@@ -1386,6 +1386,39 @@
       .import-summary .is-close svg { width: 13px; height: 13px; }
       .import-summary .is-line { font-size: 13px; font-weight: 500; color: var(--ink); line-height: 1.55; margin: 7px 0 0; }
       .import-summary .is-note { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 6px 0 0; }
+      /* ==== BEUK:importreport ==== */
+      .ir-reopen { margin: 0 14px 12px; }
+      .ir-reopen .side-btn { width: 100%; }
+      .ir-modal { max-width: 720px; }
+      .ir-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+      .ir-chip { display: inline-flex; gap: 5px; align-items: baseline; font-size: 12px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; text-decoration: none; }
+      .ir-chip b { color: var(--ink); font-size: 13px; }
+      .ir-chip.warn { border-color: var(--bad); color: var(--bad); }
+      .ir-chip.warn b { color: var(--bad); }
+      .ir-clean { font-size: 12.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; margin: 0 0 12px; line-height: 1.5; }
+      .ir-warn-line { font-size: 12.5px; color: var(--bad); margin: 8px 0; line-height: 1.5; }
+      .ir-group { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); margin: 0 0 9px; }
+      .ir-group.warn { border-color: var(--bad); border-width: 1.5px; }
+      .ir-group > summary { cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 13px; font-weight: 700; font-size: 13px; list-style: none; }
+      .ir-group > summary::-webkit-details-marker { display: none; }
+      .ir-group.warn > summary { color: var(--bad); }
+      .ir-gcount { font-family: var(--mono-font); font-size: 12px; color: var(--muted); }
+      .ir-item { border-top: 1px solid var(--line); padding: 9px 13px 10px; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+      .ir-item.undone .ir-line { text-decoration: line-through; color: var(--muted); }
+      .ir-line { color: var(--ink); overflow-wrap: anywhere; }
+      .ir-where { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+      .ir-ba { display: grid; gap: 3px; margin: 6px 0 0; }
+      .ir-ba > div { display: flex; gap: 7px; align-items: baseline; min-width: 0; }
+      .ir-ba code { font-family: var(--mono-font); font-size: 11.5px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; overflow-wrap: anywhere; white-space: pre-wrap; min-width: 0; }
+      .ir-tag { flex: 0 0 auto; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); min-width: 46px; }
+      .ir-act { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 7px; }
+      .ir-act .tb-btn { padding: 4px 11px; font-size: 12px; }
+      .ir-hint, .ir-na { font-size: 11.5px; color: var(--muted); }
+      .ir-done { font-size: 12px; color: var(--good); font-weight: 600; }
+      .ir-fail { font-size: 11.5px; color: var(--bad); }
+      .ir-actions { flex-wrap: wrap; }
+      @media (max-width: 560px) { .ir-actions .tb-btn { flex: 1 1 45%; } }
+      /* ==== /BEUK:importreport ==== */
       #secSettings { margin-bottom: 6px; }
       #secSettings .switch-row { border-bottom: 1px solid var(--line); }
 
@@ -1481,6 +1514,11 @@
             <p class="is-line" id="importSummaryText"></p>
             <p class="is-note" data-i18n="import.retypeHint">A wrong label lifts off in one click — open the section and change its type; the contents list follows at once.</p>
           </div>
+          <!-- ==== BEUK:importreport ==== -->
+          <div id="irReopen" class="ir-reopen" style="display:none;">
+            <button type="button" class="side-btn" id="btnIrReopen" data-i18n-title="ir.reopenTitle" title="Open the report of what the last import changed"><i data-lucide="list-checks"></i><span>Import report</span></button>
+          </div>
+          <!-- ==== /BEUK:importreport ==== -->
           <div class="sample-bar">
             <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story (25,000 words)</button>
             <p class="sample-note" id="sampleNote">A complete novella, The Salt Meridian, at real book scale. Load puts it on the desk in a snap; Remove clears the desk completely, back to empty.</p>
@@ -2365,6 +2403,23 @@
       </div>
     </div>
 
+    <!-- ==== BEUK:importreport ==== -->
+    <div class="modal-back" id="modalImportReport" style="z-index:68;">
+      <div class="modal wide ir-modal" role="dialog" aria-modal="true" aria-labelledby="irH">
+        <h2 id="irH"><i data-lucide="list-checks"></i><span data-i18n="ir.title">Here's what we changed</span></h2>
+        <p class="m-sub" id="irSub"></p>
+        <div id="irBody"></div>
+        <p class="ir-warn-line" id="irUndoAllNote" style="display:none;"></p>
+        <div class="modal-actions ir-actions">
+          <button class="tb-btn" id="btnIrDismiss" type="button" data-i18n="ir.dismiss">Dismiss report</button>
+          <button class="tb-btn" id="btnIrUndoAll" type="button" data-i18n="ir.undoAll">Undo the whole import</button>
+          <button class="tb-btn" id="btnIrClose" type="button" data-i18n="ir.close">Close</button>
+          <button class="tb-btn primary" id="btnIrKeep" type="button" data-i18n="ir.keepAll">Keep all</button>
+        </div>
+      </div>
+    </div>
+    <!-- ==== /BEUK:importreport ==== -->
+
     <!-- Version history: snapshots of the whole book, browsed and restored without disturbing it -->
     <div class="modal-back" id="modalHistory" style="z-index:70;">
       <div class="modal wide ins-modal" role="dialog" aria-modal="true" aria-labelledby="histH">
@@ -2790,6 +2845,7 @@
         if (typeof insOnLangChange === "function") insOnLangChange();
         if (typeof goalsOnLangChange === "function") goalsOnLangChange();
         if (typeof historyOnLangChange === "function") historyOnLangChange();
+        if (typeof irOnLangChange === "function") irOnLangChange();
         if (typeof pwaOnLangChange === "function") pwaOnLangChange();
         if (typeof dictOnLangChange === "function") dictOnLangChange();
         if (typeof syncThemeButton === "function" && $("themeLabel")) syncThemeButton();
@@ -5248,6 +5304,27 @@
         "ra.noSpeech": "此浏览器不提供语音合成，因此朗读功能无法在此运行。",
         "ra.empty": "本节还没有可朗读的文本。"
       };
+      /* ==== BEUK:importreport ==== */
+      /* Import report strings, all thirteen packs. Merged into the
+         tables above at load, before the first t() call, so the
+         ui.packs.complete self-check sees one key set everywhere. */
+      const IR_STRINGS = {
+        "en": { "ir.title": "Here's what we changed", "ir.sub": "{file} · imported {when}. Every change the import made is listed below — undo any one of them, or the whole import.", "ir.keepAll": "Keep all", "ir.undoAll": "Undo the whole import", "ir.undoAllNA": "Undoing the whole import is not available: {reason}.", "ir.dismiss": "Dismiss report", "ir.close": "Close", "ir.undoThis": "Undo this", "ir.undone": "Undone", "ir.failed": "Could not undo: {reason}.", "ir.noUndo": "Can't be undone on its own: {reason}.", "ir.before": "Before", "ir.after": "After", "ir.where": "In {where}", "ir.reopen": "Import report — {n} change", "ir.reopenPlural": "Import report — {n} changes", "ir.reopenTitle": "Open the report of what the last import changed", "ir.noneDropped": "Nothing was dropped. Checked for: {list}.", "ir.scanFailed": "The Word file's own parts could not be read, so comments, tracked changes, text boxes and page headers were not checked.", "ir.partly": "{done} of {total} lines restored; the rest had been edited since the import", "ir.toastUndoAll": "Import undone — the book is back as it was", "ir.confirmUndoAllTitle": "Undo the whole import?", "ir.confirmUndoAllBody": "The book returns to how it stood before you imported {file}. The imported version is kept as a snapshot in History.", "ir.confirmUndoAllYes": "Undo the import", "ir.confirmDismissTitle": "Dismiss the import report?", "ir.confirmDismissBody": "The report and its undo buttons go away. Your book stays exactly as it is.", "ir.confirmDismissYes": "Dismiss", "ir.g.dropped": "Dropped or not supported", "ir.g.structure": "Chapters and headings", "ir.g.matter": "Front and back matter", "ir.g.breaks": "Scene breaks", "ir.g.typography": "Typography", "ir.g.notes": "Footnotes and images", "ir.g.book": "Language and book details", "ir.c.headings": "headings", "ir.c.tables": "tables", "ir.c.images": "images", "ir.c.notes": "footnotes", "ir.c.comments": "comments", "ir.c.tracked": "tracked changes", "ir.c.textboxes": "text boxes", "ir.c.headers": "page headers and footers", "ir.c.lists": "lists", "ir.c.links": "links", "ir.c.formatting": "italic and bold", "ir.c.warnings": "converter warnings", "ir.from.h1": "Heading 1", "ir.from.h2": "Heading 2, promoted to a chapter", "ir.from.md1": "a # heading", "ir.from.md2": "a ## heading, promoted to a chapter", "ir.from.text": "the line {heading}", "ir.from.fallback": "the text before your first chapter heading", "ir.k.chapter": "New chapter: {title} — from {from}", "ir.k.demoted": "Heading {level} became body text: {text}", "ir.k.matterHeading": "{type} — named by its own heading", "ir.k.matterChapter": "{type} lifted from the opening of {chapter}", "ir.k.matterShape": "{type} recognised by its shape and given its own page", "ir.k.lifted.title": "A title-page line was taken as the book's credit and not kept as text", "ir.k.lifted.furniture": "A short title-page line was left out (it looked like title-page furniture)", "ir.k.lifted.titleHeading": "A heading repeating the book title was left out", "ir.k.toc": "The table of contents was left out — Beuk builds its own from your sections", "ir.k.emptyHeading": "A heading with no text under it was left out", "ir.k.break": "Scene break, from the marker {marker}", "ir.k.typography": "Smartened: {q} quote marks, {d} dashes, {e} ellipses", "ir.k.typographyAll": "Quotes, dashes and ellipses were smartened, but the changes could not be traced line by line", "ir.k.notes": "Footnotes: {found} found, {mapped} linked to their reference, {orphans} orphaned", "ir.k.noteOrphan": "Footnote {n}: its reference was not found in the text; the note is kept as a plain paragraph", "ir.k.refOrphan": "Footnote reference {n} has no note text", "ir.k.image": "Image imported into the library: {name}", "ir.alt.yes": "with alt text", "ir.alt.no": "no alt text — add one so screen readers can describe it", "ir.k.imageDropped": "An image was left out — its format ({type}) is not supported; JPG and PNG are", "ir.k.table": "A table ({n} row) was left out — its words are not in your book", "ir.k.tablePlural": "A table ({n} rows) was left out — its words are not in your book", "ir.k.tableImages": "It also held {n} image.", "ir.k.tableImagesPlural": "It also held {n} images.", "ir.k.comments": "{n} Word comment was left out — comments are not part of the book", "ir.k.commentsPlural": "{n} Word comments were left out — comments are not part of the book", "ir.k.tracked": "Tracked changes: {ins} insertions kept and {del} deletions left out — the file came in as if every change were accepted", "ir.k.textbox": "{n} text box: its words are kept in the reading order, the box and its position are not", "ir.k.textboxPlural": "{n} text boxes: their words are kept in the reading order, the boxes and their positions are not", "ir.k.headers": "{n} page header or footer with text was left out — Beuk sets its own running heads", "ir.k.headersPlural": "{n} page headers or footers with text were left out — Beuk sets its own running heads", "ir.k.lists": "{n} list item became a plain paragraph — bullets and numbering are not kept", "ir.k.listsPlural": "{n} list items became plain paragraphs — bullets and numbering are not kept", "ir.k.links": "{n} link: the words are kept, the web address is not", "ir.k.linksPlural": "{n} links: the words are kept, the web addresses are not", "ir.k.emphasis": "Italic and bold are not carried by the Word import yet: {em} italic and {strong} bold passages are now plain text", "ir.k.mdImage": "{n} Markdown image link: the picture itself was not imported — add it from the image library", "ir.k.mdImagePlural": "{n} Markdown image links: the pictures themselves were not imported — add them from the image library", "ir.k.mammoth": "Converter note: {message}", "ir.k.frontmatter": "The YAML front matter was read as book details and not kept as text", "ir.k.language": "Language detected: {lang}, from {via}", "ir.via.docx": "the document's own language tags", "ir.via.text": "the words of the text", "ir.lang.applied": "applied to the book", "ir.lang.suggested": "suggested only — confirm it in Project Settings", "ir.lang.manual": "not applied — you chose the language by hand", "ir.lang.same": "already the book's language", "ir.k.meta": "Book detail taken from the manuscript — {field}: {value}", "ir.f.title": "Title", "ir.f.author": "Author", "ir.f.isbn": "ISBN", "ir.f.publisher": "Publisher", "ir.f.year": "Year", "ir.why.first": "it is the first chapter of the import, with nothing imported before it to merge into", "ir.why.fallback": "this was text before your first chapter heading; it already stands as its own section", "ir.why.retype": "its own heading named it; if the label is wrong, change it with the section's type control", "ir.why.notes": "the note text is kept; edit it in the editor", "ir.why.source": "this is how the Word file came in; there is no imported text to put back", "ir.why.lang": "the book's language was not changed", "ir.why.gone": "the text it applies to has been edited or moved since the import", "ir.why.big": "it is too large to keep undo data for; use History", "ir.why.snapGone": "the pre-import snapshot is no longer in History", "ir.why.toc": "Beuk builds the contents from your sections", "ir.why.emptyHeading": "it had no text; add a chapter by hand if you need it", "ir.why.format": "convert the picture to JPG or PNG and add it from the image library", "ir.why.emphasis": "re-apply it in the editor with *asterisks* for italic and **double asterisks** for bold", "ir.why.align": "the changes could not be traced line by line; use Undo the whole import or History", "ir.why.emptyTable": "the table had no text", "ir.why.na": "there is nothing to undo", "ir.hint.chapter": "Merges it back into the section before it, keeping its heading as a line.", "ir.hint.matter": "Puts the text back where it stood in your manuscript.", "ir.hint.demoted": "Makes it a subheading again.", "ir.hint.break": "Removes the break; the paragraphs run on.", "ir.hint.typography": "Restores the straight quotes, hyphens and dots in this section.", "ir.hint.image": "Takes the picture out of the text and the image library.", "ir.hint.table": "Puts its words back as plain paragraphs, one per row, where it stood.", "ir.hint.book": "Restores the value the book had before the import." },
+        "es": { "ir.title": "Esto es lo que hemos cambiado", "ir.sub": "{file} · importado el {when}. Abajo figura cada cambio que hizo la importación: deshaz cualquiera de ellos o la importación entera.", "ir.keepAll": "Conservar todo", "ir.undoAll": "Deshacer toda la importación", "ir.undoAllNA": "No se puede deshacer toda la importación: {reason}.", "ir.dismiss": "Descartar el informe", "ir.close": "Cerrar", "ir.undoThis": "Deshacer esto", "ir.undone": "Deshecho", "ir.failed": "No se pudo deshacer: {reason}.", "ir.noUndo": "No se puede deshacer por separado: {reason}.", "ir.before": "Antes", "ir.after": "Después", "ir.where": "En {where}", "ir.reopen": "Informe de importación — {n} cambio", "ir.reopenPlural": "Informe de importación — {n} cambios", "ir.reopenTitle": "Abre el informe de lo que cambió la última importación", "ir.noneDropped": "No se ha descartado nada. Comprobado: {list}.", "ir.scanFailed": "No se pudieron leer las partes internas del archivo de Word, así que no se comprobaron comentarios, cambios registrados, cuadros de texto ni encabezados de página.", "ir.partly": "{done} de {total} líneas restauradas; el resto se había editado después de la importación", "ir.toastUndoAll": "Importación deshecha: el libro vuelve a estar como estaba", "ir.confirmUndoAllTitle": "¿Deshacer toda la importación?", "ir.confirmUndoAllBody": "El libro vuelve a como estaba antes de importar {file}. La versión importada se guarda como instantánea en el Historial.", "ir.confirmUndoAllYes": "Deshacer la importación", "ir.confirmDismissTitle": "¿Descartar el informe de importación?", "ir.confirmDismissBody": "El informe y sus botones de deshacer desaparecen. Tu libro queda exactamente como está.", "ir.confirmDismissYes": "Descartar", "ir.g.dropped": "Descartado o no admitido", "ir.g.structure": "Capítulos y encabezados", "ir.g.matter": "Preliminares y finales", "ir.g.breaks": "Cambios de escena", "ir.g.typography": "Tipografía", "ir.g.notes": "Notas al pie e imágenes", "ir.g.book": "Idioma y datos del libro", "ir.c.headings": "encabezados", "ir.c.tables": "tablas", "ir.c.images": "imágenes", "ir.c.notes": "notas al pie", "ir.c.comments": "comentarios", "ir.c.tracked": "cambios registrados", "ir.c.textboxes": "cuadros de texto", "ir.c.headers": "encabezados y pies de página", "ir.c.lists": "listas", "ir.c.links": "enlaces", "ir.c.formatting": "cursiva y negrita", "ir.c.warnings": "avisos del conversor", "ir.from.h1": "Título 1", "ir.from.h2": "Título 2, ascendido a capítulo", "ir.from.md1": "un encabezado #", "ir.from.md2": "un encabezado ##, ascendido a capítulo", "ir.from.text": "la línea {heading}", "ir.from.fallback": "el texto anterior al primer encabezado de capítulo", "ir.k.chapter": "Capítulo nuevo: {title} — a partir de {from}", "ir.k.demoted": "El título {level} pasó a ser texto normal: {text}", "ir.k.matterHeading": "{type} — nombrado por su propio encabezado", "ir.k.matterChapter": "{type} extraído del comienzo de {chapter}", "ir.k.matterShape": "{type} reconocido por su forma y con página propia", "ir.k.lifted.title": "Una línea de la portada se tomó como crédito del libro y no se conservó como texto", "ir.k.lifted.furniture": "Se omitió una línea corta de la portada (parecía mobiliario de portada)", "ir.k.lifted.titleHeading": "Se omitió un encabezado que repetía el título del libro", "ir.k.toc": "Se omitió la tabla de contenidos: Beuk crea la suya a partir de tus secciones", "ir.k.emptyHeading": "Se omitió un encabezado sin texto debajo", "ir.k.break": "Cambio de escena, a partir del marcador {marker}", "ir.k.typography": "Tipografía mejorada: {q} comillas, {d} rayas, {e} puntos suspensivos", "ir.k.typographyAll": "Se mejoraron comillas, rayas y puntos suspensivos, pero los cambios no se pudieron seguir línea a línea", "ir.k.notes": "Notas al pie: {found} encontradas, {mapped} enlazadas con su llamada, {orphans} huérfanas", "ir.k.noteOrphan": "Nota {n}: no se encontró su llamada en el texto; la nota se conserva como párrafo normal", "ir.k.refOrphan": "La llamada de nota {n} no tiene texto de nota", "ir.k.image": "Imagen importada a la biblioteca: {name}", "ir.alt.yes": "con texto alternativo", "ir.alt.no": "sin texto alternativo: añade uno para que los lectores de pantalla puedan describirla", "ir.k.imageDropped": "Se omitió una imagen: su formato ({type}) no es compatible; JPG y PNG sí lo son", "ir.k.table": "Se omitió una tabla ({n} fila): sus palabras no están en tu libro", "ir.k.tablePlural": "Se omitió una tabla ({n} filas): sus palabras no están en tu libro", "ir.k.tableImages": "También contenía {n} imagen.", "ir.k.tableImagesPlural": "También contenía {n} imágenes.", "ir.k.comments": "Se omitió {n} comentario de Word: los comentarios no forman parte del libro", "ir.k.commentsPlural": "Se omitieron {n} comentarios de Word: los comentarios no forman parte del libro", "ir.k.tracked": "Cambios registrados: {ins} inserciones conservadas y {del} eliminaciones omitidas; el archivo entró como si se hubieran aceptado todos los cambios", "ir.k.textbox": "{n} cuadro de texto: sus palabras se conservan en el orden de lectura, el cuadro y su posición no", "ir.k.textboxPlural": "{n} cuadros de texto: sus palabras se conservan en el orden de lectura, los cuadros y su posición no", "ir.k.headers": "Se omitió {n} encabezado o pie de página con texto: Beuk compone sus propios titulillos", "ir.k.headersPlural": "Se omitieron {n} encabezados o pies de página con texto: Beuk compone sus propios titulillos", "ir.k.lists": "{n} elemento de lista pasó a ser un párrafo normal: no se conservan viñetas ni numeración", "ir.k.listsPlural": "{n} elementos de lista pasaron a ser párrafos normales: no se conservan viñetas ni numeración", "ir.k.links": "{n} enlace: se conservan las palabras, no la dirección web", "ir.k.linksPlural": "{n} enlaces: se conservan las palabras, no las direcciones web", "ir.k.emphasis": "La importación de Word aún no conserva cursiva ni negrita: {em} pasajes en cursiva y {strong} en negrita son ahora texto normal", "ir.k.mdImage": "{n} enlace de imagen Markdown: la imagen en sí no se importó; añádela desde la biblioteca de imágenes", "ir.k.mdImagePlural": "{n} enlaces de imagen Markdown: las imágenes en sí no se importaron; añádelas desde la biblioteca de imágenes", "ir.k.mammoth": "Nota del conversor: {message}", "ir.k.frontmatter": "El bloque YAML inicial se leyó como datos del libro y no se conservó como texto", "ir.k.language": "Idioma detectado: {lang}, a partir de {via}", "ir.via.docx": "las etiquetas de idioma del propio documento", "ir.via.text": "las palabras del texto", "ir.lang.applied": "aplicado al libro", "ir.lang.suggested": "solo sugerido: confírmalo en Ajustes del proyecto", "ir.lang.manual": "no aplicado: elegiste el idioma a mano", "ir.lang.same": "ya es el idioma del libro", "ir.k.meta": "Dato del libro tomado del manuscrito — {field}: {value}", "ir.f.title": "Título", "ir.f.author": "Autor", "ir.f.isbn": "ISBN", "ir.f.publisher": "Editorial", "ir.f.year": "Año", "ir.why.first": "es el primer capítulo de la importación y no hay nada importado antes con lo que unirlo", "ir.why.fallback": "era texto anterior a tu primer encabezado de capítulo; ya es una sección propia", "ir.why.retype": "lo nombró su propio encabezado; si la etiqueta es errónea, cámbiala con el selector de tipo de la sección", "ir.why.notes": "el texto de la nota se conserva; edítalo en el editor", "ir.why.source": "así llegó el archivo de Word; no hay texto importado que devolver", "ir.why.lang": "el idioma del libro no cambió", "ir.why.gone": "el texto al que se refiere se ha editado o movido después de la importación", "ir.why.big": "es demasiado grande para guardar datos de deshacer; usa el Historial", "ir.why.snapGone": "la instantánea previa a la importación ya no está en el Historial", "ir.why.toc": "Beuk crea el índice a partir de tus secciones", "ir.why.emptyHeading": "no tenía texto; añade un capítulo a mano si lo necesitas", "ir.why.format": "convierte la imagen a JPG o PNG y añádela desde la biblioteca de imágenes", "ir.why.emphasis": "vuelve a aplicarlo en el editor con *asteriscos* para la cursiva y **dobles asteriscos** para la negrita", "ir.why.align": "los cambios no se pudieron seguir línea a línea; usa Deshacer toda la importación o el Historial", "ir.why.emptyTable": "la tabla no tenía texto", "ir.why.na": "no hay nada que deshacer", "ir.hint.chapter": "Lo vuelve a unir a la sección anterior y conserva su encabezado como una línea.", "ir.hint.matter": "Devuelve el texto a donde estaba en tu manuscrito.", "ir.hint.demoted": "Lo convierte de nuevo en subtítulo.", "ir.hint.break": "Quita el cambio de escena; los párrafos siguen seguidos.", "ir.hint.typography": "Restaura las comillas rectas, los guiones y los puntos de esta sección.", "ir.hint.image": "Quita la imagen del texto y de la biblioteca de imágenes.", "ir.hint.table": "Devuelve sus palabras como párrafos normales, uno por fila, donde estaba.", "ir.hint.book": "Restaura el valor que tenía el libro antes de la importación." },
+        "fr": { "ir.title": "Voici ce que nous avons changé", "ir.sub": "{file} · importé le {when}. Chaque modification faite par l’import figure ci-dessous — annulez-en une seule, ou l’import entier.", "ir.keepAll": "Tout garder", "ir.undoAll": "Annuler tout l’import", "ir.undoAllNA": "Impossible d’annuler tout l’import : {reason}.", "ir.dismiss": "Fermer définitivement le rapport", "ir.close": "Fermer", "ir.undoThis": "Annuler ceci", "ir.undone": "Annulé", "ir.failed": "Annulation impossible : {reason}.", "ir.noUndo": "Ne peut pas être annulé seul : {reason}.", "ir.before": "Avant", "ir.after": "Après", "ir.where": "Dans {where}", "ir.reopen": "Rapport d’import — {n} modification", "ir.reopenPlural": "Rapport d’import — {n} modifications", "ir.reopenTitle": "Ouvrir le rapport de ce que le dernier import a modifié", "ir.noneDropped": "Rien n’a été écarté. Vérifié : {list}.", "ir.scanFailed": "Les parties internes du fichier Word n’ont pas pu être lues : commentaires, modifications suivies, zones de texte et en-têtes n’ont donc pas été vérifiés.", "ir.partly": "{done} lignes sur {total} restaurées ; les autres avaient été modifiées depuis l’import", "ir.toastUndoAll": "Import annulé — le livre est revenu à son état d’avant", "ir.confirmUndoAllTitle": "Annuler tout l’import ?", "ir.confirmUndoAllBody": "Le livre revient à son état d’avant l’import de {file}. La version importée est conservée comme instantané dans l’Historique.", "ir.confirmUndoAllYes": "Annuler l’import", "ir.confirmDismissTitle": "Fermer définitivement le rapport d’import ?", "ir.confirmDismissBody": "Le rapport et ses boutons d’annulation disparaissent. Votre livre reste exactement tel quel.", "ir.confirmDismissYes": "Fermer le rapport", "ir.g.dropped": "Écarté ou non pris en charge", "ir.g.structure": "Chapitres et titres", "ir.g.matter": "Pages liminaires et finales", "ir.g.breaks": "Changements de scène", "ir.g.typography": "Typographie", "ir.g.notes": "Notes et images", "ir.g.book": "Langue et informations du livre", "ir.c.headings": "titres", "ir.c.tables": "tableaux", "ir.c.images": "images", "ir.c.notes": "notes de bas de page", "ir.c.comments": "commentaires", "ir.c.tracked": "modifications suivies", "ir.c.textboxes": "zones de texte", "ir.c.headers": "en-têtes et pieds de page", "ir.c.lists": "listes", "ir.c.links": "liens", "ir.c.formatting": "italique et gras", "ir.c.warnings": "avertissements du convertisseur", "ir.from.h1": "Titre 1", "ir.from.h2": "Titre 2, promu au rang de chapitre", "ir.from.md1": "un titre #", "ir.from.md2": "un titre ##, promu au rang de chapitre", "ir.from.text": "la ligne {heading}", "ir.from.fallback": "le texte précédant votre premier titre de chapitre", "ir.k.chapter": "Nouveau chapitre : {title} — d’après {from}", "ir.k.demoted": "Le titre de niveau {level} est devenu du texte courant : {text}", "ir.k.matterHeading": "{type} — nommé par son propre titre", "ir.k.matterChapter": "{type} extrait du début de {chapter}", "ir.k.matterShape": "{type} reconnu à sa forme et placé sur sa propre page", "ir.k.lifted.title": "Une ligne de la page de titre a été prise comme crédit du livre et n’est pas conservée comme texte", "ir.k.lifted.furniture": "Une courte ligne de la page de titre a été écartée (elle ressemblait à un élément de page de titre)", "ir.k.lifted.titleHeading": "Un titre répétant le titre du livre a été écarté", "ir.k.toc": "La table des matières a été écartée — Beuk construit la sienne à partir de vos sections", "ir.k.emptyHeading": "Un titre sans texte en dessous a été écarté", "ir.k.break": "Changement de scène, d’après le repère {marker}", "ir.k.typography": "Typographie soignée : {q} guillemets, {d} tirets, {e} points de suspension", "ir.k.typographyAll": "Guillemets, tirets et points de suspension ont été soignés, mais les changements n’ont pas pu être suivis ligne par ligne", "ir.k.notes": "Notes : {found} trouvées, {mapped} reliées à leur appel, {orphans} orphelines", "ir.k.noteOrphan": "Note {n} : son appel est introuvable dans le texte ; la note est conservée comme simple paragraphe", "ir.k.refOrphan": "L’appel de note {n} n’a pas de texte de note", "ir.k.image": "Image importée dans la bibliothèque : {name}", "ir.alt.yes": "avec texte alternatif", "ir.alt.no": "sans texte alternatif — ajoutez-en un pour que les lecteurs d’écran puissent la décrire", "ir.k.imageDropped": "Une image a été écartée — son format ({type}) n’est pas pris en charge ; JPG et PNG le sont", "ir.k.table": "Un tableau ({n} ligne) a été écarté — ses mots ne sont pas dans votre livre", "ir.k.tablePlural": "Un tableau ({n} lignes) a été écarté — ses mots ne sont pas dans votre livre", "ir.k.tableImages": "Il contenait aussi {n} image.", "ir.k.tableImagesPlural": "Il contenait aussi {n} images.", "ir.k.comments": "{n} commentaire Word a été écarté — les commentaires ne font pas partie du livre", "ir.k.commentsPlural": "{n} commentaires Word ont été écartés — les commentaires ne font pas partie du livre", "ir.k.tracked": "Modifications suivies : {ins} insertions gardées et {del} suppressions écartées — le fichier est entré comme si toutes les modifications étaient acceptées", "ir.k.textbox": "{n} zone de texte : ses mots sont gardés dans l’ordre de lecture, pas la zone ni sa position", "ir.k.textboxPlural": "{n} zones de texte : leurs mots sont gardés dans l’ordre de lecture, pas les zones ni leur position", "ir.k.headers": "{n} en-tête ou pied de page avec du texte a été écarté — Beuk compose ses propres titres courants", "ir.k.headersPlural": "{n} en-têtes ou pieds de page avec du texte ont été écartés — Beuk compose ses propres titres courants", "ir.k.lists": "{n} élément de liste est devenu un simple paragraphe — puces et numérotation ne sont pas gardées", "ir.k.listsPlural": "{n} éléments de liste sont devenus de simples paragraphes — puces et numérotation ne sont pas gardées", "ir.k.links": "{n} lien : les mots sont gardés, pas l’adresse web", "ir.k.linksPlural": "{n} liens : les mots sont gardés, pas les adresses web", "ir.k.emphasis": "L’import Word ne conserve pas encore l’italique ni le gras : {em} passages en italique et {strong} en gras sont maintenant du texte simple", "ir.k.mdImage": "{n} lien d’image Markdown : l’image elle-même n’a pas été importée — ajoutez-la depuis la bibliothèque d’images", "ir.k.mdImagePlural": "{n} liens d’image Markdown : les images elles-mêmes n’ont pas été importées — ajoutez-les depuis la bibliothèque d’images", "ir.k.mammoth": "Note du convertisseur : {message}", "ir.k.frontmatter": "L’en-tête YAML a été lu comme informations du livre et n’est pas conservé comme texte", "ir.k.language": "Langue détectée : {lang}, d’après {via}", "ir.via.docx": "les balises de langue du document", "ir.via.text": "les mots du texte", "ir.lang.applied": "appliquée au livre", "ir.lang.suggested": "seulement suggérée — confirmez-la dans les Paramètres du projet", "ir.lang.manual": "non appliquée — vous avez choisi la langue vous-même", "ir.lang.same": "déjà la langue du livre", "ir.k.meta": "Information du livre tirée du manuscrit — {field} : {value}", "ir.f.title": "Titre", "ir.f.author": "Auteur", "ir.f.isbn": "ISBN", "ir.f.publisher": "Éditeur", "ir.f.year": "Année", "ir.why.first": "c’est le premier chapitre de l’import, sans rien d’importé avant lui où le fusionner", "ir.why.fallback": "c’était du texte avant votre premier titre de chapitre ; il forme déjà sa propre section", "ir.why.retype": "son propre titre l’a nommé ; si l’étiquette est fausse, changez-la avec le sélecteur de type de la section", "ir.why.notes": "le texte de la note est conservé ; modifiez-le dans l’éditeur", "ir.why.source": "c’est ainsi que le fichier Word est arrivé ; il n’y a pas de texte importé à remettre", "ir.why.lang": "la langue du livre n’a pas changé", "ir.why.gone": "le texte concerné a été modifié ou déplacé depuis l’import", "ir.why.big": "c’est trop volumineux pour garder des données d’annulation ; utilisez l’Historique", "ir.why.snapGone": "l’instantané d’avant l’import n’est plus dans l’Historique", "ir.why.toc": "Beuk construit la table des matières à partir de vos sections", "ir.why.emptyHeading": "il n’avait pas de texte ; ajoutez un chapitre à la main si besoin", "ir.why.format": "convertissez l’image en JPG ou PNG et ajoutez-la depuis la bibliothèque d’images", "ir.why.emphasis": "réappliquez-le dans l’éditeur avec des *astérisques* pour l’italique et des **doubles astérisques** pour le gras", "ir.why.align": "les changements n’ont pas pu être suivis ligne par ligne ; utilisez Annuler tout l’import ou l’Historique", "ir.why.emptyTable": "le tableau n’avait pas de texte", "ir.why.na": "il n’y a rien à annuler", "ir.hint.chapter": "Le refusionne avec la section précédente, en gardant son titre comme une ligne.", "ir.hint.matter": "Remet le texte là où il se trouvait dans votre manuscrit.", "ir.hint.demoted": "En refait un intertitre.", "ir.hint.break": "Supprime le changement de scène ; les paragraphes s’enchaînent.", "ir.hint.typography": "Rétablit les guillemets droits, traits d’union et points de cette section.", "ir.hint.image": "Retire l’image du texte et de la bibliothèque d’images.", "ir.hint.table": "Remet ses mots en paragraphes simples, un par ligne du tableau, à sa place.", "ir.hint.book": "Rétablit la valeur qu’avait le livre avant l’import." },
+        "de": { "ir.title": "Das haben wir geändert", "ir.sub": "{file} · importiert am {when}. Jede Änderung des Imports steht unten — machen Sie eine einzelne rückgängig oder den ganzen Import.", "ir.keepAll": "Alles behalten", "ir.undoAll": "Ganzen Import rückgängig machen", "ir.undoAllNA": "Den ganzen Import rückgängig zu machen ist nicht möglich: {reason}.", "ir.dismiss": "Bericht verwerfen", "ir.close": "Schließen", "ir.undoThis": "Rückgängig", "ir.undone": "Rückgängig gemacht", "ir.failed": "Rückgängig machen fehlgeschlagen: {reason}.", "ir.noUndo": "Nicht einzeln rückgängig zu machen: {reason}.", "ir.before": "Vorher", "ir.after": "Nachher", "ir.where": "In {where}", "ir.reopen": "Importbericht — {n} Änderung", "ir.reopenPlural": "Importbericht — {n} Änderungen", "ir.reopenTitle": "Den Bericht darüber öffnen, was der letzte Import geändert hat", "ir.noneDropped": "Nichts wurde weggelassen. Geprüft: {list}.", "ir.scanFailed": "Die internen Teile der Word-Datei ließen sich nicht lesen; Kommentare, nachverfolgte Änderungen, Textfelder und Kopfzeilen wurden daher nicht geprüft.", "ir.partly": "{done} von {total} Zeilen wiederhergestellt; der Rest wurde seit dem Import bearbeitet", "ir.toastUndoAll": "Import rückgängig gemacht — das Buch ist wieder wie vorher", "ir.confirmUndoAllTitle": "Den ganzen Import rückgängig machen?", "ir.confirmUndoAllBody": "Das Buch kehrt in den Zustand vor dem Import von {file} zurück. Die importierte Fassung bleibt als Schnappschuss im Verlauf erhalten.", "ir.confirmUndoAllYes": "Import rückgängig machen", "ir.confirmDismissTitle": "Importbericht verwerfen?", "ir.confirmDismissBody": "Der Bericht und seine Rückgängig-Schaltflächen verschwinden. Ihr Buch bleibt genau so, wie es ist.", "ir.confirmDismissYes": "Verwerfen", "ir.g.dropped": "Weggelassen oder nicht unterstützt", "ir.g.structure": "Kapitel und Überschriften", "ir.g.matter": "Titelei und Anhang", "ir.g.breaks": "Szenenwechsel", "ir.g.typography": "Typografie", "ir.g.notes": "Fußnoten und Bilder", "ir.g.book": "Sprache und Buchangaben", "ir.c.headings": "Überschriften", "ir.c.tables": "Tabellen", "ir.c.images": "Bilder", "ir.c.notes": "Fußnoten", "ir.c.comments": "Kommentare", "ir.c.tracked": "nachverfolgte Änderungen", "ir.c.textboxes": "Textfelder", "ir.c.headers": "Kopf- und Fußzeilen", "ir.c.lists": "Listen", "ir.c.links": "Links", "ir.c.formatting": "Kursiv und Fett", "ir.c.warnings": "Konverter-Hinweise", "ir.from.h1": "Überschrift 1", "ir.from.h2": "Überschrift 2, zum Kapitel hochgestuft", "ir.from.md1": "einer #-Überschrift", "ir.from.md2": "einer ##-Überschrift, zum Kapitel hochgestuft", "ir.from.text": "der Zeile {heading}", "ir.from.fallback": "dem Text vor Ihrer ersten Kapitelüberschrift", "ir.k.chapter": "Neues Kapitel: {title} — aus {from}", "ir.k.demoted": "Überschrift {level} wurde zu Fließtext: {text}", "ir.k.matterHeading": "{type} — durch die eigene Überschrift benannt", "ir.k.matterChapter": "{type} aus dem Anfang von {chapter} herausgelöst", "ir.k.matterShape": "{type} an seiner Form erkannt und auf eine eigene Seite gestellt", "ir.k.lifted.title": "Eine Titelblattzeile wurde als Angabe des Buchs übernommen und nicht als Text behalten", "ir.k.lifted.furniture": "Eine kurze Titelblattzeile wurde weggelassen (sie sah nach Titelblatt-Beiwerk aus)", "ir.k.lifted.titleHeading": "Eine Überschrift, die den Buchtitel wiederholt, wurde weggelassen", "ir.k.toc": "Das Inhaltsverzeichnis wurde weggelassen — Beuk erstellt sein eigenes aus Ihren Abschnitten", "ir.k.emptyHeading": "Eine Überschrift ohne Text darunter wurde weggelassen", "ir.k.break": "Szenenwechsel, aus der Markierung {marker}", "ir.k.typography": "Typografisch verfeinert: {q} Anführungszeichen, {d} Striche, {e} Auslassungspunkte", "ir.k.typographyAll": "Anführungszeichen, Striche und Auslassungspunkte wurden verfeinert, die Änderungen ließen sich aber nicht zeilenweise nachverfolgen", "ir.k.notes": "Fußnoten: {found} gefunden, {mapped} mit ihrem Verweis verknüpft, {orphans} verwaist", "ir.k.noteOrphan": "Fußnote {n}: ihr Verweis wurde im Text nicht gefunden; die Notiz bleibt als einfacher Absatz erhalten", "ir.k.refOrphan": "Fußnotenverweis {n} hat keinen Notiztext", "ir.k.image": "Bild in die Bibliothek importiert: {name}", "ir.alt.yes": "mit Alternativtext", "ir.alt.no": "ohne Alternativtext — fügen Sie einen hinzu, damit Screenreader es beschreiben können", "ir.k.imageDropped": "Ein Bild wurde weggelassen — sein Format ({type}) wird nicht unterstützt; JPG und PNG schon", "ir.k.table": "Eine Tabelle ({n} Zeile) wurde weggelassen — ihre Wörter stehen nicht in Ihrem Buch", "ir.k.tablePlural": "Eine Tabelle ({n} Zeilen) wurde weggelassen — ihre Wörter stehen nicht in Ihrem Buch", "ir.k.tableImages": "Sie enthielt außerdem {n} Bild.", "ir.k.tableImagesPlural": "Sie enthielt außerdem {n} Bilder.", "ir.k.comments": "{n} Word-Kommentar wurde weggelassen — Kommentare gehören nicht zum Buch", "ir.k.commentsPlural": "{n} Word-Kommentare wurden weggelassen — Kommentare gehören nicht zum Buch", "ir.k.tracked": "Nachverfolgte Änderungen: {ins} Einfügungen behalten und {del} Löschungen weggelassen — die Datei kam herein, als wären alle Änderungen angenommen", "ir.k.textbox": "{n} Textfeld: seine Wörter bleiben in der Lesereihenfolge, das Feld und seine Position nicht", "ir.k.textboxPlural": "{n} Textfelder: ihre Wörter bleiben in der Lesereihenfolge, die Felder und ihre Positionen nicht", "ir.k.headers": "{n} Kopf- oder Fußzeile mit Text wurde weggelassen — Beuk setzt eigene Kolumnentitel", "ir.k.headersPlural": "{n} Kopf- oder Fußzeilen mit Text wurden weggelassen — Beuk setzt eigene Kolumnentitel", "ir.k.lists": "{n} Listeneintrag wurde zu einem einfachen Absatz — Aufzählungszeichen und Nummerierung bleiben nicht erhalten", "ir.k.listsPlural": "{n} Listeneinträge wurden zu einfachen Absätzen — Aufzählungszeichen und Nummerierung bleiben nicht erhalten", "ir.k.links": "{n} Link: die Wörter bleiben, die Webadresse nicht", "ir.k.linksPlural": "{n} Links: die Wörter bleiben, die Webadressen nicht", "ir.k.emphasis": "Kursiv und Fett übernimmt der Word-Import noch nicht: {em} kursive und {strong} fette Passagen sind jetzt normaler Text", "ir.k.mdImage": "{n} Markdown-Bildlink: das Bild selbst wurde nicht importiert — fügen Sie es über die Bildbibliothek hinzu", "ir.k.mdImagePlural": "{n} Markdown-Bildlinks: die Bilder selbst wurden nicht importiert — fügen Sie sie über die Bildbibliothek hinzu", "ir.k.mammoth": "Hinweis des Konverters: {message}", "ir.k.frontmatter": "Der YAML-Vorspann wurde als Buchangaben gelesen und nicht als Text behalten", "ir.k.language": "Sprache erkannt: {lang}, anhand {via}", "ir.via.docx": "der Sprachangaben im Dokument selbst", "ir.via.text": "der Wörter des Textes", "ir.lang.applied": "auf das Buch angewendet", "ir.lang.suggested": "nur vorgeschlagen — bestätigen Sie sie in den Projekteinstellungen", "ir.lang.manual": "nicht angewendet — Sie haben die Sprache von Hand gewählt", "ir.lang.same": "bereits die Sprache des Buchs", "ir.k.meta": "Buchangabe aus dem Manuskript übernommen — {field}: {value}", "ir.f.title": "Titel", "ir.f.author": "Autor", "ir.f.isbn": "ISBN", "ir.f.publisher": "Verlag", "ir.f.year": "Jahr", "ir.why.first": "es ist das erste Kapitel des Imports; davor wurde nichts importiert, mit dem es zusammengeführt werden könnte", "ir.why.fallback": "das war Text vor Ihrer ersten Kapitelüberschrift; er steht bereits als eigener Abschnitt", "ir.why.retype": "die eigene Überschrift hat ihn benannt; ist die Bezeichnung falsch, ändern Sie sie über die Typauswahl des Abschnitts", "ir.why.notes": "der Notiztext bleibt erhalten; bearbeiten Sie ihn im Editor", "ir.why.source": "so kam die Word-Datei herein; es gibt keinen importierten Text, der zurückgelegt werden könnte", "ir.why.lang": "die Sprache des Buchs wurde nicht geändert", "ir.why.gone": "der betroffene Text wurde seit dem Import bearbeitet oder verschoben", "ir.why.big": "zu groß, um Rückgängig-Daten aufzubewahren; nutzen Sie den Verlauf", "ir.why.snapGone": "der Schnappschuss vor dem Import ist nicht mehr im Verlauf", "ir.why.toc": "Beuk erstellt das Inhaltsverzeichnis aus Ihren Abschnitten", "ir.why.emptyHeading": "sie hatte keinen Text; fügen Sie bei Bedarf ein Kapitel von Hand hinzu", "ir.why.format": "wandeln Sie das Bild in JPG oder PNG um und fügen Sie es über die Bildbibliothek hinzu", "ir.why.emphasis": "wenden Sie es im Editor erneut an — mit *Sternchen* für Kursiv und **doppelten Sternchen** für Fett", "ir.why.align": "die Änderungen ließen sich nicht zeilenweise nachverfolgen; nutzen Sie Ganzen Import rückgängig machen oder den Verlauf", "ir.why.emptyTable": "die Tabelle hatte keinen Text", "ir.why.na": "es gibt nichts rückgängig zu machen", "ir.hint.chapter": "Führt es mit dem vorherigen Abschnitt zusammen und behält die Überschrift als Zeile.", "ir.hint.matter": "Legt den Text dorthin zurück, wo er im Manuskript stand.", "ir.hint.demoted": "Macht sie wieder zu einer Zwischenüberschrift.", "ir.hint.break": "Entfernt den Szenenwechsel; die Absätze laufen weiter.", "ir.hint.typography": "Stellt die geraden Anführungszeichen, Bindestriche und Punkte in diesem Abschnitt wieder her.", "ir.hint.image": "Nimmt das Bild aus dem Text und aus der Bildbibliothek.", "ir.hint.table": "Legt ihre Wörter als einfache Absätze, einer pro Zeile, an ihren Platz zurück.", "ir.hint.book": "Stellt den Wert wieder her, den das Buch vor dem Import hatte." },
+        "it": { "ir.title": "Ecco cosa abbiamo cambiato", "ir.sub": "{file} · importato il {when}. Qui sotto trovi ogni modifica fatta dall’importazione: annullane una o l’intera importazione.", "ir.keepAll": "Mantieni tutto", "ir.undoAll": "Annulla l’intera importazione", "ir.undoAllNA": "Non è possibile annullare l’intera importazione: {reason}.", "ir.dismiss": "Chiudi il rapporto", "ir.close": "Chiudi", "ir.undoThis": "Annulla questa", "ir.undone": "Annullata", "ir.failed": "Impossibile annullare: {reason}.", "ir.noUndo": "Non si può annullare da sola: {reason}.", "ir.before": "Prima", "ir.after": "Dopo", "ir.where": "In {where}", "ir.reopen": "Rapporto di importazione — {n} modifica", "ir.reopenPlural": "Rapporto di importazione — {n} modifiche", "ir.reopenTitle": "Apri il rapporto di ciò che ha cambiato l’ultima importazione", "ir.noneDropped": "Non è stato scartato nulla. Controllati: {list}.", "ir.scanFailed": "Non è stato possibile leggere le parti interne del file Word, quindi commenti, revisioni, caselle di testo e intestazioni non sono stati controllati.", "ir.partly": "{done} righe su {total} ripristinate; le altre erano state modificate dopo l’importazione", "ir.toastUndoAll": "Importazione annullata: il libro è tornato com’era", "ir.confirmUndoAllTitle": "Annullare l’intera importazione?", "ir.confirmUndoAllBody": "Il libro torna com’era prima che importassi {file}. La versione importata resta come istantanea nella Cronologia.", "ir.confirmUndoAllYes": "Annulla l’importazione", "ir.confirmDismissTitle": "Chiudere il rapporto di importazione?", "ir.confirmDismissBody": "Il rapporto e i suoi pulsanti di annullamento spariscono. Il tuo libro resta esattamente com’è.", "ir.confirmDismissYes": "Chiudi il rapporto", "ir.g.dropped": "Scartato o non supportato", "ir.g.structure": "Capitoli e titoli", "ir.g.matter": "Parti iniziali e finali", "ir.g.breaks": "Cambi di scena", "ir.g.typography": "Tipografia", "ir.g.notes": "Note e immagini", "ir.g.book": "Lingua e dati del libro", "ir.c.headings": "titoli", "ir.c.tables": "tabelle", "ir.c.images": "immagini", "ir.c.notes": "note a piè di pagina", "ir.c.comments": "commenti", "ir.c.tracked": "revisioni", "ir.c.textboxes": "caselle di testo", "ir.c.headers": "intestazioni e piè di pagina", "ir.c.lists": "elenchi", "ir.c.links": "link", "ir.c.formatting": "corsivo e grassetto", "ir.c.warnings": "avvisi del convertitore", "ir.from.h1": "Titolo 1", "ir.from.h2": "Titolo 2, promosso a capitolo", "ir.from.md1": "un titolo #", "ir.from.md2": "un titolo ##, promosso a capitolo", "ir.from.text": "la riga {heading}", "ir.from.fallback": "il testo prima del tuo primo titolo di capitolo", "ir.k.chapter": "Nuovo capitolo: {title} — da {from}", "ir.k.demoted": "Il titolo di livello {level} è diventato testo normale: {text}", "ir.k.matterHeading": "{type} — indicato dal suo stesso titolo", "ir.k.matterChapter": "{type} estratto dall’inizio di {chapter}", "ir.k.matterShape": "{type} riconosciuto dalla forma e messo su una pagina propria", "ir.k.lifted.title": "Una riga del frontespizio è stata presa come credito del libro e non conservata come testo", "ir.k.lifted.furniture": "Una breve riga del frontespizio è stata omessa (sembrava un elemento del frontespizio)", "ir.k.lifted.titleHeading": "Un titolo che ripete il titolo del libro è stato omesso", "ir.k.toc": "L’indice è stato omesso: Beuk crea il suo a partire dalle tue sezioni", "ir.k.emptyHeading": "Un titolo senza testo sotto è stato omesso", "ir.k.break": "Cambio di scena, dal segno {marker}", "ir.k.typography": "Tipografia rifinita: {q} virgolette, {d} trattini, {e} puntini di sospensione", "ir.k.typographyAll": "Virgolette, trattini e puntini di sospensione sono stati rifiniti, ma le modifiche non si sono potute seguire riga per riga", "ir.k.notes": "Note: {found} trovate, {mapped} collegate al loro richiamo, {orphans} orfane", "ir.k.noteOrphan": "Nota {n}: il suo richiamo non è stato trovato nel testo; la nota resta come paragrafo normale", "ir.k.refOrphan": "Il richiamo di nota {n} non ha testo di nota", "ir.k.image": "Immagine importata nella libreria: {name}", "ir.alt.yes": "con testo alternativo", "ir.alt.no": "senza testo alternativo: aggiungine uno perché gli screen reader possano descriverla", "ir.k.imageDropped": "Un’immagine è stata omessa: il suo formato ({type}) non è supportato; JPG e PNG sì", "ir.k.table": "Una tabella ({n} riga) è stata omessa: le sue parole non sono nel tuo libro", "ir.k.tablePlural": "Una tabella ({n} righe) è stata omessa: le sue parole non sono nel tuo libro", "ir.k.tableImages": "Conteneva anche {n} immagine.", "ir.k.tableImagesPlural": "Conteneva anche {n} immagini.", "ir.k.comments": "{n} commento di Word è stato omesso: i commenti non fanno parte del libro", "ir.k.commentsPlural": "{n} commenti di Word sono stati omessi: i commenti non fanno parte del libro", "ir.k.tracked": "Revisioni: {ins} inserimenti mantenuti e {del} eliminazioni omesse; il file è entrato come se tutte le modifiche fossero accettate", "ir.k.textbox": "{n} casella di testo: le sue parole restano nell’ordine di lettura, la casella e la sua posizione no", "ir.k.textboxPlural": "{n} caselle di testo: le loro parole restano nell’ordine di lettura, le caselle e la loro posizione no", "ir.k.headers": "{n} intestazione o piè di pagina con testo è stato omesso: Beuk compone le proprie testatine", "ir.k.headersPlural": "{n} intestazioni o piè di pagina con testo sono stati omessi: Beuk compone le proprie testatine", "ir.k.lists": "{n} voce di elenco è diventata un paragrafo normale: punti elenco e numerazione non vengono mantenuti", "ir.k.listsPlural": "{n} voci di elenco sono diventate paragrafi normali: punti elenco e numerazione non vengono mantenuti", "ir.k.links": "{n} link: le parole restano, l’indirizzo web no", "ir.k.linksPlural": "{n} link: le parole restano, gli indirizzi web no", "ir.k.emphasis": "L’importazione da Word non mantiene ancora corsivo e grassetto: {em} passaggi in corsivo e {strong} in grassetto ora sono testo normale", "ir.k.mdImage": "{n} link a immagine Markdown: l’immagine non è stata importata; aggiungila dalla libreria immagini", "ir.k.mdImagePlural": "{n} link a immagini Markdown: le immagini non sono state importate; aggiungile dalla libreria immagini", "ir.k.mammoth": "Nota del convertitore: {message}", "ir.k.frontmatter": "L’intestazione YAML è stata letta come dati del libro e non conservata come testo", "ir.k.language": "Lingua rilevata: {lang}, da {via}", "ir.via.docx": "i tag di lingua del documento stesso", "ir.via.text": "le parole del testo", "ir.lang.applied": "applicata al libro", "ir.lang.suggested": "solo suggerita: confermala nelle Impostazioni del progetto", "ir.lang.manual": "non applicata: hai scelto la lingua a mano", "ir.lang.same": "è già la lingua del libro", "ir.k.meta": "Dato del libro preso dal manoscritto — {field}: {value}", "ir.f.title": "Titolo", "ir.f.author": "Autore", "ir.f.isbn": "ISBN", "ir.f.publisher": "Editore", "ir.f.year": "Anno", "ir.why.first": "è il primo capitolo dell’importazione e prima non c’è nulla di importato a cui unirlo", "ir.why.fallback": "era testo prima del tuo primo titolo di capitolo; è già una sezione a sé", "ir.why.retype": "l’ha indicato il suo stesso titolo; se l’etichetta è sbagliata, cambiala con il selettore del tipo di sezione", "ir.why.notes": "il testo della nota è conservato; modificalo nell’editor", "ir.why.source": "è così che è arrivato il file Word; non c’è testo importato da rimettere", "ir.why.lang": "la lingua del libro non è cambiata", "ir.why.gone": "il testo a cui si riferisce è stato modificato o spostato dopo l’importazione", "ir.why.big": "è troppo grande per conservare i dati di annullamento; usa la Cronologia", "ir.why.snapGone": "l’istantanea precedente all’importazione non è più nella Cronologia", "ir.why.toc": "Beuk crea l’indice a partire dalle tue sezioni", "ir.why.emptyHeading": "non aveva testo; aggiungi un capitolo a mano se ti serve", "ir.why.format": "converti l’immagine in JPG o PNG e aggiungila dalla libreria immagini", "ir.why.emphasis": "riapplicalo nell’editor con *asterischi* per il corsivo e **doppi asterischi** per il grassetto", "ir.why.align": "le modifiche non si sono potute seguire riga per riga; usa Annulla l’intera importazione o la Cronologia", "ir.why.emptyTable": "la tabella non aveva testo", "ir.why.na": "non c’è nulla da annullare", "ir.hint.chapter": "Lo riunisce alla sezione precedente, mantenendo il titolo come riga.", "ir.hint.matter": "Rimette il testo dov’era nel tuo manoscritto.", "ir.hint.demoted": "Lo rende di nuovo un sottotitolo.", "ir.hint.break": "Toglie il cambio di scena; i paragrafi proseguono.", "ir.hint.typography": "Ripristina le virgolette dritte, i trattini e i punti in questa sezione.", "ir.hint.image": "Toglie l’immagine dal testo e dalla libreria immagini.", "ir.hint.table": "Rimette le sue parole come paragrafi normali, uno per riga, dov’era.", "ir.hint.book": "Ripristina il valore che il libro aveva prima dell’importazione." },
+        "pt": { "ir.title": "Eis o que mudámos", "ir.sub": "{file} · importado a {when}. Cada alteração feita pela importação está listada abaixo — desfaça qualquer uma delas, ou a importação inteira.", "ir.keepAll": "Manter tudo", "ir.undoAll": "Desfazer toda a importação", "ir.undoAllNA": "Não é possível desfazer toda a importação: {reason}.", "ir.dismiss": "Dispensar o relatório", "ir.close": "Fechar", "ir.undoThis": "Desfazer isto", "ir.undone": "Desfeito", "ir.failed": "Não foi possível desfazer: {reason}.", "ir.noUndo": "Não pode ser desfeito sozinho: {reason}.", "ir.before": "Antes", "ir.after": "Depois", "ir.where": "Em {where}", "ir.reopen": "Relatório de importação — {n} alteração", "ir.reopenPlural": "Relatório de importação — {n} alterações", "ir.reopenTitle": "Abrir o relatório do que a última importação alterou", "ir.noneDropped": "Nada foi descartado. Verificado: {list}.", "ir.scanFailed": "Não foi possível ler as partes internas do ficheiro Word, por isso comentários, alterações registadas, caixas de texto e cabeçalhos não foram verificados.", "ir.partly": "{done} de {total} linhas repostas; as restantes tinham sido editadas depois da importação", "ir.toastUndoAll": "Importação desfeita — o livro voltou a estar como estava", "ir.confirmUndoAllTitle": "Desfazer toda a importação?", "ir.confirmUndoAllBody": "O livro volta ao estado anterior à importação de {file}. A versão importada fica guardada como instantâneo no Histórico.", "ir.confirmUndoAllYes": "Desfazer a importação", "ir.confirmDismissTitle": "Dispensar o relatório de importação?", "ir.confirmDismissBody": "O relatório e os seus botões de desfazer desaparecem. O seu livro fica exatamente como está.", "ir.confirmDismissYes": "Dispensar", "ir.g.dropped": "Descartado ou não suportado", "ir.g.structure": "Capítulos e títulos", "ir.g.matter": "Páginas iniciais e finais", "ir.g.breaks": "Mudanças de cena", "ir.g.typography": "Tipografia", "ir.g.notes": "Notas de rodapé e imagens", "ir.g.book": "Idioma e dados do livro", "ir.c.headings": "títulos", "ir.c.tables": "tabelas", "ir.c.images": "imagens", "ir.c.notes": "notas de rodapé", "ir.c.comments": "comentários", "ir.c.tracked": "alterações registadas", "ir.c.textboxes": "caixas de texto", "ir.c.headers": "cabeçalhos e rodapés", "ir.c.lists": "listas", "ir.c.links": "ligações", "ir.c.formatting": "itálico e negrito", "ir.c.warnings": "avisos do conversor", "ir.from.h1": "Título 1", "ir.from.h2": "Título 2, promovido a capítulo", "ir.from.md1": "um título #", "ir.from.md2": "um título ##, promovido a capítulo", "ir.from.text": "a linha {heading}", "ir.from.fallback": "o texto antes do seu primeiro título de capítulo", "ir.k.chapter": "Novo capítulo: {title} — a partir de {from}", "ir.k.demoted": "O título de nível {level} passou a texto normal: {text}", "ir.k.matterHeading": "{type} — indicado pelo seu próprio título", "ir.k.matterChapter": "{type} retirado do início de {chapter}", "ir.k.matterShape": "{type} reconhecido pela forma e colocado numa página própria", "ir.k.lifted.title": "Uma linha da página de título foi tomada como crédito do livro e não ficou como texto", "ir.k.lifted.furniture": "Uma linha curta da página de título foi deixada de fora (parecia mobiliário da página de título)", "ir.k.lifted.titleHeading": "Foi deixado de fora um título que repetia o título do livro", "ir.k.toc": "O índice foi deixado de fora — o Beuk cria o seu a partir das suas secções", "ir.k.emptyHeading": "Foi deixado de fora um título sem texto por baixo", "ir.k.break": "Mudança de cena, a partir do marcador {marker}", "ir.k.typography": "Tipografia apurada: {q} aspas, {d} travessões, {e} reticências", "ir.k.typographyAll": "Aspas, travessões e reticências foram apurados, mas as alterações não puderam ser seguidas linha a linha", "ir.k.notes": "Notas de rodapé: {found} encontradas, {mapped} ligadas à sua chamada, {orphans} órfãs", "ir.k.noteOrphan": "Nota {n}: a sua chamada não foi encontrada no texto; a nota fica como parágrafo normal", "ir.k.refOrphan": "A chamada de nota {n} não tem texto de nota", "ir.k.image": "Imagem importada para a biblioteca: {name}", "ir.alt.yes": "com texto alternativo", "ir.alt.no": "sem texto alternativo — adicione um para que os leitores de ecrã a possam descrever", "ir.k.imageDropped": "Uma imagem foi deixada de fora — o seu formato ({type}) não é suportado; JPG e PNG são", "ir.k.table": "Uma tabela ({n} linha) foi deixada de fora — as suas palavras não estão no seu livro", "ir.k.tablePlural": "Uma tabela ({n} linhas) foi deixada de fora — as suas palavras não estão no seu livro", "ir.k.tableImages": "Continha também {n} imagem.", "ir.k.tableImagesPlural": "Continha também {n} imagens.", "ir.k.comments": "{n} comentário do Word foi deixado de fora — os comentários não fazem parte do livro", "ir.k.commentsPlural": "{n} comentários do Word foram deixados de fora — os comentários não fazem parte do livro", "ir.k.tracked": "Alterações registadas: {ins} inserções mantidas e {del} eliminações deixadas de fora — o ficheiro entrou como se todas as alterações tivessem sido aceites", "ir.k.textbox": "{n} caixa de texto: as suas palavras ficam na ordem de leitura, a caixa e a sua posição não", "ir.k.textboxPlural": "{n} caixas de texto: as suas palavras ficam na ordem de leitura, as caixas e as suas posições não", "ir.k.headers": "{n} cabeçalho ou rodapé com texto foi deixado de fora — o Beuk compõe os seus próprios cabeçalhos correntes", "ir.k.headersPlural": "{n} cabeçalhos ou rodapés com texto foram deixados de fora — o Beuk compõe os seus próprios cabeçalhos correntes", "ir.k.lists": "{n} item de lista passou a parágrafo normal — marcadores e numeração não se mantêm", "ir.k.listsPlural": "{n} itens de lista passaram a parágrafos normais — marcadores e numeração não se mantêm", "ir.k.links": "{n} ligação: as palavras ficam, o endereço web não", "ir.k.linksPlural": "{n} ligações: as palavras ficam, os endereços web não", "ir.k.emphasis": "A importação do Word ainda não mantém itálico nem negrito: {em} passagens em itálico e {strong} em negrito são agora texto normal", "ir.k.mdImage": "{n} ligação de imagem Markdown: a imagem em si não foi importada — adicione-a a partir da biblioteca de imagens", "ir.k.mdImagePlural": "{n} ligações de imagem Markdown: as imagens em si não foram importadas — adicione-as a partir da biblioteca de imagens", "ir.k.mammoth": "Nota do conversor: {message}", "ir.k.frontmatter": "O bloco YAML inicial foi lido como dados do livro e não ficou como texto", "ir.k.language": "Idioma detetado: {lang}, a partir de {via}", "ir.via.docx": "as etiquetas de idioma do próprio documento", "ir.via.text": "as palavras do texto", "ir.lang.applied": "aplicado ao livro", "ir.lang.suggested": "apenas sugerido — confirme-o nas Definições do projeto", "ir.lang.manual": "não aplicado — escolheu o idioma à mão", "ir.lang.same": "já é o idioma do livro", "ir.k.meta": "Dado do livro retirado do manuscrito — {field}: {value}", "ir.f.title": "Título", "ir.f.author": "Autor", "ir.f.isbn": "ISBN", "ir.f.publisher": "Editora", "ir.f.year": "Ano", "ir.why.first": "é o primeiro capítulo da importação, sem nada importado antes dele com que o juntar", "ir.why.fallback": "era texto antes do seu primeiro título de capítulo; já é uma secção própria", "ir.why.retype": "o seu próprio título indicou-o; se a etiqueta estiver errada, mude-a com o seletor de tipo da secção", "ir.why.notes": "o texto da nota é mantido; edite-o no editor", "ir.why.source": "foi assim que o ficheiro Word chegou; não há texto importado para repor", "ir.why.lang": "o idioma do livro não foi alterado", "ir.why.gone": "o texto a que se refere foi editado ou movido depois da importação", "ir.why.big": "é grande demais para guardar dados de desfazer; use o Histórico", "ir.why.snapGone": "o instantâneo anterior à importação já não está no Histórico", "ir.why.toc": "o Beuk cria o índice a partir das suas secções", "ir.why.emptyHeading": "não tinha texto; adicione um capítulo à mão se precisar", "ir.why.format": "converta a imagem em JPG ou PNG e adicione-a a partir da biblioteca de imagens", "ir.why.emphasis": "volte a aplicá-lo no editor com *asteriscos* para itálico e **asteriscos duplos** para negrito", "ir.why.align": "as alterações não puderam ser seguidas linha a linha; use Desfazer toda a importação ou o Histórico", "ir.why.emptyTable": "a tabela não tinha texto", "ir.why.na": "não há nada para desfazer", "ir.hint.chapter": "Junta-o de novo à secção anterior, mantendo o título como uma linha.", "ir.hint.matter": "Repõe o texto onde estava no seu manuscrito.", "ir.hint.demoted": "Volta a torná-lo um subtítulo.", "ir.hint.break": "Retira a mudança de cena; os parágrafos seguem seguidos.", "ir.hint.typography": "Repõe as aspas retas, os hífenes e os pontos nesta secção.", "ir.hint.image": "Retira a imagem do texto e da biblioteca de imagens.", "ir.hint.table": "Repõe as suas palavras como parágrafos normais, um por linha, onde estava.", "ir.hint.book": "Repõe o valor que o livro tinha antes da importação." },
+        "nl": { "ir.title": "Dit hebben we veranderd", "ir.sub": "{file} · geïmporteerd op {when}. Elke wijziging van de import staat hieronder — maak er één ongedaan, of de hele import.", "ir.keepAll": "Alles behouden", "ir.undoAll": "Hele import ongedaan maken", "ir.undoAllNA": "De hele import ongedaan maken kan niet: {reason}.", "ir.dismiss": "Rapport sluiten", "ir.close": "Sluiten", "ir.undoThis": "Ongedaan maken", "ir.undone": "Ongedaan gemaakt", "ir.failed": "Ongedaan maken lukte niet: {reason}.", "ir.noUndo": "Niet los ongedaan te maken: {reason}.", "ir.before": "Voor", "ir.after": "Na", "ir.where": "In {where}", "ir.reopen": "Importrapport — {n} wijziging", "ir.reopenPlural": "Importrapport — {n} wijzigingen", "ir.reopenTitle": "Open het rapport van wat de laatste import heeft veranderd", "ir.noneDropped": "Er is niets weggelaten. Gecontroleerd: {list}.", "ir.scanFailed": "De interne onderdelen van het Word-bestand konden niet worden gelezen, dus opmerkingen, bijgehouden wijzigingen, tekstvakken en kopteksten zijn niet gecontroleerd.", "ir.partly": "{done} van {total} regels hersteld; de rest was sinds de import bewerkt", "ir.toastUndoAll": "Import ongedaan gemaakt — het boek is weer zoals het was", "ir.confirmUndoAllTitle": "De hele import ongedaan maken?", "ir.confirmUndoAllBody": "Het boek keert terug naar hoe het was voordat u {file} importeerde. De geïmporteerde versie blijft als momentopname bewaard in de Geschiedenis.", "ir.confirmUndoAllYes": "Import ongedaan maken", "ir.confirmDismissTitle": "Het importrapport sluiten?", "ir.confirmDismissBody": "Het rapport en zijn knoppen om ongedaan te maken verdwijnen. Uw boek blijft precies zoals het is.", "ir.confirmDismissYes": "Sluiten", "ir.g.dropped": "Weggelaten of niet ondersteund", "ir.g.structure": "Hoofdstukken en koppen", "ir.g.matter": "Voorwerk en nawerk", "ir.g.breaks": "Scèneovergangen", "ir.g.typography": "Typografie", "ir.g.notes": "Voetnoten en afbeeldingen", "ir.g.book": "Taal en boekgegevens", "ir.c.headings": "koppen", "ir.c.tables": "tabellen", "ir.c.images": "afbeeldingen", "ir.c.notes": "voetnoten", "ir.c.comments": "opmerkingen", "ir.c.tracked": "bijgehouden wijzigingen", "ir.c.textboxes": "tekstvakken", "ir.c.headers": "kop- en voetteksten", "ir.c.lists": "lijsten", "ir.c.links": "links", "ir.c.formatting": "cursief en vet", "ir.c.warnings": "waarschuwingen van de converter", "ir.from.h1": "Kop 1", "ir.from.h2": "Kop 2, gepromoveerd tot hoofdstuk", "ir.from.md1": "een #-kop", "ir.from.md2": "een ##-kop, gepromoveerd tot hoofdstuk", "ir.from.text": "de regel {heading}", "ir.from.fallback": "de tekst vóór uw eerste hoofdstukkop", "ir.k.chapter": "Nieuw hoofdstuk: {title} — uit {from}", "ir.k.demoted": "Kop {level} werd gewone tekst: {text}", "ir.k.matterHeading": "{type} — benoemd door de eigen kop", "ir.k.matterChapter": "{type} gehaald uit het begin van {chapter}", "ir.k.matterShape": "{type} herkend aan de vorm en op een eigen pagina gezet", "ir.k.lifted.title": "Een regel van de titelpagina werd gebruikt als vermelding van het boek en niet als tekst bewaard", "ir.k.lifted.furniture": "Een korte regel van de titelpagina werd weggelaten (hij leek op titelpagina-opmaak)", "ir.k.lifted.titleHeading": "Een kop die de boektitel herhaalt werd weggelaten", "ir.k.toc": "De inhoudsopgave werd weggelaten — Beuk maakt zijn eigen uit uw secties", "ir.k.emptyHeading": "Een kop zonder tekst eronder werd weggelaten", "ir.k.break": "Scèneovergang, uit de markering {marker}", "ir.k.typography": "Typografisch verfijnd: {q} aanhalingstekens, {d} streepjes, {e} beletseltekens", "ir.k.typographyAll": "Aanhalingstekens, streepjes en beletseltekens zijn verfijnd, maar de wijzigingen konden niet regel voor regel worden gevolgd", "ir.k.notes": "Voetnoten: {found} gevonden, {mapped} gekoppeld aan hun verwijzing, {orphans} verweesd", "ir.k.noteOrphan": "Voetnoot {n}: de verwijzing is niet in de tekst gevonden; de noot blijft als gewone alinea bewaard", "ir.k.refOrphan": "Voetnootverwijzing {n} heeft geen notetekst", "ir.k.image": "Afbeelding geïmporteerd in de bibliotheek: {name}", "ir.alt.yes": "met alternatieve tekst", "ir.alt.no": "zonder alternatieve tekst — voeg er een toe zodat schermlezers haar kunnen beschrijven", "ir.k.imageDropped": "Een afbeelding werd weggelaten — het formaat ({type}) wordt niet ondersteund; JPG en PNG wel", "ir.k.table": "Een tabel ({n} rij) werd weggelaten — de woorden staan niet in uw boek", "ir.k.tablePlural": "Een tabel ({n} rijen) werd weggelaten — de woorden staan niet in uw boek", "ir.k.tableImages": "Er stond ook {n} afbeelding in.", "ir.k.tableImagesPlural": "Er stonden ook {n} afbeeldingen in.", "ir.k.comments": "{n} Word-opmerking werd weggelaten — opmerkingen horen niet bij het boek", "ir.k.commentsPlural": "{n} Word-opmerkingen werden weggelaten — opmerkingen horen niet bij het boek", "ir.k.tracked": "Bijgehouden wijzigingen: {ins} invoegingen behouden en {del} verwijderingen weggelaten — het bestand kwam binnen alsof alle wijzigingen waren geaccepteerd", "ir.k.textbox": "{n} tekstvak: de woorden blijven in de leesvolgorde, het vak en de positie niet", "ir.k.textboxPlural": "{n} tekstvakken: de woorden blijven in de leesvolgorde, de vakken en hun posities niet", "ir.k.headers": "{n} kop- of voettekst met tekst werd weggelaten — Beuk zet eigen kopregels", "ir.k.headersPlural": "{n} kop- of voetteksten met tekst werden weggelaten — Beuk zet eigen kopregels", "ir.k.lists": "{n} lijstitem werd een gewone alinea — opsommingstekens en nummering blijven niet bewaard", "ir.k.listsPlural": "{n} lijstitems werden gewone alinea's — opsommingstekens en nummering blijven niet bewaard", "ir.k.links": "{n} link: de woorden blijven, het webadres niet", "ir.k.linksPlural": "{n} links: de woorden blijven, de webadressen niet", "ir.k.emphasis": "Cursief en vet neemt de Word-import nog niet over: {em} cursieve en {strong} vette passages zijn nu gewone tekst", "ir.k.mdImage": "{n} Markdown-afbeeldingslink: de afbeelding zelf is niet geïmporteerd — voeg haar toe via de beeldbibliotheek", "ir.k.mdImagePlural": "{n} Markdown-afbeeldingslinks: de afbeeldingen zelf zijn niet geïmporteerd — voeg ze toe via de beeldbibliotheek", "ir.k.mammoth": "Melding van de converter: {message}", "ir.k.frontmatter": "De YAML-kop werd gelezen als boekgegevens en niet als tekst bewaard", "ir.k.language": "Taal herkend: {lang}, op basis van {via}", "ir.via.docx": "de taalcodes in het document zelf", "ir.via.text": "de woorden van de tekst", "ir.lang.applied": "toegepast op het boek", "ir.lang.suggested": "alleen voorgesteld — bevestig het in de Projectinstellingen", "ir.lang.manual": "niet toegepast — u koos de taal zelf", "ir.lang.same": "al de taal van het boek", "ir.k.meta": "Boekgegeven uit het manuscript overgenomen — {field}: {value}", "ir.f.title": "Titel", "ir.f.author": "Auteur", "ir.f.isbn": "ISBN", "ir.f.publisher": "Uitgever", "ir.f.year": "Jaar", "ir.why.first": "het is het eerste hoofdstuk van de import; er is daarvóór niets geïmporteerd om het mee samen te voegen", "ir.why.fallback": "dit was tekst vóór uw eerste hoofdstukkop; het staat al als eigen sectie", "ir.why.retype": "de eigen kop benoemde het; klopt het label niet, wijzig het dan met de typekeuze van de sectie", "ir.why.notes": "de notetekst blijft bewaard; bewerk hem in de editor", "ir.why.source": "zo kwam het Word-bestand binnen; er is geen geïmporteerde tekst om terug te zetten", "ir.why.lang": "de taal van het boek is niet gewijzigd", "ir.why.gone": "de betreffende tekst is sinds de import bewerkt of verplaatst", "ir.why.big": "te groot om gegevens voor ongedaan maken te bewaren; gebruik de Geschiedenis", "ir.why.snapGone": "de momentopname van vóór de import staat niet meer in de Geschiedenis", "ir.why.toc": "Beuk maakt de inhoudsopgave uit uw secties", "ir.why.emptyHeading": "er stond geen tekst onder; voeg zelf een hoofdstuk toe als u het nodig hebt", "ir.why.format": "zet de afbeelding om naar JPG of PNG en voeg haar toe via de beeldbibliotheek", "ir.why.emphasis": "pas het opnieuw toe in de editor met *sterretjes* voor cursief en **dubbele sterretjes** voor vet", "ir.why.align": "de wijzigingen konden niet regel voor regel worden gevolgd; gebruik Hele import ongedaan maken of de Geschiedenis", "ir.why.emptyTable": "de tabel bevatte geen tekst", "ir.why.na": "er is niets om ongedaan te maken", "ir.hint.chapter": "Voegt het weer samen met de sectie ervoor en houdt de kop als regel.", "ir.hint.matter": "Zet de tekst terug waar hij in uw manuscript stond.", "ir.hint.demoted": "Maakt er weer een tussenkop van.", "ir.hint.break": "Haalt de scèneovergang weg; de alinea's lopen door.", "ir.hint.typography": "Herstelt de rechte aanhalingstekens, koppeltekens en puntjes in deze sectie.", "ir.hint.image": "Haalt de afbeelding uit de tekst en uit de beeldbibliotheek.", "ir.hint.table": "Zet de woorden terug als gewone alinea's, één per rij, waar de tabel stond.", "ir.hint.book": "Herstelt de waarde die het boek vóór de import had." },
+        "pl": { "ir.title": "Oto, co zmieniliśmy", "ir.sub": "{file} · zaimportowano {when}. Poniżej jest każda zmiana dokonana przez import — cofnij dowolną z nich albo cały import.", "ir.keepAll": "Zachowaj wszystko", "ir.undoAll": "Cofnij cały import", "ir.undoAllNA": "Nie można cofnąć całego importu: {reason}.", "ir.dismiss": "Odrzuć raport", "ir.close": "Zamknij", "ir.undoThis": "Cofnij to", "ir.undone": "Cofnięto", "ir.failed": "Nie udało się cofnąć: {reason}.", "ir.noUndo": "Nie da się cofnąć osobno: {reason}.", "ir.before": "Przed", "ir.after": "Po", "ir.where": "W: {where}", "ir.reopen": "Raport importu — {n} zmiana", "ir.reopenPlural": "Raport importu — zmiany: {n}", "ir.reopenTitle": "Otwórz raport o tym, co zmienił ostatni import", "ir.noneDropped": "Nic nie zostało pominięte. Sprawdzono: {list}.", "ir.scanFailed": "Nie udało się odczytać wewnętrznych części pliku Word, więc komentarze, śledzone zmiany, pola tekstowe i nagłówki nie zostały sprawdzone.", "ir.partly": "Przywrócono {done} z {total} wierszy; pozostałe edytowano po imporcie", "ir.toastUndoAll": "Import cofnięty — książka wróciła do stanu sprzed importu", "ir.confirmUndoAllTitle": "Cofnąć cały import?", "ir.confirmUndoAllBody": "Książka wraca do stanu sprzed zaimportowania {file}. Zaimportowana wersja zostaje zachowana jako migawka w Historii.", "ir.confirmUndoAllYes": "Cofnij import", "ir.confirmDismissTitle": "Odrzucić raport importu?", "ir.confirmDismissBody": "Raport i jego przyciski cofania znikną. Twoja książka zostanie dokładnie taka, jaka jest.", "ir.confirmDismissYes": "Odrzuć", "ir.g.dropped": "Pominięte lub nieobsługiwane", "ir.g.structure": "Rozdziały i nagłówki", "ir.g.matter": "Strony początkowe i końcowe", "ir.g.breaks": "Zmiany scen", "ir.g.typography": "Typografia", "ir.g.notes": "Przypisy i obrazy", "ir.g.book": "Język i dane książki", "ir.c.headings": "nagłówki", "ir.c.tables": "tabele", "ir.c.images": "obrazy", "ir.c.notes": "przypisy", "ir.c.comments": "komentarze", "ir.c.tracked": "śledzone zmiany", "ir.c.textboxes": "pola tekstowe", "ir.c.headers": "nagłówki i stopki stron", "ir.c.lists": "listy", "ir.c.links": "linki", "ir.c.formatting": "kursywa i pogrubienie", "ir.c.warnings": "ostrzeżenia konwertera", "ir.from.h1": "Nagłówek 1", "ir.from.h2": "Nagłówek 2, awansowany na rozdział", "ir.from.md1": "nagłówka #", "ir.from.md2": "nagłówka ##, awansowanego na rozdział", "ir.from.text": "wiersza {heading}", "ir.from.fallback": "tekstu przed pierwszym nagłówkiem rozdziału", "ir.k.chapter": "Nowy rozdział: {title} — na podstawie: {from}", "ir.k.demoted": "Nagłówek poziomu {level} stał się zwykłym tekstem: {text}", "ir.k.matterHeading": "{type} — nazwany własnym nagłówkiem", "ir.k.matterChapter": "{type} wydzielony z początku: {chapter}", "ir.k.matterShape": "{type} rozpoznany po kształcie i umieszczony na osobnej stronie", "ir.k.lifted.title": "Wiersz strony tytułowej przyjęto jako dane książki i nie zachowano go jako tekstu", "ir.k.lifted.furniture": "Pominięto krótki wiersz strony tytułowej (wyglądał na element strony tytułowej)", "ir.k.lifted.titleHeading": "Pominięto nagłówek powtarzający tytuł książki", "ir.k.toc": "Pominięto spis treści — Beuk tworzy własny na podstawie Twoich sekcji", "ir.k.emptyHeading": "Pominięto nagłówek bez tekstu pod spodem", "ir.k.break": "Zmiana sceny, na podstawie znacznika {marker}", "ir.k.typography": "Poprawiona typografia: cudzysłowy: {q}, myślniki: {d}, wielokropki: {e}", "ir.k.typographyAll": "Poprawiono cudzysłowy, myślniki i wielokropki, ale zmian nie dało się prześledzić wiersz po wierszu", "ir.k.notes": "Przypisy: znalezione: {found}, połączone z odnośnikiem: {mapped}, osierocone: {orphans}", "ir.k.noteOrphan": "Przypis {n}: nie znaleziono jego odnośnika w tekście; przypis zostaje jako zwykły akapit", "ir.k.refOrphan": "Odnośnik przypisu {n} nie ma treści przypisu", "ir.k.image": "Obraz zaimportowany do biblioteki: {name}", "ir.alt.yes": "z tekstem alternatywnym", "ir.alt.no": "bez tekstu alternatywnego — dodaj go, aby czytniki ekranu mogły go opisać", "ir.k.imageDropped": "Pominięto obraz — jego format ({type}) nie jest obsługiwany; JPG i PNG są", "ir.k.table": "Pominięto tabelę (wiersze: {n}) — jej słów nie ma w Twojej książce", "ir.k.tablePlural": "Pominięto tabelę (wiersze: {n}) — jej słów nie ma w Twojej książce", "ir.k.tableImages": "Zawierała też obraz ({n}).", "ir.k.tableImagesPlural": "Zawierała też obrazy ({n}).", "ir.k.comments": "Pominięto komentarz Worda ({n}) — komentarze nie są częścią książki", "ir.k.commentsPlural": "Pominięto komentarze Worda ({n}) — komentarze nie są częścią książki", "ir.k.tracked": "Śledzone zmiany: zachowano wstawienia ({ins}) i pominięto usunięcia ({del}) — plik wczytano tak, jakby wszystkie zmiany zostały zaakceptowane", "ir.k.textbox": "Pole tekstowe ({n}): jego słowa zostają w kolejności czytania, pole i jego położenie nie", "ir.k.textboxPlural": "Pola tekstowe ({n}): ich słowa zostają w kolejności czytania, pola i ich położenie nie", "ir.k.headers": "Pominięto nagłówek lub stopkę strony z tekstem ({n}) — Beuk składa własne żywe paginy", "ir.k.headersPlural": "Pominięto nagłówki lub stopki stron z tekstem ({n}) — Beuk składa własne żywe paginy", "ir.k.lists": "Element listy ({n}) stał się zwykłym akapitem — punktory i numeracja nie są zachowywane", "ir.k.listsPlural": "Elementy listy ({n}) stały się zwykłymi akapitami — punktory i numeracja nie są zachowywane", "ir.k.links": "Link ({n}): słowa zostają, adres internetowy nie", "ir.k.linksPlural": "Linki ({n}): słowa zostają, adresy internetowe nie", "ir.k.emphasis": "Import z Worda nie przenosi jeszcze kursywy ani pogrubienia: fragmenty kursywą ({em}) i pogrubione ({strong}) są teraz zwykłym tekstem", "ir.k.mdImage": "Link do obrazu Markdown ({n}): sam obraz nie został zaimportowany — dodaj go z biblioteki obrazów", "ir.k.mdImagePlural": "Linki do obrazów Markdown ({n}): same obrazy nie zostały zaimportowane — dodaj je z biblioteki obrazów", "ir.k.mammoth": "Uwaga konwertera: {message}", "ir.k.frontmatter": "Nagłówek YAML odczytano jako dane książki i nie zachowano go jako tekstu", "ir.k.language": "Wykryty język: {lang}, na podstawie: {via}", "ir.via.docx": "własne znaczniki języka w dokumencie", "ir.via.text": "słowa tekstu", "ir.lang.applied": "zastosowano do książki", "ir.lang.suggested": "tylko zasugerowano — potwierdź w Ustawieniach projektu", "ir.lang.manual": "nie zastosowano — język wybrano ręcznie", "ir.lang.same": "to już język książki", "ir.k.meta": "Dane książki pobrane z rękopisu — {field}: {value}", "ir.f.title": "Tytuł", "ir.f.author": "Autor", "ir.f.isbn": "ISBN", "ir.f.publisher": "Wydawca", "ir.f.year": "Rok", "ir.why.first": "to pierwszy rozdział importu i nie zaimportowano przed nim niczego, z czym można by go połączyć", "ir.why.fallback": "to był tekst przed pierwszym nagłówkiem rozdziału; już stanowi osobną sekcję", "ir.why.retype": "nazwał go własny nagłówek; jeśli etykieta jest błędna, zmień ją wyborem typu sekcji", "ir.why.notes": "treść przypisu jest zachowana; edytuj ją w edytorze", "ir.why.source": "tak przyszedł plik Word; nie ma zaimportowanego tekstu do przywrócenia", "ir.why.lang": "język książki nie został zmieniony", "ir.why.gone": "tekst, którego to dotyczy, został po imporcie edytowany lub przeniesiony", "ir.why.big": "to zbyt duże, by przechowywać dane cofania; użyj Historii", "ir.why.snapGone": "migawki sprzed importu nie ma już w Historii", "ir.why.toc": "Beuk tworzy spis treści na podstawie Twoich sekcji", "ir.why.emptyHeading": "nie miał tekstu; w razie potrzeby dodaj rozdział ręcznie", "ir.why.format": "przekonwertuj obraz na JPG lub PNG i dodaj go z biblioteki obrazów", "ir.why.emphasis": "zastosuj je ponownie w edytorze: *gwiazdki* dla kursywy i **podwójne gwiazdki** dla pogrubienia", "ir.why.align": "zmian nie dało się prześledzić wiersz po wierszu; użyj Cofnij cały import lub Historii", "ir.why.emptyTable": "tabela nie zawierała tekstu", "ir.why.na": "nie ma nic do cofnięcia", "ir.hint.chapter": "Łączy go z poprzednią sekcją, zachowując nagłówek jako wiersz.", "ir.hint.matter": "Odkłada tekst tam, gdzie stał w rękopisie.", "ir.hint.demoted": "Znów robi z niego śródtytuł.", "ir.hint.break": "Usuwa zmianę sceny; akapity biegną dalej.", "ir.hint.typography": "Przywraca proste cudzysłowy, łączniki i kropki w tej sekcji.", "ir.hint.image": "Usuwa obraz z tekstu i z biblioteki obrazów.", "ir.hint.table": "Odkłada jej słowa jako zwykłe akapity, po jednym na wiersz, w jej miejscu.", "ir.hint.book": "Przywraca wartość, którą książka miała przed importem." },
+        "ru": { "ir.title": "Вот что мы изменили", "ir.sub": "{file} · импортирован {when}. Ниже перечислены все изменения, сделанные импортом, — отмените любое из них или весь импорт.", "ir.keepAll": "Оставить всё", "ir.undoAll": "Отменить весь импорт", "ir.undoAllNA": "Отменить весь импорт нельзя: {reason}.", "ir.dismiss": "Закрыть отчёт", "ir.close": "Закрыть", "ir.undoThis": "Отменить это", "ir.undone": "Отменено", "ir.failed": "Не удалось отменить: {reason}.", "ir.noUndo": "Нельзя отменить отдельно: {reason}.", "ir.before": "До", "ir.after": "После", "ir.where": "В разделе {where}", "ir.reopen": "Отчёт об импорте — изменений: {n}", "ir.reopenPlural": "Отчёт об импорте — изменений: {n}", "ir.reopenTitle": "Открыть отчёт о том, что изменил последний импорт", "ir.noneDropped": "Ничего не потеряно. Проверено: {list}.", "ir.scanFailed": "Не удалось прочитать внутренние части файла Word, поэтому примечания, исправления, надписи и колонтитулы не проверены.", "ir.partly": "Восстановлено строк: {done} из {total}; остальные были изменены после импорта", "ir.toastUndoAll": "Импорт отменён — книга вернулась в прежнее состояние", "ir.confirmUndoAllTitle": "Отменить весь импорт?", "ir.confirmUndoAllBody": "Книга вернётся к состоянию до импорта {file}. Импортированная версия сохранится как снимок в Истории.", "ir.confirmUndoAllYes": "Отменить импорт", "ir.confirmDismissTitle": "Закрыть отчёт об импорте?", "ir.confirmDismissBody": "Отчёт и его кнопки отмены исчезнут. Ваша книга останется в точности такой, как сейчас.", "ir.confirmDismissYes": "Закрыть", "ir.g.dropped": "Отброшено или не поддерживается", "ir.g.structure": "Главы и заголовки", "ir.g.matter": "Вступительные и заключительные страницы", "ir.g.breaks": "Смены сцен", "ir.g.typography": "Типографика", "ir.g.notes": "Сноски и изображения", "ir.g.book": "Язык и данные книги", "ir.c.headings": "заголовки", "ir.c.tables": "таблицы", "ir.c.images": "изображения", "ir.c.notes": "сноски", "ir.c.comments": "примечания", "ir.c.tracked": "исправления", "ir.c.textboxes": "надписи", "ir.c.headers": "колонтитулы", "ir.c.lists": "списки", "ir.c.links": "ссылки", "ir.c.formatting": "курсив и полужирный", "ir.c.warnings": "предупреждения конвертера", "ir.from.h1": "«Заголовок 1»", "ir.from.h2": "«Заголовок 2», повышен до главы", "ir.from.md1": "заголовка #", "ir.from.md2": "заголовка ##, повышен до главы", "ir.from.text": "строки {heading}", "ir.from.fallback": "текста перед первым заголовком главы", "ir.k.chapter": "Новая глава: {title} — из {from}", "ir.k.demoted": "Заголовок уровня {level} стал обычным текстом: {text}", "ir.k.matterHeading": "{type} — назван собственным заголовком", "ir.k.matterChapter": "{type} вынесен из начала раздела {chapter}", "ir.k.matterShape": "{type} распознан по форме и вынесен на отдельную страницу", "ir.k.lifted.title": "Строка титульного листа взята как выходные данные книги и не сохранена как текст", "ir.k.lifted.furniture": "Короткая строка титульного листа опущена (она похожа на оформление титула)", "ir.k.lifted.titleHeading": "Опущен заголовок, повторяющий название книги", "ir.k.toc": "Оглавление опущено — Beuk строит своё по вашим разделам", "ir.k.emptyHeading": "Опущен заголовок без текста под ним", "ir.k.break": "Смена сцены, по маркеру {marker}", "ir.k.typography": "Типографика улучшена: кавычек — {q}, тире — {d}, многоточий — {e}", "ir.k.typographyAll": "Кавычки, тире и многоточия улучшены, но изменения не удалось проследить построчно", "ir.k.notes": "Сноски: найдено — {found}, связано со ссылкой — {mapped}, без пары — {orphans}", "ir.k.noteOrphan": "Сноска {n}: её ссылка в тексте не найдена; сноска сохранена как обычный абзац", "ir.k.refOrphan": "У ссылки на сноску {n} нет текста сноски", "ir.k.image": "Изображение импортировано в библиотеку: {name}", "ir.alt.yes": "с альтернативным текстом", "ir.alt.no": "без альтернативного текста — добавьте его, чтобы экранные дикторы могли его описать", "ir.k.imageDropped": "Изображение опущено — его формат ({type}) не поддерживается; поддерживаются JPG и PNG", "ir.k.table": "Таблица (строк: {n}) опущена — её слов нет в вашей книге", "ir.k.tablePlural": "Таблица (строк: {n}) опущена — её слов нет в вашей книге", "ir.k.tableImages": "В ней было также изображений: {n}.", "ir.k.tableImagesPlural": "В ней было также изображений: {n}.", "ir.k.comments": "Опущено примечание Word ({n}) — примечания не входят в книгу", "ir.k.commentsPlural": "Опущено примечаний Word: {n} — примечания не входят в книгу", "ir.k.tracked": "Исправления: вставок сохранено — {ins}, удалений опущено — {del}; файл загружен так, будто все исправления приняты", "ir.k.textbox": "Надпись ({n}): её слова сохранены в порядке чтения, рамка и положение — нет", "ir.k.textboxPlural": "Надписей: {n}; их слова сохранены в порядке чтения, рамки и положение — нет", "ir.k.headers": "Опущен колонтитул с текстом ({n}) — Beuk ставит собственные колонтитулы", "ir.k.headersPlural": "Опущено колонтитулов с текстом: {n} — Beuk ставит собственные колонтитулы", "ir.k.lists": "Элемент списка ({n}) стал обычным абзацем — маркеры и нумерация не сохраняются", "ir.k.listsPlural": "Элементов списка, ставших обычными абзацами: {n} — маркеры и нумерация не сохраняются", "ir.k.links": "Ссылка ({n}): слова сохранены, веб-адрес — нет", "ir.k.linksPlural": "Ссылок: {n}; слова сохранены, веб-адреса — нет", "ir.k.emphasis": "Импорт из Word пока не переносит курсив и полужирный: фрагменты курсивом ({em}) и полужирным ({strong}) теперь обычный текст", "ir.k.mdImage": "Ссылка на изображение Markdown ({n}): само изображение не импортировано — добавьте его из библиотеки изображений", "ir.k.mdImagePlural": "Ссылок на изображения Markdown: {n}; сами изображения не импортированы — добавьте их из библиотеки изображений", "ir.k.mammoth": "Сообщение конвертера: {message}", "ir.k.frontmatter": "Блок YAML в начале прочитан как данные книги и не сохранён как текст", "ir.k.language": "Определён язык: {lang}, по {via}", "ir.via.docx": "языковым меткам самого документа", "ir.via.text": "словам текста", "ir.lang.applied": "применён к книге", "ir.lang.suggested": "только предложен — подтвердите его в настройках проекта", "ir.lang.manual": "не применён — вы выбрали язык вручную", "ir.lang.same": "это уже язык книги", "ir.k.meta": "Данные книги взяты из рукописи — {field}: {value}", "ir.f.title": "Название", "ir.f.author": "Автор", "ir.f.isbn": "ISBN", "ir.f.publisher": "Издательство", "ir.f.year": "Год", "ir.why.first": "это первая глава импорта, до неё не импортировано ничего, с чем её можно объединить", "ir.why.fallback": "это был текст перед первым заголовком главы; он уже стоит отдельным разделом", "ir.why.retype": "его назвал собственный заголовок; если метка неверна, измените её через выбор типа раздела", "ir.why.notes": "текст сноски сохранён; правьте его в редакторе", "ir.why.source": "так пришёл файл Word; импортированного текста, который можно вернуть, нет", "ir.why.lang": "язык книги не менялся", "ir.why.gone": "текст, к которому это относится, изменён или перемещён после импорта", "ir.why.big": "слишком велико, чтобы хранить данные отмены; воспользуйтесь Историей", "ir.why.snapGone": "снимка до импорта больше нет в Истории", "ir.why.toc": "Beuk строит оглавление по вашим разделам", "ir.why.emptyHeading": "под ним не было текста; при необходимости добавьте главу вручную", "ir.why.format": "преобразуйте изображение в JPG или PNG и добавьте его из библиотеки изображений", "ir.why.emphasis": "примените заново в редакторе: *звёздочки* для курсива и **двойные звёздочки** для полужирного", "ir.why.align": "изменения не удалось проследить построчно; используйте «Отменить весь импорт» или Историю", "ir.why.emptyTable": "в таблице не было текста", "ir.why.na": "отменять нечего", "ir.hint.chapter": "Снова объединяет её с предыдущим разделом, сохраняя заголовок строкой.", "ir.hint.matter": "Возвращает текст туда, где он стоял в рукописи.", "ir.hint.demoted": "Снова делает его подзаголовком.", "ir.hint.break": "Убирает смену сцены; абзацы идут подряд.", "ir.hint.typography": "Возвращает прямые кавычки, дефисы и точки в этом разделе.", "ir.hint.image": "Убирает изображение из текста и из библиотеки изображений.", "ir.hint.table": "Возвращает её слова обычными абзацами, по одному на строку, на её место.", "ir.hint.book": "Возвращает значение, которое было у книги до импорта." },
+        "tr": { "ir.title": "Değiştirdiklerimiz şunlar", "ir.sub": "{file} · {when} tarihinde içe aktarıldı. İçe aktarmanın yaptığı her değişiklik aşağıda — herhangi birini ya da tüm içe aktarmayı geri alın.", "ir.keepAll": "Hepsini koru", "ir.undoAll": "Tüm içe aktarmayı geri al", "ir.undoAllNA": "Tüm içe aktarma geri alınamıyor: {reason}.", "ir.dismiss": "Raporu kapat", "ir.close": "Kapat", "ir.undoThis": "Bunu geri al", "ir.undone": "Geri alındı", "ir.failed": "Geri alınamadı: {reason}.", "ir.noUndo": "Tek başına geri alınamaz: {reason}.", "ir.before": "Önce", "ir.after": "Sonra", "ir.where": "{where} içinde", "ir.reopen": "İçe aktarma raporu — {n} değişiklik", "ir.reopenPlural": "İçe aktarma raporu — {n} değişiklik", "ir.reopenTitle": "Son içe aktarmanın neleri değiştirdiğine dair raporu aç", "ir.noneDropped": "Hiçbir şey atlanmadı. Denetlenenler: {list}.", "ir.scanFailed": "Word dosyasının iç bölümleri okunamadı; bu yüzden yorumlar, izlenen değişiklikler, metin kutuları ve sayfa üst bilgileri denetlenmedi.", "ir.partly": "{total} satırdan {done} tanesi geri getirildi; kalanlar içe aktarmadan sonra düzenlenmişti", "ir.toastUndoAll": "İçe aktarma geri alındı — kitap eski hâline döndü", "ir.confirmUndoAllTitle": "Tüm içe aktarma geri alınsın mı?", "ir.confirmUndoAllBody": "Kitap, {file} dosyasını içe aktarmadan önceki hâline döner. İçe aktarılan sürüm Geçmiş'te bir anlık görüntü olarak saklanır.", "ir.confirmUndoAllYes": "İçe aktarmayı geri al", "ir.confirmDismissTitle": "İçe aktarma raporu kapatılsın mı?", "ir.confirmDismissBody": "Rapor ve geri alma düğmeleri kaybolur. Kitabınız olduğu gibi kalır.", "ir.confirmDismissYes": "Kapat", "ir.g.dropped": "Atlanan veya desteklenmeyen", "ir.g.structure": "Bölümler ve başlıklar", "ir.g.matter": "Ön ve arka sayfalar", "ir.g.breaks": "Sahne geçişleri", "ir.g.typography": "Tipografi", "ir.g.notes": "Dipnotlar ve resimler", "ir.g.book": "Dil ve kitap bilgileri", "ir.c.headings": "başlıklar", "ir.c.tables": "tablolar", "ir.c.images": "resimler", "ir.c.notes": "dipnotlar", "ir.c.comments": "yorumlar", "ir.c.tracked": "izlenen değişiklikler", "ir.c.textboxes": "metin kutuları", "ir.c.headers": "sayfa üst ve alt bilgileri", "ir.c.lists": "listeler", "ir.c.links": "bağlantılar", "ir.c.formatting": "italik ve kalın", "ir.c.warnings": "dönüştürücü uyarıları", "ir.from.h1": "Başlık 1", "ir.from.h2": "Başlık 2, bölüme yükseltildi", "ir.from.md1": "bir # başlığı", "ir.from.md2": "bir ## başlığı, bölüme yükseltildi", "ir.from.text": "{heading} satırı", "ir.from.fallback": "ilk bölüm başlığınızdan önceki metin", "ir.k.chapter": "Yeni bölüm: {title} — kaynağı: {from}", "ir.k.demoted": "{level}. düzey başlık düz metne dönüştü: {text}", "ir.k.matterHeading": "{type} — kendi başlığıyla adlandırıldı", "ir.k.matterChapter": "{type}, {chapter} bölümünün başından ayrıldı", "ir.k.matterShape": "{type} biçiminden tanındı ve kendi sayfasına kondu", "ir.k.lifted.title": "Bir başlık sayfası satırı kitabın künyesi olarak alındı ve metin olarak tutulmadı", "ir.k.lifted.furniture": "Kısa bir başlık sayfası satırı atlandı (başlık sayfası süsüne benziyordu)", "ir.k.lifted.titleHeading": "Kitap adını tekrarlayan bir başlık atlandı", "ir.k.toc": "İçindekiler atlandı — Beuk kendi içindekiler sayfasını bölümlerinizden oluşturur", "ir.k.emptyHeading": "Altında metin olmayan bir başlık atlandı", "ir.k.break": "Sahne geçişi, {marker} işaretinden", "ir.k.typography": "Tipografi düzeltildi: {q} tırnak, {d} tire, {e} üç nokta", "ir.k.typographyAll": "Tırnaklar, tireler ve üç noktalar düzeltildi ama değişiklikler satır satır izlenemedi", "ir.k.notes": "Dipnotlar: {found} bulundu, {mapped} tanesi göndermesine bağlandı, {orphans} tanesi sahipsiz", "ir.k.noteOrphan": "Dipnot {n}: göndermesi metinde bulunamadı; not düz bir paragraf olarak tutuldu", "ir.k.refOrphan": "{n} dipnot göndermesinin not metni yok", "ir.k.image": "Resim kitaplığa aktarıldı: {name}", "ir.alt.yes": "alternatif metinli", "ir.alt.no": "alternatif metin yok — ekran okuyucuların tanımlayabilmesi için bir tane ekleyin", "ir.k.imageDropped": "Bir resim atlandı — biçimi ({type}) desteklenmiyor; JPG ve PNG destekleniyor", "ir.k.table": "Bir tablo ({n} satır) atlandı — sözcükleri kitabınızda yok", "ir.k.tablePlural": "Bir tablo ({n} satır) atlandı — sözcükleri kitabınızda yok", "ir.k.tableImages": "Ayrıca {n} resim içeriyordu.", "ir.k.tableImagesPlural": "Ayrıca {n} resim içeriyordu.", "ir.k.comments": "{n} Word yorumu atlandı — yorumlar kitabın parçası değildir", "ir.k.commentsPlural": "{n} Word yorumu atlandı — yorumlar kitabın parçası değildir", "ir.k.tracked": "İzlenen değişiklikler: {ins} ekleme tutuldu, {del} silme atlandı — dosya, tüm değişiklikler kabul edilmiş gibi geldi", "ir.k.textbox": "{n} metin kutusu: sözcükleri okuma sırasında tutuldu, kutu ve konumu tutulmadı", "ir.k.textboxPlural": "{n} metin kutusu: sözcükleri okuma sırasında tutuldu, kutular ve konumları tutulmadı", "ir.k.headers": "Metin içeren {n} sayfa üst veya alt bilgisi atlandı — Beuk kendi sayfa başlıklarını dizer", "ir.k.headersPlural": "Metin içeren {n} sayfa üst veya alt bilgisi atlandı — Beuk kendi sayfa başlıklarını dizer", "ir.k.lists": "{n} liste öğesi düz paragrafa dönüştü — madde işaretleri ve numaralandırma tutulmaz", "ir.k.listsPlural": "{n} liste öğesi düz paragraflara dönüştü — madde işaretleri ve numaralandırma tutulmaz", "ir.k.links": "{n} bağlantı: sözcükler tutuldu, web adresi tutulmadı", "ir.k.linksPlural": "{n} bağlantı: sözcükler tutuldu, web adresleri tutulmadı", "ir.k.emphasis": "Word içe aktarması italik ve kalını henüz taşımıyor: {em} italik ve {strong} kalın pasaj artık düz metin", "ir.k.mdImage": "{n} Markdown resim bağlantısı: resmin kendisi içe aktarılmadı — resim kitaplığından ekleyin", "ir.k.mdImagePlural": "{n} Markdown resim bağlantısı: resimlerin kendileri içe aktarılmadı — resim kitaplığından ekleyin", "ir.k.mammoth": "Dönüştürücü notu: {message}", "ir.k.frontmatter": "YAML ön bilgisi kitap bilgisi olarak okundu ve metin olarak tutulmadı", "ir.k.language": "Algılanan dil: {lang}, kaynak: {via}", "ir.via.docx": "belgenin kendi dil etiketleri", "ir.via.text": "metnin sözcükleri", "ir.lang.applied": "kitaba uygulandı", "ir.lang.suggested": "yalnızca önerildi — Proje Ayarları'nda onaylayın", "ir.lang.manual": "uygulanmadı — dili elle seçtiniz", "ir.lang.same": "zaten kitabın dili", "ir.k.meta": "Elyazmasından alınan kitap bilgisi — {field}: {value}", "ir.f.title": "Başlık", "ir.f.author": "Yazar", "ir.f.isbn": "ISBN", "ir.f.publisher": "Yayınevi", "ir.f.year": "Yıl", "ir.why.first": "bu, içe aktarmanın ilk bölümü; öncesinde birleştirilecek içe aktarılmış bir şey yok", "ir.why.fallback": "bu, ilk bölüm başlığınızdan önceki metindi; zaten kendi bölümü olarak duruyor", "ir.why.retype": "kendi başlığı onu adlandırdı; etiket yanlışsa bölümün tür seçimiyle değiştirin", "ir.why.notes": "not metni tutuldu; düzenleyicide düzenleyin", "ir.why.source": "Word dosyası böyle geldi; geri konacak içe aktarılmış metin yok", "ir.why.lang": "kitabın dili değişmedi", "ir.why.gone": "ilgili metin içe aktarmadan sonra düzenlendi veya taşındı", "ir.why.big": "geri alma verisi tutmak için fazla büyük; Geçmiş'i kullanın", "ir.why.snapGone": "içe aktarma öncesi anlık görüntü artık Geçmiş'te yok", "ir.why.toc": "Beuk içindekileri bölümlerinizden oluşturur", "ir.why.emptyHeading": "altında metin yoktu; gerekirse elle bir bölüm ekleyin", "ir.why.format": "resmi JPG veya PNG'ye dönüştürüp resim kitaplığından ekleyin", "ir.why.emphasis": "düzenleyicide yeniden uygulayın: italik için *yıldız*, kalın için **çift yıldız**", "ir.why.align": "değişiklikler satır satır izlenemedi; Tüm içe aktarmayı geri al'ı veya Geçmiş'i kullanın", "ir.why.emptyTable": "tabloda metin yoktu", "ir.why.na": "geri alınacak bir şey yok", "ir.hint.chapter": "Onu önceki bölümle yeniden birleştirir, başlığını bir satır olarak korur.", "ir.hint.matter": "Metni elyazmanızda durduğu yere geri koyar.", "ir.hint.demoted": "Onu yeniden ara başlık yapar.", "ir.hint.break": "Sahne geçişini kaldırır; paragraflar devam eder.", "ir.hint.typography": "Bu bölümdeki düz tırnakları, kısa çizgileri ve noktaları geri getirir.", "ir.hint.image": "Resmi metinden ve resim kitaplığından çıkarır.", "ir.hint.table": "Sözcüklerini, satır başına bir düz paragraf olarak, durduğu yere geri koyar.", "ir.hint.book": "Kitabın içe aktarmadan önceki değerini geri getirir." },
+        "ar": { "ir.title": "إليك ما غيّرناه", "ir.sub": "{file} · استُورد في {when}. كل تغيير أجراه الاستيراد مُدرج أدناه — تراجع عن أيٍّ منها، أو عن الاستيراد كله.", "ir.keepAll": "الاحتفاظ بالكل", "ir.undoAll": "التراجع عن الاستيراد كله", "ir.undoAllNA": "لا يمكن التراجع عن الاستيراد كله: {reason}.", "ir.dismiss": "تجاهل التقرير", "ir.close": "إغلاق", "ir.undoThis": "تراجع عن هذا", "ir.undone": "تم التراجع", "ir.failed": "تعذّر التراجع: {reason}.", "ir.noUndo": "لا يمكن التراجع عنه وحده: {reason}.", "ir.before": "قبل", "ir.after": "بعد", "ir.where": "في {where}", "ir.reopen": "تقرير الاستيراد — {n} تغيير", "ir.reopenPlural": "تقرير الاستيراد — {n} تغييرات", "ir.reopenTitle": "افتح تقرير ما غيّره آخر استيراد", "ir.noneDropped": "لم يُحذف شيء. تم التحقق من: {list}.", "ir.scanFailed": "تعذّرت قراءة الأجزاء الداخلية لملف Word، لذا لم يُتحقق من التعليقات والتغييرات المتعقَّبة ومربعات النص ورؤوس الصفحات.", "ir.partly": "استُعيد {done} من {total} سطرًا؛ وعُدّل الباقي بعد الاستيراد", "ir.toastUndoAll": "تم التراجع عن الاستيراد — عاد الكتاب كما كان", "ir.confirmUndoAllTitle": "التراجع عن الاستيراد كله؟", "ir.confirmUndoAllBody": "يعود الكتاب إلى ما كان عليه قبل استيراد {file}. وتُحفظ النسخة المستوردة لقطةً في السجل.", "ir.confirmUndoAllYes": "التراجع عن الاستيراد", "ir.confirmDismissTitle": "تجاهل تقرير الاستيراد؟", "ir.confirmDismissBody": "يختفي التقرير وأزرار التراجع فيه. ويبقى كتابك كما هو تمامًا.", "ir.confirmDismissYes": "تجاهل", "ir.g.dropped": "محذوف أو غير مدعوم", "ir.g.structure": "الفصول والعناوين", "ir.g.matter": "الصفحات التمهيدية والختامية", "ir.g.breaks": "فواصل المشاهد", "ir.g.typography": "الطباعة", "ir.g.notes": "الحواشي والصور", "ir.g.book": "اللغة وبيانات الكتاب", "ir.c.headings": "العناوين", "ir.c.tables": "الجداول", "ir.c.images": "الصور", "ir.c.notes": "الحواشي", "ir.c.comments": "التعليقات", "ir.c.tracked": "التغييرات المتعقَّبة", "ir.c.textboxes": "مربعات النص", "ir.c.headers": "رؤوس الصفحات وتذييلاتها", "ir.c.lists": "القوائم", "ir.c.links": "الروابط", "ir.c.formatting": "المائل والعريض", "ir.c.warnings": "تحذيرات المحوّل", "ir.from.h1": "العنوان 1", "ir.from.h2": "العنوان 2، رُقّي إلى فصل", "ir.from.md1": "عنوان #", "ir.from.md2": "عنوان ##، رُقّي إلى فصل", "ir.from.text": "السطر {heading}", "ir.from.fallback": "النص الذي يسبق أول عنوان فصل", "ir.k.chapter": "فصل جديد: {title} — من {from}", "ir.k.demoted": "صار عنوان المستوى {level} نصًا عاديًا: {text}", "ir.k.matterHeading": "{type} — سمّاه عنوانه الخاص", "ir.k.matterChapter": "{type} انتُزع من بداية {chapter}", "ir.k.matterShape": "{type} عُرف من شكله ووُضع في صفحة خاصة", "ir.k.lifted.title": "أُخذ سطر من صفحة العنوان على أنه بيانات الكتاب ولم يُحتفظ به نصًا", "ir.k.lifted.furniture": "حُذف سطر قصير من صفحة العنوان (بدا من زخارف صفحة العنوان)", "ir.k.lifted.titleHeading": "حُذف عنوان يكرر عنوان الكتاب", "ir.k.toc": "حُذف جدول المحتويات — يبني Beuk جدوله من أقسامك", "ir.k.emptyHeading": "حُذف عنوان لا نص تحته", "ir.k.break": "فاصل مشهد، من العلامة {marker}", "ir.k.typography": "تحسين الطباعة: {q} علامة تنصيص، {d} شرطة، {e} علامة حذف", "ir.k.typographyAll": "حُسّنت علامات التنصيص والشرطات وعلامات الحذف، لكن تعذّر تتبع التغييرات سطرًا بسطر", "ir.k.notes": "الحواشي: {found} عُثر عليها، {mapped} رُبطت بإحالتها، {orphans} يتيمة", "ir.k.noteOrphan": "الحاشية {n}: لم يُعثر على إحالتها في النص؛ وحُفظت الحاشية فقرةً عادية", "ir.k.refOrphan": "إحالة الحاشية {n} بلا نص حاشية", "ir.k.image": "استُوردت صورة إلى المكتبة: {name}", "ir.alt.yes": "مع نص بديل", "ir.alt.no": "بلا نص بديل — أضف نصًا ليتمكن قارئ الشاشة من وصفها", "ir.k.imageDropped": "حُذفت صورة — صيغتها ({type}) غير مدعومة؛ JPG وPNG مدعومتان", "ir.k.table": "حُذف جدول ({n} صف) — كلماته ليست في كتابك", "ir.k.tablePlural": "حُذف جدول ({n} صفوف) — كلماته ليست في كتابك", "ir.k.tableImages": "وكان يضم أيضًا {n} صورة.", "ir.k.tableImagesPlural": "وكان يضم أيضًا {n} صور.", "ir.k.comments": "حُذف {n} تعليق من Word — التعليقات ليست جزءًا من الكتاب", "ir.k.commentsPlural": "حُذفت {n} تعليقات من Word — التعليقات ليست جزءًا من الكتاب", "ir.k.tracked": "التغييرات المتعقَّبة: أُبقي على {ins} إدراجًا وحُذف {del} حذفًا — دخل الملف كأن كل التغييرات مقبولة", "ir.k.textbox": "{n} مربع نص: كلماته محفوظة بترتيب القراءة، أما المربع وموضعه فلا", "ir.k.textboxPlural": "{n} مربعات نص: كلماتها محفوظة بترتيب القراءة، أما المربعات ومواضعها فلا", "ir.k.headers": "حُذف {n} رأس أو تذييل صفحة فيه نص — يضع Beuk ترويساته الخاصة", "ir.k.headersPlural": "حُذفت {n} رؤوس أو تذييلات صفحات فيها نص — يضع Beuk ترويساته الخاصة", "ir.k.lists": "صار {n} عنصر قائمة فقرةً عادية — لا تُحفظ النقاط ولا الترقيم", "ir.k.listsPlural": "صارت {n} عناصر قائمة فقرات عادية — لا تُحفظ النقاط ولا الترقيم", "ir.k.links": "{n} رابط: الكلمات محفوظة، أما عنوان الويب فلا", "ir.k.linksPlural": "{n} روابط: الكلمات محفوظة، أما عناوين الويب فلا", "ir.k.emphasis": "لا ينقل استيراد Word الخط المائل والعريض بعد: {em} مقطعًا مائلًا و{strong} مقطعًا عريضًا صارت نصًا عاديًا", "ir.k.mdImage": "{n} رابط صورة Markdown: لم تُستورد الصورة نفسها — أضفها من مكتبة الصور", "ir.k.mdImagePlural": "{n} روابط صور Markdown: لم تُستورد الصور نفسها — أضفها من مكتبة الصور", "ir.k.mammoth": "ملاحظة المحوّل: {message}", "ir.k.frontmatter": "قُرئت ترويسة YAML على أنها بيانات الكتاب ولم يُحتفظ بها نصًا", "ir.k.language": "اللغة المكتشفة: {lang}، من {via}", "ir.via.docx": "وسوم اللغة في المستند نفسه", "ir.via.text": "كلمات النص", "ir.lang.applied": "طُبّقت على الكتاب", "ir.lang.suggested": "مقترحة فقط — أكّدها في إعدادات المشروع", "ir.lang.manual": "لم تُطبَّق — اخترت اللغة يدويًا", "ir.lang.same": "هي لغة الكتاب أصلًا", "ir.k.meta": "بيان كتاب مأخوذ من المخطوطة — {field}: {value}", "ir.f.title": "العنوان", "ir.f.author": "المؤلف", "ir.f.isbn": "ISBN", "ir.f.publisher": "الناشر", "ir.f.year": "السنة", "ir.why.first": "هذا أول فصل في الاستيراد، ولا شيء مستوردًا قبله لدمجه فيه", "ir.why.fallback": "كان هذا نصًا قبل أول عنوان فصل؛ وهو قائم بالفعل قسمًا مستقلًا", "ir.why.retype": "سمّاه عنوانه الخاص؛ إن كان التصنيف خاطئًا فغيّره من اختيار نوع القسم", "ir.why.notes": "نص الحاشية محفوظ؛ عدّله في المحرر", "ir.why.source": "هكذا وصل ملف Word؛ لا يوجد نص مستورد لإعادته", "ir.why.lang": "لم تتغير لغة الكتاب", "ir.why.gone": "عُدّل النص المعني أو نُقل بعد الاستيراد", "ir.why.big": "أكبر من أن تُحفظ له بيانات تراجع؛ استخدم السجل", "ir.why.snapGone": "لم تعد لقطة ما قبل الاستيراد في السجل", "ir.why.toc": "يبني Beuk جدول المحتويات من أقسامك", "ir.why.emptyHeading": "لم يكن تحته نص؛ أضف فصلًا يدويًا إن احتجت إليه", "ir.why.format": "حوّل الصورة إلى JPG أو PNG وأضفها من مكتبة الصور", "ir.why.emphasis": "أعد تطبيقه في المحرر بـ *نجمات* للمائل و**نجمات مزدوجة** للعريض", "ir.why.align": "تعذّر تتبع التغييرات سطرًا بسطر؛ استخدم التراجع عن الاستيراد كله أو السجل", "ir.why.emptyTable": "لم يكن في الجدول نص", "ir.why.na": "لا شيء للتراجع عنه", "ir.hint.chapter": "يدمجه من جديد في القسم الذي قبله، مع إبقاء عنوانه سطرًا.", "ir.hint.matter": "يعيد النص إلى حيث كان في مخطوطتك.", "ir.hint.demoted": "يجعله عنوانًا فرعيًا من جديد.", "ir.hint.break": "يزيل فاصل المشهد؛ فتتصل الفقرات.", "ir.hint.typography": "يعيد علامات التنصيص المستقيمة والواصلات والنقاط في هذا القسم.", "ir.hint.image": "يُخرج الصورة من النص ومن مكتبة الصور.", "ir.hint.table": "يعيد كلماته فقراتٍ عادية، فقرة لكل صف، في موضعه.", "ir.hint.book": "يعيد القيمة التي كانت للكتاب قبل الاستيراد." },
+        "ja": { "ir.title": "取り込みで変更した内容", "ir.sub": "{file} · {when} に取り込み。取り込みによる変更はすべて下に一覧しています — 個別に、または取り込み全体を元に戻せます。", "ir.keepAll": "すべて残す", "ir.undoAll": "取り込み全体を元に戻す", "ir.undoAllNA": "取り込み全体は元に戻せません: {reason}。", "ir.dismiss": "レポートを閉じる", "ir.close": "閉じる", "ir.undoThis": "これを元に戻す", "ir.undone": "元に戻しました", "ir.failed": "元に戻せませんでした: {reason}。", "ir.noUndo": "個別には元に戻せません: {reason}。", "ir.before": "変更前", "ir.after": "変更後", "ir.where": "{where} 内", "ir.reopen": "取り込みレポート — 変更 {n} 件", "ir.reopenPlural": "取り込みレポート — 変更 {n} 件", "ir.reopenTitle": "直前の取り込みで変わった内容のレポートを開く", "ir.noneDropped": "欠落はありません。確認した項目: {list}。", "ir.scanFailed": "Word ファイル内部を読めなかったため、コメント・変更履歴・テキストボックス・ヘッダーは確認していません。", "ir.partly": "{total} 行中 {done} 行を復元しました。残りは取り込み後に編集されています", "ir.toastUndoAll": "取り込みを元に戻しました — 本は元の状態です", "ir.confirmUndoAllTitle": "取り込み全体を元に戻しますか?", "ir.confirmUndoAllBody": "{file} を取り込む前の状態に本が戻ります。取り込んだ版は履歴にスナップショットとして残ります。", "ir.confirmUndoAllYes": "取り込みを元に戻す", "ir.confirmDismissTitle": "取り込みレポートを閉じますか?", "ir.confirmDismissBody": "レポートと元に戻すボタンが消えます。本はそのまま変わりません。", "ir.confirmDismissYes": "閉じる", "ir.g.dropped": "欠落・非対応", "ir.g.structure": "章と見出し", "ir.g.matter": "前付け・後付け", "ir.g.breaks": "場面転換", "ir.g.typography": "組版", "ir.g.notes": "脚注と画像", "ir.g.book": "言語と書誌情報", "ir.c.headings": "見出し", "ir.c.tables": "表", "ir.c.images": "画像", "ir.c.notes": "脚注", "ir.c.comments": "コメント", "ir.c.tracked": "変更履歴", "ir.c.textboxes": "テキストボックス", "ir.c.headers": "ページのヘッダーとフッター", "ir.c.lists": "リスト", "ir.c.links": "リンク", "ir.c.formatting": "斜体と太字", "ir.c.warnings": "変換時の警告", "ir.from.h1": "見出し 1", "ir.from.h2": "見出し 2(章に格上げ)", "ir.from.md1": "# 見出し", "ir.from.md2": "## 見出し(章に格上げ)", "ir.from.text": "行「{heading}」", "ir.from.fallback": "最初の章見出しより前の本文", "ir.k.chapter": "新しい章: {title} — 元: {from}", "ir.k.demoted": "見出し {level} が本文になりました: {text}", "ir.k.matterHeading": "{type} — 自身の見出しによる", "ir.k.matterChapter": "{type} を {chapter} の冒頭から切り出しました", "ir.k.matterShape": "{type} を形から認識し、独立したページにしました", "ir.k.lifted.title": "扉の一行を本のクレジットとして扱い、本文には残していません", "ir.k.lifted.furniture": "扉の短い一行を省きました(扉の飾りと判断)", "ir.k.lifted.titleHeading": "書名を繰り返す見出しを省きました", "ir.k.toc": "目次を省きました — Beuk がセクションから目次を作ります", "ir.k.emptyHeading": "本文のない見出しを省きました", "ir.k.break": "場面転換(記号 {marker} から)", "ir.k.typography": "組版を整えました: 引用符 {q}、ダッシュ {d}、三点リーダー {e}", "ir.k.typographyAll": "引用符・ダッシュ・三点リーダーを整えましたが、変更を行ごとに追跡できませんでした", "ir.k.notes": "脚注: 検出 {found}、参照とリンク {mapped}、孤立 {orphans}", "ir.k.noteOrphan": "脚注 {n}: 本文に参照が見つからないため、通常の段落として残しました", "ir.k.refOrphan": "脚注参照 {n} に注の本文がありません", "ir.k.image": "画像をライブラリに取り込みました: {name}", "ir.alt.yes": "代替テキストあり", "ir.alt.no": "代替テキストなし — スクリーンリーダーが説明できるよう追加してください", "ir.k.imageDropped": "画像を省きました — 形式 ({type}) は非対応です(JPG と PNG に対応)", "ir.k.table": "表({n} 行)を省きました — その文字は本に入っていません", "ir.k.tablePlural": "表({n} 行)を省きました — その文字は本に入っていません", "ir.k.tableImages": "画像も {n} 点含まれていました。", "ir.k.tableImagesPlural": "画像も {n} 点含まれていました。", "ir.k.comments": "Word のコメント {n} 件を省きました — コメントは本の一部ではありません", "ir.k.commentsPlural": "Word のコメント {n} 件を省きました — コメントは本の一部ではありません", "ir.k.tracked": "変更履歴: 挿入 {ins} 件を残し、削除 {del} 件を除外 — すべての変更を承諾した状態で取り込みました", "ir.k.textbox": "テキストボックス {n} 個: 文字は読み順で残し、枠と位置は残していません", "ir.k.textboxPlural": "テキストボックス {n} 個: 文字は読み順で残し、枠と位置は残していません", "ir.k.headers": "文字のあるヘッダー/フッター {n} 件を省きました — Beuk は独自の柱を組みます", "ir.k.headersPlural": "文字のあるヘッダー/フッター {n} 件を省きました — Beuk は独自の柱を組みます", "ir.k.lists": "リスト項目 {n} 件が通常の段落になりました — 行頭記号と番号は残りません", "ir.k.listsPlural": "リスト項目 {n} 件が通常の段落になりました — 行頭記号と番号は残りません", "ir.k.links": "リンク {n} 件: 文字は残し、URL は残していません", "ir.k.linksPlural": "リンク {n} 件: 文字は残し、URL は残していません", "ir.k.emphasis": "Word 取り込みはまだ斜体と太字を引き継ぎません: 斜体 {em} 箇所、太字 {strong} 箇所が通常の文字になりました", "ir.k.mdImage": "Markdown の画像リンク {n} 件: 画像そのものは取り込んでいません — 画像ライブラリから追加してください", "ir.k.mdImagePlural": "Markdown の画像リンク {n} 件: 画像そのものは取り込んでいません — 画像ライブラリから追加してください", "ir.k.mammoth": "変換時の注記: {message}", "ir.k.frontmatter": "YAML フロントマターは書誌情報として読み取り、本文には残していません", "ir.k.language": "検出した言語: {lang}(根拠: {via})", "ir.via.docx": "文書自身の言語タグ", "ir.via.text": "本文の語", "ir.lang.applied": "本に適用しました", "ir.lang.suggested": "提案のみ — プロジェクト設定で確認してください", "ir.lang.manual": "適用していません — 言語は手動で選択されています", "ir.lang.same": "すでに本の言語です", "ir.k.meta": "原稿から取得した書誌情報 — {field}: {value}", "ir.f.title": "書名", "ir.f.author": "著者", "ir.f.isbn": "ISBN", "ir.f.publisher": "出版社", "ir.f.year": "年", "ir.why.first": "取り込みの最初の章で、前に結合できる取り込み内容がありません", "ir.why.fallback": "最初の章見出しより前の本文で、すでに独立したセクションです", "ir.why.retype": "自身の見出しで名付けられています。ラベルが違う場合はセクションの種類で変更してください", "ir.why.notes": "注の本文は残っています。エディターで編集してください", "ir.why.source": "Word ファイルがこの形で届いたため、戻す取り込みテキストがありません", "ir.why.lang": "本の言語は変更されていません", "ir.why.gone": "対象のテキストが取り込み後に編集または移動されています", "ir.why.big": "元に戻すデータを保持するには大きすぎます。履歴を使ってください", "ir.why.snapGone": "取り込み前のスナップショットが履歴にありません", "ir.why.toc": "Beuk はセクションから目次を作ります", "ir.why.emptyHeading": "本文がありませんでした。必要なら章を手動で追加してください", "ir.why.format": "画像を JPG か PNG に変換し、画像ライブラリから追加してください", "ir.why.emphasis": "エディターで付け直してください: 斜体は *アスタリスク*、太字は **二重アスタリスク**", "ir.why.align": "変更を行ごとに追跡できませんでした。取り込み全体を元に戻すか履歴を使ってください", "ir.why.emptyTable": "表に文字がありませんでした", "ir.why.na": "元に戻すものはありません", "ir.hint.chapter": "直前のセクションに結合し直し、見出しは一行として残します。", "ir.hint.matter": "原稿にあった位置へ本文を戻します。", "ir.hint.demoted": "小見出しに戻します。", "ir.hint.break": "場面転換を取り除き、段落を続けます。", "ir.hint.typography": "このセクションのまっすぐな引用符・ハイフン・ピリオドを復元します。", "ir.hint.image": "画像を本文と画像ライブラリから取り除きます。", "ir.hint.table": "表があった位置に、行ごとの通常の段落として文字を戻します。", "ir.hint.book": "取り込み前の本の値に戻します。" },
+        "zh-Hans": { "ir.title": "以下是我们所做的改动", "ir.sub": "{file} · 导入于 {when}。导入所做的每一处改动都列在下面——可以撤销其中任意一项,也可以撤销整个导入。", "ir.keepAll": "全部保留", "ir.undoAll": "撤销整个导入", "ir.undoAllNA": "无法撤销整个导入:{reason}。", "ir.dismiss": "关闭报告", "ir.close": "关闭", "ir.undoThis": "撤销此项", "ir.undone": "已撤销", "ir.failed": "无法撤销:{reason}。", "ir.noUndo": "不能单独撤销:{reason}。", "ir.before": "改动前", "ir.after": "改动后", "ir.where": "位于 {where}", "ir.reopen": "导入报告 — {n} 处改动", "ir.reopenPlural": "导入报告 — {n} 处改动", "ir.reopenTitle": "打开上一次导入所做改动的报告", "ir.noneDropped": "没有任何内容被丢弃。已检查:{list}。", "ir.scanFailed": "无法读取 Word 文件的内部部件,因此未检查批注、修订、文本框和页眉。", "ir.partly": "已恢复 {total} 行中的 {done} 行;其余行在导入后已被编辑", "ir.toastUndoAll": "已撤销导入——书已恢复原样", "ir.confirmUndoAllTitle": "撤销整个导入?", "ir.confirmUndoAllBody": "书将恢复到导入 {file} 之前的状态。导入的版本会作为快照保存在历史记录中。", "ir.confirmUndoAllYes": "撤销导入", "ir.confirmDismissTitle": "关闭导入报告?", "ir.confirmDismissBody": "报告及其撤销按钮会消失。你的书保持原样不变。", "ir.confirmDismissYes": "关闭", "ir.g.dropped": "已丢弃或不支持", "ir.g.structure": "章节与标题", "ir.g.matter": "前置与后置内容", "ir.g.breaks": "场景分隔", "ir.g.typography": "排版", "ir.g.notes": "脚注与图片", "ir.g.book": "语言与书籍信息", "ir.c.headings": "标题", "ir.c.tables": "表格", "ir.c.images": "图片", "ir.c.notes": "脚注", "ir.c.comments": "批注", "ir.c.tracked": "修订", "ir.c.textboxes": "文本框", "ir.c.headers": "页眉和页脚", "ir.c.lists": "列表", "ir.c.links": "链接", "ir.c.formatting": "斜体和粗体", "ir.c.warnings": "转换器警告", "ir.from.h1": "标题 1", "ir.from.h2": "标题 2,升级为章", "ir.from.md1": "# 标题", "ir.from.md2": "## 标题,升级为章", "ir.from.text": "文本行 {heading}", "ir.from.fallback": "第一个章标题之前的文字", "ir.k.chapter": "新章:{title} — 来自 {from}", "ir.k.demoted": "{level} 级标题变成了正文:{text}", "ir.k.matterHeading": "{type} — 由其自身标题命名", "ir.k.matterChapter": "{type} 从 {chapter} 的开头提取", "ir.k.matterShape": "{type} 按其形态识别,并单独成页", "ir.k.lifted.title": "一行标题页文字被当作书籍署名信息,未作为正文保留", "ir.k.lifted.furniture": "省略了一行简短的标题页文字(看起来像标题页装饰)", "ir.k.lifted.titleHeading": "省略了一个重复书名的标题", "ir.k.toc": "省略了目录——Beuk 会根据你的各部分自动生成目录", "ir.k.emptyHeading": "省略了一个下方没有文字的标题", "ir.k.break": "场景分隔,来自标记 {marker}", "ir.k.typography": "排版已优化:{q} 个引号、{d} 个破折号、{e} 个省略号", "ir.k.typographyAll": "引号、破折号和省略号已优化,但无法逐行追踪这些改动", "ir.k.notes": "脚注:找到 {found} 条,{mapped} 条已链接到引用处,{orphans} 条孤立", "ir.k.noteOrphan": "脚注 {n}:正文中找不到它的引用;该注释作为普通段落保留", "ir.k.refOrphan": "脚注引用 {n} 没有注释内容", "ir.k.image": "图片已导入图片库:{name}", "ir.alt.yes": "有替代文本", "ir.alt.no": "没有替代文本——请添加,以便读屏软件描述它", "ir.k.imageDropped": "省略了一张图片——不支持其格式({type});支持 JPG 和 PNG", "ir.k.table": "省略了一个表格({n} 行)——其中的文字不在你的书中", "ir.k.tablePlural": "省略了一个表格({n} 行)——其中的文字不在你的书中", "ir.k.tableImages": "其中还有 {n} 张图片。", "ir.k.tableImagesPlural": "其中还有 {n} 张图片。", "ir.k.comments": "省略了 {n} 条 Word 批注——批注不属于书的内容", "ir.k.commentsPlural": "省略了 {n} 条 Word 批注——批注不属于书的内容", "ir.k.tracked": "修订:保留了 {ins} 处插入,省略了 {del} 处删除——文件按全部修订均已接受的状态导入", "ir.k.textbox": "{n} 个文本框:文字按阅读顺序保留,文本框及其位置未保留", "ir.k.textboxPlural": "{n} 个文本框:文字按阅读顺序保留,文本框及其位置未保留", "ir.k.headers": "省略了 {n} 个含文字的页眉或页脚——Beuk 会排出自己的书眉", "ir.k.headersPlural": "省略了 {n} 个含文字的页眉或页脚——Beuk 会排出自己的书眉", "ir.k.lists": "{n} 个列表项变成了普通段落——项目符号和编号不会保留", "ir.k.listsPlural": "{n} 个列表项变成了普通段落——项目符号和编号不会保留", "ir.k.links": "{n} 个链接:文字保留,网址未保留", "ir.k.linksPlural": "{n} 个链接:文字保留,网址未保留", "ir.k.emphasis": "Word 导入暂不保留斜体和粗体:{em} 处斜体和 {strong} 处粗体现在是普通文字", "ir.k.mdImage": "{n} 个 Markdown 图片链接:图片本身未导入——请从图片库添加", "ir.k.mdImagePlural": "{n} 个 Markdown 图片链接:图片本身未导入——请从图片库添加", "ir.k.mammoth": "转换器提示:{message}", "ir.k.frontmatter": "YAML 头信息被读取为书籍信息,未作为正文保留", "ir.k.language": "检测到的语言:{lang},依据 {via}", "ir.via.docx": "文档自带的语言标记", "ir.via.text": "正文的用词", "ir.lang.applied": "已应用到本书", "ir.lang.suggested": "仅为建议——请在项目设置中确认", "ir.lang.manual": "未应用——你手动选择了语言", "ir.lang.same": "已是本书的语言", "ir.k.meta": "从书稿中获取的书籍信息 — {field}:{value}", "ir.f.title": "书名", "ir.f.author": "作者", "ir.f.isbn": "ISBN", "ir.f.publisher": "出版社", "ir.f.year": "年份", "ir.why.first": "这是导入的第一章,之前没有可合并的导入内容", "ir.why.fallback": "这是第一个章标题之前的文字,已经是独立的部分", "ir.why.retype": "由其自身标题命名;如果标签不对,请用该部分的类型选择器修改", "ir.why.notes": "注释文字已保留;请在编辑器中修改", "ir.why.source": "Word 文件就是这样导入的;没有可以放回的导入文字", "ir.why.lang": "书的语言没有改变", "ir.why.gone": "相关文字在导入后已被编辑或移动", "ir.why.big": "数据过大,无法保留撤销信息;请使用历史记录", "ir.why.snapGone": "导入前的快照已不在历史记录中", "ir.why.toc": "Beuk 会根据你的各部分生成目录", "ir.why.emptyHeading": "下方没有文字;如有需要请手动添加一章", "ir.why.format": "请把图片转换为 JPG 或 PNG,再从图片库添加", "ir.why.emphasis": "请在编辑器中重新设置:斜体用 *星号*,粗体用 **双星号**", "ir.why.align": "无法逐行追踪这些改动;请使用撤销整个导入或历史记录", "ir.why.emptyTable": "表格中没有文字", "ir.why.na": "没有可撤销的内容", "ir.hint.chapter": "将其重新并入前一部分,并把标题保留为一行文字。", "ir.hint.matter": "把文字放回它在书稿中的原位置。", "ir.hint.demoted": "将其恢复为小标题。", "ir.hint.break": "去掉场景分隔,段落连续排列。", "ir.hint.typography": "恢复本部分中的直引号、连字符和英文句点。", "ir.hint.image": "把图片从正文和图片库中移除。", "ir.hint.table": "在表格原位置,按每行一段的普通段落放回其中的文字。", "ir.hint.book": "恢复本书在导入前的值。" }
+      };
+      Object.keys(IR_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], IR_STRINGS[code]); });
+      /* ==== /BEUK:importreport ==== */
       /* Supplementary keys (sync status, settings language hints,
          shelf confirms) — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {
@@ -8785,6 +8862,7 @@
         fonts: [],
         customThemes: [],
         activeId: null,
+        importReport: null,
         device: "kindle",
         page: 1,
         pageCount: 1,
@@ -10966,6 +11044,7 @@
       function snapshotBookDoc() {
         const d = serializeBook();
         delete d.history; /* a snapshot never carries the other snapshots */
+        delete d.importReport; /* nor the import report: it describes one import, not a moment of the book */
         return JSON.parse(JSON.stringify(d));
       }
       function pruneAutoSnapshots() {
@@ -13346,7 +13425,7 @@
         let copyright = null;
         blocks.forEach((block, bi) => {
           const key = block.trim().toLowerCase().replace(/\s+/g, " ");
-          if (titleKeys.has(key) && wordCountOf(block) <= 12) return;
+          if (titleKeys.has(key) && wordCountOf(block) <= 12) { irNote({ kind: "lifted", reason: "title", text: block }); return; }
           if (isCopyrightBlock(block)) {
             if (!copyright) { copyright = { kind: "front", type: "copyright", title: "Copyright", bodyText: "", ord: bi }; pieces.push(copyright); }
             copyright.bodyText = copyright.bodyText ? copyright.bodyText + "\n\n" + block : block;
@@ -13361,7 +13440,7 @@
         if (copyright) {
           for (let i = rest.length - 1; i >= 0; i--) {
             const b = rest[i].block.trim();
-            if (rest[i].ord < copyright.ord && wordCountOf(b) <= 6 && !/[.!?…]/.test(b) && !/^for\s/i.test(b)) rest.splice(i, 1);
+            if (rest[i].ord < copyright.ord && wordCountOf(b) <= 6 && !/[.!?…]/.test(b) && !/^for\s/i.test(b)) { irNote({ kind: "lifted", reason: "furniture", text: rest[i].block }); rest.splice(i, 1); }
           }
         }
         for (let i = 0; i < rest.length; i++) {
@@ -13411,17 +13490,19 @@
           const bodyText = seg.lines.join("\n").trim();
           if (!seg.heading) return { bodyText, cls: "lead" };
           const n = normHeading(seg.heading);
-          if (n === "contents" || n === "table of contents") return { bodyText, cls: "skip" };
+          if (n === "contents" || n === "table of contents") { irNote({ kind: "toc-dropped", text: bodyText, heading: seg.heading }); return { bodyText, cls: "skip" }; }
           /* "Also by Daniel Reyes" carries the author's name in the
              heading itself; the type is the same. */
           const matter = MATTER_HEADINGS[n] || (n.indexOf("also by") === 0 ? { kind: "back", type: "alsoby", title: "Also by the Author" } : null);
-          if (matter) return { bodyText, cls: "matter", matter };
+          if (matter) return { bodyText, cls: "matter", matter, raw: seg.heading };
           if (CHAPTER_HEAD_RE.test(seg.heading.trim())) {
             /* A markdown heading that merely repeats the book's own
                title opens the front matter; it is not a chapter. */
-            if (/^#{1,2}\s+/.test(seg.heading.trim()) && (n === titleKey || (fallbackKey && n === fallbackKey)) && si <= 1)
+            if (/^#{1,2}\s+/.test(seg.heading.trim()) && (n === titleKey || (fallbackKey && n === fallbackKey)) && si <= 1) {
+              irNote({ kind: "lifted", reason: "title-heading", text: seg.heading });
               return { bodyText, cls: "lead" };
-            return { bodyText, cls: "chapter", head: parseChapterHeading(seg.heading) };
+            }
+            return { bodyText, cls: "chapter", head: parseChapterHeading(seg.heading), raw: seg.heading };
           }
           return { bodyText, cls: "lead" };
         });
@@ -13436,11 +13517,11 @@
           if (it.cls === "matter") {
             let kind = it.matter.kind;
             if (it.matter.type === "epigraph" && firstBody !== -1 && ii > firstBody) kind = "body";
-            pieces.push({ kind, type: it.matter.type, title: it.matter.title, number: "", body: it.bodyText.split("\n") });
+            pieces.push({ kind, type: it.matter.type, title: it.matter.title, number: "", body: it.bodyText.split("\n"), _ir: { via: "heading", heading: it.raw } });
             return;
           }
           if (it.cls === "chapter") {
-            pieces.push({ kind: "body", type: "chapter", title: it.head.title, number: it.head.number, body: it.bodyText.split("\n") });
+            pieces.push({ kind: "body", type: "chapter", title: it.head.title, number: it.head.number, body: it.bodyText.split("\n"), _ir: { via: "heading", heading: it.raw } });
             return;
           }
           /* Unheaded or title-headed text: by shape when it stands
@@ -13449,7 +13530,7 @@
           if (firstBody === -1 || ii < firstBody) {
             const blocks = it.bodyText.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
             const zone = frontZonePieces(blocks, identity, fallbackTitle);
-            zone.pieces.forEach((p) => pieces.push({ kind: p.kind, type: p.type, title: p.title, number: "", body: p.bodyText.split("\n") }));
+            zone.pieces.forEach((p) => pieces.push({ kind: p.kind, type: p.type, title: p.title, number: "", body: p.bodyText.split("\n"), _ir: { via: "shape" } }));
             if (zone.prose) proseChunks.push(zone.prose);
           } else if (ii > lastBody && pieces.length) {
             const last = pieces[pieces.length - 1];
@@ -13460,7 +13541,7 @@
           }
         });
         if (proseChunks.length) {
-          const fb = { kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: proseChunks.join("\n\n").split("\n") };
+          const fb = { kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } };
           const at = pieces.findIndex((p) => p.kind === "body");
           if (at < 0) pieces.push(fb); else pieces.splice(at, 0, fb);
         }
@@ -13472,13 +13553,17 @@
             const blocks = p.body.join("\n").split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
             const carved = carveEpigraph(blocks);
             if (carved) {
-              finalPieces.push({ kind: "body", type: "epigraph", title: "Epigraph", number: "", body: carved.epigraph.join("\n\n").split("\n") });
+              finalPieces.push({ kind: "body", type: "epigraph", title: "Epigraph", number: "", body: carved.epigraph.join("\n\n").split("\n"), _ir: { via: "chapter-head", chapter: p } });
               p.body = carved.rest.join("\n\n").split("\n");
             }
           }
           finalPieces.push(p);
         });
-        const kept = finalPieces.filter((p) => p.type !== "chapter" || p.body.join("").trim().length || finalPieces.length === 1);
+        const kept = finalPieces.filter((p) => {
+          const keep = p.type !== "chapter" || p.body.join("").trim().length || finalPieces.length === 1;
+          if (!keep) irNote({ kind: "empty-heading", text: (p._ir && p._ir.heading) || p.title });
+          return keep;
+        });
         if (!kept.length) kept.push({ kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: String(text).split("\n") });
         return kept;
       }
@@ -13519,15 +13604,19 @@
           if (!content) return;
           if (p.type === "copyright") {
             let target = sections.find((s) => s.type === "copyright");
-            if (!target) { target = mkSection(kind, "copyright", "Copyright"); sections.push(target); }
+            let mode = "appended";
+            if (!target) { target = mkSection(kind, "copyright", "Copyright"); sections.push(target); mode = "created"; }
+            else if (!String(target.content || "").trim()) mode = "filled";
             target.content = String(target.content || "").trim() ? target.content + "\n\n" + content : content;
+            p._placed = { id: target.id, mode, content };
             sink.copyrightTexts.push(content);
             return;
           }
           const slot = sections.find((s) => s.type === p.type && !String(s.content || "").trim());
-          if (slot) { slot.content = content; return; }
+          if (slot) { slot.content = content; p._placed = { id: slot.id, mode: "filled", content }; return; }
           const fresh = mkSection(kind, p.type, p.title || p.type);
           fresh.content = content;
+          p._placed = { id: fresh.id, mode: "created", content };
           const tocIdx = kind === "front" ? sections.findIndex((s) => s.type === "toc") : -1;
           if (tocIdx >= 0) sections.splice(tocIdx, 0, fresh); else sections.push(fresh);
         });
@@ -13557,9 +13646,11 @@
           const type = p.type || "chapter";
           const isChapter = type === "chapter";
           if (isChapter) chapN++;
-          return mkSection("body", type, p.title || (isChapter ? "Chapter " + chapN : type), {
+          const sec = mkSection("body", type, p.title || (isChapter ? "Chapter " + chapN : type), {
             number: isChapter ? (p.number || String(chapN)) : "", content: beautifyText((p.body || []).join("\n"))
           });
+          p._placed = { id: sec.id, mode: "created", content: sec.content };
+          return sec;
         });
         const sink = { copyrightTexts: [] };
         /* The imported manuscript is the north star: it takes the desk
@@ -13609,12 +13700,12 @@
           const newBody = body.slice();
           if (prologue) {
             const pi = newBody.findIndex((s) => s.type === "prologue");
-            if (pi >= 0 && !String(prologue.content || "").trim()) { prologue.content = newBody[pi].content; newBody.splice(pi, 1); }
+            if (pi >= 0 && !String(prologue.content || "").trim()) { irReseat(pieces, newBody[pi].id, prologue.id); prologue.content = newBody[pi].content; newBody.splice(pi, 1); }
             newBody.unshift(prologue);
           }
           if (epilogue) {
             const ei = newBody.findIndex((s) => s.type === "epilogue");
-            if (ei >= 0 && !String(epilogue.content || "").trim()) { epilogue.content = newBody[ei].content; newBody.splice(ei, 1); }
+            if (ei >= 0 && !String(epilogue.content || "").trim()) { irReseat(pieces, newBody[ei].id, epilogue.id); epilogue.content = newBody[ei].content; newBody.splice(ei, 1); }
             newBody.push(epilogue);
           }
           state.sections = front.concat(newBody, back);
@@ -13663,24 +13754,21 @@
                fallback witness. */
             const docxDet = await detectDocxLanguage(buf);
             const identity = await readDocxCoreIdentity(buf);
+            const scan = await irScanDocxXml(buf);
             const result = await mammoth.convertToHtml({ arrayBuffer: buf });
-            const text = sanitizeHtmlToText(result.value);
-            replaceBodyChapters(parseManuscript(text, name.replace(/\.docx$/i, ""), identity), name, identity);
-            offerDetectedLanguage(docxDet && docxDet.strong ? docxDet : (detectLanguageInText(text) || docxDet));
+            /* From here the import is synchronous and recorded for the
+               import report (BEUK:importreport). */
+            importDocxConverted(name, result.value, result.messages, scan, identity, docxDet);
           } else {
             const raw = await file.text();
             /* A markdown or text manuscript may declare its own
                credit in YAML frontmatter; that block is metadata, not
                prose, so it is read for the byline and lifted out of
                the text before the chapters are split. */
-            const parsed = bulkParseFrontmatter(raw);
-            const text = parsed.body;
-            const det = detectLanguageInText(text);
-            replaceBodyChapters(parseManuscript(beautifyText(text), name.replace(/\.(md|markdown|txt)$/i, ""), { title: parsed.meta.title || "", author: parsed.meta.author || "" }), name,
-              { title: parsed.meta.title || "", author: parsed.meta.author || "" });
-            offerDetectedLanguage(det);
+            importPlainManuscript(name, raw);
           }
         } catch (err) {
+          irAbort();
           toast("Could not import that file: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
         }
       }
@@ -13697,6 +13785,857 @@
         if (isc) isc.addEventListener("click", () => { const b = $("importSummary"); if (b) b.style.display = "none"; });
       }
       if (typeof window !== "undefined") window.beukImport = { parseManuscript, importFoundList, replaceBodyChapters };
+      /* ==== BEUK:importreport ==== */
+      /* ================= Import report: "Here's what we changed" =================
+         Every transformation the import makes is recorded as a
+         structured change { kind, where, before, after, reversible }
+         and shown to the writer straight after the import, grouped,
+         counts first. Each change that can be reverted on its own
+         carries a real per-item undo that acts on the book as it
+         stands now (it finds its text by content, not by position,
+         and says so plainly when that text has since been edited);
+         a change that cannot be reverted alone says why instead of
+         offering a button. "Undo the whole import" restores the
+         pre-import book from the History snapshot the import already
+         takes (or, for an empty desk, from a copy kept here; for the
+         untouched sample, by reloading the sample).
+         The report rides with the book (state.importReport, in
+         serializeBook) until the writer dismisses it; snapshots do
+         not carry it.
+
+         What Mammoth.js 1.6.0 (the converter loaded above) does with
+         Word features — verified in its own source,
+         https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.js
+         (lib/docx/body-reader.js, lib/docx/docx-reader.js, lib/document-to-html.js):
+           - only the main document, comments, footnotes, endnotes,
+             numbering and styles parts are read (findPartPaths): page
+             headers and footers are never imported.
+           - any other unknown element is skipped with the warning
+             "An unrecognised element was ignored: …" (shown verbatim).
+           - "w:del" is in the ignored-elements list, "w:ins" is read as
+             ordinary content: tracked changes arrive as if accepted.
+           - "w:commentReference" converts through the "ignore" html
+             path unless a style map asks for comments: comments are
+             dropped.
+           - "w:txbxContent" / "v:textbox" are read as child content:
+             text-box text arrives inline in reading order;
+             "mc:AlternateContent" collapses to its mc:Fallback.
+           - footnote/endnote references become
+             <sup><a href="#footnote-ID" id="footnote-ref-ID">[N]</a></sup>
+             and the notes an <ol> of <li id="footnote-ID"> at the end,
+             each with a "↑" back-link.
+           - images become <img src="data:…"> with alt = the drawing's
+             descr, else its title.
+           - tables become <table>; Beuk's narrative import drops them.
+         These facts drive what the report says; nothing here guesses. */
+      var IR_REC = null;
+      const IR_SENT_RE = /^([A-Z]+)(\d+)$/;
+      const irSent = (tag, n) => "" + tag + n + "";
+      /* Scene-break markers the import reads as a break. Beuk's own
+         beautifier already turns ***, ---, ___ and ### lines into a
+         break; spaced forms such as "* * *" and "# # #", and the
+         ❦ / ⁂ ornaments, are added here. */
+      const IR_BREAK_RE = /^\s*(?:([*#])(?:\s*\1){2,}|-{3,}|_{3,}|❦|⁂)\s*$/;
+      function irNote(rec) { if (IR_REC) IR_REC.notes.push(rec); }
+      function irReseat(pieces, fromId, toId) {
+        (pieces || []).forEach((p) => { if (p._placed && p._placed.id === fromId) p._placed = { id: toId, mode: "filled", content: p._placed.content }; });
+      }
+      const irLoose = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+      const irClip = (s, n) => { const v = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return v.length > (n || 140) ? v.slice(0, (n || 140) - 1) + "…" : v; };
+      const irBlocks = (content) => String(content || "").split(/\n\s*\n/);
+      /* beautifyText reads the book's language for its quote marks; a
+         per-item typography undo must re-derive the smart form in the
+         language the import used, whatever the book is set to now. */
+      function irBeautifyAs(text, code) {
+        const keep = state.meta.language;
+        try { if (code && LANG_PACKS[code]) state.meta.language = code; return beautifyText(text); }
+        finally { state.meta.language = keep; }
+      }
+      /* beautifyText minus its typography (quotes, dashes, ellipses):
+         the same whitespace, break and blank-line work, so the two
+         outputs stay line-for-line aligned. */
+      function irStructural(text) {
+        let s = String(text == null ? "" : text);
+        s = s.replace(/\r\n?/g, "\n");
+        s = s.replace(/[ \t]+/g, " ");
+        s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,})[ \t]*$/gm, "***");
+        s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
+        s = s.replace(/\n{3,}/g, "\n\n");
+        return s.trim();
+      }
+      function irTypoPrep(raw, ir) {
+        const smart = beautifyText(raw);
+        const plain = irStructural(raw);
+        const S = smart.split("\n"), P = plain.split("\n");
+        ir.typoMap = new Map();
+        if (S.length !== P.length) { ir.typoBroken = true; return smart; }
+        for (let i = 0; i < S.length; i++) {
+          const a = S[i].trim(), b = P[i].trim();
+          if (a === b || !a) continue;
+          if (!ir.typoMap.has(a)) ir.typoMap.set(a, []);
+          ir.typoMap.get(a).push(b);
+        }
+        return smart;
+      }
+      function irBegin(name, format) {
+        const ir = {
+          file: name, format, notes: [], headings: [], demoted: [], breaks: [], images: [], tables: [],
+          docNotes: [], refCount: 0, drops: {}, messages: [], scan: null, lang: bookLang(),
+          frontmatter: null, typoMap: null, typoBroken: false
+        };
+        const empty = isEmptyDesk();
+        const sample = deskIsUntouchedSample();
+        ir.pre = {
+          meta: Object.assign({}, state.meta),
+          headSnap: (state.history && state.history[0]) ? state.history[0].id : null,
+          empty, sample,
+          displacing: sampleState.loaded || state.meta.bookId === "urn:uuid:beuk-sample-salt-meridian",
+          preDoc: null
+        };
+        if (empty && !sample) {
+          const d = snapshotBookDoc();
+          if (JSON.stringify(d).length <= 2000000) ir.pre.preDoc = d;
+        }
+        IR_REC = ir;
+        return ir;
+      }
+      function irAbort() { IR_REC = null; }
+      /* The synchronous halves of handleImportFile, after its file
+         reads: one for a converted .docx, one for Markdown/text. */
+      function importDocxConverted(name, html, messages, scan, identity, docxDet) {
+        const ir = irBegin(name, "docx");
+        try {
+          const text = irDocxHtmlToText(html, ir);
+          ir.messages = messages || []; ir.scan = scan || null;
+          const pieces = parseManuscript(text, name.replace(/\.docx$/i, ""), identity || {});
+          replaceBodyChapters(pieces, name, identity || {});
+          const det = docxDet && docxDet.strong ? docxDet : (detectLanguageInText(text) || docxDet);
+          offerDetectedLanguage(det);
+          return irFinish(ir, pieces, det);
+        } finally { irAbort(); }
+      }
+      function importPlainManuscript(name, raw) {
+        /* A markdown or text manuscript may declare its own credit in
+           YAML frontmatter; that block is metadata, not prose, so it is
+           read for the byline and lifted out before the split. */
+        const parsed = bulkParseFrontmatter(raw);
+        const text = parsed.body;
+        const det = detectLanguageInText(text);
+        const ident = { title: parsed.meta.title || "", author: parsed.meta.author || "" };
+        const ir = irBegin(name, /\.txt$/i.test(name) ? "txt" : "md");
+        try {
+          if (parsed.body !== raw && (ident.title || ident.author)) ir.frontmatter = raw.slice(0, Math.max(0, raw.length - parsed.body.length)).trim();
+          const pieces = parseManuscript(irPlainTextPrep(text, ir), name.replace(/\.(md|markdown|txt)$/i, ""), ident);
+          replaceBodyChapters(pieces, name, ident);
+          offerDetectedLanguage(det);
+          return irFinish(ir, pieces, det);
+        } finally { irAbort(); }
+      }
+
+      /* ---- DOCX: the narrative sanitizer, instrumented ----
+         Same walk as sanitizeHtmlToText (h1/h2 open chapters, lists
+         flatten, blockquotes keep "> ", tables are left out), plus
+         what the report needs: headings by level, footnotes mapped to
+         Beuk's [^n] notes, JPG/PNG images into the image library,
+         spaced scene-break markers, and a count of everything the
+         walk drops. Placeholders (U+E000 sentinels) mark where breaks,
+         images and tables stood so the report knows which section
+         each landed in; irFinish swaps them for the real text. */
+      function irDocxHtmlToText(html, ir) {
+        const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+        doc.querySelectorAll("style, script, o\\:p, w\\:sdt").forEach((n) => n.remove());
+        /* Notes first: lift every footnote/endnote out of the trailing list. */
+        const notesById = {};
+        doc.querySelectorAll('li[id^="footnote-"], li[id^="endnote-"]').forEach((li) => {
+          li.querySelectorAll('a[href^="#footnote-ref-"], a[href^="#endnote-ref-"]').forEach((a) => a.remove());
+          const text = li.textContent.replace(/ /g, " ").replace(/\s+/g, " ").trim();
+          notesById[li.id] = { id: li.id, text, n: null };
+          const ol = li.parentElement;
+          li.remove();
+          if (ol && ol.tagName === "OL" && !ol.children.length) ol.remove();
+        });
+        doc.querySelectorAll("dl").forEach((dl) => { if (!dl.textContent.trim()) dl.remove(); });
+        doc.querySelectorAll('a[href^="#footnote-"], a[href^="#endnote-"]').forEach((a) => {
+          const href = (a.getAttribute("href") || "").slice(1);
+          const m = a.textContent.match(/\[(\d{1,3})\]/);
+          if (!m) return;
+          if (notesById[href]) notesById[href].n = m[1];
+          ir.refCount++;
+          const host = a.parentElement && a.parentElement.tagName === "SUP" && a.parentElement.childNodes.length === 1 ? a.parentElement : a;
+          host.replaceWith(doc.createTextNode("[^" + m[1] + "]"));
+        });
+        ir.docNotes = Object.keys(notesById).map((k) => notesById[k]);
+        /* Formatting the plain-text walk cannot carry. */
+        ir.drops.em = doc.body.querySelectorAll("em, i").length;
+        ir.drops.strong = doc.body.querySelectorAll("strong, b").length;
+        ir.drops.links = doc.body.querySelectorAll("a[href]").length;
+        doc.querySelectorAll("*").forEach((el) => { el.removeAttribute("style"); el.removeAttribute("class"); el.removeAttribute("lang"); });
+        const parts = [];
+        const push = (txt) => { const v = (txt || "").replace(/\s+/g, " ").trim(); if (v) parts.push(v); };
+        const pushImages = (node) => {
+          node.querySelectorAll("img").forEach((img) => {
+            const src = img.getAttribute("src") || "";
+            const alt = String(img.getAttribute("alt") || "").replace(/[\[\]\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+            const m = src.match(/^data:([^;,]+);base64,(.*)$/);
+            const mediaType = m ? m[1].toLowerCase() : "";
+            const idx = ir.images.length;
+            const rec = { idx, alt, mediaType: mediaType || "unknown", imported: false, secId: null, imgId: null };
+            if (m && (mediaType === "image/png" || mediaType === "image/jpeg" || mediaType === "image/jpg")) {
+              const ext = mediaType === "image/png" ? "png" : "jpg";
+              rec.image = { id: uid(), name: "word-image-" + (idx + 1) + "." + ext, mediaType: ext === "png" ? "image/png" : "image/jpeg", ext, data: m[2] };
+              rec.imgId = rec.image.id;
+              rec.imported = true;
+            }
+            ir.images.push(rec);
+            parts.push(irSent("IMG", idx));
+          });
+        };
+        doc.body.childNodes.forEach((node) => {
+          if (node.nodeType === 3) { push(node.textContent); return; }
+          if (node.nodeType !== 1) return;
+          const tag = node.tagName.toLowerCase();
+          const txt = node.textContent.replace(/ /g, " ");
+          if (tag === "h1" || tag === "h2") {
+            ir.headings.push({ level: tag === "h1" ? 1 : 2, key: irLoose(txt) });
+            push("# " + txt.trim());
+          } else if (/^h[3-6]$/.test(tag)) {
+            const v = txt.replace(/\s+/g, " ").trim();
+            if (v) ir.demoted.push({ level: Number(tag.slice(1)), text: v });
+            push(txt);
+          } else if (tag === "blockquote") txt.split(/\n+/).forEach((l) => push("> " + l.trim()));
+          else if (tag === "ul" || tag === "ol") {
+            const lis = node.querySelectorAll("li");
+            ir.drops.listItems = (ir.drops.listItems || 0) + lis.length;
+            lis.forEach((li) => push(li.textContent));
+          } else if (tag === "table") {
+            const rows = [];
+            node.querySelectorAll("tr").forEach((tr) => {
+              const cells = Array.prototype.map.call(tr.children, (c) => c.textContent.replace(/\s+/g, " ").trim());
+              if (cells.some(Boolean)) rows.push(cells);
+            });
+            const imgs = node.querySelectorAll("img").length;
+            const idx = ir.tables.length;
+            ir.tables.push({ idx, rows, images: imgs, secId: null, prev: null });
+            parts.push(irSent("TBL", idx));
+          } else if (tag === "p" && IR_BREAK_RE.test(txt) && !node.querySelector("img")) {
+            const idx = ir.breaks.length;
+            ir.breaks.push({ idx, marker: txt.replace(/\s+/g, " ").trim(), secId: null, prev: "", next: "" });
+            parts.push(irSent("SB", idx));
+          } else {
+            push(txt);
+            if (node.querySelector && node.querySelector("img")) pushImages(node);
+          }
+        });
+        /* Note texts are smartened like the prose they belong to. */
+        ir.docNotes.forEach((nt) => {
+          nt.plain = irStructural(nt.text);
+          nt.smart = beautifyText(nt.text);
+        });
+        return irTypoPrep(parts.join("\n\n"), ir);
+      }
+      /* Markdown / plain text: the same break markers, as lines. */
+      function irPlainTextPrep(raw, ir) {
+        const lines = String(raw || "").replace(/\r\n?/g, "\n").split("\n");
+        let fence = false;
+        const out = lines.map((line) => {
+          if (/^\s*(```|~~~)/.test(line)) fence = !fence;
+          if (fence || !IR_BREAK_RE.test(line)) return line;
+          const idx = ir.breaks.length;
+          ir.breaks.push({ idx, marker: line.trim(), secId: null, prev: "", next: "" });
+          return "\n" + irSent("SB", idx) + "\n";
+        });
+        ir.drops.mdImages = lines.filter((l) => /!\[[^\]]*\]\((?!img:)[^)]*\)/.test(l)).length;
+        return irTypoPrep(out.join("\n"), ir);
+      }
+      /* Word features the HTML never shows — read from the package
+         itself. mc:Choice branches are skipped because Mammoth reads
+         the mc:Fallback copy, so each box or change counts once. */
+      async function irScanDocxXml(buf) {
+        const out = { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: false };
+        if (!window.JSZip || !buf) return out;
+        try {
+          const zip = await JSZip.loadAsync(buf.slice(0));
+          const docF = zip.file("word/document.xml");
+          if (docF) {
+            const xml = (await docF.async("string")).replace(/<mc:Choice\b[\s\S]*?<\/mc:Choice>/g, "");
+            out.ins = (xml.match(/<w:ins[\s>]/g) || []).length;
+            out.del = (xml.match(/<w:del[\s>]/g) || []).length;
+            out.textboxes = (xml.match(/<w:txbxContent[\s>]/g) || []).length;
+          }
+          const cm = zip.file("word/comments.xml");
+          if (cm) out.comments = ((await cm.async("string")).match(/<w:comment[\s>]/g) || []).length;
+          /* Mammoth reads only the main document, comments, notes,
+             numbering and styles (findPartPaths in its docx-reader):
+             page headers and footers never arrive. Count the ones that
+             carry words. */
+          const hf = Object.keys(zip.files).filter((n) => /^word\/(header|footer)\d*\.xml$/.test(n));
+          for (const n of hf) { const x = await zip.file(n).async("string"); if (/<w:t[\s>][^<]*\S/.test(x)) out.headers++; }
+          out.scanned = true;
+        } catch (e) { /* the scan is a witness, never a blocker */ }
+        return out;
+      }
+
+      /* ---- After the desk is set: resolve, map, and write the report ---- */
+      function irFinish(ir, pieces, det) {
+        IR_REC = null;
+        const secById = (id) => state.sections.find((s) => s.id === id) || null;
+        const secName = (s) => s ? (s.kind === "body" && s.type === "chapter" ? (s.number ? t("side.chapterAbbr") + " " + s.number + " — " : "") + (s.title || t("side.untitled")) : (s.title || t("import.type." + s.type))) : "";
+        /* 1. Placeholders → real text, remembering where each landed. */
+        state.sections.forEach((s) => {
+          const c = String(s.content || "");
+          if (c.indexOf("") === -1) return;
+          const out = [];
+          const marks = [];
+          irBlocks(c).forEach((b) => {
+            const m = b.trim().match(IR_SENT_RE);
+            if (!m) { out.push(b.replace(/[A-Z]+\d+/g, "")); return; }
+            const n = Number(m[2]);
+            if (m[1] === "SB" && ir.breaks[n]) { ir.breaks[n].secId = s.id; marks.push({ rec: ir.breaks[n], at: out.length }); out.push("***"); }
+            else if (m[1] === "IMG" && ir.images[n]) {
+              const rec = ir.images[n];
+              rec.secId = s.id;
+              if (rec.imported) { state.images.push(rec.image); out.push(imageTokenText({ alt: rec.alt, id: rec.image.id, full: false })); }
+            } else if (m[1] === "TBL" && ir.tables[n]) { ir.tables[n].secId = s.id; ir.tables[n].prev = out.length ? out[out.length - 1].trim() : ""; }
+          });
+          marks.forEach((mk) => { mk.rec.prev = (out[mk.at - 1] || "").trim(); mk.rec.next = (out[mk.at + 1] || "").trim(); });
+          s.content = out.filter((b, i) => b.trim() || i === 0).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
+        });
+        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/\n?[A-Z]+\d+\n?/g, "");
+        (pieces || []).forEach((p) => { if (p._placed) p._placed.content = resolveText(p._placed.content); });
+        const importIds = new Set();
+        (pieces || []).forEach((p) => { if (p._placed) importIds.add(p._placed.id); });
+        const importSecs = state.sections.filter((s) => importIds.has(s.id));
+        const bodySecs = importSecs.filter((s) => s.kind === "body");
+        /* 2. Footnotes: each note joins the section holding its reference. */
+        const noteStats = { found: ir.docNotes.length, refs: ir.refCount, mapped: 0, orphanNotes: [], orphanRefs: [] };
+        const typoExtra = [];
+        ir.docNotes.forEach((nt) => {
+          const re = nt.n ? new RegExp("\\[\\^" + nt.n + "\\](?!:)") : null;
+          const host = re ? state.sections.find((s) => re.test(String(s.content || ""))) : null;
+          if (host) {
+            host.content = String(host.content || "").trim() + "\n\n[^" + nt.n + "]: " + nt.smart;
+            noteStats.mapped++;
+            if (nt.plain !== nt.smart) typoExtra.push({ secId: host.id, smart: "[^" + nt.n + "]: " + nt.smart, plain: "[^" + nt.n + "]: " + nt.plain });
+          } else {
+            const last = bodySecs[bodySecs.length - 1] || importSecs[importSecs.length - 1];
+            if (last) last.content = String(last.content || "").trim() + "\n\n[" + (nt.n || "?") + "] " + nt.smart;
+            noteStats.orphanNotes.push({ n: nt.n || "?", text: nt.smart, secId: last ? last.id : null });
+          }
+        });
+        if (ir.format === "docx") {
+          const defined = new Set(ir.docNotes.filter((nt) => nt.n).map((nt) => nt.n));
+          state.sections.forEach((s) => {
+            const re = /\[\^(\d{1,3})\](?!:)/g; let m;
+            while ((m = re.exec(String(s.content || "")))) if (!defined.has(m[1]) && importIds.has(s.id)) noteStats.orphanRefs.push(m[1]);
+          });
+        } else {
+          /* Markdown notes are already Beuk's own [^n] syntax: count
+             them and check each definition shares a section with its
+             reference — the renderer links notes within a section. */
+          importSecs.forEach((s) => {
+            const c = String(s.content || "");
+            const refs = new Set(), defs = new Set(); let m;
+            const rr = /\[\^(\d{1,3})\](?!:)/g; while ((m = rr.exec(c))) refs.add(m[1]);
+            const dr = /^\[\^?(\d{1,3})\]:/gm; while ((m = dr.exec(c))) defs.add(m[1]);
+            noteStats.refs += refs.size; noteStats.found += defs.size;
+            defs.forEach((n) => { if (refs.has(n)) noteStats.mapped++; else noteStats.orphanNotes.push({ n, text: "", secId: s.id }); });
+            refs.forEach((n) => { if (!defs.has(n)) noteStats.orphanRefs.push(n); });
+          });
+        }
+        /* 3. Typography: which lines the smartening changed, per section. */
+        const typoBySec = new Map();
+        if (ir.typoMap && !ir.typoBroken) {
+          importSecs.forEach((s) => {
+            String(s.content || "").split("\n").forEach((line) => {
+              const key = line.trim();
+              const q = ir.typoMap.get(key);
+              if (!q || !q.length) return;
+              const plain = q.shift();
+              if (!typoBySec.has(s.id)) typoBySec.set(s.id, []);
+              typoBySec.get(s.id).push({ smart: key, plain });
+            });
+          });
+        }
+        typoExtra.forEach((x) => { if (!typoBySec.has(x.secId)) typoBySec.set(x.secId, []); typoBySec.get(x.secId).push({ smart: x.smart, plain: x.plain }); });
+        /* 4. The changes, as records. */
+        const items = [];
+        let seq = 0;
+        const add = (o) => { o.id = "c" + (++seq); o.state = "applied"; items.push(o); return o; };
+        const firstBodyId = bodySecs.length ? bodySecs[0].id : null;
+        const headingLevelOf = (raw) => {
+          const k = irLoose(String(raw || "").replace(/^#{1,2}\s+/, ""));
+          const h = ir.headings.find((x) => x.key === k);
+          return h ? h.level : 0;
+        };
+        (pieces || []).forEach((p) => {
+          const type = p.type || "chapter";
+          const sec = p._placed ? secById(p._placed.id) : null;
+          if (!sec) return;
+          const via = (p._ir && p._ir.via) || "";
+          const heading = (p._ir && p._ir.heading) || "";
+          if (type === "chapter") {
+            let from = "text";
+            if (via === "fallback") from = "fallback";
+            else if (/^#{1,2}\s+/.test(heading)) {
+              if (ir.format === "docx") from = headingLevelOf(heading) === 2 ? "h2" : "h1";
+              else from = /^##\s/.test(heading) ? "md2" : "md1";
+            }
+            const idx = state.sections.indexOf(sec);
+            let prevBody = null;
+            for (let i = idx - 1; i >= 0; i--) if (state.sections[i].kind === "body") { prevBody = state.sections[i]; break; }
+            const rec = { kind: "chapter", group: "structure", where: { secId: sec.id, label: secName(sec) },
+              before: heading ? irClip(heading.replace(/^#{1,2}\s+/, ""), 90) : "", after: irClip(secName(sec), 90),
+              data: { from, heading, title: sec.title, number: sec.number } };
+            if (via === "fallback") { rec.reversible = false; rec.why = "fallback"; }
+            else if (!prevBody || !importIds.has(prevBody.id)) { rec.reversible = false; rec.why = "first"; }
+            else rec.reversible = true;
+            add(rec);
+            return;
+          }
+          const rec = { kind: "matter", group: "matter", where: { secId: sec.id, label: secName(sec) },
+            before: "", after: irClip(p._placed.content, 160),
+            data: { type, via, heading, mode: p._placed.mode, content: p._placed.content, chapterId: null } };
+          if (via === "heading") { rec.reversible = false; rec.why = "retype"; rec.before = irClip(heading, 80); }
+          else if (via === "chapter-head") {
+            const ch = p._ir.chapter && p._ir.chapter._placed ? secById(p._ir.chapter._placed.id) : null;
+            rec.data.chapterId = ch ? ch.id : null;
+            rec.data.chapterLabel = ch ? secName(ch) : "";
+            rec.reversible = !!ch;
+            if (!ch) rec.why = "gone";
+          } else rec.reversible = !!firstBodyId;
+          add(rec);
+        });
+        ir.notes.forEach((nt) => {
+          if (nt.kind === "lifted") add({ kind: "lifted", group: "matter", where: { secId: null, label: "" }, before: irClip(nt.text, 140), after: "", reversible: !!firstBodyId, why: firstBodyId ? "" : "gone", data: { reason: nt.reason, text: nt.text } });
+          else if (nt.kind === "toc-dropped") add({ kind: "toc", group: "dropped", where: { secId: null, label: "" }, before: irClip(nt.text, 160), after: "", reversible: false, why: "toc", data: {} });
+          else if (nt.kind === "empty-heading") add({ kind: "emptyHeading", group: "dropped", where: { secId: null, label: "" }, before: irClip(nt.text, 90), after: "", reversible: false, why: "emptyHeading", data: { text: nt.text } });
+        });
+        ir.demoted.forEach((d) => {
+          const k = irLoose(d.text);
+          const host = importSecs.find((s) => irBlocks(s.content).some((b) => irLoose(b) === k));
+          add({ kind: "demoted", group: "structure", where: { secId: host ? host.id : null, label: host ? secName(host) : "" },
+            before: irClip(d.text, 100), after: irClip(d.text, 100), reversible: !!host, why: host ? "" : "gone", data: { level: d.level, text: d.text } });
+        });
+        ir.breaks.forEach((b) => {
+          const host = b.secId ? secById(b.secId) : null;
+          if (!host) return;
+          add({ kind: "break", group: "breaks", where: { secId: host.id, label: secName(host) }, before: b.marker, after: "***", reversible: true, data: { marker: b.marker, prev: b.prev, next: b.next } });
+        });
+        typoBySec.forEach((pairs, secId) => {
+          const host = secById(secId);
+          if (!host) return;
+          const cnt = { q: 0, d: 0, e: 0 };
+          const count = (s, re) => (String(s).match(re) || []).length;
+          pairs.forEach((pr) => {
+            cnt.q += Math.max(0, count(pr.smart, /[“”‘’«»„‚‹›「」『』]/g) - count(pr.plain, /[“”‘’«»„‚‹›「」『』]/g));
+            cnt.d += Math.max(0, count(pr.smart, /[—–]/g) - count(pr.plain, /[—–]/g));
+            cnt.e += Math.max(0, count(pr.smart, /…/g) - count(pr.plain, /…/g));
+          });
+          const keep = pairs.map((pr) => irBeautifyAs(pr.plain, ir.lang).trim() === pr.smart ? [pr.plain] : [pr.plain, pr.smart]);
+          const size = keep.reduce((n, k) => n + k.join("").length, 0);
+          add({ kind: "typography", group: "typography", where: { secId, label: secName(host) },
+            before: irClip(pairs[0].plain, 120), after: irClip(pairs[0].smart, 120),
+            reversible: size <= 1500000, why: size <= 1500000 ? "" : "big",
+            data: { q: cnt.q, d: cnt.d, e: cnt.e, lines: pairs.length, keep: size <= 1500000 ? keep : [], lang: ir.lang } });
+        });
+        if (ir.typoBroken) add({ kind: "typographyAll", group: "typography", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "align", data: {} });
+        if (noteStats.found || noteStats.refs) {
+          add({ kind: "notes", group: "notes", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "notes",
+            data: { found: noteStats.found, refs: noteStats.refs, mapped: noteStats.mapped, orphans: noteStats.orphanNotes.length + noteStats.orphanRefs.length } });
+          noteStats.orphanNotes.forEach((o) => { const h = o.secId ? secById(o.secId) : null; add({ kind: "noteOrphan", group: "dropped", where: { secId: o.secId, label: h ? secName(h) : "" }, before: irClip(o.text, 140), after: "", reversible: false, why: "notes", data: { n: o.n } }); });
+          noteStats.orphanRefs.forEach((n) => add({ kind: "refOrphan", group: "dropped", where: { secId: null, label: "" }, before: "[" + n + "]", after: "", reversible: false, why: "notes", data: { n } }));
+        }
+        ir.images.forEach((im) => {
+          const host = im.secId ? secById(im.secId) : null;
+          if (im.imported) add({ kind: "image", group: "notes", where: { secId: im.secId, label: host ? secName(host) : "" }, before: "", after: im.alt ? irClip(im.alt, 100) : "", reversible: !!host, why: host ? "" : "gone", data: { alt: im.alt, imgId: im.imgId, name: im.image.name } });
+          else add({ kind: "imageDropped", group: "dropped", where: { secId: im.secId, label: host ? secName(host) : "" }, before: im.alt ? irClip(im.alt, 100) : "", after: "", reversible: false, why: "format", data: { type: im.mediaType } });
+        });
+        ir.tables.forEach((tb) => {
+          const host = tb.secId ? secById(tb.secId) : null;
+          add({ kind: "table", group: "dropped", where: { secId: tb.secId, label: host ? secName(host) : "" },
+            before: irClip(tb.rows.map((r) => r.join(" | ")).join(" / "), 200), after: "",
+            reversible: !!host && tb.rows.length > 0, why: host ? (tb.rows.length ? "" : "emptyTable") : "gone",
+            data: { rows: tb.rows, prev: tb.prev, images: tb.images } });
+        });
+        const sc = ir.scan;
+        if (sc && sc.comments) add({ kind: "comments", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { n: sc.comments } });
+        if (sc && (sc.ins || sc.del)) add({ kind: "tracked", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { ins: sc.ins, del: sc.del } });
+        if (sc && sc.headers) add({ kind: "headers", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { n: sc.headers } });
+        if (sc && sc.textboxes) add({ kind: "textbox", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { n: sc.textboxes } });
+        if (ir.drops.listItems) add({ kind: "lists", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { n: ir.drops.listItems } });
+        if (ir.drops.links) add({ kind: "links", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { n: ir.drops.links } });
+        if (ir.drops.em || ir.drops.strong) add({ kind: "emphasis", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "emphasis", data: { em: ir.drops.em || 0, strong: ir.drops.strong || 0 } });
+        if (ir.drops.mdImages) add({ kind: "mdImage", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { n: ir.drops.mdImages } });
+        const seenMsg = new Map();
+        (ir.messages || []).forEach((m) => { const k = (m.type || "warning") + "|" + (m.message || ""); seenMsg.set(k, (seenMsg.get(k) || 0) + 1); });
+        seenMsg.forEach((n, k) => { const i = k.indexOf("|"); add({ kind: "mammoth", group: "dropped", where: { secId: null, label: "" }, before: "", after: "", reversible: false, why: "source", data: { type: k.slice(0, i), message: k.slice(i + 1), n } }); });
+        if (ir.frontmatter) add({ kind: "frontmatter", group: "book", where: { secId: null, label: "" }, before: irClip(ir.frontmatter, 140), after: "", reversible: false, why: "source", data: {} });
+        /* Language and book details: what changed on the credit. */
+        const pre = ir.pre.meta;
+        if (det && det.code) {
+          const applied = state.meta.language !== pre.language;
+          const status = applied ? "applied" : (pre.langSource === "manual" ? "manual" : (det.code === state.meta.language ? "same" : "suggested"));
+          add({ kind: "language", group: "book", where: { secId: null, label: "" }, before: applied ? pre.language : "", after: det.code,
+            reversible: applied, why: applied ? "" : "lang",
+            data: { code: det.code, via: det.via === "docx" ? "docx" : "text", status, prev: { language: pre.language, langSource: pre.langSource, langGuess: pre.langGuess }, value: state.meta.language } });
+        }
+        ["title", "author", "isbn", "publisher", "year"].forEach((f) => {
+          const before = ir.pre.displacing ? "" : String(pre[f] || "");
+          const after = String(state.meta[f] || "");
+          if (!after || after === String(pre[f] || "")) return;
+          if (f === "year" && ir.pre.displacing && after === String(new Date().getFullYear())) return;
+          add({ kind: "meta", group: "book", where: { secId: null, label: "" }, before, after, reversible: true, data: { field: f, prev: before, value: after } });
+        });
+        /* 5. How the whole import can be undone. */
+        const head = state.history && state.history[0];
+        const snapId = head && head.auto === "import" && head.id !== ir.pre.headSnap ? head.id : null;
+        state.importReport = {
+          v: 1, id: uid(), file: ir.file, format: ir.format, at: new Date().toISOString(), dismissed: false, kept: false,
+          checked: ir.format === "docx" ? ["headings", "tables", "images", "notes", "comments", "tracked", "textboxes", "headers", "lists", "links", "formatting", "warnings"] : ["headings", "notes", "images"],
+          scanOk: !!(sc && sc.scanned),
+          undo: { snapId, preDoc: snapId ? null : ir.pre.preDoc, sample: !snapId && ir.pre.sample },
+          items
+        };
+        noteBookEdited();
+        renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
+        irSyncReopen();
+        irOpenReport();
+        return state.importReport;
+      }
+      function normalizeImportReport(r) {
+        if (!r || typeof r !== "object" || r.v !== 1 || !Array.isArray(r.items)) return null;
+        return JSON.parse(JSON.stringify(r));
+      }
+
+      /* ---- Per-item undo: each acts on the book as it stands now ---- */
+      const irFindBlock = (sec, pred) => { const bl = irBlocks(sec.content); for (let i = 0; i < bl.length; i++) if (pred(bl[i].trim(), i, bl)) return { bl, i }; return null; };
+      const irFirstBody = () => {
+        const rep = state.importReport;
+        const ids = new Set((rep ? rep.items : []).filter((it) => it.kind === "chapter").map((it) => it.where.secId));
+        return state.sections.find((s) => s.kind === "body" && ids.has(s.id)) || state.sections.find((s) => s.kind === "body") || null;
+      };
+      const irPrepend = (sec, text) => { sec.content = String(text).trim() + (String(sec.content || "").trim() ? "\n\n" + String(sec.content).trim() : ""); };
+      /* Takes the imported text back out of the section it was placed
+         in: the seat it filled is emptied, the seat it created goes,
+         the text it appended is cut. Edited since → refuse. */
+      function irUnplace(it) {
+        const sec = state.sections.find((s) => s.id === it.where.secId);
+        const content = String(it.data.content || "").trim();
+        if (!sec || !content) return false;
+        const cur = String(sec.content || "").trim();
+        if (it.data.mode === "appended") {
+          const at = cur.lastIndexOf(content);
+          if (at < 0) return false;
+          sec.content = (cur.slice(0, at) + cur.slice(at + content.length)).replace(/\n{3,}/g, "\n\n").trim();
+          return true;
+        }
+        if (irLoose(cur) !== irLoose(content)) return false;
+        if (it.data.mode === "created") state.sections.splice(state.sections.indexOf(sec), 1);
+        else sec.content = "";
+        return true;
+      }
+      const IR_UNDO = {
+        chapter(it) {
+          const sec = state.sections.find((s) => s.id === it.where.secId);
+          if (!sec) return { ok: false, why: "gone" };
+          const idx = state.sections.indexOf(sec);
+          let prev = null;
+          for (let i = idx - 1; i >= 0; i--) if (state.sections[i].kind === "body") { prev = state.sections[i]; break; }
+          if (!prev) return { ok: false, why: "first" };
+          const h = String(it.data.heading || "").trim();
+          const level = it.data.from === "h2" || it.data.from === "md2" ? "## " : (it.data.from === "h1" || it.data.from === "md1" ? "# " : "");
+          const headLine = level ? level + h.replace(/^#{1,2}\s+/, "") : h;
+          const chapters = state.sections.filter((s) => s.type === "chapter");
+          const seqNumbers = chapters.every((c, i) => String(c.number) === String(i + 1));
+          prev.content = [String(prev.content || "").trim(), headLine, String(sec.content || "").trim()].filter(Boolean).join("\n\n");
+          state.sections.splice(idx, 1);
+          if (seqNumbers) state.sections.filter((s) => s.type === "chapter").forEach((c, i) => { c.number = String(i + 1); });
+          if (state.activeId === sec.id) state.activeId = prev.id;
+          return { ok: true, into: prev.id };
+        },
+        matter(it) {
+          const content = String(it.data.content || "").trim();
+          let target = null;
+          if (it.data.via === "chapter-head") target = state.sections.find((s) => s.id === it.data.chapterId);
+          else target = irFirstBody();
+          if (!target || target.id === it.where.secId) return { ok: false, why: "gone" };
+          if (!irUnplace(it)) return { ok: false, why: "gone" };
+          irPrepend(target, content);
+          if (state.activeId === it.where.secId && !state.sections.some((s) => s.id === state.activeId)) state.activeId = target.id;
+          return { ok: true, into: target.id };
+        },
+        lifted(it) {
+          const target = irFirstBody();
+          if (!target) return { ok: false, why: "gone" };
+          irPrepend(target, String(it.data.text || "").replace(/^#{1,2}\s+/, "# "));
+          return { ok: true, into: target.id };
+        },
+        demoted(it) {
+          const k = irLoose(it.data.text);
+          const order = [state.sections.find((s) => s.id === it.where.secId)].concat(state.sections).filter(Boolean);
+          for (const sec of order) {
+            const f = irFindBlock(sec, (b) => irLoose(b) === k && !/^#/.test(b));
+            if (f) { f.bl[f.i] = "## " + f.bl[f.i].trim(); sec.content = f.bl.join("\n\n"); return { ok: true, into: sec.id }; }
+          }
+          return { ok: false, why: "gone" };
+        },
+        break(it) {
+          const pk = irLoose(it.data.prev), nk = irLoose(it.data.next);
+          const order = [state.sections.find((s) => s.id === it.where.secId)].concat(state.sections).filter(Boolean);
+          for (const sec of order) {
+            const f = irFindBlock(sec, (b, i, bl) => /^(\*\*\*|❦|⁂)$/.test(b) && irLoose(bl[i - 1] || "") === pk && irLoose(bl[i + 1] || "") === nk);
+            if (f) { f.bl.splice(f.i, 1); sec.content = f.bl.join("\n\n"); return { ok: true, into: sec.id }; }
+          }
+          return { ok: false, why: "gone" };
+        },
+        typography(it) {
+          const sec = state.sections.find((s) => s.id === it.where.secId) || null;
+          const pool = (sec ? [sec] : []).concat(state.sections.filter((s) => s !== sec));
+          let done = 0;
+          const total = (it.data.keep || []).length;
+          (it.data.keep || []).forEach((k) => {
+            const plain = k[0];
+            const smart = k[1] || irBeautifyAs(plain, it.data.lang).trim();
+            for (const s of pool) {
+              const lines = String(s.content || "").split("\n");
+              const li = lines.findIndex((l) => l.trim() === smart);
+              if (li >= 0) { lines[li] = plain; s.content = lines.join("\n"); done++; return; }
+            }
+          });
+          if (!done) return { ok: false, why: "gone" };
+          return { ok: true, partial: done < total ? { done, total } : null, into: sec ? sec.id : null };
+        },
+        image(it) {
+          const order = [state.sections.find((s) => s.id === it.where.secId)].concat(state.sections).filter(Boolean);
+          for (const sec of order) {
+            const f = irFindBlock(sec, (b) => { const tk = parseImageLine(b); return !!tk && tk.id === it.data.imgId; });
+            if (f) {
+              f.bl.splice(f.i, 1); sec.content = f.bl.join("\n\n");
+              const still = state.sections.some((s) => imageTokensIn(s.content).some((tk) => tk.id === it.data.imgId)) ||
+                state.sections.some((s) => s.plateId === it.data.imgId || s.backdropId === it.data.imgId);
+              if (!still) state.images = (state.images || []).filter((im) => im.id !== it.data.imgId);
+              return { ok: true, into: sec.id };
+            }
+          }
+          return { ok: false, why: "gone" };
+        },
+        table(it) {
+          const sec = state.sections.find((s) => s.id === it.where.secId);
+          if (!sec) return { ok: false, why: "gone" };
+          const rows = (it.data.rows || []).map((r) => r.filter(Boolean).join(" | ")).filter(Boolean);
+          if (!rows.length) return { ok: false, why: "emptyTable" };
+          const bl = irBlocks(sec.content);
+          let at = 0;
+          if (it.data.prev) {
+            const pk = irLoose(it.data.prev);
+            const i = bl.findIndex((b) => irLoose(b) === pk);
+            if (i < 0) return { ok: false, why: "gone" };
+            at = i + 1;
+          }
+          bl.splice.apply(bl, [at, 0].concat(rows));
+          sec.content = bl.filter((b) => b.trim()).join("\n\n");
+          return { ok: true, into: sec.id };
+        },
+        language(it) {
+          if (state.meta.language !== it.data.value) return { ok: false, why: "gone" };
+          state.meta.language = it.data.prev.language; state.meta.langSource = it.data.prev.langSource; state.meta.langGuess = it.data.prev.langGuess || "";
+          return { ok: true };
+        },
+        meta(it) {
+          if (String(state.meta[it.data.field] || "") !== it.data.value) return { ok: false, why: "gone" };
+          state.meta[it.data.field] = it.data.prev;
+          return { ok: true };
+        }
+      };
+      function irUndoItem(id) {
+        const rep = state.importReport;
+        const it = rep && rep.items.find((x) => x.id === id);
+        if (!it || it.state !== "applied" || !it.reversible || !IR_UNDO[it.kind]) return { ok: false, why: "na" };
+        const res = IR_UNDO[it.kind](it);
+        if (res.ok) {
+          it.state = "undone";
+          it.undoneAt = new Date().toISOString();
+          if (res.partial) it.partial = res.partial;
+          /* Restored text is an arrival, not today's writing. */
+          wlogRebase = true;
+          noteBookEdited();
+          renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
+          if (it.kind === "language" || it.kind === "meta") refreshLangHint();
+        } else {
+          it.lastFail = res.why;
+        }
+        irRenderReport();
+        irSyncReopen();
+        return res;
+      }
+      function irUndoAllAvailability() {
+        const rep = state.importReport;
+        if (!rep) return { ok: false, why: "na" };
+        if (rep.undo.snapId) return (state.history || []).some((s) => s.id === rep.undo.snapId) ? { ok: true, via: "snapshot" } : { ok: false, why: "snapGone" };
+        if (rep.undo.preDoc) return { ok: true, via: "preDoc" };
+        if (rep.undo.sample) return { ok: true, via: "sample" };
+        return { ok: false, why: "snapGone" };
+      }
+      function irUndoAll() {
+        const rep = state.importReport;
+        const av = irUndoAllAvailability();
+        if (!rep || !av.ok) return false;
+        if (av.via === "snapshot") restoreSnapshot(rep.undo.snapId);
+        else if (av.via === "sample") applySampleBookSync();
+        else {
+          autoSnapshot("restore");
+          applyBookDoc(JSON.parse(JSON.stringify(rep.undo.preDoc)));
+          noteBookEdited();
+        }
+        /* Whatever the restored book carried, this import's report is done. */
+        if (state.importReport && state.importReport.id === rep.id) state.importReport = null;
+        renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
+        irCloseReport();
+        irSyncReopen();
+        toast(t("ir.toastUndoAll"), "undo-2");
+        return true;
+      }
+      function irDismiss() {
+        state.importReport = null;
+        noteBookEdited();
+        irCloseReport();
+        irSyncReopen();
+      }
+
+      /* ---- The report, on screen ---- */
+      const IR_GROUPS = ["dropped", "structure", "matter", "breaks", "typography", "notes", "book"];
+      function irItemLabel(it) {
+        const d = it.data || {};
+        switch (it.kind) {
+          case "chapter": return t("ir.k.chapter", { title: it.after || d.title || "", from: t("ir.from." + d.from, { heading: irClip(d.heading, 60) }) });
+          case "demoted": return t("ir.k.demoted", { level: d.level, text: irClip(d.text, 70) });
+          case "matter": return d.via === "heading" ? t("ir.k.matterHeading", { type: t("import.type." + d.type) })
+            : d.via === "chapter-head" ? t("ir.k.matterChapter", { type: t("import.type." + d.type), chapter: d.chapterLabel || it.where.label })
+            : t("ir.k.matterShape", { type: t("import.type." + d.type) });
+          case "lifted": return t("ir.k.lifted." + (d.reason === "title-heading" ? "titleHeading" : d.reason));
+          case "toc": return t("ir.k.toc");
+          case "emptyHeading": return t("ir.k.emptyHeading");
+          case "break": return t("ir.k.break", { marker: d.marker });
+          case "typography": return t("ir.k.typography", { q: d.q, d: d.d, e: d.e });
+          case "typographyAll": return t("ir.k.typographyAll");
+          case "notes": return t("ir.k.notes", { found: d.found, mapped: d.mapped, orphans: d.orphans });
+          case "noteOrphan": return t("ir.k.noteOrphan", { n: String(d.n) });
+          case "refOrphan": return t("ir.k.refOrphan", { n: String(d.n) });
+          case "image": return t("ir.k.image", { name: d.name }) + " — " + (d.alt ? t("ir.alt.yes") : t("ir.alt.no"));
+          case "imageDropped": return t("ir.k.imageDropped", { type: d.type });
+          case "table": return t("ir.k.table", { n: (d.rows || []).length }) + (d.images ? " " + t("ir.k.tableImages", { n: d.images }) : "");
+          case "comments": return t("ir.k.comments", { n: d.n });
+          case "tracked": return t("ir.k.tracked", { ins: d.ins, del: d.del });
+          case "textbox": return t("ir.k.textbox", { n: d.n });
+          case "headers": return t("ir.k.headers", { n: d.n });
+          case "lists": return t("ir.k.lists", { n: d.n });
+          case "links": return t("ir.k.links", { n: d.n });
+          case "emphasis": return t("ir.k.emphasis", { em: d.em, strong: d.strong });
+          case "mdImage": return t("ir.k.mdImage", { n: d.n });
+          case "mammoth": return t("ir.k.mammoth", { message: d.message }) + (d.n > 1 ? " ×" + d.n : "");
+          case "frontmatter": return t("ir.k.frontmatter");
+          case "language": return t("ir.k.language", { lang: (LANG_PACKS[d.code] ? langPack(d.code).native : d.code), via: t("ir.via." + d.via) }) + " — " + t("ir.lang." + d.status);
+          case "meta": return t("ir.k.meta", { field: t("ir.f." + d.field), value: it.after });
+          default: return it.kind;
+        }
+      }
+      const IR_HINT = { chapter: "chapter", matter: "matter", lifted: "matter", demoted: "demoted", break: "break", typography: "typography", image: "image", table: "table", language: "book", meta: "book" };
+      function irRenderReport() {
+        const body = $("irBody");
+        if (!body) return;
+        const rep = state.importReport;
+        if (!rep) { body.innerHTML = ""; return; }
+        $("irSub").textContent = t("ir.sub", { file: rep.file, when: fmtDateIntl(new Date(rep.at)) });
+        const by = {};
+        IR_GROUPS.forEach((g) => { by[g] = []; });
+        rep.items.forEach((it) => { (by[it.group] || (by[it.group] = [])).push(it); });
+        let html = '<div class="ir-chips">';
+        IR_GROUPS.forEach((g) => {
+          if (!by[g].length) return;
+          html += '<a class="ir-chip' + (g === "dropped" ? " warn" : "") + '" href="#ir-g-' + g + '"><b>' + by[g].length + "</b> " + esc(t("ir.g." + g)) + "</a>";
+        });
+        html += "</div>";
+        if (!by.dropped.length) {
+          html += '<p class="ir-clean">' + esc(t("ir.noneDropped", { list: rep.checked.map((c) => t("ir.c." + c)).join(", ") })) + "</p>";
+        }
+        if (rep.format === "docx" && !rep.scanOk) html += '<p class="ir-warn-line">' + esc(t("ir.scanFailed")) + "</p>";
+        IR_GROUPS.forEach((g) => {
+          const list = by[g];
+          if (!list.length) return;
+          html += '<details class="ir-group' + (g === "dropped" ? " warn" : "") + '" id="ir-g-' + g + '"' + (g === "dropped" || list.length <= 6 ? " open" : "") + '><summary><span class="ir-gname">' + esc(t("ir.g." + g)) + '</span><span class="ir-gcount">' + list.length + "</span></summary>";
+          list.forEach((it) => {
+            html += '<div class="ir-item ' + esc(it.state) + '" data-irid="' + esc(it.id) + '">';
+            html += '<div class="ir-line">' + esc(irItemLabel(it)) + "</div>";
+            if (it.where && it.where.label) html += '<div class="ir-where">' + esc(t("ir.where", { where: it.where.label })) + "</div>";
+            if (it.before || it.after) {
+              html += '<div class="ir-ba">';
+              if (it.before) html += '<div><span class="ir-tag">' + esc(t("ir.before")) + "</span><code>" + esc(it.before) + "</code></div>";
+              if (it.after) html += '<div><span class="ir-tag">' + esc(t("ir.after")) + "</span><code>" + esc(it.after) + "</code></div>";
+              html += "</div>";
+            }
+            html += '<div class="ir-act">';
+            if (it.state === "undone") html += '<span class="ir-done">' + esc(t("ir.undone")) + (it.partial ? " — " + esc(t("ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
+            else if (it.reversible) {
+              html += '<button type="button" class="tb-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc(t("ir.undoThis")) + "</button>";
+              if (IR_HINT[it.kind]) html += '<span class="ir-hint">' + esc(t("ir.hint." + IR_HINT[it.kind])) + "</span>";
+              if (it.lastFail) html += '<span class="ir-fail">' + esc(t("ir.failed", { reason: t("ir.why." + it.lastFail) })) + "</span>";
+            } else html += '<span class="ir-na">' + esc(t("ir.noUndo", { reason: t("ir.why." + (it.why || "source")) })) + "</span>";
+            html += "</div></div>";
+          });
+          html += "</details>";
+        });
+        body.innerHTML = html;
+        const av = irUndoAllAvailability();
+        const ua = $("btnIrUndoAll");
+        if (ua) { ua.disabled = !av.ok; ua.title = av.ok ? "" : t("ir.why." + av.why); }
+        const na = $("irUndoAllNote");
+        if (na) { na.textContent = av.ok ? "" : t("ir.undoAllNA", { reason: t("ir.why." + av.why) }); na.style.display = av.ok ? "none" : ""; }
+      }
+      function irOpenReport() {
+        if (!state.importReport) return;
+        irRenderReport();
+        const m = $("modalImportReport");
+        if (m) m.classList.add("open");
+        icons();
+      }
+      function irCloseReport() { const m = $("modalImportReport"); if (m) m.classList.remove("open"); }
+      function irSyncReopen() {
+        const box = $("irReopen"), btn = $("btnIrReopen");
+        if (!box || !btn) return;
+        const rep = state.importReport;
+        if (!rep || rep.dismissed) { box.style.display = "none"; return; }
+        const open = rep.items.filter((it) => it.state === "applied").length;
+        btn.querySelector("span").textContent = t("ir.reopen", { n: open, file: rep.file });
+        box.style.display = "";
+      }
+      function irOnLangChange() { irSyncReopen(); const m = $("modalImportReport"); if (m && m.classList.contains("open")) irRenderReport(); }
+      function initImportReport() {
+        const m = $("modalImportReport");
+        if (!m) return;
+        $("btnIrKeep").addEventListener("click", () => {
+          if (state.importReport) { state.importReport.kept = true; noteBookEdited(); }
+          irCloseReport();
+        });
+        $("btnIrClose").addEventListener("click", irCloseReport);
+        m.addEventListener("click", (e) => {
+          if (e.target === m) { irCloseReport(); return; }
+          const b = e.target.closest && e.target.closest("[data-irundo]");
+          if (b) irUndoItem(b.getAttribute("data-irundo"));
+        });
+        $("btnIrUndoAll").addEventListener("click", () => {
+          const rep = state.importReport; if (!rep) return;
+          cloudConfirm({ title: t("ir.confirmUndoAllTitle"), body: t("ir.confirmUndoAllBody", { file: rep.file }), yes: t("ir.confirmUndoAllYes"), no: t("confirm.keep") })
+            .then((ok) => { if (ok) irUndoAll(); });
+        });
+        $("btnIrDismiss").addEventListener("click", () => {
+          cloudConfirm({ title: t("ir.confirmDismissTitle"), body: t("ir.confirmDismissBody"), yes: t("ir.confirmDismissYes"), no: t("confirm.keep") })
+            .then((ok) => { if (ok) irDismiss(); });
+        });
+        $("btnIrReopen").addEventListener("click", irOpenReport);
+        irSyncReopen();
+      }
+      if (typeof window !== "undefined") window.beukImportReport = { importDocxConverted, importPlainManuscript, open: irOpenReport, undo: irUndoItem, undoAll: irUndoAll, dismiss: irDismiss, docxHtmlToText: irDocxHtmlToText, begin: irBegin, finish: irFinish, plainPrep: irPlainTextPrep, label: irItemLabel };
+      /* ==== /BEUK:importreport ==== */
 
       /* ================= Settings modal ================= */
       function renderCoverSettings() {
@@ -17642,7 +18581,8 @@
           printOmitBlankHead: state.printOmitBlankHead,
           printFolio: state.printFolio,
           goals: Object.assign({}, state.goals),
-          history: (state.history || []).slice()
+          history: (state.history || []).slice(),
+          importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null
         };
       }
       function applyBookDoc(doc) {
@@ -17714,10 +18654,15 @@
            history untouched — the safety net taken before a swap
            must survive the swap itself. */
         if (Array.isArray(doc.history)) state.history = normalizeHistory(doc.history);
+        /* The import report belongs to the book it describes: a book
+           arriving without one clears the desk's (a different book's
+           report must never describe this one). */
+        state.importReport = normalizeImportReport(doc.importReport);
         state.page = 1;
         const isBox = $("importSummary"); if (isBox) isBox.style.display = "none";
         renderSidebar(); syncEditor(); renderStudio(); syncStudioControls();
         renderPreview(); updateStats(); refreshExportTree(); renderCoverSettings();
+        if (typeof irSyncReopen === "function") irSyncReopen();
         return true;
       }
 
@@ -23455,6 +24400,116 @@
           } }
 
       ];
+      /* ==== BEUK:importreport ==== */
+      /* Import report self-checks: each import runs through the real
+         pipeline (the synchronous halves of handleImportFile), on a
+         known prior desk, and every claim is read back from the book. */
+      function irCheckRun(fn) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+        try {
+          applyBookDoc(buildEmptyBook());
+          sampleState.loaded = false; sampleState.loadedJson = null;
+          state.history = [];
+          state.meta.title = "Prior Book";
+          const ch = state.sections.find((s) => s.type === "chapter");
+          ch.title = "Prior Chapter"; ch.content = "The prior book's only words.";
+          return fn(ch.id);
+        } finally {
+          irCloseReport();
+          applyBookDoc(keepDoc);
+          sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+        }
+      }
+      SELF_CHECKS.push(
+        { id: "import.report.txt-records-and-undo", feature: "import", name: "Import report (text): chapter splits, a spaced * * * scene break and smartened quotes are each recorded; undoing one chapter split merges it back (one section fewer, its words intact), the typography and break undos restore exactly what was there, and Undo the whole import restores the prior book",
+          run() {
+            return irCheckRun((priorId) => {
+              const priorJson = JSON.stringify(state.sections.map((s) => [s.type, s.title, s.content]));
+              const fixture = ["Chapter 1", 'She said "go" -- and went...', "", "* * *", "", "After the break.", "", "Chapter 2", 'The second "chapter" text.', "", "Chapter 3", "Third text, plainly."].join("\n");
+              const rep = importPlainManuscript("fixture.txt", fixture);
+              const items = rep ? rep.items : [];
+              const chapters = items.filter((i) => i.kind === "chapter");
+              const brk = items.find((i) => i.kind === "break");
+              const typo = items.filter((i) => i.kind === "typography");
+              const recOk = chapters.length === 3 && chapters.every((c) => c.data.from === "text") &&
+                !!brk && brk.data.marker === "* * *" && typo.length >= 1 && !!rep.undo.snapId;
+              const ch3 = chapters.find((c) => c.data.number === "3");
+              const before = state.sections.length;
+              const r1 = ch3 ? irUndoItem(ch3.id) : { ok: false };
+              const ch2 = state.sections.find((s) => s.type === "chapter" && s.number === "2");
+              const mergeOk = r1.ok && state.sections.length === before - 1 && !!ch2 &&
+                ch2.content.indexOf("Chapter 3") !== -1 && ch2.content.indexOf("Third text, plainly.") !== -1 &&
+                ch2.content.indexOf("The second “chapter” text.") !== -1;
+              const ch1 = state.sections.find((s) => s.type === "chapter" && s.number === "1");
+              const t1 = typo.find((i) => i.where.secId === (ch1 && ch1.id));
+              const r2 = t1 ? irUndoItem(t1.id) : { ok: false };
+              const typoOk = r2.ok && ch1.content.indexOf('She said "go" -- and went...') !== -1;
+              const r3 = irUndoItem(brk.id);
+              const breakOk = r3.ok && ch1.content.indexOf("***") === -1 && ch1.content.indexOf("After the break.") !== -1;
+              const all = irUndoAll();
+              const restoredJson = JSON.stringify(state.sections.map((s) => [s.type, s.title, s.content]));
+              const allOk = all && restoredJson === priorJson && state.importReport === null && state.sections.some((s) => s.id === priorId);
+              return scVerdict(recOk && mergeOk && typoOk && breakOk && allOk,
+                "recorded 3 text-marker chapters, the * * * break and the smartening (" + recOk + "), chapter 3 merged back with its words (" + mergeOk + "), straight quotes/dashes/dots restored (" + typoOk + "), break removed (" + breakOk + "), whole import undone to the prior book (" + allOk + ")");
+            });
+          } },
+        { id: "import.report.docx-honest", feature: "import", name: "Import report (Word): a Mammoth-shaped document's table is reported as left out (and its words come back on undo), the footnote is linked as a Beuk note, the image lands in the library with its alt text, Heading 3 is reported as demoted, and comments, tracked changes, headers, lists and converter warnings are all listed — never silently lost",
+          run() {
+            return irCheckRun(() => {
+              const html = "<p>Copyright © 2026 Fixture Author. All rights reserved.</p><h1>The Harbour</h1>" +
+                '<p>She said "wait".<sup><a href="#footnote-1" id="footnote-ref-1">[1]</a></sup></p>' +
+                '<p><img src="data:image/png;base64,iVBORw0KGgo=" alt="A gull on the rail" /></p>' +
+                "<h3>Low tide</h3><p>Words under the low tide heading.</p>" +
+                "<table><tr><td>Tide</td><td>Height</td></tr><tr><td>Low</td><td>0.4 m</td></tr></table>" +
+                "<p>After the table.</p><h1>The Chart Room</h1><p>Second chapter text.</p><ul><li>One</li><li>Two</li></ul>" +
+                '<ol><li id="footnote-1"><p>Ledger, page 9. <a href="#footnote-ref-1">↑</a></p></li></ol>';
+              const rep = importDocxConverted("fixture.docx", html, [{ type: "warning", message: "Unrecognised paragraph style: 'Quote' (Style ID: Quote)" }],
+                { comments: 2, ins: 1, del: 1, textboxes: 0, headers: 1, scanned: true }, {}, null);
+              const items = rep ? rep.items : [];
+              const has = (k) => items.find((i) => i.kind === k);
+              const ch1 = state.sections.find((s) => s.type === "chapter" && s.title === "The Harbour");
+              const tbl = has("table"), img = has("image"), dem = has("demoted"), notes = has("notes");
+              const noteOk = !!ch1 && ch1.content.indexOf("[^1]") !== -1 && /\n\[\^1\]: Ledger, page 9\.$/.test(ch1.content) && !!notes && notes.data.mapped === 1 && notes.data.orphans === 0;
+              const imgOk = !!img && img.data.alt === "A gull on the rail" && state.images.some((im) => im.id === img.data.imgId) &&
+                ch1.content.indexOf("![A gull on the rail](img:" + img.data.imgId + ")") !== -1;
+              const tableOk = !!tbl && tbl.group === "dropped" && tbl.before.indexOf("Tide | Height") !== -1 && ch1.content.indexOf("Tide") === -1;
+              const listedOk = !!dem && dem.data.level === 3 && !!has("comments") && !!has("tracked") && !!has("headers") && !!has("lists") &&
+                !!has("mammoth") && !!items.find((i) => i.kind === "matter" && i.data.type === "copyright") && !!has("typography");
+              const rt = irUndoItem(tbl.id);
+              const tableBack = rt.ok && ch1.content.indexOf("Tide | Height") !== -1 && ch1.content.indexOf("Low | 0.4 m") !== -1 &&
+                ch1.content.indexOf("Tide | Height") > ch1.content.indexOf("Words under the low tide heading.");
+              const ri = irUndoItem(img.id);
+              const imgGone = ri.ok && ch1.content.indexOf("img:" + img.data.imgId) === -1 && !state.images.some((im) => im.id === img.data.imgId);
+              const rd = irUndoItem(dem.id);
+              const demBack = rd.ok && ch1.content.indexOf("## Low tide") !== -1;
+              const naOk = !has("comments").reversible && !!$("irBody") && /Low tide/.test($("irBody").textContent);
+              return scVerdict(noteOk && imgOk && tableOk && listedOk && tableBack && imgGone && demBack && naOk,
+                "footnote linked as [^1] (" + noteOk + "), image in library with alt (" + imgOk + "), table reported left out (" + tableOk + "), demoted heading + comments/tracked/headers/lists/warning/copyright/typography listed (" + listedOk + "), table words back on undo (" + tableBack + "), image undo (" + imgGone + "), subheading restored (" + demBack + "), unrevertable items say so (" + naOk + ")");
+            });
+          } },
+        { id: "import.report.persists-with-book", feature: "import", name: "Import report rides with the book: serializeBook carries it, History snapshots do not, a book arriving without one clears it, and the import area offers it again until dismissed",
+          run() {
+            return irCheckRun(() => {
+              importPlainManuscript("persist.md", "# One\nFirst words.\n\n# Two\nSecond words.");
+              const doc = serializeBook();
+              const carried = !!doc.importReport && doc.importReport.items.some((i) => i.kind === "chapter");
+              const snapClean = !("importReport" in snapshotBookDoc());
+              const shown = $("irReopen") && $("irReopen").style.display !== "none";
+              applyBookDoc(buildEmptyBook());
+              const cleared = state.importReport === null && $("irReopen").style.display === "none";
+              applyBookDoc(doc);
+              const back = !!state.importReport && $("irReopen").style.display !== "none";
+              irDismiss();
+              const gone = state.importReport === null && serializeBook().importReport === null && $("irReopen").style.display === "none";
+              return scVerdict(carried && snapClean && shown && cleared && back && gone,
+                "serialized with the book (" + carried + "), not in snapshots (" + snapClean + "), offered in the import area (" + shown + "), cleared by a book without one (" + cleared + "), restored with its book (" + back + "), dismiss removes it (" + gone + ")");
+            });
+          } }
+      );
+      /* ==== /BEUK:importreport ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
@@ -24846,6 +25901,7 @@
         syncStudioControls();
         initPreview();
         initImport();
+        initImportReport();
         initSettings();
         initCoverMaker();
         initSample();
