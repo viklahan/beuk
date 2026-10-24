@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Beuk renderer attack fixture</title>
+<!--
+  A hostile "print interior". Every element below tries to pull content
+  the renderer must never see into the printed page: the process
+  environment, the export volume, the database, the app API, the
+  renderer itself, cloud metadata, and the public internet. If any of
+  them worked, that content would appear as text in the PDF. The
+  harness (deploy/renderer-attack.sh) extracts the PDF text and fails on
+  any leak marker. The visible marker ATTACKPAGERENDERED proves the
+  page itself did render and the extraction works.
+-->
+<base href="file:///"/>
+<meta http-equiv="refresh" content="1;url=file:///proc/1/environ"/>
+<link rel="stylesheet" href="http://app:3000/api/health"/>
+<link rel="stylesheet" href="file:///proc/1/environ"/>
+<style>
+  @import url("file:///proc/1/environ");
+  @import url("http://app:3000/api/health");
+  @font-face { font-family: "Leak"; src: url("https://fonts.gstatic.com/s/inter/v13/leak.woff2"); }
+  @page { size: 6in 9in; margin: 0.5in; }
+  body { font-family: serif; background: url("http://169.254.169.254/latest/meta-data/"); }
+  iframe, object, embed { display: block; width: 5in; height: 1.2in; border: 1px solid #999; margin: 4px 0; }
+  .after-env::after { content: url("file:///proc/1/environ"); }
+</style>
+<script>document.write('<p>JS-RAN-INLINE</p>');</script>
+<script src="http://app:3000/api/health"></script>
+</head>
+<body>
+<h1>ATTACKPAGERENDERED</h1>
+<p class="after-env">If anything below shows text other than these labels, the renderer leaked.</p>
+
+<p>file:///proc/1/environ</p>
+<iframe src="file:///proc/1/environ"></iframe>
+<object data="file:///proc/1/environ" type="text/plain"></object>
+<embed src="file:///proc/self/environ" type="text/plain"/>
+
+<p>file:///data/exports/ and file:///data/backups/</p>
+<iframe src="file:///data/exports/"></iframe>
+<iframe src="file:///data/backups/"></iframe>
+<iframe src="file:///etc/passwd"></iframe>
+<iframe src="proc/1/environ"></iframe>
+
+<p>http://db:5432/</p>
+<iframe src="http://db:5432/"></iframe>
+
+<p>http://app:3000/api/health</p>
+<iframe src="http://app:3000/api/health"></iframe>
+<object data="http://app:3000/api/health" type="text/plain"></object>
+
+<p>renderer itself and loopback</p>
+<iframe src="http://127.0.0.1:3100/health"></iframe>
+<iframe src="http://renderer:3100/health"></iframe>
+<iframe src="http://localhost:3100/health"></iframe>
+
+<p>cloud metadata and the internet</p>
+<iframe src="http://169.254.169.254/latest/meta-data/"></iframe>
+<iframe src="https://example.com/"></iframe>
+<iframe src="http://example.com/"></iframe>
+
+<p>nested data: frame and srcdoc</p>
+<iframe src="data:text/html,&lt;iframe src='file:///proc/1/environ'&gt;&lt;/iframe&gt;&lt;iframe src='http://app:3000/api/health'&gt;&lt;/iframe&gt;"></iframe>
+<iframe srcdoc="&lt;iframe src='file:///proc/1/environ'&gt;&lt;/iframe&gt;&lt;iframe src='https://example.com/'&gt;&lt;/iframe&gt;"></iframe>
+
+<p>images (no text, but must not even be requested)</p>
+<img src="file:///proc/1/environ" alt=""/>
+<img src="http://app:3000/api/health" alt=""/>
+<img src="https://example.com/favicon.ico" alt=""/>
+<svg width="10" height="10"><image href="file:///proc/1/environ" width="10" height="10"/></svg>
+
+<p>scripted exfiltration (JS must be off)</p>
+<script>
+  document.write('<p>JS-RAN-BODY</p>');
+  for (const u of ['file:///proc/1/environ', 'http://app:3000/api/health', 'http://db:5432/', 'https://example.com/']) {
+    fetch(u).then((r) => r.text()).then((t) => { const p = document.createElement('pre'); p.textContent = 'JS-FETCHED ' + t; document.body.appendChild(p); }).catch(() => {});
+    const x = new XMLHttpRequest(); try { x.open('GET', u, false); x.send(); document.write('<pre>JS-XHR ' + x.responseText + '</pre>'); } catch (e) {}
+  }
+</script>
+<img src="x" onerror="document.body.insertAdjacentHTML('beforeend','<p>JS-RAN-ONERROR</p>')" alt=""/>
+
+<form action="http://app:3000/api/auth/register" method="post"><input name="email" value="x"/></form>
+<a href="file:///proc/1/environ">link (not followed)</a>
+<p>ENDOFATTACKFIXTURE</p>
+</body>
+</html>

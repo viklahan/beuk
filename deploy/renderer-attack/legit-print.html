@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Renderer Legit Fixture — Print Interior (5.5 × 8.5 in)</title>
+<!-- A small, honest print interior in the shape buildPrintHtml emits:
+     CSS only (no script), @page trim size + margin boxes, sections that
+     break pages, and an image as a data: URI. The harness checks the PDF
+     has the trim size, the page count, and this text. -->
+<style>
+@page { size: 5.5in 8.5in; margin: 0.75in 0.6in 0.75in 0.8in;
+  @bottom-center { content: counter(page); font-size: 9.5pt; } }
+@page :first { @bottom-center { content: none; } }
+html, body { margin: 0; padding: 0; background: #fff; color: #191713; }
+body { font-family: serif; font-size: 11pt; line-height: 1.4; }
+.print-sec { page-break-before: always; }
+.print-sec:first-child { page-break-before: avoid; }
+.chapter-title { text-align: center; font-size: 1.85em; margin: 1.5em 0 1em; }
+figure { text-align: center; } figure img { width: 1in; height: 1in; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<section class="print-sec"><h1 class="chapter-title">LEGITTITLEPAGE</h1><p style="text-align:center">A renderer fixture</p></section>
+<section class="print-sec chapter-sec"><h2 class="chapter-title">Chapter One: LEGITCHAPTERONE</h2>
+<p>The first chapter of a legitimate print interior. It renders to a PDF whose pages carry the 5.5 by 8.5 inch trim from its own @page rule.</p>
+<figure><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR4nGM4oaGBFTEMLQkAgl1GAWqNFmsAAAAASUVORK5CYII=" alt="A red square"/></figure></section>
+<section class="print-sec chapter-sec"><h2 class="chapter-title">Chapter Two: LEGITCHAPTERTWO</h2>
+<p>The second chapter opens on a fresh page. LEGITENDOFBOOK</p></section>
+</body>
+</html>
