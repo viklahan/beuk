@@ -54,8 +54,8 @@ stored server-side as a SHA-256 hash.
 
 | Endpoint | What |
 |---|---|
-| `POST /api/auth/register` | `{email, password}` (password ≥ 8 chars) → creates the account, starts a session |
-| `POST /api/auth/login` | → new session cookie; 401 for wrong password or unknown email (same message) |
+| `POST /api/auth/register` | `{email, password}` (password ≥ 8 chars) → creates the account, starts a session; 409 for an existing email (also when two sign-ups race); 429 + `Retry-After` past the per-IP rate limit |
+| `POST /api/auth/login` | → new session cookie; 401 for wrong password or unknown email (same message, same argon2 work); 429 + `Retry-After` past the per-IP rate limit |
 | `POST /api/auth/logout` | destroys the session, clears the cookie |
 | `GET /api/auth/me` | current user, or 401 |
 | `GET /api/manuscripts` | caller's manuscripts (metadata only) |
@@ -80,7 +80,11 @@ stored server-side as a SHA-256 hash.
 | `GET /api/health` | `{ok, db}` liveness |
 | `GET /api/status` | public, scrubbed health summary: app, version, build stamp, db up/down, latest Self-checks outcome (see Warmth) |
 | `GET /api/config/public` | public config for pages/clients: support contact + Ko-fi jar URL (or `null`) |
-| `POST /api/founders/apply` | public Founders' Shelf application `{name, email, about}`; validated, per-IP throttled |
+| `POST /api/founders/apply` | public Founders' Shelf application `{name, email, about}`; validated, per-IP throttled (429 + `Retry-After`) |
+
+Any `:id` (and `manuscriptId` / `exportId` in a query or body) that is
+not a UUID answers **404** — it can never name a row — instead of
+reaching Postgres and coming back as a 500.
 
 **Owner isolation:** every manuscript query is scoped by the session's
 `user_id`; another user's manuscript returns 404, never 403, so existence
@@ -351,6 +355,73 @@ Founders' Shelf application; none of it touches pricing or checkout.
   the client can show the forgiving parts (repair balance, planned
   time off) instead of just a number.
 
+## Hardening (abuse, crashes, shutdown, headers)
+
+- **Rate limiting.** `POST /api/auth/login` and `POST /api/auth/register`
+  each have an in-memory per-client-IP token bucket (separate buckets):
+  `AUTH_RATE_BURST` attempts (default 10), then one more every
+  `AUTH_RATE_REFILL_MS` (default 60000). Over the limit → `429` with
+  `Retry-After` (seconds). In-memory means per process and reset on
+  restart — proportional for the single-node deploy, not for replicas.
+  There are no password-reset endpoints yet, so none are limited.
+- **Real client IP.** Express `trust proxy` is set to `TRUST_PROXY_HOPS`
+  (default **1** — Caddy). Caddy ignores any client-sent
+  `X-Forwarded-For` and sets its own, so `req.ip` is the address Caddy
+  saw; a spoofed `X-Forwarded-For` does not buy a new bucket (verified
+  live through Caddy). The Founders' Shelf throttle uses the same
+  corrected `req.ip` (before this, every request looked like it came
+  from Caddy, so one busy visitor throttled everyone). **If you run the
+  app without a proxy in front, set `TRUST_PROXY_HOPS=0`**, or clients
+  can pick their own IP.
+- **No login timing oracle.** An unknown email still spends one argon2id
+  verify against a per-process dummy hash, so response time does not
+  reveal which emails have accounts.
+- **Crash-proofing.** A download whose stored file vanishes or can't be
+  read after the existence check answers `500 {"error": "export file is
+  missing from storage"}` instead of killing Node (unhandled stream
+  error). The pg pool has an `error` listener: a Postgres restart drops
+  idle connections, gets logged, and the next query reconnects
+  (verified live with `docker compose restart db`).
+- **Graceful shutdown.** On SIGTERM/SIGINT the server stops accepting
+  connections, lets in-flight requests finish, gives a running job up
+  to `SHUTDOWN_GRACE_MS` (default 20000) and otherwise marks it
+  **failed** with "the server was shutting down" (queued jobs stay
+  queued and re-run at next boot), closes the pool and exits 0 (1 if
+  requests had to be cut). Compose runs the app with `init: true`
+  (Docker's tini as PID 1) and `stop_grace_period: 30s`.
+- **Expired sessions** are deleted at boot and every
+  `SESSION_PURGE_INTERVAL_MS` (default 1 h).
+- **Healthchecks.** `app` probes `/api/health` with node's `fetch` (the
+  image has no curl); `caddy` probes its admin API on `localhost:2019`
+  (independent of DOMAIN/TLS mode) and only starts once `app` is
+  healthy.
+
+### Security headers (Caddyfile)
+
+Every response carries `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin`,
+`X-Frame-Options: SAMEORIGIN`, and an **enforced**
+`Content-Security-Policy: frame-ancestors 'self'; object-src 'none';
+base-uri 'self'`. The full source allow-list (scripts from cdnjs /
+jsdelivr, Google Fonts, inline scripts and styles, `blob:`/`data:`
+images, any `https:` image/fetch host because cover-photo results come
+from Pexels and Openverse's arbitrary hosts) ships as
+**`Content-Security-Policy-Report-Only`** — deliberately not enforced,
+because only the studio's load path was exercised against it, not every
+feature. Violations would show as `[Report Only]` console messages.
+`Strict-Transport-Security: max-age=31536000` is sent only over HTTPS
+on a host other than `localhost`/`127.0.0.1`, so local mode
+(`http://localhost:8090`, or `https://localhost`) is never pinned.
+
+Verified on a throwaway compose stack (local mode on port 18101): the
+studio, `/help/`, `/changelog`, `/roadmap` and `/thanks/` load in
+headless Chromium with **zero** CSP console messages (enforced or
+report-only), and JSZip, mammoth, lucide and jsPDF all load; a
+positive control (injecting a script from a non-listed host and an
+`<object>`) does produce the expected messages. With a real-domain
+site address over HTTPS the HSTS header is present; on localhost and
+plain HTTP it is not.
+
 ## Tests
 
 ```bash
@@ -402,6 +473,18 @@ the source's manuscript, the unconfigured-tool path completing
 killed by the per-job timeout. The real EPUBCheck/Ghostscript
 binaries cannot run in the test sandbox — the stubs prove the
 pipeline around them (see Jobs, residual limits).
+Hardening adds (`tests/hardening.test.ts`): the token bucket's burst /
+refill / retry-after maths, login and register 429 + `Retry-After` per
+client IP (a spoofed left-most `X-Forwarded-For` entry doesn't escape
+it; another IP is unaffected), the founders throttle keyed on the
+corrected IP, unknown-email login costing comparable time to a wrong
+password, concurrent duplicate register → one 201 + one 409, non-UUID
+ids → 404 on every `:id` route and id-bearing body, a download whose
+file became unreadable after the stat → 500 JSON with the server still
+up, the pg pool surviving an `error` event, expired-session purge,
+graceful shutdown (in-flight request finishes, new connections refused,
+pool closed, exit 0), and a job outliving the shutdown grace marked
+failed while queued jobs stay queued.
 
 ## Deploy to Hetzner (outline)
 
@@ -470,7 +553,11 @@ milestone — no server changes needed.
 
 ```
 src/
-  index.ts        entrypoint: migrate, then listen
+  index.ts        entrypoint: migrate, then listen; session purge timer,
+                  SIGTERM/SIGINT → graceful shutdown
+  shutdown.ts     graceful shutdown sequence (requests, jobs, pool)
+  ratelimit.ts    in-memory per-IP token bucket + 429 middleware
+  ids.ts          UUID validation (non-UUID ids → 404)
   migrate.ts      `npm run migrate`
   app.ts          buildApp() — express app (injectable clock for tests)
   config.ts       env → config
