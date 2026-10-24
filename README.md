@@ -266,14 +266,14 @@ catalogue to an admin):
 | Evidence | `GET /audit` — recent audit rows |
 | Founders' Shelf | `GET /founders` — the M4 seed-list applications (read-only, audited) |
 
-**Self-checks registry:** 48 cases ported from the coverage registry.
-**28 execute server-side** — infra (DB reachable, migrations current,
+**Self-checks registry:** 118 cases ported from the coverage registry.
+**31 execute server-side** — infra (DB reachable, migrations current,
 export volume writable), data invariants (no orphaned export
 files/rows, archive SHA-256 re-verification, streak ledger
 consistency), and package assertions over fixture EPUBs (cover /
 preset / landmark / alt-text style checks, box-set and DOCX structure,
 and the validator cases run against deliberately damaged packages).
-**20 are registered as `client-only`** with a one-line reason each
+**87 are registered as `client-only`** with a one-line reason each
 (theme application, print CSS, word counts — inherently client-UI
 state): reported in every run, never silently dropped, never faked
 as passing. Runs are stored in `housekeeping_check_runs`.
@@ -453,6 +453,36 @@ placeholder page for the app itself, plus the M4 warmth pages under
 app instead (see the Caddyfile), which fills their config slots. The
 existing Beuk web client drops its built files in here in a later
 milestone — no server changes needed.
+
+## Studio: the Word import report
+
+After every import (`.docx`, `.md`, `.txt`) the studio opens a
+**"Here's what we changed"** report, grouped and counted, with
+before/after snippets. It records chapter splits (and the heading or
+line each came from — Heading 2 is reported as promoted, Heading 3–6
+as demoted to body text), front matter carved out by shape (copyright,
+epigraph, dedication, title-page lines), scene breaks (including spaced
+markers such as `* * *`, now read as breaks), smartened quotes/dashes/
+ellipses per section, footnotes (Word notes are linked as Beuk `[^n]`
+notes in the section that cites them; unmatched ones are reported as
+orphaned), JPG/PNG images (imported into the image library, with their
+alt-text status), the language detected and any book details taken from
+the manuscript. What the import **drops** is listed first and
+prominently: tables, unsupported image formats, Word comments, tracked
+changes (imported as if accepted), text boxes (text kept inline), page
+headers/footers, list formatting, link addresses, italic/bold, and every
+Mammoth.js warning verbatim. The Word behaviours are those of
+Mammoth.js 1.6.0, verified in its source (cited in the client code).
+
+Each reversible change has a real **Undo this** that acts on the book as
+it stands now (it refuses, and says why, if the text has since changed);
+a change that cannot be reverted alone says so instead of offering a
+button. **Undo the whole import** restores the pre-import book from the
+History snapshot the import takes. The report is stored with the book
+(`importReport` in the book JSON, not in History snapshots) and stays
+reachable from the import area until dismissed. This is the studio's
+main import only; Box Set volume import and Bulk import still use the
+plain converter without a report.
 
 ## What is deliberately NOT here yet
 

@@ -1174,6 +1174,28 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Vault parsing (frontmatter, [[links]], embeds) is client import behavior.',
   },
+
+  /* ---- Word import report (client-side; BEUK:importreport) ---- */
+  {
+    id: 'import.report.txt-records-and-undo',
+    title:
+      'Import report (text): chapter splits, a spaced * * * scene break and smartened quotes are recorded; one chapter split undoes back into its neighbour, typography and break undos restore the original, and Undo the whole import restores the prior book',
+    kind: 'client-only',
+    reason: 'The import pipeline, the report and its undos all run in the studio against the book in the browser.',
+  },
+  {
+    id: 'import.report.docx-honest',
+    title:
+      'Import report (Word): tables are reported as left out (words back on undo), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',
+    kind: 'client-only',
+    reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
+  },
+  {
+    id: 'import.report.persists-with-book',
+    title: 'Import report rides with the book until dismissed; History snapshots do not carry it',
+    kind: 'client-only',
+    reason: 'The report is a field of the client book document (serializeBook); the shelf stores the book JSON opaquely.',
+  },
 ];
 
 /* ------------------------------------------------------------------ */
