@@ -329,9 +329,19 @@ export async function renderPrintPdf(
   inputPath: string,
   outputPath: string,
 ): Promise<ToolOutcome<{ pdfBytes: number }>> {
+  // The archive stores exports by id with no extension, and Chromium
+  // picks the document type from a file:// URL's extension: handed the
+  // bare id it renders the HTML SOURCE as plain text (observed: a
+  // 6 × 9 in interior came back as 1,270 Letter-size pages of
+  // monospace markup). Render a `.html`-named copy beside the output,
+  // the same way EPUBCheck gets a `.epub`-named copy.
+  const htmlPath = /\.html?$/i.test(inputPath)
+    ? inputPath
+    : path.join(path.dirname(outputPath), 'interior.html');
+  if (htmlPath !== inputPath) await copyFile(inputPath, htmlPath);
   const run = await runCommand(
     config.htmlPdfBin!,
-    renderPdfArgs(config.htmlPdfBin!, inputPath, outputPath),
+    renderPdfArgs(config.htmlPdfBin!, htmlPath, outputPath),
     config.jobTimeoutMs,
   );
   if (run.timedOut) {

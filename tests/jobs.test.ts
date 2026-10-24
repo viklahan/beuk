@@ -185,6 +185,14 @@ for a in "$@"; do
   esac
 done
 if [ -z "$out" ]; then echo "fake-chrome: no --print-to-pdf target" >&2; exit 2; fi
+# Real Chromium types a file:// document by its extension; an
+# extensionless archive file renders as plain-text source. The stub
+# refuses it, so the adapter must hand over a .html-named copy.
+for url in "$@"; do :; done
+case "$url" in
+  file://*.html) ;;
+  *) echo "fake-chrome: $url is not an .html document (would render as text)" >&2; exit 3 ;;
+esac
 printf '%%PDF-1.4\\n1 0 obj\\n<<>>\\nendobj\\ntrailer\\n<<>>\\n%%%%EOF\\n' > "$out"
 exit 0
 `,
