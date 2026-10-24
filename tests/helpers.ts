@@ -189,10 +189,16 @@ export class Client {
     }
   }
 
-  async request(method: string, pathName: string, body?: unknown): Promise<Response> {
+  async request(
+    method: string,
+    pathName: string,
+    body?: unknown,
+    extraHeaders?: Record<string, string>,
+  ): Promise<Response> {
     const headers: Record<string, string> = {
       'content-type': 'application/json',
       ...this.cookieHeader(),
+      ...extraHeaders,
     };
     const res = await fetch(`${this.base}${pathName}`, {
       method,
@@ -241,8 +247,8 @@ export class Client {
   post(p: string, body?: unknown) {
     return this.request('POST', p, body);
   }
-  put(p: string, body?: unknown) {
-    return this.request('PUT', p, body);
+  put(p: string, body?: unknown, headers?: Record<string, string>) {
+    return this.request('PUT', p, body, headers);
   }
   delete(p: string) {
     return this.request('DELETE', p);

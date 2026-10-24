@@ -171,6 +171,39 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       return 'client/help/, client/thanks/ and CHANGELOG.md all readable from the deploy tree';
     },
   },
+  {
+    id: 'infra.deploy.vendored-libraries',
+    title: 'Deploy tree carries the studio libraries, byte-identical to their pinned releases',
+    kind: 'server',
+    run: async () => {
+      // Local-first saving: the studio loads JSZip, mammoth, lucide and
+      // jsPDF from client/assets/vendor/ (not a CDN) so it opens and
+      // imports .docx OFFLINE. The page pins each file with a
+      // Subresource Integrity hash; a file that drifted from its pinned
+      // bytes would be refused by the browser. Same hashes as the
+      // integrity="" attributes in client/index.html.
+      const pinned: Array<[string, string]> = [
+        ['jszip.min.js', 'sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=='],
+        ['mammoth.browser.min.js', 'sha512-sG5Q7boJL+ft/weuz6Mmi9XBD+bEzE9AI2FMP4YMFxp3FpTFUQSQQm5K5cSgJCyed6bWs3W8f8h0lp36lHXhQA=='],
+        ['lucide.min.js', 'sha512-ibnpmCRt4ihCELC17N3qavYe+koJxpcJQA2FxbbyCJkqYs1WetGvNWeecRmT5g3IJf7CmAsW+rLMJFC0qdkAiA=='],
+        ['jspdf.umd.min.js', 'sha512-B/+2C2xTio+mD98bsO0SAh007OKBp96sQyJECBAFzA0pwWQhyC/yxgMU6aWjldvtZkALDUeOl+7eiLZL7P7+FA=='],
+      ];
+      const problems: string[] = [];
+      for (const [file, sri] of pinned) {
+        let bytes: Buffer;
+        try {
+          bytes = await readFile(path.join(clientDir(), 'assets', 'vendor', file));
+        } catch {
+          problems.push(`${file}: missing`);
+          continue;
+        }
+        const actual = 'sha512-' + createHash('sha512').update(bytes).digest('base64');
+        if (actual !== sri) problems.push(`${file}: bytes differ from the pinned hash`);
+      }
+      assert(!problems.length, `studio libraries: ${problems.join('; ')}`);
+      return `${pinned.length} vendored libraries present and matching their pinned SHA-512`;
+    },
+  },
 
   /* ---- Data invariants ---- */
   {
@@ -231,6 +264,22 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       }
       assert(!bad.length, `corrupted exports: ${bad.slice(0, 3).join('; ')}`);
       return `${rows.rows.length} export(s) re-hashed, all match`;
+    },
+  },
+  {
+    id: 'data.manuscripts.revision-valid',
+    title: 'Every shelf manuscript carries a valid concurrency revision',
+    kind: 'server',
+    run: async ({ db }) => {
+      // Optimistic concurrency (migration 009): PUT is refused with 409
+      // unless it names the current revision, so a row with a missing
+      // or non-positive revision could never be saved again.
+      const rows = await db.query<{ total: string; bad: string }>(
+        'select count(*)::text as total, count(*) filter (where revision is null or revision < 1)::text as bad from manuscripts',
+      );
+      const { total, bad } = rows.rows[0] ?? { total: '0', bad: '0' };
+      assert(bad === '0', `${bad} manuscript(s) carry an invalid revision`);
+      return `${total} manuscript(s), every revision >= 1`;
     },
   },
   {
@@ -759,6 +808,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'Signed in, the server streak is shown; signed out, the local streak',
     kind: 'client-only',
     reason: 'Which streak renders is a client display decision over the two sources.',
+  },
+  {
+    id: 'local.autosave.roundtrip',
+    title: 'Local-first saving: the book (images, fonts, cover, history) is written to IndexedDB and restored on reload',
+    kind: 'client-only',
+    reason: 'IndexedDB lives in the writer’s browser; the server never sees the device copy.',
+  },
+  {
+    id: 'local.indicator.honest',
+    title: 'Local save indicator: saving, saved, and every failure state (storage blocked, quota full) are shown honestly',
+    kind: 'client-only',
+    reason: 'The indicator is header UI driven by the browser’s storage outcome.',
+  },
+  {
+    id: 'local.conflict.409-routes-to-notice',
+    title: 'A 409 from the shelf (stale revision) raises the conflict notice instead of overwriting',
+    kind: 'client-only',
+    reason: 'The server half is covered by tests/manuscripts.test.ts; routing the 409 into the notice is client UI.',
   },
   {
     id: 'cloud.epubcheck.result-in-plain-language',
