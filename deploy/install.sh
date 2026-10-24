@@ -17,7 +17,8 @@
 #     for Housekeeping's promotion gate
 #   • builds and starts the stack (db + app + Caddy); migrations run on boot
 #   • unless INSTALL_TOOLS=0: downloads EPUBCheck and builds the tools
-#     overlay image (JRE + Ghostscript + headless Chromium + ICC profiles)
+#     overlay image (JRE + Ghostscript + ICC profiles) plus the isolated
+#     renderer service (headless Chromium in its own locked-down container)
 #     so EPUBCheck and PDF/X jobs run for real; if the tools step fails,
 #     the deploy still completes and the jobs honestly report "not configured"
 #   • verifies the app answers /api/health from inside the stack and
@@ -153,7 +154,7 @@ ${COMPOSE} -f docker-compose.yml build app
 COMPOSE_FILES=(-f docker-compose.yml)
 TOOLS_STATE="skipped (INSTALL_TOOLS=0) — jobs will report \"not configured\""
 if [ "${INSTALL_TOOLS}" = "1" ]; then
-  log "Job tools (EPUBCheck ${EPUBCHECK_VERSION} + Ghostscript + Chromium for PDF rendition)"
+  log "Job tools (EPUBCheck ${EPUBCHECK_VERSION} + Ghostscript + isolated Chromium renderer for PDF rendition)"
   TOOLS_OK=1
   (
     set -e
@@ -172,7 +173,7 @@ if [ "${INSTALL_TOOLS}" = "1" ]; then
   ) || TOOLS_OK=0
   if [ "${TOOLS_OK}" = "1" ]; then
     COMPOSE_FILES+=(-f deploy/docker-compose.tools.yml)
-    TOOLS_STATE="enabled — app image rebuilt with JRE + Ghostscript + Chromium + EPUBCheck (PDFX ICC auto-pointed at a FOGRA profile when found)"
+    TOOLS_STATE="enabled — app image rebuilt with JRE + Ghostscript + EPUBCheck (PDFX ICC auto-pointed at a FOGRA profile when found); print-html renders in the isolated renderer service"
     note "tools overlay will be used"
   else
     TOOLS_STATE="FAILED to prepare — deploy continues; jobs will report \"not configured\" until fixed"

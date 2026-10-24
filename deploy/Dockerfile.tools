@@ -21,6 +21,9 @@ RUN apt-get update \
 # icc-profiles-free package shipped one (FOGRA is the common case).
 # If none is found the placeholder path stays, and PDF/X jobs fail with
 # Ghostscript's own error in their result — honest, never a fake pass.
+# (Observed 2026-10-24 on node:24-slim / Debian bookworm: the package ships
+# FOGRA28L..FOGRA40L only as .ti3 characterisation data, no .icc, so this
+# search finds nothing there — supply a real profile per README step 5.)
 RUN p="$(find /usr/share/color/icc -iname '*fogra*.icc' 2>/dev/null | head -n 1)"; \
     if [ -n "$p" ]; then \
       sed -i "s|^/BeukICCPath .*|/BeukICCPath ($p) def|" /app/tools/PDFX_def.ps; \

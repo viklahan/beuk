@@ -121,15 +121,32 @@ process group and all, and fails with the timeout stated). On boot,
 jobs a dead process left `running` are failed honestly and `queued`
 ones are picked up again.
 
-- **EPUBCheck** runs as `java -jar $EPUBCHECK_JAR <file> --json <report>`
+Admission is capped so one account can't flood that single worker:
+a user may hold at most `JOB_MAX_ACTIVE_PER_USER` jobs (default 2)
+queued or running at once — the next create answers **429** with the
+reason — and the whole server at most `JOB_MAX_QUEUED` (default 20) —
+the next answers **503**. Refused requests create no job. The counts
+are taken under a Postgres advisory lock, so simultaneous requests
+can't both slip past a cap. These caps apply to every job kind (they
+share the one worker), EPUBCheck and PDF/X alike.
+
+- **EPUBCheck** runs as `java -Xmx$JAVA_MAX_HEAP -jar $EPUBCHECK_JAR <file> --json <report>`
+  (`JAVA_MAX_HEAP` defaults to `512m`; only `<digits>[k|m|g]` is
+  accepted, anything else falls back to the default, so the setting
+  can't smuggle in other JVM flags). A book that needs more heap fails
+  with the JVM's OutOfMemoryError in its result instead of starving
+  the box. 512m is an operational default, not a measured EPUBCheck
+  requirement — raise it if large books hit it.
   and the JSON report is parsed into counts (fatal / error / warning /
   info / usage) plus the message list (code, severity, message,
   location) stored on the job. A book WITH findings is a `done` job
   whose result says `passed: false` — the job succeeded, the book
   didn't, and the result never blurs the two.
-- **PDF/X** runs Ghostscript with the PDF/X-1a recipe in
-  `src/jobs/tools.ts` (`-dPDFX`, prepress settings, everything
-  converted to DeviceCMYK) fed the definition file
+- **PDF/X** first renders the print-html interior to PDF in the
+  isolated **renderer** service (below), then runs Ghostscript with
+  the PDF/X-1a recipe in `src/jobs/tools.ts` (`-dSAFER`, `-dPDFX`,
+  prepress settings, everything converted to DeviceCMYK) fed the
+  definition file
   `tools/PDFX_def.ps`, which declares the `GTS_PDFX` OutputIntent and
   embeds the CMYK ICC profile it points at. On success the converted
   PDF is stored back into the user's archive as a new export
@@ -145,23 +162,84 @@ No pass is ever fabricated, no result is ever invented; a tool that
 runs is believed exactly as far as its own output (Ghostscript must
 exit 0 AND leave a non-empty file).
 
+### The renderer sandbox (print-html → PDF)
+
+A print interior is **user-supplied HTML**, so the browser that
+prints it never runs in the app container (which holds
+`DATABASE_URL`, the Stripe keys, and the export/backup volumes, and
+can reach the database). It runs in its own service, `renderer`
+(`deploy/renderer/`: `node:24-slim` + Debian's `chromium` +
+`puppeteer-core`, nothing else), wired in by the tools overlay. The
+app POSTs the HTML to `RENDERER_URL` (`http://renderer:3100/render`)
+and gets the PDF back. Container fences (`deploy/docker-compose.tools.yml`):
+
+- its only network is `render`, declared `internal: true` and shared
+  with the app alone — no route off the host, and the database is not
+  on it;
+- no volumes; read-only root filesystem with a 512 MB tmpfs `/tmp`;
+- `cap_drop: [ALL]`, `no-new-privileges`, runs as `node`;
+- `mem_limit` 1536m, `cpus` 1.5, `pids_limit` 256;
+- no secrets in its environment.
+
+In-browser fences (`deploy/renderer/server.mjs`): every request the
+page makes is intercepted and aborted except the one navigation that
+delivers the document itself (`data:` URIs — the interior's images
+and uploaded fonts — never touch the network); the document is served
+with a CSP that forbids scripts, frames, objects and connections;
+JavaScript is disabled (the studio's `buildPrintHtml` emits CSS and
+markup only); Chromium's resolver maps every host to NOTFOUND and all
+traffic goes to a dead proxy; each job gets a fresh browser and
+profile in tmpfs, a hard timeout (`RENDER_TIMEOUT_MS`, default 90 s,
+then SIGKILL), an input cap (`RENDER_MAX_BYTES`, defaults to
+`EXPORT_MAX_BYTES`), and one render at a time. Chromium runs with
+`--no-sandbox` because its own sandbox needs user namespaces or a
+setuid helper, which Docker's default seccomp profile plus
+`cap_drop: ALL` forbid — the container is the sandbox boundary. The
+print parameters match the old in-app `--print-to-pdf` call
+(`printBackground` and `preferCSSPageSize` on, tagged PDF, no
+header/footer).
+
+One residual, stated plainly: the renderer **container** can open a
+TCP connection to `app:3000` on the shared internal network (the same
+public API Caddy already serves). The browser inside it cannot — the
+interception, resolver and proxy fences stop it, and the proof below
+checks exactly that.
+
+`HTML_PDF_BIN` (Chromium inside the app container) is **retired**: if
+it is still set and `RENDERER_URL` is not, pdfx jobs fail as "not
+configured" and the message says `HTML_PDF_BIN` is ignored and why.
+
+**Prove it:** `./deploy/renderer-attack.sh` builds an isolated copy of
+the tools stack (own compose project and image names, no Caddy, no
+host ports), plants canary secrets in the app's environment and
+canary files on its volumes, submits `deploy/renderer-attack/attack-print.html`
+(iframes/objects/images/CSS imports/scripts aimed at
+`file:///proc/1/environ`, `/data/exports`, `/data/backups`,
+`http://db:5432`, `http://app:3000/api/health`, the renderer's own
+port, cloud metadata and `https://example.com`) plus a legitimate
+interior through the real API, extracts the PDFs' text with
+`pdftotext`, and fails on any leak. It also checks the renderer
+container's env, mounts, capabilities and network reach, and renders
+the same hostile page the old way as a control, to show the fixture
+does catch a leak when one is possible. `STUDIO_HTML=<file>` also
+renders a real studio interior; `KEEP=1` leaves the stack up.
+
 **Production setup (on the Hetzner box, once):**
 
-1. Install a JRE, Ghostscript, and a headless Chromium, e.g.
-   `apt-get install -y default-jre-headless ghostscript chromium`
-   (or extend the app image the same way — the tools overlay does
-   exactly this). The stock Compose image deliberately does not
-   carry them yet.
+1. Use the tools overlay (`deploy/install.sh` does): it extends the
+   app image with a JRE, Ghostscript and ICC profiles, and builds and
+   starts the isolated `renderer` service. The stock Compose image
+   deliberately does not carry them.
 2. Download the EPUBCheck release zip from
    <https://github.com/w3c/epubcheck/releases>, unpack it somewhere
    the app can read, and set `EPUBCHECK_JAR` to its `epubcheck.jar`
    (mount the directory into the app container if it lives on the
    host; `JAVA_BIN` only if `java` isn't on the PATH).
 3. Set `GS_BIN=/usr/bin/gs` in `.env`.
-4. Set `HTML_PDF_BIN=/usr/bin/chromium` in `.env` — the
-   headless-Chromium-compatible binary the pdfx job uses to render a
-   print-html interior to PDF before Ghostscript converts it. (The
-   tools overlay sets this for you.)
+4. `RENDERER_URL` points the pdfx job at the renderer service (the
+   tools overlay sets `http://renderer:3100/render` for you). Do not
+   install Chromium into the app image instead — see the renderer
+   sandbox above.
 5. **ICC profile (required for real PDF/X-1a):** install a CMYK
    press profile (e.g. the `icc-profiles-free` package) and edit the
    `BeukICCPath` line in `tools/PDFX_def.ps` to point at it. With
@@ -171,18 +249,28 @@ exit 0 AND leave a non-empty file).
    not-configured failure above; the moment they are, the same jobs
    run for real with no code change.
 
-Two residual limits, stated plainly. First, **the real binaries have
-never executed in the build sandbox** (no JRE/Ghostscript/Chromium
-there): the pipeline around them — gating, queueing, the
-HTML → PDF rendition, timeouts, report parsing, archive storage —
-is fully tested with stub tools wired through the same
-`JAVA_BIN`/`GS_BIN`/`HTML_PDF_BIN` settings, and the Hetzner box is
-where EPUBCheck, the renderer, and Ghostscript first run for real.
-Second, **Ghostscript converts PDF input**: a pdfx job first renders
-the archived print-html interior to PDF with the configured
-renderer, then converts that PDF to PDF/X-1a. If the renderer is
-not configured, the job fails honestly as "not configured" before
+Residual limits, stated plainly. First, the unit tests run the
+pipeline around the tools — gating, queueing, admission caps, the
+HTTP rendition call, timeouts, report parsing, archive storage —
+with stubs wired through the same `JAVA_BIN`/`GS_BIN`/`RENDERER_URL`
+settings. The real binaries run in `deploy/renderer-attack.sh`
+(EPUBCheck 5.2.1 under `-Xmx`, the renderer's Chromium, Ghostscript
+10.00.0). Second, **Ghostscript converts PDF input**: a pdfx job
+first renders the archived print-html interior to PDF in the
+renderer, then converts that PDF to PDF/X-1a. If the renderer is not
+configured, the job fails honestly as "not configured" before
 Ghostscript ever runs — raw HTML is never fed to Ghostscript.
+Third, **the ICC profile**: Ghostscript (≥ 9.50) runs SAFER by
+default, so `PDFX_def.ps` may read its ICC profile only when that file
+is explicitly permitted — the job now passes `--permit-file-read=`
+for exactly the `BeukICCPath` file (without it every pdfx job failed
+with `/invalidfileaccess`, even with a real profile). And on Debian
+bookworm the `icc-profiles-free` package ships its FOGRA data as
+`.ti3` characterisation files, not `.icc` profiles, so the overlay's
+`*fogra*.icc` search finds nothing and `BeukICCPath` keeps its
+placeholder: until a real CMYK press profile matching the declared
+condition (CGATS TR 001) is supplied (step 5), pdfx jobs fail with
+Ghostscript's own error — honestly, never a fake pass.
 
 ## Billing hooks (M2)
 
