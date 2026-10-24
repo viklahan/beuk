@@ -19,7 +19,9 @@ param(
   [int]$Port = 8090
 )
 
-$ErrorActionPreference = 'Stop'
+# Not 'Stop': docker writes progress to stderr, which Windows PowerShell
+# would turn into a terminating error. Native steps check $LASTEXITCODE.
+$ErrorActionPreference = 'Continue'
 $root = $PSScriptRoot
 Set-Location $root
 $project = 'beuk-saas'
@@ -74,10 +76,13 @@ foreach ($p in $strays) {
 }
 
 # 2a. Other containers publishing the port (not this compose project).
-$holders = docker ps --filter "publish=$Port" --format '{{.ID}}|{{.Names}}|{{.Label "com.docker.compose.project"}}'
-foreach ($line in $holders) {
-  if (-not $line) { continue }
-  $id, $name, $proj = $line -split '\|'
+# (Labels are read via inspect: PowerShell 5.1 mangles quotes inside a
+# native --format template argument.)
+$holders = docker ps -q --filter "publish=$Port"
+foreach ($id in $holders) {
+  if (-not $id) { continue }
+  $name = docker inspect -f '{{.Name}}' $id
+  $proj = (docker inspect -f '{{json .Config.Labels}}' $id | ConvertFrom-Json).'com.docker.compose.project'
   if ($proj -eq $project) { continue }
   Note "stopping container $name (project '$proj') holding port $Port"
   docker stop $id | Out-Null
