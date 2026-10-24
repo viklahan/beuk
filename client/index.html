@@ -18177,9 +18177,33 @@
         cloud.pendingSyncs++;
         setSyncStatus("local");
       }
-      async function cloudSaveNow() {
+      /* ==== BEUK:local ==== — shelf saves run one at a time. Two
+         overlapping PUTs would both carry the same If-Match (the
+         revision only moves when the first answer arrives), so the
+         second would come back 409 and raise a conflict that never
+         happened. A save asked for while one is in flight is
+         coalesced into a single follow-up that runs after the answer,
+         on the new revision. (A POST race would also have put two
+         copies of the book on the shelf.) */
+      var cloudSaveInFlight = null, cloudSaveFollowUp = null; /* var: callable before this line runs */
+      function cloudSaveNow() {
+        if (!cloudSaveInFlight) {
+          cloudSaveInFlight = cloudSaveRun().finally(() => { cloudSaveInFlight = null; });
+          return cloudSaveInFlight;
+        }
+        if (!cloudSaveFollowUp) {
+          cloudSaveFollowUp = cloudSaveInFlight.catch(() => {}).then(() => { cloudSaveFollowUp = null; return cloudSaveNow(); });
+        }
+        return cloudSaveFollowUp;
+      }
+      /* ==== /BEUK:local ==== */
+      async function cloudSaveRun() {
         if (!cloud.user || !cloud.available || !cloudDirty) return;
         if (cloud.linkState === "declined") return;
+        /* BEUK:local — while the conflict notice is open the writer is
+           choosing; a background save would only re-send the stale
+           revision. The choice itself saves (resolveConflict). */
+        if (cloud.conflict) return;
         setSyncStatus("saving");
         const doc = serializeBook();
         const sentAt = Date.now(); /* BEUK:local — edits after this stay dirty */

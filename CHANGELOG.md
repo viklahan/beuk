@@ -15,6 +15,8 @@ to make well.
   laptop and a desktop: if the shelf copy changed elsewhere, Beuk asks
   — keep mine, use the shelf copy, or keep both — instead of letting
   one device quietly replace the other.
+  On a slow connection your own saves queue one behind the other, so
+  the notice only appears when the book really did change elsewhere.
 - **Works offline, including Word import.** The studio's own libraries
   now ship with it, so it opens and imports .docx without a connection.
 

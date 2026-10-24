@@ -96,6 +96,11 @@ so two devices racing can never both land. A stale base gets 409 with the
 current shelf copy, which the studio routes into its conflict notice
 (Keep mine / Use the shelf copy / Keep both) — never a silent overwrite.
 `If-Match: *` (RFC 9110) skips the check; the studio never sends it.
+The studio sends one shelf save at a time per tab: a save that comes due
+while an upload is still in flight waits and runs once afterwards, on the
+revision that upload returned — so a slow uplink never trips a 409 against
+the device's own previous save. (Two tabs of the same book on one device
+are not coordinated and can still meet as a conflict.)
 Tests: `tests/manuscripts.test.ts`.
 
 ## Local-first saving (studio)

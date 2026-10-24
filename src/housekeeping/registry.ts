@@ -828,6 +828,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The server half runs in tests/manuscripts.test.ts; routing the 409 into the conflict notice is client UI (async network path, exercised by the studio browser run, not the synchronous in-studio checks).',
   },
   {
+    id: 'local.shelf-save.serialized',
+    title: 'Shelf saves from one device never overlap: a save asked for mid-upload runs once afterwards, on the new revision (no false conflict notice, no duplicate shelf copy)',
+    kind: 'client-only',
+    reason: 'Save sequencing is client behavior over an async network path; exercised by the studio browser run (slow-uplink race proof), not the synchronous in-studio checks.',
+  },
+  {
     id: 'cloud.epubcheck.result-in-plain-language',
     title: 'EPUBCheck job results render in plain language in the Export dialog',
     kind: 'client-only',
