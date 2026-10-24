@@ -5,3 +5,6 @@ dist/
 tools-bin/
 
 docker-compose.override.yml
+
+# per-agent scratch (Playwright/attack scratch files)
+.scratch/

@@ -2,11 +2,25 @@
 # base file) when INSTALL_TOOLS=1:
 #   docker compose -f docker-compose.yml -f deploy/docker-compose.tools.yml up -d
 # It rebuilds the app service from deploy/Dockerfile.tools (the stock app
-# image + JRE + Ghostscript + headless Chromium + the EPUBCheck release
-# from ../tools-bin/) and points the job runner at the in-container tool
-# paths. Without this overlay the stack runs exactly as the base file
-# describes and EPUBCheck / PDF/X jobs complete as honest "not configured"
-# failures.
+# image + JRE + Ghostscript + the EPUBCheck release from ../tools-bin/)
+# and adds the isolated "renderer" service (headless Chromium, built from
+# deploy/renderer/) that turns a print-html interior into a PDF for the
+# pdfx job. Without this overlay the stack runs exactly as the base file
+# describes and EPUBCheck / PDF/X jobs complete as honest "not
+# configured" failures.
+#
+# The renderer runs USER-SUPPLIED HTML, so it gets nothing worth
+# stealing and nowhere to send it:
+#   - its only network is "render", internal: true (no route out of the
+#     host, no DNS for the outside world) and shared with the app alone
+#     — the database is not on it;
+#   - no volumes; read-only root filesystem; a size-capped tmpfs /tmp;
+#   - cap_drop ALL, no-new-privileges, runs as the image's `node` user;
+#   - memory / CPU / process-count limits;
+#   - no secrets in its environment (it never sees DATABASE_URL, Stripe
+#     keys, or anything else the app holds).
+# Docker Compose service keys used here: https://docs.docker.com/reference/compose-file/services/
+# internal networks: https://docs.docker.com/reference/compose-file/networks/#internal
 services:
   app:
     build:
@@ -19,4 +33,40 @@ services:
       EPUBCHECK_JAR: /opt/epubcheck/epubcheck.jar
       JAVA_BIN: /usr/bin/java
       GS_BIN: /usr/bin/gs
-      HTML_PDF_BIN: /usr/bin/chromium
+      # The pdfx job's HTML → PDF step: POST the print interior here.
+      RENDERER_URL: http://renderer:3100/render
+    networks:
+      - default
+      - render
+    depends_on:
+      renderer:
+        condition: service_healthy
+
+  renderer:
+    build:
+      context: deploy/renderer
+    image: beuk-renderer:latest
+    restart: unless-stopped
+    environment:
+      RENDER_PORT: "3100"
+      RENDER_MAX_BYTES: ${EXPORT_MAX_BYTES:-52428800}
+      RENDER_TIMEOUT_MS: ${RENDER_TIMEOUT_MS:-90000}
+    networks:
+      - render
+    expose:
+      - "3100"
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1536m
+    memswap_limit: 1536m
+    cpus: 1.5
+    pids_limit: 256
+
+networks:
+  render:
+    internal: true

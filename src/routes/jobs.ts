@@ -10,6 +10,9 @@ import { JobRunner, type JobKind, type JobRow } from '../jobs/runner.js';
  * export) is a 404, never a 403. Creating a job never blocks on tool
  * configuration — the job is accepted, runs, and if the tool is not
  * configured on this server it completes as FAILED saying so.
+ * Admission is capped (per user and server-wide) so one account can't
+ * flood the single-worker queue: over a cap the answer is 429 / 503
+ * with the reason, and no job is created.
  */
 
 function view(row: JobRow) {
@@ -25,6 +28,9 @@ function view(row: JobRow) {
     finishedAt: row.finished_at,
   };
 }
+
+/** Arbitrary constant key for the job-admission advisory lock. */
+const JOB_ADMISSION_LOCK = 0x6265756b; // "beuk"
 
 const JOB_COLUMNS =
   'id, user_id, kind, source_export_id, status, result, artifact_export_id, created_at, started_at, finished_at';
@@ -62,12 +68,45 @@ export function jobRoutes(db: Db, config: Config): { router: Router; runner: Job
         jobId: null,
       };
     }
-    const created = await db.query<JobRow>(
-      `insert into jobs (user_id, kind, source_export_id) values ($1, $2, $3)
-       returning ${JOB_COLUMNS}`,
-      [reqUserId, kind, source.id],
-    );
-    return { status: 201 as const, payload: { job: view(created.rows[0]) }, jobId: created.rows[0].id };
+    // Admission caps. The runner drains one job at a time, so every job
+    // waiting or running holds a slot of the box: one user may hold at
+    // most jobMaxActivePerUser of them, the whole server jobMaxQueued.
+    // Count-then-insert runs under one transaction-scoped advisory lock
+    // so two simultaneous requests can't both slip past a cap.
+    // https://www.postgresql.org/docs/16/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
+    return db.tx(async (tx) => {
+      await tx.query('select pg_advisory_xact_lock($1)', [JOB_ADMISSION_LOCK]);
+      const active = await tx.query<{ mine: number; total: number }>(
+        `select count(*) filter (where user_id = $1)::int as mine, count(*)::int as total
+         from jobs where status in ('queued', 'running')`,
+        [reqUserId],
+      );
+      const { mine, total } = active.rows[0];
+      if (mine >= config.jobMaxActivePerUser) {
+        return {
+          status: 429 as const,
+          payload: {
+            error:
+              `you already have ${mine} job${mine === 1 ? '' : 's'} waiting or running ` +
+              `(the limit is ${config.jobMaxActivePerUser}); start this one when one of them finishes`,
+          },
+          jobId: null,
+        };
+      }
+      if (total >= config.jobMaxQueued) {
+        return {
+          status: 503 as const,
+          payload: { error: 'the server job queue is full right now; please try again in a few minutes' },
+          jobId: null,
+        };
+      }
+      const created = await tx.query<JobRow>(
+        `insert into jobs (user_id, kind, source_export_id) values ($1, $2, $3)
+         returning ${JOB_COLUMNS}`,
+        [reqUserId, kind, source.id],
+      );
+      return { status: 201 as const, payload: { job: view(created.rows[0]) }, jobId: created.rows[0].id };
+    });
   }
 
   for (const kind of ['epubcheck', 'pdfx'] as const) {
