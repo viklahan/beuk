@@ -135,6 +135,15 @@ export function testConfig(overrides?: Partial<Config>): Config {
     // the honest default); stock tests pass a key + stub base URL in.
     pexelsApiKey: null,
     pexelsApiBase: 'https://api.pexels.com/v1',
+    // Hardening: tests talk to the app directly; one trusted hop lets a
+    // test pose as distinct clients via X-Forwarded-For. The auth rate
+    // limit is generous by default so suites that register many users
+    // never trip it; tests/hardening.test.ts sets a tight one.
+    trustProxyHops: 1,
+    authRateBurst: 10_000,
+    authRateRefillMs: 60_000,
+    shutdownGraceMs: 20_000,
+    sessionPurgeIntervalMs: 3_600_000,
     ...overrides,
   };
 }

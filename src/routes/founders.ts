@@ -27,6 +27,13 @@ export function foundersRoutes(db: Db): Router {
   // Per-instance attempt log: ip → timestamps inside the window.
   const attempts = new Map<string, number[]>();
 
+  /** Whole seconds until the oldest attempt in the window ages out. */
+  function retryAfterSec(ip: string): number {
+    const oldest = (attempts.get(ip) ?? [])[0];
+    if (oldest === undefined) return 1;
+    return Math.max(1, Math.ceil((WINDOW_MS - (Date.now() - oldest)) / 1000));
+  }
+
   function throttled(ip: string): boolean {
     const nowMs = Date.now();
     const recent = (attempts.get(ip) ?? []).filter((t) => nowMs - t < WINDOW_MS);
@@ -43,7 +50,10 @@ export function foundersRoutes(db: Db): Router {
 
   router.post('/apply', async (req, res, next) => {
     try {
-      if (throttled(req.ip ?? 'unknown')) {
+      // req.ip is the real client: app.ts trusts exactly the Caddy hop.
+      const ip = req.ip ?? 'unknown';
+      if (throttled(ip)) {
+        res.setHeader('Retry-After', String(retryAfterSec(ip)));
         return res.status(429).json({
           error: 'too many applications from this connection — please wait a little and try again',
         });

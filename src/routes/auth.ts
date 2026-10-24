@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import { hashPassword, verifyPassword } from '../password.js';
+import { dummyPasswordHash, hashPassword, verifyAgainstDummy, verifyPassword } from '../password.js';
+import { rateLimit, TokenBucketLimiter } from '../ratelimit.js';
 import {
   clearSessionCookie,
   createSession,
@@ -19,10 +20,22 @@ interface UserRow {
   password_hash: string;
 }
 
+/** Postgres unique_violation. */
+const UNIQUE_VIOLATION = '23505';
+
 export function authRoutes(db: Db, config: Config): Router {
   const router = Router();
+  // Warm the dummy hash so the first unknown-email login isn't the one
+  // request that also pays for computing it.
+  void dummyPasswordHash();
+  // Per-client-IP buckets (req.ip is the real client: see `trust proxy`
+  // in app.ts). Separate buckets so sign-ups can't starve sign-ins.
+  const bucket = () =>
+    new TokenBucketLimiter({ burst: config.authRateBurst, refillMs: config.authRateRefillMs });
+  const loginLimit = rateLimit(bucket(), 'too many sign-in attempts — please wait and try again');
+  const registerLimit = rateLimit(bucket(), 'too many sign-up attempts — please wait and try again');
 
-  router.post('/register', async (req, res, next) => {
+  router.post('/register', registerLimit, async (req, res, next) => {
     try {
       const email = String(req.body?.email ?? '').trim().toLowerCase();
       const password = String(req.body?.password ?? '');
@@ -34,10 +47,21 @@ export function authRoutes(db: Db, config: Config): Router {
       if (existing.rows.length) return res.status(409).json({ error: 'email already registered' });
 
       const passwordHash = await hashPassword(password);
-      const created = await db.query<UserRow>(
-        'insert into users (email, password_hash) values ($1, $2) returning id, email',
-        [email, passwordHash],
-      );
+      let created;
+      try {
+        created = await db.query<UserRow>(
+          'insert into users (email, password_hash) values ($1, $2) returning id, email',
+          [email, passwordHash],
+        );
+      } catch (err) {
+        // Two concurrent sign-ups for one email both pass the check
+        // above; the unique index decides, and the loser gets the same
+        // 409 as a sequential duplicate instead of a 500.
+        if ((err as { code?: string })?.code === UNIQUE_VIOLATION) {
+          return res.status(409).json({ error: 'email already registered' });
+        }
+        throw err;
+      }
       const user = created.rows[0];
       await initStreakState(db, user.id);
       const session = await createSession(db, user.id, config.sessionTtlDays);
@@ -48,7 +72,7 @@ export function authRoutes(db: Db, config: Config): Router {
     }
   });
 
-  router.post('/login', async (req, res, next) => {
+  router.post('/login', loginLimit, async (req, res, next) => {
     try {
       const email = String(req.body?.email ?? '').trim().toLowerCase();
       const password = String(req.body?.password ?? '');
@@ -57,8 +81,12 @@ export function authRoutes(db: Db, config: Config): Router {
         [email],
       );
       const user = found.rows[0];
-      // Same response for unknown email and wrong password.
-      if (!user || !(await verifyPassword(user.password_hash, password))) {
+      // Same response — and the same argon2 work — for unknown email
+      // and wrong password (no timing oracle on which emails exist).
+      const ok = user
+        ? await verifyPassword(user.password_hash, password)
+        : await verifyAgainstDummy(password);
+      if (!user || !ok) {
         return res.status(401).json({ error: 'invalid email or password' });
       }
       const session = await createSession(db, user.id, config.sessionTtlDays);

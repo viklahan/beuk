@@ -5,3 +5,4 @@ dist/
 tools-bin/
 
 docker-compose.override.yml
+.scratch/
