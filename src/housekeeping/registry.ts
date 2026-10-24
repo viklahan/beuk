@@ -1191,6 +1191,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
   },
   {
+    id: 'import.report.images-accounted',
+    title:
+      'Import report (Word): every picture is accounted for — images inside headings, list items and quotes are imported, and any the import cannot hold are listed as left out',
+    kind: 'client-only',
+    reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
+  },
+  {
     id: 'import.report.persists-with-book',
     title: 'Import report rides with the book until dismissed; History snapshots do not carry it',
     kind: 'client-only',

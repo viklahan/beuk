@@ -266,14 +266,14 @@ catalogue to an admin):
 | Evidence | `GET /audit` — recent audit rows |
 | Founders' Shelf | `GET /founders` — the M4 seed-list applications (read-only, audited) |
 
-**Self-checks registry:** 118 cases ported from the coverage registry.
+**Self-checks registry:** 119 cases ported from the coverage registry.
 **31 execute server-side** — infra (DB reachable, migrations current,
 export volume writable), data invariants (no orphaned export
 files/rows, archive SHA-256 re-verification, streak ledger
 consistency), and package assertions over fixture EPUBs (cover /
 preset / landmark / alt-text style checks, box-set and DOCX structure,
 and the validator cases run against deliberately damaged packages).
-**87 are registered as `client-only`** with a one-line reason each
+**88 are registered as `client-only`** with a one-line reason each
 (theme application, print CSS, word counts — inherently client-UI
 state): reported in every run, never silently dropped, never faked
 as passing. Runs are stored in `housekeeping_check_runs`.
@@ -466,7 +466,9 @@ markers such as `* * *`, now read as breaks), smartened quotes/dashes/
 ellipses per section, footnotes (Word notes are linked as Beuk `[^n]`
 notes in the section that cites them; unmatched ones are reported as
 orphaned), JPG/PNG images (imported into the image library, with their
-alt-text status), the language detected and any book details taken from
+alt-text status — including pictures inside headings, list items and
+quotes; every picture in the file is counted, and any the import cannot
+hold, such as one inside a footnote, is listed as left out), the language detected and any book details taken from
 the manuscript. What the import **drops** is listed first and
 prominently: tables, unsupported image formats, Word comments, tracked
 changes (imported as if accepted), text boxes (text kept inline), page
