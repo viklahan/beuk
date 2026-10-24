@@ -31,6 +31,9 @@ COPY tools ./tools
 # Self-check jobs.pdfx.rendition.overlay-carries-chromium reads these two
 # from the deploy tree; without them the run fails and promotion is blocked.
 COPY deploy/Dockerfile.tools deploy/docker-compose.tools.yml ./deploy/
+# Self-checks infra.deploy.security-headers / infra.deploy.signals-healthchecks
+# read these two from the deploy tree (no secrets: values come from .env).
+COPY Caddyfile docker-compose.yml ./
 # The exportdata/backupdata named volumes mount here. A fresh volume takes
 # its ownership from the image's mountpoint, so these must exist and be
 # owned by `node` — otherwise Docker creates them root-owned and every

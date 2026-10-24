@@ -5,6 +5,44 @@
 {$DOMAIN} {
 	encode gzip
 
+	# === SECURITY HEADERS (every response: studio, warmth pages, API) ===
+	header {
+		# MIME sniffing off: a stored export is never re-interpreted as HTML/JS.
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Clickjacking: only this origin may frame the studio (legacy
+		# header + the CSP frame-ancestors directive below).
+		X-Frame-Options "SAMEORIGIN"
+		# ENFORCED CSP — only directives the studio provably never needs to
+		# relax: no framing by other origins, no <object>/<embed> plugins,
+		# no <base> pointing elsewhere.
+		Content-Security-Policy "frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+		# REPORT-ONLY CSP — the full source allow-list. Shipped report-only
+		# on purpose: the studio legitimately needs inline scripts/styles
+		# (one self-contained index.html), CDN scripts (cdnjs: JSZip,
+		# mammoth; jsdelivr: lucide, jsPDF), Google Fonts, blob:/data:
+		# images, and cover-photo fetches whose image hosts are whatever
+		# the stock search returns (Pexels, Openverse → arbitrary https
+		# hosts). Enforcing it would risk breaking a studio path nobody
+		# exercised; violations show as "[Report Only]" console messages
+		# instead. See README "Security headers".
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https: data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; manifest-src 'self'; frame-src 'self' blob: data:; form-action 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+	}
+	# HSTS only over real TLS on a real domain. Browsers ignore it over
+	# plain HTTP anyway (RFC 6797 §8.1: "If an HTTP response is received
+	# over insecure transport, the UA MUST ignore any present STS header
+	# field(s)" — https://www.rfc-editor.org/rfc/rfc6797#section-8.1),
+	# and it is never sent for localhost / 127.0.0.1 so local mode
+	# (http://localhost:8090, or https://localhost with Caddy's internal
+	# CA) never pins a dev box to HTTPS. No includeSubDomains/preload:
+	# other subdomains are not this deploy's to promise.
+	# Matcher syntax: https://caddyserver.com/docs/caddyfile/matchers
+	@hsts {
+		protocol https
+		not host localhost 127.0.0.1
+	}
+	header @hsts Strict-Transport-Security "max-age=31536000"
+
 	# API → Node app
 	handle /api/* {
 		reverse_proxy app:3000
