@@ -78,8 +78,15 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(BEUK_CACHE).then((cache) => cache.put("./index.html", copy)).catch(() => {});
+          /* ==== BEUK:auth ==== only the studio shell itself may refresh
+             the cached shell — a /reset or /help page must never be
+             stored as index.html (it would replace the offline studio). */
+          const shellDir = new URL("./", self.location.href).pathname;
+          if (res.ok && (url.pathname === shellDir || url.pathname === shellDir + "index.html")) {
+            const copy = res.clone();
+            caches.open(BEUK_CACHE).then((cache) => cache.put("./index.html", copy)).catch(() => {});
+          }
+          /* ==== /BEUK:auth ==== */
           return res;
         })
         .catch(() => caches.match("./index.html", { ignoreSearch: true }))
