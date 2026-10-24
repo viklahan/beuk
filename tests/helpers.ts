@@ -6,6 +6,8 @@ import path from 'node:path';
 import { buildApp } from '../src/app.js';
 import type { Config } from '../src/config.js';
 import { runMigrations, type Db, type QueryResult } from '../src/db.js';
+import type { Mailer } from '../src/mailer.js';
+import type { AccountLimits, BackgroundTasks } from '../src/routes/account.js';
 import type {
   BootCheck,
   HousekeepingDeps,
@@ -92,6 +94,8 @@ export interface TestServer {
   base: string;
   config: Config;
   close: () => Promise<void>;
+  /** P0 #5: await the account routes' after-response work (reset mail). */
+  settle: () => Promise<void>;
 }
 
 /** The full test Config (fresh temp dirs per call). */
@@ -135,6 +139,12 @@ export function testConfig(overrides?: Partial<Config>): Config {
     // the honest default); stock tests pass a key + stub base URL in.
     pexelsApiKey: null,
     pexelsApiBase: 'https://api.pexels.com/v1',
+    // Account basics: no SMTP by default (the unconfigured path is the
+    // honest default) and no console logging of reset links in tests.
+    smtpUrl: null,
+    mailFrom: null,
+    mailLogLinks: false,
+    trustProxy: 'loopback, linklocal, uniquelocal',
     ...overrides,
   };
 }
@@ -144,9 +154,10 @@ export async function startTestServer(
   now?: () => Date,
   overrides?: Partial<Config>,
   housekeeping?: HousekeepingDeps,
+  extra?: { mailer?: Mailer; accountLimits?: AccountLimits },
 ): Promise<TestServer> {
   const config = testConfig(overrides);
-  const app = buildApp({ db, config, now, housekeeping });
+  const app = buildApp({ db, config, now, housekeeping, ...extra });
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
   });
@@ -156,6 +167,7 @@ export async function startTestServer(
     base: `http://127.0.0.1:${address.port}`,
     config,
     close: () => new Promise((resolve) => server.close(() => resolve())),
+    settle: () => (app.locals.accountTasks as BackgroundTasks).idle(),
   };
 }
 

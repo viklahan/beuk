@@ -77,6 +77,21 @@ export interface Config {
   /** Stock photos: Pexels API base URL (PEXELS_API_BASE, default
    *  https://api.pexels.com/v1); tests point it at a stub server. */
   pexelsApiBase: string;
+  /** P0 #5 account basics: outgoing mail. SMTP_URL is a nodemailer
+   *  connection URL (smtp://user:pass@host:587 — STARTTLS when the
+   *  server offers it; smtps://…:465 for implicit TLS). MAIL_FROM is
+   *  the From address. Both null until set — while either is missing
+   *  NO email is sent and none is ever reported as sent (see mailer.ts). */
+  smtpUrl: string | null;
+  mailFrom: string | null;
+  /** When mail is not configured, write the would-be message (with its
+   *  reset link) to the server console. MAIL_LOG_LINKS=true|false;
+   *  default: on unless NODE_ENV=production. */
+  mailLogLinks: boolean;
+  /** Express "trust proxy" setting (TRUST_PROXY) so req.ip is the real
+   *  client behind Caddy — the per-IP rate limits depend on it.
+   *  Default: loopback, linklocal, uniquelocal (Compose networks). */
+  trustProxy: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -115,5 +130,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),
     pexelsApiKey: env.PEXELS_API_KEY || null,
     pexelsApiBase: (env.PEXELS_API_BASE ?? 'https://api.pexels.com/v1').replace(/\/$/, ''),
+    smtpUrl: env.SMTP_URL || null,
+    mailFrom: env.MAIL_FROM || null,
+    mailLogLinks: env.MAIL_LOG_LINKS
+      ? env.MAIL_LOG_LINKS.toLowerCase() === 'true' || env.MAIL_LOG_LINKS === '1'
+      : (env.NODE_ENV ?? '').toLowerCase() !== 'production',
+    trustProxy: env.TRUST_PROXY || 'loopback, linklocal, uniquelocal',
   };
 }
