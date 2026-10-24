@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exports &amp; your archive — Beuk Help</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="wordmark" href="/help/">beuk</a>
+      <span class="subbrand">quietshelf.studio</span>
+      <nav class="site-nav">
+        <a href="/help/">Help</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/roadmap">Roadmap</a>
+        <!--BEUK_SUPPORT_NAV-->
+      </nav>
+    </header>
+    <main class="page">
+      <p class="back-link"><a href="/help/">← All guides</a></p>
+      <h1>Exports &amp; your archive</h1>
+      <p class="lede">
+        What you're doing: taking finished books out of Beuk in the shape
+        each destination wants — and knowing where your copies live.
+      </p>
+      <h2>The export shelf</h2>
+      <ul>
+        <li><strong>EPUB</strong> — the book itself, per <a href="/help/platform-presets.html">store preset</a>. Byte-0 mimetype stored uncompressed, EPUB 3 navigation plus an NCX fallback, exactly per the standard.</li>
+        <li><strong>Markdown (.md)</strong> — a clean archive of the manuscript with YAML front matter (title, author, ISBN, language, rights…). Made for Obsidian, Scrivener, Ulysses, or a Git repository — the copy that outlives every app, including this one. Download it or copy it straight from the dialog.</li>
+        <li><strong>Standalone HTML</strong> — the whole typeset book as one self-contained page, styles embedded. Good for sharing a reading copy or archiving exactly what readers saw.</li>
+        <li><strong>Word (.docx)</strong> — for editors and collaborators who live in Word: real heading styles, body text, scene breaks, and your endnotes gathered at the end.</li>
+        <li><strong>Print HTML</strong> — the paginated interior from <a href="/help/print-interiors.html">Print interiors</a>, as a file.</li>
+      </ul>
+      <h2>Look inside before you ship</h2>
+      <p>
+        The <strong>Archive Package Inspector</strong> opens your EPUB and
+        shows its actual contents — the file tree, each file's size, and
+        its text, highlighted — the package exactly as a store will
+        receive it. If the <a href="/help/check-your-book.html">validator</a>
+        ever puzzles you, the answer is usually visible here.
+      </p>
+      <h2>Your cloud archive</h2>
+      <p>
+        Signed in, every export you save is kept in your personal archive
+        on Beuk's servers: the format, the preset, the filename, and a
+        SHA-256 fingerprint of the bytes, so a re-download can be verified
+        as the very same file. The archive is yours alone — another
+        account can't see, download, or delete from it, and deleting a
+        manuscript never deletes its exports. The archive is the permanent
+        copy; the manuscript is the working document.
+      </p>
+      <div class="trouble">
+        <h2>What can go wrong</h2>
+        <p><strong>A download won't start in this window.</strong> Some embedded previews block file downloads. Open Beuk in a full browser tab and export again — the file itself is generated identically either way.</p>
+        <p><strong>My export is bigger than 50 MB.</strong> The archive caps a single export at 50 MB; image-heavy books can exceed it. Reduce image dimensions (2048 px on the long side is plenty for e-readers) and export again.</p>
+      </div>
+    </main>
+    <footer class="site-foot">
+      <!--BEUK_KOFI_JAR-->
+      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+    </footer>
+  </body>
+</html>

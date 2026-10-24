@@ -1,0 +1,111 @@
+# Beuk SaaS — identical shape for local dev and the Hetzner production box.
+#   cp .env.example .env   (fill in real values on the server only)
+#   docker compose up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-beuk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-beuk}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-beuk} -d ${POSTGRES_DB:-beuk}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    # Fixed name: deploy/Dockerfile.tools builds the tools overlay FROM this.
+    image: beuk-app:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-beuk}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-beuk}
+      PORT: "3000"
+      APP_TIMEZONE: ${APP_TIMEZONE:-UTC}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-30}
+      # M2: export archive bytes live on the exportdata volume.
+      EXPORT_DIR: /data/exports
+      EXPORT_MAX_BYTES: ${EXPORT_MAX_BYTES:-52428800}
+      # M2 billing hooks: unset until Vik sets a price + Stripe keys;
+      # while unset the billing endpoints answer 501 "not configured".
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+      APP_BASE_URL: ${APP_BASE_URL:-https://localhost}
+      # M3 Housekeeping: backups on their own volume, the per-deploy build stamp, and the clean-tree
+      # marker the promotion gate requires.
+      BACKUP_DIR: /data/backups
+      BUILD_STAMP: ${BUILD_STAMP:-}
+      GIT_SHA: ${GIT_SHA:-}
+      TREE_CLEAN: ${TREE_CLEAN:-}
+      # M4 warmth: the public support contact (Help page) and the Ko-fi
+      # tip jar. KOFI_URL empty → no jar is rendered anywhere.
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-support@beuk.studio}
+      SUPPORT_NAME: ${SUPPORT_NAME:-}
+      SUPPORT_REPLY_PROMISE: ${SUPPORT_REPLY_PROMISE:-}
+      KOFI_URL: ${KOFI_URL:-}
+      APP_VERSION: ${APP_VERSION:-}
+      # M5 jobs: EPUBCheck + Ghostscript tool paths. Unset → jobs are
+      # accepted and complete as FAILED "not configured" (a result is
+      # never faked). The stock image does NOT contain the JRE,
+      # EPUBCheck or Ghostscript — production installs them and sets
+      # these (see the README "Jobs" section). If the jar lives on
+      # the host, mount it in and point EPUBCHECK_JAR at the mount.
+      EPUBCHECK_JAR: ${EPUBCHECK_JAR:-}
+      JAVA_BIN: ${JAVA_BIN:-java}
+      GS_BIN: ${GS_BIN:-}
+      PDFX_DEF: /app/tools/PDFX_def.ps
+      # HTML_PDF_BIN: headless-Chromium-compatible binary that renders a
+      # print-html interior to PDF before Ghostscript converts it to
+      # PDF/X. Unset → pdfx jobs fail honestly as "not configured".
+      HTML_PDF_BIN: ${HTML_PDF_BIN:-}
+      JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      # Stock photos for the cover maker (Pexels). Key unset → the
+      # stock search endpoint answers 501 "stock photos not
+      # configured"; the key is used server-side only.
+      PEXELS_API_KEY: ${PEXELS_API_KEY:-}
+      PEXELS_API_BASE: ${PEXELS_API_BASE:-https://api.pexels.com/v1}
+    volumes:
+      - exportdata:/data/exports
+      - backupdata:/data/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    # Not published on the host: Caddy is the only public entry point.
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # === STATIC CLIENT MOUNT POINT ===
+      # The built Beuk web client (the wired studio bundle) drops into
+      # ./client on the host and is served by Caddy at the site root.
+      # Note: the warmth pages (/help, /thanks, /changelog, /roadmap)
+      # are NOT served from this mount — Caddy proxies them to the app,
+      # which reads them from its own image (COPY client + CHANGELOG.md
+      # in the Dockerfile).
+      - ./client:/srv/client:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
+  exportdata:
+  backupdata:
+  caddy_data:
+  caddy_config:

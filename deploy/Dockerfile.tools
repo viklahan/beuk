@@ -1,0 +1,23 @@
+# Beuk app image + the M5 job tools (JRE, Ghostscript, CMYK ICC profiles,
+# and a headless Chromium for the HTML → PDF rendition step of pdfx jobs).
+# deploy/install.sh builds this as an overlay ON TOP of the stock app image
+# (which deliberately stays slim). EPUBCheck itself is not baked in here —
+# install.sh downloads the release into ../tools-bin/ and this file copies
+# it to /opt/epubcheck/ (epubcheck.jar + its lib/ alongside).
+ARG BASE_IMAGE=beuk-app:latest
+FROM ${BASE_IMAGE}
+USER root
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      default-jre-headless ghostscript icc-profiles-free chromium \
+ && rm -rf /var/lib/apt/lists/*
+# Point the PDF/X definition at a real CMYK press profile if the
+# icc-profiles-free package shipped one (FOGRA is the common case).
+# If none is found the placeholder path stays, and PDF/X jobs fail with
+# Ghostscript's own error in their result — honest, never a fake pass.
+RUN p="$(find /usr/share/color/icc -iname '*fogra*.icc' 2>/dev/null | head -n 1)"; \
+    if [ -n "$p" ]; then \
+      sed -i "s|^/BeukICCPath .*|/BeukICCPath ($p) def|" /app/tools/PDFX_def.ps; \
+    fi
+COPY tools-bin/ /opt/epubcheck/
+USER node

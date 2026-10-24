@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Export for a store (presets) — Beuk Help</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="wordmark" href="/help/">beuk</a>
+      <span class="subbrand">quietshelf.studio</span>
+      <nav class="site-nav">
+        <a href="/help/">Help</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/roadmap">Roadmap</a>
+        <!--BEUK_SUPPORT_NAV-->
+      </nav>
+    </header>
+    <main class="page">
+      <p class="back-link"><a href="/help/">← All guides</a></p>
+      <h1>Export for a store (presets)</h1>
+      <p class="lede">
+        What you're doing: producing the edition of your EPUB that a
+        particular store most likes to receive. The book inside is the
+        same; the packaging details differ.
+      </p>
+      <h2>Steps</h2>
+      <ol>
+        <li>Open the <strong>Export</strong> dialog and choose a preset: <strong>Generic EPUB</strong>, <strong>Amazon KDP</strong>, <strong>Apple Books</strong>, <strong>Kobo</strong>, <strong>Nook</strong>, or <strong>Draft2Digital</strong>.</li>
+        <li>Read the preset's detail panel — it says exactly what changes for that store, in plain words.</li>
+        <li>Download. The filename carries the preset (<code>your-book-kdp.epub</code>, <code>your-book-apple-books.epub</code>…) so a folder of exports never confuses you.</li>
+        <li>Run the <a href="/help/check-your-book.html">validator</a> on the preset you picked — it checks the package you actually ship, not a generic one.</li>
+      </ol>
+      <h2>What actually differs</h2>
+      <ul>
+        <li><strong>KDP &amp; Nook</strong> add a legacy <em>guide</em> (cover / contents / start pointers) that older navigation relies on.</li>
+        <li><strong>Apple Books</strong> adds Apple's display-options file and rich accessibility metadata.</li>
+        <li><strong>Kobo</strong> adds accessibility metadata in the form Kobo's ingestion expects.</li>
+        <li><strong>Draft2Digital</strong> combines the lot, since it forwards your book to many stores at once.</li>
+        <li><strong>Identifiers stay honest:</strong> if your book has an ISBN, every preset uses it. If it doesn't, presets use the book's own identifier — Beuk never invents an ASIN or a store ID for you.</li>
+      </ul>
+      <div class="trouble">
+        <h2>What can go wrong</h2>
+        <p><strong>I uploaded the KDP file to Apple.</strong> Nothing breaks dramatically — but you'd be carrying another store's packaging. The filename suffix exists precisely to prevent this; trust it.</p>
+        <p><strong>The store still rejected my file.</strong> Copy the exact message into the <a href="/help/epub-error-decoder.html">error decoder</a>. Most rejections decode to something small and fixable.</p>
+      </div>
+    </main>
+    <footer class="site-foot">
+      <!--BEUK_KOFI_JAR-->
+      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Build a box set — Beuk Help</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="wordmark" href="/help/">beuk</a>
+      <span class="subbrand">quietshelf.studio</span>
+      <nav class="site-nav">
+        <a href="/help/">Help</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/roadmap">Roadmap</a>
+        <!--BEUK_SUPPORT_NAV-->
+      </nav>
+    </header>
+    <main class="page">
+      <p class="back-link"><a href="/help/">← All guides</a></p>
+      <h1>Build a box set</h1>
+      <p class="lede">
+        What you're doing: binding several finished books into one
+        omnibus EPUB — a trilogy in a single volume, a series starter
+        bundle, the complete works of one productive winter.
+      </p>
+      <h2>Steps</h2>
+      <ol>
+        <li>Open the <strong>Export</strong> dialog and find the <strong>Box Set</strong> section. The book in the studio is always <strong>Book One</strong>.</li>
+        <li>Use <strong>Add a Book…</strong> to bring in the next volumes as manuscripts (<code>.docx</code>, <code>.md</code>, or <code>.txt</code>). Each is listed with its chapter and word counts; any book can be removed again.</li>
+        <li>Pick a platform preset if the set is headed for a particular store — it applies to the combined package.</li>
+        <li>Choose <strong>Build Box Set .epub</strong>. Beuk assembles one volume: a divider and title page for each book, then its sections in order, book by book.</li>
+      </ol>
+      <h2>How the combined book is put together</h2>
+      <ul>
+        <li>One unified table of contents: each book is a part, its chapters nested beneath it.</li>
+        <li>Every book keeps its own cover, images, and endnotes, rendered under that book's context.</li>
+        <li>Files inside the package are volume-prefixed, so nothing from Book Two can collide with Book One.</li>
+      </ul>
+      <div class="trouble">
+        <h2>What can go wrong</h2>
+        <p><strong>The combined file is enormous.</strong> Box sets add up — three image-rich novels can make a file some stores cap. If a store refuses on size, reduce image dimensions in the later volumes, or split the set.</p>
+        <p><strong>Book Two's chapters show Book One's styling.</strong> By design: a box set is one publication, typeset once, consistently. If a volume truly needs its own look, export it as its own book instead.</p>
+        <p><strong>A book imported with no chapters.</strong> Same cause as in <a href="/help/import-a-manuscript.html">Import a manuscript</a>: chapters are found by heading styles. Fix them in the source file and add the book again.</p>
+      </div>
+    </main>
+    <footer class="site-foot">
+      <!--BEUK_KOFI_JAR-->
+      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+    </footer>
+  </body>
+</html>

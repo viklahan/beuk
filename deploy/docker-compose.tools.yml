@@ -1,0 +1,22 @@
+# Tools overlay — used by deploy/install.sh (and only together with the
+# base file) when INSTALL_TOOLS=1:
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.tools.yml up -d
+# It rebuilds the app service from deploy/Dockerfile.tools (the stock app
+# image + JRE + Ghostscript + headless Chromium + the EPUBCheck release
+# from ../tools-bin/) and points the job runner at the in-container tool
+# paths. Without this overlay the stack runs exactly as the base file
+# describes and EPUBCheck / PDF/X jobs complete as honest "not configured"
+# failures.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.tools
+      args:
+        BASE_IMAGE: beuk-app:latest
+    image: beuk-app-tools:latest
+    environment:
+      EPUBCHECK_JAR: /opt/epubcheck/epubcheck.jar
+      JAVA_BIN: /usr/bin/java
+      GS_BIN: /usr/bin/gs
+      HTML_PDF_BIN: /usr/bin/chromium

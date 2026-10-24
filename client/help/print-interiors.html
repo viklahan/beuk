@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Print interiors &amp; trim sizes — Beuk Help</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="wordmark" href="/help/">beuk</a>
+      <span class="subbrand">quietshelf.studio</span>
+      <nav class="site-nav">
+        <a href="/help/">Help</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/roadmap">Roadmap</a>
+        <!--BEUK_SUPPORT_NAV-->
+      </nav>
+    </header>
+    <main class="page">
+      <p class="back-link"><a href="/help/">← All guides</a></p>
+      <h1>Print interiors &amp; trim sizes</h1>
+      <p class="lede">
+        What you're doing: turning the same manuscript into a paginated
+        paperback interior — real pages, with margins that respect the
+        binding.
+      </p>
+      <h2>Steps</h2>
+      <ol>
+        <li>Open the <strong>Export</strong> dialog and find the <strong>Print Interior</strong> section.</li>
+        <li>Choose a trim size: <strong>5 × 8</strong>, <strong>5.25 × 8</strong>, <strong>5.5 × 8.5</strong>, <strong>6 × 9</strong>, <strong>7 × 10</strong>, or <strong>8.5 × 11</strong> inches. The margin readout updates to match — including the estimated page count.</li>
+        <li>Decide on chapter openings: the <em>recto</em> toggle starts every chapter on a right-hand page, the traditional book way. Off, chapters simply start on the next page.</li>
+        <li>Open the <strong>Print View</strong> and check a few pages. Then <strong>Print → Save as PDF</strong>. (If printing is unavailable where you are, <strong>Download Print HTML</strong> gives you the identical paginated document as a file that prints from any browser.)</li>
+      </ol>
+      <h2>What Beuk handles for you</h2>
+      <ul>
+        <li>Exact page dimensions for the chosen trim, set in the paged-media stylesheet.</li>
+        <li><strong>Mirrored gutter margins</strong> that grow with page count, following KDP and IngramSpark guidance — roughly 0.625 in for a slim book up to 1.125 in past 700 pages — so text never disappears into the binding.</li>
+        <li>A running head (title · author) and page numbers, kept off the first page, as books do.</li>
+        <li>Chapters always begin on a fresh page.</li>
+      </ul>
+      <div class="trouble">
+        <h2>What can go wrong — and one honest limit</h2>
+        <p><strong>The honest limit:</strong> what you get is a <em>print-ready interior PDF</em>. True <strong>PDF/X-1a</strong> conversion — the flavour some printers insist on — happens on Beuk's servers in a later phase of the SaaS build. Beuk will never label a file PDF/X when it isn't; if your printer demands it today, they'll need the file converted elsewhere.</p>
+        <p><strong>Blank pages appeared.</strong> With recto chapter starts on, a chapter that would open on a left page gets a deliberate blank before it. That's correct book behaviour — printers expect it.</p>
+        <p><strong>The PDF has browser headers/footers.</strong> In the print dialog, turn off "Headers and footers" — those are your browser's, not Beuk's. Beuk's own running head is the one inside the page.</p>
+      </div>
+    </main>
+    <footer class="site-foot">
+      <!--BEUK_KOFI_JAR-->
+      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+    </footer>
+  </body>
+</html>

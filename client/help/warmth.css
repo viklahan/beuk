@@ -1,0 +1,172 @@
+/* Beuk warmth pages — the Paper theme from the product spec:
+   antique parchment #FAF7F2, warm-gray borders #DDD6C8, sepia ink
+   #1C1917, amber accent #92400E. Plain CSS, no build step. */
+
+:root {
+  --paper: #faf7f2;
+  --paper-deep: #f3eee3;
+  --ink: #1c1917;
+  --ink-soft: #57534e;
+  --line: #ddd6c8;
+  --amber: #92400e;
+  --amber-soft: #fef3c7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "EB Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+.site-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 1.5rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.wordmark {
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+.subbrand {
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 0.95rem;
+}
+
+.site-nav { margin-left: auto; display: flex; gap: 1.1rem; }
+.site-nav a { color: var(--amber); text-decoration: none; font-size: 1rem; }
+.site-nav a:hover { text-decoration: underline; }
+
+.page {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 2.5rem;
+}
+
+h1 { font-size: 2.1rem; line-height: 1.2; margin: 0.4em 0 0.5em; }
+h2 { font-size: 1.45rem; margin: 1.6em 0 0.5em; }
+h3 { font-size: 1.2rem; margin: 1.3em 0 0.4em; }
+p { margin: 0.7em 0; }
+a { color: var(--amber); }
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.86em;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+}
+li { margin: 0.35em 0; }
+hr { border: none; border-top: 1px solid var(--line); margin: 2em 0; }
+blockquote {
+  margin: 1em 0;
+  padding: 0.2em 1em;
+  border-left: 3px solid var(--amber);
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.lede { font-size: 1.22rem; color: var(--ink-soft); }
+
+.status-line {
+  border: 1px solid var(--line);
+  background: var(--paper-deep);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+}
+
+.guide-list { list-style: none; padding: 0; margin: 1rem 0; }
+.guide-list li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  margin: 0.6rem 0;
+  padding: 0.8rem 1rem;
+}
+.guide-list a { font-weight: 700; text-decoration: none; font-size: 1.12rem; }
+.guide-list a:hover { text-decoration: underline; }
+.guide-list p { margin: 0.25em 0 0; color: var(--ink-soft); font-size: 1rem; }
+
+.support-block {
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  background: var(--amber-soft);
+  padding: 1rem 1.25rem;
+  margin: 2rem 0;
+}
+.support-block h2 { margin-top: 0.2em; }
+.support-email { font-size: 1.25rem; font-weight: 700; }
+
+.trouble {
+  border-left: 3px solid var(--amber);
+  background: #fffdf8;
+  padding: 0.6rem 1.1rem;
+  margin: 1.2rem 0;
+}
+.trouble h2 { margin-top: 0.4em; }
+
+.error-entry { border-bottom: 1px solid var(--line); padding: 1rem 0; }
+.error-entry h3 { margin-top: 0.2em; }
+.error-entry .says {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  display: block;
+  white-space: pre-wrap;
+}
+
+.kofi-jar {
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--amber);
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 1.1rem 1.4rem 1.25rem;
+  margin: 2.2rem 0 1rem;
+}
+.kofi-jar h2 { margin-top: 0.15em; }
+.kofi-button {
+  display: inline-block;
+  background: var(--amber);
+  color: #fff7ed;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.55rem 1.3rem;
+  margin: 0.4rem 0;
+}
+.kofi-button:hover { background: #78350f; }
+.kofi-note { color: var(--ink-soft); font-size: 0.98rem; font-style: italic; }
+
+.site-foot {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 2.5rem;
+}
+.foot-note {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin-top: 1.5rem;
+}
+
+.back-link { font-size: 1rem; }

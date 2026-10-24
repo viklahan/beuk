@@ -1,0 +1,43 @@
+# Beuk — Caddy reverse proxy.
+# DOMAIN comes from .env: "localhost" for local dev (internal CA, https://localhost),
+# "beuk.studio" in production (automatic Let's Encrypt TLS).
+
+{$DOMAIN} {
+	encode gzip
+
+	# API → Node app
+	handle /api/* {
+		reverse_proxy app:3000
+	}
+
+	# M4 warmth pages → Node app (their support block and tip-jar slots
+	# depend on server config: SUPPORT_EMAIL / KOFI_URL). The app reads
+	# the page files from the same ./client tree mounted below.
+	handle /help* {
+		reverse_proxy app:3000
+	}
+	handle /thanks* {
+		reverse_proxy app:3000
+	}
+	handle /support* {
+		reverse_proxy app:3000
+	}
+	handle /changelog {
+		reverse_proxy app:3000
+	}
+	handle /roadmap {
+		reverse_proxy app:3000
+	}
+
+	# === STATIC CLIENT ===
+	# The built Beuk web client lives in ./client (mounted at /srv/client).
+	# SPA fallback: unknown paths return index.html.
+	handle {
+		# Revalidate on every load (cheap 304 via ETag) so a deploy reaches
+		# writers immediately instead of a heuristically cached old studio.
+		header Cache-Control "no-cache"
+		root * /srv/client
+		try_files {path} /index.html
+		file_server
+	}
+}

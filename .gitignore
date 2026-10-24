@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.log
+tools-bin/
+
+docker-compose.override.yml

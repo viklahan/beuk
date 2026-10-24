@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Add a cover — Beuk Help</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="wordmark" href="/help/">beuk</a>
+      <span class="subbrand">quietshelf.studio</span>
+      <nav class="site-nav">
+        <a href="/help/">Help</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/roadmap">Roadmap</a>
+        <!--BEUK_SUPPORT_NAV-->
+      </nav>
+    </header>
+    <main class="page">
+      <p class="back-link"><a href="/help/">← All guides</a></p>
+      <h1>Add a cover</h1>
+      <p class="lede">
+        What you're doing: giving the book its face. A cover in Beuk is a
+        real part of the EPUB — declared properly, shown first, and
+        recognised by every store's catalogue.
+      </p>
+      <h2>Steps</h2>
+      <ol>
+        <li>Open <strong>Project Settings</strong> and find the Cover Image block.</li>
+        <li>Upload a <code>JPG</code> or <code>PNG</code>. For store catalogues, bigger is better: Kindle recommends 2560 × 1600 px. A small image uploads fine but may be refused by a store later.</li>
+        <li>The cover appears at the head of Front Matter. Select it there to see it on the device canvas.</li>
+        <li>Export as usual. The EPUB now carries the image, a cover page first in the reading order, and a <em>cover landmark</em> in the navigation — the thing screen readers and store ingesters look for.</li>
+        <li>Changed your mind? Remove in Project Settings and the package returns to exactly its coverless self — no residue.</li>
+      </ol>
+      <div class="trouble">
+        <h2>What can go wrong</h2>
+        <p><strong>The store says my cover is too small.</strong> That's the store's catalogue rule, not the EPUB's fault. Upload the largest version you have; for print-adjacent sizes, 2560 px on the long side keeps everyone happy.</p>
+        <p><strong>The cover looks stretched.</strong> Covers are shown at their own proportions — if the file itself is an odd shape, the preview shows that honestly. Crop in an image editor before uploading.</p>
+        <p><strong>No cover yet — can I export anyway?</strong> Yes. Beuk exports a complete, valid book without one; the validator will note it as a friendly warning, never an error.</p>
+      </div>
+    </main>
+    <footer class="site-foot">
+      <!--BEUK_KOFI_JAR-->
+      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+    </footer>
+  </body>
+</html>

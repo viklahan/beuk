@@ -1,0 +1,46 @@
+%!PS-Adobe-3.0
+%% Beuk — PDF/X-1a definition file for Ghostscript.
+%%
+%% The pdfx job feeds this file to Ghostscript BEFORE the input
+%% (see ghostscriptPdfxArgs in src/jobs/tools.ts, and the Jobs
+%% section of the README). It declares the PDF/X-1a OutputIntent
+%% and embeds the CMYK ICC profile the intent points at.
+%%
+%% *** EDIT BEFORE PRODUCTION USE ***
+%% The ICC profile path below is a placeholder. Point it at a real
+%% CMYK press profile installed on the server — e.g. install the
+%% `icc-profiles-free` package (Debian/Ubuntu) or Ghostscript's own
+%% ICC profiles and use one such as:
+%%   /usr/share/color/icc/colord/FOGRA39L_coated.icc
+%% If the file does not exist, Ghostscript errors out and the job
+%% fails with that error in its result — by design, never a fake pass.
+
+/BeukICCPath (/usr/share/color/icc/PDFX_ICC_PROFILE.icc) def
+
+% PDF/X version key + document info (title/trailer are per-book at
+% the PDF level; this declares the conformance claim).
+[
+  /GTS_PDFXVersion (PDF/X-1:2001)
+  /Trapped /False
+  /DOCINFO pdfmark
+
+% Embed the ICC profile as a stream object Ghostscript can reference.
+[/_objdef {beukICCProfile} /type /stream /OBJ pdfmark
+[{beukICCProfile} << /N 4 >> /PUT pdfmark
+[{beukICCProfile} BeukICCPath (r) file /PUT pdfmark
+
+% The OutputIntent dictionary: PDF/X-1a requires an output condition
+% identifier naming a standard printing condition (here CGATS TR 001,
+% the common US web-offset reference) and the destination profile.
+[/_objdef {beukOutputIntent} /type /dict /OBJ pdfmark
+[{beukOutputIntent} <<
+    /Type /OutputIntent
+    /S /GTS_PDFX
+    /OutputConditionIdentifier (CGATS TR 001)
+    /RegistryName (http://www.color.org)
+    /Info (CGATS TR 001)
+    /DestOutputProfile {beukICCProfile}
+  >> /PUT pdfmark
+
+% Attach the OutputIntent to the document catalog.
+[{Catalog} << /OutputIntents [{beukOutputIntent}] >> /PUT pdfmark
