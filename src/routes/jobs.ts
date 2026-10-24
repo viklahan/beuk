@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
+import { isUuid, uuidParam } from '../ids.js';
 import { JobRunner, type JobKind, type JobRow } from '../jobs/runner.js';
 
 /**
@@ -33,12 +34,17 @@ export function jobRoutes(db: Db, config: Config): { router: Router; runner: Job
   const runner = new JobRunner(db, config);
   const router = Router();
   router.use(requireAuth(db));
+  router.param('id', uuidParam('job not found'));
 
   async function createJob(reqUserId: string, kind: JobKind, body: unknown) {
     const exportId =
       body && typeof body === 'object' ? (body as { exportId?: unknown }).exportId : undefined;
     if (typeof exportId !== 'string' || !exportId) {
       return { status: 400 as const, payload: { error: 'exportId is required' }, jobId: null };
+    }
+    // A non-UUID can never name an export: the same 404, not a 500.
+    if (!isUuid(exportId)) {
+      return { status: 404 as const, payload: { error: 'export not found' }, jobId: null };
     }
     const owned = await db.query<{ id: string; format: string }>(
       'select id, format from exports where id = $1 and user_id = $2',
