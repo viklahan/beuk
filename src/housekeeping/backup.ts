@@ -38,6 +38,7 @@ export const SECRET_CONFIG_KEYS = [
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
   'POSTGRES_PASSWORD',
+  'SMTP_URL',
 ] as const;
 
 export interface BackupManifest {
@@ -95,6 +96,8 @@ function settingsDocument(config: Config, createdBy: string): Record<string, unk
         config.stripeSecretKey && config.stripeWebhookSecret && config.stripePriceId,
       ),
       treeClean: config.treeClean,
+      mailConfigured: Boolean(config.smtpUrl && config.mailFrom),
+      mailFrom: config.mailFrom,
     },
     excludedSecrets: [...SECRET_CONFIG_KEYS],
     note: 'Secret values are excluded by name and never written to a backup.',
@@ -171,7 +174,7 @@ export async function createBackup(
     exportFiles,
     files: fileEntries,
     excluded: [
-      'config secrets by name: DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, POSTGRES_PASSWORD',
+      `config secrets by name: ${SECRET_CONFIG_KEYS.join(', ')}`,
       'housekeeping_audit / housekeeping_check_runs / housekeeping_signoffs (append-only evidence)',
       'schema_migrations (owned by the migration runner)',
     ],

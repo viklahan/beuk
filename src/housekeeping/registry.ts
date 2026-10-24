@@ -14,6 +14,7 @@ import {
 } from './packages.js';
 import { scanTags } from './xml.js';
 import { clientDir, repoRoot } from '../warmth/pages.js';
+import { createMailer, type Mailer } from '../mailer.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -32,6 +33,8 @@ export interface CheckContext {
   db: Db;
   config: Config;
   fixtures: FixtureSet;
+  /** P0 #5: the app's mailer (defaults to one built from config). */
+  mailer?: Mailer;
 }
 
 export interface CaseResult {
@@ -170,6 +173,66 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       );
       return 'client/help/, client/thanks/ and CHANGELOG.md all readable from the deploy tree';
     },
+  },
+
+  /* ---- Account basics (P0 #5): mail + password reset ---- */
+  {
+    id: 'auth.mail.delivery-state-honest',
+    title: 'Email: SMTP verified when configured; otherwise reported "email not configured" and never claimed sent',
+    kind: 'server',
+    run: async ({ config, mailer }) => {
+      const m = mailer ?? createMailer(config, { log: () => {} });
+      const status = m.status();
+      if (status.configured) {
+        const verified = await m.verify();
+        assert(verified.ok, verified.detail);
+        return `${verified.detail}; from ${status.from}`;
+      }
+      // Unconfigured: prove the mailer refuses to claim a delivery.
+      const quiet = createMailer({ ...config, mailLogLinks: false }, { log: () => {} });
+      const probe = await quiet.send({ to: 'probe@invalid.example', subject: 'probe', text: 'probe' });
+      assert(!probe.delivered, 'an unconfigured mailer reported a delivery');
+      const verified = await m.verify();
+      assert(!verified.ok, 'an unconfigured mailer reported a verified connection');
+      return `${status.detail}. Password-reset emails are NOT being sent until SMTP_URL and MAIL_FROM are set.`;
+    },
+  },
+  {
+    id: 'auth.reset.page-in-deploy-tree',
+    title: 'Deploy tree carries the password-reset page (/reset)',
+    kind: 'server',
+    run: async () => {
+      const html = await readFile(path.join(clientDir(), 'reset', 'index.html'), 'utf8').catch(() => null);
+      assert(html !== null, 'client/reset/index.html is missing from the deploy tree — reset links would 404');
+      assert(html.includes('/api/auth/reset'), 'client/reset/index.html does not post to /api/auth/reset');
+      return 'client/reset/index.html readable and posts to /api/auth/reset';
+    },
+  },
+  {
+    id: 'auth.reset.tokens-hashed-single-use',
+    title: 'Password-reset tokens: stored hashed, single-use column present, none live past 60 minutes',
+    kind: 'server',
+    run: async ({ db }) => {
+      const cols = await db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns where table_name = 'password_resets'`,
+      );
+      const names = new Set(cols.rows.map((r) => r.column_name));
+      for (const c of ['token_hash', 'expires_at', 'used_at']) {
+        assert(names.has(c), `password_resets has no ${c} column`);
+      }
+      assert(!names.has('token'), 'password_resets stores a plaintext token column');
+      const live = await db.query<{ n: number }>(
+        `select count(*)::int as n from password_resets where used_at is null and expires_at > now() + interval '61 minutes'`,
+      );
+      assert(Number(live.rows[0]?.n ?? 0) === 0, 'a live reset token expires more than 60 minutes out');
+      return 'token_hash / expires_at / used_at present, no plaintext token column, no live token expires past 60 minutes';
+    },
+  },
+  {
+    id: 'auth.ui.forgot-and-account-controls',
+    title: 'Studio: "Forgot password?" with honest confirmation copy; Change password + Sign out everywhere',
+    kind: 'client-only',
+    reason: 'The sign-in dialog and the account area are studio UI; the endpoints they call are covered by the server tests.',
   },
 
   /* ---- Data invariants ---- */

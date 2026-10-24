@@ -70,6 +70,16 @@ services:
       # configured"; the key is used server-side only.
       PEXELS_API_KEY: ${PEXELS_API_KEY:-}
       PEXELS_API_BASE: ${PEXELS_API_BASE:-https://api.pexels.com/v1}
+      # Account basics (password reset): outgoing mail. SMTP_URL or
+      # MAIL_FROM unset → NO email is sent and none is reported as sent;
+      # Housekeeping says "email not configured". MAIL_LOG_LINKS=true
+      # writes would-be messages (with reset links) to the app log —
+      # for local stacks only (the image runs NODE_ENV=production, so
+      # it is off unless set).
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_LOG_LINKS: ${MAIL_LOG_LINKS:-}
+      TRUST_PROXY: ${TRUST_PROXY:-loopback, linklocal, uniquelocal}
     volumes:
       - exportdata:/data/exports
       - backupdata:/data/backups
