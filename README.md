@@ -58,10 +58,10 @@ stored server-side as a SHA-256 hash.
 | `POST /api/auth/login` | → new session cookie; 401 for wrong password or unknown email (same message) |
 | `POST /api/auth/logout` | destroys the session, clears the cookie |
 | `GET /api/auth/me` | current user, or 401 |
-| `GET /api/manuscripts` | caller's manuscripts (metadata only) |
+| `GET /api/manuscripts` | caller's manuscripts (metadata only, incl. `revision`) |
 | `POST /api/manuscripts` | `{doc, title?}` — `doc` is the whole book JSON (metadata + settings + front/body/back-matter sections); title lifts from `doc.title` if not given |
-| `GET /api/manuscripts/:id` | full manuscript incl. `doc` |
-| `PUT /api/manuscripts/:id` | `{doc?, title?}` |
+| `GET /api/manuscripts/:id` | full manuscript incl. `doc` and `revision`; `ETag: "<revision>"` |
+| `PUT /api/manuscripts/:id` | `{doc?, title?}` + the base revision as `If-Match: "<revision>"` (or `body.revision`). Stale base → **409** `{error, manuscript}` (the current shelf copy, `doc` included); no base → **428** with the same copy; malformed → 400. Success bumps `revision` (see Optimistic concurrency) |
 | `DELETE /api/manuscripts/:id` | |
 | `GET /api/streak` | current streak state — incl. `freezesAvailable`, `pauseDays` (planned days off, today onward) and `pausedToday` |
 | `POST /api/streak/heartbeat` | the client pings on activity; **the server stamps its own date** (in `APP_TIMEZONE`) and computes the streak |
@@ -87,6 +87,57 @@ stored server-side as a SHA-256 hash.
 isn't leaked. The export archive follows the identical rule: list,
 download and delete are owner-scoped, and an export can only be attached
 to a manuscript the caller owns (someone else's manuscript id → 404).
+
+**Optimistic concurrency (migration 009):** every manuscript carries a
+`revision` (starts at 1, +1 on every successful PUT), returned as a
+field and as a strong `ETag`. A PUT must name the revision it was based
+on; the check and the write are a single `UPDATE … WHERE revision = $n`,
+so two devices racing can never both land. A stale base gets 409 with the
+current shelf copy, which the studio routes into its conflict notice
+(Keep mine / Use the shelf copy / Keep both) — never a silent overwrite.
+`If-Match: *` (RFC 9110) skips the check; the studio never sends it.
+Tests: `tests/manuscripts.test.ts`.
+
+## Local-first saving (studio)
+
+The studio saves the open book **on the device first**, signed in or
+not, online or not:
+
+- **IndexedDB** (`beuk-local` → store `kv`): the whole `serializeBook()`
+  document — text, settings, cover, images and uploaded fonts (base64
+  inside the document), History snapshots — plus the sample-story
+  bookkeeping and the shelf link. Written ~800 ms after the writer
+  pauses and again on `visibilitychange → hidden` / `pagehide`, in one
+  `durability: "strict"` transaction that moves the previous record to
+  `book-prev` first; a record that fails to parse falls back to it.
+- **Boot restore** happens before the desk is shown. Signed in, the
+  device copy is reconciled with the shelf: only the shelf moved → the
+  shelf copy opens; only the device moved → it is pushed; both moved →
+  the conflict notice. Removing the sample story clears the saved desk
+  too, so it never comes back on reload.
+- **Header indicator:** `Saving…` / `Saved on this device ✓` / honest
+  failures (`Not saved — this browser is blocking storage`, `… storage
+  is full`, other errors by name), with **Export a backup** (a
+  `.beuk-backup.json` file the indicator can also open again). The
+  studio calls `navigator.storage.persist()`; when the browser declines,
+  the indicator says the copy may be cleared under storage pressure.
+- A `beforeunload` prompt is attached **only** while a device save is
+  pending or failing.
+- **Limits, stated plainly:** writing typed in the last ~0.8 s before a
+  hard crash (no `pagehide`) may be lost; a private window's storage
+  ends with the window; the browser can still evict the copy if it did
+  not grant lasting storage — export a backup now and then.
+
+**Offline completeness:** JSZip 3.10.1, mammoth 1.6.0, lucide 0.469.0
+and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
+to the CDN releases, pinned with SRI; the Housekeeping case
+`infra.deploy.vendored-libraries` re-hashes them) and precached by the
+service worker (cache `beuk-shell-v2`; both `client/sw.js` and
+`client/assets/sw.js`). Google Fonts are browser-specific and cannot be
+precached ahead of time: the page hands the worker the stylesheet and
+the font files it actually loaded, so faces the studio has displayed
+online open offline; any other face falls back to the system fonts in
+its stack.
 
 ## Export archive storage (M2)
 
@@ -505,7 +556,8 @@ tools/            PDFX_def.ps — the PDF/X-1a definition file the
                   pdfx job hands to Ghostscript (edit its ICC path)
 migrations/       001 users+sessions · 002 manuscripts · 003 streaks ·
                   004 exports · 005 user plan/billing · 006 housekeeping
-                  · 007 founders (M4) · 008 jobs (M5)
+                  · 007 founders (M4) · 008 jobs (M5) · 009 manuscript
+                  revision (optimistic concurrency)
 tests/            node:test suite (PGlite-backed)
 client/           static mount point (app placeholder + M4 warmth
                   pages under help/ and thanks/)

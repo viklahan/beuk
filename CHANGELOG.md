@@ -4,6 +4,20 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-24 — Your book is saved on this device
+
+- **Saved on this device, always.** For writers who lost an afternoon to
+  a browser crash: the studio now saves the book in your browser every
+  time you pause, signed in or not, online or not — and the header says
+  so plainly, or says plainly when it can't. One click exports a backup
+  file you can open again.
+- **Two devices, no silent overwrites.** For writers who work on a
+  laptop and a desktop: if the shelf copy changed elsewhere, Beuk asks
+  — keep mine, use the shelf copy, or keep both — instead of letting
+  one device quietly replace the other.
+- **Works offline, including Word import.** The studio's own libraries
+  now ship with it, so it opens and imports .docx without a connection.
+
 ## 2026-10-22 — The warmth surfaces
 
 - **A help reading room.** For writers who said a manual written like

@@ -825,7 +825,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     id: 'local.conflict.409-routes-to-notice',
     title: 'A 409 from the shelf (stale revision) raises the conflict notice instead of overwriting',
     kind: 'client-only',
-    reason: 'The server half is covered by tests/manuscripts.test.ts; routing the 409 into the notice is client UI.',
+    reason: 'The server half runs in tests/manuscripts.test.ts; routing the 409 into the conflict notice is client UI (async network path, exercised by the studio browser run, not the synchronous in-studio checks).',
   },
   {
     id: 'cloud.epubcheck.result-in-plain-language',
