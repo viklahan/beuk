@@ -1423,6 +1423,29 @@
         .brand-sub { display: none; }
         .brand-name { font-size: 19px; }
       }
+      /* ==== BEUK:acx ==== */
+      .modal.acx-modal { max-width: 860px; }
+      .acx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+      .acx-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+      .acx-grid input, .acx-grid select, .acx-add input, .acx-table input[type=text] { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--panel); color: var(--ink); min-width: 0; }
+      .acx-check { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--ink-2); margin: 4px 0 6px; }
+      .acx-h { margin: 18px 0 6px; font-size: 14px; font-weight: 700; }
+      .acx-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+      .acx-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+      .acx-table th, .acx-table td { text-align: start; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      .acx-table th { font-weight: 700; color: var(--muted); background: var(--panel-3); }
+      .acx-table tr.acx-over td { color: var(--bad); font-weight: 600; }
+      .acx-table input[type=text] { width: 100%; }
+      .acx-act { white-space: nowrap; display: flex; gap: 4px; }
+      .acx-why { font-size: 11px; color: var(--muted); }
+      .acx-math { font-family: var(--mono-font); font-size: 12.5px; margin: 10px 0 2px; color: var(--ink); }
+      .acx-note { font-size: 12.5px; color: var(--muted); margin: 4px 0; line-height: 1.5; }
+      .acx-list { margin: 4px 0; padding-inline-start: 18px; font-size: 12.5px; color: var(--ink-2); line-height: 1.5; }
+      .acx-list .si-btn { margin-inline-start: 6px; }
+      .acx-warn { color: var(--bad); }
+      .acx-add { display: flex; gap: 6px; margin: 6px 0 8px; }
+      @media (max-width: 640px) { .acx-grid { grid-template-columns: 1fr; } }
+      /* ==== /BEUK:acx ==== */
     </style>
   </head>
   <body>
@@ -1863,6 +1886,20 @@
       </div>
     </div>
 
+    <!-- ==== BEUK:acx ==== -->
+    <div class="modal-back" id="modalAcx">
+      <div class="modal acx-modal" role="dialog" aria-modal="true" aria-labelledby="acxH">
+        <h2 id="acxH" data-i18n="acx.title"><i data-lucide="headphones"></i>Audio Script — ACX</h2>
+        <p class="m-sub" data-i18n="acx.sub">ACX's rules.</p>
+        <div id="acxBody"></div>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnAcxClose" type="button" data-i18n="acx.close">Close</button>
+          <button class="tb-btn primary" id="btnAcxDownload" type="button" data-i18n="acx.download"><i data-lucide="download"></i>Download Audio Script (.zip)</button>
+        </div>
+      </div>
+    </div>
+    <!-- ==== /BEUK:acx ==== -->
+
     <!-- Export modal -->
     <div class="modal-back" id="modalExport">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="expH">
@@ -1937,6 +1974,16 @@
             <button class="tb-btn" id="btnDownloadDocx" data-i18n="exp.downloadDocx"><i data-lucide="download"></i>Download .docx</button>
           </div>
         </div>
+
+        <!-- ==== BEUK:acx ==== -->
+        <div class="fmt-sec">
+          <h3 data-i18n="acx.secH"><i data-lucide="headphones"></i>Audio Script for ACX (Audible)</h3>
+          <p data-i18n="acx.secP">Narrator scripts in ACX order.</p>
+          <div class="fmt-actions">
+            <button class="tb-btn" id="btnAcxOpen" type="button" data-i18n="acx.open"><i data-lucide="headphones"></i>Prepare Audio Script</button>
+          </div>
+        </div>
+        <!-- ==== /BEUK:acx ==== -->
 
         <div class="fmt-sec">
           <h3 data-i18n="exp.printH"><i data-lucide="printer"></i>Print Interior — PDF via Print</h3>
@@ -8491,6 +8538,906 @@
         "about.installHint": "想让 Beuk 触手可及，可从浏览器菜单把它添加到主屏幕 — 它会安装为应用，并可离线打开。"
       });
 
+      /* ==== BEUK:acx ==== */
+      /* Audio script (ACX) strings — assigned per pack so ui.packs.complete holds. */
+      Object.assign(UI_STRINGS.en, {
+        "acx.secH": "Audio Script for ACX (Audible)",
+        "acx.secP": "Narrator scripts in ACX order — opening credits, one file per chapter, closing credits — with a pronunciation guide, a retail-sample suggestion and a length estimate. Beuk records no audio; every minute shown is an estimate from the word count.",
+        "acx.open": "Prepare Audio Script",
+        "acx.title": "Audio Script — ACX",
+        "acx.sub": "ACX's rules, as its help pages state them: one file per chapter or section, opening and closing credits as their own files, the section header spoken at the start of each file, no file over 120 minutes, and a retail sample of 5 minutes or less.",
+        "acx.narrator": "Narrator name",
+        "acx.narratorPh": "As it will appear on ACX",
+        "acx.format": "Script format",
+        "acx.fmt.both": "Word (.docx) and plain text (.txt)",
+        "acx.fmt.docx": "Word (.docx) only",
+        "acx.fmt.txt": "Plain text (.txt) only",
+        "acx.rights": "Read the copyright line in the closing credits (ACX's pages give no rule for the copyright page)",
+        "acx.filesH": "Files, in ACX order",
+        "acx.colFile": "File",
+        "acx.colWords": "Words",
+        "acx.colMin": "Est. minutes",
+        "acx.colNarrate": "Narrate",
+        "acx.total": "{words} words ÷ {wph} words per finished hour ≈ {hours} hours ({min} minutes)",
+        "acx.noEstimate": "Length: not checked — ACX's words-per-hour average does not apply to a character-counted language.",
+        "acx.estNote": "9,300 words per hour is ACX's stated average for narrators. Real narrators vary — this is an estimate, not a measurement.",
+        "acx.excludedH": "Left out of the recording",
+        "acx.why.toc": "ACX recommends against narrating the table of contents",
+        "acx.why.auto": "A print page — the opening credits announce the title, author and narrator instead",
+        "acx.why.copyright": "ACX gives no rule for the copyright page; left out (the rights line can be read in the closing credits)",
+        "acx.why.picture": "A picture page — nothing to narrate",
+        "acx.why.colophon": "Print production notes",
+        "acx.why.part": "Part divider — its heading is read at the top of the next file",
+        "acx.why.user": "Switched off by you",
+        "acx.why.empty": "No text yet",
+        "acx.narrateAnyway": "Narrate it",
+        "acx.sampleH": "Retail sample suggestion",
+        "acx.sampleText": "{words} words from the opening of {section} ≈ {min} minutes. ACX asks for 5 minutes or less, taken from the first five minutes of the audiobook — the excerpt ships in the zip.",
+        "acx.sampleExplicit": "Explicit material: not checked — ACX bars it from the sample; only you can judge that.",
+        "acx.warnH": "Warnings",
+        "acx.warn.noNarrator": "Narrator name is empty — the credits carry a placeholder; ACX requires the narrator to be named.",
+        "acx.warn.noAuthor": "Author is empty — ACX requires the author in the credits.",
+        "acx.warn.noTitle": "Title is empty — ACX requires the title in the credits.",
+        "acx.warn.long": "{file}: about {min} minutes — over ACX's 120-minute limit per file; split it.",
+        "acx.warn.noAlt": "Pictures without a description: {n} — the narrator sees a placeholder.",
+        "acx.warn.notes": "Footnotes marked as narrator-decision notes: {n} — ACX's pages give no rule for notes.",
+        "acx.warn.none": "No warnings from the checks Beuk ran.",
+        "acx.warn.specs": "Audio specs (MP3 bit rate, levels, room tone): not checked — they apply to the recorded files, which Beuk does not make.",
+        "acx.pronH": "Pronunciation guide",
+        "acx.pronSub": "Words Beuk guesses a narrator may stumble on: names used mid-sentence that never appear in lower case, accented words and italicised words. Beuk has no dictionary — these are guesses for you to confirm. Filled entries go in the guide and are noted in the scripts at their first occurrence.",
+        "acx.listenNote": "Listen is a rough preview in your device's own voice — not how a narrator will say it.",
+        "acx.noSpeech": "This browser has no speech voice — the preview is unavailable.",
+        "acx.cjk": "Automatic detection works on space-separated languages; add words by hand for this book.",
+        "acx.addPh": "A word to add",
+        "acx.add": "Add",
+        "acx.noCands": "No candidates found — add any word by hand.",
+        "acx.colWord": "Word",
+        "acx.colCount": "Uses",
+        "acx.colFirst": "First seen",
+        "acx.colSounds": "Sounds like",
+        "acx.colIpa": "IPA (optional)",
+        "acx.reason.name": "Repeated name",
+        "acx.reason.accent": "Accented",
+        "acx.reason.italic": "Italicised",
+        "acx.reason.manual": "Added by you",
+        "acx.listen": "Listen",
+        "acx.dismiss": "Not needed",
+        "acx.download": "Download Audio Script (.zip)",
+        "acx.building": "Building…",
+        "acx.done": "Audio script downloaded — files: {n}",
+        "acx.fail": "Audio script failed: {msg}",
+        "acx.empty": "Nothing to narrate yet — add chapters first.",
+        "acx.close": "Close"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "acx.secH": "Guion de audio para ACX (Audible)",
+        "acx.secP": "Guiones para el narrador en el orden de ACX — créditos iniciales, un archivo por capítulo, créditos finales — con guía de pronunciación, sugerencia de muestra comercial y estimación de duración. Beuk no graba audio; cada minuto mostrado es una estimación a partir del recuento de palabras.",
+        "acx.open": "Preparar guion de audio",
+        "acx.title": "Guion de audio — ACX",
+        "acx.sub": "Las reglas de ACX, tal como las indican sus páginas de ayuda: un archivo por capítulo o sección, créditos iniciales y finales en archivos propios, el encabezado de sección leído al inicio de cada archivo, ningún archivo de más de 120 minutos y una muestra comercial de 5 minutos o menos.",
+        "acx.narrator": "Nombre del narrador",
+        "acx.narratorPh": "Tal como aparecerá en ACX",
+        "acx.format": "Formato del guion",
+        "acx.fmt.both": "Word (.docx) y texto plano (.txt)",
+        "acx.fmt.docx": "Solo Word (.docx)",
+        "acx.fmt.txt": "Solo texto plano (.txt)",
+        "acx.rights": "Leer la línea de copyright en los créditos finales (las páginas de ACX no dan una regla para la página de copyright)",
+        "acx.filesH": "Archivos, en el orden de ACX",
+        "acx.colFile": "Archivo",
+        "acx.colWords": "Palabras",
+        "acx.colMin": "Minutos est.",
+        "acx.colNarrate": "Narrar",
+        "acx.total": "{words} palabras ÷ {wph} palabras por hora terminada ≈ {hours} horas ({min} minutos)",
+        "acx.noEstimate": "Duración: no comprobada — el promedio de palabras por hora de ACX no se aplica a un idioma que se cuenta por caracteres.",
+        "acx.estNote": "9.300 palabras por hora es el promedio que indica ACX para los narradores. Cada narrador varía: es una estimación, no una medición.",
+        "acx.excludedH": "Fuera de la grabación",
+        "acx.why.toc": "ACX desaconseja narrar el índice",
+        "acx.why.auto": "Una página impresa: los créditos iniciales anuncian el título, el autor y el narrador en su lugar",
+        "acx.why.copyright": "ACX no da una regla para la página de copyright; queda fuera (la línea de derechos puede leerse en los créditos finales)",
+        "acx.why.picture": "Una página de imagen: nada que narrar",
+        "acx.why.colophon": "Notas de producción impresa",
+        "acx.why.part": "Separador de parte: su encabezado se lee al inicio del archivo siguiente",
+        "acx.why.user": "Desactivado por ti",
+        "acx.why.empty": "Aún sin texto",
+        "acx.narrateAnyway": "Narrarla",
+        "acx.sampleH": "Sugerencia de muestra comercial",
+        "acx.sampleText": "{words} palabras del comienzo de {section} ≈ {min} minutos. ACX pide 5 minutos o menos, tomados de los primeros cinco minutos del audiolibro; el fragmento va en el zip.",
+        "acx.sampleExplicit": "Material explícito: no comprobado — ACX lo prohíbe en la muestra; solo tú puedes juzgarlo.",
+        "acx.warnH": "Advertencias",
+        "acx.warn.noNarrator": "El nombre del narrador está vacío: los créditos llevan un marcador; ACX exige nombrar al narrador.",
+        "acx.warn.noAuthor": "El autor está vacío: ACX exige el autor en los créditos.",
+        "acx.warn.noTitle": "El título está vacío: ACX exige el título en los créditos.",
+        "acx.warn.long": "{file}: unos {min} minutos — supera el límite de 120 minutos por archivo de ACX; divídelo.",
+        "acx.warn.noAlt": "Imágenes sin descripción: {n}; el narrador verá un marcador.",
+        "acx.warn.notes": "Notas al pie marcadas como decisión del narrador: {n}; las páginas de ACX no dan una regla para las notas.",
+        "acx.warn.none": "Sin advertencias en las comprobaciones que hizo Beuk.",
+        "acx.warn.specs": "Especificaciones de audio (tasa de bits MP3, niveles, tono de sala): no comprobadas — se aplican a los archivos grabados, que Beuk no produce.",
+        "acx.pronH": "Guía de pronunciación",
+        "acx.pronSub": "Palabras en las que Beuk supone que un narrador podría tropezar: nombres usados a mitad de frase que nunca aparecen en minúscula, palabras con acentos y palabras en cursiva. Beuk no tiene diccionario: son suposiciones que debes confirmar. Las entradas completadas van a la guía y se anotan en los guiones en su primera aparición.",
+        "acx.listenNote": "Escuchar es una vista previa aproximada con la voz de tu dispositivo, no como lo dirá un narrador.",
+        "acx.noSpeech": "Este navegador no tiene voz de síntesis: la vista previa no está disponible.",
+        "acx.cjk": "La detección automática funciona con idiomas separados por espacios; añade las palabras a mano para este libro.",
+        "acx.addPh": "Una palabra para añadir",
+        "acx.add": "Añadir",
+        "acx.noCands": "No se encontraron candidatas: añade cualquier palabra a mano.",
+        "acx.colWord": "Palabra",
+        "acx.colCount": "Usos",
+        "acx.colFirst": "Primera vez",
+        "acx.colSounds": "Suena como",
+        "acx.colIpa": "AFI (opcional)",
+        "acx.reason.name": "Nombre repetido",
+        "acx.reason.accent": "Con acento",
+        "acx.reason.italic": "En cursiva",
+        "acx.reason.manual": "Añadida por ti",
+        "acx.listen": "Escuchar",
+        "acx.dismiss": "No hace falta",
+        "acx.download": "Descargar guion de audio (.zip)",
+        "acx.building": "Generando…",
+        "acx.done": "Guion de audio descargado — archivos: {n}",
+        "acx.fail": "Falló el guion de audio: {msg}",
+        "acx.empty": "Aún no hay nada que narrar: añade capítulos primero.",
+        "acx.close": "Cerrar"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "acx.secH": "Script audio pour ACX (Audible)",
+        "acx.secP": "Des scripts de narration dans l'ordre ACX — générique d'ouverture, un fichier par chapitre, générique de fin — avec un guide de prononciation, une suggestion d'extrait commercial et une estimation de durée. Beuk n'enregistre aucun son ; chaque minute affichée est une estimation tirée du nombre de mots.",
+        "acx.open": "Préparer le script audio",
+        "acx.title": "Script audio — ACX",
+        "acx.sub": "Les règles d'ACX, telles que ses pages d'aide les énoncent : un fichier par chapitre ou section, les génériques d'ouverture et de fin dans leurs propres fichiers, l'en-tête de section lu au début de chaque fichier, aucun fichier de plus de 120 minutes, et un extrait commercial de 5 minutes ou moins.",
+        "acx.narrator": "Nom du narrateur",
+        "acx.narratorPh": "Tel qu'il apparaîtra sur ACX",
+        "acx.format": "Format du script",
+        "acx.fmt.both": "Word (.docx) et texte brut (.txt)",
+        "acx.fmt.docx": "Word (.docx) uniquement",
+        "acx.fmt.txt": "Texte brut (.txt) uniquement",
+        "acx.rights": "Lire la mention de copyright dans le générique de fin (les pages d'ACX ne donnent aucune règle pour la page de copyright)",
+        "acx.filesH": "Fichiers, dans l'ordre ACX",
+        "acx.colFile": "Fichier",
+        "acx.colWords": "Mots",
+        "acx.colMin": "Minutes est.",
+        "acx.colNarrate": "Narrer",
+        "acx.total": "{words} mots ÷ {wph} mots par heure finie ≈ {hours} heures ({min} minutes)",
+        "acx.noEstimate": "Durée : non vérifiée — la moyenne de mots par heure d'ACX ne s'applique pas à une langue comptée en caractères.",
+        "acx.estNote": "9 300 mots par heure est la moyenne indiquée par ACX pour les narrateurs. Chaque narrateur varie : c'est une estimation, pas une mesure.",
+        "acx.excludedH": "Hors de l'enregistrement",
+        "acx.why.toc": "ACX déconseille de narrer la table des matières",
+        "acx.why.auto": "Une page d'impression — le générique d'ouverture annonce le titre, l'auteur et le narrateur à la place",
+        "acx.why.copyright": "ACX ne donne aucune règle pour la page de copyright ; laissée de côté (la mention peut être lue dans le générique de fin)",
+        "acx.why.picture": "Une page d'image — rien à narrer",
+        "acx.why.colophon": "Notes de fabrication de l'imprimé",
+        "acx.why.part": "Intercalaire de partie — son titre est lu en tête du fichier suivant",
+        "acx.why.user": "Désactivé par vous",
+        "acx.why.empty": "Pas encore de texte",
+        "acx.narrateAnyway": "La narrer",
+        "acx.sampleH": "Suggestion d'extrait commercial",
+        "acx.sampleText": "{words} mots du début de {section} ≈ {min} minutes. ACX demande 5 minutes ou moins, prises dans les cinq premières minutes du livre audio — l'extrait est dans le zip.",
+        "acx.sampleExplicit": "Contenu explicite : non vérifié — ACX l'interdit dans l'extrait ; vous seul pouvez en juger.",
+        "acx.warnH": "Avertissements",
+        "acx.warn.noNarrator": "Le nom du narrateur est vide — les génériques portent un espace réservé ; ACX exige que le narrateur soit nommé.",
+        "acx.warn.noAuthor": "L'auteur est vide — ACX exige l'auteur dans les génériques.",
+        "acx.warn.noTitle": "Le titre est vide — ACX exige le titre dans les génériques.",
+        "acx.warn.long": "{file} : environ {min} minutes — au-delà de la limite ACX de 120 minutes par fichier ; scindez-le.",
+        "acx.warn.noAlt": "Images sans description : {n} — le narrateur voit un espace réservé.",
+        "acx.warn.notes": "Notes marquées comme décisions du narrateur : {n} — les pages d'ACX ne donnent aucune règle pour les notes.",
+        "acx.warn.none": "Aucun avertissement dans les vérifications effectuées par Beuk.",
+        "acx.warn.specs": "Spécifications audio (débit MP3, niveaux, ambiance) : non vérifiées — elles concernent les fichiers enregistrés, que Beuk ne produit pas.",
+        "acx.pronH": "Guide de prononciation",
+        "acx.pronSub": "Les mots sur lesquels Beuk suppose qu'un narrateur pourrait buter : des noms employés en milieu de phrase et jamais en minuscules, des mots accentués et des mots en italique. Beuk n'a pas de dictionnaire — ce sont des suppositions à confirmer. Les entrées remplies vont dans le guide et sont signalées dans les scripts à leur première occurrence.",
+        "acx.listenNote": "Écouter est un aperçu approximatif avec la voix de votre appareil — pas la façon dont un narrateur le dira.",
+        "acx.noSpeech": "Ce navigateur n'a pas de voix de synthèse — l'aperçu est indisponible.",
+        "acx.cjk": "La détection automatique fonctionne pour les langues séparées par des espaces ; ajoutez les mots à la main pour ce livre.",
+        "acx.addPh": "Un mot à ajouter",
+        "acx.add": "Ajouter",
+        "acx.noCands": "Aucun candidat trouvé — ajoutez un mot à la main.",
+        "acx.colWord": "Mot",
+        "acx.colCount": "Emplois",
+        "acx.colFirst": "Première occurrence",
+        "acx.colSounds": "Se prononce",
+        "acx.colIpa": "API (facultatif)",
+        "acx.reason.name": "Nom répété",
+        "acx.reason.accent": "Accentué",
+        "acx.reason.italic": "En italique",
+        "acx.reason.manual": "Ajouté par vous",
+        "acx.listen": "Écouter",
+        "acx.dismiss": "Inutile",
+        "acx.download": "Télécharger le script audio (.zip)",
+        "acx.building": "Construction…",
+        "acx.done": "Script audio téléchargé — fichiers : {n}",
+        "acx.fail": "Échec du script audio : {msg}",
+        "acx.empty": "Rien à narrer pour l'instant — ajoutez d'abord des chapitres.",
+        "acx.close": "Fermer"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "acx.secH": "Hörbuch-Skript für ACX (Audible)",
+        "acx.secP": "Sprecherskripte in ACX-Reihenfolge — Eröffnungscredits, eine Datei pro Kapitel, Schlusscredits — mit Aussprache-Leitfaden, Vorschlag für die Hörprobe und Längenschätzung. Beuk nimmt nichts auf; jede angezeigte Minute ist eine Schätzung aus der Wortzahl.",
+        "acx.open": "Hörbuch-Skript vorbereiten",
+        "acx.title": "Hörbuch-Skript — ACX",
+        "acx.sub": "Die ACX-Regeln laut seinen Hilfeseiten: eine Datei pro Kapitel oder Abschnitt, Eröffnungs- und Schlusscredits als eigene Dateien, die Abschnittsüberschrift zu Beginn jeder Datei gesprochen, keine Datei über 120 Minuten und eine Hörprobe von höchstens 5 Minuten.",
+        "acx.narrator": "Name der Sprecherin / des Sprechers",
+        "acx.narratorPh": "So, wie er auf ACX erscheint",
+        "acx.format": "Skriptformat",
+        "acx.fmt.both": "Word (.docx) und Klartext (.txt)",
+        "acx.fmt.docx": "Nur Word (.docx)",
+        "acx.fmt.txt": "Nur Klartext (.txt)",
+        "acx.rights": "Den Copyright-Vermerk in den Schlusscredits lesen (die ACX-Seiten nennen keine Regel für die Copyright-Seite)",
+        "acx.filesH": "Dateien in ACX-Reihenfolge",
+        "acx.colFile": "Datei",
+        "acx.colWords": "Wörter",
+        "acx.colMin": "Gesch. Minuten",
+        "acx.colNarrate": "Einsprechen",
+        "acx.total": "{words} Wörter ÷ {wph} Wörter pro fertiger Stunde ≈ {hours} Stunden ({min} Minuten)",
+        "acx.noEstimate": "Länge: nicht geprüft — ACX' Durchschnitt an Wörtern pro Stunde gilt nicht für eine nach Zeichen gezählte Sprache.",
+        "acx.estNote": "9.300 Wörter pro Stunde ist der von ACX genannte Durchschnitt für Sprecher. Echte Sprecher weichen ab — das ist eine Schätzung, keine Messung.",
+        "acx.excludedH": "Nicht eingesprochen",
+        "acx.why.toc": "ACX rät davon ab, das Inhaltsverzeichnis einzusprechen",
+        "acx.why.auto": "Eine Druckseite — stattdessen nennen die Eröffnungscredits Titel, Autor und Sprecher",
+        "acx.why.copyright": "ACX nennt keine Regel für die Copyright-Seite; weggelassen (der Vermerk kann in den Schlusscredits gelesen werden)",
+        "acx.why.picture": "Eine Bildseite — nichts einzusprechen",
+        "acx.why.colophon": "Hinweise zur Druckherstellung",
+        "acx.why.part": "Teiltrenner — seine Überschrift wird am Anfang der nächsten Datei gelesen",
+        "acx.why.user": "Von Ihnen ausgeschaltet",
+        "acx.why.empty": "Noch kein Text",
+        "acx.narrateAnyway": "Doch einsprechen",
+        "acx.sampleH": "Vorschlag für die Hörprobe",
+        "acx.sampleText": "{words} Wörter vom Anfang von {section} ≈ {min} Minuten. ACX verlangt höchstens 5 Minuten aus den ersten fünf Minuten des Hörbuchs — der Auszug liegt im Zip.",
+        "acx.sampleExplicit": "Explizite Inhalte: nicht geprüft — ACX schließt sie in der Hörprobe aus; das können nur Sie beurteilen.",
+        "acx.warnH": "Warnungen",
+        "acx.warn.noNarrator": "Der Sprechername ist leer — die Credits enthalten einen Platzhalter; ACX verlangt, dass der Sprecher genannt wird.",
+        "acx.warn.noAuthor": "Der Autor ist leer — ACX verlangt den Autor in den Credits.",
+        "acx.warn.noTitle": "Der Titel ist leer — ACX verlangt den Titel in den Credits.",
+        "acx.warn.long": "{file}: etwa {min} Minuten — über dem ACX-Limit von 120 Minuten pro Datei; teilen Sie sie.",
+        "acx.warn.noAlt": "Bilder ohne Beschreibung: {n} — der Sprecher sieht einen Platzhalter.",
+        "acx.warn.notes": "Fußnoten als Sprecher-Entscheidung markiert: {n} — die ACX-Seiten nennen keine Regel für Anmerkungen.",
+        "acx.warn.none": "Keine Warnungen aus den Prüfungen, die Beuk ausgeführt hat.",
+        "acx.warn.specs": "Audio-Vorgaben (MP3-Bitrate, Pegel, Raumton): nicht geprüft — sie gelten für die Aufnahmen, die Beuk nicht erstellt.",
+        "acx.pronH": "Aussprache-Leitfaden",
+        "acx.pronSub": "Wörter, bei denen Beuk vermutet, dass ein Sprecher stolpern könnte: Namen mitten im Satz, die nie kleingeschrieben vorkommen, Wörter mit Akzenten und kursive Wörter. Beuk hat kein Wörterbuch — das sind Vermutungen, die Sie bestätigen. Ausgefüllte Einträge kommen in den Leitfaden und werden im Skript beim ersten Vorkommen vermerkt.",
+        "acx.listenNote": "Anhören ist eine grobe Vorschau mit der Stimme Ihres Geräts — nicht so, wie ein Sprecher es sagen wird.",
+        "acx.noSpeech": "Dieser Browser hat keine Sprachausgabe — die Vorschau ist nicht verfügbar.",
+        "acx.cjk": "Die automatische Erkennung funktioniert bei Sprachen mit Leerzeichen; fügen Sie für dieses Buch Wörter von Hand hinzu.",
+        "acx.addPh": "Ein Wort hinzufügen",
+        "acx.add": "Hinzufügen",
+        "acx.noCands": "Keine Kandidaten gefunden — fügen Sie Wörter von Hand hinzu.",
+        "acx.colWord": "Wort",
+        "acx.colCount": "Vorkommen",
+        "acx.colFirst": "Zuerst in",
+        "acx.colSounds": "Klingt wie",
+        "acx.colIpa": "IPA (optional)",
+        "acx.reason.name": "Wiederholter Name",
+        "acx.reason.accent": "Mit Akzent",
+        "acx.reason.italic": "Kursiv",
+        "acx.reason.manual": "Von Ihnen hinzugefügt",
+        "acx.listen": "Anhören",
+        "acx.dismiss": "Nicht nötig",
+        "acx.download": "Hörbuch-Skript herunterladen (.zip)",
+        "acx.building": "Wird erstellt …",
+        "acx.done": "Hörbuch-Skript heruntergeladen — Dateien: {n}",
+        "acx.fail": "Hörbuch-Skript fehlgeschlagen: {msg}",
+        "acx.empty": "Noch nichts einzusprechen — fügen Sie zuerst Kapitel hinzu.",
+        "acx.close": "Schließen"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "acx.secH": "Copione audio per ACX (Audible)",
+        "acx.secP": "Copioni per il narratore nell'ordine ACX — titoli di testa, un file per capitolo, titoli di coda — con guida alla pronuncia, suggerimento per l'estratto di vendita e stima della durata. Beuk non registra audio; ogni minuto mostrato è una stima dal conteggio delle parole.",
+        "acx.open": "Prepara copione audio",
+        "acx.title": "Copione audio — ACX",
+        "acx.sub": "Le regole di ACX, come le indicano le sue pagine di aiuto: un file per capitolo o sezione, titoli di testa e di coda in file propri, l'intestazione della sezione letta all'inizio di ogni file, nessun file oltre i 120 minuti e un estratto di vendita di 5 minuti o meno.",
+        "acx.narrator": "Nome del narratore",
+        "acx.narratorPh": "Come apparirà su ACX",
+        "acx.format": "Formato del copione",
+        "acx.fmt.both": "Word (.docx) e testo semplice (.txt)",
+        "acx.fmt.docx": "Solo Word (.docx)",
+        "acx.fmt.txt": "Solo testo semplice (.txt)",
+        "acx.rights": "Leggere la riga del copyright nei titoli di coda (le pagine di ACX non danno regole per la pagina del copyright)",
+        "acx.filesH": "File, nell'ordine ACX",
+        "acx.colFile": "File",
+        "acx.colWords": "Parole",
+        "acx.colMin": "Minuti stim.",
+        "acx.colNarrate": "Narrare",
+        "acx.total": "{words} parole ÷ {wph} parole per ora finita ≈ {hours} ore ({min} minuti)",
+        "acx.noEstimate": "Durata: non verificata — la media di parole all'ora di ACX non si applica a una lingua contata a caratteri.",
+        "acx.estNote": "9.300 parole all'ora è la media indicata da ACX per i narratori. I narratori reali variano: è una stima, non una misura.",
+        "acx.excludedH": "Escluso dalla registrazione",
+        "acx.why.toc": "ACX sconsiglia di narrare l'indice",
+        "acx.why.auto": "Una pagina di stampa: i titoli di testa annunciano invece titolo, autore e narratore",
+        "acx.why.copyright": "ACX non dà regole per la pagina del copyright; esclusa (la riga dei diritti può essere letta nei titoli di coda)",
+        "acx.why.picture": "Una pagina illustrata: niente da narrare",
+        "acx.why.colophon": "Note sulla produzione di stampa",
+        "acx.why.part": "Divisore di parte: il suo titolo viene letto all'inizio del file successivo",
+        "acx.why.user": "Disattivato da te",
+        "acx.why.empty": "Ancora senza testo",
+        "acx.narrateAnyway": "Narrala",
+        "acx.sampleH": "Suggerimento per l'estratto di vendita",
+        "acx.sampleText": "{words} parole dall'inizio di {section} ≈ {min} minuti. ACX chiede 5 minuti o meno, presi dai primi cinque minuti dell'audiolibro: l'estratto è nello zip.",
+        "acx.sampleExplicit": "Materiale esplicito: non verificato — ACX lo esclude dall'estratto; solo tu puoi giudicarlo.",
+        "acx.warnH": "Avvisi",
+        "acx.warn.noNarrator": "Il nome del narratore è vuoto: i titoli contengono un segnaposto; ACX richiede che il narratore sia nominato.",
+        "acx.warn.noAuthor": "L'autore è vuoto: ACX richiede l'autore nei titoli.",
+        "acx.warn.noTitle": "Il titolo è vuoto: ACX richiede il titolo nei titoli.",
+        "acx.warn.long": "{file}: circa {min} minuti — oltre il limite ACX di 120 minuti per file; dividilo.",
+        "acx.warn.noAlt": "Immagini senza descrizione: {n}; il narratore vede un segnaposto.",
+        "acx.warn.notes": "Note segnate come decisione del narratore: {n}; le pagine di ACX non danno regole per le note.",
+        "acx.warn.none": "Nessun avviso dai controlli eseguiti da Beuk.",
+        "acx.warn.specs": "Specifiche audio (bitrate MP3, livelli, tono ambiente): non verificate — riguardano i file registrati, che Beuk non produce.",
+        "acx.pronH": "Guida alla pronuncia",
+        "acx.pronSub": "Parole su cui Beuk ipotizza che un narratore possa inciampare: nomi usati a metà frase che non compaiono mai in minuscolo, parole accentate e parole in corsivo. Beuk non ha un dizionario: sono ipotesi da confermare. Le voci compilate vanno nella guida e vengono segnalate nei copioni alla prima occorrenza.",
+        "acx.listenNote": "Ascolta è un'anteprima approssimativa con la voce del tuo dispositivo, non come lo dirà un narratore.",
+        "acx.noSpeech": "Questo browser non ha una voce di sintesi: l'anteprima non è disponibile.",
+        "acx.cjk": "Il rilevamento automatico funziona con lingue separate da spazi; aggiungi le parole a mano per questo libro.",
+        "acx.addPh": "Una parola da aggiungere",
+        "acx.add": "Aggiungi",
+        "acx.noCands": "Nessuna candidata trovata: aggiungi una parola a mano.",
+        "acx.colWord": "Parola",
+        "acx.colCount": "Usi",
+        "acx.colFirst": "Prima volta",
+        "acx.colSounds": "Suona come",
+        "acx.colIpa": "IPA (facoltativo)",
+        "acx.reason.name": "Nome ripetuto",
+        "acx.reason.accent": "Accentata",
+        "acx.reason.italic": "In corsivo",
+        "acx.reason.manual": "Aggiunta da te",
+        "acx.listen": "Ascolta",
+        "acx.dismiss": "Non serve",
+        "acx.download": "Scarica copione audio (.zip)",
+        "acx.building": "Creazione…",
+        "acx.done": "Copione audio scaricato — file: {n}",
+        "acx.fail": "Copione audio non riuscito: {msg}",
+        "acx.empty": "Ancora niente da narrare: aggiungi prima dei capitoli.",
+        "acx.close": "Chiudi"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "acx.secH": "Guião de áudio para ACX (Audible)",
+        "acx.secP": "Guiões para o narrador na ordem ACX — créditos iniciais, um ficheiro por capítulo, créditos finais — com guia de pronúncia, sugestão de amostra comercial e estimativa de duração. O Beuk não grava áudio; cada minuto mostrado é uma estimativa a partir da contagem de palavras.",
+        "acx.open": "Preparar guião de áudio",
+        "acx.title": "Guião de áudio — ACX",
+        "acx.sub": "As regras da ACX, tal como as suas páginas de ajuda as indicam: um ficheiro por capítulo ou secção, créditos iniciais e finais em ficheiros próprios, o cabeçalho da secção lido no início de cada ficheiro, nenhum ficheiro com mais de 120 minutos e uma amostra comercial de 5 minutos ou menos.",
+        "acx.narrator": "Nome do narrador",
+        "acx.narratorPh": "Tal como aparecerá na ACX",
+        "acx.format": "Formato do guião",
+        "acx.fmt.both": "Word (.docx) e texto simples (.txt)",
+        "acx.fmt.docx": "Apenas Word (.docx)",
+        "acx.fmt.txt": "Apenas texto simples (.txt)",
+        "acx.rights": "Ler a linha de direitos de autor nos créditos finais (as páginas da ACX não dão regra para a página de direitos de autor)",
+        "acx.filesH": "Ficheiros, na ordem ACX",
+        "acx.colFile": "Ficheiro",
+        "acx.colWords": "Palavras",
+        "acx.colMin": "Minutos est.",
+        "acx.colNarrate": "Narrar",
+        "acx.total": "{words} palavras ÷ {wph} palavras por hora final ≈ {hours} horas ({min} minutos)",
+        "acx.noEstimate": "Duração: não verificada — a média de palavras por hora da ACX não se aplica a uma língua contada por caracteres.",
+        "acx.estNote": "9300 palavras por hora é a média indicada pela ACX para os narradores. Cada narrador varia — é uma estimativa, não uma medição.",
+        "acx.excludedH": "Fora da gravação",
+        "acx.why.toc": "A ACX desaconselha narrar o índice",
+        "acx.why.auto": "Uma página impressa — os créditos iniciais anunciam o título, o autor e o narrador em seu lugar",
+        "acx.why.copyright": "A ACX não dá regra para a página de direitos de autor; fica de fora (a linha de direitos pode ser lida nos créditos finais)",
+        "acx.why.picture": "Uma página de imagem — nada para narrar",
+        "acx.why.colophon": "Notas de produção da impressão",
+        "acx.why.part": "Divisória de parte — o seu título é lido no início do ficheiro seguinte",
+        "acx.why.user": "Desativado por si",
+        "acx.why.empty": "Ainda sem texto",
+        "acx.narrateAnyway": "Narrá-la",
+        "acx.sampleH": "Sugestão de amostra comercial",
+        "acx.sampleText": "{words} palavras do início de {section} ≈ {min} minutos. A ACX pede 5 minutos ou menos, retirados dos primeiros cinco minutos do audiolivro — o excerto segue no zip.",
+        "acx.sampleExplicit": "Material explícito: não verificado — a ACX proíbe-o na amostra; só você pode avaliar isso.",
+        "acx.warnH": "Avisos",
+        "acx.warn.noNarrator": "O nome do narrador está vazio — os créditos levam um marcador; a ACX exige que o narrador seja nomeado.",
+        "acx.warn.noAuthor": "O autor está vazio — a ACX exige o autor nos créditos.",
+        "acx.warn.noTitle": "O título está vazio — a ACX exige o título nos créditos.",
+        "acx.warn.long": "{file}: cerca de {min} minutos — acima do limite da ACX de 120 minutos por ficheiro; divida-o.",
+        "acx.warn.noAlt": "Imagens sem descrição: {n} — o narrador vê um marcador.",
+        "acx.warn.notes": "Notas marcadas como decisão do narrador: {n} — as páginas da ACX não dão regra para notas.",
+        "acx.warn.none": "Sem avisos nas verificações que o Beuk fez.",
+        "acx.warn.specs": "Especificações de áudio (taxa de bits MP3, níveis, tom de sala): não verificadas — aplicam-se aos ficheiros gravados, que o Beuk não produz.",
+        "acx.pronH": "Guia de pronúncia",
+        "acx.pronSub": "Palavras em que o Beuk supõe que um narrador poderá tropeçar: nomes usados a meio da frase que nunca aparecem em minúsculas, palavras acentuadas e palavras em itálico. O Beuk não tem dicionário — são suposições para confirmar. As entradas preenchidas vão para o guia e são anotadas nos guiões na primeira ocorrência.",
+        "acx.listenNote": "Ouvir é uma pré-visualização aproximada com a voz do seu dispositivo — não como um narrador o dirá.",
+        "acx.noSpeech": "Este navegador não tem voz de síntese — a pré-visualização não está disponível.",
+        "acx.cjk": "A deteção automática funciona em línguas separadas por espaços; adicione as palavras à mão para este livro.",
+        "acx.addPh": "Uma palavra a adicionar",
+        "acx.add": "Adicionar",
+        "acx.noCands": "Nenhuma candidata encontrada — adicione qualquer palavra à mão.",
+        "acx.colWord": "Palavra",
+        "acx.colCount": "Usos",
+        "acx.colFirst": "Primeira vez",
+        "acx.colSounds": "Soa como",
+        "acx.colIpa": "AFI (opcional)",
+        "acx.reason.name": "Nome repetido",
+        "acx.reason.accent": "Acentuada",
+        "acx.reason.italic": "Em itálico",
+        "acx.reason.manual": "Adicionada por si",
+        "acx.listen": "Ouvir",
+        "acx.dismiss": "Não é preciso",
+        "acx.download": "Transferir guião de áudio (.zip)",
+        "acx.building": "A criar…",
+        "acx.done": "Guião de áudio transferido — ficheiros: {n}",
+        "acx.fail": "O guião de áudio falhou: {msg}",
+        "acx.empty": "Ainda nada para narrar — adicione capítulos primeiro.",
+        "acx.close": "Fechar"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "acx.secH": "Audioscript voor ACX (Audible)",
+        "acx.secP": "Vertellersscripts in ACX-volgorde — openingscredits, één bestand per hoofdstuk, slotcredits — met een uitspraakgids, een voorstel voor het verkoopfragment en een lengteschatting. Beuk neemt geen audio op; elke getoonde minuut is een schatting op basis van het aantal woorden.",
+        "acx.open": "Audioscript voorbereiden",
+        "acx.title": "Audioscript — ACX",
+        "acx.sub": "De regels van ACX, zoals de helppagina's ze geven: één bestand per hoofdstuk of sectie, opening- en slotcredits als eigen bestanden, de sectiekop uitgesproken aan het begin van elk bestand, geen bestand langer dan 120 minuten en een verkoopfragment van hoogstens 5 minuten.",
+        "acx.narrator": "Naam van de verteller",
+        "acx.narratorPh": "Zoals het op ACX zal verschijnen",
+        "acx.format": "Scriptformaat",
+        "acx.fmt.both": "Word (.docx) en platte tekst (.txt)",
+        "acx.fmt.docx": "Alleen Word (.docx)",
+        "acx.fmt.txt": "Alleen platte tekst (.txt)",
+        "acx.rights": "De copyrightregel voorlezen in de slotcredits (de pagina's van ACX geven geen regel voor de copyrightpagina)",
+        "acx.filesH": "Bestanden, in ACX-volgorde",
+        "acx.colFile": "Bestand",
+        "acx.colWords": "Woorden",
+        "acx.colMin": "Geschatte min.",
+        "acx.colNarrate": "Inspreken",
+        "acx.total": "{words} woorden ÷ {wph} woorden per afgewerkt uur ≈ {hours} uur ({min} minuten)",
+        "acx.noEstimate": "Lengte: niet gecontroleerd — het ACX-gemiddelde aan woorden per uur geldt niet voor een taal die in tekens wordt geteld.",
+        "acx.estNote": "9.300 woorden per uur is het gemiddelde dat ACX voor vertellers noemt. Echte vertellers verschillen — dit is een schatting, geen meting.",
+        "acx.excludedH": "Niet opgenomen",
+        "acx.why.toc": "ACX raadt af de inhoudsopgave in te spreken",
+        "acx.why.auto": "Een drukpagina — de openingscredits noemen in plaats daarvan titel, auteur en verteller",
+        "acx.why.copyright": "ACX geeft geen regel voor de copyrightpagina; weggelaten (de rechtenregel kan in de slotcredits worden voorgelezen)",
+        "acx.why.picture": "Een afbeeldingspagina — niets om in te spreken",
+        "acx.why.colophon": "Notities over de drukproductie",
+        "acx.why.part": "Deelscheiding — de kop wordt bovenaan het volgende bestand voorgelezen",
+        "acx.why.user": "Door jou uitgezet",
+        "acx.why.empty": "Nog geen tekst",
+        "acx.narrateAnyway": "Toch inspreken",
+        "acx.sampleH": "Voorstel voor het verkoopfragment",
+        "acx.sampleText": "{words} woorden uit het begin van {section} ≈ {min} minuten. ACX vraagt hoogstens 5 minuten, uit de eerste vijf minuten van het luisterboek — het fragment zit in de zip.",
+        "acx.sampleExplicit": "Expliciet materiaal: niet gecontroleerd — ACX sluit het uit van het fragment; alleen jij kunt dat beoordelen.",
+        "acx.warnH": "Waarschuwingen",
+        "acx.warn.noNarrator": "De naam van de verteller is leeg — de credits bevatten een plaatshouder; ACX eist dat de verteller genoemd wordt.",
+        "acx.warn.noAuthor": "De auteur is leeg — ACX eist de auteur in de credits.",
+        "acx.warn.noTitle": "De titel is leeg — ACX eist de titel in de credits.",
+        "acx.warn.long": "{file}: ongeveer {min} minuten — boven de ACX-limiet van 120 minuten per bestand; splits het.",
+        "acx.warn.noAlt": "Afbeeldingen zonder beschrijving: {n} — de verteller ziet een plaatshouder.",
+        "acx.warn.notes": "Voetnoten gemarkeerd als beslissing voor de verteller: {n} — de pagina's van ACX geven geen regel voor noten.",
+        "acx.warn.none": "Geen waarschuwingen uit de controles die Beuk uitvoerde.",
+        "acx.warn.specs": "Audiospecificaties (MP3-bitrate, niveaus, roomtone): niet gecontroleerd — ze gelden voor de opnamen, die Beuk niet maakt.",
+        "acx.pronH": "Uitspraakgids",
+        "acx.pronSub": "Woorden waarover Beuk vermoedt dat een verteller kan struikelen: namen midden in een zin die nooit met een kleine letter voorkomen, woorden met accenten en cursieve woorden. Beuk heeft geen woordenboek — dit zijn gissingen die jij bevestigt. Ingevulde items gaan in de gids en worden in de scripts bij de eerste keer vermeld.",
+        "acx.listenNote": "Beluisteren is een ruwe voorvertoning met de stem van je apparaat — niet hoe een verteller het zal zeggen.",
+        "acx.noSpeech": "Deze browser heeft geen spraakstem — de voorvertoning is niet beschikbaar.",
+        "acx.cjk": "Automatische herkenning werkt bij talen met spaties; voeg voor dit boek woorden met de hand toe.",
+        "acx.addPh": "Een woord om toe te voegen",
+        "acx.add": "Toevoegen",
+        "acx.noCands": "Geen kandidaten gevonden — voeg een woord met de hand toe.",
+        "acx.colWord": "Woord",
+        "acx.colCount": "Keer",
+        "acx.colFirst": "Eerst gezien",
+        "acx.colSounds": "Klinkt als",
+        "acx.colIpa": "IPA (optioneel)",
+        "acx.reason.name": "Herhaalde naam",
+        "acx.reason.accent": "Met accent",
+        "acx.reason.italic": "Cursief",
+        "acx.reason.manual": "Door jou toegevoegd",
+        "acx.listen": "Beluisteren",
+        "acx.dismiss": "Niet nodig",
+        "acx.download": "Audioscript downloaden (.zip)",
+        "acx.building": "Bezig met maken…",
+        "acx.done": "Audioscript gedownload — bestanden: {n}",
+        "acx.fail": "Audioscript mislukt: {msg}",
+        "acx.empty": "Nog niets om in te spreken — voeg eerst hoofdstukken toe.",
+        "acx.close": "Sluiten"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "acx.secH": "Skrypt audio dla ACX (Audible)",
+        "acx.secP": "Skrypty dla lektora w kolejności ACX — napisy początkowe, jeden plik na rozdział, napisy końcowe — z przewodnikiem wymowy, propozycją próbki sprzedażowej i szacunkiem długości. Beuk nie nagrywa dźwięku; każda pokazana minuta to szacunek z liczby słów.",
+        "acx.open": "Przygotuj skrypt audio",
+        "acx.title": "Skrypt audio — ACX",
+        "acx.sub": "Zasady ACX według jego stron pomocy: jeden plik na rozdział lub sekcję, napisy początkowe i końcowe w osobnych plikach, nagłówek sekcji czytany na początku każdego pliku, żaden plik nie dłuższy niż 120 minut i próbka sprzedażowa do 5 minut.",
+        "acx.narrator": "Imię i nazwisko lektora",
+        "acx.narratorPh": "Tak, jak pojawi się w ACX",
+        "acx.format": "Format skryptu",
+        "acx.fmt.both": "Word (.docx) i zwykły tekst (.txt)",
+        "acx.fmt.docx": "Tylko Word (.docx)",
+        "acx.fmt.txt": "Tylko zwykły tekst (.txt)",
+        "acx.rights": "Przeczytaj notę o prawach autorskich w napisach końcowych (strony ACX nie podają zasady dla strony praw autorskich)",
+        "acx.filesH": "Pliki w kolejności ACX",
+        "acx.colFile": "Plik",
+        "acx.colWords": "Słowa",
+        "acx.colMin": "Szac. minuty",
+        "acx.colNarrate": "Nagrać",
+        "acx.total": "{words} słów ÷ {wph} słów na gotową godzinę ≈ {hours} godz. ({min} minut)",
+        "acx.noEstimate": "Długość: nie sprawdzono — średnia słów na godzinę ACX nie dotyczy języka liczonego w znakach.",
+        "acx.estNote": "9300 słów na godzinę to średnia podawana przez ACX dla lektorów. Lektorzy się różnią — to szacunek, nie pomiar.",
+        "acx.excludedH": "Pominięte w nagraniu",
+        "acx.why.toc": "ACX odradza nagrywanie spisu treści",
+        "acx.why.auto": "Strona drukowana — tytuł, autora i lektora zapowiadają napisy początkowe",
+        "acx.why.copyright": "ACX nie podaje zasady dla strony praw autorskich; pominięta (notę można przeczytać w napisach końcowych)",
+        "acx.why.picture": "Strona z obrazem — nie ma czego czytać",
+        "acx.why.colophon": "Uwagi o produkcji druku",
+        "acx.why.part": "Separator części — jego nagłówek czyta się na początku następnego pliku",
+        "acx.why.user": "Wyłączone przez ciebie",
+        "acx.why.empty": "Jeszcze bez tekstu",
+        "acx.narrateAnyway": "Nagraj mimo to",
+        "acx.sampleH": "Propozycja próbki sprzedażowej",
+        "acx.sampleText": "{words} słów z początku: {section} ≈ {min} minut. ACX prosi o maksymalnie 5 minut z pierwszych pięciu minut audiobooka — fragment jest w pliku zip.",
+        "acx.sampleExplicit": "Treści dosadne: nie sprawdzono — ACX wyklucza je z próbki; ocenić to możesz tylko ty.",
+        "acx.warnH": "Ostrzeżenia",
+        "acx.warn.noNarrator": "Imię lektora jest puste — napisy zawierają symbol zastępczy; ACX wymaga podania lektora.",
+        "acx.warn.noAuthor": "Autor jest pusty — ACX wymaga autora w napisach.",
+        "acx.warn.noTitle": "Tytuł jest pusty — ACX wymaga tytułu w napisach.",
+        "acx.warn.long": "{file}: około {min} minut — ponad limit ACX 120 minut na plik; podziel go.",
+        "acx.warn.noAlt": "Obrazy bez opisu: {n} — lektor zobaczy symbol zastępczy.",
+        "acx.warn.notes": "Przypisy oznaczone jako decyzja lektora: {n} — strony ACX nie podają zasady dla przypisów.",
+        "acx.warn.none": "Brak ostrzeżeń z kontroli wykonanych przez Beuk.",
+        "acx.warn.specs": "Parametry audio (bitrate MP3, poziomy, ton pomieszczenia): nie sprawdzono — dotyczą nagranych plików, których Beuk nie tworzy.",
+        "acx.pronH": "Przewodnik wymowy",
+        "acx.pronSub": "Słowa, na których według Beuk lektor może się potknąć: imiona w środku zdania, które nigdy nie występują małą literą, słowa ze znakami diakrytycznymi i słowa kursywą. Beuk nie ma słownika — to przypuszczenia do potwierdzenia. Wypełnione wpisy trafiają do przewodnika i są notowane w skryptach przy pierwszym wystąpieniu.",
+        "acx.listenNote": "Odsłuch to zgrubny podgląd głosem twojego urządzenia — nie tak, jak powie to lektor.",
+        "acx.noSpeech": "Ta przeglądarka nie ma głosu syntezy — podgląd jest niedostępny.",
+        "acx.cjk": "Automatyczne wykrywanie działa dla języków ze spacjami; dla tej książki dodaj słowa ręcznie.",
+        "acx.addPh": "Słowo do dodania",
+        "acx.add": "Dodaj",
+        "acx.noCands": "Nie znaleziono kandydatów — dodaj słowo ręcznie.",
+        "acx.colWord": "Słowo",
+        "acx.colCount": "Użycia",
+        "acx.colFirst": "Pierwsze wystąpienie",
+        "acx.colSounds": "Brzmi jak",
+        "acx.colIpa": "IPA (opcjonalnie)",
+        "acx.reason.name": "Powtarzane imię",
+        "acx.reason.accent": "Ze znakami diakrytycznymi",
+        "acx.reason.italic": "Kursywą",
+        "acx.reason.manual": "Dodane przez ciebie",
+        "acx.listen": "Odsłuchaj",
+        "acx.dismiss": "Niepotrzebne",
+        "acx.download": "Pobierz skrypt audio (.zip)",
+        "acx.building": "Tworzenie…",
+        "acx.done": "Pobrano skrypt audio — pliki: {n}",
+        "acx.fail": "Skrypt audio nie powiódł się: {msg}",
+        "acx.empty": "Nie ma jeszcze czego nagrać — najpierw dodaj rozdziały.",
+        "acx.close": "Zamknij"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "acx.secH": "Аудиосценарий для ACX (Audible)",
+        "acx.secP": "Сценарии для чтеца в порядке ACX — вступительные титры, по файлу на главу, заключительные титры — с гидом по произношению, предложением для ознакомительного фрагмента и оценкой длительности. Beuk не записывает звук; каждая показанная минута — оценка по числу слов.",
+        "acx.open": "Подготовить аудиосценарий",
+        "acx.title": "Аудиосценарий — ACX",
+        "acx.sub": "Правила ACX, как они изложены на его страницах помощи: один файл на главу или раздел, вступительные и заключительные титры отдельными файлами, заголовок раздела звучит в начале каждого файла, ни один файл не длиннее 120 минут, ознакомительный фрагмент — не более 5 минут.",
+        "acx.narrator": "Имя чтеца",
+        "acx.narratorPh": "Как оно будет указано на ACX",
+        "acx.format": "Формат сценария",
+        "acx.fmt.both": "Word (.docx) и простой текст (.txt)",
+        "acx.fmt.docx": "Только Word (.docx)",
+        "acx.fmt.txt": "Только простой текст (.txt)",
+        "acx.rights": "Прочитать строку об авторском праве в заключительных титрах (страницы ACX не дают правила для страницы копирайта)",
+        "acx.filesH": "Файлы в порядке ACX",
+        "acx.colFile": "Файл",
+        "acx.colWords": "Слова",
+        "acx.colMin": "Оценка, мин",
+        "acx.colNarrate": "Читать",
+        "acx.total": "{words} слов ÷ {wph} слов на готовый час ≈ {hours} ч ({min} минут)",
+        "acx.noEstimate": "Длительность: не проверена — среднее ACX по словам в час не применимо к языку, где считают знаки.",
+        "acx.estNote": "9 300 слов в час — среднее, которое ACX указывает для чтецов. Реальные чтецы различаются — это оценка, а не измерение.",
+        "acx.excludedH": "Не входит в запись",
+        "acx.why.toc": "ACX не рекомендует озвучивать оглавление",
+        "acx.why.auto": "Печатная страница — вместо неё вступительные титры называют название, автора и чтеца",
+        "acx.why.copyright": "ACX не даёт правила для страницы копирайта; пропущена (строку о правах можно прочитать в заключительных титрах)",
+        "acx.why.picture": "Страница с изображением — нечего читать",
+        "acx.why.colophon": "Сведения о печатном производстве",
+        "acx.why.part": "Разделитель части — её заголовок читается в начале следующего файла",
+        "acx.why.user": "Отключено вами",
+        "acx.why.empty": "Пока без текста",
+        "acx.narrateAnyway": "Озвучить",
+        "acx.sampleH": "Предложение для ознакомительного фрагмента",
+        "acx.sampleText": "{words} слов из начала раздела «{section}» ≈ {min} минут. ACX просит не более 5 минут из первых пяти минут аудиокниги — фрагмент лежит в zip.",
+        "acx.sampleExplicit": "Откровенный материал: не проверен — ACX запрещает его во фрагменте; судить можете только вы.",
+        "acx.warnH": "Предупреждения",
+        "acx.warn.noNarrator": "Имя чтеца не указано — в титрах стоит заглушка; ACX требует назвать чтеца.",
+        "acx.warn.noAuthor": "Автор не указан — ACX требует автора в титрах.",
+        "acx.warn.noTitle": "Название не указано — ACX требует название в титрах.",
+        "acx.warn.long": "{file}: около {min} минут — больше лимита ACX в 120 минут на файл; разделите его.",
+        "acx.warn.noAlt": "Изображения без описания: {n} — чтец увидит заглушку.",
+        "acx.warn.notes": "Сноски помечены как решение чтеца: {n} — страницы ACX не дают правила для сносок.",
+        "acx.warn.none": "Проверки, выполненные Beuk, предупреждений не дали.",
+        "acx.warn.specs": "Аудиотребования (битрейт MP3, уровни, фон помещения): не проверены — они относятся к записанным файлам, которые Beuk не создаёт.",
+        "acx.pronH": "Гид по произношению",
+        "acx.pronSub": "Слова, на которых, по догадке Beuk, чтец может споткнуться: имена в середине предложения, никогда не встречающиеся со строчной буквы, слова с диакритикой и слова курсивом. У Beuk нет словаря — это догадки, которые подтверждаете вы. Заполненные записи попадают в гид и отмечаются в сценариях при первом появлении.",
+        "acx.listenNote": "Прослушивание — грубый предпросмотр голосом вашего устройства, а не то, как это скажет чтец.",
+        "acx.noSpeech": "В этом браузере нет синтезированного голоса — предпросмотр недоступен.",
+        "acx.cjk": "Автоматический поиск работает для языков с пробелами; для этой книги добавьте слова вручную.",
+        "acx.addPh": "Слово для добавления",
+        "acx.add": "Добавить",
+        "acx.noCands": "Кандидатов не найдено — добавьте слово вручную.",
+        "acx.colWord": "Слово",
+        "acx.colCount": "Вхождения",
+        "acx.colFirst": "Впервые",
+        "acx.colSounds": "Звучит как",
+        "acx.colIpa": "МФА (необязательно)",
+        "acx.reason.name": "Повторяющееся имя",
+        "acx.reason.accent": "С диакритикой",
+        "acx.reason.italic": "Курсивом",
+        "acx.reason.manual": "Добавлено вами",
+        "acx.listen": "Прослушать",
+        "acx.dismiss": "Не нужно",
+        "acx.download": "Скачать аудиосценарий (.zip)",
+        "acx.building": "Сборка…",
+        "acx.done": "Аудиосценарий скачан — файлов: {n}",
+        "acx.fail": "Ошибка аудиосценария: {msg}",
+        "acx.empty": "Пока нечего читать — сначала добавьте главы.",
+        "acx.close": "Закрыть"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "acx.secH": "ACX (Audible) için sesli kitap metni",
+        "acx.secP": "ACX sırasına göre anlatıcı metinleri — açılış jeneriği, bölüm başına bir dosya, kapanış jeneriği — telaffuz rehberi, satış örneği önerisi ve süre tahminiyle. Beuk ses kaydetmez; gösterilen her dakika kelime sayısından yapılan bir tahmindir.",
+        "acx.open": "Sesli kitap metnini hazırla",
+        "acx.title": "Sesli kitap metni — ACX",
+        "acx.sub": "ACX'in yardım sayfalarında belirttiği kurallar: bölüm veya kısım başına bir dosya, açılış ve kapanış jeneriği ayrı dosyalarda, her dosyanın başında bölüm başlığının okunması, hiçbir dosyanın 120 dakikayı aşmaması ve en fazla 5 dakikalık bir satış örneği.",
+        "acx.narrator": "Anlatıcının adı",
+        "acx.narratorPh": "ACX'te görüneceği şekliyle",
+        "acx.format": "Metin biçimi",
+        "acx.fmt.both": "Word (.docx) ve düz metin (.txt)",
+        "acx.fmt.docx": "Yalnızca Word (.docx)",
+        "acx.fmt.txt": "Yalnızca düz metin (.txt)",
+        "acx.rights": "Telif satırını kapanış jeneriğinde oku (ACX'in sayfaları telif sayfası için bir kural vermiyor)",
+        "acx.filesH": "ACX sırasına göre dosyalar",
+        "acx.colFile": "Dosya",
+        "acx.colWords": "Kelime",
+        "acx.colMin": "Tahmini dk",
+        "acx.colNarrate": "Seslendir",
+        "acx.total": "{words} kelime ÷ bitmiş saat başına {wph} kelime ≈ {hours} saat ({min} dakika)",
+        "acx.noEstimate": "Süre: kontrol edilmedi — ACX'in saat başına kelime ortalaması karakterle sayılan bir dile uygulanmaz.",
+        "acx.estNote": "Saatte 9.300 kelime, ACX'in anlatıcılar için belirttiği ortalamadır. Gerçek anlatıcılar farklılık gösterir — bu bir ölçüm değil, tahmindir.",
+        "acx.excludedH": "Kayda alınmayanlar",
+        "acx.why.toc": "ACX içindekiler bölümünün seslendirilmemesini önerir",
+        "acx.why.auto": "Bir baskı sayfası — bunun yerine açılış jeneriği başlığı, yazarı ve anlatıcıyı duyurur",
+        "acx.why.copyright": "ACX telif sayfası için kural vermez; dışarıda bırakıldı (telif satırı kapanış jeneriğinde okunabilir)",
+        "acx.why.picture": "Bir resim sayfası — seslendirilecek bir şey yok",
+        "acx.why.colophon": "Baskı üretim notları",
+        "acx.why.part": "Kısım ayırıcı — başlığı bir sonraki dosyanın başında okunur",
+        "acx.why.user": "Sizin tarafınızdan kapatıldı",
+        "acx.why.empty": "Henüz metin yok",
+        "acx.narrateAnyway": "Seslendir",
+        "acx.sampleH": "Satış örneği önerisi",
+        "acx.sampleText": "{section} bölümünün başından {words} kelime ≈ {min} dakika. ACX, sesli kitabın ilk beş dakikasından en fazla 5 dakika ister — alıntı zip dosyasında.",
+        "acx.sampleExplicit": "Müstehcen içerik: kontrol edilmedi — ACX bunu örnekte yasaklar; buna yalnızca siz karar verebilirsiniz.",
+        "acx.warnH": "Uyarılar",
+        "acx.warn.noNarrator": "Anlatıcı adı boş — jenerikte yer tutucu var; ACX anlatıcının adının söylenmesini şart koşar.",
+        "acx.warn.noAuthor": "Yazar boş — ACX jenerikte yazarı şart koşar.",
+        "acx.warn.noTitle": "Başlık boş — ACX jenerikte başlığı şart koşar.",
+        "acx.warn.long": "{file}: yaklaşık {min} dakika — ACX'in dosya başına 120 dakikalık sınırını aşıyor; bölün.",
+        "acx.warn.noAlt": "Açıklaması olmayan resimler: {n} — anlatıcı bir yer tutucu görür.",
+        "acx.warn.notes": "Anlatıcı kararı olarak işaretlenen dipnotlar: {n} — ACX'in sayfaları notlar için kural vermiyor.",
+        "acx.warn.none": "Beuk'un yaptığı kontrollerde uyarı yok.",
+        "acx.warn.specs": "Ses özellikleri (MP3 bit hızı, seviyeler, oda tonu): kontrol edilmedi — Beuk'un üretmediği kayıt dosyaları için geçerlidir.",
+        "acx.pronH": "Telaffuz rehberi",
+        "acx.pronSub": "Beuk'un bir anlatıcının takılabileceğini tahmin ettiği kelimeler: cümle ortasında kullanılan ve hiç küçük harfle geçmeyen adlar, aksanlı kelimeler ve italik kelimeler. Beuk'un sözlüğü yok — bunlar sizin onaylayacağınız tahminlerdir. Doldurulan girişler rehbere girer ve metinlerde ilk geçtikleri yerde not edilir.",
+        "acx.listenNote": "Dinle, cihazınızın kendi sesiyle kaba bir ön izlemedir — bir anlatıcının söyleyeceği gibi değildir.",
+        "acx.noSpeech": "Bu tarayıcıda konuşma sesi yok — ön izleme kullanılamıyor.",
+        "acx.cjk": "Otomatik algılama boşlukla ayrılan dillerde çalışır; bu kitap için kelimeleri elle ekleyin.",
+        "acx.addPh": "Eklenecek kelime",
+        "acx.add": "Ekle",
+        "acx.noCands": "Aday bulunamadı — herhangi bir kelimeyi elle ekleyin.",
+        "acx.colWord": "Kelime",
+        "acx.colCount": "Kullanım",
+        "acx.colFirst": "İlk görüldüğü yer",
+        "acx.colSounds": "Okunuşu",
+        "acx.colIpa": "IPA (isteğe bağlı)",
+        "acx.reason.name": "Tekrarlanan ad",
+        "acx.reason.accent": "Aksanlı",
+        "acx.reason.italic": "İtalik",
+        "acx.reason.manual": "Sizin eklediğiniz",
+        "acx.listen": "Dinle",
+        "acx.dismiss": "Gerek yok",
+        "acx.download": "Sesli kitap metnini indir (.zip)",
+        "acx.building": "Oluşturuluyor…",
+        "acx.done": "Sesli kitap metni indirildi — dosya: {n}",
+        "acx.fail": "Sesli kitap metni başarısız: {msg}",
+        "acx.empty": "Henüz seslendirilecek bir şey yok — önce bölüm ekleyin.",
+        "acx.close": "Kapat"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "acx.secH": "نص صوتي لـ ACX (Audible)",
+        "acx.secP": "نصوص للراوي بترتيب ACX — شارة البداية، ملف لكل فصل، شارة النهاية — مع دليل نطق واقتراح لعيّنة البيع وتقدير للمدة. لا يسجّل Beuk أي صوت؛ كل دقيقة معروضة تقدير من عدد الكلمات.",
+        "acx.open": "إعداد النص الصوتي",
+        "acx.title": "النص الصوتي — ACX",
+        "acx.sub": "قواعد ACX كما تذكرها صفحات المساعدة: ملف لكل فصل أو قسم، وشارتا البداية والنهاية في ملفين مستقلين، وعنوان القسم يُقرأ في بداية كل ملف، ولا ملف يتجاوز 120 دقيقة، وعيّنة بيع مدتها 5 دقائق أو أقل.",
+        "acx.narrator": "اسم الراوي",
+        "acx.narratorPh": "كما سيظهر على ACX",
+        "acx.format": "صيغة النص",
+        "acx.fmt.both": "Word (.docx) ونص عادي (.txt)",
+        "acx.fmt.docx": "Word (.docx) فقط",
+        "acx.fmt.txt": "نص عادي (.txt) فقط",
+        "acx.rights": "قراءة سطر حقوق النشر في شارة النهاية (لا تذكر صفحات ACX قاعدة لصفحة حقوق النشر)",
+        "acx.filesH": "الملفات بترتيب ACX",
+        "acx.colFile": "الملف",
+        "acx.colWords": "الكلمات",
+        "acx.colMin": "دقائق تقديرية",
+        "acx.colNarrate": "رواية",
+        "acx.total": "{words} كلمة ÷ {wph} كلمة لكل ساعة نهائية ≈ {hours} ساعة ({min} دقيقة)",
+        "acx.noEstimate": "المدة: لم يُتحقق منها — متوسط ACX للكلمات في الساعة لا ينطبق على لغة تُعدّ بالأحرف.",
+        "acx.estNote": "9300 كلمة في الساعة هو المتوسط الذي تذكره ACX للرواة. يختلف الرواة فعليًا — هذا تقدير لا قياس.",
+        "acx.excludedH": "خارج التسجيل",
+        "acx.why.toc": "توصي ACX بعدم قراءة جدول المحتويات",
+        "acx.why.auto": "صفحة مطبوعة — تعلن شارة البداية العنوان والمؤلف والراوي بدلًا منها",
+        "acx.why.copyright": "لا تذكر ACX قاعدة لصفحة حقوق النشر؛ استُبعدت (يمكن قراءة سطر الحقوق في شارة النهاية)",
+        "acx.why.picture": "صفحة صورة — لا شيء يُروى",
+        "acx.why.colophon": "ملاحظات إنتاج الطباعة",
+        "acx.why.part": "فاصل جزء — يُقرأ عنوانه في بداية الملف التالي",
+        "acx.why.user": "أوقفته بنفسك",
+        "acx.why.empty": "لا نص بعد",
+        "acx.narrateAnyway": "روايتها",
+        "acx.sampleH": "اقتراح لعيّنة البيع",
+        "acx.sampleText": "{words} كلمة من بداية {section} ≈ {min} دقيقة. تطلب ACX عيّنة مدتها 5 دقائق أو أقل من أول خمس دقائق في الكتاب الصوتي — المقتطف موجود في ملف zip.",
+        "acx.sampleExplicit": "المحتوى الصريح: لم يُتحقق منه — تمنعه ACX في العيّنة؛ وحدك من يحكم على ذلك.",
+        "acx.warnH": "تحذيرات",
+        "acx.warn.noNarrator": "اسم الراوي فارغ — تحمل الشارات عنصرًا نائبًا؛ تشترط ACX ذكر الراوي.",
+        "acx.warn.noAuthor": "المؤلف فارغ — تشترط ACX ذكر المؤلف في الشارات.",
+        "acx.warn.noTitle": "العنوان فارغ — تشترط ACX ذكر العنوان في الشارات.",
+        "acx.warn.long": "{file}: نحو {min} دقيقة — يتجاوز حد ACX البالغ 120 دقيقة لكل ملف؛ قسّمه.",
+        "acx.warn.noAlt": "صور بلا وصف: {n} — سيرى الراوي عنصرًا نائبًا.",
+        "acx.warn.notes": "حواشٍ معلَّمة كقرار للراوي: {n} — لا تذكر صفحات ACX قاعدة للحواشي.",
+        "acx.warn.none": "لا تحذيرات من الفحوص التي أجراها Beuk.",
+        "acx.warn.specs": "مواصفات الصوت (معدل بت MP3، المستويات، نغمة الغرفة): لم يُتحقق منها — تنطبق على الملفات المسجّلة التي لا يصنعها Beuk.",
+        "acx.pronH": "دليل النطق",
+        "acx.pronSub": "كلمات يُخمّن Beuk أن الراوي قد يتعثر فيها: أسماء تُستخدم في وسط الجملة ولا تظهر أبدًا بحرف صغير، وكلمات بعلامات تشكيل، وكلمات مائلة. ليس لدى Beuk قاموس — هذه تخمينات عليك تأكيدها. تدخل المدخلات المكتملة في الدليل وتُذكر في النصوص عند أول ظهور لها.",
+        "acx.listenNote": "الاستماع معاينة تقريبية بصوت جهازك — وليس كما سيقولها الراوي.",
+        "acx.noSpeech": "لا يملك هذا المتصفح صوتًا للنطق — المعاينة غير متاحة.",
+        "acx.cjk": "يعمل الاكتشاف التلقائي في اللغات التي تفصل كلماتها مسافات؛ أضف الكلمات يدويًا لهذا الكتاب.",
+        "acx.addPh": "كلمة لإضافتها",
+        "acx.add": "إضافة",
+        "acx.noCands": "لم يُعثر على مرشحين — أضف أي كلمة يدويًا.",
+        "acx.colWord": "الكلمة",
+        "acx.colCount": "مرات الورود",
+        "acx.colFirst": "أول ظهور",
+        "acx.colSounds": "يُنطق مثل",
+        "acx.colIpa": "الأبجدية الصوتية (اختياري)",
+        "acx.reason.name": "اسم متكرر",
+        "acx.reason.accent": "بعلامات تشكيل",
+        "acx.reason.italic": "مائل",
+        "acx.reason.manual": "أضفتها بنفسك",
+        "acx.listen": "استمع",
+        "acx.dismiss": "غير لازم",
+        "acx.download": "تنزيل النص الصوتي (.zip)",
+        "acx.building": "جارٍ الإنشاء…",
+        "acx.done": "نُزِّل النص الصوتي — الملفات: {n}",
+        "acx.fail": "فشل النص الصوتي: {msg}",
+        "acx.empty": "لا شيء للرواية بعد — أضف فصولًا أولًا.",
+        "acx.close": "إغلاق"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "acx.secH": "ACX（Audible）用オーディオ台本",
+        "acx.secP": "ACXの順序で並べたナレーター用台本 — オープニングクレジット、章ごとに1ファイル、クロージングクレジット — 発音ガイド、販売用サンプルの提案、長さの見積もり付き。Beukは録音しません。表示される分数はすべて語数からの見積もりです。",
+        "acx.open": "オーディオ台本を準備",
+        "acx.title": "オーディオ台本 — ACX",
+        "acx.sub": "ACXのヘルプページに記載されたルール：章またはセクションごとに1ファイル、オープニングとクロージングのクレジットはそれぞれ独立したファイル、各ファイルの冒頭でセクション見出しを読む、120分を超えるファイルは不可、販売用サンプルは5分以内。",
+        "acx.narrator": "ナレーター名",
+        "acx.narratorPh": "ACXに表示されるとおりに",
+        "acx.format": "台本の形式",
+        "acx.fmt.both": "Word（.docx）とテキスト（.txt）",
+        "acx.fmt.docx": "Word（.docx）のみ",
+        "acx.fmt.txt": "テキスト（.txt）のみ",
+        "acx.rights": "クロージングクレジットで著作権表示を読む（ACXのページには著作権ページの規定がありません）",
+        "acx.filesH": "ACX順のファイル",
+        "acx.colFile": "ファイル",
+        "acx.colWords": "語数",
+        "acx.colMin": "推定分数",
+        "acx.colNarrate": "朗読",
+        "acx.total": "{words}語 ÷ 完成1時間あたり{wph}語 ≈ {hours}時間（{min}分）",
+        "acx.noEstimate": "長さ：未確認 — ACXの1時間あたり語数の平均は、文字数で数える言語には当てはまりません。",
+        "acx.estNote": "1時間あたり9,300語はACXが示すナレーターの平均です。実際のナレーターには個人差があり、これは測定ではなく見積もりです。",
+        "acx.excludedH": "録音しないもの",
+        "acx.why.toc": "ACXは目次の朗読を推奨していません",
+        "acx.why.auto": "印刷用のページ — 代わりにオープニングクレジットで書名・著者・ナレーターを告げます",
+        "acx.why.copyright": "ACXには著作権ページの規定がないため除外（著作権表示はクロージングクレジットで読めます）",
+        "acx.why.picture": "画像のページ — 朗読するものはありません",
+        "acx.why.colophon": "印刷制作の注記",
+        "acx.why.part": "部の区切り — 見出しは次のファイルの冒頭で読みます",
+        "acx.why.user": "あなたがオフにしました",
+        "acx.why.empty": "まだテキストがありません",
+        "acx.narrateAnyway": "朗読する",
+        "acx.sampleH": "販売用サンプルの提案",
+        "acx.sampleText": "{section}の冒頭から{words}語 ≈ {min}分。ACXはオーディオブックの最初の5分から5分以内を求めています — 抜粋はzipに入っています。",
+        "acx.sampleExplicit": "露骨な内容：未確認 — ACXはサンプルでの使用を禁じています。判断できるのはあなただけです。",
+        "acx.warnH": "警告",
+        "acx.warn.noNarrator": "ナレーター名が空です — クレジットには仮の文字が入ります。ACXはナレーター名の明示を求めています。",
+        "acx.warn.noAuthor": "著者が空です — ACXはクレジットに著者を求めています。",
+        "acx.warn.noTitle": "書名が空です — ACXはクレジットに書名を求めています。",
+        "acx.warn.long": "{file}：約{min}分 — ACXの1ファイル120分の上限を超えています。分割してください。",
+        "acx.warn.noAlt": "説明のない画像：{n} — ナレーターには仮の文字が表示されます。",
+        "acx.warn.notes": "ナレーター判断として示した脚注：{n} — ACXのページには注の規定がありません。",
+        "acx.warn.none": "Beukが実行したチェックでは警告はありません。",
+        "acx.warn.specs": "音声仕様（MP3ビットレート、レベル、ルームトーン）：未確認 — Beukが作らない録音ファイルに適用されるものです。",
+        "acx.pronH": "発音ガイド",
+        "acx.pronSub": "ナレーターがつまずきそうだとBeukが推測した語：文中で使われ小文字では一度も現れない名前、アクセント付きの語、斜体の語。Beukには辞書がないため、これはあなたが確認すべき推測です。記入した項目はガイドに入り、台本では最初の出現箇所に注記されます。",
+        "acx.listenNote": "「聴く」はお使いの端末の音声による大まかなプレビューです — ナレーターの読み方ではありません。",
+        "acx.noSpeech": "このブラウザには音声合成の声がありません — プレビューは使えません。",
+        "acx.cjk": "自動検出は空白で区切る言語で機能します。この本では語を手で追加してください。",
+        "acx.addPh": "追加する語",
+        "acx.add": "追加",
+        "acx.noCands": "候補は見つかりませんでした — 語を手で追加してください。",
+        "acx.colWord": "語",
+        "acx.colCount": "出現数",
+        "acx.colFirst": "初出",
+        "acx.colSounds": "読み方",
+        "acx.colIpa": "IPA（任意）",
+        "acx.reason.name": "繰り返される名前",
+        "acx.reason.accent": "アクセント付き",
+        "acx.reason.italic": "斜体",
+        "acx.reason.manual": "あなたが追加",
+        "acx.listen": "聴く",
+        "acx.dismiss": "不要",
+        "acx.download": "オーディオ台本をダウンロード（.zip）",
+        "acx.building": "作成中…",
+        "acx.done": "オーディオ台本をダウンロードしました — ファイル数：{n}",
+        "acx.fail": "オーディオ台本に失敗しました：{msg}",
+        "acx.empty": "まだ朗読するものがありません — 先に章を追加してください。",
+        "acx.close": "閉じる"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "acx.secH": "ACX（Audible）有声书脚本",
+        "acx.secP": "按 ACX 顺序排列的朗读者脚本 — 片头鸣谢、每章一个文件、片尾鸣谢 — 附发音指南、零售试听建议和时长估算。Beuk 不录制任何音频；显示的每一分钟都是根据字数得出的估算。",
+        "acx.open": "准备有声书脚本",
+        "acx.title": "有声书脚本 — ACX",
+        "acx.sub": "ACX 帮助页面所述的规则：每章或每节一个文件，片头和片尾鸣谢各自独立成文件，每个文件开头读出章节标题，任何文件不超过 120 分钟，零售试听不超过 5 分钟。",
+        "acx.narrator": "朗读者姓名",
+        "acx.narratorPh": "与 ACX 上显示的一致",
+        "acx.format": "脚本格式",
+        "acx.fmt.both": "Word（.docx）和纯文本（.txt）",
+        "acx.fmt.docx": "仅 Word（.docx）",
+        "acx.fmt.txt": "仅纯文本（.txt）",
+        "acx.rights": "在片尾鸣谢中读出版权声明（ACX 页面未对版权页作规定）",
+        "acx.filesH": "按 ACX 顺序的文件",
+        "acx.colFile": "文件",
+        "acx.colWords": "词数",
+        "acx.colMin": "估计分钟",
+        "acx.colNarrate": "朗读",
+        "acx.total": "{words} 词 ÷ 每成品小时 {wph} 词 ≈ {hours} 小时（{min} 分钟）",
+        "acx.noEstimate": "时长：未检查 — ACX 的每小时词数平均值不适用于按字符计数的语言。",
+        "acx.estNote": "每小时 9,300 词是 ACX 给出的朗读者平均值。实际朗读者各不相同 — 这是估算，不是测量。",
+        "acx.excludedH": "不录制的部分",
+        "acx.why.toc": "ACX 不建议朗读目录",
+        "acx.why.auto": "印刷页面 — 由片头鸣谢宣布书名、作者和朗读者",
+        "acx.why.copyright": "ACX 未对版权页作规定；已略去（版权声明可在片尾鸣谢中读出）",
+        "acx.why.picture": "图片页 — 没有可朗读的内容",
+        "acx.why.colophon": "印刷制作说明",
+        "acx.why.part": "部分隔页 — 其标题在下一个文件开头读出",
+        "acx.why.user": "已由你关闭",
+        "acx.why.empty": "尚无文字",
+        "acx.narrateAnyway": "仍要朗读",
+        "acx.sampleH": "零售试听建议",
+        "acx.sampleText": "取自 {section} 开头的 {words} 词 ≈ {min} 分钟。ACX 要求取有声书最初五分钟内、不超过 5 分钟的内容 — 节选已放入 zip。",
+        "acx.sampleExplicit": "露骨内容：未检查 — ACX 禁止其出现在试听中；只有你能判断。",
+        "acx.warnH": "警告",
+        "acx.warn.noNarrator": "朗读者姓名为空 — 鸣谢中为占位文字；ACX 要求写明朗读者。",
+        "acx.warn.noAuthor": "作者为空 — ACX 要求在鸣谢中写明作者。",
+        "acx.warn.noTitle": "书名为空 — ACX 要求在鸣谢中写明书名。",
+        "acx.warn.long": "{file}：约 {min} 分钟 — 超过 ACX 每个文件 120 分钟的上限；请拆分。",
+        "acx.warn.noAlt": "无描述的图片：{n} — 朗读者将看到占位文字。",
+        "acx.warn.notes": "标为朗读者自行决定的脚注：{n} — ACX 页面未对注释作规定。",
+        "acx.warn.none": "Beuk 执行的检查没有警告。",
+        "acx.warn.specs": "音频规格（MP3 码率、电平、环境音）：未检查 — 它们适用于录制的文件，而 Beuk 不制作这些文件。",
+        "acx.pronH": "发音指南",
+        "acx.pronSub": "Beuk 猜测朗读者可能读错的词：在句中使用且从未以小写出现的名字、带变音符号的词以及斜体词。Beuk 没有词典 — 这些都是需要你确认的猜测。填写的条目会进入指南，并在脚本中首次出现处标注。",
+        "acx.listenNote": "试听是用你设备自带语音的粗略预览 — 并非朗读者的读法。",
+        "acx.noSpeech": "此浏览器没有语音 — 无法预览。",
+        "acx.cjk": "自动检测适用于以空格分词的语言；请为本书手动添加词语。",
+        "acx.addPh": "要添加的词",
+        "acx.add": "添加",
+        "acx.noCands": "未找到候选词 — 可手动添加任意词。",
+        "acx.colWord": "词",
+        "acx.colCount": "次数",
+        "acx.colFirst": "首次出现",
+        "acx.colSounds": "读音近似",
+        "acx.colIpa": "国际音标（可选）",
+        "acx.reason.name": "重复出现的名字",
+        "acx.reason.accent": "带变音符号",
+        "acx.reason.italic": "斜体",
+        "acx.reason.manual": "由你添加",
+        "acx.listen": "试听",
+        "acx.dismiss": "不需要",
+        "acx.download": "下载有声书脚本（.zip）",
+        "acx.building": "正在生成…",
+        "acx.done": "有声书脚本已下载 — 文件数：{n}",
+        "acx.fail": "有声书脚本生成失败：{msg}",
+        "acx.empty": "尚无可朗读内容 — 请先添加章节。",
+        "acx.close": "关闭"
+      });
+      /* ==== /BEUK:acx ==== */
       /* ================= Ornaments (inline SVG, em-sized) ================= */
       function starPath(cx, cy, r) {
         return "M" + cx + " " + (cy - r) + " L" + (cx + r * 0.28) + " " + (cy - r * 0.28) + " L" + (cx + r) + " " + cy +
@@ -16647,6 +17594,705 @@
         }
       }
 
+      /* ==== BEUK:acx ==== */
+      /* ================= Audio script export for ACX (feature 7) =================
+         A narrator's script set for an audiobook made on ACX (Audible's
+         Audiobook Creation Exchange) or any producer working the same
+         way: one script per finished file, in ACX order — 00 Opening
+         Credits, the narrated sections, NN Closing Credits — plus a
+         pronunciation guide, a retail-sample suggestion and a summary
+         with the length estimate shown as plain arithmetic.
+
+         Every rule below is taken from a page we read, cited next to
+         the constant. Where ACX's own pages are silent (footnotes,
+         pictures, the copyright page) the script does not pretend a
+         rule exists: it hands the call to the narrator / author as an
+         explicit note. Nothing here records or measures audio — every
+         minute shown is an estimate from a word count. */
+      const ACX_SPEC = {
+        /* "On average, most performers narrate about 9,300 words per
+           hour." — an average, so the result is an estimate.
+           https://help.acx.com/s/article/how-long-will-my-narrated-audiobook-be */
+        wordsPerHour: 9300,
+        /* "Each file must be no longer than 120 minutes."
+           https://help.acx.com/s/article/acx-audio-submission-requirements */
+        maxFileMinutes: 120,
+        /* "Include a retail sample of 5 minutes or less." / "Please choose
+           the first five minutes of your audiobook as the sample." /
+           "Samples must not contain any explicit (e.g., violent or
+           pornographic) material."
+           https://help.acx.com/s/article/acx-audio-submission-requirements */
+        sampleMaxMinutes: 5,
+        sources: {
+          /* One file per chapter/section, separate opening and closing
+             credit files, the section header spoken in every file, the
+             opening/closing credit wording, the 120-minute cap and the
+             retail sample — all from this page. */
+          submission: "https://help.acx.com/s/article/acx-audio-submission-requirements",
+          wordsPerHour: "https://help.acx.com/s/article/how-long-will-my-narrated-audiobook-be",
+          /* "We don't recommend including the table of contents in the audiobook." */
+          toc: "https://help.acx.com/s/article/producing-and-recording-your-audiobook",
+          /* "Remove sections that aren't for audio" — "such as the table
+             of contents or index and other front or back matter". */
+          sections: "https://www.acx.com/mp/blog/introducing-enhanced-listener-navigation-for-your-audiobook",
+          /* Pronunciation notes "as a reminder or cue to the narrator",
+             especially for "fictional locations, made up names, or
+             invented languages". */
+          pronunciation: "https://www.acx.com/mp/blog/directors-notes-for-your-acx-production",
+          /* Secondary (not ACX): a self-publishing guide that advises
+             removing footnotes / folding them into the text, and is
+             itself inconsistent about the copyright page. Cited only to
+             explain why those calls are left to the author. */
+          secondary: "https://scribecount.com/author-resource/publishing-a-book/How-to-Format-Your-Manuscript-for-Audiobook-Production"
+        }
+      };
+      /* Section types left out of the recording by default, with the
+         reason shown to the author. Every one can be switched back on.
+         toc → ACX recommends against it (sources.toc). The title-page
+         family → its content (title, author, narrator) is what the
+         opening credits announce (sources.submission). copyright → ACX
+         is silent; the author may opt to read the rights line in the
+         closing credits instead. frontispiece → a picture page. */
+      const ACX_DEFAULT_SKIP = { cover: "picture", halftitle: "auto", titlepage: "auto", toc: "toc", copyright: "copyright", frontispiece: "picture", colophon: "colophon" };
+      const ACX_SCENE_BREAK = /^(\*\*\*|❦|⁂)$/;
+      const ACX_NOTE_MARK = /\[\^?(\d{1,3})\]/g;
+      function acxNormalize(a) {
+        a = a && typeof a === "object" ? a : {};
+        const include = {};
+        if (a.include && typeof a.include === "object") Object.keys(a.include).forEach((k) => { if (typeof a.include[k] === "boolean") include[k] = a.include[k]; });
+        const seen = new Set();
+        const pron = (Array.isArray(a.pron) ? a.pron : []).map((p) => (p && typeof p === "object" ? {
+          word: String(p.word || "").trim().slice(0, 80),
+          soundsLike: String(p.soundsLike || "").slice(0, 160),
+          ipa: String(p.ipa || "").slice(0, 160),
+          manual: p.manual === true
+        } : null)).filter((p) => {
+          if (!p || !p.word || seen.has(p.word.toLowerCase())) return false;
+          seen.add(p.word.toLowerCase()); return true;
+        });
+        return {
+          narrator: typeof a.narrator === "string" ? a.narrator.slice(0, 200) : "",
+          format: ["both", "docx", "txt"].includes(a.format) ? a.format : "both",
+          rightsInClosing: a.rightsInClosing === true,
+          include: include,
+          pron: pron,
+          dismissed: (Array.isArray(a.dismissed) ? a.dismissed : []).filter((w) => typeof w === "string" && w).map((w) => w.slice(0, 80))
+        };
+      }
+      state.audio = acxNormalize(null);
+      function acxEdited() { if (typeof noteBookEdited === "function") noteBookEdited(); }
+      const acxEstimable = () => langPack(bookLang()).count !== "characters";
+      const acxMinutes = (words) => words / ACX_SPEC.wordsPerHour * 60;
+      const acxRound = (n, d) => { const f = Math.pow(10, d); return Math.round(n * f) / f; };
+      /* The spoken words of a line: markup and bracketed narrator notes out. */
+      const acxSpoken = (text) => String(text || "").replace(ACX_NOTE_MARK, " ").replace(/\[(NOTE|IMAGE|PAUSE|PRONUNCIATION|NARRATOR)[^\]]*\]/g, " ").replace(/\*\*|\*/g, "");
+      const acxPlainInline = (text) => String(text || "").replace(ACX_NOTE_MARK, (m, n) => " [NOTE " + n + "]").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
+      function acxSectionSkipReason(s) {
+        const own = state.audio.include[s.id];
+        if (own === false) return "user";
+        if (s.type === "part") return "part";
+        if (own === true) return (s.type === "cover" || s.type === "frontispiece") ? "picture" : null;
+        if (ACX_DEFAULT_SKIP[s.type]) return ACX_DEFAULT_SKIP[s.type];
+        if (!String(s.content || "").trim()) return "empty";
+        return null;
+      }
+      /* The spoken header ACX asks every file to carry ("Prologue",
+         "Chapter 1"). */
+      function acxSpokenHeader(s) {
+        if (s.type === "chapter") return (s.number ? "Chapter " + s.number + (s.title ? ": " + s.title : "") : (s.title || "Untitled Chapter"));
+        return s.title || sectionLabel(s) || "Untitled";
+      }
+      function acxFileTitle(s) {
+        const raw = s.type === "chapter" ? (s.number ? "Chapter " + s.number + (s.title ? " - " + s.title : "") : (s.title || "Chapter")) : (s.title || "Section");
+        return raw.replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, " ").trim().slice(0, 80) || "Section";
+      }
+      /* One section's script lines. Footnotes become narrator-decision
+         notes after the paragraph that cites them (ACX's pages give no
+         rule for notes); pictures become [IMAGE: alt]; scene breaks
+         become pauses. */
+      function acxSectionLines(s, prefix) {
+        const lines = (prefix || []).slice();
+        lines.push({ k: "head", text: acxSpokenHeader(s) });
+        if (s.subtitle) lines.push({ k: "sub", text: s.subtitle });
+        if (s.plateId && s.plateAlt) lines.push({ k: "image", text: s.plateAlt });
+        /* Generated pages the author chose to narrate anyway: read what the page shows. */
+        if (s.type === "toc") {
+          state.sections.filter((x) => x.included && x.kind === "body" && x.type !== "part").forEach((x) => lines.push({ k: "para", text: sectionLabel(x) }));
+          return lines;
+        }
+        if (s.type === "copyright" && !String(s.content || "").trim()) { lines.push({ k: "para", text: rightsLine() }); return lines; }
+        const notes = {};
+        collectDocxNotesFrom(s.content).forEach((n) => { notes[n.n] = n.text; });
+        const text = beautifyText(s.content || "");
+        let breakIdx = 0;
+        text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).forEach((block) => {
+          if (/^\[\^?\d{1,3}\]:/.test(block)) return;
+          const tok = parseImageLine(block);
+          if (tok) { lines.push({ k: "image", text: tok.alt || "", missingAlt: !tok.alt }); return; }
+          if (ACX_SCENE_BREAK.test(block)) {
+            lines.push({ k: "pause", text: "" });
+            const sc = sceneEntryAt(s, breakIdx);
+            if (sc && sc.alt) lines.push({ k: "image", text: sc.alt });
+            breakIdx++;
+            return;
+          }
+          const bl = block.split("\n");
+          let kind = "para", body;
+          if (bl.every((l) => l.startsWith(">"))) { kind = "quote"; body = bl.map((l) => l.replace(/^>\s?/, "")).join(" "); }
+          else body = bl.join(" ").replace(/^#{1,6}\s+/, "");
+          lines.push({ k: kind, text: body });
+          const cited = [];
+          body.replace(ACX_NOTE_MARK, (m, n) => { if (!cited.includes(n)) cited.push(n); return m; });
+          cited.forEach((n) => lines.push({ k: "note", n: n, text: notes[n] || "" }));
+        });
+        return lines;
+      }
+      function acxLinesWords(lines) {
+        return lines.reduce((sum, l) => sum + (["head", "sub", "para", "quote"].includes(l.k) ? countWords(acxSpoken(l.text), bookLang()) : 0), 0);
+      }
+      const acxWordRe = (w) => new RegExp("(^|[^\\p{L}\\p{M}])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=$|[^\\p{L}\\p{M}])", "iu");
+      /* The whole plan: files in ACX order, the excluded sections with
+         their reasons, totals, the retail-sample suggestion and the
+         warnings. Pure and synchronous — the summary screen, the zip
+         and the self-checks all read the same plan. */
+      function acxBuildPlan() {
+        const a = state.audio = acxNormalize(state.audio);
+        const m = state.meta;
+        const narr = a.narrator.trim();
+        const title = (m.title || "").trim(), author = (m.author || "").trim();
+        const files = [];
+        const excluded = [];
+        const warnings = [];
+        const narratorText = narr || "[NARRATOR NAME — fill in before recording]";
+        const titleLine = (title || "[BOOK TITLE]") + (m.subtitle ? ": " + m.subtitle : "");
+        files.push({ kind: "opening", title: "Opening Credits", lines: [
+          { k: "direction", text: "OPENING CREDITS — ACX: the announcement must state the title, author(s) and narrator(s), consistent with the book's metadata and cover art." },
+          { k: "para", text: titleLine + "." },
+          { k: "para", text: "Written by " + (author || "[AUTHOR]") + "." },
+          { k: "para", text: "Narrated by " + narratorText + "." }
+        ] });
+        let pendingPart = [];
+        const narrated = [];
+        state.sections.filter((s) => s.included).forEach((s) => {
+          const why = acxSectionSkipReason(s);
+          if (why === "part") {
+            pendingPart = [{ k: "head", text: (s.number ? "Part " + s.number + (s.title ? ": " + s.title : "") : (s.title || "Part")) }];
+            excluded.push({ id: s.id, label: sectionLabel(s), reason: "part", toggle: false });
+            return;
+          }
+          if (why) { excluded.push({ id: s.id, label: sectionLabel(s), reason: why, toggle: ["toc", "copyright", "colophon", "user"].includes(why) }); return; }
+          const lines = acxSectionLines(s, pendingPart);
+          pendingPart = [];
+          const f = { kind: "section", sectionId: s.id, label: sectionLabel(s), title: acxFileTitle(s), lines: lines };
+          files.push(f); narrated.push(f);
+        });
+        const closing = [{ k: "direction", text: "CLOSING CREDITS — ACX: closing credits must indicate finality; ACX's best practice is \"You have been listening to…\", the title, author(s) and narrator(s), and \"The End\"." },
+          { k: "para", text: "You have been listening to " + titleLine + ", written by " + (author || "[AUTHOR]") + ", narrated by " + narratorText + "." }];
+        if (a.rightsInClosing) closing.push({ k: "para", text: rightsLine() });
+        closing.push({ k: "para", text: "The End." });
+        files.push({ kind: "closing", title: "Closing Credits", lines: closing });
+
+        /* Pronunciation: first-occurrence notes for every filled entry. */
+        const filled = a.pron.filter((p) => p.soundsLike.trim() || p.ipa.trim());
+        const noted = new Set();
+        narrated.forEach((f) => {
+          const out = [];
+          f.lines.forEach((l) => {
+            out.push(l);
+            if (l.k !== "para" && l.k !== "quote" && l.k !== "head" && l.k !== "sub") return;
+            filled.forEach((p) => {
+              const key = p.word.toLowerCase();
+              if (noted.has(key) || !acxWordRe(p.word).test(acxSpoken(l.text))) return;
+              noted.add(key);
+              out.push({ k: "pron", word: p.word, soundsLike: p.soundsLike.trim(), ipa: p.ipa.trim() });
+            });
+          });
+          f.lines = out;
+        });
+
+        const pad = Math.max(2, String(files.length - 1).length);
+        const estimable = acxEstimable();
+        let totalWords = 0, footnotes = 0, missingAlt = 0;
+        files.forEach((f, i) => {
+          f.num = String(i).padStart(pad, "0");
+          f.name = f.num + " " + f.title;
+          f.words = acxLinesWords(f.lines);
+          f.minutes = estimable ? acxMinutes(f.words) : null;
+          totalWords += f.words;
+          f.lines.forEach((l) => { if (l.k === "note") footnotes++; if (l.k === "image" && l.missingAlt) missingAlt++; });
+          if (estimable && f.minutes > ACX_SPEC.maxFileMinutes) warnings.push({ key: "long", file: f.name, min: acxRound(f.minutes, 0) });
+        });
+        if (!narr) warnings.unshift({ key: "noNarrator" });
+        if (!author) warnings.unshift({ key: "noAuthor" });
+        if (!title) warnings.unshift({ key: "noTitle" });
+        if (missingAlt) warnings.push({ key: "noAlt", n: missingAlt });
+        if (footnotes) warnings.push({ key: "notes", n: footnotes });
+
+        /* Retail sample: ACX asks for the first five minutes, 5 minutes
+           or less — so the opening of the first narrated section, cut
+           at a sentence end at or under five minutes of words. */
+        let sample = null;
+        if (narrated.length) {
+          const cap = Math.floor(ACX_SPEC.wordsPerHour * ACX_SPEC.sampleMaxMinutes / 60);
+          /* the story's own opening: the first body section (prologue or chapter), not the epigraph */
+          const first = narrated.find((f) => (state.sections.find((x) => x.id === f.sectionId) || {}).kind === "body") || narrated[0];
+          const parts = []; let words = 0;
+          for (const l of first.lines) {
+            if (!["head", "sub", "para", "quote"].includes(l.k)) continue;
+            const plain = acxPlainInline(acxSpoken(l.text));
+            const w = countWords(plain, bookLang());
+            if (words + w <= cap) { parts.push(plain); words += w; continue; }
+            const sentences = plain.match(/[^.!?…]+[.!?…]+["'”’»)]*\s*|[^.!?…]+$/g) || [];
+            let piece = "";
+            for (const sn of sentences) {
+              const sw = countWords(sn, bookLang());
+              if (words + sw > cap) break;
+              piece += sn; words += sw;
+            }
+            if (piece.trim()) parts.push(piece.trim());
+            break;
+          }
+          sample = { file: first.name, label: first.label, words: words, minutes: estimable ? acxMinutes(words) : null, text: parts.join("\n\n"), cap: cap };
+        }
+        return {
+          files: files, excluded: excluded, warnings: warnings, sample: sample, estimable: estimable,
+          totalWords: totalWords, totalMinutes: estimable ? acxMinutes(totalWords) : null,
+          totalHours: estimable ? totalWords / ACX_SPEC.wordsPerHour : null,
+          narrated: narrated.length, footnotes: footnotes
+        };
+      }
+
+      /* ---- Pronunciation candidates ----
+         Beuk ships no dictionary, so "a word a narrator may stumble on"
+         is guessed from the manuscript itself, and labelled a guess:
+         - name: capitalised mid-sentence, used at least twice, and never
+           written in lower case anywhere in the book (so not an ordinary
+           word that merely starts a sentence);
+         - accent: carries letters outside plain ASCII (English books
+           only — elsewhere accents are ordinary spelling);
+         - italic: set in *italics* and never written plainly — books
+           italicise foreign and invented words.
+         Ranked by use. ACX's own director's-notes template asks for
+         exactly these: "fictional locations, made up names, or invented
+         languages" (ACX_SPEC.sources.pronunciation). */
+      const ACX_COMMON_CAPS = new Set(("I Mr Mrs Ms Miss Dr St Sir Madam Lord Lady God OK Monday Tuesday Wednesday Thursday Friday Saturday Sunday " +
+        "January February March April May June July August September October November December English French German Spanish Italian " +
+        "Chapter Part Book Christmas Easter TV").toLowerCase().split(" "));
+      function acxDetectCandidates(limit) {
+        const out = { list: [], skipped: false };
+        if (!acxEstimable()) { out.skipped = true; return out; }
+        const english = bookLang().split("-")[0] === "en";
+        const lowerSeen = new Map();
+        const cand = new Map();
+        const tokenRe = /[\p{L}][\p{L}\p{M}'’-]*[\p{L}\p{M}]|[\p{L}]/gu;
+        const touch = (word, reason, where, snippet) => {
+          let c = cand.get(word);
+          if (!c) { c = { word: word, count: 0, mid: 0, reasons: new Set(), first: where, snippet: snippet }; cand.set(word, c); }
+          return c;
+        };
+        state.sections.filter((s) => s.included && !acxSectionSkipReason(s)).forEach((s) => {
+          const label = sectionLabel(s);
+          beautifyText(s.content || "").split(/\n\s*\n/).forEach((block) => {
+            block = block.trim();
+            if (!block || parseImageLine(block) || ACX_SCENE_BREAK.test(block)) return;
+            block = block.replace(/^\[\^?\d{1,3}\]:\s*/, "").replace(/^>\s?/gm, "").replace(/^#{1,6}\s+/, "").replace(/\*\*/g, "").replace(ACX_NOTE_MARK, " ");
+            /* italics: mark spans, then strip the asterisks */
+            const italicWords = new Set();
+            block.replace(/\*([^*\n]+)\*/g, (m0, inner) => { (inner.match(tokenRe) || []).forEach((w) => italicWords.add(w)); return m0; });
+            const plain = block.replace(/\*/g, "");
+            let mm;
+            tokenRe.lastIndex = 0;
+            while ((mm = tokenRe.exec(plain)) !== null) {
+              const raw = mm[0].replace(/['’]s$/u, "").replace(/['’-]+$/u, "");
+              if (raw.length < 2) continue;
+              const before = plain.slice(0, mm.index).replace(/["“”‘’'(\[\s—–-]+$/u, "");
+              const sentenceStart = !before || /[.!?…:]$/.test(before);
+              const isCap = /^\p{Lu}\p{Ll}/u.test(raw);
+              const lc = raw.toLowerCase();
+              const snippet = () => plain.slice(Math.max(0, mm.index - 30), mm.index + raw.length + 30).replace(/\s+/g, " ").trim();
+              if (!isCap && raw === lc && !italicWords.has(mm[0])) lowerSeen.set(lc, (lowerSeen.get(lc) || 0) + 1);
+              if (isCap || italicWords.has(mm[0]) || (english && /[^\x00-\x7F]/.test(raw.replace(/[’]/g, "")))) {
+                const key = isCap ? raw : lc;
+                const c = cand.get(key) || touch(key, null, label, snippet());
+                c.count++;
+                if (isCap && !sentenceStart) c.mid++;
+                if (italicWords.has(mm[0])) c.reasons.add("italic");
+                if (english && /[^\x00-\x7F]/.test(raw.replace(/[’]/g, ""))) c.reasons.add("accent");
+              }
+            }
+          });
+        });
+        const dismissed = new Set(state.audio.dismissed.map((w) => w.toLowerCase()));
+        cand.forEach((c) => {
+          const lc = c.word.toLowerCase();
+          if (dismissed.has(lc) || ACX_COMMON_CAPS.has(lc) || lowerSeen.get(lc)) return;
+          if (c.mid >= 1 && c.count >= 2 && /^\p{Lu}/u.test(c.word)) c.reasons.add("name");
+          if (!c.reasons.size) return;
+          out.list.push({ word: c.word, count: c.count, first: c.first, snippet: c.snippet, reasons: Array.from(c.reasons) });
+        });
+        out.list.sort((x, y) => y.count - x.count || x.word.localeCompare(y.word));
+        if (limit) out.list = out.list.slice(0, limit);
+        return out;
+      }
+      /* Rows shown in the guide: the author's own entries first-class,
+         then the detected candidates not yet filled. */
+      function acxGuideRows() {
+        const det = acxDetectCandidates(60);
+        const rows = [];
+        const byWord = new Map(det.list.map((c) => [c.word.toLowerCase(), c]));
+        state.audio.pron.forEach((p) => {
+          const c = byWord.get(p.word.toLowerCase());
+          rows.push({ word: p.word, count: c ? c.count : null, first: c ? c.first : "", snippet: c ? c.snippet : "", reasons: c ? c.reasons : ["manual"], entry: p });
+          byWord.delete(p.word.toLowerCase());
+        });
+        det.list.forEach((c) => { if (byWord.has(c.word.toLowerCase())) rows.push(Object.assign({ entry: null }, c)); });
+        return { rows: rows, skipped: det.skipped };
+      }
+      function acxSetPron(word, field, value) {
+        const a = state.audio;
+        let p = a.pron.find((x) => x.word.toLowerCase() === word.toLowerCase());
+        if (!p) { p = { word: word, soundsLike: "", ipa: "", manual: false }; a.pron.push(p); }
+        p[field] = String(value || "").slice(0, 160);
+        if (!p.manual && !p.soundsLike.trim() && !p.ipa.trim()) a.pron = a.pron.filter((x) => x !== p);
+        acxEdited();
+      }
+
+      /* ---- Files ---- */
+      function acxLineTxt(l) {
+        if (l.k === "head") return l.text;
+        if (l.k === "sub") return l.text;
+        if (l.k === "direction") return "[" + l.text + "]";
+        if (l.k === "pause") return "[PAUSE — scene break]";
+        if (l.k === "image") return "[IMAGE: " + (l.text || "no description — ask the author") + "]";
+        if (l.k === "note") return "[NARRATOR DECISION — footnote " + l.n + ": “" + acxPlainInline(l.text) + "” — read it here, fold it into the narration, or leave it out; ACX gives no rule for notes.]";
+        if (l.k === "pron") return "[PRONUNCIATION: " + l.word + (l.soundsLike ? " — sounds like “" + l.soundsLike + "”" : "") + (l.ipa ? " — IPA /" + l.ipa.replace(/^\/|\/$/g, "") + "/" : "") + "]";
+        if (l.k === "quote") return "[QUOTED PASSAGE] " + acxPlainInline(l.text);
+        return acxPlainInline(l.text);
+      }
+      function acxFileTxt(f) {
+        return f.lines.map(acxLineTxt).join("\n\n") + "\n";
+      }
+      function acxDocxRunsWithNotes(text) {
+        return String(text || "").split(ACX_NOTE_MARK).map((piece, i) => (i % 2 ? docxRun("[NOTE " + piece + "]", { b: true }) : (piece ? docxInlineRuns(piece) : ""))).join("");
+      }
+      function acxDocxXml(lines) {
+        const parts = lines.map((l) => {
+          if (l.k === "head") return docxPara(l.text, "Heading1");
+          if (l.k === "sub") return docxPara("", "Normal", { rawRuns: docxRun(l.text, { i: true }) });
+          if (l.k === "para") return docxPara("", "Normal", { rawRuns: acxDocxRunsWithNotes(l.text) });
+          if (l.k === "quote") return docxPara("", "Quote", { rawRuns: docxRun("[QUOTED PASSAGE] ", { b: true }) + acxDocxRunsWithNotes(l.text) });
+          if (l.k === "pause") return docxPara("", "Normal", { align: "center", rawRuns: docxRun("[PAUSE — scene break]", { b: true }) });
+          return docxPara("", "Caption", { rawRuns: docxRun(acxLineTxt(l), { b: l.k === "pron" || l.k === "direction", i: true }) });
+        });
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>\n' + parts.join("\n") +
+          '\n<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440" w:header="720" w:footer="720"/></w:sectPr></w:body></w:document>';
+      }
+      /* A DOCX package for one script: the studio's own DOCX package
+         (buildDocxFiles) with only word/document.xml swapped. */
+      function acxDocxFiles(lines, tpl) {
+        const xml = acxDocxXml(lines);
+        return (tpl || buildDocxFiles()).map((f) => (f.path === "word/document.xml" ? { path: f.path, content: xml } : f));
+      }
+      function acxPronLines(plan) {
+        const rows = acxGuideRows();
+        const lines = [{ k: "head", text: "Pronunciation Guide — " + (state.meta.title || "Untitled Book") }];
+        lines.push({ k: "direction", text: "Filled entries are noted again in the scripts at their first occurrence. Detected words without an entry are Beuk's guesses from the manuscript (names repeated mid-sentence, accented and italicised words) — the author has not confirmed them." });
+        const filled = rows.rows.filter((r) => r.entry && (r.entry.soundsLike.trim() || r.entry.ipa.trim()));
+        const open = rows.rows.filter((r) => !(r.entry && (r.entry.soundsLike.trim() || r.entry.ipa.trim())));
+        lines.push({ k: "sub", text: "Entries from the author (" + filled.length + ")" });
+        filled.forEach((r) => lines.push({ k: "para", text: r.word + " — sounds like “" + (r.entry.soundsLike.trim() || "—") + "”" + (r.entry.ipa.trim() ? " — IPA /" + r.entry.ipa.trim().replace(/^\/|\/$/g, "") + "/" : "") + (r.count ? " — " + r.count + " uses, first in " + r.first : "") }));
+        if (!filled.length) lines.push({ k: "para", text: "(none yet)" });
+        lines.push({ k: "sub", text: "Detected, not yet filled in (" + open.length + ")" });
+        open.forEach((r) => lines.push({ k: "para", text: r.word + (r.count ? " — " + r.count + " uses, first in " + r.first + (r.snippet ? ": …" + r.snippet + "…" : "") : "") }));
+        if (rows.skipped) lines.push({ k: "para", text: "(automatic detection does not run for character-counted languages)" });
+        return lines;
+      }
+      function acxSummaryTxt(plan) {
+        const L = [];
+        const m = state.meta;
+        L.push("AUDIO SCRIPT SUMMARY — " + (m.title || "Untitled Book") + (m.author ? " by " + m.author : ""));
+        L.push("Narrator: " + (state.audio.narrator.trim() || "(not set)"));
+        L.push("");
+        L.push("FILES, IN ACX ORDER");
+        plan.files.forEach((f) => L.push(f.name + "  |  " + f.words + " words  |  " + (f.minutes == null ? "minutes not estimated" : "~" + acxRound(f.minutes, 1) + " min")));
+        L.push("");
+        if (plan.estimable) {
+          L.push("LENGTH ESTIMATE");
+          L.push(plan.totalWords + " words / " + ACX_SPEC.wordsPerHour + " words per finished hour = " + acxRound(plan.totalHours, 2) + " hours (~" + acxRound(plan.totalMinutes, 0) + " minutes).");
+          L.push("9,300 words per hour is ACX's stated average (\"most performers narrate about 9,300 words per hour\"); real narrators vary, so this is an estimate, not a measurement. " + ACX_SPEC.sources.wordsPerHour);
+        } else L.push("LENGTH ESTIMATE: not checked — ACX's words-per-hour average does not apply to a character-counted language.");
+        L.push("");
+        L.push("LEFT OUT OF THE RECORDING");
+        plan.excluded.forEach((x) => L.push("- " + x.label + ": " + acxReasonEn(x.reason)));
+        if (!plan.excluded.length) L.push("- (nothing)");
+        L.push("");
+        L.push("WARNINGS");
+        plan.warnings.forEach((w) => L.push("- " + acxWarnEn(w)));
+        if (!plan.warnings.length) L.push("- none from the checks Beuk ran");
+        L.push("- Explicit material in the retail sample: not checked — ACX bars it; only the author can judge.");
+        L.push("- Audio specs (MP3 bit rate, levels, room tone): not checked — they apply to the recorded files, which Beuk does not make.");
+        L.push("");
+        L.push("ACX RULES USED (read " + "2026-10" + ")");
+        L.push("- One file per chapter or section; opening and closing credits as separate files; each file spoken with its section header; files no longer than 120 minutes; retail sample 5 minutes or less, from the first five minutes: " + ACX_SPEC.sources.submission);
+        L.push("- Table of contents not narrated: " + ACX_SPEC.sources.toc + " and " + ACX_SPEC.sources.sections);
+        L.push("- Pronunciation notes for made-up names and places: " + ACX_SPEC.sources.pronunciation);
+        L.push("- Footnotes, pictures and the copyright page: ACX's pages give no rule, so the scripts mark them for the narrator/author to decide. Secondary guidance (not ACX): " + ACX_SPEC.sources.secondary);
+        return L.join("\n") + "\n";
+      }
+      function acxReasonEn(r) {
+        return ({ toc: "ACX recommends against narrating the table of contents", auto: "print page — the opening credits announce the title, author and narrator instead", copyright: "ACX gives no rule; left out (the rights line can be read in the closing credits)", picture: "a picture page — nothing to narrate", colophon: "print production notes", part: "part divider — its heading is read at the top of the next file", user: "switched off by the author", empty: "no text yet" })[r] || r;
+      }
+      function acxWarnEn(w) {
+        return ({ noNarrator: "Narrator name is empty — the credits carry a placeholder; ACX requires the narrator to be named.", noAuthor: "Author is empty — ACX requires the author in the credits.", noTitle: "Title is empty — ACX requires the title in the credits.",
+          long: w.file + ": about " + w.min + " minutes — over ACX's 120-minute limit per file; split it.", noAlt: w.n + " picture(s) have no description — the narrator sees a placeholder.",
+          notes: w.n + " footnote(s) appear as narrator-decision notes." })[w.key] || w.key;
+      }
+      /* The zip's file list, synchronous: [{ path, text } | { path, docx }]. */
+      function acxZipEntries(plan) {
+        const fmt = state.audio.format;
+        const out = [];
+        /* the package skeleton once; only word/document.xml differs per script */
+        const tpl = fmt !== "txt" ? buildDocxFiles().map((f) => (f.path === "word/document.xml" ? { path: f.path, content: "" } : f)) : null;
+        plan.files.forEach((f) => {
+          if (fmt !== "txt") out.push({ path: "DOCX/" + f.name + ".docx", docx: acxDocxFiles(f.lines, tpl) });
+          if (fmt !== "docx") out.push({ path: "TXT/" + f.name + ".txt", text: acxFileTxt(f) });
+        });
+        const pron = acxPronLines(plan);
+        if (fmt !== "txt") out.push({ path: "Pronunciation Guide.docx", docx: acxDocxFiles(pron, tpl) });
+        if (fmt !== "docx") out.push({ path: "Pronunciation Guide.txt", text: pron.map(acxLineTxt).join("\n\n") + "\n" });
+        if (plan.sample) out.push({ path: "Retail Sample - suggestion.txt", text: "[RETAIL SAMPLE SUGGESTION — from the opening of " + plan.sample.file + ", " + plan.sample.words + " words" + (plan.sample.minutes == null ? "" : " ≈ " + acxRound(plan.sample.minutes, 1) + " min") + ". ACX: 5 minutes or less, the first five minutes of the audiobook, no explicit material (not checked).]\n\n" + plan.sample.text + "\n" });
+        out.push({ path: "Audio Script Summary.txt", text: acxSummaryTxt(plan) });
+        return out;
+      }
+      async function acxBuildZipBlob(plan) {
+        const zip = new JSZip();
+        const entries = acxZipEntries(plan || acxBuildPlan());
+        for (const e of entries) {
+          if (e.text != null) { zip.file(e.path, e.text); continue; }
+          const inner = new JSZip();
+          e.docx.forEach((f) => inner.file(f.path, f.content));
+          zip.file(e.path, await inner.generateAsync({ type: "uint8array" }));
+        }
+        return zip.generateAsync({ type: "blob", mimeType: "application/zip" });
+      }
+      async function acxDownload() {
+        if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; }
+        const plan = acxBuildPlan();
+        if (!plan.narrated) { toast(t("acx.empty"), "alert-triangle"); return; }
+        const btn = $("btnAcxDownload");
+        if (btn) { btn.disabled = true; btn.textContent = t("acx.building"); }
+        try {
+          const blob = await acxBuildZipBlob(plan);
+          downloadBlob(blob, slug(state.meta.title || "book") + "-audio-script.zip");
+          toast(t("acx.done", { n: plan.files.length }), "headphones");
+        } catch (err) {
+          toast(t("acx.fail", { msg: err && err.message ? err.message : "unknown error" }), "alert-triangle");
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>' + esc(t("acx.download")); icons(); }
+        }
+      }
+
+      /* ---- "Listen to a line": the device's own voice, a rough preview ---- */
+      function acxListen(word) {
+        if (!raSupported()) { toast(t("acx.noSpeech"), "volume-x"); return; }
+        const p = state.audio.pron.find((x) => x.word.toLowerCase() === String(word).toLowerCase());
+        const say = (p && p.soundsLike.trim()) || word;
+        try {
+          if (typeof raStop === "function") raStop();
+          const u = new window.SpeechSynthesisUtterance(say);
+          u.lang = bookLang();
+          const v = raChosenVoice(); if (v) u.voice = v;
+          window.speechSynthesis.speak(u);
+        } catch (e) { toast(t("acx.noSpeech"), "volume-x"); }
+      }
+
+      /* ---- Summary screen ---- */
+      const acxFmtMin = (n) => (n == null ? "—" : (Math.round(n * 10) / 10).toLocaleString(getUiLang(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+      const acxFmtHours = (n) => (n == null ? "—" : (Math.round(n * 100) / 100).toLocaleString(getUiLang(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      function acxWarnText(w) {
+        if (w.key === "long") return t("acx.warn.long", { file: w.file, min: fmtNum(w.min) });
+        if (w.key === "noAlt" || w.key === "notes") return t("acx.warn." + w.key, { n: w.n });
+        return t("acx.warn." + w.key);
+      }
+      function acxRender() {
+        const body = $("acxBody"); if (!body) return;
+        const plan = acxBuildPlan();
+        const a = state.audio;
+        let h = "";
+        h += '<div class="acx-grid"><label><span>' + esc(t("acx.narrator")) + '</span><input type="text" id="acxNarrator" maxlength="200" value="' + esc(a.narrator) + '" placeholder="' + esc(t("acx.narratorPh")) + '"/></label>' +
+          '<label><span>' + esc(t("acx.format")) + '</span><select id="acxFormat">' + ["both", "docx", "txt"].map((v) => '<option value="' + v + '"' + (a.format === v ? " selected" : "") + ">" + esc(t("acx.fmt." + v)) + "</option>").join("") + "</select></label></div>";
+        h += '<label class="acx-check"><input type="checkbox" id="acxRights"' + (a.rightsInClosing ? " checked" : "") + "/> <span>" + esc(t("acx.rights")) + "</span></label>";
+        h += '<h3 class="acx-h">' + esc(t("acx.filesH")) + "</h3>";
+        h += '<div class="acx-table-wrap"><table class="acx-table" id="acxFiles"><thead><tr><th>' + esc(t("acx.colFile")) + "</th><th>" + esc(t("acx.colWords")) + "</th><th>" + esc(t("acx.colMin")) + "</th><th>" + esc(t("acx.colNarrate")) + "</th></tr></thead><tbody>";
+        plan.files.forEach((f) => {
+          const over = plan.estimable && f.minutes > ACX_SPEC.maxFileMinutes;
+          h += "<tr" + (over ? ' class="acx-over"' : "") + "><td>" + esc(f.name) + "</td><td>" + fmtNum(f.words) + "</td><td>" + acxFmtMin(f.minutes) + "</td><td>" +
+            (f.sectionId ? '<input type="checkbox" checked data-acxinc="' + esc(f.sectionId) + '" aria-label="' + esc(t("acx.colNarrate")) + '"/>' : "") + "</td></tr>";
+        });
+        h += "</tbody></table></div>";
+        h += '<p class="acx-math" id="acxMath">' + (plan.estimable
+          ? esc(t("acx.total", { words: fmtNum(plan.totalWords), wph: fmtNum(ACX_SPEC.wordsPerHour), hours: acxFmtHours(plan.totalHours), min: fmtNum(plan.totalMinutes) }))
+          : esc(t("acx.noEstimate"))) + "</p>";
+        if (plan.estimable) h += '<p class="acx-note">' + esc(t("acx.estNote")) + "</p>";
+        if (plan.excluded.length) {
+          h += '<h3 class="acx-h">' + esc(t("acx.excludedH")) + '</h3><ul class="acx-list" id="acxExcluded">';
+          plan.excluded.forEach((x) => {
+            h += "<li><b>" + esc(x.label) + "</b> — " + esc(t("acx.why." + x.reason)) +
+              (x.toggle ? ' <button class="si-btn" type="button" data-acxon="' + esc(x.id) + '">' + esc(t("acx.narrateAnyway")) + "</button>" : "") + "</li>";
+          });
+          h += "</ul>";
+        }
+        h += '<h3 class="acx-h">' + esc(t("acx.sampleH")) + "</h3>";
+        if (plan.sample) {
+          h += '<p class="acx-note" id="acxSample">' + esc(t("acx.sampleText", { words: fmtNum(plan.sample.words), section: plan.sample.label, min: acxFmtMin(plan.sample.minutes) })) + "</p>";
+          h += '<p class="acx-note">' + esc(t("acx.sampleExplicit")) + "</p>";
+        } else h += '<p class="acx-note">' + esc(t("acx.empty")) + "</p>";
+        h += '<h3 class="acx-h">' + esc(t("acx.warnH")) + '</h3><ul class="acx-list" id="acxWarnings">';
+        plan.warnings.forEach((w) => { h += "<li" + (w.key === "notes" ? "" : ' class="acx-warn"') + ">" + esc(acxWarnText(w)) + "</li>"; });
+        if (!plan.warnings.length) h += "<li>" + esc(t("acx.warn.none")) + "</li>";
+        h += "<li>" + esc(t("acx.warn.specs")) + "</li></ul>";
+        /* Pronunciation guide */
+        const g = acxGuideRows();
+        h += '<h3 class="acx-h">' + esc(t("acx.pronH")) + '</h3><p class="acx-note">' + esc(t("acx.pronSub")) + "</p>";
+        h += '<p class="acx-note"><i>' + esc(raSupported() ? t("acx.listenNote") : t("acx.noSpeech")) + "</i></p>";
+        if (g.skipped) h += '<p class="acx-note">' + esc(t("acx.cjk")) + "</p>";
+        h += '<div class="acx-add"><input type="text" id="acxAddWord" maxlength="80" placeholder="' + esc(t("acx.addPh")) + '"/><button class="si-btn" type="button" id="btnAcxAdd">' + esc(t("acx.add")) + "</button></div>";
+        if (!g.rows.length) h += '<p class="acx-note">' + esc(t("acx.noCands")) + "</p>";
+        else {
+          h += '<div class="acx-table-wrap"><table class="acx-table" id="acxPron"><thead><tr><th>' + esc(t("acx.colWord")) + "</th><th>" + esc(t("acx.colCount")) + "</th><th>" + esc(t("acx.colFirst")) + "</th><th>" + esc(t("acx.colSounds")) + "</th><th>" + esc(t("acx.colIpa")) + "</th><th></th></tr></thead><tbody>";
+          g.rows.forEach((r) => {
+            const e = r.entry || { soundsLike: "", ipa: "" };
+            const w = esc(r.word);
+            h += '<tr data-acxword="' + w + '"><td><b>' + w + '</b><div class="acx-why">' + r.reasons.map((x) => esc(t("acx.reason." + x))).join(" · ") + "</div></td><td>" + (r.count == null ? "—" : fmtNum(r.count)) + "</td><td title=\"" + esc(r.snippet || "") + "\">" + esc(r.first || "—") + "</td>" +
+              '<td><input type="text" data-acxfield="soundsLike" maxlength="160" value="' + esc(e.soundsLike) + '" aria-label="' + esc(t("acx.colSounds")) + '"/></td>' +
+              '<td><input type="text" data-acxfield="ipa" maxlength="160" value="' + esc(e.ipa) + '" aria-label="' + esc(t("acx.colIpa")) + '"/></td>' +
+              '<td class="acx-act"><button class="si-btn" type="button" data-acxlisten="1"' + (raSupported() ? "" : " disabled") + ">" + esc(t("acx.listen")) + '</button><button class="si-btn" type="button" data-acxdismiss="1">' + esc(t("acx.dismiss")) + "</button></td></tr>";
+          });
+          h += "</tbody></table></div>";
+        }
+        body.innerHTML = h;
+        icons();
+      }
+      function acxOpen() {
+        acxRender();
+        /* one modal at a time, as the other export sub-dialogs do */
+        const ex = $("modalExport"); if (ex) ex.classList.remove("open");
+        $("modalAcx").classList.add("open");
+      }
+      function acxInit() {
+        const modal = $("modalAcx"); if (!modal) return;
+        $("btnAcxOpen").addEventListener("click", acxOpen);
+        $("btnAcxClose").addEventListener("click", () => modal.classList.remove("open"));
+        modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
+        $("btnAcxDownload").addEventListener("click", acxDownload);
+        const body = $("acxBody");
+        body.addEventListener("change", (e) => {
+          const el = e.target;
+          if (el.id === "acxNarrator") { state.audio.narrator = el.value.slice(0, 200); acxEdited(); acxRender(); return; }
+          if (el.id === "acxFormat") { state.audio.format = el.value; acxEdited(); return; }
+          if (el.id === "acxRights") { state.audio.rightsInClosing = !!el.checked; acxEdited(); acxRender(); return; }
+          if (el.hasAttribute("data-acxinc")) { state.audio.include[el.getAttribute("data-acxinc")] = false; acxEdited(); acxRender(); return; }
+          if (el.hasAttribute("data-acxfield")) {
+            const row = el.closest("[data-acxword]");
+            acxSetPron(row.getAttribute("data-acxword"), el.getAttribute("data-acxfield"), el.value);
+          }
+        });
+        body.addEventListener("click", (e) => {
+          const b = e.target.closest("button"); if (!b) return;
+          if (b.hasAttribute("data-acxon")) { state.audio.include[b.getAttribute("data-acxon")] = true; acxEdited(); acxRender(); return; }
+          const row = b.closest("[data-acxword]");
+          if (b.hasAttribute("data-acxlisten") && row) { acxListen(row.getAttribute("data-acxword")); return; }
+          if (b.hasAttribute("data-acxdismiss") && row) {
+            const w = row.getAttribute("data-acxword");
+            state.audio.pron = state.audio.pron.filter((x) => x.word.toLowerCase() !== w.toLowerCase());
+            if (!state.audio.dismissed.some((x) => x.toLowerCase() === w.toLowerCase())) state.audio.dismissed.push(w);
+            acxEdited(); acxRender(); return;
+          }
+          if (b.id === "btnAcxAdd") {
+            const inp = $("acxAddWord"); const w = String(inp.value || "").trim().slice(0, 80);
+            if (!w) return;
+            if (!state.audio.pron.some((x) => x.word.toLowerCase() === w.toLowerCase())) state.audio.pron.push({ word: w, soundsLike: "", ipa: "", manual: true });
+            state.audio.dismissed = state.audio.dismissed.filter((x) => x.toLowerCase() !== w.toLowerCase());
+            acxEdited(); acxRender();
+          }
+        });
+      }
+      /* Self-checks for the Housekeeping registry (appended to SELF_CHECKS). */
+      function acxSelfChecks() {
+        const withAcxFixture = (fn) => {
+          const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+          const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+          try {
+            applyBookDoc({
+              meta: { title: "Check Harbour", subtitle: "A test", author: "Ada Check", language: "en", langSource: "manual" },
+              sections: [
+                mkSection("front", "titlepage", "Title Page"),
+                mkSection("front", "toc", "Table of Contents"),
+                mkSection("body", "chapter", "Arrival", { number: "1", content: "Quillon walked to the quay. He met Bryndle there.[^1]\n\n***\n\n![The quay at dusk](img:nope)\n\nLater, Quillon and Bryndle argued about the *saudade* of tides.\n\n[^1]: Bryndle is the harbour cat." }),
+                mkSection("body", "chapter", "Departure", { number: "2", content: "Quillon left at dawn. Nobody waved." })
+              ],
+              audio: { narrator: "Nell Reader", pron: [{ word: "Quillon", soundsLike: "KWILL-on", ipa: "ˈkwɪlɒn" }] }
+            });
+            return fn();
+          } finally {
+            applyBookDoc(keepDoc);
+            cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+          }
+        };
+        return [
+          { id: "acx.files.order-and-credits", feature: "acx", name: "Audio script: files in ACX order — 00 Opening Credits, one file per narrated section, NN Closing Credits — with title, author and narrator in both credits and the table of contents left out",
+            run() {
+              return withAcxFixture(() => {
+                const plan = acxBuildPlan();
+                const names = plan.files.map((f) => f.name);
+                const open = acxFileTxt(plan.files[0]), close = acxFileTxt(plan.files[plan.files.length - 1]);
+                const ok = names.join("|") === "00 Opening Credits|01 Chapter 1 - Arrival|02 Chapter 2 - Departure|03 Closing Credits" &&
+                  ["Check Harbour", "Ada Check", "Nell Reader"].every((s) => open.includes(s) && close.includes(s)) &&
+                  close.includes("You have been listening to") && /The End\.\s*$/.test(close) &&
+                  plan.excluded.some((x) => x.reason === "toc") && acxFileTxt(plan.files[1]).indexOf("Chapter 1: Arrival") === 0;
+                return scVerdict(ok, names.join(", "));
+              });
+            } },
+          { id: "acx.script.notes-images-pauses", feature: "acx", name: "Audio script: footnotes become narrator-decision notes, pictures become [IMAGE: alt], scene breaks become pauses",
+            run() {
+              return withAcxFixture(() => {
+                const txt = acxFileTxt(acxBuildPlan().files[1]);
+                const ok = txt.includes("[NARRATOR DECISION — footnote 1: “Bryndle is the harbour cat.”") && txt.includes("[IMAGE: The quay at dusk]") &&
+                  txt.includes("[PAUSE — scene break]") && !txt.includes("[^1]:");
+                return scVerdict(ok, ok ? "note, image and pause markers present" : txt.slice(0, 300));
+              });
+            } },
+          { id: "acx.pron.detect-roundtrip-first-note", feature: "acx", name: "Pronunciation guide: repeated invented names are detected, entries round-trip through serializeBook, and the script notes an entry at its first occurrence only",
+            run() {
+              return withAcxFixture(() => {
+                const det = acxDetectCandidates(0).list.map((c) => c.word);
+                const doc = JSON.parse(JSON.stringify(serializeBook()));
+                applyBookDoc(doc);
+                const kept = state.audio.pron.length === 1 && state.audio.pron[0].soundsLike === "KWILL-on" && state.audio.narrator === "Nell Reader";
+                const plan = acxBuildPlan();
+                const all = plan.files.map(acxFileTxt).join("\n");
+                const notes = (all.match(/\[PRONUNCIATION: Quillon/g) || []).length;
+                const ok = det.includes("Quillon") && det.includes("Bryndle") && det.includes("saudade") && !det.includes("Nobody") && kept && notes === 1 && acxFileTxt(plan.files[1]).includes("[PRONUNCIATION: Quillon — sounds like “KWILL-on” — IPA /ˈkwɪlɒn/]");
+                return scVerdict(ok, "detected: " + det.join(", ") + "; entry kept " + kept + "; first-occurrence notes " + notes);
+              });
+            } },
+          { id: "acx.estimate.words-per-hour", feature: "acx", name: "Audio script: finished-length estimate is words ÷ 9,300 (ACX's average) and a file over 120 minutes is warned",
+            run() {
+              return withAcxFixture(() => {
+                const ch = state.sections.find((s) => s.title === "Departure");
+                ch.content = Array(19000).fill("tide").join(" ") + ".";
+                const plan = acxBuildPlan();
+                const f = plan.files[2];
+                const ok = Math.abs(plan.totalHours - plan.totalWords / 9300) < 1e-9 && f.minutes > 120 && plan.warnings.some((w) => w.key === "long" && w.file === f.name);
+                return scVerdict(ok, plan.totalWords + " words / 9300 = " + acxRound(plan.totalHours, 3) + " h; " + f.name + " ≈ " + acxRound(f.minutes, 1) + " min");
+              });
+            } }
+        ];
+      }
+      if (typeof window !== "undefined") window.beukAcx = { plan: acxBuildPlan, detect: acxDetectCandidates, entries: acxZipEntries, zip: acxBuildZipBlob, txt: acxFileTxt, render: acxRender, open: acxOpen, spec: ACX_SPEC };
+      /* ==== /BEUK:acx ==== */
+
       /* ================= Package inspector ================= */
       const byteSize = (str) => new Blob([str]).size;
       const fileSize = (f) => (f.binary ? Math.round(f.content.length * 3 / 4) : byteSize(f.content));
@@ -17642,7 +19288,9 @@
           printOmitBlankHead: state.printOmitBlankHead,
           printFolio: state.printFolio,
           goals: Object.assign({}, state.goals),
-          history: (state.history || []).slice()
+          history: (state.history || []).slice(),
+          /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
+          audio: acxNormalize(state.audio)
         };
       }
       function applyBookDoc(doc) {
@@ -17714,6 +19362,8 @@
            history untouched — the safety net taken before a swap
            must survive the swap itself. */
         if (Array.isArray(doc.history)) state.history = normalizeHistory(doc.history);
+        /* BEUK:acx — a book's audio plan is its own: one without it starts clean. */
+        state.audio = acxNormalize(doc.audio);
         state.page = 1;
         const isBox = $("importSummary"); if (isBox) isBox.style.display = "none";
         renderSidebar(); syncEditor(); renderStudio(); syncStudioControls();
@@ -23455,6 +25105,9 @@
           } }
 
       ];
+      /* ==== BEUK:acx ==== */
+      SELF_CHECKS.push(...acxSelfChecks());
+      /* ==== /BEUK:acx ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
@@ -24861,6 +26514,7 @@
         initCloud();
         initPlatform();
         initBulk();
+        acxInit(); /* BEUK:acx */
         updateStats();
         renderPreview();
         refreshExportTree();
