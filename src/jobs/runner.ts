@@ -42,6 +42,8 @@ interface SourceExportRow {
 export class JobRunner {
   private queue: string[] = [];
   private draining = false;
+  private stopping = false;
+  private current: { jobId: string; done: Promise<void> } | null = null;
 
   constructor(
     private db: Db,
@@ -50,7 +52,41 @@ export class JobRunner {
 
   enqueue(jobId: string): void {
     this.queue.push(jobId);
-    void this.drain();
+    if (!this.stopping) void this.drain();
+  }
+
+  /** Graceful shutdown: take no further jobs (queued ones stay `queued`
+   *  in the database and recover() re-runs them on the next boot), give
+   *  the running job up to `graceMs` to finish, and if it is still
+   *  running then, mark it failed saying exactly that — never leave it
+   *  looking alive, never pretend it passed. */
+  async shutdown(graceMs: number): Promise<{ finished: boolean; failedJobId: string | null }> {
+    this.stopping = true;
+    this.queue = [];
+    const current = this.current;
+    if (!current) return { finished: true, failedJobId: null };
+    let timer: NodeJS.Timeout | undefined;
+    const settled = await Promise.race([
+      current.done.then(() => true),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), graceMs);
+      }),
+    ]);
+    clearTimeout(timer);
+    if (settled) return { finished: true, failedJobId: null };
+    await this.db.query(
+      `update jobs set status = 'failed', finished_at = now(), result = $2::jsonb
+       where id = $1 and status = 'running'`,
+      [
+        current.jobId,
+        JSON.stringify({
+          error:
+            'The server was shutting down and this job did not finish in time, so it was stopped. ' +
+            'Nothing was checked or converted — please run it again.',
+        }),
+      ],
+    );
+    return { finished: false, failedJobId: current.jobId };
   }
 
   /** Boot recovery (called once from index.ts): a job left `running`
@@ -78,13 +114,16 @@ export class JobRunner {
     if (this.draining) return;
     this.draining = true;
     try {
-      while (this.queue.length) {
+      while (this.queue.length && !this.stopping) {
         const jobId = this.queue.shift()!;
-        await this.process(jobId).catch((err) => {
+        const done = this.process(jobId).catch((err) => {
           // process() converts every expected failure into a job
           // result; reaching here means something structural broke.
           console.error(`job ${jobId}: unexpected runner error`, err);
         });
+        this.current = { jobId, done };
+        await done;
+        this.current = null;
       }
     } finally {
       this.draining = false;
@@ -97,10 +136,12 @@ export class JobRunner {
     result: Record<string, unknown>,
     artifactExportId: string | null = null,
   ): Promise<void> {
+    // Only a job still `running` can finish: once shutdown() has failed
+    // it, a late tool exit must not overwrite that honest record.
     await this.db.query(
       `update jobs set status = $2, result = $3::jsonb, artifact_export_id = $4,
               finished_at = now()
-       where id = $1`,
+       where id = $1 and status = 'running'`,
       [jobId, status, JSON.stringify(result), artifactExportId],
     );
   }
