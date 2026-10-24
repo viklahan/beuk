@@ -5,6 +5,9 @@ import type { Config } from '../config.js';
 import { defaultMigrationsDir, type Db } from '../db.js';
 import { fixtureEntries, loadFixtures, type FixtureSet } from './fixtures.js';
 import { pdfRenderProblem } from '../jobs/tools.js';
+import { isUuid } from '../ids.js';
+import { dummyPasswordHash, verifyAgainstDummy } from '../password.js';
+import { TokenBucketLimiter } from '../ratelimit.js';
 import {
   parseOpf,
   readZip,
@@ -171,6 +174,112 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       return 'client/help/, client/thanks/ and CHANGELOG.md all readable from the deploy tree';
     },
   },
+
+  /* ==== BEUK:harden ==== */
+  /* ---- Hardening: auth abuse, ids, sessions, deploy headers/signals ---- */
+  {
+    id: 'security.auth.rate-limit',
+    title: 'Sign-in and sign-up are rate-limited per client (429 + Retry-After)',
+    kind: 'server',
+    run: async ({ config }) => {
+      assert(
+        Number.isFinite(config.authRateBurst) && config.authRateBurst >= 1 &&
+          Number.isFinite(config.authRateRefillMs) && config.authRateRefillMs > 0,
+        `auth rate limit misconfigured (AUTH_RATE_BURST=${config.authRateBurst}, AUTH_RATE_REFILL_MS=${config.authRateRefillMs})`,
+      );
+      // Exercise the same limiter class the routes use, on a frozen clock.
+      const limiter = new TokenBucketLimiter({ burst: config.authRateBurst, refillMs: config.authRateRefillMs, now: () => 0 });
+      for (let i = 0; i < config.authRateBurst; i++) assert(limiter.take('probe').ok, `attempt ${i + 1} refused early`);
+      const refused = limiter.take('probe');
+      assert(!refused.ok && refused.retryAfterSec >= 1, 'attempt past the burst was not refused with a retry-after');
+      assert(
+        Number.isInteger(config.trustProxyHops) && config.trustProxyHops >= 0,
+        `TRUST_PROXY_HOPS=${config.trustProxyHops} is not a hop count`,
+      );
+      return `${config.authRateBurst} attempts per client, then one per ${config.authRateRefillMs} ms; trust proxy = ${config.trustProxyHops} hop(s)`;
+    },
+  },
+  {
+    id: 'security.auth.no-timing-oracle',
+    title: 'Unknown-email sign-in spends a real argon2id verify (no account-existence timing oracle)',
+    kind: 'server',
+    run: async () => {
+      const hash = await dummyPasswordHash();
+      assert(hash.startsWith('$argon2id$'), 'the dummy hash is not an argon2id hash');
+      const t0 = Date.now();
+      assert((await verifyAgainstDummy('probe password')) === false, 'dummy verify did not refuse');
+      return `dummy argon2id verify ran (${Date.now() - t0} ms) and refused`;
+    },
+  },
+  {
+    id: 'security.ids.non-uuid-not-found',
+    title: 'Non-UUID ids are rejected before reaching Postgres (404, never a 500)',
+    kind: 'server',
+    run: async () => {
+      assert(isUuid('00000000-0000-0000-0000-000000000000'), 'a canonical UUID was rejected');
+      for (const bad of ['nope', '123', "1' or '1'='1", '']) assert(!isUuid(bad), `"${bad}" accepted as a UUID`);
+      return 'canonical UUIDs accepted; malformed ids refused';
+    },
+  },
+  {
+    id: 'data.sessions.expired-purged',
+    title: 'Expired sessions are being purged',
+    kind: 'server',
+    run: async ({ db, config }) => {
+      // The purge runs at boot and every SESSION_PURGE_INTERVAL_MS; a
+      // session expired for more than two intervals means it stopped.
+      const stale = await db.query<{ n: string }>(
+        `select count(*)::text as n from sessions
+         where expires_at < now() - ($1::bigint * interval '1 millisecond')`,
+        [String(config.sessionPurgeIntervalMs * 2)],
+      );
+      const n = Number(stale.rows[0]?.n ?? 0);
+      assert(n === 0, `${n} session(s) expired more than two purge intervals ago are still stored`);
+      return `no session expired longer than ${config.sessionPurgeIntervalMs * 2} ms is stored`;
+    },
+  },
+  {
+    id: 'infra.deploy.security-headers',
+    title: 'Caddyfile sends the security headers (HSTS on real TLS only, CSP enforced + report-only)',
+    kind: 'server',
+    run: async () => {
+      // Static proof from the deploy tree; the live headers are proven
+      // by the Playwright check in the README "Security headers" section.
+      const caddy = await readFile(path.join(repoRoot(), 'Caddyfile'), 'utf8');
+      const missing = [
+        'X-Content-Type-Options "nosniff"',
+        'Referrer-Policy "strict-origin-when-cross-origin"',
+        'X-Frame-Options "SAMEORIGIN"',
+        'Content-Security-Policy "frame-ancestors',
+        'Content-Security-Policy-Report-Only "',
+        'header @hsts Strict-Transport-Security',
+        'not host localhost 127.0.0.1',
+      ].filter((needle) => !caddy.includes(needle));
+      assert(!missing.length, `Caddyfile is missing: ${missing.join('; ')}`);
+      return 'nosniff, referrer policy, frame protection, CSP (enforced + report-only) and TLS-only HSTS all present';
+    },
+  },
+  {
+    id: 'infra.deploy.signals-healthchecks',
+    title: 'Compose runs the app under an init with a grace period, and health-checks app + caddy',
+    kind: 'server',
+    run: async ({ config }) => {
+      const compose = await readFile(path.join(repoRoot(), 'docker-compose.yml'), 'utf8');
+      const app = compose.slice(compose.indexOf('\n  app:'), compose.indexOf('\n  caddy:'));
+      const caddy = compose.slice(compose.indexOf('\n  caddy:'));
+      assert(/\n\s+init: true/.test(app), 'app service does not set init: true (node would be PID 1)');
+      const grace = /stop_grace_period:\s*(\d+)s/.exec(app);
+      assert(grace, 'app service has no stop_grace_period');
+      assert(
+        Number(grace[1]) * 1000 > config.shutdownGraceMs,
+        `SHUTDOWN_GRACE_MS ${config.shutdownGraceMs} is not below stop_grace_period ${grace[1]}s`,
+      );
+      assert(app.includes('healthcheck:') && app.includes('/api/health'), 'app service has no /api/health healthcheck');
+      assert(caddy.includes('healthcheck:'), 'caddy service has no healthcheck');
+      return `init: true, stop_grace_period ${grace[1]}s > SHUTDOWN_GRACE_MS ${config.shutdownGraceMs} ms, app + caddy healthchecks present`;
+    },
+  },
+  /* ==== /BEUK:harden ==== */
 
   /* ---- Data invariants ---- */
   {
