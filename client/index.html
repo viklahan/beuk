@@ -2788,6 +2788,7 @@
         if (typeof syncUiLangMenu === "function") syncUiLangMenu();
         if (typeof raRefresh === "function" && $("raPop")) raRefresh();
         if (typeof insOnLangChange === "function") insOnLangChange();
+        if (typeof betaOnLangChange === "function") betaOnLangChange(); /* BEUK:beta */
         if (typeof goalsOnLangChange === "function") goalsOnLangChange();
         if (typeof historyOnLangChange === "function") historyOnLangChange();
         if (typeof pwaOnLangChange === "function") pwaOnLangChange();
@@ -17817,6 +17818,7 @@
         if (row) row.style.display = (cloud.available && cloud.user) ? "flex" : "none";
         const sec = $("archiveSec");
         if (sec) sec.style.display = (cloud.available && cloud.user) ? "" : "none";
+        if (typeof betaRenderChrome === "function") betaRenderChrome(); /* BEUK:beta */
         icons();
       }
       function renderAccountButton() {
@@ -24867,6 +24869,949 @@
         icons();
       }
       document.addEventListener("DOMContentLoaded", init);
+      /* ==== BEUK:beta ==== */
+      /* Beta-reader share links (studio side).
+         - Export dialog: "Share with beta readers" — create a read-only
+           reading link to this book (copy button), list this book's
+           links with reader + comment counts, republish, revoke.
+           Signed out (or no server) it says why, and makes no calls.
+         - Sidebar: "Reader comments" — the comments readers left on
+           this book's links, anchored to section + paragraph + quoted
+           passage; jump to the passage in the editor, resolve/reopen.
+         Server contract: /api/shares (owner, signed in) and the public
+         reader at /read/<token> (see src/routes/shares.ts).
+         The link token is shown once by the server and stored there
+         only hashed; this browser keeps the tokens it created (a local
+         convenience, so "Copy link" works again on this device). */
+      Object.assign(UI_STRINGS.en, {
+        "beta.h": "Share with beta readers",
+        "beta.sub": "Send a read-only copy of this book to beta readers. They read in the browser — no account needed — and can comment on any passage. The copy is frozen when you share it; republish to send your latest draft.",
+        "beta.offline": "Sharing needs the Beuk server. This studio is running on this device only, so there is nowhere for a reader to open a link.",
+        "beta.signedOut": "Sign in to share. A reading link lives on your shelf, so you need an account — your readers don’t.",
+        "beta.signIn": "Sign in",
+        "beta.notOnShelf": "This book isn’t on your shelf yet — bring it there from Your Shelf (top right), then share it.",
+        "beta.expiry": "Link expires",
+        "beta.expNever": "Never", "beta.exp7": "In 7 days", "beta.exp30": "In 30 days", "beta.exp90": "In 90 days",
+        "beta.allowComments": "Readers can comment",
+        "beta.nameRequired": "Ask readers for their name",
+        "beta.create": "Create a reading link",
+        "beta.creating": "Saving your latest draft and creating the link…",
+        "beta.newLink": "Your new reading link — copy it now. The server keeps only a fingerprint of it, so it can be shown again on this device only.",
+        "beta.copy": "Copy link", "beta.copied": "Link copied",
+        "beta.copyFail": "Couldn’t copy — select the link and copy it by hand",
+        "beta.listH": "Reading links for this book",
+        "beta.none": "No reading links for this book yet.",
+        "beta.readers": "{n} reader", "beta.readersPlural": "{n} readers",
+        "beta.comments": "{n} comment", "beta.commentsPlural": "{n} comments",
+        "beta.openCount": "{n} open",
+        "beta.stActive": "Open", "beta.stRevoked": "Revoked", "beta.stExpired": "Expired",
+        "beta.expires": "expires {date}",
+        "beta.published": "copy from {date}",
+        "beta.republish": "Republish", "beta.republished": "Readers now see your latest draft",
+        "beta.revoke": "Revoke", "beta.revokeTitle": "Revoke this reading link?",
+        "beta.revokeBody": "Anyone opening “{title}” will see a calm note that the copy is closed. Comments already left stay with you.",
+        "beta.revokedToast": "Link revoked",
+        "beta.linkElsewhere": "The link can be copied only on the device that created it.",
+        "beta.failed": "That didn’t work — {error}",
+        "beta.loading": "Loading…",
+        "beta.cOpen": "Reader comments", "beta.cTitle": "Reader comments",
+        "beta.cSub": "What your beta readers said, anchored to the passage they were reading. Jump to it, then mark it resolved once you’ve dealt with it.",
+        "beta.cEmpty": "No reader comments yet. Share a reading link from Export, and comments will gather here.",
+        "beta.cSignedOut": "Sign in to see comments from your beta readers.",
+        "beta.cShowResolved": "Show resolved",
+        "beta.cJump": "Jump to passage", "beta.cResolve": "Resolve", "beta.cReopen": "Reopen",
+        "beta.cAnon": "A reader",
+        "beta.cMissingSection": "A section no longer in this book",
+        "beta.cWhole": "On the section as a whole",
+        "beta.cMoved": "That passage has changed since — opened its section instead",
+        "beta.cRefresh": "Refresh", "beta.cClose": "Close",
+        "beta.cVia": "via “{title}”",
+        "beta.cResolvedTag": "resolved"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "beta.h": "Compartir con lectores beta",
+        "beta.sub": "Envía una copia de solo lectura de este libro a tus lectores beta. Leen en el navegador — sin cuenta — y pueden comentar cualquier pasaje. La copia queda fija al compartirla; vuelve a publicar para enviar tu último borrador.",
+        "beta.offline": "Para compartir hace falta el servidor de Beuk. Este estudio funciona solo en este dispositivo, así que no hay dónde abrir un enlace.",
+        "beta.signedOut": "Inicia sesión para compartir. Un enlace de lectura vive en tu estantería, así que necesitas una cuenta; tus lectores no.",
+        "beta.signIn": "Iniciar sesión",
+        "beta.notOnShelf": "Este libro aún no está en tu estantería — llévalo allí desde Tu estantería (arriba a la derecha) y luego compártelo.",
+        "beta.expiry": "El enlace caduca",
+        "beta.expNever": "Nunca", "beta.exp7": "En 7 días", "beta.exp30": "En 30 días", "beta.exp90": "En 90 días",
+        "beta.allowComments": "Los lectores pueden comentar",
+        "beta.nameRequired": "Pedir el nombre a los lectores",
+        "beta.create": "Crear un enlace de lectura",
+        "beta.creating": "Guardando tu último borrador y creando el enlace…",
+        "beta.newLink": "Tu nuevo enlace de lectura — cópialo ahora. El servidor solo guarda una huella, así que solo podrá mostrarse de nuevo en este dispositivo.",
+        "beta.copy": "Copiar enlace", "beta.copied": "Enlace copiado",
+        "beta.copyFail": "No se pudo copiar — selecciona el enlace y cópialo a mano",
+        "beta.listH": "Enlaces de lectura de este libro",
+        "beta.none": "Aún no hay enlaces de lectura para este libro.",
+        "beta.readers": "{n} lector", "beta.readersPlural": "{n} lectores",
+        "beta.comments": "{n} comentario", "beta.commentsPlural": "{n} comentarios",
+        "beta.openCount": "{n} pendientes",
+        "beta.stActive": "Abierto", "beta.stRevoked": "Revocado", "beta.stExpired": "Caducado",
+        "beta.expires": "caduca el {date}",
+        "beta.published": "copia del {date}",
+        "beta.republish": "Volver a publicar", "beta.republished": "Tus lectores ya ven tu último borrador",
+        "beta.revoke": "Revocar", "beta.revokeTitle": "¿Revocar este enlace de lectura?",
+        "beta.revokeBody": "Quien abra «{title}» verá una nota tranquila de que la copia está cerrada. Los comentarios ya recibidos se quedan contigo.",
+        "beta.revokedToast": "Enlace revocado",
+        "beta.linkElsewhere": "El enlace solo puede copiarse en el dispositivo que lo creó.",
+        "beta.failed": "No ha funcionado — {error}",
+        "beta.loading": "Cargando…",
+        "beta.cOpen": "Comentarios de lectores", "beta.cTitle": "Comentarios de lectores",
+        "beta.cSub": "Lo que dijeron tus lectores beta, anclado al pasaje que leían. Salta a él y márcalo como resuelto cuando lo hayas atendido.",
+        "beta.cEmpty": "Aún no hay comentarios. Comparte un enlace de lectura desde Exportar y los comentarios se reunirán aquí.",
+        "beta.cSignedOut": "Inicia sesión para ver los comentarios de tus lectores beta.",
+        "beta.cShowResolved": "Mostrar resueltos",
+        "beta.cJump": "Ir al pasaje", "beta.cResolve": "Resolver", "beta.cReopen": "Reabrir",
+        "beta.cAnon": "Un lector",
+        "beta.cMissingSection": "Una sección que ya no está en este libro",
+        "beta.cWhole": "Sobre la sección en conjunto",
+        "beta.cMoved": "Ese pasaje ha cambiado desde entonces — se abrió su sección",
+        "beta.cRefresh": "Actualizar", "beta.cClose": "Cerrar",
+        "beta.cVia": "vía «{title}»",
+        "beta.cResolvedTag": "resuelto"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "beta.h": "Partager avec des bêta-lecteurs",
+        "beta.sub": "Envoyez une copie en lecture seule de ce livre à vos bêta-lecteurs. Ils lisent dans le navigateur — sans compte — et peuvent commenter n’importe quel passage. La copie est figée au partage ; republiez pour envoyer votre dernière version.",
+        "beta.offline": "Le partage nécessite le serveur Beuk. Ce studio fonctionne uniquement sur cet appareil : un lecteur n’aurait nulle part où ouvrir un lien.",
+        "beta.signedOut": "Connectez-vous pour partager. Un lien de lecture vit sur votre étagère : il vous faut un compte — pas à vos lecteurs.",
+        "beta.signIn": "Se connecter",
+        "beta.notOnShelf": "Ce livre n’est pas encore sur votre étagère — placez-le depuis Votre étagère (en haut à droite), puis partagez-le.",
+        "beta.expiry": "Le lien expire",
+        "beta.expNever": "Jamais", "beta.exp7": "Dans 7 jours", "beta.exp30": "Dans 30 jours", "beta.exp90": "Dans 90 jours",
+        "beta.allowComments": "Les lecteurs peuvent commenter",
+        "beta.nameRequired": "Demander leur nom aux lecteurs",
+        "beta.create": "Créer un lien de lecture",
+        "beta.creating": "Enregistrement de votre dernière version et création du lien…",
+        "beta.newLink": "Votre nouveau lien de lecture — copiez-le maintenant. Le serveur n’en garde qu’une empreinte : il ne pourra être réaffiché que sur cet appareil.",
+        "beta.copy": "Copier le lien", "beta.copied": "Lien copié",
+        "beta.copyFail": "Copie impossible — sélectionnez le lien et copiez-le à la main",
+        "beta.listH": "Liens de lecture de ce livre",
+        "beta.none": "Aucun lien de lecture pour ce livre pour l’instant.",
+        "beta.readers": "{n} lecteur", "beta.readersPlural": "{n} lecteurs",
+        "beta.comments": "{n} commentaire", "beta.commentsPlural": "{n} commentaires",
+        "beta.openCount": "{n} en attente",
+        "beta.stActive": "Ouvert", "beta.stRevoked": "Révoqué", "beta.stExpired": "Expiré",
+        "beta.expires": "expire le {date}",
+        "beta.published": "copie du {date}",
+        "beta.republish": "Republier", "beta.republished": "Vos lecteurs voient désormais votre dernière version",
+        "beta.revoke": "Révoquer", "beta.revokeTitle": "Révoquer ce lien de lecture ?",
+        "beta.revokeBody": "Quiconque ouvrira « {title} » verra une note paisible indiquant que la copie est fermée. Les commentaires déjà laissés restent chez vous.",
+        "beta.revokedToast": "Lien révoqué",
+        "beta.linkElsewhere": "Le lien ne peut être copié que sur l’appareil qui l’a créé.",
+        "beta.failed": "Cela n’a pas fonctionné — {error}",
+        "beta.loading": "Chargement…",
+        "beta.cOpen": "Commentaires des lecteurs", "beta.cTitle": "Commentaires des lecteurs",
+        "beta.cSub": "Ce que vos bêta-lecteurs ont dit, ancré au passage qu’ils lisaient. Allez-y, puis marquez-le comme résolu une fois traité.",
+        "beta.cEmpty": "Aucun commentaire pour l’instant. Partagez un lien de lecture depuis Exporter, et les commentaires se rassembleront ici.",
+        "beta.cSignedOut": "Connectez-vous pour voir les commentaires de vos bêta-lecteurs.",
+        "beta.cShowResolved": "Afficher les résolus",
+        "beta.cJump": "Aller au passage", "beta.cResolve": "Résoudre", "beta.cReopen": "Rouvrir",
+        "beta.cAnon": "Un lecteur",
+        "beta.cMissingSection": "Une section qui n’est plus dans ce livre",
+        "beta.cWhole": "Sur la section dans son ensemble",
+        "beta.cMoved": "Ce passage a changé depuis — sa section a été ouverte",
+        "beta.cRefresh": "Actualiser", "beta.cClose": "Fermer",
+        "beta.cVia": "via « {title} »",
+        "beta.cResolvedTag": "résolu"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "beta.h": "Mit Testlesern teilen",
+        "beta.sub": "Schicke Testlesern eine schreibgeschützte Kopie dieses Buchs. Sie lesen im Browser — ohne Konto — und können jede Passage kommentieren. Die Kopie wird beim Teilen eingefroren; veröffentliche sie neu, um deinen neuesten Stand zu senden.",
+        "beta.offline": "Zum Teilen braucht es den Beuk-Server. Dieses Studio läuft nur auf diesem Gerät, also gibt es keinen Ort, an dem ein Link geöffnet werden könnte.",
+        "beta.signedOut": "Melde dich an, um zu teilen. Ein Leselink liegt in deinem Regal, du brauchst also ein Konto — deine Leser nicht.",
+        "beta.signIn": "Anmelden",
+        "beta.notOnShelf": "Dieses Buch steht noch nicht in deinem Regal — bring es über Dein Regal (oben rechts) dorthin und teile es dann.",
+        "beta.expiry": "Link läuft ab",
+        "beta.expNever": "Nie", "beta.exp7": "In 7 Tagen", "beta.exp30": "In 30 Tagen", "beta.exp90": "In 90 Tagen",
+        "beta.allowComments": "Leser dürfen kommentieren",
+        "beta.nameRequired": "Leser nach ihrem Namen fragen",
+        "beta.create": "Leselink erstellen",
+        "beta.creating": "Dein neuester Stand wird gespeichert und der Link erstellt…",
+        "beta.newLink": "Dein neuer Leselink — kopiere ihn jetzt. Der Server speichert nur einen Fingerabdruck, daher kann er nur auf diesem Gerät erneut angezeigt werden.",
+        "beta.copy": "Link kopieren", "beta.copied": "Link kopiert",
+        "beta.copyFail": "Kopieren fehlgeschlagen — markiere den Link und kopiere ihn von Hand",
+        "beta.listH": "Leselinks für dieses Buch",
+        "beta.none": "Noch keine Leselinks für dieses Buch.",
+        "beta.readers": "{n} Leser", "beta.readersPlural": "{n} Leser",
+        "beta.comments": "{n} Kommentar", "beta.commentsPlural": "{n} Kommentare",
+        "beta.openCount": "{n} offen",
+        "beta.stActive": "Offen", "beta.stRevoked": "Widerrufen", "beta.stExpired": "Abgelaufen",
+        "beta.expires": "läuft ab am {date}",
+        "beta.published": "Kopie vom {date}",
+        "beta.republish": "Neu veröffentlichen", "beta.republished": "Deine Leser sehen jetzt deinen neuesten Stand",
+        "beta.revoke": "Widerrufen", "beta.revokeTitle": "Diesen Leselink widerrufen?",
+        "beta.revokeBody": "Wer „{title}“ öffnet, sieht einen ruhigen Hinweis, dass die Kopie geschlossen ist. Bereits hinterlassene Kommentare bleiben bei dir.",
+        "beta.revokedToast": "Link widerrufen",
+        "beta.linkElsewhere": "Der Link kann nur auf dem Gerät kopiert werden, das ihn erstellt hat.",
+        "beta.failed": "Das hat nicht geklappt — {error}",
+        "beta.loading": "Wird geladen…",
+        "beta.cOpen": "Leserkommentare", "beta.cTitle": "Leserkommentare",
+        "beta.cSub": "Was deine Testleser gesagt haben, verankert an der Passage, die sie gerade lasen. Spring hin und markiere es als erledigt, sobald du dich darum gekümmert hast.",
+        "beta.cEmpty": "Noch keine Leserkommentare. Teile einen Leselink über Exportieren, dann sammeln sich die Kommentare hier.",
+        "beta.cSignedOut": "Melde dich an, um die Kommentare deiner Testleser zu sehen.",
+        "beta.cShowResolved": "Erledigte anzeigen",
+        "beta.cJump": "Zur Passage", "beta.cResolve": "Erledigt", "beta.cReopen": "Wieder öffnen",
+        "beta.cAnon": "Ein Leser",
+        "beta.cMissingSection": "Ein Abschnitt, der nicht mehr in diesem Buch ist",
+        "beta.cWhole": "Zum Abschnitt als Ganzes",
+        "beta.cMoved": "Diese Passage hat sich seitdem geändert — ihr Abschnitt wurde geöffnet",
+        "beta.cRefresh": "Aktualisieren", "beta.cClose": "Schließen",
+        "beta.cVia": "über „{title}“",
+        "beta.cResolvedTag": "erledigt"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "beta.h": "Condividi con i beta reader",
+        "beta.sub": "Invia una copia di sola lettura di questo libro ai tuoi beta reader. Leggono nel browser — senza account — e possono commentare qualsiasi passo. La copia è fissata al momento della condivisione; ripubblica per inviare la bozza più recente.",
+        "beta.offline": "La condivisione richiede il server di Beuk. Questo studio funziona solo su questo dispositivo, quindi non c’è dove aprire un link.",
+        "beta.signedOut": "Accedi per condividere. Un link di lettura vive sul tuo scaffale, quindi serve un account — ai tuoi lettori no.",
+        "beta.signIn": "Accedi",
+        "beta.notOnShelf": "Questo libro non è ancora sul tuo scaffale — portalo lì da Il tuo scaffale (in alto a destra), poi condividilo.",
+        "beta.expiry": "Il link scade",
+        "beta.expNever": "Mai", "beta.exp7": "Tra 7 giorni", "beta.exp30": "Tra 30 giorni", "beta.exp90": "Tra 90 giorni",
+        "beta.allowComments": "I lettori possono commentare",
+        "beta.nameRequired": "Chiedi il nome ai lettori",
+        "beta.create": "Crea un link di lettura",
+        "beta.creating": "Salvo la bozza più recente e creo il link…",
+        "beta.newLink": "Il tuo nuovo link di lettura — copialo ora. Il server ne conserva solo un’impronta, quindi potrà essere mostrato di nuovo solo su questo dispositivo.",
+        "beta.copy": "Copia link", "beta.copied": "Link copiato",
+        "beta.copyFail": "Copia non riuscita — seleziona il link e copialo a mano",
+        "beta.listH": "Link di lettura di questo libro",
+        "beta.none": "Ancora nessun link di lettura per questo libro.",
+        "beta.readers": "{n} lettore", "beta.readersPlural": "{n} lettori",
+        "beta.comments": "{n} commento", "beta.commentsPlural": "{n} commenti",
+        "beta.openCount": "{n} aperti",
+        "beta.stActive": "Aperto", "beta.stRevoked": "Revocato", "beta.stExpired": "Scaduto",
+        "beta.expires": "scade il {date}",
+        "beta.published": "copia del {date}",
+        "beta.republish": "Ripubblica", "beta.republished": "I lettori ora vedono la tua bozza più recente",
+        "beta.revoke": "Revoca", "beta.revokeTitle": "Revocare questo link di lettura?",
+        "beta.revokeBody": "Chi apre «{title}» vedrà una nota tranquilla che la copia è chiusa. I commenti già lasciati restano a te.",
+        "beta.revokedToast": "Link revocato",
+        "beta.linkElsewhere": "Il link può essere copiato solo sul dispositivo che l’ha creato.",
+        "beta.failed": "Non ha funzionato — {error}",
+        "beta.loading": "Caricamento…",
+        "beta.cOpen": "Commenti dei lettori", "beta.cTitle": "Commenti dei lettori",
+        "beta.cSub": "Cosa hanno detto i tuoi beta reader, ancorato al passo che stavano leggendo. Raggiungilo, poi segnalo come risolto quando te ne sei occupato.",
+        "beta.cEmpty": "Ancora nessun commento. Condividi un link di lettura da Esporta e i commenti si raccoglieranno qui.",
+        "beta.cSignedOut": "Accedi per vedere i commenti dei tuoi beta reader.",
+        "beta.cShowResolved": "Mostra risolti",
+        "beta.cJump": "Vai al passo", "beta.cResolve": "Risolvi", "beta.cReopen": "Riapri",
+        "beta.cAnon": "Un lettore",
+        "beta.cMissingSection": "Una sezione non più presente in questo libro",
+        "beta.cWhole": "Sulla sezione nel suo insieme",
+        "beta.cMoved": "Quel passo è cambiato nel frattempo — è stata aperta la sua sezione",
+        "beta.cRefresh": "Aggiorna", "beta.cClose": "Chiudi",
+        "beta.cVia": "tramite «{title}»",
+        "beta.cResolvedTag": "risolto"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "beta.h": "Partilhar com leitores beta",
+        "beta.sub": "Envie uma cópia só de leitura deste livro aos seus leitores beta. Leem no navegador — sem conta — e podem comentar qualquer passagem. A cópia fica fixa ao partilhar; volte a publicar para enviar o rascunho mais recente.",
+        "beta.offline": "Partilhar requer o servidor Beuk. Este estúdio funciona apenas neste dispositivo, por isso não há onde um leitor abrir um link.",
+        "beta.signedOut": "Inicie sessão para partilhar. Um link de leitura vive na sua estante, por isso precisa de uma conta — os seus leitores não.",
+        "beta.signIn": "Iniciar sessão",
+        "beta.notOnShelf": "Este livro ainda não está na sua estante — leve-o para lá a partir de A sua estante (canto superior direito) e depois partilhe-o.",
+        "beta.expiry": "O link expira",
+        "beta.expNever": "Nunca", "beta.exp7": "Em 7 dias", "beta.exp30": "Em 30 dias", "beta.exp90": "Em 90 dias",
+        "beta.allowComments": "Os leitores podem comentar",
+        "beta.nameRequired": "Pedir o nome aos leitores",
+        "beta.create": "Criar um link de leitura",
+        "beta.creating": "A guardar o rascunho mais recente e a criar o link…",
+        "beta.newLink": "O seu novo link de leitura — copie-o agora. O servidor guarda apenas uma impressão digital, por isso só pode voltar a ser mostrado neste dispositivo.",
+        "beta.copy": "Copiar link", "beta.copied": "Link copiado",
+        "beta.copyFail": "Não foi possível copiar — selecione o link e copie-o à mão",
+        "beta.listH": "Links de leitura deste livro",
+        "beta.none": "Ainda não há links de leitura para este livro.",
+        "beta.readers": "{n} leitor", "beta.readersPlural": "{n} leitores",
+        "beta.comments": "{n} comentário", "beta.commentsPlural": "{n} comentários",
+        "beta.openCount": "{n} em aberto",
+        "beta.stActive": "Aberto", "beta.stRevoked": "Revogado", "beta.stExpired": "Expirado",
+        "beta.expires": "expira a {date}",
+        "beta.published": "cópia de {date}",
+        "beta.republish": "Voltar a publicar", "beta.republished": "Os leitores já veem o seu rascunho mais recente",
+        "beta.revoke": "Revogar", "beta.revokeTitle": "Revogar este link de leitura?",
+        "beta.revokeBody": "Quem abrir «{title}» verá uma nota tranquila de que a cópia está fechada. Os comentários já deixados ficam consigo.",
+        "beta.revokedToast": "Link revogado",
+        "beta.linkElsewhere": "O link só pode ser copiado no dispositivo que o criou.",
+        "beta.failed": "Não funcionou — {error}",
+        "beta.loading": "A carregar…",
+        "beta.cOpen": "Comentários de leitores", "beta.cTitle": "Comentários de leitores",
+        "beta.cSub": "O que os seus leitores beta disseram, ancorado à passagem que estavam a ler. Salte para lá e marque como resolvido quando tratar do assunto.",
+        "beta.cEmpty": "Ainda não há comentários. Partilhe um link de leitura em Exportar e os comentários vão juntar-se aqui.",
+        "beta.cSignedOut": "Inicie sessão para ver os comentários dos seus leitores beta.",
+        "beta.cShowResolved": "Mostrar resolvidos",
+        "beta.cJump": "Ir para a passagem", "beta.cResolve": "Resolver", "beta.cReopen": "Reabrir",
+        "beta.cAnon": "Um leitor",
+        "beta.cMissingSection": "Uma secção que já não está neste livro",
+        "beta.cWhole": "Sobre a secção no seu todo",
+        "beta.cMoved": "Essa passagem mudou entretanto — foi aberta a sua secção",
+        "beta.cRefresh": "Atualizar", "beta.cClose": "Fechar",
+        "beta.cVia": "via «{title}»",
+        "beta.cResolvedTag": "resolvido"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "beta.h": "Delen met proeflezers",
+        "beta.sub": "Stuur proeflezers een alleen-lezen kopie van dit boek. Ze lezen in de browser — zonder account — en kunnen bij elke passage reageren. De kopie ligt vast zodra je deelt; publiceer opnieuw om je nieuwste versie te sturen.",
+        "beta.offline": "Delen vraagt om de Beuk-server. Deze studio draait alleen op dit apparaat, dus er is geen plek waar een lezer een link kan openen.",
+        "beta.signedOut": "Log in om te delen. Een leeslink staat op je plank, dus je hebt een account nodig — je lezers niet.",
+        "beta.signIn": "Inloggen",
+        "beta.notOnShelf": "Dit boek staat nog niet op je plank — zet het daar via Jouw plank (rechtsboven) en deel het daarna.",
+        "beta.expiry": "Link verloopt",
+        "beta.expNever": "Nooit", "beta.exp7": "Over 7 dagen", "beta.exp30": "Over 30 dagen", "beta.exp90": "Over 90 dagen",
+        "beta.allowComments": "Lezers kunnen reageren",
+        "beta.nameRequired": "Lezers om hun naam vragen",
+        "beta.create": "Leeslink maken",
+        "beta.creating": "Je nieuwste versie wordt opgeslagen en de link gemaakt…",
+        "beta.newLink": "Je nieuwe leeslink — kopieer hem nu. De server bewaart alleen een vingerafdruk, dus hij kan alleen op dit apparaat opnieuw worden getoond.",
+        "beta.copy": "Link kopiëren", "beta.copied": "Link gekopieerd",
+        "beta.copyFail": "Kopiëren mislukt — selecteer de link en kopieer hem met de hand",
+        "beta.listH": "Leeslinks voor dit boek",
+        "beta.none": "Nog geen leeslinks voor dit boek.",
+        "beta.readers": "{n} lezer", "beta.readersPlural": "{n} lezers",
+        "beta.comments": "{n} reactie", "beta.commentsPlural": "{n} reacties",
+        "beta.openCount": "{n} open",
+        "beta.stActive": "Open", "beta.stRevoked": "Ingetrokken", "beta.stExpired": "Verlopen",
+        "beta.expires": "verloopt op {date}",
+        "beta.published": "kopie van {date}",
+        "beta.republish": "Opnieuw publiceren", "beta.republished": "Lezers zien nu je nieuwste versie",
+        "beta.revoke": "Intrekken", "beta.revokeTitle": "Deze leeslink intrekken?",
+        "beta.revokeBody": "Wie “{title}” opent, ziet een rustige melding dat de kopie gesloten is. Reacties die al zijn achtergelaten blijven bij jou.",
+        "beta.revokedToast": "Link ingetrokken",
+        "beta.linkElsewhere": "De link kan alleen worden gekopieerd op het apparaat dat hem maakte.",
+        "beta.failed": "Dat lukte niet — {error}",
+        "beta.loading": "Laden…",
+        "beta.cOpen": "Lezersreacties", "beta.cTitle": "Lezersreacties",
+        "beta.cSub": "Wat je proeflezers zeiden, verankerd aan de passage die ze lazen. Spring ernaartoe en markeer het als afgehandeld zodra je ermee klaar bent.",
+        "beta.cEmpty": "Nog geen lezersreacties. Deel een leeslink via Exporteren, dan verzamelen de reacties zich hier.",
+        "beta.cSignedOut": "Log in om de reacties van je proeflezers te zien.",
+        "beta.cShowResolved": "Afgehandelde tonen",
+        "beta.cJump": "Naar passage", "beta.cResolve": "Afhandelen", "beta.cReopen": "Heropenen",
+        "beta.cAnon": "Een lezer",
+        "beta.cMissingSection": "Een sectie die niet meer in dit boek staat",
+        "beta.cWhole": "Over de sectie als geheel",
+        "beta.cMoved": "Die passage is sindsdien veranderd — de sectie is geopend",
+        "beta.cRefresh": "Vernieuwen", "beta.cClose": "Sluiten",
+        "beta.cVia": "via “{title}”",
+        "beta.cResolvedTag": "afgehandeld"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "beta.h": "Udostępnij betaczytelnikom",
+        "beta.sub": "Wyślij betaczytelnikom kopię tej książki tylko do odczytu. Czytają w przeglądarce — bez konta — i mogą komentować każdy fragment. Kopia zostaje zamrożona w chwili udostępnienia; opublikuj ponownie, by wysłać najnowszą wersję.",
+        "beta.offline": "Udostępnianie wymaga serwera Beuk. To studio działa tylko na tym urządzeniu, więc czytelnik nie ma gdzie otworzyć linku.",
+        "beta.signedOut": "Zaloguj się, aby udostępnić. Link do czytania mieszka na Twojej półce, więc potrzebujesz konta — Twoi czytelnicy nie.",
+        "beta.signIn": "Zaloguj się",
+        "beta.notOnShelf": "Tej książki nie ma jeszcze na Twojej półce — przenieś ją tam z Twojej półki (prawy górny róg), a potem udostępnij.",
+        "beta.expiry": "Link wygasa",
+        "beta.expNever": "Nigdy", "beta.exp7": "Za 7 dni", "beta.exp30": "Za 30 dni", "beta.exp90": "Za 90 dni",
+        "beta.allowComments": "Czytelnicy mogą komentować",
+        "beta.nameRequired": "Proś czytelników o imię",
+        "beta.create": "Utwórz link do czytania",
+        "beta.creating": "Zapisuję najnowszą wersję i tworzę link…",
+        "beta.newLink": "Twój nowy link do czytania — skopiuj go teraz. Serwer przechowuje tylko jego odcisk, więc można go ponownie pokazać tylko na tym urządzeniu.",
+        "beta.copy": "Kopiuj link", "beta.copied": "Skopiowano link",
+        "beta.copyFail": "Nie udało się skopiować — zaznacz link i skopiuj go ręcznie",
+        "beta.listH": "Linki do czytania tej książki",
+        "beta.none": "Brak linków do czytania tej książki.",
+        "beta.readers": "{n} czytelnik", "beta.readersPlural": "Czytelnicy: {n}",
+        "beta.comments": "{n} komentarz", "beta.commentsPlural": "Komentarze: {n}",
+        "beta.openCount": "otwarte: {n}",
+        "beta.stActive": "Otwarty", "beta.stRevoked": "Unieważniony", "beta.stExpired": "Wygasł",
+        "beta.expires": "wygasa {date}",
+        "beta.published": "kopia z {date}",
+        "beta.republish": "Opublikuj ponownie", "beta.republished": "Czytelnicy widzą teraz Twoją najnowszą wersję",
+        "beta.revoke": "Unieważnij", "beta.revokeTitle": "Unieważnić ten link do czytania?",
+        "beta.revokeBody": "Każdy, kto otworzy „{title}”, zobaczy spokojną informację, że kopia jest zamknięta. Pozostawione już komentarze zostają u Ciebie.",
+        "beta.revokedToast": "Link unieważniony",
+        "beta.linkElsewhere": "Link można skopiować tylko na urządzeniu, które go utworzyło.",
+        "beta.failed": "Nie udało się — {error}",
+        "beta.loading": "Wczytywanie…",
+        "beta.cOpen": "Komentarze czytelników", "beta.cTitle": "Komentarze czytelników",
+        "beta.cSub": "Co powiedzieli Twoi betaczytelnicy, zakotwiczone przy fragmencie, który czytali. Przejdź do niego i oznacz jako rozwiązane, gdy się nim zajmiesz.",
+        "beta.cEmpty": "Brak komentarzy. Udostępnij link do czytania w Eksporcie, a komentarze zbiorą się tutaj.",
+        "beta.cSignedOut": "Zaloguj się, aby zobaczyć komentarze betaczytelników.",
+        "beta.cShowResolved": "Pokaż rozwiązane",
+        "beta.cJump": "Przejdź do fragmentu", "beta.cResolve": "Rozwiąż", "beta.cReopen": "Otwórz ponownie",
+        "beta.cAnon": "Czytelnik",
+        "beta.cMissingSection": "Sekcja, której nie ma już w tej książce",
+        "beta.cWhole": "O sekcji jako całości",
+        "beta.cMoved": "Ten fragment się zmienił — otwarto jego sekcję",
+        "beta.cRefresh": "Odśwież", "beta.cClose": "Zamknij",
+        "beta.cVia": "przez „{title}”",
+        "beta.cResolvedTag": "rozwiązane"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "beta.h": "Поделиться с бета-читателями",
+        "beta.sub": "Отправьте бета-читателям копию книги только для чтения. Они читают в браузере — без аккаунта — и могут комментировать любой фрагмент. Копия фиксируется в момент публикации; опубликуйте заново, чтобы отправить свежий черновик.",
+        "beta.offline": "Чтобы делиться, нужен сервер Beuk. Эта студия работает только на этом устройстве, поэтому читателю негде открыть ссылку.",
+        "beta.signedOut": "Войдите, чтобы поделиться. Ссылка для чтения хранится на вашей полке, поэтому нужен аккаунт — читателям он не нужен.",
+        "beta.signIn": "Войти",
+        "beta.notOnShelf": "Этой книги ещё нет на вашей полке — перенесите её туда через «Ваша полка» (вверху справа), а затем поделитесь.",
+        "beta.expiry": "Срок действия ссылки",
+        "beta.expNever": "Бессрочно", "beta.exp7": "7 дней", "beta.exp30": "30 дней", "beta.exp90": "90 дней",
+        "beta.allowComments": "Читатели могут комментировать",
+        "beta.nameRequired": "Спрашивать имя читателя",
+        "beta.create": "Создать ссылку для чтения",
+        "beta.creating": "Сохраняем свежий черновик и создаём ссылку…",
+        "beta.newLink": "Ваша новая ссылка для чтения — скопируйте её сейчас. Сервер хранит только её отпечаток, поэтому показать её снова можно лишь на этом устройстве.",
+        "beta.copy": "Копировать ссылку", "beta.copied": "Ссылка скопирована",
+        "beta.copyFail": "Не удалось скопировать — выделите ссылку и скопируйте вручную",
+        "beta.listH": "Ссылки для чтения этой книги",
+        "beta.none": "Для этой книги пока нет ссылок для чтения.",
+        "beta.readers": "Читателей: {n}", "beta.readersPlural": "Читателей: {n}",
+        "beta.comments": "Комментариев: {n}", "beta.commentsPlural": "Комментариев: {n}",
+        "beta.openCount": "открытых: {n}",
+        "beta.stActive": "Открыта", "beta.stRevoked": "Отозвана", "beta.stExpired": "Истекла",
+        "beta.expires": "истекает {date}",
+        "beta.published": "копия от {date}",
+        "beta.republish": "Опубликовать заново", "beta.republished": "Читатели теперь видят ваш свежий черновик",
+        "beta.revoke": "Отозвать", "beta.revokeTitle": "Отозвать эту ссылку для чтения?",
+        "beta.revokeBody": "Каждый, кто откроет «{title}», увидит спокойное сообщение, что копия закрыта. Уже оставленные комментарии останутся у вас.",
+        "beta.revokedToast": "Ссылка отозвана",
+        "beta.linkElsewhere": "Скопировать ссылку можно только на устройстве, где она создана.",
+        "beta.failed": "Не получилось — {error}",
+        "beta.loading": "Загрузка…",
+        "beta.cOpen": "Комментарии читателей", "beta.cTitle": "Комментарии читателей",
+        "beta.cSub": "Что сказали ваши бета-читатели, с привязкой к фрагменту, который они читали. Перейдите к нему и отметьте как решённое, когда разберётесь.",
+        "beta.cEmpty": "Комментариев пока нет. Поделитесь ссылкой для чтения в окне «Экспорт», и комментарии соберутся здесь.",
+        "beta.cSignedOut": "Войдите, чтобы увидеть комментарии бета-читателей.",
+        "beta.cShowResolved": "Показать решённые",
+        "beta.cJump": "К фрагменту", "beta.cResolve": "Решено", "beta.cReopen": "Открыть снова",
+        "beta.cAnon": "Читатель",
+        "beta.cMissingSection": "Раздел, которого больше нет в книге",
+        "beta.cWhole": "О разделе в целом",
+        "beta.cMoved": "Этот фрагмент изменился — открыт его раздел",
+        "beta.cRefresh": "Обновить", "beta.cClose": "Закрыть",
+        "beta.cVia": "через «{title}»",
+        "beta.cResolvedTag": "решено"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "beta.h": "Beta okurlarla paylaş",
+        "beta.sub": "Bu kitabın salt okunur bir kopyasını beta okurlarına gönder. Tarayıcıda okurlar — hesap gerekmez — ve her pasaja yorum bırakabilirler. Kopya paylaşıldığı anda sabitlenir; en son taslağını göndermek için yeniden yayımla.",
+        "beta.offline": "Paylaşmak için Beuk sunucusu gerekir. Bu stüdyo yalnızca bu cihazda çalışıyor; bir okurun bağlantıyı açabileceği bir yer yok.",
+        "beta.signedOut": "Paylaşmak için oturum aç. Okuma bağlantısı rafında yaşar, bu yüzden bir hesaba ihtiyacın var — okurlarının yok.",
+        "beta.signIn": "Oturum aç",
+        "beta.notOnShelf": "Bu kitap henüz rafında değil — Rafın (sağ üst) üzerinden oraya taşı, sonra paylaş.",
+        "beta.expiry": "Bağlantının süresi",
+        "beta.expNever": "Hiçbir zaman", "beta.exp7": "7 gün sonra", "beta.exp30": "30 gün sonra", "beta.exp90": "90 gün sonra",
+        "beta.allowComments": "Okurlar yorum yapabilir",
+        "beta.nameRequired": "Okurlardan adlarını iste",
+        "beta.create": "Okuma bağlantısı oluştur",
+        "beta.creating": "En son taslağın kaydediliyor ve bağlantı oluşturuluyor…",
+        "beta.newLink": "Yeni okuma bağlantın — şimdi kopyala. Sunucu yalnızca bir parmak izini saklar; bu yüzden yalnızca bu cihazda yeniden gösterilebilir.",
+        "beta.copy": "Bağlantıyı kopyala", "beta.copied": "Bağlantı kopyalandı",
+        "beta.copyFail": "Kopyalanamadı — bağlantıyı seçip elle kopyala",
+        "beta.listH": "Bu kitabın okuma bağlantıları",
+        "beta.none": "Bu kitap için henüz okuma bağlantısı yok.",
+        "beta.readers": "{n} okur", "beta.readersPlural": "{n} okur",
+        "beta.comments": "{n} yorum", "beta.commentsPlural": "{n} yorum",
+        "beta.openCount": "{n} açık",
+        "beta.stActive": "Açık", "beta.stRevoked": "İptal edildi", "beta.stExpired": "Süresi doldu",
+        "beta.expires": "{date} tarihinde sona erer",
+        "beta.published": "{date} tarihli kopya",
+        "beta.republish": "Yeniden yayımla", "beta.republished": "Okurlar artık en son taslağını görüyor",
+        "beta.revoke": "İptal et", "beta.revokeTitle": "Bu okuma bağlantısı iptal edilsin mi?",
+        "beta.revokeBody": "“{title}” bağlantısını açan herkes kopyanın kapandığını bildiren sakin bir not görür. Bırakılmış yorumlar sende kalır.",
+        "beta.revokedToast": "Bağlantı iptal edildi",
+        "beta.linkElsewhere": "Bağlantı yalnızca onu oluşturan cihazda kopyalanabilir.",
+        "beta.failed": "Olmadı — {error}",
+        "beta.loading": "Yükleniyor…",
+        "beta.cOpen": "Okur yorumları", "beta.cTitle": "Okur yorumları",
+        "beta.cSub": "Beta okurlarının söyledikleri, okudukları pasaja bağlı olarak. Oraya git, ilgilendiğinde çözüldü olarak işaretle.",
+        "beta.cEmpty": "Henüz okur yorumu yok. Dışa Aktar’dan bir okuma bağlantısı paylaş, yorumlar burada toplanır.",
+        "beta.cSignedOut": "Beta okurlarının yorumlarını görmek için oturum aç.",
+        "beta.cShowResolved": "Çözülenleri göster",
+        "beta.cJump": "Pasaja git", "beta.cResolve": "Çözüldü", "beta.cReopen": "Yeniden aç",
+        "beta.cAnon": "Bir okur",
+        "beta.cMissingSection": "Artık bu kitapta olmayan bir bölüm",
+        "beta.cWhole": "Bölümün bütünü hakkında",
+        "beta.cMoved": "O pasaj o zamandan beri değişti — bölümü açıldı",
+        "beta.cRefresh": "Yenile", "beta.cClose": "Kapat",
+        "beta.cVia": "“{title}” üzerinden",
+        "beta.cResolvedTag": "çözüldü"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "beta.h": "شارك مع القرّاء التجريبيين",
+        "beta.sub": "أرسل نسخة للقراءة فقط من هذا الكتاب إلى قرّائك التجريبيين. يقرؤون في المتصفح — دون حساب — ويمكنهم التعليق على أي مقطع. تُجمَّد النسخة لحظة المشاركة؛ أعد النشر لترسل أحدث مسوّدة.",
+        "beta.offline": "تحتاج المشاركة إلى خادم Beuk. يعمل هذا الاستوديو على هذا الجهاز فقط، فلا مكان يفتح فيه القارئ رابطًا.",
+        "beta.signedOut": "سجّل الدخول للمشاركة. رابط القراءة يعيش على رفّك، لذا تحتاج إلى حساب — أما قرّاؤك فلا.",
+        "beta.signIn": "تسجيل الدخول",
+        "beta.notOnShelf": "هذا الكتاب ليس على رفّك بعد — انقله إليه من «رفّك» (أعلى اليمين)، ثم شاركه.",
+        "beta.expiry": "انتهاء الرابط",
+        "beta.expNever": "أبدًا", "beta.exp7": "بعد 7 أيام", "beta.exp30": "بعد 30 يومًا", "beta.exp90": "بعد 90 يومًا",
+        "beta.allowComments": "يمكن للقرّاء التعليق",
+        "beta.nameRequired": "اطلب من القرّاء أسماءهم",
+        "beta.create": "أنشئ رابط قراءة",
+        "beta.creating": "جارٍ حفظ أحدث مسوّدة وإنشاء الرابط…",
+        "beta.newLink": "رابط القراءة الجديد — انسخه الآن. لا يحتفظ الخادم إلا ببصمة له، لذا لا يمكن عرضه مجددًا إلا على هذا الجهاز.",
+        "beta.copy": "انسخ الرابط", "beta.copied": "نُسخ الرابط",
+        "beta.copyFail": "تعذّر النسخ — حدّد الرابط وانسخه يدويًا",
+        "beta.listH": "روابط القراءة لهذا الكتاب",
+        "beta.none": "لا توجد روابط قراءة لهذا الكتاب بعد.",
+        "beta.readers": "القرّاء: {n}", "beta.readersPlural": "القرّاء: {n}",
+        "beta.comments": "التعليقات: {n}", "beta.commentsPlural": "التعليقات: {n}",
+        "beta.openCount": "المفتوحة: {n}",
+        "beta.stActive": "مفتوح", "beta.stRevoked": "ملغى", "beta.stExpired": "منتهٍ",
+        "beta.expires": "ينتهي في {date}",
+        "beta.published": "نسخة {date}",
+        "beta.republish": "أعد النشر", "beta.republished": "يرى القرّاء الآن أحدث مسوّدة لك",
+        "beta.revoke": "إلغاء", "beta.revokeTitle": "إلغاء رابط القراءة هذا؟",
+        "beta.revokeBody": "كل من يفتح «{title}» سيرى ملاحظة هادئة بأن النسخة مغلقة. التعليقات التي تُركت تبقى لديك.",
+        "beta.revokedToast": "أُلغي الرابط",
+        "beta.linkElsewhere": "لا يمكن نسخ الرابط إلا على الجهاز الذي أنشأه.",
+        "beta.failed": "لم ينجح ذلك — {error}",
+        "beta.loading": "جارٍ التحميل…",
+        "beta.cOpen": "تعليقات القرّاء", "beta.cTitle": "تعليقات القرّاء",
+        "beta.cSub": "ما قاله قرّاؤك التجريبيون، مثبّتًا على المقطع الذي كانوا يقرؤونه. انتقل إليه، ثم علّمه محلولًا حين تنتهي منه.",
+        "beta.cEmpty": "لا تعليقات بعد. شارك رابط قراءة من «تصدير»، وستتجمع التعليقات هنا.",
+        "beta.cSignedOut": "سجّل الدخول لرؤية تعليقات قرّائك التجريبيين.",
+        "beta.cShowResolved": "إظهار المحلولة",
+        "beta.cJump": "انتقل إلى المقطع", "beta.cResolve": "تم الحل", "beta.cReopen": "إعادة فتح",
+        "beta.cAnon": "قارئ",
+        "beta.cMissingSection": "قسم لم يعد في هذا الكتاب",
+        "beta.cWhole": "عن القسم ككل",
+        "beta.cMoved": "تغيّر ذلك المقطع منذ ذلك الحين — فُتح قسمه بدلًا منه",
+        "beta.cRefresh": "تحديث", "beta.cClose": "إغلاق",
+        "beta.cVia": "عبر «{title}»",
+        "beta.cResolvedTag": "محلول"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "beta.h": "ベータ読者と共有",
+        "beta.sub": "この本の閲覧専用コピーをベータ読者に送ります。読者はブラウザで読み — アカウント不要 — どの箇所にもコメントできます。コピーは共有した時点で固定されます。最新の原稿を送るには再公開してください。",
+        "beta.offline": "共有には Beuk サーバーが必要です。このスタジオはこの端末だけで動いているため、読者がリンクを開ける場所がありません。",
+        "beta.signedOut": "共有するにはサインインしてください。読書リンクはあなたの本棚に置かれるため、アカウントが必要です — 読者には不要です。",
+        "beta.signIn": "サインイン",
+        "beta.notOnShelf": "この本はまだ本棚にありません — 「あなたの本棚」（右上）から移してから共有してください。",
+        "beta.expiry": "リンクの有効期限",
+        "beta.expNever": "なし", "beta.exp7": "7日後", "beta.exp30": "30日後", "beta.exp90": "90日後",
+        "beta.allowComments": "読者がコメントできる",
+        "beta.nameRequired": "読者に名前を尋ねる",
+        "beta.create": "読書リンクを作成",
+        "beta.creating": "最新の原稿を保存してリンクを作成しています…",
+        "beta.newLink": "新しい読書リンクです — 今すぐコピーしてください。サーバーには指紋だけが保存されるため、再表示できるのはこの端末だけです。",
+        "beta.copy": "リンクをコピー", "beta.copied": "リンクをコピーしました",
+        "beta.copyFail": "コピーできませんでした — リンクを選択して手動でコピーしてください",
+        "beta.listH": "この本の読書リンク",
+        "beta.none": "この本の読書リンクはまだありません。",
+        "beta.readers": "読者 {n} 人", "beta.readersPlural": "読者 {n} 人",
+        "beta.comments": "コメント {n} 件", "beta.commentsPlural": "コメント {n} 件",
+        "beta.openCount": "未解決 {n} 件",
+        "beta.stActive": "公開中", "beta.stRevoked": "取り消し済み", "beta.stExpired": "期限切れ",
+        "beta.expires": "{date} に期限切れ",
+        "beta.published": "{date} のコピー",
+        "beta.republish": "再公開", "beta.republished": "読者に最新の原稿が表示されるようになりました",
+        "beta.revoke": "取り消す", "beta.revokeTitle": "この読書リンクを取り消しますか？",
+        "beta.revokeBody": "「{title}」を開いた人には、コピーが閉じられたという穏やかなお知らせが表示されます。すでに届いたコメントは残ります。",
+        "beta.revokedToast": "リンクを取り消しました",
+        "beta.linkElsewhere": "リンクをコピーできるのは、作成した端末だけです。",
+        "beta.failed": "うまくいきませんでした — {error}",
+        "beta.loading": "読み込み中…",
+        "beta.cOpen": "読者のコメント", "beta.cTitle": "読者のコメント",
+        "beta.cSub": "ベータ読者の声を、読んでいた箇所に結びつけて表示します。その箇所へ移動し、対応したら解決済みにしてください。",
+        "beta.cEmpty": "読者のコメントはまだありません。「書き出し」から読書リンクを共有すると、ここにコメントが集まります。",
+        "beta.cSignedOut": "ベータ読者のコメントを見るにはサインインしてください。",
+        "beta.cShowResolved": "解決済みを表示",
+        "beta.cJump": "その箇所へ", "beta.cResolve": "解決済みにする", "beta.cReopen": "再び開く",
+        "beta.cAnon": "読者",
+        "beta.cMissingSection": "この本にはもうないセクション",
+        "beta.cWhole": "セクション全体について",
+        "beta.cMoved": "その箇所はその後変更されました — セクションを開きました",
+        "beta.cRefresh": "更新", "beta.cClose": "閉じる",
+        "beta.cVia": "「{title}」経由",
+        "beta.cResolvedTag": "解決済み"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "beta.h": "与试读读者分享",
+        "beta.sub": "把这本书的只读副本发给你的试读读者。他们在浏览器中阅读 — 无需账号 — 并可以评论任意段落。副本在分享时即被固定；重新发布即可发送你的最新稿。",
+        "beta.offline": "分享需要 Beuk 服务器。此工作室仅在本设备上运行，读者没有地方打开链接。",
+        "beta.signedOut": "登录后即可分享。阅读链接存放在你的书架上，因此你需要一个账号 — 你的读者不需要。",
+        "beta.signIn": "登录",
+        "beta.notOnShelf": "这本书还不在你的书架上 — 先从“你的书架”（右上角）把它放上去，再分享。",
+        "beta.expiry": "链接有效期",
+        "beta.expNever": "永不过期", "beta.exp7": "7 天后", "beta.exp30": "30 天后", "beta.exp90": "90 天后",
+        "beta.allowComments": "读者可以评论",
+        "beta.nameRequired": "请读者留下姓名",
+        "beta.create": "创建阅读链接",
+        "beta.creating": "正在保存你的最新稿并创建链接…",
+        "beta.newLink": "你的新阅读链接 — 请现在复制。服务器只保存它的指纹，因此只能在本设备上再次显示。",
+        "beta.copy": "复制链接", "beta.copied": "链接已复制",
+        "beta.copyFail": "无法复制 — 请选中链接后手动复制",
+        "beta.listH": "这本书的阅读链接",
+        "beta.none": "这本书还没有阅读链接。",
+        "beta.readers": "{n} 位读者", "beta.readersPlural": "{n} 位读者",
+        "beta.comments": "{n} 条评论", "beta.commentsPlural": "{n} 条评论",
+        "beta.openCount": "{n} 条未解决",
+        "beta.stActive": "开放", "beta.stRevoked": "已撤销", "beta.stExpired": "已过期",
+        "beta.expires": "{date} 过期",
+        "beta.published": "{date} 的副本",
+        "beta.republish": "重新发布", "beta.republished": "读者现在看到的是你的最新稿",
+        "beta.revoke": "撤销", "beta.revokeTitle": "撤销这个阅读链接？",
+        "beta.revokeBody": "任何打开“{title}”的人都会看到一条平静的提示：副本已关闭。已留下的评论仍归你所有。",
+        "beta.revokedToast": "链接已撤销",
+        "beta.linkElsewhere": "只能在创建它的设备上复制该链接。",
+        "beta.failed": "没有成功 — {error}",
+        "beta.loading": "正在加载…",
+        "beta.cOpen": "读者评论", "beta.cTitle": "读者评论",
+        "beta.cSub": "试读读者的意见，锚定在他们当时阅读的段落。跳转过去，处理完后标记为已解决。",
+        "beta.cEmpty": "还没有读者评论。从“导出”分享一个阅读链接，评论就会汇集到这里。",
+        "beta.cSignedOut": "登录后可查看试读读者的评论。",
+        "beta.cShowResolved": "显示已解决",
+        "beta.cJump": "跳转到段落", "beta.cResolve": "标为已解决", "beta.cReopen": "重新打开",
+        "beta.cAnon": "一位读者",
+        "beta.cMissingSection": "已不在本书中的章节",
+        "beta.cWhole": "针对整个章节",
+        "beta.cMoved": "该段落此后已改动 — 已打开其所在章节",
+        "beta.cRefresh": "刷新", "beta.cClose": "关闭",
+        "beta.cVia": "来自“{title}”",
+        "beta.cResolvedTag": "已解决"
+      });
+
+      const BETA_TOKENS_KEY = "beuk.betaTokens.v1";
+      const beta = { shares: [], comments: [], loading: false, error: "", newLink: null, showResolved: false, busy: false };
+      function betaTokens() {
+        try { const v = JSON.parse(localStorage.getItem(BETA_TOKENS_KEY) || "{}"); return v && typeof v === "object" ? v : {}; }
+        catch (e) { return {}; }
+      }
+      function betaRememberToken(shareId, token) {
+        try { const m = betaTokens(); m[shareId] = token; localStorage.setItem(BETA_TOKENS_KEY, JSON.stringify(m)); } catch (e) { /* convenience only */ }
+      }
+      function betaLinkFor(token) { return location.origin + "/read/" + token; }
+      /* The chrome state the share surfaces follow: no server, signed
+         out, not on the shelf, or ready. Read synchronously — this
+         decides what renders and never touches the network. */
+      function betaGate() {
+        if (!cloud.available) return "offline";
+        if (!cloud.user) return "signedOut";
+        if (cloud.linkState === "declined") return "notOnShelf";
+        return "ready";
+      }
+      function betaInjectStyles() {
+        if ($("betaStyles")) return;
+        const st = document.createElement("style");
+        st.id = "betaStyles";
+        st.textContent =
+          ".beta-opts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:10px 0}" +
+          ".beta-opts label{font-size:12.5px;display:flex;align-items:center;gap:6px}" +
+          ".beta-opts select{max-width:160px}" +
+          ".beta-new{border:1px solid var(--accent);border-radius:9px;padding:10px 12px;margin:10px 0;background:var(--panel)}" +
+          ".beta-new p{font-size:12.5px;margin:0 0 8px;line-height:1.5}" +
+          ".beta-linkrow{display:flex;gap:8px;align-items:center}" +
+          ".beta-linkrow input{flex:1 1 auto;min-width:0;font-family:var(--mono-font);font-size:12px}" +
+          ".beta-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}" +
+          ".beta-row{flex-wrap:wrap}" +
+          ".beta-row .a-name{font-family:inherit}" +
+          ".beta-st{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;border:1px solid var(--line);margin-left:6px}" +
+          ".beta-st.active{color:var(--accent);border-color:var(--accent)}" +
+          ".beta-btns{display:flex;gap:6px;flex-wrap:wrap}" +
+          ".beta-note{font-size:12.5px;color:var(--muted);line-height:1.55;margin:8px 0 0}" +
+          ".bc-sec{margin:14px 0 6px;font-weight:700;font-size:13px}" +
+          ".bc-item{border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:9px 12px;margin:6px 0}" +
+          ".bc-item.resolved{opacity:.62}" +
+          ".bc-quote{font-family:'EB Garamond',Georgia,serif;font-style:italic;border-left:3px solid var(--accent);padding-left:8px;margin:0 0 6px;font-size:14px}" +
+          ".bc-body{font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}" +
+          ".bc-meta{font-size:11.5px;color:var(--muted);margin-top:4px}" +
+          ".bc-btns{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}" +
+          ".bc-btns .tb-btn{padding:5px 10px;font-size:12px}" +
+          ".bc-top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:6px 0}";
+        document.head.appendChild(st);
+      }
+      function betaInjectDom() {
+        betaInjectStyles();
+        const arc = $("archiveSec");
+        if (arc && !$("betaSec")) {
+          const sec = document.createElement("div");
+          sec.className = "fmt-sec"; sec.id = "betaSec";
+          arc.parentNode.insertBefore(sec, arc.nextSibling);
+          sec.addEventListener("click", betaOnClick);
+        }
+        const hist = $("btnHistory");
+        if (hist && !$("btnBetaComments")) {
+          const b = document.createElement("button");
+          b.className = "side-btn ins-open-btn"; b.id = "btnBetaComments"; b.type = "button";
+          hist.parentNode.insertBefore(b, hist.nextSibling);
+          b.addEventListener("click", betaOpenComments);
+        }
+        if (!$("modalBetaComments")) {
+          const m = document.createElement("div");
+          m.className = "modal-back"; m.id = "modalBetaComments"; m.style.zIndex = "70";
+          m.innerHTML = '<div class="modal wide ins-modal" role="dialog" aria-modal="true" aria-labelledby="betaCH">' +
+            '<h2 id="betaCH"></h2><p class="m-sub" id="betaCSub"></p><div id="betaCBody"></div>' +
+            '<div class="modal-actions"><button class="tb-btn" type="button" id="btnBetaCClose"></button></div></div>';
+          document.body.appendChild(m);
+          m.addEventListener("click", (e) => { if (e.target === m) betaCloseComments(); else betaOnCommentsClick(e); });
+          m.addEventListener("change", (e) => { if (e.target && e.target.id === "betaShowResolved") { beta.showResolved = e.target.checked; betaRenderComments(); } });
+          $("btnBetaCClose").addEventListener("click", betaCloseComments);
+        }
+      }
+      function betaFmtDate(v) { return v ? fmtDateIntl(new Date(v)) : ""; }
+      function betaRenderButton() {
+        const b = $("btnBetaComments"); if (!b) return;
+        b.innerHTML = '<i data-lucide="message-square-quote"></i>' + esc(t("beta.cOpen"));
+      }
+      function betaRenderSection() {
+        const sec = $("betaSec"); if (!sec) return;
+        const gate = betaGate();
+        let h = '<h3><i data-lucide="users"></i>' + esc(t("beta.h")) + "</h3><p>" + esc(t("beta.sub")) + "</p>";
+        if (gate === "offline") {
+          h += '<p class="shelf-empty" data-beta-gate="offline">' + esc(t("beta.offline")) + "</p>";
+        } else if (gate === "signedOut") {
+          h += '<p class="shelf-empty" data-beta-gate="signedOut">' + esc(t("beta.signedOut")) + "</p>" +
+            '<div class="fmt-actions"><button class="tb-btn" type="button" data-beta="signin"><i data-lucide="cloud"></i>' + esc(t("beta.signIn")) + "</button></div>";
+        } else if (gate === "notOnShelf") {
+          h += '<p class="shelf-empty" data-beta-gate="notOnShelf">' + esc(t("beta.notOnShelf")) + "</p>";
+        } else {
+          h += '<div class="beta-opts">' +
+            '<label>' + esc(t("beta.expiry")) + ' <select class="txt-input" id="betaExpiry">' +
+            ["0", "7", "30", "90"].map((d) => '<option value="' + d + '">' + esc(t(d === "0" ? "beta.expNever" : "beta.exp" + d)) + "</option>").join("") +
+            "</select></label>" +
+            '<label><input type="checkbox" id="betaAllow" checked> ' + esc(t("beta.allowComments")) + "</label>" +
+            '<label><input type="checkbox" id="betaNameReq" checked> ' + esc(t("beta.nameRequired")) + "</label></div>" +
+            '<div class="fmt-actions"><button class="tb-btn primary" type="button" id="btnBetaCreate" data-beta="create"' + (beta.busy ? " disabled" : "") + '><i data-lucide="link"></i>' + esc(t("beta.create")) + "</button></div>";
+          if (beta.busy) h += '<p class="cr-wait">' + esc(t("beta.creating")) + "</p>";
+          if (beta.error) h += '<p class="cr-wait" role="alert">' + esc(t("beta.failed", { error: beta.error })) + "</p>";
+          if (beta.newLink) {
+            h += '<div class="beta-new" id="betaNewLink"><p>' + esc(t("beta.newLink")) + '</p><div class="beta-linkrow">' +
+              '<input class="txt-input" readonly id="betaNewUrl" value="' + esc(beta.newLink) + '" aria-label="' + esc(t("beta.copy")) + '">' +
+              '<button class="tb-btn" type="button" data-beta-copy="' + esc(beta.newLink) + '"><i data-lucide="copy"></i>' + esc(t("beta.copy")) + "</button></div></div>";
+          }
+          h += '<div class="field-lab" style="margin-top:12px">' + esc(t("beta.listH")) + '</div><div class="beta-list" id="betaList">';
+          if (beta.loading && !beta.shares.length) h += '<p class="shelf-empty">' + esc(t("beta.loading")) + "</p>";
+          else if (!beta.shares.length) h += '<p class="shelf-empty">' + esc(t("beta.none")) + "</p>";
+          else {
+            const tokens = betaTokens();
+            h += beta.shares.map((s) => {
+              const st = s.status === "active" ? "beta.stActive" : s.status === "revoked" ? "beta.stRevoked" : "beta.stExpired";
+              const meta = [
+                t("beta.published", { date: betaFmtDate(s.publishedAt) }),
+                t("beta.readers", { n: s.readerCount }),
+                t("beta.comments", { n: s.commentCount }) + (s.openCommentCount ? " (" + t("beta.openCount", { n: s.openCommentCount }) + ")" : "")
+              ];
+              if (s.expiresAt && s.status === "active") meta.push(t("beta.expires", { date: betaFmtDate(s.expiresAt) }));
+              const token = tokens[s.id];
+              let btns = "";
+              if (s.status === "active") {
+                btns += token
+                  ? '<button class="tb-btn" type="button" data-beta-copy="' + esc(betaLinkFor(token)) + '"><i data-lucide="copy"></i>' + esc(t("beta.copy")) + "</button>"
+                  : "";
+                btns += '<button class="tb-btn" type="button" data-beta-republish="' + esc(s.id) + '"><i data-lucide="refresh-cw"></i>' + esc(t("beta.republish")) + "</button>" +
+                  '<button class="tb-btn" type="button" data-beta-revoke="' + esc(s.id) + '">' + esc(t("beta.revoke")) + "</button>";
+              }
+              return '<div class="arc-row beta-row" data-share-id="' + esc(s.id) + '"><div class="a-main"><div class="a-name">' + esc(s.title) +
+                '<span class="beta-st ' + esc(s.status) + '">' + esc(t(st)) + '</span></div><div class="a-meta">' + esc(meta.join(" · ")) + "</div>" +
+                (s.status === "active" && !token ? '<div class="a-meta">' + esc(t("beta.linkElsewhere")) + "</div>" : "") +
+                '</div><div class="beta-btns">' + btns + "</div></div>";
+            }).join("");
+          }
+          h += "</div>";
+        }
+        sec.innerHTML = h;
+        icons();
+      }
+      async function betaLoadShares() {
+        if (betaGate() !== "ready" || !cloud.linkedId) { beta.shares = []; betaRenderSection(); return; }
+        beta.loading = true; betaRenderSection();
+        const r = await apiFetch("/api/shares?manuscriptId=" + encodeURIComponent(cloud.linkedId), {});
+        beta.loading = false;
+        if (r && Array.isArray(r.shares)) { beta.shares = r.shares; beta.error = ""; }
+        else if (r && r.__error) beta.error = r.__error;
+        betaRenderSection();
+      }
+      async function betaCreate() {
+        if (betaGate() !== "ready" || beta.busy) return;
+        const days = parseInt(($("betaExpiry") || {}).value || "0", 10);
+        const allow = !!($("betaAllow") || {}).checked;
+        const nameReq = !!($("betaNameReq") || {}).checked;
+        beta.busy = true; beta.error = ""; beta.newLink = null; betaRenderSection();
+        try {
+          /* The share is taken from the shelf copy: bring the shelf up
+             to the words on the desk first, so readers get this draft. */
+          if (!(await cloudEnsureLinked())) { beta.error = t("beta.notOnShelf"); return; }
+          if (cloudDirty) await cloudSaveNow();
+          const body = { manuscriptId: cloud.linkedId, allowComments: allow, readerNameRequired: nameReq };
+          if (days > 0) body.expiresInDays = days;
+          const r = await apiFetch("/api/shares", { method: "POST", body: JSON.stringify(body) });
+          if (r && r.token && r.share) {
+            betaRememberToken(r.share.id, r.token);
+            beta.newLink = betaLinkFor(r.token);
+          } else beta.error = (r && r.__error) || "the server could not be reached";
+        } finally {
+          beta.busy = false;
+          await betaLoadShares();
+        }
+      }
+      async function betaCopy(text) {
+        try { await navigator.clipboard.writeText(text); toast(t("beta.copied"), "copy"); }
+        catch (e) {
+          const inp = $("betaNewUrl");
+          if (inp) { inp.focus(); inp.select(); }
+          toast(t("beta.copyFail"), "alert-triangle");
+        }
+      }
+      function betaOnClick(e) {
+        const el = e.target && e.target.closest ? e.target.closest("[data-beta],[data-beta-copy],[data-beta-republish],[data-beta-revoke]") : null;
+        if (!el) return;
+        if (el.getAttribute("data-beta") === "signin") { $("modalExport").classList.remove("open"); openAuth(); return; }
+        if (el.getAttribute("data-beta") === "create") { betaCreate(); return; }
+        if (el.hasAttribute("data-beta-copy")) { betaCopy(el.getAttribute("data-beta-copy")); return; }
+        if (el.hasAttribute("data-beta-republish")) {
+          const id = el.getAttribute("data-beta-republish");
+          (async () => {
+            if (cloudDirty) await cloudSaveNow();
+            const r = await apiFetch("/api/shares/" + encodeURIComponent(id) + "/republish", { method: "POST", body: "{}" });
+            if (r && r.share) toast(t("beta.republished"), "refresh-cw");
+            else toast(t("beta.failed", { error: (r && r.__error) || "the server could not be reached" }), "alert-triangle");
+            betaLoadShares();
+          })();
+          return;
+        }
+        if (el.hasAttribute("data-beta-revoke")) {
+          const id = el.getAttribute("data-beta-revoke");
+          const s = beta.shares.find((x) => x.id === id);
+          cloudConfirm({ title: t("beta.revokeTitle"), body: t("beta.revokeBody", { title: s ? s.title : "" }), yes: t("beta.revoke"), no: t("confirm.keep") })
+            .then(async (ok) => {
+              if (!ok) return;
+              const r = await apiFetch("/api/shares/" + encodeURIComponent(id) + "/revoke", { method: "POST", body: "{}" });
+              if (r && r.share) toast(t("beta.revokedToast"), "link-2-off");
+              else toast(t("beta.failed", { error: (r && r.__error) || "the server could not be reached" }), "alert-triangle");
+              betaLoadShares();
+            });
+        }
+      }
+
+      /* ---- Reader comments panel ---- */
+      function betaSectionName(id) {
+        const s = state.sections.find((x) => x.id === id);
+        if (!s) return null;
+        return [s.number, s.title].filter(Boolean).join(" · ") || s.type;
+      }
+      function betaRenderComments() {
+        const m = $("modalBetaComments"); if (!m) return;
+        $("betaCH").innerHTML = '<i data-lucide="message-square-quote"></i>' + esc(t("beta.cTitle"));
+        $("betaCSub").textContent = t("beta.cSub");
+        $("btnBetaCClose").textContent = t("beta.cClose");
+        const body = $("betaCBody");
+        const gate = betaGate();
+        if (gate === "offline") { body.innerHTML = '<p class="ins-none">' + esc(t("beta.offline")) + "</p>"; icons(); return; }
+        if (gate === "signedOut") { body.innerHTML = '<p class="ins-none">' + esc(t("beta.cSignedOut")) + "</p>"; icons(); return; }
+        if (gate === "notOnShelf" || !cloud.linkedId) { body.innerHTML = '<p class="ins-none">' + esc(t("beta.notOnShelf")) + "</p>"; icons(); return; }
+        let h = '<div class="bc-top"><label style="font-size:12.5px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="betaShowResolved"' + (beta.showResolved ? " checked" : "") + "> " + esc(t("beta.cShowResolved")) + "</label>" +
+          '<button class="tb-btn" type="button" data-bc="refresh"><i data-lucide="refresh-cw"></i>' + esc(t("beta.cRefresh")) + "</button></div>";
+        if (beta.error) h += '<p class="cr-wait" role="alert">' + esc(t("beta.failed", { error: beta.error })) + "</p>";
+        const list = beta.comments.filter((c) => beta.showResolved || !c.resolvedAt);
+        if (beta.loading && !beta.comments.length) h += '<p class="ins-none">' + esc(t("beta.loading")) + "</p>";
+        else if (!list.length) h += '<p class="ins-none">' + esc(t("beta.cEmpty")) + "</p>";
+        else {
+          /* Grouped in book order: sections as they stand now, then
+             comments on sections the book no longer has. */
+          const order = new Map(state.sections.map((s, i) => [s.id, i]));
+          const groups = new Map();
+          list.forEach((c) => { if (!groups.has(c.sectionId)) groups.set(c.sectionId, []); groups.get(c.sectionId).push(c); });
+          const keys = [...groups.keys()].sort((a, b) => (order.has(a) ? order.get(a) : 1e9) - (order.has(b) ? order.get(b) : 1e9));
+          keys.forEach((sid) => {
+            const name = betaSectionName(sid);
+            h += '<div class="bc-sec">' + esc(name || t("beta.cMissingSection")) + "</div>";
+            groups.get(sid).sort((a, b) => (a.paragraph == null ? -1 : a.paragraph) - (b.paragraph == null ? -1 : b.paragraph)).forEach((c) => {
+              h += '<div class="bc-item' + (c.resolvedAt ? " resolved" : "") + '" data-comment-id="' + esc(c.id) + '">' +
+                (c.quote ? '<p class="bc-quote">' + esc(c.quote) + "</p>" : '<p class="bc-meta">' + esc(t("beta.cWhole")) + "</p>") +
+                '<div class="bc-body">' + esc(c.body) + "</div>" +
+                '<div class="bc-meta">' + esc((c.readerName || t("beta.cAnon")) + " · " + betaFmtDate(c.createdAt) + " · " + t("beta.cVia", { title: c.shareTitle || "" }) + (c.resolvedAt ? " · " + t("beta.cResolvedTag") : "")) + "</div>" +
+                '<div class="bc-btns">' + (name ? '<button class="tb-btn" type="button" data-bc-jump="' + esc(c.id) + '"><i data-lucide="corner-down-right"></i>' + esc(t("beta.cJump")) + "</button>" : "") +
+                '<button class="tb-btn" type="button" data-bc-resolve="' + esc(c.id) + '">' + esc(t(c.resolvedAt ? "beta.cReopen" : "beta.cResolve")) + "</button></div></div>";
+            });
+          });
+        }
+        body.innerHTML = h;
+        icons();
+      }
+      async function betaLoadComments() {
+        if (betaGate() !== "ready" || !cloud.linkedId) { beta.comments = []; betaRenderComments(); return; }
+        beta.loading = true; betaRenderComments();
+        const r = await apiFetch("/api/shares/comments?manuscriptId=" + encodeURIComponent(cloud.linkedId), {});
+        beta.loading = false;
+        if (r && Array.isArray(r.comments)) { beta.comments = r.comments; beta.error = ""; }
+        else if (r && r.__error) beta.error = r.__error;
+        betaRenderComments();
+      }
+      function betaOpenComments() {
+        beta.error = "";
+        betaRenderComments();
+        $("modalBetaComments").classList.add("open");
+        betaLoadComments();
+      }
+      function betaCloseComments() { $("modalBetaComments").classList.remove("open"); }
+      /* Find a comment's passage in the section's text: the quoted
+         words first (as the reader saw them, whitespace-insensitive),
+         then the paragraph by its block index. */
+      function betaLocate(content, c) {
+        const text = String(content || "");
+        if (c.quote) {
+          const words = c.quote.split(/\s+/).filter(Boolean).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+          if (words.length) {
+            const m = new RegExp(words.join("\\s+")).exec(text);
+            if (m) return { start: m.index, end: m.index + m[0].length, exact: true };
+          }
+        }
+        if (typeof c.paragraph === "number") {
+          const re = /\S[\s\S]*?(?=\n\s*\n|$)/g; let m, i = 0;
+          while ((m = re.exec(text))) {
+            if (i === c.paragraph) return { start: m.index, end: m.index + m[0].length, exact: !c.quote };
+            i++;
+          }
+        }
+        return null;
+      }
+      function betaJump(c) {
+        const s = state.sections.find((x) => x.id === c.sectionId);
+        if (!s) return;
+        betaCloseComments();
+        selectSection(s.id);
+        if (typeof setCenterTab === "function") { currentCenterTab = "content"; setCenterTab("content"); }
+        const area = $("editorArea");
+        const hit = betaLocate(s.content, c);
+        if (!hit || !hit.exact) toast(t("beta.cMoved"), "info");
+        if (area && hit && area.offsetParent !== null) {
+          area.focus();
+          area.setSelectionRange(hit.start, hit.end);
+          /* Bring the selection into view: measure the lines before it. */
+          const before = area.value.slice(0, hit.start).split("\n").length;
+          const lh = parseFloat(getComputedStyle(area).lineHeight) || 24;
+          area.scrollTop = Math.max(0, before * lh - area.clientHeight / 3);
+        }
+      }
+      function betaOnCommentsClick(e) {
+        const el = e.target && e.target.closest ? e.target.closest("[data-bc],[data-bc-jump],[data-bc-resolve]") : null;
+        if (!el) return;
+        if (el.getAttribute("data-bc") === "refresh") { betaLoadComments(); return; }
+        const id = el.getAttribute("data-bc-jump") || el.getAttribute("data-bc-resolve");
+        const c = beta.comments.find((x) => x.id === id);
+        if (!c) return;
+        if (el.hasAttribute("data-bc-jump")) { betaJump(c); return; }
+        (async () => {
+          const r = await apiFetch("/api/shares/" + encodeURIComponent(c.shareId) + "/comments/" + encodeURIComponent(c.id) + (c.resolvedAt ? "/unresolve" : "/resolve"), { method: "POST", body: "{}" });
+          if (r && r.comment) c.resolvedAt = r.comment.resolvedAt;
+          else beta.error = (r && r.__error) || "the server could not be reached";
+          betaRenderComments();
+        })();
+      }
+
+      /* Hooks the shared chrome calls (guarded with typeof there). */
+      function betaRenderChrome() { betaRenderButton(); betaRenderSection(); }
+      function betaOnLangChange() {
+        betaRenderChrome();
+        const m = $("modalBetaComments");
+        if (m && m.classList.contains("open")) betaRenderComments();
+      }
+      function betaInit() {
+        betaInjectDom();
+        betaRenderChrome();
+        const exp = $("btnExport");
+        if (exp) exp.addEventListener("click", () => { beta.newLink = null; beta.error = ""; betaRenderSection(); if (betaGate() === "ready") betaLoadShares(); });
+      }
+      document.addEventListener("DOMContentLoaded", betaInit);
+      /* ==== /BEUK:beta ==== */
     </script>
   </body>
 </html>
