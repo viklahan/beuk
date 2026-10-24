@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { copyFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
@@ -412,8 +412,32 @@ export function pdfxProblem(config: Config): string | null {
  * always renders the print-html interior to PDF first (see
  * renderPrintPdf above); raw HTML is never fed to Ghostscript.
  */
+/**
+ * The ICC profile path the PDF/X definition file names on its
+ * `/BeukICCPath (…) def` line, or null when the file cannot be read or
+ * names none. Ghostscript 9.50+ runs in -dSAFER mode by default, which
+ * refuses PostScript `file` reads outside its own paths — so the def
+ * file's `BeukICCPath (r) file` fails with /invalidfileaccess unless
+ * that one profile is explicitly permitted (verified on GPL Ghostscript
+ * 10.00.0). Source: https://ghostscript.readthedocs.io/en/latest/Use.html#dsafer
+ * — "as of 9.50 defaults to SAFER being active"; --permit-file-read "Adds a path … to the permit read list".
+ */
+export function pdfxIccPath(defPath: string): string | null {
+  try {
+    const text = readFileSync(defPath, 'latin1');
+    const m = /^\/BeukICCPath\s*\(([^)]*)\)\s*def/m.exec(text);
+    return m && m[1] ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPath: string): string[] {
+  const icc = pdfxIccPath(config.pdfxDefPath);
   return [
+    // Read access for exactly the one ICC profile the def file embeds;
+    // SAFER stays on for everything else.
+    ...(icc ? [`--permit-file-read=${icc}`] : []),
     '-dPDFX',
     '-dBATCH',
     '-dNOPAUSE',
