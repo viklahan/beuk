@@ -1342,6 +1342,14 @@
       .cm-wrap-note { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 10px 0 0; max-width: 78ch; }
       .cm-wrap-note.warn { color: var(--accent); font-weight: 600; }
       .cm-wrap-actions { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 16px; }
+      /* ==== BEUK:hardcover ==== */
+      .cm-hc-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+      .cm-hc-legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .cm-hc-legend i.sw { display: inline-block; width: 16px; height: 0; border-top: 2px solid currentColor; }
+      .cm-hc-legend i.sw.dash { border-top-style: dashed; }
+      .cm-hc-legend i.sw.zone { height: 9px; border: 1px solid currentColor; border-radius: 2px; }
+      .cm-hc-legend .off { flex-basis: 100%; font-style: italic; }
+      /* ==== /BEUK:hardcover ==== */
       /* The book on the stand: a preserve-3d box wearing slices of
          the wrap render, turned by drag or arrow keys, with an SVG
          dimension overlay that tracks the model's edges. */
@@ -2218,6 +2226,11 @@
             <button class="tb-btn active" id="btnCmWrapGuides" type="button" aria-pressed="true"><i data-lucide="ruler"></i><span data-i18n="covermk.wrap.guides">Guides</span></button>
             <p class="cm-wrap-dims" id="cmWrapDims"></p>
           </div>
+          <!-- ==== BEUK:hardcover ==== -->
+          <div class="cm-hc-legend" id="cmHcLegend" aria-live="polite"></div>
+          <p class="cm-wrap-note" id="cmHcSpineNote" style="display:none;"></p>
+          <p class="cm-wrap-note warn" id="cmHcTrimWarn" style="display:none;"></p>
+          <!-- ==== /BEUK:hardcover ==== -->
           <div class="cm3d" id="cmWrap3d">
             <p class="cm3d-showing" id="cmWrap3dShowing"></p>
             <div class="cm3d-stage" id="cmWrap3dStage" tabindex="0">
@@ -2236,6 +2249,24 @@
           </div>
           <p class="cm-wrap-note warn" id="cmWrapNarrowNote" style="display:none;" data-i18n="covermk.wrap.narrow">At this page count the spine is under 0.5 in — too narrow for spine text, so it stays plain. Printers recommend exactly that.</p>
           <div class="form-grid" style="margin-top:14px;">
+            <!-- ==== BEUK:hardcover ==== -->
+            <div class="full">
+              <label class="field-lab" for="cmHcBinding" data-i18n="covermk.hc.binding">Binding</label>
+              <select class="txt-input" id="cmHcBinding">
+                <option value="paperback" data-i18n="covermk.hc.bindPaperback">Paperback</option>
+                <option value="case" data-i18n="covermk.hc.bindCase">Hardcover · case laminate</option>
+                <option value="jacket" data-i18n="covermk.hc.bindJacket">Hardcover · dust jacket</option>
+              </select>
+            </div>
+            <div class="cm-hc-only" style="display:none;">
+              <label class="field-lab" for="cmHcSpine" data-i18n="covermk.hc.spineTemplate">Spine from your printer's template (in)</label>
+              <input class="txt-input" id="cmHcSpine" type="number" min="0" max="4" step="0.001" />
+            </div>
+            <div class="cm-hc-only" style="display:none;">
+              <label class="field-lab" for="cmHcAllow" data-i18n="covermk.hc.spineAllow">Case spine allowance (in) · unverified</label>
+              <input class="txt-input" id="cmHcAllow" type="number" min="0" max="1" step="0.001" />
+            </div>
+            <!-- ==== /BEUK:hardcover ==== -->
             <div>
               <label class="field-lab" for="cmWrapTrim" data-i18n="covermk.wrap.trim">Trim size</label>
               <select class="txt-input" id="cmWrapTrim"></select>
@@ -2269,8 +2300,30 @@
               <label class="field-lab" for="cmWrapImprint" data-i18n="covermk.wrap.imprint">Imprint line</label>
               <input class="txt-input" id="cmWrapImprint" type="text" />
             </div>
+            <!-- ==== BEUK:hardcover ==== -->
+            <div class="full cm-hc-flap" style="display:none;">
+              <label class="field-lab" for="cmHcFlapFront" data-i18n="covermk.hc.flapFront">Front flap — book description</label>
+              <textarea class="txt-input" id="cmHcFlapFront" rows="4" style="width:100%; resize:vertical; font-family:inherit; line-height:1.5;"></textarea>
+            </div>
+            <div class="full cm-hc-flap" style="display:none;">
+              <label class="field-lab" for="cmHcFlapBack" data-i18n="covermk.hc.flapBack">Back flap — about the author</label>
+              <textarea class="txt-input" id="cmHcFlapBack" rows="3" style="width:100%; resize:vertical; font-family:inherit; line-height:1.5;"></textarea>
+            </div>
+            <div class="full cm-hc-flap" style="display:none;">
+              <div style="display:flex; gap:9px; align-items:center; flex-wrap:wrap;">
+                <button class="tb-btn" id="btnCmHcPhoto" type="button"><i data-lucide="image-plus"></i><span data-i18n="covermk.hc.flapPhoto">Author photo for the back flap</span></button>
+                <button class="tb-btn" id="btnCmHcPhotoRemove" type="button" style="display:none;"><i data-lucide="x"></i><span data-i18n="covermk.hc.flapPhotoRemove">Remove photo</span></button>
+                <span class="cm-wrap-note" id="cmHcPhotoName" style="margin:0;"></span>
+                <input type="file" id="cmHcPhotoInput" accept="image/jpeg,image/png,.jpg,.jpeg,.png" style="display:none;" />
+              </div>
+            </div>
+            <!-- ==== /BEUK:hardcover ==== -->
           </div>
           <p class="cm-wrap-note" data-i18n="covermk.wrap.pdfNote">A standard PDF at the exact trim-plus-bleed size — the file KDP Print, IngramSpark, Barnes &amp; Noble Press, Lulu and BookVault ask for. IngramSpark prefers PDF/X: once your shelf is live, Beuk's server PDF/X conversion (Export archive jobs) can be applied to this file — this download itself is not PDF/X.</p>
+          <!-- ==== BEUK:hardcover ==== -->
+          <p class="cm-wrap-note cm-hc-only" style="display:none;" data-i18n="covermk.hc.specNote">Hardcover sizes follow the formula IngramSpark publishes in its File Creation Guide (rev. 8.24.26): case laminate = 0.625 in wrap + board + 0.5 in hinge + spine + 0.5 in hinge + board + 0.625 in wrap; dust jacket = 0.125 in bleed + 3.25 in flap + 0.25 in fold + panel + spine + panel + 0.25 in fold + 3.25 in flap + 0.125 in bleed. IngramSpark states the formula for custom trims; its cover template generator, emailed for your ISBN and page count, is the final word — compare the two before you upload.</p>
+          <p class="cm-wrap-note cm-hc-only" style="display:none;" data-i18n="covermk.hc.kdpNote">KDP hardcover (case laminate only) uses its own wrap (0.51 in) and hinge (0.4 in) and does not publish a full-size formula — Beuk does not size KDP hardcovers yet; use KDP's cover calculator for those.</p>
+          <!-- ==== /BEUK:hardcover ==== -->
           <div class="cm-wrap-actions">
             <button class="tb-btn primary" id="btnCmWrapPdf" type="button"><i data-lucide="file-down"></i><span data-i18n="covermk.wrap.pdf">Download wrap PDF</span></button>
             <button class="tb-btn" id="btnCmWrapJpg" type="button"><i data-lucide="image-down"></i><span data-i18n="covermk.wrap.jpg">Download wrap JPG</span></button>
@@ -5936,6 +5989,23 @@
       Object.assign(UI_STRINGS.ar, { "brand.tagline": "محوّل EPUB الخاص بك — مجاني ومفتوح المصدر" });
       Object.assign(UI_STRINGS.ja, { "brand.tagline": "無料でオープンソースのEPUBコンバーター" });
       Object.assign(UI_STRINGS["zh-Hans"], { "brand.tagline": "你的免费开源 EPUB 转换器" });
+
+      /* ==== BEUK:hardcover ==== */
+      /* Hardcover wraps (Cover Maker) — assigned per pack so completeness holds. */
+      Object.assign(UI_STRINGS.en, { "covermk.hc.binding": "Binding", "covermk.hc.bindPaperback": "Paperback", "covermk.hc.bindCase": "Hardcover · case laminate", "covermk.hc.bindJacket": "Hardcover · dust jacket", "covermk.hc.spineTemplate": "Spine from your printer's template (in)", "covermk.hc.spineTemplatePh": "blank = estimate", "covermk.hc.spineAllow": "Case spine allowance (in) · unverified", "covermk.hc.spineSrcTemplate": "Spine: from your printer's template — the file is sized to it.", "covermk.hc.spineSrcEstimate": "Spine: estimate (page count × paper factor + allowance) — not checked against IngramSpark's template generator. Casebound spines usually run wider than the page block; type the spine from your template for an exact file.", "covermk.hc.dimsCase": "Board {pw} × {ph} in · Spine {spine} in ({spineMm} mm) · Full case wrap {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Jacket panel {pw} × {ph} in · Flaps 3.25 in · Spine {spine} in ({spineMm} mm) · Full jacket {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "IngramSpark's trim size matrix does not list {trim} for {binding}. Pick a listed trim, or check IngramSpark's custom-trim limits before you order.", "covermk.hc.specNote": "Hardcover sizes follow the formula IngramSpark publishes in its File Creation Guide (rev. 8.24.26): case laminate = 0.625 in wrap + board + 0.5 in hinge + spine + 0.5 in hinge + board + 0.625 in wrap; dust jacket = 0.125 in bleed + 3.25 in flap + 0.25 in fold + panel + spine + panel + 0.25 in fold + 3.25 in flap + 0.125 in bleed. IngramSpark states the formula for custom trims; its cover template generator, emailed for your ISBN and page count, is the final word — compare the two before you upload.", "covermk.hc.kdpNote": "KDP hardcover (case laminate only) uses its own wrap (0.51 in) and hinge (0.4 in) and does not publish a full-size formula — Beuk does not size KDP hardcovers yet; use KDP's cover calculator for those.", "covermk.hc.flapFront": "Front flap — book description", "covermk.hc.flapBack": "Back flap — about the author", "covermk.hc.flapPhoto": "Author photo for the back flap", "covermk.hc.flapPhotoRemove": "Remove photo", "covermk.hc.flapPhotoNone": "No photo chosen", "covermk.hc.lgBleed": "Bleed edge", "covermk.hc.lgWrap": "Turn-in / wrap (folds round the board)", "covermk.hc.lgBoard": "Board edge", "covermk.hc.lgTrim": "Trim", "covermk.hc.lgHinge": "Hinge / gutter", "covermk.hc.lgSpine": "Spine folds", "covermk.hc.lgFold": "Flap fold", "covermk.hc.lgFlap": "Flap", "covermk.hc.lgSafe": "Safety (keep text inside)", "covermk.hc.lgBarcode": "Barcode area", "covermk.hc.lgOff": "Guides show on screen only — they are never in the PDF or JPG." });
+      Object.assign(UI_STRINGS.es, { "covermk.hc.binding": "Encuadernación", "covermk.hc.bindPaperback": "Rústica", "covermk.hc.bindCase": "Tapa dura · cartoné laminado", "covermk.hc.bindJacket": "Tapa dura · con sobrecubierta", "covermk.hc.spineTemplate": "Lomo según la plantilla de tu imprenta (in)", "covermk.hc.spineTemplatePh": "vacío = estimación", "covermk.hc.spineAllow": "Margen extra del lomo de tapa dura (in) · sin verificar", "covermk.hc.spineSrcTemplate": "Lomo: tomado de la plantilla de tu imprenta — el archivo se ajusta a él.", "covermk.hc.spineSrcEstimate": "Lomo: estimación (páginas × factor del papel + margen) — no comprobada con el generador de plantillas de IngramSpark. Los lomos de tapa dura suelen ser más anchos que el bloque de páginas; escribe el lomo de tu plantilla para un archivo exacto.", "covermk.hc.dimsCase": "Cartón {pw} × {ph} in · Lomo {spine} in ({spineMm} mm) · Cubierta completa {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Panel de sobrecubierta {pw} × {ph} in · Solapas 3.25 in · Lomo {spine} in ({spineMm} mm) · Sobrecubierta completa {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "La tabla de formatos de IngramSpark no incluye {trim} para {binding}. Elige un formato de la lista o revisa los límites de formato personalizado de IngramSpark antes de pedir.", "covermk.hc.specNote": "Las medidas de tapa dura siguen la fórmula que IngramSpark publica en su File Creation Guide (rev. 8.24.26): cartoné = 0.625 in de vuelta + cartón + 0.5 in de bisagra + lomo + 0.5 in de bisagra + cartón + 0.625 in de vuelta; sobrecubierta = 0.125 in de sangrado + 3.25 in de solapa + 0.25 in de pliegue + panel + lomo + panel + 0.25 in de pliegue + 3.25 in de solapa + 0.125 in de sangrado. IngramSpark da la fórmula para formatos personalizados; su generador de plantillas, enviado por correo para tu ISBN y número de páginas, es la referencia final — compara ambos antes de subir el archivo.", "covermk.hc.kdpNote": "La tapa dura de KDP (solo cartoné) usa su propia vuelta (0.51 in) y bisagra (0.4 in) y no publica una fórmula de tamaño completo — Beuk aún no calcula tapas duras de KDP; usa la calculadora de cubiertas de KDP.", "covermk.hc.flapFront": "Solapa delantera — descripción del libro", "covermk.hc.flapBack": "Solapa trasera — sobre el autor", "covermk.hc.flapPhoto": "Foto del autor para la solapa trasera", "covermk.hc.flapPhotoRemove": "Quitar foto", "covermk.hc.flapPhotoNone": "Ninguna foto elegida", "covermk.hc.lgBleed": "Borde de sangrado", "covermk.hc.lgWrap": "Vuelta (se dobla alrededor del cartón)", "covermk.hc.lgBoard": "Borde del cartón", "covermk.hc.lgTrim": "Corte", "covermk.hc.lgHinge": "Bisagra / canal", "covermk.hc.lgSpine": "Pliegues del lomo", "covermk.hc.lgFold": "Pliegue de solapa", "covermk.hc.lgFlap": "Solapa", "covermk.hc.lgSafe": "Zona segura (texto dentro)", "covermk.hc.lgBarcode": "Zona del código de barras", "covermk.hc.lgOff": "Las guías solo se ven en pantalla — nunca aparecen en el PDF ni en el JPG." });
+      Object.assign(UI_STRINGS.fr, { "covermk.hc.binding": "Reliure", "covermk.hc.bindPaperback": "Broché", "covermk.hc.bindCase": "Relié · cartonnage pelliculé", "covermk.hc.bindJacket": "Relié · avec jaquette", "covermk.hc.spineTemplate": "Dos selon le gabarit de votre imprimeur (in)", "covermk.hc.spineTemplatePh": "vide = estimation", "covermk.hc.spineAllow": "Surplus du dos cartonné (in) · non vérifié", "covermk.hc.spineSrcTemplate": "Dos : repris du gabarit de votre imprimeur — le fichier y est ajusté.", "covermk.hc.spineSrcEstimate": "Dos : estimation (pages × facteur du papier + surplus) — non vérifiée avec le générateur de gabarits d'IngramSpark. Le dos d'un relié est en général plus large que le bloc de pages ; saisissez le dos de votre gabarit pour un fichier exact.", "covermk.hc.dimsCase": "Carton {pw} × {ph} in · Dos {spine} in ({spineMm} mm) · Couverture complète {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Panneau de jaquette {pw} × {ph} in · Rabats 3.25 in · Dos {spine} in ({spineMm} mm) · Jaquette complète {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "La grille des formats d'IngramSpark ne propose pas {trim} pour {binding}. Choisissez un format listé ou vérifiez les limites des formats personnalisés d'IngramSpark avant de commander.", "covermk.hc.specNote": "Les dimensions des reliés suivent la formule publiée par IngramSpark dans son File Creation Guide (rév. 8.24.26) : cartonnage = 0.625 in de rempli + carton + 0.5 in de charnière + dos + 0.5 in de charnière + carton + 0.625 in de rempli ; jaquette = 0.125 in de fond perdu + 3.25 in de rabat + 0.25 in de pli + panneau + dos + panneau + 0.25 in de pli + 3.25 in de rabat + 0.125 in de fond perdu. IngramSpark donne cette formule pour les formats personnalisés ; son générateur de gabarits, envoyé par e-mail pour votre ISBN et votre nombre de pages, fait foi — comparez les deux avant l'envoi.", "covermk.hc.kdpNote": "Le relié KDP (cartonnage uniquement) a son propre rempli (0.51 in) et sa charnière (0.4 in) et ne publie pas de formule complète — Beuk ne dimensionne pas encore les reliés KDP ; utilisez le calculateur de couverture de KDP.", "covermk.hc.flapFront": "Rabat avant — présentation du livre", "covermk.hc.flapBack": "Rabat arrière — l'auteur", "covermk.hc.flapPhoto": "Photo de l'auteur pour le rabat arrière", "covermk.hc.flapPhotoRemove": "Retirer la photo", "covermk.hc.flapPhotoNone": "Aucune photo choisie", "covermk.hc.lgBleed": "Bord du fond perdu", "covermk.hc.lgWrap": "Rempli (replié autour du carton)", "covermk.hc.lgBoard": "Bord du carton", "covermk.hc.lgTrim": "Coupe", "covermk.hc.lgHinge": "Charnière / gouttière", "covermk.hc.lgSpine": "Plis du dos", "covermk.hc.lgFold": "Pli du rabat", "covermk.hc.lgFlap": "Rabat", "covermk.hc.lgSafe": "Zone sûre (texte à l'intérieur)", "covermk.hc.lgBarcode": "Zone du code-barres", "covermk.hc.lgOff": "Les repères ne s'affichent qu'à l'écran — jamais dans le PDF ni le JPG." });
+      Object.assign(UI_STRINGS.de, { "covermk.hc.binding": "Bindung", "covermk.hc.bindPaperback": "Taschenbuch", "covermk.hc.bindCase": "Hardcover · laminierter Einband", "covermk.hc.bindJacket": "Hardcover · mit Schutzumschlag", "covermk.hc.spineTemplate": "Rückenbreite laut Vorlage Ihrer Druckerei (in)", "covermk.hc.spineTemplatePh": "leer = Schätzung", "covermk.hc.spineAllow": "Zuschlag für den Hardcover-Rücken (in) · ungeprüft", "covermk.hc.spineSrcTemplate": "Rücken: aus der Vorlage Ihrer Druckerei — die Datei wird darauf bemessen.", "covermk.hc.spineSrcEstimate": "Rücken: Schätzung (Seitenzahl × Papierfaktor + Zuschlag) — nicht mit dem Vorlagengenerator von IngramSpark abgeglichen. Hardcover-Rücken sind meist breiter als der Buchblock; tragen Sie den Rücken aus Ihrer Vorlage ein, um eine exakte Datei zu erhalten.", "covermk.hc.dimsCase": "Deckel {pw} × {ph} in · Rücken {spine} in ({spineMm} mm) · Gesamter Bezug {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Umschlagfeld {pw} × {ph} in · Klappen 3.25 in · Rücken {spine} in ({spineMm} mm) · Gesamter Schutzumschlag {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "Die Formatübersicht von IngramSpark führt {trim} nicht für {binding}. Wählen Sie ein gelistetes Format oder prüfen Sie vor der Bestellung die Grenzen für Sonderformate bei IngramSpark.", "covermk.hc.specNote": "Hardcover-Maße folgen der Formel, die IngramSpark in seinem File Creation Guide (Rev. 8.24.26) veröffentlicht: laminierter Einband = 0.625 in Einschlag + Deckel + 0.5 in Gelenk + Rücken + 0.5 in Gelenk + Deckel + 0.625 in Einschlag; Schutzumschlag = 0.125 in Beschnitt + 3.25 in Klappe + 0.25 in Falz + Feld + Rücken + Feld + 0.25 in Falz + 3.25 in Klappe + 0.125 in Beschnitt. IngramSpark nennt die Formel für Sonderformate; der Vorlagengenerator, der Ihnen für ISBN und Seitenzahl per E-Mail eine Vorlage schickt, ist maßgeblich — vergleichen Sie beides vor dem Hochladen.", "covermk.hc.kdpNote": "KDP-Hardcover (nur laminiert) nutzt einen eigenen Einschlag (0.51 in) und ein eigenes Gelenk (0.4 in) und veröffentlicht keine vollständige Formel — Beuk bemisst KDP-Hardcover noch nicht; nutzen Sie dafür den Cover-Rechner von KDP.", "covermk.hc.flapFront": "Vordere Klappe — Buchbeschreibung", "covermk.hc.flapBack": "Hintere Klappe — über die Autorin / den Autor", "covermk.hc.flapPhoto": "Autorenfoto für die hintere Klappe", "covermk.hc.flapPhotoRemove": "Foto entfernen", "covermk.hc.flapPhotoNone": "Kein Foto gewählt", "covermk.hc.lgBleed": "Beschnittkante", "covermk.hc.lgWrap": "Einschlag (um den Deckel gefalzt)", "covermk.hc.lgBoard": "Deckelkante", "covermk.hc.lgTrim": "Endformat", "covermk.hc.lgHinge": "Gelenk / Falz", "covermk.hc.lgSpine": "Rückenfalze", "covermk.hc.lgFold": "Klappenfalz", "covermk.hc.lgFlap": "Klappe", "covermk.hc.lgSafe": "Sicherheitsbereich (Text innerhalb)", "covermk.hc.lgBarcode": "Barcode-Bereich", "covermk.hc.lgOff": "Hilfslinien erscheinen nur am Bildschirm — nie im PDF oder JPG." });
+      Object.assign(UI_STRINGS.it, { "covermk.hc.binding": "Rilegatura", "covermk.hc.bindPaperback": "Brossura", "covermk.hc.bindCase": "Copertina rigida · cartonato plastificato", "covermk.hc.bindJacket": "Copertina rigida · con sovraccoperta", "covermk.hc.spineTemplate": "Dorso dal modello della tipografia (in)", "covermk.hc.spineTemplatePh": "vuoto = stima", "covermk.hc.spineAllow": "Margine aggiuntivo del dorso rigido (in) · non verificato", "covermk.hc.spineSrcTemplate": "Dorso: dal modello della tua tipografia — il file è dimensionato su questo.", "covermk.hc.spineSrcEstimate": "Dorso: stima (pagine × fattore carta + margine) — non verificata con il generatore di modelli di IngramSpark. I dorsi dei cartonati sono di solito più larghi del blocco pagine; inserisci il dorso del tuo modello per un file esatto.", "covermk.hc.dimsCase": "Piatto {pw} × {ph} in · Dorso {spine} in ({spineMm} mm) · Copertina completa {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Pannello sovraccoperta {pw} × {ph} in · Alette 3.25 in · Dorso {spine} in ({spineMm} mm) · Sovraccoperta completa {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "La tabella dei formati di IngramSpark non prevede {trim} per {binding}. Scegli un formato in elenco o verifica i limiti dei formati personalizzati di IngramSpark prima di ordinare.", "covermk.hc.specNote": "Le misure dei cartonati seguono la formula che IngramSpark pubblica nella sua File Creation Guide (rev. 8.24.26): cartonato = 0.625 in di risvolto + piatto + 0.5 in di cerniera + dorso + 0.5 in di cerniera + piatto + 0.625 in di risvolto; sovraccoperta = 0.125 in di abbondanza + 3.25 in di aletta + 0.25 in di piega + pannello + dorso + pannello + 0.25 in di piega + 3.25 in di aletta + 0.125 in di abbondanza. IngramSpark indica la formula per i formati personalizzati; il suo generatore di modelli, inviato via e-mail per il tuo ISBN e numero di pagine, è il riferimento finale — confronta i due prima di caricare.", "covermk.hc.kdpNote": "Il cartonato KDP (solo plastificato) usa un proprio risvolto (0.51 in) e una propria cerniera (0.4 in) e non pubblica una formula completa — Beuk non dimensiona ancora i cartonati KDP; usa il calcolatore di copertine di KDP.", "covermk.hc.flapFront": "Aletta anteriore — descrizione del libro", "covermk.hc.flapBack": "Aletta posteriore — l'autore", "covermk.hc.flapPhoto": "Foto dell'autore per l'aletta posteriore", "covermk.hc.flapPhotoRemove": "Rimuovi foto", "covermk.hc.flapPhotoNone": "Nessuna foto scelta", "covermk.hc.lgBleed": "Bordo di abbondanza", "covermk.hc.lgWrap": "Risvolto (si ripiega sul piatto)", "covermk.hc.lgBoard": "Bordo del piatto", "covermk.hc.lgTrim": "Rifilo", "covermk.hc.lgHinge": "Cerniera / canalino", "covermk.hc.lgSpine": "Pieghe del dorso", "covermk.hc.lgFold": "Piega dell'aletta", "covermk.hc.lgFlap": "Aletta", "covermk.hc.lgSafe": "Area sicura (testo all'interno)", "covermk.hc.lgBarcode": "Area del codice a barre", "covermk.hc.lgOff": "Le guide si vedono solo a schermo — non finiscono mai nel PDF o nel JPG." });
+      Object.assign(UI_STRINGS.pt, { "covermk.hc.binding": "Encadernação", "covermk.hc.bindPaperback": "Brochura", "covermk.hc.bindCase": "Capa dura · cartonado plastificado", "covermk.hc.bindJacket": "Capa dura · com sobrecapa", "covermk.hc.spineTemplate": "Lombada segundo o modelo da gráfica (in)", "covermk.hc.spineTemplatePh": "vazio = estimativa", "covermk.hc.spineAllow": "Acréscimo da lombada de capa dura (in) · não verificado", "covermk.hc.spineSrcTemplate": "Lombada: do modelo da sua gráfica — o ficheiro é dimensionado por ela.", "covermk.hc.spineSrcEstimate": "Lombada: estimativa (páginas × fator do papel + acréscimo) — não verificada com o gerador de modelos da IngramSpark. As lombadas de capa dura costumam ser mais largas do que o miolo; escreva a lombada do seu modelo para um ficheiro exato.", "covermk.hc.dimsCase": "Cartão {pw} × {ph} in · Lombada {spine} in ({spineMm} mm) · Capa completa {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Painel da sobrecapa {pw} × {ph} in · Badanas 3.25 in · Lombada {spine} in ({spineMm} mm) · Sobrecapa completa {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "A tabela de formatos da IngramSpark não inclui {trim} para {binding}. Escolha um formato da lista ou confirme os limites de formato personalizado da IngramSpark antes de encomendar.", "covermk.hc.specNote": "As medidas de capa dura seguem a fórmula que a IngramSpark publica no seu File Creation Guide (rev. 8.24.26): cartonado = 0.625 in de dobra + cartão + 0.5 in de charneira + lombada + 0.5 in de charneira + cartão + 0.625 in de dobra; sobrecapa = 0.125 in de sangria + 3.25 in de badana + 0.25 in de vinco + painel + lombada + painel + 0.25 in de vinco + 3.25 in de badana + 0.125 in de sangria. A IngramSpark indica a fórmula para formatos personalizados; o seu gerador de modelos, enviado por e-mail para o seu ISBN e número de páginas, é a referência final — compare os dois antes de enviar.", "covermk.hc.kdpNote": "A capa dura da KDP (só cartonado) usa a sua própria dobra (0.51 in) e charneira (0.4 in) e não publica uma fórmula completa — o Beuk ainda não dimensiona capas duras da KDP; use a calculadora de capas da KDP.", "covermk.hc.flapFront": "Badana da frente — descrição do livro", "covermk.hc.flapBack": "Badana de trás — sobre o autor", "covermk.hc.flapPhoto": "Foto do autor para a badana de trás", "covermk.hc.flapPhotoRemove": "Remover foto", "covermk.hc.flapPhotoNone": "Nenhuma foto escolhida", "covermk.hc.lgBleed": "Limite da sangria", "covermk.hc.lgWrap": "Dobra (envolve o cartão)", "covermk.hc.lgBoard": "Limite do cartão", "covermk.hc.lgTrim": "Corte", "covermk.hc.lgHinge": "Charneira / goteira", "covermk.hc.lgSpine": "Vincos da lombada", "covermk.hc.lgFold": "Vinco da badana", "covermk.hc.lgFlap": "Badana", "covermk.hc.lgSafe": "Área segura (texto dentro)", "covermk.hc.lgBarcode": "Área do código de barras", "covermk.hc.lgOff": "As guias só aparecem no ecrã — nunca no PDF nem no JPG." });
+      Object.assign(UI_STRINGS.nl, { "covermk.hc.binding": "Bindwijze", "covermk.hc.bindPaperback": "Paperback", "covermk.hc.bindCase": "Hardcover · gelamineerde band", "covermk.hc.bindJacket": "Hardcover · met stofomslag", "covermk.hc.spineTemplate": "Rug volgens het sjabloon van je drukker (in)", "covermk.hc.spineTemplatePh": "leeg = schatting", "covermk.hc.spineAllow": "Extra rugbreedte voor de band (in) · niet geverifieerd", "covermk.hc.spineSrcTemplate": "Rug: uit het sjabloon van je drukker — het bestand is daarop afgemeten.", "covermk.hc.spineSrcEstimate": "Rug: schatting (pagina's × papierfactor + toeslag) — niet gecontroleerd met de sjabloongenerator van IngramSpark. Een gebonden rug is meestal breder dan het boekblok; vul de rug uit je sjabloon in voor een exact bestand.", "covermk.hc.dimsCase": "Bord {pw} × {ph} in · Rug {spine} in ({spineMm} mm) · Volledige band {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Omslagpaneel {pw} × {ph} in · Flappen 3.25 in · Rug {spine} in ({spineMm} mm) · Volledig stofomslag {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "Het formaatoverzicht van IngramSpark noemt {trim} niet voor {binding}. Kies een vermeld formaat of controleer de grenzen voor eigen formaten bij IngramSpark voordat je bestelt.", "covermk.hc.specNote": "Hardcovermaten volgen de formule die IngramSpark publiceert in zijn File Creation Guide (rev. 8.24.26): gelamineerde band = 0.625 in omslag + bord + 0.5 in scharnier + rug + 0.5 in scharnier + bord + 0.625 in omslag; stofomslag = 0.125 in afloop + 3.25 in flap + 0.25 in vouw + paneel + rug + paneel + 0.25 in vouw + 3.25 in flap + 0.125 in afloop. IngramSpark geeft de formule voor eigen formaten; de sjabloongenerator, die je per e-mail een sjabloon voor je ISBN en paginatal stuurt, is leidend — vergelijk beide voordat je uploadt.", "covermk.hc.kdpNote": "KDP-hardcover (alleen gelamineerd) gebruikt een eigen omslag (0.51 in) en scharnier (0.4 in) en publiceert geen volledige formule — Beuk berekent KDP-hardcovers nog niet; gebruik daarvoor de omslagcalculator van KDP.", "covermk.hc.flapFront": "Voorflap — beschrijving van het boek", "covermk.hc.flapBack": "Achterflap — over de auteur", "covermk.hc.flapPhoto": "Auteursfoto voor de achterflap", "covermk.hc.flapPhotoRemove": "Foto verwijderen", "covermk.hc.flapPhotoNone": "Geen foto gekozen", "covermk.hc.lgBleed": "Afloopgrens", "covermk.hc.lgWrap": "Omslag (om het bord gevouwen)", "covermk.hc.lgBoard": "Bordrand", "covermk.hc.lgTrim": "Snijlijn", "covermk.hc.lgHinge": "Scharnier / goot", "covermk.hc.lgSpine": "Rugvouwen", "covermk.hc.lgFold": "Flapvouw", "covermk.hc.lgFlap": "Flap", "covermk.hc.lgSafe": "Veilige zone (tekst binnen)", "covermk.hc.lgBarcode": "Barcodevak", "covermk.hc.lgOff": "Hulplijnen zie je alleen op het scherm — nooit in de pdf of jpg." });
+      Object.assign(UI_STRINGS.pl, { "covermk.hc.binding": "Oprawa", "covermk.hc.bindPaperback": "Miękka", "covermk.hc.bindCase": "Twarda · okleina laminowana", "covermk.hc.bindJacket": "Twarda · z obwolutą", "covermk.hc.spineTemplate": "Grzbiet z szablonu drukarni (in)", "covermk.hc.spineTemplatePh": "puste = szacunek", "covermk.hc.spineAllow": "Naddatek grzbietu oprawy twardej (in) · niezweryfikowany", "covermk.hc.spineSrcTemplate": "Grzbiet: z szablonu Twojej drukarni — plik jest do niego dopasowany.", "covermk.hc.spineSrcEstimate": "Grzbiet: szacunek (liczba stron × współczynnik papieru + naddatek) — niesprawdzony z generatorem szablonów IngramSpark. Grzbiety opraw twardych są zwykle szersze niż blok stron; wpisz grzbiet z szablonu, by plik był dokładny.", "covermk.hc.dimsCase": "Tektura {pw} × {ph} in · Grzbiet {spine} in ({spineMm} mm) · Cała okleina {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Panel obwoluty {pw} × {ph} in · Skrzydełka 3.25 in · Grzbiet {spine} in ({spineMm} mm) · Cała obwoluta {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "Tabela formatów IngramSpark nie obejmuje {trim} dla {binding}. Wybierz format z listy lub sprawdź limity formatów niestandardowych IngramSpark przed zamówieniem.", "covermk.hc.specNote": "Wymiary oprawy twardej wynikają ze wzoru, który IngramSpark publikuje w File Creation Guide (wyd. 8.24.26): okleina = 0.625 in zawinięcia + tektura + 0.5 in przegubu + grzbiet + 0.5 in przegubu + tektura + 0.625 in zawinięcia; obwoluta = 0.125 in spadu + 3.25 in skrzydełka + 0.25 in zgięcia + panel + grzbiet + panel + 0.25 in zgięcia + 3.25 in skrzydełka + 0.125 in spadu. IngramSpark podaje wzór dla formatów niestandardowych; jego generator szablonów, wysyłany e-mailem dla Twojego ISBN i liczby stron, jest rozstrzygający — porównaj oba przed wysłaniem.", "covermk.hc.kdpNote": "Twarda oprawa KDP (tylko laminowana) ma własne zawinięcie (0.51 in) i przegub (0.4 in) i nie publikuje pełnego wzoru — Beuk jeszcze nie wymiaruje twardych opraw KDP; użyj kalkulatora okładek KDP.", "covermk.hc.flapFront": "Przednie skrzydełko — opis książki", "covermk.hc.flapBack": "Tylne skrzydełko — o autorze", "covermk.hc.flapPhoto": "Zdjęcie autora na tylne skrzydełko", "covermk.hc.flapPhotoRemove": "Usuń zdjęcie", "covermk.hc.flapPhotoNone": "Nie wybrano zdjęcia", "covermk.hc.lgBleed": "Krawędź spadu", "covermk.hc.lgWrap": "Zawinięcie (wokół tektury)", "covermk.hc.lgBoard": "Krawędź tektury", "covermk.hc.lgTrim": "Linia cięcia", "covermk.hc.lgHinge": "Przegub / rowek", "covermk.hc.lgSpine": "Zgięcia grzbietu", "covermk.hc.lgFold": "Zgięcie skrzydełka", "covermk.hc.lgFlap": "Skrzydełko", "covermk.hc.lgSafe": "Strefa bezpieczna (tekst wewnątrz)", "covermk.hc.lgBarcode": "Pole kodu kreskowego", "covermk.hc.lgOff": "Linie pomocnicze widać tylko na ekranie — nigdy w PDF ani JPG." });
+      Object.assign(UI_STRINGS.ru, { "covermk.hc.binding": "Переплёт", "covermk.hc.bindPaperback": "Мягкая обложка", "covermk.hc.bindCase": "Твёрдый · ламинированный переплёт", "covermk.hc.bindJacket": "Твёрдый · с суперобложкой", "covermk.hc.spineTemplate": "Корешок по шаблону типографии (in)", "covermk.hc.spineTemplatePh": "пусто = оценка", "covermk.hc.spineAllow": "Надбавка корешка твёрдого переплёта (in) · не проверено", "covermk.hc.spineSrcTemplate": "Корешок: по шаблону вашей типографии — файл рассчитан по нему.", "covermk.hc.spineSrcEstimate": "Корешок: оценка (страницы × коэффициент бумаги + надбавка) — не сверена с генератором шаблонов IngramSpark. Корешок твёрдого переплёта обычно шире книжного блока; введите корешок из шаблона, чтобы файл был точным.", "covermk.hc.dimsCase": "Крышка {pw} × {ph} in · Корешок {spine} in ({spineMm} mm) · Вся обложка {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Панель суперобложки {pw} × {ph} in · Клапаны 3.25 in · Корешок {spine} in ({spineMm} mm) · Вся суперобложка {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "В таблице форматов IngramSpark нет {trim} для варианта «{binding}». Выберите формат из списка или проверьте ограничения IngramSpark для нестандартных форматов перед заказом.", "covermk.hc.specNote": "Размеры твёрдого переплёта рассчитаны по формуле из File Creation Guide IngramSpark (ред. 8.24.26): ламинированный переплёт = 0.625 in загиба + крышка + 0.5 in шарнира + корешок + 0.5 in шарнира + крышка + 0.625 in загиба; суперобложка = 0.125 in вылета + 3.25 in клапана + 0.25 in сгиба + панель + корешок + панель + 0.25 in сгиба + 3.25 in клапана + 0.125 in вылета. IngramSpark приводит формулу для нестандартных форматов; окончательный ответ — её генератор шаблонов, который присылает шаблон под ваш ISBN и число страниц, — сравните оба перед загрузкой.", "covermk.hc.kdpNote": "Твёрдый переплёт KDP (только ламинированный) использует свой загиб (0.51 in) и шарнир (0.4 in) и не публикует полной формулы — Beuk пока не рассчитывает твёрдые переплёты KDP; используйте калькулятор обложек KDP.", "covermk.hc.flapFront": "Передний клапан — описание книги", "covermk.hc.flapBack": "Задний клапан — об авторе", "covermk.hc.flapPhoto": "Фото автора для заднего клапана", "covermk.hc.flapPhotoRemove": "Убрать фото", "covermk.hc.flapPhotoNone": "Фото не выбрано", "covermk.hc.lgBleed": "Край вылета", "covermk.hc.lgWrap": "Загиб (оборачивается вокруг крышки)", "covermk.hc.lgBoard": "Край крышки", "covermk.hc.lgTrim": "Обрез", "covermk.hc.lgHinge": "Шарнир / канавка", "covermk.hc.lgSpine": "Сгибы корешка", "covermk.hc.lgFold": "Сгиб клапана", "covermk.hc.lgFlap": "Клапан", "covermk.hc.lgSafe": "Безопасная зона (текст внутри)", "covermk.hc.lgBarcode": "Место для штрихкода", "covermk.hc.lgOff": "Направляющие видны только на экране — их никогда нет в PDF или JPG." });
+      Object.assign(UI_STRINGS.tr, { "covermk.hc.binding": "Cilt", "covermk.hc.bindPaperback": "Karton kapak", "covermk.hc.bindCase": "Sert kapak · laminasyonlu", "covermk.hc.bindJacket": "Sert kapak · şömizli", "covermk.hc.spineTemplate": "Matbaa şablonundaki sırt (in)", "covermk.hc.spineTemplatePh": "boş = tahmin", "covermk.hc.spineAllow": "Sert kapak sırt payı (in) · doğrulanmadı", "covermk.hc.spineSrcTemplate": "Sırt: matbaanızın şablonundan — dosya buna göre boyutlanır.", "covermk.hc.spineSrcEstimate": "Sırt: tahmin (sayfa × kâğıt katsayısı + pay) — IngramSpark şablon üreticisiyle karşılaştırılmadı. Sert kapak sırtları genellikle sayfa bloğundan geniştir; tam ölçülü bir dosya için şablonunuzdaki sırtı yazın.", "covermk.hc.dimsCase": "Mukavva {pw} × {ph} in · Sırt {spine} in ({spineMm} mm) · Tam kaplama {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "Şömiz paneli {pw} × {ph} in · Kulaklar 3.25 in · Sırt {spine} in ({spineMm} mm) · Tam şömiz {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "IngramSpark'ın ebat tablosu {binding} için {trim} ebadını içermiyor. Listedeki bir ebadı seçin ya da sipariş vermeden önce IngramSpark'ın özel ebat sınırlarını kontrol edin.", "covermk.hc.specNote": "Sert kapak ölçüleri, IngramSpark'ın File Creation Guide'ında (rev. 8.24.26) yayımladığı formüle uyar: laminasyonlu = 0.625 in kıvırma + mukavva + 0.5 in menteşe + sırt + 0.5 in menteşe + mukavva + 0.625 in kıvırma; şömiz = 0.125 in taşma + 3.25 in kulak + 0.25 in kırım + panel + sırt + panel + 0.25 in kırım + 3.25 in kulak + 0.125 in taşma. IngramSpark formülü özel ebatlar için verir; ISBN'iniz ve sayfa sayınız için e-postayla gönderdiği şablon üreticisi son sözü söyler — yüklemeden önce ikisini karşılaştırın.", "covermk.hc.kdpNote": "KDP sert kapak (yalnızca laminasyonlu) kendi kıvırma (0.51 in) ve menteşe (0.4 in) değerlerini kullanır ve tam ölçü formülü yayımlamaz — Beuk henüz KDP sert kapaklarını boyutlamıyor; bunlar için KDP kapak hesaplayıcısını kullanın.", "covermk.hc.flapFront": "Ön kulak — kitap tanıtımı", "covermk.hc.flapBack": "Arka kulak — yazar hakkında", "covermk.hc.flapPhoto": "Arka kulak için yazar fotoğrafı", "covermk.hc.flapPhotoRemove": "Fotoğrafı kaldır", "covermk.hc.flapPhotoNone": "Fotoğraf seçilmedi", "covermk.hc.lgBleed": "Taşma kenarı", "covermk.hc.lgWrap": "Kıvırma (mukavvanın etrafına katlanır)", "covermk.hc.lgBoard": "Mukavva kenarı", "covermk.hc.lgTrim": "Kesim", "covermk.hc.lgHinge": "Menteşe / oluk", "covermk.hc.lgSpine": "Sırt kırımları", "covermk.hc.lgFold": "Kulak kırımı", "covermk.hc.lgFlap": "Kulak", "covermk.hc.lgSafe": "Güvenli alan (metin içeride)", "covermk.hc.lgBarcode": "Barkod alanı", "covermk.hc.lgOff": "Kılavuzlar yalnızca ekranda görünür — PDF'te ya da JPG'de asla yer almaz." });
+      Object.assign(UI_STRINGS.ar, { "covermk.hc.binding": "التجليد", "covermk.hc.bindPaperback": "غلاف ورقي", "covermk.hc.bindCase": "غلاف مقوّى · مغلّف لامع", "covermk.hc.bindJacket": "غلاف مقوّى · مع سترة", "covermk.hc.spineTemplate": "عرض الكعب من قالب المطبعة (in)", "covermk.hc.spineTemplatePh": "فارغ = تقدير", "covermk.hc.spineAllow": "زيادة كعب الغلاف المقوّى (in) · غير متحقق منها", "covermk.hc.spineSrcTemplate": "الكعب: من قالب مطبعتك — يُضبط الملف عليه.", "covermk.hc.spineSrcEstimate": "الكعب: تقدير (عدد الصفحات × معامل الورق + الزيادة) — لم يُطابَق مع مولّد قوالب IngramSpark. كعوب الأغلفة المقوّاة أعرض عادةً من كتلة الصفحات؛ اكتب عرض الكعب من قالبك لملف دقيق.", "covermk.hc.dimsCase": "اللوح {pw} × {ph} in · الكعب {spine} in ({spineMm} mm) · الغلاف كاملاً {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "لوحة السترة {pw} × {ph} in · الأجنحة 3.25 in · الكعب {spine} in ({spineMm} mm) · السترة كاملة {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "جدول المقاسات لدى IngramSpark لا يتضمن {trim} لخيار {binding}. اختر مقاساً مدرجاً أو راجع حدود المقاسات المخصّصة لدى IngramSpark قبل الطلب.", "covermk.hc.specNote": "مقاسات الغلاف المقوّى تتبع المعادلة التي تنشرها IngramSpark في دليل File Creation Guide (إصدار 8.24.26): المغلّف = 0.625 in ثنية + اللوح + 0.5 in مفصل + الكعب + 0.5 in مفصل + اللوح + 0.625 in ثنية؛ السترة = 0.125 in نزف + 3.25 in جناح + 0.25 in طيّة + اللوحة + الكعب + اللوحة + 0.25 in طيّة + 3.25 in جناح + 0.125 in نزف. تذكر IngramSpark المعادلة للمقاسات المخصّصة؛ ومولّد قوالبها الذي يُرسل بالبريد لرقم ISBN وعدد صفحاتك هو المرجع النهائي — قارن بينهما قبل الرفع.", "covermk.hc.kdpNote": "الغلاف المقوّى في KDP (مغلّف فقط) له ثنية خاصة (0.51 in) ومفصل خاص (0.4 in) ولا تنشر KDP معادلة كاملة — لا يحسب Beuk مقاسات أغلفة KDP المقوّاة بعد؛ استخدم حاسبة الأغلفة في KDP.", "covermk.hc.flapFront": "الجناح الأمامي — وصف الكتاب", "covermk.hc.flapBack": "الجناح الخلفي — عن المؤلف", "covermk.hc.flapPhoto": "صورة المؤلف للجناح الخلفي", "covermk.hc.flapPhotoRemove": "إزالة الصورة", "covermk.hc.flapPhotoNone": "لم تُختر صورة", "covermk.hc.lgBleed": "حافة النزف", "covermk.hc.lgWrap": "الثنية (تلتف حول اللوح)", "covermk.hc.lgBoard": "حافة اللوح", "covermk.hc.lgTrim": "القص", "covermk.hc.lgHinge": "المفصل / المجرى", "covermk.hc.lgSpine": "طيّات الكعب", "covermk.hc.lgFold": "طيّة الجناح", "covermk.hc.lgFlap": "الجناح", "covermk.hc.lgSafe": "المنطقة الآمنة (النص داخلها)", "covermk.hc.lgBarcode": "مكان الباركود", "covermk.hc.lgOff": "الأدلة تظهر على الشاشة فقط — لا تظهر أبداً في PDF أو JPG." });
+      Object.assign(UI_STRINGS.ja, { "covermk.hc.binding": "製本", "covermk.hc.bindPaperback": "ペーパーバック", "covermk.hc.bindCase": "ハードカバー · ラミネート表紙", "covermk.hc.bindJacket": "ハードカバー · カバー付き", "covermk.hc.spineTemplate": "印刷所テンプレートの背幅 (in)", "covermk.hc.spineTemplatePh": "空欄 = 推定", "covermk.hc.spineAllow": "ハードカバー背幅の加算 (in) · 未検証", "covermk.hc.spineSrcTemplate": "背幅: 印刷所のテンプレートの値 — ファイルはこの値で作られます。", "covermk.hc.spineSrcEstimate": "背幅: 推定値（ページ数 × 用紙係数 + 加算）— IngramSpark のテンプレート生成ツールとは照合していません。ハードカバーの背は本文ブロックより広くなるのが普通です。正確なファイルにはテンプレートの背幅を入力してください。", "covermk.hc.dimsCase": "表紙ボード {pw} × {ph} in · 背 {spine} in ({spineMm} mm) · 表紙全体 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "カバー面 {pw} × {ph} in · 袖 3.25 in · 背 {spine} in ({spineMm} mm) · カバー全体 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "IngramSpark の判型表には {binding} の {trim} がありません。一覧にある判型を選ぶか、注文前に IngramSpark のカスタム判型の範囲を確認してください。", "covermk.hc.specNote": "ハードカバーの寸法は IngramSpark が File Creation Guide（rev. 8.24.26）で公開している式に従います：ラミネート表紙 = 0.625 in 折り返し + ボード + 0.5 in ミゾ + 背 + 0.5 in ミゾ + ボード + 0.625 in 折り返し；カバー = 0.125 in 塗り足し + 3.25 in 袖 + 0.25 in 折り + 面 + 背 + 面 + 0.25 in 折り + 3.25 in 袖 + 0.125 in 塗り足し。IngramSpark はこの式をカスタム判型向けに示しています。ISBN とページ数に合わせてメールで届くテンプレート生成ツールが最終基準です — 入稿前に両方を見比べてください。", "covermk.hc.kdpNote": "KDP のハードカバー（ラミネートのみ）は独自の折り返し (0.51 in) とミゾ (0.4 in) を使い、全体寸法の式は公開されていません — Beuk はまだ KDP ハードカバーの寸法を計算しません。KDP の表紙計算ツールを使ってください。", "covermk.hc.flapFront": "前袖 — 本の紹介", "covermk.hc.flapBack": "後ろ袖 — 著者紹介", "covermk.hc.flapPhoto": "後ろ袖の著者写真", "covermk.hc.flapPhotoRemove": "写真を外す", "covermk.hc.flapPhotoNone": "写真が選ばれていません", "covermk.hc.lgBleed": "塗り足しの端", "covermk.hc.lgWrap": "折り返し（ボードに巻き込む）", "covermk.hc.lgBoard": "ボードの端", "covermk.hc.lgTrim": "仕上がり線", "covermk.hc.lgHinge": "ミゾ / ヒンジ", "covermk.hc.lgSpine": "背の折り線", "covermk.hc.lgFold": "袖の折り", "covermk.hc.lgFlap": "袖", "covermk.hc.lgSafe": "安全領域（文字は内側に）", "covermk.hc.lgBarcode": "バーコード欄", "covermk.hc.lgOff": "ガイドは画面上だけ — PDF や JPG には決して入りません。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "covermk.hc.binding": "装订", "covermk.hc.bindPaperback": "平装", "covermk.hc.bindCase": "精装 · 覆膜封面", "covermk.hc.bindJacket": "精装 · 带护封", "covermk.hc.spineTemplate": "印厂模板中的书脊宽度 (in)", "covermk.hc.spineTemplatePh": "留空 = 估算", "covermk.hc.spineAllow": "精装书脊附加量 (in) · 未核实", "covermk.hc.spineSrcTemplate": "书脊：取自印厂模板——文件按此尺寸制作。", "covermk.hc.spineSrcEstimate": "书脊：估算值（页数 × 纸张系数 + 附加量）——未与 IngramSpark 模板生成器核对。精装书脊通常比书芯更宽；请填入模板中的书脊宽度以得到精确文件。", "covermk.hc.dimsCase": "封面板 {pw} × {ph} in · 书脊 {spine} in ({spineMm} mm) · 整张封面 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "护封面板 {pw} × {ph} in · 勒口 3.25 in · 书脊 {spine} in ({spineMm} mm) · 整张护封 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "IngramSpark 的开本表中没有 {binding} 的 {trim}。请选择表中的开本，或在下单前确认 IngramSpark 的自定义开本范围。", "covermk.hc.specNote": "精装尺寸采用 IngramSpark 在 File Creation Guide（rev. 8.24.26）中公布的公式：覆膜精装 = 0.625 in 包边 + 封面板 + 0.5 in 书槽 + 书脊 + 0.5 in 书槽 + 封面板 + 0.625 in 包边；护封 = 0.125 in 出血 + 3.25 in 勒口 + 0.25 in 折线 + 面板 + 书脊 + 面板 + 0.25 in 折线 + 3.25 in 勒口 + 0.125 in 出血。IngramSpark 将此公式用于自定义开本；按你的 ISBN 和页数通过邮件发送的模板生成器才是最终标准——上传前请对照两者。", "covermk.hc.kdpNote": "KDP 精装（仅覆膜）使用自己的包边 (0.51 in) 和书槽 (0.4 in)，且未公布完整尺寸公式——Beuk 暂不计算 KDP 精装尺寸；请使用 KDP 的封面计算器。", "covermk.hc.flapFront": "前勒口——图书简介", "covermk.hc.flapBack": "后勒口——关于作者", "covermk.hc.flapPhoto": "后勒口的作者照片", "covermk.hc.flapPhotoRemove": "移除照片", "covermk.hc.flapPhotoNone": "未选择照片", "covermk.hc.lgBleed": "出血边", "covermk.hc.lgWrap": "包边（折向封面板内侧）", "covermk.hc.lgBoard": "封面板边缘", "covermk.hc.lgTrim": "裁切线", "covermk.hc.lgHinge": "书槽 / 铰链", "covermk.hc.lgSpine": "书脊折线", "covermk.hc.lgFold": "勒口折线", "covermk.hc.lgFlap": "勒口", "covermk.hc.lgSafe": "安全区（文字放在内侧）", "covermk.hc.lgBarcode": "条形码区域", "covermk.hc.lgOff": "参考线只显示在屏幕上——绝不会出现在 PDF 或 JPG 中。" });
+      /* ==== /BEUK:hardcover ==== */
 
       /* Structure upgrade: matter library, reordering, Parts — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, { "import.type.foreword": "Foreword", "import.type.preface": "Preface", "import.type.cta": "Call to Action", "import.type.part": "Part", "side.addPage": "Add a page", "side.addPart": "Add Part", "toast.pageAdded": "{name} added", "toast.pageExists": "{name} is already in your book — here it is", "toast.moveTier": "Pages stay within their own part of the book — change its type to move it there.", "toast.partAdded": "Part added" });
@@ -14199,8 +14269,329 @@
          the cover recipe (recipe.wrap) like everything else here. */
       const WRAP_PAPERS = { white: 0.0025, cream: 0.0027 };
       const WRAP_BLEED = 0.125, WRAP_SPINE_MIN = 0.5;
+      /* ==== BEUK:hardcover ==== */
+      /* Hardcover wraps — case laminate and dust jacket.
+         Every number below is copied from IngramSpark's own File
+         Creation Guide, rev. 8.24.26 (downloaded and read 2026-10-24):
+           https://www.ingramspark.com/hubfs/downloads/file-creation-guide.pdf
+         p.41-42 "Custom trim sizes":
+           Case laminate — "The board size … is calculated by
+           subtracting .185" from the trim size width and adding
+           .25" to the trim size height."
+           "Bleed Width = .625" + Board Width + .5" + Spine + .5" +
+           Board Width + .625"", "Bleed Height = .625" + Board
+           Height + .625"" (0.625 in = the turn-in that wraps round
+           the board; 0.5 in = the gutter / hinge each side of the
+           spine).
+           Dust jacket — "The front and back cover size … is
+           calculated by adding .4375" to the trim size width and
+           adding .25" to the trim size height."
+           "Bleed Width = .125" + 3.25" + .25" + Cover Width + Spine
+           + Cover Width + .25" + 3.25" + .125"", "Bleed Height =
+           .125" + Board Height + .125"" (the guide writes "Board
+           Height" here; read as the jacket's cover height, trim
+           height + .25", from the sentence above it).
+         p.23 (casebound) / p.25 (dust jacket): the pink safe area
+         lies 0.125 in inside the fold lines, and LS recommends a
+         further 0.125 in for text (0.25 in in all).
+         p.26: "Dust jackets have an additional 3.25" area that wraps
+         around the hardcover book … with the addition of a 0.25"
+         wrap area between the front/back covers and flaps."
+         The guide states these formulas for CUSTOM trims; for every
+         trim IngramSpark's cover template generator (emailed per
+         ISBN) is the final word, and the studio says so in the UI.
+         Which trims each binding is offered in: IngramSpark's trim
+         size matrix, https://www.ingramspark.com/hubfs/downloads/trim-sizes.pdf
+         (rows "Case Laminate" / "Jacketed Cover"), mapped onto the
+         studio's own trim ids — 8 × 10.88 and 8.25 × 10.75 are in
+         the matrix but not in the studio's trim list.
+         The hardcover SPINE: neither IngramSpark nor KDP publishes a
+         casebound spine formula — both hand it out through their
+         template generator / cover calculator. So the spine is the
+         number from the writer's template when they enter it
+         (spineSource "template"), and otherwise an ESTIMATE: page
+         block (pages × the paper factor) + a case-spine allowance
+         the writer can set, default 0 and marked unverified
+         (spineSource "estimate"). The UI never calls an estimate
+         exact. */
+      const HC_SPEC = {
+        source: "https://www.ingramspark.com/hubfs/downloads/file-creation-guide.pdf",
+        trimSource: "https://www.ingramspark.com/hubfs/downloads/trim-sizes.pdf",
+        caseLam: { boardWMinus: 0.185, boardHPlus: 0.25, wrap: 0.625, hinge: 0.5, safe: 0.125, textSafe: 0.25 },
+        jacket: { panelWPlus: 0.4375, panelHPlus: 0.25, bleed: 0.125, flap: 3.25, flapFold: 0.25, safe: 0.125, textSafe: 0.25 },
+        trims: {
+          "case": ["5x8", "5.5x8.5", "5.83x8.27", "6x9", "6.14x9.21", "6.69x9.61", "7x10", "7.5x9.25", "8x8", "8x10", "8.5x8.5", "8.5x11", "11x8.5"],
+          jacket: ["5x8", "5.5x8.5", "6x9", "6.14x9.21"]
+        }
+      };
+      /* KDP hardcover, for the note in the UI only — KDP's "Create a
+         hardcover cover" page gives a 0.51 in wrap and a 0.4 in hinge
+         gap but no board size or full-width formula, so the studio
+         does not size KDP hardcovers:
+         https://kdp.amazon.com/help/topic/GDTKFJPNQCBTMRV6 */
+      const HC_BINDINGS = ["paperback", "case", "jacket"];
+      /* Inches for the dims line: up to 4 decimals (6.4375 stays exact), trailing zeros trimmed, at least 2. */
+      function hcIn(v) { const s = (Math.round(v * 10000) / 10000).toFixed(4).replace(/0+$/, ""); const dec = (s.split(".")[1] || "").length; return dec < 2 ? Number(s).toFixed(2) : s; }
+      function hcTrimOffered(binding, trimId) {
+        if (binding !== "case" && binding !== "jacket") return true;
+        return HC_SPEC.trims[binding].indexOf(trimId) !== -1;
+      }
+      /* The sheet geometry, in inches from the top-left of the file:
+         where the back panel, spine and front panel sit, plus every
+         guide zone the preview draws. Paperback reproduces the
+         original wrap exactly (bleed + trim + spine + trim + bleed). */
+      function hcLayout(binding, tr, spine) {
+        const z = [];
+        if (binding === "case") {
+          const S = HC_SPEC.caseLam;
+          const bw = tr.w - S.boardWMinus, bh = tr.h + S.boardHPlus;
+          const backX = S.wrap, spineX = S.wrap + bw + S.hinge, frontX = spineX + spine + S.hinge;
+          const W = S.wrap + bw + S.hinge + spine + S.hinge + bw + S.wrap, H = S.wrap + bh + S.wrap;
+          z.push({ kind: "wrap", x: 0, y: 0, w: W, h: H, inner: { x: S.wrap, y: S.wrap, w: W - 2 * S.wrap, h: bh } });
+          z.push({ kind: "board", x: backX, y: S.wrap, w: bw, h: bh });
+          z.push({ kind: "board", x: frontX, y: S.wrap, w: bw, h: bh });
+          z.push({ kind: "hinge", x: backX + bw, y: S.wrap, w: S.hinge, h: bh });
+          z.push({ kind: "hinge", x: spineX + spine, y: S.wrap, w: S.hinge, h: bh });
+          z.push({ kind: "spine", x: spineX, y: S.wrap, w: spine, h: bh });
+          z.push({ kind: "safe", x: backX + S.safe, y: S.wrap + S.safe, w: bw - 2 * S.safe, h: bh - 2 * S.safe });
+          z.push({ kind: "safe", x: frontX + S.safe, y: S.wrap + S.safe, w: bw - 2 * S.safe, h: bh - 2 * S.safe });
+          return { binding, totalW: W, totalH: H, backX, spineX, frontX, topY: S.wrap, panelW: bw, panelH: bh, spineW: spine,
+            board: { w: bw, h: bh }, wrap: S.wrap, hinge: S.hinge, textSafe: S.textSafe, hingeClear: S.textSafe, zones: z, flaps: null };
+        }
+        if (binding === "jacket") {
+          const S = HC_SPEC.jacket;
+          const pw = tr.w + S.panelWPlus, ph = tr.h + S.panelHPlus;
+          const backFlapX = S.bleed, backX = S.bleed + S.flap + S.flapFold;
+          const spineX = backX + pw, frontX = spineX + spine, frontFlapX = frontX + pw + S.flapFold;
+          const W = S.bleed + S.flap + S.flapFold + pw + spine + pw + S.flapFold + S.flap + S.bleed, H = S.bleed + ph + S.bleed;
+          z.push({ kind: "bleed", x: 0, y: 0, w: W, h: H, inner: { x: S.bleed, y: S.bleed, w: W - 2 * S.bleed, h: ph } });
+          z.push({ kind: "flap", x: backFlapX, y: S.bleed, w: S.flap, h: ph });
+          z.push({ kind: "flap", x: frontFlapX, y: S.bleed, w: S.flap, h: ph });
+          z.push({ kind: "fold", x: backFlapX + S.flap, y: S.bleed, w: S.flapFold, h: ph });
+          z.push({ kind: "fold", x: frontX + pw, y: S.bleed, w: S.flapFold, h: ph });
+          z.push({ kind: "trim", x: backX, y: S.bleed, w: pw, h: ph });
+          z.push({ kind: "trim", x: frontX, y: S.bleed, w: pw, h: ph });
+          z.push({ kind: "spine", x: spineX, y: S.bleed, w: spine, h: ph });
+          [backFlapX, backX, frontX, frontFlapX].forEach((x, i) => {
+            const w = i === 0 || i === 3 ? S.flap : pw;
+            z.push({ kind: "safe", x: x + S.safe, y: S.bleed + S.safe, w: w - 2 * S.safe, h: ph - 2 * S.safe });
+          });
+          return { binding, totalW: W, totalH: H, backX, spineX, frontX, topY: S.bleed, panelW: pw, panelH: ph, spineW: spine,
+            panel: { w: pw, h: ph }, flap: S.flap, flapFold: S.flapFold, textSafe: S.textSafe, hingeClear: S.textSafe, zones: z,
+            flaps: { back: { x: backFlapX, y: S.bleed, w: S.flap, h: ph }, front: { x: frontFlapX, y: S.bleed, w: S.flap, h: ph } } };
+        }
+        const b = WRAP_BLEED;
+        const W = tr.w + tr.w + spine + b * 2, H = tr.h + b * 2;
+        z.push({ kind: "bleed", x: 0, y: 0, w: W, h: H, inner: { x: b, y: b, w: W - 2 * b, h: tr.h } });
+        z.push({ kind: "trim", x: b, y: b, w: tr.w, h: tr.h });
+        z.push({ kind: "trim", x: b + tr.w + spine, y: b, w: tr.w, h: tr.h });
+        z.push({ kind: "spine", x: b + tr.w, y: b, w: spine, h: tr.h });
+        return { binding: "paperback", totalW: W, totalH: H, backX: b, spineX: b + tr.w, frontX: b + tr.w + spine, topY: b,
+          panelW: tr.w, panelH: tr.h, spineW: spine, textSafe: 0.25, hingeClear: 0.375, zones: z, flaps: null };
+      }
+      /* The back flap's default bio: the book's own About the
+         Author page, markup stripped. */
+      function hcAboutAuthorText() {
+        const s = (state.sections || []).find((x) => x.type === "aboutauthor");
+        const raw = s ? String(s.content || "") : "";
+        return raw.replace(/<[^>]+>/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+          .replace(/[*_#>`]+/g, "").replace(/[ \t]+/g, " ").trim();
+      }
+      function hcFlapFrontText(w) { return String((w && w.flapFront) || state.meta.description || "").trim(); }
+      function hcFlapBackText(w) { return String((w && w.flapBack) || hcAboutAuthorText()).trim(); }
+      /* The back-flap author photo: an image in the book's own image
+         list (like cover art), cached the same way. */
+      function hcEnsureFlapPhoto(recipe) {
+        return new Promise((resolve) => {
+          const id = recipe && recipe.wrap && recipe.wrap.flapPhotoId;
+          if (!id) { resolve(null); return; }
+          if (coverImgCache[id]) { resolve(coverImgCache[id]); return; }
+          const im = (state.images || []).find((x) => x.id === id);
+          if (!im) { resolve(null); return; }
+          const img = new Image();
+          img.onload = () => { coverImgCache[id] = img; resolve(img); };
+          img.onerror = () => resolve(null);
+          img.src = "data:" + im.mediaType + ";base64," + im.data;
+        });
+      }
+      /* Flap copy on a dust jacket: the front flap carries the book
+         description, the back flap the author photo + bio — all
+         inside the flap's 0.25 in text-safe inset. Returns every
+         drawn box in inches for the self-checks. */
+      function hcDrawFlaps(ctx, recipe, w, L, px, ink) {
+        const out = { front: [], back: [], photo: null, frontText: hcFlapFrontText(w), backText: hcFlapBackText(w) };
+        const inset = L.textSafe;
+        const lay = (flap) => ({ x: (flap.x + inset) * px, y: (flap.y + inset) * px, w: (flap.w - 2 * inset) * px, bottom: (flap.y + flap.h - inset) * px });
+        const para = (box, text, startY, list, size, color, weight) => {
+          let y = startY;
+          const lh = size * 1.5;
+          ctx.font = (weight || "500") + " " + size + "px " + fontStack(recipe.elements.subtitle.font);
+          ctx.fillStyle = color; ctx.textAlign = "left"; ctx.textBaseline = "top";
+          wrapLines(ctx, text, box.w).forEach((ln) => {
+            if (!ln) { y += lh * 0.5; return; }
+            if (y + lh > box.bottom) return;
+            ctx.fillText(ln, box.x, y);
+            list.push({ x: box.x / px, y: y / px, w: ctx.measureText(ln).width / px, h: lh / px });
+            y += lh;
+          });
+          return y;
+        };
+        const F = lay(L.flaps.front), B = lay(L.flaps.back);
+        if (out.frontText) para(F, out.frontText, F.y + 0.2 * px, out.front, 0.135 * px, ink.inkBody);
+        let by = B.y + 0.2 * px;
+        const photo = w.flapPhotoId ? coverImgCache[w.flapPhotoId] : null;
+        if (photo && (photo.naturalWidth || photo.width)) {
+          const iw = photo.naturalWidth || photo.width, ih = photo.naturalHeight || photo.height;
+          const pw = B.w * 0.72, ph = Math.min(pw * ih / iw, (B.bottom - B.y) * 0.42);
+          const pW = ph * iw / ih, pX = B.x + (B.w - pW) / 2;
+          ctx.drawImage(photo, pX, by, pW, ph);
+          out.photo = { x: pX / px, y: by / px, w: pW / px, h: ph / px };
+          by += ph + 0.22 * px;
+        }
+        const author = String(recipe.author || "").trim();
+        if (author) {
+          const as = 0.15 * px;
+          ctx.font = "700 " + as + "px " + fontStack(recipe.elements.author.font);
+          ctx.fillStyle = ink.inkAuthor; ctx.textAlign = "left"; ctx.textBaseline = "top";
+          const label = author.toUpperCase();
+          ctx.fillText(label, B.x, by);
+          out.back.push({ x: B.x / px, y: by / px, w: Math.min(ctx.measureText(label).width, B.w) / px, h: as * 1.3 / px });
+          by += as * 1.3 + 0.12 * px;
+        }
+        if (out.backText) para(B, out.backText, by, out.back, 0.125 * px, ink.inkBody);
+        return out;
+      }
+      /* Guide styles: one table feeds the canvas and the legend, so
+         the two can never disagree. Guides are a PREVIEW layer only —
+         drawWrapTo paints them only when opts.guides is set, and
+         every download (PDF, JPG) renders with opts = {}. */
+      const HC_GUIDE_STYLE = {
+        bleed: { color: "rgba(255,70,90,0.95)", dash: true, label: "covermk.hc.lgBleed" },
+        wrap: { color: "rgba(255,70,90,0.95)", zone: "rgba(255,70,90,0.14)", label: "covermk.hc.lgWrap" },
+        board: { color: "rgba(60,180,255,0.95)", label: "covermk.hc.lgBoard" },
+        trim: { color: "rgba(60,180,255,0.95)", label: "covermk.hc.lgTrim" },
+        hinge: { color: "rgba(255,140,20,0.98)", zone: "rgba(255,140,20,0.26)", label: "covermk.hc.lgHinge" },
+        spine: { color: "rgba(255,210,40,0.98)", label: "covermk.hc.lgSpine" },
+        fold: { color: "rgba(170,110,255,0.98)", zone: "rgba(170,110,255,0.26)", label: "covermk.hc.lgFold" },
+        flap: { color: "rgba(170,110,255,0.98)", dash: true, label: "covermk.hc.lgFlap" },
+        safe: { color: "rgba(40,210,120,0.95)", dash: true, label: "covermk.hc.lgSafe" },
+        barcode: { color: "rgba(255,60,200,0.95)", label: "covermk.hc.lgBarcode" }
+      };
+      function hcGuideKinds(binding) {
+        if (binding === "case") return ["wrap", "board", "hinge", "spine", "safe", "barcode"];
+        if (binding === "jacket") return ["bleed", "trim", "fold", "flap", "spine", "safe", "barcode"];
+        return ["bleed", "trim", "spine"];
+      }
+      function hcDrawGuides(ctx, d, px, W, H, barcode) {
+        const L = d.layout, drawn = [];
+        const lw = Math.max(1, W / 900);
+        ctx.save();
+        ctx.lineWidth = lw;
+        L.zones.forEach((z) => {
+          const st = HC_GUIDE_STYLE[z.kind];
+          if (!st) return;
+          const x = z.x * px, y = z.y * px, w = z.w * px, h = z.h * px;
+          if (z.inner) {
+            /* the outer band (turn-in or bleed): shade it, dash its edge */
+            if (st.zone) {
+              ctx.fillStyle = st.zone;
+              ctx.beginPath();
+              ctx.rect(x, y, w, h);
+              ctx.rect(z.inner.x * px + z.inner.w * px, z.inner.y * px, -z.inner.w * px, z.inner.h * px);
+              ctx.fill("evenodd");
+            }
+            ctx.strokeStyle = st.color; ctx.setLineDash([9, 7]);
+            ctx.strokeRect(x + lw / 2, y + lw / 2, w - lw, h - lw);
+            ctx.setLineDash([]);
+          } else if (z.kind === "spine") {
+            ctx.strokeStyle = st.color; ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.moveTo(x + w, 0); ctx.lineTo(x + w, H); ctx.stroke();
+          } else {
+            if (st.zone) { ctx.fillStyle = st.zone; ctx.fillRect(x, y, w, h); }
+            ctx.strokeStyle = st.color; ctx.setLineDash(st.dash ? [7, 6] : []);
+            ctx.strokeRect(x, y, w, h);
+          }
+          if (drawn.indexOf(z.kind) === -1) drawn.push(z.kind);
+        });
+        if (barcode) {
+          ctx.strokeStyle = HC_GUIDE_STYLE.barcode.color; ctx.setLineDash([]); ctx.lineWidth = lw * 2;
+          ctx.strokeRect(barcode.x * px - lw, barcode.y * px - lw, barcode.w * px + 2 * lw, barcode.h * px + 2 * lw);
+          drawn.push("barcode");
+        }
+        ctx.restore();
+        return drawn;
+      }
+      function hcLegendHtml(binding) {
+        return hcGuideKinds(binding).map((k) => {
+          const st = HC_GUIDE_STYLE[k];
+          const cls = st.zone ? "sw zone" : (st.dash ? "sw dash" : "sw");
+          const bg = st.zone ? ' style="background:' + st.zone + '"' : "";
+          return '<span style="color:' + st.color + '"><i class="' + cls + '"' + bg + '></i><span style="color:var(--muted)">' + esc(t(st.label)) + "</span></span>";
+        }).join("") + '<span class="off">' + esc(t("covermk.hc.lgOff")) + "</span>";
+      }
+      /* The binding-dependent bits of the wrap section: which rows
+         show, the legend, the honest spine-source line and the
+         trim-availability warning. */
+      function hcSyncPanel(d) {
+        const hard = d.binding !== "paperback";
+        document.querySelectorAll("#cmWrapSection .cm-hc-only").forEach((el) => { el.style.display = hard ? "" : "none"; });
+        document.querySelectorAll("#cmWrapSection .cm-hc-flap").forEach((el) => { el.style.display = d.binding === "jacket" ? "" : "none"; });
+        const lg = $("cmHcLegend");
+        if (lg) { lg.innerHTML = cmWrapGuides ? hcLegendHtml(d.binding) : ""; lg.style.display = cmWrapGuides ? "" : "none"; }
+        const sn = $("cmHcSpineNote");
+        if (sn) {
+          sn.style.display = hard ? "" : "none";
+          sn.classList.toggle("warn", d.spineSource === "estimate");
+          sn.textContent = hard ? t(d.spineSource === "template" ? "covermk.hc.spineSrcTemplate" : "covermk.hc.spineSrcEstimate") : "";
+        }
+        const tw = $("cmHcTrimWarn");
+        if (tw) {
+          tw.style.display = d.trimOffered ? "none" : "";
+          tw.textContent = d.trimOffered ? "" : t("covermk.hc.trimWarn", { trim: d.trim.label, binding: t(d.binding === "case" ? "covermk.hc.bindCase" : "covermk.hc.bindJacket") });
+        }
+        const w = cmRecipe && cmRecipe.wrap;
+        const has = !!(w && w.flapPhotoId && (state.images || []).some((x) => x.id === w.flapPhotoId));
+        if ($("btnCmHcPhotoRemove")) $("btnCmHcPhotoRemove").style.display = has ? "" : "none";
+        if ($("cmHcPhotoName")) {
+          const im = has ? state.images.find((x) => x.id === w.flapPhotoId) : null;
+          $("cmHcPhotoName").textContent = im ? im.name || "" : t("covermk.hc.flapPhotoNone");
+        }
+      }
+      function hcWireControls() {
+        const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
+        on("cmHcBinding", "change", () => { if (!cmRecipe) return; cmRecipe.wrap.binding = HC_BINDINGS.indexOf($("cmHcBinding").value) !== -1 ? $("cmHcBinding").value : "paperback"; updateWrapDims(); });
+        on("cmHcSpine", "input", () => { if (!cmRecipe) return; const n = Number($("cmHcSpine").value); cmRecipe.wrap.hcSpine = isFinite(n) && n > 0 && n <= 4 ? n : 0; updateWrapDims(); });
+        on("cmHcAllow", "input", () => { if (!cmRecipe) return; const n = Number($("cmHcAllow").value); cmRecipe.wrap.hcSpineAllow = isFinite(n) && n > 0 && n <= 1 ? n : 0; updateWrapDims(); });
+        on("cmHcFlapFront", "input", () => { if (!cmRecipe) return; cmRecipe.wrap.flapFront = $("cmHcFlapFront").value; drawWrapPreview(); });
+        on("cmHcFlapBack", "input", () => { if (!cmRecipe) return; cmRecipe.wrap.flapBack = $("cmHcFlapBack").value; drawWrapPreview(); });
+        on("btnCmHcPhoto", "click", () => { if ($("cmHcPhotoInput")) $("cmHcPhotoInput").click(); });
+        on("btnCmHcPhotoRemove", "click", () => { if (!cmRecipe) return; cmRecipe.wrap.flapPhotoId = null; updateWrapDims(); });
+        on("cmHcPhotoInput", "change", () => {
+          const input = $("cmHcPhotoInput");
+          const file = input.files && input.files[0];
+          input.value = "";
+          if (!file || !cmRecipe) return;
+          if (!/^image\/(jpeg|png)$/.test(file.type)) { toast(t("toast.coverType"), "alert-triangle"); return; }
+          const reader = new FileReader();
+          reader.onload = () => {
+            const url = String(reader.result || "");
+            const comma = url.indexOf(",");
+            if (comma < 0) { toast(t("toast.coverReadFail"), "alert-triangle"); return; }
+            const im = { id: uid(), name: file.name, mediaType: file.type, ext: file.type === "image/png" ? "png" : "jpg", data: url.slice(comma + 1) };
+            state.images.push(im);
+            cmRecipe.wrap.flapPhotoId = im.id;
+            noteBookEdited();
+            refreshImagePickers();
+            hcEnsureFlapPhoto(cmRecipe).then(() => updateWrapDims());
+          };
+          reader.onerror = () => toast(t("toast.coverReadFail"), "alert-triangle");
+          reader.readAsDataURL(file);
+        });
+      }
+      /* ==== /BEUK:hardcover ==== */
       function wrapDefaults() {
-        return { trim: "", pages: 0, paper: "white", customFactor: 0.0025, blurb: "", quote: "", imprint: "" };
+        return { trim: "", pages: 0, paper: "white", customFactor: 0.0025, blurb: "", quote: "", imprint: "",
+          binding: "paperback", hcSpine: 0, hcSpineAllow: 0, flapFront: "", flapBack: "", flapPhotoId: null };
       }
       function normalizeWrap(w) {
         if (!w || typeof w !== "object") return wrapDefaults();
@@ -14212,7 +14603,12 @@
           pages: isFinite(pages) && pages > 0 ? Math.min(5000, pages) : 0,
           paper: ["white", "cream", "custom"].indexOf(w.paper) !== -1 ? w.paper : "white",
           customFactor: isFinite(cf) && cf >= 0.0005 && cf <= 0.02 ? cf : 0.0025,
-          blurb: str(w.blurb), quote: str(w.quote), imprint: str(w.imprint)
+          blurb: str(w.blurb), quote: str(w.quote), imprint: str(w.imprint),
+          binding: HC_BINDINGS.indexOf(w.binding) !== -1 ? w.binding : "paperback",
+          hcSpine: isFinite(Number(w.hcSpine)) && Number(w.hcSpine) > 0 && Number(w.hcSpine) <= 4 ? Number(w.hcSpine) : 0,
+          hcSpineAllow: isFinite(Number(w.hcSpineAllow)) && Number(w.hcSpineAllow) > 0 && Number(w.hcSpineAllow) <= 1 ? Number(w.hcSpineAllow) : 0,
+          flapFront: str(w.flapFront), flapBack: str(w.flapBack),
+          flapPhotoId: typeof w.flapPhotoId === "string" && w.flapPhotoId ? w.flapPhotoId : null
         };
       }
       function wrapFactor(w) { return w.paper === "custom" ? w.customFactor : (WRAP_PAPERS[w.paper] || 0.0025); }
@@ -14223,12 +14619,20 @@
         const tr = trimSize(w.trim || undefined);
         const pages = w.pages > 0 ? w.pages : printPageEstimate();
         const factor = wrapFactor(w);
-        const spine = pages * factor;
+        const hard = w.binding === "case" || w.binding === "jacket";
+        /* Hardcover: the template's spine when given, else the
+           page-block estimate plus the (unverified) allowance. */
+        const spineSource = !hard ? "paperback" : (w.hcSpine > 0 ? "template" : "estimate");
+        const spine = spineSource === "template" ? w.hcSpine : pages * factor + (hard ? w.hcSpineAllow : 0);
+        const L = hcLayout(w.binding, tr, spine);
         return {
           trim: tr, pages, factor, spine, bleed: WRAP_BLEED,
-          totalW: tr.w + tr.w + spine + WRAP_BLEED * 2,
-          totalH: tr.h + WRAP_BLEED * 2,
-          spineText: spine >= WRAP_SPINE_MIN
+          totalW: L.totalW,
+          totalH: L.totalH,
+          spineText: spine >= WRAP_SPINE_MIN,
+          binding: w.binding, spineSource, layout: L,
+          panel: { w: L.panelW, h: L.panelH },
+          trimOffered: hcTrimOffered(w.binding, tr.id)
         };
       }
       function wrapLines(ctx, text, maxW) {
@@ -14261,9 +14665,13 @@
         const W = canvas.width, H = canvas.height;
         const ctx = canvas.getContext("2d");
         const px = W / d.totalW; /* pixels per inch */
-        const bleed = d.bleed * px, tw = d.trim.w * px, th = d.trim.h * px, spineW = d.spine * px;
+        /* Panel geometry from the binding's layout (paperback: trim
+           panels at the bleed; case laminate: the boards inside the
+           turn-in; dust jacket: the jacket panels between the flaps). */
+        const L = d.layout;
+        const tw = L.panelW * px, th = L.panelH * px, spineW = d.spine * px;
         paintCoverBackground(ctx, W, H, recipe);
-        const backX = bleed, spineX = bleed + tw, frontX = spineX + spineW, topY = bleed;
+        const backX = L.backX * px, spineX = L.spineX * px, frontX = L.frontX * px, topY = L.topY * px;
         /* Front: the existing composition, inside the front rectangle. */
         const front = renderCoverCanvas(recipe, Math.max(2, Math.round(tw)), Math.max(2, Math.round(th)));
         ctx.drawImage(front, frontX, topY, tw, th);
@@ -14275,7 +14683,7 @@
         if (d.spineText) {
           const title = String(recipe.title || "").trim(), author = String(recipe.author || "").trim();
           const cx = spineX + spineW / 2, footIn = 0.42;
-          const avail = (d.trim.h - footIn - 0.3) * px;
+          const avail = (L.panelH - footIn - 0.3) * px;
           let size = Math.min(spineW * 0.6, 0.32 * px);
           const gap = author ? 0.3 * px : 0;
           ctx.save();
@@ -14315,7 +14723,7 @@
         /* ---- Back panel: quote, blurb, author, imprint — inside
            the safe margins, clear of the hinge zone by the spine,
            and never into the barcode reserve. ---- */
-        const safe = 0.25 * px, hinge = 0.375 * px;
+        const safe = L.textSafe * px, hinge = L.hingeClear * px;
         const tx = backX + safe, textW = tw - safe - hinge;
         const bcW = 2 * px, bcH = 1.2 * px;
         const bcX = backX + tw - hinge - bcW, bcY = topY + th - safe - bcH;
@@ -14382,7 +14790,12 @@
           ctx.fillText(t("covermk.wrap.barcode").toUpperCase(), bcX + bcW / 2, bcY + bcH / 2);
         }
         ctx.restore();
-        if (opts.guides) {
+        /* ==== BEUK:hardcover ==== */
+        if (L.flaps) items.flaps = hcDrawFlaps(ctx, recipe, w, L, px, { inkTitle, inkBody, inkAuthor });
+        /* ==== /BEUK:hardcover ==== */
+        if (opts.guides && d.binding !== "paperback") {
+          items.guides = hcDrawGuides(ctx, d, px, W, H, items.barcode);
+        } else if (opts.guides) {
           ctx.save();
           ctx.lineWidth = Math.max(1, W / 900);
           ctx.strokeStyle = "rgba(255,70,90,0.95)"; ctx.setLineDash([9, 7]);
@@ -14425,19 +14838,27 @@
         const W = 1240;
         c.width = W; c.height = Math.round(W * d.totalH / d.totalW);
         drawWrapTo(c, cmRecipe, { guides: cmWrapGuides, preview: true });
+        /* ==== BEUK:hardcover ==== */
+        const fid = cmRecipe.wrap && cmRecipe.wrap.flapPhotoId;
+        if (fid && !coverImgCache[fid] && d.binding === "jacket") hcEnsureFlapPhoto(cmRecipe).then((img) => { if (img) drawWrapPreview(); });
+        /* ==== /BEUK:hardcover ==== */
         refreshWrap3d();
       }
       function updateWrapDims() {
         if (!cmRecipe) return;
         const d = wrapDims(cmRecipe);
         const el = $("cmWrapDims");
-        if (el) el.textContent = t("covermk.wrap.dims", {
+        const dimArgs = {
           spine: d.spine < 0.1 ? d.spine.toFixed(3) : d.spine.toFixed(2), spineMm: (d.spine * 25.4).toFixed(1),
-          w: d.totalW.toFixed(2), h: d.totalH.toFixed(2),
-          wMm: (d.totalW * 25.4).toFixed(1), hMm: (d.totalH * 25.4).toFixed(1)
-        });
+          w: hcIn(d.totalW), h: hcIn(d.totalH),
+          wMm: (d.totalW * 25.4).toFixed(1), hMm: (d.totalH * 25.4).toFixed(1),
+          pw: hcIn(d.panel.w), ph: hcIn(d.panel.h)
+        };
+        if (d.binding === "paperback") { dimArgs.w = d.totalW.toFixed(2); dimArgs.h = d.totalH.toFixed(2); }
+        if (el) el.textContent = t(d.binding === "case" ? "covermk.hc.dimsCase" : d.binding === "jacket" ? "covermk.hc.dimsJacket" : "covermk.wrap.dims", dimArgs);
         const note = $("cmWrapNarrowNote");
         if (note) note.style.display = d.spineText ? "none" : "";
+        hcSyncPanel(d);
         drawWrapPreview();
       }
       function syncWrapControls() {
@@ -14459,12 +14880,20 @@
         if ($("cmWrapBlurb")) $("cmWrapBlurb").value = w.blurb || state.meta.description || "";
         if ($("cmWrapQuote")) $("cmWrapQuote").value = w.quote;
         if ($("cmWrapImprint")) { $("cmWrapImprint").value = w.imprint; $("cmWrapImprint").placeholder = state.meta.publisher || t("covermk.wrap.imprintPh"); }
+        /* ==== BEUK:hardcover ==== */
+        if ($("cmHcBinding")) $("cmHcBinding").value = w.binding;
+        if ($("cmHcSpine")) { $("cmHcSpine").value = w.hcSpine > 0 ? w.hcSpine : ""; $("cmHcSpine").placeholder = t("covermk.hc.spineTemplatePh"); }
+        if ($("cmHcAllow")) $("cmHcAllow").value = w.hcSpineAllow > 0 ? w.hcSpineAllow : "";
+        if ($("cmHcFlapFront")) { $("cmHcFlapFront").value = w.flapFront; $("cmHcFlapFront").placeholder = state.meta.description || ""; }
+        if ($("cmHcFlapBack")) { $("cmHcFlapBack").value = w.flapBack; $("cmHcFlapBack").placeholder = hcAboutAuthorText(); }
+        /* ==== /BEUK:hardcover ==== */
         updateWrapDims();
       }
       function downloadWrap(kind) {
         if (!cmRecipe) return;
-        ensureCoverBgImage(cmRecipe).then(() => {
-          const name = slug(state.meta.title || "cover") + "-cover-wrap";
+        Promise.all([ensureCoverBgImage(cmRecipe), hcEnsureFlapPhoto(cmRecipe)]).then(() => {
+          const bnd = cmRecipe.wrap && cmRecipe.wrap.binding;
+          const name = slug(state.meta.title || "cover") + (bnd === "case" ? "-case-laminate-wrap" : bnd === "jacket" ? "-dust-jacket" : "-cover-wrap");
           if (kind === "jpg") {
             const c = renderWrapCanvas(cmRecipe, {});
             if (c.toBlob) c.toBlob((b) => { if (b) downloadBlob(b, name + ".jpg"); }, "image/jpeg", 0.92);
@@ -14543,14 +14972,17 @@
         c.width = W; c.height = H;
         drawWrapTo(c, recipe, {});
         const px = W / d.totalW;
-        const b = d.bleed * px, tw = d.trim.w * px, th = d.trim.h * px, sw = Math.max(1, d.spine * px);
+        /* Slice by the binding's layout: trim panels (paperback),
+           boards (case laminate) or jacket panels (dust jacket). */
+        const L = d.layout;
+        const b = L.topY * px, tw = L.panelW * px, th = L.panelH * px, sw = Math.max(1, d.spine * px);
         const slice = (x, w) => {
           const s = document.createElement("canvas");
           s.width = Math.max(1, Math.round(w)); s.height = Math.max(1, Math.round(th));
           s.getContext("2d").drawImage(c, x, b, w, th, 0, 0, s.width, s.height);
           return s.toDataURL("image/jpeg", 0.88);
         };
-        return { dims: d, front: slice(b + tw + sw, tw), spine: slice(b + tw, sw), back: slice(b, tw),
+        return { dims: d, front: slice(L.frontX * px, tw), spine: slice(L.spineX * px, sw), back: slice(L.backX * px, tw),
           px: { front: Math.round(tw), spine: Math.round(sw), back: Math.round(tw), perInch: px } };
       }
       function wrap3dFaceEls() {
@@ -14593,7 +15025,8 @@
         wrap3dPaint();
         w3.raf = requestAnimationFrame(wrap3dLoop);
       }
-      function wrap3dLayout(Bw, Bh, D, sh) {
+      function wrap3dLayout(Bw, Bh, D, sh, sq) {
+        sq = sq || 0; /* BEUK:hardcover — the boards' square over the page block, top and bottom */
         const book = $("cmWrap3dBook"); if (!book) return;
         book.style.width = Bw + "px"; book.style.height = Bh + "px";
         book.style.marginLeft = (-Bw / 2) + "px"; book.style.marginTop = (-Bh / 2) + "px";
@@ -14602,16 +15035,16 @@
         set(F.front, Bw, Bh, "translateZ(" + (D / 2) + "px)");
         set(F.back, Bw, Bh, "rotateY(180deg) translateZ(" + (D / 2) + "px)");
         set(F.spine, D, Bh, "rotateY(-90deg) translateZ(" + (Bw / 2) + "px)");
-        set(F.fore, D, Bh, "rotateY(90deg) translateZ(" + (Bw / 2) + "px)");
-        set(F.top, Bw, D, "rotateX(90deg) translateZ(" + (Bh / 2) + "px)");
-        set(F.bottom, Bw, D, "rotateX(-90deg) translateZ(" + (Bh / 2) + "px)");
+        set(F.fore, D, Bh - 2 * sq, "rotateY(90deg) translateZ(" + (Bw / 2) + "px)");
+        set(F.top, Bw, D, "rotateX(90deg) translateZ(" + (Bh / 2 - sq) + "px)");
+        set(F.bottom, Bw, D, "rotateX(-90deg) translateZ(" + (Bh / 2 - sq) + "px)");
         const ground = $("cm3dGround");
         if (ground) {
           ground.style.width = (Bw * 1.25) + "px"; ground.style.height = (Bh * 0.16) + "px";
           ground.style.left = "50%"; ground.style.marginLeft = (-Bw * 0.625) + "px";
           ground.style.top = (sh / 2 + 4 + Bh * 0.52) + "px";
         }
-        w3.geom = { w: Bw, h: Bh, depth: D };
+        w3.geom = { w: Bw, h: Bh, depth: D, square: sq };
       }
       /* The same rotations the CSS applies — rotateY first, then
          rotateX (the transform list order) — and the same
@@ -14661,7 +15094,8 @@
         let hA, hB;
         if (frontZ >= 0) { const left = (FTL.x + FBL.x) <= (FTR.x + FBR.x); hA = left ? FTL : FTR; hB = left ? FBL : FBR; }
         else { const left = (BTL.x + BBL.x) <= (BTR.x + BBR.x); hA = left ? BTL : BTR; hB = left ? BBL : BBR; }
-        const hLabel = fmt(t("covermk.wrap3d.height"), d.trim.h);
+        const P = d.panel || { w: d.trim.w, h: d.trim.h };
+        const hLabel = fmt(t("covermk.wrap3d.height"), P.h);
         const hMidX = (hA.x + hB.x) / 2;
         /* On a narrow stage the label would run off the left edge —
            then it steps inside the silhouette instead, haloed
@@ -14669,8 +15103,8 @@
         if (hMidX - 24 - hLabel.length * 6.6 < 2) w3setDim(w3svg.h, hA, hB, -16, 0, hLabel, "start", 26, 0);
         else w3setDim(w3svg.h, hA, hB, -16, 0, hLabel, "end", -8, 0);
         /* Width: the bottom edge of the facing cover. */
-        if (frontZ >= 0) w3setDim(w3svg.w, FBL, FBR, 0, 16, fmt(t("covermk.wrap3d.width"), d.trim.w), "middle", 0, 15);
-        else w3setDim(w3svg.w, BBL, BBR, 0, 16, fmt(t("covermk.wrap3d.width"), d.trim.w), "middle", 0, 15);
+        if (frontZ >= 0) w3setDim(w3svg.w, FBL, FBR, 0, 16, fmt(t("covermk.wrap3d.width"), P.w), "middle", 0, 15);
+        else w3setDim(w3svg.w, BBL, BBR, 0, 16, fmt(t("covermk.wrap3d.width"), P.w), "middle", 0, 15);
         /* Spine: across the spine's own top edge while the spine
            shows; across the top face's nearer depth edge while
            only the top shows; hidden when neither does. */
@@ -14685,11 +15119,17 @@
         const sw = stage.clientWidth, sh = stage.clientHeight;
         if (!sw || !sh) return;
         const d = w3.dims;
+        /* The model's outer face is the printed panel — trim for a
+           paperback, the board for a case laminate, the jacket panel
+           for a dust jacket — and the page block sits inside the
+           hardcover's square (panel height − trim height, split). */
+        const P = d.panel || { w: d.trim.w, h: d.trim.h };
         const Bh = Math.round(Math.min(sh * 0.68, 315));
-        const Bw = Bh * d.trim.w / d.trim.h;
-        const D = Math.max(2, Bh * d.spine / d.trim.h);
-        const gsig = sw + "|" + sh + "|" + Bw.toFixed(1) + "|" + Bh + "|" + D.toFixed(1);
-        if (gsig !== w3.geomSig) { w3.geomSig = gsig; wrap3dLayout(Bw, Bh, D, sh); }
+        const Bw = Bh * P.w / P.h;
+        const D = Math.max(2, Bh * d.spine / P.h);
+        const sq = d.binding && d.binding !== "paperback" ? Math.max(0, Bh * (P.h - d.trim.h) / 2 / P.h) : 0;
+        const gsig = sw + "|" + sh + "|" + Bw.toFixed(1) + "|" + Bh + "|" + D.toFixed(1) + "|" + sq.toFixed(2);
+        if (gsig !== w3.geomSig) { w3.geomSig = gsig; wrap3dLayout(Bw, Bh, D, sh, sq); }
         book.style.transform = "rotateX(" + w3.rotX.toFixed(2) + "deg) rotateY(" + w3.rotY.toFixed(2) + "deg)";
         wrap3dDimsSvg(sw, sh, Bw, Bh, D);
       }
@@ -15149,8 +15589,10 @@
           cmWrapGuides = !cmWrapGuides;
           $("btnCmWrapGuides").setAttribute("aria-pressed", String(cmWrapGuides));
           $("btnCmWrapGuides").classList.toggle("active", cmWrapGuides);
+          if (cmRecipe) hcSyncPanel(wrapDims(cmRecipe)); /* BEUK:hardcover — legend follows the toggle */
           drawWrapPreview();
         });
+        hcWireControls(); /* BEUK:hardcover */
         /* The stand: drag to turn the book (free sideways, a gentle
            clamp on the tilt), arrow keys while it is focused. The
            first grab — pointer or key — stops the slow auto-turn
@@ -19385,6 +19827,134 @@
               state.coverRecipe = keepRecipe; state.cover = keepCover;
             }
           } },
+        /* ==== BEUK:hardcover ==== */
+        /* ---- Hardcover wraps: case laminate + dust jacket ---- */
+        { id: "cover.hardcover.case-math", feature: "cover", name: "Hardcover case laminate: board = trim width − 0.185 by trim height + 0.25, and the wrap is 0.625 + board + 0.5 + spine + 0.5 + board + 0.625 by 0.625 + board height + 0.625 (IngramSpark File Creation Guide 8.24.26)",
+          run() {
+            const mk = (trim, spine) => { const r = defaultCoverRecipe(); r.wrap = Object.assign(wrapDefaults(), { trim, pages: 300, binding: "case", hcSpine: spine }); return wrapDims(r); };
+            const close = (a, b) => Math.abs(a - b) < 1e-9;
+            const a = mk("6x9", 0.5), b = mk("8.5x11", 1.25);
+            return scVerdict(
+              close(a.layout.board.w, 5.815) && close(a.layout.board.h, 9.25) && close(a.totalW, 14.38) && close(a.totalH, 10.5) && a.spineSource === "template" &&
+              close(b.layout.board.w, 8.315) && close(b.layout.board.h, 11.25) && close(b.totalW, 0.625 * 2 + 0.5 * 2 + 8.315 * 2 + 1.25) && close(b.totalH, 12.5),
+              "6 × 9 with a 0.5 in template spine: board 5.815 × 9.25 in, wrap " + a.totalW.toFixed(3) + " × " + a.totalH.toFixed(3) + " in; 8.5 × 11 with 1.25 in: wrap " + b.totalW.toFixed(3) + " × " + b.totalH.toFixed(3) + " in");
+          } },
+        { id: "cover.hardcover.jacket-math", feature: "cover", name: "Hardcover dust jacket: panel = trim + 0.4375 by trim + 0.25; jacket = 0.125 + 3.25 + 0.25 + panel + spine + panel + 0.25 + 3.25 + 0.125 by 0.125 + panel height + 0.125 (IngramSpark File Creation Guide 8.24.26)",
+          run() {
+            const r = defaultCoverRecipe(); r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 300, binding: "jacket", hcSpine: 0.5 });
+            const d = wrapDims(r);
+            const close = (a, b) => Math.abs(a - b) < 1e-9;
+            const fl = d.layout.flaps;
+            return scVerdict(
+              close(d.panel.w, 6.4375) && close(d.panel.h, 9.25) && close(d.totalW, 20.625) && close(d.totalH, 9.5) &&
+              close(fl.back.x, 0.125) && close(fl.back.w, 3.25) && close(fl.front.x + fl.front.w, d.totalW - 0.125) && close(d.layout.frontX - d.layout.spineX, 0.5),
+              "6 × 9 with a 0.5 in template spine: jacket panel 6.4375 × 9.25 in, flaps 3.25 in at both ends, jacket " + d.totalW.toFixed(4) + " × " + d.totalH.toFixed(3) + " in");
+          } },
+        { id: "cover.hardcover.spine-source", feature: "cover", name: "Hardcover spine: a spine typed from the printer's template is used exactly and labelled so; otherwise it is an estimate (pages × paper factor + the unverified allowance) and labelled an estimate",
+          run() {
+            const r = defaultCoverRecipe(); r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 300, paper: "cream", binding: "case", hcSpineAllow: 0.1 });
+            const est = wrapDims(r);
+            r.wrap.hcSpine = 0.912;
+            const tpl = wrapDims(r);
+            return scVerdict(est.spineSource === "estimate" && Math.abs(est.spine - (300 * 0.0027 + 0.1)) < 1e-9 &&
+              tpl.spineSource === "template" && Math.abs(tpl.spine - 0.912) < 1e-12 && t("covermk.hc.spineSrcEstimate").indexOf("not checked") !== -1,
+              "no template spine → estimate " + est.spine.toFixed(3) + " in (300 × 0.0027 + 0.1 allowance), labelled “estimate — not checked”; template 0.912 in → used exactly, labelled from the template");
+          } },
+        { id: "cover.hardcover.trims", feature: "cover", name: "Hardcover trims: IngramSpark's trim matrix — 6 × 9 offered for case laminate and dust jacket, 7 × 10 for case laminate only, 4.25 × 7 for neither; an unlisted trim shows the warning",
+          run() {
+            return scVerdict(hcTrimOffered("case", "6x9") && hcTrimOffered("jacket", "6x9") && hcTrimOffered("case", "7x10") && !hcTrimOffered("jacket", "7x10") &&
+              !hcTrimOffered("case", "4.25x7") && !hcTrimOffered("jacket", "4.25x7") && hcTrimOffered("paperback", "4.25x7"),
+              "case laminate trims: " + HC_SPEC.trims["case"].join(", ") + "; dust jacket trims: " + HC_SPEC.trims.jacket.join(", "));
+          } },
+        { id: "cover.hardcover.guides-preview-only", feature: "cover", name: "Hardcover guides: hinge, board, turn-in, flap, spine, safety and barcode guides are drawn only when guides are on; a download render (no options) has none of them",
+          run() {
+            const r = defaultCoverRecipe(); r.bgType = "solid"; r.bgColor = "#203040"; r.texture = "vignette";
+            r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 300, binding: "case", hcSpine: 0.5 });
+            const d = wrapDims(r);
+            const W = 900, H = Math.round(W * d.totalH / d.totalW), px = W / d.totalW;
+            const c1 = document.createElement("canvas"); c1.width = W; c1.height = H;
+            const c2 = document.createElement("canvas"); c2.width = W; c2.height = H;
+            const g = drawWrapTo(c1, r, { guides: true, preview: true });
+            const n = drawWrapTo(c2, r, {});
+            const at = (c, xin, yin) => Array.from(c.getContext("2d").getImageData(Math.round(xin * px), Math.round(yin * px), 1, 1).data);
+            const hingeX = d.layout.backX + d.layout.board.w + 0.25, midY = d.totalH / 2;
+            const p1 = at(c1, hingeX, midY), p2 = at(c2, hingeX, midY);
+            const diff = Math.abs(p1[0] - p2[0]) + Math.abs(p1[1] - p2[1]) + Math.abs(p1[2] - p2[2]);
+            const rj = JSON.parse(JSON.stringify(r)); rj.wrap.binding = "jacket";
+            const dj = wrapDims(rj);
+            const cj = document.createElement("canvas"); cj.width = W; cj.height = Math.round(W * dj.totalH / dj.totalW);
+            const gj = drawWrapTo(cj, rj, { guides: true });
+            return scVerdict(diff > 30 && !n.guides && Array.isArray(g.guides) &&
+              ["wrap", "board", "hinge", "spine", "safe", "barcode"].every((k) => g.guides.indexOf(k) !== -1) &&
+              ["bleed", "trim", "fold", "flap", "spine", "safe", "barcode"].every((k) => (gj.guides || []).indexOf(k) !== -1),
+              "case guides drawn: " + g.guides.join(", ") + "; jacket guides drawn: " + (gj.guides || []).join(", ") + "; hinge-centre pixel with guides rgb(" + p1.slice(0, 3).join(",") + ") vs download render rgb(" + p2.slice(0, 3).join(",") + ")");
+          } },
+        { id: "cover.hardcover.flaps", feature: "cover", name: "Dust jacket flaps: the front flap carries the book description and the back flap the author bio (defaulting to the book's About the Author page), every line inside the flap's 0.25 in text-safe inset",
+          run() {
+            const r = defaultCoverRecipe(); r.author = "A. Checker";
+            r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 300, binding: "jacket", hcSpine: 0.6, flapFront: "A harbour, a ledger and a long tide home. ".repeat(12) });
+            const d = wrapDims(r);
+            const c = document.createElement("canvas"); c.width = 1400; c.height = Math.round(1400 * d.totalH / d.totalW);
+            const res = drawWrapTo(c, r, {});
+            const fl = d.layout.flaps, s = 0.25, eps = 1e-6;
+            const inside = (b, f) => b.x >= f.x + s - eps && b.x + b.w <= f.x + f.w - s + 0.02 && b.y >= f.y + s - eps && b.y + b.h <= f.y + f.h - s + eps;
+            const about = hcAboutAuthorText();
+            return scVerdict(!!res.flaps && res.flaps.front.length >= 3 && res.flaps.front.every((b) => inside(b, fl.front)) &&
+              res.flaps.back.length >= 1 && res.flaps.back.every((b) => inside(b, fl.back)) &&
+              res.flaps.backText === (about || "") && res.flaps.frontText.indexOf("harbour") !== -1,
+              res.flaps.front.length + " front-flap lines and " + res.flaps.back.length + " back-flap lines, all inside the 0.25 in inset; back-flap bio " + (about ? "defaults to the About the Author page" : "is empty because the book has no About the Author text"));
+          } },
+        { id: "cover.hardcover.pdf-size", feature: "cover", name: "Hardcover PDF: the generated PDF page equals the computed case-laminate and dust-jacket sizes in inches",
+          run() {
+            const px1 = document.createElement("canvas"); px1.width = 2; px1.height = 2;
+            const out = [];
+            let ok = true;
+            ["case", "jacket"].forEach((b) => {
+              const r = defaultCoverRecipe(); r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 300, binding: b, hcSpine: 0.5 });
+              const d = wrapDims(r);
+              const doc = buildWrapPdfDoc(r, px1.toDataURL("image/jpeg", 0.9));
+              if (!doc) { ok = false; out.push(b + ": jsPDF not loaded"); return; }
+              const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight();
+              ok = ok && Math.abs(pw - d.totalW) < 0.005 && Math.abs(ph - d.totalH) < 0.005;
+              out.push(b + " computed " + d.totalW.toFixed(3) + " × " + d.totalH.toFixed(3) + " in, PDF " + pw.toFixed(3) + " × " + ph.toFixed(3) + " in");
+            });
+            return scVerdict(ok, out.join("; "));
+          } },
+        { id: "cover.hardcover.recipe-persists", feature: "cover", name: "Hardcover settings (binding, template spine, allowance, flap texts, flap photo) survive a serialize → load round-trip inside the cover recipe",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const r = defaultCoverRecipe();
+              r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 320, binding: "jacket", hcSpine: 0.874, hcSpineAllow: 0.05, flapFront: "Front flap copy.", flapBack: "Back flap bio.", flapPhotoId: "sc-flap-photo" });
+              state.coverRecipe = normalizeCoverRecipe(r);
+              const before = stableJson(serializeBook().coverRecipe.wrap);
+              applyBookDoc(JSON.parse(JSON.stringify(serializeBook())));
+              const w = state.coverRecipe.wrap;
+              const after = stableJson(serializeBook().coverRecipe.wrap);
+              return scVerdict(before === after && w.binding === "jacket" && Math.abs(w.hcSpine - 0.874) < 1e-12 && Math.abs(w.hcSpineAllow - 0.05) < 1e-12 &&
+                w.flapFront === "Front flap copy." && w.flapBack === "Back flap bio." && w.flapPhotoId === "sc-flap-photo",
+                "wrap in = wrap out: " + after);
+            } finally { applyBookDoc(keepDoc); }
+          } },
+        { id: "cover.hardcover.3d-proportions", feature: "cover", name: "3D viewer, hardcover: the model's face is the board (case laminate) or jacket panel (dust jacket) at its true proportions, the spine depth follows the computed spine, and the page block sits inside the boards' square",
+          run() {
+            const keepRecipe = state.coverRecipe;
+            try {
+              const r = defaultCoverRecipe(); r.title = "Board Book"; r.author = "A. Checker";
+              r.wrap = Object.assign(wrapDefaults(), { trim: "6x9", pages: 300, binding: "case", hcSpine: 0.9 });
+              state.coverRecipe = r;
+              openCoverMaker();
+              refreshWrap3d(); wrap3dPaint();
+              const g = w3.geom, d = wrapDims(cmRecipe);
+              const ok = !!g && Math.abs(g.w / g.h - d.panel.w / d.panel.h) < 0.01 && Math.abs(g.depth / g.h - d.spine / d.panel.h) < 0.01 &&
+                Math.abs(g.square / g.h - 0.125 / d.panel.h) < 0.01;
+              return scVerdict(ok, g ? "model w/h " + (g.w / g.h).toFixed(3) + " (board " + (d.panel.w / d.panel.h).toFixed(3) + "), depth/h " + (g.depth / g.h).toFixed(3) + " (spine " + (d.spine / d.panel.h).toFixed(3) + "), square " + g.square.toFixed(1) + " px" : "the 3D stand did not lay out (no stage size)");
+            } finally {
+              $("modalCoverMaker").classList.remove("open");
+              state.coverRecipe = keepRecipe;
+            }
+          } },
+        /* ==== /BEUK:hardcover ==== */
         /* ---- Feature 2: platform export presets ---- */
         { id: "presets.generic.baseline", feature: "presets", name: "Generic preset: no guide, no Apple display-options file; accessibility metadata ships (as in every Beuk package); bare filename",
           run() {
