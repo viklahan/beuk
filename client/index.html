@@ -14,6 +14,8 @@
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
     <title>Beuk — quietshelf.studio</title>
     <script>
+      /* BEUK:local — the desk stays hidden until this device's saved book is restored (local-first saving). */
+      document.documentElement.setAttribute("data-local-restore", "pending");
       /* Theme: Paper is the default look. On a first open — no saved
          preference in this browser — the studio opens in Paper (the
          light theme), whatever the system colour scheme says. A saved
@@ -32,10 +34,16 @@
       href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Gentium+Book+Plus:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Merriweather:ital,wght@0,400;0,700;0,900;1,400&family=Montserrat:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Oswald:wght@500;600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
       rel="stylesheet"
     />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <!-- ==== BEUK:local ==== Studio libraries, vendored for offline use: byte-identical
+         copies of the pinned releases (verified against cdnjs SRI and jsDelivr file hashes:
+         https://api.cdnjs.com/libraries/jszip/3.10.1?fields=sri ,
+         https://api.cdnjs.com/libraries/mammoth/1.6.0?fields=sri ,
+         https://data.jsdelivr.com/v1/packages/npm/lucide@0.469.0 ,
+         https://data.jsdelivr.com/v1/packages/npm/jspdf@2.5.2 ). Precached by sw.js. -->
+    <script src="assets/vendor/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=="></script>
+    <script src="assets/vendor/mammoth.browser.min.js" integrity="sha512-sG5Q7boJL+ft/weuz6Mmi9XBD+bEzE9AI2FMP4YMFxp3FpTFUQSQQm5K5cSgJCyed6bWs3W8f8h0lp36lHXhQA=="></script>
+    <script src="assets/vendor/lucide.min.js" integrity="sha512-ibnpmCRt4ihCELC17N3qavYe+koJxpcJQA2FxbbyCJkqYs1WetGvNWeecRmT5g3IJf7CmAsW+rLMJFC0qdkAiA=="></script>
+    <script src="assets/vendor/jspdf.umd.min.js" integrity="sha512-B/+2C2xTio+mD98bsO0SAh007OKBp96sQyJECBAFzA0pwWQhyC/yxgMU6aWjldvtZkALDUeOl+7eiLZL7P7+FA=="></script>
     <style>
       /* Paper theme (default): warm antique parchment, sepia ink, amber accent. */
       :root {
@@ -158,6 +166,42 @@
         .net-pill .net-full { display: none; }
         .net-pill .net-short { display: inline; }
       }
+      /* ==== BEUK:local ==== */
+      /* Local-first saving: the device-save indicator. Always present,
+         always honest — saving, saved, or not saved (with a way out). */
+      html[data-local-restore="pending"] #panes { visibility: hidden; }
+      .local-wrap { position: relative; flex: 0 1 auto; min-width: 0; }
+      .local-pill {
+        display: inline-flex; align-items: center; gap: 7px; max-width: 100%;
+        padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 999px;
+        background: var(--panel-3); color: var(--ink-2);
+        font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden;
+      }
+      .local-pill .local-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
+      .local-pill[data-state="saved"] .local-dot { background: var(--good); }
+      .local-pill[data-state="saved"][data-evictable] .local-dot { background: var(--gold); }
+      .local-pill[data-state="saving"] .local-dot { background: var(--gold); }
+      .local-pill[data-state="blocked"], .local-pill[data-state="quota"], .local-pill[data-state="error"] { border-color: var(--bad); color: var(--bad); }
+      .local-pill[data-state="blocked"] .local-dot, .local-pill[data-state="quota"] .local-dot, .local-pill[data-state="error"] .local-dot { background: var(--bad); }
+      .local-pill .local-sub { color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
+      .local-pill .local-short { display: none; }
+      .local-pill-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
+      .local-backup-inline { border: 1px solid var(--bad); background: var(--panel); color: var(--bad); border-radius: 999px; padding: 2px 9px; font-size: 11.5px; font-weight: 600; flex: 0 0 auto; }
+      .local-pop {
+        position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: 320px; max-width: calc(100vw - 32px);
+        background: var(--panel); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: var(--shadow);
+        padding: 14px; color: var(--ink); font-size: 13px; line-height: 1.5; white-space: normal;
+      }
+      .local-pop[hidden] { display: none; }
+      .local-pop h3 { margin: 0 0 6px; font-size: 13.5px; }
+      .local-pop p { margin: 0 0 12px; color: var(--ink-2); }
+      .local-pop .local-pop-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      @media (max-width: 1180px) { .local-pill .local-sub { display: none; } }
+      @media (max-width: 980px) {
+        .local-pill .local-full { display: none; }
+        .local-pill .local-short { display: inline; }
+      }
+      /* ==== /BEUK:local ==== */
       /* "A new Beuk is ready": a slim, calm bar under the header,
          shown only while an updated shell waits. */
       .update-bar {
@@ -1441,7 +1485,24 @@
           <div class="book-title" id="projectTitleDisplay">Sample Manuscript</div>
           <div class="book-author" id="projectAuthorDisplay">A working draft — replace with your own book</div>
         </div>
-        <span class="net-pill" id="netPill" hidden role="status"><span class="net-dot" aria-hidden="true"></span><span class="net-full" id="netPillText" data-i18n="offline.header">Offline — everything is saved on this device</span><span class="net-short" data-i18n="offline.headerShort">Offline</span></span>
+        <span class="net-pill" id="netPill" hidden role="status"><span class="net-dot" aria-hidden="true"></span><span class="net-full" id="netPillText" data-i18n="offline.header">Offline — you can keep writing here</span><span class="net-short" data-i18n="offline.headerShort">Offline</span></span>
+        <!-- ==== BEUK:local ==== -->
+        <div class="local-wrap">
+          <span class="local-pill" id="localPill" data-state="checking" role="status" aria-live="polite">
+            <button class="local-pill-btn" id="localPillBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="localPop" aria-label="Saving on this device — details" data-i18n-aria="local.aria"><span class="local-dot" aria-hidden="true"></span><span class="local-full" id="localPillText">Checking this device…</span><span class="local-short" id="localPillShort">Checking…</span><span class="local-sub" id="localPillSub" hidden></span></button>
+            <button class="local-backup-inline" id="btnLocalBackupInline" type="button" hidden data-i18n="local.backup">Export a backup</button>
+          </span>
+          <div class="local-pop" id="localPop" role="dialog" aria-labelledby="localPopTitle" hidden>
+            <h3 id="localPopTitle"></h3>
+            <p id="localPopDetail"></p>
+            <div class="local-pop-actions">
+              <button class="tb-btn primary" id="btnLocalBackup" type="button"><i data-lucide="download"></i><span data-i18n="local.backup">Export a backup</span></button>
+              <button class="tb-btn" id="btnLocalOpenBackup" type="button"><i data-lucide="folder-open"></i><span data-i18n="local.openBackup">Open a backup…</span></button>
+            </div>
+            <input type="file" id="localBackupInput" accept=".json,application/json" style="display:none;" />
+          </div>
+        </div>
+        <!-- ==== /BEUK:local ==== -->
         <div class="lang-wrap">
           <button class="tb-btn" id="btnUiLang" aria-haspopup="listbox" aria-expanded="false" aria-label="Interface language" data-i18n-aria="set.uiLanguage"><i data-lucide="globe" class="lang-globe"></i><span class="lang-name" id="uiLangName">English</span><i data-lucide="chevron-down" class="lang-chev"></i></button>
           <div class="lang-menu" id="uiLangMenu" role="listbox" aria-label="Interface language" data-i18n-aria="set.uiLanguage" hidden></div>
@@ -2791,6 +2852,7 @@
         if (typeof goalsOnLangChange === "function") goalsOnLangChange();
         if (typeof historyOnLangChange === "function") historyOnLangChange();
         if (typeof pwaOnLangChange === "function") pwaOnLangChange();
+        if (typeof localOnLangChange === "function") localOnLangChange(); /* BEUK:local */
         if (typeof dictOnLangChange === "function") dictOnLangChange();
         if (typeof syncThemeButton === "function" && $("themeLabel")) syncThemeButton();
         if (typeof renderSidebar === "function" && $("structureList")) renderSidebar();
@@ -8206,7 +8268,7 @@
       /* Platform hardening: PWA + explicit offline mode — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {
         "history.auto.conflict": "Kept from a shelf conflict",
-        "offline.header": "Offline — everything is saved on this device", "offline.headerShort": "Offline",
+        "offline.header": "Offline — you can keep writing here", "offline.headerShort": "Offline",
         "offline.savedHere": "Offline — saved on this device",
         "offline.pending": "{n} sync waiting", "offline.pendingPlural": "{n} syncs waiting",
         "offline.conflictTitle": "This book changed in two places",
@@ -8228,7 +8290,7 @@
       });
       Object.assign(UI_STRINGS.es, {
         "history.auto.conflict": "Guardado de un conflicto de sincronización",
-        "offline.header": "Sin conexión — todo se guarda en este dispositivo", "offline.headerShort": "Sin conexión",
+        "offline.header": "Sin conexión — puedes seguir escribiendo aquí", "offline.headerShort": "Sin conexión",
         "offline.savedHere": "Sin conexión — guardado en este dispositivo",
         "offline.pending": "{n} sincronización en espera", "offline.pendingPlural": "{n} sincronizaciones en espera",
         "offline.conflictTitle": "Este libro cambió en dos lugares",
@@ -8250,7 +8312,7 @@
       });
       Object.assign(UI_STRINGS.fr, {
         "history.auto.conflict": "Conservé d'un conflit de synchronisation",
-        "offline.header": "Hors ligne — tout est enregistré sur cet appareil", "offline.headerShort": "Hors ligne",
+        "offline.header": "Hors ligne — vous pouvez continuer à écrire ici", "offline.headerShort": "Hors ligne",
         "offline.savedHere": "Hors ligne — enregistré sur cet appareil",
         "offline.pending": "{n} synchronisation en attente", "offline.pendingPlural": "{n} synchronisations en attente",
         "offline.conflictTitle": "Ce livre a changé à deux endroits",
@@ -8272,7 +8334,7 @@
       });
       Object.assign(UI_STRINGS.de, {
         "history.auto.conflict": "Aus einem Regal-Konflikt behalten",
-        "offline.header": "Offline — alles wird auf diesem Gerät gespeichert", "offline.headerShort": "Offline",
+        "offline.header": "Offline — Sie können hier weiterschreiben", "offline.headerShort": "Offline",
         "offline.savedHere": "Offline — auf diesem Gerät gespeichert",
         "offline.pending": "{n} Abgleich wartet", "offline.pendingPlural": "{n} Abgleiche warten",
         "offline.conflictTitle": "Dieses Buch hat sich an zwei Orten verändert",
@@ -8294,7 +8356,7 @@
       });
       Object.assign(UI_STRINGS.it, {
         "history.auto.conflict": "Conservato da un conflitto di sincronizzazione",
-        "offline.header": "Offline — tutto è salvato su questo dispositivo", "offline.headerShort": "Offline",
+        "offline.header": "Offline — puoi continuare a scrivere qui", "offline.headerShort": "Offline",
         "offline.savedHere": "Offline — salvato su questo dispositivo",
         "offline.pending": "{n} sincronizzazione in attesa", "offline.pendingPlural": "{n} sincronizzazioni in attesa",
         "offline.conflictTitle": "Questo libro è cambiato in due luoghi",
@@ -8316,7 +8378,7 @@
       });
       Object.assign(UI_STRINGS.pt, {
         "history.auto.conflict": "Guardado de um conflito de sincronização",
-        "offline.header": "Offline — tudo está guardado neste dispositivo", "offline.headerShort": "Offline",
+        "offline.header": "Offline — pode continuar a escrever aqui", "offline.headerShort": "Offline",
         "offline.savedHere": "Offline — guardado neste dispositivo",
         "offline.pending": "{n} sincronização à espera", "offline.pendingPlural": "{n} sincronizações à espera",
         "offline.conflictTitle": "Este livro mudou em dois lugares",
@@ -8338,7 +8400,7 @@
       });
       Object.assign(UI_STRINGS.nl, {
         "history.auto.conflict": "Bewaard uit een synchronisatieconflict",
-        "offline.header": "Offline — alles wordt op dit apparaat bewaard", "offline.headerShort": "Offline",
+        "offline.header": "Offline — u kunt hier verder schrijven", "offline.headerShort": "Offline",
         "offline.savedHere": "Offline — op dit apparaat bewaard",
         "offline.pending": "{n} synchronisatie wacht", "offline.pendingPlural": "{n} synchronisaties wachten",
         "offline.conflictTitle": "Dit boek is op twee plaatsen veranderd",
@@ -8360,7 +8422,7 @@
       });
       Object.assign(UI_STRINGS.pl, {
         "history.auto.conflict": "Zachowana z konfliktu synchronizacji",
-        "offline.header": "Offline — wszystko zapisuje się na tym urządzeniu", "offline.headerShort": "Offline",
+        "offline.header": "Offline — możesz tu dalej pisać", "offline.headerShort": "Offline",
         "offline.savedHere": "Offline — zapisano na tym urządzeniu",
         "offline.pending": "{n} synchronizacja oczekuje", "offline.pendingPlural": "{n} synchronizacji oczekuje",
         "offline.conflictTitle": "Ta książka zmieniła się w dwóch miejscach",
@@ -8382,7 +8444,7 @@
       });
       Object.assign(UI_STRINGS.ru, {
         "history.auto.conflict": "Сохранено из конфликта синхронизации",
-        "offline.header": "Нет сети — всё сохраняется на этом устройстве", "offline.headerShort": "Нет сети",
+        "offline.header": "Нет сети — можно продолжать писать здесь", "offline.headerShort": "Нет сети",
         "offline.savedHere": "Нет сети — сохранено на этом устройстве",
         "offline.pending": "{n} синхронизация ожидает", "offline.pendingPlural": "{n} синхронизации ожидают",
         "offline.conflictTitle": "Эта книга изменилась в двух местах",
@@ -8404,7 +8466,7 @@
       });
       Object.assign(UI_STRINGS.tr, {
         "history.auto.conflict": "Bir eşitleme çakışmasından saklandı",
-        "offline.header": "Çevrimdışı — her şey bu cihazda saklanıyor", "offline.headerShort": "Çevrimdışı",
+        "offline.header": "Çevrimdışı — burada yazmaya devam edebilirsiniz", "offline.headerShort": "Çevrimdışı",
         "offline.savedHere": "Çevrimdışı — bu cihazda saklandı",
         "offline.pending": "{n} eşitleme bekliyor", "offline.pendingPlural": "{n} eşitleme bekliyor",
         "offline.conflictTitle": "Bu kitap iki yerde değişti",
@@ -8426,7 +8488,7 @@
       });
       Object.assign(UI_STRINGS.ar, {
         "history.auto.conflict": "محفوظة من تعارض في المزامنة",
-        "offline.header": "غير متصل — كل شيء محفوظ على هذا الجهاز", "offline.headerShort": "غير متصل",
+        "offline.header": "غير متصل — يمكنك مواصلة الكتابة هنا", "offline.headerShort": "غير متصل",
         "offline.savedHere": "غير متصل — محفوظ على هذا الجهاز",
         "offline.pending": "{n} مزامنة في الانتظار", "offline.pendingPlural": "{n} مزامنات في الانتظار",
         "offline.conflictTitle": "تغيّر هذا الكتاب في مكانين",
@@ -8448,7 +8510,7 @@
       });
       Object.assign(UI_STRINGS.ja, {
         "history.auto.conflict": "同期の競合から保管",
-        "offline.header": "オフライン — すべてこのデバイスに保存されています", "offline.headerShort": "オフライン",
+        "offline.header": "オフライン — ここで書き続けられます", "offline.headerShort": "オフライン",
         "offline.savedHere": "オフライン — このデバイスに保存",
         "offline.pending": "{n} 件の同期が待機中", "offline.pendingPlural": "{n} 件の同期が待機中",
         "offline.conflictTitle": "この本は2か所で変更されました",
@@ -8470,7 +8532,7 @@
       });
       Object.assign(UI_STRINGS["zh-Hans"], {
         "history.auto.conflict": "因同步冲突而保留",
-        "offline.header": "离线 — 一切都保存在这台设备上", "offline.headerShort": "离线",
+        "offline.header": "离线 — 你可以在这里继续写作", "offline.headerShort": "离线",
         "offline.savedHere": "离线 — 已保存在这台设备上",
         "offline.pending": "{n} 次同步等待中", "offline.pendingPlural": "{n} 次同步等待中",
         "offline.conflictTitle": "这本书在两处发生了变化",
@@ -8490,6 +8552,362 @@
         "about.offlineLine": "Beuk 首先把你的书保存在这台设备上：写作和保存从不需要等待网络。登录后，离线写下的一切都会安静地等待，并在连接恢复的那一刻与你的书架同步。",
         "about.installHint": "想让 Beuk 触手可及，可从浏览器菜单把它添加到主屏幕 — 它会安装为应用，并可离线打开。"
       });
+
+      /* ==== BEUK:local ==== */
+      /* Local-first saving: the header save indicator, backups, and the
+         boot restore — assigned per pack so completeness holds. */
+      Object.assign(UI_STRINGS.en, {
+        "local.checking": "Checking this device…", "local.checkingShort": "Checking…",
+        "local.saving": "Saving…",
+        "local.saved": "Saved on this device ✓", "local.savedShort": "Saved ✓",
+        "local.evictable": "· the browser may clear it if space runs short",
+        "local.blocked": "Not saved — this browser is blocking storage",
+        "local.quota": "Not saved — this device's storage is full",
+        "local.error": "Not saved — the browser refused to store the book ({name})",
+        "local.notSavedShort": "Not saved",
+        "local.backup": "Export a backup", "local.openBackup": "Open a backup…",
+        "local.detailSaved": "Your book is saved in this browser on this device each time you pause. Last saved {time}.",
+        "local.detailSavedNoTime": "Your book is saved in this browser on this device each time you pause.",
+        "local.detailPersisted": "The browser has granted lasting storage: it clears the book only if you clear this site's data yourself.",
+        "local.detailEvictable": "The browser has not granted lasting storage, so it may clear its copy if the device runs short of space — export a backup now and then.",
+        "local.detailUnsupported": "This browser does not say whether its storage is lasting — export a backup now and then.",
+        "local.detailFailed": "Nothing is being saved on this device right now. Export a backup to keep your writing, and keep this tab open.",
+        "local.restored": "Welcome back — your book was restored from this device",
+        "local.backupBad": "That file isn't a Beuk backup",
+        "local.backupOpened": "Backup opened — “{title}”",
+        "local.backupConfirmTitle": "Open this backup?",
+        "local.backupConfirmBody": "The desk holds “{title}”. Opening the backup replaces it here — the current book is kept first as a snapshot in History.",
+        "local.backupConfirmYes": "Open the backup",
+        "local.shelfNewer": "Your shelf had a newer copy of “{title}” — it is open now",
+        "local.aria": "Saving on this device — details",
+        "history.auto.backup": "Before opening a backup",
+        "offline.notSavedHere": "Offline — not saved on this device"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "local.checking": "Comprobando este dispositivo…", "local.checkingShort": "Comprobando…",
+        "local.saving": "Guardando…",
+        "local.saved": "Guardado en este dispositivo ✓", "local.savedShort": "Guardado ✓",
+        "local.evictable": "· el navegador podría borrarlo si falta espacio",
+        "local.blocked": "Sin guardar — este navegador está bloqueando el almacenamiento",
+        "local.quota": "Sin guardar — el almacenamiento de este dispositivo está lleno",
+        "local.error": "Sin guardar — el navegador se negó a guardar el libro ({name})",
+        "local.notSavedShort": "Sin guardar",
+        "local.backup": "Exportar una copia de seguridad", "local.openBackup": "Abrir una copia de seguridad…",
+        "local.detailSaved": "Tu libro se guarda en este navegador, en este dispositivo, cada vez que haces una pausa. Último guardado: {time}.",
+        "local.detailSavedNoTime": "Tu libro se guarda en este navegador, en este dispositivo, cada vez que haces una pausa.",
+        "local.detailPersisted": "El navegador ha concedido almacenamiento duradero: solo borrará el libro si tú borras los datos de este sitio.",
+        "local.detailEvictable": "El navegador no ha concedido almacenamiento duradero, así que podría borrar su copia si el dispositivo se queda sin espacio — exporta una copia de seguridad de vez en cuando.",
+        "local.detailUnsupported": "Este navegador no indica si su almacenamiento es duradero — exporta una copia de seguridad de vez en cuando.",
+        "local.detailFailed": "Ahora mismo no se guarda nada en este dispositivo. Exporta una copia de seguridad para conservar lo escrito y no cierres esta pestaña.",
+        "local.restored": "Bienvenido de nuevo — tu libro se ha restaurado desde este dispositivo",
+        "local.backupBad": "Ese archivo no es una copia de seguridad de Beuk",
+        "local.backupOpened": "Copia de seguridad abierta — «{title}»",
+        "local.backupConfirmTitle": "¿Abrir esta copia de seguridad?",
+        "local.backupConfirmBody": "El escritorio contiene «{title}». Abrir la copia de seguridad lo reemplaza aquí — antes, el libro actual se guarda como instantánea en el Historial.",
+        "local.backupConfirmYes": "Abrir la copia",
+        "local.shelfNewer": "Tu estantería tenía una copia más reciente de «{title}» — ahora está abierta",
+        "local.aria": "Guardado en este dispositivo — detalles",
+        "history.auto.backup": "Antes de abrir una copia de seguridad",
+        "offline.notSavedHere": "Sin conexión — sin guardar en este dispositivo"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "local.checking": "Vérification de cet appareil…", "local.checkingShort": "Vérification…",
+        "local.saving": "Enregistrement…",
+        "local.saved": "Enregistré sur cet appareil ✓", "local.savedShort": "Enregistré ✓",
+        "local.evictable": "· le navigateur peut l'effacer si l'espace manque",
+        "local.blocked": "Non enregistré — ce navigateur bloque le stockage",
+        "local.quota": "Non enregistré — le stockage de cet appareil est plein",
+        "local.error": "Non enregistré — le navigateur a refusé de stocker le livre ({name})",
+        "local.notSavedShort": "Non enregistré",
+        "local.backup": "Exporter une sauvegarde", "local.openBackup": "Ouvrir une sauvegarde…",
+        "local.detailSaved": "Votre livre est enregistré dans ce navigateur, sur cet appareil, à chaque pause. Dernier enregistrement : {time}.",
+        "local.detailSavedNoTime": "Votre livre est enregistré dans ce navigateur, sur cet appareil, à chaque pause.",
+        "local.detailPersisted": "Le navigateur a accordé un stockage durable : il n'effacera le livre que si vous effacez vous-même les données de ce site.",
+        "local.detailEvictable": "Le navigateur n'a pas accordé de stockage durable : il peut effacer sa copie si l'appareil manque d'espace — exportez une sauvegarde de temps en temps.",
+        "local.detailUnsupported": "Ce navigateur n'indique pas si son stockage est durable — exportez une sauvegarde de temps en temps.",
+        "local.detailFailed": "Rien n'est enregistré sur cet appareil pour l'instant. Exportez une sauvegarde pour garder votre texte et laissez cet onglet ouvert.",
+        "local.restored": "Bon retour — votre livre a été restauré depuis cet appareil",
+        "local.backupBad": "Ce fichier n'est pas une sauvegarde Beuk",
+        "local.backupOpened": "Sauvegarde ouverte — « {title} »",
+        "local.backupConfirmTitle": "Ouvrir cette sauvegarde ?",
+        "local.backupConfirmBody": "Le bureau contient « {title} ». Ouvrir la sauvegarde le remplace ici — le livre actuel est d'abord conservé comme instantané dans l'Historique.",
+        "local.backupConfirmYes": "Ouvrir la sauvegarde",
+        "local.shelfNewer": "Votre étagère avait une copie plus récente de « {title} » — elle est ouverte maintenant",
+        "local.aria": "Enregistrement sur cet appareil — détails",
+        "history.auto.backup": "Avant l'ouverture d'une sauvegarde",
+        "offline.notSavedHere": "Hors ligne — non enregistré sur cet appareil"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "local.checking": "Dieses Gerät wird geprüft…", "local.checkingShort": "Prüfe…",
+        "local.saving": "Wird gespeichert…",
+        "local.saved": "Auf diesem Gerät gespeichert ✓", "local.savedShort": "Gespeichert ✓",
+        "local.evictable": "· der Browser kann es bei Platzmangel löschen",
+        "local.blocked": "Nicht gespeichert — dieser Browser blockiert den Speicher",
+        "local.quota": "Nicht gespeichert — der Speicher dieses Geräts ist voll",
+        "local.error": "Nicht gespeichert — der Browser hat das Speichern des Buchs verweigert ({name})",
+        "local.notSavedShort": "Nicht gespeichert",
+        "local.backup": "Sicherung exportieren", "local.openBackup": "Sicherung öffnen…",
+        "local.detailSaved": "Ihr Buch wird bei jeder Pause in diesem Browser auf diesem Gerät gespeichert. Zuletzt gespeichert: {time}.",
+        "local.detailSavedNoTime": "Ihr Buch wird bei jeder Pause in diesem Browser auf diesem Gerät gespeichert.",
+        "local.detailPersisted": "Der Browser hat dauerhaften Speicher gewährt: Er löscht das Buch nur, wenn Sie die Daten dieser Website selbst löschen.",
+        "local.detailEvictable": "Der Browser hat keinen dauerhaften Speicher gewährt und kann seine Kopie löschen, wenn das Gerät knapp an Platz ist — exportieren Sie ab und zu eine Sicherung.",
+        "local.detailUnsupported": "Dieser Browser gibt nicht an, ob sein Speicher dauerhaft ist — exportieren Sie ab und zu eine Sicherung.",
+        "local.detailFailed": "Auf diesem Gerät wird gerade nichts gespeichert. Exportieren Sie eine Sicherung, um Ihren Text zu behalten, und lassen Sie diesen Tab geöffnet.",
+        "local.restored": "Willkommen zurück — Ihr Buch wurde von diesem Gerät wiederhergestellt",
+        "local.backupBad": "Diese Datei ist keine Beuk-Sicherung",
+        "local.backupOpened": "Sicherung geöffnet — „{title}“",
+        "local.backupConfirmTitle": "Diese Sicherung öffnen?",
+        "local.backupConfirmBody": "Auf dem Schreibtisch liegt „{title}“. Die Sicherung zu öffnen ersetzt es hier — das aktuelle Buch wird vorher als Schnappschuss im Verlauf aufbewahrt.",
+        "local.backupConfirmYes": "Sicherung öffnen",
+        "local.shelfNewer": "In Ihrem Regal lag eine neuere Fassung von „{title}“ — sie ist jetzt geöffnet",
+        "local.aria": "Speichern auf diesem Gerät — Details",
+        "history.auto.backup": "Vor dem Öffnen einer Sicherung",
+        "offline.notSavedHere": "Offline — nicht auf diesem Gerät gespeichert"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "local.checking": "Controllo di questo dispositivo…", "local.checkingShort": "Controllo…",
+        "local.saving": "Salvataggio…",
+        "local.saved": "Salvato su questo dispositivo ✓", "local.savedShort": "Salvato ✓",
+        "local.evictable": "· il browser potrebbe cancellarlo se manca spazio",
+        "local.blocked": "Non salvato — questo browser sta bloccando l'archiviazione",
+        "local.quota": "Non salvato — lo spazio di questo dispositivo è pieno",
+        "local.error": "Non salvato — il browser si è rifiutato di archiviare il libro ({name})",
+        "local.notSavedShort": "Non salvato",
+        "local.backup": "Esporta un backup", "local.openBackup": "Apri un backup…",
+        "local.detailSaved": "Il tuo libro viene salvato in questo browser, su questo dispositivo, a ogni pausa. Ultimo salvataggio: {time}.",
+        "local.detailSavedNoTime": "Il tuo libro viene salvato in questo browser, su questo dispositivo, a ogni pausa.",
+        "local.detailPersisted": "Il browser ha concesso un'archiviazione duratura: cancellerà il libro solo se cancelli tu i dati di questo sito.",
+        "local.detailEvictable": "Il browser non ha concesso un'archiviazione duratura, quindi potrebbe cancellare la sua copia se il dispositivo resta senza spazio — esporta un backup ogni tanto.",
+        "local.detailUnsupported": "Questo browser non indica se la sua archiviazione è duratura — esporta un backup ogni tanto.",
+        "local.detailFailed": "In questo momento non viene salvato nulla su questo dispositivo. Esporta un backup per conservare ciò che hai scritto e tieni aperta questa scheda.",
+        "local.restored": "Bentornato — il tuo libro è stato ripristinato da questo dispositivo",
+        "local.backupBad": "Quel file non è un backup di Beuk",
+        "local.backupOpened": "Backup aperto — «{title}»",
+        "local.backupConfirmTitle": "Aprire questo backup?",
+        "local.backupConfirmBody": "La scrivania contiene «{title}». Aprire il backup lo sostituisce qui — prima, il libro attuale viene conservato come istantanea nella Cronologia.",
+        "local.backupConfirmYes": "Apri il backup",
+        "local.shelfNewer": "La tua libreria aveva una copia più recente di «{title}» — ora è aperta",
+        "local.aria": "Salvataggio su questo dispositivo — dettagli",
+        "history.auto.backup": "Prima di aprire un backup",
+        "offline.notSavedHere": "Offline — non salvato su questo dispositivo"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "local.checking": "A verificar este dispositivo…", "local.checkingShort": "A verificar…",
+        "local.saving": "A guardar…",
+        "local.saved": "Guardado neste dispositivo ✓", "local.savedShort": "Guardado ✓",
+        "local.evictable": "· o navegador pode apagá-lo se faltar espaço",
+        "local.blocked": "Não guardado — este navegador está a bloquear o armazenamento",
+        "local.quota": "Não guardado — o armazenamento deste dispositivo está cheio",
+        "local.error": "Não guardado — o navegador recusou-se a guardar o livro ({name})",
+        "local.notSavedShort": "Não guardado",
+        "local.backup": "Exportar uma cópia de segurança", "local.openBackup": "Abrir uma cópia de segurança…",
+        "local.detailSaved": "O seu livro é guardado neste navegador, neste dispositivo, sempre que faz uma pausa. Última gravação: {time}.",
+        "local.detailSavedNoTime": "O seu livro é guardado neste navegador, neste dispositivo, sempre que faz uma pausa.",
+        "local.detailPersisted": "O navegador concedeu armazenamento duradouro: só apaga o livro se for o próprio a apagar os dados deste site.",
+        "local.detailEvictable": "O navegador não concedeu armazenamento duradouro, por isso pode apagar a sua cópia se o dispositivo ficar sem espaço — exporte uma cópia de segurança de vez em quando.",
+        "local.detailUnsupported": "Este navegador não indica se o seu armazenamento é duradouro — exporte uma cópia de segurança de vez em quando.",
+        "local.detailFailed": "Neste momento nada está a ser guardado neste dispositivo. Exporte uma cópia de segurança para manter o que escreveu e mantenha este separador aberto.",
+        "local.restored": "Bem-vindo de volta — o seu livro foi restaurado a partir deste dispositivo",
+        "local.backupBad": "Esse ficheiro não é uma cópia de segurança do Beuk",
+        "local.backupOpened": "Cópia de segurança aberta — «{title}»",
+        "local.backupConfirmTitle": "Abrir esta cópia de segurança?",
+        "local.backupConfirmBody": "A mesa contém «{title}». Abrir a cópia de segurança substitui-o aqui — antes, o livro atual é guardado como instantâneo no Histórico.",
+        "local.backupConfirmYes": "Abrir a cópia",
+        "local.shelfNewer": "A sua estante tinha uma cópia mais recente de «{title}» — agora está aberta",
+        "local.aria": "Gravação neste dispositivo — detalhes",
+        "history.auto.backup": "Antes de abrir uma cópia de segurança",
+        "offline.notSavedHere": "Offline — não guardado neste dispositivo"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "local.checking": "Dit apparaat wordt gecontroleerd…", "local.checkingShort": "Controleren…",
+        "local.saving": "Opslaan…",
+        "local.saved": "Opgeslagen op dit apparaat ✓", "local.savedShort": "Opgeslagen ✓",
+        "local.evictable": "· de browser kan het wissen bij ruimtegebrek",
+        "local.blocked": "Niet opgeslagen — deze browser blokkeert opslag",
+        "local.quota": "Niet opgeslagen — de opslag van dit apparaat is vol",
+        "local.error": "Niet opgeslagen — de browser weigerde het boek op te slaan ({name})",
+        "local.notSavedShort": "Niet opgeslagen",
+        "local.backup": "Back-up exporteren", "local.openBackup": "Back-up openen…",
+        "local.detailSaved": "Uw boek wordt bij elke pauze in deze browser op dit apparaat opgeslagen. Laatst opgeslagen: {time}.",
+        "local.detailSavedNoTime": "Uw boek wordt bij elke pauze in deze browser op dit apparaat opgeslagen.",
+        "local.detailPersisted": "De browser heeft blijvende opslag toegekend: hij wist het boek alleen als u zelf de gegevens van deze site wist.",
+        "local.detailEvictable": "De browser heeft geen blijvende opslag toegekend en kan zijn kopie dus wissen als het apparaat ruimte tekortkomt — exporteer af en toe een back-up.",
+        "local.detailUnsupported": "Deze browser zegt niet of zijn opslag blijvend is — exporteer af en toe een back-up.",
+        "local.detailFailed": "Er wordt op dit moment niets op dit apparaat opgeslagen. Exporteer een back-up om uw tekst te bewaren en houd dit tabblad open.",
+        "local.restored": "Welkom terug — uw boek is vanaf dit apparaat hersteld",
+        "local.backupBad": "Dat bestand is geen Beuk-back-up",
+        "local.backupOpened": "Back-up geopend — “{title}”",
+        "local.backupConfirmTitle": "Deze back-up openen?",
+        "local.backupConfirmBody": "Op het bureau ligt “{title}”. De back-up openen vervangt het hier — het huidige boek wordt eerst bewaard als momentopname in de Geschiedenis.",
+        "local.backupConfirmYes": "Open de back-up",
+        "local.shelfNewer": "Op uw boekenplank stond een nieuwere versie van “{title}” — die is nu open",
+        "local.aria": "Opslaan op dit apparaat — details",
+        "history.auto.backup": "Voor het openen van een back-up",
+        "offline.notSavedHere": "Offline — niet opgeslagen op dit apparaat"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "local.checking": "Sprawdzanie tego urządzenia…", "local.checkingShort": "Sprawdzanie…",
+        "local.saving": "Zapisywanie…",
+        "local.saved": "Zapisano na tym urządzeniu ✓", "local.savedShort": "Zapisano ✓",
+        "local.evictable": "· przeglądarka może to usunąć, gdy zabraknie miejsca",
+        "local.blocked": "Nie zapisano — ta przeglądarka blokuje pamięć",
+        "local.quota": "Nie zapisano — pamięć tego urządzenia jest pełna",
+        "local.error": "Nie zapisano — przeglądarka odmówiła zapisania książki ({name})",
+        "local.notSavedShort": "Nie zapisano",
+        "local.backup": "Eksportuj kopię zapasową", "local.openBackup": "Otwórz kopię zapasową…",
+        "local.detailSaved": "Twoja książka zapisuje się w tej przeglądarce na tym urządzeniu przy każdej przerwie. Ostatni zapis: {time}.",
+        "local.detailSavedNoTime": "Twoja książka zapisuje się w tej przeglądarce na tym urządzeniu przy każdej przerwie.",
+        "local.detailPersisted": "Przeglądarka przyznała trwałą pamięć: usunie książkę tylko wtedy, gdy sam wyczyścisz dane tej witryny.",
+        "local.detailEvictable": "Przeglądarka nie przyznała trwałej pamięci, więc może usunąć swoją kopię, gdy na urządzeniu zabraknie miejsca — od czasu do czasu eksportuj kopię zapasową.",
+        "local.detailUnsupported": "Ta przeglądarka nie podaje, czy jej pamięć jest trwała — od czasu do czasu eksportuj kopię zapasową.",
+        "local.detailFailed": "W tej chwili nic nie zapisuje się na tym urządzeniu. Eksportuj kopię zapasową, aby zachować tekst, i nie zamykaj tej karty.",
+        "local.restored": "Witaj ponownie — twoja książka została przywrócona z tego urządzenia",
+        "local.backupBad": "Ten plik nie jest kopią zapasową Beuk",
+        "local.backupOpened": "Otwarto kopię zapasową — „{title}”",
+        "local.backupConfirmTitle": "Otworzyć tę kopię zapasową?",
+        "local.backupConfirmBody": "Na biurku leży „{title}”. Otwarcie kopii zapasowej zastąpi ją tutaj — obecna książka zostanie najpierw zachowana jako migawka w Historii.",
+        "local.backupConfirmYes": "Otwórz kopię",
+        "local.shelfNewer": "Na twojej półce była nowsza wersja „{title}” — jest teraz otwarta",
+        "local.aria": "Zapisywanie na tym urządzeniu — szczegóły",
+        "history.auto.backup": "Przed otwarciem kopii zapasowej",
+        "offline.notSavedHere": "Offline — nie zapisano na tym urządzeniu"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "local.checking": "Проверка этого устройства…", "local.checkingShort": "Проверка…",
+        "local.saving": "Сохранение…",
+        "local.saved": "Сохранено на этом устройстве ✓", "local.savedShort": "Сохранено ✓",
+        "local.evictable": "· браузер может удалить это при нехватке места",
+        "local.blocked": "Не сохранено — этот браузер блокирует хранилище",
+        "local.quota": "Не сохранено — хранилище этого устройства заполнено",
+        "local.error": "Не сохранено — браузер отказался сохранить книгу ({name})",
+        "local.notSavedShort": "Не сохранено",
+        "local.backup": "Экспортировать резервную копию", "local.openBackup": "Открыть резервную копию…",
+        "local.detailSaved": "Ваша книга сохраняется в этом браузере на этом устройстве при каждой паузе. Последнее сохранение: {time}.",
+        "local.detailSavedNoTime": "Ваша книга сохраняется в этом браузере на этом устройстве при каждой паузе.",
+        "local.detailPersisted": "Браузер предоставил постоянное хранилище: он удалит книгу, только если вы сами очистите данные этого сайта.",
+        "local.detailEvictable": "Браузер не предоставил постоянное хранилище, поэтому может удалить свою копию при нехватке места на устройстве — время от времени экспортируйте резервную копию.",
+        "local.detailUnsupported": "Этот браузер не сообщает, является ли его хранилище постоянным — время от времени экспортируйте резервную копию.",
+        "local.detailFailed": "Сейчас на этом устройстве ничего не сохраняется. Экспортируйте резервную копию, чтобы сохранить текст, и не закрывайте эту вкладку.",
+        "local.restored": "С возвращением — ваша книга восстановлена с этого устройства",
+        "local.backupBad": "Этот файл не является резервной копией Beuk",
+        "local.backupOpened": "Резервная копия открыта — «{title}»",
+        "local.backupConfirmTitle": "Открыть эту резервную копию?",
+        "local.backupConfirmBody": "На столе лежит «{title}». Открытие резервной копии заменит её здесь — текущая книга сначала сохранится как снимок в Истории.",
+        "local.backupConfirmYes": "Открыть копию",
+        "local.shelfNewer": "На вашей полке была более новая версия «{title}» — теперь открыта она",
+        "local.aria": "Сохранение на этом устройстве — подробности",
+        "history.auto.backup": "Перед открытием резервной копии",
+        "offline.notSavedHere": "Нет сети — не сохранено на этом устройстве"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "local.checking": "Bu cihaz denetleniyor…", "local.checkingShort": "Denetleniyor…",
+        "local.saving": "Kaydediliyor…",
+        "local.saved": "Bu cihazda kayıtlı ✓", "local.savedShort": "Kayıtlı ✓",
+        "local.evictable": "· yer azalırsa tarayıcı bunu silebilir",
+        "local.blocked": "Kaydedilmedi — bu tarayıcı depolamayı engelliyor",
+        "local.quota": "Kaydedilmedi — bu cihazın depolama alanı dolu",
+        "local.error": "Kaydedilmedi — tarayıcı kitabı saklamayı reddetti ({name})",
+        "local.notSavedShort": "Kaydedilmedi",
+        "local.backup": "Yedek dışa aktar", "local.openBackup": "Yedek aç…",
+        "local.detailSaved": "Kitabınız her duraklayışınızda bu cihazdaki bu tarayıcıya kaydedilir. Son kayıt: {time}.",
+        "local.detailSavedNoTime": "Kitabınız her duraklayışınızda bu cihazdaki bu tarayıcıya kaydedilir.",
+        "local.detailPersisted": "Tarayıcı kalıcı depolama izni verdi: kitabı yalnızca bu sitenin verilerini kendiniz silerseniz siler.",
+        "local.detailEvictable": "Tarayıcı kalıcı depolama izni vermedi; cihazda yer azalırsa kendi kopyasını silebilir — arada bir yedek dışa aktarın.",
+        "local.detailUnsupported": "Bu tarayıcı depolamasının kalıcı olup olmadığını söylemiyor — arada bir yedek dışa aktarın.",
+        "local.detailFailed": "Şu anda bu cihaza hiçbir şey kaydedilmiyor. Yazdıklarınızı korumak için bir yedek dışa aktarın ve bu sekmeyi açık tutun.",
+        "local.restored": "Tekrar hoş geldiniz — kitabınız bu cihazdan geri yüklendi",
+        "local.backupBad": "Bu dosya bir Beuk yedeği değil",
+        "local.backupOpened": "Yedek açıldı — “{title}”",
+        "local.backupConfirmTitle": "Bu yedek açılsın mı?",
+        "local.backupConfirmBody": "Masada “{title}” duruyor. Yedeği açmak onu burada değiştirir — mevcut kitap önce Geçmiş'te bir anlık görüntü olarak saklanır.",
+        "local.backupConfirmYes": "Yedeği aç",
+        "local.shelfNewer": "Rafınızda “{title}” kitabının daha yeni bir kopyası vardı — şimdi o açık",
+        "local.aria": "Bu cihaza kaydetme — ayrıntılar",
+        "history.auto.backup": "Bir yedeği açmadan önce",
+        "offline.notSavedHere": "Çevrimdışı — bu cihazda kayıtlı değil"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "local.checking": "جارٍ فحص هذا الجهاز…", "local.checkingShort": "جارٍ الفحص…",
+        "local.saving": "جارٍ الحفظ…",
+        "local.saved": "محفوظ على هذا الجهاز ✓", "local.savedShort": "محفوظ ✓",
+        "local.evictable": "· قد يمسحه المتصفح إذا ضاقت المساحة",
+        "local.blocked": "لم يُحفظ — هذا المتصفح يحجب التخزين",
+        "local.quota": "لم يُحفظ — مساحة التخزين على هذا الجهاز ممتلئة",
+        "local.error": "لم يُحفظ — رفض المتصفح تخزين الكتاب ({name})",
+        "local.notSavedShort": "لم يُحفظ",
+        "local.backup": "تصدير نسخة احتياطية", "local.openBackup": "فتح نسخة احتياطية…",
+        "local.detailSaved": "يُحفظ كتابك في هذا المتصفح على هذا الجهاز كلما توقفت عن الكتابة. آخر حفظ: {time}.",
+        "local.detailSavedNoTime": "يُحفظ كتابك في هذا المتصفح على هذا الجهاز كلما توقفت عن الكتابة.",
+        "local.detailPersisted": "منح المتصفح تخزينًا دائمًا: لن يمسح الكتاب إلا إذا مسحت بيانات هذا الموقع بنفسك.",
+        "local.detailEvictable": "لم يمنح المتصفح تخزينًا دائمًا، لذا قد يمسح نسخته إذا ضاقت مساحة الجهاز — صدِّر نسخة احتياطية بين حين وآخر.",
+        "local.detailUnsupported": "لا يوضح هذا المتصفح ما إذا كان تخزينه دائمًا — صدِّر نسخة احتياطية بين حين وآخر.",
+        "local.detailFailed": "لا شيء يُحفظ على هذا الجهاز الآن. صدِّر نسخة احتياطية لتحتفظ بما كتبت، وأبقِ هذا التبويب مفتوحًا.",
+        "local.restored": "مرحبًا بعودتك — استُعيد كتابك من هذا الجهاز",
+        "local.backupBad": "هذا الملف ليس نسخة احتياطية من Beuk",
+        "local.backupOpened": "فُتحت النسخة الاحتياطية — «{title}»",
+        "local.backupConfirmTitle": "فتح هذه النسخة الاحتياطية؟",
+        "local.backupConfirmBody": "على المكتب «{title}». فتح النسخة الاحتياطية يستبدله هنا — ويُحفظ الكتاب الحالي أولًا لقطةً في السجل.",
+        "local.backupConfirmYes": "فتح النسخة الاحتياطية",
+        "local.shelfNewer": "كان على رفّك نسخة أحدث من «{title}» — وهي مفتوحة الآن",
+        "local.aria": "الحفظ على هذا الجهاز — التفاصيل",
+        "history.auto.backup": "قبل فتح نسخة احتياطية",
+        "offline.notSavedHere": "غير متصل — غير محفوظ على هذا الجهاز"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "local.checking": "このデバイスを確認中…", "local.checkingShort": "確認中…",
+        "local.saving": "保存中…",
+        "local.saved": "このデバイスに保存済み ✓", "local.savedShort": "保存済み ✓",
+        "local.evictable": "· 容量が不足するとブラウザが消去する場合があります",
+        "local.blocked": "未保存 — このブラウザがストレージをブロックしています",
+        "local.quota": "未保存 — このデバイスのストレージがいっぱいです",
+        "local.error": "未保存 — ブラウザが本の保存を拒否しました（{name}）",
+        "local.notSavedShort": "未保存",
+        "local.backup": "バックアップを書き出す", "local.openBackup": "バックアップを開く…",
+        "local.detailSaved": "本は、手を止めるたびにこのデバイスのこのブラウザに保存されます。最終保存：{time}。",
+        "local.detailSavedNoTime": "本は、手を止めるたびにこのデバイスのこのブラウザに保存されます。",
+        "local.detailPersisted": "ブラウザが永続ストレージを許可しました。このサイトのデータをご自身で消去しない限り、本は消えません。",
+        "local.detailEvictable": "ブラウザは永続ストレージを許可していないため、デバイスの容量が不足するとそのコピーを消去する場合があります。ときどきバックアップを書き出してください。",
+        "local.detailUnsupported": "このブラウザはストレージが永続的かどうかを示しません。ときどきバックアップを書き出してください。",
+        "local.detailFailed": "現在、このデバイスには何も保存されていません。文章を守るためにバックアップを書き出し、このタブは開いたままにしてください。",
+        "local.restored": "おかえりなさい — 本をこのデバイスから復元しました",
+        "local.backupBad": "そのファイルは Beuk のバックアップではありません",
+        "local.backupOpened": "バックアップを開きました —『{title}』",
+        "local.backupConfirmTitle": "このバックアップを開きますか？",
+        "local.backupConfirmBody": "机の上には『{title}』があります。バックアップを開くとここで置き換わります — 現在の本は先に履歴のスナップショットとして保管されます。",
+        "local.backupConfirmYes": "バックアップを開く",
+        "local.shelfNewer": "本棚に『{title}』の新しいコピーがありました — 今はそちらを開いています",
+        "local.aria": "このデバイスへの保存 — 詳細",
+        "history.auto.backup": "バックアップを開く前",
+        "offline.notSavedHere": "オフライン — このデバイスに未保存"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "local.checking": "正在检查这台设备…", "local.checkingShort": "检查中…",
+        "local.saving": "正在保存…",
+        "local.saved": "已保存在这台设备上 ✓", "local.savedShort": "已保存 ✓",
+        "local.evictable": "· 空间不足时浏览器可能会清除它",
+        "local.blocked": "未保存 — 此浏览器正在阻止存储",
+        "local.quota": "未保存 — 这台设备的存储空间已满",
+        "local.error": "未保存 — 浏览器拒绝存储这本书（{name}）",
+        "local.notSavedShort": "未保存",
+        "local.backup": "导出备份", "local.openBackup": "打开备份…",
+        "local.detailSaved": "每当你停下来，这本书都会保存在这台设备的这个浏览器中。上次保存：{time}。",
+        "local.detailSavedNoTime": "每当你停下来，这本书都会保存在这台设备的这个浏览器中。",
+        "local.detailPersisted": "浏览器已授予持久存储：只有你自己清除本站数据时，它才会清除这本书。",
+        "local.detailEvictable": "浏览器没有授予持久存储，因此设备空间不足时它可能会清除自己的副本 — 请不时导出一份备份。",
+        "local.detailUnsupported": "此浏览器没有说明其存储是否持久 — 请不时导出一份备份。",
+        "local.detailFailed": "目前这台设备上没有保存任何内容。请导出一份备份以保留你的文字，并保持此标签页打开。",
+        "local.restored": "欢迎回来 — 你的书已从这台设备恢复",
+        "local.backupBad": "该文件不是 Beuk 备份",
+        "local.backupOpened": "备份已打开 —《{title}》",
+        "local.backupConfirmTitle": "打开这个备份？",
+        "local.backupConfirmBody": "书桌上是《{title}》。打开备份会在这里替换它 — 当前的书会先作为快照保存在历史记录中。",
+        "local.backupConfirmYes": "打开备份",
+        "local.shelfNewer": "你的书架上有《{title}》更新的副本 — 现在打开的是它",
+        "local.aria": "保存在这台设备上 — 详情",
+        "history.auto.backup": "打开备份之前",
+        "offline.notSavedHere": "离线 — 未保存在这台设备上"
+      });
+      /* ==== /BEUK:local ==== */
 
       /* ================= Ornaments (inline SVG, em-sized) ================= */
       function starPath(cx, cy, r) {
@@ -17505,6 +17923,7 @@
            instead of overwriting anything. */
         pendingSyncs: 0,         // saves that came due while unreachable, waiting to flush
         baseUpdatedAt: null,     // shelf updatedAt at last agreement
+        baseRevision: null,      // BEUK:local — shelf revision at last agreement (sent as If-Match; 409 on mismatch)
         shelfUpdatedAt: null,    // shelf updatedAt as last observed
         conflict: null,          // { doc, updatedAt } of the shelf copy awaiting the writer's choice
         lastEditAt: 0
@@ -17531,7 +17950,7 @@
           });
           if (res.status === 204) return {};
           const data = await res.json().catch(() => null);
-          if (!res.ok) return { __error: (data && data.error) || ("HTTP " + res.status), __status: res.status };
+          if (!res.ok) return { __error: (data && data.error) || ("HTTP " + res.status), __status: res.status, __body: data };
           return data || {};
         } catch (e) {
           cloudNoteUnreachable();
@@ -17718,6 +18137,7 @@
         const isBox = $("importSummary"); if (isBox) isBox.style.display = "none";
         renderSidebar(); syncEditor(); renderStudio(); syncStudioControls();
         renderPreview(); updateStats(); refreshExportTree(); renderCoverSettings();
+        if (typeof localMarkDirty === "function") localMarkDirty(false); /* BEUK:local — a whole book arrived: save it */
         return true;
       }
 
@@ -17727,6 +18147,7 @@
         if (!cloud.user) cloud.editedBeforeSignIn = true;
         cloudDirty = true;
         cloud.lastEditAt = Date.now();
+        if (typeof localMarkDirty === "function") localMarkDirty(true); /* BEUK:local */
         cloudAutosaveTick();
       }
       function cloudAutosaveTick() {
@@ -17761,10 +18182,15 @@
         if (cloud.linkState === "declined") return;
         setSyncStatus("saving");
         const doc = serializeBook();
+        const sentAt = Date.now(); /* BEUK:local — edits after this stay dirty */
         let res;
         if (cloud.linkedId) {
+          /* BEUK:local — optimistic concurrency: name the shelf revision
+             this save was based on; a stale one comes back 409. */
+          const hasRev = typeof cloud.baseRevision === "number";
           res = await apiFetch("/api/manuscripts/" + encodeURIComponent(cloud.linkedId), {
-            method: "PUT", body: JSON.stringify({ title: state.meta.title, doc })
+            method: "PUT", headers: hasRev ? { "If-Match": '"' + cloud.baseRevision + '"' } : {},
+            body: JSON.stringify({ title: state.meta.title, doc })
           });
         } else {
           res = await apiFetch("/api/manuscripts", {
@@ -17773,12 +18199,22 @@
           if (res && res.manuscript && res.manuscript.id) { cloud.linkedId = res.manuscript.id; cloud.linkState = "linked"; }
         }
         if (res && res.manuscript) {
-          cloudDirty = false;
+          /* BEUK:local — writing typed while the save was in flight is
+             not on the shelf yet: it stays dirty and comes due again. */
+          cloudDirty = cloud.lastEditAt > sentAt;
           cloud.pendingSyncs = 0;
           cloud.baseUpdatedAt = res.manuscript.updatedAt || cloud.baseUpdatedAt;
           cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
+          if (typeof res.manuscript.revision === "number") cloud.baseRevision = res.manuscript.revision;
           setSyncStatus("saved");
+          if (cloudDirty) cloudAutosaveTick();
           cloudLoadShelf();
+        } else if (res && (res.__status === 409 || res.__status === 428) && res.__body && res.__body.manuscript && res.__body.manuscript.doc) {
+          /* BEUK:local — the shelf moved on since this device last
+             agreed with it: the conflict notice, never an overwrite. */
+          cloud.shelfUpdatedAt = res.__body.manuscript.updatedAt || null;
+          setSyncStatus("local");
+          raiseConflict(res.__body.manuscript);
         } else if (res && res.__status === 404 && cloud.linkedId) {
           /* The shelf copy is gone (deleted elsewhere): re-create it. */
           cloud.linkedId = null; cloud.linkState = "unlinked";
@@ -17791,6 +18227,7 @@
         cloud.syncStatus = status;
         renderSyncLine();
         renderAccountButton();
+        if (typeof localNoteLinkChanged === "function") localNoteLinkChanged(); /* BEUK:local */
       }
       /* The shelf status line, composed in one place: the standing
          state, the offline truth when the connection is down, and
@@ -17803,6 +18240,11 @@
           : cloud.syncStatus === "saved" ? t("sync.onShelf")
           : t("sync.onDevice");
         if (cloud.user && !net.online) s = t("offline.savedHere");
+        /* BEUK:local — "on this device" only while the device save works. */
+        if (typeof localFailed === "function" && localFailed()) {
+          if (cloud.user && !net.online) s = t("offline.notSavedHere");
+          else if (cloud.syncStatus !== "saving" && cloud.syncStatus !== "saved") s = t("local.notSavedShort");
+        }
         if (cloud.user && cloud.pendingSyncs > 0) s += " · " + t("offline.pending", { n: cloud.pendingSyncs });
         txt.textContent = s;
         const shelfLine = $("shelfSyncLine");
@@ -17897,6 +18339,8 @@
         }
         applyBookDoc(r.manuscript.doc);
         cloud.linkedId = id; cloud.linkState = "linked"; cloudDirty = false;
+        cloud.baseRevision = typeof r.manuscript.revision === "number" ? r.manuscript.revision : null; /* BEUK:local */
+        if (typeof sampleState !== "undefined") { sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton(); } /* BEUK:local */
         cloud.baseUpdatedAt = r.manuscript.updatedAt || null;
         cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
         setSyncStatus("saved");
@@ -17909,6 +18353,7 @@
          (by its own bookId) already rests there, it simply links. */
       async function cloudAfterSignIn() {
         cloudLoadStreak();
+        if (typeof localReconcileOnSignIn === "function" && await localReconcileOnSignIn()) return; /* BEUK:local */
         await cloudLoadShelf();
         if (cloud.linkState === "linked" || !cloud.editedBeforeSignIn) { setSyncStatus(cloud.linkState === "linked" ? "saved" : "local"); return; }
         let match = null;
@@ -17918,6 +18363,7 @@
         }
         if (match) {
           cloud.linkedId = match.id; cloud.linkState = "linked"; cloudDirty = true;
+          cloud.baseRevision = typeof match.revision === "number" ? match.revision : null; /* BEUK:local */
           cloud.baseUpdatedAt = match.updatedAt || null;
           cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
           setSyncStatus("saving");
@@ -18019,6 +18465,7 @@
         cloud.linkedId = null; cloud.linkState = "unlinked";
         cloud.shelf = []; cloud.archive = []; cloudDirty = false;
         cloud.pendingSyncs = 0; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; cloud.conflict = null;
+        cloud.baseRevision = null; if (typeof localNoteSignedOut === "function") localNoteSignedOut(); /* BEUK:local */
         $("modalShelf").classList.remove("open");
         renderCloudChrome();
         renderStreak();
@@ -18204,7 +18651,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v1"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v2"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -18268,7 +18715,7 @@
         cloudSaveNow();
       }
       function raiseConflict(manuscript) {
-        cloud.conflict = { doc: manuscript.doc, updatedAt: manuscript.updatedAt || null };
+        cloud.conflict = { doc: manuscript.doc, updatedAt: manuscript.updatedAt || null, revision: typeof manuscript.revision === "number" ? manuscript.revision : null };
         const body = $("conflictBody");
         if (body) {
           const title = state.meta.title || t("misc.untitledBook");
@@ -18311,6 +18758,7 @@
             pruneAutoSnapshots();
           }
           cloud.baseUpdatedAt = c.updatedAt; cloud.shelfUpdatedAt = c.updatedAt;
+          if (c.revision !== null && c.revision !== undefined) cloud.baseRevision = c.revision; /* BEUK:local */
           cloud.pendingSyncs = 0;
           cloudDirty = true; /* the merged history rides the next save */
           setSyncStatus("saving");
@@ -18319,6 +18767,7 @@
         } else {
           if (choice === "both") snapshotForeignDoc(c.doc, t("offline.snapshotShelfName"));
           cloud.baseUpdatedAt = c.updatedAt; /* the copy just seen is the base this save replaces */
+          if (c.revision !== null && c.revision !== undefined) cloud.baseRevision = c.revision; /* BEUK:local */
           cloudDirty = true;
           cloudSaveNow();
           toast(t(choice === "both" ? "offline.resolvedBoth" : "offline.resolvedMine"), "cloud");
@@ -18402,7 +18851,10 @@
           navigator.serviceWorker.addEventListener("controllerchange", () => {
             if (pwa.reloading) return;
             pwa.reloading = true;
-            window.location.reload();
+            /* BEUK:local — the new worker reloads the page: land the
+               device save first, so the reload never costs writing. */
+            if (typeof localSaveBeforeReload === "function") localSaveBeforeReload().then(() => window.location.reload());
+            else window.location.reload();
           });
           navigator.serviceWorker.register(PWA_SW_URL)
             .catch(() => navigator.serviceWorker.register(PWA_SW_URL_ASSETS))
@@ -23452,7 +23904,64 @@
               saveStreak(); renderStreak();
               cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
             }
+          } },
+        /* ==== BEUK:local ==== */
+        { id: "local.autosave.roundtrip", feature: "local", name: "Local-first saving: the device record carries the whole book — text, cover, images, uploaded fonts, History snapshots and the sample bookkeeping — and restores it unchanged",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const keepSusp = local.suspended;
+            local.suspended = true;
+            try {
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Device Fixture";
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.content = "Saved on this device, word for word.";
+              state.cover = { data: FAKE_PNG, mediaType: "image/png", ext: "png", name: "Fixture Cover.png" };
+              state.images = [{ id: "lcimg1", name: "Plate.png", mediaType: "image/png", ext: "png", data: FAKE_PNG }];
+              state.fonts = [normalizeCustomFont({ id: "lcfont1", family: "Fixture Face", ext: "ttf", data: "AAEAAAALAIAAAwAwT1MvMg==" })];
+              state.history = [{ id: "lcsnap1", name: "Fixture snapshot", auto: null, at: "2026-01-01T00:00:00.000Z", words: 3, doc: { meta: { title: "Old" }, sections: [] } }];
+              const before = stableJson(serializeBook());
+              const rec = JSON.parse(localRecordJson());
+              applyBookDoc(buildEmptyBook());
+              applyBookDoc(rec.book);
+              const after = stableJson(serializeBook());
+              const same = before === after;
+              const assets = state.cover && state.cover.data === FAKE_PNG && state.images.length === 1 && state.images[0].data === FAKE_PNG &&
+                state.fonts.length === 1 && state.history.length === 1 && state.history[0].id === "lcsnap1";
+              const parsedOk = !!localParseRecord({ json: JSON.stringify(rec) }) && localParseRecord({ json: "{torn" }) === null;
+              return scVerdict(same && assets && parsedOk,
+                "serialize → device record → restore → serialize is identical (" + same + "); cover, image, font and snapshot all came back (" + assets + "); a torn record is refused so the last-good copy is used instead (" + parsedOk + ")");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              local.suspended = keepSusp;
+            }
+          } },
+        { id: "local.indicator.honest", feature: "local", name: "Local save indicator: Saving…, Saved on this device ✓ and each failure (storage blocked, storage full, other error) read honestly; a failure offers Export a backup and is never shown as saved",
+          run() {
+            const keep = { status: local.status, persisted: local.persisted, err: local.errorName };
+            try {
+              const seen = {};
+              ["saving", "saved", "blocked", "quota", "error"].forEach((s) => {
+                local.status = s; local.errorName = "UnknownError"; renderLocalPill();
+                seen[s] = { text: $("localPillText").textContent, backup: !$("btnLocalBackupInline").hidden, state: $("localPill").getAttribute("data-state") };
+              });
+              const okSaving = seen.saving.text === t("local.saving") && !seen.saving.backup;
+              const okSaved = seen.saved.text === t("local.saved") && !seen.saved.backup;
+              const okFail = ["blocked", "quota", "error"].every((s) => seen[s].backup && seen[s].text !== t("local.saved") && seen[s].state === s) &&
+                seen.blocked.text === t("local.blocked") && seen.quota.text === t("local.quota") && seen.error.text.indexOf("UnknownError") !== -1;
+              local.status = "saved"; local.persisted = false; renderLocalPill();
+              const evictable = $("localPill").hasAttribute("data-evictable") && $("localPill").title.indexOf(t("local.detailEvictable")) !== -1;
+              return scVerdict(okSaving && okSaved && okFail && evictable,
+                "saving reads Saving… (" + okSaving + "); saved reads Saved on this device ✓ (" + okSaved + "); blocked / full / error each say Not saved and offer a backup (" + okFail + "); a declined lasting-storage request is said plainly (" + evictable + ")");
+            } finally {
+              local.status = keep.status; local.persisted = keep.persisted; local.errorName = keep.err; renderLocalPill();
+            }
           } }
+        /* ==== /BEUK:local ==== */
 
       ];
       function runSelfChecks() {
@@ -23462,6 +23971,563 @@
         });
       }
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS = SELF_CHECKS; window.runBeukSelfChecks = runSelfChecks; }
+
+      /* ==== BEUK:local ==== */
+      /* ================= Local-first saving =================
+         The book lives on this device first. Every edit is written to
+         the browser's IndexedDB about 800 ms after the writer pauses,
+         and again the moment the tab is hidden or the page is being
+         left (visibilitychange → hidden, pagehide) — so a crash, a
+         closed lid or a dead battery costs at most the last pause.
+         Nothing here waits on, or talks to, the network: a signed-out
+         writer and an offline writer are saved exactly the same way.
+
+         What is stored: the whole serializeBook() document — text,
+         settings, cover, images, uploaded fonts (all as base64 data
+         inside the document, so the binary assets ride along), and
+         the History snapshots — plus the sample-story bookkeeping and
+         the shelf link, so a reload restores the desk exactly.
+
+         Atomic, with a last-good copy: one readwrite transaction moves
+         the current record to "book-prev" and writes the new "book"
+         (and "link"). IndexedDB transactions commit all or nothing
+         (https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction),
+         so a torn write leaves the previous save intact, and a record
+         that ever fails to parse falls back to the copy before it.
+
+         Honest status, always visible in the header: Saving… /
+         Saved on this device ✓ / Not saved (storage blocked, quota
+         full, or another storage error — with Export a backup). We
+         ask for lasting storage with navigator.storage.persist() and
+         say so plainly when the browser declines: the book is still
+         saved, but "Storage may be cleared by the UA under storage
+         pressure" (https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist,
+         https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria). */
+      const LOCAL_DB_NAME = "beuk-local";
+      const LOCAL_DB_VERSION = 1;
+      const LOCAL_STORE = "kv";
+      const LOCAL_DEBOUNCE_MS = 800;
+      const LOCAL_FORMAT = 1;
+      const local = {
+        db: null,
+        ready: false,          // restore finished: saving may begin (never before — an empty desk must not overwrite a saved book)
+        status: "checking",    // checking | saving | saved | blocked | quota | error
+        errorName: "",
+        persisted: null,       // true | false | "unsupported" | null (not asked yet)
+        persistAsked: false,
+        dirty: false,
+        editSeq: 0,            // bumps on every change; a save only clears dirty if nothing changed while it was writing
+        realEdits: 0,          // the writer's own edits this session (not whole-book arrivals)
+        timer: null,
+        writing: false,
+        queued: false,
+        lastJson: null,        // the record last committed (skip identical writes)
+        savedAt: 0,
+        restoredAt: 0,
+        restoredLink: null,    // the shelf link as it stood when this device last saved
+        signedOut: false,      // the writer signed out this session: the stored link is dropped
+        guardOn: false,
+        suspended: false       // self-checks may hold saving still
+      };
+      let localRestorePromise = null;
+
+      function localReq(r) {
+        return new Promise((resolve, reject) => { r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+      }
+      function localOpenDb() {
+        return new Promise((resolve, reject) => {
+          let req;
+          try {
+            if (!window.indexedDB) { const e = new Error("IndexedDB unavailable"); e.name = "NotSupportedError"; throw e; }
+            req = window.indexedDB.open(LOCAL_DB_NAME, LOCAL_DB_VERSION);
+          } catch (e) { reject(e); return; }
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(LOCAL_STORE)) db.createObjectStore(LOCAL_STORE);
+          };
+          req.onsuccess = () => {
+            const db = req.result;
+            /* Another tab upgrading the schema: step aside cleanly. */
+            db.onversionchange = () => { try { db.close(); } catch (e) {} local.db = null; };
+            resolve(db);
+          };
+          req.onerror = () => reject(req.error || new Error("open failed"));
+          req.onblocked = () => {};
+        });
+      }
+      /* The shelf link this device knows — written beside the book so
+         a reload can reconcile instead of guessing. Signed out or
+         offline (no user this session), the link last stored is
+         carried forward untouched, except that edits made meanwhile
+         mark it as having writing the shelf has not seen. */
+      function localLinkSnapshot() {
+        if (cloud.user) {
+          return {
+            userId: cloud.user.id || null, linkedId: cloud.linkedId, linkState: cloud.linkState,
+            baseUpdatedAt: cloud.baseUpdatedAt, baseRevision: typeof cloud.baseRevision === "number" ? cloud.baseRevision : null,
+            shelfDirty: !!(cloudDirty || cloud.pendingSyncs > 0)
+          };
+        }
+        if (local.signedOut || !local.restoredLink) return null;
+        return Object.assign({}, local.restoredLink, { shelfDirty: !!(local.restoredLink.shelfDirty || cloud.sessionEdited) });
+      }
+      function localRecordJson() {
+        return JSON.stringify({
+          format: LOCAL_FORMAT,
+          book: serializeBook(),
+          sample: { loaded: !!sampleState.loaded, loadedJson: sampleState.loaded ? (sampleState.loadedJson || null) : null },
+          flags: { editedBeforeSignIn: !!cloud.editedBeforeSignIn }
+        });
+      }
+      /* One transaction: current → book-prev, new → book, link → link. */
+      function localWrite(json, link) {
+        return new Promise((resolve, reject) => {
+          if (!local.db) { const e = new Error("storage closed"); e.name = "InvalidStateError"; reject(e); return; }
+          let tx;
+          /* durability "strict": the commit is reported only once the
+             browser has verified the write reached persistent storage —
+             "recommended where the risk of data loss outweighs the impact
+             ... on performance" (https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase/transaction).
+             Browsers that do not know the option ignore it. */
+          try { tx = local.db.transaction(LOCAL_STORE, "readwrite", { durability: "strict" }); }
+          catch (e) { reject(e); return; }
+          const store = tx.objectStore(LOCAL_STORE);
+          const rec = { format: LOCAL_FORMAT, savedAt: new Date().toISOString(), json: json };
+          const get = store.get("book");
+          get.onsuccess = () => {
+            try {
+              if (get.result && typeof get.result.json === "string") store.put(get.result, "book-prev");
+              store.put(rec, "book");
+              store.put({ savedAt: rec.savedAt, link: link || null }, "link");
+            } catch (e) { try { tx.abort(); } catch (e2) {} reject(e); }
+          };
+          tx.oncomplete = () => resolve(rec);
+          tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
+          tx.onerror = () => {};
+        });
+      }
+      function localWriteLinkOnly() {
+        if (!local.ready || !local.db || local.suspended) return;
+        try {
+          const tx = local.db.transaction(LOCAL_STORE, "readwrite");
+          tx.objectStore(LOCAL_STORE).put({ savedAt: new Date().toISOString(), link: localLinkSnapshot() }, "link");
+        } catch (e) {}
+      }
+      let localLinkTimer = null;
+      function localNoteLinkChanged() {
+        if (!local.ready) return;
+        clearTimeout(localLinkTimer);
+        localLinkTimer = setTimeout(localWriteLinkOnly, 120);
+      }
+      function localClassifyError(e) {
+        const name = (e && e.name) || "Error";
+        if (name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED") return "quota";
+        if (name === "SecurityError" || name === "InvalidStateError" || name === "NotSupportedError" || name === "UnknownError" || name === "InvalidAccessError") return "blocked";
+        return "error";
+      }
+
+      /* ---- change tracking: every edit and every whole-book arrival ---- */
+      function localMarkDirty(real) {
+        local.editSeq++;
+        if (real) local.realEdits++;
+        if (!local.ready || local.suspended) return;
+        local.dirty = true;
+        if (local.status !== "blocked" && local.status !== "quota" && local.status !== "error") localSetStatus("saving");
+        clearTimeout(local.timer);
+        local.timer = setTimeout(localSaveNow, LOCAL_DEBOUNCE_MS);
+        localSyncUnloadGuard();
+      }
+      async function localSaveNow() {
+        clearTimeout(local.timer); local.timer = null;
+        if (!local.ready || local.suspended) return;
+        if (local.writing) { local.queued = true; return; }
+        const seq = local.editSeq;
+        let json;
+        try { json = localRecordJson(); }
+        catch (e) { local.errorName = (e && e.name) || "Error"; localSetStatus("error"); return; }
+        if (json === local.lastJson && local.status !== "blocked" && local.status !== "quota" && local.status !== "error") {
+          if (local.editSeq === seq) local.dirty = false;
+          localSetStatus("saved");
+          localSyncUnloadGuard();
+          return;
+        }
+        local.writing = true;
+        if (local.status !== "blocked" && local.status !== "quota" && local.status !== "error") localSetStatus("saving");
+        try {
+          if (!local.db) local.db = await localOpenDb();
+          await localWrite(json, localLinkSnapshot());
+          local.lastJson = json;
+          local.savedAt = Date.now();
+          if (local.editSeq === seq) local.dirty = false;
+          local.errorName = "";
+          localSetStatus("saved");
+          localAskPersist();
+        } catch (e) {
+          local.errorName = (e && e.name) || "Error";
+          localSetStatus(localClassifyError(e));
+        } finally {
+          local.writing = false;
+          if (local.queued) { local.queued = false; localSaveNow(); }
+          else if (local.dirty && !local.timer && local.status === "saved") local.timer = setTimeout(localSaveNow, LOCAL_DEBOUNCE_MS);
+          localSyncUnloadGuard();
+        }
+      }
+      /* Lasting storage: asked once, after the first real save of the
+         writer's own work (Firefox shows a prompt; Chromium and Safari
+         decide silently). The answer is shown, never assumed. */
+      function localAskPersist() {
+        if (local.persistAsked) return;
+        const sm = navigator.storage;
+        if (!sm || typeof sm.persist !== "function") { local.persistAsked = true; local.persisted = "unsupported"; renderLocalPill(); return; }
+        if (local.realEdits === 0 && typeof sm.persisted === "function") {
+          /* No writing yet this session: only read the standing answer. */
+          sm.persisted().then((p) => { if (p) { local.persisted = true; local.persistAsked = true; } else if (local.persisted === null) local.persisted = false; renderLocalPill(); }).catch(() => {});
+          return;
+        }
+        local.persistAsked = true;
+        Promise.resolve().then(() => sm.persist()).then((p) => { local.persisted = !!p; renderLocalPill(); })
+          .catch(() => { local.persisted = false; renderLocalPill(); });
+      }
+      /* beforeunload asks only while something is genuinely unsaved:
+         a pending or failed device save. Attached and removed as that
+         changes, as MDN advises (the listener otherwise costs the
+         back/forward cache) — https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event */
+      function localBeforeUnload(e) {
+        e.preventDefault();
+        e.returnValue = true;
+      }
+      function localHasUnsaved() {
+        return !!(local.dirty || local.writing || local.timer);
+      }
+      function localSyncUnloadGuard() {
+        const want = local.ready && localHasUnsaved();
+        if (want && !local.guardOn) { window.addEventListener("beforeunload", localBeforeUnload); local.guardOn = true; }
+        else if (!want && local.guardOn) { window.removeEventListener("beforeunload", localBeforeUnload); local.guardOn = false; }
+      }
+      /* A reload the studio itself starts (a new service worker took
+         over): finish the device save, then let the page go without
+         the unsaved-changes prompt. Capped so a hung storage layer
+         can never block the reload forever. */
+      async function localSaveBeforeReload() {
+        try {
+          if (local.ready && (local.dirty || local.timer || local.writing)) {
+            const deadline = Date.now() + 3000;
+            await localSaveNow();
+            while ((local.writing || local.queued) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 50));
+          }
+        } catch (e) {}
+        if (local.guardOn && !localHasUnsaved()) { window.removeEventListener("beforeunload", localBeforeUnload); local.guardOn = false; }
+      }
+      function localFlushOnHide() {
+        if (local.ready && (local.dirty || local.timer)) localSaveNow();
+      }
+
+      /* ---- boot: restore before the desk is shown ---- */
+      async function localReadAll(db) {
+        const tx = db.transaction(LOCAL_STORE, "readonly");
+        const store = tx.objectStore(LOCAL_STORE);
+        const [book, prev, link] = await Promise.all([localReq(store.get("book")), localReq(store.get("book-prev")), localReq(store.get("link"))]);
+        return { book, prev, link };
+      }
+      function localParseRecord(rec) {
+        if (!rec || typeof rec.json !== "string") return null;
+        try {
+          const d = JSON.parse(rec.json);
+          if (!d || typeof d !== "object" || !d.book || typeof d.book !== "object" || !Array.isArray(d.book.sections)) return null;
+          return d;
+        } catch (e) { return null; }
+      }
+      async function localRestore() {
+        let found = null;
+        try {
+          local.db = await localOpenDb();
+          const all = await localReadAll(local.db);
+          found = localParseRecord(all.book);
+          local.restoredFrom = found ? "book" : null;
+          if (!found) { found = localParseRecord(all.prev); if (found) local.restoredFrom = "book-prev"; }
+          if (all.link && all.link.link && typeof all.link.link === "object") local.restoredLink = all.link.link;
+          if (found) {
+            applyBookDoc(found.book);
+            sampleState.loaded = !!(found.sample && found.sample.loaded);
+            sampleState.loadedJson = sampleState.loaded ? (found.sample.loadedJson || sampleComparableJson()) : null;
+            if (found.flags && found.flags.editedBeforeSignIn) cloud.editedBeforeSignIn = true;
+            renderSampleButton();
+            local.restoredAt = Date.now();
+            const rs = (all.book && all.book.savedAt) || (all.prev && all.prev.savedAt);
+            local.savedAt = rs ? Date.parse(rs) || Date.now() : Date.now();
+          }
+        } catch (e) {
+          local.errorName = (e && e.name) || "Error";
+          local.status = localClassifyError(e);
+        }
+        local.ready = true;
+        document.documentElement.removeAttribute("data-local-restore");
+        if (local.status === "checking") {
+          if (found) {
+            /* What the desk now holds is exactly what is stored. */
+            local.lastJson = localRecordJson();
+            localSetStatus("saved");
+            localAskPersist();
+            if (!isEmptyDesk() && !deskIsUntouchedSample()) toast(t("local.restored"), "hard-drive");
+            /* A last-good fallback, or a normalisation on the way in:
+               write the healed record back so both copies are sound. */
+            if (local.restoredFrom === "book-prev") localSaveNow();
+          } else {
+            /* First visit on this device: the first write also proves
+               the browser will keep what we give it. */
+            localSaveNow();
+          }
+        } else {
+          renderLocalPill();
+        }
+        localSyncUnloadGuard();
+        return found;
+      }
+
+      /* ---- signed in: reconcile this device's copy with the shelf ----
+         Called from cloudAfterSignIn before its own logic. Returns
+         true when it settled the link (the caller then stands down).
+         Never silently drops either copy: when both moved, the
+         existing conflict notice asks (Keep mine / Use the shelf copy /
+         Keep both). */
+      async function localReconcileOnSignIn() {
+        if (localRestorePromise) { try { await localRestorePromise; } catch (e) {} }
+        const link = local.restoredLink;
+        if (!link || !link.linkedId || !cloud.user || link.userId !== cloud.user.id) return false;
+        if (cloud.linkedId || cloud.linkState === "linked") return false;
+        local.restoredLink = null;
+        const shelfDirty = !!(link.shelfDirty || cloud.sessionEdited);
+        const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(link.linkedId), {});
+        if (r && r.__status === 404) {
+          /* The shelf copy is gone: this device's book is the only one —
+             offer it a place on the shelf through the usual path. */
+          if (!isEmptyDesk()) cloud.editedBeforeSignIn = true;
+          return false;
+        }
+        cloud.linkedId = link.linkedId; cloud.linkState = "linked";
+        if (!r || !r.manuscript) {
+          /* The shelf is out of reach: keep the link and let the
+             pending machinery flush (and reconcile) on reconnect. */
+          cloud.baseUpdatedAt = link.baseUpdatedAt || null; cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
+          cloud.baseRevision = typeof link.baseRevision === "number" ? link.baseRevision : null;
+          cloudDirty = shelfDirty;
+          if (shelfDirty) cloudAutosaveTick(); else setSyncStatus("saved");
+          localNoteLinkChanged();
+          return true;
+        }
+        const m = r.manuscript;
+        cloud.shelfUpdatedAt = m.updatedAt || null;
+        const shelfMoved = typeof link.baseRevision === "number" && typeof m.revision === "number"
+          ? m.revision !== link.baseRevision
+          : (m.updatedAt || null) !== (link.baseUpdatedAt || null);
+        if (!shelfDirty) {
+          if (shelfMoved && m.doc) {
+            /* Nothing here the shelf has not seen; the shelf moved on
+               (another device): bring its newer copy to the desk. */
+            applyBookDoc(m.doc);
+            sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
+            toast(t("local.shelfNewer", { title: state.meta.title || t("misc.untitledBook") }), "cloud");
+          }
+          cloud.baseUpdatedAt = m.updatedAt || null;
+          cloud.baseRevision = typeof m.revision === "number" ? m.revision : null;
+          cloudDirty = false;
+          setSyncStatus("saved");
+        } else if (!shelfMoved) {
+          /* Only this device moved: push it. */
+          cloud.baseUpdatedAt = m.updatedAt || null;
+          cloud.baseRevision = typeof m.revision === "number" ? m.revision : null;
+          cloudDirty = true;
+          cloudSaveNow();
+        } else {
+          /* Both moved: the writer chooses. */
+          cloud.baseUpdatedAt = link.baseUpdatedAt || null;
+          cloud.baseRevision = typeof link.baseRevision === "number" ? link.baseRevision : null;
+          cloudDirty = true;
+          setSyncStatus("local");
+          raiseConflict(m);
+        }
+        cloudLoadShelf();
+        localNoteLinkChanged();
+        return true;
+      }
+      function localNoteSignedOut() {
+        local.signedOut = true;
+        local.restoredLink = null;
+        localNoteLinkChanged();
+      }
+
+      /* ---- backups: a whole-book file the writer keeps ---- */
+      function localBackupFilename() {
+        const d = new Date();
+        const stamp = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        const title = String(state.meta.title || "").trim();
+        return ((title && slug(title)) || "book") + "-" + stamp + ".beuk-backup.json";
+      }
+      function localExportBackup() {
+        const payload = { format: "beuk-backup", version: 1, exportedAt: new Date().toISOString(), book: serializeBook() };
+        downloadBlob(new Blob([JSON.stringify(payload)], { type: "application/json" }), localBackupFilename());
+      }
+      function localParseBackup(text) {
+        try {
+          const d = JSON.parse(text);
+          if (d && d.format === "beuk-backup" && d.book && typeof d.book === "object" && Array.isArray(d.book.sections)) return d.book;
+        } catch (e) {}
+        return null;
+      }
+      function localApplyBackup(book) {
+        const snap = autoSnapshot("backup");
+        const arrivingId = book.meta && book.meta.bookId;
+        applyBookDoc(JSON.parse(JSON.stringify(book)));
+        if (snap) {
+          state.history = [snap].concat((state.history || []).filter((s) => s.id !== snap.id));
+          pruneAutoSnapshots();
+        }
+        sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
+        /* A different book than the shelf link: it becomes its own
+           shelf book on the next save instead of overwriting this one. */
+        if (cloud.linkedId && arrivingId && arrivingId !== localPrevBookId) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; }
+        noteBookEdited();
+        toast(t("local.backupOpened", { title: state.meta.title || t("misc.untitledBook") }), "hard-drive");
+      }
+      let localPrevBookId = null;
+      function localOpenBackupFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const book = localParseBackup(String(reader.result || ""));
+          if (!book) { toast(t("local.backupBad"), "alert-triangle"); return; }
+          localPrevBookId = state.meta.bookId;
+          if (isEmptyDesk() || deskIsUntouchedSample()) { localApplyBackup(book); return; }
+          cloudConfirm({
+            title: t("local.backupConfirmTitle"),
+            body: t("local.backupConfirmBody", { title: state.meta.title || t("misc.untitledBook") }),
+            yes: t("local.backupConfirmYes"), no: t("confirm.keep")
+          }).then((ok) => { if (ok) localApplyBackup(book); });
+        };
+        reader.onerror = () => toast(t("local.backupBad"), "alert-triangle");
+        reader.readAsText(file);
+      }
+
+      /* ---- the header indicator ---- */
+      function localSetStatus(s) {
+        local.status = s;
+        renderLocalPill();
+        if (typeof renderSyncLine === "function") renderSyncLine();
+      }
+      function localSaveOk() {
+        return local.status === "saved" || local.status === "saving" || local.status === "checking";
+      }
+      function localFailed() {
+        return local.status === "blocked" || local.status === "quota" || local.status === "error";
+      }
+      function localStatusText() {
+        switch (local.status) {
+          case "checking": return { full: t("local.checking"), short: t("local.checkingShort") };
+          case "saving": return { full: t("local.saving"), short: t("local.saving") };
+          case "saved": return { full: t("local.saved"), short: t("local.savedShort") };
+          case "blocked": return { full: t("local.blocked"), short: t("local.notSavedShort") };
+          case "quota": return { full: t("local.quota"), short: t("local.notSavedShort") };
+          default: return { full: t("local.error", { name: local.errorName || "Error" }), short: t("local.notSavedShort") };
+        }
+      }
+      function localDetailText() {
+        if (localFailed()) return t("local.detailFailed");
+        let s = local.savedAt ? t("local.detailSaved", { time: fmtLocalTime(local.savedAt) }) : t("local.detailSavedNoTime");
+        if (local.persisted === true) s += " " + t("local.detailPersisted");
+        else if (local.persisted === false) s += " " + t("local.detailEvictable");
+        else if (local.persisted === "unsupported") s += " " + t("local.detailUnsupported");
+        return s;
+      }
+      function fmtLocalTime(ms) {
+        try { return new Intl.DateTimeFormat(getUiLang(), { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(ms)); }
+        catch (e) { return new Date(ms).toLocaleTimeString(); }
+      }
+      function renderLocalPill() {
+        const pill = $("localPill"); if (!pill) return;
+        const txt = localStatusText();
+        pill.setAttribute("data-state", local.status);
+        pill.toggleAttribute("data-evictable", local.status === "saved" && (local.persisted === false || local.persisted === "unsupported"));
+        const full = $("localPillText"), short = $("localPillShort"), sub = $("localPillSub");
+        if (full) full.textContent = txt.full;
+        if (short) short.textContent = txt.short;
+        if (sub) {
+          const ev = local.status === "saved" && local.persisted === false;
+          sub.hidden = !ev;
+          sub.textContent = ev ? t("local.evictable") : "";
+        }
+        pill.setAttribute("title", localDetailText());
+        const bk = $("btnLocalBackupInline"); if (bk) bk.hidden = !localFailed();
+        const pop = $("localPop");
+        if (pop && !pop.hidden) renderLocalPop();
+      }
+      function renderLocalPop() {
+        const d = $("localPopDetail"); if (d) d.textContent = localDetailText();
+        const h = $("localPopTitle"); if (h) h.textContent = localStatusText().full;
+      }
+      function toggleLocalPop(open) {
+        const pop = $("localPop"); if (!pop) return;
+        const want = open === undefined ? pop.hidden : open;
+        pop.hidden = !want;
+        $("localPillBtn").setAttribute("aria-expanded", want ? "true" : "false");
+        if (want) { renderLocalPop(); icons(); }
+      }
+      function localOnLangChange() { renderLocalPill(); }
+      /* Offline fonts: hand the worker the Google Fonts stylesheet and
+         the font files this page actually loaded, so they open offline
+         next time. Faces never displayed online are not cached — offline
+         they fall back to the system fonts in each font stack. */
+      function localCacheFontsSoon() {
+        if (!("serviceWorker" in navigator) || !window.performance || typeof performance.getEntriesByType !== "function") return;
+        const send = () => {
+          try {
+            const urls = performance.getEntriesByType("resource").map((e) => e.name)
+              .filter((u) => u.indexOf("https://fonts.googleapis.com/") === 0 || u.indexOf("https://fonts.gstatic.com/") === 0);
+            const link = document.querySelector('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]');
+            if (link && urls.indexOf(link.href) === -1) urls.push(link.href);
+            if (!urls.length) return;
+            navigator.serviceWorker.ready.then((reg) => { if (reg.active) reg.active.postMessage({ type: "BEUK_CACHE_URLS", urls: urls }); }).catch(() => {});
+          } catch (e) {}
+        };
+        const later = () => setTimeout(send, 4000);
+        if (document.readyState === "complete") later(); else window.addEventListener("load", later, { once: true });
+      }
+
+      function localInit() {
+        const btn = $("localPillBtn");
+        if (btn) btn.addEventListener("click", (e) => { e.stopPropagation(); toggleLocalPop(); });
+        const inline = $("btnLocalBackupInline");
+        if (inline) inline.addEventListener("click", (e) => { e.stopPropagation(); localExportBackup(); });
+        const exp = $("btnLocalBackup"); if (exp) exp.addEventListener("click", () => { localExportBackup(); toggleLocalPop(false); });
+        const open = $("btnLocalOpenBackup"), inp = $("localBackupInput");
+        if (open && inp) {
+          open.addEventListener("click", () => { toggleLocalPop(false); inp.value = ""; inp.click(); });
+          inp.addEventListener("change", () => localOpenBackupFile(inp.files && inp.files[0]));
+        }
+        document.addEventListener("click", (e) => {
+          const pop = $("localPop");
+          if (pop && !pop.hidden && !e.target.closest("#localPop") && !e.target.closest("#localPillBtn")) toggleLocalPop(false);
+        });
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const pop = $("localPop"); if (pop && !pop.hidden) toggleLocalPop(false); } });
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") localFlushOnHide(); });
+        window.addEventListener("pagehide", localFlushOnHide);
+        renderLocalPill();
+        localRestorePromise = localRestore();
+        localCacheFontsSoon();
+        /* Belt and braces: never leave the desk hidden if storage hangs. */
+        setTimeout(() => {
+          if (!local.ready) {
+            document.documentElement.removeAttribute("data-local-restore");
+          }
+        }, 5000);
+      }
+      if (typeof window !== "undefined") {
+        window.beukLocal = {
+          state: local, saveNow: localSaveNow, markDirty: localMarkDirty, restore: () => localRestorePromise,
+          exportBackup: localExportBackup, parseBackup: localParseBackup, applyBackup: localApplyBackup,
+          recordJson: localRecordJson, linkSnapshot: localLinkSnapshot, reconcile: localReconcileOnSignIn
+        };
+      }
+      /* ==== /BEUK:local ==== */
 
       /* ================= Chrome wiring & init ================= */
       function syncThemeButton() {
@@ -24858,6 +25924,7 @@
         initChrome();
         initHeader();
         initDictation();
+        localInit(); /* BEUK:local — restore this device's book before the shelf boots */
         initCloud();
         initPlatform();
         initBulk();
