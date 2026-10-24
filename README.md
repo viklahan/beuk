@@ -135,6 +135,25 @@ ones are picked up again.
   PDF is stored back into the user's archive as a new export
   (format `pdfx`, filename `…-pdfx.pdf`, linked to the source's
   manuscript) and the job's `artifactExportId` points at it.
+  Ghostscript 9.50+ runs with `-dSAFER` on by default, which refuses
+  the definition file's read of its ICC profile (`/invalidfileaccess`,
+  observed on Ghostscript 10.00.0), so the job passes
+  `--permit-file-read=<that one profile>` — read from the
+  `/BeukICCPath` line — and keeps SAFER on for everything else. The
+  definition file declares both `GTS_PDFXVersion (PDF/X-1:2001)` and
+  `GTS_PDFXConformance (PDF/X-1a:2001)`; without the second key a file
+  only claims PDF/X-1:2001.
+- **PDF/X inspection (Store-ready tie-in).** After conversion the job
+  reads the converted file itself (`src/jobs/pdfinspect.ts`, no
+  dependencies) and stores the facts on the result as `inspection`:
+  page count, the first page's MediaBox/TrimBox/BleedBox in inches,
+  the declared `GTS_PDFXVersion` / `GTS_PDFXConformance` and whether a
+  `GTS_PDFX` OutputIntent is present, every font with an `embedded`
+  flag (a FontDescriptor carrying `/FontFile`, `/FontFile2` or
+  `/FontFile3`; Type 3 fonts count as embedded), and how many RGB
+  colour references remain. It reports what the file *declares and
+  contains* — it is not a PDF/X validator, and anything it cannot read
+  stays `null`, never a pass.
 
 **Tool gating is honest, in the M2-billing tradition.** Availability
 is checked when the job runs: if EPUBCheck's jar is unset/missing,
@@ -166,23 +185,90 @@ exit 0 AND leave a non-empty file).
    press profile (e.g. the `icc-profiles-free` package) and edit the
    `BeukICCPath` line in `tools/PDFX_def.ps` to point at it. With
    the placeholder path left in place, Ghostscript errors out and
-   the job fails with that error — by design.
+   the job fails with that error — by design. **Check this one:** on
+   Debian bookworm, `icc-profiles-free` ships no FOGRA profile (its
+   `/usr/share/color/icc` holds sRGB/Gray/Cineon profiles plus
+   Ghostscript's own `ghostscript/default_cmyk.icc`), so the tools
+   overlay's FOGRA lookup finds nothing and the placeholder stays —
+   pdfx jobs then fail with Ghostscript's `/undefinedfilename`.
+   Install a real press profile (FOGRA39 / GRACoL / SWOP from your
+   printer) and point `BeukICCPath` at it; the `OutputConditionIdentifier`
+   in the same file must name the condition that profile describes.
 6. Restart the app. Until steps 1–5 are done, jobs answer with the
    not-configured failure above; the moment they are, the same jobs
    run for real with no code change.
 
-Two residual limits, stated plainly. First, **the real binaries have
-never executed in the build sandbox** (no JRE/Ghostscript/Chromium
-there): the pipeline around them — gating, queueing, the
+Residual limits, stated plainly. First, **the test suite runs stub
+tools**: the pipeline around the binaries — gating, queueing, the
 HTML → PDF rendition, timeouts, report parsing, archive storage —
-is fully tested with stub tools wired through the same
-`JAVA_BIN`/`GS_BIN`/`HTML_PDF_BIN` settings, and the Hetzner box is
-where EPUBCheck, the renderer, and Ghostscript first run for real.
-Second, **Ghostscript converts PDF input**: a pdfx job first renders
+is tested with stub tools wired through the same
+`JAVA_BIN`/`GS_BIN`/`HTML_PDF_BIN` settings. The real binaries were
+run once by hand (2026-10-24, Debian bookworm container: Chromium
+from apt, GPL Ghostscript 10.00.0, EPUBCheck 5.2.1, with
+`BeukICCPath` pointed at Ghostscript's own `default_cmyk.icc` because
+bookworm has no FOGRA profile). That run is what found the two bugs
+fixed above (SAFER refusing the ICC read; Chromium rendering the
+extensionless archive file as plain-text source — 1,270 Letter pages).
+After the fixes, the bundled sample's 6 × 9 in interior rendered to
+81 pages and converted in about 90 seconds to a declared
+PDF/X-1a:2001 file with every font embedded and no RGB left — but
+**109 MB** (the sample is picture-heavy), and **set in DejaVu Serif,
+not the book's faces**: the print-html interior names its fonts but
+does not carry the studio's Google web fonts, so a server without the
+book's fonts installed falls back. The Store-ready report flags that
+as an advisory row. Second, **Ghostscript converts PDF input**: a pdfx job first renders
 the archived print-html interior to PDF with the configured
 renderer, then converts that PDF to PDF/X-1a. If the renderer is
 not configured, the job fails honestly as "not configured" before
 Ghostscript ever runs — raw HTML is never fed to Ghostscript.
+
+## Store-ready? report (studio + jobs)
+
+The studio's Export dialog opens with a **Store-ready?** button: one
+pass/fail report for **Amazon KDP** or **IngramSpark**, paperback or
+hardcover, for the chosen ink and paper. The rules are data
+(`STORE_RULES` in `client/index.html`), each table citing the store's
+own guide: KDP's trim/page-range/margin table, cover-calculator spine
+factors, file-format and barcode help pages, and IngramSpark's File
+Creation Guide (rev. 8.24.26) plus its Paper Specifications sheet.
+Every row is **pass / fail / warn / not checked**, with what was
+measured and, for failures, a concrete fix (one click where the
+studio can make it: switch trim, follow the book's trim or page
+count, use the store's spine factor; otherwise a jump to the
+chapter, the print settings or the cover maker).
+
+- Checked in the browser: trim against the store's list (and
+  IngramSpark's custom-trim ranges), page count against the range for
+  that trim + ink + paper, margins/gutter (KDP minimums; IngramSpark's
+  0.5 in recommendation is advisory), every placed picture's DPI at its
+  printed size, bleed (full-page plates and chapter backdrops reach the
+  trim edge, and Beuk's interior has no bleed — so they fail), and the
+  wrap: same trim and page count as the interior, spine = pages × the
+  store's published factor, spine-text rules, barcode area (drawn and
+  measured, text overlap tested), cover artwork DPI, bleed, RGB colour
+  (advisory), and IngramSpark's PDF/X requirement for cover files.
+- Checked by the server ("Run full server check", signed in): the
+  studio archives the print interior and the EPUB, runs the existing
+  `pdfx` and `epubcheck` jobs, and folds in the pdfx job's
+  `inspection` — fonts embedded, declared PDF/X + OutputIntent + no
+  RGB, the real page count and page size — and EPUBCheck's result.
+  Signed out, local-only, tools unconfigured, still running or stale
+  (the book changed since), those rows say **not checked** and why.
+- **The verdict is "Ready for <store>" only when every required row
+  passed.** Any required failure → "Not ready — N blocking issues";
+  otherwise any required row that couldn't run → "Can't confirm —
+  M checks couldn't run". Advisory rows never decide it. Unverifiable
+  numbers are not invented: KDP publishes no groundwood spine factor
+  (spine "not checked"), IngramSpark's exact spine exists only in its
+  per-book cover template (the paper-bulk estimate is shown; the writer
+  can confirm against their template), and total ink coverage (240%)
+  is never measured.
+- **Download report** saves a self-contained HTML file: book title,
+  store, binding, ink/paper, trim, page count (estimated or counted),
+  ISO timestamp, the verdict, every row with its evidence and fix, and
+  the source URLs.
+- Hardcover covers (case laminate / dust jacket) are "not checked":
+  Beuk's wrap is a paperback wrap.
 
 ## Billing hooks (M2)
 
@@ -402,6 +488,15 @@ the source's manuscript, the unconfigured-tool path completing
 killed by the per-job timeout. The real EPUBCheck/Ghostscript
 binaries cannot run in the test sandbox — the stubs prove the
 pipeline around them (see Jobs, residual limits).
+The Store-ready tie-in adds: the PDF inspector over hand-built PDFs
+(PDF/X-shaped file with inherited MediaBox, TrimBox, declaration,
+OutputIntent and embedded fonts; an unembedded font plus RGB in a
+Flate-compressed content stream; objects packed in a compressed object
+stream with a UTF-16 hex string; files with no fonts or no PDF at all
+staying unknown), the pdfx job carrying `inspection` on its result, the
+Ghostscript arguments permitting exactly the ICC profile the definition
+file names, and a fake renderer that refuses an extensionless
+`file://` URL the way real Chromium mis-renders one.
 
 ## Deploy to Hetzner (outline)
 
@@ -484,6 +579,8 @@ src/
                   availability gating, report parsing) · runner.ts
                   (sequential in-process worker, per-job timeout,
                   boot recovery, PDF/X output back into the archive)
+                  · pdfinspect.ts (reads the converted PDF: pages, page
+                  box, PDF/X declaration, font embedding, RGB left)
   housekeeping/   the M3 admin surface: admin.ts (gate) · scrub.ts
                   (secret scrubber) · lock.ts (one global lock) ·
                   registry.ts (Self-checks) · packages.ts + fixtures.ts
