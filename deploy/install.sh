@@ -28,6 +28,10 @@
 #                       look over the raw IP — see the note at the end)
 #   SUPPORT_EMAIL / SUPPORT_NAME / SUPPORT_REPLY_PROMISE   Help-page contact
 #   KOFI_URL            Ko-fi page; unset → no tip jar is rendered anywhere
+#   SMTP_URL / MAIL_FROM  outgoing email for password-reset links, e.g.
+#                       SMTP_URL=smtp://user:pass@smtp.example.com:587
+#                       MAIL_FROM="Beuk <no-reply@beuk.studio>"; unset →
+#                       no email is sent (Housekeeping: "email not configured")
 #   APP_TIMEZONE        default UTC (e.g. America/Los_Angeles)
 #   INSTALL_TOOLS       default 1; set 0 to skip EPUBCheck/Ghostscript
 #   EPUBCHECK_VERSION   default 5.2.1
@@ -127,6 +131,20 @@ set_env APP_TIMEZONE "${APP_TIMEZONE}"
 [ -n "${SUPPORT_NAME:-}" ]           && set_env SUPPORT_NAME "${SUPPORT_NAME}"
 [ -n "${SUPPORT_REPLY_PROMISE:-}" ]  && set_env SUPPORT_REPLY_PROMISE "${SUPPORT_REPLY_PROMISE}"
 [ -n "${KOFI_URL:-}" ]               && set_env KOFI_URL "${KOFI_URL}"
+[ -n "${SMTP_URL:-}" ]               && set_env SMTP_URL "${SMTP_URL}"
+[ -n "${MAIL_FROM:-}" ]              && set_env MAIL_FROM "${MAIL_FROM}"
+# A localhost install is a local stack: show reset links in the app log
+# while email is unconfigured. A real domain never logs them.
+if [ "${DEPLOY_DOMAIN}" = "localhost" ]; then
+  [ -z "$(get_env MAIL_LOG_LINKS)" ] && set_env MAIL_LOG_LINKS "true"
+else
+  set_env MAIL_LOG_LINKS "false"
+fi
+if [ -n "$(get_env SMTP_URL)" ] && [ -n "$(get_env MAIL_FROM)" ]; then
+  MAIL_STATE="configured (run Housekeeping's mail test to verify delivery)"
+else
+  MAIL_STATE="NOT configured — password-reset emails are not sent until SMTP_URL and MAIL_FROM are set"
+fi
 
 # Build stamp for Housekeeping self-checks / promotion manifest.
 if git -C "${REPO_ROOT}" rev-parse --short HEAD >/dev/null 2>&1; then
@@ -212,6 +230,7 @@ COMPOSE_CMD="${COMPOSE} -f docker-compose.yml"
   echo "  domain:        ${DEPLOY_DOMAIN}"
   echo "  build stamp:   $(get_env BUILD_STAMP)"
   echo "  tools:         ${TOOLS_STATE}"
+  echo "  email:         ${MAIL_STATE}"
   echo "  compose cmd:   ${COMPOSE_CMD}"
 } > deploy/last-install.txt
 
@@ -231,6 +250,7 @@ note "       ${COMPOSE_CMD} exec app node dist/admin-cli.js grant <your-email>"
 note "  2. Open Housekeeping and run Rehearse, then a Self-checks run."
 note "  3. Write something and watch for \"On your shelf ✓\" (cloud sync working)."
 note "Tools: ${TOOLS_STATE}"
+note "Email: ${MAIL_STATE}"
 note "Secrets live only in .env (chmod 600) — it was never printed. Day-to-day:"
 note "  logs:    ${COMPOSE_CMD} logs -f app"
 note "  restart: ${COMPOSE_CMD} up -d        (re-run ./deploy/install.sh after pulling changes)"
