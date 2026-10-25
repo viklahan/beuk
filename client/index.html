@@ -779,6 +779,12 @@
       #zenScenePop .zs-opt .zs-dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--muted); flex: 0 0 auto; }
       #zenScenePop .zs-opt.active { color: var(--accent); }
       #zenScenePop .zs-opt.active .zs-dot { background: var(--gold); border-color: var(--gold); }
+      /* ==== BEUK:sound ==== the popover says honestly what the sound is doing: loading, or why it cannot play */
+      #zenScenePop .zs-status { max-width: 230px; padding: 4px 10px 6px; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+      #zenScenePop .zs-status[data-state="error"] { color: var(--accent); }
+      #btnZenSound.loading { border-style: dashed; }
+      #btnZenSound.failed { border-color: var(--accent); }
+      /* ==== /BEUK:sound ==== */
       #btnZenSound.remembered::after {
         content: ""; position: absolute; top: 4px; right: 5px; width: 5px; height: 5px;
         border-radius: 50%; background: var(--gold); opacity: .85;
@@ -7145,19 +7151,19 @@
       Object.assign(UI_STRINGS.ar, { "zen.title": "زن", "zen.sound": "صوت محيطي" });
       Object.assign(UI_STRINGS.ja, { "zen.title": "禅", "zen.sound": "環境音" });
       Object.assign(UI_STRINGS["zh-Hans"], { "zen.title": "禅", "zen.sound": "环境音" });
-      Object.assign(UI_STRINGS.en, { "zen.scene.rain": "Gentle rain", "zen.scene.rainDrum": "Rain & slow drum", "zen.scene.wind": "Soft wind", "zen.scene.pick": "Choose a scene" });
-      Object.assign(UI_STRINGS.es, { "zen.scene.rain": "Lluvia suave", "zen.scene.rainDrum": "Lluvia y tambor lento", "zen.scene.wind": "Viento suave", "zen.scene.pick": "Elige una escena" });
-      Object.assign(UI_STRINGS.fr, { "zen.scene.rain": "Pluie douce", "zen.scene.rainDrum": "Pluie et tambour lent", "zen.scene.wind": "Vent doux", "zen.scene.pick": "Choisir une scène" });
-      Object.assign(UI_STRINGS.de, { "zen.scene.rain": "Sanfter Regen", "zen.scene.rainDrum": "Regen & langsame Trommel", "zen.scene.wind": "Sanfter Wind", "zen.scene.pick": "Szene wählen" });
-      Object.assign(UI_STRINGS.it, { "zen.scene.rain": "Pioggia leggera", "zen.scene.rainDrum": "Pioggia e tamburo lento", "zen.scene.wind": "Vento leggero", "zen.scene.pick": "Scegli una scena" });
-      Object.assign(UI_STRINGS.pt, { "zen.scene.rain": "Chuva suave", "zen.scene.rainDrum": "Chuva e tambor lento", "zen.scene.wind": "Vento suave", "zen.scene.pick": "Escolher uma cena" });
-      Object.assign(UI_STRINGS.nl, { "zen.scene.rain": "Zachte regen", "zen.scene.rainDrum": "Regen & langzame trommel", "zen.scene.wind": "Zachte wind", "zen.scene.pick": "Kies een scène" });
-      Object.assign(UI_STRINGS.pl, { "zen.scene.rain": "Delikatny deszcz", "zen.scene.rainDrum": "Deszcz i wolny bęben", "zen.scene.wind": "Łagodny wiatr", "zen.scene.pick": "Wybierz scenę" });
-      Object.assign(UI_STRINGS.ru, { "zen.scene.rain": "Тихий дождь", "zen.scene.rainDrum": "Дождь и медленный барабан", "zen.scene.wind": "Тихий ветер", "zen.scene.pick": "Выбрать сцену" });
-      Object.assign(UI_STRINGS.tr, { "zen.scene.rain": "Hafif yağmur", "zen.scene.rainDrum": "Yağmur ve yavaş davul", "zen.scene.wind": "Hafif rüzgâr", "zen.scene.pick": "Sahne seç" });
-      Object.assign(UI_STRINGS.ar, { "zen.scene.rain": "مطر خفيف", "zen.scene.rainDrum": "مطر وطبل بطيء", "zen.scene.wind": "رياح خفيفة", "zen.scene.pick": "اختر مشهدًا" });
-      Object.assign(UI_STRINGS.ja, { "zen.scene.rain": "静かな雨", "zen.scene.rainDrum": "雨とゆっくりした太鼓", "zen.scene.wind": "そよ風", "zen.scene.pick": "シーンを選ぶ" });
-      Object.assign(UI_STRINGS["zh-Hans"], { "zen.scene.rain": "轻柔的雨", "zen.scene.rainDrum": "雨与慢鼓", "zen.scene.wind": "微风", "zen.scene.pick": "选择场景" });
+      Object.assign(UI_STRINGS.en, { "zen.scene.rain": "Gentle rain", "zen.scene.waves": "Soft waves on the shore", "zen.scene.wind": "Soft wind", "zen.scene.pick": "Choose a scene", "zen.sound.loading": "Loading the sound…", "zen.sound.failed": "This sound couldn’t load. It needs a connection the first time it plays; after that it works offline.", "zen.sound.unsupported": "This browser can’t play this sound.", "zen.sound.blocked": "The browser is holding the sound back. Click Ambient sound again to let it play." });
+      Object.assign(UI_STRINGS.es, { "zen.scene.rain": "Lluvia suave", "zen.scene.waves": "Olas suaves en la orilla", "zen.scene.wind": "Viento suave", "zen.scene.pick": "Elige una escena", "zen.sound.loading": "Cargando el sonido…", "zen.sound.failed": "No se pudo cargar este sonido. La primera vez necesita conexión; después funciona sin conexión.", "zen.sound.unsupported": "Este navegador no puede reproducir este sonido.", "zen.sound.blocked": "El navegador está reteniendo el sonido. Vuelve a pulsar Sonido ambiente para que suene." });
+      Object.assign(UI_STRINGS.fr, { "zen.scene.rain": "Pluie douce", "zen.scene.waves": "Vagues douces sur le rivage", "zen.scene.wind": "Vent doux", "zen.scene.pick": "Choisir une scène", "zen.sound.loading": "Chargement du son…", "zen.sound.failed": "Ce son n’a pas pu être chargé. La première fois, il faut une connexion ; ensuite, il fonctionne hors ligne.", "zen.sound.unsupported": "Ce navigateur ne peut pas lire ce son.", "zen.sound.blocked": "Le navigateur retient le son. Cliquez de nouveau sur Son d'ambiance pour le laisser jouer." });
+      Object.assign(UI_STRINGS.de, { "zen.scene.rain": "Sanfter Regen", "zen.scene.waves": "Sanfte Wellen am Ufer", "zen.scene.wind": "Sanfter Wind", "zen.scene.pick": "Szene wählen", "zen.sound.loading": "Klang wird geladen…", "zen.sound.failed": "Dieser Klang konnte nicht geladen werden. Beim ersten Abspielen braucht er eine Verbindung, danach funktioniert er offline.", "zen.sound.unsupported": "Dieser Browser kann diesen Klang nicht abspielen.", "zen.sound.blocked": "Der Browser hält den Klang zurück. Klicke noch einmal auf Umgebungsklang, um ihn abzuspielen." });
+      Object.assign(UI_STRINGS.it, { "zen.scene.rain": "Pioggia leggera", "zen.scene.waves": "Onde leggere sulla riva", "zen.scene.wind": "Vento leggero", "zen.scene.pick": "Scegli una scena", "zen.sound.loading": "Caricamento del suono…", "zen.sound.failed": "Impossibile caricare questo suono. La prima volta serve una connessione; poi funziona anche offline.", "zen.sound.unsupported": "Questo browser non può riprodurre questo suono.", "zen.sound.blocked": "Il browser sta trattenendo il suono. Fai di nuovo clic su Suono ambientale per farlo partire." });
+      Object.assign(UI_STRINGS.pt, { "zen.scene.rain": "Chuva suave", "zen.scene.waves": "Ondas suaves na praia", "zen.scene.wind": "Vento suave", "zen.scene.pick": "Escolher uma cena", "zen.sound.loading": "A carregar o som…", "zen.sound.failed": "Não foi possível carregar este som. Na primeira vez precisa de ligação; depois funciona offline.", "zen.sound.unsupported": "Este navegador não consegue reproduzir este som.", "zen.sound.blocked": "O navegador está a reter o som. Clique novamente em Som ambiente para o deixar tocar." });
+      Object.assign(UI_STRINGS.nl, { "zen.scene.rain": "Zachte regen", "zen.scene.waves": "Zachte golven op de kust", "zen.scene.wind": "Zachte wind", "zen.scene.pick": "Kies een scène", "zen.sound.loading": "Geluid laden…", "zen.sound.failed": "Dit geluid kon niet worden geladen. De eerste keer is een verbinding nodig; daarna werkt het offline.", "zen.sound.unsupported": "Deze browser kan dit geluid niet afspelen.", "zen.sound.blocked": "De browser houdt het geluid tegen. Klik nogmaals op Omgevingsgeluid om het te laten spelen." });
+      Object.assign(UI_STRINGS.pl, { "zen.scene.rain": "Delikatny deszcz", "zen.scene.waves": "Łagodne fale przy brzegu", "zen.scene.wind": "Łagodny wiatr", "zen.scene.pick": "Wybierz scenę", "zen.sound.loading": "Wczytywanie dźwięku…", "zen.sound.failed": "Nie udało się wczytać tego dźwięku. Za pierwszym razem potrzebne jest połączenie; potem działa offline.", "zen.sound.unsupported": "Ta przeglądarka nie może odtworzyć tego dźwięku.", "zen.sound.blocked": "Przeglądarka wstrzymuje dźwięk. Kliknij ponownie Dźwięk otoczenia, aby go odtworzyć." });
+      Object.assign(UI_STRINGS.ru, { "zen.scene.rain": "Тихий дождь", "zen.scene.waves": "Тихие волны у берега", "zen.scene.wind": "Тихий ветер", "zen.scene.pick": "Выбрать сцену", "zen.sound.loading": "Загрузка звука…", "zen.sound.failed": "Не удалось загрузить этот звук. В первый раз нужно подключение к сети; потом он работает и офлайн.", "zen.sound.unsupported": "Этот браузер не может воспроизвести этот звук.", "zen.sound.blocked": "Браузер придерживает звук. Нажмите «Фоновый звук» ещё раз, чтобы он заиграл." });
+      Object.assign(UI_STRINGS.tr, { "zen.scene.rain": "Hafif yağmur", "zen.scene.waves": "Kıyıda hafif dalgalar", "zen.scene.wind": "Hafif rüzgâr", "zen.scene.pick": "Sahne seç", "zen.sound.loading": "Ses yükleniyor…", "zen.sound.failed": "Bu ses yüklenemedi. İlk çalışta bağlantı gerekir; sonrasında çevrimdışı da çalışır.", "zen.sound.unsupported": "Bu tarayıcı bu sesi çalamıyor.", "zen.sound.blocked": "Tarayıcı sesi bekletiyor. Çalması için Ortam sesi düğmesine yeniden tıklayın." });
+      Object.assign(UI_STRINGS.ar, { "zen.scene.rain": "مطر خفيف", "zen.scene.waves": "أمواج هادئة على الشاطئ", "zen.scene.wind": "رياح خفيفة", "zen.scene.pick": "اختر مشهدًا", "zen.sound.loading": "جارٍ تحميل الصوت…", "zen.sound.failed": "تعذّر تحميل هذا الصوت. يحتاج إلى اتصال في أول تشغيل، وبعد ذلك يعمل دون اتصال.", "zen.sound.unsupported": "لا يستطيع هذا المتصفح تشغيل هذا الصوت.", "zen.sound.blocked": "المتصفح يحجب الصوت. انقر على «صوت محيطي» مرة أخرى ليبدأ التشغيل." });
+      Object.assign(UI_STRINGS.ja, { "zen.scene.rain": "静かな雨", "zen.scene.waves": "岸辺の穏やかな波", "zen.scene.wind": "そよ風", "zen.scene.pick": "シーンを選ぶ", "zen.sound.loading": "音を読み込んでいます…", "zen.sound.failed": "この音を読み込めませんでした。初回の再生には接続が必要です。その後はオフラインでも再生できます。", "zen.sound.unsupported": "このブラウザではこの音を再生できません。", "zen.sound.blocked": "ブラウザが音の再生を止めています。もう一度「環境音」をクリックすると再生されます。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "zen.scene.rain": "轻柔的雨", "zen.scene.waves": "岸边轻柔的海浪", "zen.scene.wind": "微风", "zen.scene.pick": "选择场景", "zen.sound.loading": "正在加载声音…", "zen.sound.failed": "无法加载此声音。首次播放需要联网，之后可离线播放。", "zen.sound.unsupported": "此浏览器无法播放此声音。", "zen.sound.blocked": "浏览器暂时阻止了声音。再次点击“环境音”即可播放。" });
       Object.assign(UI_STRINGS.en, { "zen.nav.prev": "Previous section", "zen.nav.next": "Next section", "zen.nav.browse": "Browse all sections", "zen.nav.sections": "Sections", "zen.continueTo": "Continue to {name}" });
       Object.assign(UI_STRINGS.es, { "zen.nav.prev": "Sección anterior", "zen.nav.next": "Sección siguiente", "zen.nav.browse": "Ver todas las secciones", "zen.nav.sections": "Secciones", "zen.continueTo": "Continuar con {name}" });
       Object.assign(UI_STRINGS.fr, { "zen.nav.prev": "Section précédente", "zen.nav.next": "Section suivante", "zen.nav.browse": "Toutes les sections", "zen.nav.sections": "Sections", "zen.continueTo": "Continuer vers {name}" });
@@ -27881,7 +27887,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v3"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v4"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -32775,66 +32781,98 @@
                 "reduced-motion entry presented the title moment statically at opacity " + titleOp + " with no settle or breath classes engaged, the wash layer crossed by opacity, and the sketch and vignette applied; exit removed the title, flash and art");
             } finally { window.beukZen.overrideReducedMotion(null); setZenMode(false); window.beukZen.settle(); }
           } },
-        { id: "zen.sound.opt-in", feature: "zen", name: "Zen ambient sound is opt-in only: entering zen starts no audio (no context, toggle off), the toggle starts and stops the generated ambience, the choice is remembered without ever auto-starting, and exiting zen stops the sound",
+        /* ==== BEUK:sound ==== the zen sound checks assert the field-recording engine: opt-in, honest status, no synthesis */
+        { id: "zen.sound.opt-in", feature: "zen", name: "Zen ambient sound is opt-in only: entering zen starts no audio (no context, toggle off); the writer's click starts it — the toggle reads “on” only once a recording is actually playing, never while it loads; a second click stops it and releases the context; the choice is remembered without ever auto-starting; exiting zen stops the sound",
           run() {
             const keepPref = (() => { try { return localStorage.getItem(ZEN_SOUND_KEY); } catch (e) { return null; } })();
             try {
               setZenMode(true); window.beukZen.settle();
               const snd = window.beukZenSound;
-              const quietOnEntry = !!snd && !snd.playing() && !snd.hasContext();
+              const quietOnEntry = !!snd && !snd.playing() && !snd.hasContext() && snd.status().status === "off";
               const btn = $("btnZenSound");
               const offOnEntry = !!btn && btn.getAttribute("aria-pressed") === "false";
               if (btn) btn.click();
-              const started = !!snd && snd.playing() && snd.hasContext() && snd.pref() === true && !!btn && btn.getAttribute("aria-pressed") === "true";
+              const st1 = snd.status().status;
+              /* Honest: while the file loads the toggle is NOT pressed and says it is busy; once playing it is pressed. */
+              const honest = (st1 === "loading" && !snd.playing() && btn.getAttribute("aria-pressed") === "false" && btn.getAttribute("aria-busy") === "true") ||
+                (st1 === "on" && snd.playing() && btn.getAttribute("aria-pressed") === "true") ||
+                ((st1 === "error" || st1 === "blocked") && !snd.playing() && btn.getAttribute("aria-pressed") === "false");
+              const started = snd.hasContext() || st1 === "error";
               if (btn) btn.click();
-              const stopped = !!snd && !snd.playing() && !snd.hasContext();
+              const stopped = !!snd && !snd.playing() && !snd.hasContext() && snd.status().status === "off" && btn.getAttribute("aria-pressed") === "false" && !btn.hasAttribute("aria-busy");
+              const forgot = snd.pref() === false;
               if (btn) btn.click();
-              const restarted = !!snd && snd.playing();
+              const restarted = !!snd && (snd.hasContext() || snd.status().status === "error");
               setZenMode(false); window.beukZen.settle();
-              const stoppedOnExit = !!snd && !snd.playing() && !snd.hasContext();
-              return scVerdict(quietOnEntry && offOnEntry && started && stopped && restarted && stoppedOnExit,
-                "entry: no AudioContext and the toggle off; click: ambience playing (context live, preference remembered); click again: stopped and context released; click once more then exit zen: sound stopped with the room");
+              const stoppedOnExit = !!snd && !snd.playing() && !snd.hasContext() && snd.status().status === "off";
+              setZenMode(true); window.beukZen.settle();
+              const noAutoResume = !snd.playing() && !snd.hasContext();
+              setZenMode(false); window.beukZen.settle();
+              return scVerdict(quietOnEntry && offOnEntry && started && honest && stopped && forgot && restarted && stoppedOnExit && noAutoResume,
+                "entry: no AudioContext and the toggle off; click: status " + st1 + " (toggle pressed=" + (st1 === "on") + ", honest " + honest + "); click again: stopped, context released, preference forgotten (" + forgot + "); click once more then exit zen: stopped with the room; re-entering zen did not resume it (" + noAutoResume + ")");
             } finally {
               setZenMode(false); window.beukZen.settle();
               try { if (keepPref === null) localStorage.removeItem(ZEN_SOUND_KEY); else localStorage.setItem(ZEN_SOUND_KEY, keepPref); } catch (e) {}
             }
           } },
-        { id: "zen.sound.scenes", feature: "zen", name: "Zen ambient scenes: the sound toggle's popover offers rain, rain & slow drum, and soft wind; the live graph is all low and soft — a master lowpass near 1.1kHz, a noise bed, no sustained tone oscillators anywhere (the old chord pad is gone) — scenes switch from the popover, and exiting zen stops every source",
+        { id: "zen.sound.scenes", feature: "zen", name: "Zen ambient scenes are real recordings: the popover offers gentle rain, soft waves and soft wind (labelled in every locale), each scene maps to its own same-origin file /assets/sound/<scene>.mp3 with a 45–90 s loop between equal pads, an old “rain-drum” or unknown stored scene becomes rain, and starting, switching and stopping the sound creates no oscillator, no filter and no generated noise buffer — the synthesis and the 1.1 kHz master lowpass are gone",
           run() {
             const keepSnd = (() => { try { return localStorage.getItem(ZEN_SOUND_KEY); } catch (e) { return null; } })();
             const keepScene = (() => { try { return localStorage.getItem(ZEN_SCENE_KEY); } catch (e) { return null; } })();
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const proto = AC ? AC.prototype : null;
+            const spied = ["createOscillator", "createBiquadFilter", "createBuffer", "createScriptProcessor", "createConstantSource", "createIIRFilter"];
+            const calls = {}; const orig = {};
             try {
-              setZenMode(true); window.beukZen.settle();
+              if (proto) spied.forEach((k) => { if (typeof proto[k] === "function") { orig[k] = proto[k]; calls[k] = 0; proto[k] = function () { calls[k]++; return orig[k].apply(this, arguments); }; } });
               const snd = window.beukZenSound;
-              const silentBefore = !!snd && !snd.hasContext() && !snd.playing();
+              const scenes = snd.scenes();
+              const files = snd.files();
+              const filesOk = scenes.join(",") === "rain,waves,wind" && scenes.every((s) => {
+                const f = files[s]; const u = snd.url(s);
+                return !!f && f.file === "assets/sound/" + s + ".mp3" && new URL(u).origin === location.origin && /\/assets\/sound\/(rain|waves|wind)\.mp3$/.test(new URL(u).pathname) &&
+                  f.pad > 0 && f.pad < 2 && f.loop >= 45 && f.loop <= 90;
+              });
+              const labelsOk = scenes.every((s) => Object.keys(UI_STRINGS).every((loc) => typeof UI_STRINGS[loc]["zen.scene." + s] === "string" && UI_STRINGS[loc]["zen.scene." + s].length > 1)) &&
+                ["zen.sound.loading", "zen.sound.failed", "zen.sound.unsupported", "zen.sound.blocked"].every((k) => Object.keys(UI_STRINGS).every((loc) => typeof UI_STRINGS[loc][k] === "string" && UI_STRINGS[loc][k].length > 1)) &&
+                Object.keys(UI_STRINGS).every((loc) => !("zen.scene.rainDrum" in UI_STRINGS[loc]));
+              const mig = [snd.migrate("rain-drum"), snd.migrate("nonsense"), snd.migrate(null), snd.migrate("waves"), snd.migrate("wind"), snd.migrate("rain")].join(",");
+              localStorage.setItem(ZEN_SCENE_KEY, "rain-drum");
+              const migStored = snd.scene() === "rain" && localStorage.getItem(ZEN_SCENE_KEY) === "rain";
+              localStorage.setItem(ZEN_SCENE_KEY, "thunder");
+              const unknownStored = snd.scene() === "rain" && localStorage.getItem(ZEN_SCENE_KEY) === "rain";
+              const migOk = mig === "rain,rain,rain,waves,wind,rain" && migStored && unknownStored;
+              setZenMode(true); window.beukZen.settle();
+              const silentBefore = !snd.hasContext() && !snd.playing();
               const caret = $("btnZenScenes");
               if (caret) caret.click();
               const pop = $("zenScenePop");
               const rows = pop ? Array.prototype.slice.call(pop.querySelectorAll(".zs-opt")) : [];
               const popOk = !!pop && pop.classList.contains("open") && rows.length === 3 &&
-                rows.map((r) => r.getAttribute("data-scene")).join(",") === "rain,rain-drum,wind";
-              const rainRow = rows.filter((r) => r.getAttribute("data-scene") === "rain")[0];
-              if (rainRow) rainRow.click();
+                rows.map((r) => r.getAttribute("data-scene")).join(",") === "rain,waves,wind" &&
+                rows.every((r) => { const lab = r.querySelector("[data-i18n]"); return !!lab && lab.getAttribute("data-i18n") === "zen.scene." + r.getAttribute("data-scene") && lab.textContent === t("zen.scene." + r.getAttribute("data-scene")); });
+              const wavesRow = rows.filter((r) => r.getAttribute("data-scene") === "waves")[0];
+              if (wavesRow) wavesRow.click();
+              const pickedWaves = snd.scene() === "waves" && !snd.hasContext();
               const btn = $("btnZenSound");
               if (btn) btn.click();
               const g1 = snd.graph();
-              const graphOk = !!g1 && g1.masterFilterType === "lowpass" && g1.masterFilterFreq >= 900 && g1.masterFilterFreq <= 1300 &&
-                (g1.roles.noise || 0) >= 1 && g1.sustainedToneOscillators === 0 && !g1.roles.pad && !g1.roles.chord && g1.droplets === true;
+              const st1 = snd.status();
+              const targetOk = !!g1 && ((st1.status === "loading" && st1.pending === "waves") || (st1.status === "on" && g1.scene === "waves") || st1.status === "error") &&
+                !("masterFilterType" in g1) && !("masterFilterFreq" in g1);
               if (caret) caret.click();
               const windRow = $("zenScenePop") ? $("zenScenePop").querySelector('[data-scene="wind"]') : null;
               if (windRow) windRow.click();
-              const g2 = snd.graph();
-              const windOk = !!g2 && g2.scene === "wind" && g2.droplets === false && g2.drumScheduled === false && (g2.roles.noise || 0) >= 1;
-              if (caret) caret.click();
-              const drumRow = $("zenScenePop") ? $("zenScenePop").querySelector('[data-scene="rain-drum"]') : null;
-              if (drumRow) drumRow.click();
-              const g3 = snd.graph();
-              const drumOk = !!g3 && g3.scene === "rain-drum" && g3.drumScheduled === true && g3.sustainedToneOscillators === 0;
+              const st2 = snd.status();
+              const switchOk = snd.scene() === "wind" && (st2.pending === "wind" || (snd.graph() && snd.graph().scene === "wind") || st2.status === "error");
               setZenMode(false); window.beukZen.settle();
-              const stoppedOnExit = !!snd && !snd.playing() && !snd.hasContext() && snd.graph() === null;
-              return scVerdict(silentBefore && popOk && graphOk && windOk && drumOk && stoppedOnExit,
-                "silent before the writer's click; popover lists rain / rain-drum / wind; live graph: master lowpass at " + (g1 ? g1.masterFilterFreq : "?") + "Hz, roles " + (g1 ? JSON.stringify(g1.roles) : "?") + ", zero sustained tone oscillators; popover switches reached wind (noise bed only) and rain-drum (drum scheduled); exit stopped every source and released the context");
+              const stoppedOnExit = !snd.playing() && !snd.hasContext() && snd.graph() === null;
+              const synthCalls = Object.keys(calls).reduce((a, k) => a + calls[k], 0);
+              const noSynth = synthCalls === 0 && typeof zenNoiseBuffer === "undefined" && typeof zenDroplet === "undefined" && typeof zenDrumHit === "undefined";
+              return scVerdict(filesOk && labelsOk && migOk && silentBefore && popOk && pickedWaves && targetOk && switchOk && stoppedOnExit && noSynth,
+                "scenes " + scenes.join("/") + " → " + scenes.map((s) => new URL(snd.url(s)).pathname).join(", ") + " (" + filesOk + "); labels in " + Object.keys(UI_STRINGS).length + " locales (" + labelsOk + "); migration " + mig + ", stored rain-drum → rain (" + migStored + "), unknown → rain (" + unknownStored + "); popover rain/waves/wind (" + popOk + "); start targets waves (" + st1.status + "), switch reaches wind (" + switchOk + "); synthesis calls while starting/switching/stopping: " + JSON.stringify(calls) + "; exit released the context (" + stoppedOnExit + ")");
             } finally {
+              if (proto) Object.keys(orig).forEach((k) => { proto[k] = orig[k]; });
               setZenMode(false); window.beukZen.settle();
               try {
                 if (keepSnd === null) localStorage.removeItem(ZEN_SOUND_KEY); else localStorage.setItem(ZEN_SOUND_KEY, keepSnd);
@@ -32842,6 +32880,7 @@
               } catch (e) {}
             }
           } },
+        /* ==== /BEUK:sound ==== */
         { id: "zen.nav.switch", feature: "zen", name: "Zen section navigation: in zen, the bottom cluster's chevrons, the section index, the continue line and Alt+Arrow keys change the open section without leaving zen — and the pill and cluster update to the new section and its word counts",
           run() {
             const keepId = state.activeId;
@@ -34658,6 +34697,110 @@
         });
       }
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS = SELF_CHECKS; window.runBeukSelfChecks = runSelfChecks; }
+      /* ==== BEUK:sound ==== */
+      /* Checks that need the network and the decoder, so they cannot
+         answer synchronously: window.runBeukAsyncSelfChecks() runs them
+         and resolves to the same result shape as runBeukSelfChecks(). */
+      const SELF_CHECKS_ASYNC = [
+        { id: "zen.sound.files-decode", feature: "zen", name: "Zen sound files: every scene's recording is served from this origin as audio/mpeg, is at most 1.5 MB (4.5 MB together), decodes in this browser to pad + loop + pad seconds, and its loop is seamless on the decoded samples — the loop end runs into the loop start with no level step and the padded tail repeats the head",
+          async run() {
+            const snd = window.beukZenSound;
+            const files = snd.files();
+            const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+            if (!OAC) return scVerdict(false, "no OfflineAudioContext in this browser — cannot decode to verify");
+            const rows = []; let total = 0; let ok = true;
+            for (const s of snd.scenes()) {
+              const f = files[s];
+              const res = await fetch(snd.url(s), { credentials: "same-origin" });
+              const type = (res.headers.get("content-type") || "").split(";")[0].trim();
+              const bytes = await res.arrayBuffer();
+              const size = bytes.byteLength; /* read before decodeAudioData detaches the buffer */
+              total += size;
+              const ctx = new OAC(2, 1, 44100);
+              const buf = await new Promise((resolve, reject) => { try { const p = ctx.decodeAudioData(bytes, resolve, reject); if (p && p.then) p.then(resolve, reject); } catch (e) { reject(e); } });
+              const sr = buf.sampleRate, d = buf.getChannelData(0);
+              const want = f.pad * 2 + f.loop;
+              const durOk = Math.abs(buf.duration - want) < 0.15;
+              /* Seam: 50 ms RMS just before loopEnd vs just after loopStart, and
+                 the correlation of the periodic copy (the tail pad repeats the head). */
+              const a = Math.round(f.pad * sr), b = Math.round((f.pad + f.loop) * sr), n = Math.round(0.05 * sr);
+              const rms = (i0, i1) => { let q = 0; for (let i = i0; i < i1; i++) q += d[i] * d[i]; return Math.sqrt(q / Math.max(1, i1 - i0)); };
+              const step = 20 * Math.log10((rms(b - n, b) + 1e-9) / (rms(a, a + n) + 1e-9));
+              let best = -1;
+              for (let lag = -64; lag <= 64; lag++) {
+                let xy = 0, xx = 0, yy = 0;
+                for (let i = 0; i < 8192; i++) { const x = d[a + i], y = d[b + i + lag]; xy += x * y; xx += x * x; yy += y * y; }
+                const c = xy / Math.sqrt(xx * yy + 1e-12); if (c > best) best = c;
+              }
+              const jump = Math.abs(d[b] - d[b - 1]), typical = (() => { let q = 0; for (let i = a + 1; i < a + 4097; i++) q += Math.abs(d[i] - d[i - 1]); return q / 4096; })();
+              const seamOk = Math.abs(step) < 3 && best > 0.9 && jump < typical * 8 + 1e-4;
+              const rowOk = res.ok && type === "audio/mpeg" && size > 100 * 1024 && size <= 1.5 * 1024 * 1024 && durOk && seamOk;
+              ok = ok && rowOk;
+              rows.push(s + ": " + res.status + " " + type + " " + (size / 1024).toFixed(0) + " KB, decoded " + buf.duration.toFixed(3) + " s (want " + want.toFixed(3) + "), seam RMS step " + step.toFixed(2) + " dB, periodic copy r=" + best.toFixed(3) + ", seam sample jump " + jump.toFixed(4) + " vs typical " + typical.toFixed(4) + (rowOk ? "" : " ✗"));
+            }
+            ok = ok && total <= 4.5 * 1024 * 1024;
+            return scVerdict(ok, rows.join("; ") + "; total " + (total / 1024).toFixed(0) + " KB");
+          } },
+        { id: "zen.sound.buffer-loop", feature: "zen", name: "Zen sound playback: the writer's click plays the chosen scene's recording through one looping AudioBufferSourceNode (loop on, looping exactly [pad, pad + loop)) fed from /assets/sound/<scene>.mp3, fading in to the master level over about two seconds; switching scenes crossfades to the other file; stopping releases everything; no oscillator, filter or generated buffer is ever made",
+          async run() {
+            const keepSnd = (() => { try { return localStorage.getItem(ZEN_SOUND_KEY); } catch (e) { return null; } })();
+            const keepScene = (() => { try { return localStorage.getItem(ZEN_SCENE_KEY); } catch (e) { return null; } })();
+            const AC = window.AudioContext || window.webkitAudioContext;
+            const proto = AC ? AC.prototype : null;
+            const calls = {}; const orig = {};
+            try {
+              if (proto) ["createOscillator", "createBiquadFilter", "createBuffer", "createScriptProcessor", "createConstantSource", "createIIRFilter"].forEach((k) => { if (typeof proto[k] === "function") { orig[k] = proto[k]; calls[k] = 0; proto[k] = function () { calls[k]++; return orig[k].apply(this, arguments); }; } });
+              const snd = window.beukZenSound, files = snd.files();
+              snd.setScene("rain");
+              setZenMode(true); window.beukZen.settle();
+              const btn = $("btnZenSound");
+              btn.click();
+              await snd.settled();
+              const g1 = snd.graph() || {};
+              const v1 = (g1.voices || [])[0] || {};
+              const f1 = files.rain;
+              const voiceOk = g1.status === "on" && snd.playing() && btn.getAttribute("aria-pressed") === "true" && (g1.voices || []).length === 1 && v1.loop === true &&
+                Math.abs(v1.loopStart - f1.pad) < 1e-6 && Math.abs(v1.loopEnd - (f1.pad + f1.loop)) < 1e-6 && /\/assets\/sound\/rain\.mp3$/.test(new URL(v1.url).pathname) &&
+                Math.abs(v1.bufferDuration - (f1.pad * 2 + f1.loop)) < 0.15;
+              const fading = g1.masterGain < g1.masterTarget;
+              await new Promise((r) => setTimeout(r, 2300));
+              const g1b = snd.graph() || {};
+              const levelOk = Math.abs(g1b.masterGain - g1b.masterTarget) < 0.01 && (g1b.contextState === "running");
+              snd.setScene("waves");
+              await snd.settled();
+              const g2 = snd.graph() || {};
+              const cross = (g2.voices || []).map((v) => v.scene).join("+");
+              const switchOk = g2.scene === "waves" && cross === "rain+waves" && /\/assets\/sound\/waves\.mp3$/.test(new URL(g2.voices[1].url).pathname);
+              await new Promise((r) => setTimeout(r, 2400));
+              const g3 = snd.graph() || {};
+              const settledOk = (g3.voices || []).map((v) => v.scene).join("+") === "waves";
+              btn.click();
+              const stopOk = !snd.playing() && !snd.hasContext() && snd.graph() === null;
+              setZenMode(false); window.beukZen.settle();
+              const synth = Object.keys(calls).reduce((a, k) => a + calls[k], 0);
+              return scVerdict(voiceOk && fading && levelOk && switchOk && settledOk && stopOk && synth === 0,
+                "rain voice " + JSON.stringify(v1) + " (" + voiceOk + "); master fading in at " + g1.masterGain + " → " + g1b.masterGain + " of " + g1b.masterTarget + ", context " + g1b.contextState + "; switch crossfade voices " + cross + " then " + (g3.voices || []).map((v) => v.scene).join("+") + "; stop released (" + stopOk + "); synthesis calls " + JSON.stringify(calls));
+            } finally {
+              if (proto) Object.keys(orig).forEach((k) => { proto[k] = orig[k]; });
+              window.beukZenSound.stop();
+              setZenMode(false); window.beukZen.settle();
+              try {
+                if (keepSnd === null) localStorage.removeItem(ZEN_SOUND_KEY); else localStorage.setItem(ZEN_SOUND_KEY, keepSnd);
+                if (keepScene === null) localStorage.removeItem(ZEN_SCENE_KEY); else localStorage.setItem(ZEN_SCENE_KEY, keepScene);
+              } catch (e) {}
+            }
+          } }
+      ];
+      async function runAsyncSelfChecks() {
+        const out = [];
+        for (const c of SELF_CHECKS_ASYNC) {
+          try { const r = await c.run(); out.push({ id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }); }
+          catch (e) { out.push({ id: c.id, feature: c.feature, name: c.name, pass: false, detail: "threw: " + (e && e.message ? e.message : String(e)) }); }
+        }
+        return out;
+      }
+      if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS_ASYNC = SELF_CHECKS_ASYNC; window.runBeukAsyncSelfChecks = runAsyncSelfChecks; }
+      /* ==== /BEUK:sound ==== */
 
       /* ==== BEUK:local ==== */
       /* ================= Local-first saving =================
@@ -35330,7 +35473,20 @@
           $("btnZenDictate").addEventListener("contextmenu", (e) => { if (typeof dictOpenLangPicker === "function") { e.preventDefault(); dictOpenLangPicker($("btnZenDictate")); } });
           if (typeof dictSyncUi === "function") dictSyncUi();
           $("btnZenSound").addEventListener("click", () => {
-            if (zenSound.playing) { zenSoundStop(); zenSoundSetPref(false); zenSoundSyncBtn(); }
+            /* BEUK:sound — a click while a file is still loading cancels it, like a click while playing */
+            if (zenSound.status === "blocked" && zenSound.ctx) {
+              /* a fresh click is a fresh user gesture: ask the browser
+                 again; if it still will not start, this click turns the
+                 sound off — the writer is never stuck in "blocked". */
+              const c = zenSound.ctx;
+              let r = null;
+              try { r = c.resume(); } catch (e) {}
+              Promise.race([r && r.then ? r.catch(() => {}) : Promise.resolve(), new Promise((res) => setTimeout(res, 700))]).then(() => {
+                if (zenSound.ctx === c && c.state !== "running") { zenSoundStop(); zenSoundSetPref(false); zenSoundSyncBtn(); }
+              });
+              return;
+            }
+            if (zenSound.playing || zenSound.status === "loading") { zenSoundStop(); zenSoundSetPref(false); zenSoundSyncBtn(); }
             else zenSoundStart();
           });
           $("btnZenScenes").addEventListener("click", (ev) => {
@@ -35348,6 +35504,7 @@
           pop.id = "zenScenePop";
           pop.setAttribute("role", "menu");
           pop.innerHTML = '<div class="zs-head" data-i18n="zen.sound">' + esc(t("zen.sound")) + '</div>' +
+            '<div class="zs-status" role="status" aria-live="polite" style="display:none"></div>' +
             ZEN_SCENES.map((s) => '<button type="button" class="zs-opt" role="menuitemradio" aria-checked="false" data-scene="' + s + '"><span class="zs-dot" aria-hidden="true"></span><span data-i18n="' + zenSceneKey(s) + '">' + esc(t(zenSceneKey(s))) + '</span></button>').join("");
           document.body.appendChild(pop);
           pop.querySelectorAll(".zs-opt").forEach((b) => b.addEventListener("click", () => {
@@ -35680,157 +35837,208 @@
           }
         }
       }
-      /* Ambient sound: soft, low and slow — no sustained tones at
-         all. Everything is generated locally with the Web Audio API
-         (no files, no network) and runs through a master lowpass
-         near 1.1kHz at low gain, so nothing bright can ever reach
-         the ear. Three scenes: gentle rain (a filtered noise bed
-         whose patter breathes slowly, with sparse low droplet
-         plinks), rain with a very slow soft frame-drum pulse beneath
-         it, and soft wind (the quietest). Off by default; entering
-         zen never starts it. Only the writer's own click on the
-         toggle starts it, in that session; the sound and scene
-         choices are remembered (a small gilt dot on the toggle) but
-         sound itself never resumes on its own. Fades run about two
-         seconds, on start, on stop and on scene switches. */
+      /* ==== BEUK:sound ==== */
+      /* Ambient sound: REAL field recordings, no synthesis. Three
+         scenes — gentle rain, soft waves on a shore, soft wind — each a
+         public-domain / CC0 recording (client/assets/sound/CREDITS.md
+         names every source page, licence line, sha256 and edit), cut
+         into a 45–90 s loop whose seam is crossfaded so the loop point
+         is inaudible, loudness-matched across scenes.
+
+         Playback is Web Audio: on the first play of a scene its file is
+         fetched from this origin, decoded (decodeAudioData) and played
+         by an AudioBufferSourceNode with loop=true — sample-accurate,
+         gapless — through a per-voice gain into one master gain. No
+         oscillators, no noise generators, no filters.
+
+         The encoder-padding problem, solved by construction: every
+         MP3 decoder emits some priming/padding samples (LAME writes a
+         576-sample encoder delay; decoders differ in whether they
+         remove it — https://hydrogenaudio.org/index.php/topic,39431.0.html,
+         https://ffmpeg.org/pipermail/ffmpeg-devel/2016-June/194840.html),
+         and decodeAudioData also resamples to the context's rate
+         (https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/decodeAudioData).
+         So each file carries `pad` seconds of the loop's own tail BEFORE
+         the loop and `pad` seconds of its head AFTER it: the content is
+         periodic with period `loop` across the whole interior. Playback
+         loops [pad, pad + loop) — whatever small offset a decoder adds,
+         that window is still exactly one period of the loop, so the
+         seam stays seamless in every browser. MP3 is the format every
+         engine decodes (MDN audio codec guide: MP3 "Yes" in Chrome,
+         Edge, Firefox, Opera, Safari 3.1+ —
+         https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Audio_codecs;
+         https://caniuse.com/mp3); Opus is only played by Safari inside
+         CAF (same MDN page), and AAC in Firefox depends on the OS.
+
+         The contract is unchanged: off by default; entering zen never
+         starts it; only the writer's own click on the toggle starts it,
+         in that session; the scene choice is remembered (a small gilt
+         dot on the toggle) but sound itself never resumes on its own.
+         Fades run about two seconds on start, on stop and on scene
+         switches (a crossfade). The toggle shows "on" only once sound
+         is actually playing: while a file loads the popover says so,
+         and if it cannot load (offline before the first play) or this
+         browser cannot decode it, the popover says that plainly and
+         nothing plays. The service worker keeps each file after its
+         first play, so a scene that played once works offline. */
       const ZEN_SCENE_KEY = "beuk.zenScene.v1";
-      const ZEN_SCENES = ["rain", "rain-drum", "wind"];
+      const ZEN_SCENES = ["rain", "waves", "wind"];
+      /* Loop geometry per file (seconds), written by the build in
+         CREDITS.md: the file is pad + loop + pad long. */
+      const ZEN_SOUND_FILES = {
+        rain: { file: "assets/sound/rain.mp3", pad: 0.5, loop: 60 },
+        waves: { file: "assets/sound/waves.mp3", pad: 0.5, loop: 60 },
+        wind: { file: "assets/sound/wind.mp3", pad: 0.5, loop: 60 }
+      };
+      const ZEN_SOUND_LEVEL = 0.7; /* files are mastered to -27 LUFS; ~-30 LUFS at the ear before the system volume */
+      const ZEN_SOUND_FADE = 2;
+      /* Older studios stored "rain-drum" (a synthesized scene that is
+         gone); it becomes rain, and anything unknown becomes rain. */
+      function zenSceneMigrate(v) { return v === "rain-drum" ? "rain" : (ZEN_SCENES.indexOf(v) >= 0 ? v : "rain"); }
       function zenScenePref() {
-        try { const v = window.localStorage && localStorage.getItem(ZEN_SCENE_KEY); return ZEN_SCENES.indexOf(v) >= 0 ? v : "rain"; }
-        catch (e) { return "rain"; }
+        try {
+          const v = window.localStorage ? localStorage.getItem(ZEN_SCENE_KEY) : null;
+          const m = zenSceneMigrate(v);
+          if (v !== null && v !== m) { try { localStorage.setItem(ZEN_SCENE_KEY, m); } catch (e) {} }
+          return m;
+        } catch (e) { return "rain"; }
       }
       function zenSceneSetPref(v) { try { if (window.localStorage) localStorage.setItem(ZEN_SCENE_KEY, v); } catch (e) {} }
-      function zenSceneKey(name) { return "zen.scene." + (name === "rain-drum" ? "rainDrum" : name); }
-      const zenSound = { ctx: null, master: null, masterFilter: null, bus: null, scene: null, sceneNodes: null, timers: [], live: [], playing: false, _noiseBuf: null, _noiseCtx: null };
-      function zenSndLater(fn, ms) { zenSound.timers.push(setTimeout(fn, ms)); }
-      function zenSndClearTimers() { zenSound.timers.forEach((id) => clearTimeout(id)); zenSound.timers = []; }
-      function zenLiveAdd(role, node) { const e = { role, node }; zenSound.live.push(e); return e; }
-      function zenLiveDrop(e) { const i = zenSound.live.indexOf(e); if (i >= 0) zenSound.live.splice(i, 1); }
-      function zenNoiseBuffer(ctx) {
-        if (zenSound._noiseBuf && zenSound._noiseCtx === ctx) return zenSound._noiseBuf;
-        const len = ctx.sampleRate * 2;
-        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-        zenSound._noiseBuf = buf; zenSound._noiseCtx = ctx;
-        return buf;
+      function zenSceneKey(name) { return "zen.scene." + name; }
+      function zenSoundUrl(scene) {
+        const f = ZEN_SOUND_FILES[scene];
+        try { return new URL(f.file, document.baseURI).href; } catch (e) { return f.file; }
       }
-      function zenTeardownScene(fadeMs) {
-        const nodes = zenSound.sceneNodes;
-        zenSound.sceneNodes = null;
-        if (!nodes) return;
+      /* status: "off" | "loading" | "on" | "blocked" (decoded and
+         started, but the browser keeps the context suspended) | "error". `error` is
+         "offline" (the file could not be fetched), "unsupported" (no
+         Web Audio, or this browser could not decode the file). */
+      const zenSound = { ctx: null, master: null, scene: null, voice: null, playing: false, status: "off", error: "", pending: null, token: 0, buffers: {}, loads: {}, live: [], settle: null };
+      function zenSoundDecode(ctx, bytes) {
+        /* Promise form where supported; the callback form for older
+           WebKit, which only takes callbacks. */
+        return new Promise((resolve, reject) => {
+          let done = false;
+          const ok = (b) => { if (!done) { done = true; resolve(b); } };
+          const bad = (e) => { if (!done) { done = true; reject(e || new Error("decode")); } };
+          try { const p = ctx.decodeAudioData(bytes, ok, bad); if (p && typeof p.then === "function") p.then(ok, bad); }
+          catch (e) { bad(e); }
+        });
+      }
+      function zenSoundLoad(scene, ctx) {
+        const url = zenSoundUrl(scene);
+        const key = url + "@" + ctx.sampleRate;
+        if (zenSound.buffers[key]) return Promise.resolve(zenSound.buffers[key]);
+        if (zenSound.loads[key]) return zenSound.loads[key];
+        const p = fetch(url, { credentials: "same-origin" })
+          .then((res) => { if (!res.ok) { const e = new Error("HTTP " + res.status); e.kind = "offline"; throw e; } return res.arrayBuffer(); },
+            (err) => { const e = new Error(err && err.message ? err.message : "fetch failed"); e.kind = "offline"; throw e; })
+          .then((bytes) => zenSoundDecode(ctx, bytes).catch((err) => { if (err && err.kind) throw err; const e = new Error("decode failed"); e.kind = "unsupported"; throw e; }))
+          .then((buf) => { zenSound.buffers[key] = buf; delete zenSound.loads[key]; return buf; },
+            (err) => { delete zenSound.loads[key]; throw err; });
+        zenSound.loads[key] = p;
+        return p;
+      }
+      function zenSoundVoice(scene, buf) {
         const ctx = zenSound.ctx;
-        if (ctx && fadeMs > 0) {
-          const t0 = ctx.currentTime;
-          try {
-            nodes.gain.gain.cancelScheduledValues(t0);
-            nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, t0);
-            nodes.gain.gain.linearRampToValueAtTime(0, t0 + fadeMs / 1000);
-          } catch (e) {}
-          const stops = nodes.stops.slice();
-          zenSndLater(() => { stops.forEach((fn) => { try { fn(); } catch (e) {} }); try { nodes.gain.disconnect(); } catch (e) {} }, fadeMs + 80);
-        } else {
-          nodes.stops.forEach((fn) => { try { fn(); } catch (e) {} });
-          try { nodes.gain.disconnect(); } catch (e) {}
-        }
-      }
-      function zenDroplet(nodes) {
-        const ctx = zenSound.ctx; if (!ctx) return;
-        const t0 = ctx.currentTime;
-        const o = ctx.createOscillator(); o.type = "sine";
-        o.frequency.value = 400 + Math.random() * 500;
-        const og = ctx.createGain();
-        const peak = 0.03 + Math.random() * 0.05;
-        og.gain.setValueAtTime(0, t0);
-        og.gain.linearRampToValueAtTime(peak, t0 + 0.012);
-        og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22 + Math.random() * 0.15);
-        o.connect(og); og.connect(nodes.gain);
-        const e = zenLiveAdd("droplet", o);
-        o.onended = () => zenLiveDrop(e);
-        o.start(t0); o.stop(t0 + 0.45);
-      }
-      function zenScheduleDroplets(nodes) {
-        const tick = () => {
-          if (zenSound.sceneNodes !== nodes || !zenSound.ctx) return;
-          zenDroplet(nodes);
-          zenSndLater(tick, 350 + Math.random() * 1300);
-        };
-        zenSndLater(tick, 300 + Math.random() * 700);
-      }
-      function zenDrumHit(nodes) {
-        const ctx = zenSound.ctx; if (!ctx) return;
-        const t0 = ctx.currentTime;
-        const o = ctx.createOscillator(); o.type = "sine";
-        o.frequency.setValueAtTime(112, t0);
-        o.frequency.exponentialRampToValueAtTime(58, t0 + 0.14);
-        const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 260;
-        const og = ctx.createGain();
-        og.gain.setValueAtTime(0, t0);
-        og.gain.linearRampToValueAtTime(0.34, t0 + 0.015);
-        og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.42);
-        o.connect(f); f.connect(og); og.connect(nodes.gain);
-        const e = zenLiveAdd("drum", o);
-        o.onended = () => zenLiveDrop(e);
-        o.start(t0); o.stop(t0 + 0.5);
-        const tap = ctx.createBufferSource(); tap.buffer = zenNoiseBuffer(ctx);
-        const tf = ctx.createBiquadFilter(); tf.type = "lowpass"; tf.frequency.value = 700;
-        const tg = ctx.createGain();
-        tg.gain.setValueAtTime(0.05, t0);
-        tg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
-        tap.connect(tf); tf.connect(tg); tg.connect(nodes.gain);
-        const e2 = zenLiveAdd("tap", tap);
-        tap.onended = () => zenLiveDrop(e2);
-        tap.start(t0); tap.stop(t0 + 0.08);
-      }
-      function zenScheduleDrum(nodes) {
-        const pattern = [1, 0, 1, 0, 0, 0, 1, 0];
-        const tick = () => {
-          if (zenSound.sceneNodes !== nodes || !zenSound.ctx) return;
-          if (pattern[nodes.step % pattern.length]) zenDrumHit(nodes);
-          nodes.step++;
-          zenSndLater(tick, 1220 + (Math.random() * 70 - 35));
-        };
-        zenSndLater(tick, 900);
-      }
-      function zenBuildScene(name) {
-        const ctx = zenSound.ctx;
-        if (!ctx || !zenSound.bus) return;
-        const g = ctx.createGain(); g.gain.value = 0; g.connect(zenSound.bus);
-        const nodes = { gain: g, stops: [], name, step: 0, droplets: false, drum: false };
+        const f = ZEN_SOUND_FILES[scene];
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        src.loopStart = f.pad;
+        src.loopEnd = f.pad + f.loop;
+        const g = ctx.createGain();
         const t0 = ctx.currentTime;
         g.gain.setValueAtTime(0, t0);
-        g.gain.linearRampToValueAtTime(1, t0 + (name === "wind" ? 2.2 : 1.8));
-        const noiseBed = (freq, level, lfoRate, lfoDepth, swellRate, swellDepth) => {
-          const src = ctx.createBufferSource(); src.buffer = zenNoiseBuffer(ctx); src.loop = true;
-          const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = freq; f.Q.value = 0.3;
-          const ng = ctx.createGain(); ng.gain.value = level;
-          src.connect(f); f.connect(ng); ng.connect(g); src.start();
-          const e = zenLiveAdd("noise", src);
-          const lfo = ctx.createOscillator(); lfo.frequency.value = lfoRate;
-          const lfoG = ctx.createGain(); lfoG.gain.value = lfoDepth;
-          lfo.connect(lfoG); lfoG.connect(f.frequency); lfo.start();
-          const lfo2 = ctx.createOscillator(); lfo2.frequency.value = swellRate;
-          const lfo2G = ctx.createGain(); lfo2G.gain.value = swellDepth;
-          lfo2.connect(lfo2G); lfo2G.connect(ng.gain); lfo2.start();
-          nodes.stops.push(() => { try { src.stop(); } catch (err) {} zenLiveDrop(e); try { lfo.stop(); lfo2.stop(); } catch (err) {} });
-        };
-        if (name === "rain" || name === "rain-drum") {
-          noiseBed(720, 0.5, 0.07, 170, 0.045, 0.12);
-          nodes.droplets = true;
-          zenScheduleDroplets(nodes);
-          if (name === "rain-drum") { nodes.drum = true; zenScheduleDrum(nodes); }
+        g.gain.linearRampToValueAtTime(1, t0 + ZEN_SOUND_FADE);
+        src.connect(g); g.connect(zenSound.master);
+        src.start(t0, f.pad);
+        const v = { scene, url: zenSoundUrl(scene), src, gain: g, startedAt: t0 };
+        const e = { role: "buffer", node: src, scene, url: v.url };
+        zenSound.live.push(e);
+        v.entry = e;
+        return v;
+      }
+      function zenSoundRetire(v, fadeSec) {
+        if (!v) return;
+        const ctx = zenSound.ctx;
+        const drop = () => { try { v.src.stop(); } catch (e) {} try { v.gain.disconnect(); } catch (e) {} const i = zenSound.live.indexOf(v.entry); if (i >= 0) zenSound.live.splice(i, 1); };
+        if (!ctx || !(fadeSec > 0)) { drop(); return; }
+        try {
+          const t0 = ctx.currentTime;
+          v.gain.gain.cancelScheduledValues(t0);
+          v.gain.gain.setValueAtTime(v.gain.gain.value, t0);
+          v.gain.gain.linearRampToValueAtTime(0, t0 + fadeSec);
+          v.src.stop(t0 + fadeSec + 0.05);
+        } catch (e) { drop(); return; }
+        setTimeout(drop, fadeSec * 1000 + 120);
+      }
+      function zenSoundFail(err, token) {
+        if (token !== zenSound.token) return;
+        zenSound.error = (err && err.kind) || "unsupported";
+        zenSound.pending = null;
+        if (zenSound.voice) {
+          /* A scene switch failed: the scene already playing keeps
+             playing and stays the remembered one. */
+          zenSound.status = "on";
+          zenSceneSetPref(zenSound.voice.scene);
         } else {
-          noiseBed(340, 0.34, 0.05, 150, 0.033, 0.13);
+          zenSound.status = "error";
+          zenSound.playing = false;
+          const c = zenSound.ctx;
+          zenSound.ctx = null; zenSound.master = null; zenSound.scene = null; zenSound.live = [];
+          if (c) { try { c.close(); } catch (e) {} }
         }
-        zenSound.sceneNodes = nodes;
-        zenSound.scene = name;
+        zenSoundSyncBtn();
+        const pop = $("zenScenePop");
+        if (pop) { pop.classList.add("open"); const caret = $("btnZenScenes"); if (caret) caret.setAttribute("aria-expanded", "true"); }
+      }
+      function zenSoundPlayScene(scene) {
+        const ctx = zenSound.ctx;
+        if (!ctx) return Promise.resolve();
+        const token = zenSound.token;
+        zenSound.pending = scene;
+        zenSound.error = "";
+        if (!zenSound.voice) zenSound.status = "loading";
+        zenSoundSyncBtn();
+        const run = zenSoundLoad(scene, ctx).then((buf) => {
+          if (token !== zenSound.token || zenSound.ctx !== ctx || zenSound.pending !== scene) return;
+          const old = zenSound.voice;
+          zenSound.voice = zenSoundVoice(scene, buf);
+          zenSound.scene = scene;
+          zenSound.pending = null;
+          if (old) zenSoundRetire(old, ZEN_SOUND_FADE);
+          else {
+            const t0 = ctx.currentTime;
+            zenSound.master.gain.cancelScheduledValues(t0);
+            zenSound.master.gain.setValueAtTime(zenSound.master.gain.value, t0);
+            zenSound.master.gain.linearRampToValueAtTime(ZEN_SOUND_LEVEL, t0 + ZEN_SOUND_FADE);
+          }
+          /* Honest "on": only once the context is actually running. A
+             browser that keeps it suspended (autoplay policy, no audio
+             device) gets "blocked" and a plain line in the popover; the
+             state flips to on by itself if the context starts later. */
+          if (ctx.state === "running") {
+            zenSound.status = "on";
+            zenSound.playing = true;
+            zenSoundSetPref(true);
+          } else {
+            zenSound.status = "blocked";
+            zenSound.playing = false;
+            const pop = $("zenScenePop");
+            if (pop) { pop.classList.add("open"); const caret = $("btnZenScenes"); if (caret) caret.setAttribute("aria-expanded", "true"); }
+            try { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) {}
+          }
+          zenSoundSyncBtn();
+        }, (err) => zenSoundFail(err, token));
+        zenSound.settle = run;
+        return run;
       }
       function zenSoundSetScene(name) {
         if (ZEN_SCENES.indexOf(name) < 0) return;
         zenSceneSetPref(name);
-        if (zenSound.playing && zenSound.ctx && zenSound.scene !== name) {
-          zenTeardownScene(1100);
-          zenBuildScene(name);
+        if (zenSound.ctx && (zenSound.status === "on" || zenSound.status === "loading" || zenSound.status === "blocked") && (zenSound.pending || zenSound.scene) !== name) {
+          zenSoundPlayScene(name);
         }
         zenSoundSyncBtn();
       }
@@ -35843,72 +36051,84 @@
           b.classList.toggle("active", on);
           b.setAttribute("aria-checked", on ? "true" : "false");
         });
+        const st = pop.querySelector(".zs-status");
+        if (st) {
+          let key = "";
+          if (zenSound.pending) key = "zen.sound.loading";
+          if (zenSound.status === "blocked") key = "zen.sound.blocked";
+          if (zenSound.error === "offline") key = "zen.sound.failed";
+          else if (zenSound.error === "unsupported") key = "zen.sound.unsupported";
+          st.setAttribute("data-state", (zenSound.error || zenSound.status === "blocked") ? "error" : (key ? "loading" : ""));
+          if (key) { st.setAttribute("data-i18n", key); st.textContent = t(key); st.style.display = ""; }
+          else { st.removeAttribute("data-i18n"); st.textContent = ""; st.style.display = "none"; }
+        }
       }
       function zenSoundGraph() {
         if (!zenSound.ctx) return null;
         const roles = {};
         zenSound.live.forEach((e) => { roles[e.role] = (roles[e.role] || 0) + 1; });
+        const v = zenSound.voice;
         return {
           scene: zenSound.scene,
-          masterFilterType: zenSound.masterFilter ? zenSound.masterFilter.type : null,
-          masterFilterFreq: zenSound.masterFilter ? Math.round(zenSound.masterFilter.frequency.value) : null,
+          pending: zenSound.pending,
+          status: zenSound.status,
+          contextState: zenSound.ctx.state,
           masterGain: zenSound.master ? Math.round(zenSound.master.gain.value * 1000) / 1000 : null,
+          masterTarget: ZEN_SOUND_LEVEL,
           roles,
-          sustainedToneOscillators: zenSound.live.filter((e) => e.role === "pad" || e.role === "chord").length,
-          droplets: !!(zenSound.sceneNodes && zenSound.sceneNodes.droplets),
-          drumScheduled: !!(zenSound.sceneNodes && zenSound.sceneNodes.drum)
+          voices: zenSound.live.map((e) => ({ scene: e.scene, url: e.url, loop: e.node.loop, loopStart: e.node.loopStart, loopEnd: e.node.loopEnd,
+            bufferDuration: e.node.buffer ? e.node.buffer.duration : null, bufferRate: e.node.buffer ? e.node.buffer.sampleRate : null, channels: e.node.buffer ? e.node.buffer.numberOfChannels : null })),
+          voiceScene: v ? v.scene : null
         };
       }
       function zenSoundSyncBtn() {
         const btn = $("btnZenSound");
-        if (!btn) return;
-        btn.classList.toggle("on", zenSound.playing);
-        btn.classList.toggle("remembered", !zenSound.playing && zenSoundPref());
-        btn.setAttribute("aria-pressed", zenSound.playing ? "true" : "false");
-        const ic = btn.querySelector(".zs-ic");
-        if (ic) ic.innerHTML = zenSound.playing ? ZEN_SND_ON : ZEN_SND_OFF;
+        if (btn) {
+          btn.classList.toggle("on", zenSound.playing);
+          btn.classList.toggle("loading", zenSound.status === "loading");
+          btn.classList.toggle("failed", zenSound.status === "error");
+          btn.classList.toggle("remembered", !zenSound.playing && zenSound.status !== "loading" && zenSoundPref());
+          btn.setAttribute("aria-pressed", zenSound.playing ? "true" : "false");
+          if (zenSound.status === "loading") btn.setAttribute("aria-busy", "true"); else btn.removeAttribute("aria-busy");
+          const ic = btn.querySelector(".zs-ic");
+          if (ic) ic.innerHTML = zenSound.playing ? ZEN_SND_ON : ZEN_SND_OFF;
+        }
         zenSceneSyncPop();
       }
       function zenSoundStart() {
-        if (zenSound.playing) return;
+        if (zenSound.playing || zenSound.status === "loading") return zenSound.settle || Promise.resolve();
         const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-        if (!zenSound.ctx) {
-          const ctx = new AC();
-          const comp = ctx.createDynamicsCompressor();
-          comp.connect(ctx.destination);
-          const mf = ctx.createBiquadFilter(); mf.type = "lowpass"; mf.frequency.value = 1100; mf.Q.value = 0.3;
-          const master = ctx.createGain(); master.gain.value = 0;
-          master.connect(mf); mf.connect(comp);
-          const bus = ctx.createGain(); bus.gain.value = 1; bus.connect(master);
-          zenSound.ctx = ctx; zenSound.master = master; zenSound.masterFilter = mf; zenSound.bus = bus;
-        }
-        const ctx = zenSound.ctx;
-        if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
-        zenBuildScene(zenScenePref());
-        const t0 = ctx.currentTime;
-        zenSound.master.gain.cancelScheduledValues(t0);
-        zenSound.master.gain.setValueAtTime(zenSound.master.gain.value, t0);
-        zenSound.master.gain.linearRampToValueAtTime(0.2, t0 + 2);
-        zenSound.playing = true;
-        zenSoundSetPref(true);
-        zenSoundSyncBtn();
+        zenSound.token++;
+        zenSound.error = "";
+        if (!AC) { zenSoundFail({ kind: "unsupported" }, zenSound.token); return Promise.resolve(); }
+        const ctx = new AC();
+        const master = ctx.createGain(); master.gain.value = 0;
+        master.connect(ctx.destination);
+        zenSound.ctx = ctx; zenSound.master = master; zenSound.voice = null; zenSound.scene = null; zenSound.live = [];
+        /* Created and resumed inside the writer's click, so autoplay
+           policies allow it. */
+        if (ctx.state === "suspended") { try { const r = ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
+        ctx.onstatechange = () => {
+          if (zenSound.ctx !== ctx || zenSound.status !== "blocked" || ctx.state !== "running") return;
+          zenSound.status = "on"; zenSound.playing = true; zenSoundSetPref(true); zenSoundSyncBtn();
+        };
+        return zenSoundPlayScene(zenScenePref());
       }
       function zenSoundStop() {
-        zenSndClearTimers();
-        zenTeardownScene(0);
-        if (zenSound.ctx && zenSound.master) {
-          const closing = zenSound.ctx, master = zenSound.master;
+        zenSound.token++;
+        const closing = zenSound.ctx, master = zenSound.master, voice = zenSound.voice;
+        if (closing && master) {
           try {
             const t0 = closing.currentTime;
             master.gain.cancelScheduledValues(t0);
             master.gain.setValueAtTime(master.gain.value, t0);
             master.gain.linearRampToValueAtTime(0.0001, t0 + 1.8);
-            setTimeout(() => { try { closing.close(); } catch (e) {} }, 2000);
+            setTimeout(() => { if (voice) { try { voice.src.stop(); } catch (e) {} } try { closing.close(); } catch (e) {} }, 2000);
           } catch (e) { try { closing.close(); } catch (e2) {} }
         }
-        zenSound.ctx = null; zenSound.master = null; zenSound.masterFilter = null; zenSound.bus = null;
-        zenSound.scene = null; zenSound.live = [];
+        zenSound.ctx = null; zenSound.master = null; zenSound.voice = null;
+        zenSound.scene = null; zenSound.pending = null; zenSound.live = [];
+        zenSound.status = "off"; zenSound.error = ""; zenSound.settle = null;
         /* Stopping never rewrites the remembered preference: leaving
            zen silences the sound, but the writer's choice stays on
            offer (the toggle's gilt dot) for next time. Only an
@@ -35916,9 +36136,12 @@
         zenSound.playing = false;
         zenSoundSyncBtn();
       }
+      /* ==== /BEUK:sound ==== */
       if (typeof window !== "undefined") {
         window.beukZen = { set: setZenMode, active: () => document.body.classList.contains("zen"), settle: zenSettle, transitioning: () => zenTransitioning, overrideReducedMotion: (v) => { zenReducedOverride = (v === null || v === undefined) ? null : !!v; }, goTo: zenGoTo, step: zenStep, renderSurface: zenRenderSurface };
-        window.beukZenSound = { start: zenSoundStart, stop: zenSoundStop, playing: () => zenSound.playing, hasContext: () => !!zenSound.ctx, pref: zenSoundPref, scene: zenScenePref, setScene: zenSoundSetScene, graph: zenSoundGraph };
+        window.beukZenSound = { start: zenSoundStart, stop: zenSoundStop, playing: () => zenSound.playing, hasContext: () => !!zenSound.ctx, pref: zenSoundPref, scene: zenScenePref, setScene: zenSoundSetScene, graph: zenSoundGraph,
+          /* BEUK:sound — honest status and a promise that settles when the current load/decode does */
+          status: () => ({ status: zenSound.status, error: zenSound.error, pending: zenSound.pending }), settled: () => zenSound.settle || Promise.resolve(), files: () => JSON.parse(JSON.stringify(ZEN_SOUND_FILES)), url: zenSoundUrl, migrate: zenSceneMigrate, scenes: () => ZEN_SCENES.slice() };
       }
       /* ================= Read Aloud =================
          The toolbar's Read Aloud button reads the open section in the book's language

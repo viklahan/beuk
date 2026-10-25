@@ -59,6 +59,11 @@
 	#      (https://api.openverse.org/v1/schema/). Openverse ORIGINALS
 	#      live on each photographer's own host and are NOT allowed —
 	#      see README for that trade-off.
+	#  connect-src 'self' also covers the zen ambient recordings: the
+	#      studio fetch()es /assets/sound/*.mp3 from its own origin and
+	#      decodes them with Web Audio (fetch() is governed by connect-src:
+	#      https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/connect-src).
+	#      file_server types them audio/mpeg (the caddy image's /etc/mime.types).
 	#  worker-src 'self' — the service worker (/sw.js).
 	#  frame-src 'self' — the print-preview iframe (srcdoc) and help.
 	#  form-action / base-uri 'self', object-src 'none',

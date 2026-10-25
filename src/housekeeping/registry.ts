@@ -1684,6 +1684,20 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Zen is a client body-class layout state over the studio chrome.',
   },
+  /* ---- Zen ambient sound: real CC0 / public-domain recordings (BEUK:sound) ---- */
+  {
+    id: 'zen.sound.files-decode',
+    title: 'Zen sound files are same-origin audio/mpeg, within budget, decode to pad + loop + pad seconds and loop seamlessly on the decoded samples',
+    kind: 'client-only',
+    reason:
+      'Decoding is the browser’s own decodeAudioData (asserted by window.runBeukAsyncSelfChecks()). The server side — every shipped file listed in client/assets/sound/CREDITS.md with a matching sha256, CC0/PD licence and the size budget — is tests/sound.test.ts.',
+  },
+  {
+    id: 'zen.sound.buffer-loop',
+    title: 'Zen sound plays the chosen recording through one looping AudioBufferSourceNode, fades in, crossfades on scene switch and creates no oscillator or filter',
+    kind: 'client-only',
+    reason: 'Playback is a Web Audio graph in the studio, asserted by the async client self-check window.runBeukAsyncSelfChecks().',
+  },
   {
     id: 'ui.sidebar.scroll-survives-rerender',
     title: 'Structure pane keeps its scroll position across sidebar rebuilds',

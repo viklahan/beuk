@@ -21,7 +21,15 @@
      shell so the studio opens on the local book with no network.
    - Everything else (the shell's assets, the CDN libraries, the
      fonts) is cache-first, filled from the network on first use. */
-const BEUK_CACHE = "beuk-shell-v3";
+const BEUK_CACHE = "beuk-shell-v4";
+/* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
+   up to ~1 MB each) are NOT precached — install stays small. Each is
+   kept the first time it is played, in its own cache that a shell
+   version bump does not retire, so a scene that has played once plays
+   offline, also after the studio updates. Only complete 200 responses
+   from this origin are stored. */
+const BEUK_SOUND_CACHE = "beuk-sound-v1";
+/* ==== /BEUK:sound ==== */
 const BEUK_SHELL = [
   "../",
   "../index.html",
@@ -61,7 +69,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== BEUK_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== BEUK_CACHE && k !== BEUK_SOUND_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
       .then(() => self.clients.matchAll({ type: "window" }))
       .then((clients) => clients.forEach((c) => c.postMessage({ type: "BEUK_SHELL_READY", cache: BEUK_CACHE })))
@@ -140,6 +148,22 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
+  /* ==== BEUK:sound ==== zen recordings: cache-first from the sound
+     cache, filled on first play. */
+  if (url.origin === self.location.origin && url.pathname.indexOf("/assets/sound/") !== -1 && /.mp3$/.test(url.pathname)) {
+    event.respondWith(
+      caches.open(BEUK_SOUND_CACHE).then((cache) => cache.match(req, { ignoreSearch: true }).then((hit) => {
+        if (hit) return hit;
+        return fetch(req).then((res) => {
+          if (res && res.status === 200 && res.type === "basic") cache.put(req, res.clone()).catch(() => {});
+          return res;
+        });
+      }))
+    );
+    return;
+  }
+  /* ==== /BEUK:sound ==== */
 
   /* Static assets and cross-origin libraries/fonts: cache-first. */
   event.respondWith(

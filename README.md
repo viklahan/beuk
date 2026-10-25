@@ -223,8 +223,10 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v2`; both `client/sw.js` and
-`client/assets/sw.js`). Google Fonts are browser-specific and cannot be
+service worker (cache `beuk-shell-v4`; both `client/sw.js` and
+`client/assets/sw.js`). The zen ambient recordings are not precached:
+each is kept in its own cache (`beuk-sound-v1`, which a shell version
+bump leaves alone) the first time it plays. Google Fonts are browser-specific and cannot be
 precached ahead of time: the page hands the worker the stylesheet and
 the font files it actually loaded, so faces the studio has displayed
 online open offline; any other face falls back to the system fonts in
@@ -1223,6 +1225,48 @@ Self-checks: `dictation.language-picker`, `dictation.language-suggest`,
 server registry). The 12 non-English translations of these strings were
 written by an agent and have not yet been reviewed by native speakers.
 
+## Studio: Zen ambient sound (client-only)
+
+Zen mode's sound toggle plays **real field recordings**, nothing
+synthesized: gentle rain (Felix Blume, banana field, Veracruz), soft
+waves (Dsw4, Lake Ontario shore) and soft wind (alas23/sala, an old
+willow in Utena). All three are public domain; every source page, the
+exact licence line read on it, the sha256 of the original and of the
+shipped file, and every edit are in `client/assets/sound/CREDITS.md`
+(`tests/sound.test.ts` keeps that file and the folder in lock-step and
+checks the size budget: ≤ 1.5 MB each, ≤ 4.5 MB together; today
+3 × 954 KB).
+
+- **Files.** `client/assets/sound/{rain,waves,wind}.mp3` — 0.5 s pad +
+  60 s loop + 0.5 s pad, 44.1 kHz stereo MP3 128 kb/s, all mastered to
+  −27 LUFS. The loop seam is a 4 s equal-power crossfade; the pads are
+  the loop's own tail and head, so the audio is periodic and the studio
+  loops `[0.5 s, 60.5 s)` of the decoded buffer. That keeps the seam
+  clean whatever MP3 encoder delay/padding a browser leaves in (measured
+  in Playwright: Chromium and Firefox decode exactly 61.000 s, WebKit
+  61.048 s). `tools/sound/build_loop.py` rebuilds them.
+- **Playback.** Web Audio: the first play of a scene fetches its file
+  from this origin, `decodeAudioData`, one `AudioBufferSourceNode`
+  (`loop = true`) through a gain into a master gain (0.7); ~2 s fades on
+  start, stop and scene switches (a crossfade). No oscillators, filters
+  or generated noise.
+- **Honest status.** Opt-in only: entering zen never starts audio and
+  sound never resumes on its own. The toggle reads "on" only while the
+  AudioContext is actually running. While a file loads the popover says
+  so; if it cannot load (offline before its first play), cannot be
+  decoded, or the browser keeps audio suspended, the popover says that
+  and nothing claims to play.
+- **Offline.** The service worker keeps each recording in
+  `beuk-sound-v1` the first time it plays, so a scene that has played
+  once plays offline.
+- **Stored choice.** `beuk.zenScene.v1` — `rain` / `waves` / `wind`;
+  the old synthesized `rain-drum` and anything unknown become `rain`.
+- **Checks.** In-studio `zen.sound.opt-in` and `zen.sound.scenes`
+  (`runBeukSelfChecks()`), plus two that need the network and the
+  decoder, `zen.sound.files-decode` and `zen.sound.buffer-loop`
+  (`window.runBeukAsyncSelfChecks()`; registered client-only in
+  Housekeeping).
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a
@@ -1482,6 +1526,12 @@ Real restic against an S3 server is the full-stack proof under
 concurrency; on a small Docker VM, `node --import tsx --test
 --test-concurrency=4 "tests/*.test.ts"` is the same suite with fewer
 PGlite processes at once.
+Zen sound adds (`tests/sound.test.ts`): every recording in
+`client/assets/sound/` listed in its CREDITS.md with a matching sha256
+of the shipped bytes and nothing unlisted, each entry naming a CC0 /
+public-domain source with the licence line quoted, the size budget,
+one file per scene with the synthesis gone, and both service-worker
+twins runtime-caching (never precaching) the recordings.
 M4 adds: every help page, the decoder, and the thanks page serving
 200 through the app; the tip jar present in the served HTML when
 `KOFI_URL` is set and entirely absent (with the word "donation"
