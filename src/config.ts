@@ -66,6 +66,18 @@ export interface Config {
   /** M5 jobs: the PDF/X-1a definition file handed to Ghostscript
    *  (PDFX_DEF; defaults to tools/PDFX_def.ps in the repo). */
   pdfxDefPath: string;
+  /** M5 jobs: Ghostscript's ICC profile directory for the pdfx job
+   *  (PDFX_ICC_DIR, passed as -sICCProfilesDir). pdfwrite converts
+   *  colour into its default_cmyk.icc and ignores -sOutputICCProfile
+   *  (measured on Ghostscript 10.00.0, 2026-10-25 — see
+   *  ghostscriptPdfxArgs), so the tools image builds a directory whose
+   *  default_cmyk.icc IS the press profile the OutputIntent declares.
+   *  Null: the conversion runs through Ghostscript's own built-in CMYK
+   *  profile, and the job result says so. */
+  pdfxIccDir: string | null;
+  /** M5 jobs: resolution (PDFX_INK_DPI, default 100) of the CMYK raster
+   *  the pdfx job renders from its own output to measure total ink. */
+  pdfxInkDpi: number;
   /** M5 jobs: URL of the isolated renderer service (RENDERER_URL, e.g.
    *  http://renderer:3100/render — see deploy/renderer/ and the tools
    *  overlay). The pdfx job POSTs the print-html interior there and
@@ -181,6 +193,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     javaBin: env.JAVA_BIN || 'java',
     gsBin: env.GS_BIN || null,
     pdfxDefPath: env.PDFX_DEF ?? path.resolve(process.cwd(), 'tools', 'PDFX_def.ps'),
+    pdfxIccDir: env.PDFX_ICC_DIR || null,
+    pdfxInkDpi: positiveInt(env.PDFX_INK_DPI, 100),
     rendererUrl: env.RENDERER_URL || null,
     legacyHtmlPdfBin: env.HTML_PDF_BIN || null,
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),

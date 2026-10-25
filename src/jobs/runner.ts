@@ -5,7 +5,8 @@ import path from 'node:path';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { inspectPdf, type PdfInspection } from './pdfinspect.js';
-import { epubcheckProblem, pdfRenderProblem, pdfxProblem, renderPrintPdf, runEpubCheck, runPdfx } from './tools.js';
+import { neutralRgbToGray, textInkFacts, transparencyFacts, type TextInkFacts, type TransparencyFacts } from './pdfpress.js';
+import { epubcheckProblem, measureTac, pdfRenderProblem, pdfxProblem, renderPrintPdf, runEpubCheck, runPdfx, type TacMeasurement } from './tools.js';
 
 /**
  * M5 job runner: a deliberately simple in-process worker. One
@@ -244,9 +245,36 @@ export class JobRunner {
         error: rendered.error,
       });
     }
+    // Step 1b (press): what in the renderer's PDF PDF/X-1a will make
+    // Ghostscript flatten, and which pages carry text before conversion;
+    // then neutral greys (black text included) become DeviceGray so they
+    // print on the black plate alone (src/jobs/pdfpress.ts says why).
+    const renderedBytes = await readFile(renderedPath);
+    const press: Record<string, unknown> = {};
+    let renderedText: TextInkFacts | null = null;
+    try {
+      press.renderedTransparency = transparencyFacts(renderedBytes) satisfies TransparencyFacts;
+      renderedText = textInkFacts(renderedBytes);
+    } catch (err) {
+      press.renderedReadError = err instanceof Error ? err.message : String(err);
+    }
+    let gsInput = renderedPath;
+    try {
+      const gray = neutralRgbToGray(renderedBytes);
+      press.neutralGray = { streams: gray.streams, operators: gray.operators, skipped: gray.skipped };
+      if (gray.operators > 0) {
+        gsInput = path.join(workDir, 'rendered-gray.pdf');
+        await writeFile(gsInput, gray.pdf);
+      }
+    } catch (err) {
+      press.neutralGray = { streams: 0, operators: 0, skipped: `the rewrite failed, so the PDF was converted as rendered: ${err instanceof Error ? err.message : String(err)}` };
+    }
+    press.colourConversion = this.config.pdfxIccDir
+      ? { profileDir: this.config.pdfxIccDir, through: 'default_cmyk.icc in PDFX_ICC_DIR (the press profile in the tools image)' }
+      : { profileDir: null, through: "Ghostscript's built-in default_cmyk.icc — NOT the profile the OutputIntent declares (PDFX_ICC_DIR is not set)" };
     // Step 2: convert the rendered PDF to PDF/X-1a.
     const outputPath = path.join(workDir, 'converted.pdf');
-    const outcome = await runPdfx(this.config, renderedPath, outputPath);
+    const outcome = await runPdfx(this.config, gsInput, outputPath);
     if (!outcome.ok) {
       return this.finish(job.id, 'failed', {
         tool: 'ghostscript',
@@ -269,6 +297,37 @@ export class JobRunner {
         error: `The converted PDF could not be read for inspection: ${err instanceof Error ? err.message : String(err)}`,
       };
     }
+    // Press facts measured on the converted file itself: the colour every
+    // piece of text is shown in, the pages that still carry real text
+    // (a page Ghostscript flattened to a picture carries none), and the
+    // highest total ink of a CMYK raster of every page.
+    let outText: TextInkFacts | null = null;
+    try {
+      outText = textInkFacts(bytes);
+      press.text = {
+        textShows: outText.textShows,
+        kOnly: outText.kOnly,
+        kValues: outText.kValues,
+        otherColours: outText.otherColours,
+        notes: outText.notes.slice(0, 10),
+      };
+    } catch (err) {
+      press.text = { error: err instanceof Error ? err.message : String(err) };
+    }
+    if (renderedText && outText) {
+      const kept = new Set(outText.pagesWithText);
+      const lost = renderedText.pagesWithText.filter((p) => !kept.has(p));
+      press.textPages = {
+        rendered: renderedText.pagesWithText.length,
+        converted: outText.pagesWithText.length,
+        // Pages whose text the renderer wrote as text but the converted
+        // file no longer carries as text: flattened to pictures.
+        flattened: renderedText.pageCount === outText.pageCount ? lost.length : null,
+        flattenedPages: renderedText.pageCount === outText.pageCount ? lost.slice(0, 200) : null,
+      };
+    }
+    const ink = await measureTac(this.config, outputPath, workDir);
+    press.ink = ink.ok ? (ink.value satisfies TacMeasurement) : { error: ink.error };
     const sha256 = createHash('sha256').update(bytes).digest('hex');
     const base = source.filename.replace(/\.[^.]*$/, '') || 'beuk-export';
     const filename = `${base}-pdfx.pdf`;
@@ -296,6 +355,7 @@ export class JobRunner {
         outputBytes: bytes.length,
         outputSha256: sha256,
         inspection,
+        press,
       },
       artifactId,
     );

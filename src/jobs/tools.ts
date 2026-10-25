@@ -1,8 +1,9 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { copyFile, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
+import { parsePam, tacFromPam } from './pdfpress.js';
 
 /**
  * M5 tool adapters: the ONLY code that talks to the external binaries
@@ -442,6 +443,16 @@ export function pdfxProblem(config: Config): string | null {
       'exists. This is a server setup gap, not a finding about your book.'
     );
   }
+  // The conversion profile directory (PDFX_ICC_DIR): without its
+  // default_cmyk.icc Ghostscript would fail to start its colour
+  // management, so a half-built directory is a setup gap, said plainly.
+  if (config.pdfxIccDir && !existsSync(path.join(config.pdfxIccDir, 'default_cmyk.icc'))) {
+    return (
+      'PDF/X conversion is not configured on this server (the colour-conversion profile directory ' +
+      `PDFX_ICC_DIR="${config.pdfxIccDir}" has no default_cmyk.icc), so this job was not run and no ` +
+      'converted file exists. This is a server setup gap, not a finding about your book.'
+    );
+  }
   return null;
 }
 
@@ -480,6 +491,7 @@ export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPat
   return [
     '-dSAFER',
     ...(icc ? [`--permit-file-read=${icc}`] : []),
+    ...pdfxIccDirArgs(config),
     '-dPDFX',
     // Chromium writes the book's links (TOC entries, URLs) as Link
     // annotations. PDF/X forbids annotations other than TrapNet /
@@ -507,6 +519,37 @@ export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPat
     config.pdfxDefPath,
     inputPath,
   ];
+}
+
+/**
+ * Which CMYK the conversion lands in. pdfwrite (ColorConversionStrategy=
+ * CMYK) converts DeviceRGB into its default_cmyk.icc and does NOT honour
+ * -sOutputICCProfile: on GPL Ghostscript 10.00.0 (2026-10-25, a probe
+ * page of #000 / #404040 / #191713 / #8a2b1c), -sOutputICCProfile=<the
+ * SWOP profile> — with or without -dOverrideICC, before or after
+ * -sDEVICE, under SAFER or NOSAFER — and -sDefaultCMYKProfile changed
+ * not one value: `0 0 0 rg` became `0.722 0.675 0.671 0.882 k` every
+ * time, which is what LittleCMS gives for sRGB → Ghostscript's own
+ * default_cmyk.icc (relative colorimetric + black point compensation),
+ * not the SWOP profile (that gives 0.714 0.659 0.651 1.000). A
+ * Ghostscript bug report says the same of 9.27 ("it is not possible to
+ * specify output icc profile … for RGB-to-CMYK pdfwrite conversion",
+ * https://bugs.ghostscript.com/show_bug.cgi?id=701022, closed WONTFIX —
+ * read via a search summary; the tracker blocked a direct fetch).
+ * -sICCProfilesDir DOES move it: Ghostscript finds default_cmyk.icc by
+ * name in that directory (https://ghostscript.readthedocs.io/en/latest/GhostscriptColorManagement.html,
+ * "-sICCProfilesDir"), and with a directory whose default_cmyk.icc is
+ * the SWOP2006_Coated3v2 profile the same probe gave
+ * `0.71 0.659 0.651 0.996 k` — the SWOP transform. The tools image
+ * builds that directory (deploy/Dockerfile.tools: Ghostscript's own
+ * profiles, with default_cmyk.icc replaced by an unaltered copy of the
+ * pinned SWOP file), so the CMYK numbers come from the very profile the
+ * OutputIntent declares. Under SAFER the directory must be readable.
+ */
+export function pdfxIccDirArgs(config: Pick<Config, 'pdfxIccDir'>): string[] {
+  if (!config.pdfxIccDir) return [];
+  const dir = config.pdfxIccDir.endsWith('/') ? config.pdfxIccDir : `${config.pdfxIccDir}/`;
+  return [`--permit-file-read=${dir}`, `-sICCProfilesDir=${dir}`];
 }
 
 /** Ghostscript's "reverting to normal PDF output" notice (it means the
@@ -585,4 +628,74 @@ export async function runPdfx(
     };
   }
   return { ok: true, value: { gsVersion } };
+}
+
+/* ------------------------------ total ink (Ghostscript pamcmyk32) ------------------------------ */
+
+export interface TacMeasurement {
+  /** Highest per-pixel C+M+Y+K over every page, in percent. */
+  maxTacPct: number;
+  /** The same per page (1-based order). */
+  perPagePct: number[];
+  dpi: number;
+}
+
+/**
+ * Total ink, measured on the converted file itself: Ghostscript renders
+ * every page to an 8-bit CMYK raster (the pamcmyk32 device, "Netpbm
+ * PAM … CMYK", https://ghostscript.readthedocs.io/en/latest/Devices.html)
+ * and the highest per-pixel C+M+Y+K is read. Text and art anti-aliasing
+ * is off (-dTextAlphaBits=1 / -dGraphicsAlphaBits=1, the defaults, stated)
+ * so edge pixels are never blends. Rendering a DeviceCMYK file to a CMYK
+ * device through the same default_cmyk.icc (the same PDFX_ICC_DIR) is an
+ * identity: on the 10.00.0 probe page the raster's maximum (294.9 %)
+ * equalled the sum of the file's own `k` values (0.722+0.675+0.671+0.882).
+ * The raster is a sample at PDFX_INK_DPI: a picture is read one device
+ * pixel per sample, so a lone extreme pixel between samples can be
+ * missed — the figure is "measured at N dpi", never "certified".
+ */
+export async function measureTac(
+  config: Config,
+  pdfPath: string,
+  workDir: string,
+): Promise<ToolOutcome<TacMeasurement>> {
+  const dir = path.join(workDir, 'ink');
+  await mkdir(dir, { recursive: true });
+  const dpi = config.pdfxInkDpi;
+  const run = await runCommand(
+    config.gsBin!,
+    [
+      '-dSAFER',
+      ...pdfxIccDirArgs(config),
+      '-dBATCH',
+      '-dNOPAUSE',
+      '-dQUIET',
+      '-sDEVICE=pamcmyk32',
+      `-r${dpi}`,
+      '-dTextAlphaBits=1',
+      '-dGraphicsAlphaBits=1',
+      `-sOutputFile=${path.join(dir, 'p%05d.pam')}`,
+      pdfPath,
+    ],
+    config.pdfxTimeoutMs,
+  );
+  try {
+    if (run.timedOut) return { ok: false, error: `the ink measurement did not finish within ${config.pdfxTimeoutMs} ms and was stopped` };
+    if (run.spawnError || run.code !== 0) {
+      return { ok: false, error: `Ghostscript could not render the file to measure its ink (exit ${run.code ?? 'none'}).${stderrTail(run.stderr)}` };
+    }
+    const files = (await readdir(dir)).filter((f) => /^p\d{5}\.pam$/.test(f)).sort();
+    if (!files.length) return { ok: false, error: 'Ghostscript rendered no pages, so no ink was measured' };
+    const perPagePct: number[] = [];
+    for (const f of files) {
+      const img = parsePam(await readFile(path.join(dir, f)));
+      const tac = img ? tacFromPam(img) : null;
+      if (tac === null) return { ok: false, error: `page raster ${f} is not an 8-bit CMYK PAM, so no ink was measured` };
+      perPagePct.push(tac);
+      await rm(path.join(dir, f), { force: true });
+    }
+    return { ok: true, value: { maxTacPct: Math.max(...perPagePct), perPagePct, dpi } };
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }

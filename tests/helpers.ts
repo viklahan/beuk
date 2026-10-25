@@ -136,6 +136,8 @@ export function testConfig(overrides?: Partial<Config>): Config {
     javaBin: 'java',
     gsBin: null,
     pdfxDefPath: path.resolve(import.meta.dirname, '..', 'tools', 'PDFX_def.ps'),
+    pdfxIccDir: null,
+    pdfxInkDpi: 100,
     rendererUrl: null,
     legacyHtmlPdfBin: null,
     jobTimeoutMs: 120_000,
