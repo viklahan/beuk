@@ -1286,6 +1286,9 @@
       .val-summary b { color: var(--ink); }
       .val-summary .val-file { font-family: var(--mono-font); font-size: 11.5px; }
       .val-list li .v-name { font-weight: 700; color: var(--ink); }
+      /* ==== BEUK:help ==== a failed line's BEUK- code, linked to /help/errors/<code> */
+      .v-code { font-family: var(--mono-font); font-size: 11px; font-weight: 500; margin-left: 6px; color: var(--accent); white-space: nowrap; text-underline-offset: 2px; }
+      /* ==== /BEUK:help ==== */
       .val-list li.v-error svg { color: var(--bad); }
       .val-list li.v-warning svg { color: var(--gold); }
 
@@ -25763,6 +25766,37 @@
           passes: results.filter((r) => r.level === "pass").length
         };
       }
+      /* ==== BEUK:help ==== H1.3: each validator line that is not a pass
+         carries its BEUK- code, linked to its entry in the error
+         dictionary (/help/errors/<code>). The map mirrors
+         content/help/errors.json maps.validator; tests/help-content.test.ts
+         fails if the two ever disagree. EPUBCheck job messages carry a
+         server-side "beuk" field, linked the same way. */
+      const BEUK_VALIDATOR_CODES = {"mimetype.first-stored": "BEUK-P101", "container.points-to-opf": "BEUK-P102", "xml.well-formed": "BEUK-X201", "manifest.matches-files": "BEUK-R302", "spine.resolves": "BEUK-R303", "links.anchors-resolve": "BEUK-R304", "links.in-spine": "BEUK-R305", "manifest.properties": "BEUK-P103", "nav.landmarks": "BEUK-N404", "ncx.present-targets": "BEUK-N404", "images.alt-text": "BEUK-A601", "metadata.required": "BEUK-M501", "metadata.isbn": "BEUK-M502", "metadata.description": "BEUK-M503", "cover.declared": "BEUK-M504"};
+      function beukCodeLinkHtml(code) {
+        if (!code || !/^BEUK-[A-Z]\d{3}$/.test(code)) return "";
+        return ' <a class="v-code" href="/help/errors/' + code + '" target="_blank" rel="noopener" title="' + esc(t("help.codeLink", { code: code })) + '">' + code + "</a>";
+      }
+      function validationListHtml(sorted, iconFor) {
+        return '<ul class="check-list val-list">' + sorted.map((r) =>
+          '<li class="v-' + r.level + '"><i data-lucide="' + iconFor(r.level) + '"></i><span><span class="v-name">' + esc(r.name) + ".</span> " + esc(r.detail) +
+          (r.level !== "pass" ? beukCodeLinkHtml(BEUK_VALIDATOR_CODES[r.id]) : "") + "</span></li>"
+        ).join("") + "</ul>";
+      }
+      Object.assign(UI_STRINGS.en, { "help.codeLink": "{code} in the error dictionary" });
+      Object.assign(UI_STRINGS.es, { "help.codeLink": "{code} en el diccionario de errores" });
+      Object.assign(UI_STRINGS.fr, { "help.codeLink": "{code} dans le dictionnaire des erreurs" });
+      Object.assign(UI_STRINGS.de, { "help.codeLink": "{code} im Fehlerverzeichnis" });
+      Object.assign(UI_STRINGS.it, { "help.codeLink": "{code} nel dizionario degli errori" });
+      Object.assign(UI_STRINGS.pt, { "help.codeLink": "{code} no dicionário de erros" });
+      Object.assign(UI_STRINGS.nl, { "help.codeLink": "{code} in het foutenwoordenboek" });
+      Object.assign(UI_STRINGS.pl, { "help.codeLink": "{code} w słowniku błędów" });
+      Object.assign(UI_STRINGS.ru, { "help.codeLink": "{code} в справочнике ошибок" });
+      Object.assign(UI_STRINGS.tr, { "help.codeLink": "Hata sözlüğünde {code}" });
+      Object.assign(UI_STRINGS.ar, { "help.codeLink": "{code} في قاموس الأخطاء" });
+      Object.assign(UI_STRINGS.ja, { "help.codeLink": "エラー辞典の {code}" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "help.codeLink": "错误词典中的 {code}" });
+      /* ==== /BEUK:help ==== */
       function runValidation() {
         const box = $("validateResults"); if (!box) return;
         const v = validateEpubPackage(epubFiles());
@@ -25774,9 +25808,7 @@
           '<div class="val-summary"><b>' + headline + ".</b> Checked the " + esc(platformPreset().name) + ' package (<span class="val-file">' + esc(platformFilename()) + "</span>): " +
           v.passes + " passed · " + v.warnings + " warning" + (v.warnings === 1 ? "" : "s") + " · " + v.errors + " error" + (v.errors === 1 ? "" : "s") +
           ". Structural checks only — the full EPUBCheck suite runs in the server phase.</div>" +
-          '<ul class="check-list val-list">' + sorted.map((r) =>
-            '<li class="v-' + r.level + '"><i data-lucide="' + iconFor(r.level) + '"></i><span><span class="v-name">' + esc(r.name) + ".</span> " + esc(r.detail) + "</span></li>"
-          ).join("") + "</ul>";
+          validationListHtml(sorted, iconFor);
         box.style.display = "";
         icons();
       }
@@ -27696,7 +27728,7 @@
         if (msgs.length) {
           h += '<ul class="cr-msgs">' + msgs.slice(0, 8).map((m) =>
             "<li><b>" + esc(m.severity || "") + "</b> " + esc(m.message || "") +
-            (m.location ? ' <span class="cr-loc">' + esc(m.location) + "</span>" : "") + "</li>").join("") + "</ul>";
+            (m.location ? ' <span class="cr-loc">' + esc(m.location) + "</span>" : "") + /* ==== BEUK:help ==== */ beukCodeLinkHtml(m.beuk) /* ==== /BEUK:help ==== */ + "</li>").join("") + "</ul>";
           if (msgs.length > 8) h += '<p class="cr-more">…and ' + (msgs.length - 8) + " more messages in the full report.</p>";
         }
         return h + "</div>";
@@ -30394,6 +30426,23 @@
               !!wf && wf.level === "error" && wf.detail.includes("package.opf"),
               "broken markup is caught before a strict reader ever sees it");
           } },
+        /* ==== BEUK:help ==== */
+        { id: "help.validator.beuk-codes", feature: "validator", name: "Every validator check has a BEUK- code, and each line that is not a pass links to /help/errors/<code> (a chapter with one </p> removed shows BEUK-X201)",
+          run() {
+            const files = epubFiles("generic").map((f) => f.path === "OEBPS/Text/chapter_01.xhtml"
+              ? Object.assign({}, f, { content: String(f.content).replace("</p>", "") }) : f);
+            const v = validateEpubPackage(files);
+            const unmapped = v.results.filter((r) => !BEUK_VALIDATOR_CODES[r.id]).map((r) => r.id);
+            const html = validationListHtml(v.results, () => "x");
+            const failing = v.results.filter((r) => r.level !== "pass");
+            const linked = failing.every((r) => html.indexOf('href="/help/errors/' + BEUK_VALIDATOR_CODES[r.id] + '"') !== -1);
+            const passes = v.results.filter((r) => r.level === "pass").length;
+            const linkCount = (html.match(/class="v-code"/g) || []).length;
+            const wf = v.results.find((r) => r.id === "xml.well-formed");
+            return scVerdict(!unmapped.length && failing.length > 0 && linked && linkCount === failing.length && !!wf && wf.level === "error" && html.indexOf("/help/errors/BEUK-X201") !== -1,
+              "unmapped ids: [" + unmapped.join(", ") + "]; " + failing.length + " failing lines, " + linkCount + " code links, " + passes + " passes carry none");
+          } },
+        /* ==== /BEUK:help ==== */
         { id: "validator.catches.dangling-anchor", feature: "validator", name: "Validator catches a dangling anchor: a link to a nonexistent #fn-missing id inside a chapter is reported by the link check, naming the fragment",
           run() {
             const files = epubFiles("generic").map((f) => f.path === "OEBPS/Text/chapter_01.xhtml"
