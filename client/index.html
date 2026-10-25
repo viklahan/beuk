@@ -255,7 +255,7 @@
         color: var(--muted); padding: 14px 8px 6px; display: flex; align-items: center; justify-content: space-between;
       }
       .sec-item {
-        display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+        display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; text-align: left;
         border: 1px solid transparent; background: transparent; border-radius: 8px;
         padding: 7px 8px; color: var(--ink-2); font-size: 13px;
       }
@@ -35295,7 +35295,10 @@
         /* BEUK:sidebar — the pill shows only the short label; the whole
            sentence and its explanation ride the tooltip and the name. */
         pill.setAttribute("title", txt.full + " — " + localDetailText());
-        const pbtn = $("localPillBtn"); if (pbtn) pbtn.setAttribute("aria-label", txt.full + " — " + t("local.aria"));
+        /* The screen shows "Saved · back up !" when the browser may clear
+           storage; the accessible name carries that warning too. */
+        const evictable = pill.hasAttribute("data-evictable");
+        const pbtn = $("localPillBtn"); if (pbtn) pbtn.setAttribute("aria-label", txt.full + (evictable ? " — " + localDetailText() : "") + " — " + t("local.aria"));
         const bk = $("btnLocalBackupInline"); if (bk) bk.hidden = !localFailed();
         if (pill.parentElement) pill.parentElement.classList.toggle("is-failed", localFailed()); /* BEUK:sidebar */
         const pop = $("localPop");
@@ -35474,6 +35477,10 @@
           if (typeof dictSyncUi === "function") dictSyncUi();
           $("btnZenSound").addEventListener("click", () => {
             /* BEUK:sound — a click while a file is still loading cancels it, like a click while playing */
+            /* The button lingers for ~1 s while Zen fades out; leaving Zen has
+               already stopped the sound, so a click then must not restart it
+               with no button left on screen to stop it. */
+            if (!document.body.classList.contains("zen")) return;
             if (zenSound.status === "blocked" && zenSound.ctx) {
               /* a fresh click is a fresh user gesture: ask the browser
                  again; if it still will not start, this click turns the
