@@ -1325,8 +1325,8 @@ Founders' Shelf application; none of it touches pricing or checkout.
   follow; there are no other copies to keep in sync.
 - **Status line** — `GET /api/status` returns a scrubbed public
   summary (app, version, build stamp, db up/down, latest Self-checks
-  outcome + when); the Help index fetches it and shows "All's well on
-  the shelf" in plain words. `GET /api/config/public` exposes just the
+  outcome + when). (The Help pages no longer fetch it: they render
+  their own shelf status server-side — see Help & Support below.) `GET /api/config/public` exposes just the
   support contact and jar URL for pages and the future client.
 - **Founders' Shelf** — `POST /api/founders/apply` (public) takes a
   name, an email, and one line about what they write; validated and
@@ -1395,7 +1395,13 @@ without JavaScript (search posts to `/help/search`; the dictionary rows
 are `<details>`). The shelf-status strip is read live: app (up — it
 rendered the page), db (`select 1`), the job queue, whether EPUBCheck
 is **installed** (never "up"), and the latest Housekeeping self-check
-run — or says it is unknown / none yet.
+run — or says it is unknown / none yet. The headline says "All's well
+on the shelf" only when every one of those was checked and is fine
+(db up, queue read, EPUBCheck installed, latest self-check passed); a
+failed self-check reads "found something to tidy", db down reads
+"Something is down", and anything else is a neutral "Up — …" line
+naming each gap (for example "Up — EPUBCheck not installed; no
+self-check run yet").
 
 **Search (H2)** — migration `013_help_search.sql`: `help_docs` (one row
 per guide, guide section and error entry; generated weighted tsvector +

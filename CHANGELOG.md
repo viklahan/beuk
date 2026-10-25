@@ -24,8 +24,11 @@ to make well.
   saving and conflicts between devices, and beta-reader share links.
   Help follows your Paper or Candlelight choice from the studio.
 - **No promises we can't keep.** The support address, name and reply
-  time appear only once the mailbox is set up; until then Help names
-  no one and promises nothing.
+  time appear only once the mailbox is set up; until then Help (and the
+  thank-you page after an export) names no one and promises nothing.
+  The shelf status at the top of Help says "All's well" only when
+  everything behind it was checked and passed; otherwise it says
+  plainly what isn't installed or hasn't run yet.
 
 ## 2026-10-25 — Zen sounds like the real thing
 

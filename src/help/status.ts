@@ -28,7 +28,27 @@ export interface ShelfStatus {
   selfChecks: { overall: string; at: string; passed: number; failed: number } | null;
   /** True when the self-check table could not be read (db up, query failed). */
   selfChecksUnreadable: boolean;
-  headline: 'well' | 'tidy' | 'down';
+  /**
+   * The one-line summary. "well" (the green "All's well") is said ONLY
+   * when every component was checked and is fine: db up, queue read,
+   * EPUBCheck installed, and the latest self-check run passed. A failed
+   * self-check is "tidy"; db down is "down"; anything unchecked or
+   * missing is "partial" — a neutral line naming the gaps.
+   */
+  headline: 'well' | 'partial' | 'tidy' | 'down';
+  /** What keeps a "partial" headline from being "well", in plain words. */
+  gaps: string[];
+}
+
+export function shelfHeadline(s: Omit<ShelfStatus, 'headline' | 'gaps' | 'checkedAt'>): { headline: ShelfStatus['headline']; gaps: string[] } {
+  if (s.db !== 'up') return { headline: 'down', gaps: ['the database did not answer'] };
+  if (s.selfChecks && s.selfChecks.overall !== 'pass') return { headline: 'tidy', gaps: [] };
+  const gaps: string[] = [];
+  if (!s.queue) gaps.push('job queue unreadable');
+  if (s.epubcheck !== 'installed') gaps.push('EPUBCheck not installed');
+  if (s.selfChecksUnreadable) gaps.push('self-check history unreadable');
+  else if (!s.selfChecks) gaps.push('no self-check run yet');
+  return { headline: gaps.length ? 'partial' : 'well', gaps };
 }
 
 const TTL_MS = 5_000;
@@ -76,15 +96,14 @@ export async function readShelfStatus(db: Db, config: Config, now: () => Date = 
       selfChecksUnreadable = true;
     }
   }
-  const value: ShelfStatus = {
-    checkedAt: now().toISOString(),
-    db: dbUp ? 'up' : 'down',
+  const parts = {
+    db: (dbUp ? 'up' : 'down') as ShelfStatus['db'],
     queue,
-    epubcheck: epubcheckProblem(config) ? 'not-installed' : 'installed',
+    epubcheck: (epubcheckProblem(config) ? 'not-installed' : 'installed') as ShelfStatus['epubcheck'],
     selfChecks,
     selfChecksUnreadable,
-    headline: !dbUp ? 'down' : selfChecks && selfChecks.overall !== 'pass' ? 'tidy' : 'well',
   };
+  const value: ShelfStatus = { checkedAt: now().toISOString(), ...parts, ...shelfHeadline(parts) };
   cache = { at: Date.now(), value, db };
   return value;
 }
