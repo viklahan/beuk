@@ -107,6 +107,9 @@ if (-not $NoBuild) {
 }
 & docker @compose up -d --remove-orphans
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
+# The Caddyfile is a bind mount: 'up' leaves a running caddy on its old
+# config, so restart it to pick up any edit.
+& docker @compose restart caddy | Out-Null
 
 # 4. Health.
 $url = "http://localhost:$Port"

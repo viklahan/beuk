@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { ghostscriptPdfxArgs, pdfxIccPath } from '../src/jobs/tools.js';
+import { ghostscriptPdfxArgs, pdfxIccPath, pdfxProblem } from '../src/jobs/tools.js';
 import type { Config } from '../src/config.js';
 
 /**
@@ -36,4 +36,17 @@ test('ghostscript args keep SAFER first, permit reading exactly the def file ICC
   const bare = ghostscriptPdfxArgs({ pdfxDefPath: without } as Config, '/in.pdf', '/out.pdf');
   assert.equal(bare.some((a) => a.startsWith('--permit-file-read')), false);
   assert.equal(pdfxIccPath(path.join(dir, 'missing.ps')), null);
+});
+
+test('a def file whose CMYK profile is missing reads as "not configured", not a Ghostscript crash', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'beuk-pdfxicc-'));
+  const def = path.join(dir, 'def.ps');
+  // node answers --version, so it stands in for a working gs binary here.
+  const cfg = (pdfxDefPath: string) => ({ gsBin: process.execPath, pdfxDefPath }) as Config;
+  writeFileSync(def, `%!PS
+/BeukICCPath (${path.join(dir, 'absent.icc')}) def
+`);
+  assert.match(String(pdfxProblem(cfg(def))), /no CMYK press colour profile/);
+  writeFileSync(path.join(dir, 'absent.icc'), 'profile bytes');
+  assert.equal(pdfxProblem(cfg(def)), null);
 });

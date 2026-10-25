@@ -432,6 +432,16 @@ export function pdfxProblem(config: Config): string | null {
       'is a server setup gap, not a finding about your book.'
     );
   }
+  // The def file embeds a CMYK press profile; a missing one makes
+  // Ghostscript die with a raw /undefinedfilename, so say it plainly.
+  const icc = pdfxIccPath(config.pdfxDefPath);
+  if (icc && !existsSync(icc)) {
+    return (
+      'PDF/X conversion is not configured on this server (no CMYK press colour profile at ' +
+      `"${icc}", the path PDFX_DEF names), so this job was not run and no converted file ` +
+      'exists. This is a server setup gap, not a finding about your book.'
+    );
+  }
   return null;
 }
 

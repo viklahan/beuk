@@ -786,7 +786,8 @@ Founders' Shelf application; none of it touches pricing or checkout.
   `AUTH_RATE_REFILL_MS` (default 60000). Over the limit → `429` with
   `Retry-After` (seconds). In-memory means per process and reset on
   restart — proportional for the single-node deploy, not for replicas.
-  There are no password-reset endpoints yet, so none are limited.
+  Forgot / reset / change-password have their own limits (see the
+  account-basics section).
 - **Real client IP.** Express `trust proxy` is set to `TRUST_PROXY_HOPS`
   (default **1** — Caddy). Caddy ignores any client-sent
   `X-Forwarded-For` and sets its own, so `req.ip` is the address Caddy

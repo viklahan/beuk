@@ -64,8 +64,9 @@ export function buildApp({
   // gets its own raw parser mounted on its exact path BEFORE the global
   // JSON parser can touch (and re-shape) the payload.
   app.use('/api/billing/webhook', express.raw({ type: () => true, limit: '5mb' }));
-  // Manuscripts are whole-book JSON documents; allow generous payloads.
-  app.use(express.json({ limit: '10mb' }));
+  // Manuscripts are whole-book JSON documents (pictures and snapshots
+  // included); allow generous payloads.
+  app.use(express.json({ limit: config.manuscriptMaxBytes }));
 
   app.get('/api/health', async (_req, res) => {
     try {
@@ -119,6 +120,11 @@ export function buildApp({
   app.use(resetPageRoutes(config));
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    // body-parser marks an over-limit body; say so instead of a bare 500
+    // so the studio can tell the writer why the shelf save failed.
+    if ((err as { type?: string }).type === 'entity.too.large') {
+      return res.status(413).json({ error: 'book is too large for the shelf', limitBytes: config.manuscriptMaxBytes });
+    }
     console.error(err);
     return res.status(500).json({ error: 'internal error' });
   });

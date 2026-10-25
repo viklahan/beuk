@@ -111,6 +111,7 @@ export function testConfig(overrides?: Partial<Config>): Config {
     // absent by default (billing tests pass stripeWebhookSecret in).
     exportDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-exports-')),
     exportMaxBytes: 50 * 1024 * 1024,
+    manuscriptMaxBytes: 64 * 1024 * 1024,
     stripeSecretKey: null,
     stripeWebhookSecret: null,
     stripePriceId: null,

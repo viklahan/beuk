@@ -39,6 +39,7 @@ let bobEpubId: string;
 
 let fakeJava: string;
 let fakeGs: string;
+let pdfxDef: string;
 let stubRenderer: http.Server;
 let rendererUrl: string;
 let rendererMode: 'pdf' | 'error' | 'not-pdf' = 'pdf';
@@ -184,6 +185,13 @@ exit 0
 `,
   );
   chmodSync(fakeGs, 0o755);
+  // A def file whose ICC profile exists, so pdfxProblem lets the stub run.
+  const icc = path.join(dir, 'press.icc');
+  writeFileSync(icc, 'stub profile');
+  pdfxDef = path.join(dir, 'PDFX_def.ps');
+  writeFileSync(pdfxDef, `%!PS
+/BeukICCPath (${icc}) def
+`);
 
   // Stub renderer: answers like deploy/renderer/server.mjs. Its reply
   // is switchable so the failure modes can be driven from tests.
@@ -217,6 +225,7 @@ exit 0
     epubcheckJar: stubJar,
     javaBin: fakeJava,
     gsBin: fakeGs,
+    pdfxDefPath: pdfxDef,
     rendererUrl,
   });
   alice = new Client(server.base);
@@ -531,6 +540,7 @@ test('renderer failures are honest: an HTTP error, a non-PDF reply, an unreachab
   const unreachable = await startTestServer(db, undefined, {
     exportDir: server.config.exportDir,
     gsBin: fakeGs,
+    pdfxDefPath: pdfxDef,
     rendererUrl: 'http://127.0.0.1:9/render',
   });
   try {

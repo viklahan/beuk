@@ -13,6 +13,10 @@ export interface Config {
   exportDir: string;
   /** M2: max accepted export upload size in bytes (default 50 MiB). */
   exportMaxBytes: number;
+  /** Max accepted manuscript JSON body in bytes (MANUSCRIPT_MAX_BYTES,
+   *  default 64 MiB). A book carries its pictures and its snapshot
+   *  history, so the sample book alone is ~23 MB. */
+  manuscriptMaxBytes: number;
   /** M2 billing hooks: all null until Vik sets a price + keys. When any
    *  piece is missing the billing endpoints answer 501 "not configured"
    *  rather than erroring or faking success. */
@@ -139,6 +143,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionTtlDays: Number(env.SESSION_TTL_DAYS ?? 30),
     exportDir: env.EXPORT_DIR ?? path.resolve(process.cwd(), 'data', 'exports'),
     exportMaxBytes: Number(env.EXPORT_MAX_BYTES ?? 50 * 1024 * 1024),
+    manuscriptMaxBytes: Number(env.MANUSCRIPT_MAX_BYTES ?? 64 * 1024 * 1024),
     stripeSecretKey: env.STRIPE_SECRET_KEY || null,
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || null,
     stripePriceId: env.STRIPE_PRICE_ID || null,
