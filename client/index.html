@@ -26820,8 +26820,11 @@
       }
       function checkShellCached() {
         if (!("caches" in window)) return;
-        caches.open(BEUK_CACHE_NAME)
-          .then((cache) => cache.keys())
+        /* BEUK:branding — has() first: open() would CREATE the cache, and a
+           page left open across a worker upgrade would re-create its old,
+           just-retired shell cache empty. */
+        caches.has(BEUK_CACHE_NAME)
+          .then((present) => (present ? caches.open(BEUK_CACHE_NAME).then((cache) => cache.keys()) : []))
           .then((keys) => {
             if (keys.some((r) => /\/index\.html$/.test(r.url) || /\/$/.test(r.url))) pwa.shellCached = true;
           })
