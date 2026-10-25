@@ -10084,7 +10084,17 @@
         "store.c.even.ok": "{pages} pages ({src}) is even.",
         "store.c.even.warn": "{pages} pages ({src}) is odd; {store} rounds up to an even count by adding a blank page at the end.",
         "store.c.tac.name": "Total ink coverage",
-        "store.nc.tac": "Beuk can't measure ink coverage. IngramSpark asks that total CMYK ink stay within {tac}% — files above it may be rejected for correction.",
+        "store.nc.tac": "Not measured yet: total ink is measured on the converted PDF by the server check. {store} asks that total CMYK ink stay within {tac}% — files above it may be rejected for correction.",
+        "store.nc.tacFail": "The server's PDF/X job could not measure ink: {error}",
+        "store.c.tac.ok": "Highest total ink in the converted PDF: {max}% (measured at {dpi} dpi), within {store}'s {tac}%.",
+        "store.c.tac.over": "Highest total ink in the converted PDF: {max}% (measured at {dpi} dpi), over {store}'s {tac}% on {n} page(s). Files above it may be rejected for correction.",
+        "store.c.tac.fix": "The darkest parts of pictures carry the most ink: lighten their deepest shadows, then check again.",
+        "store.c.textK.name": "Text in black ink only",
+        "store.c.textK.ok": "All {n} runs of text in the converted PDF print in 100% black (K) alone. Measured in the file, not assumed.",
+        "store.c.textK.tints": "All {n} runs of text in the converted PDF print on the black plate alone, but {tints} of them are grey tints of black ({values}% K): the book's lighter kickers, subtitles, captions and running heads. {store} recommends 100% black for text 24 pt or below.",
+        "store.c.textK.fail": "{bad} of {n} runs of text in the converted PDF use other inks ({colours}). {store} asks for text in black ink only; text set in a colour keeps that colour by design.",
+        "store.c.textK.none": "The converted PDF shows no text at all, so text colour could not be measured.",
+        "store.nc.textK": "The server's PDF/X job did not measure text colour: {error}",
         "store.c.wrap.name": "Cover wrap",
         "store.nc.noWrap": "This book has no Beuk cover wrap yet, so its print cover couldn't be checked. Build one in the cover maker, or check your own cover file against the store's template.",
         "store.nc.hardcover": "Beuk builds the {binding} wrap in the hardcover cover tool, but this report doesn’t check hardcover wraps yet — so the cover wasn’t checked. Compare the wrap against {store}’s template before you upload.",
@@ -10270,7 +10280,17 @@
         "store.c.even.ok": "{pages} páginas ({src}) es un número par.",
         "store.c.even.warn": "{pages} páginas ({src}) es impar; {store} redondea a un número par añadiendo una página en blanco al final.",
         "store.c.tac.name": "Cobertura total de tinta",
-        "store.nc.tac": "Beuk no puede medir la cobertura de tinta. IngramSpark pide que la tinta CMYK total no supere el {tac}% — los archivos que lo superen pueden rechazarse para su corrección.",
+        "store.nc.tac": "Aún sin medir: la tinta total se mide en el PDF convertido con la comprobación del servidor. {store} pide que la tinta CMYK total no supere el {tac}% — los archivos que lo superen pueden rechazarse para su corrección.",
+        "store.nc.tacFail": "El trabajo PDF/X del servidor no pudo medir la tinta: {error}",
+        "store.c.tac.ok": "Tinta total máxima en el PDF convertido: {max}% (medida a {dpi} ppp), dentro del {tac}% de {store}.",
+        "store.c.tac.over": "Tinta total máxima en el PDF convertido: {max}% (medida a {dpi} ppp), por encima del {tac}% de {store} en {n} página(s). Los archivos que lo superan pueden rechazarse para su corrección.",
+        "store.c.tac.fix": "Las zonas más oscuras de las imágenes llevan más tinta: aclara sus sombras más profundas y vuelve a comprobar.",
+        "store.c.textK.name": "Texto solo en tinta negra",
+        "store.c.textK.ok": "Los {n} tramos de texto del PDF convertido se imprimen solo en negro al 100% (K). Medido en el archivo, no supuesto.",
+        "store.c.textK.tints": "Los {n} tramos de texto del PDF convertido se imprimen solo con la plancha negra, pero {tints} son tintes grises del negro ({values}% K): los antetítulos, subtítulos, pies y cabeceras más claros del libro. {store} recomienda negro al 100% para texto de 24 pt o menos.",
+        "store.c.textK.fail": "{bad} de {n} tramos de texto del PDF convertido usan otras tintas ({colours}). {store} pide texto solo en tinta negra; el texto con color mantiene ese color a propósito.",
+        "store.c.textK.none": "El PDF convertido no muestra ningún texto, así que no se pudo medir el color del texto.",
+        "store.nc.textK": "El trabajo PDF/X del servidor no midió el color del texto: {error}",
         "store.c.wrap.name": "Cubierta completa",
         "store.nc.noWrap": "Este libro aún no tiene una cubierta completa de Beuk, así que su cubierta impresa no se pudo comprobar. Crea una en el creador de cubiertas, o comprueba tu propio archivo de cubierta con la plantilla de la tienda.",
         "store.nc.hardcover": "Beuk crea la cubierta de {binding} en la herramienta de tapa dura, pero este informe aún no comprueba cubiertas de tapa dura — así que la cubierta no se comprobó. Compárala con la plantilla de {store} antes de subirla.",
@@ -10456,7 +10476,17 @@
         "store.c.even.ok": "{pages} pages ({src}) est un nombre pair.",
         "store.c.even.warn": "{pages} pages ({src}) est impair ; {store} arrondit au nombre pair en ajoutant une page blanche à la fin.",
         "store.c.tac.name": "Taux d’encrage total",
-        "store.nc.tac": "Beuk ne peut pas mesurer le taux d’encrage. IngramSpark demande que l’encre CMJN totale ne dépasse pas {tac} % — les fichiers au-delà peuvent être refusés pour correction.",
+        "store.nc.tac": "Pas encore mesuré : l’encrage total se mesure sur le PDF converti par la vérification serveur. {store} demande que l’encre CMJN totale ne dépasse pas {tac} % — les fichiers au-delà peuvent être refusés pour correction.",
+        "store.nc.tacFail": "La tâche PDF/X du serveur n’a pas pu mesurer l’encre : {error}",
+        "store.c.tac.ok": "Encrage total maximal du PDF converti : {max} % (mesuré à {dpi} ppp), dans les {tac} % de {store}.",
+        "store.c.tac.over": "Encrage total maximal du PDF converti : {max} % (mesuré à {dpi} ppp), au-delà des {tac} % de {store} sur {n} page(s). Les fichiers au-delà peuvent être refusés pour correction.",
+        "store.c.tac.fix": "Les zones les plus sombres des images portent le plus d’encre : éclaircissez leurs ombres les plus profondes, puis vérifiez à nouveau.",
+        "store.c.textK.name": "Texte en encre noire seule",
+        "store.c.textK.ok": "Les {n} passages de texte du PDF converti s’impriment en noir 100 % (K) seul. Mesuré dans le fichier, pas supposé.",
+        "store.c.textK.tints": "Les {n} passages de texte du PDF converti s’impriment sur la seule plaque noire, mais {tints} sont des teintes grises du noir ({values} % K) : les surtitres, sous-titres, légendes et titres courants plus clairs du livre. {store} recommande le noir 100 % pour le texte de 24 pt ou moins.",
+        "store.c.textK.fail": "{bad} des {n} passages de texte du PDF converti utilisent d’autres encres ({colours}). {store} demande un texte en encre noire seule ; un texte en couleur garde sa couleur à dessein.",
+        "store.c.textK.none": "Le PDF converti n’affiche aucun texte : la couleur du texte n’a pas pu être mesurée.",
+        "store.nc.textK": "La tâche PDF/X du serveur n’a pas mesuré la couleur du texte : {error}",
         "store.c.wrap.name": "Couverture complète",
         "store.nc.noWrap": "Ce livre n’a pas encore de couverture complète Beuk, sa couverture imprimée n’a donc pas pu être vérifiée. Créez-en une dans l’atelier de couverture, ou vérifiez votre propre fichier de couverture avec le gabarit de la boutique.",
         "store.nc.hardcover": "Beuk crée la couverture en {binding} dans l’outil de couverture reliée, mais ce rapport ne vérifie pas encore les couvertures reliées — la couverture n’a donc pas été vérifiée. Comparez-la au gabarit de {store} avant l’envoi.",
@@ -10642,7 +10672,17 @@
         "store.c.even.ok": "{pages} Seiten ({src}) sind eine gerade Zahl.",
         "store.c.even.warn": "{pages} Seiten ({src}) sind ungerade; {store} rundet auf eine gerade Zahl auf und fügt am Ende eine leere Seite an.",
         "store.c.tac.name": "Gesamtfarbauftrag",
-        "store.nc.tac": "Beuk kann den Farbauftrag nicht messen. IngramSpark verlangt, dass der CMYK-Gesamtfarbauftrag {tac} % nicht übersteigt — Dateien darüber können zur Korrektur abgelehnt werden.",
+        "store.nc.tac": "Noch nicht gemessen: Der Gesamtfarbauftrag wird von der Serverprüfung am konvertierten PDF gemessen. {store} verlangt, dass der CMYK-Gesamtfarbauftrag {tac} % nicht übersteigt — Dateien darüber können zur Korrektur abgelehnt werden.",
+        "store.nc.tacFail": "Der PDF/X-Auftrag des Servers konnte den Farbauftrag nicht messen: {error}",
+        "store.c.tac.ok": "Höchster Gesamtfarbauftrag im konvertierten PDF: {max} % (gemessen bei {dpi} dpi), innerhalb der {tac} % von {store}.",
+        "store.c.tac.over": "Höchster Gesamtfarbauftrag im konvertierten PDF: {max} % (gemessen bei {dpi} dpi), über den {tac} % von {store} auf {n} Seite(n). Dateien darüber können zur Korrektur abgelehnt werden.",
+        "store.c.tac.fix": "Die dunkelsten Bildstellen tragen die meiste Farbe: Hellen Sie die tiefsten Schatten auf und prüfen Sie erneut.",
+        "store.c.textK.name": "Text nur in Schwarz",
+        "store.c.textK.ok": "Alle {n} Textstellen im konvertierten PDF drucken allein in 100 % Schwarz (K). In der Datei gemessen, nicht angenommen.",
+        "store.c.textK.tints": "Alle {n} Textstellen im konvertierten PDF drucken allein auf der Schwarzplatte, aber {tints} davon sind Grautöne von Schwarz ({values} % K): die helleren Dachzeilen, Untertitel, Bildunterschriften und Kolumnentitel des Buchs. {store} empfiehlt 100 % Schwarz für Text bis 24 pt.",
+        "store.c.textK.fail": "{bad} von {n} Textstellen im konvertierten PDF nutzen andere Farben ({colours}). {store} verlangt Text nur in Schwarz; farbig gesetzter Text behält seine Farbe bewusst.",
+        "store.c.textK.none": "Das konvertierte PDF zeigt keinen Text, daher konnte die Textfarbe nicht gemessen werden.",
+        "store.nc.textK": "Der PDF/X-Auftrag des Servers hat die Textfarbe nicht gemessen: {error}",
         "store.c.wrap.name": "Gesamtumschlag",
         "store.nc.noWrap": "Dieses Buch hat noch keinen Beuk-Gesamtumschlag, daher konnte der Druckumschlag nicht geprüft werden. Erstelle einen im Umschlag-Studio, oder prüfe deine eigene Umschlagdatei anhand der Vorlage des Shops.",
         "store.nc.hardcover": "Beuk erstellt den Umschlag für {binding} im Hardcover-Werkzeug, aber dieser Bericht prüft Hardcover-Umschläge noch nicht — daher wurde der Umschlag nicht geprüft. Vergleichen Sie ihn vor dem Hochladen mit der Vorlage von {store}.",
@@ -10828,7 +10868,17 @@
         "store.c.even.ok": "{pages} pagine ({src}) è un numero pari.",
         "store.c.even.warn": "{pages} pagine ({src}) è dispari; {store} arrotonda a un numero pari aggiungendo una pagina bianca alla fine.",
         "store.c.tac.name": "Copertura totale d’inchiostro",
-        "store.nc.tac": "Beuk non può misurare la copertura d’inchiostro. IngramSpark chiede che l’inchiostro CMYK totale resti entro il {tac}% — i file oltre questo limite possono essere respinti per correzione.",
+        "store.nc.tac": "Non ancora misurata: l’inchiostro totale si misura sul PDF convertito dal controllo sul server. {store} chiede che l’inchiostro CMYK totale resti entro il {tac}% — i file oltre questo limite possono essere respinti per correzione.",
+        "store.nc.tacFail": "Il processo PDF/X del server non ha potuto misurare l’inchiostro: {error}",
+        "store.c.tac.ok": "Inchiostro totale massimo nel PDF convertito: {max}% (misurato a {dpi} dpi), entro il {tac}% di {store}.",
+        "store.c.tac.over": "Inchiostro totale massimo nel PDF convertito: {max}% (misurato a {dpi} dpi), oltre il {tac}% di {store} su {n} pagina/e. I file oltre il limite possono essere respinti per correzione.",
+        "store.c.tac.fix": "Le zone più scure delle immagini portano più inchiostro: schiarisci le ombre più profonde, poi ricontrolla.",
+        "store.c.textK.name": "Testo solo in inchiostro nero",
+        "store.c.textK.ok": "Tutti i {n} tratti di testo del PDF convertito si stampano solo in nero al 100% (K). Misurato nel file, non presunto.",
+        "store.c.textK.tints": "Tutti i {n} tratti di testo del PDF convertito si stampano con la sola lastra del nero, ma {tints} sono tinte grigie del nero ({values}% K): occhielli, sottotitoli, didascalie e testatine più chiari del libro. {store} raccomanda il nero al 100% per il testo fino a 24 pt.",
+        "store.c.textK.fail": "{bad} di {n} tratti di testo del PDF convertito usano altri inchiostri ({colours}). {store} chiede testo solo in nero; il testo a colori mantiene il suo colore per scelta.",
+        "store.c.textK.none": "Il PDF convertito non mostra alcun testo, quindi il colore del testo non si è potuto misurare.",
+        "store.nc.textK": "Il processo PDF/X del server non ha misurato il colore del testo: {error}",
         "store.c.wrap.name": "Copertina completa",
         "store.nc.noWrap": "Questo libro non ha ancora una copertina completa Beuk, quindi la copertina di stampa non è stata controllata. Creane una nel creatore di copertine, oppure controlla il tuo file di copertina con il modello dello store.",
         "store.nc.hardcover": "Beuk crea la copertina {binding} nello strumento per copertine rigide, ma questo rapporto non controlla ancora le copertine rigide — quindi la copertina non è stata controllata. Confrontala con il modello di {store} prima di caricarla.",
@@ -11014,7 +11064,17 @@
         "store.c.even.ok": "{pages} páginas ({src}) é um número par.",
         "store.c.even.warn": "{pages} páginas ({src}) é ímpar; a {store} arredonda para um número par juntando uma página em branco no fim.",
         "store.c.tac.name": "Cobertura total de tinta",
-        "store.nc.tac": "O Beuk não consegue medir a cobertura de tinta. A IngramSpark pede que a tinta CMYK total não ultrapasse {tac}% — ficheiros acima disso podem ser rejeitados para correção.",
+        "store.nc.tac": "Ainda não medido: a tinta total é medida no PDF convertido pela verificação no servidor. A {store} pede que a tinta CMYK total não ultrapasse {tac}% — ficheiros acima disso podem ser rejeitados para correção.",
+        "store.nc.tacFail": "A tarefa PDF/X do servidor não conseguiu medir a tinta: {error}",
+        "store.c.tac.ok": "Tinta total máxima no PDF convertido: {max}% (medida a {dpi} ppp), dentro dos {tac}% da {store}.",
+        "store.c.tac.over": "Tinta total máxima no PDF convertido: {max}% (medida a {dpi} ppp), acima dos {tac}% da {store} em {n} página(s). Ficheiros acima disso podem ser rejeitados para correção.",
+        "store.c.tac.fix": "As zonas mais escuras das imagens levam mais tinta: clareie as sombras mais profundas e verifique de novo.",
+        "store.c.textK.name": "Texto só a tinta preta",
+        "store.c.textK.ok": "Todos os {n} trechos de texto do PDF convertido imprimem só em preto a 100% (K). Medido no ficheiro, não presumido.",
+        "store.c.textK.tints": "Todos os {n} trechos de texto do PDF convertido imprimem só na chapa do preto, mas {tints} são tons de cinzento do preto ({values}% K): os antetítulos, subtítulos, legendas e cabeços mais claros do livro. A {store} recomenda preto a 100% para texto de 24 pt ou menos.",
+        "store.c.textK.fail": "{bad} de {n} trechos de texto do PDF convertido usam outras tintas ({colours}). A {store} pede texto só a tinta preta; texto a cores mantém essa cor de propósito.",
+        "store.c.textK.none": "O PDF convertido não mostra texto nenhum, por isso a cor do texto não pôde ser medida.",
+        "store.nc.textK": "A tarefa PDF/X do servidor não mediu a cor do texto: {error}",
         "store.c.wrap.name": "Capa completa",
         "store.nc.noWrap": "Este livro ainda não tem uma capa completa do Beuk, por isso a capa impressa não pôde ser verificada. Crie uma no criador de capas, ou verifique o seu próprio ficheiro de capa com o modelo da loja.",
         "store.nc.hardcover": "O Beuk cria a capa de {binding} na ferramenta de capa dura, mas este relatório ainda não verifica capas duras — por isso a capa não foi verificada. Compare-a com o modelo da {store} antes de enviar.",
@@ -11200,7 +11260,17 @@
         "store.c.even.ok": "{pages} pagina’s ({src}) is een even aantal.",
         "store.c.even.warn": "{pages} pagina’s ({src}) is oneven; {store} rondt af naar een even aantal door aan het eind een lege pagina toe te voegen.",
         "store.c.tac.name": "Totale inktdekking",
-        "store.nc.tac": "Beuk kan de inktdekking niet meten. IngramSpark vraagt dat de totale CMYK-inkt binnen {tac}% blijft — bestanden daarboven kunnen ter correctie worden geweigerd.",
+        "store.nc.tac": "Nog niet gemeten: de totale inkt wordt door de servercontrole op de omgezette pdf gemeten. {store} vraagt dat de totale CMYK-inkt binnen {tac}% blijft — bestanden daarboven kunnen ter correctie worden geweigerd.",
+        "store.nc.tacFail": "De PDF/X-taak van de server kon de inkt niet meten: {error}",
+        "store.c.tac.ok": "Hoogste totale inkt in de omgezette pdf: {max}% (gemeten op {dpi} dpi), binnen de {tac}% van {store}.",
+        "store.c.tac.over": "Hoogste totale inkt in de omgezette pdf: {max}% (gemeten op {dpi} dpi), boven de {tac}% van {store} op {n} pagina('s). Bestanden daarboven kunnen ter correctie worden geweigerd.",
+        "store.c.tac.fix": "De donkerste delen van afbeeldingen dragen de meeste inkt: maak de diepste schaduwen lichter en controleer opnieuw.",
+        "store.c.textK.name": "Tekst alleen in zwarte inkt",
+        "store.c.textK.ok": "Alle {n} tekststukken in de omgezette pdf drukken alleen in 100% zwart (K). Gemeten in het bestand, niet aangenomen.",
+        "store.c.textK.tints": "Alle {n} tekststukken in de omgezette pdf drukken alleen op de zwartplaat, maar {tints} ervan zijn grijstinten van zwart ({values}% K): de lichtere bovenregels, ondertitels, bijschriften en kopregels van het boek. {store} raadt 100% zwart aan voor tekst van 24 pt of kleiner.",
+        "store.c.textK.fail": "{bad} van {n} tekststukken in de omgezette pdf gebruiken andere inkten ({colours}). {store} vraagt om tekst alleen in zwarte inkt; tekst in een kleur houdt die kleur bewust.",
+        "store.c.textK.none": "De omgezette pdf toont helemaal geen tekst, dus de tekstkleur kon niet worden gemeten.",
+        "store.nc.textK": "De PDF/X-taak van de server heeft de tekstkleur niet gemeten: {error}",
         "store.c.wrap.name": "Volledig omslag",
         "store.nc.noWrap": "Dit boek heeft nog geen Beuk-omslag, dus het drukomslag kon niet worden gecontroleerd. Maak er een in de omslagmaker, of controleer je eigen omslagbestand met de sjabloon van de winkel.",
         "store.nc.hardcover": "Beuk maakt het omslag voor {binding} in de tool voor gebonden omslagen, maar dit rapport controleert gebonden omslagen nog niet — dus het omslag is niet gecontroleerd. Vergelijk het met de sjabloon van {store} voordat u uploadt.",
@@ -11386,7 +11456,17 @@
         "store.c.even.ok": "Stron: {pages} ({src}) — liczba parzysta.",
         "store.c.even.warn": "Stron: {pages} ({src}) — liczba nieparzysta; {store} zaokrągla do parzystej, dodając pustą stronę na końcu.",
         "store.c.tac.name": "Całkowite pokrycie farbą",
-        "store.nc.tac": "Beuk nie może zmierzyć pokrycia farbą. IngramSpark prosi, by całkowita farba CMYK nie przekraczała {tac}% — pliki powyżej tej wartości mogą zostać odrzucone do poprawki.",
+        "store.nc.tac": "Jeszcze nie zmierzono: całkowitą farbę mierzy kontrola na serwerze w przekonwertowanym PDF. {store} prosi, by całkowita farba CMYK nie przekraczała {tac}% — pliki powyżej tej wartości mogą zostać odrzucone do poprawki.",
+        "store.nc.tacFail": "Zadanie PDF/X na serwerze nie zdołało zmierzyć farby: {error}",
+        "store.c.tac.ok": "Najwyższa całkowita farba w przekonwertowanym PDF: {max}% (zmierzono przy {dpi} dpi), w granicy {tac}% {store}.",
+        "store.c.tac.over": "Najwyższa całkowita farba w przekonwertowanym PDF: {max}% (zmierzono przy {dpi} dpi), ponad {tac}% {store} na {n} stronie/stronach. Pliki powyżej mogą zostać odrzucone do poprawki.",
+        "store.c.tac.fix": "Najciemniejsze fragmenty obrazów niosą najwięcej farby: rozjaśnij najgłębsze cienie i sprawdź ponownie.",
+        "store.c.textK.name": "Tekst tylko czarną farbą",
+        "store.c.textK.ok": "Wszystkie {n} fragmenty tekstu w przekonwertowanym PDF drukują się wyłącznie w 100% czerni (K). Zmierzono w pliku, nie założono.",
+        "store.c.textK.tints": "Wszystkie {n} fragmenty tekstu w przekonwertowanym PDF drukują się wyłącznie z płyty czarnej, ale {tints} z nich to szare odcienie czerni ({values}% K): jaśniejsze nadtytuły, podtytuły, podpisy i paginy żywe książki. {store} zaleca 100% czerni dla tekstu do 24 pt.",
+        "store.c.textK.fail": "{bad} z {n} fragmentów tekstu w przekonwertowanym PDF używa innych farb ({colours}). {store} prosi o tekst tylko czarną farbą; tekst w kolorze celowo zachowuje kolor.",
+        "store.c.textK.none": "Przekonwertowany PDF nie zawiera żadnego tekstu, więc nie dało się zmierzyć jego koloru.",
+        "store.nc.textK": "Zadanie PDF/X na serwerze nie zmierzyło koloru tekstu: {error}",
         "store.c.wrap.name": "Pełna okładka",
         "store.nc.noWrap": "Ta książka nie ma jeszcze pełnej okładki Beuk, więc okładki do druku nie sprawdzono. Utwórz ją w kreatorze okładek albo sprawdź własny plik okładki z szablonem sklepu.",
         "store.nc.hardcover": "Beuk tworzy okładkę do oprawy {binding} w narzędziu okładek twardych, ale ten raport jeszcze ich nie sprawdza — więc okładki nie sprawdzono. Porównaj ją z szablonem {store} przed wysłaniem.",
@@ -11572,7 +11652,17 @@
         "store.c.even.ok": "Страниц: {pages} ({src}) — число чётное.",
         "store.c.even.warn": "Страниц: {pages} ({src}) — число нечётное; {store} округляет до чётного, добавляя пустую страницу в конце.",
         "store.c.tac.name": "Суммарное покрытие краской",
-        "store.nc.tac": "Beuk не может измерить покрытие краской. IngramSpark просит, чтобы суммарная краска CMYK не превышала {tac}% — файлы сверх этого могут вернуть на исправление.",
+        "store.nc.tac": "Ещё не измерено: суммарную краску измеряет проверка на сервере по сконвертированному PDF. {store} просит, чтобы суммарная краска CMYK не превышала {tac}% — файлы сверх этого могут вернуть на исправление.",
+        "store.nc.tacFail": "Задача PDF/X на сервере не смогла измерить краску: {error}",
+        "store.c.tac.ok": "Наибольшая суммарная краска в сконвертированном PDF: {max}% (измерено при {dpi} dpi), в пределах {tac}% {store}.",
+        "store.c.tac.over": "Наибольшая суммарная краска в сконвертированном PDF: {max}% (измерено при {dpi} dpi), выше {tac}% {store} на {n} стр. Такие файлы могут вернуть на исправление.",
+        "store.c.tac.fix": "Больше всего краски несут самые тёмные участки изображений: осветлите глубокие тени и проверьте снова.",
+        "store.c.textK.name": "Текст только чёрной краской",
+        "store.c.textK.ok": "Все {n} фрагм. текста в сконвертированном PDF печатаются только 100% чёрным (K). Измерено в файле, а не предположено.",
+        "store.c.textK.tints": "Все {n} фрагм. текста в сконвертированном PDF печатаются только чёрной формой, но {tints} из них — серые оттенки чёрного ({values}% K): более светлые надзаголовки, подзаголовки, подписи и колонтитулы книги. {store} рекомендует 100% чёрный для текста 24 pt и меньше.",
+        "store.c.textK.fail": "{bad} из {n} фрагм. текста в сконвертированном PDF используют другие краски ({colours}). {store} просит текст только чёрной краской; цветной текст намеренно сохраняет цвет.",
+        "store.c.textK.none": "В сконвертированном PDF нет текста, поэтому цвет текста измерить не удалось.",
+        "store.nc.textK": "Задача PDF/X на сервере не измерила цвет текста: {error}",
         "store.c.wrap.name": "Полная обложка",
         "store.nc.noWrap": "У этой книги ещё нет полной обложки Beuk, поэтому печатную обложку проверить не удалось. Создайте её в конструкторе обложек или сверьте свой файл обложки с шаблоном магазина.",
         "store.nc.hardcover": "Beuk строит обложку «{binding}» в инструменте твёрдого переплёта, но этот отчёт пока не проверяет такие обложки, — поэтому обложка не проверена. Сверьте её с шаблоном {store} перед загрузкой.",
@@ -11758,7 +11848,17 @@
         "store.c.even.ok": "{pages} sayfa ({src}) çift sayıdır.",
         "store.c.even.warn": "{pages} sayfa ({src}) tek sayıdır; {store} sona boş bir sayfa ekleyerek çift sayıya yuvarlar.",
         "store.c.tac.name": "Toplam mürekkep kapsamı",
-        "store.nc.tac": "Beuk mürekkep kapsamını ölçemez. IngramSpark toplam CMYK mürekkebinin %{tac} içinde kalmasını istiyor — üzerindeki dosyalar düzeltme için reddedilebilir.",
+        "store.nc.tac": "Henüz ölçülmedi: toplam mürekkep, sunucu denetimiyle dönüştürülmüş PDF üzerinde ölçülür. {store} toplam CMYK mürekkebinin %{tac} içinde kalmasını istiyor — üzerindeki dosyalar düzeltme için reddedilebilir.",
+        "store.nc.tacFail": "Sunucunun PDF/X işi mürekkebi ölçemedi: {error}",
+        "store.c.tac.ok": "Dönüştürülmüş PDF'teki en yüksek toplam mürekkep: %{max} ({dpi} dpi'de ölçüldü), {store} sınırı %{tac} içinde.",
+        "store.c.tac.over": "Dönüştürülmüş PDF'teki en yüksek toplam mürekkep: %{max} ({dpi} dpi'de ölçüldü), {n} sayfada {store} sınırı %{tac} üzerinde. Üzerindeki dosyalar düzeltme için reddedilebilir.",
+        "store.c.tac.fix": "Görsellerin en koyu yerleri en çok mürekkebi taşır: en derin gölgeleri açın, sonra yeniden denetleyin.",
+        "store.c.textK.name": "Metin yalnızca siyah mürekkeple",
+        "store.c.textK.ok": "Dönüştürülmüş PDF'teki {n} metin parçasının tümü yalnızca %100 siyahla (K) basılır. Dosyada ölçüldü, varsayılmadı.",
+        "store.c.textK.tints": "Dönüştürülmüş PDF'teki {n} metin parçasının tümü yalnızca siyah kalıpla basılır, ancak {tints} tanesi siyahın gri tonlarıdır (%{values} K): kitabın daha açık üst başlıkları, alt başlıkları, resim yazıları ve sayfa başlıkları. {store} 24 pt ve altı metin için %100 siyah önerir.",
+        "store.c.textK.fail": "Dönüştürülmüş PDF'teki {n} metin parçasından {bad} tanesi başka mürekkepler kullanıyor ({colours}). {store} metnin yalnızca siyah mürekkeple olmasını istiyor; renkli dizilmiş metin rengini bilerek korur.",
+        "store.c.textK.none": "Dönüştürülmüş PDF hiç metin göstermiyor, bu yüzden metin rengi ölçülemedi.",
+        "store.nc.textK": "Sunucunun PDF/X işi metin rengini ölçmedi: {error}",
         "store.c.wrap.name": "Tam kapak",
         "store.nc.noWrap": "Bu kitabın henüz Beuk tam kapağı yok, bu yüzden baskı kapağı denetlenemedi. Kapak oluşturucuda bir tane yapın ya da kendi kapak dosyanızı mağazanın şablonuyla karşılaştırın.",
         "store.nc.hardcover": "Beuk, {binding} kapağını sert kapak aracında oluşturur, ancak bu rapor sert kapakları henüz denetlemiyor — bu yüzden kapak denetlenmedi. Yüklemeden önce {store}’ın şablonuyla karşılaştırın.",
@@ -11944,7 +12044,17 @@
         "store.c.even.ok": "{pages} صفحة ({src}) عدد زوجي.",
         "store.c.even.warn": "{pages} صفحة ({src}) عدد فردي؛ يقرّب {store} إلى عدد زوجي بإضافة صفحة فارغة في النهاية.",
         "store.c.tac.name": "إجمالي تغطية الحبر",
-        "store.nc.tac": "لا يستطيع Beuk قياس تغطية الحبر. تطلب IngramSpark ألا يتجاوز إجمالي حبر CMYK نسبة {tac}% — وقد تُرفض الملفات التي تتجاوزها لتصحيحها.",
+        "store.nc.tac": "لم يُقَس بعد: يُقاس إجمالي الحبر على ملف PDF المحوَّل عبر فحص الخادم. تطلب {store} ألا يتجاوز إجمالي حبر CMYK نسبة {tac}% — وقد تُرفض الملفات التي تتجاوزها لتصحيحها.",
+        "store.nc.tacFail": "تعذّر على مهمة PDF/X في الخادم قياس الحبر: {error}",
+        "store.c.tac.ok": "أعلى إجمالي حبر في ملف PDF المحوَّل: {max}% (مقيس عند {dpi} نقطة/بوصة)، ضمن حد {store} البالغ {tac}%.",
+        "store.c.tac.over": "أعلى إجمالي حبر في ملف PDF المحوَّل: {max}% (مقيس عند {dpi} نقطة/بوصة)، يتجاوز حد {store} البالغ {tac}% في {n} صفحة. وقد تُرفض الملفات التي تتجاوزه لتصحيحها.",
+        "store.c.tac.fix": "تحمل أغمق أجزاء الصور أكبر قدر من الحبر: فتِّح أعمق ظلالها ثم أعد الفحص.",
+        "store.c.textK.name": "النص بالحبر الأسود وحده",
+        "store.c.textK.ok": "كل مقاطع النص البالغة {n} في ملف PDF المحوَّل تُطبع بالأسود 100% (K) وحده. مقيس في الملف، لا مفترض.",
+        "store.c.textK.tints": "كل مقاطع النص البالغة {n} في ملف PDF المحوَّل تُطبع على لوح الأسود وحده، لكن {tints} منها درجات رمادية من الأسود ({values}% K): العناوين التمهيدية والفرعية والتعليقات والترويسات الأفتح في الكتاب. توصي {store} بالأسود 100% للنص بحجم 24 نقطة أو أقل.",
+        "store.c.textK.fail": "{bad} من أصل {n} من مقاطع النص في ملف PDF المحوَّل تستخدم أحبارًا أخرى ({colours}). تطلب {store} النص بالحبر الأسود وحده؛ ويحتفظ النص الملوَّن بلونه عن قصد.",
+        "store.c.textK.none": "لا يعرض ملف PDF المحوَّل أي نص، لذا تعذّر قياس لون النص.",
+        "store.nc.textK": "لم تقس مهمة PDF/X في الخادم لون النص: {error}",
         "store.c.wrap.name": "الغلاف الكامل",
         "store.nc.noWrap": "ليس لهذا الكتاب غلاف كامل من Beuk بعد، لذلك تعذّر فحص غلافه المطبوع. أنشئ غلافًا في صانع الأغلفة، أو افحص ملف غلافك وفق قالب المتجر.",
         "store.nc.hardcover": "يبني Beuk غلاف «{binding}» في أداة الغلاف المقوّى، لكن هذا التقرير لا يفحص الأغلفة المقوّاة بعد — لذلك لم يُفحص الغلاف. قارنه بقالب {store} قبل الرفع.",
@@ -12130,7 +12240,17 @@
         "store.c.even.ok": "{pages} ページ（{src}）は偶数です。",
         "store.c.even.warn": "{pages} ページ（{src}）は奇数です。{store} は末尾に白ページを加えて偶数に切り上げます。",
         "store.c.tac.name": "総インク量",
-        "store.nc.tac": "Beuk はインク量を測定できません。IngramSpark は CMYK の総インク量を {tac}% 以内に収めるよう求めています — 超えるファイルは修正のために差し戻されることがあります。",
+        "store.nc.tac": "まだ測定していません：総インク量はサーバーのチェックで変換後の PDF について測定します。{store} は CMYK の総インク量を {tac}% 以内に収めるよう求めています — 超えるファイルは修正のために差し戻されることがあります。",
+        "store.nc.tacFail": "サーバーの PDF/X ジョブはインク量を測定できませんでした：{error}",
+        "store.c.tac.ok": "変換後の PDF の最大総インク量：{max}%（{dpi} dpi で測定）。{store} の {tac}% 以内です。",
+        "store.c.tac.over": "変換後の PDF の最大総インク量：{max}%（{dpi} dpi で測定）。{n} ページで {store} の {tac}% を超えています。超えるファイルは修正のために差し戻されることがあります。",
+        "store.c.tac.fix": "画像の最も暗い部分が最も多くのインクを使います。最も深い影を明るくしてから、もう一度チェックしてください。",
+        "store.c.textK.name": "本文はブラックインクのみ",
+        "store.c.textK.ok": "変換後の PDF の {n} 個のテキストはすべて 100% ブラック（K）のみで印刷されます。ファイルで測定した結果で、推定ではありません。",
+        "store.c.textK.tints": "変換後の PDF の {n} 個のテキストはすべてブラック版のみで印刷されますが、そのうち {tints} 個はブラックのグレー濃淡（{values}% K）です：本の淡いキッカー、サブタイトル、キャプション、柱。{store} は 24 pt 以下のテキストに 100% ブラックを推奨しています。",
+        "store.c.textK.fail": "変換後の PDF の {n} 個のテキストのうち {bad} 個が他のインクを使っています（{colours}）。{store} は本文をブラックインクのみで求めています。色を指定したテキストは意図どおりその色のままです。",
+        "store.c.textK.none": "変換後の PDF にテキストがまったくないため、文字色を測定できませんでした。",
+        "store.nc.textK": "サーバーの PDF/X ジョブは文字色を測定しませんでした：{error}",
         "store.c.wrap.name": "カバー全体",
         "store.nc.noWrap": "この本にはまだ Beuk のカバー全体がないため、印刷用カバーを確認できませんでした。カバーメーカーで作るか、ご自分のカバーファイルをストアのテンプレートと照らし合わせてください。",
         "store.nc.hardcover": "Beuk はハードカバー用ツールで{binding}のカバーを作れますが、このレポートはまだハードカバーのカバーを確認しません — そのためカバーは確認していません。アップロード前に {store} のテンプレートと照らし合わせてください。",
@@ -12316,7 +12436,17 @@
         "store.c.even.ok": "{pages} 页（{src}）为偶数。",
         "store.c.even.warn": "{pages} 页（{src}）为奇数；{store} 会在末尾加一页空白页，补成偶数。",
         "store.c.tac.name": "总油墨覆盖率",
-        "store.nc.tac": "Beuk 无法测量油墨覆盖率。IngramSpark 要求 CMYK 总油墨量不超过 {tac}%——超出的文件可能被退回修改。",
+        "store.nc.tac": "尚未测量：总油墨量由服务器检查在转换后的 PDF 上测量。{store} 要求 CMYK 总油墨量不超过 {tac}%——超出的文件可能被退回修改。",
+        "store.nc.tacFail": "服务器的 PDF/X 任务未能测量油墨：{error}",
+        "store.c.tac.ok": "转换后 PDF 的最高总油墨量：{max}%（以 {dpi} dpi 测量），在 {store} 的 {tac}% 以内。",
+        "store.c.tac.over": "转换后 PDF 的最高总油墨量：{max}%（以 {dpi} dpi 测量），有 {n} 页超过 {store} 的 {tac}%。超出的文件可能被退回修改。",
+        "store.c.tac.fix": "图片最暗的部分用墨最多：调亮最深的阴影后再检查一次。",
+        "store.c.textK.name": "文字仅用黑色油墨",
+        "store.c.textK.ok": "转换后 PDF 中的全部 {n} 段文字只用 100% 黑色（K）印刷。在文件中测得，并非假定。",
+        "store.c.textK.tints": "转换后 PDF 中的全部 {n} 段文字只用黑版印刷，但其中 {tints} 段是黑色的灰色色调（{values}% K）：书中较浅的眉题、副标题、图注和书眉。{store} 建议 24 pt 及以下的文字使用 100% 黑色。",
+        "store.c.textK.fail": "转换后 PDF 的 {n} 段文字中有 {bad} 段使用了其他油墨（{colours}）。{store} 要求文字仅用黑色油墨；设为彩色的文字会按设计保留其颜色。",
+        "store.c.textK.none": "转换后的 PDF 中没有任何文字，因此无法测量文字颜色。",
+        "store.nc.textK": "服务器的 PDF/X 任务未测量文字颜色：{error}",
         "store.c.wrap.name": "完整封面",
         "store.nc.noWrap": "这本书还没有 Beuk 完整封面，因此无法检查印刷封面。请在封面工坊里制作一个，或按商店的模板检查你自己的封面文件。",
         "store.nc.hardcover": "Beuk 可在精装封面工具中制作{binding}封面，但本报告尚未检查精装封面——因此未检查封面。上传前请与 {store} 的模板核对。",
@@ -22486,10 +22616,15 @@
              the book wears ride in as data-URI @font-face rules, so
              the interior prints in them exactly as the studio shows. */
           (usedUploadedFonts().length ? fontFaceCss((f) => "data:" + f.mediaType + ";base64," + f.data) + "\n" : "") +
-          "html, body { margin: 0; padding: 0; background: #fff; color: #191713; }\n" +
-          "body { font-size: " + printBaseFontPt() + "pt; }";
+          /* Press ink: the interior's text is pure black (#000) on the
+             page colour, and every see-through effect the book look
+             uses is printed as the solid tint it looks like (see the
+             BEUK:print block below). */
+          "html, body { margin: 0; padding: 0; background: " + PRINT_PAGE + "; color: " + PRINT_INK + "; }\n" +
+          "body { font-size: " + printBaseFontPt() + "pt; }\n" +
+          printPressCss();
         const pairs = state.sections.filter((s) => s.included && s.type !== "cover")
-          .map((s) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + '">\n' + sectionHtml(s, true, true) + "\n</section>" }));
+          .map((s) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + '">\n' + printPressHtml(sectionHtml(s, true, true)) + "\n</section>" }));
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
            edition line — or the copyright page when the book has no
@@ -22502,6 +22637,294 @@
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '">\n<head>\n<meta charset="utf-8"/>\n<title>' +
           esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
+      /* ==== BEUK:print ==== */
+      /* Print for press. IngramSpark requires a PDF/X-1a:2001 or
+         PDF/X-3:2002 interior (File Creation Guide,
+         https://www.ingramspark.com/hubfs/downloads/file-creation-guide.pdf),
+         and PDF/X-1a forbids transparency, so Ghostscript flattens
+         every page that has any into one picture — its text too
+         (measured on the sample, 2026-10-24: 70 of 81 pages). The
+         book look uses see-through effects in three places; the
+         print interior prints each one as the solid colour it
+         already looks like on the page:
+         1. CSS opacity on text — kickers, subtitles, captions, the
+            contents dots: the ink blended with the page colour,
+            ink·a + page·(1 − a), as a solid colour at full opacity.
+         2. Inline SVG ornament parts carrying opacity="…": the same
+            blend, as a solid fill.
+         3. Pictures: a chapter backdrop (a whisper-strength picture
+            dissolving down the page) is baked — the same cover crop,
+            the same fade, the same strength — onto the page colour
+            as one opaque JPEG; a PNG / WebP / GIF with see-through
+            pixels is laid onto the page colour; an SVG picture that
+            paints with any see-through colour is drawn onto the page
+            colour as a picture.
+         Pictures decode asynchronously, so preparePrintPress() runs
+         before every print surface that leaves the studio (the print
+         view, the downloaded print HTML, the server's PDF/X job) and
+         buildPrintHtml() reads what it baked; a picture not yet
+         prepared prints exactly as before and printPressReport()
+         counts it. The book's text has no colour setting of its own,
+         so the interior's text is pure black; the e-reader / EPUB
+         look is untouched — none of this runs outside the print
+         interior. */
+      const PRINT_PAGE = "#ffffff";
+      const PRINT_INK = "#000000";
+      function printHexRgb(hex) {
+        const h = String(hex || "").trim().replace(/^#/, "");
+        const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+        if (!/^[0-9a-f]{6}$/i.test(full)) return null;
+        return [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+      }
+      /* The solid colour an ink at opacity a shows on the page. */
+      function printBlendHex(ink, page, a) {
+        const i = printHexRgb(ink) || [0, 0, 0], p = printHexRgb(page) || [255, 255, 255];
+        const al = Math.max(0, Math.min(1, a));
+        return "#" + i.map((c, k) => Math.round(c * al + p[k] * (1 - al)).toString(16).padStart(2, "0")).join("");
+      }
+      /* One override per book-stylesheet rule that sets an opacity
+         below 1, read from the stylesheet itself so a new rule can
+         never slip through: the same selector at full opacity, in
+         the blended ink. Backdrop strengths (.bd-*) are baked into
+         their pictures instead. */
+      function printSolidTintCss(bookCss) {
+        const out = [];
+        const re = /([^{}]+)\{([^{}]*)\}/g;
+        let m;
+        while ((m = re.exec(bookCss))) {
+          const sel = m[1].trim();
+          const op = /(?:^|;)\s*opacity:\s*([0-9.]+)\s*(?:;|$)/.exec(m[2]);
+          if (!op || sel.charAt(0) === "@" || /\.bd-/.test(sel)) continue;
+          const a = parseFloat(op[1]);
+          if (!(a >= 0 && a < 1)) continue;
+          out.push(sel + " { opacity: 1; color: " + printBlendHex(PRINT_INK, PRINT_PAGE, a) + "; }");
+        }
+        return out.join("\n");
+      }
+      /* The backdrop layer's own numbers, read from the book
+         stylesheet (strengths, fade stops, crop anchor) so the bake
+         can never drift from the look it replaces. */
+      function printBackdropLook() {
+        const css = buildBookCss("");
+        const strength = {};
+        BACKDROP_STRENGTHS.forEach((s) => {
+          const m = new RegExp("\\.bd-" + s + " \\{ opacity: ([0-9.]+);").exec(css);
+          strength[s] = m ? parseFloat(m[1]) : null;
+        });
+        const fade = /mask-image: linear-gradient\(to bottom, #000 ([0-9.]+)%, rgba\(0,0,0,0\) ([0-9.]+)%\)/.exec(css);
+        const pos = /\.bd-layer \{[^}]*background-position: center ([0-9.]+)%/.exec(css);
+        return { strength: strength, fadeFrom: fade ? parseFloat(fade[1]) / 100 : null, fadeTo: fade ? parseFloat(fade[2]) / 100 : null, posY: pos ? parseFloat(pos[1]) / 100 : null };
+      }
+      /* The layer's box on the printed page, in CSS px: the opening's
+         width (the text block, less an ornate frame's 3px double
+         border each side) plus the 1.3in reach past each side, by
+         the 12.5in height — the .print-sec .bd-layer rule in
+         buildPrintCss. */
+      function printBackdropBox() {
+        const tr = trimSize();
+        const mg = printMargins(tr.id);
+        const framed = (state.theme.headerStyle || "classic_centered") === "ornate_framed";
+        return { w: Math.round((tr.w - mg.inside - mg.outside + 2.6) * 96 - (framed ? 6 : 0)), h: Math.round(12.5 * 96) };
+      }
+      function printPressCss() {
+        return [
+          printSolidTintCss(buildBookCss("")),
+          /* A baked backdrop already is the colour it prints. */
+          ".print-sec .bd-layer.bd-baked { opacity: 1; -webkit-mask-image: none; mask-image: none; background-size: 100% 100%; background-position: 0 0; }",
+          /* The words ride above the art: the layer is the opening's
+             first child and absolutely placed, so the opening's own
+             lines are lifted above it. */
+          ".print-sec .chapter-opening.has-bd > :not(.bd-layer) { position: relative; }"
+        ].join("\n");
+      }
+      /* Baked pictures, keyed by what they were baked from, and the
+         count of anything the last build left see-through. */
+      const printPressCache = new Map();
+      const printPressState = { svgKept: 0, pending: 0 };
+      /* Inline SVG parts with opacity="a" (ornaments, rules) become
+         solid fills (and strokes) in the blended ink. A part painted
+         with a colour this can't read keeps its opacity — and is
+         counted, so the report never claims a solid it didn't make. */
+      function printSolidSvgHtml(html) {
+        return html.replace(/<svg\b[\s\S]*?<\/svg>/g, (svg) =>
+          svg.replace(/<(path|rect|circle|ellipse|polygon|polyline|line|g)\b([^>]*?)\sopacity="([0-9.]+)"([^>]*)>/g, (all, tag, pre, a, post) => {
+            const alpha = parseFloat(a);
+            if (!(alpha >= 0 && alpha < 1)) return all;
+            const selfClose = /\/\s*$/.test(post);
+            let attrs = pre + post.replace(/\/\s*$/, "");
+            let ok = true;
+            const solid = (v) => {
+              if (v === "none") return v;
+              if (v === "currentColor") return printBlendHex(PRINT_INK, PRINT_PAGE, alpha);
+              if (printHexRgb(v)) return printBlendHex(v, PRINT_PAGE, alpha);
+              ok = false;
+              return v;
+            };
+            const fillM = /\sfill="([^"]*)"/.exec(attrs);
+            if (fillM) attrs = attrs.replace(fillM[0], ' fill="' + solid(fillM[1]) + '"');
+            else if (tag !== "g") attrs += ' fill="' + printBlendHex(PRINT_INK, PRINT_PAGE, alpha) + '"';
+            else ok = false;
+            const strokeM = /\sstroke="([^"]*)"/.exec(attrs);
+            if (strokeM) attrs = attrs.replace(strokeM[0], ' stroke="' + solid(strokeM[1]) + '"');
+            if (!ok) { printPressState.svgKept += 1; return all; }
+            return "<" + tag + attrs + (selfClose ? "/>" : ">");
+          }));
+      }
+      const PRINT_SVG_SEE_THROUGH = /opacity|rgba\(|hsla\(|transparent|<mask\b|<filter\b|<image\b|mix-blend|#[0-9a-f]{8}\b|#[0-9a-f]{4}\b/i;
+      const PRINT_BD_RE = /<div class="bd-layer bd-(whisper|soft|strong)" style="background-image:url\((data:image\/[^)]+)\)"/g;
+      const PRINT_PIC_RE = /src="(data:image\/(?:png|webp|gif|svg\+xml);base64,[^"]+)"/g;
+      function printBackdropKey(strength, src, box) {
+        return "bd|" + strength + "|" + box.w + "x" + box.h + "|" + src;
+      }
+      /* The print interior's body with every prepared picture swapped
+         for its baked, opaque self and every SVG opacity made solid. */
+      function printPressHtml(html) {
+        const box = printBackdropBox();
+        let out = printSolidSvgHtml(html);
+        out = out.replace(PRINT_BD_RE, (all, strength, src) => {
+          const hit = printPressCache.get(printBackdropKey(strength, src, box));
+          if (!hit || !hit.out) { printPressState.pending += 1; return all; }
+          return '<div class="bd-layer bd-' + strength + ' bd-baked" style="background-image:url(' + hit.out + ')"';
+        });
+        out = out.replace(PRINT_PIC_RE, (all, src) => {
+          const hit = printPressCache.get("img|" + src);
+          if (!hit || hit.error) { printPressState.pending += 1; return all; }
+          return hit.out ? 'src="' + hit.out + '"' : all;
+        });
+        return out;
+      }
+      function printDecodeImage(src) {
+        return new Promise((resolve, reject) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => reject(new Error("the picture did not decode"));
+          im.src = src;
+        });
+      }
+      function printCanvas(w, h) {
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
+        return c;
+      }
+      /* JPEG at 0.92: a JPEG carries no alpha channel at all, so the
+         renderer can never hand Ghostscript a soft mask for it. */
+      const PRINT_JPEG_Q = 0.92;
+      async function printBakeBackdrop(src, alpha, look, box) {
+        const im = await printDecodeImage(src);
+        const iw = im.naturalWidth || im.width, ih = im.naturalHeight || im.height;
+        if (!iw || !ih) throw new Error("the picture has no size");
+        /* background-size: cover — CSS px per picture px. The bake
+           keeps the picture's own detail, between 150 and 300 ppi. */
+        const s = Math.max(box.w / iw, box.h / ih);
+        const k = Math.max(150, Math.min(300, 96 / s)) / 96;
+        const c = printCanvas(box.w * k, box.h * k);
+        const lay = printCanvas(c.width, c.height);
+        const lg = lay.getContext("2d");
+        const dw = iw * s * k, dh = ih * s * k;
+        lg.drawImage(im, (c.width - dw) * 0.5, (c.height - dh) * look.posY, dw, dh);
+        lg.globalCompositeOperation = "destination-in";
+        const grad = lg.createLinearGradient(0, 0, 0, c.height);
+        grad.addColorStop(0, "rgba(0,0,0,1)");
+        grad.addColorStop(look.fadeFrom, "rgba(0,0,0,1)");
+        grad.addColorStop(look.fadeTo, "rgba(0,0,0,0)");
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        lg.fillStyle = grad;
+        lg.fillRect(0, 0, c.width, c.height);
+        const g = c.getContext("2d");
+        g.fillStyle = PRINT_PAGE;
+        g.fillRect(0, 0, c.width, c.height);
+        g.globalAlpha = alpha;
+        g.drawImage(lay, 0, 0);
+        return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
+      }
+      /* A picture with see-through parts, laid onto the page colour;
+         null when it has none (it prints as it is). */
+      async function printFlattenPicture(src) {
+        const isSvg = src.indexOf("data:image/svg+xml") === 0;
+        if (isSvg) {
+          let text = "";
+          try { text = decodeURIComponent(escape(atob(src.slice(src.indexOf(",") + 1)))); } catch (e) { text = ""; }
+          if (text && !PRINT_SVG_SEE_THROUGH.test(text)) return null;
+        }
+        const im = await printDecodeImage(src);
+        let w = im.naturalWidth || im.width || 300, h = im.naturalHeight || im.height || 150;
+        /* An SVG has no pixels of its own: draw it 2400 px on its
+           long side, sharp at any size a book sets it. */
+        if (isSvg) { const f = 2400 / Math.max(w, h); w *= f; h *= f; }
+        const c = printCanvas(w, h);
+        const g = c.getContext("2d");
+        if (!isSvg) {
+          g.drawImage(im, 0, 0, c.width, c.height);
+          const d = g.getImageData(0, 0, c.width, c.height).data;
+          let see = false;
+          for (let i = 3; i < d.length; i += 4) if (d[i] < 255) { see = true; break; }
+          if (!see) return null;
+          g.clearRect(0, 0, c.width, c.height);
+        }
+        g.fillStyle = PRINT_PAGE;
+        g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(im, 0, 0, c.width, c.height);
+        return c.toDataURL("image/jpeg", PRINT_JPEG_Q);
+      }
+      /* Bake everything the current print interior needs and has not
+         yet been baked. */
+      async function preparePrintPress() {
+        const html = buildPrintHtml();
+        const look = printBackdropLook();
+        const box = printBackdropBox();
+        const jobs = [];
+        const seen = new Set();
+        const settle = (key, p) => jobs.push(p
+          .then((out) => { printPressCache.set(key, { out: out }); })
+          .catch((e) => { printPressCache.set(key, { out: null, error: String((e && e.message) || e) }); }));
+        html.replace(PRINT_BD_RE, (all, strength, src) => {
+          const key = printBackdropKey(strength, src, box);
+          const had = printPressCache.get(key);
+          if ((!had || had.error) && !seen.has(key)) {
+            seen.add(key);
+            const alpha = look.strength[strength];
+            settle(key, alpha == null || look.fadeFrom == null || look.fadeTo == null || look.posY == null
+              ? Promise.reject(new Error("the backdrop look could not be read from the book stylesheet"))
+              : printBakeBackdrop(src, alpha, look, box));
+          }
+          return all;
+        });
+        html.replace(PRINT_PIC_RE, (all, src) => {
+          const key = "img|" + src;
+          const had = printPressCache.get(key);
+          if ((!had || had.error) && !seen.has(key)) { seen.add(key); settle(key, printFlattenPicture(src)); }
+          return all;
+        });
+        await Promise.all(jobs);
+        return printPressReport();
+      }
+      /* What the print interior as built right now carries: the
+         solid-tint rules, baked backdrops, flattened pictures, and
+         anything still see-through (not yet prepared, failed, or an
+         SVG part kept). Counted from the built document itself. */
+      function printPressReport() {
+        printPressState.pending = 0; printPressState.svgKept = 0;
+        const html = buildPrintHtml();
+        const flattened = Array.from(printPressCache.entries()).filter((e) => e[0].indexOf("img|") === 0 && e[1].out && html.indexOf(e[1].out) !== -1).length;
+        return {
+          tintRules: (printSolidTintCss(buildBookCss("")).match(/\{ opacity: 1;/g) || []).length,
+          bakedBackdrops: (html.match(/ bd-baked"/g) || []).length,
+          flattenedPictures: flattened,
+          seeThroughLeft: printPressState.pending + printPressState.svgKept,
+          errors: Array.from(printPressCache.values()).filter((v) => v.error).map((v) => v.error)
+        };
+      }
+      /* The picture the print file carries for a backdrop: its press
+         bake when one is ready (what buildPrintHtml then writes), else
+         the original. Lets a check follow one backdrop into print. */
+      function printBackdropCarried(img, strength) {
+        const src = "data:" + img.mediaType + ";base64," + img.data;
+        const hit = printPressCache.get(printBackdropKey(strength, src, printBackdropBox()));
+        return hit && hit.out ? { baked: true, data: hit.out.slice(hit.out.indexOf(",") + 1) } : { baked: false, data: img.data };
+      }
+      window.preparePrintPress = preparePrintPress;
+      window.printPressReport = printPressReport;
+      /* ==== /BEUK:print ==== */
       function renderPrintControls() {
         const grid = $("trimGrid"); if (!grid) return;
         grid.innerHTML = TRIM_GROUPS.map((g) =>
@@ -22540,14 +22963,22 @@
         renderPrintControls();
         const tr = trimSize();
         $("printSub").textContent = (state.meta.title || "Untitled Book") + " · " + tr.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : "") + " · " + (state.printRecto ? "chapters open on recto (right-hand) pages" : "chapters open on the next page") + ". To make the PDF: Print / Save as PDF below, paper size " + tr.label + ", margins None, background graphics on. The downloaded Print HTML file prints exactly the same way.";
-        $("printFrame").srcdoc = buildPrintHtml();
+        const first = buildPrintHtml();
+        $("printFrame").srcdoc = first;
         $("modalExport").classList.remove("open");
         $("modalPrint").classList.add("open");
         icons();
+        /* Pictures bake for press in the background (BEUK:print); the
+           view refreshes once they have, if anything changed. */
+        preparePrintPress().then(() => {
+          const next = buildPrintHtml();
+          if (next !== first && $("modalPrint").classList.contains("open")) $("printFrame").srcdoc = next;
+        }).catch(() => {});
       }
       function initPrint() {
         $("btnOpenPrintView").addEventListener("click", openPrintView);
-        $("btnDownloadPrintHtml").addEventListener("click", () => {
+        $("btnDownloadPrintHtml").addEventListener("click", async () => {
+          try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
           downloadBlob(new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename());
           toast("Print interior downloaded — open it and Print → Save as PDF at the " + trimSize().label + " trim", "printer");
         });
@@ -22608,7 +23039,9 @@
            itself — printTypeCss is the very text buildPrintCss
            ships, scoped to the view's pages, so a Large Print
            edition re-typesets here exactly as it prints. */
-        el.textContent = buildBookCss(".piv-book") + "\n" + printTypeCss(".piv-book") + "\n.piv-book { font-size: " + printBaseFontPt() + "pt; }";
+        el.textContent = buildBookCss(".piv-book") + "\n" + printTypeCss(".piv-book") + "\n.piv-book { font-size: " + printBaseFontPt() + "pt; }" +
+          /* The spread shows the press tints the print file carries (BEUK:print). */
+          "\n" + printSolidTintCss(buildBookCss(".piv-book"));
       }
       function pivGeometry() {
         const trim = trimSize();
@@ -25092,7 +25525,7 @@
           /* G202145060: "books need at least 79 pages to have spine text", "at least 0.0625" of clearance on each side". */
           spineTextMinPages: 79, spineTextClear: 0.0625,
           barcode: { minW: 1.4, minH: 0.8, edge: 0.25, label: "2 × 1.2 in suggested, 1.4 × 0.8 in minimum, 0.25 in from spine and trim" },
-          interiorPdfx: "preferred", coverPdfx: false, coverColor: "kdp", tac: null, ebookLimits: null
+          interiorPdfx: "preferred", coverPdfx: false, coverColor: "kdp", tac: null, textK: null, ebookLimits: null
         },
         ingramspark: {
           id: "ingramspark", name: "IngramSpark",
@@ -25164,6 +25597,9 @@
              cover type safety 0.25 in recommended. */
           barcode: { minW: 1.75, minH: 1, edge: 0.25, label: "at least 1.75 × 1 in, inside the 0.25 in type safety" },
           interiorPdfx: "required", pdfxAccepted: ["PDF/X-1a:2001", "PDF/X-3:2002"], coverPdfx: true, coverColor: "is", tac: 240,
+          /* Text setup, black & white and colour text requirements: "BODY TEXT: For best results for text that is 24 pt. or
+             below, please use 100% black only." — a recommendation, so an advisory row, measured on the server's PDF. */
+          textK: true,
           /* EBOOK: "No single image inside an EPUB can be greater than 3.2 million pixels"; cover "Minimum of 1873 pixels along
              the longest side, 1600 pixels on the shortest side". */
           ebookLimits: { maxImagePx: 3200000, coverLong: 1873, coverShort: 1600 }
@@ -25405,7 +25841,38 @@
         /* Even page count: both stores pad an odd count themselves — advisory. */
         row("interior", "even", false, pages % 2 === 0 ? "pass" : "warn", t("store.c.even.name"),
           t(pages % 2 === 0 ? "store.c.even.ok" : "store.c.even.warn", PP));
-        if (R.tac) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tac", { tac: R.tac }));
+        /* ==== BEUK:print ==== */
+        /* Press facts the server measured on the converted file itself
+           (src/jobs/pdfpress.ts): the ink every run of text is shown in,
+           and the highest total ink of a CMYK raster of every page. Not
+           measured is "not checked", never a pass. */
+        const press = insp && F.srv && F.srv.pdfx && F.srv.pdfx.result ? F.srv.pdfx.result.press || null : null;
+        if (R.textK) {
+          const tx = press && press.text && typeof press.text.textShows === "number" ? press.text : null;
+          if (!insp) row("interior", "textK", false, "nc", t("store.c.textK.name"), why);
+          else if (!tx) row("interior", "textK", false, "nc", t("store.c.textK.name"), t("store.nc.textK", { error: (press && press.text && press.text.error) || t("store.nc.pending") }));
+          else if (!tx.textShows) row("interior", "textK", false, "nc", t("store.c.textK.name"), t("store.c.textK.none"));
+          else if (tx.kOnly < tx.textShows) {
+            const cols = Object.keys(tx.otherColours || {}).sort((a, b) => tx.otherColours[b] - tx.otherColours[a]).slice(0, 3).join("; ");
+            row("interior", "textK", false, "warn", t("store.c.textK.name"), t("store.c.textK.fail", Object.assign({ bad: fmtNum(tx.textShows - tx.kOnly), n: fmtNum(tx.textShows), colours: cols }, P)));
+          } else {
+            const full = (tx.kValues && tx.kValues["100"]) || 0;
+            const tintVals = Object.keys(tx.kValues || {}).filter((k) => k !== "100").map(Number).sort((a, b) => b - a);
+            if (full === tx.textShows) row("interior", "textK", false, "pass", t("store.c.textK.name"), t("store.c.textK.ok", { n: fmtNum(tx.textShows) }));
+            else row("interior", "textK", false, "warn", t("store.c.textK.name"), t("store.c.textK.tints", Object.assign({ n: fmtNum(tx.textShows), tints: fmtNum(tx.textShows - full), values: tintVals.join(", ") }, P)));
+          }
+        }
+        if (R.tac) {
+          const ink = press && press.ink && typeof press.ink.maxTacPct === "number" ? press.ink : null;
+          if (!insp) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tac", Object.assign({ tac: R.tac }, P)));
+          else if (!ink) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tacFail", { error: (press && press.ink && press.ink.error) || t("store.nc.pending") }));
+          else {
+            const over = (ink.perPagePct || []).filter((v) => v > R.tac).length;
+            if (ink.maxTacPct <= R.tac) row("interior", "tac", false, "pass", t("store.c.tac.name"), t("store.c.tac.ok", Object.assign({ max: String(Math.round(ink.maxTacPct * 10) / 10), dpi: ink.dpi, tac: R.tac }, P)));
+            else row("interior", "tac", false, "warn", t("store.c.tac.name"), t("store.c.tac.over", Object.assign({ max: String(Math.round(ink.maxTacPct * 10) / 10), dpi: ink.dpi, tac: R.tac, n: fmtNum(over) }, P)), t("store.c.tac.fix"));
+          }
+        }
+        /* ==== /BEUK:print ==== */
 
         /* ---- Cover wrap ---- */
         const recipe = state.coverRecipe ? normalizeCoverRecipe(state.coverRecipe) : null;
@@ -25650,6 +26117,7 @@
         try {
           if (!(await cloudEnsureLinked())) { out.error = t("store.serverNeedShelf"); }
           else {
+            try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
             const printId = await storeUpload("print-html", new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename(), null);
             out.pdfx = await storeCreateJob("pdfx", printId);
             if (window.JSZip) {
@@ -29689,7 +30157,11 @@
                       prev.includes(scImgKey(bd.img))))
                   fails.push(label + ": preview does not carry the pair");
                 const li = print.indexOf(scImgKey(plate.img));
-                const ri = print.indexOf(scImgKey(bd.img));
+                /* BEUK:print — the print file carries a backdrop as its
+                   press bake once one is ready (the same picture laid onto
+                   the page colour), so its fingerprint is read from what
+                   print actually carries for this backdrop. */
+                const ri = print.indexOf(scImgKey(printBackdropCarried(bd.img, bd.strength)));
                 if (!(li !== -1 && ri !== -1 && li < ri && print.includes("bd-layer bd-whisper")))
                   fails.push(label + ": print file does not carry the plate ahead of the backdrop opening");
                 /* EPUB: the plate ships as its own XHTML ahead of the
@@ -32925,6 +33397,77 @@
       /* ==== /BEUK:importreport ==== */
       /* ==== BEUK:acx ==== */
       SELF_CHECKS.push(...acxSelfChecks());
+      /* ==== BEUK:print ==== */
+      /* Print for press, checked from the document the print view and
+         the server job actually receive (buildPrintHtml), and from the
+         Store-ready rows fed a server result. */
+      SELF_CHECKS.push(
+        { id: "print.press.solid-tints", feature: "print", name: "Print for press: every see-through text rule of the book look prints as its solid blended tint at full opacity, body text is pure black, no inline ornament part keeps an opacity, and the EPUB stylesheet is untouched",
+          run() {
+            return storeOnSample(() => {
+              const book = buildBookCss("");
+              const html = buildPrintHtml();
+              const css = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+              const body = html.slice(html.indexOf("<body>"));
+              /* Each book rule with opacity a < 1 (backdrop strengths aside) must be followed by the same selector at opacity 1 in ink·a + white·(1 − a). */
+              const want = [];
+              book.replace(/([^{}]+)\{([^{}]*)\}/g, (all, sel, decl) => {
+                const m = /(?:^|;)\s*opacity:\s*([0-9.]+)\s*(?:;|$)/.exec(decl);
+                if (m && parseFloat(m[1]) < 1 && !/\.bd-/.test(sel) && sel.trim().charAt(0) !== "@") want.push({ sel: sel.trim(), a: parseFloat(m[1]) });
+                return all;
+              });
+              const tint = (a) => "#" + [0, 0, 0].map(() => Math.round(255 * (1 - a)).toString(16).padStart(2, "0")).join("");
+              const missing = want.filter((w) => {
+                const rule = w.sel + " { opacity: 1; color: " + tint(w.a) + "; }";
+                return css.lastIndexOf(rule) <= css.indexOf(w.sel + " {");
+              });
+              const inkOk = css.indexOf("html, body { margin: 0; padding: 0; background: #ffffff; color: #000000; }") !== -1 && css.indexOf("#191713") === -1;
+              const svgOpacity = (body.match(/<svg\b[\s\S]*?<\/svg>/g) || []).filter((s) => /\sopacity="0?\.\d+"/.test(s)).length;
+              const ornamentsSeen = (body.match(/<svg class="ornament"/g) || []).length;
+              /* The EPUB / e-reader look keeps its see-through kickers: only print changes. */
+              const epubOk = /\.chapter-number \{[^}]*opacity: 0\.75;/.test(book) && buildBookCss("").indexOf("opacity: 1; color: #") === -1;
+              const ok = want.length >= 10 && !missing.length && inkOk && ornamentsSeen > 0 && svgOpacity === 0 && epubOk;
+              return scVerdict(ok, want.length + " see-through rules, " + (want.length - missing.length) + " printed as solid tints" + (missing.length ? " (missing: " + missing.map((m) => m.sel).join(", ") + ")" : "") +
+                "; body ink #000 (" + inkOk + "); " + ornamentsSeen + " inline ornaments, " + svgOpacity + " still with opacity; EPUB stylesheet unchanged (" + epubOk + ")");
+            });
+          } },
+        { id: "print.press.blend-math", feature: "print", name: "Print for press: the solid tint is the ink blended with the page colour (ink·a + page·(1 − a)), and an inline SVG part turns its opacity into that solid fill",
+          run() {
+            const k75 = printBlendHex("#000000", "#ffffff", 0.75), k85 = printBlendHex("#000", "#fff", 0.85), red = printBlendHex("#8a2b1c", "#ffffff", 0.5);
+            const svg = printSolidSvgHtml('<svg><g fill="currentColor"><path d="M0 0" opacity=".8"/><rect x="1" opacity="0.5" fill="#8a2b1c"/><path d="M1 1"/></g></svg>');
+            const ok = k75 === "#404040" && k85 === "#262626" && red === "#c5958e" &&
+              svg.indexOf('<path d="M0 0" fill="#333333"/>') !== -1 && svg.indexOf('<rect x="1" fill="#c5958e"/>') !== -1 && svg.indexOf("opacity") === -1;
+            return scVerdict(ok, "75% black → " + k75 + ", 85% → " + k85 + ", 50% #8a2b1c → " + red + "; SVG: " + svg.replace(/<\/?svg>/g, ""));
+          } },
+        { id: "print.press.store-rows", feature: "print", name: "Store-ready press rows: text ink and total ink pass only on measured server facts — 100% K text passes, grey-tint text and ink over 240% warn with the numbers, an unmeasured job is “not checked”",
+          run() {
+            return storeOnSample(() => {
+              const insp = { pageCount: 81, firstPage: { mediaBox: { w: 6, h: 9 }, trimBox: { w: 6, h: 9 }, bleedBox: null }, pdfx: { version: "PDF/X-1:2001", conformance: "PDF/X-1a:2001", outputIntent: true, outputCondition: "CGATS TR 003" },
+                fonts: [{ name: "AAAAAA+EBGaramond-Regular", subtype: "Type1C", embedded: true }], fontsAllEmbedded: true, rgb: { colourSpaceRefs: 0, rgbOperators: 0 }, encrypted: false, notes: [] };
+              const rowsWith = (press) => {
+                storeUi.server = { sig: storeBookSig(), at: new Date(), pdfx: { status: "done", result: { inspection: insp, press: press } }, epubcheck: null, error: "" };
+                const a = storeAudit({ store: "ingramspark", binding: "paperback", ink: "bw_white" });
+                const get = (id) => a.groups.interior.find((r) => r.id === id) || { status: "absent", evidence: "" };
+                return { textK: get("textK"), tac: get("tac") };
+              };
+              const clean = rowsWith({ text: { textShows: 900, kOnly: 900, kValues: { 100: 900 }, otherColours: {} }, ink: { maxTacPct: 212.5, perPagePct: [212.5, 10], dpi: 100 } });
+              const tinted = rowsWith({ text: { textShows: 900, kOnly: 900, kValues: { 100: 850, 75: 50 }, otherColours: {} }, ink: { maxTacPct: 296.1, perPagePct: [296.1, 241, 12], dpi: 100 } });
+              const unmeasured = rowsWith({ text: { error: "no stream" }, ink: { error: "Ghostscript rendered no pages" } });
+              storeUi.server = null;
+              const none = storeAudit({ store: "ingramspark", binding: "paperback", ink: "bw_white" }).groups.interior;
+              const kdp = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" }).groups.interior;
+              const ok = clean.textK.status === "pass" && clean.tac.status === "pass" && clean.tac.evidence.indexOf("212.5") !== -1 &&
+                tinted.textK.status === "warn" && tinted.textK.evidence.indexOf("75") !== -1 &&
+                tinted.tac.status === "warn" && tinted.tac.evidence.indexOf("296.1") !== -1 && tinted.tac.evidence.indexOf("2") !== -1 &&
+                unmeasured.textK.status === "nc" && unmeasured.tac.status === "nc" && unmeasured.tac.evidence.indexOf("rendered no pages") !== -1 &&
+                none.filter((r) => r.id === "textK" || r.id === "tac").every((r) => r.status === "nc") &&
+                !kdp.some((r) => r.id === "textK" || r.id === "tac");
+              return scVerdict(ok, "measured clean: text " + clean.textK.status + ", ink " + clean.tac.status + "; tints/over: text " + tinted.textK.status + ", ink " + tinted.tac.status +
+                "; unmeasured: " + unmeasured.textK.status + "/" + unmeasured.tac.status + "; no server: " + none.filter((r) => r.id === "textK" || r.id === "tac").map((r) => r.status).join("/") + "; KDP rows: " + kdp.filter((r) => r.id === "textK" || r.id === "tac").length);
+            });
+          } }
+      );
+      /* ==== /BEUK:print ==== */
       /* ==== /BEUK:acx ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
