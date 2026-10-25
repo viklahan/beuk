@@ -27616,6 +27616,9 @@
           /* BEUK:shelfguard — an optional third choice resolves "alt"; only callers that pass spec.alt ever see it. */
           const alt = $("btnConfirmAlt");
           if (alt) { alt.textContent = spec.alt || ""; alt.hidden = !spec.alt; }
+          /* BEUK:shelfguard — with defaultNo the safe choice also carries the primary look; the replacing one does not. */
+          $("btnConfirmNo").classList.toggle("primary", !!spec.defaultNo);
+          $("btnConfirmYes").classList.toggle("primary", !spec.defaultNo);
           $("modalConfirm").classList.add("open");
           icons();
           /* BEUK:shelfguard — the safe choice holds the focus, so Enter keeps the writer's book. */

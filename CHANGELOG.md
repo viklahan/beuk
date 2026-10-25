@@ -4,6 +4,23 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — Opening a shelf book asks before it replaces yours
+
+- **Your only copy is never swapped out without a question.** For
+  writers who keep a book on one device: opening a book from your shelf
+  used to replace a book that had never been put on the shelf — with no
+  question and no copy in History — whenever you had not typed in it
+  since the page loaded. Now, whenever the book on your desk exists only
+  on this device (or has writing your shelf has not seen yet), Beuk
+  asks first: **Keep my book** (the default), **Put it on my shelf, then
+  open**, or **Open and replace it**. If putting it on the shelf fails,
+  nothing is replaced.
+- **"Restore the whole book" keeps its promise.** Its confirmation says
+  a snapshot of the book as it is now is taken first. That was not true
+  when the desk held the untouched sample story; it now always is.
+- The new words ship in all 13 languages; the 12 translations have not
+  yet been checked by native speakers.
+
 ## 2026-10-25 — Zen sounds like the real thing
 
 - **Real rain, waves and wind.** For writers who use Zen's ambient
