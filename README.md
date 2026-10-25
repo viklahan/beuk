@@ -734,6 +734,46 @@ so the scripts leave those calls to the author/narrator. Audio specs
 (bit rate, levels, room tone) apply to recordings and are reported as
 not checked.
 
+## Studio: dictation language (client-only)
+
+**The browser cannot detect which language is being spoken.** The Web
+Speech API's `SpeechRecognition.lang` takes a single BCP 47 tag and, when
+unset, falls back to the page's `<html lang>`; the spec defines no
+spoken-language detection and no multi-language session
+([W3C Web Speech API](https://webaudio.github.io/web-speech-api/#dom-speechrecognition-lang),
+[MDN](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/lang)).
+Spanish speech heard as English comes out as English-shaped words. So the
+studio never claims to auto-detect speech; instead:
+
+- **Picker.** Right-click (or long-press) either mic — or tap *Change
+  language* on the bar shown while listening — to choose the dictation
+  language: the book's language (default), recent picks first, then every
+  language Beuk has a recognition code for. The pick is saved with the
+  book (`serializeBook().dictation = { lang, recent }`; `lang: ""` means
+  "follow the book's language"). Switching mid-session aborts the old
+  recogniser and starts a fresh one in the new language; words already
+  final stay in the text, the unfinalised tail (heard in the old
+  language) is dropped.
+- **Suggestions from the text, never automatic.** For a writer who
+  dictates (the mic exists in this browser and has been used), the bar
+  under the toolbar reads the last ~1,500 characters of the open section
+  with the same detector the importer uses (`detectLanguageInText`,
+  confident results only). If it reads as another language than the
+  dictation language: *"This section looks Spanish — dictate in Spanish?"*
+  If the whole manuscript reads as another language than the book's, it
+  offers to fix the book language (which also drives hyphenation, quotes
+  and Read Aloud) and records that as a hand choice. Nothing changes
+  until the writer taps; *Not now* dismisses it for that section/book.
+- **Read Aloud** offers the matching voice when the open section reads as
+  another language than the book; the switch applies to that section only
+  and lasts for the session (voices are the device's — if none is
+  installed for that language the popover says so).
+
+Self-checks: `dictation.language-picker`, `dictation.language-suggest`,
+`readaloud.section-language` (stubbed recogniser; client-only in the
+server registry). The 12 non-English translations of these strings were
+written by an agent and have not yet been reviewed by native speakers.
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a

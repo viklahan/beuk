@@ -390,6 +390,7 @@
         position: fixed; z-index: 98; width: min(322px, calc(100vw - 24px));
         background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 14px;
         box-shadow: var(--shadow); padding: 14px 15px 15px; display: none;
+        max-height: calc(100vh - 16px); overflow-y: auto; box-sizing: border-box; /* BEUK:dictlang */
       }
       #dictPop.open { display: block; }
       #dictPop .dp-head { font-weight: 700; font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
@@ -29883,6 +29884,171 @@
               }
             });
           } },
+        /* ==== BEUK:dictlang ==== */
+        { id: "dictation.language-picker", feature: "dictation", name: "Dictation language picker: the popover offers the book language, recent picks and every dictation language with the honest no-auto-detect line; a pick sets the recogniser's lang, a mid-session switch restarts cleanly keeping final words, and the pick round-trips with the book",
+          run() {
+            const d = window.beukDictation;
+            if (!d || !d.setLang) return scVerdict(false, "window.beukDictation.setLang is not exposed");
+            const instances = [];
+            class FakeRec {
+              constructor() { instances.push(this); this.lang = ""; this.continuous = false; this.interimResults = false; this.aborted = false; }
+              start() {}
+              stop() { if (this.onend) this.onend(); }
+              abort() { this.aborted = true; if (this.onend) this.onend(); }
+              emit(list) {
+                if (!this.onresult) return;
+                const results = list.map((pair) => { const r = [{ transcript: pair[0] }]; r.isFinal = !!pair[1]; return r; });
+                this.onresult({ resultIndex: 0, results: results });
+              }
+            }
+            return withEditorFixture((area, sec) => {
+              try {
+                d.stub(FakeRec);
+                state.meta.language = "en"; state.meta.langSource = "manual";
+                state.dictation = { lang: "", recent: [] };
+                const followsBook = d.langInfo().lang === "en-US" && d.langInfo().chosen === false;
+                /* The picker. */
+                d.openPicker($("btnDictate"));
+                const pop = $("dictPop");
+                const sel = $("dictLangSel");
+                const pickerOk = !!pop && pop.classList.contains("open") && !!sel &&
+                  sel.querySelectorAll("option[value]:not([value=''])").length === Object.keys(DICT_LANGS).length &&
+                  pop.textContent.indexOf(t("dict.noAutoDetect").slice(0, 30)) !== -1 &&
+                  !!pop.querySelector('[data-dict-lang="en"][aria-pressed="true"]');
+                sel.value = "es"; sel.dispatchEvent(new Event("change"));
+                const picked = state.dictation.lang === "es" && d.langInfo().lang === "es-ES" &&
+                  !!$("dictPop") && $("dictPop").classList.contains("open") &&
+                  !!$("dictPop").querySelector('[data-dict-lang="es"][aria-pressed="true"]');
+                /* Start: the recogniser hears Spanish. */
+                area.value = "Intro."; area.dispatchEvent(new Event("input"));
+                area.focus(); area.setSelectionRange(area.value.length, area.value.length);
+                d.start();
+                const r1 = instances[instances.length - 1];
+                const startOk = d.state() === "listening" && !!r1 && r1.lang === "es-ES";
+                r1.emit([["hola mundo", true], ["y luego", false]]);
+                const heard = area.value === "Intro. hola mundo y luego";
+                /* Mid-session switch: final words stay, the unfinalised tail leaves, a fresh recogniser starts in French. */
+                const n0 = instances.length;
+                d.setLang("fr");
+                const r2 = instances[instances.length - 1];
+                const switchOk = r1.aborted === true && instances.length === n0 + 1 && r2.lang === "fr-FR" &&
+                  d.state() === "listening" && area.value === "Intro. hola mundo";
+                r1.emit([["late ghost words", true]]);
+                const oldIgnored = area.value === "Intro. hola mundo";
+                r2.emit([["bonjour", true]]);
+                const newLands = area.value === "Intro. hola mundo bonjour";
+                d.stop();
+                /* Recent picks first; choosing the book language means "follow the book". */
+                const ch = d.choices();
+                const recentOk = ch[0] === "fr" && ch.indexOf("es") !== -1 && ch.indexOf("en") !== -1;
+                const saved = JSON.parse(JSON.stringify(serializeBook()));
+                const serialOk = !!saved.dictation && saved.dictation.lang === "fr" && saved.dictation.recent[0] === "fr" && saved.dictation.recent[1] === "es";
+                d.setLang("en");
+                const backToBook = state.dictation.lang === "" && d.langInfo().lang === "en-US" && state.dictation.recent[0] === "en";
+                /* Round trip: the saved book brings its pick back; a book without one follows its own language. */
+                applyBookDoc(saved);
+                const restored = state.dictation.lang === "fr" && d.langInfo().lang === "fr-FR";
+                const bare = JSON.parse(JSON.stringify(saved)); delete bare.dictation;
+                applyBookDoc(bare);
+                const bareOk = state.dictation.lang === "" && d.langInfo().lang === DICT_LANGS[bookLang()];
+                const junk = JSON.parse(JSON.stringify(saved)); junk.dictation = { lang: "xx-nonsense", recent: ["es", 7, "zz"] };
+                applyBookDoc(junk);
+                const junkOk = state.dictation.lang === "" && state.dictation.recent.length === 1 && state.dictation.recent[0] === "es";
+                return scVerdict(followsBook && pickerOk && picked && startOk && heard && switchOk && oldIgnored && newLands && recentOk && serialOk && backToBook && restored && bareOk && junkOk,
+                  "follows the book by default (" + followsBook + "); picker carries every dictation language + the honest line (" + pickerOk + "); a pick sets es-ES (" + picked + "); the recogniser started in es-ES (" + startOk + "/" + heard + "); switching to French mid-session aborted the old recogniser, kept the final words and dropped the unfinalised tail (" + switchOk + "), ignored the old one's late events (" + oldIgnored + ") and the new one lands (" + newLands + "); recent first (" + ch.join(",") + "); serialized (" + serialOk + "); picking the book language follows the book (" + backToBook + "); round-trip restores (" + restored + "); a book without a pick follows its language (" + bareOk + "); junk is refused (" + junkOk + ")");
+              } finally {
+                d.stop(); d.discard(); d.unstub();
+                const p = $("dictPop"); if (p) p.classList.remove("open");
+              }
+            });
+          } },
+        { id: "dictation.language-suggest", feature: "dictation", name: "Dictation language suggestion: Spanish text at the end of a section in an English book offers “dictate in Spanish” without switching anything; one tap sets es-ES; a manuscript that reads as another language offers to fix the book language; Not now dismisses",
+          run() {
+            const d = window.beukDictation;
+            if (!d || !d.suggestion) return scVerdict(false, "window.beukDictation.suggestion is not exposed");
+            class FakeRec { constructor() { this.lang = ""; } start() {} stop() { if (this.onend) this.onend(); } abort() { if (this.onend) this.onend(); } }
+            const EN = "The old keeper climbed the stone steps every morning and looked out at the sea that glittered under the sun. He spoke to no one in the village, but everyone knew him, and the children brought him bread and letters. When the winter came, the fog covered the harbour and he lit the lamp for the boats that no longer came. His daughter lived in the city and she wrote to him every week with a long letter about the family. He read them by the window with a cup of coffee, and then he kept them in a wooden box that had been his father's.";
+            const ES = "El viejo farero subía cada mañana las escaleras de piedra y miraba el mar que brillaba bajo el sol. No hablaba con nadie en el pueblo, pero todos lo conocían y los niños le llevaban pan y cartas. Cuando llegaba el invierno, la niebla cubría el puerto y él encendía la lámpara para los barcos que ya no venían. Su hija vivía en la ciudad y le escribía cada semana una carta larga con noticias de la familia. Él las leía junto a la ventana, con una taza de café, y después las guardaba en una caja de madera que había sido de su padre.";
+            return withEditorFixture(() => {
+              try {
+                d.stub(FakeRec);
+                d.start(); d.stop(); /* the writer has used the mic: suggestions may speak */
+                applyBookDoc({ meta: { language: "en", langSource: "manual", langGuess: "" }, dictation: null,
+                  sections: [
+                    { id: "dl-a", type: "chapter", title: "One", content: [EN, EN, EN, EN].join("\n\n") },
+                    { id: "dl-b", type: "chapter", title: "Two", content: [EN, ES, ES, ES].join("\n\n") }
+                  ], activeId: "dl-a" });
+                selectSection("dl-a");
+                const bar = $("langBar");
+                const quietOnEnglish = !!bar && !bar.classList.contains("open");
+                selectSection("dl-b");
+                const name = langDisplayName("es");
+                const offered = bar.classList.contains("open") && bar.dataset.kind === "section" && bar.dataset.code === "es" &&
+                  bar.textContent.indexOf(t("langsug.section", { lang: name })) !== -1 && !!bar.querySelector('[data-lb="dict"]');
+                /* Typing more, refreshing again: still only a suggestion — nothing switched. */
+                $("editorArea").dispatchEvent(new Event("input")); d.refreshBar();
+                const noAuto = d.langInfo().lang === "en-US" && state.dictation.lang === "" && state.meta.language === "en";
+                bar.querySelector('[data-lb="dict"]').click();
+                const tapped = d.langInfo().lang === "es-ES" && state.dictation.lang === "es" && state.meta.language === "en" &&
+                  !(bar.classList.contains("open") && bar.dataset.kind === "section");
+                /* Not now: back to English dictation, suggestion offered again, dismissed for this section. */
+                d.setLang("en"); d.refreshBar();
+                const reoffered = bar.dataset.kind === "section";
+                const no = bar.querySelector('[data-lb="no"]'); if (no) no.click();
+                const dismissed = bar.dataset.kind !== "section" && d.langInfo().lang === "en-US";
+                /* The whole manuscript reads Spanish: offer to fix the BOOK language — still only on tap. */
+                applyBookDoc({ meta: { language: "en", langSource: "manual", langGuess: "" }, dictation: null,
+                  sections: [
+                    { id: "dl-c", type: "chapter", title: "Uno", content: [ES, ES, ES].join("\n\n") },
+                    { id: "dl-d", type: "chapter", title: "Dos", content: [ES, ES].join("\n\n") }
+                  ], activeId: "dl-c" });
+                selectSection("dl-c");
+                const bookOffered = bar.classList.contains("open") && bar.dataset.kind === "book" && bar.dataset.code === "es" &&
+                  state.meta.language === "en" && !!bar.querySelector('[data-lb="book"]');
+                bar.querySelector('[data-lb="book"]').click();
+                const bookFixed = state.meta.language === "es" && state.meta.langSource === "manual" &&
+                  d.langInfo().lang === "es-ES" && !bar.classList.contains("open");
+                return scVerdict(quietOnEnglish && offered && noAuto && tapped && reoffered && dismissed && bookOffered && bookFixed,
+                  "English section: no bar (" + quietOnEnglish + "); Spanish tail in an English book offered “" + t("langsug.section", { lang: name }) + "” (" + offered + "); nothing switched without a tap (" + noAuto + "); the tap set es-ES and left the book language alone (" + tapped + "); offered again after switching back (" + reoffered + ") and Not now dismissed it (" + dismissed + "); an all-Spanish manuscript offered to fix the book language (" + bookOffered + ") and the tap set it (manual), dictation following (" + bookFixed + ")");
+              } finally {
+                d.stop(); d.discard(); d.unstub();
+              }
+            });
+          } },
+        { id: "readaloud.section-language", feature: "readaloud", name: "Read Aloud section language: a section that reads as another language than the book is offered the matching voice in the popover; the tap switches only that section's reading language, and “back” returns to the book's",
+          run() {
+            const ra = window.beukReadAloud;
+            if (!ra || !ra.lang) return scVerdict(false, "window.beukReadAloud.lang is not exposed");
+            const ES = "El viejo farero subía cada mañana las escaleras de piedra y miraba el mar que brillaba bajo el sol. No hablaba con nadie en el pueblo, pero todos lo conocían y los niños le llevaban pan y cartas. Cuando llegaba el invierno, la niebla cubría el puerto y él encendía la lámpara para los barcos que ya no venían. Su hija vivía en la ciudad y le escribía cada semana una carta larga con noticias de la familia.";
+            return withEditorFixture(() => {
+              try {
+                applyBookDoc({ meta: { language: "en", langSource: "manual", langGuess: "" },
+                  sections: [{ id: "rl-a", type: "chapter", title: "Uno", content: [ES, ES].join("\n\n") }], activeId: "rl-a" });
+                selectSection("rl-a");
+                ra.open();
+                const box = $("raLangSug");
+                if (!ra.supported()) {
+                  const hidden = !!box && box.hidden;
+                  return scVerdict(hidden, "this browser has no speech synthesis: Read Aloud offers no voice, and the section-language line stays hidden (" + hidden + ") — the voice switch itself could not be exercised here");
+                }
+                const name = langDisplayName("es");
+                const offered = !!box && !box.hidden && box.textContent.indexOf(t("ra.langSug", { lang: name })) !== -1 && !!$("raLangUse") && ra.lang() === "en";
+                $("raLangUse").click();
+                const popStillOpen = !$("raPop").hidden;
+                const voices = ra.voices();
+                const switched = ra.lang() === "es" && !box.hidden && box.textContent.indexOf(t("ra.langUsing", { lang: name })) !== -1 &&
+                  voices.every((v) => String(v.lang || "").toLowerCase().indexOf("es") === 0) && state.meta.language === "en";
+                $("raLangBook").click();
+                const back = ra.lang() === "en" && box.hidden;
+                return scVerdict(offered && popStillOpen && switched && back,
+                  "Spanish section in an English book: the popover offered “" + t("ra.langUse", { lang: name }) + "” (" + offered + "); the tap kept the popover open (" + popStillOpen + ") and read in Spanish with only Spanish device voices listed (" + voices.length + " on this device), the book language untouched (" + switched + "); back returned to the book's language and the offer stays dismissed (" + back + ")");
+              } finally {
+                ra.stop();
+                const p = $("raPop"); if (p) p.hidden = true;
+              }
+            });
+          } },
+        /* ==== /BEUK:dictlang ==== */
         { id: "ui.zen.mode-hides-the-room", feature: "ui", name: "Zen mode: entering settles the body into the zen class — the class the stylesheet keys on to hide the structure pane, preview and topbar — and leaving restores the room",
           run() {
             try {
@@ -32775,6 +32941,7 @@
           play: raPlay, pause: raPause, stop: raStop, refresh: raRefresh,
           state: () => ra.status, supported: raSupported,
           voices: raLangVoices, suggested: () => raSuggested(raLangVoices()),
+          lang: () => raLang(), /* BEUK:dictlang */
           open: () => { const p = $("raPop"); if (p && p.hidden) raTogglePop(); }
         };
       }
@@ -33086,7 +33253,7 @@
             ? t("dict.hearFallback", { book: pack.native || info.book, lang: langPack(getUiLang()).native || info.lang })
             : t("dict.hearLang", { lang: pack.native || info.book });
           html += '<p class="dp-line">' + esc(hear) + '</p>' + dictLangPickerHtml() +
-            (mode === "lang" ? "" : '<p class="dp-privacy">' + esc(t("dict.privacy")) + '</p>') +
+            (mode === "lang" && dict.seen ? "" : '<p class="dp-privacy">' + esc(t("dict.privacy")) + '</p>') +
             '<div class="dp-actions"><button type="button" class="tb-btn" id="dictPopClose">' + esc(t("dict.close")) + '</button>' +
             (dict.want ? "" : '<button type="button" class="tb-btn primary" id="dictPopBegin">' + esc(t("dict.begin")) + '</button>') + '</div>';
         }
@@ -33098,6 +33265,11 @@
           else { pop.style.right = "auto"; pop.style.left = Math.max(12, r.left) + "px"; }
         }
         pop.classList.add("open");
+        /* BEUK:dictlang — the picker makes the popover taller: keep all of it on screen. */
+        if (anchorBtn && anchorBtn.getBoundingClientRect) {
+          const top = parseFloat(pop.style.top) || 8, h = pop.offsetHeight;
+          if (top + h > window.innerHeight - 8) pop.style.top = Math.max(8, window.innerHeight - h - 8) + "px";
+        }
         const close = $("dictPopClose"); if (close) close.addEventListener("click", dictPopClose);
         const begin = $("dictPopBegin"); if (begin) begin.addEventListener("click", dictBegin);
         dictWireLangPicker(pop); /* BEUK:dictlang */
@@ -33294,6 +33466,8 @@
           html = ic + '<span class="lb-text">' + esc(t("dict.barListening", { lang: langDisplayName(info.code || info.lang) })) + '</span><span class="lb-actions">' +
             '<button type="button" class="tb-btn" data-lb="change">' + esc(t("dict.langChange")) + '</button></span>';
         }
+        /* While listening, the picker is always one tap away — whatever the bar is saying. */
+        if (sug && dict.want) html = html.replace(/<\/span>$/, '<button type="button" class="tb-btn" data-lb="change">' + esc(t("dict.langChange")) + '</button></span>');
         bar.dataset.kind = sug ? sug.kind : (dict.want ? "listening" : "");
         bar.dataset.code = sug ? sug.code : "";
         bar.innerHTML = html;
