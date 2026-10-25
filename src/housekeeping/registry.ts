@@ -19,6 +19,8 @@ import {
 import { scanTags } from './xml.js';
 import { clientDir, repoRoot } from '../warmth/pages.js';
 import { createMailer, type Mailer } from '../mailer.js';
+import { renderSnapshot } from '../shares/render.js';
+import { sanitizeHtml } from '../shares/sanitize.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -1693,6 +1695,80 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: "Audio script: length estimate is words / 9,300 (ACX's average) and a file over 120 minutes is warned",
     kind: 'client-only',
     reason: 'The estimate is computed in the client summary screen from word counts; nothing is recorded or measured.',
+  },
+  /* ---- Beta-reader share links ---- */
+  {
+    id: 'shares.schema.tables-present',
+    title: 'Share links: shares, share_comments and share_readers tables exist',
+    kind: 'server',
+    run: async ({ db }) => {
+      const r = await db.query<{ n: string | number }>(
+        `select count(*) as n from information_schema.tables
+         where table_name in ('shares', 'share_comments', 'share_readers')`,
+      );
+      assert(Number(r.rows[0].n) === 3, `expected 3 share tables, found ${r.rows[0].n}`);
+      return 'shares, share_comments and share_readers present';
+    },
+  },
+  {
+    id: 'shares.tokens.stored-hashed-only',
+    title: 'Share links: every stored link token is a SHA-256 hash, never the token itself',
+    kind: 'server',
+    run: async ({ db }) => {
+      const r = await db.query<{ n: string | number }>(
+        `select count(*) as n from shares where token_hash !~ '^[0-9a-f]{64}$'`,
+      );
+      const total = await db.query<{ n: string | number }>('select count(*) as n from shares');
+      assert(Number(r.rows[0].n) === 0, `${r.rows[0].n} share row(s) hold a token that is not a SHA-256 hash`);
+      return `${total.rows[0].n} share row(s), all token columns are 64-hex hashes`;
+    },
+  },
+  {
+    id: 'shares.reader.hostile-book-renders-inert',
+    title: 'Share links: a book carrying <script>, on* handlers and javascript: links renders inert',
+    kind: 'server',
+    run: async () => {
+      const { snapshot } = renderSnapshot(
+        {
+          meta: { title: '<script>alert(1)</script>' },
+          sections: [
+            {
+              id: 'x',
+              kind: 'body',
+              type: 'chapter',
+              title: '<img src=x onerror=alert(1)>',
+              content: '<script>alert(2)</script>\n\n<a href="javascript:alert(3)">x</a>',
+            },
+          ],
+        },
+        'check',
+      );
+      const html = snapshot.sections.map((s) => sanitizeHtml(s.html)).join('');
+      assert(!/<script/i.test(html), 'a <script> tag survived');
+      assert(!/<[a-z][^>]*\son[a-z]+\s*=/i.test(html), 'an event-handler attribute survived');
+      assert(!/(href|src)\s*=\s*["']?\s*javascript:/i.test(html), 'a javascript: URL survived');
+      const raw = sanitizeHtml('<p onclick="x()">a</p><a href="javascript:alert(1)">b</a><img src=x onerror=alert(1)>');
+      assert(raw === '<p>a</p><a>b</a>', `sanitizer output was ${raw}`);
+      return 'renderer escapes book text; sanitizer drops scripts, handlers, javascript: links and unsafe images';
+    },
+  },
+  {
+    id: 'shares.studio.signed-out-shows-why',
+    title: 'Share links: signed out, the Export dialog explains why sharing needs a shelf',
+    kind: 'client-only',
+    reason: 'The share panel and its signed-out note are client UI state (the API already requires auth).',
+  },
+  {
+    id: 'shares.studio.create-copy-revoke-republish',
+    title: 'Share links: the studio creates a link (copy button), lists links with reader/comment counts, revokes and republishes',
+    kind: 'client-only',
+    reason: 'The share list and its controls are rendered by the client over the /api/shares owner endpoints.',
+  },
+  {
+    id: 'shares.studio.comments-panel-jump-resolve',
+    title: 'Share links: the Reader comments panel shows comments by section/paragraph, jumps to them and resolves them',
+    kind: 'client-only',
+    reason: 'Anchoring a comment to the open book (section + paragraph + quote) happens in the client editor.',
   },
 ];
 

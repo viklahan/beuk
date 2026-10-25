@@ -88,6 +88,11 @@ self.addEventListener("fetch", (event) => {
   let url;
   try { url = new URL(req.url); } catch (e) { return; }
 
+  /* Beta-reader pages (/read/<token>, their pictures and comments)
+     are not the studio: never cached, and never allowed to stand in
+     for the cached shell — straight to the network, untouched. */
+  if (url.pathname.indexOf("/read/") === 0) return;
+
   /* The shelf and its API: network-first, never cached. On failure
      the rejection propagates untouched — the page already knows how
      to be offline. */

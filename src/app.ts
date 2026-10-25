@@ -17,6 +17,7 @@ import { jobRoutes } from './routes/jobs.js';
 import { manuscriptRoutes } from './routes/manuscripts.js';
 import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
+import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
 import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
@@ -102,7 +103,14 @@ export function buildApp({
   app.use('/api/config', publicConfigRoutes(config));
   app.use('/api/founders', foundersRoutes(db));
 
+  // Beta-reader share links: owner surface (signed in).
+  app.use('/api/shares', shareOwnerRoutes(db, now));
+
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
+
+  // Beta-reader share links: the public read-only reader (no account).
+  // Caddy proxies /read* to the app (see the Caddyfile).
+  app.use('/read', shareReaderRoutes(db, { now, cookieSecure: config.cookieSecure }));
 
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.

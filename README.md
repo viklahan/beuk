@@ -86,6 +86,8 @@ stored server-side as a SHA-256 hash.
 | `GET /api/status` | public, scrubbed health summary: app, version, build stamp, db up/down, latest Self-checks outcome (see Warmth) |
 | `GET /api/config/public` | public config for pages/clients: support contact + Ko-fi jar URL (or `null`) |
 | `POST /api/founders/apply` | public Founders' Shelf application `{name, email, about}`; validated, per-IP throttled (429 + `Retry-After`) |
+| `/api/shares/*` | signed-in: beta-reader share links — create from a shelf manuscript (token returned **once**), list, republish, revoke, expiry, comments, resolve (see Beta-reader share links) |
+| `GET /read/:token` · `/read/:token/comments` | public (no account): the read-only reader page and its comment API; **410** once revoked or expired |
 
 Any `:id` (and `manuscriptId` / `exportId` in a query or body) that is
 not a UUID answers **404** — it can never name a row — instead of
@@ -536,6 +538,86 @@ a Self-checks run (`auth.mail.delivery-state-honest` connects and
 authenticates). `SMTP_URL` is treated as a secret: scrubbed from every
 Housekeeping output and excluded from backups by name.
 
+## Beta-reader share links
+
+A signed-in writer shares a **frozen, read-only copy** of a shelf
+manuscript with beta readers, who read it in the browser and comment
+without an account. Migration `011_shares.sql` adds `shares`,
+`share_comments` and `share_readers`.
+
+**Owner API** (signed in; every query owner-scoped — another writer's
+share or comment is a 404, never a 403):
+
+| Endpoint | What |
+|---|---|
+| `POST /api/shares` | `{manuscriptId, title?, expiresAt?\|expiresInDays?, allowComments?, readerNameRequired?}` → `201 {share, token, path}`. The token (32 url-safe chars, 192 random bits) is returned **this once**; only its SHA-256 is stored, like session tokens |
+| `GET /api/shares[?manuscriptId=]` | the caller's links: `status` (`active` / `revoked` / `expired`), `readerCount`, `commentCount`, `openCommentCount`, `sectionCount`, dates — never the token |
+| `PUT /api/shares/:id` | `{expiresAt: ISO\|null, expiresInDays?, allowComments?, readerNameRequired?, title?}` — a past expiry is a 400; `null` clears it |
+| `POST /api/shares/:id/republish` | re-renders the copy from the shelf manuscript's current text (409 if revoked, or if the manuscript was deleted) |
+| `POST /api/shares/:id/revoke` · `DELETE /api/shares/:id` | close the link (410 from then on) · remove it and its comments |
+| `GET /api/shares/:id/comments` · `GET /api/shares/comments?manuscriptId=` | comments on one link · on every link of one manuscript (the studio's panel) |
+| `POST /api/shares/:id/comments/:cid/resolve` · `…/unresolve` · `DELETE …/:cid` | |
+
+**The frozen copy.** At share time (and on every republish) the server
+renders the studio's book JSON into one HTML body per readable section
+(`src/shares/render.ts` — a port of the studio's own text format:
+paragraphs, `#`/`##` headings, `>` quotes, scene breaks, `img:` pictures,
+`[^n]` notes, `*em*`/`**strong**`). Every piece of book text is
+HTML-escaped before markup is added, and the result then passes an
+allowlist sanitizer (`src/shares/sanitize.ts`) — at share time **and
+again at serve time**: no `<script>`, no `on*` handlers, no `style`, links
+only to in-page `#` anchors, images only from the share itself
+(`/read/<token>/img/<id>`, raster types only — SVG never ships) or
+`data:image/(png|jpeg|gif|webp)`. Cover, contents and title pages are
+replaced by the reader's own header; excluded sections are left out.
+Each block carries `data-p` = its block index in the section's text
+(the studio's blank-line split), which is how a comment anchors back to
+its paragraph.
+
+**The reader** (`GET /read/:token[?c=n]`, `src/shares/reader.ts`): the
+Paper look of the help pages (`/help/warmth.css`), chapter navigation
+that works without JavaScript, mobile-first. Security headers: a CSP of
+`default-src 'none'` with a per-response nonce for the one small comment
+script and its stylesheet (no inline handlers anywhere),
+`Referrer-Policy: no-referrer` (the token is in the URL),
+`X-Frame-Options: DENY`, `nosniff`, `noindex`, `no-store`. The owner's
+email and account id are never rendered. A revoked or expired link gets
+a calm **410** page; an unknown token a calm 404. Caddy proxies `/read*`
+to the app, and both studio service workers leave `/read/` uncached.
+
+**Comments** (`GET|POST /read/:token/comments`): select a passage → a
+"Comment on this" button anchors the comment to section + paragraph +
+quoted text; or comment on the chapter as a whole. Caps: body 2000
+chars, name 60, quote 500. A hidden honeypot field (`website`) gets an
+ordinary-looking 202 and nothing is stored. Rate limits (in-memory, per
+app instance): **10 comments per IP per share per 10 minutes** and **200
+per share per hour** → 429. The client IP is the last
+`X-Forwarded-For` entry — Caddy, with no `trusted_proxies`, ignores
+client-sent values and sets it itself
+(<https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#defaults>);
+direct connections use the socket address. Stored per comment: an
+`ip_hash` (SHA-256 of share id + IP) for abuse review — an IPv4 hash is
+brute-forceable, so this is abuse control, not anonymity. The public
+comment list carries reader name, text, quote and time only (no IP hash,
+no resolved state), and is visible to everyone holding the link.
+
+**Reader count** = distinct browsers that opened the link: an opaque
+`beuk_reader` cookie (path `/read`, http-only), stored only hashed with
+the share id.
+
+**Studio.** Export → *Share with beta readers*: create a link (expiry,
+comments on/off, ask for names) with a copy button; this book's links
+with status, reader and comment counts; republish; revoke. Signed out,
+or with no server, the section says why and makes no calls. Because the
+server keeps only a hash, the studio remembers the tokens it created in
+this browser (`localStorage`, a convenience) — on another device a link
+can't be copied again; create a new one. The sidebar's *Reader
+comments* lists comments grouped by section in book order, jumps to the
+quoted passage in the editor (falling back to the paragraph, and saying
+so when the passage has changed), and resolves/reopens. Reader-page
+wording is English only for now; the studio surfaces carry all 13 UI
+locales.
+
 ## Housekeeping (M3)
 
 The admin surface for the app itself — never customer-facing, and it
@@ -847,6 +929,17 @@ stream with a UTF-16 hex string; files with no fonts or no PDF at all
 staying unknown), the pdfx job carrying `inspection` on its result, and the
 Ghostscript arguments permitting exactly the ICC profile the definition
 file names (with `-dSAFER` kept first).
+Share links add (`tests/shares.test.ts`): create → list → read with the
+token returned once and stored only hashed; the frozen copy unchanged
+until republish; revoke → 410 (page and comment API); expiry → 410 and
+re-opened by clearing it; comment validation, honeypot and
+resolve/unresolve/delete; **IDOR** — another writer gets 404 on every
+owner route, including mixing their own share id with someone else's
+comment id; **XSS** — a manuscript carrying `<script>`, `onerror=`,
+`javascript:` links and SVG/HTML "images" renders inert (the only script
+on the page is the nonce'd helper); the per-IP and per-share comment
+limits; and the owner's email absent from every public page and the
+public comment API.
 
 ## Deploy to Hetzner (outline)
 
@@ -982,7 +1075,11 @@ src/
   routes/         auth.ts · manuscripts.ts · streak.ts · exports.ts ·
                   billing.ts · housekeeping.ts · public.ts (M4 status +
                   public config) · founders.ts (M4) · warmth.ts (M4 pages)
-                  · jobs.ts (M5)
+                  · jobs.ts (M5) · shares.ts (beta-reader links:
+                  owner API + public /read reader)
+  shares/         render.ts (book JSON → frozen sanitized copy) ·
+                  sanitize.ts (allowlist HTML sanitizer) · reader.ts
+                  (reader / 410 / 404 pages, CSP headers)
   warmth/         M4 page machinery: pages.ts (chrome, config slots,
                   Ko-fi jar) · markdown.ts (safe md→HTML for the
                   changelog/roadmap pages)
@@ -994,7 +1091,8 @@ tools/            PDFX_def.ps — the PDF/X-1a definition file the
 migrations/       001 users+sessions · 002 manuscripts · 003 streaks ·
                   004 exports · 005 user plan/billing · 006 housekeeping
                   · 007 founders (M4) · 008 jobs (M5) · 009 manuscript
-                  revision (optimistic concurrency)
+                  revision (optimistic concurrency) · 010 password
+                  resets · 011 shares
 tests/            node:test suite (PGlite-backed)
 client/           static mount point (app placeholder + M4 warmth
                   pages under help/ and thanks/)

@@ -71,6 +71,11 @@
 	handle /reset* {
 		reverse_proxy app:3000
 	}
+	# Beta-reader share links: the server-rendered read-only reader
+	# (/read/<token>), its pictures and its comment API.
+	handle /read* {
+		reverse_proxy app:3000
+	}
 
 	# === STATIC CLIENT ===
 	# The built Beuk web client lives in ./client (mounted at /srv/client).
