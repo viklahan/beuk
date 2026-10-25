@@ -1744,6 +1744,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The guard runs in the studio before the shelf book is fetched; asserted by the async client self-check window.runBeukAsyncSelfChecks() against a stubbed shelf.',
   },
   {
+    id: 'confirm.alt.hidden-when-unused',
+    title: 'A two-choice confirmation draws exactly two buttons (the optional third is hidden and can never resolve as yes); the three-choice shelf-open dialog stacks Keep / Put on shelf / Replace',
+    kind: 'client-only',
+    reason: 'Rendered layout of the studio confirm dialog (computed style in the browser); asserted by the async client self-check window.runBeukAsyncSelfChecks().',
+  },
+  {
     id: 'history.restore.snapshot-always',
     title: 'Restore the whole book always takes the snapshot its confirmation promises, the untouched sample included',
     kind: 'client-only',

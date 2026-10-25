@@ -1180,6 +1180,11 @@
       .modal .form-grid .full { grid-column: 1 / -1; }
       .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
       #modalConfirm .modal-actions { flex-wrap: wrap; } /* BEUK:shelfguard — three choices fit at phone width */
+      /* BEUK:shelfguard — .tb-btn's display:inline-flex would otherwise beat the hidden attribute and leave an empty, focusable pill in every two-choice dialog. */
+      #btnConfirmAlt[hidden] { display: none; }
+      /* BEUK:shelfguard — three choices stack full width, the safe one on top, so none sits stranded on a second row. */
+      #modalConfirm .modal-actions.three { flex-direction: column; align-items: stretch; }
+      #modalConfirm .modal-actions.three .tb-btn { justify-content: center; }
       .file-tree {
         font-family: var(--mono-font); font-size: 12px; line-height: 1.75; background: var(--panel);
         border: 1px solid var(--line); border-radius: 9px; padding: 13px 16px; color: var(--ink-2);
@@ -6004,19 +6009,19 @@
       /* ==== /BEUK:importreport ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
-        "en": { "shelf.guardDeviceBody": "“{title}” is only on this device — it has never been put on your shelf. Opening another book replaces it here. Put it on your shelf first and you can open it again any time.", "shelf.guardKeep": "Keep my book", "shelf.guardReplace": "Open and replace it", "shelf.guardSaveFirst": "Put it on my shelf, then open", "shelf.guardSaveFailed": "“{title}” could not be put on your shelf, so nothing was replaced — it is still open here." },
-        "es": { "shelf.guardDeviceBody": "«{title}» solo está en este dispositivo: nunca se ha puesto en tu estantería. Abrir otro libro lo reemplaza aquí. Ponlo antes en tu estantería y podrás volver a abrirlo cuando quieras.", "shelf.guardKeep": "Conservar mi libro", "shelf.guardReplace": "Abrir y reemplazarlo", "shelf.guardSaveFirst": "Ponerlo en mi estantería y abrir", "shelf.guardSaveFailed": "No se pudo poner «{title}» en tu estantería, así que no se reemplazó nada: sigue abierto aquí." },
-        "fr": { "shelf.guardDeviceBody": "« {title} » n'existe que sur cet appareil — il n'a jamais été mis sur votre étagère. Ouvrir un autre livre le remplace ici. Mettez-le d'abord sur votre étagère et vous pourrez le rouvrir à tout moment.", "shelf.guardKeep": "Garder mon livre", "shelf.guardReplace": "Ouvrir et le remplacer", "shelf.guardSaveFirst": "Le mettre sur mon étagère, puis ouvrir", "shelf.guardSaveFailed": "« {title} » n'a pas pu être mis sur votre étagère, donc rien n'a été remplacé — il reste ouvert ici." },
-        "de": { "shelf.guardDeviceBody": "„{title}“ gibt es nur auf diesem Gerät — es war noch nie in Ihrem Regal. Ein anderes Buch zu öffnen ersetzt es hier. Stellen Sie es zuerst in Ihr Regal, dann können Sie es jederzeit wieder öffnen.", "shelf.guardKeep": "Mein Buch behalten", "shelf.guardReplace": "Öffnen und ersetzen", "shelf.guardSaveFirst": "Erst ins Regal stellen, dann öffnen", "shelf.guardSaveFailed": "„{title}“ konnte nicht in Ihr Regal gestellt werden, daher wurde nichts ersetzt — es ist hier weiter geöffnet." },
-        "it": { "shelf.guardDeviceBody": "«{title}» è solo su questo dispositivo: non è mai stato messo nella tua libreria. Aprire un altro libro lo sostituisce qui. Mettilo prima nella tua libreria e potrai riaprirlo quando vuoi.", "shelf.guardKeep": "Tieni il mio libro", "shelf.guardReplace": "Apri e sostituiscilo", "shelf.guardSaveFirst": "Mettilo nella libreria, poi apri", "shelf.guardSaveFailed": "Non è stato possibile mettere «{title}» nella tua libreria, quindi non è stato sostituito nulla: è ancora aperto qui." },
-        "pt": { "shelf.guardDeviceBody": "«{title}» só existe neste dispositivo — nunca foi posto na sua estante. Abrir outro livro substitui-o aqui. Ponha-o primeiro na sua estante e poderá voltar a abri-lo quando quiser.", "shelf.guardKeep": "Manter o meu livro", "shelf.guardReplace": "Abrir e substituí-lo", "shelf.guardSaveFirst": "Pô-lo na estante e depois abrir", "shelf.guardSaveFailed": "Não foi possível pôr «{title}» na sua estante, por isso nada foi substituído — continua aberto aqui." },
-        "nl": { "shelf.guardDeviceBody": "“{title}” staat alleen op dit apparaat — het is nooit op uw boekenplank gezet. Een ander boek openen vervangt het hier. Zet het eerst op uw boekenplank, dan kunt u het altijd weer openen.", "shelf.guardKeep": "Mijn boek houden", "shelf.guardReplace": "Openen en vervangen", "shelf.guardSaveFirst": "Eerst op mijn boekenplank, dan openen", "shelf.guardSaveFailed": "“{title}” kon niet op uw boekenplank worden gezet, dus er is niets vervangen — het staat hier nog open." },
-        "pl": { "shelf.guardDeviceBody": "„{title}” jest tylko na tym urządzeniu — nigdy nie trafiła na twoją półkę. Otwarcie innej książki zastąpi ją tutaj. Najpierw odłóż ją na półkę, a otworzysz ją ponownie w każdej chwili.", "shelf.guardKeep": "Zostaw moją książkę", "shelf.guardReplace": "Otwórz i zastąp", "shelf.guardSaveFirst": "Odłóż na półkę, potem otwórz", "shelf.guardSaveFailed": "Nie udało się odłożyć „{title}” na półkę, więc nic nie zostało zastąpione — książka jest tu nadal otwarta." },
-        "ru": { "shelf.guardDeviceBody": "«{title}» есть только на этом устройстве — она ни разу не попадала на вашу полку. Открытие другой книги заменит её здесь. Сначала поставьте её на полку — тогда сможете открыть её снова в любой момент.", "shelf.guardKeep": "Оставить мою книгу", "shelf.guardReplace": "Открыть и заменить", "shelf.guardSaveFirst": "Поставить на полку, затем открыть", "shelf.guardSaveFailed": "Не удалось поставить «{title}» на вашу полку, поэтому ничего не заменено — книга по-прежнему открыта здесь." },
-        "tr": { "shelf.guardDeviceBody": "“{title}” yalnızca bu cihazda — rafınıza hiç konmadı. Başka bir kitap açmak onu burada değiştirir. Önce rafınıza koyun; sonra istediğiniz zaman yeniden açabilirsiniz.", "shelf.guardKeep": "Kitabımı koru", "shelf.guardReplace": "Aç ve değiştir", "shelf.guardSaveFirst": "Önce rafıma koy, sonra aç", "shelf.guardSaveFailed": "“{title}” rafınıza konamadı, bu yüzden hiçbir şey değiştirilmedi — hâlâ burada açık." },
-        "ar": { "shelf.guardDeviceBody": "«{title}» موجود على هذا الجهاز فقط — لم يُوضع على رفّك قط. فتح كتاب آخر يستبدله هنا. ضعه على رفّك أولًا لتتمكّن من فتحه مجددًا في أي وقت.", "shelf.guardKeep": "أبقِ كتابي", "shelf.guardReplace": "افتح واستبدله", "shelf.guardSaveFirst": "ضعه على رفّي ثم افتح", "shelf.guardSaveFailed": "تعذّر وضع «{title}» على رفّك، لذا لم يُستبدل شيء — ما زال مفتوحًا هنا." },
-        "ja": { "shelf.guardDeviceBody": "「{title}」はこの端末にしかありません — まだ一度も本棚に置かれていません。別の本を開くと、ここで置き換わります。先に本棚に置けば、いつでもまた開けます。", "shelf.guardKeep": "自分の本を残す", "shelf.guardReplace": "開いて置き換える", "shelf.guardSaveFirst": "本棚に置いてから開く", "shelf.guardSaveFailed": "「{title}」を本棚に置けなかったため、何も置き換えていません — ここで開いたままです。" },
-        "zh-Hans": { "shelf.guardDeviceBody": "《{title}》只在这台设备上——从未放到你的书架上。打开另一本书会在此替换它。先把它放到书架上，之后随时都能再打开。", "shelf.guardKeep": "保留我的书", "shelf.guardReplace": "打开并替换它", "shelf.guardSaveFirst": "先放到我的书架，再打开", "shelf.guardSaveFailed": "未能把《{title}》放到你的书架上，因此没有替换任何内容——它仍在此打开。" }
+        "en": { "shelf.guardDeviceBody": "“{title}” is only on this device — it isn't on your shelf as it stands here. Opening another book replaces it here. Put it on your shelf first and you can open it again any time.", "shelf.guardKeep": "Keep my book", "shelf.guardReplace": "Open and replace it", "shelf.guardSaveFirst": "Put it on my shelf, then open", "shelf.guardSaveFailed": "“{title}” could not be put on your shelf, so nothing was replaced — it is still open here." },
+        "es": { "shelf.guardDeviceBody": "«{title}» solo está en este dispositivo: tu estantería no tiene una copia tal como está aquí. Abrir otro libro lo reemplaza aquí. Ponlo antes en tu estantería y podrás volver a abrirlo cuando quieras.", "shelf.guardKeep": "Conservar mi libro", "shelf.guardReplace": "Abrir y reemplazarlo", "shelf.guardSaveFirst": "Ponerlo en mi estantería y abrir", "shelf.guardSaveFailed": "No se pudo poner «{title}» en tu estantería, así que no se reemplazó nada: sigue abierto aquí." },
+        "fr": { "shelf.guardDeviceBody": "« {title} » n'existe que sur cet appareil — votre étagère n'en a aucune copie dans son état actuel. Ouvrir un autre livre le remplace ici. Mettez-le d'abord sur votre étagère et vous pourrez le rouvrir à tout moment.", "shelf.guardKeep": "Garder mon livre", "shelf.guardReplace": "Ouvrir et le remplacer", "shelf.guardSaveFirst": "Le mettre sur mon étagère, puis ouvrir", "shelf.guardSaveFailed": "« {title} » n'a pas pu être mis sur votre étagère, donc rien n'a été remplacé — il reste ouvert ici." },
+        "de": { "shelf.guardDeviceBody": "„{title}“ gibt es nur auf diesem Gerät — Ihr Regal hat keine Kopie davon in diesem Stand. Ein anderes Buch zu öffnen ersetzt es hier. Stellen Sie es zuerst in Ihr Regal, dann können Sie es jederzeit wieder öffnen.", "shelf.guardKeep": "Mein Buch behalten", "shelf.guardReplace": "Öffnen und ersetzen", "shelf.guardSaveFirst": "Erst ins Regal stellen, dann öffnen", "shelf.guardSaveFailed": "„{title}“ konnte nicht in Ihr Regal gestellt werden, daher wurde nichts ersetzt — es ist hier weiter geöffnet." },
+        "it": { "shelf.guardDeviceBody": "«{title}» è solo su questo dispositivo: la tua libreria non ne ha una copia così com'è qui. Aprire un altro libro lo sostituisce qui. Mettilo prima nella tua libreria e potrai riaprirlo quando vuoi.", "shelf.guardKeep": "Tieni il mio libro", "shelf.guardReplace": "Apri e sostituiscilo", "shelf.guardSaveFirst": "Mettilo nella libreria, poi apri", "shelf.guardSaveFailed": "Non è stato possibile mettere «{title}» nella tua libreria, quindi non è stato sostituito nulla: è ancora aperto qui." },
+        "pt": { "shelf.guardDeviceBody": "«{title}» só existe neste dispositivo — a sua estante não tem nenhuma cópia dele tal como está aqui. Abrir outro livro substitui-o aqui. Ponha-o primeiro na sua estante e poderá voltar a abri-lo quando quiser.", "shelf.guardKeep": "Manter o meu livro", "shelf.guardReplace": "Abrir e substituí-lo", "shelf.guardSaveFirst": "Pô-lo na estante e depois abrir", "shelf.guardSaveFailed": "Não foi possível pôr «{title}» na sua estante, por isso nada foi substituído — continua aberto aqui." },
+        "nl": { "shelf.guardDeviceBody": "“{title}” staat alleen op dit apparaat — uw boekenplank heeft er geen kopie van zoals het hier is. Een ander boek openen vervangt het hier. Zet het eerst op uw boekenplank, dan kunt u het altijd weer openen.", "shelf.guardKeep": "Mijn boek houden", "shelf.guardReplace": "Openen en vervangen", "shelf.guardSaveFirst": "Eerst op mijn boekenplank, dan openen", "shelf.guardSaveFailed": "“{title}” kon niet op uw boekenplank worden gezet, dus er is niets vervangen — het staat hier nog open." },
+        "pl": { "shelf.guardDeviceBody": "„{title}” jest tylko na tym urządzeniu — na twojej półce nie ma jej kopii w obecnym stanie. Otwarcie innej książki zastąpi ją tutaj. Najpierw odłóż ją na półkę, a otworzysz ją ponownie w każdej chwili.", "shelf.guardKeep": "Zostaw moją książkę", "shelf.guardReplace": "Otwórz i zastąp", "shelf.guardSaveFirst": "Odłóż na półkę, potem otwórz", "shelf.guardSaveFailed": "Nie udało się odłożyć „{title}” na półkę, więc nic nie zostało zastąpione — książka jest tu nadal otwarta." },
+        "ru": { "shelf.guardDeviceBody": "«{title}» есть только на этом устройстве — на вашей полке нет её копии в нынешнем виде. Открытие другой книги заменит её здесь. Сначала поставьте её на полку — тогда сможете открыть её снова в любой момент.", "shelf.guardKeep": "Оставить мою книгу", "shelf.guardReplace": "Открыть и заменить", "shelf.guardSaveFirst": "Поставить на полку, затем открыть", "shelf.guardSaveFailed": "Не удалось поставить «{title}» на вашу полку, поэтому ничего не заменено — книга по-прежнему открыта здесь." },
+        "tr": { "shelf.guardDeviceBody": "“{title}” yalnızca bu cihazda — rafınızda buradaki hâlinin bir kopyası yok. Başka bir kitap açmak onu burada değiştirir. Önce rafınıza koyun; sonra istediğiniz zaman yeniden açabilirsiniz.", "shelf.guardKeep": "Kitabımı koru", "shelf.guardReplace": "Aç ve değiştir", "shelf.guardSaveFirst": "Önce rafıma koy, sonra aç", "shelf.guardSaveFailed": "“{title}” rafınıza konamadı, bu yüzden hiçbir şey değiştirilmedi — hâlâ burada açık." },
+        "ar": { "shelf.guardDeviceBody": "«{title}» موجود على هذا الجهاز فقط — لا توجد على رفّك نسخة منه كما هو هنا. فتح كتاب آخر يستبدله هنا. ضعه على رفّك أولًا لتتمكّن من فتحه مجددًا في أي وقت.", "shelf.guardKeep": "أبقِ كتابي", "shelf.guardReplace": "افتح واستبدله", "shelf.guardSaveFirst": "ضعه على رفّي ثم افتح", "shelf.guardSaveFailed": "تعذّر وضع «{title}» على رفّك، لذا لم يُستبدل شيء — ما زال مفتوحًا هنا." },
+        "ja": { "shelf.guardDeviceBody": "「{title}」はこの端末にしかありません — 本棚には、ここにある状態の写しがありません。別の本を開くと、ここで置き換わります。先に本棚に置けば、いつでもまた開けます。", "shelf.guardKeep": "自分の本を残す", "shelf.guardReplace": "開いて置き換える", "shelf.guardSaveFirst": "本棚に置いてから開く", "shelf.guardSaveFailed": "「{title}」を本棚に置けなかったため、何も置き換えていません — ここで開いたままです。" },
+        "zh-Hans": { "shelf.guardDeviceBody": "《{title}》只在这台设备上——你的书架上没有它现在这个样子的副本。打开另一本书会在此替换它。先把它放到书架上，之后随时都能再打开。", "shelf.guardKeep": "保留我的书", "shelf.guardReplace": "打开并替换它", "shelf.guardSaveFirst": "先放到我的书架，再打开", "shelf.guardSaveFailed": "未能把《{title}》放到你的书架上，因此没有替换任何内容——它仍在此打开。" }
       };
       Object.keys(SHELFGUARD_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], SHELFGUARD_STRINGS[code]); });
       /* ==== /BEUK:shelfguard ==== */
@@ -27606,6 +27611,7 @@
 
       /* ---- calm confirm dialog (promise-based, one at a time) ---- */
       let cloudConfirmResolve = null;
+      let cloudConfirmAltOffered = false; /* BEUK:shelfguard — "alt" only ever resolves when the caller offered it */
       function cloudConfirm(spec) {
         return new Promise((resolve) => {
           cloudConfirmResolve = resolve;
@@ -27615,7 +27621,8 @@
           $("btnConfirmNo").textContent = spec.no || "Cancel";
           /* BEUK:shelfguard — an optional third choice resolves "alt"; only callers that pass spec.alt ever see it. */
           const alt = $("btnConfirmAlt");
-          if (alt) { alt.textContent = spec.alt || ""; alt.hidden = !spec.alt; }
+          cloudConfirmAltOffered = !!spec.alt;
+          if (alt) { alt.textContent = spec.alt || ""; alt.hidden = !spec.alt; alt.parentNode.classList.toggle("three", !!spec.alt); }
           /* BEUK:shelfguard — with defaultNo the safe choice also carries the primary look; the replacing one does not. */
           $("btnConfirmNo").classList.toggle("primary", !!spec.defaultNo);
           $("btnConfirmYes").classList.toggle("primary", !spec.defaultNo);
@@ -27627,6 +27634,8 @@
       }
       function cloudConfirmDone(value) {
         $("modalConfirm").classList.remove("open");
+        /* BEUK:shelfguard — a two-choice caller written as `if (ok)` must never read a stray "alt" as yes. */
+        if (value === "alt" && !cloudConfirmAltOffered) value = false;
         if (cloudConfirmResolve) { const r = cloudConfirmResolve; cloudConfirmResolve = null; r(value); }
       }
 
@@ -34990,6 +34999,38 @@
               setSyncStatus(keep.c.syncStatus);
               renderShelfList();
             }
+          } },
+        { id: "confirm.alt.hidden-when-unused", feature: "shelf", name: "A two-choice confirmation renders exactly two buttons — the optional third is not drawn, not focusable, and can never resolve as yes; a three-choice one draws all three, the safe one first",
+          async run() {
+            const bad = [];
+            const alt = $("btnConfirmAlt"), row = alt && alt.parentNode;
+            if (!alt) return scVerdict(false, "#btnConfirmAlt missing");
+            const settle = () => new Promise((r) => setTimeout(r, 0));
+            try {
+              let p = cloudConfirm({ title: "Check plain", body: "Check plain confirm", yes: "Do it", no: "Keep" });
+              const cs = getComputedStyle(alt);
+              if (cs.display !== "none") bad.push("plain confirm draws the third button (display " + cs.display + ")");
+              if (row.classList.contains("three")) bad.push("plain confirm uses the three-choice layout");
+              if (!$("btnConfirmYes").classList.contains("primary") || $("btnConfirmNo").classList.contains("primary")) bad.push("plain confirm lost Yes as the primary look");
+              cloudConfirmDone("alt");
+              const r1 = await p;
+              if (r1 !== false) bad.push("a stray \"alt\" on a plain confirm resolved " + JSON.stringify(r1) + ", not false");
+              p = cloudConfirm({ title: "Check three", body: "Check three choices", yes: "Replace", alt: "Save first", no: "Keep", defaultNo: true });
+              if (getComputedStyle(alt).display === "none" || alt.textContent !== "Save first") bad.push("three-choice confirm does not draw its labelled third button");
+              if (!row.classList.contains("three")) bad.push("three-choice confirm is not stacked");
+              const order = Array.from(row.querySelectorAll(".tb-btn")).filter((b) => getComputedStyle(b).display !== "none").map((b) => b.id).join(",");
+              if (order !== "btnConfirmNo,btnConfirmAlt,btnConfirmYes") bad.push("three-choice order " + order);
+              cloudConfirmDone("alt");
+              const r2 = await p;
+              if (r2 !== "alt") bad.push("offered third choice resolved " + JSON.stringify(r2));
+              p = cloudConfirm({ title: "Check plain again", body: "x", yes: "Do it", no: "Keep" });
+              if (getComputedStyle(alt).display !== "none" || row.classList.contains("three")) bad.push("the third button outlived its three-choice dialog");
+              cloudConfirmDone(false); await p;
+            } finally {
+              if ($("modalConfirm").classList.contains("open")) cloudConfirmDone(false);
+              await settle();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "plain confirm: third button display:none, stray alt resolves false, Yes primary; three-choice: stacked Keep / Save first / Replace, alt resolves \"alt\"; the next plain confirm is two buttons again");
           } }
         /* ==== /BEUK:shelfguard ==== */
       ];

@@ -13,8 +13,9 @@ to make well.
   since the page loaded. Now, whenever the book on your desk exists only
   on this device (or has writing your shelf has not seen yet), Beuk
   asks first: **Keep my book** (the default), **Put it on my shelf, then
-  open**, or **Open and replace it**. If putting it on the shelf fails,
-  nothing is replaced.
+  open**, or **Open and replace it**, stacked with the safe choice on
+  top. If putting it on the shelf fails, nothing is replaced. Every
+  other confirmation still shows just its two buttons.
 - **"Restore the whole book" keeps its promise.** Its confirmation says
   a snapshot of the book as it is now is taken first. That was not true
   when the desk held the untouched sample story; it now always is.

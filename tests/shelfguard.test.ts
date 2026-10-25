@@ -13,7 +13,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['shelf.open.guards-device-only', 'history.restore.snapshot-always'];
+const IDS = ['shelf.open.guards-device-only', 'history.restore.snapshot-always', 'confirm.alt.hidden-when-unused'];
 
 test('shelfguard: every new self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -51,4 +51,14 @@ test('shelfguard: a whole-book restore snapshots unconditionally (its confirmati
   const body = html.slice(start, html.indexOf('function restoreSnapshotSection(', start));
   assert.match(body, /takeSnapshot\("", "restore"\);/);
   assert.doesNotMatch(body, /autoSnapshot\("restore"\)/);
+});
+
+test('shelfguard: the optional third confirm button is really hidden and a stray "alt" never reads as yes', async () => {
+  const html = await clientHtml();
+  // .tb-btn is display:inline-flex, which beats the bare hidden attribute.
+  assert.match(html, /#btnConfirmAlt\[hidden\] \{ display: none; \}/);
+  const start = html.indexOf('function cloudConfirmDone(value) {');
+  assert.ok(start > 0, 'cloudConfirmDone found');
+  const body = html.slice(start, html.indexOf('\n      }', start));
+  assert.match(body, /if \(value === "alt" && !cloudConfirmAltOffered\) value = false;/);
 });
