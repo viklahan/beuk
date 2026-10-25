@@ -7,6 +7,7 @@ import { createPgDb, defaultMigrationsDir, runMigrations, type Db } from './db.j
 import type { BootCheck } from './housekeeping/context.js';
 import { createPgScratchFactory } from './housekeeping/scratch.js';
 import type { JobRunner } from './jobs/runner.js';
+import type { BackupScheduler } from './housekeeping/offsite.js';
 
 const config = loadConfig();
 if (!config.databaseUrl) {
@@ -73,6 +74,15 @@ await purge();
 const purgeTimer = setInterval(purge, config.sessionPurgeIntervalMs);
 purgeTimer.unref();
 
+// Scheduled local backups (+ off-site copy + weekly restore drill when
+// configured): a cheap due-check every 15 minutes, the work itself under
+// the Housekeeping lock and audited (src/housekeeping/offsite.ts).
+const backupScheduler = app.locals.backupScheduler as BackupScheduler;
+const backupTick = () => void backupScheduler.tick();
+const backupTimer = setInterval(backupTick, 15 * 60_000);
+backupTimer.unref();
+setTimeout(backupTick, 30_000).unref();
+
 const server = app.listen(config.port, () => {
   console.log(`beuk-api listening on :${config.port} (timezone ${config.timeZone})`);
 });
@@ -82,7 +92,7 @@ const shutdown = createShutdown({
   graceMs: config.shutdownGraceMs,
   runner: jobsRunner,
   closeDb: () => db.end(),
-  timers: [purgeTimer],
+  timers: [purgeTimer, backupTimer],
 });
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));

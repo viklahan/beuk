@@ -162,6 +162,28 @@ export function testConfig(overrides?: Partial<Config>): Config {
     smtpUrl: null,
     mailFrom: null,
     mailLogLinks: false,
+    // Backups: no schedule and no off-site target by default (both are
+    // reported "not configured"); tests/offsite.test.ts sets them.
+    backupIntervalHours: 0,
+    offsite: {
+      b2KeyId: null,
+      b2ApplicationKey: null,
+      b2Bucket: null,
+      b2Endpoint: null,
+      repoPrefix: 'beuk',
+      resticPassword: null,
+      resticBin: 'restic',
+      resticTimeoutMs: 60_000,
+      probeTimeoutMs: 60_000,
+      resticHost: 'beuk',
+      resticTag: 'beuk-backup',
+      keepDaily: 7,
+      keepWeekly: 4,
+      keepMonthly: 12,
+      maxAgeHours: 36,
+      drillIntervalHours: 168,
+      drillMaxAgeHours: 192,
+    },
     ...overrides,
   };
 }

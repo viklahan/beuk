@@ -21,6 +21,16 @@ import { readReferenceDoc } from '../housekeeping/reference.js';
 import { buildCheckContext, runSelfChecks, SELF_CHECK_CASES } from '../housekeeping/registry.js';
 import { scrubText, scrubValue } from '../housekeeping/scrub.js';
 import { createMailer, type Mailer } from '../mailer.js';
+import {
+  drillHealth,
+  missingOffsiteSettings,
+  offsiteFreshness,
+  offsiteSettings,
+  readDrillStatus,
+  readOffsiteStatus,
+  readScheduleStatus,
+  scheduleHealth,
+} from '../housekeeping/offsite.js';
 
 /**
  * Housekeeping (M3) — the admin surface for the app itself.
@@ -54,6 +64,9 @@ const ACTION_CATALOG = [
   { name: 'promote.execute', pillar: 'Promotion', method: 'POST', path: '/api/housekeeping/promote', mutating: true, description: 'Refuses unless the tree is marked clean, Self-checks passed on this build stamp, and a sign-off exists; writes PROMOTION_MANIFEST.json.' },
   { name: 'audit.list', pillar: 'Evidence', method: 'GET', path: '/api/housekeeping/audit', mutating: false, description: 'Recent Housekeeping audit rows.' },
   { name: 'founders.list', pillar: "Founders' Shelf", method: 'GET', path: '/api/housekeeping/founders', mutating: false, description: "List Founders' Shelf applications (M4 warmth: the private seed list writers applied to). Read-only; every read is audited." },
+  { name: 'offsite.status', pillar: 'Evidence', method: 'GET', path: '/api/housekeeping/offsite', mutating: false, description: 'Scheduled local backups, the encrypted off-site copy (restic -> Backblaze B2) and the restore drill: configured or not, last runs, errors. Credentials are never shown.' },
+  { name: 'offsite.run', pillar: 'Evidence', method: 'POST', path: '/api/housekeeping/offsite/run', mutating: true, description: 'Make a local backup now and copy it off-site (encrypted by restic), then apply retention (restic forget --prune). 409 when off-site is not configured.' },
+  { name: 'offsite.drill', pillar: 'Evidence', method: 'POST', path: '/api/housekeeping/offsite/drill', mutating: true, description: 'Restore drill: restore the latest off-site snapshot into a scratch directory and verify it against its manifest (hashes, per-table row counts, export files). Production data is never touched.' },
   { name: 'mail.status', pillar: 'Mail', method: 'GET', path: '/api/housekeeping/mail', mutating: false, description: 'Whether this server can send email (password-reset links): "email not configured" until SMTP_URL and MAIL_FROM are set. Credentials are never shown.' },
   { name: 'mail.test', pillar: 'Mail', method: 'POST', path: '/api/housekeeping/mail/test', mutating: true, description: "Send one test email to the signed-in admin's own address and report exactly what the SMTP server said; never reports a send that did not happen." },
 ] as const;
@@ -160,6 +173,7 @@ export function housekeepingRoutes(
     passCount: number;
     failCount: number;
     clientOnlyCount: number;
+    notConfiguredCount: number;
     results: unknown;
   }> {
     const startedAt = new Date();
@@ -188,6 +202,7 @@ export function housekeepingRoutes(
       passCount: run.passCount,
       failCount: run.failCount,
       clientOnlyCount: run.clientOnlyCount,
+      notConfiguredCount: run.notConfiguredCount,
       results: run.results,
     };
   }
@@ -198,7 +213,7 @@ export function housekeepingRoutes(
       return {
         status: 200,
         result: run.overall,
-        detail: `${run.passCount} pass, ${run.failCount} fail, ${run.clientOnlyCount} client-only`,
+        detail: `${run.passCount} pass, ${run.failCount} fail, ${run.clientOnlyCount} client-only, ${run.notConfiguredCount} not configured`,
         body: {
           run: {
             id: run.runId,
@@ -210,6 +225,7 @@ export function housekeepingRoutes(
               pass: run.passCount,
               fail: run.failCount,
               clientOnly: run.clientOnlyCount,
+              notConfigured: run.notConfiguredCount,
             },
             results: run.results,
           },
@@ -361,9 +377,74 @@ export function housekeepingRoutes(
               pass: verification.passCount,
               fail: verification.failCount,
               clientOnly: verification.clientOnlyCount,
+              notConfigured: verification.notConfiguredCount,
             },
           },
         },
+      };
+    });
+  });
+
+  /* ---------------- Off-site backups ---------------- */
+
+  router.get('/offsite', async (_req, res, next) => {
+    try {
+      const settings = offsiteSettings(config);
+      const o = config.offsite;
+      return send(res, 200, {
+        offsite: {
+          configured: Boolean(settings),
+          missing: missingOffsiteSettings(config),
+          repository: settings?.repository ?? null,
+          retention: { keepDaily: o.keepDaily, keepWeekly: o.keepWeekly, keepMonthly: o.keepMonthly },
+          scheduleEveryHours: config.backupIntervalHours,
+          drillEveryHours: o.drillIntervalHours,
+          localRetention: 'none: local backups are never deleted automatically',
+          last: await readOffsiteStatus(config),
+          drill: await readDrillStatus(config),
+          schedule: await readScheduleStatus(config),
+          checks: {
+            schedule: await scheduleHealth(config),
+            fresh: await offsiteFreshness(config),
+            drill: await drillHealth(config),
+          },
+        },
+      });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  const offsiteRefusal = (): ActionOutcome => ({
+    status: 409,
+    result: 'not-configured',
+    detail: `missing ${missingOffsiteSettings(config).join(', ')}`,
+    body: { error: 'off-site backups are not configured on this server', missing: missingOffsiteSettings(config) },
+  });
+
+  router.post('/offsite/run', async (req, res) => {
+    return mutate(req, res, 'offsite.run', {}, async () => {
+      if (!offsiteSettings(config) || !hk.backups) return offsiteRefusal();
+      const out = await hk.backups.backupNow(req.user!.email);
+      const ok = out.local.ok && Boolean(out.offsite?.ok);
+      return {
+        status: ok ? 200 : 502,
+        result: ok ? 'pushed' : 'error',
+        detail: out.offsite?.detail ?? out.local.detail,
+        body: { ok, local: out.local, offsite: out.offsite },
+      };
+    });
+  });
+
+  router.post('/offsite/drill', async (req, res) => {
+    return mutate(req, res, 'offsite.drill', {}, async () => {
+      if (!offsiteSettings(config) || !hk.backups) return offsiteRefusal();
+      const drill = await hk.backups.runDrill(req.user!.email);
+      return {
+        status: drill.ok ? 200 : 502,
+        result: drill.ok ? 'pass' : 'fail',
+        detail: drill.detail,
+        body: { drill },
       };
     });
   });

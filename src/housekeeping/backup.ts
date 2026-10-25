@@ -85,6 +85,10 @@ export const SECRET_CONFIG_KEYS = [
   'STRIPE_WEBHOOK_SECRET',
   'POSTGRES_PASSWORD',
   'SMTP_URL',
+  // Off-site backups (restic -> Backblaze B2 S3 API): see offsite.ts.
+  'RESTIC_PASSWORD',
+  'OFFSITE_B2_KEY_ID',
+  'OFFSITE_B2_APPLICATION_KEY',
 ] as const;
 
 export interface BackupManifest {
@@ -398,7 +402,7 @@ export async function executeRestore(
       // ('{"1","2"}'), which jsonb rejects ("invalid input syntax for
       // type json") — reproduced against postgres:16 + pg 8.23.1.
       const placeholders = columns
-        .map((col, i) => (jsonCols.has(col) ? `$${i + 1}::jsonb` : `$${i + 1}`))
+        .map((col, i) => (jsonCols.has(col) ? `$${i + 1}::text::jsonb` : `$${i + 1}`))
         .join(', ');
       for (const row of rows) {
         const values = columns.map((col) => {

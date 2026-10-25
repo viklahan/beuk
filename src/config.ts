@@ -141,6 +141,48 @@ export interface Config {
    *  reset link) to the server console. MAIL_LOG_LINKS=true|false;
    *  default: on unless NODE_ENV=production. */
   mailLogLinks: boolean;
+  /** Scheduled local backups: one every BACKUP_INTERVAL_HOURS (default
+   *  24; 0 turns the schedule off). Local backups are never deleted
+   *  automatically (local retention is not decided yet). */
+  backupIntervalHours: number;
+  /** Off-site backups: restic to Backblaze B2 through B2's S3-compatible
+   *  API (see src/housekeeping/offsite.ts for why). Off until all five
+   *  of key id, application key, bucket, endpoint and RESTIC_PASSWORD
+   *  are set; until then Housekeeping reports "not configured". */
+  offsite: {
+    b2KeyId: string | null;
+    b2ApplicationKey: string | null;
+    b2Bucket: string | null;
+    /** The bucket's S3 endpoint, e.g. https://s3.us-west-004.backblazeb2.com */
+    b2Endpoint: string | null;
+    /** Folder inside the bucket (OFFSITE_B2_PREFIX, default "beuk"). */
+    repoPrefix: string;
+    resticPassword: string | null;
+    resticBin: string;
+    resticTimeoutMs: number;
+    /** Timeout for the first repository probe (OFFSITE_PROBE_TIMEOUT_MS,
+     *  default 2 min): restic keeps retrying a wrong key or a missing
+     *  bucket, so a short probe turns that into a prompt, named failure. */
+    probeTimeoutMs: number;
+    resticHost: string;
+    resticTag: string;
+    /** restic forget --keep-daily/--keep-weekly/--keep-monthly. */
+    keepDaily: number;
+    keepWeekly: number;
+    keepMonthly: number;
+    /** Freshness self-check fails beyond this age (default 36 h). */
+    maxAgeHours: number;
+    /** Restore drill cadence (default 168 h = weekly; 0 = off) and the
+     *  age beyond which the drill self-check fails (default 192 h). */
+    drillIntervalHours: number;
+    drillMaxAgeHours: number;
+  };
+}
+
+function nonNegativeNumber(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
 function positiveInt(raw: string | undefined, fallback: number): number {
@@ -201,5 +243,25 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     mailLogLinks: env.MAIL_LOG_LINKS
       ? env.MAIL_LOG_LINKS.toLowerCase() === 'true' || env.MAIL_LOG_LINKS === '1'
       : (env.NODE_ENV ?? '').toLowerCase() !== 'production',
+    backupIntervalHours: nonNegativeNumber(env.BACKUP_INTERVAL_HOURS, 24),
+    offsite: {
+      b2KeyId: env.OFFSITE_B2_KEY_ID || null,
+      b2ApplicationKey: env.OFFSITE_B2_APPLICATION_KEY || null,
+      b2Bucket: env.OFFSITE_B2_BUCKET || null,
+      b2Endpoint: env.OFFSITE_B2_ENDPOINT || null,
+      repoPrefix: env.OFFSITE_B2_PREFIX ?? 'beuk',
+      resticPassword: env.RESTIC_PASSWORD || null,
+      resticBin: env.RESTIC_BIN || 'restic',
+      resticTimeoutMs: positiveInt(env.RESTIC_TIMEOUT_MS, 30 * 60_000),
+      probeTimeoutMs: positiveInt(env.OFFSITE_PROBE_TIMEOUT_MS, 120_000),
+      resticHost: env.RESTIC_HOST || 'beuk',
+      resticTag: 'beuk-backup',
+      keepDaily: positiveInt(env.RESTIC_KEEP_DAILY, 7),
+      keepWeekly: positiveInt(env.RESTIC_KEEP_WEEKLY, 4),
+      keepMonthly: positiveInt(env.RESTIC_KEEP_MONTHLY, 12),
+      maxAgeHours: positiveInt(env.OFFSITE_MAX_AGE_HOURS, 36),
+      drillIntervalHours: nonNegativeNumber(env.OFFSITE_DRILL_INTERVAL_HOURS, 168),
+      drillMaxAgeHours: positiveInt(env.OFFSITE_DRILL_MAX_AGE_HOURS, 192),
+    },
   };
 }

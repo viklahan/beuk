@@ -19,6 +19,13 @@ import {
 } from './packages.js';
 import { scanTags } from './xml.js';
 import { BACKUP_TABLES, classifyTables, EXCLUDED_TABLES } from './backup.js';
+import { drillHealth, offsiteFreshness, scheduleHealth, type HealthVerdict } from './offsite.js';
+
+function verdict(v: HealthVerdict): string {
+  if (v.status === 'not-configured') throw new NotConfigured(v.detail);
+  assert(v.status === 'pass', v.detail);
+  return v.detail;
+}
 import { clientDir, repoRoot } from '../warmth/pages.js';
 import { createMailer, type Mailer } from '../mailer.js';
 import { renderSnapshot } from '../shares/render.js';
@@ -48,9 +55,14 @@ export interface CheckContext {
 export interface CaseResult {
   id: string;
   title: string;
-  status: 'pass' | 'fail' | 'client-only';
+  /** not-configured: the feature this case checks is switched off on
+   *  this server. Never counted as a pass; does not fail the run. */
+  status: 'pass' | 'fail' | 'client-only' | 'not-configured';
   detail: string;
 }
+
+/** Thrown by a case whose feature is not configured on this server. */
+export class NotConfigured extends Error {}
 
 interface RegistryCase {
   id: string;
@@ -481,6 +493,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       assert(!c.missing.length, `listed tables the database does not have: ${c.missing.join(', ')}`);
       return `${c.total} tables: ${BACKUP_TABLES.length} backed up, ${Object.keys(EXCLUDED_TABLES).length} excluded with a reason`;
     },
+  },
+  {
+    id: 'backup.schedule.running',
+    title: 'Scheduled local backups are running (BACKUP_INTERVAL_HOURS)',
+    kind: 'server',
+    run: async ({ config }) => verdict(await scheduleHealth(config)),
+  },
+  {
+    id: 'backup.offsite.fresh',
+    title: 'The last off-site backup (restic -> B2) succeeded and is recent (OFFSITE_MAX_AGE_HOURS)',
+    kind: 'server',
+    run: async ({ config }) => verdict(await offsiteFreshness(config)),
+  },
+  {
+    id: 'backup.offsite.drill',
+    title: 'The last restore drill of the off-site copy passed and is recent',
+    kind: 'server',
+    run: async ({ config }) => verdict(await drillHealth(config)),
   },
   {
     id: 'data.streak.ledger-consistent',
@@ -1928,6 +1958,7 @@ export interface SelfCheckRun {
   passCount: number;
   failCount: number;
   clientOnlyCount: number;
+  notConfiguredCount: number;
   results: CaseResult[];
 }
 
@@ -1950,7 +1981,7 @@ export async function runSelfChecks(ctx: CheckContext): Promise<SelfCheckRun> {
       results.push({
         id: registryCase.id,
         title: registryCase.title,
-        status: 'fail',
+        status: err instanceof NotConfigured ? 'not-configured' : 'fail',
         detail: err instanceof Error ? err.message : String(err),
       });
     }
@@ -1958,7 +1989,9 @@ export async function runSelfChecks(ctx: CheckContext): Promise<SelfCheckRun> {
   const passCount = results.filter((r) => r.status === 'pass').length;
   const failCount = results.filter((r) => r.status === 'fail').length;
   const clientOnlyCount = results.filter((r) => r.status === 'client-only').length;
+  const notConfiguredCount = results.filter((r) => r.status === 'not-configured').length;
   return {
+    notConfiguredCount,
     overall: failCount ? 'fail' : 'pass',
     passCount,
     failCount,
