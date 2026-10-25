@@ -1,6 +1,6 @@
 import type { Config } from '../config.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
-import { BRAND_FOOTNOTE, BRAND_SUBLINE, billingGateHtml, kofiJarHtml, supportNavHtml } from '../warmth/pages.js';
+import { BRAND_FOOTNOTE, BRAND_SUBLINE, billingGateHtml, kofiJarHtml, supportBlocks, supportNavHtml } from '../warmth/pages.js';
 import { helpAssetUrl } from './assets.js';
 import {
   ERROR_CATEGORIES,
@@ -84,8 +84,9 @@ function searchOut(config: Config, inner = ''): string {
 /* ------------------------------ status ------------------------------ */
 
 function statusHeadline(s: ShelfStatus): string {
-  if (s.headline === 'down') return 'The shelf is being tidied — something is down';
+  if (s.headline === 'down') return 'Something is down — the database did not answer';
   if (s.headline === 'tidy') return 'The last shelf-check found something to tidy';
+  if (s.headline === 'partial') return `Up — ${s.gaps.join('; ')}`;
   return "All's well on the shelf";
 }
 
@@ -469,7 +470,7 @@ export function renderGuide(ctx: PageCtx, g: Guide): string {
     </article>`;
   const body = `<div class="g-page${g.panes.length ? ' has-pane' : ''}">
     ${guideNav(ctx, g.slug)}
-    ${article}
+    ${supportBlocks(article, ctx.config)}
     ${paneHtml(g)}
   </div>`;
   return chrome(ctx, { title: `${g.title} — Beuk Help`, description: g.blurb, active: 'guides', body, wide: true });

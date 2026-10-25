@@ -162,9 +162,19 @@ export function contentDir(): string {
   return path.join(repoRoot(), 'content', 'help');
 }
 
+/**
+ * `[[if-support]]…[[/if-support]]` in guide copy marks words that promise
+ * a reply (V's decision 2): they render only when SUPPORT_EMAIL is set.
+ * The HTML keeps them inside <!--BEUK_IF_SUPPORT--> markers, which the
+ * page renderer resolves per request (supportBlocks); the indexed/plain
+ * text drops them, so search never surfaces a promise either way.
+ */
+const IF_SUPPORT_BLOCK = /\[\[if-support\]\][\s\S]*?\[\[\/if-support\]\]/g;
+
 /** Visible text of an inline-Markdown string (what a reader sees). */
 export function inlineText(md: string): string {
   return md
+    .replace(IF_SUPPORT_BLOCK, '')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -172,7 +182,11 @@ export function inlineText(md: string): string {
 }
 
 export function inlineHtml(md: string): string {
-  return renderInline(escapeHtml(md));
+  return renderInline(escapeHtml(md))
+    .split('[[if-support]]')
+    .join('<!--BEUK_IF_SUPPORT-->')
+    .split('[[/if-support]]')
+    .join('<!--/BEUK_IF_SUPPORT-->');
 }
 
 function parseValue(raw: string): unknown {

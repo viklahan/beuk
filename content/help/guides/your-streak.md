@@ -29,6 +29,6 @@ What you're doing: nothing, mostly. The streak simply notices the days you show 
 
 ### What can go wrong
 
-**I wrote today but the streak didn't move.** The day is stamped by activity while signed in. If you worked offline or signed out, the day wasn't recorded — write to us if it matters and we'll look; but know the streak is a nudge, not a grade.
+**I wrote today but the streak didn't move.** The day is stamped by activity while signed in. If you worked offline or signed out, the day wasn't recorded —[[if-support]] write to us if it matters and we'll look;[[/if-support]] but know the streak is a nudge, not a grade.
 
 **My streak restarted.** That happens when a gap is longer than your freezes could cover. It stings for a second; it's also just true. Your longest streak is kept, and day one of the new one is today.

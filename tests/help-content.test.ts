@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { loadConfig } from '../src/config.js';
 import { HTTP_CODES, beukCodeForEpubcheck, beukCodeForValidator } from '../src/help/codes.js';
 import { checkHelpContent, getHelpContent, loadHelpContent } from '../src/help/content.js';
-import { resetShelfStatusCache } from '../src/help/status.js';
+import { resetShelfStatusCache, shelfHeadline } from '../src/help/status.js';
 import { parseEpubCheckReport } from '../src/jobs/tools.js';
 import { Client, createTestDb, registerUser, startTestServer } from './helpers.js';
 import { newGuideText } from './help-text.js';
@@ -281,7 +281,7 @@ test('pages: home, guide, dictionary, an entry and the search page render; unkno
 });
 
 test('support contact: with SUPPORT_EMAIL unset no page names a person, an address or a reply time; set, it appears', async () => {
-  const pages = ['/help/', '/help/errors', '/help/errors/BEUK-X201', '/help/check-your-book', '/help/search?q=zzqxv+flarn', '/support'];
+  const pages = ['/help/', '/help/errors', '/help/errors/BEUK-X201', '/help/check-your-book', '/help/your-streak', '/help/search?q=zzqxv+flarn', '/support', '/thanks'];
   const db = await createTestDb();
   const unset = await startTestServer(db, undefined, {
     supportEmail: null,
@@ -296,6 +296,8 @@ test('support contact: with SUPPORT_EMAIL unset no page names a person, an addre
       assert.doesNotMatch(r.html, /mailto:/, `${p}: no mailto while SUPPORT_EMAIL is unset`);
       assert.doesNotMatch(r.html, /two working days|Write to a human|When the guides run out|\bVik\b/, `${p}: no person or promise`);
       assert.doesNotMatch(r.html, /support@beuk\.studio|\{\{SUPPORT_/, `${p}: no placeholder address or slot`);
+      assert.doesNotMatch(r.html, /a human at\s+the end of the email address|write to us|we&#39;ll look|we'll look|A human reads/, `${p}: no promise of a reply`);
+      assert.doesNotMatch(r.html, /BEUK_IF_SUPPORT|\[\[\/?if-support\]\]/, `${p}: no leftover markers`);
     }
     const pub = await new Client(unset.base).get('/api/config/public');
     assert.deepEqual(pub.body.support, { email: null, name: 'Vik', replyPromise: 'a human replies within two working days' });
@@ -315,6 +317,11 @@ test('support contact: with SUPPORT_EMAIL unset no page names a person, an addre
     assert.match(none.html, /href="mailto:shelf@example\.com"/);
     const support = await getPage(set.base, '/support');
     assert.match(support.html, /Write in with what's working and what isn't: <a href="mailto:shelf@example\.com">/);
+    const thanks = await getPage(set.base, '/thanks');
+    assert.match(thanks.html, /is open, and there's a human at\s+the end of the email address there\./);
+    const streak = await getPage(set.base, '/help/your-streak');
+    assert.match(streak.html, /the day wasn(&#39;|')t recorded — write to us if it matters and we(&#39;|')ll look; but know/);
+    assert.doesNotMatch(streak.html + thanks.html, /BEUK_IF_SUPPORT|\[\[\/?if-support\]\]/);
   } finally {
     await set.close();
   }
@@ -336,7 +343,11 @@ test('shelf status: live values from the server, nothing hard-coded; a failed se
     assert.match(first.html, /<span class="k">jobs<\/span><span class="v">0 waiting or running<\/span>/);
     assert.match(first.html, /<span class="k">epubcheck<\/span><span class="v">not installed<\/span>/, 'EPUBCHECK_JAR unset is "not installed", never "up"');
     assert.match(first.html, /<span class="k">self-checks<\/span><span class="v">none yet<\/span>/);
-    assert.match(first.html, /id="status-line">All&#39;s well on the shelf\. Beuk is up and running\.<|id="status-line">All's well on the shelf\. Beuk is up and running\.</);
+    // Not green: EPUBCheck is not installed and no self-check has run, so
+    // the headline is the neutral "partial" line naming the gaps.
+    assert.match(first.html, /class="pill status-pill is-partial"/);
+    assert.match(first.html, /id="status-line">Up — EPUBCheck not installed; no self-check run yet\.</);
+    assert.doesNotMatch(first.html, /All(&#39;|')s well|is-well|up and running/, 'no green headline while components are unchecked');
     assert.doesNotMatch(first.html, /25\/10\/2026/, 'no date from the design is hard-coded');
 
     await db.query(
@@ -355,6 +366,41 @@ test('shelf status: live values from the server, nothing hard-coded; a failed se
     await server.close();
     resetShelfStatusCache();
   }
+});
+
+test('shelf status: "All\'s well" only when db, queue, EPUBCheck and the latest self-check are all checked and fine', async () => {
+  const db = await createTestDb();
+  // An EPUBCHECK_JAR path that exists — "installed" is a file check, never "up".
+  const jar = path.join(root, 'tests', 'fixtures', 'help-v0', 'your-streak.txt');
+  const server = await startTestServer(db, undefined, { epubcheckJar: jar });
+  try {
+    resetShelfStatusCache();
+    const noRun = await getPage(server.base, '/help/');
+    assert.match(noRun.html, /<span class="k">epubcheck<\/span><span class="v ok">installed<\/span>/);
+    assert.match(noRun.html, /class="pill status-pill is-partial"/);
+    assert.match(noRun.html, /id="status-line">Up — no self-check run yet\.</);
+
+    await db.query(
+      `insert into housekeeping_check_runs (build_stamp, started_at, finished_at, overall, pass_count, fail_count, client_only_count, results)
+       values ('test-build-1', '2026-03-04T05:06:00Z', '2026-03-04T05:07:00Z', 'pass', 42, 0, 20, '[]')`,
+    );
+    resetShelfStatusCache();
+    const well = await getPage(server.base, '/help/');
+    assert.match(well.html, /class="pill status-pill is-well"/);
+    assert.match(well.html, /id="status-line">All(&#39;|')s well on the shelf\. Beuk is up and running\. The last shelf-check passed on 4 Mar 2026\.</);
+  } finally {
+    await server.close();
+    resetShelfStatusCache();
+  }
+  // The rule itself, every gap on its own.
+  const base = { db: 'up' as const, queue: { queued: 0, running: 0 }, epubcheck: 'installed' as const, selfChecks: { overall: 'pass', at: '2026-03-04T05:07:00Z', passed: 1, failed: 0 }, selfChecksUnreadable: false };
+  assert.deepEqual(shelfHeadline(base), { headline: 'well', gaps: [] });
+  assert.equal(shelfHeadline({ ...base, db: 'down' }).headline, 'down');
+  assert.deepEqual(shelfHeadline({ ...base, queue: null }), { headline: 'partial', gaps: ['job queue unreadable'] });
+  assert.deepEqual(shelfHeadline({ ...base, epubcheck: 'not-installed' }), { headline: 'partial', gaps: ['EPUBCheck not installed'] });
+  assert.deepEqual(shelfHeadline({ ...base, selfChecks: null }), { headline: 'partial', gaps: ['no self-check run yet'] });
+  assert.deepEqual(shelfHeadline({ ...base, selfChecks: null, selfChecksUnreadable: true }), { headline: 'partial', gaps: ['self-check history unreadable'] });
+  assert.equal(shelfHeadline({ ...base, selfChecks: { ...base.selfChecks, overall: 'fail' } }).headline, 'tidy');
 });
 
 test('HTTP bodies gain { code }: 409 manuscript conflict, 410 closed reading copy — existing fields unchanged', async () => {
