@@ -875,6 +875,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Trim choice and the one-click fix are studio state.',
   },
   {
+    id: 'store.trim.paper-matrix',
+    title: 'Store-ready: IngramSpark trims are checked per paper against its Trim Size Matrix; a blank cell is “not checked” (custom trim) or a fail, never a pass',
+    kind: 'client-only',
+    reason: 'The per-paper trim matrix and the paper choice live in the studio’s STORE_RULES.',
+  },
+  {
     id: 'store.spine.wrap-matches-store-factor',
     title: 'Store-ready: the wrap’s spine is checked against the store’s published per-page factor, and the fix makes it pass',
     kind: 'client-only',

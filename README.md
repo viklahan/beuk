@@ -237,9 +237,15 @@ studio can make it: switch trim, follow the book's trim or page
 count, use the store's spine factor; otherwise a jump to the
 chapter, the print settings or the cover maker).
 
-- Checked in the browser: trim against the store's list (and
-  IngramSpark's custom-trim ranges), page count against the range for
-  that trim + ink + paper, margins/gutter (KDP minimums; IngramSpark's
+- Checked in the browser: trim against the store's list for the
+  chosen paper (IngramSpark's Trim Size Matrix marks each trim per
+  paper: a trim listed but blank for that paper is "not checked" when
+  it fits the custom-trim range — the matrix only says such sizes *may*
+  be available — and a fail when it doesn't; colour papers have no
+  published custom range, so off-matrix colour trims are "not
+  checked"), page count against the range for that trim + ink + paper
+  (IngramSpark: the matrix's per-paper range, e.g. crème 18–1,050,
+  50# white 18–1,200, 11 × 8.5 capped at 400), margins/gutter (KDP minimums; IngramSpark's
   0.5 in recommendation is advisory), every placed picture's DPI at its
   printed size, bleed (full-page plates and chapter backdrops reach the
   trim edge, and Beuk's interior has no bleed — so they fail), and the

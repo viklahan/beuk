@@ -8628,6 +8628,15 @@
         "store.c.trim.fail": "{store} doesn't print {trim} ({binding}).",
         "store.c.trim.fix": "Switch to {nearest}, the closest trim {store} prints.",
         "store.c.trim.act": "Use {nearest}",
+        "store.c.trim.okPaper": "{store} prints {trim} on {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} is {store}'s {exact} trim, printed on {ink} ({binding}); Beuk shows it rounded.",
+        "store.c.trim.failPaper": "{store} lists {trim} ({binding}), but not on {ink}, and it is outside the custom-trim range for this paper. {store} prints it on: {papers}.",
+        "store.c.trim.failNoPaper": "{store} lists {trim}, but not as {binding} on {ink} or any other paper here, and it is outside the custom-trim range for this paper.",
+        "store.c.trim.fixPaper": "Switch to {nearest}, the closest trim {store} prints on {ink}, or choose a paper it prints {trim} on.",
+        "store.c.trim.fixPaperOnly": "Choose a paper {store} prints {trim} on: {papers}.",
+        "store.c.trim.actInk": "Use {ink}",
+        "store.nc.trimMaybeCustom": "{trim} isn't a standard {store} size on {ink} ({binding}). The trim size matrix says such sizes may be available through Custom Trim, and it fits the custom range for this paper ({range}) — confirm it when you set up the title.",
+        "store.nc.trimCustomPaper": "{trim} isn't a standard {store} size on {ink} ({binding}), and {store}'s custom-trim page gives no size range for colour papers — confirm it when you set up the title, or choose a standard size.",
         "store.c.pages.name": "Page count",
         "store.c.pages.ok": "{pages} pages ({src}) sits inside {store}'s {min}–{max} page range for this trim and paper.",
         "store.c.pages.fail": "{pages} pages ({src}) is outside {store}'s {min}–{max} page range for this trim and paper.",
@@ -8635,7 +8644,6 @@
         "store.c.pages.fix": "Change the trim or the ink & paper, or bring the page count inside the range.",
         "store.nc.pagesTrim": "The page range depends on the trim, and this trim isn't one {store} prints.",
         "store.nc.pagesInk": "{store} lists no page range for {ink} at this trim.",
-        "store.nc.pagesIsHigh": "{pages} pages ({src}) is above the {max}-page maximum most {store} papers list. Some papers go higher — check {store}'s trim size matrix for your paper.",
         "store.c.margins.name": "Margins & gutter",
         "store.c.margins.ok": "Gutter {inside} in (at least {need} in needed at {pages} pages); outside {outside} in, top {top} in, foot {bottom} in — all at or above {store}'s minimums.",
         "store.c.margins.fail": "The {which} margin is {have} in; at {pages} pages {store} asks for at least {need} in.",
@@ -8806,6 +8814,15 @@
         "store.c.trim.fail": "{store} no imprime {trim} en {binding}.",
         "store.c.trim.fix": "Cambia a {nearest}, el corte más cercano que imprime {store}.",
         "store.c.trim.act": "Usar {nearest}",
+        "store.c.trim.okPaper": "{store} imprime {trim} en {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} es el corte {exact} de {store}, impreso en {ink} ({binding}); Beuk lo muestra redondeado.",
+        "store.c.trim.failPaper": "{store} incluye {trim} ({binding}), pero no en {ink}, y queda fuera del rango de corte personalizado para este papel. {store} lo imprime en: {papers}.",
+        "store.c.trim.failNoPaper": "{store} incluye {trim}, pero no en {binding} con {ink} ni con ningún otro papel de aquí, y queda fuera del rango de corte personalizado para este papel.",
+        "store.c.trim.fixPaper": "Cambia a {nearest}, el corte más cercano que {store} imprime en {ink}, o elige un papel en el que imprima {trim}.",
+        "store.c.trim.fixPaperOnly": "Elige un papel en el que {store} imprima {trim}: {papers}.",
+        "store.c.trim.actInk": "Usar {ink}",
+        "store.nc.trimMaybeCustom": "{trim} no es un tamaño estándar de {store} en {ink} ({binding}). La tabla de tamaños indica que estos tamaños pueden estar disponibles como corte personalizado, y entra en el rango personalizado para este papel ({range}); confírmalo al configurar el título.",
+        "store.nc.trimCustomPaper": "{trim} no es un tamaño estándar de {store} en {ink} ({binding}), y la página de cortes personalizados de {store} no da rango para papeles en color; confírmalo al configurar el título o elige un tamaño estándar.",
         "store.c.pages.name": "Número de páginas",
         "store.c.pages.ok": "{pages} páginas ({src}) está dentro del rango de {min}–{max} páginas de {store} para este corte y este papel.",
         "store.c.pages.fail": "{pages} páginas ({src}) queda fuera del rango de {min}–{max} páginas de {store} para este corte y este papel.",
@@ -8813,7 +8830,6 @@
         "store.c.pages.fix": "Cambia el corte o la tinta y el papel, o ajusta el número de páginas al rango.",
         "store.nc.pagesTrim": "El rango de páginas depende del corte, y {store} no imprime este corte.",
         "store.nc.pagesInk": "{store} no publica un rango de páginas para {ink} en este corte.",
-        "store.nc.pagesIsHigh": "{pages} páginas ({src}) supera el máximo de {max} páginas que figura para la mayoría de papeles de {store}. Algunos papeles admiten más — consulta la tabla de tamaños de corte de {store} para tu papel.",
         "store.c.margins.name": "Márgenes y margen de lomo",
         "store.c.margins.ok": "Margen de lomo de {inside} pulg. (se necesitan al menos {need} pulg. con {pages} páginas); exterior {outside} pulg., superior {top} pulg., pie {bottom} pulg. — todos iguales o por encima de los mínimos de {store}.",
         "store.c.margins.fail": "El margen {which} es de {have} pulg.; con {pages} páginas {store} pide al menos {need} pulg.",
@@ -8984,6 +9000,15 @@
         "store.c.trim.fail": "{store} n’imprime pas le format {trim} en {binding}.",
         "store.c.trim.fix": "Passez à {nearest}, le format le plus proche qu’imprime {store}.",
         "store.c.trim.act": "Utiliser {nearest}",
+        "store.c.trim.okPaper": "{store} imprime {trim} sur {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} correspond au format {exact} de {store}, imprimé sur {ink} ({binding}) ; Beuk l’affiche arrondi.",
+        "store.c.trim.failPaper": "{store} propose {trim} ({binding}), mais pas sur {ink}, et ce format sort de la plage de formats personnalisés pour ce papier. {store} l’imprime sur : {papers}.",
+        "store.c.trim.failNoPaper": "{store} propose {trim}, mais pas en {binding} sur {ink} ni sur aucun autre papier proposé ici, et ce format sort de la plage de formats personnalisés pour ce papier.",
+        "store.c.trim.fixPaper": "Passez à {nearest}, le format le plus proche que {store} imprime sur {ink}, ou choisissez un papier sur lequel il imprime {trim}.",
+        "store.c.trim.fixPaperOnly": "Choisissez un papier sur lequel {store} imprime {trim} : {papers}.",
+        "store.c.trim.actInk": "Utiliser {ink}",
+        "store.nc.trimMaybeCustom": "{trim} n’est pas un format standard {store} sur {ink} ({binding}). La grille des formats indique que ces formats peuvent être disponibles en format personnalisé, et celui-ci entre dans la plage personnalisée pour ce papier ({range}) — confirmez-le lors de la création du titre.",
+        "store.nc.trimCustomPaper": "{trim} n’est pas un format standard {store} sur {ink} ({binding}), et la page des formats personnalisés de {store} ne donne aucune plage pour les papiers couleur — confirmez-le lors de la création du titre, ou choisissez un format standard.",
         "store.c.pages.name": "Nombre de pages",
         "store.c.pages.ok": "{pages} pages ({src}) se situe dans la plage de {min} à {max} pages de {store} pour ce format et ce papier.",
         "store.c.pages.fail": "{pages} pages ({src}) sort de la plage de {min} à {max} pages de {store} pour ce format et ce papier.",
@@ -8991,7 +9016,6 @@
         "store.c.pages.fix": "Changez le format ou l’encre et le papier, ou ramenez le nombre de pages dans la plage.",
         "store.nc.pagesTrim": "La plage de pages dépend du format, et {store} n’imprime pas ce format.",
         "store.nc.pagesInk": "{store} n’indique aucune plage de pages pour {ink} à ce format.",
-        "store.nc.pagesIsHigh": "{pages} pages ({src}) dépasse le maximum de {max} pages indiqué pour la plupart des papiers {store}. Certains papiers vont plus loin — consultez la grille des formats de {store} pour votre papier.",
         "store.c.margins.name": "Marges et petit fond",
         "store.c.margins.ok": "Petit fond de {inside} po (au moins {need} po requis pour {pages} pages) ; extérieur {outside} po, tête {top} po, pied {bottom} po — tous au moins égaux aux minimums de {store}.",
         "store.c.margins.fail": "La marge {which} est de {have} po ; pour {pages} pages, {store} demande au moins {need} po.",
@@ -9162,6 +9186,15 @@
         "store.c.trim.fail": "{store} druckt {trim} nicht als {binding}.",
         "store.c.trim.fix": "Wechsle zu {nearest}, dem nächstgelegenen Format, das {store} druckt.",
         "store.c.trim.act": "{nearest} verwenden",
+        "store.c.trim.okPaper": "{store} druckt {trim} auf {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} ist das {store}-Format {exact}, gedruckt auf {ink} ({binding}); Beuk zeigt es gerundet.",
+        "store.c.trim.failPaper": "{store} führt {trim} ({binding}), aber nicht auf {ink}, und es liegt außerhalb des Sonderformat-Bereichs für dieses Papier. {store} druckt es auf: {papers}.",
+        "store.c.trim.failNoPaper": "{store} führt {trim}, aber nicht als {binding} auf {ink} oder einem anderen Papier hier, und es liegt außerhalb des Sonderformat-Bereichs für dieses Papier.",
+        "store.c.trim.fixPaper": "Wechsle zu {nearest}, dem nächstgelegenen Format, das {store} auf {ink} druckt, oder wähle ein Papier, auf dem es {trim} druckt.",
+        "store.c.trim.fixPaperOnly": "Wähle ein Papier, auf dem {store} {trim} druckt: {papers}.",
+        "store.c.trim.actInk": "{ink} verwenden",
+        "store.nc.trimMaybeCustom": "{trim} ist bei {store} auf {ink} ({binding}) kein Standardformat. Laut Formattabelle sind solche Formate eventuell als Sonderformat erhältlich, und es liegt im Sonderformat-Bereich für dieses Papier ({range}) – bestätige es beim Anlegen des Titels.",
+        "store.nc.trimCustomPaper": "{trim} ist bei {store} auf {ink} ({binding}) kein Standardformat, und die Sonderformat-Seite von {store} nennt keinen Bereich für Farbpapiere – bestätige es beim Anlegen des Titels oder wähle ein Standardformat.",
         "store.c.pages.name": "Seitenzahl",
         "store.c.pages.ok": "{pages} Seiten ({src}) liegen im Bereich von {min}–{max} Seiten, den {store} für dieses Format und Papier vorgibt.",
         "store.c.pages.fail": "{pages} Seiten ({src}) liegen außerhalb des Bereichs von {min}–{max} Seiten, den {store} für dieses Format und Papier vorgibt.",
@@ -9169,7 +9202,6 @@
         "store.c.pages.fix": "Ändere das Format oder Druck & Papier, oder bring die Seitenzahl in den Bereich.",
         "store.nc.pagesTrim": "Der Seitenbereich hängt vom Format ab, und dieses Format druckt {store} nicht.",
         "store.nc.pagesInk": "{store} nennt für {ink} in diesem Format keinen Seitenbereich.",
-        "store.nc.pagesIsHigh": "{pages} Seiten ({src}) liegen über dem Maximum von {max} Seiten, das für die meisten {store}-Papiere gilt. Manche Papiere erlauben mehr — sieh in der Formattabelle von {store} für dein Papier nach.",
         "store.c.margins.name": "Ränder & Bundsteg",
         "store.c.margins.ok": "Bundsteg {inside} in (bei {pages} Seiten sind mindestens {need} in nötig); außen {outside} in, oben {top} in, unten {bottom} in — alle auf oder über den Mindestwerten von {store}.",
         "store.c.margins.fail": "Der Rand ({which}) beträgt {have} in; bei {pages} Seiten verlangt {store} mindestens {need} in.",
@@ -9340,6 +9372,15 @@
         "store.c.trim.fail": "{store} non stampa {trim} come {binding}.",
         "store.c.trim.fix": "Passa a {nearest}, il formato più vicino stampato da {store}.",
         "store.c.trim.act": "Usa {nearest}",
+        "store.c.trim.okPaper": "{store} stampa {trim} su {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} è il formato {exact} di {store}, stampato su {ink} ({binding}); Beuk lo mostra arrotondato.",
+        "store.c.trim.failPaper": "{store} elenca {trim} ({binding}), ma non su {ink}, ed è fuori dall’intervallo di formati personalizzati per questa carta. {store} lo stampa su: {papers}.",
+        "store.c.trim.failNoPaper": "{store} elenca {trim}, ma non come {binding} su {ink} né su altre carte disponibili qui, ed è fuori dall’intervallo di formati personalizzati per questa carta.",
+        "store.c.trim.fixPaper": "Passa a {nearest}, il formato più vicino che {store} stampa su {ink}, oppure scegli una carta su cui stampa {trim}.",
+        "store.c.trim.fixPaperOnly": "Scegli una carta su cui {store} stampa {trim}: {papers}.",
+        "store.c.trim.actInk": "Usa {ink}",
+        "store.nc.trimMaybeCustom": "{trim} non è un formato standard di {store} su {ink} ({binding}). La tabella dei formati dice che questi formati possono essere disponibili come formato personalizzato, e rientra nell’intervallo personalizzato per questa carta ({range}) — confermalo quando imposti il titolo.",
+        "store.nc.trimCustomPaper": "{trim} non è un formato standard di {store} su {ink} ({binding}), e la pagina dei formati personalizzati di {store} non indica intervalli per le carte a colori — confermalo quando imposti il titolo, oppure scegli un formato standard.",
         "store.c.pages.name": "Numero di pagine",
         "store.c.pages.ok": "{pages} pagine ({src}) rientrano nell’intervallo di {min}–{max} pagine di {store} per questo formato e questa carta.",
         "store.c.pages.fail": "{pages} pagine ({src}) sono fuori dall’intervallo di {min}–{max} pagine di {store} per questo formato e questa carta.",
@@ -9347,7 +9388,6 @@
         "store.c.pages.fix": "Cambia il formato oppure inchiostro e carta, o porta il numero di pagine dentro l’intervallo.",
         "store.nc.pagesTrim": "L’intervallo di pagine dipende dal formato, e {store} non stampa questo formato.",
         "store.nc.pagesInk": "{store} non indica un intervallo di pagine per {ink} in questo formato.",
-        "store.nc.pagesIsHigh": "{pages} pagine ({src}) superano il massimo di {max} pagine indicato per la maggior parte delle carte {store}. Alcune carte arrivano oltre — controlla la tabella dei formati di {store} per la tua carta.",
         "store.c.margins.name": "Margini e margine interno",
         "store.c.margins.ok": "Margine interno di {inside} in (ne servono almeno {need} in con {pages} pagine); esterno {outside} in, superiore {top} in, inferiore {bottom} in — tutti pari o superiori ai minimi di {store}.",
         "store.c.margins.fail": "Il margine {which} è di {have} in; con {pages} pagine {store} chiede almeno {need} in.",
@@ -9518,6 +9558,15 @@
         "store.c.trim.fail": "A {store} não imprime {trim} em {binding}.",
         "store.c.trim.fix": "Mude para {nearest}, o formato mais próximo que a {store} imprime.",
         "store.c.trim.act": "Usar {nearest}",
+        "store.c.trim.okPaper": "A {store} imprime {trim} em {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} é o formato {exact} da {store}, impresso em {ink} ({binding}); o Beuk mostra-o arredondado.",
+        "store.c.trim.failPaper": "A {store} lista {trim} ({binding}), mas não em {ink}, e fica fora do intervalo de formatos personalizados para este papel. A {store} imprime-o em: {papers}.",
+        "store.c.trim.failNoPaper": "A {store} lista {trim}, mas não em {binding} com {ink} nem com outro papel disponível aqui, e fica fora do intervalo de formatos personalizados para este papel.",
+        "store.c.trim.fixPaper": "Mude para {nearest}, o formato mais próximo que a {store} imprime em {ink}, ou escolha um papel em que ela imprima {trim}.",
+        "store.c.trim.fixPaperOnly": "Escolha um papel em que a {store} imprima {trim}: {papers}.",
+        "store.c.trim.actInk": "Usar {ink}",
+        "store.nc.trimMaybeCustom": "{trim} não é um tamanho padrão da {store} em {ink} ({binding}). A tabela de formatos diz que estes tamanhos podem estar disponíveis como formato personalizado, e cabe no intervalo personalizado para este papel ({range}) — confirme ao configurar o título.",
+        "store.nc.trimCustomPaper": "{trim} não é um tamanho padrão da {store} em {ink} ({binding}), e a página de formatos personalizados da {store} não indica intervalo para papéis a cores — confirme ao configurar o título ou escolha um tamanho padrão.",
         "store.c.pages.name": "Número de páginas",
         "store.c.pages.ok": "{pages} páginas ({src}) está dentro do intervalo de {min}–{max} páginas da {store} para este formato e papel.",
         "store.c.pages.fail": "{pages} páginas ({src}) está fora do intervalo de {min}–{max} páginas da {store} para este formato e papel.",
@@ -9525,7 +9574,6 @@
         "store.c.pages.fix": "Mude o formato ou a tinta e o papel, ou traga o número de páginas para dentro do intervalo.",
         "store.nc.pagesTrim": "O intervalo de páginas depende do formato, e a {store} não imprime este formato.",
         "store.nc.pagesInk": "A {store} não indica um intervalo de páginas para {ink} neste formato.",
-        "store.nc.pagesIsHigh": "{pages} páginas ({src}) ultrapassa o máximo de {max} páginas indicado para a maioria dos papéis da {store}. Alguns papéis vão mais longe — consulte a tabela de formatos da {store} para o seu papel.",
         "store.c.margins.name": "Margens e medianiz",
         "store.c.margins.ok": "Medianiz de {inside} pol. (são precisas pelo menos {need} pol. com {pages} páginas); exterior {outside} pol., topo {top} pol., pé {bottom} pol. — todas iguais ou acima dos mínimos da {store}.",
         "store.c.margins.fail": "A margem {which} tem {have} pol.; com {pages} páginas a {store} pede pelo menos {need} pol.",
@@ -9696,6 +9744,15 @@
         "store.c.trim.fail": "{store} drukt {trim} niet als {binding}.",
         "store.c.trim.fix": "Kies {nearest}, het dichtstbijzijnde formaat dat {store} drukt.",
         "store.c.trim.act": "{nearest} gebruiken",
+        "store.c.trim.okPaper": "{store} drukt {trim} op {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} is het {store}-formaat {exact}, gedrukt op {ink} ({binding}); Beuk toont het afgerond.",
+        "store.c.trim.failPaper": "{store} noemt {trim} ({binding}), maar niet op {ink}, en het valt buiten het bereik voor afwijkende formaten bij dit papier. {store} drukt het op: {papers}.",
+        "store.c.trim.failNoPaper": "{store} noemt {trim}, maar niet als {binding} op {ink} of een ander papier hier, en het valt buiten het bereik voor afwijkende formaten bij dit papier.",
+        "store.c.trim.fixPaper": "Kies {nearest}, het dichtstbijzijnde formaat dat {store} op {ink} drukt, of kies een papier waarop het {trim} drukt.",
+        "store.c.trim.fixPaperOnly": "Kies een papier waarop {store} {trim} drukt: {papers}.",
+        "store.c.trim.actInk": "{ink} gebruiken",
+        "store.nc.trimMaybeCustom": "{trim} is bij {store} geen standaardformaat op {ink} ({binding}). Volgens de formatentabel zijn zulke formaten mogelijk als afwijkend formaat verkrijgbaar, en het valt binnen het bereik voor dit papier ({range}) — bevestig het bij het aanmaken van de titel.",
+        "store.nc.trimCustomPaper": "{trim} is bij {store} geen standaardformaat op {ink} ({binding}), en de pagina over afwijkende formaten van {store} noemt geen bereik voor kleurenpapier — bevestig het bij het aanmaken van de titel, of kies een standaardformaat.",
         "store.c.pages.name": "Aantal pagina’s",
         "store.c.pages.ok": "{pages} pagina’s ({src}) valt binnen het bereik van {min}–{max} pagina’s dat {store} voor dit formaat en papier hanteert.",
         "store.c.pages.fail": "{pages} pagina’s ({src}) valt buiten het bereik van {min}–{max} pagina’s dat {store} voor dit formaat en papier hanteert.",
@@ -9703,7 +9760,6 @@
         "store.c.pages.fix": "Wijzig het formaat of de inkt & het papier, of breng het aantal pagina’s binnen het bereik.",
         "store.nc.pagesTrim": "Het paginabereik hangt af van het formaat, en dit formaat drukt {store} niet.",
         "store.nc.pagesInk": "{store} noemt geen paginabereik voor {ink} in dit formaat.",
-        "store.nc.pagesIsHigh": "{pages} pagina’s ({src}) ligt boven het maximum van {max} pagina’s dat voor de meeste papiersoorten van {store} geldt. Sommige papiersoorten gaan hoger — kijk in de formatentabel van {store} voor jouw papier.",
         "store.c.margins.name": "Marges & rugmarge",
         "store.c.margins.ok": "Rugmarge {inside} in (bij {pages} pagina’s is minstens {need} in nodig); buiten {outside} in, boven {top} in, onder {bottom} in — allemaal op of boven de minimumwaarden van {store}.",
         "store.c.margins.fail": "De marge ({which}) is {have} in; bij {pages} pagina’s vraagt {store} minstens {need} in.",
@@ -9874,6 +9930,15 @@
         "store.c.trim.fail": "{store} nie drukuje formatu {trim} w oprawie: {binding}.",
         "store.c.trim.fix": "Przełącz na {nearest} — najbliższy format, który drukuje {store}.",
         "store.c.trim.act": "Użyj {nearest}",
+        "store.c.trim.okPaper": "{store} drukuje {trim} na papierze: {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} to format {exact} w {store}, drukowany na papierze: {ink} ({binding}); Beuk pokazuje go w zaokrągleniu.",
+        "store.c.trim.failPaper": "{store} wymienia {trim} ({binding}), ale nie na papierze: {ink}, a format wykracza poza zakres formatów niestandardowych dla tego papieru. {store} drukuje go na: {papers}.",
+        "store.c.trim.failNoPaper": "{store} wymienia {trim}, ale nie jako {binding} na papierze: {ink} ani na żadnym innym papierze tutaj, a format wykracza poza zakres formatów niestandardowych dla tego papieru.",
+        "store.c.trim.fixPaper": "Przejdź na {nearest}, najbliższy format, który {store} drukuje na papierze: {ink}, albo wybierz papier, na którym drukuje {trim}.",
+        "store.c.trim.fixPaperOnly": "Wybierz papier, na którym {store} drukuje {trim}: {papers}.",
+        "store.c.trim.actInk": "Użyj: {ink}",
+        "store.nc.trimMaybeCustom": "{trim} nie jest standardowym formatem {store} na papierze: {ink} ({binding}). Tabela formatów mówi, że takie formaty mogą być dostępne jako niestandardowe, a ten mieści się w zakresie dla tego papieru ({range}) — potwierdź to przy zakładaniu tytułu.",
+        "store.nc.trimCustomPaper": "{trim} nie jest standardowym formatem {store} na papierze: {ink} ({binding}), a strona formatów niestandardowych {store} nie podaje zakresu dla papierów kolorowych — potwierdź to przy zakładaniu tytułu albo wybierz format standardowy.",
         "store.c.pages.name": "Liczba stron",
         "store.c.pages.ok": "Stron: {pages} ({src}) — mieści się w zakresie {min}–{max} stron {store} dla tego formatu i papieru.",
         "store.c.pages.fail": "Stron: {pages} ({src}) — poza zakresem {min}–{max} stron {store} dla tego formatu i papieru.",
@@ -9881,7 +9946,6 @@
         "store.c.pages.fix": "Zmień format albo druk i papier, lub dopasuj liczbę stron do zakresu.",
         "store.nc.pagesTrim": "Zakres stron zależy od formatu, a {store} nie drukuje tego formatu.",
         "store.nc.pagesInk": "{store} nie podaje zakresu stron dla opcji {ink} w tym formacie.",
-        "store.nc.pagesIsHigh": "Stron: {pages} ({src}) — więcej niż maksimum {max} stron podane dla większości papierów {store}. Niektóre papiery pozwalają na więcej — sprawdź tabelę formatów {store} dla swojego papieru.",
         "store.c.margins.name": "Marginesy i margines wewnętrzny",
         "store.c.margins.ok": "Margines wewnętrzny {inside} in (przy {pages} stronach potrzeba co najmniej {need} in); zewnętrzny {outside} in, górny {top} in, dolny {bottom} in — wszystkie na poziomie minimów {store} lub powyżej.",
         "store.c.margins.fail": "Margines ({which}) ma {have} in; przy {pages} stronach {store} wymaga co najmniej {need} in.",
@@ -10052,6 +10116,15 @@
         "store.c.trim.fail": "{store} не печатает формат {trim} в варианте «{binding}».",
         "store.c.trim.fix": "Переключитесь на {nearest} — ближайший формат, который печатает {store}.",
         "store.c.trim.act": "Использовать {nearest}",
+        "store.c.trim.okPaper": "{store} печатает {trim} на бумаге «{ink}» ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} — формат {store} {exact}, печатается на бумаге «{ink}» ({binding}); Beuk показывает его округлённым.",
+        "store.c.trim.failPaper": "{store} указывает {trim} ({binding}), но не для бумаги «{ink}», и формат выходит за диапазон нестандартных форматов для этой бумаги. {store} печатает его на: {papers}.",
+        "store.c.trim.failNoPaper": "{store} указывает {trim}, но не как {binding} на бумаге «{ink}» или другой доступной здесь бумаге, и формат выходит за диапазон нестандартных форматов для этой бумаги.",
+        "store.c.trim.fixPaper": "Перейдите на {nearest} — ближайший формат, который {store} печатает на бумаге «{ink}», или выберите бумагу, на которой печатается {trim}.",
+        "store.c.trim.fixPaperOnly": "Выберите бумагу, на которой {store} печатает {trim}: {papers}.",
+        "store.c.trim.actInk": "Выбрать «{ink}»",
+        "store.nc.trimMaybeCustom": "{trim} — не стандартный формат {store} на бумаге «{ink}» ({binding}). В таблице форматов сказано, что такие форматы могут быть доступны как нестандартные, и он входит в диапазон для этой бумаги ({range}) — подтвердите это при создании издания.",
+        "store.nc.trimCustomPaper": "{trim} — не стандартный формат {store} на бумаге «{ink}» ({binding}), а страница нестандартных форматов {store} не даёт диапазона для цветной бумаги — подтвердите это при создании издания или выберите стандартный формат.",
         "store.c.pages.name": "Число страниц",
         "store.c.pages.ok": "Страниц: {pages} ({src}) — в пределах диапазона {store} {min}–{max} для этого формата и бумаги.",
         "store.c.pages.fail": "Страниц: {pages} ({src}) — вне диапазона {store} {min}–{max} для этого формата и бумаги.",
@@ -10059,7 +10132,6 @@
         "store.c.pages.fix": "Измените формат или печать и бумагу либо приведите число страниц в диапазон.",
         "store.nc.pagesTrim": "Диапазон страниц зависит от формата, а этот формат {store} не печатает.",
         "store.nc.pagesInk": "{store} не указывает диапазон страниц для варианта «{ink}» в этом формате.",
-        "store.nc.pagesIsHigh": "Страниц: {pages} ({src}) — больше максимума в {max} страниц, указанного для большинства бумаг {store}. Некоторые бумаги допускают больше — сверьтесь с таблицей форматов {store} для вашей бумаги.",
         "store.c.margins.name": "Поля и корешковое поле",
         "store.c.margins.ok": "Корешковое поле {inside} in (при {pages} страницах нужно не меньше {need} in); внешнее {outside} in, верхнее {top} in, нижнее {bottom} in — все не ниже минимумов {store}.",
         "store.c.margins.fail": "Поле ({which}) — {have} in; при {pages} страницах {store} требует не меньше {need} in.",
@@ -10230,6 +10302,15 @@
         "store.c.trim.fail": "{store}, {trim} boyutunu {binding} olarak basmıyor.",
         "store.c.trim.fix": "{store}’ın bastığı en yakın boyut olan {nearest} boyutuna geçin.",
         "store.c.trim.act": "{nearest} kullan",
+        "store.c.trim.okPaper": "{store}, {trim} boyutunu {ink} üzerine basıyor ({binding}).",
+        "store.c.trim.okPaperNear": "{trim}, {store}’ın {exact} boyutudur ve {ink} üzerine basılır ({binding}); Beuk bunu yuvarlanmış gösterir.",
+        "store.c.trim.failPaper": "{store}, {trim} boyutunu listeliyor ({binding}), ama {ink} için değil; ayrıca bu kâğıdın özel kesim aralığının dışında. {store} bunu şu kâğıtlara basıyor: {papers}.",
+        "store.c.trim.failNoPaper": "{store}, {trim} boyutunu listeliyor, ama {ink} ya da buradaki başka bir kâğıtta {binding} olarak değil; ayrıca bu kâğıdın özel kesim aralığının dışında.",
+        "store.c.trim.fixPaper": "{store}’ın {ink} üzerine bastığı en yakın boyut olan {nearest} boyutuna geçin ya da {trim} boyutunu bastığı bir kâğıt seçin.",
+        "store.c.trim.fixPaperOnly": "{store}’ın {trim} boyutunu bastığı bir kâğıt seçin: {papers}.",
+        "store.c.trim.actInk": "{ink} kullan",
+        "store.nc.trimMaybeCustom": "{trim}, {ink} üzerinde standart bir {store} boyutu değil ({binding}). Boyut tablosu bu tür boyutların özel kesimle sunulabileceğini söylüyor ve bu kâğıdın özel aralığına giriyor ({range}) — kitabı oluştururken doğrulayın.",
+        "store.nc.trimCustomPaper": "{trim}, {ink} üzerinde standart bir {store} boyutu değil ({binding}) ve {store}’ın özel kesim sayfası renkli kâğıtlar için aralık vermiyor — kitabı oluştururken doğrulayın ya da standart bir boyut seçin.",
         "store.c.pages.name": "Sayfa sayısı",
         "store.c.pages.ok": "{pages} sayfa ({src}), {store}’ın bu boyut ve kâğıt için {min}–{max} sayfa aralığının içinde.",
         "store.c.pages.fail": "{pages} sayfa ({src}), {store}’ın bu boyut ve kâğıt için {min}–{max} sayfa aralığının dışında.",
@@ -10237,7 +10318,6 @@
         "store.c.pages.fix": "Kesim boyutunu ya da baskı ve kâğıdı değiştirin veya sayfa sayısını aralığa getirin.",
         "store.nc.pagesTrim": "Sayfa aralığı kesim boyutuna bağlı ve {store} bu boyutu basmıyor.",
         "store.nc.pagesInk": "{store}, bu boyutta {ink} için bir sayfa aralığı vermiyor.",
-        "store.nc.pagesIsHigh": "{pages} sayfa ({src}), {store} kâğıtlarının çoğu için verilen {max} sayfalık üst sınırın üzerinde. Bazı kâğıtlar daha yükseğe çıkar — kâğıdınız için {store}’ın boyut tablosuna bakın.",
         "store.c.margins.name": "Kenar boşlukları ve cilt payı",
         "store.c.margins.ok": "Cilt payı {inside} in ({pages} sayfada en az {need} in gerekir); dış {outside} in, üst {top} in, alt {bottom} in — hepsi {store}’ın alt sınırında veya üzerinde.",
         "store.c.margins.fail": "{which} kenar boşluğu {have} in; {pages} sayfada {store} en az {need} in istiyor.",
@@ -10408,6 +10488,15 @@
         "store.c.trim.fail": "لا يطبع {store} المقاس {trim} بنوع «{binding}».",
         "store.c.trim.fix": "انتقل إلى {nearest}، أقرب مقاس يطبعه {store}.",
         "store.c.trim.act": "استخدم {nearest}",
+        "store.c.trim.okPaper": "تطبع {store} المقاس {trim} على {ink} ({binding}).",
+        "store.c.trim.okPaperNear": "{trim} هو مقاس {store} البالغ {exact}، ويُطبع على {ink} ({binding})؛ يعرضه Beuk مقرّبًا.",
+        "store.c.trim.failPaper": "تُدرج {store} المقاس {trim} ({binding})، لكن ليس على {ink}، وهو خارج نطاق المقاسات المخصّصة لهذا الورق. تطبعه {store} على: {papers}.",
+        "store.c.trim.failNoPaper": "تُدرج {store} المقاس {trim}، لكن ليس بتجليد {binding} على {ink} أو أي ورق آخر هنا، وهو خارج نطاق المقاسات المخصّصة لهذا الورق.",
+        "store.c.trim.fixPaper": "انتقل إلى {nearest}، أقرب مقاس تطبعه {store} على {ink}، أو اختر ورقًا تطبع عليه {trim}.",
+        "store.c.trim.fixPaperOnly": "اختر ورقًا تطبع عليه {store} المقاس {trim}: {papers}.",
+        "store.c.trim.actInk": "استخدم {ink}",
+        "store.nc.trimMaybeCustom": "{trim} ليس مقاسًا قياسيًا لدى {store} على {ink} ({binding}). يذكر جدول المقاسات أن هذه المقاسات قد تتوفر كمقاس مخصّص، وهو يقع ضمن النطاق المخصّص لهذا الورق ({range}) — تأكّد من ذلك عند إعداد العنوان.",
+        "store.nc.trimCustomPaper": "{trim} ليس مقاسًا قياسيًا لدى {store} على {ink} ({binding})، ولا تذكر صفحة المقاسات المخصّصة لدى {store} أي نطاق للورق الملوّن — تأكّد من ذلك عند إعداد العنوان، أو اختر مقاسًا قياسيًا.",
         "store.c.pages.name": "عدد الصفحات",
         "store.c.pages.ok": "{pages} صفحة ({src}) ضمن نطاق {store} من {min} إلى {max} صفحة لهذا المقاس وهذا الورق.",
         "store.c.pages.fail": "{pages} صفحة ({src}) خارج نطاق {store} من {min} إلى {max} صفحة لهذا المقاس وهذا الورق.",
@@ -10415,7 +10504,6 @@
         "store.c.pages.fix": "غيّر المقاس أو الحبر والورق، أو أدخل عدد الصفحات ضمن النطاق.",
         "store.nc.pagesTrim": "يعتمد نطاق الصفحات على المقاس، و{store} لا يطبع هذا المقاس.",
         "store.nc.pagesInk": "لا يذكر {store} نطاق صفحات لخيار «{ink}» بهذا المقاس.",
-        "store.nc.pagesIsHigh": "{pages} صفحة ({src}) تتجاوز الحد الأقصى البالغ {max} صفحة المذكور لمعظم أوراق {store}. بعض الأوراق تسمح بأكثر — راجع جدول مقاسات {store} لورقك.",
         "store.c.margins.name": "الهوامش وهامش التجليد",
         "store.c.margins.ok": "هامش التجليد {inside} in (يلزم {need} in على الأقل عند {pages} صفحة)؛ الخارجي {outside} in، والعلوي {top} in، والسفلي {bottom} in — جميعها عند الحد الأدنى لدى {store} أو فوقه.",
         "store.c.margins.fail": "الهامش ({which}) يساوي {have} in؛ وعند {pages} صفحة يطلب {store} ما لا يقل عن {need} in.",
@@ -10586,6 +10674,15 @@
         "store.c.trim.fail": "{store} は {trim} を{binding}で印刷していません。",
         "store.c.trim.fix": "{store} が印刷する最も近い判型 {nearest} に切り替えてください。",
         "store.c.trim.act": "{nearest} にする",
+        "store.c.trim.okPaper": "{store} は {trim} を {ink} で印刷しています（{binding}）。",
+        "store.c.trim.okPaperNear": "{trim} は {store} の {exact} 判で、{ink} で印刷されます（{binding}）。Beuk では丸めて表示しています。",
+        "store.c.trim.failPaper": "{store} は {trim}（{binding}）を掲載していますが、{ink} では扱っておらず、この用紙のカスタム判型の範囲からも外れています。{store} が印刷する用紙: {papers}。",
+        "store.c.trim.failNoPaper": "{store} は {trim} を掲載していますが、{ink} を含むここで選べるどの用紙でも {binding} では扱っておらず、この用紙のカスタム判型の範囲からも外れています。",
+        "store.c.trim.fixPaper": "{store} が {ink} で印刷する最も近い判型 {nearest} に変えるか、{trim} を印刷できる用紙を選んでください。",
+        "store.c.trim.fixPaperOnly": "{store} が {trim} を印刷する用紙を選んでください: {papers}。",
+        "store.c.trim.actInk": "{ink} にする",
+        "store.nc.trimMaybeCustom": "{trim} は {ink}（{binding}）では {store} の標準判型ではありません。判型表によるとこうした判型はカスタム判型として扱える場合があり、この用紙のカスタム範囲（{range}）にも入っています — タイトル設定時に確認してください。",
+        "store.nc.trimCustomPaper": "{trim} は {ink}（{binding}）では {store} の標準判型ではなく、{store} のカスタム判型ページにはカラー用紙の範囲が記載されていません — タイトル設定時に確認するか、標準判型を選んでください。",
         "store.c.pages.name": "ページ数",
         "store.c.pages.ok": "{pages} ページ（{src}）は、この判型と用紙での {store} の {min}–{max} ページの範囲内です。",
         "store.c.pages.fail": "{pages} ページ（{src}）は、この判型と用紙での {store} の {min}–{max} ページの範囲外です。",
@@ -10593,7 +10690,6 @@
         "store.c.pages.fix": "判型かインクと用紙を変えるか、ページ数を範囲内に収めてください。",
         "store.nc.pagesTrim": "ページ数の範囲は判型によって決まりますが、{store} はこの判型を印刷していません。",
         "store.nc.pagesInk": "{store} はこの判型の「{ink}」にページ数の範囲を示していません。",
-        "store.nc.pagesIsHigh": "{pages} ページ（{src}）は、{store} の多くの用紙で示されている上限 {max} ページを超えています。より多く扱える用紙もあります — お使いの用紙について {store} の判型表を確認してください。",
         "store.c.margins.name": "余白とノド",
         "store.c.margins.ok": "ノド {inside} in（{pages} ページでは {need} in 以上が必要）、小口 {outside} in、天 {top} in、地 {bottom} in — いずれも {store} の最小値以上です。",
         "store.c.margins.fail": "{which}の余白が {have} in です。{pages} ページでは {store} は {need} in 以上を求めています。",
@@ -10764,6 +10860,15 @@
         "store.c.trim.fail": "{store} 不以{binding}印刷 {trim}。",
         "store.c.trim.fix": "改用 {nearest}，这是 {store} 印刷的最接近的开本。",
         "store.c.trim.act": "使用 {nearest}",
+        "store.c.trim.okPaper": "{store} 以{ink}印刷 {trim}（{binding}）。",
+        "store.c.trim.okPaperNear": "{trim} 即 {store} 的 {exact} 开本，以{ink}印刷（{binding}）；Beuk 显示的是四舍五入值。",
+        "store.c.trim.failPaper": "{store} 列有 {trim}（{binding}），但不提供{ink}，且超出该纸张的自定义开本范围。{store} 用以下纸张印刷它：{papers}。",
+        "store.c.trim.failNoPaper": "{store} 列有 {trim}，但{ink}及这里的其他纸张都不提供{binding}，且超出该纸张的自定义开本范围。",
+        "store.c.trim.fixPaper": "改用 {nearest}——{store} 以{ink}印刷的最接近开本，或选择一种能印刷 {trim} 的纸张。",
+        "store.c.trim.fixPaperOnly": "选择一种 {store} 能印刷 {trim} 的纸张：{papers}。",
+        "store.c.trim.actInk": "使用{ink}",
+        "store.nc.trimMaybeCustom": "{trim} 在{ink}（{binding}）上不是 {store} 的标准开本。开本表说明此类尺寸可能可以通过自定义开本提供，且它在该纸张的自定义范围内（{range}）——请在设置书目时确认。",
+        "store.nc.trimCustomPaper": "{trim} 在{ink}（{binding}）上不是 {store} 的标准开本，而 {store} 的自定义开本页面没有给出彩色纸张的范围——请在设置书目时确认，或选择标准开本。",
         "store.c.pages.name": "页数",
         "store.c.pages.ok": "{pages} 页（{src}）在 {store} 对该开本和纸张规定的 {min}–{max} 页范围内。",
         "store.c.pages.fail": "{pages} 页（{src}）超出 {store} 对该开本和纸张规定的 {min}–{max} 页范围。",
@@ -10771,7 +10876,6 @@
         "store.c.pages.fix": "更换开本或油墨与纸张，或把页数调整到范围之内。",
         "store.nc.pagesTrim": "页数范围取决于开本，而 {store} 不印刷这个开本。",
         "store.nc.pagesInk": "{store} 没有给出该开本下“{ink}”的页数范围。",
-        "store.nc.pagesIsHigh": "{pages} 页（{src}）超过了 {store} 多数纸张所列的 {max} 页上限。部分纸张可以更多——请查看 {store} 针对你所用纸张的开本表。",
         "store.c.margins.name": "页边距与订口",
         "store.c.margins.ok": "订口 {inside} in（{pages} 页时至少需要 {need} in）；外侧 {outside} in、顶部 {top} in、底部 {bottom} in——均不低于 {store} 的最低要求。",
         "store.c.margins.fail": "{which}边距为 {have} in；{pages} 页时 {store} 要求至少 {need} in。",
@@ -19897,26 +20001,47 @@
             { id: "bw_white", ppi: 512 }, { id: "bw_white70", ppi: 377 }, { id: "bw_cream", ppi: 444 }, { id: "bw_groundwood", ppi: 400 },
             { id: "std_color", ppi: 512 }, { id: "std_color70", ppi: 377 }, { id: "premium_color", ppi: 377 }
           ],
+          /* Trim Size Matrix (guide p. 40). Availability is PER PAPER: each trim row is shaded under the papers IngramSpark
+             prints it on, and "Blank white cells indicate non-standard sizes that may be available through Custom Trim".
+             Column order of the matrix (and of every availability string below, "1" = shaded, "0" = blank):
+             38# groundwood, 50# crème, 50# white, 70# white, colour 50# white, colour 70# white, premium colour 70# white.
+             Read from the guide's own page 40 by sampling each cell's fill colour (pdftoppm at 200 dpi + pdftotext -bbox to
+             locate rows and columns), then checked by eye against the rendered page. */
+          paperCols: ["bw_groundwood", "bw_cream", "bw_white", "bw_white70", "std_color", "std_color70", "premium_color"],
           bindings: {
-            /* Trim Size Matrix (guide p. 40), Perfectbound rows. Page range header: 18–900 (PF) on most papers, with 1,050 and
-               1,200 also listed for some papers — the column-to-paper mapping is colour-coded and could not be read reliably,
-               so 900 is the verified maximum and anything between 900 and 1,200 is "not checked". 11 × 8.5: "Max 400 pages". */
+            /* Perfectbound rows. 11 × 8.5: "Max 400 pages", shaded under premium colour only. */
             paperback: {
-              trims: [[4, 6], [4, 7], [4.25, 7], [4.37, 7], [4.72, 7.48], [5, 7], [5, 8], [5.06, 7.81], [5.25, 8], [5.5, 7.5], [5.5, 8.25],
-                [5.5, 8.38], [5.5, 8.5], [5.83, 8.27], [6, 9], [6.14, 9.21], [6.5, 6.5], [6.625, 10.25], [6.69, 9.61], [7, 10], [7.44, 9.69],
-                [7.5, 9.25], [8, 8], [8, 10], [8, 10.88], [8.25, 10.75], [8.25, 11], [8.268, 11.693], [8.5, 8.5], [8.5, 9], [8.5, 11], [11, 8.5]]
-                .map((d) => ({ w: d[0], h: d[1], maxPages: d[0] === 11 && d[1] === 8.5 ? 400 : null })),
-              minPages: 18, maxPages: 900, maxPagesUnverified: 1200,
-              /* Custom Trim Sizes (guide p. 41), Perfect Bound: white & groundwood 4–8.5 in wide × 6–11 in long; crème 4–6.14 × 6–9.252. */
-              custom: { white: { w: [4, 8.5], h: [6, 11] }, cream: { w: [4, 6.14], h: [6, 9.252] } }
+              trims: [[4, 6, "1111111"], [4, 7, "0111111"], [4.25, 7, "0111111"], [4.37, 7, "1011110"], [4.72, 7.48, "0111110"],
+                [5, 7, "1111110"], [5, 8, "1111111"], [5.06, 7.81, "1111110"], [5.25, 8, "1111110"], [5.5, 7.5, "1011110"],
+                [5.5, 8.25, "1111111"], [5.5, 8.38, "1100000"], [5.5, 8.5, "1111111"], [5.83, 8.27, "1111110"], [6, 9, "1111111"],
+                [6.14, 9.21, "1111111"], [6.5, 6.5, "0011111"], [6.625, 10.25, "0011111"], [6.69, 9.61, "0011111"], [7, 10, "0011111"],
+                [7.44, 9.69, "0011110"], [7.5, 9.25, "0011111"], [8, 8, "0011111"], [8, 10, "0011111"], [8, 10.88, "0011111"],
+                [8.25, 10.75, "0011111"], [8.25, 11, "0011111"], [8.268, 11.693, "0011110"], [8.5, 8.5, "0011111"], [8.5, 9, "0011111"],
+                [8.5, 11, "0011111"], [11, 8.5, "0000001"]].map(storeIsTrim),
+              /* Matrix "Page Range" header row, per paper column, Perfectbound: groundwood "18-900 pgs (PF)", crème "18-1050 pgs",
+                 50# white "18-1200 pgs", 70# white "18-900 pgs (PF)", colour 50# "18-1200 pgs", colour 70# "18-900 pgs (PF)",
+                 premium "18-900 pgs(PF)". */
+              pages: { bw_groundwood: [18, 900], bw_cream: [18, 1050], bw_white: [18, 1200], bw_white70: [18, 900],
+                std_color: [18, 1200], std_color70: [18, 900], premium_color: [18, 900] },
+              /* Custom Trim Sizes (guide p. 41), Perfect Bound: "White Paper* & Groundwood Paper*" 4–8.5 in wide × 6–11 in long;
+                 "Crème" 4–6.14 × 6–9.252. Keyed by paper column; the colour papers are not named on that page, so they get no
+                 range (a non-standard colour trim is "not checked", never passed). */
+              custom: { bw_white: { w: [4, 8.5], h: [6, 11] }, bw_white70: { w: [4, 8.5], h: [6, 11] }, bw_groundwood: { w: [4, 8.5], h: [6, 11] },
+                bw_cream: { w: [4, 6.14], h: [6, 9.252] } }
             },
-            /* Trim Size Matrix, Case Laminate rows; page range 18–840 (HC); 11 × 8.5 "Max 400 pages". */
+            /* Case Laminate rows (Beuk's hardcover is case laminate). 11 × 8.5: "Max 400 pages", premium colour only. */
             hardcover: {
-              trims: [[5, 8], [5.5, 8.5], [5.83, 8.27], [6, 9], [6.14, 9.21], [6.69, 9.61], [7, 10], [7.5, 9.25], [8, 8], [8, 10], [8, 10.88],
-                [8.25, 10.75], [8.5, 8.5], [8.5, 11], [11, 8.5]].map((d) => ({ w: d[0], h: d[1], maxPages: d[0] === 11 && d[1] === 8.5 ? 400 : null })),
-              minPages: 18, maxPages: 840, maxPagesUnverified: null,
-              /* Custom Trim Sizes, Case Laminate: white 5–8.5 × 7–11; crème & groundwood 5–6.14 × 7–9.252. */
-              custom: { white: { w: [5, 8.5], h: [7, 11] }, cream: { w: [5, 6.14], h: [7, 9.252] } }
+              trims: [[5, 8, "1111111"], [5.5, 8.5, "1111111"], [5.83, 8.27, "1111110"], [6, 9, "1111111"], [6.14, 9.21, "1111111"],
+                [6.69, 9.61, "0011111"], [7, 10, "0011111"], [7.5, 9.25, "0011111"], [8, 8, "0011111"], [8, 10, "0011111"],
+                [8, 10.88, "0011111"], [8.25, 10.75, "0011111"], [8.5, 8.5, "0011111"], [8.5, 11, "0011111"], [11, 8.5, "0000001"]].map(storeIsTrim),
+              /* Same header row, HC figures: groundwood "18-840 pgs (HC)", 70# white "18-840 pgs (HC)", colour 70# "18-840 pgs (HC)",
+                 premium "18-840 pgs(HC)". Crème (18-1050), 50# white (18-1200) and colour 50# (18-1200) print a single range with
+                 no PF/HC split, so it is taken as written for both bindings. */
+              pages: { bw_groundwood: [18, 840], bw_cream: [18, 1050], bw_white: [18, 1200], bw_white70: [18, 840],
+                std_color: [18, 1200], std_color70: [18, 840], premium_color: [18, 840] },
+              /* Custom Trim Sizes, Case Laminate & Dust Jacket: "White Paper*" 5–8.5 × 7–11; "Crème & Groundwood Paper*" 5–6.14 × 7–9.252. */
+              custom: { bw_white: { w: [5, 8.5], h: [7, 11] }, bw_white70: { w: [5, 8.5], h: [7, 11] },
+                bw_cream: { w: [5, 6.14], h: [7, 9.252] }, bw_groundwood: { w: [5, 6.14], h: [7, 9.252] } }
             }
           },
           gutter: null, edgeMin: null,
@@ -19953,6 +20078,20 @@
         if (sc.ink && rules.inks.some((i) => i.id === sc.ink)) return sc.ink;
         const w = state.coverRecipe ? normalizeWrap(state.coverRecipe.wrap) : null;
         return w && w.paper === "cream" ? "bw_cream" : "bw_white";
+      }
+      /* One IngramSpark matrix row: [w, h, availability per paper column]. 11 × 8.5 carries the matrix's "Max 400 pages". */
+      function storeIsTrim(d) {
+        const cols = ["bw_groundwood", "bw_cream", "bw_white", "bw_white70", "std_color", "std_color70", "premium_color"];
+        const avail = {};
+        cols.forEach((c, i) => { avail[c] = d[2].charAt(i) === "1"; });
+        return { w: d[0], h: d[1], avail: avail, maxPages: d[0] === 11 && d[1] === 8.5 ? 400 : null };
+      }
+      /* Is this matched trim printed on this paper? KDP rows carry a page range per ink (null = not available);
+         IngramSpark rows carry the matrix's shading per paper. */
+      function storeTrimOnPaper(hit, inkId) {
+        if (!hit) return false;
+        if (hit.avail) return hit.avail[inkId] === true;
+        return true;
       }
       function storeMatchTrim(list, tr) {
         return list.find((x) => Math.abs(x.w - tr.w) <= STORE_TRIM_TOL && Math.abs(x.h - tr.h) <= STORE_TRIM_TOL) || null;
@@ -20017,27 +20156,44 @@
           groups[group].push({ id: id, required: required, status: status, name: name, evidence: evidence, fix: fix || "", action: action || null });
 
         /* ---- Interior ---- */
-        const hit = storeMatchTrim(B.trims, tr);
+        /* A trim counts as printed only on the paper chosen: IngramSpark's matrix shades each trim per paper, so a listed
+           trim with a blank cell is "not standard on this paper" (custom trim may cover it), never a pass. */
+        const listed = storeMatchTrim(B.trims, tr);
+        const hit = storeTrimOnPaper(listed, inkId) ? listed : null;
+        const nearRange = (cr) => storeIn(cr.w[0]) + "–" + storeIn(cr.w[1]) + " × " + storeIn(cr.h[0]) + "–" + storeIn(cr.h[1]) + " in";
+        /* The closest trim this store prints on this paper that Beuk also offers, so the fix is one click. */
+        const nearestOnPaper = () => TRIM_SIZES.filter((x) => storeTrimOnPaper(storeMatchTrim(B.trims, x), inkId))
+          .sort((a, b) => (Math.abs(a.w - tr.w) + Math.abs(a.h - tr.h)) - (Math.abs(b.w - tr.w) + Math.abs(b.h - tr.h)))[0];
         let trimOk = !!hit;
         if (hit) {
+          const PT = Object.assign({ exact: storeTrimLabel(hit.w, hit.h) }, P);
+          const near = Math.abs(hit.w - tr.w) > 1e-9 || Math.abs(hit.h - tr.h) > 1e-9;
           row("interior", "trim", true, "pass", t("store.c.trim.name"),
-            Math.abs(hit.w - tr.w) > 1e-9 || Math.abs(hit.h - tr.h) > 1e-9
-              ? t("store.c.trim.okNear", Object.assign({ exact: storeTrimLabel(hit.w, hit.h) }, P))
-              : t("store.c.trim.ok", P));
+            hit.avail ? t(near ? "store.c.trim.okPaperNear" : "store.c.trim.okPaper", PT) : t(near ? "store.c.trim.okNear" : "store.c.trim.ok", PT));
         } else {
-          const cr = B.custom ? B.custom[inkId === "bw_cream" ? "cream" : "white"] : null;
+          const cr = B.custom ? B.custom[inkId] : null;
           const inCustom = cr && tr.w >= cr.w[0] && tr.w <= cr.w[1] && tr.h >= cr.h[0] && tr.h <= cr.h[1];
-          if (inCustom) {
+          if (listed && inCustom) {
+            /* Listed, blank under this paper: the matrix only says such sizes "may be available through Custom Trim". */
+            row("interior", "trim", true, "nc", t("store.c.trim.name"), t("store.nc.trimMaybeCustom", Object.assign({ range: nearRange(cr) }, P)));
+          } else if (inCustom) {
             trimOk = true;
-            row("interior", "trim", true, "pass", t("store.c.trim.name"),
-              t("store.c.trim.okCustom", Object.assign({ range: storeIn(cr.w[0]) + "–" + storeIn(cr.w[1]) + " × " + storeIn(cr.h[0]) + "–" + storeIn(cr.h[1]) + " in" }, P)));
+            row("interior", "trim", true, "pass", t("store.c.trim.name"), t("store.c.trim.okCustom", Object.assign({ range: nearRange(cr) }, P)));
+          } else if (B.custom && !cr) {
+            /* A colour paper and a size that isn't standard on it: the custom-trim page names no range for colour papers,
+               so this can be neither passed nor failed. */
+            row("interior", "trim", true, "nc", t("store.c.trim.name"), t("store.nc.trimCustomPaper", P));
           } else {
-            /* The closest trim this store prints that Beuk also offers, so the fix is one click. */
-            const offered = TRIM_SIZES.filter((x) => storeMatchTrim(B.trims, x));
-            const near = offered.slice().sort((a, b) => (Math.abs(a.w - tr.w) + Math.abs(a.h - tr.h)) - (Math.abs(b.w - tr.w) + Math.abs(b.h - tr.h)))[0];
-            row("interior", "trim", true, "fail", t("store.c.trim.name"), t("store.c.trim.fail", P),
-              near ? t("store.c.trim.fix", Object.assign({ nearest: near.label }, P)) : "",
-              near ? { kind: "trim", trim: near.id, label: t("store.c.trim.act", { nearest: near.label }) } : null);
+            const near = nearestOnPaper();
+            const papers = listed && listed.avail ? R.inks.filter((i) => listed.avail[i.id]) : [];
+            const PF = Object.assign({ nearest: near ? near.label : "", papers: papers.map((i) => t("store.ink." + i.id)).join(", ") }, P);
+            const evidence = listed ? t(papers.length ? "store.c.trim.failPaper" : "store.c.trim.failNoPaper", PF) : t("store.c.trim.fail", P);
+            const fix = listed && papers.length
+              ? (near ? t("store.c.trim.fixPaper", PF) : t("store.c.trim.fixPaperOnly", PF))
+              : (near ? t("store.c.trim.fix", PF) : "");
+            const action = near ? { kind: "trim", trim: near.id, label: t("store.c.trim.act", { nearest: near.label }) }
+              : papers.length ? { kind: "ink", ink: papers[0].id, label: t("store.c.trim.actInk", { ink: t("store.ink." + papers[0].id) }) } : null;
+            row("interior", "trim", true, "fail", t("store.c.trim.name"), evidence, fix, action);
           }
         }
         /* Page count against the range for this trim, ink and binding. */
@@ -20051,13 +20207,15 @@
           else if (pages < range[0] || pages > range[1]) row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(range[0]), max: fmtNum(range[1]) }, PP)), t("store.c.pages.fix"));
           else row("interior", "pages", true, "pass", t("store.c.pages.name"), t("store.c.pages.ok", Object.assign({ min: fmtNum(range[0]), max: fmtNum(range[1]) }, PP)));
         } else {
-          const hardMax = hit && hit.maxPages ? hit.maxPages : null;
-          const max = hardMax || B.maxPages;
-          const upper = hardMax || B.maxPagesUnverified || B.maxPages;
-          if (pages < B.minPages || pages > upper)
-            row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(B.minPages), max: fmtNum(upper) }, PP)), t("store.c.pages.fix"));
-          else if (pages > max) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesIsHigh", Object.assign({ max: fmtNum(max) }, PP)));
-          else row("interior", "pages", true, "pass", t("store.c.pages.name"), t("store.c.pages.ok", Object.assign({ min: fmtNum(B.minPages), max: fmtNum(max) }, PP)));
+          /* The matrix header's range for this paper column, capped by the trim's own "Max 400 pages" where it has one. */
+          const range = B.pages[inkId];
+          if (!range) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesInk", P));
+          else {
+            const max = hit && hit.maxPages ? Math.min(hit.maxPages, range[1]) : range[1];
+            if (pages < range[0] || pages > max)
+              row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(range[0]), max: fmtNum(max) }, PP)), t("store.c.pages.fix"));
+            else row("interior", "pages", true, "pass", t("store.c.pages.name"), t("store.c.pages.ok", Object.assign({ min: fmtNum(range[0]), max: fmtNum(max) }, PP)));
+          }
         }
         /* Margins: KDP's minimums are rules (required); IngramSpark's 0.5 in is a recommendation (advisory). */
         const mg = F.mg;
@@ -20332,6 +20490,7 @@
         if (act.kind === "section") { $("modalStore").classList.remove("open"); a11yJumpTo({ kind: "section", sectionId: act.sectionId }); return; }
         if (act.kind === "cover") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openCoverMaker(); return; }
         if (act.kind === "attest") { state.storeCheck.attestSpine = true; noteBookEdited(); renderStoreReport(); return; }
+        if (act.kind === "ink") { state.storeCheck.ink = act.ink; noteBookEdited(); renderStoreReport(); return; }
         if (!state.coverRecipe) return;
         const w = normalizeWrap(state.coverRecipe.wrap);
         if (act.kind === "wrapTrim") w.trim = "";
@@ -26530,6 +26689,22 @@
               const i = storeAudit({ store: "ingramspark", binding: "paperback", ink: "bw_white" }).groups.interior.find((r) => r.id === "trim");
               const ok = k.status === "fail" && k.action && k.action.kind === "trim" && TRIM_SIZES.some((x) => x.id === k.action.trim && x.kdp) && i.status === "pass";
               return scVerdict(ok, "KDP " + k.status + " → " + (k.action ? k.action.trim : "no action") + "; IngramSpark " + i.status);
+            });
+          } },
+        { id: "store.trim.paper-matrix", feature: "print", name: "Store-ready: IngramSpark trims are checked against the paper chosen (Trim Size Matrix) — 8.5 × 11 passes on 50# white, fails on crème, is “not checked” on groundwood (custom trim only), and 11 × 8.5 caps premium colour at 400 pages",
+          run() {
+            return storeOnSample(() => {
+              state.printTrim = "8.5x11";
+              const at = (ink) => storeAudit({ store: "ingramspark", binding: "paperback", ink: ink }).groups.interior;
+              const trimOf = (ink) => at(ink).find((r) => r.id === "trim");
+              const w = trimOf("bw_white"), c = trimOf("bw_cream"), g = trimOf("bw_groundwood");
+              const cOk = c.status === "fail" && c.action && c.action.kind === "trim";
+              const hcCream = storeAudit({ store: "ingramspark", binding: "hardcover", ink: "bw_cream" }).groups.interior.find((r) => r.id === "trim");
+              const R = STORE_RULES.ingramspark.bindings.paperback;
+              const land = storeMatchTrim(R.trims, { w: 11, h: 8.5 });
+              const landOk = land && land.maxPages === 400 && land.avail.premium_color === true && land.avail.std_color === false;
+              const ok = w.status === "pass" && cOk && g.status === "nc" && hcCream.status === "fail" && landOk && R.pages.bw_cream[1] === 1050;
+              return scVerdict(ok, "8.5×11 PB: 50# white " + w.status + ", crème " + c.status + " → " + (c.action ? c.action.trim : "no action") + ", groundwood " + g.status + "; HC crème " + hcCream.status + "; 11×8.5 premium-only/400 (" + !!landOk + ")");
             });
           } },
         { id: "store.spine.wrap-matches-store-factor", feature: "print", name: "Store-ready: the wrap's spine is checked against the store's published factor for the chosen paper, and the one-click fix makes it pass",

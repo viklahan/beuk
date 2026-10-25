@@ -174,7 +174,7 @@ test('self-checks: a healthy system passes, client-only cases are reported (neve
       assert.equal(byId.get(id)?.status, 'pass', `${id}: ${byId.get(id)?.detail}`);
     }
     // Client-only cases are registered with a reason, not a pass.
-    for (const id of ['HK-F1-06', 'HK-F2-07', 'fonts.each.reaches-export-css', 'themes.apply.then-overridable', 'print.trims.page-dimensions', 'store.verdict.never-green-unchecked', 'store.dpi.sample-fails-honestly']) {
+    for (const id of ['HK-F1-06', 'HK-F2-07', 'fonts.each.reaches-export-css', 'themes.apply.then-overridable', 'print.trims.page-dimensions', 'store.verdict.never-green-unchecked', 'store.dpi.sample-fails-honestly', 'store.trim.paper-matrix']) {
       const result = byId.get(id);
       assert.equal(result?.status, 'client-only', id);
       assert.ok((result?.detail ?? '').length > 10, `${id} must carry a one-line reason`);
