@@ -445,6 +445,59 @@
          way back, and reading aloud was never part of the room. */
       .focus-cluster { display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; }
       body.zen .focus-cluster { display: none; }
+      /* ==== BEUK:toolbar ==== */
+      /* The editor toolbar is four whole groups — Format (Bold,
+         Italic) · Structure (Blockquote, Scene Break, Em Dash,
+         Footnote) · Assist (Insert Image, Dictate, Auto-Format) ·
+         Focus (Read Aloud, Zen). A group never splits across rows;
+         tbLayout() measures the groups and picks where rows break so
+         the rows come out as even as the width allows, and every row
+         fills edge to edge (the buttons share the spare width, never
+         a hole). Each group carries its own leading divider, hidden
+         when the group opens a row, so a divider never stands at a
+         row's edge. When the labelled groups would need more than two
+         rows, secondary labels fold to icons in three steps (data-
+         collapse 1 → 3); the folded label stays in the button as
+         visually-hidden text, so the accessible name and the tooltip
+         (title) remain. Read Aloud, Zen and Auto-Format never fold. */
+      #insertToolbar { column-gap: 4px; row-gap: 4px; }
+      #insertToolbar > .tool-group {
+        display: flex; align-items: center; gap: 4px; min-width: 0;
+        flex: var(--tg-grow, 1) 1 auto; flex-wrap: wrap;
+      }
+      #insertToolbar > .tool-group > .tool-btn,
+      #insertToolbar > .tool-group > .ra-wrap { flex: 1 1 auto; }
+      #insertToolbar .ra-wrap { display: flex; }
+      #insertToolbar .ra-wrap > .tool-btn { flex: 1 1 auto; }
+      #insertToolbar > .tool-group.row-start > .tool-sep { display: none; }
+      body.zen #insertToolbar > .focus-cluster { display: none; }
+      /* A forced row break: a zero-height line of its own; the
+         negative margin takes back the extra row gap that line adds. */
+      #insertToolbar > .tool-break { display: none; flex: 0 0 100%; height: 0; margin-top: -4px; }
+      #insertToolbar > .tool-break.on { display: block; }
+      #insertToolbar .tool-btn.folded { position: relative; padding: 0 9px; min-width: 34px; gap: 0; }
+      #insertToolbar .tool-btn.folded .tl {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+        overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+      }
+      /* Measuring pass (tbLayout): natural widths, nothing grows or
+         wraps, every divider shown. Applied and removed inside one
+         synchronous call, so it never paints. */
+      #insertToolbar.tb-measure { flex-wrap: nowrap; }
+      #insertToolbar.tb-measure > .tool-group { flex: 0 0 auto; flex-wrap: nowrap; }
+      #insertToolbar.tb-measure > .tool-group > .tool-btn,
+      #insertToolbar.tb-measure > .tool-group > .ra-wrap { flex: 0 0 auto; }
+      #insertToolbar.tb-measure > .tool-group.row-start > .tool-sep { display: block; }
+      #insertToolbar.tb-measure > .tool-break { display: none; }
+      /* The Read Aloud panel normally hangs from its button's end
+         edge; when the Focus group opens a row near the start edge,
+         that would run it off screen, so it hangs from the start
+         edge instead (tbPlaceRaPop). Phones keep the full-width
+         panel below. */
+      @media (min-width: 701px) {
+        #insertToolbar .ra-wrap.ra-start > #raPop { inset-inline-end: auto; inset-inline-start: 0; }
+      }
+      /* ==== /BEUK:toolbar ==== */
       .auto-note {
         border: 1px solid var(--line); border-left: 3px solid var(--gold); background: var(--panel-2);
         border-radius: 8px; padding: 14px 16px; font-size: 13px; color: var(--ink-2); line-height: 1.55;
@@ -1749,18 +1802,26 @@
               </div>
 
               <div class="toolbar" id="insertToolbar">
-                <button class="tool-btn" data-insert="bold" title="Bold (Ctrl/Cmd+B)" data-i18n="tool.bold" data-i18n-title="tool.boldTitle"><i data-lucide="bold"></i>Bold</button>
-                <button class="tool-btn" data-insert="italic" title="Italic (Ctrl/Cmd+I)" data-i18n="tool.italic" data-i18n-title="tool.italicTitle"><i data-lucide="italic"></i>Italic</button>
-                <span class="tool-sep" aria-hidden="true"></span>
-                <button class="tool-btn" data-insert="blockquote" title="Blockquote — set this paragraph apart as a quotation" data-i18n="tool.blockquote" data-i18n-title="tool.blockquoteTitle"><i data-lucide="quote"></i>Blockquote</button>
-                <button class="tool-btn" data-insert="scenebreak" title="Scene break — becomes an ornament in the book" data-i18n="tool.sceneBreak" data-i18n-title="tool.sceneBreakTitle"><i data-lucide="sparkle"></i>Scene Break</button>
-                <button class="tool-btn" data-insert="emdash" title="Em dash" data-i18n="tool.emDash" data-i18n-title="tool.emDashTitle"><i data-lucide="minus"></i>Em Dash —</button>
-                <span class="tool-sep" aria-hidden="true"></span>
-                <button class="tool-btn" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n="tool.footnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i>Footnote</button>
-                <button class="tool-btn" id="btnInsertImage" title="Insert a picture from the book's image library" data-i18n="tool.insertImage" data-i18n-title="tool.insertImageTitle"><i data-lucide="image-plus"></i>Insert Image</button>
-                <button class="tool-btn" id="btnDictate" aria-pressed="false" title="Dictate — speak, and your words land at the cursor" data-i18n-title="dict.titleIdle"><i data-lucide="mic"></i><span id="dictBtnLabel" data-i18n="dict.label">Dictate</span></button>
-                <button class="tool-btn accent" id="btnBeautify" style="margin-left:auto;" title="Polish the text — smart quotes, em-dashes, ellipses" data-i18n="tool.autoFormat" data-i18n-title="tool.autoFormatTitle"><i data-lucide="wand-sparkles"></i>Auto-Format</button>
-                <div class="focus-cluster">
+                <!-- ==== BEUK:toolbar ==== whole groups wrap; tbLayout() picks the breaks and how many labels fold to icons -->
+                <div class="tool-group" data-tg="format">
+                  <button class="tool-btn" data-collapse="1" data-insert="bold" title="Bold (Ctrl/Cmd+B)" data-i18n-title="tool.boldTitle"><i data-lucide="bold"></i><span class="tl" data-i18n="tool.bold">Bold</span></button>
+                  <button class="tool-btn" data-collapse="1" data-insert="italic" title="Italic (Ctrl/Cmd+I)" data-i18n-title="tool.italicTitle"><i data-lucide="italic"></i><span class="tl" data-i18n="tool.italic">Italic</span></button>
+                </div>
+                <span class="tool-break" aria-hidden="true"></span>
+                <div class="tool-group" data-tg="structure"><span class="tool-sep" aria-hidden="true"></span>
+                  <button class="tool-btn" data-collapse="2" data-insert="blockquote" title="Blockquote — set this paragraph apart as a quotation" data-i18n-title="tool.blockquoteTitle"><i data-lucide="quote"></i><span class="tl" data-i18n="tool.blockquote">Blockquote</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="scenebreak" title="Scene break — becomes an ornament in the book" data-i18n-title="tool.sceneBreakTitle"><i data-lucide="sparkle"></i><span class="tl" data-i18n="tool.sceneBreak">Scene Break</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="emdash" title="Em dash" data-i18n-title="tool.emDashTitle"><i data-lucide="minus"></i><span class="tl" data-i18n="tool.emDash">Em Dash —</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i><span class="tl" data-i18n="tool.footnote">Footnote</span></button>
+                </div>
+                <span class="tool-break" aria-hidden="true"></span>
+                <div class="tool-group" data-tg="assist"><span class="tool-sep" aria-hidden="true"></span>
+                  <button class="tool-btn" data-collapse="3" id="btnInsertImage" title="Insert a picture from the book's image library" data-i18n-title="tool.insertImageTitle"><i data-lucide="image-plus"></i><span class="tl" data-i18n="tool.insertImage">Insert Image</span></button>
+                  <button class="tool-btn" data-collapse="3" id="btnDictate" aria-pressed="false" title="Dictate — speak, and your words land at the cursor" data-i18n-title="dict.titleIdle"><i data-lucide="mic"></i><span class="tl" id="dictBtnLabel" data-i18n="dict.label">Dictate</span></button>
+                  <button class="tool-btn accent" id="btnBeautify" title="Polish the text — smart quotes, em-dashes, ellipses" data-i18n-title="tool.autoFormatTitle"><i data-lucide="wand-sparkles"></i><span class="tl" data-i18n="tool.autoFormat">Auto-Format</span></button>
+                </div>
+                <span class="tool-break" aria-hidden="true"></span>
+                <div class="tool-group focus-cluster" data-tg="focus">
                   <span class="tool-sep" aria-hidden="true"></span>
                   <div class="ra-wrap">
                     <button class="tool-btn" id="btnReadAloud" aria-haspopup="dialog" aria-expanded="false" aria-label="Read this section aloud" data-i18n-aria="top.readAloudAria"><i data-lucide="volume-2"></i><span data-i18n="top.readAloud">Read Aloud</span></button>
@@ -1778,6 +1839,7 @@
                   </div>
                   <button class="tool-btn" id="btnZen" aria-label="Zen mode — hide everything but the page"><i data-lucide="leaf"></i><span data-i18n="top.zen">Zen</span></button>
                 </div>
+                <!-- ==== /BEUK:toolbar ==== -->
               </div>
               <div id="sceneBar">
                 <span class="scene-ic"><i data-lucide="sparkle"></i></span>
@@ -3093,6 +3155,7 @@
         if (sel && sel.value !== code) sel.value = code;
         if (typeof syncUiLangMenu === "function") syncUiLangMenu();
         if (typeof raRefresh === "function" && $("raPop")) raRefresh();
+        if (typeof tbLayoutOnLangChange === "function") tbLayoutOnLangChange(); /* BEUK:toolbar */
         if (typeof insOnLangChange === "function") insOnLangChange();
         if (typeof betaOnLangChange === "function") betaOnLangChange(); /* BEUK:beta */
         if (typeof goalsOnLangChange === "function") goalsOnLangChange();
@@ -29411,6 +29474,50 @@
                 "pill in #topbar reads “" + UI_LANG_NAMES[keep] + "”; menu lists " + items.length + " languages in their own names; clicking Deutsch closed the menu, set the UI to de (Export = “" + UI_STRINGS.de["top.export"] + "”, pill now reads “Deutsch”) and left the book's language at " + keepBookLang);
             } finally { setUiLang(keep); closeUiLangMenu(); }
           } },
+        /* ==== BEUK:toolbar ==== */
+        { id: "editor.toolbar.layout", feature: "editor-toolbar", name: "Editor toolbar layout at this width: the four groups (Format · Structure · Assist · Focus) each stay on one row, every row fills the toolbar edge to edge, no divider stands at a row's edge, no gap between neighbours is wider than one divider slot, and any label folded to an icon keeps its text for screen readers and a tooltip",
+          run() {
+            const tb = $("insertToolbar");
+            if (!tb || typeof tbLayout !== "function") return scVerdict(false, "the toolbar or its layout routine is missing");
+            return withEditorFixture(() => {
+            if (!(tb.clientWidth > 0)) return scVerdict(false, "could not measure: the toolbar is not on screen in this view (on a phone, open the Write pane and run again)");
+            tbLayout();
+            const cs = getComputedStyle(tb), tr = tb.getBoundingClientRect();
+            const cl = tr.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft);
+            const cr = tr.right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight);
+            const shown = (el) => { const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
+            const items = Array.prototype.filter.call(tb.querySelectorAll(".tool-btn, .tool-sep"), (el) => !el.closest("#raPop") && shown(el))
+              .map((el) => { const b = el.getBoundingClientRect(); return { el, sep: el.classList.contains("tool-sep"), l: b.left, r: b.right, cy: (b.top + b.bottom) / 2 }; });
+            const rows = [];
+            items.forEach((it) => { let row = rows.find((rw) => Math.abs(rw.cy - it.cy) < 8); if (!row) { row = { cy: it.cy, items: [] }; rows.push(row); } row.items.push(it); });
+            let edgeSep = 0, worstSlack = 0, worstGap = 0, slot = 0;
+            rows.forEach((row) => {
+              row.items.sort((a, b) => a.l - b.l);
+              const f = row.items[0], z = row.items[row.items.length - 1];
+              if (f.sep || z.sep) edgeSep++;
+              worstSlack = Math.max(worstSlack, f.l - cl, cr - z.r);
+              for (let i = 1; i < row.items.length; i++) {
+                const a = row.items[i - 1], b = row.items[i];
+                if (b.sep && i + 1 < row.items.length) slot = Math.max(slot, row.items[i + 1].l - a.r);
+                if (!a.sep && !b.sep) worstGap = Math.max(worstGap, b.l - a.r);
+              }
+            });
+            const groups = tbGroups(tb);
+            const split = groups.filter((g) => {
+              const tops = Array.prototype.map.call(g.querySelectorAll(":scope > .tool-btn, :scope > .ra-wrap > .tool-btn"), (b) => Math.round(b.getBoundingClientRect().top));
+              return new Set(tops).size > 1;
+            }).map((g) => g.getAttribute("data-tg"));
+            const folded = Array.prototype.slice.call(tb.querySelectorAll(".tool-btn.folded"));
+            const foldedOk = folded.every((b) => { const l = b.querySelector(".tl"); return !!l && l.textContent.trim().length > 0 && !!b.getAttribute("title"); });
+            const gapOk = slot > 0 ? worstGap <= slot + 0.5 : worstGap <= 6;
+            return scVerdict(
+              rows.length > 0 && edgeSep === 0 && worstSlack <= 1.5 && gapOk && split.length === 0 && foldedOk,
+              tb.clientWidth + "px toolbar, " + rows.length + " row(s), fold level " + tb.getAttribute("data-fold") + "; rows with a divider at an edge: " + edgeSep +
+              "; widest unfilled edge " + worstSlack.toFixed(1) + "px; widest gap between neighbours " + worstGap.toFixed(1) + "px against a divider slot of " + slot.toFixed(1) + "px" +
+              "; groups split across rows: " + (split.join(", ") || "none") + "; " + folded.length + " label(s) folded to icons, each keeping its text and tooltip (" + foldedOk + ")");
+            });
+          } },
+        /* ==== /BEUK:toolbar ==== */
         { id: "ui.toolbar.focus-cluster", feature: "ui", name: "Read & focus cluster: Read Aloud and Zen stand at the editor toolbar's right end after a divider, labels showing, and neither remains in the header; Zen enters and exits cleanly from its toolbar button, and the Read Aloud popover opens from the toolbar with its voice choices intact",
           run() {
             const bar = $("topbar"), tb = $("insertToolbar");
@@ -32523,6 +32630,7 @@
         const btn = $("btnReadAloud");
         if (btn) btn.setAttribute("aria-expanded", String(open));
         if (open) { closeUiLangMenu(); raRefresh(); }
+        if (typeof tbPlaceRaPop === "function") tbPlaceRaPop(); /* BEUK:toolbar */
       }
       function raClosePop() {
         const pop = $("raPop");
@@ -32530,6 +32638,147 @@
         const btn = $("btnReadAloud");
         if (btn) btn.setAttribute("aria-expanded", "false");
       }
+      /* ==== BEUK:toolbar ==== */
+      /* Editor toolbar layout. The four groups wrap whole; this picks
+         (a) how many secondary labels fold to icons and (b) where the
+         rows break, from the groups' measured natural widths:
+           - for fold level 0 (all labels) … 3, find the fewest rows
+             the groups can fill in order, and among those the split
+             whose widest row is narrowest (the most even rows);
+           - use the first level that fits in two rows or fewer; if
+             none does, the level with the fewest rows.
+         Re-runs when the toolbar's width changes, when its labels
+         change (language, the Dictate label, icons drawn), when
+         fonts arrive, and on entering or leaving zen. */
+      const TB_MAX_FOLD = 3;
+      let tbLastKey = "", tbQueued = false;
+      function tbGroups(tb) {
+        return Array.prototype.filter.call(tb.children, (el) => el.classList.contains("tool-group") && getComputedStyle(el).display !== "none");
+      }
+      function tbApplyFold(tb, level) {
+        tb.querySelectorAll(".tool-btn[data-collapse]").forEach((b) => {
+          b.classList.toggle("folded", Number(b.getAttribute("data-collapse")) <= level);
+        });
+        tb.setAttribute("data-fold", String(level));
+      }
+      function tbBestSplit(widths, cost, gap, W) {
+        /* widths[i]: group i with its divider; cost[i]: what that
+           divider adds (0 for the first group). Brute force over the
+           2^(n-1) ways to break n ≤ 4 groups into rows. */
+        const n = widths.length;
+        let best = null;
+        for (let mask = 0; mask < (1 << Math.max(0, n - 1)); mask++) {
+          const rows = []; let cur = [0];
+          for (let i = 1; i < n; i++) { if (mask & (1 << (i - 1))) { rows.push(cur); cur = [i]; } else cur.push(i); }
+          rows.push(cur);
+          let widest = 0, fits = true;
+          for (const r of rows) {
+            let w = widths[r[0]] - cost[r[0]];
+            for (let k = 1; k < r.length; k++) w += gap + widths[r[k]];
+            widest = Math.max(widest, w);
+            if (w > W + 0.5) fits = false;
+          }
+          const cand = { rows, widest, fits, n: rows.length };
+          if (!best ||
+              (cand.fits && !best.fits) ||
+              (cand.fits === best.fits && (cand.n < best.n || (cand.n === best.n && cand.widest < best.widest)))) best = cand;
+        }
+        return best;
+      }
+      function tbLayout() {
+        tbQueued = false;
+        const tb = $("insertToolbar");
+        if (!tb) return;
+        const cs = getComputedStyle(tb);
+        const W = tb.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        if (!(W > 0)) { tbLastKey = ""; return; }
+        const groups = tbGroups(tb);
+        if (!groups.length) return;
+        groups.forEach((g) => { if (!g.style.getPropertyValue("--tg-grow")) g.style.setProperty("--tg-grow", String(g.querySelectorAll(":scope > .tool-btn, :scope > .ra-wrap").length || 1)); });
+        const gap = parseFloat(cs.columnGap) || 0;
+        tb.classList.add("tb-measure");
+        const plans = [];
+        for (let level = 0; level <= TB_MAX_FOLD; level++) {
+          tbApplyFold(tb, level);
+          const widths = groups.map((g) => g.getBoundingClientRect().width);
+          const cost = groups.map((g, i) => {
+            const sep = g.querySelector(":scope > .tool-sep");
+            if (!sep || i === 0) return 0;
+            const ss = getComputedStyle(sep);
+            return sep.getBoundingClientRect().width + parseFloat(ss.marginLeft) + parseFloat(ss.marginRight) + (parseFloat(getComputedStyle(g).columnGap) || 0);
+          });
+          plans.push({ level, split: tbBestSplit(widths, cost, gap, W) });
+        }
+        tb.classList.remove("tb-measure");
+        let plan = plans.find((p) => p.split.fits && p.split.n <= 2);
+        if (!plan) {
+          const fitting = plans.filter((p) => p.split.fits);
+          const pool = fitting.length ? fitting : plans.slice(-1);
+          plan = pool.reduce((a, b) => (b.split.n < a.split.n ? b : a));
+        }
+        tbApplyFold(tb, plan.level);
+        const starts = new Set(plan.split.rows.map((r) => r[0]));
+        groups.forEach((g, i) => g.classList.toggle("row-start", starts.has(i)));
+        /* a break stands just before each row-opening group but the first */
+        Array.prototype.forEach.call(tb.children, (el) => {
+          if (!el.classList.contains("tool-break")) return;
+          let next = el.nextElementSibling;
+          while (next && !(next.classList.contains("tool-group") && groups.includes(next))) next = next.nextElementSibling;
+          const gi = next ? groups.indexOf(next) : -1;
+          el.classList.toggle("on", gi > 0 && starts.has(gi));
+        });
+        tb.setAttribute("data-rows", String(plan.split.n));
+        tbLastKey = String(W);
+        tbPlaceRaPop();
+      }
+      function tbQueue() {
+        if (tbQueued) return;
+        tbQueued = true;
+        requestAnimationFrame(tbLayout);
+      }
+      function tbPlaceRaPop() {
+        const pop = $("raPop"), wrap = pop && pop.closest(".ra-wrap");
+        if (!wrap) return;
+        wrap.classList.remove("ra-start");
+        if (pop.hidden) return;
+        /* "On screen" means inside the viewport AND inside the nearest
+           ancestor that clips (the centre pane scrolls), or the panel
+           would hide under the neighbouring pane. */
+        let lo = 0, hi = window.innerWidth;
+        for (let el = wrap.parentElement; el && el !== document.body; el = el.parentElement) {
+          const ox = getComputedStyle(el).overflowX;
+          if (ox !== "visible") { const b = el.getBoundingClientRect(); lo = Math.max(lo, b.left); hi = Math.min(hi, b.right); break; }
+        }
+        const spill = () => { const r = pop.getBoundingClientRect(); return Math.max(0, lo + 4 - r.left) + Math.max(0, r.right - (hi - 4)); };
+        const atEnd = spill();
+        if (atEnd > 0) { wrap.classList.add("ra-start"); if (spill() >= atEnd) wrap.classList.remove("ra-start"); }
+      }
+      function tbLayoutOnLangChange() { tbLayout(); }
+      function tbLayoutInit() {
+        const tb = $("insertToolbar");
+        if (!tb) return;
+        tbLayout();
+        if (typeof ResizeObserver === "function") {
+          new ResizeObserver(() => {
+            const cs = getComputedStyle(tb);
+            const W = tb.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            if (String(W) !== tbLastKey) tbQueue();
+          }).observe(tb);
+        } else window.addEventListener("resize", tbQueue);
+        if (typeof MutationObserver === "function") {
+          new MutationObserver((list) => {
+            if (list.some((m) => !(m.target.closest ? m.target : m.target.parentElement).closest("#raPop"))) tbQueue();
+          }).observe(tb, { childList: true, characterData: true, subtree: true });
+          let wasZen = document.body.classList.contains("zen");
+          new MutationObserver(() => {
+            const z = document.body.classList.contains("zen");
+            if (z !== wasZen) { wasZen = z; tbQueue(); }
+          }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+        }
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(tbQueue);
+        if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", tbQueue);
+      }
+      /* ==== /BEUK:toolbar ==== */
       if (typeof window !== "undefined") {
         window.beukReadAloud = {
           play: raPlay, pause: raPause, stop: raStop, refresh: raRefresh,
@@ -33024,6 +33273,7 @@
         renderPreview();
         refreshExportTree();
         icons();
+        tbLayoutInit(); /* BEUK:toolbar — after the icons are drawn */
       }
       document.addEventListener("DOMContentLoaded", init);
       /* ==== BEUK:beta ==== */
