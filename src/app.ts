@@ -93,7 +93,10 @@ export function buildApp({
   app.use('/api/manuscripts', manuscriptRoutes(db));
   app.use('/api/streak', streakRoutes(db, config, now));
   app.use('/api/exports', exportRoutes(db, config));
-  app.use('/api/billing', billingRoutes(db, billing ?? new StripeBillingProvider(config)));
+  app.use(
+    '/api/billing',
+    billingRoutes(db, config, billing ?? new StripeBillingProvider(config), now),
+  );
   app.use(
     '/api/housekeeping',
     housekeepingRoutes(db, config, createHousekeepingContext(config, housekeeping), mail),
