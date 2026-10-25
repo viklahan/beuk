@@ -1653,6 +1653,15 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The interface string table is client data.',
   },
+  // BEUK:pagecount — per-device page counts at fixed device geometry.
+  {
+    id: 'preview.pagecount.fixed-geometry',
+    title:
+      'Page counts at fixed device geometry: each e-reader profile counts at its own CSS-px reading area, identical at any window size; the copy calls them estimates',
+    kind: 'client-only',
+    reason:
+      'E-reader pagination is laid out by the studio browser (CSS multicol in the client page); the server never lays out pages.',
+  },
   {
     id: 'cover.maker.adopt-gains-cover-package',
     title: 'Adopting a made cover gives the EPUB its cover files and landmark',
