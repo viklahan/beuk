@@ -19,6 +19,7 @@ import { writeFileAtomic } from '../housekeeping/fsutil.js';
 import { readReferenceDoc } from '../housekeeping/reference.js';
 import { buildCheckContext, runSelfChecks, SELF_CHECK_CASES } from '../housekeeping/registry.js';
 import { scrubText, scrubValue } from '../housekeeping/scrub.js';
+import { createMailer, type Mailer } from '../mailer.js';
 
 /**
  * Housekeeping (M3) — the admin surface for the app itself.
@@ -52,9 +53,16 @@ const ACTION_CATALOG = [
   { name: 'promote.execute', pillar: 'Promotion', method: 'POST', path: '/api/housekeeping/promote', mutating: true, description: 'Refuses unless the tree is marked clean, Self-checks passed on this build stamp, and a sign-off exists; writes PROMOTION_MANIFEST.json.' },
   { name: 'audit.list', pillar: 'Evidence', method: 'GET', path: '/api/housekeeping/audit', mutating: false, description: 'Recent Housekeeping audit rows.' },
   { name: 'founders.list', pillar: "Founders' Shelf", method: 'GET', path: '/api/housekeeping/founders', mutating: false, description: "List Founders' Shelf applications (M4 warmth: the private seed list writers applied to). Read-only; every read is audited." },
+  { name: 'mail.status', pillar: 'Mail', method: 'GET', path: '/api/housekeeping/mail', mutating: false, description: 'Whether this server can send email (password-reset links): "email not configured" until SMTP_URL and MAIL_FROM are set. Credentials are never shown.' },
+  { name: 'mail.test', pillar: 'Mail', method: 'POST', path: '/api/housekeeping/mail/test', mutating: true, description: "Send one test email to the signed-in admin's own address and report exactly what the SMTP server said; never reports a send that did not happen." },
 ] as const;
 
-export function housekeepingRoutes(db: Db, config: Config, hk: HousekeepingContext): Router {
+export function housekeepingRoutes(
+  db: Db,
+  config: Config,
+  hk: HousekeepingContext,
+  mailer: Mailer = createMailer(config),
+): Router {
   const router = Router();
   router.use(requireAdmin(db));
   // Non-UUID run ids can never match a row: 404, not a Postgres 500.
@@ -154,7 +162,7 @@ export function housekeepingRoutes(db: Db, config: Config, hk: HousekeepingConte
     results: unknown;
   }> {
     const startedAt = new Date();
-    const run = await runSelfChecks(buildCheckContext(db, config));
+    const run = await runSelfChecks({ ...buildCheckContext(db, config), mailer });
     const finishedAt = new Date();
     const inserted = await db.query<{ id: string }>(
       `insert into housekeeping_check_runs
@@ -503,6 +511,38 @@ export function housekeepingRoutes(db: Db, config: Config, hk: HousekeepingConte
     } catch (err) {
       return next(err);
     }
+  });
+
+  /* ---------------- Mail (P0 #5 account basics) ---------------- */
+
+  router.get('/mail', (_req, res) => {
+    return send(res, 200, { mail: mailer.status() });
+  });
+
+  router.post('/mail/test', async (req, res) => {
+    return mutate(req, res, 'mail.test', {}, async () => {
+      const status = mailer.status();
+      const to = req.user!.email;
+      const result = await mailer.send({
+        to,
+        subject: 'Beuk test email',
+        text: `This is a test email from Housekeeping on ${config.appBaseUrl} (build ${config.buildStamp}). If you can read it, password-reset emails can reach this inbox.`,
+      });
+      if (result.delivered) {
+        return {
+          status: 200,
+          result: 'sent',
+          detail: `accepted by the SMTP server for ${to}`,
+          body: { mail: status, sent: true, to, messageId: result.messageId },
+        };
+      }
+      return {
+        status: status.configured ? 502 : 409,
+        result: status.configured ? 'failed' : 'not-configured',
+        detail: result.reason,
+        body: { mail: status, sent: false, to, reason: result.reason },
+      };
+    });
   });
 
   // Unknown housekeeping paths: the same 404 as everything else here.

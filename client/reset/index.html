@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <title>Choose a new password — Beuk</title>
+    <link rel="stylesheet" href="/help/warmth.css" />
+    <style>
+      [hidden] { display: none !important; }
+      .reset-form { display: grid; gap: 0.9rem; max-width: 26rem; margin: 1.4rem 0; }
+      .reset-form label { display: grid; gap: 0.25rem; font-size: 1rem; color: var(--ink-soft); }
+      .reset-form input {
+        font: inherit; font-size: 1.05rem; padding: 0.5rem 0.7rem;
+        border: 1px solid var(--line); border-radius: 6px; background: #fffdf8; color: var(--ink);
+      }
+      .reset-form button {
+        justify-self: start; font: inherit; font-size: 1.05rem; padding: 0.5rem 1.2rem;
+        border: 1px solid var(--amber); border-radius: 6px; background: var(--amber); color: #fff; cursor: pointer;
+      }
+      .reset-form button[disabled] { opacity: 0.6; cursor: wait; }
+      .reset-msg { border-left: 3px solid var(--amber); background: #fffdf8; padding: 0.6rem 1.1rem; }
+      .reset-msg.bad { border-left-color: #b91c1c; }
+    </style>
+  </head>
+  <body>
+    <header class="site-head">
+      <a class="wordmark" href="/">beuk</a>
+      <span class="subbrand">quietshelf.studio</span>
+      <nav class="site-nav">
+        <a href="/help/">Help</a>
+      </nav>
+    </header>
+    <main class="page">
+      <h1>Choose a new password</h1>
+      <p class="lede" id="resetLede">
+        Pick a new password for your Beuk shelf. Setting it signs you out
+        on every device, so you'll sign in again afterwards.
+      </p>
+      <form class="reset-form" id="resetForm" novalidate>
+        <label>New password
+          <input id="resetPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters" />
+        </label>
+        <label>Type it once more
+          <input id="resetConfirm" type="password" autocomplete="new-password" minlength="8" required />
+        </label>
+        <button type="submit" id="resetSubmit">Set new password</button>
+      </form>
+      <p class="reset-msg" id="resetMsg" role="status" hidden></p>
+      <p><a class="back-link" href="/">Back to the studio</a></p>
+    </main>
+    <footer class="site-foot">
+      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+    </footer>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var token = params.get("token") || "";
+        // Keep the token out of the address bar, history and any later
+        // referrer as soon as it has been read.
+        if (token && history.replaceState) history.replaceState(null, "", location.pathname);
+        var form = document.getElementById("resetForm");
+        var msg = document.getElementById("resetMsg");
+        var btn = document.getElementById("resetSubmit");
+        function say(text, bad) {
+          msg.textContent = text;
+          msg.className = "reset-msg" + (bad ? " bad" : "");
+          msg.hidden = false;
+        }
+        if (!token) {
+          form.hidden = true;
+          say("This page needs the link from your reset email. Ask for a new one from the studio's sign-in dialog (“Forgot password?”).", true);
+          return;
+        }
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var pw = document.getElementById("resetPassword").value;
+          var again = document.getElementById("resetConfirm").value;
+          if (pw.length < 8) { say("Your new password needs at least 8 characters.", true); return; }
+          if (pw !== again) { say("The two passwords don’t match — type them again.", true); return; }
+          btn.disabled = true;
+          fetch("/api/auth/reset", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: token, password: pw })
+          }).then(function (res) {
+            return res.json().catch(function () { return {}; }).then(function (body) { return { res: res, body: body }; });
+          }).then(function (r) {
+            btn.disabled = false;
+            if (r.res.ok && r.body && r.body.ok) {
+              form.hidden = true;
+              token = "";
+              say("Your password is changed, and every device that was signed in has been signed out. Open the studio and sign in with the new password.", false);
+            } else if (r.res.status === 429) {
+              say("Too many attempts from here — wait a few minutes and try again.", true);
+            } else {
+              say((r.body && r.body.error) ? ("That didn’t work: " + r.body.error + ".") : "That didn’t work — please try again.", true);
+            }
+          }).catch(function () {
+            btn.disabled = false;
+            say("The server couldn’t be reached — nothing was changed. Try again in a moment.", true);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -14,6 +14,16 @@ export function collectSecrets(config: Config): string[] {
   };
   add(config.stripeSecretKey);
   add(config.stripeWebhookSecret);
+  // P0 #5: SMTP_URL carries the mail password.
+  if (config.smtpUrl) {
+    add(config.smtpUrl);
+    try {
+      const url = new URL(config.smtpUrl);
+      if (url.password) add(decodeURIComponent(url.password));
+    } catch {
+      // Unparseable URL: the full string is already in the set.
+    }
+  }
   if (config.databaseUrl) {
     add(config.databaseUrl);
     try {

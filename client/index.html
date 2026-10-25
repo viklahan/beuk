@@ -1180,6 +1180,15 @@
       .sync-row { align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
       .sync-row svg { width: 15px; height: 15px; color: var(--gold); flex: 0 0 auto; }
       .linkish { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 12.5px; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-family: inherit; }
+      /* ==== BEUK:auth ==== */
+      .auth-forgot-row { margin-top: 6px; }
+      .auth-note { display: none; font-size: 12.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent, var(--line)); border-radius: 8px; padding: 9px 11px; line-height: 1.45; margin-top: 12px; }
+      .acct-box { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+      .acct-box > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+      .acct-grid { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 8px 0 4px; }
+      .acct-msg { display: none; font-size: 12.5px; line-height: 1.45; margin: 0; }
+      .acct-sub { font-size: 12.5px; line-height: 1.45; margin: 6px 0 0; opacity: 0.85; }
+      /* ==== /BEUK:auth ==== */
       .auth-err { display: none; font-size: 12.5px; color: var(--bad); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; line-height: 1.45; margin-top: 14px; }
       .bring-box { border: 1px dashed var(--line-2); border-radius: 9px; padding: 13px 14px; margin: 0 0 14px; background: var(--panel); }
       .bring-box p { font-size: 12.5px; color: var(--ink-2); margin: 0 0 10px; line-height: 1.55; }
@@ -2453,6 +2462,10 @@
           <div><label class="field-lab" for="authEmail" data-i18n="auth.email">Email</label><input class="txt-input" id="authEmail" type="email" autocomplete="email" placeholder="you@example.com" /></div>
           <div><label class="field-lab" for="authPassword" data-i18n="auth.password">Password</label><input class="txt-input" id="authPassword" type="password" autocomplete="current-password" placeholder="At least 8 characters" data-i18n-ph="auth.passwordPh" /></div>
         </div>
+        <!-- ==== BEUK:auth ==== -->
+        <div class="auth-forgot-row" id="authForgotRow"><button class="linkish" id="authForgot" type="button" data-i18n="acct.forgotLink">Forgot password?</button></div>
+        <div class="auth-note" id="authNote" role="status"></div>
+        <!-- ==== /BEUK:auth ==== -->
         <div class="auth-err" id="authError" role="alert"></div>
         <div class="modal-actions" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <button class="linkish" id="authToggle" type="button">New here? Create your shelf</button>
@@ -2485,6 +2498,19 @@
           <p class="bulk-progress" id="bulkProgress" style="display:none;"></p>
           <div class="bulk-summary" id="bulkSummary" style="display:none;"></div>
         </div>
+        <!-- ==== BEUK:auth ==== -->
+        <details class="acct-box" id="acctBox">
+          <summary data-i18n="acct.title">Account &amp; security</summary>
+          <div class="acct-grid">
+            <div><label class="field-lab" for="acctCurrent" data-i18n="acct.current">Current password</label><input class="txt-input" id="acctCurrent" type="password" autocomplete="current-password" /></div>
+            <div><label class="field-lab" for="acctNew" data-i18n="acct.new">New password</label><input class="txt-input" id="acctNew" type="password" autocomplete="new-password" placeholder="At least 8 characters" data-i18n-ph="auth.passwordPh" /></div>
+            <div><button class="tb-btn" id="btnAcctChange" type="button"><i data-lucide="key-round"></i><span data-i18n="acct.changeBtn">Change password</span></button></div>
+            <p class="acct-msg" id="acctMsg" role="status"></p>
+            <p class="acct-sub" data-i18n="acct.everywhereSub">Signed in somewhere you no longer use? This signs out every device — this one included. Your books stay safely on your shelf.</p>
+            <div><button class="tb-btn" id="btnAcctEverywhere" type="button"><i data-lucide="log-out"></i><span data-i18n="acct.everywhereBtn">Sign out everywhere</span></button></div>
+          </div>
+        </details>
+        <!-- ==== /BEUK:auth ==== -->
         <div class="modal-actions" style="justify-content:space-between;">
           <button class="tb-btn" id="btnSignOut" type="button" data-i18n="shelf.signOut"><i data-lucide="log-out"></i>Sign out</button>
           <button class="tb-btn" id="btnCloseShelf" type="button" data-i18n="shelf.back">Back to writing</button>
@@ -8908,6 +8934,348 @@
         "offline.notSavedHere": "离线 — 未保存在这台设备上"
       });
       /* ==== /BEUK:local ==== */
+      /* ==== BEUK:auth ==== account basics (P0 #5): forgot password,
+         change password, sign out everywhere — assigned per pack so
+         completeness holds. */
+      Object.assign(UI_STRINGS.en, {
+        "acct.forgotLink": "Forgot password?",
+        "acct.forgotTitle": "Reset your password",
+        "acct.forgotSub": "Give the email address of your shelf. If an account exists for it, we’ll send a link to choose a new password — it works once, for 60 minutes.",
+        "acct.forgotSend": "Send reset link",
+        "acct.backToSignIn": "Back to sign in",
+        "acct.forgotSent": "If an account exists for that address, a reset link is on its way.",
+        "acct.forgotNoEmail": "Note: this server isn’t set up to send email yet, so no message will actually be sent. Ask whoever runs this Beuk server to help you reset it.",
+        "acct.emailInvalid": "That doesn’t look like an email address — check it and try again.",
+        "acct.tooMany": "Too many attempts just now — wait a few minutes and try again.",
+        "acct.unreachable": "The shelf is out of reach just now — nothing was changed. Try again in a moment.",
+        "acct.title": "Account & security",
+        "acct.current": "Current password",
+        "acct.new": "New password",
+        "acct.changeBtn": "Change password",
+        "acct.changed": "Password changed. {n} other device was signed out; this one stays signed in.",
+        "acct.changedPlural": "Password changed. {n} other devices were signed out; this one stays signed in.",
+        "acct.wrongCurrent": "That isn’t your current password — nothing was changed.",
+        "acct.tooShort": "Your new password needs at least 8 characters.",
+        "acct.everywhereSub": "Signed in somewhere you no longer use? This signs out every device — this one included. Your books stay safely on your shelf.",
+        "acct.everywhereBtn": "Sign out everywhere",
+        "acct.everywhereConfirmTitle": "Sign out on every device?",
+        "acct.everywhereConfirmBody": "Every device signed in to this shelf, including this one, will be signed out. Your books stay on your shelf and on this device.",
+        "acct.everywhereDone": "Signed out on {n} device — sign in again whenever you like",
+        "acct.everywhereDonePlural": "Signed out on {n} devices — sign in again whenever you like"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "acct.forgotLink": "¿Olvidaste la contraseña?",
+        "acct.forgotTitle": "Restablece tu contraseña",
+        "acct.forgotSub": "Indica el correo de tu estantería. Si existe una cuenta con él, te enviaremos un enlace para elegir una contraseña nueva: funciona una sola vez, durante 60 minutos.",
+        "acct.forgotSend": "Enviar enlace",
+        "acct.backToSignIn": "Volver a iniciar sesión",
+        "acct.forgotSent": "Si existe una cuenta con esa dirección, el enlace para restablecerla va en camino.",
+        "acct.forgotNoEmail": "Aviso: este servidor aún no está configurado para enviar correo, así que no se enviará ningún mensaje. Pide ayuda a quien administra este servidor de Beuk.",
+        "acct.emailInvalid": "Eso no parece una dirección de correo: revísala y vuelve a intentarlo.",
+        "acct.tooMany": "Demasiados intentos ahora mismo: espera unos minutos y vuelve a intentarlo.",
+        "acct.unreachable": "La estantería no está al alcance ahora mismo: no se ha cambiado nada. Inténtalo de nuevo en un momento.",
+        "acct.title": "Cuenta y seguridad",
+        "acct.current": "Contraseña actual",
+        "acct.new": "Contraseña nueva",
+        "acct.changeBtn": "Cambiar contraseña",
+        "acct.changed": "Contraseña cambiada. Se cerró la sesión en {n} dispositivo más; este sigue con la sesión iniciada.",
+        "acct.changedPlural": "Contraseña cambiada. Se cerró la sesión en {n} dispositivos más; este sigue con la sesión iniciada.",
+        "acct.wrongCurrent": "Esa no es tu contraseña actual: no se ha cambiado nada.",
+        "acct.tooShort": "La contraseña nueva necesita al menos 8 caracteres.",
+        "acct.everywhereSub": "¿Has iniciado sesión en algún sitio que ya no usas? Esto cierra la sesión en todos los dispositivos, también en este. Tus libros siguen a salvo en tu estantería.",
+        "acct.everywhereBtn": "Cerrar sesión en todas partes",
+        "acct.everywhereConfirmTitle": "¿Cerrar sesión en todos los dispositivos?",
+        "acct.everywhereConfirmBody": "Se cerrará la sesión en todos los dispositivos conectados a esta estantería, incluido este. Tus libros siguen en tu estantería y en este dispositivo.",
+        "acct.everywhereDone": "Sesión cerrada en {n} dispositivo: vuelve a entrar cuando quieras",
+        "acct.everywhereDonePlural": "Sesión cerrada en {n} dispositivos: vuelve a entrar cuando quieras"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "acct.forgotLink": "Mot de passe oublié ?",
+        "acct.forgotTitle": "Réinitialiser votre mot de passe",
+        "acct.forgotSub": "Indiquez l’adresse e-mail de votre étagère. Si un compte existe pour elle, nous enverrons un lien pour choisir un nouveau mot de passe — valable une seule fois, pendant 60 minutes.",
+        "acct.forgotSend": "Envoyer le lien",
+        "acct.backToSignIn": "Retour à la connexion",
+        "acct.forgotSent": "Si un compte existe pour cette adresse, un lien de réinitialisation est en route.",
+        "acct.forgotNoEmail": "Remarque : ce serveur n’est pas encore configuré pour envoyer des e-mails, aucun message ne sera donc envoyé. Demandez de l’aide à la personne qui gère ce serveur Beuk.",
+        "acct.emailInvalid": "Cela ne ressemble pas à une adresse e-mail — vérifiez-la et réessayez.",
+        "acct.tooMany": "Trop de tentatives pour l’instant — patientez quelques minutes et réessayez.",
+        "acct.unreachable": "L’étagère est hors de portée pour l’instant — rien n’a été modifié. Réessayez dans un moment.",
+        "acct.title": "Compte et sécurité",
+        "acct.current": "Mot de passe actuel",
+        "acct.new": "Nouveau mot de passe",
+        "acct.changeBtn": "Changer le mot de passe",
+        "acct.changed": "Mot de passe changé. {n} autre appareil a été déconnecté ; celui-ci reste connecté.",
+        "acct.changedPlural": "Mot de passe changé. {n} autres appareils ont été déconnectés ; celui-ci reste connecté.",
+        "acct.wrongCurrent": "Ce n’est pas votre mot de passe actuel — rien n’a été modifié.",
+        "acct.tooShort": "Votre nouveau mot de passe doit compter au moins 8 caractères.",
+        "acct.everywhereSub": "Connecté quelque part que vous n’utilisez plus ? Ceci déconnecte tous les appareils, celui-ci compris. Vos livres restent en sécurité sur votre étagère.",
+        "acct.everywhereBtn": "Se déconnecter partout",
+        "acct.everywhereConfirmTitle": "Se déconnecter sur tous les appareils ?",
+        "acct.everywhereConfirmBody": "Tous les appareils connectés à cette étagère, celui-ci compris, seront déconnectés. Vos livres restent sur votre étagère et sur cet appareil.",
+        "acct.everywhereDone": "Déconnecté sur {n} appareil — reconnectez-vous quand vous voulez",
+        "acct.everywhereDonePlural": "Déconnecté sur {n} appareils — reconnectez-vous quand vous voulez"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "acct.forgotLink": "Passwort vergessen?",
+        "acct.forgotTitle": "Passwort zurücksetzen",
+        "acct.forgotSub": "Geben Sie die E-Mail-Adresse Ihres Regals an. Wenn dafür ein Konto existiert, senden wir einen Link, mit dem Sie ein neues Passwort wählen — er gilt einmal, 60 Minuten lang.",
+        "acct.forgotSend": "Link senden",
+        "acct.backToSignIn": "Zurück zur Anmeldung",
+        "acct.forgotSent": "Wenn für diese Adresse ein Konto existiert, ist ein Link zum Zurücksetzen unterwegs.",
+        "acct.forgotNoEmail": "Hinweis: Dieser Server ist noch nicht für den E-Mail-Versand eingerichtet, es wird also keine Nachricht verschickt. Bitten Sie die Person, die diesen Beuk-Server betreibt, um Hilfe.",
+        "acct.emailInvalid": "Das sieht nicht nach einer E-Mail-Adresse aus — prüfen Sie sie und versuchen Sie es erneut.",
+        "acct.tooMany": "Gerade zu viele Versuche — warten Sie ein paar Minuten und versuchen Sie es erneut.",
+        "acct.unreachable": "Das Regal ist gerade nicht erreichbar — es wurde nichts geändert. Versuchen Sie es gleich noch einmal.",
+        "acct.title": "Konto und Sicherheit",
+        "acct.current": "Aktuelles Passwort",
+        "acct.new": "Neues Passwort",
+        "acct.changeBtn": "Passwort ändern",
+        "acct.changed": "Passwort geändert. {n} anderes Gerät wurde abgemeldet; dieses bleibt angemeldet.",
+        "acct.changedPlural": "Passwort geändert. {n} andere Geräte wurden abgemeldet; dieses bleibt angemeldet.",
+        "acct.wrongCurrent": "Das ist nicht Ihr aktuelles Passwort — es wurde nichts geändert.",
+        "acct.tooShort": "Ihr neues Passwort braucht mindestens 8 Zeichen.",
+        "acct.everywhereSub": "Irgendwo angemeldet, das Sie nicht mehr nutzen? Damit werden alle Geräte abgemeldet — auch dieses. Ihre Bücher bleiben sicher in Ihrem Regal.",
+        "acct.everywhereBtn": "Überall abmelden",
+        "acct.everywhereConfirmTitle": "Auf allen Geräten abmelden?",
+        "acct.everywhereConfirmBody": "Alle Geräte, die bei diesem Regal angemeldet sind, auch dieses, werden abgemeldet. Ihre Bücher bleiben in Ihrem Regal und auf diesem Gerät.",
+        "acct.everywhereDone": "Auf {n} Gerät abgemeldet — melden Sie sich jederzeit wieder an",
+        "acct.everywhereDonePlural": "Auf {n} Geräten abgemeldet — melden Sie sich jederzeit wieder an"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "acct.forgotLink": "Password dimenticata?",
+        "acct.forgotTitle": "Reimposta la password",
+        "acct.forgotSub": "Indica l’indirizzo email della tua libreria. Se esiste un account, ti invieremo un link per scegliere una nuova password: funziona una sola volta, per 60 minuti.",
+        "acct.forgotSend": "Invia il link",
+        "acct.backToSignIn": "Torna all’accesso",
+        "acct.forgotSent": "Se esiste un account per quell’indirizzo, un link per reimpostare la password è in arrivo.",
+        "acct.forgotNoEmail": "Nota: questo server non è ancora configurato per inviare email, quindi nessun messaggio verrà inviato. Chiedi aiuto a chi gestisce questo server Beuk.",
+        "acct.emailInvalid": "Non sembra un indirizzo email: controllalo e riprova.",
+        "acct.tooMany": "Troppi tentativi in questo momento: attendi qualche minuto e riprova.",
+        "acct.unreachable": "La libreria non è raggiungibile in questo momento: non è cambiato nulla. Riprova tra poco.",
+        "acct.title": "Account e sicurezza",
+        "acct.current": "Password attuale",
+        "acct.new": "Nuova password",
+        "acct.changeBtn": "Cambia password",
+        "acct.changed": "Password cambiata. È stato disconnesso {n} altro dispositivo; questo resta connesso.",
+        "acct.changedPlural": "Password cambiata. Sono stati disconnessi {n} altri dispositivi; questo resta connesso.",
+        "acct.wrongCurrent": "Questa non è la tua password attuale: non è cambiato nulla.",
+        "acct.tooShort": "La nuova password deve avere almeno 8 caratteri.",
+        "acct.everywhereSub": "Hai effettuato l’accesso da qualche parte che non usi più? Così esci da tutti i dispositivi, compreso questo. I tuoi libri restano al sicuro nella tua libreria.",
+        "acct.everywhereBtn": "Esci ovunque",
+        "acct.everywhereConfirmTitle": "Uscire da tutti i dispositivi?",
+        "acct.everywhereConfirmBody": "Tutti i dispositivi collegati a questa libreria, compreso questo, verranno disconnessi. I tuoi libri restano nella tua libreria e su questo dispositivo.",
+        "acct.everywhereDone": "Disconnesso da {n} dispositivo: accedi di nuovo quando vuoi",
+        "acct.everywhereDonePlural": "Disconnesso da {n} dispositivi: accedi di nuovo quando vuoi"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "acct.forgotLink": "Esqueceu a palavra-passe?",
+        "acct.forgotTitle": "Repor a palavra-passe",
+        "acct.forgotSub": "Indique o email da sua estante. Se existir uma conta com ele, enviaremos uma ligação para escolher uma nova palavra-passe — funciona uma vez, durante 60 minutos.",
+        "acct.forgotSend": "Enviar ligação",
+        "acct.backToSignIn": "Voltar a entrar",
+        "acct.forgotSent": "Se existir uma conta para esse endereço, a ligação para repor a palavra-passe está a caminho.",
+        "acct.forgotNoEmail": "Nota: este servidor ainda não está configurado para enviar email, por isso nenhuma mensagem será enviada. Peça ajuda a quem gere este servidor Beuk.",
+        "acct.emailInvalid": "Isso não parece um endereço de email — verifique-o e tente novamente.",
+        "acct.tooMany": "Demasiadas tentativas neste momento — aguarde alguns minutos e tente novamente.",
+        "acct.unreachable": "A estante está fora de alcance neste momento — nada foi alterado. Tente novamente daqui a pouco.",
+        "acct.title": "Conta e segurança",
+        "acct.current": "Palavra-passe atual",
+        "acct.new": "Nova palavra-passe",
+        "acct.changeBtn": "Alterar palavra-passe",
+        "acct.changed": "Palavra-passe alterada. {n} outro dispositivo terminou a sessão; este continua com sessão iniciada.",
+        "acct.changedPlural": "Palavra-passe alterada. {n} outros dispositivos terminaram a sessão; este continua com sessão iniciada.",
+        "acct.wrongCurrent": "Essa não é a sua palavra-passe atual — nada foi alterado.",
+        "acct.tooShort": "A nova palavra-passe precisa de pelo menos 8 caracteres.",
+        "acct.everywhereSub": "Tem sessão iniciada num sítio que já não usa? Isto termina a sessão em todos os dispositivos — incluindo este. Os seus livros ficam a salvo na sua estante.",
+        "acct.everywhereBtn": "Terminar sessão em todo o lado",
+        "acct.everywhereConfirmTitle": "Terminar sessão em todos os dispositivos?",
+        "acct.everywhereConfirmBody": "Todos os dispositivos com sessão iniciada nesta estante, incluindo este, vão terminar a sessão. Os seus livros ficam na sua estante e neste dispositivo.",
+        "acct.everywhereDone": "Sessão terminada em {n} dispositivo — volte a entrar quando quiser",
+        "acct.everywhereDonePlural": "Sessão terminada em {n} dispositivos — volte a entrar quando quiser"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "acct.forgotLink": "Wachtwoord vergeten?",
+        "acct.forgotTitle": "Uw wachtwoord opnieuw instellen",
+        "acct.forgotSub": "Geef het e-mailadres van uw plank. Als er een account voor bestaat, sturen we een link om een nieuw wachtwoord te kiezen — hij werkt één keer, 60 minuten lang.",
+        "acct.forgotSend": "Link versturen",
+        "acct.backToSignIn": "Terug naar inloggen",
+        "acct.forgotSent": "Als er een account voor dat adres bestaat, is er een herstellink onderweg.",
+        "acct.forgotNoEmail": "Let op: deze server is nog niet ingesteld om e-mail te versturen, dus er wordt geen bericht verstuurd. Vraag de beheerder van deze Beuk-server om hulp.",
+        "acct.emailInvalid": "Dat lijkt geen e-mailadres — controleer het en probeer het opnieuw.",
+        "acct.tooMany": "Te veel pogingen op dit moment — wacht een paar minuten en probeer het opnieuw.",
+        "acct.unreachable": "De plank is nu niet bereikbaar — er is niets gewijzigd. Probeer het zo opnieuw.",
+        "acct.title": "Account en beveiliging",
+        "acct.current": "Huidig wachtwoord",
+        "acct.new": "Nieuw wachtwoord",
+        "acct.changeBtn": "Wachtwoord wijzigen",
+        "acct.changed": "Wachtwoord gewijzigd. {n} ander apparaat is uitgelogd; dit apparaat blijft ingelogd.",
+        "acct.changedPlural": "Wachtwoord gewijzigd. {n} andere apparaten zijn uitgelogd; dit apparaat blijft ingelogd.",
+        "acct.wrongCurrent": "Dat is niet uw huidige wachtwoord — er is niets gewijzigd.",
+        "acct.tooShort": "Uw nieuwe wachtwoord moet minstens 8 tekens hebben.",
+        "acct.everywhereSub": "Ergens ingelogd dat u niet meer gebruikt? Hiermee logt u op elk apparaat uit — ook op dit. Uw boeken blijven veilig op uw plank.",
+        "acct.everywhereBtn": "Overal uitloggen",
+        "acct.everywhereConfirmTitle": "Op alle apparaten uitloggen?",
+        "acct.everywhereConfirmBody": "Elk apparaat dat op deze plank is ingelogd, ook dit, wordt uitgelogd. Uw boeken blijven op uw plank en op dit apparaat.",
+        "acct.everywhereDone": "Uitgelogd op {n} apparaat — log weer in wanneer u wilt",
+        "acct.everywhereDonePlural": "Uitgelogd op {n} apparaten — log weer in wanneer u wilt"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "acct.forgotLink": "Nie pamiętasz hasła?",
+        "acct.forgotTitle": "Zresetuj hasło",
+        "acct.forgotSub": "Podaj adres e-mail swojej półki. Jeśli istnieje dla niego konto, wyślemy link do ustawienia nowego hasła — działa jeden raz, przez 60 minut.",
+        "acct.forgotSend": "Wyślij link",
+        "acct.backToSignIn": "Wróć do logowania",
+        "acct.forgotSent": "Jeśli dla tego adresu istnieje konto, link do resetu hasła jest już w drodze.",
+        "acct.forgotNoEmail": "Uwaga: ten serwer nie jest jeszcze skonfigurowany do wysyłania e-maili, więc żadna wiadomość nie zostanie wysłana. Poproś o pomoc osobę, która prowadzi ten serwer Beuk.",
+        "acct.emailInvalid": "To nie wygląda na adres e-mail — sprawdź go i spróbuj ponownie.",
+        "acct.tooMany": "Zbyt wiele prób w tej chwili — odczekaj kilka minut i spróbuj ponownie.",
+        "acct.unreachable": "Półka jest teraz poza zasięgiem — nic nie zostało zmienione. Spróbuj ponownie za chwilę.",
+        "acct.title": "Konto i bezpieczeństwo",
+        "acct.current": "Obecne hasło",
+        "acct.new": "Nowe hasło",
+        "acct.changeBtn": "Zmień hasło",
+        "acct.changed": "Hasło zmienione. Wylogowane inne urządzenia: {n}; to urządzenie pozostaje zalogowane.",
+        "acct.changedPlural": "Hasło zmienione. Wylogowane inne urządzenia: {n}; to urządzenie pozostaje zalogowane.",
+        "acct.wrongCurrent": "To nie jest Twoje obecne hasło — nic nie zostało zmienione.",
+        "acct.tooShort": "Nowe hasło musi mieć co najmniej 8 znaków.",
+        "acct.everywhereSub": "Zalogowano Cię gdzieś, z czego już nie korzystasz? To wyloguje wszystkie urządzenia — również to. Twoje książki pozostaną bezpiecznie na półce.",
+        "acct.everywhereBtn": "Wyloguj wszędzie",
+        "acct.everywhereConfirmTitle": "Wylogować na wszystkich urządzeniach?",
+        "acct.everywhereConfirmBody": "Każde urządzenie zalogowane do tej półki, łącznie z tym, zostanie wylogowane. Twoje książki pozostaną na półce i na tym urządzeniu.",
+        "acct.everywhereDone": "Wylogowane urządzenia: {n} — zaloguj się ponownie, kiedy zechcesz",
+        "acct.everywhereDonePlural": "Wylogowane urządzenia: {n} — zaloguj się ponownie, kiedy zechcesz"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "acct.forgotLink": "Забыли пароль?",
+        "acct.forgotTitle": "Сброс пароля",
+        "acct.forgotSub": "Укажите адрес электронной почты вашей полки. Если для него есть аккаунт, мы пришлём ссылку для выбора нового пароля — она работает один раз в течение 60 минут.",
+        "acct.forgotSend": "Отправить ссылку",
+        "acct.backToSignIn": "Вернуться ко входу",
+        "acct.forgotSent": "Если для этого адреса есть аккаунт, ссылка для сброса пароля уже в пути.",
+        "acct.forgotNoEmail": "Обратите внимание: этот сервер пока не настроен на отправку почты, поэтому письмо отправлено не будет. Попросите помощи у того, кто управляет этим сервером Beuk.",
+        "acct.emailInvalid": "Это не похоже на адрес электронной почты — проверьте его и попробуйте ещё раз.",
+        "acct.tooMany": "Слишком много попыток — подождите несколько минут и попробуйте снова.",
+        "acct.unreachable": "Полка сейчас недоступна — ничего не изменилось. Попробуйте чуть позже.",
+        "acct.title": "Аккаунт и безопасность",
+        "acct.current": "Текущий пароль",
+        "acct.new": "Новый пароль",
+        "acct.changeBtn": "Сменить пароль",
+        "acct.changed": "Пароль изменён. Других устройств, с которых выполнен выход: {n}; это устройство остаётся в аккаунте.",
+        "acct.changedPlural": "Пароль изменён. Других устройств, с которых выполнен выход: {n}; это устройство остаётся в аккаунте.",
+        "acct.wrongCurrent": "Это не ваш текущий пароль — ничего не изменилось.",
+        "acct.tooShort": "Новый пароль должен содержать не менее 8 символов.",
+        "acct.everywhereSub": "Вошли где-то, чем больше не пользуетесь? Это завершит сеанс на всех устройствах, включая это. Ваши книги останутся в безопасности на полке.",
+        "acct.everywhereBtn": "Выйти везде",
+        "acct.everywhereConfirmTitle": "Выйти на всех устройствах?",
+        "acct.everywhereConfirmBody": "Сеанс будет завершён на всех устройствах, вошедших в эту полку, включая это. Ваши книги останутся на полке и на этом устройстве.",
+        "acct.everywhereDone": "Устройств, с которых выполнен выход: {n} — войдите снова, когда захотите",
+        "acct.everywhereDonePlural": "Устройств, с которых выполнен выход: {n} — войдите снова, когда захотите"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "acct.forgotLink": "Parolanızı mı unuttunuz?",
+        "acct.forgotTitle": "Parolanızı sıfırlayın",
+        "acct.forgotSub": "Rafınızın e-posta adresini girin. Bu adrese ait bir hesap varsa yeni bir parola seçmeniz için bir bağlantı göndereceğiz — bağlantı bir kez ve 60 dakika boyunca geçerlidir.",
+        "acct.forgotSend": "Bağlantıyı gönder",
+        "acct.backToSignIn": "Girişe dön",
+        "acct.forgotSent": "Bu adrese ait bir hesap varsa, sıfırlama bağlantısı yolda.",
+        "acct.forgotNoEmail": "Not: bu sunucu henüz e-posta gönderecek şekilde ayarlanmadı, bu yüzden hiçbir ileti gönderilmeyecek. Bu Beuk sunucusunu yöneten kişiden yardım isteyin.",
+        "acct.emailInvalid": "Bu bir e-posta adresine benzemiyor — kontrol edip yeniden deneyin.",
+        "acct.tooMany": "Şu anda çok fazla deneme yapıldı — birkaç dakika bekleyip yeniden deneyin.",
+        "acct.unreachable": "Rafa şu anda ulaşılamıyor — hiçbir şey değişmedi. Birazdan yeniden deneyin.",
+        "acct.title": "Hesap ve güvenlik",
+        "acct.current": "Mevcut parola",
+        "acct.new": "Yeni parola",
+        "acct.changeBtn": "Parolayı değiştir",
+        "acct.changed": "Parola değiştirildi. {n} diğer cihazda oturum kapatıldı; bu cihazda oturum açık kalıyor.",
+        "acct.changedPlural": "Parola değiştirildi. {n} diğer cihazda oturum kapatıldı; bu cihazda oturum açık kalıyor.",
+        "acct.wrongCurrent": "Bu, mevcut parolanız değil — hiçbir şey değişmedi.",
+        "acct.tooShort": "Yeni parolanız en az 8 karakter olmalı.",
+        "acct.everywhereSub": "Artık kullanmadığınız bir yerde oturum mu açık? Bu, bu cihaz dahil tüm cihazlarda oturumu kapatır. Kitaplarınız rafınızda güvende kalır.",
+        "acct.everywhereBtn": "Her yerde oturumu kapat",
+        "acct.everywhereConfirmTitle": "Tüm cihazlarda oturum kapatılsın mı?",
+        "acct.everywhereConfirmBody": "Bu raf için oturum açmış tüm cihazlarda, bu cihaz dahil, oturum kapatılacak. Kitaplarınız rafınızda ve bu cihazda kalır.",
+        "acct.everywhereDone": "{n} cihazda oturum kapatıldı — dilediğinizde yeniden giriş yapın",
+        "acct.everywhereDonePlural": "{n} cihazda oturum kapatıldı — dilediğinizde yeniden giriş yapın"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "acct.forgotLink": "نسيت كلمة المرور؟",
+        "acct.forgotTitle": "إعادة تعيين كلمة المرور",
+        "acct.forgotSub": "أدخل البريد الإلكتروني لرفّك. إن وُجد حساب له فسنرسل رابطًا لاختيار كلمة مرور جديدة — يعمل مرة واحدة، لمدة 60 دقيقة.",
+        "acct.forgotSend": "إرسال الرابط",
+        "acct.backToSignIn": "العودة إلى تسجيل الدخول",
+        "acct.forgotSent": "إن وُجد حساب لهذا العنوان، فرابط إعادة التعيين في طريقه إليك.",
+        "acct.forgotNoEmail": "ملاحظة: هذا الخادم غير مُعدّ لإرسال البريد الإلكتروني بعد، لذلك لن تُرسل أي رسالة. اطلب المساعدة ممن يدير خادم Beuk هذا.",
+        "acct.emailInvalid": "لا يبدو هذا عنوان بريد إلكتروني — تحقّق منه وحاول مرة أخرى.",
+        "acct.tooMany": "محاولات كثيرة جدًا الآن — انتظر بضع دقائق ثم حاول مرة أخرى.",
+        "acct.unreachable": "الرفّ بعيد المنال الآن — لم يتغيّر شيء. حاول مرة أخرى بعد قليل.",
+        "acct.title": "الحساب والأمان",
+        "acct.current": "كلمة المرور الحالية",
+        "acct.new": "كلمة المرور الجديدة",
+        "acct.changeBtn": "تغيير كلمة المرور",
+        "acct.changed": "تم تغيير كلمة المرور. عدد الأجهزة الأخرى التي سُجّل خروجها: {n}؛ ويبقى هذا الجهاز مسجّل الدخول.",
+        "acct.changedPlural": "تم تغيير كلمة المرور. عدد الأجهزة الأخرى التي سُجّل خروجها: {n}؛ ويبقى هذا الجهاز مسجّل الدخول.",
+        "acct.wrongCurrent": "هذه ليست كلمة مرورك الحالية — لم يتغيّر شيء.",
+        "acct.tooShort": "تحتاج كلمة المرور الجديدة إلى 8 أحرف على الأقل.",
+        "acct.everywhereSub": "هل سجّلت الدخول في مكان لم تعد تستخدمه؟ هذا يسجّل الخروج من كل الأجهزة — بما فيها هذا الجهاز. تبقى كتبك آمنة على رفّك.",
+        "acct.everywhereBtn": "تسجيل الخروج من كل مكان",
+        "acct.everywhereConfirmTitle": "تسجيل الخروج من كل الأجهزة؟",
+        "acct.everywhereConfirmBody": "سيُسجَّل خروج كل جهاز مسجّل الدخول إلى هذا الرفّ، بما فيه هذا الجهاز. تبقى كتبك على رفّك وعلى هذا الجهاز.",
+        "acct.everywhereDone": "عدد الأجهزة التي سُجّل خروجها: {n} — سجّل الدخول مجددًا متى شئت",
+        "acct.everywhereDonePlural": "عدد الأجهزة التي سُجّل خروجها: {n} — سجّل الدخول مجددًا متى شئت"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "acct.forgotLink": "パスワードをお忘れですか？",
+        "acct.forgotTitle": "パスワードの再設定",
+        "acct.forgotSub": "本棚のメールアドレスを入力してください。そのアドレスのアカウントがあれば、新しいパスワードを設定するリンクをお送りします。リンクは1回限り、60分間有効です。",
+        "acct.forgotSend": "リンクを送信",
+        "acct.backToSignIn": "サインインに戻る",
+        "acct.forgotSent": "そのアドレスのアカウントがあれば、再設定用のリンクをお送りしています。",
+        "acct.forgotNoEmail": "ご注意：このサーバーはまだメール送信の設定がされていないため、メッセージは送信されません。この Beuk サーバーの管理者にご相談ください。",
+        "acct.emailInvalid": "メールアドレスの形式ではないようです。確認してもう一度お試しください。",
+        "acct.tooMany": "試行回数が多すぎます。数分待ってからもう一度お試しください。",
+        "acct.unreachable": "いまは本棚に届きません。何も変更されていません。少ししてからもう一度お試しください。",
+        "acct.title": "アカウントとセキュリティ",
+        "acct.current": "現在のパスワード",
+        "acct.new": "新しいパスワード",
+        "acct.changeBtn": "パスワードを変更",
+        "acct.changed": "パスワードを変更しました。ほかの {n} 台の端末からサインアウトしました。この端末はサインインしたままです。",
+        "acct.changedPlural": "パスワードを変更しました。ほかの {n} 台の端末からサインアウトしました。この端末はサインインしたままです。",
+        "acct.wrongCurrent": "現在のパスワードと一致しません。何も変更されていません。",
+        "acct.tooShort": "新しいパスワードは8文字以上にしてください。",
+        "acct.everywhereSub": "もう使っていない場所でサインインしたままですか？この端末を含むすべての端末からサインアウトします。本は本棚に安全に残ります。",
+        "acct.everywhereBtn": "すべての端末でサインアウト",
+        "acct.everywhereConfirmTitle": "すべての端末でサインアウトしますか？",
+        "acct.everywhereConfirmBody": "この端末を含め、この本棚にサインインしているすべての端末がサインアウトされます。本は本棚とこの端末に残ります。",
+        "acct.everywhereDone": "{n} 台の端末でサインアウトしました。いつでもまたサインインできます",
+        "acct.everywhereDonePlural": "{n} 台の端末でサインアウトしました。いつでもまたサインインできます"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "acct.forgotLink": "忘记密码？",
+        "acct.forgotTitle": "重置密码",
+        "acct.forgotSub": "请输入你书架的邮箱地址。如果该地址有账户，我们会发送一个设置新密码的链接——仅可使用一次，有效期 60 分钟。",
+        "acct.forgotSend": "发送重置链接",
+        "acct.backToSignIn": "返回登录",
+        "acct.forgotSent": "如果该地址有账户，重置链接正在发送途中。",
+        "acct.forgotNoEmail": "注意：此服务器尚未配置发送邮件，因此不会真的发出任何邮件。请向运行此 Beuk 服务器的人求助。",
+        "acct.emailInvalid": "这看起来不像邮箱地址——请检查后重试。",
+        "acct.tooMany": "尝试次数过多——请等几分钟后再试。",
+        "acct.unreachable": "暂时连不上书架——没有任何更改。请稍后再试。",
+        "acct.title": "账户与安全",
+        "acct.current": "当前密码",
+        "acct.new": "新密码",
+        "acct.changeBtn": "修改密码",
+        "acct.changed": "密码已修改。另外 {n} 台设备已退出登录；这台设备保持登录。",
+        "acct.changedPlural": "密码已修改。另外 {n} 台设备已退出登录；这台设备保持登录。",
+        "acct.wrongCurrent": "这不是你的当前密码——没有任何更改。",
+        "acct.tooShort": "新密码至少需要 8 个字符。",
+        "acct.everywhereSub": "在不再使用的地方还登录着？这会让所有设备退出登录——包括这台。你的书仍安全地放在书架上。",
+        "acct.everywhereBtn": "在所有设备上退出",
+        "acct.everywhereConfirmTitle": "在所有设备上退出登录？",
+        "acct.everywhereConfirmBody": "登录到此书架的所有设备（包括这台）都将退出登录。你的书仍在书架上，也在这台设备上。",
+        "acct.everywhereDone": "已在 {n} 台设备上退出登录——随时可以再次登录",
+        "acct.everywhereDonePlural": "已在 {n} 台设备上退出登录——随时可以再次登录"
+      });
+      /* ==== /BEUK:auth ==== */
 
       /* ================= Ornaments (inline SVG, em-sized) ================= */
       function starPath(cx, cy, r) {
@@ -18446,6 +18814,7 @@
         $("authToggle").textContent = reg ? t("auth.toggleSignIn") : t("auth.toggleCreate");
         $("authPassword").setAttribute("autocomplete", reg ? "new-password" : "current-password");
         $("authError").style.display = "none";
+        if (typeof acctAuthModeHook === "function") acctAuthModeHook(mode); /* BEUK:auth */
       }
       function openAuth() {
         setAuthMode("login");
@@ -18458,6 +18827,7 @@
         focusEditor();
       }
       async function cloudAuthSubmit() {
+        if (authMode === "forgot") return acctForgotSubmit(); /* BEUK:auth */
         const email = $("authEmail").value.trim();
         const password = $("authPassword").value;
         const err = $("authError");
@@ -18480,7 +18850,7 @@
           err.textContent = (r && r.__error)
             ? (authMode === "register" ? r.__error : "That email and password don\u2019t match a shelf we know — check them and try again.")
             : "The shelf is out of reach just now — your writing is safe here on this device. Try again in a moment.";
-          err.style.display = "";
+          err.style.display = "block"; /* BEUK:auth — "" fell back to the CSS display:none, hiding every sign-in error */
         }
       }
       async function cloudSignOut() {
@@ -18599,6 +18969,96 @@
         box.innerHTML = '<p class="cr-wait">Still checking — it is taking longer than usual. Leave this open a little longer, or run it again later.</p>';
       }
 
+      /* ==== BEUK:auth ==== account basics (P0 #5)
+         Forgot password lives inside the sign-in dialog as a third mode
+         ("forgot"): email only, one honest confirmation for every
+         address (the server answers identically whether or not an
+         account exists). If the server says it cannot send email at
+         all, the dialog says so instead of implying a message is coming.
+         Change password + sign out everywhere live in the shelf dialog. */
+      function acctAuthModeHook(mode) {
+        const forgot = mode === "forgot";
+        const pwWrap = $("authPassword") && $("authPassword").closest("div");
+        if (pwWrap) pwWrap.style.display = forgot ? "none" : "";
+        const row = $("authForgotRow"); if (row) row.style.display = mode === "login" ? "" : "none";
+        const note = $("authNote"); if (note) { note.style.display = "none"; note.textContent = ""; }
+        const btn = $("btnAuthSubmit"); if (btn) btn.style.display = "";
+        if (forgot) {
+          $("authTitle").textContent = t("acct.forgotTitle");
+          $("authSub").textContent = t("acct.forgotSub");
+          $("authSubmitLabel").textContent = t("acct.forgotSend");
+          $("authToggle").textContent = t("acct.backToSignIn");
+        }
+      }
+      async function acctForgotSubmit() {
+        const email = $("authEmail").value.trim();
+        const err = $("authError");
+        const note = $("authNote");
+        const btn = $("btnAuthSubmit");
+        err.style.display = "none"; note.style.display = "none";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = t("acct.emailInvalid"); err.style.display = "block"; return; }
+        btn.disabled = true; $("authSubmitLabel").textContent = t("auth.oneMoment");
+        const r = await apiFetch("/api/auth/forgot", { method: "POST", auth: false, body: JSON.stringify({ email }) });
+        btn.disabled = false; $("authSubmitLabel").textContent = t("acct.forgotSend");
+        if (!r) { err.textContent = t("acct.unreachable"); err.style.display = "block"; return; }
+        if (r.__error) {
+          err.textContent = r.__status === 429 ? t("acct.tooMany") : r.__status === 400 ? t("acct.emailInvalid") : t("acct.unreachable");
+          err.style.display = "block";
+          return;
+        }
+        note.textContent = t("acct.forgotSent") + (r.emailDelivery === "not-configured" ? " " + t("acct.forgotNoEmail") : "");
+        note.style.display = "block";
+        btn.style.display = "none";
+      }
+      function acctSay(text, bad) {
+        const m = $("acctMsg"); if (!m) return;
+        m.textContent = text;
+        m.style.color = bad ? "var(--bad)" : "";
+        m.style.display = text ? "block" : "none";
+      }
+      async function acctChangePassword() {
+        const current = $("acctCurrent").value;
+        const next = $("acctNew").value;
+        if (next.length < 8) { acctSay(t("acct.tooShort"), true); return; }
+        const btn = $("btnAcctChange"); btn.disabled = true;
+        const r = await apiFetch("/api/auth/password", { method: "POST", body: JSON.stringify({ currentPassword: current, newPassword: next }) });
+        btn.disabled = false;
+        if (!r) { acctSay(t("acct.unreachable"), true); return; }
+        if (r.__error) {
+          acctSay(r.__status === 403 ? t("acct.wrongCurrent") : r.__status === 400 ? t("acct.tooShort") : r.__status === 429 ? t("acct.tooMany") : t("acct.unreachable"), true);
+          return;
+        }
+        $("acctCurrent").value = ""; $("acctNew").value = "";
+        const n = typeof r.otherSessionsRevoked === "number" ? r.otherSessionsRevoked : 0;
+        acctSay(t("acct.changed", { n }), false);
+      }
+      async function acctSignOutEverywhere() {
+        const yes = await cloudConfirm({
+          title: t("acct.everywhereConfirmTitle"), body: t("acct.everywhereConfirmBody"),
+          yes: t("acct.everywhereBtn"), no: t("auth.notNow")
+        });
+        if (!yes) return;
+        const r = await apiFetch("/api/auth/sessions/revoke-all", { method: "POST", body: "{}" });
+        // 401 = this session was already gone; finish signing out locally.
+        if (!r || (r.__error && r.__status !== 401)) { acctSay(t("acct.unreachable"), true); return; }
+        const n = typeof r.revoked === "number" ? r.revoked : 0;
+        await cloudSignOut();
+        toast(t("acct.everywhereDone", { n }), "log-out");
+      }
+      function acctInit() {
+        $("authForgot").addEventListener("click", () => { setAuthMode("forgot"); setTimeout(() => { const e = $("authEmail"); if (e) e.focus(); }, 30); });
+        $("btnAcctChange").addEventListener("click", acctChangePassword);
+        $("btnAcctEverywhere").addEventListener("click", acctSignOutEverywhere);
+        $("acctNew").addEventListener("keydown", (e) => { if (e.key === "Enter") acctChangePassword(); });
+        $("btnAccount").addEventListener("click", () => {
+          acctSay("", false);
+          const c = $("acctCurrent"), n = $("acctNew"); if (c) c.value = ""; if (n) n.value = "";
+          const box = $("acctBox"); if (box) box.open = false;
+        });
+      }
+      if (typeof window !== "undefined") window.beukAccount = { acctForgotSubmit, acctChangePassword, acctSignOutEverywhere };
+      /* ==== /BEUK:auth ==== */
+
       /* ---- boot: probe quietly; wire the surfaces; degrade silently ---- */
       async function initCloud() {
         renderCloudChrome();
@@ -18608,7 +19068,8 @@
         });
         $("btnCloseAuth").addEventListener("click", closeAuth);
         $("modalAuth").addEventListener("click", (e) => { if (e.target === $("modalAuth")) closeAuth(); });
-        $("authToggle").addEventListener("click", () => setAuthMode(authMode === "register" ? "login" : "register"));
+        $("authToggle").addEventListener("click", () => setAuthMode(authMode === "login" ? "register" : "login"));
+        if (typeof acctInit === "function") acctInit(); /* BEUK:auth */
         $("btnAuthSubmit").addEventListener("click", cloudAuthSubmit);
         [$("authEmail"), $("authPassword")].forEach((inp) => inp.addEventListener("keydown", (e) => { if (e.key === "Enter") cloudAuthSubmit(); }));
         $("btnCloseShelf").addEventListener("click", () => { $("modalShelf").classList.remove("open"); focusEditor(); });

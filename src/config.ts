@@ -112,6 +112,17 @@ export interface Config {
   /** Hardening: how often expired sessions are deleted
    *  (SESSION_PURGE_INTERVAL_MS, default 1 hour; also once at boot). */
   sessionPurgeIntervalMs: number;
+  /** P0 #5 account basics: outgoing mail. SMTP_URL is a nodemailer
+   *  connection URL (smtp://user:pass@host:587 — STARTTLS when the
+   *  server offers it; smtps://…:465 for implicit TLS). MAIL_FROM is
+   *  the From address. Both null until set — while either is missing
+   *  NO email is sent and none is ever reported as sent (see mailer.ts). */
+  smtpUrl: string | null;
+  mailFrom: string | null;
+  /** When mail is not configured, write the would-be message (with its
+   *  reset link) to the server console. MAIL_LOG_LINKS=true|false;
+   *  default: on unless NODE_ENV=production. */
+  mailLogLinks: boolean;
 }
 
 function positiveInt(raw: string | undefined, fallback: number): number {
@@ -164,5 +175,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     authRateRefillMs: Number(env.AUTH_RATE_REFILL_MS ?? 60_000),
     shutdownGraceMs: Number(env.SHUTDOWN_GRACE_MS ?? 20_000),
     sessionPurgeIntervalMs: Number(env.SESSION_PURGE_INTERVAL_MS ?? 3_600_000),
+    smtpUrl: env.SMTP_URL || null,
+    mailFrom: env.MAIL_FROM || null,
+    mailLogLinks: env.MAIL_LOG_LINKS
+      ? env.MAIL_LOG_LINKS.toLowerCase() === 'true' || env.MAIL_LOG_LINKS === '1'
+      : (env.NODE_ENV ?? '').toLowerCase() !== 'production',
   };
 }

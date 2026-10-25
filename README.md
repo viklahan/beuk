@@ -58,6 +58,11 @@ stored server-side as a SHA-256 hash.
 | `POST /api/auth/login` | → new session cookie; 401 for wrong password or unknown email (same message, same argon2 work); 429 + `Retry-After` past the per-IP rate limit |
 | `POST /api/auth/logout` | destroys the session, clears the cookie |
 | `GET /api/auth/me` | current user, or 401 |
+| `POST /api/auth/forgot` | `{email}` → **always the same 200** `{ok, message, emailDelivery}` for any well-formed address, account or not (no enumeration); per-IP 429, silent per-address limit (see Account basics) |
+| `POST /api/auth/reset` | `{token, password}` → consumes a single-use, 60-minute token; new argon2id hash; **every session of that user is revoked**; 400 for an invalid/used/expired token |
+| `POST /api/auth/password` | signed in; `{currentPassword, newPassword}` → 403 for a wrong current password; on success the user's **other** sessions are revoked (this one stays) |
+| `POST /api/auth/sessions/revoke-all` | signed in; "sign out everywhere" — revokes every session including this one → `{ok, revoked}` |
+| `GET /reset?token=…` | the "choose a new password" page the reset email links to (served by the app; `no-store`, `no-referrer`) |
 | `GET /api/manuscripts` | caller's manuscripts (metadata only, incl. `revision`) |
 | `POST /api/manuscripts` | `{doc, title?}` — `doc` is the whole book JSON (metadata + settings + front/body/back-matter sections); title lifts from `doc.title` if not given |
 | `GET /api/manuscripts/:id` | full manuscript incl. `doc` and `revision`; `ETag: "<revision>"` |
@@ -380,6 +385,59 @@ photos not configured`** and the cover maker simply offers no stock
 search. (`PEXELS_API_BASE` overrides the API base URL; tests point it
 at a stub.)
 
+## Account basics: password reset + email
+
+There is now a way back into an account: **forgot password → emailed
+link → new password**, plus **change password** and **sign out
+everywhere** for a signed-in writer (studio: the sign-in dialog's
+"Forgot password?" and the shelf dialog's "Account & security").
+Email verification on signup is **not** implemented.
+
+**Mail (`src/mailer.ts`).** Outgoing mail goes through nodemailer over
+`SMTP_URL` (a nodemailer connection URL: `smtp://user:pass@host:587`
+upgrades with STARTTLS when the server offers it; `smtps://…:465` is
+implicit TLS) from `MAIL_FROM`. A message counts as sent only when the
+SMTP server accepted it. **Until both are set, no email is sent and
+none is ever reported as sent:** Housekeeping says "email not
+configured", the forgot-password response carries
+`emailDelivery: "not-configured"` (the same for every address — it is
+a server-wide fact), and the studio tells the writer no message will
+arrive. With `MAIL_LOG_LINKS=true` (default whenever `NODE_ENV` is not
+`production`; the Docker image runs `production`, so set it explicitly
+for a local stack) the would-be message, reset link included, is
+written to the app log instead — for local use only, since the link
+is a live credential.
+
+**Reset tokens** are 32 random bytes in the link only; the database
+(`password_resets`, migration 010) keeps their SHA-256 hash, an
+`expires_at` of now + 60 minutes and a `used_at` stamp. Consuming one
+is a single atomic `update … where used_at is null and expires_at >
+now()`; success sets the new argon2id hash, deletes every session of
+the user, and spends any other outstanding links. A too-short new
+password is refused before the token is touched. Changing the
+password while signed in also spends outstanding links.
+
+**No account enumeration.** `/forgot` answers before it looks anything
+up (the token + email work runs after the response), so known and
+unknown addresses get the same status, body and timing. Limits, per
+app instance (in memory): 10 forgot requests per IP per 15 minutes
+(then **429** with `Retry-After`), 3 per address per hour (beyond that
+the same 200 is returned but nothing is sent — no mail-bombing an
+inbox), 20 reset attempts per IP per 15 minutes, 10 change-password
+attempts per user per 15 minutes. Per-IP limits need the real client
+IP behind Caddy: the app sets Express `trust proxy` from
+`TRUST_PROXY_HOPS` (default 1 = Caddy; see Hardening).
+This also makes the Founders' Shelf per-IP throttle per real client.
+
+**Enabling email (Vik's step, the credentials are his):** set
+`SMTP_URL` and `MAIL_FROM` in `.env` (any SMTP provider; the From
+domain should be one the provider is allowed to send for), restart,
+then in Housekeeping run `POST /api/housekeeping/mail/test` (sends one
+message to your own address and reports what the SMTP server said) and
+a Self-checks run (`auth.mail.delivery-state-honest` connects and
+authenticates). `SMTP_URL` is treated as a secret: scrubbed from every
+Housekeeping output and excluded from backups by name.
+
 ## Housekeeping (M3)
 
 The admin surface for the app itself — never customer-facing, and it
@@ -390,7 +448,7 @@ Mutating actions take **one global lock** (a concurrent attempt gets
 **409**), every action writes an **audit row**, and every output —
 responses, audit summaries, generated manifests — passes through a
 **secret scrubber** that redacts the configured secret values
-(database URL/password, Stripe keys).
+(database URL/password, Stripe keys, SMTP URL/password).
 
 **Granting admin:** out-of-band only. Register the account in the app,
 then on the server run
@@ -413,15 +471,20 @@ catalogue to an admin):
 | Promotion | `POST /promote/sign-off`, then `POST /promote` (the gate, below) |
 | Evidence | `GET /audit` — recent audit rows |
 | Founders' Shelf | `GET /founders` — the M4 seed-list applications (read-only, audited) |
+| Mail | `GET /mail` — whether email can be sent ("email not configured" until `SMTP_URL` + `MAIL_FROM`; credentials never shown); `POST /mail/test` — one test message to the admin's own address, 409 when not configured, 502 when the SMTP server refuses |
 
-**Self-checks registry:** 48 cases ported from the coverage registry.
-**28 execute server-side** — infra (DB reachable, migrations current,
+**Self-checks registry:** cases ported from the coverage registry,
+plus later additions (`GET /api/housekeeping/actions` reports the live
+totals: `cases`, `server`, `clientOnly`). The server-side cases cover
+infra (DB reachable, migrations current,
 export volume writable), data invariants (no orphaned export
 files/rows, archive SHA-256 re-verification, streak ledger
 consistency), and package assertions over fixture EPUBs (cover /
 preset / landmark / alt-text style checks, box-set and DOCX structure,
-and the validator cases run against deliberately damaged packages).
-**20 are registered as `client-only`** with a one-line reason each
+and the validator cases run against deliberately damaged packages),
+plus account basics (mail delivery state, the `/reset` page in the
+deploy tree, reset-token schema). The rest are registered as
+**`client-only`** with a one-line reason each
 (theme application, print CSS, word counts — inherently client-UI
 state): reported in every run, never silently dropped, never faked
 as passing. Runs are stored in `housekeeping_check_runs`.
@@ -629,6 +692,19 @@ up, the pg pool surviving an `error` event, expired-session purge,
 graceful shutdown (in-flight request finishes, new connections refused,
 pool closed, exit 0), and a job outliving the shutdown grace marked
 failed while queued jobs stay queued.
+Account basics add (`tests/account.test.ts`): forgot-password giving
+the identical status/body/headers for a known and an unknown address
+(and mail only for the real one), the token stored only as a hash,
+reset setting an argon2id hash and revoking every session, token reuse
+rejected, expiry after 60 minutes, a short password not burning the
+token, one link spending the others, change password (403 on a wrong
+current password, other sessions revoked, this one kept), sign out
+everywhere, the per-IP 429 and silent per-address limit, the
+unconfigured path (`emailDelivery: "not-configured"`, link only in the
+console log, nothing logged with `MAIL_LOG_LINKS` off), a real
+nodemailer hand-off to an in-process SMTP stub (and an honest failure
+when nothing listens), the `/reset` page headers, and Housekeeping's
+mail status / test send / self-checks with SMTP credentials scrubbed.
 
 ## Deploy to Hetzner (outline)
 
@@ -668,6 +744,9 @@ everything it does.
    `tools/PDFX_def.ps` at a real CMYK ICC profile — the five steps
    under "Jobs — Production setup" above. Until then, EPUBCheck and
    PDF/X jobs complete as honest "not configured" failures.
+9. Email (password reset): set `SMTP_URL` + `MAIL_FROM` in `.env`
+   (or pass them to `install.sh`), then use Housekeeping's mail test.
+   Until then no reset email is sent and the studio says so.
 
 The same Compose file runs locally — only `.env` differs.
 
@@ -676,7 +755,7 @@ The same Compose file runs locally — only `.env` differs.
 `client/` is bind-mounted into Caddy at `/srv/client` and served at the
 site root with SPA fallback; `/api/*` is proxied to the app. It holds a
 placeholder page for the app itself, plus the M4 warmth pages under
-`client/help/` and `client/thanks/` — those paths are proxied to the
+`client/help/`, `client/thanks/` and `client/reset/` — those paths are proxied to the
 app instead (see the Caddyfile), which fills their config slots. The
 existing Beuk web client drops its built files in here in a later
 milestone — no server changes needed.
@@ -691,7 +770,9 @@ milestone — no server changes needed.
   users), and a real community (Phase 2, Discourse, on its trigger).
   Phase 0 shipped in M4; the later phases wait for their triggers.
 - The web client wired to this API, first-login import of local
-  manuscripts, and email verification / password reset — later work.
+  manuscripts, and email verification on signup — later work.
+  (Password reset, change password and sign out everywhere shipped:
+  see Account basics.)
 
 ## Layout
 

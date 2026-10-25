@@ -6,6 +6,8 @@ import {
   createHousekeepingContext,
   type HousekeepingDeps,
 } from './housekeeping/context.js';
+import { createMailer, type Mailer } from './mailer.js';
+import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes } from './routes/auth.js';
 import { billingRoutes } from './routes/billing.js';
 import { exportRoutes } from './routes/exports.js';
@@ -14,6 +16,7 @@ import { housekeepingRoutes } from './routes/housekeeping.js';
 import { jobRoutes } from './routes/jobs.js';
 import { manuscriptRoutes } from './routes/manuscripts.js';
 import { publicConfigRoutes, statusRoutes } from './routes/public.js';
+import { resetPageRoutes } from './routes/reset-page.js';
 import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
@@ -27,9 +30,21 @@ export interface AppDeps {
   billing?: BillingProvider;
   /** M3 Housekeeping injectables (lock, scratch DB factory, boot check). */
   housekeeping?: HousekeepingDeps;
+  /** P0 #5: outgoing mail; defaults to createMailer(config). */
+  mailer?: Mailer;
+  /** P0 #5: rate limits for the account endpoints (tests tighten them). */
+  accountLimits?: AccountLimits;
 }
 
-export function buildApp({ db, config, now, billing, housekeeping }: AppDeps): Express {
+export function buildApp({
+  db,
+  config,
+  now,
+  billing,
+  housekeeping,
+  mailer,
+  accountLimits,
+}: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
   // Exactly the configured number of proxy hops (default 1: Caddy) is
@@ -40,6 +55,10 @@ export function buildApp({ db, config, now, billing, housekeeping }: AppDeps): E
   // "Defaults"), so the right-most entry is the client Caddy saw.
   // https://expressjs.com/en/guide/behind-proxies.html
   app.set('trust proxy', config.trustProxyHops);
+  const mail = mailer ?? createMailer(config);
+  const accountTasks = new BackgroundTasks();
+  app.locals.mailer = mail;
+  app.locals.accountTasks = accountTasks;
   // The billing webhook verifies its signature over the RAW body, so it
   // gets its own raw parser mounted on its exact path BEFORE the global
   // JSON parser can touch (and re-shape) the payload.
@@ -59,13 +78,15 @@ export function buildApp({ db, config, now, billing, housekeeping }: AppDeps): E
   app.get('/api', (_req, res) => res.json({ name: 'beuk-api', milestone: 'M5' }));
 
   app.use('/api/auth', authRoutes(db, config));
+  // P0 #5: forgot/reset password, change password, sign out everywhere.
+  app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
   app.use('/api/manuscripts', manuscriptRoutes(db));
   app.use('/api/streak', streakRoutes(db, config, now));
   app.use('/api/exports', exportRoutes(db, config));
   app.use('/api/billing', billingRoutes(db, billing ?? new StripeBillingProvider(config)));
   app.use(
     '/api/housekeeping',
-    housekeepingRoutes(db, config, createHousekeepingContext(config, housekeeping)),
+    housekeepingRoutes(db, config, createHousekeepingContext(config, housekeeping), mail),
   );
   // M5 jobs (EPUBCheck + PDF/X over the caller's own archive).
   const jobs = jobRoutes(db, config);
@@ -86,6 +107,8 @@ export function buildApp({ db, config, now, billing, housekeeping }: AppDeps): E
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.
   app.use(warmthRoutes(config));
+  // P0 #5: the "choose a new password" page the reset email links to.
+  app.use(resetPageRoutes(config));
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err);

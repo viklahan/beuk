@@ -85,6 +85,15 @@ services:
       AUTH_RATE_REFILL_MS: ${AUTH_RATE_REFILL_MS:-60000}
       SHUTDOWN_GRACE_MS: ${SHUTDOWN_GRACE_MS:-20000}
       SESSION_PURGE_INTERVAL_MS: ${SESSION_PURGE_INTERVAL_MS:-3600000}
+      # Account basics (password reset): outgoing mail. SMTP_URL or
+      # MAIL_FROM unset → NO email is sent and none is reported as sent;
+      # Housekeeping says "email not configured". MAIL_LOG_LINKS=true
+      # writes would-be messages (with reset links) to the app log —
+      # for local stacks only (the image runs NODE_ENV=production, so
+      # it is off unless set).
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_LOG_LINKS: ${MAIL_LOG_LINKS:-}
     volumes:
       - exportdata:/data/exports
       - backupdata:/data/backups

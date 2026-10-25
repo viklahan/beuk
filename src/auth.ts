@@ -15,7 +15,7 @@ declare module 'express-serve-static-core' {
   }
 }
 
-function tokenHash(token: string): string {
+export function tokenHash(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 

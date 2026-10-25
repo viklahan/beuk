@@ -4,6 +4,17 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-24 — A way back into your shelf
+
+- **Forgot password.** For writers locked out of their own shelf: the
+  sign-in dialog now has "Forgot password?" — a link arrives by email,
+  works once, for an hour, and signs every device out when you use it.
+  If the server can't send email yet, the studio says so plainly
+  instead of promising a message that won't come.
+- **Change password, sign out everywhere.** For writers who signed in
+  on a borrowed laptop: both live under "Account & security" in your
+  shelf.
+
 ## 2026-10-24 — Your book is saved on this device
 
 - **Saved on this device, always.** For writers who lost an afternoon to
