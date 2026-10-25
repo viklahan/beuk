@@ -10,6 +10,7 @@ import { runMigrations, type Db, type QueryResult } from '../src/db.js';
 import type { Mailer } from '../src/mailer.js';
 import type { AccountLimits, BackgroundTasks } from '../src/routes/account.js';
 import type { CspReportOptions } from '../src/routes/csp-report.js';
+import type { HelpSearchLimits } from '../src/routes/help.js';
 import type {
   BootCheck,
   HousekeepingDeps,
@@ -205,6 +206,7 @@ export async function startTestServer(
     accountLimits?: AccountLimits;
     cspReport?: CspReportOptions;
     billing?: BillingProvider;
+    helpSearchLimits?: HelpSearchLimits;
   },
 ): Promise<TestServer> {
   const config = testConfig(overrides);

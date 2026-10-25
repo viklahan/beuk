@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 import { BRAND_FOOTNOTE, BRAND_SUBLINE } from '../src/warmth/pages.js';
+import { getHelpContent } from '../src/help/content.js';
 import { createTestDb, startTestServer } from './helpers.js';
 
 /* BEUK:branding — V's decisions of 2026-10-25:
@@ -20,6 +21,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const clientDir = path.join(here, '..', 'client');
 const read = (...p: string[]) => readFile(path.join(clientDir, ...p), 'utf8');
 
+/** The warmth pages that are still static files. The Help pages are no
+ *  longer static (H1: server-rendered from content/help/), so every one
+ *  of them is checked as rendered, in the test below. */
 async function warmthStaticPages(): Promise<string[]> {
   const help = (await readdir(path.join(clientDir, 'help'))).filter((f) => f.endsWith('.html'));
   return [
@@ -45,7 +49,7 @@ test('branding: every client ui.brand.* self-check is registered server-side as 
 test('branding: warmth pages carry the beuk.studio sub-brand and footer, never quietshelf.studio', async () => {
   assert.equal(BRAND_SUBLINE, 'beuk.studio');
   const pages = await warmthStaticPages();
-  assert.ok(pages.length >= 15, `expected the 12 help pages + reset/support/thanks, got ${pages.length}`);
+  assert.ok(pages.length >= 3, `expected reset/support/thanks, got ${pages.length}`);
   for (const p of pages) {
     const html = await read(p);
     assert.doesNotMatch(html, /quietshelf/i, `${p} must not name quietshelf.studio`);
@@ -53,6 +57,32 @@ test('branding: warmth pages carry the beuk.studio sub-brand and footer, never q
     assert.ok(html.includes(`<span class="subbrand">${BRAND_SUBLINE}</span>`), `${p} sub-brand`);
     assert.ok(html.includes(`<p class="foot-note">${BRAND_FOOTNOTE}</p>`), `${p} footer`);
     assert.doesNotMatch(html, /open[\s-]?source/i, `${p} must not claim open source`);
+  }
+  // H1: every server-rendered Help page carries the same sub-brand and footer.
+  const db = await createTestDb();
+  const server = await startTestServer(db);
+  try {
+    const c = getHelpContent();
+    const rendered = [
+      '/help/',
+      '/help/errors',
+      '/help/search?q=cover',
+      ...c.guides.map((g) => `/help/${g.slug}`),
+      ...c.errors.map((e) => `/help/errors/${e.code}`),
+    ];
+    assert.ok(rendered.length >= 3 + 13 + 20, `${rendered.length} rendered help pages`);
+    for (const p of rendered) {
+      const res = await fetch(server.base + p);
+      const html = await res.text();
+      assert.equal(res.status, 200, p);
+      assert.doesNotMatch(html, /quietshelf/i, `${p} must not name quietshelf.studio`);
+      assert.doesNotMatch(html, /Quiet Shelf/, `${p} must not say "from Quiet Shelf"`);
+      assert.ok(html.includes(`<span class="subbrand">${BRAND_SUBLINE}</span>`), `${p} sub-brand`);
+      assert.ok(html.includes(`<p class="foot-note">${BRAND_FOOTNOTE}</p>`), `${p} footer`);
+      assert.doesNotMatch(html, /open[\s-]?source/i, `${p} must not claim open source`);
+    }
+  } finally {
+    await server.close();
   }
 });
 
