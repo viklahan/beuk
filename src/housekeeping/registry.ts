@@ -1690,6 +1690,37 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Scroll restoration happens in the client sidebar renderer on every rebuild.',
   },
+  // BEUK:sidebar — compact header pill, single Import/Settings, collapsible sidebar, pre-rename sample swap.
+  {
+    id: 'ui.savepill.compact',
+    title: 'Header save pill shows a dot and a short label per state; the full sentence rides the tooltip, accessible name and popover; warnings stay distinct; width is capped',
+    kind: 'client-only',
+    reason: 'The save pill is client chrome over the browser-local save state (IndexedDB); the check renders each state in the studio.',
+  },
+  {
+    id: 'ui.header.no-duplicates',
+    title: 'Import and Project Settings appear once, in the sidebar; the header carries no duplicate icons',
+    kind: 'client-only',
+    reason: 'Header and sidebar buttons are client markup; the check inspects the studio DOM and clicks the sidebar buttons.',
+  },
+  {
+    id: 'ui.sidebar.collapse',
+    title: 'Sidebar tools stand in one labelled icon row; statistics are a remembered disclosure with a live one-line summary',
+    kind: 'client-only',
+    reason: 'The sidebar layout and its per-device preference (localStorage) live in the client.',
+  },
+  {
+    id: 'ui.outline.groups',
+    title: 'Outline Front/Body/Back groups fold with counts; the active section is never hidden; add-page, add-chapter and reorder survive',
+    kind: 'client-only',
+    reason: 'The outline is rendered by the client sidebar renderer from the in-browser book model.',
+  },
+  {
+    id: 'sample.legacy-salt-meridian',
+    title: 'A sample copy saved before the rename is snapshotted into History and replaced by the current sample; restoring the snapshot returns the old text exactly',
+    kind: 'client-only',
+    reason: 'The sweep runs in the client on every path a book reaches the desk (device restore, shelf open, conflict, backup file).',
+  },
 
   /* ---- Dictation language + Read Aloud section language (BEUK:dictlang) ---- */
   {

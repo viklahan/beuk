@@ -4,6 +4,30 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — A calmer sidebar, and the sample's own name everywhere
+
+- **A save pill that fits.** For writers who found the header crowded:
+  the "Saved on this device" pill is now a dot and a word or two —
+  Saved ✓, Saving…, Saved · back up, Not saved. Warnings keep their
+  colour and a "!"; the full sentence is in its tooltip and one click
+  away in its popover.
+- **One Import, one Project Settings.** They live at the top of the
+  sidebar (on phones, in the Structure tab); the header no longer
+  repeats them as icons.
+- **More of your outline at once.** Story Insights, Goals, History and
+  Reader comments sit in one small row; the statistics fold behind a
+  one-line summary; Front Matter, Body and Back Matter each fold with a
+  count. The section you are editing is never folded away. At a laptop
+  size the outline now shows about three times as many sections.
+- **The sample is The Lantern Coast everywhere.** A browser or shelf
+  that saved the sample before its rename still showed the old title —
+  on the desk, the hardback and the preview. The next time that copy
+  opens, it is put in History ("Before sample update") and the current
+  sample takes its place; restoring it gives the old text back word for
+  word. The sample's own cover picture still carried the old title too;
+  it is re-lettered. The new words in 12 languages have not yet been
+  checked by native speakers.
+
 ## 2026-10-25 — Older books get a proper ID
 
 - **Older books, clean exports.** For writers whose books date from
