@@ -347,3 +347,6 @@ a.strong { font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) {
   .step, li.pick, .ln { transition: background-color .15s ease, border-color .15s ease; }
 }
+/* Steps read in the interface face (the design's step cards), not the reading serif. */
+.g-sec li.step { font-family: var(--ui); font-size: 15.5px; line-height: 1.5; }
+li.pick .see { margin-left: 8px; }
