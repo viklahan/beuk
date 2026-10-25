@@ -4,6 +4,20 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — Zen sounds like the real thing
+
+- **Real rain, waves and wind.** For writers who use Zen's ambient
+  sound: the old sound was made by the computer and, as one writer put
+  it, sounded like someone blowing air. It is now three real
+  recordings — gentle rain on banana leaves, soft waves on a lake shore,
+  and wind in an old willow — each given to the public domain by the
+  person who recorded it (named in the credits). They loop without a
+  seam. “Rain & slow drum” is gone; if you had picked it, Zen starts on
+  rain. Each sound downloads the first time you play it (about 1 MB) and
+  then works offline. If it cannot load, the sound menu says so instead
+  of pretending to play. The new words in 12 languages have not yet been
+  checked by native speakers.
+
 ## 2026-10-25 — Older books get a proper ID
 
 - **Older books, clean exports.** For writers whose books date from
