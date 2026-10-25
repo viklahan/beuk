@@ -21,7 +21,7 @@
      shell so the studio opens on the local book with no network.
    - Everything else (the shell's assets, the CDN libraries, the
      fonts) is cache-first, filled from the network on first use. */
-const BEUK_CACHE = "beuk-shell-v2";
+const BEUK_CACHE = "beuk-shell-v3";
 const BEUK_SHELL = [
   "../",
   "../index.html",
@@ -68,8 +68,26 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+/* ==== BEUK:branding ==== An OLDER studio page that is still open when
+   this worker activates asks caches.open(<its own, older name>) once more
+   (its shell check), which re-creates that old cache EMPTY right after
+   activate retired it. Seen in the v2 -> v3 browser proof. So when an
+   open page pings this worker, shell caches with a LOWER version number
+   than this one are retired again. Only "beuk-shell-v<N>" names with
+   N below ours are touched, never a newer worker's cache, never anything
+   else (the writer's book lives in IndexedDB, not in Cache Storage). */
+function retireOlderShells() {
+  const mine = parseInt(BEUK_CACHE.replace("beuk-shell-v", ""), 10);
+  return caches.keys().then((keys) => Promise.all(keys.filter((k) => {
+    const m = /^beuk-shell-v(\d+)$/.exec(k);
+    return !!m && parseInt(m[1], 10) < mine;
+  }).map((k) => caches.delete(k))));
+}
+/* ==== /BEUK:branding ==== */
+
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
+  if (event.data && event.data.type === "BEUK_PING") event.waitUntil(retireOlderShells().catch(() => {}));
   if (event.data && event.data.type === "BEUK_PING" && event.source)
     event.source.postMessage({ type: "BEUK_SHELL_READY", cache: BEUK_CACHE });
   if (event.data && event.data.type === "BEUK_CACHE_URLS" && Array.isArray(event.data.urls)) {

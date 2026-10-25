@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Beuk" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
-    <title>Beuk — quietshelf.studio</title>
+    <title>Beuk — beuk.studio</title>
     <script>
       /* BEUK:local — the desk stays hidden until this device's saved book is restored (local-first saving). */
       document.documentElement.setAttribute("data-local-restore", "pending");
@@ -1757,9 +1757,9 @@
           <img src="assets/logo.webp" alt="" width="30" height="36" />
           <div class="brand-txt">
             <div class="brand-name">beuk</div>
-            <div class="brand-sub">quietshelf.studio</div>
+            <div class="brand-sub">beuk.studio</div>
           </div>
-          <span class="brand-tagline" id="brandTagline" data-i18n="brand.tagline">your free &amp; open-source EPUB converter</span>
+          <span class="brand-tagline" id="brandTagline" data-i18n="brand.tagline">your EPUB &amp; print studio</span>
         </div>
         <div class="brand-div" aria-hidden="true"></div>
         <div class="book-id" style="flex:1 1 auto; min-width:0;">
@@ -6475,20 +6475,26 @@
         "top.zen": "Zen", "zen.exit": "退出 Zen", "editor.countSection": "本节 {n} 词", "editor.countBook": "全书 {n} 词", "covermk.layout.free": "自由", "covermk.bgPhoto": "照片", "covermk.photoFind": "搜索照片", "covermk.photoPh": "搜索照片 — 试试标题里的词", "covermk.photoNeedAccount": "图库照片随账户提供 — 登录后为你的封面搜索照片。", "covermk.photoNotConfigured": "这个书架还没有设置图库照片。", "covermk.photoRetry": "暂时无法连接图库照片 — 请重试。", "covermk.photoNone": "没有匹配的照片 — 换几个词试试。", "covermk.photoFail": "无法加载那张照片 — 请换一张。", "covermk.photoBy": "照片由 {name} 拍摄（Pexels）", "covermk.photoByOpenverse": "照片由 {name} 拍摄（Openverse）", "covermk.duoScene": "双色调正在显示内置的海港场景 — 上传你的图片或从图库中选择一张，即可对自己的图片应用双色调。", "covermk.photoUse": "照片已设为封面背景", "covermk.posH": "位置 — 水平", "covermk.posV": "位置 — 垂直", "covermk.dragHint": "拖动封面上的任意文字块，把它放到你想要的位置。", "covermk.resetPos": "重置位置"
       });
 
-      /* Brand tagline beside the wordmark — assigned per pack so completeness holds. */
-      Object.assign(UI_STRINGS.en, { "brand.tagline": "your free & open-source EPUB converter" });
-      Object.assign(UI_STRINGS.es, { "brand.tagline": "tu conversor de EPUB gratuito y de código abierto" });
-      Object.assign(UI_STRINGS.fr, { "brand.tagline": "votre convertisseur EPUB gratuit et open source" });
-      Object.assign(UI_STRINGS.de, { "brand.tagline": "Ihr kostenloser und quelloffener EPUB-Konverter" });
-      Object.assign(UI_STRINGS.it, { "brand.tagline": "il tuo convertitore EPUB gratuito e open source" });
-      Object.assign(UI_STRINGS.pt, { "brand.tagline": "o seu conversor de EPUB gratuito e de código aberto" });
-      Object.assign(UI_STRINGS.nl, { "brand.tagline": "je gratis en open source EPUB-converter" });
-      Object.assign(UI_STRINGS.pl, { "brand.tagline": "Twój darmowy i otwartoźródłowy konwerter EPUB" });
-      Object.assign(UI_STRINGS.ru, { "brand.tagline": "ваш бесплатный конвертер EPUB с открытым исходным кодом" });
-      Object.assign(UI_STRINGS.tr, { "brand.tagline": "ücretsiz ve açık kaynak EPUB dönüştürücünüz" });
-      Object.assign(UI_STRINGS.ar, { "brand.tagline": "محوّل EPUB الخاص بك — مجاني ومفتوح المصدر" });
-      Object.assign(UI_STRINGS.ja, { "brand.tagline": "無料でオープンソースのEPUBコンバーター" });
-      Object.assign(UI_STRINGS["zh-Hans"], { "brand.tagline": "你的免费开源 EPUB 转换器" });
+      /* ==== BEUK:branding ==== */
+      /* Brand tagline beside the wordmark — assigned per pack so completeness holds.
+         V's D2/D3 (2026-10-25): no "free" and no "open-source" in any locale —
+         the repo carries no licence, and paid plans are coming. The
+         ui.brand.domain self-check fails if either word returns. Non-English
+         wordings are new copy, flagged for native review like the rest. */
+      Object.assign(UI_STRINGS.en, { "brand.tagline": "your EPUB & print studio" });
+      Object.assign(UI_STRINGS.es, { "brand.tagline": "tu estudio de EPUB e impresión" });
+      Object.assign(UI_STRINGS.fr, { "brand.tagline": "votre atelier EPUB et impression" });
+      Object.assign(UI_STRINGS.de, { "brand.tagline": "Ihr Studio für EPUB und Druck" });
+      Object.assign(UI_STRINGS.it, { "brand.tagline": "il tuo studio per EPUB e stampa" });
+      Object.assign(UI_STRINGS.pt, { "brand.tagline": "o seu estúdio de EPUB e impressão" });
+      Object.assign(UI_STRINGS.nl, { "brand.tagline": "je studio voor EPUB en druk" });
+      Object.assign(UI_STRINGS.pl, { "brand.tagline": "Twoje studio EPUB i druku" });
+      Object.assign(UI_STRINGS.ru, { "brand.tagline": "ваша студия EPUB и печати" });
+      Object.assign(UI_STRINGS.tr, { "brand.tagline": "EPUB ve baskı stüdyonuz" });
+      Object.assign(UI_STRINGS.ar, { "brand.tagline": "استوديو EPUB والطباعة الخاص بك" });
+      Object.assign(UI_STRINGS.ja, { "brand.tagline": "EPUBと印刷のためのスタジオ" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "brand.tagline": "你的 EPUB 与印刷工作室" });
+      /* ==== /BEUK:branding ==== */
 
       /* ==== BEUK:hardcover ==== */
       /* Hardcover wraps (Cover Maker) — assigned per pack so completeness holds. */
@@ -26656,7 +26662,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v2"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v3"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -26814,8 +26820,11 @@
       }
       function checkShellCached() {
         if (!("caches" in window)) return;
-        caches.open(BEUK_CACHE_NAME)
-          .then((cache) => cache.keys())
+        /* BEUK:branding — has() first: open() would CREATE the cache, and a
+           page left open across a worker upgrade would re-create its old,
+           just-retired shell cache empty. */
+        caches.has(BEUK_CACHE_NAME)
+          .then((present) => (present ? caches.open(BEUK_CACHE_NAME).then((cache) => cache.keys()) : []))
           .then((keys) => {
             if (keys.some((r) => /\/index\.html$/.test(r.url) || /\/$/.test(r.url))) pwa.shellCached = true;
           })
@@ -30892,7 +30901,7 @@
                 "computed font-family of body / Export / sidebar / group label / toolbar / dialog heading all resolve to Karla; the stack declares “Noto Sans Arabic” + sans-serif fallbacks, and an Arabic UI (dir=rtl) still computes the same family — Arabic glyphs fall back per-glyph, the chrome never breaks");
             } finally { setUiLang(keep); }
           } },
-        { id: "ui.tagline.present", feature: "ui", name: "Tagline beside the wordmark: the header carries the localized brand.tagline next to the beuk / quietshelf.studio lockup — quiet descriptor text, re-rendered from the string table on a language switch — and a max-width rule hides it before it can crowd the shelf status or account control at narrow widths",
+        { id: "ui.tagline.present", feature: "ui", name: "Tagline beside the wordmark: the header carries the localized brand.tagline next to the beuk / beuk.studio lockup — quiet descriptor text, re-rendered from the string table on a language switch — and a max-width rule hides it before it can crowd the shelf status or account control at narrow widths",
           run() {
             const keep = getUiLang();
             try {
@@ -30919,6 +30928,28 @@
                 "tagline sits inside the brand lockup in #topbar reading “" + UI_STRINGS.en["brand.tagline"] + "” in English and “" + UI_STRINGS.de["brand.tagline"] + "” under a German UI; a max-width stylesheet rule hides .brand-tagline at narrow widths (" + (hideRule ? "found" : "MISSING") + "), and zen mode hides the whole topbar, tagline with it");
             } finally { setUiLang(keep); }
           } },
+        /* ==== BEUK:branding ==== */
+        { id: "ui.brand.domain", feature: "ui", name: "Brand: the header lockup and the page title name beuk.studio (the production domain, V's D1), and no brand.tagline in any of the 13 interface languages claims \"free\" or \"open source\" (V's D2/D3: the repo carries no licence and paid plans are coming)",
+          run() {
+            const sub = document.querySelector("#topbar .brand-sub");
+            const subOk = !!sub && sub.textContent.trim() === "beuk.studio";
+            const titleOk = /beuk\.studio/.test(document.title) && !/quiet\s?shelf/i.test(document.title);
+            /* Every way the old taglines said "free" or "open source", per
+               language, plus the English words anywhere. */
+            const banned = [/\bfree\b/i, /open[\s-]?source/i, /gratuit/i, /gratis/i, /código (abierto|aberto)/i, /kostenlos/i, /quelloffen/i,
+              /darmow/i, /otwartoźródłow/i, /бесплатн/i, /открыт\S* исходн/i, /ücretsiz/i, /açık kaynak/i, /مجاني/, /مفتوح المصدر/,
+              /無料/, /オープンソース/, /免费/, /开源/];
+            const packs = Object.keys(UI_STRINGS);
+            const bad = [];
+            packs.forEach((p) => {
+              const tl = UI_STRINGS[p]["brand.tagline"];
+              if (typeof tl !== "string" || !tl.trim()) { bad.push(p + ": missing"); return; }
+              banned.forEach((re) => { if (re.test(tl)) bad.push(p + ": " + tl); });
+            });
+            return scVerdict(subOk && titleOk && packs.length === 13 && !bad.length,
+              "header sub-brand reads “" + (sub ? sub.textContent.trim() : "(missing)") + "”, page title “" + document.title + "”; " + packs.length + " tagline packs checked against " + banned.length + " free/open-source patterns" + (bad.length ? " — FOUND " + bad.join("; ") : ", none found"));
+          } },
+        /* ==== /BEUK:branding ==== */
         { id: "ui.header.language-dropdown", feature: "ui", name: "Header language dropdown: the pill sits in the topbar showing the current interface language's own name with a chevron, opens a menu of all thirteen UI languages, and choosing one switches the interface language at once (the book's language is untouched)",
           run() {
             const keep = getUiLang();

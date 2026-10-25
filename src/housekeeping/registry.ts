@@ -1578,7 +1578,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'Header shows the brand tagline beside the Beuk wordmark lockup',
     kind: 'client-only',
     reason:
-      'The tagline (“your free & open-source EPUB converter”, string-table key brand.tagline, all 13 locales) is header chrome rendered by the client; it truncates as the bar narrows and hides below 1400px and in zen mode.',
+      'The tagline (“your EPUB & print studio”, string-table key brand.tagline, all 13 locales) is header chrome rendered by the client; it truncates as the bar narrows and hides below 1400px and in zen mode.',
+  },
+  {
+    id: 'ui.brand.domain',
+    title: 'Brand names beuk.studio; no tagline in any locale claims “free” or “open source”',
+    kind: 'client-only',
+    reason:
+      'The header lockup, the page title and the 13-locale brand.tagline string table are client chrome. V decided on 2026-10-25: the sub-brand is the production domain beuk.studio, and the “free & open-source” claim is removed because the repo carries no licence. The case fails if either word returns in any locale.',
   },
   {
     id: 'ui.zen.mode-hides-the-room',

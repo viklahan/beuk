@@ -1091,7 +1091,23 @@ Founders' Shelf application; none of it touches pricing or checkout.
   (the post-export landing). **While `KOFI_URL` is unset, no jar is
   rendered anywhere** — no placeholder, no dead link. It is never
   called a donation and never appears on a pricing or checkout surface
-  (there are none in this codebase).
+  (there are none in this codebase). **The jar is temporary: it stays
+  only until paid plans are live** (V, 2026-10-25). Pages that carry it
+  load `/help/billing-gate.js`, which asks `GET /api/billing/status`
+  and hides every `data-kofi` element (the jar, the header "Support"
+  link, the coffee section of `/support`) only when the answer is an
+  explicit `{ "live": true }`. A 404/501, any other answer, a network
+  error or no answer within 1.5 s keeps the jar showing.
+- **Brand** — the sub-brand beside the wordmark and the footer of every
+  warmth page is `beuk.studio`, the production domain
+  (`BRAND_SUBLINE` / `BRAND_FOOTNOTE` in `src/warmth/pages.ts`; the
+  static pages are kept equal to them by `tests/branding.test.ts`). The
+  studio tagline is "your EPUB & print studio" in all 13 interface
+  languages. **Beuk is not open source**: the repo has no licence file
+  and `package.json` is private, so no page claims otherwise. The
+  `ui.brand.domain` self-check fails if "free" or "open source" returns
+  to the tagline in any language. The sample book's imprint "Quiet
+  Shelf Studio" is fictional demo data and stays as it is.
 - **Changelog & roadmap** — `/changelog` renders `CHANGELOG.md` (repo
   root; entries credit the writers who asked), `/roadmap` renders
   `docs/roadmap.md` — the same file Housekeeping's Reference pillar

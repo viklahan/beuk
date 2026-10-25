@@ -292,7 +292,8 @@ test('support page: served only when KOFI_URL is configured, nav link follows', 
     assert.doesNotMatch(page.html, /donation/i);
     for (const p of ['/help/', '/help/add-a-cover.html', '/thanks', '/changelog']) {
       const { html } = await getPage(withJar.server.base, p);
-      assert.match(html, /<a href="\/support">Support<\/a>/, `${p} nav should link the support page`);
+      // BEUK:branding: the link carries data-kofi so the billing gate can hide it once paid plans are live.
+      assert.match(html, /<a href="\/support" data-kofi>Support<\/a>/, `${p} nav should link the support page`);
     }
   } finally {
     await withJar.server.close();

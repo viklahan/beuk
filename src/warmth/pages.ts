@@ -18,11 +18,25 @@ import { escapeHtml, renderMarkdown } from './markdown.js';
  *                              likewise only when KOFI_URL is configured.
  *   {{KOFI_URL}}               the Ko-fi page itself (the /support page's
  *                              button; that page is only served when set).
+ *   <!--BEUK_BILLING_GATE-->   the Ko-fi gate script (client/help/
+ *                              billing-gate.js) — only when KOFI_URL is
+ *                              configured. It hides every data-kofi
+ *                              element once GET /api/billing/status says
+ *                              { live: true } (V's D4: the tip jar stays
+ *                              only until paid plans are live); any other
+ *                              answer, or none, leaves the jar showing.
  *
  * The Changelog and Roadmap pages are rendered from their Markdown
  * sources (CHANGELOG.md at the repo root, docs/roadmap.md — the same
  * file Housekeeping's Reference pillar serves) inside the same chrome.
  */
+
+/** The brand on every warmth page (V's D1/D6, 2026-10-25): the
+ *  production domain is the sub-brand, so the line beside the wordmark
+ *  matches the address writers type. The static pages under client/
+ *  carry the same two strings; tests/branding.test.ts keeps them equal. */
+export const BRAND_SUBLINE = 'beuk.studio';
+export const BRAND_FOOTNOTE = 'Beuk — a typesetting studio for writers, at beuk.studio.';
 
 export function repoRoot(): string {
   // src/warmth (tsx dev) and dist/warmth (compiled) both sit two levels
@@ -40,7 +54,7 @@ export function clientDir(): string {
 export function kofiJarHtml(config: Config): string {
   if (!config.kofiUrl) return '';
   const url = escapeHtml(config.kofiUrl);
-  return `<aside class="kofi-jar">
+  return `<aside class="kofi-jar" data-kofi>
   <h2>Support the maker</h2>
   <p>Beuk is made and kept by an independent maker, not a company with a
   sales team. If Beuk helped your book onto the shelf and you'd like to
@@ -55,7 +69,13 @@ export function kofiJarHtml(config: Config): string {
 /** The header link to the support page — only when Ko-fi is configured,
  *  so the nav never points at a page that 404s. */
 export function supportNavHtml(config: Config): string {
-  return config.kofiUrl ? '<a href="/support">Support</a>' : '';
+  return config.kofiUrl ? '<a href="/support" data-kofi>Support</a>' : '';
+}
+
+/** The billing gate (see the slot list above) — only on a server with a
+ *  tip jar to gate, so a server without Ko-fi makes no extra request. */
+export function billingGateHtml(config: Config): string {
+  return config.kofiUrl ? '<script src="/help/billing-gate.js"></script>' : '';
 }
 
 /** Fill the dynamic slots of a static warmth page from config. */
@@ -72,7 +92,9 @@ export function fillSlots(html: string, config: Config): string {
     .split('{{SUPPORT_REPLY_PROMISE}}')
     .join(escapeHtml(config.supportReplyPromise))
     .split('<!--BEUK_KOFI_JAR-->')
-    .join(kofiJarHtml(config));
+    .join(kofiJarHtml(config))
+    .split('<!--BEUK_BILLING_GATE-->')
+    .join(billingGateHtml(config));
 }
 
 /** Read a static page from client/ (guarding against path escapes) and
@@ -102,11 +124,12 @@ export function pageChrome(config: Config, title: string, bodyHtml: string): str
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(title)} — Beuk Help</title>
     <link rel="stylesheet" href="/help/warmth.css" />
+    ${billingGateHtml(config)}
   </head>
   <body>
     <header class="site-head">
       <a class="wordmark" href="/help/">beuk</a>
-      <span class="subbrand">quietshelf.studio</span>
+      <span class="subbrand">${escapeHtml(BRAND_SUBLINE)}</span>
       <nav class="site-nav">
         <a href="/help/">Help</a>
         <a href="/changelog">Changelog</a>
@@ -119,7 +142,7 @@ ${bodyHtml}
     </main>
     <footer class="site-foot">
 ${kofiJarHtml(config)}
-      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+      <p class="foot-note">${escapeHtml(BRAND_FOOTNOTE)}</p>
     </footer>
   </body>
 </html>

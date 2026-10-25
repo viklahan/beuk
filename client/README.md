@@ -19,8 +19,11 @@ to the app, which reads these files and fills their config slots
   the EPUB error decoder, and the shared Paper stylesheet
   (`warmth.css`). Plain HTML/CSS, no build step. Pages may use the
   slots `{{SUPPORT_EMAIL}}`, `{{SUPPORT_NAME}}`,
-  `{{SUPPORT_REPLY_PROMISE}}` and `<!--BEUK_KOFI_JAR-->`; the app
-  substitutes them (the jar only when `KOFI_URL` is set).
+  `{{SUPPORT_REPLY_PROMISE}}`, `<!--BEUK_KOFI_JAR-->` and
+  `<!--BEUK_BILLING_GATE-->` (in `<head>`); the app substitutes them
+  (the jar and its gate only when `KOFI_URL` is set). The gate,
+  `help/billing-gate.js`, hides every `data-kofi` element once
+  `GET /api/billing/status` answers `{ "live": true }`.
 - `thanks/` — the post-export landing page the app links to after a
   successful export.
 
