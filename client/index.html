@@ -2822,6 +2822,27 @@
       const $ = (id) => document.getElementById(id);
       const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       const uid = () => "s" + Math.random().toString(36).slice(2, 9);
+      /* ==== BEUK:epub ==== */
+      /* A book's own identifier is a real RFC 9562 version-4 UUID
+         (https://www.rfc-editor.org/rfc/rfc9562#name-uuid-version-4):
+         the EPUB ships it as urn:uuid:…, and EPUBCheck (OPF-085) flags
+         a urn:uuid: value that is not a valid UUID. crypto.randomUUID
+         (https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID)
+         needs a secure context, so getRandomValues backs it up. */
+      function newBookId() {
+        try { if (window.crypto && typeof window.crypto.randomUUID === "function") return "urn:uuid:" + window.crypto.randomUUID(); } catch (e) {}
+        const b = new Uint8Array(16);
+        try { window.crypto.getRandomValues(b); } catch (e) { for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256); }
+        b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+        const h = Array.prototype.map.call(b, (x) => (x + 256).toString(16).slice(1)).join("");
+        return "urn:uuid:" + h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+      }
+      /* The sample's fixed identity. Earlier builds gave it the
+         non-UUID "urn:uuid:beuk-sample-salt-meridian"; a desk saved
+         then still carries it, so both are recognised as the sample. */
+      const SAMPLE_BOOK_ID = "urn:uuid:fb544908-ebbc-4bb6-87cc-445335432f3e";
+      const isSampleBookId = (id) => id === SAMPLE_BOOK_ID || id === "urn:uuid:beuk-sample-salt-meridian";
+      /* ==== /BEUK:epub ==== */
       const fmtNum = (n) => { try { return new Intl.NumberFormat(getUiLang(), { maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0)); } catch (e) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); } };
       const icons = () => { if (window.lucide) lucide.createIcons(); };
 
@@ -13141,7 +13162,7 @@
       ];
       const AUTO_TYPES = ["cover", "halftitle", "titlepage", "copyright", "toc"];
       const state = {
-        meta: { title: "", subtitle: "", author: "", publisher: "", isbn: "", language: "en", langSource: "auto", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: "urn:uuid:" + uid() + "-" + uid() },
+        meta: { title: "", subtitle: "", author: "", publisher: "", isbn: "", language: "en", langSource: "auto", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() },
         theme: Object.assign({}, PRESETS[0].theme),
         activePreset: "classic",
         sections: [],
@@ -13391,7 +13412,7 @@
           }
         });
         return {
-          meta: { title: "The Salt Meridian", subtitle: "A novella of Gullwick", author: "E. Marlowe", publisher: "Quiet Shelf Studio", isbn: "", language: "en", langSource: "manual", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "A complete sample novella bundled with Beuk: a buried channel, a true ledger, and the town that sold its own sea back to itself.", a11ySummary: "", bookId: "urn:uuid:beuk-sample-salt-meridian" },
+          meta: { title: "The Salt Meridian", subtitle: "A novella of Gullwick", author: "E. Marlowe", publisher: "Quiet Shelf Studio", isbn: "", language: "en", langSource: "manual", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "A complete sample novella bundled with Beuk: a buried channel, a true ledger, and the town that sold its own sea back to itself.", a11ySummary: "", bookId: SAMPLE_BOOK_ID },
           theme: Object.assign({}, PRESETS[0].theme),
           activePreset: "classic",
           sections: secs,
@@ -13416,7 +13437,7 @@
         BACK.forEach((b) => secs.push(mkSection("back", b.type, b.label)));
         const chapter = secs.find((s) => s.type === "chapter");
         return {
-          meta: { title: "", subtitle: "", author: "", publisher: "", isbn: "", language: "en", langSource: "auto", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: "urn:uuid:" + uid() + "-" + uid() },
+          meta: { title: "", subtitle: "", author: "", publisher: "", isbn: "", language: "en", langSource: "auto", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() },
           theme: Object.assign({}, PRESETS[0].theme),
           activePreset: "classic",
           sections: secs,
@@ -18073,7 +18094,7 @@
            document's declared title/author only fill blanks the writer
            has not already filled — an import never overwrites the
            credit the writer chose for themselves. */
-        const displacingSample = sampleState.loaded || state.meta.bookId === "urn:uuid:beuk-sample-salt-meridian";
+        const displacingSample = sampleState.loaded || isSampleBookId(state.meta.bookId);
         if (displacingSample) {
           const scaffold = buildEmptyBook();
           const front = placeMatterPieces(scaffold.sections.filter((s) => s.kind === "front"), frontPieces, "front", sink);
@@ -18083,7 +18104,7 @@
           state.meta.author = identity.author || "";
           state.meta.subtitle = ""; state.meta.publisher = ""; state.meta.isbn = "";
           state.meta.rights = ""; state.meta.description = ""; state.meta.a11ySummary = "";
-          state.meta.bookId = "urn:uuid:" + uid() + "-" + uid();
+          state.meta.bookId = newBookId();
           state.meta.language = "en"; state.meta.langSource = "auto"; state.meta.langGuess = "";
           /* The manuscript's own copyright page speaks for the
              imprint too: its ISBN, publisher and year take the desk
@@ -18294,7 +18315,7 @@
           meta: Object.assign({}, state.meta),
           headSnap: (state.history && state.history[0]) ? state.history[0].id : null,
           empty, sample,
-          displacing: sampleState.loaded || state.meta.bookId === "urn:uuid:beuk-sample-salt-meridian",
+          displacing: sampleState.loaded || isSampleBookId(state.meta.bookId),
           preDoc: null
         };
         if (empty && !sample) {
@@ -21059,7 +21080,10 @@
          .concat(packagedImages().map((img) => '    <item id="img-' + img.id + '" href="Images/' + imageFileName(img) + '" media-type="' + img.mediaType + '"/>'))
          .concat(usedFonts.map((f) => '    <item id="font-' + f.id + '" href="Fonts/' + fontFileName(f) + '" media-type="' + f.mediaType + '"/>'))
          .concat(plan.map((p) => '    <item id="' + p.id + '" href="' + p.file + '" media-type="application/xhtml+xml"/>'));
-        const spine = plan.map((p) => '    <itemref idref="' + p.id + '"/>');
+        /* BEUK:epub — the contents landmark lands on a spine item */
+        const tocTarget = epubTocTarget((plan.find((p) => !p.plate && p.section.type === "toc") || {}).file);
+        const spine = plan.map((p) => '    <itemref idref="' + p.id + '"/>')
+          .concat(tocTarget.navInSpine ? ['    <itemref idref="nav" linear="no"/>'] : []);
         const opf =
           '<?xml version="1.0" encoding="UTF-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="pub-id" version="3.0" xml:lang="' + esc(m.language) + '">\n' +
           '  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n' +
@@ -21079,7 +21103,7 @@
           '  <spine toc="ncx"' + (isRtlLang(m.language) ? ' page-progression-direction="rtl"' : "") + ">\n" + spine.join("\n") + "\n  </spine>\n" +
           (preset.guide ? "  <guide>\n" +
             (plan.find((p) => p.section.type === "cover") ? '    <reference type="cover" title="Cover" href="' + plan.find((p) => p.section.type === "cover").file + '"/>\n' : "") +
-            '    <reference type="toc" title="Table of Contents" href="nav.xhtml"/>\n' +
+            '    <reference type="toc" title="Table of Contents" href="' + tocTarget.href + '"/>\n' +
             (plan.length ? '    <reference type="text" title="Start" href="' + (plan.find((p) => !p.plate && p.section.kind === "body") || plan.find((p) => !p.plate) || plan[0]).file + '"/>\n' : "") +
             "  </guide>\n" : "") +
           "</package>";
@@ -21111,7 +21135,7 @@
           "\n</ol></nav>\n" +
           '<nav epub:type="landmarks" hidden="hidden"><ol>' +
           (coverPlan ? '<li><a epub:type="cover" href="' + coverPlan.file + '">Cover</a></li>' : "") +
-          '<li><a epub:type="toc" href="nav.xhtml">Contents</a></li>' +
+          '<li><a epub:type="toc" href="' + tocTarget.href + '">Contents</a></li>' +
           (plan.length ? '<li><a epub:type="bodymatter" href="' + (plan.find((p) => !p.plate && p.section.kind === "body") || plan.find((p) => !p.plate) || plan[0]).file + '">Begin Reading</a></li>' : "") +
           "</ol></nav>\n</body>\n</html>";
         files.push({ path: "OEBPS/nav.xhtml", content: nav });
@@ -21133,6 +21157,7 @@
         /* The conformance claim rides only on a clean accessibility
            audit of this exact package; the audit runs before the
            stamp, and the stamp never feeds back into it. */
+        epubApplyManifestProperties(files); /* BEUK:epub */
         a11yStampConformance(files);
         return files;
       }
@@ -22092,6 +22117,10 @@
         bsUsedFonts.forEach((f) => files.push({ path: "OEBPS/Fonts/" + fontFileName(f), content: f.data, binary: true }));
         const modified = new Date().toISOString().replace(/\.\d+Z$/, "Z");
         const firstCoverVi = vols.findIndex((v) => v.cover);
+        /* BEUK:epub — the box set has no contents page of its own in
+           the spine (volume toc pages are skipped), so the nav joins it
+           non-linear and the contents landmark lands on a spine item. */
+        const tocTarget = epubTocTarget(null);
         const manifest = [
           '    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>',
           '    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>',
@@ -22115,10 +22144,10 @@
           a11yMetaBlock(files) +
           "  </metadata>\n" +
           "  <manifest>\n" + manifest.join("\n") + "\n  </manifest>\n" +
-          '  <spine toc="ncx"' + (isRtlLang(m.language) ? ' page-progression-direction="rtl"' : "") + ">\n" + plan.map((e) => '    <itemref idref="' + e.id + '"/>').join("\n") + "\n  </spine>\n" +
+          '  <spine toc="ncx"' + (isRtlLang(m.language) ? ' page-progression-direction="rtl"' : "") + ">\n" + plan.map((e) => '    <itemref idref="' + e.id + '"/>').concat(tocTarget.navInSpine ? ['    <itemref idref="nav" linear="no"/>'] : []).join("\n") + "\n  </spine>\n" +
           (preset.guide ? "  <guide>\n" +
             (plan.find((e) => e.kind === "cover") ? '    <reference type="cover" title="Cover" href="' + plan.find((e) => e.kind === "cover").file + '"/>\n' : "") +
-            '    <reference type="toc" title="Table of Contents" href="nav.xhtml"/>\n' +
+            '    <reference type="toc" title="Table of Contents" href="' + tocTarget.href + '"/>\n' +
             (plan.length ? '    <reference type="text" title="Start" href="' + (plan.find((e) => e.kind === "section" && e.section.kind === "body") || plan[0]).file + '"/>\n' : "") +
             "  </guide>\n" : "") +
           "</package>";
@@ -22137,7 +22166,7 @@
           "\n</ol></nav>\n" +
           '<nav epub:type="landmarks" hidden="hidden"><ol>' +
           (plan.find((e) => e.kind === "cover") ? '<li><a epub:type="cover" href="' + plan.find((e) => e.kind === "cover").file + '">Cover</a></li>' : "") +
-          '<li><a epub:type="toc" href="nav.xhtml">Contents</a></li>' +
+          '<li><a epub:type="toc" href="' + tocTarget.href + '">Contents</a></li>' +
           (plan.length ? '<li><a epub:type="bodymatter" href="' + (plan.find((e) => e.kind === "section" && e.section.kind === "body") || plan[0]).file + '">Begin Reading</a></li>' : "") +
           "</ol></nav>\n</body>\n</html>";
         files.push({ path: "OEBPS/nav.xhtml", content: nav });
@@ -22153,6 +22182,7 @@
           "  <head><meta name=\"dtb:uid\" content=\"" + esc(m.isbn ? "urn:isbn:" + m.isbn.replace(/[^0-9Xx]/g, "") : m.bookId) + '"/><meta name="dtb:depth" content="2"/><meta name="dtb:totalPageCount" content="0"/><meta name="dtb:maxPageNumber" content="0"/></head>\n' +
           "  <docTitle><text>" + esc(boxSetTitle()) + "</text></docTitle>\n  <navMap>\n" + ncxVolumes + "\n  </navMap>\n</ncx>";
         files.push({ path: "OEBPS/toc.ncx", content: ncx });
+        epubApplyManifestProperties(files); /* BEUK:epub */
         a11yStampConformance(files);
         return files;
       }
@@ -22196,7 +22226,7 @@
         const sections = [mkSection("front", "titlepage", "Title Page")].concat(
           chapters.map((c, i) => mkSection("body", "chapter", c.title || ("Chapter " + (i + 1)), { number: c.number || String(i + 1), content: beautifyText(c.body.join("\n")) }))
         );
-        return { id: uid(), meta: { title: fallback, subtitle: "", author: state.meta.author || "", publisher: "", isbn: "", language: state.meta.language || "en", langSource: state.meta.langSource || "auto", langGuess: "", year: state.meta.year || String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: "urn:uuid:" + uid() + "-" + uid() }, sections, cover: null, images: [] };
+        return { id: uid(), meta: { title: fallback, subtitle: "", author: state.meta.author || "", publisher: "", isbn: "", language: state.meta.language || "en", langSource: state.meta.langSource || "auto", langGuess: "", year: state.meta.year || String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() }, sections, cover: null, images: [] };
       }
       function renderBoxSetList() {
         const box = $("boxSetList"); if (!box) return;
@@ -23164,6 +23194,179 @@
         });
         return { path: parts.join("/"), frag: frag };
       }
+      /* ==== BEUK:epub ==== */
+      /* Manifest properties and spine reach, derived from the package's
+         own bytes rather than promised by each builder.
+         EPUB 3.3 §5.6.2.1 Resource properties
+         (https://www.w3.org/TR/epub-33/#sec-item-resource-properties):
+         "EPUB creators MUST set the following properties whenever a
+         resource referenced by an item element matches" — mathml,
+         remote-resources, scripted, svg, switch. Their definitions are
+         the Manifest properties vocabulary, Appendix D.6
+         (https://www.w3.org/TR/epub-33/#app-item-properties-vocab):
+           mathml  (#sec-mathml)  — contains MathML markup; EPUB content documents
+           remote-resources (#sec-remote-resources) — internal references to
+                   resources outside the container; any resource that can reference
+           scripted (#sec-scripted) — scripted content document; §6.3.2.1
+                   (https://www.w3.org/TR/epub-33/#sec-scripted-support) also counts
+                   XHTML documents with HTML form elements
+           svg     (#sec-svg-prop) — "embeds one or more instances of SVG markup";
+                   XHTML content documents, implied for SVG content documents
+           switch  (#sec-switch) — deprecated epub:switch; XHTML content documents
+         Declared-only properties (nav, cover-image) are the builder's own
+         statement and are kept as written. The detected five are
+         recomputed from the file each time, so a declaration can neither
+         go missing (EPUBCheck OPF-014) nor linger (OPF-015). */
+      const EPUB_DETECTED_PROPS = ["mathml", "remote-resources", "scripted", "svg", "switch"];
+      const EPUB_NS = { xhtml: "http://www.w3.org/1999/xhtml", svg: "http://www.w3.org/2000/svg", mathml: "http://www.w3.org/1998/Math/MathML", ops: "http://www.idpf.org/2007/ops", xlink: "http://www.w3.org/1999/xlink" };
+      const epubIsRemoteRef = (v) => /^\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(String(v || "")) && !/^\s*file:/i.test(String(v || ""));
+      const epubCssHasRemote = (css) => {
+        const c = String(css || "").replace(/\/\*[\s\S]*?\*\//g, "");
+        let m; const re = /url\(\s*(['"]?)([^'")]*)\1\s*\)|@import\s+(['"])([^'"]+)\3/gi;
+        while ((m = re.exec(c)) !== null) { if (epubIsRemoteRef(m[2] || m[4])) return true; }
+        return false;
+      };
+      function epubDetectProps(content, mediaType) {
+        const found = {};
+        const mt = String(mediaType || "").toLowerCase();
+        if (mt === "text/css") { if (epubCssHasRemote(content)) found["remote-resources"] = true; return EPUB_DETECTED_PROPS.filter((p) => found[p]); }
+        const isXhtml = mt === "application/xhtml+xml";
+        const isSvg = mt === "image/svg+xml";
+        if (!isXhtml && !isSvg) return [];
+        const src = String(content == null ? "" : content);
+        const doc = parseXmlDoc(src);
+        if (doc) {
+          const byNs = (ns, name) => doc.getElementsByTagNameNS(ns, name).length > 0;
+          if (isXhtml) {
+            if (byNs(EPUB_NS.svg, "svg")) found.svg = true;
+            if (byNs(EPUB_NS.mathml, "math")) found.mathml = true;
+            if (byNs(EPUB_NS.xhtml, "script") || byNs(EPUB_NS.xhtml, "form")) found.scripted = true;
+            if (byNs(EPUB_NS.ops, "switch")) found.switch = true;
+          }
+          /* Remote resources: what the renderer fetches — not hyperlinks
+             (an <a href="https://…"> is a link out, not a resource). */
+          const loads = { img: ["src", "srcset"], audio: ["src"], video: ["src", "poster"], source: ["src", "srcset"], track: ["src"], iframe: ["src"], embed: ["src"], object: ["data"], script: ["src"], input: ["src"], image: ["href"], use: ["href"], feImage: ["href"] };
+          const all = doc.getElementsByTagName("*");
+          for (let i = 0; i < all.length && !found["remote-resources"]; i++) {
+            const el = all[i];
+            const name = el.localName;
+            const attrs = loads[name] || [];
+            for (const a of attrs) {
+              const vals = [el.getAttribute(a), el.getAttributeNS(EPUB_NS.xlink, a)].filter((v) => v != null);
+              if (vals.some((v) => (a === "srcset" ? String(v).split(",").some((part) => epubIsRemoteRef(part.trim().split(/\s+/)[0])) : epubIsRemoteRef(v)))) found["remote-resources"] = true;
+            }
+            if (name === "link" && /(^|\s)stylesheet(\s|$)/i.test(el.getAttribute("rel") || "") && epubIsRemoteRef(el.getAttribute("href"))) found["remote-resources"] = true;
+            if (el.getAttribute("style") && epubCssHasRemote(el.getAttribute("style"))) found["remote-resources"] = true;
+            if (name === "style" && epubCssHasRemote(el.textContent)) found["remote-resources"] = true;
+          }
+        } else {
+          /* Unparseable markup still gets an honest best effort; the
+             well-formedness check reports the file itself. */
+          const bare = src.replace(/<!--[\s\S]*?-->/g, "");
+          if (isXhtml && /<(?:[\w.-]+:)?svg[\s>\/]/.test(bare)) found.svg = true;
+          if (isXhtml && /<(?:[\w.-]+:)?math[\s>\/]/.test(bare)) found.mathml = true;
+          if (isXhtml && /<(?:script|form)[\s>\/]/i.test(bare)) found.scripted = true;
+          if (isXhtml && /<epub:switch[\s>\/]/.test(bare)) found.switch = true;
+        }
+        /* SVG documents: the svg property is implied (D.6.6), and
+           scripted / mathml / switch apply to content documents only. */
+        if (isSvg) { delete found.svg; delete found.scripted; delete found.mathml; delete found.switch; }
+        return EPUB_DETECTED_PROPS.filter((p) => found[p]);
+      }
+      function epubOpfPathOf(files) {
+        const c = files.find((f) => f.path === "META-INF/container.xml");
+        const m = c && String(c.content).match(/full-path="([^"]+)"/);
+        return m ? m[1] : "OEBPS/package.opf";
+      }
+      const epubAttr = (tag, name) => { const m = tag.match(new RegExp("\\s" + name + "=\"([^\"]*)\"")); return m ? m[1] : ""; };
+      /* Per manifest item: what is declared, what the file needs. */
+      function epubManifestPropertyReport(files) {
+        const opfPath = epubOpfPathOf(files);
+        const opf = files.find((f) => f.path === opfPath);
+        if (!opf || opf.binary) return { opfPath: opfPath, items: [] };
+        const byPath = {}; files.forEach((f) => { byPath[f.path] = f; });
+        const items = [];
+        const re = /<item\b[^>]*?\/?>/g; let m;
+        while ((m = re.exec(String(opf.content))) !== null) {
+          const tag = m[0];
+          const href = epubAttr(tag, "href"), mediaType = epubAttr(tag, "media-type");
+          const declared = epubAttr(tag, "properties").split(/\s+/).filter(Boolean);
+          const f = byPath[resolvePkgPath(opfPath, href).path];
+          const needed = f && !f.binary ? epubDetectProps(f.content, mediaType) : [];
+          const declaredDetected = declared.filter((p) => EPUB_DETECTED_PROPS.indexOf(p) !== -1);
+          items.push({ tag: tag, id: epubAttr(tag, "id"), href: href, mediaType: mediaType, declared: declared, needed: needed,
+            missing: needed.filter((p) => declared.indexOf(p) === -1),
+            extra: declaredDetected.filter((p) => needed.indexOf(p) === -1) });
+        }
+        return { opfPath: opfPath, items: items };
+      }
+      function epubApplyManifestProperties(files) {
+        const rep = epubManifestPropertyReport(files);
+        const opf = files.find((f) => f.path === rep.opfPath);
+        if (!opf) return files;
+        let content = String(opf.content);
+        rep.items.forEach((it) => {
+          if (!it.missing.length && !it.extra.length) return;
+          const keep = it.declared.filter((p) => EPUB_DETECTED_PROPS.indexOf(p) === -1);
+          const props = keep.concat(it.needed);
+          const bare = it.tag.replace(/\sproperties="[^"]*"/, "");
+          const next = props.length ? bare.replace(/\s*\/?>$/, ' properties="' + props.join(" ") + '"/>') : bare;
+          content = content.replace(it.tag, () => next);
+        });
+        opf.content = content;
+        return files;
+      }
+      /* EPUB 3.3 §5.7.1 The spine element
+         (https://www.w3.org/TR/epub-33/#sec-spine-elem): EPUB creators
+         MUST list in the spine all EPUB and foreign content documents
+         hyperlinked to from publication resources, and all those
+         hyperlinked to from the EPUB navigation document (whether or
+         not the nav document itself is in the spine). EPUBCheck reports
+         a miss as RSC-011. Returns every such hyperlink that misses. */
+      function epubLinksOutsideSpine(files) {
+        const opfPath = epubOpfPathOf(files);
+        const opf = files.find((f) => f.path === opfPath);
+        if (!opf || opf.binary) return [];
+        const oc = String(opf.content);
+        const byId = {}, mtByPath = {};
+        let m; const ire = /<item\b[^>]*?\/?>/g;
+        while ((m = ire.exec(oc)) !== null) {
+          const p = resolvePkgPath(opfPath, epubAttr(m[0], "href")).path;
+          byId[epubAttr(m[0], "id")] = p; mtByPath[p] = epubAttr(m[0], "media-type");
+        }
+        const spine = {}; const sre = /<itemref\b[^>]*?idref="([^"]+)"/g;
+        while ((m = sre.exec(oc)) !== null) if (byId[m[1]]) spine[byId[m[1]]] = true;
+        const isContentDoc = (p) => mtByPath[p] === "application/xhtml+xml" || mtByPath[p] === "image/svg+xml";
+        const out = [], seen = {};
+        files.filter((f) => !f.binary && /\.xhtml$/i.test(f.path)).forEach((f) => {
+          const c = String(f.content).replace(/<!--[\s\S]*?-->/g, "");
+          const are = /<a\b[^>]*?\shref="([^"]*)"/g; let a;
+          while ((a = are.exec(c)) !== null) {
+            const ref = a[1];
+            if (!ref || ref.charAt(0) === "#" || /^[a-z][a-z0-9+.-]*:/i.test(ref)) continue;
+            const target = resolvePkgPath(f.path, ref).path;
+            if (isContentDoc(target) && !spine[target]) {
+              const key = f.path + " -> " + ref;
+              if (!seen[key]) { seen[key] = true; out.push({ from: f.path, href: ref, target: target }); }
+            }
+          }
+        });
+        return out;
+      }
+      /* Where the landmarks' (and the KDP guide's) "toc" entry points.
+         A contents page in the spine is the natural target. Without
+         one, the nav document itself is the only contents there is, so
+         it joins the spine as a non-linear item — EPUB 3.3 §7.5
+         (https://www.w3.org/TR/epub-33/#sec-nav-doc-use-spine) allows
+         the nav document in the spine, and linear="no" (§5.7.2
+         https://www.w3.org/TR/epub-33/#sec-itemref-elem) keeps it out
+         of the default reading order. Either way the link lands on a
+         spine item, as §5.7.1 requires. */
+      function epubTocTarget(tocFile) {
+        return tocFile ? { href: tocFile, navInSpine: false } : { href: "nav.xhtml", navInSpine: true };
+      }
+      if (typeof window !== "undefined") window.beukEpub = { detectProps: epubDetectProps, manifestReport: epubManifestPropertyReport, applyManifestProperties: epubApplyManifestProperties, linksOutsideSpine: epubLinksOutsideSpine, tocTarget: epubTocTarget, detected: EPUB_DETECTED_PROPS };
+      /* ==== /BEUK:epub ==== */
       function validateEpubPackage(files) {
         const results = [];
         const add = (id, level, name, detail) => results.push({ id: id, level: level, name: name, detail: detail });
@@ -23337,6 +23540,36 @@
           linkProblems.slice(0, 4).join("; ") + (linkProblems.length > 4 ? "; and " + (linkProblems.length - 4) + " more" : "") + ". A reader tapping one of these lands nowhere.");
         else add("links.anchors-resolve", "pass", "Every internal link and anchor resolves",
           "All cross-references — the stylesheet, the images, the navigation entries and the footnote back-links included — land on a real file and, where an anchor is named, a real element id.");
+
+        /* ==== BEUK:epub ==== */
+        /* 8b — manifest properties match what each file contains
+           (EPUB 3.3 §5.6.2.1, https://www.w3.org/TR/epub-33/#sec-item-resource-properties;
+           EPUBCheck OPF-014 / OPF-015) */
+        if (opfDoc) {
+          const propRep = epubManifestPropertyReport(files);
+          const propProblems = [];
+          propRep.items.forEach((it) => {
+            if (it.missing.length) propProblems.push(it.href + " needs properties=\"" + it.missing.join(" ") + "\" but does not declare it");
+            if (it.extra.length) propProblems.push(it.href + " declares \"" + it.extra.join(" ") + "\" but contains no such content");
+          });
+          if (propProblems.length) add("manifest.properties", "error", "Manifest properties do not match the content",
+            propProblems.slice(0, 4).join("; ") + (propProblems.length > 4 ? "; and " + (propProblems.length - 4) + " more" : "") + ". Store validators (EPUBCheck) reject this.");
+          else {
+            const declaredN = propRep.items.filter((it) => it.needed.length).length;
+            add("manifest.properties", "pass", "Manifest properties match the content",
+              "Each manifest item declares exactly the svg / mathml / scripted / remote-resources / switch properties its file needs" + (declaredN ? " (" + declaredN + " item" + (declaredN === 1 ? "" : "s") + " carry one)" : " — none of them needs any") + ".");
+          }
+        }
+        /* 8c — every hyperlinked content document is in the spine
+           (EPUB 3.3 §5.7.1, https://www.w3.org/TR/epub-33/#sec-spine-elem; EPUBCheck RSC-011) */
+        if (opfDoc) {
+          const outside = epubLinksOutsideSpine(files);
+          if (outside.length) add("links.in-spine", "error", "Links to documents outside the reading order",
+            outside.slice(0, 4).map((o) => o.from + " links to " + o.href).join("; ") + (outside.length > 4 ? "; and " + (outside.length - 4) + " more" : "") + " — a linked document must be in the spine.");
+          else add("links.in-spine", "pass", "Every linked document is in the reading order",
+            "Each document reached by a link — from the navigation or from the text — is listed in the spine.");
+        }
+        /* ==== /BEUK:epub ==== */
 
         /* 9 — every image carries alt text */
         let imgCount = 0; const altProblems = [];
@@ -28925,7 +29158,7 @@
               const noRemnant = packed.indexOf("Salt Meridian") === -1 && packed.indexOf("Marlowe") === -1 && packed.indexOf("Gullwick") === -1 &&
                 !state.sections.some((s) => s.type === "prologue" || s.type === "epilogue");
               const cleanMeta = state.meta.subtitle === "" && state.meta.description === "" &&
-                state.meta.bookId !== "urn:uuid:beuk-sample-salt-meridian" && state.meta.langSource === "auto";
+                !isSampleBookId(state.meta.bookId) && state.meta.langSource === "auto";
               return scVerdict(headOk && noRemnant && cleanMeta && !sampleState.loaded,
                 "the header now credits “" + state.meta.title + "” by " + state.meta.author + " — sample identity displaced (" + headOk + "), no Salt Meridian / Marlowe / Gullwick remnant in any section (" + noRemnant + "), sample meta cleared (" + cleanMeta + "), sample toggle off (" + !sampleState.loaded + ")");
             } finally {
@@ -30965,6 +31198,137 @@
             }
           } }
         /* ==== /BEUK:local ==== */
+        ,
+        /* ==== BEUK:epub ==== */
+        /* Manifest properties + spine reach (EPUB 3.3 §5.6.2.1 / §5.7.1;
+           EPUBCheck OPF-014, OPF-015, RSC-011). Each case restores the
+           writer's book afterwards. */
+        { id: "epub.props.detect-from-content", feature: "epub", name: "Manifest properties: svg / mathml / scripted / switch / remote-resources are detected from a document's own markup — hyperlinks, comments and local references never count",
+          run() {
+            const x = (body) => '<?xml version="1.0" encoding="utf-8"?>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>t</title></head><body>' + body + "</body></html>";
+            const X = "application/xhtml+xml";
+            const d = (c, mt) => epubDetectProps(c, mt || X).join(" ");
+            const cases = [
+              [d(x('<p>plain</p>')), ""],
+              [d(x('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><path d="M0 0"/></svg>')), "svg"],
+              [d(x('<!-- <svg xmlns="http://www.w3.org/2000/svg"/> --><p>no</p>')), ""],
+              [d(x('<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>')), "mathml"],
+              [d(x('<script>var a = 1;<\/script>')), "scripted"],
+              [d(x('<form action="#"><input type="text" name="q"/></form>')), "scripted"],
+              [d(x('<epub:switch id="s"><epub:default><p>x</p></epub:default></epub:switch>')), "switch"],
+              [d(x('<img src="https://example.com/a.png" alt="a"/>')), "remote-resources"],
+              [d(x('<p><a href="https://example.com/">a link out</a></p>')), ""],
+              [d(x('<img src="../Images/a.png" alt="a"/>')), ""],
+              [d(x('<p style="background-image: url(\'https://example.com/b.jpg\')">x</p>')), "remote-resources"],
+              [d("p { background: url(../Images/a.jpg); }", "text/css"), ""],
+              [d("@font-face { src: url(https://example.com/f.woff2); }", "text/css"), "remote-resources"],
+              [d('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><path d="M0 0"/></svg>', "image/svg+xml"), ""],
+              [d("binary-ish", "image/png"), ""]
+            ];
+            const bad = cases.map((c, i) => c[0] === c[1] ? null : "case " + i + ": got \"" + c[0] + "\" expected \"" + c[1] + "\"").filter(Boolean);
+            return scVerdict(!bad.length, bad.length ? bad.join("; ") : cases.length + " documents classified exactly as EPUB 3.3 D.6 defines the properties");
+          } },
+        { id: "epub.props.sample-declared-exactly", feature: "epub", name: "Manifest properties: the sample book's package, in every store preset and as a box set, declares exactly the properties each file needs — inline ornament SVG carries properties=\"svg\"",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepVols = state.boxSetVolumes;
+            try {
+              applyBookDoc(buildSampleBook());
+              const bad = [];
+              let svgItems = 0;
+              PLATFORM_PRESETS.forEach((p) => {
+                const rep = epubManifestPropertyReport(epubFiles(p.id));
+                rep.items.forEach((it) => {
+                  if (it.missing.length || it.extra.length) bad.push(p.id + ": " + it.href + " missing [" + it.missing.join(" ") + "] extra [" + it.extra.join(" ") + "]");
+                  if (p.id === "generic" && it.declared.indexOf("svg") !== -1) svgItems++;
+                });
+                const nav = rep.items.find((it) => it.id === "nav");
+                if (!nav || nav.declared.indexOf("nav") === -1) bad.push(p.id + ": the nav item lost properties=\"nav\"");
+                if (state.cover && !rep.items.some((it) => it.declared.indexOf("cover-image") !== -1)) bad.push(p.id + ": the cover lost properties=\"cover-image\"");
+              });
+              state.boxSetVolumes = [{ id: "scvol2", meta: { title: "The Second Tide", subtitle: "", author: "E. Marlowe", publisher: "", isbn: "", language: "en", year: "2026", rights: "", description: "", bookId: "urn:uuid:sc-boxset-vol2" },
+                sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "First Light", { number: "One", content: "Book two opens quietly." })], cover: null, images: [] }];
+              epubManifestPropertyReport(boxSetFiles("generic")).items.forEach((it) => {
+                if (it.missing.length || it.extra.length) bad.push("box set: " + it.href + " missing [" + it.missing.join(" ") + "] extra [" + it.extra.join(" ") + "]");
+              });
+              const ch = scText(epubFiles("generic"), "OEBPS/Text/chapter_01.xhtml");
+              const chHasSvg = /<svg[\s>]/.test(ch);
+              const chDeclared = /<item id="sec-chapter_01"[^>]*properties="svg"/.test(scText(epubFiles("generic"), "OEBPS/package.opf"));
+              if (chHasSvg !== chDeclared) bad.push("chapter_01 has inline svg=" + chHasSvg + " but declares svg=" + chDeclared);
+              return scVerdict(!bad.length && svgItems > 0,
+                bad.length ? bad.slice(0, 4).join("; ") : "every preset and the box set declare exactly what each file contains (" + svgItems + " generic-package items carry svg)");
+            } finally { applyBookDoc(keepDoc); state.boxSetVolumes = keepVols; }
+          } },
+        { id: "epub.props.recomputed-not-trusted", feature: "epub", name: "Manifest properties: a missing svg is restored and a stale svg / scripted / mathml is removed when the package is assembled, while nav and cover-image stay as declared",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              applyBookDoc(buildSampleBook());
+              const files = epubFiles("generic");
+              const opf = scFile(files, "OEBPS/package.opf");
+              const before = String(opf.content);
+              const svgTag = (before.match(/<item [^>]*properties="svg"\/>/) || [""])[0];
+              const plainTag = (before.match(/<item id="sec-copyright" [^>]*\/>/) || [""])[0];
+              if (!svgTag || !plainTag || /properties=/.test(plainTag)) return scVerdict(false, "fixture tags not found (svg item: " + !!svgTag + ", plain copyright item: " + !!plainTag + ")");
+              opf.content = before.replace(svgTag, svgTag.replace(' properties="svg"', ""))
+                .replace(plainTag, plainTag.replace("/>", ' properties="svg scripted mathml"/>'));
+              epubApplyManifestProperties(files);
+              const after = String(opf.content);
+              return scVerdict(after === before && after.includes('properties="nav"') && (!state.cover || after.includes('properties="cover-image"')),
+                after === before ? "the damaged manifest is recomputed back to the exact original — svg restored, the invented properties dropped, nav and cover-image untouched" : "recomputed manifest differs from the original");
+            } finally { applyBookDoc(keepDoc); }
+          } },
+        { id: "epub.spine.nav-links-reach-spine", feature: "epub", name: "Spine reach: every document the nav or the text links to is in the spine — the contents landmark targets the in-spine contents page, or the nav joins the spine as linear=\"no\" when there is none",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepVols = state.boxSetVolumes;
+            try {
+              applyBookDoc(buildSampleBook());
+              const bad = [];
+              PLATFORM_PRESETS.forEach((p) => { epubLinksOutsideSpine(epubFiles(p.id)).forEach((o) => bad.push(p.id + ": " + o.from + " -> " + o.href)); });
+              const withToc = epubFiles("kdp");
+              const navWith = scText(withToc, "OEBPS/nav.xhtml"), opfWith = scText(withToc, "OEBPS/package.opf");
+              const tocPageOk = navWith.includes('<a epub:type="toc" href="Text/toc.xhtml">') && opfWith.includes('<reference type="toc" title="Table of Contents" href="Text/toc.xhtml"/>') && !opfWith.includes('<itemref idref="nav"');
+              const tocSec = state.sections.find((s) => s.type === "toc");
+              if (tocSec) tocSec.included = false;
+              const noToc = epubFiles("kdp");
+              epubLinksOutsideSpine(noToc).forEach((o) => bad.push("no contents page: " + o.from + " -> " + o.href));
+              const navInSpineOk = scText(noToc, "OEBPS/package.opf").includes('<itemref idref="nav" linear="no"/>') && scText(noToc, "OEBPS/nav.xhtml").includes('<a epub:type="toc" href="nav.xhtml">');
+              if (tocSec) tocSec.included = true;
+              state.boxSetVolumes = [{ id: "scvol2", meta: { title: "The Second Tide", subtitle: "", author: "E. Marlowe", publisher: "", isbn: "", language: "en", year: "2026", rights: "", description: "", bookId: "urn:uuid:sc-boxset-vol2" },
+                sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "First Light", { number: "One", content: "Book two opens quietly." })], cover: null, images: [] }];
+              epubLinksOutsideSpine(boxSetFiles("kdp")).forEach((o) => bad.push("box set: " + o.from + " -> " + o.href));
+              return scVerdict(!bad.length && tocPageOk && navInSpineOk,
+                bad.length ? bad.slice(0, 4).join("; ") : "no link leaves the spine in any preset or the box set; contents landmark -> Text/toc.xhtml (" + tocPageOk + "); without a contents page the nav rides the spine non-linear (" + navInSpineOk + ")");
+            } finally { applyBookDoc(keepDoc); state.boxSetVolumes = keepVols; }
+          } },
+        { id: "validator.catches.undeclared-svg-and-off-spine-link", feature: "validator", name: "Validator catches an inline-SVG document without properties=\"svg\" and a nav link to a document removed from the spine",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              applyBookDoc(buildSampleBook());
+              const clean = validateEpubPackage(epubFiles("generic"));
+              const r0 = (id) => (clean.results.find((x) => x.id === id) || {}).level;
+              const files = epubFiles("generic");
+              const damaged = files.map((f) => f.path === "OEBPS/package.opf"
+                ? Object.assign({}, f, { content: String(f.content).replace(/(<item id="sec-chapter_01"[^>]*?) properties="svg"/, "$1").replace('    <itemref idref="sec-chapter_02"/>\n', "") }) : f);
+              const v = validateEpubPackage(damaged);
+              const r = (id) => (v.results.find((x) => x.id === id) || {});
+              const props = r("manifest.properties"), spine = r("links.in-spine");
+              return scVerdict(r0("manifest.properties") === "pass" && r0("links.in-spine") === "pass" &&
+                props.level === "error" && /chapter_01\.xhtml/.test(props.detail || "") &&
+                spine.level === "error" && /chapter_02\.xhtml/.test(spine.detail || ""),
+                "clean: " + r0("manifest.properties") + "/" + r0("links.in-spine") + "; damaged: " + props.level + " (" + (props.detail || "") + ") / " + spine.level);
+            } finally { applyBookDoc(keepDoc); }
+          } },
+        { id: "epub.identifier.real-uuid", feature: "epub", name: "Identifier: new books, imports and the sample carry a real RFC 9562 UUID, so urn:uuid: never ships a non-UUID (EPUBCheck OPF-085)",
+          run() {
+            const re = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+            const a = newBookId(), b = newBookId(), e = buildEmptyBook().meta.bookId, s = buildSampleBook().meta.bookId;
+            return scVerdict(re.test(a) && re.test(b) && a !== b && re.test(e) && s === SAMPLE_BOOK_ID && re.test(s) && isSampleBookId("urn:uuid:beuk-sample-salt-meridian"),
+              "new " + a + "; empty desk " + e + "; sample " + s + " (the pre-UUID sample id is still recognised)");
+          } }
+        /* ==== /BEUK:epub ==== */
 
       ];
       /* ==== BEUK:store ==== */
