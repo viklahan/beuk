@@ -2126,6 +2126,35 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'EPUB: new books, imports and the sample carry a real RFC 9562 UUID identifier',
     kind: 'client-only',
     reason: 'Book identifiers are minted in the client when a book is created or imported.',
+  },  {
+    id: 'bookid.v5.rfc-vector',
+    title: 'Book ID: the UUIDv5 routine reproduces the RFC 9562 Appendix A.4 vector and SHA-1 the FIPS 180-4 test digests',
+    kind: 'client-only',
+    reason: 'The UUIDv5/SHA-1 routine runs in the client, where old book ids are migrated on arrival.',
+  },
+  {
+    id: 'bookid.migrate.legacy-book',
+    title: 'Book ID: an old non-UUID id migrates to the expected UUIDv5, keeps the old id in legacyBookIds, snapshots History first and ships the new id',
+    kind: 'client-only',
+    reason: 'Migration runs in the client (applyBookDoc); the server stores the book document as-is and never rewrites its ids.',
+  },
+  {
+    id: 'bookid.migrate.idempotent',
+    title: 'Book ID: migration is idempotent across re-applying, a second device and restoring the pre-migration snapshot',
+    kind: 'client-only',
+    reason: 'Migration and History live in the client book document.',
+  },
+  {
+    id: 'bookid.match.legacy-and-new',
+    title: 'Book ID: shelf matching treats migrated and un-migrated copies as one book and never matches a different one',
+    kind: 'client-only',
+    reason: 'Shelf matching by book id runs in the client (cloudAfterSignIn, backup open); the server keys manuscripts and shares by manuscript id only.',
+  },
+  {
+    id: 'bookid.sample.stays-sample',
+    title: "Book ID: the pre-UUID sample id migrates to the sample's fixed UUID and stays the sample",
+    kind: 'client-only',
+    reason: 'Sample detection is a client concern (isSampleBookId).',
   },
 ];
 

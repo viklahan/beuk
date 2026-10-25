@@ -3044,6 +3044,130 @@
       const SAMPLE_BOOK_ID = "urn:uuid:fb544908-ebbc-4bb6-87cc-445335432f3e";
       const isSampleBookId = (id) => id === SAMPLE_BOOK_ID || id === "urn:uuid:beuk-sample-lantern-coast";
       /* ==== /BEUK:epub ==== */
+      /* ==== BEUK:bookid ==== */
+      /* Books saved before real UUIDs carry an id like
+         "urn:uuid:sabc1234-sdef5678": EPUBCheck reports OPF-085
+         ('"dc:identifier" value … is marked as a UUID, but is an invalid
+         UUID' — message text from EPUBCheck 5.2.1's own bundle). Such an
+         id is migrated, once, on arrival (applyBookDoc), to a UUID
+         version 5 of the old id under Beuk's fixed namespace — RFC 9562
+         §5.5 (https://www.rfc-editor.org/rfc/rfc9562#name-uuid-version-5):
+         SHA-1 over namespace octets ‖ name octets, the leftmost 128 bits,
+         version 0b0101 in octet 6, variant 0b10 in octet 8. The name is
+         the old id string exactly as stored, UTF-8 encoded. Same old id
+         → same new id on every device, so devices that migrate apart
+         still agree. The old id stays in meta.legacyBookIds, and every
+         "is this the same book?" test (bookIdsMatch) accepts it.
+         BOOKID_NAMESPACE was generated once (random v4) for Beuk and must
+         never change: changing it would split every migrated book. */
+      const BOOKID_NAMESPACE = "8bf1c6b6-5f75-4773-a701-cdd420357f52";
+      const LEGACY_SAMPLE_BOOK_ID = "urn:uuid:beuk-sample-lantern-coast";
+      /* A well-formed RFC 9562 UUID (versions 1–8, variant 10xx) behind urn:uuid:. */
+      const BOOKID_UUID_RE = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      /* SHA-1 (FIPS 180-4, https://csrc.nist.gov/pubs/fips/180-4/upd1/final),
+         synchronous because applyBookDoc is; crypto.subtle.digest is
+         async and needs a secure context. Verified against the RFC 9562
+         Appendix A.4 vector in the bookid self-check. */
+      function bookIdSha1(bytes) {
+        const ml = bytes.length, withPad = ((ml + 9 + 63) >> 6) << 6;
+        const m = new Uint8Array(withPad); m.set(bytes); m[ml] = 0x80;
+        const bits = ml * 8;
+        m[withPad - 4] = (bits >>> 24) & 255; m[withPad - 3] = (bits >>> 16) & 255; m[withPad - 2] = (bits >>> 8) & 255; m[withPad - 1] = bits & 255;
+        m[withPad - 5] = Math.floor(bits / 4294967296) & 255;
+        let h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476, h4 = 0xc3d2e1f0;
+        const w = new Int32Array(80);
+        for (let off = 0; off < withPad; off += 64) {
+          for (let i = 0; i < 16; i++) w[i] = (m[off + i * 4] << 24) | (m[off + i * 4 + 1] << 16) | (m[off + i * 4 + 2] << 8) | m[off + i * 4 + 3];
+          for (let i = 16; i < 80; i++) { const x = w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]; w[i] = (x << 1) | (x >>> 31); }
+          let a = h0, b = h1, c = h2, d = h3, e = h4;
+          for (let i = 0; i < 80; i++) {
+            let f, k;
+            if (i < 20) { f = (b & c) | (~b & d); k = 0x5a827999; }
+            else if (i < 40) { f = b ^ c ^ d; k = 0x6ed9eba1; }
+            else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8f1bbcdc; }
+            else { f = b ^ c ^ d; k = 0xca62c1d6; }
+            const tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[i]) | 0;
+            e = d; d = c; c = (b << 30) | (b >>> 2); b = a; a = tmp;
+          }
+          h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0; h4 = (h4 + e) | 0;
+        }
+        const out = new Uint8Array(20);
+        [h0, h1, h2, h3, h4].forEach((h, i) => { out[i * 4] = (h >>> 24) & 255; out[i * 4 + 1] = (h >>> 16) & 255; out[i * 4 + 2] = (h >>> 8) & 255; out[i * 4 + 3] = h & 255; });
+        return out;
+      }
+      function bookIdUtf8(s) {
+        if (typeof TextEncoder === "function") return new TextEncoder().encode(String(s));
+        const u = unescape(encodeURIComponent(String(s))), b = new Uint8Array(u.length);
+        for (let i = 0; i < u.length; i++) b[i] = u.charCodeAt(i);
+        return b;
+      }
+      /* RFC 9562 §5.5 UUIDv5 of `name` under namespace `ns` (canonical hex form, no urn prefix). */
+      function uuidV5(ns, name) {
+        const hex = String(ns).replace(/-/g, "");
+        const nb = bookIdUtf8(name), buf = new Uint8Array(16 + nb.length);
+        for (let i = 0; i < 16; i++) buf[i] = parseInt(hex.substr(i * 2, 2), 16);
+        buf.set(nb, 16);
+        const b = bookIdSha1(buf).slice(0, 16);
+        b[6] = (b[6] & 0x0f) | 0x50; b[8] = (b[8] & 0x3f) | 0x80;
+        const h = Array.prototype.map.call(b, (x) => (x + 256).toString(16).slice(1)).join("");
+        return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+      }
+      const bookIdIsLegacy = (id) => typeof id === "string" && id !== "" && !BOOKID_UUID_RE.test(id);
+      /* The new id for an old one. The pre-UUID sample id becomes the
+         sample's own fixed UUID, so the sample stays the sample. */
+      function bookIdMigrated(id) {
+        if (id === LEGACY_SAMPLE_BOOK_ID) return SAMPLE_BOOK_ID;
+        return "urn:uuid:" + uuidV5(BOOKID_NAMESPACE, id);
+      }
+      function bookIdNormalizeLegacyList(list) {
+        if (!Array.isArray(list)) return [];
+        const out = [];
+        list.forEach((x) => { if (typeof x === "string" && x && x.length <= 300 && out.indexOf(x) === -1 && out.length < 16) out.push(x); });
+        return out;
+      }
+      /* Every id this book has answered to: its own, its legacy ids,
+         and — for a book not yet migrated — the id it will migrate to. */
+      function bookIdsOf(meta) {
+        const out = [];
+        const add = (x) => { if (typeof x === "string" && x && out.indexOf(x) === -1) out.push(x); };
+        if (!meta || typeof meta !== "object") return out;
+        add(meta.bookId);
+        if (bookIdIsLegacy(meta.bookId)) add(bookIdMigrated(meta.bookId));
+        bookIdNormalizeLegacyList(meta.legacyBookIds).forEach((x) => { add(x); if (bookIdIsLegacy(x)) add(bookIdMigrated(x)); });
+        return out;
+      }
+      function bookIdsMatch(a, b) {
+        const ia = bookIdsOf(a), ib = bookIdsOf(b);
+        return ia.some((x) => ib.indexOf(x) !== -1);
+      }
+      /* Pure: migrates one meta object in place. Returns { from, to } or null when there was nothing to do. */
+      function bookIdMigrateMeta(meta) {
+        if (!meta || typeof meta !== "object" || !bookIdIsLegacy(meta.bookId)) return null;
+        const from = meta.bookId, to = bookIdMigrated(from);
+        meta.legacyBookIds = bookIdNormalizeLegacyList([from].concat(Array.isArray(meta.legacyBookIds) ? meta.legacyBookIds : []));
+        meta.bookId = to;
+        return { from: from, to: to };
+      }
+      let bookIdMigrationSeq = 0, bookIdLastMigration = null;
+      /* The desk's book, once: History takes a "Before book ID update"
+         snapshot first (not for an empty desk, nor for the sample — its
+         only change is the rename to its own fixed id, and a snapshot
+         would make an untouched sample look edited — nor when History
+         already holds exactly this state, e.g. a restored snapshot). */
+      function bookIdMigrateDesk() {
+        if (!bookIdIsLegacy(state.meta.bookId)) return null;
+        const from = state.meta.bookId;
+        if (!isEmptyDesk() && !isSampleBookId(from) && typeof takeSnapshot === "function") {
+          const now = JSON.stringify(snapshotBookDoc());
+          const already = (state.history || []).some((h) => h && h.doc && h.doc.meta && h.doc.meta.bookId === from && JSON.stringify(h.doc) === now);
+          if (!already) takeSnapshot("", "bookid");
+        }
+        const r = bookIdMigrateMeta(state.meta);
+        bookIdMigrationSeq++;
+        bookIdLastMigration = { from: r.from, to: r.to, at: new Date().toISOString() };
+        return r;
+      }
+      /* ==== /BEUK:bookid ==== */
       const fmtNum = (n) => { try { return new Intl.NumberFormat(getUiLang(), { maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0)); } catch (e) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); } };
       const icons = () => { if (window.lucide) lucide.createIcons(); };
 
@@ -6009,7 +6133,7 @@
         "history.storage": "Snapshots live with this book — on this device, and on your shelf when the book syncs. Automatic snapshots (taken before an import, the sample story, or a restore) are kept to the most recent ten; one you name is never removed for you.",
         "history.words": "{n} word", "history.wordsPlural": "{n} words",
         "history.autoTag": "automatic",
-        "history.auto.import": "Before import", "history.auto.sample": "Before the sample story", "history.auto.restore": "Before restore",
+        "history.auto.import": "Before import", "history.auto.sample": "Before the sample story", "history.auto.restore": "Before restore", "history.auto.bookid": "Before book ID update",
         "history.unnamed": "Snapshot", "history.back": "All snapshots",
         "history.sections": "{n} section", "history.sectionsPlural": "{n} sections",
         "history.restoreAll": "Restore the whole book", "history.restoreSection": "Restore",
@@ -6028,7 +6152,7 @@
         "history.storage": "Las instantáneas viven con este libro — en este dispositivo, y en tu estantería cuando el libro se sincroniza. Las automáticas (tomadas antes de una importación, del relato de muestra o de una restauración) se conservan hasta las diez más recientes; una que nombras nunca se elimina por ti.",
         "history.words": "{n} palabra", "history.wordsPlural": "{n} palabras",
         "history.autoTag": "automática",
-        "history.auto.import": "Antes de la importación", "history.auto.sample": "Antes del relato de muestra", "history.auto.restore": "Antes de la restauración",
+        "history.auto.import": "Antes de la importación", "history.auto.sample": "Antes del relato de muestra", "history.auto.restore": "Antes de la restauración", "history.auto.bookid": "Antes de actualizar el ID del libro",
         "history.unnamed": "Instantánea", "history.back": "Todas las instantáneas",
         "history.sections": "{n} sección", "history.sectionsPlural": "{n} secciones",
         "history.restoreAll": "Restaurar el libro entero", "history.restoreSection": "Restaurar",
@@ -6047,7 +6171,7 @@
         "history.storage": "Les instantanés vivent avec ce livre — sur cet appareil, et sur votre étagère quand le livre se synchronise. Les instantanés automatiques (pris avant un import, le récit d'exemple ou une restauration) sont gardés jusqu'aux dix plus récents ; celui que vous nommez n'est jamais supprimé à votre place.",
         "history.words": "{n} mot", "history.wordsPlural": "{n} mots",
         "history.autoTag": "automatique",
-        "history.auto.import": "Avant l'import", "history.auto.sample": "Avant le récit d'exemple", "history.auto.restore": "Avant la restauration",
+        "history.auto.import": "Avant l'import", "history.auto.sample": "Avant le récit d'exemple", "history.auto.restore": "Avant la restauration", "history.auto.bookid": "Avant la mise à jour de l'identifiant du livre",
         "history.unnamed": "Instantané", "history.back": "Tous les instantanés",
         "history.sections": "{n} section", "history.sectionsPlural": "{n} sections",
         "history.restoreAll": "Restaurer le livre entier", "history.restoreSection": "Restaurer",
@@ -6066,7 +6190,7 @@
         "history.storage": "Schnappschüsse leben bei diesem Buch — auf diesem Gerät und in Ihrem Regal, sobald das Buch synchronisiert. Automatische Schnappschüsse (vor einem Import, der Beispielgeschichte oder einer Wiederherstellung) werden auf die zehn neuesten begrenzt; einen, den Sie benennen, löscht niemand für Sie.",
         "history.words": "{n} Wort", "history.wordsPlural": "{n} Wörter",
         "history.autoTag": "automatisch",
-        "history.auto.import": "Vor dem Import", "history.auto.sample": "Vor der Beispielgeschichte", "history.auto.restore": "Vor der Wiederherstellung",
+        "history.auto.import": "Vor dem Import", "history.auto.sample": "Vor der Beispielgeschichte", "history.auto.restore": "Vor der Wiederherstellung", "history.auto.bookid": "Vor der Aktualisierung der Buch-ID",
         "history.unnamed": "Schnappschuss", "history.back": "Alle Schnappschüsse",
         "history.sections": "{n} Abschnitt", "history.sectionsPlural": "{n} Abschnitte",
         "history.restoreAll": "Das ganze Buch wiederherstellen", "history.restoreSection": "Wiederherstellen",
@@ -6085,7 +6209,7 @@
         "history.storage": "Le istantanee vivono con questo libro — su questo dispositivo, e sul tuo scaffale quando il libro si sincronizza. Quelle automatiche (scattate prima di un'importazione, del racconto di esempio o di un ripristino) si conservano fino alle dieci più recenti; una a cui dai un nome non viene mai rimossa per te.",
         "history.words": "{n} parola", "history.wordsPlural": "{n} parole",
         "history.autoTag": "automatica",
-        "history.auto.import": "Prima dell'importazione", "history.auto.sample": "Prima del racconto di esempio", "history.auto.restore": "Prima del ripristino",
+        "history.auto.import": "Prima dell'importazione", "history.auto.sample": "Prima del racconto di esempio", "history.auto.restore": "Prima del ripristino", "history.auto.bookid": "Prima dell'aggiornamento dell'ID del libro",
         "history.unnamed": "Istantanea", "history.back": "Tutte le istantanee",
         "history.sections": "{n} sezione", "history.sectionsPlural": "{n} sezioni",
         "history.restoreAll": "Ripristina l'intero libro", "history.restoreSection": "Ripristina",
@@ -6104,7 +6228,7 @@
         "history.storage": "Os instantâneos vivem com este livro — neste dispositivo, e na sua estante quando o livro sincroniza. Os automáticos (tirados antes de uma importação, da história de exemplo ou de um restauro) ficam limitados aos dez mais recentes; um a que dê nome nunca é removido por si.",
         "history.words": "{n} palavra", "history.wordsPlural": "{n} palavras",
         "history.autoTag": "automático",
-        "history.auto.import": "Antes da importação", "history.auto.sample": "Antes da história de exemplo", "history.auto.restore": "Antes do restauro",
+        "history.auto.import": "Antes da importação", "history.auto.sample": "Antes da história de exemplo", "history.auto.restore": "Antes do restauro", "history.auto.bookid": "Antes da atualização do ID do livro",
         "history.unnamed": "Instantâneo", "history.back": "Todos os instantâneos",
         "history.sections": "{n} secção", "history.sectionsPlural": "{n} secções",
         "history.restoreAll": "Restaurar o livro inteiro", "history.restoreSection": "Restaurar",
@@ -6123,7 +6247,7 @@
         "history.storage": "Momentopnamen leven bij dit boek — op dit apparaat, en op je plank zodra het boek synchroniseert. Automatische opnamen (gemaakt vóór een import, het voorbeeldverhaal of een herstel) blijven beperkt tot de tien meest recente; een opname die je een naam geeft, wordt nooit voor je verwijderd.",
         "history.words": "{n} woord", "history.wordsPlural": "{n} woorden",
         "history.autoTag": "automatisch",
-        "history.auto.import": "Vóór de import", "history.auto.sample": "Vóór het voorbeeldverhaal", "history.auto.restore": "Vóór het herstel",
+        "history.auto.import": "Vóór de import", "history.auto.sample": "Vóór het voorbeeldverhaal", "history.auto.restore": "Vóór het herstel", "history.auto.bookid": "Vóór de update van de boek-ID",
         "history.unnamed": "Momentopname", "history.back": "Alle momentopnamen",
         "history.sections": "{n} sectie", "history.sectionsPlural": "{n} secties",
         "history.restoreAll": "Herstel het hele boek", "history.restoreSection": "Herstel",
@@ -6142,7 +6266,7 @@
         "history.storage": "Migawki żyją przy tej książce — na tym urządzeniu oraz na twojej półce, gdy książka się synchronizuje. Automatyczne (robione przed importem, opowieścią przykładową lub przywróceniem) zachowywane są do dziesięciu najnowszych; nazwana przez ciebie nigdy nie zostanie usunięta za ciebie.",
         "history.words": "{n} słowo", "history.wordsPlural": "{n} słów",
         "history.autoTag": "automatyczna",
-        "history.auto.import": "Przed importem", "history.auto.sample": "Przed opowieścią przykładową", "history.auto.restore": "Przed przywróceniem",
+        "history.auto.import": "Przed importem", "history.auto.sample": "Przed opowieścią przykładową", "history.auto.restore": "Przed przywróceniem", "history.auto.bookid": "Przed aktualizacją identyfikatora książki",
         "history.unnamed": "Migawka", "history.back": "Wszystkie migawki",
         "history.sections": "{n} sekcja", "history.sectionsPlural": "{n} sekcji",
         "history.restoreAll": "Przywróć całą książkę", "history.restoreSection": "Przywróć",
@@ -6161,7 +6285,7 @@
         "history.storage": "Снимки живут вместе с этой книгой — на этом устройстве и на вашей полке, когда книга синхронизируется. Автоматические (перед импортом, примерной повестью или восстановлением) хранятся до десяти последних; названный вами никогда не удаляется за вас.",
         "history.words": "{n} слово", "history.wordsPlural": "{n} слов",
         "history.autoTag": "автоматический",
-        "history.auto.import": "Перед импортом", "history.auto.sample": "Перед примерной повестью", "history.auto.restore": "Перед восстановлением",
+        "history.auto.import": "Перед импортом", "history.auto.sample": "Перед примерной повестью", "history.auto.restore": "Перед восстановлением", "history.auto.bookid": "Перед обновлением идентификатора книги",
         "history.unnamed": "Снимок", "history.back": "Все снимки",
         "history.sections": "{n} раздел", "history.sectionsPlural": "{n} разделов",
         "history.restoreAll": "Восстановить всю книгу", "history.restoreSection": "Восстановить",
@@ -6180,7 +6304,7 @@
         "history.storage": "Anlık görüntüler bu kitapla yaşar — bu cihazda ve kitap eşitlendiğinde rafınızda. Otomatik olanlar (bir içe aktarmadan, örnek öyküden veya geri yüklemeden önce alınanlar) en son on taneyle sınırlı tutulur; ad verdiğiniz biri asla sizin yerinize silinmez.",
         "history.words": "{n} kelime", "history.wordsPlural": "{n} kelime",
         "history.autoTag": "otomatik",
-        "history.auto.import": "İçe aktarmadan önce", "history.auto.sample": "Örnek öyküden önce", "history.auto.restore": "Geri yüklemeden önce",
+        "history.auto.import": "İçe aktarmadan önce", "history.auto.sample": "Örnek öyküden önce", "history.auto.restore": "Geri yüklemeden önce", "history.auto.bookid": "Kitap kimliği güncellemesinden önce",
         "history.unnamed": "Anlık görüntü", "history.back": "Tüm anlık görüntüler",
         "history.sections": "{n} bölüm", "history.sectionsPlural": "{n} bölüm",
         "history.restoreAll": "Kitabın tamamını geri yükle", "history.restoreSection": "Geri yükle",
@@ -6199,7 +6323,7 @@
         "history.storage": "تعيش اللقطات مع هذا الكتاب — على هذا الجهاز، وعلى رفّك عندما يتزامن الكتاب. اللقطات التلقائية (المأخوذة قبل استيراد أو القصة النموذجية أو استعادة) تُحفظ حتى العشر الأحدث؛ والتي تسمّيها لا تُحذف عنك أبدًا.",
         "history.words": "{n} كلمة", "history.wordsPlural": "{n} كلمة",
         "history.autoTag": "تلقائية",
-        "history.auto.import": "قبل الاستيراد", "history.auto.sample": "قبل القصة النموذجية", "history.auto.restore": "قبل الاستعادة",
+        "history.auto.import": "قبل الاستيراد", "history.auto.sample": "قبل القصة النموذجية", "history.auto.restore": "قبل الاستعادة", "history.auto.bookid": "قبل تحديث معرّف الكتاب",
         "history.unnamed": "لقطة", "history.back": "كل اللقطات",
         "history.sections": "{n} قسم", "history.sectionsPlural": "{n} قسم",
         "history.restoreAll": "استعد الكتاب كاملًا", "history.restoreSection": "استعد",
@@ -6218,7 +6342,7 @@
         "history.storage": "スナップショットはこの本と一緒にあります — このデバイスに、そして本が同期すればあなたの本棚に。自動スナップショット（読み込み、サンプルストーリー、復元の前に撮られるもの）は最新の10件まで保持され、名前を付けたものが勝手に消されることはありません。",
         "history.words": "{n} 語", "history.wordsPlural": "{n} 語",
         "history.autoTag": "自動",
-        "history.auto.import": "読み込み前", "history.auto.sample": "サンプルストーリーの前", "history.auto.restore": "復元前",
+        "history.auto.import": "読み込み前", "history.auto.sample": "サンプルストーリーの前", "history.auto.restore": "復元前", "history.auto.bookid": "書籍IDの更新前",
         "history.unnamed": "スナップショット", "history.back": "すべてのスナップショット",
         "history.sections": "{n} セクション", "history.sectionsPlural": "{n} セクション",
         "history.restoreAll": "本全体を復元", "history.restoreSection": "復元",
@@ -6237,7 +6361,7 @@
         "history.storage": "快照与这本书同在 — 保存在此设备上，书同步时也随之登上你的书架。自动快照（在导入、示例故事或恢复之前拍摄）只保留最近十份；你命名的快照永远不会替你删除。",
         "history.words": "{n} 词", "history.wordsPlural": "{n} 词",
         "history.autoTag": "自动",
-        "history.auto.import": "导入前", "history.auto.sample": "示例故事之前", "history.auto.restore": "恢复前",
+        "history.auto.import": "导入前", "history.auto.sample": "示例故事之前", "history.auto.restore": "恢复前", "history.auto.bookid": "更新图书 ID 之前",
         "history.unnamed": "快照", "history.back": "全部快照",
         "history.sections": "{n} 节", "history.sectionsPlural": "{n} 节",
         "history.restoreAll": "恢复整本书", "history.restoreSection": "恢复",
@@ -15884,7 +16008,7 @@
           out.push({
             id: typeof e.id === "string" && e.id ? e.id : uid(),
             name: typeof e.name === "string" ? e.name : "",
-            auto: ["import", "sample", "restore", "conflict"].indexOf(e.auto) !== -1 ? e.auto : null,
+            auto: ["import", "sample", "restore", "conflict", "bookid"].indexOf(e.auto) !== -1 ? e.auto : null, /* BEUK:bookid — "bookid" */
             at: typeof e.at === "string" ? e.at : new Date(0).toISOString(),
             words: Math.max(0, Math.floor(Number(e.words) || 0)),
             doc: e.doc
@@ -19167,6 +19291,7 @@
           state.meta.subtitle = ""; state.meta.publisher = ""; state.meta.isbn = "";
           state.meta.rights = ""; state.meta.description = ""; state.meta.a11ySummary = "";
           state.meta.bookId = newBookId();
+          delete state.meta.legacyBookIds; /* BEUK:bookid — a new book answers to no old ids */
           state.meta.language = "en"; state.meta.langSource = "auto"; state.meta.langGuess = "";
           /* The manuscript's own copyright page speaks for the
              imprint too: its ISBN, publisher and year take the desk
@@ -26415,6 +26540,8 @@
         if (typeof raStop === "function") raStop();
         if (typeof dictDiscard === "function") dictDiscard();
         if (doc.meta) state.meta = Object.assign({}, state.meta, doc.meta);
+        /* BEUK:bookid — legacy ids belong to the arriving book alone (never inherited from the desk), and the key is absent when empty so an untouched sample compares as it always has. */
+        if (doc.meta) { const lg = bookIdNormalizeLegacyList(doc.meta.legacyBookIds); if (lg.length) state.meta.legacyBookIds = lg; else delete state.meta.legacyBookIds; }
         /* Language bookkeeping backfill: books saved before detection
            existed carry no langSource. A non-English language in such
            a book was picked by hand in the old selector, so it counts
@@ -26484,6 +26611,8 @@
         state.audio = acxNormalize(doc.audio);
         /* BEUK:dictlang — the dictation language belongs to the book: one without it follows its own language. */
         state.dictation = dictNormalize(doc.dictation);
+        /* BEUK:bookid — every arrival (local restore, shelf, backup file, conflict, snapshot) passes here: a pre-UUID id migrates now, once, after History has its snapshot. */
+        bookIdMigrateDesk();
         state.page = 1;
         const isBox = $("importSummary"); if (isBox) isBox.style.display = "none";
         renderSidebar(); syncEditor(); renderStudio(); syncStudioControls();
@@ -26745,7 +26874,7 @@
         let match = null;
         for (const m of cloud.shelf.slice(0, 20)) {
           const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(m.id), {});
-          if (r && r.manuscript && r.manuscript.doc && r.manuscript.doc.meta && r.manuscript.doc.meta.bookId === state.meta.bookId) { match = m; break; }
+          if (r && r.manuscript && r.manuscript.doc && r.manuscript.doc.meta && bookIdsMatch(r.manuscript.doc.meta, state.meta)) { match = m; break; } /* BEUK:bookid — legacy ids match too */
         }
         if (match) {
           cloud.linkedId = match.id; cloud.linkState = "linked"; cloudDirty = true;
@@ -33185,8 +33314,122 @@
             const a = newBookId(), b = newBookId(), e = buildEmptyBook().meta.bookId, s = buildSampleBook().meta.bookId;
             return scVerdict(re.test(a) && re.test(b) && a !== b && re.test(e) && s === SAMPLE_BOOK_ID && re.test(s) && isSampleBookId("urn:uuid:beuk-sample-lantern-coast"),
               "new " + a + "; empty desk " + e + "; sample " + s + " (the pre-UUID sample id is still recognised)");
-          } }
+          } },
         /* ==== /BEUK:epub ==== */
+        /* ==== BEUK:bookid ==== */
+        /* Pre-UUID book ids migrate to a deterministic UUIDv5. The
+           expected values below were computed independently with
+           Node's crypto SHA-1 (not with this file's code). */
+        { id: "bookid.v5.rfc-vector", feature: "epub", name: "Book ID: the UUIDv5 routine reproduces RFC 9562 Appendix A.4 (DNS namespace, \"www.example.com\" → 2ed6657d-e927-568b-95e1-2665a8aea6a2) and SHA-1 reproduces the FIPS 180-4 \"abc\" and empty-message digests",
+          run() {
+            const got = uuidV5("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com");
+            const hx = (b) => Array.prototype.map.call(b, (x) => (x + 256).toString(16).slice(1)).join("");
+            const shaOk = hx(bookIdSha1(new Uint8Array(0))) === "da39a3ee5e6b4b0d3255bfef95601890afd80709" &&
+              hx(bookIdSha1(bookIdUtf8("abc"))) === "a9993e364706816aba3e25717850c26c9cd0d89d";
+            return scVerdict(got === "2ed6657d-e927-568b-95e1-2665a8aea6a2" && shaOk, "v5 " + got + "; SHA-1 test digests " + (shaOk ? "match" : "DO NOT match"));
+          } },
+        { id: "bookid.migrate.legacy-book", feature: "epub", name: "Book ID: an old non-UUID id migrates on arrival to the expected UUIDv5, keeps the old id in legacyBookIds, snapshots History first (\"Before book ID update\"), and ships the new id in the EPUB",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const keepSusp = local.suspended; local.suspended = true;
+            try {
+              const OLD = "urn:uuid:sk3j9x2a-s8f7d6e5", WANT = "urn:uuid:4e75b77b-c0ca-5014-81c8-cb44bc7600fd";
+              const d = buildEmptyBook();
+              d.meta.title = "Old Id Fixture"; d.meta.author = "E. Marlowe"; d.meta.bookId = OLD;
+              d.sections.find((x) => x.type === "chapter").content = "Written before book ids were real UUIDs.";
+              d.history = [];
+              applyBookDoc(d);
+              const idOk = state.meta.bookId === WANT && BOOKID_UUID_RE.test(state.meta.bookId) && state.meta.bookId.charAt(23) === "5";
+              const legacyOk = Array.isArray(state.meta.legacyBookIds) && state.meta.legacyBookIds.length === 1 && state.meta.legacyBookIds[0] === OLD;
+              const snap = (state.history || [])[0];
+              const snapOk = !!snap && snap.auto === "bookid" && !!snap.doc && snap.doc.meta.bookId === OLD && snapshotLabel(snap) === t("history.auto.bookid");
+              state.meta.isbn = "";
+              const opf = scText(epubFiles("generic"), "OEBPS/package.opf");
+              const opfOk = opf.includes('<dc:identifier id="pub-id">' + WANT + "</dc:identifier>") && opf.indexOf(OLD) === -1;
+              const rec = JSON.parse(localRecordJson());
+              const recOk = rec.book.meta.bookId === WANT && rec.book.meta.legacyBookIds[0] === OLD;
+              return scVerdict(idOk && legacyOk && snapOk && opfOk && recOk,
+                OLD + " → " + state.meta.bookId + " (expected " + WANT + ": " + idOk + "); legacy kept (" + legacyOk + "); snapshot first (" + snapOk + "); OPF ships the new id only (" + opfOk + "); device record carries both (" + recOk + ")");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              local.suspended = keepSusp;
+            }
+          } },
+        { id: "bookid.migrate.idempotent", feature: "epub", name: "Book ID: migration is idempotent — re-applying, a second device, and restoring the pre-migration snapshot all keep the same id, one legacy id and one \"Before book ID update\" snapshot",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const keepSusp = local.suspended; local.suspended = true;
+            try {
+              const OLD = "urn:uuid:sk3j9x2a-s8f7d6e5", WANT = "urn:uuid:4e75b77b-c0ca-5014-81c8-cb44bc7600fd";
+              const d = buildEmptyBook();
+              d.meta.title = "Idempotent Fixture"; d.meta.bookId = OLD; d.history = [];
+              d.sections.find((x) => x.type === "chapter").content = "Same book, every time.";
+              applyBookDoc(JSON.parse(JSON.stringify(d)));
+              const first = state.meta.bookId;
+              const again = bookIdMigrateDesk();
+              applyBookDoc(JSON.parse(JSON.stringify(serializeBook())));
+              const second = state.meta.bookId;
+              const other = { bookId: OLD }; bookIdMigrateMeta(other);
+              const snaps = () => (state.history || []).filter((h) => h.auto === "bookid").length;
+              const snapsBefore = snaps();
+              const pre = (state.history || []).find((h) => h.auto === "bookid");
+              if (pre) restoreSnapshot(pre.id);
+              const afterRestore = state.meta.bookId;
+              const ok = first === WANT && again === null && second === WANT && other.bookId === WANT && afterRestore === WANT &&
+                state.meta.legacyBookIds.length === 1 && snapsBefore === 1 && snaps() === 1;
+              return scVerdict(ok, "first " + first + ", again " + (again === null ? "no-op" : "MIGRATED AGAIN") + ", reapplied " + second + ", other device " + other.bookId +
+                ", after restoring the old-id snapshot " + afterRestore + "; legacy ids " + state.meta.legacyBookIds.length + "; bookid snapshots " + snapsBefore + " → " + snaps());
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              local.suspended = keepSusp;
+            }
+          } },
+        { id: "bookid.match.legacy-and-new", feature: "epub", name: "Book ID: shelf matching treats a migrated and an un-migrated copy of a book as the same book, and never matches a different book or a fresh one",
+          run() {
+            const OLD = "urn:uuid:sk3j9x2a-s8f7d6e5";
+            const migrated = { bookId: OLD }; bookIdMigrateMeta(migrated);
+            const unmigrated = { bookId: OLD };
+            const stripped = { bookId: migrated.bookId };
+            const otherOld = { bookId: "urn:uuid:sa1b2c3d-se4f5g6h" };
+            const fresh = { bookId: newBookId() };
+            const ok = bookIdsMatch(migrated, unmigrated) && bookIdsMatch(unmigrated, migrated) && bookIdsMatch(stripped, unmigrated) &&
+              !bookIdsMatch(migrated, otherOld) && !bookIdsMatch(unmigrated, fresh) && !bookIdsMatch({}, {}) && bookIdsMatch(fresh, { bookId: fresh.bookId });
+            return scVerdict(ok, "migrated ↔ un-migrated match both ways; a migrated copy that lost its legacy list still matches; a different old book, a fresh book and id-less books do not");
+          } },
+        { id: "bookid.sample.stays-sample", feature: "epub", name: "Book ID: the pre-UUID sample id migrates to the sample's own fixed UUID, stays the sample, takes no snapshot, and its stored untouched-sample fingerprint migrates to match",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const keepSusp = local.suspended; local.suspended = true;
+            try {
+              const old = buildSampleBook(); old.meta.bookId = LEGACY_SAMPLE_BOOK_ID; old.history = [];
+              applyBookDoc(JSON.parse(JSON.stringify(old)));
+              const idOk = state.meta.bookId === SAMPLE_BOOK_ID && isSampleBookId(state.meta.bookId) &&
+                Array.isArray(state.meta.legacyBookIds) && state.meta.legacyBookIds[0] === LEGACY_SAMPLE_BOOK_ID;
+              const noSnap = !(state.history || []).some((h) => h.auto === "bookid");
+              /* What an old build stored as the "as loaded" fingerprint: the desk with the old id and no legacy list. */
+              const lj = JSON.parse(sampleComparableJson());
+              lj.meta.bookId = LEGACY_SAMPLE_BOOK_ID; delete lj.meta.legacyBookIds;
+              bookIdMigrateMeta(lj.meta);
+              const untouched = stableJson(lj) === sampleComparableJson();
+              return scVerdict(idOk && noSnap && untouched, "legacy sample id → " + state.meta.bookId + " (" + idOk + "); no snapshot (" + noSnap + "); untouched fingerprint equal after migration (" + untouched + ")");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              local.suspended = keepSusp;
+            }
+          } }
+        /* ==== /BEUK:bookid ==== */
 
       ];
       /* ==== BEUK:store ==== */
@@ -33773,8 +34016,10 @@
           return d;
         } catch (e) { return null; }
       }
+      let localRestoreMigrated = false; /* BEUK:bookid */
       async function localRestore() {
         let found = null;
+        localRestoreMigrated = false;
         try {
           local.db = await localOpenDb();
           const all = await localReadAll(local.db);
@@ -33783,9 +34028,15 @@
           if (!found) { found = localParseRecord(all.prev); if (found) local.restoredFrom = "book-prev"; }
           if (all.link && all.link.link && typeof all.link.link === "object") local.restoredLink = all.link.link;
           if (found) {
+            const bookIdSeqBefore = bookIdMigrationSeq; /* BEUK:bookid */
             applyBookDoc(found.book);
             sampleState.loaded = !!(found.sample && found.sample.loaded);
             sampleState.loadedJson = sampleState.loaded ? (found.sample.loadedJson || sampleComparableJson()) : null;
+            /* BEUK:bookid — the id migrated on the way in: the stored "as loaded" sample fingerprint is migrated the same way, so an untouched sample stays untouched; the healed record is written back below. */
+            localRestoreMigrated = bookIdMigrationSeq !== bookIdSeqBefore;
+            if (localRestoreMigrated && sampleState.loaded && found.sample.loadedJson) {
+              try { const lj = JSON.parse(found.sample.loadedJson); if (lj && lj.meta) { bookIdMigrateMeta(lj.meta); sampleState.loadedJson = stableJson(lj); } } catch (e) {}
+            }
             if (found.flags && found.flags.editedBeforeSignIn) cloud.editedBeforeSignIn = true;
             renderSampleButton();
             local.restoredAt = Date.now();
@@ -33808,6 +34059,7 @@
             /* A last-good fallback, or a normalisation on the way in:
                write the healed record back so both copies are sound. */
             if (local.restoredFrom === "book-prev") localSaveNow();
+            else if (localRestoreMigrated) { local.lastJson = null; localSaveNow(); } /* BEUK:bookid — persist the migrated id */
           } else {
             /* First visit on this device: the first write also proves
                the browser will keep what we give it. */
@@ -33912,7 +34164,7 @@
       }
       function localApplyBackup(book) {
         const snap = autoSnapshot("backup");
-        const arrivingId = book.meta && book.meta.bookId;
+        const arrivingMeta = book.meta && typeof book.meta === "object" ? { bookId: book.meta.bookId, legacyBookIds: book.meta.legacyBookIds } : null; /* BEUK:bookid */
         applyBookDoc(JSON.parse(JSON.stringify(book)));
         if (snap) {
           state.history = [snap].concat((state.history || []).filter((s) => s.id !== snap.id));
@@ -33921,18 +34173,18 @@
         sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
         /* A different book than the shelf link: it becomes its own
            shelf book on the next save instead of overwriting this one. */
-        if (cloud.linkedId && arrivingId && arrivingId !== localPrevBookId) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; }
+        if (cloud.linkedId && arrivingMeta && bookIdsOf(arrivingMeta).length && !bookIdsMatch(arrivingMeta, localPrevBookMeta)) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; }
         noteBookEdited();
         toast(t("local.backupOpened", { title: state.meta.title || t("misc.untitledBook") }), "hard-drive");
       }
-      let localPrevBookId = null;
+      let localPrevBookMeta = null; /* BEUK:bookid — the desk book's ids (own + legacy) when a backup was opened */
       function localOpenBackupFile(file) {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
           const book = localParseBackup(String(reader.result || ""));
           if (!book) { toast(t("local.backupBad"), "alert-triangle"); return; }
-          localPrevBookId = state.meta.bookId;
+          localPrevBookMeta = { bookId: state.meta.bookId, legacyBookIds: state.meta.legacyBookIds };
           if (isEmptyDesk() || deskIsUntouchedSample()) { localApplyBackup(book); return; }
           cloudConfirm({
             title: t("local.backupConfirmTitle"),

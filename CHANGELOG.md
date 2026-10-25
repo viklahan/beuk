@@ -4,6 +4,17 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — Older books get a proper ID
+
+- **Older books, clean exports.** For writers whose books date from
+  before Beuk gave every book a real ID: EPUBCheck warned about their
+  identifier (OPF-085). The first time such a book opens, it now gets a
+  proper ID on its own. Every device works out the same new ID, and
+  the old one is kept, so your shelf still knows it is the same book and
+  never makes a copy. History saves a "Before book ID update" snapshot
+  first. Nothing else in the book changes. The new words in 12 languages
+  have not yet been checked by native speakers.
+
 ## 2026-10-24 — Your book as a hardback
 
 - **Hardcover in the preview.** For writers who want to see the printed
