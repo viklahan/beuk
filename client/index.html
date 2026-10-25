@@ -28931,7 +28931,7 @@
               area.value = "The chart was old."; area.dispatchEvent(new Event("input"));
               area.focus(); area.setSelectionRange(area.value.length, area.value.length);
               document.querySelector('[data-insert="endnote"]').click();
-              const opened = $("modalFootnote").classList.contains("open") && $("fnTitle").textContent === "Footnote 1";
+              const opened = $("modalFootnote").classList.contains("open") && $("fnTitle").textContent === t("fn.titleN", { n: 1 });
               if (!opened) return scVerdict(false, "the Footnote button did not open the note dialog as Footnote 1");
               $("fnText").value = "Drawn in ink that never dried.";
               $("btnDoFootnote").click();
@@ -28939,7 +28939,7 @@
                 sec.content === area.value && !$("modalFootnote").classList.contains("open");
               area.setSelectionRange(5, 5);
               document.querySelector('[data-insert="endnote"]').click();
-              const opened2 = $("modalFootnote").classList.contains("open") && $("fnTitle").textContent === "Footnote 2";
+              const opened2 = $("modalFootnote").classList.contains("open") && $("fnTitle").textContent === t("fn.titleN", { n: 2 });
               if (!opened2) return scVerdict(false, "the second footnote did not number itself 2 (first pair ok: " + firstOk + ")");
               $("fnText").value = "A second note.";
               $("btnDoFootnote").click();
@@ -32740,6 +32740,7 @@
         const pop = $("raPop"), wrap = pop && pop.closest(".ra-wrap");
         if (!wrap) return;
         wrap.classList.remove("ra-start");
+        pop.style.translate = "";
         if (pop.hidden) return;
         /* "On screen" means inside the viewport AND inside the nearest
            ancestor that clips (the centre pane scrolls), or the panel
@@ -32752,6 +32753,14 @@
         const spill = () => { const r = pop.getBoundingClientRect(); return Math.max(0, lo + 4 - r.left) + Math.max(0, r.right - (hi - 4)); };
         const atEnd = spill();
         if (atEnd > 0) { wrap.classList.add("ra-start"); if (spill() >= atEnd) wrap.classList.remove("ra-start"); }
+        /* Still a few px over (a pane narrower than panel + button
+           offset): nudge it sideways into the frame — physical px, so
+           the same in either reading direction. */
+        if (spill() > 0) {
+          const r = pop.getBoundingClientRect();
+          const dx = r.right > hi - 4 ? (hi - 4) - r.right : (lo + 4) - r.left;
+          pop.style.translate = Math.round(dx) + "px 0";
+        }
       }
       function tbLayoutOnLangChange() { tbLayout(); }
       function tbLayoutInit() {
