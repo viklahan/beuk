@@ -17,9 +17,10 @@ export interface Config {
    *  default 64 MiB). A book carries its pictures and its snapshot
    *  history, so the sample book alone is ~23 MB. */
   manuscriptMaxBytes: number;
-  /** RESTORE_ENABLED (default false). Off until restore carries every
-   *  table: today it would delete share links, reader comments, reader
-   *  records and jobs and not bring them back. */
+  /** RESTORE_ENABLED (default true). Restore now carries every data
+   *  table (shares, comments, readers and jobs included; the completeness
+   *  self-check fails on any unclassified table). Set false to turn
+   *  restore off: POST /api/housekeeping/restore then answers 503. */
   restoreEnabled: boolean;
   /** M2 billing hooks: all null until Vik sets a price + keys. When any
    *  piece is missing the billing endpoints answer 501 "not configured"
@@ -157,7 +158,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     exportDir: env.EXPORT_DIR ?? path.resolve(process.cwd(), 'data', 'exports'),
     exportMaxBytes: Number(env.EXPORT_MAX_BYTES ?? 50 * 1024 * 1024),
     manuscriptMaxBytes: Number(env.MANUSCRIPT_MAX_BYTES ?? 64 * 1024 * 1024),
-    restoreEnabled: (env.RESTORE_ENABLED ?? 'false').toLowerCase() === 'true',
+    restoreEnabled: (env.RESTORE_ENABLED ?? 'true').toLowerCase() !== 'false',
     stripeSecretKey: env.STRIPE_SECRET_KEY || null,
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || null,
     stripePriceId: env.STRIPE_PRICE_ID || null,

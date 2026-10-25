@@ -709,11 +709,37 @@ as passing. Runs are stored in `housekeeping_check_runs`.
 one directory per named backup: `manifest.json` (contents + hashes),
 `db.json` (logical dump of the data tables), `settings.json`
 (non-secret config — **secrets are excluded by name**, listed in the
-manifest), and `files/` (a copy of the export volume). The audit and
-check-run tables are NOT backed up: evidence is append-only and a
-restore must not rewrite it. All file writes are atomic (temp + rename).
+manifest), and `files/` (a copy of the export volume). Every table is
+classified in `src/housekeeping/backup.ts`: `BACKUP_TABLES` (users,
+manuscripts, streaks, exports, jobs, sessions, Founders' Shelf
+applications, share links, reader comments and reader records) or
+`EXCLUDED_TABLES`, each with its reason, also written into every
+manifest: the audit, check-run and sign-off tables (evidence is
+append-only and a restore must not rewrite it), `schema_migrations`
+(owned by the migration runner) and `password_resets` (live reset
+tokens: a restore **deletes** them all, so no link issued before the
+restore keeps working). The self-check `data.backup.tables-classified`
+and a server test fail the day a migration adds a table that is in
+neither list. The dump is read inside one `REPEATABLE READ READ ONLY`
+transaction, so it is one consistent snapshot across tables; the
+manifest's `consistency` field records the mode Postgres reported.
+All file writes are atomic (temp + rename).
 
-**Restore is turned off for now** (`RESTORE_ENABLED`, default `false`; `POST /restore` answers 503 with the reason). It does not yet back up share links, reader comments, reader records or jobs, and deleting users during a restore would cascade them away. See `docs/plan-billing-backups-restore-branding.md`, Phase 0.
+**Restore is on** (`RESTORE_ENABLED`, default `true`). Set
+`RESTORE_ENABLED=false` to turn it off: `POST /restore` then answers 503
+with the reason and touches nothing. Restore puts back every table in
+`BACKUP_TABLES`, share links, comments, readers and jobs included
+(proven by `tests/restore-coverage.test.ts`: a share with two comments,
+a reader and a job survive backup → change → restore, and the
+`pre-restore-…` snapshot carries them too). `jsonb` values are
+re-inserted as JSON text with an explicit cast; before that fix a job
+result or share snapshot whose top-level value was an array made the
+whole restore fail on real Postgres ("invalid input syntax for type
+json"; the transaction rolled back). A backup taken before shares and
+jobs were backed up is **refused by name** (409): restoring it would
+delete every row of those tables. Still not done (plan Phase 3): no
+schema-version gate, no dry-run, the export-volume swap is not atomic,
+and the app keeps serving during a restore.
 
 **Restore is two-step:** `POST /restore/preview` returns a per-table
 diff summary and a short-lived preview id; `POST /restore` requires

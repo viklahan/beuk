@@ -113,7 +113,8 @@ export function testConfig(overrides?: Partial<Config>): Config {
     exportDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-exports-')),
     exportMaxBytes: 50 * 1024 * 1024,
     manuscriptMaxBytes: 64 * 1024 * 1024,
-    restoreEnabled: false,
+    // Mirrors the production default (on); the 503 test turns it off.
+    restoreEnabled: true,
     stripeSecretKey: null,
     stripeWebhookSecret: null,
     stripePriceId: null,

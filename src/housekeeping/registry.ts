@@ -18,6 +18,7 @@ import {
   type ZipEntry,
 } from './packages.js';
 import { scanTags } from './xml.js';
+import { BACKUP_TABLES, classifyTables, EXCLUDED_TABLES } from './backup.js';
 import { clientDir, repoRoot } from '../warmth/pages.js';
 import { createMailer, type Mailer } from '../mailer.js';
 import { renderSnapshot } from '../shares/render.js';
@@ -464,6 +465,21 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       const { total, bad } = rows.rows[0] ?? { total: '0', bad: '0' };
       assert(bad === '0', `${bad} manuscript(s) carry an invalid revision`);
       return `${total} manuscript(s), every revision >= 1`;
+    },
+  },
+  {
+    id: 'data.backup.tables-classified',
+    title: 'Every database table is either backed up or excluded on purpose (with a reason)',
+    kind: 'server',
+    run: async ({ db }) => {
+      // Fails the day a migration adds a table nobody classified: an
+      // unclassified table is silently missing from every backup, and a
+      // restore's `delete from users` cascade could wipe it.
+      const c = await classifyTables(db);
+      assert(!c.unclassified.length, `tables in neither BACKUP_TABLES nor EXCLUDED_TABLES: ${c.unclassified.join(', ')}`);
+      assert(!c.both.length, `tables in both lists: ${c.both.join(', ')}`);
+      assert(!c.missing.length, `listed tables the database does not have: ${c.missing.join(', ')}`);
+      return `${c.total} tables: ${BACKUP_TABLES.length} backed up, ${Object.keys(EXCLUDED_TABLES).length} excluded with a reason`;
     },
   },
   {

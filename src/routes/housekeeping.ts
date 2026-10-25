@@ -10,6 +10,7 @@ import {
   listBackups,
   previewRestore,
   readManifest,
+  RestoreRefused,
 } from '../housekeeping/backup.js';
 import {
   writeAudit,
@@ -311,10 +312,9 @@ export function housekeepingRoutes(
         return {
           status: 503,
           result: 'refused',
-          detail: 'restore disabled: shares, comments, readers and jobs not yet covered',
+          detail: 'restore disabled by RESTORE_ENABLED=false',
           body: {
-            error:
-              'restore is turned off: it does not yet carry share links, reader comments, reader records or jobs, and would delete them',
+            error: 'restore is turned off on this server (RESTORE_ENABLED=false)',
           },
         };
       }
@@ -335,11 +335,17 @@ export function housekeepingRoutes(
           body: { error: 'restore preview is missing, expired, or does not match this backup' },
         };
       }
-      const restored = await executeRestore(db, config, {
-        name,
-        createdBy: req.user!.email,
-        secrets: hk.secrets,
-      });
+      let restored;
+      try {
+        restored = await executeRestore(db, config, {
+          name,
+          createdBy: req.user!.email,
+          secrets: hk.secrets,
+        });
+      } catch (err) {
+        if (!(err instanceof RestoreRefused)) throw err;
+        return { status: 409, result: 'refused', detail: err.message, body: { error: err.message } };
+      }
       const verification = await executeSelfCheckRun();
       return {
         status: 200,

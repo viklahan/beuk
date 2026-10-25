@@ -279,7 +279,7 @@ test('backup: secrets are excluded by name and the canary appears in NO housekee
 });
 
 test('restore is refused while RESTORE_ENABLED is off, and nothing is touched', async () => {
-  const { server, admin } = await setup();
+  const { server, admin } = await setup({ restoreEnabled: false });
   try {
     const first = await admin.post('/api/manuscripts', {
       doc: { title: 'Kept Book', sections: { frontMatter: [], body: [], backMatter: [] } },
