@@ -32984,6 +32984,243 @@
               return scVerdict(before > 100 && after === before, "scrolled to " + before + "px; a click-through re-render left the pane at " + after + "px");
             } finally { applyBookDoc(keepDoc); }
           } },
+        /* ==== BEUK:sidebar ==== */
+        { id: "ui.savepill.compact", feature: "ui", name: "Header save pill is compact: every state shows a dot and a SHORT label (Checking… / Saving… / Saved ✓ / Saved · back up / Not saved), the whole sentence and its explanation ride the tooltip, the accessible name and the one-click popover; warning and failure states stay visibly distinct; the pill never grows past its cap",
+          run() {
+            const keep = { status: local.status, persisted: local.persisted, err: local.errorName };
+            const pill = $("localPill"), btn = $("localPillBtn"), short = $("localPillShort"), full = $("localPillText"), wrap = pill && pill.parentElement;
+            if (!pill || !btn || !short || !full || !wrap) return scVerdict(false, "pill elements missing");
+            const cases = [
+              ["checking", true, "local.checkingShort", false, false],
+              ["saving", true, "local.saving", false, false],
+              ["saved", true, "local.savedShort", false, false],
+              ["saved", false, "local.savedRiskShort", true, false],
+              ["blocked", true, "local.notSavedShort", true, true],
+              ["quota", true, "local.notSavedShort", true, true],
+              ["error", true, "local.notSavedShort", true, true]
+            ];
+            const bad = [];
+            let maxW = 0;
+            try {
+              cases.forEach(([st, persisted, key, warn, fail]) => {
+                local.status = st; local.persisted = persisted; local.errorName = "UnknownError"; renderLocalPill();
+                const txt = localStatusText();
+                const tag = st + (persisted ? "" : "/evictable");
+                if (short.textContent !== t(key)) bad.push(tag + ": label “" + short.textContent + "” ≠ " + key);
+                if (!(short.textContent.length < txt.full.length || st === "saving")) bad.push(tag + ": label not shorter than the sentence");
+                if (full.textContent !== txt.full) bad.push(tag + ": hidden full sentence missing");
+                if (pill.title.indexOf(txt.full) === -1 || pill.title.indexOf(localDetailText()) === -1) bad.push(tag + ": tooltip lacks the sentence or its explanation");
+                if ((btn.getAttribute("aria-label") || "").indexOf(txt.full) !== 0) bad.push(tag + ": accessible name lacks the sentence");
+                const warnEl = pill.querySelector(".local-warn");
+                const warnShown = !!warnEl && getComputedStyle(warnEl).display !== "none";
+                if (warnShown !== warn) bad.push(tag + ": warning mark " + (warnShown ? "shown" : "hidden"));
+                if (warn && short.textContent === t("local.savedShort")) bad.push(tag + ": a warning reads as plain Saved");
+                if (fail !== !$("btnLocalBackupInline").hidden) bad.push(tag + ": backup offer " + (fail ? "missing" : "shown"));
+                if (getComputedStyle(full).position !== "absolute" || full.getBoundingClientRect().width > 1) bad.push(tag + ": the long sentence is still painted in the header");
+                const capHere = (fail ? Math.min(260, window.innerWidth * 0.40) : Math.min(200, window.innerWidth * 0.34)) + 1;
+                const wHere = pill.getBoundingClientRect().width;
+                if (wHere > capHere) bad.push(tag + ": pill " + Math.round(wHere) + "px exceeds its " + Math.round(capHere) + "px cap");
+                if (fail && short.getBoundingClientRect().width > 0 && short.scrollWidth > short.clientWidth + 1) bad.push(tag + ": the Not saved label is cut off");
+                maxW = Math.max(maxW, wHere);
+              });
+              /* The explanation is one click away. */
+              local.status = "saved"; local.persisted = false; renderLocalPill();
+              toggleLocalPop(true);
+              const popOk = !$("localPop").hidden && $("localPopDetail").textContent.indexOf(t("local.detailEvictable")) !== -1;
+              toggleLocalPop(false);
+              if (!popOk) bad.push("popover does not explain the evictable state");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "7 states: short labels, full sentence in tooltip/name/popover, warnings distinct, widest pill " + Math.round(maxW) + "px (cap 200px, 260px with the backup offer)");
+            } finally {
+              local.status = keep.status; local.persisted = keep.persisted; local.errorName = keep.err; renderLocalPill();
+            }
+          } },
+        { id: "ui.header.no-duplicates", feature: "ui", name: "Import and Project Settings live once, in the sidebar: the header carries no Import or Settings icon, and the sidebar buttons still open them",
+          run() {
+            const top = $("topbar");
+            const gone = !$("btnImportTop") && !$("btnSettings");
+            const imp = $("btnImport"), set = $("btnSettings2"), side = $("pane-structure");
+            const inSide = !!imp && !!set && side.contains(imp) && side.contains(set);
+            const headerDupes = Array.prototype.filter.call(top.querySelectorAll("button"), (b) => {
+              const n = ((b.getAttribute("aria-label") || "") + " " + b.textContent).toLowerCase();
+              return /import|settings/.test(n) && !b.closest(".local-wrap");
+            }).map((b) => b.id || b.className);
+            const m = $("modalSettings"), wasOpen = m.classList.contains("open");
+            set.click();
+            const opens = m.classList.contains("open");
+            if (!wasOpen) m.classList.remove("open");
+            /* The file picker cannot be opened from a check: prove the
+               sidebar Import button is wired to it instead. */
+            const fi = $("fileInput"); let picked = false;
+            const realClick = fi.click; fi.click = () => { picked = true; };
+            try { imp.click(); } finally { fi.click = realClick; }
+            return scVerdict(gone && inSide && headerDupes.length === 0 && opens && picked,
+              "header icons removed (" + gone + "); sidebar Import + Project Settings present (" + inSide + "); other header buttons naming import/settings: " + (headerDupes.join(", ") || "none") + "; Project Settings opens (" + opens + "); Import opens the file picker (" + picked + ")");
+          } },
+        { id: "ui.sidebar.collapse", feature: "ui", name: "Sidebar bottom: Story Insights, Goals, History (and Reader comments) stand as one always-visible row of labelled icon buttons; the statistics are a keyboard-operable disclosure with a one-line live summary, closed by default and remembered on this device",
+          run() {
+            const keepOpen = sidePrefs().statusOpen;
+            const bad = [];
+            try {
+              const row = $("sideTools"), body = $("sideStatusBody"), head = $("btnSideStatus");
+              if (!row || !body || !head) return scVerdict(false, "dock elements missing");
+              const ids = ["btnInsights", "btnGoals", "btnHistory"].concat($("btnBetaComments") ? ["btnBetaComments"] : []);
+              ids.forEach((id) => {
+                const b = $(id);
+                if (!b || b.parentElement !== row) { bad.push(id + " not in the tools row"); return; }
+                if (body.contains(b)) bad.push(id + " hidden inside the disclosure");
+                const lab = b.querySelector(".side-tool-lab");
+                if (!lab || !lab.textContent.trim()) bad.push(id + " has no visible label");
+                if (!b.getAttribute("aria-label") || !b.title) bad.push(id + " lost its name or tooltip");
+                if (!b.querySelector("svg, i[data-lucide]")) bad.push(id + " has no icon");
+              });
+              if (!(ids.length >= 3)) bad.push("tools missing");
+              const tops = ids.map((id) => Math.round($(id).getBoundingClientRect().top));
+              if (row.getBoundingClientRect().width > 0 && new Set(tops).size !== 1) bad.push("tools not on one row (" + tops.join("/") + ")");
+              if (body.contains($("syncRow"))) bad.push("the shelf line is hidden inside the disclosure");
+              if (head.tagName !== "BUTTON" || head.getAttribute("aria-controls") !== "sideStatusBody") bad.push("disclosure header is not a controlling button");
+              sideStatusToggle(false);
+              const closedOk = head.getAttribute("aria-expanded") === "false" && body.hidden;
+              sideStatusToggle(true);
+              const openOk = head.getAttribute("aria-expanded") === "true" && !body.hidden;
+              let stored = null;
+              try { stored = JSON.parse(localStorage.getItem(SIDE_PREFS_KEY) || "null"); } catch (e) { stored = "unavailable"; }
+              const remembered = stored === "unavailable" || (stored && stored.statusOpen === true);
+              head.click();
+              const clickOk = head.getAttribute("aria-expanded") === "false" && body.hidden;
+              if (!closedOk || !openOk || !clickOk) bad.push("toggle states wrong (closed " + closedOk + ", open " + openOk + ", click " + clickOk + ")");
+              if (!remembered) bad.push("choice not remembered on this device");
+              const total = state.sections.filter((x) => x.included).reduce((n, x) => n + sectionWords(x), 0);
+              renderSideStatusSummary();
+              const sum = $("sideStatusSummary").textContent;
+              if (sum.indexOf(fmtNum(total)) === -1 || sum.indexOf(fmtNum(Math.ceil(total / 250))) === -1) bad.push("summary “" + sum + "” does not carry " + fmtNum(total) + " words / " + fmtNum(Math.ceil(total / 250)) + " pages");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : ids.length + " tools in one row, disclosure toggles and is remembered, summary “" + sum + "”");
+            } finally { sideStatusToggle(keepOpen); }
+          } },
+        { id: "ui.outline.groups", feature: "ui", name: "Outline groups fold: each Front/Body/Back heading is a toggle with its section count; folding hides that group's rows, but the active section is never hidden — arriving at a section (select, a new page) opens its group; drag targets and the add-chapter flow survive",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepGroups = Object.assign({}, sidePrefs().groups);
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook());
+              state.meta.title = "Outline Fixture";
+              const ch = state.sections.find((x) => x.type === "chapter");
+              state.activeId = ch.id;
+              ["front", "body", "back"].forEach((g) => sideOutlineSetCollapsed(g, false));
+              renderSidebar();
+              const list = $("structureList");
+              const tog = (g) => list.querySelector('.group-toggle[data-og="' + g + '"]');
+              const rowsOf = (g) => Array.prototype.slice.call(list.querySelectorAll('#og-' + g + ' .sec-item'));
+              const shown = (el) => !!el && getComputedStyle(el).display !== "none";
+              ["front", "body", "back"].forEach((g) => {
+                const b = tog(g);
+                const n = state.sections.filter((x) => ogKeyOf(groupOf(x)) === g).length;
+                if (!b || b.tagName !== "BUTTON") { bad.push(g + " heading is not a button"); return; }
+                if (b.getAttribute("aria-expanded") !== "true") bad.push(g + " not open by default");
+                if (b.getAttribute("aria-controls") !== "og-" + g || !$("og-" + g)) bad.push(g + " aria-controls broken");
+                if (b.querySelector(".og-count").textContent !== fmtNum(n)) bad.push(g + " count " + b.querySelector(".og-count").textContent + " ≠ " + n);
+              });
+              const frontN = rowsOf("front").length;
+              tog("front").click();
+              if (tog("front").getAttribute("aria-expanded") !== "false") bad.push("front did not fold");
+              if (rowsOf("front").some(shown)) bad.push("folded front still shows rows");
+              if (!rowsOf("body").every(shown)) bad.push("folding front hid body rows");
+              /* Arriving at a hidden section opens its group. */
+              const fsec = state.sections.find((x) => x.kind === "front" && x.type === "copyright") || state.sections.find((x) => x.kind === "front");
+              selectSection(fsec.id);
+              if (tog("front").getAttribute("aria-expanded") !== "true" || !shown(list.querySelector('[data-sec="' + fsec.id + '"]'))) bad.push("selecting a folded section did not open its group");
+              /* Folding the active group keeps the active row visible. */
+              tog("front").click();
+              const act = list.querySelector('.sec-item.active');
+              const others = rowsOf("front").filter((r) => !r.classList.contains("active"));
+              if (!shown(act) || others.some(shown)) bad.push("folded active group: active row " + (shown(act) ? "shown" : "HIDDEN") + ", " + others.filter(shown).length + " others shown");
+              /* A new back-matter page opens a folded back group. */
+              sideOutlineSetCollapsed("back", true); renderSidebar();
+              if (rowsOf("back").some(shown)) bad.push("folded back still shows rows");
+              const added = insertMatter("colophon");
+              const addedRow = added && list.querySelector('[data-sec="' + added.id + '"]');
+              if (!added || !shown(addedRow) || tog("back").getAttribute("aria-expanded") !== "true") bad.push("Add a page did not reveal the new page");
+              /* Add Chapter stays reachable in an open body; every row stays a drag source. */
+              const before = state.sections.filter((x) => x.kind === "body").length;
+              const addBtn = $("btnAddChapter");
+              if (!addBtn || !shown(addBtn)) bad.push("Add Chapter hidden");
+              else { addBtn.click(); if (state.sections.filter((x) => x.kind === "body").length !== before + 1) bad.push("Add Chapter did not add"); }
+              const notDraggable = Array.prototype.filter.call(list.querySelectorAll(".sec-item"), (r) => r.getAttribute("draggable") !== "true").length;
+              if (notDraggable) bad.push(notDraggable + " rows lost draggable");
+              /* Reordering still runs through the same tier law. */
+              const bodies = state.sections.filter((x) => x.kind === "body");
+              const movedOk = bodies.length >= 2 && moveSectionTo(bodies[1].id, bodies[0].id, false) && state.sections.filter((x) => x.kind === "body")[0].id === bodies[1].id;
+              if (!movedOk) bad.push("reorder within body failed");
+              const frontStill = rowsOf("front").length === frontN;
+              if (!frontStill) bad.push("front row count changed");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "3 toggles with counts; fold hides rows; select / Add a page open their group; folded active group keeps its active row; Add Chapter, drag sources and reorder intact");
+            } finally {
+              ["front", "body", "back"].forEach((g) => sideOutlineSetCollapsed(g, !!keepGroups[g]));
+              applyBookDoc(keepDoc);
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+          } },
+        { id: "sample.legacy-salt-meridian", feature: "sample", name: "A copy of the sample saved before its rename (old title, old id, its UUIDv5, or the fixed sample id with the old title) is put into History (“Before sample update”) and replaced by the current sample; restoring that snapshot gives the old text back exactly as the writer's own book; books that are not the old sample are never touched",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            const OLD_TITLE = "The Salt Meridian";
+            const oldDoc = (id) => {
+              const d = buildSampleBook();
+              d.meta.title = OLD_TITLE; d.meta.bookId = id;
+              const ab = d.sections.find((x) => x.type === "aboutauthor") || d.sections[d.sections.length - 1];
+              ab.content = "Fixture words only the old copy carries — " + OLD_TITLE + " — kept verbatim.";
+              return d;
+            };
+            try {
+              /* 1. the pre-UUID old id, migrated on arrival to its UUIDv5 */
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              const d1 = oldDoc("urn:uuid:beuk-sample-salt-meridian");
+              const oldText = d1.sections.map((x) => x.content).join("\n");
+              applyBookDoc(JSON.parse(JSON.stringify(d1)));
+              const migratedOk = state.meta.bookId === bookIdMigrated("urn:uuid:beuk-sample-salt-meridian") && (state.meta.legacyBookIds || []).indexOf("urn:uuid:beuk-sample-salt-meridian") !== -1;
+              const swapped = sampleSweepPreRename();
+              const snap = state.history[0];
+              if (!migratedOk) bad.push("old id did not migrate as expected");
+              if (!swapped || state.meta.title !== buildSampleBook().meta.title || state.meta.bookId !== SAMPLE_BOOK_ID) bad.push("not replaced by the current sample (title " + state.meta.title + ")");
+              if (!sampleState.loaded || !deskIsUntouchedSample()) bad.push("sample bookkeeping not set as loaded");
+              if (!snap || snap.auto !== "sampleupdate" || snap.doc.meta.title !== OLD_TITLE || snapshotLabel(snap) !== t("history.auto.sampleupdate")) bad.push("History lacks the “Before sample update” snapshot");
+              const kinds = normalizeHistory([{ id: "a", auto: "sampleupdate", doc: { sections: [] } }, { id: "b", auto: "backup", doc: { sections: [] } }]).map((h) => h.auto).join(",");
+              if (kinds !== "sampleupdate,backup") bad.push("normalizeHistory dropped kinds: " + kinds);
+              if (sampleSweepPreRename()) bad.push("the current sample was swapped again");
+              /* restore gives the old text back exactly, as the writer's own book */
+              restoreSnapshot(snap.id);
+              const back = state.sections.map((x) => x.content).join("\n");
+              if (back !== oldText || state.meta.title !== OLD_TITLE) bad.push("restore did not return the old text exactly");
+              if (isSampleBookId(state.meta.bookId) || (state.meta.legacyBookIds || []).length || sampleIsPreRenameCopy(state.meta) || sampleState.loaded) bad.push("restored copy would be swapped out again");
+              /* 2. the fixed sample UUID with the old title (saved between the UUID change and the rename) */
+              applyBookDoc(JSON.parse(JSON.stringify(oldDoc(SAMPLE_BOOK_ID))));
+              if (!sampleIsPreRenameCopy(state.meta)) bad.push("fixed id + old title not recognised");
+              /* 3. never touched: the current sample, another book with that title, the old id retitled and re-authored */
+              const cur = buildSampleBook();
+              const other = oldDoc(newBookId());
+              const mine = oldDoc("urn:uuid:beuk-sample-salt-meridian"); mine.meta.title = "My Own Novel"; mine.meta.author = "A. Writer";
+              if (sampleIsPreRenameCopy(cur.meta)) bad.push("current sample flagged");
+              if (sampleIsPreRenameCopy(other.meta)) bad.push("an unrelated book with the old title flagged");
+              if (sampleIsPreRenameCopy(mine.meta)) bad.push("a retitled, re-authored book flagged");
+              if (!isSampleBookId("urn:uuid:beuk-sample-salt-meridian")) bad.push("old id not known as the sample");
+              /* the packaged cover: the shipped one is not the stale one; a same-length look-alike is not either */
+              if (sampleCoverIsStale(SAMPLE_COVER)) bad.push("the packaged cover is still the stale one");
+              if (sampleCoverIsStale({ data: "A".repeat(SAMPLE_COVER_STALE.len) })) bad.push("a same-length picture matched the stale cover");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "old id → UUIDv5 recognised and replaced, snapshot first; fixed id + old title recognised; restore returns the old text byte-for-byte with a fresh id; current sample, unrelated and re-authored books untouched");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              local.suspended = keepSusp;
+            }
+          } },
+        /* ==== /BEUK:sidebar ==== */
         /* ---- Bulk import + Obsidian vault (shelf, signed-in only) ---- */
         { id: "bulk.queue.three-files-three-books", feature: "bulk", name: "Bulk queue: a 3-file batch creates 3 shelf books, each titled from its own first heading",
           run() {
