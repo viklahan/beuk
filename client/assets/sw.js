@@ -21,7 +21,7 @@
      shell so the studio opens on the local book with no network.
    - Everything else (the shell's assets, the CDN libraries, the
      fonts) is cache-first, filled from the network on first use. */
-const BEUK_CACHE = "beuk-shell-v1";
+const BEUK_CACHE = "beuk-shell-v2";
 const BEUK_SHELL = [
   "../",
   "../index.html",
@@ -30,8 +30,23 @@ const BEUK_SHELL = [
   "./icon-192.png",
   "./icon-512.png",
   "./icon-maskable-512.png",
-  "./apple-touch-icon.png"
+  "./apple-touch-icon.png",
+  /* BEUK:local — the studio's libraries, vendored so the studio
+     opens, imports .docx and exports offline (byte-identical to
+     the pinned CDN releases; index.html pins them with SRI). */
+  "./vendor/jszip.min.js",
+  "./vendor/mammoth.browser.min.js",
+  "./vendor/lucide.min.js",
+  "./vendor/jspdf.umd.min.js"
 ];
+
+/* BEUK:local — Google Fonts for offline use. The stylesheet and
+   its font files are browser-specific, so they cannot be listed
+   here ahead of time: the page posts the URLs it actually loaded
+   (BEUK_CACHE_URLS) and the worker keeps them. Only these two
+   origins are accepted. Faces the studio never displayed online
+   are not cached and fall back to the system fonts offline. */
+const BEUK_FONT_ORIGINS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -57,6 +72,14 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
   if (event.data && event.data.type === "BEUK_PING" && event.source)
     event.source.postMessage({ type: "BEUK_SHELL_READY", cache: BEUK_CACHE });
+  if (event.data && event.data.type === "BEUK_CACHE_URLS" && Array.isArray(event.data.urls)) {
+    const urls = event.data.urls.filter((u) => {
+      try { return BEUK_FONT_ORIGINS.indexOf(new URL(u).origin) !== -1; } catch (e) { return false; }
+    }).slice(0, 200);
+    event.waitUntil(caches.open(BEUK_CACHE).then((cache) =>
+      Promise.all(urls.map((u) => cache.match(u).then((hit) => hit || cache.add(new Request(u, { mode: "cors", credentials: "omit" })).catch(() => null))))
+    ));
+  }
 });
 
 self.addEventListener("fetch", (event) => {
