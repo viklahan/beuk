@@ -866,6 +866,38 @@ app instead (see the Caddyfile), which fills their config slots. The
 existing Beuk web client drops its built files in here in a later
 milestone — no server changes needed.
 
+## Studio: the Word import report
+
+After every import (`.docx`, `.md`, `.txt`) the studio opens a
+**"Here's what we changed"** report, grouped and counted, with
+before/after snippets. It records chapter splits (and the heading or
+line each came from — Heading 2 is reported as promoted, Heading 3–6
+as demoted to body text), front matter carved out by shape (copyright,
+epigraph, dedication, title-page lines), scene breaks (including spaced
+markers such as `* * *`, now read as breaks), smartened quotes/dashes/
+ellipses per section, footnotes (Word notes are linked as Beuk `[^n]`
+notes in the section that cites them; unmatched ones are reported as
+orphaned), JPG/PNG images (imported into the image library, with their
+alt-text status — including pictures inside headings, list items and
+quotes; every picture in the file is counted, and any the import cannot
+hold, such as one inside a footnote, is listed as left out), the language detected and any book details taken from
+the manuscript. What the import **drops** is listed first and
+prominently: tables, unsupported image formats, Word comments, tracked
+changes (imported as if accepted), text boxes (text kept inline), page
+headers/footers, list formatting, link addresses, italic/bold, and every
+Mammoth.js warning verbatim. The Word behaviours are those of
+Mammoth.js 1.6.0, verified in its source (cited in the client code).
+
+Each reversible change has a real **Undo this** that acts on the book as
+it stands now (it refuses, and says why, if the text has since changed);
+a change that cannot be reverted alone says so instead of offering a
+button. **Undo the whole import** restores the pre-import book from the
+History snapshot the import takes. The report is stored with the book
+(`importReport` in the book JSON, not in History snapshots) and stays
+reachable from the import area until dismissed. This is the studio's
+main import only; Box Set volume import and Bulk import still use the
+plain converter without a report.
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — M2 ships the hooks only (plan column, verified
