@@ -131,12 +131,20 @@ not, online or not:
   shelf copy opens; only the device moved → it is pushed; both moved →
   the conflict notice. Removing the sample story clears the saved desk
   too, so it never comes back on reload.
-- **Header indicator:** `Saving…` / `Saved on this device ✓` / honest
-  failures (`Not saved — this browser is blocking storage`, `… storage
-  is full`, other errors by name), with **Export a backup** (a
-  `.beuk-backup.json` file the indicator can also open again). The
+- **Header indicator:** a compact pill — a dot and a short label per
+  state: `Checking…`, `Saving…`, `Saved ✓`, `Saved · back up` (gold dot
+  and `!`: saved, but the browser has not granted lasting storage) and
+  `Not saved` (red, with an inline **Export a backup**). The full
+  sentence (`Saved on this device ✓`, `Not saved — this browser is
+  blocking storage`, `… storage is full`, other errors by name) and its
+  explanation are the pill's tooltip and accessible name, a visually
+  hidden live-region copy, and one click away in its popover (which also
+  offers Export a backup and Open a backup… — a `.beuk-backup.json`
+  file). The pill is capped at 200 px (260 px while it offers the
+  backup); below 560 px wide the dot and the `!` carry the state. The
   studio calls `navigator.storage.persist()`; when the browser declines,
-  the indicator says the copy may be cleared under storage pressure.
+  the pill reads `Saved · back up` and the popover says the copy may be
+  cleared under storage pressure.
 - A `beforeunload` prompt is attached **only** while a device save is
   pending or failing.
 - **Limits, stated plainly:** writing typed in the last ~0.8 s before a
@@ -170,6 +178,46 @@ the studio migrates it once:
   compares ids exactly, so it would not recognise a shelf copy that
   another device has already migrated; it does after its next page load
   (the studio page is fetched network-first).
+
+**The sample before its rename.** The bundled novella was renamed The
+Lantern Coast in commit `c47dc98`; a browser (or shelf) that saved the
+sample before then still held it under its old title. Whenever a book
+reaches the desk from outside (device restore, shelf open, the shelf's
+newer copy at sign-in, the conflict choice "use the shelf copy", Open a
+backup…) the studio checks for that copy **by identity**: the old
+pre-UUID sample id, its UUIDv5, either in `meta.legacyBookIds`, or the
+fixed sample UUID — and the copy must still read as the sample (its old
+title, or E. Marlowe as author under an old id; a retitled and
+re-authored book is never touched). Such a copy is snapshotted into
+History (**"Before sample update"**) and replaced by the current sample,
+marked as loaded; a non-blocking notice with a History button says so.
+The swap runs after that path has agreed its shelf revision, so a linked
+book saves it as a normal edit (`If-Match`), never a false conflict or
+an unlink. Restoring the snapshot returns the old text exactly, as the
+writer's own book (a fresh id), so it is not swapped again.
+`normalizeHistory` now keeps the `backup` and `sampleupdate` kinds
+(`backup` used to be dropped on reload). The rename had also left the
+old title **painted into the packaged cover JPEG** (`SAMPLE_COVER`; only
+its file name changed), which is what the Hardcover device and every
+sample EPUB showed. That title band is re-lettered in the shipped style,
+and a desk carrying the stale JPEG (exact SHA-1 match) gets the new one
+(an edited sample takes a History snapshot first).
+
+**Sidebar.** Import Document and Project Settings live only at the top
+of the sidebar (on phones, in the Structure tab); the header no longer
+repeats them. Story Insights, Goals, History and Reader comments are one
+always-visible row of small labelled icon buttons (full names as tooltip
+and accessible name). The statistics (counts, streak, goals, Front /
+Body / Back progress) are a disclosure whose header carries a one-line
+live summary (`24,828 words · ~100 pages · 1h 50m`), closed by default;
+the shelf line stays outside it so a sync warning is never folded away.
+The outline's Front Matter / Body / Back Matter headings are toggles
+with a section count; arriving at a section (click, next/prev, search,
+import, a new page) opens its group, and a folded group still shows its
+active row. Both choices are remembered per device (`localStorage`
+`beuk.sidebar.v1`, a convenience — without it everything renders open
+and the statistics closed). With the sample at 1440×900 the outline
+shows 13 rows (it showed 4).
 
 **Offline completeness:** JSZip 3.10.1, mammoth 1.6.0, lucide 0.469.0
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
