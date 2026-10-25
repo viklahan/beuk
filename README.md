@@ -685,6 +685,7 @@ catalogue to an admin):
 | Rehearse | `POST /rehearse` — migrations + boot/health check against a scratch database; production data untouched |
 | Reference | `GET /reference/architecture`, `GET /reference/roadmap` — rendered from `docs/architecture.md` / `docs/roadmap.md` in the repo |
 | Promotion | `POST /promote/sign-off`, then `POST /promote` (the gate, below) |
+| Evidence | `GET /offsite` — scheduled, off-site (restic → B2) and drill status, "not configured" until set; `POST /offsite/run` — back up now and copy off-site; `POST /offsite/drill` — restore drill of the latest off-site snapshot (both 409 when not configured) |
 | Evidence | `GET /audit` — recent audit rows |
 | Founders' Shelf | `GET /founders` — the M4 seed-list applications (read-only, audited) |
 | Mail | `GET /mail` — whether email can be sent ("email not configured" until `SMTP_URL` + `MAIL_FROM`; credentials never shown); `POST /mail/test` — one test message to the admin's own address, 409 when not configured, 502 when the SMTP server refuses |
@@ -703,23 +704,209 @@ deploy tree, reset-token schema). The rest are registered as
 **`client-only`** with a one-line reason each
 (theme application, print CSS, word counts, the ACX audio script — inherently client-UI
 state): reported in every run, never silently dropped, never faked
-as passing. Runs are stored in `housekeeping_check_runs`.
+as passing. A case whose feature is switched off on this server
+(scheduled backups, the off-site copy and its drill) reports
+**`not-configured`** with the missing setting names: never a pass, and
+it does not fail the run (`counts.notConfigured`). Runs are stored in
+`housekeeping_check_runs`.
 
 **Backups** live under `BACKUP_DIR` (Compose: the `backupdata` volume),
 one directory per named backup: `manifest.json` (contents + hashes),
 `db.json` (logical dump of the data tables), `settings.json`
 (non-secret config — **secrets are excluded by name**, listed in the
-manifest), and `files/` (a copy of the export volume). The audit and
-check-run tables are NOT backed up: evidence is append-only and a
-restore must not rewrite it. All file writes are atomic (temp + rename).
+manifest), and `files/` (a copy of the export volume). Every table is
+classified in `src/housekeeping/backup.ts`: `BACKUP_TABLES` (users,
+manuscripts, streaks, exports, jobs, sessions, Founders' Shelf
+applications, share links, reader comments and reader records) or
+`EXCLUDED_TABLES`, each with its reason, also written into every
+manifest: the audit, check-run and sign-off tables (evidence is
+append-only and a restore must not rewrite it), `schema_migrations`
+(owned by the migration runner) and `password_resets` (live reset
+tokens: a restore **deletes** them all, so no link issued before the
+restore keeps working). The self-check `data.backup.tables-classified`
+and a server test fail the day a migration adds a table that is in
+neither list. The dump is read inside one `REPEATABLE READ READ ONLY`
+transaction, so it is one consistent snapshot across tables; the
+manifest's `consistency` field records the mode Postgres reported.
+All file writes are atomic (temp + rename).
 
-**Restore is turned off for now** (`RESTORE_ENABLED`, default `false`; `POST /restore` answers 503 with the reason). It does not yet back up share links, reader comments, reader records or jobs, and deleting users during a restore would cascade them away. See `docs/plan-billing-backups-restore-branding.md`, Phase 0.
+**Restore is on** (`RESTORE_ENABLED`, default `true`). Set
+`RESTORE_ENABLED=false` to turn it off: `POST /restore` then answers 503
+with the reason and touches nothing. Restore puts back every table in
+`BACKUP_TABLES`, share links, comments, readers and jobs included
+(proven by `tests/restore-coverage.test.ts`: a share with two comments,
+a reader and a job survive backup → change → restore, and the
+`pre-restore-…` snapshot carries them too). `jsonb` values are
+re-inserted as JSON text with an explicit cast; before that fix a job
+result or share snapshot whose top-level value was an array made the
+whole restore fail on real Postgres ("invalid input syntax for type
+json"; the transaction rolled back). A backup taken before shares and
+jobs were backed up is **refused by name** (409): restoring it would
+delete every row of those tables. Still not done (plan Phase 3): no
+schema-version gate, no dry-run, the export-volume swap is not atomic,
+and the app keeps serving during a restore.
 
 **Restore is two-step:** `POST /restore/preview` returns a per-table
 diff summary and a short-lived preview id; `POST /restore` requires
 that preview id **and** `confirmed: true`. It snapshots the current
 state first (a `pre-restore-…` backup), restores, then verifies by
-re-running Self-checks and reports the result.
+re-running Self-checks and reports the result. The export directory
+is emptied and refilled, never removed (in Compose it is a volume mount
+point; removing it failed with EBUSY after the database had already
+been restored).
+
+### Scheduled and off-site backups
+
+**Scheduled local backups.** The app makes one named backup
+(`scheduled-<timestamp>`) every `BACKUP_INTERVAL_HOURS` (default 24;
+`0` turns the schedule off). A cheap due-check runs 30 s after boot and
+then every 15 minutes; the backup itself runs under the Housekeeping
+lock (it waits for a running restore or rehearsal) and every step is an
+audit row with actor `scheduler` (`backups.scheduled`, `offsite.backup`,
+`offsite.drill`). A failed backup is audited as `error`, retried hourly,
+and turns the self-check `backup.schedule.running` red. **Local backups
+are never deleted automatically**: how many to keep on the box is not
+decided yet, so watch the `backupdata` volume's disk use (each backup
+copies the whole export volume).
+
+**Off-site copies (restic → Backblaze B2).** After each scheduled
+backup, and on `POST /api/housekeeping/offsite/run`, the app copies that
+backup directory into a restic repository in a private B2 bucket, then
+applies retention with `restic forget --group-by host,tags --keep-daily 7
+--keep-weekly 4 --keep-monthly 12 --prune` (`RESTIC_KEEP_*`). Why these
+choices:
+
+- **S3-compatible API, not restic's `b2:` backend.** restic's own docs:
+  "Due to issues with error handling in the current B2 library that
+  restic uses, the recommended way to utilize Backblaze B2 is by using
+  its S3-compatible API"
+  (https://restic.readthedocs.io/en/stable/030_preparing_a_new_repo.html).
+  Backblaze's restic guide uses the same S3 form
+  (https://www.backblaze.com/docs/cloud-storage-integrate-restic-with-backblaze-b2).
+  The app builds `RESTIC_REPOSITORY=s3:<endpoint>/<bucket>/<prefix>`.
+- **Encrypted before upload.** restic encrypts every pack, index and
+  snapshot with the repository password; the bucket never sees
+  plaintext (proven below).
+- **`--group-by host,tags`.** restic groups snapshots by host and paths
+  by default (https://restic.readthedocs.io/en/stable/060_forget.html);
+  every backup here has its own directory name, so with the default
+  nothing would ever be forgotten.
+- **restic 0.19.1, pinned.** The `Dockerfile` downloads the release
+  from GitHub and checks the sha256 published in its `SHA256SUMS`
+  (amd64 and arm64); any other bytes fail the build. It also copies a
+  CA bundle into the image (`node:24-slim` has none; restic needs it
+  for B2's TLS).
+- **Credentials only via env.** The five settings below go in `.env`.
+  Each restic call gets a minimal environment (repository, password,
+  the two S3 keys, a cache dir): the database URL, Stripe and SMTP
+  secrets never reach it, nothing secret is on its command line, and
+  the restic password and both B2 key values are added to the secret
+  scrubber, so no Housekeeping response, audit row or status file can
+  carry them.
+- **A wrong key fails fast and by name.** restic 0.19.1 does not exit
+  on a bad key or a missing bucket; it keeps retrying with backoff
+  (seen against MinIO: `Stat: The request signature we calculated does
+  not match…`, retried for minutes). The first call of each run (`restic
+  cat config`) is therefore cut off after `OFFSITE_PROBE_TIMEOUT_MS`
+  (default 2 min) and the error restic kept retrying on is recorded.
+  Exit code 10 ("repository does not exist", restic ≥ 0.17.0,
+  https://restic.readthedocs.io/en/stable/075_scripting.html) makes
+  the app run `restic init` once.
+
+**Not configured is never green.** Until all five of
+`OFFSITE_B2_KEY_ID`, `OFFSITE_B2_APPLICATION_KEY`, `OFFSITE_B2_BUCKET`,
+`OFFSITE_B2_ENDPOINT` and `RESTIC_PASSWORD` are set, the self-checks
+`backup.offsite.fresh` and `backup.offsite.drill` report
+**`not-configured`** (a status of its own: never counted as a pass, and
+it does not fail the run), `GET /api/housekeeping/offsite` lists the
+missing names, and `POST /offsite/run` / `/offsite/drill` answer 409.
+
+**Freshness.** `backup.offsite.fresh` fails when the last run failed
+(with restic's error), when no off-site backup has run yet, or when the
+last success is older than `OFFSITE_MAX_AGE_HOURS` (default 36).
+
+**Restore drill.** Weekly (`OFFSITE_DRILL_INTERVAL_HOURS`, default
+168; also on `POST /offsite/drill`) the app restores the latest restic
+snapshot into a fresh temporary directory and checks it against its own
+manifest: the sha256 of `db.json` and `settings.json`, the row count of
+every table in `db.json`, the export file count and bytes, and that the
+manifest is byte-identical to the local copy when that still exists.
+The temp directory is then removed. Production data is never touched.
+`backup.offsite.drill` fails when the last drill failed, when none has
+run, or when the last one is older than `OFFSITE_DRILL_MAX_AGE_HOURS`
+(default 192). The drill checks the restored files; it does not load
+them into a database (that is the plan's Phase 3 throwaway-stack drill).
+
+**Setup (V, once):**
+
+1. In the Backblaze console, **B2 Cloud Storage → Buckets → Create a
+   Bucket**: a new name, privacy **Private**. Note the **Endpoint**
+   shown on the bucket's details (for example
+   `s3.us-west-004.backblazeb2.com`).
+2. **Application Keys → Add a New Application Key**: allow access to
+   **that bucket only**, type **Read and Write**. Copy the `keyID` and
+   the `applicationKey` immediately: B2 shows the application key once.
+3. Make a long random restic password (a password manager's generator
+   is fine). **Store it in your password manager AND on paper** kept
+   somewhere safe off the server. restic: "Losing your password means
+   that your data is irrecoverably lost"
+   (https://restic.readthedocs.io/en/stable/030_preparing_a_new_repo.html).
+   The server cannot help you here: the password is the only key.
+4. On the server, in `.env`:
+   `OFFSITE_B2_KEY_ID=<keyID>`, `OFFSITE_B2_APPLICATION_KEY=<applicationKey>`,
+   `OFFSITE_B2_BUCKET=<bucket name>`,
+   `OFFSITE_B2_ENDPOINT=https://<endpoint from step 1>`,
+   `RESTIC_PASSWORD=<password from step 3>`. Then
+   `docker compose up -d --build app`.
+5. As admin: `POST /api/housekeeping/offsite/run` (creates the restic
+   repository on first use and uploads the first backup), then
+   `POST /api/housekeeping/offsite/drill`, then
+   `POST /api/housekeeping/self-checks/run`: `backup.offsite.fresh` and
+   `backup.offsite.drill` should both pass. From then on the schedule
+   does it by itself.
+
+Not verified against real B2: this was proven against MinIO's S3 API
+(below), not a Backblaze account; whether a bucket-restricted key is
+enough for restic's first `init` against B2 is confirmed only by step 5
+on the real bucket. External alerting (email or a dead-man's switch
+when a check goes red) is not built: the red self-check is the alarm,
+so someone has to look.
+
+**How it was proven** (2026-10-25, throwaway compose project
+`beuk-backup`, no published host ports: app built from this tree, the
+`postgres:16-alpine` db, and MinIO
+`cgr.dev/chainguard/minio@sha256:268d68a2…` standing in for B2's S3
+API):
+
+- The **scheduler** fired by itself 30 s after boot:
+  `backups.scheduled created` → `offsite.backup pushed` ("initialised
+  repository") → `offsite.drill pass`, with a share, two comments, a
+  reader and a job in the backup.
+- **Encrypted at rest:** the bucket held only restic's layout
+  (`config`, `keys/…`, `index/…`, `snapshots/…`, `data/xx/…`). A byte
+  grep of the whole MinIO volume for the manuscript title, a comment
+  and the admin email found **0** hits; the same grep finds them in the
+  local backups' `db.json` (positive control).
+- **Retention ran:** after four backups on one day, `forget --prune`
+  removed two snapshots and their packs; `restic snapshots` listed the
+  two that restic 0.19.1's policy keeps (the newest daily, and the
+  oldest as "oldest daily/weekly/monthly snapshot").
+- **Drill passed:** file hashes matched, every table's row count
+  matched the manifest (`shares=1 share_comments=2 share_readers=1
+  jobs=1` …), manifest identical to the local copy.
+- **Restore on real Postgres:** after deleting a comment and the job
+  and revoking the share, restore through `POST /restore` brought all
+  of it back (job result `[1, 2]` and the share's array snapshot
+  intact) and its verification run passed. This run also caught that
+  restore removed the export directory itself, which in Compose is a
+  volume mount point: `EBUSY: resource busy or locked, rmdir
+  '/data/exports'` after the database had committed. Restore now
+  empties the directory instead.
+- **Broken credential:** with a deliberately wrong application key,
+  `POST /offsite/run` answered 502 and `backup.offsite.fresh` went red
+  with restic's own error ("…The request signature we calculated does
+  not match the signature you provided. Check your key and signing
+  method."); the wrong key appears nowhere in the status file.
 
 **Promotion flow:** the deploy marks the working tree clean
 (`TREE_CLEAN=true` or a `.tree-clean` marker file — see `.env.example`).
@@ -1030,6 +1217,21 @@ conflict, a canary secret appearing in **no** Housekeeping output
 the restore preview → confirm flow on the test database, Rehearse
 against a PGlite scratch database, and the promotion gate refusing
 each missing precondition before succeeding with all of them.
+Backups add (`tests/restore-coverage.test.ts`, `tests/offsite.test.ts`):
+a share with two comments, a reader and a job surviving backup →
+change → restore (and present in the `pre-restore-…` snapshot), jsonb
+array round-trips under node-pg's parameter encoding, the table
+completeness guard, the repeatable-read dump, password-reset tokens
+emptied on restore, an old-format backup refused by name, and, against
+a fake restic, the scheduler (backup, push, retention arguments, drill,
+audit, lock), not-configured reporting, a broken credential and a
+retrying probe turning freshness red with the real error, a tampered
+snapshot failing the drill, and no restic or B2 secret in any output.
+Real restic against an S3 server is the full-stack proof under
+"Scheduled and off-site backups". The suite runs node's default
+concurrency; on a small Docker VM, `node --import tsx --test
+--test-concurrency=4 "tests/*.test.ts"` is the same suite with fewer
+PGlite processes at once.
 M4 adds: every help page, the decoder, and the thanks page serving
 200 through the app; the tip jar present in the served HTML when
 `KOFI_URL` is set and entirely absent (with the word "donation"
@@ -1116,10 +1318,14 @@ everything it does.
    Never commit `.env`.
 4. `docker compose up -d --build`. Caddy fetches the Let's Encrypt
    certificate automatically; the app runs migrations on boot.
-5. Backups are owned by Housekeeping's Evidence pillar (named backups
-   of the DB + settings + export volume, restore rehearsed) — still
-   keep volume-level snapshots of `pgdata`, `exportdata` and
-   `backupdata` as the outer safety net.
+5. Backups are owned by Housekeeping's Evidence pillar: a scheduled
+   local backup every 24 h (DB + settings + export volume) and, once
+   the five off-site settings are in `.env`, an encrypted restic copy
+   in a private Backblaze B2 bucket with a weekly restore drill (setup
+   steps: Housekeeping → "Scheduled and off-site backups"). Local
+   backups are never pruned automatically; watch the `backupdata`
+   volume. Volume-level snapshots of `pgdata`, `exportdata` and
+   `backupdata` remain a useful outer net.
 6. After first boot, register your account in the app and grant it
    admin: `docker compose exec app node dist/admin-cli.js grant <email>`.
    Set `BUILD_STAMP` (or `GIT_SHA`)
@@ -1188,6 +1394,11 @@ plain converter without a report.
 - **Live billing** — M2 ships the hooks only (plan column, verified
   webhooks, checkout endpoint). It activates when Vik sets a price and
   keys in `.env`; until then the endpoints answer 501.
+- **Local backup retention and backup alerting** — local backups are
+  never pruned (the number to keep is undecided), and a red backup
+  self-check sends no email or ping by itself. Restore still lacks the
+  plan's Phase 3 items (schema gate, dry-run, atomic file swap,
+  maintenance mode).
 - **Warmth Phases 1 and 2** — the Made-with-Beuk gallery, template
   sharing, seasonal challenges and spotlights (Phase 1, ~100–500
   users), and a real community (Phase 2, Discourse, on its trigger).
@@ -1225,7 +1436,8 @@ src/
                   (secret scrubber) · lock.ts (one global lock) ·
                   registry.ts (Self-checks) · packages.ts + fixtures.ts
                   (zip/EPUB structural checks + fixture packages) ·
-                  backup.ts (Evidence: backup/restore) · scratch.ts
+                  backup.ts (Evidence: backup/restore) · offsite.ts
+                  (backup schedule, restic off-site copy, drill) · scratch.ts
                   (Rehearse scratch DBs) · reference.ts (docs reader) ·
                   context.ts · fsutil.ts · xml.ts
   routes/         auth.ts · manuscripts.ts · streak.ts · exports.ts ·

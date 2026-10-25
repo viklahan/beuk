@@ -13,6 +13,10 @@ export function collectSecrets(config: Config): string[] {
     if (value && value.length >= 6) found.add(value);
   };
   add(config.stripeSecretKey);
+  // Off-site backups: the restic password and the B2 key pair.
+  add(config.offsite?.resticPassword);
+  add(config.offsite?.b2ApplicationKey);
+  add(config.offsite?.b2KeyId);
   add(config.stripeWebhookSecret);
   // P0 #5: SMTP_URL carries the mail password.
   if (config.smtpUrl) {

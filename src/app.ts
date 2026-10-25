@@ -14,6 +14,7 @@ import { cspReportRoutes, type CspReportOptions } from './routes/csp-report.js';
 import { exportRoutes } from './routes/exports.js';
 import { foundersRoutes } from './routes/founders.js';
 import { housekeepingRoutes } from './routes/housekeeping.js';
+import { BackupScheduler } from './housekeeping/offsite.js';
 import { jobRoutes } from './routes/jobs.js';
 import { manuscriptRoutes } from './routes/manuscripts.js';
 import { publicConfigRoutes, statusRoutes } from './routes/public.js';
@@ -94,10 +95,19 @@ export function buildApp({
   app.use('/api/streak', streakRoutes(db, config, now));
   app.use('/api/exports', exportRoutes(db, config));
   app.use('/api/billing', billingRoutes(db, billing ?? new StripeBillingProvider(config)));
-  app.use(
-    '/api/housekeeping',
-    housekeepingRoutes(db, config, createHousekeepingContext(config, housekeeping), mail),
-  );
+  const hk = createHousekeepingContext(config, housekeeping);
+  // Scheduled local backups + off-site copies + restore drill; the
+  // timer lives in index.ts, the manual actions in Housekeeping.
+  hk.backups = new BackupScheduler({
+    db,
+    config,
+    secrets: hk.secrets,
+    lock: hk.lock,
+    runRestic: housekeeping?.runRestic,
+    now: housekeeping?.now,
+  });
+  app.locals.backupScheduler = hk.backups;
+  app.use('/api/housekeeping', housekeepingRoutes(db, config, hk, mail));
   // M5 jobs (EPUBCheck + PDF/X over the caller's own archive).
   const jobs = jobRoutes(db, config);
   app.use('/api/jobs', jobs.router);

@@ -4,6 +4,7 @@ import type { Db } from '../db.js';
 import { HousekeepingLock } from './lock.js';
 import { collectSecrets } from './scrub.js';
 import type { RestoreDiff } from './backup.js';
+import type { BackupScheduler, ResticRunner } from './offsite.js';
 
 /** A throwaway database for Rehearse: migrations + boot check run here,
  *  never against production data. */
@@ -20,6 +21,10 @@ export interface HousekeepingDeps {
   lock?: HousekeepingLock;
   scratchFactory?: ScratchDbFactory;
   bootCheck?: BootCheck;
+  /** Off-site backups: the restic runner (tests inject a fake). */
+  runRestic?: ResticRunner;
+  /** Clock for the backup scheduler (tests walk it forward). */
+  now?: () => Date;
 }
 
 export interface RestorePreview {
@@ -39,6 +44,8 @@ export interface HousekeepingContext {
   scratchFactory?: ScratchDbFactory;
   bootCheck?: BootCheck;
   previews: Map<string, RestorePreview>;
+  /** Scheduled + off-site backups and the restore drill (set by buildApp). */
+  backups?: BackupScheduler;
   newPreview: (backupName: string, actorId: string, diff: RestoreDiff) => RestorePreview;
   takePreview: (id: string, backupName: string, actorId: string) => RestorePreview | null;
 }

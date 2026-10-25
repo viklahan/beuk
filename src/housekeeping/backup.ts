@@ -15,12 +15,16 @@ import { scrubText } from './scrub.js';
  *   <name>/settings.json   non-secret config; secrets EXCLUDED BY NAME
  *   <name>/files/…         a copy of the export volume
  *
- * Deliberately NOT in a backup: the Housekeeping audit + check-run
- * tables (append-only evidence — a restore must not rewrite history),
- * schema_migrations, and every secret value.
+ * Deliberately NOT in a backup: the tables in EXCLUDED_TABLES (each
+ * with its reason) and every secret value. Every public table must be
+ * in exactly one of BACKUP_TABLES / EXCLUDED_TABLES: the self-check
+ * data.backup.tables-classified and tests/restore-coverage.test.ts fail
+ * the day a migration adds a table nobody classified.
  */
 
-/** Data tables, in FK-safe restore order (parents before children). */
+/** Data tables, in FK-safe restore order (parents before children):
+ *  jobs after exports (source/artifact export ids), shares after
+ *  manuscripts, share_comments / share_readers after shares. */
 export const BACKUP_TABLES = [
   'users',
   'manuscripts',
@@ -28,9 +32,51 @@ export const BACKUP_TABLES = [
   'streak_days',
   'streak_freezes',
   'exports',
+  'jobs',
   'sessions',
   'founders_applications',
+  'shares',
+  'share_comments',
+  'share_readers',
 ] as const;
+
+/** Tables a backup deliberately leaves out, and why. Restore never
+ *  rewrites these from a backup (password_resets is emptied instead). */
+export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
+  password_resets:
+    'live credentials (single-use reset tokens); restore deletes every row so no pre-restore reset link keeps working',
+  housekeeping_audit: 'append-only evidence; a restore must not rewrite history',
+  housekeeping_check_runs: 'append-only evidence; a restore must not rewrite history',
+  housekeeping_signoffs: 'append-only evidence; a restore must not rewrite history',
+  schema_migrations: 'owned by the migration runner',
+};
+
+export interface TableClassification {
+  /** Public tables in neither list. */
+  unclassified: string[];
+  /** Tables listed in both lists. */
+  both: string[];
+  /** Listed tables the database does not have. */
+  missing: string[];
+  total: number;
+}
+
+/** Compare every public base table against BACKUP_TABLES / EXCLUDED_TABLES. */
+export async function classifyTables(db: Db): Promise<TableClassification> {
+  const r = await db.query<{ table_name: string }>(
+    `select table_name from information_schema.tables
+     where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name`,
+  );
+  const present = new Set(r.rows.map((row) => row.table_name));
+  const backed = new Set<string>(BACKUP_TABLES);
+  const excluded = new Set(Object.keys(EXCLUDED_TABLES));
+  return {
+    unclassified: [...present].filter((t) => !backed.has(t) && !excluded.has(t)),
+    both: [...backed].filter((t) => excluded.has(t)),
+    missing: [...backed, ...excluded].filter((t) => !present.has(t)),
+    total: present.size,
+  };
+}
 
 /** Config keys whose VALUES are secrets: excluded from backups by name. */
 export const SECRET_CONFIG_KEYS = [
@@ -39,6 +85,10 @@ export const SECRET_CONFIG_KEYS = [
   'STRIPE_WEBHOOK_SECRET',
   'POSTGRES_PASSWORD',
   'SMTP_URL',
+  // Off-site backups (restic -> Backblaze B2 S3 API): see offsite.ts.
+  'RESTIC_PASSWORD',
+  'OFFSITE_B2_KEY_ID',
+  'OFFSITE_B2_APPLICATION_KEY',
 ] as const;
 
 export interface BackupManifest {
@@ -50,6 +100,9 @@ export interface BackupManifest {
   exportFiles: { count: number; bytes: number };
   files: { path: string; bytes: number; sha256: string }[];
   excluded: string[];
+  /** How the dump was taken, as reported by Postgres itself inside the
+   *  dump transaction (absent in backups made before this field). */
+  consistency?: { isolation: string; readOnly: boolean };
 }
 
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -71,13 +124,44 @@ function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === 'bigint' ? value.toString() : value;
 }
 
-async function dumpTables(db: Db): Promise<Record<string, unknown[]>> {
-  const dump: Record<string, unknown[]> = {};
-  for (const table of BACKUP_TABLES) {
-    const result = await db.query(`select * from ${table}`);
-    dump[table] = result.rows as unknown[];
+/** Every table read inside ONE repeatable-read, read-only transaction,
+ *  so the dump is a single consistent snapshot across tables (no
+ *  manuscript without its exports, no comment without its share).
+ *  https://www.postgresql.org/docs/16/transaction-iso.html#XACT-REPEATABLE-READ
+ *  https://www.postgresql.org/docs/16/sql-set-transaction.html */
+async function dumpTables(
+  db: Db,
+): Promise<{ tables: Record<string, unknown[]>; consistency: { isolation: string; readOnly: boolean } }> {
+  return db.tx(async (tx) => {
+    await tx.query('set transaction isolation level repeatable read, read only');
+    const mode = await tx.query<{ iso: string; ro: string }>(
+      `select current_setting('transaction_isolation') as iso,
+              current_setting('transaction_read_only') as ro`,
+    );
+    const dump: Record<string, unknown[]> = {};
+    for (const table of BACKUP_TABLES) {
+      const result = await tx.query(`select * from ${table}`);
+      dump[table] = result.rows as unknown[];
+    }
+    return {
+      tables: dump,
+      consistency: { isolation: mode.rows[0]?.iso ?? 'unknown', readOnly: mode.rows[0]?.ro === 'on' },
+    };
+  });
+}
+
+/** jsonb columns per table, from information_schema. */
+async function jsonbColumns(db: Db): Promise<Map<string, Set<string>>> {
+  const r = await db.query<{ table_name: string; column_name: string }>(
+    `select table_name, column_name from information_schema.columns
+     where table_schema = 'public' and data_type = 'jsonb'`,
+  );
+  const out = new Map<string, Set<string>>();
+  for (const row of r.rows) {
+    if (!out.has(row.table_name)) out.set(row.table_name, new Set());
+    out.get(row.table_name)!.add(row.column_name);
   }
-  return dump;
+  return out;
 }
 
 function settingsDocument(config: Config, createdBy: string): Record<string, unknown> {
@@ -140,7 +224,7 @@ export async function createBackup(
   const dir = backupPath(config, name);
   await mkdir(dir, { recursive: true });
 
-  const tables = await dumpTables(db);
+  const { tables, consistency } = await dumpTables(db);
   const tableCounts: Record<string, number> = {};
   for (const table of BACKUP_TABLES) tableCounts[table] = tables[table].length;
 
@@ -175,9 +259,9 @@ export async function createBackup(
     files: fileEntries,
     excluded: [
       `config secrets by name: ${SECRET_CONFIG_KEYS.join(', ')}`,
-      'housekeeping_audit / housekeeping_check_runs / housekeeping_signoffs (append-only evidence)',
-      'schema_migrations (owned by the migration runner)',
+      ...Object.entries(EXCLUDED_TABLES).map(([table, reason]) => `${table} (${reason})`),
     ],
+    consistency,
   };
   const manifestJson = scrubText(JSON.stringify(manifest, null, 2), opts.secrets);
   await writeFileAtomic(path.join(dir, 'manifest.json'), manifestJson);
@@ -227,6 +311,14 @@ export interface RestoreDiff {
   buildStamp: string;
   tables: { table: string; backupRows: number; currentRows: number }[];
   exportFiles: { backupFiles: number; note: string };
+  /** Tables this server backs up that the backup does not carry (it was
+   *  taken before they were added). Restore refuses such a backup:
+   *  restoring it would delete every row of those tables. */
+  missingTables: string[];
+}
+
+function missingTablesOf(data: BackupData): string[] {
+  return BACKUP_TABLES.filter((t) => !Array.isArray(data.tables[t]));
 }
 
 /** Step one of restore: a diff summary against current state. */
@@ -255,8 +347,12 @@ export async function previewRestore(
       backupFiles: data.manifest.exportFiles.count,
       note: 'the export volume is replaced with the backup copy; a snapshot of current state is taken first',
     },
+    missingTables: missingTablesOf(data),
   };
 }
+
+/** A restore refused for a named reason (nothing was touched). */
+export class RestoreRefused extends Error {}
 
 export interface RestoreResult {
   restoredFrom: string;
@@ -273,6 +369,13 @@ export async function executeRestore(
 ): Promise<RestoreResult> {
   const data = await readBackup(config, opts.name);
   if (!data) throw new Error(`backup not found: ${opts.name}`);
+  const missing = missingTablesOf(data);
+  if (missing.length) {
+    throw new RestoreRefused(
+      `backup ${opts.name} does not carry ${missing.join(', ')} (taken before they were backed up); restoring it would delete every row of those tables`,
+    );
+  }
+  const jsonb = await jsonbColumns(db);
 
   const snapshotName = `pre-restore-${new Date().toISOString().replace(/[:.]/g, '-')}`;
   const snapshot = await createBackup(db, config, {
@@ -283,6 +386,8 @@ export async function executeRestore(
 
   const tablesRestored: Record<string, number> = {};
   await db.tx(async (tx) => {
+    // Reset tokens are never restored: every pre-restore link dies.
+    await tx.query('delete from password_resets');
     for (const table of [...BACKUP_TABLES].reverse()) {
       await tx.query(`delete from ${table}`);
     }
@@ -291,9 +396,19 @@ export async function executeRestore(
       tablesRestored[table] = rows.length;
       if (!rows.length) continue;
       const columns = Object.keys(rows[0]);
+      const jsonCols = jsonb.get(table) ?? new Set<string>();
+      // jsonb values go in as JSON text with an explicit cast: node-pg
+      // turns a JS array parameter into a Postgres ARRAY literal
+      // ('{"1","2"}'), which jsonb rejects ("invalid input syntax for
+      // type json") — reproduced against postgres:16 + pg 8.23.1.
+      const placeholders = columns
+        .map((col, i) => (jsonCols.has(col) ? `$${i + 1}::text::jsonb` : `$${i + 1}`))
+        .join(', ');
       for (const row of rows) {
-        const values = columns.map((col) => row[col] ?? null);
-        const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+        const values = columns.map((col) => {
+          const v = row[col] ?? null;
+          return jsonCols.has(col) && v !== null ? JSON.stringify(v) : v;
+        });
         await tx.query(
           `insert into ${table} (${columns.join(', ')}) values (${placeholders})`,
           values,
@@ -304,9 +419,15 @@ export async function executeRestore(
 
   // Replace the export volume with the backup's copy (snapshot above
   // holds the pre-restore volume, so this is recoverable).
+  // The export dir itself is NOT removed, only emptied: in Compose it is
+  // a volume mount point, and rmdir on a mount point fails with EBUSY
+  // (seen in the full-stack proof: the DB had committed, the file step
+  // threw, the API answered 500 with no verification run).
   const filesDir = path.join(backupPath(config, opts.name), 'files');
-  await rm(config.exportDir, { recursive: true, force: true });
   await mkdir(config.exportDir, { recursive: true });
+  for (const entry of await readdir(config.exportDir)) {
+    await rm(path.join(config.exportDir, entry), { recursive: true, force: true });
+  }
   const copied = await readdir(filesDir).catch(() => [] as string[]);
   if (copied.length) {
     await cp(filesDir, config.exportDir, { recursive: true });
