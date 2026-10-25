@@ -415,9 +415,15 @@ export async function executeRestore(
 
   // Replace the export volume with the backup's copy (snapshot above
   // holds the pre-restore volume, so this is recoverable).
+  // The export dir itself is NOT removed, only emptied: in Compose it is
+  // a volume mount point, and rmdir on a mount point fails with EBUSY
+  // (seen in the full-stack proof: the DB had committed, the file step
+  // threw, the API answered 500 with no verification run).
   const filesDir = path.join(backupPath(config, opts.name), 'files');
-  await rm(config.exportDir, { recursive: true, force: true });
   await mkdir(config.exportDir, { recursive: true });
+  for (const entry of await readdir(config.exportDir)) {
+    await rm(path.join(config.exportDir, entry), { recursive: true, force: true });
+  }
   const copied = await readdir(filesDir).catch(() => [] as string[]);
   if (copied.length) {
     await cp(filesDir, config.exportDir, { recursive: true });

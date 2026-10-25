@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -233,4 +233,23 @@ test('restore deletes every password-reset token; a backup that predates the sha
   );
   assert.equal(await count(db, 'shares'), 1, 'nothing was touched');
   assert.equal(await count(db, 'share_comments'), 2);
+});
+
+// The export directory is a volume mount point in Compose, so restore
+// must empty it rather than rmdir it (EBUSY). That failure only
+// reproduces on a real mount: it was seen, and its fix proven, in the
+// full-stack run (README "Off-site backups"). An inode check cannot
+// stand in for it here: ext4 hands the recreated directory the same
+// inode number, so it passed on the old rm+mkdir code too. This test
+// pins the contents contract only.
+test('restore replaces the export directory contents with the backup copy', async () => {
+  const db = await createTestDb();
+  const config = testConfig();
+  await mkdir(path.join(config.exportDir, 'u1'), { recursive: true });
+  await writeFile(path.join(config.exportDir, 'u1', 'kept-in-backup'), 'backed up bytes');
+  await createBackup(db, config, { name: 'files', createdBy: 'test', secrets: [] });
+  await writeFile(path.join(config.exportDir, 'u1', 'added-later'), 'post-backup bytes');
+  await executeRestore(db, config, { name: 'files', createdBy: 'test', secrets: [] });
+  assert.deepEqual((await readdir(path.join(config.exportDir, 'u1'))).sort(), ['kept-in-backup']);
+  assert.equal(await readFile(path.join(config.exportDir, 'u1', 'kept-in-backup'), 'utf8'), 'backed up bytes');
 });
