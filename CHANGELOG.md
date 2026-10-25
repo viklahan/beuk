@@ -4,6 +4,29 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — Help you can search, and codes that lead somewhere
+
+- **Search the help shelf, or paste the message.** For writers who were
+  handed a wall of machine text by a store or by EPUBCheck: paste the
+  whole thing into Help and every code in it (RSC-005, OPF-085, a 429…)
+  is looked up at once; ordinary words search the guides, and a
+  misspelt word can still find its page. Searches are logged as the words and the
+  number of results only — never who searched.
+- **The error dictionary.** Every failure Beuk knows about now has a
+  BEUK- code with a page of its own: what you might see, what happened
+  in plain terms, and a checklist. The structural validator shows the
+  code on every line that is not a pass, and server EPUBCheck results
+  carry it too. The decoder's "present but undeclared" message was
+  labelled RSC-009; EPUBCheck calls it RSC-008, and now so do we.
+- **Guides with the file beside them.** On a wide screen each guide
+  step can show the part of the file or the result it talks about —
+  real excerpts from the sample book, labelled as such. Two new guides:
+  saving and conflicts between devices, and beta-reader share links.
+  Help follows your Paper or Candlelight choice from the studio.
+- **No promises we can't keep.** The support address, name and reply
+  time appear only once the mailbox is set up; until then Help names
+  no one and promises nothing.
+
 ## 2026-10-25 — Zen sounds like the real thing
 
 - **Real rain, waves and wind.** For writers who use Zen's ambient

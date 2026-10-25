@@ -84,10 +84,20 @@ stored server-side as a SHA-256 hash.
 | `/api/housekeeping/*` | the admin surface — **404 to everyone who is not a signed-in admin** (see Housekeeping) |
 | `GET /api/health` | `{ok, db}` liveness |
 | `GET /api/status` | public, scrubbed health summary: app, version, build stamp, db up/down, latest Self-checks outcome (see Warmth) |
-| `GET /api/config/public` | public config for pages/clients: support contact + Ko-fi jar URL (or `null`) |
+| `GET /api/config/public` | public config for pages/clients: support contact (`email`, `name`, `replyPromise` — each `null` until set in `.env`) + Ko-fi jar URL (or `null`) |
+| `GET /help/` · `/help/<slug>` · `/help/errors` · `/help/errors/<code>` | public, server-rendered Help pages from `content/help/` (see Help & Support); `/help/<old>.html` and `/help/index.html` answer **301** to the new URLs |
+| `GET /help/search?q=` · `POST /help/search` | public, the no-JavaScript search results page (the form posts, so a long pasted message fits) |
+| `GET /api/help/search?q=` · `POST /api/help/search {q}` | public help search → `{q, codes, errors, guides, sections, total, trigram, logId}`; exact codes first, then full text, then trigram; **429** + `Retry-After` past the per-IP limit (30 burst, one more every 2 s); 400 without `q` |
+| `POST /api/help/search/click` | `{logId, ref}` → 204: records which result a search led to (no user id, no IP) |
 | `POST /api/founders/apply` | public Founders' Shelf application `{name, email, about}`; validated, per-IP throttled (429 + `Retry-After`) |
 | `/api/shares/*` | signed-in: beta-reader share links — create from a shelf manuscript (token returned **once**), list, republish, revoke, expiry, comments, resolve (see Beta-reader share links) |
 | `GET /read/:token` · `/read/:token/comments` | public (no account): the read-only reader page and its comment API; **410** once revoked or expired |
+
+**BEUK- codes in error bodies (H1, additive):** the 409 of `PUT
+/api/manuscripts/:id` carries `code: "BEUK-C801"`, the 410s of
+`/read/:token/comments` carry `code: "BEUK-H410"` (the 410 reader page
+links `/help/errors/BEUK-H410`), and the 429/503 of `POST /api/jobs/*`
+carry `code: "BEUK-J702"`. Every existing field is unchanged.
 
 Any `:id` (and `manuscriptId` / `exportId` in a query or body) that is
 not a UUID answers **404** — it can never name a row — instead of
@@ -1273,17 +1283,19 @@ The public surfaces that make Beuk feel like a place rather than a
 checkout. All of it is unauthenticated and read-only except the
 Founders' Shelf application; none of it touches pricing or checkout.
 
-- **Help reading room** — `/help/` plus ten task guides and an EPUB
-  error decoder, served by the app from plain static HTML in
-  `client/help/` (Paper style, no build step). Caddy proxies `/help*`,
-  `/thanks*`, `/changelog` and `/roadmap` to the app because two slots
-  depend on server config (below); everything else at the site root is
-  still Caddy's static mount.
-- **Support block** — the Help index names a human and a reply-time
-  promise. Set them in `.env`: `SUPPORT_EMAIL` (the official support
-  channel — placeholder `support@beuk.studio` until Vik sets the real
-  address), `SUPPORT_NAME`, `SUPPORT_REPLY_PROMISE` (default: "a human
-  replies within two working days").
+- **Help reading room** — now the Help & Support centre (H1/H2, its
+  own section below): server-rendered from `content/help/`. Caddy
+  proxies `/help*`, `/thanks*`, `/changelog` and `/roadmap` to the app;
+  everything else at the site root is still Caddy's static mount.
+- **Support contact** — rendered **only when `SUPPORT_EMAIL` is set**
+  (V, 2026-10-25: the mailbox does not exist yet, so `.env.example`
+  and Compose leave it empty). Unset, no page shows an address, a name
+  or a reply promise: the Help pages' "When the guides run out" block
+  (`#support`), the footer address, the "write to …" hints, and the
+  `/support` page's write-in line (`<!--BEUK_IF_SUPPORT-->` block) are
+  all absent — no empty mailto. `SUPPORT_NAME` and
+  `SUPPORT_REPLY_PROMISE` are used only with `SUPPORT_EMAIL`, each only
+  when set; there are no built-in defaults any more.
 - **Ko-fi tip jar** — set `KOFI_URL` in `.env` and a "Support the
   maker" jar appears at the foot of the Help pages and on `/thanks`
   (the post-export landing). **While `KOFI_URL` is unset, no jar is
@@ -1326,6 +1338,86 @@ Founders' Shelf application; none of it touches pricing or checkout.
   `freezesAvailable`, the upcoming `pauseDays`, and `pausedToday`, so
   the client can show the forgiving parts (repair balance, planned
   time off) instead of just a number.
+
+## Help & Support (H1 + H2)
+
+The Help centre is content plus a small renderer. Round 5 builds the
+content model (H1) and search (H2) only; there is **no AI assistant, no
+support-request form and no Housekeeping triage** (H3–H5 are out).
+
+**Content (H1.1–1.2)** — `content/help/`:
+
+- `guides/<slug>.md` — 13 guides in a small Markdown subset with front
+  matter (`slug, title, blurb, group write|ship|keep, audience[],
+  updated, readMinutes, related[]`, optional `new`), sections `## Steps`
+  (each step may carry `tech:`, `pane:` and `highlight:` hints),
+  `## Explanation`, `## Troubleshooting` and `## Panes` (format in
+  `src/help/content.ts`). The 11 pre-H1 guides were migrated with their
+  copy verbatim — `tests/help-content.test.ts` renders each one and
+  compares its text with the old page's (`tests/fixtures/help-v0/`).
+  The two intended edits: check-your-book gains a fourth step and an
+  updated honest limit (server EPUBCheck from Your Archive → Run
+  EPUBCheck), and the decoder's "present but undeclared" code is
+  corrected from RSC-009 to **RSC-008** (EPUBCheck's RSC-009 is a
+  fragment-identifier rule). `saving` and `share` are new, written from
+  this README's Local-first saving and Beta-reader share links sections.
+- The guide page's right-hand pane shows **real excerpts**, each with
+  its source: the studio's validator results and file list for the
+  sample book (KDP preset, captured 2026-10-25), and a real EPUBCheck
+  5.2.1 run over a copy with one `</p>` removed on purpose. They are
+  labelled "Excerpt, not live".
+- `errors.json` — the BEUK- error dictionary (24 entries): `code,
+  category, title, severity, says[], cause, steps[], guide, maps
+  {epubcheck, validator, http, store}, sources[]`. Every EPUBCheck code
+  and line is checked against the bundled EPUBCheck 5.2.1 message bundle
+  (`tests/fixtures/epubcheck/`); validator, studio and server lines
+  against the repo's own strings. Store wording is shown only when it
+  was found on the store's own page — none was this round, so the KDP
+  and Apple entries cite their pages but quote nothing.
+- `home.json` — search suggestions, the four "start from where you
+  are" cards, and the guide order.
+
+**Codes at the source (H1.3)** — EPUBCheck job messages gain `beuk`
+(the entry whose `maps.epubcheck` lists the id, or `null`); the studio's
+validator shows the BEUK- code on every line that is not a pass, linked
+to `/help/errors/<code>` (client self-check `help.validator.beuk-codes`);
+HTTP error bodies gain `code` (see API).
+
+**Pages (H1.4)** — `/help/`, `/help/<slug>`, `/help/errors`,
+`/help/errors/<code>`, `/help/search`, from `src/help/render.ts`;
+content cached in memory (re-read on change outside production). Paper
+and Candlelight follow the studio's `beuk.theme.v1`, applied by a tiny
+head script before first paint. Stylesheet and scripts are served at
+content-hashed paths (`/help/static/help.<hash>.css` …) because the
+studio's service worker answers static GETs cache-first. No inline
+scripts or handlers; the enforced CSP is unchanged. Everything works
+without JavaScript (search posts to `/help/search`; the dictionary rows
+are `<details>`). The shelf-status strip is read live: app (up — it
+rendered the page), db (`select 1`), the job queue, whether EPUBCheck
+is **installed** (never "up"), and the latest Housekeeping self-check
+run — or says it is unknown / none yet.
+
+**Search (H2)** — migration `013_help_search.sql`: `help_docs` (one row
+per guide, guide section and error entry; generated weighted tsvector +
+GIN; pg_trgm GIN indexes on title and codes when the extension is
+available — it is in `postgres:16-alpine`; where it is not, the
+migration still succeeds and search uses an in-app trigram twin) and
+`search_log (q_hash, q_text ≤ 200, results_count, clicked_ref,
+created_at)` — no user id, no IP. `help_docs` is rebuilt from the
+content at boot (idempotent upsert, rows for removed content deleted);
+both tables are excluded from backups (derived / anonymous statistics).
+A query matches, in order: every code in it (BEUK-…, EPUBCheck ids like
+RSC-005, the HTTP statuses the dictionary maps — a pasted multi-line
+report is scanned up to 20 000 characters), then
+`websearch_to_tsquery('english')` ranked with `ts_headline` snippets,
+then — only when nothing matched — trigram `word_similarity`.
+
+Tests: `tests/help-content.test.ts` (guides parse, verbatim copy,
+dictionary grounding, code mapping, old URLs, support on/off, live
+status, codes in HTTP bodies) and `tests/help-search.test.ts` (exact
+code wins, a real pasted EPUBCheck report, full text, trigram with and
+without pg_trgm — PGlite loads it from its contrib build —, the
+anonymous log, idempotent rebuild, rate limit, the no-JS page).
 
 ## Hardening (abuse, crashes, shutdown, headers)
 
@@ -1630,10 +1722,10 @@ everything it does.
    admin: `docker compose exec app node dist/admin-cli.js grant <email>`.
    Set `BUILD_STAMP` (or `GIT_SHA`)
    per deploy so Self-checks runs and sign-offs stamp the right build.
-7. Warmth (M4, all in `.env`, all optional): set `SUPPORT_EMAIL` to the
-   real support address (the Help page shows a placeholder until you
-   do), `SUPPORT_NAME` / `SUPPORT_REPLY_PROMISE` if the defaults don't
-   fit, and `KOFI_URL` when a Ko-fi page exists — until then no tip
+7. Warmth (M4, all in `.env`, all optional): set `SUPPORT_EMAIL` once the
+   support mailbox really exists (until then no page shows any address,
+   name or reply promise), `SUPPORT_NAME` / `SUPPORT_REPLY_PROMISE` if you
+   want them shown with it (no defaults), and `KOFI_URL` when a Ko-fi page exists — until then no tip
    jar is rendered anywhere.
 8. Jobs (M5, optional, any time): install the JRE + EPUBCheck jar +
    Ghostscript, set `EPUBCHECK_JAR` / `GS_BIN` in `.env`, and point
@@ -1652,8 +1744,10 @@ The same Compose file runs locally — only `.env` differs.
 `client/` is bind-mounted into Caddy at `/srv/client` and served at the
 site root with SPA fallback; `/api/*` is proxied to the app. It holds a
 placeholder page for the app itself, plus the M4 warmth pages under
-`client/help/`, `client/thanks/` and `client/reset/` — those paths are proxied to the
-app instead (see the Caddyfile), which fills their config slots. The
+`client/thanks/`, `client/support/` and `client/reset/` and the Help
+stylesheet/scripts under `client/help/` — those paths are proxied to the
+app instead (see the Caddyfile), which fills their config slots (the Help
+pages themselves render from `content/help/`). The
 existing Beuk web client drops its built files in here in a later
 milestone — no server changes needed.
 
@@ -1749,11 +1843,16 @@ src/
   routes/         auth.ts · manuscripts.ts · streak.ts · exports.ts ·
                   billing.ts · housekeeping.ts · public.ts (M4 status +
                   public config) · founders.ts (M4) · warmth.ts (M4 pages)
+                  · help.ts (H1/H2 Help pages + search API)
                   · jobs.ts (M5) · shares.ts (beta-reader links:
                   owner API + public /read reader)
   shares/         render.ts (book JSON → frozen sanitized copy) ·
                   sanitize.ts (allowlist HTML sanitizer) · reader.ts
                   (reader / 410 / 404 pages, CSP headers)
+  help/           H1/H2 Help: content.ts (guides/errors/home loader +
+                  checks) · render.ts (pages) · search.ts (index,
+                  query, log) · codes.ts (BEUK- mapping) · status.ts
+                  (live shelf status) · assets.ts (hashed css/js)
   warmth/         M4 page machinery: pages.ts (chrome, config slots,
                   Ko-fi jar) · markdown.ts (safe md→HTML for the
                   changelog/roadmap pages)
@@ -1768,9 +1867,11 @@ migrations/       001 users+sessions · 002 manuscripts · 003 streaks ·
                   revision (optimistic concurrency) · 010 password
                   resets · 011 shares · 012 billing state (events
                   ledger, subscriptions; users.plan = display label)
+                  · 013 help search (help_docs, search_log)
 tests/            node:test suite (PGlite-backed)
-client/           static mount point (app placeholder + M4 warmth
-                  pages under help/ and thanks/)
+content/help/     H1 Help content: guides/*.md, errors.json, home.json
+client/           static mount point (the studio, the Help stylesheet
+                  and scripts under help/, thanks/, reset/, support/)
 CHANGELOG.md      the public changelog source (/changelog renders it)
 docker-compose.yml · Dockerfile · Caddyfile · .env.example
 ```
