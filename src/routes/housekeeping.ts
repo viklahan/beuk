@@ -307,6 +307,17 @@ export function housekeepingRoutes(
     const previewId = String(req.body?.previewId ?? '');
     const confirmed = req.body?.confirmed === true;
     return mutate(req, res, 'restore.execute', { name }, async () => {
+      if (!config.restoreEnabled) {
+        return {
+          status: 503,
+          result: 'refused',
+          detail: 'restore disabled: shares, comments, readers and jobs not yet covered',
+          body: {
+            error:
+              'restore is turned off: it does not yet carry share links, reader comments, reader records or jobs, and would delete them',
+          },
+        };
+      }
       if (!confirmed) {
         return {
           status: 400,

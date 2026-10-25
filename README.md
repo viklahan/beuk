@@ -713,6 +713,8 @@ manifest), and `files/` (a copy of the export volume). The audit and
 check-run tables are NOT backed up: evidence is append-only and a
 restore must not rewrite it. All file writes are atomic (temp + rename).
 
+**Restore is turned off for now** (`RESTORE_ENABLED`, default `false`; `POST /restore` answers 503 with the reason). It does not yet back up share links, reader comments, reader records or jobs, and deleting users during a restore would cascade them away. See `docs/plan-billing-backups-restore-branding.md`, Phase 0.
+
 **Restore is two-step:** `POST /restore/preview` returns a per-table
 diff summary and a short-lived preview id; `POST /restore` requires
 that preview id **and** `confirmed: true`. It snapshots the current

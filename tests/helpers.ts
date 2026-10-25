@@ -113,6 +113,7 @@ export function testConfig(overrides?: Partial<Config>): Config {
     exportDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-exports-')),
     exportMaxBytes: 50 * 1024 * 1024,
     manuscriptMaxBytes: 64 * 1024 * 1024,
+    restoreEnabled: false,
     stripeSecretKey: null,
     stripeWebhookSecret: null,
     stripePriceId: null,

@@ -278,8 +278,30 @@ test('backup: secrets are excluded by name and the canary appears in NO housekee
   }
 });
 
-test('restore: preview → confirm restores the data, refuses without confirmation, snapshots first', async () => {
+test('restore is refused while RESTORE_ENABLED is off, and nothing is touched', async () => {
   const { server, admin } = await setup();
+  try {
+    const first = await admin.post('/api/manuscripts', {
+      doc: { title: 'Kept Book', sections: { frontMatter: [], body: [], backMatter: [] } },
+    });
+    assert.equal(first.status, 201);
+    assert.equal((await admin.post('/api/housekeeping/backups', { name: 'snapoff' })).status, 201);
+    const preview = await admin.post('/api/housekeeping/restore/preview', { name: 'snapoff' });
+    assert.equal(preview.status, 200);
+    const refused = await admin.post('/api/housekeeping/restore', {
+      name: 'snapoff', previewId: preview.body.previewId, confirmed: true,
+    });
+    assert.equal(refused.status, 503);
+    assert.match(String(refused.body.error), /restore is turned off/);
+    const after = await admin.get('/api/manuscripts');
+    assert.equal((after.body.manuscripts as unknown[]).length, 1);
+  } finally {
+    await server.close();
+  }
+});
+
+test('restore: preview → confirm restores the data, refuses without confirmation, snapshots first', async () => {
+  const { server, admin } = await setup({ restoreEnabled: true });
   try {
     const first = await admin.post('/api/manuscripts', {
       doc: { title: 'First Book', sections: { frontMatter: [], body: [], backMatter: [] } },
