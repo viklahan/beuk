@@ -985,8 +985,10 @@ support, changelog, roadmap, language switch to Arabic and Japanese,
 service worker + offline reload, and the in-studio self-checks — with a
 `securitypolicyviolation` listener in every frame, the console scanned
 for CSP messages, and the app log watched for `/api/csp-report` lines
-(the test stack's Caddyfile drops `report-to` so headless Chromium falls
-back to `report-uri` and service-worker violations reach the log too).
+(the test stack's Caddyfile drops `report-to`, because headless Chromium
+registered the `csp` endpoint but never uploaded a `report-to` report in
+100 s, while it does send `report-uri` reports; a violation inside the
+service worker's own context would only show up there, and none did).
 Run first against the policy as report-only, then **enforced**: zero
 violations and zero uncaught page errors, apart from the documented
 Openverse-original case above. A positive control (a foreign
