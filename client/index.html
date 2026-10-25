@@ -999,6 +999,7 @@
       }
       .desk-facts { text-align: center; font-size: 11.5px; color: var(--muted); letter-spacing: .02em; }
       .desk-total { text-align: center; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-top: 2px; }
+      .desk-basis { text-align: center; font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; } /* BEUK:pagecount */
       .desk-rail { overflow-y: auto; min-height: 0; max-height: 172px; margin-top: 8px; display: flex; flex-direction: column; gap: 2px; padding-right: 2px; overscroll-behavior: contain; }
       .desk-item {
         display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%;
@@ -2179,6 +2180,7 @@
             <div id="previewDesk">
               <div class="desk-facts" id="deskFacts"></div>
               <div class="desk-total" id="deskTotal"></div>
+              <div class="desk-basis" id="deskBasis"></div><!-- BEUK:pagecount -->
               <div class="desk-rail" id="deskRail" role="list"></div>
             </div>
             <div id="deskMeasure" aria-hidden="true"><div id="deskFlow" class="fc-page" lang="en"></div></div>
@@ -3156,7 +3158,7 @@
         "preview.prev": "Prev", "preview.next": "Next", "preview.pageOf": "Page {page} of {count}",
         "preview.tip": "Tip: click the preview, then use ← → arrow keys to turn pages.",
         "preview.previewing": "Previewing: {name}", "preview.chapterPrefix": "Chapter {n} — ", "preview.excludedSuffix": " · excluded from export",
-        "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} page on {device}", "preview.desk.totalPlural": "{title} · {n} pages on {device}", "preview.desk.pages": "{n} page", "preview.desk.pagesPlural": "{n} pages", "preview.desk.railLabel": "Sections and page counts on this device",
+        "preview.desk.facts": "{size} screen · {res} · {ppi} ppi", "preview.desk.total": "{title} · about {n} page on {device}", "preview.desk.totalPlural": "{title} · about {n} pages on {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimated for a {w} × {h} px reading area with {size} px text. A reader’s own text size and margins change the count.", "preview.desk.railLabel": "Sections and page counts on this device",
         "set.title": "Project Settings",
         "set.subHtml": "These metadata fields are written into the EPUB package document (<span style=\"font-family:var(--mono-font);\">package.opf</span>) and the Markdown frontmatter, and used to generate the title page and copyright page.",
         "set.bookTitle": "Book Title", "set.subtitle": "Subtitle (optional)", "set.author": "Author", "set.publisher": "Publisher",
@@ -3523,7 +3525,7 @@
         "preview.prev": "Anterior", "preview.next": "Siguiente", "preview.pageOf": "Página {page} de {count}",
         "preview.tip": "Consejo: haz clic en la vista previa y usa las flechas ← → para pasar de página.",
         "preview.previewing": "Vista previa: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluido de la exportación",
-        "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · {n} página en {device}", "preview.desk.totalPlural": "{title} · {n} páginas en {device}", "preview.desk.pages": "{n} página", "preview.desk.pagesPlural": "{n} páginas", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
+        "preview.desk.facts": "Pantalla de {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · aprox. {n} página en {device}", "preview.desk.totalPlural": "{title} · aprox. {n} páginas en {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimación para un área de lectura de {w} × {h} px con texto de {size} px. El tamaño de letra y los márgenes que elija cada lector cambian el recuento.", "preview.desk.railLabel": "Secciones y número de páginas en este dispositivo",
         "set.title": "Ajustes del proyecto",
         "set.subHtml": "Estos metadatos se escriben en el documento del paquete EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) y en la cabecera del Markdown, y se usan para generar la portada interior y la página de créditos.",
         "set.bookTitle": "Título del libro", "set.subtitle": "Subtítulo (opcional)", "set.author": "Autor", "set.publisher": "Editorial",
@@ -3719,7 +3721,7 @@
         "preview.prev": "Préc.", "preview.next": "Suiv.", "preview.pageOf": "Page {page} sur {count}",
         "preview.tip": "Astuce : cliquez l'aperçu, puis tournez les pages avec les flèches ← →.",
         "preview.previewing": "Aperçu : {name}", "preview.chapterPrefix": "Chapitre {n} — ", "preview.excludedSuffix": " · exclu de l'export",
-        "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · {n} page sur {device}", "preview.desk.totalPlural": "{title} · {n} pages sur {device}", "preview.desk.pages": "{n} page", "preview.desk.pagesPlural": "{n} pages", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
+        "preview.desk.facts": "Écran {size} · {res} · {ppi} ppp", "preview.desk.total": "{title} · environ {n} page sur {device}", "preview.desk.totalPlural": "{title} · environ {n} pages sur {device}", "preview.desk.pages": "≈ {n} page", "preview.desk.pagesPlural": "≈ {n} pages", "preview.desk.basis": "Estimation pour une zone de lecture de {w} × {h} px avec un texte de {size} px. La taille du texte et les marges choisies par le lecteur changent le décompte.", "preview.desk.railLabel": "Sections et nombre de pages sur cet appareil",
         "set.title": "Réglages du projet",
         "set.subHtml": "Ces métadonnées sont écrites dans le document du paquet EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) et dans l'en-tête du Markdown, et servent à générer la page de titre et la page de copyright.",
         "set.bookTitle": "Titre du livre", "set.subtitle": "Sous-titre (facultatif)", "set.author": "Auteur", "set.publisher": "Éditeur",
@@ -3915,7 +3917,7 @@
         "preview.prev": "Zurück", "preview.next": "Weiter", "preview.pageOf": "Seite {page} von {count}",
         "preview.tip": "Tipp: Klicken Sie in die Vorschau und blättern Sie dann mit den Pfeiltasten ← →.",
         "preview.previewing": "Vorschau: {name}", "preview.chapterPrefix": "Kapitel {n} — ", "preview.excludedSuffix": " · vom Export ausgeschlossen",
-        "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · {n} Seiten auf {device}", "preview.desk.pages": "{n} Seite", "preview.desk.pagesPlural": "{n} Seiten", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
+        "preview.desk.facts": "{size} Bildschirm · {res} · {ppi} ppi", "preview.desk.total": "{title} · etwa {n} Seite auf {device}", "preview.desk.totalPlural": "{title} · etwa {n} Seiten auf {device}", "preview.desk.pages": "≈ {n} Seite", "preview.desk.pagesPlural": "≈ {n} Seiten", "preview.desk.basis": "Geschätzt für einen Lesebereich von {w} × {h} px mit {size} px Schrift. Schriftgröße und Ränder, die Lesende selbst wählen, ändern die Zahl.", "preview.desk.railLabel": "Abschnitte und Seitenzahlen auf diesem Gerät",
         "set.title": "Projekteinstellungen",
         "set.subHtml": "Diese Metadaten werden in das EPUB-Paketdokument (<span style=\"font-family:var(--mono-font);\">package.opf</span>) und den Markdown-Vorspann geschrieben und erzeugen Titelblatt und Impressum.",
         "set.bookTitle": "Buchtitel", "set.subtitle": "Untertitel (optional)", "set.author": "Autor", "set.publisher": "Verlag",
@@ -4111,7 +4113,7 @@
         "preview.prev": "Prec.", "preview.next": "Succ.", "preview.pageOf": "Pagina {page} di {count}",
         "preview.tip": "Consiglio: fai clic sull'anteprima, poi sfoglia le pagine con le frecce ← →.",
         "preview.previewing": "Anteprima: {name}", "preview.chapterPrefix": "Capitolo {n} — ", "preview.excludedSuffix": " · escluso dall'esportazione",
-        "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} pagina su {device}", "preview.desk.totalPlural": "{title} · {n} pagine su {device}", "preview.desk.pages": "{n} pagina", "preview.desk.pagesPlural": "{n} pagine", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
+        "preview.desk.facts": "Schermo da {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · circa {n} pagina su {device}", "preview.desk.totalPlural": "{title} · circa {n} pagine su {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagine", "preview.desk.basis": "Stima per un'area di lettura di {w} × {h} px con testo a {size} px. La dimensione del testo e i margini scelti dal lettore cambiano il conteggio.", "preview.desk.railLabel": "Sezioni e conteggio pagine su questo dispositivo",
         "set.title": "Impostazioni del progetto",
         "set.subHtml": "Questi metadati vengono scritti nel documento del pacchetto EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) e nell'intestazione del Markdown, e servono a generare frontespizio e pagina del copyright.",
         "set.bookTitle": "Titolo del libro", "set.subtitle": "Sottotitolo (facoltativo)", "set.author": "Autore", "set.publisher": "Editore",
@@ -4307,7 +4309,7 @@
         "preview.prev": "Ant.", "preview.next": "Seg.", "preview.pageOf": "Página {page} de {count}",
         "preview.tip": "Dica: clique na pré-visualização e vire as páginas com as setas ← →.",
         "preview.previewing": "Pré-visualização: {name}", "preview.chapterPrefix": "Capítulo {n} — ", "preview.excludedSuffix": " · excluído da exportação",
-        "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} página no {device}", "preview.desk.totalPlural": "{title} · {n} páginas no {device}", "preview.desk.pages": "{n} página", "preview.desk.pagesPlural": "{n} páginas", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
+        "preview.desk.facts": "Tela de {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · cerca de {n} página no {device}", "preview.desk.totalPlural": "{title} · cerca de {n} páginas no {device}", "preview.desk.pages": "≈ {n} página", "preview.desk.pagesPlural": "≈ {n} páginas", "preview.desk.basis": "Estimativa para uma área de leitura de {w} × {h} px com texto de {size} px. O tamanho do texto e as margens escolhidos pelo leitor alteram a contagem.", "preview.desk.railLabel": "Seções e contagem de páginas neste dispositivo",
         "set.title": "Definições do projeto",
         "set.subHtml": "Estes metadados são escritos no documento do pacote EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) e no cabeçalho do Markdown, e servem para gerar a página de título e a página de direitos.",
         "set.bookTitle": "Título do livro", "set.subtitle": "Subtítulo (opcional)", "set.author": "Autor", "set.publisher": "Editora",
@@ -4503,7 +4505,7 @@
         "preview.prev": "Vorige", "preview.next": "Volgende", "preview.pageOf": "Pagina {page} van {count}",
         "preview.tip": "Tip: klik op het voorbeeld en blader daarna met de pijltjestoetsen ← →.",
         "preview.previewing": "Voorbeeld: {name}", "preview.chapterPrefix": "Hoofdstuk {n} — ", "preview.excludedSuffix": " · uitgesloten van de export",
-        "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} pagina op {device}", "preview.desk.totalPlural": "{title} · {n} pagina's op {device}", "preview.desk.pages": "{n} pagina", "preview.desk.pagesPlural": "{n} pagina's", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
+        "preview.desk.facts": "{size} scherm · {res} · {ppi} ppi", "preview.desk.total": "{title} · ongeveer {n} pagina op {device}", "preview.desk.totalPlural": "{title} · ongeveer {n} pagina's op {device}", "preview.desk.pages": "≈ {n} pagina", "preview.desk.pagesPlural": "≈ {n} pagina's", "preview.desk.basis": "Geschat voor een leesvlak van {w} × {h} px met tekst van {size} px. De tekstgrootte en marges die een lezer zelf kiest, veranderen het aantal.", "preview.desk.railLabel": "Secties en pagina-aantallen op dit apparaat",
         "set.title": "Projectinstellingen",
         "set.subHtml": "Deze metagegevens worden in het EPUB-pakketdocument (<span style=\"font-family:var(--mono-font);\">package.opf</span>) en de Markdown-voorkop geschreven en genereren de titelpagina en copyrightpagina.",
         "set.bookTitle": "Boektitel", "set.subtitle": "Ondertitel (optioneel)", "set.author": "Auteur", "set.publisher": "Uitgever",
@@ -4699,7 +4701,7 @@
         "preview.prev": "Wstecz", "preview.next": "Dalej", "preview.pageOf": "Strona {page} z {count}",
         "preview.tip": "Wskazówka: kliknij podgląd, a potem przewracaj strony strzałkami ← →.",
         "preview.previewing": "Podgląd: {name}", "preview.chapterPrefix": "Rozdział {n} — ", "preview.excludedSuffix": " · wyłączone z eksportu",
-        "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} strona na {device}", "preview.desk.totalPlural": "{title} · {n} strony na {device}", "preview.desk.pages": "{n} strona", "preview.desk.pagesPlural": "{n} strony", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
+        "preview.desk.facts": "Ekran {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · około {n} strony na {device}", "preview.desk.totalPlural": "{title} · około {n} stron na {device}", "preview.desk.pages": "≈ {n} strona", "preview.desk.pagesPlural": "≈ {n} strony", "preview.desk.basis": "Szacunek dla obszaru czytania {w} × {h} px przy tekście {size} px. Rozmiar tekstu i marginesy wybrane przez czytelnika zmieniają liczbę.", "preview.desk.railLabel": "Sekcje i liczba stron na tym urządzeniu",
         "set.title": "Ustawienia projektu",
         "set.subHtml": "Te metadane są zapisywane w dokumencie pakietu EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) i w nagłówku Markdown oraz służą do wygenerowania strony tytułowej i redakcyjnej.",
         "set.bookTitle": "Tytuł książki", "set.subtitle": "Podtytuł (opcjonalnie)", "set.author": "Autor", "set.publisher": "Wydawca",
@@ -4895,7 +4897,7 @@
         "preview.prev": "Назад", "preview.next": "Вперёд", "preview.pageOf": "Страница {page} из {count}",
         "preview.tip": "Совет: щёлкните по предпросмотру, а затем листайте страницы стрелками ← →.",
         "preview.previewing": "Предпросмотр: {name}", "preview.chapterPrefix": "Глава {n} — ", "preview.excludedSuffix": " · исключено из экспорта",
-        "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} страница на {device}", "preview.desk.totalPlural": "{title} · {n} страниц на {device}", "preview.desk.pages": "{n} страница", "preview.desk.pagesPlural": "{n} страниц", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
+        "preview.desk.facts": "Экран {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · около {n} страницы на {device}", "preview.desk.totalPlural": "{title} · около {n} страниц на {device}", "preview.desk.pages": "≈ {n} страница", "preview.desk.pagesPlural": "≈ {n} страниц", "preview.desk.basis": "Оценка для области чтения {w} × {h} px при тексте {size} px. Размер шрифта и поля, выбранные читателем, меняют число.", "preview.desk.railLabel": "Разделы и число страниц на этом устройстве",
         "set.title": "Настройки проекта",
         "set.subHtml": "Эти метаданные записываются в документ пакета EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) и в шапку Markdown и используются для создания титульного листа и страницы с выходными данными.",
         "set.bookTitle": "Название книги", "set.subtitle": "Подзаголовок (необязательно)", "set.author": "Автор", "set.publisher": "Издатель",
@@ -5091,7 +5093,7 @@
         "preview.prev": "Önceki", "preview.next": "Sonraki", "preview.pageOf": "Sayfa {page} / {count}",
         "preview.tip": "İpucu: önizlemeye tıklayın, sonra ← → ok tuşlarıyla sayfaları çevirin.",
         "preview.previewing": "Önizleme: {name}", "preview.chapterPrefix": "Bölüm {n} — ", "preview.excludedSuffix": " · dışa aktarımdan çıkarıldı",
-        "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde {n} sayfa", "preview.desk.pages": "{n} sayfa", "preview.desk.pagesPlural": "{n} sayfa", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
+        "preview.desk.facts": "{size} ekran · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.totalPlural": "{title} · {device} üzerinde yaklaşık {n} sayfa", "preview.desk.pages": "≈ {n} sayfa", "preview.desk.pagesPlural": "≈ {n} sayfa", "preview.desk.basis": "{size} px metinle {w} × {h} px okuma alanı için tahmin. Okurun seçtiği yazı boyutu ve kenar boşlukları sayıyı değiştirir.", "preview.desk.railLabel": "Bu cihazdaki bölümler ve sayfa sayıları",
         "set.title": "Proje ayarları",
         "set.subHtml": "Bu üst veriler EPUB paket belgesine (<span style=\"font-family:var(--mono-font);\">package.opf</span>) ve Markdown ön bilgisine yazılır ve başlık sayfası ile telif sayfasını oluşturmak için kullanılır.",
         "set.bookTitle": "Kitap başlığı", "set.subtitle": "Alt başlık (isteğe bağlı)", "set.author": "Yazar", "set.publisher": "Yayınevi",
@@ -5287,7 +5289,7 @@
         "preview.prev": "السابق", "preview.next": "التالي", "preview.pageOf": "صفحة {page} من {count}",
         "preview.tip": "تلميح: انقر المعاينة، ثم قلّب الصفحات بمفتاحي الأسهم ← →.",
         "preview.previewing": "معاينة: {name}", "preview.chapterPrefix": "الفصل {n} — ", "preview.excludedSuffix": " · مستثنى من التصدير",
-        "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · {n} صفحات على {device}", "preview.desk.pages": "{n} صفحة", "preview.desk.pagesPlural": "{n} صفحات", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
+        "preview.desk.facts": "شاشة {size} · {res} · {ppi} ppi", "preview.desk.total": "{title} · نحو {n} صفحة على {device}", "preview.desk.totalPlural": "{title} · نحو {n} صفحات على {device}", "preview.desk.pages": "≈ {n} صفحة", "preview.desk.pagesPlural": "≈ {n} صفحات", "preview.desk.basis": "تقدير لمساحة قراءة {w} × {h} px بنص {size} px. حجم الخط والهوامش التي يختارها القارئ تغيّر العدد.", "preview.desk.railLabel": "الأقسام وعدد الصفحات على هذا الجهاز",
         "set.title": "إعدادات المشروع",
         "set.subHtml": "تُكتب هذه البيانات الوصفية في مستند حزمة EPUB (<span style=\"font-family:var(--mono-font);\">package.opf</span>) وفي مقدمة Markdown، وتُستخدم لإنشاء صفحة العنوان وصفحة حقوق النشر.",
         "set.bookTitle": "عنوان الكتاب", "set.subtitle": "العنوان الفرعي (اختياري)", "set.author": "المؤلف", "set.publisher": "الناشر",
@@ -5483,7 +5485,7 @@
         "preview.prev": "前へ", "preview.next": "次へ", "preview.pageOf": "{count}ページ中 {page}ページ",
         "preview.tip": "ヒント：プレビューをクリックしてから、← → の矢印キーでページをめくれます。",
         "preview.previewing": "プレビュー中：{name}", "preview.chapterPrefix": "第{n}章 — ", "preview.excludedSuffix": " · 書き出しから除外",
-        "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で {n} ページ", "preview.desk.totalPlural": "{title} · {device} で {n} ページ", "preview.desk.pages": "{n} ページ", "preview.desk.pagesPlural": "{n} ページ", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
+        "preview.desk.facts": "{size} 画面 · {res} · {ppi} ppi", "preview.desk.total": "{title} · {device} で約 {n} ページ", "preview.desk.totalPlural": "{title} · {device} で約 {n} ページ", "preview.desk.pages": "≈ {n} ページ", "preview.desk.pagesPlural": "≈ {n} ページ", "preview.desk.basis": "{w} × {h} px の読書領域、{size} px の文字での推定です。読者が選ぶ文字サイズや余白で数は変わります。", "preview.desk.railLabel": "このデバイスでのセクションとページ数",
         "set.title": "プロジェクト設定",
         "set.subHtml": "これらのメタデータはEPUBパッケージ文書（<span style=\"font-family:var(--mono-font);\">package.opf</span>）とMarkdownのフロントマターに書き込まれ、タイトルページと著作権ページの生成に使われます。",
         "set.bookTitle": "書名", "set.subtitle": "サブタイトル（任意）", "set.author": "著者", "set.publisher": "出版社",
@@ -5679,7 +5681,7 @@
         "preview.prev": "上一页", "preview.next": "下一页", "preview.pageOf": "第 {page} 页，共 {count} 页",
         "preview.tip": "提示：点击预览，然后用 ← → 方向键翻页。",
         "preview.previewing": "正在预览：{name}", "preview.chapterPrefix": "第 {n} 章 — ", "preview.excludedSuffix": " · 已从导出中排除",
-        "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上共 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上共 {n} 页", "preview.desk.pages": "{n} 页", "preview.desk.pagesPlural": "{n} 页", "preview.desk.railLabel": "此设备上的章节与页数",
+        "preview.desk.facts": "{size} 屏幕 · {res} · {ppi} ppi", "preview.desk.total": "{title} · 在 {device} 上约 {n} 页", "preview.desk.totalPlural": "{title} · 在 {device} 上约 {n} 页", "preview.desk.pages": "≈ {n} 页", "preview.desk.pagesPlural": "≈ {n} 页", "preview.desk.basis": "按 {w} × {h} px 阅读区域、{size} px 文字估算。读者自选的字号和页边距会改变页数。", "preview.desk.railLabel": "此设备上的章节与页数",
         "set.title": "项目设置",
         "set.subHtml": "这些元数据会写入 EPUB 包文档（<span style=\"font-family:var(--mono-font);\">package.opf</span>）和 Markdown 的前置信息，并用于生成书名页和版权页。",
         "set.bookTitle": "书名", "set.subtitle": "副标题（可选）", "set.author": "作者", "set.publisher": "出版社",
@@ -17748,7 +17750,7 @@
       /* The reading desk's facts per profile: physical screen size,
          pixel resolution and density — the real devices' own numbers. */
       const DEVICE_FACTS = {
-        kindle: { size: "6.8 in", res: "1448 × 1072", ppi: 300 },
+        kindle: { size: "6.8 in", res: "1648 × 1236", ppi: 300 }, /* BEUK:pagecount — was "1448 × 1072" (the 6 in Paperwhite's grid); the 6.8 in model is 1648 × 1236: https://wiki.mobileread.com/wiki/New_Paperwhite ("verified through screenshot"), https://goodereader.com/blog/?p=263623 */
         ipad: { size: "10.9 in", res: "2360 × 1640", ppi: 264 },
         kobo: { size: "6 in", res: "1448 × 1072", ppi: 300 },
         phone: { size: "6.1 in", res: "1179 × 2556", ppi: 460 },
@@ -17759,6 +17761,88 @@
         android: { size: "10.1 in", res: "1920 × 1200", ppi: 224 }
       };
       const DEVICE_NAMES = { kindle: "Kindle Paperwhite", ipad: "iPad", kobo: "Kobo Clara", phone: "Phone", oasis: "Kindle Oasis", basic: "Kindle", iphone: "iPhone", forma: "Kobo Forma", android: "Android Tablet" };
+      /* ==== BEUK:pagecount ==== */
+      /* Page counts at each device's own reading-area geometry, never the
+         browser window's. Found: at a 1280×720 window the Kindle screen
+         drew at 107×122 px and the desk said 2443 pages; at 1440×900 it
+         said 429 — the count followed the window. Now every count (the
+         desk, the rail, the preview's "Page X of Y") is laid out at the
+         fixed CSS-px reading area below; the visible preview is the same
+         layout scaled down to fit, so it can never disagree.
+
+         One row per profile. screen = the panel's pixel grid (portrait,
+         w × h) with its source. dpr = device pixels per CSS px. Apple
+         publishes theirs (@2x iPad, @3x iPhone). E-ink readers and the
+         generic Android tablet publish none, so dpr follows Android's
+         density buckets (dp = px ÷ (dpi ÷ 160); buckets ~160/240/320/480:
+         https://developer.android.com/training/multiscreen/screendensities )
+         rounded to the nearest bucket — the same rule gives Apple's own
+         @2x (264 ppi) and @3x (460 ppi), but on e-ink it is a convention,
+         so those rows say dprVerified: false. inset = the reader's own
+         margins and chrome around the text in CSS px: no maker publishes
+         these and every reader lets the reader change them, so every
+         inset is UNVERIFIED — an estimate, which is why the copy says
+         "about N pages". Text size is the book's Base Font Size (CSS px),
+         the same number the preview uses; a reader's own text setting
+         changes the real count. */
+      const PAGE_GEOMETRY = {
+        kindle: { screen: [1236, 1648], screenSrc: "https://wiki.mobileread.com/wiki/New_Paperwhite ; https://goodereader.com/blog/?p=263623", screenVerified: true, dpr: 2, dprVerified: false, inset: { x: 36, top: 44, bottom: 44 }, insetVerified: false },
+        oasis: { screen: [1264, 1680], screenSrc: "https://digitec.ch/en/s1/product/amazon-kindle-oasis-2017-7-32-gb-graphite-aluminium-ereaders-6884588 (MobileRead lists 1680 × 1260: https://wiki.mobileread.com/wiki/Kindle_Oasis_7)", screenVerified: true, dpr: 2, dprVerified: false, inset: { x: 36, top: 44, bottom: 44 }, insetVerified: false },
+        /* Amazon does not publish the 2022 Kindle's pixel grid (https://ebookfriendly.com/amazon-kindle-11-2022-faq-worth-buying/);
+           1072 × 1448 is what a 6 in panel at the published 300 ppi gives — UNVERIFIED. */
+        basic: { screen: [1072, 1448], screenSrc: "derived: 6 in at 300 ppi (grid unpublished)", screenVerified: false, dpr: 2, dprVerified: false, inset: { x: 36, top: 44, bottom: 44 }, insetVerified: false },
+        kobo: { screen: [1072, 1448], screenSrc: "https://blog.the-ebook-reader.com/2024/05/28/kobo-clara-bw-review-is-it-really-better/ ; https://www.ifixit.com/Device/Kobo_Clara_BW_N365", screenVerified: true, dpr: 2, dprVerified: false, inset: { x: 36, top: 44, bottom: 44 }, insetVerified: false },
+        forma: { screen: [1440, 1920], screenSrc: "https://wiki.mobileread.com/wiki/Kobo_Forma", screenVerified: true, dpr: 2, dprVerified: false, inset: { x: 40, top: 48, bottom: 48 }, insetVerified: false },
+        /* iPad Air (5th gen) 2360 × 1640 at 264 ppi (https://support.apple.com/en-us/111887); viewport 820 × 1180 at 2.0 (https://yesviz.com/devices/ipad-air-2020/).
+           Read as the preview always has: a two-page spread. */
+        ipad: { screen: [1640, 2360], screenSrc: "https://support.apple.com/en-us/111887", screenVerified: true, dpr: 2, dprVerified: true, dprSrc: "https://yesviz.com/devices/ipad-air-2020/", inset: { x: 44, top: 64, bottom: 56 }, insetVerified: false, twoUp: true },
+        /* iPhone 15: 2556 × 1179 at 460 ppi (https://support.apple.com/en-us/111831); viewport 393 × 852 at 3 (https://yesviz.com/devices/iphone-15/). */
+        iphone: { screen: [1179, 2556], screenSrc: "https://support.apple.com/en-us/111831", screenVerified: true, dpr: 3, dprVerified: true, dprSrc: "https://yesviz.com/devices/iphone-15/", inset: { x: 20, top: 64, bottom: 48 }, insetVerified: false },
+        /* The generic "Phone" profile carries the same facts as the iPhone row (DEVICE_FACTS.phone), so the same grid. */
+        phone: { screen: [1179, 2556], screenSrc: "https://support.apple.com/en-us/111831", screenVerified: true, dpr: 3, dprVerified: true, dprSrc: "https://yesviz.com/devices/iphone-15/", inset: { x: 20, top: 64, bottom: 48 }, insetVerified: false },
+        /* A 10.1 in 1920 × 1200 / 224 ppi tablet (e.g. Galaxy Tab A 10.1: https://en.wikipedia.org/wiki/Samsung_Galaxy_Tab_A_10.1 );
+           dpr 1.5 is the hdpi bucket — no maker publishes it — UNVERIFIED. */
+        android: { screen: [1200, 1920], screenSrc: "https://en.wikipedia.org/wiki/Samsung_Galaxy_Tab_A_10.1", screenVerified: true, dpr: 1.5, dprVerified: false, inset: { x: 40, top: 56, bottom: 48 }, insetVerified: false }
+      };
+      /* The text area a profile lays a page into, in CSS px. Null for
+         the Hardcover (its pages come from the print engine's trim). */
+      function deviceReadingArea(d) {
+        const g = PAGE_GEOMETRY[d || state.device];
+        if (!g) return null;
+        const cssW = Math.round(g.screen[0] / g.dpr), cssH = Math.round(g.screen[1] / g.dpr);
+        return { w: cssW - 2 * g.inset.x, h: cssH - g.inset.top - g.inset.bottom, cssW, cssH, twoUp: !!g.twoUp };
+      }
+      /* The scale the visible preview draws the fixed layout at, and the
+         letterbox offsets that centre it in the screen's text box. */
+      function previewFit(area) {
+        const wrap = $("flowWrap");
+        const ww = wrap ? wrap.clientWidth : 0, wh = wrap ? wrap.clientHeight : 0;
+        if (!area || !ww || !wh) return { s: 1, ox: 0, oy: 0, ww, wh };
+        const s = Math.min(ww / area.w, wh / area.h);
+        return { s, ox: (ww - area.w * s) / 2, oy: (wh - area.h * s) / 2, ww, wh };
+      }
+      /* Counts cached per book signature + device, so flipping between
+         profiles (or back) reuses a finished measurement. */
+      /* Which preview page (1-based) a screen x falls on: the visible flow
+         is the fixed layout drawn at scale s from offset ox, turned to
+         state.page — map back into layout px, then divide by the step. */
+      function previewPageAtX(clientX) {
+        const wrap = $("flowWrap");
+        const area = deviceReadingArea();
+        const f = previewFit(area);
+        const step = (area ? area.w : wrap.clientWidth) + COL_GAP;
+        if (!step || !f.s) return 0;
+        const lx = (clientX - wrap.getBoundingClientRect().left - (area ? f.ox : 0)) / (area ? f.s : 1) + (state.page - 1) * step;
+        return Math.floor((lx + 1) / step) + 1; /* +1 layout px: float noise at a column edge */
+      }
+      const pageCountCache = new Map();
+      /* Bumped whenever web fonts finish loading: new metrics, new count. */
+      let pcFontGen = 0;
+      function pcCacheSet(sig, res) {
+        pageCountCache.set(sig, res);
+        while (pageCountCache.size > 40) pageCountCache.delete(pageCountCache.keys().next().value);
+      }
+      /* ==== /BEUK:pagecount ==== */
 
       /* ================= Reading desk =================
          The preview column is a desk, not a pedestal: the frame is
@@ -17789,24 +17873,39 @@
         const w = Math.max(120, Math.min(cap, zw, byHeight));
         frame.style.width = w.toFixed(1) + "px";
       }
-      function deskSignature(w, h) {
+      /* BEUK:pagecount — the signature is the book's content (hashed, so
+         a same-length edit still recounts), the profile and its FIXED
+         reading area, and the web-font generation. It no longer takes
+         the window's box: the (w, h) arguments are ignored. */
+      function pcHash(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+        return (h >>> 0).toString(36);
+      }
+      function deskSignature() {
         let themeJson = "";
         try { themeJson = JSON.stringify(state.theme); } catch (e) { themeJson = ""; }
-        return [state.device, w, h, state.sections.length,
-          state.sections.map((s) => s.id + ":" + (s.content || "").length + ":" + (s.title || "").length + ":" + (s.number || "")).join("|"),
+        const area = deviceReadingArea();
+        return [state.device, area ? area.w + "x" + area.h + (area.twoUp ? "x2" : "") : "none", "f" + pcFontGen, state.sections.length,
+          state.sections.map((s) => s.id + ":" + pcHash(s.content || "") + ":" + (s.content || "").length + ":" + (s.title || "") + ":" + (s.number || "") + ":" + (s.kind || "") + ":" + (s.type || "")).join("|"),
           themeJson, state.meta.title || "", state.meta.author || "",
           state.cover ? "cov" : "", (state.images || []).length
         ].join("~");
       }
       /* Lay one section out in the hidden twin of the page flow, at
-         exactly the visible flow's geometry, and read its page
-         count the way measurePages() reads the visible one. */
+         exactly the visible flow's geometry — BEUK:pagecount: the
+         profile's fixed reading area — and read its page count the way
+         measurePages() reads the visible one. */
       function deskPrepareFlow(w, h) {
         let styleEl = $("bookStyle");
         if (!styleEl) { styleEl = document.createElement("style"); styleEl.id = "bookStyle"; document.head.appendChild(styleEl); styleEl.textContent = buildBookCss(".fc-page"); }
         const holder = $("deskMeasure"), flow = $("deskFlow");
+        /* The measurer lives on <body>, so a hidden preview pane (a phone
+           on the writing tab) still lays it out. */
+        if (holder.parentNode !== document.body) document.body.appendChild(holder);
         holder.style.width = w + "px"; holder.style.height = h + "px";
-        const twoUp = state.device === "ipad";
+        const area = deviceReadingArea();
+        const twoUp = area ? area.twoUp : state.device === "ipad";
         flow.style.width = w + "px";
         flow.style.height = h + "px";
         flow.style.columnWidth = (twoUp ? (w - COL_GAP) / 2 : w) + "px";
@@ -17818,6 +17917,21 @@
       function deskSectionPages(flow, s, w) {
         flow.innerHTML = sectionHtml(s);
         keepOrnamentsWithText(flow); /* BEUK:selfchecks — same repair as the visible flow */
+        return Math.max(1, Math.round(flow.scrollWidth / (w + COL_GAP)));
+      }
+      /* BEUK:pagecount — book pictures carry no width/height, so until
+         one is decoded it lays out at zero height and the count comes
+         out short (measured: the first profile's desk read 109 where
+         the same layout read 111 a second later). Counts wait for them. */
+      function pcPendingImages(el) {
+        return Array.prototype.filter.call(el.querySelectorAll("img"), (im) => !im.complete);
+      }
+      function pcWhenDecoded(imgs) {
+        return Promise.all(imgs.map((im) => (im.decode ? im.decode() : Promise.resolve()).catch(() => {})));
+      }
+      function pcRemeasure(flow, w) {
+        undoOrnamentRepairs(flow);
+        keepOrnamentsWithText(flow);
         return Math.max(1, Math.round(flow.scrollWidth / (w + COL_GAP)));
       }
       /* ==== BEUK:selfchecks ==== */
@@ -17931,15 +18045,21 @@
         return true;
       }
       /* ==== /BEUK:selfchecks ==== */
+      /* BEUK:pagecount — measured at the profile's fixed reading area,
+         never the window's box; null only for a profile without one
+         (the Hardcover, whose pages come from the print engine). */
       function computeDeskCountsSync() {
-        const wrap = $("flowWrap");
-        const w = wrap.clientWidth, h = wrap.clientHeight;
-        if (!w || !h) return null;
-        const flow = deskPrepareFlow(w, h);
+        const area = deviceReadingArea();
+        if (!area) return null;
+        const flow = deskPrepareFlow(area.w, area.h);
         const counts = {};
-        state.sections.forEach((s) => { counts[s.id] = deskSectionPages(flow, s, w); });
+        let provisional = false;
+        state.sections.forEach((s) => { counts[s.id] = deskSectionPages(flow, s, area.w); if (pcPendingImages(flow).length) provisional = true; });
         flow.innerHTML = "";
-        return { counts, total: state.sections.reduce((a, s) => a + (counts[s.id] || 0), 0) };
+        const res = { counts, total: state.sections.reduce((a, s) => a + (counts[s.id] || 0), 0), w: area.w, h: area.h, provisional };
+        /* A count taken before a picture decoded is never cached. */
+        if (!provisional) pcCacheSet(deskSignature(), res);
+        return res;
       }
       const deskState = { counts: {}, total: 0, sig: "" };
       let deskTimer = null;
@@ -17948,13 +18068,15 @@
         deskTimer = setTimeout(updateDesk, typeof delay === "number" ? delay : 450);
       }
       function updateDesk() {
-        const wrap = $("flowWrap"); if (!wrap) return;
-        const w = wrap.clientWidth, h = wrap.clientHeight;
-        if (!w || !h) return;
         renderDeskFacts();
-        const sig = deskSignature(w, h);
+        const area = deviceReadingArea(); /* BEUK:pagecount */
+        if (!area) return;
+        const w = area.w, h = area.h;
+        const sig = deskSignature();
         if (sig === deskState.sig) { renderDeskRailMarks(); return; }
         deskState.sig = sig;
+        const hit = pageCountCache.get(sig);
+        if (hit) { deskState.counts = hit.counts; deskState.total = hit.total; renderDesk(); return; }
         /* Chunked: a long book measures a few sections at a time so
            the desk never stalls the writing. A newer signature
            abandons the run. */
@@ -17968,12 +18090,29 @@
           while (i < sections.length && performance.now() - t0 < 40) {
             const s = sections[i++];
             counts[s.id] = deskSectionPages(flow, s, w);
+            const pend = pcPendingImages(flow); /* BEUK:pagecount */
+            if (pend.length) {
+              const owner = flow.firstChild;
+              pcWhenDecoded(pend).then(() => {
+                if (deskState.sig !== sig) return;
+                /* Another measurement may have used the shared flow
+                   meanwhile: lay the section out again if so. */
+                if (flow.firstChild !== owner) deskSectionPages(flow, s, w);
+                counts[s.id] = pcRemeasure(flow, w);
+                setTimeout(step, 0);
+              });
+              return;
+            }
           }
           if (i < sections.length) { setTimeout(step, 0); return; }
           flow.innerHTML = "";
           deskState.counts = counts;
           deskState.total = sections.reduce((a, s) => a + (counts[s.id] || 0), 0);
+          pcCacheSet(sig, { counts, total: deskState.total, w, h });
           renderDesk();
+          /* The preview's own "Page X of Y" was measured from the same
+             fixed geometry; a hidden pane takes the count from here. */
+          if (!$("flowWrap").clientWidth && counts[state.activeId]) { state.pageCount = counts[state.activeId]; goToPage(state.page, true); }
         })();
       }
       function renderDeskFacts() {
@@ -17991,6 +18130,11 @@
           title: state.meta.title || t("misc.untitledBook"),
           n: deskState.total, device: DEVICE_NAMES[state.device] || state.device
         });
+        /* BEUK:pagecount — say what the estimate was measured at. */
+        const area = deviceReadingArea();
+        if ($("deskBasis")) $("deskBasis").textContent = area
+          ? t("preview.desk.basis", { w: area.w, h: area.h, size: (state.theme && state.theme.fontSize) || 16 })
+          : "";
         const rail = $("deskRail");
         rail.setAttribute("aria-label", t("preview.desk.railLabel"));
         rail.innerHTML = "";
@@ -18040,12 +18184,60 @@
         $("previewSectionName").textContent = t("preview.previewing", { name: (s.kind === "body" ? (s.number ? t("preview.chapterPrefix", { n: s.number }) : "") + (s.title || t("side.untitled")) : s.title) }) + (s.included ? "" : t("preview.excludedSuffix"));
         state.page = 1;
         requestAnimationFrame(() => { measurePages(); goToPage(1, true); });
+        /* BEUK:pagecount — re-count once the section's pictures decode. */
+        const pend = pcPendingImages(flow);
+        if (pend.length) {
+          const owner = flow.firstChild;
+          pcWhenDecoded(pend).then(() => { if (flow.firstChild === owner) { measurePages(); goToPage(state.page, true); } });
+        }
         scheduleDeskUpdate();
         renderDeskRailMarks();
         if (typeof hcOnPreview === "function") hcOnPreview(); /* BEUK:hcpreview */
       }
+      /* ==== BEUK:pagecount ==== */
+      /* The visible preview is laid out at the profile's fixed reading
+         area and drawn scaled to fit the screen, so its "Page X of Y"
+         is the same count the desk shows, at any window size or zoom. */
+      function previewTransform(page) {
+        const wrap = $("flowWrap");
+        const area = deviceReadingArea();
+        if (!area) {
+          wrap.style.clipPath = "";
+          return "translateX(" + (-(page - 1) * (wrap.clientWidth + COL_GAP)) + "px)";
+        }
+        const f = previewFit(area);
+        /* Letterbox: clip to the scaled page so the next column, a gap
+           away, never peeks in. */
+        wrap.style.clipPath = "inset(" + f.oy.toFixed(2) + "px " + f.ox.toFixed(2) + "px)";
+        return "translate(" + f.ox.toFixed(2) + "px, " + f.oy.toFixed(2) + "px) scale(" + f.s.toFixed(5) + ") translateX(" + (-(page - 1) * (area.w + COL_GAP)) + "px)";
+      }
       function measurePages() {
         const wrap = $("flowWrap"), flow = $("pageFlow");
+        const area = deviceReadingArea();
+        if (area) {
+          flow.style.width = area.w + "px";
+          flow.style.height = area.h + "px";
+          flow.style.transformOrigin = "0 0";
+          flow.style.columnWidth = (area.twoUp ? (area.w - COL_GAP) / 2 : area.w) + "px";
+          flow.style.columnGap = COL_GAP + "px";
+          /* Repairs read on-screen boxes: measure unscaled, then put the
+             scaled transform back without animating. */
+          flow.style.transition = "none";
+          flow.style.transform = "none";
+          undoOrnamentRepairs(flow);
+          keepOrnamentsWithText(flow);
+          const total = flow.scrollWidth;
+          if (total) state.pageCount = Math.max(1, Math.round(total / (area.w + COL_GAP)));
+          else {
+            const hit = pageCountCache.get(deskSignature());
+            state.pageCount = (hit && hit.counts[state.activeId]) || 1;
+          }
+          state.page = Math.min(Math.max(1, state.page || 1), state.pageCount);
+          flow.style.transform = previewTransform(state.page);
+          requestAnimationFrame(() => { flow.style.transition = ""; });
+          return;
+        }
+        /* ==== /BEUK:pagecount ==== */
         const w = wrap.clientWidth, h = wrap.clientHeight;
         if (!w || !h) { state.pageCount = 1; return; }
         flow.style.width = w + "px";
@@ -18063,11 +18255,9 @@
       }
       function goToPage(n, instant) {
         state.page = Math.min(Math.max(1, n), state.pageCount);
-        const wrap = $("flowWrap");
-        const step = wrap.clientWidth + COL_GAP;
         const flow = $("pageFlow");
         if (instant) flow.style.transition = "none";
-        flow.style.transform = "translateX(" + (-(state.page - 1) * step) + "px)";
+        flow.style.transform = previewTransform(state.page); /* BEUK:pagecount */
         if (instant) requestAnimationFrame(() => { flow.style.transition = ""; });
         $("pageCounter").textContent = t("preview.pageOf", { page: state.page, count: state.pageCount });
         $("btnPrevPage").disabled = state.page <= 1;
@@ -18114,11 +18304,10 @@
           e.preventDefault(); e.stopPropagation();
           const target = document.getElementById((a.getAttribute("href") || "").slice(1));
           if (!target) return;
-          const wrap = $("flowWrap");
-          const step = wrap.clientWidth + COL_GAP;
-          if (!step) return;
-          const layoutX = target.getBoundingClientRect().left - wrap.getBoundingClientRect().left + (state.page - 1) * step;
-          goToPage(Math.floor(layoutX / step) + 1);
+          /* BEUK:pagecount — the flow is drawn scaled at its fixed
+             reading area: map the target back into layout px. */
+          const pg = previewPageAtX(target.getBoundingClientRect().left);
+          if (pg) goToPage(pg);
         });
         $("deviceScreen").addEventListener("click", (e) => {
           if (e.target.closest && e.target.closest("a")) return;
@@ -18136,7 +18325,10 @@
         });
         let rsz = null;
         window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(120); }, 150); });
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(120); });
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { pcFontGen++; fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(120); });
+        /* BEUK:pagecount — a face that arrives later changes the metrics,
+           so the cached counts for the old metrics no longer apply. */
+        if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => { pcFontGen++; measurePages(); goToPage(state.page, true); scheduleDeskUpdate(120); });
       }
 
       /* ==== BEUK:hcpreview ==== */
@@ -29044,6 +29236,58 @@
               fitDeviceFrame(); measurePages(); applyBookDoc(keepDoc);
             }
           } },
+        /* ==== BEUK:pagecount ==== */
+        { id: "preview.pagecount.fixed-geometry", feature: "preview", name: "Page counts at fixed device geometry: every e-reader profile has a reading area in CSS px from its real screen (source and verified/unverified flags in a data table); the desk's counts and the preview's \"Page X of Y\" come from that area and stay identical while the drawn screen is resized from tiny to large; the copy calls them estimates",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            const zone = $("frameZone"), frame = $("deviceFrame");
+            const keepZone = { flex: zone.style.flex, w: zone.style.width, h: zone.style.height };
+            const keepTrans = frame.style.transition;
+            frame.style.transition = "none";
+            try {
+              applyBookDoc(buildSampleBook());
+              const profiles = Array.from(document.querySelectorAll("#deviceBar .dev-btn")).map((b) => b.getAttribute("data-device")).filter((d) => d !== "hardcover");
+              const tableBad = profiles.filter((d) => {
+                const g = PAGE_GEOMETRY[d], a = deviceReadingArea(d);
+                return !g || !a || !(a.w > 100 && a.h > 100 && a.w < a.cssW && a.h < a.cssH) || !g.screenSrc ||
+                  typeof g.screenVerified !== "boolean" || typeof g.dprVerified !== "boolean" || typeof g.insetVerified !== "boolean";
+              });
+              const sizes = [[150, 190], [300, 420], [440, 640], [720, 1040]];
+              let provisional = false;
+              const bits = [], bad = [];
+              ["kindle", "ipad", "iphone", "android"].forEach((d) => {
+                setDevice(d);
+                let ref = null; const screens = new Set();
+                sizes.forEach(([w, h]) => {
+                  zone.style.flex = "0 0 auto"; zone.style.width = w + "px"; zone.style.height = h + "px";
+                  fitDeviceFrame(); measurePages(); goToPage(1, true);
+                  const sr = $("deviceScreen").getBoundingClientRect();
+                  screens.add(Math.round(sr.width) + "x" + Math.round(sr.height));
+                  const res = computeDeskCountsSync();
+                  const key = res ? JSON.stringify(res.counts) : "null";
+                  if (ref === null) ref = { key, total: res ? res.total : null };
+                  if (!res || key !== ref.key) bad.push(d + "@" + w + "x" + h + " total " + (res && res.total) + " ≠ " + ref.total);
+                  if (res && res.provisional) provisional = true;
+                  if (res && state.pageCount !== res.counts[state.activeId]) bad.push(d + "@" + w + "x" + h + " preview says " + state.pageCount + " of the active section, desk " + res.counts[state.activeId]);
+                });
+                if (screens.size < 3) bad.push(d + ": the drawn screen did not actually change size (" + Array.from(screens).join(", ") + ")");
+                bits.push(d + " " + ref.total + " pages at " + Array.from(screens).join(" / "));
+              });
+              const enTotal = UI_STRINGS.en["preview.desk.totalPlural"] || "";
+              const copyOk = /about/.test(enTotal) && Object.keys(UI_STRINGS).every((p) => typeof UI_STRINGS[p]["preview.desk.basis"] === "string" && UI_STRINGS[p]["preview.desk.basis"].indexOf("{w}") !== -1);
+              return scVerdict(!tableBad.length && !bad.length && copyOk,
+                profiles.length + " profiles in the geometry table (" + (tableBad.length ? "bad rows: " + tableBad.join(", ") : "all rows complete") + "); " + bits.join("; ") +
+                (bad.length ? " — MISMATCH: " + bad.slice(0, 6).join("; ") : " — identical at every size, and the preview's own count of the open section matches the desk") +
+                (provisional ? " (some pictures were still decoding, so these totals are provisional — the desk re-counts once they decode)" : "") + "; estimate copy in all locales (" + copyOk + "); this window " + window.innerWidth + "×" + window.innerHeight + " at devicePixelRatio " + window.devicePixelRatio);
+            } finally {
+              zone.style.flex = keepZone.flex; zone.style.width = keepZone.w; zone.style.height = keepZone.h;
+              frame.style.transition = keepTrans;
+              setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc);
+              fitDeviceFrame(); measurePages();
+            }
+          } },
+        /* ==== /BEUK:pagecount ==== */
         { id: "export.preset.googleplay", feature: "presets", name: "Google Play preset: the eleventh platform preset — the standard validated package with no store-specific files, its own -google-play filename and checklist line; the other ten presets are untouched",
           run() {
             const p = PLATFORM_PRESETS.find((x) => x.id === "googleplay");
@@ -30514,23 +30758,19 @@
               state.activeId = ch.id;
               const sentence = "The tide came in over the mud flats and the gulls rose all at once, crying over the harbour while the ferry sounded its horn twice for the far shore.";
               const fillerPara = (n) => { const w = []; for (let i = 0; i < n; i++) w.push(sentence); return w.join(" "); };
-              const pageOf = (el) => {
-                const wrap = $("flowWrap"); const step = wrap.clientWidth + COL_GAP;
-                if (!step || !el) return 0;
-                const lx = el.getBoundingClientRect().left - wrap.getBoundingClientRect().left + (state.page - 1) * step;
-                return Math.floor(lx / step) + 1;
-              };
+              /* BEUK:pagecount — the preview is the fixed device layout
+                 drawn scaled; previewPageAtX maps a screen x back to its
+                 layout page (the old wrap-width step no longer applies). */
+              const pageOf = (el) => (el ? previewPageAtX(el.getBoundingClientRect().left) : 0);
               /* A paragraph that breaks across pages stands on every
                  page its fragments touch — credit all of them, not
                  just the page it starts on. */
               const pagesOf = (el) => {
-                const wrap = $("flowWrap"); const step = wrap.clientWidth + COL_GAP;
                 const pages = new Set();
-                if (!step || !el) return pages;
-                const wr = wrap.getBoundingClientRect();
+                if (!el) return pages;
                 const rects = el.getClientRects();
                 for (let i = 0; i < rects.length; i++) {
-                  if (rects[i].width > 0) pages.add(Math.floor((rects[i].left - wr.left + (state.page - 1) * step) / step) + 1);
+                  if (rects[i].width > 0) pages.add(previewPageAtX(rects[i].left));
                 }
                 return pages;
               };
