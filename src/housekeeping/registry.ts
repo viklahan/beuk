@@ -4,10 +4,11 @@ import path from 'node:path';
 import type { Config } from '../config.js';
 import { defaultMigrationsDir, type Db } from '../db.js';
 import { fixtureEntries, loadFixtures, type FixtureSet } from './fixtures.js';
-import { pdfRenderProblem } from '../jobs/tools.js';
 import { isUuid } from '../ids.js';
 import { dummyPasswordHash, verifyAgainstDummy } from '../password.js';
 import { TokenBucketLimiter } from '../ratelimit.js';
+import { ghostscriptPdfxArgs, pdfRenderProblem, pdfxIccPath } from '../jobs/tools.js';
+import { inspectPdf } from '../jobs/pdfinspect.js';
 import {
   parseOpf,
   readZip,
@@ -1132,6 +1133,93 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The server runs the job and stores its result; the plain-language rendering is client UI.',
   },
+
+  /* ==== BEUK:store ==== */
+  /* ---- Store-ready? report (KDP + IngramSpark verdict) ---- */
+  {
+    id: 'jobs.pdfx.inspection-reads-facts',
+    title: 'PDF/X results carry an inspection of the converted file: pages, page box, PDF/X declaration, font embedding, RGB left',
+    kind: 'server',
+    run: async () => {
+      const pdf = Buffer.from(
+        '%PDF-1.3\n' +
+          '1 0 obj\n<< /Type /Pages /Kids [2 0 R] /Count 1 /MediaBox [0 0 432 648] >>\nendobj\n' +
+          '2 0 obj\n<< /Type /Page /Parent 1 0 R >>\nendobj\n' +
+          '3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n' +
+          '4 0 obj\n<< /GTS_PDFXVersion (PDF/X-1:2001) /GTS_PDFXConformance (PDF/X-1a:2001) >>\nendobj\n' +
+          'trailer\n<< /Info 4 0 R >>\n%%EOF\n',
+        'latin1',
+      );
+      const r = inspectPdf(pdf);
+      assert(r.pageCount === 1, `expected 1 page, read ${r.pageCount}`);
+      assert(r.firstPage.mediaBox?.w === 6 && r.firstPage.mediaBox?.h === 9, 'expected a 6 × 9 in page box');
+      assert(r.pdfx.conformance === 'PDF/X-1a:2001', 'expected the declared X-1a conformance to be read');
+      assert(r.fontsAllEmbedded === false, 'an unembedded Helvetica must be reported as unembedded, never as embedded');
+      return '1 page, 6 × 9 in, PDF/X-1a:2001 declared, unembedded font reported as unembedded';
+    },
+  },
+  {
+    id: 'jobs.pdfx.safer-permits-icc',
+    title: 'Ghostscript runs under SAFER with read access to exactly the ICC profile the PDF/X definition embeds',
+    kind: 'server',
+    run: async ({ config }) => {
+      const icc = pdfxIccPath(config.pdfxDefPath);
+      assert(icc, `the PDF/X definition at ${config.pdfxDefPath} names no /BeukICCPath`);
+      const args = ghostscriptPdfxArgs(config, '/in.pdf', '/out.pdf');
+      assert(args[0] === '-dSAFER', 'SAFER must be spelled out as the first Ghostscript argument');
+      assert(
+        args.filter((a) => a.startsWith('--permit-file-read')).length === 1 && args.includes(`--permit-file-read=${icc}`),
+        'Ghostscript must permit reading exactly the ICC profile the definition embeds',
+      );
+      assert(!args.includes('-dNOSAFER'), 'SAFER must stay on');
+      const def = await readFile(config.pdfxDefPath, 'latin1');
+      assert(def.includes('/GTS_PDFXConformance (PDF/X-1a:2001)'), 'the definition must declare PDF/X-1a:2001 conformance');
+      return `permit-file-read ${icc}; SAFER on; X-1a conformance declared`;
+    },
+  },
+  {
+    id: 'store.rules.cited-data',
+    title: 'Store-ready: KDP and IngramSpark rules are data tables citing the stores’ own published guides',
+    kind: 'client-only',
+    reason: 'The rules table (STORE_RULES) and the report live in the studio; the server only supplies the PDF/X and EPUBCheck facts.',
+  },
+  {
+    id: 'store.verdict.never-green-unchecked',
+    title: 'Store-ready: a required check that could not run makes the verdict “Can’t confirm”, never “Ready”',
+    kind: 'client-only',
+    reason: 'The verdict is computed in the studio from the rows it rendered; asserted by the client registry.',
+  },
+  {
+    id: 'store.dpi.sample-fails-honestly',
+    title: 'Store-ready: the sample’s full-page paintings fail the 300 DPI rule with their measured DPI',
+    kind: 'client-only',
+    reason: 'Image placement and effective DPI are measured in the studio over the bundled sample.',
+  },
+  {
+    id: 'store.trim.unsupported-fails',
+    title: 'Store-ready: a trim the store does not print fails with a one-click switch to the nearest one it does',
+    kind: 'client-only',
+    reason: 'Trim choice and the one-click fix are studio state.',
+  },
+  {
+    id: 'store.trim.paper-matrix',
+    title: 'Store-ready: IngramSpark trims are checked per paper against its Trim Size Matrix; a blank cell is “not checked” (custom trim) or a fail, never a pass',
+    kind: 'client-only',
+    reason: 'The per-paper trim matrix and the paper choice live in the studio’s STORE_RULES.',
+  },
+  {
+    id: 'store.spine.wrap-matches-store-factor',
+    title: 'Store-ready: the wrap’s spine is checked against the store’s published per-page factor, and the fix makes it pass',
+    kind: 'client-only',
+    reason: 'The cover wrap and its spine math are computed in the studio.',
+  },
+  {
+    id: 'store.report.download-carries-evidence',
+    title: 'Store-ready: the downloaded report carries title, store, trim, pages, date, verdict, every check’s evidence and the sources',
+    kind: 'client-only',
+    reason: 'The report file is generated in the browser.',
+  },
+  /* ==== /BEUK:store ==== */
 
   /* ---- Sample story: the 0 ↔ 25K desk toggle (all client-side) ---- */
   {

@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
+import { inspectPdf, type PdfInspection } from './pdfinspect.js';
 import { epubcheckProblem, pdfRenderProblem, pdfxProblem, renderPrintPdf, runEpubCheck, runPdfx } from './tools.js';
 
 /**
@@ -257,6 +258,17 @@ export class JobRunner {
     // user's archive as a new export (format 'pdfx'), linked to the
     // same manuscript as its source, then point the job at it.
     const bytes = await readFile(outputPath);
+    // Store-ready tie-in: read the converted file's own facts (pages,
+    // boxes, PDF/X declaration, font embedding, RGB leftovers) so the
+    // studio's report states what the file says, not what we hope.
+    let inspection: PdfInspection | { error: string };
+    try {
+      inspection = inspectPdf(bytes);
+    } catch (err) {
+      inspection = {
+        error: `The converted PDF could not be read for inspection: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
     const sha256 = createHash('sha256').update(bytes).digest('hex');
     const base = source.filename.replace(/\.[^.]*$/, '') || 'beuk-export';
     const filename = `${base}-pdfx.pdf`;
@@ -283,6 +295,7 @@ export class JobRunner {
         artifactExportId: artifactId,
         outputBytes: bytes.length,
         outputSha256: sha256,
+        inspection,
       },
       artifactId,
     );

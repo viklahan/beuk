@@ -344,6 +344,21 @@ test('pdfx job on a print interior renders HTML to PDF first, then archives the 
   assert.equal(result.gsVersion, '9.99-stub');
   assert.equal(result.artifactExportId, job.artifactExportId);
   assert.equal(result.renderedPdfBytes, FAKE_RENDERED_PDF.length);
+  // Store-ready tie-in: the converted file's own facts ride the result.
+  // The stub "conversion" is a bare PDF with no pages, no fonts and no
+  // PDF/X declaration — and the inspection says exactly that.
+  const inspection = result.inspection as {
+    headerVersion: string | null;
+    pageCount: number;
+    pdfx: { version: string | null; outputIntent: boolean };
+    fontsAllEmbedded: boolean | null;
+  };
+  assert.ok(inspection, 'pdfx results carry an inspection of the converted file');
+  assert.equal(inspection.headerVersion, '1.4');
+  assert.equal(inspection.pageCount, 0);
+  assert.equal(inspection.pdfx.version, null);
+  assert.equal(inspection.pdfx.outputIntent, false);
+  assert.equal(inspection.fontsAllEmbedded, null);
 
   // The output is a real archive citizen: listed, downloadable, and —
   // crucially — a PDF produced by the rendition step, not the source
