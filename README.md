@@ -1,5 +1,4 @@
-# Beuk SaaS — server
-
+# Beuk 
 The server side of Beuk (the browser-based EPUB typesetting studio),
 built milestone by milestone per `../goals/beuk-saas-launch/files/phase-two-saas-plan.md`.
 
