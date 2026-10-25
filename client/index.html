@@ -428,6 +428,40 @@
       #sceneBarLabel { flex: 1 1 auto; min-width: 140px; }
       #sceneBarLabel b { color: var(--ink); }
       #sceneBarThumb { width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line-2); flex: 0 0 auto; }
+      /* ==== BEUK:dictlang ==== */
+      /* The language bar: a calm, dismissible line under the toolbar.
+         It appears only when there is something to say — the language
+         dictation is listening in, or a suggestion read from the TEXT
+         (never from the voice: the browser cannot tell which language
+         is being spoken). Nothing here switches anything by itself. */
+      #langBar {
+        display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin: 10px 0 2px; padding: 7px 10px 7px 12px; border: 1px solid var(--line-2);
+        border-radius: 10px; background: var(--panel-2); font-size: 12.5px; color: var(--ink-2);
+      }
+      #langBar.open { display: flex; }
+      #langBar .lb-ic { display: inline-flex; color: var(--accent); flex: 0 0 auto; }
+      #langBar .lb-ic svg { width: 14px; height: 14px; }
+      #langBar .lb-text { flex: 1 1 220px; min-width: 0; line-height: 1.45; }
+      #langBar .lb-text b { color: var(--ink); font-weight: 600; }
+      #langBar .lb-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+      #langBar .tb-btn { padding: 5px 10px; font-size: 12px; border: 1px solid var(--line-2); }
+      #langBar .tb-btn.primary { border-color: transparent; }
+      #dictPop .dp-langs { margin-top: 11px; }
+      #dictPop .dp-lab { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+      #dictPop .dp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+      #dictPop .dp-chip {
+        font: inherit; font-size: 12px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+        border: 1px solid var(--line-2); background: transparent; color: var(--ink-2);
+      }
+      #dictPop .dp-chip[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+      #dictPop .dp-chip:hover { border-color: var(--muted); }
+      #dictPop #dictLangSel { margin-top: 8px; width: 100%; box-sizing: border-box; font-size: 12.5px; }
+      #dictPop .dp-honest { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 8px 0 0; }
+      #raLangSug { margin: 8px 0 0; font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+      #raLangSug[hidden] { display: none; }
+      #raLangSug .tb-btn { margin-top: 6px; padding: 5px 10px; font-size: 12px; border: 1px solid var(--line-2); }
+      /* ==== /BEUK:dictlang ==== */
       .scene-suggest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 8px; }
       #editorArea {
         width: 100%; min-height: 430px; resize: vertical; border: 1px solid var(--line-2); border-radius: 10px;
@@ -1758,7 +1792,7 @@
                 <span class="tool-sep" aria-hidden="true"></span>
                 <button class="tool-btn" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n="tool.footnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i>Footnote</button>
                 <button class="tool-btn" id="btnInsertImage" title="Insert a picture from the book's image library" data-i18n="tool.insertImage" data-i18n-title="tool.insertImageTitle"><i data-lucide="image-plus"></i>Insert Image</button>
-                <button class="tool-btn" id="btnDictate" aria-pressed="false" title="Dictate — speak, and your words land at the cursor" data-i18n-title="dict.titleIdle"><i data-lucide="mic"></i><span id="dictBtnLabel" data-i18n="dict.label">Dictate</span></button>
+                <button class="tool-btn" id="btnDictate" aria-pressed="false" title="Dictate — speak, and your words land at the cursor" data-i18n-title="dict.titleIdleLang"><i data-lucide="mic"></i><span id="dictBtnLabel" data-i18n="dict.label">Dictate</span></button>
                 <button class="tool-btn accent" id="btnBeautify" style="margin-left:auto;" title="Polish the text — smart quotes, em-dashes, ellipses" data-i18n="tool.autoFormat" data-i18n-title="tool.autoFormatTitle"><i data-lucide="wand-sparkles"></i>Auto-Format</button>
                 <div class="focus-cluster">
                   <span class="tool-sep" aria-hidden="true"></span>
@@ -1774,6 +1808,7 @@
                       <label class="ra-voice-lab" for="raVoice" data-i18n="ra.voice">Voice</label>
                       <select class="txt-input" id="raVoice"></select>
                       <p class="ra-note" id="raNote" hidden></p>
+                      <div id="raLangSug" hidden></div>
                     </div>
                   </div>
                   <button class="tool-btn" id="btnZen" aria-label="Zen mode — hide everything but the page"><i data-lucide="leaf"></i><span data-i18n="top.zen">Zen</span></button>
@@ -1786,6 +1821,7 @@
                 <button class="tb-btn" id="btnSceneAdd" type="button"><i data-lucide="image-plus"></i><span id="sceneAddLabel">Add scene image</span></button>
                 <button class="tb-btn" id="btnSceneRemove" type="button" style="display:none;"><i data-lucide="trash-2"></i><span data-i18n="scene.remove">Remove</span></button>
               </div>
+              <div id="langBar" role="status" aria-live="polite"></div>
               <div id="editorWordBar" aria-live="polite"><span id="edSecWords"></span><span aria-hidden="true">·</span><span id="edBookWords"></span></div>
               <div id="genEditor" style="display:none;"></div>
               <textarea id="editorArea" spellcheck="true" aria-label="Chapter content" placeholder="Start writing…" data-i18n-ph="editor.placeholder"></textarea>
@@ -6943,6 +6979,192 @@
         "dict.errGeneric": "听写意外停止了。",
         "dict.errAuto": "这一页是自动生成的 — 请打开一个已写好的章节再听写。"
       });
+
+      /* ==== BEUK:dictlang ==== Dictation language picker + text-based language suggestions — assigned per pack so completeness holds.
+         Non-English copy was written by an agent and has NOT been checked by a native speaker yet. */
+      Object.assign(UI_STRINGS.en, {
+        "dict.titleIdleLang": "Dictate — speak, and your words land at the cursor. Right-click (or long-press) to choose the language.",
+        "dict.hearChosen": "Listening in {lang} — the language you chose for this book.",
+        "dict.langLabel": "Listen in", "dict.langBook": "book", "dict.langMore": "More languages…",
+        "dict.noAutoDetect": "Your browser listens for one language at a time and cannot tell which language you are speaking, so choose it here. Beuk can only read your text and suggest a switch.",
+        "dict.barListening": "Dictation is listening in {lang}.", "dict.langChange": "Change language",
+        "langsug.section": "This section looks {lang} — dictate in {lang}?",
+        "langsug.dictYes": "Dictate in {lang}",
+        "langsug.book": "This manuscript reads as {lang}, but the book's language is set to {book}. The book's language drives hyphenation, quotation marks and Read Aloud.",
+        "langsug.bookYes": "Set the book to {lang}", "langsug.dictOnly": "Only dictate in {lang}",
+        "langsug.notNow": "Not now", "langsug.bookDone": "Book language set to {lang}",
+        "ra.langSug": "This section looks {lang}, not the book's language.",
+        "ra.langUse": "Read it with a {lang} voice", "ra.langUsing": "Reading this section in {lang}.", "ra.langBook": "Back to {lang}"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "dict.titleIdleLang": "Dictar — habla y tus palabras aparecerán en el cursor. Clic derecho (o pulsación larga) para elegir el idioma.",
+        "dict.hearChosen": "Escuchando en {lang}, el idioma que elegiste para este libro.",
+        "dict.langLabel": "Escuchar en", "dict.langBook": "libro", "dict.langMore": "Más idiomas…",
+        "dict.noAutoDetect": "Tu navegador escucha un solo idioma a la vez y no puede saber en qué idioma hablas, así que elígelo aquí. Beuk solo puede leer tu texto y sugerir un cambio.",
+        "dict.barListening": "El dictado está escuchando en {lang}.", "dict.langChange": "Cambiar idioma",
+        "langsug.section": "Esta sección parece estar en {lang}. ¿Dictar en {lang}?",
+        "langsug.dictYes": "Dictar en {lang}",
+        "langsug.book": "Este manuscrito parece estar en {lang}, pero el idioma del libro es {book}. El idioma del libro determina la división de palabras, las comillas y la lectura en voz alta.",
+        "langsug.bookYes": "Poner el libro en {lang}", "langsug.dictOnly": "Solo dictar en {lang}",
+        "langsug.notNow": "Ahora no", "langsug.bookDone": "Idioma del libro: {lang}",
+        "ra.langSug": "Esta sección parece estar en {lang}, no en el idioma del libro.",
+        "ra.langUse": "Leerla con una voz en {lang}", "ra.langUsing": "Leyendo esta sección en {lang}.", "ra.langBook": "Volver a {lang}"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "dict.titleIdleLang": "Dicter — parlez, et vos mots arrivent au curseur. Clic droit (ou appui long) pour choisir la langue.",
+        "dict.hearChosen": "Écoute en {lang} — la langue choisie pour ce livre.",
+        "dict.langLabel": "Écouter en", "dict.langBook": "livre", "dict.langMore": "Autres langues…",
+        "dict.noAutoDetect": "Votre navigateur écoute une seule langue à la fois et ne peut pas savoir dans quelle langue vous parlez : choisissez-la ici. Beuk peut seulement lire votre texte et suggérer un changement.",
+        "dict.barListening": "La dictée écoute en {lang}.", "dict.langChange": "Changer de langue",
+        "langsug.section": "Cette section semble être en {lang} — dicter en {lang} ?",
+        "langsug.dictYes": "Dicter en {lang}",
+        "langsug.book": "Ce manuscrit semble être en {lang}, mais la langue du livre est {book}. La langue du livre détermine la césure, les guillemets et la lecture à voix haute.",
+        "langsug.bookYes": "Passer le livre en {lang}", "langsug.dictOnly": "Dicter seulement en {lang}",
+        "langsug.notNow": "Pas maintenant", "langsug.bookDone": "Langue du livre : {lang}",
+        "ra.langSug": "Cette section semble être en {lang}, pas dans la langue du livre.",
+        "ra.langUse": "La lire avec une voix en {lang}", "ra.langUsing": "Lecture de cette section en {lang}.", "ra.langBook": "Revenir à : {lang}"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "dict.titleIdleLang": "Diktieren — sprechen Sie, und Ihre Worte landen am Cursor. Rechtsklick (oder lange drücken), um die Sprache zu wählen.",
+        "dict.hearChosen": "Hört auf {lang} — die Sprache, die Sie für dieses Buch gewählt haben.",
+        "dict.langLabel": "Hören auf", "dict.langBook": "Buch", "dict.langMore": "Weitere Sprachen…",
+        "dict.noAutoDetect": "Ihr Browser hört jeweils nur eine Sprache und kann nicht erkennen, welche Sprache Sie sprechen — wählen Sie sie deshalb hier. Beuk kann nur Ihren Text lesen und einen Wechsel vorschlagen.",
+        "dict.barListening": "Das Diktat hört auf {lang}.", "dict.langChange": "Sprache ändern",
+        "langsug.section": "Dieser Abschnitt scheint auf {lang} zu sein — auf {lang} diktieren?",
+        "langsug.dictYes": "Auf {lang} diktieren",
+        "langsug.book": "Dieses Manuskript liest sich wie {lang}, aber als Buchsprache ist {book} eingestellt. Die Buchsprache bestimmt Silbentrennung, Anführungszeichen und Vorlesen.",
+        "langsug.bookYes": "Buch auf {lang} stellen", "langsug.dictOnly": "Nur auf {lang} diktieren",
+        "langsug.notNow": "Nicht jetzt", "langsug.bookDone": "Buchsprache: {lang}",
+        "ra.langSug": "Dieser Abschnitt scheint auf {lang} zu sein, nicht in der Buchsprache.",
+        "ra.langUse": "Mit einer Stimme für {lang} vorlesen", "ra.langUsing": "Dieser Abschnitt wird auf {lang} vorgelesen.", "ra.langBook": "Zurück zu {lang}"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "dict.titleIdleLang": "Detta — parla e le tue parole arrivano al cursore. Clic destro (o pressione prolungata) per scegliere la lingua.",
+        "dict.hearChosen": "In ascolto in {lang} — la lingua che hai scelto per questo libro.",
+        "dict.langLabel": "Ascolta in", "dict.langBook": "libro", "dict.langMore": "Altre lingue…",
+        "dict.noAutoDetect": "Il browser ascolta una sola lingua alla volta e non può capire in quale lingua stai parlando, quindi sceglila qui. Beuk può solo leggere il tuo testo e suggerire un cambio.",
+        "dict.barListening": "La dettatura è in ascolto in {lang}.", "dict.langChange": "Cambia lingua",
+        "langsug.section": "Questa sezione sembra in {lang} — dettare in {lang}?",
+        "langsug.dictYes": "Detta in {lang}",
+        "langsug.book": "Questo manoscritto sembra in {lang}, ma la lingua del libro è impostata su {book}. La lingua del libro determina sillabazione, virgolette e lettura ad alta voce.",
+        "langsug.bookYes": "Imposta il libro in {lang}", "langsug.dictOnly": "Detta solo in {lang}",
+        "langsug.notNow": "Non ora", "langsug.bookDone": "Lingua del libro: {lang}",
+        "ra.langSug": "Questa sezione sembra in {lang}, non nella lingua del libro.",
+        "ra.langUse": "Leggila con una voce in {lang}", "ra.langUsing": "Lettura di questa sezione in {lang}.", "ra.langBook": "Torna a {lang}"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "dict.titleIdleLang": "Ditar — fale e as suas palavras aparecem no cursor. Clique com o botão direito (ou toque longo) para escolher o idioma.",
+        "dict.hearChosen": "A ouvir em {lang} — o idioma que escolheu para este livro.",
+        "dict.langLabel": "Ouvir em", "dict.langBook": "livro", "dict.langMore": "Mais idiomas…",
+        "dict.noAutoDetect": "O seu navegador ouve um idioma de cada vez e não consegue saber em que idioma está a falar, por isso escolha-o aqui. O Beuk só consegue ler o seu texto e sugerir uma mudança.",
+        "dict.barListening": "O ditado está a ouvir em {lang}.", "dict.langChange": "Mudar de idioma",
+        "langsug.section": "Esta secção parece estar em {lang} — ditar em {lang}?",
+        "langsug.dictYes": "Ditar em {lang}",
+        "langsug.book": "Este manuscrito parece estar em {lang}, mas o idioma do livro está definido como {book}. O idioma do livro determina a hifenização, as aspas e a leitura em voz alta.",
+        "langsug.bookYes": "Definir o livro em {lang}", "langsug.dictOnly": "Ditar só em {lang}",
+        "langsug.notNow": "Agora não", "langsug.bookDone": "Idioma do livro: {lang}",
+        "ra.langSug": "Esta secção parece estar em {lang}, não no idioma do livro.",
+        "ra.langUse": "Lê-la com uma voz em {lang}", "ra.langUsing": "A ler esta secção em {lang}.", "ra.langBook": "Voltar a {lang}"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "dict.titleIdleLang": "Dicteren — spreek, en je woorden komen bij de cursor. Klik met rechts (of houd lang ingedrukt) om de taal te kiezen.",
+        "dict.hearChosen": "Luistert in het {lang} — de taal die je voor dit boek hebt gekozen.",
+        "dict.langLabel": "Luisteren in", "dict.langBook": "boek", "dict.langMore": "Meer talen…",
+        "dict.noAutoDetect": "Je browser luistert naar één taal tegelijk en kan niet horen welke taal je spreekt — kies die dus hier. Beuk kan alleen je tekst lezen en een wissel voorstellen.",
+        "dict.barListening": "Dicteren luistert in het {lang}.", "dict.langChange": "Taal wijzigen",
+        "langsug.section": "Dit deel lijkt {lang} — dicteren in het {lang}?",
+        "langsug.dictYes": "Dicteren in het {lang}",
+        "langsug.book": "Dit manuscript leest als {lang}, maar de taal van het boek staat op {book}. De boektaal bepaalt woordafbreking, aanhalingstekens en Voorlezen.",
+        "langsug.bookYes": "Boek op {lang} zetten", "langsug.dictOnly": "Alleen dicteren in het {lang}",
+        "langsug.notNow": "Niet nu", "langsug.bookDone": "Boektaal: {lang}",
+        "ra.langSug": "Dit deel lijkt {lang}, niet de taal van het boek.",
+        "ra.langUse": "Voorlezen met een stem voor {lang}", "ra.langUsing": "Dit deel wordt in het {lang} voorgelezen.", "ra.langBook": "Terug naar {lang}"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "dict.titleIdleLang": "Dyktuj — mów, a słowa pojawią się przy kursorze. Kliknij prawym przyciskiem (lub przytrzymaj), aby wybrać język.",
+        "dict.hearChosen": "Słucha w języku: {lang} — wybranym dla tej książki.",
+        "dict.langLabel": "Słuchaj w języku", "dict.langBook": "książka", "dict.langMore": "Więcej języków…",
+        "dict.noAutoDetect": "Przeglądarka słucha naraz tylko jednego języka i nie rozpozna, w jakim języku mówisz — wybierz go tutaj. Beuk może jedynie czytać Twój tekst i zaproponować zmianę.",
+        "dict.barListening": "Dyktowanie słucha w języku: {lang}.", "dict.langChange": "Zmień język",
+        "langsug.section": "Ta sekcja wygląda na napisaną w języku: {lang}. Dyktować w tym języku?",
+        "langsug.dictYes": "Dyktuj w języku: {lang}",
+        "langsug.book": "Ten rękopis wygląda na napisany w języku: {lang}, ale język książki to {book}. Język książki decyduje o dzieleniu wyrazów, cudzysłowach i czytaniu na głos.",
+        "langsug.bookYes": "Ustaw język książki: {lang}", "langsug.dictOnly": "Tylko dyktuj w języku: {lang}",
+        "langsug.notNow": "Nie teraz", "langsug.bookDone": "Język książki: {lang}",
+        "ra.langSug": "Ta sekcja wygląda na napisaną w języku: {lang}, a nie w języku książki.",
+        "ra.langUse": "Czytaj głosem w języku: {lang}", "ra.langUsing": "Ta sekcja jest czytana w języku: {lang}.", "ra.langBook": "Wróć do języka: {lang}"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "dict.titleIdleLang": "Диктовка — говорите, и слова появятся у курсора. Щелчок правой кнопкой (или долгое нажатие) — выбрать язык.",
+        "dict.hearChosen": "Слушаю на языке: {lang} — вы выбрали его для этой книги.",
+        "dict.langLabel": "Слушать на языке", "dict.langBook": "книга", "dict.langMore": "Другие языки…",
+        "dict.noAutoDetect": "Браузер слушает только один язык за раз и не может определить, на каком языке вы говорите, поэтому выберите его здесь. Beuk может лишь читать ваш текст и предложить переключение.",
+        "dict.barListening": "Диктовка слушает на языке: {lang}.", "dict.langChange": "Сменить язык",
+        "langsug.section": "Похоже, этот раздел на языке: {lang}. Диктовать на нём?",
+        "langsug.dictYes": "Диктовать: {lang}",
+        "langsug.book": "Похоже, рукопись написана на языке: {lang}, но язык книги — {book}. Язык книги определяет переносы, кавычки и чтение вслух.",
+        "langsug.bookYes": "Язык книги: {lang}", "langsug.dictOnly": "Только диктовать: {lang}",
+        "langsug.notNow": "Не сейчас", "langsug.bookDone": "Язык книги изменён: {lang}",
+        "ra.langSug": "Похоже, этот раздел на языке: {lang}, а не на языке книги.",
+        "ra.langUse": "Читать голосом: {lang}", "ra.langUsing": "Этот раздел читается на языке: {lang}.", "ra.langBook": "Вернуться: {lang}"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "dict.titleIdleLang": "Dikte — konuşun, sözcükleriniz imlecin olduğu yere gelsin. Dili seçmek için sağ tıklayın (veya uzun basın).",
+        "dict.hearChosen": "{lang} dinleniyor — bu kitap için seçtiğiniz dil.",
+        "dict.langLabel": "Dinleme dili", "dict.langBook": "kitap", "dict.langMore": "Daha fazla dil…",
+        "dict.noAutoDetect": "Tarayıcınız aynı anda tek bir dili dinler ve hangi dilde konuştuğunuzu anlayamaz; bu yüzden dili burada seçin. Beuk yalnızca metninizi okuyup bir geçiş önerebilir.",
+        "dict.barListening": "Dikte {lang} dinliyor.", "dict.langChange": "Dili değiştir",
+        "langsug.section": "Bu bölüm {lang} gibi görünüyor — {lang} dikte edilsin mi?",
+        "langsug.dictYes": "Dikte dili: {lang}",
+        "langsug.book": "Bu metin {lang} gibi görünüyor, ancak kitabın dili {book} olarak ayarlı. Kitabın dili heceleme, tırnak işaretleri ve Sesli Okuma'yı belirler.",
+        "langsug.bookYes": "Kitap dilini {lang} yap", "langsug.dictOnly": "Yalnızca dikte: {lang}",
+        "langsug.notNow": "Şimdi değil", "langsug.bookDone": "Kitap dili: {lang}",
+        "ra.langSug": "Bu bölüm kitabın dilinde değil, {lang} gibi görünüyor.",
+        "ra.langUse": "{lang} bir sesle oku", "ra.langUsing": "Bu bölüm {lang} okunuyor.", "ra.langBook": "Geri dön: {lang}"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "dict.titleIdleLang": "إملاء — تكلّم وستظهر كلماتك عند المؤشر. انقر بزر الفأرة الأيمن (أو اضغط مطوّلًا) لاختيار اللغة.",
+        "dict.hearChosen": "الاستماع بلغة {lang} — اللغة التي اخترتها لهذا الكتاب.",
+        "dict.langLabel": "الاستماع بلغة", "dict.langBook": "الكتاب", "dict.langMore": "لغات أخرى…",
+        "dict.noAutoDetect": "يستمع متصفحك إلى لغة واحدة في كل مرة ولا يستطيع معرفة اللغة التي تتكلم بها، لذا اخترها هنا. لا يستطيع Beuk إلا قراءة نصّك واقتراح التبديل.",
+        "dict.barListening": "الإملاء يستمع بلغة {lang}.", "dict.langChange": "تغيير اللغة",
+        "langsug.section": "يبدو أن هذا القسم مكتوب بلغة {lang} — هل تريد الإملاء بلغة {lang}؟",
+        "langsug.dictYes": "الإملاء بلغة {lang}",
+        "langsug.book": "يبدو أن هذه المخطوطة مكتوبة بلغة {lang}، لكن لغة الكتاب مضبوطة على {book}. لغة الكتاب تحدد تقسيم الكلمات وعلامات الاقتباس والقراءة بصوت عالٍ.",
+        "langsug.bookYes": "اجعل لغة الكتاب {lang}", "langsug.dictOnly": "الإملاء فقط بلغة {lang}",
+        "langsug.notNow": "ليس الآن", "langsug.bookDone": "أصبحت لغة الكتاب {lang}",
+        "ra.langSug": "يبدو أن هذا القسم مكتوب بلغة {lang}، لا بلغة الكتاب.",
+        "ra.langUse": "اقرأه بصوت بلغة {lang}", "ra.langUsing": "يُقرأ هذا القسم بلغة {lang}.", "ra.langBook": "العودة إلى {lang}"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "dict.titleIdleLang": "音声入力 — 話すと、言葉がカーソル位置に入ります。右クリック(または長押し)で言語を選べます。",
+        "dict.hearChosen": "{lang}で聞き取り中 — この本のために選んだ言語です。",
+        "dict.langLabel": "聞き取る言語", "dict.langBook": "本の言語", "dict.langMore": "ほかの言語…",
+        "dict.noAutoDetect": "ブラウザは一度に一つの言語しか聞き取れず、あなたが何語で話しているかを判別できません。ここで言語を選んでください。Beuk にできるのは、文章を読んで切り替えを提案することだけです。",
+        "dict.barListening": "音声入力は{lang}で聞き取っています。", "dict.langChange": "言語を変更",
+        "langsug.section": "このセクションは{lang}のようです — {lang}で音声入力しますか?",
+        "langsug.dictYes": "{lang}で音声入力",
+        "langsug.book": "この原稿は{lang}のようですが、本の言語は{book}に設定されています。本の言語はハイフネーション、引用符、読み上げを左右します。",
+        "langsug.bookYes": "本の言語を{lang}にする", "langsug.dictOnly": "音声入力だけ{lang}にする",
+        "langsug.notNow": "今はしない", "langsug.bookDone": "本の言語を{lang}にしました",
+        "ra.langSug": "このセクションは本の言語ではなく、{lang}のようです。",
+        "ra.langUse": "{lang}の音声で読む", "ra.langUsing": "このセクションを{lang}で読み上げています。", "ra.langBook": "{lang}に戻す"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "dict.titleIdleLang": "听写 — 开口说,文字会落在光标处。右键单击(或长按)可选择语言。",
+        "dict.hearChosen": "正在用{lang}聆听 — 这是您为这本书选择的语言。",
+        "dict.langLabel": "聆听语言", "dict.langBook": "本书语言", "dict.langMore": "更多语言…",
+        "dict.noAutoDetect": "浏览器一次只能聆听一种语言,无法分辨您在说哪种语言,所以请在这里选择。Beuk 只能读取您的文字并建议切换。",
+        "dict.barListening": "听写正在用{lang}聆听。", "dict.langChange": "更改语言",
+        "langsug.section": "这一节看起来是{lang} — 要用{lang}听写吗?",
+        "langsug.dictYes": "用{lang}听写",
+        "langsug.book": "这份书稿看起来是{lang},但本书语言设置为{book}。本书语言决定断字、引号和朗读。",
+        "langsug.bookYes": "把本书语言设为{lang}", "langsug.dictOnly": "只用{lang}听写",
+        "langsug.notNow": "暂不", "langsug.bookDone": "本书语言已设为{lang}",
+        "ra.langSug": "这一节看起来是{lang},而不是本书的语言。",
+        "ra.langUse": "用{lang}语音朗读", "ra.langUsing": "正在用{lang}朗读这一节。", "ra.langBook": "改回{lang}"
+      });
+      /* ==== /BEUK:dictlang ==== */
 
       /* Scene images (art anchored at a chapter's scene breaks) — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {
@@ -13168,7 +13390,8 @@
         printOmitBlankHead: true,
         printFolio: "centre",
         goals: { daily: 0, project: 0, deadline: "" },
-        history: []
+        history: [],
+        dictation: { lang: "", recent: [] } /* BEUK:dictlang — the dictation language the writer picked for this book ("" = follow the book) */
       };
 
       /* ================= Platform export presets =================
@@ -15603,6 +15826,7 @@
         if (id !== state.activeId && typeof dictDiscard === "function") dictDiscard();
         state.activeId = id;
         renderSidebar(); syncEditor(); renderPreview();
+        if (typeof langBarRefresh === "function") langBarRefresh(); /* BEUK:dictlang */
         if (window.innerWidth < 1024) setMobilePane("center");
       }
       /* ================= Section type (retype) =================
@@ -24648,7 +24872,9 @@
           history: (state.history || []).slice(),
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
-          audio: acxNormalize(state.audio)
+          audio: acxNormalize(state.audio),
+          /* BEUK:dictlang — the dictation language picked for this book, and its recent picks */
+          dictation: dictNormalize(state.dictation)
         };
       }
       function applyBookDoc(doc) {
@@ -24727,12 +24953,15 @@
         state.importReport = normalizeImportReport(doc.importReport);
         /* BEUK:acx — a book's audio plan is its own: one without it starts clean. */
         state.audio = acxNormalize(doc.audio);
+        /* BEUK:dictlang — the dictation language belongs to the book: one without it follows its own language. */
+        state.dictation = dictNormalize(doc.dictation);
         state.page = 1;
         const isBox = $("importSummary"); if (isBox) isBox.style.display = "none";
         renderSidebar(); syncEditor(); renderStudio(); syncStudioControls();
         renderPreview(); updateStats(); refreshExportTree(); renderCoverSettings();
         if (typeof localMarkDirty === "function") localMarkDirty(false); /* BEUK:local — a whole book arrived: save it */
         if (typeof irSyncReopen === "function") irSyncReopen();
+        if (typeof langSugReset === "function") langSugReset(); /* BEUK:dictlang */
         return true;
       }
 
@@ -31712,11 +31941,13 @@
             '<span class="zs-ic" style="display:inline-flex;">' + ZEN_SND_OFF + '</span><span data-i18n="zen.sound">' + esc(t("zen.sound")) + '</span></button>' +
             '<button id="btnZenScenes" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-aria="zen.scene.pick" aria-label="' + esc(t("zen.scene.pick")) + '" title="' + esc(t("zen.scene.pick")) + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>' +
-            '<button id="btnZenDictate" type="button" aria-pressed="false" data-i18n-aria="dict.title" aria-label="' + esc(t("dict.title")) + '" title="' + esc(t("dict.titleIdle")) + '">' +
+            '<button id="btnZenDictate" type="button" aria-pressed="false" data-i18n-aria="dict.title" aria-label="' + esc(t("dict.title")) + '" title="' + esc(t("dict.titleIdleLang")) + '">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>' +
             '<span class="zd-label" data-i18n="dict.label">' + esc(t("dict.label")) + '</span></button>';
           document.body.appendChild(cluster);
           $("btnZenDictate").addEventListener("click", () => { if (typeof dictToggle === "function") dictToggle($("btnZenDictate")); });
+          /* BEUK:dictlang — right-click / long-press: choose the dictation language */
+          $("btnZenDictate").addEventListener("contextmenu", (e) => { if (typeof dictOpenLangPicker === "function") { e.preventDefault(); dictOpenLangPicker($("btnZenDictate")); } });
           if (typeof dictSyncUi === "function") dictSyncUi();
           $("btnZenSound").addEventListener("click", () => {
             if (zenSound.playing) { zenSoundStop(); zenSoundSetPref(false); zenSoundSyncBtn(); }
@@ -32317,14 +32548,21 @@
          plus every installed voice for the book's language, and says
          so plainly when this device has none. Reading stops on Stop,
          on switching sections, and when another book takes the desk. */
-      const ra = { status: "idle", chunks: [], idx: 0, sectionId: null, session: 0, voiceSel: "" };
+      const ra = { status: "idle", chunks: [], idx: 0, sectionId: null, session: 0, voiceSel: "", langFor: {}, sugDismissed: {} };
       function raSupported() { return typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function"; }
       function raAllVoices() {
         if (!raSupported()) return [];
         try { return window.speechSynthesis.getVoices() || []; } catch (e) { return []; }
       }
+      /* BEUK:dictlang — the language this section is read in: the book's,
+         unless the writer accepted a section-language suggestion. */
+      function raLang() {
+        const s = activeSection();
+        const o = s && ra.langFor ? ra.langFor[s.id] : "";
+        return o && LANG_PACKS[o] ? o : bookLang();
+      }
       function raLangVoices() {
-        const prim = String(bookLang() || "en").toLowerCase().split("-")[0];
+        const prim = String(raLang() || "en").toLowerCase().split("-")[0];
         return raAllVoices().filter((v) => String(v.lang || "").toLowerCase().replace(/_/g, "-").split("-")[0] === prim);
       }
       const RA_FEMALE_NAMES = ["zira", "samantha", "victoria", "karen", "moira", "tessa", "fiona", "veena", "serena", "allison", "ava", "susan", "aria", "jenny", "michelle", "neerja", "swara", "katja", "denise", "elvira", "elsa", "francisca", "colette", "zofia", "svetlana", "emel", "nanami", "xiaoxiao", "alice", "amelie", "anna", "petra", "monica", "angelica", "luciana", "joana", "catarina", "ines", "milena", "ekaterina", "lekha", "kyoko", "tingting", "ting-ting", "sin-ji", "mei-jia", "yuna", "zuzana", "ida", "christel", "sofia", "helena", "laura", "marta", "paulina", "dalia", "larissa", "carmen"];
@@ -32339,7 +32577,7 @@
       }
       function raSuggested(voices) {
         const list = voices || raLangVoices();
-        const exact = String(bookLang() || "").toLowerCase();
+        const exact = String(raLang() || "").toLowerCase();
         const pick = (gender) => {
           const cands = list.filter((v) => raGenderOf(v) === gender);
           if (!cands.length) return null;
@@ -32402,7 +32640,7 @@
         const chunk = ra.chunks[ra.idx];
         if (chunk == null) { raFinish(); return; }
         const u = new window.SpeechSynthesisUtterance(chunk);
-        u.lang = bookLang();
+        u.lang = raLang();
         const v = raChosenVoice();
         if (v) u.voice = v;
         u.onend = () => {
@@ -32466,11 +32704,12 @@
         }
         const voices = raLangVoices();
         if (!voices.length) {
-          const pack = LANG_PACKS[bookLang()] || {};
+          const pack = LANG_PACKS[raLang()] || {};
           sel.innerHTML = ""; sel.disabled = true;
-          note.textContent = t("ra.noVoices", { lang: pack.native || bookLang() });
+          note.textContent = t("ra.noVoices", { lang: pack.native || raLang() });
           note.hidden = false;
           if (play) play.disabled = true;
+          raLangSugRender(); /* BEUK:dictlang */
           return;
         }
         note.hidden = true;
@@ -32491,6 +32730,7 @@
           : (sug.female ? "gender:female" : (sug.male ? "gender:male" : "voice:" + voices[0].voiceURI));
         sel.value = wanted;
         ra.voiceSel = wanted;
+        raLangSugRender(); /* BEUK:dictlang */
       }
       function raSyncUi() {
         const play = $("raPlay"), pause = $("raPause"), stop = $("raStop"),
@@ -32596,9 +32836,12 @@
       function dictSupported() { return !!dictCtor(); }
       function dictLangInfo() {
         const book = bookLang();
-        if (DICT_LANGS[book]) return { lang: DICT_LANGS[book], fallback: false, book: book };
+        /* BEUK:dictlang — the writer's own pick for this book comes first. */
+        const pick = dictBookChoice();
+        if (pick) return { lang: DICT_LANGS[pick], fallback: false, book: book, code: pick, chosen: pick !== book };
+        if (DICT_LANGS[book]) return { lang: DICT_LANGS[book], fallback: false, book: book, code: book, chosen: false };
         const ui = getUiLang();
-        return { lang: DICT_LANGS[ui] || ui, fallback: true, book: book };
+        return { lang: DICT_LANGS[ui] || ui, fallback: true, book: book, code: DICT_LANGS[ui] ? ui : "", chosen: false };
       }
       function dictNeedsSpace(a, b) {
         if (!a || !b) return false;
@@ -32802,7 +33045,7 @@
         if (btn) {
           btn.classList.toggle("listening", on);
           btn.setAttribute("aria-pressed", String(on));
-          btn.setAttribute("title", t(on ? "dict.titleStop" : "dict.titleIdle"));
+          btn.setAttribute("title", t(on ? "dict.titleStop" : "dict.titleIdleLang"));
           const lab = $("dictBtnLabel");
           if (lab) lab.textContent = t(on ? "dict.listening" : "dict.label");
         }
@@ -32810,10 +33053,11 @@
         if (zb) {
           zb.classList.toggle("listening", on);
           zb.setAttribute("aria-pressed", String(on));
-          zb.setAttribute("title", t(on ? "dict.titleStop" : "dict.titleIdle"));
+          zb.setAttribute("title", t(on ? "dict.titleStop" : "dict.titleIdleLang"));
           const zl = zb.querySelector(".zd-label");
           if (zl) zl.textContent = t(on ? "dict.listening" : "dict.label");
         }
+        if (typeof langBarRefresh === "function") langBarRefresh(); /* BEUK:dictlang */
       }
       const DICT_MIC_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
       function dictPopBuild() {
@@ -32836,13 +33080,15 @@
           html += '<p class="dp-line">' + esc(t("dict.unsupported")) + '</p>' +
             '<div class="dp-actions"><button type="button" class="tb-btn" id="dictPopClose">' + esc(t("dict.close")) + '</button></div>';
         } else {
-          const hear = info.fallback
+          const hear = info.chosen
+            ? t("dict.hearChosen", { lang: langPack(info.code).native || info.code })
+            : info.fallback
             ? t("dict.hearFallback", { book: pack.native || info.book, lang: langPack(getUiLang()).native || info.lang })
             : t("dict.hearLang", { lang: pack.native || info.book });
-          html += '<p class="dp-line">' + esc(hear) + '</p>' +
-            '<p class="dp-privacy">' + esc(t("dict.privacy")) + '</p>' +
+          html += '<p class="dp-line">' + esc(hear) + '</p>' + dictLangPickerHtml() +
+            (mode === "lang" ? "" : '<p class="dp-privacy">' + esc(t("dict.privacy")) + '</p>') +
             '<div class="dp-actions"><button type="button" class="tb-btn" id="dictPopClose">' + esc(t("dict.close")) + '</button>' +
-            '<button type="button" class="tb-btn primary" id="dictPopBegin">' + esc(t("dict.begin")) + '</button></div>';
+            (dict.want ? "" : '<button type="button" class="tb-btn primary" id="dictPopBegin">' + esc(t("dict.begin")) + '</button>') + '</div>';
         }
         pop.innerHTML = html;
         if (anchorBtn && anchorBtn.getBoundingClientRect) {
@@ -32854,6 +33100,7 @@
         pop.classList.add("open");
         const close = $("dictPopClose"); if (close) close.addEventListener("click", dictPopClose);
         const begin = $("dictPopBegin"); if (begin) begin.addEventListener("click", dictBegin);
+        dictWireLangPicker(pop); /* BEUK:dictlang */
       }
       function dictPopClose() {
         const pop = $("dictPop");
@@ -32862,12 +33109,257 @@
       }
       function dictOnLangChange() {
         dictSyncUi();
+        if (typeof raLangSugRender === "function") raLangSugRender(); /* BEUK:dictlang */
         const pop = $("dictPop");
         if (pop && pop.classList.contains("open") && dict.popMode) dictPopOpen(dict.popMode, dict.popAnchor);
       }
+      /* ==== BEUK:dictlang ==== */
+      /* Dictation language: switch it, and suggest it from the TEXT.
+         What the browser can and cannot do, checked against the specs:
+         - W3C Web Speech API: SpeechRecognition.lang is ONE BCP 47 tag;
+           "If unset ... will default to use the language of the html
+           document root element". The spec defines no spoken-language
+           detection and no multi-language recognition session.
+           https://webaudio.github.io/web-speech-api/#dom-speechrecognition-lang
+         - MDN: "If not specified, this defaults to the HTML lang attribute
+           value, or the user agent's language setting if that isn't set either."
+           https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/lang
+         - Chrome's introduction sets the recogniser's language with a single
+           BCP-47 value: https://developer.chrome.com/blog/voice-driven-web-apps-introduction-to-the-web-speech-api
+         So Beuk never claims to hear which language is being spoken. Spanish
+         speech heard as English comes out as English-shaped words — and THAT
+         text is what Beuk can read honestly: when the section's recent text
+         reads as another language (detectLanguageInText, confident results
+         only), a calm suggestion offers the switch. Nothing switches until
+         the writer taps. The pick is remembered per book (serializeBook /
+         applyBookDoc), with recent picks first in the picker. */
+      const DICT_RECENT_MAX = 4;
+      const LANGSUG_TAIL = 1500;   /* characters of the section's end that "recent text" means */
+      const LANGSUG_DEBOUNCE = 900;
+      const langSug = { dismissed: {}, timer: null, last: null };
+      function dictNormalize(d) {
+        const out = { lang: "", recent: [] };
+        if (d && typeof d === "object") {
+          if (typeof d.lang === "string" && DICT_LANGS[d.lang]) out.lang = d.lang;
+          if (Array.isArray(d.recent)) d.recent.forEach((c) => {
+            if (typeof c === "string" && DICT_LANGS[c] && out.recent.indexOf(c) === -1 && out.recent.length < DICT_RECENT_MAX) out.recent.push(c);
+          });
+        }
+        return out;
+      }
+      function dictBookChoice() {
+        const d = state.dictation;
+        return d && typeof d.lang === "string" && DICT_LANGS[d.lang] ? d.lang : "";
+      }
+      /* Two codes name the same spoken language when their primary subtag
+         matches — except the two Chinese scripts, which stay distinct. */
+      function langPrimary(code) {
+        const c = String(code || "");
+        return c.indexOf("zh") === 0 ? c : c.split("-")[0].toLowerCase();
+      }
+      /* A language's name in the INTERFACE language ("Spanish" / "español").
+         Intl.DisplayNames: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DisplayNames
+         Where it is missing, the pack's own name stands in. */
+      function langDisplayName(code) {
+        try {
+          if (typeof Intl !== "undefined" && Intl.DisplayNames) {
+            const n = new Intl.DisplayNames([getUiLang(), "en"], { type: "language" }).of(code);
+            if (n && n !== code) return n;
+          }
+        } catch (e) {}
+        const p = LANG_PACKS[code];
+        return p ? p.name : String(code || "");
+      }
+      function dictLangChoices() {
+        const info = dictLangInfo();
+        const d = dictNormalize(state.dictation);
+        const out = [];
+        [info.code].concat(d.recent, [bookLang()]).forEach((c) => {
+          if (c && DICT_LANGS[c] && out.indexOf(c) === -1) out.push(c);
+        });
+        return out.slice(0, DICT_RECENT_MAX + 1);
+      }
+      function dictLangPickerHtml() {
+        const info = dictLangInfo();
+        const chips = dictLangChoices().map((c) =>
+          '<button type="button" class="dp-chip" data-dict-lang="' + esc(c) + '" aria-pressed="' + String(c === info.code) + '">' +
+          esc(langPack(c).native || c) + (c === bookLang() ? " · " + esc(t("dict.langBook")) : "") + "</button>").join("");
+        const all = Object.keys(DICT_LANGS)
+          .map((c) => ({ c: c, n: langDisplayName(c) }))
+          .sort((a, b) => a.n.localeCompare(b.n))
+          .map((o) => '<option value="' + esc(o.c) + '">' + esc(o.n) + " — " + esc(langPack(o.c).native || o.c) + "</option>").join("");
+        return '<div class="dp-langs"><span class="dp-lab">' + esc(t("dict.langLabel")) + '</span>' +
+          '<div class="dp-chips">' + chips + '</div>' +
+          '<select class="txt-input" id="dictLangSel" aria-label="' + esc(t("dict.langMore")) + '"><option value="">' + esc(t("dict.langMore")) + '</option>' + all + '</select>' +
+          '<p class="dp-honest">' + esc(t("dict.noAutoDetect")) + '</p></div>';
+      }
+      function dictWireLangPicker(pop) {
+        if (!pop) return;
+        pop.querySelectorAll("[data-dict-lang]").forEach((b) => b.addEventListener("click", () => dictSetLang(b.getAttribute("data-dict-lang"))));
+        const sel = pop.querySelector("#dictLangSel");
+        if (sel) sel.addEventListener("change", () => { if (sel.value) dictSetLang(sel.value); });
+      }
+      function dictOpenLangPicker(anchorBtn) {
+        if (!dictSupported()) { dictPopOpen("unsupported", anchorBtn); return; }
+        dictPopOpen("lang", anchorBtn);
+      }
+      /* Switching mid-session: the words already final are already in the
+         text and stay; the unfinalised tail leaves (it was heard in the old
+         language); the old recogniser is silenced (its late events are
+         ignored by generation) and a fresh one starts in the new language. */
+      function dictRestartForLang() {
+        if (!dict.want) return;
+        dict.gen++;
+        if (dict.restartTimer) { clearTimeout(dict.restartTimer); dict.restartTimer = null; }
+        if (dict.spanStart >= 0 && dict.sessInterim) { dict.sessInterim = ""; dictWriteSpan(); }
+        dict.spanStart = -1; dict.spanLen = 0; dict.joiner = "";
+        dict.sessFinals = ""; dict.sessInterim = ""; dict.heardFinal = false;
+        dict.emptyRestarts = 0;
+        const old = dict.rec; dict.rec = null;
+        if (old) { try { old.abort(); } catch (e) {} }
+        if (!dictStartSession()) { dict.want = false; toast(t("dict.errGeneric"), "mic-off"); }
+      }
+      function dictSetLang(code) {
+        if (!code || !DICT_LANGS[code]) return false;
+        const before = dictLangInfo().lang;
+        const d = dictNormalize(state.dictation);
+        d.lang = code === bookLang() ? "" : code;
+        d.recent = [code].concat(d.recent.filter((c) => c !== code)).slice(0, DICT_RECENT_MAX);
+        state.dictation = d;
+        noteBookEdited();
+        if (dictLangInfo().lang !== before && dict.want) dictRestartForLang();
+        dictSyncUi();
+        const pop = $("dictPop");
+        if (pop && pop.classList.contains("open") && dict.popMode && dict.popMode !== "unsupported") dictPopOpen(dict.popMode, dict.popAnchor);
+        return true;
+      }
+      /* The writer fixes the BOOK's language from a suggestion: that is a
+         hand choice (langSource "manual"), exactly like Project Settings. */
+      function langSetBookLanguage(code) {
+        if (!code || !LANG_PACKS[code]) return false;
+        const before = dictLangInfo().lang;
+        state.meta.language = code;
+        state.meta.langSource = "manual";
+        state.meta.langGuess = "";
+        if (state.dictation && state.dictation.lang === code) state.dictation.lang = "";
+        noteBookEdited();
+        updateStats(); renderPreview(); refreshExportTree();
+        const setLang = $("setLang"); if (setLang) setLang.value = code;
+        if (dictLangInfo().lang !== before && dict.want) dictRestartForLang();
+        dictSyncUi();
+        if (typeof raRefresh === "function" && $("raPop") && !$("raPop").hidden) raRefresh();
+        toast(t("langsug.bookDone", { lang: langDisplayName(code) }), "languages");
+        return true;
+      }
+      /* Suggestions only speak to a writer who dictates: the mic must exist
+         in this browser, and be live or have been used before. */
+      function langSugGate() { return dictSupported() && (dict.want || dict.seen); }
+      function langSuggestion() {
+        if (!langSugGate()) return null;
+        const s = activeSection();
+        if (!s || AUTO_TYPES.includes(s.type)) return null;
+        const book = bookLang();
+        const whole = detectLanguageInText(manuscriptText());
+        if (whole && whole.strong && LANG_PACKS[whole.code] && langPrimary(whole.code) !== langPrimary(book) &&
+            !langSug.dismissed["book:" + whole.code]) return { kind: "book", code: whole.code };
+        const tail = raCleanText(String(s.content || "").slice(-LANGSUG_TAIL));
+        const det = detectLanguageInText(tail);
+        const cur = dictLangInfo().code || book;
+        if (det && det.strong && DICT_LANGS[det.code] && langPrimary(det.code) !== langPrimary(cur) &&
+            !langSug.dismissed[s.id + ":" + det.code]) return { kind: "section", code: det.code, sectionId: s.id };
+        return null;
+      }
+      function langBarRefresh() {
+        const bar = $("langBar");
+        if (!bar) return;
+        if (langSug.timer) { clearTimeout(langSug.timer); langSug.timer = null; }
+        const sug = langSuggestion();
+        langSug.last = sug;
+        const ic = '<span class="lb-ic" aria-hidden="true">' + DICT_MIC_SVG + '</span>';
+        let html = "";
+        if (sug && sug.kind === "book") {
+          const name = langDisplayName(sug.code);
+          html = ic + '<span class="lb-text">' + esc(t("langsug.book", { lang: name, book: langDisplayName(bookLang()) })) + '</span><span class="lb-actions">' +
+            '<button type="button" class="tb-btn primary" data-lb="book">' + esc(t("langsug.bookYes", { lang: name })) + '</button>' +
+            (DICT_LANGS[sug.code] && langPrimary(dictLangInfo().code) !== langPrimary(sug.code)
+              ? '<button type="button" class="tb-btn" data-lb="dict">' + esc(t("langsug.dictOnly", { lang: name })) + '</button>' : "") +
+            '<button type="button" class="tb-btn" data-lb="no">' + esc(t("langsug.notNow")) + '</button></span>';
+        } else if (sug && sug.kind === "section") {
+          const name = langDisplayName(sug.code);
+          html = ic + '<span class="lb-text">' + esc(t("langsug.section", { lang: name })) + '</span><span class="lb-actions">' +
+            '<button type="button" class="tb-btn primary" data-lb="dict">' + esc(t("langsug.dictYes", { lang: name })) + '</button>' +
+            '<button type="button" class="tb-btn" data-lb="no">' + esc(t("langsug.notNow")) + '</button></span>';
+        } else if (dict.want) {
+          const info = dictLangInfo();
+          html = ic + '<span class="lb-text">' + esc(t("dict.barListening", { lang: langDisplayName(info.code || info.lang) })) + '</span><span class="lb-actions">' +
+            '<button type="button" class="tb-btn" data-lb="change">' + esc(t("dict.langChange")) + '</button></span>';
+        }
+        bar.dataset.kind = sug ? sug.kind : (dict.want ? "listening" : "");
+        bar.dataset.code = sug ? sug.code : "";
+        bar.innerHTML = html;
+        bar.classList.toggle("open", !!html);
+      }
+      function langBarLater() {
+        if (langSug.timer) clearTimeout(langSug.timer);
+        langSug.timer = setTimeout(() => { langSug.timer = null; langBarRefresh(); }, LANGSUG_DEBOUNCE);
+      }
+      function langSugReset() {
+        langSug.dismissed = {};
+        try { ra.langFor = {}; ra.sugDismissed = {}; } catch (e) {}
+        langBarRefresh();
+      }
+      function langBarInit() {
+        const bar = $("langBar");
+        if (bar) bar.addEventListener("click", (e) => {
+          const b = e.target.closest && e.target.closest("[data-lb]");
+          if (!b) return;
+          const act = b.getAttribute("data-lb");
+          const sug = langSug.last;
+          if (act === "change") { dictOpenLangPicker(b); return; }
+          if (!sug) return;
+          if (act === "book") langSetBookLanguage(sug.code);
+          else if (act === "dict") dictSetLang(sug.code);
+          else if (act === "no") langSug.dismissed[sug.kind === "book" ? "book:" + sug.code : sug.sectionId + ":" + sug.code] = true;
+          langBarRefresh();
+        });
+        const area = $("editorArea");
+        if (area) area.addEventListener("input", langBarLater);
+      }
+      /* Read Aloud: a section that reads as another language than the book
+         is offered the matching voice — the same tap-to-accept pattern. */
+      function raLangSugRender() {
+        const box = $("raLangSug");
+        if (!box) return;
+        const s = activeSection();
+        if (!s || !raSupported()) { box.hidden = true; box.innerHTML = ""; return; }
+        const over = ra.langFor ? ra.langFor[s.id] : "";
+        if (over) {
+          box.innerHTML = esc(t("ra.langUsing", { lang: langDisplayName(over) })) +
+            '<br><button type="button" class="tb-btn" id="raLangBook">' + esc(t("ra.langBook", { lang: langDisplayName(bookLang()) })) + '</button>';
+          box.hidden = false;
+          const b = $("raLangBook");
+          if (b) b.addEventListener("click", () => { delete ra.langFor[s.id]; ra.sugDismissed[s.id] = true; if (ra.status !== "idle") raStop(); ra.voiceSel = ""; raRefresh(); });
+          return;
+        }
+        const det = detectLanguageInText(raCleanText(s.content || ""));
+        if (det && det.strong && LANG_PACKS[det.code] && langPrimary(det.code) !== langPrimary(bookLang()) && !ra.sugDismissed[s.id]) {
+          const name = langDisplayName(det.code);
+          box.innerHTML = esc(t("ra.langSug", { lang: name })) +
+            '<br><button type="button" class="tb-btn" id="raLangUse" data-code="' + esc(det.code) + '">' + esc(t("ra.langUse", { lang: name })) + '</button>';
+          box.hidden = false;
+          const b = $("raLangUse");
+          if (b) b.addEventListener("click", () => { ra.langFor[s.id] = det.code; if (ra.status !== "idle") raStop(); ra.voiceSel = ""; raRefresh(); });
+          return;
+        }
+        box.hidden = true; box.innerHTML = "";
+      }
+      /* ==== /BEUK:dictlang ==== */
       function initDictation() {
         const btn = $("btnDictate");
         if (btn) btn.addEventListener("click", () => dictToggle(btn));
+        /* BEUK:dictlang — right-click / long-press on the mic opens the language picker */
+        if (btn) btn.addEventListener("contextmenu", (e) => { e.preventDefault(); dictOpenLangPicker(btn); });
+        langBarInit();
         const area = $("editorArea");
         if (area) area.addEventListener("input", () => {
           if (dict.applying) return;
@@ -32880,8 +33372,8 @@
         });
         document.addEventListener("click", (e) => {
           const pop = $("dictPop");
-          if (pop && pop.classList.contains("open") && !pop.contains(e.target) &&
-              !(e.target.closest && e.target.closest("#btnDictate, #btnZenDictate"))) dictPopClose();
+          if (pop && pop.classList.contains("open") && !pop.contains(e.target) && e.target.isConnected !== false &&
+              !(e.target.closest && e.target.closest("#btnDictate, #btnZenDictate, #langBar"))) dictPopClose();
         });
         document.addEventListener("keydown", (e) => { if (e.key === "Escape") dictPopClose(); });
         dictSyncUi();
@@ -32900,7 +33392,11 @@
               if (dict.want && !dict.rec) dictStartSession();
             }
           },
-          span: () => ({ start: dict.spanStart, len: dict.spanLen, finals: dict.sessFinals, interim: dict.sessInterim })
+          span: () => ({ start: dict.spanStart, len: dict.spanLen, finals: dict.sessFinals, interim: dict.sessInterim }),
+          /* BEUK:dictlang */
+          setLang: (code) => dictSetLang(code), choices: () => dictLangChoices(),
+          openPicker: (anchor) => dictOpenLangPicker(anchor || $("btnDictate")),
+          suggestion: () => langSuggestion(), refreshBar: () => langBarRefresh()
         };
       }
 
@@ -32925,7 +33421,7 @@
           const menu = $("uiLangMenu");
           if (menu && !menu.hidden && !e.target.closest(".lang-wrap")) closeUiLangMenu();
           const pop = $("raPop");
-          if (pop && !pop.hidden && !e.target.closest(".ra-wrap")) raClosePop();
+          if (pop && !pop.hidden && e.target.isConnected !== false && !e.target.closest(".ra-wrap")) raClosePop(); /* BEUK:dictlang — a re-rendered button inside the popover is not "outside" */
         });
         document.addEventListener("keydown", (e) => {
           if (e.key === "Escape") { closeUiLangMenu(); raClosePop(); }
