@@ -1459,6 +1459,28 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Scroll restoration happens in the client sidebar renderer on every rebuild.',
   },
 
+  /* ---- Dictation language + Read Aloud section language (BEUK:dictlang) ---- */
+  {
+    id: 'dictation.language-picker',
+    title: 'Dictation language picker sets the recogniser language, restarts cleanly mid-session and round-trips with the book',
+    kind: 'client-only',
+    reason:
+      'Dictation runs in the browser’s own SpeechRecognition (stubbed in the client self-check); the pick is client state serialized with the book (serializeBook().dictation). The server never sees speech.',
+  },
+  {
+    id: 'dictation.language-suggest',
+    title: 'Text that reads as another language offers a dictation / book-language switch, never applied without a tap',
+    kind: 'client-only',
+    reason:
+      'The suggestion is computed in the client from the open section’s text (detectLanguageInText) and shown in the editor’s language bar. Browsers cannot detect the spoken language (W3C Web Speech API: lang is a single BCP 47 tag).',
+  },
+  {
+    id: 'readaloud.section-language',
+    title: 'Read Aloud offers the matching voice for a section that reads as another language than the book',
+    kind: 'client-only',
+    reason: 'Read Aloud uses the device’s speechSynthesis voices in the browser; the section-language switch is client session state.',
+  },
+
   /* ---- Cover maker (all client-side) ---- */
   {
     id: 'cover.maker.renders-text-over-background',
