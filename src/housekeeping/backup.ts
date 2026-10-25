@@ -24,7 +24,16 @@ import { scrubText } from './scrub.js';
 
 /** Data tables, in FK-safe restore order (parents before children):
  *  jobs after exports (source/artifact export ids), shares after
- *  manuscripts, share_comments / share_readers after shares. */
+ *  manuscripts, share_comments / share_readers after shares.
+ *  billing_subscriptions / billing_events (migration 012) only reference
+ *  users. They are backed up, not excluded: billing_subscriptions holds
+ *  the grace clock (status_since) and the user attribution that access
+ *  is derived from, and both have user_id ... on delete set null, so a
+ *  restore that deleted users while leaving them in place would silently
+ *  null every attribution. billing_events is the webhook dedupe ledger;
+ *  restoring it to the backup's point is safe because a re-delivered
+ *  event re-fetches the subscription from Stripe rather than trusting
+ *  the event body (src/billing-sync.ts). */
 export const BACKUP_TABLES = [
   'users',
   'manuscripts',
@@ -38,6 +47,8 @@ export const BACKUP_TABLES = [
   'shares',
   'share_comments',
   'share_readers',
+  'billing_subscriptions',
+  'billing_events',
 ] as const;
 
 /** Tables a backup deliberately leaves out, and why. Restore never

@@ -786,7 +786,8 @@ one directory per named backup: `manifest.json` (contents + hashes),
 manifest), and `files/` (a copy of the export volume). Every table is
 classified in `src/housekeeping/backup.ts`: `BACKUP_TABLES` (users,
 manuscripts, streaks, exports, jobs, sessions, Founders' Shelf
-applications, share links, reader comments and reader records) or
+applications, share links, reader comments and reader records, billing
+subscriptions and the billing webhook event ledger) or
 `EXCLUDED_TABLES`, each with its reason, also written into every
 manifest: the audit, check-run and sign-off tables (evidence is
 append-only and a restore must not rewrite it), `schema_migrations`
