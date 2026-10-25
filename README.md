@@ -143,6 +143,33 @@ not, online or not:
   ends with the window; the browser can still evict the copy if it did
   not grant lasting storage — export a backup now and then.
 
+**Book IDs from older builds.** Books saved before real UUIDs carry an
+id like `urn:uuid:sk3j9x2a-s8f7d6e5`, which EPUBCheck reports as
+OPF-085 ("marked as a UUID, but is an invalid UUID"). Whenever such a
+book arrives on the desk (device restore, shelf open, backup file,
+conflict choice, restored snapshot — every path runs `applyBookDoc`),
+the studio migrates it once:
+
+- **New id = UUIDv5** (RFC 9562 §5.5) of the old id string under Beuk's
+  fixed namespace `8bf1c6b6-5f75-4773-a701-cdd420357f52`, so the same
+  old book gets the **same** new id on every device. The pre-UUID sample
+  id `urn:uuid:beuk-sample-lantern-coast` becomes the sample's own fixed
+  UUID instead, so the sample stays the sample.
+- The old id is kept in `meta.legacyBookIds`. Every "is this the same
+  book?" test (first sign-in shelf matching, opening a backup file)
+  accepts a match on the current id, a legacy id, or the id a
+  not-yet-migrated copy will migrate to. A migrated device and an
+  un-migrated shelf copy are one book, never a duplicate.
+- History takes a **"Before book ID update"** snapshot first (not for
+  an empty desk, the sample, or a state History already holds).
+  Running it again changes nothing.
+- The server is untouched: manuscripts and share links are keyed by
+  manuscript id, and the book id rides inside the stored document as-is.
+- **Limit:** a browser still running a build from before this change
+  compares ids exactly, so it would not recognise a shelf copy that
+  another device has already migrated; it does after its next page load
+  (the studio page is fetched network-first).
+
 **Offline completeness:** JSZip 3.10.1, mammoth 1.6.0, lucide 0.469.0
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
