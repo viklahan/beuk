@@ -151,7 +151,7 @@ test('the frozen copy stays frozen until republished', async () => {
   const { share, token } = await newShare(alice, mid);
   const changed = JSON.parse(JSON.stringify(studioDoc));
   changed.sections[3].content = 'A rewritten fog chapter.';
-  assert.equal((await alice.put(`/api/manuscripts/${mid}`, { doc: changed })).status, 200);
+  assert.equal((await alice.put(`/api/manuscripts/${mid}`, { doc: changed, revision: 1 })).status, 200);
   assert.match((await getHtml(`/read/${token}?c=2`)).html, /The fog came in\./);
   const rep = await alice.post(`/api/shares/${share.id}/republish`);
   assert.equal(rep.status, 200);
