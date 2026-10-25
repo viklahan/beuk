@@ -8,7 +8,9 @@ import { escapeHtml, renderMarkdown } from './markdown.js';
  * client/help/ (plus client/thanks/) — no build step. The dynamic slots
  * are filled HERE, at request time, by token substitution:
  *
- *   {{SUPPORT_EMAIL}}          the support address (mailto + text)
+ *   {{SUPPORT_EMAIL}}          the support address (mailto + text); wrap
+ *                              it in <!--BEUK_IF_SUPPORT-->…<!--/BEUK_IF_SUPPORT-->
+ *                              so it disappears while SUPPORT_EMAIL is unset
  *   {{SUPPORT_NAME}}           the named human on the Help page
  *   {{SUPPORT_REPLY_PROMISE}}  the reply-time promise wording
  *   <!--BEUK_KOFI_JAR-->       the Ko-fi tip jar block — rendered ONLY
@@ -78,19 +80,28 @@ export function billingGateHtml(config: Config): string {
   return config.kofiUrl ? '<script src="/help/billing-gate.js"></script>' : '';
 }
 
+/** Remove every <!--BEUK_IF_SUPPORT-->…<!--/BEUK_IF_SUPPORT--> block
+ *  when SUPPORT_EMAIL is unset (keep its contents, minus the markers,
+ *  when it is set), so a static page never shows an empty mailto. */
+export function supportBlocks(html: string, config: Config): string {
+  return html.replace(/<!--BEUK_IF_SUPPORT-->([\s\S]*?)<!--\/BEUK_IF_SUPPORT-->/g, (_m, inner: string) =>
+    config.supportEmail ? inner : '',
+  );
+}
+
 /** Fill the dynamic slots of a static warmth page from config. */
 export function fillSlots(html: string, config: Config): string {
-  return html
+  return supportBlocks(html, config)
     .split('{{KOFI_URL}}')
     .join(escapeHtml(config.kofiUrl ?? ''))
     .split('<!--BEUK_SUPPORT_NAV-->')
     .join(supportNavHtml(config))
     .split('{{SUPPORT_EMAIL}}')
-    .join(escapeHtml(config.supportEmail))
+    .join(escapeHtml(config.supportEmail ?? ''))
     .split('{{SUPPORT_NAME}}')
-    .join(escapeHtml(config.supportName))
+    .join(escapeHtml(config.supportName ?? ''))
     .split('{{SUPPORT_REPLY_PROMISE}}')
-    .join(escapeHtml(config.supportReplyPromise))
+    .join(escapeHtml(config.supportReplyPromise ?? ''))
     .split('<!--BEUK_KOFI_JAR-->')
     .join(kofiJarHtml(config))
     .split('<!--BEUK_BILLING_GATE-->')

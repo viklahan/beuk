@@ -57,8 +57,9 @@ services:
       GIT_SHA: ${GIT_SHA:-}
       TREE_CLEAN: ${TREE_CLEAN:-}
       # M4 warmth: the public support contact (Help page) and the Ko-fi
-      # tip jar. KOFI_URL empty → no jar is rendered anywhere.
-      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-support@beuk.studio}
+      # tip jar. KOFI_URL empty → no jar is rendered anywhere; SUPPORT_EMAIL
+      # empty → no support address, name or reply promise is shown anywhere.
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
       SUPPORT_NAME: ${SUPPORT_NAME:-}
       SUPPORT_REPLY_PROMISE: ${SUPPORT_REPLY_PROMISE:-}
       KOFI_URL: ${KOFI_URL:-}

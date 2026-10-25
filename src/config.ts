@@ -60,10 +60,16 @@ export interface Config {
   appVersion: string;
   /** M4 warmth: the public support contact shown on the Help pages.
    *  Email is the official support channel; the address, the human name
-   *  and the reply-time promise are all Vik's to set in .env. */
-  supportEmail: string;
-  supportName: string;
-  supportReplyPromise: string;
+   *  and the reply-time promise are all Vik's to set in .env.
+   *  All three are null until set (V, 2026-10-25: the mailbox does not
+   *  exist yet). While SUPPORT_EMAIL is unset, nothing that names a
+   *  person, an address or a reply time is rendered anywhere — no
+   *  empty mailto, no placeholder address. SUPPORT_NAME and
+   *  SUPPORT_REPLY_PROMISE are only used when SUPPORT_EMAIL is set,
+   *  and each only when it is set itself (no built-in default promise). */
+  supportEmail: string | null;
+  supportName: string | null;
+  supportReplyPromise: string | null;
   /** M4 warmth: Ko-fi page URL (KOFI_URL). Null until set — while null
    *  the tip jar is rendered NOWHERE (no placeholder, no dead link). */
   kofiUrl: string | null;
@@ -252,10 +258,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     promotionManifestPath:
       env.PROMOTION_MANIFEST_PATH ?? path.resolve(process.cwd(), 'PROMOTION_MANIFEST.json'),
     appVersion: env.APP_VERSION || '0.1.0',
-    supportEmail: env.SUPPORT_EMAIL || 'support@beuk.studio',
-    supportName: env.SUPPORT_NAME || 'the maker of Beuk',
-    supportReplyPromise:
-      env.SUPPORT_REPLY_PROMISE || 'a human replies within two working days',
+    supportEmail: env.SUPPORT_EMAIL?.trim() || null,
+    supportName: env.SUPPORT_NAME?.trim() || null,
+    supportReplyPromise: env.SUPPORT_REPLY_PROMISE?.trim() || null,
     kofiUrl: env.KOFI_URL || null,
     epubcheckJar: env.EPUBCHECK_JAR || null,
     javaBin: env.JAVA_BIN || 'java',

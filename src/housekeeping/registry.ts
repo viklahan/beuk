@@ -174,7 +174,9 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       // room 404s and /changelog 500s on first boot.
       const missing: string[] = [];
       const clientFiles: string[][] = [
-        ['help', 'index.html'],
+        ['help', 'help.css'],
+        ['help', 'help.js'],
+        ['help', 'theme.js'],
         ['help', 'warmth.css'],
         ['thanks', 'index.html'],
       ];
@@ -190,11 +192,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       } catch {
         missing.push('CHANGELOG.md');
       }
+      // H1: the Help pages render from content/help/ (guides, errors, home).
+      for (const rel of [['content', 'help', 'errors.json'], ['content', 'help', 'home.json'], ['content', 'help', 'guides', 'check-your-book.md']]) {
+        try {
+          await readFile(path.join(repoRoot(), ...rel), 'utf8');
+        } catch {
+          missing.push(rel.join('/'));
+        }
+      }
       assert(
         !missing.length,
         `warmth page sources missing from the deploy tree: ${missing.join(', ')}`,
       );
-      return 'client/help/, client/thanks/ and CHANGELOG.md all readable from the deploy tree';
+      return 'client/help/ assets, content/help/, client/thanks/ and CHANGELOG.md all readable from the deploy tree';
     },
   },
   {
@@ -2181,6 +2191,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Book identifiers are minted in the client when a book is created or imported.',
   },  {
+    id: 'help.validator.beuk-codes',
+    title: 'Help: every studio validator check maps to a BEUK- code, and each line that is not a pass links to /help/errors/<code>',
+    kind: 'client-only',
+    reason: 'The structural validator and its result list run in the studio; the server side of the mapping is covered by tests/help-content.test.ts.',
+  },
+  {
     id: 'bookid.v5.rfc-vector',
     title: 'Book ID: the UUIDv5 routine reproduces the RFC 9562 Appendix A.4 vector and SHA-1 the FIPS 180-4 test digests',
     kind: 'client-only',

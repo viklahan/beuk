@@ -3,6 +3,8 @@ import { buildApp } from './app.js';
 import { purgeExpiredSessions } from './auth.js';
 import { createShutdown } from './shutdown.js';
 import { loadConfig } from './config.js';
+import { checkHelpContent, getHelpContent } from './help/content.js';
+import { rebuildHelpIndex } from './help/search.js';
 import { createPgDb, defaultMigrationsDir, runMigrations, type Db } from './db.js';
 import type { BootCheck } from './housekeeping/context.js';
 import { createPgScratchFactory } from './housekeeping/scratch.js';
@@ -25,6 +27,18 @@ if (process.env.ADMIN_EMAILS) {
 const db = createPgDb(config.databaseUrl);
 const applied = await runMigrations(db, defaultMigrationsDir());
 if (applied.length) console.log(`migrations applied: ${applied.join(', ')}`);
+
+// H1/H2: check the help content and (re)build its search index from the
+// content files. Problems are logged loudly; the server still boots so
+// the studio and API stay up, and /help reports what it can.
+try {
+  const problems = checkHelpContent(getHelpContent());
+  if (problems.length) console.error(`help content: ${problems.length} problem(s):\n  ${problems.join('\n  ')}`);
+  const idx = await rebuildHelpIndex(db);
+  console.log(`help search index: ${idx.upserted} documents, ${idx.removed} removed`);
+} catch (err) {
+  console.error('help content could not be loaded or indexed', err);
+}
 
 /** Rehearse boot check: stand the real app up on an ephemeral port
  *  against the scratch database and probe its health endpoint. */
