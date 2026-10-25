@@ -250,21 +250,21 @@ exit 0
     alice,
     aliceManuscriptId,
     'epub',
-    'the-salt-meridian.epub',
+    'the-lantern-coast.epub',
     Buffer.from('PK\x03\x04 stub epub bytes'),
   );
   aliceMarkdownId = await newExport(
     alice,
     aliceManuscriptId,
     'markdown',
-    'the-salt-meridian.md',
-    Buffer.from('# The Salt Meridian\n'),
+    'the-lantern-coast.md',
+    Buffer.from('# The Lantern Coast\n'),
   );
   alicePrintId = await newExport(
     alice,
     aliceManuscriptId,
     'print-html',
-    'the-salt-meridian-print.html',
+    'the-lantern-coast-print.html',
     Buffer.from('<html><body>print interior</body></html>'),
   );
   bobEpubId = await newExport(
@@ -393,7 +393,7 @@ test('pdfx job on a print interior renders HTML to PDF first, then archives the 
   const artifact = list.find((e) => e.id === job.artifactExportId);
   assert.ok(artifact);
   assert.equal(artifact.format, 'pdfx');
-  assert.equal(artifact.filename, 'the-salt-meridian-print-pdfx.pdf');
+  assert.equal(artifact.filename, 'the-lantern-coast-print-pdfx.pdf');
   assert.equal(artifact.manuscriptId, aliceManuscriptId);
   const download = await alice.download(`/api/exports/${artifact.id}/download`);
   assert.equal(download.status, 200);

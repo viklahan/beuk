@@ -38,7 +38,7 @@ after(async () => {
 
 test('export archive: save → list → download round-trip with sha256 integrity', async () => {
   const bytes = Buffer.from('PK\x03\x04 fake-but-plausible epub bytes 0123456789');
-  const query = `manuscriptId=${aliceManuscriptId}&format=epub&filename=the-salt-meridian-kdp.epub&preset=kdp`;
+  const query = `manuscriptId=${aliceManuscriptId}&format=epub&filename=the-lantern-coast-kdp.epub&preset=kdp`;
   const saved = await alice.upload(`/api/exports?${query}`, bytes);
   assert.equal(saved.status, 201);
   const meta = saved.body.export as {
@@ -53,7 +53,7 @@ test('export archive: save → list → download round-trip with sha256 integrit
   assert.equal(meta.manuscriptId, aliceManuscriptId);
   assert.equal(meta.format, 'epub');
   assert.equal(meta.preset, 'kdp');
-  assert.equal(meta.filename, 'the-salt-meridian-kdp.epub');
+  assert.equal(meta.filename, 'the-lantern-coast-kdp.epub');
   assert.equal(meta.byteSize, bytes.length);
   assert.equal(meta.sha256, sha256(bytes));
 
@@ -67,7 +67,7 @@ test('export archive: save → list → download round-trip with sha256 integrit
   const download = await alice.download(`/api/exports/${meta.id}/download`);
   assert.equal(download.status, 200);
   assert.equal(download.headers.get('content-type'), 'application/epub+zip');
-  assert.match(download.headers.get('content-disposition') ?? '', /the-salt-meridian-kdp\.epub/);
+  assert.match(download.headers.get('content-disposition') ?? '', /the-lantern-coast-kdp\.epub/);
   assert.deepEqual(download.bytes, bytes);
   assert.equal(sha256(download.bytes), meta.sha256);
 });

@@ -8,11 +8,11 @@ let alice: Client;
 let bob: Client;
 
 const sampleDoc = {
-  title: 'The Salt Meridian',
+  title: 'The Lantern Coast',
   author: 'A. Writer',
   settings: { bodyFont: 'EB Garamond', fontSizePx: 19, lineHeight: 1.6 },
   sections: {
-    frontMatter: [{ kind: 'title-page', text: 'The Salt Meridian' }],
+    frontMatter: [{ kind: 'title-page', text: 'The Lantern Coast' }],
     body: [{ kind: 'chapter', title: 'One', text: 'It began with the tide.' }],
     backMatter: [{ kind: 'about-author', text: 'A. Writer lives by the sea.' }],
   },
@@ -35,7 +35,7 @@ test('manuscript CRUD happy path for the owner', async () => {
   const created = await alice.post('/api/manuscripts', { doc: sampleDoc });
   assert.equal(created.status, 201);
   const manuscript = created.body.manuscript as { id: string; title: string; doc: typeof sampleDoc };
-  assert.equal(manuscript.title, 'The Salt Meridian'); // title lifted from doc
+  assert.equal(manuscript.title, 'The Lantern Coast'); // title lifted from doc
   assert.deepEqual(manuscript.doc, sampleDoc);
 
   const list = await alice.get('/api/manuscripts');
@@ -50,10 +50,10 @@ test('manuscript CRUD happy path for the owner', async () => {
   assert.equal(fetched.status, 200);
   assert.deepEqual((fetched.body.manuscript as { doc: unknown }).doc, sampleDoc);
 
-  const updatedDoc = { ...sampleDoc, title: 'The Salt Meridian (Revised)' };
+  const updatedDoc = { ...sampleDoc, title: 'The Lantern Coast (Revised)' };
   const updated = await alice.put(`/api/manuscripts/${manuscript.id}`, { doc: updatedDoc, revision: 1 });
   assert.equal(updated.status, 200);
-  assert.equal((updated.body.manuscript as { title: string }).title, 'The Salt Meridian');
+  assert.equal((updated.body.manuscript as { title: string }).title, 'The Lantern Coast');
   assert.equal((updated.body.manuscript as { revision: number }).revision, 2);
 
   const renamed = await alice.put(

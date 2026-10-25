@@ -18,7 +18,7 @@ const PNG_1PX =
 
 // The studio's own document shape (serializeBook in client/index.html).
 const studioDoc = {
-  meta: { title: 'The Salt Meridian', author: 'A. Writer', language: 'en' },
+  meta: { title: 'The Lantern Coast', author: 'A. Writer', language: 'en' },
   sections: [
     { id: 'sec-cover', kind: 'front', type: 'cover', title: 'Cover', content: '' },
     { id: 'sec-ded', kind: 'front', type: 'dedication', title: 'Dedication', content: 'For the keepers.' },
@@ -118,7 +118,7 @@ test('create → list → read: token returned once, stored hashed, reader page 
 
   const page = await getHtml(created.path);
   assert.equal(page.status, 200);
-  assert.match(page.html, /The Salt Meridian/);
+  assert.match(page.html, /The Lantern Coast/);
   assert.match(page.html, /href="\/help\/warmth\.css"/);
   assert.match(page.headers.get('content-security-policy') ?? '', /script-src 'nonce-/);
   assert.equal(page.headers.get('referrer-policy'), 'no-referrer');
