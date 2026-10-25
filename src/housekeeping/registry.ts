@@ -1560,6 +1560,43 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The 3D viewer renders in the client from the client wrap geometry.',
   },
+  // BEUK:hcpreview — the Hardcover device in the studio's preview pane.
+  {
+    id: 'preview.hardcover.device',
+    title: 'Hardcover device: a closed hardback wearing the book’s cover art and spine title; the e-reader frame and desk stand down and return',
+    kind: 'client-only',
+    reason: 'The hardcover device is drawn by the client preview pane (CSS 3D in the studio page).',
+  },
+  {
+    id: 'preview.hardcover.trim-proportions',
+    title: 'Hardcover device proportions follow the print trim plus IngramSpark’s 0.125 in square; 6 × 9 and 5 × 8 differ',
+    kind: 'client-only',
+    reason: 'The proportions come from the client trim table and are measured in the rendered client DOM.',
+  },
+  {
+    id: 'preview.hardcover.spread-print',
+    title: 'Hardcover device, open: each spread page equals the Print Interior View page from the same print model',
+    kind: 'client-only',
+    reason: 'Both the spread and the Print Interior View paginate in the client browser; the server never lays out pages.',
+  },
+  {
+    id: 'preview.hardcover.turn-jump',
+    title: 'Hardcover device: Next / Prev / arrow keys step one spread and stop at the ends; it opens on, and follows, the chapter being edited',
+    kind: 'client-only',
+    reason: 'Page turning and chapter selection are client UI state.',
+  },
+  {
+    id: 'preview.hardcover.binding-look',
+    title: 'Hardcover device materials follow the cover maker binding: dust jacket, case laminate, or a cloth board with no cover art',
+    kind: 'client-only',
+    reason: 'The binding lives in the client cover recipe and the look is drawn by the client.',
+  },
+  {
+    id: 'preview.hardcover.i18n',
+    title: 'Hardcover device strings ship in all 13 interface languages',
+    kind: 'client-only',
+    reason: 'The interface string table is client data.',
+  },
   {
     id: 'cover.maker.adopt-gains-cover-package',
     title: 'Adopting a made cover gives the EPUB its cover files and landmark',

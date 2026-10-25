@@ -4,6 +4,20 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-24 — Your book as a hardback
+
+- **Hardcover in the preview.** For writers who want to see the printed
+  book, not just the e-reader: the preview bar has a Hardcover device. A
+  small hardback sits on the desk wearing your cover (dust-jacket gloss,
+  case-laminate print, or a cloth board stamped with the title when there
+  is no cover art yet), its size following your print trim. Tap it and it
+  opens to real spreads from the print layout — the same pages the Print
+  Interior View shows, with running heads, folios and endpapers. Turn
+  pages with the buttons, arrow keys or a swipe; it opens on the chapter
+  you are editing, and there is a full-screen button for reading a spread
+  at size. The new words in 12 languages have not yet been checked by
+  native speakers.
+
 ## 2026-10-24 — A way back into your shelf
 
 - **Forgot password.** For writers locked out of their own shelf: the
