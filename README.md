@@ -901,27 +901,103 @@ Founders' Shelf application; none of it touches pricing or checkout.
 
 Every response carries `X-Content-Type-Options: nosniff`,
 `Referrer-Policy: strict-origin-when-cross-origin`,
-`X-Frame-Options: SAMEORIGIN`, and an **enforced**
-`Content-Security-Policy: frame-ancestors 'self'; object-src 'none';
-base-uri 'self'`. The full source allow-list (scripts from cdnjs /
-jsdelivr, Google Fonts, inline scripts and styles, `blob:`/`data:`
-images, any `https:` image/fetch host because cover-photo results come
-from Pexels and Openverse's arbitrary hosts) ships as
-**`Content-Security-Policy-Report-Only`** — deliberately not enforced,
-because only the studio's load path was exercised against it, not every
-feature. Violations would show as `[Report Only]` console messages.
+`X-Frame-Options: SAMEORIGIN` and an **enforced**
+`Content-Security-Policy` (the `/read` reader sends its own, stricter
+policy instead; every other page — studio, help, thanks, support,
+changelog, roadmap, `/reset` — gets this one):
+
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline';
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+font-src 'self' data: https://fonts.gstatic.com;
+img-src 'self' data: https://images.pexels.com https://api.openverse.org;
+connect-src 'self' https://images.pexels.com https://api.openverse.org
+            https://fonts.googleapis.com https://fonts.gstatic.com;
+worker-src 'self'; manifest-src 'self'; frame-src 'self';
+form-action 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self';
+report-uri /api/csp-report; report-to csp
+```
+
+What is still allowed, and why — honestly:
+
+- **`'unsafe-inline'` for scripts and styles.** The studio is one
+  self-contained `index.html` whose code lives in inline `<script>`
+  blocks and whose markup uses inline styles; the help index, support and `/reset` pages
+  carry small inline scripts too. So the CSP does
+  **not** stop an injected inline script — it stops scripts from any
+  other origin, plugins, `<base>` hijacks, foreign form targets and
+  framing. Moving the studio to nonces/hashes would be the next step.
+- **No third-party script host.** JSZip, mammoth, lucide and jsPDF are
+  vendored under `client/assets/vendor/` (with SRI), so `script-src` names
+  no CDN. `'unsafe-eval'` is **not** granted.
+- **Google Fonts** — the stylesheet on `fonts.googleapis.com`, the files
+  on `fonts.gstatic.com`; both are also in `connect-src` because the
+  service worker re-fetches them for offline use (a worker's `fetch()` is
+  governed by `connect-src`).
+- **`images.pexels.com`** — signed-in cover and scene photo search goes
+  through `/api/stock` (Pexels); every Pexels photo URL is on this host
+  ([Pexels API docs](https://www.pexels.com/api/documentation/)).
+- **`api.openverse.org`** — when no shelf answers, photo search queries
+  Openverse straight from the browser and shows its thumbnails
+  (`/v1/images/{identifier}/thumb/`,
+  [schema](https://api.openverse.org/v1/schema/)). Openverse *originals*
+  live on each photographer's own host (Flickr, Wikimedia, …) and are
+  **not** allowed: in that offline-from-the-server mode, picking a photo
+  fetches the original first, the CSP refuses it (one `connect-src`
+  violation), and the studio falls back to Openverse's thumbnail — a
+  smaller picture. Signed-in Pexels search is unaffected.
+- **`data:`** for images and fonts (book pictures, covers, uploaded fonts
+  are data URIs). `blob:` is not needed and not allowed.
+
+**Violation reports** go to `POST /api/csp-report`
+(`src/routes/csp-report.ts`): both the legacy `report-uri` format
+(`application/csp-report`) and the Reporting API (`report-to csp` +
+`Reporting-Endpoints: csp="/api/csp-report"`, `application/reports+json`).
+Per client IP it is rate-limited (token bucket, 30 burst, 1 per 2 s →
+429), bodies over 16 KiB are refused (413), at most 20 reports per POST
+are read, and each report becomes **one log line** — disposition,
+directive, the blocked resource reduced to its origin or keyword, and the
+document/source reduced to a path with queries and share/reset tokens cut
+(`/read/:token`, `/reset`). No IP, user agent, referrer or script sample
+is logged, and nothing is stored. Browsers that support `report-to`
+ignore `report-uri`; the Reporting API only delivers over HTTPS or
+localhost, with a delay of up to a minute.
+
 `Strict-Transport-Security: max-age=31536000` is sent only over HTTPS
 on a host other than `localhost`/`127.0.0.1`, so local mode
 (`http://localhost:8090`, or `https://localhost`) is never pinned.
 
-Verified on a throwaway compose stack (local mode on port 18101): the
-studio, `/help/`, `/changelog`, `/roadmap` and `/thanks/` load in
-headless Chromium with **zero** CSP console messages (enforced or
-report-only), and JSZip, mammoth, lucide and jsPDF all load; a
-positive control (injecting a script from a non-listed host and an
-`<object>`) does produce the expected messages. With a real-domain
-site address over HTTPS the HSTS header is present; on localhost and
-plain HTTP it is not.
+**How the allow-list was proven** (throwaway compose project
+`beuk-csp`, no published ports, Playwright inside Caddy's network
+namespace on `http://localhost`): a Playwright click-through of every
+studio feature — load, sample book, typing, every toolbar button,
+uploads (picture, font, flourish, cover, cover art), dictation (stub
+recogniser), Read Aloud (stub voice), all 10 device previews incl. the
+hardcover mini-book, cover maker, case-laminate wrap + dust-jacket PDF,
+EPUB/DOCX/Markdown/HTML/ACX downloads, inspector/validate/a11y/preflight,
+print preview + spreads, Store-ready report, DOCX/Markdown/TXT import +
+import report, register / change password / sign out / sign in /
+forgot / reset with a real emailed token, shelf save + open, export
+archive saves, beta share link + `/read` + comment + comment in the
+studio, Pexels cover and scene photo search, every help page, thanks,
+support, changelog, roadmap, language switch to Arabic and Japanese,
+service worker + offline reload, and the in-studio self-checks — with a
+`securitypolicyviolation` listener in every frame, the console scanned
+for CSP messages, and the app log watched for `/api/csp-report` lines
+(the test stack's Caddyfile drops `report-to`, because headless Chromium
+registered the `csp` endpoint but never uploaded a `report-to` report in
+100 s, while it does send `report-uri` reports; a violation inside the
+service worker's own context would only show up there, and none did).
+Run first against the policy as report-only, then **enforced**: zero
+violations and zero uncaught page errors, apart from the documented
+Openverse-original case above. A positive control (a foreign
+`<script>`, `fetch`, `<img>` and `<object>`) is refused and all four
+reach `/api/csp-report`. Note: Chromium does not apply `'unsafe-eval'`
+checks while DevTools/Playwright is attached, so the click-through wraps
+`eval`, `Function` and string timers in a tripwire instead; a plain
+headless Chrome (no DevTools) confirms `eval` and `new Function` throw
+`EvalError` under this policy.
 
 ## Tests
 

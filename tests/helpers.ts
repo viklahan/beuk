@@ -8,6 +8,7 @@ import type { Config } from '../src/config.js';
 import { runMigrations, type Db, type QueryResult } from '../src/db.js';
 import type { Mailer } from '../src/mailer.js';
 import type { AccountLimits, BackgroundTasks } from '../src/routes/account.js';
+import type { CspReportOptions } from '../src/routes/csp-report.js';
 import type {
   BootCheck,
   HousekeepingDeps,
@@ -168,7 +169,7 @@ export async function startTestServer(
   now?: () => Date,
   overrides?: Partial<Config>,
   housekeeping?: HousekeepingDeps,
-  extra?: { mailer?: Mailer; accountLimits?: AccountLimits },
+  extra?: { mailer?: Mailer; accountLimits?: AccountLimits; cspReport?: CspReportOptions },
 ): Promise<TestServer> {
   const config = testConfig(overrides);
   const app = buildApp({ db, config, now, housekeeping, ...extra });

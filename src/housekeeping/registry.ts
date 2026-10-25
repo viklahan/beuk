@@ -280,7 +280,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'infra.deploy.security-headers',
-    title: 'Caddyfile sends the security headers (HSTS on real TLS only, CSP enforced + report-only)',
+    title: 'Caddyfile sends the security headers (HSTS on real TLS only, full CSP enforced with a report endpoint)',
     kind: 'server',
     run: async () => {
       // Static proof from the deploy tree; the live headers are proven
@@ -290,13 +290,21 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
         'X-Content-Type-Options "nosniff"',
         'Referrer-Policy "strict-origin-when-cross-origin"',
         'X-Frame-Options "SAMEORIGIN"',
-        'Content-Security-Policy "frame-ancestors',
-        'Content-Security-Policy-Report-Only "',
+        `header ?Content-Security-Policy "default-src 'self'`,
+        "object-src 'none'",
+        "frame-ancestors 'self'",
+        'report-uri /api/csp-report',
+        'report-to csp',
+        'header ?Reporting-Endpoints "csp=',
         'header @hsts Strict-Transport-Security',
         'not host localhost 127.0.0.1',
       ].filter((needle) => !caddy.includes(needle));
       assert(!missing.length, `Caddyfile is missing: ${missing.join('; ')}`);
-      return 'nosniff, referrer policy, frame protection, CSP (enforced + report-only) and TLS-only HSTS all present';
+      // The full policy is enforced; a leftover report-only copy would
+      // mean the allow-list is not actually in force.
+      const live = caddy.replace(/^\s*#.*$/gm, '');
+      assert(!live.includes('Content-Security-Policy-Report-Only'), 'Caddyfile still ships a report-only CSP');
+      return 'nosniff, referrer policy, frame protection, the full CSP (enforced, reporting to /api/csp-report) and TLS-only HSTS all present';
     },
   },
   {

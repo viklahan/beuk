@@ -27672,7 +27672,8 @@
               openCoverMaker();
               cloud.available = false; cloud.user = null;
               gateStandalone = cmStockGate();
-              const fixture = { results: [{ title: "Harbour at dusk", creator: "Ada Lens", creator_url: "https://openverse.org/@ada", foreign_landing_url: "https://example.org/harbour", url: "https://images.example.org/harbour-full.jpg", thumbnail: "https://images.example.org/harbour-thumb.jpg" }] };
+              /* BEUK:csp — thumbnail in Openverse's real shape (/v1/images/{identifier}/thumb/, https://api.openverse.org/v1/schema/) on an img-src host the enforced CSP allows, so the self-check never asks for a blocked image. */
+              const fixture = { results: [{ title: "Harbour at dusk", creator: "Ada Lens", creator_url: "https://openverse.org/@ada", foreign_landing_url: "https://example.org/harbour", url: "https://images.example.org/harbour-full.jpg", thumbnail: "https://api.openverse.org/v1/images/00000000-0000-0000-0000-000000000000/thumb/" }] };
               const mapped = cmMapDirectResults(fixture);
               state = cmRenderStockResults(mapped);
               const gridEl = $("cmPhotoGrid");
@@ -27693,7 +27694,7 @@
             return scVerdict(
               gateStandalone === "direct" && gateAccount === "account" &&
               url === "https://api.openverse.org/v1/images/?q=salt%20harbour&page_size=12&license_type=all&filter_dead=false" &&
-              state === "ok" && grid === 1 && src === "https://images.example.org/harbour-thumb.jpg" &&
+              state === "ok" && grid === 1 && src === "https://api.openverse.org/v1/images/00000000-0000-0000-0000-000000000000/thumb/" &&
               titleAttr === t("covermk.photoByOpenverse", { name: "Ada Lens" }),
               "standalone gate is “direct” and the search URL is " + url + "; the Openverse shape maps into " + grid + " grid cell(s) credited “" + titleAttr + "”; a reachable shelf without a writer still gates as “account”");
           } },
@@ -30250,14 +30251,15 @@
               /* Standalone: the Openverse shape maps into the grid,
                  credited, in the same contract the cover maker renders. */
               cloud.available = false; cloud.user = null;
-              const fixture = { results: [{ title: "Harbour at dusk", creator: "Ada Lens", creator_url: "https://openverse.org/@ada", foreign_landing_url: "https://example.org/harbour", url: "https://images.example.org/harbour-full.jpg", thumbnail: "https://images.example.org/harbour-thumb.jpg" }] };
+              /* BEUK:csp — thumbnail in Openverse's real shape (/v1/images/{identifier}/thumb/, https://api.openverse.org/v1/schema/) on an img-src host the enforced CSP allows, so the self-check never asks for a blocked image. */
+              const fixture = { results: [{ title: "Harbour at dusk", creator: "Ada Lens", creator_url: "https://openverse.org/@ada", foreign_landing_url: "https://example.org/harbour", url: "https://images.example.org/harbour-full.jpg", thumbnail: "https://api.openverse.org/v1/images/00000000-0000-0000-0000-000000000000/thumb/" }] };
               const mapped = cmMapDirectResults(fixture);
               const state2 = sceneRenderSuggestResults(mapped);
               const grid = $("sceneSuggestGrid");
               const cell = grid ? grid.querySelector("button") : null;
               const cellImg = grid ? grid.querySelector("img") : null;
               const renderOk = state2 === "ok" && !!cell && cell.title === t("covermk.photoByOpenverse", { name: "Ada Lens" }) &&
-                !!cellImg && cellImg.getAttribute("src") === "https://images.example.org/harbour-thumb.jpg";
+                !!cellImg && cellImg.getAttribute("src") === "https://api.openverse.org/v1/images/00000000-0000-0000-0000-000000000000/thumb/";
               /* Closing the browser without picking changes nothing. */
               const libBefore = state.images.length;
               $("btnCloseScene").click();
