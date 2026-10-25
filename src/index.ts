@@ -1,5 +1,7 @@
 import type { Server } from 'node:http';
 import { buildApp } from './app.js';
+import { purgeExpiredSessions } from './auth.js';
+import { createShutdown } from './shutdown.js';
 import { loadConfig } from './config.js';
 import { createPgDb, defaultMigrationsDir, runMigrations, type Db } from './db.js';
 import type { BootCheck } from './housekeeping/context.js';
@@ -58,6 +60,29 @@ const app = buildApp({
 // `running` are failed honestly, jobs still `queued` are re-run.
 const jobsRunner = app.locals.jobsRunner as JobRunner | undefined;
 await jobsRunner?.recover().catch((err) => console.error('job recovery failed', err));
-app.listen(config.port, () => {
+
+// Expired sessions: purge once at boot, then periodically (cheap
+// indexed delete; requireAuth already refuses expired ones).
+const purge = () =>
+  purgeExpiredSessions(db)
+    .then((n) => {
+      if (n) console.log(`sessions: purged ${n} expired`);
+    })
+    .catch((err) => console.error('session purge failed', err));
+await purge();
+const purgeTimer = setInterval(purge, config.sessionPurgeIntervalMs);
+purgeTimer.unref();
+
+const server = app.listen(config.port, () => {
   console.log(`beuk-api listening on :${config.port} (timezone ${config.timeZone})`);
 });
+
+const shutdown = createShutdown({
+  server,
+  graceMs: config.shutdownGraceMs,
+  runner: jobsRunner,
+  closeDb: () => db.end(),
+  timers: [purgeTimer],
+});
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));

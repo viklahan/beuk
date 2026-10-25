@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { uuidParam } from '../ids.js';
 
 interface ManuscriptRow {
   id: string;
@@ -25,6 +26,7 @@ function validDoc(doc: unknown): doc is Record<string, unknown> {
 export function manuscriptRoutes(db: Db): Router {
   const router = Router();
   router.use(requireAuth(db));
+  router.param('id', uuidParam('manuscript not found'));
 
   // Every query below is owner-scoped: user_id always comes from the
   // session, never from the request.

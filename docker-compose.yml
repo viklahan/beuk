@@ -22,6 +22,14 @@ services:
     # Fixed name: deploy/Dockerfile.tools builds the tools overlay FROM this.
     image: beuk-app:latest
     restart: unless-stopped
+    # Hardening: Docker's bundled init (tini) runs as PID 1, forwards
+    # SIGTERM/SIGINT to node and reaps orphaned tool processes. The app
+    # then shuts down gracefully (src/shutdown.ts) within
+    # SHUTDOWN_GRACE_MS, which stays below stop_grace_period so Docker
+    # never has to SIGKILL it mid-request.
+    # https://docs.docker.com/reference/compose-file/services/#init
+    init: true
+    stop_grace_period: 30s
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-beuk}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-beuk}
       PORT: "3000"
@@ -70,6 +78,13 @@ services:
       # configured"; the key is used server-side only.
       PEXELS_API_KEY: ${PEXELS_API_KEY:-}
       PEXELS_API_BASE: ${PEXELS_API_BASE:-https://api.pexels.com/v1}
+      # Hardening: one trusted proxy hop (Caddy) so req.ip is the real
+      # client for the auth rate limit and the founders throttle.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      AUTH_RATE_BURST: ${AUTH_RATE_BURST:-10}
+      AUTH_RATE_REFILL_MS: ${AUTH_RATE_REFILL_MS:-60000}
+      SHUTDOWN_GRACE_MS: ${SHUTDOWN_GRACE_MS:-20000}
+      SESSION_PURGE_INTERVAL_MS: ${SESSION_PURGE_INTERVAL_MS:-3600000}
     volumes:
       - exportdata:/data/exports
       - backupdata:/data/backups
@@ -79,6 +94,14 @@ services:
     # Not published on the host: Caddy is the only public entry point.
     expose:
       - "3000"
+    # The image has no curl/wget; node's built-in fetch probes the same
+    # /api/health the boot check uses (it also confirms the DB is up).
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   caddy:
     image: caddy:2-alpine
@@ -101,7 +124,18 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    # Probes Caddy's admin API on its default localhost:2019 listener —
+    # independent of DOMAIN (http vs https, local CA) so the same check
+    # works in local mode and production.
+    # https://caddyserver.com/docs/api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   pgdata:

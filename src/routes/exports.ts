@@ -6,6 +6,7 @@ import express, { Router, type NextFunction, type Request, type Response } from 
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { isUuid, uuidParam } from '../ids.js';
 
 export const EXPORT_FORMATS = ['epub', 'markdown', 'html', 'print-html', 'docx', 'pdfx'] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
@@ -53,9 +54,35 @@ function cleanFilename(name: unknown, format: ExportFormat): string {
   return base || fallback;
 }
 
+/**
+ * Stream a stored export file to the response. A read stream with no
+ * 'error' listener turns a vanished or unreadable file (deleted between
+ * the stat and the open, EISDIR, EACCES, an I/O error) into an uncaught
+ * exception that kills the whole Node process. Here a failure before
+ * any byte is sent becomes the same honest 500 the stat check gives;
+ * a failure mid-stream can only abort that one response (the status
+ * line is already out).
+ */
+export function streamFile(file: string, res: Response): void {
+  const stream = createReadStream(file);
+  stream.on('error', (err) => {
+    console.error(`export download: reading ${file} failed`, err);
+    if (!res.headersSent) {
+      for (const h of ['content-type', 'content-disposition', 'content-length']) res.removeHeader(h);
+      res.status(500).json({ error: 'export file is missing from storage' });
+    } else {
+      res.destroy(err);
+    }
+  });
+  // If the client goes away, stop reading the file.
+  res.on('close', () => stream.destroy());
+  stream.pipe(res);
+}
+
 export function exportRoutes(db: Db, config: Config): Router {
   const router = Router();
   router.use(requireAuth(db));
+  router.param('id', uuidParam('export not found'));
 
   const filePath = (userId: string, exportId: string) =>
     path.join(config.exportDir, userId, exportId);
@@ -90,6 +117,7 @@ export function exportRoutes(db: Db, config: Config): Router {
         }
         const manuscriptId = String(req.query.manuscriptId ?? '');
         if (!manuscriptId) return res.status(400).json({ error: 'manuscriptId is required' });
+        if (!isUuid(manuscriptId)) return res.status(404).json({ error: 'manuscript not found' });
         // The linked manuscript must belong to the caller — the same
         // owner-scoped 404 as everywhere else (existence is not leaked).
         const owner = await db.query(
@@ -154,7 +182,7 @@ export function exportRoutes(db: Db, config: Config): Router {
         `attachment; filename="${row.filename.replace(/"/g, '')}"`,
       );
       res.setHeader('content-length', String(row.byte_size));
-      return createReadStream(file).pipe(res);
+      return streamFile(file, res);
     } catch (err) {
       return next(err);
     }

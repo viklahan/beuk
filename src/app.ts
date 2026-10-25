@@ -32,6 +32,14 @@ export interface AppDeps {
 export function buildApp({ db, config, now, billing, housekeeping }: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
+  // Exactly the configured number of proxy hops (default 1: Caddy) is
+  // trusted, so req.ip is the real client address: Express takes the
+  // address that many hops back, reading X-Forwarded-For right-to-left.
+  // Caddy ignores any X-Forwarded-For the client sent and sets its own
+  // (https://caddyserver.com/docs/caddyfile/directives/reverse_proxy,
+  // "Defaults"), so the right-most entry is the client Caddy saw.
+  // https://expressjs.com/en/guide/behind-proxies.html
+  app.set('trust proxy', config.trustProxyHops);
   // The billing webhook verifies its signature over the RAW body, so it
   // gets its own raw parser mounted on its exact path BEFORE the global
   // JSON parser can touch (and re-shape) the payload.

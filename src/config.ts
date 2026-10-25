@@ -77,6 +77,26 @@ export interface Config {
   /** Stock photos: Pexels API base URL (PEXELS_API_BASE, default
    *  https://api.pexels.com/v1); tests point it at a stub server. */
   pexelsApiBase: string;
+  /** Hardening: how many reverse-proxy hops sit in front of the app
+   *  (TRUST_PROXY_HOPS, default 1 = Caddy). Handed to Express's
+   *  `trust proxy` so req.ip is the real client address. Set 0 when the
+   *  app is reached directly (no proxy), or clients could spoof
+   *  X-Forwarded-For. https://expressjs.com/en/guide/behind-proxies.html */
+  trustProxyHops: number;
+  /** Hardening: per-client-IP token bucket on POST /api/auth/login and
+   *  /api/auth/register (separate buckets). AUTH_RATE_BURST attempts
+   *  (default 10) up front, one more every AUTH_RATE_REFILL_MS
+   *  (default 60000 = one a minute). */
+  authRateBurst: number;
+  authRateRefillMs: number;
+  /** Hardening: on SIGTERM/SIGINT, how long in-flight requests and a
+   *  running job get before the job is marked failed and the process
+   *  exits (SHUTDOWN_GRACE_MS, default 20000; keep it below compose's
+   *  stop_grace_period). */
+  shutdownGraceMs: number;
+  /** Hardening: how often expired sessions are deleted
+   *  (SESSION_PURGE_INTERVAL_MS, default 1 hour; also once at boot). */
+  sessionPurgeIntervalMs: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -115,5 +135,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),
     pexelsApiKey: env.PEXELS_API_KEY || null,
     pexelsApiBase: (env.PEXELS_API_BASE ?? 'https://api.pexels.com/v1').replace(/\/$/, ''),
+    trustProxyHops: Number(env.TRUST_PROXY_HOPS ?? 1),
+    authRateBurst: Number(env.AUTH_RATE_BURST ?? 10),
+    authRateRefillMs: Number(env.AUTH_RATE_REFILL_MS ?? 60_000),
+    shutdownGraceMs: Number(env.SHUTDOWN_GRACE_MS ?? 20_000),
+    sessionPurgeIntervalMs: Number(env.SESSION_PURGE_INTERVAL_MS ?? 3_600_000),
   };
 }

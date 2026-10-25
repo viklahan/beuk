@@ -17,8 +17,19 @@ export interface Db {
   tx<T>(fn: (txDb: Db) => Promise<T>): Promise<T>;
 }
 
-export function createPgDb(databaseUrl: string): Db & { end: () => Promise<void> } {
+export function createPgDb(
+  databaseUrl: string,
+): Db & { end: () => Promise<void>; pool: pg.Pool } {
   const pool = new pg.Pool({ connectionString: databaseUrl });
+  // An idle pooled client whose backend dies (Postgres restart, network
+  // blip) makes the Pool emit 'error'. With no listener, an EventEmitter
+  // 'error' is thrown — an uncaught exception that kills the app. Log it
+  // instead: the pool discards that client and the next query opens a
+  // fresh connection (in-flight queries still reject to their caller).
+  // https://node-postgres.com/apis/pool#events ("error")
+  pool.on('error', (err) => {
+    console.error('postgres pool: idle client error (connection dropped; will reconnect on next query)', err.message);
+  });
   const wrap = (queryFn: (text: string, params?: unknown[]) => Promise<QueryResult<unknown>>): Db => ({
     query: async <T>(text: string, params?: unknown[]) =>
       queryFn(text, params) as Promise<QueryResult<T>>,
@@ -40,7 +51,7 @@ export function createPgDb(databaseUrl: string): Db & { end: () => Promise<void>
     },
   });
   const db = wrap(async (text, params) => pool.query(text, params as unknown[]) as Promise<QueryResult<unknown>>);
-  return { ...db, end: () => pool.end() };
+  return { ...db, end: () => pool.end(), pool };
 }
 
 /** Apply any not-yet-applied .sql files from `dir`, in filename order.

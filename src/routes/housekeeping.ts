@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { Config } from '../config.js';
 import { defaultMigrationsDir, runMigrations, type Db } from '../db.js';
 import { requireAdmin } from '../housekeeping/admin.js';
+import { isUuid } from '../ids.js';
 import {
   createBackup,
   executeRestore,
@@ -56,6 +57,11 @@ const ACTION_CATALOG = [
 export function housekeepingRoutes(db: Db, config: Config, hk: HousekeepingContext): Router {
   const router = Router();
   router.use(requireAdmin(db));
+  // Non-UUID run ids can never match a row: 404, not a Postgres 500.
+  router.param('id', (_req, res, next, value: string) => {
+    if (isUuid(value)) return next();
+    return send(res, 404, { error: 'run not found' });
+  });
 
   const send = (res: Response, status: number, payload: unknown): void => {
     res.status(status).json(scrubValue(payload, hk.secrets));

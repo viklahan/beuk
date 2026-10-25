@@ -65,6 +65,16 @@ export async function destroySession(db: Db, req: Request): Promise<void> {
   if (token) await db.query('delete from sessions where token_hash = $1', [tokenHash(token)]);
 }
 
+/** Delete sessions past their expiry. requireAuth already refuses
+ *  them; this only stops the table growing forever. Cheap: one indexed
+ *  range delete (sessions_expires_at_idx). Returns rows removed. */
+export async function purgeExpiredSessions(db: Db): Promise<number> {
+  const result = await db.query<{ id: string }>(
+    'delete from sessions where expires_at <= now() returning id',
+  );
+  return result.rows.length;
+}
+
 /** Express middleware: resolves the session cookie to req.user, else 401. */
 export function requireAuth(db: Db) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
