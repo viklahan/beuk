@@ -58,17 +58,32 @@ export interface Config {
   /** M5 jobs: the PDF/X-1a definition file handed to Ghostscript
    *  (PDFX_DEF; defaults to tools/PDFX_def.ps in the repo). */
   pdfxDefPath: string;
-  /** M5 jobs: headless-Chromium-compatible binary used to render a
-   *  print-html interior to PDF before PDF/X conversion (HTML_PDF_BIN,
-   *  e.g. /usr/bin/chromium). It must accept Chromium's
-   *  --headless/--print-to-pdf flags. Null means HTML-to-PDF rendition
-   *  is NOT configured on this server: pdfx jobs are still accepted,
-   *  run, and complete as FAILED with that stated in their result —
-   *  raw HTML is never fed to Ghostscript. */
-  htmlPdfBin: string | null;
+  /** M5 jobs: URL of the isolated renderer service (RENDERER_URL, e.g.
+   *  http://renderer:3100/render — see deploy/renderer/ and the tools
+   *  overlay). The pdfx job POSTs the print-html interior there and
+   *  gets the PDF back; user HTML never runs inside the app container.
+   *  Null means HTML-to-PDF rendition is NOT configured on this server:
+   *  pdfx jobs are still accepted, run, and complete as FAILED with that
+   *  stated in their result — raw HTML is never fed to Ghostscript. */
+  rendererUrl: string | null;
+  /** The retired in-container renderer setting (HTML_PDF_BIN). It is
+   *  read ONLY so the not-configured message can say it is ignored:
+   *  running Chromium on user HTML inside the app container exposed the
+   *  app's secrets and volumes, so that mode no longer exists. */
+  legacyHtmlPdfBin: string | null;
   /** M5 jobs: per-job wall-clock timeout in ms (JOB_TIMEOUT_MS,
    *  default 2 minutes); a job that overruns is stopped and fails. */
   jobTimeoutMs: number;
+  /** M5 jobs: maximum JVM heap for EPUBCheck (JAVA_MAX_HEAP, passed as
+   *  -Xmx; default 512m). A hostile or huge EPUB then fails with an
+   *  OutOfMemoryError in its result instead of starving the box. */
+  javaMaxHeap: string;
+  /** M5 jobs: how many jobs one user may have queued or running at
+   *  once (JOB_MAX_ACTIVE_PER_USER, default 2); the next is a 429. */
+  jobMaxActivePerUser: number;
+  /** M5 jobs: how many jobs the whole server holds queued or running
+   *  at once (JOB_MAX_QUEUED, default 20); the next is a 503. */
+  jobMaxQueued: number;
   /** Stock photos (cover-maker backgrounds, via Pexels): the API key
    *  (PEXELS_API_KEY). Null until set — while null, GET /api/stock/search
    *  answers 501 "stock photos not configured". The key is used
@@ -97,6 +112,11 @@ export interface Config {
   /** Hardening: how often expired sessions are deleted
    *  (SESSION_PURGE_INTERVAL_MS, default 1 hour; also once at boot). */
   sessionPurgeIntervalMs: number;
+}
+
+function positiveInt(raw: string | undefined, fallback: number): number {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -131,8 +151,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     javaBin: env.JAVA_BIN || 'java',
     gsBin: env.GS_BIN || null,
     pdfxDefPath: env.PDFX_DEF ?? path.resolve(process.cwd(), 'tools', 'PDFX_def.ps'),
-    htmlPdfBin: env.HTML_PDF_BIN || null,
+    rendererUrl: env.RENDERER_URL || null,
+    legacyHtmlPdfBin: env.HTML_PDF_BIN || null,
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),
+    javaMaxHeap: /^[1-9][0-9]*[kKmMgG]?$/.test(env.JAVA_MAX_HEAP ?? '') ? env.JAVA_MAX_HEAP! : '512m',
+    jobMaxActivePerUser: positiveInt(env.JOB_MAX_ACTIVE_PER_USER, 2),
+    jobMaxQueued: positiveInt(env.JOB_MAX_QUEUED, 20),
     pexelsApiKey: env.PEXELS_API_KEY || null,
     pexelsApiBase: (env.PEXELS_API_BASE ?? 'https://api.pexels.com/v1').replace(/\/$/, ''),
     trustProxyHops: Number(env.TRUST_PROXY_HOPS ?? 1),

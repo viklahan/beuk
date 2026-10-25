@@ -1,13 +1,14 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { copyFile, readFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
 
 /**
  * M5 tool adapters: the ONLY code that talks to the external binaries
- * (EPUBCheck on a JRE, Ghostscript, and a headless-Chromium-compatible
- * HTML-to-PDF renderer). The honesty contract lives here:
+ * (EPUBCheck on a JRE, Ghostscript) and to the isolated HTML-to-PDF
+ * renderer service (headless Chromium in its own locked-down container,
+ * reached over HTTP at RENDERER_URL). The honesty contract lives here:
  *
  * - A tool that is not configured/installed yields a clear problem
  *   string BEFORE anything runs, and the job completes as FAILED with
@@ -17,9 +18,10 @@ import type { Config } from '../config.js';
  *   successful job whose report says so — `passed: false`), and
  *   Ghostscript must both exit 0 AND leave a non-empty output file.
  * - The adapters are stub-able purely through config: point JAVA_BIN /
- *   GS_BIN / HTML_PDF_BIN at any executable (the tests use small shell
- *   scripts) and EPUBCHECK_JAR at any file, and the whole pipeline
- *   runs unchanged.
+ *   GS_BIN at any executable (the tests use small shell scripts),
+ *   EPUBCHECK_JAR at any file, and RENDERER_URL at any HTTP server that
+ *   answers like deploy/renderer/server.mjs (the tests run a stub), and
+ *   the whole pipeline runs unchanged.
  */
 
 export interface EpubCheckMessage {
@@ -251,7 +253,10 @@ export async function runEpubCheck(
   for (const flag of ['--json', '-j']) {
     const run = await runCommand(
       config.javaBin,
-      ['-jar', config.epubcheckJar!, bookPath, flag, jsonPath],
+      // -Xmx caps the JVM heap so one hostile or enormous EPUB fails with
+      // an OutOfMemoryError (reported below) instead of starving the box.
+      // https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html (-Xmx)
+      [`-Xmx${config.javaMaxHeap}`, '-jar', config.epubcheckJar!, bookPath, flag, jsonPath],
       config.jobTimeoutMs,
     );
     lastRun = run;
@@ -285,20 +290,33 @@ export async function runEpubCheck(
 
 /* -------------------- HTML → PDF rendition (print interior) -------------------- */
 
-/** Why the print interior cannot be rendered to PDF on this server, or null when it can. */
+/** Why the print interior cannot be rendered to PDF on this server, or null when it can.
+ *  "Can" means a renderer is configured; whether it answers is only known
+ *  when a job calls it, and an unreachable renderer fails that job saying so. */
 export function pdfRenderProblem(config: Config): string | null {
-  if (!config.htmlPdfBin) {
+  if (!config.rendererUrl) {
+    const legacy = config.legacyHtmlPdfBin
+      ? ' HTML_PDF_BIN is set but no longer used: rendering user HTML with a browser inside ' +
+        "the app container exposed the app's secrets and storage, so rendition now runs only " +
+        'in the isolated renderer service (deploy/docker-compose.tools.yml).'
+      : '';
     return (
-      'HTML-to-PDF rendition is not configured on this server (HTML_PDF_BIN is not set), ' +
+      'HTML-to-PDF rendition is not configured on this server (RENDERER_URL is not set), ' +
       'so this job was not run and no converted file exists. This is a ' +
-      'server setup gap, not a finding about your book.'
+      'server setup gap, not a finding about your book.' +
+      legacy
     );
   }
-  const probe = spawnSync(config.htmlPdfBin, ['--version'], { timeout: 5_000, encoding: 'utf8' });
-  if (probe.error) {
+  let url: URL;
+  try {
+    url = new URL(config.rendererUrl);
+  } catch {
+    url = new URL('invalid:');
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return (
-      `HTML-to-PDF rendition is not configured on this server (the renderer at HTML_PDF_BIN="${config.htmlPdfBin}" ` +
-      'did not run), so this job was not run and no converted file exists. This is a ' +
+      `HTML-to-PDF rendition is not configured on this server (RENDERER_URL="${config.rendererUrl}" ` +
+      'is not an http(s) URL), so this job was not run and no converted file exists. This is a ' +
       'server setup gap, not a finding about your book.'
     );
   }
@@ -306,72 +324,86 @@ export function pdfRenderProblem(config: Config): string | null {
 }
 
 /**
- * Render a print-html interior to PDF with a headless-Chromium-compatible
- * binary. The print interior's @page CSS carries the trim size, so the
- * rendition honors it; --no-pdf-header-footer keeps the browser's own
- * chrome out of the book.
+ * Render a print-html interior to PDF in the isolated renderer service
+ * (deploy/renderer/server.mjs): the HTML bytes are POSTed to
+ * RENDERER_URL and the PDF comes back in the response body. The
+ * browser that interprets the user's HTML never runs in this process's
+ * container, so it can reach none of the app's environment, volumes,
+ * or database. The print interior's @page CSS carries the trim size;
+ * the renderer honours it (preferCSSPageSize) with no browser header/footer.
  */
-export function renderPdfArgs(htmlPdfBin: string, inputPath: string, outputPath: string): string[] {
-  const url = inputPath.startsWith('file://') ? inputPath : `file://${inputPath}`;
-  return [
-    '--headless',
-    '--disable-gpu',
-    '--no-sandbox',
-    '--hide-scrollbars',
-    `--print-to-pdf=${outputPath}`,
-    '--no-pdf-header-footer',
-    url,
-  ];
-}
-
 export async function renderPrintPdf(
   config: Config,
   inputPath: string,
   outputPath: string,
 ): Promise<ToolOutcome<{ pdfBytes: number }>> {
-  const run = await runCommand(
-    config.htmlPdfBin!,
-    renderPdfArgs(config.htmlPdfBin!, inputPath, outputPath),
-    config.jobTimeoutMs,
-  );
-  if (run.timedOut) {
-    return {
-      ok: false,
-      error: `The HTML-to-PDF renderer did not finish within ${config.jobTimeoutMs} ms and was stopped.`,
-    };
-  }
-  if (run.spawnError) {
+  const html = await readFile(inputPath);
+  let response: Response;
+  try {
+    response = await fetch(config.rendererUrl!, {
+      method: 'POST',
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+      body: html,
+      signal: AbortSignal.timeout(config.jobTimeoutMs),
+    });
+  } catch (err) {
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      return {
+        ok: false,
+        error: `The HTML-to-PDF renderer did not finish within ${config.jobTimeoutMs} ms and was stopped.`,
+      };
+    }
+    const cause = err instanceof Error && err.cause instanceof Error ? err.cause.message : String(err);
     return {
       ok: false,
       error:
-        `The HTML-to-PDF renderer could not be started (HTML_PDF_BIN="${config.htmlPdfBin}": ${run.spawnError}). ` +
+        `The HTML-to-PDF renderer could not be reached (RENDERER_URL="${config.rendererUrl}": ${cause}). ` +
         'This is a server setup gap, not a finding about your book.',
     };
   }
-  if (run.code !== 0) {
+  let body: Buffer;
+  try {
+    body = Buffer.from(await response.arrayBuffer());
+  } catch (err) {
+    const name = err instanceof Error ? err.name : '';
     return {
       ok: false,
       error:
-        `The HTML-to-PDF renderer exited with code ${run.code} and produced no PDF.` +
-        stderrTail(run.stderr),
+        name === 'TimeoutError' || name === 'AbortError'
+          ? `The HTML-to-PDF renderer did not finish within ${config.jobTimeoutMs} ms and was stopped.`
+          : 'The HTML-to-PDF renderer dropped the connection before sending a PDF, so no converted file exists.',
     };
   }
-  const produced = await readFile(outputPath).catch(() => null);
-  if (!produced || produced.length === 0) {
+  if (response.status !== 200) {
+    let said = '';
+    try {
+      const parsed = JSON.parse(body.toString('utf8')) as { error?: unknown };
+      if (typeof parsed.error === 'string') said = ` Renderer said: ${parsed.error.slice(0, 300)}`;
+    } catch {
+      /* not JSON — say nothing more than the status */
+    }
+    return {
+      ok: false,
+      error: `The HTML-to-PDF renderer answered HTTP ${response.status} and produced no PDF.${said}`,
+    };
+  }
+  if (body.length === 0) {
     return {
       ok: false,
       error:
-        'The HTML-to-PDF renderer reported success but left no output file, so no converted file exists.',
+        'The HTML-to-PDF renderer reported success but sent no bytes, so no converted file exists.',
     };
   }
-  if (produced.subarray(0, 4).toString('latin1') !== '%PDF') {
+  if (body.subarray(0, 4).toString('latin1') !== '%PDF') {
     return {
       ok: false,
       error:
-        'The HTML-to-PDF renderer left a file that is not a PDF, so it cannot be converted to PDF/X.',
+        'The HTML-to-PDF renderer sent something that is not a PDF, so it cannot be converted to PDF/X.',
     };
   }
-  return { ok: true, value: { pdfBytes: produced.length } };
+  await writeFile(outputPath, body);
+  return { ok: true, value: { pdfBytes: body.length } };
 }
 
 /* ------------------------------ PDF/X (Ghostscript) ------------------------------ */
@@ -412,8 +444,32 @@ export function pdfxProblem(config: Config): string | null {
  * always renders the print-html interior to PDF first (see
  * renderPrintPdf above); raw HTML is never fed to Ghostscript.
  */
+/** The ICC profile path PDFX_def.ps embeds (its `/BeukICCPath (…) def`
+ *  line), or null when the file is unreadable or carries no such line. */
+export function pdfxIccPath(defPath: string): string | null {
+  let text: string;
+  try {
+    text = readFileSync(defPath, 'latin1');
+  } catch {
+    return null;
+  }
+  const match = /^\/BeukICCPath \(([^()]*)\) def/m.exec(text);
+  return match ? match[1] : null;
+}
+
 export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPath: string): string[] {
+  // The rendered PDF carries user-influenced content (text, images, and
+  // the writer's uploaded fonts, subset-embedded by Chromium), so it is
+  // interpreted under -dSAFER — file access limited to the inputs named
+  // here, no device or parameter tampering. SAFER has been Ghostscript's
+  // default since 9.50; it is spelled out so a different gs build can
+  // never silently drop it. Under SAFER the definition file may only read
+  // the ICC profile it embeds if that one file is explicitly permitted.
+  // https://ghostscript.readthedocs.io/en/latest/Use.html (-dSAFER, --permit-file-read)
+  const icc = pdfxIccPath(config.pdfxDefPath);
   return [
+    '-dSAFER',
+    ...(icc ? [`--permit-file-read=${icc}`] : []),
     '-dPDFX',
     '-dBATCH',
     '-dNOPAUSE',

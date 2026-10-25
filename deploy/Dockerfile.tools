@@ -1,20 +1,29 @@
-# Beuk app image + the M5 job tools (JRE, Ghostscript, CMYK ICC profiles,
-# and a headless Chromium for the HTML → PDF rendition step of pdfx jobs).
+# Beuk app image + the M5 job tools that run INSIDE the app container:
+# a JRE (for EPUBCheck), Ghostscript, and CMYK ICC profiles.
 # deploy/install.sh builds this as an overlay ON TOP of the stock app image
 # (which deliberately stays slim). EPUBCheck itself is not baked in here —
 # install.sh downloads the release into ../tools-bin/ and this file copies
 # it to /opt/epubcheck/ (epubcheck.jar + its lib/ alongside).
+#
+# Headless Chromium is deliberately NOT installed here any more: it runs
+# user-supplied print-html, so it lives in its own locked-down "renderer"
+# service (deploy/renderer/, wired in deploy/docker-compose.tools.yml),
+# never in the container that holds the database URL, the Stripe keys,
+# and the export/backup volumes.
 ARG BASE_IMAGE=beuk-app:latest
 FROM ${BASE_IMAGE}
 USER root
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      default-jre-headless ghostscript icc-profiles-free chromium \
+      default-jre-headless ghostscript icc-profiles-free \
  && rm -rf /var/lib/apt/lists/*
 # Point the PDF/X definition at a real CMYK press profile if the
 # icc-profiles-free package shipped one (FOGRA is the common case).
 # If none is found the placeholder path stays, and PDF/X jobs fail with
 # Ghostscript's own error in their result — honest, never a fake pass.
+# (Observed 2026-10-24 on node:24-slim / Debian bookworm: the package ships
+# FOGRA28L..FOGRA40L only as .ti3 characterisation data, no .icc, so this
+# search finds nothing there — supply a real profile per README step 5.)
 RUN p="$(find /usr/share/color/icc -iname '*fogra*.icc' 2>/dev/null | head -n 1)"; \
     if [ -n "$p" ]; then \
       sed -i "s|^/BeukICCPath .*|/BeukICCPath ($p) def|" /app/tools/PDFX_def.ps; \

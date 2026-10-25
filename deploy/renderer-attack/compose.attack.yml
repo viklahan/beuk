@@ -1,0 +1,16 @@
+# Used ONLY by deploy/renderer-attack.sh, on top of docker-compose.yml +
+# deploy/docker-compose.tools.yml. It renames the images so the proof
+# never overwrites the beuk-app / beuk-app-tools / beuk-renderer tags a
+# real deployment on the same host uses, and plants canary secrets in the
+# app's environment so a leak would be unmistakable in the PDF text.
+services:
+  app:
+    image: ${ATTACK_PREFIX:-beuk-attack}-app-tools:latest
+    build:
+      args:
+        BASE_IMAGE: ${ATTACK_PREFIX:-beuk-attack}-app:latest
+    environment:
+      STRIPE_SECRET_KEY: sk_test_BEUKCANARYSTRIPE0000000000
+      PEXELS_API_KEY: BEUKCANARYPEXELS
+  renderer:
+    image: ${ATTACK_PREFIX:-beuk-attack}-renderer:latest

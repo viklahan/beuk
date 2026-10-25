@@ -1,0 +1,10 @@
+{
+  "name": "beuk-renderer",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Isolated print-html -> PDF renderer for Beuk pdfx jobs (see server.mjs)",
+  "type": "module",
+  "main": "server.mjs",
+  "engines": { "node": ">=22.12.0" },
+  "dependencies": { "puppeteer-core": "25.13.0" }
+}

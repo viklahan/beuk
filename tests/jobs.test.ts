@@ -1,22 +1,29 @@
 import assert from 'node:assert/strict';
 import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import { Client, createTestDb, registerUser, startTestServer, type TestServer } from './helpers.js';
+import { Client, createTestDb, registerUser, startTestServer, testConfig, type TestServer } from './helpers.js';
 import type { Db } from '../src/db.js';
+import { loadConfig } from '../src/config.js';
+import { ghostscriptPdfxArgs, pdfRenderProblem } from '../src/jobs/tools.js';
 
 /**
  * M5 jobs, end-to-end through the REAL adapters and child_process —
- * the tools themselves are small shell-script stubs (configured via
- * the same JAVA_BIN / EPUBCHECK_JAR / GS_BIN settings production
+ * the tools themselves are small stubs (configured via the same
+ * JAVA_BIN / EPUBCHECK_JAR / GS_BIN / RENDERER_URL settings production
  * uses):
  *  - fake "java" writes a canned EPUBCheck JSON report to the path
- *    the adapter names after -j/--json;
- *  - fake "chrome" answers --version and writes a minimal valid PDF
- *    to the --print-to-pdf= target (the HTML → PDF rendition step);
+ *    the adapter names after -j/--json (and refuses to run without an
+ *    -Xmx heap cap as its first argument);
+ *  - a stub renderer HTTP server answers POST /render like
+ *    deploy/renderer/server.mjs: it records the HTML it was sent and
+ *    returns a minimal valid PDF (the HTML → PDF rendition step);
  *  - fake "gs" copies its input file to the -sOutputFile= target.
- * Real EPUBCheck/Ghostscript/Chromium binaries cannot run in this sandbox;
+ * Real EPUBCheck/Ghostscript/Chromium binaries do not run here (the
+ * renderer's real isolation is proven by deploy/renderer-attack.sh);
  * the pipeline around them is what is proven here.
  */
 
@@ -32,7 +39,10 @@ let bobEpubId: string;
 
 let fakeJava: string;
 let fakeGs: string;
-let fakeChrome: string;
+let stubRenderer: http.Server;
+let rendererUrl: string;
+let rendererMode: 'pdf' | 'error' | 'not-pdf' = 'pdf';
+const rendererCalls: Array<{ method: string; url: string; contentType: string; body: Buffer }> = [];
 let sleepyJava: string;
 let stubJar: string;
 
@@ -131,7 +141,12 @@ done
 if [ -z "$out" ]; then echo "fake-java: no json target" >&2; exit 2; fi
 # Like real EPUBCheck: the input's mode comes from its .epub extension; an
 # extensionless file (how the archive stores exports) is refused, no report.
-case "$3" in
+# The JVM heap must be capped: -Xmx<size> comes first, before -jar.
+case "$1" in
+  -Xmx*) ;;
+  *) echo "fake-java: no -Xmx heap cap (first arg was '$1')" >&2; exit 3 ;;
+esac
+case "$4" in
   *.epub) ;;
   *) echo "Mode required for non-epub files. Default version is 3.0." >&2; exit 2 ;;
 esac
@@ -170,33 +185,39 @@ exit 0
   );
   chmodSync(fakeGs, 0o755);
 
-  fakeChrome = path.join(dir, 'fake-chrome.sh');
-  writeFileSync(
-    fakeChrome,
-    `#!/bin/sh
-# Fake headless Chromium: --version answers; --print-to-pdf=PATH writes a
-# minimal valid PDF there. The server asserts the output IS a PDF before
-# Ghostscript ever sees it, so the stub's bytes must start with %PDF.
-if [ "$1" = "--version" ]; then echo "156.0.8078.47-stub"; exit 0; fi
-out=""
-for a in "$@"; do
-  case "$a" in
-    --print-to-pdf=*) out="\${a#--print-to-pdf=}" ;;
-  esac
-done
-if [ -z "$out" ]; then echo "fake-chrome: no --print-to-pdf target" >&2; exit 2; fi
-printf '%%PDF-1.4\\n1 0 obj\\n<<>>\\nendobj\\ntrailer\\n<<>>\\n%%%%EOF\\n' > "$out"
-exit 0
-`,
-  );
-  chmodSync(fakeChrome, 0o755);
+  // Stub renderer: answers like deploy/renderer/server.mjs. Its reply
+  // is switchable so the failure modes can be driven from tests.
+  stubRenderer = http.createServer((req, res) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (c: Buffer) => chunks.push(c));
+    req.on('end', () => {
+      rendererCalls.push({
+        method: req.method ?? '',
+        url: req.url ?? '',
+        contentType: String(req.headers['content-type'] ?? ''),
+        body: Buffer.concat(chunks),
+      });
+      if (rendererMode === 'error') {
+        res.writeHead(500, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ error: 'the renderer failed: stub explosion' }));
+      } else if (rendererMode === 'not-pdf') {
+        res.writeHead(200, { 'content-type': 'application/pdf' });
+        res.end('<html>definitely not a pdf</html>');
+      } else {
+        res.writeHead(200, { 'content-type': 'application/pdf' });
+        res.end(FAKE_RENDERED_PDF);
+      }
+    });
+  });
+  await new Promise<void>((resolve) => stubRenderer.listen(0, '127.0.0.1', resolve));
+  rendererUrl = `http://127.0.0.1:${(stubRenderer.address() as AddressInfo).port}/render`;
 
   db = await createTestDb();
   server = await startTestServer(db, undefined, {
     epubcheckJar: stubJar,
     javaBin: fakeJava,
     gsBin: fakeGs,
-    htmlPdfBin: fakeChrome,
+    rendererUrl,
   });
   alice = new Client(server.base);
   bob = new Client(server.base);
@@ -236,6 +257,7 @@ exit 0
 
 after(async () => {
   await server.close();
+  await new Promise<void>((resolve) => stubRenderer.close(() => resolve()));
 });
 
 test('epubcheck job on own epub export runs to done with the parsed report stored', async () => {
@@ -342,6 +364,13 @@ test('pdfx job on a print interior renders HTML to PDF first, then archives the 
   assert.equal(download.headers.get('content-type'), 'application/pdf');
   assert.deepEqual(download.bytes, FAKE_RENDERED_PDF);
   assert.notEqual(download.bytes.toString('utf8'), '<html><body>print interior</body></html>');
+  // The rendition happened in the renderer service: the print interior's
+  // exact bytes were POSTed to RENDERER_URL as HTML.
+  const call = rendererCalls.at(-1)!;
+  assert.equal(call.method, 'POST');
+  assert.equal(call.url, '/render');
+  assert.match(call.contentType, /^text\/html/);
+  assert.equal(call.body.toString('utf8'), '<html><body>print interior</body></html>');
 });
 
 test('unconfigured tools: job creation still succeeds, the job completes FAILED, never a pass', async () => {
@@ -403,4 +432,153 @@ test('job endpoints require auth', async () => {
   assert.equal((await anon.post('/api/jobs/pdfx', { exportId: alicePrintId })).status, 401);
   assert.equal((await anon.get('/api/jobs')).status, 401);
   assert.equal((await anon.get('/api/jobs/whatever')).status, 401);
+});
+
+test('admission caps: a user holds at most JOB_MAX_ACTIVE_PER_USER jobs, the server JOB_MAX_QUEUED', async () => {
+  // A sleepy tool keeps jobs active long enough to fill the slots; the
+  // short timeout then fails each one so the slots free up again.
+  const capped = await startTestServer(db, undefined, {
+    exportDir: server.config.exportDir,
+    epubcheckJar: stubJar,
+    javaBin: sleepyJava,
+    jobTimeoutMs: 1_000,
+    jobMaxActivePerUser: 2,
+    jobMaxQueued: 3,
+  });
+  try {
+    const erin = new Client(capped.base);
+    await erin.post('/api/auth/login', { email: 'alice@example.com', password: 'correct horse battery' });
+    const frank = new Client(capped.base);
+    await frank.post('/api/auth/login', { email: 'bob@example.com', password: 'correct horse battery' });
+
+    const first = await erin.post('/api/jobs/epubcheck', { exportId: aliceEpubId });
+    const second = await erin.post('/api/jobs/epubcheck', { exportId: aliceEpubId });
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
+    const third = await erin.post('/api/jobs/epubcheck', { exportId: aliceEpubId });
+    assert.equal(third.status, 429);
+    assert.match(String(third.body.error), /already have 2 jobs waiting or running \(the limit is 2\)/);
+
+    const bobs = await frank.post('/api/jobs/epubcheck', { exportId: bobEpubId });
+    assert.equal(bobs.status, 201);
+    const overflow = await frank.post('/api/jobs/epubcheck', { exportId: bobEpubId });
+    assert.equal(overflow.status, 503);
+    assert.match(String(overflow.body.error), /job queue is full/);
+
+    // Refused requests created no jobs: exactly the three admitted ones are active.
+    const active = await db.query<{ n: number }>(
+      `select count(*)::int as n from jobs where status in ('queued', 'running')`,
+    );
+    assert.equal(active.rows[0].n, 3);
+
+    for (const [client, res] of [
+      [erin, first],
+      [erin, second],
+      [frank, bobs],
+    ] as const) {
+      const job = await waitForJob(client, (res.body.job as JobView).id);
+      assert.equal(job.status, 'failed');
+    }
+    // Slots free again once jobs finish.
+    const again = await erin.post('/api/jobs/epubcheck', { exportId: aliceEpubId });
+    assert.equal(again.status, 201);
+    await waitForJob(erin, (again.body.job as JobView).id);
+  } finally {
+    await capped.close();
+  }
+});
+
+test('renderer failures are honest: an HTTP error, a non-PDF reply, an unreachable renderer', async () => {
+  try {
+    rendererMode = 'error';
+    const errored = await waitForJob(
+      alice,
+      ((await alice.post('/api/jobs/pdfx', { exportId: alicePrintId })).body.job as JobView).id,
+    );
+    assert.equal(errored.status, 'failed');
+    assert.equal(errored.result!.tool, 'html-to-pdf');
+    assert.equal(errored.result!.configured, true);
+    assert.match(String(errored.result!.error), /answered HTTP 500 and produced no PDF\. Renderer said: the renderer failed: stub explosion/);
+    assert.equal(errored.artifactExportId, null);
+
+    rendererMode = 'not-pdf';
+    const notPdf = await waitForJob(
+      alice,
+      ((await alice.post('/api/jobs/pdfx', { exportId: alicePrintId })).body.job as JobView).id,
+    );
+    assert.equal(notPdf.status, 'failed');
+    assert.match(String(notPdf.result!.error), /not a PDF/);
+  } finally {
+    rendererMode = 'pdf';
+  }
+
+  // Nothing listens on the discard port: the renderer can't be reached.
+  const unreachable = await startTestServer(db, undefined, {
+    exportDir: server.config.exportDir,
+    gsBin: fakeGs,
+    rendererUrl: 'http://127.0.0.1:9/render',
+  });
+  try {
+    const gina = new Client(unreachable.base);
+    await gina.post('/api/auth/login', { email: 'alice@example.com', password: 'correct horse battery' });
+    const job = await waitForJob(
+      gina,
+      ((await gina.post('/api/jobs/pdfx', { exportId: alicePrintId })).body.job as JobView).id,
+    );
+    assert.equal(job.status, 'failed');
+    assert.equal(job.result!.tool, 'html-to-pdf');
+    assert.match(String(job.result!.error), /could not be reached \(RENDERER_URL="http:\/\/127\.0\.0\.1:9\/render"/);
+  } finally {
+    await unreachable.close();
+  }
+});
+
+test('a leftover HTML_PDF_BIN is never used: rendition reports not configured and says why', () => {
+  const config = loadConfig({ HTML_PDF_BIN: '/usr/bin/chromium' } as NodeJS.ProcessEnv);
+  assert.equal(config.rendererUrl, null);
+  const problem = pdfRenderProblem(config);
+  assert.ok(problem);
+  assert.match(problem, /RENDERER_URL is not set/);
+  assert.match(problem, /HTML_PDF_BIN is set but no longer used/);
+  assert.match(pdfRenderProblem({ ...config, rendererUrl: 'file:///etc/passwd' })!, /not an http\(s\) URL/);
+  assert.equal(pdfRenderProblem({ ...config, rendererUrl: 'http://renderer:3100/render' }), null);
+});
+
+test('job limits config: JVM heap and admission caps default sanely and reject junk', () => {
+  const defaults = loadConfig({} as NodeJS.ProcessEnv);
+  assert.equal(defaults.javaMaxHeap, '512m');
+  assert.equal(defaults.jobMaxActivePerUser, 2);
+  assert.equal(defaults.jobMaxQueued, 20);
+  const set = loadConfig({
+    JAVA_MAX_HEAP: '1g',
+    JOB_MAX_ACTIVE_PER_USER: '3',
+    JOB_MAX_QUEUED: '50',
+  } as NodeJS.ProcessEnv);
+  assert.equal(set.javaMaxHeap, '1g');
+  assert.equal(set.jobMaxActivePerUser, 3);
+  assert.equal(set.jobMaxQueued, 50);
+  // A heap value that could smuggle another JVM flag is refused.
+  const junk = loadConfig({
+    JAVA_MAX_HEAP: '512m -XX:+Foo',
+    JOB_MAX_ACTIVE_PER_USER: '0',
+    JOB_MAX_QUEUED: 'lots',
+  } as NodeJS.ProcessEnv);
+  assert.equal(junk.javaMaxHeap, '512m');
+  assert.equal(junk.jobMaxActivePerUser, 2);
+  assert.equal(junk.jobMaxQueued, 20);
+});
+
+test('Ghostscript runs under -dSAFER, permitted to read only the ICC profile the PDF/X definition embeds', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'beuk-pdfxdef-'));
+  const def = path.join(dir, 'PDFX_def.ps');
+  writeFileSync(def, '%!PS\n/BeukICCPath (/usr/share/color/icc/test/FOGRA39L.icc) def\n');
+  const args = ghostscriptPdfxArgs(testConfig({ pdfxDefPath: def }), '/w/in.pdf', '/w/out.pdf');
+  assert.equal(args[0], '-dSAFER');
+  assert.ok(args.includes('--permit-file-read=/usr/share/color/icc/test/FOGRA39L.icc'));
+  assert.deepEqual(args.slice(-2), [def, '/w/in.pdf']);
+  // No BeukICCPath line → SAFER still on, nothing extra permitted.
+  writeFileSync(def, '%!PS\n');
+  const bare = ghostscriptPdfxArgs(testConfig({ pdfxDefPath: def }), '/w/in.pdf', '/w/out.pdf');
+  assert.equal(bare[0], '-dSAFER');
+  assert.ok(!bare.some((a) => a.startsWith('--permit-file-read')));
 });

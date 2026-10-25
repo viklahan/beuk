@@ -28,9 +28,10 @@ COPY CHANGELOG.md ./CHANGELOG.md
 # (The JRE + EPUBCheck jar + Ghostscript binaries themselves are a
 # production install step — see the README "Jobs" section.)
 COPY tools ./tools
-# Self-check jobs.pdfx.rendition.overlay-carries-chromium reads these two
-# from the deploy tree; without them the run fails and promotion is blocked.
+# Self-check jobs.pdfx.rendition.renderer-isolated reads these from the
+# deploy tree; without them the run fails and promotion is blocked.
 COPY deploy/Dockerfile.tools deploy/docker-compose.tools.yml ./deploy/
+COPY deploy/renderer/Dockerfile deploy/renderer/server.mjs ./deploy/renderer/
 # Self-checks infra.deploy.security-headers / infra.deploy.signals-healthchecks
 # read these two from the deploy tree (no secrets: values come from .env).
 COPY Caddyfile docker-compose.yml ./

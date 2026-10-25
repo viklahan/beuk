@@ -129,8 +129,12 @@ export function testConfig(overrides?: Partial<Config>): Config {
     javaBin: 'java',
     gsBin: null,
     pdfxDefPath: path.resolve(import.meta.dirname, '..', 'tools', 'PDFX_def.ps'),
-    htmlPdfBin: null,
+    rendererUrl: null,
+    legacyHtmlPdfBin: null,
     jobTimeoutMs: 120_000,
+    javaMaxHeap: '512m',
+    jobMaxActivePerUser: 2,
+    jobMaxQueued: 20,
     // Stock photos: no Pexels key by default (the unconfigured path is
     // the honest default); stock tests pass a key + stub base URL in.
     pexelsApiKey: null,

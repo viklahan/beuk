@@ -882,34 +882,112 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'PDF/X rendition unconfigured: the problem string says so before anything runs',
     kind: 'server',
     run: async ({ config }) => {
-      const problem = pdfRenderProblem({ ...config, htmlPdfBin: null });
+      const problem = pdfRenderProblem({ ...config, rendererUrl: null });
       assert(
-        problem !== null && problem.includes('HTML_PDF_BIN'),
-        'expected an honest not-configured problem naming HTML_PDF_BIN',
+        problem !== null && problem.includes('RENDERER_URL'),
+        'expected an honest not-configured problem naming RENDERER_URL',
       );
-      return 'an unconfigured renderer yields a named, honest problem string';
+      const legacy = pdfRenderProblem({ ...config, rendererUrl: null, legacyHtmlPdfBin: '/usr/bin/chromium' });
+      assert(
+        legacy !== null && legacy.includes('HTML_PDF_BIN is set but no longer used'),
+        'a leftover HTML_PDF_BIN must be named as ignored, never silently used',
+      );
+      return 'an unconfigured renderer yields a named, honest problem string; a leftover HTML_PDF_BIN is named as ignored';
     },
   },
   {
-    id: 'jobs.pdfx.rendition.overlay-carries-chromium',
-    title: 'Tools overlay installs Chromium and points HTML_PDF_BIN at it',
+    id: 'jobs.pdfx.rendition.renderer-isolated',
+    title: 'Tools overlay renders print HTML in an isolated renderer, never in the app container',
     kind: 'server',
     run: async () => {
-      // The pdfx job renders the print-html interior with a headless
-      // Chromium before Ghostscript converts it. If the overlay ever
-      // stops shipping the renderer, pdfx jobs would fail honestly —
-      // this case makes that a loud, named failure at self-check time.
-      const dockerfile = await readFile(path.join(repoRoot(), 'deploy', 'Dockerfile.tools'), 'utf8');
+      // The pdfx job's Chromium interprets USER-SUPPLIED HTML. It must
+      // live in its own service with no secrets, no volumes, no route
+      // out and no database — and must be gone from the app image. This
+      // case reads the deploy files the app image carries and fails,
+      // naming the gap, the moment any of that drifts.
+      const deploy = path.join(repoRoot(), 'deploy');
+      const toolsDockerfile = await readFile(path.join(deploy, 'Dockerfile.tools'), 'utf8');
+      const withoutComments = (text: string): string =>
+        text
+          .split('\n')
+          .filter((line) => !line.trimStart().startsWith('#'))
+          .join('\n');
+      const installs = withoutComments(toolsDockerfile);
       assert(
-        /(^|\s)chromium(\s|$)/m.test(dockerfile),
-        'deploy/Dockerfile.tools does not install chromium',
+        !/(^|\s)chromium(\s|$)/m.test(installs),
+        'deploy/Dockerfile.tools installs chromium into the APP image — user HTML would run next to the app secrets',
       );
-      const compose = await readFile(
-        path.join(repoRoot(), 'deploy', 'docker-compose.tools.yml'),
-        'utf8',
+      const rendererDockerfile = await readFile(path.join(deploy, 'renderer', 'Dockerfile'), 'utf8');
+      assert(
+        /(^|\s)chromium(\s|$)/m.test(withoutComments(rendererDockerfile)),
+        'deploy/renderer/Dockerfile does not install chromium',
       );
-      assert(compose.includes('HTML_PDF_BIN'), 'deploy/docker-compose.tools.yml does not set HTML_PDF_BIN');
-      return 'overlay installs chromium and exports HTML_PDF_BIN';
+      const server = await readFile(path.join(deploy, 'renderer', 'server.mjs'), 'utf8');
+      for (const fence of [
+        'setRequestInterception(true)',
+        'setJavaScriptEnabled(false)',
+        "request.abort('blockedbyclient')",
+        '--host-resolver-rules=MAP * ~NOTFOUND',
+        "script-src 'none'",
+      ]) {
+        assert(server.includes(fence), `deploy/renderer/server.mjs lost its fence: ${fence}`);
+      }
+      const compose = (
+        await readFile(path.join(deploy, 'docker-compose.tools.yml'), 'utf8')
+      ).replace(/\r\n/g, '\n');
+      /** The lines of one YAML block (by exact key line), comments dropped. */
+      const block = (name: string, indent: string): string[] => {
+        const lines = compose.split('\n');
+        const at = lines.findIndex((l) => l === `${indent}${name}:`);
+        assert(at >= 0, `deploy/docker-compose.tools.yml has no "${name}" block`);
+        const out: string[] = [];
+        for (const line of lines.slice(at + 1)) {
+          if (line.trimStart().startsWith('#')) continue;
+          if (line.trim() && !line.startsWith(indent + ' ')) break;
+          out.push(line);
+        }
+        return out;
+      };
+      /** The "- item" entries listed directly under `key:` in a block. */
+      const listUnder = (lines: string[], key: string): string[] => {
+        const at = lines.findIndex((l) => l.trim() === `${key}:`);
+        if (at < 0) return [];
+        const items: string[] = [];
+        for (const line of lines.slice(at + 1)) {
+          const m = /^\s+- (.+)$/.exec(line);
+          if (!m) break;
+          items.push(m[1].trim());
+        }
+        return items;
+      };
+      const renderer = block('renderer', '  ');
+      const rendererText = renderer.join('\n');
+      const appText = block('app', '  ').join('\n');
+      assert(appText.includes('RENDERER_URL'), 'the app service does not set RENDERER_URL');
+      assert(!appText.includes('HTML_PDF_BIN'), 'the app service still sets HTML_PDF_BIN');
+      assert(/^\s+read_only: true$/m.test(rendererText), 'renderer root filesystem is not read_only');
+      assert(listUnder(renderer, 'cap_drop').includes('ALL'), 'renderer does not drop ALL capabilities');
+      assert(
+        listUnder(renderer, 'security_opt').includes('no-new-privileges:true'),
+        'renderer lacks no-new-privileges',
+      );
+      assert(!/^\s+volumes:/m.test(rendererText), 'renderer mounts volumes');
+      assert(!/^\s+ports:/m.test(rendererText), 'renderer publishes ports');
+      assert(
+        /^\s+mem_limit: /m.test(rendererText) && /^\s+pids_limit: /m.test(rendererText),
+        'renderer has no memory/pids limit',
+      );
+      assert(
+        !/DATABASE_URL|STRIPE|PEXELS|POSTGRES|SECRET|KEY/.test(rendererText),
+        'renderer environment carries an app secret',
+      );
+      assert(
+        listUnder(renderer, 'networks').join(',') === 'render',
+        'renderer must be on the internal "render" network only',
+      );
+      const topNets = block('networks', '').join('\n');
+      assert(/^ {2}render:\n {4}internal: true$/m.test(topNets), 'the "render" network is not internal: true');
+      return 'renderer: own image with chromium, request/JS/DNS fences, read-only, cap_drop ALL, no-new-privileges, no volumes/ports/secrets, internal network only; app image carries no chromium and points RENDERER_URL at it';
     },
   },
   {
