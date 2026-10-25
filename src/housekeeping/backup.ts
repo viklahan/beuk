@@ -60,6 +60,8 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
   housekeeping_check_runs: 'append-only evidence; a restore must not rewrite history',
   housekeeping_signoffs: 'append-only evidence; a restore must not rewrite history',
   schema_migrations: 'owned by the migration runner',
+  help_docs: 'derived: rebuilt from content/help/ on every boot (H2 search index)',
+  search_log: 'anonymous search statistics (query text + result count, no user id, no IP); not user data, and a restore must not rewrite them',
 };
 
 export interface TableClassification {

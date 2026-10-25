@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import { readCookie, requireAuth } from '../auth.js';
 import type { Db } from '../db.js';
+import { HTTP_CODES } from '../help/codes.js';
 import { renderSnapshot, type Snapshot } from '../shares/render.js';
 import {
   readerHeaders,
@@ -549,7 +550,7 @@ export function shareReaderRoutes(
     try {
       const share = await find(req.params.token);
       if (!share) return res.status(404).json({ error: 'reading copy not found' });
-      if (status(share, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed' });
+      if (status(share, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed', code: HTTP_CODES.readingCopyClosed });
       const r = await db.query<CommentRow>(
         `select id, section_id, paragraph_index, quote, body, reader_name, created_at
          from share_comments where share_id = $1 order by created_at asc limit 1000`,
@@ -576,7 +577,7 @@ export function shareReaderRoutes(
     try {
       const share = await find(req.params.token);
       if (!share) return res.status(404).json({ error: 'reading copy not found' });
-      if (status(share, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed' });
+      if (status(share, now()) !== 'active') return res.status(410).json({ error: 'this reading copy is closed', code: HTTP_CODES.readingCopyClosed });
       if (!share.allow_comments) return res.status(403).json({ error: 'comments are turned off for this copy' });
       const body = (req.body ?? {}) as Record<string, unknown>;
       // Honeypot: a hidden field people never fill. A bot that fills it

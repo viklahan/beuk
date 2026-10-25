@@ -13,6 +13,7 @@ import { billingRoutes } from './routes/billing.js';
 import { cspReportRoutes, type CspReportOptions } from './routes/csp-report.js';
 import { exportRoutes } from './routes/exports.js';
 import { foundersRoutes } from './routes/founders.js';
+import { helpRoutes, type HelpSearchLimits } from './routes/help.js';
 import { housekeepingRoutes } from './routes/housekeeping.js';
 import { BackupScheduler } from './housekeeping/offsite.js';
 import { jobRoutes } from './routes/jobs.js';
@@ -39,6 +40,8 @@ export interface AppDeps {
   accountLimits?: AccountLimits;
   /** CSP violation report endpoint (tests inject the log + limits). */
   cspReport?: CspReportOptions;
+  /** H2: per-IP limit for help search (tests tighten it). */
+  helpSearchLimits?: HelpSearchLimits;
 }
 
 export function buildApp({
@@ -50,6 +53,7 @@ export function buildApp({
   mailer,
   accountLimits,
   cspReport,
+  helpSearchLimits,
 }: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
@@ -125,6 +129,10 @@ export function buildApp({
   app.use('/api/config', publicConfigRoutes(config));
   app.use('/api/founders', foundersRoutes(db));
 
+  // H1/H2 Help: server-rendered pages + public search API.
+  const help = helpRoutes(db, config, helpSearchLimits);
+  app.use('/api/help', help.api);
+
   // Beta-reader share links: owner surface (signed in).
   app.use('/api/shares', shareOwnerRoutes(db, now));
 
@@ -136,6 +144,7 @@ export function buildApp({
 
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.
+  app.use(help.pages);
   app.use(warmthRoutes(config));
   // P0 #5: the "choose a new password" page the reset email links to.
   app.use(resetPageRoutes(config));

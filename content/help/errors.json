@@ -1,0 +1,445 @@
+{
+  "about": "Beuk's error dictionary. Every 'says' line is copied from where it comes from: EPUBCheck lines are the message text of the bundled EPUBCheck 5.2.1 message bundle (com/adobe/epubcheck/messages/MessageBundle.properties; a %1$s placeholder is shown as …), Beuk lines are the exact strings in this repo (path in sources). Store wording appears only when it was found on the store's own documentation page (URL in sources). tests/help-content.test.ts checks every EPUBCheck code and line against the bundle.",
+  "errors": [
+    {
+      "code": "BEUK-P101",
+      "category": "package",
+      "title": "The mimetype entry is wrong",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "PKG-006", "text": "Mimetype file entry is missing or is not the first file in the archive." },
+        { "from": "epubcheck", "code": "PKG-007", "text": "Mimetype file should only contain the string \"application/epub+zip\" and should not be compressed." },
+        { "from": "epubcheck", "code": "PKG-005", "text": "The mimetype file has an extra field of length …. The use of the extra field feature of the ZIP format is not permitted for the mimetype file." },
+        { "from": "validator", "code": "mimetype.first-stored", "text": "Mimetype is not the first, uncompressed entry" }
+      ],
+      "cause": "An EPUB's very first entry must be a tiny file named mimetype, stored with no compression. Re-zipping an EPUB with an ordinary zip tool breaks this instantly.",
+      "steps": [
+        "Don't re-zip the EPUB by hand.",
+        "Export again from Beuk — the mimetype is written first and uncompressed by construction.",
+        "Run Validate This Book; its first check confirms it."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["PKG-006", "PKG-007", "PKG-005"], "validator": ["mimetype.first-stored"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties PKG_005 PKG_006 PKG_007", "client/index.html validateEpubPackage check 1"]
+    },
+    {
+      "code": "BEUK-P102",
+      "category": "package",
+      "title": "The package file can't be found",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "RSC-002", "text": "Required META-INF/container.xml resource could not be found." },
+        { "from": "epubcheck", "code": "RSC-003", "text": "No rootfile tag with media type \"application/oebps-package+xml\" was found in the container." },
+        { "from": "epubcheck", "code": "OPF-002", "text": "The OPF file \"…\" was not found in the EPUB." },
+        { "from": "validator", "code": "container.points-to-opf", "text": "Container points at a missing package document" },
+        { "from": "validator", "code": "container.points-to-opf", "text": "META-INF/container.xml is missing" }
+      ],
+      "cause": "The signpost at the front of every EPUB (META-INF/container.xml) points to a package file (.opf) that isn't where it says. Typical of hand-assembled packages.",
+      "steps": [
+        "Re-export from Beuk; the container and the package file are generated together.",
+        "If you edited the file elsewhere, check that the rootfile full-path in container.xml matches where the .opf actually is."
+      ],
+      "guide": "epub-error-decoder",
+      "maps": { "epubcheck": ["RSC-002", "RSC-003", "OPF-002"], "validator": ["container.points-to-opf"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties RSC_002 RSC_003 OPF_002", "client/index.html validateEpubPackage check 2"]
+    },
+    {
+      "code": "BEUK-X201",
+      "category": "content",
+      "title": "A chapter isn't well-formed XML",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "RSC-005", "text": "Error while parsing file: …" },
+        { "from": "epubcheck", "code": "RSC-016", "text": "Fatal Error while parsing file: …" },
+        { "from": "validator", "code": "xml.well-formed", "text": "Malformed markup" }
+      ],
+      "cause": "One of the XHTML files inside isn't well-formed XML — an unclosed tag, a raw & that should be &amp;, a <br> that isn't <br />. EPUB is strict where HTML is forgiving. EPUBCheck also reports markup that is well-formed but breaks the XHTML rules (an element where it isn't allowed) under RSC-005, and one unclosed tag usually produces several of those lines.",
+      "steps": [
+        "Read the file name and line in the message — that names the chapter.",
+        "If the chapter was hand-edited or pasted from the web, re-import it and let Beuk's sanitizer clean it.",
+        "Export and validate again. Fix the first error first: the lines after it are often echoes of the same tag."
+      ],
+      "guide": "epub-error-decoder",
+      "maps": { "epubcheck": ["RSC-005", "RSC-016"], "validator": ["xml.well-formed"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties RSC_005 RSC_016", "content/help/guides/check-your-book.md Panes (a real EPUBCheck 5.2.1 run: one removed </p> gave three RSC-005 errors and one RSC-016 fatal)"]
+    },
+    {
+      "code": "BEUK-R301",
+      "category": "content",
+      "title": "A referenced file isn't in the package",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "RSC-007", "text": "Referenced resource \"…\" could not be found in the EPUB." },
+        { "from": "epubcheck", "code": "RSC-001", "text": "File \"…\" could not be found." }
+      ],
+      "cause": "A page, image, or stylesheet links to a file that isn't in the package — usually an image that was linked from a chapter but never embedded, or a file renamed after the fact.",
+      "steps": [
+        "Open the book in the Package Inspector.",
+        "Compare what the chapter references with what the package holds.",
+        "Insert images through the image library rather than pasting links."
+      ],
+      "guide": "exports-and-archive",
+      "maps": { "epubcheck": ["RSC-007", "RSC-001"], "validator": [], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties RSC_001 RSC_007"]
+    },
+    {
+      "code": "BEUK-R302",
+      "category": "content",
+      "title": "The manifest and the files disagree",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "RSC-008", "text": "Referenced resource \"…\" is not declared in the OPF manifest." },
+        { "from": "epubcheck", "code": "OPF-003", "text": "Item \"…\" exists in the EPUB, but is not declared in the OPF manifest." },
+        { "from": "validator", "code": "manifest.matches-files", "text": "Manifest and package contents disagree" }
+      ],
+      "cause": "A file exists in the package, but the manifest — the package's table of contents for files — doesn't list it (or the manifest lists a file that isn't there). Readers are entitled to ignore undeclared files.",
+      "steps": [
+        "Re-export. Beuk builds the manifest from the same file list it ships, so the two can't disagree."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["RSC-008", "OPF-003"], "validator": ["manifest.matches-files"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties RSC_008 OPF_003 (RSC_009 is a different rule: 'A non-SVG image resource should not be defined with a fragment identifier.')", "client/index.html validateEpubPackage check 4"]
+    },
+    {
+      "code": "BEUK-R303",
+      "category": "package",
+      "title": "The reading order (spine) is broken",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "OPF-049", "text": "Item id \"…\" was not found in the manifest." },
+        { "from": "epubcheck", "code": "OPF-033", "text": "The spine contains no linear resources." },
+        { "from": "validator", "code": "spine.resolves", "text": "Spine entries point at nothing" },
+        { "from": "validator", "code": "spine.resolves", "text": "The spine is empty" }
+      ],
+      "cause": "The spine is the book's reading order: a list of manifest ids, one per page in order. An entry that names an id the manifest doesn't have breaks the reading order at that point; an empty spine leaves nothing to read.",
+      "steps": [
+        "Re-export from Beuk; the spine is written from the same section list as the manifest.",
+        "If you edited the .opf by hand, check every itemref idref against the item ids in the manifest."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["OPF-049", "OPF-033"], "validator": ["spine.resolves"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties OPF_033 OPF_049", "client/index.html validateEpubPackage check 5"]
+    },
+    {
+      "code": "BEUK-R304",
+      "category": "content",
+      "title": "An internal link or anchor goes nowhere",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "RSC-012", "text": "Fragment identifier is not defined." },
+        { "from": "validator", "code": "links.anchors-resolve", "text": "Broken internal links or anchors" }
+      ],
+      "cause": "A link inside the book points at a file that isn't in the package, or at an #anchor that no element in that file carries — a footnote back-link to a paragraph that was renamed, for example. A reader tapping it lands nowhere.",
+      "steps": [
+        "Read which file and which link the line names.",
+        "Re-export from Beuk: notes and their back-links are generated together.",
+        "In hand-edited files, make the id and the #fragment match exactly."
+      ],
+      "guide": "footnotes-and-images",
+      "maps": { "epubcheck": ["RSC-012"], "validator": ["links.anchors-resolve"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties RSC_012", "client/index.html validateEpubPackage check 8"]
+    },
+    {
+      "code": "BEUK-R305",
+      "category": "content",
+      "title": "A linked document is outside the reading order",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "RSC-011", "text": "Found a reference to a resource that is not a spine item." },
+        { "from": "validator", "code": "links.in-spine", "text": "Links to documents outside the reading order" }
+      ],
+      "cause": "EPUB 3.3 requires every content document that is reached by a hyperlink — from the navigation or from the text — to be listed in the spine. A linked page that isn't in it can't be shown in reading order.",
+      "steps": [
+        "Re-export from Beuk; it places every linked document in the spine.",
+        "In hand-edited packages, add an itemref for the linked document (linear=\"no\" keeps it out of the default reading order)."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["RSC-011"], "validator": ["links.in-spine"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties RSC_011", "client/index.html validateEpubPackage check 8c (EPUB 3.3 §5.7.1 https://www.w3.org/TR/epub-33/#sec-spine-elem)"]
+    },
+    {
+      "code": "BEUK-P103",
+      "category": "package",
+      "title": "Manifest properties don't match the content",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "OPF-014", "text": "The property \"…\" should be declared in the OPF file." },
+        { "from": "epubcheck", "code": "OPF-015", "text": "The property \"…\" should not be declared in the OPF file." },
+        { "from": "validator", "code": "manifest.properties", "text": "Manifest properties do not match the content" }
+      ],
+      "cause": "Each manifest item must declare what its file contains — svg, mathml, scripted, remote-resources or switch — and must not declare what it doesn't. A chapter with an inline SVG flourish but no properties=\"svg\" is the usual case.",
+      "steps": [
+        "Re-export from Beuk: these five properties are recomputed from each file's own content every time.",
+        "In a hand-edited package, add or remove the property the line names on that item."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["OPF-014", "OPF-015"], "validator": ["manifest.properties"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties OPF_014 OPF_015", "client/index.html BEUK:epub epubManifestPropertyReport (EPUB 3.3 §5.6.2.1)"]
+    },
+    {
+      "code": "BEUK-D402",
+      "category": "package",
+      "title": "Duplicate files, differently-cased",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "OPF-060", "text": "Duplicate entry in the ZIP file: \"…\" (file names must be unique after Unicode canonical normalization and full case folding)." }
+      ],
+      "cause": "The package holds Chapter1.xhtml and chapter1.xhtml, or a manifest identifier used twice. Some systems treat those as the same name and collide.",
+      "steps": [
+        "The validator's duplicate-identifier check catches the manifest version (it reports under Manifest and package contents disagree).",
+        "For filenames, re-export rather than hand-renaming files inside a package."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["OPF-060"], "validator": [], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties OPF_060", "client/index.html validateEpubPackage check 4 (duplicate manifest ids)"]
+    },
+    {
+      "code": "BEUK-U403",
+      "category": "package",
+      "title": "Book ID marked as a UUID but invalid",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "OPF-085", "text": "\"dc:identifier\" value \"…\" is marked as a UUID, but is an invalid UUID." }
+      ],
+      "cause": "Books saved by older Beuk builds carry an id like urn:uuid:sk3j9x2a-s8f7d6e5. Beuk replaces it with a real UUID whenever the book arrives on the desk.",
+      "steps": [
+        "Open the book in the studio once — the id is repaired automatically.",
+        "Export again; the new file carries the corrected id."
+      ],
+      "guide": "exports-and-archive",
+      "maps": { "epubcheck": ["OPF-085"], "validator": [], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties OPF_085", "README.md 'Local-first saving (studio)' — Book IDs from older builds"]
+    },
+    {
+      "code": "BEUK-N404",
+      "category": "package",
+      "title": "The navigation is incomplete",
+      "severity": "error",
+      "says": [
+        { "from": "epubcheck", "code": "OPF-050", "text": "TOC attribute references resource with non-NCX mime type; \"application/x-dtbncx+xml\" is expected." },
+        { "from": "validator", "code": "nav.landmarks", "text": "Navigation landmarks are incomplete" },
+        { "from": "validator", "code": "nav.landmarks", "text": "No navigation document declared" },
+        { "from": "validator", "code": "ncx.present-targets", "text": "No NCX for older readers" },
+        { "from": "validator", "code": "ncx.present-targets", "text": "NCX problems" }
+      ],
+      "cause": "EPUB 3 readers use the navigation document — its table of contents and landmarks (contents, the start of the body text, the cover). The NCX is the old EPUB 2 navigation file older Kindles still read. If either is missing, or the NCX's entries point at files that aren't there, readers lose their table of contents.",
+      "steps": [
+        "Re-export; Beuk always generates the NCX alongside the EPUB 3 navigation, in reading order.",
+        "In a hand-edited package, check the spine's toc attribute names the NCX item."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": ["OPF-050"], "validator": ["nav.landmarks", "ncx.present-targets"], "http": [], "store": [] },
+      "sources": ["tools-bin/epubcheck.jar MessageBundle.properties OPF_050", "client/index.html validateEpubPackage checks 6 and 7"]
+    },
+    {
+      "code": "BEUK-A601",
+      "category": "content",
+      "title": "An image has no alt text",
+      "severity": "error",
+      "says": [
+        { "from": "validator", "code": "images.alt-text", "text": "Images without alt text" }
+      ],
+      "cause": "Screen-reader users hear nothing where the picture is. Beuk's validator treats a missing description as an error; decorative ornaments (aria-hidden) are skipped by design.",
+      "steps": [
+        "Find the image the line names in the strip under the editor.",
+        "Add one plain sentence describing what the picture shows.",
+        "Export and validate again."
+      ],
+      "guide": "footnotes-and-images",
+      "maps": { "epubcheck": [], "validator": ["images.alt-text"], "http": [], "store": [] },
+      "sources": ["client/index.html validateEpubPackage check 9", "The bundled EPUBCheck 5.2.1 message bundle has no message for a missing img alt attribute, so no EPUBCheck code is mapped."]
+    },
+    {
+      "code": "BEUK-M501",
+      "category": "content",
+      "title": "Required metadata is missing",
+      "severity": "error",
+      "says": [
+        { "from": "validator", "code": "metadata.required", "text": "Required metadata is missing" }
+      ],
+      "cause": "The package lacks one of a title, an author, an identifier or a language. Most stores reject a book that arrives without them.",
+      "steps": [
+        "Open Project Settings and fill in the field the line names.",
+        "Export and validate again."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": [], "validator": ["metadata.required"], "http": [], "store": [] },
+      "sources": ["client/index.html validateEpubPackage checks 10–12"]
+    },
+    {
+      "code": "BEUK-M502",
+      "category": "content",
+      "title": "No ISBN — the book's own identifier is used",
+      "severity": "warning",
+      "says": [
+        { "from": "validator", "code": "metadata.isbn", "text": "No ISBN — the book's UUID is the identifier" }
+      ],
+      "cause": "Without an ISBN in Project Settings the package identifies the book by its own UUID. That is valid EPUB and fine for direct sales; most store programmes want an ISBN, or assign their own ID on ingest. A warning, not a failure.",
+      "steps": [
+        "Have an ISBN? Add it in Project Settings and export again.",
+        "No ISBN? You can ship as it is — Beuk never invents one."
+      ],
+      "guide": "platform-presets",
+      "maps": { "epubcheck": [], "validator": ["metadata.isbn"], "http": [], "store": [] },
+      "sources": ["client/index.html validateEpubPackage checks 10–12"]
+    },
+    {
+      "code": "BEUK-M503",
+      "category": "content",
+      "title": "No book description",
+      "severity": "warning",
+      "says": [
+        { "from": "validator", "code": "metadata.description", "text": "No book description" }
+      ],
+      "cause": "Project Settings has no description, so the package carries no dc:description. The book still opens and reads without one, but stores show the description on the book's page. A warning, not a failure.",
+      "steps": [
+        "Add a description in Project Settings and export again."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": [], "validator": ["metadata.description"], "http": [], "store": [] },
+      "sources": ["client/index.html validateEpubPackage checks 10–12"]
+    },
+    {
+      "code": "BEUK-M504",
+      "category": "content",
+      "title": "The cover is missing or not declared",
+      "severity": "warning",
+      "says": [
+        { "from": "validator", "code": "cover.declared", "text": "No cover image" },
+        { "from": "validator", "code": "cover.declared", "text": "Cover image is packaged but not declared" },
+        { "from": "validator", "code": "cover.declared", "text": "Cover declaration is incomplete" }
+      ],
+      "cause": "With no cover uploaded the book is still valid, and the validator says so as a warning — but nearly every store requires a cover before it lists a book. A cover file that ships without properties=\"cover-image\" (or without the legacy cover meta) is an error: stores would not treat it as the cover.",
+      "steps": [
+        "Upload a cover in Project Settings.",
+        "Export again — the cover is declared, given a cover page and a cover landmark."
+      ],
+      "guide": "add-a-cover",
+      "maps": { "epubcheck": [], "validator": ["cover.declared"], "http": [], "store": [] },
+      "sources": ["client/index.html validateEpubPackage check 13"]
+    },
+    {
+      "code": "BEUK-S501",
+      "category": "store",
+      "title": "Kindle says the cover is too small",
+      "severity": "warning",
+      "says": [],
+      "cause": "Not an EPUB error at all — a catalogue rule. KDP's cover guidelines give the ideal size as 2,560 pixels in height by 1,600 pixels in width, and require at least 500 pixels on the longest side; KDP shows a warning at upload when a cover is smaller than recommended.",
+      "steps": [
+        "Upload the largest cover you have in Project Settings.",
+        "Re-export with the KDP preset."
+      ],
+      "guide": "add-a-cover",
+      "maps": { "epubcheck": [], "validator": [], "http": [], "store": ["KDP"] },
+      "sources": ["https://kdp.amazon.com/en_US/help/topic/G6GTK3T3NUHKLEFX (fetched 2026-10-25; the page does not quote the warning's exact words, so none are shown here)"]
+    },
+    {
+      "code": "BEUK-S502",
+      "category": "store",
+      "title": "Apple Books refuses a large image",
+      "severity": "error",
+      "says": [],
+      "cause": "Apple's importer adds its own limits. Its Books Asset Guide (changes in 5.2.14) raised the limit for interior book images from 4 million to 5.6 million pixels — width times height, whatever the file size.",
+      "steps": [
+        "Export with the Apple Books preset.",
+        "Keep individual images near 2048 px on the long side — ample for any e-reader screen."
+      ],
+      "guide": "platform-presets",
+      "maps": { "epubcheck": [], "validator": [], "http": [], "store": ["Apple Books"] },
+      "sources": ["https://help.apple.com/itc/booksassetguide/en.lproj/itc618428401.html (fetched 2026-10-25; it gives no error-message text, so none is shown here)"]
+    },
+    {
+      "code": "BEUK-J701",
+      "category": "jobs",
+      "title": "A server check ran out of time",
+      "severity": "error",
+      "says": [
+        { "from": "server", "code": "epubcheck", "text": "EPUBCheck did not finish within 120000 ms and was stopped." },
+        { "from": "server", "code": "pdfx", "text": "Ghostscript did not finish within 900000 ms (PDFX_TIMEOUT_MS) and was stopped. Pages with any transparency are flattened to images, which is slow on picture-heavy books." }
+      ],
+      "cause": "Each server job step gets a fixed allowance: EPUBCheck and the print renderer 2 minutes by default (JOB_TIMEOUT_MS), the PDF/X conversion step 15 minutes (PDFX_TIMEOUT_MS). An overrun is stopped and the job is reported as failed, not left hanging. The numbers in the message are this server's settings.",
+      "steps": [
+        "Run the check again — a busy moment is the usual cause.",
+        "If it fails the same way twice, the book may need longer than this server allows; the job id identifies the run."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": [], "validator": [], "http": [], "store": [] },
+      "sources": ["src/jobs/tools.ts runEpubCheck and runPdfx timeout messages", "src/config.ts jobTimeoutMs (default 120000) and pdfxTimeoutMs (default 900000)"]
+    },
+    {
+      "code": "BEUK-J702",
+      "category": "jobs",
+      "title": "Too many server jobs waiting",
+      "severity": "error",
+      "says": [
+        { "from": "server", "code": "HTTP 429", "text": "you already have 2 jobs waiting or running (the limit is 2); start this one when one of them finishes" },
+        { "from": "server", "code": "HTTP 503", "text": "the server job queue is full right now; please try again in a few minutes" }
+      ],
+      "cause": "One account can hold two server jobs (EPUBCheck or PDF/X) queued or running at a time, and the whole server twenty, so one book cannot crowd out everyone else. Both limits are server settings (JOB_MAX_ACTIVE_PER_USER, JOB_MAX_QUEUED); the message names this server's numbers. No job is created when the answer is 429 or 503.",
+      "steps": [
+        "Wait for a running job to finish.",
+        "Then start the next one."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": [], "validator": [], "http": [{ "status": 429, "route": "POST /api/jobs/epubcheck · POST /api/jobs/pdfx" }, { "status": 503, "route": "POST /api/jobs/epubcheck · POST /api/jobs/pdfx" }], "store": [] },
+      "sources": ["src/routes/jobs.ts createJob admission caps", "src/config.ts jobMaxActivePerUser (default 2), jobMaxQueued (default 20)"]
+    },
+    {
+      "code": "BEUK-C801",
+      "category": "saving",
+      "title": "Two devices saved different copies",
+      "severity": "warning",
+      "says": [
+        { "from": "studio", "code": "offline.conflictTitle", "text": "This book changed in two places" },
+        { "from": "server", "code": "HTTP 409", "text": "revision conflict: the shelf copy has changed" }
+      ],
+      "cause": "You edited the same book in two places. Beuk never overwrites silently — it asks which copy wins.",
+      "steps": [
+        "Choose Keep mine, Use the shelf copy, or Keep both.",
+        "Not sure? Keep both — the shelf copy is kept as a snapshot in History, word for word."
+      ],
+      "guide": "saving",
+      "maps": { "epubcheck": [], "validator": [], "http": [{ "status": 409, "route": "PUT /api/manuscripts/:id" }], "store": [] },
+      "sources": ["src/routes/manuscripts.ts PUT 409", "client/index.html offline.conflictTitle / offline.conflictBothNote (en)"]
+    },
+    {
+      "code": "BEUK-L901",
+      "category": "saving",
+      "title": "This browser is blocking storage",
+      "severity": "error",
+      "says": [
+        { "from": "studio", "code": "local.blocked", "text": "Not saved — this browser is blocking storage" },
+        { "from": "studio", "code": "local.quota", "text": "Not saved — this device's storage is full" }
+      ],
+      "cause": "Private windows and some privacy settings stop the studio from saving on this device, and a full disk does the same. Your writing is still on screen, but it isn't kept.",
+      "steps": [
+        "Export a backup now (the header indicator offers it).",
+        "Open Beuk in a normal window, or allow site storage, or free some space.",
+        "Sign in so the shelf keeps a copy too."
+      ],
+      "guide": "saving",
+      "maps": { "epubcheck": [], "validator": [], "http": [], "store": [] },
+      "sources": ["client/index.html local.blocked / local.quota (en)", "README.md 'Local-first saving (studio)' — Header indicator"]
+    },
+    {
+      "code": "BEUK-H410",
+      "category": "sharing",
+      "title": "This share link is closed",
+      "severity": "info",
+      "says": [
+        { "from": "server", "code": "GET /read/:token", "text": "This reading copy is closed" },
+        { "from": "server", "code": "GET /read/:token", "text": "The writer has closed this reading copy." },
+        { "from": "server", "code": "GET /read/:token", "text": "The reading period for this copy has ended." },
+        { "from": "server", "code": "HTTP 410", "text": "this reading copy is closed" }
+      ],
+      "cause": "The writer revoked this reading link, or its expiry date passed. Nothing is wrong on the reader's side. Comments left before then stay with the writer, on the writer's side of the link.",
+      "steps": [
+        "Ask the writer for a fresh link.",
+        "No account is needed to read or comment."
+      ],
+      "guide": "share",
+      "maps": { "epubcheck": [], "validator": [], "http": [{ "status": 410, "route": "GET /read/:token · GET|POST /read/:token/comments" }], "store": [] },
+      "sources": ["src/shares/reader.ts renderGonePage", "src/routes/shares.ts 410 responses", "README.md 'Beta-reader share links'"]
+    }
+  ]
+}

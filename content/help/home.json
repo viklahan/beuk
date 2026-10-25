@@ -1,0 +1,54 @@
+{
+  "about": "The Help home page: search suggestions, the four 'start from where you are' cards, and the order guides are listed in within each group.",
+  "suggestions": [
+    { "label": "RSC-005", "mono": true },
+    { "label": "cover too small" },
+    { "label": "my streak restarted" },
+    { "label": "reading copy is closed" },
+    { "label": "not saved storage" },
+    { "label": "429", "mono": true }
+  ],
+  "paths": [
+    {
+      "kicker": "NEW TO BEUK",
+      "title": "I have a manuscript and want a book",
+      "links": [
+        { "label": "Import a manuscript", "href": "/help/import-a-manuscript" },
+        { "label": "Typeset a chapter", "href": "/help/typeset-a-chapter" },
+        { "label": "Add a cover", "href": "/help/add-a-cover" }
+      ]
+    },
+    {
+      "kicker": "SHIPPING",
+      "title": "I'm sending it to a store",
+      "links": [
+        { "label": "Export for a store (presets)", "href": "/help/platform-presets" },
+        { "label": "Check your book", "href": "/help/check-your-book" },
+        { "label": "A store rejected my file", "href": "/help/epub-error-decoder" }
+      ]
+    },
+    {
+      "kicker": "HANDS IN THE FILE",
+      "title": "I edit the EPUB or HTML myself",
+      "links": [
+        { "label": "The error dictionary", "href": "/help/errors" },
+        { "label": "Package Inspector & archive", "href": "/help/exports-and-archive" },
+        { "label": "Server EPUBCheck jobs", "href": "/help/check-your-book" }
+      ]
+    },
+    {
+      "kicker": "READING A DRAFT",
+      "title": "Someone sent me a link to read",
+      "links": [
+        { "label": "How share links work", "href": "/help/share" },
+        { "label": "Leaving comments", "href": "/help/share#comments" },
+        { "label": "The link says it's closed", "href": "/help/errors/BEUK-H410" }
+      ]
+    }
+  ],
+  "guideOrder": [
+    "import-a-manuscript", "typeset-a-chapter", "add-a-cover", "footnotes-and-images",
+    "platform-presets", "box-sets", "print-interiors", "check-your-book", "epub-error-decoder",
+    "exports-and-archive", "your-streak", "saving", "share"
+  ]
+}

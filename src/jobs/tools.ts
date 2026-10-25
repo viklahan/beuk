@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
+import { beukCodeForEpubcheck } from '../help/codes.js';
 import { parsePam, tacFromPam } from './pdfpress.js';
 
 /**
@@ -30,6 +31,21 @@ export interface EpubCheckMessage {
   severity: string;
   message: string;
   location: string | null;
+  /** H1.3: the BEUK- error-dictionary code this EPUBCheck id maps to
+   *  (content/help/errors.json maps.epubcheck), or null when no entry
+   *  lists it — never a guess. Links to /help/errors/<beuk>. */
+  beuk: string | null;
+}
+
+/** BEUK- code for an EPUBCheck id; a dictionary that cannot be read is
+ *  logged and maps nothing (the job result itself is unaffected). */
+function beukFor(id: string): string | null {
+  try {
+    return beukCodeForEpubcheck(id);
+  } catch (err) {
+    console.error('help: error dictionary unreadable, EPUBCheck codes left unmapped:', err instanceof Error ? err.message : err);
+    return null;
+  }
 }
 
 export interface EpubCheckReport {
@@ -214,11 +230,13 @@ export function parseEpubCheckReport(rawJson: string): EpubCheckReport | null {
         counts.infos += 1;
         break;
     }
+    const code = String(raw.ID ?? raw.id ?? '');
     return {
-      code: String(raw.ID ?? raw.id ?? ''),
+      code,
       severity,
       message: String(raw.message ?? ''),
       location: locationOf(raw),
+      beuk: beukFor(code),
     };
   });
   const checker = root.checker ?? {};

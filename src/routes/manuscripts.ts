@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { uuidParam } from '../ids.js';
+import { HTTP_CODES } from '../help/codes.js';
 
 interface ManuscriptRow {
   id: string;
@@ -166,7 +167,7 @@ export function manuscriptRoutes(db: Db): Router {
       const manuscript = { ...metadata(row), doc: row.doc };
       if (base === null)
         return res.status(428).json({ error: 'revision required (If-Match header or body.revision)', manuscript });
-      return res.status(409).json({ error: 'revision conflict: the shelf copy has changed', manuscript });
+      return res.status(409).json({ error: 'revision conflict: the shelf copy has changed', code: HTTP_CODES.manuscriptConflict, manuscript });
     } catch (err) {
       return next(err);
     }

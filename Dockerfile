@@ -52,6 +52,9 @@ COPY docs ./docs
 # only the caddy container sees.
 COPY client ./client
 COPY CHANGELOG.md ./CHANGELOG.md
+# H1/H2 Help: the guides (Markdown), the error dictionary and the home
+# page data, read at request time and indexed for search at boot.
+COPY content ./content
 # M5: the PDF/X definition file the pdfx job hands to Ghostscript.
 # (The JRE + EPUBCheck jar + Ghostscript binaries themselves are a
 # production install step — see the README "Jobs" section.)

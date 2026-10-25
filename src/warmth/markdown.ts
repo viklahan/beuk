@@ -19,7 +19,7 @@ function isSafeUrl(url: string): boolean {
   return /^(https?:\/\/|mailto:|\/|#)/i.test(url);
 }
 
-function renderInline(escaped: string): string {
+export function renderInline(escaped: string): string {
   // Inline code first (its contents take no further formatting).
   const parts = escaped.split(/(`[^`]+`)/g);
   return parts

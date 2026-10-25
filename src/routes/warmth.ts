@@ -16,8 +16,7 @@ import { renderMarkdown } from '../warmth/markdown.js';
  * M4 warmth pages, served by the app (Caddy proxies these paths to it —
  * see the Caddyfile) because their slots depend on server config:
  *
- *   GET /help/ + /help/<guide>   the static reading-room pages from
- *                                client/help/, slots filled per request
+ *   (GET /help/, /help/<slug>, /help/errors… — see routes/help.ts)
  *   GET /help/warmth.css         the shared Paper stylesheet (static)
  *   GET /help/billing-gate.js    hides the Ko-fi jar once billing is live
  *   GET /thanks                  the post-export landing (client/thanks/)
@@ -67,16 +66,8 @@ export function warmthRoutes(config: Config): Router {
     }
   });
 
-  router.get(['/help', '/help/'], (_req, res, next) => {
-    return sendPage(res, next, () => readClientPage(config, 'help', 'index.html'));
-  });
-
-  router.get('/help/:page', (req, res, next) => {
-    const page = req.params.page;
-    // Plain file names only — no traversal, no directories.
-    if (!/^[a-z0-9-]+\.html$/.test(page)) return next();
-    return sendPage(res, next, () => readClientPage(config, 'help', page));
-  });
+  // /help/, the guides, /help/errors and /help/search are H1/H2's
+  // server-rendered pages: src/routes/help.ts.
 
   router.get(['/thanks', '/thanks/'], (req, res, next) => {
     return sendPage(res, next, () => readClientPage(config, 'thanks', 'index.html'));

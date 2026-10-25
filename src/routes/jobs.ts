@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requireAuth } from '../auth.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
+import { HTTP_CODES } from '../help/codes.js';
 import { isUuid, uuidParam } from '../ids.js';
 import { JobRunner, type JobKind, type JobRow } from '../jobs/runner.js';
 
@@ -95,6 +96,7 @@ export function jobRoutes(db: Db, config: Config): { router: Router; runner: Job
             error:
               `you already have ${mine} job${mine === 1 ? '' : 's'} waiting or running ` +
               `(the limit is ${config.jobMaxActivePerUser}); start this one when one of them finishes`,
+            code: HTTP_CODES.jobsBusy,
           },
           jobId: null,
         };
@@ -102,7 +104,10 @@ export function jobRoutes(db: Db, config: Config): { router: Router; runner: Job
       if (total >= config.jobMaxQueued) {
         return {
           status: 503 as const,
-          payload: { error: 'the server job queue is full right now; please try again in a few minutes' },
+          payload: {
+            error: 'the server job queue is full right now; please try again in a few minutes',
+            code: HTTP_CODES.jobsBusy,
+          },
           jobId: null,
         };
       }

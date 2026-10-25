@@ -246,6 +246,7 @@ export function renderGonePage(nonce: string, reason: 'revoked' | 'expired'): st
       <p class="lede">${line}</p>
       <p>Nothing is wrong on your side. If you were reading it as a beta reader, thank you — and if you’d like
       to keep going, ask the writer for a fresh link.</p>
+      <p class="rd-hint">Reference: <a href="/help/errors/BEUK-H410">BEUK-H410</a></p>
     </main>`,
   });
 }

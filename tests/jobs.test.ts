@@ -304,6 +304,7 @@ test('epubcheck job on own epub export runs to done with the parsed report store
     severity: string;
     message: string;
     location: string | null;
+    beuk: string | null;
   }>;
   assert.equal(messages.length, 3);
   assert.equal(messages[0].code, 'RSC-005');
@@ -311,6 +312,11 @@ test('epubcheck job on own epub export runs to done with the parsed report store
   assert.equal(messages[0].location, 'OEBPS/Text/ch01.xhtml:12:4');
   assert.equal(messages[1].location, 'OEBPS/package.opf');
   assert.equal(messages[2].location, null);
+  // H1.3: each message carries its error-dictionary code, or null when
+  // no entry maps that EPUBCheck id (never a guess).
+  assert.equal(messages[0].beuk, 'BEUK-X201');
+  assert.equal(messages[1].beuk, null);
+  assert.equal(messages[2].beuk, null);
 });
 
 test("jobs are owner-scoped: another user's export 404s, another user's job 404s, lists are separate", async () => {
@@ -535,12 +541,15 @@ test('admission caps: a user holds at most JOB_MAX_ACTIVE_PER_USER jobs, the ser
     assert.equal(second.status, 201);
     const third = await erin.post('/api/jobs/epubcheck', { exportId: aliceEpubId });
     assert.equal(third.status, 429);
+    assert.equal(third.body.code, 'BEUK-J702', 'H1.3: the 429 names its error-dictionary entry');
     assert.match(String(third.body.error), /already have 2 jobs waiting or running \(the limit is 2\)/);
 
     const bobs = await frank.post('/api/jobs/epubcheck', { exportId: bobEpubId });
     assert.equal(bobs.status, 201);
     const overflow = await frank.post('/api/jobs/epubcheck', { exportId: bobEpubId });
     assert.equal(overflow.status, 503);
+    assert.equal(overflow.body.code, 'BEUK-J702', 'H1.3: the 503 names its error-dictionary entry');
+    assert.equal(overflow.body.error, 'the server job queue is full right now; please try again in a few minutes');
     assert.match(String(overflow.body.error), /job queue is full/);
 
     // Refused requests created no jobs: exactly the three admitted ones are active.
