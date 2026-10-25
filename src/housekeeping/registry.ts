@@ -20,6 +20,8 @@ import {
 import { scanTags } from './xml.js';
 import { clientDir, repoRoot } from '../warmth/pages.js';
 import { createMailer, type Mailer } from '../mailer.js';
+import { StripeBillingProvider } from '../billing.js';
+import { loadEntitlements } from '../entitlements.js';
 import { renderSnapshot } from '../shares/render.js';
 import { sanitizeHtml } from '../shares/sanitize.js';
 
@@ -388,6 +390,84 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The sign-in dialog and the account area are studio UI; the endpoints they call are covered by the server tests.',
   },
+
+  /* ==== BEUK:billing ==== */
+  {
+    id: 'billing.mode.matches-key',
+    title: 'Billing: the Stripe key mode is known and agrees with STRIPE_MODE; unconfigured billing refuses every webhook',
+    kind: 'server',
+    run: async ({ config }) => {
+      const provider = new StripeBillingProvider(config);
+      if (!config.stripeSecretKey || !config.stripeWebhookSecret) {
+        // Unconfigured: prove nothing can be processed, say so plainly.
+        assert(!provider.configured, 'billing reports configured without both keys');
+        assert(!provider.checkoutConfigured, 'checkout reports configured without both keys');
+        return 'billing NOT configured (STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET unset): the webhook answers 501 and nothing can be granted';
+      }
+      assert(provider.misconfiguration === null, provider.misconfiguration ?? '');
+      return `mode ${provider.mode} (from the key prefix${config.stripeMode ? `, agrees with STRIPE_MODE` : ''}); only ${provider.mode}-mode events are applied`;
+    },
+  },
+  {
+    id: 'billing.entitlements.file-valid',
+    title: 'Billing: the entitlements file parses and carries STRIPE_PRICE_ID',
+    kind: 'server',
+    run: async ({ config }) => {
+      const loaded = loadEntitlements(config);
+      assert(loaded.ok, loaded.ok ? '' : `ENTITLEMENTS_FILE ${loaded.source} is invalid: ${loaded.error}`);
+      const prices = Object.keys(loaded.table.prices);
+      if (!loaded.source) {
+        return 'no ENTITLEMENTS_FILE set: no price grants any entitlement and no feature is gated';
+      }
+      if (config.stripePriceId) {
+        assert(
+          prices.includes(config.stripePriceId),
+          `STRIPE_PRICE_ID ${config.stripePriceId} is not in ${loaded.source}: a checkout on it would grant nothing`,
+        );
+      }
+      return `${prices.length} price(s) in ${loaded.source}`;
+    },
+  },
+  {
+    id: 'billing.events.none-stuck',
+    title: 'Billing: no webhook event has been left unprocessed for more than an hour',
+    kind: 'server',
+    run: async ({ db }) => {
+      const stuck = await db.query<{ event_id: string; type: string; error: string | null }>(
+        `select event_id, type, error from billing_events
+         where processed_at is null and received_at < now() - interval '1 hour'
+         order by received_at limit 20`,
+      );
+      assert(
+        !stuck.rows.length,
+        `${stuck.rows.length} unprocessed event(s): ${stuck.rows.map((r) => `${r.event_id} (${r.type}${r.error ? `: ${r.error}` : ''})`).join('; ')}`,
+      );
+      const total = await db.query<{ n: number }>('select count(*)::int as n from billing_events');
+      return `${Number(total.rows[0]?.n ?? 0)} event(s) in the ledger, none stuck`;
+    },
+  },
+  {
+    id: 'billing.subscriptions.attributed',
+    title: 'Billing: every live subscription belongs to an account (no email guessing; unattributed ones listed here)',
+    kind: 'server',
+    run: async ({ db }) => {
+      const orphans = await db.query<{ stripe_subscription_id: string; stripe_customer_id: string; status: string }>(
+        `select stripe_subscription_id, stripe_customer_id, status from billing_subscriptions
+         where user_id is null and status not in ('canceled', 'incomplete_expired')
+         order by updated_at limit 20`,
+      );
+      const conflicts = await db.query<{ n: number }>(
+        `select count(*)::int as n from billing_events
+         where outcome in ('unattributed', 'customer-conflict') and received_at > now() - interval '30 days'`,
+      );
+      assert(
+        !orphans.rows.length,
+        `${orphans.rows.length} subscription(s) with no account: ${orphans.rows.map((r) => `${r.stripe_subscription_id} (customer ${r.stripe_customer_id}, ${r.status})`).join('; ')}. Link the customer to the right account by hand (users.stripe_customer_id), then resend the event from the Stripe Dashboard.`,
+      );
+      return `every non-terminal subscription is attributed; ${Number(conflicts.rows[0]?.n ?? 0)} unattributed/conflicting event(s) in the last 30 days`;
+    },
+  },
+  /* ==== /BEUK:billing ==== */
 
   /* ---- Data invariants ---- */
   {
