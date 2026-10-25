@@ -1,0 +1,112 @@
+# Beuk renderer — the book's typefaces, pinned. One file per line:
+#   sha256  destination (under /usr/share/fonts/truetype/beuk)  source URL
+# deploy/renderer/fetch-fonts.mjs downloads each URL at build time and
+# refuses any byte that does not match its sha256.
+#
+# Faces: exactly the families, weights and styles the studio loads from
+# Google Fonts (the css2 link in client/index.html <head>), restricted
+# to the twenty book families (BODY_FONTS + HEAD_FONTS). They are the
+# static TrueType instances Google Fonts itself serves for those
+# requests (fonts.gstatic.com, resolved 2026-10-25 from
+# https://fonts.googleapis.com/css2 with a plain client): STATIC on
+# purpose — Chromium (Skia/PDF) embedded the variable [wght] files from
+# the google/fonts repository as Type 3 fonts (pdffonts, 2026-10-25),
+# which press preflights treat as a defect; static TrueType embeds as
+# CID TrueType. Every family is SIL Open Font License 1.1; its OFL.txt
+# comes from the google/fonts repository at a pinned commit and is
+# installed beside its fonts, as the licence requires for
+# redistribution. The fonts are not modified.
+6ab296ea2b6ea95302e1c3ffd9ed203483ce1e9a3b2ef23646e7780459f5cbd7  alegreya/Alegreya-italic-400.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UaSrEBBsBhlBjvfkSLk3abBFkvpkARTPlbgv6qm.ttf
+2f355df26680f857b950e338995b2945df5d5345dd4334fd61c60600d666fbb6  alegreya/Alegreya-normal-400.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hUI_A.ttf
+3ae790f5b3f70bf2a9d990c07bbbfc22af476fb5835f309128f5978baf7a9bd6  alegreya/Alegreya-normal-500.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNGxBUI_A.ttf
+613bb372fa6f66a19ed652ea8eea88768ff4321d5eb03cf8b28a217ba8942fbf  alegreya/Alegreya-normal-700.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNGERII_A.ttf
+bd933cb739b5125a1fda907d61ea237beadb4ac382ac7a5f9af0a8bbedaf48b7  cinzel/Cinzel-normal-500.ttf  https://fonts.gstatic.com/s/cinzel/v26/8vIU7ww63mVu7gtR-kwKxNvkNOjw-uTnTYo.ttf
+5150b3609eeaaa9c6d7e093cb9b16ab8ec2f7110ddf0cbe751887e6f158398af  cinzel/Cinzel-normal-600.ttf  https://fonts.gstatic.com/s/cinzel/v26/8vIU7ww63mVu7gtR-kwKxNvkNOjw-gjgTYo.ttf
+2c6b1ff0d368efb73636700b69dbef707fa5602a06d085a4e91e5125082651f0  cinzel/Cinzel-normal-700.ttf  https://fonts.gstatic.com/s/cinzel/v26/8vIU7ww63mVu7gtR-kwKxNvkNOjw-jHgTYo.ttf
+14efb9443652199ade5bc6ba8637b4084acce40a58368a3808f84f55667e3e90  cormorantgaramond/Cormorant_Garamond-italic-500.ttf  https://fonts.gstatic.com/s/cormorantgaramond/v21/co3smX5slCNuHLi8bLeY9MK7whWMhyjYrGFEsdtdc62E6zd5wDDOjw.ttf
+1724047c8988ca5155bff667bc48fa52e97d57aabc6b42eebbf986f21a4be20b  cormorantgaramond/Cormorant_Garamond-normal-500.ttf  https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_s06GnM.ttf
+69e7ae35cba23d962227b86f99217c250e642e4c6f6104b4f3ec465039e4e2d8  cormorantgaramond/Cormorant_Garamond-normal-600.ttf  https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_iE9GnM.ttf
+440daf036a35abd6d2bdfa92b14ab0f150cce690fe6d767ee5cab15a1a10a87f  cormorantgaramond/Cormorant_Garamond-normal-700.ttf  https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_hg9GnM.ttf
+d0a5681115c77a29f474bd79ef39d253814f3761456a1eca05521d0bfabdd1e6  crimsonpro/Crimson_Pro-italic-400.ttf  https://fonts.gstatic.com/s/crimsonpro/v28/q5uSsoa5M_tv7IihmnkabAReu49Y_Bo-HVKMBi6Ue5s7.ttf
+d43dfaf98f1cb4ef4052e266538317af16ebe6ea8eed50c03c086f2752682e47  crimsonpro/Crimson_Pro-normal-400.ttf  https://fonts.gstatic.com/s/crimsonpro/v28/q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZzm18OA.ttf
+dc4f64ccc1c6ae09bf34aff45cf3d15591fa56e0c546a04b0d2ad30d2c7c22d9  crimsonpro/Crimson_Pro-normal-500.ttf  https://fonts.gstatic.com/s/crimsonpro/v28/q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZ_G18OA.ttf
+9875f841c142b0e80712c7d721f099f15c084ab966e8e572d7a0505eda1d8c34  crimsonpro/Crimson_Pro-normal-600.ttf  https://fonts.gstatic.com/s/crimsonpro/v28/q5uUsoa5M_tv7IihmnkabC5XiXCAlXGks1WZEGp8OA.ttf
+9d2ca86044b885d085059c7e3bed21d6e31456a81a47761e7ade8cd390ebe71d  ebgaramond/EB_Garamond-italic-400.ttf  https://fonts.gstatic.com/s/ebgaramond/v33/SlGFmQSNjdsmc35JDF1K5GRwUjcdlttVFm-rI7e8QI96.ttf
+1051266691bf470e46920bb64e81c901cf82111caa81ff45fcbe50e2bccb274e  ebgaramond/EB_Garamond-italic-500.ttf  https://fonts.gstatic.com/s/ebgaramond/v33/SlGFmQSNjdsmc35JDF1K5GRwUjcdlttVFm-rI7eOQI96.ttf
+934aa932b4bc1a75d883f7c3d4d5bbc8278e5e7fcc96d5440bbffd61050cf958  ebgaramond/EB_Garamond-normal-400.ttf  https://fonts.gstatic.com/s/ebgaramond/v33/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-6_RUAw.ttf
+45fad23db0ff6cc8f2ce5a6f9802d499e8ab737c039a7944a6f2f617d224af14  ebgaramond/EB_Garamond-normal-500.ttf  https://fonts.gstatic.com/s/ebgaramond/v33/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-2fRUAw.ttf
+b536adfa0f5746cfbd148d8a1a669540366edef2c85c4b49450798a037bd928c  ebgaramond/EB_Garamond-normal-600.ttf  https://fonts.gstatic.com/s/ebgaramond/v33/SlGDmQSNjdsmc35JDF1K5E55YMjF_7DPuGi-NfNUAw.ttf
+7877d9a83f041daf73c1dcfec5f59aceca6d7899b477e92aa9afa11e7efb91c1  gentiumbookplus/Gentium_Book_Plus-italic-400.ttf  https://fonts.gstatic.com/s/gentiumbookplus/v1/vEFN2-RHBgUK5fbjKxRpbBtJPyRpocKdf7Y.ttf
+d92afb471d3078093e1677c06a1f03cfe01cd237b18ecc2b58651f7b7f5a7047  gentiumbookplus/Gentium_Book_Plus-normal-400.ttf  https://fonts.gstatic.com/s/gentiumbookplus/v1/vEFL2-RHBgUK5fbjKxRpbBtJPyRpofKf.ttf
+02e3eb2e2734161cd94ab673c4ec62f72ba31f4335c71be9c3ecf0e1ff29261e  gentiumbookplus/Gentium_Book_Plus-normal-700.ttf  https://fonts.gstatic.com/s/gentiumbookplus/v1/vEFO2-RHBgUK5fbjKxRpbBtJPyRpocojWpbG.ttf
+1b08e7fc267a5c7e1d614100f604b83e7e8a0be241f0f288faa2b3ac93a683ba  inter/Inter-normal-400.ttf  https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf
+8c883f63b2c4157d997319f2c8bc6995ed4357ef371940d31ca159004a4aae63  inter/Inter-normal-500.ttf  https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf
+e7a1aaf7eda9f2fad4131725fa556265ec75ca7b2d756260173a040363e8d4f7  inter/Inter-normal-600.ttf  https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf
+b37284b5701b6b168dfc770aa1a4ac492106422fd3ba76bc7641e37434e8019c  inter/Inter-normal-700.ttf  https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZg.ttf
+b2149da8101de6ecbc0d5ea9616a0a0a45fbd01701f012a0ae9b0d0ed733c070  librebaskerville/Libre_Baskerville-italic-400.ttf  https://fonts.gstatic.com/s/librebaskerville/v24/kmKWZrc3Hgbbcjq75U4uslyuy4kn0qNccR04_RUJeby2OU36SgNK.ttf
+f5bc4341f15de5e877d8d95b6b14b33e9a3da1f8fef4ed0700ed407f096cffb6  librebaskerville/Libre_Baskerville-normal-400.ttf  https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17uj8Q4SCQ.ttf
+8b008ffdae31b314657cb8e28d822da09893035d06bad9b1ab53ea762549cbd1  librebaskerville/Libre_Baskerville-normal-700.ttf  https://fonts.gstatic.com/s/librebaskerville/v24/kmKUZrc3Hgbbcjq75U4uslyuy4kn0olVQ-LglH6T17ujFgkSCQ.ttf
+3d4973f83fc079ecc2b245035c98884cc4ae5c59c4d4f31c7333644c10838aa4  librecaslontext/Libre_Caslon_Text-italic-400.ttf  https://fonts.gstatic.com/s/librecaslontext/v5/DdT678IGsGw1aF1JU10PUbTvNNaDMfq91-c.ttf
+689d2a36e4ad834c0638f9eb659bfd29456deb94ca23b58795d4ec83ceb7ae5c  librecaslontext/Libre_Caslon_Text-normal-400.ttf  https://fonts.gstatic.com/s/librecaslontext/v5/DdT878IGsGw1aF1JU10PUbTvNNaDMcq_.ttf
+de0c5f2a990a292e576eeb50bb770723ad884846db53843008496caf62f6f90e  librecaslontext/Libre_Caslon_Text-normal-700.ttf  https://fonts.gstatic.com/s/librecaslontext/v5/DdT578IGsGw1aF1JU10PUbTvNNaDMfID8sdj.ttf
+bad55524c5f792c2796e2e62f2edd100506cd108b2456c34dea7afa4f297ab88  literata/Literata-italic-400.ttf  https://fonts.gstatic.com/s/literata/v40/or3NQ6P12-iJxAIgLYT1PLs1Zd0nfUwAbeGVKoRYzNiCp1OUedn8_7XWSQ.ttf
+1d6eafdc620333fcc3d573c115fc62ea78d0965d1f72a8f549fc9660fef556b3  literata/Literata-normal-400.ttf  https://fonts.gstatic.com/s/literata/v40/or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbBG_F_Y.ttf
+9124266ec1188c6aa774cd4985286f064a5dcc06747a8200ef5add5c91cca815  literata/Literata-normal-500.ttf  https://fonts.gstatic.com/s/literata/v40/or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbCO_F_Y.ttf
+1bc8575bc9f4b7ed93f594924f6639e58d78dbc9bc10491414c4684f69264b92  literata/Literata-normal-600.ttf  https://fonts.gstatic.com/s/literata/v40/or3PQ6P12-iJxAIgLa78DkrbXsDgk0oVDaDPYLanFLHpPf2TbM-4F_Y.ttf
+26243fda8cd938cc2734f46d20d7464822d89378c7f375e187e39f9ed3f20907  lora/Lora-italic-400.ttf  https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFkqg.ttf
+1d37d1e34c77be80f0119754ad78df9aad30d5b1c78132a4cbdac0fe567f5d4f  lora/Lora-normal-400.ttf  https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787weuyJG.ttf
+9bfe70fd1d70600c523d7ef66c8a024187270f115570d82baf97df7f05e6c2aa  lora/Lora-normal-500.ttf  https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787wsuyJG.ttf
+36120862013ba0d8059ee03b3f6155d6420cabbf0743ccf5542f22ef918c20a2  lora/Lora-normal-600.ttf  https://fonts.gstatic.com/s/lora/v37/0QI6MX1D_JOuGQbT0gvTJPa787zAvCJG.ttf
+afff81272b7653417bb6f8bef57add055b1f9fda36f27eba5f32b40752bd08da  merriweather/Merriweather-italic-400.ttf  https://fonts.gstatic.com/s/merriweather/v33/u-4B0qyriQwlOrhSvowK_l5-eTxCVx0ZbwLvKH2Gk9hLmp0v5yA-xXPqCzLvPee1XYk_XSf-FmTCUF3w.ttf
+e029d3b71e5bae3877c73f4f2b15af28db16593d49b0aed2a328d37ff7075846  merriweather/Merriweather-normal-400.ttf  https://fonts.gstatic.com/s/merriweather/v33/u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDr3icqEw.ttf
+90b7db4460fcd1a5ca49575c2668a793f3cd6447664d312a068d690e1c01e6bc  merriweather/Merriweather-normal-700.ttf  https://fonts.gstatic.com/s/merriweather/v33/u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDrOSAqEw.ttf
+0d17518d468ebb7bf6be187fe39caf344dd83a51c22618d230bde02dd99f08d2  merriweather/Merriweather-normal-900.ttf  https://fonts.gstatic.com/s/merriweather/v33/u-4D0qyriQwlOrhSvowK_l5UcA6zuSYEqOzpPe3HOZJ5eX1WtLaQwmYiScCmDxhtNOKl8yDrdyAqEw.ttf
+637639da93fdd9178e52662cce4bd5a59a544eb60677bb6ef9f89bc472607e5d  montserrat/Montserrat-normal-500.ttf  https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtZ6Ew-.ttf
+c535bb158e8cfc3c27654f73aa68a87732899e7d9b10d8496b68605a56d947a7  montserrat/Montserrat-normal-600.ttf  https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCu170w-.ttf
+247f052d2f5b84a5bbe7831c3b08a71ca391ff54f1dfb9be88a3d3da569e3a38  montserrat/Montserrat-normal-700.ttf  https://fonts.gstatic.com/s/montserrat/v31/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCuM70w-.ttf
+a7a0a9114e29fbf6e83a339ed930d5d8ae69fe4217c34fdd95386d995929d6e8  newsreader/Newsreader-italic-400.ttf  https://fonts.gstatic.com/s/newsreader/v26/cY9kfjOCX1hbuyalUrK439vogqC9yFZCYg7oRZaLP4obnf7fTXglsMwoT-ZA.ttf
+5f4c8787a65ca5ec7595b8146c7366e436097aab682e5764db67177fb20584d3  newsreader/Newsreader-italic-500.ttf  https://fonts.gstatic.com/s/newsreader/v26/cY9kfjOCX1hbuyalUrK439vogqC9yFZCYg7oRZaLP4obnf7fTXglsMwaT-ZA.ttf
+b8f5e0a8bdd6a12c722ca5635d9da87e77ccbb2d0172112e34e00c4e55f2cd5a  newsreader/Newsreader-normal-400.ttf  https://fonts.gstatic.com/s/newsreader/v26/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438weI_ADA.ttf
+68c4493c7c6c9aaff48defeeb6408e7ce705efc4c33363de4d9d6f5e07775064  newsreader/Newsreader-normal-500.ttf  https://fonts.gstatic.com/s/newsreader/v26/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438wSo_ADA.ttf
+04188d5295f4e1100ce91a96b864f15b7af5be976e9fb9cc279af737be804272  newsreader/Newsreader-normal-600.ttf  https://fonts.gstatic.com/s/newsreader/v26/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JVF438wpojADA.ttf
+edca7f2098242ead25675251ac9c35ecd2a9d001e4bcb641e07471148b6c365b  oswald/Oswald-normal-500.ttf  https://fonts.gstatic.com/s/oswald/v57/TK3_WkUHHAIjg75cFRf3bXL8LICs18NvgUE.ttf
+20987dd8fd1d3e9ab087a55cb90e98081c873c729c113043e0bfb1ef0f9e0bd7  oswald/Oswald-normal-600.ttf  https://fonts.gstatic.com/s/oswald/v57/TK3_WkUHHAIjg75cFRf3bXL8LICs1y9ogUE.ttf
+ef1515fa19156794b36e5f362c677f78837c38ccdd6fa1fa76d1dd918ea7abbe  playfairdisplay/Playfair_Display-italic-500.ttf  https://fonts.gstatic.com/s/playfairdisplay/v40/nuFRD-vYSZviVYUb_rj3ij__anPXDTnCjmHKM4nYO7KN_pqTbtY.ttf
+b60ffb0ee2b4e09d71d67ff3ea16d6a23cf2e0cf637c5f4e36fff2e3b1465252  playfairdisplay/Playfair_Display-normal-500.ttf  https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKd3vUDQ.ttf
+8ab6a1db2d7caeb46c742371da500d0f3de1dc6ec6bea2aef0106f678d7a1f8d  playfairdisplay/Playfair_Display-normal-600.ttf  https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKebukDQ.ttf
+adefc53e7b3d483f1fa5e85edd82b7689ca79db25a1f6786bd7949cdcfeec601  playfairdisplay/Playfair_Display-normal-700.ttf  https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKeiukDQ.ttf
+009698a23dcc4267ecabc3e0e72f30b61174fe78db20ac6172ef98d15c5f0927  ptserif/PT_Serif-italic-400.ttf  https://fonts.gstatic.com/s/ptserif/v19/EJRTQgYoZZY2vCFuvAFTzro.ttf
+6902e32186c45fd344901f936d563fe61dfd8d29133e3d97f7163c86b08ede9c  ptserif/PT_Serif-normal-400.ttf  https://fonts.gstatic.com/s/ptserif/v19/EJRVQgYoZZY2vCFuvDFR.ttf
+86fe68d3c03f693cfeb3bfa2410273d3f688c712581d738201bf69fb832545fc  ptserif/PT_Serif-normal-700.ttf  https://fonts.gstatic.com/s/ptserif/v19/EJRSQgYoZZY2vCFuvAnt65qV.ttf
+4c51c2a49d1bd7046376443c1577b76f251944a6366f5f7918a8377e20e50c1f  sourcesans3/Source_Sans_3-italic-400.ttf  https://fonts.gstatic.com/s/sourcesans3/v20/nwpDtKy2OAdR1K-IwhWudF-R3woAa8opPOrG97lwqLlO9C4.ttf
+20ab9752bd19a373dba627393b6c142e6cf8fc2f219119a8e0cb1442ef679ec5  sourcesans3/Source_Sans_3-normal-400.ttf  https://fonts.gstatic.com/s/sourcesans3/v20/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Ky461EN.ttf
+950e66c48e5e60c9407421d0fa601047176f17e0d22a598bbd084dde45a98be2  sourcesans3/Source_Sans_3-normal-600.ttf  https://fonts.gstatic.com/s/sourcesans3/v20/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Kxm7FEN.ttf
+83a72786970a93a8c48eaead886c995676d512c0ee7164138f8ea76ea847d75c  sourcesans3/Source_Sans_3-normal-700.ttf  https://fonts.gstatic.com/s/sourcesans3/v20/nwpBtKy2OAdR1K-IwhWudF-R9QMylBJAV3Bo8Kxf7FEN.ttf
+eb04ae6974781ab7145f7ea57838bf0248b6fc0280a5a5e803c1b56f687e7621  sourceserif4/Source_Serif_4-italic-400.ttf  https://fonts.gstatic.com/s/sourceserif4/v15/vEF02_tTDB4M7-auWDN0ahZJW1ge6NmXpVAHV83Bfb_US2D2QYxoUKIkn98pRl9dCw.ttf
+f01900495012279f1e95d721c59363395eeffb79ef806eaa4dfa8bd923ccec0b  sourceserif4/Source_Serif_4-normal-400.ttf  https://fonts.gstatic.com/s/sourceserif4/v15/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjihdqrhw.ttf
+0b03b227d7edf5addbf0094b88c3aa1d66d9448b2b501ed686eb4818b691c247  sourceserif4/Source_Serif_4-normal-600.ttf  https://fonts.gstatic.com/s/sourceserif4/v15/vEFy2_tTDB4M7-auWDN0ahZJW3IX2ih5nk3AucvUHf6OAVIJmeUDygwjisltrhw.ttf
+2a0198c9448be38a8f90b4af9631d7697e8e64c1e4ea768a3eef81cd4b96b449  spectral/Spectral-italic-400.ttf  https://fonts.gstatic.com/s/spectral/v15/rnCt-xNNww_2s0amA9M8kn0.ttf
+a60e4f79eb03c8e4ddc086ebcec975eaceb4969af92a17fa17dfe55cbff4cd72  spectral/Spectral-italic-500.ttf  https://fonts.gstatic.com/s/spectral/v15/rnCu-xNNww_2s0amA9M8qonFafM.ttf
+a25b5c20bf44dacb3e1ed67a461b390ef5057cabc4b300d65fa9fa33e8bd590c  spectral/Spectral-normal-400.ttf  https://fonts.gstatic.com/s/spectral/v15/rnCr-xNNww_2s0amA-M-.ttf
+febd63963c49af322220d331567e4648e1816bdd3e069b874c2e480ab9efda26  spectral/Spectral-normal-500.ttf  https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vKsV3G.ttf
+80687dd88656adc4746969756605b521ee907784f6f794f4441ebb1a689b5d57  spectral/Spectral-normal-600.ttf  https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vmtl3G.ttf
+f6f60d5d4cf4f4b1fc4e41353c897a2f5a16e6396c0cd8fa8bdfd2f4586a9a68  alegreya/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/alegreya/OFL.txt
+f2b3029aba64c378bf0963b62945eee15e564fe4330b934c8f2eb058282b5e83  cinzel/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/cinzel/OFL.txt
+60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956  cormorantgaramond/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/cormorantgaramond/OFL.txt
+1820869bd5baa1c2d88fa87c89eea532cf9442d841008acab720654b7f82823d  crimsonpro/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsonpro/OFL.txt
+0985066662eb755ed3683ae5482a81a9195b49ce3f7e165cc2388b3dbece7dd7  ebgaramond/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ebgaramond/OFL.txt
+c309a440be606e283ccacc746662d714b9c5b5a7a0a10dd2514b90206b55ddfe  gentiumbookplus/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/gentiumbookplus/OFL.txt
+5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57  inter/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/inter/OFL.txt
+3624eddd4c8f8a908130a417ae7cd089c9da69899c4e0ca1a5217d0a6fae16fd  librebaskerville/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/librebaskerville/OFL.txt
+a294245c822c5aa9fd9a9f3189418e99415428be5fecadf797793d5d8f6a3ad3  librecaslontext/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/librecaslontext/OFL.txt
+8742963604cd89dc81437811a850018fc03b2bfad686d7422c8235967c87614e  literata/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/literata/OFL.txt
+1d9a970809ac804b582a6ce7f0ebc4e7fefcbfd7ff6299cad35ee656a21be716  lora/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lora/OFL.txt
+715bd349bfa6116f99e351e1548321dcfa25b91df65502d22ca8d624557697d2  merriweather/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/merriweather/OFL.txt
+8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e  montserrat/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/montserrat/OFL.txt
+fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8  newsreader/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/newsreader/OFL.txt
+0fd731a904b729a4e02eaf5e8ebd06783edd9abe400e8882760160230675b652  oswald/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/oswald/OFL.txt
+ddf311c28ddf5a5ad9747649837346b67bed9d356789c3072bb27dbce49e514d  ptserif/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/OFL.txt
+566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e  playfairdisplay/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/playfairdisplay/OFL.txt
+09746787287a289323b0ec3cff4d1a4a801331b82b7207c1e186f5d26619a392  sourcesans3/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/sourcesans3/OFL.txt
+5f94c3fd3a23131a417ab5a0c8452de57e70c3cfb9f604d88241f7065ebf9fd9  sourceserif4/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/sourceserif4/OFL.txt
+501d6ceca8e552630fe3aa9442b9a818565680a1a2f79f3fb8c13d6f309a9e98  spectral/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/spectral/OFL.txt

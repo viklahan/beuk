@@ -36,5 +36,22 @@ RUN mkdir -p /usr/share/color/icc/beuk \
  && echo "$ICC_SHA256  /usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc" | sha256sum -c - \
  && chmod 0644 /usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc
 COPY tools/icc/LICENSE-SWOP2006_Coated3v2.txt /usr/share/color/icc/beuk/
+# The pdfx job's colour-conversion directory (PDFX_ICC_DIR, passed to
+# Ghostscript as -sICCProfilesDir). Ghostscript's pdfwrite converts RGB
+# into the default_cmyk.icc it finds there and ignores
+# -sOutputICCProfile (measured on 10.00.0; src/jobs/tools.ts
+# pdfxIccDirArgs has the numbers), so this directory holds Ghostscript's
+# own profiles with default_cmyk.icc replaced by a byte-identical copy
+# of the pinned SWOP profile — the same file the OutputIntent embeds.
+# The copy is checked against the pinned sha256 again, and the profile
+# is not altered (its licence forbids that; copying under another file
+# name is not an alteration).
+RUN set -e; gsicc="$(ls -d /usr/share/ghostscript/*/iccprofiles | head -n1)"; \
+    test -f "$gsicc/default_rgb.icc"; \
+    mkdir -p /usr/share/color/icc/beuk/gs; \
+    cp "$gsicc"/*.icc /usr/share/color/icc/beuk/gs/; \
+    cp /usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc /usr/share/color/icc/beuk/gs/default_cmyk.icc; \
+    echo "$ICC_SHA256  /usr/share/color/icc/beuk/gs/default_cmyk.icc" | sha256sum -c -; \
+    chmod 0644 /usr/share/color/icc/beuk/gs/*.icc
 COPY tools-bin/ /opt/epubcheck/
 USER node

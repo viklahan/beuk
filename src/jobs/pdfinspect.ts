@@ -59,8 +59,10 @@ export interface PdfInspection {
   notes: string[];
 }
 
-interface PdfObject {
+export interface PdfObject {
   num: number;
+  /** Generation number (0 for objects read out of an object stream). */
+  gen: number;
   dict: string;
   /** Decoded stream text (latin1) when the stream could be decoded. */
   stream: string | null;
@@ -84,7 +86,7 @@ function decodeStream(dict: string, raw: Buffer): Buffer | null {
 
 /** Pull every `N G obj … endobj` out of the file, plus the objects
  *  packed inside FlateDecode object streams (/Type /ObjStm). */
-function readObjects(buf: Buffer, notes: string[]): PdfObject[] {
+export function readObjects(buf: Buffer, notes: string[]): PdfObject[] {
   const text = buf.toString('latin1');
   const out: PdfObject[] = [];
   const re = /(\d+)\s+(\d+)\s+obj\b/g;
@@ -124,7 +126,7 @@ function readObjects(buf: Buffer, notes: string[]): PdfObject[] {
         }
       }
     }
-    out.push({ num: Number(m[1]), dict, stream });
+    out.push({ num: Number(m[1]), gen: Number(m[2]), dict, stream });
     re.lastIndex = end + 6;
   }
   // Objects compressed inside object streams.
@@ -143,7 +145,7 @@ function readObjects(buf: Buffer, notes: string[]): PdfObject[] {
       const off = head[i * 2 + 1];
       const nextOff = i + 1 < n ? head[(i + 1) * 2 + 1] : o.stream.length - first;
       if (!Number.isFinite(num) || !Number.isFinite(off)) continue;
-      out.push({ num, dict: o.stream.slice(first + off, first + nextOff), stream: null });
+      out.push({ num, gen: 0, dict: o.stream.slice(first + off, first + nextOff), stream: null });
     }
   }
   return out;

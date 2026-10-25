@@ -174,11 +174,13 @@ test('self-checks: a healthy system passes, client-only cases are reported (neve
       'jobs.pdfx.inspection-reads-facts',
       'jobs.pdfx.safer-permits-icc',
       'jobs.pdfx.icc-profile-matches-def',
+      'jobs.pdfx.converts-through-press-profile',
+      'jobs.pdfx.neutral-text-black-plate',
     ]) {
       assert.equal(byId.get(id)?.status, 'pass', `${id}: ${byId.get(id)?.detail}`);
     }
     // Client-only cases are registered with a reason, not a pass.
-    for (const id of ['HK-F1-06', 'HK-F2-07', 'fonts.each.reaches-export-css', 'themes.apply.then-overridable', 'print.trims.page-dimensions', 'store.verdict.never-green-unchecked', 'store.dpi.sample-fails-honestly', 'store.trim.paper-matrix', 'import.report.txt-records-and-undo', 'import.report.docx-honest', 'import.report.images-accounted', 'import.report.persists-with-book', 'epub.props.detect-from-content', 'epub.props.sample-declared-exactly', 'epub.props.recomputed-not-trusted', 'epub.spine.nav-links-reach-spine', 'validator.catches.undeclared-svg-and-off-spine-link', 'epub.identifier.real-uuid', 'dictation.language-picker', 'dictation.language-suggest', 'readaloud.section-language']) {
+    for (const id of ['HK-F1-06', 'HK-F2-07', 'fonts.each.reaches-export-css', 'themes.apply.then-overridable', 'print.trims.page-dimensions', 'store.verdict.never-green-unchecked', 'store.dpi.sample-fails-honestly', 'store.trim.paper-matrix', 'import.report.txt-records-and-undo', 'import.report.docx-honest', 'import.report.images-accounted', 'import.report.persists-with-book', 'epub.props.detect-from-content', 'epub.props.sample-declared-exactly', 'epub.props.recomputed-not-trusted', 'epub.spine.nav-links-reach-spine', 'validator.catches.undeclared-svg-and-off-spine-link', 'epub.identifier.real-uuid', 'dictation.language-picker', 'dictation.language-suggest', 'readaloud.section-language', 'print.press.solid-tints', 'print.press.blend-math', 'print.press.store-rows']) {
       const result = byId.get(id);
       assert.equal(result?.status, 'client-only', id);
       assert.ok((result?.detail ?? '').length > 10, `${id} must carry a one-line reason`);

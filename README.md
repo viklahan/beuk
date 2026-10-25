@@ -187,12 +187,14 @@ timeout — an overrun is killed, process group and all, and fails
 with the timeout stated: `JOB_TIMEOUT_MS` (default 2 minutes) for
 EPUBCheck and for the pdfx job's renderer request, and
 `PDFX_TIMEOUT_MS` (default 15 minutes) for the pdfx job's Ghostscript
-step. The split is measured: on the bundled 81-page / 7.5 MB sample
-(2026-10-24, beuk-icc stack) the whole job took 99 s, of which the
-renderer was ~6 s (timed on its own) and Ghostscript the rest, because PDF/X-1a forbids transparency and Ghostscript flattens
-every page that has any by rendering the whole page to a 300 ppi
-image (70 of the sample's 81 pages). 15 minutes is an operational
-allowance for longer, picture-heavier books, not a measured limit. On boot,
+step. Measured on the bundled sample (2026-10-25, compose project
+`beuk-print`): before the press fixes below, Ghostscript flattened 70
+of the 81 pages to 300 ppi page pictures (PDF/X-1a forbids
+transparency), which took 408 s on its own on that (busy) host; with
+the print interior free of transparency the whole job — render,
+convert, read back, measure ink — took 65 s for 73 pages. 15 minutes
+is an operational allowance for longer, picture-heavier books, not a
+measured limit. On boot,
 jobs a dead process left `running` are failed honestly and `queued`
 ones are picked up again.
 
@@ -395,20 +397,88 @@ gem's PDF/X-1a profile) reported 0 issues on it, against 2 418 on the
 Chromium PDF and 81 (no TrimBox) on the output of the previous flags,
 which had silently reverted to plain PDF. That gem is far narrower than
 a commercial preflight (Acrobat, PitStop, callas): **the file is not
-independently validated as PDF/X-1a.** Known gaps in that file:
-**111 MB** (70 of 81 pages are flattened to 300 ppi page images,
-*including their text*, because Chromium writes opacity — ornaments at
-`opacity=".8"`, captions and kickers at 0.75–0.88 — and alpha images);
-body text comes out **4-colour rich black, ~68/66/70/80 = 284% total
-ink** (measured from the rendered CMYK), where IngramSpark asks for
-100% K text and ≤ 240% total ink; the CMYK numbers come from
-Ghostscript's built-in conversion — `-sOutputICCProfile` (the SWOP
-profile or Ghostscript's `ps_cmyk.icc`) changed not one value on
-pdfwrite 10.00.0 in our probe — so they are **not** computed through the
-SWOP TR 003 profile the OutputIntent declares; and the interior is **set
-in DejaVu Serif, not the book's faces** (the print-html names its fonts
-but does not carry the studio's Google web fonts; the Store-ready report
-flags that as an advisory row). Second, **Ghostscript converts PDF
+independently validated as PDF/X-1a.** That file had four gaps, fixed
+on 2026-10-25 (unit `print`) and measured on the same sample through
+the real stack (compose project `beuk-print`), before → after:
+
+| | before | after |
+|---|---|---|
+| pages flattened to pictures (their text no longer text, by pdftotext) | 70 of 81 | **0 of 73** |
+| file size | 111 784 531 B | **14 862 220 B** |
+| body text colour operator | `0.678 0.659 0.694 0.8 k` (rich black) | **`0 g`** (DeviceGray, K only) |
+| text runs on the black plate alone (pdfpress.ts) | — | **3 176 of 3 176** (3 008 at 100 % K, 168 grey tints of 67–88 % K) |
+| CMYK conversion through | Ghostscript's built-in `default_cmyk.icc` | **the declared SWOP2006_Coated3v2 profile** |
+| fonts (pdffonts) | DejaVu Serif ×2 | **EB Garamond Regular / Italic / SemiBold, Libre Baskerville Regular / Bold**, CID TrueType, embedded |
+| highest total ink, 100 dpi CMYK raster | 300.4 % (all 81 pages over 240 %) | **321.2 %** (16 of 73 pages over 240 %: the full-page paintings) |
+| PDF/X declarations | X-1:2001 + X-1a:2001, GTS_PDFX `CGATS TR 003` | unchanged |
+
+(The page count fell from 81 to 73 because the interior is now set in
+EB Garamond, which sets tighter than DejaVu Serif.) What changed:
+
+- **No transparency in the print interior** (studio, `BEUK:print` in
+  `client/index.html`). CSS opacity on kickers, subtitles, captions and
+  the contents dots prints as the solid tint it looks like (ink · a +
+  page · (1 − a), so 75 % black is `#404040`); inline SVG ornament parts
+  with `opacity="…"` get that solid fill; a chapter backdrop (whisper
+  strength, fading down the page) is baked — same cover crop, fade and
+  strength — onto the page colour as one opaque JPEG; PNG / WebP / GIF
+  pictures with see-through pixels are laid onto the page colour; SVG
+  pictures that paint with any see-through colour are drawn onto it.
+  Body text is pure `#000` (the book's text has no colour setting of
+  its own). The Chromium PDF of the sample now carries no `/ca` below 1,
+  no soft masks, no blend modes, no transparency groups (counted on
+  every job as `press.renderedTransparency`). The EPUB / e-reader look
+  is untouched; the print view, the downloaded print HTML and the
+  server job all prepare the bakes first (`preparePrintPress()`).
+- **Text on the black plate alone.** Chromium writes every colour as
+  DeviceRGB, which pdfwrite converts through an ICC transform (rich
+  black). Ghostscript leaves DeviceGray as DeviceGray and maps it to
+  pure K on CMYK output ("By default, Ghostscript will map DeviceGray
+  color spaces to pure K when the output device is CMYK based",
+  [Color Management](https://ghostscript.readthedocs.io/en/latest/GhostscriptColorManagement.html)).
+  So the job rewrites every *neutral* RGB value (r = g = b) in the
+  renderer's content streams as the same DeviceGray value before
+  Ghostscript runs (`src/jobs/pdfpress.ts`, an incremental update over
+  the untouched original); coloured values are never touched.
+  `-dBlackText` was measured and rejected: it forces *all* text to
+  black, coloured text included.
+- **Conversion through the declared profile.** pdfwrite converts into
+  the `default_cmyk.icc` it finds in its ICC directory and ignores
+  `-sOutputICCProfile` (measured: with or without `-dOverrideICC`, and
+  `-sDefaultCMYKProfile`, `0 0 0 rg` stayed `0.722 0.675 0.671 0.882 k`
+  — what LittleCMS gives for sRGB → Ghostscript's own default_cmyk.icc).
+  The tools image therefore builds `/usr/share/color/icc/beuk/gs/` —
+  Ghostscript's profiles with `default_cmyk.icc` replaced by a
+  byte-identical copy of the pinned SWOP file — and the job passes it as
+  `-sICCProfilesDir` (`PDFX_ICC_DIR`); the same probe then gave
+  `0.71 0.659 0.651 0.996 k`, the SWOP transform. The self-check
+  `jobs.pdfx.converts-through-press-profile` fails when Ghostscript is
+  configured without that directory.
+- **The book's real typefaces.** The renderer image installs the static
+  TrueType faces Google Fonts serves for exactly the families, weights
+  and styles the studio loads (twenty families, SIL OFL 1.1 with their
+  OFL.txt, every file pinned by sha256 in `deploy/renderer/fonts.lock`).
+  Static, not the google/fonts repository's variable files: Chromium
+  embedded those as Type 3 fonts (measured).
+- **Measured, not assumed** (`press` on every pdfx result): the colour
+  in force at every text-showing operator of the converted file
+  (`press.text`), the pages that still carry text against the renderer's
+  PDF (`press.textPages.flattened`), and total ink — Ghostscript renders
+  the converted file to an 8-bit CMYK raster (`pamcmyk32`, at
+  `PDFX_INK_DPI`, default 100, anti-aliasing off) and the highest
+  per-pixel C+M+Y+K is read (`press.ink`). The Store-ready report shows
+  these as two IngramSpark rows (below).
+
+**Total ink is NOT within 240 %.** We found no total-ink limit for
+Ghostscript 10.00.0's pdfwrite, and an ink-limited device link
+(LittleCMS `linkicc -k 240`, sRGB → SWOP) handed to `-sSourceObjectICC`
+was accepted and changed nothing (302.4 % with and without it, on a
+raster device as well as on pdfwrite). The SWOP2006_Coated3v2
+profile's own limit is 300 %; the measured 321.2 % comes from the
+full-page paintings, about 19 points of it from Ghostscript
+re-encoding them as JPEG (with lossless Flate image encoding the same
+pages measured 302.4 %). The Store-ready total-ink row says so, with
+the number. Second, **Ghostscript converts PDF
 input**: a pdfx job first renders the archived print-html interior to
 PDF in the renderer, then converts that PDF to PDF/X-1a. If the
 renderer is not configured, the job fails honestly as "not configured"
@@ -465,8 +535,17 @@ chapter, the print settings or the cover maker).
   numbers are not invented: KDP publishes no groundwood spine factor
   (spine "not checked"), IngramSpark's exact spine exists only in its
   per-book cover template (the paper-bulk estimate is shown; the writer
-  can confirm against their template), and total ink coverage (240%)
-  is never measured.
+  can confirm against their template).
+- **Press rows (IngramSpark, advisory, measured on the server's PDF).**
+  "Text in black ink only" passes only when every text run in the
+  converted file is 100 % K, warns with the tint values when some are
+  grey tints of K, and warns with the colours when any run uses other
+  inks ("BODY TEXT: For best results for text that is 24 pt. or below,
+  please use 100% black only", File Creation Guide). "Total ink
+  coverage" passes at or under 240 % and otherwise warns with the
+  measured maximum, the raster resolution and the number of pages over.
+  Not measured (no server, the job failed, still running) is "not
+  checked".
 - **Download report** saves a self-contained HTML file: book title,
   store, binding, ink/paper, trim, page count (estimated or counted),
   ISO timestamp, the verdict, every row with its evidence and fix, and
