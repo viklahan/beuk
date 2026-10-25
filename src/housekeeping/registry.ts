@@ -9,6 +9,7 @@ import { dummyPasswordHash, verifyAgainstDummy } from '../password.js';
 import { TokenBucketLimiter } from '../ratelimit.js';
 import { ghostscriptPdfxArgs, pdfRenderProblem, pdfxIccPath } from '../jobs/tools.js';
 import { inspectPdf } from '../jobs/pdfinspect.js';
+import { checkPdfxProfile } from '../jobs/iccprofile.js';
 import {
   parseOpf,
   readZip,
@@ -1177,6 +1178,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       const def = await readFile(config.pdfxDefPath, 'latin1');
       assert(def.includes('/GTS_PDFXConformance (PDF/X-1a:2001)'), 'the definition must declare PDF/X-1a:2001 conformance');
       return `permit-file-read ${icc}; SAFER on; X-1a conformance declared`;
+    },
+  },
+  {
+    id: 'jobs.pdfx.icc-profile-matches-def',
+    title: 'PDF/X press profile: the definition file names the pinned CMYK profile and its condition; the installed file is those exact bytes (checked whenever PDF/X is configured or the file is present)',
+    kind: 'server',
+    run: async ({ config }) => {
+      // With GS_BIN set the server claims PDF/X works, so the profile
+      // file MUST be there and be the pinned bytes. Without it, the def
+      // file is still checked and the detail says the file was not.
+      const check = checkPdfxProfile(config, config.gsBin !== null);
+      assert(check.ok, check.detail);
+      return check.detail;
     },
   },
   {
