@@ -1011,6 +1011,90 @@
       .desk-item .d-pages { font-family: var(--mono-font); font-size: 11.5px; color: var(--muted); flex: 0 0 auto; }
       .desk-item.current .d-pages { color: var(--ink-2); }
       #deskMeasure { position: fixed; left: 0; top: 0; visibility: hidden; pointer-events: none; overflow: hidden; z-index: -1; }
+      /* ==== BEUK:hcpreview ==== */
+      /* The Hardcover device: a small, real-looking hardback on the
+         desk (CSS 3D, no libraries) that opens to the book's actual
+         print layout. Sizes are set in px by JS from the trim; the
+         CSS only carries the materials. */
+      #pane-preview.hc-mode #deviceFrame,
+      #pane-preview.hc-mode .page-controls,
+      #pane-preview.hc-mode [data-i18n="preview.tip"],
+      #pane-preview.hc-mode #previewDesk { display: none !important; }
+      .hc-stage { position: relative; width: 100%; height: 100%; min-height: 220px; display: flex; align-items: center; justify-content: center; outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+      .hc-stage[hidden] { display: none; }
+      .hc-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 12px; }
+      .hc-scene { perspective: 1500px; perspective-origin: 50% -60%; display: flex; align-items: center; justify-content: center; }
+      /* Negative rotateX tips the head TOWARD the viewer (CSS y points
+         down), so the head of the case — both board edges and the
+         recessed cream page block between them — faces the eye. A
+         positive tilt turned the head away and back-face culled it. */
+      .hc-book { position: relative; transform-style: preserve-3d; transform: rotateX(-26deg) rotateY(28deg); transition: transform .55s cubic-bezier(.3,.7,.3,1); cursor: pointer; }
+      .hc-book:hover, .hc-stage:focus-visible .hc-book { transform: rotateX(-18deg) rotateY(18deg); }
+      .hc-face { position: absolute; left: 0; top: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+      .hc-front { overflow: hidden; border-radius: 1px 3px 3px 1px; transform-origin: left center; transition: transform .5s cubic-bezier(.45,.05,.4,1); }
+      .hc-front img { display: block; width: 100%; height: 100%; object-fit: cover; }
+      .hc-front .hc-sheen { position: absolute; inset: 0; pointer-events: none; }
+      .hc-case .hc-front .hc-sheen { background: linear-gradient(115deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 38%, rgba(0,0,0,.08) 100%); }
+      .hc-jacket .hc-front .hc-sheen { background: linear-gradient(118deg, rgba(255,255,255,0) 18%, rgba(255,255,255,.34) 30%, rgba(255,255,255,0) 44%), linear-gradient(to right, rgba(0,0,0,.06), rgba(255,255,255,0) 30%); }
+      .hc-front .hc-hinge { position: absolute; top: 0; bottom: 0; width: 3px; background: linear-gradient(to right, rgba(0,0,0,.30), rgba(255,255,255,.18)); pointer-events: none; }
+      .hc-jacket .hc-front .hc-flap { position: absolute; top: 0; bottom: 0; right: 0; width: 4px; background: linear-gradient(to left, rgba(0,0,0,.28), rgba(255,255,255,.14)); pointer-events: none; }
+      .hc-cloth { background-color: var(--hc-cloth, #2b3a55); background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, rgba(0,0,0,0) 1px 3px), repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 1px, rgba(0,0,0,0) 1px 3px); }
+      .hc-typo { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6em; padding: 12% 10%; text-align: center; color: #e9cf8c; }
+      .hc-typo .hc-t-title { font-size: 1.5em; line-height: 1.15; font-weight: 600; letter-spacing: .02em; text-shadow: 0 1px 0 rgba(0,0,0,.35); overflow-wrap: anywhere; }
+      .hc-typo .hc-t-rule { width: 34%; height: 1px; background: currentColor; opacity: .7; }
+      .hc-typo .hc-t-author { font-size: .82em; letter-spacing: .18em; text-transform: uppercase; opacity: .92; }
+      .hc-spine { display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: inset 4px 0 6px rgba(0,0,0,.25), inset -3px 0 5px rgba(0,0,0,.18); }
+      .hc-spine-text { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 88%; letter-spacing: .08em; }
+      .hc-spine-text .hc-s-author { opacity: .8; margin-top: 1.2em; font-size: .86em; }
+      .hc-back { filter: brightness(.9); }
+      .hc-block { overflow: hidden; }
+      .hc-block .hc-leaves { position: absolute; inset: 0; background-color: #f3ead8; }
+      /* Leaf lines run along the page: front-to-back across the head
+         and tail, top-to-bottom down the fore-edge. */
+      .hc-block .hc-leaves-h { background-image: linear-gradient(to bottom, rgba(90,70,40,.20), rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(90,70,40,.16)), repeating-linear-gradient(0deg, rgba(120,100,70,.18) 0 1px, rgba(0,0,0,0) 1px 2px); }
+      .hc-block .hc-leaves-v { background-image: repeating-linear-gradient(90deg, rgba(120,100,70,.18) 0 1px, rgba(0,0,0,0) 1px 2px); }
+      .hc-inner { background-color: #e9dcc0; }
+      .hc-edgeb { filter: brightness(.86); }
+      .hc-shadow { position: absolute; left: 4%; right: -6%; bottom: -16px; height: 24px; border-radius: 50%; background: radial-gradient(closest-side, rgba(20,14,6,.42), rgba(20,14,6,0)); filter: blur(4px); pointer-events: none; }
+      :root[data-theme="candlelight"] .hc-shadow { background: radial-gradient(closest-side, rgba(0,0,0,.8), rgba(0,0,0,0)); }
+      .hc-book.hc-opening { transform: rotateX(-4deg) rotateY(4deg); }
+      .hc-book.hc-opening .hc-front { transform: var(--hc-front-z) rotateY(-150deg) !important; }
+      /* Open: the real print pages, set as a spread inside the case. */
+      .hc-openbox { position: relative; }
+      .hc-openbox.hc-fade { animation: hcFade .32s ease-out; }
+      @keyframes hcFade { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+      .hc-spreadwrap { position: absolute; left: 0; top: 0; transform-origin: top left; }
+      .hc-casebg { position: absolute; border-radius: 4px; box-shadow: 0 14px 34px rgba(20,14,4,.38), 0 2px 6px rgba(20,14,4,.25); }
+      :root[data-theme="candlelight"] .hc-casebg { box-shadow: 0 16px 40px rgba(0,0,0,.72), 0 2px 8px rgba(0,0,0,.5); }
+      .hc-stack { position: absolute; background-color: #efe5d0; background-image: repeating-linear-gradient(90deg, rgba(110,90,60,.22) 0 1px, rgba(0,0,0,0) 1px 3px); }
+      .hc-pages { position: absolute; display: flex; perspective: 2600px; }
+      .hc-pages .piv-page { box-shadow: none; }
+      .hc-side { position: relative; flex: none; overflow: hidden; }
+      .hc-endpaper { position: absolute; inset: 0; background-color: #e9dcc0; background-image: radial-gradient(rgba(120,90,50,.10) 1px, rgba(0,0,0,0) 1.5px); background-size: 9px 9px; }
+      .hc-gutter { position: absolute; top: 0; bottom: 0; width: 16%; pointer-events: none; z-index: 3; }
+      .hc-gutter.g-right { right: 0; background: linear-gradient(to left, rgba(30,20,8,.30), rgba(30,20,8,.08) 32%, rgba(30,20,8,0)); }
+      .hc-gutter.g-left { left: 0; background: linear-gradient(to right, rgba(30,20,8,.30), rgba(30,20,8,.08) 32%, rgba(30,20,8,0)); }
+      .hc-paper-cream .piv-page { background: #f8f1e1; }
+      .hc-leaf { position: absolute; top: 0; transform-style: preserve-3d; z-index: 5; transition: transform .62s cubic-bezier(.45,.05,.35,1); }
+      .hc-leaf .hc-lf { position: absolute; inset: 0; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+      .hc-leaf .hc-lb { transform: rotateY(180deg); }
+      .hc-bar { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 10px 4px; flex: 0 0 auto; flex-wrap: wrap; }
+      .hc-bar[hidden], .hc-meta[hidden] { display: none; }
+      .hc-bar .hc-full { padding: 8px 10px; }
+      .hc-bar .hc-full[hidden] { display: none; }
+      #previewStage:fullscreen { background: var(--bg); padding: 18px; }
+      :root[data-theme="candlelight"] #previewStage:fullscreen { background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%); }
+      .hc-meta { text-align: center; padding: 2px 12px 8px; max-width: 460px; }
+      .hc-counter { font-family: var(--mono-font); font-size: 12.5px; color: var(--ink-2); }
+      .hc-facts { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+      .hc-hint { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
+      .hc-link { background: none; border: 0; padding: 4px 6px; margin-top: 4px; color: var(--accent); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+      .hc-link:disabled { color: var(--muted); text-decoration: none; cursor: default; opacity: .7; }
+      @media (prefers-reduced-motion: reduce) {
+        .hc-book, .hc-front, .hc-leaf { transition: none !important; }
+        .hc-openbox.hc-fade { animation: none; }
+      }
+      /* ==== /BEUK:hcpreview ==== */
       #deskFlow { position: relative; }
 
       /* ---------- Modals / toast ---------- */
@@ -2054,6 +2138,7 @@
             <button class="dev-btn" data-device="iphone"><i data-lucide="smartphone"></i>iPhone</button>
             <button class="dev-btn" data-device="forma"><i data-lucide="book-marked"></i>Kobo Forma</button>
             <button class="dev-btn" data-device="android"><i data-lucide="tablet"></i>Android Tablet</button>
+            <button class="dev-btn" data-device="hardcover" data-i18n="hcp.device"><i data-lucide="book-text"></i>Hardcover</button><!-- BEUK:hcpreview -->
           </div>
           <div id="previewStage">
             <div id="frameZone">
@@ -2066,12 +2151,29 @@
                   <div class="home-bar"></div>
                 </div>
               </div>
+              <!-- ==== BEUK:hcpreview ==== -->
+              <div id="hcStage" class="hc-stage" hidden tabindex="0"></div>
+              <!-- ==== /BEUK:hcpreview ==== -->
             </div>
             <div class="page-controls">
               <button class="page-btn" id="btnPrevPage" data-i18n="preview.prev"><i data-lucide="chevron-left"></i>Prev</button>
               <span id="pageCounter">Page 1 of 1</span>
               <button class="page-btn" id="btnNextPage" data-i18n="preview.next">Next<i data-lucide="chevron-right"></i></button>
             </div>
+            <!-- ==== BEUK:hcpreview ==== -->
+            <div class="hc-bar" id="hcBar" hidden>
+              <button class="page-btn" id="hcPrev" type="button"><i data-lucide="chevron-left"></i><span data-i18n="hcp.prev">Prev</span></button>
+              <button class="page-btn hc-toggle" id="hcToggle" type="button"><i data-lucide="book-open"></i><span id="hcToggleLabel" data-i18n="hcp.open">Open the book</span></button>
+              <button class="page-btn" id="hcNext" type="button"><span data-i18n="hcp.next">Next</span><i data-lucide="chevron-right"></i></button>
+              <button class="page-btn hc-full" id="hcFull" type="button" title="Full screen" aria-label="Full screen" data-i18n-title="hcp.fullscreen" data-i18n-aria="hcp.fullscreen"><i data-lucide="maximize-2"></i></button>
+            </div>
+            <div class="hc-meta" id="hcMeta" hidden>
+              <div class="hc-counter" id="hcCounter" aria-live="polite"></div>
+              <div class="hc-facts" id="hcFacts"></div>
+              <button class="hc-link" id="hcToChapter" type="button" data-i18n="hcp.toChapter">Go to the chapter you are editing</button>
+              <p class="hc-hint" data-i18n="hcp.hint">Tap the book to open it. Turn pages with the buttons, ← → keys or a swipe.</p>
+            </div>
+            <!-- ==== /BEUK:hcpreview ==== -->
             <div id="previewSectionName"></div>
             <p style="text-align:center; font-size:11.5px; color:var(--muted); margin:2px 0 10px;" data-i18n="preview.tip">Tip: click the preview, then use ← → arrow keys to turn pages.</p>
             <div id="previewDesk">
@@ -6404,6 +6506,22 @@
       Object.assign(UI_STRINGS.ja, { "covermk.hc.binding": "製本", "covermk.hc.bindPaperback": "ペーパーバック", "covermk.hc.bindCase": "ハードカバー · ラミネート表紙", "covermk.hc.bindJacket": "ハードカバー · カバー付き", "covermk.hc.spineTemplate": "印刷所テンプレートの背幅 (in)", "covermk.hc.spineTemplatePh": "空欄 = 推定", "covermk.hc.spineAllow": "ハードカバー背幅の加算 (in) · 未検証", "covermk.hc.spineSrcTemplate": "背幅: 印刷所のテンプレートの値 — ファイルはこの値で作られます。", "covermk.hc.spineSrcEstimate": "背幅: 推定値（ページ数 × 用紙係数 + 加算）— IngramSpark のテンプレート生成ツールとは照合していません。ハードカバーの背は本文ブロックより広くなるのが普通です。正確なファイルにはテンプレートの背幅を入力してください。", "covermk.hc.dimsCase": "表紙ボード {pw} × {ph} in · 背 {spine} in ({spineMm} mm) · 表紙全体 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "カバー面 {pw} × {ph} in · 袖 3.25 in · 背 {spine} in ({spineMm} mm) · カバー全体 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "IngramSpark の判型表には {binding} の {trim} がありません。一覧にある判型を選ぶか、注文前に IngramSpark のカスタム判型の範囲を確認してください。", "covermk.hc.specNote": "ハードカバーの寸法は IngramSpark が File Creation Guide（rev. 8.24.26）で公開している式に従います：ラミネート表紙 = 0.625 in 折り返し + ボード + 0.5 in ミゾ + 背 + 0.5 in ミゾ + ボード + 0.625 in 折り返し；カバー = 0.125 in 塗り足し + 3.25 in 袖 + 0.25 in 折り + 面 + 背 + 面 + 0.25 in 折り + 3.25 in 袖 + 0.125 in 塗り足し。IngramSpark はこの式をカスタム判型向けに示しています。ISBN とページ数に合わせてメールで届くテンプレート生成ツールが最終基準です — 入稿前に両方を見比べてください。", "covermk.hc.kdpNote": "KDP のハードカバー（ラミネートのみ）は独自の折り返し (0.51 in) とミゾ (0.4 in) を使い、全体寸法の式は公開されていません — Beuk はまだ KDP ハードカバーの寸法を計算しません。KDP の表紙計算ツールを使ってください。", "covermk.hc.flapFront": "前袖 — 本の紹介", "covermk.hc.flapBack": "後ろ袖 — 著者紹介", "covermk.hc.flapPhoto": "後ろ袖の著者写真", "covermk.hc.flapPhotoRemove": "写真を外す", "covermk.hc.flapPhotoNone": "写真が選ばれていません", "covermk.hc.lgBleed": "塗り足しの端", "covermk.hc.lgWrap": "折り返し（ボードに巻き込む）", "covermk.hc.lgBoard": "ボードの端", "covermk.hc.lgTrim": "仕上がり線", "covermk.hc.lgHinge": "ミゾ / ヒンジ", "covermk.hc.lgSpine": "背の折り線", "covermk.hc.lgFold": "袖の折り", "covermk.hc.lgFlap": "袖", "covermk.hc.lgSafe": "安全領域（文字は内側に）", "covermk.hc.lgBarcode": "バーコード欄", "covermk.hc.lgOff": "ガイドは画面上だけ — PDF や JPG には決して入りません。" });
       Object.assign(UI_STRINGS["zh-Hans"], { "covermk.hc.binding": "装订", "covermk.hc.bindPaperback": "平装", "covermk.hc.bindCase": "精装 · 覆膜封面", "covermk.hc.bindJacket": "精装 · 带护封", "covermk.hc.spineTemplate": "印厂模板中的书脊宽度 (in)", "covermk.hc.spineTemplatePh": "留空 = 估算", "covermk.hc.spineAllow": "精装书脊附加量 (in) · 未核实", "covermk.hc.spineSrcTemplate": "书脊：取自印厂模板——文件按此尺寸制作。", "covermk.hc.spineSrcEstimate": "书脊：估算值（页数 × 纸张系数 + 附加量）——未与 IngramSpark 模板生成器核对。精装书脊通常比书芯更宽；请填入模板中的书脊宽度以得到精确文件。", "covermk.hc.dimsCase": "封面板 {pw} × {ph} in · 书脊 {spine} in ({spineMm} mm) · 整张封面 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.dimsJacket": "护封面板 {pw} × {ph} in · 勒口 3.25 in · 书脊 {spine} in ({spineMm} mm) · 整张护封 {w} × {h} in ({wMm} × {hMm} mm)", "covermk.hc.trimWarn": "IngramSpark 的开本表中没有 {binding} 的 {trim}。请选择表中的开本，或在下单前确认 IngramSpark 的自定义开本范围。", "covermk.hc.specNote": "精装尺寸采用 IngramSpark 在 File Creation Guide（rev. 8.24.26）中公布的公式：覆膜精装 = 0.625 in 包边 + 封面板 + 0.5 in 书槽 + 书脊 + 0.5 in 书槽 + 封面板 + 0.625 in 包边；护封 = 0.125 in 出血 + 3.25 in 勒口 + 0.25 in 折线 + 面板 + 书脊 + 面板 + 0.25 in 折线 + 3.25 in 勒口 + 0.125 in 出血。IngramSpark 将此公式用于自定义开本；按你的 ISBN 和页数通过邮件发送的模板生成器才是最终标准——上传前请对照两者。", "covermk.hc.kdpNote": "KDP 精装（仅覆膜）使用自己的包边 (0.51 in) 和书槽 (0.4 in)，且未公布完整尺寸公式——Beuk 暂不计算 KDP 精装尺寸；请使用 KDP 的封面计算器。", "covermk.hc.flapFront": "前勒口——图书简介", "covermk.hc.flapBack": "后勒口——关于作者", "covermk.hc.flapPhoto": "后勒口的作者照片", "covermk.hc.flapPhotoRemove": "移除照片", "covermk.hc.flapPhotoNone": "未选择照片", "covermk.hc.lgBleed": "出血边", "covermk.hc.lgWrap": "包边（折向封面板内侧）", "covermk.hc.lgBoard": "封面板边缘", "covermk.hc.lgTrim": "裁切线", "covermk.hc.lgHinge": "书槽 / 铰链", "covermk.hc.lgSpine": "书脊折线", "covermk.hc.lgFold": "勒口折线", "covermk.hc.lgFlap": "勒口", "covermk.hc.lgSafe": "安全区（文字放在内侧）", "covermk.hc.lgBarcode": "条形码区域", "covermk.hc.lgOff": "参考线只显示在屏幕上——绝不会出现在 PDF 或 JPG 中。" });
       /* ==== /BEUK:hardcover ==== */
+      /* ==== BEUK:hcpreview ==== */
+      /* Hardcover device (preview pane) — assigned per pack so completeness holds. Not yet reviewed by native speakers. */
+      Object.assign(UI_STRINGS.en, { "hcp.device": "Hardcover", "hcp.open": "Open the book", "hcp.close": "Close the book", "hcp.prev": "Prev", "hcp.next": "Next", "hcp.toChapter": "Go to the chapter you are editing", "hcp.notInPrint": "The section you are editing is not in the print interior", "hcp.hint": "Tap the book to open it. Turn pages with the buttons, the ← → keys or a swipe.", "hcp.pages": "Pages {a}–{b} of {n}", "hcp.page": "Page {a} of {n}", "hcp.closedCounter": "Closed · {n} printed pages", "hcp.empty": "Nothing to print yet — the book fills as you write.", "hcp.facts": "{trim} trim · {binding} · pages from the print layout", "hcp.bindCase": "Hardcover · case laminate", "hcp.bindJacket": "Hardcover · dust jacket", "hcp.bindCloth": "Cloth board — no cover art yet", "hcp.bindUnset": "Shown as case laminate — the Cover Maker binding is set to paperback", "hcp.ariaBook": "Closed hardcover of {title} — open it", "hcp.endpaper": "Endpaper", "hcp.fullscreen": "Full screen", "hcp.fullscreenFail": "This browser would not open full screen." });
+      Object.assign(UI_STRINGS.es, { "hcp.device": "Tapa dura", "hcp.open": "Abrir el libro", "hcp.close": "Cerrar el libro", "hcp.prev": "Anterior", "hcp.next": "Siguiente", "hcp.toChapter": "Ir al capítulo que estás editando", "hcp.notInPrint": "La sección que estás editando no está en el interior impreso", "hcp.hint": "Toca el libro para abrirlo. Pasa las páginas con los botones, las teclas ← → o deslizando.", "hcp.pages": "Páginas {a}–{b} de {n}", "hcp.page": "Página {a} de {n}", "hcp.closedCounter": "Cerrado · {n} páginas impresas", "hcp.empty": "Aún no hay nada que imprimir: el libro se llena a medida que escribes.", "hcp.facts": "Formato {trim} · {binding} · páginas del diseño de impresión", "hcp.bindCase": "Tapa dura · cartoné laminado", "hcp.bindJacket": "Tapa dura · sobrecubierta", "hcp.bindCloth": "Tapa de tela: aún sin ilustración de cubierta", "hcp.bindUnset": "Se muestra como cartoné laminado: en el creador de cubiertas la encuadernación es rústica", "hcp.ariaBook": "Libro de tapa dura cerrado: {title}. Ábrelo", "hcp.endpaper": "Guarda", "hcp.fullscreen": "Pantalla completa", "hcp.fullscreenFail": "Este navegador no pudo abrir la pantalla completa." });
+      Object.assign(UI_STRINGS.fr, { "hcp.device": "Relié", "hcp.open": "Ouvrir le livre", "hcp.close": "Fermer le livre", "hcp.prev": "Préc.", "hcp.next": "Suiv.", "hcp.toChapter": "Aller au chapitre en cours d’édition", "hcp.notInPrint": "La section en cours d’édition ne fait pas partie de l’intérieur imprimé", "hcp.hint": "Touchez le livre pour l’ouvrir. Tournez les pages avec les boutons, les touches ← → ou d’un glissement.", "hcp.pages": "Pages {a}–{b} sur {n}", "hcp.page": "Page {a} sur {n}", "hcp.closedCounter": "Fermé · {n} pages imprimées", "hcp.empty": "Rien à imprimer pour l’instant — le livre se remplit à mesure que vous écrivez.", "hcp.facts": "Format {trim} · {binding} · pages issues de la mise en page d’impression", "hcp.bindCase": "Relié · cartonnage pelliculé", "hcp.bindJacket": "Relié · jaquette", "hcp.bindCloth": "Couverture toilée — pas encore d’illustration", "hcp.bindUnset": "Affiché en cartonnage pelliculé — la reliure choisie dans le créateur de couverture est brochée", "hcp.ariaBook": "Livre relié fermé : {title} — l’ouvrir", "hcp.endpaper": "Page de garde", "hcp.fullscreen": "Plein écran", "hcp.fullscreenFail": "Ce navigateur n’a pas pu passer en plein écran." });
+      Object.assign(UI_STRINGS.de, { "hcp.device": "Hardcover", "hcp.open": "Buch öffnen", "hcp.close": "Buch schließen", "hcp.prev": "Zurück", "hcp.next": "Weiter", "hcp.toChapter": "Zum Kapitel, das Sie gerade bearbeiten", "hcp.notInPrint": "Der Abschnitt, den Sie bearbeiten, gehört nicht zum Druckinnenteil", "hcp.hint": "Tippen Sie auf das Buch, um es zu öffnen. Blättern Sie mit den Schaltflächen, den Tasten ← → oder per Wischen.", "hcp.pages": "Seiten {a}–{b} von {n}", "hcp.page": "Seite {a} von {n}", "hcp.closedCounter": "Geschlossen · {n} gedruckte Seiten", "hcp.empty": "Noch nichts zu drucken — das Buch füllt sich, während Sie schreiben.", "hcp.facts": "Format {trim} · {binding} · Seiten aus dem Drucklayout", "hcp.bindCase": "Hardcover · laminierter Einband", "hcp.bindJacket": "Hardcover · Schutzumschlag", "hcp.bindCloth": "Leineneinband — noch kein Titelbild", "hcp.bindUnset": "Als laminierter Einband gezeigt — im Cover-Editor ist Taschenbuch gewählt", "hcp.ariaBook": "Geschlossenes Hardcover: {title} — öffnen", "hcp.endpaper": "Vorsatzpapier", "hcp.fullscreen": "Vollbild", "hcp.fullscreenFail": "Dieser Browser konnte den Vollbildmodus nicht öffnen." });
+      Object.assign(UI_STRINGS.it, { "hcp.device": "Copertina rigida", "hcp.open": "Apri il libro", "hcp.close": "Chiudi il libro", "hcp.prev": "Prec.", "hcp.next": "Succ.", "hcp.toChapter": "Vai al capitolo che stai modificando", "hcp.notInPrint": "La sezione che stai modificando non fa parte degli interni di stampa", "hcp.hint": "Tocca il libro per aprirlo. Sfoglia le pagine con i pulsanti, i tasti ← → o scorrendo.", "hcp.pages": "Pagine {a}–{b} di {n}", "hcp.page": "Pagina {a} di {n}", "hcp.closedCounter": "Chiuso · {n} pagine stampate", "hcp.empty": "Ancora niente da stampare: il libro si riempie mentre scrivi.", "hcp.facts": "Formato {trim} · {binding} · pagine dall’impaginazione di stampa", "hcp.bindCase": "Copertina rigida · cartonato plastificato", "hcp.bindJacket": "Copertina rigida · sovraccoperta", "hcp.bindCloth": "Copertina in tela: ancora senza immagine di copertina", "hcp.bindUnset": "Mostrato come cartonato plastificato: nel creatore di copertine la rilegatura è brossura", "hcp.ariaBook": "Libro rilegato chiuso: {title}. Aprilo", "hcp.endpaper": "Risguardo", "hcp.fullscreen": "Schermo intero", "hcp.fullscreenFail": "Questo browser non ha aperto lo schermo intero." });
+      Object.assign(UI_STRINGS.pt, { "hcp.device": "Capa dura", "hcp.open": "Abrir o livro", "hcp.close": "Fechar o livro", "hcp.prev": "Ant.", "hcp.next": "Seg.", "hcp.toChapter": "Ir para o capítulo em edição", "hcp.notInPrint": "A secção em edição não faz parte do miolo impresso", "hcp.hint": "Toque no livro para o abrir. Vire as páginas com os botões, as teclas ← → ou deslizando.", "hcp.pages": "Páginas {a}–{b} de {n}", "hcp.page": "Página {a} de {n}", "hcp.closedCounter": "Fechado · {n} páginas impressas", "hcp.empty": "Ainda não há nada para imprimir — o livro enche-se à medida que escreve.", "hcp.facts": "Formato {trim} · {binding} · páginas do layout de impressão", "hcp.bindCase": "Capa dura · cartonado plastificado", "hcp.bindJacket": "Capa dura · sobrecapa", "hcp.bindCloth": "Capa em tecido — ainda sem arte de capa", "hcp.bindUnset": "Mostrado como cartonado plastificado — no criador de capas a encadernação é brochura", "hcp.ariaBook": "Livro de capa dura fechado: {title} — abrir", "hcp.endpaper": "Guarda", "hcp.fullscreen": "Ecrã inteiro", "hcp.fullscreenFail": "Este navegador não conseguiu abrir o ecrã inteiro." });
+      Object.assign(UI_STRINGS.nl, { "hcp.device": "Gebonden", "hcp.open": "Boek openen", "hcp.close": "Boek sluiten", "hcp.prev": "Vorige", "hcp.next": "Volgende", "hcp.toChapter": "Naar het hoofdstuk dat je bewerkt", "hcp.notInPrint": "Het deel dat je bewerkt hoort niet bij het gedrukte binnenwerk", "hcp.hint": "Tik op het boek om het te openen. Blader met de knoppen, de toetsen ← → of door te vegen.", "hcp.pages": "Pagina’s {a}–{b} van {n}", "hcp.page": "Pagina {a} van {n}", "hcp.closedCounter": "Gesloten · {n} gedrukte pagina’s", "hcp.empty": "Nog niets om te drukken — het boek vult zich terwijl je schrijft.", "hcp.facts": "Formaat {trim} · {binding} · pagina’s uit de drukopmaak", "hcp.bindCase": "Gebonden · gelamineerde band", "hcp.bindJacket": "Gebonden · stofomslag", "hcp.bindCloth": "Linnen band — nog geen omslagafbeelding", "hcp.bindUnset": "Getoond als gelamineerde band — in de omslagmaker staat de bindwijze op paperback", "hcp.ariaBook": "Gesloten gebonden boek: {title} — openen", "hcp.endpaper": "Schutblad", "hcp.fullscreen": "Volledig scherm", "hcp.fullscreenFail": "Deze browser kon niet naar volledig scherm." });
+      Object.assign(UI_STRINGS.pl, { "hcp.device": "Twarda oprawa", "hcp.open": "Otwórz książkę", "hcp.close": "Zamknij książkę", "hcp.prev": "Wstecz", "hcp.next": "Dalej", "hcp.toChapter": "Przejdź do rozdziału, który edytujesz", "hcp.notInPrint": "Edytowana sekcja nie należy do drukowanego wnętrza", "hcp.hint": "Dotknij książki, aby ją otworzyć. Przewracaj strony przyciskami, klawiszami ← → lub przesunięciem.", "hcp.pages": "Strony {a}–{b} z {n}", "hcp.page": "Strona {a} z {n}", "hcp.closedCounter": "Zamknięta · stron w druku: {n}", "hcp.empty": "Nie ma jeszcze czego drukować — książka zapełnia się w miarę pisania.", "hcp.facts": "Format {trim} · {binding} · strony z układu do druku", "hcp.bindCase": "Twarda · okleina laminowana", "hcp.bindJacket": "Twarda · obwoluta", "hcp.bindCloth": "Oprawa płócienna — jeszcze bez grafiki okładki", "hcp.bindUnset": "Pokazano jako okleinę laminowaną — w kreatorze okładki wybrano oprawę miękką", "hcp.ariaBook": "Zamknięta książka w twardej oprawie: {title} — otwórz", "hcp.endpaper": "Wyklejka", "hcp.fullscreen": "Pełny ekran", "hcp.fullscreenFail": "Ta przeglądarka nie otworzyła pełnego ekranu." });
+      Object.assign(UI_STRINGS.ru, { "hcp.device": "Твёрдый переплёт", "hcp.open": "Открыть книгу", "hcp.close": "Закрыть книгу", "hcp.prev": "Назад", "hcp.next": "Вперёд", "hcp.toChapter": "К главе, которую вы редактируете", "hcp.notInPrint": "Редактируемый раздел не входит в печатный блок", "hcp.hint": "Нажмите на книгу, чтобы открыть её. Листайте кнопками, клавишами ← → или свайпом.", "hcp.pages": "Страницы {a}–{b} из {n}", "hcp.page": "Страница {a} из {n}", "hcp.closedCounter": "Закрыта · печатных страниц: {n}", "hcp.empty": "Печатать пока нечего — книга наполняется по мере того, как вы пишете.", "hcp.facts": "Формат {trim} · {binding} · страницы из печатного макета", "hcp.bindCase": "Твёрдый · ламинированная обложка", "hcp.bindJacket": "Твёрдый · суперобложка", "hcp.bindCloth": "Тканевый переплёт — обложки пока нет", "hcp.bindUnset": "Показано как ламинированный переплёт — в конструкторе обложки выбрана мягкая обложка", "hcp.ariaBook": "Закрытая книга в твёрдом переплёте: {title} — открыть", "hcp.endpaper": "Форзац", "hcp.fullscreen": "Во весь экран", "hcp.fullscreenFail": "Браузер не смог перейти в полноэкранный режим." });
+      Object.assign(UI_STRINGS.tr, { "hcp.device": "Sert kapak", "hcp.open": "Kitabı aç", "hcp.close": "Kitabı kapat", "hcp.prev": "Önceki", "hcp.next": "Sonraki", "hcp.toChapter": "Düzenlediğiniz bölüme git", "hcp.notInPrint": "Düzenlediğiniz bölüm basılı iç sayfalarda yer almıyor", "hcp.hint": "Açmak için kitaba dokunun. Sayfaları düğmelerle, ← → tuşlarıyla ya da kaydırarak çevirin.", "hcp.pages": "Sayfa {a}–{b} / {n}", "hcp.page": "Sayfa {a} / {n}", "hcp.closedCounter": "Kapalı · {n} basılı sayfa", "hcp.empty": "Henüz basılacak bir şey yok — kitap siz yazdıkça dolar.", "hcp.facts": "{trim} boyut · {binding} · baskı düzeninden sayfalar", "hcp.bindCase": "Sert kapak · laminasyonlu", "hcp.bindJacket": "Sert kapak · şömiz", "hcp.bindCloth": "Bez cilt — henüz kapak görseli yok", "hcp.bindUnset": "Laminasyonlu sert kapak olarak gösteriliyor — Kapak Oluşturucu’da cilt karton kapak seçili", "hcp.ariaBook": "Kapalı sert kapaklı kitap: {title} — aç", "hcp.endpaper": "Forza", "hcp.fullscreen": "Tam ekran", "hcp.fullscreenFail": "Bu tarayıcı tam ekranı açamadı." });
+      Object.assign(UI_STRINGS.ar, { "hcp.device": "غلاف مقوّى", "hcp.open": "افتح الكتاب", "hcp.close": "أغلق الكتاب", "hcp.prev": "السابق", "hcp.next": "التالي", "hcp.toChapter": "انتقل إلى الفصل الذي تحرّره", "hcp.notInPrint": "القسم الذي تحرّره ليس ضمن الصفحات المطبوعة", "hcp.hint": "انقر الكتاب لفتحه. قلّب الصفحات بالأزرار أو بمفتاحي ← → أو بالسحب.", "hcp.pages": "الصفحات {a}–{b} من {n}", "hcp.page": "الصفحة {a} من {n}", "hcp.closedCounter": "مغلق · {n} صفحة مطبوعة", "hcp.empty": "لا شيء للطباعة بعد — يمتلئ الكتاب كلما كتبت.", "hcp.facts": "مقاس {trim} · {binding} · صفحات من تخطيط الطباعة", "hcp.bindCase": "غلاف مقوّى · مغلّف لامع", "hcp.bindJacket": "غلاف مقوّى · غلاف واقٍ", "hcp.bindCloth": "غلاف قماشي — لا صورة غلاف بعد", "hcp.bindUnset": "معروض كغلاف مقوّى مغلّف — التجليد في صانع الغلاف مضبوط على غلاف ورقي", "hcp.ariaBook": "كتاب مغلق بغلاف مقوّى: {title} — افتحه", "hcp.endpaper": "ورقة الحراسة", "hcp.fullscreen": "ملء الشاشة", "hcp.fullscreenFail": "تعذّر على هذا المتصفح فتح وضع ملء الشاشة." });
+      Object.assign(UI_STRINGS.ja, { "hcp.device": "ハードカバー", "hcp.open": "本を開く", "hcp.close": "本を閉じる", "hcp.prev": "前へ", "hcp.next": "次へ", "hcp.toChapter": "編集中の章へ移動", "hcp.notInPrint": "編集中のセクションは印刷本文に含まれていません", "hcp.hint": "本をタップすると開きます。ボタン、← → キー、スワイプでページをめくれます。", "hcp.pages": "{n}ページ中 {a}–{b}ページ", "hcp.page": "{n}ページ中 {a}ページ", "hcp.closedCounter": "閉じた状態 · 印刷 {n} ページ", "hcp.empty": "まだ印刷するものがありません。書き進めると本が埋まっていきます。", "hcp.facts": "判型 {trim} · {binding} · 印刷レイアウトのページ", "hcp.bindCase": "ハードカバー · ラミネート表紙", "hcp.bindJacket": "ハードカバー · ダストジャケット", "hcp.bindCloth": "クロス装 — 表紙画像はまだありません", "hcp.bindUnset": "ラミネート表紙として表示中 — 表紙メーカーの製本はペーパーバックです", "hcp.ariaBook": "閉じたハードカバー：{title} — 開く", "hcp.endpaper": "見返し", "hcp.fullscreen": "全画面表示", "hcp.fullscreenFail": "このブラウザでは全画面表示を開けませんでした。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "hcp.device": "精装", "hcp.open": "打开书", "hcp.close": "合上书", "hcp.prev": "上一页", "hcp.next": "下一页", "hcp.toChapter": "转到正在编辑的章节", "hcp.notInPrint": "正在编辑的部分不在印刷内页中", "hcp.hint": "点按书本即可打开。用按钮、← → 键或滑动来翻页。", "hcp.pages": "第 {a}–{b} 页，共 {n} 页", "hcp.page": "第 {a} 页，共 {n} 页", "hcp.closedCounter": "已合上 · 印刷 {n} 页", "hcp.empty": "还没有可印刷的内容——书会随着你的写作而充实。", "hcp.facts": "开本 {trim} · {binding} · 页面来自印刷版式", "hcp.bindCase": "精装 · 覆膜封面", "hcp.bindJacket": "精装 · 护封", "hcp.bindCloth": "布面精装——尚无封面图", "hcp.bindUnset": "按覆膜精装显示——封面制作器中的装订设为平装", "hcp.ariaBook": "合上的精装书：{title}——打开", "hcp.endpaper": "环衬", "hcp.fullscreen": "全屏", "hcp.fullscreenFail": "此浏览器无法打开全屏。" });
+      /* ==== /BEUK:hcpreview ==== */
 
       /* Structure upgrade: matter library, reordering, Parts — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, { "import.type.foreword": "Foreword", "import.type.preface": "Preface", "import.type.cta": "Call to Action", "import.type.part": "Part", "side.addPage": "Add a page", "side.addPart": "Add Part", "toast.pageAdded": "{name} added", "toast.pageExists": "{name} is already in your book — here it is", "toast.moveTier": "Pages stay within their own part of the book — change its type to move it there.", "toast.partAdded": "Part added" });
@@ -17924,6 +18042,7 @@
         requestAnimationFrame(() => { measurePages(); goToPage(1, true); });
         scheduleDeskUpdate();
         renderDeskRailMarks();
+        if (typeof hcOnPreview === "function") hcOnPreview(); /* BEUK:hcpreview */
       }
       function measurePages() {
         const wrap = $("flowWrap"), flow = $("pageFlow");
@@ -17967,6 +18086,7 @@
         setTimeout(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(60); }, 330);
         const flow = $("pageFlow");
         flow.style.setProperty("--orn-bg", getComputedStyle($("deviceScreen")).backgroundColor);
+        hcOnDevice(d); /* BEUK:hcpreview */
       }
       function initPreview() {
         $("deviceBar").addEventListener("click", (e) => {
@@ -18010,6 +18130,7 @@
           const tag = (document.activeElement && document.activeElement.tagName) || "";
           if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
           if (document.querySelector(".modal-back.open")) return;
+          if (state.device === "hardcover") { hcKey(e); return; } /* BEUK:hcpreview */
           if (e.key === "ArrowRight") goToPage(state.page + 1);
           else if (e.key === "ArrowLeft") goToPage(state.page - 1);
         });
@@ -18017,6 +18138,523 @@
         window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(120); }, 150); });
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(120); });
       }
+
+      /* ==== BEUK:hcpreview ==== */
+      /* ================= Hardcover device =================
+         A small hardback on the desk, the way a reader would hold the
+         printed book. Closed, it is a CSS 3D object: the front board
+         wears the cover art (or, with no art yet, a cloth board with a
+         stamped title), the spine carries the title and author, the
+         head shows the cream page block recessed between the two
+         board edges by the square (the head tips toward the eye; the
+         tail and fore-edge faces exist too). Open, it is the
+         book's REAL print layout: every page is built by the Print
+         Interior View's own engine — buildPrintViewModel() paginates
+         the book at the print trim with the print stylesheet
+         (printTypeCss is the very ruleset buildPrintHtml ships) and
+         pivPageEl() lays each page out with its running head and
+         folio — so a spread here is the Print Interior View's
+         pagination, not the reflowable e-reader render. CAUTION, found
+         while proving this: the PDF made from buildPrintHtml() does
+         not paginate the same as the Print Interior View today, so
+         this is the print view's typesetting, not yet proven to be the
+         PDF's.
+         Proportions: the boards are the trim plus the square — the
+         overhang past the page block. IngramSpark's File Creation
+         Guide sizes a case-laminate board as trim height + 0.25 in
+         (https://www.ingramspark.com/hubfs/downloads/file-creation-guide.pdf,
+         p.41, the HC_SPEC.caseLam.boardHPlus constant above), i.e.
+         0.125 in at head and tail. The same guide sizes the board
+         WIDTH as trim width − 0.185 in (the board stops at the hinge),
+         so the 0.125 in fore-edge square here is a drawing choice,
+         not an IngramSpark number. Board thickness and the page-stack edges
+         are drawing only, not a print specification. Spine depth is
+         the cover maker's own spine number (template or estimate,
+         wrapDims) or, with no wrap yet, pages × the white-paper
+         factor; it is a picture, and the closed book never labels it
+         exact. */
+      DEVICE_FOOTERS.hardcover = "Hardcover · print layout";
+      DEVICE_NAMES.hardcover = "Hardcover";
+      const hc = { open: false, model: null, sig: "", spread: 0, lastActive: null, anim: null, animTo: null, tone: null, toneKey: "", refreshTimer: null, swipeX: null, swiped: false };
+      const hcReduced = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      const hcSquareIn = () => HC_SPEC.caseLam.boardHPlus / 2;
+      function hcWrap() { return state.coverRecipe ? normalizeWrap(state.coverRecipe.wrap) : null; }
+      /* "jacket" | "case" | "cloth" (no cover art: a bare cloth board). */
+      function hcLook() {
+        const w = hcWrap();
+        if (!state.cover || !state.cover.data) return "cloth";
+        return w && w.binding === "jacket" ? "jacket" : "case";
+      }
+      function hcBindingLabel() {
+        const w = hcWrap();
+        const look = hcLook();
+        if (look === "cloth") return t("hcp.bindCloth");
+        if (!w || (w.binding !== "case" && w.binding !== "jacket")) return t("hcp.bindUnset");
+        return look === "jacket" ? t("hcp.bindJacket") : t("hcp.bindCase");
+      }
+      function hcSignature() {
+        const printKeys = Object.keys(state).filter((k) => k.indexOf("print") === 0).sort()
+          .map((k) => { let v; try { v = JSON.stringify(state[k]); } catch (e) { v = ""; } return k + ":" + v; }).join("|");
+        let theme = "";
+        try { theme = JSON.stringify(state.theme); } catch (e) { theme = ""; }
+        return [printKeys, theme, state.meta.title || "", state.meta.author || "", state.meta.language || "",
+          (state.images || []).map((im) => im.id).join(","),
+          state.sections.map((s) => [s.id, s.kind, s.type, s.included ? 1 : 0, s.number || "", s.title || "", s.subtitle || "", s.plateId || "", s.backdropId || "", s.content || ""].join("\u0001")).join("\u0002")
+        ].join("\u0003");
+      }
+      function hcEnsureModel(force) {
+        const sig = hcSignature();
+        if (!force && hc.model && sig === hc.sig) return hc.model;
+        hc.model = buildPrintViewModel();
+        hc.sig = sig;
+        hc.spread = Math.max(0, Math.min(hc.spread, Math.max(0, hc.model.spreads - 1)));
+        return hc.model;
+      }
+      /* The spread that holds the first page of the section open in
+         the editor — the spread the Print Interior View's own jump
+         box lands on (floor(page / 2)) — or null when that section
+         is not in the print interior (the cover, an excluded one). */
+      function hcChapterSpread(model) {
+        const s = activeSection(); if (!s || !model) return null;
+        const pg = model.pages.find((p) => p.section && p.section.id === s.id);
+        return pg ? Math.floor(pg.n / 2) : null;
+      }
+      const HC_BOARD_IN = 0.09; /* drawing only: how thick a board looks — not a print specification */
+      function hcSpineIn(model) {
+        /* A case's spine is the page block plus the two boards; the
+           cover maker's hardcover spine (template or estimate) wins
+           when the writer has set a hardcover binding. */
+        const w = hcWrap();
+        const pages = model && model.pages.length ? model.pages.length : printPageEstimate();
+        let spine = pages * (w ? wrapFactor(w) : WRAP_PAPERS.white) + 2 * HC_BOARD_IN;
+        if (w && (w.binding === "case" || w.binding === "jacket")) { try { spine = Math.max(spine, wrapDims(state.coverRecipe).spine); } catch (e) { /* keep the drawing estimate */ } }
+        return Math.max(0.3, Math.min(2.4, spine));
+      }
+      /* The board colour: the cover art's own spine-side edge,
+         averaged, so the spine and back read as the same printed
+         case; a deep cloth when there is no art. */
+      function hcTone(cb) {
+        if (!state.cover || !state.cover.data) return { r: 43, g: 58, b: 85, cloth: true };
+        const key = state.cover.data.length + ":" + state.cover.data.slice(0, 64);
+        if (hc.toneKey === key && hc.tone) return hc.tone;
+        if (hc.toneKey !== key) {
+          hc.toneKey = key; hc.tone = null;
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const c = document.createElement("canvas"); c.width = 24; c.height = 36;
+              const x = c.getContext("2d"); x.drawImage(img, 0, 0, 24, 36);
+              const d = x.getImageData(0, 0, 3, 36).data;
+              let r = 0, g = 0, b = 0, n = 0;
+              for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+              if (hc.toneKey === key) hc.tone = { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+            } catch (e) { if (hc.toneKey === key) hc.tone = { r: 60, g: 52, b: 44 }; }
+            if (cb) cb();
+          };
+          img.onerror = () => { if (hc.toneKey === key) hc.tone = { r: 60, g: 52, b: 44 }; if (cb) cb(); };
+          img.src = "data:" + state.cover.mediaType + ";base64," + state.cover.data;
+        }
+        return { r: 60, g: 52, b: 44, pending: true };
+      }
+      const hcRgb = (c, k) => "rgb(" + Math.round(c.r * (k || 1)) + "," + Math.round(c.g * (k || 1)) + "," + Math.round(c.b * (k || 1)) + ")";
+      const hcInkOn = (c) => ((0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b) / 255 > 0.58 ? "#1d1a16" : "#f4ecdc");
+      function hcFace(cls, w, h, transform) {
+        const el = document.createElement("div");
+        el.className = "hc-face " + cls;
+        el.style.width = w + "px"; el.style.height = h + "px";
+        el.style.transform = transform;
+        return el;
+      }
+      function hcRenderClosed() {
+        const stage = $("hcStage");
+        const model = hcEnsureModel(false);
+        const trim = model.g.trim;
+        const sq = hcSquareIn();
+        const look = hcLook();
+        const availW = Math.max(120, stage.clientWidth - 40), availH = Math.max(160, stage.clientHeight - 56);
+        const spineIn = hcSpineIn(model);
+        /* One scale for every trim up to 6.5 × 9.5 in, so a 5 × 8 sits
+           visibly smaller (and slimmer) than a 6 × 9 on the same desk;
+           a larger trim is fitted to the space instead. */
+        const ppi = Math.max(8, Math.min(availH * 0.86 / (Math.max(trim.h, 9.5) + 2 * sq), availW * 0.8 / (Math.max(trim.w, 6.5) + sq + spineIn)));
+        const BW = (trim.w + sq) * ppi, BH = (trim.h + 2 * sq) * ppi, D = spineIn * ppi;
+        const bt = Math.max(1.5, HC_BOARD_IN * ppi);
+        const tone = hcTone(() => { if (state.device === "hardcover" && !hc.open) hcRenderClosed(); });
+        const toneCss = hcRgb(tone);
+        stage.innerHTML = "";
+        const scene = document.createElement("div");
+        scene.className = "hc-scene";
+        scene.style.width = (BW + D * 1.6) + "px"; scene.style.height = (BH + 30) + "px";
+        const book = document.createElement("div");
+        book.className = "hc-book hc-" + look;
+        book.id = "hcBook";
+        book.style.width = BW + "px"; book.style.height = BH + "px";
+        book.style.marginLeft = D + "px";
+        book.style.setProperty("--hc-front-z", "translateZ(" + (D / 2) + "px)");
+        book.setAttribute("role", "button");
+        book.setAttribute("aria-label", t("hcp.ariaBook", { title: state.meta.title || t("misc.untitledBook") }));
+        book.setAttribute("data-trim", trim.id);
+        book.setAttribute("data-look", look);
+        /* Back board, spine, head, then the front board on top. */
+        const back = hcFace("hc-back", BW, BH, "translateZ(" + (-D / 2) + "px) rotateY(180deg)");
+        back.style.background = look === "cloth" ? "" : toneCss;
+        if (look === "cloth") back.classList.add("hc-cloth");
+        book.appendChild(back);
+        const spine = hcFace("hc-spine", D, BH, "translateX(" + (-D / 2) + "px) rotateY(-90deg)");
+        if (look === "cloth") spine.classList.add("hc-cloth"); else spine.style.background = "linear-gradient(to right, " + hcRgb(tone, 0.82) + ", " + toneCss + " 30%, " + toneCss + " 70%, " + hcRgb(tone, 0.86) + ")";
+        const st = document.createElement("div");
+        st.className = "hc-spine-text";
+        st.style.fontFamily = fontStack(state.theme.headFont);
+        st.style.fontSize = Math.max(6, Math.min(D * 0.38, BW * 0.06)) + "px";
+        st.style.color = look === "cloth" ? "#e9cf8c" : hcInkOn(tone);
+        const stTitle = document.createElement("span"); stTitle.className = "hc-s-title"; stTitle.textContent = state.meta.title || t("misc.untitledBook");
+        st.appendChild(stTitle);
+        if (state.meta.author) { const sa = document.createElement("span"); sa.className = "hc-s-author"; sa.textContent = "  ·  " + state.meta.author; st.appendChild(sa); }
+        spine.appendChild(st);
+        book.appendChild(spine);
+        /* The case is bigger than the page block it holds: the boards
+           overhang the leaves by the square at head, tail and fore-edge,
+           so the cream page block sits recessed between two board edges.
+           Every face is built (head, tail and fore-edge of both boards
+           and of the block) so the object is solid at any angle; the
+           3/4 view below shows front, spine and head. */
+        const sqPx = sq * ppi, boardCss = look === "cloth" ? "" : toneCss;
+        const edgeFace = (cls, w, h, transform) => {
+          const f = hcFace("hc-edgeb " + cls, w, h, transform);
+          if (look === "cloth") f.classList.add("hc-cloth"); else f.style.background = hcRgb(tone, 0.78);
+          book.appendChild(f);
+          return f;
+        };
+        /* Inside of the back board (the endpaper), seen over the head of
+           the recessed page block. */
+        const inner = hcFace("hc-inner", BW, BH, "translateZ(" + (-D / 2 + bt) + "px)");
+        book.appendChild(inner);
+        /* Board edges: front and back board, head / fore-edge / tail. */
+        [D / 2 - bt / 2, -D / 2 + bt / 2].forEach((z, i) => {
+          const tag = i ? "back" : "front";
+          edgeFace("hc-eh-" + tag, BW, bt, "translateY(" + (-bt / 2) + "px) translateZ(" + z + "px) rotateX(90deg)");
+          edgeFace("hc-et-" + tag, BW, bt, "translateY(" + (BH - bt / 2) + "px) translateZ(" + z + "px) rotateX(-90deg)");
+          edgeFace("hc-ef-" + tag, bt, BH, "translateX(" + (BW - bt / 2) + "px) translateZ(" + z + "px) rotateY(90deg)");
+        });
+        /* Head of the spine (the case's hollow back). */
+        edgeFace("hc-eh-spine", bt, D, "translateY(" + (-D / 2) + "px) rotateX(90deg)");
+        /* The page block: trim-sized, between the boards, recessed by the square. */
+        const PW = BW - sqPx - bt, PD = Math.max(1, D - 2 * bt), PH = BH - 2 * sqPx;
+        const blockFace = (cls, w, h, transform, grain) => {
+          const f = hcFace("hc-block " + cls, w, h, transform);
+          const lv = document.createElement("div");
+          lv.className = "hc-leaves" + (grain ? " hc-leaves-" + grain : "");
+          f.appendChild(lv);
+          book.appendChild(f);
+          return f;
+        };
+        const top = blockFace("hc-top", PW, PD, "translateX(" + bt + "px) translateY(" + (sqPx - PD / 2) + "px) rotateX(90deg)", "h");
+        top.setAttribute("data-square-px", sqPx.toFixed(2));
+        blockFace("hc-tail", PW, PD, "translateX(" + bt + "px) translateY(" + (BH - sqPx - PD / 2) + "px) rotateX(-90deg)", "h");
+        blockFace("hc-fore", PD, PH, "translateX(" + (BW - sqPx - PD / 2) + "px) translateY(" + sqPx + "px) rotateY(90deg)", "v");
+        if (boardCss) inner.style.boxShadow = "inset 0 0 0 " + Math.max(1, bt * 0.6) + "px " + boardCss;
+        const front = hcFace("hc-front", BW, BH, "translateZ(" + (D / 2) + "px)");
+        if (look === "cloth") {
+          front.classList.add("hc-cloth");
+          const ty = document.createElement("div");
+          ty.className = "hc-typo";
+          ty.style.fontFamily = fontStack(state.theme.headFont);
+          ty.style.fontSize = Math.max(7, BW * 0.075) + "px";
+          const tt = document.createElement("div"); tt.className = "hc-t-title"; tt.textContent = state.meta.title || t("misc.untitledBook");
+          const tr = document.createElement("div"); tr.className = "hc-t-rule";
+          const ta = document.createElement("div"); ta.className = "hc-t-author"; ta.textContent = state.meta.author || "";
+          ty.appendChild(tt); ty.appendChild(tr); if (state.meta.author) ty.appendChild(ta);
+          front.appendChild(ty);
+        } else {
+          const img = document.createElement("img");
+          img.alt = ""; img.draggable = false;
+          img.src = "data:" + state.cover.mediaType + ";base64," + state.cover.data;
+          front.appendChild(img);
+        }
+        const hinge = document.createElement("div"); hinge.className = "hc-hinge"; hinge.style.left = (0.32 * ppi) + "px";
+        front.appendChild(hinge);
+        if (look === "jacket") { const fl = document.createElement("div"); fl.className = "hc-flap"; front.appendChild(fl); }
+        const sheen = document.createElement("div"); sheen.className = "hc-sheen"; front.appendChild(sheen);
+        book.appendChild(front);
+        const shadow = document.createElement("div"); shadow.className = "hc-shadow";
+        scene.appendChild(shadow);
+        scene.appendChild(book);
+        stage.appendChild(scene);
+        book.addEventListener("click", () => { if (!hc.swiped) hcSetOpen(true); });
+        hcSyncChrome();
+      }
+      function hcSide(page, side, model) {
+        const g = model.g;
+        const box = document.createElement("div");
+        box.className = "hc-side hc-" + (side === "left" ? "l" : "r");
+        box.style.width = g.pageW + "px"; box.style.height = g.pageH + "px";
+        hcFillSide(box, page, side, model);
+        return box;
+      }
+      function hcFillSide(box, page, side, model) {
+        if (page) {
+          const keep = piv.guides;
+          piv.guides = false; /* the trim / margin guides belong to the proofing view, not the reader's book */
+          try { box.appendChild(pivPageEl(page, side, model)); } finally { piv.guides = keep; }
+          box.setAttribute("data-page", String(page.n));
+        } else {
+          const ep = document.createElement("div"); ep.className = "hc-endpaper";
+          ep.setAttribute("aria-label", t("hcp.endpaper"));
+          box.appendChild(ep);
+          box.setAttribute("data-endpaper", "true");
+        }
+        const gut = document.createElement("div");
+        gut.className = "hc-gutter " + (side === "left" ? "g-right" : "g-left");
+        box.appendChild(gut);
+      }
+      function hcRenderOpen(dir) {
+        const stage = $("hcStage");
+        const model = hcEnsureModel(false);
+        if (!model.pages.length) { hc.open = false; hcRenderClosed(); return; }
+        hc.spread = Math.max(0, Math.min(hc.spread, model.spreads - 1));
+        const g = model.g;
+        const sq = Math.round(hcSquareIn() * PIV_PX);
+        const stackMax = 12;
+        const caseW = 2 * g.pageW + 2 * (sq + stackMax), caseH = g.pageH + 2 * sq;
+        const availW = Math.max(120, stage.clientWidth - 24), availH = Math.max(140, stage.clientHeight - 24);
+        const scale = Math.max(0.05, Math.min(availW / caseW, availH / caseH, 1.25));
+        const tone = hcTone(null);
+        const look = hcLook();
+        stage.innerHTML = "";
+        const box = document.createElement("div");
+        box.className = "hc-openbox" + (dir === "fade" && !hcReduced() ? " hc-fade" : "");
+        box.id = "hcOpen";
+        box.style.width = (caseW * scale) + "px"; box.style.height = (caseH * scale) + "px";
+        const wrap = document.createElement("div");
+        wrap.className = "hc-spreadwrap" + (hcWrap() && hcWrap().paper === "cream" ? " hc-paper-cream" : "");
+        wrap.style.width = caseW + "px"; wrap.style.height = caseH + "px";
+        wrap.style.transform = "scale(" + scale + ")";
+        const cb = document.createElement("div");
+        cb.className = "hc-casebg" + (look === "cloth" ? " hc-cloth" : "");
+        cb.style.left = "0"; cb.style.top = "0"; cb.style.width = caseW + "px"; cb.style.height = caseH + "px";
+        if (look !== "cloth") cb.style.background = hcRgb(tone, 0.9);
+        wrap.appendChild(cb);
+        /* The page block's edges: what is already read sits under the
+           left page, what is still to come under the right. */
+        const frac = model.spreads > 1 ? hc.spread / (model.spreads - 1) : 0;
+        const wl = Math.round(2 + (stackMax - 2) * frac), wr = Math.round(2 + (stackMax - 2) * (1 - frac));
+        const pagesLeft = sq + stackMax;
+        const sl = document.createElement("div"); sl.className = "hc-stack";
+        sl.style.left = (pagesLeft - wl) + "px"; sl.style.top = (sq + 3) + "px"; sl.style.width = wl + "px"; sl.style.height = (g.pageH - 6) + "px";
+        const sr = document.createElement("div"); sr.className = "hc-stack";
+        sr.style.left = (pagesLeft + 2 * g.pageW) + "px"; sr.style.top = (sq + 3) + "px"; sr.style.width = wr + "px"; sr.style.height = (g.pageH - 6) + "px";
+        wrap.appendChild(sl); wrap.appendChild(sr);
+        const pagesEl = document.createElement("div");
+        pagesEl.className = "hc-pages";
+        pagesEl.id = "hcPages";
+        pagesEl.style.left = pagesLeft + "px"; pagesEl.style.top = sq + "px";
+        pagesEl.style.width = (2 * g.pageW) + "px"; pagesEl.style.height = g.pageH + "px";
+        const to = pivSpreadPages(model, hc.spread);
+        const animate = (dir === 1 || dir === -1) && hc.animFrom != null && !hcReduced();
+        if (animate) {
+          const from = pivSpreadPages(model, hc.animFrom);
+          /* Under the turning leaf: the side it leaves already shows
+             the new spread's page; the side it lands on still shows
+             the old one until the leaf covers it. */
+          pagesEl.appendChild(hcSide(dir === 1 ? from.left : to.left, "left", model));
+          pagesEl.appendChild(hcSide(dir === 1 ? to.right : from.right, "right", model));
+          const leaf = document.createElement("div");
+          leaf.className = "hc-leaf";
+          leaf.id = "hcLeaf";
+          leaf.style.width = g.pageW + "px"; leaf.style.height = g.pageH + "px";
+          leaf.style.left = (dir === 1 ? g.pageW : 0) + "px";
+          leaf.style.transformOrigin = dir === 1 ? "left center" : "right center";
+          leaf.style.transform = "rotateY(0deg)";
+          const f = document.createElement("div"); f.className = "hc-lf";
+          hcFillSide(f, dir === 1 ? from.right : from.left, dir === 1 ? "right" : "left", model);
+          const b = document.createElement("div"); b.className = "hc-lf hc-lb";
+          hcFillSide(b, dir === 1 ? to.left : to.right, dir === 1 ? "left" : "right", model);
+          leaf.appendChild(f); leaf.appendChild(b);
+          pagesEl.appendChild(leaf);
+          requestAnimationFrame(() => requestAnimationFrame(() => { leaf.style.transform = "rotateY(" + (dir === 1 ? -180 : 180) + "deg)"; }));
+          clearTimeout(hc.anim);
+          hc.anim = setTimeout(() => { hc.anim = null; hc.animFrom = null; if (hc.open && state.device === "hardcover") hcRenderOpen(0); }, 660);
+        } else {
+          pagesEl.appendChild(hcSide(to.left, "left", model));
+          pagesEl.appendChild(hcSide(to.right, "right", model));
+          hc.animFrom = null;
+        }
+        wrap.appendChild(pagesEl);
+        box.appendChild(wrap);
+        stage.appendChild(box);
+        hcSyncChrome();
+      }
+      /* Finish any turn in flight at once, so a quick second press
+         never strands a half-turned leaf. */
+      function hcSettle() {
+        if (hc.anim) { clearTimeout(hc.anim); hc.anim = null; hc.animFrom = null; }
+      }
+      function hcTurn(delta, instant) {
+        if (state.device !== "hardcover") return;
+        if (!hc.open) { if (delta > 0) hcSetOpen(true, instant); return; }
+        const model = hcEnsureModel(false);
+        const target = Math.max(0, Math.min(model.spreads - 1, hc.spread + delta));
+        hcSettle();
+        if (target === hc.spread) { hcRenderOpen(0); return; }
+        hc.animFrom = instant ? null : hc.spread;
+        hc.spread = target;
+        hcRenderOpen(instant ? 0 : (delta > 0 ? 1 : -1));
+      }
+      function hcGoToSpread(n) {
+        hcSettle();
+        const model = hcEnsureModel(false);
+        hc.spread = Math.max(0, Math.min(model.spreads - 1, n));
+        if (hc.open) hcRenderOpen(0); else hcSyncChrome();
+      }
+      function hcSetOpen(open, instant) {
+        hcSettle();
+        const model = hcEnsureModel(false);
+        if (open && !model.pages.length) { hcSyncChrome(); return; }
+        if (open && !hc.open) {
+          const cs = hcChapterSpread(model);
+          hc.spread = cs == null ? 0 : cs;
+          hc.lastActive = state.activeId;
+          const book = $("hcBook");
+          if (!instant && !hcReduced() && book) {
+            book.classList.add("hc-opening");
+            hc.open = true;
+            hcSyncChrome();
+            clearTimeout(hc.anim);
+            hc.anim = setTimeout(() => { hc.anim = null; if (hc.open && state.device === "hardcover") hcRenderOpen("fade"); }, 480);
+            return;
+          }
+          hc.open = true;
+          hcRenderOpen(0);
+          return;
+        }
+        if (!open && hc.open) { hc.open = false; hcRenderClosed(); return; }
+        if (hc.open) hcRenderOpen(0); else hcRenderClosed();
+      }
+      function hcSyncChrome() {
+        const model = hc.model;
+        const n = model ? model.pages.length : 0;
+        const empty = !n;
+        $("hcPrev").disabled = !hc.open || hc.spread <= 0;
+        $("hcNext").disabled = empty || (hc.open && model && hc.spread >= model.spreads - 1);
+        $("hcToggle").disabled = empty && !hc.open;
+        $("hcToggleLabel").setAttribute("data-i18n", hc.open ? "hcp.close" : "hcp.open");
+        $("hcToggleLabel").textContent = t(hc.open ? "hcp.close" : "hcp.open");
+        let counter;
+        if (empty) counter = t("hcp.empty");
+        else if (!hc.open) counter = t("hcp.closedCounter", { n });
+        else {
+          const pr = pivSpreadPages(model, hc.spread);
+          counter = pr.left && pr.right ? t("hcp.pages", { a: pr.left.n, b: pr.right.n, n }) : t("hcp.page", { a: (pr.left || pr.right).n, n });
+        }
+        $("hcCounter").textContent = counter;
+        const trim = model ? model.g.trim : trimSize();
+        $("hcFacts").textContent = t("hcp.facts", { trim: trim.label, binding: hcBindingLabel() });
+        const cs = hcChapterSpread(model);
+        $("hcToChapter").disabled = cs == null;
+        $("hcToChapter").textContent = cs == null ? t("hcp.notInPrint") : t("hcp.toChapter");
+      }
+      function hcRender() {
+        if (state.device !== "hardcover") return;
+        if (hc.open) hcRenderOpen(0); else hcRenderClosed();
+      }
+      /* Entering / leaving the device. The e-reader frame, its page
+         controls and the reading desk stand down while the hardcover
+         is on the desk; switching back restores them untouched. */
+      function hcOnDevice(d) {
+        const on = d === "hardcover";
+        $("pane-preview").classList.toggle("hc-mode", on);
+        $("hcStage").hidden = !on; $("hcBar").hidden = !on; $("hcMeta").hidden = !on;
+        hcSettle();
+        if (!on) { $("hcStage").innerHTML = ""; return; }
+        hc.open = false;
+        hcEnsureModel(false);
+        hcRenderClosed();
+        if (typeof icons === "function") icons();
+      }
+      /* renderPreview() runs whenever the book, the theme or the open
+         section changes; on the hardcover it re-paginates (only when
+         something the print layout reads changed) and, when the
+         writer picks another chapter, turns the open book to it. */
+      function hcOnPreview() {
+        if (state.device !== "hardcover") return;
+        clearTimeout(hc.refreshTimer);
+        hc.refreshTimer = setTimeout(hcRefreshNow, 260);
+      }
+      function hcRefreshNow() {
+        if (state.device !== "hardcover") return;
+        if (hc.anim) { hc.refreshTimer = setTimeout(hcRefreshNow, 200); return; }
+        hcEnsureModel(false);
+        if (hc.open && hc.lastActive !== state.activeId) {
+          hc.lastActive = state.activeId;
+          const cs = hcChapterSpread(hc.model);
+          if (cs != null) hc.spread = cs;
+        }
+        hcRender();
+      }
+      function hcKey(e) {
+        if (document.activeElement && document.activeElement.isContentEditable) return;
+        if (e.key === "ArrowRight") { e.preventDefault(); hcTurn(1); }
+        else if (e.key === "ArrowLeft") { e.preventDefault(); hcTurn(-1); }
+        else if ((e.key === "Enter" || e.key === " ") && document.activeElement === $("hcStage") && !hc.open) { e.preventDefault(); hcSetOpen(true); }
+        else if (e.key === "Escape" && hc.open) { hcSetOpen(false); }
+      }
+      function hcInit() {
+        $("hcPrev").addEventListener("click", () => hcTurn(-1));
+        $("hcNext").addEventListener("click", () => hcTurn(1));
+        $("hcToggle").addEventListener("click", () => hcSetOpen(!hc.open));
+        /* Full screen: the whole preview stage (book + controls), so a
+           spread can be read at size; hidden where the browser offers
+           no element fullscreen (https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen). */
+        const ps = $("previewStage");
+        if (!ps.requestFullscreen || document.fullscreenEnabled === false) $("hcFull").hidden = true;
+        $("hcFull").addEventListener("click", () => {
+          if (document.fullscreenElement) { if (document.exitFullscreen) document.exitFullscreen().catch(() => {}); return; }
+          ps.requestFullscreen().catch(() => toast(t("hcp.fullscreenFail"), "alert-triangle"));
+        });
+        document.addEventListener("fullscreenchange", () => {
+          if (state.device !== "hardcover") return;
+          requestAnimationFrame(() => requestAnimationFrame(() => { hcSettle(); hcRender(); }));
+        });
+        $("hcToChapter").addEventListener("click", () => {
+          const model = hcEnsureModel(false);
+          const cs = hcChapterSpread(model); if (cs == null) return;
+          hc.lastActive = state.activeId;
+          if (!hc.open) { hcSetOpen(true); return; }
+          hcGoToSpread(cs);
+        });
+        const stage = $("hcStage");
+        /* Swipe to turn; a tap on the open spread turns too — the
+           outer third of each page, like an e-reader. */
+        stage.addEventListener("pointerdown", (e) => { hc.swipeX = e.clientX; hc.swiped = false; });
+        /* A swipe that starts on a picture in the spread would otherwise
+           begin a native image drag, which cancels the pointer (no
+           pointerup ever arrives) — so the swipe silently did nothing.
+           Nothing on the stage is meant to be dragged out. */
+        stage.addEventListener("dragstart", (e) => e.preventDefault());
+        stage.addEventListener("pointercancel", () => { hc.swipeX = null; });
+        stage.addEventListener("pointerup", (e) => {
+          if (hc.swipeX == null) return;
+          const dx = e.clientX - hc.swipeX; hc.swipeX = null;
+          if (Math.abs(dx) > 40) { hc.swiped = true; hcTurn(dx < 0 ? 1 : -1); setTimeout(() => { hc.swiped = false; }, 0); }
+        });
+        stage.addEventListener("click", (e) => {
+          if (hc.swiped || !hc.open) return;
+          const pages = $("hcPages"); if (!pages) return;
+          const r = pages.getBoundingClientRect();
+          const x = (e.clientX - r.left) / Math.max(1, r.width);
+          if (x > 0.66) hcTurn(1); else if (x < 0.34) hcTurn(-1);
+        });
+        if (typeof ResizeObserver !== "undefined") {
+          let raf = 0;
+          new ResizeObserver(() => {
+            if (state.device !== "hardcover" || hc.anim) return;
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(hcRender);
+          }).observe($("frameZone"));
+        }
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (state.device === "hardcover") { hcEnsureModel(true); hcRender(); } });
+      }
+      /* ==== /BEUK:hcpreview ==== */
 
       /* ================= Import ================= */
       function splitIntoChapters(text, fallbackTitle) {
@@ -28092,7 +28730,7 @@
               applyBookDoc(keepDoc);
             }
           } },
-        { id: "preview.devices.expanded", feature: "preview", name: "Preview devices: Kindle Oasis, Kindle (basic), iPhone, Kobo Forma and a generic Android tablet join the original four profiles, each selectable with its own frame size and footer label; the original four are unchanged",
+        { id: "preview.devices.expanded", feature: "preview", name: "Preview devices: Kindle Oasis, Kindle (basic), iPhone, Kobo Forma and a generic Android tablet join the original four profiles, each selectable with its own frame size and footer label; the original four are unchanged; the Hardcover print device makes ten buttons",
           run() {
             const keepDevice = state.device;
             const frame = $("deviceFrame");
@@ -28101,7 +28739,7 @@
             try {
               const btns = Array.from(document.querySelectorAll("#deviceBar .dev-btn"));
               const ids = btns.map((b) => b.getAttribute("data-device"));
-              const allOk = btns.length === 9 && ["kindle", "ipad", "kobo", "phone", "oasis", "basic", "iphone", "forma", "android"].every((d) => ids.includes(d));
+              const allOk = btns.length === 10 && ["kindle", "ipad", "kobo", "phone", "oasis", "basic", "iphone", "forma", "android", "hardcover"].every((d) => ids.includes(d)); /* BEUK:hcpreview — nine e-readers + the Hardcover print device */
               const origOk = DEVICE_FOOTERS.kindle === "Kindle Paperwhite · 300 ppi" && DEVICE_FOOTERS.ipad === "Apple Books · iPad" &&
                 DEVICE_FOOTERS.kobo === "Kobo Clara · ComfortLight" && DEVICE_FOOTERS.phone === "Phone · OLED True Black";
               const expect = { oasis: ["384px", "Kindle Oasis · 300 ppi", "Kindle Oasis"], basic: ["322px", "Kindle · 300 ppi", "Kindle"], iphone: ["258px", "iPhone · Apple Books", "iPhone"], forma: ["388px", "Kobo Forma · ComfortLight", "Kobo Forma"], android: ["408px", "Android Tablet · 10.1 in", "Android Tablet"] };
@@ -28117,9 +28755,220 @@
               setDevice("kindle");
               const backOk = $("deviceFrame").className === "frame-kindle" && getComputedStyle($("deviceFrame")).maxWidth === "348px" && $("footDevice").textContent === "Kindle Paperwhite · 300 ppi";
               return scVerdict(allOk && origOk && newOk && backOk,
-                "nine profiles on the bar (" + allOk + "); the original four keep their names and footers (" + origOk + "); each new profile selects its own frame at its own size with its own footer (" + newOk + (bits.length ? " — mismatches: " + bits.join(", ") : "") + "); the Paperwhite still frames at 348px (" + backOk + ")");
+                "nine e-reader profiles plus the Hardcover device on the bar (" + allOk + "); the original four keep their names and footers (" + origOk + "); each new profile selects its own frame at its own size with its own footer (" + newOk + (bits.length ? " — mismatches: " + bits.join(", ") : "") + "); the Paperwhite still frames at 348px (" + backOk + ")");
             } finally { setDevice(keepDevice || "kindle"); frame.style.transition = keepTrans; }
           } },
+        /* ==== BEUK:hcpreview ==== */
+        { id: "preview.hardcover.device", feature: "preview", name: "Hardcover device: choosing it puts a closed hardback on the desk — the front board wears the book's own cover art, the spine carries the title — and stands the e-reader frame, page controls and reading desk down; choosing an e-reader again restores them",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            try {
+              applyBookDoc(buildSampleBook());
+              setDevice("hardcover");
+              const book = $("hcBook");
+              const img = book ? book.querySelector(".hc-front img") : null;
+              const artOk = !!img && !!state.cover && img.getAttribute("src") === "data:" + state.cover.mediaType + ";base64," + state.cover.data;
+              const spineEl = book ? book.querySelector(".hc-spine .hc-s-title") : null;
+              const spineOk = !!spineEl && spineEl.textContent === state.meta.title && !!state.meta.title;
+              const modeOk = $("pane-preview").classList.contains("hc-mode") && !$("hcStage").hidden && !$("hcBar").hidden &&
+                getComputedStyle($("deviceFrame")).display === "none" && getComputedStyle($("previewDesk")).display === "none";
+              const closedOk = !hc.open && $("hcCounter").textContent === t("hcp.closedCounter", { n: hc.model.pages.length });
+              setDevice("kindle");
+              const backOk = !$("pane-preview").classList.contains("hc-mode") && $("hcStage").hidden && $("hcBar").hidden &&
+                $("deviceFrame").className === "frame-kindle" && getComputedStyle($("deviceFrame")).display !== "none" && getComputedStyle($("deviceFrame")).maxWidth === "348px";
+              return scVerdict(artOk && spineOk && modeOk && closedOk && backOk,
+                "front board shows the book's cover image (" + artOk + "); the spine reads the title (" + spineOk + "); the e-reader frame and desk stand down (" + modeOk + "); the book starts closed with its printed page count (" + closedOk + "); Kindle Paperwhite comes back at 348px (" + backOk + ")");
+            } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.trim-proportions", feature: "preview", name: "Hardcover device proportions follow the print trim: the closed boards are the trim plus IngramSpark's 0.125 in square (head, tail, fore-edge), so 6 × 9 and 5 × 8 differ in shape, and a 5 × 8 sits smaller than a 6 × 9 on the same desk",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            try {
+              applyBookDoc(buildSampleBook());
+              const measure = (trimId) => {
+                state.printTrim = trimId;
+                setDevice("hardcover");
+                const b = $("hcBook");
+                return { w: parseFloat(b.style.width), h: parseFloat(b.style.height), trim: b.getAttribute("data-trim") };
+              };
+              const a = measure("6x9"), b = measure("5x8");
+              const sq = HC_SPEC.caseLam.boardHPlus / 2;
+              const ratio = (tw, th) => (tw + sq) / (th + 2 * sq);
+              const aOk = a.trim === "6x9" && Math.abs(a.w / a.h - ratio(6, 9)) < 0.005;
+              const bOk = b.trim === "5x8" && Math.abs(b.w / b.h - ratio(5, 8)) < 0.005;
+              const differOk = Math.abs(a.w / a.h - b.w / b.h) > 0.02 && b.w < a.w && b.h < a.h;
+              return scVerdict(sq === 0.125 && aOk && bOk && differOk,
+                "6 × 9 boards " + a.w.toFixed(1) + " × " + a.h.toFixed(1) + " px, ratio " + (a.w / a.h).toFixed(4) + " vs expected " + ratio(6, 9).toFixed(4) + " (" + aOk + "); 5 × 8 boards " + b.w.toFixed(1) + " × " + b.h.toFixed(1) + " px, ratio " + (b.w / b.h).toFixed(4) + " vs " + ratio(5, 8).toFixed(4) + " (" + bOk + "); the two differ and 5 × 8 is smaller (" + differOk + ")");
+            } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.spread-print", feature: "preview", name: "Hardcover device, open: every spread is the print pagination itself — each page's number, side, running head, folio and text equal the Print Interior View's page built from the same print model at the same trim; page 1 faces the front endpaper",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            const keepGuides = piv.guides;
+            try {
+              applyBookDoc(buildSampleBook());
+              state.printTrim = "6x9";
+              setDevice("hardcover");
+              hcSetOpen(true, true);
+              piv.guides = false;
+              const ref = buildPrintViewModel();
+              const P = ref.pages.length;
+              const checks = [0, 1, Math.floor(ref.spreads / 2), ref.spreads - 1];
+              const bad = [];
+              let compared = 0;
+              checks.forEach((sp) => {
+                hcGoToSpread(sp);
+                const pr = pivSpreadPages(ref, sp);
+                [["left", pr.left], ["right", pr.right]].forEach(([side, pg]) => {
+                  const box = $("hcPages").querySelector(".hc-side.hc-" + (side === "left" ? "l" : "r"));
+                  if (!pg) { if (!box || box.getAttribute("data-endpaper") !== "true") bad.push("spread " + sp + " " + side + " should be the endpaper"); return; }
+                  const want = pivPageEl(pg, side, ref);
+                  const got = box ? box.querySelector(".piv-page") : null;
+                  compared++;
+                  if (!got || got.getAttribute("data-page") !== String(pg.n) || !got.classList.contains("piv-" + side)) { bad.push("page " + pg.n + " missing or on the wrong side"); return; }
+                  const rh = (el) => { const x = el.querySelector(".piv-runhead"); return x ? x.textContent : null; };
+                  const fo = (el) => { const x = el.querySelector(".piv-folio"); return x ? x.textContent : null; };
+                  if (got.textContent !== want.textContent || rh(got) !== rh(want) || fo(got) !== fo(want)) bad.push("page " + pg.n + " differs from the print view");
+                });
+              });
+              const endOk = checks.indexOf(0) !== -1 && !bad.some((b) => b.indexOf("spread 0") === 0);
+              const counterOk = /\d/.test($("hcCounter").textContent);
+              return scVerdict(P > 10 && compared >= 6 && !bad.length && endOk && counterOk,
+                compared + " pages across spreads " + checks.join(", ") + " of " + ref.spreads + " (" + P + " printed pages) compared with the print view's own pages" + (bad.length ? " — mismatches: " + bad.join("; ") : ", all equal") + "; page 1 faces the endpaper (" + endOk + ")");
+            } finally { piv.guides = keepGuides; hc.open = false; setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.turn-jump", feature: "preview", name: "Hardcover device, turning and jumping: Next / Prev and the ← → keys step one spread and stop at the ends; opening the book lands on the spread holding the chapter open in the editor, and choosing another chapter turns the open book to it",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            try {
+              applyBookDoc(buildSampleBook());
+              state.printTrim = "6x9";
+              const bodies = state.sections.filter((s) => s.kind === "body" && s.included);
+              if (bodies.length < 2) return scVerdict(false, "the sample needs two chapters");
+              state.activeId = bodies[0].id;
+              setDevice("hardcover");
+              hcSetOpen(true, true);
+              const first = hc.model.pages.find((p) => p.section && p.section.id === bodies[0].id);
+              const openOk = hc.open && !!first && hc.spread === Math.floor(first.n / 2);
+              const s0 = hc.spread;
+              hcTurn(1, true); const nextOk = hc.spread === s0 + 1;
+              hcTurn(-1, true); const prevOk = hc.spread === s0;
+              hcKey({ key: "ArrowRight", preventDefault() {} }); hcSettle(); const keyOk = hc.spread === s0 + 1;
+              hcKey({ key: "ArrowLeft", preventDefault() {} }); hcSettle();
+              hcGoToSpread(0); hcTurn(-1, true); const lowOk = hc.spread === 0 && $("hcPrev").disabled;
+              hcGoToSpread(hc.model.spreads - 1); hcTurn(1, true); const highOk = hc.spread === hc.model.spreads - 1 && $("hcNext").disabled;
+              state.activeId = bodies[1].id;
+              hcRefreshNow();
+              const second = hc.model.pages.find((p) => p.section && p.section.id === bodies[1].id);
+              const jumpOk = !!second && hc.spread === Math.floor(second.n / 2);
+              return scVerdict(openOk && nextOk && prevOk && keyOk && lowOk && highOk && jumpOk,
+                "opens on the first chapter's spread " + s0 + " (" + openOk + "); next / prev (" + nextOk + "/" + prevOk + "); arrow key (" + keyOk + "); stops at the first and last spreads (" + lowOk + "/" + highOk + "); picking chapter two turns to spread " + hc.spread + " (" + jumpOk + ")");
+            } finally { hc.open = false; setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.binding-look", feature: "preview", name: "Hardcover device materials follow the cover maker's binding: dust jacket wears a glossy jacket with a flap edge, case laminate a printed board, and a book with no cover art a cloth board stamped with its title and author",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            try {
+              applyBookDoc(buildSampleBook());
+              const look = (binding) => {
+                const r = state.coverRecipe ? state.coverRecipe : defaultCoverRecipe();
+                r.wrap = Object.assign(normalizeWrap(r.wrap), { binding });
+                state.coverRecipe = normalizeCoverRecipe(r);
+                setDevice("hardcover");
+                const b = $("hcBook");
+                return { look: b.getAttribute("data-look"), flap: !!b.querySelector(".hc-flap"), img: !!b.querySelector(".hc-front img"), facts: $("hcFacts").textContent };
+              };
+              const j = look("jacket"), c = look("case");
+              const jOk = j.look === "jacket" && j.flap && j.img && j.facts.indexOf(t("hcp.bindJacket")) !== -1;
+              const cOk = c.look === "case" && !c.flap && c.img && c.facts.indexOf(t("hcp.bindCase")) !== -1;
+              state.cover = null;
+              setDevice("hardcover");
+              const b = $("hcBook");
+              const typo = b.querySelector(".hc-typo");
+              const clothOk = b.getAttribute("data-look") === "cloth" && !b.querySelector(".hc-front img") && !!typo &&
+                typo.textContent.indexOf(state.meta.title) !== -1 && (!state.meta.author || typo.textContent.indexOf(state.meta.author) !== -1) && $("hcFacts").textContent.indexOf(t("hcp.bindCloth")) !== -1;
+              return scVerdict(jOk && cOk && clothOk, "dust jacket (" + jOk + "); case laminate (" + cOk + "); no cover art → cloth with the stamped title (" + clothOk + ")");
+            } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.page-block", feature: "preview", name: "Hardcover device, closed: it is a case, not a slab — a cream page block sits between the two boards, recessed by the 0.125 in square at head, tail and fore-edge, and the head of the block faces the viewer on screen (projected winding, the rule backface culling uses) and clears the front board's edge, not just present in the DOM",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            try {
+              applyBookDoc(buildSampleBook());
+              state.printTrim = "6x9";
+              setDevice("hardcover");
+              const b = $("hcBook");
+              const q = (sel) => b.querySelector(sel);
+              const px = (el, k) => parseFloat(el.style[k]);
+              const sq = HC_SPEC.caseLam.boardHPlus / 2;
+              const BW = px(b, "width"), BH = px(b, "height");
+              const ppi = BW / (6 + sq);
+              const sqPx = sq * ppi;
+              const head = q(".hc-top"), tail = q(".hc-tail"), fore = q(".hc-fore");
+              const edges = ["front", "back"].every((w) => ["eh", "et", "ef"].every((e) => !!q(".hc-" + e + "-" + w)));
+              const facesOk = !!(head && tail && fore && edges && q(".hc-inner"));
+              if (!facesOk) return scVerdict(false, "missing faces: head " + !!head + ", tail " + !!tail + ", fore-edge " + !!fore + ", six board edges " + edges);
+              const bt = px(q(".hc-eh-front"), "height");
+              /* The block is the trim: the case is trim + square on
+                 three sides, so the block is the board less the square
+                 (fore-edge) less the hinge board, and the height less
+                 two squares. */
+              const blockW = px(head, "width"), blockH = px(fore, "height");
+              const geomOk = Math.abs(blockW - (BW - sqPx - bt)) < 0.5 && Math.abs(blockH - (BH - 2 * sqPx)) < 0.5 &&
+                Math.abs(parseFloat(head.getAttribute("data-square-px")) - sqPx) < 0.01 && sqPx > 2;
+              /* Is the head actually painted toward the eye? A face with
+                 backface-visibility: hidden is drawn only while its front
+                 side faces the viewer (CSS Transforms 2,
+                 https://www.w3.org/TR/css-transforms-2/#backface-visibility-property),
+                 i.e. while its projected corners keep their on-screen
+                 winding. Project three corners of each face with 0 × 0
+                 probes and test the winding — the same test that culled
+                 the head of the old head-away tilt. Then the cream must
+                 really clear the front board: the back edge of the
+                 block's head must project above the front board's top
+                 edge (the front part of the block is honestly hidden
+                 behind the front board's square). Hit-testing is not
+                 used: Chromium returned the front board for the ~2 px
+                 sliver, so it cannot discriminate here. */
+              const stage = $("hcStage").getBoundingClientRect();
+              if (!stage.width || !stage.height) return scVerdict(false, "not measurable: the preview pane is not laid out (stage " + Math.round(stage.width) + " × " + Math.round(stage.height) + ")");
+              const prev = b.style.transition; b.style.transition = "none";
+              const at = (el, xPct, yPct) => {
+                const p = document.createElement("i");
+                p.style.cssText = "position:absolute;left:" + xPct + "%;top:" + yPct + "%;width:0;height:0;pointer-events:none";
+                el.appendChild(p);
+                const r = p.getBoundingClientRect();
+                p.remove();
+                return { x: r.left, y: r.top };
+              };
+              const winding = (el) => { const p0 = at(el, 0, 0), p1 = at(el, 100, 0), p2 = at(el, 0, 100); return (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x); };
+              const wHead = winding(head), wFrontEdge = winding(q(".hc-eh-front")), wBackEdge = winding(q(".hc-eh-back")), wFront = winding(q(".hc-front"));
+              const f0 = at(q(".hc-front"), 0, 0), f1 = at(q(".hc-front"), 100, 0), hb = at(head, 50, 0);
+              /* Signed distance of the block's back-edge midpoint from the
+                 front board's top edge; positive = above it, on screen. */
+              const clear = ((f1.x - f0.x) * (hb.y - f0.y) - (f1.y - f0.y) * (hb.x - f0.x)) / -Math.hypot(f1.x - f0.x, f1.y - f0.y);
+              b.style.transition = prev;
+              const faceOk = wFront > 0 && wHead > 0 && wFrontEdge > 0 && wBackEdge > 0;
+              const clearOk = clear >= 1;
+              return scVerdict(geomOk && faceOk && clearOk,
+                "6 × 9 board " + BW.toFixed(1) + " × " + BH.toFixed(1) + " px holds a block " + blockW.toFixed(1) + " × " + blockH.toFixed(1) + " px, square " + sqPx.toFixed(2) + " px = 0.125 in (" + geomOk + "); faces toward the eye — front board, head of block, front and back board head edges (" + faceOk + "); the cream head clears the front board by " + clear.toFixed(2) + " px on screen (" + clearOk + ")");
+            } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.i18n", feature: "preview", name: "Hardcover device strings ship in all 13 interface languages",
+          run() {
+            const keys = Object.keys(UI_STRINGS.en).filter((k) => k.indexOf("hcp.") === 0);
+            const packs = Object.keys(UI_STRINGS);
+            const missing = [];
+            packs.forEach((p) => keys.forEach((k) => { if (typeof UI_STRINGS[p][k] !== "string" || !UI_STRINGS[p][k]) missing.push(p + ":" + k); }));
+            return scVerdict(keys.length >= 21 && packs.length === 13 && !missing.length, keys.length + " keys × " + packs.length + " packs" + (missing.length ? " — missing " + missing.join(", ") : ", none missing"));
+          } },
+        /* ==== /BEUK:hcpreview ==== */
         { id: "preview.desk.totals", feature: "preview", name: "Reading desk totals: the whole-book page count on a device equals the sum of the per-section counts from the same preview layout engine, on two different profiles; switching profiles updates both numbers",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -34446,6 +35295,7 @@
         initStudio();
         syncStudioControls();
         initPreview();
+        hcInit(); /* BEUK:hcpreview */
         initImport();
         initImportReport();
         initSettings();
