@@ -183,9 +183,22 @@
       .local-pill[data-state="saving"] .local-dot { background: var(--gold); }
       .local-pill[data-state="blocked"], .local-pill[data-state="quota"], .local-pill[data-state="error"] { border-color: var(--bad); color: var(--bad); }
       .local-pill[data-state="blocked"] .local-dot, .local-pill[data-state="quota"] .local-dot, .local-pill[data-state="error"] .local-dot { background: var(--bad); }
-      .local-pill .local-sub { color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
-      .local-pill .local-short { display: none; }
-      .local-pill-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
+      /* BEUK:sidebar — the pill is a compact status: dot + a short label.
+         The full sentence lives in the popover (one click), the
+         button's tooltip and its accessible name; the live region
+         announces the full sentence through a visually-hidden copy. */
+      .local-wrap { max-width: min(200px, 34vw); }
+      .local-wrap.is-failed { max-width: min(260px, 40vw); } /* "Not saved" + its Export a backup offer, both readable */
+      .local-pill[data-state="blocked"] .local-short, .local-pill[data-state="quota"] .local-short, .local-pill[data-state="error"] .local-short { flex: 0 0 auto; }
+      .local-pill { box-sizing: border-box; }
+      .local-pill .local-full { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+      .local-pill .local-short { display: inline; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+      .local-pill .local-warn { display: none; flex: 0 0 auto; font-weight: 700; font-size: 11px; line-height: 1; }
+      .local-pill[data-state="saved"][data-evictable] .local-warn,
+      .local-pill[data-state="blocked"] .local-warn, .local-pill[data-state="quota"] .local-warn, .local-pill[data-state="error"] .local-warn { display: inline; }
+      .local-pill[data-state="saved"][data-evictable] { border-color: var(--gold); }
+      .local-pill[data-state="saved"][data-evictable] .local-warn { color: var(--gold); }
+      .local-pill-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
       .local-backup-inline { border: 1px solid var(--bad); background: var(--panel); color: var(--bad); border-radius: 999px; padding: 2px 9px; font-size: 11.5px; font-weight: 600; flex: 0 0 auto; }
       .local-pop {
         position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: 320px; max-width: calc(100vw - 32px);
@@ -196,10 +209,13 @@
       .local-pop h3 { margin: 0 0 6px; font-size: 13.5px; }
       .local-pop p { margin: 0 0 12px; color: var(--ink-2); }
       .local-pop .local-pop-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-      @media (max-width: 1180px) { .local-pill .local-sub { display: none; } }
-      @media (max-width: 980px) {
-        .local-pill .local-full { display: none; }
-        .local-pill .local-short { display: inline; }
+      /* Phones: the dot (and the ! of a warning) is the status; the
+         label folds away so the header never overlaps — one tap opens
+         the popover with the whole sentence. */
+      @media (max-width: 560px) {
+        .local-wrap { flex: 0 0 auto; }
+        .local-pill { padding: 6px 9px; }
+        .local-pill .local-short { display: none; }
       }
       /* ==== /BEUK:local ==== */
       /* "A new Beuk is ready": a slim, calm bar under the header,
@@ -1569,7 +1585,7 @@
         #btnUiLang { padding: 8px 10px; }
       }
       @media (max-width: 560px) {
-        #btnHelp, #btnSupport, #btnImportTop, #btnSettings { display: none; }
+        #btnHelp, #btnSupport { display: none; }
       }
 
       /* ---------- Cover maker ---------- */
@@ -1771,7 +1787,7 @@
         <!-- ==== BEUK:local ==== -->
         <div class="local-wrap">
           <span class="local-pill" id="localPill" data-state="checking" role="status" aria-live="polite">
-            <button class="local-pill-btn" id="localPillBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="localPop" aria-label="Saving on this device — details" data-i18n-aria="local.aria"><span class="local-dot" aria-hidden="true"></span><span class="local-full" id="localPillText">Checking this device…</span><span class="local-short" id="localPillShort">Checking…</span><span class="local-sub" id="localPillSub" hidden></span></button>
+            <button class="local-pill-btn" id="localPillBtn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="localPop" aria-label="Checking this device… — Saving on this device — details"><span class="local-dot" aria-hidden="true"></span><span class="local-warn" aria-hidden="true">!</span><span class="local-short" id="localPillShort" aria-hidden="true">Checking…</span><span class="local-full" id="localPillText">Checking this device…</span></button>
             <button class="local-backup-inline" id="btnLocalBackupInline" type="button" hidden data-i18n="local.backup">Export a backup</button>
           </span>
           <div class="local-pop" id="localPop" role="dialog" aria-labelledby="localPopTitle" hidden>
@@ -1793,8 +1809,6 @@
         <button class="tb-btn" id="btnTheme" aria-label="Toggle Paper / Candlelight theme" data-i18n-aria="top.themeAria"><span id="themeIcon" style="display:inline-flex;"><i data-lucide="flame"></i></span><span class="tb-label" id="themeLabel">Candlelight</span></button>
         <button class="tb-btn" id="btnHelp" aria-label="Open the help reading room" data-i18n-aria="top.helpAria"><i data-lucide="life-buoy"></i><span class="tb-label lbl-collapse" data-i18n="top.help">Help</span></button>
         <button class="tb-btn" id="btnSupport" aria-label="Support — write to a human" data-i18n-aria="top.supportAria"><i data-lucide="coffee"></i><span class="tb-label lbl-collapse" data-i18n="top.support">Support</span></button>
-        <button class="tb-btn" id="btnImportTop" aria-label="Import document"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg><span class="tb-label lbl-collapse" data-i18n="top.import">Import</span></button>
-        <button class="tb-btn" id="btnSettings" aria-label="Project settings"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg><span class="tb-label lbl-collapse" data-i18n="top.settings">Project Settings</span></button>
         <button class="tb-btn primary" id="btnExport" aria-label="Export book"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><span class="tb-label" data-i18n="top.export">Export</span></button>
       </header>
 
@@ -3188,7 +3202,7 @@
       const UI_LANG_NAMES = { "en": "English", "es": "Español", "fr": "Français", "de": "Deutsch", "it": "Italiano", "pt": "Português", "nl": "Nederlands", "pl": "Polski", "ru": "Русский", "tr": "Türkçe", "ar": "العربية", "ja": "日本語", "zh-Hans": "简体中文" };
       const UI_STRINGS = {
       "en": {
-        "top.signIn": "Sign in", "top.signInTitle": "Sign in to your shelf", "top.import": "Import", "top.settings": "Project Settings", "top.export": "Export",
+        "top.signIn": "Sign in", "top.signInTitle": "Sign in to your shelf", "top.export": "Export",
         "top.themeToCandle": "Candlelight", "top.themeToPaper": "Paper", "top.accountAria": "Account and your shelf", "top.themeAria": "Toggle Paper / Candlelight theme",
         "tabs.structure": "Structure", "tabs.write": "Write", "tabs.style": "Style", "tabs.preview": "Preview",
         "side.import": "Import Document", "side.settings": "Project Settings",
@@ -3555,7 +3569,7 @@
         window.BEUK_THEME = { key: THEME_KEY, get: getTheme, set: setTheme, apply: applyTheme, resolveStored: resolveStoredTheme, resolve: resolveTheme, defaultTheme: defaultTheme, init: initTheme };
       }
       UI_STRINGS["es"] = {
-        "top.signIn": "Iniciar sesión", "top.signInTitle": "Inicia sesión en tu estantería", "top.import": "Importar", "top.settings": "Ajustes del proyecto", "top.export": "Exportar",
+        "top.signIn": "Iniciar sesión", "top.signInTitle": "Inicia sesión en tu estantería", "top.export": "Exportar",
         "top.themeToCandle": "Luz de vela", "top.themeToPaper": "Papel", "top.accountAria": "Cuenta y tu estantería", "top.themeAria": "Cambiar entre tema Papel y Luz de vela",
         "tabs.structure": "Estructura", "tabs.write": "Escribir", "tabs.style": "Estilo", "tabs.preview": "Vista previa",
         "side.import": "Importar documento", "side.settings": "Ajustes del proyecto",
@@ -3751,7 +3765,7 @@
         "ra.empty": "Esta sección aún no tiene texto para leer."
       };
       UI_STRINGS["fr"] = {
-        "top.signIn": "Se connecter", "top.signInTitle": "Connectez-vous à votre étagère", "top.import": "Importer", "top.settings": "Réglages du projet", "top.export": "Exporter",
+        "top.signIn": "Se connecter", "top.signInTitle": "Connectez-vous à votre étagère", "top.export": "Exporter",
         "top.themeToCandle": "Chandelle", "top.themeToPaper": "Papier", "top.accountAria": "Compte et votre étagère", "top.themeAria": "Basculer entre les thèmes Papier et Chandelle",
         "tabs.structure": "Structure", "tabs.write": "Écrire", "tabs.style": "Style", "tabs.preview": "Aperçu",
         "side.import": "Importer un document", "side.settings": "Réglages du projet",
@@ -3947,7 +3961,7 @@
         "ra.empty": "Cette section n’a pas encore de texte à lire."
       };
       UI_STRINGS["de"] = {
-        "top.signIn": "Anmelden", "top.signInTitle": "Bei Ihrem Regal anmelden", "top.import": "Importieren", "top.settings": "Projekteinstellungen", "top.export": "Exportieren",
+        "top.signIn": "Anmelden", "top.signInTitle": "Bei Ihrem Regal anmelden", "top.export": "Exportieren",
         "top.themeToCandle": "Kerzenlicht", "top.themeToPaper": "Papier", "top.accountAria": "Konto und Ihr Regal", "top.themeAria": "Zwischen Papier- und Kerzenlicht-Thema wechseln",
         "tabs.structure": "Struktur", "tabs.write": "Schreiben", "tabs.style": "Stil", "tabs.preview": "Vorschau",
         "side.import": "Dokument importieren", "side.settings": "Projekteinstellungen",
@@ -4143,7 +4157,7 @@
         "ra.empty": "Dieser Abschnitt hat noch keinen Text zum Vorlesen."
       };
       UI_STRINGS["it"] = {
-        "top.signIn": "Accedi", "top.signInTitle": "Accedi alla tua libreria", "top.import": "Importa", "top.settings": "Impostazioni del progetto", "top.export": "Esporta",
+        "top.signIn": "Accedi", "top.signInTitle": "Accedi alla tua libreria", "top.export": "Esporta",
         "top.themeToCandle": "Lume di candela", "top.themeToPaper": "Carta", "top.accountAria": "Account e la tua libreria", "top.themeAria": "Passa dal tema Carta a Lume di candela",
         "tabs.structure": "Struttura", "tabs.write": "Scrivi", "tabs.style": "Stile", "tabs.preview": "Anteprima",
         "side.import": "Importa documento", "side.settings": "Impostazioni del progetto",
@@ -4339,7 +4353,7 @@
         "ra.empty": "Questa sezione non ha ancora testo da leggere."
       };
       UI_STRINGS["pt"] = {
-        "top.signIn": "Entrar", "top.signInTitle": "Entre na sua estante", "top.import": "Importar", "top.settings": "Definições do projeto", "top.export": "Exportar",
+        "top.signIn": "Entrar", "top.signInTitle": "Entre na sua estante", "top.export": "Exportar",
         "top.themeToCandle": "Luz de vela", "top.themeToPaper": "Papel", "top.accountAria": "Conta e a sua estante", "top.themeAria": "Alternar entre os temas Papel e Luz de vela",
         "tabs.structure": "Estrutura", "tabs.write": "Escrever", "tabs.style": "Estilo", "tabs.preview": "Pré-visualização",
         "side.import": "Importar documento", "side.settings": "Definições do projeto",
@@ -4535,7 +4549,7 @@
         "ra.empty": "Esta secção ainda não tem texto para ler."
       };
       UI_STRINGS["nl"] = {
-        "top.signIn": "Inloggen", "top.signInTitle": "Log in op uw boekenplank", "top.import": "Importeren", "top.settings": "Projectinstellingen", "top.export": "Exporteren",
+        "top.signIn": "Inloggen", "top.signInTitle": "Log in op uw boekenplank", "top.export": "Exporteren",
         "top.themeToCandle": "Kaarslicht", "top.themeToPaper": "Papier", "top.accountAria": "Account en uw boekenplank", "top.themeAria": "Wissel tussen de thema's Papier en Kaarslicht",
         "tabs.structure": "Structuur", "tabs.write": "Schrijven", "tabs.style": "Stijl", "tabs.preview": "Voorbeeld",
         "side.import": "Document importeren", "side.settings": "Projectinstellingen",
@@ -4731,7 +4745,7 @@
         "ra.empty": "Deze sectie heeft nog geen tekst om voor te lezen."
       };
       UI_STRINGS["pl"] = {
-        "top.signIn": "Zaloguj się", "top.signInTitle": "Zaloguj się do swojej półki", "top.import": "Importuj", "top.settings": "Ustawienia projektu", "top.export": "Eksportuj",
+        "top.signIn": "Zaloguj się", "top.signInTitle": "Zaloguj się do swojej półki", "top.export": "Eksportuj",
         "top.themeToCandle": "Blask świec", "top.themeToPaper": "Papier", "top.accountAria": "Konto i twoja półka", "top.themeAria": "Przełącz motyw Papier / Blask świec",
         "tabs.structure": "Struktura", "tabs.write": "Pisz", "tabs.style": "Styl", "tabs.preview": "Podgląd",
         "side.import": "Importuj dokument", "side.settings": "Ustawienia projektu",
@@ -4927,7 +4941,7 @@
         "ra.empty": "Ta sekcja nie ma jeszcze tekstu do przeczytania."
       };
       UI_STRINGS["ru"] = {
-        "top.signIn": "Войти", "top.signInTitle": "Войти на свою полку", "top.import": "Импорт", "top.settings": "Настройки проекта", "top.export": "Экспорт",
+        "top.signIn": "Войти", "top.signInTitle": "Войти на свою полку", "top.export": "Экспорт",
         "top.themeToCandle": "При свечах", "top.themeToPaper": "Бумага", "top.accountAria": "Аккаунт и ваша полка", "top.themeAria": "Переключить тему «Бумага» / «При свечах»",
         "tabs.structure": "Структура", "tabs.write": "Писать", "tabs.style": "Стиль", "tabs.preview": "Предпросмотр",
         "side.import": "Импортировать документ", "side.settings": "Настройки проекта",
@@ -5123,7 +5137,7 @@
         "ra.empty": "В этом разделе пока нет текста для чтения."
       };
       UI_STRINGS["tr"] = {
-        "top.signIn": "Giriş yap", "top.signInTitle": "Rafınıza giriş yapın", "top.import": "İçe aktar", "top.settings": "Proje ayarları", "top.export": "Dışa aktar",
+        "top.signIn": "Giriş yap", "top.signInTitle": "Rafınıza giriş yapın", "top.export": "Dışa aktar",
         "top.themeToCandle": "Mum ışığı", "top.themeToPaper": "Kâğıt", "top.accountAria": "Hesap ve rafınız", "top.themeAria": "Kâğıt / Mum ışığı temasını değiştir",
         "tabs.structure": "Yapı", "tabs.write": "Yaz", "tabs.style": "Stil", "tabs.preview": "Önizleme",
         "side.import": "Belge içe aktar", "side.settings": "Proje ayarları",
@@ -5319,7 +5333,7 @@
         "ra.empty": "Bu bölümde henüz okunacak metin yok."
       };
       UI_STRINGS["ar"] = {
-        "top.signIn": "تسجيل الدخول", "top.signInTitle": "سجّل الدخول إلى رفّك", "top.import": "استيراد", "top.settings": "إعدادات المشروع", "top.export": "تصدير",
+        "top.signIn": "تسجيل الدخول", "top.signInTitle": "سجّل الدخول إلى رفّك", "top.export": "تصدير",
         "top.themeToCandle": "ضوء الشموع", "top.themeToPaper": "الورق", "top.accountAria": "الحساب ورفّك", "top.themeAria": "التبديل بين مظهري الورق وضوء الشموع",
         "tabs.structure": "البنية", "tabs.write": "كتابة", "tabs.style": "الأسلوب", "tabs.preview": "معاينة",
         "side.import": "استيراد مستند", "side.settings": "إعدادات المشروع",
@@ -5515,7 +5529,7 @@
         "ra.empty": "لا يوجد نص في هذا القسم لقراءته بعد."
       };
       UI_STRINGS["ja"] = {
-        "top.signIn": "サインイン", "top.signInTitle": "本棚にサインイン", "top.import": "読み込む", "top.settings": "プロジェクト設定", "top.export": "書き出す",
+        "top.signIn": "サインイン", "top.signInTitle": "本棚にサインイン", "top.export": "書き出す",
         "top.themeToCandle": "キャンドルライト", "top.themeToPaper": "ペーパー", "top.accountAria": "アカウントとあなたの本棚", "top.themeAria": "ペーパー／キャンドルライトのテーマを切り替え",
         "tabs.structure": "構成", "tabs.write": "書く", "tabs.style": "スタイル", "tabs.preview": "プレビュー",
         "side.import": "文書を読み込む", "side.settings": "プロジェクト設定",
@@ -5711,7 +5725,7 @@
         "ra.empty": "このセクションにはまだ読み上げるテキストがありません。"
       };
       UI_STRINGS["zh-Hans"] = {
-        "top.signIn": "登录", "top.signInTitle": "登录到你的书架", "top.import": "导入", "top.settings": "项目设置", "top.export": "导出",
+        "top.signIn": "登录", "top.signInTitle": "登录到你的书架", "top.export": "导出",
         "top.themeToCandle": "烛光", "top.themeToPaper": "纸面", "top.accountAria": "账户与你的书架", "top.themeAria": "切换纸面／烛光主题",
         "tabs.structure": "结构", "tabs.write": "写作", "tabs.style": "样式", "tabs.preview": "预览",
         "side.import": "导入文档", "side.settings": "项目设置",
@@ -9402,7 +9416,7 @@
         "local.checking": "Checking this device…", "local.checkingShort": "Checking…",
         "local.saving": "Saving…",
         "local.saved": "Saved on this device ✓", "local.savedShort": "Saved ✓",
-        "local.evictable": "· the browser may clear it if space runs short",
+        "local.savedRiskShort": "Saved · back up",
         "local.blocked": "Not saved — this browser is blocking storage",
         "local.quota": "Not saved — this device's storage is full",
         "local.error": "Not saved — the browser refused to store the book ({name})",
@@ -9429,7 +9443,7 @@
         "local.checking": "Comprobando este dispositivo…", "local.checkingShort": "Comprobando…",
         "local.saving": "Guardando…",
         "local.saved": "Guardado en este dispositivo ✓", "local.savedShort": "Guardado ✓",
-        "local.evictable": "· el navegador podría borrarlo si falta espacio",
+        "local.savedRiskShort": "Guardado · haz copia",
         "local.blocked": "Sin guardar — este navegador está bloqueando el almacenamiento",
         "local.quota": "Sin guardar — el almacenamiento de este dispositivo está lleno",
         "local.error": "Sin guardar — el navegador se negó a guardar el libro ({name})",
@@ -9456,7 +9470,7 @@
         "local.checking": "Vérification de cet appareil…", "local.checkingShort": "Vérification…",
         "local.saving": "Enregistrement…",
         "local.saved": "Enregistré sur cet appareil ✓", "local.savedShort": "Enregistré ✓",
-        "local.evictable": "· le navigateur peut l'effacer si l'espace manque",
+        "local.savedRiskShort": "Enregistré · sauvegardez",
         "local.blocked": "Non enregistré — ce navigateur bloque le stockage",
         "local.quota": "Non enregistré — le stockage de cet appareil est plein",
         "local.error": "Non enregistré — le navigateur a refusé de stocker le livre ({name})",
@@ -9483,7 +9497,7 @@
         "local.checking": "Dieses Gerät wird geprüft…", "local.checkingShort": "Prüfe…",
         "local.saving": "Wird gespeichert…",
         "local.saved": "Auf diesem Gerät gespeichert ✓", "local.savedShort": "Gespeichert ✓",
-        "local.evictable": "· der Browser kann es bei Platzmangel löschen",
+        "local.savedRiskShort": "Gespeichert · sichern",
         "local.blocked": "Nicht gespeichert — dieser Browser blockiert den Speicher",
         "local.quota": "Nicht gespeichert — der Speicher dieses Geräts ist voll",
         "local.error": "Nicht gespeichert — der Browser hat das Speichern des Buchs verweigert ({name})",
@@ -9510,7 +9524,7 @@
         "local.checking": "Controllo di questo dispositivo…", "local.checkingShort": "Controllo…",
         "local.saving": "Salvataggio…",
         "local.saved": "Salvato su questo dispositivo ✓", "local.savedShort": "Salvato ✓",
-        "local.evictable": "· il browser potrebbe cancellarlo se manca spazio",
+        "local.savedRiskShort": "Salvato · fai un backup",
         "local.blocked": "Non salvato — questo browser sta bloccando l'archiviazione",
         "local.quota": "Non salvato — lo spazio di questo dispositivo è pieno",
         "local.error": "Non salvato — il browser si è rifiutato di archiviare il libro ({name})",
@@ -9537,7 +9551,7 @@
         "local.checking": "A verificar este dispositivo…", "local.checkingShort": "A verificar…",
         "local.saving": "A guardar…",
         "local.saved": "Guardado neste dispositivo ✓", "local.savedShort": "Guardado ✓",
-        "local.evictable": "· o navegador pode apagá-lo se faltar espaço",
+        "local.savedRiskShort": "Guardado · faça cópia",
         "local.blocked": "Não guardado — este navegador está a bloquear o armazenamento",
         "local.quota": "Não guardado — o armazenamento deste dispositivo está cheio",
         "local.error": "Não guardado — o navegador recusou-se a guardar o livro ({name})",
@@ -9564,7 +9578,7 @@
         "local.checking": "Dit apparaat wordt gecontroleerd…", "local.checkingShort": "Controleren…",
         "local.saving": "Opslaan…",
         "local.saved": "Opgeslagen op dit apparaat ✓", "local.savedShort": "Opgeslagen ✓",
-        "local.evictable": "· de browser kan het wissen bij ruimtegebrek",
+        "local.savedRiskShort": "Opgeslagen · maak back-up",
         "local.blocked": "Niet opgeslagen — deze browser blokkeert opslag",
         "local.quota": "Niet opgeslagen — de opslag van dit apparaat is vol",
         "local.error": "Niet opgeslagen — de browser weigerde het boek op te slaan ({name})",
@@ -9591,7 +9605,7 @@
         "local.checking": "Sprawdzanie tego urządzenia…", "local.checkingShort": "Sprawdzanie…",
         "local.saving": "Zapisywanie…",
         "local.saved": "Zapisano na tym urządzeniu ✓", "local.savedShort": "Zapisano ✓",
-        "local.evictable": "· przeglądarka może to usunąć, gdy zabraknie miejsca",
+        "local.savedRiskShort": "Zapisano · zrób kopię",
         "local.blocked": "Nie zapisano — ta przeglądarka blokuje pamięć",
         "local.quota": "Nie zapisano — pamięć tego urządzenia jest pełna",
         "local.error": "Nie zapisano — przeglądarka odmówiła zapisania książki ({name})",
@@ -9618,7 +9632,7 @@
         "local.checking": "Проверка этого устройства…", "local.checkingShort": "Проверка…",
         "local.saving": "Сохранение…",
         "local.saved": "Сохранено на этом устройстве ✓", "local.savedShort": "Сохранено ✓",
-        "local.evictable": "· браузер может удалить это при нехватке места",
+        "local.savedRiskShort": "Сохранено · сделайте копию",
         "local.blocked": "Не сохранено — этот браузер блокирует хранилище",
         "local.quota": "Не сохранено — хранилище этого устройства заполнено",
         "local.error": "Не сохранено — браузер отказался сохранить книгу ({name})",
@@ -9645,7 +9659,7 @@
         "local.checking": "Bu cihaz denetleniyor…", "local.checkingShort": "Denetleniyor…",
         "local.saving": "Kaydediliyor…",
         "local.saved": "Bu cihazda kayıtlı ✓", "local.savedShort": "Kayıtlı ✓",
-        "local.evictable": "· yer azalırsa tarayıcı bunu silebilir",
+        "local.savedRiskShort": "Kayıtlı · yedek alın",
         "local.blocked": "Kaydedilmedi — bu tarayıcı depolamayı engelliyor",
         "local.quota": "Kaydedilmedi — bu cihazın depolama alanı dolu",
         "local.error": "Kaydedilmedi — tarayıcı kitabı saklamayı reddetti ({name})",
@@ -9672,7 +9686,7 @@
         "local.checking": "جارٍ فحص هذا الجهاز…", "local.checkingShort": "جارٍ الفحص…",
         "local.saving": "جارٍ الحفظ…",
         "local.saved": "محفوظ على هذا الجهاز ✓", "local.savedShort": "محفوظ ✓",
-        "local.evictable": "· قد يمسحه المتصفح إذا ضاقت المساحة",
+        "local.savedRiskShort": "محفوظ · خذ نسخة احتياطية",
         "local.blocked": "لم يُحفظ — هذا المتصفح يحجب التخزين",
         "local.quota": "لم يُحفظ — مساحة التخزين على هذا الجهاز ممتلئة",
         "local.error": "لم يُحفظ — رفض المتصفح تخزين الكتاب ({name})",
@@ -9699,7 +9713,7 @@
         "local.checking": "このデバイスを確認中…", "local.checkingShort": "確認中…",
         "local.saving": "保存中…",
         "local.saved": "このデバイスに保存済み ✓", "local.savedShort": "保存済み ✓",
-        "local.evictable": "· 容量が不足するとブラウザが消去する場合があります",
+        "local.savedRiskShort": "保存済み · バックアップを",
         "local.blocked": "未保存 — このブラウザがストレージをブロックしています",
         "local.quota": "未保存 — このデバイスのストレージがいっぱいです",
         "local.error": "未保存 — ブラウザが本の保存を拒否しました（{name}）",
@@ -9726,7 +9740,7 @@
         "local.checking": "正在检查这台设备…", "local.checkingShort": "检查中…",
         "local.saving": "正在保存…",
         "local.saved": "已保存在这台设备上 ✓", "local.savedShort": "已保存 ✓",
-        "local.evictable": "· 空间不足时浏览器可能会清除它",
+        "local.savedRiskShort": "已保存 · 请备份",
         "local.blocked": "未保存 — 此浏览器正在阻止存储",
         "local.quota": "未保存 — 这台设备的存储空间已满",
         "local.error": "未保存 — 浏览器拒绝存储这本书（{name}）",
@@ -19581,7 +19595,6 @@
         const input = $("fileInput");
         const open = () => input.click();
         $("btnImport").addEventListener("click", open);
-        $("btnImportTop").addEventListener("click", open);
         input.addEventListener("change", () => {
           if (input.files && input.files[0]) handleImportFile(input.files[0]);
           input.value = "";
@@ -20496,7 +20509,6 @@
         $("modalSettings").classList.add("open");
       }
       function initSettings() {
-        $("btnSettings").addEventListener("click", openSettings);
         $("btnSettings2").addEventListener("click", openSettings);
         $("btnCloseSettings").addEventListener("click", () => $("modalSettings").classList.remove("open"));
         $("modalSettings").addEventListener("click", (e) => { if (e.target === $("modalSettings")) $("modalSettings").classList.remove("open"); });
@@ -34452,7 +34464,7 @@
         switch (local.status) {
           case "checking": return { full: t("local.checking"), short: t("local.checkingShort") };
           case "saving": return { full: t("local.saving"), short: t("local.saving") };
-          case "saved": return { full: t("local.saved"), short: t("local.savedShort") };
+          case "saved": return { full: t("local.saved"), short: (local.persisted === false || local.persisted === "unsupported") ? t("local.savedRiskShort") : t("local.savedShort") }; /* BEUK:sidebar — storage the browser may clear reads differently from lasting storage */
           case "blocked": return { full: t("local.blocked"), short: t("local.notSavedShort") };
           case "quota": return { full: t("local.quota"), short: t("local.notSavedShort") };
           default: return { full: t("local.error", { name: local.errorName || "Error" }), short: t("local.notSavedShort") };
@@ -34475,16 +34487,15 @@
         const txt = localStatusText();
         pill.setAttribute("data-state", local.status);
         pill.toggleAttribute("data-evictable", local.status === "saved" && (local.persisted === false || local.persisted === "unsupported"));
-        const full = $("localPillText"), short = $("localPillShort"), sub = $("localPillSub");
+        const full = $("localPillText"), short = $("localPillShort");
         if (full) full.textContent = txt.full;
         if (short) short.textContent = txt.short;
-        if (sub) {
-          const ev = local.status === "saved" && local.persisted === false;
-          sub.hidden = !ev;
-          sub.textContent = ev ? t("local.evictable") : "";
-        }
-        pill.setAttribute("title", localDetailText());
+        /* BEUK:sidebar — the pill shows only the short label; the whole
+           sentence and its explanation ride the tooltip and the name. */
+        pill.setAttribute("title", txt.full + " — " + localDetailText());
+        const pbtn = $("localPillBtn"); if (pbtn) pbtn.setAttribute("aria-label", txt.full + " — " + t("local.aria"));
         const bk = $("btnLocalBackupInline"); if (bk) bk.hidden = !localFailed();
+        if (pill.parentElement) pill.parentElement.classList.toggle("is-failed", localFailed()); /* BEUK:sidebar */
         const pop = $("localPop");
         if (pop && !pop.hidden) renderLocalPop();
       }
