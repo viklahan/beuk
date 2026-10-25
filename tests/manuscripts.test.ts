@@ -184,3 +184,36 @@ test('optimistic concurrency: a PUT without a revision is refused (428) with the
   const missing = await alice.put('/api/manuscripts/00000000-0000-0000-0000-000000000000', { doc: sampleDoc, revision: 1 });
   assert.equal(missing.status, 404);
 });
+
+// BEUK:bookid — the server keys manuscripts (and shares) by manuscript id
+// only; the book's own meta.bookId / meta.legacyBookIds ride inside the
+// opaque doc. A copy saved by an un-migrated device (pre-UUID id) and the
+// same book saved after migration (UUIDv5 id + legacy id kept) must both
+// store and come back byte-for-byte, under the same manuscript row.
+test('a pre-UUID book id and its migrated form both round-trip untouched on the same manuscript', async () => {
+  const legacyDoc = { meta: { title: 'Old Id Book', bookId: 'urn:uuid:sk3j9x2a-s8f7d6e5' }, sections: [] };
+  const migratedDoc = {
+    meta: {
+      title: 'Old Id Book',
+      bookId: 'urn:uuid:4e75b77b-c0ca-5014-81c8-cb44bc7600fd',
+      legacyBookIds: ['urn:uuid:sk3j9x2a-s8f7d6e5'],
+    },
+    sections: [],
+  };
+  const created = await alice.post('/api/manuscripts', { doc: legacyDoc });
+  assert.equal(created.status, 201);
+  const id = (created.body.manuscript as { id: string }).id;
+  assert.deepEqual((created.body.manuscript as { doc: unknown }).doc, legacyDoc);
+
+  const migrated = await alice.put(`/api/manuscripts/${id}`, { doc: migratedDoc, revision: 1 });
+  assert.equal(migrated.status, 200);
+  const fetched = await alice.get(`/api/manuscripts/${id}`);
+  assert.deepEqual((fetched.body.manuscript as { doc: unknown }).doc, migratedDoc);
+
+  // An un-migrated device writing the old id back is accepted too (no
+  // server-side rewrite either way); the client's matching tolerates both.
+  const back = await alice.put(`/api/manuscripts/${id}`, { doc: legacyDoc, revision: 2 });
+  assert.equal(back.status, 200);
+  const again = await alice.get(`/api/manuscripts/${id}`);
+  assert.deepEqual((again.body.manuscript as { doc: unknown }).doc, legacyDoc);
+});
