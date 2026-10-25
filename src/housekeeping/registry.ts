@@ -1592,6 +1592,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The binding lives in the client cover recipe and the look is drawn by the client.',
   },
   {
+    id: 'preview.hardcover.page-block',
+    title: 'Hardcover device, closed: a cream page block recessed between the boards by the 0.125 in square, its head facing the viewer on screen and clearing the front board',
+    kind: 'client-only',
+    reason: 'The closed book is CSS 3D in the client; the check measures the projected faces in the studio browser.',
+  },
+  {
     id: 'preview.hardcover.i18n',
     title: 'Hardcover device strings ship in all 13 interface languages',
     kind: 'client-only',

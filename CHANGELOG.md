@@ -10,9 +10,13 @@ to make well.
   book, not just the e-reader: the preview bar has a Hardcover device. A
   small hardback sits on the desk wearing your cover (dust-jacket gloss,
   case-laminate print, or a cloth board stamped with the title when there
-  is no cover art yet), its size following your print trim. Tap it and it
+  is no cover art yet), its size following your print trim. Look over its
+  head and you see the cream page block sitting just inside the boards,
+  the way a real case overhangs its pages. Tap it and it
   opens to real spreads from the print layout — the same pages the Print
-  Interior View shows, with running heads, folios and endpapers. Turn
+  Interior View shows, with running heads, folios and endpapers. (The
+  exported PDF does not yet paginate exactly like the Print Interior
+  View; that gap predates this feature.) Turn
   pages with the buttons, arrow keys or a swipe; it opens on the chapter
   you are editing, and there is a full-screen button for reading a spread
   at size. The new words in 12 languages have not yet been checked by

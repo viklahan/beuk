@@ -16,7 +16,7 @@ const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'),
 test('hcpreview: every client preview.hardcover.* self-check is registered server-side as client-only with a reason', async () => {
   const html = await clientHtml();
   const clientIds = [...html.matchAll(/id: "(preview\.hardcover\.[a-z0-9.-]+)"/g)].map((m) => m[1]);
-  assert.ok(clientIds.length >= 6, `expected the hardcover-device self-checks in the client, found ${clientIds.length}`);
+  assert.ok(clientIds.length >= 7, `expected the hardcover-device self-checks in the client, found ${clientIds.length}`);
   const serverIds = SELF_CHECK_CASES.filter((c) => c.id.startsWith('preview.hardcover.')).map((c) => c.id);
   assert.deepEqual([...serverIds].sort(), [...new Set(clientIds)].sort());
   for (const c of SELF_CHECK_CASES.filter((x) => x.id.startsWith('preview.hardcover.'))) {
@@ -48,5 +48,18 @@ test('hcpreview: the open book is built from the print view engine and every hcp
   for (const k of keys) {
     const n = html.split(`"${k}":`).length - 1;
     assert.equal(n, 13, `${k} appears in ${n} locale packs, expected 13`);
+  }
+});
+
+test('hcpreview: the closed case tips its head toward the viewer and builds the recessed page block on three sides', async () => {
+  const html = await clientHtml();
+  // A positive rotateX turns the head away and back-face culls it (the
+  // reviewer's finding); the resting and hover tilts must both be negative.
+  const rest = /\.hc-book \{[^}]*transform: rotateX\((-?\d+)deg\) rotateY\(\d+deg\)/.exec(html);
+  const hover = /\.hc-book:hover, \.hc-stage:focus-visible \.hc-book \{ transform: rotateX\((-?\d+)deg\)/.exec(html);
+  assert.ok(rest && hover, 'closed-book tilts present');
+  assert.ok(Number(rest[1]) < 0 && Number(hover[1]) < 0, `tilts ${rest[1]} / ${hover[1]} must tip the head toward the eye`);
+  for (const face of ['"hc-top"', '"hc-tail"', '"hc-fore"', '"hc-inner"', '"hc-eh-"', '"hc-et-"', '"hc-ef-"']) {
+    assert.ok(html.includes(face), `closed book builds ${face}`);
   }
 });

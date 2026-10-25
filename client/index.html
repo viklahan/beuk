@@ -935,9 +935,13 @@
       .hc-stage { position: relative; width: 100%; height: 100%; min-height: 220px; display: flex; align-items: center; justify-content: center; outline: none; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
       .hc-stage[hidden] { display: none; }
       .hc-stage:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); border-radius: 12px; }
-      .hc-scene { perspective: 1500px; perspective-origin: 50% -30%; display: flex; align-items: center; justify-content: center; }
-      .hc-book { position: relative; transform-style: preserve-3d; transform: rotateX(10deg) rotateY(30deg); transition: transform .55s cubic-bezier(.3,.7,.3,1); cursor: pointer; }
-      .hc-book:hover, .hc-stage:focus-visible .hc-book { transform: rotateX(8deg) rotateY(19deg); }
+      .hc-scene { perspective: 1500px; perspective-origin: 50% -60%; display: flex; align-items: center; justify-content: center; }
+      /* Negative rotateX tips the head TOWARD the viewer (CSS y points
+         down), so the head of the case — both board edges and the
+         recessed cream page block between them — faces the eye. A
+         positive tilt turned the head away and back-face culled it. */
+      .hc-book { position: relative; transform-style: preserve-3d; transform: rotateX(-26deg) rotateY(28deg); transition: transform .55s cubic-bezier(.3,.7,.3,1); cursor: pointer; }
+      .hc-book:hover, .hc-stage:focus-visible .hc-book { transform: rotateX(-18deg) rotateY(18deg); }
       .hc-face { position: absolute; left: 0; top: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
       .hc-front { overflow: hidden; border-radius: 1px 3px 3px 1px; transform-origin: left center; transition: transform .5s cubic-bezier(.45,.05,.4,1); }
       .hc-front img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -955,12 +959,17 @@
       .hc-spine-text { writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 88%; letter-spacing: .08em; }
       .hc-spine-text .hc-s-author { opacity: .8; margin-top: 1.2em; font-size: .86em; }
       .hc-back { filter: brightness(.9); }
-      .hc-edge, .hc-top { overflow: hidden; }
-      .hc-edge .hc-leaves, .hc-top .hc-leaves { position: absolute; background-color: #f3ead8; background-image: repeating-linear-gradient(90deg, rgba(120,100,70,.16) 0 1px, rgba(0,0,0,0) 1px 2px); }
-      .hc-top .hc-leaves { background-image: repeating-linear-gradient(0deg, rgba(120,100,70,.16) 0 1px, rgba(0,0,0,0) 1px 2px); }
+      .hc-block { overflow: hidden; }
+      .hc-block .hc-leaves { position: absolute; inset: 0; background-color: #f3ead8; }
+      /* Leaf lines run along the page: front-to-back across the head
+         and tail, top-to-bottom down the fore-edge. */
+      .hc-block .hc-leaves-h { background-image: linear-gradient(to bottom, rgba(90,70,40,.20), rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(90,70,40,.16)), repeating-linear-gradient(0deg, rgba(120,100,70,.18) 0 1px, rgba(0,0,0,0) 1px 2px); }
+      .hc-block .hc-leaves-v { background-image: repeating-linear-gradient(90deg, rgba(120,100,70,.18) 0 1px, rgba(0,0,0,0) 1px 2px); }
+      .hc-inner { background-color: #e9dcc0; }
+      .hc-edgeb { filter: brightness(.86); }
       .hc-shadow { position: absolute; left: 4%; right: -6%; bottom: -16px; height: 24px; border-radius: 50%; background: radial-gradient(closest-side, rgba(20,14,6,.42), rgba(20,14,6,0)); filter: blur(4px); pointer-events: none; }
       :root[data-theme="candlelight"] .hc-shadow { background: radial-gradient(closest-side, rgba(0,0,0,.8), rgba(0,0,0,0)); }
-      .hc-book.hc-opening { transform: rotateX(4deg) rotateY(4deg); }
+      .hc-book.hc-opening { transform: rotateX(-4deg) rotateY(4deg); }
       .hc-book.hc-opening .hc-front { transform: var(--hc-front-z) rotateY(-150deg) !important; }
       /* Open: the real print pages, set as a spread inside the case. */
       .hc-openbox { position: relative; }
@@ -17711,21 +17720,29 @@
          printed book. Closed, it is a CSS 3D object: the front board
          wears the cover art (or, with no art yet, a cloth board with a
          stamped title), the spine carries the title and author, the
-         head shows the page block between the boards. Open, it is the
+         head shows the cream page block recessed between the two
+         board edges by the square (the head tips toward the eye; the
+         tail and fore-edge faces exist too). Open, it is the
          book's REAL print layout: every page is built by the Print
          Interior View's own engine — buildPrintViewModel() paginates
          the book at the print trim with the print stylesheet
          (printTypeCss is the very ruleset buildPrintHtml ships) and
          pivPageEl() lays each page out with its running head and
-         folio — so a spread here is the same typesetting as the
-         print file, not the reflowable e-reader render.
+         folio — so a spread here is the Print Interior View's
+         pagination, not the reflowable e-reader render. CAUTION, found
+         while proving this: the PDF made from buildPrintHtml() does
+         not paginate the same as the Print Interior View today, so
+         this is the print view's typesetting, not yet proven to be the
+         PDF's.
          Proportions: the boards are the trim plus the square — the
          overhang past the page block. IngramSpark's File Creation
          Guide sizes a case-laminate board as trim height + 0.25 in
          (https://www.ingramspark.com/hubfs/downloads/file-creation-guide.pdf,
          p.41, the HC_SPEC.caseLam.boardHPlus constant above), i.e.
-         0.125 in at head and tail; the drawing uses that same 0.125 in
-         at the fore-edge. Board thickness and the page-stack edges
+         0.125 in at head and tail. The same guide sizes the board
+         WIDTH as trim width − 0.185 in (the board stops at the hinge),
+         so the 0.125 in fore-edge square here is a drawing choice,
+         not an IngramSpark number. Board thickness and the page-stack edges
          are drawing only, not a print specification. Spine depth is
          the cover maker's own spine number (template or estimate,
          wrapDims) or, with no wrap yet, pages × the white-paper
@@ -17870,13 +17887,47 @@
         if (state.meta.author) { const sa = document.createElement("span"); sa.className = "hc-s-author"; sa.textContent = "  ·  " + state.meta.author; st.appendChild(sa); }
         spine.appendChild(st);
         book.appendChild(spine);
-        const top = hcFace("hc-top", BW, D, "translateY(" + (-D / 2) + "px) rotateX(90deg)");
-        top.style.background = look === "cloth" ? "#2b3a55" : toneCss;
-        const leaves = document.createElement("div");
-        leaves.className = "hc-leaves";
-        leaves.style.left = "1px"; leaves.style.right = (sq * ppi) + "px"; leaves.style.top = bt + "px"; leaves.style.bottom = bt + "px";
-        top.appendChild(leaves);
-        book.appendChild(top);
+        /* The case is bigger than the page block it holds: the boards
+           overhang the leaves by the square at head, tail and fore-edge,
+           so the cream page block sits recessed between two board edges.
+           Every face is built (head, tail and fore-edge of both boards
+           and of the block) so the object is solid at any angle; the
+           3/4 view below shows front, spine and head. */
+        const sqPx = sq * ppi, boardCss = look === "cloth" ? "" : toneCss;
+        const edgeFace = (cls, w, h, transform) => {
+          const f = hcFace("hc-edgeb " + cls, w, h, transform);
+          if (look === "cloth") f.classList.add("hc-cloth"); else f.style.background = hcRgb(tone, 0.78);
+          book.appendChild(f);
+          return f;
+        };
+        /* Inside of the back board (the endpaper), seen over the head of
+           the recessed page block. */
+        const inner = hcFace("hc-inner", BW, BH, "translateZ(" + (-D / 2 + bt) + "px)");
+        book.appendChild(inner);
+        /* Board edges: front and back board, head / fore-edge / tail. */
+        [D / 2 - bt / 2, -D / 2 + bt / 2].forEach((z, i) => {
+          const tag = i ? "back" : "front";
+          edgeFace("hc-eh-" + tag, BW, bt, "translateY(" + (-bt / 2) + "px) translateZ(" + z + "px) rotateX(90deg)");
+          edgeFace("hc-et-" + tag, BW, bt, "translateY(" + (BH - bt / 2) + "px) translateZ(" + z + "px) rotateX(-90deg)");
+          edgeFace("hc-ef-" + tag, bt, BH, "translateX(" + (BW - bt / 2) + "px) translateZ(" + z + "px) rotateY(90deg)");
+        });
+        /* Head of the spine (the case's hollow back). */
+        edgeFace("hc-eh-spine", bt, D, "translateY(" + (-D / 2) + "px) rotateX(90deg)");
+        /* The page block: trim-sized, between the boards, recessed by the square. */
+        const PW = BW - sqPx - bt, PD = Math.max(1, D - 2 * bt), PH = BH - 2 * sqPx;
+        const blockFace = (cls, w, h, transform, grain) => {
+          const f = hcFace("hc-block " + cls, w, h, transform);
+          const lv = document.createElement("div");
+          lv.className = "hc-leaves" + (grain ? " hc-leaves-" + grain : "");
+          f.appendChild(lv);
+          book.appendChild(f);
+          return f;
+        };
+        const top = blockFace("hc-top", PW, PD, "translateX(" + bt + "px) translateY(" + (sqPx - PD / 2) + "px) rotateX(90deg)", "h");
+        top.setAttribute("data-square-px", sqPx.toFixed(2));
+        blockFace("hc-tail", PW, PD, "translateX(" + bt + "px) translateY(" + (BH - sqPx - PD / 2) + "px) rotateX(-90deg)", "h");
+        blockFace("hc-fore", PD, PH, "translateX(" + (BW - sqPx - PD / 2) + "px) translateY(" + sqPx + "px) rotateY(90deg)", "v");
+        if (boardCss) inner.style.boxShadow = "inset 0 0 0 " + Math.max(1, bt * 0.6) + "px " + boardCss;
         const front = hcFace("hc-front", BW, BH, "translateZ(" + (D / 2) + "px)");
         if (look === "cloth") {
           front.classList.add("hc-cloth");
@@ -18150,6 +18201,12 @@
         /* Swipe to turn; a tap on the open spread turns too — the
            outer third of each page, like an e-reader. */
         stage.addEventListener("pointerdown", (e) => { hc.swipeX = e.clientX; hc.swiped = false; });
+        /* A swipe that starts on a picture in the spread would otherwise
+           begin a native image drag, which cancels the pointer (no
+           pointerup ever arrives) — so the swipe silently did nothing.
+           Nothing on the stage is meant to be dragged out. */
+        stage.addEventListener("dragstart", (e) => e.preventDefault());
+        stage.addEventListener("pointercancel", () => { hc.swipeX = null; });
         stage.addEventListener("pointerup", (e) => {
           if (hc.swipeX == null) return;
           const dx = e.clientX - hc.swipeX; hc.swipeX = null;
@@ -28175,6 +28232,71 @@
               const clothOk = b.getAttribute("data-look") === "cloth" && !b.querySelector(".hc-front img") && !!typo &&
                 typo.textContent.indexOf(state.meta.title) !== -1 && (!state.meta.author || typo.textContent.indexOf(state.meta.author) !== -1) && $("hcFacts").textContent.indexOf(t("hcp.bindCloth")) !== -1;
               return scVerdict(jOk && cOk && clothOk, "dust jacket (" + jOk + "); case laminate (" + cOk + "); no cover art → cloth with the stamped title (" + clothOk + ")");
+            } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
+          } },
+        { id: "preview.hardcover.page-block", feature: "preview", name: "Hardcover device, closed: it is a case, not a slab — a cream page block sits between the two boards, recessed by the 0.125 in square at head, tail and fore-edge, and the head of the block faces the viewer on screen (projected winding, the rule backface culling uses) and clears the front board's edge, not just present in the DOM",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device;
+            try {
+              applyBookDoc(buildSampleBook());
+              state.printTrim = "6x9";
+              setDevice("hardcover");
+              const b = $("hcBook");
+              const q = (sel) => b.querySelector(sel);
+              const px = (el, k) => parseFloat(el.style[k]);
+              const sq = HC_SPEC.caseLam.boardHPlus / 2;
+              const BW = px(b, "width"), BH = px(b, "height");
+              const ppi = BW / (6 + sq);
+              const sqPx = sq * ppi;
+              const head = q(".hc-top"), tail = q(".hc-tail"), fore = q(".hc-fore");
+              const edges = ["front", "back"].every((w) => ["eh", "et", "ef"].every((e) => !!q(".hc-" + e + "-" + w)));
+              const facesOk = !!(head && tail && fore && edges && q(".hc-inner"));
+              if (!facesOk) return scVerdict(false, "missing faces: head " + !!head + ", tail " + !!tail + ", fore-edge " + !!fore + ", six board edges " + edges);
+              const bt = px(q(".hc-eh-front"), "height");
+              /* The block is the trim: the case is trim + square on
+                 three sides, so the block is the board less the square
+                 (fore-edge) less the hinge board, and the height less
+                 two squares. */
+              const blockW = px(head, "width"), blockH = px(fore, "height");
+              const geomOk = Math.abs(blockW - (BW - sqPx - bt)) < 0.5 && Math.abs(blockH - (BH - 2 * sqPx)) < 0.5 &&
+                Math.abs(parseFloat(head.getAttribute("data-square-px")) - sqPx) < 0.01 && sqPx > 2;
+              /* Is the head actually painted toward the eye? A face with
+                 backface-visibility: hidden is drawn only while its front
+                 side faces the viewer (CSS Transforms 2,
+                 https://www.w3.org/TR/css-transforms-2/#backface-visibility-property),
+                 i.e. while its projected corners keep their on-screen
+                 winding. Project three corners of each face with 0 × 0
+                 probes and test the winding — the same test that culled
+                 the head of the old head-away tilt. Then the cream must
+                 really clear the front board: the back edge of the
+                 block's head must project above the front board's top
+                 edge (the front part of the block is honestly hidden
+                 behind the front board's square). Hit-testing is not
+                 used: Chromium returned the front board for the ~2 px
+                 sliver, so it cannot discriminate here. */
+              const stage = $("hcStage").getBoundingClientRect();
+              if (!stage.width || !stage.height) return scVerdict(false, "not measurable: the preview pane is not laid out (stage " + Math.round(stage.width) + " × " + Math.round(stage.height) + ")");
+              const prev = b.style.transition; b.style.transition = "none";
+              const at = (el, xPct, yPct) => {
+                const p = document.createElement("i");
+                p.style.cssText = "position:absolute;left:" + xPct + "%;top:" + yPct + "%;width:0;height:0;pointer-events:none";
+                el.appendChild(p);
+                const r = p.getBoundingClientRect();
+                p.remove();
+                return { x: r.left, y: r.top };
+              };
+              const winding = (el) => { const p0 = at(el, 0, 0), p1 = at(el, 100, 0), p2 = at(el, 0, 100); return (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x); };
+              const wHead = winding(head), wFrontEdge = winding(q(".hc-eh-front")), wBackEdge = winding(q(".hc-eh-back")), wFront = winding(q(".hc-front"));
+              const f0 = at(q(".hc-front"), 0, 0), f1 = at(q(".hc-front"), 100, 0), hb = at(head, 50, 0);
+              /* Signed distance of the block's back-edge midpoint from the
+                 front board's top edge; positive = above it, on screen. */
+              const clear = ((f1.x - f0.x) * (hb.y - f0.y) - (f1.y - f0.y) * (hb.x - f0.x)) / -Math.hypot(f1.x - f0.x, f1.y - f0.y);
+              b.style.transition = prev;
+              const faceOk = wFront > 0 && wHead > 0 && wFrontEdge > 0 && wBackEdge > 0;
+              const clearOk = clear >= 1;
+              return scVerdict(geomOk && faceOk && clearOk,
+                "6 × 9 board " + BW.toFixed(1) + " × " + BH.toFixed(1) + " px holds a block " + blockW.toFixed(1) + " × " + blockH.toFixed(1) + " px, square " + sqPx.toFixed(2) + " px = 0.125 in (" + geomOk + "); faces toward the eye — front board, head of block, front and back board head edges (" + faceOk + "); the cream head clears the front board by " + clear.toFixed(2) + " px on screen (" + clearOk + ")");
             } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
           } },
         { id: "preview.hardcover.i18n", feature: "preview", name: "Hardcover device strings ship in all 13 interface languages",
