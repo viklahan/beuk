@@ -1301,6 +1301,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The image picker and placement are client editor interactions.',
   },
   {
+    id: 'editor.toolbar.layout',
+    title: 'Editor toolbar layout: whole groups per row, rows filled, no edge dividers, no holes',
+    kind: 'client-only',
+    reason: 'Toolbar layout is measured from the rendered client DOM at the browser width; the server renders no editor.',
+  },
+  {
     id: 'editor.wordbar.live-counts',
     title: 'Word bar on the Content page: section and book counts, live',
     kind: 'client-only',
