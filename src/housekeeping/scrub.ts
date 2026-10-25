@@ -53,6 +53,10 @@ export function scrubValue<T>(value: T, secrets: readonly string[]): T {
   if (!secrets.length) return value;
   if (typeof value === 'string') return scrubText(value, secrets) as T;
   if (Array.isArray(value)) return value.map((v) => scrubValue(v, secrets)) as T;
+  // A Date has no own keys, so the object walk below would turn it into {}
+  // (pg returns timestamptz columns as Dates). Keep it as the ISO string
+  // JSON would have given it.
+  if (value instanceof Date) return (Number.isNaN(value.getTime()) ? null : value.toISOString()) as T;
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
     for (const [key, v] of Object.entries(value)) {
