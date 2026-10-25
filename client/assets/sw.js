@@ -21,7 +21,7 @@
      shell so the studio opens on the local book with no network.
    - Everything else (the shell's assets, the CDN libraries, the
      fonts) is cache-first, filled from the network on first use. */
-const BEUK_CACHE = "beuk-shell-v2";
+const BEUK_CACHE = "beuk-shell-v3";
 const BEUK_SHELL = [
   "../",
   "../index.html",

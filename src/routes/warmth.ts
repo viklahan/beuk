@@ -19,6 +19,7 @@ import { renderMarkdown } from '../warmth/markdown.js';
  *   GET /help/ + /help/<guide>   the static reading-room pages from
  *                                client/help/, slots filled per request
  *   GET /help/warmth.css         the shared Paper stylesheet (static)
+ *   GET /help/billing-gate.js    hides the Ko-fi jar once billing is live
  *   GET /thanks                  the post-export landing (client/thanks/)
  *   GET /support                 the "buy the maker a coffee" page
  *                                (client/support/) — served ONLY when
@@ -50,6 +51,17 @@ export function warmthRoutes(config: Config): Router {
     try {
       const css = await readFile(path.join(clientDir(), 'help', 'warmth.css'), 'utf8');
       return res.type('css').send(css);
+    } catch (err) {
+      return next(err as Error);
+    }
+  });
+
+  // The Ko-fi gate (client/help/billing-gate.js) — included only on
+  // pages that carry a tip jar; see billingGateHtml in warmth/pages.ts.
+  router.get('/help/billing-gate.js', async (_req, res, next) => {
+    try {
+      const js = await readFile(path.join(clientDir(), 'help', 'billing-gate.js'), 'utf8');
+      return res.type('application/javascript').send(js);
     } catch (err) {
       return next(err as Error);
     }

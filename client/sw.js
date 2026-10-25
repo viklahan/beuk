@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v2";
+const BEUK_CACHE = "beuk-shell-v3";
 const BEUK_SHELL = [
   "./",
   "./index.html",

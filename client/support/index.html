@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Support Beuk — buy the maker a coffee</title>
+    <!--BEUK_BILLING_GATE-->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
@@ -334,7 +335,7 @@
   <body>
     <header class="site-head">
       <a class="wordmark" href="/help/">beuk</a>
-      <span class="subbrand">quietshelf.studio</span>
+      <span class="subbrand">beuk.studio</span>
       <nav class="site-nav">
         <a href="/">Studio</a>
         <a href="/help/">Help</a>
@@ -391,7 +392,7 @@
         <figcaption class="plate-caption"><b>Plate I.</b> The night desk, where books get finished.</figcaption>
       </figure>
 
-      <section class="ask" aria-labelledby="ask-headline">
+      <section class="ask" aria-labelledby="ask-headline" data-kofi>
         <p class="headline" id="ask-headline">The candle's burning low tonight.</p>
         <p>
           Beuk is made and kept by one independent maker, not a company
@@ -411,10 +412,10 @@
         </p>
       </section>
 
-      <hr />
+      <hr data-kofi />
 
-      <h2>Where a coffee goes</h2>
-      <ul class="goes">
+      <h2 data-kofi>Where a coffee goes</h2>
+      <ul class="goes" data-kofi>
         <li>
           <div class="mark" aria-hidden="true">❦</div>
           <h3>The shelf</h3>
@@ -440,7 +441,7 @@
       </ul>
     </main>
     <footer class="site-foot">
-      <p class="foot-note">Beuk — a typesetting studio for writers, from Quiet Shelf.</p>
+      <p class="foot-note">Beuk — a typesetting studio for writers, at beuk.studio.</p>
     </footer>
     <script>
       (function () {
