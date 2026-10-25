@@ -481,6 +481,21 @@ export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPat
     '-dSAFER',
     ...(icc ? [`--permit-file-read=${icc}`] : []),
     '-dPDFX',
+    // Chromium writes the book's links (TOC entries, URLs) as Link
+    // annotations. PDF/X forbids annotations other than TrapNet /
+    // PrinterMark, and on meeting one Ghostscript 10.00.0 prints
+    // "Annotation (not TrapNet or PrinterMark) on page, not permitted in
+    // PDF/X, reverting to normal PDF output" — while PDFX_def.ps still
+    // stamps the PDF/X keys, i.e. a file that CLAIMS PDF/X-1a but is not
+    // (observed 2026-10-24 on the bundled sample). Links have no place in
+    // a printed interior, so they are dropped: -dShowAnnots=false makes
+    // the PDF interpreter skip the page Annots, -dPreserveAnnots=false
+    // stops pdfwrite carrying any across. Without these flags the same
+    // run printed the revert message; with them it did not.
+    // https://ghostscript.readthedocs.io/en/latest/Use.html (-dShowAnnots)
+    // https://ghostscript.readthedocs.io/en/latest/VectorDevices.html (-dPreserveAnnots)
+    '-dShowAnnots=false',
+    '-dPreserveAnnots=false',
     '-dBATCH',
     '-dNOPAUSE',
     '-dNOOUTERSAVE',
@@ -492,6 +507,21 @@ export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPat
     config.pdfxDefPath,
     inputPath,
   ];
+}
+
+/** Ghostscript's "reverting to normal PDF output" notice (it means the
+ *  output is NOT PDF/X), joined onto one line, or null when absent. */
+export function pdfxRevertMessage(output: string): string | null {
+  // Ghostscript 10.00.0 wraps the notice over two lines:
+  //   GPL Ghostscript 10.00.0: Annotation (not TrapNet or PrinterMark) on page,
+  //    not permitted in PDF/X, reverting to normal PDF output
+  // so the line before is kept when it is that "GPL Ghostscript …:" start.
+  const lines = output.split(/\r?\n/);
+  const i = lines.findIndex((l) => /reverting to normal PDF output/i.test(l));
+  if (i === -1) return null;
+  const parts = [lines[i]];
+  if (i > 0 && !/Ghostscript [0-9.]+:/.test(lines[i]) && /Ghostscript [0-9.]+:/.test(lines[i - 1])) parts.unshift(lines[i - 1]);
+  return parts.map((p) => p.trim()).join(' ').slice(0, 300);
 }
 
 export async function runPdfx(
@@ -507,12 +537,14 @@ export async function runPdfx(
   const run = await runCommand(
     config.gsBin!,
     ghostscriptPdfxArgs(config, inputPath, outputPath),
-    config.jobTimeoutMs,
+    config.pdfxTimeoutMs,
   );
   if (run.timedOut) {
     return {
       ok: false,
-      error: `Ghostscript did not finish within ${config.jobTimeoutMs} ms and was stopped.`,
+      error:
+        `Ghostscript did not finish within ${config.pdfxTimeoutMs} ms (PDFX_TIMEOUT_MS) and was stopped. ` +
+        'Pages with any transparency are flattened to images, which is slow on picture-heavy books.',
     };
   }
   if (run.spawnError) {
@@ -529,6 +561,20 @@ export async function runPdfx(
       error:
         `Ghostscript exited with code ${run.code} and produced no converted file.` +
         stderrTail(run.stderr),
+    };
+  }
+  // Ghostscript gives up on PDF/X for things it cannot make conformant
+  // (it says "... not permitted in PDF/X, reverting to normal PDF
+  // output") yet still exits 0 — and the definition file has already
+  // stamped the PDF/X keys. Such a file would CLAIM PDF/X falsely, so
+  // the job fails with Ghostscript's own words instead.
+  const said = `${run.stdout}\n${run.stderr}`;
+  const revert = pdfxRevertMessage(said);
+  if (revert) {
+    return {
+      ok: false,
+      error:
+        `Ghostscript could not keep this file PDF/X and wrote a plain PDF instead, so no PDF/X file exists. Ghostscript said: ${revert}`,
     };
   }
   const produced = await readFile(outputPath).catch(() => null);

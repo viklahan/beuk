@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { after, before, test } from 'node:test';
@@ -39,6 +39,7 @@ let bobEpubId: string;
 
 let fakeJava: string;
 let fakeGs: string;
+let fakeToolsDir: string;
 let pdfxDef: string;
 let stubRenderer: http.Server;
 let rendererUrl: string;
@@ -163,6 +164,7 @@ exit 0
   writeFileSync(sleepyJava, '#!/bin/sh\nsleep 30\n');
   chmodSync(sleepyJava, 0o755);
 
+  fakeToolsDir = dir;
   fakeGs = path.join(dir, 'fake-gs.sh');
   writeFileSync(
     fakeGs,
@@ -180,6 +182,16 @@ for a in "$@"; do
   esac
 done
 if [ -z "$out" ] || [ -z "$input" ]; then echo "fake-gs: missing in/out" >&2; exit 2; fi
+# Marker files beside the script drive the PDF/X failure modes:
+# gs-revert → print Ghostscript 10.00.0's real two-line "reverting to
+# normal PDF output" notice and still exit 0 (as the real binary does);
+# gs-slow → overrun any short timeout.
+here="$(dirname "$0")"
+if [ -f "$here/gs-slow" ]; then sleep 30; fi
+if [ -f "$here/gs-revert" ]; then
+  echo "GPL Ghostscript 10.00.0: Annotation (not TrapNet or PrinterMark) on page,"
+  echo " not permitted in PDF/X, reverting to normal PDF output"
+fi
 cp "$input" "$out"
 exit 0
 `,
@@ -397,6 +409,48 @@ test('pdfx job on a print interior renders HTML to PDF first, then archives the 
   assert.equal(call.body.toString('utf8'), '<html><body>print interior</body></html>');
 });
 
+test('a Ghostscript run that reverts to plain PDF fails honestly — no artifact claiming PDF/X', async () => {
+  const marker = path.join(fakeToolsDir, 'gs-revert');
+  writeFileSync(marker, '');
+  try {
+    const created = await alice.post('/api/jobs/pdfx', { exportId: alicePrintId });
+    assert.equal(created.status, 201);
+    const job = await waitForJob(alice, (created.body.job as JobView).id);
+    assert.equal(job.status, 'failed');
+    assert.equal(job.artifactExportId, null);
+    const error = String(job.result!.error);
+    assert.match(error, /could not keep this file PDF\/X/);
+    assert.match(error, /Annotation \(not TrapNet or PrinterMark\) on page, not permitted in PDF\/X, reverting to normal PDF output/);
+  } finally {
+    rmSync(marker, { force: true });
+  }
+});
+
+test('the Ghostscript step has its own timeout (PDFX_TIMEOUT_MS), stated when it overruns', async () => {
+  const marker = path.join(fakeToolsDir, 'gs-slow');
+  writeFileSync(marker, '');
+  const slow = await startTestServer(db, undefined, {
+    exportDir: server.config.exportDir,
+    gsBin: fakeGs,
+    pdfxDefPath: pdfxDef,
+    rendererUrl,
+    jobTimeoutMs: 120_000,
+    pdfxTimeoutMs: 400,
+  });
+  try {
+    const gail = new Client(slow.base);
+    await gail.post('/api/auth/login', { email: 'alice@example.com', password: 'correct horse battery' });
+    const created = await gail.post('/api/jobs/pdfx', { exportId: alicePrintId });
+    assert.equal(created.status, 201);
+    const job = await waitForJob(gail, (created.body.job as JobView).id);
+    assert.equal(job.status, 'failed');
+    assert.match(String(job.result!.error), /Ghostscript did not finish within 400 ms \(PDFX_TIMEOUT_MS\)/);
+  } finally {
+    rmSync(marker, { force: true });
+    await slow.close();
+  }
+});
+
 test('unconfigured tools: job creation still succeeds, the job completes FAILED, never a pass', async () => {
   // Same db AND same export dir (the bytes live there); only the tool
   // configuration differs — config defaults: no jar, no gs.
@@ -574,6 +628,10 @@ test('job limits config: JVM heap and admission caps default sanely and reject j
   assert.equal(defaults.javaMaxHeap, '512m');
   assert.equal(defaults.jobMaxActivePerUser, 2);
   assert.equal(defaults.jobMaxQueued, 20);
+  assert.equal(defaults.jobTimeoutMs, 120_000);
+  assert.equal(defaults.pdfxTimeoutMs, 900_000);
+  assert.equal(loadConfig({ PDFX_TIMEOUT_MS: '1800000' } as NodeJS.ProcessEnv).pdfxTimeoutMs, 1_800_000);
+  assert.equal(loadConfig({ PDFX_TIMEOUT_MS: 'soon' } as NodeJS.ProcessEnv).pdfxTimeoutMs, 900_000);
   const set = loadConfig({
     JAVA_MAX_HEAP: '1g',
     JOB_MAX_ACTIVE_PER_USER: '3',

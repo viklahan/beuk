@@ -73,6 +73,8 @@ services:
       # PDF/X. Unset → pdfx jobs fail honestly as "not configured".
       HTML_PDF_BIN: ${HTML_PDF_BIN:-}
       JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      # Ghostscript step of a pdfx job (flattening is slow): 15 min.
+      PDFX_TIMEOUT_MS: ${PDFX_TIMEOUT_MS:-900000}
       # Stock photos for the cover maker (Pexels). Key unset → the
       # stock search endpoint answers 501 "stock photos not
       # configured"; the key is used server-side only.
