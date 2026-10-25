@@ -4,6 +4,7 @@ import type { Server } from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { buildApp } from '../src/app.js';
+import type { BillingProvider } from '../src/billing.js';
 import type { Config } from '../src/config.js';
 import { runMigrations, type Db, type QueryResult } from '../src/db.js';
 import type { Mailer } from '../src/mailer.js';
@@ -118,6 +119,10 @@ export function testConfig(overrides?: Partial<Config>): Config {
     stripeSecretKey: null,
     stripeWebhookSecret: null,
     stripePriceId: null,
+    stripeMode: null,
+    stripeApiBase: 'http://127.0.0.1:9',
+    billingGraceDays: 7,
+    entitlementsFile: null,
     appBaseUrl: 'http://127.0.0.1',
     // M3: no admins, a throwaway backup dir, a fixed build stamp and a
     // temp promotion-manifest path by default; tests override as needed.
@@ -193,7 +198,12 @@ export async function startTestServer(
   now?: () => Date,
   overrides?: Partial<Config>,
   housekeeping?: HousekeepingDeps,
-  extra?: { mailer?: Mailer; accountLimits?: AccountLimits; cspReport?: CspReportOptions },
+  extra?: {
+    mailer?: Mailer;
+    accountLimits?: AccountLimits;
+    cspReport?: CspReportOptions;
+    billing?: BillingProvider;
+  },
 ): Promise<TestServer> {
   const config = testConfig(overrides);
   const app = buildApp({ db, config, now, housekeeping, ...extra });

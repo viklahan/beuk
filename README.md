@@ -77,9 +77,10 @@ stored server-side as a SHA-256 hash.
 | `POST /api/jobs/epubcheck` | `{exportId}` — queue an EPUBCheck job over one of the caller's own `epub` exports → `201 {job}` (see Jobs) |
 | `POST /api/jobs/pdfx` | `{exportId}` — queue a PDF/X conversion job over one of the caller's own `print-html` exports → `201 {job}` |
 | `GET /api/jobs` · `GET /api/jobs/:id` | the caller's jobs with status + parsed results; another user's job is a 404 |
-| `POST /api/billing/checkout` | starts a subscription checkout → `{url}`; **501 `billing not configured`** until Stripe keys + price are set |
+| `POST /api/billing/checkout` | `{priceId?}` (allow-listed prices only) — starts a subscription checkout → `{url}`; **501 `billing not configured`** until Stripe keys + price are set; **409** while the caller already has a subscription that has not ended |
+| `GET /api/billing/status` | public: `{live, configured, mode, checkout, graceDays}`; signed in, also `account: {status, granted, entitlements, label, renewsAt, cancelAtPeriodEnd, graceEndsAt}` (see Billing) |
 | `GET /api/stock/search?q=…&per_page=…` | signed-in only; Pexels stock-photo search for cover-maker backgrounds → `{photos}` (id, dimensions, photographer + page links, `src` sizes); **501 `stock photos not configured`** until `PEXELS_API_KEY` is set (see Stock photos) |
-| `POST /api/billing/webhook` | Stripe webhook; signature-verified events are the ONLY way a plan changes (see Billing) |
+| `POST /api/billing/webhook` | Stripe webhook; signature-verified, deduplicated by event id, mode-checked; the ONLY way billing state changes (see Billing) |
 | `/api/housekeeping/*` | the admin surface — **404 to everyone who is not a signed-in admin** (see Housekeeping) |
 | `GET /api/health` | `{ok, db}` liveness |
 | `GET /api/status` | public, scrubbed health summary: app, version, build stamp, db up/down, latest Self-checks outcome (see Warmth) |
@@ -473,33 +474,101 @@ chapter, the print settings or the cover maker).
 - Hardcover covers (case laminate / dust jacket) are "not checked":
   Beuk's wrap is a paperback wrap.
 
-## Billing hooks (M2)
+## Billing
 
-Users carry `plan` (`free` | `pro`), `plan_updated_at`, and a stored
-Stripe customer id. **A plan changes only from a signature-verified
-webhook event** — no client request can flip one:
+Pricing is **parked**; this is plumbing that works for any pricing V
+picks. Nothing is live until the keys, a price and an entitlements file
+are set, and **no route is gated yet**.
 
-- `checkout.session.completed` → `pro`
-- `customer.subscription.updated` → `pro` while `active`/`trialing`, else `free`
-- `customer.subscription.deleted` → `free`
+**Principle: store what Stripe says, derive access from data.**
 
-The webhook verifies the `Stripe-Signature` header (HMAC-SHA256 over the
-raw body, 5-minute replay window) whenever `STRIPE_WEBHOOK_SECRET` is
-set; unsigned or unverifiable deliveries get a 400 and change nothing.
-Billing sits behind a provider interface (`src/billing.ts`) so the routes
-never talk to Stripe directly.
+- **Webhook** (`POST /api/billing/webhook`) verifies `Stripe-Signature`
+  (HMAC-SHA256 over the raw body, `v1` only, 5-minute replay window), then:
+  1. **Mode check.** The server's mode comes from the API key prefix
+     (`sk_test_`/`rk_test_` = test, `sk_live_`/`rk_live_` = live; an
+     optional `STRIPE_MODE` must agree or billing refuses to run). An
+     event whose `livemode` differs is recorded as `ignored-wrong-mode`
+     and changes nothing, so a test `whsec_` left on a live server cannot
+     flip real accounts.
+  2. **Dedupe.** Every event id goes into `billing_events`; a redelivery
+     of a processed event answers `{duplicate:true}` and does nothing. A
+     delivery whose handling failed answers 500, stays unprocessed, and
+     Stripe's retry is processed normally.
+  3. **Retrieve, don't trust the body.** The event only says which object
+     changed; the server retrieves the current Subscription from the
+     Stripe API (under a per-subscription lock) and stores that in
+     `billing_subscriptions`. Delivery order therefore does not matter: a
+     late "updated(active)" after "deleted" cannot re-grant anyone.
+- **Handled events** (register these on the endpoint):
+  `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+  `checkout.session.async_payment_failed`, `customer.subscription.created`,
+  `.updated`, `.deleted`, `.paused`, `.resumed`, `invoice.paid`,
+  `invoice.payment_failed`, `charge.refunded`, `charge.dispute.created`.
+  Anything else is acknowledged as `ignored-type`.
+- **Async payments.** A completed checkout with `payment_status: unpaid`
+  (bank debits) grants nothing (`awaiting-payment`); access comes with
+  `async_payment_succeeded` or a subscription Stripe reports as active.
+- **Attribution, no guessing.** Our user id (checkout
+  `client_reference_id` / metadata, copied onto the subscription's
+  metadata), then the stored Stripe customer id. **Never the email.** A
+  subscription that cannot be attributed is stored with no account and
+  the Housekeeping self-check `billing.subscriptions.attributed` fails,
+  listing it.
+- **Status policy** (`src/entitlements.ts`; `entitlementsFor` is the only
+  place access is decided): `active`/`trialing` grant; `past_due` grants
+  for `BILLING_GRACE_DAYS` (default **7**), counted from when this server
+  first saw `past_due`; `canceled`, `unpaid`, `incomplete`,
+  `incomplete_expired` and `paused` grant nothing. Refunds and disputes
+  re-sync the customer's subscriptions and **follow the status Stripe
+  reports**: cancel the subscription in the Dashboard to end access.
+  Only subscriptions in the server's own mode count.
+- **Entitlements are data** (`ENTITLEMENTS_FILE`):
 
-**Enabling billing later (Vik's step, price + keys are his):**
+  ```json
+  { "prices": { "price_REPLACE_ME": { "label": "REPLACE_ME", "entitlements": ["replace.me"] } } }
+  ```
 
-1. In Stripe: create the Pro product and its recurring price; register
-   the webhook endpoint `https://beuk.studio/api/billing/webhook` for the
-   three event types above.
-2. In the server's `.env` only: set `STRIPE_PRICE_ID` (`price_…`),
-   `STRIPE_SECRET_KEY` (`sk_…`), `STRIPE_WEBHOOK_SECRET` (`whsec_…`),
-   and `APP_BASE_URL` (public site origin, for checkout redirects).
-3. Restart the app. Until all of that is set, `POST /api/billing/checkout`
-   answers a clean **501 `billing not configured`** — no error, no fake
-   success — and the webhook refuses everything.
+  A price not in the file grants nothing. `users.plan` is now only a
+  cached display label (the file's `label`, else `pro` while granted,
+  `free` otherwise). It can lag after a grace period ends;
+  `/api/billing/status` is computed live.
+- **A lapsed writer loses nothing they wrote.** Books, saving, exports and
+  beta-reader links never check billing (tested). `requireEntitlement()`
+  exists but is applied to **no route** until V's pricing names a gated
+  feature, and it must never wrap reading, listing, exporting or sharing
+  a writer's own work.
+- **Checkout** reuses the writer's stored Stripe customer, accepts only
+  allow-listed prices (the entitlements file plus `STRIPE_PRICE_ID`),
+  refuses a second subscription (409), and its `success_url` carries
+  `{CHECKOUT_SESSION_ID}`. A landing page must wait for
+  `/api/billing/status`, never claim access from the redirect.
+- **`GET /api/billing/status`**: `live` is true only when billing is fully
+  configured (keys + price, consistent mode, valid entitlements file)
+  **and** in live mode. Test-mode keys give `configured: true, live:
+  false` (show a TEST MODE badge; the Ko-fi jar stays).
+- **Housekeeping self-checks**: `billing.mode.matches-key`,
+  `billing.entitlements.file-valid`, `billing.events.none-stuck` (nothing
+  unprocessed for over an hour), `billing.subscriptions.attributed`.
+- **Not built yet**: a Customer Portal route (cancel / update card) and
+  any studio billing UI. Until then cancellations and card changes
+  happen in the Stripe Dashboard.
+
+**Enabling billing (V's step; prices and keys are his):**
+
+1. In Stripe: create the product(s) and recurring price(s); register the
+   webhook endpoint `https://beuk.studio/api/billing/webhook` for the
+   event types above (test and live endpoints have different secrets).
+2. Write the entitlements file and mount it read-only into the app
+   container (for example a compose-override `volumes:` line
+   `./entitlements.json:/app/config/entitlements.json:ro`); set
+   `ENTITLEMENTS_FILE` to the in-container path.
+3. In the server's `.env` only: `STRIPE_PRICE_ID` (`price_…`),
+   `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (`whsec_…`) and
+   `APP_BASE_URL`; optionally `STRIPE_MODE` and `BILLING_GRACE_DAYS`.
+4. Restart, run Self-checks, then prove it in a sandbox with
+   `stripe listen --forward-to …` plus `stripe trigger <event>` for each
+   handled type before switching to live keys. Until all of that is set,
+   checkout and the webhook answer a clean **501 `billing not configured`**.
 
 ## Stock photos (cover maker)
 
@@ -1204,9 +1273,19 @@ validation, and auth requirements on every protected route. M2 adds:
 export save → list → download round-trip with SHA-256 integrity, all five
 formats, export owner isolation, manuscript-link validation, the upload
 cap (413), the webhook accepting a correctly-signed event and flipping
-the plan (and reverting on subscription end), forged/unsigned webhooks
-changing nothing, and checkout/webhook returning a clean 501 while
-billing is unconfigured. No real Stripe calls anywhere in the suite.
+forged/unsigned webhooks changing nothing, and checkout/webhook
+returning a clean 501 while billing is unconfigured. The billing
+plumbing adds, against a local fake Stripe API (no real Stripe calls
+anywhere in the suite): duplicate delivery processed once, a failed
+delivery retried rather than skipped, unpaid async checkouts granting
+nothing until `async_payment_succeeded`, out-of-order delivery (a stale
+"active" after "deleted"), past_due grace (kept inside 7 days, gone
+after; unpaid at once), refunds and disputes following the retrieved
+status, test events never granting on a live server, no email
+attribution (unattributed subscriptions fail the Housekeeping check),
+checkout customer reuse, price allow-list and 409, and a lapsed writer
+still listing, reading, saving and exporting books with share links
+working.
 M3 adds: 404 for anonymous and non-admin callers on **every**
 Housekeeping route, admin granted only by the CLI (never by registering
 or logging in) with immediate revoke, a healthy
@@ -1391,9 +1470,11 @@ plain converter without a report.
 
 ## What is deliberately NOT here yet
 
-- **Live billing** — M2 ships the hooks only (plan column, verified
-  webhooks, checkout endpoint). It activates when Vik sets a price and
-  keys in `.env`; until then the endpoints answer 501.
+- **Live billing** — the plumbing is here (verified, deduplicated,
+  order-safe webhooks; entitlements as data; checkout), but pricing is
+  parked, no route is gated, and there is no Customer Portal route or
+  studio billing UI. It activates when V sets prices, keys and the
+  entitlements file; until then the endpoints answer 501.
 - **Local backup retention and backup alerting** — local backups are
   never pruned (the number to keep is undecided), and a red backup
   self-check sends no email or ping by itself. Restore still lacks the
@@ -1425,7 +1506,11 @@ src/
   auth.ts         sessions (hashed tokens), cookie helpers, requireAuth
   streak.ts       day math + streak computation + heartbeat repair/pause
   billing.ts      billing provider interface + Stripe (signature verify,
-                  event→plan mapping, checkout session) — inert w/o keys
+                  retrieve subscription/charge, checkout) — inert w/o keys
+  billing-sync.ts webhook pipeline: dedupe ledger, mode check, retrieve +
+                  store subscription state, attribution (no email)
+  entitlements.ts entitlements file, status policy, entitlementsFor,
+                  requireEntitlement (applied to no route yet)
   jobs/           M5: tools.ts (EPUBCheck/Ghostscript adapters,
                   availability gating, report parsing) · runner.ts
                   (sequential in-process worker, per-job timeout,
@@ -1460,7 +1545,8 @@ migrations/       001 users+sessions · 002 manuscripts · 003 streaks ·
                   004 exports · 005 user plan/billing · 006 housekeeping
                   · 007 founders (M4) · 008 jobs (M5) · 009 manuscript
                   revision (optimistic concurrency) · 010 password
-                  resets · 011 shares
+                  resets · 011 shares · 012 billing state (events
+                  ledger, subscriptions; users.plan = display label)
 tests/            node:test suite (PGlite-backed)
 client/           static mount point (app placeholder + M4 warmth
                   pages under help/ and thanks/)

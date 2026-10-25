@@ -39,11 +39,16 @@ services:
       # M2: export archive bytes live on the exportdata volume.
       EXPORT_DIR: /data/exports
       EXPORT_MAX_BYTES: ${EXPORT_MAX_BYTES:-52428800}
-      # M2 billing hooks: unset until Vik sets a price + Stripe keys;
-      # while unset the billing endpoints answer 501 "not configured".
+      # Billing: unset until V sets prices + Stripe keys; while unset the
+      # billing endpoints answer 501 "not configured" (README, Billing).
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+      STRIPE_MODE: ${STRIPE_MODE:-}
+      BILLING_GRACE_DAYS: ${BILLING_GRACE_DAYS:-7}
+      # A path INSIDE the container; mount the file read-only there
+      # (README, Billing). Unset = nothing granted, nothing gated.
+      ENTITLEMENTS_FILE: ${ENTITLEMENTS_FILE:-}
       APP_BASE_URL: ${APP_BASE_URL:-https://localhost}
       # M3 Housekeeping: backups on their own volume, the per-deploy build stamp, and the clean-tree
       # marker the promotion gate requires.

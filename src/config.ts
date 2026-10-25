@@ -28,6 +28,20 @@ export interface Config {
   stripeSecretKey: string | null;
   stripeWebhookSecret: string | null;
   stripePriceId: string | null;
+  /** STRIPE_MODE ('test' | 'live'), optional. The mode is read from the
+   *  secret key's prefix (sk_test_/rk_test_ vs sk_live_/rk_live_,
+   *  https://docs.stripe.com/keys); when STRIPE_MODE is also set and
+   *  disagrees, billing refuses to run. Null = not set. */
+  stripeMode: 'test' | 'live' | null;
+  /** Stripe API origin (STRIPE_API_BASE). Default https://api.stripe.com;
+   *  tests point it at a local fake Stripe API. */
+  stripeApiBase: string;
+  /** P2 (V, 2026-10-25): days a past_due subscription keeps its
+   *  entitlements (BILLING_GRACE_DAYS, default 7). */
+  billingGraceDays: number;
+  /** P1: JSON file mapping Stripe price ids to entitlements
+   *  (ENTITLEMENTS_FILE). Null = no file: nothing is granted or gated. */
+  entitlementsFile: string | null;
   /** Public base URL of the site, for billing checkout redirect targets. */
   appBaseUrl: string;
   /** M3 Housekeeping: directory named backups are written under. */
@@ -185,6 +199,12 @@ function nonNegativeNumber(raw: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
+function nonNegativeInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+}
+
 function positiveInt(raw: string | undefined, fallback: number): number {
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : fallback;
@@ -204,6 +224,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     stripeSecretKey: env.STRIPE_SECRET_KEY || null,
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || null,
     stripePriceId: env.STRIPE_PRICE_ID || null,
+    stripeMode:
+      env.STRIPE_MODE === 'test' || env.STRIPE_MODE === 'live' ? env.STRIPE_MODE : null,
+    stripeApiBase: (env.STRIPE_API_BASE || 'https://api.stripe.com').replace(/\/$/, ''),
+    billingGraceDays: nonNegativeInt(env.BILLING_GRACE_DAYS, 7),
+    entitlementsFile: env.ENTITLEMENTS_FILE || null,
     appBaseUrl: (env.APP_BASE_URL ?? 'https://localhost').replace(/\/$/, ''),
     backupDir: env.BACKUP_DIR ?? path.resolve(process.cwd(), 'data', 'backups'),
     buildStamp:
