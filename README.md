@@ -203,6 +203,37 @@ sample EPUB showed. That title band is re-lettered in the shipped style,
 and a desk carrying the stale JPEG (exact SHA-1 match) gets the new one
 (an edited sample takes a History snapshot first).
 
+**A book that exists only on this device is never replaced silently.**
+`deskHoldsUnshelvedWork()` is true when the desk's book exists nowhere
+else: not an empty desk, not the untouched sample, and either not linked
+to a shelf manuscript (never shelved, or declined at sign-in) or linked
+with writing the shelf has not seen (`cloudDirty`, a pending queue, an
+open conflict). Signed out, the link this device last stored answers.
+Every path that puts another book on the desk:
+
+| Path | What protects the desk's book |
+|---|---|
+| Open a book from the shelf | **Asks** whenever the predicate holds — no longer only after edits made this session (a book restored from this device and never shelved used to be replaced with no question). Three choices, stacked full width with the safe one on top: **Keep my book** (the focused, primary default; Escape also keeps), **Put it on my shelf, then open** (a normal shelf save first — POST, or PUT with `If-Match` — and nothing is replaced unless the shelf confirms it), **Open and replace it**. A snapshot is not used here: the arriving shelf book brings its own History, so a snapshot of the desk's book could only survive inside a different book. |
+| The shelf's newer copy at sign-in | Runs only when this device has nothing the shelf has not seen (the stored link says so), so the desk's book is the shelf's own earlier copy; with unsynced writing the conflict notice asks instead. The server keeps no older revisions, so that earlier copy is superseded by the newer one. |
+| Conflict → Use the shelf copy | History snapshot of this device's copy first ("This device's copy, kept from a sync conflict"), re-seated in the arriving book's History and saved with it on the agreed revision. |
+| Open a backup… | Asks (unless the desk is empty or the untouched sample), then a "Before opening a backup" snapshot, re-seated in the arriving book's History. A backup of a different book unlinks the desk and becomes its own shelf book (POST), never a PUT over the replaced one. |
+| Restore the whole book (History) | Its confirmation says a snapshot is taken first — it now always is, the untouched sample and an empty desk included. |
+| Load the sample story | Asks, then a "Before the sample story" snapshot. |
+| Remove the sample (back to an empty desk) | An edited sample asks first and says nothing is restored; the untouched sample goes without asking. There is no other "new book" action. |
+
+The third button exists only in that dialog: every other confirmation
+draws exactly two (`#btnConfirmAlt[hidden]` is `display: none`, since
+`.tb-btn`'s `inline-flex` would otherwise beat the `hidden` attribute),
+and a stray "alt" on a two-choice confirmation resolves `false`, never
+yes. The device-only wording says the shelf has no copy of the book *as
+it stands here* — true for a book never shelved, one declined at
+sign-in, one whose shelf copy is gone, and a backup opened unlinked.
+
+Self-checks: `shelf.open.guards-device-only` and
+`confirm.alt.hidden-when-unused` (async; the first against a stubbed
+shelf, the second on the rendered dialog) and
+`history.restore.snapshot-always`, all client-only in Housekeeping. Tests: `tests/shelfguard.test.ts`.
+
 **Sidebar.** Import Document and Project Settings live only at the top
 of the sidebar (on phones, in the Structure tab); the header no longer
 repeats them. Story Insights, Goals, History and Reader comments are one
