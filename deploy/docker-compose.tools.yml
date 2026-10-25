@@ -33,6 +33,10 @@ services:
       EPUBCHECK_JAR: /opt/epubcheck/epubcheck.jar
       JAVA_BIN: /usr/bin/java
       GS_BIN: /usr/bin/gs
+      # Ghostscript's ICC directory whose default_cmyk.icc is the pinned
+      # SWOP press profile (built by deploy/Dockerfile.tools), so the
+      # pdfx job's CMYK comes from the profile its OutputIntent declares.
+      PDFX_ICC_DIR: /usr/share/color/icc/beuk/gs/
       # The pdfx job's HTML → PDF step: POST the print interior here.
       RENDERER_URL: http://renderer:3100/render
     networks:

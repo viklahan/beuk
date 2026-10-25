@@ -7,9 +7,10 @@ import { fixtureEntries, loadFixtures, type FixtureSet } from './fixtures.js';
 import { isUuid } from '../ids.js';
 import { dummyPasswordHash, verifyAgainstDummy } from '../password.js';
 import { TokenBucketLimiter } from '../ratelimit.js';
-import { ghostscriptPdfxArgs, pdfRenderProblem, pdfxIccPath } from '../jobs/tools.js';
+import { ghostscriptPdfxArgs, pdfRenderProblem, pdfxIccDirArgs, pdfxIccPath } from '../jobs/tools.js';
+import { neutralRgbToGray, textInkFacts } from '../jobs/pdfpress.js';
 import { inspectPdf } from '../jobs/pdfinspect.js';
-import { checkPdfxProfile } from '../jobs/iccprofile.js';
+import { checkPdfxProfile, PDFX_PROFILE } from '../jobs/iccprofile.js';
 import {
   parseOpf,
   readZip,
@@ -1178,9 +1179,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       assert(icc, `the PDF/X definition at ${config.pdfxDefPath} names no /BeukICCPath`);
       const args = ghostscriptPdfxArgs(config, '/in.pdf', '/out.pdf');
       assert(args[0] === '-dSAFER', 'SAFER must be spelled out as the first Ghostscript argument');
+      // Exactly two things may be read beyond the inputs: the profile the
+      // definition embeds, and (when PDFX_ICC_DIR is set) the colour-
+      // conversion profile directory.
+      const permits = args.filter((a) => a.startsWith('--permit-file-read'));
+      const allowed = [`--permit-file-read=${icc}`, ...pdfxIccDirArgs(config).filter((a) => a.startsWith('--permit-file-read'))];
       assert(
-        args.filter((a) => a.startsWith('--permit-file-read')).length === 1 && args.includes(`--permit-file-read=${icc}`),
-        'Ghostscript must permit reading exactly the ICC profile the definition embeds',
+        permits.length === allowed.length && allowed.every((a) => permits.includes(a)),
+        `Ghostscript must permit reading exactly the embedded ICC profile${config.pdfxIccDir ? ' and the conversion profile directory' : ''}; it permits ${permits.join(' ')}`,
       );
       assert(!args.includes('-dNOSAFER'), 'SAFER must stay on');
       const def = await readFile(config.pdfxDefPath, 'latin1');
@@ -1201,6 +1207,91 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       return check.detail;
     },
   },
+  /* ==== BEUK:print ==== */
+  {
+    id: 'jobs.pdfx.converts-through-press-profile',
+    title: 'PDF/X colour conversion runs through the press profile the OutputIntent declares (Ghostscript’s default_cmyk.icc in PDFX_ICC_DIR is the pinned profile’s exact bytes)',
+    kind: 'server',
+    run: async ({ config }) => {
+      if (!config.pdfxIccDir) {
+        // With GS configured, converting through Ghostscript's built-in
+        // profile while declaring another is the dishonest state: fail.
+        assert(config.gsBin === null, 'GS_BIN is set but PDFX_ICC_DIR is not, so conversions use Ghostscript’s built-in CMYK profile, not the declared press profile');
+        return 'PDF/X is not configured on this server (GS_BIN unset); nothing converts, so nothing to check';
+      }
+      const file = path.join(config.pdfxIccDir, 'default_cmyk.icc');
+      const bytes = await readFile(file).catch(() => null);
+      assert(bytes, `no default_cmyk.icc in PDFX_ICC_DIR (${config.pdfxIccDir})`);
+      const sha = createHash('sha256').update(bytes).digest('hex');
+      assert(sha === PDFX_PROFILE.sha256, `${file} is sha256 ${sha}, not the pinned press profile ${PDFX_PROFILE.sha256}`);
+      const args = ghostscriptPdfxArgs(config, '/in.pdf', '/out.pdf');
+      assert(args.some((a) => a.startsWith('-sICCProfilesDir=')), 'the pdfx Ghostscript call does not pass -sICCProfilesDir');
+      return `${file} = pinned ${PDFX_PROFILE.path} (sha256 ${sha.slice(0, 12)}…); -sICCProfilesDir passed`;
+    },
+  },
+  {
+    id: 'jobs.pdfx.neutral-text-black-plate',
+    title: 'PDF/X press: neutral RGB (black text, grey tints) is rewritten to DeviceGray before conversion, coloured values are untouched, and text colour is read back per text run',
+    kind: 'server',
+    run: async () => {
+      const content = 'BT /F1 11 Tf 0 0 0 rg (A) Tj .25 .25 .25 rg (B) Tj 0.5 0.2 0.1 rg (C) Tj ET 1 1 1 RG';
+      const pdf = Buffer.from(
+        [
+          '%PDF-1.4',
+          '1 0 obj',
+          '<< /Type /Catalog /Pages 2 0 R >>',
+          'endobj',
+          '2 0 obj',
+          '<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 432 648] >>',
+          'endobj',
+          '3 0 obj',
+          '<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>',
+          'endobj',
+          '4 0 obj',
+          `<< /Length ${content.length} >>`,
+          'stream',
+          content,
+          'endstream',
+          'endobj',
+          'trailer',
+          '<< /Size 5 /Root 1 0 R >>',
+          'startxref',
+          '0',
+          '%%EOF',
+          '',
+        ].join('\n'),
+        'latin1',
+      );
+      const out = neutralRgbToGray(pdf);
+      assert(out.skipped === null, `the rewrite was skipped: ${out.skipped}`);
+      assert(out.operators === 3, `expected 3 neutral operators rewritten (black, 25% grey, white stroke), got ${out.operators}`);
+      assert(out.pdf.subarray(0, pdf.length).equals(pdf), 'the original bytes must stay verbatim ahead of the incremental update');
+      const facts = textInkFacts(out.pdf);
+      assert(facts.textShows === 3, `expected 3 text runs, read ${facts.textShows}`);
+      assert(facts.kOnly === 2 && facts.kValues['100'] === 1 && facts.kValues['75'] === 1, `expected black + 75% grey as K-only, read ${JSON.stringify(facts.kValues)}`);
+      assert(Object.keys(facts.otherColours).join() === '0.5 0.2 0.1 rg', `the coloured run must stay coloured, read ${JSON.stringify(facts.otherColours)}`);
+      return 'black → 100% K, 25% grey → 75% K, coloured text untouched; original bytes kept ahead of the update';
+    },
+  },
+  {
+    id: 'print.press.solid-tints',
+    title: 'Print for press: see-through text rules print as solid blended tints, body text is pure black, inline ornaments carry no opacity, the EPUB stylesheet is untouched',
+    kind: 'client-only',
+    reason: 'The print interior is built in the studio (buildPrintHtml); asserted by the client registry on the sample.',
+  },
+  {
+    id: 'print.press.blend-math',
+    title: 'Print for press: a solid tint is ink·a + page·(1 − a); an SVG part’s opacity becomes that solid fill',
+    kind: 'client-only',
+    reason: 'The blend and the SVG rewrite are studio functions; asserted by the client registry.',
+  },
+  {
+    id: 'print.press.store-rows',
+    title: 'Store-ready press rows (text in black ink, total ink) pass only on measured server facts; unmeasured is “not checked”',
+    kind: 'client-only',
+    reason: 'The rows are rendered in the studio from the pdfx job’s press facts; asserted by the client registry.',
+  },
+  /* ==== /BEUK:print ==== */
   {
     id: 'store.rules.cited-data',
     title: 'Store-ready: KDP and IngramSpark rules are data tables citing the stores’ own published guides',
