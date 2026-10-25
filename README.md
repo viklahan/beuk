@@ -182,9 +182,17 @@ artifact export, timestamps). Creating a job validates ownership and
 format (someone else's export → 404; an `epubcheck` job needs an
 `epub` export, a `pdfx` job a `print-html` one → 400) and returns
 immediately; a simple in-process worker drains the queue **one job
-at a time** (one Hetzner box; the tools are heavy) with a per-job
-timeout (`JOB_TIMEOUT_MS`, default 2 minutes — an overrun is killed,
-process group and all, and fails with the timeout stated). On boot,
+at a time** (one Hetzner box; the tools are heavy) with a per-step
+timeout — an overrun is killed, process group and all, and fails
+with the timeout stated: `JOB_TIMEOUT_MS` (default 2 minutes) for
+EPUBCheck and for the pdfx job's renderer request, and
+`PDFX_TIMEOUT_MS` (default 15 minutes) for the pdfx job's Ghostscript
+step. The split is measured: on the bundled 81-page / 7.5 MB sample
+(2026-10-24, beuk-icc stack) the whole job took 99 s, of which the
+renderer was ~6 s (timed on its own) and Ghostscript the rest, because PDF/X-1a forbids transparency and Ghostscript flattens
+every page that has any by rendering the whole page to a 300 ppi
+image (70 of the sample's 81 pages). 15 minutes is an operational
+allowance for longer, picture-heavier books, not a measured limit. On boot,
 jobs a dead process left `running` are failed honestly and `queued`
 ones are picked up again.
 
@@ -227,6 +235,14 @@ share the one worker), EPUBCheck and PDF/X alike.
   definition file declares both `GTS_PDFXVersion (PDF/X-1:2001)` and
   `GTS_PDFXConformance (PDF/X-1a:2001)`; without the second key a file
   only claims PDF/X-1:2001.
+  Chromium writes the book's links as Link annotations, which PDF/X
+  forbids; Ghostscript 10.00.0 then prints "…not permitted in PDF/X,
+  reverting to normal PDF output" and exits 0 while the definition file
+  has already stamped the PDF/X keys — a file that *claims* PDF/X-1a
+  and is not (seen on the sample: its pages lost their TrimBox). The
+  job therefore passes `-dShowAnnots=false -dPreserveAnnots=false`
+  (links mean nothing on paper), and any such revert notice fails the
+  job with Ghostscript's own words instead of archiving the file.
 - **PDF/X inspection (Store-ready tie-in).** After conversion the job
   reads the converted file itself (`src/jobs/pdfinspect.ts`, no
   dependencies) and stores the facts on the result as `inspection`:
@@ -326,62 +342,83 @@ renders a real studio interior; `KEEP=1` leaves the stack up.
    tools overlay sets `http://renderer:3100/render` for you). Do not
    install Chromium into the app image instead — see the renderer
    sandbox above.
-5. **ICC profile (required for real PDF/X-1a):** install a CMYK
-   press profile (e.g. the `icc-profiles-free` package) and edit the
-   `BeukICCPath` line in `tools/PDFX_def.ps` to point at it. With
-   the placeholder path left in place, Ghostscript errors out and
-   the job fails with that error — by design. **Check this one:** on
-   Debian bookworm, `icc-profiles-free` ships no FOGRA profile (its
-   `/usr/share/color/icc` holds sRGB/Gray/Cineon profiles plus
-   Ghostscript's own `ghostscript/default_cmyk.icc`), so the tools
-   overlay's FOGRA lookup finds nothing and the placeholder stays —
-   pdfx jobs then fail with Ghostscript's `/undefinedfilename`.
-   Install a real press profile (FOGRA39 / GRACoL / SWOP from your
-   printer) and point `BeukICCPath` at it; the `OutputConditionIdentifier`
-   in the same file must name the condition that profile describes.
+5. **ICC profile (installed by the tools overlay):**
+   `deploy/Dockerfile.tools` downloads IDEAlliance's
+   `SWOP2006_Coated3v2.icc` from the ICC Profile Registry
+   (<https://registry.color.org/profile-registry/SWOP2006_Coated3v2>) to
+   `/usr/share/color/icc/beuk/` and refuses any bytes but sha256
+   `27dc90db…15e3b` (its ICC profile ID equals the registry's,
+   `f7b89b04…a98`). `tools/PDFX_def.ps` embeds it as the OutputIntent's
+   DestOutputProfile with `OutputConditionIdentifier (CGATS TR 003)` and
+   `RegistryName (http://www.color.org)` — the registry's reference name
+   for "SWOP proofing and printing on U.S. Grade 3 coated publication
+   paper" (<https://registry.color.org/cmyk-registry/cgats_tr_003>).
+   **Why this one:** IngramSpark's File Creation Guide requires
+   PDF/X-1a:2001 or PDF/X-3:2002 and total ink ≤ 240% but names no press
+   condition; KDP asks for CMYK and names none either; the only named
+   profile found is second-hand (a forum quote of IngramSpark's FAQ:
+   "U.S. Web Coated (SWOP) v2"), and Adobe's licence forbids bundling that
+   one with software. The IDEAlliance profile is the redistributable US
+   SWOP profile ("may be used, embedded, exchanged, and shared without
+   restriction"; not altered or sold) — attribution in
+   `tools/icc/LICENSE-SWOP2006_Coated3v2.txt`, copied into the image.
+   Housekeeping's `jobs.pdfx.icc-profile-matches-def` check verifies the
+   definition file, the installed file's hash and its profile ID agree
+   (the file itself only when `GS_BIN` is set or the file is present —
+   otherwise its detail says it was not checked). Outside the tools
+   image, put that exact file at that path. Debian's `icc-profiles-free`
+   has no CMYK press profile, and non-free `icc-profiles` 2.1-2 ships an
+   older `SWOP2006_Coated3v2.icc` build whose profile ID does not match
+   the registry's, so neither is used.
 6. Restart the app. Until steps 1–5 are done, jobs answer with the
    not-configured failure above; the moment they are, the same jobs
    run for real with no code change.
 
 Residual limits, stated plainly. First, the unit tests run the
 pipeline around the tools — gating, queueing, admission caps, the
-HTTP rendition call, timeouts, report parsing, archive storage —
-with stubs wired through the same `JAVA_BIN`/`GS_BIN`/`RENDERER_URL`
-settings. The real binaries run in `deploy/renderer-attack.sh`
-(EPUBCheck 5.2.1 under `-Xmx`, the renderer's Chromium, Ghostscript
-10.00.0). Separately, the Store-ready work ran the real binaries once
-by hand (2026-10-24, Debian bookworm container: Chromium from apt
-invoked directly — before rendering moved into the renderer service —
-GPL Ghostscript 10.00.0, EPUBCheck 5.2.1, with `BeukICCPath` pointed
-at Ghostscript's own `default_cmyk.icc` because bookworm has no FOGRA
-profile). That run found the SAFER ICC-read refusal fixed above. It
-also found that the old file:// rendition rendered the extensionless
-archive file as plain-text source; the renderer service is handed the
-HTML bytes with an explicit `text/html` type, so that path no longer
-exists. After the fixes, the bundled sample's 6 × 9 in interior
-rendered to 81 pages and converted in about 90 seconds to a declared
-PDF/X-1a:2001 file with every font embedded and no RGB left — but
-**109 MB** (the sample is picture-heavy), and **set in DejaVu Serif,
-not the book's faces**: the print-html interior names its fonts but
-does not carry the studio's Google web fonts, so a renderer without
-the book's fonts installed falls back. The Store-ready report flags
-that as an advisory row. That run has not been repeated through the
-renderer service. Second, **Ghostscript converts PDF input**: a pdfx
-job first renders the archived print-html interior to PDF in the
-renderer, then converts that PDF to PDF/X-1a. If the renderer is not
-configured, the job fails honestly as "not configured" before
-Ghostscript ever runs — raw HTML is never fed to Ghostscript.
+HTTP rendition call, timeouts, report parsing, archive storage, the
+PDF/X-revert failure — with stubs wired through the same
+`JAVA_BIN`/`GS_BIN`/`RENDERER_URL` settings. The real binaries run in
+`deploy/renderer-attack.sh` (EPUBCheck 5.2.1 under `-Xmx`, the
+renderer's Chromium, Ghostscript 10.00.0). **Real run through the
+renderer service (2026-10-24, compose project `beuk-icc`, tools image
+built from `deploy/Dockerfile.tools`):** the bundled sample's 6 × 9 in
+print interior (7 571 328 bytes of HTML) went through `POST
+/api/jobs/pdfx` and finished `done` in 99 s — 81 pages, MediaBox =
+TrimBox = BleedBox = 6 × 9 in, declared `PDF/X-1:2001` +
+`PDF/X-1a:2001`, one GTS_PDFX OutputIntent `CGATS TR 003` whose
+embedded DestOutputProfile is byte-identical to the pinned profile
+(same sha256), both fonts embedded (pdffonts: emb yes), no
+annotations, no transparency, no RGB colour spaces, `qpdf --check`
+clean, PDF 1.3. An old open-source checker (the `preflight` 0.3.0 Ruby
+gem's PDF/X-1a profile) reported 0 issues on it, against 2 418 on the
+Chromium PDF and 81 (no TrimBox) on the output of the previous flags,
+which had silently reverted to plain PDF. That gem is far narrower than
+a commercial preflight (Acrobat, PitStop, callas): **the file is not
+independently validated as PDF/X-1a.** Known gaps in that file:
+**111 MB** (70 of 81 pages are flattened to 300 ppi page images,
+*including their text*, because Chromium writes opacity — ornaments at
+`opacity=".8"`, captions and kickers at 0.75–0.88 — and alpha images);
+body text comes out **4-colour rich black, ~68/66/70/80 = 284% total
+ink** (measured from the rendered CMYK), where IngramSpark asks for
+100% K text and ≤ 240% total ink; the CMYK numbers come from
+Ghostscript's built-in conversion — `-sOutputICCProfile` (the SWOP
+profile or Ghostscript's `ps_cmyk.icc`) changed not one value on
+pdfwrite 10.00.0 in our probe — so they are **not** computed through the
+SWOP TR 003 profile the OutputIntent declares; and the interior is **set
+in DejaVu Serif, not the book's faces** (the print-html names its fonts
+but does not carry the studio's Google web fonts; the Store-ready report
+flags that as an advisory row). Second, **Ghostscript converts PDF
+input**: a pdfx job first renders the archived print-html interior to
+PDF in the renderer, then converts that PDF to PDF/X-1a. If the
+renderer is not configured, the job fails honestly as "not configured"
+before Ghostscript ever runs — raw HTML is never fed to Ghostscript.
 Third, **the ICC profile**: Ghostscript (≥ 9.50) runs SAFER by
 default, so `PDFX_def.ps` may read its ICC profile only when that file
-is explicitly permitted — the job now passes `--permit-file-read=`
-for exactly the `BeukICCPath` file (without it every pdfx job failed
-with `/invalidfileaccess`, even with a real profile). And on Debian
-bookworm the `icc-profiles-free` package ships its FOGRA data as
-`.ti3` characterisation files, not `.icc` profiles, so the overlay's
-`*fogra*.icc` search finds nothing and `BeukICCPath` keeps its
-placeholder: until a real CMYK press profile matching the declared
-condition (CGATS TR 001) is supplied (step 5), pdfx jobs fail with
-Ghostscript's own error — honestly, never a fake pass.
+is explicitly permitted — the job passes `--permit-file-read=` for
+exactly the `BeukICCPath` file (without it every pdfx job failed with
+`/invalidfileaccess`). If the profile is missing (no tools image),
+pdfx jobs fail as "not configured", never a fake pass.
 
 ## Store-ready? report (studio + jobs)
 
@@ -977,8 +1014,9 @@ everything it does.
    jar is rendered anywhere.
 8. Jobs (M5, optional, any time): install the JRE + EPUBCheck jar +
    Ghostscript, set `EPUBCHECK_JAR` / `GS_BIN` in `.env`, and point
-   `tools/PDFX_def.ps` at a real CMYK ICC profile — the five steps
-   under "Jobs — Production setup" above. Until then, EPUBCheck and
+   the tools overlay installs the pinned CMYK press profile that
+   `tools/PDFX_def.ps` names — the five steps under "Jobs — Production
+   setup" above. Until then, EPUBCheck and
    PDF/X jobs complete as honest "not configured" failures.
 9. Email (password reset): set `SMTP_URL` + `MAIL_FROM` in `.env`
    (or pass them to `install.sh`), then use Housekeeping's mail test.
