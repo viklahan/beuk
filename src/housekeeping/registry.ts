@@ -1668,6 +1668,32 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The report is a field of the client book document (serializeBook); the shelf stores the book JSON opaquely.',
   },
+
+  /* ---- Feature 7: ACX audio script export (all client-side) ---- */
+  {
+    id: 'acx.files.order-and-credits',
+    title: 'Audio script: files in ACX order (00 Opening Credits … NN Closing Credits) with title, author and narrator in both credits; the table of contents left out',
+    kind: 'client-only',
+    reason: 'The audio script plan and its zip are built in the client from the open book; the server never sees the scripts.',
+  },
+  {
+    id: 'acx.script.notes-images-pauses',
+    title: 'Audio script: footnotes become narrator-decision notes, pictures become [IMAGE: alt], scene breaks become pauses',
+    kind: 'client-only',
+    reason: 'Script lines are generated in the client from the manuscript text and section metadata.',
+  },
+  {
+    id: 'acx.pron.detect-roundtrip-first-note',
+    title: 'Pronunciation guide: candidates detected, entries round-trip with the book, first-occurrence note only',
+    kind: 'client-only',
+    reason: 'Detection and the guide are client state; the guide rides the manuscript document the server stores opaquely.',
+  },
+  {
+    id: 'acx.estimate.words-per-hour',
+    title: "Audio script: length estimate is words / 9,300 (ACX's average) and a file over 120 minutes is warned",
+    kind: 'client-only',
+    reason: 'The estimate is computed in the client summary screen from word counts; nothing is recorded or measured.',
+  },
 ];
 
 /* ------------------------------------------------------------------ */

@@ -583,7 +583,7 @@ and the validator cases run against deliberately damaged packages),
 plus account basics (mail delivery state, the `/reset` page in the
 deploy tree, reset-token schema). The rest are registered as
 **`client-only`** with a one-line reason each
-(theme application, print CSS, word counts — inherently client-UI
+(theme application, print CSS, word counts, the ACX audio script — inherently client-UI
 state): reported in every run, never silently dropped, never faked
 as passing. Runs are stored in `housekeeping_check_runs`.
 
@@ -615,6 +615,42 @@ activity: `pause` (planned ahead, free) and `repair` (auto-applied by the
 heartbeat after a missed day, consuming the user's freeze balance —
 new accounts start with 1). Current/longest streaks are computed server-side
 from activity + freeze days.
+
+## Studio: ACX audio script export (client-only)
+
+Export → **Audio Script for ACX (Audible)** opens a summary screen and
+downloads `<title>-audio-script.zip`, built entirely in the browser
+(JSZip; no server call, no audio recorded):
+
+- `DOCX/` and/or `TXT/` narrator scripts, one per file in ACX order —
+  `00 Opening Credits`, one file per narrated section (each opening with
+  its spoken section header), `NN Closing Credits`. Credits are filled
+  from the book's title, subtitle and author plus a narrator name field.
+- Footnotes become `[NARRATOR DECISION — footnote n: …]` notes, pictures
+  `[IMAGE: alt text]`, scene breaks `[PAUSE — scene break]`. The table of
+  contents, title-page family, copyright, frontispiece and colophon are
+  left out by default (each can be switched back on); part dividers are
+  read at the top of the next file.
+- `Pronunciation Guide` — candidates are auto-detected (capitalised
+  names used mid-sentence that never appear in lower case, accented and
+  italicised words; Beuk has no dictionary, so they are labelled
+  guesses). The author's "sounds like" / IPA entries are saved with the
+  book (`serializeBook().audio`) and noted inline at first occurrence.
+  "Listen" previews an entry with the browser's own speech voice.
+- `Retail Sample - suggestion.txt` and `Audio Script Summary.txt` (per-file
+  words and estimated minutes, the words ÷ 9,300 math, warnings, sources).
+
+Rules come from ACX's help pages, cited in the code next to each
+constant: [submission requirements](https://help.acx.com/s/article/acx-audio-submission-requirements)
+(one file per section, separate credit files, ≤120 min per file, retail
+sample ≤5 min from the first five minutes, credit wording),
+[9,300 words per hour](https://help.acx.com/s/article/how-long-will-my-narrated-audiobook-be)
+(an average — every length shown is an estimate), and
+[no table of contents](https://help.acx.com/s/article/producing-and-recording-your-audiobook).
+ACX's pages give no rule for footnotes, pictures or the copyright page,
+so the scripts leave those calls to the author/narrator. Audio specs
+(bit rate, levels, room tone) apply to recordings and are reported as
+not checked.
 
 ## Warmth Phase 0 (M4)
 
