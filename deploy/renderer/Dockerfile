@@ -16,11 +16,13 @@ ENV NODE_ENV=production \
 RUN apt-get update \
  && apt-get install -y --no-install-recommends chromium \
  && rm -rf /var/lib/apt/lists/*
-# The book's own typefaces (the studio's twenty body/heading families,
-# SIL OFL 1.1, each with its OFL.txt), pinned to one google/fonts commit
-# and checked file by file against fonts.lock; then fontconfig's cache
-# is rebuilt so Chromium finds them by family name. Without them the
-# print interior fell back to DejaVu Serif.
+# The book's own typefaces: the static TrueType faces Google Fonts serves
+# for exactly the families/weights/styles the studio loads (twenty book
+# families, SIL OFL 1.1, each with its OFL.txt), every file checked
+# against its pinned sha256 in fonts.lock; then fontconfig's cache is
+# rebuilt so Chromium finds them by family name. Without them the print
+# interior fell back to DejaVu Serif. Static, not variable: Chromium
+# embeds variable fonts in a PDF as Type 3 (see fonts.lock).
 COPY fonts.lock fetch-fonts.mjs /tmp/fonts/
 RUN node /tmp/fonts/fetch-fonts.mjs /tmp/fonts/fonts.lock /usr/share/fonts/truetype/beuk \
  && fc-cache -f /usr/share/fonts/truetype/beuk \
