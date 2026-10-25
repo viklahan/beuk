@@ -10,6 +10,7 @@ import { createMailer, type Mailer } from './mailer.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes } from './routes/auth.js';
 import { billingRoutes } from './routes/billing.js';
+import { cspReportRoutes, type CspReportOptions } from './routes/csp-report.js';
 import { exportRoutes } from './routes/exports.js';
 import { foundersRoutes } from './routes/founders.js';
 import { housekeepingRoutes } from './routes/housekeeping.js';
@@ -35,6 +36,8 @@ export interface AppDeps {
   mailer?: Mailer;
   /** P0 #5: rate limits for the account endpoints (tests tighten them). */
   accountLimits?: AccountLimits;
+  /** CSP violation report endpoint (tests inject the log + limits). */
+  cspReport?: CspReportOptions;
 }
 
 export function buildApp({
@@ -45,6 +48,7 @@ export function buildApp({
   housekeeping,
   mailer,
   accountLimits,
+  cspReport,
 }: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
@@ -64,6 +68,10 @@ export function buildApp({
   // gets its own raw parser mounted on its exact path BEFORE the global
   // JSON parser can touch (and re-shape) the payload.
   app.use('/api/billing/webhook', express.raw({ type: () => true, limit: '5mb' }));
+  // CSP violation reports carry their own small body cap and parser
+  // (application/csp-report, application/reports+json), so they are
+  // mounted before the global JSON parser and its manuscript-sized limit.
+  app.use('/api/csp-report', cspReportRoutes(cspReport));
   // Manuscripts are whole-book JSON documents (pictures and snapshots
   // included); allow generous payloads.
   app.use(express.json({ limit: config.manuscriptMaxBytes }));
