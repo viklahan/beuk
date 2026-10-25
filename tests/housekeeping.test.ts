@@ -170,6 +170,7 @@ test('self-checks: a healthy system passes, client-only cases are reported (neve
       'validator.catches.undeclared-cover',
       'jobs.pdfx.inspection-reads-facts',
       'jobs.pdfx.safer-permits-icc',
+      'jobs.pdfx.icc-profile-matches-def',
     ]) {
       assert.equal(byId.get(id)?.status, 'pass', `${id}: ${byId.get(id)?.detail}`);
     }

@@ -1,0 +1,34 @@
+SWOP2006_Coated3v2.icc — attribution and terms of use
+=====================================================
+
+The PDF/X job embeds this CMYK output profile as the DestOutputProfile
+of every converted interior's GTS_PDFX OutputIntent. The profile is NOT
+stored in this repository: deploy/Dockerfile.tools downloads it at
+image build time from the ICC Profile Registry and checks its hash.
+
+  Source:  https://registry.color.org/profile-registry/profiles/SWOP2006_Coated3v2.icc
+  Entry:   https://registry.color.org/profile-registry/SWOP2006_Coated3v2
+  sha256:  27dc90dbeb399b76c0f91a6b387fe30c38939f034d2500712f3c43094be15e3b
+  Size:    2747952 bytes
+  ICC profile ID (MD5 per ICC.1, computed over the downloaded file):
+           f7b89b0445878f17ebb85d7515da9a98 — equals the "Profile ID" the
+           registry entry lists.
+  Characterisation: CGATS TR 003 — "SWOP proofing and printing on U.S.
+           Grade 3 coated publication paper"
+           (https://registry.color.org/cmyk-registry/cgats_tr_003)
+
+Copyright: X-Rite, Inc.
+
+Terms of use, verbatim from the profile's own copyright (cprt) tag and
+the registry entry:
+
+  This profile is made available by IDEAlliance, with permission of
+  X-Rite, Inc., and may be used, embedded, exchanged, and shared without
+  restriction.  It may not be altered, or sold without written
+  permission of IDEAlliance.
+
+Beuk does not alter the profile (the hash check refuses any other
+bytes) and does not sell the profile itself; it is embedded unchanged in
+the PDFs the job produces, which the terms ("embedded") allow. Whether a
+paid hosted plan counts as "selling" is a reading of the terms, not a
+ruling — ask IDEAlliance if that matters to you.

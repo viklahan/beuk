@@ -6,16 +6,44 @@
 %% section of the README). It declares the PDF/X-1a OutputIntent
 %% and embeds the CMYK ICC profile the intent points at.
 %%
-%% *** EDIT BEFORE PRODUCTION USE ***
-%% The ICC profile path below is a placeholder. Point it at a real
-%% CMYK press profile installed on the server — e.g. install the
-%% `icc-profiles-free` package (Debian/Ubuntu) or Ghostscript's own
-%% ICC profiles and use one such as:
-%%   /usr/share/color/icc/colord/FOGRA39L_coated.icc
-%% If the file does not exist, Ghostscript errors out and the job
-%% fails with that error in its result — by design, never a fake pass.
+%% THE PROFILE (why this one — evidence, not taste):
+%%  - IngramSpark's File Creation Guide (downloaded 2026-10-24,
+%%    https://www.ingramspark.com/hubfs/downloads/file-creation-guide.pdf)
+%%    requires "PDF/X-1a:2001 or PDF/X-3:2002", CMYK images, total ink
+%%    at most 240%, and names NO characterisation or press profile.
+%%    KDP's cover/paperback help (https://kdp.amazon.com/help/topic/G201953020,
+%%    https://kdp.amazon.com/help/topic/G201857950) asks for CMYK and
+%%    names no profile either. So neither printer states a condition.
+%%  - The only named profile found is second-hand: an Adobe forum post
+%%    quoting IngramSpark's FAQ — "we recommend the U.S. Web Coated
+%%    (SWOP) v2" — i.e. US SWOP coated web offset (unverified on
+%%    ingramspark.com; https://community.adobe.com/t5/acrobat-discussions/creating-ingramspark-compatible-pdf-x-with-acrobat-pro/m-p/8084560).
+%%    Adobe's SWOP v2 profile may NOT be bundled with software
+%%    ("distribute the Software only (a) as embedded within digital
+%%    image files and (b) on a standalone basis",
+%%    https://support.epson.net/terms/lfp/1260_pl/eula/index.php), so it
+%%    cannot ship in this image.
+%%  - The redistributable US-SWOP profile is IDEAlliance's
+%%    SWOP2006_Coated3v2.icc in the ICC Profile Registry
+%%    (https://registry.color.org/profile-registry/SWOP2006_Coated3v2):
+%%    characterisation "CGATS TR003", ISO 12647-2:2004, web offset,
+%%    TAC 300%, medium GCR; licence "may be used, embedded, exchanged,
+%%    and shared without restriction. It may not be altered, or sold
+%%    without written permission of IDEAlliance." (also in the
+%%    profile's own cprt tag; see tools/icc/LICENSE-SWOP2006_Coated3v2.txt).
+%%    Its registered characterisation, CGATS TR 003, is "SWOP proofing
+%%    and printing on U.S. Grade 3 coated publication paper"
+%%    (https://registry.color.org/cmyk-registry/cgats_tr_003).
+%%  - KNOWN GAP: the profile's TAC is 300%; IngramSpark asks for <= 240%.
+%%    Converting through this profile does not cap ink at 240%.
+%%
+%% deploy/Dockerfile.tools downloads that exact file (pinned URL +
+%% sha256) to the path below. The housekeeping check
+%% jobs.pdfx.icc-profile-matches-def verifies file, hash and these
+%% strings agree. If the file does not exist, the job fails as
+%% "not configured" — by design, never a fake pass.
 
-/BeukICCPath (/usr/share/color/icc/PDFX_ICC_PROFILE.icc) def
+/BeukICCPath (/usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc) def
 
 % PDF/X version key + document info (title/trailer are per-book at
 % the PDF level; this declares the conformance claim).
@@ -34,16 +62,18 @@
 [{beukICCProfile} << /N 4 >> /PUT pdfmark
 [{beukICCProfile} BeukICCPath (r) file /PUT pdfmark
 
-% The OutputIntent dictionary: PDF/X-1a requires an output condition
-% identifier naming a standard printing condition (here CGATS TR 001,
-% the common US web-offset reference) and the destination profile.
+% The OutputIntent dictionary. OutputConditionIdentifier is the ICC
+% characterisation-registry reference name of the condition the
+% embedded profile was built from ("CGATS TR 003",
+% https://registry.color.org/cmyk-registry/cgats_tr_003); RegistryName
+% is that registry; Info names the profile and the condition in words.
 [/_objdef {beukOutputIntent} /type /dict /OBJ pdfmark
 [{beukOutputIntent} <<
     /Type /OutputIntent
     /S /GTS_PDFX
-    /OutputConditionIdentifier (CGATS TR 001)
+    /OutputConditionIdentifier (CGATS TR 003)
     /RegistryName (http://www.color.org)
-    /Info (CGATS TR 001)
+    /Info (SWOP2006_Coated3v2.icc - SWOP proofing and printing on U.S. Grade 3 coated publication paper \(CGATS TR 003\))
     /DestOutputProfile {beukICCProfile}
   >> /PUT pdfmark
 

@@ -191,7 +191,7 @@ if [ "${INSTALL_TOOLS}" = "1" ]; then
   ) || TOOLS_OK=0
   if [ "${TOOLS_OK}" = "1" ]; then
     COMPOSE_FILES+=(-f deploy/docker-compose.tools.yml)
-    TOOLS_STATE="enabled — app image rebuilt with JRE + Ghostscript + EPUBCheck (PDFX ICC auto-pointed at a FOGRA profile when found); print-html renders in the isolated renderer service"
+    TOOLS_STATE="enabled — app image rebuilt with JRE + Ghostscript + EPUBCheck (PDF/X press profile SWOP2006_Coated3v2.icc, CGATS TR 003, sha256-pinned); print-html renders in the isolated renderer service"
     note "tools overlay will be used"
   else
     TOOLS_STATE="FAILED to prepare — deploy continues; jobs will report \"not configured\" until fixed"

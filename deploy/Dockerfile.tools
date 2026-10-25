@@ -1,5 +1,6 @@
 # Beuk app image + the M5 job tools that run INSIDE the app container:
-# a JRE (for EPUBCheck), Ghostscript, and CMYK ICC profiles.
+# a JRE (for EPUBCheck), Ghostscript, and the CMYK press profile the
+# PDF/X job embeds.
 # deploy/install.sh builds this as an overlay ON TOP of the stock app image
 # (which deliberately stays slim). EPUBCheck itself is not baked in here —
 # install.sh downloads the release into ../tools-bin/ and this file copies
@@ -15,18 +16,25 @@ FROM ${BASE_IMAGE}
 USER root
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      default-jre-headless ghostscript icc-profiles-free \
+      default-jre-headless ghostscript ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
-# Point the PDF/X definition at a real CMYK press profile if the
-# icc-profiles-free package shipped one (FOGRA is the common case).
-# If none is found the placeholder path stays, and PDF/X jobs fail with
-# Ghostscript's own error in their result — honest, never a fake pass.
-# (Observed 2026-10-24 on node:24-slim / Debian bookworm: the package ships
-# FOGRA28L..FOGRA40L only as .ti3 characterisation data, no .icc, so this
-# search finds nothing there — supply a real profile per README step 5.)
-RUN p="$(find /usr/share/color/icc -iname '*fogra*.icc' 2>/dev/null | head -n 1)"; \
-    if [ -n "$p" ]; then \
-      sed -i "s|^/BeukICCPath .*|/BeukICCPath ($p) def|" /app/tools/PDFX_def.ps; \
-    fi
+# The CMYK press profile tools/PDFX_def.ps embeds (its /BeukICCPath line):
+# IDEAlliance's SWOP2006_Coated3v2.icc (characterisation CGATS TR 003)
+# from the ICC Profile Registry, pinned by sha256 — any other bytes fail
+# the build. Why this profile, and its licence ("may be used, embedded,
+# exchanged, and shared without restriction"; not altered or sold):
+# tools/PDFX_def.ps and tools/icc/LICENSE-SWOP2006_Coated3v2.txt.
+# https://registry.color.org/profile-registry/SWOP2006_Coated3v2
+# (Debian's icc-profiles-free has no CMYK press profile — FOGRA data only
+# as .ti3 — and non-free icc-profiles 2.1-2 carries a different, older
+# SWOP2006_Coated3v2.icc build whose ICC profile ID does not match the
+# registry's, so the registry file is used.)
+ARG ICC_URL=https://registry.color.org/profile-registry/profiles/SWOP2006_Coated3v2.icc
+ARG ICC_SHA256=27dc90dbeb399b76c0f91a6b387fe30c38939f034d2500712f3c43094be15e3b
+RUN mkdir -p /usr/share/color/icc/beuk \
+ && curl -fsSL --retry 3 -o /usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc "$ICC_URL" \
+ && echo "$ICC_SHA256  /usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc" | sha256sum -c - \
+ && chmod 0644 /usr/share/color/icc/beuk/SWOP2006_Coated3v2.icc
+COPY tools/icc/LICENSE-SWOP2006_Coated3v2.txt /usr/share/color/icc/beuk/
 COPY tools-bin/ /opt/epubcheck/
 USER node

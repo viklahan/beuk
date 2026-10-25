@@ -137,6 +137,7 @@ export function testConfig(overrides?: Partial<Config>): Config {
     rendererUrl: null,
     legacyHtmlPdfBin: null,
     jobTimeoutMs: 120_000,
+    pdfxTimeoutMs: 900_000,
     javaMaxHeap: '512m',
     jobMaxActivePerUser: 2,
     jobMaxQueued: 20,

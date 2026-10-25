@@ -75,9 +75,18 @@ export interface Config {
    *  running Chromium on user HTML inside the app container exposed the
    *  app's secrets and volumes, so that mode no longer exists. */
   legacyHtmlPdfBin: string | null;
-  /** M5 jobs: per-job wall-clock timeout in ms (JOB_TIMEOUT_MS,
-   *  default 2 minutes); a job that overruns is stopped and fails. */
+  /** M5 jobs: wall-clock timeout in ms (JOB_TIMEOUT_MS, default 2
+   *  minutes) for EPUBCheck and for the pdfx job's HTML-to-PDF renderer
+   *  request; a step that overruns is stopped and the job fails. */
   jobTimeoutMs: number;
+  /** M5 jobs: wall-clock timeout in ms for the pdfx job's Ghostscript
+   *  conversion step (PDFX_TIMEOUT_MS, default 15 minutes). Separate
+   *  because PDF/X-1a forbids transparency: Ghostscript flattens every
+   *  page that has any by rendering it whole to an image, which took
+   *  ~100 s of the bundled 81-page sample's run (the renderer: ~6 s).
+   *  15 minutes is an operational default sized for books several
+   *  times that, not a measured limit. */
+  pdfxTimeoutMs: number;
   /** M5 jobs: maximum JVM heap for EPUBCheck (JAVA_MAX_HEAP, passed as
    *  -Xmx; default 512m). A hostile or huge EPUB then fails with an
    *  OutOfMemoryError in its result instead of starving the box. */
@@ -170,6 +179,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rendererUrl: env.RENDERER_URL || null,
     legacyHtmlPdfBin: env.HTML_PDF_BIN || null,
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),
+    pdfxTimeoutMs: positiveInt(env.PDFX_TIMEOUT_MS, 900_000),
     javaMaxHeap: /^[1-9][0-9]*[kKmMgG]?$/.test(env.JAVA_MAX_HEAP ?? '') ? env.JAVA_MAX_HEAP! : '512m',
     jobMaxActivePerUser: positiveInt(env.JOB_MAX_ACTIVE_PER_USER, 2),
     jobMaxQueued: positiveInt(env.JOB_MAX_QUEUED, 20),
