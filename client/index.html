@@ -311,7 +311,50 @@
       }
       .matter-lib-btn:hover { border-color: var(--accent); color: var(--accent); }
       .matter-lib-btn.exists { opacity: .55; }
-      .side-status { border-top: 1px solid var(--line); padding: 12px 16px 14px; background: var(--panel); flex: 0 0 auto; }
+      /* ==== BEUK:sidebar ==== */
+      /* The bottom dock: the four book tools as one compact labelled
+         row (always visible), the shelf line, and the statistics as a
+         disclosure whose header carries a one-line live summary. The
+         outline above gets the height the old stacked panel took. */
+      .side-dock { border-top: 1px solid var(--line); background: var(--panel); flex: 0 0 auto; padding: 8px 10px 6px; }
+      .side-tools { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+      .side-tool {
+        display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; min-width: 0;
+        padding: 6px 2px 5px; border: 1px solid transparent; border-radius: 8px; background: transparent;
+        color: var(--ink-2); font: inherit; font-size: 10.5px; font-weight: 600; line-height: 1.2; cursor: pointer;
+      }
+      .side-tool:hover { background: var(--panel-2); border-color: var(--line); color: var(--ink); }
+      .side-tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .side-tool svg { width: 16px; height: 16px; flex: 0 0 auto; }
+      .side-tool-lab { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .side-dock .sync-row { margin: 6px 6px 0; }
+      .side-status { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 4px; }
+      .side-status-head {
+        display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 6px; border: 0; border-radius: 7px;
+        background: transparent; color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 500; text-align: start; cursor: pointer;
+      }
+      .side-status-head:hover { background: var(--panel-2); color: var(--ink); }
+      .side-status-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .side-status-sum { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-variant-numeric: tabular-nums; }
+      .side-status-chev { width: 14px; height: 14px; flex: 0 0 auto; transition: transform .15s ease; }
+      .side-status-head[aria-expanded="true"] .side-status-chev { transform: rotate(180deg); }
+      .side-status-body { padding: 6px 6px 8px; max-height: 46vh; overflow-y: auto; }
+      .side-status-body[hidden] { display: none; }
+      .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+      /* Outline groups: each heading is a toggle with its section count. */
+      .group-toggle {
+        width: 100%; border: 0; background: transparent; font: inherit; font-size: 10.5px; font-weight: 700; letter-spacing: .14em;
+        text-transform: uppercase; color: var(--muted); cursor: pointer; border-radius: 6px; text-align: start; justify-content: flex-start; gap: 6px;
+      }
+      .group-toggle:hover { color: var(--ink); }
+      .group-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+      .group-toggle .og-chev { width: 12px; height: 12px; flex: 0 0 auto; transition: transform .15s ease; }
+      .group-toggle[aria-expanded="false"] .og-chev { transform: rotate(-90deg); }
+      html[dir="rtl"] .group-toggle[aria-expanded="false"] .og-chev { transform: rotate(90deg); }
+      .group-toggle .og-name { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .group-toggle .og-count { margin-inline-start: auto; font-family: var(--mono-font); font-size: 10px; letter-spacing: 0; font-weight: 500; color: var(--muted); }
+      .sec-item.og-hidden, .outline-group.og-collapsed > .og-extra { display: none; }
+      /* ==== /BEUK:sidebar ==== */
       .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
       .streak-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; color: var(--ink-2); }
       .streak-row svg { width: 15px; height: 15px; color: var(--gold); flex: 0 0 auto; }
@@ -1293,7 +1336,6 @@
       /* ---------- Story Insights ---------- */
       :root { --ins-a: var(--accent); --ins-b: #14665a; }
       :root[data-theme="candlelight"] { --ins-a: var(--accent); --ins-b: var(--gold); }
-      .ins-open-btn { width: 100%; margin-top: 11px; }
       .ins-modal { max-width: 780px; }
       .ins-sec { border-top: 1px solid var(--line); padding: 19px 0 8px; }
       .ins-sec:first-child { border-top: none; padding-top: 4px; }
@@ -1851,26 +1893,35 @@
           <div id="structureScroll">
             <div id="structureList"></div>
           </div>
-          <div class="side-status">
-            <div class="stat-grid">
-              <div class="stat-cell"><div class="stat-num" id="statWords">0</div><div class="stat-lab" data-i18n="stats.words">Words</div></div>
-              <div class="stat-cell"><div class="stat-num" id="statChars">0</div><div class="stat-lab" data-i18n="stats.characters">Characters</div></div>
-              <div class="stat-cell"><div class="stat-num" id="statPages">0</div><div class="stat-lab" data-i18n="stats.pages">Pages est.</div></div>
-              <div class="stat-cell"><div class="stat-num" id="statTime">0m</div><div class="stat-lab" data-i18n="stats.readingTime">Reading time</div></div>
+          <!-- ==== BEUK:sidebar ==== -->
+          <div class="side-dock">
+            <div class="side-tools" id="sideTools" role="group" aria-label="Book tools" data-i18n-aria="side.toolsAria">
+            <button class="side-tool" id="btnInsights" type="button" title="Story Insights" aria-label="Story Insights" data-i18n-title="insights.open" data-i18n-aria="insights.open"><i data-lucide="activity"></i><span class="side-tool-lab" data-i18n="side.toolInsights">Insights</span></button>
+            <button class="side-tool" id="btnGoals" type="button" title="Goals" aria-label="Goals" data-i18n-title="goals.open" data-i18n-aria="goals.open"><i data-lucide="target"></i><span class="side-tool-lab" data-i18n="side.toolGoals">Goals</span></button>
+            <button class="side-tool" id="btnHistory" type="button" title="History" aria-label="History" data-i18n-title="history.open" data-i18n-aria="history.open"><i data-lucide="history"></i><span class="side-tool-lab" data-i18n="side.toolHistory">History</span></button>
             </div>
-            <p id="statsNote" style="margin:9px 0 0; font-size:11px; color:var(--muted); line-height:1.5;">Pages at 250 words/page · reading time at 225 wpm.</p>
-            <button class="side-btn ins-open-btn" id="btnInsights" data-i18n="insights.open"><i data-lucide="activity"></i>Story Insights</button>
-            <button class="side-btn ins-open-btn" id="btnGoals" data-i18n="goals.open"><i data-lucide="target"></i>Goals</button>
-            <button class="side-btn ins-open-btn" id="btnHistory" data-i18n="history.open"><i data-lucide="history"></i>History</button>
-            <div class="streak-row"><i data-lucide="flame"></i><span id="streakText">No writing streak yet — write today to light one.</span></div>
-            <div class="goal-lines" id="goalLines" style="display:none;"></div>
-            <div class="sync-row" id="syncRow" style="display:none;"><i data-lucide="cloud"></i><span id="syncText">On your shelf ✓</span></div>
-            <div class="prog-block" id="progressBlock">
-              <div class="prog-row"><span>Front Matter</span><span class="prog-track"><span class="prog-fill" id="progFront" style="display:block; width:0%;"></span></span><span class="prog-pct" id="progFrontPct">0%</span></div>
-              <div class="prog-row"><span>Body</span><span class="prog-track"><span class="prog-fill" id="progBody" style="display:block; width:0%;"></span></span><span class="prog-pct" id="progBodyPct">0%</span></div>
-              <div class="prog-row"><span>Back Matter</span><span class="prog-track"><span class="prog-fill" id="progBack" style="display:block; width:0%;"></span></span><span class="prog-pct" id="progBackPct">0%</span></div>
+              <div class="sync-row" id="syncRow" style="display:none;"><i data-lucide="cloud"></i><span id="syncText">On your shelf ✓</span></div>
+            <div class="side-status" id="sideStatus">
+              <button class="side-status-head" id="btnSideStatus" type="button" aria-expanded="false" aria-controls="sideStatusBody"><span class="sr-only" data-i18n="side.statsAria">Book statistics</span><span class="side-status-sum" id="sideStatusSummary">0 words</span><i data-lucide="chevron-up" class="side-status-chev"></i></button>
+              <div class="side-status-body" id="sideStatusBody" hidden>
+                <div class="stat-grid">
+                  <div class="stat-cell"><div class="stat-num" id="statWords">0</div><div class="stat-lab" data-i18n="stats.words">Words</div></div>
+                  <div class="stat-cell"><div class="stat-num" id="statChars">0</div><div class="stat-lab" data-i18n="stats.characters">Characters</div></div>
+                  <div class="stat-cell"><div class="stat-num" id="statPages">0</div><div class="stat-lab" data-i18n="stats.pages">Pages est.</div></div>
+                  <div class="stat-cell"><div class="stat-num" id="statTime">0m</div><div class="stat-lab" data-i18n="stats.readingTime">Reading time</div></div>
+                </div>
+                <p id="statsNote" style="margin:9px 0 0; font-size:11px; color:var(--muted); line-height:1.5;">Pages at 250 words/page · reading time at 225 wpm.</p>
+                <div class="streak-row"><i data-lucide="flame"></i><span id="streakText">No writing streak yet — write today to light one.</span></div>
+                <div class="goal-lines" id="goalLines" style="display:none;"></div>
+                <div class="prog-block" id="progressBlock">
+                  <div class="prog-row"><span data-i18n="side.groupFront">Front Matter</span><span class="prog-track"><span class="prog-fill" id="progFront" style="display:block; width:0%;"></span></span><span class="prog-pct" id="progFrontPct">0%</span></div>
+                  <div class="prog-row"><span data-i18n="side.groupBody">Body</span><span class="prog-track"><span class="prog-fill" id="progBody" style="display:block; width:0%;"></span></span><span class="prog-pct" id="progBodyPct">0%</span></div>
+                  <div class="prog-row"><span data-i18n="side.groupBack">Back Matter</span><span class="prog-track"><span class="prog-fill" id="progBack" style="display:block; width:0%;"></span></span><span class="prog-pct" id="progBackPct">0%</span></div>
+                </div>
+              </div>
             </div>
           </div>
+          <!-- ==== /BEUK:sidebar ==== -->
         </aside>
 
         <!-- ============ PANE 2 : EDITOR / STUDIO ============ -->
@@ -3466,6 +3517,7 @@
         if (typeof dictOnLangChange === "function") dictOnLangChange();
         if (typeof syncThemeButton === "function" && $("themeLabel")) syncThemeButton();
         if (typeof renderSidebar === "function" && $("structureList")) renderSidebar();
+        if (typeof renderSideStatusSummary === "function") renderSideStatusSummary(); /* BEUK:sidebar */
         if (typeof updateStats === "function" && $("statWords")) updateStats();
         if (typeof renderSampleButton === "function" && $("btnSampleStory")) renderSampleButton();
         if (typeof syncEditor === "function" && state.sections && state.sections.length) syncEditor();
@@ -15470,6 +15522,64 @@
       /* ================= UI: sidebar ================= */
       const activeSection = () => state.sections.find((s) => s.id === state.activeId) || state.sections[0];
       function groupOf(s) { return s.kind === "front" ? "Front Matter" : s.kind === "body" ? "Body" : "Back Matter"; }
+      /* ==== BEUK:sidebar ==== */
+      /* Per-device sidebar layout: the statistics disclosure (closed by
+         default) and which outline groups are folded. A convenience
+         only — it lives in this browser, every access is guarded, and
+         the sidebar renders correctly (all groups open, statistics
+         closed) when storage is unavailable. */
+      const SIDE_PREFS_KEY = "beuk.sidebar.v1";
+      let sidePrefsCache = null, ogLastActive = null;
+      function sidePrefs() {
+        if (sidePrefsCache) return sidePrefsCache;
+        let v = null;
+        try { const raw = window.localStorage && localStorage.getItem(SIDE_PREFS_KEY); v = raw ? JSON.parse(raw) : null; } catch (e) { v = null; }
+        const groups = v && v.groups && typeof v.groups === "object" ? v.groups : {};
+        sidePrefsCache = {
+          statusOpen: !!(v && v.statusOpen === true),
+          groups: { front: groups.front === true, body: groups.body === true, back: groups.back === true }
+        };
+        return sidePrefsCache;
+      }
+      function sidePrefsSave() {
+        try { if (window.localStorage) localStorage.setItem(SIDE_PREFS_KEY, JSON.stringify(sidePrefs())); } catch (e) {}
+      }
+      const ogKeyOf = (g) => (g === "Front Matter" ? "front" : g === "Body" ? "body" : "back");
+      const sideOutlineCollapsed = (gk) => !!sidePrefs().groups[gk];
+      function sideOutlineSetCollapsed(gk, collapsed) {
+        const p = sidePrefs();
+        if (!(gk in p.groups) || p.groups[gk] === !!collapsed) return;
+        p.groups[gk] = !!collapsed;
+        sidePrefsSave();
+      }
+      function sideStatusApply() {
+        const btn = $("btnSideStatus"), body = $("sideStatusBody");
+        if (!btn || !body) return;
+        const open = sidePrefs().statusOpen;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        body.hidden = !open;
+      }
+      function sideStatusToggle(open) {
+        const p = sidePrefs();
+        p.statusOpen = open === undefined ? !p.statusOpen : !!open;
+        sidePrefsSave();
+        sideStatusApply();
+      }
+      /* The disclosure header's one-line summary, from the same counts
+         the statistics grid shows. */
+      function renderSideStatusSummary(total) {
+        const el = $("sideStatusSummary"); if (!el) return;
+        if (typeof total !== "number") total = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
+        const mins = Math.round(total / 225);
+        const time = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
+        el.textContent = t("side.statsSummary", { words: fmtNum(total), pages: fmtNum(Math.ceil(total / 250)), time: time });
+      }
+      function sideInit() {
+        const btn = $("btnSideStatus");
+        if (btn) btn.addEventListener("click", () => sideStatusToggle());
+        sideStatusApply();
+      }
+      /* ==== /BEUK:sidebar ==== */
       function renderSidebar() {
         const list = $("structureList");
         /* Rebuilding the list must not throw the writer back to the top:
@@ -15477,10 +15587,24 @@
         const scroller = $("structureScroll");
         const keepScroll = scroller ? scroller.scrollTop : 0;
         let html = "";
+        /* BEUK:sidebar — each group heading is a toggle. Arriving at a
+           section (click, next/prev, search, import, a new page) opens
+           its group; a collapsed group still shows its active row, so
+           the section being edited is never hidden. */
+        const ogActive = activeSection();
+        if (state.activeId !== ogLastActive) {
+          ogLastActive = state.activeId;
+          if (ogActive) sideOutlineSetCollapsed(ogKeyOf(groupOf(ogActive)), false);
+        }
         ["Front Matter", "Body", "Back Matter"].forEach((g) => {
           const items = state.sections.filter((s) => groupOf(s) === g);
           if (!items.length && g !== "Body") return;
-          html += '<div class="group-label"><span>' + (g === "Front Matter" ? t("side.groupFront") : g === "Body" ? t("side.groupBody") : t("side.groupBack")) + "</span></div>";
+          const gk = ogKeyOf(g), gCollapsed = sideOutlineCollapsed(gk);
+          const gName = g === "Front Matter" ? t("side.groupFront") : g === "Body" ? t("side.groupBody") : t("side.groupBack");
+          html += '<button type="button" class="group-label group-toggle" data-og="' + gk + '" aria-expanded="' + (gCollapsed ? "false" : "true") + '" aria-controls="og-' + gk + '"' +
+            ' aria-label="' + esc(gName + " — " + t("side.groupCount", { n: items.length })) + '">' +
+            '<i data-lucide="chevron-down" class="og-chev"></i><span class="og-name">' + esc(gName) + '</span><span class="og-count" aria-hidden="true">' + fmtNum(items.length) + "</span></button>";
+          html += '<div class="outline-group' + (gCollapsed ? " og-collapsed" : "") + '" id="og-' + gk + '" data-og-group="' + gk + '">';
           /* In the body, chapters stand grouped under their Part:
              the divider carries its own row and the chapters that
              follow it (until the next Part) sit indented beneath. */
@@ -15492,7 +15616,7 @@
             const name = isPart
               ? (s.number ? t("import.type.part") + " " + s.number + " — " : "") + (s.title || t("side.untitled"))
               : s.kind === "body" ? (s.number ? t("side.chapterAbbr") + " " + s.number + " — " : "") + (s.title || t("side.untitled")) : s.title;
-            html += '<div class="sec-item' + (isActive ? " active" : "") + (s.included ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + s.id + '" role="button" tabindex="0" draggable="true">' +
+            html += '<div class="sec-item' + (isActive ? " active" : "") + (gCollapsed && !isActive ? " og-hidden" : "") + (s.included ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + s.id + '" role="button" tabindex="0" draggable="true">' +
               '<span class="drag"><i data-lucide="' + (isPart ? "bookmark" : s.kind === "body" ? "grip-vertical" : s.type === "toc" ? "list-ordered" : s.type === "cover" ? "image" : "file-text") + '"></i></span>' +
               '<span class="sec-name">' + esc(name) + '</span>' +
               '<span class="sec-wc" id="wc-' + s.id + '">' + fmtNum(sectionWords(s)) + " " + t("side.wordUnit") + "</span>" +
@@ -15502,9 +15626,16 @@
               '<button type="button" class="mini" data-act="eye" title="' + t("side.includeInExport") + '" aria-label="' + t("side.includeInExport") + '"><i data-lucide="' + (s.included ? "eye" : "eye-off") + '"></i></button>' +
               "</span></div>";
           });
-          if (g === "Body") html += '<button id="btnAddChapter"><i data-lucide="plus"></i>' + t("side.addChapter") + '</button><button id="btnAddPart"><i data-lucide="bookmark-plus"></i>' + t("side.addPart") + "</button>";
+          if (g === "Body") html += '<div class="og-extra"><button id="btnAddChapter"><i data-lucide="plus"></i>' + t("side.addChapter") + '</button><button id="btnAddPart"><i data-lucide="bookmark-plus"></i>' + t("side.addPart") + "</button></div>";
+          html += "</div>";
         });
         list.innerHTML = html;
+        list.querySelectorAll(".group-toggle").forEach((b) => b.addEventListener("click", () => {
+          const gk = b.getAttribute("data-og");
+          sideOutlineSetCollapsed(gk, !sideOutlineCollapsed(gk));
+          renderSidebar();
+          const again = list.querySelector('.group-toggle[data-og="' + gk + '"]'); if (again) again.focus();
+        }));
         renderMatterLib();
         const addBtn = $("btnAddChapter");
         if (addBtn) addBtn.addEventListener("click", addChapter);
@@ -15589,6 +15720,7 @@
         $("statPages").textContent = fmtNum(Math.ceil(total / 250));
         const mins = Math.round(total / 225);
         $("statTime").textContent = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
+        renderSideStatusSummary(total); /* BEUK:sidebar */
         /* The Content page carries its own live counts — this section and
            the whole book — and the Zen pill reads the same numbers. */
         const secTxt = t("editor.countSection", { n: fmtNum(activeSection() ? sectionWords(activeSection()) : 0) });
@@ -36388,6 +36520,7 @@
         initInsights();
         initGoals();
         initHistory();
+        sideInit(); /* BEUK:sidebar */
         initExport();
         initStoreReady(); /* BEUK:store */
         initPrint();
@@ -37100,7 +37233,7 @@
         const hist = $("btnHistory");
         if (hist && !$("btnBetaComments")) {
           const b = document.createElement("button");
-          b.className = "side-btn ins-open-btn"; b.id = "btnBetaComments"; b.type = "button";
+          b.className = "side-tool"; b.id = "btnBetaComments"; b.type = "button"; /* BEUK:sidebar — one of the compact tools row */
           hist.parentNode.insertBefore(b, hist.nextSibling);
           b.addEventListener("click", betaOpenComments);
         }
@@ -37119,7 +37252,9 @@
       function betaFmtDate(v) { return v ? fmtDateIntl(new Date(v)) : ""; }
       function betaRenderButton() {
         const b = $("btnBetaComments"); if (!b) return;
-        b.innerHTML = '<i data-lucide="message-square-quote"></i>' + esc(t("beta.cOpen"));
+        /* BEUK:sidebar — compact tool: short visible label; the full name is the tooltip and accessible name. */
+        b.innerHTML = '<i data-lucide="message-square-quote"></i><span class="side-tool-lab">' + esc(t("side.toolComments")) + "</span>";
+        b.title = t("beta.cOpen"); b.setAttribute("aria-label", t("beta.cOpen"));
       }
       function betaRenderSection() {
         const sec = $("betaSec"); if (!sec) return;
