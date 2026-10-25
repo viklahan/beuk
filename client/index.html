@@ -17390,8 +17390,120 @@
       }
       function deskSectionPages(flow, s, w) {
         flow.innerHTML = sectionHtml(s);
+        keepOrnamentsWithText(flow); /* BEUK:selfchecks — same repair as the visible flow */
         return Math.max(1, Math.round(flow.scrollWidth / (w + COL_GAP)));
       }
+      /* ==== BEUK:selfchecks ==== */
+      /* An ornament never sits alone on a page — enforced after layout.
+         The book CSS forbids a break on both sides of .scene-break
+         (break-before/after: avoid) and on the pre-break block, but in
+         the preview's fixed-height multicol flow Chromium does not
+         honour those 'avoid' values by pulling lines of the preceding
+         paragraph forward: measured in headless Chromium 131 at a
+         1280×720 window (a 107×122 px Kindle screen), a chapter ending
+         "…\n\n***" left the ornament alone at the head of the next page
+         at all 28 paragraph counts the self-check sweeps. 'avoid' is a
+         preference ranked by "break appeal", not a guarantee
+         (https://developer.chrome.com/docs/chromium/renderingng-fragmentation ;
+         https://www.w3.org/TR/css-break-3/#break-between ).
+         So after layout, each stranded ornament is repaired: the last
+         line(s) of the paragraph before it are split off into a
+         continuation paragraph with a forced column break, carrying
+         them onto the ornament's page; if there is no paragraph before
+         it (a figure stands there), the ornament is moved forward to
+         the page of the paragraph after it. Only the on-screen flow and
+         its page-count twin are touched — never the book's text. */
+      function keepOrnamentsWithText(flow) {
+        if (!flow || !flow.querySelector(".scene-break")) return 0;
+        const colW = parseFloat(flow.style.columnWidth) || flow.clientWidth;
+        const step = colW + COL_GAP;
+        if (!step || !colW) return 0;
+        const rtl = flow.dir === "rtl";
+        let repairs = 0;
+        for (let pass = 0; pass < 40; pass++) {
+          const fr = flow.getBoundingClientRect();
+          const colOf = (r) => Math.floor((rtl ? fr.right - r.right : r.left - fr.left) / step);
+          const isProse = (el) => !!el && el.tagName === "P" && !el.closest(".chapter-opening");
+          const colsOf = (el) => { const s = new Set(); Array.prototype.forEach.call(el.getClientRects(), (r) => { if (r.width > 0) s.add(colOf(r)); }); return s; };
+          const prose = Array.prototype.filter.call(flow.querySelectorAll("p"), isProse);
+          const stranded = Array.prototype.find.call(flow.querySelectorAll(".scene-break"), (orn) => {
+            if (orn.dataset.ornKept) return false;
+            const r = orn.getBoundingClientRect(); if (!r.width && !r.height) return false;
+            const c = colOf(r);
+            return !prose.some((p) => colsOf(p).has(c));
+          });
+          if (!stranded) break;
+          stranded.dataset.ornKept = "1"; /* one repair per ornament */
+          const c = colOf(stranded.getBoundingClientRect());
+          const prev = stranded.previousElementSibling, next = stranded.nextElementSibling;
+          if (isProse(prev) && splitLastLines(prev, colOf, c)) { repairs++; continue; }
+          if (isProse(next) && Math.min.apply(null, Array.from(colsOf(next))) > c) {
+            stranded.style.breakBefore = "column"; repairs++; continue;
+          }
+        }
+        return repairs;
+      }
+      /* Puts the flow back exactly as rendered: each continuation's
+         words return to their paragraph, and the marks are cleared —
+         in place, so pictures are never re-created mid-measure. */
+      function undoOrnamentRepairs(flow) {
+        if (!flow) return;
+        Array.prototype.forEach.call(flow.querySelectorAll("p[data-orn-split]"), (cont) => {
+          const host = cont.previousElementSibling;
+          if (host && host.dataset.ornHost) {
+            while (cont.firstChild) host.appendChild(cont.firstChild);
+            host.normalize();
+            if (host.dataset.ornHost === "pb") host.classList.add("pre-break");
+            host.style.textAlignLast = "";
+            delete host.dataset.ornHost;
+          }
+          cont.remove();
+        });
+        Array.prototype.forEach.call(flow.querySelectorAll(".scene-break[data-orn-kept]"), (orn) => {
+          orn.style.breakBefore = ""; delete orn.dataset.ornKept;
+        });
+      }
+      /* Splits a paragraph before its last one or two lines (so the
+         moved lines are never the whole fragment already heading a
+         page) and starts the continuation on a new column. Returns
+         false when the paragraph cannot be split usefully. */
+      function splitLastLines(p, colOf, ornCol) {
+        const words = [];
+        const tw = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = tw.nextNode())) {
+          const txt = node.nodeValue; const re = /\S+/g; let m;
+          while ((m = re.exec(txt))) {
+            const rg = document.createRange(); rg.setStart(node, m.index); rg.setEnd(node, m.index + m[0].length);
+            const rr = rg.getClientRects()[0]; if (!rr) continue;
+            words.push({ node, off: m.index, col: colOf(rr), top: Math.round(rr.top) });
+          }
+        }
+        if (!words.length) return false;
+        /* Line starts: a word on a new column, or lower on the same one. */
+        const starts = [];
+        words.forEach((w, i) => { const pw = words[i - 1]; if (!pw || w.col !== pw.col || w.top > pw.top + 2) starts.push(i); });
+        const lastCol = words[words.length - 1].col;
+        if (lastCol >= ornCol) return false; /* already shares the page */
+        const linesInLastFrag = starts.filter((i) => words[i].col === lastCol).length;
+        const k = Math.min(2, Math.max(1, linesInLastFrag - 1));
+        if (starts.length <= k) return false;
+        const at = words[starts[starts.length - k]];
+        const rg = document.createRange();
+        rg.setStart(at.node, at.off); rg.setEnd(p, p.childNodes.length);
+        const frag = rg.extractContents();
+        const cont = document.createElement("p");
+        cont.className = (p.className || "").replace(/\b(first|has-dropcap)\b/g, "").trim();
+        cont.style.textIndent = "0"; cont.style.breakBefore = "column";
+        cont.dataset.ornSplit = "1";
+        cont.appendChild(frag);
+        p.dataset.ornHost = p.classList.contains("pre-break") ? "pb" : "1";
+        p.classList.remove("pre-break");
+        if (getComputedStyle(p).textAlign === "justify") p.style.textAlignLast = "justify";
+        p.after(cont);
+        return true;
+      }
+      /* ==== /BEUK:selfchecks ==== */
       function computeDeskCountsSync() {
         const wrap = $("flowWrap");
         const w = wrap.clientWidth, h = wrap.clientHeight;
@@ -17514,6 +17626,10 @@
         const twoUp = state.device === "ipad";
         flow.style.columnWidth = (twoUp ? (w - COL_GAP) / 2 : w) + "px";
         flow.style.columnGap = COL_GAP + "px";
+        /* BEUK:selfchecks — repairs are made for one geometry: undo the
+           last ones from the pristine render, then repair afresh. */
+        undoOrnamentRepairs(flow);
+        keepOrnamentsWithText(flow);
         const total = flow.scrollWidth;
         state.pageCount = Math.max(1, Math.round(total / (w + COL_GAP)));
       }
@@ -19245,11 +19361,15 @@
           ctx.fillRect(cx - len / 2, y, len, Math.max(1, H * 0.0016));
         }
       }
+      /* The warm scrim laid over the writer's own art so the type
+         reads on it: r, g, b, alpha. (BEUK:selfchecks — named so the
+         self-check can predict the composited pixel per channel.) */
+      const COVER_ART_SCRIM = [12, 10, 8, 0.20];
       function paintCoverBackground(ctx, W, H, recipe) {
         const src = coverBgSource(recipe);
         if ((recipe.bgType === "image" || recipe.bgType === "photo") && src) {
           drawImageCover(ctx, src, W, H);
-          ctx.fillStyle = "rgba(12,10,8,0.20)"; ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "rgba(" + COVER_ART_SCRIM.slice(0, 3).join(",") + "," + COVER_ART_SCRIM[3] + ")"; ctx.fillRect(0, 0, W, H);
           return;
         }
         if (recipe.bgType === "duotone") {
@@ -26118,6 +26238,12 @@
           cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
         }
       }
+      /* ==== BEUK:selfchecks ==== */
+      /* A picture's fingerprint for "is this picture in that HTML":
+         64 base64 characters from the middle of its data — past the
+         shared file header, so two different JPEGs never collide. */
+      const scImgKey = (img) => { const d = String((img && img.data) || ""); const at = Math.max(0, Math.floor(d.length / 2) - 32); return d.slice(at, at + 64); };
+      /* ==== /BEUK:selfchecks ==== */
       const SELF_CHECKS = [
         /* ---- Feature 1: cover upload + cover landmark ---- */
         { id: "cover.absent.no-cover-artifacts", feature: "cover", name: "No cover uploaded: package has no cover file, cover-image manifest entry, meta, or nav landmark",
@@ -26273,10 +26399,19 @@
               const c2 = document.createElement("canvas"); c2.width = 100; c2.height = 160;
               drawCoverTo(c2, duoRecipe);
               const p2 = c2.getContext("2d").getImageData(4, 4, 1, 1).data;
+              /* BEUK:selfchecks — the scrim is warm (12,10,8 at 20 %), so
+                 grey-120 art composites to 98.4 / 98.0 / 97.6 per channel:
+                 not a neutral grey, and the 8-bit canvas may round the
+                 channels apart (Chromium 131 paints 98,98,97). The art
+                 pixel is checked channel by channel against the
+                 source-over result, within 1 for rounding. */
+              const sc = COVER_ART_SCRIM;
+              const want = [0, 1, 2].map((i) => 120 * (1 - sc[3]) + sc[i] * sc[3]);
+              const artOk = [0, 1, 2].every((i) => Math.abs(p1[i] - want[i]) <= 1);
               return scVerdict(
-                Math.abs(p1[0] - 98) <= 8 && p1[0] === p1[1] && p1[1] === p1[2] &&
+                artOk &&
                 Math.abs(p2[0] - 120) <= 6 && p2[0] === p2[1] && p2[1] === p2[2],
-                "art background pixel ≈ 98 (art under the scrim); duotone pixel ≈ 120 in neutral grey between black and white");
+                "art background pixel " + p1[0] + "," + p1[1] + "," + p1[2] + " ≈ " + want.map((v) => v.toFixed(1)).join(",") + " (grey-120 art under the warm scrim); duotone pixel " + p2[0] + "," + p2[1] + "," + p2[2] + " ≈ 120 in neutral grey between black and white");
             } finally { delete coverImgCache["sc-cover-art"]; }
           } },
         { id: "cover.maker.free-position-photo-bg", feature: "cover", name: "Cover maker: free placement anchors a text block where the writer put it and the position survives normalization; the photo background type is kept and paints the chosen photo; title keywords drop the small words; stock photos come from the shelf endpoint (GET /api/stock/search) — no per-writer key anywhere, signed-out gate, contract-shaped results render, a 501 surfaces the honest not-set-up message",
@@ -28156,6 +28291,15 @@
                   fails.push(label + ": plate leaf does not stand immediately before the opening leaf");
                 if (!bd) { unpaired.push(label); return; }
                 pairCount += 1;
+                /* BEUK:selfchecks — every sample JPEG opens with the same
+                   JFIF header and quantisation tables, so the first 48
+                   base64 characters were identical for every picture:
+                   indexOf found plate and backdrop at the same offset and
+                   "plate ahead of backdrop" could never hold. The key is
+                   now taken from the middle of the image data, and must
+                   tell the two halves apart before anything is read
+                   through it. */
+                if (scImgKey(plate.img) === scImgKey(bd.img)) { fails.push(label + ": plate and backdrop fingerprints collide"); return; }
                 const pairOk = plate.img !== bd.img && plate.img.data !== bd.img.data && s.plateId !== s.backdropId &&
                   plate.alt.trim().length >= 8 && bd.strength === "whisper" &&
                   /— left page$/.test(plate.img.name || "") && /— right page$/.test(bd.img.name || "");
@@ -28165,11 +28309,11 @@
                    backdrop layer, full-bleed under the print rule. */
                 const prev = sectionHtml(s);
                 if (!(prev.includes("plate-page") && prev.includes('alt="' + esc(plate.alt) + '"') &&
-                      prev.includes(plate.img.data.slice(0, 48)) && prev.includes("bd-layer bd-whisper") &&
-                      prev.includes(bd.img.data.slice(0, 48))))
+                      prev.includes(scImgKey(plate.img)) && prev.includes("bd-layer bd-whisper") &&
+                      prev.includes(scImgKey(bd.img))))
                   fails.push(label + ": preview does not carry the pair");
-                const li = print.indexOf(plate.img.data.slice(0, 48));
-                const ri = print.indexOf(bd.img.data.slice(0, 48));
+                const li = print.indexOf(scImgKey(plate.img));
+                const ri = print.indexOf(scImgKey(bd.img));
                 if (!(li !== -1 && ri !== -1 && li < ri && print.includes("bd-layer bd-whisper")))
                   fails.push(label + ": print file does not carry the plate ahead of the backdrop opening");
                 /* EPUB: the plate ships as its own XHTML ahead of the
@@ -28186,12 +28330,12 @@
                   piv.spread = Math.floor(openPage.n / 2); renderPrintView();
                   const openEl = $("pivSpread").querySelector('.piv-page[data-page="' + openPage.n + '"]');
                   const bleedOk = !!openEl && openEl.classList.contains("piv-paired") && !!openEl.querySelector(".piv-bleed") &&
-                    (openEl.querySelector(".piv-bleed").style.backgroundImage || "").includes(bd.img.data.slice(0, 48)) &&
+                    (openEl.querySelector(".piv-bleed").style.backgroundImage || "").includes(scImgKey(bd.img)) &&
                     !openEl.querySelector('.piv-clip .bd-layer:not([style*="display: none"])');
                   if (!bleedOk) fails.push(label + ": opening leaf does not render the paired bleed");
                   piv.spread = Math.floor(platePage.n / 2); renderPrintView();
                   const plateEl = $("pivSpread").querySelector('.piv-page[data-page="' + platePage.n + '"]');
-                  if (!(plateEl && (plateEl.querySelector(".piv-clip") || plateEl).innerHTML.includes(plate.img.data.slice(0, 48)) && !plateEl.querySelector(".piv-bleed")))
+                  if (!(plateEl && (plateEl.querySelector(".piv-clip") || plateEl).innerHTML.includes(scImgKey(plate.img)) && !plateEl.querySelector(".piv-bleed")))
                     fails.push(label + ": plate leaf does not render the left half plain");
                 }
               });
@@ -28913,8 +29057,18 @@
               s.content = "one two three four five";
               updateStats();
               const sec = $("edSecWords").textContent, book = $("edBookWords").textContent, zen = $("zenCount").textContent;
-              return scVerdict(sec.indexOf("5") >= 0 && book.length > 0 && zen.indexOf("5") >= 0,
-                "word bar reads '" + sec + "' · '" + book + "' and the Zen pill carries the same counts");
+              /* BEUK:selfchecks — a section's count is its body words
+                 plus its title and subtitle (sectionWords, the one
+                 function every count reads, and the sample's 24,828
+                 total rests on it). The old test looked for a bare "5",
+                 true only on an untitled section: on the sample's
+                 Chapter One ("The Ferry Crossing" / "In which Mara
+                 returns") the right reading is 5 + 3 + 4 = 12. */
+              const expSec = 5 + countWords(s.title) + countWords(s.subtitle);
+              const secTxt = t("editor.countSection", { n: fmtNum(expSec) });
+              const bookTxt = t("editor.countBook", { n: fmtNum(bookWordTotal()) });
+              return scVerdict(sectionWords(s) === expSec && sec === secTxt && book === bookTxt && zen === secTxt + " · " + bookTxt,
+                "word bar reads '" + sec + "' · '" + book + "' (expected '" + secTxt + "' · '" + bookTxt + "': 5 body words + the section's title and subtitle, and the book total) and the Zen pill carries the same counts ('" + zen + "')");
             } finally { s.content = keep; updateStats(); }
           } },
         { id: "editor.scroll.steady", feature: "editor", name: "Editor scroll and caret hold fast: with the caret mid-chapter and the view scrolled to it, typing, the word-count and streak bookkeeping, the preview re-render, a state sync landing on the same section, a toolbar format and Auto-Format all leave the scroll position and the caret exactly where the writer put them",
