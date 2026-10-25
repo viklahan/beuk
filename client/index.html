@@ -1179,6 +1179,7 @@
       .modal .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .modal .form-grid .full { grid-column: 1 / -1; }
       .modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
+      #modalConfirm .modal-actions { flex-wrap: wrap; } /* BEUK:shelfguard — three choices fit at phone width */
       .file-tree {
         font-family: var(--mono-font); font-size: 12px; line-height: 1.75; background: var(--panel);
         border: 1px solid var(--line); border-radius: 9px; padding: 13px 16px; color: var(--ink-2);
@@ -3018,6 +3019,7 @@
         <p class="m-sub" id="confirmBody"></p>
         <div class="modal-actions">
           <button class="tb-btn" id="btnConfirmNo" type="button">Keep writing</button>
+          <button class="tb-btn" id="btnConfirmAlt" type="button" hidden></button><!-- BEUK:shelfguard — optional third choice -->
           <button class="tb-btn primary" id="btnConfirmYes" type="button">Open it anyway</button>
         </div>
       </div>
@@ -6000,6 +6002,24 @@
       };
       Object.keys(IR_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], IR_STRINGS[code]); });
       /* ==== /BEUK:importreport ==== */
+      /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
+      const SHELFGUARD_STRINGS = {
+        "en": { "shelf.guardDeviceBody": "“{title}” is only on this device — it has never been put on your shelf. Opening another book replaces it here. Put it on your shelf first and you can open it again any time.", "shelf.guardKeep": "Keep my book", "shelf.guardReplace": "Open and replace it", "shelf.guardSaveFirst": "Put it on my shelf, then open", "shelf.guardSaveFailed": "“{title}” could not be put on your shelf, so nothing was replaced — it is still open here." },
+        "es": { "shelf.guardDeviceBody": "«{title}» solo está en este dispositivo: nunca se ha puesto en tu estantería. Abrir otro libro lo reemplaza aquí. Ponlo antes en tu estantería y podrás volver a abrirlo cuando quieras.", "shelf.guardKeep": "Conservar mi libro", "shelf.guardReplace": "Abrir y reemplazarlo", "shelf.guardSaveFirst": "Ponerlo en mi estantería y abrir", "shelf.guardSaveFailed": "No se pudo poner «{title}» en tu estantería, así que no se reemplazó nada: sigue abierto aquí." },
+        "fr": { "shelf.guardDeviceBody": "« {title} » n'existe que sur cet appareil — il n'a jamais été mis sur votre étagère. Ouvrir un autre livre le remplace ici. Mettez-le d'abord sur votre étagère et vous pourrez le rouvrir à tout moment.", "shelf.guardKeep": "Garder mon livre", "shelf.guardReplace": "Ouvrir et le remplacer", "shelf.guardSaveFirst": "Le mettre sur mon étagère, puis ouvrir", "shelf.guardSaveFailed": "« {title} » n'a pas pu être mis sur votre étagère, donc rien n'a été remplacé — il reste ouvert ici." },
+        "de": { "shelf.guardDeviceBody": "„{title}“ gibt es nur auf diesem Gerät — es war noch nie in Ihrem Regal. Ein anderes Buch zu öffnen ersetzt es hier. Stellen Sie es zuerst in Ihr Regal, dann können Sie es jederzeit wieder öffnen.", "shelf.guardKeep": "Mein Buch behalten", "shelf.guardReplace": "Öffnen und ersetzen", "shelf.guardSaveFirst": "Erst ins Regal stellen, dann öffnen", "shelf.guardSaveFailed": "„{title}“ konnte nicht in Ihr Regal gestellt werden, daher wurde nichts ersetzt — es ist hier weiter geöffnet." },
+        "it": { "shelf.guardDeviceBody": "«{title}» è solo su questo dispositivo: non è mai stato messo nella tua libreria. Aprire un altro libro lo sostituisce qui. Mettilo prima nella tua libreria e potrai riaprirlo quando vuoi.", "shelf.guardKeep": "Tieni il mio libro", "shelf.guardReplace": "Apri e sostituiscilo", "shelf.guardSaveFirst": "Mettilo nella libreria, poi apri", "shelf.guardSaveFailed": "Non è stato possibile mettere «{title}» nella tua libreria, quindi non è stato sostituito nulla: è ancora aperto qui." },
+        "pt": { "shelf.guardDeviceBody": "«{title}» só existe neste dispositivo — nunca foi posto na sua estante. Abrir outro livro substitui-o aqui. Ponha-o primeiro na sua estante e poderá voltar a abri-lo quando quiser.", "shelf.guardKeep": "Manter o meu livro", "shelf.guardReplace": "Abrir e substituí-lo", "shelf.guardSaveFirst": "Pô-lo na estante e depois abrir", "shelf.guardSaveFailed": "Não foi possível pôr «{title}» na sua estante, por isso nada foi substituído — continua aberto aqui." },
+        "nl": { "shelf.guardDeviceBody": "“{title}” staat alleen op dit apparaat — het is nooit op uw boekenplank gezet. Een ander boek openen vervangt het hier. Zet het eerst op uw boekenplank, dan kunt u het altijd weer openen.", "shelf.guardKeep": "Mijn boek houden", "shelf.guardReplace": "Openen en vervangen", "shelf.guardSaveFirst": "Eerst op mijn boekenplank, dan openen", "shelf.guardSaveFailed": "“{title}” kon niet op uw boekenplank worden gezet, dus er is niets vervangen — het staat hier nog open." },
+        "pl": { "shelf.guardDeviceBody": "„{title}” jest tylko na tym urządzeniu — nigdy nie trafiła na twoją półkę. Otwarcie innej książki zastąpi ją tutaj. Najpierw odłóż ją na półkę, a otworzysz ją ponownie w każdej chwili.", "shelf.guardKeep": "Zostaw moją książkę", "shelf.guardReplace": "Otwórz i zastąp", "shelf.guardSaveFirst": "Odłóż na półkę, potem otwórz", "shelf.guardSaveFailed": "Nie udało się odłożyć „{title}” na półkę, więc nic nie zostało zastąpione — książka jest tu nadal otwarta." },
+        "ru": { "shelf.guardDeviceBody": "«{title}» есть только на этом устройстве — она ни разу не попадала на вашу полку. Открытие другой книги заменит её здесь. Сначала поставьте её на полку — тогда сможете открыть её снова в любой момент.", "shelf.guardKeep": "Оставить мою книгу", "shelf.guardReplace": "Открыть и заменить", "shelf.guardSaveFirst": "Поставить на полку, затем открыть", "shelf.guardSaveFailed": "Не удалось поставить «{title}» на вашу полку, поэтому ничего не заменено — книга по-прежнему открыта здесь." },
+        "tr": { "shelf.guardDeviceBody": "“{title}” yalnızca bu cihazda — rafınıza hiç konmadı. Başka bir kitap açmak onu burada değiştirir. Önce rafınıza koyun; sonra istediğiniz zaman yeniden açabilirsiniz.", "shelf.guardKeep": "Kitabımı koru", "shelf.guardReplace": "Aç ve değiştir", "shelf.guardSaveFirst": "Önce rafıma koy, sonra aç", "shelf.guardSaveFailed": "“{title}” rafınıza konamadı, bu yüzden hiçbir şey değiştirilmedi — hâlâ burada açık." },
+        "ar": { "shelf.guardDeviceBody": "«{title}» موجود على هذا الجهاز فقط — لم يُوضع على رفّك قط. فتح كتاب آخر يستبدله هنا. ضعه على رفّك أولًا لتتمكّن من فتحه مجددًا في أي وقت.", "shelf.guardKeep": "أبقِ كتابي", "shelf.guardReplace": "افتح واستبدله", "shelf.guardSaveFirst": "ضعه على رفّي ثم افتح", "shelf.guardSaveFailed": "تعذّر وضع «{title}» على رفّك، لذا لم يُستبدل شيء — ما زال مفتوحًا هنا." },
+        "ja": { "shelf.guardDeviceBody": "「{title}」はこの端末にしかありません — まだ一度も本棚に置かれていません。別の本を開くと、ここで置き換わります。先に本棚に置けば、いつでもまた開けます。", "shelf.guardKeep": "自分の本を残す", "shelf.guardReplace": "開いて置き換える", "shelf.guardSaveFirst": "本棚に置いてから開く", "shelf.guardSaveFailed": "「{title}」を本棚に置けなかったため、何も置き換えていません — ここで開いたままです。" },
+        "zh-Hans": { "shelf.guardDeviceBody": "《{title}》只在这台设备上——从未放到你的书架上。打开另一本书会在此替换它。先把它放到书架上，之后随时都能再打开。", "shelf.guardKeep": "保留我的书", "shelf.guardReplace": "打开并替换它", "shelf.guardSaveFirst": "先放到我的书架，再打开", "shelf.guardSaveFailed": "未能把《{title}》放到你的书架上，因此没有替换任何内容——它仍在此打开。" }
+      };
+      Object.keys(SHELFGUARD_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], SHELFGUARD_STRINGS[code]); });
+      /* ==== /BEUK:shelfguard ==== */
       /* Supplementary keys (sync status, settings language hints,
          shelf confirms) — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {
@@ -16428,7 +16448,9 @@
          to the most recent ten, oldest pruned first, while a
          snapshot the writer named is never removed for them. An
          empty desk needs no net, and neither does the untouched
-         sample: it can be reloaded exactly, so nothing is lost. */
+         sample: it can be reloaded exactly, so nothing is lost —
+         except before a whole-book restore, which always takes its
+         snapshot, because its confirmation says so (BEUK:shelfguard). */
       const HISTORY_AUTO_CAP = 10;
       function normalizeHistory(list) {
         if (!Array.isArray(list)) return [];
@@ -16502,7 +16524,10 @@
       function restoreSnapshot(id) {
         const snap = (state.history || []).find((s) => s.id === id);
         if (!snap) return false;
-        autoSnapshot("restore"); /* every restore is itself undoable */
+        /* Every restore is itself undoable — always, the untouched sample
+           and an empty desk included, because the confirmation says a
+           snapshot is taken first (BEUK:shelfguard). */
+        takeSnapshot("", "restore");
         const doc = JSON.parse(JSON.stringify(snap.doc));
         delete doc.history; /* restoring a book never restores its history list */
         applyBookDoc(doc);
@@ -27462,18 +27487,61 @@
         list.querySelectorAll("[data-open-book]").forEach((b) => b.addEventListener("click", () => cloudOpenBook(b.getAttribute("data-open-book"))));
         icons();
       }
+      /* ==== BEUK:shelfguard ==== */
+      /* True when the desk holds a book that exists nowhere else: not an
+         empty desk, not the untouched sample (it reloads exactly), and
+         either not linked to a shelf manuscript or linked with writing
+         the shelf has not seen. Signed out, the link this device last
+         stored answers (a linked book with nothing unsynced is on the
+         shelf). */
+      function deskHoldsUnshelvedWork() {
+        if (isEmptyDesk() || deskIsUntouchedSample()) return false;
+        if (cloud.user) {
+          if (cloud.linkState === "linked" && cloud.linkedId) return !!(cloudDirty || cloud.pendingSyncs > 0 || cloud.conflict);
+          return true;
+        }
+        const L = typeof localLinkSnapshot === "function" ? localLinkSnapshot() : null;
+        return !(L && L.linkedId && !L.shelfDirty);
+      }
+      /* "Put it on my shelf, then open": the desk's book is saved through
+         the normal shelf path (POST when unlinked, PUT with If-Match when
+         linked). True only when the shelf answered and nothing is left
+         unsynced; a refusal, an unreachable shelf or a conflict returns
+         false and the caller replaces nothing. */
+      async function shelfGuardPutDeskOnShelf() {
+        if (!cloud.user || !cloud.available) return false;
+        if (cloud.linkState !== "linked") cloud.linkState = "unlinked";
+        cloudDirty = true;
+        await cloudSaveNow();
+        return cloud.linkState === "linked" && !!cloud.linkedId && !cloudDirty && !cloud.conflict && cloud.syncStatus === "saved";
+      }
+      /* ==== /BEUK:shelfguard ==== */
       async function cloudOpenBook(id) {
         if (!cloud.user || !id) return;
         if (id === cloud.linkedId) { $("modalShelf").classList.remove("open"); return; }
-        const unsaved = cloudDirty || (cloud.linkState !== "linked" && cloud.sessionEdited);
-        if (unsaved) {
-          const ok = await cloudConfirm({
+        /* ==== BEUK:shelfguard ==== — the guard asks whenever the desk's
+           book exists nowhere else (never put on the shelf, or linked
+           with writing the shelf has not seen) — not only after edits
+           made this session: a book restored from this device and never
+           shelved is the writer's only copy. Asking, not a snapshot: the
+           arriving shelf book brings its own History, so a snapshot of
+           this one could only survive inside a different book. */
+        if (deskHoldsUnshelvedWork()) {
+          const title = state.meta.title || t("misc.untitledBook");
+          const linked = cloud.linkState === "linked" && !!cloud.linkedId;
+          const choice = await cloudConfirm({
             title: t("shelf.openConfirmTitle"),
-            body: t("shelf.openConfirmBody", { title: state.meta.title || t("misc.untitledBook") }),
-            yes: t("confirm.openAnyway"), no: t("confirm.keep")
+            body: linked ? t("shelf.openConfirmBody", { title: title }) : t("shelf.guardDeviceBody", { title: title }),
+            yes: t("shelf.guardReplace"), alt: t("shelf.guardSaveFirst"), no: t("shelf.guardKeep"), defaultNo: true
           });
-          if (!ok) return;
+          if (!choice) return;
+          if (choice === "alt" && !(await shelfGuardPutDeskOnShelf())) {
+            toast(t("shelf.guardSaveFailed", { title: title }), "alert-triangle");
+            return;
+          }
+          if (id === cloud.linkedId) { $("modalShelf").classList.remove("open"); return; }
         }
+        /* ==== /BEUK:shelfguard ==== */
         const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(id), {});
         if (!r || !r.manuscript || !r.manuscript.doc) {
           toast(t("toast.bookOpenFail"), "alert-triangle");
@@ -27545,8 +27613,13 @@
           $("confirmBody").textContent = spec.body || "";
           $("btnConfirmYes").innerHTML = esc(spec.yes || "Yes");
           $("btnConfirmNo").textContent = spec.no || "Cancel";
+          /* BEUK:shelfguard — an optional third choice resolves "alt"; only callers that pass spec.alt ever see it. */
+          const alt = $("btnConfirmAlt");
+          if (alt) { alt.textContent = spec.alt || ""; alt.hidden = !spec.alt; }
           $("modalConfirm").classList.add("open");
           icons();
+          /* BEUK:shelfguard — the safe choice holds the focus, so Enter keeps the writer's book. */
+          if (spec.defaultNo) { try { $("btnConfirmNo").focus({ preventScroll: true }); } catch (e) {} }
         });
       }
       function cloudConfirmDone(value) {
@@ -27829,6 +27902,7 @@
         $("btnBringBook").addEventListener("click", cloudBringBook);
         $("btnConfirmYes").addEventListener("click", () => cloudConfirmDone(true));
         $("btnConfirmNo").addEventListener("click", () => cloudConfirmDone(false));
+        { const alt = $("btnConfirmAlt"); if (alt) alt.addEventListener("click", () => cloudConfirmDone("alt")); } /* BEUK:shelfguard */
         $("btnArcEpub").addEventListener("click", async () => { if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; } cloudArchiveExport("epub", await buildEpubBlob(), platformFilename(), state.exportPlatform); });
         $("btnArcMd").addEventListener("click", () => cloudArchiveExport("markdown", new Blob([buildMarkdown()], { type: "text/markdown;charset=utf-8" }), slug(state.meta.title) + ".md", null));
         $("btnArcHtml").addEventListener("click", () => cloudArchiveExport("html", new Blob([buildStandaloneHtml()], { type: "text/html;charset=utf-8" }), slug(state.meta.title) + ".html", null));
@@ -34690,6 +34764,48 @@
       );
       /* ==== /BEUK:print ==== */
       /* ==== /BEUK:acx ==== */
+      /* ==== BEUK:shelfguard ==== */
+      SELF_CHECKS.push(
+        { id: "history.restore.snapshot-always", feature: "history", name: "Restore the whole book takes the snapshot its confirmation promises in every case — the untouched sample included — and that snapshot gives the replaced book back exactly",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            const keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            const text = () => state.sections.map((x) => x.content).join("\n");
+            try {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              state.meta.title = "Check Restore Mine";
+              state.sections.find((x) => x.type === "chapter").content = "Words kept in a named snapshot — check.";
+              const mineText = text();
+              const mine = takeSnapshot("Check mine", null);
+              applyBookDoc(buildSampleBook());
+              sampleState.loaded = true; sampleState.loadedJson = sampleComparableJson();
+              const sampleText = text();
+              if (!deskIsUntouchedSample()) bad.push("fixture: the sample is not untouched");
+              const n0 = (state.history || []).length;
+              restoreSnapshot(mine.id);
+              const s0 = state.history[0];
+              if (state.history.length !== n0 + 1 || !s0 || s0.auto !== "restore") bad.push("no snapshot taken before restoring over the untouched sample (history " + n0 + " → " + state.history.length + ")");
+              else if (s0.doc.sections.map((x) => x.content).join("\n") !== sampleText) bad.push("the snapshot does not hold the replaced book exactly");
+              if (text() !== mineText || state.meta.title !== "Check Restore Mine") bad.push("restore did not return the named snapshot");
+              if (s0 && s0.auto === "restore") {
+                restoreSnapshot(s0.id);
+                if (text() !== sampleText) bad.push("restoring the safety snapshot did not give the sample back exactly");
+              }
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "restore over the untouched sample took its snapshot first; that snapshot returns the sample byte-for-byte");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              local.suspended = keepSusp;
+            }
+          } }
+      );
+      /* ==== /BEUK:shelfguard ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
@@ -34789,7 +34905,90 @@
                 if (keepScene === null) localStorage.removeItem(ZEN_SCENE_KEY); else localStorage.setItem(ZEN_SCENE_KEY, keepScene);
               } catch (e) {}
             }
+          } },
+        /* ==== BEUK:shelfguard ==== */
+        { id: "shelf.open.guards-device-only", feature: "shelf", name: "Opening a shelf book over a book that exists only on this device (restored, never shelved, no edits this session) asks first: Keep my book is the focused default and leaves the desk byte-identical with no shelf call; Put it on my shelf, then open saves it (POST) before the other book arrives; Open and replace it opens on the shelf's own revision. A linked book with nothing unsynced, the untouched sample and an empty desk are not held",
+          async run() {
+            const keep = {
+              doc: JSON.parse(JSON.stringify(serializeBook())), sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
+              c: { user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision,
+                baseUpdatedAt: cloud.baseUpdatedAt, shelfUpdatedAt: cloud.shelfUpdatedAt, sessionEdited: cloud.sessionEdited, editedBeforeSignIn: cloud.editedBeforeSignIn,
+                pendingSyncs: cloud.pendingSyncs, conflict: cloud.conflict, shelf: cloud.shelf, syncStatus: cloud.syncStatus, lastEditAt: cloud.lastEditAt },
+              dirty: cloudDirty, susp: local.suspended, fetch: window.fetch
+            };
+            const calls = [];
+            const OTHER = buildEmptyBook(); OTHER.meta.title = "Check Shelf Other";
+            OTHER.sections.find((x) => x.type === "chapter").content = "The other book's words.";
+            const MINE = "Only-on-this-device words: the lamp at Gullwick burned blue — check " + uid();
+            const at = "2026-01-01T00:00:00.000Z";
+            window.fetch = async (path, opts) => {
+              const m = (opts && opts.method) || "GET"; calls.push(m + " " + path);
+              const res = (o, st) => ({ status: st || 200, ok: !st || st < 400, json: async () => o });
+              if (m === "GET" && path === "/api/manuscripts/sc-other") return res({ manuscript: { id: "sc-other", title: OTHER.meta.title, doc: JSON.parse(JSON.stringify(OTHER)), revision: 7, updatedAt: at } });
+              if (m === "POST" && path === "/api/manuscripts") return res({ manuscript: { id: "sc-mine", revision: 1, updatedAt: at } });
+              if (m === "GET" && path === "/api/manuscripts") return res({ manuscripts: [] });
+              return res({ error: "not in the fixture" }, 404);
+            };
+            const deviceOnly = () => {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              state.meta.title = "Check Device Book";
+              state.sections.find((x) => x.type === "chapter").content = MINE;
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              cloud.user = { id: "sc-user", email: "check@beuk.invalid" }; cloud.available = true;
+              cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null;
+              cloud.sessionEdited = false; cloud.pendingSyncs = 0; cloud.conflict = null; cloudDirty = false; cloud.lastEditAt = 0;
+              calls.length = 0;
+            };
+            const settle = () => new Promise((r) => setTimeout(r, 0));
+            const bad = [];
+            local.suspended = true;
+            try {
+              /* 1. Keep my book */
+              deviceOnly();
+              const before = stableJson(serializeBook());
+              if (!deskHoldsUnshelvedWork()) bad.push("the device-only book was not recognised");
+              let p = cloudOpenBook("sc-other");
+              const altBtn = $("btnConfirmAlt");
+              if (!$("modalConfirm").classList.contains("open")) bad.push("no confirmation");
+              if (document.activeElement !== $("btnConfirmNo") || $("btnConfirmNo").textContent !== t("shelf.guardKeep")) bad.push("Keep my book is not the focused default");
+              if (!altBtn || altBtn.hidden || altBtn.textContent !== t("shelf.guardSaveFirst")) bad.push("no put-on-shelf choice");
+              if ($("confirmBody").textContent !== t("shelf.guardDeviceBody", { title: "Check Device Book" })) bad.push("the body is not the device-only wording");
+              cloudConfirmDone(false); await p; await settle();
+              if (stableJson(serializeBook()) !== before || calls.length) bad.push("Keep changed the desk or called the shelf: " + calls.join(", "));
+              /* 2. Open and replace it */
+              p = cloudOpenBook("sc-other"); cloudConfirmDone(true); await p; await settle();
+              if (state.meta.title !== "Check Shelf Other" || cloud.linkedId !== "sc-other" || cloud.baseRevision !== 7 || cloudDirty) bad.push("Replace did not open the other book clean on its revision");
+              /* 3. Put it on my shelf, then open */
+              deviceOnly();
+              p = cloudOpenBook("sc-other"); cloudConfirmDone("alt"); await p; await settle();
+              if (calls[0] !== "POST /api/manuscripts" || calls.indexOf("GET /api/manuscripts/sc-other") < 1) bad.push("save-first order: " + calls.join(", "));
+              if (state.meta.title !== "Check Shelf Other" || cloud.linkedId !== "sc-other" || cloud.baseRevision !== 7) bad.push("save-first did not then open the other book");
+              /* 4. nothing to lose, nothing asked */
+              deviceOnly(); cloud.linkedId = "sc-linked"; cloud.linkState = "linked"; cloud.baseRevision = 3;
+              if (deskHoldsUnshelvedWork()) bad.push("a linked, synced book was held");
+              cloudDirty = true;
+              if (!deskHoldsUnshelvedWork()) bad.push("a linked book with unsynced writing was not held");
+              cloudDirty = false; cloud.linkedId = null; cloud.linkState = "declined";
+              if (!deskHoldsUnshelvedWork()) bad.push("a book declined for the shelf was not held");
+              applyBookDoc(buildSampleBook()); sampleState.loaded = true; sampleState.loadedJson = sampleComparableJson();
+              if (deskHoldsUnshelvedWork()) bad.push("the untouched sample was held");
+              applyBookDoc(buildEmptyBook()); sampleState.loaded = false; sampleState.loadedJson = null;
+              if (deskHoldsUnshelvedWork()) bad.push("an empty desk was held");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "asked over a device-only book; Keep left the desk byte-identical with no shelf call; Replace opened revision 7 clean; Put-on-shelf POSTed first, then opened; synced, sample and empty desks pass, declined and unsynced are held");
+            } finally {
+              if ($("modalConfirm").classList.contains("open")) cloudConfirmDone(false);
+              await settle();
+              window.fetch = keep.fetch;
+              Object.assign(cloud, keep.c);
+              applyBookDoc(keep.doc);
+              sampleState.loaded = keep.sample.loaded; sampleState.loadedJson = keep.sample.json; renderSampleButton();
+              cloudDirty = keep.dirty;
+              local.suspended = keep.susp;
+              setSyncStatus(keep.c.syncStatus);
+              renderShelfList();
+            }
           } }
+        /* ==== /BEUK:shelfguard ==== */
       ];
       async function runAsyncSelfChecks() {
         const out = [];
