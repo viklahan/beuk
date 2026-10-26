@@ -179,3 +179,31 @@ test('the studio links fonts-scripts.css, names the faces in its font stacks, em
     assert.equal(c.kind, 'client-only');
   }
 });
+
+test('an embedded script face carries its script\'s unicode-range (the preview\'s), so an EPUB\'s Latin text never falls to it', () => {
+  const html = readFileSync(path.join(ROOT, 'client', 'index.html'), 'utf8');
+  const css = readFileSync(path.join(FONTS, 'fonts-scripts.css'), 'utf8');
+  for (const F of FACES) {
+    const webRanges = new Set(
+      [...css.matchAll(/@font-face \{([^}]*)\}/g)].filter((b) => b[1].includes(`font-family: '${F.family}';`)).map((b) => /unicode-range: ([^;]+);/.exec(b[1])![1]),
+    );
+    assert.equal(webRanges.size, 1, `${F.family}: one range in fonts-scripts.css`);
+    const [range] = [...webRanges];
+    assert.ok(html.includes(`family: "${F.family}", dir: "${F.dir}"`), `${F.family} in SCRIPT_FONTS`);
+    assert.ok(html.includes(`range: "${range}",`), `${F.family}: the EPUB face uses the preview's range`);
+    for (const c of [0x41, 0x61, 0x30, 0xe9, 0x2019]) assert.ok(!ranges(range).some(([lo, hi]) => c >= lo && c <= hi), `${F.family} range excludes U+${c.toString(16)}`);
+  }
+  // fontFaceCss writes it, scriptFontsFor passes it, and the self-check asserts it
+  assert.ok(html.includes(`(f.range ? " unicode-range: " + f.range + ";" : "") + " }"`));
+  assert.ok(html.includes('weight: fc.weight, range: sf.range, data: data'));
+  assert.ok(html.includes(`"; font-style: normal; unicode-range: " + sf.range + "; }"`));
+});
+
+test('the Print Interior View sets the book\'s direction on its page flow and turns right-to-left columns the other way', () => {
+  const html = readFileSync(path.join(ROOT, 'client', 'index.html'), 'utf8');
+  const fn = /function pivSectionFlow\(s, g\) \{([\s\S]*?)\n      \}/.exec(html)![1];
+  assert.ok(fn.includes('flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";'));
+  assert.ok(html.includes('flow.style.transform = "translateX(" + ((flow.dir === "rtl" ? 1 : -1) * page.col * (g.contentW + PIV_GAP)) + "px)";'));
+  // the uploaded-font self-check no longer counts the script faces as an unused uploaded face
+  assert.ok(html.includes('!Object.keys(SCRIPT_FONTS).some((k) => SCRIPT_FONTS[k].faces.some((fc) => f.path === "OEBPS/Fonts/" + fc.file))'));
+});

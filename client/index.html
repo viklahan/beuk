@@ -16014,7 +16014,12 @@
           /* BEUK:scriptfonts — an embedded library face carries its
              licence (SIL OFL 1.1) once per family, as the licence asks */
           (f.ofl && !oflDone[f.family] && (oflDone[f.family] = true) ? "/* " + f.family + " is embedded under the SIL Open Font License 1.1:\n" + f.ofl.replace(/\*\//g, "* /") + "\n*/\n" : "") +
-          '@font-face { font-family: "' + f.family.replace(/"/g, "") + '"; src: url("' + urlFor(f) + '") format("' + FONT_FORMAT[f.ext] + '"); font-weight: ' + (f.weight || "normal") + '; font-style: normal; }'
+          '@font-face { font-family: "' + f.family.replace(/"/g, "") + '"; src: url("' + urlFor(f) + '") format("' + FONT_FORMAT[f.ext] + '"); font-weight: ' + (f.weight || "normal") + '; font-style: normal;' +
+          /* BEUK:scriptfonts — a script face draws only its own script
+             (the preview's fonts-scripts.css ranges): its TrueType also
+             carries Latin, and without the range a reader that lacks the
+             book's Latin face would set the Latin text in it */
+          (f.range ? " unicode-range: " + f.range + ";" : "") + " }"
         ).join("\n");
       }
       /* ==== BEUK:scriptfonts ==== The book's script faces for ebooks.
@@ -16030,12 +16035,14 @@
       const SCRIPT_MIN_CHARS = 20;
       const SCRIPT_FONTS = {
         deva: { family: "Noto Serif Devanagari", dir: "notoserifdevanagari", langs: ["hi", "mr", "ne", "sa"],
+          range: "U+0900-097F, U+1CD0-1CF4, U+1CF7-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B0A",
           re: /[ऀ-ॿ᳐-᳿꣠-ꣿ]/g,
           faces: [
             { weight: 400, file: "Noto_Serif_Devanagari-normal-400.ttf", sha256: "39ff220273661f9b01893e61d16756a612f6f3e358c1d2546b5fc24b6b7fecbb" },
             { weight: 700, file: "Noto_Serif_Devanagari-normal-700.ttf", sha256: "de5246a1e11ad12d16e5bff2b08a0f2dd4d8922f36d01a73020d40dff76cacaf" }
           ] },
         arab: { family: "Amiri", dir: "amiri", langs: ["ar", "fa", "ur"],
+          range: "U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1",
           re: /[؀-ۿݐ-ݿࡰ-ࣿﭐ-﷿ﹰ-ﻼ]/g,
           faces: [
             { weight: 400, file: "Amiri-normal-400.ttf", sha256: "7f19c4a5dc77b0ef435b430d750759170def15d6e3801006e0704dadc7f220e3" },
@@ -16069,7 +16076,7 @@
           if (!scriptFontOfl[sf.dir]) return;
           sf.faces.forEach((fc) => {
             const data = scriptFontData[sf.dir + "/" + fc.file];
-            if (data) out.push({ id: "sf-" + sf.dir + "-" + fc.weight, family: sf.family, ext: "ttf", mediaType: FONT_MEDIA.ttf, file: fc.file, weight: fc.weight, data: data, ofl: scriptFontOfl[sf.dir] });
+            if (data) out.push({ id: "sf-" + sf.dir + "-" + fc.weight, family: sf.family, ext: "ttf", mediaType: FONT_MEDIA.ttf, file: fc.file, weight: fc.weight, range: sf.range, data: data, ofl: scriptFontOfl[sf.dir] });
           });
         });
         return out;
@@ -29216,6 +29223,11 @@
         flow.style.height = g.contentH + "px";
         flow.style.columnWidth = g.contentW + "px";
         flow.style.columnGap = PIV_GAP + "px";
+        /* BEUK:scriptfonts — the book's own direction, as the print
+           file's root carries it; a right-to-left flow lays its overflow
+           columns out leftward (pivPageEl turns them the other way) */
+        flow.setAttribute("lang", state.meta.language || "en");
+        flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
         flow.innerHTML = sectionHtml(s, true, true);
         return flow;
       }
@@ -29339,7 +29351,7 @@
             const inFlow = flow.querySelector(".bd-layer");
             if (inFlow) inFlow.style.display = "none";
           }
-          flow.style.transform = "translateX(" + (-(page.col * (g.contentW + PIV_GAP))) + "px)";
+          flow.style.transform = "translateX(" + ((flow.dir === "rtl" ? 1 : -1) * page.col * (g.contentW + PIV_GAP)) + "px)";
           clip.appendChild(flow);
           el.appendChild(clip);
         }
@@ -36990,7 +37002,9 @@
                 validateEpubPackage(files).errors === 0;
               /* An unused face stays out of the package. */
               headSel.value = "Libre Baskerville"; headSel.dispatchEvent(new Event("change"));
-              const unusedOk = state.theme.headFont === "Libre Baskerville" && !epubFiles("generic").some((f) => f.path.indexOf("Fonts/") !== -1);
+              const unusedOk = state.theme.headFont === "Libre Baskerville" && !epubFiles("generic").some((f) => f.path.indexOf("Fonts/") !== -1 &&
+                /* BEUK:scriptfonts — a Hindi or Arabic book carries its script faces; only uploaded faces count here */
+                !Object.keys(SCRIPT_FONTS).some((k) => SCRIPT_FONTS[k].faces.some((fc) => f.path === "OEBPS/Fonts/" + fc.file)));
               /* Removal: gone from the shelf and the pickers, and a
                  book wearing it falls back at once. */
               headSel.value = "Beuk Check Serif"; headSel.dispatchEvent(new Event("change"));
@@ -42556,7 +42570,7 @@
                     const f = files.find((x) => x.path === "OEBPS/Fonts/" + fc.file);
                     if (!f || !f.binary || f.content !== scriptFontData[sf.dir + "/" + fc.file]) bad.push(lang + "/" + preset + ": " + fc.file + " is not in the package");
                     if (opf.indexOf('href="Fonts/' + fc.file + '" media-type="font/ttf"') === -1) bad.push(lang + "/" + preset + ": " + fc.file + " is not declared as font/ttf");
-                    if (css.indexOf('@font-face { font-family: "' + sf.family + '"; src: url("../Fonts/' + fc.file + '") format("truetype"); font-weight: ' + fc.weight + "; font-style: normal; }") === -1) bad.push(lang + "/" + preset + ": no @font-face for " + fc.file);
+                    if (css.indexOf('@font-face { font-family: "' + sf.family + '"; src: url("../Fonts/' + fc.file + '") format("truetype"); font-weight: ' + fc.weight + "; font-style: normal; unicode-range: " + sf.range + "; }") === -1) bad.push(lang + "/" + preset + ": no @font-face (with its script's unicode-range) for " + fc.file);
                   });
                   if (css.indexOf(sf.family + " is embedded under the SIL Open Font License 1.1") === -1 || !/SIL OPEN FONT LICENSE Version 1\.1/.test(css)) bad.push(lang + "/" + preset + ": the OFL text is not in blitz.css");
                   if (files.some((x) => x.path === "OEBPS/Fonts/" + other.faces[0].file)) bad.push(lang + "/" + preset + ": embeds " + other.family + " too");
