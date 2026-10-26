@@ -137,6 +137,7 @@ export function pageChrome(config: Config, title: string, bodyHtml: string): str
     <!-- BEUK:fonts — self-hosted (no request to Google); Literata, Latin, preloaded -->
     <link rel="preload" href="/assets/fonts/literata/literata-latin-normal-400_500_600_700.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="/assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="/assets/fonts/fonts-help.css" />
     <link rel="stylesheet" href="/help/warmth.css" />
     ${billingGateHtml(config)}
   </head>

@@ -12,6 +12,7 @@ const families = [...new Set(fonts.map((r) => r[0]))].sort();
 const total = fonts.reduce((a, r) => a + Number(r[2]), 0);
 const kib = (n) => (n / 1024).toFixed(1) + ' KiB';
 const css = await readFile(path.join(dir, 'fonts.css'));
+const helpCss = await readFile(path.join(dir, 'fonts-help.css'));
 
 let md = `# Beuk web fonts (self-hosted)
 
@@ -21,14 +22,18 @@ fonts.googleapis.com or fonts.gstatic.com for anything, and the
 Content-Security-Policy (Caddyfile) no longer allows either host.
 
 - **What:** ${families.length} families, ${fonts.length} WOFF2 files, ${total} bytes (${kib(total)}) in total;
-  \`fonts.css\` is ${css.length} bytes. A page downloads only the files whose
-  family, weight, style and \`unicode-range\` it actually uses.
+  \`fonts.css\` (${css.length} bytes) is linked by every page; \`fonts-help.css\`
+  (${helpCss.length} bytes) adds Literata 700 and italic 500, which only the help and
+  warmth pages ever asked for — the studio keeps exactly its old Literata faces
+  (400–600, italic 400), the same ones the print renderer installs, so the
+  preview still matches the PDF. A page downloads only the files whose family,
+  weight, style and \`unicode-range\` it actually uses.
 - **Source:** the WOFF2 files are the bytes the Google Fonts CSS2 API serves
   (fonts.gstatic.com) for exactly the families, axes, weights and styles the
   pages requested before; fetched once by a maintainer with
   \`node tools/fonts/vendor-web-fonts.mjs .\` (desktop Chrome user agent). The
-  font files are not modified. \`fonts.css\` holds the same \`@font-face\` blocks
-  that API returned, with \`url()\` pointing at the local file.
+  font files are not modified. The two stylesheets hold the same \`@font-face\`
+  blocks that API returned, with \`url()\` pointing at the local file.
 - **Subsets kept:** latin, latin-ext, cyrillic, cyrillic-ext, greek, greek-ext,
   vietnamese (only those each family offers). Dropped: Lora's \`math\` and
   \`symbols\` subsets. Arabic, Japanese and Chinese text uses system fonts, as

@@ -36,6 +36,8 @@ import type { ShelfStatus } from './status.js';
    Mono in the weights this page always used; only the two faces on
    first paint (Literata headings, Karla text; Latin) are preloaded. */
 export const FONTS_HREF = '/assets/fonts/fonts.css';
+/** Literata 700 + italic 500: asked for by help and warmth pages, never by the studio. */
+export const FONTS_HELP_HREF = '/assets/fonts/fonts-help.css';
 export const HELP_FONT_PRELOADS = [
   '/assets/fonts/literata/literata-latin-normal-400_500_600_700.woff2',
   '/assets/fonts/karla/karla-latin-normal-400_500_600_700.woff2'
@@ -179,6 +181,7 @@ export function chrome(
     <link rel="icon" href="/assets/logo.webp" />
     ${HELP_FONT_PRELOADS.map((u) => `<link rel="preload" href="${u}" as="font" type="font/woff2" crossorigin />`).join('\n    ')}
     <link rel="stylesheet" href="${FONTS_HREF}" />
+    <link rel="stylesheet" href="${FONTS_HELP_HREF}" />
     <link rel="stylesheet" href="${helpAssetUrl('help.css')}" />
     ${billingGateHtml(config)}
   </head>

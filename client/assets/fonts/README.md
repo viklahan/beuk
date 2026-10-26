@@ -6,14 +6,18 @@ fonts.googleapis.com or fonts.gstatic.com for anything, and the
 Content-Security-Policy (Caddyfile) no longer allows either host.
 
 - **What:** 22 families, 219 WOFF2 files, 5890780 bytes (5752.7 KiB) in total;
-  `fonts.css` is 140730 bytes. A page downloads only the files whose
-  family, weight, style and `unicode-range` it actually uses.
+  `fonts.css` (136200 bytes) is linked by every page; `fonts-help.css`
+  (4882 bytes) adds Literata 700 and italic 500, which only the help and
+  warmth pages ever asked for — the studio keeps exactly its old Literata faces
+  (400–600, italic 400), the same ones the print renderer installs, so the
+  preview still matches the PDF. A page downloads only the files whose family,
+  weight, style and `unicode-range` it actually uses.
 - **Source:** the WOFF2 files are the bytes the Google Fonts CSS2 API serves
   (fonts.gstatic.com) for exactly the families, axes, weights and styles the
   pages requested before; fetched once by a maintainer with
   `node tools/fonts/vendor-web-fonts.mjs .` (desktop Chrome user agent). The
-  font files are not modified. `fonts.css` holds the same `@font-face` blocks
-  that API returned, with `url()` pointing at the local file.
+  font files are not modified. The two stylesheets hold the same `@font-face`
+  blocks that API returned, with `url()` pointing at the local file.
 - **Subsets kept:** latin, latin-ext, cyrillic, cyrillic-ext, greek, greek-ext,
   vietnamese (only those each family offers). Dropped: Lora's `math` and
   `symbols` subsets. Arabic, Japanese and Chinese text uses system fonts, as

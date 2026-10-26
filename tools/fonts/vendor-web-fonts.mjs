@@ -128,13 +128,20 @@ for (const family of families) {
   manifest.push([family, dir + '/OFL.txt', body.length, sha(body), url, 'METADATA.pb license: ' + lic[1] + (rfn ? '; ' + rfn : '; no Reserved Font Name')]);
 }
 
-const faces = blocks.map((b) =>
+// Two stylesheets, so every page keeps EXACTLY the faces it had: the studio
+// asked Literata for 400-600 + italic 400 (the print renderer installs the
+// same, so the preview matches the PDF); help and the warmth pages also
+// asked for Literata 700 and italic 500. Those two faces (the same variable
+// files) go to fonts-help.css, which only help/warmth pages link.
+const helpOnly = (b) => b.family === 'Literata' && ((b.style === 'normal' && b.weight === '700') || (b.style === 'italic' && b.weight === '500'));
+const face = (b) =>
   '/* ' + b.subset + ' */\n@font-face {\n  font-family: \'' + b.family + '\';\n  font-style: ' + b.style + ';\n  font-weight: ' + b.weight +
-  ';\n  font-display: swap;\n  src: url(' + byUrl.get(b.url).local + ') format(\'woff2\');\n  unicode-range: ' + b.range + ';\n}');
-await writeFile(path.join(OUT, 'fonts.css'),
-  '/* Beuk web fonts, self-hosted (tools/fonts/vendor-web-fonts.mjs; provenance,\n' +
-  '   licences and sha256 in README.md beside this file). No request leaves\n' +
-  '   this origin. URLs are relative to this stylesheet. */\n' + faces.join('\n') + '\n');
+  ';\n  font-display: swap;\n  src: url(' + byUrl.get(b.url).local + ') format(\'woff2\');\n  unicode-range: ' + b.range + ';\n}';
+const head = (what) => '/* Beuk web fonts, self-hosted: ' + what + '\n   (tools/fonts/vendor-web-fonts.mjs; provenance, licences and sha256 in\n' +
+  '   README.md beside this file). No request leaves this origin. URLs are\n   relative to this stylesheet. */\n';
+await writeFile(path.join(OUT, 'fonts.css'), head('every page.') + blocks.filter((b) => !helpOnly(b)).map(face).join('\n') + '\n');
+await writeFile(path.join(OUT, 'fonts-help.css'), head('Literata 700 + italic 500, linked by the help\n   and warmth pages only (they asked Google for those; the studio never did).') +
+  blocks.filter(helpOnly).map(face).join('\n') + '\n');
 await writeFile(path.join(OUT, 'MANIFEST.tsv'),
   'family\tfile\tbytes\tsha256\tsource\tnote\n' + manifest.map((r) => r.join('\t')).join('\n') + '\n');
 console.log('families: ' + families.length + ', font files: ' + byUrl.size + ', bytes: ' +

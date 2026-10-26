@@ -44,8 +44,15 @@ test('the Caddyfile CSP: style-src and font-src are own-origin only, no Google h
   assert.doesNotMatch(m[1], /google/i);
 });
 
-test('fonts.css references only files that exist, and every shipped font file is referenced', () => {
-  const css = readFileSync(path.join(FONTS, 'fonts.css'), 'utf8');
+test('fonts.css + fonts-help.css reference only files that exist, and every shipped font file is referenced', () => {
+  const studioCss = readFileSync(path.join(FONTS, 'fonts.css'), 'utf8');
+  const helpCss = readFileSync(path.join(FONTS, 'fonts-help.css'), 'utf8');
+  // fonts-help.css holds exactly Literata 700 + italic 500 (help/warmth asked
+  // for them, the studio never did — its preview must match the print faces)
+  const faceKeys = (c: string) => [...c.matchAll(/font-family: '([^']+)';\s*font-style: (\w+);\s*font-weight: (\d+);/g)].map((m) => `${m[1]} ${m[2]} ${m[3]}`);
+  assert.deepEqual([...new Set(faceKeys(helpCss))].sort(), ['Literata italic 500', 'Literata normal 700']);
+  assert.ok(!faceKeys(studioCss).includes('Literata normal 700') && !faceKeys(studioCss).includes('Literata italic 500'));
+  const css = studioCss + helpCss;
   const urls = [...css.matchAll(/url\(([^)]+)\)/g)].map((x) => x[1]);
   assert.ok(urls.length > 0);
   for (const u of urls) {
@@ -94,6 +101,7 @@ test('the studio, thanks and support pages link the self-hosted stylesheet; prel
   for (const [p, prefix] of pages) {
     const html = readFileSync(path.join(ROOT, p), 'utf8');
     assert.ok(html.includes(`<link rel="stylesheet" href="${prefix}fonts.css" />`), `${p} links fonts.css`);
+    assert.equal(html.includes('fonts-help.css'), p !== 'client/index.html', `${p}: fonts-help.css on help/warmth pages only`);
     for (const m of html.matchAll(/<link rel="preload" href="([^"]+)" as="font" type="font\/woff2" crossorigin \/>/g)) {
       assert.ok(m[1].startsWith(prefix), `${p}: ${m[1]}`);
       assert.ok(existsSync(path.join(ROOT, 'client', m[1].replace(/^\//, ''))), `${p} preloads a real file: ${m[1]}`);
@@ -112,6 +120,7 @@ test('server-rendered help, warmth, thanks and support pages carry the self-host
       assert.equal(res.status, 200, page);
       assert.doesNotMatch(html, GOOGLE, `${page} names no Google font host`);
       assert.ok(html.includes('<link rel="stylesheet" href="/assets/fonts/fonts.css" />'), `${page} links fonts.css`);
+      assert.ok(html.includes('<link rel="stylesheet" href="/assets/fonts/fonts-help.css" />'), `${page} links fonts-help.css`);
       const pre = [...html.matchAll(/<link rel="preload" href="([^"]+)" as="font"/g)].map((m) => m[1]);
       assert.ok(pre.length >= 1 && pre.length <= 3, `${page}: 1–3 preloads (${pre.length})`);
       for (const u of pre) assert.ok(existsSync(path.join(ROOT, 'client', u.replace(/^\//, ''))), `${page} preloads a real file: ${u}`);
