@@ -225,6 +225,31 @@ export async function archiveBytesOf(db: Db, userId: string): Promise<number> {
   return Number(r.rows[0]?.n ?? 0) + Number(books.rows[0]?.n ?? 0);
 }
 
+/**
+ * A shelf doc as the book inside a studio backup file. The studio's
+ * backup opener (localParseBackup in client/index.html) accepts only
+ * {format:'beuk-backup', book:{sections:[...]}}. The studio writes
+ * sections as an array; older/other writers used
+ * {frontMatter, body, backMatter} — flattened here with each section's
+ * kind (front/body/back), the same reading src/shares/render.ts makes.
+ * Anything else returns null: it is kept as stored, and said so.
+ */
+export function asStudioBackupBook(doc: unknown): Record<string, unknown> | null {
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return null;
+  const d = doc as Record<string, unknown>;
+  if (Array.isArray(d.sections)) return d;
+  if (d.sections && typeof d.sections === 'object') {
+    const s = d.sections as Record<string, unknown>;
+    if (![s.frontMatter, s.body, s.backMatter].some(Array.isArray)) return null;
+    const tier = (arr: unknown, kind: string) =>
+      (Array.isArray(arr) ? arr : [])
+        .filter((x): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x))
+        .map((x) => ({ ...x, kind: typeof x.kind === 'string' && x.kind ? x.kind : kind }));
+    return { ...d, sections: [...tier(s.frontMatter, 'front'), ...tier(s.body, 'body'), ...tier(s.backMatter, 'back')] };
+  }
+  return null;
+}
+
 /** The README.txt at the root of the archive. */
 export function exportReadme(opts: { email: string; exportedAt: string; appBaseUrl: string; counts: Record<string, number>; missingFiles: number }): string {
   const c = opts.counts;
@@ -241,9 +266,18 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `account.json            Your account: email address, when it was created, whether`,
     `                        the address is confirmed, any pending change of address,`,
     `                        and what the server knows about your plan.`,
-    `manuscripts/            Every book on your shelf (${c.manuscripts}), one JSON file each — the`,
-    `                        whole book as the studio saved it: text, settings, pictures`,
-    `                        and its snapshot history. The studio can open these files.`,
+    `manuscripts/            Every book on your shelf (${c.manuscripts}), one Beuk backup file`,
+    `                        each (.beuk-backup.json) — the whole book as the studio saved`,
+    `                        it: text, settings, pictures and its snapshot history. Open`,
+    `                        one in the studio with "Open a backup". manuscripts/index.json`,
+    `                        lists each book's shelf id, revision and dates.`,
+    ...(c.unopenable
+      ? [
+          `                        ${c.unopenable} book(s) had no chapters the studio could read;`,
+          `                        they are kept as plain .json files exactly as stored, and`,
+          `                        index.json marks them ("studioCanOpen": false).`,
+        ]
+      : []),
     `exports/                Every file in your export archive (${c.exports}), byte for byte,`,
     `                        and exports/index.json with each one's format, preset,`,
     `                        size, SHA-256 and date.`,
@@ -288,11 +322,11 @@ export async function writeAccountExport(
   zip: ZipWriter,
   account: Record<string, unknown>,
 ): Promise<{ counts: Record<string, number>; missingFiles: number }> {
-  const counts: Record<string, number> = { manuscripts: 0, exports: 0, shares: 0, comments: 0 };
+  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, exports: 0, shares: 0, comments: 0 };
 
   // Manuscripts, one at a time (a book can be large).
   const ids = await db.query<{ id: string }>('select id from manuscripts where user_id = $1 order by created_at', [userId]);
-  const books: { id: string; title: string; file: string }[] = [];
+  const books: { id: string; title: string; revision: number; createdAt: string; updatedAt: string; file: string; studioCanOpen: boolean }[] = [];
   for (const { id } of ids.rows) {
     const r = await db.query<{ id: string; title: string; doc: unknown; revision: number; created_at: string; updated_at: string }>(
       'select id, title, doc, revision, created_at, updated_at from manuscripts where id = $1 and user_id = $2',
@@ -300,14 +334,28 @@ export async function writeAccountExport(
     );
     const m = r.rows[0];
     if (!m) continue; // deleted meanwhile
-    const file = await zip.add(
-      `manuscripts/${safeName(m.title, 'Untitled')} (${m.id.slice(0, 8)}).json`,
-      JSON.stringify({ id: m.id, title: m.title, revision: m.revision, createdAt: iso(m.created_at), updatedAt: iso(m.updated_at), doc: m.doc }, null, 2),
-      { compress: true, modified: new Date(m.updated_at) },
-    );
-    books.push({ id: m.id, title: m.title, file });
+    const base = `manuscripts/${safeName(m.title, 'Untitled')} (${m.id.slice(0, 8)})`;
+    const book = asStudioBackupBook(m.doc);
+    const file = book
+      ? await zip.add(
+          `${base}.beuk-backup.json`,
+          JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: now.toISOString(), book }),
+          { compress: true, modified: new Date(m.updated_at) },
+        )
+      : await zip.add(`${base}.json`, JSON.stringify(m.doc, null, 2), { compress: true, modified: new Date(m.updated_at) });
+    if (!book) counts.unopenable += 1;
+    books.push({
+      id: m.id,
+      title: m.title,
+      revision: m.revision,
+      createdAt: iso(m.created_at),
+      updatedAt: iso(m.updated_at),
+      file,
+      studioCanOpen: !!book,
+    });
     counts.manuscripts += 1;
   }
+  await zip.add('manuscripts/index.json', JSON.stringify({ manuscripts: books }, null, 2), { compress: true });
 
   // Exports: the bytes, then an index with each file's metadata.
   const archive = await listArchive(db, userId);
@@ -507,8 +555,10 @@ export async function deleteAccount(
     await del('users', 'delete from users where id = $1', [userId]);
   });
   // The bytes go after the rows: a crash in between leaves orphan files
-  // (invisible to everyone, swept by the next delete of this id), never
-  // rows pointing at nothing.
+  // (invisible to everyone; Housekeeping's data.exports.no-orphan-files
+  // check reports them, it does not remove them), never rows pointing at
+  // nothing. A server job finishing during the delete is handled by the
+  // runner: it unlinks its file when the export row did not survive.
   await rm(path.join(config.exportDir, userId), { recursive: true, force: true });
   return { removed, subscriptionsLeftForOperator: keepSubscriptionIds.length };
 }

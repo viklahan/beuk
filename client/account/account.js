@@ -125,6 +125,33 @@
     }
   };
 
+  /* "Download all my data": ask the server first, so a refusal (too
+     many tries, too large, signed out) is said here instead of being
+     saved as a file. Without this script the plain link still works. */
+  document.querySelectorAll("a[data-export]").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      say("", false);
+      fetch("/api/account/export/check", { credentials: "same-origin", cache: "no-store" }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          return { status: res.status, data: data || {} };
+        });
+      }, function () {
+        return { status: 0, data: {} };
+      }).then(function (r) {
+        if (r.status === 200) {
+          say("Your data is on its way. Your browser saves it as one ZIP file.", false);
+          location.href = link.getAttribute("href");
+          return;
+        }
+        var c = r.status === 413 ? null : common(r);
+        if (c) { say(c, true); return; }
+        var text = r.data.error ? String(r.data.error) : UNREACHABLE;
+        say(text.charAt(0).toUpperCase() + text.slice(1) + ".", true);
+      });
+    });
+  });
+
   document.querySelectorAll("form[data-form]").forEach(function (form) {
     var h = handlers[form.getAttribute("data-form")];
     if (!h) return;

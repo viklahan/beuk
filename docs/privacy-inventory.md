@@ -142,7 +142,10 @@ sends no email (src/routes/founders.ts:9-10).
 ## 8b. "Download all my data"
 
 GET /api/account/export (signed in, rate-limited per user) streams one ZIP
-built on the fly and not stored: every shelf manuscript as JSON, every
+built on the fly and not stored: every shelf manuscript as a studio
+backup file (.beuk-backup.json) with manuscripts/index.json for each
+book's id, revision and dates (a stored doc with no readable chapters is
+kept as plain .json and marked), every
 archived export's bytes with exports/index.json, each share's settings,
 frozen reading copy and comments (reader names and comment text, NOT the
 comment ip_hash), streak days and freezes, server jobs and their results,

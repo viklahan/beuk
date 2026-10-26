@@ -4,7 +4,8 @@ import type { Server } from 'node:http';
 import path from 'node:path';
 import { test } from 'node:test';
 import { buildApp } from '../src/app.js';
-import { ACCOUNT_DELETED_TABLES } from '../src/account/data.js';
+import { ACCOUNT_DELETED_TABLES, asStudioBackupBook } from '../src/account/data.js';
+import { keepExportFileIfRowSurvived } from '../src/exports-store.js';
 import { readZip } from '../src/housekeeping/packages.js';
 import type { Db } from '../src/db.js';
 import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
@@ -95,6 +96,25 @@ const BOOK = {
     { id: 'ch2', kind: 'body', type: 'chapter', title: 'Two', content: 'Seven eight.' },
   ],
 };
+
+/** The exact check the studio's backup opener makes (localParseBackup in
+ *  client/index.html): a file that fails it cannot be opened there. */
+function studioOpensBackup(text: string): boolean {
+  try {
+    const d = JSON.parse(text);
+    return !!(d && d.format === 'beuk-backup' && d.book && typeof d.book === 'object' && Array.isArray(d.book.sections));
+  } catch {
+    return false;
+  }
+}
+
+test('the studio\'s backup check is copied here faithfully', () => {
+  const html = readFileSync(path.resolve(import.meta.dirname, '..', 'client', 'index.html'), 'utf8');
+  assert.ok(
+    html.includes('if (d && d.format === "beuk-backup" && d.book && typeof d.book === "object" && Array.isArray(d.book.sections)) return d.book;'),
+    'localParseBackup changed: update studioOpensBackup in this test',
+  );
+});
 
 async function makeBook(c: Client, title = 'The Salt Road'): Promise<string> {
   const r = await c.post('/api/manuscripts', { title, doc: BOOK });
@@ -402,7 +422,19 @@ test('download all my data: one ZIP with every book, export bytes + index, share
     const c = new Client(s.base);
     await registerUser(c, 'zip@example.com');
     const id = await makeBook(c);
-    await makeBook(c, 'Second / Book');
+    const second = await makeBook(c, 'Second / Book');
+    // An older writer's shape: sections as { frontMatter, body, backMatter }.
+    await db.query(`update manuscripts set doc = $1::jsonb where id = $2`, [
+      JSON.stringify({
+        meta: { title: 'Second / Book' },
+        sections: {
+          frontMatter: [{ id: 'f1', type: 'dedication', title: 'For B', content: 'For B.' }],
+          body: [{ id: 'b1', type: 'chapter', title: 'One', content: 'Older words.' }],
+          backMatter: [],
+        },
+      }),
+      second,
+    ]);
     const epub = Buffer.from('PK\u0003\u0004 pretend epub');
     const md = Buffer.from('# The Salt Road\n\n'.repeat(50));
     assert.equal((await c.upload(`/api/exports?manuscriptId=${id}&format=epub&filename=salt.epub`, epub)).status, 201);
@@ -430,11 +462,30 @@ test('download all my data: one ZIP with every book, export bytes + index, share
     for (const n of ['README.txt', 'account.json', 'exports/index.json', 'exports/salt.epub', 'exports/salt.md', 'streak.json', 'jobs.json']) {
       assert.ok(names.includes(n), `${n} in ${names.join(', ')}`);
     }
-    const books = names.filter((n) => n.startsWith('manuscripts/'));
+    const books = names.filter((n) => n.startsWith('manuscripts/') && n !== 'manuscripts/index.json');
     assert.equal(books.length, 2);
+    assert.ok(books.every((n) => n.endsWith('.beuk-backup.json')), books.join(', '));
     assert.ok(books.some((n) => n.startsWith('manuscripts/Second Book (')), 'slashes never become folders');
-    const book = JSON.parse(get(books.find((n) => n.startsWith('manuscripts/The Salt Road'))!).toString('utf8'));
-    assert.deepEqual(book.doc, BOOK);
+    // Every book opens in the studio: it passes the studio's own backup check.
+    for (const n of books) assert.ok(studioOpensBackup(get(n).toString('utf8')), `${n} would not open in the studio`);
+    const backup = JSON.parse(get(books.find((n) => n.startsWith('manuscripts/The Salt Road'))!).toString('utf8'));
+    assert.equal(backup.format, 'beuk-backup');
+    assert.equal(backup.version, 1);
+    assert.deepEqual(backup.book, BOOK, 'the book is exactly as stored');
+    const older = JSON.parse(get(books.find((n) => n.startsWith('manuscripts/Second Book ('))!).toString('utf8'));
+    assert.deepEqual(
+      older.book.sections.map((x: { id: string; kind: string }) => [x.id, x.kind]),
+      [['f1', 'front'], ['b1', 'body']],
+      'the older shape is flattened in reading order with each section\'s kind',
+    );
+    // The shelf's own facts live beside the books.
+    const mIndex = JSON.parse(get('manuscripts/index.json').toString('utf8'));
+    assert.equal(mIndex.manuscripts.length, 2);
+    const salt = mIndex.manuscripts.find((x: { id: string }) => x.id === id);
+    assert.equal(salt.revision, 1);
+    assert.equal(salt.studioCanOpen, true);
+    assert.ok(salt.file.endsWith('.beuk-backup.json') && names.includes(salt.file));
+    assert.ok(salt.createdAt && salt.updatedAt);
     assert.ok(get('exports/salt.epub').equals(epub));
     assert.ok(get('exports/salt.md').equals(md));
     assert.equal(entries.find((e) => e.name === 'exports/salt.md')!.method, 8, 'text is deflated');
@@ -457,6 +508,9 @@ test('download all my data: one ZIP with every book, export bytes + index, share
     assert.equal(account.counts.comments, 1);
     const readme = get('README.txt').toString('utf8');
     assert.match(readme, /manuscripts\//);
+    assert.match(readme, /\.beuk-backup\.json/);
+    assert.match(readme, /Open a backup/);
+    assert.ok(!/had no chapters/.test(readme), 'no unopenable books, so no note about them');
     assert.match(readme, /Your password\. The server keeps only a one-way hash/);
     // Secrets and other people's data never leave.
     const all = entries.map((e) => e.data.toString('utf8')).join('\n');
@@ -493,6 +547,7 @@ test('delete my account: phrase + password required; everything the account owns
     const c = new Client(s.base);
     await registerUser(c, 'leaving@example.com');
     const id = await makeBook(c);
+    assert.ok(!(await page(c, s.base, '/account')).text.includes('data-subscription-warning'), 'no subscription, no warning');
     await c.upload(`/api/exports?manuscriptId=${id}&format=epub&filename=leaving.epub`, Buffer.from('PK bytes'));
     const share = await c.post('/api/shares', { manuscriptId: id });
     await new Client(s.base).post(`/read/${share.body.token}/comments`, { sectionId: 'ch1', body: 'Hm.', readerName: 'Bo' });
@@ -510,6 +565,11 @@ test('delete my account: phrase + password required; everything the account owns
       `insert into billing_events (event_id, type, livemode, user_id) values ('evt_1', 'customer.subscription.updated', false, $1)`,
       [uid],
     );
+    // Before the click, the page says deleting does not cancel the live subscription.
+    const before = (await page(c, s.base, '/account')).text;
+    assert.match(before, /data-subscription-warning/);
+    assert.match(before, /Deleting the account does not cancel it/);
+    assert.ok(before.indexOf('data-subscription-warning') < before.indexOf('data-form="delete"'), 'the warning comes before the form');
     // A second device's session.
     const device2 = new Client(s.base);
     await device2.post('/api/auth/login', { email: 'leaving@example.com', password: 'correct horse battery' });
@@ -600,17 +660,27 @@ test('rate limits: resend, email change, export, delete (per user) and the confi
     await c.post('/api/account/email', { currentPassword: 'x', newEmail: 'a@example.com' });
     assert.equal((await c.post('/api/account/email', { currentPassword: 'x', newEmail: 'a@example.com' })).status, 429);
 
+    // The look-before-download records nothing and says what the download would.
+    assert.equal((await c.get('/api/account/export/check')).status, 200);
+    assert.equal((await c.get('/api/account/export/check')).status, 200);
     assert.equal((await c.download('/api/account/export')).status, 200);
     const e2 = await c.download('/api/account/export');
     assert.equal(e2.status, 429);
     assert.ok(e2.headers.get('retry-after'));
+    const check = await c.get('/api/account/export/check');
+    assert.equal(check.status, 429);
+    assert.ok(check.headers.get('retry-after'));
+    assert.match(String(check.body.error), /too many attempts/);
 
     assert.equal((await c.post('/api/account/delete', { currentPassword: 'guess one', confirmPhrase: 'delete my account' })).status, 403);
     assert.equal((await c.post('/api/account/delete', { currentPassword: 'correct horse battery', confirmPhrase: 'delete my account' })).status, 429);
     assert.ok((await db.query(`select 1 from users where email = 'limits@example.com'`)).rows.length, 'still there');
 
     assert.equal((await postForm(s.base, '/account/confirm', { token: 'nope' })).status, 400);
-    assert.equal((await postForm(s.base, '/account/confirm', { token: 'nope' })).status, 429);
+    const busy = await postForm(s.base, '/account/confirm', { token: 'nope' });
+    assert.equal(busy.status, 429);
+    assert.match(busy.text, /Your link still works/);
+    assert.ok(!busy.text.includes('has already been used'), 'a busy refusal never says the link is spent');
 
     // Another user's buckets are their own.
     const d = new Client(s.base);
@@ -633,6 +703,7 @@ test('owner scoping: every /api/account route needs a session; one account never
       ['POST', '/api/account/email'],
       ['POST', '/api/account/email/cancel'],
       ['POST', '/api/account/delete'],
+      ['GET', '/api/account/export/check'],
     ] as const) {
       assert.equal((await anon.request(m, p, m === 'GET' ? undefined : {})).status, 401, `${m} ${p}`);
     }
@@ -707,4 +778,44 @@ test('the default portal limits are proportionate (a few an hour for anything th
   assert.ok(DEFAULT_PORTAL_LIMITS.resendPerUser.max <= 5);
   assert.ok(DEFAULT_PORTAL_LIMITS.emailPerUser.max <= 10);
   assert.ok(DEFAULT_PORTAL_LIMITS.exportPerUser.max <= 10);
+});
+
+test('download all my data: a book with no chapters the studio can read is kept as stored and marked, not passed off as a backup', () => {
+  assert.equal(asStudioBackupBook({ meta: { title: 'x' } }), null);
+  assert.equal(asStudioBackupBook({ sections: 'nope' }), null);
+  assert.equal(asStudioBackupBook({ sections: { other: [] } }), null);
+  assert.equal(asStudioBackupBook(null), null);
+  assert.equal(asStudioBackupBook([1, 2]), null);
+  const arr = { sections: [{ id: 'a' }] };
+  assert.equal(asStudioBackupBook(arr), arr, 'the studio\'s own shape passes through untouched');
+  const flat = asStudioBackupBook({ sections: { body: [{ id: 'b', kind: 'body' }], backMatter: [{ id: 'z' }, null] } })!;
+  assert.deepEqual(flat.sections, [{ id: 'b', kind: 'body' }, { id: 'z', kind: 'back' }]);
+});
+
+test('an export file landing after its account was deleted does not outlive it', async () => {
+  const db = await createTestDb();
+  const s = await start(db);
+  try {
+    const c = new Client(s.base);
+    await registerUser(c, 'race@example.com');
+    const uid = await userId(db, 'race@example.com');
+    const book = await makeBook(c);
+    const up = await c.upload(`/api/exports?manuscriptId=${book}&format=epub&filename=kept.epub`, Buffer.from('PK kept'));
+    assert.equal(up.status, 201);
+    const keptId = (up.body.export as { id: string }).id;
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    // A row that still exists: the file stays.
+    assert.equal(await keepExportFileIfRowSurvived(db, s.exportDir, uid, keptId), true);
+    assert.ok(existsSync(path.join(s.exportDir, uid, keptId)));
+    // The account is deleted; a late writer then puts bytes down.
+    assert.equal((await c.post('/api/account/delete', { currentPassword: 'correct horse battery', confirmPhrase: 'delete my account' })).status, 200);
+    const lateId = '00000000-0000-4000-8000-000000000001';
+    await mkdir(path.join(s.exportDir, uid), { recursive: true });
+    await writeFile(path.join(s.exportDir, uid, lateId), Buffer.from('late'));
+    assert.equal(await keepExportFileIfRowSurvived(db, s.exportDir, uid, lateId), false);
+    assert.ok(!existsSync(path.join(s.exportDir, uid, lateId)), 'the late file is gone');
+    assert.ok(!existsSync(path.join(s.exportDir, uid)), 'and the empty folder with it');
+  } finally {
+    await s.close();
+  }
 });

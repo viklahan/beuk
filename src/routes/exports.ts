@@ -7,6 +7,7 @@ import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { requireAuth } from '../auth.js';
 import { isUuid, uuidParam } from '../ids.js';
+import { keepExportFileIfRowSurvived } from '../exports-store.js';
 
 export const EXPORT_FORMATS = ['epub', 'markdown', 'html', 'print-html', 'docx', 'pdfx'] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
@@ -149,6 +150,11 @@ export function exportRoutes(db: Db, config: Config): Router {
           // Bytes failed to land: leave no metadata pointing at nothing.
           await db.query('delete from exports where id = $1', [row.id]).catch(() => {});
           throw err;
+        }
+        // The account (and so this row) may have been deleted while the
+        // bytes were landing: then the file goes too.
+        if (!(await keepExportFileIfRowSurvived(db, config.exportDir, req.user!.id, row.id))) {
+          return res.status(404).json({ error: 'manuscript not found' });
         }
         return res.status(201).json({ export: metadata(row) });
       } catch (err) {

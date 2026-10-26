@@ -181,7 +181,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       const ip = req.ip ?? 'unknown';
       if (confirmIp.hit(ip)) {
         res.setHeader('Retry-After', String(confirmIp.retryAfterSeconds(ip)));
-        return res.status(429).type('html').send(confirmResultPage(config, { ok: false, reason: 'invalid' }));
+        return res.status(429).type('html').send(confirmResultPage(config, { ok: false, reason: 'busy' }));
       }
       const token = String(req.body?.token ?? '');
       let outcome;
@@ -309,15 +309,32 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
     }
   });
 
+  const TOO_LARGE = 'your data is larger than one download can hold — download your archive files one by one from the account page, then try again';
+
+  // A look before the download, so the account page can show a refusal
+  // instead of the browser saving the error as a file. Records nothing.
+  api.get('/export/check', async (req, res, next) => {
+    try {
+      const user = req.user!;
+      res.setHeader('Cache-Control', 'no-store');
+      if (exportUser.wouldLimit(user.id)) {
+        res.setHeader('Retry-After', String(exportUser.retryAfterSeconds(user.id)));
+        return res.status(429).json({ error: 'too many attempts — please wait a little and try again' });
+      }
+      if ((await archiveBytesOf(db, user.id)) > ZIP_LIMIT_BYTES) return res.status(413).json({ error: TOO_LARGE });
+      return res.json({ ok: true });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
   api.get('/export', async (req, res, next) => {
     try {
       const user = req.user!;
       if (exportUser.hit(user.id)) return tooMany(res, exportUser, user.id);
       const total = await archiveBytesOf(db, user.id);
       if (total > ZIP_LIMIT_BYTES) {
-        return res.status(413).json({
-          error: 'your data is larger than one download can hold — download your archive files one by one from the account page, then try again',
-        });
+        return res.status(413).json({ error: TOO_LARGE });
       }
       const overview = await accountOverview(db, config, user.id, now());
       if (!overview) return res.status(401).json({ error: 'not signed in' });

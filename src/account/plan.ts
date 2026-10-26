@@ -39,6 +39,10 @@ export interface AccountPlan {
   subscription: EntitlementState;
   /** HOOK for the billing wave: the sign-up trial. null = not tracked yet. */
   trial: AccountTrial | null;
+  /** Non-terminal subscription rows on this account: the ones deleting the
+   *  account would leave running while cancelBillingForDeletedAccount
+   *  cancels nothing. */
+  liveSubscriptions: number;
 }
 
 export interface PlanDeps {
@@ -65,7 +69,18 @@ export async function accountPlan(deps: PlanDeps, user: { id: string; createdAt:
     subscription,
     // Billing wave: compute the trial from user.createdAt here.
     trial: null,
+    liveSubscriptions: (await liveSubscriptionIds(deps.db, user.id)).length,
   };
+}
+
+async function liveSubscriptionIds(db: Db, userId: string): Promise<string[]> {
+  const rows = await db.query<{ stripe_subscription_id: string; status: string }>(
+    'select stripe_subscription_id, status from billing_subscriptions where user_id = $1',
+    [userId],
+  );
+  return rows.rows
+    .filter((r) => !(TERMINAL_STATUSES as readonly string[]).includes(r.status))
+    .map((r) => r.stripe_subscription_id);
 }
 
 export interface DeletionBillingOutcome {
@@ -93,13 +108,7 @@ export async function cancelBillingForDeletedAccount(
   deps: { db: Db; billing: BillingProvider },
   userId: string,
 ): Promise<DeletionBillingOutcome> {
-  const rows = await deps.db.query<{ stripe_subscription_id: string; status: string }>(
-    'select stripe_subscription_id, status from billing_subscriptions where user_id = $1',
-    [userId],
-  );
-  const live = rows.rows
-    .filter((r) => !(TERMINAL_STATUSES as readonly string[]).includes(r.status))
-    .map((r) => r.stripe_subscription_id);
+  const live = await liveSubscriptionIds(deps.db, userId);
   // TODO(billing wave): deps.billing.cancelSubscription(id) for each live id.
   return { cancelled: [], leftForOperator: live };
 }

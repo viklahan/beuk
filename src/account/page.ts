@@ -244,13 +244,13 @@ ${o.archive
       <section class="portal-card" id="data" aria-labelledby="data-h">
         <h2 id="data-h">Your data</h2>
         <p>One ZIP file with everything this server keeps for you: every book on your shelf, every file in your archive, your reading links and their comments, your streak, and a README saying what is where.</p>
-        <p><a class="portal-button" href="/api/account/export" download>Download all my data</a></p>
+        <p><a class="portal-button" href="/api/account/export" download data-export>Download all my data</a></p>
       </section>
 
       <section class="portal-card danger" id="delete" aria-labelledby="delete-h">
         <h2 id="delete-h">Delete my account</h2>
         <p>This removes your account and everything on it from this server: your shelf, your archive and its files, your reading links and their comments, your streak, and your sign-ins. It cannot be undone. Books on your devices are not touched.</p>
-        <p><a href="/api/account/export" download>Download all my data first</a></p>
+        <p><a href="/api/account/export" download data-export>Download all my data first</a></p>${subscriptionNote(plan, config)}
         <details class="portal-more">
           <summary>Delete my account</summary>
           <form class="portal-form" data-form="delete" novalidate>
@@ -262,6 +262,17 @@ ${o.archive
         </details>
       </section>`;
   return portalChrome(config, 'Your account', body, { signedIn: true, script: true });
+}
+
+/** Before the delete form: a live subscription is not cancelled by
+ *  deleting the account yet (see cancelBillingForDeletedAccount). */
+function subscriptionNote(plan: AccountPlan, config: Config): string {
+  if (!plan.liveSubscriptions) return '';
+  const who = config.supportEmail
+    ? `write to <a href="mailto:${esc(config.supportEmail)}">${esc(config.supportEmail)}</a> to have it cancelled`
+    : 'ask the person who runs this server to cancel it';
+  return `
+        <p class="note-line" data-subscription-warning>This account has a subscription that is still running at Stripe. Deleting the account does not cancel it: this server can't cancel a subscription by itself yet. Before you delete, ${who}.</p>`;
 }
 
 /** The confirm page: a button that POSTs the token (prefetch-safe). */
@@ -281,7 +292,7 @@ export function confirmPage(config: Config, token: string | null): string {
 
 export function confirmResultPage(
   config: Config,
-  outcome: { ok: true; purpose: 'signup' | 'change'; email: string } | { ok: false; reason: 'invalid' | 'taken' },
+  outcome: { ok: true; purpose: 'signup' | 'change'; email: string } | { ok: false; reason: 'invalid' | 'taken' | 'busy' },
 ): string {
   let body: string;
   if (outcome.ok && outcome.purpose === 'signup') {
@@ -292,6 +303,9 @@ export function confirmResultPage(
     body = `      <h1>Your email address has changed</h1>
       <p class="lede">Your Beuk account now uses ${esc(outcome.email)}. Sign in with it from now on.</p>
       <p><a class="portal-button" href="/account">Your account</a> <a class="portal-button quiet" href="/studio">Back to the studio</a></p>`;
+  } else if (outcome.reason === 'busy') {
+    body = `      <h1>Too many tries from here just now</h1>
+      <p class="lede" data-confirm-busy>Your link still works. Nothing has changed; open it again in a few minutes.</p>`;
   } else if (outcome.reason === 'taken') {
     body = `      <h1>That address is already in use</h1>
       <p class="lede">Another Beuk account uses this address now, so this one keeps its old address. You can choose a different one on your account page.</p>
