@@ -153,6 +153,14 @@ services:
       OFFSITE_DRILL_MAX_AGE_HOURS: ${OFFSITE_DRILL_MAX_AGE_HOURS:-192}
       OFFSITE_PROBE_TIMEOUT_MS: ${OFFSITE_PROBE_TIMEOUT_MS:-120000}
       RESTIC_TIMEOUT_MS: ${RESTIC_TIMEOUT_MS:-1800000}
+      # Ops: local backup retention (both empty = keep everything), backup
+      # alerts (email needs SMTP_URL + MAIL_FROM), error-report retention.
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-}
+      BACKUP_KEEP_COUNT: ${BACKUP_KEEP_COUNT:-}
+      ALERT_EMAIL: ${ALERT_EMAIL:-}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_WEBHOOK_FORMAT: ${ALERT_WEBHOOK_FORMAT:-json}
+      CLIENT_ERRORS_KEEP_DAYS: ${CLIENT_ERRORS_KEEP_DAYS:-30}
     volumes:
       - exportdata:/data/exports
       - backupdata:/data/backups

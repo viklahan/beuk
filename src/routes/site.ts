@@ -51,6 +51,7 @@ export function siteRoutes(config: Config): Router {
       '/roadmap',
       '/privacy',
       '/terms',
+      '/status',
       ...(config.kofiUrl ? ['/support'] : []),
     ];
     const xmlEsc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

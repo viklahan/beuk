@@ -34,6 +34,9 @@ That is a fact about the code, not a policy decision.
 | Housekeeping audit | actor user id + **actor email** (admins only), action, params summary, result | migrations/006_housekeeping.sql:12-21 | No limit (append-only, excluded from backups and restore) |
 | Self-check runs / sign-offs | build stamp, counts, results; sign-off user id + email + note (admins only) | migrations/006_housekeeping.sql:27-50 | No limit |
 | help_docs | derived from content/help/ — no personal data | migrations/013_help_search.sql:21-33 | Rebuilt each boot |
+| Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], quoted text over 24 chars → "[…]", book/picture file names → [file]; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v7), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
+| Usage counts | usage_daily: day, counter name, a number, a final flag — **nothing else** (see §11) | migrations/015_ops.sql; src/ops/usage.ts | **No limit** (one row per day per counter). Excluded from backups |
+| Backup alert state | ops_alerts: whether a backup incident is open, which self-check ids are red and their scrubbed detail, when the last alert went out and what each channel answered. ALERT_EMAIL (the operator's own address) is configuration, not stored here | migrations/015_ops.sql; src/ops/alerts.ts | One row, overwritten on each change. Excluded from backups |
 
 ## 2. Server: cookies
 
@@ -47,7 +50,8 @@ No analytics, advertising or tracking cookies exist in the code (grep of
 
 ## 3. Server: in-memory only (lost on restart)
 
-Rate limits keyed by client IP or user id: login/register token buckets
+Rate limits keyed by client IP or user id: studio error reports per IP
+(src/ops/client-errors.ts), login/register token buckets
 (src/routes/auth.ts:34; src/ratelimit.ts:27-28), forgot/reset per IP and
 per email, password change per user (src/routes/account.ts:51-54,108-111),
 Founders' form per IP (src/routes/founders.ts:28-49), help search per IP
@@ -106,12 +110,21 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
   for about a year. The bucket region is whatever endpoint the operator
   configures (OFFSITE_B2_ENDPOINT).
 - Excluded from backups: password_resets, housekeeping_*, help_docs,
-  search_log, schema_migrations (src/housekeeping/backup.ts:56-65).
+  search_log, schema_migrations, client_errors, usage_daily, ops_alerts
+  (src/housekeeping/backup.ts EXCLUDED_TABLES).
+- **Local retention (optional):** BACKUP_KEEP_DAYS / BACKUP_KEEP_COUNT.
+  **Unset (today) = keep everything**, as above. When set, older local
+  backups are deleted (src/ops/retention.ts), never the newest complete
+  one and never while a backup runs. Deleted data then leaves the box's
+  local backups after that many days / backups; off-site snapshots keep
+  their own restic retention.
 
 ## 7. Email
 
-Only password-reset emails (src/routes/account.ts:78-97) and the admin
-test email (src/routes/housekeeping.ts:620-626). Sent through the SMTP
+Only password-reset emails (src/routes/account.ts:78-97), the admin
+test email (src/routes/housekeeping.ts:620-626), and backup alerts to the
+operator's own ALERT_EMAIL (src/ops/alerts.ts; no writer data: check
+names and their scrubbed detail). Sent through the SMTP
 server the operator configures in SMTP_URL (src/config.ts `smtpUrl`;
 src/mailer.ts). The provider is not named in the code. Nothing is sent
 while SMTP_URL / MAIL_FROM are unset. No newsletters; the Founders' Shelf
@@ -129,6 +142,8 @@ sends no email (src/routes/founders.ts:9-10).
 | Stripe | the **server**, only when billing is configured (it is not live) | the account email (customer_email) and user id (client_reference_id, metadata) when the writer starts a checkout; card details go to Stripe's checkout page, never to Beuk | src/billing.ts:237-256; src/routes/billing.ts:94-127 |
 | SMTP provider | the server | the recipient address and the reset email | §7 |
 | Backblaze B2 | the server, if off-site backups are configured | encrypted backup snapshots | §6 |
+| Alert webhook (e.g. Slack or Discord), only if ALERT_WEBHOOK_URL is set | the server, when a backup incident opens or closes, or on a test | the server's address (APP_BASE_URL), the time, the red backup check names and their scrubbed detail. No writer data | src/ops/alerts.ts |
+| An outside uptime monitor (not set up; V's choice) | the monitor, on a timer | it fetches /api/health or /api/status/public: no writer data in either | docs/uptime-monitoring.md |
 | CDN scripts | **none**: script-src is 'self' 'unsafe-inline'; the libraries are vendored under /assets/vendor/ | — | Caddyfile CSP comment + header; client/index.html:36-42 |
 
 ## 9. Client side (the browser)
@@ -139,7 +154,8 @@ sends no email (src/routes/founders.ts:9-10).
   shelf (client/index.html ~35134-35170).
 - **localStorage** (all prefixed `beuk.`): theme.v1, uiLang.v1,
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
-  zenSound.v1, betaTokens.v1 — the share-link tokens the writer made,
+  zenSound.v1, errors.v1 ("off" when the writer turns error reports off
+  in Project Settings; absent = on), betaTokens.v1 — the share-link tokens the writer made,
   kept so the studio can show the links again (client/index.html:38224-38231) —
   and desk ("1" once the writer has written on this device, so the landing
   page at / sends them straight back to the studio; no content, no id).
@@ -152,8 +168,54 @@ sends no email (src/routes/founders.ts:9-10).
 
 - No account-deletion endpoint; no self-serve deletion of Founders'
   Shelf entries.
-- No analytics, ad trackers, fingerprinting, or third-party scripts.
+- No third-party analytics, ad trackers, fingerprinting, or third-party
+  scripts. Beuk's own usage counting is the daily aggregate in §11.
+- The public status page (/status, /api/status/public) shows no writer
+  data: component states, plain summaries, reading times.
 - No email verification, no marketing email.
 - No retention limit for: streak days, jobs, help search_log,
-  founders_applications, housekeeping records, local backups, container
-  logs.
+  founders_applications, housekeeping records, local backups (unless
+  BACKUP_KEEP_* is set), usage counts, container logs.
+
+## 11. Usage counts (src/ops/usage.ts, migration 015)
+
+**What is stored:** one row per day per counter in `usage_daily`: the
+day (APP_TIMEZONE), the counter's name, a number, and whether the day is
+final. No cookies are set, and no IP address, user id, email, session,
+user agent or per-event row is written anywhere for this.
+
+**What is counted** (only when the server's answer was a success):
+
+| Counter | Counted when |
+|---|---|
+| sign_ups | POST /api/auth/register answered 201 |
+| sign_ins | POST /api/auth/login answered 200 (a wrong password is not counted) |
+| first_shelf_saves | POST /api/manuscripts answered 201 and that account now has exactly one book on the shelf. To know that, the number of that account's manuscripts is read at that moment; the account is not written anywhere. An account that deletes all its books and saves again counts again |
+| exports_archived | POST /api/exports answered 201 |
+| epubcheck_runs | POST /api/jobs/epubcheck answered 2xx (a job was queued; whether EPUBCheck is installed is not part of it) |
+| share_links_created | POST /api/shares answered 201 |
+| came_back_after_7_days | computed from `streak_days` (already kept, §1): accounts with a writing day on that day whose previous writing day was 7 or more days earlier. Today is recomputed; a past day is computed one last time after it ends, then kept as it is |
+
+**What is NOT counted:** page views, visits, the landing page, Help
+reads, which features are used inside the studio, anything about books,
+anything that happens on a device without the server (writing never
+needs an account), failed requests.
+
+Shown to admins in Housekeeping (`GET /api/housekeeping/usage`, last 30
+days). No retention limit.
+
+## 12. Studio error reports (src/ops/client-errors.ts, client/index.html BEUK:errors)
+
+On by default; a writer turns them off in Project Settings ("Send error
+reports when something breaks"), stored on that device as
+localStorage `beuk.errors.v1 = "off"`. When an uncaught error or an
+unhandled promise rejection happens in the studio, it sends at most 5
+reports per page load (each distinct error once) to POST
+/api/client-errors, **without cookies**. What is sent and kept: §1
+"Studio error reports". Scrubbing happens in the studio and again on the
+server. It is pattern-based, so it is a strong filter, not a proof: a
+file name with spaces (e.g. "My Novel.docx") loses its last word and
+extension ("Novel.docx" becomes [file]) but keeps the words before it,
+and an error message quoting 24 characters of text or fewer keeps that
+text. Admins see reports grouped by message in Housekeeping
+(`GET /api/housekeeping/client-errors`). Kept 30 days.

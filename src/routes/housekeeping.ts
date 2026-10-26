@@ -31,6 +31,8 @@ import {
   readScheduleStatus,
   scheduleHealth,
 } from '../housekeeping/offsite.js';
+import { OPS_ACTIONS } from './ops-housekeeping.js';
+import { retentionPolicy } from '../ops/retention.js';
 
 /**
  * Housekeeping (M3) — the admin surface for the app itself.
@@ -138,7 +140,7 @@ export function housekeepingRoutes(
 
   router.get('/actions', (_req, res) => {
     return send(res, 200, {
-      actions: ACTION_CATALOG,
+      actions: [...ACTION_CATALOG, ...OPS_ACTIONS],
       registry: {
         cases: SELF_CHECK_CASES.length,
         server: SELF_CHECK_CASES.filter((c) => c.kind === 'server').length,
@@ -399,7 +401,7 @@ export function housekeepingRoutes(
           retention: { keepDaily: o.keepDaily, keepWeekly: o.keepWeekly, keepMonthly: o.keepMonthly },
           scheduleEveryHours: config.backupIntervalHours,
           drillEveryHours: o.drillIntervalHours,
-          localRetention: 'none: local backups are never deleted automatically',
+          localRetention: retentionPolicy(config).description,
           last: await readOffsiteStatus(config),
           drill: await readDrillStatus(config),
           schedule: await readScheduleStatus(config),

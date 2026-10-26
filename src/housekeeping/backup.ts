@@ -62,6 +62,9 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
   schema_migrations: 'owned by the migration runner',
   help_docs: 'derived: rebuilt from content/help/ on every boot (H2 search index)',
   search_log: 'anonymous search statistics (query text + result count, no user id, no IP); not user data, and a restore must not rewrite them',
+  client_errors: 'studio error reports (scrubbed message + stack, counts; no user id, no IP); diagnostics kept 30 days, not user data',
+  usage_daily: 'daily aggregate counters (one number per day per counter; no identifiers); a restore must not rewrite them',
+  ops_alerts: 'backup alert state (open incident, last alert); operational state of this server, not data',
 };
 
 export interface TableClassification {
@@ -102,6 +105,8 @@ export const SECRET_CONFIG_KEYS = [
   'RESTIC_PASSWORD',
   'OFFSITE_B2_KEY_ID',
   'OFFSITE_B2_APPLICATION_KEY',
+  // Ops backup alerts: the webhook URL is itself a credential.
+  'ALERT_WEBHOOK_URL',
 ] as const;
 
 export interface BackupManifest {
