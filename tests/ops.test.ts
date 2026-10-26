@@ -165,7 +165,8 @@ test('status: Caddy routes /status to the app, both workers leave it to the netw
   assert.ok(caddy.includes('handle /status* {\n\t\treverse_proxy app:3000\n\t}'));
   for (const p of [['client', 'sw.js'], ['client', 'assets', 'sw.js']]) {
     const sw = await read(...p);
-    assert.match(sw, /sitemap\\\.xml\|status\)\(\\\/\|\$\)/, p.join('/'));
+    // Other server pages share the group (account, features, …): status must be one of them.
+    assert.match(sw, /sitemap\\\.xml(\|[a-z-]+)*\|status(\|[a-z-]+)*\)\(\\\/\|\$\)/, p.join('/'));
   }
   const db = await createTestDb();
   const server = await startTestServer(db, undefined, { appBaseUrl: 'https://beuk.studio' });
@@ -575,9 +576,11 @@ test('client errors: the studio sends them without cookies, deduped and capped, 
   assert.match(block, /const BEUK_ERR_MAX = 5;/);
   assert.match(block, /beukErrSeen\[key\]/);
   assert.match(block, /"beuk\.errors\.v1"/);
-  assert.match(block, /!== "off"/);
+  // Opt-in: nothing is sent until the writer turns reports on (the privacy page promises
+  // nothing is sent while signed out; V and the lawyer decide before this changes).
+  assert.match(block, /localStorage\.getItem\(BEUK_ERRORS_KEY\) === "on"; \} catch \(e\) \{ return false; \}/);
   assert.doesNotMatch(block, /state\.(doc|book|title)|activeSection\(|\.content\b/, 'no book data near the reporter');
-  assert.match(html, /<input type="checkbox" id="setErrReports" checked \/>/);
+  assert.match(html, /<input type="checkbox" id="setErrReports" \/>/);
   for (const k of ['errs.toggle', 'errs.note']) {
     assert.equal(html.split(`"${k}": "`).length - 1, 13, `${k} in 13 locales`);
   }

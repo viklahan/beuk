@@ -2569,7 +2569,7 @@
         <div class="about-box">
           <h3 data-i18n="about.title">Beuk on this device</h3>
           <p class="cover-note" data-i18n="about.offlineLine">Beuk keeps your book on this device first: writing and saving never wait on a connection. When you are signed in, anything written offline waits quietly and syncs to your shelf the moment the connection returns.</p>
-          <div id="errReportsRow" style="margin:10px 0;"><label class="acx-check" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="setErrReports" checked /> <span data-i18n="errs.toggle">Send error reports when something breaks</span></label><p class="cover-note" data-i18n="errs.note" style="margin-top:6px;">Only the error message and where in Beuk's code it happened. Web addresses, email addresses, long codes, long quoted text and most file names are filtered out first. The filter works on patterns, so an error that quotes a few of your own words could still carry them. Kept for a limited time, then deleted. This setting is for this device.</p></div>
+          <div id="errReportsRow" style="margin:10px 0;"><label class="acx-check" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="setErrReports" /> <span data-i18n="errs.toggle">Send error reports when something breaks</span></label><p class="cover-note" data-i18n="errs.note" style="margin-top:6px;">Only the error message and where in Beuk's code it happened. Web addresses, email addresses, long codes, long quoted text and most file names are filtered out first. The filter works on patterns, so an error that quotes a few of your own words could still carry them. Kept for a limited time, then deleted. This setting is for this device.</p></div>
           <p class="cover-note" id="installHint" data-i18n="about.installHint">To keep Beuk a tap away, add it to your home screen from your browser's menu — it installs as an app and opens offline.</p>
           <button class="tb-btn" id="btnInstall" type="button" style="display:none;"><i data-lucide="download"></i><span data-i18n="pwa.install">Install Beuk</span></button>
           <!-- ==== BEUK:legal ==== shown only when this studio has its server (openSettings) -->
@@ -7542,15 +7542,17 @@
          long quoted text and file names scrubbed) plus the shell build, the UI
          language and a device class, to POST /api/client-errors, without
          cookies. Never book text, titles, file names or user ids. At most
-         BEUK_ERR_MAX per page load, each distinct error once. Off when
-         localStorage beuk.errors.v1 = "off" (Project Settings toggle). */
+         BEUK_ERR_MAX per page load, each distinct error once. OPT-IN: on only
+         when the writer turns it on (Project Settings toggle), which stores
+         localStorage beuk.errors.v1 = "on". Off by default until the privacy
+         page says otherwise (it promises nothing is sent while signed out). */
       const BEUK_ERRORS_KEY = "beuk.errors.v1";
       const BEUK_ERR_MAX = 5;
       let beukErrBuild = "unknown";
       let beukErrCount = 0;
       const beukErrSeen = {};
       function beukErrorsOn() {
-        try { return localStorage.getItem(BEUK_ERRORS_KEY) !== "off"; } catch (e) { return true; }
+        try { return localStorage.getItem(BEUK_ERRORS_KEY) === "on"; } catch (e) { return false; }
       }
       /* BEUK:errscrub */
       function beukErrScrub(raw) {
@@ -7621,7 +7623,7 @@
         if (!cb) return;
         cb.checked = beukErrorsOn();
         cb.addEventListener("change", () => {
-          try { if (cb.checked) localStorage.removeItem(BEUK_ERRORS_KEY); else localStorage.setItem(BEUK_ERRORS_KEY, "off"); } catch (e) {}
+          try { if (cb.checked) localStorage.setItem(BEUK_ERRORS_KEY, "on"); else localStorage.removeItem(BEUK_ERRORS_KEY); } catch (e) {}
         });
       })();
       Object.assign(UI_STRINGS.en, { "errs.toggle": "Send error reports when something breaks", "errs.note": "Only the error message and where in Beuk's code it happened. Web addresses, email addresses, long codes, long quoted text and most file names are filtered out first. The filter works on patterns, so an error that quotes a few of your own words could still carry them. Kept for a limited time, then deleted. This setting is for this device." });
@@ -33464,7 +33466,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v7"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v8"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check

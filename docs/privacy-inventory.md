@@ -35,7 +35,7 @@ That is a fact about the code, not a policy decision.
 | Housekeeping audit | actor user id + **actor email** (admins only), action, params summary, result | migrations/006_housekeeping.sql:12-21 | No limit (append-only, excluded from backups and restore) |
 | Self-check runs / sign-offs | build stamp, counts, results; sign-off user id + email + note (admins only) | migrations/006_housekeeping.sql:27-50 | No limit |
 | help_docs | derived from content/help/ — no personal data | migrations/013_help_search.sql:21-33 | Rebuilt each boot |
-| Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], a quoted book/picture file name of any length → "[file]", other quoted text over 24 chars → "[…]", book/picture file names → [file] together with up to five capitalised or numbered words before them; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v7), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
+| Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], a quoted book/picture file name of any length → "[file]", other quoted text over 24 chars → "[…]", book/picture file names → [file] together with up to five capitalised or numbered words before them; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v8), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
 | Usage counts | usage_daily: day, counter name, a number, a final flag — **nothing else** (see §11) | migrations/015_ops.sql; src/ops/usage.ts | **No limit** (one row per day per counter). Excluded from backups |
 | Backup alert state | ops_alerts: whether a backup incident is open, which self-check ids are red and their scrubbed detail, when the last alert went out and what each channel answered, whether the opening alert was delivered and how many attempts it took. ALERT_EMAIL (the operator's own address) is configuration, not stored here | migrations/015_ops.sql; src/ops/alerts.ts | One row, overwritten on each change. Excluded from backups |
 
@@ -175,12 +175,12 @@ are left out (src/account/data.ts `writeAccountExport`).
   shelf (client/index.html ~35134-35170).
 - **localStorage** (all prefixed `beuk.`): theme.v1, uiLang.v1,
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
-  zenSound.v1, errors.v1 ("off" when the writer turns error reports off
-  in Project Settings; absent = on), betaTokens.v1 — the share-link tokens the writer made,
+  zenSound.v1, errors.v1 ("on" when the writer turns error reports on
+  in Project Settings; absent = off), betaTokens.v1 — the share-link tokens the writer made,
   kept so the studio can show the links again (client/index.html:38224-38231) —
   and desk ("1" once the writer has written on this device, so the landing
   page at / sends them straight back to the studio; no content, no id).
-- **Service worker caches**: beuk-shell-v7 (the app shell), beuk-sound-v2
+- **Service worker caches**: beuk-shell-v8 (the app shell), beuk-sound-v2
   (ambient sound files), and the self-hosted font files under assets/fonts/ (client/sw.js).
 - **Backup files** (.beuk-backup.json) and exports are files the writer
   downloads; Beuk does not see where they go.
@@ -228,9 +228,10 @@ days). No retention limit.
 
 ## 12. Studio error reports (src/ops/client-errors.ts, client/index.html BEUK:errors)
 
-On by default; a writer turns them off in Project Settings, under "Beuk
+Off by default (opt-in): a writer turns them on in Project Settings, under "Beuk
 on this device" ("Send error reports when something breaks"), stored on that device as
-localStorage `beuk.errors.v1 = "off"`. When an uncaught error or an
+localStorage `beuk.errors.v1 = "on"`. They stay opt-in until the privacy page
+(which says nothing is sent while signed out) is revised. When an uncaught error or an
 unhandled promise rejection happens in the studio, it sends at most 5
 reports per page load (each distinct error once) to POST
 /api/client-errors, **without cookies**. What is sent and kept: §1

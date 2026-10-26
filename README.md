@@ -297,7 +297,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v7`; both `client/sw.js` and
+service worker (cache `beuk-shell-v8`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -2483,6 +2483,106 @@ The same Compose file runs locally — only `.env` differs.
   `APP_BASE_URL`). The landing page and every Help page carry Open Graph
   and Twitter card tags over one 1200 × 630 preview image
   (`client/site/og.png`).
+
+## Accounts — your typesetting portal (/account)
+
+Writing never needs an account. An account adds a shelf that follows you to any device, an archive for finished files, and links for beta readers. **/account** is where all of it comes together: a page from the server in the Paper style of Help. Caddy sends `/account*` to the app, and the service workers leave it to the network.
+
+- **Signed out**, it is a calm page with *Sign in* and *Create an account*, which open the studio's dialog (`/studio?signin`, `/studio?signup`).
+- **Signed in**, it shows your email address and whether it is confirmed; your shelf (title, about how many words, last saved, *Open in the studio* → `/studio?book=<id>`); your export archive with downloads; your beta-reader links and how many comments wait; your streak; your plan; password and sign-in; *Download all my data*; and *Delete my account*.
+
+**Email confirmation.** Sign-up sends a link (single-use, 48 hours; the server keeps only its SHA-256). The link opens `/account/confirm`, where one button confirms; just opening the link changes nothing, so mail scanners can't use it up. An unconfirmed account works exactly like a confirmed one; confirming only means a reset email can reach you. "Send the link again" makes a new link and retires the old ones. Without SMTP_URL / MAIL_FROM the server says "email isn't set up on this server" and never claims a message was sent.
+
+**Changing your email** needs your current password. A link goes to the new address and a short notice to the old one. The address changes only when the link is opened, and a pending change can be cancelled. While email is not configured, a change is refused with that reason; an address never changes unconfirmed.
+
+**Download all my data** (`GET /api/account/export`) is one ZIP made on the fly. It holds every book on your shelf as a studio backup file (`manuscripts/<title> (<id8>).beuk-backup.json`, which the studio opens with "Open a backup"; books in the older front/body/back shape are flattened so they open too) plus `manuscripts/index.json` (shelf id, revision, dates, whether the studio can open it), every archived file byte for byte with `exports/index.json`, each reading link's settings, frozen copy and comments, `streak.json`, `jobs.json`, `account.json` and a `README.txt` that says what is where. Left out: your password hash, sessions, link tokens and readers' abuse-control hashes. One download holds up to 3.5 GB (the classic ZIP format, no ZIP64).
+
+**Delete my account** needs your current password and the typed phrase `delete my account`. One transaction removes everything the account owns: sign-ins, reset and confirmation links, books, archive rows, server jobs, streak, reading links with their comments and reader counts, billing subscription rows, and the account. Then the archive files are removed from disk. Not removed: Founders' Shelf entries (they have no account id), the admin Housekeeping records, and the Stripe event ledger, which keeps each event id with no user attached. Copies stay in backups for the time the privacy page describes.
+
+**Plan.** The Plan section shows what the server knows from verified Stripe webhooks (src/entitlements.ts). Until billing is configured it says plans are not switched on and everything is open. It never shows a price; the price is V's setting and is not set. Export always stays open.
+
+Rate limits, per user and in memory: resend 3/hour, email change 5/hour, data download 5/hour, delete attempts 5 per 15 minutes; the confirm page allows 30 per 15 minutes per IP. API: `GET /api/account/summary`, `POST /api/account/confirm/resend`, `POST /api/account/email`, `POST /api/account/email/cancel`, `GET /api/account/export`, `POST /api/account/delete`. Change password and sign out everywhere stay at `/api/auth/password` and `/api/auth/sessions/revoke-all`.
+
+In the studio, the shelf dialog links to the account page and shows a calm line when the address isn't confirmed. Right after you sign in or create an account, a book on the desk that has real writing and isn't on your shelf is offered a place there once ("Bring it to my shelf" / "Not now"). It is never uploaded unless you choose.
+
+`GET /api/account/export/check` (signed in) answers 200, 413 or 429 without counting against the download limit; the account page asks it first, so a refusal shows on the page instead of being saved as a file. Before deleting an account with a running subscription, the Delete section says deleting does not cancel it yet (the cancel call comes with the billing work: `cancelBillingForDeletedAccount()` in `src/account/plan.ts`), and the trial clock is still to be filled in (`accountPlan()`, same file). Accounts made before migration 014 start as "not confirmed".
+
+## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
+
+- **`/features`** (`client/site/features.html`) shows the studio feature by feature in nine real screenshots under `client/site/shots/` (WebP, 600–1280 px wide, all under 100 KB, each with alt text and its real size). They were taken in the studio with the bundled sample, *The Lantern Coast*, on 26 October 2026: the writing desk with the device preview, the Typography Studio, the Print Interior View, the cover maker and print wrap, the export dialog with its store presets, Story Insights, the Goals habit calendar and a History snapshot. Every line describes the studio as it is today. Beta-reader links need an account, so that section says there is no picture instead of showing a mock-up. The road-so-far chart isn't pictured because the browser had logged the sample's length on only one day.
+- **`/compare`** (`client/site/compare/index.html`) and **`/compare/atticus`, `/compare/vellum`, `/compare/reedsy-studio`, `/compare/dabble`**: one page per tool.
+  - Each has a side-by-side table, "Where <tool> is stronger", "Where Beuk is different" and "What Beuk doesn't do".
+  - Every fact about the other tool carries a `[n]` mark that links into a visible **Sources** list. Each source is a page on that tool's own website, with the date it was checked (26 October 2026). Anything we could not confirm from a source is left out.
+  - Beuk's price reads only "7-day free trial, then one price — announced before launch".
+  - When a competitor's price or features change, edit that page's table row and its source line together.
+- **Design.** The pages share `client/site/site.css`, a copy of the landing page's tokens, top bar, buttons and footer. The landing page keeps its own inline CSS, so this file cannot change how the front page looks.
+  - The landing page links Features and Compare in its top bar and footer.
+  - To keep the top bar on one line, "Ports of call" and "Manifest" now appear only in the footer and the tour bar.
+- **Serving.**
+  - Caddy serves each path exactly (`handle /features` → `/site/features.html`, and so on). `/features/`, `/compare/` and `/compare/<name>/` redirect (308) to the bare path, and any other `/compare/...` path falls through to the studio like every unknown path.
+  - `/sitemap.xml` lists all six pages (`COMPARE_SLUGS` in `src/routes/site.ts`).
+  - Both service workers leave `/features` and `/compare` to the network, like Help and `/site/*`.
+- **Tests.** `tests/site-pages.test.ts` covers:
+  - Pages and copy: each page exists, makes no false claims (the landing page's list, plus no price for Beuk, no "best", no exclamation marks), and has its canonical and Open Graph tags.
+  - Images: every referenced file exists, and each screenshot's WebP size matches its `width`/`height`.
+  - Sources: every comparison has a sources list on the vendor's own site with the checked date, and every source mark points into it.
+  - Wiring: the sitemap, the Caddy routes, both service workers, and the landing page's links.
+- **Counts are tied to the studio.** The pages' numbers (themes, cover layouts, store presets, trim sizes, book and studio languages) are checked by `tests/site-pages.test.ts` against the studio's own tables (PRESETS, COVER_LAYOUTS, PLATFORM_PRESETS, TRIM_SIZES, LANG_PACKS, UI_LANG_ORDER); change a table and the test names every sentence that needs the new count. Account-only parts (beta-reader links, the server's PDF/X-1a conversion and EPUBCheck, and the Store-ready? checks that read the PDF/X file) are marked "with an account" on every page.
+
+## Production ops: status page, backup alerts and retention, error reports, usage counts
+
+**Public status: `/status` and `/api/status/public`.** A server-rendered page in Help's Paper style, readable without JavaScript, and the same reading as JSON for outside monitors. It covers:
+
+- **Studio:** the studio's file is present in this deploy.
+- **Shelf:** the database answers `select 1`.
+- **Help:** the content loads and its own check finds no problems.
+- **Server checks:** EPUBCheck and PDF/X tools *installed* or not. Never "working": whether a tool runs is known when a job runs it.
+- **Email:** configured (SMTP_URL + MAIL_FROM) or not. Nothing is sent to test it.
+- **Backups:** age of the newest complete local backup, whether the schedule's check is green, and whether a fresh off-site copy exists.
+
+Each part carries its reading time. States are Working, Not set up, Needs attention and Down; a part that is switched off is "Not set up", never a failure, and never "working". Nothing internal is shown: no error text, hostnames, paths, setting values or build stamp. One reading is cached for 30 s (`Cache-Control: public, max-age=30` on the JSON). Both answer 503 when the database does not. Caddy proxies `/status*` to the app, the service workers leave `/status` to the network, and it is in the sitemap. The page says plainly that it comes from the server itself, so it cannot load when the server is down. Point an outside monitor at it: see `docs/uptime-monitoring.md`.
+
+**Backup alerts.** After each 15-minute scheduler tick the server reads the three backup self-checks: `backup.schedule.running`, `backup.offsite.fresh` and `backup.offsite.drill`.
+
+- When any turns red, an incident opens and one alert goes out.
+- While it stays open nothing more is sent, even if the list of red checks changes.
+- When every check is green or not configured again, one "working again" message goes out.
+- `not-configured` is never an incident.
+- The state is kept in `ops_alerts` (and in memory), so a restart or a database outage does not repeat alerts.
+
+Channels:
+
+- `ALERT_EMAIL` is used only when email is set up. Otherwise Housekeeping says "email isn't set up on this server" and nothing is claimed as sent.
+- `ALERT_WEBHOOK_URL` gets a JSON POST, chosen by `ALERT_WEBHOOK_FORMAT`:
+  - `json` (default): the full alert object, with `text` and `content` lines.
+  - `slack`: `{"text"}`, the field Slack's incoming webhooks require.
+  - `discord`: `{"content"}`, at most 2000 characters, Discord's Execute Webhook field.
+- The webhook URL is a credential. It is never shown, it is scrubbed from every output, and it is excluded from backups by name.
+- `POST /api/housekeeping/alerts/test` sends one test message on every configured channel.
+- "Once per incident" means once **delivered**. If no channel accepts the opening alert (the webhook is down, SMTP refuses it, or no channel was set when the incident opened), later checks try again, at least 10 minutes apart and at most 4 attempts that reached a channel; a channel added during an incident still gets it. Housekeeping shows `incident.delivered`, `incident.openAttempts` and what each channel answered.
+
+**Local backup retention.** Set with `BACKUP_KEEP_COUNT` (keep the n newest) and/or `BACKUP_KEEP_DAYS` (keep everything younger than d days). Both empty, the default, keeps every local backup, as before. With both set, a backup is kept if either rule keeps it. Never deleted:
+
+- the newest complete backup;
+- any directory without a readable manifest (unfinished or not a backup);
+- the status dot-files.
+
+Pruning runs after each tick under the one Housekeeping lock. If a backup, restore or rehearsal holds the lock, pruning is skipped until the next tick. `POST /api/housekeeping/backups/prune` runs it now; it answers 409 while retention is unset. `GET /api/housekeeping/ops` shows the policy, the last retention run, the alert channels and the incident with its last alert.
+
+**Studio error reports.** The studio's `error` / `unhandledrejection` handlers POST a minimal report to `/api/client-errors`, sent without cookies:
+
+- the message (at most 300 characters) and stack (at most 15 lines), scrubbed of URL queries and fragments, `/read/` tokens, email addresses, UUIDs, token-like strings, long quoted text and book/picture file names;
+- the shell build;
+- the UI language;
+- the device class: phone, tablet or desktop.
+
+It sends no user id. At most 5 reports go out per page load, each distinct error once. **Reports are opt-in**: nothing is sent until the writer turns on "Send error reports when something breaks" under "Beuk on this device" in Project Settings (all 13 locales; localStorage `beuk.errors.v1 = "on"`). They stay off by default until the privacy page, which says nothing is sent while signed out, is revised. The filter works on patterns: it removes web addresses, emails, ids, long codes, long quoted text and file names (quoted ones whole, unquoted ones with up to five capitalised words before them), but an error that quotes a few of the writer's words can still carry them, and the studio note says so.
+
+The server scrubs again and caps the body at 4 KB. It rate-limits per IP (10, then one a minute, in memory) and allows at most 1000 new groups a day. Reports are stored aggregated, one row per day per error, language and device, with a count, and deleted after `CLIENT_ERRORS_KEEP_DAYS` (default 30). `GET /api/housekeeping/client-errors` groups them by message.
+
+**Usage counts.** One number per day per counter in `usage_daily`. No cookies, IPs, user ids or per-user event log. The counters are sign-ups, sign-ins, first shelf saves, exports archived, EPUBCheck runs and share links created, each counted on a successful response. "Came back after 7 days" is computed from `streak_days`. `GET /api/housekeeping/usage` shows the last 30 days. Exactly what is and isn't counted: `docs/privacy-inventory.md` §11.
+
+New tables (migration 015) are excluded from backups, with reasons: `client_errors`, `usage_daily` and `ops_alerts`.
 
 ## The static client mount point
 

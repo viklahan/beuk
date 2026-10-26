@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v7"; /* v7: the studio moves to /studio and the landing page takes / (a v6 worker would cache the landing page as the studio) */
+const BEUK_CACHE = "beuk-shell-v8"; /* v8: the account portal, status, features and compare pages stay network-only; studio error reports (opt-in) */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell

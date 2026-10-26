@@ -4,6 +4,29 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Your account, the whole site, and knowing when something is wrong
+
+**Your typesetting portal**
+- **beuk.studio/account** shows your email address, your shelf (about how many words, when each book was last saved, and a link that opens it in the studio), your export archive, your beta-reader links, your streak and your plan, all in one place. Signed out, it offers Sign in and Create an account.
+- **Email confirmation.** A new account gets a link to confirm its address. Nothing waits on it: writing, saving, exporting and the trial work the same either way. When this server can't send email, it says so.
+- **Change your email address** from the account page. A link goes to the new address and a notice to the old one, and nothing changes until the link is opened.
+- **Download all my data:** one ZIP with every book (as backup files the studio opens), every archived file, your reading links and their comments, your streak, and a README saying what is inside.
+- **Delete my account:** with your password and a typed phrase. It removes everything the account holds, archive files included, and offers the full download first. If a subscription is still running, the page says that deleting doesn't cancel it yet, and who to ask.
+- After you sign in or create an account, a book on this device that has real writing is offered a place on your shelf, once, and only if you say yes.
+
+**Features and comparisons**
+- **beuk.studio/features shows the studio as it is.** Nine pictures of the real studio, taken with the sample novella. Every line says what the studio does today; beta-reader links need an account, so that section has no picture rather than a mock-up.
+- **Beuk beside Atticus, Vellum, Reedsy Studio and Dabble** at beuk.studio/compare. Each page says where the other tool is stronger as plainly as where Beuk is, and lists what Beuk doesn't do. Every fact about the other tool links to that tool's own website and carries the date we checked it (26 October 2026). No price is shown for Beuk: a 7-day free trial, then one price, announced before launch.
+- The front page's top bar shows Features and Compare; "Ports of call" and "Manifest" stay in the footer.
+
+**Knowing when something is wrong**
+- **A status page.** beuk.studio/status says whether the studio, the shelf, Help, the server checks, email and backups are working, with the time of each reading. Parts not set up yet say so. An outside monitor can read the same at /api/status/public (see docs/uptime-monitoring.md).
+- **Backups speak up.** When a backup check turns red, the server sends one alert by email (once email is set up) and/or to a chat webhook, tries again if it didn't arrive, and sends one more when things are working again.
+- **Old local backups can be tidied.** Two new settings decide how many to keep; until they are set, every backup is kept. The newest is never deleted, and nothing is deleted while a backup runs.
+- **Error reports, only if you want them.** You can let the studio send the error message and where in Beuk's code it happened when something breaks, never your account. It is off unless you turn it on in Project Settings.
+- **Counts, not tracking.** The server keeps one number a day for sign-ups, sign-ins, first saves, exports, EPUBCheck runs, share links, and writers who came back after a week. No cookies, no addresses, nothing about who.
+- The studio offers this update ("A new Beuk is ready").
+
 ## 2026-10-26 — A front door
 
 - **beuk.studio opens on the landing page.** It says what Beuk is, with

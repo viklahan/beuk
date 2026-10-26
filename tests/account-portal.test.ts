@@ -738,7 +738,8 @@ test('wiring: Caddy sends /account* to the app; both workers leave it to the net
   const caddy = read('Caddyfile');
   assert.ok(caddy.includes('handle /account* {\n\t\treverse_proxy app:3000\n\t}'));
   for (const p of [['client', 'sw.js'], ['client', 'assets', 'sw.js']]) {
-    assert.match(read(...p), /\|sitemap\\\.xml\|account\)\(\\\/\|\$\)/, p.join('/'));
+    // Other server pages share the group (status, features, …): account must be one of them.
+    assert.match(read(...p), /\|sitemap\\\.xml(\|[a-z-]+)*\|account(\|[a-z-]+)*\)\(\\\/\|\$\)/, p.join('/'));
   }
   const db = await createTestDb();
   const s = await start(db);
