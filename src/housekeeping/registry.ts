@@ -1803,6 +1803,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The device link record (IndexedDB) and the conflict notice live in the browser; asserted by the async client self-check window.runBeukAsyncSelfChecks().',
   },
+  /* ---- round-7 overlapping shelf saves (BEUK:savesync) ---- */
+  {
+    id: 'shelf.save.single-flight',
+    title: 'Shelf saves are single-flight: a save asked for mid-flight runs once, after the answer, on the returned revision (never two PUTs on one If-Match); a late answer for a book no longer on the desk moves nothing; no path out of a save leaves "Saving…" standing',
+    kind: 'client-only',
+    reason: 'The save queue, its in-flight promise and the shelf status line live in the browser; asserted by the async client self-check window.runBeukAsyncSelfChecks() against a stand-in shelf that keeps this server’s If-Match contract.',
+  },
+  {
+    id: 'shelf.save.identical-409-silent',
+    title: 'A 409 or reconnect check whose shelf copy is the device’s own book settles quietly on the shelf revision; a stale timestamp with an agreeing revision is no conflict; another device’s different words still raise the notice',
+    kind: 'client-only',
+    reason: 'The comparison of the shelf copy with the desk’s book and the conflict notice run in the browser; asserted by the async client self-check window.runBeukAsyncSelfChecks().',
+  },
   {
     id: 'ui.lang.live-account-desk',
     title: 'Switching the UI language redraws the account button and the preview desk at once (es, ar, ja)',

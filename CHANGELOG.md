@@ -4,6 +4,20 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Saves that overlap never cry conflict
+
+- **No false "This book changed in two places".** For signed-in writers:
+  a save whose answer arrived after the desk had moved on (another shelf
+  book opened meanwhile, or the studio's own self-checks running) could
+  leave a wrong note of when the shelf last changed, and the next check
+  with the shelf then opened the notice for a book that had changed in
+  one place only — after which the shelf line could stay on "Saving to
+  your shelf…" until a reload. Each save's answer now lands only on the
+  book it was sent for, the studio trusts the shelf's own revision number
+  over that note, and it quietly agrees when the shelf already holds
+  exactly the book on your desk. "Saving…" always settles. A book really
+  changed on another device still gets the notice, as before.
+
 ## 2026-10-26 — Your address stays with us
 
 - **No more Google Fonts.** Every typeface in the studio, Help, the

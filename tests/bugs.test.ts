@@ -40,7 +40,8 @@ test('bugs: a landed shelf save writes the new revision to the device at once, a
 test('bugs: a stale note is forgiven only when the shelf copy is the same book', async () => {
   const html = await clientHtml();
   // Both tolerance sites compare whole documents; neither compares anything weaker.
-  assert.match(html, /res\.__status === 409 && res\.__body && res\.__body\.manuscript && res\.__body\.manuscript\.doc &&\s+typeof res\.__body\.manuscript\.revision === "number" && typeof bookDocsSame === "function" && bookDocsSame\(res\.__body\.manuscript\.doc, doc\)/);
+  // BEUK:savesync (round 7) — the 409 copy may also equal the device's book as it stands now; still whole-document.
+  assert.match(html, /res\.__status === 409 && res\.__body && res\.__body\.manuscript && res\.__body\.manuscript\.doc &&\s+typeof res\.__body\.manuscript\.revision === "number" && typeof bookDocsSame === "function" &&\s+\(bookDocsSame\(res\.__body\.manuscript\.doc, doc\) \|\| bookDocsSame\(res\.__body\.manuscript\.doc, serializeBook\(\)\)\)\)/);
   assert.match(html, /\} else if \(m\.doc && typeof bookDocsSame === "function" && bookDocsSame\(m\.doc, serializeBook\(\)\)\) \{/);
   // The real conflict branch is still there, after it.
   const rec = html.slice(html.indexOf('async function localReconcileOnSignIn() {'));
