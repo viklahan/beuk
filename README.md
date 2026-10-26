@@ -1664,6 +1664,124 @@ longer sends the reader back to page 1.
 - **Hooks (tests only, never in the UI):** `window.beukReader`
   (`flush`, `pageOf`, `caretAnchor`, `pageAnchor`, `follow`).
 
+## Studio: chapter operations — delete with Undo, duplicate, split, merge (client-only)
+
+Every row of the sidebar's section list that can be changed carries one
+**action menu** (the `…` button after the eye; it replaces the old
+one-click trash button). The menu offers **Duplicate**, **Split at
+cursor**, **Merge with next** and **Delete**, as far as each applies to
+that section. Generated pages (cover, half title, title page,
+copyright, contents) have no menu.
+
+- **One path for all four.** Each operation first takes an automatic
+  History snapshot — "Before deleting <name>", "Before duplicating
+  <name>", "Before splitting <name>", "Before merging <a> and <b>" (auto
+  kind `chapterop`; the words are composed when shown, so they follow
+  the interface language) — then makes the change, then shows a toast
+  with **Undo** for ten seconds. The toast waits while the pointer rests
+  on it or focus is in it; after a menu action focus moves to its Undo
+  button, and when the toast leaves, focus returns to the active row.
+  The toast stack is an `aria-live="polite"` region.
+- **Snapshots kept.** Structural snapshots keep their own most recent
+  **five**; they are counted apart from the ten kept for imports, the
+  sample story, restores and the other automatic kinds, so a run of
+  chapter edits never pushes those out. A snapshot stays in History after
+  the toast is gone and restores like any other.
+- **What a structural snapshot costs.** Like every snapshot it is the
+  whole book, but an operation moves text, never a picture, the cover or
+  a font, so the snapshot **shares** those with the book instead of
+  holding a second copy. In memory the picture data is one shared
+  string. In the saved book (local save, shelf, book file) each
+  picture, font or cover the snapshot holds unchanged from the book's
+  own is written once — as the book's — and the snapshot entry names it
+  (`{ "ref": id }`, under `chopDoc` in place of `doc`); one the book has
+  since changed or dropped is written in full inside the snapshot, so a
+  restore brings back exactly what was there. Measured on the sample
+  (29 pictures; payload 7,828,735 bytes fresh): five delete + Undo add
+  about 0.75 MB in all (each packed entry about 0.2 MB, mostly the
+  book's text), where a full copy would add about 7.8 MB each. Named
+  snapshots and the other automatic kinds still hold full copies, as
+  before; the shelf's limit (`MANUSCRIPT_MAX_BYTES`, 64 MiB by default)
+  counts them. A studio from before this change does not read `chopDoc`
+  entries: it skips them (it never restores half a book), and the next
+  save from it leaves them out.
+- **Undo is an inverse edit, not a restore.** It puts back only what the
+  operation took or added, so writing done meanwhile elsewhere in the
+  book stands. A deleted section returns next to the neighbour it stood
+  beside (else at its old index) with its id — so reader comments, which
+  the shelf keeps by section id, attach to it again — and with its text,
+  notes, image references, scene images, plate, backdrop and every other
+  per-section setting; the active section is restored too. If the
+  sections an operation produced (the copy, the two halves of a split,
+  the merged section) have been edited since, Undo leaves them alone and
+  says so, pointing at the snapshot. A whole book arriving (shelf load,
+  backup, sample, restore) ends any pending Undo.
+- **Delete** works for the sections that could be deleted before (body
+  sections: chapters, prologue, epilogue, Part dividers); a book keeps
+  at least one section.
+- **Duplicate** (body sections except Part dividers) inserts a deep copy
+  right after the original: new id, title "<title> (copy)" (localised),
+  the same text, image references and settings, and the audio script's
+  per-section choice. **Reader comments are not copied** — they stay
+  with the original. The copy is selected.
+- **Split at cursor** (the active section; not generated pages or Part
+  dividers) cuts at the cursor's paragraph: the paragraph holding the
+  cursor opens the second part, or the next one when the cursor sits at
+  a paragraph's very end. There must be text on both sides, otherwise
+  the item is disabled with the reason. A heading line (`# …` / `## …`)
+  right at the cut becomes the second part's title; otherwise it is
+  "<title> (2)". Note definitions (`[^n]: …`) go with the text that
+  cites them — to both parts when both cite the note, so neither
+  reference goes dead; an uncited one stays on its own side. Images stay
+  with their paragraphs and scene images with their breaks. The second
+  part keeps the section's kind, type, drop-cap and small-caps settings,
+  but not the chapter-opening plate, backdrop or contents-heading
+  override (those belong to the opening of the first part). The second
+  part is selected. There is no keyboard shortcut; the menu is reached
+  with Tab (the row's tools show while focus is in the row) and Enter.
+- **Merge with next** joins a section with the one after it, separated
+  by the studio's scene break (`***`). The first section's title,
+  number and settings are kept; the second's plate and backdrop are not
+  (Undo, or the snapshot, brings them back). Note labels of the second
+  that clash with the first's are renumbered so each note keeps its own
+  text, and scene images move with their breaks. Merge refuses —
+  disabled, with the reason as tooltip, as visible text in the menu and
+  as a toast if chosen — across front matter / body / back matter, onto
+  or from generated pages and Part dividers, and on the last section.
+- **Chapter numbers.** When the chapters were numbered in sequence
+  before the operation — 1 2 3, I II III, i ii iii, or English number
+  words (One, ONE, one; Beuk's own pattern match, nothing more) — they
+  are renumbered in the same style afterwards; any other numbering is
+  left exactly as the writer set it. Undo renumbers the same way when
+  the operation renumbered and the chapters are still in sequence —
+  whatever other operations ran or were undone since, in any order (two
+  deletes undone oldest first end at 1..n again, exactly as before).
+  Where the writer has set numbers by hand since, Undo instead gives
+  every chapter whose number the operation changed (and nobody changed
+  since) its number back.
+- **Where Undo leaves you.** Undo returns to the section that was
+  active before the operation, unless the writer has since moved to
+  another section — then they stay where they are.
+- **Saving.** Each operation and each Undo is an ordinary edit: it marks
+  the book for the local save and the shelf sync (revision /
+  `If-Match`) like typing does, and structure changes never count as
+  writing in the habit log.
+- **Toasts, generally.** Toast action buttons now take clicks: the
+  stack is `pointer-events: none` so it never blocks the page, and its
+  buttons used to inherit that (before this change a mouse click on a
+  toast's History button did nothing). On phones the stack is no longer
+  squeezed to half the screen width.
+- **Checks.** In-studio `chapters.delete.undo-restores-exactly`,
+  `chapters.delete.snapshot-taken`, `chapters.duplicate.deep-copy`,
+  `chapters.split.at-caret`, `chapters.merge.scene-break` and
+  `chapters.merge.refuses-across-kinds` (`runBeukSelfChecks()`;
+  registered client-only in Housekeeping). Each runs on its own fixture
+  book, checks a serialize → apply round trip after the operation and
+  after its Undo, and puts the desk back.
+- **Hooks (tests only, never in the UI):** `window.beukChapters`
+  (`del`, `duplicate`, `split`, `merge`, `undo`, `last`, `mergeWhy`,
+  `splitPlan`, `menu`, `closeMenu`).
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a

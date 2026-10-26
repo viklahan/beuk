@@ -4,6 +4,32 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Chapters you can move without fear
+
+- **Delete has an Undo.** Deleting a chapter no longer happens in one
+  silent click. It now sits in the row's new `…` menu, takes a History
+  snapshot first ("Before deleting …"), and shows "“…” deleted" with an
+  Undo button for ten seconds. Undo puts the chapter back exactly where
+  it was — text, notes, pictures, settings and its reader comments — and
+  keeps anything you wrote in the meantime. After the notice is gone,
+  the snapshot is still in History.
+- **Duplicate, Split at cursor, Merge with next.** The same menu copies
+  a chapter (titled "… (copy)"; reader comments stay with the original),
+  splits the open section where your cursor is (a heading at that spot
+  becomes the new chapter's title, and footnotes travel with the text
+  that cites them), and joins a section with the next one using a scene
+  break. Each takes its own snapshot and offers Undo. Merging across
+  front matter, body and back matter is refused, and the menu says why.
+- **Numbers keep up.** A book numbered in order — 1, 2, 3, I, II, III or
+  One, Two, Three — stays in order after any of these, and after their
+  Undos in any order; numbers you set by hand are left alone.
+- **Snapshots stay light.** The snapshot taken before each of these
+  shares the book's pictures instead of copying them, so a few deletes
+  no longer make the saved book (and the shelf upload) several times
+  bigger.
+- **Notice buttons work.** Buttons on notices (like "History") now
+  respond to a click, and notices use the full width of a phone.
+
 ## 2026-10-26 — Who walks on, and where
 
 - **Names on stage, in Story Insights.** A new last section shows the
