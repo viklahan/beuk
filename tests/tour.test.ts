@@ -103,3 +103,21 @@ test('tour: each client tour.* self-check is registered server-side as client-on
     assert.ok((c.reason ?? '').length > 10, `${c.id} carries a reason`);
   }
 });
+
+test('tour: a replay opened on an empty desk ends when a book arrives, as the first-run tour does', async () => {
+  const block = tourBlock(await clientHtml());
+  const start = block.slice(block.indexOf('function tourStart('), block.indexOf('function tourGo('));
+  assert.ok(start.includes('tour.empty0 = (opts.empty0 !== undefined) ? !!opts.empty0 : isEmptyDesk();'), 'the start records whether the desk was empty');
+  const began = block.slice(block.indexOf('function tourWriterBegan('), block.indexOf('function tourTick('));
+  assert.ok(began.includes('if (edits > tour.edits0) return true;'), 'a real edit still ends it');
+  assert.ok(began.includes('return (!tour.replay || tour.empty0) && !isEmptyDesk();'), 'an import or the sample on a desk that was empty ends it, replay or not');
+  const suspend = block.slice(block.indexOf('function tourSuspendForChecks('));
+  assert.ok(suspend.includes('empty0: tour.empty0') && suspend.includes('tourStart({ replay: keep.replay, empty0: keep.empty0 });'), 'a Self-checks run brings it back with the same starting desk');
+});
+
+test('tour: the Help guide for importing links to the tour, and the studio opens it from /studio#tour', async () => {
+  const guide = await readFile(path.join(here, '..', 'content', 'help', 'guides', 'import-a-manuscript.md'), 'utf8');
+  assert.ok(guide.includes('[Show the quick tour](/studio#tour)'), 'the Help guide links to the tour');
+  const block = tourBlock(await clientHtml());
+  assert.ok(block.includes('const asked = /^#tour$/i.test(location.hash || "");'), 'tourInit answers /studio#tour');
+});

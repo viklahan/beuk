@@ -45634,8 +45634,9 @@
            empty, or a real edit lands), or one of the last step's
            three buttons. Skip (the x, or Esc) ends it too. Either way
            it is stored and never shown again by itself.
-         - "Show the quick tour" under the sample story, or /studio#tour,
-           shows it again on purpose. */
+         - "Show the quick tour" under the sample story, or /studio#tour
+           (linked from the Help guide "Import a manuscript"), shows it
+           again on purpose. */
       Object.assign(UI_STRINGS.en, {"tour.label": "Quick tour", "tour.count": "Step {step} of {total}", "tour.next": "Next", "tour.back": "Back", "tour.skip": "Skip the tour", "tour.show": "Show the quick tour", "tour.s1t": "Bring your book in", "tour.s1b": "Bring in a Word, Markdown or plain-text manuscript with “{import}”, or simply start typing on the empty page. To look around first, open the sample story. Your book saves on this device; no account is needed.", "tour.s2t": "Write here, see the book there", "tour.s2b": "You write on the page. The preview shows the book as a reader will see it, on the e-reader, tablet or phone you choose.", "tour.s3t": "Give it a look", "tour.s3b": "“{studio}” sets the type for the whole book. Pick a theme in one click, then change the faces, sizes and spacing if you like.", "tour.s4t": "Export when the book is ready", "tour.s4b": "“{export}” makes the EPUB, with presets for Amazon KDP, Apple Books, Kobo, Google Play and other stores, and a print edition in paperback or hardback. Export always stays open, with or without an account.", "tour.s4q": "Where would you like to begin?", "tour.actImport": "Import a manuscript", "tour.actSample": "Open the sample story", "tour.actWrite": "Start writing", "tour.skipped": "The tour is closed. “Show the quick tour”, under the sample story, brings it back.", "tour.live": "Step {step} of {total}: {title}"});
       Object.assign(UI_STRINGS.es, {"tour.label": "Visita rápida", "tour.count": "Paso {step} de {total}", "tour.next": "Siguiente", "tour.back": "Atrás", "tour.skip": "Saltar la visita", "tour.show": "Ver la visita rápida", "tour.s1t": "Trae tu libro", "tour.s1b": "Trae un manuscrito de Word, Markdown o texto sin formato con «{import}», o empieza a escribir sin más en la página vacía. Si prefieres echar un vistazo antes, abre la historia de muestra. Tu libro se guarda en este dispositivo; no necesitas cuenta.", "tour.s2t": "Escribe aquí, mira el libro allí", "tour.s2b": "Escribes en la página. La vista previa muestra el libro tal como lo verá un lector, en el lector electrónico, la tableta o el teléfono que elijas.", "tour.s3t": "Dale un aspecto", "tour.s3b": "«{studio}» compone el texto de todo el libro. Elige un tema con un clic y, si quieres, cambia después las fuentes, los tamaños y los espaciados.", "tour.s4t": "Exporta cuando el libro esté listo", "tour.s4b": "«{export}» crea el EPUB, con ajustes para Amazon KDP, Apple Books, Kobo, Google Play y otras tiendas, y una edición impresa en tapa blanda o tapa dura. La exportación siempre está disponible, con cuenta o sin ella.", "tour.s4q": "¿Por dónde quieres empezar?", "tour.actImport": "Importar un manuscrito", "tour.actSample": "Abrir la historia de muestra", "tour.actWrite": "Empezar a escribir", "tour.skipped": "La visita se ha cerrado. «Ver la visita rápida», bajo la historia de muestra, la vuelve a abrir.", "tour.live": "Paso {step} de {total}: {title}"});
       Object.assign(UI_STRINGS.fr, {"tour.label": "Visite rapide", "tour.count": "Étape {step} sur {total}", "tour.next": "Suivant", "tour.back": "Retour", "tour.skip": "Passer la visite", "tour.show": "Revoir la visite rapide", "tour.s1t": "Apportez votre livre", "tour.s1b": "Importez un manuscrit Word, Markdown ou texte brut avec « {import} », ou commencez simplement à écrire sur la page vide. Pour découvrir d’abord, ouvrez l’histoire d’exemple. Votre livre est enregistré sur cet appareil ; aucun compte n’est nécessaire.", "tour.s2t": "Écrivez ici, voyez le livre là", "tour.s2b": "Vous écrivez sur la page. L’aperçu montre le livre tel qu’un lecteur le verra, sur la liseuse, la tablette ou le téléphone de votre choix.", "tour.s3t": "Donnez-lui son allure", "tour.s3b": "« {studio} » compose tout le livre. Choisissez un thème en un clic, puis modifiez les polices, les tailles et les espacements si vous le souhaitez.", "tour.s4t": "Exportez quand le livre est prêt", "tour.s4b": "« {export} » crée l’EPUB, avec des préréglages pour Amazon KDP, Apple Books, Kobo, Google Play et d’autres librairies, ainsi qu’une édition imprimée, brochée ou reliée. L’export reste toujours ouvert, avec ou sans compte.", "tour.s4q": "Par où voulez-vous commencer ?", "tour.actImport": "Importer un manuscrit", "tour.actSample": "Ouvrir l’histoire d’exemple", "tour.actWrite": "Commencer à écrire", "tour.skipped": "La visite est fermée. « Revoir la visite rapide », sous l’histoire d’exemple, la rouvre.", "tour.live": "Étape {step} sur {total} : {title}"});
@@ -45768,6 +45769,7 @@
         tour.lastResult = null; tour.wouldStore = null;
         tour.lastFocus = document.activeElement;
         tour.edits0 = (typeof local !== "undefined" && local) ? local.realEdits : 0;
+        tour.empty0 = (opts.empty0 !== undefined) ? !!opts.empty0 : isEmptyDesk();
         tourBuild();
         const typing = document.activeElement && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName);
         tourGo(0, typing ? "" : "title");
@@ -45789,12 +45791,13 @@
         else if (how === "back") { if ($("tourBack").hidden) focus($("tourNext")); else focus($("tourBack")); }
       }
       /* The writer has begun: words typed, a book imported, the sample
-         opened (whatever arrives on a desk that was empty). On a replay
-         the desk was never empty, so only a real edit counts. */
+         opened (whatever arrives on a desk that was empty). A replay
+         opened on an empty desk ends the same way; a replay opened
+         over a book ends only at a real edit. */
       function tourWriterBegan() {
         const edits = (typeof local !== "undefined" && local) ? local.realEdits : 0;
         if (edits > tour.edits0) return true;
-        return !tour.replay && !isEmptyDesk();
+        return (!tour.replay || tour.empty0) && !isEmptyDesk();
       }
       function tourTick() {
         if (!tour.active) return;
@@ -45949,11 +45952,11 @@
          back at the same step afterwards. */
       function tourSuspendForChecks() {
         if (!tour.active || tour.dry) return () => {};
-        const keep = { step: tour.step, replay: tour.replay };
+        const keep = { step: tour.step, replay: tour.replay, empty0: tour.empty0 };
         tourTeardown();
         return () => {
           if (tour.active) return;
-          tourStart({ replay: keep.replay });
+          tourStart({ replay: keep.replay, empty0: keep.empty0 });
           tourGo(keep.step, "");
         };
       }
