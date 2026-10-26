@@ -45,6 +45,14 @@
     <script src="assets/vendor/lucide.min.js" integrity="sha512-ibnpmCRt4ihCELC17N3qavYe+koJxpcJQA2FxbbyCJkqYs1WetGvNWeecRmT5g3IJf7CmAsW+rLMJFC0qdkAiA=="></script>
     <script src="assets/vendor/jspdf.umd.min.js" integrity="sha512-B/+2C2xTio+mD98bsO0SAh007OKBp96sQyJECBAFzA0pwWQhyC/yxgMU6aWjldvtZkALDUeOl+7eiLZL7P7+FA=="></script>
     <style>
+      /* BEUK:daycycle — registered so the Zen day's light eases between
+         values (unregistered, it steps by imperceptible amounts). */
+      @property --zd-tint { syntax: "<color>"; inherits: true; initial-value: rgba(0, 0, 0, 0); }
+      @property --zd-glow { syntax: "<color>"; inherits: true; initial-value: rgba(0, 0, 0, 0); }
+      @property --zd-water { syntax: "<color>"; inherits: true; initial-value: rgba(0, 0, 0, 0); }
+      @property --zd-vig { syntax: "<color>"; inherits: true; initial-value: rgba(0, 0, 0, 0); }
+      @property --zd-gx { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+      @property --zd-gy { syntax: "<percentage>"; inherits: true; initial-value: -10%; }
       /* Paper theme (default): warm antique parchment, sepia ink, amber accent. */
       :root {
         color-scheme: light;
@@ -651,16 +659,35 @@
       :root[data-theme="candlelight"] #zenArt { color: #c9a959; --zao: .075; --zao-lo: .048; }
       /* The room's warm tone in zen: a clear colour shift, not a hint —
          a warm field under a soft top light, present the whole session. */
+      /* ==== BEUK:daycycle ==== the light of the day, as custom
+         properties the day cycle eases between (see "The day turns as
+         you write"); the defaults below are the session's opening
+         light, so the room is right before the first tick. */
+      #zenArt {
+        --zd-tint: rgba(214, 222, 226, .3); --zd-glow: rgba(255, 238, 218, .58);
+        --zd-water: rgba(176, 194, 206, .2); --zd-vig: rgba(70, 80, 94, .085);
+        --zd-gx: 10%; --zd-gy: 58%;
+        transition: --zd-tint 8s ease-in-out, --zd-glow 8s ease-in-out, --zd-water 8s ease-in-out, --zd-vig 8s ease-in-out, --zd-gx 8s ease-in-out, --zd-gy 8s ease-in-out;
+      }
+      :root[data-theme="candlelight"] #zenArt {
+        --zd-tint: rgba(206, 124, 74, .17); --zd-glow: rgba(232, 142, 78, .26);
+        --zd-water: rgba(190, 118, 84, .1); --zd-vig: rgba(201, 150, 89, .14);
+        --zd-gx: 86%; --zd-gy: 52%;
+      }
+      #zenArt.zen-still { transition-duration: 4s; }
+      #zenArt.zd-snap, #zenArt.zd-snap .zd-body, #zenArt.zd-snap .zd-glint, #zenArt.zd-snap .zd-star { transition: none !important; }
+      #zenArtSvg .zd-body, #zenArtSvg .zd-glint { transition: transform 8s ease-in-out, opacity 4s ease; }
+      #zenArtSvg .zd-star { transition: opacity 6s ease; }
+      /* Reduced motion: nothing glides — the sun and moon are moved only
+         while faded out, so the change reads as a slow crossfade. */
+      #zenArt.zen-still .zd-body, #zenArt.zen-still .zd-glint { transition: opacity 2.4s ease; }
+      /* ==== /BEUK:daycycle ==== */
       #zenArt .zen-wash {
         position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease;
         background:
-          radial-gradient(130% 95% at 50% -10%, rgba(255, 253, 246, .6) 0%, rgba(255, 253, 246, 0) 55%),
-          linear-gradient(rgba(240, 208, 138, .24), rgba(240, 208, 138, .24));
-      }
-      :root[data-theme="candlelight"] #zenArt .zen-wash {
-        background:
-          radial-gradient(130% 95% at 50% -10%, rgba(224, 151, 59, .26) 0%, rgba(224, 151, 59, 0) 55%),
-          linear-gradient(rgba(224, 151, 59, .15), rgba(224, 151, 59, .15));
+          radial-gradient(130% 95% at var(--zd-gx) var(--zd-gy), var(--zd-glow) 0%, rgba(255, 253, 246, 0) 55%),
+          linear-gradient(rgba(0, 0, 0, 0) 56%, var(--zd-water) 76%, var(--zd-water) 100%),
+          linear-gradient(var(--zd-tint), var(--zd-tint));
       }
       body.zen #zenArt .zen-wash { opacity: 1; }
       body.zen-returning #zenArt .zen-wash { opacity: 0; transition-duration: .9s; }
@@ -670,10 +697,10 @@
          editor again, hours in. */
       #zenArt .zen-vig {
         position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease;
-        background: radial-gradient(118% 118% at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(92, 64, 28, .09) 100%);
+        background: radial-gradient(118% 118% at 50% 50%, rgba(0, 0, 0, 0) 60%, var(--zd-vig) 100%);
       }
       :root[data-theme="candlelight"] #zenArt .zen-vig {
-        background: radial-gradient(118% 118% at 50% 50%, rgba(0, 0, 0, 0) 58%, rgba(201, 169, 89, .14) 100%);
+        background: radial-gradient(118% 118% at 50% 50%, rgba(0, 0, 0, 0) 58%, var(--zd-vig) 100%);
       }
       body.zen #zenArt .zen-vig { opacity: 1; }
       body.zen-returning #zenArt .zen-vig { opacity: 0; transition-duration: .9s; }
@@ -32922,6 +32949,114 @@
                 "reduced-motion entry presented the title moment statically at opacity " + titleOp + " with no settle or breath classes engaged, the wash layer crossed by opacity, and the sketch and vignette applied; exit removed the title, flash and art");
             } finally { window.beukZen.overrideReducedMotion(null); setZenMode(false); window.beukZen.settle(); }
           } },
+        /* ==== BEUK:daycycle ==== the day turns as you write */
+        { id: "zen.day.no-reader", feature: "zen", name: "Zen day: the harbour sketch carries no reader figure — the horizon, harbour, still-water lines and reeds remain, and the only filled shapes are the moon and the stars of the night group",
+          run() {
+            try {
+              setZenMode(true); window.beukZen.settle();
+              const svg = $("zenArtSvg");
+              const filled = svg ? Array.from(svg.querySelectorAll("[fill]")).filter((el) => el.getAttribute("fill") !== "none") : [];
+              const strays = filled.filter((el) => !el.closest(".zen-night"));
+              const noFigure = !!svg && strays.length === 0 && !svg.querySelector("circle[r='11']") && ZEN_ART_SVG.indexOf("M226,752") < 0 && ZEN_ART_SVG.indexOf("M192,770") < 0;
+              const kept = !!svg && svg.querySelectorAll(".zdraw").length === 3 && !!svg.querySelector(".zen-day .zd-sun") && !!svg.querySelector(".zen-night .zd-moon") && svg.querySelectorAll(".zd-star").length >= 5;
+              setZenMode(false); window.beukZen.settle();
+              return scVerdict(noFigure && kept,
+                "filled shapes outside the night group: " + strays.length + " (the reader's head, body and book are gone); horizon / shore / water lines " + (svg ? svg.querySelectorAll(".zdraw").length : 0) + ", sun, moon and " + (svg ? svg.querySelectorAll(".zd-star").length : 0) + " stars present");
+            } finally { setZenMode(false); window.beukZen.settle(); }
+          } },
+        { id: "zen.day.advances", feature: "zen", name: "Zen day: the phase advances only with time spent in Zen — it pauses while the tab is hidden and while Zen is closed (no timer then), and re-entering Zen in the same visit continues the day rather than restarting it",
+          run() {
+            const Z = window.beukZen;
+            const keep = Z.dayPhase();
+            let t = 1000;
+            const near = (a, b) => Math.abs(a - b) < 0.002;
+            try {
+              Z.overrideReducedMotion(false); Z.dayClock(() => t); Z.dayHidden(false);
+              setZenMode(true); Z.settle();
+              Z.setDayPhase(0);
+              const bodySel = () => (document.documentElement.getAttribute("data-theme") === "candlelight" ? ".zen-night" : ".zen-day") + " .zd-body";
+              const sun0 = (($("zenArtSvg") || document).querySelector(bodySel()) || {}).style;
+              const tf0 = sun0 ? sun0.transform : "";
+              t += 540; const p1 = Z.dayPhase();
+              Z.dayHidden(true); const timerHidden = Z.dayTimerActive();
+              t += 900; const p2 = Z.dayPhase();
+              Z.dayHidden(false); const timerBack = Z.dayTimerActive();
+              t += 540; const p3 = Z.dayPhase();
+              Z.dayTick();
+              const sun1 = (($("zenArtSvg") || document).querySelector(bodySel()) || {}).style;
+              const moved = !!sun1 && sun1.transform !== tf0;
+              setZenMode(false); Z.settle();
+              const timerClosed = Z.dayTimerActive();
+              t += 900; const p4 = Z.dayPhase();
+              setZenMode(true); Z.settle();
+              const p5 = Z.dayPhase();
+              t += 54; const p6 = Z.dayPhase();
+              setZenMode(false); Z.settle();
+              const ok = near(p1, 0.1) && near(p2, p1) && !timerHidden && timerBack && near(p3, 0.2) && moved && !timerClosed && near(p4, p3) && near(p5, p3) && near(p6, p3 + 0.01);
+              return scVerdict(ok,
+                "after 9 min in Zen phase " + p1.toFixed(4) + " (expect 0.1); 15 min hidden → " + p2.toFixed(4) + " (timer " + (timerHidden ? "STILL RUNNING" : "stopped") + "); 9 more visible min → " + p3.toFixed(4) + " (expect 0.2), sun " + (moved ? "moved" : "DID NOT MOVE") + "; Zen closed for 15 min → " + p4.toFixed(4) + " (timer " + (timerClosed ? "STILL RUNNING" : "stopped") + "); re-entered at " + p5.toFixed(4) + ", +54 s → " + p6.toFixed(4));
+            } finally { Z.overrideReducedMotion(null); setZenMode(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); Z.setDayPhase(keep); }
+          } },
+        { id: "zen.day.holds-at-dusk", feature: "zen", name: "Zen day: the phase clamps at 1 (a soft dusk at about ninety minutes) and holds there — on Paper the light at the hold is still a light, low-alpha field with the sun above the horizon, never night; the timer stops once the hold is reached",
+          run() {
+            const Z = window.beukZen;
+            const keep = Z.dayPhase();
+            let t = 5000;
+            try {
+              Z.dayClock(() => t); Z.dayHidden(false);
+              setZenMode(true); Z.settle();
+              Z.setDayPhase(0.98);
+              t += 0.02 * 5400 + 30; Z.dayTick();
+              const atNinety = Z.dayPhase();
+              t += 36000; Z.dayTick();
+              const held = Z.dayPhase();
+              const timer = Z.dayTimerActive();
+              Z.setDayPhase(3); const clamped = Z.dayPhase();
+              const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+              let worstLum = 1, worstAlpha = 0, sunLow = -1;
+              for (const p of [0.9, 0.95, 1]) {
+                const L = Z.dayLight("paper", p);
+                worstLum = Math.min(worstLum, lum(L.tint), lum(L.glow));
+                worstAlpha = Math.max(worstAlpha, L.tint[3]);
+                sunLow = Math.max(sunLow, Z.dayBody(false, p).y);
+              }
+              const light = worstLum >= 0.45 && worstAlpha <= 0.35 && sunLow > 0 && sunLow + 32 < 598 && Z.dayBody(false, 1).op > 0;
+              setZenMode(false); Z.settle();
+              return scVerdict(atNinety === 1 && held === 1 && clamped === 1 && !timer && light,
+                "phase at 90 min " + atNinety + ", ten hours later " + held + ", set to 3 → " + clamped + "; timer " + (timer ? "STILL RUNNING" : "stopped") + " at the hold; Paper dusk tint/glow luminance ≥ " + worstLum.toFixed(3) + " (threshold 0.45), tint alpha ≤ " + worstAlpha + ", sun's lowest centre y " + sunLow.toFixed(0) + " (horizon 598)");
+            } finally { setZenMode(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); Z.setDayPhase(keep); }
+          } },
+        { id: "zen.day.reduced-motion", feature: "zen", name: "Zen day under reduced motion: no transform transitions on the sun, moon or glints; a change of light moves the sun only while it is faded out (a crossfade), and small steps wait for a rare update",
+          run() {
+            const Z = window.beukZen;
+            const keep = Z.dayPhase();
+            let t = 9000;
+            try {
+              Z.overrideReducedMotion(true); Z.dayClock(() => t); Z.dayHidden(false);
+              setZenMode(true); Z.settle();
+              Z.setDayPhase(0.1);
+              const art = $("zenArt"), svg = $("zenArtSvg");
+              const still = !!art && art.classList.contains("zen-still");
+              const movers = svg ? Array.from(svg.querySelectorAll(".zd-body, .zd-glint")) : [];
+              const animatesTransform = movers.some((el) => {
+                const cs = getComputedStyle(el);
+                const props = cs.transitionProperty.split(",").map((x) => x.trim());
+                const durs = cs.transitionDuration.split(",").map((x) => parseFloat(x) || 0);
+                return props.some((pr, i) => (pr === "transform" || pr === "all") && (durs[i % durs.length] || 0) > 0);
+              });
+              const sun = svg ? svg.querySelector((document.documentElement.getAttribute("data-theme") === "candlelight" ? ".zen-night" : ".zen-day") + " .zd-body") : null;
+              const tf0 = sun ? sun.style.transform : "";
+              t += 60; Z.dayTick();
+              const smallWaits = !!sun && sun.style.transform === tf0 && sun.style.opacity !== "0";
+              t += 600; Z.dayTick();
+              const fading = !!sun && sun.style.transform === tf0 && sun.style.opacity === "0";
+              setZenMode(false); Z.settle();
+              const ok = still && movers.length >= 2 && !animatesTransform && smallWaits && fading;
+              return scVerdict(ok,
+                "reduced motion: art " + (still ? "marked still" : "NOT marked still") + "; " + movers.length + " moving groups, transform transition " + (animatesTransform ? "PRESENT" : "absent") + "; a 1-minute step " + (smallWaits ? "waited" : "DID NOT WAIT") + "; a 10-minute step " + (fading ? "faded the sun out before moving it" : "MOVED IT IN VIEW"));
+            } finally { Z.overrideReducedMotion(null); setZenMode(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); Z.setDayPhase(keep); }
+          } },
+        /* ==== /BEUK:daycycle ==== */
         /* ==== BEUK:sound ==== the zen sound checks assert the field-recording engine: opt-in, honest status, no synthesis */
         { id: "zen.sound.opt-in", feature: "zen", name: "Zen ambient sound is opt-in only: entering zen starts no audio (no context, toggle off); the writer's click starts it — the toggle reads “on” only once a recording is actually playing, never while it loads; a second click stops it and releases the context; the choice is remembered without ever auto-starting; exiting zen stops the sound",
           run() {
@@ -35708,15 +35843,16 @@
         catch (e) { return false; }
       }
       /* The harbour sketch: delicate single-weight line art, drawn in
-         code — horizon, a distant harbour, still-water reflections,
-         reeds in the lower corners and a small reader on the shore.
-         The day group (sun) shows on Paper; the night group (moon and
-         stars) on Candlelight. Everything lives at the edges of the
-         frame; the centre stays empty. */
+         code — horizon, a distant harbour, still-water reflections and
+         reeds in the lower corners. The day group (the sun and its glint
+         on the water) shows on Paper; the night group (the moon, its
+         glade and the stars) on Candlelight. Both are placed by the day
+         cycle below. Everything lives at the edges of the frame; the
+         centre stays empty. */
       const ZEN_ART_SVG =
         '<svg id="zenArtSvg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">' +
         '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M148,168 q7,-7 14,0 q7,-7 14,0" opacity=".65"/><path d="M196,138 q5,-5 11,0 q6,-5 11,0" opacity=".5"/>' +
+        '<path d="M28,330 q7,-7 14,0 q7,-7 14,0" opacity=".65"/><path d="M64,304 q5,-5 11,0 q6,-5 11,0" opacity=".5"/>' +
         '<path class="zdraw" pathLength="1" d="M0,598 H1440" opacity=".5"/><path class="zdraw" pathLength="1" d="M0,607 H600 M846,607 H1440" opacity=".28"/>' +
         '<path class="zdraw" pathLength="1" d="M0,812 q180,-14 360,-8 t360,4 t360,-2 t360,-4" opacity=".45"/>' +
         '<path d="M1036,598 v-24 h20 v24 M1064,598 v-34 h26 v34 M1098,598 v-22 h18 v22"/>' +
@@ -35727,18 +35863,196 @@
         '<g opacity=".45"><path d="M96,626 h72 M210,650 h40 M150,700 h54 M1150,630 h88 M1266,654 h48 M1058,678 h56 M1310,700 h64 M1210,724 h40"/></g>' +
         '<g opacity=".8"><path d="M44,900 C38,826 42,756 30,690 M30,690 l-5,-17 M30,690 l6,-16"/><path d="M74,900 C70,834 76,772 66,716 M66,716 l-4,-13 M66,716 l5,-12"/><path d="M108,900 C106,842 110,786 100,736"/><path d="M142,900 C140,852 146,806 138,764"/><path d="M20,900 C24,862 20,830 12,800"/><path d="M168,900 C164,864 170,832 180,806"/></g>' +
         '<g opacity=".8"><path d="M1396,900 C1390,830 1396,762 1386,700 M1386,700 l-5,-16 M1386,700 l6,-15"/><path d="M1362,900 C1358,844 1364,790 1354,742"/><path d="M1424,900 C1422,856 1428,818 1420,782"/><path d="M1330,900 C1334,866 1330,838 1322,812"/></g>' +
-        '<path d="M192,770 l26,-8 26,8 v17 l-26,-8 -26,8 Z M218,762 v17"/>' +
-        '<g class="zen-day"><circle cx="1208" cy="126" r="34"/><circle cx="1208" cy="126" r="50" opacity=".4"/></g>' +
-        '<g class="zen-night"><path d="M1224,92 a42,42 0 1,0 20,72 a34,34 0 1,1 -20,-72 Z" fill="currentColor" stroke="none"/>' +
-        '<path transform="translate(180,110)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none" opacity=".8"/>' +
-        '<path transform="translate(330,66) scale(.7)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none" opacity=".7"/>' +
-        '<path transform="translate(96,252) scale(.6)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none" opacity=".6"/>' +
-        '<path transform="translate(1352,238) scale(.75)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none" opacity=".7"/></g>' +
+        '<g class="zen-day"><g class="zd-glint" style="opacity:0"><path d="M-24,618 h48 M-15,631 h30 M-8,644 h16"/></g>' +
+        '<g class="zd-body zd-sun"><circle r="32"/><circle r="46" opacity=".4"/></g></g>' +
+        '<g class="zen-night"><g class="zd-glint" style="opacity:0"><path d="M-20,618 h40 M-12,631 h24 M-6,644 h12"/></g>' +
+        '<g class="zd-body zd-moon"><path d="M16,-34 a42,42 0 1,0 20,72 a34,34 0 1,1 -20,-72 Z" fill="currentColor" stroke="none"/></g>' +
+        '<path class="zd-star" data-at="0.04" data-o="0.8" style="opacity:0" transform="translate(180,110)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.13" data-o="0.7" style="opacity:0" transform="translate(1352,238) scale(0.75)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.23" data-o="0.6" style="opacity:0" transform="translate(96,252) scale(0.6)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.33" data-o="0.65" style="opacity:0" transform="translate(1290,96) scale(0.65)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.43" data-o="0.7" style="opacity:0" transform="translate(240,52) scale(0.7)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.53" data-o="0.55" style="opacity:0" transform="translate(1410,150) scale(0.55)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.63" data-o="0.5" style="opacity:0" transform="translate(56,128) scale(0.5)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.73" data-o="0.5" style="opacity:0" transform="translate(1262,330) scale(0.5)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
+        '<path class="zd-star" data-at="0.83" data-o="0.45" style="opacity:0" transform="translate(150,350) scale(0.45)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
         '</g>' +
-        '<g fill="currentColor"><circle cx="240" cy="738" r="11"/>' +
-        '<path d="M226,752 q14,-8 26,2 l12,32 q3,9 -7,11 l-36,3 q-10,1 -9,-9 l7,-30 q2,-7 7,-9 Z"/>' +
-        '<path d="M212,806 l18,-26 9,5 -14,21 Z"/></g>' +
+        '</g>' +
         '</svg>';
+      /* ==== BEUK:daycycle ==== The day turns as you write.
+         The harbour's light follows the time spent in Zen during this
+         visit — never the wall clock, and nothing on screen counts it.
+         Paper opens at a cool dawn (a low sun on the left), climbs
+         through morning and a bright midday (the sun passes above the
+         frame, its light moving across the top), reaches a golden
+         afternoon on the right and a soft dusk at about ninety minutes,
+         then holds there — it never goes dark on the writer.
+         Candlelight opens at dusk, deepens into night as the moon rises
+         slowly on the left and the stars come out one by one, and holds
+         at a calm moonlit night.
+         Cost: one timer every 30 s while Zen is open and the tab is
+         visible; each tick sets a handful of custom properties and two
+         transforms, and CSS eases them over several seconds. No
+         animation frame loop; nothing at all runs when Zen is closed.
+         Reduced motion: the sun and moon only move while faded out, and
+         the light changes only every few minutes. Time is kept in
+         memory, so leaving and re-entering Zen continues the day and a
+         reload starts a fresh dawn. */
+      const ZD_SPAN = 5400;          /* seconds from first light to the held dusk / night */
+      const ZD_TICK_MS = 30000;
+      const ZD_STILL_STEP = 0.04;    /* reduced motion: about every 3.6 minutes */
+      const zdRealNow = () => ((typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now()) / 1000;
+      let zdAcc = 0, zdStart = null, zdTimer = null, zdLastP = -1, zdObs = null, zdHiddenOv = null, zdFade = [];
+      let zdNow = zdRealNow;
+      const zdClamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+      const zdSmooth = (u) => { u = zdClamp(u, 0, 1); return u * u * (3 - 2 * u); };
+      const zdHidden = () => (zdHiddenOv !== null ? zdHiddenOv : !!document.hidden);
+      const zdNight = () => document.documentElement.getAttribute("data-theme") === "candlelight";
+      function zdElapsed() { return zdAcc + (zdStart !== null ? Math.max(0, zdNow() - zdStart) : 0); }
+      function zdPhase() { return zdClamp(zdElapsed() / ZD_SPAN, 0, 1); }
+      /* The light at each moment: tint (the warm field), glow (the top
+         light, which follows the sun across), water (the band below the
+         horizon) and vig (the edge shading). Stops are eased between. */
+      const ZD_LIGHT = {
+        paper: [
+          { p: 0,    tint: [214, 222, 226, .3],  glow: [255, 238, 218, .58], gx: 10, gy: 58,  water: [176, 194, 206, .2],  vig: [70, 80, 94, .085] },
+          { p: .25,  tint: [234, 226, 196, .24], glow: [255, 250, 236, .6],  gx: 16, gy: 8,   water: [192, 204, 200, .15], vig: [86, 74, 52, .085] },
+          { p: .5,   tint: [242, 226, 182, .22], glow: [255, 254, 246, .7],  gx: 50, gy: -12, water: [204, 212, 196, .12], vig: [92, 70, 36, .085] },
+          { p: .75,  tint: [242, 206, 132, .3],  glow: [255, 236, 192, .62], gx: 86, gy: 6,   water: [230, 192, 112, .17], vig: [112, 72, 24, .1] },
+          { p: 1,    tint: [236, 194, 164, .3],  glow: [252, 216, 182, .54], gx: 88, gy: 54,  water: [204, 170, 178, .2],  vig: [98, 60, 52, .11] }
+        ],
+        candlelight: [
+          { p: 0,    tint: [206, 124, 74, .17],  glow: [232, 142, 78, .26],  gx: 86, gy: 52,  water: [190, 118, 84, .1],   vig: [201, 150, 89, .14] },
+          { p: .5,   tint: [162, 120, 112, .13], glow: [204, 152, 118, .17], gx: 40, gy: 20,  water: [146, 128, 142, .09], vig: [198, 160, 92, .14] },
+          { p: 1,    tint: [128, 120, 146, .12], glow: [210, 204, 214, .15], gx: 14, gy: 14,  water: [150, 160, 194, .1],  vig: [196, 168, 100, .14] }
+        ]
+      };
+      function zdLight(theme, p) {
+        const stops = ZD_LIGHT[theme === "candlelight" ? "candlelight" : "paper"];
+        p = zdClamp(Number(p) || 0, 0, 1);
+        let i = 0;
+        while (i < stops.length - 2 && p > stops[i + 1].p) i++;
+        const a = stops[i], b = stops[i + 1];
+        const u = zdSmooth((p - a.p) / (b.p - a.p));
+        const mix = (x, y) => x + (y - x) * u;
+        const col = (x, y) => [0, 1, 2].map((k) => Math.round(mix(x[k], y[k]))).concat([+mix(x[3], y[3]).toFixed(3)]);
+        return { tint: col(a.tint, b.tint), glow: col(a.glow, b.glow), water: col(a.water, b.water), vig: col(a.vig, b.vig), gx: +mix(a.gx, b.gx).toFixed(1), gy: +mix(a.gy, b.gy).toFixed(1) };
+      }
+      /* Where the sun or moon stands, in the sketch's 1440 x 900 frame
+         (horizon at y 598). The sun climbs in the left margin, passes
+         above the frame over midday, and comes down the right margin to
+         rest between the boats and the lighthouse. The moon rises slowly
+         in the left margin and settles high. Both stay clear of the text
+         column at 1280 px and wider. */
+      function zdBody(night, p) {
+        p = zdClamp(Number(p) || 0, 0, 1);
+        if (night) {
+          const e = 1 - (1 - p) * (1 - p);
+          return { x: 150 + 55 * e, y: 552 - 337 * e, op: +(0.6 + 0.4 * zdSmooth(p / 0.5)).toFixed(3), glint: +(0.5 + 0.4 * p).toFixed(3) };
+        }
+        /* morning: up the left margin, then lost in the bright high
+           light (faded out) before it could reach the chrome; midday:
+           unseen overhead; afternoon: it reappears high on the right and
+           settles to the held dusk. It never passes behind the page. */
+        let x, y, op;
+        if (p <= 0.32) { const u = p / 0.32; x = 140 + 56 * u; y = 548 - 400 * zdSmooth(u); op = 1 - zdSmooth((p - 0.24) / 0.08); }
+        else if (p >= 0.68) { const v = (p - 0.68) / 0.32; x = 1250 + 18 * v; y = 148 + 352 * zdSmooth(v); op = zdSmooth((p - 0.68) / 0.06); }
+        else { const w = (p - 0.32) / 0.36; x = 196 + 1054 * w; y = 148; op = 0; }
+        return { x, y, op: +op.toFixed(3), glint: +(zdClamp((y - 300) / 200, 0, 1) * 0.9).toFixed(3) };
+      }
+      const zdRgba = (c) => "rgba(" + c[0] + ", " + c[1] + ", " + c[2] + ", " + c[3] + ")";
+      function zdPlace(el, tf, op, still, snap) {
+        if (!el) return;
+        if (!still || snap || el.style.transform === "") { el.style.transform = tf; el.style.opacity = String(op); return; }
+        if (el.style.transform === tf) { el.style.opacity = String(op); return; }
+        /* reduced motion: fade out where it stands, move unseen, fade back in */
+        el.style.opacity = "0";
+        zdFade.push(setTimeout(() => {
+          el.style.transform = tf;
+          void el.getBoundingClientRect();
+          el.style.opacity = String(op);
+        }, 2600));
+      }
+      function zdApply(snap) {
+        const art = $("zenArt");
+        if (!art) return;
+        const p = zdPhase();
+        const still = zenReducedMotion();
+        art.classList.toggle("zen-still", still);
+        if (!snap && still && zdLastP >= 0 && Math.abs(p - zdLastP) < ZD_STILL_STEP && !(p >= 1 && zdLastP < 1)) return;
+        if (snap) { zdFade.forEach((id) => clearTimeout(id)); zdFade = []; art.classList.add("zd-snap"); }
+        const night = zdNight();
+        const L = zdLight(night ? "candlelight" : "paper", p);
+        art.style.setProperty("--zd-tint", zdRgba(L.tint));
+        art.style.setProperty("--zd-glow", zdRgba(L.glow));
+        art.style.setProperty("--zd-water", zdRgba(L.water));
+        art.style.setProperty("--zd-vig", zdRgba(L.vig));
+        art.style.setProperty("--zd-gx", L.gx + "%");
+        art.style.setProperty("--zd-gy", L.gy + "%");
+        const svg = $("zenArtSvg");
+        if (svg) {
+          const grp = svg.querySelector(night ? ".zen-night" : ".zen-day");
+          const B = zdBody(night, p);
+          const tf = "translate(" + B.x.toFixed(1) + "px, " + B.y.toFixed(1) + "px)";
+          zdPlace(grp && grp.querySelector(".zd-body"), tf, B.op, still, snap);
+          zdPlace(grp && grp.querySelector(".zd-glint"), "translate(" + B.x.toFixed(1) + "px, 0px)", B.glint, still, snap);
+          svg.querySelectorAll(".zd-star").forEach((st) => {
+            st.style.opacity = (night && p >= parseFloat(st.getAttribute("data-at"))) ? st.getAttribute("data-o") : "0";
+          });
+        }
+        zdLastP = p;
+        if (snap) { void art.offsetWidth; art.classList.remove("zd-snap"); }
+      }
+      function zdTick() {
+        zdApply(false);
+        /* the day has reached its held dusk / night: nothing more to do */
+        if (zdPhase() >= 1 && zdLastP >= 1 && zdTimer) { clearInterval(zdTimer); zdTimer = null; }
+      }
+      function zdResume() {
+        if (!document.body.classList.contains("zen") || zdHidden()) return;
+        if (zdStart === null) zdStart = zdNow();
+        if (!zdTimer && zdPhase() < 1) zdTimer = setInterval(zdTick, ZD_TICK_MS);
+      }
+      function zdPause() {
+        if (zdStart !== null) { zdAcc += Math.max(0, zdNow() - zdStart); zdStart = null; }
+        if (zdTimer) { clearInterval(zdTimer); zdTimer = null; }
+      }
+      function zdEnter() {
+        zdLastP = -1;
+        zdApply(true);
+        zdResume();
+        if (!zdObs && typeof MutationObserver !== "undefined") {
+          zdObs = new MutationObserver(() => { zdLastP = -1; zdApply(true); });
+          zdObs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        }
+      }
+      function zdExit() {
+        zdPause();
+        zdFade.forEach((id) => clearTimeout(id)); zdFade = [];
+        if (zdObs) { zdObs.disconnect(); zdObs = null; }
+      }
+      function zdVisibility() {
+        if (!document.body.classList.contains("zen")) return;
+        if (zdHidden()) zdPause(); else { zdResume(); zdApply(false); }
+      }
+      if (typeof document !== "undefined") document.addEventListener("visibilitychange", zdVisibility);
+      /* test hooks (self-checks and screenshots; never shown in the UI) */
+      function zdSetPhase(p) {
+        p = zdClamp(Number(p) || 0, 0, 1);
+        zdAcc = p * ZD_SPAN;
+        if (zdStart !== null) zdStart = zdNow();
+        if (zdTimer && p >= 1) { clearInterval(zdTimer); zdTimer = null; }
+        if (!zdTimer && p < 1 && zdStart !== null) zdTimer = setInterval(zdTick, ZD_TICK_MS);
+        zdLastP = -1;
+        zdApply(true);
+      }
+      function zdSetClock(fn) {
+        const running = zdStart !== null;
+        if (running) zdAcc += Math.max(0, zdNow() - zdStart);
+        zdNow = (typeof fn === "function") ? fn : zdRealNow;
+        if (running) zdStart = zdNow();
+      }
+      /* ==== /BEUK:daycycle ==== */
       const ZEN_SND_ON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
       const ZEN_SND_OFF = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/></svg>';
       function zenSoundPref() { try { return !!(window.localStorage && localStorage.getItem(ZEN_SOUND_KEY) === "on"); } catch (e) { return false; } }
@@ -36079,6 +36393,7 @@
           zenBuildLayer();
           document.body.classList.remove("zen-returning");
           document.body.classList.add("zen");
+          zdEnter(); /* BEUK:daycycle */
           zenRenderSurface();
           const a = $("editorArea"); if (a) { try { a.focus({ preventScroll: true }); } catch (e) { a.focus(); } }
           if (zenReducedMotion()) {
@@ -36123,6 +36438,7 @@
         } else {
           const wasZen = document.body.classList.contains("zen");
           zenSoundStop();
+          zdExit(); /* BEUK:daycycle */
           if (typeof dictPopClose === "function") dictPopClose();
           const pop0 = $("zenScenePop"); if (pop0) pop0.classList.remove("open");
           zenIndexClose();
@@ -36443,7 +36759,10 @@
       }
       /* ==== /BEUK:sound ==== */
       if (typeof window !== "undefined") {
-        window.beukZen = { set: setZenMode, active: () => document.body.classList.contains("zen"), settle: zenSettle, transitioning: () => zenTransitioning, overrideReducedMotion: (v) => { zenReducedOverride = (v === null || v === undefined) ? null : !!v; }, goTo: zenGoTo, step: zenStep, renderSurface: zenRenderSurface };
+        window.beukZen = { set: setZenMode, active: () => document.body.classList.contains("zen"), settle: zenSettle, transitioning: () => zenTransitioning, overrideReducedMotion: (v) => { zenReducedOverride = (v === null || v === undefined) ? null : !!v; }, goTo: zenGoTo, step: zenStep, renderSurface: zenRenderSurface,
+          /* BEUK:daycycle — the day's phase (0 first light .. 1 the held dusk / night) and test hooks */
+          dayPhase: zdPhase, setDayPhase: zdSetPhase, dayTick: zdTick, dayClock: zdSetClock, dayLight: zdLight, dayBody: zdBody,
+          dayHidden: (v) => { zdHiddenOv = (v === null || v === undefined) ? null : !!v; zdVisibility(); }, dayTimerActive: () => !!zdTimer, dayRunning: () => zdStart !== null };
         window.beukZenSound = { start: zenSoundStart, stop: zenSoundStop, playing: () => zenSound.playing, hasContext: () => !!zenSound.ctx, pref: zenSoundPref, scene: zenScenePref, setScene: zenSoundSetScene, graph: zenSoundGraph,
           /* BEUK:sound — honest status and a promise that settles when the current load/decode does */
           status: () => ({ status: zenSound.status, error: zenSound.error, pending: zenSound.pending }), settled: () => zenSound.settle || Promise.resolve(), files: () => JSON.parse(JSON.stringify(ZEN_SOUND_FILES)), url: zenSoundUrl, migrate: zenSceneMigrate, scenes: () => ZEN_SCENES.slice() };
