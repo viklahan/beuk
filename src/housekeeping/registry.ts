@@ -1694,6 +1694,31 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Zen is a client body-class layout state over the studio chrome.',
   },
+  /* ---- Zen day cycle: the harbour's light follows time spent in Zen (BEUK:daycycle) ---- */
+  {
+    id: 'zen.day.no-reader',
+    title: 'Zen harbour sketch carries no reader figure; horizon, harbour, water and reeds remain',
+    kind: 'client-only',
+    reason: 'The sketch is SVG built by the studio only while Zen is open; asserted in the browser by window.runBeukSelfChecks().',
+  },
+  {
+    id: 'zen.day.advances',
+    title: 'Zen day phase advances only with time in Zen, pauses while the tab is hidden or Zen is closed, and continues on re-entry',
+    kind: 'client-only',
+    reason: 'The phase is an in-memory clock in the studio page (visibilitychange, a 30 s timer); asserted with an injected clock by window.runBeukSelfChecks().',
+  },
+  {
+    id: 'zen.day.holds-at-dusk',
+    title: 'Zen day clamps at a soft dusk (phase 1) and holds; Paper never reaches night',
+    kind: 'client-only',
+    reason: 'The light table and the sun path live in the studio; asserted by window.runBeukSelfChecks().',
+  },
+  {
+    id: 'zen.day.reduced-motion',
+    title: 'Zen day under reduced motion moves nothing: no transform transitions, the sun or moon crossfades instead, rare updates',
+    kind: 'client-only',
+    reason: 'Reduced motion is a browser preference (plus the studio override) applied to client CSS; asserted by window.runBeukSelfChecks().',
+  },
   /* ---- Zen ambient sound: real CC0 / public-domain recordings (BEUK:sound) ---- */
   {
     id: 'zen.sound.files-decode',
