@@ -267,9 +267,15 @@ ${COMPOSE} "${COMPOSE_FILES[@]}" up -d --build
 # file it sees differs from the tree's.
 HOST_CADDY_SHA="$(sha256sum Caddyfile | cut -d' ' -f1)"
 LIVE_CADDY_SHA="$(${COMPOSE} "${COMPOSE_FILES[@]}" exec -T caddy sha256sum /etc/caddy/Caddyfile 2>/dev/null | cut -d' ' -f1 || true)"
+# Same file but edited in place (same inode): the container sees the new
+# text, yet Caddy only reads it on (re)load — so reload it gracefully
+# (identical config = no reload; only --force reloads that).
+# https://caddyserver.com/docs/command-line#caddy-reload
 if [ "${HOST_CADDY_SHA}" != "${LIVE_CADDY_SHA}" ]; then
   note "Caddyfile changed — restarting Caddy so it loads the new one"
   ${COMPOSE} "${COMPOSE_FILES[@]}" restart caddy
+else
+  ${COMPOSE} "${COMPOSE_FILES[@]}" exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1     && note "Caddy config reloaded"     || warn "caddy reload failed — check: ${COMPOSE} logs --tail=50 caddy"
 fi
 
 # ── 6. Health ────────────────────────────────────────────────────────────────
