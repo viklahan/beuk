@@ -160,3 +160,82 @@ test('the landing page links Features and Compare in its top bar and footer', ()
   assert.match(html, /<a class="nl" href="\/features">Features<\/a>\n\s+<a class="nl" href="\/compare">Compare<\/a>/);
   assert.match(html, /<a href="\/features">Features<\/a>\n\s+<a href="\/compare">Compare<\/a>/);
 });
+
+test('the landing top bar hides nothing of its own: the two in-page links it gave up are still in the footer', () => {
+  const html = read('client', 'site', 'index.html');
+  const bar = /<nav[^>]*>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+  assert.ok(bar.includes('href="/features"') && bar.includes('href="/compare"'), 'the top bar links the new pages');
+  assert.ok(!bar.includes('href="#ports"') && !bar.includes('href="#manifest"'), 'no hidden links left in the top bar');
+  assert.doesNotMatch(html, /a\.nl\[href[^\]]*\]\{display:none\}/, 'no top-bar link hidden by CSS');
+  assert.doesNotMatch(html, /a\.nl\[href[^\]]*\]\s*\{display:none\}/);
+  for (const a of ['#ports', '#manifest', '#helm']) assert.ok(html.includes(`<a href="${a}">`), `footer keeps ${a}`);
+});
+
+test("the site pages' numbers are the studio's", () => {
+  const studio = read('client', 'index.html');
+  const themes = /const PRESETS = \[([\s\S]*?)\n\s*\];/.exec(studio)?.[1] ?? '';
+  const themeIds = [...themes.matchAll(/^\s+\{ id: "([a-z0-9-]+)", genre:/gm)].map((m) => m[1]);
+  const layouts = [...(/const COVER_LAYOUTS = \[([^\]]*)\]/.exec(studio)?.[1] ?? '').matchAll(/"([a-z]+)"/g)];
+  const platforms = /const PLATFORM_PRESETS = \[([\s\S]*?)\n\s*\];/.exec(studio)?.[1] ?? '';
+  const presetIds = [...platforms.matchAll(/\{ id: "([a-z0-9]+)"/g)];
+  const trims = [...(/const TRIM_SIZES = \[([\s\S]*?)\];/.exec(studio)?.[1] ?? '').matchAll(/\bid: "([0-9.x]+)"/g)];
+  const packs = /const LANG_PACKS = \{([\s\S]*?)\n {6}\};/.exec(studio)?.[1] ?? '';
+  const bookLangs = (packs.match(/^\s+"[A-Za-z-]+":\s+\{ name:/gm) ?? []).length;
+  const uiLangs = [...(/const UI_LANG_ORDER = \[([^\]]*)\]/.exec(studio)?.[1] ?? '').matchAll(/"([A-Za-z-]+)"/g)];
+  assert.equal(themeIds.length, 15, `15 themes: ${themeIds.join(', ')}`);
+  assert.equal(layouts.length, 7, '7 cover layouts');
+  assert.equal(presetIds.length, 11, '11 store presets');
+  assert.equal(trims.length, 24, '24 trims');
+  assert.equal(bookLangs, 36, '36 book languages');
+  assert.equal(uiLangs.length, 13, '13 studio languages');
+  const WORDS: Record<string, number> = { seven: 7, eleven: 11, thirteen: 13, fifteen: 15 };
+  const num = (s: string) => (/^\d+$/.test(s) ? Number(s) : WORDS[s.toLowerCase()] ?? NaN);
+  // Every "N themes / layouts / presets / trim sizes / languages" on Beuk's side must match.
+  const checks: [RegExp, number][] = [
+    [/\b(\d+|[A-Za-z]+)(?: full-book)? themes\b/g, themeIds.length],
+    [/\b(\d+|[A-Za-z]+) layouts\b/g, layouts.length],
+    [/\b(\d+|[A-Za-z]+)(?: EPUB)?(?: store)? presets\b/g, presetIds.length],
+    [/\b(\d+|[A-Za-z]+) book languages\b/g, bookLangs],
+    [/speaks (\d+|[A-Za-z]+) languages\b/g, uiLangs.length],
+  ];
+  let seen = 0;
+  for (const p of PAGES) {
+    // Beuk's side only: the other tool's table cells hold that tool's own sourced numbers (Vellum's 24 trims).
+    const text = read(...p.file)
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<td data-label="(?!Beuk")[^"]*">[\s\S]*?<\/td>/g, '')
+      .replace(/<[^>]+>/g, ' ');
+    for (const [re, want] of checks) {
+      for (const m of text.matchAll(re)) {
+        const n = num(m[1]);
+        if (Number.isNaN(n)) continue; // "Theme presets", "its store presets": no number
+        seen++;
+        assert.equal(n, want, `${p.url}: "${m[0]}" should say ${want}`);
+      }
+    }
+    for (const m of text.matchAll(/\b(\d+) trim sizes\b/g)) assert.equal(Number(m[1]), trims.length, `${p.url}: "${m[0]}"`);
+  }
+  assert.ok(seen >= 15, `the counts were found on the pages (${seen})`);
+});
+
+test('the pages say what is free and what makes a PDF/X file the way the studio does', () => {
+  const features = read('client', 'site', 'features.html');
+  // Beuk's server makes PDF/X-1a for signed-in writers (README "Jobs (M5)"), so no page may say Beuk can't.
+  for (const p of PAGES) {
+    const text = read(...p.file).replace(/<[^>]+>/g, ' ');
+    assert.doesNotMatch(text, /does not (export a PDF directly|make PDF\/X files in the browser)/, p.url);
+    assert.doesNotMatch(text, /no free tier after/i, p.url);
+    assert.doesNotMatch(text, /one price after a free week|a free week, then one price\./i, p.url);
+  }
+  assert.match(features, /with an account, Beuk's server converts the print interior to PDF\/X-1a/);
+  assert.match(features, /<li><b>PDF\/X-1a print conversion<\/b> on Beuk's server/);
+  assert.match(features, /Everything above works on your device with no account at all, except the parts marked “with an account”\./);
+  const vellum = read('client', 'site', 'compare', 'vellum.html');
+  const stronger = /Where Vellum is stronger<\/h2>([\s\S]*?)<\/ul>/.exec(vellum)?.[1] ?? '';
+  assert.doesNotMatch(stronger, /PDF\/X/, 'PDF/X is not a Vellum-only strength');
+  assert.match(vellum, /Checks on Beuk's server<\/b>, with an account: the print interior converted to PDF\/X-1a, and your EPUB run through the official EPUBCheck\./);
+  for (const slug of ['atticus', 'reedsy-studio']) {
+    assert.match(read('client', 'site', 'compare', `${slug}.html`), /With an account, Beuk's server converts the print interior to PDF\/X-1a\./, slug);
+    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Writing and exporting on your device need no Beuk account/, slug);
+  }
+});
