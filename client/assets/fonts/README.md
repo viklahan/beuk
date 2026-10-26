@@ -5,14 +5,16 @@ served from this directory, from Beuk's own origin. No page asks
 fonts.googleapis.com or fonts.gstatic.com for anything, and the
 Content-Security-Policy (Caddyfile) no longer allows either host.
 
-- **What:** 24 families, 228 WOFF2 files, 6514996 bytes (6362.3 KiB) in total;
+- **What:** 27 families, 236 WOFF2 files, 6677392 bytes (6520.9 KiB) in total;
   `fonts.css` (147312 bytes) is linked by every page; `fonts-help.css`
   (4882 bytes) adds Literata 700 and italic 500, which only the help and
   warmth pages ever asked for — the studio keeps exactly its old Literata faces
   (400–600, italic 400), the same ones the print renderer installs, so the
   preview still matches the PDF. `fonts-scripts.css` (5335 bytes), linked by
   the studio only, adds the book's script faces (Amiri, Noto Serif Devanagari; see
-  *Script faces* below). A page downloads only the files whose family,
+  *Script faces* below), and `fonts-display.css` (3562 bytes), also
+  studio only, adds the heading-only display faces (Abril Fatface, Patrick Hand, Pinyon Script;
+  see *Display faces* below). A page downloads only the files whose family,
   weight, style and `unicode-range` it actually uses.
 - **Source:** the WOFF2 files are the bytes the Google Fonts CSS2 API serves
   (fonts.gstatic.com) for exactly the families, axes, weights and styles the
@@ -62,10 +64,35 @@ Latin book — are set in them, with no choice to make.
   METADATA.pb at the pinned commit says `license: "OFL"`). An EPUB carries
   each embedded family's OFL.txt as a comment in its stylesheet.
 
+## Display faces (headings only)
+
+Vendored by `node tools/fonts/vendor-display-fonts.mjs .` the same way, from the
+same sources, on 2026-10-26: Abril Fatface, Patrick Hand, Pinyon Script. The studio offers them as
+heading fonts only — chapter titles and numbers, part and title pages, drop
+caps — never as body text: a script or poster face is not built for running
+text, so no body-font picker lists them and a book document that names one as
+its body face is read back with the default body face.
+
+- **Weights:** each family has one weight (400) and no italic; the studio
+  sets every heading in them at 400, so no browser or reader fakes a bold.
+- **Web (live preview):** 8 WOFF2 files (162396 bytes, 158.6 KiB) in
+  `fonts-display.css`, the subsets each family offers (latin, latin-ext, and
+  vietnamese where it has one), by `unicode-range`.
+- **Print and EPUB:** 3 static TrueType files (353528 bytes, 345.2 KiB),
+  one per family, the same bytes and sha256 the print renderer installs
+  (deploy/renderer/fonts.lock). An EPUB whose headings are set in a display
+  face embeds that face's file and carries its OFL.txt as a comment in the
+  stylesheet; no reading system has these faces of its own.
+- **Licence:** SIL OFL 1.1 (OFL.txt beside the files; METADATA.pb at the
+  pinned commit says `license: "OFL"`). Abril Fatface carries the Reserved
+  Font Names "Abril" and "Abril Fatface": Beuk ships and embeds the files
+  unmodified and unsubset, which the licence allows under those names.
+
 ## Families
 
 | Family | Directory | Google Fonts version | Files | Bytes | Licence | Reserved Font Name (from OFL.txt) | Licence source |
 |---|---|---|---|---|---|---|---|
+| Abril Fatface | `abrilfatface/` | v25 | 2 | 20872 | OFL 1.1 | Reserved Font Names "Abril" and "Abril Fatface" | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/abrilfatface/OFL.txt) (sha256 `aba8997e16b1e3888c6e855ba883c70d96bd4375bff8cb9c7ce0f097200f74b8`) |
 | Alegreya | `alegreya/` | v41 | 14 | 256416 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/alegreya/OFL.txt) (sha256 `f6f60d5d4cf4f4b1fc4e41353c897a2f5a16e6396c0cd8fa8bdfd2f4586a9a68`) |
 | Amiri | `amiri/` | v30 | 4 | 422736 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/amiri/OFL.txt) (sha256 `72de68e5954f4fdd24702292ef5a32f003ca960ec9330dc86e5eefb5dffb9b22`) |
 | Cinzel | `cinzel/` | v26 | 2 | 40444 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/cinzel/OFL.txt) (sha256 `f2b3029aba64c378bf0963b62945eee15e564fe4330b934c8f2eb058282b5e83`) |
@@ -86,6 +113,8 @@ Latin book — are set in them, with no choice to make.
 | Noto Serif Devanagari | `notoserifdevanagari/` | v34 | 1 | 126864 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/notoserifdevanagari/OFL.txt) (sha256 `a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331`) |
 | Oswald | `oswald/` | v57 | 5 | 72492 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/oswald/OFL.txt) (sha256 `0fd731a904b729a4e02eaf5e8ebd06783edd9abe400e8882760160230675b652`) |
 | PT Serif | `ptserif/` | v19 | 12 | 322644 | OFL 1.1 | Reserved Font Names "PT Sans", "PT Serif" and "ParaType". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/OFL.txt) (sha256 `ddf311c28ddf5a5ad9747649837346b67bed9d356789c3072bb27dbce49e514d`) |
+| Patrick Hand | `patrickhand/` | v25 | 3 | 55628 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/patrickhand/OFL.txt) (sha256 `377f4f9c19e935228552478eb68cc2ed82910988a60ba60e2ac73b09f32d02d1`) |
+| Pinyon Script | `pinyonscript/` | v24 | 3 | 85896 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/pinyonscript/OFL.txt) (sha256 `61d07cb0eaa943943648df2b11d0c2210e772053c192871e13f680b53fe0b77e`) |
 | Playfair Display | `playfairdisplay/` | v40 | 8 | 146168 | OFL 1.1 | Reserved Font Name "Playfair Display" | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/playfairdisplay/OFL.txt) (sha256 `566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e`) |
 | Source Sans 3 | `sourcesans3/` | v20 | 14 | 236616 | OFL 1.1 | Reserved Font Name 'Source'. All Rights Reserved. Source is a trademark of Adobe in the United States and/or other countries. | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/sourcesans3/OFL.txt) (sha256 `09746787287a289323b0ec3cff4d1a4a801331b82b7207c1e186f5d26619a392`) |
 | Source Serif 4 | `sourceserif4/` | v15 | 12 | 623480 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/sourceserif4/OFL.txt) (sha256 `5f94c3fd3a23131a417ab5a0c8452de57e70c3cfb9f604d88241f7065ebf9fd9`) |
@@ -323,7 +352,18 @@ Latin book — are set in them, with no choice to make.
 | `amiri/amiri-arabic-normal-400.woff2` | 108560 | `9abf8a10b4a2f27b698740522c9beec9ded7728aeef0738ac0d6e175bf6249d7` | https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHpUrtLMA7w.woff2 |
 | `amiri/amiri-arabic-normal-700.woff2` | 99968 | `c775d9f8c3a7cf0d0c2bb5246dd699e8c09bf6f8758e1be0b98939331b18bcce` | https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkaY6zp5yGw.woff2 |
 | `notoserifdevanagari/notoserifdevanagari-devanagari-normal-400_500_600_700.woff2` | 126864 | `bab9ee27c0141b4ccfcbea74684d4707ac97d4eaf0640ec1663c6e161b9eeb1f` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dNcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRH-xEMqTN.woff2 |
+| `pinyonscript/pinyonscript-vietnamese-normal-400.woff2` | 10700 | `7b21477143c6cfd96aedc8864390d5b1c92f2684012d3e6da9eaa0aa0f11135a` | https://fonts.gstatic.com/s/pinyonscript/v24/6xKpdSJbL9-e9LuoeQiDRQR8WOraOrbh.woff2 |
+| `pinyonscript/pinyonscript-latin-ext-normal-400.woff2` | 36152 | `c208ba67b4eff57e673bb188faeca3a51a6d928f8d94aca268b0a41a5deb6932` | https://fonts.gstatic.com/s/pinyonscript/v24/6xKpdSJbL9-e9LuoeQiDRQR8WOvaOrbh.woff2 |
+| `pinyonscript/pinyonscript-latin-normal-400.woff2` | 39044 | `3e1f69a201572cad4aabea7ccf720f093a7dbc005380b2a1b89e0b94476d3e42` | https://fonts.gstatic.com/s/pinyonscript/v24/6xKpdSJbL9-e9LuoeQiDRQR8WOXaOg.woff2 |
+| `patrickhand/patrickhand-vietnamese-normal-400.woff2` | 11572 | `7813e19e2d80efee8ace1de69517c99a0eb3059917336c4c8fccddbd8c838a9e` | https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYe8UcLLq7s.woff2 |
+| `patrickhand/patrickhand-latin-ext-normal-400.woff2` | 20112 | `c16846bad9501534b8402172c18f87e927146c4e63af2942f1fa8ad8ba7e6e70` | https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYe8UMLLq7s.woff2 |
+| `patrickhand/patrickhand-latin-normal-400.woff2` | 23944 | `ac5bc9033b2572bf84d39f7150c1634e37ed16e8dbee632d6d0bceac0bbf0199` | https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYe8XsLL.woff2 |
+| `abrilfatface/abrilfatface-latin-ext-normal-400.woff2` | 7716 | `c7cc6ab22643e87e9693f54ad411dde5012b5d4f96f53408f52c541144be9b6a` | https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchq-lmjdLh.woff2 |
+| `abrilfatface/abrilfatface-latin-normal-400.woff2` | 13156 | `edf7a1f3bc22e815ea426b102fa0493d20af482b242066e689a1263ebb2eeb68` | https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchq-dmjQ.woff2 |
 | `amiri/Amiri-normal-400.ttf` | 385840 | `7f19c4a5dc77b0ef435b430d750759170def15d6e3801006e0704dadc7f220e3` | https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUp.ttf |
 | `amiri/Amiri-normal-700.ttf` | 368616 | `65e3e6fe6af66bb6d24959bd537a89ea35de14083f5a2e2290c246136c2b047b` | https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkZY4.ttf |
 | `notoserifdevanagari/Noto_Serif_Devanagari-normal-400.ttf` | 232404 | `39ff220273661f9b01893e61d16756a612f6f3e358c1d2546b5fc24b6b7fecbb` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-H.ttf |
 | `notoserifdevanagari/Noto_Serif_Devanagari-normal-700.ttf` | 232872 | `de5246a1e11ad12d16e5bff2b08a0f2dd4d8922f36d01a73020d40dff76cacaf` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTDZpA-H.ttf |
+| `pinyonscript/Pinyon_Script-normal-400.ttf` | 144584 | `3683830e3bb3f1a2138b6098f8663ca5ceb66b1f397a4f30639aae139e344bb8` | https://fonts.gstatic.com/s/pinyonscript/v24/6xKpdSJbL9-e9LuoeQiDRQR8aOI.ttf |
+| `patrickhand/Patrick_Hand-normal-400.ttf` | 152636 | `8a384204c8ab3e9ed82954d46d8110a66fb5d7acf8f6b64c6f3980c1d0c01993` | https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYeMWQ.ttf |
+| `abrilfatface/Abril_Fatface-normal-400.ttf` | 56308 | `c426e1328c73a1d1c1c36809ead3353b487ae71d3b387ac8daca2d4b6d9124c0` | https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchm-A.ttf |
