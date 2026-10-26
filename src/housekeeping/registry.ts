@@ -2150,7 +2150,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'import.title.keeps-section-editor',
-    title: 'A credit the writer types on the Title Page or Copyright section editor counts as theirs: the next import keeps it and offers the document's own',
+    title: "A credit the writer types on the Title Page or Copyright section editor counts as theirs: the next import keeps it and offers the document's own",
     kind: 'client-only',
     reason: 'The section editors and credit provenance (meta.titleSource/authorSource) are client UI and client book state.',
   },
