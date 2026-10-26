@@ -59,7 +59,11 @@ const CSS2_URL = 'https://fonts.googleapis.com/css2?' + [
 ].map((f) => 'family=' + f).join('&') + '&display=swap';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
-const KEEP_SUBSETS = ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext', 'greek', 'greek-ext', 'vietnamese'];
+// Lora also has 'math' and 'symbols' subsets and NO 'greek' one: its basic
+// Greek letters (U+0391-03C9) live in 'math'. Dropping them would turn Greek
+// set in Lora into the fallback face, so they are kept too — every face the
+// pages loaded from Google before is served here, nothing more.
+const KEEP_SUBSETS = ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext', 'greek', 'greek-ext', 'vietnamese', 'math', 'symbols'];
 const GF_COMMIT = 'e7db6ca603fd4862010383ff17ffd6cc4ffac1c0';
 const dirOf = (family) => family.toLowerCase().replace(/[^a-z0-9]/g, '');
 

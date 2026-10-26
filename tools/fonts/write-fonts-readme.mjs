@@ -34,10 +34,13 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
   \`node tools/fonts/vendor-web-fonts.mjs .\` (desktop Chrome user agent). The
   font files are not modified. The two stylesheets hold the same \`@font-face\`
   blocks that API returned, with \`url()\` pointing at the local file.
-- **Subsets kept:** latin, latin-ext, cyrillic, cyrillic-ext, greek, greek-ext,
-  vietnamese (only those each family offers). Dropped: Lora's \`math\` and
-  \`symbols\` subsets. Arabic, Japanese and Chinese text uses system fonts, as
-  before (no family here covers those scripts).
+- **Subsets:** every subset the API returned — latin, latin-ext, cyrillic,
+  cyrillic-ext, greek, greek-ext, vietnamese (only those each family offers),
+  plus Lora's \`math\` and \`symbols\` (Lora has no \`greek\` subset; its basic
+  Greek letters live in \`math\`). The studio page declares exactly the same
+  @font-face set (family, style, weight, unicode-range) it got from Google
+  before. Arabic, Japanese and Chinese text uses system fonts, as before (no
+  family here covers those scripts).
 - **Licence:** every family is SIL Open Font License 1.1. Each family's
   \`OFL.txt\` sits beside its fonts; it is the file from the google/fonts
   repository at commit \`e7db6ca603fd4862010383ff17ffd6cc4ffac1c0\` (the same

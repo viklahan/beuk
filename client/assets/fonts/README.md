@@ -5,8 +5,8 @@ served from this directory, from Beuk's own origin. No page asks
 fonts.googleapis.com or fonts.gstatic.com for anything, and the
 Content-Security-Policy (Caddyfile) no longer allows either host.
 
-- **What:** 22 families, 219 WOFF2 files, 5890780 bytes (5752.7 KiB) in total;
-  `fonts.css` (136200 bytes) is linked by every page; `fonts-help.css`
+- **What:** 22 families, 223 WOFF2 files, 5965396 bytes (5825.6 KiB) in total;
+  `fonts.css` (147312 bytes) is linked by every page; `fonts-help.css`
   (4882 bytes) adds Literata 700 and italic 500, which only the help and
   warmth pages ever asked for — the studio keeps exactly its old Literata faces
   (400–600, italic 400), the same ones the print renderer installs, so the
@@ -18,10 +18,13 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
   `node tools/fonts/vendor-web-fonts.mjs .` (desktop Chrome user agent). The
   font files are not modified. The two stylesheets hold the same `@font-face`
   blocks that API returned, with `url()` pointing at the local file.
-- **Subsets kept:** latin, latin-ext, cyrillic, cyrillic-ext, greek, greek-ext,
-  vietnamese (only those each family offers). Dropped: Lora's `math` and
-  `symbols` subsets. Arabic, Japanese and Chinese text uses system fonts, as
-  before (no family here covers those scripts).
+- **Subsets:** every subset the API returned — latin, latin-ext, cyrillic,
+  cyrillic-ext, greek, greek-ext, vietnamese (only those each family offers),
+  plus Lora's `math` and `symbols` (Lora has no `greek` subset; its basic
+  Greek letters live in `math`). The studio page declares exactly the same
+  @font-face set (family, style, weight, unicode-range) it got from Google
+  before. Arabic, Japanese and Chinese text uses system fonts, as before (no
+  family here covers those scripts).
 - **Licence:** every family is SIL Open Font License 1.1. Each family's
   `OFL.txt` sits beside its fonts; it is the file from the google/fonts
   repository at commit `e7db6ca603fd4862010383ff17ffd6cc4ffac1c0` (the same
@@ -46,7 +49,7 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
 | Libre Baskerville | `librebaskerville/` | v24 | 4 | 113940 | OFL 1.1 | Reserved Font Name Libre Baskerville. | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/librebaskerville/OFL.txt) (sha256 `3624eddd4c8f8a908130a417ae7cd089c9da69899c4e0ca1a5217d0a6fae16fd`) |
 | Libre Caslon Text | `librecaslontext/` | v5 | 6 | 122056 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/librecaslontext/OFL.txt) (sha256 `a294245c822c5aa9fd9a9f3189418e99415428be5fecadf797793d5d8f6a3ad3`) |
 | Literata | `literata/` | v40 | 14 | 585336 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/literata/OFL.txt) (sha256 `8742963604cd89dc81437811a850018fc03b2bfad686d7422c8235967c87614e`) |
-| Lora | `lora/` | v37 | 10 | 179432 | OFL 1.1 | Reserved Font Name "Lora". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lora/OFL.txt) (sha256 `1d9a970809ac804b582a6ce7f0ebc4e7fefcbfd7ff6299cad35ee656a21be716`) |
+| Lora | `lora/` | v37 | 14 | 254048 | OFL 1.1 | Reserved Font Name "Lora". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/lora/OFL.txt) (sha256 `1d9a970809ac804b582a6ce7f0ebc4e7fefcbfd7ff6299cad35ee656a21be716`) |
 | Merriweather | `merriweather/` | v33 | 10 | 421740 | OFL 1.1 | Reserved Font Name "Merriweather". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/merriweather/OFL.txt) (sha256 `715bd349bfa6116f99e351e1548321dcfa25b91df65502d22ca8d624557697d2`) |
 | Montserrat | `montserrat/` | v31 | 5 | 171768 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/montserrat/OFL.txt) (sha256 `8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e`) |
 | Newsreader | `newsreader/` | v26 | 6 | 516172 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/newsreader/OFL.txt) (sha256 `fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8`) |
@@ -175,11 +178,15 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
 | `literata/literata-latin-normal-400_500_600_700.woff2` | 85672 | `7478e1920209e51dcc235d151d2056a0a6e3c54b4436f7030d256f231fe09b58` | https://fonts.gstatic.com/s/literata/v40/or3PQ6P12-iJxAIgLa78DkTtAoDhk0oVpaK3YLanFLHpPf2TbLi4J_HWTA.woff2 |
 | `lora/lora-cyrillic-ext-italic-400.woff2` | 14432 | `ffe99c49959dea073fcf7c4d1703d944fcf0ac07282ddd382b212ef22a9b0649` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFoqJ2nOeZ.woff2 |
 | `lora/lora-cyrillic-italic-400.woff2` | 12512 | `aaeb039ba0ecdbc75108a6f66ee9f6745315412de78a4061cc90365b513fc4a3` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFoqt2nOeZ.woff2 |
+| `lora/lora-math-italic-400.woff2` | 17608 | `d6a5c00176ed3a371a691afa4e3fd398ba5a61182bf2cc39bef35f05fcf9b18c` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFotN2nOeZ.woff2 |
+| `lora/lora-symbols-italic-400.woff2` | 10520 | `2877d988532ba8d11f1529ab2b1e8bf871268c57c65ddeaedc060a7299c3f12e` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFosF2nOeZ.woff2 |
 | `lora/lora-vietnamese-italic-400.woff2` | 5536 | `a506cef75e0506008fa1d8d34bc1a6eac5e7a2823ae8560c8344f1592a8f01d9` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFoqB2nOeZ.woff2 |
 | `lora/lora-latin-ext-italic-400.woff2` | 12460 | `3bb65e234cd07a69127592cafd08ce4242a1a4ace24dcc4c466881693fc74867` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFoqF2nOeZ.woff2 |
 | `lora/lora-latin-italic-400.woff2` | 22756 | `723cc14fe86bc9fadb2f5f34efb421d246edb240a18d2a7828d2edc041d79996` | https://fonts.gstatic.com/s/lora/v37/0QI8MX1D_JOuMw_hLdO6T2wV9KnW-MoFoq92nA.woff2 |
 | `lora/lora-cyrillic-ext-normal-400_500_600.woff2` | 23636 | `0e523e4bc3c6308f002a3208ea2990cb4f64282d4fbb67c12f5726d13b66eef6` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwf7I-NP.woff2 |
 | `lora/lora-cyrillic-normal-400_500_600.woff2` | 21232 | `c57d9ca3bd42e6bc093badc7744dd2059a78f66a3a4dc6ca40574480c870f553` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMw77I-NP.woff2 |
+| `lora/lora-math-normal-400_500_600.woff2` | 29240 | `a8c4cb778ab6202d22bdea2ccc8d7e7caf802cfe0a7ce37df7b212f82341468f` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuM3b7I-NP.woff2 |
+| `lora/lora-symbols-normal-400_500_600.woff2` | 17248 | `2df52199eac56e2ec7a735e609bb151bdab79422c3e73948f4b6580c66bb5a50` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuM2T7I-NP.woff2 |
 | `lora/lora-vietnamese-normal-400_500_600.woff2` | 8992 | `98c22de85f6e83bcd6ae1a443e12e256fbc8de7142bec4f76b059f8ff9c2797e` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwX7I-NP.woff2 |
 | `lora/lora-latin-ext-normal-400_500_600.woff2` | 20088 | `2a2d9c22c9863086a23f5013fede1428585321812b25f2662542c39d02967c5e` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwT7I-NP.woff2 |
 | `lora/lora-latin-normal-400_500_600.woff2` | 37788 | `ddb8c66035104e233fc024669183aad3738b6daa16deee2ebb1241bd0f98ace1` | https://fonts.gstatic.com/s/lora/v37/0QIvMX1D_JOuMwr7Iw.woff2 |
