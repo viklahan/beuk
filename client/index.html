@@ -19489,6 +19489,9 @@
           return false;
         }
         rec.done = true;
+        /* the operation is undone: its "Before …" snapshot is spent, and
+           would otherwise crowd out older ones under CHOP_SNAP_CAP */
+        if (rec.snapId) state.history = (state.history || []).filter((h) => h.id !== rec.snapId);
         /* Otherwise (numbers set by hand since, or never in sequence)
            every chapter whose number the operation set, and that no
            one has renumbered since, gets its number back. */
@@ -19818,7 +19821,7 @@
           return;
         }
         chopCloseMenu(false);
-        const opts = { focusUndo: true };
+        const opts = { focusUndo: !!viaKeyboard }; /* a mouse pick leaves focus alone, so the toast times out */
         if (act === "del") chopDelete(id, opts);
         else if (act === "dup") chopDuplicate(id, opts);
         else if (act === "split") chopSplit(id, null, opts);
@@ -22401,7 +22404,10 @@
          to the sample, which can always be reloaded exactly. */
       const IMGLIB_UNDO_MS = 10000;
       const IMGLIB_COVER_TYPES = ["image", "photo", "duotone"];
-      const imglibIsSample = (im) => !!im && typeof im.id === "string" && im.id.indexOf("sample-img-") === 0;
+      /* A sample picture is protected only while the sample is the book on the
+         desk: a book imported over the sample can let them go like any other. */
+      const imglibIsSample = (im) => !!im && typeof im.id === "string" && im.id.indexOf("sample-img-") === 0 &&
+        (sampleState.loaded || isSampleBookId(state.meta.bookId));
       const imglibBytes = (im) => (im && typeof im.data === "string" ? Math.round(im.data.length * 3 / 4) : 0);
       /* Sizes and file names are isolated (U+2066/U+2068 … U+2069) so a right-to-left sentence keeps "141.3 KB" and "ferry.png" whole. */
       const imglibSize = (n) => "\u2066" + (n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : fmtBytes(n)) + "\u2069";
@@ -22671,10 +22677,11 @@
         const n = unused.length;
         const size = imglibSize(unused.reduce((a, im) => a + imglibBytes(im), 0));
         box.hidden = false;
-        box.innerHTML = '<button type="button" class="tb-btn" id="btnImgCleanup" aria-describedby="imgCleanupNote"' + (n ? "" : " disabled") + '><i data-lucide="eraser"></i><span>' +
-          esc(t("imglib.cleanup", { n: n, size: size })) + "</span></button>" +
+        /* nothing to remove: the quiet note alone, never "(0 · 0 B)" */
+        box.innerHTML = (n ? '<button type="button" class="tb-btn" id="btnImgCleanup" aria-describedby="imgCleanupNote"><i data-lucide="eraser"></i><span>' +
+          esc(t("imglib.cleanup", { n: n, size: size })) + "</span></button>" : "") +
           '<span class="img-lib-note" id="imgCleanupNote">' + esc(t(n ? "imglib.cleanupHistory" : "imglib.cleanupNone")) + (hasSample ? " " + esc(t("imglib.sampleNote")) : "") + "</span>";
-        $("btnImgCleanup").addEventListener("click", imglibCleanup);
+        if ($("btnImgCleanup")) $("btnImgCleanup").addEventListener("click", imglibCleanup);
       }
       function imglibInit() {
         $("btnImgRmCancel").addEventListener("click", () => imglibCloseConfirm(false));
@@ -39993,6 +40000,7 @@
          picture). Each case runs on it and restores the writer's desk. */
       function imglibCheckFixture() {
         applyBookDoc(buildEmptyBook());
+        sampleState.loaded = true; /* the sample's pictures are protected only while the sample is on the desk (imglibCheckRun puts this back) */
         state.history = [];
         state.meta.title = "Image Library Fixture"; state.meta.author = "Fixture Author";
         const mk = (id, extra) => Object.assign({ id: id, name: id + ".png", mediaType: "image/png", ext: "png", data: FAKE_PNG }, extra || {});
@@ -40144,11 +40152,14 @@
               const tEl = $("toasts").lastElementChild;
               if (!tEl || tEl.textContent.indexOf(t("imglib.cleanupToast", { n: 2, size: imglibSize(bytes) })) === -1 || !tEl.querySelector(".toast-action")) bad.push("no cleanup toast with Undo");
               const btn0 = $("btnImgCleanup");
-              if (!btn0 || !btn0.disabled || $("imgCleanupNote").textContent.indexOf(t("imglib.cleanupNone")) === -1) bad.push("with none unused the button is not disabled with its note");
+              if (btn0 || $("imgCleanupNote").textContent.indexOf(t("imglib.cleanupNone")) === -1) bad.push("with none unused the button is still offered, or its note is missing");
               if (!imageById("sample-img-ilS")) bad.push("the sample picture was removed");
+              sampleState.loaded = false; /* a book imported over the sample: its pictures may go like any other */
+              if (!imglibUnused().some((im) => im.id === "sample-img-ilS")) bad.push("with the sample gone, its unused picture is still protected");
+              sampleState.loaded = true;
               if (tEl && tEl.querySelector(".toast-action")) tEl.querySelector(".toast-action").click();
               if (!imageById("ilK") || !imageById("ilL")) bad.push("Undo did not bring them back");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "“" + want + "” removed exactly ilK, ilL; then disabled with “" + t("imglib.cleanupNone") + "”; sample picture kept; Undo restored both");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "“" + want + "” removed exactly ilK, ilL; then only the note “" + t("imglib.cleanupNone") + "”; sample picture kept while the sample is on the desk, offered once it is not; Undo restored both");
             });
           } },
         { id: "images.delete.leaves-serialized-book", feature: "images", name: "Image library: a removed picture is gone from serializeBook()'s images and from the record the device save writes, while the History snapshot taken before still holds it; a run of removals shares one snapshot so History does not multiply the book",

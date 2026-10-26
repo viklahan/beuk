@@ -50,8 +50,8 @@ test('imagelib: the snapshot kind is whitelisted, the sample line is untouched, 
   assert.ok(m, 'normalizeHistory whitelist found');
   assert.ok((JSON.parse(m[1]) as string[]).includes('imgremove'));
   assert.match(html, /autoSnapshot\("imgremove"\)/);
-  // The sample's own pictures are never offered for removal.
-  assert.match(html, /const imglibIsSample = \(im\) => !!im && typeof im\.id === "string" && im\.id\.indexOf\("sample-img-"\) === 0;/);
+  // The sample's own pictures are never offered for removal while the sample is the book on the desk.
+  assert.match(html, /const imglibIsSample = \(im\) => !!im && typeof im\.id === "string" && im\.id\.indexOf\("sample-img-"\) === 0 &&\s*\(sampleState\.loaded \|\| isSampleBookId\(state\.meta\.bookId\)\);/);
   const sw = await readFile(path.join(here, '..', 'client', 'sw.js'), 'utf8');
   assert.match(sw, /beuk-shell-v5/);
   assert.match(sw, /beuk-sound-v2/);

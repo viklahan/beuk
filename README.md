@@ -1679,14 +1679,18 @@ copyright, contents) have no menu.
   kind `chapterop`; the words are composed when shown, so they follow
   the interface language) — then makes the change, then shows a toast
   with **Undo** for ten seconds. The toast waits while the pointer rests
-  on it or focus is in it; after a menu action focus moves to its Undo
-  button, and when the toast leaves, focus returns to the active row.
+  on it or focus is in it; after a menu action chosen from the keyboard
+  focus moves to its Undo button (a mouse or touch pick leaves focus
+  where it was, so the toast times out), and when the toast leaves,
+  focus returns to the active row.
   The toast stack is an `aria-live="polite"` region.
 - **Snapshots kept.** Structural snapshots keep their own most recent
   **five**; they are counted apart from the ten kept for imports, the
   sample story, restores and the other automatic kinds, so a run of
   chapter edits never pushes those out. A snapshot stays in History after
-  the toast is gone and restores like any other.
+  the toast is gone and restores like any other. Pressing Undo spends the
+  operation's snapshot: it is dropped, so repeated delete-and-Undo never
+  fills History with copies of the same moment.
 - **What a structural snapshot costs.** Like every snapshot it is the
   whole book, but an operation moves text, never a picture, the cover or
   a font, so the snapshot **shares** those with the book instead of
@@ -1824,11 +1828,14 @@ writer take a picture out of the book.
 - **Remove unused pictures (n · size).** Counts the pictures nothing
   references and their total size (base64 length × 3/4, the figure the
   library shows for each picture), snapshots first, removes exactly those,
-  and offers Undo. With none, the button is disabled with the note "Every
-  picture in the library is in use."
+  and offers Undo. With none, only the note "Every picture in the library
+  is in use." is shown.
 - **The sample story's pictures** (ids `sample-img-…`) carry no delete
-  control and are never counted as unused: they belong to the sample,
-  which can always be reloaded exactly. A note in the library says so.
+  control and are never counted as unused **while the sample is the book
+  on the desk**: they belong to the sample, which can always be reloaded
+  exactly. A note in the library says so. In a book imported over the
+  sample they are ordinary pictures: unused ones are counted and removed
+  like any other.
 - **Storage truth.** After a removal the picture is gone from
   `serializeBook().images`, from the record the device save writes to
   IndexedDB (the previous record, `book-prev`, holds it until the next

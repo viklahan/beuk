@@ -19,7 +19,11 @@ to make well.
   ("Before removing a picture"), so a picture can always come back — and
   that snapshot holds the picture, so the saved book only gets smaller
   once you delete it in History. The library says so.
-- The sample story's own pictures stay with the sample.
+- The sample story's own pictures stay with the sample. In a book
+  imported over the sample, the sample pictures it carried along can be
+  removed like any other.
+- Undo on a chapter operation also clears the "Before …" snapshot it no
+  longer needs; a mouse pick no longer holds the Undo toast open.
 - **Fixed:** the Undo button on a toast could not be clicked with a
   mouse or a finger; toasts on a phone are no longer squeezed narrow.
 
