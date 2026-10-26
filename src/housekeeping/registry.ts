@@ -1078,6 +1078,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The book document is serialized in the client; the server stores it as it arrives (asserted by window.runBeukSelfChecks()).',
   },
   {
+    id: 'colour.dark-surfaces.readable',
+    title: 'On the studio’s dark surfaces (the OLED phone preview, zen in Candlelight) the accent is shown in a shade that reaches 3:1; the EPUB and print keep the colour chosen',
+    kind: 'client-only',
+    reason: 'The preview and zen CSS is generated in the client from the book state (asserted by window.runBeukSelfChecks()).',
+  },
+  {
+    id: 'colour.print.black-ink-option',
+    title: 'Print the accent in black ink: the print interior sets the accented elements in #000 and blends black for its tints, while screens and the EPUB keep the accent',
+    kind: 'client-only',
+    reason: 'The print interior HTML is assembled in the client from the book state (asserted by window.runBeukSelfChecks()); the server converts it as it arrives.',
+  },
+  {
     id: 'themes.library.count-shelves-shape',
     title: 'Theme library: 15 themes across six genre shelves, all references resolve',
     kind: 'client-only',

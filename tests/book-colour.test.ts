@@ -76,7 +76,8 @@ test('the colour flows through the one generator, and only when set (unset = the
 test('print keeps the accent, blends it for its solid tints and ornaments, and prints on white paper whatever the tint', () => {
   assert.ok(html.includes('out.push(sel + " { opacity: 1; color: " + printBlendHex(printInkFor(sel), PRINT_PAGE, a) + "; }"); /* BEUK:bookcolour */'));
   assert.ok(html.includes('if (v === "currentColor") return printBlendHex(printOrnamentInk(), PRINT_PAGE, alpha);'));
-  assert.ok(html.includes('const printOrnamentInk = () => bookColour().accent || PRINT_INK;'));
+  assert.ok(html.includes('const printOrnamentInk = () => printAccent() || PRINT_INK;'));
+  assert.ok(html.includes('const printAccent = () => { const c = bookColour(); return c.printBlack ? "" : c.accent; };'));
   // the print document's own page rule follows the book CSS, so white paper wins over a tint
   const fn = /function buildPrintHtml\(\) \{([\s\S]*?)\n      \}/.exec(html)![1];
   const iBook = fn.indexOf('buildBookCss("")'), iPaper = fn.indexOf('"html, body { margin: 0; padding: 0; background: " + PRINT_PAGE');
@@ -116,8 +117,77 @@ test('new studio strings exist in all 13 languages, with their placeholders, and
   }
 });
 
+test('on the studio dark surfaces the accent is lifted to 3:1; the grounds it measures are the studio’s own', () => {
+  // the reference failure: a dark accent on the OLED phone's black screen, and on Candlelight's ground
+  assert.ok(contrast('#1f3a64', '#000000') < 3);
+  assert.ok(contrast('#7a1f2b', '#100e0c') < 3);
+  // the grounds named in the code are the ones the studio paints
+  assert.ok(html.includes('.frame-phone .screen { background: #000000; color: #e9e9e9;'));
+  const candle = /:root\[data-theme="candlelight"\] \{([\s\S]*?)\}/.exec(html)![1];
+  for (const [tok, hex] of [['--bg', '#100e0c'], ['--panel', '#181715'], ['--panel-2', '#22201d'], ['--panel-3', '#262320']]) assert.ok(candle.includes(`${tok}: ${hex};`), `${tok} ${hex}`);
+  assert.ok(html.includes('background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%);'));
+  assert.ok(html.includes('{ scope: ".fc-page", on: ".frame-phone ", bgs: ["#000000"] },'));
+  assert.ok(html.includes('{ scope: ".zen-book", on: \':root[data-theme="candlelight"] \', bgs: ["#100e0c", "#181715", "#22201d", "#262320", "#2e2416"] }'));
+  // the lift: mixed with white in 5% steps until 3:1 on every ground, emitted only for the scoped surface
+  assert.ok(html.includes('const h = "#" + rgb.map((v) => Math.round(v + (255 - v) * k / 20).toString(16).padStart(2, "0")).join("");'));
+  assert.ok(html.includes('if (bgs.every((b) => colourContrast(h, b) >= COLOUR_MIN_LARGE)) return h;'));
+  const rules = /function bookColourRules\(S, root, scope\) \{([\s\S]*?)\n      \}/.exec(html)![1];
+  assert.ok(rules.includes('if (d.scope !== scope) return;'));
+  assert.ok(rules.includes('out.push(BOOK_ACCENT_TARGETS.map((x) => d.on + S + x).join(", ") + " { color: " + lit + "; }");'));
+  // independent copy of the lift: every named accent reaches 3:1 on every ground
+  const lift = (hex: string, bgs: string[]) => {
+    const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    for (let k = 0; k <= 20; k++) {
+      const h = '#' + rgb.map((v) => Math.round(v + ((255 - v) * k) / 20).toString(16).padStart(2, '0')).join('');
+      if (bgs.every((b) => contrast(h, b) >= 3)) return h;
+    }
+    return '#ffffff';
+  };
+  for (const a of swatches('COLOUR_ACCENTS'))
+    for (const bgs of [['#000000'], ['#100e0c', '#181715', '#22201d', '#262320', '#2e2416']]) {
+      const h = lift(a.hex, bgs);
+      for (const b of bgs) assert.ok(contrast(h, b) >= 3, `${a.id} -> ${h} on ${b}`);
+    }
+});
+
+test('print can set the accent in black ink; the panel says plainly what a coloured accent does in print', () => {
+  assert.ok(html.includes('if (accent && o.printBlack === true) out.printBlack = true;'));
+  const fn = /function printColourCss\(S\) \{([\s\S]*?)\n      \}/.exec(html)![1];
+  assert.ok(fn.includes('if (!c.accent || !c.printBlack) return "";'));
+  assert.ok(fn.includes('BOOK_ACCENT_TARGETS.map((x) => S + x).join(", ") + " { color: " + PRINT_INK + "; }'));
+  // the print interior: after the book CSS and the paper rule, before the solid tints
+  const pr = /function buildPrintHtml\(\) \{([\s\S]*?)\n      \}/.exec(html)![1];
+  const iBook = pr.indexOf('buildBookCss("")'), iBlack = pr.indexOf('printColourCss("")'), iPress = pr.indexOf('printPressCss()');
+  assert.ok(iBook !== -1 && iBlack > iBook && iPress > iBlack);
+  assert.ok(html.includes('"\\n" + printColourCss(".piv-book ") + printSolidTintCss(buildBookCss(".piv-book"));'));
+  assert.ok(html.includes('<input type="checkbox" id="colourPrintBlack" />'));
+  assert.ok(html.includes('$("colourPrintBlack").addEventListener("change", (e) => setBookPrintBlack(e.target.checked));'));
+  // no unbacked claim that black-ink print turns the accent grey; the Store-ready row is named
+  assert.ok(!html.includes('a black-ink edition prints it in grey'));
+  assert.ok(html.includes('the Store-ready report warns under “Text in black ink only”'));
+  assert.ok(!html.includes("The book's text has no colour setting of its own"));
+});
+
+test('the review strings (print in black ink, dark screens) exist in all 13 languages', () => {
+  const langs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'ja', 'zh-Hans'];
+  const keys = ['colour.printBlack', 'colour.printBlackHint', 'colour.darkNote'];
+  let en: Record<string, string> = {};
+  for (const lang of langs) {
+    const target = lang === 'zh-Hans' ? 'UI_STRINGS["zh-Hans"]' : `UI_STRINGS.${lang}`;
+    const blocks = [...html.matchAll(new RegExp(`Object\\.assign\\(${target.replace(/[.[\]"]/g, '\\$&')}, (\\{"colour\\.printBlack"[^\\n]*\\})\\);`, 'g'))];
+    assert.equal(blocks.length, 1, `${lang}: one block`);
+    const d = JSON.parse(blocks[0][1]) as Record<string, string>;
+    assert.deepEqual(Object.keys(d).sort(), [...keys].sort(), `${lang}: every key`);
+    if (lang === 'en') en = d;
+    for (const k of keys) {
+      assert.ok(d[k] && d[k].trim() && !d[k].includes('!'), `${lang} ${k}`);
+      if (lang !== 'en') assert.notEqual(d[k], en[k], `${lang} ${k} is translated`);
+    }
+  }
+});
+
 test('the colour self-checks are in the studio and registered client-only', () => {
-  for (const id of ['colour.accent.reaches-every-output', 'colour.unset.css-identical', 'colour.contrast.guard', 'colour.persists-with-book', 'fonts.display.heading-only', 'fonts.display.preview-and-epub']) {
+  for (const id of ['colour.accent.reaches-every-output', 'colour.unset.css-identical', 'colour.contrast.guard', 'colour.persists-with-book', 'colour.dark-surfaces.readable', 'colour.print.black-ink-option', 'fonts.display.heading-only', 'fonts.display.preview-and-epub']) {
     assert.ok(html.includes(`{ id: "${id}"`), `${id} in the client self-checks`);
     const c = SELF_CHECK_CASES.find((x) => x.id === id);
     assert.ok(c, `${id} registered`);

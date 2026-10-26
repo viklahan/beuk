@@ -230,3 +230,16 @@ test('the studio links fonts-display.css, offers the display faces as headings o
   assert.ok(html.includes('state.theme.bodyFont = bodyFaceOf(state.theme.bodyFont);'));
   assert.ok(html.includes('.concat(displayFontsFor()); /* BEUK:displayfaces */'));
 });
+
+test('the cover maker keeps the heading list from before the display faces joined it', () => {
+  const html = readFileSync(path.join(ROOT, 'client', 'index.html'), 'utf8');
+  // the copy is taken before the push, and the cover list is built from the copy
+  const iCopy = html.indexOf('const TEXT_HEAD_FONTS = HEAD_FONTS.slice();');
+  const iPush = html.indexOf('HEAD_FONTS.push.apply(HEAD_FONTS, DISPLAY_FAMILIES);');
+  assert.ok(iCopy !== -1 && iPush > iCopy, 'TEXT_HEAD_FONTS is copied before the display faces are pushed');
+  assert.ok(html.includes('const COVER_FONTS = TEXT_HEAD_FONTS.concat(BODY_FONTS.filter((f) => !TEXT_HEAD_FONTS.includes(f)));'));
+  // a new cover, or a cover whose uploaded face is removed, never falls back to a display face
+  assert.ok(html.includes('const hf = (!displayFontOf(state.theme.headFont) && state.theme.headFont) || "Libre Baskerville";'));
+  assert.ok(html.includes('if (e && e.font === family) e.font = displayFontOf(state.theme.headFont) ? "Libre Baskerville" : state.theme.headFont; });'));
+  assert.ok(html.includes('if (COVER_FONTS.indexOf(d.family) !== -1) bad.push(d.family + " is offered on covers (unchecked there)");'));
+});
