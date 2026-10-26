@@ -37,6 +37,7 @@
     <link rel="preload" href="assets/fonts/karla/karla-latin-normal-400_500_600_700.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="assets/fonts/ebgaramond/ebgaramond-latin-normal-400_500_600.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="assets/fonts/fonts-scripts.css" /><!-- BEUK:scriptfonts — Amiri + Noto Serif Devanagari, script subsets only -->
     <!-- ==== /BEUK:fonts ==== -->
     <!-- ==== BEUK:local ==== Studio libraries, vendored for offline use: byte-identical
          copies of the pinned releases (verified against cdnjs SRI and jsDelivr file hashes:
@@ -15854,8 +15855,15 @@
          nonfiction. Fifteen named themes bundle a font pairing, chapter
          header style, ornament and rhythm defaults per shelf; applying one
          is a starting point — every fine-grain control below still wins. */
-      const SERIF_STACK = (f) => "'" + f + "', Georgia, 'Times New Roman', serif";
-      const SANS_STACK = (f) => "'" + f + "', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+      /* BEUK:scriptfonts — the script faces follow the book's Latin
+         face in every stack: the Latin face draws what it has (its
+         @font-face unicode-ranges are Latin/Greek/Cyrillic), and
+         Devanagari and Arabic-script characters fall to Noto Serif
+         Devanagari and Amiri (fonts-scripts.css; installed in the print
+         renderer; embedded in an EPUB that needs them). */
+      const SCRIPT_STACK = "'Noto Serif Devanagari', 'Amiri'";
+      const SERIF_STACK = (f) => "'" + f + "', " + SCRIPT_STACK + ", Georgia, 'Times New Roman', serif";
+      const SANS_STACK = (f) => "'" + f + "', " + SCRIPT_STACK + ", 'Helvetica Neue', Helvetica, Arial, sans-serif";
       const SANS_FONTS = ["Inter", "Source Sans 3", "Montserrat", "Oswald"];
       const fontStack = (f) => (SANS_FONTS.includes(f) ? SANS_STACK(f) : SERIF_STACK(f));
       const BODY_FONTS = ["EB Garamond", "Libre Baskerville", "Cormorant Garamond", "Newsreader", "Spectral", "Merriweather", "Lora", "Source Serif 4", "Crimson Pro", "Libre Caslon Text", "PT Serif", "Gentium Book Plus", "Alegreya", "Literata", "Playfair Display", "Inter", "Source Sans 3"];
@@ -15985,7 +15993,7 @@
           family: f.family.trim(), ext: ext, mediaType: FONT_MEDIA[ext], data: f.data
         };
       }
-      const fontFileName = (f) => (slug(f.family) || "font") + "." + f.ext;
+      const fontFileName = (f) => f.file || ((slug(f.family) || "font") + "." + f.ext);
       /* The uploaded faces this book actually wears: the theme's
          body and heading fonts, the header design's three fonts,
          and any cover-maker element set in one. Only these ride
@@ -16000,11 +16008,139 @@
         if (state.coverRecipe && state.coverRecipe.elements) CM_ELEMENTS.forEach((k) => { const e = state.coverRecipe.elements[k]; if (e) add(e.font); });
         return out;
       }
-      function fontFaceCss(urlFor) {
-        return usedUploadedFonts().map((f) =>
-          '@font-face { font-family: "' + f.family.replace(/"/g, "") + '"; src: url("' + urlFor(f) + '") format("' + FONT_FORMAT[f.ext] + '"); font-weight: normal; font-style: normal; }'
+      function fontFaceCss(urlFor, list) {
+        const oflDone = {};
+        return (list || usedUploadedFonts()).map((f) =>
+          /* BEUK:scriptfonts — an embedded library face carries its
+             licence (SIL OFL 1.1) once per family, as the licence asks */
+          (f.ofl && !oflDone[f.family] && (oflDone[f.family] = true) ? "/* " + f.family + " is embedded under the SIL Open Font License 1.1:\n" + f.ofl.replace(/\*\//g, "* /") + "\n*/\n" : "") +
+          '@font-face { font-family: "' + f.family.replace(/"/g, "") + '"; src: url("' + urlFor(f) + '") format("' + FONT_FORMAT[f.ext] + '"); font-weight: ' + (f.weight || "normal") + '; font-style: normal; }'
         ).join("\n");
       }
+      /* ==== BEUK:scriptfonts ==== The book's script faces for ebooks.
+         A book whose language is written in Devanagari (hi) or Arabic
+         script (ar, fa, ur) — or whose text holds at least
+         SCRIPT_MIN_CHARS letters of one — carries that script's regular
+         and bold TrueType face in its EPUB: fetched from this origin
+         (assets/fonts/<dir>/, the same bytes the print renderer
+         installs), checked against the pinned sha256, declared in the
+         manifest as font/ttf and bound by @font-face rules that carry
+         the family's OFL.txt. Italic is left to the reading system (it
+         slants the regular face). Not subset: whole files. */
+      const SCRIPT_MIN_CHARS = 20;
+      const SCRIPT_FONTS = {
+        deva: { family: "Noto Serif Devanagari", dir: "notoserifdevanagari", langs: ["hi", "mr", "ne", "sa"],
+          re: /[ऀ-ॿ᳐-᳿꣠-ꣿ]/g,
+          faces: [
+            { weight: 400, file: "Noto_Serif_Devanagari-normal-400.ttf", sha256: "39ff220273661f9b01893e61d16756a612f6f3e358c1d2546b5fc24b6b7fecbb" },
+            { weight: 700, file: "Noto_Serif_Devanagari-normal-700.ttf", sha256: "de5246a1e11ad12d16e5bff2b08a0f2dd4d8922f36d01a73020d40dff76cacaf" }
+          ] },
+        arab: { family: "Amiri", dir: "amiri", langs: ["ar", "fa", "ur"],
+          re: /[؀-ۿݐ-ݿࡰ-ࣿﭐ-﷿ﹰ-ﻼ]/g,
+          faces: [
+            { weight: 400, file: "Amiri-normal-400.ttf", sha256: "7f19c4a5dc77b0ef435b430d750759170def15d6e3801006e0704dadc7f220e3" },
+            { weight: 700, file: "Amiri-normal-700.ttf", sha256: "65e3e6fe6af66bb6d24959bd537a89ea35de14083f5a2e2290c246136c2b047b" }
+          ] }
+      };
+      const scriptFontData = {};
+      const scriptFontOfl = {};
+      /* The scripts a book needs a face for: its language, or enough of
+         the script's letters in its included sections and title. */
+      function bookScripts(sections, lang, meta) {
+        const primary = String(lang || "").split("-")[0];
+        let text = null;
+        return Object.keys(SCRIPT_FONTS).filter((k) => {
+          const sf = SCRIPT_FONTS[k];
+          if (sf.langs.indexOf(primary) !== -1) return true;
+          if (text === null) {
+            const m = meta || {};
+            text = [m.title, m.subtitle, m.author].concat((sections || []).filter((s) => s && s.included)
+              .map((s) => [s.title, s.subtitle, s.content].join("\n"))).join("\n");
+          }
+          const hits = text.match(sf.re);
+          return !!hits && hits.length >= SCRIPT_MIN_CHARS;
+        });
+      }
+      /* The faces ready to embed (fetched and checked) for those scripts. */
+      function scriptFontsFor(sections, lang, meta) {
+        const out = [];
+        bookScripts(sections, lang, meta).forEach((k) => {
+          const sf = SCRIPT_FONTS[k];
+          if (!scriptFontOfl[sf.dir]) return;
+          sf.faces.forEach((fc) => {
+            const data = scriptFontData[sf.dir + "/" + fc.file];
+            if (data) out.push({ id: "sf-" + sf.dir + "-" + fc.weight, family: sf.family, ext: "ttf", mediaType: FONT_MEDIA.ttf, file: fc.file, weight: fc.weight, data: data, ofl: scriptFontOfl[sf.dir] });
+          });
+        });
+        return out;
+      }
+      /* Everything an EPUB package embeds: the uploaded faces the book
+         wears, then the script faces its text needs. */
+      const epubFonts = (sections, lang, meta) => usedUploadedFonts().concat(scriptFontsFor(sections, lang, meta));
+      function bufToBase64(buf) {
+        const b = new Uint8Array(buf); let out = "";
+        for (let i = 0; i < b.length; i += 0x8000) out += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+        return btoa(out);
+      }
+      /* Fetches (once) the faces the book needs; resolves to the
+         families needed and the ones that could not be loaded. */
+      async function ensureScriptFonts(sections, lang, meta) {
+        const need = bookScripts(sections, lang, meta);
+        const failed = [];
+        for (const k of need) {
+          const sf = SCRIPT_FONTS[k];
+          try {
+            if (!scriptFontOfl[sf.dir]) {
+              const r = await fetch(new URL("assets/fonts/" + sf.dir + "/OFL.txt", document.baseURI).href, { credentials: "same-origin" });
+              const txt = r.ok ? await r.text() : "";
+              if (!/SIL OPEN FONT LICENSE Version 1\.1/i.test(txt)) throw new Error("licence " + (r.ok ? "unreadable" : "HTTP " + r.status));
+              scriptFontOfl[sf.dir] = txt;
+            }
+            for (const fc of sf.faces) {
+              const key = sf.dir + "/" + fc.file;
+              if (scriptFontData[key]) continue;
+              const res = await fetch(new URL("assets/fonts/" + key, document.baseURI).href, { credentials: "same-origin" });
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              const buf = await res.arrayBuffer();
+              if (window.crypto && crypto.subtle) {
+                const hex = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buf))).map((x) => x.toString(16).padStart(2, "0")).join("");
+                if (hex !== fc.sha256) throw new Error("sha256 mismatch for " + fc.file);
+              }
+              scriptFontData[key] = bufToBase64(buf);
+            }
+          } catch (e) { failed.push(sf.family); }
+        }
+        return { needed: need.map((k) => SCRIPT_FONTS[k].family), failed: failed };
+      }
+      /* The export tree shows what the package will hold: a book that
+         needs a script face fetches it in the background, once. */
+      const scriptFontTried = {};
+      function prefetchScriptFonts(after) {
+        const need = bookScripts(state.sections, state.meta.language, state.meta).filter((k) => !scriptFontTried[k]);
+        if (!need.length) return;
+        need.forEach((k) => { scriptFontTried[k] = true; });
+        const before = scriptFontsFor(state.sections, state.meta.language, state.meta).length;
+        ensureScriptFonts(state.sections, state.meta.language, state.meta).then(() => {
+          if (after && scriptFontsFor(state.sections, state.meta.language, state.meta).length > before) after();
+        }).catch(() => {});
+      }
+      /* A right-to-left book's own direction, on every document an
+         export writes (the preview's flow already carries it). */
+      const bookDirAttr = (code) => (isRtlLang(code) ? ' dir="rtl"' : "");
+      Object.assign(UI_STRINGS.en, { "sf.fetchFail": "The {list} book face could not be loaded, so this EPUB does not embed it — reading apps will use their own font for that script." });
+      Object.assign(UI_STRINGS.es, { "sf.fetchFail": "No se pudo cargar la fuente {list}, así que este EPUB no la incrusta: las aplicaciones de lectura usarán su propia fuente para esa escritura." });
+      Object.assign(UI_STRINGS.fr, { "sf.fetchFail": "La police {list} n’a pas pu être chargée : cet EPUB ne l’intègre donc pas, et les applications de lecture utiliseront leur propre police pour cette écriture." });
+      Object.assign(UI_STRINGS.de, { "sf.fetchFail": "Die Schriftart {list} konnte nicht geladen werden und ist daher nicht in dieses EPUB eingebettet – Lese-Apps setzen dieses Schriftsystem in ihrer eigenen Schriftart." });
+      Object.assign(UI_STRINGS.it, { "sf.fetchFail": "Non è stato possibile caricare il carattere {list}, quindi questo EPUB non lo incorpora: le app di lettura useranno il proprio carattere per quella scrittura." });
+      Object.assign(UI_STRINGS.pt, { "sf.fetchFail": "Não foi possível carregar a fonte {list}, por isso este EPUB não a incorpora — as aplicações de leitura usarão a sua própria fonte para essa escrita." });
+      Object.assign(UI_STRINGS.nl, { "sf.fetchFail": "Het lettertype {list} kon niet worden geladen, dus dit EPUB sluit het niet in — leesapps gebruiken voor dat schrift hun eigen lettertype." });
+      Object.assign(UI_STRINGS.pl, { "sf.fetchFail": "Nie udało się wczytać kroju {list}, więc ten EPUB go nie osadza — aplikacje do czytania użyją dla tego pisma własnej czcionki." });
+      Object.assign(UI_STRINGS.ru, { "sf.fetchFail": "Не удалось загрузить шрифт {list}, поэтому он не встроен в этот EPUB — приложения для чтения покажут эту письменность своим шрифтом." });
+      Object.assign(UI_STRINGS.tr, { "sf.fetchFail": "{list} yazı tipi yüklenemedi, bu yüzden bu EPUB onu gömmüyor — okuma uygulamaları bu yazı sistemi için kendi yazı tiplerini kullanacak." });
+      Object.assign(UI_STRINGS.ar, { "sf.fetchFail": "تعذّر تحميل الخط {list}، لذا لا يتضمّنه ملف EPUB هذا — ستعرض تطبيقات القراءة هذه الكتابة بخطها الخاص." });
+      Object.assign(UI_STRINGS.ja, { "sf.fetchFail": "書体 {list} を読み込めなかったため、この EPUB には埋め込まれていません。読書アプリはその文字を独自のフォントで表示します。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "sf.fetchFail": "未能加载字体 {list}，因此此 EPUB 未嵌入该字体——阅读应用将使用自己的字体显示这种文字。" });
+      /* ==== /BEUK:scriptfonts ==== */
       const registeredFontIds = {};
       function registerUploadedFont(f) {
         if (!f || registeredFontIds[f.id]) return Promise.resolve(false);
@@ -19139,6 +19275,20 @@
           S + ".vol-author { font-family: " + headFf + "; font-size: 1.02em; letter-spacing: 0.14em; text-transform: uppercase; text-indent: 0; margin-top: 1.2em; opacity: 0.85; }",
           S + ".vol-rule { margin: 1.4em auto 0 auto; width: 7.5em; max-width: 60%; }"
         ];
+        /* BEUK:scriptfonts — a right-to-left book (dir="rtl" on its
+           documents and preview): what the rules above set flush left
+           is set flush right, the editorial bar and the contents
+           indent move to the right edge. Left-to-right books get
+           exactly the CSS they always had. */
+        if (isRtlLang(bookLang())) {
+          if (!t.justify) css.push(root + " { text-align: right; }");
+          css.push(
+            S + ".ch-modern_stacked, " + S + ".ch-modern_stacked .chapter-title, " + S + ".ch-modern_stacked .chapter-subtitle, " +
+              S + ".ch-editorial_left, " + S + ".ch-editorial_left .chapter-title, " + S + ".ch-editorial_left .chapter-subtitle, " +
+              S + ".copyright p, " + S + ".inhead, " + S + ".part-body { text-align: right; }",
+            S + ".ch-editorial_left .chapter-number { border-left: 0; padding-left: 0; border-right: 0.22em solid currentColor; padding-right: 0.6em; }",
+            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }");
+        }
         return css.join("\n");
       }
 
@@ -28082,7 +28232,8 @@
           lines.push("    ├── Images/");
           imgEntries.forEach((e, i) => lines.push("    │   " + (i === imgEntries.length - 1 ? "└── " : "├── ") + e));
         }
-        const treeFonts = usedUploadedFonts();
+        const treeFonts = epubFonts(state.sections, state.meta.language, state.meta); /* BEUK:scriptfonts */
+        prefetchScriptFonts(refreshExportTree);
         if (treeFonts.length) {
           lines.push("    ├── Fonts/");
           treeFonts.forEach((f, i) => lines.push("    │   " + (i === treeFonts.length - 1 ? "└── " : "├── ") + fontFileName(f)));
@@ -28096,7 +28247,7 @@
       }
       function xhtmlDoc(title, bodyInner, epubType) {
         return '<?xml version="1.0" encoding="utf-8"?>\n' +
-          '<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + esc(state.meta.language) + '" xml:lang="' + esc(state.meta.language) + '">\n' +
+          '<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + esc(state.meta.language) + '" xml:lang="' + esc(state.meta.language) + '"' + bookDirAttr(state.meta.language) + '>\n' +
           "<head><title>" + esc(title) + '</title><link rel="stylesheet" type="text/css" href="../Styles/blitz.css"/></head>\n' +
           '<body' + (epubType ? ' epub:type="' + epubType + '"' : "") + ">\n" + bodyInner + "\n</body>\n</html>";
       }
@@ -28113,8 +28264,8 @@
         files.push({ path: "META-INF/container.xml", content:
           '<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>' });
         if (preset.appleOptions) files.push({ path: "META-INF/com.apple.ibooks.display-options.xml", content: APPLE_DISPLAY_OPTIONS });
-        const usedFonts = usedUploadedFonts();
-        files.push({ path: "OEBPS/Styles/blitz.css", content: buildBookCss("") + (usedFonts.length ? "\n" + fontFaceCss((f) => "../Fonts/" + fontFileName(f)) : "") });
+        const usedFonts = epubFonts(state.sections, m.language, m); /* BEUK:scriptfonts */
+        files.push({ path: "OEBPS/Styles/blitz.css", content: buildBookCss("") + (usedFonts.length ? "\n" + fontFaceCss((f) => "../Fonts/" + fontFileName(f), usedFonts) : "") });
         plan.forEach((p) => {
           if (p.plate) {
             files.push({ path: "OEBPS/" + p.file, content: xhtmlDoc("Plate — " + (p.section.title || "Chapter"), plateHtml(p.section, true, false, true), "") });
@@ -28186,7 +28337,7 @@
         const navLi = (e) => '  <li><a href="' + e.p.file + '">' + navLabel(e.p) + "</a>" +
           (e.children.length ? "\n<ol>\n" + e.children.map((c) => '  <li><a href="' + c.file + '">' + navLabel(c) + "</a></li>").join("\n") + "\n</ol>" : "") + "</li>";
         const nav =
-          '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + esc(m.language) + '">\n' +
+          '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + esc(m.language) + '"' + bookDirAttr(m.language) + '>\n' +
           "<head><title>Table of Contents</title></head>\n<body>\n" +
           '<nav epub:type="toc" id="toc"><h1>Contents</h1><ol>\n' +
           navTree.map(navLi).join("\n") +
@@ -28241,6 +28392,9 @@
       /* The EPUB blob builder, shared by the download and by the
          cloud archive upload — same generator, same bytes, both ways. */
       async function buildEpubBlob() {
+        /* BEUK:scriptfonts — the script faces the book needs, before the package is assembled */
+        const sf = await ensureScriptFonts(state.sections, state.meta.language, state.meta);
+        if (sf.failed.length) toast(t("sf.fetchFail", { list: sf.failed.join(", ") }), "alert-triangle");
         const files = epubFiles();
         const zip = new JSZip();
         files.forEach((f) => {
@@ -28349,7 +28503,7 @@
           "@media print { body { padding: 0; } }";
         const secs = state.sections.filter((s) => s.included)
           .map((s) => '<section class="book-section">\n' + sectionHtml(s, true, true) + "\n</section>").join("\n");
-        return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '">\n<head>\n<meta charset="utf-8"/>\n<meta name="viewport" content="width=device-width, initial-scale=1"/>\n<title>' +
+        return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n<meta name="viewport" content="width=device-width, initial-scale=1"/>\n<title>' +
           esc(m.title) + (m.author ? " — " + esc(m.author) : "") + "</title>\n<style>\n" + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
 
@@ -28636,7 +28790,7 @@
           target.html = target.html.replace(/<\/section>\s*$/, '<p class="lp-edition">' + esc(t("print.lpEdition")) + "</p>\n</section>");
         }
         const secs = pairs.map((p) => p.html).join("\n");
-        return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '">\n<head>\n<meta charset="utf-8"/>\n<title>' +
+        return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n<title>' +
           esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
       /* ==== BEUK:print ==== */
@@ -29461,8 +29615,8 @@
         files.push({ path: "META-INF/container.xml", content:
           '<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="OEBPS/package.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>' });
         if (preset.appleOptions) files.push({ path: "META-INF/com.apple.ibooks.display-options.xml", content: APPLE_DISPLAY_OPTIONS });
-        const bsUsedFonts = usedUploadedFonts();
-        files.push({ path: "OEBPS/Styles/blitz.css", content: buildBookCss("") + (bsUsedFonts.length ? "\n" + fontFaceCss((f) => "../Fonts/" + fontFileName(f)) : "") });
+        const bsUsedFonts = epubFonts(vols.reduce((a, v) => a.concat(v.sections || []), []), m.language, m); /* BEUK:scriptfonts */
+        files.push({ path: "OEBPS/Styles/blitz.css", content: buildBookCss("") + (bsUsedFonts.length ? "\n" + fontFaceCss((f) => "../Fonts/" + fontFileName(f), bsUsedFonts) : "") });
         plan.forEach((e) => files.push({ path: "OEBPS/" + e.file, content: renderBoxSetEntry(e) }));
         vols.forEach((vol, vi) => { if (vol.cover) files.push({ path: "OEBPS/Images/" + volumeCoverFileName(vi, vol.cover), content: vol.cover.data, binary: true }); });
         vols.forEach((vol) => packagedImagesFor(vol.sections, vol.images).forEach((img) => files.push({ path: "OEBPS/Images/" + imageFileName(img), content: img.data, binary: true })));
@@ -29515,7 +29669,7 @@
         files.push({ path: "OEBPS/package.opf", content: opf });
         const entriesFor = (vi) => plan.filter((e) => e.volIdx === vi && (e.kind === "titlepage" || e.kind === "section"));
         const nav =
-          '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + esc(m.language) + '">\n' +
+          '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + esc(m.language) + '"' + bookDirAttr(m.language) + '>\n' +
           "<head><title>Table of Contents</title></head>\n<body>\n" +
           '<nav epub:type="toc" id="toc"><h1>Contents</h1><ol>\n' +
           vols.map((vol, vi) => {
@@ -29553,6 +29707,8 @@
         const btn = $("btnBuildBoxSet");
         btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>Building…'; icons();
         try {
+          const sf = await ensureScriptFonts(boxSetVolumesAll().reduce((a, v) => a.concat(v.sections || []), []), state.meta.language, state.meta); /* BEUK:scriptfonts */
+          if (sf.failed.length) toast(t("sf.fetchFail", { list: sf.failed.join(", ") }), "alert-triangle");
           const files = boxSetFiles();
           const zip = new JSZip();
           files.forEach((f) => {
@@ -42321,6 +42477,111 @@
           } }
       );
       /* ==== /BEUK:bugs ==== */
+      /* ==== BEUK:scriptfonts ==== — the script faces, proved in this
+         browser: the preview sets Hindi and Arabic in them (loaded from
+         this origin), and an EPUB of a Hindi or Arabic book carries them. */
+      SELF_CHECKS_ASYNC.push(
+        { id: "fonts.script.preview-faces", feature: "fonts-themes", name: "Script faces in the live preview: a Hindi and an Arabic sample paragraph (and a Hindi chapter title) are set in Noto Serif Devanagari and Amiri, loaded from this origin's assets/fonts/, while Latin text keeps the book's chosen face",
+          async run() {
+            const HI = "बूढ़ा प्रकाशस्तंभ रक्षक हर सुबह पत्थर की सीढ़ियाँ चढ़ता और धूप में चमकते समुद्र को देखता था।";
+            const AR = "كان حارس المنارة العجوز يصعد كل صباح الدرجات الحجرية وينظر إلى البحر الذي يلمع تحت الشمس.";
+            const LATIN = "Hamburgefonstiv";
+            if (!document.getElementById("bookStyle")) { try { renderPreview(); } catch (e) {} }
+            const linked = !!document.querySelector('link[rel="stylesheet"][href$="assets/fonts/fonts-scripts.css"]');
+            const host = document.createElement("div");
+            host.className = "fc-page";
+            host.setAttribute("aria-hidden", "true");
+            host.style.cssText = "position:absolute;left:-10000px;top:0;width:32em;visibility:hidden;";
+            host.innerHTML = '<p class="first" lang="hi">' + HI + '</p><p lang="ar" dir="rtl">' + AR + "</p><p>" + LATIN + '</p><h2 class="chapter-title" lang="hi">' + HI + "</h2>";
+            document.body.appendChild(host);
+            const bad = []; const facts = [];
+            try {
+              const font = (cs, ff) => cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + " " + ff;
+              const width = (cs, ff, text) => {
+                const sp = document.createElement("span");
+                sp.style.cssText = "font:" + font(cs, ff) + ";white-space:nowrap;";
+                sp.textContent = text; host.appendChild(sp);
+                const w = sp.getBoundingClientRect().width; sp.remove(); return w;
+              };
+              /* the face is named in the element's stack, document.fonts
+                 resolves the text to it and loads it, and the stack sets
+                 a word exactly as the face alone does: it drew it */
+              const probe = async (el, text, family, label) => {
+                const cs = getComputedStyle(el);
+                if (cs.fontFamily.indexOf(family) === -1) { bad.push(label + ": " + family + " is not in the stack (" + cs.fontFamily + ")"); return; }
+                const faces = await document.fonts.load(font(cs, cs.fontFamily), text);
+                const face = faces.find((f) => f.family.replace(/["']/g, "") === family && f.status === "loaded");
+                if (!face) { bad.push(label + ": " + family + " did not load for the text"); return; }
+                const word = text.split(/\s+/)[0];
+                const a = width(cs, cs.fontFamily, word), b = width(cs, "'" + family + "'", word);
+                if (Math.abs(a - b) > 0.5) bad.push(label + ": the stack sets '" + word + "' at " + a.toFixed(1) + "px, " + family + " alone at " + b.toFixed(1) + "px");
+                else facts.push(label + " in " + family + " " + cs.fontWeight);
+              };
+              const ps = host.querySelectorAll("p, h2");
+              await probe(ps[0], HI, "Noto Serif Devanagari", "Hindi paragraph");
+              await probe(ps[1], AR, "Amiri", "Arabic paragraph");
+              await probe(ps[3], HI, "Noto Serif Devanagari", "Hindi chapter title");
+              /* Latin text keeps the book's own face */
+              const lcs = getComputedStyle(ps[2]);
+              const body = state.theme.bodyFont;
+              await document.fonts.load(font(lcs, lcs.fontFamily), LATIN);
+              const la = width(lcs, lcs.fontFamily, LATIN), lb = width(lcs, "'" + body + "'", LATIN);
+              if (lcs.fontFamily.indexOf(body) !== 0 && lcs.fontFamily.indexOf('"' + body + '"') !== 0) bad.push("the stack does not start with the body face " + body);
+              if (Math.abs(la - lb) > 0.5) bad.push("Latin text is not set in " + body + " (" + la.toFixed(1) + " vs " + lb.toFixed(1) + "px)");
+              const own = new URL("assets/fonts/", document.baseURI).href;
+              const fetched = performance.getEntriesByType("resource").map((e) => e.name);
+              ["notoserifdevanagari/", "amiri/"].forEach((d) => { if (!fetched.some((u) => u.indexOf(own + d) === 0)) bad.push("no file was loaded from " + own + d); });
+              if (!linked) bad.push("fonts-scripts.css is not linked by the studio");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : facts.join(", ") + "; Latin text stays in " + body + "; files from " + own);
+            } finally { host.remove(); }
+          } },
+        { id: "epub.fonts.script-embedded", feature: "epub", name: "Script faces in the EPUB: a Hindi book's package embeds Noto Serif Devanagari and an Arabic book's embeds Amiri (regular + bold TrueType, font/ttf in the manifest, sha256-checked, @font-face + OFL.txt in blitz.css) for the generic, KDP and Apple presets; the Arabic book's pages and nav carry dir=\"rtl\" with a right-to-left spine; the faces add no validator error; a Latin book embeds neither, a Hindi passage in it brings its face",
+          async run() {
+            const keep = Object.assign({}, state.meta);
+            const bad = []; const facts = [];
+            /* the open book's own validator errors (say, no author yet) are
+               its own; the check asks that the script faces add none */
+            const errIds = (files) => validateEpubPackage(files).results.filter((r) => r.level === "error").map((r) => r.id);
+            const baseErr = {};
+            ["generic", "kdp", "apple"].forEach((p) => { baseErr[p] = errIds(epubFiles(p)); });
+            try {
+              for (const [lang, sf, other] of [["hi", SCRIPT_FONTS.deva, SCRIPT_FONTS.arab], ["ar", SCRIPT_FONTS.arab, SCRIPT_FONTS.deva]]) {
+                state.meta.language = lang;
+                const got = await ensureScriptFonts(state.sections, lang, state.meta);
+                if (got.failed.length) { bad.push(lang + ": could not load " + got.failed.join(", ")); continue; }
+                for (const preset of ["generic", "kdp", "apple"]) {
+                  const files = epubFiles(preset);
+                  const opf = scText(files, "OEBPS/package.opf"), css = scText(files, "OEBPS/Styles/blitz.css");
+                  sf.faces.forEach((fc) => {
+                    const f = files.find((x) => x.path === "OEBPS/Fonts/" + fc.file);
+                    if (!f || !f.binary || f.content !== scriptFontData[sf.dir + "/" + fc.file]) bad.push(lang + "/" + preset + ": " + fc.file + " is not in the package");
+                    if (opf.indexOf('href="Fonts/' + fc.file + '" media-type="font/ttf"') === -1) bad.push(lang + "/" + preset + ": " + fc.file + " is not declared as font/ttf");
+                    if (css.indexOf('@font-face { font-family: "' + sf.family + '"; src: url("../Fonts/' + fc.file + '") format("truetype"); font-weight: ' + fc.weight + "; font-style: normal; }") === -1) bad.push(lang + "/" + preset + ": no @font-face for " + fc.file);
+                  });
+                  if (css.indexOf(sf.family + " is embedded under the SIL Open Font License 1.1") === -1 || !/SIL OPEN FONT LICENSE Version 1\.1/.test(css)) bad.push(lang + "/" + preset + ": the OFL text is not in blitz.css");
+                  if (files.some((x) => x.path === "OEBPS/Fonts/" + other.faces[0].file)) bad.push(lang + "/" + preset + ": embeds " + other.family + " too");
+                  const added = errIds(files).filter((id) => baseErr[preset].indexOf(id) === -1);
+                  if (added.length) bad.push(lang + "/" + preset + ": validator errors " + added.join(", "));
+                  const page = files.find((x) => /^OEBPS\/Text\/.+\.xhtml$/.test(x.path));
+                  const rtlPage = !!page && page.content.indexOf(' dir="rtl"') !== -1, rtlNav = scText(files, "OEBPS/nav.xhtml").indexOf(' dir="rtl"') !== -1;
+                  const rtlSpine = opf.indexOf('page-progression-direction="rtl"') !== -1;
+                  if (lang === "ar" && !(rtlPage && rtlNav && rtlSpine)) bad.push("ar/" + preset + ": dir=rtl page " + rtlPage + ", nav " + rtlNav + ", rtl spine " + rtlSpine);
+                  if (lang === "hi" && (rtlPage || rtlNav || rtlSpine)) bad.push("hi/" + preset + ": a left-to-right book got a right-to-left direction");
+                }
+                const kb = Math.round(sf.faces.reduce((a, fc) => a + Math.floor(scriptFontData[sf.dir + "/" + fc.file].length * 3 / 4), 0) / 1024);
+                facts.push(lang + ": " + sf.family + " " + sf.faces.map((fc) => fc.weight).join(" + ") + " (" + kb + " KB)");
+              }
+              /* detection: a Latin book needs neither; a Hindi passage in it brings Devanagari; a stray word does not */
+              const sec = (content) => [{ included: true, title: "One", subtitle: "", content: content }];
+              const none = bookScripts(sec("A plain English chapter, nothing else."), "en", { title: "A Book" });
+              const passage = bookScripts(sec("He read the inscription aloud: " + "बूढ़ा प्रकाशस्तंभ रक्षक हर सुबह पत्थर की सीढ़ियाँ चढ़ता था।"), "en", { title: "A Book" });
+              const stray = bookScripts(sec("The word नमस्ते, once."), "en", { title: "A Book" });
+              if (none.length || passage.join() !== "deva" || stray.length) bad.push("detection: Latin " + JSON.stringify(none) + ", Hindi passage " + JSON.stringify(passage) + ", one stray word " + JSON.stringify(stray));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : facts.join("; ") + " — generic, KDP and Apple packages add no validator error; the Arabic one is dir=rtl with an rtl spine; Latin-only books embed neither");
+            } finally { Object.assign(state.meta, keep); }
+          } }
+      );
+      /* ==== /BEUK:scriptfonts ==== */
       async function runAsyncSelfChecks() {
         const out = [];
         for (const c of SELF_CHECKS_ASYNC) {

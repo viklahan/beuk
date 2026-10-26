@@ -8,11 +8,15 @@ const dir = path.join(process.argv[2] || '.', 'client', 'assets', 'fonts');
 const rows = (await readFile(path.join(dir, 'MANIFEST.tsv'), 'utf8')).trim().split('\n').slice(1).map((l) => l.split('\t'));
 const fonts = rows.filter((r) => r[1].endsWith('.woff2'));
 const lic = rows.filter((r) => r[1].endsWith('OFL.txt'));
+const ttfs = rows.filter((r) => r[1].endsWith('.ttf'));
+const ttfTotal = ttfs.reduce((a, r) => a + Number(r[2]), 0);
 const families = [...new Set(fonts.map((r) => r[0]))].sort();
 const total = fonts.reduce((a, r) => a + Number(r[2]), 0);
 const kib = (n) => (n / 1024).toFixed(1) + ' KiB';
 const css = await readFile(path.join(dir, 'fonts.css'));
 const helpCss = await readFile(path.join(dir, 'fonts-help.css'));
+const scriptCss = await readFile(path.join(dir, 'fonts-scripts.css'));
+const scriptFamilies = [...new Set(ttfs.map((r) => r[0]))].sort();
 
 let md = `# Beuk web fonts (self-hosted)
 
@@ -26,7 +30,9 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
   (${helpCss.length} bytes) adds Literata 700 and italic 500, which only the help and
   warmth pages ever asked for — the studio keeps exactly its old Literata faces
   (400–600, italic 400), the same ones the print renderer installs, so the
-  preview still matches the PDF. A page downloads only the files whose family,
+  preview still matches the PDF. \`fonts-scripts.css\` (${scriptCss.length} bytes), linked by
+  the studio only, adds the book's script faces (${scriptFamilies.join(', ')}; see
+  *Script faces* below). A page downloads only the files whose family,
   weight, style and \`unicode-range\` it actually uses.
 - **Source:** the WOFF2 files are the bytes the Google Fonts CSS2 API serves
   (fonts.gstatic.com) for exactly the families, axes, weights and styles the
@@ -39,8 +45,9 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
   plus Lora's \`math\` and \`symbols\` (Lora has no \`greek\` subset; its basic
   Greek letters live in \`math\`). The studio page declares exactly the same
   @font-face set (family, style, weight, unicode-range) it got from Google
-  before. Arabic, Japanese and Chinese text uses system fonts, as before (no
-  family here covers those scripts).
+  before. Arabic-script and Devanagari text is set in the script faces below;
+  Hebrew, Japanese, Chinese and the other scripts no family here covers use
+  system fonts, as before.
 - **Licence:** every family is SIL Open Font License 1.1. Each family's
   \`OFL.txt\` sits beside its fonts; it is the file from the google/fonts
   repository at commit \`e7db6ca603fd4862010383ff17ffd6cc4ffac1c0\` (the same
@@ -48,6 +55,32 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
   at the same commit says \`license: "OFL"\`.
 - **Machine-readable:** \`MANIFEST.tsv\` (family, file, bytes, sha256, source URL).
   Regenerate this README with \`node tools/fonts/write-fonts-readme.mjs .\`.
+
+## Script faces (Arabic, Devanagari)
+
+Vendored by \`node tools/fonts/vendor-script-fonts.mjs .\` the same way, from the
+same sources, on 2026-10-26. A book's Latin text stays in the Latin face the
+writer chose; the font stacks name these faces right after it, so Arabic-script
+and Devanagari characters — a whole Hindi or Arabic book, or one passage in a
+Latin book — are set in them, with no choice to make.
+
+- **Web (live preview):** only each family's own script subset (Amiri:
+  \`arabic\`; Noto Serif Devanagari: \`devanagari\`), declared in
+  \`fonts-scripts.css\` with the \`unicode-range\` Google returned, so a book
+  with no such text never downloads them.
+- **EPUB:** ${ttfs.length} static TrueType files (${ttfTotal} bytes, ${kib(ttfTotal)}) —
+  each family's regular and bold — kept here so the studio can embed them in
+  an EPUB whose book needs them (TrueType, \`font/ttf\`: an EPUB 3 core media
+  type, and the format Beuk's uploaded fonts already ship in). They are the
+  same bytes, same sha256, as the print renderer installs
+  (deploy/renderer/fonts.lock), which also installs the other weights and
+  styles (Amiri italic 400/700, Noto Serif Devanagari 500/600).
+- **Emphasis:** Amiri has a true slanted style (italic 400 and 700). Devanagari
+  has no italic tradition and Noto Serif Devanagari has none: italic Hindi
+  text is slanted by the browser or reader; bold is a real bold.
+- **Licence:** SIL OFL 1.1, no Reserved Font Name (OFL.txt beside the files;
+  METADATA.pb at the pinned commit says \`license: "OFL"\`). An EPUB carries
+  each embedded family's OFL.txt as a comment in its stylesheet.
 
 ## Families
 
@@ -67,6 +100,6 @@ md += `
 | File | Bytes | sha256 | Source |
 |---|---|---|---|
 `;
-for (const r of fonts) md += `| \`${r[1]}\` | ${r[2]} | \`${r[3]}\` | ${r[4]} |\n`;
+for (const r of fonts.concat(ttfs)) md += `| \`${r[1]}\` | ${r[2]} | \`${r[3]}\` | ${r[4]} |\n`;
 await writeFile(path.join(dir, 'README.md'), md);
 console.log('README.md: ' + families.length + ' families, ' + fonts.length + ' files, ' + total + ' bytes');

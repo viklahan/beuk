@@ -18,7 +18,8 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 # The book's own typefaces: the static TrueType faces Google Fonts serves
 # for exactly the families/weights/styles the studio loads (twenty book
-# families, SIL OFL 1.1, each with its OFL.txt), every file checked
+# families plus the Arabic and Devanagari script faces, Amiri and Noto
+# Serif Devanagari; SIL OFL 1.1, each with its OFL.txt), every file checked
 # against its pinned sha256 in fonts.lock; then fontconfig's cache is
 # rebuilt so Chromium finds them by family name. Without them the print
 # interior fell back to DejaVu Serif. Static, not variable: Chromium
