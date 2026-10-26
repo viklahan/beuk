@@ -173,6 +173,8 @@ export function testConfig(overrides?: Partial<Config>): Config {
     // Backups: no schedule and no off-site target by default (both are
     // reported "not configured"); tests/offsite.test.ts sets them.
     backupIntervalHours: 0,
+    // Legal pages: every slot unset by default (the "being completed" notices).
+    legal: { operatorName: null, contactEmail: null, jurisdiction: null, postalAddress: null, hostingLocation: null, effectiveDate: null },
     offsite: {
       b2KeyId: null,
       b2ApplicationKey: null,
