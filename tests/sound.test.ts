@@ -43,19 +43,35 @@ test('sound credits: every shipped file is listed, exists, and matches its recor
 
 test('sound credits: each shipped file names a CC0 or public-domain source, its licence line and its edits', async () => {
   const { rows, credits } = await shippedRows();
+  const renderer = await readFile(path.join(here, '..', 'tools', 'sound', 'render_ambience.py'), 'utf8');
   for (const r of rows) {
     const start = credits.indexOf(`## ${r.file}`);
     assert.ok(start !== -1, `${r.file} has its own "## ${r.file}" section`);
     const next = credits.indexOf('\n## ', start + 4);
     const section = credits.slice(start, next === -1 ? undefined : next);
-    assert.match(section, /Source page: https:\/\/\S+/, `${r.file}: source page URL`);
-    assert.match(section, /Direct download: https:\/\/\S+/, `${r.file}: direct download URL`);
-    assert.match(section, /Licence: (CC0 1\.0|Public domain)/, `${r.file}: licence is CC0 or public domain`);
     assert.match(section, /Licence line seen: “[^”]{3,}”/, `${r.file}: the exact licence line quoted`);
-    assert.match(section, /Retrieved: 2026-10-25/, `${r.file}: retrieval date`);
-    assert.match(section, /Original sha256: `[0-9a-f]{64}`/, `${r.file}: sha256 of the original download`);
     assert.match(section, /Edits:/, `${r.file}: the edits made`);
     assert.doesNotMatch(section, /CC[- ]BY|Attribution 4\.0|royalty[- ]free/i, `${r.file}: no attribution-required or custom licence`);
+    /* A Public Domain Mark labels a work as already free of copyright; it is not the
+       creator's own waiver, so a recent recording under it cannot ship (round 6). */
+    assert.doesNotMatch(section, /Public Domain Mark/i, `${r.file}: not shipped under a Public Domain Mark`);
+    if (/^- Made for Beuk/m.test(section)) {
+      /* Our own offline render: CC0 by us, and the exact command that re-renders it. */
+      assert.match(section, /Licence: CC0 1\.0/, `${r.file}: our own render is released CC0 1.0`);
+      const scene = r.file.replace(/\.mp3$/, '');
+      const cmd = /Render: `python3 -I tools\/sound\/render_ambience\.py ([a-z]+) \S+ (\d+)`/.exec(section);
+      assert.ok(cmd, `${r.file}: the render command is recorded`);
+      assert.equal(cmd[1], scene, `${r.file}: rendered as its own scene`);
+      const seeds = /\{"rain": (\d+), "wind": (\d+)\}\[scene\]/.exec(renderer);
+      assert.ok(seeds, 'render_ambience.py declares its default seeds');
+      assert.equal(cmd[2], scene === 'rain' ? seeds[1] : seeds[2], `${r.file}: recorded seed is the script's default seed`);
+    } else {
+      assert.match(section, /Source page: https:\/\/\S+/, `${r.file}: source page URL`);
+      assert.match(section, /Direct download: https:\/\/\S+/, `${r.file}: direct download URL`);
+      assert.match(section, /Licence: (CC0 1\.0|Public domain)/, `${r.file}: licence is CC0 or public domain`);
+      assert.match(section, /Retrieved: 2026-10-2[56]/, `${r.file}: retrieval date`);
+      assert.match(section, /Original sha256: `[0-9a-f]{64}`/, `${r.file}: sha256 of the original download`);
+    }
   }
 });
 
@@ -88,7 +104,11 @@ test('sound files: both service-worker twins runtime-cache the recordings, never
   for (const p of ['sw.js', path.join('assets', 'sw.js')]) {
     const sw = await readFile(path.join(here, '..', 'client', p), 'utf8');
     assert.match(sw, /const BEUK_CACHE = "beuk-shell-v5";/, `${p}: shell cache at v5`);
-    assert.match(sw, /const BEUK_SOUND_CACHE = "beuk-sound-v1";/, `${p}: sound cache`);
+    /* v2: rain and wind were replaced under the same names (round 6); the cache is
+       cache-first, so the name had to move or returning writers keep the old files. */
+    assert.match(sw, /const BEUK_SOUND_CACHE = "beuk-sound-v2";/, `${p}: sound cache`);
+    assert.ok(!sw.includes('beuk-sound-v1'), `${p}: the old sound cache name is not kept anywhere`);
+    assert.match(sw, /\/\^beuk-sound-v\(\\d\+\)\$\/[\s\S]*parseInt\(s\[1\], 10\) < mySound/, `${p}: older beuk-sound-v<N> caches are retired`);
     const shell = /const BEUK_SHELL = \[([\s\S]*?)\];/.exec(sw);
     assert.ok(shell && !/sound/.test(shell[1]), `${p}: recordings are not in the precache list`);
     assert.match(sw, /k !== BEUK_CACHE && k !== BEUK_SOUND_CACHE/, `${p}: activate keeps the sound cache`);
