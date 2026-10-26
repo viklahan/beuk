@@ -2455,7 +2455,10 @@ The same Compose file runs locally — only `.env` differs.
   to it). `/index.html` and every other unknown path still fall back to
   the studio, so old links keep working. Books saved on a device are kept
   per origin, not per path, so they open at `/studio` unchanged. The
-  installed app starts at `/studio` (manifest `start_url`).
+  installed app still starts at the root (manifest `start_url`), because
+  the synced studio copy is also hosted where only `index.html` and
+  `assets/` exist; on beuk.studio the root sends a writer who has
+  written straight to `/studio`.
 - **Service worker v7.** Both copies cache the studio from `/`,
   `/index.html` or `/studio`, but never a response marked as the landing
   page. `/site/*`, `/robots.txt` and `/sitemap.xml` go straight to the
