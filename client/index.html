@@ -17690,19 +17690,81 @@
           ? '<p class="hist-orn">❦</p>'
           : "<p>" + esc(p.replace(/\s*\n\s*/g, " ")) + "</p>").join("");
       }
+      /* ==== BEUK:goalshist ==== what changed since each snapshot,
+         against the book as it stands now — computed on this device
+         from the snapshot's own stored copy; nothing new is stored.
+         Sections are matched by their id: one only in the book now
+         was added since, one only in the snapshot is no longer in the
+         book, one in both whose text or count moved has changed. Each
+         side is counted by the same rule (snapshotSectionWords), the
+         snapshot against its own meta and the book now against
+         today's. */
+      function histDeltaText(snapWords, nowWords, keys) {
+        const d = Math.round(nowWords) - Math.round(snapWords);
+        const k = keys || { up: "history.deltaUp", down: "history.deltaDown", same: "history.deltaSame" };
+        if (d > 0) return t(k.up, { n: fmtNum(d), count: d });
+        if (d < 0) return t(k.down, { n: fmtNum(-d), count: -d });
+        return t(k.same);
+      }
+      function histLiveDoc() { return { meta: state.meta, sections: state.sections }; }
+      function histSectionText(s) { return [s.title, s.subtitle, s.number, s.content].map((v) => String(v == null ? "" : v)).join("\u0001"); }
+      function histSectionDiff(snapDoc, liveDoc) {
+        const out = { added: [], removed: [], changed: [] };
+        const before = new Map(), after = new Map();
+        snapDoc.sections.forEach((s) => before.set(s.id, s));
+        liveDoc.sections.forEach((s) => after.set(s.id, s));
+        liveDoc.sections.forEach((s) => {
+          const was = before.get(s.id);
+          const wNow = snapshotSectionWords(liveDoc, s);
+          if (!was) { out.added.push({ id: s.id, name: snapshotSectionName(s), before: 0, after: wNow, delta: wNow }); return; }
+          const wWas = snapshotSectionWords(snapDoc, was);
+          if (wWas !== wNow || histSectionText(was) !== histSectionText(s)) out.changed.push({ id: s.id, name: snapshotSectionName(s), before: wWas, after: wNow, delta: wNow - wWas });
+        });
+        snapDoc.sections.forEach((s) => {
+          if (after.has(s.id)) return;
+          const wWas = snapshotSectionWords(snapDoc, s);
+          out.removed.push({ id: s.id, name: snapshotSectionName(s), before: wWas, after: 0, delta: -wWas });
+        });
+        return out;
+      }
+      function histDiffHtml(snap) {
+        const diff = histSectionDiff(snap.doc, histLiveDoc());
+        const all = diff.added.concat(diff.removed, diff.changed);
+        let html = '<div class="hist-diff" id="histDiff"><h3 class="hist-diff-h">' + esc(t("history.diffH")) + "</h3>" +
+          '<p class="hist-diff-sub">' + esc(t("history.diffSub")) + "</p>";
+        if (!all.length) return html + '<p class="hist-diff-none">' + esc(t("history.diffNone")) + "</p></div>";
+        const maxAbs = Math.max(1, Math.max.apply(null, all.map((r) => Math.abs(r.delta))));
+        const row = (r, kind) => {
+          const n = kind === "changed" && r.delta === 0 ? t("history.diffReworded") :
+            histDeltaText(0, r.delta, { up: "history.dUp", down: "history.dDown", same: "history.diffReworded" });
+          const pct = (Math.abs(r.delta) / maxAbs * 100).toFixed(1);
+          const bar = '<span class="hist-diff-bar" aria-hidden="true"><span>' + (r.delta < 0 ? '<i class="down" style="width:' + pct + '%"></i>' : "") +
+            "</span><span>" + (r.delta > 0 ? '<i class="up" style="width:' + pct + '%"></i>' : "") + "</span></span>";
+          const title = kind === "changed" && r.delta !== 0 ? ' title="' + esc(fmtNum(r.before) + " → " + fmtNum(r.after)) + '"' : "";
+          return '<div class="hist-diff-row" data-hdiff="' + kind + '" data-hdiff-id="' + esc(r.id) + '"><span class="hist-diff-name" dir="auto">' + esc(r.name) + '</span><span class="hist-diff-n"' + title + ">" + esc(n) + "</span>" + bar + "</div>";
+        };
+        [["added", "history.diffAdded"], ["removed", "history.diffRemoved"], ["changed", "history.diffChanged"]].forEach(([kind, key]) => {
+          if (!diff[kind].length) return;
+          html += '<div class="hist-diff-lab">' + esc(t(key)) + "</div>" + diff[kind].map((r) => row(r, kind)).join("");
+        });
+        return html + "</div>";
+      }
+      if (typeof window !== "undefined") window.beukHistDiff = { delta: histDeltaText, sections: histSectionDiff };
+      /* ==== /BEUK:goalshist ==== */
       function renderHistory() {
         const listEl = $("historyList"), detEl = $("historyDetail");
         if (!listEl || !detEl) return;
         const snaps = state.history || [];
         const snap = histViewId ? snaps.find((s) => s.id === histViewId) : null;
         if (histViewId && !snap) { histViewId = null; histPeekId = null; }
+        const nowWords = bookWordTotal(); /* BEUK:goalshist */
         if (!snap) {
           detEl.style.display = "none"; detEl.innerHTML = "";
           listEl.style.display = "";
           listEl.innerHTML = snaps.length ? snaps.map((s) =>
             '<div class="hist-row"><button type="button" class="hist-main" data-hopen="' + esc(s.id) + '">' +
             '<span class="hist-name">' + esc(snapshotLabel(s)) + (s.auto ? ' <span class="hist-auto">' + esc(t("history.autoTag")) + "</span>" : "") + "</span>" +
-            '<span class="hist-meta">' + esc(snapshotWhen(s)) + " · " + esc(histWordCount(s.words)) + "</span></button>" +
+            '<span class="hist-meta">' + esc(snapshotWhen(s)) + " · " + esc(histWordCount(s.words)) + '<span class="hist-delta" data-hdelta="' + esc(s.id) + '" title="' + esc(t("history.deltaTitle")) + '">' + esc(histDeltaText(s.words, nowWords)) + "</span></span></button>" + /* BEUK:goalshist — the change against the book now */
             '<button type="button" class="tb-btn hist-del" data-hdel="' + esc(s.id) + '">' + esc(t("history.delete")) + "</button></div>"
           ).join("") : '<p class="ins-none">' + esc(t("history.empty")) + "</p>";
         } else {
@@ -17713,6 +17775,7 @@
             '<p class="ins-caption">' + esc(snapshotWhen(snap)) + " · " + esc(histWordCount(snap.words)) + " · " + esc(t("history.sections", { n: snap.doc.sections.length })) + "</p>" +
             '<div class="hist-restore-row"><button type="button" class="tb-btn" data-hrestore="' + esc(snap.id) + '">' + esc(t("history.restoreAll")) + '</button>' +
             '<button type="button" class="linkish" data-hdel="' + esc(snap.id) + '">' + esc(t("history.delete")) + "</button></div>";
+          html += histDiffHtml(snap); /* BEUK:goalshist — which sections differ from the book now */
           snap.doc.sections.forEach((s) => {
             html += '<div class="hist-sec-row"><span class="hist-sec-main"><span class="hist-sec-name">' + esc(snapshotSectionName(s)) + '</span>' +
               '<span class="hist-sec-meta">' + esc(histWordCount(snapshotSectionWords(snap.doc, s))) + '</span></span>' +
