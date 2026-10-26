@@ -34,7 +34,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}/.."
 
-usage() { sed -n '11,22p' "${BASH_SOURCE[0]}" | sed 's/^#  //'; exit 2; }
+usage() { sed -n '11,21p' "${BASH_SOURCE[0]}" | sed 's/^#  //'; exit 2; }
 [ $# -ge 2 ] || usage
 EMAIL="$1"; ACTION="$2"; shift 2
 
