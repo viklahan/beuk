@@ -133,6 +133,14 @@
 	handle /roadmap {
 		reverse_proxy app:3000
 	}
+	# The legal pages (src/legal/render.ts): their operator details
+	# come from the LEGAL_* settings in .env.
+	handle /privacy* {
+		reverse_proxy app:3000
+	}
+	handle /terms* {
+		reverse_proxy app:3000
+	}
 	# P0 #5: the "choose a new password" page reset emails link to
 	# (/reset?token=…). Served by the app; never cached.
 	handle /reset* {

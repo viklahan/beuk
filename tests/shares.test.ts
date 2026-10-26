@@ -304,7 +304,9 @@ test('XSS: a hostile manuscript renders inert on the reader page', async () => {
   assert.equal(/<[a-z][^>]*\son[a-z]+\s*=/i.test(page.html), false);
   assert.equal(/(href|src)\s*=\s*["']?\s*javascript:/i.test(page.html), false);
   assert.equal(/<svg/i.test(page.html), false);
-  assert.equal(/<a [^>]*href="(?!#|\/read\/|\/help\/)/i.test(page.html), false);
+  // Links: only the reader's own chrome — chapter anchors, /read/ pages,
+  // /help/, and the footer's exact /privacy and /terms (legal pages).
+  assert.equal(/<a [^>]*href="(?!#|\/read\/|\/help\/|\/privacy"|\/terms")/i.test(page.html), false);
   // The text is still there, escaped, for the reader to see.
   assert.match(page.html, /&lt;script&gt;alert\(3\)&lt;\/script&gt;/);
   // SVG / non-image "pictures" never ship.

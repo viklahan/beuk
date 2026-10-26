@@ -80,6 +80,14 @@ services:
       SUPPORT_REPLY_PROMISE: ${SUPPORT_REPLY_PROMISE:-}
       KOFI_URL: ${KOFI_URL:-}
       APP_VERSION: ${APP_VERSION:-}
+      # Legal pages (/privacy, /terms): operator details. Empty → the
+      # page shows a visible "being completed" notice, never a guess.
+      LEGAL_OPERATOR_NAME: ${LEGAL_OPERATOR_NAME:-}
+      LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
+      LEGAL_POSTAL_ADDRESS: ${LEGAL_POSTAL_ADDRESS:-}
+      LEGAL_JURISDICTION: ${LEGAL_JURISDICTION:-}
+      LEGAL_HOSTING_LOCATION: ${LEGAL_HOSTING_LOCATION:-}
+      LEGAL_EFFECTIVE_DATE: ${LEGAL_EFFECTIVE_DATE:-}
       # M5 jobs: EPUBCheck + Ghostscript tool paths. Unset → jobs are
       # accepted and complete as FAILED "not configured" (a result is
       # never faked). The stock image does NOT contain the JRE,

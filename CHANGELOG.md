@@ -4,6 +4,20 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — What Beuk keeps, in plain words
+
+- **A privacy page and the terms.** `/privacy` says what Beuk keeps,
+  where, for how long, who else sees any of it (including that the
+  typefaces load from Google Fonts), and what you can do about it.
+  `/terms` sets out the ground rules: your writing stays yours, the
+  studio is free, keep your own copies. Both were written from what
+  the software actually does, and both say plainly what isn't there
+  yet, such as a button to delete your account (for now, you ask by
+  email). Until the operator's details are filled in, the pages say
+  that part is still being completed rather than guessing. Linked from
+  Help, the thank-you page, reading copies and the studio's sign-in
+  dialog.
+
 ## 2026-10-25 — Help you can search, and codes that lead somewhere
 
 - **Search the help shelf, or paste the message.** For writers who were

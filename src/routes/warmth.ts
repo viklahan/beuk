@@ -11,6 +11,7 @@ import {
   repoRoot,
 } from '../warmth/pages.js';
 import { renderMarkdown } from '../warmth/markdown.js';
+import { renderLegalPage } from '../legal/render.js';
 
 /**
  * M4 warmth pages, served by the app (Caddy proxies these paths to it —
@@ -26,6 +27,9 @@ import { renderMarkdown } from '../warmth/markdown.js';
  *   GET /changelog               rendered from CHANGELOG.md (repo root)
  *   GET /roadmap                 rendered from docs/roadmap.md — the same
  *                                source Housekeeping's Reference serves
+ *   GET /privacy, GET /terms     the legal pages, from content/legal/
+ *                                (src/legal/render.ts; operator details
+ *                                from the LEGAL_* settings)
  *
  * Everything else under the site root remains Caddy's static mount.
  */
@@ -99,6 +103,16 @@ export function warmthRoutes(config: Config): Router {
       const body = renderMarkdown(doc.content);
       const html = pageChrome(config, doc.title, body);
       return res.type('html').send(html);
+    } catch (err) {
+      return next(err as Error);
+    }
+  });
+
+  router.get(['/privacy', '/privacy/', '/terms', '/terms/'], async (req, res, next) => {
+    try {
+      const page = req.path.startsWith('/privacy') ? 'privacy' : 'terms';
+      const html = await renderLegalPage(page, config);
+      return res.type('html').set('Cache-Control', 'no-cache').send(html);
     } catch (err) {
       return next(err as Error);
     }
