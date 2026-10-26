@@ -27,6 +27,11 @@ to make well.
 - **Counts, not tracking.** The server keeps one number a day for sign-ups, sign-ins, first saves, exports, EPUBCheck runs, share links, and writers who came back after a week. No cookies, no addresses, nothing about who.
 - The studio offers this update ("A new Beuk is ready").
 
+**Hindi and Arabic, set properly**
+- Hindi and Arabic books are now set in real book faces, Noto Serif Devanagari and Amiri (free, open-licensed, served from beuk.studio), in the preview, the print PDF and the EPUB, instead of whatever font the reader's device has.
+- There is nothing to choose: your Latin faces stay, and Devanagari and Arabic letters, a whole book or one passage, switch to the script face by themselves.
+- Arabic (and Persian, Hebrew, Urdu) books now read right to left in every export, and their headings and contents follow the book's side.
+
 ## 2026-10-26 — A front door
 
 - **beuk.studio opens on the landing page.** It says what Beuk is, with

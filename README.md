@@ -2584,6 +2584,15 @@ The server scrubs again and caps the body at 4 KB. It rate-limits per IP (10, th
 
 New tables (migration 015) are excluded from backups, with reasons: `client_errors`, `usage_daily` and `ops_alerts`.
 
+## Hindi and Arabic book faces (Devanagari, Arabic)
+
+- **Faces.** Arabic: **Amiri** (a Naskh book face; real bold and italic), for body and headings. Devanagari: **Noto Serif Devanagari** (real weights 400–700, one variable WOFF2 on the web). Both SIL OFL 1.1, no Reserved Font Name; `OFL.txt` from google/fonts at the pinned commit beside the files; provenance and sha256 in `client/assets/fonts/MANIFEST.tsv` and `deploy/renderer/fonts.lock`; vendored with `tools/fonts/vendor-script-fonts.mjs`.
+- **Nothing to choose.** The studio's serif and sans stacks now read *Latin face → Noto Serif Devanagari → Amiri → fallbacks*. Latin text keeps the face the writer chose; Devanagari and Arabic letters fall to the script face, whether the whole book or one passage. The web files (`fonts-scripts.css`, studio only) load only when that script is on screen (unicode-range).
+- **Print.** The renderer installs the same faces (rebuild the renderer image to pick them up).
+- **EPUB.** A book whose language is hi/mr/ne/sa or ar/fa/ur, or whose text holds at least 20 letters of the script, embeds the regular and bold TrueType (font/ttf, with the family's OFL text in the CSS), bound with the same unicode-range as the preview so Latin text never switches face. Cost: about +454 KB (Hindi) or +737 KB (Arabic) per EPUB before compression; there is no subsetter yet, which matters for KDP's per-MB delivery fee at the 70% royalty.
+- **Right to left.** Arabic, Persian, Hebrew and Urdu books now carry `dir="rtl"` in their EPUB pages and nav, the print HTML, the standalone HTML and the Print Interior View; flush-left headers and contents indents follow the book's side.
+- **Limits.** Kindle may substitute its own fonts unless the reader turns on Publisher Font (not tested on a store reader). Devanagari has no italic: italic Hindi is slanted by the browser. A sans book's Hindi or Arabic text is set in these serif faces. Hebrew has no face yet. Self-checks: `fonts.script.preview-faces`, `epub.fonts.script-embedded`.
+
 ## The static client mount point
 
 `client/` is bind-mounted into Caddy at `/srv/client`; `/api/*` is
