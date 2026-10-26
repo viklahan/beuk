@@ -189,6 +189,12 @@ test('self-checks: a healthy system passes, client-only cases are reported (neve
       assert.ok((result?.detail ?? '').length > 10, `${id} must carry a one-line reason`);
     }
 
+    // BEUK:tour — the first-run quick tour's checks are client-only too.
+    for (const id of ['tour.fresh-device-only', 'tour.never-over-dialog-or-zen', 'tour.targets-visible', 'tour.skip-ends-for-good', 'tour.no-overflow-rtl-phone']) {
+      assert.equal(byId.get(id)?.status, 'client-only', id);
+      assert.ok((byId.get(id)?.detail ?? '').length > 10, `${id} must carry a one-line reason`);
+    }
+
     // The run is stored and listed under the build stamp.
     const runs = await admin.get('/api/housekeeping/self-checks/runs');
     const listed = runs.body.runs as { id: string; build_stamp: string; overall: string }[];
