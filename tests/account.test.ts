@@ -23,8 +23,10 @@ class RecordingMailer implements Mailer {
   async verify() {
     return { ok: true, detail: 'recording mailer (test)' };
   }
+  /** The password-reset mails to `email` (the sign-up confirmation the
+   *  accounts portal sends is tested in tests/account-portal.test.ts). */
   to(email: string): MailMessage[] {
-    return this.sent.filter((m) => m.to === email);
+    return this.sent.filter((m) => m.to === email && m.subject === 'Reset your Beuk password');
   }
 }
 
@@ -382,6 +384,8 @@ test('email not configured: forgot says so (same for every address); the link on
   const s = await startTestServer(noMailDb, undefined, { mailLogLinks: true }, undefined, { mailer: consoleMailer });
   try {
     await registerUser(new Client(s.base), 'local@example.com');
+    await s.settle();
+    logged.splice(0); // the sign-up confirmation (accounts portal) is not this test's subject
     const known = await new Client(s.base).post('/api/auth/forgot', { email: 'local@example.com' });
     const unknown = await new Client(s.base).post('/api/auth/forgot', { email: 'ghost@example.com' });
     await s.settle();
@@ -430,6 +434,8 @@ test('mailer: real SMTP hand-off through nodemailer (stub server), and an honest
     const s = await startTestServer(smtpDb, undefined, { smtpUrl: cfg.smtpUrl, mailFrom: cfg.mailFrom }, undefined, { mailer: m });
     try {
       await registerUser(new Client(s.base), 'smtp-user@example.com');
+      await s.settle();
+      smtp.messages.splice(0); // the sign-up confirmation (accounts portal) is not this test's subject
       const res = await new Client(s.base).post('/api/auth/forgot', { email: 'smtp-user@example.com' });
       assert.equal(res.body.emailDelivery, 'email');
       await s.settle();

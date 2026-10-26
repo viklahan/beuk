@@ -9,6 +9,7 @@ import {
 import { createMailer, type Mailer } from './mailer.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes } from './routes/auth.js';
+import { accountPortalRoutes, signupConfirmationHook, type PortalLimits } from './routes/account-portal.js';
 import { billingRoutes } from './routes/billing.js';
 import { cspReportRoutes, type CspReportOptions } from './routes/csp-report.js';
 import { exportRoutes } from './routes/exports.js';
@@ -43,6 +44,8 @@ export interface AppDeps {
   cspReport?: CspReportOptions;
   /** H2: per-IP limit for help search (tests tighten it). */
   helpSearchLimits?: HelpSearchLimits;
+  /** Accounts portal: rate limits for /api/account (tests tighten them). */
+  portalLimits?: PortalLimits;
 }
 
 export function buildApp({
@@ -55,6 +58,7 @@ export function buildApp({
   accountLimits,
   cspReport,
   helpSearchLimits,
+  portalLimits,
 }: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
@@ -93,7 +97,11 @@ export function buildApp({
 
   app.get('/api', (_req, res) => res.json({ name: 'beuk-api', milestone: 'M5' }));
 
-  app.use('/api/auth', authRoutes(db, config));
+  const billingProvider = billing ?? new StripeBillingProvider(config);
+  // Accounts portal (/account + /api/account): the sign-up hook sends the
+  // email confirmation after the register response.
+  const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });
+  app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks }) }));
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
   app.use('/api/manuscripts', manuscriptRoutes(db));
@@ -101,7 +109,7 @@ export function buildApp({
   app.use('/api/exports', exportRoutes(db, config));
   app.use(
     '/api/billing',
-    billingRoutes(db, config, billing ?? new StripeBillingProvider(config), now),
+    billingRoutes(db, config, billingProvider, now),
   );
   const hk = createHousekeepingContext(config, housekeeping);
   // Scheduled local backups + off-site copies + restore drill; the
@@ -137,6 +145,8 @@ export function buildApp({
   // Beta-reader share links: owner surface (signed in).
   app.use('/api/shares', shareOwnerRoutes(db, now));
 
+  app.use('/api/account', portal.api);
+
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
 
   // Beta-reader share links: the public read-only reader (no account).
@@ -151,6 +161,8 @@ export function buildApp({
   app.use(siteRoutes(config));
   // P0 #5: the "choose a new password" page the reset email links to.
   app.use(resetPageRoutes(config));
+  // Accounts portal pages: /account, /account/confirm, /account/deleted.
+  app.use(portal.pages);
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     // body-parser marks an over-limit body; say so instead of a bare 500

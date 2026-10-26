@@ -176,6 +176,9 @@ test('self-checks: a healthy system passes, client-only cases are reported (neve
       'jobs.pdfx.icc-profile-matches-def',
       'jobs.pdfx.converts-through-press-profile',
       'jobs.pdfx.neutral-text-black-plate',
+      'account.confirm.tokens-hashed-single-use',
+      'account.delete.covers-every-owned-table',
+      'account.portal.page-in-deploy-tree',
     ]) {
       assert.equal(byId.get(id)?.status, 'pass', `${id}: ${byId.get(id)?.detail}`);
     }

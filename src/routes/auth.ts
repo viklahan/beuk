@@ -23,7 +23,13 @@ interface UserRow {
 /** Postgres unique_violation. */
 const UNIQUE_VIOLATION = '23505';
 
-export function authRoutes(db: Db, config: Config): Router {
+export interface AuthHooks {
+  /** Accounts portal: runs after a successful sign-up (sends the email
+   *  confirmation after the response); its fields join the 201 body. */
+  afterRegister?: (user: { id: string; email: string }) => Record<string, unknown> | void;
+}
+
+export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}): Router {
   const router = Router();
   // Warm the dummy hash so the first unknown-email login isn't the one
   // request that also pays for computing it.
@@ -66,7 +72,8 @@ export function authRoutes(db: Db, config: Config): Router {
       await initStreakState(db, user.id);
       const session = await createSession(db, user.id, config.sessionTtlDays);
       setSessionCookie(res, session.token, session.expiresAt, config.cookieSecure);
-      return res.status(201).json({ user: { id: user.id, email: user.email } });
+      const extra = hooks.afterRegister?.({ id: user.id, email: user.email }) ?? {};
+      return res.status(201).json({ ...extra, user: { id: user.id, email: user.email } });
     } catch (err) {
       return next(err);
     }

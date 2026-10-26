@@ -56,6 +56,8 @@ export const BACKUP_TABLES = [
 export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
   password_resets:
     'live credentials (single-use reset tokens); restore deletes every row so no pre-restore reset link keeps working',
+  email_confirmations:
+    'live credentials (single-use email-confirmation links); restore deletes the users they belong to (on delete cascade), so no pre-restore link keeps working',
   housekeeping_audit: 'append-only evidence; a restore must not rewrite history',
   housekeeping_check_runs: 'append-only evidence; a restore must not rewrite history',
   housekeeping_signoffs: 'append-only evidence; a restore must not rewrite history',

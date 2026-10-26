@@ -33,6 +33,8 @@ import { StripeBillingProvider } from '../billing.js';
 import { loadEntitlements } from '../entitlements.js';
 import { renderSnapshot } from '../shares/render.js';
 import { sanitizeHtml } from '../shares/sanitize.js';
+import { ACCOUNT_DELETED_TABLES, ACCOUNT_DETACHED_TABLES } from '../account/data.js';
+import { CONFIRM_TOKEN_TTL_HOURS } from '../account/confirm.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -414,6 +416,67 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The sign-in dialog and the account area are studio UI; the endpoints they call are covered by the server tests.',
   },
+
+  /* ==== BEUK:portal ==== the account page (/account) */
+  {
+    id: 'account.confirm.tokens-hashed-single-use',
+    title: 'Email-confirmation links: stored hashed, single-use column present, none live past their 48 hours',
+    kind: 'server',
+    run: async ({ db }) => {
+      const cols = await db.query<{ column_name: string }>(
+        `select column_name from information_schema.columns where table_name = 'email_confirmations'`,
+      );
+      const names = new Set(cols.rows.map((r) => r.column_name));
+      for (const c of ['token_hash', 'expires_at', 'used_at']) {
+        assert(names.has(c), `email_confirmations has no ${c} column`);
+      }
+      assert(!names.has('token'), 'email_confirmations stores a plaintext token column');
+      const live = await db.query<{ n: number }>(
+        `select count(*)::int as n from email_confirmations
+         where used_at is null and expires_at > now() + make_interval(hours => $1, mins => 1)`,
+        [CONFIRM_TOKEN_TTL_HOURS],
+      );
+      assert(Number(live.rows[0]?.n ?? 0) === 0, `a live confirmation link expires more than ${CONFIRM_TOKEN_TTL_HOURS} hours out`);
+      return `token_hash / expires_at / used_at present, no plaintext token column, no live link expires past ${CONFIRM_TOKEN_TTL_HOURS} hours`;
+    },
+  },
+  {
+    id: 'account.delete.covers-every-owned-table',
+    title: 'Delete my account: every table that references users is either deleted or deliberately detached',
+    kind: 'server',
+    run: async ({ db }) => {
+      const r = await db.query<{ table_name: string }>(
+        `select distinct tc.table_name
+         from information_schema.table_constraints tc
+         join information_schema.constraint_column_usage ccu
+           on ccu.constraint_name = tc.constraint_name and ccu.table_schema = tc.table_schema
+         where tc.constraint_type = 'FOREIGN KEY' and tc.table_schema = 'public' and ccu.table_name = 'users'
+         order by tc.table_name`,
+      );
+      const referencing = r.rows.map((row) => row.table_name);
+      assert(referencing.length > 0, 'no foreign keys to users were found — the check cannot see the schema');
+      const handled = new Set<string>([...ACCOUNT_DELETED_TABLES, ...Object.keys(ACCOUNT_DETACHED_TABLES)]);
+      const missed = referencing.filter((t) => !handled.has(t));
+      assert(!missed.length, `account deletion does not handle: ${missed.join(', ')}`);
+      return `${referencing.length} tables reference users; all are deleted or detached by account deletion (${referencing.join(', ')})`;
+    },
+  },
+  {
+    id: 'account.portal.page-in-deploy-tree',
+    title: 'Deploy tree carries the account page assets (/account/account.js, /account/account.css)',
+    kind: 'server',
+    run: async () => {
+      const js = await readFile(path.join(clientDir(), 'account', 'account.js'), 'utf8').catch(() => null);
+      const css = await readFile(path.join(clientDir(), 'account', 'account.css'), 'utf8').catch(() => null);
+      assert(js !== null, 'client/account/account.js is missing — the account page forms would not work');
+      assert(css !== null, 'client/account/account.css is missing — the account page would be unstyled');
+      for (const p of ['/api/account/delete', '/api/account/email', '/api/auth/password', '/api/auth/sessions/revoke-all']) {
+        assert(js.includes(p), `client/account/account.js does not call ${p}`);
+      }
+      return 'client/account/account.js + account.css readable; the forms call the account, password and sign-out-everywhere endpoints';
+    },
+  },
+  /* ==== /BEUK:portal ==== */
 
   /* ==== BEUK:billing ==== */
   {

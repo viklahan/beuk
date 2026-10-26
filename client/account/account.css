@@ -1,0 +1,114 @@
+/* The account page (/account) — "your typesetting portal". Sits on top
+   of client/help/warmth.css (the Paper palette and chrome); only what
+   the portal adds lives here. Plain CSS, no build step. */
+
+[hidden] { display: none !important; }
+
+.portal .kicker {
+  margin: 0.6rem 0 0;
+  color: var(--ink-soft);
+  font-style: italic;
+  font-size: 1rem;
+}
+.portal h1 { margin-top: 0.15em; }
+
+.portal-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fffdf4;
+  padding: 0.4rem 1.25rem 1rem;
+  margin: 1.2rem 0;
+}
+.portal-card h2 { margin: 0.7em 0 0.4em; font-size: 1.3rem; }
+.portal-card.danger { border-color: #d9b8b0; }
+
+.muted { color: var(--ink-soft); }
+.small { font-size: 0.95rem; }
+.ok-line { color: #2e6b45; }
+
+.note-line {
+  border-left: 3px solid var(--amber);
+  background: var(--paper-deep);
+  padding: 0.35rem 1rem;
+  margin: 0.8rem 0;
+  border-radius: 0 6px 6px 0;
+}
+.note-line p { margin: 0.4em 0; }
+
+.portal-list { list-style: none; padding: 0; margin: 0.5rem 0; }
+.portal-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding: 0.6rem 0;
+}
+.portal-list li:first-child { border-top: none; }
+.item-title { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.item-meta { display: block; color: var(--ink-soft); font-size: 0.95rem; }
+.item-link { font-size: 1rem; white-space: nowrap; }
+
+.portal-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.2rem 0; }
+.portal-button,
+.portal-form button {
+  display: inline-block;
+  font: inherit;
+  font-size: 1rem;
+  background: var(--amber);
+  color: #f4fbfa;
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  padding: 0.45rem 1.2rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.portal-button:hover,
+.portal-form button:hover { background: #0d4a5f; }
+.portal-button.quiet { background: transparent; color: var(--amber); }
+.portal-button.quiet:hover { background: var(--amber-soft); }
+.portal-form button.danger-button { background: #8b2f22; border-color: #8b2f22; }
+.portal-form button.danger-button:hover { background: #6e2318; }
+.portal-form button[disabled] { opacity: 0.6; cursor: wait; }
+
+.linkish {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--amber);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.portal-more { margin: 0.8rem 0; }
+.portal-more summary { cursor: pointer; color: var(--amber); }
+.portal-form { display: grid; gap: 0.8rem; max-width: 26rem; margin: 0.8rem 0; }
+.portal-form label { display: grid; gap: 0.25rem; font-size: 1rem; color: var(--ink-soft); }
+.portal-form input {
+  font: inherit;
+  font-size: 1.05rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--ink);
+  width: 100%;
+}
+.portal-form button { justify-self: start; }
+
+.portal-msg {
+  border-left: 3px solid var(--amber);
+  background: #fffdf8;
+  padding: 0.6rem 1.1rem;
+  position: sticky;
+  top: 0.5rem;
+  z-index: 2;
+}
+.portal-msg.bad { border-left-color: #b91c1c; }
+
+@media (max-width: 520px) {
+  .portal-card { padding: 0.3rem 1rem 0.9rem; }
+  .portal-list li { flex-direction: column; }
+}
