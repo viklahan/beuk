@@ -1470,6 +1470,10 @@
       .linkish { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 12.5px; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-family: inherit; }
       /* ==== BEUK:auth ==== */
       .auth-forgot-row { margin-top: 6px; }
+      /* ==== BEUK:legal ==== */
+      .legal-line { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+      .legal-line a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+      /* ==== /BEUK:legal ==== */
       .auth-note { display: none; font-size: 12.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent, var(--line)); border-radius: 8px; padding: 9px 11px; line-height: 1.45; margin-top: 12px; }
       .acct-box { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
       .acct-box > summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
@@ -2318,6 +2322,9 @@
           <p class="cover-note" data-i18n="about.offlineLine">Beuk keeps your book on this device first: writing and saving never wait on a connection. When you are signed in, anything written offline waits quietly and syncs to your shelf the moment the connection returns.</p>
           <p class="cover-note" id="installHint" data-i18n="about.installHint">To keep Beuk a tap away, add it to your home screen from your browser's menu — it installs as an app and opens offline.</p>
           <button class="tb-btn" id="btnInstall" type="button" style="display:none;"><i data-lucide="download"></i><span data-i18n="pwa.install">Install Beuk</span></button>
+          <!-- ==== BEUK:legal ==== shown only when this studio has its server (openSettings) -->
+          <p class="cover-note legal-line" id="legalLinksSettings" hidden><span data-i18n="legal.settingsLine">How Beuk handles your data, and the ground rules:</span> <a href="/privacy" target="_blank" rel="noopener" data-i18n="legal.privacy">Privacy</a> · <a href="/terms" target="_blank" rel="noopener" data-i18n="legal.terms">Terms</a></p>
+          <!-- ==== /BEUK:legal ==== -->
           <p class="cover-note" id="installedLine" style="display:none;" data-i18n="pwa.installed">Beuk is installed on this device — it opens like an app of its own, online or off.</p>
         </div>
         <div class="modal-actions">
@@ -2975,6 +2982,9 @@
         <div class="auth-note" id="authNote" role="status"></div>
         <!-- ==== /BEUK:auth ==== -->
         <div class="auth-err" id="authError" role="alert"></div>
+        <!-- ==== BEUK:legal ==== the shelf's privacy page and terms -->
+        <p class="legal-line" id="authLegal"><span data-i18n="legal.authLine">How your account and books are looked after:</span> <a href="/privacy" target="_blank" rel="noopener" data-i18n="legal.privacy">Privacy</a> · <a href="/terms" target="_blank" rel="noopener" data-i18n="legal.terms">Terms</a></p>
+        <!-- ==== /BEUK:legal ==== -->
         <div class="modal-actions" style="justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <button class="linkish" id="authToggle" type="button">New here? Create your shelf</button>
           <div style="display:flex; gap:9px;">
@@ -6034,6 +6044,24 @@
       };
       Object.keys(SHELFGUARD_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], SHELFGUARD_STRINGS[code]); });
       /* ==== /BEUK:shelfguard ==== */
+      /* ==== BEUK:legal ==== — the links to /privacy and /terms, all 13 packs */
+      const LEGAL_STRINGS = {
+        "en": { "legal.authLine": "How your account and books are looked after:", "legal.settingsLine": "How Beuk handles your data, and the ground rules:", "legal.privacy": "Privacy", "legal.terms": "Terms" },
+        "es": { "legal.authLine": "Cómo se cuidan tu cuenta y tus libros:", "legal.settingsLine": "Cómo trata Beuk tus datos, y las reglas básicas:", "legal.privacy": "Privacidad", "legal.terms": "Condiciones" },
+        "fr": { "legal.authLine": "Comment votre compte et vos livres sont gardés :", "legal.settingsLine": "Comment Beuk traite vos données, et les règles du jeu :", "legal.privacy": "Confidentialité", "legal.terms": "Conditions" },
+        "de": { "legal.authLine": "Wie mit Ihrem Konto und Ihren Büchern umgegangen wird:", "legal.settingsLine": "Wie Beuk mit Ihren Daten umgeht, und die Grundregeln:", "legal.privacy": "Datenschutz", "legal.terms": "Nutzungsbedingungen" },
+        "it": { "legal.authLine": "Come vengono custoditi il tuo account e i tuoi libri:", "legal.settingsLine": "Come Beuk tratta i tuoi dati, e le regole di base:", "legal.privacy": "Privacy", "legal.terms": "Termini" },
+        "pt": { "legal.authLine": "Como a sua conta e os seus livros são guardados:", "legal.settingsLine": "Como o Beuk trata os seus dados, e as regras básicas:", "legal.privacy": "Privacidade", "legal.terms": "Termos" },
+        "nl": { "legal.authLine": "Hoe er met uw account en uw boeken wordt omgegaan:", "legal.settingsLine": "Hoe Beuk met uw gegevens omgaat, en de spelregels:", "legal.privacy": "Privacy", "legal.terms": "Voorwaarden" },
+        "pl": { "legal.authLine": "Jak dbamy o twoje konto i twoje książki:", "legal.settingsLine": "Jak Beuk obchodzi się z twoimi danymi i podstawowe zasady:", "legal.privacy": "Prywatność", "legal.terms": "Warunki" },
+        "ru": { "legal.authLine": "Как хранятся ваш аккаунт и ваши книги:", "legal.settingsLine": "Как Beuk обращается с вашими данными, и основные правила:", "legal.privacy": "Конфиденциальность", "legal.terms": "Условия" },
+        "tr": { "legal.authLine": "Hesabınıza ve kitaplarınıza nasıl bakılıyor:", "legal.settingsLine": "Beuk verilerinizi nasıl işliyor ve temel kurallar:", "legal.privacy": "Gizlilik", "legal.terms": "Koşullar" },
+        "ar": { "legal.authLine": "كيف نعتني بحسابك وكتبك:", "legal.settingsLine": "كيف يتعامل Beuk مع بياناتك، والقواعد الأساسية:", "legal.privacy": "الخصوصية", "legal.terms": "الشروط" },
+        "ja": { "legal.authLine": "アカウントと本の扱いについて：", "legal.settingsLine": "Beuk でのデータの扱いと、基本のルール：", "legal.privacy": "プライバシー", "legal.terms": "利用規約" },
+        "zh-Hans": { "legal.authLine": "你的账户和书稿如何被妥善保管：", "legal.settingsLine": "Beuk 如何处理你的数据，以及基本规则：", "legal.privacy": "隐私", "legal.terms": "条款" }
+      };
+      Object.keys(LEGAL_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], LEGAL_STRINGS[code]); });
+      /* ==== /BEUK:legal ==== */
       /* Supplementary keys (sync status, settings language hints,
          shelf confirms) — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {
@@ -20968,6 +20996,9 @@
         $("setA11ySummary").placeholder = a11ySummaryDefault();
         refreshLangHint();
         renderCoverSettings();
+        /* ==== BEUK:legal ==== the legal pages live on the studio's server: no server, no links to pages that aren't there */
+        try { const ll = $("legalLinksSettings"); if (ll) ll.hidden = !cloud.available; } catch (e) { /* cloud not ready yet: leave hidden */ }
+        /* ==== /BEUK:legal ==== */
         $("modalSettings").classList.add("open");
       }
       function initSettings() {
