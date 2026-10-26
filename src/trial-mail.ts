@@ -17,6 +17,9 @@ import { escapeHtml as esc } from './warmth/markdown.js';
  * mail server does not accept it, the claim is released, so a later tick
  * tries again; a delivered message is never sent twice. Accounts that
  * already have a plan (active, trialing or past_due in grace) get nothing.
+ * The tick pages through the whole window (by account id), so
+ * accounts it passes over, such as ones that subscribed during their
+ * trial, never crowd out the ones still waiting for their email.
  *
  * Self-contained on purpose (plain text + a small HTML body): the email
  * layout helper being built in parallel can take it over later.
@@ -28,6 +31,9 @@ export interface TrialReminderDeps {
   billing: BillingProvider;
   mailer: Mailer;
   now: () => Date;
+  /** Accounts read per page of the reminder window (default 200; tests
+   *  set it small to prove paging). */
+  batchSize?: number;
 }
 
 export interface TrialTickResult {
@@ -91,34 +97,44 @@ export class TrialReminders {
     const { db, config } = this.deps;
     const now = this.deps.now();
     const until = new Date(now.getTime() + config.trialReminderDays * DAY_MS);
-    const due = await db.query<{ id: string; email: string }>(
-      `select id, email from users
-       where trial_reminder_sent_at is null
-         and coalesce(trial_ends_at, created_at + make_interval(days => $3::int)) > $1
-         and coalesce(trial_ends_at, created_at + make_interval(days => $3::int)) <= $2
-       order by created_at limit ${BATCH}`,
-      [now, until, config.trialDays],
-    );
+    const batch = Math.max(1, Math.floor(this.deps.batchSize ?? BATCH));
     let sent = 0;
     let failed = 0;
-    for (const u of due.rows) {
-      const access = await accountAccess(this.deps, u.id);
-      if (!access || access.state !== 'trial') continue; // a plan already, or not in a trial
-      const claim = await db.query<{ id: string }>(
-        'update users set trial_reminder_sent_at = $2 where id = $1 and trial_reminder_sent_at is null returning id',
-        [u.id, now],
+    // Keyset cursor over the account id (exact, unlike a JS Date of a
+    // microsecond timestamp): every account in the window is looked at
+    // once per tick, however many of them are passed over.
+    let after: string | null = null;
+    for (;;) {
+      const due: { rows: Array<{ id: string; email: string }> } = await db.query<{ id: string; email: string }>(
+        `select id, email from users
+         where trial_reminder_sent_at is null
+           and coalesce(trial_ends_at, created_at + make_interval(days => $3::int)) > $1
+           and coalesce(trial_ends_at, created_at + make_interval(days => $3::int)) <= $2
+           and ($4::uuid is null or id > $4::uuid)
+         order by id limit ${batch}`,
+        [now, until, config.trialDays, after],
       );
-      if (!claim.rows.length) continue;
-      const result = await this.deps.mailer.send(trialEndingMessage(config, u.email, access.trial.endsAt));
-      if (result.delivered) {
-        sent++;
-        continue;
+      for (const u of due.rows) {
+        const access = await accountAccess(this.deps, u.id);
+        if (!access || access.state !== 'trial') continue; // a plan already, or not in a trial
+        const claim = await db.query<{ id: string }>(
+          'update users set trial_reminder_sent_at = $2 where id = $1 and trial_reminder_sent_at is null returning id',
+          [u.id, now],
+        );
+        if (!claim.rows.length) continue;
+        const result = await this.deps.mailer.send(trialEndingMessage(config, u.email, access.trial.endsAt));
+        if (result.delivered) {
+          sent++;
+          continue;
+        }
+        failed++;
+        await db.query('update users set trial_reminder_sent_at = null where id = $1', [u.id]);
+        // The mail server is refusing: stop here and try again next tick.
+        console.warn(`trial reminder not sent: ${result.reason}`);
+        return { ran: true, skipped: null, sent, failed };
       }
-      failed++;
-      await db.query('update users set trial_reminder_sent_at = null where id = $1', [u.id]);
-      // The mail server is refusing: stop here and try again next tick.
-      console.warn(`trial reminder not sent: ${result.reason}`);
-      break;
+      if (due.rows.length < batch) break;
+      after = due.rows[due.rows.length - 1].id;
     }
     return { ran: true, skipped: null, sent, failed };
   }

@@ -4,12 +4,13 @@ import { after, before, test } from 'node:test';
 import { buildApp } from '../src/app.js';
 import { ACCESS_RULES, decideAccess, NEVER_PAUSED, trialFor } from '../src/access.js';
 import { cancelBillingForDeletedAccount } from '../src/account/plan.js';
-import type { BillingProvider } from '../src/billing.js';
+import { StripeBillingProvider, type BillingProvider } from '../src/billing.js';
 import type { Config } from '../src/config.js';
 import type { Db } from '../src/db.js';
 import { decideEntitlements, type EntitlementState } from '../src/entitlements.js';
 import type { MailMessage, MailResult, Mailer, MailerStatus } from '../src/mailer.js';
-import type { TrialReminders } from '../src/trial-mail.js';
+import { readZip } from '../src/housekeeping/packages.js';
+import { TrialReminders } from '../src/trial-mail.js';
 import { Client, createTestDb, registerUser, testConfig } from './helpers.js';
 
 /*
@@ -573,6 +574,61 @@ test('trial-ending email: once per account, 3 days before, only with email + bil
   } finally {
     clock = saved;
   }
+});
+
+test('trial-ending email: accounts passed over (a plan already) never crowd out ones still in their trial — the tick pages through the window', async () => {
+  await db.query('update users set trial_reminder_sent_at = now()');
+  // Small pages, so three subscribed accounts fill more than one page.
+  const paging = new TrialReminders({
+    db,
+    config: on.config,
+    billing: new StripeBillingProvider(on.config),
+    mailer,
+    now,
+    batchSize: 2,
+  });
+  // Fixed ids, so the subscribed accounts come first in id order and the
+  // waiting one last (sign-up would draw random ids).
+  const insert = async (id: string, label: string, endsInDays: number): Promise<string> => {
+    const email = `${label}-${++seq}@example.com`;
+    await db.query("insert into users (id, email, password_hash, trial_ends_at) values ($1, $2, 'x', $3)", [
+      id,
+      email,
+      new Date(clock.getTime() + endsInDays * DAY),
+    ]);
+    return email;
+  };
+  const subscribed: string[] = [];
+  for (let i = 1; i <= 3; i++) {
+    const id = `0000000${i}-0000-4000-8000-000000000000`;
+    subscribed.push(await insert(id, `pagesub${i}`, 1));
+    await addSub(id, `sub_page_${i}`, 'trialing');
+  }
+  const waiting = { email: await insert('ffffffff-ffff-4fff-bfff-ffffffffffff', 'pagewait', 2) };
+  const before = mailer.sent.length;
+  const out = await paging.tick();
+  assert.equal(out.sent, 1, JSON.stringify(out));
+  const fresh = mailer.sent.slice(before);
+  assert.deepEqual(fresh.map((m) => m.to), [waiting.email]);
+  for (const e of subscribed) assert.ok(!fresh.some((m) => m.to === e), 'a plan already: no email');
+  assert.equal((await paging.tick()).sent, 0, 'once means once');
+});
+
+test('Download all my data carries the stored trial fields even while billing is off', async () => {
+  const w = await writer(off.base, 'exporttrial');
+  const ends = new Date('2026-11-17T12:00:00.000Z');
+  const sentAt = new Date('2026-11-14T12:00:00.000Z');
+  await db.query('update users set trial_ends_at = $2, trial_reminder_sent_at = $3 where id = $1', [w.id, ends, sentAt]);
+  const res = await w.c.download('/api/account/export');
+  assert.equal(res.status, 200);
+  const account = JSON.parse(readZip(res.bytes).find((e) => e.name === 'account.json')!.data.toString('utf8'));
+  assert.equal(account.plan.trialEndsAt, ends.toISOString());
+  assert.equal(account.plan.trialReminderSentAt, sentAt.toISOString());
+
+  await db.query('update users set trial_reminder_sent_at = null where id = $1', [w.id]);
+  const again = await w.c.download('/api/account/export');
+  const account2 = JSON.parse(readZip(again.bytes).find((e) => e.name === 'account.json')!.data.toString('utf8'));
+  assert.equal(account2.plan.trialReminderSentAt, null, 'null = not sent');
 });
 
 /* ---------------- Plan section copy ---------------- */

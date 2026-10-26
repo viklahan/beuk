@@ -359,6 +359,15 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       const overview = await accountOverview(db, config, user.id, now());
       if (!overview) return res.status(401).json({ error: 'not signed in' });
       const plan = await accountPlan({ db, config, billing, now }, { id: user.id, createdAt: overview.user.createdAt });
+      // The stored trial fields, as kept, whatever the billing state
+      // (plan.trial is null while billing is off, but the row still exists).
+      const trialRow = (
+        await db.query<{ trial_ends_at: Date | string | null; trial_reminder_sent_at: Date | string | null }>(
+          'select trial_ends_at, trial_reminder_sent_at from users where id = $1',
+          [user.id],
+        )
+      ).rows[0];
+      const iso = (v: Date | string | null | undefined): string | null => (v ? new Date(v).toISOString() : null);
       const exportedAt = now().toISOString();
       const day = exportedAt.slice(0, 10);
       res.setHeader('Content-Type', 'application/zip');
@@ -379,7 +388,8 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
             renewsAt: plan.subscription.renewsAt,
             cancelAtPeriodEnd: plan.subscription.cancelAtPeriodEnd,
             access: plan.access,
-            trialEndsAt: plan.trial?.endsAt ?? null,
+            trialEndsAt: iso(trialRow?.trial_ends_at),
+            trialReminderSentAt: iso(trialRow?.trial_reminder_sent_at),
           },
         };
         const { counts, missingFiles } = await writeAccountExport(db, config, user.id, now(), zip, account);
