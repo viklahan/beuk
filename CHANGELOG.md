@@ -16,8 +16,12 @@ to make well.
 - **History says what changed.** Every snapshot shows how the book has
   moved since — "+1,240 words since", "−310 words since" or "same length
   as now" — and opening one lists the sections added since, the ones no
-  longer in the book, and the ones that changed, with their word counts.
-  All counted on your device from the snapshot you already have.
+  longer in the book, the ones you left out of the book (or brought back)
+  with the sidebar eye, and the ones that changed, with their word
+  counts. A chapter left out of the book counts for nothing, the same as
+  in the word total, so the list always adds up to the change shown on
+  the snapshot. All counted on your device from the snapshot you already
+  have.
 
 ## 2026-10-26 — Your address stays with us
 

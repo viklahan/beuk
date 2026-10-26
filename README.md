@@ -1430,11 +1430,16 @@ its change against the book as it stands now — "+1,240 words since",
 "−310 words since" or "same length as now" (snapshot `words` vs
 `bookWordTotal()`, plural per language). A snapshot's detail opens with
 **Since this snapshot**: sections matched by id, grouped as *Added
-since*, *No longer in the book* and *Changed* (word count moved, or the
-text changed at the same length — "same length, reworded"), each with
-its signed word change and a small centred bar. Both sides are counted
-by the same rule (`snapshotSectionWords`, the snapshot against its own
-meta); the section deltas sum to the book's change. Computed on the
+since*, *No longer in the book*, *Left out of the book since* /
+*Brought into the book since* (the sidebar eye flipped) and *Changed*
+(word count moved, or the text changed at the same length — "same
+length, edited"), each with its signed word change and a small centred
+bar. Both sides are counted by the same rule as the chip and
+`bookWordTotal()`: `snapshotSectionWords` (the snapshot against its own
+meta), with a section left out of the book counting for nothing. A
+section edited or added while left out is listed as "left out of the
+book, not counted". So the section deltas always sum to the chip's
+change. Computed on the
 device from the stored snapshot; nothing new is stored. Automatic
 snapshot labels are unchanged.
 
