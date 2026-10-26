@@ -1790,6 +1790,31 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'History snapshots live in the in-browser book (state.history); restore runs in the client.',
   },
+  /* ---- round-7 goals & history (BEUK:goalshist) ---- */
+  {
+    id: 'goals.road.only-logged-days',
+    title: 'The road so far draws a point only for a day the log kept: a fixture log with gaps gives exactly its logged days, breaks the line at every gap, and hides below two logged days',
+    kind: 'client-only',
+    reason: "The writing log (with the book length per logged day) lives in this browser's localStorage and the chart is drawn in the studio; asserted by window.runBeukSelfChecks().",
+  },
+  {
+    id: 'goals.road.pace-line',
+    title: "The road so far draws the target as a level line and, with a deadline ahead, the steady pace from today's length to the target on the deadline at (target - today) / days left; none past the deadline or once met",
+    kind: 'client-only',
+    reason: 'Goals ride the in-browser book and the chart geometry is computed in the studio; asserted by window.runBeukSelfChecks().',
+  },
+  {
+    id: 'history.delta.words',
+    title: "Each snapshot shows its change against the book now (+N words / -N words / same length) with each language's plural form",
+    kind: 'client-only',
+    reason: 'History snapshots live in the in-browser book (state.history); the comparison is computed and rendered in the client.',
+  },
+  {
+    id: 'history.delta.sections',
+    title: "A snapshot's detail lists the sections added since, no longer in the book, and changed by word count (or reworded), matched by section id; the deltas sum to the book's change",
+    kind: 'client-only',
+    reason: 'History snapshots live in the in-browser book (state.history); the section comparison is computed and rendered in the client.',
+  },
   /* ---- round-6 bugs (BEUK:bugs) ---- */
   {
     id: 'history.restore.empty-desk-no-prune',
