@@ -1911,7 +1911,7 @@
           </div>
           <!-- ==== /BEUK:importreport ==== -->
           <div class="sample-bar">
-            <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story (25,000 words)</button>
+            <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story</button><!-- BEUK:bugs — the real count is filled in by renderSampleButton -->
             <p class="sample-note" id="sampleNote">A complete novella, The Lantern Coast, at real book scale. Load puts it on the desk in a snap; Remove clears the desk completely, back to empty.</p>
           </div>
           <div id="matterLib"></div>
@@ -3498,10 +3498,40 @@
         } catch (e) { return null; }
       }
       function getUiLang() { return uiLangState; }
+      /* ==== BEUK:bugs ==== — CLDR plurals, opt-in. A call that passes
+         {count: <number>} chooses its form by the UI language's own
+         plural rules (Intl.PluralRules — https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/PluralRules):
+         first a language-specific extra form from UI_PLURAL_FORMS
+         (Polish "many", Russian "few", Arabic "few"…), then the base
+         key for "one", then the key's "Plural" twin. Extra forms live
+         outside UI_STRINGS so every pack keeps the same keys. Calls
+         without {count} keep the old {n} !== 1 rule unchanged. */
+      const UI_PLURAL_FORMS = {};
+      const uiPluralRulesCache = {};
+      function uiPluralCategory(n) {
+        try {
+          const loc = uiLangState || "en";
+          if (!uiPluralRulesCache[loc]) uiPluralRulesCache[loc] = new Intl.PluralRules(loc);
+          return uiPluralRulesCache[loc].select(n);
+        } catch (e) { return n === 1 ? "one" : "other"; }
+      }
+      function tCountForm(pack, lang, key, n) {
+        const cat = uiPluralCategory(n);
+        const extra = UI_PLURAL_FORMS[lang] && UI_PLURAL_FORMS[lang][key];
+        if (extra && extra[cat] != null) return extra[cat];
+        if (cat === "one") return pack[key] != null ? pack[key] : null;
+        if (pack[key + "Plural"] != null) return pack[key + "Plural"];
+        return pack[key] != null ? pack[key] : null;
+      }
+      /* ==== /BEUK:bugs ==== */
       function t(key, params) {
         const pack = UI_STRINGS[uiLangState] || UI_STRINGS.en;
         let s = null;
-        if (params && typeof params.n === "number" && params.n !== 1 && pack[key + "Plural"] != null) s = pack[key + "Plural"];
+        if (params && typeof params.count === "number") { /* BEUK:bugs */
+          s = tCountForm(pack, UI_STRINGS[uiLangState] ? uiLangState : "en", key, params.count);
+          if (s == null) s = params.count !== 1 && UI_STRINGS.en[key + "Plural"] != null ? UI_STRINGS.en[key + "Plural"] : UI_STRINGS.en[key];
+        }
+        else if (params && typeof params.n === "number" && params.n !== 1 && pack[key + "Plural"] != null) s = pack[key + "Plural"];
         else if (pack[key] != null) s = pack[key];
         else if (params && typeof params.n === "number" && params.n !== 1 && UI_STRINGS.en[key + "Plural"] != null) s = UI_STRINGS.en[key + "Plural"];
         else s = UI_STRINGS.en[key];
@@ -3553,6 +3583,11 @@
         if (typeof renderSideStatusSummary === "function") renderSideStatusSummary(); /* BEUK:sidebar */
         if (typeof updateStats === "function" && $("statWords")) updateStats();
         if (typeof renderSampleButton === "function" && $("btnSampleStory")) renderSampleButton();
+        /* BEUK:bugs — the account button (Sign in / its title) and the
+           preview desk (total, basis, per-section pages, rail label)
+           are drawn by their own renderers: redraw them too. */
+        if (typeof renderAccountButton === "function" && $("btnAccount")) renderAccountButton();
+        if (typeof renderDesk === "function" && $("deskRail") && $("deskTotal") && $("deskTotal").textContent) renderDesk(); /* only once it has been measured and drawn */
         if (typeof syncEditor === "function" && state.sections && state.sections.length) syncEditor();
         if (typeof renderPreview === "function" && state.sections && state.sections.length) renderPreview();
         if (typeof icons === "function") icons();
@@ -6697,43 +6732,43 @@
 
       /* Zen mode, Content-page word counts and cover photos — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {
-        "top.zen": "Zen", "zen.exit": "Exit Zen", "editor.countSection": "{n} words in this section", "editor.countBook": "{n} words in the book", "covermk.layout.free": "Free", "covermk.bgPhoto": "Photos", "covermk.photoFind": "Find Photos", "covermk.photoPh": "Search photos — try words from your title", "covermk.photoNeedAccount": "Stock photos come with an account — sign in and search photos for your cover.", "covermk.photoNotConfigured": "Stock photos aren't set up on this shelf yet.", "covermk.photoRetry": "Stock photos couldn't be reached just now — please try again.", "covermk.photoNone": "No photos matched — try fewer or different words.", "covermk.photoFail": "That photo couldn't be loaded — try another one.", "covermk.photoBy": "Photo by {name} on Pexels", "covermk.photoByOpenverse": "Photo by {name} via Openverse", "covermk.duoScene": "Duotone is showing the built-in harbour scene — upload art or pick a picture from your library to duotone your own.", "covermk.photoUse": "Photo set as the cover background", "covermk.posH": "Position — across", "covermk.posV": "Position — down", "covermk.dragHint": "Drag any text block on the cover to place it exactly where you want it.", "covermk.resetPos": "Reset positions"
+        "top.zen": "Zen", "zen.exit": "Exit Zen", "editor.countSection": "{n} word in this section", "editor.countSectionPlural": "{n} words in this section", "editor.countBook": "{n} word in the book", "editor.countBookPlural": "{n} words in the book", "covermk.layout.free": "Free", "covermk.bgPhoto": "Photos", "covermk.photoFind": "Find Photos", "covermk.photoPh": "Search photos — try words from your title", "covermk.photoNeedAccount": "Stock photos come with an account — sign in and search photos for your cover.", "covermk.photoNotConfigured": "Stock photos aren't set up on this shelf yet.", "covermk.photoRetry": "Stock photos couldn't be reached just now — please try again.", "covermk.photoNone": "No photos matched — try fewer or different words.", "covermk.photoFail": "That photo couldn't be loaded — try another one.", "covermk.photoBy": "Photo by {name} on Pexels", "covermk.photoByOpenverse": "Photo by {name} via Openverse", "covermk.duoScene": "Duotone is showing the built-in harbour scene — upload art or pick a picture from your library to duotone your own.", "covermk.photoUse": "Photo set as the cover background", "covermk.posH": "Position — across", "covermk.posV": "Position — down", "covermk.dragHint": "Drag any text block on the cover to place it exactly where you want it.", "covermk.resetPos": "Reset positions"
       });
       Object.assign(UI_STRINGS.es, {
-        "top.zen": "Zen", "zen.exit": "Salir de Zen", "editor.countSection": "{n} palabras en esta sección", "editor.countBook": "{n} palabras en el libro", "covermk.layout.free": "Libre", "covermk.bgPhoto": "Fotos", "covermk.photoFind": "Buscar fotos", "covermk.photoPh": "Busca fotos: prueba palabras de tu título", "covermk.photoNeedAccount": "Las fotos de archivo vienen con una cuenta — inicia sesión y busca fotos para tu portada.", "covermk.photoNotConfigured": "Las fotos de archivo aún no están configuradas en esta estantería.", "covermk.photoRetry": "No se pudo contactar con las fotos de archivo — inténtalo de nuevo.", "covermk.photoNone": "Sin resultados: prueba con menos palabras.", "covermk.photoFail": "Esa foto no se pudo cargar — prueba con otra.", "covermk.photoBy": "Foto de {name} en Pexels", "covermk.photoByOpenverse": "Foto de {name} en Openverse", "covermk.duoScene": "El duotono muestra la escena del puerto incluida — sube tu arte o elige una imagen de tu biblioteca para aplicar el duotono a la tuya.", "covermk.photoUse": "Foto aplicada como fondo de portada", "covermk.posH": "Posición — horizontal", "covermk.posV": "Posición — vertical", "covermk.dragHint": "Arrastra cualquier bloque de texto sobre la portada para colocarlo donde quieras.", "covermk.resetPos": "Restablecer posiciones"
+        "top.zen": "Zen", "zen.exit": "Salir de Zen", "editor.countSection": "{n} palabra en esta sección", "editor.countSectionPlural": "{n} palabras en esta sección", "editor.countBook": "{n} palabra en el libro", "editor.countBookPlural": "{n} palabras en el libro", "covermk.layout.free": "Libre", "covermk.bgPhoto": "Fotos", "covermk.photoFind": "Buscar fotos", "covermk.photoPh": "Busca fotos: prueba palabras de tu título", "covermk.photoNeedAccount": "Las fotos de archivo vienen con una cuenta — inicia sesión y busca fotos para tu portada.", "covermk.photoNotConfigured": "Las fotos de archivo aún no están configuradas en esta estantería.", "covermk.photoRetry": "No se pudo contactar con las fotos de archivo — inténtalo de nuevo.", "covermk.photoNone": "Sin resultados: prueba con menos palabras.", "covermk.photoFail": "Esa foto no se pudo cargar — prueba con otra.", "covermk.photoBy": "Foto de {name} en Pexels", "covermk.photoByOpenverse": "Foto de {name} en Openverse", "covermk.duoScene": "El duotono muestra la escena del puerto incluida — sube tu arte o elige una imagen de tu biblioteca para aplicar el duotono a la tuya.", "covermk.photoUse": "Foto aplicada como fondo de portada", "covermk.posH": "Posición — horizontal", "covermk.posV": "Posición — vertical", "covermk.dragHint": "Arrastra cualquier bloque de texto sobre la portada para colocarlo donde quieras.", "covermk.resetPos": "Restablecer posiciones"
       });
       Object.assign(UI_STRINGS.fr, {
-        "top.zen": "Zen", "zen.exit": "Quitter Zen", "editor.countSection": "{n} mots dans cette section", "editor.countBook": "{n} mots dans le livre", "covermk.layout.free": "Libre", "covermk.bgPhoto": "Photos", "covermk.photoFind": "Chercher des photos", "covermk.photoPh": "Rechercher des photos — des mots de votre titre", "covermk.photoNeedAccount": "Les photos libres viennent avec un compte — connectez-vous pour chercher des photos pour votre couverture.", "covermk.photoNotConfigured": "Les photos libres ne sont pas encore configurées sur cette étagère.", "covermk.photoRetry": "Les photos libres sont injoignables pour le moment — réessayez.", "covermk.photoNone": "Aucune photo — essayez d'autres mots.", "covermk.photoFail": "Cette photo n'a pas pu être chargée — essayez-en une autre.", "covermk.photoBy": "Photo de {name} sur Pexels", "covermk.photoByOpenverse": "Photo de {name} via Openverse", "covermk.duoScene": "La bichromie affiche la scène de port intégrée — importez votre image ou choisissez-en une dans votre bibliothèque pour appliquer la bichromie à la vôtre.", "covermk.photoUse": "Photo définie comme arrière-plan de couverture", "covermk.posH": "Position — horizontale", "covermk.posV": "Position — verticale", "covermk.dragHint": "Faites glisser un bloc de texte sur la couverture pour le placer où vous voulez.", "covermk.resetPos": "Réinitialiser les positions"
+        "top.zen": "Zen", "zen.exit": "Quitter Zen", "editor.countSection": "{n} mot dans cette section", "editor.countSectionPlural": "{n} mots dans cette section", "editor.countBook": "{n} mot dans le livre", "editor.countBookPlural": "{n} mots dans le livre", "covermk.layout.free": "Libre", "covermk.bgPhoto": "Photos", "covermk.photoFind": "Chercher des photos", "covermk.photoPh": "Rechercher des photos — des mots de votre titre", "covermk.photoNeedAccount": "Les photos libres viennent avec un compte — connectez-vous pour chercher des photos pour votre couverture.", "covermk.photoNotConfigured": "Les photos libres ne sont pas encore configurées sur cette étagère.", "covermk.photoRetry": "Les photos libres sont injoignables pour le moment — réessayez.", "covermk.photoNone": "Aucune photo — essayez d'autres mots.", "covermk.photoFail": "Cette photo n'a pas pu être chargée — essayez-en une autre.", "covermk.photoBy": "Photo de {name} sur Pexels", "covermk.photoByOpenverse": "Photo de {name} via Openverse", "covermk.duoScene": "La bichromie affiche la scène de port intégrée — importez votre image ou choisissez-en une dans votre bibliothèque pour appliquer la bichromie à la vôtre.", "covermk.photoUse": "Photo définie comme arrière-plan de couverture", "covermk.posH": "Position — horizontale", "covermk.posV": "Position — verticale", "covermk.dragHint": "Faites glisser un bloc de texte sur la couverture pour le placer où vous voulez.", "covermk.resetPos": "Réinitialiser les positions"
       });
       Object.assign(UI_STRINGS.de, {
-        "top.zen": "Zen", "zen.exit": "Zen beenden", "editor.countSection": "{n} Wörter in diesem Abschnitt", "editor.countBook": "{n} Wörter im Buch", "covermk.layout.free": "Frei", "covermk.bgPhoto": "Fotos", "covermk.photoFind": "Fotos suchen", "covermk.photoPh": "Fotos suchen — Wörter aus Ihrem Titel", "covermk.photoNeedAccount": "Stockfotos gibt es mit einem Konto — melden Sie sich an und suchen Sie Fotos für Ihr Cover.", "covermk.photoNotConfigured": "Stockfotos sind auf diesem Regal noch nicht eingerichtet.", "covermk.photoRetry": "Stockfotos waren gerade nicht erreichbar — bitte versuchen Sie es erneut.", "covermk.photoNone": "Keine Treffer — versuchen Sie andere Wörter.", "covermk.photoFail": "Dieses Foto konnte nicht geladen werden — versuchen Sie ein anderes.", "covermk.photoBy": "Foto von {name} auf Pexels", "covermk.photoByOpenverse": "Foto von {name} über Openverse", "covermk.duoScene": "Der Duoton zeigt die eingebaute Hafenszene — laden Sie Ihr eigenes Bild hoch oder wählen Sie eines aus Ihrer Bibliothek, um es in Duoton zu setzen.", "covermk.photoUse": "Foto als Cover-Hintergrund gesetzt", "covermk.posH": "Position — waagerecht", "covermk.posV": "Position — senkrecht", "covermk.dragHint": "Ziehen Sie einen Textblock auf dem Cover an die gewünschte Stelle.", "covermk.resetPos": "Positionen zurücksetzen"
+        "top.zen": "Zen", "zen.exit": "Zen beenden", "editor.countSection": "{n} Wort in diesem Abschnitt", "editor.countSectionPlural": "{n} Wörter in diesem Abschnitt", "editor.countBook": "{n} Wort im Buch", "editor.countBookPlural": "{n} Wörter im Buch", "covermk.layout.free": "Frei", "covermk.bgPhoto": "Fotos", "covermk.photoFind": "Fotos suchen", "covermk.photoPh": "Fotos suchen — Wörter aus Ihrem Titel", "covermk.photoNeedAccount": "Stockfotos gibt es mit einem Konto — melden Sie sich an und suchen Sie Fotos für Ihr Cover.", "covermk.photoNotConfigured": "Stockfotos sind auf diesem Regal noch nicht eingerichtet.", "covermk.photoRetry": "Stockfotos waren gerade nicht erreichbar — bitte versuchen Sie es erneut.", "covermk.photoNone": "Keine Treffer — versuchen Sie andere Wörter.", "covermk.photoFail": "Dieses Foto konnte nicht geladen werden — versuchen Sie ein anderes.", "covermk.photoBy": "Foto von {name} auf Pexels", "covermk.photoByOpenverse": "Foto von {name} über Openverse", "covermk.duoScene": "Der Duoton zeigt die eingebaute Hafenszene — laden Sie Ihr eigenes Bild hoch oder wählen Sie eines aus Ihrer Bibliothek, um es in Duoton zu setzen.", "covermk.photoUse": "Foto als Cover-Hintergrund gesetzt", "covermk.posH": "Position — waagerecht", "covermk.posV": "Position — senkrecht", "covermk.dragHint": "Ziehen Sie einen Textblock auf dem Cover an die gewünschte Stelle.", "covermk.resetPos": "Positionen zurücksetzen"
       });
       Object.assign(UI_STRINGS.it, {
-        "top.zen": "Zen", "zen.exit": "Esci da Zen", "editor.countSection": "{n} parole in questa sezione", "editor.countBook": "{n} parole nel libro", "covermk.layout.free": "Libero", "covermk.bgPhoto": "Foto", "covermk.photoFind": "Cerca foto", "covermk.photoPh": "Cerca foto: parole dal tuo titolo", "covermk.photoNeedAccount": "Le foto stock arrivano con un account — accedi e cerca foto per la tua copertina.", "covermk.photoNotConfigured": "Le foto stock non sono ancora configurate su questo scaffale.", "covermk.photoRetry": "Le foto stock non sono raggiungibili al momento — riprova.", "covermk.photoNone": "Nessuna foto: prova altre parole.", "covermk.photoFail": "Impossibile caricare quella foto — provane un'altra.", "covermk.photoBy": "Foto di {name} su Pexels", "covermk.photoByOpenverse": "Foto di {name} via Openverse", "covermk.duoScene": "La bicromia mostra la scena del porto incorporata — carica la tua immagine o scegline una dalla tua libreria per applicare la bicromia alla tua.", "covermk.photoUse": "Foto impostata come sfondo della copertina", "covermk.posH": "Posizione — orizzontale", "covermk.posV": "Posizione — verticale", "covermk.dragHint": "Trascina un blocco di testo sulla copertina per posizionarlo dove vuoi.", "covermk.resetPos": "Reimposta posizioni"
+        "top.zen": "Zen", "zen.exit": "Esci da Zen", "editor.countSection": "{n} parola in questa sezione", "editor.countSectionPlural": "{n} parole in questa sezione", "editor.countBook": "{n} parola nel libro", "editor.countBookPlural": "{n} parole nel libro", "covermk.layout.free": "Libero", "covermk.bgPhoto": "Foto", "covermk.photoFind": "Cerca foto", "covermk.photoPh": "Cerca foto: parole dal tuo titolo", "covermk.photoNeedAccount": "Le foto stock arrivano con un account — accedi e cerca foto per la tua copertina.", "covermk.photoNotConfigured": "Le foto stock non sono ancora configurate su questo scaffale.", "covermk.photoRetry": "Le foto stock non sono raggiungibili al momento — riprova.", "covermk.photoNone": "Nessuna foto: prova altre parole.", "covermk.photoFail": "Impossibile caricare quella foto — provane un'altra.", "covermk.photoBy": "Foto di {name} su Pexels", "covermk.photoByOpenverse": "Foto di {name} via Openverse", "covermk.duoScene": "La bicromia mostra la scena del porto incorporata — carica la tua immagine o scegline una dalla tua libreria per applicare la bicromia alla tua.", "covermk.photoUse": "Foto impostata come sfondo della copertina", "covermk.posH": "Posizione — orizzontale", "covermk.posV": "Posizione — verticale", "covermk.dragHint": "Trascina un blocco di testo sulla copertina per posizionarlo dove vuoi.", "covermk.resetPos": "Reimposta posizioni"
       });
       Object.assign(UI_STRINGS.pt, {
-        "top.zen": "Zen", "zen.exit": "Sair do Zen", "editor.countSection": "{n} palavras nesta seção", "editor.countBook": "{n} palavras no livro", "covermk.layout.free": "Livre", "covermk.bgPhoto": "Fotos", "covermk.photoFind": "Procurar fotos", "covermk.photoPh": "Procurar fotos — palavras do seu título", "covermk.photoNeedAccount": "As fotos de stock vêm com uma conta — inicie sessão e procure fotos para a sua capa.", "covermk.photoNotConfigured": "As fotos de stock ainda não estão configuradas nesta estante.", "covermk.photoRetry": "Não foi possível alcançar as fotos de stock agora — tente novamente.", "covermk.photoNone": "Nenhuma foto — tente outras palavras.", "covermk.photoFail": "Não foi possível carregar essa foto — tente outra.", "covermk.photoBy": "Foto de {name} no Pexels", "covermk.photoByOpenverse": "Foto de {name} via Openverse", "covermk.duoScene": "O duotono mostra a cena do porto incorporada — carregue a sua arte ou escolha uma imagem da sua biblioteca para aplicar o duotono à sua.", "covermk.photoUse": "Foto definida como fundo da capa", "covermk.posH": "Posição — horizontal", "covermk.posV": "Posição — vertical", "covermk.dragHint": "Arraste qualquer bloco de texto na capa para o posicionar onde quiser.", "covermk.resetPos": "Repor posições"
+        "top.zen": "Zen", "zen.exit": "Sair do Zen", "editor.countSection": "{n} palavra nesta seção", "editor.countSectionPlural": "{n} palavras nesta seção", "editor.countBook": "{n} palavra no livro", "editor.countBookPlural": "{n} palavras no livro", "covermk.layout.free": "Livre", "covermk.bgPhoto": "Fotos", "covermk.photoFind": "Procurar fotos", "covermk.photoPh": "Procurar fotos — palavras do seu título", "covermk.photoNeedAccount": "As fotos de stock vêm com uma conta — inicie sessão e procure fotos para a sua capa.", "covermk.photoNotConfigured": "As fotos de stock ainda não estão configuradas nesta estante.", "covermk.photoRetry": "Não foi possível alcançar as fotos de stock agora — tente novamente.", "covermk.photoNone": "Nenhuma foto — tente outras palavras.", "covermk.photoFail": "Não foi possível carregar essa foto — tente outra.", "covermk.photoBy": "Foto de {name} no Pexels", "covermk.photoByOpenverse": "Foto de {name} via Openverse", "covermk.duoScene": "O duotono mostra a cena do porto incorporada — carregue a sua arte ou escolha uma imagem da sua biblioteca para aplicar o duotono à sua.", "covermk.photoUse": "Foto definida como fundo da capa", "covermk.posH": "Posição — horizontal", "covermk.posV": "Posição — vertical", "covermk.dragHint": "Arraste qualquer bloco de texto na capa para o posicionar onde quiser.", "covermk.resetPos": "Repor posições"
       });
       Object.assign(UI_STRINGS.nl, {
-        "top.zen": "Zen", "zen.exit": "Zen stoppen", "editor.countSection": "{n} woorden in dit deel", "editor.countBook": "{n} woorden in het boek", "covermk.layout.free": "Vrij", "covermk.bgPhoto": "Foto's", "covermk.photoFind": "Foto's zoeken", "covermk.photoPh": "Zoek foto's — woorden uit je titel", "covermk.photoNeedAccount": "Stockfoto's horen bij een account — log in en zoek foto's voor je omslag.", "covermk.photoNotConfigured": "Stockfoto's zijn op deze plank nog niet ingesteld.", "covermk.photoRetry": "Stockfoto's zijn nu niet bereikbaar — probeer het opnieuw.", "covermk.photoNone": "Geen foto's gevonden — probeer andere woorden.", "covermk.photoFail": "Die foto kon niet worden geladen — probeer een andere.", "covermk.photoBy": "Foto door {name} op Pexels", "covermk.photoByOpenverse": "Foto door {name} via Openverse", "covermk.duoScene": "Duotoon toont de ingebouwde havenscène — upload je eigen beeld of kies er een uit je bibliotheek om je eigen afbeelding in duotoon te zetten.", "covermk.photoUse": "Foto ingesteld als omslagachtergrond", "covermk.posH": "Positie — horizontaal", "covermk.posV": "Positie — verticaal", "covermk.dragHint": "Sleep een tekstblok op het omslag naar de gewenste plek.", "covermk.resetPos": "Posities resetten"
+        "top.zen": "Zen", "zen.exit": "Zen stoppen", "editor.countSection": "{n} woord in dit deel", "editor.countSectionPlural": "{n} woorden in dit deel", "editor.countBook": "{n} woord in het boek", "editor.countBookPlural": "{n} woorden in het boek", "covermk.layout.free": "Vrij", "covermk.bgPhoto": "Foto's", "covermk.photoFind": "Foto's zoeken", "covermk.photoPh": "Zoek foto's — woorden uit je titel", "covermk.photoNeedAccount": "Stockfoto's horen bij een account — log in en zoek foto's voor je omslag.", "covermk.photoNotConfigured": "Stockfoto's zijn op deze plank nog niet ingesteld.", "covermk.photoRetry": "Stockfoto's zijn nu niet bereikbaar — probeer het opnieuw.", "covermk.photoNone": "Geen foto's gevonden — probeer andere woorden.", "covermk.photoFail": "Die foto kon niet worden geladen — probeer een andere.", "covermk.photoBy": "Foto door {name} op Pexels", "covermk.photoByOpenverse": "Foto door {name} via Openverse", "covermk.duoScene": "Duotoon toont de ingebouwde havenscène — upload je eigen beeld of kies er een uit je bibliotheek om je eigen afbeelding in duotoon te zetten.", "covermk.photoUse": "Foto ingesteld als omslagachtergrond", "covermk.posH": "Positie — horizontaal", "covermk.posV": "Positie — verticaal", "covermk.dragHint": "Sleep een tekstblok op het omslag naar de gewenste plek.", "covermk.resetPos": "Posities resetten"
       });
       Object.assign(UI_STRINGS.pl, {
-        "top.zen": "Zen", "zen.exit": "Wyjdź z Zen", "editor.countSection": "{n} słów w tej sekcji", "editor.countBook": "{n} słów w książce", "covermk.layout.free": "Swobodny", "covermk.bgPhoto": "Zdjęcia", "covermk.photoFind": "Szukaj zdjęć", "covermk.photoPh": "Szukaj zdjęć — słowa z tytułu", "covermk.photoNeedAccount": "Zdjęcia stockowe są dostępne z kontem — zaloguj się i szukaj zdjęć na okładkę.", "covermk.photoNotConfigured": "Zdjęcia stockowe nie są jeszcze skonfigurowane na tej półce.", "covermk.photoRetry": "Nie udało się teraz połączyć ze zdjęciami stockowymi — spróbuj ponownie.", "covermk.photoNone": "Brak wyników — spróbuj innych słów.", "covermk.photoFail": "Nie udało się wczytać tego zdjęcia — spróbuj innego.", "covermk.photoBy": "Zdjęcie: {name} (Pexels)", "covermk.photoByOpenverse": "Zdjęcie: {name} (Openverse)", "covermk.duoScene": "Duoton pokazuje wbudowaną scenę portu — wgraj własną grafikę lub wybierz obraz z biblioteki, aby zastosować duoton do własnego.", "covermk.photoUse": "Zdjęcie ustawione jako tło okładki", "covermk.posH": "Pozycja — w poziomie", "covermk.posV": "Pozycja — w pionie", "covermk.dragHint": "Przeciągnij blok tekstu na okładce dokładnie tam, gdzie chcesz.", "covermk.resetPos": "Resetuj pozycje"
+        "top.zen": "Zen", "zen.exit": "Wyjdź z Zen", "editor.countSection": "{n} słowo w tej sekcji", "editor.countSectionPlural": "{n} słowa w tej sekcji", "editor.countBook": "{n} słowo w książce", "editor.countBookPlural": "{n} słowa w książce", "covermk.layout.free": "Swobodny", "covermk.bgPhoto": "Zdjęcia", "covermk.photoFind": "Szukaj zdjęć", "covermk.photoPh": "Szukaj zdjęć — słowa z tytułu", "covermk.photoNeedAccount": "Zdjęcia stockowe są dostępne z kontem — zaloguj się i szukaj zdjęć na okładkę.", "covermk.photoNotConfigured": "Zdjęcia stockowe nie są jeszcze skonfigurowane na tej półce.", "covermk.photoRetry": "Nie udało się teraz połączyć ze zdjęciami stockowymi — spróbuj ponownie.", "covermk.photoNone": "Brak wyników — spróbuj innych słów.", "covermk.photoFail": "Nie udało się wczytać tego zdjęcia — spróbuj innego.", "covermk.photoBy": "Zdjęcie: {name} (Pexels)", "covermk.photoByOpenverse": "Zdjęcie: {name} (Openverse)", "covermk.duoScene": "Duoton pokazuje wbudowaną scenę portu — wgraj własną grafikę lub wybierz obraz z biblioteki, aby zastosować duoton do własnego.", "covermk.photoUse": "Zdjęcie ustawione jako tło okładki", "covermk.posH": "Pozycja — w poziomie", "covermk.posV": "Pozycja — w pionie", "covermk.dragHint": "Przeciągnij blok tekstu na okładce dokładnie tam, gdzie chcesz.", "covermk.resetPos": "Resetuj pozycje"
       });
       Object.assign(UI_STRINGS.ru, {
-        "top.zen": "Zen", "zen.exit": "Выйти из Zen", "editor.countSection": "{n} слов в этом разделе", "editor.countBook": "{n} слов в книге", "covermk.layout.free": "Свободно", "covermk.bgPhoto": "Фото", "covermk.photoFind": "Найти фото", "covermk.photoPh": "Поиск фото — слова из названия", "covermk.photoNeedAccount": "Стоковые фото доступны с аккаунтом — войдите и ищите фото для обложки.", "covermk.photoNotConfigured": "Стоковые фото на этой полке ещё не настроены.", "covermk.photoRetry": "Стоковые фото сейчас недоступны — попробуйте ещё раз.", "covermk.photoNone": "Ничего не нашлось — попробуйте другие слова.", "covermk.photoFail": "Это фото не удалось загрузить — попробуйте другое.", "covermk.photoBy": "Фото: {name} на Pexels", "covermk.photoByOpenverse": "Фото: {name} на Openverse", "covermk.duoScene": "Дуотон показывает встроенную сцену гавани — загрузите своё изображение или выберите картинку из библиотеки, чтобы сделать дуотон из неё.", "covermk.photoUse": "Фото установлено фоном обложки", "covermk.posH": "Позиция — по горизонтали", "covermk.posV": "Позиция — по вертикали", "covermk.dragHint": "Перетащите любой текстовый блок на обложке в нужное место.", "covermk.resetPos": "Сбросить позиции"
+        "top.zen": "Zen", "zen.exit": "Выйти из Zen", "editor.countSection": "{n} слово в этом разделе", "editor.countSectionPlural": "{n} слов в этом разделе", "editor.countBook": "{n} слово в книге", "editor.countBookPlural": "{n} слов в книге", "covermk.layout.free": "Свободно", "covermk.bgPhoto": "Фото", "covermk.photoFind": "Найти фото", "covermk.photoPh": "Поиск фото — слова из названия", "covermk.photoNeedAccount": "Стоковые фото доступны с аккаунтом — войдите и ищите фото для обложки.", "covermk.photoNotConfigured": "Стоковые фото на этой полке ещё не настроены.", "covermk.photoRetry": "Стоковые фото сейчас недоступны — попробуйте ещё раз.", "covermk.photoNone": "Ничего не нашлось — попробуйте другие слова.", "covermk.photoFail": "Это фото не удалось загрузить — попробуйте другое.", "covermk.photoBy": "Фото: {name} на Pexels", "covermk.photoByOpenverse": "Фото: {name} на Openverse", "covermk.duoScene": "Дуотон показывает встроенную сцену гавани — загрузите своё изображение или выберите картинку из библиотеки, чтобы сделать дуотон из неё.", "covermk.photoUse": "Фото установлено фоном обложки", "covermk.posH": "Позиция — по горизонтали", "covermk.posV": "Позиция — по вертикали", "covermk.dragHint": "Перетащите любой текстовый блок на обложке в нужное место.", "covermk.resetPos": "Сбросить позиции"
       });
       Object.assign(UI_STRINGS.tr, {
-        "top.zen": "Zen", "zen.exit": "Zen'den çık", "editor.countSection": "Bu bölümde {n} kelime", "editor.countBook": "Kitapta {n} kelime", "covermk.layout.free": "Serbest", "covermk.bgPhoto": "Fotoğraflar", "covermk.photoFind": "Fotoğraf ara", "covermk.photoPh": "Fotoğraf ara — başlığınızdan kelimeler", "covermk.photoNeedAccount": "Stok fotoğraflar bir hesapla gelir — giriş yapın ve kapağınız için fotoğraf arayın.", "covermk.photoNotConfigured": "Stok fotoğraflar bu rafta henüz kurulmadı.", "covermk.photoRetry": "Stok fotoğraflara şu an ulaşılamadı — lütfen tekrar deneyin.", "covermk.photoNone": "Fotoğraf bulunamadı — başka kelimeler deneyin.", "covermk.photoFail": "O fotoğraf yüklenemedi — başka birini deneyin.", "covermk.photoBy": "{name} tarafından Pexels'te", "covermk.photoByOpenverse": "{name} tarafından Openverse'te", "covermk.duoScene": "Düoton, yerleşik liman sahnesini gösteriyor — kendi görselinizi yükleyin veya kitaplığınızdan bir resim seçerek düotonu ona uygulayın.", "covermk.photoUse": "Fotoğraf kapak arka planı yapıldı", "covermk.posH": "Konum — yatay", "covermk.posV": "Konum — dikey", "covermk.dragHint": "Kapaktaki herhangi bir metin bloğunu istediğiniz yere sürükleyin.", "covermk.resetPos": "Konumları sıfırla"
+        "top.zen": "Zen", "zen.exit": "Zen'den çık", "editor.countSection": "Bu bölümde {n} kelime", "editor.countSectionPlural": "Bu bölümde {n} kelime", "editor.countBook": "Kitapta {n} kelime", "editor.countBookPlural": "Kitapta {n} kelime", "covermk.layout.free": "Serbest", "covermk.bgPhoto": "Fotoğraflar", "covermk.photoFind": "Fotoğraf ara", "covermk.photoPh": "Fotoğraf ara — başlığınızdan kelimeler", "covermk.photoNeedAccount": "Stok fotoğraflar bir hesapla gelir — giriş yapın ve kapağınız için fotoğraf arayın.", "covermk.photoNotConfigured": "Stok fotoğraflar bu rafta henüz kurulmadı.", "covermk.photoRetry": "Stok fotoğraflara şu an ulaşılamadı — lütfen tekrar deneyin.", "covermk.photoNone": "Fotoğraf bulunamadı — başka kelimeler deneyin.", "covermk.photoFail": "O fotoğraf yüklenemedi — başka birini deneyin.", "covermk.photoBy": "{name} tarafından Pexels'te", "covermk.photoByOpenverse": "{name} tarafından Openverse'te", "covermk.duoScene": "Düoton, yerleşik liman sahnesini gösteriyor — kendi görselinizi yükleyin veya kitaplığınızdan bir resim seçerek düotonu ona uygulayın.", "covermk.photoUse": "Fotoğraf kapak arka planı yapıldı", "covermk.posH": "Konum — yatay", "covermk.posV": "Konum — dikey", "covermk.dragHint": "Kapaktaki herhangi bir metin bloğunu istediğiniz yere sürükleyin.", "covermk.resetPos": "Konumları sıfırla"
       });
       Object.assign(UI_STRINGS.ar, {
-        "top.zen": "Zen", "zen.exit": "إنهاء Zen", "editor.countSection": "{n} كلمة في هذا القسم", "editor.countBook": "{n} كلمة في الكتاب", "covermk.layout.free": "حر", "covermk.bgPhoto": "صور", "covermk.photoFind": "بحث عن صور", "covermk.photoPh": "ابحث عن صور — كلمات من عنوانك", "covermk.photoNeedAccount": "الصور الجاهزة تأتي مع حساب — سجّل الدخول وابحث عن صور لغلافك.", "covermk.photoNotConfigured": "الصور الجاهزة غير مُعدّة على هذا الرف بعد.", "covermk.photoRetry": "تعذّر الوصول إلى الصور الجاهزة الآن — حاول مجدداً.", "covermk.photoNone": "لا توجد صور مطابقة — جرّب كلمات أخرى.", "covermk.photoFail": "تعذّر تحميل تلك الصورة — جرّب أخرى.", "covermk.photoBy": "صورة {name} على Pexels", "covermk.photoByOpenverse": "صورة {name} عبر Openverse", "covermk.duoScene": "يعرض اللونان مشهد الميناء المدمج — حمّل صورتك أو اختر صورة من مكتبتك لتطبيق اللونين عليها.", "covermk.photoUse": "تم تعيين الصورة كخلفية للغلاف", "covermk.posH": "الموضع — أفقي", "covermk.posV": "الموضع — عمودي", "covermk.dragHint": "اسحب أي كتلة نصية على الغلاف لوضعها في المكان الذي تريده.", "covermk.resetPos": "إعادة تعيين المواضع"
+        "top.zen": "Zen", "zen.exit": "إنهاء Zen", "editor.countSection": "{n} كلمة في هذا القسم", "editor.countSectionPlural": "{n} كلمة في هذا القسم", "editor.countBook": "{n} كلمة في الكتاب", "editor.countBookPlural": "{n} كلمة في الكتاب", "covermk.layout.free": "حر", "covermk.bgPhoto": "صور", "covermk.photoFind": "بحث عن صور", "covermk.photoPh": "ابحث عن صور — كلمات من عنوانك", "covermk.photoNeedAccount": "الصور الجاهزة تأتي مع حساب — سجّل الدخول وابحث عن صور لغلافك.", "covermk.photoNotConfigured": "الصور الجاهزة غير مُعدّة على هذا الرف بعد.", "covermk.photoRetry": "تعذّر الوصول إلى الصور الجاهزة الآن — حاول مجدداً.", "covermk.photoNone": "لا توجد صور مطابقة — جرّب كلمات أخرى.", "covermk.photoFail": "تعذّر تحميل تلك الصورة — جرّب أخرى.", "covermk.photoBy": "صورة {name} على Pexels", "covermk.photoByOpenverse": "صورة {name} عبر Openverse", "covermk.duoScene": "يعرض اللونان مشهد الميناء المدمج — حمّل صورتك أو اختر صورة من مكتبتك لتطبيق اللونين عليها.", "covermk.photoUse": "تم تعيين الصورة كخلفية للغلاف", "covermk.posH": "الموضع — أفقي", "covermk.posV": "الموضع — عمودي", "covermk.dragHint": "اسحب أي كتلة نصية على الغلاف لوضعها في المكان الذي تريده.", "covermk.resetPos": "إعادة تعيين المواضع"
       });
       Object.assign(UI_STRINGS.ja, {
-        "top.zen": "Zen", "zen.exit": "Zenを終了", "editor.countSection": "このセクションは {n} 語", "editor.countBook": "本全体で {n} 語", "covermk.layout.free": "フリー", "covermk.bgPhoto": "写真", "covermk.photoFind": "写真を検索", "covermk.photoPh": "写真を検索 — タイトルの言葉で", "covermk.photoNeedAccount": "ストック写真はアカウントで利用できます — サインインして表紙の写真を検索してください。", "covermk.photoNotConfigured": "この棚ではストック写真がまだ設定されていません。", "covermk.photoRetry": "ストック写真に接続できませんでした — もう一度お試しください。", "covermk.photoNone": "写真が見つかりません — 別の言葉で試してください。", "covermk.photoFail": "その写真を読み込めませんでした — 別の写真をお試しください。", "covermk.photoBy": "{name} さんの写真（Pexels）", "covermk.photoByOpenverse": "{name} さんの写真（Openverse）", "covermk.duoScene": "デュオトーンは内蔵の港のシーンを表示しています — 自分の画像をアップロードするか、ライブラリから選んでデュオトーンを適用できます。", "covermk.photoUse": "写真をカバーの背景に設定しました", "covermk.posH": "位置 — 横", "covermk.posV": "位置 — 縦", "covermk.dragHint": "カバー上のテキストブロックをドラッグして、好きな場所に配置できます。", "covermk.resetPos": "位置をリセット"
+        "top.zen": "Zen", "zen.exit": "Zenを終了", "editor.countSection": "このセクションは {n} 語", "editor.countSectionPlural": "このセクションは {n} 語", "editor.countBook": "本全体で {n} 語", "editor.countBookPlural": "本全体で {n} 語", "covermk.layout.free": "フリー", "covermk.bgPhoto": "写真", "covermk.photoFind": "写真を検索", "covermk.photoPh": "写真を検索 — タイトルの言葉で", "covermk.photoNeedAccount": "ストック写真はアカウントで利用できます — サインインして表紙の写真を検索してください。", "covermk.photoNotConfigured": "この棚ではストック写真がまだ設定されていません。", "covermk.photoRetry": "ストック写真に接続できませんでした — もう一度お試しください。", "covermk.photoNone": "写真が見つかりません — 別の言葉で試してください。", "covermk.photoFail": "その写真を読み込めませんでした — 別の写真をお試しください。", "covermk.photoBy": "{name} さんの写真（Pexels）", "covermk.photoByOpenverse": "{name} さんの写真（Openverse）", "covermk.duoScene": "デュオトーンは内蔵の港のシーンを表示しています — 自分の画像をアップロードするか、ライブラリから選んでデュオトーンを適用できます。", "covermk.photoUse": "写真をカバーの背景に設定しました", "covermk.posH": "位置 — 横", "covermk.posV": "位置 — 縦", "covermk.dragHint": "カバー上のテキストブロックをドラッグして、好きな場所に配置できます。", "covermk.resetPos": "位置をリセット"
       });
       Object.assign(UI_STRINGS["zh-Hans"], {
-        "top.zen": "Zen", "zen.exit": "退出 Zen", "editor.countSection": "本节 {n} 词", "editor.countBook": "全书 {n} 词", "covermk.layout.free": "自由", "covermk.bgPhoto": "照片", "covermk.photoFind": "搜索照片", "covermk.photoPh": "搜索照片 — 试试标题里的词", "covermk.photoNeedAccount": "图库照片随账户提供 — 登录后为你的封面搜索照片。", "covermk.photoNotConfigured": "这个书架还没有设置图库照片。", "covermk.photoRetry": "暂时无法连接图库照片 — 请重试。", "covermk.photoNone": "没有匹配的照片 — 换几个词试试。", "covermk.photoFail": "无法加载那张照片 — 请换一张。", "covermk.photoBy": "照片由 {name} 拍摄（Pexels）", "covermk.photoByOpenverse": "照片由 {name} 拍摄（Openverse）", "covermk.duoScene": "双色调正在显示内置的海港场景 — 上传你的图片或从图库中选择一张，即可对自己的图片应用双色调。", "covermk.photoUse": "照片已设为封面背景", "covermk.posH": "位置 — 水平", "covermk.posV": "位置 — 垂直", "covermk.dragHint": "拖动封面上的任意文字块，把它放到你想要的位置。", "covermk.resetPos": "重置位置"
+        "top.zen": "Zen", "zen.exit": "退出 Zen", "editor.countSection": "本节 {n} 词", "editor.countSectionPlural": "本节 {n} 词", "editor.countBook": "全书 {n} 词", "editor.countBookPlural": "全书 {n} 词", "covermk.layout.free": "自由", "covermk.bgPhoto": "照片", "covermk.photoFind": "搜索照片", "covermk.photoPh": "搜索照片 — 试试标题里的词", "covermk.photoNeedAccount": "图库照片随账户提供 — 登录后为你的封面搜索照片。", "covermk.photoNotConfigured": "这个书架还没有设置图库照片。", "covermk.photoRetry": "暂时无法连接图库照片 — 请重试。", "covermk.photoNone": "没有匹配的照片 — 换几个词试试。", "covermk.photoFail": "无法加载那张照片 — 请换一张。", "covermk.photoBy": "照片由 {name} 拍摄（Pexels）", "covermk.photoByOpenverse": "照片由 {name} 拍摄（Openverse）", "covermk.duoScene": "双色调正在显示内置的海港场景 — 上传你的图片或从图库中选择一张，即可对自己的图片应用双色调。", "covermk.photoUse": "照片已设为封面背景", "covermk.posH": "位置 — 水平", "covermk.posV": "位置 — 垂直", "covermk.dragHint": "拖动封面上的任意文字块，把它放到你想要的位置。", "covermk.resetPos": "重置位置"
       });
 
       /* ==== BEUK:branding ==== */
@@ -9896,7 +9931,7 @@
         "side.toolComments": "Comments",
         "side.toolsAria": "Book tools",
         "side.statsAria": "Book statistics",
-        "side.statsSummary": "{words} words · ~{pages} pages · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} section",
         "side.groupCountPlural": "{n} sections",
         "sample.legacyUpdated": "The sample story has been updated. Your previous copy, “{old}”, is kept in History.",
@@ -9910,7 +9945,7 @@
         "side.toolComments": "Comentarios",
         "side.toolsAria": "Herramientas del libro",
         "side.statsAria": "Estadísticas del libro",
-        "side.statsSummary": "{words} palabras · ~{pages} páginas · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} sección",
         "side.groupCountPlural": "{n} secciones",
         "sample.legacyUpdated": "El relato de muestra se ha actualizado. Tu copia anterior, «{old}», se guarda en el Historial.",
@@ -9924,7 +9959,7 @@
         "side.toolComments": "Commentaires",
         "side.toolsAria": "Outils du livre",
         "side.statsAria": "Statistiques du livre",
-        "side.statsSummary": "{words} mots · ~{pages} pages · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} section",
         "side.groupCountPlural": "{n} sections",
         "sample.legacyUpdated": "Le récit d'exemple a été mis à jour. Votre copie précédente, « {old} », est conservée dans l'Historique.",
@@ -9938,7 +9973,7 @@
         "side.toolComments": "Kommentare",
         "side.toolsAria": "Buchwerkzeuge",
         "side.statsAria": "Buchstatistik",
-        "side.statsSummary": "{words} Wörter · ~{pages} Seiten · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} Abschnitt",
         "side.groupCountPlural": "{n} Abschnitte",
         "sample.legacyUpdated": "Die Beispielgeschichte wurde aktualisiert. Ihre bisherige Kopie, „{old}“, liegt im Verlauf.",
@@ -9952,7 +9987,7 @@
         "side.toolComments": "Commenti",
         "side.toolsAria": "Strumenti del libro",
         "side.statsAria": "Statistiche del libro",
-        "side.statsSummary": "{words} parole · ~{pages} pagine · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} sezione",
         "side.groupCountPlural": "{n} sezioni",
         "sample.legacyUpdated": "Il racconto di esempio è stato aggiornato. La tua copia precedente, «{old}», è conservata nella Cronologia.",
@@ -9966,7 +10001,7 @@
         "side.toolComments": "Comentários",
         "side.toolsAria": "Ferramentas do livro",
         "side.statsAria": "Estatísticas do livro",
-        "side.statsSummary": "{words} palavras · ~{pages} páginas · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} secção",
         "side.groupCountPlural": "{n} secções",
         "sample.legacyUpdated": "A história de exemplo foi atualizada. A sua cópia anterior, «{old}», está guardada no Histórico.",
@@ -9980,7 +10015,7 @@
         "side.toolComments": "Reacties",
         "side.toolsAria": "Boekgereedschap",
         "side.statsAria": "Boekstatistieken",
-        "side.statsSummary": "{words} woorden · ~{pages} pagina’s · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} onderdeel",
         "side.groupCountPlural": "{n} onderdelen",
         "sample.legacyUpdated": "Het voorbeeldverhaal is bijgewerkt. Je vorige kopie, ‘{old}’, staat in de Geschiedenis.",
@@ -9994,7 +10029,7 @@
         "side.toolComments": "Komentarze",
         "side.toolsAria": "Narzędzia książki",
         "side.statsAria": "Statystyki książki",
-        "side.statsSummary": "Słowa: {words} · ~{pages} str. · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} sekcja",
         "side.groupCountPlural": "Sekcje: {n}",
         "sample.legacyUpdated": "Opowieść przykładowa została zaktualizowana. Twoja poprzednia kopia, „{old}”, jest zachowana w Historii.",
@@ -10008,7 +10043,7 @@
         "side.toolComments": "Отзывы",
         "side.toolsAria": "Инструменты книги",
         "side.statsAria": "Статистика книги",
-        "side.statsSummary": "Слов: {words} · ~{pages} стр. · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} раздел",
         "side.groupCountPlural": "Разделов: {n}",
         "sample.legacyUpdated": "Примерная повесть обновлена. Ваша прежняя копия, «{old}», сохранена в Истории.",
@@ -10022,7 +10057,7 @@
         "side.toolComments": "Yorumlar",
         "side.toolsAria": "Kitap araçları",
         "side.statsAria": "Kitap istatistikleri",
-        "side.statsSummary": "{words} kelime · ~{pages} sayfa · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} bölüm",
         "side.groupCountPlural": "{n} bölüm",
         "sample.legacyUpdated": "Örnek öykü güncellendi. Önceki kopyanız, “{old}”, Geçmiş’te saklanıyor.",
@@ -10036,7 +10071,7 @@
         "side.toolComments": "التعليقات",
         "side.toolsAria": "أدوات الكتاب",
         "side.statsAria": "إحصاءات الكتاب",
-        "side.statsSummary": "{words} كلمة · ~{pages} صفحة · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} قسم",
         "side.groupCountPlural": "الأقسام: {n}",
         "sample.legacyUpdated": "حُدِّثت القصة النموذجية. نسختك السابقة، «{old}»، محفوظة في السجلّ.",
@@ -10050,7 +10085,7 @@
         "side.toolComments": "コメント",
         "side.toolsAria": "本のツール",
         "side.statsAria": "本の統計",
-        "side.statsSummary": "{words}語 · 約{pages}ページ · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n}セクション",
         "side.groupCountPlural": "{n}セクション",
         "sample.legacyUpdated": "サンプルストーリーを更新しました。以前のコピー『{old}』は履歴に保存されています。",
@@ -10064,7 +10099,7 @@
         "side.toolComments": "评论",
         "side.toolsAria": "书籍工具",
         "side.statsAria": "书籍统计",
-        "side.statsSummary": "{words} 词 · 约 {pages} 页 · {time}",
+        "side.statsSummary": "{words} · {pages} · {time}",
         "side.groupCount": "{n} 个部分",
         "side.groupCountPlural": "{n} 个部分",
         "sample.legacyUpdated": "示例故事已更新。你之前的副本《{old}》保存在历史记录中。",
@@ -10072,6 +10107,118 @@
         "sample.coverUpdated": "示例的封面现已显示当前书名。之前的版本保存在历史记录中。"
       });
       /* ==== /BEUK:sidebar ==== */
+      /* ==== BEUK:bugs ==== */
+      /* Counted words and pages, said in each language's own plural
+         forms (t() with {count}); the signed-in account button's
+         title; and the whole-book restore confirmation for a desk
+         that is truly empty (no snapshot is taken, so it does not
+         promise one). Assigned per pack so completeness holds. */
+      Object.assign(UI_STRINGS.en, {
+        "side.statsWords": "{n} word", "side.statsWordsPlural": "{n} words",
+        "side.statsPages": "~{n} page", "side.statsPagesPlural": "~{n} pages",
+        "top.accountTitle": "{email} — your shelf",
+        "history.restoreBodyEmpty": "The book returns to “{name}”, exactly as it stood. The desk is empty right now, so there is nothing to keep and no snapshot is taken."
+      });
+      Object.assign(UI_STRINGS.es, {
+        "side.statsWords": "{n} palabra", "side.statsWordsPlural": "{n} palabras",
+        "side.statsPages": "~{n} página", "side.statsPagesPlural": "~{n} páginas",
+        "top.accountTitle": "{email} — tu estantería",
+        "history.restoreBodyEmpty": "El libro vuelve a «{name}» tal como estaba. El escritorio está vacío ahora mismo, así que no hay nada que guardar y no se toma ninguna instantánea."
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "side.statsWords": "{n} mot", "side.statsWordsPlural": "{n} mots",
+        "side.statsPages": "~{n} page", "side.statsPagesPlural": "~{n} pages",
+        "top.accountTitle": "{email} — votre étagère",
+        "history.restoreBodyEmpty": "Le livre revient à « {name} », exactement comme il était. Le bureau est vide pour l'instant : il n'y a rien à conserver, donc aucun instantané n'est pris."
+      });
+      Object.assign(UI_STRINGS.de, {
+        "side.statsWords": "{n} Wort", "side.statsWordsPlural": "{n} Wörter",
+        "side.statsPages": "~{n} Seite", "side.statsPagesPlural": "~{n} Seiten",
+        "top.accountTitle": "{email} — Ihr Regal",
+        "history.restoreBodyEmpty": "Das Buch kehrt zu „{name}“ zurück, genau wie es stand. Der Schreibtisch ist gerade leer – es gibt nichts zu bewahren, daher wird kein Schnappschuss genommen."
+      });
+      Object.assign(UI_STRINGS.it, {
+        "side.statsWords": "{n} parola", "side.statsWordsPlural": "{n} parole",
+        "side.statsPages": "~{n} pagina", "side.statsPagesPlural": "~{n} pagine",
+        "top.accountTitle": "{email} — la tua libreria",
+        "history.restoreBodyEmpty": "Il libro torna a «{name}», esattamente com'era. La scrivania ora è vuota: non c'è niente da conservare, quindi non viene scattata alcuna istantanea."
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "side.statsWords": "{n} palavra", "side.statsWordsPlural": "{n} palavras",
+        "side.statsPages": "~{n} página", "side.statsPagesPlural": "~{n} páginas",
+        "top.accountTitle": "{email} — a sua estante",
+        "history.restoreBodyEmpty": "O livro volta a «{name}», exatamente como estava. A mesa está vazia neste momento, por isso não há nada a guardar e não se tira nenhum instantâneo."
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "side.statsWords": "{n} woord", "side.statsWordsPlural": "{n} woorden",
+        "side.statsPages": "~{n} pagina", "side.statsPagesPlural": "~{n} pagina’s",
+        "top.accountTitle": "{email} — uw boekenplank",
+        "history.restoreBodyEmpty": "Het boek keert terug naar ‘{name}’, precies zoals het stond. Het bureau is nu leeg, dus er valt niets te bewaren en er wordt geen momentopname gemaakt."
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "side.statsWords": "{n} słowo", "side.statsWordsPlural": "{n} słowa",
+        "side.statsPages": "~{n} strona", "side.statsPagesPlural": "~{n} strony",
+        "top.accountTitle": "{email} — twoja półka",
+        "history.restoreBodyEmpty": "Książka wraca do „{name}”, dokładnie taka, jaka była. Biurko jest teraz puste, więc nie ma czego zachować i migawka nie jest robiona."
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "side.statsWords": "{n} слово", "side.statsWordsPlural": "{n} слов",
+        "side.statsPages": "~{n} страница", "side.statsPagesPlural": "~{n} страниц",
+        "top.accountTitle": "{email} — ваша полка",
+        "history.restoreBodyEmpty": "Книга возвращается к «{name}» — точно такой, какой была. Сейчас стол пуст: сохранять нечего, поэтому снимок не делается."
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "side.statsWords": "{n} kelime", "side.statsWordsPlural": "{n} kelime",
+        "side.statsPages": "~{n} sayfa", "side.statsPagesPlural": "~{n} sayfa",
+        "top.accountTitle": "{email} — rafınız",
+        "history.restoreBodyEmpty": "Kitap, “{name}” anındaki hâline tam olarak döner. Masa şu anda boş; saklanacak bir şey olmadığından anlık görüntü alınmaz."
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "side.statsWords": "{n} كلمة", "side.statsWordsPlural": "{n} كلمة",
+        "side.statsPages": "~{n} صفحة", "side.statsPagesPlural": "~{n} صفحة",
+        "top.accountTitle": "{email} — رفّك",
+        "history.restoreBodyEmpty": "يعود الكتاب إلى «{name}» كما كان تمامًا. المكتب فارغ الآن، فلا شيء يُحفظ ولا تُؤخذ أي لقطة."
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "side.statsWords": "{n}語", "side.statsWordsPlural": "{n}語",
+        "side.statsPages": "約{n}ページ", "side.statsPagesPlural": "約{n}ページ",
+        "top.accountTitle": "{email} — あなたの本棚",
+        "history.restoreBodyEmpty": "本は「{name}」の状態に、まったくそのまま戻ります。いまデスクは空なので、残すものはなく、スナップショットは撮りません。"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "side.statsWords": "{n} 词", "side.statsWordsPlural": "{n} 词",
+        "side.statsPages": "约 {n} 页", "side.statsPagesPlural": "约 {n} 页",
+        "top.accountTitle": "{email} — 你的书架",
+        "history.restoreBodyEmpty": "书将完全回到《{name}》时的样子。书桌现在是空的，没有需要保留的内容，因此不拍快照。"
+      });
+      /* The forms beyond one/other, by CLDR category (Intl.PluralRules):
+         Polish many (0, 5–21, 25…: "słów", "stron"), Russian few (2–4,
+         22…: "слова", "страницы") with "Plural" holding many, Arabic
+         few (3–10: "كلمات", "صفحات") with every other category in the
+         singular-noun form that numerals 11 and up take (the dual is
+         written with the numeral, like 11+), and French one for the
+         bare word unit ("1 mot"; Arabic 3–10 "كلمات"). */
+      Object.assign(UI_PLURAL_FORMS, {
+        pl: {
+          "side.statsWords": { many: "{n} słów" }, "side.statsPages": { many: "~{n} stron" },
+          "editor.countSection": { many: "{n} słów w tej sekcji" }, "editor.countBook": { many: "{n} słów w książce" },
+          "preview.desk.pages": { many: "≈ {n} stron" }
+        },
+        ru: {
+          "side.statsWords": { few: "{n} слова" }, "side.statsPages": { few: "~{n} страницы" },
+          "editor.countSection": { few: "{n} слова в этом разделе" }, "editor.countBook": { few: "{n} слова в книге" },
+          "preview.desk.pages": { few: "≈ {n} страницы" }
+        },
+        ar: {
+          "side.statsWords": { few: "{n} كلمات" }, "side.statsPages": { few: "~{n} صفحات" },
+          "editor.countSection": { few: "{n} كلمات في هذا القسم" }, "editor.countBook": { few: "{n} كلمات في الكتاب" },
+          "preview.desk.pages": { few: "≈ {n} صفحات", many: "≈ {n} صفحة", other: "≈ {n} صفحة", zero: "≈ {n} صفحة", two: "≈ {n} صفحة" },
+          "side.wordUnit": { few: "كلمات" },
+          "preview.desk.total": { few: "{title} · نحو {n} صفحات على {device}", many: "{title} · نحو {n} صفحة على {device}", other: "{title} · نحو {n} صفحة على {device}", zero: "{title} · نحو {n} صفحة على {device}", two: "{title} · نحو {n} صفحة على {device}" }
+        },
+        fr: { "side.wordUnit": { one: "mot" } }
+      });
+      /* ==== /BEUK:bugs ==== */
       /* ==== BEUK:auth ==== account basics (P0 #5): forgot password,
          change password, sign out everywhere — assigned per pack so
          completeness holds. */
@@ -14458,14 +14605,40 @@
       const isEmptyDesk = () => bookWordTotal() === 0 &&
         !String(state.meta.title || "").trim() && !String(state.meta.author || "").trim() &&
         state.sections.every((s) => !String(s.content || "").trim());
+      /* ==== BEUK:bugs ==== — the sample's own word count, as shipped:
+         counted once from the bundled book exactly the way the stats
+         count the desk (sectionWords over the included sections, the
+         sample's own title and author in place), instead of a typed-in
+         round number. Nothing is drawn while it is counted. */
+      let sampleShippedWordsCache = null;
+      function sampleShippedWords() {
+        if (sampleShippedWordsCache !== null) return sampleShippedWordsCache;
+        const d = buildSampleBook();
+        const keepSecs = state.sections, keepMeta = state.meta;
+        try {
+          state.sections = d.sections; state.meta = Object.assign({}, keepMeta, d.meta || {});
+          sampleShippedWordsCache = bookWordTotal();
+        } finally { state.sections = keepSecs; state.meta = keepMeta; }
+        return sampleShippedWordsCache;
+      }
+      /* While the sample is open its note says the desk's live count —
+         redrawn by updateStats on every edit, never left stale. */
+      function renderSampleNoteLive(total) {
+        if (!sampleState.loaded) return;
+        const note = $("sampleNote"); if (!note) return;
+        if (typeof total !== "number") total = bookWordTotal();
+        note.textContent = t("side.sampleNoteLoaded", { n: fmtNum(total), count: total });
+      }
+      /* ==== /BEUK:bugs ==== */
       function renderSampleButton() {
         const btn = $("btnSampleStory"); if (!btn) return;
         const note = $("sampleNote");
         if (sampleState.loaded) {
           btn.innerHTML = '<i data-lucide="book-x"></i>' + t("side.sampleRemove");
-          if (note) note.textContent = t("side.sampleNoteLoaded", { n: fmtNum(bookWordTotal()) });
+          if (note) renderSampleNoteLive(); /* BEUK:bugs */
         } else {
-          btn.innerHTML = '<i data-lucide="book-open"></i>' + t("side.sampleLoad", { n: fmtNum(25000) });
+          const sw = sampleShippedWords(); /* BEUK:bugs — the real count, not a round 25,000 */
+          btn.innerHTML = '<i data-lucide="book-open"></i>' + t("side.sampleLoad", { n: fmtNum(sw), count: sw });
           if (note) note.textContent = t("side.sampleNoteLoad");
         }
         icons();
@@ -15916,7 +16089,8 @@
         if (typeof total !== "number") total = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
         const mins = Math.round(total / 225);
         const time = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
-        el.textContent = t("side.statsSummary", { words: fmtNum(total), pages: fmtNum(Math.ceil(total / 250)), time: time });
+        const pages = Math.ceil(total / 250); /* BEUK:bugs — each count in its own plural form */
+        el.textContent = t("side.statsSummary", { words: t("side.statsWords", { n: fmtNum(total), count: total }), pages: t("side.statsPages", { n: fmtNum(pages), count: pages }), time: time });
       }
       function sideInit() {
         const btn = $("btnSideStatus");
@@ -15963,7 +16137,7 @@
             html += '<div class="sec-item' + (isActive ? " active" : "") + (gCollapsed && !isActive ? " og-hidden" : "") + (s.included ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + s.id + '" role="button" tabindex="0" draggable="true">' +
               '<span class="drag"><i data-lucide="' + (isPart ? "bookmark" : s.kind === "body" ? "grip-vertical" : s.type === "toc" ? "list-ordered" : s.type === "cover" ? "image" : "file-text") + '"></i></span>' +
               '<span class="sec-name">' + esc(name) + '</span>' +
-              '<span class="sec-wc" id="wc-' + s.id + '">' + fmtNum(sectionWords(s)) + " " + t("side.wordUnit") + "</span>" +
+              '<span class="sec-wc" id="wc-' + s.id + '">' + fmtNum(sectionWords(s)) + " " + t("side.wordUnit", { count: sectionWords(s) }) + "</span>" +
               '<span class="sec-tools">' +
               '<button type="button" class="mini" data-act="up" title="' + t("side.moveUp") + '" aria-label="' + t("side.moveUp") + '"><i data-lucide="chevron-up"></i></button><button type="button" class="mini" data-act="down" title="' + t("side.moveDown") + '" aria-label="' + t("side.moveDown") + '"><i data-lucide="chevron-down"></i></button>' +
               (s.kind === "body" ? '<button type="button" class="mini" data-act="del" title="' + t("side.deleteChapter") + '" aria-label="' + t("side.deleteChapter") + '"><i data-lucide="trash-2"></i></button>' : "") +
@@ -16065,15 +16239,17 @@
         const mins = Math.round(total / 225);
         $("statTime").textContent = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
         renderSideStatusSummary(total); /* BEUK:sidebar */
+        if (typeof renderSampleNoteLive === "function") renderSampleNoteLive(total); /* BEUK:bugs — the sample note's count is live */
         /* The Content page carries its own live counts — this section and
            the whole book — and the Zen pill reads the same numbers. */
-        const secTxt = t("editor.countSection", { n: fmtNum(activeSection() ? sectionWords(activeSection()) : 0) });
-        const bookTxt = t("editor.countBook", { n: fmtNum(total) });
+        const secW = activeSection() ? sectionWords(activeSection()) : 0; /* BEUK:bugs — plural by count */
+        const secTxt = t("editor.countSection", { n: fmtNum(secW), count: secW });
+        const bookTxt = t("editor.countBook", { n: fmtNum(total), count: total });
         const edSec = $("edSecWords"), edBook = $("edBookWords"), zenCount = $("zenCount");
         if (edSec) edSec.textContent = secTxt;
         if (edBook) edBook.textContent = bookTxt;
         if (zenCount) zenCount.textContent = secTxt + " · " + bookTxt;
-        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) el.textContent = fmtNum(sectionWords(s)) + " " + t("side.wordUnit"); });
+        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); el.textContent = fmtNum(w) + " " + t("side.wordUnit", { count: w }); } });
         $("projectTitleDisplay").textContent = state.meta.title || t("misc.untitledBook");
         $("projectAuthorDisplay").textContent = state.meta.author ? t("misc.byAuthor", { author: state.meta.author }) : "";
         renderProgress();
@@ -16563,13 +16739,46 @@
         noteBookEdited();
         return true;
       }
+      /* ==== BEUK:bugs ==== — a desk that is truly empty: exactly the
+         blank book a new desk starts as (no words, no title or credit,
+         no cover, pictures, fonts or saved themes, the starting
+         sections untouched, the starting typography). Restoring over
+         it loses nothing, so no safety snapshot is taken — one would
+         only push a real automatic snapshot out of the ten kept. Any
+         difference at all, and the snapshot is taken as before. */
+      function deskTrulyEmpty() {
+        if (!isEmptyDesk()) return false;
+        if (state.cover || state.coverRecipe) return false;
+        if ((state.images || []).length || (state.fonts || []).length || (state.customThemes || []).length) return false;
+        const metaFree = ["language", "langSource", "langGuess", "year", "bookId", "legacyBookIds"];
+        const m = state.meta || {};
+        for (const k of Object.keys(m)) {
+          if (metaFree.indexOf(k) !== -1) continue;
+          if (typeof m[k] === "string" ? m[k].trim() : (m[k] !== null && m[k] !== undefined && m[k] !== false)) return false;
+        }
+        const blank = buildEmptyBook();
+        if (state.sections.length !== blank.sections.length) return false;
+        for (let i = 0; i < blank.sections.length; i++) {
+          const a = state.sections[i], b = blank.sections[i];
+          if (a.kind !== b.kind || a.type !== b.type || String(a.title || "") !== String(b.title || "") ||
+              String(a.subtitle || "") !== String(b.subtitle || "") || String(a.number || "") !== String(b.number || "") ||
+              a.plateId || a.backdropId || a.included === false) return false;
+        }
+        if (state.theme && state.theme.header) return false;
+        if (state.activePreset !== blank.activePreset) return false;
+        const themeNow = Object.assign({}, state.theme); delete themeNow.header;
+        return stableJson(themeNow) === stableJson(blank.theme);
+      }
+      /* ==== /BEUK:bugs ==== */
       function restoreSnapshot(id) {
         const snap = (state.history || []).find((s) => s.id === id);
         if (!snap) return false;
-        /* Every restore is itself undoable — always, the untouched sample
-           and an empty desk included, because the confirmation says a
-           snapshot is taken first (BEUK:shelfguard). */
-        takeSnapshot("", "restore");
+        /* Every restore is itself undoable — the untouched sample
+           included, because the confirmation says a snapshot is taken
+           first (BEUK:shelfguard). The one exception is a truly empty
+           desk (BEUK:bugs): there is nothing to keep, its confirmation
+           says no snapshot is taken, and none is. */
+        if (!deskTrulyEmpty()) takeSnapshot("", "restore");
         const doc = JSON.parse(JSON.stringify(snap.doc));
         delete doc.history; /* restoring a book never restores its history list */
         applyBookDoc(doc);
@@ -16752,7 +16961,7 @@
             const s = (state.history || []).find((x) => x.id === id);
             cloudConfirm({
               title: t("history.restoreTitle"),
-              body: t("history.restoreBody", { name: s ? snapshotLabel(s) : "" }),
+              body: t(deskTrulyEmpty() ? "history.restoreBodyEmpty" : "history.restoreBody", { name: s ? snapshotLabel(s) : "" }), /* BEUK:bugs — says only what restore will do */
               yes: t("history.restoreAll"), no: t("confirm.keep")
             }).then((ok) => {
               if (!ok) return;
@@ -18892,7 +19101,7 @@
         renderDeskFacts();
         $("deskTotal").textContent = t("preview.desk.total", {
           title: state.meta.title || t("misc.untitledBook"),
-          n: deskState.total, device: DEVICE_NAMES[state.device] || state.device
+          n: deskState.total, count: deskState.total, device: DEVICE_NAMES[state.device] || state.device
         });
         /* BEUK:pagecount — say what the estimate was measured at. */
         const area = deviceReadingArea();
@@ -18911,7 +19120,8 @@
           const name = document.createElement("span");
           name.className = "d-name"; name.textContent = deskSectionLabel(s);
           const pg = document.createElement("span");
-          pg.className = "d-pages"; pg.textContent = t("preview.desk.pages", { n: deskState.counts[s.id] || 1 });
+          const dpn = deskState.counts[s.id] || 1;
+          pg.className = "d-pages"; pg.textContent = t("preview.desk.pages", { n: dpn, count: dpn });
           b.appendChild(name); b.appendChild(pg);
           rail.appendChild(b);
         });
@@ -27440,8 +27650,25 @@
           cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
           if (typeof res.manuscript.revision === "number") cloud.baseRevision = res.manuscript.revision;
           setSyncStatus("saved");
+          if (typeof localWriteLinkNow === "function") localWriteLinkNow(); /* BEUK:bugs — the new revision reaches the device now, not 120 ms later */
           if (cloudDirty) cloudAutosaveTick();
           cloudLoadShelf();
+        } else if (res && res.__status === 409 && res.__body && res.__body.manuscript && res.__body.manuscript.doc &&
+            typeof res.__body.manuscript.revision === "number" && typeof bookDocsSame === "function" && bookDocsSame(res.__body.manuscript.doc, doc)) {
+          /* BEUK:bugs — the shelf already holds exactly the book this
+             save carried (an earlier save of it landed but its answer
+             was lost, or this device's revision note was behind):
+             there is nothing to choose between. Agree on the shelf's
+             revision; writing typed since stays due. */
+          const m = res.__body.manuscript;
+          cloudDirty = cloud.lastEditAt > sentAt;
+          cloud.pendingSyncs = 0;
+          cloud.baseRevision = m.revision;
+          cloud.baseUpdatedAt = m.updatedAt || cloud.baseUpdatedAt;
+          cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
+          setSyncStatus("saved");
+          if (typeof localWriteLinkNow === "function") localWriteLinkNow();
+          if (cloudDirty) cloudAutosaveTick();
         } else if (res && (res.__status === 409 || res.__status === 428) && res.__body && res.__body.manuscript && res.__body.manuscript.doc) {
           /* BEUK:local — the shelf moved on since this device last
              agreed with it: the conflict notice, never an overwrite. */
@@ -27508,7 +27735,7 @@
         if (cloud.user) {
           const initial = String(cloud.user.email || "?").trim().charAt(0).toUpperCase() || "?";
           btn.innerHTML = '<span class="acct-avatar">' + esc(initial) + '</span><span class="sync-dot' + (cloud.syncStatus === "saving" ? " saving" : "") + '"></span>';
-          btn.title = cloud.user.email + " — your shelf";
+          btn.title = t("top.accountTitle", { email: cloud.user.email }); /* BEUK:bugs */
         } else {
           btn.innerHTML = '<i data-lucide="cloud"></i><span class="tb-label">' + t("top.signIn") + "</span>";
           btn.title = t("top.signInTitle");
@@ -30395,7 +30622,7 @@
               const items = Array.from(document.querySelectorAll("#deskRail .desk-item"));
               const listOk = items.length === state.sections.length &&
                 items.every((el, i) => el.getAttribute("data-desk-id") === state.sections[i].id &&
-                  el.querySelector(".d-pages").textContent === t("preview.desk.pages", { n: res.counts[state.sections[i].id] || 1 }));
+                  el.querySelector(".d-pages").textContent === t("preview.desk.pages", { n: res.counts[state.sections[i].id] || 1, count: res.counts[state.sections[i].id] || 1 }));
               const factsOk = $("deskFacts").textContent.indexOf(DEVICE_FACTS.kindle.res) !== -1 && $("deskFacts").textContent.indexOf("300") !== -1;
               const totalOk = $("deskTotal").textContent.indexOf(String(res.total)) !== -1 && $("deskTotal").textContent.indexOf(state.meta.title) !== -1;
               const target = state.sections.find((s) => s.type === "chapter" && s.id !== state.activeId) || state.sections[1];
@@ -31905,8 +32132,8 @@
                  Chapter One ("The Ferry Crossing" / "In which Mara
                  returns") the right reading is 5 + 3 + 4 = 12. */
               const expSec = 5 + countWords(s.title) + countWords(s.subtitle);
-              const secTxt = t("editor.countSection", { n: fmtNum(expSec) });
-              const bookTxt = t("editor.countBook", { n: fmtNum(bookWordTotal()) });
+              const secTxt = t("editor.countSection", { n: fmtNum(expSec), count: expSec });
+              const bookTxt = t("editor.countBook", { n: fmtNum(bookWordTotal()), count: bookWordTotal() });
               return scVerdict(sectionWords(s) === expSec && sec === secTxt && book === bookTxt && zen === secTxt + " · " + bookTxt,
                 "word bar reads '" + sec + "' · '" + book + "' (expected '" + secTxt + "' · '" + bookTxt + "': 5 body words + the section's title and subtitle, and the book total) and the Zen pill carries the same counts ('" + zen + "')");
             } finally { s.content = keep; updateStats(); }
@@ -33068,7 +33295,7 @@
               const stepped = state.activeId === secs[1].id && document.body.classList.contains("zen");
               const nameOk = !!$("zenNavName") && $("zenNavName").textContent === (sectionLabel(secs[1]) || "");
               const total = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
-              const pillExpect = t("editor.countSection", { n: fmtNum(sectionWords(secs[1])) }) + " · " + t("editor.countBook", { n: fmtNum(total) });
+              const pillExpect = t("editor.countSection", { n: fmtNum(sectionWords(secs[1])), count: sectionWords(secs[1]) }) + " · " + t("editor.countBook", { n: fmtNum(total), count: total });
               const pillOk = $("zenCount").textContent === pillExpect;
               document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", altKey: true, bubbles: true, cancelable: true }));
               const altStepped = state.activeId === secs[2].id && document.body.classList.contains("zen");
@@ -34864,7 +35091,7 @@
       /* ==== /BEUK:acx ==== */
       /* ==== BEUK:shelfguard ==== */
       SELF_CHECKS.push(
-        { id: "history.restore.snapshot-always", feature: "history", name: "Restore the whole book takes the snapshot its confirmation promises in every case — the untouched sample included — and that snapshot gives the replaced book back exactly",
+        { id: "history.restore.snapshot-always", feature: "history", name: "Restore the whole book takes the snapshot its confirmation promises in every case but a truly empty desk — the untouched sample included — and that snapshot gives the replaced book back exactly",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
@@ -35120,6 +35347,224 @@
           } }
         /* ==== /BEUK:shelfguard ==== */
       ];
+      /* ==== BEUK:bugs ==== — self-checks for the round-6 fixes */
+      SELF_CHECKS_ASYNC.push(
+        { id: "shelf.reload.no-false-conflict", feature: "shelf", name: "A reload right after a shelf save never raises a false conflict: the new revision is written at once (no debounce left pending); a stale note whose shelf copy is this very book agrees quietly, on reload and on a 409; a shelf copy that really differs still raises the conflict notice",
+          async run() {
+            const keep = {
+              doc: JSON.parse(JSON.stringify(serializeBook())), sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
+              c: { user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision,
+                baseUpdatedAt: cloud.baseUpdatedAt, shelfUpdatedAt: cloud.shelfUpdatedAt, sessionEdited: cloud.sessionEdited, editedBeforeSignIn: cloud.editedBeforeSignIn,
+                pendingSyncs: cloud.pendingSyncs, conflict: cloud.conflict, shelf: cloud.shelf, syncStatus: cloud.syncStatus, lastEditAt: cloud.lastEditAt },
+              dirty: cloudDirty, susp: local.suspended, fetch: window.fetch, restoredLink: local.restoredLink, signedOut: local.signedOut
+            };
+            const at = "2026-01-02T00:00:00.000Z";
+            let shelfDoc = null, shelfRev = 4, putStatus = 200;
+            const calls = [];
+            window.fetch = async (path, opts) => {
+              const m = (opts && opts.method) || "GET"; calls.push(m + " " + path);
+              const res = (o, st) => ({ status: st || 200, ok: !st || st < 400, json: async () => o });
+              if (m === "GET" && path === "/api/manuscripts/sc-fc") return res({ manuscript: { id: "sc-fc", title: "x", doc: JSON.parse(JSON.stringify(shelfDoc)), revision: shelfRev, updatedAt: at } });
+              if (m === "PUT" && path === "/api/manuscripts/sc-fc") {
+                if (putStatus === 200) return res({ manuscript: { id: "sc-fc", title: "x", doc: JSON.parse(opts.body).doc, revision: shelfRev + 1, updatedAt: at } });
+                return res({ error: "revision conflict", manuscript: { id: "sc-fc", title: "x", doc: JSON.parse(JSON.stringify(shelfDoc)), revision: shelfRev, updatedAt: at } }, putStatus);
+              }
+              if (m === "GET" && path === "/api/manuscripts") return res({ manuscripts: [] });
+              return res({ error: "not in the fixture" }, 404);
+            };
+            const settle = () => new Promise((r) => setTimeout(r, 0));
+            const closeConflict = () => { cloud.conflict = null; $("modalConflict").classList.remove("open"); };
+            const desk = () => {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              state.meta.title = "Check Conflict Book";
+              state.sections.find((x) => x.type === "chapter").content = "Words saved on the shelf a moment ago — check " + uid();
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              cloud.user = { id: "sc-user", email: "check@beuk.invalid" }; cloud.available = true;
+              cloud.sessionEdited = false; cloud.pendingSyncs = 0; cloud.conflict = null; cloud.lastEditAt = 0;
+              calls.length = 0;
+            };
+            const reloadWith = (link) => {
+              cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; cloudDirty = false;
+              local.signedOut = false;
+              local.restoredLink = Object.assign({ userId: "sc-user", linkedId: "sc-fc", linkState: "linked", baseUpdatedAt: "2026-01-01T00:00:00.000Z" }, link);
+            };
+            const bad = [];
+            local.suspended = true;
+            try {
+              /* 1. the stale note of the original bug: base 3, "dirty", shelf at 4 holding this very book */
+              desk(); shelfDoc = serializeBook(); shelfRev = 4;
+              reloadWith({ baseRevision: 3, shelfDirty: true });
+              await localReconcileOnSignIn(); await settle();
+              if (cloud.conflict || $("modalConflict").classList.contains("open")) { bad.push("a reload whose shelf copy is this very book raised the conflict notice"); closeConflict(); }
+              if (cloud.baseRevision !== 4 || cloudDirty) bad.push("the same-book reload did not agree on revision 4 clean (rev " + cloud.baseRevision + ", dirty " + cloudDirty + ")");
+              /* 2. a real conflict on reload: the shelf copy differs */
+              desk(); shelfDoc = JSON.parse(JSON.stringify(serializeBook())); shelfDoc.sections.find((x) => x.type === "chapter").content = "Another device wrote this — check";
+              reloadWith({ baseRevision: 3, shelfDirty: true });
+              await localReconcileOnSignIn(); await settle();
+              if (!cloud.conflict || !$("modalConflict").classList.contains("open")) bad.push("a real two-device change on reload did NOT raise the conflict notice");
+              closeConflict();
+              /* 3. a 409 whose shelf copy is exactly what was sent */
+              desk(); cloud.linkedId = "sc-fc"; cloud.linkState = "linked"; cloud.baseRevision = 3; cloudDirty = true;
+              shelfDoc = serializeBook(); shelfRev = 5; putStatus = 409;
+              await cloudSaveRun(); await settle();
+              if (cloud.conflict || $("modalConflict").classList.contains("open")) { bad.push("a 409 carrying this very book raised the conflict notice"); closeConflict(); }
+              if (cloud.baseRevision !== 5 || cloudDirty || cloud.syncStatus !== "saved") bad.push("the same-book 409 did not settle on revision 5 saved (rev " + cloud.baseRevision + ", " + cloud.syncStatus + ")");
+              /* 4. a 409 with a different shelf copy is a real conflict */
+              desk(); cloud.linkedId = "sc-fc"; cloud.linkState = "linked"; cloud.baseRevision = 3; cloudDirty = true;
+              shelfDoc = JSON.parse(JSON.stringify(serializeBook())); shelfDoc.meta.title = "Changed elsewhere — check"; shelfRev = 5; putStatus = 409;
+              await cloudSaveRun(); await settle();
+              if (!cloud.conflict || !$("modalConflict").classList.contains("open")) bad.push("a 409 with a different shelf copy did NOT raise the conflict notice");
+              closeConflict();
+              /* 5. a 200 leaves no link write waiting on the debounce */
+              desk(); cloud.linkedId = "sc-fc"; cloud.linkState = "linked"; cloud.baseRevision = 3; cloudDirty = true; shelfRev = 3; putStatus = 200;
+              await cloudSaveRun();
+              if (localLinkTimer !== null) bad.push("after a 200 the new revision still waits on the 120 ms link debounce");
+              if (cloud.baseRevision !== 4) bad.push("the 200 did not move the base to revision 4");
+              if (typeof bookDocsSame !== "function" || bookDocsSame({ a: 1, b: { c: 2, d: undefined } }, { b: { c: 2 }, a: 1 }) !== true || bookDocsSame({ a: 1 }, { a: 2 }) !== false) bad.push("bookDocsSame does not compare key-order-free, undefined-as-absent");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "stale note + same book: no notice, agreed on rev 4; real change on reload: notice raised; same-book 409: settled on rev 5; different 409: notice raised; 200: link written at once (no debounce pending)");
+            } finally {
+              closeConflict();
+              await settle();
+              window.fetch = keep.fetch;
+              Object.assign(cloud, keep.c);
+              applyBookDoc(keep.doc);
+              sampleState.loaded = keep.sample.loaded; sampleState.loadedJson = keep.sample.json; renderSampleButton();
+              cloudDirty = keep.dirty;
+              local.restoredLink = keep.restoredLink; local.signedOut = keep.signedOut;
+              clearTimeout(localLinkTimer); localLinkTimer = null;
+              local.suspended = keep.susp;
+              setSyncStatus(keep.c.syncStatus);
+              renderShelfList();
+            }
+          } }
+      );
+      SELF_CHECKS.push(
+        { id: "ui.lang.live-account-desk", feature: "ui", name: "Switching the UI language redraws the account button (Sign in, its title) and the preview desk (total, basis, rail label, per-section pages) at once — Spanish, Arabic, Japanese",
+          run() {
+            const keepLang = getUiLang();
+            const bad = [];
+            try {
+              ["es", "ar", "ja"].forEach((L) => {
+                setUiLang(L, { persist: false });
+                const btn = $("btnAccount");
+                if (btn) {
+                  if (cloud.user) { if (btn.title !== t("top.accountTitle", { email: cloud.user.email })) bad.push(L + ": account title not redrawn"); }
+                  else {
+                    const lab = btn.querySelector(".tb-label");
+                    if (!lab || lab.textContent !== t("top.signIn") || btn.title !== t("top.signInTitle")) bad.push(L + ": Sign in not redrawn");
+                  }
+                }
+                const tot = $("deskTotal");
+                if (tot && tot.textContent) {
+                  const want = t("preview.desk.total", { title: state.meta.title || t("misc.untitledBook"), n: deskState.total, count: deskState.total, device: DEVICE_NAMES[state.device] || state.device });
+                  if (tot.textContent !== want) bad.push(L + ": desk total not redrawn");
+                  if ($("deskRail").getAttribute("aria-label") !== t("preview.desk.railLabel")) bad.push(L + ": desk rail label not redrawn");
+                  const first = $("deskRail").querySelector(".d-pages");
+                  const s0 = state.sections[0];
+                  if (first && s0) { const n0 = deskState.counts[s0.id] || 1; if (first.textContent !== t("preview.desk.pages", { n: n0, count: n0 })) bad.push(L + ": desk page counts not redrawn"); }
+                }
+              });
+            } finally { setUiLang(keepLang, { persist: false }); }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "es / ar / ja: Sign in (or the account title) and the desk's total, rail label and page counts redrawn from the new pack, no reload");
+          } },
+        { id: "ui.plural.counts", feature: "ui", name: "Word and page counts take each language's own plural form (CLDR rules via Intl.PluralRules): 1 word / ~1 page in English, Polish 5 słów, Russian 2 слова / 5 слов / 21 слово, Arabic 3 كلمات / 11 كلمة, French 1 mot",
+          run() {
+            const keepLang = getUiLang();
+            const bad = [];
+            const cases = [
+              ["en", "side.statsWords", 1, "1 word"], ["en", "side.statsWords", 107, "107 words"], ["en", "side.statsPages", 1, "~1 page"], ["en", "side.statsPages", 2, "~2 pages"],
+              ["en", "editor.countSection", 1, "1 word in this section"], ["en", "editor.countBook", 0, "0 words in the book"],
+              ["pl", "side.statsWords", 1, "1 słowo"], ["pl", "side.statsWords", 3, "3 słowa"], ["pl", "side.statsWords", 5, "5 słów"], ["pl", "side.statsWords", 22, "22 słowa"], ["pl", "side.statsPages", 12, "~12 stron"],
+              ["ru", "side.statsWords", 2, "2 слова"], ["ru", "side.statsWords", 5, "5 слов"], ["ru", "side.statsWords", 21, "21 слово"], ["ru", "side.statsPages", 3, "~3 страницы"], ["ru", "preview.desk.pages", 5, "≈ 5 страниц"],
+              ["ar", "side.statsWords", 3, "3 كلمات"], ["ar", "side.statsWords", 11, "11 كلمة"], ["ar", "side.statsPages", 1, "~1 صفحة"], ["ar", "preview.desk.pages", 13, "≈ 13 صفحة"],
+              ["fr", "side.statsWords", 1, "1 mot"], ["fr", "side.wordUnit", 1, "mot"], ["fr", "side.wordUnit", 4, "mots"], ["ar", "side.wordUnit", 3, "كلمات"], ["ar", "side.wordUnit", 12, "كلمة"],
+              ["de", "side.statsPages", 1, "~1 Seite"], ["es", "side.statsWords", 1, "1 palabra"], ["ja", "side.statsWords", 1, "1語"]
+            ];
+            try {
+              cases.forEach(([L, key, n, want]) => {
+                setUiLang(L, { persist: false });
+                const got = t(key, { n: n, count: n });
+                if (got !== want) bad.push(L + " " + key + "(" + n + ") = " + JSON.stringify(got) + ", want " + JSON.stringify(want));
+              });
+              setUiLang("en", { persist: false });
+              const el = $("sideStatusSummary");
+              if (el) {
+                renderSideStatusSummary(107);
+                if (el.textContent !== "107 words · ~1 page · " + t("stats.readingM", { m: 0 })) bad.push("sidebar summary at 107 words reads " + JSON.stringify(el.textContent));
+              }
+            } finally { setUiLang(keepLang, { persist: false }); if (typeof updateStats === "function" && $("statWords")) updateStats(); }
+            return scVerdict(bad.length === 0, bad.length ? bad.slice(0, 6).join("; ") : cases.length + " counted forms correct across en/pl/ru/ar/fr/de/es/ja; the sidebar reads \"107 words · ~1 page\"");
+          } },
+        { id: "sample.count.truthful", feature: "sample", name: "The sample's word counts are true: the Load button states the bundled sample's real count (counted as the stats count the desk), and while the sample is open its note follows every edit",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook()); sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
+              const shipped = sampleShippedWords();
+              const btn = $("btnSampleStory");
+              if (btn && btn.textContent.indexOf(fmtNum(shipped)) === -1) bad.push("Load button does not state the real count " + fmtNum(shipped) + ": " + btn.textContent);
+              applyBookDoc(buildSampleBook()); sampleState.loaded = true; sampleState.loadedJson = sampleComparableJson(); renderSampleButton(); updateStats();
+              if (bookWordTotal() !== shipped) bad.push("shipped count " + shipped + " ≠ the loaded sample's count " + bookWordTotal());
+              const ch = state.sections.find((x) => x.kind === "body" && String(x.content || "").trim());
+              ch.content += "\n\nSeven more words for the live count.";
+              updateStats();
+              const now = bookWordTotal();
+              const note = $("sampleNote");
+              if (now === shipped) bad.push("fixture: the edit did not change the count");
+              if (note && note.textContent !== t("side.sampleNoteLoaded", { n: fmtNum(now), count: now })) bad.push("the open sample's note did not follow the edit: " + note.textContent);
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Load button: " + fmtNum(shipped) + " (the sample's real count); after an edit the note reads " + fmtNum(now));
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; local.suspended = keepSusp;
+              updateStats();
+            }
+          } },
+        { id: "history.restore.empty-desk-no-prune", feature: "history", name: "Restoring the whole book over a truly empty desk takes no safety snapshot (nothing to keep) and so prunes no real automatic snapshot; its confirmation says so; anything on the desk — a title alone — and the snapshot is taken",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              state.meta.title = "Check Target"; state.sections.find((x) => x.type === "chapter").content = "The words to restore — check.";
+              const target = takeSnapshot("Check target", null);
+              for (let i = 0; i < HISTORY_AUTO_CAP; i++) { state.meta.title = "Check auto " + i; takeSnapshot("", "import"); }
+              const autosBefore = state.history.filter((s) => s.auto).map((s) => s.id).join(",");
+              const keptHistory = state.history.slice();
+              applyBookDoc(buildEmptyBook()); state.history = keptHistory.slice();
+              if (!deskTrulyEmpty()) bad.push("a fresh blank desk is not recognised as truly empty");
+              if (t("history.restoreBodyEmpty", { name: "x" }) === t("history.restoreBody", { name: "x" })) bad.push("the empty-desk wording is not distinct");
+              const n0 = state.history.length;
+              restoreSnapshot(target.id);
+              if (state.history.length !== n0) bad.push("a snapshot was taken over the empty desk (history " + n0 + " → " + state.history.length + ")");
+              if (state.history.filter((s) => s.auto).map((s) => s.id).join(",") !== autosBefore) bad.push("a real automatic snapshot was pruned");
+              if (state.meta.title !== "Check Target") bad.push("the restore did not return the target");
+              /* anything on the desk: the snapshot is taken as before */
+              applyBookDoc(buildEmptyBook()); state.history = keptHistory.slice(); state.meta.title = "Only a title";
+              if (deskTrulyEmpty()) bad.push("a desk with a title counted as truly empty");
+              const n1 = state.history.length;
+              restoreSnapshot(target.id);
+              const s0 = state.history[0];
+              if (state.history.length !== n1 || !s0 || s0.auto !== "restore" || s0.doc.meta.title !== "Only a title") bad.push("no safety snapshot over a desk holding a title");
+              applyBookDoc(buildEmptyBook()); state.history = keptHistory.slice(); state.theme = Object.assign({}, state.theme, { fontSize: (state.theme.fontSize || 16) + 3 });
+              if (deskTrulyEmpty()) bad.push("a desk with changed typography counted as truly empty");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "empty desk: no snapshot, all " + HISTORY_AUTO_CAP + " automatic snapshots kept, distinct wording; a title or changed typography: snapshot taken");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; local.suspended = keepSusp;
+            }
+          } }
+      );
+      /* ==== /BEUK:bugs ==== */
       async function runAsyncSelfChecks() {
         const out = [];
         for (const c of SELF_CHECKS_ASYNC) {
@@ -35278,6 +35723,22 @@
         clearTimeout(localLinkTimer);
         localLinkTimer = setTimeout(localWriteLinkOnly, 120);
       }
+      /* ==== BEUK:bugs ==== — the moment a shelf save lands, the device
+         records the new shelf revision at once, not after the 120 ms
+         debounce: a reload inside that window used to restore the old
+         revision with "unsaved on the shelf", see the shelf one ahead,
+         and raise the "changed in two places" notice for a book that
+         changed in one. When the device copy itself still has a save
+         pending, the whole record (book + link) is written together in
+         one transaction, so the link never claims "on the shelf" for a
+         device copy older than the one the shelf took. */
+      function localWriteLinkNow() {
+        clearTimeout(localLinkTimer); localLinkTimer = null;
+        if (!local.ready || local.suspended) return;
+        if (local.dirty || local.timer || local.writing) { localSaveNow(); return; }
+        localWriteLinkOnly();
+      }
+      /* ==== /BEUK:bugs ==== */
       function localClassifyError(e) {
         const name = (e && e.name) || "Error";
         if (name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED") return "quota";
@@ -35378,7 +35839,8 @@
         if (local.guardOn && !localHasUnsaved()) { window.removeEventListener("beforeunload", localBeforeUnload); local.guardOn = false; }
       }
       function localFlushOnHide() {
-        if (local.ready && (local.dirty || local.timer)) localSaveNow();
+        if (local.ready && (local.dirty || local.timer)) { clearTimeout(localLinkTimer); localLinkTimer = null; localSaveNow(); }
+        else if (localLinkTimer) localWriteLinkNow(); /* BEUK:bugs — a link change still waiting on its debounce is written as the page goes */
       }
 
       /* ---- boot: restore before the desk is shown ---- */
@@ -35459,6 +35921,24 @@
          Never silently drops either copy: when both moved, the
          existing conflict notice asks (Keep mine / Use the shelf copy /
          Keep both). */
+      /* ==== BEUK:bugs ==== — two whole-book documents are the same book
+         when they serialize identically with their keys in one order
+         (the shelf stores the document as Postgres jsonb, which "does
+         not preserve the order of object keys" —
+         https://www.postgresql.org/docs/16/datatype-json.html). Both
+         pass through JSON first so an undefined field counts as absent,
+         as it is on the shelf. Any other difference (a number printed
+         differently, anything at all) makes them unequal, and the
+         writer is asked as before — the comparison can only ever
+         stand down for two copies that are the same, so agreeing on
+         the shelf's revision then loses nothing. */
+      function bookDocsSame(a, b) {
+        try {
+          if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
+          return stableJson(JSON.parse(JSON.stringify(a))) === stableJson(JSON.parse(JSON.stringify(b)));
+        } catch (e) { return false; }
+      }
+      /* ==== /BEUK:bugs ==== */
       async function localReconcileOnSignIn() {
         if (localRestorePromise) { try { await localRestorePromise; } catch (e) {} }
         const link = local.restoredLink;
@@ -35508,6 +35988,15 @@
           cloud.baseRevision = typeof m.revision === "number" ? m.revision : null;
           cloudDirty = true;
           cloudSaveNow();
+        } else if (m.doc && typeof bookDocsSame === "function" && bookDocsSame(m.doc, serializeBook())) {
+          /* BEUK:bugs — the device's note was a step behind (a reload
+             right as a shelf save landed), but the shelf copy IS this
+             device's book, word for word and setting for setting:
+             nothing moved in two places. Agree on the shelf's revision. */
+          cloud.baseUpdatedAt = m.updatedAt || null;
+          cloud.baseRevision = typeof m.revision === "number" ? m.revision : null;
+          cloudDirty = false;
+          setSyncStatus("saved");
         } else {
           /* Both moved: the writer chooses. */
           cloud.baseUpdatedAt = link.baseUpdatedAt || null;

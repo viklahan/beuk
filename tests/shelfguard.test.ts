@@ -45,12 +45,15 @@ test('shelfguard: the shelf-open guard no longer depends on edits made this sess
   assert.ok(body.indexOf('deskHoldsUnshelvedWork()') < body.indexOf('apiFetch("/api/manuscripts/"'));
 });
 
-test('shelfguard: a whole-book restore snapshots unconditionally (its confirmation says so)', async () => {
+test('shelfguard: a whole-book restore snapshots every desk but a truly empty one, and its confirmation says which', async () => {
   const html = await clientHtml();
   const start = html.indexOf('function restoreSnapshot(id) {');
   const body = html.slice(start, html.indexOf('function restoreSnapshotSection(', start));
-  assert.match(body, /takeSnapshot\("", "restore"\);/);
+  // BEUK:bugs (round 6): the only skip is a truly empty desk — nothing to keep.
+  assert.match(body, /if \(!deskTrulyEmpty\(\)\) takeSnapshot\("", "restore"\);/);
   assert.doesNotMatch(body, /autoSnapshot\("restore"\)/);
+  // The confirmation is chosen by the very same predicate, so it stays literally true.
+  assert.match(html, /body: t\(deskTrulyEmpty\(\) \? "history\.restoreBodyEmpty" : "history\.restoreBody"/);
 });
 
 test('shelfguard: the optional third confirm button is really hidden and a stray "alt" never reads as yes', async () => {
