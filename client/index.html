@@ -36148,6 +36148,219 @@
           } }
       );
       /* ==== /BEUK:shelfguard ==== */
+      /* ==== BEUK:goalshist ==== the road so far and the change since each snapshot */
+      function ghKeep() {
+        return {
+          doc: JSON.parse(JSON.stringify(serializeBook())),
+          log: JSON.parse(JSON.stringify(wlog)),
+          rebase: wlogRebase,
+          lang: getUiLang(),
+          sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
+          dirty: cloudDirty, edited: cloud.sessionEdited, before: cloud.editedBeforeSignIn,
+          susp: local.suspended
+        };
+      }
+      function ghRestore(k) {
+        try { closeHistory(); } catch (e) {}
+        histViewId = null; histPeekId = null;
+        if (getUiLang() !== k.lang) setUiLang(k.lang, { persist: false });
+        applyBookDoc(k.doc);
+        wlog = k.log; wlogRebase = true; /* the restored book is an arrival, not writing */
+        updateStats();
+        wlog = k.log; wlogRebase = k.rebase; wlogSave();
+        sampleState.loaded = k.sample.loaded; sampleState.loadedJson = k.sample.json; renderSampleButton();
+        cloudDirty = k.dirty; cloud.sessionEdited = k.edited; cloud.editedBeforeSignIn = k.before;
+        local.suspended = k.susp;
+        renderGoalRoad();
+      }
+      function ghRoadInvert(geom, model, x, y) {
+        const span = model.xMax - model.xMin || 1;
+        return {
+          day: model.xMin + ((x - geom.padL) / (geom.W - geom.padL - geom.padR)) * span,
+          w: (1 - (y - geom.padT) / (geom.H - geom.padT - geom.padB)) * model.yMax
+        };
+      }
+      SELF_CHECKS.push(
+        { id: "goals.road.only-logged-days", feature: "goals", name: "The road so far draws a point only for a day the log kept: a fixture log with gaps gives exactly its logged days (no invented points), breaks the line at every gap, lists the same days in its screen-reader table, and hides itself below two logged days",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            try {
+              local.suspended = true;
+              const key = wlogBookKey();
+              const fixture = { "2026-03-01": 1000, "2026-03-02": 1200, "2026-03-05": 1500, "2026-03-09": 1900, "2026-03-10": 2000, "not-a-day": 5, "2026-03-07": -4 };
+              const logged = ["2026-03-01", "2026-03-02", "2026-03-05", "2026-03-09", "2026-03-10"];
+              const pts = roadPoints(fixture);
+              if (pts.map((p) => p.ds).join() !== logged.join()) bad.push("points " + pts.map((p) => p.ds).join() + " ≠ the five logged days");
+              const segs = roadSegments(pts);
+              if (segs.map((s) => s.length).join() !== "2,1,2") bad.push("segments " + segs.map((s) => s.length).join() + " ≠ 2,1,2");
+              state.goals = normalizeGoals({});
+              wlog.len = {}; wlog.len[key] = fixture;
+              renderGoalRoad();
+              const host = $("goalRoad");
+              if ($("goalRoadSec").hidden) bad.push("hidden with five logged days");
+              const geom = roadState.geom, model = roadState.model;
+              const loggedDays = new Set(logged.map(roadDayIndex));
+              let vertices = 0;
+              host.querySelectorAll(".road-line").forEach((path) => {
+                const nums = (path.getAttribute("d").match(/-?\d+(\.\d+)?/g) || []).map(Number);
+                for (let i = 0; i + 1 < nums.length; i += 2) {
+                  vertices++;
+                  const day = Math.round(ghRoadInvert(geom, model, nums[i], nums[i + 1]).day);
+                  if (!loggedDays.has(day)) bad.push("a line vertex sits on an unlogged day (" + day + ")");
+                }
+              });
+              if (host.querySelectorAll(".road-line").length !== 2) bad.push(host.querySelectorAll(".road-line").length + " line pieces, expected 2 (broken at each gap)");
+              if (vertices !== 4) bad.push(vertices + " line vertices, expected 4");
+              if (host.querySelectorAll(".road-dot").length !== 1) bad.push("the lone day (Mar 5) is not drawn as one dot");
+              const rows = host.querySelectorAll("table.sr-only tbody tr");
+              if (rows.length !== 5) bad.push(rows.length + " table rows, expected 5");
+              if (host.querySelector(".road-target") || host.querySelector(".road-pace")) bad.push("a target or pace line with no goals set");
+              if (!host.querySelector(".road-cap") || host.querySelector(".road-cap").textContent.indexOf(t("goals.roadGaps")) === -1) bad.push("the caption does not say the line breaks where nothing was kept");
+              /* one logged day: hidden entirely */
+              wlog.len[key] = { "2026-03-01": 1000 };
+              renderGoalRoad();
+              if (!$("goalRoadSec").hidden || host.innerHTML !== "") bad.push("still shown with a single logged day");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "5 logged days of 7 (a junk key and a negative count dropped) → exactly 5 points; the line breaks at both gaps (2 pieces + 1 lone dot, every vertex on a logged day); 5 table rows; no target/pace without goals; one logged day hides the section");
+            } finally { ghRestore(k); }
+          } },
+        { id: "goals.road.pace-line", feature: "goals", name: "The road so far draws the project target as a level line and, with a deadline ahead, the steady pace from today's length to the target on the deadline — slope (target − today) / days left — labelled as a pace; no pace line when the deadline has passed or the target is met",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            try {
+              local.suspended = true;
+              const now = new Date();
+              const total = bookTotalWords();
+              /* the pure model: 400 words now, 1,000 by five days from today → 120 a day */
+              const dl5 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5);
+              const pm = roadModel([{ ds: "a", day: 1, w: 100 }, { ds: "b", day: 2, w: 300 }], { project: 1000, deadline: dayStr(dl5) }, 400, now);
+              if (!pm.pace || pm.pace.perDay !== 120 || pm.pace.fromW !== 400 || pm.pace.toW !== 1000 || pm.pace.toDay - pm.pace.fromDay !== 5) bad.push("model pace " + JSON.stringify(pm.pace) + " ≠ 400 → 1,000 over 5 days at 120 a day");
+              /* rendered: the live book's length, a target 600 above it, a deadline 5 days out */
+              const key = wlogBookKey();
+              const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3), d2 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2);
+              wlog.len = {}; wlog.len[key] = {}; wlog.len[key][dayStr(d1)] = Math.max(0, total - 50); wlog.len[key][dayStr(d2)] = total;
+              state.goals = normalizeGoals({ project: total + 600, deadline: dayStr(dl5) });
+              renderGoalRoad();
+              const host = $("goalRoad");
+              const pace = host.querySelector(".road-pace"), target = host.querySelector(".road-target");
+              if (!pace) bad.push("no pace line");
+              if (!target) bad.push("no target line");
+              const geom = roadState.geom, model = roadState.model;
+              if (pace && geom) {
+                const a = ghRoadInvert(geom, model, +pace.getAttribute("x1"), +pace.getAttribute("y1"));
+                const b = ghRoadInvert(geom, model, +pace.getAttribute("x2"), +pace.getAttribute("y2"));
+                const tol = model.yMax * 0.005 + 1;
+                if (Math.abs(a.day - roadDayIndex(dayStr(now))) > 0.05 || Math.abs(a.w - total) > tol) bad.push("the pace does not start at today's length");
+                if (Math.abs(b.day - roadDayIndex(dayStr(dl5))) > 0.05 || Math.abs(b.w - (total + 600)) > tol) bad.push("the pace does not reach the target on the deadline");
+                const slope = (b.w - a.w) / (b.day - a.day);
+                if (Math.abs(slope - 120) > 1) bad.push("drawn slope " + slope.toFixed(2) + " words a day ≠ 120");
+              }
+              if (target && geom) {
+                const ty = ghRoadInvert(geom, model, 0, +target.getAttribute("y1")).w;
+                if (Math.abs(ty - (total + 600)) > model.yMax * 0.005 + 1 || target.getAttribute("y1") !== target.getAttribute("y2")) bad.push("the target line is not level at the target");
+              }
+              const keyTxt = host.querySelector(".road-key") ? host.querySelector(".road-key").textContent : "";
+              if (keyTxt.indexOf(t("goals.roadPace", { n: fmtNum(120) })) === -1) bad.push("the key does not name the pace (120 a day)");
+              const cap = host.querySelector(".road-cap") ? host.querySelector(".road-cap").textContent : "";
+              if (cap.indexOf(t("goals.roadPaceNote", { date: fmtDateIntl(dl5), n: fmtNum(120) })) === -1) bad.push("the caption does not call the dashed line a pace");
+              /* a passed deadline, then a met target: no pace line either way */
+              const yd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+              state.goals = normalizeGoals({ project: total + 600, deadline: dayStr(yd) });
+              renderGoalRoad();
+              if (host.querySelector(".road-pace")) bad.push("a pace line after the deadline passed");
+              if (!host.querySelector(".road-target")) bad.push("the target line left with the deadline");
+              state.goals = normalizeGoals({ project: Math.max(1, total), deadline: dayStr(dl5) });
+              renderGoalRoad();
+              if (total > 0 && host.querySelector(".road-pace")) bad.push("a pace line for a target already met");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "model: 400 → 1,000 over 5 days = 120 a day; drawn: the dashed line runs from today's length (" + fmtNum(total) + ") to the target on the deadline at 120 a day, the target line is level, key and caption name it a pace; no pace past the deadline or once the target is met");
+            } finally { ghRestore(k); }
+          } },
+        { id: "history.delta.words", feature: "history", name: "Each snapshot in History shows its change against the book as it stands now — +N words, −N words, or same length — with each language's plural form (Polish 1 słowo / 22 słowa / 5 słów)",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const words = (n) => Array(n).fill("word").join(" ");
+            try {
+              local.suspended = true;
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              state.sections = [mkSection("body", "chapter", "", { number: "1", content: words(100) })];
+              state.activeId = state.sections[0].id;
+              const snap = takeSnapshot("Delta check", null);
+              const chip = () => { renderHistory(); const el = document.querySelector('[data-hdelta="' + snap.id + '"]'); return el ? el.textContent : null; };
+              openHistory();
+              const base = snap.words;
+              state.sections[0].content = words(140);
+              const up = bookWordTotal() - base;
+              if (chip() !== t("history.deltaUp", { n: fmtNum(up), count: up })) bad.push("growth shows " + JSON.stringify(chip()));
+              state.sections[0].content = words(70);
+              const down = base - bookWordTotal();
+              if (chip() !== t("history.deltaDown", { n: fmtNum(down), count: down })) bad.push("shrinkage shows " + JSON.stringify(chip()));
+              state.sections[0].content = words(100);
+              if (chip() !== t("history.deltaSame")) bad.push("same length shows " + JSON.stringify(chip()));
+              if (up !== 40 || down !== 30) bad.push("fixture counts moved (" + up + ", " + down + ")");
+              const okMsg = "a 100-word snapshot reads " + t("history.deltaUp", { n: fmtNum(40), count: 40 }) + " at 140, " + t("history.deltaDown", { n: fmtNum(30), count: 30 }) + " at 70 and " + t("history.deltaSame") + " at 100; Polish takes słowo / słowa / słów";
+              setUiLang("pl", { persist: false });
+              const pl = [[1, "+1 słowo od tamtej pory"], [22, "+22 słowa od tamtej pory"], [5, "+5 słów od tamtej pory"]];
+              pl.forEach(([n, want]) => { const got = histDeltaText(0, n); if (got !== want) bad.push("pl " + n + ": " + got); });
+              if (histDeltaText(5, 0) !== "−5 słów od tamtej pory") bad.push("pl −5: " + histDeltaText(5, 0));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : okMsg);
+            } finally { ghRestore(k); }
+          } },
+        { id: "history.delta.sections", feature: "history", name: "A snapshot's detail lists which sections differ from the book now — added since, no longer in the book, changed by word count (or reworded at the same length) — matched by section id, counted by one rule, and the section deltas sum to the book's delta",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const words = (n, w) => Array(n).fill(w || "word").join(" ");
+            try {
+              local.suspended = true;
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              const A = mkSection("body", "chapter", "Alpha", { number: "1", content: words(50) });
+              const B = mkSection("body", "chapter", "Beta", { number: "2", content: words(30) });
+              const C = mkSection("body", "chapter", "Gamma", { number: "3", content: words(20) });
+              const D = mkSection("body", "chapter", "Delta", { number: "4", content: words(10, "old") });
+              state.sections = [A, B, C, D];
+              state.activeId = A.id;
+              const snap = takeSnapshot("Sections check", null);
+              const E = mkSection("body", "chapter", "Epsilon", { number: "5", content: words(25) });
+              state.sections = [state.sections[0], state.sections[2], state.sections[3], E];
+              state.sections[0].content = words(55);
+              state.sections[2].content = words(10, "new");
+              const diff = histSectionDiff(snap.doc, histLiveDoc());
+              if (diff.added.map((r) => r.id).join() !== E.id) bad.push("added ≠ [Epsilon]");
+              if (diff.removed.map((r) => r.id).join() !== B.id) bad.push("removed ≠ [Beta]");
+              if (diff.changed.map((r) => r.id).join() !== [A.id, D.id].join()) bad.push("changed ≠ [Alpha, Delta]: " + diff.changed.map((r) => r.name).join(", "));
+              const a = diff.changed.find((r) => r.id === A.id), d = diff.changed.find((r) => r.id === D.id);
+              if (!a || a.delta !== 5) bad.push("Alpha delta " + (a && a.delta) + " ≠ +5");
+              if (!d || d.delta !== 0) bad.push("Delta (reworded) delta " + (d && d.delta) + " ≠ 0");
+              const sum = diff.added.concat(diff.removed, diff.changed).reduce((n, r) => n + r.delta, 0);
+              if (sum !== bookWordTotal() - snap.words) bad.push("section deltas sum to " + sum + ", the book moved " + (bookWordTotal() - snap.words));
+              /* rendered in the snapshot's detail */
+              openHistory();
+              histViewId = snap.id; renderHistory();
+              const box = $("histDiff");
+              if (!box) bad.push("no difference block in the detail");
+              else {
+                const row = (id) => box.querySelector('[data-hdiff-id="' + id + '"]');
+                const eDelta = diff.added[0] ? diff.added[0].delta : -1;
+                const txt = (id) => (row(id) ? row(id).querySelector(".hist-diff-n").textContent : null);
+                if (!row(E.id) || row(E.id).getAttribute("data-hdiff") !== "added" || txt(E.id) !== t("history.dUp", { n: fmtNum(eDelta), count: eDelta })) bad.push("Epsilon not shown as added with its words");
+                if (!row(B.id) || row(B.id).getAttribute("data-hdiff") !== "removed") bad.push("Beta not shown as no longer in the book");
+                if (txt(A.id) !== t("history.dUp", { n: fmtNum(5), count: 5 })) bad.push("Alpha shows " + JSON.stringify(txt(A.id)));
+                if (txt(D.id) !== t("history.diffReworded")) bad.push("Delta shows " + JSON.stringify(txt(D.id)));
+                if (row(C.id)) bad.push("the untouched Gamma is listed");
+              }
+              /* a snapshot of the book exactly as it is: nothing differs */
+              const same = takeSnapshot("Same", null);
+              histViewId = same.id; renderHistory();
+              if (!$("histDiff") || $("histDiff").textContent.indexOf(t("history.diffNone")) === -1) bad.push("an identical snapshot does not say every section matches");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Epsilon added (+" + diff.added[0].delta + "), Beta no longer in the book (" + diff.removed[0].delta + "), Alpha +5, Delta reworded at the same length, Gamma untouched and unlisted; deltas sum to the book's own change; an identical snapshot says every section matches");
+            } finally { ghRestore(k); }
+          } }
+      );
+      /* ==== /BEUK:goalshist ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
