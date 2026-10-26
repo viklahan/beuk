@@ -1698,6 +1698,8 @@
       @keyframes syncPulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
       .sync-row { align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
       .sync-row svg { width: 15px; height: 15px; color: var(--gold); flex: 0 0 auto; }
+      .portal-line { font-size: 12.5px; color: var(--muted); margin: -10px 0 14px; line-height: 1.6; } /* BEUK:portal */
+      .portal-line #portalNote:not(:empty)::before { content: " · "; } /* BEUK:portal */
       .linkish { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 12.5px; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-family: inherit; }
       /* ==== BEUK:auth ==== */
       .auth-forgot-row { margin-top: 6px; }
@@ -3270,6 +3272,9 @@
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shelfH" style="max-width:520px;">
         <h2 id="shelfH" data-i18n="shelf.title"><i data-lucide="library-big"></i>Your shelf</h2>
         <p class="m-sub"><span data-i18n="shelf.signedInAs">Signed in as</span> <b id="shelfEmail"></b> · <span id="shelfSyncLine">On your shelf ✓</span></p>
+        <!-- ==== BEUK:portal ==== the account page, and a calm "not confirmed" line -->
+        <p class="portal-line" id="portalLine"><a href="/account" target="_blank" rel="noopener" id="portalLink" data-i18n="portal.page">Your account page</a><span id="portalConfirm" hidden> · <span id="portalConfirmText" data-i18n="portal.unconfirmed">Your email address isn’t confirmed yet.</span> <button class="linkish" id="btnPortalResend" type="button" data-i18n="portal.resend">Send the link again</button></span><span id="portalPending" hidden></span><span id="portalNote" role="status"></span></p>
+        <!-- ==== /BEUK:portal ==== -->
         <div class="bring-box" id="shelfBring" style="display:none;">
           <p data-i18n="shelf.bringText">The book open in the studio lives only on this device for now. Bring it to your shelf and it will follow you to any device you sign in on.</p>
           <button class="tb-btn primary" id="btnBringBook" type="button" data-i18n="shelf.bringBtn"><i data-lucide="cloud-upload"></i>Bring it to my shelf</button>
@@ -32865,7 +32870,10 @@
         cloudLoadStreak();
         if (typeof localReconcileOnSignIn === "function" && await localReconcileOnSignIn()) return; /* BEUK:local */
         await cloudLoadShelf();
-        if (cloud.linkState === "linked" || !cloud.editedBeforeSignIn) { setSyncStatus(cloud.linkState === "linked" ? "saved" : "local"); return; }
+        /* BEUK:portal — offered when the desk has real writing (not an empty desk, not the untouched sample) that was edited before signing in OR is on the desk right after a sign-in / sign-up in this tab. */
+        const portalFresh = typeof portalTakeFreshSignIn === "function" && portalTakeFreshSignIn();
+        const portalDeskHasWriting = !isEmptyDesk() && !deskIsUntouchedSample();
+        if (cloud.linkState === "linked" || !portalDeskHasWriting || !(cloud.editedBeforeSignIn || portalFresh)) { setSyncStatus(cloud.linkState === "linked" ? "saved" : "local"); return; }
         let match = null;
         for (const m of cloud.shelf.slice(0, 20)) {
           const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(m.id), {});
@@ -32975,6 +32983,7 @@
           $("modalAuth").classList.remove("open");
           toast(authMode === "register" ? t("auth.welcomeNew") : t("auth.welcomeBackToast"), "cloud");
           focusEditor();
+          portalFreshSignIn = true; /* BEUK:portal */
           cloudAfterSignIn();
         } else {
           err.textContent = (r && r.__error)
@@ -33190,6 +33199,63 @@
       if (typeof window !== "undefined") window.beukAccount = { acctForgotSubmit, acctChangePassword, acctSignOutEverywhere };
       /* ==== /BEUK:auth ==== */
 
+      /* ==== BEUK:portal ==== the account page (/account, "your typesetting
+         portal") — the shelf dialog links to it and says, calmly, when the
+         email address is not confirmed yet (it never blocks anything).
+         "Send the link again" asks the server; when the server cannot send
+         email it says so instead of implying a message is coming. Right
+         after a sign-in or sign-up, cloudAfterSignIn offers a desk book with
+         real writing a place on the shelf (once; never silently). */
+      Object.assign(UI_STRINGS.en, { "portal.page": "Your account page", "portal.unconfirmed": "Your email address isn’t confirmed yet.", "portal.resend": "Send the link again", "portal.sent": "A new confirmation link is on its way.", "portal.noMail": "Email isn’t set up on this server yet, so no link can be sent.", "portal.pending": "Waiting for you to confirm {email}.", "portal.failed": "The link couldn’t be sent just now. Try again later." });
+      Object.assign(UI_STRINGS.es, { "portal.page": "Tu página de cuenta", "portal.unconfirmed": "Tu dirección de correo aún no está confirmada.", "portal.resend": "Enviar el enlace de nuevo", "portal.sent": "Un nuevo enlace de confirmación va de camino.", "portal.noMail": "El correo aún no está configurado en este servidor, así que no se puede enviar ningún enlace.", "portal.pending": "Esperando a que confirmes {email}.", "portal.failed": "No se pudo enviar el enlace ahora. Inténtalo más tarde." });
+      Object.assign(UI_STRINGS.fr, { "portal.page": "Votre page de compte", "portal.unconfirmed": "Votre adresse e-mail n’est pas encore confirmée.", "portal.resend": "Renvoyer le lien", "portal.sent": "Un nouveau lien de confirmation est en route.", "portal.noMail": "L’e-mail n’est pas encore configuré sur ce serveur : aucun lien ne peut être envoyé.", "portal.pending": "En attente de votre confirmation pour {email}.", "portal.failed": "Le lien n’a pas pu être envoyé pour l’instant. Réessayez plus tard." });
+      Object.assign(UI_STRINGS.de, { "portal.page": "Ihre Kontoseite", "portal.unconfirmed": "Ihre E-Mail-Adresse ist noch nicht bestätigt.", "portal.resend": "Link erneut senden", "portal.sent": "Ein neuer Bestätigungslink ist unterwegs.", "portal.noMail": "E-Mail ist auf diesem Server noch nicht eingerichtet, daher kann kein Link gesendet werden.", "portal.pending": "Wartet auf Ihre Bestätigung von {email}.", "portal.failed": "Der Link konnte gerade nicht gesendet werden. Versuchen Sie es später erneut." });
+      Object.assign(UI_STRINGS.it, { "portal.page": "La pagina del tuo account", "portal.unconfirmed": "Il tuo indirizzo email non è ancora confermato.", "portal.resend": "Invia di nuovo il link", "portal.sent": "Un nuovo link di conferma è in arrivo.", "portal.noMail": "L’email non è ancora configurata su questo server, quindi non si può inviare alcun link.", "portal.pending": "In attesa che tu confermi {email}.", "portal.failed": "Non è stato possibile inviare il link ora. Riprova più tardi." });
+      Object.assign(UI_STRINGS.pt, { "portal.page": "A página da sua conta", "portal.unconfirmed": "O seu endereço de email ainda não está confirmado.", "portal.resend": "Enviar o link novamente", "portal.sent": "Um novo link de confirmação está a caminho.", "portal.noMail": "O email ainda não está configurado neste servidor, por isso não é possível enviar nenhum link.", "portal.pending": "À espera de que confirme {email}.", "portal.failed": "Não foi possível enviar o link agora. Tente mais tarde." });
+      Object.assign(UI_STRINGS.nl, { "portal.page": "Uw accountpagina", "portal.unconfirmed": "Uw e-mailadres is nog niet bevestigd.", "portal.resend": "Stuur de link opnieuw", "portal.sent": "Er is een nieuwe bevestigingslink onderweg.", "portal.noMail": "E-mail is op deze server nog niet ingesteld, dus er kan geen link worden verstuurd.", "portal.pending": "Wacht op uw bevestiging van {email}.", "portal.failed": "De link kon nu niet worden verstuurd. Probeer het later opnieuw." });
+      Object.assign(UI_STRINGS.pl, { "portal.page": "Strona twojego konta", "portal.unconfirmed": "Twój adres e-mail nie jest jeszcze potwierdzony.", "portal.resend": "Wyślij link ponownie", "portal.sent": "Nowy link potwierdzający jest w drodze.", "portal.noMail": "Poczta e-mail nie jest jeszcze skonfigurowana na tym serwerze, więc nie można wysłać linku.", "portal.pending": "Czekamy, aż potwierdzisz {email}.", "portal.failed": "Nie udało się teraz wysłać linku. Spróbuj później." });
+      Object.assign(UI_STRINGS.ru, { "portal.page": "Страница вашего аккаунта", "portal.unconfirmed": "Ваш адрес электронной почты ещё не подтверждён.", "portal.resend": "Отправить ссылку ещё раз", "portal.sent": "Новая ссылка для подтверждения уже в пути.", "portal.noMail": "Почта на этом сервере ещё не настроена, поэтому ссылку отправить нельзя.", "portal.pending": "Ждём, когда вы подтвердите {email}.", "portal.failed": "Сейчас не удалось отправить ссылку. Попробуйте позже." });
+      Object.assign(UI_STRINGS.tr, { "portal.page": "Hesap sayfanız", "portal.unconfirmed": "E-posta adresiniz henüz onaylanmadı.", "portal.resend": "Bağlantıyı yeniden gönder", "portal.sent": "Yeni bir onay bağlantısı yolda.", "portal.noMail": "Bu sunucuda e-posta henüz kurulmadı, bu yüzden bağlantı gönderilemiyor.", "portal.pending": "{email} adresini onaylamanız bekleniyor.", "portal.failed": "Bağlantı şu anda gönderilemedi. Daha sonra yeniden deneyin." });
+      Object.assign(UI_STRINGS.ar, { "portal.page": "صفحة حسابك", "portal.unconfirmed": "لم يتم تأكيد بريدك الإلكتروني بعد.", "portal.resend": "أرسل الرابط مرة أخرى", "portal.sent": "رابط تأكيد جديد في طريقه إليك.", "portal.noMail": "البريد الإلكتروني غير مُعدّ على هذا الخادم بعد، لذا لا يمكن إرسال أي رابط.", "portal.pending": "بانتظار تأكيدك لـ {email}.", "portal.failed": "تعذّر إرسال الرابط الآن. حاول لاحقًا." });
+      Object.assign(UI_STRINGS.ja, { "portal.page": "アカウントページ", "portal.unconfirmed": "メールアドレスはまだ確認されていません。", "portal.resend": "リンクをもう一度送る", "portal.sent": "新しい確認リンクをお送りしています。", "portal.noMail": "このサーバーではまだメールが設定されていないため、リンクを送れません。", "portal.pending": "{email} の確認をお待ちしています。", "portal.failed": "今はリンクを送れませんでした。後でもう一度お試しください。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "portal.page": "你的账户页面", "portal.unconfirmed": "你的邮箱地址尚未确认。", "portal.resend": "重新发送链接", "portal.sent": "新的确认链接正在发送给你。", "portal.noMail": "此服务器尚未设置邮件，因此无法发送链接。", "portal.pending": "正在等待你确认 {email}。", "portal.failed": "暂时无法发送链接，请稍后再试。" });
+      let portalFreshSignIn = false;   /* set by a sign-in / sign-up in this tab; read once by cloudAfterSignIn */
+      let portalDoorBook = null;       /* /studio?book=<id> from the account page */
+      let portalSignInWork = null;     /* the boot-time cloudAfterSignIn, so the book door opens after it settles */
+      function portalTakeFreshSignIn() { const v = portalFreshSignIn; portalFreshSignIn = false; return v; }
+      function portalNote(text) { const n = $("portalNote"); if (n) n.textContent = text || ""; }
+      function portalRender(s) {
+        const box = $("portalConfirm"), pend = $("portalPending");
+        if (box) box.hidden = !(s && s.emailConfirmed === false);
+        const btn = $("btnPortalResend");
+        if (btn) btn.hidden = !!(s && s.emailDelivery === "not-configured");
+        if (pend) { pend.hidden = !(s && s.pendingEmail); pend.textContent = s && s.pendingEmail ? " · " + t("portal.pending", { email: s.pendingEmail }) : ""; }
+        if (s && s.emailConfirmed === false && s.emailDelivery === "not-configured") portalNote(t("portal.noMail"));
+      }
+      async function portalRefresh() {
+        portalNote("");
+        if (!cloud.user || !cloud.available) { portalRender(null); return null; }
+        const s = await apiFetch("/api/account/summary", {});
+        if (!s || s.__error) { portalRender(null); return null; }
+        portalRender(s);
+        return s;
+      }
+      async function portalResend() {
+        const btn = $("btnPortalResend"); if (btn) btn.disabled = true;
+        const r = await apiFetch("/api/account/confirm/resend", { method: "POST", body: "{}" });
+        if (btn) btn.disabled = false;
+        if (!r) { portalNote(t("acct.unreachable")); return; }
+        if (r.__error) { portalNote(r.__status === 429 ? t("acct.tooMany") : t("portal.failed")); return; }
+        if (r.alreadyConfirmed) { portalRefresh(); return; }
+        portalNote(r.emailDelivery === "not-configured" ? t("portal.noMail") : r.sent ? t("portal.sent") : t("portal.failed"));
+      }
+      function portalInit() {
+        const btn = $("btnPortalResend"); if (btn) btn.addEventListener("click", portalResend);
+        $("btnAccount").addEventListener("click", () => { if (cloud.user) portalRefresh(); });
+      }
+      if (typeof window !== "undefined") window.beukPortal = { portalRefresh, portalResend, portalTakeFreshSignIn };
+      /* ==== /BEUK:portal ==== */
+
       /* ---- boot: probe quietly; wire the surfaces; degrade silently ---- */
       async function initCloud() {
         renderCloudChrome();
@@ -33201,6 +33267,7 @@
         $("modalAuth").addEventListener("click", (e) => { if (e.target === $("modalAuth")) closeAuth(); });
         $("authToggle").addEventListener("click", () => setAuthMode(authMode === "login" ? "register" : "login"));
         if (typeof acctInit === "function") acctInit(); /* BEUK:auth */
+        if (typeof portalInit === "function") portalInit(); /* BEUK:portal */
         $("btnAuthSubmit").addEventListener("click", cloudAuthSubmit);
         [$("authEmail"), $("authPassword")].forEach((inp) => inp.addEventListener("keydown", (e) => { if (e.key === "Enter") cloudAuthSubmit(); }));
         $("btnCloseShelf").addEventListener("click", () => { $("modalShelf").classList.remove("open"); focusEditor(); });
@@ -33235,7 +33302,7 @@
         if (me && me.user) {
           cloud.user = me.user;
           renderCloudChrome();
-          cloudAfterSignIn();
+          portalSignInWork = cloudAfterSignIn(); /* BEUK:portal */
         }
         studioDoorFromUrl();
       }
@@ -33248,13 +33315,17 @@
         try {
           const q = new URLSearchParams(location.search);
           door = q.has("signup") ? "register" : q.has("signin") ? "login" : null;
+          /* BEUK:portal — the account page's "Open in the studio" */
+          const book = q.get("book");
+          if (book !== null) { portalDoorBook = /^[0-9a-f-]{36}$/i.test(book) ? book : null; if (!door) door = "book"; }
           if (door) {
-            q.delete("signup"); q.delete("signin");
+            q.delete("signup"); q.delete("signin"); q.delete("book");
             const rest = q.toString();
             history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
           }
         } catch (e) { door = null; }
         if (!door || !cloud.available) return;
+        if (door === "book") { if (cloud.user) { const id = portalDoorBook; if (id) Promise.resolve(portalSignInWork).catch(() => {}).then(() => cloudOpenBook(id)); } else openAuth(); return; } /* BEUK:portal — after the sign-in work (reconcile, bring offer) settles */
         if (cloud.user) { $("btnAccount").click(); return; }
         openAuth();
         if (door === "register") setAuthMode("register");

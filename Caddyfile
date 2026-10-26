@@ -143,6 +143,11 @@
 	handle /reset* {
 		reverse_proxy app:3000
 	}
+	# The account page ("your typesetting portal"), the email-confirmation
+	# page its links open (/account/confirm?token=…), and its CSS + script.
+	handle /account* {
+		reverse_proxy app:3000
+	}
 	# Beta-reader share links: the server-rendered read-only reader
 	# (/read/<token>), its pictures and its comment API.
 	handle /read* {

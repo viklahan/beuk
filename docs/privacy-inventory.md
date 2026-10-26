@@ -13,7 +13,8 @@ That is a fact about the code, not a policy decision.
 
 | Data | What is stored | Evidence | How long |
 |---|---|---|---|
-| Account | email (trimmed, lower-cased), password **hash**, created_at | migrations/001_users_sessions.sql:2-7; src/routes/auth.ts:40,51-53 | Until the account is deleted. **No self-serve account deletion exists** (no DELETE route in src/routes/auth.ts or account.ts; route list: `grep -n "router\.\(get\|post\|put\|delete\)" src/routes/*.ts`). |
+| Account | email (trimmed, lower-cased), password **hash**, created_at, email_confirmed_at (when the writer opened a confirmation link; null = not confirmed) | migrations/001_users_sessions.sql:2-7, 014_account_portal.sql; src/routes/auth.ts | Until the writer deletes the account on /account ("Delete my account": current password + typed phrase; src/routes/account-portal.ts `POST /delete`, src/account/data.ts `deleteAccount`), which removes in one transaction every row the account owns (sessions, reset and confirmation links, manuscripts, exports and their files on disk, jobs, streak, shares with their comments and reader counts, billing subscriptions) and the user row. Not removed: Founders' Shelf entries (no user id), admin Housekeeping records, billing_events (user id set null; event id kept as the webhook dedupe ledger), and a live Stripe subscription the server could not cancel (kept with user id null for the operator: there is no cancel call in src/billing.ts yet). Copies remain in backups (§6). |
+| Email confirmations | user_id, purpose ('signup' or 'change'), the address the link went to (for a change: the NEW address, before it is confirmed), **SHA-256 hash** of the token, expires_at (48 h), used_at | migrations/014_account_portal.sql; src/account/confirm.ts | Rows older than expiry + 7 days are deleted when the next link is made (src/account/confirm.ts `issueConfirmation`). Deleted with the account. Excluded from backups (src/housekeeping/backup.ts EXCLUDED_TABLES) |
 | Password hash | argon2id, the library's default parameters. The password itself is never stored. | src/password.ts:4-7 | Replaced when the password changes (src/routes/account.ts:212) |
 | Plan / billing link | users.plan (display label, default 'free'), plan_updated_at, stripe_customer_id | migrations/005_user_billing.sql:5-8 | With the account |
 | Admin flag | users.is_admin | migrations/006_housekeeping.sql:4 | With the account |
@@ -50,6 +51,8 @@ No analytics, advertising or tracking cookies exist in the code (grep of
 Rate limits keyed by client IP or user id: login/register token buckets
 (src/routes/auth.ts:34; src/ratelimit.ts:27-28), forgot/reset per IP and
 per email, password change per user (src/routes/account.ts:51-54,108-111),
+confirmation-link resend, email change, data download and account deletion per
+user id, confirmation page per IP (src/routes/account-portal.ts `DEFAULT_PORTAL_LIMITS`),
 Founders' form per IP (src/routes/founders.ts:28-49), help search per IP
 (src/routes/help.ts:106,142), reader comments per IP and
 per share (src/routes/shares.ts:63-66,606-607), stock search per user id
@@ -110,8 +113,13 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
 
 ## 7. Email
 
-Only password-reset emails (src/routes/account.ts:78-97) and the admin
-test email (src/routes/housekeeping.ts:620-626). Sent through the SMTP
+Password-reset emails (src/routes/account.ts:78-97), the email-confirmation
+link sent at sign-up and on "Send the link again", and for a change of
+address a confirmation link to the NEW address plus a short notice to the
+OLD one (src/account/confirm.ts), and the admin test email
+(src/routes/housekeeping.ts:620-626). While email is not configured a change
+of address is refused (src/routes/account-portal.ts `POST /email` → 501), so
+an address never changes unconfirmed. Sent through the SMTP
 server the operator configures in SMTP_URL (src/config.ts `smtpUrl`;
 src/mailer.ts). The provider is not named in the code. Nothing is sent
 while SMTP_URL / MAIL_FROM are unset. No newsletters; the Founders' Shelf
@@ -127,9 +135,22 @@ sends no email (src/routes/founders.ts:9-10).
 | Openverse (api.openverse.org) | the **visitor's browser**, only when the studio cannot reach its own server (standalone/offline-from-server) | the search words, the visitor's IP | client/index.html `cmStockGate`/`stockDirectUrl` (~22423-22429) |
 | Ko-fi | nobody automatically — a link only, rendered only when KOFI_URL is set | whatever the visitor gives Ko-fi after following the link | src/warmth/pages.ts:51-66 |
 | Stripe | the **server**, only when billing is configured (it is not live) | the account email (customer_email) and user id (client_reference_id, metadata) when the writer starts a checkout; card details go to Stripe's checkout page, never to Beuk | src/billing.ts:237-256; src/routes/billing.ts:94-127 |
-| SMTP provider | the server | the recipient address and the reset email | §7 |
+| SMTP provider | the server | the recipient address and the email (reset link, confirmation link, change-of-address notice) | §7 |
 | Backblaze B2 | the server, if off-site backups are configured | encrypted backup snapshots | §6 |
 | CDN scripts | **none**: script-src is 'self' 'unsafe-inline'; the libraries are vendored under /assets/vendor/ | — | Caddyfile CSP comment + header; client/index.html:36-42 |
+
+## 8b. "Download all my data"
+
+GET /api/account/export (signed in, rate-limited per user) streams one ZIP
+built on the fly and not stored: every shelf manuscript as a studio
+backup file (.beuk-backup.json) with manuscripts/index.json for each
+book's id, revision and dates (a stored doc with no readable chapters is
+kept as plain .json and marked), every
+archived export's bytes with exports/index.json, each share's settings,
+frozen reading copy and comments (reader names and comment text, NOT the
+comment ip_hash), streak days and freezes, server jobs and their results,
+account.json and a README.txt. Password hash, sessions and link tokens
+are left out (src/account/data.ts `writeAccountExport`).
 
 ## 9. Client side (the browser)
 
@@ -150,10 +171,11 @@ sends no email (src/routes/founders.ts:9-10).
 
 ## 10. Not found in the code (so not claimed)
 
-- No account-deletion endpoint; no self-serve deletion of Founders'
-  Shelf entries.
+- No self-serve deletion of Founders' Shelf entries (account deletion
+  exists since migration 014: /account, "Delete my account").
 - No analytics, ad trackers, fingerprinting, or third-party scripts.
-- No email verification, no marketing email.
+- No marketing email. (Email confirmation exists since migration 014;
+  it never blocks writing, saving, exporting or the trial.)
 - No retention limit for: streak days, jobs, help search_log,
   founders_applications, housekeeping records, local backups, container
   logs.

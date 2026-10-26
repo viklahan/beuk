@@ -26,6 +26,12 @@ export class SlidingWindowLimiter {
     return recent.length > this.max;
   }
 
+  /** Without recording anything: would the next hit() for `key` be over the limit? */
+  wouldLimit(key: string): boolean {
+    const t = this.now();
+    return (this.hits.get(key) ?? []).filter((x) => t - x < this.windowMs).length >= this.max;
+  }
+
   /** Seconds until the oldest hit in the window ages out. */
   retryAfterSeconds(key: string): number {
     const times = this.hits.get(key) ?? [];

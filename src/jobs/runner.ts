@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
+import { keepExportFileIfRowSurvived } from '../exports-store.js';
 import { inspectPdf, type PdfInspection } from './pdfinspect.js';
 import { neutralRgbToGray, textInkFacts, transparencyFacts, type TextInkFacts, type TransparencyFacts } from './pdfpress.js';
 import { epubcheckProblem, measureTac, pdfRenderProblem, pdfxProblem, renderPrintPdf, runEpubCheck, runPdfx, type TacMeasurement } from './tools.js';
@@ -343,6 +344,11 @@ export class JobRunner {
     } catch (err) {
       await this.db.query('delete from exports where id = $1', [artifactId]).catch(() => {});
       throw err;
+    }
+    // The account may have been deleted while this job ran: then its
+    // file must not outlive it.
+    if (!(await keepExportFileIfRowSurvived(this.db, this.config.exportDir, job.user_id, artifactId))) {
+      return this.finish(job.id, 'failed', { tool: 'ghostscript', error: 'the account was deleted while this job ran' });
     }
     return this.finish(
       job.id,
