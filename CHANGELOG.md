@@ -4,6 +4,26 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Story Insights you can explore
+
+- **The book at a glance.** Story Insights now opens with six small cards:
+  words, chapters, reading time, pages on your reading device, average
+  sentence length and how much is dialogue — the same counts the sidebar
+  and the reading desk show.
+- **A tidier word list.** Your most-used words sit in two compact columns,
+  and speech tags like “said” and everyday words like “like” or “one” no
+  longer crowd out the words that are really yours.
+- **Charts you can explore.** Hover or tab to any chapter in Chapter
+  rhythm, Cadence, Reading ease or Dialogue to see its words, sentence
+  length and dialogue share; click it (or press Enter) to open that chapter.
+- **New: sentence variety, reading ease and words to look at.** A chart
+  of how long your sentences run (for the whole book or one chapter), an
+  approximate Flesch reading-ease line for English books, and the small
+  filter and hedge words (felt, just, very, -ly…) with the chapters where
+  they gather — offered as words to look at, never as mistakes.
+- **Quick on long books.** Insights remember a book until it changes, and
+  repeated phrases in a long book are found far faster.
+
 ## 2026-10-26 — Your address stays with us
 
 - **No more Google Fonts.** Every typeface in the studio, Help, the
