@@ -2037,6 +2037,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Section selection and the preview page are client UI state.',
   },
   {
+    id: 'preview.opened-section-stays-put',
+    title: 'A section just opened stays on page 1 through font-size, chapter-title and device changes until the writer works in the editor',
+    kind: 'client-only',
+    reason: 'Section selection, the editor caret and the preview page are client UI state laid out by the studio browser.',
+  },
+  {
     id: 'zen.controls.no-overlap',
     title: 'Zen corner controls never cover the tabs in any of the 13 interface languages (Arabic RTL included), and stay inside the window',
     kind: 'client-only',

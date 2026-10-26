@@ -19217,7 +19217,7 @@
          still starts at page 1. */
       let pvShownId = null;
       let pvShownSec = null; /* the section object: a book loaded anew is a new place */
-      let pvFollow = "caret";
+      let pvFollow = "page"; /* "caret" once the writer works in the editor */
       let pvPendingAnchor = null;
       let pvJob = null;
       let pvLastSet = 0;
@@ -19332,7 +19332,14 @@
         let anc = null;
         const caret = same && pvFollow === "caret";
         if (same) anc = (caret ? pvCaretAnchor(s) : null) || pvPendingAnchor || pvPageAnchor($("pageFlow"));
-        else state.page = 1;
+        else {
+          /* a section just opened: no caret has been placed in it yet
+             (the editor's value write leaves the caret at the end of
+             the text), so the place is the page on screen — page 1 —
+             until the writer types, clicks or selects in the editor */
+          state.page = 1;
+          pvFollow = "page";
+        }
         pvPendingAnchor = anc;
         pvJob = { same, anc, caret };
         return pvJob;
@@ -19351,7 +19358,12 @@
       }
       function pvInit() {
         const area = $("editorArea");
-        if (area) ["input", "keyup", "mouseup", "focus", "select"].forEach((ev) => area.addEventListener(ev, () => { pvFollow = "caret"; }));
+        /* the writer's own hand in the editor; a bare focus places no caret */
+        if (area) ["input", "keyup", "mouseup", "select"].forEach((ev) => area.addEventListener(ev, (e) => {
+          if (ev === "keyup" && /^(Tab|Shift|Control|Alt|Meta|Escape)$/.test(e.key || "")) return; /* tabbing in moves no caret */
+          if (ev === "select" && document.activeElement !== area) return; /* a caret set by code into an unfocused editor is not the writer's */
+          pvFollow = "caret";
+        }));
         const hand = () => { pvFollow = "page"; };
         ["btnPrevPage", "btnNextPage", "deviceScreen"].forEach((id) => { const el = $(id); if (el) el.addEventListener("click", hand, true); });
         document.addEventListener("keydown", (e) => {
@@ -35555,11 +35567,21 @@
             pvFollow = "caret";
             renderPreview(); pvFlush();
           };
-          return fn({ open, ch, wordOnPage, visible, counterTrue, edit });
+          /* the real path: a sidebar pick (selectSection), the caret left
+             where the editor's value write puts it — the writer has not
+             touched the editor in this section */
+          const openReal = (s) => {
+            selectSection(s.id);
+            if (!$("flowWrap").clientWidth && typeof setMobilePane === "function") setMobilePane("preview");
+            fitDeviceFrame(); pvFlush();
+          };
+          return fn({ open, openReal, ch, wordOnPage, visible, counterTrue, edit });
         } finally {
           pvFollow = keepFollow;
-          if (keepMobile !== $("panes").getAttribute("data-mobile") && typeof setMobilePane === "function") setMobilePane(keepMobile || "center");
-          setDevice(keepDevice || "kindle");
+          /* the pane and the device are put back best-effort: neither may
+             keep the writer's own book from coming back to the desk */
+          try { if (keepMobile !== $("panes").getAttribute("data-mobile") && typeof setMobilePane === "function") setMobilePane(keepMobile || "center"); } catch (e) {}
+          try { setDevice(keepDevice || "kindle"); } catch (e) {}
           applyBookDoc(keepDoc);
           sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
           cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
@@ -35630,6 +35652,49 @@
               open(a);
               const pa = state.page, okA = pa === 1 && counterTrue();
               return scVerdict(was === 4 && okB && okA, "from page " + was + " of Chapter Three, Chapter Four opened at page " + pb + " (" + okB + "); back to Chapter Three at page " + pa + " (" + okA + ")");
+            });
+          } },
+        { id: "preview.opened-section-stays-put", feature: "preview", name: "A section just opened stays on its page when nothing in the editor moved: after working in Chapter Two, Chapter Three is picked in the sidebar and its caret sits at the end of the text, put there by code — a font-size change, a keystroke in the chapter title and a device change keep it on page 1, never the chapter's last page; turned by hand to page 3, a font-size change keeps the words that opened page 3 on screen",
+          run() {
+            return pvCheckRig(({ openReal, ch, counterTrue }) => {
+              const a = ch("two"), s = ch("three");
+              if (!a || !s) return scVerdict(false, "the sample lacks Chapter Two or Three");
+              openReal(a); pvFollow = "caret"; /* the writer worked in Chapter Two */
+              openReal(s);
+              /* the worst case seen in review: the caret at the very end of
+                 the text, put there by code (no writer's hand) */
+              const area = $("editorArea");
+              if (document.activeElement === area) area.blur();
+              area.setSelectionRange(area.value.length, area.value.length);
+              const atEnd = area.selectionStart === area.value.length;
+              const bits = [], bad = [];
+              const look = (label, want) => {
+                const ok = state.page === want && counterTrue();
+                bits.push(label + " → page " + state.page + " of " + state.pageCount);
+                if (!ok) bad.push(label);
+              };
+              look("opened", 1);
+              const keepSize = state.theme.fontSize;
+              try {
+                state.theme.fontSize = (keepSize || 16) + 1; renderPreview(); pvFlush();
+                look("font +1", 1);
+                const ti = $("chTitle"), keepTitle = s.title;
+                ti.value = (keepTitle || "") + "X"; ti.dispatchEvent(new Event("input")); pvFlush();
+                look("title keystroke", 1);
+                ti.value = keepTitle || ""; ti.dispatchEvent(new Event("input")); pvFlush();
+                setDevice("iphone"); measurePages(); goToPage(pvPageOfAnchor(pvAnchorNow()) || 1, true);
+                look("device iPhone", 1);
+                setDevice("kindle"); measurePages(); goToPage(state.page, true);
+                /* a hand turn: the first words of page 3 are the place */
+                goToPage(3, true); pvFollow = "page";
+                const anc = pvPageAnchor($("pageFlow"));
+                state.theme.fontSize = (keepSize || 16) + 3; renderPreview(); pvFlush();
+                const want = anc ? pvPageOfAnchor(anc) : 0;
+                const ok3 = !!anc && want > 0 && state.page === want && state.page < state.pageCount && counterTrue();
+                bits.push("hand-turned to page 3, font +3 → page " + state.page + " of " + state.pageCount + " (page 3's first words now on page " + want + ")");
+                if (!ok3) bad.push("hand-turned font change");
+              } finally { state.theme.fontSize = keepSize; }
+              return scVerdict(atEnd && bad.length === 0, "caret at the end of the text (" + area.selectionStart + " of " + area.value.length + "); " + bits.join("; ") + (bad.length ? " — moved after: " + bad.join(", ") : ""));
             });
           } },
         { id: "zen.controls.no-overlap", feature: "zen", name: "Zen corner controls never cover the tabs: in every interface language (Arabic right-to-left included) the presence dot, Ambient sound, the scene picker and Dictate share no pixel with the Chapter Content / Typography Studio tabs and stay inside the window; the cluster stands at the reading end of the line (logical inset), and the editor never runs past its column",
