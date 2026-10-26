@@ -27,8 +27,11 @@ const BEUK_CACHE = "beuk-shell-v5";
    kept the first time it is played, in its own cache that a shell
    version bump does not retire, so a scene that has played once plays
    offline, also after the studio updates. Only complete 200 responses
-   from this origin are stored. */
-const BEUK_SOUND_CACHE = "beuk-sound-v1";
+   from this origin are stored. The sound cache is cache-first, so when
+   a recording is REPLACED under the same file name this name must be
+   bumped: activate then deletes every older beuk-sound-v<N> (v2: new
+   rain and wind, round 6). */
+const BEUK_SOUND_CACHE = "beuk-sound-v2";
 /* ==== /BEUK:sound ==== */
 const BEUK_SHELL = [
   "../",
@@ -86,9 +89,13 @@ self.addEventListener("activate", (event) => {
    else (the writer's book lives in IndexedDB, not in Cache Storage). */
 function retireOlderShells() {
   const mine = parseInt(BEUK_CACHE.replace("beuk-shell-v", ""), 10);
+  /* BEUK:sound — older sound caches too: a replaced recording must never be
+     served again from a cache this worker does not use. */
+  const mySound = parseInt(BEUK_SOUND_CACHE.replace("beuk-sound-v", ""), 10);
   return caches.keys().then((keys) => Promise.all(keys.filter((k) => {
     const m = /^beuk-shell-v(\d+)$/.exec(k);
-    return !!m && parseInt(m[1], 10) < mine;
+    const s = /^beuk-sound-v(\d+)$/.exec(k);
+    return (!!m && parseInt(m[1], 10) < mine) || (!!s && parseInt(s[1], 10) < mySound);
   }).map((k) => caches.delete(k))));
 }
 /* ==== /BEUK:branding ==== */
