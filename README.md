@@ -264,7 +264,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v4`; both `client/sw.js` and
+service worker (cache `beuk-shell-v5`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v1`, which a shell version
 bump leaves alone) the first time it plays. Google Fonts are browser-specific and cannot be

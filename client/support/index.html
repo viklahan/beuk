@@ -7,7 +7,7 @@
     <!--BEUK_BILLING_GATE-->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/help/warmth.css" />
     <style>
       /* The support page: one illustrated plate — a writer's night desk —
@@ -19,13 +19,13 @@
         font-variant: small-caps; letter-spacing: 0.12em; color: var(--amber);
         font-size: 1rem; margin: 0.6em 0 0;
       }
-      .support-page h1 { font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif; font-weight: 600; font-size: clamp(2.1rem, 5vw, 2.9rem); margin-top: 0.1em; }
+      .support-page h1 { font-family: "Literata", "EB Garamond", Georgia, serif; font-weight: 600; font-size: clamp(2.1rem, 5vw, 2.9rem); margin-top: 0.1em; }
 
       /* ── The plate ─────────────────────────────────────────── */
       .plate-frame {
         margin: 1.6rem 0 0.5rem;
         padding: 10px;
-        background: #fffdf8;
+        background: #fffdf4;
         border: 1px solid var(--line);
         border-radius: 6px;
         box-shadow: 0 1px 0 #fff inset, 0 18px 40px -22px rgba(60, 35, 10, 0.45);
@@ -93,7 +93,7 @@
       .spine::after { bottom: 9%; }
       .spine span {
         writing-mode: vertical-rl; transform: rotate(180deg);
-        font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+        font-family: "Literata", "EB Garamond", Georgia, serif;
         font-size: clamp(8px, 1.25vw, 13px); letter-spacing: 0.08em; white-space: nowrap;
         background: linear-gradient(180deg, #f6e3a6, #c99a45 55%, #f1d58e);
         -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -282,24 +282,24 @@
       /* ── The ask ───────────────────────────────────────────── */
       .ask { text-align: center; max-width: 34rem; margin: 2.2rem auto 0; }
       .ask .headline {
-        font-family: "Cormorant Garamond", "EB Garamond", Georgia, serif; font-style: italic;
+        font-family: "Literata", "EB Garamond", Georgia, serif; font-style: italic;
         font-size: clamp(1.45rem, 3.4vw, 1.9rem); line-height: 1.25; margin: 0 0 0.6rem;
       }
       .coffee-button {
         display: inline-flex; align-items: center; gap: 0.6rem;
         margin: 1rem 0 0.4rem; padding: 0.8rem 1.7rem;
-        background: linear-gradient(180deg, #a5501a, var(--amber));
-        color: #fff7ed; text-decoration: none; font-weight: 700; font-size: 1.12rem; letter-spacing: 0.01em;
+        background: linear-gradient(180deg, #1a7591, var(--amber));
+        color: #f4fbfa; text-decoration: none; font-weight: 700; font-size: 1.12rem; letter-spacing: 0.01em;
         border-radius: 999px;
-        box-shadow: 0 10px 24px -12px rgba(146, 64, 14, 0.85), inset 0 1px 0 rgba(255,255,255,0.2);
+        box-shadow: 0 10px 24px -12px rgba(13, 74, 95, 0.85), inset 0 1px 0 rgba(255,255,255,0.2);
         transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
       }
-      .coffee-button:hover { transform: translateY(-1px); background: linear-gradient(180deg, #b45c22, #7c370c); box-shadow: 0 14px 28px -12px rgba(146, 64, 14, 0.9); }
+      .coffee-button:hover { transform: translateY(-1px); background: linear-gradient(180deg, #14607a, #0d4a5f); box-shadow: 0 14px 28px -12px rgba(13, 74, 95, 0.9); }
       .coffee-button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
       .coffee-button svg { width: 22px; height: 22px; }
       .ask .note { color: var(--ink-soft); font-size: 0.98rem; font-style: italic; }
       .thanks-line {
-        min-height: 1.6em; color: var(--amber); font-family: "Cormorant Garamond", Georgia, serif;
+        min-height: 1.6em; color: var(--amber); font-family: "Literata", Georgia, serif;
         font-style: italic; font-size: 1.2rem; opacity: 0; transition: opacity 0.6s ease;
       }
       .thanks-line.show { opacity: 1; }
@@ -307,7 +307,7 @@
       /* ── Where it goes / other ways ───────────────────────── */
       .goes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.9rem; margin: 1rem 0 0; padding: 0; list-style: none; }
       .goes li {
-        margin: 0; border: 1px solid var(--line); border-radius: 8px; background: #fffdf8; padding: 0.9rem 1rem 1rem;
+        margin: 0; border: 1px solid var(--line); border-radius: 8px; background: #fffdf4; padding: 0.9rem 1rem 1rem;
       }
       .goes h3 { margin: 0.1em 0 0.3em; font-size: 1.12rem; }
       .goes p { margin: 0; color: var(--ink-soft); font-size: 1rem; line-height: 1.5; }

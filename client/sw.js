@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v4";
+const BEUK_CACHE = "beuk-shell-v5";
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell
@@ -117,6 +117,12 @@ self.addEventListener("fetch", (event) => {
      are not the studio: never cached, and never allowed to stand in
      for the cached shell — straight to the network, untouched. */
   if (url.pathname.indexOf("/read/") === 0) return;
+
+  /* Help, support, thanks, changelog and roadmap are server-rendered
+     pages, not the studio, and are not precached: their HTML, CSS and
+     scripts always go straight to the network, so a restyle reaches a
+     returning visitor at once instead of waiting for a shell bump. */
+  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap)(\/|$)/.test(url.pathname)) return;
 
   /* The shelf and its API: network-first, never cached. On failure
      the rejection propagates untouched — the page already knows how

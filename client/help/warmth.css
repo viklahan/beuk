@@ -1,15 +1,17 @@
-/* Beuk warmth pages — the Paper theme from the product spec:
-   antique parchment #FAF7F2, warm-gray borders #DDD6C8, sepia ink
-   #1C1917, amber accent #92400E. Plain CSS, no build step. */
+/* Beuk warmth pages (support, thanks, changelog, roadmap) — the Voyage
+   theme of the landing page (Beuk Landing Page.html :root), the same
+   palette as client/help/help.css. The variable names are the old ones
+   (--amber is the accent) so the rules below keep working. Plain CSS,
+   no build step. */
 
 :root {
-  --paper: #faf7f2;
-  --paper-deep: #f3eee3;
-  --ink: #1c1917;
-  --ink-soft: #57534e;
-  --line: #ddd6c8;
-  --amber: #92400e;
-  --amber-soft: #fef3c7;
+  --paper: #f8f4e9;      /* Voyage --bg */
+  --paper-deep: #eef0e2; /* Voyage --bg2 */
+  --ink: #22333a;        /* Voyage --ink */
+  --ink-soft: #5d6d66;   /* Voyage --muted, 5.0:1 */
+  --line: #d5dcc9;       /* Voyage --line */
+  --amber: #14607a;      /* Voyage --accent (the accent, despite the name) */
+  --amber-soft: #dcebee;
 }
 
 * { box-sizing: border-box; }
@@ -18,7 +20,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: "EB Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
+  font-family: "Literata", "EB Garamond", "Libre Baskerville", Georgia, "Times New Roman", serif;
   font-size: 1.125rem;
   line-height: 1.65;
 }
@@ -48,7 +50,7 @@ body {
   font-size: 0.95rem;
 }
 
-.site-nav { margin-left: auto; display: flex; gap: 1.1rem; }
+.site-nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; }
 .site-nav a { color: var(--amber); text-decoration: none; font-size: 1rem; }
 .site-nav a:hover { text-decoration: underline; }
 
@@ -95,7 +97,7 @@ blockquote {
 .guide-list li {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fffdf8;
+  background: #fffdf4;
   margin: 0.6rem 0;
   padding: 0.8rem 1rem;
 }
@@ -115,7 +117,7 @@ blockquote {
 
 .trouble {
   border-left: 3px solid var(--amber);
-  background: #fffdf8;
+  background: #fffdf4;
   padding: 0.6rem 1.1rem;
   margin: 1.2rem 0;
 }
@@ -138,7 +140,7 @@ blockquote {
   border: 1px solid var(--line);
   border-top: 3px solid var(--amber);
   border-radius: 8px;
-  background: #fffdf8;
+  background: #fffdf4;
   padding: 1.1rem 1.4rem 1.25rem;
   margin: 2.2rem 0 1rem;
 }
@@ -146,14 +148,14 @@ blockquote {
 .kofi-button {
   display: inline-block;
   background: var(--amber);
-  color: #fff7ed;
+  color: #f4fbfa;
   text-decoration: none;
   font-weight: 700;
   border-radius: 999px;
   padding: 0.55rem 1.3rem;
   margin: 0.4rem 0;
 }
-.kofi-button:hover { background: #78350f; }
+.kofi-button:hover { background: #0d4a5f; }
 .kofi-note { color: var(--ink-soft); font-size: 0.98rem; font-style: italic; }
 
 .site-foot {

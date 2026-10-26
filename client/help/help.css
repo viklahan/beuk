@@ -1,52 +1,55 @@
-/* Beuk Help (H1) — the redesigned help pages. Tokens are the studio's
-   own (client/index.html :root and :root[data-theme="candlelight"]),
-   copied value for value; --hl and --amber-soft are the two the design
-   adds that the studio does not have. Type: EB Garamond (reading),
-   Karla (interface), IBM Plex Mono (codes) — the studio's faces. */
+/* Beuk Help (H1) — the redesigned help pages, in the Voyage theme: the
+   palette of the landing page (Beuk Landing Page.html :root), so help,
+   support and the landing page read as one place. Paper values marked
+   (V) are the landing page's own; the rest are derived from them and
+   checked for contrast (body text >= 4.5:1). The landing page has no
+   dark mode, so Candlelight is a derived night version of the same
+   blues and ambers. Type: Literata (reading, as on the landing page),
+   Karla (interface), IBM Plex Mono (codes). */
 :root {
   color-scheme: light;
-  --bg: #ece5d8;
-  --panel: #faf7f2;
-  --panel-2: #fffdf8;
-  --panel-3: #f1ebdf;
-  --ink: #1c1917;
-  --ink-2: #44403c;
-  --muted: #78716c;
-  --line: #ddd6c8;
-  --line-2: #cfc6b4;
-  --accent: #92400e;
-  --accent-soft: #f3e3d0;
-  --accent-ink: #fff8ec;
-  --gold: #a3802f;
+  --bg: #eef0e2;        /* (V) --bg2 */
+  --panel: #f8f4e9;     /* (V) --bg */
+  --panel-2: #fffdf4;   /* (V) --card */
+  --panel-3: #eef0e2;   /* (V) --bg2 */
+  --ink: #22333a;       /* (V) 11.9:1 */
+  --ink-2: #34474d;     /* 8.9:1 */
+  --muted: #5d6d66;     /* (V) 5.0:1 */
+  --line: #d5dcc9;      /* (V) */
+  --line-2: #c3ccb5;
+  --accent: #14607a;    /* (V) 6.4:1 */
+  --accent-soft: #dcebee;
+  --accent-ink: #f4fbfa; /* (V) --cta-ink, 6.7:1 on the accent */
+  --gold: #8a6620;      /* the landing page's amber #a87e2c darkened: 3.4:1 -> 4.8:1 for small text */
   --good: #3d7a4a;
   --bad: #b3352b;
-  --shadow: 0 10px 30px rgba(56, 42, 20, 0.16);
-  --hl: rgba(146, 64, 14, 0.09);
-  --amber-soft: #fef3c7;
-  --serif: "EB Garamond", Georgia, serif;
+  --shadow: 0 10px 30px rgba(13, 53, 66, 0.14);
+  --hl: rgba(20, 96, 122, 0.09);
+  --amber-soft: #f6ecd2;
+  --serif: "Literata", "EB Garamond", Georgia, serif;
   --ui: "Karla", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 :root[data-theme="candlelight"] {
   color-scheme: dark;
-  --bg: #100e0c;
-  --panel: #181715;
-  --panel-2: #22201d;
-  --panel-3: #262320;
-  --ink: #faf7f2;
-  --ink-2: #d8d2c6;
-  --muted: #a39e93;
-  --line: #38342e;
-  --line-2: #4a453c;
-  --accent: #e0973b;
-  --accent-soft: #3a2c1a;
-  --accent-ink: #201304;
-  --gold: #c9a959;
+  --bg: #0a171c;
+  --panel: #0f2027;     /* the landing page's #0d3542 deepened for a night page */
+  --panel-2: #152b33;
+  --panel-3: #1a323b;
+  --ink: #eaf4f1;       /* (V) spine ink, 14.9:1 */
+  --ink-2: #c9d8d4;     /* 11.4:1 */
+  --muted: #8fa39d;     /* 6.3:1 */
+  --line: #24414a;
+  --line-2: #2f525c;
+  --accent: #5fa9c2;    /* the Zen leaf's night blue, 6.3:1 */
+  --accent-soft: #163a46;
+  --accent-ink: #06161b;
+  --gold: #e8c877;      /* (V) */
   --good: #7fbf8f;
   --bad: #e58a7a;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
-  --hl: rgba(224, 151, 59, 0.12);
-  --amber-soft: #2e2414;
+  --hl: rgba(95, 169, 194, 0.12);
+  --amber-soft: #2e2714;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

@@ -87,7 +87,7 @@ test('sound files: the studio plays exactly the scenes that ship, from same-orig
 test('sound files: both service-worker twins runtime-cache the recordings, never precache them, and share one cache name', async () => {
   for (const p of ['sw.js', path.join('assets', 'sw.js')]) {
     const sw = await readFile(path.join(here, '..', 'client', p), 'utf8');
-    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v4";/, `${p}: shell cache bumped once to v4`);
+    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v5";/, `${p}: shell cache at v5`);
     assert.match(sw, /const BEUK_SOUND_CACHE = "beuk-sound-v1";/, `${p}: sound cache`);
     const shell = /const BEUK_SHELL = \[([\s\S]*?)\];/.exec(sw);
     assert.ok(shell && !/sound/.test(shell[1]), `${p}: recordings are not in the precache list`);
