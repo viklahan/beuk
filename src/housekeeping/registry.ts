@@ -1822,6 +1822,44 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The bundled sample and its counts live in the studio page.',
   },
 
+  /* ---- Story Insights, round 7 (BEUK:insights) ---- */
+  {
+    id: 'insights.glance.numbers-true',
+    title: 'Story Insights at a glance: words, reading time, chapters, average sentence and dialogue share equal the studio’s own counts; pages are the reading desk’s own measurement or no number while it measures',
+    kind: 'client-only',
+    reason: 'Story Insights is computed in the browser from the manuscript on the desk; the page count comes from the studio’s own layout engine.',
+  },
+  {
+    id: 'insights.chart.click-opens-chapter',
+    title: 'Story Insights charts: clicking a rhythm column, Enter on a cadence point and clicking a dialogue row each close Insights and open that chapter',
+    kind: 'client-only',
+    reason: 'Rendered SVG charts and editor navigation in the studio page.',
+  },
+  {
+    id: 'insights.crutch.counts',
+    title: 'Story Insights words to look at: exact counts and per-10,000 rates on hand-built English and Spanish fixtures; no list for other languages',
+    kind: 'client-only',
+    reason: 'The word lists and counting run in the studio page (the server never sees manuscript text for this).',
+  },
+  {
+    id: 'insights.sentences.histogram',
+    title: 'Story Insights sentence variety: known sentence lengths land in the right buckets, with exact median and nine-in-ten lengths',
+    kind: 'client-only',
+    reason: 'Sentence splitting and the histogram run in the studio page.',
+  },
+  {
+    id: 'insights.readability.en-only',
+    title: 'Story Insights reading ease: Flesch Reading Ease exact on a known English sentence; other book languages get a note instead of a score',
+    kind: 'client-only',
+    reason: 'Computed in the studio page from the manuscript on the desk.',
+  },
+  {
+    id: 'insights.perf',
+    title: 'Story Insights stay quick: the sample book computes and draws from cold in under 600 ms; an unchanged book reopens from the per-revision cache',
+    kind: 'client-only',
+    reason: 'Timed in the writer’s own browser; the server has no part in it.',
+  },
+
   /* ---- Dictation language + Read Aloud section language (BEUK:dictlang) ---- */
   {
     id: 'dictation.language-picker',
