@@ -51,6 +51,13 @@ services:
       context: deploy/renderer
     image: beuk-renderer:latest
     restart: unless-stopped
+    # Same rotation as the base file's x-logging (anchors do not cross
+    # files): https://docs.docker.com/engine/logging/drivers/json-file/
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       RENDER_PORT: "3100"
       RENDER_MAX_BYTES: ${EXPORT_MAX_BYTES:-52428800}

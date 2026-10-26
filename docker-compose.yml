@@ -1,10 +1,22 @@
 # Beuk SaaS — identical shape for local dev and the Hetzner production box.
 #   cp .env.example .env   (fill in real values on the server only)
 #   docker compose up -d --build
+#
+# Log rotation for every container: the json-file driver's max-size
+# defaults to -1 (unlimited), so without this a long-running box fills
+# its disk with logs. 3 x 10 MB per container.
+# https://docs.docker.com/engine/logging/drivers/json-file/
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-beuk}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -22,6 +34,7 @@ services:
     # Fixed name: deploy/Dockerfile.tools builds the tools overlay FROM this.
     image: beuk-app:latest
     restart: unless-stopped
+    logging: *default-logging
     # Hardening: Docker's bundled init (tini) runs as PID 1, forwards
     # SIGTERM/SIGINT to node and reaps orphaned tool processes. The app
     # then shuts down gracefully (src/shutdown.ts) within
@@ -39,6 +52,9 @@ services:
       # M2: export archive bytes live on the exportdata volume.
       EXPORT_DIR: /data/exports
       EXPORT_MAX_BYTES: ${EXPORT_MAX_BYTES:-52428800}
+      # Largest book the shelf accepts (src/config.ts default 64 MiB).
+      # Passed through so the .env.example knob actually reaches the app.
+      MANUSCRIPT_MAX_BYTES: ${MANUSCRIPT_MAX_BYTES:-67108864}
       # Billing: unset until V sets prices + Stripe keys; while unset the
       # billing endpoints answer 501 "not configured" (README, Billing).
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
@@ -79,6 +95,11 @@ services:
       # PDF/X. Unset → pdfx jobs fail honestly as "not configured".
       HTML_PDF_BIN: ${HTML_PDF_BIN:-}
       JOB_TIMEOUT_MS: ${JOB_TIMEOUT_MS:-120000}
+      # Job knobs documented in .env.example; defaults = src/config.ts.
+      JAVA_MAX_HEAP: ${JAVA_MAX_HEAP:-512m}
+      JOB_MAX_ACTIVE_PER_USER: ${JOB_MAX_ACTIVE_PER_USER:-2}
+      JOB_MAX_QUEUED: ${JOB_MAX_QUEUED:-20}
+      PDFX_INK_DPI: ${PDFX_INK_DPI:-100}
       # Ghostscript step of a pdfx job (flattening is slow): 15 min.
       PDFX_TIMEOUT_MS: ${PDFX_TIMEOUT_MS:-900000}
       # Stock photos for the cover maker (Pexels). Key unset → the
@@ -145,8 +166,11 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    logging: *default-logging
     environment:
       DOMAIN: ${DOMAIN:-localhost}
+      # Optional www host redirected to DOMAIN (Caddyfile); empty = none.
+      WWW_DOMAIN: ${WWW_DOMAIN:-}
     ports:
       - "80:80"
       - "443:443"
