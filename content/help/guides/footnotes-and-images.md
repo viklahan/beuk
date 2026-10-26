@@ -4,8 +4,8 @@ title: Footnotes, endnotes & images
 blurb: Notes that link both ways, pictures that sit properly, and words for readers who can't see them.
 group: write
 audience: [new, hand-edit]
-updated: 2026-10-25
-readMinutes: 3
+updated: 2026-10-26
+readMinutes: 4
 related: [check-your-book, typeset-a-chapter]
 ---
 
@@ -26,6 +26,15 @@ What you're doing: adding the apparatus of a serious book — notes that link bo
 2. **Write the alt text.** One plain sentence describing the image for readers who can't see it. Stores increasingly require it; readers have always deserved it.
 3. Choose **Standard** (sits within the text column) or **Full-bleed** (runs to the page edges where the reading system allows).
 4. Placed images can be adjusted later from the strip under the editor: change alt text, toggle full-bleed, or remove the placement (the library keeps the file).
+
+### Removing a picture from the book
+
+1. In the image library (**Insert Image**, and the scene-break picker) every picture has a small bin button.
+2. A picture nothing uses goes at once, with **Undo** for ten seconds.
+3. A picture in use first shows where — "Chapter Three (in the text), Chapter Five (plate)". **Remove it everywhere** takes it out of the text, the plate, the backdrop, the scene break, the cover or the flourishes, just as removing each by hand would, and Undo puts it all back. If it is your cover's artwork, the cover made with it goes too.
+4. **Remove unused pictures** clears every picture nothing in the book uses, saying first how many there are and how much space they take.
+
+Each removal keeps a snapshot in History ("Before removing a picture"), so a picture can always come back. That snapshot holds the picture, so the saved book only gets smaller once you delete the snapshot in History. The sample story's own pictures stay with the sample.
 
 ### Typing the marks yourself
 

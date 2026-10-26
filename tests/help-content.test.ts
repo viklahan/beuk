@@ -44,18 +44,18 @@ async function getPage(base: string, p: string, redirect: RequestRedirect = 'fol
   return { status: res.status, html: await res.text(), headers: res.headers };
 }
 
-test('help content: every guide parses, the content check is clean, 13 guides in three groups', () => {
+test('help content: every guide parses, the content check is clean, 15 guides in three groups', () => {
   const c = loadHelpContent();
   assert.deepEqual(checkHelpContent(c), []);
-  assert.equal(c.guides.length, 13);
+  assert.equal(c.guides.length, 15);
   const files = readdirSync(path.join(root, 'content', 'help', 'guides')).filter((f) => f.endsWith('.md'));
-  assert.equal(files.length, 13, 'one Markdown file per guide');
+  assert.equal(files.length, 15, 'one Markdown file per guide');
   for (const g of c.guides) {
     assert.ok(g.title && g.blurb && g.lede.length, `${g.slug} has a title, blurb and lede`);
     assert.match(g.updated, /^\d{4}-\d{2}-\d{2}$/);
   }
   const fresh = c.guides.filter((g) => g.isNew).map((g) => g.slug).sort();
-  assert.deepEqual(fresh, ['saving', 'share'], 'exactly the two new guides carry the New mark');
+  assert.deepEqual(fresh, ['move-split-merge', 'saving', 'share', 'story-insights'], 'exactly the four new guides carry the New mark');
   assert.deepEqual([...new Set(c.guides.map((g) => g.group))], ['write', 'ship', 'keep']);
 });
 
@@ -165,7 +165,15 @@ test('job results carry beuk: a real EPUBCheck 5.2.1 report maps every message, 
   assert.equal(odd!.messages[0].beuk, null);
 });
 
-test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for', async () => {
+const ADDED_2026_10_26: [string, string, string][] = [
+  ["footnotes-and-images", "remove the placement (the library keeps the file).", "remove the placement (the library keeps the file). Removing a picture from the book In the image library ( Insert Image , and the scene-break picker) every picture has a small bin button. A picture nothing uses goes at once, with Undo for ten seconds. A picture in use first shows where — \"Chapter Three (in the text), Chapter Five (plate)\". Remove it everywhere takes it out of the text, the plate, the backdrop, the scene break, the cover or the flourishes, just as removing each by hand would, and Undo puts it all back. If it is your cover's artwork, the cover made with it goes too. Remove unused pictures clears every picture nothing in the book uses, saying first how many there are and how much space they take. Each removal keeps a snapshot in History (\"Before removing a picture\"), so a picture can always come back. That snapshot holds the picture, so the saved book only gets smaller once you delete the snapshot in History. The sample story's own pictures stay with the sample."],
+  ["typeset-a-chapter", "What reads well on one should read well on all.", "What reads well on one should read well on all. The preview keeps your place. As you write and format, the preview stays on the page holding your cursor; a new font size, theme or device keeps you on the words you were reading. Typing a chapter's number, title or subtitle turns the preview to the page they stand on. Opening another chapter starts at its first page."],
+  ["import-a-manuscript", "You can do this later, but exports carry them.", "You can do this later, but exports carry them. Beuk starts you off from the document: a title page in the manuscript (the title, a subtitle, a \"by …\" line) becomes the book's title, subtitle and author, lifted out of the text; with nothing like a title page, the cleaned file name is used. The import report says where each detail came from. A title, subtitle or author you typed yourself is never overwritten by a new import. The report shows what the document calls itself and offers Use instead."],
+  ["import-a-manuscript", "re-import, or split the section by hand in the editor.", "re-import, or place the cursor where each chapter begins and choose Split at cursor from the section's … menu (see Delete, split & merge chapters )."],
+  ["add-a-cover", "may be refused by a store later.", "may be refused by a store later. No artwork yet? The Cover Maker builds a cover from a photo and type, and starts from your book: the title, subtitle, author and series are filled in, and the photo search starts from the title. A cover made earlier follows the book's new title; anything you typed in the maker yourself stays as you wrote it."],
+];
+
+test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
   const server = await startTestServer(db);
   try {
@@ -192,6 +200,12 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
           oldLimit,
           "The honest limit: this is structural validation, and Beuk doesn't claim EPUBCheck's authority for a lighter set of checks. The full, official EPUBCheck runs on Beuk's server: signed in, save the EPUB to Your Archive and choose Run EPUBCheck . It runs only where the server has EPUBCheck installed — where it hasn't, the check says so and gives no result rather than a pass. A book with findings comes back as a finished check that says it did not pass: the check worked; the book needs a fix.",
         );
+      }
+      // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
+      // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
+      for (const [s, from, to] of ADDED_2026_10_26) if (s === slug) {
+        assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
+        expected = expected.replace(from, to);
       }
       const page = await getPage(server.base, `/help/${slug}`);
       assert.equal(page.status, 200, slug);

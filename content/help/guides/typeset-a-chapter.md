@@ -4,7 +4,7 @@ title: Typeset a chapter
 blurb: Fonts, sizes, chapter headings, drop caps, and scene-break ornaments — the typesetting engine, gently.
 group: write
 audience: [new]
-updated: 2026-10-25
+updated: 2026-10-26
 readMinutes: 2
 related: [import-a-manuscript, footnotes-and-images]
 ---
@@ -20,6 +20,7 @@ What you're doing: deciding how your book *looks* as it's read — the typeface,
 5. **Chapter openings:** four header styles — *classic centred*, *modern stacked*, *editorial left*, *ornate framed* — and optional drop caps of 2, 3, or 4 lines with small-caps follow-through.
 6. **Scene breaks:** pick an ornament — asterism (`* * *`), fleur-de-lis, diamonds, a botanical sprig, a hairline rule, and more.
 7. **Check it on devices.** Flip the preview between Kindle Paperwhite, iPad (two-page spread), Kobo, and a phone. What reads well on one should read well on all.
+8. **The preview keeps your place.** As you write and format, the preview stays on the page holding your cursor; a new font size, theme or device keeps you on the words you were reading. Typing a chapter's number, title or subtitle turns the preview to the page they stand on. Opening another chapter starts at its first page.
 
 ## Troubleshooting
 

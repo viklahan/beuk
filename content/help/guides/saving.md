@@ -4,11 +4,11 @@ title: Saving, devices & conflicts
 blurb: Where your book is saved, what "Saved on this device" means, and Keep mine / Use the shelf copy / Keep both.
 group: keep
 audience: [new]
-updated: 2026-10-25
-readMinutes: 3
+updated: 2026-10-26
+readMinutes: 4
 related: [exports-and-archive, your-streak]
 new: true
-sourced-from: README.md "Local-first saving (studio)" (IndexedDB, header indicator, limits); README.md "API (M1–M5)" → "Optimistic concurrency (migration 009)" (revisions, 409, the conflict notice); client/index.html strings offline.conflictTitle, offline.conflictBothNote, local.* (en)
+sourced-from: README.md "Local-first saving (studio)" (IndexedDB, header indicator, limits); README.md "API (M1–M5)" → "Optimistic concurrency (migration 009)" (revisions, 409, the conflict notice); client/index.html strings offline.conflictTitle, offline.conflictBody, offline.conflictBothNote, local.*, history.* (en); CHANGELOG.md 2026-10-26 "Smaller History, truer counts" and "The road so far, and what changed since"
 ---
 
 What you're doing: nothing, mostly. The studio saves the open book on this device as you write — signed in or not, online or not. This page says where it goes, what the save indicator in the header means, and what happens when two devices disagree.
@@ -27,13 +27,20 @@ What you're doing: nothing, mostly. The studio saves the open book on this devic
 
 ### When two devices disagree
 
-If the same book changed on this device and on the shelf since they last agreed, the studio shows **This book changed in two places** — and nothing is overwritten until you choose:
+If the same book changed on this device and on the shelf since they last agreed, the studio shows **This book changed in two places**: on this device, and on your shelf from somewhere else. Nothing is overwritten until you choose:
 
 - **Keep mine** replaces the shelf copy with the writing on this device.
 - **Use the shelf copy** replaces the book on this device — and keeps this device's writing as a snapshot in History first.
 - **Keep both** stands by the writing on this device and preserves the shelf copy as a snapshot in History, word for word.
 
 Closing the notice simply puts the choice off, with both copies intact.
+
+### History
+
+- **Save a snapshot** in History before a big edit, named if you like. The studio also takes one by itself before an import, a restore, a chapter change, removing a picture, opening a backup or a shelf conflict.
+- Each snapshot says how the book has moved since — "+1,240 words since", "−310 words since" or "same length as now". Open one to see the sections added since, the ones no longer in the book, the ones left out of the book or brought back, and the ones that changed, with their word counts.
+- **Restore the whole book**, or one section. Restoring the whole book takes a snapshot of the book as it is first (unless the desk is empty), so the restore can itself be undone.
+- Snapshots share the book's pictures, fonts and cover instead of copying them. A picture you have removed is kept once for History, however many snapshots hold it, and goes when the last of them is deleted.
 
 ### Limits, stated plainly
 

@@ -4,6 +4,19 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Help catches up
+
+- **Two new guides.** *Delete, split & merge chapters* covers the
+  chapter `…` menu, Undo and what can't be merged. *Story Insights &
+  Goals* covers the glance cards, the charts, Names on stage, the road
+  so far, and where each count comes from (238 words a minute, the
+  reading desk's own pages).
+- **Five guides updated.** Removing a picture (Footnotes, endnotes &
+  images), the preview keeping your place (Typeset a chapter), the
+  title read from the manuscript and Split at cursor (Import a
+  manuscript), the Cover Maker (Add a cover), and History and the
+  reworded conflict notice (Saving, devices & conflicts).
+
 ## 2026-10-26 — Smaller History, truer counts
 
 - **History no longer copies your pictures.** Every snapshot (named or

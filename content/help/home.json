@@ -48,6 +48,7 @@
   ],
   "guideOrder": [
     "import-a-manuscript", "typeset-a-chapter", "add-a-cover", "footnotes-and-images",
+    "move-split-merge", "story-insights",
     "platform-presets", "box-sets", "print-interiors", "check-your-book", "epub-error-decoder",
     "exports-and-archive", "your-streak", "saving", "share"
   ]

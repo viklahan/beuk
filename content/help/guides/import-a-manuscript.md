@@ -4,8 +4,8 @@ title: Import a manuscript
 blurb: Bring a book in from Word, Markdown, or plain text — and see what Beuk tidies on the way in.
 group: write
 audience: [new]
-updated: 2026-10-25
-readMinutes: 2
+updated: 2026-10-26
+readMinutes: 3
 related: [typeset-a-chapter, add-a-cover]
 ---
 
@@ -17,7 +17,8 @@ What you're doing: bringing a finished (or nearly finished) book into Beuk so it
 2. Pick your file. A `.docx` from Word or Google Docs works best if you have one — headings, italics, and blockquotes survive the trip.
 3. Beuk reads the file and lays the book out in its three tiers: **Front Matter** (title page, copyright, dedication…), **Body** (prologue, chapters, epilogue), and **Back Matter** (acknowledgments, About the Author, Also By).
 4. Walk the section list on the left. Anything the importer guessed wrong — a chapter it read as front matter, say — can be moved; nothing is locked.
-5. Fill in the book's details (title, subtitle, author, ISBN if you have one) in Project Settings. You can do this later, but exports carry them.
+5. Fill in the book's details (title, subtitle, author, ISBN if you have one) in Project Settings. You can do this later, but exports carry them. Beuk starts you off from the document: a title page in the manuscript (the title, a subtitle, a "by …" line) becomes the book's title, subtitle and author, lifted out of the text; with nothing like a title page, the cleaned file name is used. The import report says where each detail came from.
+6. A title, subtitle or author you typed yourself is never overwritten by a new import. The report shows what the document calls itself and offers **Use** instead.
 
 ## Explanation
 
@@ -29,7 +30,7 @@ The importer has a smart sanitizer. Straight quotes become proper curly quotes, 
 
 ### What can go wrong
 
-**My chapters arrived as one long section.** The importer splits on heading styles. If your chapters were typed as big bold text rather than Heading 1, they read as one flow. Fix the headings in Word and re-import, or split the section by hand in the editor.
+**My chapters arrived as one long section.** The importer splits on heading styles. If your chapters were typed as big bold text rather than Heading 1, they read as one flow. Fix the headings in Word and re-import, or place the cursor where each chapter begins and choose **Split at cursor** from the section's `…` menu (see [Delete, split & merge chapters](/help/move-split-merge)).
 
 **Some formatting vanished.** Beuk keeps semantic formatting — emphasis, strong, headings, quotes — and deliberately drops decorative formatting (coloured text, font changes mid-chapter). Typesetting replaces decoration; that's the point of the studio.
 
