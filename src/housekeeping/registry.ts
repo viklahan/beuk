@@ -2119,6 +2119,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Section selection and the preview page are client UI state.',
   },
   {
+    id: 'preview.rtl-ui-same-pages',
+    title: 'An Arabic (right-to-left) interface lays the book pages out exactly as an English one: same page count, same first page',
+    kind: 'client-only',
+    reason: 'The device preview is laid out by the studio browser; the interface direction is client UI state.',
+  },
+  {
     id: 'preview.opened-section-stays-put',
     title: 'A section just opened stays on page 1 through a font-size change; a chapter-title keystroke turns to the page the title stands on and a device change keeps it there',
     kind: 'client-only',

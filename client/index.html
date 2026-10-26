@@ -1090,6 +1090,12 @@
       .frame-kobo { max-width: 344px; background: #17171a; border-radius: 14px 14px 26px 26px; padding: 16px 12px 30px; box-shadow: var(--shadow), inset 0 0 0 2px #2e2e33; }
       .frame-phone { max-width: 262px; background: #0a0a0c; border-radius: 34px; padding: 10px 8px 14px; box-shadow: var(--shadow), inset 0 0 0 2px #333338; }
       .screen { display: flex; flex-direction: column; overflow: hidden; position: relative; }
+      /* The device screen is the book's page, not the interface: its page
+         geometry (columns turned by scroll offset) is laid out left to
+         right whatever the interface direction; the book's own text
+         carries its own dir on #pageFlow. An Arabic interface used to
+         mirror the scroll origin and cut the pages in half. */
+      #deviceScreen { direction: ltr; }
       .frame-kindle .screen { background: #f6f4ee; color: #1c1c1c; aspect-ratio: 3 / 4.05; border-radius: 3px; filter: grayscale(1) contrast(1.04); }
       .frame-ipad .screen { background: #ffffff; color: #191919; aspect-ratio: 3 / 3.9; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
       .frame-kobo .screen { background: #f4e8cf; color: #2e2318; aspect-ratio: 3 / 4.05; border-radius: 3px; }
@@ -41296,6 +41302,18 @@
               } finally { state.theme.fontSize = keepSize; }
               return scVerdict(atEnd && bad.length === 0, "caret at the end of the text (" + area.selectionStart + " of " + area.value.length + "); " + bits.join("; ") + (bad.length ? " — moved after: " + bad.join(", ") : ""));
             });
+          } },
+        { id: "preview.rtl-ui-same-pages", feature: "preview", name: "An Arabic (right-to-left) interface lays the book's pages out exactly as an English one: the device screen stays left to right, the page count is the same and page 1 shows the same first words",
+          run() {
+            const keepLang = getUiLang();
+            const keepPage = state.page;
+            try {
+              const look = () => { renderPreview(); pvFlush(); measurePages(); goToPage(1, true); const fw = $("flowWrap"); return { n: state.pageCount, x: fw.scrollLeft, dir: getComputedStyle($("deviceScreen")).direction }; };
+              setUiLang("en"); const en = look();
+              setUiLang("ar"); const ar = look();
+              const ok = en.n > 0 && ar.n === en.n && ar.dir === "ltr" && ar.x === en.x;
+              return scVerdict(ok, "English interface: " + en.n + " pages, scroll " + en.x + "; Arabic: " + ar.n + " pages, scroll " + ar.x + ", device screen " + ar.dir);
+            } finally { setUiLang(keepLang); goToPage(keepPage, true); }
           } },
         { id: "zen.controls.no-overlap", feature: "zen", name: "Zen corner controls never cover the tabs: in every interface language (Arabic right-to-left included) the presence dot, Ambient sound, the scene picker and Dictate share no pixel with the Chapter Content / Typography Studio tabs and stay inside the window; the cluster stands at the reading end of the line (logical inset), and the editor never runs past its column",
           run() {

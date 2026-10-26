@@ -28,6 +28,9 @@ to make well.
 - **Clearer sync conflict notice.** It now says the book was changed in
   two places, this device and your shelf, without assuming this device
   was offline. All 13 languages.
+- **Fixed:** with the interface in Arabic (or any right-to-left
+  language), the device preview cut each page in half. The preview now
+  lays the book out the same whatever the interface language.
 - An open studio offers this update ("A new Beuk is ready"). An older
   studio would drop the new snapshots on its next save, so please take
   the update.
