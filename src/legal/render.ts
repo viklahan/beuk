@@ -20,7 +20,8 @@ import { pageChrome, repoRoot } from '../warmth/pages.js';
  *   [[if <flag>]] … [[end]]   kept only when the flag is true — the
  *                             page never describes a feature this
  *                             server has switched off. Flags: billing,
- *                             kofi, offsite, stock, mail.
+ *                             kofi, offsite, stock, mail, schedule,
+ *                             noschedule.
  *   {{slot}}                  filled from config after rendering.
  *
  * Operator slots (LEGAL_* in .env): a slot that is not set renders a
@@ -66,6 +67,9 @@ export interface LegalFlags {
   offsite: boolean;
   stock: boolean;
   mail: boolean;
+  /** Scheduled local backups on (BACKUP_INTERVAL_HOURS > 0), and its opposite. */
+  schedule: boolean;
+  noschedule: boolean;
 }
 
 /** What this server actually has switched on. billing = live billing,
@@ -79,6 +83,8 @@ export function legalFlags(config: Config): LegalFlags {
     offsite: offsiteSettings(config) !== null,
     stock: Boolean(config.pexelsApiKey),
     mail: Boolean(config.smtpUrl && config.mailFrom),
+    schedule: config.backupIntervalHours > 0,
+    noschedule: !(config.backupIntervalHours > 0),
   };
 }
 

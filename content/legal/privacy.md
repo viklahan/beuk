@@ -65,7 +65,13 @@ When you share a reading copy, the server stores a frozen copy of the book for i
 
 ## Backups
 
-The server makes a backup of its data every {{backuphours}} hours, so a broken disk doesn't lose your books. A backup includes accounts (with password hashes), books, exports, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
+[[if schedule]]
+The server makes a backup of its data every {{backuphours}} hours, so a broken disk doesn't lose your books.
+[[end]]
+[[if noschedule]]
+The operator makes backups of the server's data by hand, so a broken disk doesn't lose your books.
+[[end]]
+A backup includes accounts (with password hashes), books, exports, share copies and comments, and Founders' Shelf entries. Backups on the server itself are not deleted automatically today, so something you delete can remain in older backups.
 [[if offsite]]
 An encrypted copy of each backup also goes to a private storage bucket with Backblaze B2. It's encrypted before it leaves the server, and only the operator holds the key. Copies are kept on a rolling schedule: one a day for {{keepdaily}} days, one a week for {{keepweekly}} weeks, and one a month for {{keepmonthly}} months. So a deleted item can survive in these copies for up to about {{keepmonthly}} months.
 [[end]]

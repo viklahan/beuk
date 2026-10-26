@@ -186,6 +186,11 @@ test('legal: feature blocks follow this server\'s configuration', async () => {
     assert.doesNotMatch(privacy, /Stripe|Backblaze|Pexels|Ko-fi/);
     assert.doesNotMatch(terms, /Stripe|paid plan|Ko-fi/);
   });
+  await withServer({ backupIntervalHours: 24 }, async (base) => {
+    const privacy = (await get(base, '/privacy')).html;
+    assert.match(privacy, /makes a backup of its data every 24 hours/);
+    assert.doesNotMatch(privacy, /by hand/);
+  });
   const offsite = { ...testConfig().offsite, b2KeyId: 'k', b2ApplicationKey: 'a', b2Bucket: 'b', b2Endpoint: 'https://s3.example', resticPassword: 'p' };
   await withServer(
     { kofiUrl: 'https://ko-fi.com/test', offsite, pexelsApiKey: 'px', smtpUrl: 'smtp://x@y:587', mailFrom: 'Beuk <a@b.c>' },
@@ -196,6 +201,8 @@ test('legal: feature blocks follow this server\'s configuration', async () => {
       assert.match(privacy, /Pexels/);
       assert.match(privacy, /Ko-fi/);
       assert.match(privacy, /password-reset link/);
+      assert.match(privacy, /makes backups of the server&#39;s data by hand|makes backups of the server's data by hand/, 'testConfig: schedule off');
+      assert.doesNotMatch(privacy, /every 0 hours/);
       const terms = (await get(base, '/terms')).html;
       assert.match(terms, /A tip says thank you and buys nothing/);
       assert.doesNotMatch(terms, /paid plan/, 'test-free: billing still off');
@@ -211,7 +218,7 @@ test('legal: feature blocks follow this server\'s configuration', async () => {
 });
 
 test('legal: every flag combination leaves no directive or unknown slot behind', () => {
-  const names: (keyof LegalFlags)[] = ['billing', 'kofi', 'offsite', 'stock', 'mail'];
+  const names: (keyof LegalFlags)[] = ['billing', 'kofi', 'offsite', 'stock', 'mail', 'schedule', 'noschedule'];
   for (const page of ['privacy', 'terms'] as const) {
     const source = read('content', 'legal', `${page}.md`);
     assert.equal((source.match(/^\[\[if /gm) ?? []).length, (source.match(/^\[\[end\]\]/gm) ?? []).length, `${page}: balanced blocks`);

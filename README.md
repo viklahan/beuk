@@ -1481,7 +1481,7 @@ legal advice — it has not been reviewed by a lawyer.
   ("Last changed …"). Bump `updated:` whenever you edit the text.
 - **Content format:** `key: value` front matter ended by `===`
   (`title`, `updated`, `note` — the note becomes an HTML comment), then
-  Markdown (`src/warmth/markdown.ts`). `[[if billing|kofi|offsite|stock|mail]]
+  Markdown (`src/warmth/markdown.ts`). `[[if billing|kofi|offsite|stock|mail|schedule|noschedule]]
   … [[end]]` blocks appear only when that feature is on for this server
   (billing = live-mode checkout configured, the same rule as
   `/api/billing/status` `live`), so the page never describes something
