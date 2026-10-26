@@ -1907,7 +1907,7 @@
           </div>
           <!-- ==== /BEUK:importreport ==== -->
           <div class="sample-bar">
-            <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story (25,000 words)</button>
+            <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story</button><!-- BEUK:bugs — the real count is filled in by renderSampleButton -->
             <p class="sample-note" id="sampleNote">A complete novella, The Lantern Coast, at real book scale. Load puts it on the desk in a snap; Remove clears the desk completely, back to empty.</p>
           </div>
           <div id="matterLib"></div>
@@ -14577,14 +14577,40 @@
       const isEmptyDesk = () => bookWordTotal() === 0 &&
         !String(state.meta.title || "").trim() && !String(state.meta.author || "").trim() &&
         state.sections.every((s) => !String(s.content || "").trim());
+      /* ==== BEUK:bugs ==== — the sample's own word count, as shipped:
+         counted once from the bundled book exactly the way the stats
+         count the desk (sectionWords over the included sections, the
+         sample's own title and author in place), instead of a typed-in
+         round number. Nothing is drawn while it is counted. */
+      let sampleShippedWordsCache = null;
+      function sampleShippedWords() {
+        if (sampleShippedWordsCache !== null) return sampleShippedWordsCache;
+        const d = buildSampleBook();
+        const keepSecs = state.sections, keepMeta = state.meta;
+        try {
+          state.sections = d.sections; state.meta = Object.assign({}, keepMeta, d.meta || {});
+          sampleShippedWordsCache = bookWordTotal();
+        } finally { state.sections = keepSecs; state.meta = keepMeta; }
+        return sampleShippedWordsCache;
+      }
+      /* While the sample is open its note says the desk's live count —
+         redrawn by updateStats on every edit, never left stale. */
+      function renderSampleNoteLive(total) {
+        if (!sampleState.loaded) return;
+        const note = $("sampleNote"); if (!note) return;
+        if (typeof total !== "number") total = bookWordTotal();
+        note.textContent = t("side.sampleNoteLoaded", { n: fmtNum(total), count: total });
+      }
+      /* ==== /BEUK:bugs ==== */
       function renderSampleButton() {
         const btn = $("btnSampleStory"); if (!btn) return;
         const note = $("sampleNote");
         if (sampleState.loaded) {
           btn.innerHTML = '<i data-lucide="book-x"></i>' + t("side.sampleRemove");
-          if (note) note.textContent = t("side.sampleNoteLoaded", { n: fmtNum(bookWordTotal()) });
+          if (note) renderSampleNoteLive(); /* BEUK:bugs */
         } else {
-          btn.innerHTML = '<i data-lucide="book-open"></i>' + t("side.sampleLoad", { n: fmtNum(25000) });
+          const sw = sampleShippedWords(); /* BEUK:bugs — the real count, not a round 25,000 */
+          btn.innerHTML = '<i data-lucide="book-open"></i>' + t("side.sampleLoad", { n: fmtNum(sw), count: sw });
           if (note) note.textContent = t("side.sampleNoteLoad");
         }
         icons();
@@ -16185,15 +16211,17 @@
         const mins = Math.round(total / 225);
         $("statTime").textContent = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
         renderSideStatusSummary(total); /* BEUK:sidebar */
+        if (typeof renderSampleNoteLive === "function") renderSampleNoteLive(total); /* BEUK:bugs — the sample note's count is live */
         /* The Content page carries its own live counts — this section and
            the whole book — and the Zen pill reads the same numbers. */
-        const secTxt = t("editor.countSection", { n: fmtNum(activeSection() ? sectionWords(activeSection()) : 0) });
-        const bookTxt = t("editor.countBook", { n: fmtNum(total) });
+        const secW = activeSection() ? sectionWords(activeSection()) : 0; /* BEUK:bugs — plural by count */
+        const secTxt = t("editor.countSection", { n: fmtNum(secW), count: secW });
+        const bookTxt = t("editor.countBook", { n: fmtNum(total), count: total });
         const edSec = $("edSecWords"), edBook = $("edBookWords"), zenCount = $("zenCount");
         if (edSec) edSec.textContent = secTxt;
         if (edBook) edBook.textContent = bookTxt;
         if (zenCount) zenCount.textContent = secTxt + " · " + bookTxt;
-        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) el.textContent = fmtNum(sectionWords(s)) + " " + t("side.wordUnit"); });
+        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); el.textContent = fmtNum(w) + " " + t("side.wordUnit", { count: w }); } });
         $("projectTitleDisplay").textContent = state.meta.title || t("misc.untitledBook");
         $("projectAuthorDisplay").textContent = state.meta.author ? t("misc.byAuthor", { author: state.meta.author }) : "";
         renderProgress();
