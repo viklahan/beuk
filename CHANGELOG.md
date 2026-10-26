@@ -4,6 +4,16 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Your address stays with us
+
+- **No more Google Fonts.** Every typeface in the studio, Help, the
+  support and thank-you pages now comes from beuk.studio itself — the same
+  22 families, weights and styles as before, byte for byte the same font
+  files, so the studio sets type exactly as it did. Opening Beuk no longer
+  tells Google your IP address, and the site's Content-Security-Policy no
+  longer allows the Google font hosts at all, so it cannot happen by
+  accident later. Faces you have seen are still kept for offline use.
+
 ## 2026-10-26 — No false "changed in two places", and counts that read right
 
 - **Reloading right after a save no longer cries conflict.** For writers
@@ -31,8 +41,8 @@ to make well.
 ## 2026-10-25 — What Beuk keeps, in plain words
 
 - **A privacy page and the terms.** `/privacy` says what Beuk keeps,
-  where, for how long, who else sees any of it (including that the
-  typefaces load from Google Fonts), and what you can do about it.
+  where, for how long, who else sees any of it, and what you can do
+  about it.
   `/terms` sets out the ground rules: your writing stays yours, the
   studio is free, keep your own copies. Both were written from what
   the software actually does, and both say plainly what isn't there

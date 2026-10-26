@@ -50,13 +50,19 @@ const BEUK_SHELL = [
   "./assets/vendor/jspdf.umd.min.js"
 ];
 
-/* BEUK:local — Google Fonts for offline use. The stylesheet and
-   its font files are browser-specific, so they cannot be listed
-   here ahead of time: the page posts the URLs it actually loaded
-   (BEUK_CACHE_URLS) and the worker keeps them. Only these two
-   origins are accepted. Faces the studio never displayed online
-   are not cached and fall back to the system fonts offline. */
-const BEUK_FONT_ORIGINS = ["https://fonts.googleapis.com", "https://fonts.gstatic.com"];
+/* ==== BEUK:fonts ==== The web fonts for offline use. They are
+   self-hosted under assets/fonts/ (same origin — no font request
+   ever leaves it) and NOT precached: ~6 MB across 22 families and
+   their script subsets would make install heavy, and a visit uses
+   only a few files. The cache-first static rule below keeps every
+   file a controlled page loads; for the first visit, before this
+   worker controls the page, the page posts the URLs it actually
+   loaded (BEUK_CACHE_URLS) and the worker keeps them. Only URLs
+   under this deploy's assets/fonts/ are accepted. Faces the studio
+   never displayed online are not cached and fall back to the
+   system fonts offline. */
+const BEUK_FONTS_DIR = new URL("./assets/fonts/", self.location.href).href;
+/* ==== /BEUK:fonts ==== */
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -106,10 +112,10 @@ self.addEventListener("message", (event) => {
     event.source.postMessage({ type: "BEUK_SHELL_READY", cache: BEUK_CACHE });
   if (event.data && event.data.type === "BEUK_CACHE_URLS" && Array.isArray(event.data.urls)) {
     const urls = event.data.urls.filter((u) => {
-      try { return BEUK_FONT_ORIGINS.indexOf(new URL(u).origin) !== -1; } catch (e) { return false; }
+      try { return new URL(u).href.indexOf(BEUK_FONTS_DIR) === 0; } catch (e) { return false; } /* BEUK:fonts */
     }).slice(0, 200);
     event.waitUntil(caches.open(BEUK_CACHE).then((cache) =>
-      Promise.all(urls.map((u) => cache.match(u).then((hit) => hit || cache.add(new Request(u, { mode: "cors", credentials: "omit" })).catch(() => null))))
+      Promise.all(urls.map((u) => cache.match(u).then((hit) => hit || cache.add(new Request(u, { credentials: "same-origin" })).catch(() => null))))
     ));
   }
 });

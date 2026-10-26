@@ -144,9 +144,10 @@ export function pageChrome(
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(title)} — ${escapeHtml(opts.titleSuffix ?? 'Beuk Help')}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet" />
+    <!-- BEUK:fonts — self-hosted (no request to Google); Literata, Latin, preloaded -->
+    <link rel="preload" href="/assets/fonts/literata/literata-latin-normal-400_500_600_700.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="/assets/fonts/fonts-help.css" />
     <link rel="stylesheet" href="/help/warmth.css" />
     ${billingGateHtml(config)}
   </head>

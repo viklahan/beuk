@@ -93,14 +93,13 @@ test('legal: /privacy and /terms serve 200 HTML that covers every inventory cate
       'security policy', // CSP reports
       'Backups',
       'not deleted automatically',
-      'Google Fonts',
-      'fonts.googleapis.com',
-      '3 O 17493/20',
+      'serve their typefaces from Beuk',
       'Openverse',
     ]) {
       assert.ok(privacy.html.includes(needle), `/privacy should mention ${needle}`);
     }
     assert.match(privacy.html, /no button for this yet/);
+    assert.doesNotMatch(privacy.html, /googleapis|gstatic|Google receives/, 'the fonts are self-hosted: the page must not say otherwise');
     assert.match(privacy.html, /Drafted from the code on 2026-10-25[^>]*Not legal advice/);
     assert.match(privacy.html, /<h2 id="your-rights-and-how-to-use-them">/);
 

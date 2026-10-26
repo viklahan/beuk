@@ -282,11 +282,39 @@ service worker (cache `beuk-shell-v5`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
-same name, and activate retires the older ones) the first time it plays. Google Fonts are browser-specific and cannot be
-precached ahead of time: the page hands the worker the stylesheet and
-the font files it actually loaded, so faces the studio has displayed
-online open offline; any other face falls back to the system fonts in
+same name, and activate retires the older ones) the first time it plays. The web fonts are
+self-hosted under `client/assets/fonts/` (see **Web fonts** below) and are
+not precached either (~6 MB across 22 families and their script subsets;
+a visit uses a handful): the cache-first static rule keeps every font file
+a controlled page loads, and on the very first visit the page hands the
+worker the `assets/fonts/` URLs it loaded, so faces the studio has
+displayed open offline; any other face falls back to the system fonts in
 its stack.
+
+### Web fonts (self-hosted)
+
+No page asks Google for a font: every web font — the 20 book families in
+the Typography Studio pickers plus Karla and IBM Plex Mono for the UI — is
+served from Beuk's own origin under `/assets/fonts/` (dynamic Google Fonts
+embedding sends the visitor's IP to Google; LG München I, 20.01.2022,
+3 O 17493/20). The files are the WOFF2 bytes the Google Fonts CSS2 API
+served for exactly the families, weights, styles and subsets the pages
+requested before (all SIL OFL 1.1; each family's `OFL.txt` sits beside its
+files; version, source URL and sha256 per file in
+`client/assets/fonts/README.md`). `fonts.css` is linked by every page;
+`fonts-help.css` adds the two Literata faces (700, italic 500) only help
+and the warmth pages asked for, so the studio declares exactly the
+@font-face set it had before (same family/style/weight/unicode-range, 397
+faces — compared in the browser against the old Google stylesheet).
+Regenerate with `node tools/fonts/vendor-web-fonts.mjs .` then
+`node tools/fonts/write-fonts-readme.mjs .`; `tests/fonts-selfhosted.test.ts`
+fails if any file in `client/`, `src/` or the Caddyfile names a Google font
+host, if a stylesheet points at a missing file, if a family lacks its
+licence or if a file no longer matches its recorded sha256. Exports are
+unchanged: EPUB and print/standalone HTML carry only the writer's
+*uploaded* fonts (library faces are named, never packaged — as before),
+and the print renderer sets the library faces from its own installed
+TrueType files (`deploy/renderer/fonts.lock`).
 
 ## Export archive storage (M2)
 
@@ -1562,9 +1590,8 @@ legal advice — it has not been reviewed by a lawyer.
   the network, like Help.
 - **Known gaps the pages state honestly:** no self-serve account
   deletion (requests go by email); no retention limit for help search
-  records, Founders' Shelf entries, local backups and container logs;
-  the studio and these pages load Google Fonts, so visitors' IP
-  addresses reach Google.
+  records, Founders' Shelf entries and local backups (container logs
+  are rotated by size, 3 x 10 MB, with no time limit).
 
 Tests: `tests/legal.test.ts`.
 
@@ -1622,11 +1649,10 @@ changelog, roadmap, `/reset` — gets this one):
 ```
 default-src 'self';
 script-src 'self' 'unsafe-inline';
-style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-font-src 'self' data: https://fonts.gstatic.com;
+style-src 'self' 'unsafe-inline';
+font-src 'self' data:;
 img-src 'self' data: https://images.pexels.com https://api.openverse.org;
-connect-src 'self' https://images.pexels.com https://api.openverse.org
-            https://fonts.googleapis.com https://fonts.gstatic.com;
+connect-src 'self' https://images.pexels.com https://api.openverse.org;
 worker-src 'self'; manifest-src 'self'; frame-src 'self';
 form-action 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self';
 report-uri /api/csp-report; report-to csp
@@ -1644,10 +1670,13 @@ What is still allowed, and why — honestly:
 - **No third-party script host.** JSZip, mammoth, lucide and jsPDF are
   vendored under `client/assets/vendor/` (with SRI), so `script-src` names
   no CDN. `'unsafe-eval'` is **not** granted.
-- **Google Fonts** — the stylesheet on `fonts.googleapis.com`, the files
-  on `fonts.gstatic.com`; both are also in `connect-src` because the
-  service worker re-fetches them for offline use (a worker's `fetch()` is
-  governed by `connect-src`).
+- **No font host.** The web fonts are self-hosted under `/assets/fonts/`
+  (see **Web fonts** above), so `style-src` and `font-src` are `'self'`
+  (plus `'unsafe-inline'` / `data:` for inline styles and uploaded fonts)
+  and Google's font hosts appear nowhere in the policy — a browser
+  enforcing it cannot fetch a font from Google. (Changed 2026-10-26; before
+  that, both Google Fonts hosts were allowed in `style-src`/`font-src` and
+  `connect-src`.)
 - **`images.pexels.com`** — signed-in cover and scene photo search goes
   through `/api/stock` (Pexels); every Pexels photo URL is on this host
   ([Pexels API docs](https://www.pexels.com/api/documentation/)).

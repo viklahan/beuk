@@ -11,7 +11,7 @@ Beuk is a studio for turning a manuscript into a book. This page says plainly wh
 - You can use the studio without an account. Your book is then saved **in your own browser, on your device**, and doesn't reach Beuk's server.
 - If you create an account (Beuk calls it your shelf), the server keeps your email address, a scrambled form of your password, and the books, exports and share links you put there.
 - No analytics, no advertising, no tracking cookies, and Beuk doesn't sell your data.
-- One thing reaches a third party on every page: the typefaces load from Google Fonts, so your browser contacts Google. The details are below.
+- Opening a page contacts no one else: the typefaces and the studio's libraries come from Beuk's own server. The few services that can be involved, and when, are listed below.
 
 ## Who runs Beuk
 
@@ -80,7 +80,7 @@ Backups are a safety net, not a promise. Keep your own exports too.
 
 ## Other services your browser or the server talks to
 
-- **Google Fonts.** The studio and these pages load their typefaces from Google (fonts.googleapis.com and fonts.gstatic.com). Your browser fetches them directly, so **Google receives your IP address** and the usual browser details. Some European courts have found that doing this without consent is unlawful, for example the Munich Regional Court on 20 January 2022 (LG München I, 3 O 17493/20). Serving the fonts from Beuk's own server would stop this; until that is done, this is how it works.
+- **Typefaces.** The studio and these pages serve their typefaces from Beuk's own server. Your browser does not contact Google Fonts or any other font service, so no font service learns your IP address.
 [[if stock]]
 - **Pexels (cover photos).** When you search for a cover photo while signed in, Beuk's server sends your search words to Pexels, without your name or email. Your browser then loads the photo previews, and the photo you pick, straight from Pexels (images.pexels.com), so Pexels sees your IP address.
 [[end]]
