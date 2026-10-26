@@ -52,5 +52,7 @@ create table if not exists ops_alerts (
   detail text not null default '',
   last_alert_at timestamptz,
   last_alert_kind text,
-  last_alert_result text
+  last_alert_result text,
+  delivered boolean not null default false,
+  open_attempts integer not null default 0
 );

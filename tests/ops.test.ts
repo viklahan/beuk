@@ -43,14 +43,15 @@ class RecordingMailer implements Mailer {
 }
 
 /** A local HTTP sink standing in for a Slack/Discord-style webhook. */
-async function startSink(status = 200): Promise<{ url: string; bodies: unknown[]; close: () => Promise<void> }> {
+async function startSink(status = 200): Promise<{ url: string; bodies: unknown[]; close: () => Promise<void>; setStatus: (n: number) => void }> {
   const bodies: unknown[] = [];
+  let current = status;
   const server = http.createServer((req, res) => {
     let raw = '';
     req.on('data', (c) => (raw += c));
     req.on('end', () => {
       try { bodies.push(JSON.parse(raw)); } catch { bodies.push(raw); }
-      res.statusCode = status;
+      res.statusCode = current;
       res.end('ok');
     });
   });
@@ -60,6 +61,7 @@ async function startSink(status = 200): Promise<{ url: string; bodies: unknown[]
     url: `http://127.0.0.1:${addr.port}/hooks/T000/B000/CANARYwebhookTOKEN123456`,
     bodies,
     close: () => new Promise((r) => server.close(() => r())),
+    setStatus: (n: number) => { current = n; },
   };
 }
 
@@ -280,6 +282,77 @@ test('alerts: without email set up nothing is claimed as sent; slack/discord for
   }
 });
 
+test('alerts: an opening alert that never arrived is tried again (gap, cap), and reaches a channel added mid-incident', async () => {
+  const sink = await startSink(500);
+  try {
+    // 1. The webhook fails once, then works: one retry delivers it, then silence.
+    const db = await createTestDb();
+    const config = alertConfig({ alertWebhookUrl: sink.url });
+    let now = new Date('2026-10-26T10:00:00Z');
+    const alerts = new BackupAlerts({ db, config, mailer: new RecordingMailer(), secrets: collectSecrets(config), now: () => now });
+    const first = await alerts.evaluate();
+    assert.equal(first.action, 'opened');
+    assert.equal(first.state.delivered, false);
+    assert.equal(first.state.openAttempts, 1);
+    assert.match(first.state.lastAlertResult ?? '', /webhook failed: the webhook answered 500; not delivered yet \(attempt 1 of 4\)/);
+    now = new Date(now.getTime() + 5 * 60_000);
+    assert.ok(!['opened', 'retried'].includes((await alerts.evaluate()).action), 'no retry sooner than the gap');
+    assert.equal(sink.bodies.length, 1);
+    sink.setStatus(200);
+    now = new Date(now.getTime() + 10 * 60_000);
+    const retried = await alerts.evaluate();
+    assert.equal(retried.action, 'retried');
+    assert.equal(retried.state.delivered, true);
+    assert.equal(retried.state.openAttempts, 2);
+    assert.equal(sink.bodies.length, 2);
+    assert.equal((sink.bodies[1] as { state: string }).state, 'open');
+    for (let i = 0; i < 3; i++) {
+      now = new Date(now.getTime() + 15 * 60_000);
+      assert.ok(!['opened', 'retried'].includes((await alerts.evaluate()).action));
+    }
+    assert.equal(sink.bodies.length, 2, 'delivered once: no more alerts for this incident');
+    const row = await db.query<{ delivered: boolean; open_attempts: number }>('select delivered, open_attempts from ops_alerts');
+    assert.equal(row.rows[0].delivered, true);
+    assert.equal(row.rows[0].open_attempts, 2);
+
+    // 2. A webhook that never works: at most 4 attempts, then it stops and says so.
+    sink.setStatus(500);
+    const before = sink.bodies.length;
+    const db2 = await createTestDb();
+    let t = new Date('2026-10-26T10:00:00Z');
+    const stubborn = new BackupAlerts({ db: db2, config, mailer: new RecordingMailer(), secrets: collectSecrets(config), now: () => t });
+    let last = await stubborn.evaluate();
+    for (let i = 0; i < 8; i++) {
+      t = new Date(t.getTime() + 15 * 60_000);
+      last = await stubborn.evaluate();
+    }
+    assert.equal(sink.bodies.length - before, 4);
+    assert.equal(last.state.openAttempts, 4);
+    const kept = await stubborn.readState();
+    assert.match(kept.lastAlertResult ?? '', /not delivered after 4 attempts, no further tries for this incident/);
+
+    // 3. No channel when the incident opened; a webhook is configured later (restart).
+    sink.setStatus(200);
+    const db3 = await createTestDb();
+    let u = new Date('2026-10-26T10:00:00Z');
+    const bare = new BackupAlerts({ db: db3, config: alertConfig(), mailer: new RecordingMailer(), secrets: [], now: () => u });
+    const opened = await bare.evaluate();
+    assert.equal(opened.action, 'opened');
+    assert.equal(opened.state.openAttempts, 0, 'no channel: no attempt used up');
+    u = new Date(u.getTime() + 15 * 60_000);
+    assert.ok(!['opened', 'retried'].includes((await bare.evaluate()).action));
+    const n = sink.bodies.length;
+    u = new Date(u.getTime() + 15 * 60_000);
+    const later = new BackupAlerts({ db: db3, config, mailer: new RecordingMailer(), secrets: collectSecrets(config), now: () => u });
+    const told = await later.evaluate();
+    assert.equal(told.action, 'retried');
+    assert.equal(told.state.delivered, true);
+    assert.equal(sink.bodies.length, n + 1);
+  } finally {
+    await sink.close();
+  }
+});
+
 test('alerts + retention in Housekeeping: admins only, policy and channels shown, test alert', async () => {
   const db = await createTestDb();
   const sink = await startSink();
@@ -412,6 +485,21 @@ test('client errors: scrubbing on the server', () => {
   assert.equal(cleanReport('nope'), null);
 });
 
+test('client errors: file names with spaces and quoted file names are removed whole; the known limits stay as documented', () => {
+  assert.equal(scrubErrorText('Could not open My Secret Novel.docx'), 'Could not open [file]');
+  assert.equal(scrubErrorText("Failed to read 'The Lantern Coast.epub'"), "Failed to read '[file]'");
+  assert.equal(scrubErrorText('Failed to read "The Lantern Coast.epub" now'), 'Failed to read "[file]" now');
+  assert.equal(scrubErrorText('\u201cA Long Night.pdf\u201d'), '\u201c[file]\u201d');
+  assert.equal(scrubErrorText('Draft 3 Final_v2.docx failed'), '[file] failed');
+  assert.equal(scrubErrorText('"It was a dark and stormy night, the rain fell" My-Book.docx'), '"[…]" [file]');
+  // Ordinary error text and stack frames are untouched.
+  assert.equal(scrubErrorText("TypeError: Cannot read properties of undefined (reading 'x')"), "TypeError: Cannot read properties of undefined (reading 'x')");
+  assert.equal(scrubErrorText('at render (https://beuk.studio/studio:12:5)'), 'at render (https://beuk.studio/studio:12:5)');
+  // Known limits (docs/privacy-inventory.md §12; the studio note does not promise more).
+  assert.equal(scrubErrorText('could not open my secret novel.docx'), 'could not open my secret [file]');
+  assert.equal(scrubErrorText('Bad chapter: The Night My Father Left'), 'Bad chapter: The Night My Father Left');
+});
+
 test('client errors: the studio scrubber matches the server one', async () => {
   const html = await read('client', 'index.html');
   const a = html.indexOf('/* BEUK:errscrub */');
@@ -422,6 +510,10 @@ test('client errors: the studio scrubber matches the server one', async () => {
     'Failed https://beuk.studio/api/x?y=1 for a.b@c.co',
     'at /read/abcdef123/x:1:2 "a quoted sentence that is long enough"',
     'id 123e4567-e89b-12d3-a456-426614174000 tok ghp_abcdefghijklmnop0123456789 Chapter One.docx',
+    'Could not open My Secret Novel.docx',
+    "Failed to read 'The Lantern Coast.epub'",
+    'Failed to read "The Lantern Coast.epub" now and \u201cDraft 3 Final.pdf\u201d',
+    'could not open my secret novel.docx',
   ]) {
     assert.equal(studioScrub(sample), scrubErrorText(sample), sample);
   }
@@ -489,6 +581,20 @@ test('client errors: the studio sends them without cookies, deduped and capped, 
   for (const k of ['errs.toggle', 'errs.note']) {
     assert.equal(html.split(`"${k}": "`).length - 1, 13, `${k} in 13 locales`);
   }
+  // The toggle is a device preference: in "Beuk on this device", not in the book-metadata form.
+  const modal = html.slice(html.indexOf('<div class="modal-back" id="modalSettings">'));
+  const about = modal.indexOf('<div class="about-box">');
+  const row = modal.indexOf('id="errReportsRow"');
+  assert.ok(about > 0 && row > about && row < modal.indexOf('<div class="modal-actions">'), 'toggle sits in the about box');
+  // The note neither over-promises nor names a retention number the server may change.
+  const notes = html.split('"errs.note": "').slice(1).map((x) => x.slice(0, x.indexOf('"')));
+  assert.equal(notes.length, 13);
+  for (const n of notes) {
+    assert.doesNotMatch(n, /30/, 'no fixed day count');
+    assert.doesNotMatch(n, /never your book|file names or your account/i);
+  }
+  assert.match(notes[0], /most file names/);
+  assert.match(notes[0], /could still carry them/);
 });
 
 /* ------------------------------ usage ------------------------------ */

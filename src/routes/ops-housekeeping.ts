@@ -58,7 +58,7 @@ export function opsHousekeepingRoutes(db: Db, config: Config, hk: HousekeepingCo
           channels: alertChannels(config, mailer),
           incident: state,
           watching: ['backup.schedule.running', 'backup.offsite.fresh', 'backup.offsite.drill'],
-          rule: 'one alert when a backup check turns red, one when all are green again; checked every 15 minutes',
+          rule: 'one alert when a backup check turns red (tried again on later checks, up to 4 attempts, until a channel accepts it), one when all are green again; checked every 15 minutes',
         },
         retention: {
           policy: retentionPolicy(config),

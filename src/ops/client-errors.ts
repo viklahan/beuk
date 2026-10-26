@@ -19,7 +19,14 @@ import { addDaysIso, dayIn, opsSettings } from './settings.js';
  *     (tokens, hashes) become [token];
  *   - quoted strings longer than 24 characters become "[…]" (an error message
  *     can quote what it choked on, and that might be the writer's words);
- *   - names of book/picture files (.docx .epub .pdf .md .txt .jpg .png …) become [file].
+ *   - names of book/picture files (.docx .epub .pdf .md .txt .jpg .png …) become [file]:
+ *     a quoted name of any length ('The Lantern Coast.epub' → '[file]'), and an
+ *     unquoted one together with up to five words before it that start with a
+ *     capital or a digit ("open My Secret Novel.docx" → "open [file]").
+ * It is a pattern filter, not a proof: a lower-case multi-word file name keeps
+ * its first words, and an error message that quotes 24 characters or fewer of
+ * the writer's words, or names a chapter without quotes, keeps them. The
+ * studio's settings note says so; docs/privacy-inventory.md §12 has the detail.
  * Message ≤ 300 characters; stack ≤ 15 lines and 2000 characters.
  *
  * Requests are sent WITHOUT cookies (credentials: 'omit'), and nothing
@@ -37,8 +44,6 @@ const MESSAGE_MAX = 300;
 const STACK_MAX = 2000;
 const STACK_LINES = 15;
 
-const FILE_EXT = '(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\\.json)';
-
 /** Scrub one free-text field. Exported for tests (and mirrored in the studio). */
 export function scrubErrorText(raw: string): string {
   let s = raw;
@@ -51,8 +56,12 @@ export function scrubErrorText(raw: string): string {
   s = s.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '[id]');
   // 24+ characters mixing letters and digits (a long function name has no digits).
   s = s.replace(/(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{24,}/g, '[token]');
+  // A quoted file name, whatever its length or spaces.
+  s = s.replace(/"[^"\n]*?\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)"/gi, '"[file]"').replace(/'[^'\n]*?\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)'/gi, "'[file]'").replace(/“[^”\n]*?\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)”/gi, '“[file]”');
   s = s.replace(/"[^"\n]{25,}"/g, '"[…]"').replace(/'[^'\n]{25,}'/g, "'[…]'").replace(/“[^”\n]{25,}”/g, '“[…]”');
-  s = s.replace(new RegExp(`[^\\s/\\\\'"\`()]+\\.${FILE_EXT}\\b`, 'gi'), '[file]');
+  s = s.replace(/[^\s/\\'"`()]+\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)\b/gi, '[file]');
+  // An unquoted name with spaces: up to five capitalised (or numbered) words before it.
+  s = s.replace(/(?:[\p{Lu}\p{N}][^\s/\\'"`()\[\]]*[ _]){1,5}\[file\]/gu, '[file]');
   return s;
 }
 

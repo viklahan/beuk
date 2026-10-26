@@ -15,6 +15,12 @@ import { opsSettings } from './settings.js';
  * stays open, silently, while anything is still red (the list of red checks
  * may change without a new alert); when every check is green or not
  * configured again, it closes and ONE "working again" message goes out.
+ * "Once" means once DELIVERED: while no channel has accepted the opening
+ * alert (the webhook was unreachable, SMTP refused, or no channel was set
+ * when the incident opened), later ticks try again, up to
+ * MAX_OPEN_ATTEMPTS attempts that reached a channel, at least
+ * RETRY_GAP_MS apart. A tick with no channel configured costs no attempt,
+ * so a channel added mid-incident (after a restart) still gets the alert.
  * `not-configured` is never red: a feature that is off is not an incident.
  *
  * Channels, each only when set:
@@ -33,6 +39,10 @@ import { opsSettings } from './settings.js';
  */
 
 export const ALERT_KEY = 'backups';
+/** Attempts (that reached at least one channel) to deliver an incident's opening alert. */
+export const MAX_OPEN_ATTEMPTS = 4;
+/** Minimum gap between delivery attempts (the scheduler ticks every 15 minutes). */
+export const RETRY_GAP_MS = 10 * 60_000;
 
 const CHECKS: { id: string; title: string; read: (c: Config, now: Date) => Promise<HealthVerdict> }[] = [
   { id: 'backup.schedule.running', title: 'Scheduled local backups', read: scheduleHealth },
@@ -55,6 +65,10 @@ export interface AlertState {
   lastAlertAt: string | null;
   lastAlertKind: string | null;
   lastAlertResult: string | null;
+  /** Some channel accepted this incident's opening alert. */
+  delivered: boolean;
+  /** Delivery attempts for the opening alert that reached a channel. */
+  openAttempts: number;
 }
 
 export interface ChannelResult {
@@ -64,7 +78,7 @@ export interface ChannelResult {
 }
 
 export interface EvaluateResult {
-  action: 'none' | 'opened' | 'resolved' | 'updated';
+  action: 'none' | 'opened' | 'retried' | 'resolved' | 'updated';
   failing: FailingCheck[];
   channels: ChannelResult[];
   state: AlertState;
@@ -84,7 +98,7 @@ export interface AlertDeps {
 
 const EMPTY: AlertState = {
   open: false, openedAt: null, closedAt: null, failing: [], detail: '',
-  lastAlertAt: null, lastAlertKind: null, lastAlertResult: null,
+  lastAlertAt: null, lastAlertKind: null, lastAlertResult: null, delivered: false, openAttempts: 0,
 };
 
 function iso(v: unknown): string | null {
@@ -135,6 +149,7 @@ export class BackupAlerts {
       const r = await this.deps.db.query<{
         open: boolean; opened_at: unknown; closed_at: unknown; failing: string; detail: string;
         last_alert_at: unknown; last_alert_kind: string | null; last_alert_result: string | null;
+        delivered: boolean | null; open_attempts: number | null;
       }>('select * from ops_alerts where key = $1', [ALERT_KEY]);
       const row = r.rows[0];
       if (!row) return this.memory ?? { ...EMPTY };
@@ -147,6 +162,8 @@ export class BackupAlerts {
         lastAlertAt: iso(row.last_alert_at),
         lastAlertKind: row.last_alert_kind,
         lastAlertResult: row.last_alert_result,
+        delivered: Boolean(row.delivered),
+        openAttempts: Number(row.open_attempts ?? 0),
       };
       this.memory = state;
       return state;
@@ -159,13 +176,14 @@ export class BackupAlerts {
     this.memory = s;
     await this.deps.db
       .query(
-        `insert into ops_alerts (key, open, opened_at, closed_at, failing, detail, last_alert_at, last_alert_kind, last_alert_result)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `insert into ops_alerts (key, open, opened_at, closed_at, failing, detail, last_alert_at, last_alert_kind, last_alert_result, delivered, open_attempts)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          on conflict (key) do update set open = excluded.open, opened_at = excluded.opened_at,
            closed_at = excluded.closed_at, failing = excluded.failing, detail = excluded.detail,
            last_alert_at = excluded.last_alert_at, last_alert_kind = excluded.last_alert_kind,
-           last_alert_result = excluded.last_alert_result`,
-        [ALERT_KEY, s.open, s.openedAt, s.closedAt, s.failing.join(','), s.detail.slice(0, 4000), s.lastAlertAt, s.lastAlertKind, s.lastAlertResult],
+           last_alert_result = excluded.last_alert_result, delivered = excluded.delivered,
+           open_attempts = excluded.open_attempts`,
+        [ALERT_KEY, s.open, s.openedAt, s.closedAt, s.failing.join(','), s.detail.slice(0, 4000), s.lastAlertAt, s.lastAlertKind, s.lastAlertResult, s.delivered, s.openAttempts],
       )
       .catch((err) => console.error('ops alert state write failed', err instanceof Error ? this.scrub(err.message) : err));
   }
@@ -194,18 +212,38 @@ export class BackupAlerts {
     const detail = failing.map((f) => `${f.title}: ${f.detail}`).join('\n');
     if (failing.length && !prev.open) {
       const channels = await this.send('open', failing);
+      const attempts = channels.length ? 1 : 0;
+      const delivered = channels.some((c) => c.ok);
       const state: AlertState = {
         open: true, openedAt: at, closedAt: null, failing: ids, detail,
-        lastAlertAt: at, lastAlertKind: 'open', lastAlertResult: summarise(channels),
+        lastAlertAt: at, lastAlertKind: 'open', lastAlertResult: summariseOpen(channels, delivered, attempts),
+        delivered, openAttempts: attempts,
       };
       await this.writeState(state);
       return { action: 'opened', failing, channels, state };
+    }
+    if (failing.length && prev.open && !prev.delivered && prev.openAttempts < MAX_OPEN_ATTEMPTS && this.hasChannel()) {
+      const last = prev.lastAlertAt ? Date.parse(prev.lastAlertAt) : 0;
+      if (this.now().getTime() - last >= RETRY_GAP_MS) {
+        // The opening alert never reached anyone: try again (same incident).
+        const channels = await this.send('open', failing);
+        const attempts = prev.openAttempts + (channels.length ? 1 : 0);
+        const delivered = channels.some((c) => c.ok);
+        const state: AlertState = {
+          ...prev, failing: ids, detail,
+          lastAlertAt: at, lastAlertKind: 'open', lastAlertResult: summariseOpen(channels, delivered, attempts),
+          delivered, openAttempts: attempts,
+        };
+        await this.writeState(state);
+        return { action: 'retried', failing, channels, state };
+      }
     }
     if (!failing.length && prev.open) {
       const channels = await this.send('resolved', []);
       const state: AlertState = {
         ...prev, open: false, closedAt: at, failing: [], detail: '',
         lastAlertAt: at, lastAlertKind: 'resolved', lastAlertResult: summarise(channels),
+        delivered: false, openAttempts: 0,
       };
       await this.writeState(state);
       return { action: 'resolved', failing, channels, state };
@@ -217,6 +255,11 @@ export class BackupAlerts {
       return { action: 'updated', failing, channels: [], state };
     }
     return { action: 'none', failing, channels: [], state: prev };
+  }
+
+  private hasChannel(): boolean {
+    const o = opsSettings(this.deps.config);
+    return Boolean(o.alertEmail || o.alertWebhookUrl);
   }
 
   /** Housekeeping "send a test alert": every configured channel, once. */
@@ -306,6 +349,14 @@ export class BackupAlerts {
     }
     return results;
   }
+}
+
+function summariseOpen(channels: ChannelResult[], delivered: boolean, attempts: number): string {
+  const base = summarise(channels);
+  if (delivered || !channels.length) return base;
+  return attempts >= MAX_OPEN_ATTEMPTS
+    ? `${base}; not delivered after ${attempts} attempts, no further tries for this incident`
+    : `${base}; not delivered yet (attempt ${attempts} of ${MAX_OPEN_ATTEMPTS}), trying again on a later check`;
 }
 
 export function summarise(channels: ChannelResult[]): string {

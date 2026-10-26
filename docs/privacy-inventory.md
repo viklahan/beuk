@@ -34,9 +34,9 @@ That is a fact about the code, not a policy decision.
 | Housekeeping audit | actor user id + **actor email** (admins only), action, params summary, result | migrations/006_housekeeping.sql:12-21 | No limit (append-only, excluded from backups and restore) |
 | Self-check runs / sign-offs | build stamp, counts, results; sign-off user id + email + note (admins only) | migrations/006_housekeeping.sql:27-50 | No limit |
 | help_docs | derived from content/help/ — no personal data | migrations/013_help_search.sql:21-33 | Rebuilt each boot |
-| Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], quoted text over 24 chars → "[…]", book/picture file names → [file]; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v7), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
+| Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], a quoted book/picture file name of any length → "[file]", other quoted text over 24 chars → "[…]", book/picture file names → [file] together with up to five capitalised or numbered words before them; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v7), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
 | Usage counts | usage_daily: day, counter name, a number, a final flag — **nothing else** (see §11) | migrations/015_ops.sql; src/ops/usage.ts | **No limit** (one row per day per counter). Excluded from backups |
-| Backup alert state | ops_alerts: whether a backup incident is open, which self-check ids are red and their scrubbed detail, when the last alert went out and what each channel answered. ALERT_EMAIL (the operator's own address) is configuration, not stored here | migrations/015_ops.sql; src/ops/alerts.ts | One row, overwritten on each change. Excluded from backups |
+| Backup alert state | ops_alerts: whether a backup incident is open, which self-check ids are red and their scrubbed detail, when the last alert went out and what each channel answered, whether the opening alert was delivered and how many attempts it took. ALERT_EMAIL (the operator's own address) is configuration, not stored here | migrations/015_ops.sql; src/ops/alerts.ts | One row, overwritten on each change. Excluded from backups |
 
 ## 2. Server: cookies
 
@@ -206,16 +206,34 @@ days). No retention limit.
 
 ## 12. Studio error reports (src/ops/client-errors.ts, client/index.html BEUK:errors)
 
-On by default; a writer turns them off in Project Settings ("Send error
-reports when something breaks"), stored on that device as
+On by default; a writer turns them off in Project Settings, under "Beuk
+on this device" ("Send error reports when something breaks"), stored on that device as
 localStorage `beuk.errors.v1 = "off"`. When an uncaught error or an
 unhandled promise rejection happens in the studio, it sends at most 5
 reports per page load (each distinct error once) to POST
 /api/client-errors, **without cookies**. What is sent and kept: §1
 "Studio error reports". Scrubbing happens in the studio and again on the
-server. It is pattern-based, so it is a strong filter, not a proof: a
-file name with spaces (e.g. "My Novel.docx") loses its last word and
-extension ("Novel.docx" becomes [file]) but keeps the words before it,
-and an error message quoting 24 characters of text or fewer keeps that
-text. Admins see reports grouped by message in Housekeeping
-(`GET /api/housekeeping/client-errors`). Kept 30 days.
+server. It is pattern-based, so it is a strong filter, not a proof:
+
+- a quoted file name is removed whole ("Failed to read 'The Lantern
+  Coast.epub'" → "Failed to read '[file]'");
+- an unquoted file name with spaces is removed with up to five words
+  before it that start with a capital letter or a digit ("Could not open
+  My Secret Novel.docx" → "Could not open [file]"), but a lower-case one
+  keeps its first words ("open my secret novel.docx" → "open my secret
+  [file]");
+- an error message that quotes 24 characters of text or fewer, or that
+  names a chapter or title without quotes ("Bad chapter: The Night My
+  Father Left"), keeps that text.
+
+The studio's settings note says this in plain words ("most file names",
+"an error that quotes a few of your own words could still carry them")
+rather than promising that no book text can ever be in a report. The
+gaps matter for error messages that quote what they choked on (from the
+browser, a library, or the studio itself); no audit of every error
+message in the studio has been made. Admins see reports
+grouped by message in Housekeeping (`GET /api/housekeeping/client-errors`).
+Kept CLIENT_ERRORS_KEEP_DAYS days (default 30). The studio note does not
+name a number ("kept for a limited time, then deleted"), so changing the
+setting never makes it wrong; the privacy page should either not name a
+number either or be updated when the setting changes.
