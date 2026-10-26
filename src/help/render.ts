@@ -158,6 +158,7 @@ export function chrome(
   const footLinks: string[] = [];
   if (config.supportEmail) footLinks.push(`<a href="mailto:${esc(config.supportEmail)}">${esc(config.supportEmail)}</a>`);
   footLinks.push('<a href="/help/#founders">Founders\' Shelf</a>');
+  footLinks.push('<a href="/privacy">Privacy</a>', '<a href="/terms">Terms</a>');
   return `<!doctype html>
 <html lang="en">
   <head>

@@ -159,7 +159,7 @@ function shell(opts: {
   </head>
   <body>
 ${opts.body}
-    <footer class="site-foot"><p class="foot-note">A reading copy shared from Beuk — a typesetting studio for writers.</p></footer>
+    <footer class="site-foot"><p class="foot-note">A reading copy shared from Beuk — a typesetting studio for writers.</p><p class="foot-links"><a href="/privacy" rel="noreferrer">Privacy</a> · <a href="/terms" rel="noreferrer">Terms</a></p></footer>
 ${opts.script ? `    <script nonce="${opts.nonce}">${READER_JS}</script>\n` : ''}  </body>
 </html>
 `;
