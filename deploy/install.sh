@@ -25,7 +25,8 @@
 #     prints a summary with the next steps
 #
 # Optional knobs (environment variables):
-#   DEPLOY_DOMAIN       default beuk.studio (use "localhost" for a first
+#   DEPLOY_DOMAIN       default: the DOMAIN already in .env, else
+#                       beuk.studio (use "localhost" for a first
 #                       look over the raw IP — see the note at the end)
 #   SUPPORT_EMAIL / SUPPORT_NAME / SUPPORT_REPLY_PROMISE   Help-page contact
 #   KOFI_URL            Ko-fi page; unset → no tip jar is rendered anywhere
@@ -59,6 +60,12 @@ if [ -z "${COMPOSE_PROJECT_NAME:-}" ] && [ -f .env ]; then
 fi
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-beuk}"
 
+# A re-run (e.g. after `git pull`) keeps the domain already in .env
+# unless DEPLOY_DOMAIN says otherwise; only a first install defaults to
+# beuk.studio.
+if [ -z "${DEPLOY_DOMAIN:-}" ] && [ -f .env ]; then
+  DEPLOY_DOMAIN="$(grep '^DOMAIN=' .env | tail -n 1 | cut -d= -f2- || true)"
+fi
 DEPLOY_DOMAIN="${DEPLOY_DOMAIN:-beuk.studio}"
 APP_TIMEZONE="${APP_TIMEZONE:-UTC}"
 INSTALL_TOOLS="${INSTALL_TOOLS:-1}"
