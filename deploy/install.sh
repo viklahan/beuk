@@ -183,6 +183,7 @@ else
 fi
 
 # Build stamp for Housekeeping self-checks / promotion manifest.
+PREV_STAMP="$(get_env BUILD_STAMP)"
 if git -C "${REPO_ROOT}" rev-parse --short HEAD >/dev/null 2>&1; then
   SHA="$(git -C "${REPO_ROOT}" rev-parse --short HEAD)"
   set_env GIT_SHA "${SHA}"
@@ -191,7 +192,14 @@ else
   STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
   set_env BUILD_STAMP "${STAMP}"
 fi
-[ -z "$(get_env APP_VERSION)" ] && set_env APP_VERSION "$(get_env BUILD_STAMP)"
+# APP_VERSION (GET /api/status) follows the build stamp unless the
+# operator set their own: one this script wrote earlier equals the
+# previous stamp and is moved on, so a redeploy never reports the first
+# install's version.
+CUR_VERSION="$(get_env APP_VERSION)"
+if [ -z "${CUR_VERSION}" ] || [ "${CUR_VERSION}" = "${PREV_STAMP}" ]; then
+  set_env APP_VERSION "$(get_env BUILD_STAMP)"
+fi
 # Deploying this tree IS the clean-tree attestation the promotion gate asks for.
 set_env TREE_CLEAN "true"
 chmod 600 .env
