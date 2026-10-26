@@ -27660,13 +27660,18 @@
       }
       /* ==== /BEUK:local ==== */
       async function cloudSaveRun() {
-        if (!cloud.user || !cloud.available || !cloudDirty) return;
+        if (!cloud.user || !cloud.available || !cloudDirty) { cloudSettleStatus(); return; } /* BEUK:savesync */
         if (cloud.linkState === "declined") return;
         /* BEUK:local — while the conflict notice is open the writer is
            choosing; a background save would only re-send the stale
            revision. The choice itself saves (resolveConflict). */
-        if (cloud.conflict) return;
+        if (cloud.conflict) { cloudSettleStatus(); return; } /* BEUK:savesync */
         setSyncStatus("saving");
+        /* BEUK:savesync — the answer belongs to the book and the account
+           this save was sent for. If the desk now holds another shelf
+           book (or another account, or a self-check's stand-in), the
+           answer must not move this desk's revision or timestamps. */
+        const sentFor = cloudSaveOwner();
         const doc = serializeBook();
         const payload = JSON.stringify({ title: state.meta.title, doc });
         const sentAt = Date.now(); /* BEUK:local — edits after this stay dirty */
@@ -27683,8 +27688,15 @@
           res = await apiFetch("/api/manuscripts", {
             method: "POST", body: payload
           });
-          if (res && res.manuscript && res.manuscript.id) { cloud.linkedId = res.manuscript.id; cloud.linkState = "linked"; }
+          if (res && res.manuscript && res.manuscript.id && cloudSaveOwner() === sentFor) { cloud.linkedId = res.manuscript.id; cloud.linkState = "linked"; }
         }
+        /* ==== BEUK:savesync ==== */
+        if (cloudSaveOwner() !== sentFor && !(sentFor.endsWith("|") && res && res.manuscript && cloud.linkedId === res.manuscript.id)) {
+          cloudSettleStatus();
+          if (cloudDirty && cloud.user) cloudAutosaveTick();
+          return;
+        }
+        /* ==== /BEUK:savesync ==== */
         if (res && res.manuscript) {
           /* BEUK:local — writing typed while the save was in flight is
              not on the shelf yet: it stays dirty and comes due again. */
@@ -27698,14 +27710,15 @@
           if (cloudDirty) cloudAutosaveTick();
           cloudLoadShelf();
         } else if (res && res.__status === 409 && res.__body && res.__body.manuscript && res.__body.manuscript.doc &&
-            typeof res.__body.manuscript.revision === "number" && typeof bookDocsSame === "function" && bookDocsSame(res.__body.manuscript.doc, doc)) {
+            typeof res.__body.manuscript.revision === "number" && typeof bookDocsSame === "function" &&
+            (bookDocsSame(res.__body.manuscript.doc, doc) || bookDocsSame(res.__body.manuscript.doc, serializeBook()))) { /* BEUK:savesync — or the device's book as it stands now */
           /* BEUK:bugs — the shelf already holds exactly the book this
              save carried (an earlier save of it landed but its answer
              was lost, or this device's revision note was behind):
              there is nothing to choose between. Agree on the shelf's
              revision; writing typed since stays due. */
           const m = res.__body.manuscript;
-          cloudDirty = cloud.lastEditAt > sentAt;
+          cloudDirty = cloud.lastEditAt > sentAt && !bookDocsSame(m.doc, serializeBook()); /* BEUK:savesync */
           cloud.pendingSyncs = 0;
           cloud.baseRevision = m.revision;
           cloud.baseUpdatedAt = m.updatedAt || cloud.baseUpdatedAt;
@@ -27738,6 +27751,21 @@
         renderAccountButton();
         if (typeof localNoteLinkChanged === "function") localNoteLinkChanged(); /* BEUK:local */
       }
+      /* ==== BEUK:savesync ==== — which book a save is for: the account
+         and the shelf copy it was sent to ("|" = not on the shelf yet). */
+      function cloudSaveOwner() {
+        return ((cloud.user && cloud.user.id) || "") + "|" + (cloud.linkedId || "");
+      }
+      /* A save that does not run (nothing new, the conflict notice is
+         waiting, the shelf is out of reach) never leaves "Saving to your
+         shelf…" standing: the line says where the book actually is. */
+      function cloudSettleStatus() {
+        if (cloud.syncStatus !== "saving") return;
+        if (!cloud.user) { setSyncStatus("local"); return; }
+        if (cloud.conflict || !net.online || !cloud.available || cloud.linkState === "declined") { setSyncStatus("local"); return; }
+        if (!cloudDirty) { setSyncStatus(cloud.linkState === "linked" && cloud.linkedId ? "saved" : "local"); return; }
+      }
+      /* ==== /BEUK:savesync ==== */
       /* The shelf status line, composed in one place: the standing
          state, the offline truth when the connection is down, and
          the pending queue's count while saves wait to flush. The
@@ -28036,6 +28064,7 @@
         cloud.shelf = []; cloud.archive = []; cloudDirty = false;
         cloud.pendingSyncs = 0; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; cloud.conflict = null;
         cloud.baseRevision = null; if (typeof localNoteSignedOut === "function") localNoteSignedOut(); /* BEUK:local */
+        cloud.syncStatus = "local"; clearTimeout(cloudSaveTimer); cloudSaveTimer = null; /* BEUK:savesync — no "Saving…" outlives the account */
         $("modalShelf").classList.remove("open");
         renderCloudChrome();
         renderStreak();
@@ -28371,6 +28400,20 @@
           const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(cloud.linkedId), {});
           if (r && r.manuscript) {
             cloud.shelfUpdatedAt = r.manuscript.updatedAt || null;
+            /* ==== BEUK:savesync ==== — the revision is the shelf's own
+               word on whether it moved; a timestamp note can be off. And
+               a shelf copy that IS this device's book is no conflict. */
+            const m = r.manuscript;
+            if (typeof m.revision === "number" && m.revision === cloud.baseRevision) {
+              cloud.baseUpdatedAt = cloud.shelfUpdatedAt;
+            } else if (planReconciliation() === "conflict" && m.doc && typeof m.revision === "number" && bookDocsSame(m.doc, serializeBook())) {
+              cloud.baseRevision = m.revision; cloud.baseUpdatedAt = cloud.shelfUpdatedAt;
+              cloudDirty = false; cloud.pendingSyncs = 0;
+              setSyncStatus("saved");
+              if (typeof localWriteLinkNow === "function") localWriteLinkNow();
+              return;
+            }
+            /* ==== /BEUK:savesync ==== */
             if (planReconciliation() === "conflict" && r.manuscript.doc) { raiseConflict(r.manuscript); return; }
           }
         }
@@ -28378,6 +28421,7 @@
       }
       function raiseConflict(manuscript) {
         cloud.conflict = { doc: manuscript.doc, updatedAt: manuscript.updatedAt || null, revision: typeof manuscript.revision === "number" ? manuscript.revision : null };
+        if (cloud.syncStatus === "saving") setSyncStatus("local"); /* BEUK:savesync — the writer is choosing; nothing is saving */
         const body = $("conflictBody");
         if (body) {
           const title = state.meta.title || t("misc.untitledBook");
@@ -31029,8 +31073,13 @@
           } },
         { id: "offline.state", feature: "offline", name: "Offline state: dropping connectivity raises the calm header state, editing and local saving continue unblocked, and restoring connectivity clears the state",
           run() {
-            const keep = { online: net.online, dirty: cloudDirty, edited: cloud.sessionEdited, before: cloud.editedBeforeSignIn };
+            const keep = { online: net.online, dirty: cloudDirty, edited: cloud.sessionEdited, before: cloud.editedBeforeSignIn, user: cloud.user, status: cloud.syncStatus };
             try {
+              /* BEUK:savesync — signed out for the length of the check: the
+                 chip and the editor are what it measures, and a signed-in
+                 reconnect would start a real probe and shelf flush that
+                 lands after the check has put the desk back. */
+              cloud.user = null;
               setConnectivity(false);
               const shown = !$("netPill").hidden && $("netPillText").textContent === t("offline.header");
               noteBookEdited();
@@ -31041,6 +31090,7 @@
                 shown && editingOk && cleared,
                 "offline chip shown with its calm line (" + shown + "); an edit taken offline registers and the editor stays live (" + editingOk + "); reconnect clears the chip (" + cleared + ")");
             } finally {
+              cloud.user = keep.user; cloud.syncStatus = keep.status; /* BEUK:savesync */
               net.online = keep.online; renderNetPill(); renderSyncLine();
               cloudDirty = keep.dirty; cloud.sessionEdited = keep.edited; cloud.editedBeforeSignIn = keep.before;
             }
@@ -31051,7 +31101,8 @@
               user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState,
               base: cloud.baseUpdatedAt, shelf: cloud.shelfUpdatedAt, pending: cloud.pendingSyncs,
               dirty: cloudDirty, status: cloud.syncStatus, conflict: cloud.conflict,
-              history: state.history, online: net.online
+              history: state.history, online: net.online,
+              conflictOpen: $("modalConflict").classList.contains("open") /* BEUK:savesync */
             };
             const realFetch = window.fetch;
             window.fetch = function () {
@@ -31095,8 +31146,9 @@
               cloud.baseUpdatedAt = keep.base; cloud.shelfUpdatedAt = keep.shelf; cloud.pendingSyncs = keep.pending;
               cloudDirty = keep.dirty; cloud.syncStatus = keep.status; cloud.conflict = keep.conflict;
               state.history = keep.history; net.online = keep.online;
-              $("modalConflict").classList.remove("open");
+              $("modalConflict").classList.toggle("open", !!keep.conflict && keep.conflictOpen); /* BEUK:savesync — a real notice that was open stays open */
               renderNetPill(); renderSyncLine(); renderCloudChrome();
+              if (cloud.user && cloudDirty && !cloud.conflict) cloudAutosaveTick(); /* BEUK:savesync — the real book's due save, whose timer this check cleared */
             }
           } },
         /* ---- Sample story: full-scale novella, pure 0 <-> 25K toggle ---- */
@@ -35417,6 +35469,7 @@
         /* ==== BEUK:shelfguard ==== */
         { id: "shelf.open.guards-device-only", feature: "shelf", name: "Opening a shelf book over a book that exists only on this device (restored, never shelved, no edits this session) asks first: Keep my book is the focused default and leaves the desk byte-identical with no shelf call; Put it on my shelf, then open saves it (POST) before the other book arrives; Open and replace it opens on the shelf's own revision. A linked book with nothing unsynced, the untouched sample and an empty desk are not held",
           async run() {
+            const release = await scShelfHold(); /* BEUK:savesync */
             const keep = {
               doc: JSON.parse(JSON.stringify(serializeBook())), sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
               c: { user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision,
@@ -35494,6 +35547,7 @@
               local.suspended = keep.susp;
               setSyncStatus(keep.c.syncStatus);
               renderShelfList();
+              release(); /* BEUK:savesync */
             }
           } },
         { id: "confirm.alt.hidden-when-unused", feature: "shelf", name: "A two-choice confirmation renders exactly two buttons — the optional third is not drawn, not focusable, and can never resolve as yes; a three-choice one draws all three, the safe one first",
@@ -35530,10 +35584,30 @@
           } }
         /* ==== /BEUK:shelfguard ==== */
       ];
+      /* ==== BEUK:savesync ==== — a shelf self-check stands the real
+         shelf down first: the real book's due save is let finish (its
+         answer must land on the real link, not on the check's stand-in),
+         its timer is held, and a real conflict notice is put away. The
+         release puts the notice back as it was and re-arms a due save. */
+      async function scShelfHold() {
+        clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
+        for (let i = 0; i < 4 && (cloudSaveFollowUp || cloudSaveInFlight); i++) {
+          try { await (cloudSaveFollowUp || cloudSaveInFlight); } catch (e) {}
+        }
+        clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
+        const open = $("modalConflict").classList.contains("open");
+        $("modalConflict").classList.remove("open");
+        return function release() {
+          $("modalConflict").classList.toggle("open", open && !!cloud.conflict);
+          if (cloud.user && cloudDirty && !cloud.conflict) cloudAutosaveTick();
+        };
+      }
+      /* ==== /BEUK:savesync ==== */
       /* ==== BEUK:bugs ==== — self-checks for the round-6 fixes */
       SELF_CHECKS_ASYNC.push(
         { id: "shelf.reload.no-false-conflict", feature: "shelf", name: "A reload right after a shelf save never raises a false conflict: the new revision is written at once (no debounce left pending); a stale note whose shelf copy is this very book agrees quietly, on reload and on a 409; a shelf copy that really differs still raises the conflict notice",
           async run() {
+            const release = await scShelfHold(); /* BEUK:savesync */
             const keep = {
               doc: JSON.parse(JSON.stringify(serializeBook())), sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
               c: { user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision,
@@ -35618,9 +35692,199 @@
               local.suspended = keep.susp;
               setSyncStatus(keep.c.syncStatus);
               renderShelfList();
+              release(); /* BEUK:savesync */
             }
           } }
       );
+      /* ==== BEUK:savesync ==== — overlapping shelf saves. Both checks run
+         against a stand-in shelf that keeps the server's own contract
+         (src/routes/manuscripts.ts: a PUT lands only when its If-Match is
+         the current revision, else 409 with the current copy), so they
+         need no network and never touch the writer's real shelf book:
+         they run the same signed in or signed out. scShelfHold first lets
+         a real save in flight land on the real book. */
+      function scStandInShelf(id, rev, doc) {
+        const sh = { id: id, rev: rev, doc: JSON.parse(JSON.stringify(doc)), updatedAt: "2026-03-01T00:00:00.000Z", calls: [], inFlight: 0, maxInFlight: 0, hold: null };
+        const res = (o, st) => ({ status: st || 200, ok: !st || st < 400, json: async () => o });
+        const copy = () => ({ id: id, title: "x", doc: JSON.parse(JSON.stringify(sh.doc)), revision: sh.rev, updatedAt: sh.updatedAt });
+        sh.fetch = async (path, opts) => {
+          const m = (opts && opts.method) || "GET";
+          if (m === "GET" && path === "/api/manuscripts/" + id) { sh.calls.push("GET"); return res({ manuscript: copy() }); }
+          if (m === "PUT" && path === "/api/manuscripts/" + id) {
+            const ifm = (opts.headers || {})["If-Match"] || null;
+            sh.calls.push("PUT " + ifm);
+            sh.inFlight++; sh.maxInFlight = Math.max(sh.maxInFlight, sh.inFlight);
+            if (sh.hold) { const h = sh.hold; sh.hold = null; await h; }
+            sh.inFlight--;
+            if (ifm === '"' + sh.rev + '"') {
+              sh.rev++; sh.doc = JSON.parse(opts.body).doc;
+              sh.updatedAt = new Date(Date.parse(sh.updatedAt) + 1000).toISOString();
+              return res({ manuscript: copy() });
+            }
+            return res({ error: "revision conflict", manuscript: copy() }, ifm ? 409 : 428);
+          }
+          if (m === "GET" && path === "/api/manuscripts") return res({ manuscripts: [] });
+          return res({ error: "not in the fixture" }, 404);
+        };
+        sh.holdNext = () => { let open; sh.hold = new Promise((r) => { open = r; }); return open; };
+        return sh;
+      }
+      function scShelfKeep() {
+        return {
+          doc: JSON.parse(JSON.stringify(serializeBook())), sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
+          c: { user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision,
+            baseUpdatedAt: cloud.baseUpdatedAt, shelfUpdatedAt: cloud.shelfUpdatedAt, sessionEdited: cloud.sessionEdited, editedBeforeSignIn: cloud.editedBeforeSignIn,
+            pendingSyncs: cloud.pendingSyncs, conflict: cloud.conflict, shelf: cloud.shelf, syncStatus: cloud.syncStatus, lastEditAt: cloud.lastEditAt, shelfError: cloud.shelfError },
+          dirty: cloudDirty, susp: local.suspended, fetch: window.fetch, online: net.online, retry: cloudRetryTimer
+        };
+      }
+      function scShelfPutBack(keep) {
+        cloud.conflict = null; $("modalConflict").classList.remove("open");
+        clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
+        if (cloudRetryTimer && cloudRetryTimer !== keep.retry) { clearInterval(cloudRetryTimer); cloudRetryTimer = keep.retry; }
+        window.fetch = keep.fetch;
+        Object.assign(cloud, keep.c);
+        applyBookDoc(keep.doc);
+        sampleState.loaded = keep.sample.loaded; sampleState.loadedJson = keep.sample.json; renderSampleButton();
+        cloudDirty = keep.dirty; net.online = keep.online;
+        clearTimeout(localLinkTimer); localLinkTimer = null;
+        local.suspended = keep.susp;
+        setSyncStatus(keep.c.syncStatus);
+        renderShelfList();
+      }
+      function scShelfDesk(words) {
+        applyBookDoc(buildEmptyBook()); state.history = [];
+        state.meta.title = "Check Save Book";
+        state.sections.find((x) => x.type === "chapter").content = words + " — check " + uid();
+        sampleState.loaded = false; sampleState.loadedJson = null;
+        cloud.user = { id: "sc-user", email: "check@beuk.invalid" }; cloud.available = true; net.online = true;
+        cloud.linkedId = "sc-save"; cloud.linkState = "linked"; cloud.baseRevision = 3;
+        cloud.baseUpdatedAt = "2026-03-01T00:00:00.000Z"; cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
+        cloud.sessionEdited = false; cloud.pendingSyncs = 0; cloud.conflict = null; cloud.lastEditAt = 0; cloudDirty = false;
+      }
+      const scTick = (ms) => new Promise((r) => setTimeout(r, ms || 0));
+      const scEdit = (more) => { state.sections.find((x) => x.type === "chapter").content += more; noteBookEdited(); clearTimeout(cloudSaveTimer); cloudSaveTimer = null; };
+      SELF_CHECKS_ASYNC.push(
+        { id: "shelf.save.single-flight", feature: "shelf", name: "Shelf saves are single-flight: a save asked for while one is in flight sends nothing until the answer, then runs once on the revision that answer returned (never two PUTs on one If-Match, never a 409); an answer for a book no longer on the desk moves nothing; no path out of a save leaves “Saving to your shelf…” standing",
+          async run() {
+            const release = await scShelfHold();
+            const keep = scShelfKeep();
+            const bad = [];
+            let puts = [];
+            local.suspended = true;
+            try {
+              /* 1. two saves asked for during one slow PUT */
+              scShelfDesk("Words for the first save");
+              let sh = scStandInShelf("sc-save", 3, serializeBook()); window.fetch = sh.fetch;
+              scEdit(" One.");
+              let open = sh.holdNext();
+              const first = cloudSaveNow();
+              await scTick(5);
+              scEdit(" Two, typed while the first save is in flight.");
+              const again = cloudSaveNow(); cloudSaveNow();
+              await scTick(5);
+              if (sh.calls.filter((c) => c.indexOf("PUT") === 0).length !== 1) bad.push("a second PUT left while the first was in flight: " + sh.calls.join(", "));
+              if (cloud.syncStatus !== "saving") bad.push("status during the slow save is " + cloud.syncStatus);
+              open(); await first; await again; await scTick(5);
+              puts = sh.calls.filter((c) => c.indexOf("PUT") === 0);
+              if (puts.join(",") !== 'PUT "3",PUT "4"') bad.push("PUTs were " + puts.join(", ") + ", not one on 3 then one on 4");
+              if (sh.maxInFlight !== 1) bad.push(sh.maxInFlight + " PUTs were in flight at once");
+              if (cloud.conflict || $("modalConflict").classList.contains("open")) { bad.push("overlapping saves raised the conflict notice"); cloud.conflict = null; $("modalConflict").classList.remove("open"); }
+              if (cloud.baseRevision !== 5 || cloudDirty || cloud.syncStatus !== "saved") bad.push("did not settle on revision 5, clean and saved (rev " + cloud.baseRevision + ", dirty " + cloudDirty + ", " + cloud.syncStatus + ")");
+              if (!bookDocsSame(sh.doc, serializeBook())) bad.push("the stand-in shelf does not hold the desk's last words");
+              /* 2. the answer for a book that has left the desk moves nothing */
+              scShelfDesk("Words for a book about to be swapped");
+              sh = scStandInShelf("sc-save", 3, serializeBook()); window.fetch = sh.fetch;
+              scEdit(" Swap.");
+              open = sh.holdNext();
+              const gone = cloudSaveNow();
+              await scTick(5);
+              cloud.linkedId = "sc-other-book"; cloud.baseRevision = 9; cloud.baseUpdatedAt = "2026-04-04T00:00:00.000Z"; cloudDirty = false;
+              open(); await gone; await scTick(5);
+              if (cloud.linkedId !== "sc-other-book" || cloud.baseRevision !== 9 || cloud.baseUpdatedAt !== "2026-04-04T00:00:00.000Z") bad.push("a late answer for another book moved this desk's link (" + cloud.linkedId + " rev " + cloud.baseRevision + " at " + cloud.baseUpdatedAt + ")");
+              if (cloud.syncStatus === "saving") bad.push("a dropped answer left “Saving…” standing");
+              /* 3. every way out of a save clears "Saving to your shelf…" */
+              const outs = [];
+              scShelfDesk("Nothing new"); window.fetch = sh.fetch; setSyncStatus("saving"); await cloudSaveRun(); outs.push(["nothing new", cloud.syncStatus === "saved"]);
+              scShelfDesk("Waiting on the notice"); cloudDirty = true; cloud.conflict = { doc: serializeBook(), updatedAt: null, revision: 4 }; setSyncStatus("saving"); await cloudSaveRun(); outs.push(["conflict waiting", cloud.syncStatus === "local"]);
+              cloud.conflict = null;
+              scShelfDesk("Unreachable shelf"); cloudDirty = true; window.fetch = async () => { throw new TypeError("network down — check"); };
+              await cloudSaveRun(); outs.push(["network error", cloud.syncStatus !== "saving"]);
+              scShelfDesk("Refused"); cloudDirty = true; window.fetch = async () => ({ status: 500, ok: false, json: async () => ({ error: "check" }) });
+              await cloudSaveRun(); outs.push(["refused", cloud.syncStatus === "failed"]);
+              scShelfDesk("Conflict"); cloudDirty = true;
+              const elsewhere = JSON.parse(JSON.stringify(serializeBook())); elsewhere.meta.title = "Elsewhere — check";
+              sh = scStandInShelf("sc-save", 6, elsewhere); window.fetch = sh.fetch;
+              setSyncStatus("saving"); await cloudSaveRun(); outs.push(["real 409", cloud.syncStatus === "local" && !!cloud.conflict]);
+              cloud.conflict = null; $("modalConflict").classList.remove("open");
+              const stuck = outs.filter((o) => !o[1]).map((o) => o[0]);
+              if (stuck.length) bad.push("status wrong after: " + stuck.join(", "));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "slow PUT: one request in flight, the follow-up ran once on If-Match 4 (" + puts.join(", ") + "), settled on revision 5 saved, no notice; a late answer for a swapped-out book moved nothing; status clears on nothing-new, waiting notice, network error, refusal and real 409");
+            } finally {
+              scShelfPutBack(keep);
+              release();
+            }
+          } },
+        { id: "shelf.save.identical-409-silent", feature: "shelf", name: "A 409 (or a reconnect check) whose shelf copy is the device's own book is settled quietly on the shelf's revision; a timestamp note that disagrees while the revision agrees is no conflict; another device's different words still raise “This book changed in two places”",
+          async run() {
+            const release = await scShelfHold();
+            const keep = scShelfKeep();
+            const bad = [];
+            const noNotice = (what) => { if (cloud.conflict || $("modalConflict").classList.contains("open")) { bad.push(what + " raised the conflict notice"); cloud.conflict = null; $("modalConflict").classList.remove("open"); } };
+            local.suspended = true;
+            try {
+              /* 1. the 409's copy is the device's book as it stands now (the edit typed during the save) */
+              scShelfDesk("Before the edit");
+              const sent = JSON.parse(JSON.stringify(serializeBook()));
+              state.sections.find((x) => x.type === "chapter").content += " After the edit.";
+              const now = JSON.parse(JSON.stringify(serializeBook()));
+              applyBookDoc(JSON.parse(JSON.stringify(sent))); state.history = [];
+              let sh = scStandInShelf("sc-save", 3, sent); window.fetch = sh.fetch;
+              let open = sh.holdNext();
+              cloudDirty = true;
+              const p = cloudSaveRun();
+              await scTick(5);
+              applyBookDoc(JSON.parse(JSON.stringify(now))); state.history = []; cloud.lastEditAt = Date.now() + 1; cloudDirty = true;
+              sh.rev = 5; sh.doc = JSON.parse(JSON.stringify(serializeBook())); /* the edit reached the shelf first (another tab of this device) */
+              open(); await p; await scTick(5);
+              noNotice("a 409 carrying the device's current book");
+              if (cloud.baseRevision !== 5 || cloudDirty || cloud.syncStatus !== "saved") bad.push("current-book 409 did not settle on revision 5 clean (rev " + cloud.baseRevision + ", dirty " + cloudDirty + ", " + cloud.syncStatus + ")");
+              /* 2. the revision agrees, the timestamp note is stale (the round-7 leak): a plain flush */
+              scShelfDesk("Timestamp note is stale");
+              sh = scStandInShelf("sc-save", 3, serializeBook()); window.fetch = sh.fetch;
+              cloud.baseUpdatedAt = "2026-02-01T00:00:00.000Z"; cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
+              scEdit(" New words.");
+              await cloudReconnectFlush(); await (cloudSaveInFlight || Promise.resolve()); await scTick(5);
+              noNotice("a stale timestamp with an agreeing revision");
+              if (sh.calls.join(",") !== 'GET,PUT "3"' || cloud.baseRevision !== 4 || cloudDirty) bad.push("stale timestamp: calls " + sh.calls.join(", ") + ", rev " + cloud.baseRevision + ", dirty " + cloudDirty);
+              /* 3. the revision moved and the shelf copy is this very book: agree quietly */
+              scShelfDesk("Shelf moved to this same book");
+              sh = scStandInShelf("sc-save", 7, serializeBook()); sh.updatedAt = "2026-03-09T00:00:00.000Z"; window.fetch = sh.fetch;
+              cloudDirty = true;
+              await cloudReconnectFlush(); await scTick(5);
+              noNotice("a moved shelf holding this very book");
+              if (cloud.baseRevision !== 7 || cloudDirty || cloud.syncStatus !== "saved" || sh.calls.join(",") !== "GET") bad.push("same-book reconnect: rev " + cloud.baseRevision + ", dirty " + cloudDirty + ", " + cloud.syncStatus + ", calls " + sh.calls.join(", "));
+              /* 4. a real two-device change still raises the notice — on a 409 and on reconnect */
+              scShelfDesk("This device's words");
+              const other = JSON.parse(JSON.stringify(serializeBook())); other.sections.find((x) => x.type === "chapter").content = "Another device wrote this — check";
+              sh = scStandInShelf("sc-save", 6, other); window.fetch = sh.fetch;
+              cloudDirty = true; await cloudSaveRun(); await scTick(5);
+              const raised409 = !!cloud.conflict && $("modalConflict").classList.contains("open") && $("conflictTitle").textContent === t("offline.conflictTitle") && cloud.conflict.revision === 6;
+              if (!raised409) bad.push("a 409 with another device's words did NOT raise the notice");
+              cloud.conflict = null; $("modalConflict").classList.remove("open");
+              scShelfDesk("This device's words again");
+              sh = scStandInShelf("sc-save", 6, other); sh.updatedAt = "2026-03-09T00:00:00.000Z"; window.fetch = sh.fetch;
+              cloudDirty = true; await cloudReconnectFlush(); await scTick(5);
+              if (!cloud.conflict || !$("modalConflict").classList.contains("open")) bad.push("a reconnect with another device's words did NOT raise the notice");
+              if (sh.calls.some((c) => c.indexOf("PUT") === 0)) bad.push("the real conflict overwrote the shelf: " + sh.calls.join(", "));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "409 carrying the current book: settled on rev 5, no notice; stale timestamp + agreeing revision: flushed on If-Match 3; moved shelf holding this book: agreed on rev 7 with no PUT; another device's words: notice raised on 409 (rev 6) and on reconnect, no overwrite");
+            } finally {
+              scShelfPutBack(keep);
+              release();
+            }
+          } }
+      );
+      /* ==== /BEUK:savesync ==== */
       SELF_CHECKS.push(
         { id: "ui.lang.live-account-desk", feature: "ui", name: "Switching the UI language redraws the account button (Sign in, its title) and the preview desk (total, basis, rail label, per-section pages) at once — Spanish, Arabic, Japanese",
           run() {
