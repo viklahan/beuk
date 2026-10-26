@@ -11,6 +11,7 @@ import { createPgScratchFactory } from './housekeeping/scratch.js';
 import type { JobRunner } from './jobs/runner.js';
 import type { BackupScheduler } from './housekeeping/offsite.js';
 import type { OpsService } from './ops/service.js';
+import type { TrialReminders } from './trial-mail.js';
 
 const config = loadConfig();
 if (!config.databaseUrl) {
@@ -100,6 +101,19 @@ const backupTimer = setInterval(backupTick, 15 * 60_000);
 backupTimer.unref();
 setTimeout(backupTick, 30_000).unref();
 
+// The trial-ending email (once per account; only with email + billing on).
+const trialReminders = app.locals.trialReminders as TrialReminders;
+const trialTick = () =>
+  void trialReminders
+    .tick()
+    .then((r) => {
+      if (r.sent || r.failed) console.log(`trial reminders: ${r.sent} sent, ${r.failed} not sent`);
+    })
+    .catch((err) => console.error('trial reminder tick failed', err));
+const trialTimer = setInterval(trialTick, 60 * 60_000);
+trialTimer.unref();
+setTimeout(trialTick, 90_000).unref();
+
 const server = app.listen(config.port, () => {
   console.log(`beuk-api listening on :${config.port} (timezone ${config.timeZone})`);
 });
@@ -109,7 +123,7 @@ const shutdown = createShutdown({
   graceMs: config.shutdownGraceMs,
   runner: jobsRunner,
   closeDb: () => db.end(),
-  timers: [purgeTimer, backupTimer],
+  timers: [purgeTimer, backupTimer, trialTimer],
 });
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));

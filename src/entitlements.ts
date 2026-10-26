@@ -15,8 +15,14 @@ import type { Db } from './db.js';
  *
  * P4 (V): a lapsed or cancelled writer loses NOTHING they wrote. No route
  * that reads, lists, exports or shares a writer's own work may ever be
- * wrapped in `requireEntitlement`. Only features V's pricing names as
- * gated get the middleware — and none are gated until V decides.
+ * wrapped in `requireEntitlement`.
+ *
+ * V's pricing (2026-10-26) is one price for complete access after a
+ * sign-up trial, so the account's access is decided in src/access.ts
+ * (trial + this file's subscription decision): any granting subscription
+ * opens everything, and a short list of account features pauses after
+ * the trial (ACCESS_RULES there). `requireEntitlement` stays for a
+ * pricing that names features; no route uses it.
  */
 
 export interface EntitlementsPrice {

@@ -1,5 +1,7 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
+import { accessGate, ACCESS_RULES } from './access.js';
 import { StripeBillingProvider, type BillingProvider } from './billing.js';
+import { TrialReminders } from './trial-mail.js';
 import type { Config } from './config.js';
 import type { Db } from './db.js';
 import {
@@ -110,6 +112,13 @@ export function buildApp({
   app.get('/api', (_req, res) => res.json({ name: 'beuk-api', milestone: 'M5' }));
 
   const billingProvider = billing ?? new StripeBillingProvider(config);
+  // Trial + one price: the account features that pause after the trial
+  // without a plan (src/access.ts ACCESS_RULES), in front of their
+  // routers. Nothing else is ever gated, and nothing is while billing is off.
+  const gate = accessGate({ db, config, billing: billingProvider, now: now ?? (() => new Date()) });
+  for (const rule of ACCESS_RULES) app.post(rule.path, gate(rule.feature));
+  // The trial-ending email (once per account); index.ts runs its tick.
+  app.locals.trialReminders = new TrialReminders({ db, config, billing: billingProvider, mailer: mail, now: now ?? (() => new Date()) });
   // Accounts portal (/account + /api/account): the sign-up hook sends the
   // email confirmation after the register response.
   const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });

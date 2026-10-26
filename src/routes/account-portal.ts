@@ -49,7 +49,7 @@ import { ZipWriter } from '../account/zip.js';
  *   GET  /account/account.css|js  the page's stylesheet and form script
  *
  * API (signed in unless noted), mounted at /api/account:
- *   GET  /summary                 {email, emailConfirmed, pendingEmail, emailDelivery}
+ *   GET  /summary                 {email, emailConfirmed, pendingEmail, emailDelivery, plan}
  *   POST /confirm/resend          a new sign-up confirmation link
  *   POST /email {currentPassword, newEmail}
  *                                 link to the NEW address + notice to the
@@ -163,7 +163,8 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       const overview = await accountOverview(db, config, user.id, now());
       if (!overview) return res.type('html').send(signedOutPage(config));
       const plan = await accountPlan({ db, config, billing, now }, { id: user.id, createdAt: overview.user.createdAt });
-      return res.type('html').send(accountPage(config, overview, plan, { emailConfigured: mailOn() }));
+      const billingReturn = req.query.billing === 'success' || req.query.billing === 'cancelled' ? req.query.billing : null;
+      return res.type('html').send(accountPage(config, overview, plan, { emailConfigured: mailOn(), billingReturn }));
     } catch (err) {
       return next(err);
     }
@@ -207,6 +208,24 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
   const api = Router();
   api.use(requireAuth(db));
 
+  /** The studio's compact plan line. While billing is off it says only
+   *  that ({billingOn:false}): no trial, no price, nothing paused. */
+  async function studioPlan(userId: string): Promise<Record<string, unknown>> {
+    const p = await accountPlan({ db, config, billing, now }, { id: userId, createdAt: '' });
+    if (!p.billingConfigured) return { billingOn: false, access: 'open' };
+    return {
+      billingOn: true,
+      access: p.access,
+      trialEndsAt: p.trial?.endsAt ?? null,
+      trialDaysLeft: p.trial?.daysLeft ?? 0,
+      graceEndsAt: p.subscription.graceEndsAt,
+      priceLabel: p.priceLabel,
+      canUpgrade: p.liveSubscriptions === 0 && p.access !== 'subscribed',
+      canManage: p.hasBillingAccount,
+      testMode: p.mode === 'test',
+    };
+  }
+
   api.get('/summary', async (req, res, next) => {
     try {
       const u = (
@@ -222,6 +241,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
         pendingEmail: await pendingEmailChange(db, req.user!.id),
         emailDelivery: mailOn() ? 'email' : 'not-configured',
         accountPage: '/account',
+        plan: await studioPlan(req.user!.id),
       });
     } catch (err) {
       return next(err);
@@ -339,6 +359,15 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       const overview = await accountOverview(db, config, user.id, now());
       if (!overview) return res.status(401).json({ error: 'not signed in' });
       const plan = await accountPlan({ db, config, billing, now }, { id: user.id, createdAt: overview.user.createdAt });
+      // The stored trial fields, as kept, whatever the billing state
+      // (plan.trial is null while billing is off, but the row still exists).
+      const trialRow = (
+        await db.query<{ trial_ends_at: Date | string | null; trial_reminder_sent_at: Date | string | null }>(
+          'select trial_ends_at, trial_reminder_sent_at from users where id = $1',
+          [user.id],
+        )
+      ).rows[0];
+      const iso = (v: Date | string | null | undefined): string | null => (v ? new Date(v).toISOString() : null);
       const exportedAt = now().toISOString();
       const day = exportedAt.slice(0, 10);
       res.setHeader('Content-Type', 'application/zip');
@@ -358,6 +387,9 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
             label: plan.subscription.label,
             renewsAt: plan.subscription.renewsAt,
             cancelAtPeriodEnd: plan.subscription.cancelAtPeriodEnd,
+            access: plan.access,
+            trialEndsAt: iso(trialRow?.trial_ends_at),
+            trialReminderSentAt: iso(trialRow?.trial_reminder_sent_at),
           },
         };
         const { counts, missingFiles } = await writeAccountExport(db, config, user.id, now(), zip, account);
@@ -393,7 +425,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       if (!row || !(await verifyPassword(row.password_hash, currentPassword))) {
         return res.status(403).json({ error: 'current password is incorrect' });
       }
-      const billingOutcome = await cancelBillingForDeletedAccount({ db, billing }, user.id);
+      const billingOutcome = await cancelBillingForDeletedAccount({ db, billing, config }, user.id);
       const result = await deleteAccount(db, config, user.id, billingOutcome.leftForOperator);
       if (billingOutcome.leftForOperator.length) {
         console.warn(

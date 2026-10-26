@@ -84,36 +84,74 @@ export function signedOutPage(config: Config): string {
   return portalChrome(config, 'Your account', body, { signedIn: false });
 }
 
-function planSection(plan: AccountPlan): string {
+/** What pauses after the trial, and what never does (src/access.ts). */
+const PAUSED_LIST = 'adding new books to your shelf, new beta-reader links, server EPUBCheck and PDF/X checks, and saving new files to your archive';
+const ALWAYS_OPEN = 'Writing in the studio, the books already on your shelf (they keep saving), every export, your archive downloads, the reading links you already have, Download all my data, and deleting your account';
+
+function planSection(plan: AccountPlan, billingReturn: 'success' | 'cancelled' | null): string {
   const s = plan.subscription;
   const lines: string[] = [];
-  if (s.status !== 'none') {
-    const label = s.label ? esc(s.label) : 'Your subscription';
-    const state = s.granted
-      ? s.graceEndsAt
-        ? `the last payment did not go through; access continues until ${esc(humanDate(s.graceEndsAt))} while it is retried`
-        : 'active'
-      : `not active (Stripe says “${esc(s.status)}”)`;
-    lines.push(`<p><b>${label}</b>: ${state}.</p>`);
-    if (s.renewsAt && s.granted) {
-      lines.push(
-        `<p class="muted">${s.cancelAtPeriodEnd ? 'Ends' : 'Renews'} on ${esc(humanDate(s.renewsAt))}.</p>`,
-      );
+  const upgrade = '<button class="portal-button" type="button" data-action="upgrade">Choose a plan</button>';
+  const manage = '<button class="portal-button quiet" type="button" data-action="manage">Manage billing</button>';
+  const buttons: string[] = [];
+  const price = plan.priceLabel ? ` One plan, ${esc(plan.priceLabel)}, opens everything.` : '';
+
+  if (!plan.billingConfigured) {
+    // Billing off: no trial, no price, nothing paused (as before).
+    if (s.status !== 'none') {
+      lines.push(`<p><b>${s.label ? esc(s.label) : 'Your subscription'}</b>: Stripe says “${esc(s.status)}”.</p>`);
     }
-  } else if (plan.trial) {
-    lines.push(
-      plan.trial.active
-        ? `<p>Your free trial runs until ${esc(humanDate(plan.trial.endsAt))}.</p>`
-        : `<p>Your free trial ended on ${esc(humanDate(plan.trial.endsAt))}.</p>`,
-    );
-  } else if (!plan.billingConfigured) {
     lines.push('<p>Plans are not switched on on this server yet. Everything in the studio is open to you.</p>');
   } else {
-    lines.push('<p>There is no subscription on this account.</p>');
+    if (billingReturn === 'success') {
+      lines.push('<p class="note-line" data-billing-return="success">Thank you. Stripe is confirming the payment; this section shows your plan as soon as it has. Reload the page in a moment.</p>');
+    } else if (billingReturn === 'cancelled') {
+      lines.push('<p class="muted" data-billing-return="cancelled">No plan was chosen and nothing was charged.</p>');
+    }
+    switch (plan.access) {
+      case 'subscribed': {
+        const label = s.label ? esc(s.label) : 'Your plan';
+        lines.push(`<p><b>${label}</b>: active${s.status === 'trialing' ? ' (the first payment is taken when your trial ends)' : ''}. Everything is open to you.</p>`);
+        if (s.renewsAt) {
+          lines.push(`<p class="muted">${s.cancelAtPeriodEnd ? 'Ends' : 'Renews'} on ${esc(humanDate(s.renewsAt))}.</p>`);
+        }
+        break;
+      }
+      case 'grace':
+        lines.push(
+          `<p class="note-line" data-plan-notice="past-due">The last payment didn’t go through. Stripe will try the card again, and everything stays open until ${esc(humanDate(s.graceEndsAt!))}. You can change the card under Manage billing.</p>`,
+        );
+        break;
+      case 'trial':
+        if (plan.trial) {
+          const left = plan.trial.daysLeft;
+          lines.push(
+            `<p>Your free trial runs until ${esc(humanDate(plan.trial.endsAt))}: ${left} ${left === 1 ? 'day' : 'days'} left. Everything is open to you.${price}</p>`,
+          );
+          lines.push(
+            `<p class="muted">After the trial, without a plan, ${PAUSED_LIST} pause. ${ALWAYS_OPEN} stay open.${plan.firstChargeWaits ? ' If you choose a plan now, the first payment waits until your trial ends.' : ''}</p>`,
+          );
+        }
+        break;
+      case 'paused':
+        lines.push(
+          `<p class="note-line" data-plan-notice="paused">${plan.trial ? `Your free trial ended on ${esc(humanDate(plan.trial.endsAt))}.` : 'There is no plan on this account.'}${s.status !== 'none' ? ` Stripe says your subscription is “${esc(s.status)}”.` : ''} Until you choose a plan, ${PAUSED_LIST} are paused.${price}</p>`,
+        );
+        lines.push(`<p>${ALWAYS_OPEN} stay open.</p>`);
+        break;
+      default:
+        break;
+    }
+    // Choose a plan only when no subscription is still running (a
+    // past_due or unpaid one needs the card fixed, not a second plan).
+    const running = plan.liveSubscriptions > 0;
+    if (!running && plan.access !== 'subscribed') buttons.push(upgrade);
+    if (plan.hasBillingAccount) buttons.push(manage);
+    if (plan.mode === 'test') lines.push('<p class="muted">This server takes test payments only (Stripe test mode).</p>');
   }
-  if (plan.mode === 'test') lines.push('<p class="muted">This server takes test payments only (Stripe test mode).</p>');
+  if (buttons.length) lines.push(`<p class="portal-actions">${buttons.join(' ')}</p>`);
   lines.push('<p class="muted">Whatever happens with a plan, your books stay yours: export is always open, and so is everything on this page.</p>');
-  return `<section class="portal-card" id="plan" aria-labelledby="plan-h" data-plan-status="${esc(s.status)}">
+  return `<section class="portal-card" id="plan" aria-labelledby="plan-h" data-plan-status="${esc(s.status)}" data-plan-access="${esc(plan.access)}">
         <h2 id="plan-h">Plan</h2>
         ${lines.join('\n        ')}
       </section>`;
@@ -121,6 +159,8 @@ function planSection(plan: AccountPlan): string {
 
 export interface PortalPageOpts {
   emailConfigured: boolean;
+  /** /account?billing=success|cancelled, back from Stripe Checkout. */
+  billingReturn?: 'success' | 'cancelled' | null;
 }
 
 export function accountPage(config: Config, o: AccountOverview, plan: AccountPlan, opts: PortalPageOpts): string {
@@ -224,7 +264,7 @@ ${o.archive
         ${streak}
       </section>
 
-      ${planSection(plan)}
+      ${planSection(plan, opts.billingReturn ?? null)}
 
       <section class="portal-card" id="security" aria-labelledby="security-h">
         <h2 id="security-h">Password and sign-in</h2>
@@ -268,11 +308,15 @@ ${o.archive
  *  deleting the account yet (see cancelBillingForDeletedAccount). */
 function subscriptionNote(plan: AccountPlan, config: Config): string {
   if (!plan.liveSubscriptions) return '';
+  if (plan.canCancel) {
+    return `
+        <p class="note-line" data-subscription-cancels>This account has a subscription that is still running. Deleting the account cancels it at Stripe straight away, so nothing more is charged.</p>`;
+  }
   const who = config.supportEmail
     ? `write to <a href="mailto:${esc(config.supportEmail)}">${esc(config.supportEmail)}</a> to have it cancelled`
     : 'ask the person who runs this server to cancel it';
   return `
-        <p class="note-line" data-subscription-warning>This account has a subscription that is still running at Stripe. Deleting the account does not cancel it: this server can't cancel a subscription by itself yet. Before you delete, ${who}.</p>`;
+        <p class="note-line" data-subscription-warning>This account has a subscription that is still running at Stripe. Deleting the account does not cancel it: this server has no Stripe key, so it can’t reach Stripe to cancel it. Before you delete, ${who}.</p>`;
 }
 
 /** The confirm page: a button that POSTs the token (prefetch-safe). */
@@ -325,7 +369,7 @@ export function deletedPage(config: Config, opts: { subscriptionLeft?: boolean }
     : '';
   const sub = opts.subscriptionLeft
     ? `
-      <p class="note-line" data-subscription-left>This server can't cancel a subscription by itself yet, so the subscription that was on this account is still running at Stripe. The person who runs this server can see it and cancel it by hand.${contact}</p>`
+      <p class="note-line" data-subscription-left>The subscription that was on this account couldn’t be cancelled from here, so it is still running at Stripe. The person who runs this server can see it and cancel it by hand.${contact}</p>`
     : '';
   const body = `      <h1>Your account is deleted</h1>
       <p class="lede">Your account and everything on it are gone from this server. Books on your devices are still there in the studio.</p>${sub}
