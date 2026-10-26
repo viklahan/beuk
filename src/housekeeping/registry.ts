@@ -2017,6 +2017,31 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason:
       'E-reader pagination is laid out by the studio browser (CSS multicol in the client page); the server never lays out pages.',
   },
+  // BEUK:reader — the preview keeps the writer's place; Zen controls clear the tabs.
+  {
+    id: 'preview.keeps-page-on-edit',
+    title: 'The preview keeps its page while the writer formats: bold, italic, blockquote and a font-size change leave the formatted word on screen and Page X of Y true',
+    kind: 'client-only',
+    reason: 'The preview is laid out and paged by the studio browser (CSS multicol in the client page); the server never lays out pages.',
+  },
+  {
+    id: 'preview.follows-caret',
+    title: 'The preview follows the caret: an edit at another paragraph turns the preview to the page that holds it',
+    kind: 'client-only',
+    reason: 'The caret lives in the client editor and the pages are laid out by the client preview.',
+  },
+  {
+    id: 'preview.new-section-page-one',
+    title: 'Opening another section starts its preview at page 1',
+    kind: 'client-only',
+    reason: 'Section selection and the preview page are client UI state.',
+  },
+  {
+    id: 'zen.controls.no-overlap',
+    title: 'Zen corner controls never cover the tabs in any of the 13 interface languages (Arabic RTL included), and stay inside the window',
+    kind: 'client-only',
+    reason: 'Zen is drawn by the studio page; the check measures bounding boxes in the client browser.',
+  },
   {
     id: 'cover.maker.adopt-gains-cover-package',
     title: 'Adopting a made cover gives the EPUB its cover files and landmark',
