@@ -90,6 +90,19 @@
     }
   };
 
+  function goBilling(btn, path) {
+    btn.disabled = true;
+    say("", false);
+    post(path).then(function (r) {
+      var c = common(r);
+      if (c) { btn.disabled = false; say(c, true); return; }
+      if (r.status === 200 && r.data.url) { location.href = r.data.url; return; }
+      btn.disabled = false;
+      if (r.status === 409 && r.data.status) { say("This account already has a plan. Manage billing shows it.", true); return; }
+      say(r.data.reason || "Stripe can't be reached just now. Nothing has changed; try again in a moment.", true);
+    });
+  }
+
   var actions = {
     resend: function (btn) {
       btn.disabled = true;
@@ -114,6 +127,11 @@
         setTimeout(function () { location.reload(); }, 1500);
       });
     },
+    /* Plan: "Choose a plan" opens Stripe Checkout, "Manage billing" the
+       Stripe Customer Portal. The server decides everything; this only
+       follows the URL it answers with, or says why there is none. */
+    upgrade: function (btn) { goBilling(btn, "/api/billing/checkout"); },
+    manage: function (btn) { goBilling(btn, "/api/billing/portal"); },
     everywhere: function (btn) {
       if (!window.confirm("Sign out every device, this one included? Your books stay on your shelf.")) return;
       btn.disabled = true;

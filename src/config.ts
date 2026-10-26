@@ -42,6 +42,26 @@ export interface Config {
   /** P1: JSON file mapping Stripe price ids to entitlements
    *  (ENTITLEMENTS_FILE). Null = no file: nothing is granted or gated. */
   entitlementsFile: string | null;
+  /** Trial + one price (V, 2026-10-26). TRIAL_DAYS (default 7): the free
+   *  trial a new account gets from sign-up (stamped on users.trial_ends_at
+   *  at sign-up, so changing it later never moves an existing trial). */
+  trialDays: number;
+  /** BILLING_PRICE_LABEL: how the one price is written for people, e.g.
+   *  "8 a month" with its currency. Null = no price is shown anywhere
+   *  (the Upgrade button still works once STRIPE_PRICE_ID is set; Stripe's
+   *  own checkout page shows the amount). */
+  billingPriceLabel: string | null;
+  /** BILLING_AUTOMATIC_TAX=true: checkout asks Stripe Tax to calculate
+   *  tax (automatic_tax[enabled]=true). Needs Stripe Tax set up first. */
+  billingAutomaticTax: boolean;
+  /** BILLING_CANCEL_PRORATE=true: when an account is deleted, its
+   *  subscription is cancelled with prorate=true (Stripe credits the
+   *  unused time to the customer balance; it is not a refund). Default
+   *  false, Stripe's own default. */
+  billingCancelProrate: boolean;
+  /** TRIAL_REMINDER_DAYS (default 3; 0 = off): the trial-ending email goes
+   *  this many days before the trial ends, once per account. */
+  trialReminderDays: number;
   /** Public base URL of the site, for billing checkout redirect targets. */
   appBaseUrl: string;
   /** M3 Housekeeping: directory named backups are written under. */
@@ -304,6 +324,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     stripeApiBase: (env.STRIPE_API_BASE || 'https://api.stripe.com').replace(/\/$/, ''),
     billingGraceDays: nonNegativeInt(env.BILLING_GRACE_DAYS, 7),
     entitlementsFile: env.ENTITLEMENTS_FILE || null,
+    trialDays: nonNegativeInt(env.TRIAL_DAYS, 7),
+    billingPriceLabel: env.BILLING_PRICE_LABEL?.trim() || null,
+    billingAutomaticTax: (env.BILLING_AUTOMATIC_TAX ?? '').toLowerCase() === 'true',
+    billingCancelProrate: (env.BILLING_CANCEL_PRORATE ?? '').toLowerCase() === 'true',
+    trialReminderDays: nonNegativeInt(env.TRIAL_REMINDER_DAYS, 3),
     appBaseUrl: (env.APP_BASE_URL ?? 'https://localhost').replace(/\/$/, ''),
     backupDir: env.BACKUP_DIR ?? path.resolve(process.cwd(), 'data', 'backups'),
     buildStamp:

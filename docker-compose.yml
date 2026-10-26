@@ -62,6 +62,13 @@ services:
       STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
       STRIPE_MODE: ${STRIPE_MODE:-}
       BILLING_GRACE_DAYS: ${BILLING_GRACE_DAYS:-7}
+      # Trial + one price: unset = 7-day trial, no price shown, Stripe
+      # Tax off, no proration on cancel, reminder 3 days before.
+      TRIAL_DAYS: ${TRIAL_DAYS:-7}
+      BILLING_PRICE_LABEL: ${BILLING_PRICE_LABEL:-}
+      BILLING_AUTOMATIC_TAX: ${BILLING_AUTOMATIC_TAX:-false}
+      BILLING_CANCEL_PRORATE: ${BILLING_CANCEL_PRORATE:-false}
+      TRIAL_REMINDER_DAYS: ${TRIAL_REMINDER_DAYS:-3}
       # A path INSIDE the container; mount the file read-only there
       # (README, Billing). Unset = nothing granted, nothing gated.
       ENTITLEMENTS_FILE: ${ENTITLEMENTS_FILE:-}

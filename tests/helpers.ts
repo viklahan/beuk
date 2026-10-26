@@ -124,6 +124,11 @@ export function testConfig(overrides?: Partial<Config>): Config {
     stripeApiBase: 'http://127.0.0.1:9',
     billingGraceDays: 7,
     entitlementsFile: null,
+    trialDays: 7,
+    billingPriceLabel: null,
+    billingAutomaticTax: false,
+    billingCancelProrate: false,
+    trialReminderDays: 3,
     appBaseUrl: 'http://127.0.0.1',
     // M3: no admins, a throwaway backup dir, a fixed build stamp and a
     // temp promotion-manifest path by default; tests override as needed.

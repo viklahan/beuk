@@ -1700,6 +1700,7 @@
       .sync-row { align-items: center; gap: 8px; margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
       .sync-row svg { width: 15px; height: 15px; color: var(--gold); flex: 0 0 auto; }
       .portal-line { font-size: 12.5px; color: var(--muted); margin: -10px 0 14px; line-height: 1.6; } /* BEUK:portal */
+      .plan-line { margin-top: -8px; } /* BEUK:billing */
       .portal-line #portalNote:not(:empty)::before { content: " · "; } /* BEUK:portal */
       .linkish { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 12.5px; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-family: inherit; }
       /* ==== BEUK:auth ==== */
@@ -3277,6 +3278,9 @@
         <!-- ==== BEUK:portal ==== the account page, and a calm "not confirmed" line -->
         <p class="portal-line" id="portalLine"><a href="/account" target="_blank" rel="noopener" id="portalLink" data-i18n="portal.page">Your account page</a><span id="portalConfirm" hidden> · <span id="portalConfirmText" data-i18n="portal.unconfirmed">Your email address isn’t confirmed yet.</span> <button class="linkish" id="btnPortalResend" type="button" data-i18n="portal.resend">Send the link again</button></span><span id="portalPending" hidden></span><span id="portalNote" role="status"></span></p>
         <!-- ==== /BEUK:portal ==== -->
+        <!-- ==== BEUK:billing ==== the compact plan line (hidden while plans are off) -->
+        <p class="portal-line plan-line" id="planLine" hidden><span id="planText"></span> <button class="linkish" id="btnPlanUpgrade" type="button" hidden data-i18n="plan.upgrade">Choose a plan</button> <button class="linkish" id="btnPlanManage" type="button" hidden data-i18n="plan.manage">Manage billing</button></p>
+        <!-- ==== /BEUK:billing ==== -->
         <div class="bring-box" id="shelfBring" style="display:none;">
           <p data-i18n="shelf.bringText">The book open in the studio lives only on this device for now. Bring it to your shelf and it will follow you to any device you sign in on.</p>
           <button class="tb-btn primary" id="btnBringBook" type="button" data-i18n="shelf.bringBtn"><i data-lucide="cloud-upload"></i>Bring it to my shelf</button>
@@ -32596,6 +32600,7 @@
           });
           if (res.status === 204) return {};
           const data = await res.json().catch(() => null);
+          if (res.status === 402 && data && data.paused && typeof billingNotePaused === "function") billingNotePaused(); /* BEUK:billing */
           if (!res.ok) return { __error: (data && data.error) || ("HTTP " + res.status), __status: res.status, __body: data };
           return data || {};
         } catch (e) {
@@ -33505,6 +33510,7 @@
       function portalTakeFreshSignIn() { const v = portalFreshSignIn; portalFreshSignIn = false; return v; }
       function portalNote(text) { const n = $("portalNote"); if (n) n.textContent = text || ""; }
       function portalRender(s) {
+        if (typeof billingPlanRender === "function") billingPlanRender(s && s.plan); /* BEUK:billing */
         const box = $("portalConfirm"), pend = $("portalPending");
         if (box) box.hidden = !(s && s.emailConfirmed === false);
         const btn = $("btnPortalResend");
@@ -33535,6 +33541,73 @@
       }
       if (typeof window !== "undefined") window.beukPortal = { portalRefresh, portalResend, portalTakeFreshSignIn };
       /* ==== /BEUK:portal ==== */
+
+      /* ==== BEUK:billing ==== — the compact plan line in the shelf dialog
+         (free trial until …, active, a payment that didn’t go through, or
+         paused) with Choose a plan (Stripe Checkout) and Manage billing
+         (Stripe Customer Portal). It comes from /api/account/summary and
+         stays hidden while plans are off on the server ({billingOn:false});
+         it shows a price only when the server sends V’s label. When an
+         account feature is paused (HTTP 402 {paused:true}) it is said once
+         per session. Writing and every export never ask the server. */
+      Object.assign(UI_STRINGS.en, { "plan.trial": "Free trial until {date}.", "plan.price": "One plan, {price}, opens everything.", "plan.subscribed": "Your plan is active.", "plan.grace": "The last payment didn’t go through. Everything stays open until {date}.", "plan.paused": "Your free trial has ended. Adding new books to your shelf, new reader links, server checks and saving to your archive are paused. Writing and every export still work.", "plan.upgrade": "Choose a plan", "plan.manage": "Manage billing", "plan.test": "test payments only", "plan.unreachable": "Stripe can’t be reached just now. Nothing has changed; try again in a moment.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. Writing and every export still work." });
+      Object.assign(UI_STRINGS.es, { "plan.trial": "Prueba gratuita hasta el {date}.", "plan.price": "Un solo plan, {price}, lo abre todo.", "plan.subscribed": "Tu plan está activo.", "plan.grace": "El último pago no se pudo cobrar. Todo sigue abierto hasta el {date}.", "plan.paused": "Tu prueba gratuita ha terminado. Añadir libros nuevos a tu estantería, los enlaces nuevos para lectores, las comprobaciones del servidor y guardar en tu archivo están en pausa. Escribir y todas las exportaciones siguen funcionando.", "plan.upgrade": "Elegir un plan", "plan.manage": "Gestionar la facturación", "plan.test": "solo pagos de prueba", "plan.unreachable": "Ahora mismo no se puede contactar con Stripe. No ha cambiado nada; inténtalo de nuevo en un momento.", "plan.pausedToast": "Tu prueba gratuita ha terminado, así que esto queda en pausa hasta que elijas un plan. Escribir y todas las exportaciones siguen funcionando." });
+      Object.assign(UI_STRINGS.fr, { "plan.trial": "Essai gratuit jusqu’au {date}.", "plan.price": "Une seule formule, {price}, ouvre tout.", "plan.subscribed": "Votre formule est active.", "plan.grace": "Le dernier paiement n’a pas abouti. Tout reste ouvert jusqu’au {date}.", "plan.paused": "Votre essai gratuit est terminé. L’ajout de nouveaux livres à votre étagère, les nouveaux liens de lecture, les vérifications sur le serveur et l’enregistrement dans votre archive sont en pause. L’écriture et tous les exports fonctionnent toujours.", "plan.upgrade": "Choisir une formule", "plan.manage": "Gérer la facturation", "plan.test": "paiements de test uniquement", "plan.unreachable": "Stripe est injoignable pour l’instant. Rien n’a changé ; réessayez dans un moment.", "plan.pausedToast": "Votre essai gratuit est terminé : ceci est en pause jusqu’à ce que vous choisissiez une formule. L’écriture et tous les exports fonctionnent toujours." });
+      Object.assign(UI_STRINGS.de, { "plan.trial": "Kostenlose Testphase bis {date}.", "plan.price": "Ein Tarif, {price}, öffnet alles.", "plan.subscribed": "Ihr Tarif ist aktiv.", "plan.grace": "Die letzte Zahlung ist nicht durchgegangen. Alles bleibt bis {date} offen.", "plan.paused": "Ihre kostenlose Testphase ist abgelaufen. Neue Bücher ins Regal stellen, neue Leselinks, Server-Prüfungen und das Speichern im Archiv sind pausiert. Schreiben und jeder Export funktionieren weiter.", "plan.upgrade": "Tarif wählen", "plan.manage": "Abrechnung verwalten", "plan.test": "nur Testzahlungen", "plan.unreachable": "Stripe ist gerade nicht erreichbar. Nichts hat sich geändert; versuchen Sie es gleich noch einmal.", "plan.pausedToast": "Ihre kostenlose Testphase ist abgelaufen, daher ist dies pausiert, bis Sie einen Tarif wählen. Schreiben und jeder Export funktionieren weiter." });
+      Object.assign(UI_STRINGS.it, { "plan.trial": "Prova gratuita fino al {date}.", "plan.price": "Un solo piano, {price}, apre tutto.", "plan.subscribed": "Il tuo piano è attivo.", "plan.grace": "L’ultimo pagamento non è andato a buon fine. Tutto resta aperto fino al {date}.", "plan.paused": "La tua prova gratuita è terminata. Aggiungere nuovi libri allo scaffale, i nuovi link per i lettori, i controlli sul server e il salvataggio nell’archivio sono in pausa. Scrivere e tutte le esportazioni funzionano ancora.", "plan.upgrade": "Scegli un piano", "plan.manage": "Gestisci la fatturazione", "plan.test": "solo pagamenti di prova", "plan.unreachable": "Stripe non è raggiungibile in questo momento. Non è cambiato nulla; riprova tra poco.", "plan.pausedToast": "La tua prova gratuita è terminata, quindi questo è in pausa finché non scegli un piano. Scrivere e tutte le esportazioni funzionano ancora." });
+      Object.assign(UI_STRINGS.pt, { "plan.trial": "Avaliação gratuita até {date}.", "plan.price": "Um só plano, {price}, abre tudo.", "plan.subscribed": "O seu plano está ativo.", "plan.grace": "O último pagamento não foi aceite. Tudo continua aberto até {date}.", "plan.paused": "A sua avaliação gratuita terminou. Adicionar livros novos à estante, novos links para leitores, verificações no servidor e guardar no arquivo estão em pausa. Escrever e todas as exportações continuam a funcionar.", "plan.upgrade": "Escolher um plano", "plan.manage": "Gerir a faturação", "plan.test": "apenas pagamentos de teste", "plan.unreachable": "Não é possível contactar o Stripe agora. Nada mudou; tente novamente daqui a pouco.", "plan.pausedToast": "A sua avaliação gratuita terminou, por isso isto está em pausa até escolher um plano. Escrever e todas as exportações continuam a funcionar." });
+      Object.assign(UI_STRINGS.nl, { "plan.trial": "Gratis proefperiode tot {date}.", "plan.price": "Eén abonnement, {price}, opent alles.", "plan.subscribed": "Uw abonnement is actief.", "plan.grace": "De laatste betaling is niet gelukt. Alles blijft open tot {date}.", "plan.paused": "Uw gratis proefperiode is voorbij. Nieuwe boeken op uw plank zetten, nieuwe leeslinks, servercontroles en opslaan in uw archief zijn gepauzeerd. Schrijven en elke export blijven werken.", "plan.upgrade": "Kies een abonnement", "plan.manage": "Facturering beheren", "plan.test": "alleen testbetalingen", "plan.unreachable": "Stripe is nu niet bereikbaar. Er is niets veranderd; probeer het zo opnieuw.", "plan.pausedToast": "Uw gratis proefperiode is voorbij, dus dit is gepauzeerd tot u een abonnement kiest. Schrijven en elke export blijven werken." });
+      Object.assign(UI_STRINGS.pl, { "plan.trial": "Bezpłatny okres próbny do {date}.", "plan.price": "Jeden plan, {price}, otwiera wszystko.", "plan.subscribed": "Twój plan jest aktywny.", "plan.grace": "Ostatnia płatność nie przeszła. Wszystko pozostaje otwarte do {date}.", "plan.paused": "Twój bezpłatny okres próbny się skończył. Dodawanie nowych książek na półkę, nowe linki dla czytelników, sprawdzanie na serwerze i zapisywanie w archiwum są wstrzymane. Pisanie i każdy eksport nadal działają.", "plan.upgrade": "Wybierz plan", "plan.manage": "Zarządzaj płatnościami", "plan.test": "tylko płatności testowe", "plan.unreachable": "Nie można teraz połączyć się ze Stripe. Nic się nie zmieniło; spróbuj ponownie za chwilę.", "plan.pausedToast": "Twój bezpłatny okres próbny się skończył, więc to jest wstrzymane, dopóki nie wybierzesz planu. Pisanie i każdy eksport nadal działają." });
+      Object.assign(UI_STRINGS.ru, { "plan.trial": "Бесплатный пробный период до {date}.", "plan.price": "Один тариф, {price}, открывает всё.", "plan.subscribed": "Ваш тариф активен.", "plan.grace": "Последний платёж не прошёл. Всё остаётся открытым до {date}.", "plan.paused": "Ваш бесплатный пробный период закончился. Добавление новых книг на полку, новые ссылки для читателей, проверки на сервере и сохранение в архив приостановлены. Писать и экспортировать по-прежнему можно.", "plan.upgrade": "Выбрать тариф", "plan.manage": "Управление оплатой", "plan.test": "только тестовые платежи", "plan.unreachable": "Сейчас не удаётся связаться со Stripe. Ничего не изменилось; попробуйте чуть позже.", "plan.pausedToast": "Ваш бесплатный пробный период закончился, поэтому это приостановлено, пока вы не выберете тариф. Писать и экспортировать по-прежнему можно." });
+      Object.assign(UI_STRINGS.tr, { "plan.trial": "Ücretsiz deneme {date} tarihine kadar.", "plan.price": "Tek plan, {price}, her şeyi açar.", "plan.subscribed": "Planınız etkin.", "plan.grace": "Son ödeme gerçekleşmedi. Her şey {date} tarihine kadar açık kalıyor.", "plan.paused": "Ücretsiz denemeniz sona erdi. Rafınıza yeni kitap eklemek, yeni okuyucu bağlantıları, sunucu denetimleri ve arşive kaydetmek duraklatıldı. Yazmak ve tüm dışa aktarmalar çalışmaya devam ediyor.", "plan.upgrade": "Bir plan seçin", "plan.manage": "Faturalandırmayı yönetin", "plan.test": "yalnızca test ödemeleri", "plan.unreachable": "Stripe’a şu anda ulaşılamıyor. Hiçbir şey değişmedi; birazdan yeniden deneyin.", "plan.pausedToast": "Ücretsiz denemeniz sona erdi, bu yüzden bir plan seçene kadar bu duraklatıldı. Yazmak ve tüm dışa aktarmalar çalışmaya devam ediyor." });
+      Object.assign(UI_STRINGS.ar, { "plan.trial": "الفترة التجريبية المجانية حتى {date}.", "plan.price": "خطة واحدة، {price}، تفتح كل شيء.", "plan.subscribed": "خطتك مفعّلة.", "plan.grace": "لم تنجح الدفعة الأخيرة. يبقى كل شيء متاحًا حتى {date}.", "plan.paused": "انتهت فترتك التجريبية المجانية. إضافة كتب جديدة إلى رفّك، وروابط القرّاء الجديدة، وفحوص الخادم، والحفظ في أرشيفك متوقفة مؤقتًا. الكتابة وكل عمليات التصدير ما زالت تعمل.", "plan.upgrade": "اختر خطة", "plan.manage": "إدارة الفوترة", "plan.test": "مدفوعات تجريبية فقط", "plan.unreachable": "تعذّر الوصول إلى Stripe الآن. لم يتغير شيء؛ حاول مرة أخرى بعد قليل.", "plan.pausedToast": "انتهت فترتك التجريبية المجانية، لذا هذا متوقف مؤقتًا حتى تختار خطة. الكتابة وكل عمليات التصدير ما زالت تعمل." });
+      Object.assign(UI_STRINGS.ja, { "plan.trial": "無料トライアルは{date}までです。", "plan.price": "ひとつのプラン（{price}）ですべてが使えます。", "plan.subscribed": "プランは有効です。", "plan.grace": "前回のお支払いが完了しませんでした。{date}まではすべてそのまま使えます。", "plan.paused": "無料トライアルは終了しました。本棚への新しい本の追加、新しい読者リンク、サーバーでのチェック、アーカイブへの保存は一時停止中です。執筆とすべての書き出しは引き続き使えます。", "plan.upgrade": "プランを選ぶ", "plan.manage": "お支払いの管理", "plan.test": "テスト決済のみ", "plan.unreachable": "今は Stripe に接続できません。何も変更されていません。少ししてからもう一度お試しください。", "plan.pausedToast": "無料トライアルが終了したため、プランを選ぶまでこの操作は一時停止中です。執筆とすべての書き出しは引き続き使えます。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "plan.trial": "免费试用至 {date}。", "plan.price": "一个方案（{price}）即可使用全部功能。", "plan.subscribed": "你的方案已生效。", "plan.grace": "上一次付款未成功。在 {date} 之前，一切照常可用。", "plan.paused": "你的免费试用已结束。向书架添加新书、新的读者链接、服务器检查以及保存到存档已暂停。写作和所有导出仍可使用。", "plan.upgrade": "选择方案", "plan.manage": "管理账单", "plan.test": "仅限测试付款", "plan.unreachable": "暂时无法连接 Stripe。没有任何改动，请稍后再试。", "plan.pausedToast": "你的免费试用已结束，因此在你选择方案之前，此操作已暂停。写作和所有导出仍可使用。" });
+      var billingPausedSaid = false;
+      function billingDate(iso) {
+        try { return new Date(iso).toLocaleDateString(uiLangState || "en", { day: "numeric", month: "long", year: "numeric" }); }
+        catch (e) { return String(iso || "").slice(0, 10); }
+      }
+      function billingPlanRender(p) {
+        const line = $("planLine"), txt = $("planText"), up = $("btnPlanUpgrade"), mg = $("btnPlanManage");
+        if (!line || !txt) return;
+        if (!p || !p.billingOn) { line.hidden = true; txt.textContent = ""; return; }
+        let text = "";
+        if (p.access === "trial") text = t("plan.trial", { date: billingDate(p.trialEndsAt) });
+        else if (p.access === "subscribed") text = t("plan.subscribed");
+        else if (p.access === "grace") text = t("plan.grace", { date: billingDate(p.graceEndsAt) });
+        else if (p.access === "paused") text = t("plan.paused");
+        if (p.priceLabel && (p.access === "trial" || p.access === "paused")) text += " " + t("plan.price", { price: p.priceLabel });
+        if (p.testMode) text += " (" + t("plan.test") + ")";
+        txt.textContent = text;
+        if (up) up.hidden = !p.canUpgrade;
+        if (mg) mg.hidden = !p.canManage;
+        line.hidden = !text && !p.canUpgrade && !p.canManage;
+      }
+      async function billingGo(path, btn) {
+        if (btn) btn.disabled = true;
+        const r = await apiFetch(path, { method: "POST", body: "{}" });
+        if (btn) btn.disabled = false;
+        if (r && r.url) { location.href = r.url; return; }
+        if (!r) { portalNote(t("acct.unreachable")); return; }
+        if (r.__status === 409) { portalRefresh(); return; }
+        portalNote(t("plan.unreachable"));
+      }
+      function billingNotePaused() {
+        if (billingPausedSaid) return;
+        billingPausedSaid = true;
+        toast(t("plan.pausedToast"), "alert-triangle");
+      }
+      function billingInit() {
+        const up = $("btnPlanUpgrade"), mg = $("btnPlanManage");
+        if (up) up.addEventListener("click", () => billingGo("/api/billing/checkout", up));
+        if (mg) mg.addEventListener("click", () => billingGo("/api/billing/portal", mg));
+      }
+      if (typeof document !== "undefined") {
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", billingInit); else billingInit();
+      }
+      if (typeof window !== "undefined") window.beukBilling = { billingPlanRender, billingNotePaused };
+      /* ==== /BEUK:billing ==== */
 
       /* ---- boot: probe quietly; wire the surfaces; degrade silently ---- */
       async function initCloud() {

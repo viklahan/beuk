@@ -56,8 +56,10 @@ export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}): Route
       let created;
       try {
         created = await db.query<UserRow>(
-          'insert into users (email, password_hash) values ($1, $2) returning id, email',
-          [email, passwordHash],
+          // The free trial starts at sign-up (TRIAL_DAYS; src/access.ts).
+          `insert into users (email, password_hash, trial_ends_at)
+           values ($1, $2, now() + make_interval(days => $3::int)) returning id, email`,
+          [email, passwordHash, config.trialDays],
         );
       } catch (err) {
         // Two concurrent sign-ups for one email both pass the check

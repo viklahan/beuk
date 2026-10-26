@@ -3,6 +3,7 @@ import type { BillingProvider } from '../billing.js';
 import { processVerifiedEvent, type SyncDeps } from '../billing-sync.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
+import { accountAccess, TRIAL_END_MIN_MS } from '../access.js';
 import { readCookie, requireAuth, SESSION_COOKIE, tokenHash } from '../auth.js';
 import {
   entitlementsFor,
@@ -64,6 +65,10 @@ export function billingRoutes(
         mode: billing.mode,
         checkout: configured,
         graceDays: config.billingGraceDays,
+        trialDays: config.trialDays,
+        // The one price as written by V (BILLING_PRICE_LABEL), only once
+        // billing is switched on. Null = say nothing about a price.
+        priceLabel: configured ? config.billingPriceLabel : null,
       };
       const user = await optionalUser(req);
       if (user) {
@@ -82,6 +87,12 @@ export function billingRoutes(
           cancelAtPeriodEnd: state.cancelAtPeriodEnd,
           graceEndsAt: state.graceEndsAt,
         };
+        const access = await accountAccess({ db, config, billing, now }, user.id);
+        if (access) {
+          (body.account as Record<string, unknown>).access = access.state;
+          // The trial is only spoken of once billing is switched on.
+          (body.account as Record<string, unknown>).trial = access.billingOn ? access.trial : null;
+        }
       }
       return res.json(body);
     } catch (err) {
@@ -94,7 +105,7 @@ export function billingRoutes(
   router.post('/checkout', requireAuth(db), async (req, res, next) => {
     try {
       if (!fullyConfigured()) {
-        return res.status(501).json({ error: 'billing not configured' });
+        return res.status(501).json({ error: 'billing not configured', reason: 'Plans are not switched on on this server yet, so there is nothing to pay for. Everything is open.' });
       }
       const requested = typeof req.body?.priceId === 'string' ? req.body.priceId : null;
       const priceId = requested ?? config.stripePriceId!;
@@ -116,12 +127,44 @@ export function billingRoutes(
         'select stripe_customer_id from users where id = $1',
         [userId],
       );
+      // Inside Beuk's trial, the first charge waits for its end (Stripe
+      // needs at least 48 hours; with less left, the plan starts now).
+      const access = await accountAccess({ db, config, billing, now }, userId);
+      const trialEnd =
+        access && access.trial.active && new Date(access.trial.endsAt).getTime() - now().getTime() >= TRIAL_END_MIN_MS
+          ? new Date(access.trial.endsAt)
+          : null;
       const session = await billing.createCheckoutSession({
         userId,
         email: req.user!.email,
         priceId,
         customerId: customer.rows[0]?.stripe_customer_id ?? null,
+        trialEnd,
+        automaticTax: config.billingAutomaticTax,
       });
+      return res.json({ url: session.url, chargeWaitsUntil: trialEnd ? trialEnd.toISOString() : null });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  // Stripe Customer Portal: cancel, change card, see invoices. Only for a
+  // signed-in writer this server has already linked to a Stripe customer
+  // (from a verified webhook); never a customer id from the client.
+  router.post('/portal', requireAuth(db), async (req, res, next) => {
+    try {
+      if (!fullyConfigured()) {
+        return res.status(501).json({ error: 'billing not configured', reason: 'Plans are not switched on on this server yet, so there is no billing to manage.' });
+      }
+      const customer = await db.query<{ stripe_customer_id: string | null }>(
+        'select stripe_customer_id from users where id = $1',
+        [req.user!.id],
+      );
+      const customerId = customer.rows[0]?.stripe_customer_id ?? null;
+      if (!customerId) {
+        return res.status(409).json({ error: 'no billing account yet', reason: 'There is no billing to manage on this account yet. It starts when you choose a plan.' });
+      }
+      const session = await billing.createPortalSession({ customerId, returnUrl: `${config.appBaseUrl}/account` });
       return res.json({ url: session.url });
     } catch (err) {
       return next(err);

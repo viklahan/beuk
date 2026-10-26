@@ -40,6 +40,16 @@ export interface BillingProvider {
   listCustomerSubscriptionIds(customerId: string): Promise<string[]>;
   /** GET /v1/charges/:id — used to find the customer behind a dispute. */
   retrieveCharge(id: string): Promise<{ id: string; customer: string | null; livemode: boolean }>;
+  /** POST /v1/billing_portal/sessions — a short-lived Customer Portal URL
+   *  for one customer (cancel, change card, invoices). */
+  createPortalSession(args: { customerId: string; returnUrl: string }): Promise<{ url: string }>;
+  /** DELETE /v1/subscriptions/:id — cancel now. Stripe: "Cancels a
+   *  customer's subscription immediately. The customer won't be charged
+   *  again for the subscription." `prorate`: "Will generate a proration
+   *  invoice item that credits remaining unused time until the
+   *  subscription period end. Defaults to false."
+   *  (https://docs.stripe.com/api/subscriptions/cancel, checked 2026-10-26). */
+  cancelSubscription(id: string, opts: { prorate: boolean }): Promise<{ status: string }>;
 }
 
 export type StripeMode = 'test' | 'live';
@@ -54,6 +64,15 @@ export interface CheckoutArgs {
    *  Checkout will create a new Customer object",
    *  https://docs.stripe.com/api/checkout/sessions/create). */
   customerId: string | null;
+  /** Beuk's own trial end, when the writer subscribes inside it. Passed
+   *  as subscription_data[trial_end] so the first charge waits for the
+   *  end of the trial they already have: the trial is never counted
+   *  twice (no Stripe trial on top) and never cut short. Null = charge
+   *  now. Stripe requires it to be "at least 48 hours in the future"
+   *  (create-session reference, checked 2026-10-26). */
+  trialEnd: Date | null;
+  /** automatic_tax[enabled]=true (BILLING_AUTOMATIC_TAX). */
+  automaticTax: boolean;
 }
 
 export interface BillingEvent {
@@ -216,7 +235,7 @@ export class StripeBillingProvider implements BillingProvider {
     }
   }
 
-  private async api(method: 'GET' | 'POST', pathAndQuery: string, form?: URLSearchParams) {
+  private async api(method: 'GET' | 'POST' | 'DELETE', pathAndQuery: string, form?: URLSearchParams) {
     const response = await fetch(`${this.config.stripeApiBase}${pathAndQuery}`, {
       method,
       headers: {
@@ -249,15 +268,41 @@ export class StripeBillingProvider implements BillingProvider {
       // URL" (https://docs.stripe.com/checkout/fulfillment#redirect-hosted-checkout).
       // The landing page shows "confirming…" until /api/billing/status
       // says otherwise; it never claims access on its own.
-      success_url: `${this.config.appBaseUrl}/?billing=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${this.config.appBaseUrl}/?billing=cancelled`,
+      // Back to the account page, which waits for verified webhooks.
+      success_url: `${this.config.appBaseUrl}/account?billing=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${this.config.appBaseUrl}/account?billing=cancelled`,
     });
     if (args.customerId) form.set('customer', args.customerId);
     else form.set('customer_email', args.email);
+    if (args.trialEnd) form.set('subscription_data[trial_end]', String(Math.floor(args.trialEnd.getTime() / 1000)));
+    if (args.automaticTax) {
+      // https://docs.stripe.com/tax/checkout/page (checked 2026-10-26):
+      // Checkout collects the billing address it needs for tax; with an
+      // existing Customer, customer_update[address]=auto saves it there.
+      form.set('automatic_tax[enabled]', 'true');
+      if (args.customerId) form.set('customer_update[address]', 'auto');
+    }
     const payload = await this.api('POST', '/v1/checkout/sessions', form);
     const url = str(payload.url);
     if (!url) throw new Error('stripe checkout session has no url');
     return { url };
+  }
+
+  async createPortalSession(args: { customerId: string; returnUrl: string }): Promise<{ url: string }> {
+    // https://docs.stripe.com/api/customer_portal/sessions/create — with
+    // no `configuration`, "the session uses the default configuration",
+    // which is saved in the Dashboard (Settings > Billing > Customer portal).
+    const form = new URLSearchParams({ customer: args.customerId, return_url: args.returnUrl });
+    const payload = await this.api('POST', '/v1/billing_portal/sessions', form);
+    const url = str(payload.url);
+    if (!url) throw new Error('stripe portal session has no url');
+    return { url };
+  }
+
+  async cancelSubscription(id: string, opts: { prorate: boolean }): Promise<{ status: string }> {
+    const query = opts.prorate ? '?prorate=true' : '';
+    const payload = await this.api('DELETE', `/v1/subscriptions/${encodeURIComponent(id)}${query}`);
+    return { status: str(payload.status) ?? 'unknown' };
   }
 
   async retrieveSubscription(id: string): Promise<StripeSubscription> {
