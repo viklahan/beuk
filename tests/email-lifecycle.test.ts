@@ -5,8 +5,9 @@ import { test } from 'node:test';
 import { changeConfirmEmail, changeNoticeEmail, signupConfirmEmail } from '../src/account/confirm.js';
 import { html, raw, renderEmail } from '../src/email/layout.js';
 import { priceLabel, trialWords, welcomeEmail } from '../src/email/welcome.js';
-import { createMailer, type MailMessage, type Mailer, type MailerStatus, type MailResult } from '../src/mailer.js';
+import { createMailer, smtpMessage, type MailMessage, type Mailer, type MailerStatus, type MailResult } from '../src/mailer.js';
 import { resetEmail } from '../src/routes/account.js';
+import type { BillingProvider } from '../src/billing.js';
 import { Client, createTestDb, registerUser, startTestServer, testConfig } from './helpers.js';
 
 /* Lifecycle email: the shared layout, the welcome email, the support
@@ -177,13 +178,26 @@ test('welcome: sent once at sign-up when mail is configured, with the confirmati
   }
 });
 
-test('welcome: the trial in plain words; a price only when BILLING_PRICE_LABEL is set, and then exactly that label', () => {
+test('welcome: the plan in plain words; a trial only when the server tracks one; a price only as BILLING_PRICE_LABEL', () => {
+  const trial = { startedAt: '2026-10-26T10:00:00.000Z', endsAt: '2026-11-02T10:00:00.000Z', active: true };
+  // Plans on, trial tracked: when it ends.
   assert.equal(
-    trialWords({ billingOn: true, priceLabel: null }),
-    'Your 7-day free trial starts today, with this account, then one price for complete access, announced before launch. Exporting your book stays open whatever happens with a plan.',
+    trialWords({ billingOn: true, trial, priceLabel: null }),
+    'Your 7-day free trial started with this account and runs until 2 Nov 2026, then one price for complete access, announced before launch. Exporting your book stays open whatever happens with a plan.',
   );
-  assert.ok(trialWords({ billingOn: true, priceLabel: 'LABEL-AS-SET' }).includes('then LABEL-AS-SET for complete access.'));
-  assert.ok(trialWords({ billingOn: false, priceLabel: null }).startsWith("Plans aren't switched on on this server yet"));
+  assert.ok(trialWords({ billingOn: true, trial, priceLabel: 'LABEL-AS-SET' }).includes('then LABEL-AS-SET for complete access.'));
+  // Plans on, no trial tracked (today's code): no trial claimed at all.
+  assert.equal(
+    trialWords({ billingOn: true, trial: null, priceLabel: null }),
+    'Beuk is one price for complete access. Your account page shows your plan. Exporting your book stays open whatever happens with a plan.',
+  );
+  assert.equal(
+    trialWords({ billingOn: true, trial: null, priceLabel: 'LABEL-AS-SET' }),
+    'Beuk is LABEL-AS-SET for complete access. Your account page shows your plan. Exporting your book stays open whatever happens with a plan.',
+  );
+  assert.doesNotMatch(trialWords({ billingOn: true, trial: { ...trial, active: false }, priceLabel: null }), /trial/);
+  // Plans off.
+  assert.ok(trialWords({ billingOn: false, trial: null, priceLabel: null }).startsWith("Plans aren't switched on on this server yet"));
 
   const config = testConfig({ appBaseUrl: 'https://beuk.example' });
   assert.equal(priceLabel(config, {}), null);
@@ -195,9 +209,78 @@ test('welcome: the trial in plain words; a price only when BILLING_PRICE_LABEL i
   const withNull = { ...config, billingPriceLabel: null } as typeof config;
   assert.equal(priceLabel(withNull, { BILLING_PRICE_LABEL: 'FROM-ENV' }), null);
 
-  const m = welcomeEmail(config, 'https://beuk.example/account/confirm?token=t', { billingOn: true, priceLabel: '<b>LABEL</b>' });
+  const m = welcomeEmail(config, 'https://beuk.example/account/confirm?token=t', { billingOn: true, trial, priceLabel: '<b>LABEL</b>' });
   assert.ok(m.text.includes('then <b>LABEL</b> for complete access'));
   assert.ok(m.html.includes('then &lt;b&gt;LABEL&lt;/b&gt; for complete access'), 'the label is escaped in HTML');
+});
+
+/** A billing provider that says checkout is configured; nothing else is called. */
+function checkoutBilling(mode: 'test' | 'live'): BillingProvider {
+  const never = () => {
+    throw new Error('not called in this test');
+  };
+  return {
+    configured: true,
+    checkoutConfigured: true,
+    mode,
+    misconfiguration: null,
+    verifyWebhook: () => null,
+    createCheckoutSession: never,
+    retrieveSubscription: never,
+    listCustomerSubscriptionIds: never,
+    retrieveCharge: never,
+  };
+}
+
+test('welcome: plans on or off is decided as the account page decides it, and neither claims a trial the server does not track', async () => {
+  const cases = [
+    // Checkout configured, entitlements load: plans on, no trial clock yet.
+    { name: 'plans on', overrides: {}, mode: 'test' as const, on: true },
+    // Checkout configured, but the entitlements file does not load: the account page says plans are off.
+    { name: 'entitlements broken', overrides: { entitlementsFile: '/nonexistent/beuk-entitlements.json' }, mode: 'live' as const, on: false },
+  ];
+  for (const k of cases) {
+    const db = await createTestDb();
+    const mailer = new RecordingMailer();
+    const s = await startTestServer(db, undefined, k.overrides, undefined, { mailer, billing: checkoutBilling(k.mode) });
+    try {
+      const c = new Client(s.base);
+      assert.equal((await registerUser(c, 'plan@example.com')).status, 201);
+      await s.settle();
+      assert.equal(mailer.sent.length, 1, k.name);
+      const text = mailer.sent[0].text;
+      const page = (await pageWithCookie(c, `${s.base}/account`)).text;
+      if (k.on) {
+        assert.ok(text.includes('Beuk is one price for complete access. Your account page shows your plan.'), `${k.name}: ${text}`);
+        assert.doesNotMatch(text, /trial|starts today/i, `${k.name}: no trial claimed`);
+        assert.match(page, /There is no subscription on this account\./, `${k.name}: the account page agrees`);
+        assert.doesNotMatch(page, /free trial/i);
+      } else {
+        assert.ok(text.includes("Plans aren't switched on on this server yet"), `${k.name}: ${text}`);
+        assert.match(page, /Plans are not switched on on this server yet\./, `${k.name}: the account page agrees`);
+      }
+    } finally {
+      await s.close();
+    }
+  }
+});
+
+test('replies: Reply-To is SUPPORT_EMAIL when it is set, and absent while it is not', async () => {
+  const msg = { to: 'w@example.com', subject: 's', text: 't' };
+  const withSupport = smtpMessage(testConfig({ mailFrom: 'Beuk <hello@mail.beuk.example>', supportEmail: 'help@beuk.example' }), msg);
+  assert.equal(withSupport.from, 'Beuk <hello@mail.beuk.example>');
+  assert.equal(withSupport.replyTo, 'help@beuk.example');
+  assert.equal(withSupport.to, 'w@example.com');
+  const without = smtpMessage(testConfig({ mailFrom: 'Beuk <hello@mail.beuk.example>', supportEmail: null }), msg);
+  assert.ok(!('replyTo' in without), 'no Reply-To while SUPPORT_EMAIL is unset');
+
+  const lines: string[] = [];
+  const logged = createMailer(testConfig({ smtpUrl: null, mailFrom: null, mailLogLinks: true, supportEmail: 'help@beuk.example' }), { log: (l) => lines.push(l) });
+  await logged.send(msg);
+  assert.ok(lines.join('\n').includes('Reply-To: help@beuk.example'));
+
+  const doc = read('docs', 'email-setup.md');
+  assert.match(doc, /Beuk adds a `Reply-To:` header with that\s+address/);
 });
 
 test('not configured: no welcome, nothing claimed as sent, the would-be confirmation only logged', async () => {

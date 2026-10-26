@@ -147,9 +147,25 @@ reply to them. Two settings decide where writers are told to write:
 
 The support mailbox needs a mailbox host (whoever hosts your inbox),
 separate from the sending provider; sending providers are not inboxes.
-Point the root domain's MX records at that host, and set `MAIL_FROM` to
-an address that either is that mailbox or forwards to it, so a reply
-reaches someone. Beuk does not set a separate Reply-To today.
+Point the root domain's MX records at that host, so an address such as
+`help@beuk.studio` receives mail.
+
+Where replies go. The example in section 2 sends from the subdomain
+(`hello@mail.beuk.studio`), and nothing in this guide gives
+`mail.beuk.studio` an inbox. So:
+
+- With `SUPPORT_EMAIL` set, Beuk adds a `Reply-To:` header with that
+  address to every email it sends (src/mailer.ts, `smtpMessage`). A
+  writer who presses Reply writes to the support mailbox, not to the
+  sending address. This also applies to the Housekeeping test and to
+  backup alerts.
+- With `SUPPORT_EMAIL` unset, there is no `Reply-To:` and replies go to
+  `MAIL_FROM`. If that is a subdomain address, replies have nowhere to
+  land unless you give the subdomain an inbox too (MX records for
+  `mail.beuk.studio` at a mailbox host, or forwarding there). Check that
+  your sending provider allows MX records on the same subdomain before
+  adding them; some use the subdomain's MX for bounce handling. The
+  plain fix is to set `SUPPORT_EMAIL`.
 
 ## 5. Testing
 
@@ -178,7 +194,7 @@ leaving email unconfigured.
 
 | Email | Trigger | Recipient | Content | Can it be turned off? |
 |---|---|---|---|---|
-| `welcome` | Creating an account, once, only when email is configured | The new account's address | Subject "Confirm your email address, and welcome to Beuk": the confirmation link (one use, 48 hours), what an account adds (shelf, archive, beta-reader links, the server's EPUBCheck and PDF/X), that writing never needs an account, the trial in plain words (7 days; then "one price, announced before launch", or `BILLING_PRICE_LABEL` if it is set), links to Help and /account | Only by leaving email unconfigured. Without email, nothing is sent |
+| `welcome` | Creating an account, once, only when email is configured | The new account's address | Subject "Confirm your email address, and welcome to Beuk": the confirmation link (one use, 48 hours), what an account adds (shelf, archive, beta-reader links, the server's EPUBCheck and PDF/X), that writing never needs an account, the plan in plain words, decided exactly as the account page's Plan section decides it (plans off: "not switched on yet", then the 7-day trial and one price; plans on and a trial tracked by the server: when that trial ends; plans on and no trial tracked: no trial mentioned at all). A price only as `BILLING_PRICE_LABEL`, never invented, links to Help and /account | Only by leaving email unconfigured. Without email, nothing is sent |
 | `signup-confirm` | "Send the link again" on /account; and, at sign-up on a server without email, the would-be confirmation that is logged (`MAIL_LOG_LINKS`) and never sent | The account's address | Subject "Confirm your email address for Beuk": the confirmation link (one use, 48 hours) and that the shelf works either way | Writer: only by not asking. Never sent without email |
 | `email-change-confirm` | Changing the email address on /account (needs the current password) | The NEW address | Subject "Confirm your new email address for Beuk": the link that makes the change (one use, 48 hours) | No: the address cannot change without it. Refused while email is unconfigured |
 | `email-change-notice` | The same change, right after the link is sent | The OLD address | Subject "Your Beuk email address is about to change": the new address, no link to confirm, what to do if it wasn't you | No: it is the account's protection |

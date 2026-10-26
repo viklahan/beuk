@@ -15,16 +15,16 @@ That is a fact about the code, not a policy decision.
 |---|---|---|---|
 | Account | email (trimmed, lower-cased), password **hash**, created_at, email_confirmed_at (when the writer opened a confirmation link; null = not confirmed) | migrations/001_users_sessions.sql:2-7, 014_account_portal.sql; src/routes/auth.ts | Until the writer deletes the account on /account ("Delete my account": current password + typed phrase; src/routes/account-portal.ts `POST /delete`, src/account/data.ts `deleteAccount`), which removes in one transaction every row the account owns (sessions, reset and confirmation links, manuscripts, exports and their files on disk, jobs, streak, shares with their comments and reader counts, billing subscriptions) and the user row. Not removed: Founders' Shelf entries (no user id), admin Housekeeping records, billing_events (user id set null; event id kept as the webhook dedupe ledger), and a live Stripe subscription the server could not cancel (kept with user id null for the operator: there is no cancel call in src/billing.ts yet). Copies remain in backups (§6). |
 | Email confirmations | user_id, purpose ('signup' or 'change'), the address the link went to (for a change: the NEW address, before it is confirmed), **SHA-256 hash** of the token, expires_at (48 h), used_at | migrations/014_account_portal.sql; src/account/confirm.ts | Rows older than expiry + 7 days are deleted when the next link is made (src/account/confirm.ts `issueConfirmation`). Deleted with the account. Excluded from backups (src/housekeeping/backup.ts EXCLUDED_TABLES) |
-| Password hash | argon2id, the library's default parameters. The password itself is never stored. | src/password.ts:4-7 | Replaced when the password changes (src/routes/account.ts:212) |
+| Password hash | argon2id, the library's default parameters. The password itself is never stored. | src/password.ts:4-7 | Replaced when the password changes (src/routes/account.ts:214) |
 | Plan / billing link | users.plan (display label, default 'free'), plan_updated_at, stripe_customer_id | migrations/005_user_billing.sql:5-8 | With the account |
 | Admin flag | users.is_admin | migrations/006_housekeeping.sql:4 | With the account |
-| Sessions | user_id, **SHA-256 hash** of the session token, created_at, expires_at. No IP, no user agent. | migrations/001_users_sessions.sql:9-15; src/auth.ts:35-46 | SESSION_TTL_DAYS (default 30, src/config.ts `sessionTtlDays`); expired rows are purged at boot and every SESSION_PURGE_INTERVAL_MS (default 1 h): src/index.ts:78-88, src/auth.ts:73. Sign-out deletes the row (src/auth.ts:65); "sign out everywhere" deletes all of them (src/routes/account.ts:252). |
+| Sessions | user_id, **SHA-256 hash** of the session token, created_at, expires_at. No IP, no user agent. | migrations/001_users_sessions.sql:9-15; src/auth.ts:35-46 | SESSION_TTL_DAYS (default 30, src/config.ts `sessionTtlDays`); expired rows are purged at boot and every SESSION_PURGE_INTERVAL_MS (default 1 h): src/index.ts:78-88, src/auth.ts:73. Sign-out deletes the row (src/auth.ts:65); "sign out everywhere" deletes all of them (src/routes/account.ts:254). |
 | Manuscripts (the shelf) | the whole book as one JSON document (text, settings, pictures, snapshot history), title, revision, timestamps | migrations/002_manuscripts.sql:4-11, 009_manuscript_revision.sql:9 | Until the writer deletes it (src/routes/manuscripts.ts:176-179) or the account goes (on delete cascade) |
 | Writing streak | the days the server saw activity, freeze ledger, freeze balance | migrations/003_streaks.sql:8-30; heartbeat every ≥10 min while signed in: client/index.html `cloudHeartbeat` (~27494) | No limit (with the account) |
 | Export archive | metadata row (format, preset, filename, size, sha256, manuscript id) + the export **bytes** on the exportdata volume at EXPORT_DIR/<user_id>/<export_id> | migrations/004_exports.sql:1-17; src/routes/exports.ts:107; client uploads on export/store-check: client/index.html `storeUpload` (~26911) | Until the writer deletes it (src/routes/exports.ts:191-193). Survives deleting the manuscript (manuscript_id set null). |
 | Server jobs (EPUBCheck, PDF/X) | kind, status, result JSON (tool output about the writer's own file), source/artifact export ids | migrations/008_jobs.sql:7-29 | No limit (with the account) |
 | Jobs processing | EPUBCheck runs on the server (java + jar, src/config.ts `epubcheckJar`); PDF/X rendering runs in an isolated renderer container with no network egress, every outgoing request aborted (deploy/renderer/server.mjs:8-30,141-159; deploy/docker-compose.tools.yml:14,74-76) | — | — |
-| Password reset | user_id, **SHA-256 hash** of the token, expires_at (60 min), used_at | migrations/010_password_resets.sql:5-12; src/routes/account.ts:35,128-131 | Rows older than expiry + 1 day are deleted on the next reset request (src/routes/account.ts:128). Excluded from backups (src/housekeeping/backup.ts:57-58) |
+| Password reset | user_id, **SHA-256 hash** of the token, expires_at (60 min), used_at | migrations/010_password_resets.sql:5-12; src/routes/account.ts:36,129-132 | Rows older than expiry + 1 day are deleted on the next reset request (src/routes/account.ts:129). Excluded from backups (src/housekeeping/backup.ts:57-58) |
 | Share links (beta readers) | owner, SHA-256 of the link token, title, a frozen sanitized copy of the book (snapshot + images), expiry, revoked_at, comment settings | migrations/011_shares.sql:5-28 | Until the writer deletes the share (src/routes/shares.ts:384-388). Revoking/expiry closes the link but keeps the row. |
 | Reader comments | section id, paragraph index, the selected quote (≤500 chars), the comment (≤2000), the reader's name (≤60, may be required by the writer), created_at, resolved_at, **ip_hash = SHA-256(share id + client IP)** "for abuse review only" | migrations/011_shares.sql:30-45; src/routes/shares.ts:43-45,576-625 | Until the writer deletes the comment (src/routes/shares.ts:433) or the share |
 | Comment visibility | **Anyone holding the link can read every comment on that copy, with the reader names** (GET /read/:token/comments is public to link holders) | src/routes/shares.ts:549-571; src/shares/reader.ts:114 | — |
@@ -54,7 +54,7 @@ No analytics, advertising or tracking cookies exist in the code (grep of
 Rate limits keyed by client IP or user id: studio error reports per IP
 (src/ops/client-errors.ts), login/register token buckets
 (src/routes/auth.ts:34; src/ratelimit.ts:27-28), forgot/reset per IP and
-per email, password change per user (src/routes/account.ts:51-54,108-111),
+per email, password change per user (src/routes/account.ts:52-55,109-112),
 confirmation-link resend, email change, data download and account deletion per
 user id, confirmation page per IP (src/routes/account-portal.ts `DEFAULT_PORTAL_LIMITS`),
 Founders' form per IP (src/routes/founders.ts:28-49), help search per IP
@@ -75,11 +75,11 @@ per share (src/routes/shares.ts:63-66,606-607), stock search per user id
 - **App log (stdout):** no request log. Lines written: startup, errors
   (`console.error(err)`, src/app.ts:158 — may hold request details of
   the failing call), "password reset requested but not emailed" with the
-  reason only (src/routes/account.ts:139), one PII-free line per CSP
+  reason only (src/routes/account.ts:141), one PII-free line per CSP
   report (src/routes/csp-report.ts:26-34,141), and — only when
   MAIL_LOG_LINKS is on (default off in production, src/config.ts
   `mailLogLinks`) — the would-be reset email including the link
-  (src/mailer.ts:79-106).
+  (src/mailer.ts:92-120).
 - **Retention of container logs:** docker-compose.yml sets no `logging:`
   options, so Docker's json-file driver keeps them, and its `max-size`
   "Defaults to -1 (unlimited)"
@@ -131,7 +131,7 @@ on "Send the link again" (and, while email is not configured, the would-be
 sign-up confirmation, logged and never sent), and for a change of
 address a confirmation link to the NEW address plus a short notice to the
 OLD one (src/account/confirm.ts), and the admin test email
-(src/routes/housekeeping.ts:620-626), and backup alerts to the
+(src/routes/housekeeping.ts:623-630), and backup alerts to the
 operator's own ALERT_EMAIL (src/ops/alerts.ts; no writer data: check
 names and their scrubbed detail). While email is not configured a change
 of address is refused (src/routes/account-portal.ts `POST /email` → 501), so
@@ -143,7 +143,9 @@ sends no email (src/routes/founders.ts:9-10).
 Every email to a writer uses one layout (src/email/layout.ts): plain text
 plus simple HTML, no images, no remote fonts, no tracking pixel, no link
 rewriting by Beuk, and a footer saying why it was sent, the sender
-(MAIL_FROM) and a link to /account. Beuk keeps no record of which emails
+(MAIL_FROM) and a link to /account. When SUPPORT_EMAIL is set, every
+email carries it as the Reply-To address (src/mailer.ts `smtpMessage`), so
+replies go to the support mailbox. Beuk keeps no record of which emails
 were sent; the SMTP provider keeps its own delivery logs under its own
 terms. Payment receipts are Stripe's, sent by Stripe when turned on in its
 Dashboard; Beuk sends none. The full list of emails is in

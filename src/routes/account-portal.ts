@@ -27,7 +27,7 @@ import {
   writeAccountExport,
   ZIP_LIMIT_BYTES,
 } from '../account/data.js';
-import { accountPlan, cancelBillingForDeletedAccount } from '../account/plan.js';
+import { accountPlan, cancelBillingForDeletedAccount, type AccountTrial } from '../account/plan.js';
 import {
   accountPage,
   confirmPage,
@@ -118,14 +118,23 @@ function pageHeaders(res: Response): void {
  *  without, the plain confirmation, logged and never reported as sent.
  *  Used by POST /api/auth/register (see app.ts). */
 export function signupConfirmationHook(
-  deps: Pick<PortalDeps, 'db' | 'config' | 'mailer' | 'tasks'> & { billing?: Pick<BillingProvider, 'checkoutConfigured'> },
+  deps: Pick<PortalDeps, 'db' | 'config' | 'mailer' | 'tasks' | 'now'> & { billing?: BillingProvider },
 ) {
+  const now = deps.now ?? (() => new Date());
   return (user: { id: string; email: string }) => {
     deps.tasks.run(async () => {
-      await sendSignupEmail(
-        { db: deps.db, config: deps.config, mailer: deps.mailer, billingOn: Boolean(deps.billing?.checkoutConfigured) },
-        user,
-      );
+      // The plan as the account page sees it (accountPlan), so the welcome
+      // and /account can never disagree about plans or a trial.
+      let billingOn = false;
+      let trial: AccountTrial | null = null;
+      if (deps.mailer.status().configured && deps.billing) {
+        const row = await deps.db.query<{ created_at: string | Date }>('select created_at from users where id = $1', [user.id]);
+        const createdAt = row.rows[0] ? new Date(row.rows[0].created_at).toISOString() : now().toISOString();
+        const plan = await accountPlan({ db: deps.db, config: deps.config, billing: deps.billing, now }, { id: user.id, createdAt });
+        billingOn = plan.billingConfigured;
+        trial = plan.trial;
+      }
+      await sendSignupEmail({ db: deps.db, config: deps.config, mailer: deps.mailer, billingOn, trial }, user);
     });
     return { emailDelivery: deps.mailer.status().configured ? 'email' : 'not-configured' };
   };

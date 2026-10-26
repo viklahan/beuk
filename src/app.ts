@@ -113,7 +113,7 @@ export function buildApp({
   // Accounts portal (/account + /api/account): the sign-up hook sends the
   // email confirmation after the register response.
   const portal = accountPortalRoutes({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now, limits: portalLimits });
-  app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider }) }));
+  app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }) }));
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
   app.use('/api/manuscripts', manuscriptRoutes(db));

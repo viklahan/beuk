@@ -2,6 +2,8 @@ import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import type { Mailer, MailResult } from '../mailer.js';
 import { CONFIRM_TOKEN_TTL_HOURS, confirmLink, issueConfirmation, sendSignupConfirmation } from '../account/confirm.js';
+import type { AccountTrial } from '../account/plan.js';
+import { humanDate } from '../help/render-util.js';
 import { html, link, para, renderEmail, type RenderedEmail } from './layout.js';
 
 /**
@@ -24,11 +26,23 @@ import { html, link, para, renderEmail, type RenderedEmail } from './layout.js';
  * price only when BILLING_PRICE_LABEL is set (the billing work's
  * setting) and then says exactly that label; otherwise it says "one
  * price, announced before launch". It never invents an amount.
+ *
+ * Plan state comes from the SAME place as the account page's Plan
+ * section: accountPlan() in src/account/plan.ts. `billingOn` is its
+ * `billingConfigured` (checkout configured AND the entitlements file
+ * loads), and `trial` is its `trial`. The email says a trial has started
+ * only when the server tracks one (plan.trial non-null, active); until
+ * the billing work adds that clock, plan.trial is null and the email
+ * does not mention a trial at all while plans are on, so it can never
+ * promise something the account page does not show.
  */
 
 export interface WelcomeOptions {
-  /** Billing can take payments on this server (checkout configured). */
+  /** AccountPlan.billingConfigured: the account page's "plans are on". */
   billingOn: boolean;
+  /** AccountPlan.trial: the sign-up trial as this server tracks it; null
+   *  while the server does not track one. */
+  trial: AccountTrial | null;
   /** BILLING_PRICE_LABEL, or null while it is unset. */
   priceLabel: string | null;
 }
@@ -46,8 +60,15 @@ export function trialWords(opts: WelcomeOptions): string {
   const after = opts.priceLabel
     ? `then ${opts.priceLabel} for complete access`
     : 'then one price for complete access, announced before launch';
+  const exportOpen = 'Exporting your book stays open whatever happens with a plan.';
+  if (opts.billingOn && opts.trial?.active) {
+    return `Your 7-day free trial started with this account and runs until ${humanDate(opts.trial.endsAt)}, ${after}. ${exportOpen}`;
+  }
   if (opts.billingOn) {
-    return `Your 7-day free trial starts today, with this account, ${after}. Exporting your book stays open whatever happens with a plan.`;
+    // Plans are on but this server does not track a trial: say nothing
+    // about one. The account page then says "no subscription" too.
+    const price = opts.priceLabel ? `${opts.priceLabel} for complete access` : 'one price for complete access';
+    return `Beuk is ${price}. Your account page shows your plan. ${exportOpen}`;
   }
   return `Plans aren't switched on on this server yet, so everything in the studio is open to you. When they are, Beuk is a 7-day free trial, ${after}. Exporting your book stays open whatever happens with a plan.`;
 }
@@ -102,7 +123,9 @@ export interface SignupEmailDeps {
   db: Db;
   config: Config;
   mailer: Mailer;
+  /** From accountPlan(): see WelcomeOptions. */
   billingOn: boolean;
+  trial: AccountTrial | null;
 }
 
 /**
@@ -122,6 +145,7 @@ export async function sendSignupEmail(
   const token = await issueConfirmation(db, user.id, 'signup', user.email);
   const message = welcomeEmail(config, confirmLink(config, token), {
     billingOn: deps.billingOn,
+    trial: deps.trial,
     priceLabel: priceLabel(config),
   });
   // email-kind: welcome
