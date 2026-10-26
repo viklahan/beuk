@@ -3,6 +3,7 @@ import type { Config } from '../config.js';
 import { defaultMigrationsDir, runMigrations, type Db } from '../db.js';
 import { requireAdmin } from '../housekeeping/admin.js';
 import { isUuid } from '../ids.js';
+import { para, renderEmail } from '../email/layout.js';
 import {
   createBackup,
   executeRestore,
@@ -623,10 +624,17 @@ export function housekeepingRoutes(
     return mutate(req, res, 'mail.test', {}, async () => {
       const status = mailer.status();
       const to = req.user!.email;
+      // email-kind: housekeeping-test
+      // In the shared layout, so the test shows what writers' emails look like.
+      const words = `This is a test email from Housekeeping on ${config.appBaseUrl} (build ${config.buildStamp}). If you can read it, password-reset emails can reach this inbox.`;
       const result = await mailer.send({
         to,
-        subject: 'Beuk test email',
-        text: `This is a test email from Housekeeping on ${config.appBaseUrl} (build ${config.buildStamp}). If you can read it, password-reset emails can reach this inbox.`,
+        ...renderEmail(config, {
+          subject: 'Beuk test email',
+          text: [words],
+          html: para(words),
+          reason: 'an admin asked Housekeeping to send a test email to this address',
+        }),
       });
       if (result.delivered) {
         return {

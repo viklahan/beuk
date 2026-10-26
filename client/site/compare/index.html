@@ -67,7 +67,7 @@
               <li>Facts about other tools come only from their makers' own websites, and each page lists its sources with the date we checked them.</li>
               <li>If we couldn't confirm something from a source, we left it out.</li>
               <li>We say where the other tool is stronger, and what Beuk doesn't do.</li>
-              <li>Prices and features change. If you spot something out of date, <a href="/help">tell us</a> and we will correct it.</li>
+              <li>Prices and features change. If you spot something out of date, <a href="/help" data-support-tell>tell us</a> and we will correct it.</li>
             </ul>
           </div>
         </section>
@@ -108,5 +108,25 @@
         </div>
       </footer>
     </main>
+    <script>
+      /* The support address, only when this server has one (SUPPORT_EMAIL,
+         read from /api/config/public). Without it, or without the server,
+         "tell us" stays a link to Help. */
+      (function () {
+        var a = document.querySelector("[data-support-tell]");
+        if (a && window.fetch) {
+          fetch("/api/config/public", { credentials: "omit" })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) {
+              var e = j && j.support && typeof j.support.email === "string" ? j.support.email.trim() : "";
+              if (/^[^\s@<>"']+@[^\s@<>"']+$/.test(e)) {
+                a.href = "mailto:" + e;
+                a.textContent = "tell us at " + e;
+              }
+            })
+            .catch(function () {});
+        }
+      })();
+    </script>
   </body>
 </html>

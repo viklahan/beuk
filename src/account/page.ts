@@ -64,12 +64,30 @@ ${body}
     </main>
     <footer class="site-foot">
       <p class="foot-note">${esc(BRAND_FOOTNOTE)}</p>
-      <p class="foot-links">${LEGAL_LINKS_HTML}</p>
+      <p class="foot-links">${supportFootLink(config)}${LEGAL_LINKS_HTML}</p>
     </footer>
     ${opts.script ? '<script src="/account/account.js" defer></script>' : ''}
   </body>
 </html>
 `;
+}
+
+/** The support address in the footer, as Help's footer has it. Nothing
+ *  at all while SUPPORT_EMAIL is unset: no empty mailto, no promise. */
+function supportFootLink(config: Config): string {
+  if (!config.supportEmail) return '';
+  return `<a href="mailto:${esc(config.supportEmail)}" data-support-email>${esc(config.supportEmail)}</a> · `;
+}
+
+/** The account page's Help card: Help always; the address only when set. */
+export function helpSection(config: Config): string {
+  const write = config.supportEmail
+    ? ` If something on this page looks wrong, or you are stuck, write to <a href="mailto:${esc(config.supportEmail)}" data-support-email>${esc(config.supportEmail)}</a>.`
+    : '';
+  return `<section class="portal-card" id="help" aria-labelledby="help-h">
+        <h2 id="help-h">Help</h2>
+        <p><a href="/help/">Help</a> has a guide for each part of the studio and the account.${write}</p>
+      </section>`;
 }
 
 export function signedOutPage(config: Config): string {
@@ -286,6 +304,8 @@ ${o.archive
         <p>One ZIP file with everything this server keeps for you: every book on your shelf, every file in your archive, your reading links and their comments, your streak, and a README saying what is where.</p>
         <p><a class="portal-button" href="/api/account/export" download data-export>Download all my data</a></p>
       </section>
+
+      ${helpSection(config)}
 
       <section class="portal-card danger" id="delete" aria-labelledby="delete-h">
         <h2 id="delete-h">Delete my account</h2>

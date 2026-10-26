@@ -3,6 +3,7 @@ import { Router, type Request, type Response } from 'express';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import type { Mailer } from '../mailer.js';
+import { html, link as linkTo, para, renderEmail, type RenderedEmail } from '../email/layout.js';
 import { hashPassword, verifyPassword } from '../password.js';
 import { SlidingWindowLimiter } from '../rate-limit.js';
 import {
@@ -75,26 +76,26 @@ function passwordProblem(password: string): string | null {
   return null;
 }
 
-function resetEmail(config: Config, link: string): { subject: string; text: string; html: string } {
-  const subject = 'Reset your Beuk password';
-  const text = [
-    'Someone (hopefully you) asked to reset the password for the Beuk account at this address.',
-    '',
-    `Choose a new password here — the link works once, for ${RESET_TOKEN_TTL_MINUTES} minutes:`,
-    link,
-    '',
-    'Setting a new password signs you out everywhere, so sign in again afterwards.',
-    "If you didn't ask for this, ignore this email — your password stays as it is.",
-    '',
-    `— Beuk (${config.appBaseUrl})`,
-  ].join('\n');
-  const esc = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const html = `<p>Someone (hopefully you) asked to reset the password for the Beuk account at this address.</p>
-<p><a href="${esc(link)}">Choose a new password</a> — the link works once, for ${RESET_TOKEN_TTL_MINUTES} minutes.</p>
-<p>Setting a new password signs you out everywhere, so sign in again afterwards.</p>
-<p>If you didn't ask for this, ignore this email — your password stays as it is.</p>`;
-  return { subject, text, html };
+export function resetEmail(config: Config, link: string): RenderedEmail {
+  // email-layout: same words as before the shared layout; the "— Beuk
+  // (<site>)" sign-off became the layout's footer.
+  return renderEmail(config, {
+    subject: 'Reset your Beuk password',
+    text: [
+      'Someone (hopefully you) asked to reset the password for the Beuk account at this address.',
+      '',
+      `Choose a new password here — the link works once, for ${RESET_TOKEN_TTL_MINUTES} minutes:`,
+      link,
+      '',
+      'Setting a new password signs you out everywhere, so sign in again afterwards.',
+      "If you didn't ask for this, ignore this email — your password stays as it is.",
+    ],
+    html: html`${para('Someone (hopefully you) asked to reset the password for the Beuk account at this address.')}
+${para(html`${linkTo(link, 'Choose a new password')} — the link works once, for ${RESET_TOKEN_TTL_MINUTES} minutes.`)}
+${para('Setting a new password signs you out everywhere, so sign in again afterwards.')}
+${para("If you didn't ask for this, ignore this email — your password stays as it is.")}`,
+    reason: 'someone asked to reset the password for the Beuk account at this address',
+  });
 }
 
 export function accountRoutes(
@@ -134,6 +135,7 @@ export function accountRoutes(
     );
     const link = `${config.appBaseUrl}/reset?token=${encodeURIComponent(token)}`;
     const message = resetEmail(config, link);
+    // email-kind: password-reset
     const result = await mailer.send({ to: user.email, ...message });
     if (!result.delivered && !result.loggedToConsole) {
       console.warn(`password reset requested but not emailed: ${result.reason}`);

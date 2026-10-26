@@ -27,7 +27,7 @@ import {
   writeAccountExport,
   ZIP_LIMIT_BYTES,
 } from '../account/data.js';
-import { accountPlan, cancelBillingForDeletedAccount } from '../account/plan.js';
+import { accountPlan, cancelBillingForDeletedAccount, type AccountTrial } from '../account/plan.js';
 import {
   accountPage,
   confirmPage,
@@ -37,6 +37,7 @@ import {
   signedOutPage,
 } from '../account/page.js';
 import { ZipWriter } from '../account/zip.js';
+import { sendSignupEmail } from '../email/welcome.js';
 
 /**
  * Accounts — "your typesetting portal".
@@ -112,12 +113,28 @@ function pageHeaders(res: Response): void {
   res.setHeader('X-Robots-Tag', 'noindex');
 }
 
-/** Send a confirmation email for a sign-up, after the response. Used by
- *  POST /api/auth/register (see app.ts). */
-export function signupConfirmationHook(deps: Pick<PortalDeps, 'db' | 'config' | 'mailer' | 'tasks'>) {
+/** Send the sign-up email after the response: with mail configured, the
+ *  welcome with the confirmation link inside (src/email/welcome.ts), once;
+ *  without, the plain confirmation, logged and never reported as sent.
+ *  Used by POST /api/auth/register (see app.ts). */
+export function signupConfirmationHook(
+  deps: Pick<PortalDeps, 'db' | 'config' | 'mailer' | 'tasks' | 'now'> & { billing?: BillingProvider },
+) {
+  const now = deps.now ?? (() => new Date());
   return (user: { id: string; email: string }) => {
     deps.tasks.run(async () => {
-      await sendSignupConfirmation(deps.db, deps.config, deps.mailer, user);
+      // The plan as the account page sees it (accountPlan), so the welcome
+      // and /account can never disagree about plans or a trial.
+      let billingOn = false;
+      let trial: AccountTrial | null = null;
+      if (deps.mailer.status().configured && deps.billing) {
+        const row = await deps.db.query<{ created_at: string | Date }>('select created_at from users where id = $1', [user.id]);
+        const createdAt = row.rows[0] ? new Date(row.rows[0].created_at).toISOString() : now().toISOString();
+        const plan = await accountPlan({ db: deps.db, config: deps.config, billing: deps.billing, now }, { id: user.id, createdAt });
+        billingOn = plan.billingConfigured;
+        trial = plan.trial;
+      }
+      await sendSignupEmail({ db: deps.db, config: deps.config, mailer: deps.mailer, billingOn, trial }, user);
     });
     return { emailDelivery: deps.mailer.status().configured ? 'email' : 'not-configured' };
   };
@@ -298,6 +315,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       const taken = await db.query('select 1 from users where email = $1', [newEmail]);
       if (taken.rows.length) return res.status(409).json({ error: 'another account already uses that address' });
       const token = await issueConfirmation(db, user.id, 'change', newEmail);
+      // email-kind: email-change-confirm
       const toNew = await mailer.send({ to: newEmail, ...changeConfirmEmail(config, confirmLink(config, token), row.email) });
       if (!toNew.delivered) {
         // The link never left: retire it, change nothing, say so.
@@ -307,6 +325,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       }
       // The notice to the old address is a courtesy; its failure changes nothing.
       tasks.run(async () => {
+        // email-kind: email-change-notice
         const notice = await mailer.send({ to: row.email, ...changeNoticeEmail(config, newEmail) });
         if (!notice.delivered) console.warn(`email change notice not sent: ${notice.reason}`);
       });

@@ -53,7 +53,7 @@ export function statusPageRoutes(db: Db, config: Config, mailer: Mailer): { page
       const html = chrome(ctx, {
         title: 'Status — Beuk',
         description: 'Whether the Beuk studio, shelf, Help, server checks, email and backups are working right now.',
-        body: renderStatusBody(s),
+        body: renderStatusBody(s, config.supportEmail),
       });
       res.status(s.ok ? 200 : 503).type('html').set('Cache-Control', 'no-cache').send(html);
     } catch (err) {
@@ -71,7 +71,12 @@ const DOT: Record<ComponentState, string> = {
   down: 'var(--bad)',
 };
 
-export function renderStatusBody(s: PublicStatus): string {
+export function renderStatusBody(s: PublicStatus, supportEmail: string | null = null): string {
+  // The support address only when SUPPORT_EMAIL is set; nothing otherwise.
+  const write = supportEmail
+    ? `
+      <p class="muted" style="max-width:46rem;line-height:1.5;" data-support-email>If something here stays wrong, write to <a href="mailto:${esc(supportEmail)}">${esc(supportEmail)}</a>.</p>`
+    : '';
   const rows = s.components
     .map(
       (c) => `<li class="st-row" data-component="${esc(c.id)}" data-state="${esc(c.state)}" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:14px 0;border-top:1px solid var(--line);">
@@ -89,7 +94,7 @@ export function renderStatusBody(s: PublicStatus): string {
       <ul class="st-rows" style="list-style:none;margin:28px 0 0;padding:0;max-width:46rem;">
 ${rows}
       </ul>
-      <p class="muted" style="max-width:46rem;margin-top:24px;line-height:1.5;">This page comes from the server itself, so when the server is down it does not load at all. Writing in the studio keeps working on your device either way, and your book is kept there until the shelf is back.</p>
+      <p class="muted" style="max-width:46rem;margin-top:24px;line-height:1.5;">This page comes from the server itself, so when the server is down it does not load at all. Writing in the studio keeps working on your device either way, and your book is kept there until the shelf is back.</p>${write}
       <p class="muted small" style="max-width:46rem;">For monitors: <a href="/api/status/public">/api/status/public</a> gives the same reading as JSON.</p>
     </div>`;
 }

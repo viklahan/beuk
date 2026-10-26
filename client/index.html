@@ -2577,6 +2577,9 @@
           <!-- ==== BEUK:legal ==== shown only when this studio has its server (openSettings) -->
           <p class="cover-note legal-line" id="legalLinksSettings" hidden><span data-i18n="legal.settingsLine">How Beuk handles your data, and the ground rules:</span> <a href="/privacy" target="_blank" rel="noopener" data-i18n="legal.privacy">Privacy</a> · <a href="/terms" target="_blank" rel="noopener" data-i18n="legal.terms">Terms</a></p>
           <!-- ==== /BEUK:legal ==== -->
+          <!-- ==== BEUK:support ==== shown only when this studio's server has SUPPORT_EMAIL (beukSupportApply) -->
+          <p class="cover-note" id="supportLineSettings" hidden></p>
+          <!-- ==== /BEUK:support ==== -->
           <p class="cover-note" id="installedLine" style="display:none;" data-i18n="pwa.installed">Beuk is installed on this device — it opens like an app of its own, online or off.</p>
         </div>
         <div class="modal-actions">
@@ -26403,6 +26406,58 @@
           hint.textContent = t("lang.hintDefault");
         }
       }
+      /* ==== BEUK:support ==== the support address (SUPPORT_EMAIL) from the
+         studio's server, /api/config/public. While it is unset, offline, or
+         the studio has no server, nothing names an address or a person:
+         the top bar's Support button is hidden and the settings line stays
+         empty. */
+      var beukSupportEmail = null;
+      function beukSupportApply() {
+        try {
+          const btn = $("btnSupport");
+          if (btn) btn.style.display = beukSupportEmail ? "" : "none";
+          const line = $("supportLineSettings");
+          if (!line) return;
+          line.textContent = "";
+          line.hidden = !beukSupportEmail;
+          if (!beukSupportEmail) return;
+          const parts = t("support.settingsLine").split("{email}");
+          line.appendChild(document.createTextNode(parts[0] || ""));
+          const a = document.createElement("a");
+          a.href = "mailto:" + beukSupportEmail;
+          a.textContent = beukSupportEmail;
+          a.setAttribute("data-support-email", "");
+          line.appendChild(a);
+          line.appendChild(document.createTextNode(parts.slice(1).join("{email}")));
+        } catch (e) { /* leave it hidden */ }
+      }
+      function beukSupportLoad() {
+        beukSupportApply();
+        try {
+          fetch("/api/config/public", { credentials: "omit" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((j) => {
+              const e = j && j.support && typeof j.support.email === "string" ? j.support.email.trim() : "";
+              beukSupportEmail = /^[^\s@<>"']+@[^\s@<>"']+$/.test(e) ? e : null;
+              beukSupportApply();
+            })
+            .catch(() => {});
+        } catch (e) { /* no fetch: stays hidden */ }
+      }
+      Object.assign(UI_STRINGS.en, { "support.settingsLine": "Questions, or something not working? Write to {email}." });
+      Object.assign(UI_STRINGS.es, { "support.settingsLine": "¿Tienes preguntas o algo no funciona? Escribe a {email}." });
+      Object.assign(UI_STRINGS.fr, { "support.settingsLine": "Une question, ou quelque chose ne fonctionne pas ? Écrivez à {email}." });
+      Object.assign(UI_STRINGS.de, { "support.settingsLine": "Fragen, oder funktioniert etwas nicht? Schreiben Sie an {email}." });
+      Object.assign(UI_STRINGS.it, { "support.settingsLine": "Domande, o qualcosa non funziona? Scrivi a {email}." });
+      Object.assign(UI_STRINGS.pt, { "support.settingsLine": "Tem perguntas ou algo não funciona? Escreva para {email}." });
+      Object.assign(UI_STRINGS.nl, { "support.settingsLine": "Vragen, of werkt er iets niet? Schrijf naar {email}." });
+      Object.assign(UI_STRINGS.pl, { "support.settingsLine": "Masz pytania albo coś nie działa? Napisz na adres {email}." });
+      Object.assign(UI_STRINGS.ru, { "support.settingsLine": "Есть вопросы или что-то не работает? Напишите на {email}." });
+      Object.assign(UI_STRINGS.tr, { "support.settingsLine": "Sorunuz mu var, ya da bir şey çalışmıyor mu? {email} adresine yazın." });
+      Object.assign(UI_STRINGS.ar, { "support.settingsLine": "لديك سؤال، أو هناك شيء لا يعمل؟ اكتب إلى {email}." });
+      Object.assign(UI_STRINGS.ja, { "support.settingsLine": "ご質問や、うまく動かないことがあれば {email} までご連絡ください。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "support.settingsLine": "有问题，或者有什么不正常？请写信至 {email}。" });
+      /* ==== /BEUK:support ==== */
       function openSettings() {
         $("setTitle").value = imRealTitle(); $("setTitle").placeholder = t("misc.untitledBook"); $("setSubtitle").value = state.meta.subtitle; /* BEUK:importmeta */
         $("setAuthor").value = state.meta.author;
@@ -26416,6 +26471,7 @@
         /* ==== BEUK:legal ==== the legal pages live on the studio's server: no server, no links to pages that aren't there */
         try { const ll = $("legalLinksSettings"); if (ll) ll.hidden = !cloud.available; } catch (e) { /* cloud not ready yet: leave hidden */ }
         /* ==== /BEUK:legal ==== */
+        beukSupportApply(); /* BEUK:support */
         $("modalSettings").classList.add("open");
       }
       function initSettings() {
@@ -45536,6 +45592,7 @@
         if (help) help.addEventListener("click", () => { try { window.open("/help/", "_blank", "noopener"); } catch (e) {} });
         const support = $("btnSupport");
         if (support) support.addEventListener("click", () => { try { window.open("/help/#support", "_blank", "noopener"); } catch (e) {} });
+        beukSupportLoad(); /* BEUK:support — hides Support while SUPPORT_EMAIL is unset */
         document.addEventListener("click", (e) => {
           const menu = $("uiLangMenu");
           if (menu && !menu.hidden && !e.target.closest(".lang-wrap")) closeUiLangMenu();

@@ -57,6 +57,19 @@ export interface MailerOptions {
   log?: (line: string) => void;
 }
 
+/**
+ * What nodemailer is handed for one message: From is MAIL_FROM, and
+ * Reply-To is SUPPORT_EMAIL when it is set, so a writer's reply reaches
+ * the support mailbox even when MAIL_FROM is a sending-only address
+ * (docs/email-setup.md, "A mailbox for replies"). While SUPPORT_EMAIL is
+ * unset no Reply-To is added and replies go to MAIL_FROM, as before.
+ * `replyTo` is nodemailer's message field for the Reply-To header
+ * (https://nodemailer.com/message).
+ */
+export function smtpMessage(config: Config, message: MailMessage): MailMessage & { from: string; replyTo?: string } {
+  return { from: config.mailFrom ?? '', ...(config.supportEmail ? { replyTo: config.supportEmail } : {}), ...message };
+}
+
 /** Why mail is not configured, or null when it is. */
 export function mailNotConfiguredReason(config: Config): string | null {
   if (!config.smtpUrl && !config.mailFrom) return 'SMTP_URL and MAIL_FROM are not set';
@@ -97,6 +110,7 @@ export function createMailer(config: Config, opts: MailerOptions = {}): Mailer {
               '──── beuk mail (NOT SENT: email not configured) ────',
               `To: ${message.to}`,
               `Subject: ${message.subject}`,
+              ...(config.supportEmail ? [`Reply-To: ${config.supportEmail}`] : []),
               '',
               message.text,
               '────────────────────────────────────────────────────',
@@ -133,7 +147,7 @@ export function createMailer(config: Config, opts: MailerOptions = {}): Mailer {
     }),
     send: async (message) => {
       try {
-        const info = await transporter.sendMail({ from, ...message });
+        const info = await transporter.sendMail(smtpMessage(config, message));
         if (!info.accepted || info.accepted.length === 0) {
           return {
             delivered: false,
