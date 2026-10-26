@@ -47,12 +47,10 @@ export interface WelcomeOptions {
   priceLabel: string | null;
 }
 
-/** BILLING_PRICE_LABEL: from config when the billing work has added it
- *  there, otherwise from the environment. Blank counts as unset. */
-export function priceLabel(config: Config, env: NodeJS.ProcessEnv = process.env): string | null {
-  const fromConfig = (config as Config & { billingPriceLabel?: string | null }).billingPriceLabel;
-  if (fromConfig !== undefined) return fromConfig?.trim() || null;
-  return env.BILLING_PRICE_LABEL?.trim() || null;
+/** BILLING_PRICE_LABEL, as Config read it (src/config.ts). Blank counts as
+ *  unset. The second argument is kept for callers and tests; Config wins. */
+export function priceLabel(config: Config, _env: NodeJS.ProcessEnv = process.env): string | null {
+  return config.billingPriceLabel?.trim() || null;
 }
 
 /** The plan in plain words, for the welcome email. */
@@ -62,7 +60,9 @@ export function trialWords(opts: WelcomeOptions): string {
     : 'then one price for complete access, announced before launch';
   const exportOpen = 'Exporting your book stays open whatever happens with a plan.';
   if (opts.billingOn && opts.trial?.active) {
-    return `Your 7-day free trial started with this account and runs until ${humanDate(opts.trial.endsAt)}, ${after}. ${exportOpen}`;
+    // The trial's own length (TRIAL_DAYS when it started), not a fixed 7.
+    const days = Math.max(1, Math.round((Date.parse(opts.trial.endsAt) - Date.parse(opts.trial.startedAt)) / 86_400_000));
+    return `Your ${days}-day free trial started with this account and runs until ${humanDate(opts.trial.endsAt)}, ${after}. ${exportOpen}`;
   }
   if (opts.billingOn) {
     // Plans are on but this server does not track a trial: say nothing

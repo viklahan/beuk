@@ -297,7 +297,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v8`; both `client/sw.js` and
+service worker (cache `beuk-shell-v9`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -737,7 +737,7 @@ chapter, the print settings or the cover maker).
 
 Pricing is **parked**; this is plumbing that works for any pricing V
 picks. Nothing is live until the keys, a price and an entitlements file
-are set, and **no route is gated yet**.
+are set, and **the account features listed under "Trial and one price" pause after the trial**.
 
 **Principle: store what Stripe says, derive access from data.**
 
@@ -808,9 +808,9 @@ are set, and **no route is gated yet**.
 - **Housekeeping self-checks**: `billing.mode.matches-key`,
   `billing.entitlements.file-valid`, `billing.events.none-stuck` (nothing
   unprocessed for over an hour), `billing.subscriptions.attributed`.
-- **Not built yet**: a Customer Portal route (cancel / update card) and
-  any studio billing UI. Until then cancellations and card changes
-  happen in the Stripe Dashboard.
+- **Customer Portal and studio plan line**: see "Trial and one price"
+  (`POST /api/billing/portal`, the account page's Plan section, the
+  shelf dialog's plan line).
 
 **Enabling billing (V's step; prices and keys are his):**
 
@@ -2505,7 +2505,7 @@ Rate limits, per user and in memory: resend 3/hour, email change 5/hour, data do
 
 In the studio, the shelf dialog links to the account page and shows a calm line when the address isn't confirmed. Right after you sign in or create an account, a book on the desk that has real writing and isn't on your shelf is offered a place there once ("Bring it to my shelf" / "Not now"). It is never uploaded unless you choose.
 
-`GET /api/account/export/check` (signed in) answers 200, 413 or 429 without counting against the download limit; the account page asks it first, so a refusal shows on the page instead of being saved as a file. Before deleting an account with a running subscription, the Delete section says deleting does not cancel it yet (the cancel call comes with the billing work: `cancelBillingForDeletedAccount()` in `src/account/plan.ts`), and the trial clock is still to be filled in (`accountPlan()`, same file). Accounts made before migration 014 start as "not confirmed".
+`GET /api/account/export/check` (signed in) answers 200, 413 or 429 without counting against the download limit; the account page asks it first, so a refusal shows on the page instead of being saved as a file. With a Stripe key, deleting an account cancels its subscription at Stripe (`cancelBillingForDeletedAccount()` in `src/account/plan.ts`); without one, the Delete section says it doesn't and who to ask. The Plan section reads `accountPlan()` (same file). Accounts made before migration 014 start as "not confirmed".
 
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
 
@@ -2592,6 +2592,78 @@ New tables (migration 015) are excluded from backups, with reasons: `client_erro
 - **EPUB.** A book whose language is hi/mr/ne/sa or ar/fa/ur, or whose text holds at least 20 letters of the script, embeds the regular and bold TrueType (font/ttf, with the family's OFL text in the CSS), bound with the same unicode-range as the preview so Latin text never switches face. Cost: about +454 KB (Hindi) or +737 KB (Arabic) per EPUB before compression; there is no subsetter yet, which matters for KDP's per-MB delivery fee at the 70% royalty.
 - **Right to left.** Arabic, Persian, Hebrew and Urdu books now carry `dir="rtl"` in their EPUB pages and nav, the print HTML, the standalone HTML and the Print Interior View; flush-left headers and contents indents follow the book's side.
 - **Limits.** Kindle may substitute its own fonts unless the reader turns on Publisher Font (not tested on a store reader). Devanagari has no italic: italic Hindi is slanted by the browser. A sans book's Hindi or Arabic text is set in these serif faces. Hebrew has no face yet. Self-checks: `fonts.script.preview-faces`, `epub.fonts.script-embedded`.
+
+## Trial and one price
+
+V's decision (2026-10-26): a free trial that starts at account sign-up (TRIAL_DAYS, default 7), then **one price for complete access**. Writing on a device never needs an account, and **export always stays open**. Nothing on this page applies until billing is switched on (STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET + STRIPE_PRICE_ID, and a valid ENTITLEMENTS_FILE when one is set). Until then everything is open, no page mentions a trial or a price, and checkout and the portal answer **501** with a plain reason.
+
+- **The trial clock** (migration 016): `users.trial_ends_at` is stamped at sign-up (now + TRIAL_DAYS). Changing TRIAL_DAYS later never moves a trial that has already started. Accounts made before 016 got `created_at + 7 days`, so an account older than a week has used its trial. To give every existing account a fresh week on the day billing is switched on, run once: `update users set trial_ends_at = now() + interval '7 days' where trial_ends_at < now() + interval '7 days';`
+- **Access** (`src/access.ts`, the only place it is decided): `open` (billing off), `trial`, `subscribed` (Stripe active or trialing), `grace` (past_due within BILLING_GRACE_DAYS: everything stays open, with a calm notice), `paused` (trial over and no granting subscription).
+- **What pauses** (ACCESS_RULES, answered with 402 `{paused:true, exportOpen:true}`): adding new books to the shelf (`POST /api/manuscripts`), new beta-reader links and refreshing a link's copy (`POST /api/shares`, `/api/shares/:id/republish`), server EPUBCheck and PDF/X (`POST /api/jobs/epubcheck|pdfx`), and saving to the export archive (`POST /api/exports`).
+- **What never pauses** (NEVER_PAUSED, each one tested): writing and every export in the studio (they never ask the server); opening, listing, **saving** and deleting books already on the shelf (on some browsers the device copy can be cleared, so the shelf copy keeps following the writing); archive downloads; job results; managing and closing reading links; readers reading and commenting on existing links; Download all my data; Delete my account.
+- **Checkout** (`POST /api/billing/checkout`, the one price in STRIPE_PRICE_ID): inside the trial it passes `subscription_data[trial_end]` = Beuk's trial end, so the first charge waits for the end of the trial the writer already has. There is no second trial on top. Stripe requires that date at least 48 hours away, so with under 49 hours left the plan starts now. `BILLING_AUTOMATIC_TAX=true` adds `automatic_tax[enabled]=true`, and for a customer Stripe already has, `customer_update[address]=auto`. Success and cancel return to `/account?billing=success|cancelled`; the page waits for verified webhooks and never assumes the payment went through.
+- **Manage billing** (`POST /api/billing/portal`): a Stripe Customer Portal session for the customer this server linked from a verified webhook (never an id from the client), returning to `/account`. Answers 409 when there is no billing account yet.
+- **Deleting an account** cancels its live subscriptions at Stripe immediately (`DELETE /v1/subscriptions/:id`). With `BILLING_CANCEL_PRORATE=true` Stripe credits the unused time to the customer balance (not a refund); the default is Stripe's own (no credit). Without a Stripe key, or if Stripe refuses, the subscription is left unattributed for the operator, as before.
+- **Price copy**: `BILLING_PRICE_LABEL` (for example the amount and interval with its currency) is the only place a price comes from. Unset, no page, email or studio line shows or implies one.
+- **Where writers see it**: the account page's Plan section (trial end and days left, what pauses and what never does, the past_due notice, the paused notice, Choose a plan, Manage billing). In the studio, a compact plan line in the shelf dialog, in 13 languages; a paused action shows one calm toast per session.
+- **Trial-ending email**: one per account, TRIAL_REMINDER_DAYS (default 3; 0 = off) before the end, sent from an hourly timer only when email (SMTP_URL + MAIL_FROM) and billing are both on and the account has no plan. It is recorded as sent only when the mail server accepts it.
+- **Settings**: TRIAL_DAYS, BILLING_PRICE_LABEL, BILLING_AUTOMATIC_TAX, BILLING_CANCEL_PRORATE, TRIAL_REMINDER_DAYS (plus the existing STRIPE_* and BILLING_GRACE_DAYS).
+
+**In the Stripe Dashboard (V):** save the Customer portal configuration in test and live (Settings > Billing > Customer portal). Before turning on BILLING_AUTOMATIC_TAX, add tax registrations (Tax > Registrations). Turn on Successful payments and Refunds receipts (Settings > Business > Customer emails). Turn on Smart Retries and choose what happens when they run out (Billing > Revenue recovery > Retries). Fill in business details for receipts. Never put test keys on the production server: that switches billing on for real writers who can't really pay.
+
+The trial-ending email tick looks at every account whose trial ends inside the reminder window, page by page; accounts that already have a plan are skipped. Download all my data includes `plan.trialEndsAt` and `plan.trialReminderSentAt` (null = not sent), whether or not billing is on.
+
+## Lifecycle email: layout, welcome, support address
+
+**One layout** (`src/email/layout.ts`). Every email to a writer has a plain-text part and a simple HTML part. The HTML is one column with inline styles: no images, no remote fonts, no tracking pixel. A footer says why the email was sent, who sent it (`MAIL_FROM`) and links to `/account`. There is no unsubscribe link, because each email is caused by something the writer did. HTML is built with the `html` tag, which escapes every value it is given. The reset, confirmation and change-of-address emails and the Housekeeping test email all use it.
+
+**Welcome at sign-up** (`src/email/welcome.ts`). When email is configured, creating an account sends one email: the welcome, with the confirmation link inside, not two messages in the same second. It says what an account adds (shelf, archive, beta-reader links, the server's EPUBCheck and PDF/X), that writing never needs an account, and the trial in plain words: 7 days, then "one price, announced before launch", or `BILLING_PRICE_LABEL` exactly as set. It links Help and /account. "Send the link again" sends the plain confirmation, never a second welcome. Without email nothing is sent: the would-be confirmation is logged (`MAIL_LOG_LINKS`) and the register response says `emailDelivery: "not-configured"`.
+
+**Support address.** While `SUPPORT_EMAIL` is set it appears in Help, in the account page's footer and Help card, on the status page, in the studio (the top bar's Support button and a line in Project Settings) and in /compare's "tell us". While it is unset none of these name an address, a person or a reply time, and the studio hides its Support button.
+
+**Setting it up:** see `docs/email-setup.md`. It covers providers, `SMTP_URL` / `MAIL_FROM`, DNS records for beuk.studio, testing, and a table of every email Beuk sends. Payment receipts are Stripe's; Beuk sends none.
+
+The welcome reads the plan the way /account does (`accountPlan` in `src/account/plan.ts`): it mentions the trial only while billing is switched on and the account has one. When `SUPPORT_EMAIL` is set, every email carries it as Reply-To; while it is unset, replies go to `MAIL_FROM` (see `docs/email-setup.md`, "A mailbox for replies and support").
+
+## Studio: the first-run quick tour (client-only)
+
+A writer opening the studio on a new device sees four short steps, each beside the real control:
+
+1. **Bring your book in.** Import Document, or start typing on the empty page, or open the sample story.
+2. **Write here, see the book there.** The page and the device preview.
+3. **Give it a look.** Typography Studio, or the Style tab on a phone.
+4. **Export when the book is ready.** The store presets and the print edition. It ends with three ways to begin: Import a manuscript, Open the sample story, Start writing.
+
+**When it shows.** Only once this device's book has been restored, and only when all of these hold:
+- localStorage `beuk.tour.v1` is unset;
+- `beuk.desk` is not `"1"`;
+- the desk is empty (the sample counts as a book).
+
+Where the browser keeps no storage it is not shown at all, because nothing could stop it coming back.
+
+**How it ends.**
+- At the writer's first action: words typed, an import landing, the sample opened, or one of the last step's buttons. It is then stored as `"done"`.
+- Skip (the x) or Esc stores `"skipped"`. Esc that is closing an open menu leaves the tour alone.
+- Either way it is never shown again by itself.
+
+**It never blocks writing.** The card is not modal and has no backdrop. It sits under every dialog (z-index 59; `.modal-back` starts at 60) and hides while a dialog is open, while Zen is on, or while the desk is being restored.
+
+**Showing it again.** "Show the quick tour", under the sample story's note, or `/studio#tour`.
+
+**Accessibility and layout.** Focus goes to the step heading on open (not when the writer is already typing), with a polite live region for step changes. Placement is right-to-left aware; under 640 px the card docks to the top or bottom edge. Reduced motion turns off the fade and the ring movement.
+
+**Self-checks.** A Self-checks run hides an open tour and restores it afterwards. The checks are `tour.fresh-device-only`, `tour.never-over-dialog-or-zen`, `tour.targets-visible`, `tour.skip-ends-for-good` and `tour.no-overflow-rtl-phone`. Run them at 390 px wide for the phone-width check. The static checks are `tests/tour.test.ts`.
+
+Also reachable from the Help guide "Import a manuscript". Reopened on an empty desk it ends at the first import, the sample opening or the first words; reopened over a book, at the first real edit, or when finished or skipped.
+
+## Display faces and book colour (Typography Studio)
+
+- **Display faces for headings.** Three new heading faces sit in their own group in the Heading Font picker, "Display faces · headings only": **Pinyon Script** (a formal copperplate script), **Patrick Hand** (a clear handwriting face for children's books) and **Abril Fatface** (a heavy poster serif). They set chapter titles, drop caps, part and title pages, never running text. No body picker lists them, and a book that names one as its body face is set in the default body face. Each has one weight, so headings in them are set at 400 and nothing fakes a bold. With Pinyon Script, the small spaced capitals (chapter number, kickers, the title page's author, running heads) use the body face.
+- **Same files everywhere.** The faces are self-hosted for the preview (`assets/fonts/fonts-display.css`), installed in the print renderer (`deploy/renderer/fonts.lock`, the same sha256), and embedded in an EPUB whose headings wear one, with its OFL.txt in the stylesheet. Reading systems don't have these faces, so without the file a reader would use its own. All three are SIL OFL 1.1; Abril Fatface carries the Reserved Font Names "Abril" and "Abril Fatface", and Beuk ships its files unmodified. Vendored with `node tools/fonts/vendor-display-fonts.mjs .`.
+- **Book colour.** A new Colour section sets one accent colour for the whole book: chapter titles and numbers, rules and ornaments, drop caps, part pages and the title page. It also sets an optional page tint. Pick from ten named accents and four tints, or choose your own. The colour belongs to the book, not the theme: it stays when you try another theme, is saved with the book, and rides in History snapshots. With no colour set, the book's CSS is exactly what it was.
+- **Contrast, said plainly.** An accent needs 3:1 contrast on the page (WCAG AA for large text), and a tint needs 4.5:1 for black text. A colour that falls short is refused with its measured ratio, and nothing changes.
+- **Where colour shows.** The tint colours the page in the preview and the EPUB. Print ignores it: the book prints on the paper chosen at the store. Print keeps the accent, and its flattened tints (the lighter chapter number, ornament parts) blend the accent instead of black. On paper, the accent comes out in colour only in a colour-ink edition; KDP prints colour content in colour only when a colour ink option is chosen. Kindle and other e-ink readers show it as grey, and many reading apps replace the page tint with their own page colour, including in night mode.
+- **Black-ink editions.** The accent prints as coloured ink. For a black-ink edition, tick "Print the accent in black ink": screens and the EPUB keep the colour, and the print interior sets the accented elements in pure black; otherwise the Store-ready report warns under "Text in black ink only" for a store that asks for black text. On the studio's dark screens (the phone preview, zen under Candlelight) the studio shows a lighter shade of the accent so it stays readable; the book keeps the colour chosen. The cover maker uses the text faces, not the display faces.
 
 ## The static client mount point
 
@@ -2710,11 +2782,12 @@ storing "Untitled Book".
 
 ## What is deliberately NOT here yet
 
-- **Live billing** — the plumbing is here (verified, deduplicated,
-  order-safe webhooks; entitlements as data; checkout), but pricing is
-  parked, no route is gated, and there is no Customer Portal route or
-  studio billing UI. It activates when V sets prices, keys and the
-  entitlements file; until then the endpoints answer 501.
+- **Live billing** — everything is built (verified, deduplicated,
+  order-safe webhooks; entitlements as data; checkout; the trial, the
+  access rules, the Customer Portal and the studio plan line — see
+  "Trial and one price"), but the price is not set. It activates when V
+  sets the price, keys and the entitlements file; until then the
+  endpoints answer 501 and everything stays open.
 - **Local backup retention and backup alerting** — local backups are
   never pruned (the number to keep is undecided), and a red backup
   self-check sends no email or ping by itself. Restore still lacks the

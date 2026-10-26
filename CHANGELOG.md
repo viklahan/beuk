@@ -4,6 +4,35 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Your free week, a quick tour, and colour
+
+**Your free week, and after it** (once billing is switched on; until then everything stays open and no price is shown)
+- A new account starts a 7-day free trial when it signs up. Your account page shows when it ends and how many days are left.
+- After the trial, without a plan, some things pause: adding new books to your shelf, new beta-reader links, server checks, and saving new files to your archive. Writing, the books already on your shelf (they keep saving), every export, your downloads, the reading links you already have, and Download all my data stay open.
+- If you choose a plan during your trial, the first payment waits until the trial ends.
+- If a payment doesn't go through, everything stays open for 7 days while Stripe tries the card again, and the account page says so calmly.
+- Manage billing on the account page opens Stripe, where you can change your card, see your invoices or cancel.
+- Deleting your account cancels its subscription at Stripe straight away, so nothing more is charged.
+- One email a few days before your trial ends, only if you have no plan and this server can send email.
+- The studio's shelf dialog shows your plan in one line, in all 13 languages.
+
+**Email**
+- **A welcome when you create an account.** One email, once: it confirms your address and says what an account adds, and that writing never needs one. It mentions the trial only when the account has one, and a price only once one is set.
+- **One plain layout** for every Beuk email, ending with why you got it, who sent it, and a link to your account page. No pictures, no tracking.
+- **Where to write for help.** Once a support address is set it appears on your account page, the status page, the studio's Project Settings and the comparison pages, and replies to any Beuk email reach it. Until then nothing names a person or promises a reply, and the studio's Support button stays hidden.
+
+**A quick tour for a new writer**
+- The first time the studio opens on a device, four short steps show where things are: Import or the sample story, the page and the preview, Typography Studio, and Export. It ends when you start (words typed, a manuscript imported, or the sample opened); Skip or Esc closes it at any step.
+- It shows only once, and never on a device that already has a book. It doesn't block writing and stays out of the way of dialogs and Zen. "Show the quick tour", under the sample story or in the Help guide "Import a manuscript", brings it back.
+- All 13 interface languages, Arabic right to left included, phone widths and reduced motion.
+
+**Display faces and book colour**
+- Three display faces for headings, all SIL OFL 1.1 and self-hosted: **Pinyon Script** (a formal script), **Patrick Hand** (handwriting, for children's books) and **Abril Fatface** (a heavy poster serif). Headings only, never running text; installed in the print renderer and embedded in an EPUB whose headings use one.
+- A book can carry **one accent colour** for chapter titles and numbers, rules and ornaments, drop caps and the title page, and an optional **page tint** for screens and EPUB. Print keeps the accent and ignores the tint; "Print the accent in black ink" sets it in pure black for a black-ink edition.
+- A contrast guard refuses an accent below 3:1 on the page, or a tint below 4.5:1 for black text, and says the measured contrast. On the studio's dark screens a lighter shade keeps headings readable.
+- A book with no colour set typesets exactly as before. The colour is saved with the book and kept in History snapshots.
+- The studio offers this update ("A new Beuk is ready").
+
 ## 2026-10-26 — Your account, the whole site, and knowing when something is wrong
 
 **Your typesetting portal**

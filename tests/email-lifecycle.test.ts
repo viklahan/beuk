@@ -200,14 +200,11 @@ test('welcome: the plan in plain words; a trial only when the server tracks one;
   assert.ok(trialWords({ billingOn: false, trial: null, priceLabel: null }).startsWith("Plans aren't switched on on this server yet"));
 
   const config = testConfig({ appBaseUrl: 'https://beuk.example' });
-  assert.equal(priceLabel(config, {}), null);
-  assert.equal(priceLabel(config, { BILLING_PRICE_LABEL: '   ' }), null);
-  assert.equal(priceLabel(config, { BILLING_PRICE_LABEL: ' LABEL ' }), 'LABEL');
-  // Once the billing work puts it in Config, Config wins over the environment.
-  const withField = { ...config, billingPriceLabel: 'FROM-CONFIG' } as typeof config;
-  assert.equal(priceLabel(withField, { BILLING_PRICE_LABEL: 'FROM-ENV' }), 'FROM-CONFIG');
-  const withNull = { ...config, billingPriceLabel: null } as typeof config;
-  assert.equal(priceLabel(withNull, { BILLING_PRICE_LABEL: 'FROM-ENV' }), null);
+  // The label is Config's (BILLING_PRICE_LABEL, read once in src/config.ts); blank counts as unset.
+  assert.equal(priceLabel({ ...config, billingPriceLabel: null }), null);
+  assert.equal(priceLabel({ ...config, billingPriceLabel: '   ' }), null);
+  assert.equal(priceLabel({ ...config, billingPriceLabel: ' LABEL ' }), 'LABEL');
+  assert.equal(priceLabel({ ...config, billingPriceLabel: null }, { BILLING_PRICE_LABEL: 'FROM-ENV' }), null, 'Config wins over the environment');
 
   const m = welcomeEmail(config, 'https://beuk.example/account/confirm?token=t', { billingOn: true, trial, priceLabel: '<b>LABEL</b>' });
   assert.ok(m.text.includes('then <b>LABEL</b> for complete access'));
@@ -234,7 +231,7 @@ function checkoutBilling(mode: 'test' | 'live'): BillingProvider {
 
 test('welcome: plans on or off is decided as the account page decides it, and neither claims a trial the server does not track', async () => {
   const cases = [
-    // Checkout configured, entitlements load: plans on, no trial clock yet.
+    // Checkout configured, entitlements load: plans on, and the account's trial (migration 016) has started.
     { name: 'plans on', overrides: {}, mode: 'test' as const, on: true },
     // Checkout configured, but the entitlements file does not load: the account page says plans are off.
     { name: 'entitlements broken', overrides: { entitlementsFile: '/nonexistent/beuk-entitlements.json' }, mode: 'live' as const, on: false },
@@ -251,10 +248,10 @@ test('welcome: plans on or off is decided as the account page decides it, and ne
       const text = mailer.sent[0].text;
       const page = (await pageWithCookie(c, `${s.base}/account`)).text;
       if (k.on) {
-        assert.ok(text.includes('Beuk is one price for complete access. Your account page shows your plan.'), `${k.name}: ${text}`);
-        assert.doesNotMatch(text, /trial|starts today/i, `${k.name}: no trial claimed`);
-        assert.match(page, /There is no subscription on this account\./, `${k.name}: the account page agrees`);
-        assert.doesNotMatch(page, /free trial/i);
+        // The email and the account page tell the same trial, to the same day.
+        const m = /Your 7-day free trial started with this account and runs until ([^,]+), then one price for complete access, announced before launch\./.exec(text);
+        assert.ok(m, `${k.name}: ${text}`);
+        assert.ok(page.includes(`Your free trial runs until ${m[1]}`), `${k.name}: the account page agrees on ${m[1]}`);
       } else {
         assert.ok(text.includes("Plans aren't switched on on this server yet"), `${k.name}: ${text}`);
         assert.match(page, /Plans are not switched on on this server yet\./, `${k.name}: the account page agrees`);

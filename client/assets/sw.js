@@ -21,7 +21,7 @@
      shell so the studio opens on the local book with no network.
    - Everything else (the shell's assets, the CDN libraries, the
      fonts) is cache-first, filled from the network on first use. */
-const BEUK_CACHE = "beuk-shell-v8"; /* v8: the account portal, status, features and compare pages stay network-only; studio error reports (opt-in) */
+const BEUK_CACHE = "beuk-shell-v9"; /* v9: the trial plan line, the first-run tour, display faces and per-book colour */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell
