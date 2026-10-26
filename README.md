@@ -1610,6 +1610,59 @@ book (the sample's body four times over).
 Self-checks (client-only in Housekeeping): `insights.cast.detects`,
 `insights.cast.hide-persists`, `insights.cast.caseless-note`. Strings:
 all 13 UI packs, with Polish, Russian and Arabic plural forms.
+## Studio: the preview keeps the writer's place (client-only)
+
+Editing or formatting the section that is already in the preview no
+longer sends the reader back to page 1.
+
+- **What it keeps.** After editor activity (typing, a click or a
+  selection in the editor, a toolbar button, a keyboard shortcut,
+  Auto-Format, undo) the preview turns to the page holding the **caret**.
+  After the reader turned pages by hand (Prev / Next, a tap on the
+  screen, the arrow keys) it keeps **the first letter of the page being
+  read**. Theme, font size and device-profile changes lay the same words
+  out again and land on the page where that place now stands.
+- **A section just opened is not a caret.** Writing the new section into
+  the editor leaves the textarea's caret wherever the browser puts it
+  (often the end of the text) — the writer never placed it. So opening a
+  section switches to page mode at page 1, and caret-following starts
+  only with the writer's own hand in the editor: input, a click, a
+  keystroke other than Tab or a modifier, or a selection made while the
+  editor has focus (a bare focus, or a caret set by code into an
+  unfocused editor, does not count). Until then a font-size change, a
+  keystroke in the Chapter Title field or a device change keeps the
+  preview on the page being read — page 1 when nothing was turned.
+- **How a place is found.** By its text, never by markup: the source
+  paragraph's letters and digits (markdown markers, quotes and dashes
+  carry none, so source and typeset agree), which occurrence of that
+  paragraph it is, and the number of letters before the place. The page
+  is read from the drawn box of that letter in the laid-out flow. When
+  nothing matches, the page number is kept, clamped to the new count.
+  Pages are measured once per render; a picture that decodes late
+  re-measures and keeps the same place.
+- **What still starts at page 1.** Opening another section (sidebar,
+  desk rail, Zen navigation), or loading another book.
+- **Auto-Format keeps the caret.** The editor takes focus before the
+  rewrite: Chromium dropped a caret restored into an unfocused textarea
+  whose value had just been replaced (it landed at 0 a frame later).
+- **Zen corner controls.** The sound / scene / dictation cluster and the
+  scene popover are placed with `inset-inline-end`, so in Arabic they
+  stand left, clear of the right-hand tabs; below 900 px wide the tabs
+  step down under the cluster. The editor's padding is now inside its
+  width (`box-sizing: border-box`), so it never runs past its column.
+- **Checks.** In-studio `preview.keeps-page-on-edit`,
+  `preview.follows-caret`, `preview.new-section-page-one`,
+  `preview.opened-section-stays-put` and `zen.controls.no-overlap` (`runBeukSelfChecks()`; registered
+  client-only in Housekeeping). The preview checks measure at the Kindle
+  Paperwhite profile on the sample's Chapter Three;
+  `preview.opened-section-stays-put` opens it through `selectSection`
+  (the sidebar's own path) with the caret at the end of the text and no
+  editor activity, then changes font size, the chapter title and the
+  device (on a phone they show
+  the preview pane for the measure, then put the pane back); the Zen
+  check measures all 13 interface languages in the current window.
+- **Hooks (tests only, never in the UI):** `window.beukReader`
+  (`flush`, `pageOf`, `caretAnchor`, `pageAnchor`, `follow`).
 
 ## Warmth Phase 0 (M4)
 

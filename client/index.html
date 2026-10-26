@@ -542,6 +542,7 @@
       /* ==== /BEUK:dictlang ==== */
       .scene-suggest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 8px; }
       #editorArea {
+        box-sizing: border-box; /* BEUK:reader — padding inside the 100%, never past the column */
         width: 100%; min-height: 430px; resize: vertical; border: 1px solid var(--line-2); border-radius: 10px;
         background: var(--panel-2); padding: 20px 22px; outline: none;
         font-family: "EB Garamond", Georgia, serif; font-size: 17.5px; line-height: 1.65; color: var(--ink);
@@ -786,11 +787,16 @@
       #zenTitle.show .zt-orn path { stroke-dashoffset: 0; transition: stroke-dashoffset .7s ease .08s; }
       /* The corner cluster: a breathing presence dot and the sound toggle. */
       #zenCluster {
-        position: fixed; top: 14px; right: 16px; z-index: 91;
-        display: flex; align-items: center; gap: 11px;
+        /* BEUK:reader — logical side: the reading end of the line, so in
+           Arabic the cluster stands left, clear of the right-hand tabs */
+        position: fixed; top: 14px; inset-inline-end: 16px; z-index: 91;
+        display: flex; align-items: center; gap: 11px; max-width: calc(100vw - 32px);
         opacity: 0; transition: opacity .6s ease;
       }
       body.zen-art-in #zenCluster { opacity: 1; }
+      /* BEUK:reader — where the tabs and the cluster cannot share the top
+         line (a phone, a narrow window), the tabs step down beneath it. */
+      @media (max-width: 900px) { body.zen .center-tabs { padding-top: 58px; } }
       #zenMark {
         width: 11px; height: 11px; border-radius: 50%; background: var(--gold); flex: 0 0 auto;
         opacity: .35; box-shadow: 0 0 12px 3px var(--accent-soft);
@@ -814,7 +820,7 @@
       #btnZenScenes svg { width: 12px; height: 12px; }
       /* The scene popover: three quiet soundscapes, picked by name. */
       #zenScenePop {
-        position: fixed; top: 54px; right: 16px; z-index: 97; min-width: 196px;
+        position: fixed; top: 54px; inset-inline-end: 16px; z-index: 97; min-width: 196px; /* BEUK:reader */
         background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 12px;
         box-shadow: var(--shadow); padding: 6px; display: none;
       }
@@ -1506,7 +1512,7 @@
         .ins-cr-head > span:last-child { display: none; }
         .ins-cr-row { grid-template-columns: minmax(80px, 120px) 1fr 40px; row-gap: 5px; }
         .ins-cr-where { grid-column: 1 / -1; padding-inline-start: 0; }
-        .ins-g-val { font-size: 22px; }
+        .ins-g-val { font-size: 22px; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; } /* a long value ("1 س 0 د") wraps rather than cut */
         .ins-glance { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
         .ins-g { padding: 8px 9px 7px; }
       }
@@ -20700,7 +20706,12 @@
           const after = beautifyText(before.replace(/^\[\^?(\d+)\]:/gm, "[^$1]:"));
           /* The whole text is rewritten under the writer's hands:
              their scroll and caret are restored around the rewrite,
-             so a polish can never strand them at the chapter's end. */
+             so a polish can never strand them at the chapter's end.
+             BEUK:reader — the editor takes focus first: Chromium drops a
+             caret restored into an unfocused textarea whose value was
+             just replaced (it lands at 0 a moment later), and the
+             preview follows that caret. */
+          try { area.focus({ preventScroll: true }); } catch (e) { area.focus(); }
           withEditorView(() => {
             area.value = after; s.content = after;
             updateStats(); renderPreview();
@@ -21652,12 +21663,13 @@
         $("panelType").style.display = which === "type" ? "" : "none";
       }
       function setMobilePane(p) {
+        if (p !== "preview") pvLeaving(); /* BEUK:reader */
         $("panes").setAttribute("data-mobile", p);
         document.querySelectorAll("#mobileTabs button").forEach((b) => {
           const match = b.getAttribute("data-mpane") === p && (p !== "center" || (b.hasAttribute("data-mstyle") === (currentCenterTab === "type")));
           b.classList.toggle("active", match);
         });
-        if (p === "preview") requestAnimationFrame(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(60); });
+        if (p === "preview") requestAnimationFrame(() => { fitDeviceFrame(); pvResume(); scheduleDeskUpdate(60); }); /* BEUK:reader — the turn owed while hidden */
       }
       let currentCenterTab = "content";
 
@@ -22087,8 +22099,211 @@
         renderSidebar(); syncEditor(); renderPreview();
         renderDeskRailMarks();
       }
+      /* ==== BEUK:reader ==== */
+      /* The preview keeps its page while the writer works. A re-render
+         of the section already on screen (a keystroke, a format, a
+         theme or profile change) lands on the page holding the place
+         the writer is at, never back on page 1:
+           - after editor activity (typing, a click or selection in the
+             editor, a toolbar format) that place is the caret: the
+             letter at the caret is found in the typeset flow and the
+             preview turns to its page;
+           - after the reader turned pages by hand, that place is the
+             first letter on the page being read, found again in the
+             new layout.
+         A place is named by its text, never by markup: the paragraph's
+         letters and digits (markdown markers, quotes and dashes carry
+         none, so source and typeset agree) and the count of letters
+         before the place. When nothing can be matched the page number
+         is kept, clamped to the new count. Opening another section
+         still starts at page 1. */
+      let pvShownId = null;
+      let pvShownSec = null; /* the section object: a book loaded anew is a new place */
+      let pvFollow = "page"; /* "caret" once the writer works in the editor */
+      let pvPendingAnchor = null;
+      let pvJob = null;
+      let pvLastSet = 0;
+      /* Below 1024 px the editor and the preview take turns on screen.
+         A hidden preview has no width to lay pages out in (its count
+         falls back to 1 and the page would be clamped to it), so a turn
+         owed while it is hidden is kept here, with the page the reader
+         left it on, and made when the preview is shown again. */
+      let pvDeferred = null;
+      let pvLeftPage = 1;
+      function pvHidden() { const w = $("flowWrap"); return !!w && !w.clientWidth; }
+      const PV_LETTER = /[\p{L}\p{N}]/u;
+      function pvNorm(s) { return String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ""); }
+      function pvNonText(tr) {
+        return /^(\*\*\*|❦|⁂|[*#]{3,}|-{3,}|_{3,})$/.test(tr) || /^\[\^?(\d{1,3})\]:/.test(tr) ||
+          (typeof parseImageLine === "function" && !!parseImageLine(tr));
+      }
+      /* The typeset blocks that carry the section's own words, in order. */
+      function pvCandidates(flow) {
+        return Array.prototype.filter.call(flow.querySelectorAll("p, blockquote, h2.inhead, h3.inhead"), (el) =>
+          !el.closest(".chapter-opening, .endnotes, figure, .empty-note, .part-divider > p, .tp-top") &&
+          !(el.tagName === "P" && el.parentElement && el.parentElement.closest("blockquote")));
+      }
+      function pvLetters(el) {
+        const out = [];
+        const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let n;
+        while ((n = w.nextNode())) { const d = n.data; for (let i = 0; i < d.length; i++) if (PV_LETTER.test(d[i])) out.push([n, i]); }
+        return out;
+      }
+      function pvPageOfLetter(pos) {
+        const r = document.createRange();
+        try { r.setStart(pos[0], pos[1]); r.setEnd(pos[0], pos[1] + 1); } catch (e) { return 0; }
+        const b = r.getBoundingClientRect();
+        if (!b.width && !b.height) return 0;
+        return previewPageAtX(b.left + b.width / 2);
+      }
+      /* The caret's place, read from the editor's source text. */
+      function pvCaretAnchor(s) {
+        const area = $("editorArea");
+        if (!area || !s || editorSyncedSectionId !== s.id || area.value !== String(s.content || "")) return null;
+        const val = area.value, caret = Math.min(area.selectionStart || 0, val.length);
+        const re = /\n\s*\n/g; let last = 0, m;
+        const tx = [];
+        const push = (a, b) => { const raw = val.slice(a, b); const tr = raw.trim(); if (tr && !pvNonText(tr)) tx.push({ a, b, norm: pvNorm(raw) }); };
+        while ((m = re.exec(val))) { push(last, m.index); last = m.index + m[0].length; }
+        push(last, val.length);
+        if (!tx.length) return null;
+        let i = 0;
+        for (let j = 0; j < tx.length; j++) if (tx[j].a <= caret) i = j;
+        const b = tx[i];
+        const k = pvNorm(val.slice(b.a, Math.max(b.a, Math.min(caret, b.b)))).length;
+        let occ = 0;
+        for (let j = 0; j < i; j++) if (tx[j].norm === b.norm) occ++;
+        return { norm: b.norm, occ, k, len: b.norm.length, from: "caret" };
+      }
+      /* The first letter on the page being read, in the current layout. */
+      function pvPageAnchor(flow) {
+        if (!flow || !$("flowWrap").clientWidth || !(state.page > 1)) return null;
+        const cur = state.page;
+        const els = pvCandidates(flow);
+        const norms = els.map((el) => pvNorm(el.textContent));
+        const firstPage = (i) => { const L = pvLetters(els[i]); return L.length ? pvPageOfLetter(L[0]) : 0; };
+        /* the last block that starts before this page: it may run on into it */
+        let lo = 0, hi = els.length - 1, at = -1;
+        while (lo <= hi) { const mid = (lo + hi) >> 1; const p = firstPage(mid); if (p && p < cur) { at = mid; lo = mid + 1; } else hi = mid - 1; }
+        let L = at >= 0 ? pvLetters(els[at]) : [];
+        let k = -1;
+        if (at >= 0 && L.length && pvPageOfLetter(L[L.length - 1]) >= cur) {
+          /* the first of its letters standing on this page */
+          let a = 0, z = L.length - 1;
+          while (a < z) { const mid = (a + z) >> 1; if (pvPageOfLetter(L[mid]) >= cur) z = mid; else a = mid + 1; }
+          k = a;
+        } else if (at + 1 < els.length && firstPage(at + 1) === cur) { at++; L = pvLetters(els[at]); k = 0; }
+        if (k < 0) return null;
+        let occ = 0;
+        for (let j = 0; j < at; j++) if (norms[j] === norms[at]) occ++;
+        return { norm: norms[at], occ, k, len: L.length, from: "page" };
+      }
+      function pvFindBlock(flow, anc) {
+        const els = pvCandidates(flow);
+        const norms = els.map((el) => pvNorm(el.textContent));
+        let seen = 0;
+        for (let i = 0; i < els.length; i++) if (norms[i] === anc.norm && seen++ === anc.occ) return els[i];
+        /* a link or marker the typeset text drops: match on the opening letters */
+        const pre = anc.norm.slice(0, 24);
+        if (pre.length < 6) return null;
+        seen = 0;
+        for (let i = 0; i < els.length; i++) if (norms[i].slice(0, 24) === pre && seen++ === anc.occ) return els[i];
+        return null;
+      }
+      /* The page an anchor stands on in the laid-out flow (0: not found). */
+      function pvPageOfAnchor(anc) {
+        if (!anc || !$("flowWrap").clientWidth) return 0;
+        const el = pvFindBlock($("pageFlow"), anc);
+        if (!el) return 0;
+        const L = pvLetters(el);
+        if (!L.length) return 0;
+        let k = (anc.len && anc.len !== L.length) ? Math.round(anc.k * L.length / anc.len) : anc.k;
+        k = Math.min(Math.max(0, k), L.length - 1);
+        return pvPageOfLetter(L[k]);
+      }
+      /* Measure once and turn to the anchored page (or the kept page). */
+      function pvFlush() {
+        const job = pvJob; pvJob = null;
+        if (!job) return;
+        pvPendingAnchor = null;
+        /* the caret is read now, not at the render call: a rewrite of the
+           whole text (Auto-Format) puts the caret back only after it */
+        if (job.same && job.caret) { const s = activeSection(); const c = s && s.id === pvShownId ? pvCaretAnchor(s) : null; if (c) job.anc = c; }
+        if (pvHidden()) {
+          const d = pvDeferred;
+          pvDeferred = job.same
+            ? { anc: job.anc || (d && d.anc) || null, page: d ? d.page : pvLeftPage }
+            : { anc: null, page: 1 };
+          return;
+        }
+        measurePages();
+        const pg = job.same ? (pvPageOfAnchor(job.anc) || state.page) : 1;
+        goToPage(pg, true);
+        pvLastSet = state.page;
+      }
+      /* Called by renderPreview before the flow is replaced. */
+      function pvBeforeRender(s) {
+        const same = pvShownId === s.id && pvShownSec === s;
+        pvShownId = s.id; pvShownSec = s;
+        let anc = null;
+        const caret = same && pvFollow === "caret";
+        if (same) anc = (caret ? pvCaretAnchor(s) : null) || pvPendingAnchor || (pvDeferred && pvDeferred.anc) || pvPageAnchor($("pageFlow"));
+        else {
+          /* a section just opened: no caret has been placed in it yet
+             (the editor's value write leaves the caret at the end of
+             the text), so the place is the page on screen — page 1 —
+             until the writer types, clicks or selects in the editor */
+          state.page = 1;
+          pvFollow = "page";
+        }
+        pvPendingAnchor = anc;
+        pvJob = { same, anc, caret };
+        return pvJob;
+      }
+      /* A picture decoding late re-measures; the reader stays put. */
+      function pvAfterDecode(job) {
+        if (pvHidden()) return; /* the turn waits for the preview to be shown */
+        measurePages();
+        const pg = (job && job.same && state.page === pvLastSet) ? (pvPageOfAnchor(job.anc) || state.page) : state.page;
+        goToPage(pg, true);
+        pvLastSet = state.page;
+      }
+      /* A profile change lays the same words out at a new geometry. */
+      function pvAnchorNow() {
+        const s = activeSection(); if (!s || pvShownId !== s.id || pvShownSec !== s) return null;
+        return (pvFollow === "caret" ? pvCaretAnchor(s) : null) || pvPageAnchor($("pageFlow"));
+      }
+      /* The preview pane is shown again (narrow screens): make the owed turn. */
+      function pvResume() {
+        const d = pvDeferred; pvDeferred = null;
+        measurePages();
+        goToPage(d ? (pvPageOfAnchor(d.anc) || d.page) : state.page, true);
+        pvLastSet = state.page;
+      }
+      /* The preview pane is about to be hidden: remember the page being read. */
+      function pvLeaving() { if (!pvHidden() && !pvDeferred) pvLeftPage = state.page; }
+      function pvInit() {
+        const area = $("editorArea");
+        /* the writer's own hand in the editor; a bare focus places no caret */
+        if (area) ["input", "keyup", "mouseup", "select"].forEach((ev) => area.addEventListener(ev, (e) => {
+          if (ev === "keyup" && /^(Tab|Shift|Control|Alt|Meta|Escape)$/.test(e.key || "")) return; /* tabbing in moves no caret */
+          if (ev === "select" && document.activeElement !== area) return; /* a caret set by code into an unfocused editor is not the writer's */
+          pvFollow = "caret";
+        }));
+        const hand = () => { pvFollow = "page"; };
+        ["btnPrevPage", "btnNextPage", "deviceScreen"].forEach((id) => { const el = $(id); if (el) el.addEventListener("click", hand, true); });
+        document.addEventListener("keydown", (e) => {
+          if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+          const tag = (document.activeElement && document.activeElement.tagName) || "";
+          if (!["INPUT", "TEXTAREA", "SELECT"].includes(tag)) hand();
+        }, true);
+      }
+      if (typeof window !== "undefined") window.beukReader = { flush: pvFlush, pageOf: pvPageOfAnchor, caretAnchor: pvCaretAnchor, pageAnchor: pvPageAnchor, follow: (v) => { if (v) pvFollow = v; return pvFollow; } };
+      /* ==== /BEUK:reader ==== */
       function renderPreview() {
         const s = activeSection(); if (!s) return;
+        const pvDecodeJob = pvBeforeRender(s); /* BEUK:reader — read the place before the new styles and flow land */
         fitDeviceFrame();
         let styleEl = $("bookStyle");
         if (!styleEl) { styleEl = document.createElement("style"); styleEl.id = "bookStyle"; document.head.appendChild(styleEl); }
@@ -22101,13 +22316,13 @@
         $("rhBook").textContent = state.meta.title || "";
         $("rhChapter").textContent = s.kind === "body" ? (s.title || "") : s.title;
         $("previewSectionName").textContent = t("preview.previewing", { name: (s.kind === "body" ? (s.number ? t("preview.chapterPrefix", { n: s.number }) : "") + (s.title || t("side.untitled")) : s.title) }) + (s.included ? "" : t("preview.excludedSuffix"));
-        state.page = 1;
-        requestAnimationFrame(() => { measurePages(); goToPage(1, true); });
+        /* BEUK:reader — the same section keeps the writer's place; another opens at page 1. */
+        requestAnimationFrame(pvFlush);
         /* BEUK:pagecount — re-count once the section's pictures decode. */
         const pend = pcPendingImages(flow);
         if (pend.length) {
           const owner = flow.firstChild;
-          pcWhenDecoded(pend).then(() => { if (flow.firstChild === owner) { measurePages(); goToPage(state.page, true); } });
+          pcWhenDecoded(pend).then(() => { if (flow.firstChild === owner) pvAfterDecode(pvDecodeJob); }); /* BEUK:reader */
         }
         scheduleDeskUpdate();
         renderDeskRailMarks();
@@ -22187,17 +22402,21 @@
         $("deviceFrame").className = "frame-" + d;
         $("footDevice").textContent = DEVICE_FOOTERS[d];
         document.querySelectorAll("#deviceBar .dev-btn").forEach((b) => b.classList.toggle("active", b.getAttribute("data-device") === d));
+        /* BEUK:reader — the same words at a new geometry: keep the place. */
+        const pvAnc = pvAnchorNow();
+        const pvTurn = () => { measurePages(); goToPage(pvPageOfAnchor(pvAnc) || 1, true); pvLastSet = state.page; };
         state.page = 1;
         fitDeviceFrame();
         renderDeskFacts();
         scheduleDeskUpdate(60);
-        requestAnimationFrame(() => { measurePages(); goToPage(1, true); });
-        setTimeout(() => { fitDeviceFrame(); measurePages(); goToPage(state.page, true); scheduleDeskUpdate(60); }, 330);
+        requestAnimationFrame(pvTurn);
+        setTimeout(() => { fitDeviceFrame(); if (state.page === pvLastSet) pvTurn(); else { measurePages(); goToPage(state.page, true); } scheduleDeskUpdate(60); }, 330);
         const flow = $("pageFlow");
         flow.style.setProperty("--orn-bg", getComputedStyle($("deviceScreen")).backgroundColor);
         hcOnDevice(d); /* BEUK:hcpreview */
       }
       function initPreview() {
+        pvInit(); /* BEUK:reader */
         $("deviceBar").addEventListener("click", (e) => {
           const b = e.target.closest("[data-device]"); if (b) setDevice(b.getAttribute("data-device"));
         });
@@ -31635,9 +31854,18 @@
       function snapshotForeignDoc(doc, name) {
         const clean = JSON.parse(JSON.stringify(doc || {}));
         delete clean.history; /* a snapshot never carries the other snapshots */
-        const lang = (clean.meta && clean.meta.language) || "en";
-        const words = (Array.isArray(clean.sections) ? clean.sections : [])
-          .reduce((n, s) => n + countWords((s && s.content) || "", lang), 0);
+        /* The same count as every other snapshot (bookWordTotal: titles,
+           generated pages, included sections only), read from the
+           arriving book, so History's "since" figure compares like with
+           like. */
+        const keepSections = state.sections, keepMeta = state.meta;
+        let words = 0;
+        try {
+          state.sections = Array.isArray(clean.sections) ? clean.sections.filter(Boolean) : [];
+          state.meta = clean.meta || {};
+          words = bookWordTotal();
+        } catch (e) { words = 0; }
+        finally { state.sections = keepSections; state.meta = keepMeta; }
         const snap = { id: uid(), name: String(name || ""), auto: "conflict", at: new Date().toISOString(), words: words, doc: clean };
         state.history = [snap].concat(state.history || []);
         pruneAutoSnapshots();
@@ -39172,6 +39400,234 @@
           } }
       );
       /* ==== /BEUK:goalshist ==== */
+      /* ==== BEUK:reader ==== */
+      /* The preview keeps the writer's place; the Zen corner cluster
+         stands clear of the tabs. Measured in this window, on the
+         sample book, at the Kindle Paperwhite profile. */
+      function pvCheckRig(fn) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+        const keepSusp = local.suspended, keepDevice = state.device, keepFollow = pvFollow;
+        const keepMobile = $("panes").getAttribute("data-mobile");
+        local.suspended = true;
+        try {
+          applyBookDoc(buildSampleBook());
+          /* a phone shows one pane at a time: show the preview for the measure */
+          if (!$("flowWrap").clientWidth && typeof setMobilePane === "function") setMobilePane("preview");
+          setDevice("kindle"); fitDeviceFrame();
+          if (!$("flowWrap").clientWidth || !deviceReadingArea()) return scVerdict(false, "the preview pane is not shown in this window (" + window.innerWidth + "×" + window.innerHeight + "), so its pages cannot be measured here — run at a width where the preview stands beside the editor");
+          const open = (s) => { state.activeId = s.id; syncEditor(); renderPreview(); pvFlush(); };
+          const ch = (n) => state.sections.find((x) => x.type === "chapter" && String(x.number || "").toLowerCase() === n);
+          /* a word that occurs once in the section and whose letters stand on page p */
+          const wordOnPage = (s, p) => {
+            const els = pvCandidates($("pageFlow"));
+            for (const el of els) {
+              const L = pvLetters(el);
+              if (!L.length || pvPageOfLetter(L[L.length - 1]) < p) continue;
+              if (pvPageOfLetter(L[0]) > p) break;
+              const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n;
+              while ((n = w.nextNode())) {
+                const re = /[A-Za-z]{7,}/g; let m;
+                while ((m = re.exec(n.data))) {
+                  if (pvPageOfLetter([n, m.index]) !== p || pvPageOfLetter([n, m.index + m[0].length - 1]) !== p) continue;
+                  if (String(s.content).split(m[0]).length === 2) return m[0];
+                }
+              }
+            }
+            return null;
+          };
+          /* on screen, inside the visible page: read from the drawn box, not from the app's own page maths */
+          const visible = (word) => {
+            const clip = $("flowWrap").getBoundingClientRect();
+            const w = document.createTreeWalker($("pageFlow"), NodeFilter.SHOW_TEXT); let n;
+            while ((n = w.nextNode())) {
+              const i = n.data.indexOf(word);
+              if (i < 0) continue;
+              const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + word.length);
+              const b = r.getBoundingClientRect();
+              return b.width > 0 && b.left >= clip.left - 1 && b.right <= clip.right + 1 && b.top >= clip.top - 1 && b.bottom <= clip.bottom + 1;
+            }
+            return false;
+          };
+          const counterTrue = () => $("pageCounter").textContent === t("preview.pageOf", { page: state.page, count: state.pageCount });
+          const edit = (s, mutate, caretAt) => {
+            const area = $("editorArea");
+            s.content = mutate(s.content);
+            area.value = s.content;
+            const at = caretAt(s.content);
+            area.setSelectionRange(at[0], at[1]);
+            pvFollow = "caret";
+            renderPreview(); pvFlush();
+          };
+          /* the real path: a sidebar pick (selectSection), the caret left
+             where the editor's value write puts it — the writer has not
+             touched the editor in this section */
+          const openReal = (s) => {
+            selectSection(s.id);
+            if (!$("flowWrap").clientWidth && typeof setMobilePane === "function") setMobilePane("preview");
+            fitDeviceFrame(); pvFlush();
+          };
+          return fn({ open, openReal, ch, wordOnPage, visible, counterTrue, edit });
+        } finally {
+          pvFollow = keepFollow;
+          /* the pane and the device are put back best-effort: neither may
+             keep the writer's own book from coming back to the desk */
+          try { if (keepMobile !== $("panes").getAttribute("data-mobile") && typeof setMobilePane === "function") setMobilePane(keepMobile || "center"); } catch (e) {}
+          try { setDevice(keepDevice || "kindle"); } catch (e) {}
+          applyBookDoc(keepDoc);
+          sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+          local.suspended = keepSusp;
+        }
+      }
+      SELF_CHECKS.push(
+        { id: "preview.keeps-page-on-edit", feature: "preview", name: "The preview keeps its page while the writer formats: on page 4 of Chapter Three, a word chosen on that page is made bold, then italic, then the paragraph quoted and the font size raised — after each re-render the preview still shows that word on screen, and \"Page X of Y\" matches the page shown",
+          run() {
+            return pvCheckRig(({ open, ch, wordOnPage, visible, counterTrue, edit }) => {
+              const s = ch("three");
+              if (!s) return scVerdict(false, "the sample has no Chapter Three");
+              open(s); goToPage(4, true);
+              if (state.page !== 4) return scVerdict(false, "Chapter Three has only " + state.pageCount + " pages here, cannot stand on page 4");
+              const word = wordOnPage(s, 4);
+              if (!word) return scVerdict(false, "no once-only word found on page 4");
+              const bits = [], bad = [];
+              const step = (label, mutate, caret) => {
+                edit(s, mutate, caret);
+                const ok = visible(word) && counterTrue();
+                bits.push(label + " → page " + state.page + " of " + state.pageCount + (ok ? "" : " (word NOT on screen)"));
+                if (!ok) bad.push(label);
+              };
+              const sel = (c, extra) => { const i = c.indexOf(word); return [i + (extra || 0), i + (extra || 0) + word.length]; };
+              step("bold", (c) => c.replace(word, "**" + word + "**"), (c) => sel(c, 0));
+              step("italic", (c) => c.replace("**" + word + "**", "***" + word + "***"), (c) => sel(c, 0));
+              step("blockquote", (c) => { const i = c.indexOf(word); const a = c.lastIndexOf("\n\n", i); const st = a < 0 ? 0 : a + 2; let e = c.indexOf("\n\n", i); if (e < 0) e = c.length; return c.slice(0, st) + c.slice(st, e).split("\n").map((l) => "> " + l).join("\n") + c.slice(e); }, (c) => sel(c, 0));
+              const keepSize = state.theme.fontSize;
+              state.theme.fontSize = (keepSize || 16) + 3;
+              renderPreview(); pvFlush();
+              const fOk = visible(word) && counterTrue();
+              bits.push("font +3 → page " + state.page + " of " + state.pageCount + (fOk ? "" : " (word NOT on screen)"));
+              if (!fOk) bad.push("font size");
+              state.theme.fontSize = keepSize;
+              return scVerdict(bad.length === 0, "\"" + word + "\" on page 4: " + bits.join("; ") + (bad.length ? " — lost the page after: " + bad.join(", ") : ""));
+            });
+          } },
+        { id: "preview.follows-caret", feature: "preview", name: "The preview follows the caret: with the reader on page 4 of Chapter Three, an edit at the chapter's first paragraph turns the preview to the page holding that paragraph, and an edit at a word on a later page turns it there",
+          run() {
+            return pvCheckRig(({ open, ch, wordOnPage, visible, counterTrue, edit }) => {
+              const s = ch("three");
+              if (!s) return scVerdict(false, "the sample has no Chapter Three");
+              open(s);
+              const later = wordOnPage(s, 5);
+              const els = pvCandidates($("pageFlow"));
+              const firstL = els.length ? pvLetters(els[0]) : [];
+              const firstPage = firstL.length ? pvPageOfLetter(firstL[0]) : 0;
+              const firstWord = (els[0] && (els[0].textContent.match(/[A-Za-z]{5,}/) || [])[0]) || "";
+              goToPage(4, true);
+              if (!later || !firstPage || !firstWord) return scVerdict(false, "fixture: no word found on page 5, or no first paragraph");
+              edit(s, (c) => c, (c) => { const i = c.indexOf(firstWord); return [i, i]; });
+              const p1 = state.page, ok1 = p1 === firstPage && visible(firstWord) && counterTrue();
+              edit(s, (c) => c, (c) => { const i = c.indexOf(later); return [i, i]; });
+              const p2 = state.page, ok2 = p2 === 5 && visible(later) && counterTrue();
+              return scVerdict(ok1 && ok2, "caret at the first paragraph → page " + p1 + " (that paragraph starts on page " + firstPage + ", " + ok1 + "); caret at \"" + later + "\" → page " + p2 + " (expected 5, " + ok2 + ")");
+            });
+          } },
+        { id: "preview.new-section-page-one", feature: "preview", name: "Opening another section starts its preview at page 1: from page 4 of Chapter Three, Chapter Four opens at page 1, and going back to Chapter Three is a move too — page 1",
+          run() {
+            return pvCheckRig(({ open, ch, counterTrue }) => {
+              const a = ch("three"), b = ch("four");
+              if (!a || !b) return scVerdict(false, "the sample lacks Chapter Three or Four");
+              open(a); goToPage(4, true);
+              const was = state.page;
+              open(b);
+              const pb = state.page, okB = pb === 1 && counterTrue();
+              goToPage(2, true);
+              open(a);
+              const pa = state.page, okA = pa === 1 && counterTrue();
+              return scVerdict(was === 4 && okB && okA, "from page " + was + " of Chapter Three, Chapter Four opened at page " + pb + " (" + okB + "); back to Chapter Three at page " + pa + " (" + okA + ")");
+            });
+          } },
+        { id: "preview.opened-section-stays-put", feature: "preview", name: "A section just opened stays on its page when nothing in the editor moved: after working in Chapter Two, Chapter Three is picked in the sidebar and its caret sits at the end of the text, put there by code — a font-size change, a keystroke in the chapter title and a device change keep it on page 1, never the chapter's last page; turned by hand to page 3, a font-size change keeps the words that opened page 3 on screen",
+          run() {
+            return pvCheckRig(({ openReal, ch, counterTrue }) => {
+              const a = ch("two"), s = ch("three");
+              if (!a || !s) return scVerdict(false, "the sample lacks Chapter Two or Three");
+              openReal(a); pvFollow = "caret"; /* the writer worked in Chapter Two */
+              openReal(s);
+              /* the worst case seen in review: the caret at the very end of
+                 the text, put there by code (no writer's hand) */
+              const area = $("editorArea");
+              if (document.activeElement === area) area.blur();
+              area.setSelectionRange(area.value.length, area.value.length);
+              const atEnd = area.selectionStart === area.value.length;
+              const bits = [], bad = [];
+              const look = (label, want) => {
+                const ok = state.page === want && counterTrue();
+                bits.push(label + " → page " + state.page + " of " + state.pageCount);
+                if (!ok) bad.push(label);
+              };
+              look("opened", 1);
+              const keepSize = state.theme.fontSize;
+              try {
+                state.theme.fontSize = (keepSize || 16) + 1; renderPreview(); pvFlush();
+                look("font +1", 1);
+                const ti = $("chTitle"), keepTitle = s.title;
+                ti.value = (keepTitle || "") + "X"; ti.dispatchEvent(new Event("input")); pvFlush();
+                look("title keystroke", 1);
+                ti.value = keepTitle || ""; ti.dispatchEvent(new Event("input")); pvFlush();
+                setDevice("iphone"); measurePages(); goToPage(pvPageOfAnchor(pvAnchorNow()) || 1, true);
+                look("device iPhone", 1);
+                setDevice("kindle"); measurePages(); goToPage(state.page, true);
+                /* a hand turn: the first words of page 3 are the place */
+                goToPage(3, true); pvFollow = "page";
+                const anc = pvPageAnchor($("pageFlow"));
+                state.theme.fontSize = (keepSize || 16) + 3; renderPreview(); pvFlush();
+                const want = anc ? pvPageOfAnchor(anc) : 0;
+                const ok3 = !!anc && want > 0 && state.page === want && state.page < state.pageCount && counterTrue();
+                bits.push("hand-turned to page 3, font +3 → page " + state.page + " of " + state.pageCount + " (page 3's first words now on page " + want + ")");
+                if (!ok3) bad.push("hand-turned font change");
+              } finally { state.theme.fontSize = keepSize; }
+              return scVerdict(atEnd && bad.length === 0, "caret at the end of the text (" + area.selectionStart + " of " + area.value.length + "); " + bits.join("; ") + (bad.length ? " — moved after: " + bad.join(", ") : ""));
+            });
+          } },
+        { id: "zen.controls.no-overlap", feature: "zen", name: "Zen corner controls never cover the tabs: in every interface language (Arabic right-to-left included) the presence dot, Ambient sound, the scene picker and Dictate share no pixel with the Chapter Content / Typography Studio tabs and stay inside the window; the cluster stands at the reading end of the line (logical inset), and the editor never runs past its column",
+          run() {
+            const keepLang = getUiLang();
+            const bad = [], bits = [];
+            try {
+              window.beukZen.overrideReducedMotion(true);
+              setZenMode(true); window.beukZen.settle();
+              const vw = document.documentElement.clientWidth;
+              const cs = getComputedStyle($("zenCluster"));
+              const logical = /16px/.test(cs.insetInlineEnd || "");
+              if (!logical) bad.push("the cluster is not placed by inset-inline-end");
+              UI_LANG_ORDER.forEach((L) => {
+                setUiLang(L, { persist: false });
+                const vis = (el) => el && el.getClientRects().length && getComputedStyle(el).display !== "none";
+                const ctrls = ["zenMark", "btnZenSound", "btnZenScenes", "btnZenDictate"].map((id) => $(id)).filter(vis);
+                const tabs = Array.from(document.querySelectorAll(".center-tabs .ctab")).filter(vis);
+                if (!ctrls.length || !tabs.length) { bad.push(L + ": controls or tabs not shown"); return; }
+                ctrls.forEach((c) => {
+                  const a = c.getBoundingClientRect();
+                  if (a.left < -0.5 || a.right > vw + 0.5) bad.push(L + ": " + c.id + " outside the window");
+                  tabs.forEach((tb) => { const b = tb.getBoundingClientRect(); if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) bad.push(L + ": " + c.id + " covers " + tb.id); });
+                });
+                const ed = $("editorArea").getBoundingClientRect();
+                if (ed.left < -0.5 || ed.right > vw + 0.5) bad.push(L + ": the editor runs past the window (" + Math.round(ed.left) + "–" + Math.round(ed.right) + ")");
+                if (L === "ar" || L === "en") {
+                  const a = $("zenCluster").getBoundingClientRect();
+                  bits.push(L + " cluster " + Math.round(a.left) + "–" + Math.round(a.right) + ", tabs " + Math.round(Math.min(...tabs.map((x) => x.getBoundingClientRect().left))) + "–" + Math.round(Math.max(...tabs.map((x) => x.getBoundingClientRect().right))));
+                }
+              });
+              return scVerdict(bad.length === 0, UI_LANG_ORDER.length + " languages at " + window.innerWidth + "×" + window.innerHeight + ": " + bits.join("; ") + (bad.length ? " — " + bad.slice(0, 6).join("; ") : " — no overlap, all inside the window"));
+            } finally {
+              setUiLang(keepLang, { persist: false });
+              window.beukZen.overrideReducedMotion(null);
+              setZenMode(false); window.beukZen.settle();
+            }
+          } }
+      );
+      /* ==== /BEUK:reader ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
