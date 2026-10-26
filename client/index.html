@@ -1501,6 +1501,41 @@
         .hist-sec-row { flex-wrap: wrap; }
         .hist-detail-h { font-size: 19px; }
       }
+      /* ==== BEUK:goalshist ==== the road so far (Goals) and what changed since each snapshot (History).
+         Chart marks reuse the studio's tokens: the book's line wears --ins-a (the Insights accent), the
+         project target --zen-leaf (the Voyage brand blue and its Candlelight tint), the steady pace a
+         neutral --ink-2 dash; text always wears text tokens, never a mark colour. */
+      .road-key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 11.5px; color: var(--muted); margin: 0 0 8px; }
+      .road-key span { display: inline-flex; align-items: center; gap: 7px; }
+      .road-key svg { width: 18px; height: 8px; flex: 0 0 auto; }
+      .road-wrap { position: relative; border-radius: 8px; touch-action: pan-y; }
+      .road-wrap:focus { outline: none; }
+      .road-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+      .road-svg { display: block; width: 100%; height: auto; overflow: visible; }
+      .road-tip { position: absolute; top: 0; left: 0; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 5px 10px 6px; white-space: nowrap; z-index: 2; }
+      .road-tip b { display: block; font-family: "EB Garamond", Georgia, serif; font-size: 16.5px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+      .road-tip span { display: block; font-size: 11.5px; color: var(--muted); }
+      .hist-delta { display: inline-block; font-size: 11px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line); border-radius: 99px; padding: 0 7px; margin-inline-start: 7px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .hist-diff { border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 11px 13px 9px; margin: 6px 0 14px; }
+      .hist-diff-h { font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 600; color: var(--ink); margin: 0; }
+      .hist-diff-sub { font-size: 11.5px; color: var(--muted); margin: 1px 0 6px; line-height: 1.5; }
+      .hist-diff-lab { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 9px 0 2px; }
+      .hist-diff-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 78px; gap: 10px; align-items: center; padding: 3px 0; font-size: 13px; color: var(--ink); }
+      .hist-diff-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .hist-diff-n { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: end; max-width: 42vw; }
+      .hist-diff-bar { display: flex; height: 6px; }
+      .hist-diff-bar > span { flex: 1 1 0; display: flex; }
+      .hist-diff-bar > span:first-child { justify-content: flex-end; border-inline-end: 1px solid var(--line-2); }
+      .hist-diff-bar i { display: block; height: 100%; min-width: 2px; }
+      .hist-diff-bar .up { background: var(--ins-a); border-radius: 0 3px 3px 0; }
+      .hist-diff-bar .down { background: var(--zen-leaf); border-radius: 3px 0 0 3px; }
+      [dir="rtl"] .hist-diff-bar .up { border-radius: 3px 0 0 3px; }
+      [dir="rtl"] .hist-diff-bar .down { border-radius: 0 3px 3px 0; }
+      .hist-diff-none { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--muted); margin: 4px 0 2px; }
+      @media (max-width: 560px) {
+        .hist-diff-row { grid-template-columns: minmax(0, 1fr) auto 52px; gap: 8px; }
+      }
+      /* ==== /BEUK:goalshist ==== */
 
       /* ---------- Account, shelf & cloud sync (SaaS wiring) ---------- */
       .modal-back.open .modal { animation: beukRise .22s ease-out; }
@@ -2945,6 +2980,13 @@
         <h2 id="goalsH" data-i18n="goals.title"><i data-lucide="target"></i>Goals</h2>
         <p class="m-sub" data-i18n="goals.sub">Targets you set for yourself, kept quietly. Nothing here counts down at you — it only keeps the tally.</p>
         <div id="goalsProgress"></div>
+        <!-- ==== BEUK:goalshist ==== the road so far: the book's length on logged days -->
+        <section class="ins-sec" id="goalRoadSec" hidden>
+          <h3 class="ins-h" data-i18n="goals.roadH">The road so far</h3>
+          <p class="ins-sub" data-i18n="goals.roadSub">The book's length on each day the log kept it. Days it didn't — before the log began keeping length, or when the desk stayed closed — are left as gaps; the line never guesses across them.</p>
+          <div id="goalRoad"></div>
+        </section>
+        <!-- ==== /BEUK:goalshist ==== -->
         <section class="ins-sec">
           <h3 class="ins-h" data-i18n="goals.calH">The habit calendar</h3>
           <p class="ins-sub" data-i18n="goals.calSub">Words added, day by day, exactly as the log has kept them since it began. Days before the log started stay blank — nothing is filled in after the fact.</p>
@@ -10372,6 +10414,506 @@
         fr: { "side.wordUnit": { one: "mot" } }
       });
       /* ==== /BEUK:bugs ==== */
+      /* ==== BEUK:goalshist ==== strings: the road so far (Goals) and the change since each snapshot (History) — all 13 packs */
+      Object.assign(UI_STRINGS.en, {
+        "goals.roadH": "The road so far",
+        "goals.roadSub": "The book's length on each day the log kept it. Days it didn't — before the log began keeping length, or when the desk stayed closed — are left as gaps; the line never guesses across them.",
+        "goals.roadAria": "The road so far — the book's length on each logged day. Arrow keys step from day to day.",
+        "goals.roadLine": "The book's length",
+        "goals.roadTarget": "Target · {n}",
+        "goals.roadPace": "Steady pace · {n} a day",
+        "goals.roadPoint": "{date} · {n} word",
+        "goals.roadPointPlural": "{date} · {n} words",
+        "goals.roadTipWords": "{n} word",
+        "goals.roadTipWordsPlural": "{n} words",
+        "goals.roadCaption": "Kept from {from} to {to}.",
+        "goals.roadGaps": "Where the line breaks, the log kept no length for those days.",
+        "goals.roadTargetNote": "The solid line is your project target of {n} words.",
+        "goals.roadPaceNote": "The dashed line is the steady pace from today's length to your target by {date} — {n} words a day. It's a pace you could hold, not a prediction.",
+        "goals.roadDay": "Day",
+        "goals.roadWords": "Words in the book",
+        "history.deltaUp": "+{n} word since",
+        "history.deltaUpPlural": "+{n} words since",
+        "history.deltaDown": "−{n} word since",
+        "history.deltaDownPlural": "−{n} words since",
+        "history.deltaSame": "same length as now",
+        "history.deltaTitle": "Compared with the book as it stands now",
+        "history.diffH": "Since this snapshot",
+        "history.diffSub": "Section by section, against the book as it stands now — counted on this device.",
+        "history.diffNone": "Every section matches the book as it stands now.",
+        "history.diffAdded": "Added since",
+        "history.diffRemoved": "No longer in the book",
+        "history.diffLeftOut": "Left out of the book since",
+        "history.diffBroughtIn": "Brought into the book since",
+        "history.diffNotCounted": "left out of the book, not counted",
+        "history.diffChanged": "Changed",
+        "history.dUp": "+{n} word",
+        "history.dUpPlural": "+{n} words",
+        "history.dDown": "−{n} word",
+        "history.dDownPlural": "−{n} words",
+        "history.diffReworded": "same length, edited"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "goals.roadH": "El camino recorrido",
+        "goals.roadSub": "La extensión del libro cada día que el registro la guardó. Los días que no — antes de que el registro empezara a guardarla, o cuando el escritorio quedó cerrado — quedan como huecos; la línea nunca adivina a través de ellos.",
+        "goals.roadAria": "El camino recorrido — la extensión del libro en cada día registrado. Las flechas pasan de un día a otro.",
+        "goals.roadLine": "La extensión del libro",
+        "goals.roadTarget": "Meta · {n}",
+        "goals.roadPace": "Ritmo constante · {n} al día",
+        "goals.roadPoint": "{date} · {n} palabra",
+        "goals.roadPointPlural": "{date} · {n} palabras",
+        "goals.roadTipWords": "{n} palabra",
+        "goals.roadTipWordsPlural": "{n} palabras",
+        "goals.roadCaption": "Registrado del {from} al {to}.",
+        "goals.roadGaps": "Donde la línea se corta, el registro no guardó la extensión de esos días.",
+        "goals.roadTargetNote": "La línea continua es la meta de tu proyecto: {n} palabras.",
+        "goals.roadPaceNote": "La línea discontinua es el ritmo constante desde la extensión de hoy hasta tu meta el {date} — {n} palabras al día. Es un ritmo que podrías sostener, no una predicción.",
+        "goals.roadDay": "Día",
+        "goals.roadWords": "Palabras en el libro",
+        "history.deltaUp": "+{n} palabra desde entonces",
+        "history.deltaUpPlural": "+{n} palabras desde entonces",
+        "history.deltaDown": "−{n} palabra desde entonces",
+        "history.deltaDownPlural": "−{n} palabras desde entonces",
+        "history.deltaSame": "misma extensión que ahora",
+        "history.deltaTitle": "Comparado con el libro tal como está ahora",
+        "history.diffH": "Desde esta instantánea",
+        "history.diffSub": "Sección por sección, frente al libro tal como está ahora — contado en este dispositivo.",
+        "history.diffNone": "Cada sección coincide con el libro tal como está ahora.",
+        "history.diffAdded": "Añadidas después",
+        "history.diffRemoved": "Ya no están en el libro",
+        "history.diffLeftOut": "Dejadas fuera del libro desde entonces",
+        "history.diffBroughtIn": "Incluidas en el libro desde entonces",
+        "history.diffNotCounted": "fuera del libro, no se cuenta",
+        "history.diffChanged": "Cambiadas",
+        "history.dUp": "+{n} palabra",
+        "history.dUpPlural": "+{n} palabras",
+        "history.dDown": "−{n} palabra",
+        "history.dDownPlural": "−{n} palabras",
+        "history.diffReworded": "misma extensión, editada"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "goals.roadH": "Le chemin parcouru",
+        "goals.roadSub": "La longueur du livre chaque jour où le journal l'a notée. Les jours où il ne l'a pas fait — avant qu'il commence à la noter, ou quand le bureau est resté fermé — restent des vides ; la ligne ne devine jamais par-dessus.",
+        "goals.roadAria": "Le chemin parcouru — la longueur du livre chaque jour noté. Les flèches passent d'un jour à l'autre.",
+        "goals.roadLine": "La longueur du livre",
+        "goals.roadTarget": "Objectif · {n}",
+        "goals.roadPace": "Rythme régulier · {n} par jour",
+        "goals.roadPoint": "{date} · {n} mot",
+        "goals.roadPointPlural": "{date} · {n} mots",
+        "goals.roadTipWords": "{n} mot",
+        "goals.roadTipWordsPlural": "{n} mots",
+        "goals.roadCaption": "Noté du {from} au {to}.",
+        "goals.roadGaps": "Là où la ligne s'interrompt, le journal n'a pas noté la longueur ces jours-là.",
+        "goals.roadTargetNote": "La ligne pleine est l'objectif de votre projet : {n} mots.",
+        "goals.roadPaceNote": "La ligne en tirets est le rythme régulier qui mène de la longueur d'aujourd'hui à votre objectif pour le {date} — {n} mots par jour. C'est un rythme que vous pourriez tenir, pas une prédiction.",
+        "goals.roadDay": "Jour",
+        "goals.roadWords": "Mots dans le livre",
+        "history.deltaUp": "+{n} mot depuis",
+        "history.deltaUpPlural": "+{n} mots depuis",
+        "history.deltaDown": "−{n} mot depuis",
+        "history.deltaDownPlural": "−{n} mots depuis",
+        "history.deltaSame": "même longueur qu'aujourd'hui",
+        "history.deltaTitle": "Comparé au livre tel qu'il est maintenant",
+        "history.diffH": "Depuis cet instantané",
+        "history.diffSub": "Section par section, face au livre tel qu'il est maintenant — compté sur cet appareil.",
+        "history.diffNone": "Chaque section correspond au livre tel qu'il est maintenant.",
+        "history.diffAdded": "Ajoutées depuis",
+        "history.diffRemoved": "Plus dans le livre",
+        "history.diffLeftOut": "Laissées hors du livre depuis",
+        "history.diffBroughtIn": "Remises dans le livre depuis",
+        "history.diffNotCounted": "hors du livre, non comptée",
+        "history.diffChanged": "Modifiées",
+        "history.dUp": "+{n} mot",
+        "history.dUpPlural": "+{n} mots",
+        "history.dDown": "−{n} mot",
+        "history.dDownPlural": "−{n} mots",
+        "history.diffReworded": "même longueur, modifiée"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "goals.roadH": "Der Weg bisher",
+        "goals.roadSub": "Die Länge des Buchs an jedem Tag, an dem das Tagebuch sie festhielt. Tage ohne Eintrag — bevor es die Länge festhielt, oder wenn der Schreibtisch zu blieb — bleiben Lücken; die Linie rät nie darüber hinweg.",
+        "goals.roadAria": "Der Weg bisher — die Länge des Buchs an jedem festgehaltenen Tag. Mit den Pfeiltasten von Tag zu Tag.",
+        "goals.roadLine": "Die Länge des Buchs",
+        "goals.roadTarget": "Ziel · {n}",
+        "goals.roadPace": "Gleichmäßiges Tempo · {n} pro Tag",
+        "goals.roadPoint": "{date} · {n} Wort",
+        "goals.roadPointPlural": "{date} · {n} Wörter",
+        "goals.roadTipWords": "{n} Wort",
+        "goals.roadTipWordsPlural": "{n} Wörter",
+        "goals.roadCaption": "Festgehalten vom {from} bis {to}.",
+        "goals.roadGaps": "Wo die Linie abbricht, hat das Tagebuch für diese Tage keine Länge festgehalten.",
+        "goals.roadTargetNote": "Die durchgezogene Linie ist dein Projektziel: {n} Wörter.",
+        "goals.roadPaceNote": "Die gestrichelte Linie ist das gleichmäßige Tempo von der heutigen Länge bis zu deinem Ziel am {date} — {n} Wörter pro Tag. Ein Tempo, das du halten könntest, keine Vorhersage.",
+        "goals.roadDay": "Tag",
+        "goals.roadWords": "Wörter im Buch",
+        "history.deltaUp": "+{n} Wort seitdem",
+        "history.deltaUpPlural": "+{n} Wörter seitdem",
+        "history.deltaDown": "−{n} Wort seitdem",
+        "history.deltaDownPlural": "−{n} Wörter seitdem",
+        "history.deltaSame": "gleich lang wie jetzt",
+        "history.deltaTitle": "Verglichen mit dem Buch, wie es jetzt ist",
+        "history.diffH": "Seit diesem Schnappschuss",
+        "history.diffSub": "Abschnitt für Abschnitt, verglichen mit dem Buch, wie es jetzt ist — auf diesem Gerät gezählt.",
+        "history.diffNone": "Jeder Abschnitt entspricht dem Buch, wie es jetzt ist.",
+        "history.diffAdded": "Seitdem hinzugekommen",
+        "history.diffRemoved": "Nicht mehr im Buch",
+        "history.diffLeftOut": "Seitdem aus dem Buch genommen",
+        "history.diffBroughtIn": "Seitdem ins Buch aufgenommen",
+        "history.diffNotCounted": "nicht im Buch, nicht gezählt",
+        "history.diffChanged": "Geändert",
+        "history.dUp": "+{n} Wort",
+        "history.dUpPlural": "+{n} Wörter",
+        "history.dDown": "−{n} Wort",
+        "history.dDownPlural": "−{n} Wörter",
+        "history.diffReworded": "gleich lang, bearbeitet"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "goals.roadH": "La strada fatta",
+        "goals.roadSub": "La lunghezza del libro in ogni giorno in cui il diario l'ha annotata. I giorni senza — prima che il diario iniziasse ad annotarla, o quando la scrivania è rimasta chiusa — restano vuoti; la linea non tira mai a indovinare.",
+        "goals.roadAria": "La strada fatta — la lunghezza del libro in ogni giorno annotato. Le frecce passano da un giorno all'altro.",
+        "goals.roadLine": "La lunghezza del libro",
+        "goals.roadTarget": "Obiettivo · {n}",
+        "goals.roadPace": "Ritmo costante · {n} al giorno",
+        "goals.roadPoint": "{date} · {n} parola",
+        "goals.roadPointPlural": "{date} · {n} parole",
+        "goals.roadTipWords": "{n} parola",
+        "goals.roadTipWordsPlural": "{n} parole",
+        "goals.roadCaption": "Annotato dal {from} al {to}.",
+        "goals.roadGaps": "Dove la linea si interrompe, il diario non ha annotato la lunghezza di quei giorni.",
+        "goals.roadTargetNote": "La linea continua è l'obiettivo del tuo progetto: {n} parole.",
+        "goals.roadPaceNote": "La linea tratteggiata è il ritmo costante dalla lunghezza di oggi al tuo obiettivo entro il {date} — {n} parole al giorno. È un ritmo che potresti tenere, non una previsione.",
+        "goals.roadDay": "Giorno",
+        "goals.roadWords": "Parole nel libro",
+        "history.deltaUp": "+{n} parola da allora",
+        "history.deltaUpPlural": "+{n} parole da allora",
+        "history.deltaDown": "−{n} parola da allora",
+        "history.deltaDownPlural": "−{n} parole da allora",
+        "history.deltaSame": "stessa lunghezza di adesso",
+        "history.deltaTitle": "Confrontato con il libro com'è adesso",
+        "history.diffH": "Da questa istantanea",
+        "history.diffSub": "Sezione per sezione, rispetto al libro com'è adesso — contato su questo dispositivo.",
+        "history.diffNone": "Ogni sezione corrisponde al libro com'è adesso.",
+        "history.diffAdded": "Aggiunte da allora",
+        "history.diffRemoved": "Non più nel libro",
+        "history.diffLeftOut": "Escluse dal libro da allora",
+        "history.diffBroughtIn": "Incluse nel libro da allora",
+        "history.diffNotCounted": "fuori dal libro, non contata",
+        "history.diffChanged": "Cambiate",
+        "history.dUp": "+{n} parola",
+        "history.dUpPlural": "+{n} parole",
+        "history.dDown": "−{n} parola",
+        "history.dDownPlural": "−{n} parole",
+        "history.diffReworded": "stessa lunghezza, modificata"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "goals.roadH": "O caminho até aqui",
+        "goals.roadSub": "A extensão do livro em cada dia em que o registo a guardou. Os dias sem registo — antes de começar a guardá-la, ou quando a secretária ficou fechada — ficam como lacunas; a linha nunca adivina por cima delas.",
+        "goals.roadAria": "O caminho até aqui — a extensão do livro em cada dia registado. As setas passam de um dia para outro.",
+        "goals.roadLine": "A extensão do livro",
+        "goals.roadTarget": "Meta · {n}",
+        "goals.roadPace": "Ritmo constante · {n} por dia",
+        "goals.roadPoint": "{date} · {n} palavra",
+        "goals.roadPointPlural": "{date} · {n} palavras",
+        "goals.roadTipWords": "{n} palavra",
+        "goals.roadTipWordsPlural": "{n} palavras",
+        "goals.roadCaption": "Registado de {from} a {to}.",
+        "goals.roadGaps": "Onde a linha se interrompe, o registo não guardou a extensão desses dias.",
+        "goals.roadTargetNote": "A linha contínua é a meta do seu projeto: {n} palavras.",
+        "goals.roadPaceNote": "A linha tracejada é o ritmo constante da extensão de hoje até à sua meta a {date} — {n} palavras por dia. É um ritmo que poderia manter, não uma previsão.",
+        "goals.roadDay": "Dia",
+        "goals.roadWords": "Palavras no livro",
+        "history.deltaUp": "+{n} palavra desde então",
+        "history.deltaUpPlural": "+{n} palavras desde então",
+        "history.deltaDown": "−{n} palavra desde então",
+        "history.deltaDownPlural": "−{n} palavras desde então",
+        "history.deltaSame": "a mesma extensão de agora",
+        "history.deltaTitle": "Comparado com o livro tal como está agora",
+        "history.diffH": "Desde este instantâneo",
+        "history.diffSub": "Secção a secção, face ao livro tal como está agora — contado neste dispositivo.",
+        "history.diffNone": "Cada secção coincide com o livro tal como está agora.",
+        "history.diffAdded": "Acrescentadas desde então",
+        "history.diffRemoved": "Já não estão no livro",
+        "history.diffLeftOut": "Deixadas fora do livro desde então",
+        "history.diffBroughtIn": "Incluídas no livro desde então",
+        "history.diffNotCounted": "fora do livro, não contada",
+        "history.diffChanged": "Alteradas",
+        "history.dUp": "+{n} palavra",
+        "history.dUpPlural": "+{n} palavras",
+        "history.dDown": "−{n} palavra",
+        "history.dDownPlural": "−{n} palavras",
+        "history.diffReworded": "a mesma extensão, editada"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "goals.roadH": "De weg tot nu toe",
+        "goals.roadSub": "De lengte van het boek op elke dag dat het logboek die bijhield. Dagen zonder — voordat het de lengte bijhield, of wanneer het bureau dicht bleef — blijven gaten; de lijn gokt er nooit overheen.",
+        "goals.roadAria": "De weg tot nu toe — de lengte van het boek op elke bijgehouden dag. Met de pijltjestoetsen ga je van dag tot dag.",
+        "goals.roadLine": "De lengte van het boek",
+        "goals.roadTarget": "Doel · {n}",
+        "goals.roadPace": "Gelijkmatig tempo · {n} per dag",
+        "goals.roadPoint": "{date} · {n} woord",
+        "goals.roadPointPlural": "{date} · {n} woorden",
+        "goals.roadTipWords": "{n} woord",
+        "goals.roadTipWordsPlural": "{n} woorden",
+        "goals.roadCaption": "Bijgehouden van {from} tot {to}.",
+        "goals.roadGaps": "Waar de lijn breekt, hield het logboek voor die dagen geen lengte bij.",
+        "goals.roadTargetNote": "De doorgetrokken lijn is je projectdoel: {n} woorden.",
+        "goals.roadPaceNote": "De gestippelde lijn is het gelijkmatige tempo van de lengte van vandaag naar je doel op {date} — {n} woorden per dag. Een tempo dat je zou kunnen volhouden, geen voorspelling.",
+        "goals.roadDay": "Dag",
+        "goals.roadWords": "Woorden in het boek",
+        "history.deltaUp": "+{n} woord sindsdien",
+        "history.deltaUpPlural": "+{n} woorden sindsdien",
+        "history.deltaDown": "−{n} woord sindsdien",
+        "history.deltaDownPlural": "−{n} woorden sindsdien",
+        "history.deltaSame": "even lang als nu",
+        "history.deltaTitle": "Vergeleken met het boek zoals het nu is",
+        "history.diffH": "Sinds deze momentopname",
+        "history.diffSub": "Sectie voor sectie, vergeleken met het boek zoals het nu is — geteld op dit apparaat.",
+        "history.diffNone": "Elke sectie komt overeen met het boek zoals het nu is.",
+        "history.diffAdded": "Sindsdien toegevoegd",
+        "history.diffRemoved": "Niet meer in het boek",
+        "history.diffLeftOut": "Sindsdien buiten het boek gelaten",
+        "history.diffBroughtIn": "Sindsdien in het boek opgenomen",
+        "history.diffNotCounted": "buiten het boek, niet geteld",
+        "history.diffChanged": "Gewijzigd",
+        "history.dUp": "+{n} woord",
+        "history.dUpPlural": "+{n} woorden",
+        "history.dDown": "−{n} woord",
+        "history.dDownPlural": "−{n} woorden",
+        "history.diffReworded": "even lang, bewerkt"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "goals.roadH": "Dotychczasowa droga",
+        "goals.roadSub": "Długość książki w każdym dniu, w którym dziennik ją zapisał. Dni bez zapisu — zanim dziennik zaczął zapisywać długość, albo gdy biurko pozostało zamknięte — zostają lukami; linia nigdy nie zgaduje ponad nimi.",
+        "goals.roadAria": "Dotychczasowa droga — długość książki w każdym zapisanym dniu. Strzałki przechodzą z dnia na dzień.",
+        "goals.roadLine": "Długość książki",
+        "goals.roadTarget": "Cel · {n}",
+        "goals.roadPace": "Równe tempo · {n} dziennie",
+        "goals.roadPoint": "{date} · {n} słowo",
+        "goals.roadPointPlural": "{date} · {n} słowa",
+        "goals.roadTipWords": "{n} słowo",
+        "goals.roadTipWordsPlural": "{n} słowa",
+        "goals.roadCaption": "Zapisywane od {from} do {to}.",
+        "goals.roadGaps": "Tam, gdzie linia się urywa, dziennik nie zapisał długości z tych dni.",
+        "goals.roadTargetNote": "Ciągła linia to cel twojego projektu — {n}.",
+        "goals.roadPaceNote": "Przerywana linia to równe tempo od dzisiejszej długości do twojego celu na {date} — dziennie: {n}. To tempo, które dałoby się utrzymać, a nie prognoza.",
+        "goals.roadDay": "Dzień",
+        "goals.roadWords": "Słowa w książce",
+        "history.deltaUp": "+{n} słowo od tamtej pory",
+        "history.deltaUpPlural": "+{n} słowa od tamtej pory",
+        "history.deltaDown": "−{n} słowo od tamtej pory",
+        "history.deltaDownPlural": "−{n} słowa od tamtej pory",
+        "history.deltaSame": "ta sama długość co teraz",
+        "history.deltaTitle": "W porównaniu z książką w obecnym kształcie",
+        "history.diffH": "Od tej migawki",
+        "history.diffSub": "Sekcja po sekcji, w porównaniu z książką w obecnym kształcie — policzone na tym urządzeniu.",
+        "history.diffNone": "Każda sekcja zgadza się z książką w obecnym kształcie.",
+        "history.diffAdded": "Dodane od tamtej pory",
+        "history.diffRemoved": "Nie ma ich już w książce",
+        "history.diffLeftOut": "Od tamtej pory wyłączone z książki",
+        "history.diffBroughtIn": "Od tamtej pory włączone do książki",
+        "history.diffNotCounted": "poza książką, nieliczone",
+        "history.diffChanged": "Zmienione",
+        "history.dUp": "+{n} słowo",
+        "history.dUpPlural": "+{n} słowa",
+        "history.dDown": "−{n} słowo",
+        "history.dDownPlural": "−{n} słowa",
+        "history.diffReworded": "ta sama długość, zmieniona"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "goals.roadH": "Пройденный путь",
+        "goals.roadSub": "Длина книги в каждый день, когда журнал её записал. Дни без записи — до того как журнал начал записывать длину, или когда рабочий стол оставался закрыт, — остаются пробелами; линия никогда не додумывает их.",
+        "goals.roadAria": "Пройденный путь — длина книги в каждый записанный день. Стрелки переходят от дня к дню.",
+        "goals.roadLine": "Длина книги",
+        "goals.roadTarget": "Цель · {n}",
+        "goals.roadPace": "Ровный темп · {n} в день",
+        "goals.roadPoint": "{date} · {n} слово",
+        "goals.roadPointPlural": "{date} · {n} слов",
+        "goals.roadTipWords": "{n} слово",
+        "goals.roadTipWordsPlural": "{n} слов",
+        "goals.roadCaption": "Записано с {from} по {to}.",
+        "goals.roadGaps": "Там, где линия прерывается, журнал не записал длину за эти дни.",
+        "goals.roadTargetNote": "Сплошная линия — цель вашего проекта: {n}.",
+        "goals.roadPaceNote": "Пунктир — ровный темп от сегодняшней длины до вашей цели к {date}: по {n} в день. Это темп, который можно держать, а не прогноз.",
+        "goals.roadDay": "День",
+        "goals.roadWords": "Слов в книге",
+        "history.deltaUp": "+{n} слово с тех пор",
+        "history.deltaUpPlural": "+{n} слов с тех пор",
+        "history.deltaDown": "−{n} слово с тех пор",
+        "history.deltaDownPlural": "−{n} слов с тех пор",
+        "history.deltaSame": "та же длина, что сейчас",
+        "history.deltaTitle": "По сравнению с книгой в её нынешнем виде",
+        "history.diffH": "С этого снимка",
+        "history.diffSub": "Раздел за разделом, по сравнению с книгой в её нынешнем виде — подсчитано на этом устройстве.",
+        "history.diffNone": "Каждый раздел совпадает с книгой в её нынешнем виде.",
+        "history.diffAdded": "Добавлены с тех пор",
+        "history.diffRemoved": "Больше нет в книге",
+        "history.diffLeftOut": "С тех пор исключены из книги",
+        "history.diffBroughtIn": "С тех пор включены в книгу",
+        "history.diffNotCounted": "вне книги, не учитывается",
+        "history.diffChanged": "Изменены",
+        "history.dUp": "+{n} слово",
+        "history.dUpPlural": "+{n} слов",
+        "history.dDown": "−{n} слово",
+        "history.dDownPlural": "−{n} слов",
+        "history.diffReworded": "та же длина, изменён"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "goals.roadH": "Şimdiye kadarki yol",
+        "goals.roadSub": "Günlüğün kaydettiği her gün kitabın uzunluğu. Kaydedilmeyen günler — günlük uzunluğu tutmaya başlamadan önce ya da masa kapalı kaldığında — boşluk olarak kalır; çizgi bunların üzerinden asla tahmin yürütmez.",
+        "goals.roadAria": "Şimdiye kadarki yol — kaydedilen her gün kitabın uzunluğu. Ok tuşlarıyla günden güne geçilir.",
+        "goals.roadLine": "Kitabın uzunluğu",
+        "goals.roadTarget": "Hedef · {n}",
+        "goals.roadPace": "Sabit tempo · günde {n}",
+        "goals.roadPoint": "{date} · {n} kelime",
+        "goals.roadPointPlural": "{date} · {n} kelime",
+        "goals.roadTipWords": "{n} kelime",
+        "goals.roadTipWordsPlural": "{n} kelime",
+        "goals.roadCaption": "{from} ile {to} arasında kaydedildi.",
+        "goals.roadGaps": "Çizginin kesildiği yerlerde günlük o günlerin uzunluğunu kaydetmedi.",
+        "goals.roadTargetNote": "Düz çizgi proje hedefiniz: {n} kelime.",
+        "goals.roadPaceNote": "Kesikli çizgi, bugünkü uzunluktan {date} tarihindeki hedefinize giden sabit tempo — günde {n} kelime. Sürdürebileceğiniz bir tempo, bir tahmin değil.",
+        "goals.roadDay": "Gün",
+        "goals.roadWords": "Kitaptaki kelimeler",
+        "history.deltaUp": "o zamandan beri +{n} kelime",
+        "history.deltaUpPlural": "o zamandan beri +{n} kelime",
+        "history.deltaDown": "o zamandan beri −{n} kelime",
+        "history.deltaDownPlural": "o zamandan beri −{n} kelime",
+        "history.deltaSame": "şimdiyle aynı uzunlukta",
+        "history.deltaTitle": "Kitabın şimdiki hâliyle karşılaştırıldı",
+        "history.diffH": "Bu anlık görüntüden beri",
+        "history.diffSub": "Bölüm bölüm, kitabın şimdiki hâliyle karşılaştırıldı — bu cihazda sayıldı.",
+        "history.diffNone": "Her bölüm kitabın şimdiki hâliyle aynı.",
+        "history.diffAdded": "O zamandan beri eklenenler",
+        "history.diffRemoved": "Artık kitapta olmayanlar",
+        "history.diffLeftOut": "O zamandan beri kitabın dışında bırakılanlar",
+        "history.diffBroughtIn": "O zamandan beri kitaba alınanlar",
+        "history.diffNotCounted": "kitabın dışında, sayılmıyor",
+        "history.diffChanged": "Değişenler",
+        "history.dUp": "+{n} kelime",
+        "history.dUpPlural": "+{n} kelime",
+        "history.dDown": "−{n} kelime",
+        "history.dDownPlural": "−{n} kelime",
+        "history.diffReworded": "aynı uzunluk, düzenlendi"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "goals.roadH": "الطريق حتى الآن",
+        "goals.roadSub": "طول الكتاب في كل يوم حفظه السجل. الأيام التي لم يحفظها — قبل أن يبدأ السجل بحفظ الطول، أو حين بقي المكتب مغلقًا — تبقى فجوات؛ ولا يخمّن الخط ما بينها أبدًا.",
+        "goals.roadAria": "الطريق حتى الآن — طول الكتاب في كل يوم مسجّل. تنتقل مفاتيح الأسهم من يوم إلى يوم.",
+        "goals.roadLine": "طول الكتاب",
+        "goals.roadTarget": "الهدف · {n}",
+        "goals.roadPace": "وتيرة ثابتة · {n} في اليوم",
+        "goals.roadPoint": "{date} · {n} كلمة",
+        "goals.roadPointPlural": "{date} · {n} كلمة",
+        "goals.roadTipWords": "{n} كلمة",
+        "goals.roadTipWordsPlural": "{n} كلمة",
+        "goals.roadCaption": "مسجّل من {from} إلى {to}.",
+        "goals.roadGaps": "حيث ينقطع الخط، لم يحفظ السجل طول الكتاب في تلك الأيام.",
+        "goals.roadTargetNote": "الخط المتصل هو هدف مشروعك: {n}.",
+        "goals.roadPaceNote": "الخط المتقطع هو الوتيرة الثابتة من طول اليوم إلى هدفك بحلول {date} — {n} في اليوم. إنها وتيرة يمكنك الحفاظ عليها، لا تنبّؤ.",
+        "goals.roadDay": "اليوم",
+        "goals.roadWords": "الكلمات في الكتاب",
+        "history.deltaUp": "\u2066+{n}\u2069 كلمة منذ ذلك الحين",
+        "history.deltaUpPlural": "\u2066+{n}\u2069 كلمة منذ ذلك الحين",
+        "history.deltaDown": "\u2066−{n}\u2069 كلمة منذ ذلك الحين",
+        "history.deltaDownPlural": "\u2066−{n}\u2069 كلمة منذ ذلك الحين",
+        "history.deltaSame": "بالطول نفسه الآن",
+        "history.deltaTitle": "مقارنةً بالكتاب كما هو الآن",
+        "history.diffH": "منذ هذه اللقطة",
+        "history.diffSub": "قسمًا قسمًا، مقارنةً بالكتاب كما هو الآن — محسوب على هذا الجهاز.",
+        "history.diffNone": "كل قسم يطابق الكتاب كما هو الآن.",
+        "history.diffAdded": "أُضيفت منذ ذلك الحين",
+        "history.diffRemoved": "لم تعد في الكتاب",
+        "history.diffLeftOut": "استُبعدت من الكتاب منذ ذلك الحين",
+        "history.diffBroughtIn": "أُدرجت في الكتاب منذ ذلك الحين",
+        "history.diffNotCounted": "خارج الكتاب، لا يُحتسب",
+        "history.diffChanged": "تغيّرت",
+        "history.dUp": "\u2066+{n}\u2069 كلمة",
+        "history.dUpPlural": "\u2066+{n}\u2069 كلمة",
+        "history.dDown": "\u2066−{n}\u2069 كلمة",
+        "history.dDownPlural": "\u2066−{n}\u2069 كلمة",
+        "history.diffReworded": "الطول نفسه، مع تعديل"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "goals.roadH": "これまでの道のり",
+        "goals.roadSub": "記録が本の長さを残した日ごとの、本の長さです。残っていない日 — 記録が長さを残し始める前や、デスクを開かなかった日 — は空白のまま。線がその間を推測でつなぐことはありません。",
+        "goals.roadAria": "これまでの道のり — 記録された日ごとの本の長さ。矢印キーで一日ずつ移動します。",
+        "goals.roadLine": "本の長さ",
+        "goals.roadTarget": "目標 · {n}",
+        "goals.roadPace": "一定のペース · 1日 {n}",
+        "goals.roadPoint": "{date} · {n}語",
+        "goals.roadPointPlural": "{date} · {n}語",
+        "goals.roadTipWords": "{n}語",
+        "goals.roadTipWordsPlural": "{n}語",
+        "goals.roadCaption": "{from}から{to}までの記録。",
+        "goals.roadGaps": "線が途切れているところは、その日の長さが記録に残っていません。",
+        "goals.roadTargetNote": "実線はプロジェクトの目標、{n}語です。",
+        "goals.roadPaceNote": "破線は、今日の長さから{date}の目標までの一定のペース — 1日{n}語です。保てるペースの目安であって、予測ではありません。",
+        "goals.roadDay": "日",
+        "goals.roadWords": "本の語数",
+        "history.deltaUp": "その後 +{n}語",
+        "history.deltaUpPlural": "その後 +{n}語",
+        "history.deltaDown": "その後 −{n}語",
+        "history.deltaDownPlural": "その後 −{n}語",
+        "history.deltaSame": "今と同じ長さ",
+        "history.deltaTitle": "今の本と比べた差",
+        "history.diffH": "このスナップショット以降",
+        "history.diffSub": "セクションごとに、今の本と比べています — この端末で数えたものです。",
+        "history.diffNone": "どのセクションも今の本と同じです。",
+        "history.diffAdded": "その後に追加",
+        "history.diffRemoved": "今の本にはない",
+        "history.diffLeftOut": "その後に本から外した",
+        "history.diffBroughtIn": "その後に本に入れた",
+        "history.diffNotCounted": "本から外れている・数えていません",
+        "history.diffChanged": "変更あり",
+        "history.dUp": "+{n}語",
+        "history.dUpPlural": "+{n}語",
+        "history.dDown": "−{n}語",
+        "history.dDownPlural": "−{n}語",
+        "history.diffReworded": "同じ長さ、編集あり"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "goals.roadH": "一路走来",
+        "goals.roadSub": "记录留下书稿长度的每一天，书稿有多长。没有记录的日子——记录开始保存长度之前，或书桌没有打开的日子——留作空白；线条从不凭猜测连过去。",
+        "goals.roadAria": "一路走来——每个有记录的日子里书稿的长度。用方向键逐日移动。",
+        "goals.roadLine": "书稿长度",
+        "goals.roadTarget": "目标 · {n}",
+        "goals.roadPace": "稳定节奏 · 每天 {n}",
+        "goals.roadPoint": "{date} · {n} 词",
+        "goals.roadPointPlural": "{date} · {n} 词",
+        "goals.roadTipWords": "{n} 词",
+        "goals.roadTipWordsPlural": "{n} 词",
+        "goals.roadCaption": "记录自 {from} 至 {to}。",
+        "goals.roadGaps": "线条断开之处，记录没有保存那些日子的长度。",
+        "goals.roadTargetNote": "实线是你的项目目标：{n} 词。",
+        "goals.roadPaceNote": "虚线是从今天的长度到 {date} 达成目标的稳定节奏——每天 {n} 词。这是一个可以保持的节奏，不是预测。",
+        "goals.roadDay": "日期",
+        "goals.roadWords": "书中词数",
+        "history.deltaUp": "此后 +{n} 词",
+        "history.deltaUpPlural": "此后 +{n} 词",
+        "history.deltaDown": "此后 −{n} 词",
+        "history.deltaDownPlural": "此后 −{n} 词",
+        "history.deltaSame": "与现在一样长",
+        "history.deltaTitle": "与书稿现在的样子相比",
+        "history.diffH": "自这个快照以来",
+        "history.diffSub": "逐节与书稿现在的样子相比——在本设备上计算。",
+        "history.diffNone": "每一节都与书稿现在的样子一致。",
+        "history.diffAdded": "此后新增",
+        "history.diffRemoved": "已不在书中",
+        "history.diffLeftOut": "此后移出书稿",
+        "history.diffBroughtIn": "此后放回书稿",
+        "history.diffNotCounted": "不在书稿中，不计数",
+        "history.diffChanged": "有改动",
+        "history.dUp": "+{n} 词",
+        "history.dUpPlural": "+{n} 词",
+        "history.dDown": "−{n} 词",
+        "history.dDownPlural": "−{n} 词",
+        "history.diffReworded": "长度相同，有编辑"
+      });
+      ["pl", "ru", "ar"].forEach((L) => { UI_PLURAL_FORMS[L] = UI_PLURAL_FORMS[L] || {}; });
+      Object.assign(UI_PLURAL_FORMS.pl, {"goals.roadPoint": {"few": "{date} · {n} słowa", "many": "{date} · {n} słów"}, "goals.roadTipWords": {"few": "{n} słowa", "many": "{n} słów"}, "history.deltaUp": {"few": "+{n} słowa od tamtej pory", "many": "+{n} słów od tamtej pory"}, "history.deltaDown": {"few": "−{n} słowa od tamtej pory", "many": "−{n} słów od tamtej pory"}, "history.dUp": {"few": "+{n} słowa", "many": "+{n} słów"}, "history.dDown": {"few": "−{n} słowa", "many": "−{n} słów"}});
+      Object.assign(UI_PLURAL_FORMS.ru, {"goals.roadPoint": {"few": "{date} · {n} слова"}, "goals.roadTipWords": {"few": "{n} слова"}, "history.deltaUp": {"few": "+{n} слова с тех пор"}, "history.deltaDown": {"few": "−{n} слова с тех пор"}, "history.dUp": {"few": "+{n} слова"}, "history.dDown": {"few": "−{n} слова"}});
+      Object.assign(UI_PLURAL_FORMS.ar, {"goals.roadPoint": {"few": "{date} · {n} كلمات"}, "goals.roadTipWords": {"few": "{n} كلمات"}, "history.deltaUp": {"few": "\u2066+{n}\u2069 كلمات منذ ذلك الحين"}, "history.deltaDown": {"few": "\u2066−{n}\u2069 كلمات منذ ذلك الحين"}, "history.dUp": {"few": "\u2066+{n}\u2069 كلمات"}, "history.dDown": {"few": "\u2066−{n}\u2069 كلمات"}});
+      /* ==== /BEUK:goalshist ==== */
       /* ==== BEUK:auth ==== account basics (P0 #5): forgot password,
          change password, sign out everywhere — assigned per pack so
          completeness holds. */
@@ -16534,11 +17076,11 @@
           if (raw) {
             const v = JSON.parse(raw);
             if (v && typeof v === "object" && v.days && typeof v.days === "object") {
-              return { days: v.days, base: typeof v.base === "number" ? v.base : null, baseDay: typeof v.baseDay === "string" ? v.baseDay : "" };
+              return { days: v.days, base: typeof v.base === "number" ? v.base : null, baseDay: typeof v.baseDay === "string" ? v.baseDay : "", len: v.len && typeof v.len === "object" ? v.len : {} }; /* BEUK:goalshist — len */
             }
           }
         } catch (e) {}
-        return { days: wlogSeedDays(), base: null, baseDay: "" };
+        return { days: wlogSeedDays(), base: null, baseDay: "", len: {} }; /* BEUK:goalshist — no length was ever kept for seeded days */
       }
       let wlog = wlogLoad();
       let wlogRebase = true; /* the session's first observation only sets the baseline */
@@ -16558,8 +17100,23 @@
         if (!wlog.days[ds]) wlog.days[ds] = { w: 0, s: 0 };
         return wlog.days[ds];
       }
+      /* ==== BEUK:goalshist ==== the book's length, as the log saw it
+         at its last observation of each day, kept per book (by book
+         id) so two books on one desk never share a line. Only days
+         the studio actually observed are kept; nothing is ever
+         filled in for a day it did not see. */
+      function wlogBookKey() { return (state.meta && state.meta.bookId) || "_"; }
+      function wlogNoteLength(total, today) {
+        if (typeof total !== "number" || !isFinite(total)) return;
+        if (!wlog.len || typeof wlog.len !== "object") wlog.len = {};
+        const key = wlogBookKey();
+        const book = wlog.len[key] && typeof wlog.len[key] === "object" ? wlog.len[key] : (wlog.len[key] = {});
+        if (book[today] !== total) { book[today] = total; wlogSaveSoon(); }
+      }
+      /* ==== /BEUK:goalshist ==== */
       function wlogObserve(total) {
         const today = dayStr(new Date());
+        wlogNoteLength(total, today); /* BEUK:goalshist */
         if (wlogRebase || wlog.base === null) {
           wlog.base = total; wlog.baseDay = today; wlogRebase = false;
           wlogSaveSoon();
@@ -16738,6 +17295,7 @@
         noteBookEdited();
         renderGoalLines();
         renderGoalsProgress();
+        renderGoalRoad(); /* BEUK:goalshist */
       }
       function openGoals() {
         goalCalCursor = null;
@@ -16746,6 +17304,7 @@
         renderGoalCalendar();
         const m = $("modalGoals");
         m.classList.add("open");
+        renderGoalRoad(); /* BEUK:goalshist — drawn once open, at the room's own width */
         const box = m.querySelector(".modal");
         if (box) box.scrollTop = 0;
         icons();
@@ -16754,11 +17313,12 @@
       function goalsOnLangChange() {
         renderGoalLines();
         const m = $("modalGoals");
-        if (m && m.classList.contains("open")) { syncGoalInputs(); renderGoalsProgress(); renderGoalCalendar(); }
+        if (m && m.classList.contains("open")) { syncGoalInputs(); renderGoalsProgress(); renderGoalRoad(); renderGoalCalendar(); } /* BEUK:goalshist — road */
       }
       function initGoals() {
         const btn = $("btnGoals"); if (btn) btn.addEventListener("click", openGoals);
         const close = $("btnCloseGoals"); if (close) close.addEventListener("click", closeGoals);
+        initGoalRoad(); /* BEUK:goalshist */
         const back = $("modalGoals");
         if (back) back.addEventListener("click", (e) => { if (e.target === back) closeGoals(); });
         ["goalDailyInput", "goalProjectInput", "goalDeadlineInput"].forEach((id) => {
@@ -16792,6 +17352,256 @@
         window.addEventListener("beforeunload", wlogFlush);
         renderGoalLines();
       }
+      /* ==== BEUK:goalshist ==== The road so far — the book's length
+         on each day the habit log kept it (wlog.len, per book id),
+         drawn as one quiet line. A day the log did not keep is a gap:
+         the line breaks there and never draws across it, and days
+         before the log began keeping length stay blank. The project
+         target is a solid hairline; with a deadline ahead, the
+         steady pace from today's length to the target on that day
+         is a dashed line, labelled as a pace, never a forecast.
+         Hidden until there are at least two logged days. The math is
+         pure (roadPoints / roadSegments / roadModel) so the self-
+         checks can hold it; the SVG is drawn at the host's own pixel
+         width so its text stays legible at 390 px. */
+      const ROAD_DAY_MS = 86400000;
+      function roadDayIndex(ds) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ds || "");
+        return m ? Math.round(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / ROAD_DAY_MS) : null;
+      }
+      function roadPoints(lenMap) {
+        const out = [];
+        if (!lenMap || typeof lenMap !== "object") return out;
+        Object.keys(lenMap).forEach((ds) => {
+          const day = roadDayIndex(ds);
+          const w = lenMap[ds];
+          if (day === null || typeof w !== "number" || !isFinite(w) || w < 0) return;
+          out.push({ ds, day, w: Math.round(w) });
+        });
+        return out.sort((a, b) => a.day - b.day);
+      }
+      function roadSegments(points) {
+        /* consecutive calendar days join; any skipped day breaks the line */
+        const segs = [];
+        points.forEach((p, i) => {
+          if (i === 0 || p.day - points[i - 1].day > 1) segs.push([p]);
+          else segs[segs.length - 1].push(p);
+        });
+        return segs;
+      }
+      function roadNiceStep(raw) {
+        if (!(raw > 0)) return 1;
+        const p = Math.pow(10, Math.floor(Math.log10(raw)));
+        const f = raw / p;
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+      }
+      function roadModel(points, goals, total, now) {
+        const g = normalizeGoals(goals);
+        const today = roadDayIndex(dayStr(now || new Date()));
+        const target = g.project || null;
+        const dlDay = g.deadline ? roadDayIndex(g.deadline) : null;
+        let pace = null;
+        if (target && dlDay !== null && dlDay > today && target > total) {
+          pace = { fromDay: today, fromW: total, toDay: dlDay, toW: target, perDay: (target - total) / (dlDay - today) };
+        }
+        const first = points.length ? points[0].day : today;
+        const last = points.length ? points[points.length - 1].day : today;
+        const xMin = Math.min(first, pace ? pace.fromDay : first);
+        const xMax = Math.max(last, pace ? pace.toDay : last);
+        const top = Math.max(1, Math.max.apply(null, points.map((p) => p.w).concat([target || 0, pace ? pace.fromW : 0])));
+        const step = roadNiceStep(top / 4);
+        const yMax = Math.ceil((top * 1.03) / step) * step;
+        const ticks = [];
+        for (let v = 0; v <= yMax + step / 2; v += step) ticks.push(v);
+        return { points, segments: roadSegments(points), target, pace, xMin, xMax, yMax, ticks, today };
+      }
+      function roadCompact(n) {
+        try { return new Intl.NumberFormat(getUiLang(), { notation: "compact", maximumFractionDigits: 1 }).format(n); }
+        catch (e) { return fmtNum(n); }
+      }
+      function roadShortDate(day) {
+        const d = new Date(day * ROAD_DAY_MS);
+        try { return new Intl.DateTimeFormat(getUiLang(), { month: "short", day: "numeric", timeZone: "UTC" }).format(d); }
+        catch (e) { return d.toISOString().slice(5, 10); }
+      }
+      function roadLongDate(day) {
+        const d = new Date(day * ROAD_DAY_MS);
+        try { return new Intl.DateTimeFormat(getUiLang(), { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(d); }
+        catch (e) { return d.toISOString().slice(0, 10); }
+      }
+      function roadGeom(model, width) {
+        const W = Math.max(260, Math.round(width || 640));
+        const narrow = W < 480;
+        const H = narrow ? 188 : 214;
+        const padL = 8 + Math.max.apply(null, model.ticks.map((v) => roadCompact(v).length)) * 6.6;
+        const padR = 12, padT = 14, padB = 26;
+        const span = model.xMax - model.xMin || 1;
+        const x = (day) => padL + ((day - model.xMin) / span) * (W - padL - padR);
+        const y = (w) => padT + (1 - w / model.yMax) * (H - padT - padB);
+        return { W, H, padL, padR, padT, padB, x, y, narrow };
+      }
+      let roadState = { model: null, geom: null, px: [], idx: -1, width: 0 };
+      function roadSvg(model, geom) {
+        const { W, H, padL, padR, padB, x, y } = geom;
+        const f1 = (v) => v.toFixed(1);
+        let out = '<svg class="road-svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" aria-hidden="true" focusable="false">';
+        model.ticks.forEach((v) => {
+          const yy = f1(y(v));
+          out += '<line x1="' + f1(padL) + '" y1="' + yy + '" x2="' + f1(W - padR) + '" y2="' + yy + '" stroke="' + (v === 0 ? "var(--line-2)" : "var(--line)") + '" stroke-width="1"/>';
+          out += '<text x="' + f1(padL - 7) + '" y="' + f1(y(v) + 3.5) + '" text-anchor="end" font-size="10.5" fill="var(--muted)" font-family="var(--ui-font)" style="font-variant-numeric:tabular-nums">' + esc(roadCompact(v)) + "</text>";
+        });
+        /* x labels: the first logged day, the last, and the deadline when the pace runs to it — thinned so none collide */
+        const pts = model.points;
+        const labs = [{ day: pts[0].day, anchor: "start" }];
+        const lastDay = pts[pts.length - 1].day;
+        if (model.pace) { labs.push({ day: lastDay, anchor: "middle" }); labs.push({ day: model.pace.toDay, anchor: "end" }); }
+        else labs.push({ day: lastDay, anchor: "end" });
+        const kept = [];
+        labs.forEach((l) => {
+          const lx = l.anchor === "start" ? padL : l.anchor === "end" ? W - padR : x(l.day);
+          if (kept.some((k) => Math.abs(k.lx - lx) < 74)) return;
+          kept.push({ lx, l });
+        });
+        kept.forEach(({ lx, l }) => {
+          out += '<text x="' + f1(lx) + '" y="' + f1(H - padB + 17) + '" text-anchor="' + l.anchor + '" font-size="10.5" fill="var(--muted)" font-family="var(--ui-font)">' + esc(roadShortDate(l.day)) + "</text>";
+        });
+        if (model.target) {
+          const ty = f1(y(model.target));
+          out += '<line class="road-target" x1="' + f1(padL) + '" y1="' + ty + '" x2="' + f1(W - padR) + '" y2="' + ty + '" stroke="var(--zen-leaf)" stroke-width="1.5"/>';
+        }
+        model.segments.forEach((seg) => {
+          if (seg.length < 2) return; /* a line only, no area wash: under a broken line a wash reads as columns */
+          const line = seg.map((p) => f1(x(p.day)) + "," + f1(y(p.w))).join(" L");
+          out += '<path class="road-line" d="M' + line + '" fill="none" stroke="var(--ins-a)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+        });
+        if (model.pace) {
+          const p = model.pace;
+          out += '<line class="road-pace" x1="' + f1(x(p.fromDay)) + '" y1="' + f1(y(p.fromW)) + '" x2="' + f1(x(p.toDay)) + '" y2="' + f1(y(p.toW)) + '" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4" stroke-linecap="round"/>';
+        }
+        /* a lone logged day (no neighbour to join) still shows, as a dot; the last day carries the end marker */
+        model.segments.forEach((seg) => {
+          if (seg.length === 1) out += '<circle class="road-dot" cx="' + f1(x(seg[0].day)) + '" cy="' + f1(y(seg[0].w)) + '" r="4" fill="var(--ins-a)" stroke="var(--panel-2)" stroke-width="2"/>';
+        });
+        const end = pts[pts.length - 1];
+        out += '<circle class="road-end" cx="' + f1(x(end.day)) + '" cy="' + f1(y(end.w)) + '" r="4.5" fill="var(--ins-a)" stroke="var(--panel-2)" stroke-width="2"/>';
+        const ex = x(end.day), nearRight = ex > W - padR - 40;
+        out += '<text class="road-endlab" x="' + f1(nearRight ? ex - 8 : ex) + '" y="' + f1(y(end.w) - 10) + '" text-anchor="' + (nearRight ? "end" : "middle") + '" font-size="12" font-weight="700" fill="var(--ink-2)" font-family="var(--ui-font)" stroke="var(--panel-2)" stroke-width="3" paint-order="stroke" style="font-variant-numeric:tabular-nums">' + esc(fmtNum(end.w)) + "</text>";
+        /* the hover layer: a crosshair and a focus marker, moved by pointer and keys */
+        out += '<line class="road-cross" x1="0" y1="' + f1(geom.padT) + '" x2="0" y2="' + f1(H - padB) + '" stroke="var(--line-2)" stroke-width="1" visibility="hidden"/>';
+        out += '<circle class="road-focus" cx="0" cy="0" r="5" fill="var(--ins-a)" stroke="var(--panel-2)" stroke-width="2" visibility="hidden"/>';
+        return out + "</svg>";
+      }
+      function roadKeyHtml(model, m) {
+        const key = (stroke, dash, label) => '<span><svg viewBox="0 0 18 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="17" y2="4" stroke="' + stroke + '" stroke-width="2"' + (dash ? ' stroke-dasharray="4 3"' : "") + ' stroke-linecap="round"/></svg>' + esc(label) + "</span>";
+        let html = key("var(--ins-a)", false, t("goals.roadLine"));
+        if (model.target) html += key("var(--zen-leaf)", false, t("goals.roadTarget", { n: fmtNum(model.target) }));
+        if (model.pace && m && m.deadline && m.deadline.pace) html += key("var(--ink-2)", true, t("goals.roadPace", { n: fmtNum(m.deadline.pace) }));
+        return '<div class="road-key">' + html + "</div>";
+      }
+      function roadPointLabel(p) {
+        return t("goals.roadPoint", { date: roadLongDate(p.day), n: fmtNum(p.w), count: p.w });
+      }
+      function renderGoalRoad() {
+        const sec = $("goalRoadSec"), host = $("goalRoad");
+        if (!sec || !host) return;
+        const pts = roadPoints(wlog.len && wlog.len[wlogBookKey()]);
+        if (pts.length < 2) { sec.hidden = true; host.innerHTML = ""; roadState = { model: null, geom: null, px: [], idx: -1, width: 0 }; return; }
+        sec.hidden = false;
+        const total = bookTotalWords();
+        const now = new Date();
+        const model = roadModel(pts, state.goals, total, now);
+        const m = goalMath(state.goals, total, wlogTodayWords(), now);
+        const width = host.clientWidth || (host.parentNode && host.parentNode.clientWidth) || 640;
+        const geom = roadGeom(model, width);
+        let cap = t("goals.roadCaption", { from: roadLongDate(pts[0].day), to: roadLongDate(pts[pts.length - 1].day) });
+        if (model.segments.length > 1) cap += " " + t("goals.roadGaps");
+        if (model.target) cap += " " + t("goals.roadTargetNote", { n: fmtNum(model.target) });
+        if (model.pace && m.deadline && m.deadline.pace) cap += " " + t("goals.roadPaceNote", { date: fmtDateIntl(parseDayStr(state.goals.deadline)), n: fmtNum(m.deadline.pace) });
+        let table = '<table class="sr-only"><caption>' + esc(t("goals.roadH")) + "</caption><thead><tr><th scope=\"col\">" + esc(t("goals.roadDay")) + '</th><th scope="col">' + esc(t("goals.roadWords")) + "</th></tr></thead><tbody>";
+        pts.forEach((p) => { table += "<tr><td>" + esc(roadLongDate(p.day)) + "</td><td>" + esc(fmtNum(p.w)) + "</td></tr>"; });
+        table += "</tbody></table>";
+        host.innerHTML = roadKeyHtml(model, m) +
+          '<div class="road-wrap" dir="ltr" tabindex="0" role="group" aria-label="' + esc(t("goals.roadAria")) + '">' + roadSvg(model, geom) +
+          '<div class="road-tip" hidden><b></b><span></span></div></div>' +
+          '<p class="ins-caption road-cap">' + esc(cap) + "</p>" + table +
+          '<p class="sr-only road-live" aria-live="polite"></p>';
+        roadState = { model, geom, px: pts.map((p) => geom.x(p.day)), idx: -1, width: geom.W };
+      }
+      function roadShow(idx, announce) {
+        const host = $("goalRoad"); if (!host || !roadState.model) return;
+        const pts = roadState.model.points;
+        if (idx < 0 || idx >= pts.length) return;
+        roadState.idx = idx;
+        const p = pts[idx], g = roadState.geom;
+        const px = g.x(p.day), py = g.y(p.w);
+        const cross = host.querySelector(".road-cross"), dot = host.querySelector(".road-focus");
+        if (cross) { cross.setAttribute("x1", px.toFixed(1)); cross.setAttribute("x2", px.toFixed(1)); cross.setAttribute("visibility", "visible"); }
+        if (dot) { dot.setAttribute("cx", px.toFixed(1)); dot.setAttribute("cy", py.toFixed(1)); dot.setAttribute("visibility", "visible"); }
+        const endLab = host.querySelector(".road-endlab"); if (endLab) endLab.setAttribute("visibility", "hidden"); /* the readout carries the value while it shows */
+        const tip = host.querySelector(".road-tip"), wrap = host.querySelector(".road-wrap");
+        if (tip && wrap) {
+          tip.querySelector("b").textContent = t("goals.roadTipWords", { n: fmtNum(p.w), count: p.w });
+          tip.querySelector("span").textContent = roadLongDate(p.day);
+          tip.setAttribute("dir", document.documentElement.getAttribute("dir") || "ltr");
+          tip.hidden = false;
+          const scale = wrap.clientWidth / g.W || 1;
+          const tw = tip.offsetWidth, th = tip.offsetHeight;
+          const left = Math.max(0, Math.min(wrap.clientWidth - tw, px * scale - tw / 2));
+          let top = py * scale - th - 12;
+          if (top < 0) top = py * scale + 14;
+          tip.style.left = left.toFixed(0) + "px"; tip.style.top = top.toFixed(0) + "px";
+        }
+        if (announce) { const live = host.querySelector(".road-live"); if (live) live.textContent = roadPointLabel(p); }
+      }
+      function roadHide() {
+        const host = $("goalRoad"); if (!host) return;
+        roadState.idx = -1;
+        host.querySelectorAll(".road-cross, .road-focus").forEach((el) => el.setAttribute("visibility", "hidden"));
+        const endLab = host.querySelector(".road-endlab"); if (endLab) endLab.removeAttribute("visibility");
+        const tip = host.querySelector(".road-tip"); if (tip) tip.hidden = true;
+      }
+      function roadNearest(clientX) {
+        const host = $("goalRoad"), wrap = host && host.querySelector(".road-wrap");
+        if (!wrap || !roadState.px.length) return -1;
+        const r = wrap.getBoundingClientRect();
+        const xIn = (clientX - r.left) * (roadState.geom.W / (r.width || roadState.geom.W));
+        let best = 0;
+        roadState.px.forEach((v, i) => { if (Math.abs(v - xIn) < Math.abs(roadState.px[best] - xIn)) best = i; });
+        return best;
+      }
+      function initGoalRoad() {
+        const host = $("goalRoad"); if (!host) return;
+        host.addEventListener("pointermove", (e) => { if (e.target.closest && e.target.closest(".road-wrap")) { const i = roadNearest(e.clientX); if (i >= 0) roadShow(i, false); } });
+        host.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".road-wrap")) { const i = roadNearest(e.clientX); if (i >= 0) roadShow(i, false); } });
+        host.addEventListener("pointerleave", () => { const w = host.querySelector(".road-wrap"); if (!w || document.activeElement !== w) roadHide(); });
+        host.addEventListener("focusin", (e) => { if (e.target.classList && e.target.classList.contains("road-wrap") && roadState.model) roadShow(roadState.idx >= 0 ? roadState.idx : roadState.model.points.length - 1, true); });
+        host.addEventListener("focusout", (e) => { if (e.target.classList && e.target.classList.contains("road-wrap")) roadHide(); });
+        host.addEventListener("keydown", (e) => {
+          if (!e.target.classList || !e.target.classList.contains("road-wrap") || !roadState.model) return;
+          const n = roadState.model.points.length;
+          let i = roadState.idx >= 0 ? roadState.idx : n - 1;
+          if (e.key === "ArrowLeft" || e.key === "ArrowDown") i = Math.max(0, i - 1);
+          else if (e.key === "ArrowRight" || e.key === "ArrowUp") i = Math.min(n - 1, i + 1);
+          else if (e.key === "Home") i = 0;
+          else if (e.key === "End") i = n - 1;
+          else if (e.key === "Escape") { if (roadState.idx >= 0) { e.preventDefault(); e.stopPropagation(); roadHide(); } return; }
+          else return;
+          e.preventDefault();
+          roadShow(i, true);
+        });
+        if (typeof ResizeObserver === "function") {
+          new ResizeObserver(() => {
+            const m = $("modalGoals");
+            if (!m || !m.classList.contains("open") || !roadState.model) return;
+            const w = host.clientWidth;
+            if (w && Math.abs(w - roadState.width) > 4) renderGoalRoad();
+          }).observe(host);
+        }
+      }
+      if (typeof window !== "undefined") {
+        window.beukGoalRoad = { points: roadPoints, segments: roadSegments, model: roadModel, geom: roadGeom, render: renderGoalRoad, show: roadShow, bookKey: () => wlogBookKey() };
+      }
+      /* ==== /BEUK:goalshist ==== */
       if (typeof window !== "undefined") {
         window.beukGoals = {
           math: goalMath, normalize: normalizeGoals, open: openGoals, close: closeGoals,
@@ -17028,19 +17838,96 @@
           ? '<p class="hist-orn">❦</p>'
           : "<p>" + esc(p.replace(/\s*\n\s*/g, " ")) + "</p>").join("");
       }
+      /* ==== BEUK:goalshist ==== what changed since each snapshot,
+         against the book as it stands now — computed on this device
+         from the snapshot's own stored copy; nothing new is stored.
+         Sections are matched by their id: one only in the book now
+         was added since, one only in the snapshot is no longer in the
+         book, one in both whose text or count moved has changed. Each
+         side is counted by the same rule (snapshotSectionWords), the
+         snapshot against its own meta and the book now against
+         today's. */
+      function histDeltaText(snapWords, nowWords, keys) {
+        const d = Math.round(nowWords) - Math.round(snapWords);
+        const k = keys || { up: "history.deltaUp", down: "history.deltaDown", same: "history.deltaSame" };
+        if (d > 0) return t(k.up, { n: fmtNum(d), count: d });
+        if (d < 0) return t(k.down, { n: fmtNum(-d), count: -d });
+        return t(k.same);
+      }
+      function histLiveDoc() { return { meta: state.meta, sections: state.sections }; }
+      function histSectionText(s) { return [s.title, s.subtitle, s.number, s.content].map((v) => String(v == null ? "" : v)).join("\u0001"); }
+      /* A section left out of the book (the sidebar eye) counts for
+         nothing on that side, exactly as the list chip and
+         bookWordTotal() count it, so the rows always add up to the
+         chip. A snapshot keeps the flag as ‘included !== false’; the
+         desk keeps it as a plain boolean. */
+      function histCounted(doc, s, live) {
+        const inc = live ? !!s.included : s.included !== false;
+        return { inc: inc, w: inc ? snapshotSectionWords(doc, s) : 0 };
+      }
+      function histSectionDiff(snapDoc, liveDoc) {
+        const out = { added: [], removed: [], leftout: [], broughtin: [], changed: [] };
+        const before = new Map(), after = new Map();
+        snapDoc.sections.forEach((s) => before.set(s.id, s));
+        liveDoc.sections.forEach((s) => after.set(s.id, s));
+        liveDoc.sections.forEach((s) => {
+          const was = before.get(s.id);
+          const now = histCounted(liveDoc, s, true);
+          const row = (b, a, note) => ({ id: s.id, name: snapshotSectionName(s), before: b, after: a, delta: a - b, note: note || null });
+          if (!was) { out.added.push(row(0, now.w, now.inc ? null : "out")); return; }
+          const then = histCounted(snapDoc, was, false);
+          if (then.inc && !now.inc) { out.leftout.push(row(then.w, 0)); return; }
+          if (!then.inc && now.inc) { out.broughtin.push(row(0, now.w)); return; }
+          const edited = histSectionText(was) !== histSectionText(s);
+          if (!now.inc) { if (edited) out.changed.push(row(0, 0, "out")); return; }
+          if (then.w !== now.w || edited) out.changed.push(row(then.w, now.w));
+        });
+        snapDoc.sections.forEach((s) => {
+          if (after.has(s.id)) return;
+          const then = histCounted(snapDoc, s, false);
+          out.removed.push({ id: s.id, name: snapshotSectionName(s), before: then.w, after: 0, delta: -then.w, note: then.inc ? null : "out" });
+        });
+        return out;
+      }
+      function histDiffHtml(snap) {
+        const diff = histSectionDiff(snap.doc, histLiveDoc());
+        const all = diff.added.concat(diff.removed, diff.leftout, diff.broughtin, diff.changed);
+        let html = '<div class="hist-diff" id="histDiff"><h3 class="hist-diff-h">' + esc(t("history.diffH")) + "</h3>" +
+          '<p class="hist-diff-sub">' + esc(t("history.diffSub")) + "</p>";
+        if (!all.length) return html + '<p class="hist-diff-none">' + esc(t("history.diffNone")) + "</p></div>";
+        const maxAbs = Math.max(1, Math.max.apply(null, all.map((r) => Math.abs(r.delta))));
+        const row = (r, kind) => {
+          const n = r.note === "out" ? t("history.diffNotCounted") :
+            r.delta !== 0 ? histDeltaText(0, r.delta, { up: "history.dUp", down: "history.dDown", same: "history.diffReworded" }) :
+            kind === "changed" ? t("history.diffReworded") : histWordCount(0);
+          const pct = (Math.abs(r.delta) / maxAbs * 100).toFixed(1);
+          const bar = '<span class="hist-diff-bar" aria-hidden="true"><span>' + (r.delta < 0 ? '<i class="down" style="width:' + pct + '%"></i>' : "") +
+            "</span><span>" + (r.delta > 0 ? '<i class="up" style="width:' + pct + '%"></i>' : "") + "</span></span>";
+          const title = kind === "changed" && r.delta !== 0 ? ' title="' + esc(fmtNum(r.before) + " → " + fmtNum(r.after)) + '"' : "";
+          return '<div class="hist-diff-row" data-hdiff="' + kind + '" data-hdiff-id="' + esc(r.id) + '"><span class="hist-diff-name" dir="auto">' + esc(r.name) + '</span><span class="hist-diff-n"' + title + ">" + esc(n) + "</span>" + bar + "</div>";
+        };
+        [["added", "history.diffAdded"], ["removed", "history.diffRemoved"], ["leftout", "history.diffLeftOut"], ["broughtin", "history.diffBroughtIn"], ["changed", "history.diffChanged"]].forEach(([kind, key]) => {
+          if (!diff[kind].length) return;
+          html += '<div class="hist-diff-lab">' + esc(t(key)) + "</div>" + diff[kind].map((r) => row(r, kind)).join("");
+        });
+        return html + "</div>";
+      }
+      if (typeof window !== "undefined") window.beukHistDiff = { delta: histDeltaText, sections: histSectionDiff };
+      /* ==== /BEUK:goalshist ==== */
       function renderHistory() {
         const listEl = $("historyList"), detEl = $("historyDetail");
         if (!listEl || !detEl) return;
         const snaps = state.history || [];
         const snap = histViewId ? snaps.find((s) => s.id === histViewId) : null;
         if (histViewId && !snap) { histViewId = null; histPeekId = null; }
+        const nowWords = bookWordTotal(); /* BEUK:goalshist */
         if (!snap) {
           detEl.style.display = "none"; detEl.innerHTML = "";
           listEl.style.display = "";
           listEl.innerHTML = snaps.length ? snaps.map((s) =>
             '<div class="hist-row"><button type="button" class="hist-main" data-hopen="' + esc(s.id) + '">' +
             '<span class="hist-name">' + esc(snapshotLabel(s)) + (s.auto ? ' <span class="hist-auto">' + esc(t("history.autoTag")) + "</span>" : "") + "</span>" +
-            '<span class="hist-meta">' + esc(snapshotWhen(s)) + " · " + esc(histWordCount(s.words)) + "</span></button>" +
+            '<span class="hist-meta">' + esc(snapshotWhen(s)) + " · " + esc(histWordCount(s.words)) + '<span class="hist-delta" data-hdelta="' + esc(s.id) + '" title="' + esc(t("history.deltaTitle")) + '">' + esc(histDeltaText(s.words, nowWords)) + "</span></span></button>" + /* BEUK:goalshist — the change against the book now */
             '<button type="button" class="tb-btn hist-del" data-hdel="' + esc(s.id) + '">' + esc(t("history.delete")) + "</button></div>"
           ).join("") : '<p class="ins-none">' + esc(t("history.empty")) + "</p>";
         } else {
@@ -17051,6 +17938,7 @@
             '<p class="ins-caption">' + esc(snapshotWhen(snap)) + " · " + esc(histWordCount(snap.words)) + " · " + esc(t("history.sections", { n: snap.doc.sections.length })) + "</p>" +
             '<div class="hist-restore-row"><button type="button" class="tb-btn" data-hrestore="' + esc(snap.id) + '">' + esc(t("history.restoreAll")) + '</button>' +
             '<button type="button" class="linkish" data-hdel="' + esc(snap.id) + '">' + esc(t("history.delete")) + "</button></div>";
+          html += histDiffHtml(snap); /* BEUK:goalshist — which sections differ from the book now */
           snap.doc.sections.forEach((s) => {
             html += '<div class="hist-sec-row"><span class="hist-sec-main"><span class="hist-sec-name">' + esc(snapshotSectionName(s)) + '</span>' +
               '<span class="hist-sec-meta">' + esc(histWordCount(snapshotSectionWords(snap.doc, s))) + '</span></span>' +
@@ -36010,6 +36898,263 @@
           } }
       );
       /* ==== /BEUK:shelfguard ==== */
+      /* ==== BEUK:goalshist ==== the road so far and the change since each snapshot */
+      function ghKeep() {
+        return {
+          doc: JSON.parse(JSON.stringify(serializeBook())),
+          log: JSON.parse(JSON.stringify(wlog)),
+          rebase: wlogRebase,
+          lang: getUiLang(),
+          sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
+          dirty: cloudDirty, edited: cloud.sessionEdited, before: cloud.editedBeforeSignIn,
+          susp: local.suspended
+        };
+      }
+      function ghRestore(k) {
+        try { closeHistory(); } catch (e) {}
+        histViewId = null; histPeekId = null;
+        if (getUiLang() !== k.lang) setUiLang(k.lang, { persist: false });
+        applyBookDoc(k.doc);
+        wlog = k.log; wlogRebase = true; /* the restored book is an arrival, not writing */
+        updateStats();
+        wlog = k.log; wlogRebase = k.rebase; wlogSave();
+        sampleState.loaded = k.sample.loaded; sampleState.loadedJson = k.sample.json; renderSampleButton();
+        cloudDirty = k.dirty; cloud.sessionEdited = k.edited; cloud.editedBeforeSignIn = k.before;
+        local.suspended = k.susp;
+        renderGoalRoad();
+      }
+      function ghRoadInvert(geom, model, x, y) {
+        const span = model.xMax - model.xMin || 1;
+        return {
+          day: model.xMin + ((x - geom.padL) / (geom.W - geom.padL - geom.padR)) * span,
+          w: (1 - (y - geom.padT) / (geom.H - geom.padT - geom.padB)) * model.yMax
+        };
+      }
+      SELF_CHECKS.push(
+        { id: "goals.road.only-logged-days", feature: "goals", name: "The road so far draws a point only for a day the log kept: a fixture log with gaps gives exactly its logged days (no invented points), breaks the line at every gap, lists the same days in its screen-reader table, and hides itself below two logged days",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            try {
+              local.suspended = true;
+              const key = wlogBookKey();
+              const fixture = { "2026-03-01": 1000, "2026-03-02": 1200, "2026-03-05": 1500, "2026-03-09": 1900, "2026-03-10": 2000, "not-a-day": 5, "2026-03-07": -4 };
+              const logged = ["2026-03-01", "2026-03-02", "2026-03-05", "2026-03-09", "2026-03-10"];
+              const pts = roadPoints(fixture);
+              if (pts.map((p) => p.ds).join() !== logged.join()) bad.push("points " + pts.map((p) => p.ds).join() + " ≠ the five logged days");
+              const segs = roadSegments(pts);
+              if (segs.map((s) => s.length).join() !== "2,1,2") bad.push("segments " + segs.map((s) => s.length).join() + " ≠ 2,1,2");
+              state.goals = normalizeGoals({});
+              wlog.len = {}; wlog.len[key] = fixture;
+              renderGoalRoad();
+              const host = $("goalRoad");
+              if ($("goalRoadSec").hidden) bad.push("hidden with five logged days");
+              const geom = roadState.geom, model = roadState.model;
+              const loggedDays = new Set(logged.map(roadDayIndex));
+              let vertices = 0;
+              host.querySelectorAll(".road-line").forEach((path) => {
+                const nums = (path.getAttribute("d").match(/-?\d+(\.\d+)?/g) || []).map(Number);
+                for (let i = 0; i + 1 < nums.length; i += 2) {
+                  vertices++;
+                  const day = Math.round(ghRoadInvert(geom, model, nums[i], nums[i + 1]).day);
+                  if (!loggedDays.has(day)) bad.push("a line vertex sits on an unlogged day (" + day + ")");
+                }
+              });
+              if (host.querySelectorAll(".road-line").length !== 2) bad.push(host.querySelectorAll(".road-line").length + " line pieces, expected 2 (broken at each gap)");
+              if (vertices !== 4) bad.push(vertices + " line vertices, expected 4");
+              if (host.querySelectorAll(".road-dot").length !== 1) bad.push("the lone day (Mar 5) is not drawn as one dot");
+              const rows = host.querySelectorAll("table.sr-only tbody tr");
+              if (rows.length !== 5) bad.push(rows.length + " table rows, expected 5");
+              if (host.querySelector(".road-target") || host.querySelector(".road-pace")) bad.push("a target or pace line with no goals set");
+              if (!host.querySelector(".road-cap") || host.querySelector(".road-cap").textContent.indexOf(t("goals.roadGaps")) === -1) bad.push("the caption does not say the line breaks where nothing was kept");
+              /* one logged day: hidden entirely */
+              wlog.len[key] = { "2026-03-01": 1000 };
+              renderGoalRoad();
+              if (!$("goalRoadSec").hidden || host.innerHTML !== "") bad.push("still shown with a single logged day");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "5 logged days of 7 (a junk key and a negative count dropped) → exactly 5 points; the line breaks at both gaps (2 pieces + 1 lone dot, every vertex on a logged day); 5 table rows; no target/pace without goals; one logged day hides the section");
+            } finally { ghRestore(k); }
+          } },
+        { id: "goals.road.pace-line", feature: "goals", name: "The road so far draws the project target as a level line and, with a deadline ahead, the steady pace from today's length to the target on the deadline — slope (target − today) / days left — labelled as a pace; no pace line when the deadline has passed or the target is met",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            try {
+              local.suspended = true;
+              const now = new Date();
+              const total = bookTotalWords();
+              /* the pure model: 400 words now, 1,000 by five days from today → 120 a day */
+              const dl5 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5);
+              const pm = roadModel([{ ds: "a", day: 1, w: 100 }, { ds: "b", day: 2, w: 300 }], { project: 1000, deadline: dayStr(dl5) }, 400, now);
+              if (!pm.pace || pm.pace.perDay !== 120 || pm.pace.fromW !== 400 || pm.pace.toW !== 1000 || pm.pace.toDay - pm.pace.fromDay !== 5) bad.push("model pace " + JSON.stringify(pm.pace) + " ≠ 400 → 1,000 over 5 days at 120 a day");
+              /* rendered: the live book's length, a target 600 above it, a deadline 5 days out */
+              const key = wlogBookKey();
+              const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3), d2 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2);
+              wlog.len = {}; wlog.len[key] = {}; wlog.len[key][dayStr(d1)] = Math.max(0, total - 50); wlog.len[key][dayStr(d2)] = total;
+              state.goals = normalizeGoals({ project: total + 600, deadline: dayStr(dl5) });
+              renderGoalRoad();
+              const host = $("goalRoad");
+              const pace = host.querySelector(".road-pace"), target = host.querySelector(".road-target");
+              if (!pace) bad.push("no pace line");
+              if (!target) bad.push("no target line");
+              const geom = roadState.geom, model = roadState.model;
+              if (pace && geom) {
+                const a = ghRoadInvert(geom, model, +pace.getAttribute("x1"), +pace.getAttribute("y1"));
+                const b = ghRoadInvert(geom, model, +pace.getAttribute("x2"), +pace.getAttribute("y2"));
+                const tol = model.yMax * 0.005 + 1;
+                if (Math.abs(a.day - roadDayIndex(dayStr(now))) > 0.05 || Math.abs(a.w - total) > tol) bad.push("the pace does not start at today's length");
+                if (Math.abs(b.day - roadDayIndex(dayStr(dl5))) > 0.05 || Math.abs(b.w - (total + 600)) > tol) bad.push("the pace does not reach the target on the deadline");
+                const slope = (b.w - a.w) / (b.day - a.day);
+                if (Math.abs(slope - 120) > 1) bad.push("drawn slope " + slope.toFixed(2) + " words a day ≠ 120");
+              }
+              if (target && geom) {
+                const ty = ghRoadInvert(geom, model, 0, +target.getAttribute("y1")).w;
+                if (Math.abs(ty - (total + 600)) > model.yMax * 0.005 + 1 || target.getAttribute("y1") !== target.getAttribute("y2")) bad.push("the target line is not level at the target");
+              }
+              const keyTxt = host.querySelector(".road-key") ? host.querySelector(".road-key").textContent : "";
+              if (keyTxt.indexOf(t("goals.roadPace", { n: fmtNum(120) })) === -1) bad.push("the key does not name the pace (120 a day)");
+              const cap = host.querySelector(".road-cap") ? host.querySelector(".road-cap").textContent : "";
+              if (cap.indexOf(t("goals.roadPaceNote", { date: fmtDateIntl(dl5), n: fmtNum(120) })) === -1) bad.push("the caption does not call the dashed line a pace");
+              /* a passed deadline, then a met target: no pace line either way */
+              const yd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+              state.goals = normalizeGoals({ project: total + 600, deadline: dayStr(yd) });
+              renderGoalRoad();
+              if (host.querySelector(".road-pace")) bad.push("a pace line after the deadline passed");
+              if (!host.querySelector(".road-target")) bad.push("the target line left with the deadline");
+              state.goals = normalizeGoals({ project: Math.max(1, total), deadline: dayStr(dl5) });
+              renderGoalRoad();
+              if (total > 0 && host.querySelector(".road-pace")) bad.push("a pace line for a target already met");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "model: 400 → 1,000 over 5 days = 120 a day; drawn: the dashed line runs from today's length (" + fmtNum(total) + ") to the target on the deadline at 120 a day, the target line is level, key and caption name it a pace; no pace past the deadline or once the target is met");
+            } finally { ghRestore(k); }
+          } },
+        { id: "history.delta.words", feature: "history", name: "Each snapshot in History shows its change against the book as it stands now — +N words, −N words, or same length — with each language's plural form (Polish 1 słowo / 22 słowa / 5 słów)",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const words = (n) => Array(n).fill("word").join(" ");
+            try {
+              local.suspended = true;
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              state.sections = [mkSection("body", "chapter", "", { number: "1", content: words(100) })];
+              state.activeId = state.sections[0].id;
+              const snap = takeSnapshot("Delta check", null);
+              const chip = () => { renderHistory(); const el = document.querySelector('[data-hdelta="' + snap.id + '"]'); return el ? el.textContent : null; };
+              openHistory();
+              const base = snap.words;
+              state.sections[0].content = words(140);
+              const up = bookWordTotal() - base;
+              if (chip() !== t("history.deltaUp", { n: fmtNum(up), count: up })) bad.push("growth shows " + JSON.stringify(chip()));
+              state.sections[0].content = words(70);
+              const down = base - bookWordTotal();
+              if (chip() !== t("history.deltaDown", { n: fmtNum(down), count: down })) bad.push("shrinkage shows " + JSON.stringify(chip()));
+              state.sections[0].content = words(100);
+              if (chip() !== t("history.deltaSame")) bad.push("same length shows " + JSON.stringify(chip()));
+              if (up !== 40 || down !== 30) bad.push("fixture counts moved (" + up + ", " + down + ")");
+              const okMsg = "a 100-word snapshot reads " + t("history.deltaUp", { n: fmtNum(40), count: 40 }) + " at 140, " + t("history.deltaDown", { n: fmtNum(30), count: 30 }) + " at 70 and " + t("history.deltaSame") + " at 100; Polish takes słowo / słowa / słów";
+              setUiLang("pl", { persist: false });
+              const pl = [[1, "+1 słowo od tamtej pory"], [22, "+22 słowa od tamtej pory"], [5, "+5 słów od tamtej pory"]];
+              pl.forEach(([n, want]) => { const got = histDeltaText(0, n); if (got !== want) bad.push("pl " + n + ": " + got); });
+              if (histDeltaText(5, 0) !== "−5 słów od tamtej pory") bad.push("pl −5: " + histDeltaText(5, 0));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : okMsg);
+            } finally { ghRestore(k); }
+          } },
+        { id: "history.delta.sections", feature: "history", name: "A snapshot's detail lists which sections differ from the book now — added since, no longer in the book, changed by word count (or edited at the same length), left out of the book or brought into it with the sidebar eye — matched by section id, counted by the same rule as the chip (left-out sections count for nothing), and the section deltas sum to the book's delta",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const words = (n, w) => Array(n).fill(w || "word").join(" ");
+            try {
+              local.suspended = true;
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              const A = mkSection("body", "chapter", "Alpha", { number: "1", content: words(50) });
+              const B = mkSection("body", "chapter", "Beta", { number: "2", content: words(30) });
+              const C = mkSection("body", "chapter", "Gamma", { number: "3", content: words(20) });
+              const D = mkSection("body", "chapter", "Delta", { number: "4", content: words(10, "old") });
+              state.sections = [A, B, C, D];
+              state.activeId = A.id;
+              const snap = takeSnapshot("Sections check", null);
+              const E = mkSection("body", "chapter", "Epsilon", { number: "5", content: words(25) });
+              state.sections = [state.sections[0], state.sections[2], state.sections[3], E];
+              state.sections[0].content = words(55);
+              state.sections[2].content = words(10, "new");
+              const diff = histSectionDiff(snap.doc, histLiveDoc());
+              if (diff.added.map((r) => r.id).join() !== E.id) bad.push("added ≠ [Epsilon]");
+              if (diff.removed.map((r) => r.id).join() !== B.id) bad.push("removed ≠ [Beta]");
+              if (diff.changed.map((r) => r.id).join() !== [A.id, D.id].join()) bad.push("changed ≠ [Alpha, Delta]: " + diff.changed.map((r) => r.name).join(", "));
+              const a = diff.changed.find((r) => r.id === A.id), d = diff.changed.find((r) => r.id === D.id);
+              if (!a || a.delta !== 5) bad.push("Alpha delta " + (a && a.delta) + " ≠ +5");
+              if (!d || d.delta !== 0) bad.push("Delta (edited) delta " + (d && d.delta) + " ≠ 0");
+              const sum = diff.added.concat(diff.removed, diff.changed).reduce((n, r) => n + r.delta, 0);
+              if (sum !== bookWordTotal() - snap.words) bad.push("section deltas sum to " + sum + ", the book moved " + (bookWordTotal() - snap.words));
+              /* rendered in the snapshot's detail */
+              openHistory();
+              histViewId = snap.id; renderHistory();
+              const box = $("histDiff");
+              if (!box) bad.push("no difference block in the detail");
+              else {
+                const row = (id) => box.querySelector('[data-hdiff-id="' + id + '"]');
+                const eDelta = diff.added[0] ? diff.added[0].delta : -1;
+                const txt = (id) => (row(id) ? row(id).querySelector(".hist-diff-n").textContent : null);
+                if (!row(E.id) || row(E.id).getAttribute("data-hdiff") !== "added" || txt(E.id) !== t("history.dUp", { n: fmtNum(eDelta), count: eDelta })) bad.push("Epsilon not shown as added with its words");
+                if (!row(B.id) || row(B.id).getAttribute("data-hdiff") !== "removed") bad.push("Beta not shown as no longer in the book");
+                if (txt(A.id) !== t("history.dUp", { n: fmtNum(5), count: 5 })) bad.push("Alpha shows " + JSON.stringify(txt(A.id)));
+                if (txt(D.id) !== t("history.diffReworded")) bad.push("Delta shows " + JSON.stringify(txt(D.id)));
+                if (row(C.id)) bad.push("the untouched Gamma is listed");
+              }
+              /* the sidebar eye: a section left out of the book counts for
+                 nothing, on either side, just as the chip counts it */
+              const F = mkSection("body", "chapter", "Zeta", { number: "6", content: words(40) });
+              const G = mkSection("body", "chapter", "Eta", { number: "7", content: words(15) });
+              G.included = false;
+              const H = mkSection("body", "chapter", "Theta", { number: "8", content: words(12) });
+              H.included = false;
+              state.sections = [A, C, D, E, F, G, H];
+              const snapEye = takeSnapshot("Eye check", null);
+              F.included = false;              /* left out since */
+              G.included = true;               /* brought into the book since */
+              H.content = words(20);           /* edited while left out */
+              const K = mkSection("body", "chapter", "Iota", { number: "9", content: words(9) });
+              K.included = false;              /* added since, left out */
+              state.sections = state.sections.concat([K]);
+              const eye = histSectionDiff(snapEye.doc, histLiveDoc());
+              const eyeSum = ["added", "removed", "leftout", "broughtin", "changed"].reduce((n, kk) => n + eye[kk].reduce((m, r) => m + r.delta, 0), 0);
+              const chipMove = bookWordTotal() - snapEye.words;
+              if (eyeSum !== chipMove) bad.push("with left-out sections the rows sum to " + eyeSum + ", the chip moved " + chipMove);
+              const fRow = eye.leftout.find((r) => r.id === F.id), gRow = eye.broughtin.find((r) => r.id === G.id);
+              if (!fRow || fRow.delta !== -snapshotSectionWords(snapEye.doc, snapEye.doc.sections.find((x) => x.id === F.id))) bad.push("Zeta not listed as left out of the book with its words");
+              if (!gRow || gRow.delta !== sectionWords(G)) bad.push("Eta not listed as brought into the book with its words");
+              const hRow = eye.changed.find((r) => r.id === H.id);
+              if (!hRow || hRow.delta !== 0 || hRow.note !== "out") bad.push("Theta (edited while left out) not shown as not counted");
+              const kRow = eye.added.find((r) => r.id === K.id);
+              if (!kRow || kRow.delta !== 0 || kRow.note !== "out") bad.push("Iota (added, left out) not shown as not counted");
+              histViewId = snapEye.id; renderHistory();
+              const eyeBox = $("histDiff");
+              const eyeTxt = (id) => { const r = eyeBox && eyeBox.querySelector('[data-hdiff-id="' + id + '"]'); return r ? r.querySelector(".hist-diff-n").textContent : null; };
+              if (!eyeBox || eyeBox.textContent.indexOf(t("history.diffNone")) !== -1) bad.push("a hidden chapter is reported as every section matching");
+              else {
+                if (!eyeBox.querySelector('[data-hdiff="leftout"][data-hdiff-id="' + F.id + '"]')) bad.push("no left-out row for Zeta");
+                if (!eyeBox.querySelector('[data-hdiff="broughtin"][data-hdiff-id="' + G.id + '"]')) bad.push("no brought-in row for Eta");
+                if (eyeTxt(H.id) !== t("history.diffNotCounted")) bad.push("Theta shows " + JSON.stringify(eyeTxt(H.id)));
+              }
+              /* hide one chapter and nothing else: the chip and the detail agree */
+              state.sections = [A, C, D, E];
+              state.sections.forEach((x) => { x.included = true; });
+              const snapHide = takeSnapshot("Before hiding", null);
+              C.included = false;
+              const hide = histSectionDiff(snapHide.doc, histLiveDoc());
+              const hideSum = ["added", "removed", "leftout", "broughtin", "changed"].reduce((n, kk) => n + hide[kk].reduce((m, r) => m + r.delta, 0), 0);
+              if (hide.leftout.map((r) => r.id).join() !== C.id || hide.changed.length || hideSum !== bookWordTotal() - snapHide.words || hideSum >= 0) bad.push("hiding Gamma: rows " + JSON.stringify(hide) + " vs chip " + (bookWordTotal() - snapHide.words));
+              C.included = true;
+              /* a snapshot of the book exactly as it is: nothing differs */
+              const same = takeSnapshot("Same", null);
+              histViewId = same.id; renderHistory();
+              if (!$("histDiff") || $("histDiff").textContent.indexOf(t("history.diffNone")) === -1) bad.push("an identical snapshot does not say every section matches");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Epsilon added (+" + diff.added[0].delta + "), Beta no longer in the book (" + diff.removed[0].delta + "), left out / brought back / edited-while-left-out rows sum to the chip (" + eyeSum + "), Alpha +5, Delta edited at the same length, Gamma untouched and unlisted; deltas sum to the book's own change; an identical snapshot says every section matches");
+            } finally { ghRestore(k); }
+          } }
+      );
+      /* ==== /BEUK:goalshist ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
