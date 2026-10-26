@@ -24,6 +24,7 @@ import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
 import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
+import { siteRoutes } from './routes/site.js';
 
 export interface AppDeps {
   db: Db;
@@ -146,6 +147,8 @@ export function buildApp({
   // Everything else at the site root is Caddy's static client mount.
   app.use(help.pages);
   app.use(warmthRoutes(config));
+  // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).
+  app.use(siteRoutes(config));
   // P0 #5: the "choose a new password" page the reset email links to.
   app.use(resetPageRoutes(config));
 

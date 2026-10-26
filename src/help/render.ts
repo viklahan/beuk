@@ -154,6 +154,25 @@ function statusBlock(s: ShelfStatus): string {
 
 /* ------------------------------ chrome ------------------------------ */
 
+/** Link previews (Open Graph + Twitter card) for a Help page: its own title
+ *  and description over the site's one preview image (client/site/og.png),
+ *  as absolute URLs on APP_BASE_URL — a preview never fetches a relative one. */
+export function linkPreviewTags(config: Config, title: string, description?: string): string {
+  const img = `${config.appBaseUrl}/site/og.png`;
+  return [
+    '<meta property="og:type" content="website" />',
+    '<meta property="og:site_name" content="Beuk" />',
+    `<meta property="og:title" content="${esc(title)}" />`,
+    description ? `<meta property="og:description" content="${esc(description)}" />` : '',
+    `<meta property="og:image" content="${esc(img)}" />`,
+    '<meta property="og:image:width" content="1200" />',
+    '<meta property="og:image:height" content="630" />',
+    '<meta name="twitter:card" content="summary_large_image" />',
+  ]
+    .filter(Boolean)
+    .join('\n    ');
+}
+
 export function chrome(
   ctx: PageCtx,
   opts: { title: string; description?: string; active?: 'guides' | 'errors' | 'search' | null; body: string; wide?: boolean; status?: number },
@@ -178,6 +197,7 @@ export function chrome(
     <meta name="color-scheme" content="light dark" />
     <title>${esc(opts.title)}</title>
     ${opts.description ? `<meta name="description" content="${esc(opts.description)}" />` : ''}
+    ${linkPreviewTags(config, opts.title, opts.description)}
     <script src="${helpAssetUrl('theme.js')}"></script>
     <link rel="icon" href="/assets/logo.webp" />
     ${HELP_FONT_PRELOADS.map((u) => `<link rel="preload" href="${u}" as="font" type="font/woff2" crossorigin />`).join('\n    ')}

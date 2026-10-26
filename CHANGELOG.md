@@ -4,6 +4,25 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — A front door
+
+- **beuk.studio opens on the landing page.** It says what Beuk is, with
+  real buttons: Start writing, Sign in, and Start your free week. The
+  studio itself moves to beuk.studio/studio. If you have written on a
+  device before, the front page sends you straight to the studio, and
+  your book is where you left it.
+- **The page tells the truth.** It names beuk.studio, makes no claim to
+  be open source, and its numbers are the studio's own: 11 store presets
+  (Google Play included), 24 trim sizes, paperback or hardback, 36 book
+  languages. It also lists what the studio gained this month: Story
+  Insights and Goals, History and Undo, beta-reader links, and narrator
+  scripts.
+- **No font host is asked for anything.** The page uses the same
+  self-hosted fonts as the studio, and reads without JavaScript.
+- **Found and shared properly.** A real `robots.txt` and `sitemap.xml`,
+  and link previews for the front page and every Help page.
+- The studio offers this update ("A new Beuk is ready").
+
 ## 2026-10-26 — Help catches up
 
 - **Two new guides.** *Delete, split & merge chapters* covers the

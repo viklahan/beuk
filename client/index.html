@@ -33228,7 +33228,7 @@
           if (top.id === "modalAuth" || top.id === "modalShelf") focusEditor();
         });
         const up = await cloudProbe();
-        if (!up) { cloudGoLocal(); return; }
+        if (!up) { cloudGoLocal(); studioDoorFromUrl(); return; }
         cloud.available = true;
         renderCloudChrome();
         const me = await apiFetch("/api/auth/me", { auth: false });
@@ -33237,6 +33237,27 @@
           renderCloudChrome();
           cloudAfterSignIn();
         }
+        studioDoorFromUrl();
+      }
+      /* The landing page's doors: /studio?signin and /studio?signup open
+         the sign-in dialog once, in that mode (a writer already signed in
+         gets the shelf instead). The word is then dropped from the address,
+         so a reload doesn't open the dialog again. Offline, nothing opens. */
+      function studioDoorFromUrl() {
+        let door = null;
+        try {
+          const q = new URLSearchParams(location.search);
+          door = q.has("signup") ? "register" : q.has("signin") ? "login" : null;
+          if (door) {
+            q.delete("signup"); q.delete("signin");
+            const rest = q.toString();
+            history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+          }
+        } catch (e) { door = null; }
+        if (!door || !cloud.available) return;
+        if (cloud.user) { $("btnAccount").click(); return; }
+        openAuth();
+        if (door === "register") setAuthMode("register");
       }
       if (typeof window !== "undefined") {
         window.beukCloud = { cloud, apiFetch, cloudProbe, serializeBook, applyBookDoc, epubCheckResultHtml, initCloud };
@@ -33268,7 +33289,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v6"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v7"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -42516,6 +42537,9 @@
           if (local.editSeq === seq) local.dirty = false;
           local.errorName = "";
           localSetStatus("saved");
+          /* The landing page sends a writer who has written on this device
+             straight back to the studio (client/site/index.html). */
+          if (local.realEdits > 0) { try { localStorage.setItem("beuk.desk", "1"); } catch (e) {} }
           localAskPersist();
         } catch (e) {
           local.errorName = (e && e.name) || "Error";

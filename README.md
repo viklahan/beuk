@@ -297,7 +297,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v6`; both `client/sw.js` and
+service worker (cache `beuk-shell-v7`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -2439,11 +2439,53 @@ everything it does. What else it takes care of:
 
 The same Compose file runs locally — only `.env` differs.
 
+## The front door: landing page at `/`, studio at `/studio`
+
+- **`/` is the landing page** (`client/site/index.html`, the "Voyage Out"
+  design). Caddy serves it for the bare root only and marks the response
+  `X-Beuk-Page: landing`. Its buttons are real: **Start writing** opens
+  `/studio`, **Sign in** opens `/studio?signin`, and **Start your free
+  week** opens `/studio?signup`. The studio opens its sign-in dialog once
+  in that mode (or the shelf, for a writer already signed in), then drops
+  the word from the address.
+- **Returning writers skip it.** Once a writer has written on a device,
+  the studio sets `localStorage["beuk.desk"] = "1"`, and the landing page
+  sends that device straight to `/studio`. `/?home` always shows the page.
+- **`/studio` is the studio** (`client/index.html`; `/studio/` redirects
+  to it). `/index.html` and every other unknown path still fall back to
+  the studio, so old links keep working. Books saved on a device are kept
+  per origin, not per path, so they open at `/studio` unchanged. The
+  installed app starts at `/studio` (manifest `start_url`).
+- **Service worker v7.** Both copies cache the studio from `/`,
+  `/index.html` or `/studio`, but never a response marked as the landing
+  page. `/site/*`, `/robots.txt` and `/sitemap.xml` go straight to the
+  network, like Help. Offline, any navigation still opens the cached
+  studio.
+- **The page's claims are the studio's.** It names beuk.studio (not the
+  sample book's imprint), and says nothing about being free or open
+  source. It says a free 7-day trial comes with an account, and that
+  writing on a device needs none. Its counts (11 store presets, 24 trim
+  sizes, 36 book languages) are checked against the studio's own tables
+  by `tests/site.test.ts`. Its fonts are self-hosted
+  (`client/assets/fonts/fonts-site.css`: Karla, Literata and IBM Plex
+  Mono, the same OFL files as the studio), and its picture is a WebP in
+  `client/site/`. Content stays visible without JavaScript; only the
+  scroll reveal needs it.
+- **Search and link previews.** `GET /robots.txt` keeps `/api/`,
+  `/read/`, `/reset`, `/studio`, `/index.html` and Help search out of
+  search engines and names the sitemap. `GET /sitemap.xml` lists the
+  landing page, Help (every guide, with its `updated` date, and every
+  error entry), the changelog, roadmap, privacy and terms pages, and
+  `/support` while `KOFI_URL` is set (`src/routes/site.ts`, on
+  `APP_BASE_URL`). The landing page and every Help page carry Open Graph
+  and Twitter card tags over one 1200 × 630 preview image
+  (`client/site/og.png`).
+
 ## The static client mount point
 
-`client/` is bind-mounted into Caddy at `/srv/client` and served at the
-site root with SPA fallback; `/api/*` is proxied to the app. It holds a
-placeholder page for the app itself, plus the M4 warmth pages under
+`client/` is bind-mounted into Caddy at `/srv/client`; `/api/*` is
+proxied to the app. It holds the studio (`index.html`, served at
+`/studio`), the landing page under `client/site/`, plus the M4 warmth pages under
 `client/thanks/`, `client/support/` and `client/reset/` and the Help
 stylesheet/scripts under `client/help/` — those paths are proxied to the
 app instead (see the Caddyfile), which fills their config slots (the Help

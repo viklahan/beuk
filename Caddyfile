@@ -148,6 +148,30 @@
 	handle /read* {
 		reverse_proxy app:3000
 	}
+	handle /robots.txt {
+		reverse_proxy app:3000
+	}
+	handle /sitemap.xml {
+		reverse_proxy app:3000
+	}
+	# The landing page is the site's front door; the studio lives at /studio
+	# (and still at /index.html, which its offline shell caches). Every other
+	# path keeps falling back to the studio, so old links still open it.
+	@landing path /
+	handle @landing {
+		header Cache-Control "no-cache"
+		header X-Beuk-Page "landing"
+		root * /srv/client
+		rewrite * /site/index.html
+		file_server
+	}
+	redir /studio/ /studio 308
+	handle /studio {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /index.html
+		file_server
+	}
 
 	# === STATIC CLIENT ===
 	# The built Beuk web client lives in ./client (mounted at /srv/client).

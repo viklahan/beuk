@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v6"; /* v6: History snapshots share the book's pictures (a v5 studio would drop them) */
+const BEUK_CACHE = "beuk-shell-v7"; /* v7: the studio moves to /studio and the landing page takes / (a v6 worker would cache the landing page as the studio) */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell
@@ -135,7 +135,7 @@ self.addEventListener("fetch", (event) => {
      pages, not the studio, and are not precached: their HTML, CSS and
      scripts always go straight to the network, so a restyle reaches a
      returning visitor at once instead of waiting for a shell bump. */
-  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms)(\/|$)/.test(url.pathname)) return;
+  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms|site|robots\.txt|sitemap\.xml)(\/|$)/.test(url.pathname)) return;
 
   /* The shelf and its API: network-first, never cached. On failure
      the rejection propagates untouched — the page already knows how
@@ -155,7 +155,11 @@ self.addEventListener("fetch", (event) => {
              the cached shell — a /reset or /help page must never be
              stored as index.html (it would replace the offline studio). */
           const shellDir = new URL("./", self.location.href).pathname;
-          if (res.ok && (url.pathname === shellDir || url.pathname === shellDir + "index.html")) {
+          /* On beuk.studio the root is the landing page (Caddy marks it
+             X-Beuk-Page: landing) and the studio is /studio; on a host that
+             serves only the studio, the root is the studio itself. */
+          const isShell = url.pathname === shellDir || url.pathname === shellDir + "index.html" || url.pathname === shellDir + "studio";
+          if (res.ok && isShell && res.headers.get("X-Beuk-Page") !== "landing") {
             const copy = res.clone();
             caches.open(BEUK_CACHE).then((cache) => cache.put("./index.html", copy)).catch(() => {});
           }
