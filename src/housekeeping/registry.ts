@@ -2128,6 +2128,45 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The report is a field of the client book document (serializeBook); the shelf stores the book JSON opaquely.',
   },
 
+  /* ---- Import credit and Cover maker prefill (client-side; BEUK:importmeta) ---- */
+  {
+    id: 'import.title.from-titlepage',
+    title:
+      "Import credit from the manuscript's title page: title, subtitle and by-line author are read from the lead lines before the first chapter, lifted out of the body and reported (undoable); prose is never taken as a title",
+    kind: 'client-only',
+    reason: 'Title discovery runs in the studio import pipeline; the server never sees the manuscript file.',
+  },
+  {
+    id: 'import.title.from-filename',
+    title: 'Import credit from the cleaned file name when nothing better exists (extension, separators, copy markers and trailing draft/version words removed, reported as such)',
+    kind: 'client-only',
+    reason: 'Title discovery runs in the studio import pipeline; the server never sees the manuscript file.',
+  },
+  {
+    id: 'import.title.keeps-writers',
+    title: "A title the writer typed is never overwritten by an import (the report offers the document's title with one click); an imported title is replaced by the next import",
+    kind: 'client-only',
+    reason: 'Credit provenance (meta.titleSource) is a field of the client book document; imports and the report run in the studio.',
+  },
+  {
+    id: 'settings.title.placeholder-not-stored',
+    title: '"Untitled Book" is display-only: a blank title is stored blank, and a stored placeholder in any of the 13 languages counts as untitled',
+    kind: 'client-only',
+    reason: 'Settings Save and the placeholder fallback are client UI behavior.',
+  },
+  {
+    id: 'covermaker.prefill.from-book',
+    title: "Cover maker prefill: a new cover takes the book's title, subtitle, author and series (never the placeholder) and seeds the photo search",
+    kind: 'client-only',
+    reason: 'The Cover maker and its recipe live in the client book model.',
+  },
+  {
+    id: 'covermaker.prefill.follows-book',
+    title: "Cover maker follows the book: a saved recipe's blank fields, and fields still equal to the book's words when it was saved, take the book's current values; text typed in the maker is kept",
+    kind: 'client-only',
+    reason: 'The Cover maker and its recipe (with its book-text snapshot) live in the client book model.',
+  },
+
   /* ---- Feature 7: ACX audio script export (all client-side) ---- */
   {
     id: 'acx.files.order-and-credits',
