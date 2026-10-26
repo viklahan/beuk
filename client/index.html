@@ -23519,7 +23519,10 @@
         const f = previewFit(area);
         const step = (area ? area.w : wrap.clientWidth) + COL_GAP;
         if (!step || !f.s) return 0;
-        const lx = (clientX - wrap.getBoundingClientRect().left - (area ? f.ox : 0)) / (area ? f.s : 1) + (state.page - 1) * step;
+        const vx = (clientX - wrap.getBoundingClientRect().left - (area ? f.ox : 0)) / (area ? f.s : 1);
+        /* Right to left, page 1 is the window and later pages lie to its
+           left: measure from the window's right edge instead. */
+        const lx = ($("pageFlow").dir === "rtl" ? (step - COL_GAP) - vx : vx) + (state.page - 1) * step;
         return Math.floor((lx + 1) / step) + 1; /* +1 layout px: float noise at a column edge */
       }
       const pageCountCache = new Map();
@@ -24108,18 +24111,21 @@
       /* The visible preview is laid out at the profile's fixed reading
          area and drawn scaled to fit the screen, so its "Page X of Y"
          is the same count the desk shows, at any window size or zoom. */
+      /* A right-to-left book (Arabic, Hebrew…) sets its columns leftward from
+         page 1, so turning a page moves the flow right, not left. */
+      function previewTurnSign() { return $("pageFlow").dir === "rtl" ? 1 : -1; }
       function previewTransform(page) {
         const wrap = $("flowWrap");
         const area = deviceReadingArea();
         if (!area) {
           wrap.style.clipPath = "";
-          return "translateX(" + (-(page - 1) * (wrap.clientWidth + COL_GAP)) + "px)";
+          return "translateX(" + (previewTurnSign() * (page - 1) * (wrap.clientWidth + COL_GAP)) + "px)";
         }
         const f = previewFit(area);
         /* Letterbox: clip to the scaled page so the next column, a gap
            away, never peeks in. */
         wrap.style.clipPath = "inset(" + f.oy.toFixed(2) + "px " + f.ox.toFixed(2) + "px)";
-        return "translate(" + f.ox.toFixed(2) + "px, " + f.oy.toFixed(2) + "px) scale(" + f.s.toFixed(5) + ") translateX(" + (-(page - 1) * (area.w + COL_GAP)) + "px)";
+        return "translate(" + f.ox.toFixed(2) + "px, " + f.oy.toFixed(2) + "px) scale(" + f.s.toFixed(5) + ") translateX(" + (previewTurnSign() * (page - 1) * (area.w + COL_GAP)) + "px)";
       }
       function measurePages() {
         const wrap = $("flowWrap"), flow = $("pageFlow");
@@ -41682,6 +41688,35 @@
               const ok = en.n > 0 && ar.n === en.n && ar.dir === "ltr" && ar.x === en.x;
               return scVerdict(ok, "English interface: " + en.n + " pages, scroll " + en.x + "; Arabic: " + ar.n + " pages, scroll " + ar.x + ", device screen " + ar.dir);
             } finally { setUiLang(keepLang); goToPage(keepPage, true); }
+          } },
+        { id: "preview.rtl-book-pages-turn", feature: "preview", name: "A right-to-left book (Arabic) turns its pages the right way: every page of the device preview shows its own text, and a word is found on the page it is drawn on",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDevice = state.device, keepActive = state.activeId, keepPage = state.page;
+            try {
+              const doc = JSON.parse(JSON.stringify(keepDoc));
+              doc.meta = Object.assign({}, doc.meta, { language: "ar" });
+              const s = (doc.sections || []).find((x) => x.kind === "body");
+              if (!s) return scVerdict(false, "no body section to test with");
+              const para = "\u0643\u0627\u0646 \u0644\u062c\u062f\u0651\u062a\u064a \u0628\u064a\u062a\u064c \u0623\u0628\u064a\u0636\u064f \u0635\u063a\u064a\u0631 \u0639\u0644\u0649 \u0635\u062e\u0631\u0629\u064d \u0641\u0648\u0642 \u0627\u0644\u0628\u062d\u0631. ";
+              s.content = Array.from({ length: 30 }, () => para.repeat(4)).join("\n\n");
+              s.included = true;
+              applyBookDoc(doc);
+              state.activeId = s.id; setDevice("kindle"); renderPreview(); pvFlush(); measurePages();
+              const flow = $("pageFlow"), wrap = $("flowWrap");
+              const wr = wrap.getBoundingClientRect();
+              /* Page 1 opens the chapter (a picture plate or a heading in any
+                 script): anything of the book counts. Later pages must show
+                 the Arabic text itself. */
+              const shown = (anyContent) => { let n = 0; for (let i = 1; i < 6; i++) for (let j = 1; j < 6; j++) { const el = document.elementFromPoint(wr.left + wr.width * i / 6, wr.top + wr.height * j / 6); if (el && el !== flow && flow.contains(el) && (anyContent || /[\u0600-\u06FF]/.test(el.textContent || ""))) n++; } return n; };
+              const pages = state.pageCount, seen = [];
+              for (let p = 1; p <= Math.min(3, pages); p++) { goToPage(p, true); seen.push(shown(p === 1)); }
+              goToPage(Math.min(2, pages), true);
+              const ps = Array.prototype.filter.call(flow.querySelectorAll("p"), (p) => { const r = p.getBoundingClientRect(); return r.width > 0 && r.left >= wr.left && r.right <= wr.right; });
+              const here = ps.length ? previewPageAtX(ps[0].getBoundingClientRect().left + 2) : 0;
+              const ok = flow.dir === "rtl" && pages >= 3 && seen.every((n) => n > 0) && here === state.page;
+              return scVerdict(ok, "Arabic book, " + pages + " pages, flow " + flow.dir + "; text shown on pages 1–3: " + seen.join(" / ") + " probes; a paragraph on page " + state.page + " is found on page " + here);
+            } finally { applyBookDoc(keepDoc); state.activeId = keepActive; setDevice(keepDevice); renderPreview(); goToPage(keepPage, true); }
           } },
         { id: "zen.controls.no-overlap", feature: "zen", name: "Zen corner controls never cover the tabs: in every interface language (Arabic right-to-left included) the presence dot, Ambient sound, the scene picker and Dictate share no pixel with the Chapter Content / Typography Studio tabs and stay inside the window; the cluster stands at the reading end of the line (logical inset), and the editor never runs past its column",
           run() {

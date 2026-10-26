@@ -2203,6 +2203,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The device preview is laid out by the studio browser; the interface direction is client UI state.',
   },
   {
+    id: 'preview.rtl-book-pages-turn',
+    title: 'A right-to-left (Arabic) book turns its pages the right way in the device preview: every page shows its own text, and a word is found on the page it is drawn on',
+    kind: 'client-only',
+    reason: 'The device preview is laid out and paged by the studio browser.',
+  },
+  {
     id: 'preview.opened-section-stays-put',
     title: 'A section just opened stays on page 1 through a font-size change; a chapter-title keystroke turns to the page the title stands on and a device change keeps it there',
     kind: 'client-only',

@@ -31,6 +31,7 @@ to make well.
 - Hindi and Arabic books are now set in real book faces, Noto Serif Devanagari and Amiri (free, open-licensed, served from beuk.studio), in the preview, the print PDF and the EPUB, instead of whatever font the reader's device has.
 - There is nothing to choose: your Latin faces stay, and Devanagari and Arabic letters, a whole book or one passage, switch to the script face by themselves.
 - Arabic (and Persian, Hebrew, Urdu) books now read right to left in every export, and their headings and contents follow the book's side.
+- **Fixed:** in the device preview, an Arabic book showed only its first page; every later page was blank. Its pages now turn the right way.
 
 ## 2026-10-26 — A front door
 
