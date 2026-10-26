@@ -4,6 +4,18 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Who walks on, and where
+
+- **Names on stage, in Story Insights.** A new last section shows the
+  names your book keeps returning to and where: one row per name, one
+  column per section, each square shaded by how often the name appears
+  there for its length. Choose a square and the studio opens that
+  section with the first mention selected. Names are found by capital
+  letters on your device — places and ships turn up too, and the page
+  says so — and any that aren't names can be hidden; the hidden list is
+  kept with the book. Books in scripts without capital letters get a
+  short note instead of a guess.
+
 ## 2026-10-26 — Your address stays with us
 
 - **No more Google Fonts.** Every typeface in the studio, Help, the
