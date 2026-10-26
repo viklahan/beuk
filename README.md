@@ -2001,6 +2001,76 @@ reachable from the import area until dismissed. This is the studio's
 main import only; Box Set volume import and Bulk import still use the
 plain converter without a report.
 
+### The book's title, subtitle and author on import (BEUK:importmeta)
+
+An import looks for the book's credit in this order, best evidence first:
+
+1. **What the document declares** — a Word file's `dc:title` /
+   `dc:creator` (docProps/core.xml), a Markdown file's front matter
+   (`title`, `subtitle`, `author`).
+2. **The manuscript's own title page** — the short lines before the first
+   chapter or matter heading: a title line, an optional subtitle line and a
+   `by <Name>` line (also a Markdown / Heading 1 title whose only text is a
+   by-line). These lines are lifted out of the body (they no longer turn
+   into a "Dedication") and the report lists the lift with an Undo.
+3. **The file name, cleaned** — extension, `-`/`_` separators, copy
+   markers (`(1)`, `Copy of`, `- Copy`) removed; trailing draft/version
+   words (`final`, `draft`, `v3`, `v2.1`, `rev2`, `revised`, `wip`) are
+   left out only when a word with letters remains before them (so
+   "Final Frontier" stays whole). The report names the words it left out.
+
+The shape rules are **Beuk's own rules of thumb**, strict on purpose: a
+title line is 1–12 words, at most 100 characters, starts with a capital,
+a digit or a letter of a script without case, does not open with a quote
+mark, dash or bracket, does not end with `. , ; : …`, holds no second
+sentence, and never opens with "For", "To", "In memory" or "Dedicated".
+A by-line is `by` / `written by` (or lowercase `par`, `von`, `por`,
+`door`) followed by one to four capitalised names (initials and particles
+such as "de", "van" allowed). Without a by-line, a lone title (plus an
+optional subtitle), in title case or capitals, counts only when the
+body or a copyright page follows straight after. Anything else stays
+prose. By-lines in other words (for example Arabic or Japanese
+credits) are not recognised yet.
+
+For a `.docx`, a by-line on the title page outranks `dc:creator`,
+because Word fills a new file's Author property from its User name
+setting, not from the manuscript
+([Microsoft Support](https://support.microsoft.com/en-us/word/change-the-author-name-for-documents-presentations-or-workbooks)).
+Account-name defaults such as "Microsoft Office User", "User" or
+"Author" are never taken as a credit.
+
+**Provenance.** `meta.titleSource`, `subtitleSource`, `authorSource`
+("writer" or "import"; absent when unknown) ride with the book. A credit
+that came from an import may be replaced by the next import; one the
+writer typed in Project Settings (or a credit of unknown provenance,
+such as a book saved before this change) is never overwritten. The report
+says instead "Kept your title X. The document calls itself Y." with a
+**Use "Y"** button. When an import replaces an imported title with a
+different book's title and the new document names no subtitle or author,
+the earlier import's subtitle/author is cleared (reported, undoable).
+Over the untouched sample the document's credit takes the desk outright,
+as before.
+
+**"Untitled Book" is display-only.** Project Settings stores a blank
+title as `""` (the header, exports and shelf show the placeholder). A
+stored title equal to the placeholder in any of the 13 interface
+languages is treated as blank for these decisions; stored data is not
+rewritten otherwise.
+
+**Cover maker prefill.** A new cover takes the book's title, subtitle,
+author and series (`meta.series`, set by Bulk/vault import) and seeds the
+stock-photo search from the title. A saved cover recipe now keeps a
+snapshot of the book's words at the time it was used (`bookText`); on
+opening, each text field that is blank or still equals that snapshot
+follows the book's current value, and text typed in the maker is kept.
+The tagline is never filled automatically, even when the book has a
+description. An already adopted cover image is not re-rendered until the
+writer uses the maker again.
+
+Bulk import uses the same title-page reading (the page is lifted from the
+text, without a report) and falls back to the cleaned file name instead of
+storing "Untitled Book".
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — the plumbing is here (verified, deduplicated,
