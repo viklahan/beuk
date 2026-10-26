@@ -6105,6 +6105,115 @@
       };
       Object.keys(IR_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], IR_STRINGS[code]); });
       /* ==== /BEUK:importreport ==== */
+      /* ==== BEUK:importmeta ==== */
+      const IM_STRINGS = {
+        "en": { "ir.k.lifted.titlepage": "The title page was read as the book's title and credit, and not kept as text", "ir.f.subtitle": "Subtitle", "ir.k.metaCleared": "Cleared the {field} “{value}” — it came with the previous import, and this document names a different book",
+          "ir.k.metaKept.title": "Kept your title “{kept}”. The document calls itself “{offered}”.",
+          "ir.k.metaKept.subtitle": "Kept your subtitle “{kept}”. The document's subtitle is “{offered}”.",
+          "ir.k.metaKept.author": "Kept your author name “{kept}”. The document credits “{offered}”.",
+          "ir.useValue": "Use “{value}”", "ir.usedValue": "Now using “{value}”",
+          "im.via.docx": "from the Word file's document properties", "im.via.frontmatter": "from the front matter", "im.via.meta": "from the document's own details",
+          "im.via.titlepage": "from the manuscript's title page", "im.via.filename": "from the file name",
+          "im.via.filenameStripped": "from the file name, leaving out “{tokens}” (read as draft or version words — Beuk's own rule of thumb)" },
+        "es": { "ir.k.lifted.titlepage": "La portadilla se leyó como el título y la autoría del libro y no se conservó como texto", "ir.f.subtitle": "Subtítulo", "ir.k.metaCleared": "Se borró el campo {field} «{value}»: llegó con la importación anterior y este documento es otro libro",
+          "ir.k.metaKept.title": "Se mantuvo tu título «{kept}». El documento se titula «{offered}».",
+          "ir.k.metaKept.subtitle": "Se mantuvo tu subtítulo «{kept}». El subtítulo del documento es «{offered}».",
+          "ir.k.metaKept.author": "Se mantuvo tu nombre de autor «{kept}». El documento acredita a «{offered}».",
+          "ir.useValue": "Usar «{value}»", "ir.usedValue": "Ahora se usa «{value}»",
+          "im.via.docx": "de las propiedades del archivo de Word", "im.via.frontmatter": "del bloque de metadatos (front matter)", "im.via.meta": "de los datos del propio documento",
+          "im.via.titlepage": "de la portadilla del manuscrito", "im.via.filename": "del nombre del archivo",
+          "im.via.filenameStripped": "del nombre del archivo, sin «{tokens}» (leído como palabras de borrador o versión; criterio propio de Beuk)" },
+        "fr": { "ir.k.lifted.titlepage": "La page de titre a été lue comme le titre et l’auteur du livre, et n’a pas été gardée comme texte", "ir.f.subtitle": "Sous-titre", "ir.k.metaCleared": "Le champ {field} « {value} » a été vidé — il venait de l’import précédent, et ce document est un autre livre",
+          "ir.k.metaKept.title": "Votre titre « {kept} » est conservé. Le document s’intitule « {offered} ».",
+          "ir.k.metaKept.subtitle": "Votre sous-titre « {kept} » est conservé. Le sous-titre du document est « {offered} ».",
+          "ir.k.metaKept.author": "Votre nom d’auteur « {kept} » est conservé. Le document indique « {offered} ».",
+          "ir.useValue": "Utiliser « {value} »", "ir.usedValue": "« {value} » est maintenant utilisé",
+          "im.via.docx": "des propriétés du fichier Word", "im.via.frontmatter": "de l’en-tête de métadonnées (front matter)", "im.via.meta": "des informations du document lui-même",
+          "im.via.titlepage": "de la page de titre du manuscrit", "im.via.filename": "du nom du fichier",
+          "im.via.filenameStripped": "du nom du fichier, sans « {tokens} » (lu comme des mots de brouillon ou de version — règle empirique de Beuk)" },
+        "de": { "ir.k.lifted.titlepage": "Die Titelseite wurde als Titel und Autorenangabe des Buchs gelesen und nicht als Text behalten", "ir.f.subtitle": "Untertitel", "ir.k.metaCleared": "Das Feld {field} „{value}“ wurde geleert — es stammte aus dem vorigen Import, und dieses Dokument ist ein anderes Buch",
+          "ir.k.metaKept.title": "Ihr Titel „{kept}“ bleibt. Das Dokument nennt sich „{offered}“.",
+          "ir.k.metaKept.subtitle": "Ihr Untertitel „{kept}“ bleibt. Der Untertitel des Dokuments lautet „{offered}“.",
+          "ir.k.metaKept.author": "Ihr Autorenname „{kept}“ bleibt. Das Dokument nennt „{offered}“.",
+          "ir.useValue": "„{value}“ verwenden", "ir.usedValue": "Jetzt gilt „{value}“",
+          "im.via.docx": "aus den Dokumenteigenschaften der Word-Datei", "im.via.frontmatter": "aus dem Front-Matter-Block", "im.via.meta": "aus den Angaben des Dokuments selbst",
+          "im.via.titlepage": "von der Titelseite des Manuskripts", "im.via.filename": "aus dem Dateinamen",
+          "im.via.filenameStripped": "aus dem Dateinamen, ohne „{tokens}“ (als Entwurfs- oder Versionswörter gelesen — Beuks eigene Faustregel)" },
+        "it": { "ir.k.lifted.titlepage": "Il frontespizio è stato letto come titolo e autore del libro e non è stato tenuto come testo", "ir.f.subtitle": "Sottotitolo", "ir.k.metaCleared": "Il campo {field} «{value}» è stato svuotato: veniva dall’importazione precedente e questo documento è un altro libro",
+          "ir.k.metaKept.title": "Il tuo titolo «{kept}» è rimasto. Il documento si intitola «{offered}».",
+          "ir.k.metaKept.subtitle": "Il tuo sottotitolo «{kept}» è rimasto. Il sottotitolo del documento è «{offered}».",
+          "ir.k.metaKept.author": "Il tuo nome d’autore «{kept}» è rimasto. Il documento indica «{offered}».",
+          "ir.useValue": "Usa «{value}»", "ir.usedValue": "Ora in uso: «{value}»",
+          "im.via.docx": "dalle proprietà del file Word", "im.via.frontmatter": "dal blocco di metadati (front matter)", "im.via.meta": "dai dati del documento stesso",
+          "im.via.titlepage": "dal frontespizio del manoscritto", "im.via.filename": "dal nome del file",
+          "im.via.filenameStripped": "dal nome del file, senza «{tokens}» (letto come parole di bozza o versione — regola empirica di Beuk)" },
+        "pt": { "ir.k.lifted.titlepage": "A folha de rosto foi lida como o título e a autoria do livro e não foi mantida como texto", "ir.f.subtitle": "Subtítulo", "ir.k.metaCleared": "O campo {field} «{value}» foi limpo — veio da importação anterior e este documento é outro livro",
+          "ir.k.metaKept.title": "O seu título «{kept}» foi mantido. O documento intitula-se «{offered}».",
+          "ir.k.metaKept.subtitle": "O seu subtítulo «{kept}» foi mantido. O subtítulo do documento é «{offered}».",
+          "ir.k.metaKept.author": "O seu nome de autor «{kept}» foi mantido. O documento indica «{offered}».",
+          "ir.useValue": "Usar «{value}»", "ir.usedValue": "Agora em uso: «{value}»",
+          "im.via.docx": "das propriedades do ficheiro Word", "im.via.frontmatter": "do bloco de metadados (front matter)", "im.via.meta": "dos dados do próprio documento",
+          "im.via.titlepage": "da folha de rosto do manuscrito", "im.via.filename": "do nome do ficheiro",
+          "im.via.filenameStripped": "do nome do ficheiro, sem «{tokens}» (lido como palavras de rascunho ou versão — regra prática do Beuk)" },
+        "nl": { "ir.k.lifted.titlepage": "De titelpagina is gelezen als titel en auteur van het boek en niet als tekst bewaard", "ir.f.subtitle": "Ondertitel", "ir.k.metaCleared": "Het veld {field} ‘{value}’ is leeggemaakt — het kwam van de vorige import, en dit document is een ander boek",
+          "ir.k.metaKept.title": "Uw titel ‘{kept}’ is behouden. Het document heet ‘{offered}’.",
+          "ir.k.metaKept.subtitle": "Uw ondertitel ‘{kept}’ is behouden. De ondertitel van het document is ‘{offered}’.",
+          "ir.k.metaKept.author": "Uw auteursnaam ‘{kept}’ is behouden. Het document vermeldt ‘{offered}’.",
+          "ir.useValue": "‘{value}’ gebruiken", "ir.usedValue": "Nu in gebruik: ‘{value}’",
+          "im.via.docx": "uit de documenteigenschappen van het Word-bestand", "im.via.frontmatter": "uit het front-matterblok", "im.via.meta": "uit de gegevens van het document zelf",
+          "im.via.titlepage": "van de titelpagina van het manuscript", "im.via.filename": "uit de bestandsnaam",
+          "im.via.filenameStripped": "uit de bestandsnaam, zonder ‘{tokens}’ (gelezen als concept- of versiewoorden — Beuks eigen vuistregel)" },
+        "pl": { "ir.k.lifted.titlepage": "Strona tytułowa została odczytana jako tytuł i autor książki i nie została zachowana jako tekst", "ir.f.subtitle": "Podtytuł", "ir.k.metaCleared": "Wyczyszczono pole {field} „{value}” — pochodziło z poprzedniego importu, a ten dokument to inna książka",
+          "ir.k.metaKept.title": "Zachowano Twój tytuł „{kept}”. Dokument nosi tytuł „{offered}”.",
+          "ir.k.metaKept.subtitle": "Zachowano Twój podtytuł „{kept}”. Podtytuł dokumentu to „{offered}”.",
+          "ir.k.metaKept.author": "Zachowano Twoje nazwisko autora „{kept}”. Dokument podaje „{offered}”.",
+          "ir.useValue": "Użyj „{value}”", "ir.usedValue": "Teraz używane: „{value}”",
+          "im.via.docx": "z właściwości pliku Word", "im.via.frontmatter": "z bloku metadanych (front matter)", "im.via.meta": "z danych samego dokumentu",
+          "im.via.titlepage": "ze strony tytułowej rękopisu", "im.via.filename": "z nazwy pliku",
+          "im.via.filenameStripped": "z nazwy pliku, bez „{tokens}” (odczytane jako słowa szkicu lub wersji — własna reguła Beuk)" },
+        "ru": { "ir.k.lifted.titlepage": "Титульная страница прочитана как название и автор книги и не сохранена как текст", "ir.f.subtitle": "Подзаголовок", "ir.k.metaCleared": "Поле «{field}» («{value}») очищено — оно пришло с предыдущим импортом, а этот документ — другая книга",
+          "ir.k.metaKept.title": "Ваше название «{kept}» сохранено. Документ называет себя «{offered}».",
+          "ir.k.metaKept.subtitle": "Ваш подзаголовок «{kept}» сохранён. Подзаголовок документа — «{offered}».",
+          "ir.k.metaKept.author": "Ваше имя автора «{kept}» сохранено. В документе указан автор «{offered}».",
+          "ir.useValue": "Использовать «{value}»", "ir.usedValue": "Теперь используется «{value}»",
+          "im.via.docx": "из свойств файла Word", "im.via.frontmatter": "из блока метаданных (front matter)", "im.via.meta": "из сведений самого документа",
+          "im.via.titlepage": "с титульной страницы рукописи", "im.via.filename": "из имени файла",
+          "im.via.filenameStripped": "из имени файла, без «{tokens}» (это прочитано как слова черновика или версии — собственное правило Beuk)" },
+        "tr": { "ir.k.lifted.titlepage": "Başlık sayfası kitabın adı ve yazarı olarak okundu, metin olarak tutulmadı", "ir.f.subtitle": "Alt başlık", "ir.k.metaCleared": "{field} alanı (“{value}”) temizlendi — önceki içe aktarmadan gelmişti ve bu belge başka bir kitap",
+          "ir.k.metaKept.title": "Başlığınız “{kept}” korundu. Belge kendini “{offered}” olarak adlandırıyor.",
+          "ir.k.metaKept.subtitle": "Alt başlığınız “{kept}” korundu. Belgenin alt başlığı “{offered}”.",
+          "ir.k.metaKept.author": "Yazar adınız “{kept}” korundu. Belgede yazar “{offered}” olarak geçiyor.",
+          "ir.useValue": "“{value}” kullan", "ir.usedValue": "Artık “{value}” kullanılıyor",
+          "im.via.docx": "Word dosyasının belge özelliklerinden", "im.via.frontmatter": "ön bilgi (front matter) bloğundan", "im.via.meta": "belgenin kendi bilgilerinden",
+          "im.via.titlepage": "el yazmasının başlık sayfasından", "im.via.filename": "dosya adından",
+          "im.via.filenameStripped": "dosya adından, “{tokens}” dışarıda bırakılarak (taslak ya da sürüm sözcükleri olarak okundu — Beuk’un kendi pratik kuralı)" },
+        "ar": { "ir.k.lifted.titlepage": "قُرئت صفحة العنوان على أنها عنوان الكتاب واسم مؤلفه، ولم تُحفظ نصًّا", "ir.f.subtitle": "العنوان الفرعي", "ir.k.metaCleared": "أُفرغ حقل {field} «{value}» — جاء مع الاستيراد السابق، وهذا المستند كتاب آخر",
+          "ir.k.metaKept.title": "أُبقي عنوانك «{kept}». المستند يسمّي نفسه «{offered}».",
+          "ir.k.metaKept.subtitle": "أُبقي عنوانك الفرعي «{kept}». العنوان الفرعي في المستند هو «{offered}».",
+          "ir.k.metaKept.author": "أُبقي اسمك كمؤلف «{kept}». المستند ينسبه إلى «{offered}».",
+          "ir.useValue": "استخدم «{value}»", "ir.usedValue": "المستخدم الآن: «{value}»",
+          "im.via.docx": "من خصائص ملف Word", "im.via.frontmatter": "من كتلة البيانات الوصفية (front matter)", "im.via.meta": "من بيانات المستند نفسه",
+          "im.via.titlepage": "من صفحة عنوان المخطوطة", "im.via.filename": "من اسم الملف",
+          "im.via.filenameStripped": "من اسم الملف، دون «{tokens}» (قُرئت كلمات مسودة أو إصدار — قاعدة تقريبية خاصة بـ Beuk)" },
+        "ja": { "ir.k.lifted.titlepage": "扉ページを本のタイトルと著者として読み取り、本文には残していません", "ir.f.subtitle": "サブタイトル", "ir.k.metaCleared": "{field}「{value}」を空にしました — 前回の取り込みで入ったもので、この文書は別の本です",
+          "ir.k.metaKept.title": "あなたのタイトル「{kept}」をそのままにしました。文書上のタイトルは「{offered}」です。",
+          "ir.k.metaKept.subtitle": "あなたのサブタイトル「{kept}」をそのままにしました。文書上のサブタイトルは「{offered}」です。",
+          "ir.k.metaKept.author": "あなたの著者名「{kept}」をそのままにしました。文書上の著者は「{offered}」です。",
+          "ir.useValue": "「{value}」を使う", "ir.usedValue": "「{value}」を使用中",
+          "im.via.docx": "Word ファイルの文書プロパティから", "im.via.frontmatter": "フロントマターから", "im.via.meta": "文書自身の情報から",
+          "im.via.titlepage": "原稿の扉ページから", "im.via.filename": "ファイル名から",
+          "im.via.filenameStripped": "ファイル名から（「{tokens}」は草稿・版の語とみなして除外 — Beuk 独自の目安）" },
+        "zh-Hans": { "ir.k.lifted.titlepage": "书名页已读作本书的书名和作者，没有作为正文保留", "ir.f.subtitle": "副标题", "ir.k.metaCleared": "已清空{field}“{value}”——它来自上一次导入，而这份文档是另一本书",
+          "ir.k.metaKept.title": "保留了你的书名“{kept}”。文档自称“{offered}”。",
+          "ir.k.metaKept.subtitle": "保留了你的副标题“{kept}”。文档的副标题是“{offered}”。",
+          "ir.k.metaKept.author": "保留了你的作者名“{kept}”。文档署名为“{offered}”。",
+          "ir.useValue": "使用“{value}”", "ir.usedValue": "现在使用“{value}”",
+          "im.via.docx": "来自 Word 文件的文档属性", "im.via.frontmatter": "来自前置元数据（front matter）", "im.via.meta": "来自文档自身的信息",
+          "im.via.titlepage": "来自稿件的书名页", "im.via.filename": "来自文件名",
+          "im.via.filenameStripped": "来自文件名，去掉了“{tokens}”（视为草稿或版本用词 — Beuk 自己的经验规则）" }
+      };
+      Object.keys(IM_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], IM_STRINGS[code]); });
+      /* ==== /BEUK:importmeta ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
         "en": { "shelf.guardDeviceBody": "“{title}” is only on this device — it isn't on your shelf as it stands here. Opening another book replaces it here. Put it on your shelf first and you can open it again any time.", "shelf.guardKeep": "Keep my book", "shelf.guardReplace": "Open and replace it", "shelf.guardSaveFirst": "Put it on my shelf, then open", "shelf.guardSaveFailed": "“{title}” could not be put on your shelf, so nothing was replaced — it is still open here." },
@@ -14647,7 +14756,7 @@
         state.printTrim = d.printTrim; state.printRecto = d.printRecto; state.printLargePrint = d.printLargePrint;
       }
       const isEmptyDesk = () => bookWordTotal() === 0 &&
-        !String(state.meta.title || "").trim() && !String(state.meta.author || "").trim() &&
+        !imRealTitle() && /* BEUK:importmeta — a stored placeholder is no title */ !String(state.meta.author || "").trim() &&
         state.sections.every((s) => !String(s.content || "").trim());
       /* ==== BEUK:bugs ==== — the sample's own word count, as shipped:
          counted once from the bundled book exactly the way the stats
@@ -16294,7 +16403,7 @@
         if (edBook) edBook.textContent = bookTxt;
         if (zenCount) zenCount.textContent = secTxt + " · " + bookTxt;
         state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); el.textContent = fmtNum(w) + " " + t("side.wordUnit", { count: w }); } });
-        $("projectTitleDisplay").textContent = state.meta.title || t("misc.untitledBook");
+        $("projectTitleDisplay").textContent = imRealTitle() || t("misc.untitledBook"); /* BEUK:importmeta */
         $("projectAuthorDisplay").textContent = state.meta.author ? t("misc.byAuthor", { author: state.meta.author }) : "";
         renderProgress();
         renderStreak();
@@ -17398,7 +17507,15 @@
       }
       function bindGenMeta(id, key) {
         const el = $(id); if (!el) return;
-        el.addEventListener("input", () => { state.meta[key] = el.value; genRefresh(); });
+        el.addEventListener("input", () => {
+          state.meta[key] = el.value;
+          /* BEUK:importmeta — this is the second door onto the book's
+             credits (Project Settings is the first): a credit typed here
+             is the writer's and no later import may replace it; one
+             emptied here is open to the next import again. */
+          if (key === "title" || key === "subtitle" || key === "author") imSetSource(key, imMetaValue(key) ? "writer" : "");
+          genRefresh();
+        });
       }
       function renderGenEditor(s) {
         const host = $("genEditor"); if (!host) return;
@@ -20069,9 +20186,23 @@
           return { bodyText, cls: "lead" };
         });
         const isBodyItem = (it) => it.cls === "chapter" || (it.cls === "matter" && it.matter.kind === "body");
+        /* BEUK:importmeta — the manuscript's own title page is the
+           book's credit: read it, lift it out of the text, and record
+           the lift for the import report (undo puts it back). */
+        let titlePage = null;
+        if (items.length > 2 && !items[0].bodyText && items[1].cls === "chapter" && /^#{1,2}\s+/.test(String(items[1].raw || "").trim()) &&
+            items.slice(2).some(isBodyItem)) {
+          titlePage = imTitlePageFromHeading(items[1].raw, items[1].bodyText);
+          if (titlePage) items[1].cls = "skip";
+        }
         const firstBody = items.findIndex(isBodyItem);
         let lastBody = -1;
         items.forEach((it, ii) => { if (isBodyItem(it)) lastBody = ii; });
+        if (!titlePage && items.length && items[0].cls === "lead" && items[0].bodyText) {
+          titlePage = imTitlePageFrom(items[0].bodyText, firstBody !== -1);
+          if (titlePage) items[0].bodyText = titlePage.rest.trim();
+        }
+        if (titlePage) irNote({ kind: "lifted", reason: "titlepage", text: titlePage.text });
         const pieces = [];
         const proseChunks = [];
         items.forEach((it, ii) => {
@@ -20127,6 +20258,7 @@
           return keep;
         });
         if (!kept.length) kept.push({ kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: String(text).split("\n") });
+        if (titlePage) kept.titlePage = titlePage; /* BEUK:importmeta */
         return kept;
       }
       /* What the parse found, in the book's own order — the calm
@@ -20195,6 +20327,231 @@
           publisher: pubM ? pubM[1].replace(/[.\s]+$/, "").trim() : ""
         };
       }
+      /* ==== BEUK:importmeta ==== */
+      /* ================= The book's own credit, found on import =================
+         An import looks for the book's title, subtitle and author in
+         this order, best evidence first:
+           1. what the document declares about itself — a Word file's
+              dc:title / dc:creator, a Markdown file's front matter;
+           2. the manuscript's own title page — the short lines that
+              stand before the first chapter or matter heading: a title
+              line, an optional subtitle line, and a "by <Name>" line;
+           3. the file name, cleaned.
+         One exception, Beuk's own judgement: Word sets a new file's
+         Author property (dc:creator) from its User name option, not
+         from anything typed in the manuscript (Microsoft Support,
+         "Change the author name for documents, presentations, or
+         workbooks": https://support.microsoft.com/en-us/word/change-the-author-name-for-documents-presentations-or-workbooks),
+         so for a .docx a by-line the writer typed on the title page
+         outranks it.
+         The title-page shape rules are strict on purpose (Beuk's own
+         rules of thumb, not a standard): a title line is 1–12 words,
+         at most 100 characters, starts with a capital (or a letter of
+         a script without case) or a digit, does not open with a
+         quotation mark, dash or bracket, does not end like a sentence
+         (. , ; : …) and holds no second sentence; a line opening
+         "For …", "To …", "In memory …" or "Dedicated …" is never a
+         title. A by-line is "by", "written by" (any case) or the
+         lowercase "par", "von", "por", "door", then one to four names
+         of capitalised words (initials and name particles allowed).
+         Without a by-line, a lone title line (plus an optional
+         subtitle line, both in title case or capitals) is taken only
+         when the body or the copyright page follows straight after.
+         Anything else stays prose, exactly as before.
+         The placeholder "Untitled Book" is display-only and never
+         stored; where each credit came from is kept per field
+         (meta.titleSource / subtitleSource / authorSource: "writer"
+         or "import", absent when unknown). An imported credit may be
+         replaced by the next import; one the writer typed never is —
+         the import report offers the document's version instead. */
+      const IM_SRC_FIELDS = ["title", "subtitle", "author"];
+      function imIsPlaceholderTitle(v) {
+        const s = String(v || "").trim();
+        if (!s) return false;
+        if (s === "Untitled Book") return true;
+        return Object.keys(UI_STRINGS).some((c) => UI_STRINGS[c] && UI_STRINGS[c]["misc.untitledBook"] === s);
+      }
+      /* A credit as the book really holds it: a stored placeholder
+         title counts as no title at all. */
+      function imMetaValue(f) {
+        const v = String(state.meta[f] || "").trim();
+        return f === "title" && imIsPlaceholderTitle(v) ? "" : v;
+      }
+      function imRealTitle() { return imMetaValue("title"); }
+      function imSourceOf(f) { const s = state.meta[f + "Source"]; return s === "writer" || s === "import" ? s : ""; }
+      function imSetSource(f, v) { if (v === "writer" || v === "import") state.meta[f + "Source"] = v; else delete state.meta[f + "Source"]; }
+      /* Trailing draft/version words — Beuk's own rule of thumb, left
+         out only when a word with letters remains before them. */
+      const IM_FILE_TOKEN_RE = /^(?:final\d*|draft\d*|v\d+(?:[.\-]\d+)*|ver\d+|rev\d*|revised|wip)$/i;
+      function imCleanFileName(name) {
+        let s = String(name || "").split(/[\\/]/).pop().replace(/\.(docx|md|markdown|txt)$/i, "");
+        s = s.replace(/^copy of\s+/i, "");
+        let prev;
+        do { prev = s; s = s.replace(/\s*\(\d+\)\s*$/, "").replace(/[\s_-]+copy\s*$/i, "").trim(); } while (s !== prev);
+        const words = s.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+        let end = words.length;
+        while (end > 0 && IM_FILE_TOKEN_RE.test(words[end - 1])) end--;
+        const kept = words.slice(0, end);
+        if (end < words.length && kept.some((w) => /\p{L}/u.test(w))) return { value: kept.join(" "), stripped: words.slice(end).join(" ") };
+        return { value: words.join(" "), stripped: "" };
+      }
+      /* Account-name defaults office software writes into the author
+         field by itself — never a writer's credit. */
+      const IM_PLACEHOLDER_CREATORS = /^(?:microsoft office user|microsoft account|office user|windows user|user|author|unknown|admin|administrator|owner)$/i;
+      const IM_NAME_PARTICLE = /^(?:de|da|di|del|della|der|den|van|von|la|le|du|dos|das|bin|ibn|al|ter|op|zu)$/;
+      function imNameShape(s) {
+        const v = String(s || "").trim();
+        if (!v || v.length > 80) return false;
+        if (/[.!?…:;,]$/.test(v) && !/(?:^|\s)\p{Lu}\.$/u.test(v)) return false;
+        const names = v.split(/\s*(?:,|&|\band\b|\bund\b|\bet\b)\s*/).filter(Boolean);
+        if (!names.length || names.length > 4) return false;
+        return names.every((n) => {
+          const toks = n.split(/\s+/).filter(Boolean);
+          return toks.length >= 1 && toks.length <= 5 && toks.some((x) => /^\p{Lu}/u.test(x)) &&
+            toks.every((x) => /^\p{Lu}[\p{L}'’\-]*\.?$/u.test(x) || /^(?:\p{Lu}\.)+$/u.test(x) || IM_NAME_PARTICLE.test(x));
+        });
+      }
+      function imByline(line) {
+        const v = String(line || "").trim();
+        const m = v.match(/^(?:written\s+by|by)\s+(.+)$/i) || v.match(/^(?:par|von|por|door)\s+(.+)$/);
+        return m && imNameShape(m[1]) ? m[1].trim() : "";
+      }
+      const IM_FURNITURE_RE = /^(?:a|an)\s+(?:novel|novella|memoir|story|thriller|mystery|romance|collection|play|fable|tale)$/i;
+      function imTitleShape(line, maxWords) {
+        const v = String(line || "").trim();
+        if (!v || v.length > 100) return false;
+        const w = wordCountOf(v);
+        if (w < 1 || w > (maxWords || 12)) return false;
+        if (/^[#>*“"‘'«„‚\-–—(\[]/.test(v)) return false;
+        if (/[.,;:…]$/.test(v)) return false;
+        if (/[.!?]\s+\S/.test(v)) return false;
+        if (!/^[\p{Lu}\p{Lo}\p{N}]/u.test(v)) return false;
+        if (isCopyrightBlock(v) || imByline(v)) return false;
+        if (/^(?:for|to|in memory|dedicated)\b/i.test(v)) return false;
+        return true;
+      }
+      /* Title case or capitals: most significant words open with a
+         capital. Scripts without case pass. */
+      function imTitleCased(v) {
+        const words = String(v || "").split(/\s+/).filter((x) => /\p{L}/u.test(x));
+        const cased = words.filter((x) => /[\p{Lu}\p{Ll}]/u.test(x));
+        if (!cased.length) return true;
+        const small = /^(?:a|an|the|and|or|of|in|on|at|to|for|by|with|from|nor|but|as)$/i;
+        const sig = cased.filter((x, i) => i === 0 || !small.test(x));
+        return sig.filter((x) => /^[^\p{L}]*\p{Lu}/u.test(x)).length / sig.length >= 0.6;
+      }
+      /* The title page at the head of a manuscript's lead text.
+         Returns { title, subtitle, author, text (the lines lifted),
+         rest (the lead text without them) } or null. */
+      function imTitlePageFrom(text, hasBodyAfter) {
+        const lines = String(text || "").split("\n");
+        const idx = [];
+        lines.forEach((l, i) => { if (l.trim()) idx.push(i); });
+        if (!idx.length) return null;
+        const L = (k) => lines[idx[k]].trim();
+        if (!imTitleShape(L(0)) || IM_FURNITURE_RE.test(L(0))) return null;
+        let by = -1;
+        for (let k = 1; k <= Math.min(3, idx.length - 1); k++) { if (imByline(L(k))) { by = k; break; } }
+        let subtitle = "", author = "", used = 1;
+        if (by > 0) {
+          for (let k = 1; k < by; k++) {
+            const m = L(k);
+            if (IM_FURNITURE_RE.test(m)) continue;
+            if (!subtitle && imTitleShape(m, 16)) { subtitle = m; continue; }
+            return null;
+          }
+          author = imByline(L(by));
+          used = by + 1;
+        } else {
+          if (!hasBodyAfter || !imTitleCased(L(0))) return null;
+          let k = 1;
+          while (k < idx.length && k <= 2) {
+            const m = L(k);
+            if (isCopyrightBlock(m)) break;
+            if (IM_FURNITURE_RE.test(m)) { k++; continue; }
+            if (!subtitle && imTitleShape(m, 16) && imTitleCased(m)) { subtitle = m; k++; continue; }
+            return null;
+          }
+          if (k < idx.length && !isCopyrightBlock(L(k))) return null;
+          used = k;
+        }
+        const last = idx[used - 1];
+        return {
+          title: L(0), subtitle, author,
+          text: lines.slice(idx[0], last + 1).filter((l) => l.trim()).map((l) => l.trim()).join("\n"),
+          rest: lines.slice(last + 1).join("\n")
+        };
+      }
+      /* The same title page set as a markdown/Heading-1 title: "# The
+         Long Way Home" whose only text is an optional subtitle and a
+         by-line, with the body still to come. */
+      function imTitlePageFromHeading(heading, bodyText) {
+        const h = String(heading || "").trim().replace(/^#{1,2}\s+/, "").trim();
+        if (/^(?:chapter|part|book|act|volume)\b/i.test(h) || !imTitleShape(h) || IM_FURNITURE_RE.test(h)) return null;
+        const ls = String(bodyText || "").split("\n").map((l) => l.trim()).filter(Boolean);
+        if (!ls.length || ls.length > 3) return null;
+        const author = imByline(ls[ls.length - 1]);
+        if (!author) return null;
+        let subtitle = "";
+        for (let i = 0; i < ls.length - 1; i++) {
+          if (IM_FURNITURE_RE.test(ls[i])) continue;
+          if (!subtitle && imTitleShape(ls[i], 16)) { subtitle = ls[i]; continue; }
+          return null;
+        }
+        return { title: h, subtitle, author, text: [String(heading).trim()].concat(ls).join("\n"), rest: "" };
+      }
+      function imDiscover(pieces, sourceName, identity) {
+        const tp = (pieces && pieces.titlePage) || null;
+        const via = identity.via || "meta";
+        const creator = String(identity.author || "").trim();
+        const declaredAuthor = creator && !IM_PLACEHOLDER_CREATORS.test(creator) ? creator : "";
+        const fn = imCleanFileName(sourceName);
+        const pick = (list) => list.find((x) => x.value) || { value: "", via: "" };
+        const tpAuthor = { value: tp ? tp.author : "", via: "titlepage" };
+        const metaAuthor = { value: declaredAuthor, via };
+        return {
+          title: pick([{ value: String(identity.title || "").trim(), via }, { value: tp ? tp.title : "", via: "titlepage" }, { value: fn.value, via: "filename", stripped: fn.stripped }]),
+          subtitle: pick([{ value: String(identity.subtitle || "").trim(), via }, { value: tp ? tp.subtitle : "", via: "titlepage" }]),
+          author: pick(via === "docx" ? [tpAuthor, metaAuthor] : [metaAuthor, tpAuthor])
+        };
+      }
+      /* Applies what the import found. Taking the sample's place, the
+         book's credit is the document's outright; on any other desk a
+         field is filled when it is blank (or still holds an earlier
+         import's credit), and a credit the writer typed is kept — the
+         report then offers the document's version. */
+      function imApplyIdentity(pieces, sourceName, identity, displacing) {
+        const found = imDiscover(pieces, sourceName, identity || {});
+        const rec = IR_REC;
+        if (rec) { rec.metaVia = rec.metaVia || {}; rec.metaKept = rec.metaKept || []; rec.metaCleared = rec.metaCleared || []; }
+        let titleReplaced = false;
+        IM_SRC_FIELDS.forEach((f) => {
+          const d = found[f];
+          if (displacing) {
+            state.meta[f] = d.value || "";
+            imSetSource(f, d.value ? "import" : "");
+            if (rec && d.value) rec.metaVia[f] = { via: d.via, stripped: d.stripped || "" };
+            return;
+          }
+          const cur = imMetaValue(f);
+          if (!d.value) {
+            /* A subtitle or author an earlier import brought belongs to
+               that book: when this import names a different book and
+               says nothing for the field, it is cleared (reported, and
+               undoable) rather than printed under the new title. */
+            if (titleReplaced && cur && imSourceOf(f) === "import") { state.meta[f] = ""; imSetSource(f, ""); if (rec) rec.metaCleared.push(f); }
+            return;
+          }
+          if (!cur || imSourceOf(f) === "import") {
+            if (cur !== d.value) { if (f === "title" && cur) titleReplaced = true; state.meta[f] = d.value; if (rec) rec.metaVia[f] = { via: d.via, stripped: d.stripped || "" }; }
+            imSetSource(f, "import");
+            return;
+          }
+          if (rec && irLoose(cur) !== irLoose(d.value)) rec.metaKept.push({ field: f, kept: cur, offered: d.value, via: d.via });
+        });
+        return found;
+      }
+      /* ==== /BEUK:importmeta ==== */
       function replaceBodyChapters(chapters, sourceName, identity) {
         identity = identity || {};
         /* An import is about to replace the desk: the History room
@@ -20236,9 +20593,8 @@
           const front = placeMatterPieces(scaffold.sections.filter((s) => s.kind === "front"), frontPieces, "front", sink);
           const back = placeMatterPieces(scaffold.sections.filter((s) => s.kind === "back"), backPieces, "back", sink);
           state.sections = front.concat(body, back);
-          state.meta.title = identity.title || String(sourceName || "").replace(/\.(docx|md|markdown|txt)$/i, "").replace(/[-_]+/g, " ").trim();
-          state.meta.author = identity.author || "";
-          state.meta.subtitle = ""; state.meta.publisher = ""; state.meta.isbn = "";
+          imApplyIdentity(pieces, sourceName, identity, true); /* BEUK:importmeta — title, subtitle, author */
+          state.meta.publisher = ""; state.meta.isbn = "";
           state.meta.rights = ""; state.meta.description = ""; state.meta.a11ySummary = "";
           state.meta.bookId = newBookId();
           delete state.meta.legacyBookIds; /* BEUK:bookid — a new book answers to no old ids */
@@ -20272,8 +20628,7 @@
             newBody.push(epilogue);
           }
           state.sections = front.concat(newBody, back);
-          if (!String(state.meta.title || "").trim() && identity.title) state.meta.title = identity.title;
-          if (!String(state.meta.author || "").trim() && identity.author) state.meta.author = identity.author;
+          imApplyIdentity(pieces, sourceName, identity, false); /* BEUK:importmeta — fills blanks and earlier imports; the writer's own credit stands */
           const cr = copyrightMetaFrom(sink.copyrightTexts.join("\n\n"));
           if (!String(state.meta.isbn || "").trim() && cr.isbn) state.meta.isbn = cr.isbn;
           if (!String(state.meta.publisher || "").trim() && cr.publisher) state.meta.publisher = cr.publisher;
@@ -20469,8 +20824,9 @@
         try {
           const text = irDocxHtmlToText(html, ir);
           ir.messages = messages || []; ir.scan = scan || null;
-          const pieces = parseManuscript(text, name.replace(/\.docx$/i, ""), identity || {});
-          replaceBodyChapters(pieces, name, identity || {});
+          identity = Object.assign({ via: "docx" }, identity || {}); /* BEUK:importmeta */
+          const pieces = parseManuscript(text, name.replace(/\.docx$/i, ""), identity);
+          replaceBodyChapters(pieces, name, identity);
           const det = docxDet && docxDet.strong ? docxDet : (detectLanguageInText(text) || docxDet);
           offerDetectedLanguage(det);
           return irFinish(ir, pieces, det);
@@ -20483,10 +20839,10 @@
         const parsed = bulkParseFrontmatter(raw);
         const text = parsed.body;
         const det = detectLanguageInText(text);
-        const ident = { title: parsed.meta.title || "", author: parsed.meta.author || "" };
+        const ident = { title: parsed.meta.title || "", author: parsed.meta.author || "", subtitle: parsed.meta.subtitle || "", via: "frontmatter" }; /* BEUK:importmeta — subtitle, via */
         const ir = irBegin(name, /\.txt$/i.test(name) ? "txt" : "md");
         try {
-          if (parsed.body !== raw && (ident.title || ident.author)) ir.frontmatter = raw.slice(0, Math.max(0, raw.length - parsed.body.length)).trim();
+          if (parsed.body !== raw && (ident.title || ident.author || ident.subtitle)) ir.frontmatter = raw.slice(0, Math.max(0, raw.length - parsed.body.length)).trim();
           const pieces = parseManuscript(irPlainTextPrep(text, ir), name.replace(/\.(md|markdown|txt)$/i, ""), ident);
           replaceBodyChapters(pieces, name, ident);
           offerDetectedLanguage(det);
@@ -20857,13 +21213,19 @@
             reversible: applied, why: applied ? "" : "lang",
             data: { code: det.code, via: det.via === "docx" ? "docx" : "text", status, prev: { language: pre.language, langSource: pre.langSource, langGuess: pre.langGuess }, value: state.meta.language } });
         }
-        ["title", "author", "isbn", "publisher", "year"].forEach((f) => {
+        ["title", "subtitle", "author", "isbn", "publisher", "year"].forEach((f) => {
           const before = ir.pre.displacing ? "" : String(pre[f] || "");
           const after = String(state.meta[f] || "");
-          if (!after || after === String(pre[f] || "")) return;
+          const cleared = !after && (ir.metaCleared || []).indexOf(f) !== -1 && !!before; /* BEUK:importmeta */
+          if ((!after && !cleared) || after === String(pre[f] || "")) return;
           if (f === "year" && ir.pre.displacing && after === String(new Date().getFullYear())) return;
-          add({ kind: "meta", group: "book", where: { secId: null, label: "" }, before, after, reversible: true, data: { field: f, prev: before, value: after } });
+          /* BEUK:importmeta — where the value was found, and the field's provenance before the import (undo restores both). */
+          const via = (ir.metaVia || {})[f] || null;
+          const prevSource = IM_SRC_FIELDS.indexOf(f) !== -1 ? (ir.pre.displacing ? "" : (pre[f + "Source"] || "")) : undefined;
+          add({ kind: "meta", group: "book", where: { secId: null, label: "" }, before, after, reversible: true, data: { field: f, prev: before, value: after, via: via ? via.via : "", stripped: via ? via.stripped : "", prevSource, cleared } });
         });
+        /* BEUK:importmeta — the writer's own credit was kept; the document's version is one click away. */
+        (ir.metaKept || []).forEach((k) => add({ kind: "metaKept", group: "book", where: { secId: null, label: "" }, before: "", after: "", reversible: true, data: k }));
         /* 5. How the whole import can be undone. */
         const head = state.history && state.history[0];
         const snapId = head && head.auto === "import" && head.id !== ir.pre.headSnap ? head.id : null;
@@ -21022,6 +21384,14 @@
         meta(it) {
           if (String(state.meta[it.data.field] || "") !== it.data.value) return { ok: false, why: "gone" };
           state.meta[it.data.field] = it.data.prev;
+          if (typeof it.data.prevSource === "string") imSetSource(it.data.field, it.data.prevSource); /* BEUK:importmeta */
+          return { ok: true };
+        },
+        /* BEUK:importmeta — "Use <Y>": the writer chooses the document's version, so it is theirs now. */
+        metaKept(it) {
+          if (imMetaValue(it.data.field) !== it.data.kept) return { ok: false, why: "gone" };
+          state.meta[it.data.field] = it.data.offered;
+          imSetSource(it.data.field, "writer");
           return { ok: true };
         }
       };
@@ -21038,7 +21408,7 @@
           wlogRebase = true;
           noteBookEdited();
           renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
-          if (it.kind === "language" || it.kind === "meta") refreshLangHint();
+          if (it.kind === "language" || it.kind === "meta" || it.kind === "metaKept") refreshLangHint();
         } else {
           it.lastFail = res.why;
         }
@@ -21091,6 +21461,7 @@
             : d.via === "chapter-head" ? t("ir.k.matterChapter", { type: t("import.type." + d.type), chapter: d.chapterLabel || it.where.label })
             : t("ir.k.matterShape", { type: t("import.type." + d.type) });
           case "lifted": return t("ir.k.lifted." + (d.reason === "title-heading" ? "titleHeading" : d.reason));
+          case "metaKept": return t("ir.k.metaKept." + d.field, { kept: d.kept, offered: d.offered }); /* BEUK:importmeta */
           case "toc": return t("ir.k.toc");
           case "emptyHeading": return t("ir.k.emptyHeading");
           case "break": return t("ir.k.break", { marker: d.marker });
@@ -21114,7 +21485,9 @@
           case "mammoth": return t("ir.k.mammoth", { message: d.message }) + (d.n > 1 ? " ×" + d.n : "");
           case "frontmatter": return t("ir.k.frontmatter");
           case "language": return t("ir.k.language", { lang: (LANG_PACKS[d.code] ? langPack(d.code).native : d.code), via: t("ir.via." + d.via) }) + " — " + t("ir.lang." + d.status);
-          case "meta": return t("ir.k.meta", { field: t("ir.f." + d.field), value: it.after });
+          case "meta": if (d.cleared) return t("ir.k.metaCleared", { field: t("ir.f." + d.field), value: d.prev }); /* BEUK:importmeta */
+            return t("ir.k.meta", { field: t("ir.f." + d.field), value: it.after }) +
+            (d.via ? " — " + (d.via === "filename" && d.stripped ? t("im.via.filenameStripped", { tokens: d.stripped }) : t("im.via." + d.via)) : ""); /* BEUK:importmeta */
           default: return it.kind;
         }
       }
@@ -21153,9 +21526,9 @@
               html += "</div>";
             }
             html += '<div class="ir-act">';
-            if (it.state === "undone") html += '<span class="ir-done">' + esc(t("ir.undone")) + (it.partial ? " — " + esc(t("ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
+            if (it.state === "undone") html += '<span class="ir-done">' + esc(it.kind === "metaKept" ? t("ir.usedValue", { value: irClip(it.data.offered, 60) }) : t("ir.undone")) + (it.partial ? " — " + esc(t("ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
             else if (it.reversible) {
-              html += '<button type="button" class="tb-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc(t("ir.undoThis")) + "</button>";
+              html += '<button type="button" class="tb-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc(it.kind === "metaKept" ? t("ir.useValue", { value: irClip(it.data.offered, 40) }) : t("ir.undoThis")) + "</button>";
               if (IR_HINT[it.kind]) html += '<span class="ir-hint">' + esc(t("ir.hint." + IR_HINT[it.kind])) + "</span>";
               if (it.lastFail) html += '<span class="ir-fail">' + esc(t("ir.failed", { reason: t("ir.why." + it.lastFail) })) + "</span>";
             } else html += '<span class="ir-na">' + esc(t("ir.noUndo", { reason: t("ir.why." + (it.why || "source")) })) + "</span>";
@@ -21241,7 +21614,7 @@
         }
       }
       function openSettings() {
-        $("setTitle").value = state.meta.title; $("setSubtitle").value = state.meta.subtitle;
+        $("setTitle").value = imRealTitle(); $("setTitle").placeholder = t("misc.untitledBook"); $("setSubtitle").value = state.meta.subtitle; /* BEUK:importmeta */
         $("setAuthor").value = state.meta.author;
         $("setPublisher").value = state.meta.publisher; $("setIsbn").value = state.meta.isbn;
         $("setYear").value = state.meta.year; $("setRights").value = state.meta.rights;
@@ -21311,9 +21684,14 @@
           }
         });
         $("btnSaveSettings").addEventListener("click", () => {
-          state.meta.title = $("setTitle").value.trim() || "Untitled Book";
+          /* BEUK:importmeta — the placeholder is display-only: a blank
+             title is stored blank. A credit the writer changes here is
+             theirs; one they clear is open to the next import again. */
+          const imPrev = { title: imRealTitle(), subtitle: imMetaValue("subtitle"), author: imMetaValue("author") };
+          state.meta.title = $("setTitle").value.trim();
           state.meta.subtitle = $("setSubtitle").value.trim();
           state.meta.author = $("setAuthor").value.trim();
+          IM_SRC_FIELDS.forEach((f) => { const v = imMetaValue(f); if (v !== imPrev[f]) imSetSource(f, v ? "writer" : ""); });
           state.meta.publisher = $("setPublisher").value.trim();
           state.meta.isbn = $("setIsbn").value.trim();
           state.meta.year = $("setYear").value.trim();
@@ -21371,8 +21749,9 @@
         return {
           layout: "classic", bgType: "solid", bgColor: "#232a33", bgColor2: "#c9a959",
           texture: "linen", bgImageId: null,
-          title: state.meta.title || "", subtitle: state.meta.subtitle || "", author: state.meta.author || "",
-          tagline: "", series: "",
+          /* BEUK:importmeta — a new cover takes the book's own words (never the display placeholder); the tagline is the writer's to write. */
+          title: imRealTitle(), subtitle: imMetaValue("subtitle"), author: imMetaValue("author"),
+          tagline: "", series: String(state.meta.series || "").trim(),
           wrap: wrapDefaults(),
           elements: {
             series: el(bf, 30, "#c9a959"), title: el(hf, 88, "#faf6ec"),
@@ -21409,8 +21788,33 @@
           }
           out.elements[k] = el;
         });
+        /* BEUK:importmeta — what the book said when this recipe was last saved. */
+        if (r.bookText && typeof r.bookText === "object") {
+          out.bookText = {};
+          ["title", "subtitle", "author", "series"].forEach((k) => { out.bookText[k] = typeof r.bookText[k] === "string" ? r.bookText[k] : ""; });
+        }
         return out;
       }
+      /* ==== BEUK:importmeta ==== */
+      /* The Cover maker follows the book: a saved recipe's text field
+         that is blank, or still says exactly what the book said when
+         the recipe was saved, takes the book's current value; text the
+         writer typed in the maker stays. */
+      const IM_COVER_FIELDS = ["title", "subtitle", "author", "series"];
+      function imBookCoverText() {
+        return { title: imRealTitle(), subtitle: imMetaValue("subtitle"), author: imMetaValue("author"), series: String(state.meta.series || "").trim() };
+      }
+      function imCoverFollowBook(recipe) {
+        const book = imBookCoverText();
+        const snap = recipe.bookText || null;
+        const followed = [];
+        IM_COVER_FIELDS.forEach((f) => {
+          const v = String(recipe[f] || "");
+          if (!v.trim() || (snap && v === snap[f])) { if (v !== book[f]) followed.push(f); recipe[f] = book[f]; }
+        });
+        return followed;
+      }
+      /* ==== /BEUK:importmeta ==== */
       function clearCover() { state.cover = null; state.coverRecipe = null; }
       const coverImgCache = {};
       function coverBgSource(recipe) { return recipe && recipe.bgImageId ? (coverImgCache[recipe.bgImageId] || null) : null; }
@@ -22605,6 +23009,7 @@
         const comma = url.indexOf(",");
         state.cover = { data: url.slice(comma + 1), mediaType: "image/jpeg", ext: "jpg", name: slug(state.meta.title || "cover") + "-cover.jpg" };
         state.coverRecipe = normalizeCoverRecipe(JSON.parse(JSON.stringify(recipe)));
+        state.coverRecipe.bookText = imBookCoverText(); /* BEUK:importmeta */
       }
       /* ---- Maker UI ---- */
       let cmRecipe = null;
@@ -22898,12 +23303,15 @@
       }
       function openCoverMaker() {
         cmRecipe = state.coverRecipe ? normalizeCoverRecipe(JSON.parse(JSON.stringify(state.coverRecipe))) : defaultCoverRecipe();
+        if (state.coverRecipe) imCoverFollowBook(cmRecipe); /* BEUK:importmeta */
         w3.pristine = JSON.stringify(cmRecipe);
         cmElement = "title";
         syncMakerControls();
         syncWrapControls();
         const pq = $("cmPhotoQuery");
-        if (pq && !pq.value) pq.value = cmTitleKeywords(cmRecipe.title || state.meta.title);
+        /* BEUK:importmeta — the photo search follows the title too, unless the writer typed their own query. */
+        const imSeed = cmTitleKeywords(cmRecipe.title || imRealTitle());
+        if (pq && (!pq.value || pq.value === pq.getAttribute("data-im-seed"))) { pq.value = imSeed; pq.setAttribute("data-im-seed", imSeed); }
         drawMakerPreview();
         ensureCoverBgImage(cmRecipe).then(() => drawMakerPreview());
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawMakerPreview());
@@ -27522,6 +27930,8 @@
         if (doc.meta) state.meta = Object.assign({}, state.meta, doc.meta);
         /* BEUK:bookid — legacy ids belong to the arriving book alone (never inherited from the desk), and the key is absent when empty so an untouched sample compares as it always has. */
         if (doc.meta) { const lg = bookIdNormalizeLegacyList(doc.meta.legacyBookIds); if (lg.length) state.meta.legacyBookIds = lg; else delete state.meta.legacyBookIds; }
+        /* BEUK:importmeta — where each credit came from belongs to the arriving book alone; absent when unknown. */
+        if (doc.meta) ["title", "subtitle", "author"].forEach((f) => imSetSource(f, doc.meta[f + "Source"]));
         /* Language bookkeeping backfill: books saved before detection
            existed carry no langSource. A non-English language in such
            a book was picked by hand in the old selector, so it counts
@@ -28705,6 +29115,7 @@
           const val = kv[2].trim().replace(/^["']|["']$/g, "");
           if (key === "title") meta.title = val;
           else if (key === "author") meta.author = val;
+          else if (key === "subtitle") meta.subtitle = val; /* BEUK:importmeta */
           else if (key === "series") meta.series = val;
           else if (key === "language" || key === "lang") { const c = bulkFmLang(val); if (c) meta.language = c; }
         });
@@ -28795,6 +29206,13 @@
           const r = bulkResolveVaultText(text, ctx, images);
           text = r.text; linkStats = { resolved: r.resolved, degraded: r.degraded };
         }
+        /* BEUK:importmeta — the manuscript's own title page is the
+           book's credit (same shape rules as single-file import) and
+           is lifted out of the text rather than left in chapter one. */
+        const imSegs = splitSegments(text);
+        const imLead = imSegs[0].lines.length;
+        const tp = imTitlePageFrom(imSegs[0].lines.join("\n"), imSegs.length > 1);
+        if (tp) text = [tp.rest].concat(String(text).split("\n").slice(imLead)).join("\n");
         let language = "en", langSource = "auto", langGuess = "", detectedCode = "";
         const det = item.docxLang ? { code: item.docxLang, strong: true, via: "docx" } : detectLanguageInText(text);
         if (fm.language) { language = fm.language; langSource = "manual"; }
@@ -28807,12 +29225,18 @@
           chapters = splitIntoChapters(beautifyText(text), String(item.name).replace(/\.(docx|md|markdown|txt)$/i, "").replace(/[-_]+/g, " ").trim() || "Untitled Book");
         } finally { state.meta.language = keepLang; }
         const headingM = String(text).match(/^#{1,2}\s+(.+)$/m);
-        const title = fm.title || item.docTitle || (headingM ? headingM[1].replace(/^chapter\s+[\divxlc0-9]+[.:]?\s*/i, "").trim() : "") ||
-          (chapters.length && chapters[0].title) || "Untitled Book";
+        /* BEUK:importmeta — front matter, the Word title, the title
+           page, a leading heading, then the cleaned file name; never
+           the stored placeholder. */
+        const storedTitle = fm.title || item.docTitle || (tp ? tp.title : "") || (headingM ? headingM[1].replace(/^chapter\s+[\divxlc0-9]+[.:]?\s*/i, "").trim() : "") ||
+          imCleanFileName(item.name).value || (chapters.length && chapters[0].title) || "";
+        const title = storedTitle || "Untitled Book";
         const series = fm.series || (ctx.vault ? bulkFolderOf(item) : "");
         const doc = buildEmptyBook();
-        doc.meta.title = title;
-        doc.meta.author = fm.author || "";
+        doc.meta.title = storedTitle;
+        doc.meta.author = fm.author || (tp ? tp.author : "");
+        doc.meta.subtitle = fm.subtitle || (tp ? tp.subtitle : "");
+        ["title", "subtitle", "author"].forEach((f) => { if (doc.meta[f]) doc.meta[f + "Source"] = "import"; });
         doc.meta.language = language;
         doc.meta.langSource = langSource;
         doc.meta.langGuess = langGuess;
@@ -32096,7 +32520,9 @@
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
-        { id: "import.credits-document-fills-blanks-only", feature: "import", name: "Import credit on the writer's own desk: a document's declared title and author fill a blank byline on an empty desk, and a later import replaces the chapters but never overwrites a title or author the writer already has — the credit they chose stands",
+        /* BEUK:importmeta — round 7 changed the rule this check guards: a credit that itself came from an import may be replaced by the
+           next import; only a credit the writer typed (meta.titleSource / authorSource "writer", or one of unknown provenance) is never overwritten. */
+        { id: "import.credits-document-fills-blanks-only", feature: "import", name: "Import credit on the writer's own desk: a document's declared title and author fill a blank byline on an empty desk, and a later import replaces the chapters but never overwrites a title or author the writer typed — the credit they chose stands",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
@@ -32105,11 +32531,13 @@
               sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
               replaceBodyChapters(splitIntoChapters("Chapter 1\nFirst words of a first book.", "First"), "first.docx", { title: "First Book", author: "A. Writer" });
               const filled = state.meta.title === "First Book" && state.meta.author === "A. Writer";
+              /* The writer makes the credit their own in Settings. */
+              openSettings(); $("setTitle").value = "First Book, Revised"; $("setAuthor").value = "Ada Writer"; $("btnSaveSettings").click();
               replaceBodyChapters(splitIntoChapters("Chapter 1\nA revised opening, same book.", "Second"), "second.docx", { title: "Working Title", author: "Someone Else" });
-              const kept = state.meta.title === "First Book" && state.meta.author === "A. Writer" &&
+              const kept = state.meta.title === "First Book, Revised" && state.meta.author === "Ada Writer" &&
                 state.sections.filter((s) => s.type === "chapter").length === 1;
               return scVerdict(filled && kept,
-                "the blank desk adopted the document's own credit (" + filled + "); the writer's standing title and author survived the next import untouched (" + kept + ")");
+                "the blank desk adopted the document's own credit (" + filled + "); the title and author the writer typed survived the next import untouched (" + kept + ")");
             } finally {
               applyBookDoc(keepDoc);
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
@@ -35250,6 +35678,222 @@
           } }
       );
       /* ==== /BEUK:importreport ==== */
+      /* ==== BEUK:importmeta ==== */
+      /* Title/credit discovery and Cover maker prefill, through the
+         real pipeline (the synchronous halves of handleImportFile, the
+         Settings Save button, the Cover maker's own open), on a fresh
+         empty desk that is put back afterwards. */
+      function imCheckRun(fn) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+        const pq = $("cmPhotoQuery");
+        const keepPq = pq ? [pq.value, pq.getAttribute("data-im-seed")] : null;
+        try {
+          applyBookDoc(buildEmptyBook());
+          sampleState.loaded = false; sampleState.loadedJson = null;
+          state.history = [];
+          return fn();
+        } finally {
+          irCloseReport();
+          const cm = $("modalCoverMaker"); if (cm) cm.classList.remove("open");
+          const ms = $("modalSettings"); if (ms) ms.classList.remove("open");
+          cmRecipe = null;
+          if (pq && keepPq) { pq.value = keepPq[0]; if (keepPq[1] == null) pq.removeAttribute("data-im-seed"); else pq.setAttribute("data-im-seed", keepPq[1]); }
+          /* applyBookDoc merges meta: start from the kept book's own, so nothing a check set (a series, say) lingers. */
+          state.meta = JSON.parse(JSON.stringify(keepDoc.meta || {}));
+          applyBookDoc(keepDoc);
+          sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+        }
+      }
+      /* A Word title page, as Mammoth hands it over: Title and
+         Subtitle styles arrive as plain paragraphs. */
+      const IM_FIXTURE_DOCX_HTML = "<p>THE LONG WAY HOME</p><p>A Novel of the Northern Roads</p><p>by Jane Doe</p>" +
+        "<h1>Chapter One</h1><p>The road out of Kellan ran north between stone walls, and Ada walked it with her coat buttoned to the throat.</p>" +
+        "<h1>Chapter Two</h1><p>The inn at Harrow Cross kept a fire going all year.</p>";
+      const imWriterSaves = (vals) => {
+        openSettings();
+        Object.keys(vals).forEach((k) => { $(k).value = vals[k]; });
+        $("btnSaveSettings").click();
+      };
+      SELF_CHECKS.push(
+        { id: "import.title.from-titlepage", feature: "import", name: "Import credit from the manuscript's title page: a Word file with an empty dc:title and a title page (title, subtitle, \"by Jane Doe\") gives the book its title, subtitle and author — the by-line outranks the Author property Word fills from its User name setting — the title page leaves the body and is reported as lifted (undo puts it back); a lead line of prose is never taken as a title",
+          run() {
+            return imCheckRun(() => {
+              const rep = importDocxConverted("manuscript.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "vikra" }, null);
+              const credit = state.meta.title === "THE LONG WAY HOME" && state.meta.subtitle === "A Novel of the Northern Roads" && state.meta.author === "Jane Doe" &&
+                state.meta.titleSource === "import" && state.meta.authorSource === "import" &&
+                $("projectTitleDisplay").textContent === "THE LONG WAY HOME";
+              const allText = state.sections.map((s) => s.content || "").join("\n");
+              const notBody = allText.indexOf("by Jane Doe") === -1 && allText.indexOf("THE LONG WAY HOME") === -1 && !state.sections.some((s) => s.type === "dedication" && String(s.content || "").trim());
+              const lifted = rep && rep.items.find((i) => i.kind === "lifted" && i.data.reason === "titlepage");
+              const metaT = rep && rep.items.find((i) => i.kind === "meta" && i.data.field === "title");
+              const reported = !!lifted && lifted.before.indexOf("by Jane Doe") !== -1 && !!metaT && metaT.data.via === "titlepage" &&
+                irItemLabel(lifted) === t("ir.k.lifted.titlepage") && irItemLabel(metaT).indexOf(t("im.via.titlepage")) !== -1;
+              const u = lifted ? irUndoItem(lifted.id) : { ok: false };
+              const ch1 = state.sections.find((s) => s.type === "chapter");
+              const undone = u.ok && !!ch1 && ch1.content.indexOf("by Jane Doe") !== -1;
+              /* Prose standing before the first chapter stays prose. */
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              importPlainManuscript("harbour-notes.txt", "It was a cold night on the coast and nobody was out\n\nChapter 1\n\nThe harbour at dawn was a held breath.");
+              const prose = state.meta.title === "harbour notes" && state.sections.some((s) => String(s.content || "").indexOf("cold night") !== -1);
+              /* A by-line that is a sentence is no by-line. */
+              const tpBad = imTitlePageFrom("The Harbour\n\nby the time she reached the quay, the boats were gone.", true);
+              return scVerdict(credit && notBody && reported && undone && prose && !tpBad,
+                "title/subtitle/author from the title page (" + credit + "), title page not left in the body (" + notBody + "), reported as lifted with its source (" + reported + "), undo restored it into chapter one (" + undone + "), prose lead kept as prose and the file name used (" + prose + "), sentence by-line refused (" + !tpBad + ")");
+            });
+          } },
+        { id: "import.title.from-filename", feature: "import", name: "Import credit from the file name when nothing better exists: extension, separators and a copy marker such as \" (1)\" go, trailing draft/version words (final, draft, v3) go only when something meaningful remains, and the report names the file name (and the words left out) as the source",
+          run() {
+            return imCheckRun(() => {
+              const cases = [
+                ["the-long-way-home_final v3 (1).docx", "the long way home", "final v3"],
+                ["Final Frontier.txt", "Final Frontier", ""],
+                ["draft.md", "draft", ""],
+                ["Copy of salt_and_iron - Copy.docx", "salt and iron", ""],
+                ["harbour-log-v2.1.md", "harbour log", "v2.1"]
+              ];
+              const clean = cases.map((c) => { const r = imCleanFileName(c[0]); return [c[0], r.value, r.stripped, r.value === c[1] && r.stripped === c[2]]; });
+              const cleanOk = clean.every((c) => c[3]);
+              const rep = importPlainManuscript("the-long-way-home_final v3 (1).txt", "Chapter 1\n\nThe road out of Kellan ran north.\n\nChapter 2\n\nThe inn at Harrow Cross.");
+              const metaT = rep && rep.items.find((i) => i.kind === "meta" && i.data.field === "title");
+              const imported = state.meta.title === "the long way home" && state.meta.titleSource === "import" && !!metaT && metaT.data.via === "filename" &&
+                irItemLabel(metaT).indexOf(t("im.via.filenameStripped", { tokens: "final v3" })) !== -1;
+              return scVerdict(cleanOk && imported,
+                "file names cleaned " + clean.map((c) => "“" + c[0] + "” → “" + c[1] + "”" + (c[2] ? " (left out: " + c[2] + ")" : "") + (c[3] ? "" : " ✗")).join(", ") + "; import used it and reported the words left out (" + imported + ")");
+            });
+          } },
+        { id: "import.title.keeps-writers", feature: "import", name: "A title the writer typed is never overwritten by an import: the report says \"Kept your title …. The document calls itself ….\" with a one-click Use, which applies the document's title; a title that came from an import is replaced by the next import (undoing that report line puts it back), and an earlier import's author does not linger under a different book's title",
+          run() {
+            return imCheckRun(() => {
+              importPlainManuscript("first.md", "---\ntitle: First Import\nauthor: A. Writer\n---\n# Chapter 1\n\nFirst words of a first book.");
+              const first = state.meta.title === "First Import" && state.meta.titleSource === "import";
+              /* The next import replaces an imported title. */
+              const rep2 = importPlainManuscript("second.md", "---\ntitle: Second Import\nauthor: A. Writer\n---\n# Chapter 1\n\nA revised opening.");
+              const replaced = state.meta.title === "Second Import" && state.meta.titleSource === "import";
+              const m2 = rep2 && rep2.items.find((i) => i.kind === "meta" && i.data.field === "title");
+              const u2 = m2 ? irUndoItem(m2.id) : { ok: false };
+              const undoOk = u2.ok && state.meta.title === "First Import" && state.meta.titleSource === "import";
+              /* A different book with no by-line: the earlier import's author does not stay under the new title. */
+              const rep3a = importPlainManuscript("salt-and-iron.txt", "Chapter 1\n\nThe forge had been cold for a week.");
+              const cl = rep3a && rep3a.items.find((i) => i.kind === "meta" && i.data.field === "author" && i.data.cleared);
+              const clearedOk = state.meta.title === "salt and iron" && state.meta.author === "" && !state.meta.authorSource && !!cl &&
+                irItemLabel(cl) === t("ir.k.metaCleared", { field: t("ir.f.author"), value: "A. Writer" });
+              const uc = cl ? irUndoItem(cl.id) : { ok: false };
+              const clearUndo = uc.ok && state.meta.author === "A. Writer" && state.meta.authorSource === "import";
+              /* The writer types their own title in Settings. */
+              imWriterSaves({ setTitle: "My Chosen Title", setAuthor: "Ada Writer" });
+              const typed = state.meta.title === "My Chosen Title" && state.meta.titleSource === "writer" && state.meta.authorSource === "writer";
+              const rep3 = importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
+              const kept = state.meta.title === "My Chosen Title" && state.meta.author === "Ada Writer" && state.meta.titleSource === "writer";
+              const k = rep3 && rep3.items.find((i) => i.kind === "metaKept" && i.data.field === "title");
+              const ka = rep3 && rep3.items.find((i) => i.kind === "metaKept" && i.data.field === "author");
+              const said = !!k && !!ka && irItemLabel(k) === t("ir.k.metaKept.title", { kept: "My Chosen Title", offered: "THE LONG WAY HOME" });
+              irOpenReport();
+              const btn = k ? document.querySelector('#irBody [data-irundo="' + k.id + '"]') : null;
+              const btnOk = !!btn && btn.textContent === t("ir.useValue", { value: "THE LONG WAY HOME" });
+              if (btn) btn.click();
+              const used = state.meta.title === "THE LONG WAY HOME" && state.meta.titleSource === "writer" && state.meta.author === "Ada Writer" &&
+                $("projectTitleDisplay").textContent === "THE LONG WAY HOME" &&
+                (document.querySelector('#irBody [data-irid="' + (k && k.id) + '"] .ir-done') || {}).textContent === t("ir.usedValue", { value: "THE LONG WAY HOME" });
+              return scVerdict(first && replaced && undoOk && clearedOk && clearUndo && typed && kept && said && btnOk && used,
+                "first import filled (" + first + "), the next import replaced the imported title (" + replaced + ") and its undo restored it (" + undoOk + "), a different book cleared the earlier import's author (" + clearedOk + ") and undo brought it back (" + clearUndo + "), Settings marked the typed credit as the writer's (" + typed + "), the import kept it (" + kept + ") and said so for title and author (" + said + "), Use button (" + btnOk + ") applied the document's title (" + used + ")");
+            });
+          } },
+        { id: "import.title.keeps-section-editor", feature: "import", name: "A credit the writer types on the Title Page or Copyright section editor is theirs too: the next import keeps it and offers the document's own (emptying the field there opens it to imports again)",
+          run() {
+            return imCheckRun(() => {
+              importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
+              const imported = state.meta.title === "THE LONG WAY HOME" && state.meta.titleSource === "import" && state.meta.authorSource === "import";
+              const type = (id, v) => { const el = $(id); if (!el) return false; el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); return true; };
+              const tp = state.sections.find((x) => x.type === "titlepage");
+              if (tp) selectSection(tp.id);
+              const typedTp = !!tp && type("genTpTitle", "Typed On Title Page") && type("genTpSubtitle", "");
+              const cp = state.sections.find((x) => x.type === "copyright");
+              if (cp) selectSection(cp.id);
+              const typedCp = !!cp && type("genCpAuthor", "Typed Author");
+              const marked = typedTp && typedCp && state.meta.titleSource === "writer" && state.meta.authorSource === "writer" && !state.meta.subtitleSource;
+              const rep = importPlainManuscript("salt.txt", "Salt and Iron\nA Forge Story\nby R. K. Nolan\n\nChapter 1\n\nThe forge had been cold for a week.");
+              const kept = state.meta.title === "Typed On Title Page" && state.meta.author === "Typed Author" && state.meta.titleSource === "writer";
+              const k = rep && rep.items.find((i) => i.kind === "metaKept" && i.data.field === "title");
+              const ka = rep && rep.items.find((i) => i.kind === "metaKept" && i.data.field === "author");
+              const offered = !!k && !!ka && irItemLabel(k) === t("ir.k.metaKept.title", { kept: "Typed On Title Page", offered: "Salt and Iron" });
+              /* The subtitle was emptied on the section editor, so it is open to the import. */
+              const subFilled = state.meta.subtitle === "A Forge Story" && state.meta.subtitleSource === "import";
+              return scVerdict(imported && marked && kept && offered && subFilled,
+                "imported (" + imported + "), typing on the section editors marked the title/author as the writer's and the emptied subtitle as open (" + marked + "), the next import kept them (" + kept + ") and offered the document's own (" + offered + "), the emptied subtitle was filled (" + subFilled + ")");
+            });
+          } },
+        { id: "settings.title.placeholder-not-stored", feature: "import", name: "\"Untitled Book\" is display-only: Settings Save with a blank title stores \"\" (the header still shows the placeholder, the desk still counts as empty), and a book whose stored title is the placeholder in any of the 13 languages is treated as untitled — the next import fills it",
+          run() {
+            return imCheckRun(() => {
+              imWriterSaves({ setTitle: "" });
+              const stored = state.meta.title === "" && !state.meta.titleSource && $("projectTitleDisplay").textContent === t("misc.untitledBook") && isEmptyDesk();
+              const codes = ["en", "es", "fr", "de", "it", "pt", "nl", "pl", "ru", "tr", "ar", "ja", "zh-Hans"];
+              const all13 = codes.every((c) => UI_STRINGS[c] && imIsPlaceholderTitle(UI_STRINGS[c]["misc.untitledBook"]));
+              state.meta.title = UI_STRINGS.es["misc.untitledBook"];
+              openSettings();
+              const fieldBlank = $("setTitle").value === "" && $("setTitle").placeholder === t("misc.untitledBook");
+              $("modalSettings").classList.remove("open");
+              importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
+              const filled = state.meta.title === "THE LONG WAY HOME" && state.meta.titleSource === "import";
+              return scVerdict(stored && all13 && fieldBlank && filled,
+                "blank Save stored \"\" and the header shows the placeholder (" + stored + "), all 13 placeholders recognised (" + all13 + "), Settings shows a stored placeholder as a blank field (" + fieldBlank + "), a stored “Libro sin título” was filled by the import (" + filled + ")");
+            });
+          } },
+        { id: "covermaker.prefill.from-book", feature: "cover", name: "Cover maker prefill: with no saved recipe, opening the maker fills title, subtitle, author and series from the book (never the \"Untitled Book\" placeholder), leaves the tagline blank, and seeds the photo search from the title",
+          run() {
+            return imCheckRun(() => {
+              importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
+              irCloseReport();
+              state.meta.series = "Northern Roads";
+              state.coverRecipe = null;
+              const pq = $("cmPhotoQuery"); if (pq) { pq.value = ""; pq.removeAttribute("data-im-seed"); }
+              openCoverMaker();
+              const f = (id) => $(id).value;
+              const ok = f("cmTitle") === "THE LONG WAY HOME" && f("cmSubtitle") === "A Novel of the Northern Roads" && f("cmAuthor") === "Jane Doe" &&
+                f("cmSeries") === "Northern Roads" && f("cmTagline") === "" && (!pq || pq.value === cmTitleKeywords("THE LONG WAY HOME"));
+              const shown = f("cmTitle") + " / " + f("cmSubtitle") + " / " + f("cmAuthor") + " / " + f("cmSeries");
+              $("modalCoverMaker").classList.remove("open");
+              /* An untitled book does not print the placeholder on its cover. */
+              state.meta.title = "Untitled Book"; delete state.meta.titleSource; state.coverRecipe = null;
+              openCoverMaker();
+              const noPlaceholder = f("cmTitle") === "";
+              return scVerdict(ok && noPlaceholder,
+                "maker opened with “" + shown + "” — title/subtitle/author/series from the book, tagline blank, photo query seeded (" + ok + "); a stored placeholder title leaves the cover title blank (" + noPlaceholder + ")");
+            });
+          } },
+        { id: "covermaker.prefill.follows-book", feature: "cover", name: "Cover maker follows the book: a saved recipe's blank text fields, and fields still equal to what the book said when the recipe was saved, take the book's current values (a new import's title, the photo search with it); text the writer typed in the maker is kept; the snapshot survives serialize → load",
+          run() {
+            return imCheckRun(() => {
+              state.meta.title = "Old Title"; state.meta.author = "Jane Doe"; state.meta.subtitle = "";
+              const pq0 = $("cmPhotoQuery"); if (pq0) { pq0.value = ""; pq0.removeAttribute("data-im-seed"); } /* no query typed yet */
+              openCoverMaker();
+              cmRecipe.tagline = "A journey north";
+              cmRecipe.author = "J. DOE"; /* typed in the maker */
+              adoptCoverRecipe(cmRecipe, renderCoverCanvas(cmRecipe, 200, 320));
+              $("modalCoverMaker").classList.remove("open");
+              const snapOk = !!state.coverRecipe.bookText && state.coverRecipe.bookText.title === "Old Title" && state.coverRecipe.bookText.author === "Jane Doe";
+              const rt = JSON.parse(JSON.stringify(serializeBook()));
+              applyBookDoc(rt);
+              const survives = !!state.coverRecipe && !!state.coverRecipe.bookText && state.coverRecipe.bookText.title === "Old Title";
+              const pqBefore = $("cmPhotoQuery") ? $("cmPhotoQuery").value : "";
+              /* The writer imports their real manuscript. */
+              state.meta.titleSource = "import";
+              importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
+              irCloseReport();
+              openCoverMaker();
+              const f = (id) => $(id).value;
+              const followed = f("cmTitle") === "THE LONG WAY HOME" && f("cmSubtitle") === "A Novel of the Northern Roads";
+              const keptTyped = f("cmAuthor") === "J. DOE" && f("cmTagline") === "A journey north";
+              const pqOk = !$("cmPhotoQuery") || ($("cmPhotoQuery").value === cmTitleKeywords("THE LONG WAY HOME") && pqBefore === cmTitleKeywords("Old Title"));
+              return scVerdict(snapOk && survives && followed && keptTyped && pqOk,
+                "recipe saved the book's words (" + snapOk + ") and kept them through a round-trip (" + survives + "); after the import the maker shows “" + f("cmTitle") + "” and the subtitle (" + followed + "), the typed author and tagline stayed (" + keptTyped + "), photo search followed the title (" + pqOk + ": “" + pqBefore + "” → “" + ($("cmPhotoQuery") ? $("cmPhotoQuery").value : "") + "”)");
+            });
+          } }
+      );
+      /* ==== /BEUK:importmeta ==== */
       /* ==== BEUK:acx ==== */
       SELF_CHECKS.push(...acxSelfChecks());
       /* ==== BEUK:print ==== */

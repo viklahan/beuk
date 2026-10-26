@@ -18,6 +18,29 @@ to make well.
   exactly the book on your desk. "Saving…" always settles. A book really
   changed on another device still gets the notice, as before.
 
+## 2026-10-26 — Your book arrives with its name
+
+- **Importing a document brings its title in.** A Word file with an
+  empty title property used to land as "Untitled Book", and its title
+  page became a "Dedication". Beuk now reads the manuscript's own title
+  page — the title, a subtitle, a "by Jane Doe" line — and makes it the
+  book's credit, lifting those lines out of the text. Nothing like a
+  title page? The cleaned file name is used ("long-way-home_final v3
+  (1).docx" becomes "long way home"). The import report says where each
+  detail came from, and every step can be undone.
+- **Your own title is never overwritten.** A title (or author or
+  subtitle) you typed in Project Settings or on the Title Page / Copyright
+  page stays when you import a new draft; the report tells you what
+  the document calls itself and offers a one-click "Use" instead. A title
+  that only came from an earlier import is replaced by the next one.
+- **"Untitled Book" is no longer saved as a title.** Saving Project
+  Settings with a blank title keeps it blank, so the next import can fill
+  it.
+- **The Cover maker starts from your book.** Title, subtitle, author and
+  series are filled in for you, and the photo search starts from the
+  title. A cover you saved earlier follows your book's new title too —
+  anything you typed in the maker yourself stays as you wrote it.
+
 ## 2026-10-26 — Your address stays with us
 
 - **No more Google Fonts.** Every typeface in the studio, Help, the
