@@ -666,15 +666,19 @@
       #zenArt {
         --zd-tint: rgba(214, 222, 226, .3); --zd-glow: rgba(255, 238, 218, .58);
         --zd-water: rgba(176, 194, 206, .2); --zd-vig: rgba(70, 80, 94, .085);
-        --zd-gx: 10%; --zd-gy: 58%;
+        --zd-gx: 10%; --zd-gy: 58%; --zd-gx2: 10%; --zd-gy2: 58%;
         transition: --zd-tint 8s ease-in-out, --zd-glow 8s ease-in-out, --zd-water 8s ease-in-out, --zd-vig 8s ease-in-out, --zd-gx 8s ease-in-out, --zd-gy 8s ease-in-out;
       }
       :root[data-theme="candlelight"] #zenArt {
         --zd-tint: rgba(206, 124, 74, .17); --zd-glow: rgba(232, 142, 78, .26);
         --zd-water: rgba(190, 118, 84, .1); --zd-vig: rgba(201, 150, 89, .14);
-        --zd-gx: 86%; --zd-gy: 52%;
+        --zd-gx: 86%; --zd-gy: 52%; --zd-gx2: 86%; --zd-gy2: 52%;
       }
-      #zenArt.zen-still { transition-duration: 4s; }
+      /* Reduced motion: the colours still ease, but the top light's
+         position never interpolates — it is changed only on the hidden
+         glow layer, which then crossfades in (see zdGlow). */
+      #zenArt.zen-still { transition: --zd-tint 4s ease-in-out, --zd-glow 4s ease-in-out, --zd-water 4s ease-in-out, --zd-vig 4s ease-in-out; }
+      #zenArt.zd-snap .zen-wash::before, #zenArt.zd-snap .zen-wash::after,
       #zenArt.zd-snap, #zenArt.zd-snap .zd-body, #zenArt.zd-snap .zd-glint, #zenArt.zd-snap .zd-star { transition: none !important; }
       #zenArtSvg .zd-body, #zenArtSvg .zd-glint { transition: transform 8s ease-in-out, opacity 4s ease; }
       #zenArtSvg .zd-star { transition: opacity 6s ease; }
@@ -685,11 +689,20 @@
       #zenArt .zen-wash {
         position: absolute; inset: 0; opacity: 0; transition: opacity 1s ease;
         background:
-          radial-gradient(130% 95% at var(--zd-gx) var(--zd-gy), var(--zd-glow) 0%, rgba(255, 253, 246, 0) 55%),
           linear-gradient(rgba(0, 0, 0, 0) 56%, var(--zd-water) 76%, var(--zd-water) 100%),
           linear-gradient(var(--zd-tint), var(--zd-tint));
       }
       body.zen #zenArt .zen-wash { opacity: 1; }
+      /* The top light, on two layers: A carries it normally (its position
+         eases with the day); under reduced motion the new position is set
+         on whichever layer is hidden and the two crossfade (.zd-glow-b). */
+      #zenArt .zen-wash::before, #zenArt .zen-wash::after {
+        content: ""; position: absolute; inset: 0; transition: opacity 4s ease;
+        background: radial-gradient(130% 95% at var(--zd-gx) var(--zd-gy), var(--zd-glow) 0%, rgba(255, 253, 246, 0) 55%);
+      }
+      #zenArt .zen-wash::after { opacity: 0; background: radial-gradient(130% 95% at var(--zd-gx2) var(--zd-gy2), var(--zd-glow) 0%, rgba(255, 253, 246, 0) 55%); }
+      #zenArt.zd-glow-b .zen-wash::before { opacity: 0; }
+      #zenArt.zd-glow-b .zen-wash::after { opacity: 1; }
       body.zen-returning #zenArt .zen-wash { opacity: 0; transition-duration: .9s; }
       /* The persistent vignette: soft edge shading that lasts the whole
          session — warm umber on Paper (about 9% at the rim), a warm gilt
@@ -33026,7 +33039,7 @@
                 "phase at 90 min " + atNinety + ", ten hours later " + held + ", set to 3 → " + clamped + "; timer " + (timer ? "STILL RUNNING" : "stopped") + " at the hold; Paper dusk tint/glow luminance ≥ " + worstLum.toFixed(3) + " (threshold 0.45), tint alpha ≤ " + worstAlpha + ", sun's lowest centre y " + sunLow.toFixed(0) + " (horizon 598)");
             } finally { setZenMode(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); Z.setDayPhase(keep); }
           } },
-        { id: "zen.day.reduced-motion", feature: "zen", name: "Zen day under reduced motion: no transform transitions on the sun, moon or glints; a change of light moves the sun only while it is faded out (a crossfade), and small steps wait for a rare update",
+        { id: "zen.day.reduced-motion", feature: "zen", name: "Zen day under reduced motion: no transform transitions on the sun, moon or glints and no transition on the top light's position; the light's position changes only on the hidden glow layer, which crossfades in; a change of light moves the sun only while it is faded out (a crossfade), and small steps wait for a rare update",
           run() {
             const Z = window.beukZen;
             const keep = Z.dayPhase();
@@ -33045,15 +33058,46 @@
                 return props.some((pr, i) => (pr === "transform" || pr === "all") && (durs[i % durs.length] || 0) > 0);
               });
               const sun = svg ? svg.querySelector((document.documentElement.getAttribute("data-theme") === "candlelight" ? ".zen-night" : ".zen-day") + " .zd-body") : null;
+              /* the top light: no position-type property may transition on #zenArt */
+              const POS = ["--zd-gx", "--zd-gy", "--zd-gx2", "--zd-gy2"];
+              let posAnimated = "none";
+              if (art) {
+                const cs = getComputedStyle(art);
+                const props = cs.transitionProperty.split(",").map((x) => x.trim());
+                const durs = cs.transitionDuration.split(",").map((x) => parseFloat(x) || 0);
+                const hit = props.find((pr, i) => (POS.includes(pr) || pr === "all") && (durs[i % durs.length] || 0) > 0);
+                if (hit) posAnimated = hit;
+              }
+              const glowState = () => {
+                const onB = !!art && art.classList.contains("zd-glow-b");
+                const g = (k) => art ? art.style.getPropertyValue(k).trim() : "";
+                return { onB, vis: onB ? g("--zd-gx2") + " " + g("--zd-gy2") : g("--zd-gx") + " " + g("--zd-gy") };
+              };
+              const visLayerPos = () => {
+                const wash = art ? art.querySelector(".zen-wash") : null;
+                if (!wash) return "";
+                const g = (k) => getComputedStyle(art).getPropertyValue(k).trim();
+                return glowState().onB ? g("--zd-gx2") + " " + g("--zd-gy2") : g("--zd-gx") + " " + g("--zd-gy");
+              };
+              const g0 = glowState();
               const tf0 = sun ? sun.style.transform : "";
               t += 60; Z.dayTick();
-              const smallWaits = !!sun && sun.style.transform === tf0 && sun.style.opacity !== "0";
+              const smallWaits = !!sun && sun.style.transform === tf0 && sun.style.opacity !== "0" && glowState().onB === g0.onB;
+              const visBefore = visLayerPos();
+              const g1 = glowState();
               t += 600; Z.dayTick();
               const fading = !!sun && sun.style.transform === tf0 && sun.style.opacity === "0";
+              const g2 = glowState();
+              /* the layer that was showing kept its position; the new position is on the layer fading in */
+              const oldLayerKept = (() => {
+                const g = (k) => art ? art.style.getPropertyValue(k).trim() : "";
+                return (g1.onB ? g("--zd-gx2") + " " + g("--zd-gy2") : g("--zd-gx") + " " + g("--zd-gy")) === g1.vis;
+              })();
+              const crossfaded = g2.onB !== g1.onB && g2.vis !== g1.vis && oldLayerKept && visBefore === g1.vis;
               setZenMode(false); Z.settle();
-              const ok = still && movers.length >= 2 && !animatesTransform && smallWaits && fading;
+              const ok = still && movers.length >= 2 && !animatesTransform && posAnimated === "none" && smallWaits && fading && crossfaded;
               return scVerdict(ok,
-                "reduced motion: art " + (still ? "marked still" : "NOT marked still") + "; " + movers.length + " moving groups, transform transition " + (animatesTransform ? "PRESENT" : "absent") + "; a 1-minute step " + (smallWaits ? "waited" : "DID NOT WAIT") + "; a 10-minute step " + (fading ? "faded the sun out before moving it" : "MOVED IT IN VIEW"));
+                "reduced motion: art " + (still ? "marked still" : "NOT marked still") + "; " + movers.length + " moving groups, transform transition " + (animatesTransform ? "PRESENT" : "absent") + "; light-position transition " + (posAnimated === "none" ? "absent" : "PRESENT (" + posAnimated + ")") + "; a 1-minute step " + (smallWaits ? "waited" : "DID NOT WAIT") + "; a 10-minute step " + (fading ? "faded the sun out before moving it" : "MOVED IT IN VIEW") + " and " + (crossfaded ? "crossfaded the light from " + g1.vis + " to " + g2.vis + " on the other layer" : "DID NOT CROSSFADE THE LIGHT (" + g1.vis + " → " + g2.vis + ", layer kept " + oldLayerKept + ")"));
             } finally { Z.overrideReducedMotion(null); setZenMode(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); Z.setDayPhase(keep); }
           } },
         /* ==== /BEUK:daycycle ==== */
@@ -35973,6 +36017,25 @@
           el.style.opacity = String(op);
         }, 2600));
       }
+      /* The top light's position. In motion it eases on layer A. Under
+         reduced motion it is written to the hidden layer and the layers
+         swap by opacity — the light never slides. */
+      function zdGlow(art, gx, gy, still, snap) {
+        const onB = art.classList.contains("zd-glow-b");
+        const cur = (k) => art.style.getPropertyValue(k).trim();
+        if (!still || snap) {
+          art.style.setProperty("--zd-gx", gx); art.style.setProperty("--zd-gy", gy);
+          art.style.setProperty("--zd-gx2", gx); art.style.setProperty("--zd-gy2", gy);
+          art.classList.remove("zd-glow-b");
+          return;
+        }
+        const [kx, ky] = onB ? ["--zd-gx2", "--zd-gy2"] : ["--zd-gx", "--zd-gy"];
+        if (cur(kx) === gx && cur(ky) === gy) return;
+        const [hx, hy] = onB ? ["--zd-gx", "--zd-gy"] : ["--zd-gx2", "--zd-gy2"];
+        art.style.setProperty(hx, gx); art.style.setProperty(hy, gy);
+        void art.offsetWidth;
+        art.classList.toggle("zd-glow-b", !onB);
+      }
       function zdApply(snap) {
         const art = $("zenArt");
         if (!art) return;
@@ -35987,8 +36050,7 @@
         art.style.setProperty("--zd-glow", zdRgba(L.glow));
         art.style.setProperty("--zd-water", zdRgba(L.water));
         art.style.setProperty("--zd-vig", zdRgba(L.vig));
-        art.style.setProperty("--zd-gx", L.gx + "%");
-        art.style.setProperty("--zd-gy", L.gy + "%");
+        zdGlow(art, L.gx + "%", L.gy + "%", still, snap);
         const svg = $("zenArtSvg");
         if (svg) {
           const grp = svg.querySelector(night ? ".zen-night" : ".zen-day");

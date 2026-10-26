@@ -1292,12 +1292,17 @@ progress of any kind.
   reload starts a fresh dawn.
 - **Reduced motion** (`prefers-reduced-motion` or the studio override):
   nothing glides — the sun or moon fades out, moves unseen and fades back
-  in, and the light changes only every ~3.6 minutes (phase step 0.04).
+  in; the top light sits on two glow layers, its new position is set on
+  the hidden one and the two crossfade (the position itself never
+  transitions); and the light changes only every ~3.6 minutes (phase
+  step 0.04).
 - **Unchanged:** the title moment, the wash and vignette layers, the
   breathing dot, the sound cluster, and the sketch's opacity (`--zao`).
   The editor keeps its own opaque surface, so text contrast is untouched.
 - **Hooks (tests only, never in the UI):** `window.beukZen.dayPhase()`,
-  `setDayPhase(p)`, `dayTick()`, `dayClock(fn)`, `dayHidden(bool)`.
+  `setDayPhase(p)`, `dayTick()`, `dayClock(fn)`, `dayHidden(bool)`,
+  `dayLight(theme, p)`, `dayBody(night, p)`, `dayTimerActive()`,
+  `dayRunning()`.
 - **Checks.** In-studio `zen.day.no-reader`, `zen.day.advances`,
   `zen.day.holds-at-dusk`, `zen.day.reduced-motion`
   (`runBeukSelfChecks()`; registered client-only in Housekeeping).
