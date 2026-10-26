@@ -4,6 +4,25 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Taking a picture out of the book
+
+- **Remove a picture you uploaded.** In the image library (Insert Image,
+  and the scene-break picker) every picture now has a small bin button.
+  A picture nothing uses goes at once, with Undo for ten seconds. A
+  picture in use first shows where — "Chapter Three (in the text),
+  Chapter Five (plate)" — and **Remove it everywhere** takes it out of the
+  text, the plate, the backdrop, the scene break, the cover or the
+  flourishes, just as removing each by hand would. Undo puts it all back.
+- **Remove unused pictures.** One button clears every picture nothing in
+  the book uses, showing how many and how large they are first.
+- **Honest about space.** Each removal keeps a snapshot in History
+  ("Before removing a picture"), so a picture can always come back — and
+  that snapshot holds the picture, so the saved book only gets smaller
+  once you delete it in History. The library says so.
+- The sample story's own pictures stay with the sample.
+- **Fixed:** the Undo button on a toast could not be clicked with a
+  mouse or a finger; toasts on a phone are no longer squeezed narrow.
+
 ## 2026-10-26 — Chapters you can move without fear
 
 - **Delete has an Undo.** Deleting a chapter no longer happens in one
