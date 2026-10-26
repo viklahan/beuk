@@ -122,7 +122,26 @@ while an upload is still in flight waits and runs once afterwards, on the
 revision that upload returned — so a slow uplink never trips a 409 against
 the device's own previous save. (Two tabs of the same book on one device
 are not coordinated and can still meet as a conflict.)
-Tests: `tests/manuscripts.test.ts`.
+Round 7 (`BEUK:savesync`) closed the ways a false "changed in two places"
+could still open after overlapping saves, found by running the in-studio
+self-checks while signed in: (1) a save's answer is applied only to the
+book and account it was sent for — an answer that arrives after the desk
+moved to another shelf book (or, inside a self-check, to a stand-in) no
+longer moves this desk's revision or timestamps; (2) the reconnect check
+trusts the shelf's **revision** over the remembered `updatedAt`, and a
+shelf copy that is the device's own book (same document, keys sorted) is
+agreed on quietly; (3) a 409 is settled quietly when its copy equals what
+the save sent **or** the device's book as it stands now; (4) no way out
+of a save leaves "Saving to your shelf…" standing — nothing new, a
+waiting conflict notice, a network error, a refusal, a 409, a dropped
+answer and sign-out all settle the line. A real change on another device
+still raises the notice. The server's If-Match contract did not change
+(checked; a racing-PUT test now pins it). Self-checks
+`shelf.save.single-flight` and `shelf.save.identical-409-silent` (async,
+client-only; they run against a stand-in shelf that keeps this server's
+If-Match contract, so they need no network, never touch the writer's real
+shelf book, and run the same signed in or out).
+Tests: `tests/manuscripts.test.ts`, `tests/savesync.test.ts`.
 
 ## Local-first saving (studio)
 
