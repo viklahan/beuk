@@ -25,7 +25,7 @@
 //
 // Usage: node tools/fonts/vendor-web-fonts.mjs <repo root>
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = process.argv[2];
@@ -146,7 +146,14 @@ const head = (what) => '/* Beuk web fonts, self-hosted: ' + what + '\n   (tools/
 await writeFile(path.join(OUT, 'fonts.css'), head('every page.') + blocks.filter((b) => !helpOnly(b)).map(face).join('\n') + '\n');
 await writeFile(path.join(OUT, 'fonts-help.css'), head('Literata 700 + italic 500, linked by the help\n   and warmth pages only (they asked Google for those; the studio never did).') +
   blocks.filter(helpOnly).map(face).join('\n') + '\n');
+// Rows of families this script does not vendor (the script faces of
+// tools/fonts/vendor-script-fonts.mjs) are kept exactly as they are.
+let otherRows = [];
+try {
+  otherRows = (await readFile(path.join(OUT, 'MANIFEST.tsv'), 'utf8')).trim().split('\n').slice(1)
+    .filter((l) => l && !families.includes(l.split('\t')[0]));
+} catch (e) { /* first run: no manifest yet */ }
 await writeFile(path.join(OUT, 'MANIFEST.tsv'),
-  'family\tfile\tbytes\tsha256\tsource\tnote\n' + manifest.map((r) => r.join('\t')).join('\n') + '\n');
+  'family\tfile\tbytes\tsha256\tsource\tnote\n' + manifest.map((r) => r.join('\t')).concat(otherRows).join('\n') + '\n');
 console.log('families: ' + families.length + ', font files: ' + byUrl.size + ', bytes: ' +
   manifest.filter((r) => r[1].endsWith('.woff2')).reduce((a, r) => a + r[2], 0));

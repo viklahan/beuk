@@ -5,12 +5,14 @@ served from this directory, from Beuk's own origin. No page asks
 fonts.googleapis.com or fonts.gstatic.com for anything, and the
 Content-Security-Policy (Caddyfile) no longer allows either host.
 
-- **What:** 22 families, 223 WOFF2 files, 5965396 bytes (5825.6 KiB) in total;
+- **What:** 24 families, 228 WOFF2 files, 6514996 bytes (6362.3 KiB) in total;
   `fonts.css` (147312 bytes) is linked by every page; `fonts-help.css`
   (4882 bytes) adds Literata 700 and italic 500, which only the help and
   warmth pages ever asked for — the studio keeps exactly its old Literata faces
   (400–600, italic 400), the same ones the print renderer installs, so the
-  preview still matches the PDF. A page downloads only the files whose family,
+  preview still matches the PDF. `fonts-scripts.css` (5335 bytes), linked by
+  the studio only, adds the book's script faces (Amiri, Noto Serif Devanagari; see
+  *Script faces* below). A page downloads only the files whose family,
   weight, style and `unicode-range` it actually uses.
 - **Source:** the WOFF2 files are the bytes the Google Fonts CSS2 API serves
   (fonts.gstatic.com) for exactly the families, axes, weights and styles the
@@ -23,8 +25,9 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
   plus Lora's `math` and `symbols` (Lora has no `greek` subset; its basic
   Greek letters live in `math`). The studio page declares exactly the same
   @font-face set (family, style, weight, unicode-range) it got from Google
-  before. Arabic, Japanese and Chinese text uses system fonts, as before (no
-  family here covers those scripts).
+  before. Arabic-script and Devanagari text is set in the script faces below;
+  Hebrew, Japanese, Chinese and the other scripts no family here covers use
+  system fonts, as before.
 - **Licence:** every family is SIL Open Font License 1.1. Each family's
   `OFL.txt` sits beside its fonts; it is the file from the google/fonts
   repository at commit `e7db6ca603fd4862010383ff17ffd6cc4ffac1c0` (the same
@@ -33,11 +36,38 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
 - **Machine-readable:** `MANIFEST.tsv` (family, file, bytes, sha256, source URL).
   Regenerate this README with `node tools/fonts/write-fonts-readme.mjs .`.
 
+## Script faces (Arabic, Devanagari)
+
+Vendored by `node tools/fonts/vendor-script-fonts.mjs .` the same way, from the
+same sources, on 2026-10-26. A book's Latin text stays in the Latin face the
+writer chose; the font stacks name these faces right after it, so Arabic-script
+and Devanagari characters — a whole Hindi or Arabic book, or one passage in a
+Latin book — are set in them, with no choice to make.
+
+- **Web (live preview):** only each family's own script subset (Amiri:
+  `arabic`; Noto Serif Devanagari: `devanagari`), declared in
+  `fonts-scripts.css` with the `unicode-range` Google returned, so a book
+  with no such text never downloads them.
+- **EPUB:** 4 static TrueType files (1219732 bytes, 1191.1 KiB) —
+  each family's regular and bold — kept here so the studio can embed them in
+  an EPUB whose book needs them (TrueType, `font/ttf`: an EPUB 3 core media
+  type, and the format Beuk's uploaded fonts already ship in). They are the
+  same bytes, same sha256, as the print renderer installs
+  (deploy/renderer/fonts.lock), which also installs the other weights and
+  styles (Amiri italic 400/700, Noto Serif Devanagari 500/600).
+- **Emphasis:** Amiri has a true slanted style (italic 400 and 700). Devanagari
+  has no italic tradition and Noto Serif Devanagari has none: italic Hindi
+  text is slanted by the browser or reader; bold is a real bold.
+- **Licence:** SIL OFL 1.1, no Reserved Font Name (OFL.txt beside the files;
+  METADATA.pb at the pinned commit says `license: "OFL"`). An EPUB carries
+  each embedded family's OFL.txt as a comment in its stylesheet.
+
 ## Families
 
 | Family | Directory | Google Fonts version | Files | Bytes | Licence | Reserved Font Name (from OFL.txt) | Licence source |
 |---|---|---|---|---|---|---|---|
 | Alegreya | `alegreya/` | v41 | 14 | 256416 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/alegreya/OFL.txt) (sha256 `f6f60d5d4cf4f4b1fc4e41353c897a2f5a16e6396c0cd8fa8bdfd2f4586a9a68`) |
+| Amiri | `amiri/` | v30 | 4 | 422736 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/amiri/OFL.txt) (sha256 `72de68e5954f4fdd24702292ef5a32f003ca960ec9330dc86e5eefb5dffb9b22`) |
 | Cinzel | `cinzel/` | v26 | 2 | 40444 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/cinzel/OFL.txt) (sha256 `f2b3029aba64c378bf0963b62945eee15e564fe4330b934c8f2eb058282b5e83`) |
 | Cormorant Garamond | `cormorantgaramond/` | v21 | 10 | 205920 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/cormorantgaramond/OFL.txt) (sha256 `60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956`) |
 | Crimson Pro | `crimsonpro/` | v28 | 6 | 140516 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/crimsonpro/OFL.txt) (sha256 `1820869bd5baa1c2d88fa87c89eea532cf9442d841008acab720654b7f82823d`) |
@@ -53,6 +83,7 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
 | Merriweather | `merriweather/` | v33 | 10 | 421740 | OFL 1.1 | Reserved Font Name "Merriweather". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/merriweather/OFL.txt) (sha256 `715bd349bfa6116f99e351e1548321dcfa25b91df65502d22ca8d624557697d2`) |
 | Montserrat | `montserrat/` | v31 | 5 | 171768 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/montserrat/OFL.txt) (sha256 `8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e`) |
 | Newsreader | `newsreader/` | v26 | 6 | 516172 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/newsreader/OFL.txt) (sha256 `fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8`) |
+| Noto Serif Devanagari | `notoserifdevanagari/` | v34 | 1 | 126864 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/notoserifdevanagari/OFL.txt) (sha256 `a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331`) |
 | Oswald | `oswald/` | v57 | 5 | 72492 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/oswald/OFL.txt) (sha256 `0fd731a904b729a4e02eaf5e8ebd06783edd9abe400e8882760160230675b652`) |
 | PT Serif | `ptserif/` | v19 | 12 | 322644 | OFL 1.1 | Reserved Font Names "PT Sans", "PT Serif" and "ParaType". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/OFL.txt) (sha256 `ddf311c28ddf5a5ad9747649837346b67bed9d356789c3072bb27dbce49e514d`) |
 | Playfair Display | `playfairdisplay/` | v40 | 8 | 146168 | OFL 1.1 | Reserved Font Name "Playfair Display" | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/playfairdisplay/OFL.txt) (sha256 `566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e`) |
@@ -287,3 +318,12 @@ Content-Security-Policy (Caddyfile) no longer allows either host.
 | `spectral/spectral-vietnamese-normal-600.woff2` | 7872 | `84e2cc86832a0b2036ba03f00b79ef455083b3d459bafb4c8afab05f728b9335` | https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vmtm3OafadWQ.woff2 |
 | `spectral/spectral-latin-ext-normal-600.woff2` | 20824 | `dea6bd9ca650814af1f750b7474d7205b7fe0e4c79a6b58c6f7157d90dc8815c` | https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vmtm3PafadWQ.woff2 |
 | `spectral/spectral-latin-normal-600.woff2` | 22936 | `33faca8b5795a0de1af77cbc43a050a3655c4b1e03e04847fdef4d19d2e361d2` | https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vmtm3BafY.woff2 |
+| `amiri/amiri-arabic-italic-400.woff2` | 111720 | `fa136cff7ec9ae56373abd2780a4fe24d96b958bd737e15898ee26b3cb1e7042` | https://fonts.gstatic.com/s/amiri/v30/J7afnpd8CGxBHpUrhLQY66NL.woff2 |
+| `amiri/amiri-arabic-italic-700.woff2` | 102488 | `8f0a132295c9b1c7a5a1a54ffff92dbbb2a9860334e345c7e93c5b8ae95debec` | https://fonts.gstatic.com/s/amiri/v30/J7aanpd8CGxBHpUrjAo9_plqHwAa.woff2 |
+| `amiri/amiri-arabic-normal-400.woff2` | 108560 | `9abf8a10b4a2f27b698740522c9beec9ded7728aeef0738ac0d6e175bf6249d7` | https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHpUrtLMA7w.woff2 |
+| `amiri/amiri-arabic-normal-700.woff2` | 99968 | `c775d9f8c3a7cf0d0c2bb5246dd699e8c09bf6f8758e1be0b98939331b18bcce` | https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkaY6zp5yGw.woff2 |
+| `notoserifdevanagari/notoserifdevanagari-devanagari-normal-400_500_600_700.woff2` | 126864 | `bab9ee27c0141b4ccfcbea74684d4707ac97d4eaf0640ec1663c6e161b9eeb1f` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dNcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRH-xEMqTN.woff2 |
+| `amiri/Amiri-normal-400.ttf` | 385840 | `7f19c4a5dc77b0ef435b430d750759170def15d6e3801006e0704dadc7f220e3` | https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUp.ttf |
+| `amiri/Amiri-normal-700.ttf` | 368616 | `65e3e6fe6af66bb6d24959bd537a89ea35de14083f5a2e2290c246136c2b047b` | https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkZY4.ttf |
+| `notoserifdevanagari/Noto_Serif_Devanagari-normal-400.ttf` | 232404 | `39ff220273661f9b01893e61d16756a612f6f3e358c1d2546b5fc24b6b7fecbb` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-H.ttf |
+| `notoserifdevanagari/Noto_Serif_Devanagari-normal-700.ttf` | 232872 | `de5246a1e11ad12d16e5bff2b08a0f2dd4d8922f36d01a73020d40dff76cacaf` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTDZpA-H.ttf |

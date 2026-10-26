@@ -16,6 +16,15 @@
 # comes from the google/fonts repository at a pinned commit and is
 # installed beside its fonts, as the licence requires for
 # redistribution. The fonts are not modified.
+#
+# Script faces (added 2026-10-26, tools/fonts/vendor-script-fonts.mjs,
+# resolved the same way the same day): Amiri (Arabic script; 400, 700,
+# italic 400, italic 700) and Noto Serif Devanagari (Hindi; 400, 500,
+# 600, 700 — Devanagari has no italic). The studio's font stacks name
+# them right after the book's Latin face, so Chromium sets Arabic and
+# Devanagari characters in them and everything else in the Latin face,
+# as the preview does. Both SIL OFL 1.1, no Reserved Font Name. Their
+# lines are at the end of this file.
 6ab296ea2b6ea95302e1c3ffd9ed203483ce1e9a3b2ef23646e7780459f5cbd7  alegreya/Alegreya-italic-400.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UaSrEBBsBhlBjvfkSLk3abBFkvpkARTPlbgv6qm.ttf
 2f355df26680f857b950e338995b2945df5d5345dd4334fd61c60600d666fbb6  alegreya/Alegreya-normal-400.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNG9hUI_A.ttf
 3ae790f5b3f70bf2a9d990c07bbbfc22af476fb5835f309128f5978baf7a9bd6  alegreya/Alegreya-normal-500.ttf  https://fonts.gstatic.com/s/alegreya/v41/4UacrEBBsBhlBjvfkQjt71kZfyBzPgNGxBUI_A.ttf
@@ -110,3 +119,13 @@ ddf311c28ddf5a5ad9747649837346b67bed9d356789c3072bb27dbce49e514d  ptserif/OFL.tx
 09746787287a289323b0ec3cff4d1a4a801331b82b7207c1e186f5d26619a392  sourcesans3/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/sourcesans3/OFL.txt
 5f94c3fd3a23131a417ab5a0c8452de57e70c3cfb9f604d88241f7065ebf9fd9  sourceserif4/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/sourceserif4/OFL.txt
 501d6ceca8e552630fe3aa9442b9a818565680a1a2f79f3fb8c13d6f309a9e98  spectral/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/spectral/OFL.txt
+752fc8c04ff87e7134d2402b9d124d17aeb99cf0b252c8ce12c508b4357d9076  amiri/Amiri-italic-400.ttf  https://fonts.gstatic.com/s/amiri/v30/J7afnpd8CGxBHpUrtLY.ttf
+830490c7a81bec969eb24ce8b866bdfc28e581adda3a913349d8c4decf7c1519  amiri/Amiri-italic-700.ttf  https://fonts.gstatic.com/s/amiri/v30/J7aanpd8CGxBHpUrjAo9zps.ttf
+7f19c4a5dc77b0ef435b430d750759170def15d6e3801006e0704dadc7f220e3  amiri/Amiri-normal-400.ttf  https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUp.ttf
+65e3e6fe6af66bb6d24959bd537a89ea35de14083f5a2e2290c246136c2b047b  amiri/Amiri-normal-700.ttf  https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkZY4.ttf
+72de68e5954f4fdd24702292ef5a32f003ca960ec9330dc86e5eefb5dffb9b22  amiri/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/amiri/OFL.txt
+39ff220273661f9b01893e61d16756a612f6f3e358c1d2546b5fc24b6b7fecbb  notoserifdevanagari/Noto_Serif_Devanagari-normal-400.ttf  https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-H.ttf
+6abdb6fc569ae72fd1de0ea25726dc316345c3ad82959a1f51c533d0f4c48f63  notoserifdevanagari/Noto_Serif_Devanagari-normal-500.ttf  https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTAMow-H.ttf
+c78244510ba2f70055e6928db1bee40f36a32c3707cc044dd89734a581ed56f5  notoserifdevanagari/Noto_Serif_Devanagari-normal-600.ttf  https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTDgpA-H.ttf
+de5246a1e11ad12d16e5bff2b08a0f2dd4d8922f36d01a73020d40dff76cacaf  notoserifdevanagari/Noto_Serif_Devanagari-normal-700.ttf  https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTDZpA-H.ttf
+a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331  notoserifdevanagari/OFL.txt  https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/notoserifdevanagari/OFL.txt

@@ -1022,6 +1022,21 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Font-stack resolution happens in the client stylesheet builder.',
   },
+  /* BEUK:scriptfonts — Amiri (Arabic script) + Noto Serif Devanagari (Hindi) */
+  {
+    id: 'fonts.script.preview-faces',
+    title: 'Live preview sets Hindi and Arabic text in Noto Serif Devanagari and Amiri, loaded from this origin; Latin text keeps the chosen face',
+    kind: 'client-only',
+    reason:
+      'Which face draws a character is the browser’s font matching over the studio stylesheet (asserted by window.runBeukAsyncSelfChecks()). The files, sha256s, licences and the renderer lock are tests/script-fonts.test.ts.',
+  },
+  {
+    id: 'epub.fonts.script-embedded',
+    title: 'A Hindi or Arabic book’s EPUB embeds its script face (font/ttf, @font-face + OFL), Arabic pages carry dir="rtl", the package validates',
+    kind: 'client-only',
+    reason:
+      'The EPUB is assembled in the client from the book state and the same-origin font files (asserted by window.runBeukAsyncSelfChecks()); the server archives the finished package without re-typesetting it.',
+  },
   {
     id: 'themes.library.count-shelves-shape',
     title: 'Theme library: 15 themes across six genre shelves, all references resolve',

@@ -44,7 +44,7 @@ test('the Caddyfile CSP: style-src and font-src are own-origin only, no Google h
   assert.doesNotMatch(m[1], /google/i);
 });
 
-test('fonts.css + fonts-help.css reference only files that exist, and every shipped font file is referenced', () => {
+test('fonts.css + fonts-help.css + fonts-scripts.css reference only files that exist, and every shipped font file is referenced', () => {
   const studioCss = readFileSync(path.join(FONTS, 'fonts.css'), 'utf8');
   const helpCss = readFileSync(path.join(FONTS, 'fonts-help.css'), 'utf8');
   // fonts-help.css holds exactly Literata 700 + italic 500 (help/warmth asked
@@ -52,7 +52,8 @@ test('fonts.css + fonts-help.css reference only files that exist, and every ship
   const faceKeys = (c: string) => [...c.matchAll(/font-family: '([^']+)';\s*font-style: (\w+);\s*font-weight: (\d+);/g)].map((m) => `${m[1]} ${m[2]} ${m[3]}`);
   assert.deepEqual([...new Set(faceKeys(helpCss))].sort(), ['Literata italic 500', 'Literata normal 700']);
   assert.ok(!faceKeys(studioCss).includes('Literata normal 700') && !faceKeys(studioCss).includes('Literata italic 500'));
-  const css = studioCss + helpCss;
+  // fonts-scripts.css: the book's script faces (Amiri, Noto Serif Devanagari), studio only
+  const css = studioCss + helpCss + readFileSync(path.join(FONTS, 'fonts-scripts.css'), 'utf8');
   const urls = [...css.matchAll(/url\(([^)]+)\)/g)].map((x) => x[1]);
   assert.ok(urls.length > 0);
   for (const u of urls) {
@@ -71,7 +72,7 @@ test('fonts.css + fonts-help.css reference only files that exist, and every ship
 
 test('every font family directory carries its SIL OFL 1.1 licence', () => {
   const dirs = readdirSync(FONTS).filter((d) => statSync(path.join(FONTS, d)).isDirectory());
-  assert.equal(dirs.length, 22);
+  assert.equal(dirs.length, 24); // 22 Latin/Greek/Cyrillic families + 2 script faces
   for (const d of dirs) {
     const lic = path.join(FONTS, d, 'OFL.txt');
     assert.ok(existsSync(lic), `${d}/OFL.txt`);
@@ -82,7 +83,7 @@ test('every font family directory carries its SIL OFL 1.1 licence', () => {
 test('every shipped file matches the sha256 recorded in MANIFEST.tsv (and the README)', () => {
   const rows = readFileSync(path.join(FONTS, 'MANIFEST.tsv'), 'utf8').trim().split('\n').slice(1).map((l) => l.split('\t'));
   const readme = readFileSync(path.join(FONTS, 'README.md'), 'utf8');
-  const onDisk = walk(FONTS).map(rel).filter((f) => /\.woff2$|OFL\.txt$/.test(f)).map((f) => f.replace('client/assets/fonts/', ''));
+  const onDisk = walk(FONTS).map(rel).filter((f) => /\.woff2$|\.ttf$|OFL\.txt$/.test(f)).map((f) => f.replace('client/assets/fonts/', ''));
   assert.deepEqual(rows.map((r) => r[1]).sort(), onDisk.sort());
   for (const [, file, bytes, sha] of rows) {
     const body = readFileSync(path.join(FONTS, file));
