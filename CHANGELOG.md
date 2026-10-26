@@ -4,6 +4,24 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — The preview stays on your page
+
+- **Formatting no longer throws the preview back to page 1.** Making a
+  word bold or italic, quoting a paragraph, typing, Auto-Format or undo
+  used to send the preview back to the first page of the chapter. It now
+  stays on the page holding your cursor — and if you were paging through
+  the preview, a new font size, theme or device keeps you on the words
+  you were reading. Opening another chapter still starts at its first
+  page.
+- **Auto-Format keeps your cursor.** It used to drop the cursor at the
+  top of the chapter a moment after polishing.
+- **Zen's buttons stay off the tabs.** In Arabic, and on a phone, the
+  Ambient sound / Dictate buttons sat on top of the Chapter Content and
+  Typography Studio tabs. They now sit at the far end of the line in
+  every language, and on narrow screens the tabs step down beneath them.
+  The writing box no longer runs past the edge of a phone screen (or
+  past the other fields on a wide one).
+
 ## 2026-10-26 — Your address stays with us
 
 - **No more Google Fonts.** Every typeface in the studio, Help, the
