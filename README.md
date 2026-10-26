@@ -1409,7 +1409,9 @@ shade is that name's mentions **per 1,000 words of that section** (the
 same `sectionWords` count the sidebar and the Rhythm chart use), in five
 steps of one hue (`--ins-a`) on the modal surface. A square with no
 mention shows an en-dash, never a pale fill; the legend prints the
-lowest and highest rates actually shown. Hover or focus a square for
+lowest and highest rates actually shown (one decimal below 10; a rate
+above zero that would round to 0.0 reads "<0.1", so a shaded square is
+never labelled 0). Hover or focus a square for
 "Mara — Ch. Three · The Wrong-Way Water: 6 mentions"; click it (or Enter)
 to close Insights, open that section and select the first mention in the
 editor. Cells are one keyboard stop (roving tabindex; arrows, Home/End,

@@ -15503,7 +15503,7 @@
       UI_PLURAL_FORMS.ar = UI_PLURAL_FORMS.ar || {};
       Object.assign(UI_PLURAL_FORMS.pl, { "insights.castMentions": { many: "{name} — {sec}: {n} wzmianek" }, "insights.castTotal": { many: "{n} wzmianek w sumie" } });
       Object.assign(UI_PLURAL_FORMS.ru, { "insights.castMentions": { few: "{name} — {sec}: {n} упоминания" }, "insights.castTotal": { few: "всего {n} упоминания" } });
-      Object.assign(UI_PLURAL_FORMS.ar, { "insights.castMentions": { few: "{name} — {sec}: {n} مرات" }, "insights.castTotal": { few: "{n} مرات إجمالًا" } });
+      Object.assign(UI_PLURAL_FORMS.ar, { "insights.castMentions": { two: "{name} — {sec}: مرتان", few: "{name} — {sec}: {n} مرات" }, "insights.castTotal": { two: "مرتان إجمالًا", few: "{n} مرات إجمالًا" } });
       /* ==== /BEUK:cast ==== */
       /* ==== BEUK:cast ==== Names on stage — who appears in which section.
          A heatmap of the names a book keeps returning to: rows are the
@@ -15741,8 +15741,15 @@
         castCache.key = key; castCache.val = val;
         return val;
       }
-      function castRateStr(v) {
-        return v >= 10 ? fmtNum(Math.round(v)) : fmtNum(Math.round(v * 10) / 10);
+      function castRateStr(v, lang) {
+        /* one decimal below 10 (fmtNum always rounds to a whole number, which printed a shaded cell's rate as "0");
+           a rate that is above zero but rounds to 0.0 reads "<0.1", so the legend never shows 0 for a named cell */
+        const L = lang || getUiLang();
+        const f = (x, d) => { try { return new Intl.NumberFormat(L, { maximumFractionDigits: d }).format(x); } catch (e) { return String(x); } };
+        if (!(v > 0)) return f(0, 0);
+        if (v >= 10) return f(Math.round(v), 0);
+        const r = Math.round(v * 10) / 10;
+        return r === 0 ? "<" + f(0.1, 1) : f(r, 1);
       }
       function castMentionText(name, sec, n) {
         return n > 0 ? t("insights.castMentions", { count: n, n: fmtNum(n), name, sec }) : t("insights.castNotHere", { name, sec });
@@ -15968,8 +15975,10 @@
               const maraOk = !!mara && mara.total === 4 && mara.per[0] === 2 && mara.per[1] === 2;
               const haleOk = !!hale && hale.total === 3 && hale.name === "Captain Hale";
               const gullOk = !!gull && gull.total === 3;
-              return scVerdict(maraOk && haleOk && gullOk && !still && !bareHale && !bareCaptain && r.names.length === 3 && !r.caseless,
-                "found " + r.names.map((x) => x.name + " ×" + x.total + " (" + x.per.join("/") + ")").join(", ") + "; “Slowly” (opens sentences only, never lowercase, not a stopword) detected: " + still + "; bare “Hale”/“Captain” rows: " + bareHale + "/" + bareCaptain);
+              const rates = [0.37, 1.107, 8.28, 12.6, 0.03].map((v) => castRateStr(v, "en"));
+              const ratesOk = rates.join("|") === "0.4|1.1|8.3|13|<0.1";
+              return scVerdict(maraOk && haleOk && gullOk && !still && !bareHale && !bareCaptain && r.names.length === 3 && !r.caseless && ratesOk,
+                "found " + r.names.map((x) => x.name + " ×" + x.total + " (" + x.per.join("/") + ")").join(", ") + "; “Slowly” (opens sentences only, never lowercase, not a stopword) detected: " + still + "; bare “Hale”/“Captain” rows: " + bareHale + "/" + bareCaptain + "; legend rates 0.37/1.107/8.28/12.6/0.03 print as " + rates.join(" / "));
             } },
           { id: "insights.cast.hide-persists", feature: "insights", name: "Names on stage: a hidden name is kept with the book — it survives serializeBook → applyBookDoc, drops out of the rows, and a book arriving without hidden names does not inherit the last book's",
             run() {
