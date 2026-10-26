@@ -34,6 +34,8 @@
 #                       MAIL_FROM="Beuk <no-reply@beuk.studio>"; unset →
 #                       no email is sent (Housekeeping: "email not configured")
 #   APP_TIMEZONE        default UTC (e.g. America/Los_Angeles)
+#   DEPLOY_WWW          default 1: also serve www.<domain> and redirect it
+#                       to <domain> (needs a www DNS record too); 0 = apex only
 #   INSTALL_TOOLS       default 1; set 0 to skip EPUBCheck/Ghostscript
 #   EPUBCHECK_VERSION   default 5.2.1
 #
@@ -46,6 +48,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 
+# Compose project name. It is ALSO written into .env (below) so that a
+# bare `docker compose …` typed later in this directory talks to the same
+# stack: without it Compose falls back to the directory's basename (e.g.
+# "beuk-saas" for a git clone) and `docker compose exec app …` finds no
+# container, while `docker compose up -d` would start a SECOND, empty
+# stack. https://docs.docker.com/compose/how-tos/environment-variables/envvars/
+if [ -z "${COMPOSE_PROJECT_NAME:-}" ] && [ -f .env ]; then
+  COMPOSE_PROJECT_NAME="$(grep '^COMPOSE_PROJECT_NAME=' .env | tail -n 1 | cut -d= -f2- || true)"
+fi
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-beuk}"
 
 DEPLOY_DOMAIN="${DEPLOY_DOMAIN:-beuk.studio}"
@@ -62,6 +73,16 @@ die()  { printf '\n\033[31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 SUDO=""
 if [ "$(id -u)" -ne 0 ]; then
   command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+fi
+
+# ── 0. Local-only files must not ride along to a real server ─────────────
+# docker-compose.override.yml is written by start-local.ps1 for a dev box
+# (Caddy on 127.0.0.1:8090 only). Compose loads it automatically for any
+# bare `docker compose up` in this directory, which on a server would
+# take the site off 80/443. This script always passes -f explicitly, but
+# a later hand-typed command would not — so refuse instead of guessing.
+if [ "${DEPLOY_DOMAIN}" != "localhost" ] && [ -f docker-compose.override.yml ]; then
+  die "docker-compose.override.yml is present (a LOCAL dev file from start-local.ps1). Deploy from a fresh 'git clone', or move that file out of this directory, then re-run."
 fi
 
 # ── 1. Docker ────────────────────────────────────────────────────────────────
@@ -119,13 +140,20 @@ else
   note "POSTGRES_PASSWORD already set — leaving it untouched"
 fi
 
+set_env COMPOSE_PROJECT_NAME "${COMPOSE_PROJECT_NAME}"
 set_env DOMAIN "${DEPLOY_DOMAIN}"
 if [ "${DEPLOY_DOMAIN}" = "localhost" ]; then
   set_env COOKIE_SECURE "false"
   set_env APP_BASE_URL "https://localhost"
+  set_env WWW_DOMAIN ""
 else
   set_env COOKIE_SECURE "true"
   set_env APP_BASE_URL "https://${DEPLOY_DOMAIN}"
+  if [ "${DEPLOY_WWW:-1}" = "1" ]; then
+    set_env WWW_DOMAIN "www.${DEPLOY_DOMAIN}"
+  else
+    set_env WWW_DOMAIN ""
+  fi
 fi
 set_env APP_TIMEZONE "${APP_TIMEZONE}"
 [ -n "${SUPPORT_EMAIL:-}" ]          && set_env SUPPORT_EMAIL "${SUPPORT_EMAIL}"
@@ -160,7 +188,7 @@ fi
 # Deploying this tree IS the clean-tree attestation the promotion gate asks for.
 set_env TREE_CLEAN "true"
 chmod 600 .env
-note "DOMAIN=${DEPLOY_DOMAIN}  APP_TIMEZONE=${APP_TIMEZONE}  BUILD_STAMP=$(get_env BUILD_STAMP)"
+note "DOMAIN=${DEPLOY_DOMAIN}  WWW_DOMAIN=$(get_env WWW_DOMAIN)  APP_TIMEZONE=${APP_TIMEZONE}  BUILD_STAMP=$(get_env BUILD_STAMP)"
 
 [ -f client/index.html ] || warn "client/index.html is missing — the studio bundle is not in this tree; Caddy will have nothing to serve at /."
 
@@ -229,6 +257,8 @@ COMPOSE_CMD="${COMPOSE} -f docker-compose.yml"
 {
   echo "Beuk install — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "  domain:        ${DEPLOY_DOMAIN}"
+  echo "  www redirect:  $(get_env WWW_DOMAIN)"
+  echo "  compose proj:  ${COMPOSE_PROJECT_NAME}"
   echo "  build stamp:   $(get_env BUILD_STAMP)"
   echo "  tools:         ${TOOLS_STATE}"
   echo "  email:         ${MAIL_STATE}"
