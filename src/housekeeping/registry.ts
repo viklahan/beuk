@@ -2132,7 +2132,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'chapters.delete.snapshot-taken',
-    title: 'A delete first takes an automatic History snapshot (“Before deleting <name>”) that rides the book and restores; structural snapshots keep their own five',
+    title: 'A delete first takes an automatic History snapshot (“Before deleting <name>”) that rides the book and restores; structural snapshots keep their own five and share the book’s pictures instead of copying them',
     kind: 'client-only',
     reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
   },

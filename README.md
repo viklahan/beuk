@@ -1687,6 +1687,24 @@ copyright, contents) have no menu.
   sample story, restores and the other automatic kinds, so a run of
   chapter edits never pushes those out. A snapshot stays in History after
   the toast is gone and restores like any other.
+- **What a structural snapshot costs.** Like every snapshot it is the
+  whole book, but an operation moves text, never a picture, the cover or
+  a font, so the snapshot **shares** those with the book instead of
+  holding a second copy. In memory the picture data is one shared
+  string. In the saved book (local save, shelf, book file) each
+  picture, font or cover the snapshot holds unchanged from the book's
+  own is written once — as the book's — and the snapshot entry names it
+  (`{ "ref": id }`, under `chopDoc` in place of `doc`); one the book has
+  since changed or dropped is written in full inside the snapshot, so a
+  restore brings back exactly what was there. Measured on the sample
+  (29 pictures; payload 7,828,735 bytes fresh): five delete + Undo add
+  about 0.75 MB in all (each packed entry about 0.2 MB, mostly the
+  book's text), where a full copy would add about 7.8 MB each. Named
+  snapshots and the other automatic kinds still hold full copies, as
+  before; the shelf's limit (`MANUSCRIPT_MAX_BYTES`, 64 MiB by default)
+  counts them. A studio from before this change does not read `chopDoc`
+  entries: it skips them (it never restores half a book), and the next
+  save from it leaves them out.
 - **Undo is an inverse edit, not a restore.** It puts back only what the
   operation took or added, so writing done meanwhile elsewhere in the
   book stands. A deleted section returns next to the neighbour it stood
@@ -1734,9 +1752,16 @@ copyright, contents) have no menu.
   before the operation — 1 2 3, I II III, i ii iii, or English number
   words (One, ONE, one; Beuk's own pattern match, nothing more) — they
   are renumbered in the same style afterwards; any other numbering is
-  left exactly as the writer set it. Undo gives every chapter whose
-  number the operation changed (and nobody changed since) its number
-  back.
+  left exactly as the writer set it. Undo renumbers the same way when
+  the operation renumbered and the chapters are still in sequence —
+  whatever other operations ran or were undone since, in any order (two
+  deletes undone oldest first end at 1..n again, exactly as before).
+  Where the writer has set numbers by hand since, Undo instead gives
+  every chapter whose number the operation changed (and nobody changed
+  since) its number back.
+- **Where Undo leaves you.** Undo returns to the section that was
+  active before the operation, unless the writer has since moved to
+  another section — then they stay where they are.
 - **Saving.** Each operation and each Undo is an ordinary edit: it marks
   the book for the local save and the shelf sync (revision /
   `If-Match`) like typing does, and structure changes never count as

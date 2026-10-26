@@ -21,8 +21,12 @@ to make well.
   break. Each takes its own snapshot and offers Undo. Merging across
   front matter, body and back matter is refused, and the menu says why.
 - **Numbers keep up.** A book numbered in order — 1, 2, 3, I, II, III or
-  One, Two, Three — stays in order after any of these; numbers you set
-  by hand are left alone.
+  One, Two, Three — stays in order after any of these, and after their
+  Undos in any order; numbers you set by hand are left alone.
+- **Snapshots stay light.** The snapshot taken before each of these
+  shares the book's pictures instead of copying them, so a few deletes
+  no longer make the saved book (and the shelf upload) several times
+  bigger.
 - **Notice buttons work.** Buttons on notices (like "History") now
   respond to a click, and notices use the full width of a phone.
 

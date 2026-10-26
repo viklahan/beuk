@@ -18931,9 +18931,9 @@
         (n) => chopWord(n).split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-"),
         (n) => chopWord(n).toUpperCase(), (n) => chopWord(n)
       ];
+      const chopStyleFits = (f) => chopChapters().every((c, i) => String(c.number) === f(i + 1));
       function chopNumberStyle() {
-        const ch = chopChapters();
-        return CHOP_STYLES.find((f) => ch.every((c, i) => String(c.number) === f(i + 1))) || null;
+        return CHOP_STYLES.find(chopStyleFits) || null;
       }
       function chopNumbers() { const m = {}; chopChapters().forEach((c) => { m[c.id] = String(c.number || ""); }); return m; }
       function chopInsertAt(sec, anchor) {
@@ -18993,6 +18993,7 @@
         const rec = { op: spec.op, snapId: snap.id, snapLabel: snapshotLabel(snap), pre: pre, post: { numbers: chopNumbers() }, data: data, undo: spec.undo, done: false, toastEl: null };
         chopLastRec = rec;
         chopCommit(data.activeId);
+        rec.post.activeId = state.activeId;
         const el = toast(spec.msg, spec.icon, { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => chopUndo(rec), onGone: chopFocusAfter });
         if (el) {
           el.setAttribute("data-chop", spec.op);
@@ -19005,19 +19006,27 @@
         rec = rec || chopLastRec;
         if (!rec || rec.done) return false;
         if (rec.pre.epoch !== chopEpoch) { rec.done = true; return false; }
+        /* A book still numbered in sequence when Undo comes (whatever
+           other operations ran or were undone since, in any order) is
+           renumbered in that sequence afterwards — the style the
+           operation kept, else the one the book now shows. */
+        const style = rec.pre.style ? (chopStyleFits(rec.pre.style) ? rec.pre.style : chopNumberStyle()) : null;
         const res = rec.undo(rec.data);
         if (res !== true) {
           toast(t("chop.undoChanged", { name: res, snap: rec.snapLabel }), "history", { label: t("history.open"), ms: CHOP_TOAST_MS, onClick: () => { if (typeof openHistory === "function") openHistory(); } });
           return false;
         }
         rec.done = true;
-        /* Every chapter whose number the operation set, and that no
+        /* Otherwise (numbers set by hand since, or never in sequence)
+           every chapter whose number the operation set, and that no
            one has renumbered since, gets its number back. */
-        chopChapters().forEach((c) => {
+        if (style) chopChapters().forEach((c, i) => { c.number = style(i + 1); });
+        else chopChapters().forEach((c) => {
           if (Object.prototype.hasOwnProperty.call(rec.pre.numbers, c.id) && rec.post.numbers[c.id] === String(c.number || "")) c.number = rec.pre.numbers[c.id];
         });
         if (rec.toastEl) rec.toastEl.remove();
-        chopCommit(rec.pre.activeId);
+        /* The writer who moved on to another section stays there. */
+        chopCommit(state.activeId === rec.post.activeId || !state.sections.some((x) => x.id === state.activeId) ? rec.pre.activeId : state.activeId);
         toast(t("chop.undone"), "undo-2");
         return true;
       }
@@ -20060,10 +20069,72 @@
          snapshot, because its confirmation says so (BEUK:shelfguard). */
       const HISTORY_AUTO_CAP = 10;
       const CHOP_SNAP_CAP = 5; /* BEUK:chapterops — snapshots taken before a delete, duplicate, split or merge */
+      /* ==== BEUK:chapterops ==== — a structural edit moves text, never
+         a picture, cover or font: its snapshot shares the book's own
+         copies instead of holding a second set. In memory the shared
+         data strings are one string (strings never change in place;
+         every object around them is the snapshot's own); in the saved book (local save,
+         shelf, book file) every picture, font and cover the snapshot
+         holds unchanged from the book's own is written once — as the
+         book's — and the snapshot names it ({ref: id}). One the book
+         has since changed or dropped is kept in full in the snapshot,
+         so a restore always brings back exactly what was there. The
+         packed entry carries "chopDoc" in place of "doc": a studio
+         that predates this skips the entry (it reads only "doc")
+         rather than restoring half a book. */
+      const chopShareObj = (o) => { const c = JSON.parse(JSON.stringify(Object.assign({}, o, { data: "" }))); c.data = o.data; return c; };
+      const chopSameObj = (a, b) => !!a && !!b && a.id === b.id && a.data === b.data &&
+        stableJson(Object.assign({}, a, { data: "" })) === stableJson(Object.assign({}, b, { data: "" })); /* key order aside: the shelf's store may reorder keys */
+      function chopSnapDoc() {
+        const d = serializeBook();
+        delete d.history; delete d.importReport;
+        const imgs = d.images || [], fonts = d.fonts || [], cover = d.cover;
+        d.images = []; d.fonts = []; d.cover = null;
+        const c = JSON.parse(JSON.stringify(d));
+        c.images = imgs.map(chopShareObj); c.fonts = fonts.map(chopShareObj); c.cover = cover ? chopShareObj(cover) : null;
+        return c;
+      }
+      function chopSnapPack(e) {
+        if (!e || e.auto !== "chapterop" || !e.doc) return e;
+        const liveFonts = (state.fonts || []).map(normalizeCustomFont).filter(Boolean);
+        const ref = (list, live) => (list || []).map((o) => (chopSameObj(o, live.find((x) => x && o && x.id === o.id)) ? { ref: o.id } : o));
+        const p = {};
+        Object.keys(e.doc).forEach((k) => {
+          const v = e.doc[k];
+          p[k] = k === "images" ? ref(v, state.images || []) : k === "fonts" ? ref(v, liveFonts) : k === "cover" && v && chopSameObj(v, state.cover) ? { ref: "cover" } : v;
+        });
+        const o = {};
+        Object.keys(e).forEach((k) => { if (k === "doc") o.chopDoc = p; else o[k] = e[k]; });
+        return o;
+      }
+      function chopSnapUnpack(e) {
+        const p = e.chopDoc;
+        if (!p || typeof p !== "object" || !Array.isArray(p.sections)) return null;
+        let whole = true;
+        const back = (list, live) => (Array.isArray(list) ? list : []).map((o) => {
+          if (!o || typeof o.ref !== "string") return o;
+          const hit = live.find((x) => x && x.id === o.ref);
+          if (!hit) { whole = false; return null; }
+          return chopShareObj(hit);
+        });
+        const d = {};
+        Object.keys(p).forEach((k) => {
+          const v = p[k];
+          if (k === "images") d[k] = back(v, state.images || []);
+          else if (k === "fonts") d[k] = back(v, state.fonts || []);
+          else if (k === "cover" && v && v.ref === "cover") { if (!state.cover) whole = false; d[k] = state.cover ? chopShareObj(state.cover) : null; }
+          else d[k] = v;
+        });
+        /* A name the book no longer holds cannot be honoured: a
+           snapshot that could not restore exactly is not offered. */
+        return whole ? d : null;
+      }
+      /* ==== /BEUK:chapterops ==== */
       function normalizeHistory(list) {
         if (!Array.isArray(list)) return [];
         const out = [];
         list.forEach((e) => {
+          if (e && typeof e === "object" && !e.doc && e.auto === "chapterop" && e.chopDoc) { const d = chopSnapUnpack(e); if (d) e = Object.assign({}, e, { doc: d }); } /* BEUK:chapterops — a packed structural-edit snapshot takes the arriving book's pictures back */
           if (!e || typeof e !== "object" || !e.doc || typeof e.doc !== "object" || !Array.isArray(e.doc.sections)) return;
           out.push({
             id: typeof e.id === "string" && e.id ? e.id : uid(),
@@ -20109,7 +20180,7 @@
           auto: autoKind || null,
           at: new Date().toISOString(),
           words: bookWordTotal(),
-          doc: snapshotBookDoc()
+          doc: autoKind === "chapterop" ? chopSnapDoc() : snapshotBookDoc() /* BEUK:chapterops — shares the book's pictures */
         };
         state.history = [snap].concat(state.history || []);
         pruneAutoSnapshots();
@@ -31451,7 +31522,7 @@
           printFolio: state.printFolio,
           storeCheck: normalizeStoreCheck(state.storeCheck), /* BEUK:store */
           goals: Object.assign({}, state.goals),
-          history: (state.history || []).slice(),
+          history: (state.history || []).map(chopSnapPack), /* BEUK:chapterops — structural-edit snapshots name the book's pictures instead of copying them */
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
@@ -40208,7 +40279,7 @@
         return JSON.stringify({ s: again.sections, a: again.activeId }) === before;
       }
       SELF_CHECKS.push(
-        { id: "chapters.delete.undo-restores-exactly", feature: "chapters", name: "Deleting a section offers Undo; Undo puts it back at its exact place with its id, text, image references, notes, scene images and settings, restores the active section and the chapter numbers, and keeps edits made meanwhile",
+        { id: "chapters.delete.undo-restores-exactly", feature: "chapters", name: "Deleting a section offers Undo; Undo puts it back at its exact place with its id, text, image references, notes, scene images and settings, restores the active section and the chapter numbers (also when two deletes are undone out of order), and keeps edits made meanwhile",
           run() {
             return chopCheckRun(() => {
               const f = chopCheckFixture();
@@ -40244,15 +40315,24 @@
               chopFind(w.c1.id).number = "One"; chopFind(w.c2.id).number = "Two"; chopFind(w.c3.id).number = "Three";
               const recW = window.beukChapters.del(w.c1.id);
               const wordsOk = chopNums() === "One,Two" && window.beukChapters.undo(recW) && chopNums() === "One,Two,Three";
+              /* two deletes undone out of order (both toasts on screen): the sequence holds at every step and the book comes back exactly */
+              const o = chopCheckFixture();
+              chopFind(o.c1.id).number = "One"; chopFind(o.c2.id).number = "Two"; chopFind(o.c3.id).number = "Three";
+              const oPre = JSON.stringify(state.sections);
+              const recO1 = window.beukChapters.del(o.c1.id), recO2 = window.beukChapters.del(o.c3.id);
+              const o1 = chopNums();
+              const o2 = window.beukChapters.undo(recO1) && chopNums();
+              const o3 = window.beukChapters.undo(recO2) && chopNums();
+              const orderOk = o1 === "One" && o2 === "One,Two" && o3 === "One,Two,Three" && JSON.stringify(state.sections) === oPre;
               const k = chopCheckFixture();
               chopFind(k.c1.id).number = "7"; chopFind(k.c2.id).number = "12"; chopFind(k.c3.id).number = "";
               window.beukChapters.del(k.c2.id);
               const handOk = chopNums() === "7,";
-              return scVerdict(toastOk && goneOk && exactOk && activeOk && numsOk && keptOk && againOk && rtUndo && emptyOk && rtOp && lastBack && wordsOk && handOk,
-                "toast names the section with an Undo button inside the live region (" + toastOk + "); gone, the next section active, chapters renumbered 1,2 (" + goneOk + "); Undo restores the section byte-for-byte at index " + idx + " (" + exactOk + "), active again (" + activeOk + "), numbers 1,2,3 (" + numsOk + "), the edit made meanwhile kept (" + keptOk + "); a second Undo does nothing (" + againOk + "); round trip after Undo (" + rtUndo + "); deleting the last body chapter leaves an empty Body with Add chapter (" + emptyOk + ") and round-trips (" + rtOp + "); the active section's delete undone makes it active again (" + !!lastBack + "); a book numbered One, Two, Three stays in sequence and Undo restores it (" + wordsOk + "); hand-set numbers are left alone (" + handOk + ")");
+              return scVerdict(toastOk && goneOk && exactOk && activeOk && numsOk && keptOk && againOk && rtUndo && emptyOk && rtOp && lastBack && wordsOk && handOk && orderOk,
+                "toast names the section with an Undo button inside the live region (" + toastOk + "); gone, the next section active, chapters renumbered 1,2 (" + goneOk + "); Undo restores the section byte-for-byte at index " + idx + " (" + exactOk + "), active again (" + activeOk + "), numbers 1,2,3 (" + numsOk + "), the edit made meanwhile kept (" + keptOk + "); a second Undo does nothing (" + againOk + "); round trip after Undo (" + rtUndo + "); deleting the last body chapter leaves an empty Body with Add chapter (" + emptyOk + ") and round-trips (" + rtOp + "); the active section's delete undone makes it active again (" + !!lastBack + "); a book numbered One, Two, Three stays in sequence and Undo restores it (" + wordsOk + "); hand-set numbers are left alone (" + handOk + "); two deletes undone out of order keep the sequence (" + [o1, o2, o3].join(" → ") + ") and the book returns exactly (" + orderOk + ")");
             });
           } },
-        { id: "chapters.delete.snapshot-taken", feature: "chapters", name: "A delete first takes an automatic History snapshot, “Before deleting <name>” in the interface's language; it rides the book, restores, and structural snapshots keep their own five without pushing out other automatic ones",
+        { id: "chapters.delete.snapshot-taken", feature: "chapters", name: "A delete first takes an automatic History snapshot, “Before deleting <name>” in the interface's language; it rides the book, restores, and structural snapshots keep their own five without pushing out other automatic ones, naming the book's pictures in the saved book instead of copying them",
           run() {
             return chopCheckRun(() => {
               const f = chopCheckFixture();
@@ -40264,6 +40344,19 @@
                 snap.doc.sections.some((s) => s.id === f.c2.id && s.content === f.c2.content) && !("history" in snap.doc);
               const persisted = normalizeHistory(JSON.parse(JSON.stringify(state.history)))[0];
               const rideOk = !!persisted && persisted.auto === "chapterop" && persisted.chop.op === "delete" && snapshotLabel(persisted) === snapshotLabel(snap);
+              /* the saved book names the book's own pictures from the snapshot instead of copying them; it reads back whole, and a picture changed since is kept in full */
+              const pic = state.images[0].data;
+              const ser = JSON.parse(JSON.stringify(serializeBook()));
+              const ent = ser.history.find((h) => h.id === snap.id);
+              const packOk = !!ent && !ent.doc && !!ent.chopDoc && ent.chopDoc.images.length === 1 && ent.chopDoc.images[0].ref === "chopimg1" && JSON.stringify(ent).indexOf(pic) === -1;
+              const readBack = normalizeHistory(ser.history).find((h) => h.id === snap.id);
+              const readOk = !!readBack && JSON.stringify(readBack.doc) === JSON.stringify(snap.doc);
+              const keepImg = state.images[0];
+              state.images[0] = Object.assign({}, keepImg, { data: pic + "AAAA" });
+              const ser2 = JSON.parse(JSON.stringify(serializeBook()));
+              const ent2 = ser2.history.find((h) => h.id === snap.id);
+              const ownOk = !!ent2 && ent2.chopDoc.images[0].data === pic && JSON.stringify(normalizeHistory(ser2.history).find((h) => h.id === snap.id).doc) === JSON.stringify(snap.doc);
+              state.images[0] = keepImg;
               openHistory();
               const listOk = $("historyList").textContent.indexOf(snapshotLabel(snap)) !== -1;
               closeHistory();
@@ -40274,8 +40367,8 @@
               for (let i = 0; i < 7; i++) window.beukChapters.duplicate(g.c1.id);
               const chops = state.history.filter((h) => h.auto === "chapterop").length;
               const pruneOk = chops === CHOP_SNAP_CAP && state.history.some((h) => h.id === imp.id);
-              return scVerdict(snapOk && rideOk && listOk && restoreOk && pruneOk,
-                "snapshot taken before the delete, labelled “" + snapshotLabel(snap) + "”, holding the section (" + snapOk + "); survives the book's save path with its label (" + rideOk + "); listed in History (" + listOk + "); restoring it brings the section back (" + restoreOk + "); after 7 more operations " + chops + " structural snapshots kept and the import snapshot still there (" + pruneOk + ")");
+              return scVerdict(snapOk && rideOk && packOk && readOk && ownOk && listOk && restoreOk && pruneOk,
+                "snapshot taken before the delete, labelled “" + snapshotLabel(snap) + "”, holding the section (" + snapOk + "); survives the book's save path with its label (" + rideOk + "); listed in History (" + listOk + "); restoring it brings the section back (" + restoreOk + "); after 7 more operations " + chops + " structural snapshots kept and the import snapshot still there (" + pruneOk + "); the saved book names the picture instead of copying it (" + packOk + "), reads back whole (" + readOk + "), and keeps a picture changed since in full (" + ownOk + ")");
             });
           } },
         { id: "chapters.duplicate.deep-copy", feature: "chapters", name: "Duplicate inserts a deep copy right after the original — new id, “<title> (copy)”, same text, image references and settings — selects it, renumbers, and Undo removes it (refusing if the copy was since edited)",
