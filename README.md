@@ -1459,7 +1459,7 @@ and nothing is graded. Sections, in order (`INS_RENDERERS` in
 - **Echoes** — phrases that return three times or more (unchanged).
 
 Every chart is inline SVG drawn with the studio's palette tokens
-(`--ins-a`, `--ins-b`, `--gold`, `--line`), carries a visually hidden
+(`--ins-a`, `--ins-b`, `--muted`, `--line`), carries a visually hidden
 table as its text equivalent, and is drawn at the modal's real width (so
 it stays legible at 390 px). Results are cached per book revision (each
 section's id, order, inclusion, type, titles and a hash of its text, plus
