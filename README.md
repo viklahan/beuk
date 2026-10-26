@@ -1412,6 +1412,16 @@ longer sends the reader back to page 1.
   screen, the arrow keys) it keeps **the first letter of the page being
   read**. Theme, font size and device-profile changes lay the same words
   out again and land on the page where that place now stands.
+- **A section just opened is not a caret.** Writing the new section into
+  the editor leaves the textarea's caret wherever the browser puts it
+  (often the end of the text) — the writer never placed it. So opening a
+  section switches to page mode at page 1, and caret-following starts
+  only with the writer's own hand in the editor: input, a click, a
+  keystroke other than Tab or a modifier, or a selection made while the
+  editor has focus (a bare focus, or a caret set by code into an
+  unfocused editor, does not count). Until then a font-size change, a
+  keystroke in the Chapter Title field or a device change keeps the
+  preview on the page being read — page 1 when nothing was turned.
 - **How a place is found.** By its text, never by markup: the source
   paragraph's letters and digits (markdown markers, quotes and dashes
   carry none, so source and typeset agree), which occurrence of that
@@ -1431,10 +1441,14 @@ longer sends the reader back to page 1.
   step down under the cluster. The editor's padding is now inside its
   width (`box-sizing: border-box`), so it never runs past its column.
 - **Checks.** In-studio `preview.keeps-page-on-edit`,
-  `preview.follows-caret`, `preview.new-section-page-one` and
-  `zen.controls.no-overlap` (`runBeukSelfChecks()`; registered
+  `preview.follows-caret`, `preview.new-section-page-one`,
+  `preview.opened-section-stays-put` and `zen.controls.no-overlap` (`runBeukSelfChecks()`; registered
   client-only in Housekeeping). The preview checks measure at the Kindle
-  Paperwhite profile on the sample's Chapter Three (on a phone they show
+  Paperwhite profile on the sample's Chapter Three;
+  `preview.opened-section-stays-put` opens it through `selectSection`
+  (the sidebar's own path) with the caret at the end of the text and no
+  editor activity, then changes font size, the chapter title and the
+  device (on a phone they show
   the preview pane for the measure, then put the pane back); the Zen
   check measures all 13 interface languages in the current window.
 - **Hooks (tests only, never in the UI):** `window.beukReader`

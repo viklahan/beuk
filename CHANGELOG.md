@@ -12,7 +12,8 @@ to make well.
   stays on the page holding your cursor — and if you were paging through
   the preview, a new font size, theme or device keeps you on the words
   you were reading. Opening another chapter still starts at its first
-  page.
+  page, and stays there through a font-size, chapter-title or device
+  change until you work in the text.
 - **Auto-Format keeps your cursor.** It used to drop the cursor at the
   top of the chapter a moment after polishing.
 - **Zen's buttons stay off the tabs.** In Arabic, and on a phone, the
