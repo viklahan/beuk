@@ -1664,6 +1664,87 @@ longer sends the reader back to page 1.
 - **Hooks (tests only, never in the UI):** `window.beukReader`
   (`flush`, `pageOf`, `caretAnchor`, `pageAnchor`, `follow`).
 
+## Studio: removing pictures from the image library (client-only)
+
+A picture lives once in the book's image library (`state.images`) and is
+referenced by id from everywhere it appears. The library (the **Insert
+Image** dialog, and the same grid in the scene-break picker) now lets the
+writer take a picture out of the book.
+
+- **Where is it used.** `imglibUsageMap()` / `imageUsage(id)` answer it in
+  one pass for every role the studio has: image markers in any section's
+  text (by section name; a frontispiece's marker is listed as the
+  frontispiece), a chapter's opening plate and backdrop, a scene break's
+  picture, the made cover's artwork (or "kept in the cover maker" when
+  the recipe holds it but the chosen background does not show it), the
+  jacket flap photo, the book's scene-break ornament and heading
+  flourish, and the same two choices inside the writer's saved themes.
+- **The delete control.** Each picture gets a small bin button in its
+  corner (seen on hover or keyboard focus where a pointer can hover;
+  always shown on touch). Its accessible name is "Remove “name” from the
+  book". The cover maker's small artwork strip is a picker for the
+  maker's working copy and offers no delete — remove from the library
+  instead.
+- **An unused picture** is removed at once: a History snapshot is taken
+  first ("Before removing a picture"), the picture leaves the library,
+  and a toast offers **Undo** for 10 seconds.
+- **A used picture** asks first, listing where it is used ("Used in:
+  Chapter Three (in the text), Chapter Five (plate)"), with **Remove it
+  everywhere** and **Cancel** (focus starts on Cancel; Escape cancels and
+  returns focus to the bin button). Remove it everywhere clears each use
+  the way the editor's own controls do: the marker line leaves the text
+  (like the section card's remove), plate and backdrop go to "No plate" /
+  "No backdrop" (the plate's alt text is kept, as there), the scene break
+  drops its picture (like the scene picker's Remove), a cover whose
+  artwork it is goes the way of Settings' **Remove** cover (the made
+  cover and its recipe — the dialog says so), the flap photo clears like
+  the maker's own Remove, and a flourish falls back to the built-in
+  fleuron / no heading flourish (like removing it under Your flourishes).
+  Undo puts the picture and every use back; a use is restored only where
+  its place still stands empty, so nothing done in the meantime is
+  overwritten.
+- **Remove unused pictures (n · size).** Counts the pictures nothing
+  references and their total size (base64 length × 3/4, the figure the
+  library shows for each picture), snapshots first, removes exactly those,
+  and offers Undo. With none, the button is disabled with the note "Every
+  picture in the library is in use."
+- **The sample story's pictures** (ids `sample-img-…`) carry no delete
+  control and are never counted as unused: they belong to the sample,
+  which can always be reloaded exactly. A note in the library says so.
+- **Storage truth.** After a removal the picture is gone from
+  `serializeBook().images`, from the record the device save writes to
+  IndexedDB (the previous record, `book-prev`, holds it until the next
+  save) and from the next shelf save. **But the History snapshot taken
+  before still holds it** — that is what lets a writer get a picture back
+  after the toast has gone (History → restore). History rides with the
+  book, so the saved book (device and shelf) gets *bigger* by one
+  snapshot right after a removal, and smaller only once that snapshot is
+  deleted in History or pushed out by newer automatic snapshots (ten are
+  kept, `pruneAutoSnapshots`). The library note says this in plain words.
+  To keep History from multiplying the book, a run of removals with no
+  other edit in between shares one snapshot. Measured on a 3-picture
+  book against a real server (Postgres 16, `PUT /api/manuscripts/:id`):
+  shelf doc 572,103 bytes → 750,549 after removing the two unused
+  pictures → 178,383 once the snapshot was deleted.
+- **Toasts.** Toast action buttons take clicks again (`#toasts` passes
+  pointer events through to the page; the button now opts back in — no
+  toast's Undo could be clicked with a pointer before), and the toast
+  stack is as wide as a toast may be, so a phone no longer squeezes a
+  toast into a narrow column. `toast(msg, icon, { label, onClick, ms })`
+  takes an optional `ms` for a longer Undo window.
+- **Languages.** 32 strings in all 13 packs; sizes and file names are
+  wrapped in Unicode isolates so an Arabic sentence keeps "141.3 KB" and
+  "ferry.png" whole.
+- **Checks.** In-studio `images.usage.finds-every-role`,
+  `images.delete.unused-undo`, `images.delete.used-clears-roles`,
+  `images.cleanup.unused-only` and `images.delete.leaves-serialized-book`
+  (`runBeukSelfChecks()`; registered client-only in Housekeeping), on a
+  fixture book holding one picture in every role; `tests/imagelib.test.ts`
+  guards the registration, the 13 locales and the snapshot kind.
+- **Hooks (tests only, never in the UI):** `window.beukImageLib`
+  (`usage`, `usageMap`, `unused`, `remove`, `undo`, `requestDelete`,
+  `cleanup`, `isSample`, `removeWithToast`).
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a
