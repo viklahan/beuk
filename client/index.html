@@ -286,6 +286,29 @@
       .sec-item .drag svg { width: 13px; height: 13px; }
       .sec-tools { display: none; align-items: center; gap: 1px; flex: 0 0 auto; }
       .sec-item.active .sec-tools, .sec-item:hover .sec-tools { display: inline-flex; }
+      /* ==== BEUK:chapterops ==== — the row's action menu */
+      .sec-item:focus-within .sec-tools, .sec-item.chop-open .sec-tools { display: inline-flex; }
+      .sec-item .chop-more[aria-expanded="true"] { background: var(--accent-soft); color: var(--ink); }
+      .chop-menu {
+        position: fixed; z-index: 75; min-width: 196px; max-width: min(300px, calc(100vw - 16px)); box-sizing: border-box;
+        background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); padding: 5px;
+      }
+      .chop-menu[hidden] { display: none; }
+      .chop-item {
+        display: grid; grid-template-columns: 15px 1fr; column-gap: 9px; align-items: center; width: 100%; box-sizing: border-box;
+        border: none; background: transparent; color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500;
+        padding: 7px 9px; border-radius: 7px; text-align: start; cursor: pointer;
+      }
+      .chop-item svg { width: 14px; height: 14px; }
+      .chop-item:hover, .chop-item:focus-visible { background: var(--accent-soft); color: var(--ink); outline: none; }
+      .chop-item:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+      .chop-item.danger { color: var(--bad); }
+      .chop-item.danger:hover, .chop-item.danger:focus-visible { color: var(--bad); }
+      .chop-item[aria-disabled="true"] { color: var(--muted); cursor: default; }
+      .chop-item[aria-disabled="true"]:hover { background: var(--panel-3); color: var(--muted); }
+      .chop-why { grid-column: 2; font-size: 11.5px; font-weight: 400; line-height: 1.38; color: var(--muted); margin-top: 2px; }
+      .chop-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+      /* ==== /BEUK:chapterops ==== */
       #btnAddChapter, #btnAddPart {
         display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; padding: 8px 10px;
         border: 1px dashed var(--line-2); border-radius: 8px; background: transparent; color: var(--ink-2);
@@ -1772,6 +1795,8 @@
       .toast svg { width: 15px; height: 15px; flex: 0 0 auto; }
       .toast-action { flex: 0 0 auto; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 9px; cursor: pointer; opacity: 0.9; }
       .toast-action:hover { opacity: 1; }
+      .toast-action { pointer-events: auto; } /* BEUK:chapterops — the toast stack lets clicks through; its action buttons must take them */
+      .toast-action:focus-visible { outline: 2px solid var(--panel); outline-offset: 2px; }
 
       /* ---------- UI language packs ---------- */
       html[dir="rtl"] .sec-item { text-align: right; }
@@ -3171,6 +3196,7 @@
         <div id="historyList"></div>
         <div id="historyDetail" style="display:none;"></div>
         <p class="hist-note" data-i18n="history.storage">Snapshots live with this book — on this device, and on your shelf when the book syncs. Automatic snapshots (taken before an import, the sample story, or a restore) are kept to the most recent ten; one you name is never removed for you.</p>
+        <p class="hist-note" data-i18n="history.storageChop">Snapshots taken before a section is deleted, duplicated, split or merged are kept to the most recent five, apart from the ten above.</p><!-- BEUK:chapterops -->
         <div class="modal-actions">
           <button class="tb-btn" id="btnCloseHistory" data-i18n="history.close">Close</button>
         </div>
@@ -6379,6 +6405,24 @@
       };
       Object.keys(IM_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], IM_STRINGS[code]); });
       /* ==== /BEUK:importmeta ==== */
+      /* ==== BEUK:chapterops ==== — the section-operation words (delete, duplicate, split, merge, Undo), all 13 packs */
+      const CHOP_STRINGS = {
+        "en": {"chop.more": "More actions", "chop.moreFor": "More actions for {name}", "chop.duplicate": "Duplicate", "chop.split": "Split at cursor", "chop.merge": "Merge with next", "chop.delete": "Delete", "chop.copyTitle": "{title} (copy)", "chop.splitTitle": "{title} (2)", "chop.deleted": "“{name}” deleted", "chop.duplicated": "“{name}” duplicated", "chop.splitDone": "“{name}” split in two", "chop.merged": "“{a}” and “{b}” merged", "chop.undo": "Undo", "chop.undone": "Undone", "chop.undoChanged": "“{name}” has changed since, so Undo left it as it is. The snapshot “{snap}” in History still holds the earlier version.", "chop.splitNeedsActive": "Open this section and place the cursor where the second part should begin", "chop.splitNeedsCaret": "Place the cursor inside the text, where the second part should begin", "chop.mergeNoNext": "No section follows this one in its part of the book", "chop.mergeAcross": "The next section is in another part of the book ({group})", "chop.mergeGenerated": "Generated pages (cover, title pages, contents) are not merged", "chop.mergePart": "Part dividers are not merged — delete the divider instead; its chapters stay", "chop.keepOne": "A book keeps at least one section", "history.auto.chapterop": "Before a chapter change", "history.auto.chopDelete": "Before deleting {name}", "history.auto.chopDuplicate": "Before duplicating {name}", "history.auto.chopSplit": "Before splitting {name}", "history.auto.chopMerge": "Before merging {a} and {b}", "history.storageChop": "Snapshots taken before a section is deleted, duplicated, split or merged are kept to the most recent five, apart from the ten above."},
+        "es": {"chop.more": "Más acciones", "chop.moreFor": "Más acciones para {name}", "chop.duplicate": "Duplicar", "chop.split": "Dividir en el cursor", "chop.merge": "Unir con la siguiente", "chop.delete": "Eliminar", "chop.copyTitle": "{title} (copia)", "chop.splitTitle": "{title} (2)", "chop.deleted": "«{name}» eliminado", "chop.duplicated": "«{name}» duplicado", "chop.splitDone": "«{name}» dividido en dos", "chop.merged": "«{a}» y «{b}» unidos", "chop.undo": "Deshacer", "chop.undone": "Deshecho", "chop.undoChanged": "«{name}» ha cambiado desde entonces, así que Deshacer lo dejó como está. La instantánea «{snap}» del Historial conserva la versión anterior.", "chop.splitNeedsActive": "Abre esta sección y coloca el cursor donde debe empezar la segunda parte", "chop.splitNeedsCaret": "Coloca el cursor dentro del texto, donde debe empezar la segunda parte", "chop.mergeNoNext": "Ninguna sección sigue a esta en su parte del libro", "chop.mergeAcross": "La siguiente sección está en otra parte del libro ({group})", "chop.mergeGenerated": "Las páginas generadas (cubierta, portadas, índice) no se unen", "chop.mergePart": "Los separadores de parte no se unen — elimina el separador; sus capítulos se quedan", "chop.keepOne": "Un libro conserva al menos una sección", "history.auto.chapterop": "Antes de un cambio de capítulo", "history.auto.chopDelete": "Antes de eliminar {name}", "history.auto.chopDuplicate": "Antes de duplicar {name}", "history.auto.chopSplit": "Antes de dividir {name}", "history.auto.chopMerge": "Antes de unir {a} y {b}", "history.storageChop": "Las instantáneas tomadas antes de eliminar, duplicar, dividir o unir una sección se conservan hasta las cinco más recientes, aparte de las diez anteriores."},
+        "fr": {"chop.more": "Plus d’actions", "chop.moreFor": "Plus d’actions pour {name}", "chop.duplicate": "Dupliquer", "chop.split": "Scinder au curseur", "chop.merge": "Fusionner avec la suivante", "chop.delete": "Supprimer", "chop.copyTitle": "{title} (copie)", "chop.splitTitle": "{title} (2)", "chop.deleted": "« {name} » supprimé", "chop.duplicated": "« {name} » dupliqué", "chop.splitDone": "« {name} » scindé en deux", "chop.merged": "« {a} » et « {b} » fusionnés", "chop.undo": "Annuler", "chop.undone": "Annulé", "chop.undoChanged": "« {name} » a changé depuis, alors Annuler l’a laissé tel quel. L’instantané « {snap} » de l’Historique garde la version précédente.", "chop.splitNeedsActive": "Ouvrez cette section et placez le curseur là où la seconde partie doit commencer", "chop.splitNeedsCaret": "Placez le curseur dans le texte, là où la seconde partie doit commencer", "chop.mergeNoNext": "Aucune section ne suit celle-ci dans sa partie du livre", "chop.mergeAcross": "La section suivante est dans une autre partie du livre ({group})", "chop.mergeGenerated": "Les pages générées (couverture, pages de titre, table des matières) ne sont pas fusionnées", "chop.mergePart": "Les séparateurs de partie ne sont pas fusionnés — supprimez le séparateur ; ses chapitres restent", "chop.keepOne": "Un livre garde au moins une section", "history.auto.chapterop": "Avant une modification de chapitre", "history.auto.chopDelete": "Avant de supprimer {name}", "history.auto.chopDuplicate": "Avant de dupliquer {name}", "history.auto.chopSplit": "Avant de scinder {name}", "history.auto.chopMerge": "Avant de fusionner {a} et {b}", "history.storageChop": "Les instantanés pris avant de supprimer, dupliquer, scinder ou fusionner une section sont gardés jusqu’aux cinq plus récents, en plus des dix ci-dessus."},
+        "de": {"chop.more": "Weitere Aktionen", "chop.moreFor": "Weitere Aktionen für {name}", "chop.duplicate": "Duplizieren", "chop.split": "Am Cursor teilen", "chop.merge": "Mit dem nächsten zusammenführen", "chop.delete": "Löschen", "chop.copyTitle": "{title} (Kopie)", "chop.splitTitle": "{title} (2)", "chop.deleted": "„{name}“ gelöscht", "chop.duplicated": "„{name}“ dupliziert", "chop.splitDone": "„{name}“ in zwei geteilt", "chop.merged": "„{a}“ und „{b}“ zusammengeführt", "chop.undo": "Rückgängig", "chop.undone": "Rückgängig gemacht", "chop.undoChanged": "„{name}“ wurde seitdem geändert, deshalb hat Rückgängig es so gelassen. Der Schnappschuss „{snap}“ im Verlauf enthält noch die frühere Fassung.", "chop.splitNeedsActive": "Öffnen Sie diesen Abschnitt und setzen Sie den Cursor dorthin, wo der zweite Teil beginnen soll", "chop.splitNeedsCaret": "Setzen Sie den Cursor in den Text, dorthin, wo der zweite Teil beginnen soll", "chop.mergeNoNext": "Auf diesen Abschnitt folgt in seinem Buchteil keiner mehr", "chop.mergeAcross": "Der nächste Abschnitt liegt in einem anderen Buchteil ({group})", "chop.mergeGenerated": "Erzeugte Seiten (Cover, Titelseiten, Inhaltsverzeichnis) werden nicht zusammengeführt", "chop.mergePart": "Teil-Trenner werden nicht zusammengeführt — löschen Sie stattdessen den Trenner; seine Kapitel bleiben", "chop.keepOne": "Ein Buch behält mindestens einen Abschnitt", "history.auto.chapterop": "Vor einer Kapitel-Änderung", "history.auto.chopDelete": "Vor dem Löschen von {name}", "history.auto.chopDuplicate": "Vor dem Duplizieren von {name}", "history.auto.chopSplit": "Vor dem Teilen von {name}", "history.auto.chopMerge": "Vor dem Zusammenführen von {a} und {b}", "history.storageChop": "Schnappschüsse vor dem Löschen, Duplizieren, Teilen oder Zusammenführen eines Abschnitts werden bis zu den fünf neuesten behalten, zusätzlich zu den zehn oben."},
+        "it": {"chop.more": "Altre azioni", "chop.moreFor": "Altre azioni per {name}", "chop.duplicate": "Duplica", "chop.split": "Dividi al cursore", "chop.merge": "Unisci alla successiva", "chop.delete": "Elimina", "chop.copyTitle": "{title} (copia)", "chop.splitTitle": "{title} (2)", "chop.deleted": "«{name}» eliminato", "chop.duplicated": "«{name}» duplicato", "chop.splitDone": "«{name}» diviso in due", "chop.merged": "«{a}» e «{b}» uniti", "chop.undo": "Annulla", "chop.undone": "Annullato", "chop.undoChanged": "«{name}» è cambiato nel frattempo, quindi Annulla l’ha lasciato com’è. L’istantanea «{snap}» nella Cronologia conserva la versione precedente.", "chop.splitNeedsActive": "Apri questa sezione e metti il cursore dove deve cominciare la seconda parte", "chop.splitNeedsCaret": "Metti il cursore nel testo, dove deve cominciare la seconda parte", "chop.mergeNoNext": "Nessuna sezione segue questa nella sua parte del libro", "chop.mergeAcross": "La sezione successiva è in un’altra parte del libro ({group})", "chop.mergeGenerated": "Le pagine generate (copertina, frontespizi, indice) non si uniscono", "chop.mergePart": "I divisori di parte non si uniscono — elimina invece il divisore; i suoi capitoli restano", "chop.keepOne": "Un libro conserva almeno una sezione", "history.auto.chapterop": "Prima di una modifica ai capitoli", "history.auto.chopDelete": "Prima di eliminare {name}", "history.auto.chopDuplicate": "Prima di duplicare {name}", "history.auto.chopSplit": "Prima di dividere {name}", "history.auto.chopMerge": "Prima di unire {a} e {b}", "history.storageChop": "Le istantanee prese prima di eliminare, duplicare, dividere o unire una sezione si conservano fino alle cinque più recenti, oltre alle dieci qui sopra."},
+        "pt": {"chop.more": "Mais ações", "chop.moreFor": "Mais ações para {name}", "chop.duplicate": "Duplicar", "chop.split": "Dividir no cursor", "chop.merge": "Juntar com a seguinte", "chop.delete": "Eliminar", "chop.copyTitle": "{title} (cópia)", "chop.splitTitle": "{title} (2)", "chop.deleted": "«{name}» eliminado", "chop.duplicated": "«{name}» duplicado", "chop.splitDone": "«{name}» dividido em dois", "chop.merged": "«{a}» e «{b}» juntos", "chop.undo": "Anular", "chop.undone": "Anulado", "chop.undoChanged": "«{name}» mudou entretanto, por isso Anular deixou-o como está. O instantâneo «{snap}» no Histórico ainda guarda a versão anterior.", "chop.splitNeedsActive": "Abra esta secção e coloque o cursor onde a segunda parte deve começar", "chop.splitNeedsCaret": "Coloque o cursor dentro do texto, onde a segunda parte deve começar", "chop.mergeNoNext": "Nenhuma secção se segue a esta na sua parte do livro", "chop.mergeAcross": "A secção seguinte está noutra parte do livro ({group})", "chop.mergeGenerated": "As páginas geradas (capa, páginas de rosto, índice) não se juntam", "chop.mergePart": "Os divisores de parte não se juntam — elimine antes o divisor; os seus capítulos ficam", "chop.keepOne": "Um livro mantém pelo menos uma secção", "history.auto.chapterop": "Antes de uma alteração de capítulo", "history.auto.chopDelete": "Antes de eliminar {name}", "history.auto.chopDuplicate": "Antes de duplicar {name}", "history.auto.chopSplit": "Antes de dividir {name}", "history.auto.chopMerge": "Antes de juntar {a} e {b}", "history.storageChop": "Os instantâneos tirados antes de eliminar, duplicar, dividir ou juntar uma secção guardam-se até aos cinco mais recentes, além dos dez acima."},
+        "nl": {"chop.more": "Meer acties", "chop.moreFor": "Meer acties voor {name}", "chop.duplicate": "Dupliceren", "chop.split": "Splitsen bij cursor", "chop.merge": "Samenvoegen met volgende", "chop.delete": "Verwijderen", "chop.copyTitle": "{title} (kopie)", "chop.splitTitle": "{title} (2)", "chop.deleted": "‘{name}’ verwijderd", "chop.duplicated": "‘{name}’ gedupliceerd", "chop.splitDone": "‘{name}’ in tweeën gesplitst", "chop.merged": "‘{a}’ en ‘{b}’ samengevoegd", "chop.undo": "Ongedaan maken", "chop.undone": "Ongedaan gemaakt", "chop.undoChanged": "‘{name}’ is sindsdien gewijzigd, dus Ongedaan maken liet het zoals het is. De momentopname ‘{snap}’ in Geschiedenis bewaart nog de eerdere versie.", "chop.splitNeedsActive": "Open deze sectie en zet de cursor waar het tweede deel moet beginnen", "chop.splitNeedsCaret": "Zet de cursor in de tekst, waar het tweede deel moet beginnen", "chop.mergeNoNext": "Er volgt geen sectie meer in dit deel van het boek", "chop.mergeAcross": "De volgende sectie staat in een ander deel van het boek ({group})", "chop.mergeGenerated": "Gegenereerde pagina’s (omslag, titelpagina’s, inhoud) worden niet samengevoegd", "chop.mergePart": "Deelscheidingen worden niet samengevoegd — verwijder in plaats daarvan de scheiding; de hoofdstukken blijven", "chop.keepOne": "Een boek houdt minstens één sectie", "history.auto.chapterop": "Vóór een hoofdstukwijziging", "history.auto.chopDelete": "Vóór het verwijderen van {name}", "history.auto.chopDuplicate": "Vóór het dupliceren van {name}", "history.auto.chopSplit": "Vóór het splitsen van {name}", "history.auto.chopMerge": "Vóór het samenvoegen van {a} en {b}", "history.storageChop": "Momentopnamen van vóór het verwijderen, dupliceren, splitsen of samenvoegen van een sectie worden bewaard tot de vijf meest recente, naast de tien hierboven."},
+        "pl": {"chop.more": "Więcej działań", "chop.moreFor": "Więcej działań: {name}", "chop.duplicate": "Duplikuj", "chop.split": "Podziel w miejscu kursora", "chop.merge": "Scal z następną", "chop.delete": "Usuń", "chop.copyTitle": "{title} (kopia)", "chop.splitTitle": "{title} (2)", "chop.deleted": "Usunięto „{name}”", "chop.duplicated": "Zduplikowano „{name}”", "chop.splitDone": "Podzielono „{name}” na dwie części", "chop.merged": "Scalono „{a}” i „{b}”", "chop.undo": "Cofnij", "chop.undone": "Cofnięto", "chop.undoChanged": "„{name}” zmieniło się od tego czasu, więc Cofnij zostawiło to bez zmian. Migawka „{snap}” w Historii nadal przechowuje wcześniejszą wersję.", "chop.splitNeedsActive": "Otwórz tę sekcję i ustaw kursor tam, gdzie ma się zacząć druga część", "chop.splitNeedsCaret": "Ustaw kursor w tekście, tam gdzie ma się zacząć druga część", "chop.mergeNoNext": "Po tej sekcji nie ma już żadnej w tej części książki", "chop.mergeAcross": "Następna sekcja jest w innej części książki ({group})", "chop.mergeGenerated": "Strony generowane (okładka, strony tytułowe, spis treści) nie są scalane", "chop.mergePart": "Separatorów części nie scala się — usuń separator; jego rozdziały zostaną", "chop.keepOne": "Książka zachowuje co najmniej jedną sekcję", "history.auto.chapterop": "Przed zmianą rozdziałów", "history.auto.chopDelete": "Przed usunięciem: {name}", "history.auto.chopDuplicate": "Przed zduplikowaniem: {name}", "history.auto.chopSplit": "Przed podziałem: {name}", "history.auto.chopMerge": "Przed scaleniem: {a} i {b}", "history.storageChop": "Migawki wykonane przed usunięciem, zduplikowaniem, podziałem lub scaleniem sekcji są przechowywane do pięciu najnowszych, niezależnie od dziesięciu powyżej."},
+        "ru": {"chop.more": "Другие действия", "chop.moreFor": "Другие действия: {name}", "chop.duplicate": "Дублировать", "chop.split": "Разделить у курсора", "chop.merge": "Объединить со следующим", "chop.delete": "Удалить", "chop.copyTitle": "{title} (копия)", "chop.splitTitle": "{title} (2)", "chop.deleted": "«{name}» удалён", "chop.duplicated": "«{name}» продублирован", "chop.splitDone": "«{name}» разделён на два", "chop.merged": "«{a}» и «{b}» объединены", "chop.undo": "Отменить", "chop.undone": "Отменено", "chop.undoChanged": "«{name}» с тех пор изменился, поэтому отмена оставила его как есть. Снимок «{snap}» в Истории по-прежнему хранит прежнюю версию.", "chop.splitNeedsActive": "Откройте этот раздел и поставьте курсор туда, где должна начаться вторая часть", "chop.splitNeedsCaret": "Поставьте курсор внутри текста — туда, где должна начаться вторая часть", "chop.mergeNoNext": "После этого раздела в этой части книги больше ничего нет", "chop.mergeAcross": "Следующий раздел находится в другой части книги ({group})", "chop.mergeGenerated": "Создаваемые страницы (обложка, титульные страницы, оглавление) не объединяются", "chop.mergePart": "Разделители частей не объединяются — удалите разделитель; его главы останутся", "chop.keepOne": "В книге остаётся хотя бы один раздел", "history.auto.chapterop": "Перед изменением глав", "history.auto.chopDelete": "Перед удалением: {name}", "history.auto.chopDuplicate": "Перед дублированием: {name}", "history.auto.chopSplit": "Перед разделением: {name}", "history.auto.chopMerge": "Перед объединением: {a} и {b}", "history.storageChop": "Снимки, сделанные перед удалением, дублированием, разделением или объединением раздела, хранятся до пяти последних — помимо десяти выше."},
+        "tr": {"chop.more": "Diğer işlemler", "chop.moreFor": "{name} için diğer işlemler", "chop.duplicate": "Çoğalt", "chop.split": "İmleçte böl", "chop.merge": "Sonrakiyle birleştir", "chop.delete": "Sil", "chop.copyTitle": "{title} (kopya)", "chop.splitTitle": "{title} (2)", "chop.deleted": "“{name}” silindi", "chop.duplicated": "“{name}” çoğaltıldı", "chop.splitDone": "“{name}” ikiye bölündü", "chop.merged": "“{a}” ile “{b}” birleştirildi", "chop.undo": "Geri al", "chop.undone": "Geri alındı", "chop.undoChanged": "“{name}” o zamandan beri değişti, bu yüzden Geri al onu olduğu gibi bıraktı. Geçmiş’teki “{snap}” anlık görüntüsü önceki sürümü hâlâ saklıyor.", "chop.splitNeedsActive": "Bu bölümü açın ve imleci ikinci kısmın başlayacağı yere koyun", "chop.splitNeedsCaret": "İmleci metnin içinde, ikinci kısmın başlayacağı yere koyun", "chop.mergeNoNext": "Kitabın bu kısmında bu bölümden sonra başka bölüm yok", "chop.mergeAcross": "Sonraki bölüm kitabın başka bir kısmında ({group})", "chop.mergeGenerated": "Oluşturulan sayfalar (kapak, başlık sayfaları, içindekiler) birleştirilmez", "chop.mergePart": "Kısım ayırıcıları birleştirilmez — bunun yerine ayırıcıyı silin; bölümleri yerinde kalır", "chop.keepOne": "Bir kitapta en az bir bölüm kalır", "history.auto.chapterop": "Bir bölüm değişikliğinden önce", "history.auto.chopDelete": "{name} silinmeden önce", "history.auto.chopDuplicate": "{name} çoğaltılmadan önce", "history.auto.chopSplit": "{name} bölünmeden önce", "history.auto.chopMerge": "{a} ile {b} birleştirilmeden önce", "history.storageChop": "Bir bölüm silinmeden, çoğaltılmadan, bölünmeden ya da birleştirilmeden önce alınan anlık görüntüler, yukarıdaki on taneden ayrı olarak en yeni beş taneyle sınırlı tutulur."},
+        "ar": {"chop.more": "إجراءات أخرى", "chop.moreFor": "إجراءات أخرى لـ {name}", "chop.duplicate": "تكرار", "chop.split": "تقسيم عند المؤشر", "chop.merge": "دمج مع التالي", "chop.delete": "حذف", "chop.copyTitle": "{title} (نسخة)", "chop.splitTitle": "{title} (2)", "chop.deleted": "حُذف «{name}»", "chop.duplicated": "كُرِّر «{name}»", "chop.splitDone": "قُسِّم «{name}» إلى قسمين", "chop.merged": "دُمج «{a}» و«{b}»", "chop.undo": "تراجع", "chop.undone": "تم التراجع", "chop.undoChanged": "تغيّر «{name}» منذ ذلك الحين، لذا تركه التراجع كما هو. ما زالت اللقطة «{snap}» في السجل تحفظ النسخة السابقة.", "chop.splitNeedsActive": "افتح هذا القسم وضع المؤشر حيث يجب أن يبدأ الجزء الثاني", "chop.splitNeedsCaret": "ضع المؤشر داخل النص، حيث يجب أن يبدأ الجزء الثاني", "chop.mergeNoNext": "لا يلي هذا القسمَ أيُّ قسم في جزئه من الكتاب", "chop.mergeAcross": "القسم التالي في جزء آخر من الكتاب ({group})", "chop.mergeGenerated": "الصفحات المُولَّدة (الغلاف وصفحات العنوان والمحتويات) لا تُدمج", "chop.mergePart": "فواصل الأجزاء لا تُدمج — احذف الفاصل بدلًا من ذلك؛ وتبقى فصوله", "chop.keepOne": "يحتفظ الكتاب بقسم واحد على الأقل", "history.auto.chapterop": "قبل تغيير في الفصول", "history.auto.chopDelete": "قبل حذف {name}", "history.auto.chopDuplicate": "قبل تكرار {name}", "history.auto.chopSplit": "قبل تقسيم {name}", "history.auto.chopMerge": "قبل دمج {a} و{b}", "history.storageChop": "اللقطات المأخوذة قبل حذف قسم أو تكراره أو تقسيمه أو دمجه يُحتفظ بأحدث خمس منها، إضافةً إلى العشر المذكورة أعلاه."},
+        "ja": {"chop.more": "その他の操作", "chop.moreFor": "{name} のその他の操作", "chop.duplicate": "複製", "chop.split": "カーソル位置で分割", "chop.merge": "次と結合", "chop.delete": "削除", "chop.copyTitle": "{title}（コピー）", "chop.splitTitle": "{title}（2）", "chop.deleted": "「{name}」を削除しました", "chop.duplicated": "「{name}」を複製しました", "chop.splitDone": "「{name}」を2つに分割しました", "chop.merged": "「{a}」と「{b}」を結合しました", "chop.undo": "元に戻す", "chop.undone": "元に戻しました", "chop.undoChanged": "「{name}」はその後変更されたため、元に戻す操作ではそのままにしました。履歴のスナップショット「{snap}」に以前の版が残っています。", "chop.splitNeedsActive": "このセクションを開き、2つ目の部分を始めたい位置にカーソルを置いてください", "chop.splitNeedsCaret": "本文の中の、2つ目の部分を始めたい位置にカーソルを置いてください", "chop.mergeNoNext": "本のこの部分では、このセクションの後に続くセクションがありません", "chop.mergeAcross": "次のセクションは本の別の部分（{group}）にあります", "chop.mergeGenerated": "自動生成ページ（表紙・扉・目次）は結合しません", "chop.mergePart": "部の区切りは結合しません — 代わりに区切りを削除してください。章はそのまま残ります", "chop.keepOne": "本には少なくとも1つのセクションが残ります", "history.auto.chapterop": "章の変更前", "history.auto.chopDelete": "{name} の削除前", "history.auto.chopDuplicate": "{name} の複製前", "history.auto.chopSplit": "{name} の分割前", "history.auto.chopMerge": "{a} と {b} の結合前", "history.storageChop": "セクションの削除・複製・分割・結合の前に撮ったスナップショットは、上の10件とは別に、最新の5件まで保存されます。"},
+        "zh-Hans": {"chop.more": "更多操作", "chop.moreFor": "{name} 的更多操作", "chop.duplicate": "复制", "chop.split": "在光标处拆分", "chop.merge": "与下一节合并", "chop.delete": "删除", "chop.copyTitle": "{title}（副本）", "chop.splitTitle": "{title}（2）", "chop.deleted": "已删除“{name}”", "chop.duplicated": "已复制“{name}”", "chop.splitDone": "已将“{name}”拆成两节", "chop.merged": "已合并“{a}”和“{b}”", "chop.undo": "撤销", "chop.undone": "已撤销", "chop.undoChanged": "“{name}”此后已有改动，所以撤销没有动它。历史记录中的快照“{snap}”仍保存着之前的版本。", "chop.splitNeedsActive": "打开这一节，把光标放在第二部分应开始的位置", "chop.splitNeedsCaret": "把光标放在正文中第二部分应开始的位置", "chop.mergeNoNext": "在书的这一部分中，这一节之后没有其他节", "chop.mergeAcross": "下一节位于书的另一部分（{group}）", "chop.mergeGenerated": "自动生成的页面（封面、书名页、目录）不能合并", "chop.mergePart": "部分隔页不能合并 — 请改为删除分隔页；其中的章节会保留", "chop.keepOne": "一本书至少保留一节", "history.auto.chapterop": "章节更改之前", "history.auto.chopDelete": "删除 {name} 之前", "history.auto.chopDuplicate": "复制 {name} 之前", "history.auto.chopSplit": "拆分 {name} 之前", "history.auto.chopMerge": "合并 {a} 和 {b} 之前", "history.storageChop": "删除、复制、拆分或合并某一节之前拍下的快照，除上述十个之外，另保留最近的五个。"}
+      };
+      Object.keys(CHOP_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], CHOP_STRINGS[code]); });
+      /* ==== /BEUK:chapterops ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
         "en": { "shelf.guardDeviceBody": "“{title}” is only on this device — it isn't on your shelf as it stands here. Opening another book replaces it here. Put it on your shelf first and you can open it again any time.", "shelf.guardKeep": "Keep my book", "shelf.guardReplace": "Open and replace it", "shelf.guardSaveFirst": "Put it on my shelf, then open", "shelf.guardSaveFailed": "“{title}” could not be put on your shelf, so nothing was replaced — it is still open here." },
@@ -18625,11 +18669,21 @@
           b.type = "button";
           b.className = "toast-action";
           b.textContent = action.label;
-          b.addEventListener("click", () => { if (action.onClick) action.onClick(); el.remove(); });
+          b.addEventListener("click", () => { const had = el.contains(document.activeElement); if (action.onClick) action.onClick(); el.remove(); if (had && action.onGone) action.onGone(); });
           el.appendChild(b);
         }
         box.appendChild(el); icons();
-        setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 320); }, action ? 6000 : 3400);
+        /* BEUK:chapterops — an action toast may ask for a longer stay
+           (action.ms); while the pointer rests on it or focus is in
+           it, it waits (WCAG 2.2.1), and when it leaves holding focus
+           it hands focus on (action.onGone) instead of dropping it. */
+        const fade = () => {
+          if (action && (el.matches(":hover") || el.contains(document.activeElement))) { setTimeout(fade, 800); return; }
+          el.style.opacity = "0"; el.style.transition = "opacity .3s";
+          setTimeout(() => { const had = el.contains(document.activeElement); el.remove(); if (had && action && action.onGone) action.onGone(); }, 320);
+        };
+        setTimeout(fade, action ? (action.ms || 6000) : 3400);
+        return el;
       }
 
       /* ================= UI: sidebar ================= */
@@ -18736,8 +18790,8 @@
               '<span class="sec-wc" id="wc-' + s.id + '">' + fmtNum(sectionWords(s)) + " " + t("side.wordUnit", { count: sectionWords(s) }) + "</span>" +
               '<span class="sec-tools">' +
               '<button type="button" class="mini" data-act="up" title="' + t("side.moveUp") + '" aria-label="' + t("side.moveUp") + '"><i data-lucide="chevron-up"></i></button><button type="button" class="mini" data-act="down" title="' + t("side.moveDown") + '" aria-label="' + t("side.moveDown") + '"><i data-lucide="chevron-down"></i></button>' +
-              (s.kind === "body" ? '<button type="button" class="mini" data-act="del" title="' + t("side.deleteChapter") + '" aria-label="' + t("side.deleteChapter") + '"><i data-lucide="trash-2"></i></button>' : "") +
               '<button type="button" class="mini" data-act="eye" title="' + t("side.includeInExport") + '" aria-label="' + t("side.includeInExport") + '"><i data-lucide="' + (s.included ? "eye" : "eye-off") + '"></i></button>' +
+              chopRowButton(s) + /* BEUK:chapterops — Duplicate, Split, Merge and Delete live in the row's one action menu */
               "</span></div>";
           });
           if (g === "Body") html += '<div class="og-extra"><button id="btnAddChapter"><i data-lucide="plus"></i>' + t("side.addChapter") + '</button><button id="btnAddPart"><i data-lucide="bookmark-plus"></i>' + t("side.addPart") + "</button></div>";
@@ -18806,18 +18860,17 @@
         });
         icons();
         if (scroller && keepScroll) scroller.scrollTop = keepScroll;
+        if (typeof chopPlaceMenu === "function") chopPlaceMenu(); /* BEUK:chapterops — an open row menu follows its re-rendered row */
       }
       function sectionAction(id, act) {
         const idx = state.sections.findIndex((s) => s.id === id);
         const s = state.sections[idx];
         if (!s) return;
+        if (act === "more") { chopOpenMenu(id); return; } /* BEUK:chapterops — opening the menu changes nothing */
         noteBookEdited();
         if (act === "eye") { s.included = !s.included; renderSidebar(); renderPreview(); refreshExportTree(); return; }
-        if (act === "del") {
-          state.sections.splice(idx, 1);
-          if (state.activeId === id) { const next = state.sections[Math.min(idx, state.sections.length - 1)]; state.activeId = next ? next.id : null; }
-          renderSidebar(); syncEditor(); renderPreview(); updateStats(); toast(t("toast.chapterRemoved"), "trash-2"); return;
-        }
+        /* BEUK:chapterops — a delete takes a History snapshot first and offers Undo (chopDelete) */
+        if (act === "del") { chopDelete(id); return; }
         if (act === "up" || act === "down") {
           /* The move controls carry the same tier law as drag:
              within the tier, free; across it, refused — the
@@ -18825,6 +18878,477 @@
           moveSection(id, act);
         }
       }
+      /* ==== BEUK:chapterops ==== */
+      /* Structural edits on the section list — delete, duplicate,
+         split at the cursor, merge with the next section — all pass
+         through one helper, chopRun: a History snapshot first ("Before
+         deleting …", auto kind "chapterop", the most recent five kept
+         on their own), then the change, then a toast with Undo for
+         ten seconds. Undo is an inverse edit, not a restore: it puts
+         back only what the operation took, so writing done meanwhile
+         elsewhere in the book stands. Where the sections the
+         operation produced have since been edited, Undo says so and
+         leaves them — the snapshot still holds the earlier book. */
+      const CHOP_TOAST_MS = 10000;
+      let chopEpoch = 0;        /* moves whenever a whole book arrives: an Undo offered on another book does nothing */
+      let chopLastRec = null;   /* the most recent operation, for the self-checks */
+      let chopMenuFor = null;   /* the section whose action menu is open */
+      function chopBookArrived() {
+        chopEpoch++;
+        document.querySelectorAll("#toasts .toast[data-chop]").forEach((el) => el.remove());
+        chopCloseMenu(false);
+      }
+      const chopClone = (o) => JSON.parse(JSON.stringify(o));
+      function chopName(s) {
+        const title = String((s && s.title) || "").trim();
+        if (title) return title;
+        const k = "import.type." + (s && s.type);
+        const lbl = t(k);
+        return lbl !== k ? lbl : t("side.untitled");
+      }
+      /* A section compared as it stands, leaving out the number —
+         renumbering by later structural edits is not the writer's
+         change to that section. */
+      const chopSig = (s) => { if (!s) return ""; const c = Object.assign({}, s); delete c.number; return JSON.stringify(c); };
+      /* Chapter numbers: a book whose chapters are numbered 1..n in
+         order stays so after any operation (the import's own rule,
+         widened to the styles writers use: 1 2 3, I II III, i ii iii,
+         and English number words One / ONE / one — Beuk's own
+         pattern match, nothing more). A book numbered any other way
+         keeps every number the writer gave it. */
+      const chopChapters = () => state.sections.filter((s) => s.type === "chapter");
+      const CHOP_ONES = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+      const CHOP_TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+      const chopWord = (n) => (n < 20 ? CHOP_ONES[n] : n < 100 ? CHOP_TENS[Math.floor(n / 10)] + (n % 10 ? "-" + CHOP_ONES[n % 10] : "") : String(n));
+      function chopRoman(n) {
+        const r = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+        let out = ""; r.forEach(([v, s]) => { while (n >= v) { out += s; n -= v; } }); return out;
+      }
+      const CHOP_STYLES = [
+        (n) => String(n), (n) => chopRoman(n), (n) => chopRoman(n).toLowerCase(),
+        (n) => chopWord(n).charAt(0).toUpperCase() + chopWord(n).slice(1),
+        (n) => chopWord(n).split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-"),
+        (n) => chopWord(n).toUpperCase(), (n) => chopWord(n)
+      ];
+      function chopNumberStyle() {
+        const ch = chopChapters();
+        return CHOP_STYLES.find((f) => ch.every((c, i) => String(c.number) === f(i + 1))) || null;
+      }
+      function chopNumbers() { const m = {}; chopChapters().forEach((c) => { m[c.id] = String(c.number || ""); }); return m; }
+      function chopInsertAt(sec, anchor) {
+        let at = -1;
+        if (anchor.prevId) { const p = state.sections.findIndex((s) => s.id === anchor.prevId); if (p >= 0) at = p + 1; }
+        if (at < 0 && anchor.nextId) { const p = state.sections.findIndex((s) => s.id === anchor.nextId); if (p >= 0) at = p; }
+        if (at < 0) at = Math.min(Math.max(0, anchor.idx), state.sections.length);
+        state.sections.splice(at, 0, sec);
+      }
+      function chopAnchor(i) {
+        return { idx: i, prevId: i > 0 ? state.sections[i - 1].id : null, nextId: state.sections[i + 1] ? state.sections[i + 1].id : null };
+      }
+      /* Blocks of a section's text, parted into the running text and
+         the note definitions ([^n]: …), which the typesetter gathers
+         from anywhere in the section. */
+      const CHOP_DEF_RE = /^\[\^?(\d{1,3})\]:/;
+      const chopBlockText = (b) => b.text.replace(/^\s*\n|\n\s*$/g, "");
+      function chopLabels(text, refsOnly) {
+        const out = new Set();
+        String(text || "").split(/\n\s*\n/).forEach((blk) => {
+          const isDef = CHOP_DEF_RE.test(blk.trim());
+          if (refsOnly && isDef) return;
+          (blk.match(/\[\^?(\d{1,3})\]/g) || []).forEach((m) => out.add(m.replace(/[^0-9]/g, "")));
+        });
+        return out;
+      }
+      const chopBreaks = (blocks) => blocks.filter((tx) => SCENE_BREAK_BLOCK_RE.test(tx.trim())).length;
+      function chopCommit(activeId) {
+        wlogRebase = true; /* structure moved, nothing was written: the habit log rebases */
+        if (activeId && activeId !== state.activeId && state.sections.some((s) => s.id === activeId)) {
+          if (typeof raStop === "function") raStop();
+          if (typeof dictDiscard === "function") dictDiscard();
+          state.activeId = activeId;
+        }
+        if (!state.sections.some((s) => s.id === state.activeId) && state.sections.length) state.activeId = state.sections[0].id;
+        noteBookEdited();
+        renderSidebar(); syncEditor(); renderPreview(); updateStats(); refreshExportTree();
+        if (typeof betaRenderComments === "function") { try { betaRenderComments(); } catch (e) {} }
+      }
+      function chopFocusAfter() {
+        const row = document.querySelector("#structureList .sec-item.active");
+        if (row && row.offsetParent) row.focus();
+      }
+      /* The one shared path: snapshot, change, offer Undo. */
+      function chopRun(spec) {
+        /* The editor writes every keystroke into the section (initEditor),
+           so the model is current here — nothing is read back from the
+           textarea, which could only ever be older. */
+        chopCloseMenu(false);
+        const pre = { activeId: state.activeId, numbers: chopNumbers(), style: chopNumberStyle(), epoch: chopEpoch };
+        const snap = takeSnapshot("", "chapterop");
+        snap.chop = { op: spec.op, a: spec.a || "", b: spec.b || "" };
+        const data = spec.apply();
+        if (!data) { state.history = (state.history || []).filter((h) => h !== snap); return null; }
+        if (pre.style) chopChapters().forEach((c, i) => { c.number = pre.style(i + 1); });
+        if (spec.settle) spec.settle(data);
+        const rec = { op: spec.op, snapId: snap.id, snapLabel: snapshotLabel(snap), pre: pre, post: { numbers: chopNumbers() }, data: data, undo: spec.undo, done: false, toastEl: null };
+        chopLastRec = rec;
+        chopCommit(data.activeId);
+        const el = toast(spec.msg, spec.icon, { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => chopUndo(rec), onGone: chopFocusAfter });
+        if (el) {
+          el.setAttribute("data-chop", spec.op);
+          rec.toastEl = el;
+          if (spec.focusUndo) { const b = el.querySelector(".toast-action"); if (b) b.focus(); }
+        }
+        return rec;
+      }
+      function chopUndo(rec) {
+        rec = rec || chopLastRec;
+        if (!rec || rec.done) return false;
+        if (rec.pre.epoch !== chopEpoch) { rec.done = true; return false; }
+        const res = rec.undo(rec.data);
+        if (res !== true) {
+          toast(t("chop.undoChanged", { name: res, snap: rec.snapLabel }), "history", { label: t("history.open"), ms: CHOP_TOAST_MS, onClick: () => { if (typeof openHistory === "function") openHistory(); } });
+          return false;
+        }
+        rec.done = true;
+        /* Every chapter whose number the operation set, and that no
+           one has renumbered since, gets its number back. */
+        chopChapters().forEach((c) => {
+          if (Object.prototype.hasOwnProperty.call(rec.pre.numbers, c.id) && rec.post.numbers[c.id] === String(c.number || "")) c.number = rec.pre.numbers[c.id];
+        });
+        if (rec.toastEl) rec.toastEl.remove();
+        chopCommit(rec.pre.activeId);
+        toast(t("chop.undone"), "undo-2");
+        return true;
+      }
+
+      /* ---- what each operation may do here ---- */
+      const chopGenerated = (s) => AUTO_TYPES.includes(s.type);
+      const chopCanDelete = (s) => !!s && s.kind === "body" && state.sections.length > 1;
+      const chopCanDuplicate = (s) => !!s && s.kind === "body" && s.type !== "part";
+      const chopCanSplitKind = (s) => !!s && !chopGenerated(s) && s.type !== "part";
+      function chopMergeWhy(s) {
+        if (!s) return t("chop.mergeNoNext");
+        if (chopGenerated(s)) return t("chop.mergeGenerated");
+        if (s.type === "part") return t("chop.mergePart");
+        const i = state.sections.findIndex((x) => x.id === s.id);
+        const n = state.sections[i + 1];
+        if (!n) return t("chop.mergeNoNext");
+        if (n.kind !== s.kind) return t("chop.mergeAcross", { group: n.kind === "front" ? t("side.groupFront") : n.kind === "body" ? t("side.groupBody") : t("side.groupBack") });
+        if (chopGenerated(n)) return t("chop.mergeGenerated");
+        if (n.type === "part") return t("chop.mergePart");
+        return "";
+      }
+      function chopCaret(s) {
+        const area = $("editorArea");
+        if (!area || !s || s.id !== state.activeId || editorSyncedSectionId !== s.id) return -1;
+        return area.selectionStart || 0;
+      }
+      /* Where the cut falls: the paragraph holding the cursor opens
+         the second part — or, with the cursor at a paragraph's very
+         end, the paragraph after it. A heading standing right at the
+         cut becomes the second part's title. Note definitions go
+         with the text that cites them (to both parts when both do);
+         one cited nowhere stays on its own side of the cut. Scene
+         images keep their breaks. */
+      function chopSplitPlan(s, pos) {
+        if (!chopCanSplitKind(s) || pos < 0) return null;
+        const val = String(s.content || "");
+        const blocks = editorBlocks(val);
+        let c = -1;
+        for (let i = 0; i < blocks.length; i++) {
+          const b = blocks[i];
+          if (pos < b.start) { c = i; break; }
+          if (pos <= b.end) { c = (pos === b.end && pos > b.start && b.text.trim()) ? i + 1 : i; break; }
+        }
+        if (c < 0) return null;
+        const part1 = [], part2 = [], defs = [];
+        blocks.forEach((b, i) => {
+          const tx = chopBlockText(b);
+          if (!tx.trim()) return;
+          if (CHOP_DEF_RE.test(tx.trim())) defs.push({ tx: tx, i: i, label: tx.trim().match(CHOP_DEF_RE)[1] });
+          else (i < c ? part1 : part2).push(tx);
+        });
+        if (!part1.length || !part2.length) return null;
+        const k = chopBreaks(part1);
+        let title = t("chop.splitTitle", { title: chopName(s) }), lifted = false;
+        const hm = part2[0].trim().match(/^#{1,2}\s+(.+)$/);
+        if (hm && part2[0].trim().indexOf("\n") === -1) { title = hm[1].trim(); part2.shift(); lifted = true; }
+        const r1 = chopLabels(part1.join("\n\n"), true), r2 = chopLabels(part2.join("\n\n"), true);
+        const d1 = [], d2 = [];
+        defs.forEach((d) => {
+          const in1 = r1.has(d.label), in2 = r2.has(d.label);
+          if (in1) d1.push(d.tx);
+          if (in2) d2.push(d.tx);
+          if (!in1 && !in2) (d.i < c ? d1 : d2).push(d.tx);
+        });
+        const scenes = normalizeScenes(s.scenes);
+        return {
+          c1: part1.concat(d1).join("\n\n"), c2: part2.concat(d2).join("\n\n"), title: title, lifted: lifted,
+          sc1: scenes.filter((x) => x.at < k),
+          sc2: scenes.filter((x) => x.at >= k).map((x) => Object.assign({}, x, { at: x.at - k }))
+        };
+      }
+      function chopSplitWhy(s) {
+        if (!chopCanSplitKind(s)) return t("chop.splitNeedsCaret");
+        if (s.id !== state.activeId) return t("chop.splitNeedsActive");
+        return chopSplitPlan(s, chopCaret(s)) ? "" : t("chop.splitNeedsCaret");
+      }
+
+      /* ---- the four operations ---- */
+      function chopDelete(id, opts) {
+        const s = state.sections.find((x) => x.id === id);
+        if (!s) return null;
+        if (!chopCanDelete(s)) { if (s.kind === "body") toast(t("chop.keepOne"), "alert-triangle"); return null; }
+        const name = chopName(s);
+        return chopRun({
+          op: "delete", a: name, icon: "trash-2", msg: t("chop.deleted", { name: name }), focusUndo: !!(opts && opts.focusUndo),
+          apply() {
+            const i = state.sections.findIndex((x) => x.id === id);
+            if (i < 0) return null;
+            const d = { sec: chopClone(state.sections[i]), anchor: chopAnchor(i), activeId: state.activeId };
+            state.sections.splice(i, 1);
+            if (state.activeId === id) { const next = state.sections[Math.min(i, state.sections.length - 1)]; d.activeId = next ? next.id : null; }
+            return d;
+          },
+          undo(d) {
+            if (!state.sections.some((x) => x.id === d.sec.id)) chopInsertAt(chopClone(d.sec), d.anchor);
+            return true;
+          }
+        });
+      }
+      function chopDuplicate(id, opts) {
+        const s = state.sections.find((x) => x.id === id);
+        if (!chopCanDuplicate(s)) return null;
+        const name = chopName(s);
+        return chopRun({
+          op: "duplicate", a: name, icon: "copy-plus", msg: t("chop.duplicated", { name: name }), focusUndo: !!(opts && opts.focusUndo),
+          apply() {
+            const i = state.sections.findIndex((x) => x.id === id);
+            if (i < 0) return null;
+            const copy = chopClone(state.sections[i]);
+            copy.id = uid();
+            copy.title = t("chop.copyTitle", { title: name });
+            state.sections.splice(i + 1, 0, copy);
+            /* The audio script's per-section choice rides along; reader
+               comments live on the shelf under the original's id and
+               stay with the original. */
+            if (state.audio && state.audio.include && Object.prototype.hasOwnProperty.call(state.audio.include, id)) state.audio.include[copy.id] = state.audio.include[id];
+            return { copyId: copy.id, origId: id, activeId: copy.id };
+          },
+          settle(d) { d.copySig = chopSig(state.sections.find((x) => x.id === d.copyId)); },
+          undo(d) {
+            const i = state.sections.findIndex((x) => x.id === d.copyId);
+            if (i < 0) return true;
+            if (chopSig(state.sections[i]) !== d.copySig) return chopName(state.sections[i]);
+            state.sections.splice(i, 1);
+            if (state.audio && state.audio.include) delete state.audio.include[d.copyId];
+            return true;
+          }
+        });
+      }
+      function chopSplit(id, pos, opts) {
+        const s = state.sections.find((x) => x.id === id);
+        if (!s) return null;
+        const plan = chopSplitPlan(s, pos == null ? chopCaret(s) : pos);
+        if (!plan) return null;
+        const name = chopName(s);
+        return chopRun({
+          op: "split", a: name, icon: "scissors", msg: t("chop.splitDone", { name: name }), focusUndo: !!(opts && opts.focusUndo),
+          apply() {
+            const i = state.sections.findIndex((x) => x.id === id);
+            if (i < 0) return null;
+            const a = state.sections[i];
+            const d = { before: chopClone(a), aId: a.id };
+            const b = Object.assign(chopClone(a), {
+              id: uid(), title: plan.title, subtitle: "", content: plan.c2, scenes: plan.sc2,
+              plateId: null, plateAlt: "", backdropId: null, htLine1: null, htLine2: "", tocHeading: null
+            });
+            a.content = plan.c1; a.scenes = plan.sc1;
+            state.sections.splice(i + 1, 0, b);
+            d.bId = b.id; d.activeId = b.id;
+            return d;
+          },
+          settle(d) {
+            d.aSig = chopSig(state.sections.find((x) => x.id === d.aId));
+            d.bSig = chopSig(state.sections.find((x) => x.id === d.bId));
+          },
+          undo(d) {
+            const ai = state.sections.findIndex((x) => x.id === d.aId), bi = state.sections.findIndex((x) => x.id === d.bId);
+            if (ai < 0) return chopName(d.before);
+            if (chopSig(state.sections[ai]) !== d.aSig) return chopName(state.sections[ai]);
+            if (bi >= 0 && chopSig(state.sections[bi]) !== d.bSig) return chopName(state.sections[bi]);
+            const restored = chopClone(d.before);
+            restored.number = state.sections[ai].number;
+            state.sections[ai] = restored;
+            if (bi >= 0) state.sections.splice(state.sections.findIndex((x) => x.id === d.bId), 1);
+            return true;
+          }
+        });
+      }
+      function chopMergePlan(a, b) {
+        const aLab = chopLabels(a.content, false), bLab = chopLabels(b.content, false);
+        let next = Math.max(0, ...[...aLab, ...bLab].map((x) => parseInt(x, 10)).filter((x) => !isNaN(x))) + 1;
+        const map = {};
+        [...bLab].sort((x, y) => parseInt(x, 10) - parseInt(y, 10)).forEach((l) => { if (aLab.has(l)) map[l] = String(next++); });
+        const bText = String(b.content || "").replace(/\[(\^?)(\d{1,3})\]/g, (m, c, d) => (map[d] ? "[" + c + map[d] + "]" : m));
+        const split = (text) => {
+          const body = [], defs = [];
+          editorBlocks(String(text || "")).forEach((blk) => { const tx = chopBlockText(blk); if (!tx.trim()) return; (CHOP_DEF_RE.test(tx.trim()) ? defs : body).push(tx); });
+          return { body, defs };
+        };
+        const A = split(a.content), B = split(bText);
+        const joined = A.body.length && B.body.length;
+        const k = chopBreaks(A.body) + (joined ? 1 : 0);
+        const content = A.body.concat(joined ? ["***"] : [], B.body, A.defs, B.defs).join("\n\n");
+        const scenes = normalizeScenes(normalizeScenes(a.scenes).concat(normalizeScenes(b.scenes).map((x) => Object.assign({}, x, { at: x.at + k }))));
+        return { content: content, scenes: scenes, relabelled: Object.keys(map).length };
+      }
+      function chopMerge(id, opts) {
+        const a = state.sections.find((x) => x.id === id);
+        if (!a || chopMergeWhy(a)) return null;
+        const b = state.sections[state.sections.indexOf(a) + 1];
+        const an = chopName(a), bn = chopName(b);
+        return chopRun({
+          op: "merge", a: an, b: bn, icon: "merge", msg: t("chop.merged", { a: an, b: bn }), focusUndo: !!(opts && opts.focusUndo),
+          apply() {
+            const i = state.sections.findIndex((x) => x.id === id);
+            const A = state.sections[i], B = state.sections[i + 1];
+            if (!A || !B || B.id !== b.id) return null;
+            const plan = chopMergePlan(A, B);
+            const d = { aBefore: chopClone(A), bSec: chopClone(B), aId: A.id, activeId: state.activeId === B.id ? A.id : state.activeId };
+            A.content = plan.content; A.scenes = plan.scenes;
+            state.sections.splice(i + 1, 1);
+            return d;
+          },
+          settle(d) { d.aSig = chopSig(state.sections.find((x) => x.id === d.aId)); },
+          undo(d) {
+            const ai = state.sections.findIndex((x) => x.id === d.aId);
+            if (ai < 0) return chopName(d.aBefore);
+            if (chopSig(state.sections[ai]) !== d.aSig) return chopName(state.sections[ai]);
+            const restored = chopClone(d.aBefore);
+            restored.number = state.sections[ai].number;
+            state.sections[ai] = restored;
+            if (!state.sections.some((x) => x.id === d.bSec.id)) state.sections.splice(ai + 1, 0, chopClone(d.bSec));
+            return true;
+          }
+        });
+      }
+
+      /* ---- the row's action menu ---- */
+      function chopMenuItems(s) {
+        const items = [];
+        if (!s || chopGenerated(s)) return items;
+        if (chopCanDuplicate(s)) items.push({ act: "dup", icon: "copy-plus", label: t("chop.duplicate"), why: "" });
+        if (chopCanSplitKind(s)) items.push({ act: "split", icon: "scissors", label: t("chop.split"), why: chopSplitWhy(s) });
+        items.push({ act: "merge", icon: "merge", label: t("chop.merge"), why: chopMergeWhy(s) });
+        if (chopCanDelete(s)) items.push({ act: "del", icon: "trash-2", label: t("chop.delete"), why: "", danger: true });
+        return items;
+      }
+      function chopRowButton(s) {
+        if (!chopMenuItems(s).length) return "";
+        return '<button type="button" class="mini chop-more" data-act="more" aria-haspopup="menu" aria-expanded="false" title="' + esc(t("chop.more")) +
+          '" aria-label="' + esc(t("chop.moreFor", { name: chopName(s) })) + '"><i data-lucide="ellipsis"></i></button>';
+      }
+      function chopMenuEl() {
+        let m = $("chopMenu");
+        if (m) return m;
+        m = document.createElement("div");
+        m.id = "chopMenu"; m.className = "chop-menu"; m.setAttribute("role", "menu"); m.hidden = true;
+        document.body.appendChild(m);
+        m.addEventListener("click", (ev) => {
+          const it = ev.target.closest("[data-chop-act]"); if (!it) return;
+          chopMenuPick(it, ev.detail === 0);
+        });
+        m.addEventListener("keydown", (ev) => {
+          const items = Array.prototype.slice.call(m.querySelectorAll("[role=menuitem]"));
+          const i = items.indexOf(document.activeElement);
+          if (ev.key === "ArrowDown" || ev.key === "ArrowUp") { ev.preventDefault(); const n = items.length; items[(i + (ev.key === "ArrowDown" ? 1 : n - 1)) % n].focus(); }
+          else if (ev.key === "Home" || ev.key === "End") { ev.preventDefault(); items[ev.key === "Home" ? 0 : items.length - 1].focus(); }
+          else if (ev.key === "Escape") { ev.preventDefault(); chopCloseMenu(true); }
+          else if (ev.key === "Tab") { chopCloseMenu(false); }
+        });
+        document.addEventListener("pointerdown", (ev) => {
+          if (m.hidden) return;
+          if (m.contains(ev.target) || (ev.target.closest && ev.target.closest('[data-act="more"]'))) return;
+          chopCloseMenu(false);
+        }, true);
+        window.addEventListener("resize", () => chopPlaceMenu());
+        const sc = $("structureScroll"); if (sc) sc.addEventListener("scroll", () => chopPlaceMenu(), { passive: true });
+        return m;
+      }
+      function chopTrigger(id) { return document.querySelector('#structureList .sec-item[data-sec="' + id + '"] [data-act="more"]'); }
+      function chopCloseMenu(refocus) {
+        const m = $("chopMenu");
+        if (!m || m.hidden) { chopMenuFor = null; return; }
+        m.hidden = true;
+        const trig = chopMenuFor ? chopTrigger(chopMenuFor) : null;
+        if (trig) { trig.setAttribute("aria-expanded", "false"); const row = trig.closest(".sec-item"); if (row) row.classList.remove("chop-open"); }
+        if (refocus && trig) trig.focus();
+        chopMenuFor = null;
+      }
+      function chopOpenMenu(id, viaKeyboard) {
+        const s = state.sections.find((x) => x.id === id);
+        const trig = chopTrigger(id);
+        if (!s || !trig) return;
+        if (chopMenuFor === id) { chopCloseMenu(true); return; }
+        chopCloseMenu(false);
+        const m = chopMenuEl();
+        const items = chopMenuItems(s);
+        m.setAttribute("aria-label", t("chop.moreFor", { name: chopName(s) }));
+        m.innerHTML = items.map((it, i) =>
+          (it.danger && i ? '<div class="chop-sep" role="separator"></div>' : "") +
+          '<button type="button" role="menuitem" class="chop-item' + (it.danger ? " danger" : "") + '" data-chop-act="' + it.act + '"' +
+          (it.why ? ' aria-disabled="true" title="' + esc(it.why) + '" aria-describedby="chopWhy-' + it.act + '"' : "") + ">" +
+          '<i data-lucide="' + it.icon + '"></i><span>' + esc(it.label) + "</span>" +
+          (it.why ? '<span class="chop-why" id="chopWhy-' + it.act + '">' + esc(it.why) + "</span>" : "") + "</button>").join("");
+        m.hidden = false;
+        icons();
+        chopMenuFor = id;
+        chopPlaceMenu();
+        const first = m.querySelector('[role=menuitem]:not([aria-disabled="true"])') || m.querySelector("[role=menuitem]");
+        if (first && viaKeyboard !== false) first.focus();
+        else if (first) first.focus({ preventScroll: true });
+      }
+      /* Placed against its trigger, on the inline-end side, kept inside
+         the window at any width; it follows the row when the outline
+         scrolls or re-renders, and closes only when the row is gone. */
+      function chopPlaceMenu() {
+        const m = $("chopMenu");
+        if (!m || m.hidden || !chopMenuFor) return;
+        const trig = chopTrigger(chopMenuFor);
+        if (!trig) { chopCloseMenu(false); return; }
+        trig.setAttribute("aria-expanded", "true");
+        const row = trig.closest(".sec-item"); if (row) row.classList.add("chop-open");
+        const r = trig.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
+        const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+        const rtl = document.documentElement.getAttribute("dir") === "rtl";
+        let left = rtl ? r.left : r.right - w;
+        left = Math.max(8, Math.min(left, vw - w - 8));
+        let top = r.bottom + 4;
+        if (top + h > vh - 8) top = Math.max(8, r.top - h - 4);
+        m.style.left = left + "px"; m.style.top = top + "px";
+      }
+      function chopMenuPick(it, viaKeyboard) {
+        const id = chopMenuFor, act = it.getAttribute("data-chop-act");
+        if (it.getAttribute("aria-disabled") === "true") {
+          /* Refused, said plainly — on a touch screen there is no hover to read the reason from. */
+          toast(it.getAttribute("title") || "", "info");
+          return;
+        }
+        chopCloseMenu(false);
+        const opts = { focusUndo: true };
+        if (act === "del") chopDelete(id, opts);
+        else if (act === "dup") chopDuplicate(id, opts);
+        else if (act === "split") chopSplit(id, null, opts);
+        else if (act === "merge") chopMerge(id, opts);
+      }
+      /* For the self-checks, and for anyone scripting the studio. */
+      window.beukChapters = {
+        del: (id) => chopDelete(id), duplicate: (id) => chopDuplicate(id), split: (id, pos) => chopSplit(id, pos), merge: (id) => chopMerge(id),
+        undo: (rec) => chopUndo(rec), last: () => chopLastRec, mergeWhy: (id) => chopMergeWhy(state.sections.find((x) => x.id === id)),
+        splitPlan: (id, pos) => chopSplitPlan(state.sections.find((x) => x.id === id), pos), menu: (id) => chopOpenMenu(id), closeMenu: () => chopCloseMenu(false)
+      };
+      /* ==== /BEUK:chapterops ==== */
       function updateStats() {
         const included = state.sections.filter((s) => s.included);
         const total = included.reduce((n, s) => n + sectionWords(s), 0);
@@ -19534,6 +20058,7 @@
          except before a whole-book restore, which always takes its
          snapshot, because its confirmation says so (BEUK:shelfguard). */
       const HISTORY_AUTO_CAP = 10;
+      const CHOP_SNAP_CAP = 5; /* BEUK:chapterops — snapshots taken before a delete, duplicate, split or merge */
       function normalizeHistory(list) {
         if (!Array.isArray(list)) return [];
         const out = [];
@@ -19542,11 +20067,15 @@
           out.push({
             id: typeof e.id === "string" && e.id ? e.id : uid(),
             name: typeof e.name === "string" ? e.name : "",
-            auto: ["import", "sample", "restore", "conflict", "bookid", "backup", "sampleupdate"].indexOf(e.auto) !== -1 ? e.auto : null, /* BEUK:bookid — "bookid"; BEUK:sidebar — "backup" (was dropped on reload) and "sampleupdate" */
+            auto: ["import", "sample", "restore", "conflict", "bookid", "backup", "sampleupdate", "chapterop"].indexOf(e.auto) !== -1 ? e.auto : null, /* BEUK:bookid — "bookid"; BEUK:sidebar — "backup" (was dropped on reload) and "sampleupdate"; BEUK:chapterops — "chapterop" */
             at: typeof e.at === "string" ? e.at : new Date(0).toISOString(),
             words: Math.max(0, Math.floor(Number(e.words) || 0)),
             doc: e.doc
           });
+          /* BEUK:chapterops — which operation the snapshot preceded, and the section names it names (absent on every other kind) */
+          const ch = e.auto === "chapterop" && e.chop && typeof e.chop === "object" ? e.chop : null;
+          if (ch && ["delete", "duplicate", "split", "merge"].indexOf(ch.op) !== -1)
+            out[out.length - 1].chop = { op: ch.op, a: String(ch.a == null ? "" : ch.a).slice(0, 300), b: String(ch.b == null ? "" : ch.b).slice(0, 300) };
         });
         return out;
       }
@@ -19558,9 +20087,13 @@
       }
       function pruneAutoSnapshots() {
         let seen = 0, changed = false;
+        let chopSeen = 0; /* BEUK:chapterops — structural edits keep their own most recent CHOP_SNAP_CAP, so a run of them never pushes an import or restore safety net out */
         const kept = [];
         (state.history || []).forEach((s) => {
-          if (s && s.auto) {
+          if (s && s.auto === "chapterop") {
+            chopSeen++;
+            if (chopSeen > CHOP_SNAP_CAP) { changed = true; return; }
+          } else if (s && s.auto) {
             seen++;
             if (seen > HISTORY_AUTO_CAP) { changed = true; return; }
           }
@@ -19696,6 +20229,8 @@
       let histPeekId = null;
       function snapshotLabel(s) {
         if (s.name) return s.name;
+        if (s.auto === "chapterop" && s.chop && s.chop.op) /* BEUK:chapterops — worded live, in the interface's language */
+          return t("history.auto.chop" + s.chop.op.charAt(0).toUpperCase() + s.chop.op.slice(1), { name: s.chop.a, a: s.chop.a, b: s.chop.b });
         if (s.auto) return t("history.auto." + s.auto);
         return t("history.unnamed");
       }
@@ -31008,6 +31543,7 @@
         state.dictation = dictNormalize(doc.dictation);
         /* BEUK:bookid — every arrival (local restore, shelf, backup file, conflict, snapshot) passes here: a pre-UUID id migrates now, once, after History has its snapshot. */
         bookIdMigrateDesk();
+        if (typeof chopBookArrived === "function") chopBookArrived(); /* BEUK:chapterops — a pending Undo belongs to the book it was offered on */
         state.page = 1;
         const isBox = $("importSummary"); if (isBox) isBox.style.display = "none";
         renderSidebar(); syncEditor(); renderStudio(); syncStudioControls();
@@ -39628,6 +40164,246 @@
           } }
       );
       /* ==== /BEUK:reader ==== */
+      /* ==== BEUK:chapterops ==== — section operations: delete with Undo + snapshot, duplicate, split at the cursor, merge with the next */
+      function chopCheckRun(fn) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+        try { return fn(); }
+        finally {
+          if (typeof closeHistory === "function") { try { closeHistory(); } catch (e) {} }
+          chopCloseMenu(false);
+          applyBookDoc(keepDoc);
+          streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay;
+          saveStreak(); renderStreak();
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+        }
+      }
+      function chopCheckFixture() {
+        applyBookDoc(buildEmptyBook());
+        state.history = [];
+        state.images = [{ id: "chopimg1", name: "lamp.png", mediaType: "image/png", data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" }];
+        const fw = mkSection("front", "foreword", "Foreword", { content: "A word first." });
+        const c1 = mkSection("body", "chapter", "Harbour", { number: "1", content: "Alpha one.\n\nAlpha two." });
+        const c2 = mkSection("body", "chapter", "Lantern", { number: "2", content: "Bravo opens.[^1]\n\n***\n\n![A lamp](img:chopimg1)\n\nBravo closes.\n\n[^1]: Bravo's note.",
+          dropCap: false, smallCaps: false, plateId: "chopimg1", plateAlt: "A plate", backdropId: "chopimg1", backdropStrength: "strong",
+          scenes: [{ at: 0, imageId: "chopimg1", name: "Lamp", caption: "The lamp", alt: "A lamp" }] });
+        const c3 = mkSection("body", "chapter", "Tide", { number: "3", content: "Charlie text." });
+        const ab = mkSection("back", "about", "About the Author", { content: "Lives by the sea." });
+        state.sections = state.sections.filter((s) => s.kind === "front").concat([fw, c1, c2, c3], [ab]);
+        state.activeId = c2.id;
+        renderSidebar(); syncEditor(); updateStats();
+        return { fw, c1, c2, c3, ab };
+      }
+      const chopFind = (id) => state.sections.find((s) => s.id === id);
+      const chopNums = () => state.sections.filter((s) => s.type === "chapter").map((s) => s.number).join(",");
+      /* The book as serialized, applied back, and serialized again: the
+         sections and the active section come back unchanged. */
+      function chopRoundTrip() {
+        const d = JSON.parse(JSON.stringify(serializeBook()));
+        const before = JSON.stringify({ s: d.sections, a: d.activeId });
+        applyBookDoc(JSON.parse(JSON.stringify(d)));
+        const again = serializeBook();
+        return JSON.stringify({ s: again.sections, a: again.activeId }) === before;
+      }
+      SELF_CHECKS.push(
+        { id: "chapters.delete.undo-restores-exactly", feature: "chapters", name: "Deleting a section offers Undo; Undo puts it back at its exact place with its id, text, image references, notes, scene images and settings, restores the active section and the chapter numbers, and keeps edits made meanwhile",
+          run() {
+            return chopCheckRun(() => {
+              const f = chopCheckFixture();
+              const idx = state.sections.findIndex((s) => s.id === f.c2.id);
+              const c2json = JSON.stringify(f.c2);
+              const rec = window.beukChapters.del(f.c2.id);
+              const toastEl = rec && rec.toastEl;
+              const toastOk = !!toastEl && toastEl.textContent.indexOf(t("chop.deleted", { name: "Lantern" })) !== -1 && !!toastEl.querySelector(".toast-action") &&
+                toastEl.querySelector(".toast-action").textContent === t("chop.undo") && !!toastEl.closest("[aria-live]");
+              const goneOk = !!rec && !chopFind(f.c2.id) && state.activeId === f.c3.id && chopNums() === "1,2";
+              chopFind(f.c1.id).content += "\n\nA later line.";
+              const undone = window.beukChapters.undo(rec);
+              const back = state.sections[idx];
+              const exactOk = undone && !!back && JSON.stringify(back) === c2json;
+              const activeOk = state.activeId === f.c2.id;
+              const numsOk = chopNums() === "1,2,3";
+              const keptOk = chopFind(f.c1.id).content.slice(-13) === "A later line.";
+              const againOk = window.beukChapters.undo(rec) === false && state.sections.filter((s) => s.id === f.c2.id).length === 1;
+              const rtUndo = chopRoundTrip();
+              /* the last body chapter, deleted while active, and back */
+              const g = chopCheckFixture();
+              window.beukChapters.del(g.c1.id); window.beukChapters.del(g.c3.id);
+              state.activeId = g.c2.id;
+              const lastRec = window.beukChapters.del(g.c2.id);
+              const emptyOk = !!lastRec && !state.sections.some((s) => s.kind === "body") && state.sections.some((s) => s.id === state.activeId) &&
+                !!document.getElementById("btnAddChapter");
+              const rtOp = chopRoundTrip(); /* the deletion itself survives save and load */
+              const h = chopCheckFixture();
+              const rec3 = window.beukChapters.del(h.c2.id);
+              const lastBack = window.beukChapters.undo(rec3) && chopFind(h.c2.id) && state.activeId === h.c2.id;
+              /* numbered in words (the sample's style): the sequence holds, and Undo puts the words back */
+              const w = chopCheckFixture();
+              chopFind(w.c1.id).number = "One"; chopFind(w.c2.id).number = "Two"; chopFind(w.c3.id).number = "Three";
+              const recW = window.beukChapters.del(w.c1.id);
+              const wordsOk = chopNums() === "One,Two" && window.beukChapters.undo(recW) && chopNums() === "One,Two,Three";
+              const k = chopCheckFixture();
+              chopFind(k.c1.id).number = "7"; chopFind(k.c2.id).number = "12"; chopFind(k.c3.id).number = "";
+              window.beukChapters.del(k.c2.id);
+              const handOk = chopNums() === "7,";
+              return scVerdict(toastOk && goneOk && exactOk && activeOk && numsOk && keptOk && againOk && rtUndo && emptyOk && rtOp && lastBack && wordsOk && handOk,
+                "toast names the section with an Undo button inside the live region (" + toastOk + "); gone, the next section active, chapters renumbered 1,2 (" + goneOk + "); Undo restores the section byte-for-byte at index " + idx + " (" + exactOk + "), active again (" + activeOk + "), numbers 1,2,3 (" + numsOk + "), the edit made meanwhile kept (" + keptOk + "); a second Undo does nothing (" + againOk + "); round trip after Undo (" + rtUndo + "); deleting the last body chapter leaves an empty Body with Add chapter (" + emptyOk + ") and round-trips (" + rtOp + "); the active section's delete undone makes it active again (" + !!lastBack + "); a book numbered One, Two, Three stays in sequence and Undo restores it (" + wordsOk + "); hand-set numbers are left alone (" + handOk + ")");
+            });
+          } },
+        { id: "chapters.delete.snapshot-taken", feature: "chapters", name: "A delete first takes an automatic History snapshot, “Before deleting <name>” in the interface's language; it rides the book, restores, and structural snapshots keep their own five without pushing out other automatic ones",
+          run() {
+            return chopCheckRun(() => {
+              const f = chopCheckFixture();
+              const imp = takeSnapshot("", "import");
+              const rec = window.beukChapters.del(f.c2.id);
+              const snap = state.history[0];
+              const snapOk = !!snap && snap.id === rec.snapId && snap.auto === "chapterop" && snap.chop && snap.chop.op === "delete" && snap.chop.a === "Lantern" &&
+                snapshotLabel(snap) === t("history.auto.chopDelete", { name: "Lantern" }) &&
+                snap.doc.sections.some((s) => s.id === f.c2.id && s.content === f.c2.content) && !("history" in snap.doc);
+              const persisted = normalizeHistory(JSON.parse(JSON.stringify(state.history)))[0];
+              const rideOk = !!persisted && persisted.auto === "chapterop" && persisted.chop.op === "delete" && snapshotLabel(persisted) === snapshotLabel(snap);
+              openHistory();
+              const listOk = $("historyList").textContent.indexOf(snapshotLabel(snap)) !== -1;
+              closeHistory();
+              const restoreOk = window.beukHistory.restore(snap.id) && !!chopFind(f.c2.id) && chopFind(f.c2.id).content === f.c2.content;
+              /* seven more structural edits: five structural snapshots stay, the import one too */
+              const g = chopCheckFixture();
+              state.history = [imp];
+              for (let i = 0; i < 7; i++) window.beukChapters.duplicate(g.c1.id);
+              const chops = state.history.filter((h) => h.auto === "chapterop").length;
+              const pruneOk = chops === CHOP_SNAP_CAP && state.history.some((h) => h.id === imp.id);
+              return scVerdict(snapOk && rideOk && listOk && restoreOk && pruneOk,
+                "snapshot taken before the delete, labelled “" + snapshotLabel(snap) + "”, holding the section (" + snapOk + "); survives the book's save path with its label (" + rideOk + "); listed in History (" + listOk + "); restoring it brings the section back (" + restoreOk + "); after 7 more operations " + chops + " structural snapshots kept and the import snapshot still there (" + pruneOk + ")");
+            });
+          } },
+        { id: "chapters.duplicate.deep-copy", feature: "chapters", name: "Duplicate inserts a deep copy right after the original — new id, “<title> (copy)”, same text, image references and settings — selects it, renumbers, and Undo removes it (refusing if the copy was since edited)",
+          run() {
+            return chopCheckRun(() => {
+              const f = chopCheckFixture();
+              const idx = state.sections.findIndex((s) => s.id === f.c2.id);
+              const origJson = JSON.stringify(f.c2);
+              const rec = window.beukChapters.duplicate(f.c2.id);
+              const copy = state.sections[idx + 1];
+              const placeOk = !!rec && !!copy && copy.id !== f.c2.id && copy.title === t("chop.copyTitle", { title: "Lantern" }) && state.activeId === copy.id;
+              const sameOk = copy.content === f.c2.content && copy.plateId === "chopimg1" && copy.backdropId === "chopimg1" && copy.backdropStrength === "strong" &&
+                copy.dropCap === false && copy.smallCaps === false && JSON.stringify(copy.scenes) === JSON.stringify(f.c2.scenes);
+              const numsOk = chopNums() === "1,2,3,4" && copy.number === "3" && chopFind(f.c3.id).number === "4";
+              copy.scenes[0].caption = "Changed on the copy";
+              const deepOk = chopFind(f.c2.id).scenes[0].caption === "The lamp" && JSON.stringify(chopFind(f.c2.id)) === origJson;
+              copy.scenes[0].caption = "The lamp";
+              const snapOk = state.history[0].chop.op === "duplicate" && snapshotLabel(state.history[0]) === t("history.auto.chopDuplicate", { name: "Lantern" });
+              const undoOk = window.beukChapters.undo(rec) && !chopFind(copy.id) && chopNums() === "1,2,3" && state.activeId === f.c2.id;
+              const rtUndo = chopRoundTrip();
+              const g = chopCheckFixture();
+              const rec2 = window.beukChapters.duplicate(g.c2.id);
+              const copy2 = state.sections[state.sections.findIndex((s) => s.id === g.c2.id) + 1];
+              const rtOp = chopRoundTrip();
+              const h = chopCheckFixture();
+              const rec3 = window.beukChapters.duplicate(h.c2.id);
+              const copy3 = state.sections[state.sections.findIndex((s) => s.id === h.c2.id) + 1];
+              copy3.content += "\n\nNew words in the copy.";
+              const refuseOk = window.beukChapters.undo(rec3) === false && !!chopFind(copy3.id);
+              return scVerdict(placeOk && sameOk && numsOk && deepOk && snapOk && undoOk && rtUndo && !!rec2 && !!copy2 && rtOp && refuseOk,
+                "copy right after the original, new id, titled “" + (copy && copy.title) + "”, selected (" + placeOk + "); same text, plate, backdrop, drop-cap/small-caps and scene images (" + sameOk + "); chapters renumbered 1–4 (" + numsOk + "); a true deep copy (" + deepOk + "); snapshot “" + snapshotLabel(state.history[0] || {}) + "” (" + snapOk + "); Undo removes it and restores numbers and selection (" + undoOk + "); round trips after Undo (" + rtUndo + ") and after the duplicate (" + rtOp + "); Undo refuses once the copy has new words (" + refuseOk + ")");
+            });
+          } },
+        { id: "chapters.split.at-caret", feature: "chapters", name: "Split at cursor cuts the active section at the cursor's paragraph: the second part takes the heading at the cut as its title (else “<title> (2)”), note definitions follow the text that cites them, images and scene images stay with their paragraphs; Undo restores it exactly",
+          run() {
+            return chopCheckRun(() => {
+              const f = chopCheckFixture();
+              const a = chopFind(f.c2.id);
+              a.content = "Para one.[^1]\n\nPara two.\n\n***\n\n# The Turn\n\nPara three.[^2]\n\n![A lamp](img:chopimg1)\n\n[^1]: Note one.\n\n[^2]: Note two.";
+              a.scenes = [{ at: 0, imageId: "chopimg1", name: "", caption: "", alt: "A lamp" }];
+              state.activeId = a.id; syncEditor();
+              const before = JSON.stringify(a);
+              const area = $("editorArea");
+              const atCaret = a.content.indexOf("# The Turn") + 4;
+              area.setSelectionRange(atCaret, atCaret);
+              const menuWhyOk = chopSplitWhy(a) === "" && chopSplitWhy(chopFind(f.c1.id)) === t("chop.splitNeedsActive");
+              const edgeOk = !window.beukChapters.splitPlan(a.id, 0) && !window.beukChapters.splitPlan(a.id, a.content.length);
+              const rec = window.beukChapters.split(a.id);
+              const i = state.sections.findIndex((s) => s.id === a.id);
+              const b = state.sections[i + 1];
+              const firstOk = !!rec && chopFind(a.id).content === "Para one.[^1]\n\nPara two.\n\n***\n\n[^1]: Note one." && chopFind(a.id).scenes.length === 1 && chopFind(a.id).title === "Lantern";
+              const secondOk = !!b && b.title === "The Turn" && b.content === "Para three.[^2]\n\n![A lamp](img:chopimg1)\n\n[^2]: Note two." && b.scenes.length === 0 &&
+                b.type === "chapter" && b.kind === "body" && b.dropCap === false && !b.plateId && state.activeId === b.id;
+              const numsOk = chopNums() === "1,2,3,4" && b.number === "3";
+              const htmlOk = sectionHtml(b, false).indexOf("Note two") !== -1 && sectionHtml(chopFind(a.id), false).indexOf("Note one") !== -1;
+              const snapOk = snapshotLabel(state.history[0]) === t("history.auto.chopSplit", { name: "Lantern" });
+              const undoOk = window.beukChapters.undo(rec) && JSON.stringify(chopFind(a.id)) === before && !chopFind(b.id) && chopNums() === "1,2,3" && state.activeId === a.id;
+              const rtUndo = chopRoundTrip();
+              /* mid-paragraph, no heading: the paragraph opens the second part, titled “Lantern (2)” */
+              const g = chopCheckFixture();
+              const ga = chopFind(g.c2.id);
+              const plan = window.beukChapters.splitPlan(ga.id, ga.content.indexOf("Bravo closes.") + 3);
+              const midOk = !!plan && plan.title === t("chop.splitTitle", { title: "Lantern" }) && plan.c2 === "Bravo closes." &&
+                plan.c1 === "Bravo opens.[^1]\n\n***\n\n![A lamp](img:chopimg1)\n\n[^1]: Bravo's note." && plan.sc1.length === 1 && plan.sc2.length === 0;
+              const rec2 = window.beukChapters.split(ga.id, ga.content.indexOf("Bravo closes.") + 3);
+              const rtOp = !!rec2 && chopRoundTrip();
+              return scVerdict(menuWhyOk && edgeOk && firstOk && secondOk && numsOk && htmlOk && snapOk && undoOk && rtUndo && midOk && rtOp,
+                "offered on the active section only (" + menuWhyOk + "); refused with the cursor at the very start or end (" + edgeOk + "); first part keeps its text, its note and its scene image (" + firstOk + "); second part titled by the heading at the cut, carries its note definition and image, selected (" + secondOk + "); renumbered (" + numsOk + "); both typeset their own notes (" + htmlOk + "); snapshot “" + snapshotLabel(state.history[0] || {}) + "” (" + snapOk + "); Undo restores exactly (" + undoOk + "); round trips after Undo (" + rtUndo + ") and after a split (" + rtOp + "); a mid-paragraph cut opens the second part at that paragraph, titled “" + (plan && plan.title) + "” (" + midOk + ")");
+            });
+          } },
+        { id: "chapters.merge.scene-break", feature: "chapters", name: "Merge with next joins two sections with the studio's scene break (***), keeps the first's title and settings, renumbers clashing notes so each keeps its own text, shifts scene images to their breaks; Undo restores both exactly",
+          run() {
+            return chopCheckRun(() => {
+              const f = chopCheckFixture();
+              const a = chopFind(f.c1.id), b = chopFind(f.c2.id);
+              a.content = "Alpha one.[^1]\n\n[^1]: A-note.";
+              b.content = "Bravo.[^1]\n\n***\n\nBravo two.\n\n[^1]: B-note.";
+              const aJson = JSON.stringify(a), bJson = JSON.stringify(b);
+              state.activeId = b.id; syncEditor();
+              const whyOk = window.beukChapters.mergeWhy(a.id) === "";
+              const rec = window.beukChapters.merge(a.id);
+              const m = chopFind(a.id);
+              const textOk = !!rec && !!m && m.content === "Alpha one.[^1]\n\n***\n\nBravo.[^2]\n\n***\n\nBravo two.\n\n[^1]: A-note.\n\n[^2]: B-note.";
+              const keepOk = m.title === "Harbour" && m.dropCap === true && !m.plateId && !chopFind(b.id) && state.activeId === a.id;
+              const sceneOk = m.scenes.length === 1 && m.scenes[0].at === 1 && m.scenes[0].imageId === "chopimg1";
+              const numsOk = chopNums() === "1,2";
+              const html = sectionHtml(m, false);
+              const notesOk = html.indexOf("A-note") !== -1 && html.indexOf("B-note") !== -1;
+              const snapOk = snapshotLabel(state.history[0]) === t("history.auto.chopMerge", { a: "Harbour", b: "Lantern" });
+              const undoOk = window.beukChapters.undo(rec) && JSON.stringify(chopFind(a.id)) === aJson && JSON.stringify(chopFind(b.id)) === bJson &&
+                state.sections.findIndex((s) => s.id === b.id) === state.sections.findIndex((s) => s.id === a.id) + 1 && chopNums() === "1,2,3" && state.activeId === b.id;
+              const rtUndo = chopRoundTrip();
+              const g = chopCheckFixture();
+              const rec2 = window.beukChapters.merge(g.c2.id);
+              const rtOp = !!rec2 && chopRoundTrip();
+              const h = chopCheckFixture();
+              const rec3 = window.beukChapters.merge(h.c1.id);
+              chopFind(h.c1.id).content += "\n\nWritten after the merge.";
+              const refuseOk = window.beukChapters.undo(rec3) === false && !chopFind(h.c2.id);
+              return scVerdict(whyOk && textOk && keepOk && sceneOk && numsOk && notesOk && snapOk && undoOk && rtUndo && rtOp && refuseOk,
+                "joined with *** and the second's clashing note renumbered [^2] (" + textOk + "); the first's title and settings kept, the second gone, selection on the merged section (" + keepOk + "); the scene image moved to break 2 (" + sceneOk + "); renumbered 1,2 (" + numsOk + "); both notes typeset (" + notesOk + "); snapshot “" + snapshotLabel(state.history[0] || {}) + "” (" + snapOk + "); Undo restores both exactly, in place (" + undoOk + "); round trips after Undo (" + rtUndo + ") and after a merge (" + rtOp + "); Undo refuses once the merged section has new words (" + refuseOk + ")");
+            });
+          } },
+        { id: "chapters.merge.refuses-across-kinds", feature: "chapters", name: "Merge refuses honestly across front/body/back, onto generated pages, Part dividers and the last section: the menu item is disabled with the reason as its tooltip, and nothing changes — no snapshot taken",
+          run() {
+            return chopCheckRun(() => {
+              const f = chopCheckFixture();
+              const beforeSecs = JSON.stringify(state.sections), beforeHist = state.history.length;
+              const fwWhy = window.beukChapters.mergeWhy(f.fw.id), c3Why = window.beukChapters.mergeWhy(f.c3.id), abWhy = window.beukChapters.mergeWhy(f.ab.id);
+              const across = fwWhy === t("chop.mergeAcross", { group: t("side.groupBody") }) && c3Why === t("chop.mergeAcross", { group: t("side.groupBack") }) && abWhy === t("chop.mergeNoNext");
+              const refused = window.beukChapters.merge(f.fw.id) === null && window.beukChapters.merge(f.c3.id) === null && window.beukChapters.merge(f.ab.id) === null;
+              const unchanged = JSON.stringify(state.sections) === beforeSecs && state.history.length === beforeHist;
+              const part = addPart();
+              const partWhy = window.beukChapters.mergeWhy(part.id) === t("chop.mergePart");
+              const gen = state.sections.find((s) => s.type === "toc" || s.type === "titlepage");
+              const genOk = !gen || window.beukChapters.mergeWhy(gen.id) === t("chop.mergeGenerated");
+              /* the menu says it too: disabled, reason as tooltip and as visible text */
+              renderSidebar();
+              window.beukChapters.menu(f.fw.id);
+              const it = document.querySelector('#chopMenu [data-chop-act="merge"]');
+              const menuOk = !!it && it.getAttribute("aria-disabled") === "true" && it.getAttribute("title") === fwWhy &&
+                !!document.getElementById(it.getAttribute("aria-describedby") || "x") && document.querySelector("#chopMenu").getAttribute("role") === "menu";
+              window.beukChapters.closeMenu();
+              return scVerdict(across && refused && unchanged && partWhy && genOk && menuOk,
+                "front→body, body→back and the last section each refused with their reason (" + across + "): “" + c3Why + "”; merge returns nothing (" + refused + ") and the book and History are untouched (" + unchanged + "); Part dividers refused (" + partWhy + "); generated pages refused (" + genOk + "); the menu item is aria-disabled with the reason as tooltip and description (" + menuOk + ")");
+            });
+          } }
+      );
+      /* ==== /BEUK:chapterops ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }

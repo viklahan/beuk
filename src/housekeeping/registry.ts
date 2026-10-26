@@ -2125,6 +2125,42 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Zen is drawn by the studio page; the check measures bounding boxes in the client browser.',
   },
   {
+    id: 'chapters.delete.undo-restores-exactly',
+    title: 'Deleting a section offers Undo; Undo restores it at its exact place with id, text, notes, images and settings, the active section and chapter numbers, keeping edits made meanwhile',
+    kind: 'client-only',
+    reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
+  },
+  {
+    id: 'chapters.delete.snapshot-taken',
+    title: 'A delete first takes an automatic History snapshot (“Before deleting <name>”) that rides the book and restores; structural snapshots keep their own five',
+    kind: 'client-only',
+    reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
+  },
+  {
+    id: 'chapters.duplicate.deep-copy',
+    title: 'Duplicate inserts a deep copy right after the original with a new id and “(copy)” title, selects it, and Undo removes it',
+    kind: 'client-only',
+    reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
+  },
+  {
+    id: 'chapters.split.at-caret',
+    title: 'Split at cursor cuts the active section at the cursor paragraph; notes follow their references, images their paragraphs; Undo restores exactly',
+    kind: 'client-only',
+    reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
+  },
+  {
+    id: 'chapters.merge.scene-break',
+    title: 'Merge with next joins two sections with the scene break, keeps the first title and settings, renumbers clashing notes; Undo restores both',
+    kind: 'client-only',
+    reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
+  },
+  {
+    id: 'chapters.merge.refuses-across-kinds',
+    title: 'Merge refuses across front/body/back, generated pages, Part dividers and the last section, with the reason as tooltip; nothing changes',
+    kind: 'client-only',
+    reason: 'Section operations run on the in-browser book model (state.sections and its History snapshots) and the studio sidebar; the server only stores the resulting book.',
+  },
+  {
     id: 'cover.maker.adopt-gains-cover-package',
     title: 'Adopting a made cover gives the EPUB its cover files and landmark',
     kind: 'client-only',
