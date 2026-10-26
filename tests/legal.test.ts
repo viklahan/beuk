@@ -144,6 +144,9 @@ test('legal: unset operator slots render the "being completed" notice, never a p
     assert.match(terms, /The governing law has not been published yet/);
     const privacy = (await get(base, '/privacy')).html;
     assert.match(privacy, /Where the server is located has not been published yet/);
+    for (const [p, html] of [['/terms', terms], ['/privacy', privacy]]) {
+      assert.doesNotMatch(html.replace(/<[^>]+>/g, ''), /\.\./, `${p}: an inline notice never doubles the full stop`);
+    }
   });
 });
 
@@ -174,7 +177,7 @@ test('legal: set slots render their values (escaped) and no notice', async () =>
       assert.doesNotMatch(html, /\{\{|\[\[/);
     }
     assert.match((await get(base, '/terms')).html, /governed by the law of England and Wales/);
-    assert.match((await get(base, '/privacy')).html, /Where the server lives: Germany \(Hetzner\)/);
+    assert.match((await get(base, '/privacy')).html, /The server is located in Germany \(Hetzner\)\./);
   });
 });
 

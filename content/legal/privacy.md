@@ -59,7 +59,7 @@ When you share a reading copy, the server stores a frozen copy of the book for i
 ## Server logs and security
 
 - The web server keeps **no access log** of ordinary visits.
-- When a request fails inside the web server (for example, while the app is restarting), it writes an error line. That line includes the requesting IP address, the address asked for and the browser's identifying string. The app also writes a line when something goes wrong inside it. Logs like these are kept until the operator clears them; there is no automatic time limit today.
+- When a request fails inside the web server (for example, while the app is restarting), it writes an error line. That line includes the requesting IP address, the address asked for and the browser's identifying string. The app also writes a line when something goes wrong inside it. Each container's logs are rotated by size: at most three files of 10 MB are kept, and the oldest is deleted when a new one starts. How long that covers depends on traffic; there is no time limit.
 - To slow down attacks, the server counts recent attempts per IP address (sign-in, password reset, comments, searches, the Founders' form) **in memory only**. Nothing is written to disk, and a restart forgets it.
 - If your browser blocks something because of the site's security policy, it may send a report. Beuk stores nothing from it and logs one line with no address, no browser details and no page text.
 
@@ -92,7 +92,7 @@ Backups are a safety net, not a promise. Keep your own exports too.
 - **Stripe** handles paid plans, as described above.
 [[end]]
 
-The studio loads no scripts from anyone else: its libraries are served from Beuk's own server. Where the server lives: {{hosting}}. The services above may handle data in other countries.
+The studio loads no scripts from anyone else: its libraries are served from Beuk's own server. {{hosting}}. The services above may handle data in other countries.
 
 ## Why Beuk uses your data (the legal bases, in plain words)
 
@@ -105,7 +105,8 @@ The studio loads no scripts from anyone else: its libraries are served from Beuk
 - **Account, books, exports, streak, checks, reading copies and comments:** until you delete them, or until the account is deleted.
 - **Sign-in sessions:** up to {{sessiondays}} days. Expired ones are cleared automatically.
 - **Password-reset links:** expire after 60 minutes, and are cleared the next time anyone asks for a reset.
-- **Help search records, Founders' Shelf entries, server error logs and backups on the server:** no automatic limit yet.
+- **Server error logs:** rotated by size (at most 3 × 10 MB per container), with no time limit.
+- **Help search records, Founders' Shelf entries and backups on the server:** no automatic limit yet.
 - **In-memory attempt counts:** until the server restarts.
 
 ## Your rights, and how to use them

@@ -96,9 +96,11 @@ export function applyConditionals(markdown: string, flags: LegalFlags): string {
   );
 }
 
-/** The visible stand-in for an operator detail that is not set yet. */
-export function pendingNotice(what: string): string {
-  return `<span class="legal-pending" data-legal-pending>${esc(what)} has not been published yet — this part is being completed.</span>`;
+/** The visible stand-in for an operator detail that is not set yet. A
+ *  notice that stands inside a sentence takes `end = ''`, because the
+ *  sentence brings its own full stop. */
+export function pendingNotice(what: string, end = '.'): string {
+  return `<span class="legal-pending" data-legal-pending>${esc(what)} has not been published yet — this part is being completed${end}</span>`;
 }
 
 interface Slot {
@@ -135,7 +137,7 @@ function whoRuns(config: Config): string {
 
 function contactHtml(config: Config): string {
   const email = legalContactEmail(config);
-  if (!email) return pendingNotice(operatorSlots(config).contact.label);
+  if (!email) return pendingNotice(operatorSlots(config).contact.label, '');
   return `<a href="mailto:${esc(email)}">${esc(email)}</a>`;
 }
 
@@ -174,7 +176,7 @@ export function renderLegalBody(page: LegalPage, doc: LegalDoc, config: Config):
   const o = config.offsite;
   const inline: Record<string, string> = {
     contact: contactHtml(config),
-    hosting: config.legal.hostingLocation ? esc(config.legal.hostingLocation) : pendingNotice(operatorSlots(config).hosting.label),
+    hosting: config.legal.hostingLocation ? `The server is located in ${esc(config.legal.hostingLocation)}` : pendingNotice(operatorSlots(config).hosting.label, ''),
     sessiondays: esc(String(config.sessionTtlDays)),
     backuphours: esc(String(config.backupIntervalHours)),
     keepdaily: esc(String(o.keepDaily)),

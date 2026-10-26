@@ -153,6 +153,7 @@ You pass the rest as knobs on the install command (step 6) or edit
 | `OFFSITE_B2_KEY_ID`, `OFFSITE_B2_APPLICATION_KEY`, `OFFSITE_B2_BUCKET`, `OFFSITE_B2_ENDPOINT`, `RESTIC_PASSWORD` | Off-site encrypted backups to a private Backblaze B2 bucket. Setup steps: README → "Scheduled and off-site backups". Generate `RESTIC_PASSWORD` with `openssl rand -hex 32`, store it in your password manager **and on paper** — it is the only key to the off-site copies. Until all five are set, Housekeeping says **not configured** [measured], never green. |
 | `SUPPORT_EMAIL` | The public support address on the Help pages — only once the mailbox really exists. Empty = no address shown anywhere. |
 | `SUPPORT_NAME`, `SUPPORT_REPLY_PROMISE` | Optional; shown only with `SUPPORT_EMAIL`. |
+| `LEGAL_OPERATOR_NAME`, `LEGAL_CONTACT_EMAIL` (or `SUPPORT_EMAIL`), `LEGAL_POSTAL_ADDRESS`, `LEGAL_JURISDICTION`, `LEGAL_HOSTING_LOCATION`, optional `LEGAL_EFFECTIVE_DATE` | The operator details on `/privacy` and `/terms`. Until each is set, the page says "This page is still being completed" and lists what is missing. All six are passed to the app in `docker-compose.yml` (`app: environment:`). Meanings: README, legal section. Have the two pages reviewed by a lawyer. |
 | `APP_TIMEZONE` | e.g. `America/Los_Angeles` (default UTC). |
 
 **Later (fine to leave empty at launch):**
@@ -162,7 +163,6 @@ You pass the rest as knobs on the install command (step 6) or edit
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `ENTITLEMENTS_FILE` | Billing endpoints answer 501 "not configured"; nothing is gated. README → "Billing". |
 | `KOFI_URL` | No tip jar anywhere, and `/support` answers 404 [measured]. |
 | `PEXELS_API_KEY` | Cover maker offers no stock-photo search. |
-| `LEGAL_*` (privacy / terms page slots) | These come from the legal unit's work, not from this branch — take the names and meanings from its README section. **When that branch is merged, check that each `LEGAL_*` key is also listed under `app: environment:` in `docker-compose.yml`**: a key that is only in `.env` never reaches the app (this rehearsal found five documented knobs with exactly that bug). |
 
 Tuning knobs with safe defaults (`MANUSCRIPT_MAX_BYTES`,
 `JAVA_MAX_HEAP`, `JOB_MAX_ACTIVE_PER_USER`, `JOB_MAX_QUEUED`,
