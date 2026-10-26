@@ -4,6 +4,30 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — No false "changed in two places", and counts that read right
+
+- **Reloading right after a save no longer cries conflict.** For writers
+  who refresh the page the moment the shelf says "On your shelf ✓": a
+  reload in the split second after a shelf save could open the "This
+  book changed in two places" notice for a book that had changed in one.
+  The device now notes the shelf's new revision the moment the save
+  lands. A book that really was changed on another device in between
+  still gets the notice, as before.
+- **Counts in every language's own grammar.** "1 word", "~1 page" (not
+  "1 words", "~1 pages") in the sidebar, under the editor and in Zen;
+  Polish, Russian and Arabic now use their own forms for the numbers
+  that need them (for example 5 słów, 22 слова, 3 كلمات).
+- **Changing the interface language changes everything at once.** The
+  Sign in button and the preview desk's page counts used to stay in the
+  old language until a reload.
+- **The sample's numbers are true.** The Load button gives the sample's
+  real word count (24,828), not a round 25,000, and while the sample is
+  open its note follows your edits.
+- **Restoring over an empty desk keeps your History intact.** With
+  nothing on the desk there is nothing to keep, so no safety snapshot
+  is taken — and none of your real automatic snapshots is pushed out to
+  make room. The confirmation says so.
+
 ## 2026-10-25 — Help you can search, and codes that lead somewhere
 
 - **Search the help shelf, or paste the message.** For writers who were

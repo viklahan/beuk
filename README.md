@@ -141,6 +141,20 @@ not, online or not:
   shelf copy opens; only the device moved → it is pushed; both moved →
   the conflict notice. Removing the sample story clears the saved desk
   too, so it never comes back on reload.
+- **The shelf link is written the moment a shelf save lands** (not on
+  the 120 ms debounce other link changes use), together with the book
+  record when the device copy still has a save pending; a link change
+  still waiting on its debounce is written on `visibilitychange → hidden`
+  / `pagehide`. A reload right after a shelf save therefore restores
+  the shelf's new revision. (Before round 6, a reload inside that
+  window restored the old revision marked "not yet on the shelf" and
+  raised a false "changed in two places" notice.) As a second guard,
+  when the device's note is behind but the shelf copy is **the same
+  book** — the two documents serialize identically with keys sorted (the
+  shelf stores jsonb, which does not keep key order) — the studio agrees
+  on the shelf's revision instead of asking, on reload and on a 409. Any
+  difference at all still raises the conflict notice. Self-check
+  `shelf.reload.no-false-conflict` (async, client-only).
 - **Header indicator:** a compact pill — a dot and a short label per
   state: `Checking…`, `Saving…`, `Saved ✓`, `Saved · back up` (gold dot
   and `!`: saved, but the browser has not granted lasting storage) and
@@ -227,7 +241,7 @@ Every path that puts another book on the desk:
 | The shelf's newer copy at sign-in | Runs only when this device has nothing the shelf has not seen (the stored link says so), so the desk's book is the shelf's own earlier copy; with unsynced writing the conflict notice asks instead. The server keeps no older revisions, so that earlier copy is superseded by the newer one. |
 | Conflict → Use the shelf copy | History snapshot of this device's copy first ("This device's copy, kept from a sync conflict"), re-seated in the arriving book's History and saved with it on the agreed revision. |
 | Open a backup… | Asks (unless the desk is empty or the untouched sample), then a "Before opening a backup" snapshot, re-seated in the arriving book's History. A backup of a different book unlinks the desk and becomes its own shelf book (POST), never a PUT over the replaced one. |
-| Restore the whole book (History) | Its confirmation says a snapshot is taken first — it now always is, the untouched sample and an empty desk included. |
+| Restore the whole book (History) | Its confirmation says a snapshot is taken first — and one always is, the untouched sample included — except over a **truly empty desk** (exactly the blank starting book: no words, title, credit, cover, pictures, fonts or saved themes, starting sections and typography). There nothing is kept, no snapshot is taken (so none of the ten kept automatic snapshots is pruned for it), and the confirmation says so instead. Self-check `history.restore.empty-desk-no-prune`. |
 | Load the sample story | Asks, then a "Before the sample story" snapshot. |
 | Remove the sample (back to an empty desk) | An edited sample asks first and says nothing is restored; the untouched sample goes without asking. There is no other "new book" action. |
 
