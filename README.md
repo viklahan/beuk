@@ -297,7 +297,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v5`; both `client/sw.js` and
+service worker (cache `beuk-shell-v6`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -1476,16 +1476,21 @@ and nothing is graded. Sections, in order (`INS_RENDERERS` in
 - **At a glance** — words (the sidebar's own count), chapters (body
   sections typed *chapter*, with any other body sections noted), reading
   time, pages, average sentence length and the share of dialogue.
-  Reading time uses the studio's own pace of **225 words a minute** (the
-  same as the sidebar statistics) — Beuk's assumption, deliberately a
-  little slower than the 260 wpm that Brysbaert's 2019 meta-analysis of
-  190 studies found for adults silently reading English fiction
+  Reading time uses the studio's one pace, **238 words a minute**
+  (`READ_WPM`; the sidebar statistics use the same) — the average silent
+  reading rate that Brysbaert's 2019 meta-analysis of 190 studies
+  (18,573 readers) found for adults reading English non-fiction; fiction
+  ran a little faster, at 260 wpm
   (M. Brysbaert, "How many words do we read per minute? A review and
   meta-analysis of reading rate", *Journal of Memory and Language* 109,
   2019, [doi:10.1016/j.jml.2019.104047](https://doi.org/10.1016/j.jml.2019.104047)).
   Pages are the reading desk's own measured count for the device on the
   desk; until the desk has measured the book as it stands the card says so
-  instead of showing a number.
+  instead of showing a number. The sidebar's page count is the same
+  measured number (its note names the device); before the desk has
+  measured the book once it falls back to a rough 250 words a page, and
+  while the writer types it keeps the last measurement until the desk
+  re-measures.
 - **The words that carry the book** — the 20 most-used words in two
   columns, with stopwords and **Beuk's own filler lists** set aside
   (`INS_FILLER`, per book language: speech tags such as *said*/*asked*,
@@ -1691,24 +1696,27 @@ copyright, contents) have no menu.
   the toast is gone and restores like any other. Pressing Undo spends the
   operation's snapshot: it is dropped, so repeated delete-and-Undo never
   fills History with copies of the same moment.
-- **What a structural snapshot costs.** Like every snapshot it is the
-  whole book, but an operation moves text, never a picture, the cover or
-  a font, so the snapshot **shares** those with the book instead of
-  holding a second copy. In memory the picture data is one shared
-  string. In the saved book (local save, shelf, book file) each
-  picture, font or cover the snapshot holds unchanged from the book's
-  own is written once — as the book's — and the snapshot entry names it
-  (`{ "ref": id }`, under `chopDoc` in place of `doc`); one the book has
-  since changed or dropped is written in full inside the snapshot, so a
-  restore brings back exactly what was there. Measured on the sample
-  (29 pictures; payload 7,828,735 bytes fresh): five delete + Undo add
-  about 0.75 MB in all (each packed entry about 0.2 MB, mostly the
-  book's text), where a full copy would add about 7.8 MB each. Named
-  snapshots and the other automatic kinds still hold full copies, as
-  before; the shelf's limit (`MANUSCRIPT_MAX_BYTES`, 64 MiB by default)
-  counts them. A studio from before this change does not read `chopDoc`
-  entries: it skips them (it never restores half a book), and the next
-  save from it leaves them out.
+- **What a snapshot costs.** Every snapshot — named, automatic or
+  structural — is the whole book, but it **shares** the book's pictures,
+  fonts and cover instead of holding a second copy. In memory the
+  picture data is one shared string. In the saved book (local save,
+  shelf, book file) each picture, font or cover a snapshot holds
+  unchanged from the book's own is written once — as the book's — and
+  the snapshot entry names it (`{ "ref": id }`, under `chopDoc` in place
+  of `doc`). One the book has since changed or dropped is written
+  **once** in the book's `historyPool`, however many snapshots hold it,
+  and named by its place there (`{ "ref": id, "pool": i }`), so a
+  restore always brings back exactly what was there. Measured on the
+  sample (29 pictures; payload 7,828,735 bytes fresh): five delete +
+  Undo add about 0.75 MB in all (each packed entry about 0.2 MB, mostly
+  the book's text), where a full copy would add about 7.8 MB each. The
+  shelf's limit (`MANUSCRIPT_MAX_BYTES`, 64 MiB by default) counts it
+  all. An older snapshot saved as a plain `doc` still reads, and is
+  packed on the next save. A studio from before this change does not
+  read `chopDoc` entries: it skips them (it never restores half a book),
+  and the next save from it leaves them out — which is why the shell
+  cache moved to `beuk-shell-v6` with this change, so every open studio
+  offers the update.
 - **Undo is an inverse edit, not a restore.** It puts back only what the
   operation took or added, so writing done meanwhile elsewhere in the
   book stands. A deleted section returns next to the neighbour it stood
@@ -1841,16 +1849,20 @@ writer take a picture out of the book.
   IndexedDB (the previous record, `book-prev`, holds it until the next
   save) and from the next shelf save. **But the History snapshot taken
   before still holds it** — that is what lets a writer get a picture back
-  after the toast has gone (History → restore). History rides with the
-  book, so the saved book (device and shelf) gets *bigger* by one
-  snapshot right after a removal, and smaller only once that snapshot is
-  deleted in History or pushed out by newer automatic snapshots (ten are
-  kept, `pruneAutoSnapshots`). The library note says this in plain words.
+  after the toast has gone (History → restore). Its bytes move from the
+  book's pictures to `historyPool`, written once however many snapshots
+  hold it, so the saved book stays about the same size right after a
+  removal (plus the snapshot's text), and gets smaller once every
+  snapshot holding the picture is deleted in History or pushed out by
+  newer automatic snapshots (ten are kept, `pruneAutoSnapshots`). The
+  library note says this in plain words.
   To keep History from multiplying the book, a run of removals with no
-  other edit in between shares one snapshot. Measured on a 3-picture
-  book against a real server (Postgres 16, `PUT /api/manuscripts/:id`):
-  shelf doc 572,103 bytes → 750,549 after removing the two unused
-  pictures → 178,383 once the snapshot was deleted.
+  other edit in between shares one snapshot. Measured on the sample
+  (`serializeBook()` JSON, 7,828,750 bytes with no History): two named
+  snapshots and one automatic one make 8,281,626 bytes (the old
+  full-copy format: 31,314,993); removing a 134,940-byte picture then
+  leaves it at 8,281,652 — the picture's bytes moved from the book to
+  `historyPool`, written once.
 - **Toasts.** Toast action buttons take clicks again (`#toasts` passes
   pointer events through to the page; the button now opts back in — no
   toast's Undo could be clicked with a pointer before), and the toast

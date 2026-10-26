@@ -4,6 +4,34 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — Smaller History, truer counts
+
+- **History no longer copies your pictures.** Every snapshot (named or
+  automatic) now shares the book's pictures, fonts and cover instead of
+  holding its own copy. A picture you have removed is kept once for
+  History, however many snapshots still hold it. A book with many
+  snapshots saves much smaller, and removing a picture no longer makes
+  the saved book grow.
+- **One reading pace, with its source.** Reading time now uses 238 words
+  a minute everywhere (sidebar, statistics, Insights). That is the
+  average silent reading rate for adults in English (non-fiction) in a
+  2019 review of 190 studies (Brysbaert, *Journal of Memory and
+  Language*). Fiction ran a little faster, at 260 a minute.
+- **One page count.** The sidebar's page count is now the reading desk's
+  own count for the device on the desk, so it matches the desk and
+  Insights ("~111 pages" in both places for the sample on a Kindle
+  Paperwhite). A rough 250 words a page is used only until the desk has
+  measured the book.
+- **Typing a chapter title shows the title.** Editing a chapter's
+  number, title or subtitle turns the preview to the page they stand on:
+  page 1, or the page after the opening plate.
+- **Clearer sync conflict notice.** It now says the book was changed in
+  two places, this device and your shelf, without assuming this device
+  was offline. All 13 languages.
+- An open studio offers this update ("A new Beuk is ready"). An older
+  studio would drop the new snapshots on its next save, so please take
+  the update.
+
 ## 2026-10-26 — Taking a picture out of the book
 
 - **Remove a picture you uploaded.** In the image library (Insert Image,

@@ -141,7 +141,7 @@ sends no email (src/routes/founders.ts:9-10).
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
   zenSound.v1, and betaTokens.v1 — the share-link tokens the writer made,
   kept so the studio can show the links again (client/index.html:38224-38231).
-- **Service worker caches**: beuk-shell-v5 (the app shell), beuk-sound-v1
+- **Service worker caches**: beuk-shell-v6 (the app shell), beuk-sound-v2
   (ambient sound files), and the Google Fonts files (client/sw.js).
 - **Backup files** (.beuk-backup.json) and exports are files the writer
   downloads; Beuk does not see where they go.

@@ -50,7 +50,7 @@ test('insights: every new Story Insights string exists in all 13 UI packs', asyn
 
 test('insights: the reading-rate and readability sources stay cited next to the numbers', async () => {
   const html = await clientHtml();
-  assert.ok(html.includes('const INS_WPM = 225;'), 'reading pace constant');
+  assert.ok(html.includes('const READ_WPM = 238;') && html.includes('const INS_WPM = READ_WPM;'), 'reading pace constant (Brysbaert 2019 average, non-fiction)');
   assert.ok(html.includes('https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests'), 'Flesch formula source');
   assert.ok(html.includes('return 206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words);'), 'Flesch formula constants');
   const readme = await readFile(path.join(here, '..', 'README.md'), 'utf8');

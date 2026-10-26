@@ -56,7 +56,7 @@ test('sidebar: every new or changed string ships in all 13 locales', async () =>
 
 test('sidebar: History keeps every snapshot kind the studio writes (backup and sampleupdate included)', async () => {
   const html = await clientHtml();
-  const m = /function normalizeHistory\(list\) \{[\s\S]*?auto: (\[[^\]]+\])\.indexOf\(e\.auto\)/.exec(html);
+  const m = /function normalizeHistory\(list(?:, pool)?\) \{[\s\S]*?auto: (\[[^\]]+\])\.indexOf\(e\.auto\)/.exec(html);
   assert.ok(m, 'normalizeHistory whitelist found');
   const kinds = JSON.parse(m[1]) as string[];
   for (const k of ['import', 'sample', 'restore', 'conflict', 'bookid', 'backup', 'sampleupdate']) assert.ok(kinds.includes(k), k);

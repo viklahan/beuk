@@ -46,14 +46,14 @@ test('imagelib: every new string ships in all 13 locales, placeholders intact', 
 
 test('imagelib: the snapshot kind is whitelisted, the sample line is untouched, and the shell cache names stay', async () => {
   const html = await clientHtml();
-  const m = /function normalizeHistory\(list\) \{[\s\S]*?auto: (\[[^\]]+\])\.indexOf\(e\.auto\)/.exec(html);
+  const m = /function normalizeHistory\(list(?:, pool)?\) \{[\s\S]*?auto: (\[[^\]]+\])\.indexOf\(e\.auto\)/.exec(html);
   assert.ok(m, 'normalizeHistory whitelist found');
   assert.ok((JSON.parse(m[1]) as string[]).includes('imgremove'));
   assert.match(html, /autoSnapshot\("imgremove"\)/);
   // The sample's own pictures are never offered for removal while the sample is the book on the desk.
   assert.match(html, /const imglibIsSample = \(im\) => !!im && typeof im\.id === "string" && im\.id\.indexOf\("sample-img-"\) === 0 &&\s*\(sampleState\.loaded \|\| isSampleBookId\(state\.meta\.bookId\)\);/);
   const sw = await readFile(path.join(here, '..', 'client', 'sw.js'), 'utf8');
-  assert.match(sw, /beuk-shell-v5/);
+  assert.match(sw, /beuk-shell-v6/);
   assert.match(sw, /beuk-sound-v2/);
 });
 

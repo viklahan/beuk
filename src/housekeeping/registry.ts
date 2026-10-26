@@ -1817,6 +1817,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   /* ---- round-6 bugs (BEUK:bugs) ---- */
   {
+    id: 'history.snapshots.share-pictures',
+    title: 'Every History snapshot shares the book’s pictures: each picture is written once in the saved book, a dropped one once in historyPool; it reads back and restores exactly',
+    kind: 'client-only',
+    reason: 'History snapshots live in the in-browser book (state.history); packing and unpacking run in the client.',
+  },
+  {
     id: 'history.restore.empty-desk-no-prune',
     title: 'Restoring over a truly empty desk takes no safety snapshot (prunes no real automatic one) and its confirmation says so; any content and the snapshot is taken',
     kind: 'client-only',
@@ -2114,7 +2120,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'preview.opened-section-stays-put',
-    title: 'A section just opened stays on page 1 through font-size, chapter-title and device changes until the writer works in the editor',
+    title: 'A section just opened stays on page 1 through a font-size change; a chapter-title keystroke turns to the page the title stands on and a device change keeps it there',
     kind: 'client-only',
     reason: 'Section selection, the editor caret and the preview page are client UI state laid out by the studio browser.',
   },

@@ -3384,6 +3384,11 @@
     <script>
       "use strict";
       const $ = (id) => document.getElementById(id);
+      /* The studio's one reading pace: the average silent reading rate
+         for adults in English, 238 words a minute (non-fiction; fiction
+         260) - Brysbaert 2019, Journal of Memory and Language, a
+         meta-analysis of 190 studies. Every reading time uses it. */
+      const READ_WPM = 238;
       const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       const uid = () => "s" + Math.random().toString(36).slice(2, 9);
       /* ==== BEUK:epub ==== */
@@ -3562,7 +3567,7 @@
         "side.untitled": "Untitled", "side.chapterAbbr": "Ch.", "side.wordUnit": "w",
         "side.moveUp": "Move up", "side.moveDown": "Move down", "side.deleteChapter": "Delete chapter", "side.includeInExport": "Include in export",
         "stats.words": "Words", "stats.characters": "Characters", "stats.pages": "Pages est.", "stats.readingTime": "Reading time",
-        "stats.pagesNote": "Pages at {a} words/page · reading time at {b} wpm.", "stats.readingH": "{h}h {m}m", "stats.readingM": "{m}m",
+        "stats.pagesNote": "Pages at {a} words/page · reading time at {b} wpm.", "stats.pagesNoteDesk": "Pages as the reading desk counts them on {device} · reading time at {b} wpm.", "stats.readingH": "{h}h {m}m", "stats.readingM": "{m}m",
         "insights.open": "Story Insights", "insights.title": "Story Insights",
         "insights.local": "Everything here is read from your manuscript on this device, just now — nothing is sent anywhere.",
         "insights.refresh": "Refresh", "insights.close": "Close",
@@ -3827,7 +3832,7 @@
         document.querySelectorAll("[data-i18n-ph]").forEach((el) => el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))));
         document.querySelectorAll("[data-i18n-aria]").forEach((el) => el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria"))));
         document.querySelectorAll("#selDropDepth option").forEach((o) => { o.textContent = t("type.dropLines", { n: o.value }); });
-        const sn = $("statsNote"); if (sn) sn.textContent = t("stats.pagesNote", { a: fmtNum(250), b: fmtNum(225) });
+        statsPagesNote();
         if (typeof renderCoverSettings === "function" && $("coverThumb")) renderCoverSettings();
         const sel = $("uiLangSelect");
         if (sel && sel.value !== code) sel.value = code;
@@ -3965,7 +3970,7 @@
         "side.untitled": "Sin título", "side.chapterAbbr": "Cap.", "side.wordUnit": "pal.",
         "side.moveUp": "Subir", "side.moveDown": "Bajar", "side.deleteChapter": "Eliminar capítulo", "side.includeInExport": "Incluir en la exportación",
         "stats.words": "Palabras", "stats.characters": "Caracteres", "stats.pages": "Pág. aprox.", "stats.readingTime": "Tiempo de lectura",
-        "stats.pagesNote": "Páginas a {a} palabras/página · lectura a {b} ppm.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
+        "stats.pagesNote": "Páginas a {a} palabras/página · lectura a {b} ppm.", "stats.pagesNoteDesk": "Páginas según el escritorio de lectura en {device} · lectura a {b} ppm.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
         "insights.open": "Claves de la historia", "insights.title": "Claves de la historia",
         "insights.local": "Todo esto se lee de tu manuscrito en este dispositivo, ahora mismo — no se envía nada a ninguna parte.",
         "insights.refresh": "Actualizar", "insights.close": "Cerrar",
@@ -4161,7 +4166,7 @@
         "side.untitled": "Sans titre", "side.chapterAbbr": "Ch.", "side.wordUnit": "mots",
         "side.moveUp": "Monter", "side.moveDown": "Descendre", "side.deleteChapter": "Supprimer le chapitre", "side.includeInExport": "Inclure dans l'export",
         "stats.words": "Mots", "stats.characters": "Caractères", "stats.pages": "Pages estim.", "stats.readingTime": "Temps de lecture",
-        "stats.pagesNote": "Pages à {a} mots/page · lecture à {b} mots/min.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
+        "stats.pagesNote": "Pages à {a} mots/page · lecture à {b} mots/min.", "stats.pagesNoteDesk": "Pages selon le bureau de lecture sur {device} · lecture à {b} mots/min.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
         "insights.open": "Aperçu de l'histoire", "insights.title": "Aperçu de l'histoire",
         "insights.local": "Tout ici est lu dans votre manuscrit, sur cet appareil, à l'instant — rien n'est envoyé nulle part.",
         "insights.refresh": "Actualiser", "insights.close": "Fermer",
@@ -4357,7 +4362,7 @@
         "side.untitled": "Ohne Titel", "side.chapterAbbr": "Kap.", "side.wordUnit": "W.",
         "side.moveUp": "Nach oben", "side.moveDown": "Nach unten", "side.deleteChapter": "Kapitel löschen", "side.includeInExport": "In den Export aufnehmen",
         "stats.words": "Wörter", "stats.characters": "Zeichen", "stats.pages": "Seiten (gesch.)", "stats.readingTime": "Lesezeit",
-        "stats.pagesNote": "Seiten bei {a} Wörtern/Seite · Lesezeit bei {b} Wörtern/Min.", "stats.readingH": "{h} Std. {m} Min.", "stats.readingM": "{m} Min.",
+        "stats.pagesNote": "Seiten bei {a} Wörtern/Seite · Lesezeit bei {b} Wörtern/Min.", "stats.pagesNoteDesk": "Seiten laut Lesetisch auf {device} · Lesezeit bei {b} Wörtern/Min.", "stats.readingH": "{h} Std. {m} Min.", "stats.readingM": "{m} Min.",
         "insights.open": "Der Buchspiegel", "insights.title": "Der Buchspiegel",
         "insights.local": "Alles hier wird gerade jetzt aus Ihrem Manuskript auf diesem Gerät gelesen — nichts wird irgendwohin gesendet.",
         "insights.refresh": "Aktualisieren", "insights.close": "Schließen",
@@ -4553,7 +4558,7 @@
         "side.untitled": "Senza titolo", "side.chapterAbbr": "Cap.", "side.wordUnit": "par.",
         "side.moveUp": "Sposta su", "side.moveDown": "Sposta giù", "side.deleteChapter": "Elimina capitolo", "side.includeInExport": "Includi nell'esportazione",
         "stats.words": "Parole", "stats.characters": "Caratteri", "stats.pages": "Pagine stimate", "stats.readingTime": "Tempo di lettura",
-        "stats.pagesNote": "Pagine a {a} parole/pagina · lettura a {b} parole/min.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
+        "stats.pagesNote": "Pagine a {a} parole/pagina · lettura a {b} parole/min.", "stats.pagesNoteDesk": "Pagine secondo la scrivania di lettura su {device} · lettura a {b} parole/min.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
         "insights.open": "Lo specchio del libro", "insights.title": "Lo specchio del libro",
         "insights.local": "Tutto qui viene letto dal tuo manoscritto su questo dispositivo, proprio ora — nulla viene inviato da nessuna parte.",
         "insights.refresh": "Aggiorna", "insights.close": "Chiudi",
@@ -4749,7 +4754,7 @@
         "side.untitled": "Sem título", "side.chapterAbbr": "Cap.", "side.wordUnit": "pal.",
         "side.moveUp": "Mover para cima", "side.moveDown": "Mover para baixo", "side.deleteChapter": "Eliminar capítulo", "side.includeInExport": "Incluir na exportação",
         "stats.words": "Palavras", "stats.characters": "Caracteres", "stats.pages": "Pág. estimadas", "stats.readingTime": "Tempo de leitura",
-        "stats.pagesNote": "Páginas a {a} palavras/página · leitura a {b} ppm.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
+        "stats.pagesNote": "Páginas a {a} palavras/página · leitura a {b} ppm.", "stats.pagesNoteDesk": "Páginas segundo a mesa de leitura no {device} · leitura a {b} ppm.", "stats.readingH": "{h} h {m} min", "stats.readingM": "{m} min",
         "insights.open": "O espelho do livro", "insights.title": "O espelho do livro",
         "insights.local": "Tudo aqui é lido do seu manuscrito neste dispositivo, agora mesmo — nada é enviado para lugar nenhum.",
         "insights.refresh": "Atualizar", "insights.close": "Fechar",
@@ -4945,7 +4950,7 @@
         "side.untitled": "Zonder titel", "side.chapterAbbr": "Hst.", "side.wordUnit": "w.",
         "side.moveUp": "Omhoog", "side.moveDown": "Omlaag", "side.deleteChapter": "Hoofdstuk verwijderen", "side.includeInExport": "Opnemen in de export",
         "stats.words": "Woorden", "stats.characters": "Tekens", "stats.pages": "Pagina's (sch.)", "stats.readingTime": "Leestijd",
-        "stats.pagesNote": "Pagina's bij {a} woorden/pagina · leestijd bij {b} wpm.", "stats.readingH": "{h} u {m} min", "stats.readingM": "{m} min",
+        "stats.pagesNote": "Pagina's bij {a} woorden/pagina · leestijd bij {b} wpm.", "stats.pagesNoteDesk": "Pagina's volgens het leesbureau op {device} · leestijd bij {b} wpm.", "stats.readingH": "{h} u {m} min", "stats.readingM": "{m} min",
         "insights.open": "De boekspiegel", "insights.title": "De boekspiegel",
         "insights.local": "Alles hier wordt op dit moment uit uw manuscript op dit apparaat gelezen — er wordt niets ergens naartoe verzonden.",
         "insights.refresh": "Vernieuwen", "insights.close": "Sluiten",
@@ -5141,7 +5146,7 @@
         "side.untitled": "Bez tytułu", "side.chapterAbbr": "Rozdz.", "side.wordUnit": "sł.",
         "side.moveUp": "W górę", "side.moveDown": "W dół", "side.deleteChapter": "Usuń rozdział", "side.includeInExport": "Uwzględnij w eksporcie",
         "stats.words": "Słowa", "stats.characters": "Znaki", "stats.pages": "Strony (szac.)", "stats.readingTime": "Czas czytania",
-        "stats.pagesNote": "Strony przy {a} słowach/stronę · czytanie przy {b} słów/min.", "stats.readingH": "{h} godz. {m} min", "stats.readingM": "{m} min",
+        "stats.pagesNote": "Strony przy {a} słowach/stronę · czytanie przy {b} słów/min.", "stats.pagesNoteDesk": "Strony według biurka czytelniczego na {device} · czytanie przy {b} słów/min.", "stats.readingH": "{h} godz. {m} min", "stats.readingM": "{m} min",
         "insights.open": "Lustro książki", "insights.title": "Lustro książki",
         "insights.local": "Wszystko tutaj jest odczytywane z twojego rękopisu na tym urządzeniu, właśnie teraz — nic nie jest nigdzie wysyłane.",
         "insights.refresh": "Odśwież", "insights.close": "Zamknij",
@@ -5337,7 +5342,7 @@
         "side.untitled": "Без названия", "side.chapterAbbr": "Гл.", "side.wordUnit": "сл.",
         "side.moveUp": "Вверх", "side.moveDown": "Вниз", "side.deleteChapter": "Удалить главу", "side.includeInExport": "Включить в экспорт",
         "stats.words": "Слов", "stats.characters": "Знаков", "stats.pages": "Страниц (оценка)", "stats.readingTime": "Время чтения",
-        "stats.pagesNote": "Страницы при {a} словах/страницу · чтение при {b} сл./мин.", "stats.readingH": "{h} ч {m} мин", "stats.readingM": "{m} мин",
+        "stats.pagesNote": "Страницы при {a} словах/страницу · чтение при {b} сл./мин.", "stats.pagesNoteDesk": "Страницы — по подсчёту стола для чтения на {device} · чтение при {b} сл./мин.", "stats.readingH": "{h} ч {m} мин", "stats.readingM": "{m} мин",
         "insights.open": "Зеркало книги", "insights.title": "Зеркало книги",
         "insights.local": "Всё здесь читается из вашей рукописи на этом устройстве, прямо сейчас — ничего никуда не отправляется.",
         "insights.refresh": "Обновить", "insights.close": "Закрыть",
@@ -5533,7 +5538,7 @@
         "side.untitled": "Başlıksız", "side.chapterAbbr": "Bl.", "side.wordUnit": "kel.",
         "side.moveUp": "Yukarı taşı", "side.moveDown": "Aşağı taşı", "side.deleteChapter": "Bölümü sil", "side.includeInExport": "Dışa aktarıma dahil et",
         "stats.words": "Kelime", "stats.characters": "Karakter", "stats.pages": "Sayfa (tah.)", "stats.readingTime": "Okuma süresi",
-        "stats.pagesNote": "Sayfalar, sayfa başına {a} kelimeyle · okuma, dakikada {b} kelimeyle.", "stats.readingH": "{h} sa {m} dk", "stats.readingM": "{m} dk",
+        "stats.pagesNote": "Sayfalar, sayfa başına {a} kelimeyle · okuma, dakikada {b} kelimeyle.", "stats.pagesNoteDesk": "Sayfalar, okuma masasının {device} üzerindeki sayımıyla · okuma, dakikada {b} kelimeyle.", "stats.readingH": "{h} sa {m} dk", "stats.readingM": "{m} dk",
         "insights.open": "Kitabın aynası", "insights.title": "Kitabın aynası",
         "insights.local": "Buradaki her şey, el yazmanızdan bu cihazda, tam şimdi okunuyor — hiçbir şey hiçbir yere gönderilmiyor.",
         "insights.refresh": "Yenile", "insights.close": "Kapat",
@@ -5729,7 +5734,7 @@
         "side.untitled": "بلا عنوان", "side.chapterAbbr": "ف.", "side.wordUnit": "كلمة",
         "side.moveUp": "نقل لأعلى", "side.moveDown": "نقل لأسفل", "side.deleteChapter": "حذف الفصل", "side.includeInExport": "تضمين في التصدير",
         "stats.words": "الكلمات", "stats.characters": "الأحرف", "stats.pages": "الصفحات (تقدير)", "stats.readingTime": "زمن القراءة",
-        "stats.pagesNote": "الصفحات بمعدل {a} كلمة/صفحة · القراءة بمعدل {b} كلمة/دقيقة.", "stats.readingH": "{h} س {m} د", "stats.readingM": "{m} د",
+        "stats.pagesNote": "الصفحات بمعدل {a} كلمة/صفحة · القراءة بمعدل {b} كلمة/دقيقة.", "stats.pagesNoteDesk": "الصفحات حسب عدّ مكتب القراءة على {device} · القراءة بمعدل {b} كلمة/دقيقة.", "stats.readingH": "{h} س {m} د", "stats.readingM": "{m} د",
         "insights.open": "مرآة الكتاب", "insights.title": "مرآة الكتاب",
         "insights.local": "كل ما هنا يُقرأ من مخطوطتك على هذا الجهاز، الآن تمامًا — لا يُرسل أي شيء إلى أي مكان.",
         "insights.refresh": "تحديث", "insights.close": "إغلاق",
@@ -5925,7 +5930,7 @@
         "side.untitled": "無題", "side.chapterAbbr": "第", "side.wordUnit": "語",
         "side.moveUp": "上へ移動", "side.moveDown": "下へ移動", "side.deleteChapter": "章を削除", "side.includeInExport": "書き出しに含める",
         "stats.words": "単語数", "stats.characters": "文字数", "stats.pages": "ページ数（推定）", "stats.readingTime": "読書時間",
-        "stats.pagesNote": "ページ数は{a}語/ページ、読書時間は{b}語/分で計算。", "stats.readingH": "{h}時間{m}分", "stats.readingM": "{m}分",
+        "stats.pagesNote": "ページ数は{a}語/ページ、読書時間は{b}語/分で計算。", "stats.pagesNoteDesk": "ページ数は{device}での読書デスクの計測、読書時間は{b}語/分で計算。", "stats.readingH": "{h}時間{m}分", "stats.readingM": "{m}分",
         "insights.open": "本の鏡", "insights.title": "本の鏡",
         "insights.local": "ここにあるものはすべて、いまこの端末であなたの原稿から読み取られたものです。どこにも送信されません。",
         "insights.refresh": "更新", "insights.close": "閉じる",
@@ -6121,7 +6126,7 @@
         "side.untitled": "未命名", "side.chapterAbbr": "第", "side.wordUnit": "字",
         "side.moveUp": "上移", "side.moveDown": "下移", "side.deleteChapter": "删除章节", "side.includeInExport": "包含在导出中",
         "stats.words": "字数", "stats.characters": "字符", "stats.pages": "页数（估）", "stats.readingTime": "阅读时间",
-        "stats.pagesNote": "页数按每页 {a} 词计 · 阅读时间按每分钟 {b} 词计。", "stats.readingH": "{h} 小时 {m} 分", "stats.readingM": "{m} 分",
+        "stats.pagesNote": "页数按每页 {a} 词计 · 阅读时间按每分钟 {b} 词计。", "stats.pagesNoteDesk": "页数按阅读书桌在 {device} 上的计数 · 阅读时间按每分钟 {b} 词计。", "stats.readingH": "{h} 小时 {m} 分", "stats.readingM": "{m} 分",
         "insights.open": "书的镜子", "insights.title": "书的镜子",
         "insights.local": "这里的一切都刚刚在本设备上从你的手稿中读出 — 什么都不会发送到任何地方。",
         "insights.refresh": "刷新", "insights.close": "关闭",
@@ -9675,8 +9680,8 @@
         "offline.savedHere": "Offline — saved on this device",
         "offline.pending": "{n} sync waiting", "offline.pendingPlural": "{n} syncs waiting",
         "offline.conflictTitle": "This book changed in two places",
-        "offline.conflictBody": "While this device was away from your shelf, “{title}” was changed on the shelf too — last tended {date}. Nothing has been overwritten, and nothing will be until you choose:",
-        "offline.conflictBodyNoDate": "While this device was away from your shelf, “{title}” was changed on the shelf too. Nothing has been overwritten, and nothing will be until you choose:",
+        "offline.conflictBody": "“{title}” has been changed in two places: on this device, and on your shelf from somewhere else (last tended {date}). Nothing has been overwritten, and nothing will be until you choose:",
+        "offline.conflictBodyNoDate": "“{title}” has been changed in two places: on this device, and on your shelf from somewhere else. Nothing has been overwritten, and nothing will be until you choose:",
         "offline.keepMine": "Keep mine", "offline.useShelf": "Use the shelf copy", "offline.keepBoth": "Keep both",
         "offline.conflictBothNote": "Keep both stands by the writing on this device and preserves the shelf copy as a snapshot in History, word for word. Keep mine replaces the shelf copy; Use the shelf copy replaces the book on this device — and keeps this device's writing as a snapshot in History first.",
         "offline.snapshotShelfName": "Shelf copy, kept from a sync conflict",
@@ -9697,8 +9702,8 @@
         "offline.savedHere": "Sin conexión — guardado en este dispositivo",
         "offline.pending": "{n} sincronización en espera", "offline.pendingPlural": "{n} sincronizaciones en espera",
         "offline.conflictTitle": "Este libro cambió en dos lugares",
-        "offline.conflictBody": "Mientras este dispositivo estaba lejos de tu estantería, «{title}» también cambió en la estantería — última atención: {date}. Nada se ha sobrescrito, y nada se sobrescribirá hasta que elijas:",
-        "offline.conflictBodyNoDate": "Mientras este dispositivo estaba lejos de tu estantería, «{title}» también cambió en la estantería. Nada se ha sobrescrito, y nada se sobrescribirá hasta que elijas:",
+        "offline.conflictBody": "«{title}» ha cambiado en dos sitios: en este dispositivo y en tu estantería desde otro lugar (última atención: {date}). Nada se ha sobrescrito, y nada se sobrescribirá hasta que elijas:",
+        "offline.conflictBodyNoDate": "«{title}» ha cambiado en dos sitios: en este dispositivo y en tu estantería desde otro lugar. Nada se ha sobrescrito, y nada se sobrescribirá hasta que elijas:",
         "offline.keepMine": "Quedarme con el mío", "offline.useShelf": "Usar la copia de la estantería", "offline.keepBoth": "Conservar ambos",
         "offline.conflictBothNote": "Conservar ambos mantiene el texto de este dispositivo y preserva la copia de la estantería como una instantánea en el Historial, palabra por palabra. Quedarme con el mío sustituye la copia de la estantería; Usar la copia de la estantería sustituye el libro de este dispositivo — y antes guarda el texto de este dispositivo como una instantánea en el Historial.",
         "offline.snapshotShelfName": "Copia de la estantería, guardada de un conflicto de sincronización",
@@ -9719,8 +9724,8 @@
         "offline.savedHere": "Hors ligne — enregistré sur cet appareil",
         "offline.pending": "{n} synchronisation en attente", "offline.pendingPlural": "{n} synchronisations en attente",
         "offline.conflictTitle": "Ce livre a changé à deux endroits",
-        "offline.conflictBody": "Pendant que cet appareil était loin de votre étagère, « {title} » a aussi changé sur l'étagère — dernière visite : {date}. Rien n'a été écrasé, et rien ne le sera avant votre choix :",
-        "offline.conflictBodyNoDate": "Pendant que cet appareil était loin de votre étagère, « {title} » a aussi changé sur l'étagère. Rien n'a été écrasé, et rien ne le sera avant votre choix :",
+        "offline.conflictBody": "« {title} » a changé à deux endroits : sur cet appareil, et sur votre étagère depuis ailleurs (dernière visite : {date}). Rien n'a été écrasé, et rien ne le sera avant votre choix :",
+        "offline.conflictBodyNoDate": "« {title} » a changé à deux endroits : sur cet appareil, et sur votre étagère depuis ailleurs. Rien n'a été écrasé, et rien ne le sera avant votre choix :",
         "offline.keepMine": "Garder le mien", "offline.useShelf": "Utiliser la copie de l'étagère", "offline.keepBoth": "Garder les deux",
         "offline.conflictBothNote": "Garder les deux conserve le texte de cet appareil et préserve la copie de l'étagère comme un instantané dans l'Historique, mot pour mot. Garder le mien remplace la copie de l'étagère ; Utiliser la copie de l'étagère remplace le livre de cet appareil — en gardant d'abord le texte de cet appareil comme instantané dans l'Historique.",
         "offline.snapshotShelfName": "Copie de l'étagère, conservée d'un conflit de synchronisation",
@@ -9741,8 +9746,8 @@
         "offline.savedHere": "Offline — auf diesem Gerät gespeichert",
         "offline.pending": "{n} Abgleich wartet", "offline.pendingPlural": "{n} Abgleiche warten",
         "offline.conflictTitle": "Dieses Buch hat sich an zwei Orten verändert",
-        "offline.conflictBody": "Während dieses Gerät von Ihrem Regal getrennt war, wurde „{title}“ auch im Regal verändert — zuletzt gepflegt am {date}. Nichts wurde überschrieben, und nichts wird es, bis Sie wählen:",
-        "offline.conflictBodyNoDate": "Während dieses Gerät von Ihrem Regal getrennt war, wurde „{title}“ auch im Regal verändert. Nichts wurde überschrieben, und nichts wird es, bis Sie wählen:",
+        "offline.conflictBody": "„{title}“ wurde an zwei Stellen geändert: auf diesem Gerät und von anderswo in Ihrem Regal (zuletzt gepflegt am {date}). Nichts wurde überschrieben, und nichts wird es, bis Sie wählen:",
+        "offline.conflictBodyNoDate": "„{title}“ wurde an zwei Stellen geändert: auf diesem Gerät und von anderswo in Ihrem Regal. Nichts wurde überschrieben, und nichts wird es, bis Sie wählen:",
         "offline.keepMine": "Meine behalten", "offline.useShelf": "Die Regal-Kopie verwenden", "offline.keepBoth": "Beide behalten",
         "offline.conflictBothNote": "Beide behalten lässt den Text auf diesem Gerät stehen und bewahrt die Regal-Kopie Wort für Wort als Schnappschuss in der Historie. Meine behalten ersetzt die Regal-Kopie; Die Regal-Kopie verwenden ersetzt das Buch auf diesem Gerät — und bewahrt den Text dieses Geräts zuerst als Schnappschuss in der Historie.",
         "offline.snapshotShelfName": "Regal-Kopie, aus einem Abgleich-Konflikt behalten",
@@ -9763,8 +9768,8 @@
         "offline.savedHere": "Offline — salvato su questo dispositivo",
         "offline.pending": "{n} sincronizzazione in attesa", "offline.pendingPlural": "{n} sincronizzazioni in attesa",
         "offline.conflictTitle": "Questo libro è cambiato in due luoghi",
-        "offline.conflictBody": "Mentre questo dispositivo era lontano dal tuo scaffale, «{title}» è cambiato anche sullo scaffale — ultima cura: {date}. Niente è stato sovrascritto, e niente lo sarà finché non scegli:",
-        "offline.conflictBodyNoDate": "Mentre questo dispositivo era lontano dal tuo scaffale, «{title}» è cambiato anche sullo scaffale. Niente è stato sovrascritto, e niente lo sarà finché non scegli:",
+        "offline.conflictBody": "«{title}» è cambiato in due posti: su questo dispositivo e, da un'altra parte, sul tuo scaffale (ultima cura: {date}). Niente è stato sovrascritto, e niente lo sarà finché non scegli:",
+        "offline.conflictBodyNoDate": "«{title}» è cambiato in due posti: su questo dispositivo e, da un'altra parte, sul tuo scaffale. Niente è stato sovrascritto, e niente lo sarà finché non scegli:",
         "offline.keepMine": "Tieni il mio", "offline.useShelf": "Usa la copia dello scaffale", "offline.keepBoth": "Tieni entrambi",
         "offline.conflictBothNote": "Tieni entrambi conferma il testo su questo dispositivo e conserva la copia dello scaffale come istantanea nella Cronologia, parola per parola. Tieni il mio sostituisce la copia dello scaffale; Usa la copia dello scaffale sostituisce il libro su questo dispositivo — conservando prima il testo di questo dispositivo come istantanea nella Cronologia.",
         "offline.snapshotShelfName": "Copia dello scaffale, conservata da un conflitto di sincronizzazione",
@@ -9785,8 +9790,8 @@
         "offline.savedHere": "Offline — guardado neste dispositivo",
         "offline.pending": "{n} sincronização à espera", "offline.pendingPlural": "{n} sincronizações à espera",
         "offline.conflictTitle": "Este livro mudou em dois lugares",
-        "offline.conflictBody": "Enquanto este dispositivo estava longe da sua estante, «{title}» também mudou na estante — último cuidado: {date}. Nada foi substituído, e nada será até escolher:",
-        "offline.conflictBodyNoDate": "Enquanto este dispositivo estava longe da sua estante, «{title}» também mudou na estante. Nada foi substituído, e nada será até escolher:",
+        "offline.conflictBody": "«{title}» mudou em dois sítios: neste dispositivo e, a partir de outro lugar, na sua estante (último cuidado: {date}). Nada foi substituído, e nada será até escolher:",
+        "offline.conflictBodyNoDate": "«{title}» mudou em dois sítios: neste dispositivo e, a partir de outro lugar, na sua estante. Nada foi substituído, e nada será até escolher:",
         "offline.keepMine": "Manter o meu", "offline.useShelf": "Usar a cópia da estante", "offline.keepBoth": "Manter ambos",
         "offline.conflictBothNote": "Manter ambos confirma o texto neste dispositivo e preserva a cópia da estante como um instantâneo no Histórico, palavra por palavra. Manter o meu substitui a cópia da estante; Usar a cópia da estante substitui o livro neste dispositivo — guardando antes o texto deste dispositivo como um instantâneo no Histórico.",
         "offline.snapshotShelfName": "Cópia da estante, guardada de um conflito de sincronização",
@@ -9807,8 +9812,8 @@
         "offline.savedHere": "Offline — op dit apparaat bewaard",
         "offline.pending": "{n} synchronisatie wacht", "offline.pendingPlural": "{n} synchronisaties wachten",
         "offline.conflictTitle": "Dit boek is op twee plaatsen veranderd",
-        "offline.conflictBody": "Terwijl dit apparaat weg was van uw plank, is ‘{title}’ ook op de plank veranderd — laatst verzorgd op {date}. Er is niets overschreven, en dat gebeurt ook niet tot u kiest:",
-        "offline.conflictBodyNoDate": "Terwijl dit apparaat weg was van uw plank, is ‘{title}’ ook op de plank veranderd. Er is niets overschreven, en dat gebeurt ook niet tot u kiest:",
+        "offline.conflictBody": "‘{title}’ is op twee plekken veranderd: op dit apparaat, en van elders op uw plank (laatst verzorgd op {date}). Er is niets overschreven, en dat gebeurt ook niet tot u kiest:",
+        "offline.conflictBodyNoDate": "‘{title}’ is op twee plekken veranderd: op dit apparaat, en van elders op uw plank. Er is niets overschreven, en dat gebeurt ook niet tot u kiest:",
         "offline.keepMine": "De mijne houden", "offline.useShelf": "De plankkopie gebruiken", "offline.keepBoth": "Beide houden",
         "offline.conflictBothNote": "Beide houden laat de tekst op dit apparaat staan en bewaart de plankkopie woord voor woord als momentopname in de Geschiedenis. De mijne houden vervangt de plankkopie; De plankkopie gebruiken vervangt het boek op dit apparaat — en bewaart de tekst van dit apparaat eerst als momentopname in de Geschiedenis.",
         "offline.snapshotShelfName": "Plankkopie, bewaard uit een synchronisatieconflict",
@@ -9829,8 +9834,8 @@
         "offline.savedHere": "Offline — zapisano na tym urządzeniu",
         "offline.pending": "{n} synchronizacja oczekuje", "offline.pendingPlural": "{n} synchronizacji oczekuje",
         "offline.conflictTitle": "Ta książka zmieniła się w dwóch miejscach",
-        "offline.conflictBody": "Gdy to urządzenie było z dala od Twojej półki, «{title}» zmieniła się także na półce — ostatnio pielęgnowana: {date}. Nic nie zostało nadpisane i nic nie zostanie, dopóki nie wybierzesz:",
-        "offline.conflictBodyNoDate": "Gdy to urządzenie było z dala od Twojej półki, «{title}» zmieniła się także na półce. Nic nie zostało nadpisane i nic nie zostanie, dopóki nie wybierzesz:",
+        "offline.conflictBody": "«{title}» zmieniła się w dwóch miejscach: na tym urządzeniu i — z innego miejsca — na Twojej półce (ostatnio pielęgnowana: {date}). Nic nie zostało nadpisane i nic nie zostanie, dopóki nie wybierzesz:",
+        "offline.conflictBodyNoDate": "«{title}» zmieniła się w dwóch miejscach: na tym urządzeniu i — z innego miejsca — na Twojej półce. Nic nie zostało nadpisane i nic nie zostanie, dopóki nie wybierzesz:",
         "offline.keepMine": "Zachowaj moją", "offline.useShelf": "Użyj kopii z półki", "offline.keepBoth": "Zachowaj obie",
         "offline.conflictBothNote": "Zachowaj obie pozostawia tekst na tym urządzeniu i zachowuje kopię z półki słowo w słowo jako migawkę w Historii. Zachowaj moją zastępuje kopię z półki; Użyj kopii z półki zastępuje książkę na tym urządzeniu — najpierw zachowując tekst tego urządzenia jako migawkę w Historii.",
         "offline.snapshotShelfName": "Kopia z półki, zachowana z konfliktu synchronizacji",
@@ -9851,8 +9856,8 @@
         "offline.savedHere": "Нет сети — сохранено на этом устройстве",
         "offline.pending": "{n} синхронизация ожидает", "offline.pendingPlural": "{n} синхронизации ожидают",
         "offline.conflictTitle": "Эта книга изменилась в двух местах",
-        "offline.conflictBody": "Пока это устройство было вдали от вашей полки, «{title}» изменилась и на полке — последняя правка: {date}. Ничего не перезаписано и не будет, пока вы не выберете:",
-        "offline.conflictBodyNoDate": "Пока это устройство было вдали от вашей полки, «{title}» изменилась и на полке. Ничего не перезаписано и не будет, пока вы не выберете:",
+        "offline.conflictBody": "«{title}» изменилась в двух местах: на этом устройстве и — из другого места — на вашей полке (последняя правка: {date}). Ничего не перезаписано и не будет, пока вы не выберете:",
+        "offline.conflictBodyNoDate": "«{title}» изменилась в двух местах: на этом устройстве и — из другого места — на вашей полке. Ничего не перезаписано и не будет, пока вы не выберете:",
         "offline.keepMine": "Оставить мою", "offline.useShelf": "Взять копию с полки", "offline.keepBoth": "Оставить обе",
         "offline.conflictBothNote": "Оставить обе утверждает текст на этом устройстве и сохраняет копию с полки слово в слово как снимок в Истории. Оставить мою заменяет копию на полке; Взять копию с полки заменяет книгу на этом устройстве — сначала сохранив текст этого устройства как снимок в Истории.",
         "offline.snapshotShelfName": "Копия с полки, сохранённая из конфликта синхронизации",
@@ -9873,8 +9878,8 @@
         "offline.savedHere": "Çevrimdışı — bu cihazda saklandı",
         "offline.pending": "{n} eşitleme bekliyor", "offline.pendingPlural": "{n} eşitleme bekliyor",
         "offline.conflictTitle": "Bu kitap iki yerde değişti",
-        "offline.conflictBody": "Bu cihaz rafınızdan uzaktayken, «{title}» rafta da değişti — son bakım: {date}. Hiçbir şeyin üzerine yazılmadı ve siz seçene kadar yazılmayacak:",
-        "offline.conflictBodyNoDate": "Bu cihaz rafınızdan uzaktayken, «{title}» rafta da değişti. Hiçbir şeyin üzerine yazılmadı ve siz seçene kadar yazılmayacak:",
+        "offline.conflictBody": "«{title}» iki yerde değişti: bu cihazda ve başka bir yerden rafınızda (son bakım: {date}). Hiçbir şeyin üzerine yazılmadı ve siz seçene kadar yazılmayacak:",
+        "offline.conflictBodyNoDate": "«{title}» iki yerde değişti: bu cihazda ve başka bir yerden rafınızda. Hiçbir şeyin üzerine yazılmadı ve siz seçene kadar yazılmayacak:",
         "offline.keepMine": "Benimkini tut", "offline.useShelf": "Raftaki kopyayı kullan", "offline.keepBoth": "İkisini de tut",
         "offline.conflictBothNote": "İkisini de tut, bu cihazdaki metni onaylar ve raftaki kopyayı kelimesi kelimesine Geçmiş'te bir anlık görüntü olarak saklar. Benimkini tut, raftaki kopyanın yerini alır; Raftaki kopyayı kullan, bu cihazdaki kitabın yerini alır — ve önce bu cihazın metnini Geçmiş'te bir anlık görüntü olarak saklar.",
         "offline.snapshotShelfName": "Raftaki kopya, bir eşitleme çakışmasından saklandı",
@@ -9895,8 +9900,8 @@
         "offline.savedHere": "غير متصل — محفوظ على هذا الجهاز",
         "offline.pending": "{n} مزامنة في الانتظار", "offline.pendingPlural": "{n} مزامنات في الانتظار",
         "offline.conflictTitle": "تغيّر هذا الكتاب في مكانين",
-        "offline.conflictBody": "بينما كان هذا الجهاز بعيداً عن رفّك، تغيّر «{title}» على الرف أيضاً — آخر عناية: {date}. لم يُستبدل شيء، ولن يُستبدل حتى تختار:",
-        "offline.conflictBodyNoDate": "بينما كان هذا الجهاز بعيداً عن رفّك، تغيّر «{title}» على الرف أيضاً. لم يُستبدل شيء، ولن يُستبدل حتى تختار:",
+        "offline.conflictBody": "تغيّر «{title}» في مكانين: على هذا الجهاز، وعلى رفّك من مكان آخر (آخر عناية: {date}). لم يُستبدل شيء، ولن يُستبدل حتى تختار:",
+        "offline.conflictBodyNoDate": "تغيّر «{title}» في مكانين: على هذا الجهاز، وعلى رفّك من مكان آخر. لم يُستبدل شيء، ولن يُستبدل حتى تختار:",
         "offline.keepMine": "أبقِ نسختي", "offline.useShelf": "استخدم نسخة الرف", "offline.keepBoth": "أبقِ كليهما",
         "offline.conflictBothNote": "يُبقي «أبقِ كليهما» نص هذا الجهاز قائماً ويحفظ نسخة الرف كلمةً بكلمة كلقطة في السجل. يستبدل «أبقِ نسختي» نسخة الرف؛ ويستبدل «استخدم نسخة الرف» الكتاب على هذا الجهاز — بعد حفظ نص هذا الجهاز أولاً كلقطة في السجل.",
         "offline.snapshotShelfName": "نسخة الرف، محفوظة من تعارض في المزامنة",
@@ -9917,8 +9922,8 @@
         "offline.savedHere": "オフライン — このデバイスに保存",
         "offline.pending": "{n} 件の同期が待機中", "offline.pendingPlural": "{n} 件の同期が待機中",
         "offline.conflictTitle": "この本は2か所で変更されました",
-        "offline.conflictBody": "このデバイスが棚から離れている間に、「{title}」は棚でも変更されていました — 最終更新：{date}。まだ何も上書きされておらず、あなたが選ぶまで上書きされません：",
-        "offline.conflictBodyNoDate": "このデバイスが棚から離れている間に、「{title}」は棚でも変更されていました。まだ何も上書きされておらず、あなたが選ぶまで上書きされません：",
+        "offline.conflictBody": "「{title}」は2か所で変更されています：このデバイスと、別の場所からあなたの棚で（最終更新：{date}）。まだ何も上書きされておらず、あなたが選ぶまで上書きされません：",
+        "offline.conflictBodyNoDate": "「{title}」は2か所で変更されています：このデバイスと、別の場所からあなたの棚で。まだ何も上書きされておらず、あなたが選ぶまで上書きされません：",
         "offline.keepMine": "自分のものを残す", "offline.useShelf": "棚のコピーを使う", "offline.keepBoth": "両方残す",
         "offline.conflictBothNote": "「両方残す」はこのデバイスの文章を残し、棚のコピーを一字一句そのまま履歴のスナップショットとして保存します。「自分のものを残す」は棚のコピーを置き換えます。「棚のコピーを使う」はこのデバイスの本を置き換えます — その前に、このデバイスの文章を履歴のスナップショットとして保存します。",
         "offline.snapshotShelfName": "棚のコピー（同期の競合から保管）",
@@ -9939,8 +9944,8 @@
         "offline.savedHere": "离线 — 已保存在这台设备上",
         "offline.pending": "{n} 次同步等待中", "offline.pendingPlural": "{n} 次同步等待中",
         "offline.conflictTitle": "这本书在两处发生了变化",
-        "offline.conflictBody": "当这台设备离开你的书架时，《{title}》在书架上也被修改了 — 最后打理：{date}。目前没有任何内容被覆盖，在你做出选择之前也不会：",
-        "offline.conflictBodyNoDate": "当这台设备离开你的书架时，《{title}》在书架上也被修改了。目前没有任何内容被覆盖，在你做出选择之前也不会：",
+        "offline.conflictBody": "《{title}》在两处被修改了：这台设备上，以及从别处在你的书架上（最后打理：{date}）。目前没有任何内容被覆盖，在你做出选择之前也不会：",
+        "offline.conflictBodyNoDate": "《{title}》在两处被修改了：这台设备上，以及从别处在你的书架上。目前没有任何内容被覆盖，在你做出选择之前也不会：",
         "offline.keepMine": "保留我的", "offline.useShelf": "使用书架上的副本", "offline.keepBoth": "两者都保留",
         "offline.conflictBothNote": "“两者都保留”会保留这台设备上的文字，并把书架上的副本逐字保存为历史记录中的快照。“保留我的”会替换书架上的副本；“使用书架上的副本”会替换这台设备上的书 — 并会先把这台设备的文字保存为历史记录中的快照。",
         "offline.snapshotShelfName": "书架上的副本，因同步冲突而保留",
@@ -11123,7 +11128,7 @@
         "insights.gPages": "Pages", "insights.gPagesNote": "on {device}", "insights.gPagesWait": "the desk is still measuring for {device}",
         "insights.gSentence": "Average sentence", "insights.gSentenceNote": "words long",
         "insights.gDialogue": "Dialogue", "insights.gDialogueNote": "of the words are spoken",
-        "insights.glanceFoot": "Reading time uses the studio’s own pace of {n} words a minute, the same as the sidebar — a little slower than the 260 a minute that a 2019 review of 190 studies found for adults silently reading English fiction (Brysbaert, Journal of Memory and Language). Pages are the reading desk’s own count for this device.",
+        "insights.glanceFoot": "Reading time uses {n} words a minute, the same as the sidebar: the average a 2019 review of 190 studies found for adults silently reading English non-fiction (fiction ran a little faster, at 260 a minute; Brysbaert, Journal of Memory and Language). Pages are the reading desk’s own count for this device, also the same as the sidebar.",
         "insights.tipAvg": "sentences average {n} words", "insights.tipDlg": "{p}% dialogue", "insights.tipEase": "reading ease about {n}", "insights.tipOpen": "Click, or press Enter, to open it",
         "insights.colSection": "Section", "insights.colWords": "Words", "insights.colAvg": "Average sentence, in words", "insights.colEase": "Reading ease (approximate)", "insights.colLength": "Sentence length, in words", "insights.colSentences": "Sentences",
         "insights.easeH": "Reading ease", "insights.easeSub": "The Flesch Reading Ease score of each chapter. Higher scores mean shorter sentences and shorter words — it measures the shape of the prose, not its worth.",
@@ -11153,7 +11158,7 @@
         "insights.gPages": "Páginas", "insights.gPagesNote": "en {device}", "insights.gPagesWait": "el escritorio aún está midiendo para {device}",
         "insights.gSentence": "Frase media", "insights.gSentenceNote": "palabras de largo",
         "insights.gDialogue": "Diálogo", "insights.gDialogueNote": "de las palabras se dicen en voz alta",
-        "insights.glanceFoot": "El tiempo de lectura usa el ritmo propio del estudio, {n} palabras por minuto, el mismo que la barra lateral: algo más lento que las 260 por minuto que una revisión de 190 estudios (2019) halló en adultos que leen ficción en inglés en silencio (Brysbaert, Journal of Memory and Language). Las páginas son el recuento del propio escritorio de lectura para este dispositivo.",
+        "insights.glanceFoot": "El tiempo de lectura usa {n} palabras por minuto, igual que la barra lateral: la media que una revisión de 190 estudios (2019) halló en adultos que leen en silencio no ficción en inglés (la ficción se lee algo más rápido, a 260 por minuto; Brysbaert, Journal of Memory and Language). Las páginas son el recuento del propio escritorio de lectura para este dispositivo, también igual que la barra lateral.",
         "insights.tipAvg": "frases de {n} palabras de media", "insights.tipDlg": "{p}% de diálogo", "insights.tipEase": "facilidad de lectura de unos {n}", "insights.tipOpen": "Haz clic, o pulsa Intro, para abrirlo",
         "insights.colSection": "Sección", "insights.colWords": "Palabras", "insights.colAvg": "Frase media, en palabras", "insights.colEase": "Facilidad de lectura (aproximada)", "insights.colLength": "Longitud de la frase, en palabras", "insights.colSentences": "Frases",
         "insights.easeH": "Facilidad de lectura", "insights.easeSub": "La puntuación Flesch Reading Ease de cada capítulo. Una puntuación más alta significa frases y palabras más cortas: mide la forma de la prosa, no su valor.",
@@ -11183,7 +11188,7 @@
         "insights.gPages": "Pages", "insights.gPagesNote": "sur {device}", "insights.gPagesWait": "le bureau mesure encore pour {device}",
         "insights.gSentence": "Phrase moyenne", "insights.gSentenceNote": "mots de long",
         "insights.gDialogue": "Dialogue", "insights.gDialogueNote": "des mots sont dits à voix haute",
-        "insights.glanceFoot": "Le temps de lecture suit le rythme propre au studio, {n} mots par minute, le même que la barre latérale — un peu plus lent que les 260 par minute qu’une synthèse de 190 études (2019) a trouvés chez les adultes lisant en silence de la fiction en anglais (Brysbaert, Journal of Memory and Language). Les pages sont le décompte du bureau de lecture pour cet appareil.",
+        "insights.glanceFoot": "Le temps de lecture suit {n} mots par minute, comme la barre latérale : la moyenne qu’une synthèse de 190 études (2019) a trouvée chez les adultes lisant en silence des documentaires en anglais (la fiction se lit un peu plus vite, à 260 par minute ; Brysbaert, Journal of Memory and Language). Les pages sont le décompte du bureau de lecture pour cet appareil, le même aussi que la barre latérale.",
         "insights.tipAvg": "phrases de {n} mots en moyenne", "insights.tipDlg": "{p} % de dialogue", "insights.tipEase": "facilité de lecture d’environ {n}", "insights.tipOpen": "Cliquez, ou appuyez sur Entrée, pour l’ouvrir",
         "insights.colSection": "Section", "insights.colWords": "Mots", "insights.colAvg": "Phrase moyenne, en mots", "insights.colEase": "Facilité de lecture (approximative)", "insights.colLength": "Longueur de phrase, en mots", "insights.colSentences": "Phrases",
         "insights.easeH": "Facilité de lecture", "insights.easeSub": "Le score Flesch Reading Ease de chaque chapitre. Un score plus élevé signifie des phrases et des mots plus courts — il mesure la forme de la prose, pas sa valeur.",
@@ -11213,7 +11218,7 @@
         "insights.gPages": "Seiten", "insights.gPagesNote": "auf {device}", "insights.gPagesWait": "der Schreibtisch misst noch für {device}",
         "insights.gSentence": "Durchschnittssatz", "insights.gSentenceNote": "Wörter lang",
         "insights.gDialogue": "Dialog", "insights.gDialogueNote": "der Wörter werden gesprochen",
-        "insights.glanceFoot": "Die Lesezeit nutzt das Tempo des Studios, {n} Wörter pro Minute, dasselbe wie die Seitenleiste – etwas langsamer als die 260 pro Minute, die eine Übersicht über 190 Studien (2019) für Erwachsene beim stillen Lesen englischer Belletristik fand (Brysbaert, Journal of Memory and Language). Die Seiten sind die eigene Zählung des Lesetischs für dieses Gerät.",
+        "insights.glanceFoot": "Die Lesezeit rechnet mit {n} Wörtern pro Minute, wie die Seitenleiste: dem Durchschnitt, den eine Übersicht über 190 Studien (2019) für Erwachsene beim stillen Lesen englischer Sachtexte fand (Belletristik wird etwas schneller gelesen, mit 260 pro Minute; Brysbaert, Journal of Memory and Language). Die Seiten sind die eigene Zählung des Lesetischs für dieses Gerät, ebenfalls wie in der Seitenleiste.",
         "insights.tipAvg": "Sätze mit durchschnittlich {n} Wörtern", "insights.tipDlg": "{p} % Dialog", "insights.tipEase": "Lesbarkeit etwa {n}", "insights.tipOpen": "Klicken oder Eingabe drücken, um es zu öffnen",
         "insights.colSection": "Abschnitt", "insights.colWords": "Wörter", "insights.colAvg": "Durchschnittssatz, in Wörtern", "insights.colEase": "Lesbarkeit (ungefähr)", "insights.colLength": "Satzlänge, in Wörtern", "insights.colSentences": "Sätze",
         "insights.easeH": "Lesbarkeit", "insights.easeSub": "Der Flesch-Reading-Ease-Wert jedes Kapitels. Höhere Werte bedeuten kürzere Sätze und kürzere Wörter – er misst die Gestalt der Prosa, nicht ihren Wert.",
@@ -11243,7 +11248,7 @@
         "insights.gPages": "Pagine", "insights.gPagesNote": "su {device}", "insights.gPagesWait": "la scrivania sta ancora misurando per {device}",
         "insights.gSentence": "Frase media", "insights.gSentenceNote": "parole di lunghezza",
         "insights.gDialogue": "Dialogo", "insights.gDialogueNote": "delle parole sono pronunciate",
-        "insights.glanceFoot": "Il tempo di lettura usa il ritmo proprio dello studio, {n} parole al minuto, lo stesso della barra laterale: un po’ più lento delle 260 al minuto che una rassegna di 190 studi (2019) ha rilevato negli adulti che leggono in silenzio narrativa in inglese (Brysbaert, Journal of Memory and Language). Le pagine sono il conteggio della scrivania di lettura per questo dispositivo.",
+        "insights.glanceFoot": "Il tempo di lettura usa {n} parole al minuto, come la barra laterale: la media che una rassegna di 190 studi (2019) ha rilevato negli adulti che leggono in silenzio saggistica in inglese (la narrativa si legge un po’ più in fretta, a 260 al minuto; Brysbaert, Journal of Memory and Language). Le pagine sono il conteggio della scrivania di lettura per questo dispositivo, lo stesso anche della barra laterale.",
         "insights.tipAvg": "frasi di {n} parole in media", "insights.tipDlg": "{p}% di dialogo", "insights.tipEase": "leggibilità circa {n}", "insights.tipOpen": "Fai clic, o premi Invio, per aprirlo",
         "insights.colSection": "Sezione", "insights.colWords": "Parole", "insights.colAvg": "Frase media, in parole", "insights.colEase": "Leggibilità (approssimativa)", "insights.colLength": "Lunghezza della frase, in parole", "insights.colSentences": "Frasi",
         "insights.easeH": "Leggibilità", "insights.easeSub": "Il punteggio Flesch Reading Ease di ogni capitolo. Punteggi più alti significano frasi e parole più brevi: misura la forma della prosa, non il suo valore.",
@@ -11273,7 +11278,7 @@
         "insights.gPages": "Páginas", "insights.gPagesNote": "no {device}", "insights.gPagesWait": "a mesa ainda está a medir para {device}",
         "insights.gSentence": "Frase média", "insights.gSentenceNote": "palavras de comprimento",
         "insights.gDialogue": "Diálogo", "insights.gDialogueNote": "das palavras são ditas em voz alta",
-        "insights.glanceFoot": "O tempo de leitura usa o ritmo próprio do estúdio, {n} palavras por minuto, o mesmo da barra lateral — um pouco mais lento do que as 260 por minuto que uma revisão de 190 estudos (2019) encontrou em adultos a ler ficção em inglês em silêncio (Brysbaert, Journal of Memory and Language). As páginas são a contagem da própria mesa de leitura para este dispositivo.",
+        "insights.glanceFoot": "O tempo de leitura usa {n} palavras por minuto, tal como a barra lateral: a média que uma revisão de 190 estudos (2019) encontrou em adultos a ler em silêncio não ficção em inglês (a ficção lê-se um pouco mais depressa, a 260 por minuto; Brysbaert, Journal of Memory and Language). As páginas são a contagem da própria mesa de leitura para este dispositivo, também igual à barra lateral.",
         "insights.tipAvg": "frases de {n} palavras em média", "insights.tipDlg": "{p}% de diálogo", "insights.tipEase": "facilidade de leitura de cerca de {n}", "insights.tipOpen": "Clique, ou prima Enter, para o abrir",
         "insights.colSection": "Secção", "insights.colWords": "Palavras", "insights.colAvg": "Frase média, em palavras", "insights.colEase": "Facilidade de leitura (aproximada)", "insights.colLength": "Comprimento da frase, em palavras", "insights.colSentences": "Frases",
         "insights.easeH": "Facilidade de leitura", "insights.easeSub": "A pontuação Flesch Reading Ease de cada capítulo. Pontuações mais altas significam frases e palavras mais curtas — mede a forma da prosa, não o seu valor.",
@@ -11303,7 +11308,7 @@
         "insights.gPages": "Pagina’s", "insights.gPagesNote": "op {device}", "insights.gPagesWait": "het bureau meet nog voor {device}",
         "insights.gSentence": "Gemiddelde zin", "insights.gSentenceNote": "woorden lang",
         "insights.gDialogue": "Dialoog", "insights.gDialogueNote": "van de woorden wordt uitgesproken",
-        "insights.glanceFoot": "De leestijd gebruikt het eigen tempo van de studio, {n} woorden per minuut, hetzelfde als de zijbalk — iets trager dan de 260 per minuut die een overzicht van 190 studies (2019) vond voor volwassenen die stil Engelse fictie lezen (Brysbaert, Journal of Memory and Language). De pagina’s zijn de eigen telling van het leesbureau voor dit apparaat.",
+        "insights.glanceFoot": "De leestijd rekent met {n} woorden per minuut, net als de zijbalk: het gemiddelde dat een overzicht van 190 studies (2019) vond voor volwassenen die stil Engelse non-fictie lezen (fictie gaat iets sneller, 260 per minuut; Brysbaert, Journal of Memory and Language). De pagina’s zijn de eigen telling van het leesbureau voor dit apparaat, ook gelijk aan de zijbalk.",
         "insights.tipAvg": "zinnen van gemiddeld {n} woorden", "insights.tipDlg": "{p}% dialoog", "insights.tipEase": "leesgemak ongeveer {n}", "insights.tipOpen": "Klik, of druk op Enter, om het te openen",
         "insights.colSection": "Sectie", "insights.colWords": "Woorden", "insights.colAvg": "Gemiddelde zin, in woorden", "insights.colEase": "Leesgemak (bij benadering)", "insights.colLength": "Zinslengte, in woorden", "insights.colSentences": "Zinnen",
         "insights.easeH": "Leesgemak", "insights.easeSub": "De Flesch Reading Ease-score van elk hoofdstuk. Hogere scores betekenen kortere zinnen en kortere woorden — het meet de vorm van het proza, niet de waarde ervan.",
@@ -11333,7 +11338,7 @@
         "insights.gPages": "Strony", "insights.gPagesNote": "na {device}", "insights.gPagesWait": "biurko wciąż mierzy dla {device}",
         "insights.gSentence": "Średnie zdanie", "insights.gSentenceNote": "słów długości",
         "insights.gDialogue": "Dialog", "insights.gDialogueNote": "słów pada na głos",
-        "insights.glanceFoot": "Czas czytania liczony jest we własnym tempie studia, {n} słów na minutę, tak jak na pasku bocznym — nieco wolniej niż 260 na minutę, które przegląd 190 badań (2019) wykazał u dorosłych czytających po cichu anglojęzyczną prozę (Brysbaert, Journal of Memory and Language). Strony to własne wyliczenie biurka czytelniczego dla tego urządzenia.",
+        "insights.glanceFoot": "Czas czytania liczony jest przy {n} słowach na minutę, tak jak na pasku bocznym: to średnia, którą przegląd 190 badań (2019) wykazał u dorosłych czytających po cichu anglojęzyczną literaturę faktu (prozę czyta się nieco szybciej, 260 na minutę; Brysbaert, Journal of Memory and Language). Strony to własne wyliczenie biurka czytelniczego dla tego urządzenia, także takie jak na pasku bocznym.",
         "insights.tipAvg": "zdania średnio po {n} słów", "insights.tipDlg": "{p}% dialogu", "insights.tipEase": "łatwość czytania ok. {n}", "insights.tipOpen": "Kliknij lub naciśnij Enter, aby otworzyć",
         "insights.colSection": "Sekcja", "insights.colWords": "Słowa", "insights.colAvg": "Średnie zdanie, w słowach", "insights.colEase": "Łatwość czytania (przybliżona)", "insights.colLength": "Długość zdania, w słowach", "insights.colSentences": "Zdania",
         "insights.easeH": "Łatwość czytania", "insights.easeSub": "Wynik Flesch Reading Ease każdego rozdziału. Wyższy wynik oznacza krótsze zdania i krótsze słowa — mierzy kształt prozy, nie jej wartość.",
@@ -11363,7 +11368,7 @@
         "insights.gPages": "Страницы", "insights.gPagesNote": "на {device}", "insights.gPagesWait": "стол ещё измеряет для {device}",
         "insights.gSentence": "Средняя фраза", "insights.gSentenceNote": "слов в длину",
         "insights.gDialogue": "Диалог", "insights.gDialogueNote": "слов звучит вслух",
-        "insights.glanceFoot": "Время чтения считается в собственном темпе студии — {n} слов в минуту, как на боковой панели. Это чуть медленнее, чем 260 слов в минуту, которые обзор 190 исследований (2019) нашёл у взрослых, молча читающих художественную прозу на английском (Brysbaert, Journal of Memory and Language). Страницы — собственный подсчёт стола для чтения на этом устройстве.",
+        "insights.glanceFoot": "Время чтения считается при {n} словах в минуту, как на боковой панели: это среднее, которое обзор 190 исследований (2019) нашёл у взрослых, молча читающих нехудожественные тексты на английском (художественную прозу читают чуть быстрее, 260 слов в минуту; Brysbaert, Journal of Memory and Language). Страницы — собственный подсчёт стола для чтения на этом устройстве, тоже как на боковой панели.",
         "insights.tipAvg": "фразы в среднем по {n} слов", "insights.tipDlg": "{p}% диалога", "insights.tipEase": "лёгкость чтения около {n}", "insights.tipOpen": "Нажмите или нажмите Enter, чтобы открыть",
         "insights.colSection": "Раздел", "insights.colWords": "Слова", "insights.colAvg": "Средняя фраза, в словах", "insights.colEase": "Лёгкость чтения (приблизительно)", "insights.colLength": "Длина фразы, в словах", "insights.colSentences": "Фразы",
         "insights.easeH": "Лёгкость чтения", "insights.easeSub": "Оценка Flesch Reading Ease для каждой главы. Чем выше оценка, тем короче фразы и слова: она измеряет форму прозы, а не её ценность.",
@@ -11393,7 +11398,7 @@
         "insights.gPages": "Sayfa", "insights.gPagesNote": "{device} üzerinde", "insights.gPagesWait": "masa {device} için hâlâ ölçüyor",
         "insights.gSentence": "Ortalama cümle", "insights.gSentenceNote": "kelime uzunluğunda",
         "insights.gDialogue": "Diyalog", "insights.gDialogueNote": "kelimeler sesli söyleniyor",
-        "insights.glanceFoot": "Okuma süresi, stüdyonun kendi temposu olan dakikada {n} kelimeyi kullanır; kenar çubuğuyla aynıdır. Bu, 190 çalışmayı inceleyen bir derlemenin (2019) İngilizce kurmacayı sessizce okuyan yetişkinlerde bulduğu dakikada 260 kelimeden biraz yavaştır (Brysbaert, Journal of Memory and Language). Sayfalar, okuma masasının bu cihaz için kendi sayımıdır.",
+        "insights.glanceFoot": "Okuma süresi, kenar çubuğuyla aynı biçimde dakikada {n} kelimeyle hesaplanır: 190 çalışmayı inceleyen bir derlemenin (2019) İngilizce kurmaca dışı metinleri sessizce okuyan yetişkinlerde bulduğu ortalama (kurmaca biraz daha hızlı okunur, dakikada 260; Brysbaert, Journal of Memory and Language). Sayfalar, okuma masasının bu cihaz için kendi sayımıdır; bu da kenar çubuğuyla aynıdır.",
         "insights.tipAvg": "cümleler ortalama {n} kelime", "insights.tipDlg": "%{p} diyalog", "insights.tipEase": "okuma kolaylığı yaklaşık {n}", "insights.tipOpen": "Açmak için tıklayın ya da Enter’a basın",
         "insights.colSection": "Kısım", "insights.colWords": "Kelime", "insights.colAvg": "Ortalama cümle, kelime olarak", "insights.colEase": "Okuma kolaylığı (yaklaşık)", "insights.colLength": "Cümle uzunluğu, kelime olarak", "insights.colSentences": "Cümle",
         "insights.easeH": "Okuma kolaylığı", "insights.easeSub": "Her bölümün Flesch Reading Ease puanı. Yüksek puan daha kısa cümleler ve daha kısa kelimeler demektir; düzyazının biçimini ölçer, değerini değil.",
@@ -11423,7 +11428,7 @@
         "insights.gPages": "الصفحات", "insights.gPagesNote": "على {device}", "insights.gPagesWait": "ما زال المكتب يقيس لـ {device}",
         "insights.gSentence": "متوسط الجملة", "insights.gSentenceNote": "كلمة طولًا",
         "insights.gDialogue": "الحوار", "insights.gDialogueNote": "من الكلمات تُقال بصوت عالٍ",
-        "insights.glanceFoot": "تعتمد مدة القراءة على وتيرة الاستوديو نفسه، {n} كلمة في الدقيقة، وهي نفسها في الشريط الجانبي — أبطأ قليلًا من 260 كلمة في الدقيقة التي وجدتها مراجعة لـ190 دراسة (2019) لدى البالغين الذين يقرؤون الأدب القصصي الإنجليزي بصمت (Brysbaert, Journal of Memory and Language). أما الصفحات فهي عدّ مكتب القراءة نفسه لهذا الجهاز.",
+        "insights.glanceFoot": "تُحسب مدة القراءة بمعدل {n} كلمة في الدقيقة، كما في الشريط الجانبي: وهو المتوسط الذي وجدته مراجعة لـ190 دراسة (2019) لدى البالغين الذين يقرؤون بصمت نصوصًا إنجليزية غير قصصية (يُقرأ الأدب القصصي أسرع قليلًا، بمعدل 260 في الدقيقة؛ Brysbaert, Journal of Memory and Language). أما الصفحات فهي عدّ مكتب القراءة نفسه لهذا الجهاز، وهي نفسها في الشريط الجانبي أيضًا.",
         "insights.tipAvg": "متوسط الجمل {n} كلمة", "insights.tipDlg": "{p}% حوار", "insights.tipEase": "سهولة القراءة نحو {n}", "insights.tipOpen": "انقر، أو اضغط Enter، لفتحه",
         "insights.colSection": "القسم", "insights.colWords": "الكلمات", "insights.colAvg": "متوسط الجملة بالكلمات", "insights.colEase": "سهولة القراءة (تقريبية)", "insights.colLength": "طول الجملة بالكلمات", "insights.colSentences": "الجمل",
         "insights.easeH": "سهولة القراءة", "insights.easeSub": "درجة Flesch Reading Ease لكل فصل. الدرجة الأعلى تعني جملًا أقصر وكلمات أقصر — إنها تقيس شكل النثر لا قيمته.",
@@ -11453,7 +11458,7 @@
         "insights.gPages": "ページ", "insights.gPagesNote": "{device}で", "insights.gPagesWait": "デスクが{device}向けにまだ計測中です",
         "insights.gSentence": "平均の文", "insights.gSentenceNote": "語の長さ",
         "insights.gDialogue": "会話", "insights.gDialogueNote": "の語が声に出して語られる",
-        "insights.glanceFoot": "読む時間は、サイドバーと同じスタジオ独自のペース、1分あたり{n}語で計算しています。190件の研究をまとめた2019年のレビューが、英語の小説を黙読する大人について示した1分あたり260語より、少しゆっくりです（Brysbaert, Journal of Memory and Language）。ページ数は、このデバイスでの読書デスク自身の計測です。",
+        "insights.glanceFoot": "読む時間は、サイドバーと同じく1分あたり{n}語で計算しています。190件の研究をまとめた2019年のレビューが、英語のノンフィクションを黙読する大人について示した平均です（小説はやや速く、1分あたり260語。Brysbaert, Journal of Memory and Language）。ページ数は、このデバイスでの読書デスク自身の計測で、これもサイドバーと同じです。",
         "insights.tipAvg": "文の平均は{n}語", "insights.tipDlg": "会話{p}%", "insights.tipEase": "読みやすさ 約{n}", "insights.tipOpen": "クリックするか Enter キーで開きます",
         "insights.colSection": "セクション", "insights.colWords": "語数", "insights.colAvg": "平均の文（語）", "insights.colEase": "読みやすさ（概算）", "insights.colLength": "文の長さ（語）", "insights.colSentences": "文の数",
         "insights.easeH": "読みやすさ", "insights.easeSub": "各章の Flesch Reading Ease スコア。スコアが高いほど文も語も短いことを示します。散文のかたちを測るもので、その価値を測るものではありません。",
@@ -11483,7 +11488,7 @@
         "insights.gPages": "页数", "insights.gPagesNote": "在 {device} 上", "insights.gPagesWait": "书桌仍在为 {device} 测量",
         "insights.gSentence": "平均句长", "insights.gSentenceNote": "个词",
         "insights.gDialogue": "对话", "insights.gDialogueNote": "的词是说出口的",
-        "insights.glanceFoot": "阅读时间采用工作室自己的速度，每分钟 {n} 词，与侧边栏相同——比 2019 年一篇汇总 190 项研究的综述所得的每分钟 260 词（成年人默读英语小说）略慢（Brysbaert, Journal of Memory and Language）。页数是阅读书桌在此设备上自己的计数。",
+        "insights.glanceFoot": "阅读时间按每分钟 {n} 词计算，与侧边栏相同：这是 2019 年一篇汇总 190 项研究的综述在成年人默读英语非虚构作品时得出的平均值（小说读得稍快，每分钟 260 词；Brysbaert, Journal of Memory and Language）。页数是阅读书桌在此设备上自己的计数，也与侧边栏相同。",
         "insights.tipAvg": "句子平均 {n} 词", "insights.tipDlg": "对话占 {p}%", "insights.tipEase": "阅读易度约 {n}", "insights.tipOpen": "点击或按 Enter 打开",
         "insights.colSection": "部分", "insights.colWords": "词数", "insights.colAvg": "平均句长（词）", "insights.colEase": "阅读易度（近似）", "insights.colLength": "句长（词）", "insights.colSentences": "句子数",
         "insights.easeH": "阅读易度", "insights.easeSub": "每章的 Flesch Reading Ease 分数。分数越高，句子和词越短——它衡量的是文字的形态，而不是价值。",
@@ -16814,7 +16819,7 @@
          memory, and any edit anywhere recomputes. Sections are drawn
          by an ordered list of renderers (INS_RENDERERS) so another
          section can be slotted in without touching the rest. */
-      const INS_WPM = 225; /* the studio's own reading pace — the same one the sidebar's statistics use */
+      const INS_WPM = READ_WPM; /* the studio's own reading pace — the same one the sidebar's statistics use */
       /* Words to look at — Beuk's own short lists (documented in the
          README), per book language. Each term counts the exact forms
          listed, never a guess at other inflections. -ly / -mente
@@ -19210,9 +19215,9 @@
       function renderSideStatusSummary(total) {
         const el = $("sideStatusSummary"); if (!el) return;
         if (typeof total !== "number") total = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
-        const mins = Math.round(total / 225);
+        const mins = Math.round(total / READ_WPM);
         const time = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
-        const pages = Math.ceil(total / 250); /* BEUK:bugs — each count in its own plural form */
+        const pages = statsPages(total); /* BEUK:bugs — each count in its own plural form */
         el.textContent = t("side.statsSummary", { words: t("side.statsWords", { n: fmtNum(total), count: total }), pages: t("side.statsPages", { n: fmtNum(pages), count: pages }), time: time });
       }
       function sideInit() {
@@ -19834,14 +19839,41 @@
         splitPlan: (id, pos) => chopSplitPlan(state.sections.find((x) => x.id === id), pos), menu: (id) => chopOpenMenu(id), closeMenu: () => chopCloseMenu(false)
       };
       /* ==== /BEUK:chapterops ==== */
+      /* The page count the sidebar shows is the reading desk's own, for
+         the device on the desk - the same number the desk and Insights
+         show. Between a change and the desk's re-measure (it follows
+         within half a second) the last measurement is scaled by the
+         words since, so the count neither flickers while the writer
+         types nor carries one book's pages over to another. Until the
+         desk has measured a book with words in it, a rough 250 words a
+         page; a book with no words has no pages. */
+      function statsDeskReady() { try { return deskState.total > 0 && !!deskState.sig && deskState.words > 0; } catch (e) { return false; } } /* the interface may be translated before the desk's state is declared */
+      function statsPages(total) {
+        if (!(total > 0)) return 0;
+        if (!statsDeskReady()) return Math.ceil(total / 250);
+        return total === deskState.words ? deskState.total : Math.max(1, Math.round(deskState.total * total / deskState.words));
+      }
+      function statsPagesNote() {
+        const sn = $("statsNote"); if (!sn) return;
+        sn.textContent = statsDeskReady()
+          ? t("stats.pagesNoteDesk", { device: DEVICE_NAMES[state.device] || state.device || "", b: fmtNum(READ_WPM) })
+          : t("stats.pagesNote", { a: fmtNum(250), b: fmtNum(READ_WPM) });
+      }
+      function statsPagesRefresh() {
+        const total = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
+        if ($("statPages")) $("statPages").textContent = fmtNum(statsPages(total));
+        statsPagesNote();
+        renderSideStatusSummary(total);
+      }
       function updateStats() {
         const included = state.sections.filter((s) => s.included);
         const total = included.reduce((n, s) => n + sectionWords(s), 0);
         const chars = included.reduce((n, s) => n + sectionChars(s), 0);
         $("statWords").textContent = fmtNum(total);
         $("statChars").textContent = fmtNum(chars);
-        $("statPages").textContent = fmtNum(Math.ceil(total / 250));
-        const mins = Math.round(total / 225);
+        $("statPages").textContent = fmtNum(statsPages(total));
+        statsPagesNote();
+        const mins = Math.round(total / READ_WPM);
         $("statTime").textContent = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
         renderSideStatusSummary(total); /* BEUK:sidebar */
         if (typeof renderSampleNoteLive === "function") renderSampleNoteLive(total); /* BEUK:bugs — the sample note's count is live */
@@ -20562,42 +20594,74 @@
         stableJson(Object.assign({}, a, { data: "" })) === stableJson(Object.assign({}, b, { data: "" })); /* key order aside: the shelf's store may reorder keys */
       function chopSnapDoc() {
         const d = serializeBook();
-        delete d.history; delete d.importReport;
+        delete d.history; delete d.historyPool; delete d.importReport;
         const imgs = d.images || [], fonts = d.fonts || [], cover = d.cover;
         d.images = []; d.fonts = []; d.cover = null;
         const c = JSON.parse(JSON.stringify(d));
         c.images = imgs.map(chopShareObj); c.fonts = fonts.map(chopShareObj); c.cover = cover ? chopShareObj(cover) : null;
         return c;
       }
-      function chopSnapPack(e) {
-        if (!e || e.auto !== "chapterop" || !e.doc) return e;
+      /* Every snapshot packs this way, whatever its kind (named,
+         automatic, structural): a picture, font or cover the book
+         still holds unchanged is named ({ref: id}); one the book has
+         since changed or dropped is written ONCE, in the saved book's
+         historyPool, however many snapshots hold it, and named by its
+         place there ({ref: id, pool: i}). */
+      function histPack(list) {
         const liveFonts = (state.fonts || []).map(normalizeCustomFont).filter(Boolean);
-        const ref = (list, live) => (list || []).map((o) => (chopSameObj(o, live.find((x) => x && o && x.id === o.id)) ? { ref: o.id } : o));
-        const p = {};
-        Object.keys(e.doc).forEach((k) => {
-          const v = e.doc[k];
-          p[k] = k === "images" ? ref(v, state.images || []) : k === "fonts" ? ref(v, liveFonts) : k === "cover" && v && chopSameObj(v, state.cover) ? { ref: "cover" } : v;
+        const pool = { images: [], fonts: [], covers: [] };
+        const toPool = (bucket, o, refId) => {
+          let i = bucket.findIndex((x) => chopSameObj(x, o));
+          if (i < 0) { bucket.push(o); i = bucket.length - 1; }
+          return { ref: refId, pool: i };
+        };
+        const packOne = (o, live, bucket) => {
+          if (!o || typeof o !== "object" || typeof o.data !== "string" || !o.data) return o;
+          if (chopSameObj(o, live.find((x) => x && x.id === o.id))) return { ref: o.id };
+          return toPool(bucket, o, o.id);
+        };
+        const entries = (list || []).map((e) => {
+          if (!e || !e.doc) return e;
+          const p = {};
+          Object.keys(e.doc).forEach((k) => {
+            const v = e.doc[k];
+            if (k === "images") p[k] = (v || []).map((o) => packOne(o, state.images || [], pool.images));
+            else if (k === "fonts") p[k] = (v || []).map((o) => packOne(o, liveFonts, pool.fonts));
+            else if (k === "cover" && v && typeof v === "object" && typeof v.data === "string" && v.data)
+              p[k] = chopSameObj(v, state.cover) ? { ref: "cover" } : toPool(pool.covers, v, "cover");
+            else p[k] = v;
+          });
+          const o = {};
+          Object.keys(e).forEach((k) => { if (k === "doc") o.chopDoc = p; else o[k] = e[k]; });
+          return o;
         });
-        const o = {};
-        Object.keys(e).forEach((k) => { if (k === "doc") o.chopDoc = p; else o[k] = e[k]; });
-        return o;
+        return { history: entries, pool: pool };
       }
-      function chopSnapUnpack(e) {
+      function chopSnapUnpack(e, pool) {
         const p = e.chopDoc;
         if (!p || typeof p !== "object" || !Array.isArray(p.sections)) return null;
+        pool = pool && typeof pool === "object" ? pool : {};
         let whole = true;
-        const back = (list, live) => (Array.isArray(list) ? list : []).map((o) => {
+        const find = (o, live, bucket) => {
+          if (typeof o.pool === "number") return Array.isArray(bucket) ? bucket[o.pool] : null;
+          return live.find((x) => x && x.id === o.ref);
+        };
+        const back = (list, live, bucket) => (Array.isArray(list) ? list : []).map((o) => {
           if (!o || typeof o.ref !== "string") return o;
-          const hit = live.find((x) => x && x.id === o.ref);
-          if (!hit) { whole = false; return null; }
+          const hit = find(o, live, bucket);
+          if (!hit || typeof hit !== "object") { whole = false; return null; }
           return chopShareObj(hit);
         });
         const d = {};
         Object.keys(p).forEach((k) => {
           const v = p[k];
-          if (k === "images") d[k] = back(v, state.images || []);
-          else if (k === "fonts") d[k] = back(v, state.fonts || []);
-          else if (k === "cover" && v && v.ref === "cover") { if (!state.cover) whole = false; d[k] = state.cover ? chopShareObj(state.cover) : null; }
+          if (k === "images") d[k] = back(v, state.images || [], pool.images);
+          else if (k === "fonts") d[k] = back(v, state.fonts || [], pool.fonts);
+          else if (k === "cover" && v && v.ref === "cover") {
+            const hit = typeof v.pool === "number" ? (Array.isArray(pool.covers) ? pool.covers[v.pool] : null) : state.cover;
+            if (!hit || typeof hit !== "object") whole = false;
+            d[k] = hit && typeof hit === "object" ? chopShareObj(hit) : null;
+          }
           else d[k] = v;
         });
         /* A name the book no longer holds cannot be honoured: a
@@ -20605,11 +20669,11 @@
         return whole ? d : null;
       }
       /* ==== /BEUK:chapterops ==== */
-      function normalizeHistory(list) {
+      function normalizeHistory(list, pool) {
         if (!Array.isArray(list)) return [];
         const out = [];
         list.forEach((e) => {
-          if (e && typeof e === "object" && !e.doc && e.auto === "chapterop" && e.chopDoc) { const d = chopSnapUnpack(e); if (d) e = Object.assign({}, e, { doc: d }); } /* BEUK:chapterops — a packed structural-edit snapshot takes the arriving book's pictures back */
+          if (e && typeof e === "object" && !e.doc && e.chopDoc) { const d = chopSnapUnpack(e, pool); if (d) e = Object.assign({}, e, { doc: d }); } /* a packed snapshot takes the arriving book's pictures (and the history pool's) back */
           if (!e || typeof e !== "object" || !e.doc || typeof e.doc !== "object" || !Array.isArray(e.doc.sections)) return;
           out.push({
             id: typeof e.id === "string" && e.id ? e.id : uid(),
@@ -20628,7 +20692,7 @@
       }
       function snapshotBookDoc() {
         const d = serializeBook();
-        delete d.history; /* a snapshot never carries the other snapshots */
+        delete d.history; delete d.historyPool; /* a snapshot never carries the other snapshots */
         delete d.importReport; /* nor the import report: it describes one import, not a moment of the book */
         return JSON.parse(JSON.stringify(d));
       }
@@ -20655,7 +20719,7 @@
           auto: autoKind || null,
           at: new Date().toISOString(),
           words: bookWordTotal(),
-          doc: autoKind === "chapterop" ? chopSnapDoc() : snapshotBookDoc() /* BEUK:chapterops — shares the book's pictures */
+          doc: chopSnapDoc() /* every snapshot shares the book's pictures, fonts and cover in memory */
         };
         state.history = [snap].concat(state.history || []);
         pruneAutoSnapshots();
@@ -20724,7 +20788,7 @@
            says no snapshot is taken, and none is. */
         if (!deskTrulyEmpty()) takeSnapshot("", "restore");
         const doc = JSON.parse(JSON.stringify(snap.doc));
-        delete doc.history; /* restoring a book never restores its history list */
+        delete doc.history; delete doc.historyPool; /* restoring a book never restores its history list */
         applyBookDoc(doc);
         /* BEUK:sidebar — the writer chose the pre-rename sample back: it
            becomes a book of their own (fresh id, no sample ids), so the
@@ -21664,9 +21728,9 @@
           const parts = String(e.target.value).split(":");
           if (parts.length === 2) retypeSection(s.id, parts[1], parts[0]);
         });
-        $("chNumber").addEventListener("input", (e) => { const s = activeSection(); s.number = e.target.value; renderSidebar(); renderPreview(); });
-        $("chTitle").addEventListener("input", (e) => { const s = activeSection(); s.title = e.target.value; renderSidebar(); renderPreview(); });
-        $("chSubtitle").addEventListener("input", (e) => { const s = activeSection(); s.subtitle = e.target.value; renderPreview(); });
+        $("chNumber").addEventListener("input", (e) => { const s = activeSection(); s.number = e.target.value; renderSidebar(); pvShowTitle(); renderPreview(); });
+        $("chTitle").addEventListener("input", (e) => { const s = activeSection(); s.title = e.target.value; renderSidebar(); pvShowTitle(); renderPreview(); });
+        $("chSubtitle").addEventListener("input", (e) => { const s = activeSection(); s.subtitle = e.target.value; pvShowTitle(); renderPreview(); });
         bindSwitch($("tglDropCap"), () => activeSection().dropCap, (v) => { activeSection().dropCap = v; renderPreview(); });
         bindSwitch($("tglSmallCaps"), () => activeSection().smallCaps, (v) => { activeSection().smallCaps = v; renderPreview(); });
         $("chPlate").addEventListener("change", (e) => {
@@ -23410,7 +23474,7 @@
         if (!provisional) pcCacheSet(deskSignature(), res);
         return res;
       }
-      const deskState = { counts: {}, total: 0, sig: "" };
+      const deskState = { counts: {}, total: 0, sig: "", words: 0 }; /* words: the book's word count the total was measured at */
       let deskTimer = null;
       function scheduleDeskUpdate(delay) {
         clearTimeout(deskTimer);
@@ -23425,7 +23489,8 @@
         if (sig === deskState.sig) { renderDeskRailMarks(); return; }
         deskState.sig = sig;
         const hit = pageCountCache.get(sig);
-        if (hit) { deskState.counts = hit.counts; deskState.total = hit.total; renderDesk(); return; }
+        const wordsNow = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
+        if (hit) { deskState.counts = hit.counts; deskState.total = hit.total; deskState.words = wordsNow; renderDesk(); return; }
         /* Chunked: a long book measures a few sections at a time so
            the desk never stalls the writing. A newer signature
            abandons the run. */
@@ -23457,6 +23522,7 @@
           flow.innerHTML = "";
           deskState.counts = counts;
           deskState.total = sections.reduce((a, s) => a + (counts[s.id] || 0), 0);
+          deskState.words = wordsNow;
           pcCacheSet(sig, { counts, total: deskState.total, w, h });
           renderDesk();
           /* The preview's own "Page X of Y" was measured from the same
@@ -23476,6 +23542,7 @@
       function renderDesk() {
         renderDeskFacts();
         if (typeof insGlancePagesRefresh === "function") insGlancePagesRefresh(); /* BEUK:insights — the glance's page count follows the desk */
+        if (typeof statsPagesRefresh === "function") statsPagesRefresh(); /* the sidebar's page count is the desk's too */
         $("deskTotal").textContent = t("preview.desk.total", {
           title: state.meta.title || t("misc.untitledBook"),
           n: deskState.total, count: deskState.total, device: DEVICE_NAMES[state.device] || state.device
@@ -23550,6 +23617,17 @@
          left it on, and made when the preview is shown again. */
       let pvDeferred = null;
       let pvLeftPage = 1;
+      /* Editing the chapter's number, title or subtitle turns to the
+         page those stand on (the chapter opening; page 1 unless a plate
+         comes first), so the writer sees what they are typing. */
+      let pvToTitle = false;
+      function pvShowTitle() { pvToTitle = true; }
+      function pvTitlePage() {
+        const el = $("pageFlow") && $("pageFlow").querySelector(".chapter-opening");
+        if (!el || !$("flowWrap").clientWidth) return 1;
+        const b = el.getBoundingClientRect();
+        return (b.width || b.height) ? (previewPageAtX(b.left + Math.min(4, b.width / 2)) || 1) : 1;
+      }
       function pvHidden() { const w = $("flowWrap"); return !!w && !w.clientWidth; }
       const PV_LETTER = /[\p{L}\p{N}]/u;
       function pvNorm(s) { return String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ""); }
@@ -23652,13 +23730,14 @@
         if (job.same && job.caret) { const s = activeSection(); const c = s && s.id === pvShownId ? pvCaretAnchor(s) : null; if (c) job.anc = c; }
         if (pvHidden()) {
           const d = pvDeferred;
+          if (job.title) { pvDeferred = { anc: null, page: 1, title: true }; return; }
           pvDeferred = job.same
             ? { anc: job.anc || (d && d.anc) || null, page: d ? d.page : pvLeftPage }
             : { anc: null, page: 1 };
           return;
         }
         measurePages();
-        const pg = job.same ? (pvPageOfAnchor(job.anc) || state.page) : 1;
+        const pg = job.title ? pvTitlePage() : job.same ? (pvPageOfAnchor(job.anc) || state.page) : 1;
         goToPage(pg, true);
         pvLastSet = state.page;
       }
@@ -23677,15 +23756,18 @@
           state.page = 1;
           pvFollow = "page";
         }
+        const title = same && pvToTitle;
+        pvToTitle = false;
+        if (title) anc = null;
         pvPendingAnchor = anc;
-        pvJob = { same, anc, caret };
+        pvJob = { same, anc, caret: caret && !title, title };
         return pvJob;
       }
       /* A picture decoding late re-measures; the reader stays put. */
       function pvAfterDecode(job) {
         if (pvHidden()) return; /* the turn waits for the preview to be shown */
         measurePages();
-        const pg = (job && job.same && state.page === pvLastSet) ? (pvPageOfAnchor(job.anc) || state.page) : state.page;
+        const pg = (job && job.same && state.page === pvLastSet) ? (job.title ? pvTitlePage() : (pvPageOfAnchor(job.anc) || state.page)) : state.page;
         goToPage(pg, true);
         pvLastSet = state.page;
       }
@@ -23698,7 +23780,7 @@
       function pvResume() {
         const d = pvDeferred; pvDeferred = null;
         measurePages();
-        goToPage(d ? (pvPageOfAnchor(d.anc) || d.page) : state.page, true);
+        goToPage(d ? (d.title ? pvTitlePage() : (pvPageOfAnchor(d.anc) || d.page)) : state.page, true);
         pvLastSet = state.page;
       }
       /* The preview pane is about to be hidden: remember the page being read. */
@@ -32311,6 +32393,7 @@
            without one serializes exactly as it always has. */
         if (state.theme.header) themeCopy.header = JSON.parse(JSON.stringify(state.theme.header));
         else delete themeCopy.header;
+        const hist = histPack(state.history); /* snapshots name the book's pictures; the ones it no longer holds are written once, in historyPool */
         return {
           meta: Object.assign({}, state.meta),
           theme: themeCopy,
@@ -32335,7 +32418,8 @@
           printFolio: state.printFolio,
           storeCheck: normalizeStoreCheck(state.storeCheck), /* BEUK:store */
           goals: Object.assign({}, state.goals),
-          history: (state.history || []).map(chopSnapPack), /* BEUK:chapterops — structural-edit snapshots name the book's pictures instead of copying them */
+          history: hist.history,
+          historyPool: hist.pool,
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
@@ -32417,7 +32501,7 @@
            empty desk, a legacy shelf copy) leaves the standing
            history untouched — the safety net taken before a swap
            must survive the swap itself. */
-        if (Array.isArray(doc.history)) state.history = normalizeHistory(doc.history);
+        if (Array.isArray(doc.history)) state.history = normalizeHistory(doc.history, doc.historyPool);
         /* The import report belongs to the book it describes: a book
            arriving without one clears the desk's (a different book's
            report must never describe this one). */
@@ -33178,7 +33262,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v5"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v6"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -33274,7 +33358,7 @@
          and its word count is counted from that document. */
       function snapshotForeignDoc(doc, name) {
         const clean = JSON.parse(JSON.stringify(doc || {}));
-        delete clean.history; /* a snapshot never carries the other snapshots */
+        delete clean.history; delete clean.historyPool; /* a snapshot never carries the other snapshots */
         /* The same count as every other snapshot (bookWordTotal: titles,
            generated pages, included sections only), read from the
            arriving book, so History's "since" figure compares like with
@@ -35986,7 +36070,7 @@
               const deskTitle = state.meta.title;
               const shelfDoc = JSON.parse(JSON.stringify(serializeBook()));
               shelfDoc.meta = Object.assign({}, shelfDoc.meta, { title: "Shelf Copy Title" });
-              delete shelfDoc.history;
+              delete shelfDoc.history; delete shelfDoc.historyPool;
               raiseConflict({ doc: shelfDoc, updatedAt: cloud.shelfUpdatedAt });
               const raised = $("modalConflict").classList.contains("open") && $("conflictBody").textContent.indexOf(deskTitle) !== -1;
               /* 4) Keep both: shelf copy preserved as a snapshot, desk untouched, notice closed */
@@ -38746,7 +38830,7 @@
               const total = state.sections.filter((x) => x.included).reduce((n, x) => n + sectionWords(x), 0);
               renderSideStatusSummary();
               const sum = $("sideStatusSummary").textContent;
-              if (sum.indexOf(fmtNum(total)) === -1 || sum.indexOf(fmtNum(Math.ceil(total / 250))) === -1) bad.push("summary “" + sum + "” does not carry " + fmtNum(total) + " words / " + fmtNum(Math.ceil(total / 250)) + " pages");
+              if (sum.indexOf(fmtNum(total)) === -1 || sum.indexOf(fmtNum(statsPages(total))) === -1) bad.push("summary “" + sum + "” does not carry " + fmtNum(total) + " words / " + fmtNum(statsPages(total)) + " pages");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : ids.length + " tools in one row, disclosure toggles and is remembered, summary “" + sum + "”");
             } finally { sideStatusToggle(keepOpen); }
           } },
@@ -40044,7 +40128,7 @@
           local.suspended = keepSusp;
         }
       }
-      const imglibDeskJson = () => { const d = serializeBook(); delete d.history; delete d.activeId; return JSON.stringify(d); };
+      const imglibDeskJson = () => { const d = serializeBook(); delete d.history; delete d.historyPool; delete d.activeId; return JSON.stringify(d); };
       SELF_CHECKS.push(
         { id: "images.usage.finds-every-role", feature: "images", name: "Image library: one usage map finds a picture in every role — text marker (by section name), frontispiece, plate, backdrop, scene break, cover artwork (or kept in the maker when the cover shows none), jacket flap photo, ornament, heading flourish and a saved theme's ornament — and only pictures nothing uses count as unused (sample pictures never)",
           run() {
@@ -40172,12 +40256,14 @@
               imglibRemove(["ilK"]);
               const doc = serializeBook();
               if (doc.images.some((im) => im.id === "ilK")) bad.push("still in serializeBook().images");
-              const noHist = Object.assign({}, doc); delete noHist.history;
+              const noHist = Object.assign({}, doc); delete noHist.history; delete noHist.historyPool;
               if (JSON.stringify(noHist).indexOf(data) !== -1) bad.push("its bytes remain in the book outside History");
               const rec = JSON.parse(localRecordJson());
               if (rec.book.images.some((im) => im.id === "ilK")) bad.push("still in the device-save record");
-              const holders = doc.history.filter((s) => s.doc.images.some((im) => im.id === "ilK" && im.data === data)).length;
+              const holders = normalizeHistory(doc.history, doc.historyPool).filter((s) => s.doc.images.some((im) => im.id === "ilK" && im.data === data)).length;
               if (holders !== 1) bad.push(holders + " History snapshots hold it (want 1)");
+              const copies = JSON.stringify(doc).split(data).length - 1;
+              if (copies !== 1) bad.push("the saved book holds its bytes " + copies + " times (want 1, in historyPool)");
               imglibRemove(["ilL"]);
               const snaps = state.history.filter((s) => s.auto === "imgremove").length;
               if (snaps !== 1) bad.push("two removals in a row took " + snaps + " snapshots");
@@ -41165,7 +41251,7 @@
               return scVerdict(was === 4 && okB && okA, "from page " + was + " of Chapter Three, Chapter Four opened at page " + pb + " (" + okB + "); back to Chapter Three at page " + pa + " (" + okA + ")");
             });
           } },
-        { id: "preview.opened-section-stays-put", feature: "preview", name: "A section just opened stays on its page when nothing in the editor moved: after working in Chapter Two, Chapter Three is picked in the sidebar and its caret sits at the end of the text, put there by code — a font-size change, a keystroke in the chapter title and a device change keep it on page 1, never the chapter's last page; turned by hand to page 3, a font-size change keeps the words that opened page 3 on screen",
+        { id: "preview.opened-section-stays-put", feature: "preview", name: "A section just opened stays on its page when nothing in the editor moved: after working in Chapter Two, Chapter Three is picked in the sidebar and its caret sits at the end of the text, put there by code — a font-size change keeps it on page 1, never the chapter's last page; a keystroke in the chapter title turns to the page the title stands on (after the opening plate) and a device change keeps the title there; turned by hand to page 3, a font-size change keeps the words that opened page 3 on screen",
           run() {
             return pvCheckRig(({ openReal, ch, counterTrue }) => {
               const a = ch("two"), s = ch("three");
@@ -41191,10 +41277,13 @@
                 look("font +1", 1);
                 const ti = $("chTitle"), keepTitle = s.title;
                 ti.value = (keepTitle || "") + "X"; ti.dispatchEvent(new Event("input")); pvFlush();
-                look("title keystroke", 1);
+                const titleAt = pvTitlePage();
+                look("title keystroke", s.plateId && titleAt > 1 ? titleAt : (s.plateId ? -1 : 1));
                 ti.value = keepTitle || ""; ti.dispatchEvent(new Event("input")); pvFlush();
-                setDevice("iphone"); measurePages(); goToPage(pvPageOfAnchor(pvAnchorNow()) || 1, true);
-                look("device iPhone", 1);
+                look("title restored", titleAt);
+                const devAnc = pvAnchorNow(); /* read before the change, as the device switch's own turn does */
+                setDevice("iphone"); measurePages(); goToPage(pvPageOfAnchor(devAnc) || 1, true);
+                look("device iPhone", pvTitlePage());
                 setDevice("kindle"); measurePages(); goToPage(state.page, true);
                 /* a hand turn: the first words of page 3 are the place */
                 goToPage(3, true); pvFollow = "page";
@@ -41359,13 +41448,13 @@
               const ser = JSON.parse(JSON.stringify(serializeBook()));
               const ent = ser.history.find((h) => h.id === snap.id);
               const packOk = !!ent && !ent.doc && !!ent.chopDoc && ent.chopDoc.images.length === 1 && ent.chopDoc.images[0].ref === "chopimg1" && JSON.stringify(ent).indexOf(pic) === -1;
-              const readBack = normalizeHistory(ser.history).find((h) => h.id === snap.id);
+              const readBack = normalizeHistory(ser.history, ser.historyPool).find((h) => h.id === snap.id);
               const readOk = !!readBack && JSON.stringify(readBack.doc) === JSON.stringify(snap.doc);
               const keepImg = state.images[0];
               state.images[0] = Object.assign({}, keepImg, { data: pic + "AAAA" });
               const ser2 = JSON.parse(JSON.stringify(serializeBook()));
               const ent2 = ser2.history.find((h) => h.id === snap.id);
-              const ownOk = !!ent2 && ent2.chopDoc.images[0].data === pic && JSON.stringify(normalizeHistory(ser2.history).find((h) => h.id === snap.id).doc) === JSON.stringify(snap.doc);
+              const ownOk = !!ent2 && ent2.chopDoc.images[0].pool === 0 && ser2.historyPool.images[0].data === pic && JSON.stringify(normalizeHistory(ser2.history, ser2.historyPool).find((h) => h.id === snap.id).doc) === JSON.stringify(snap.doc);
               state.images[0] = keepImg;
               openHistory();
               const listOk = $("historyList").textContent.indexOf(snapshotLabel(snap)) !== -1;
@@ -42106,6 +42195,45 @@
               if (now === shipped) bad.push("fixture: the edit did not change the count");
               if (note && note.textContent !== t("side.sampleNoteLoaded", { n: fmtNum(now), count: now })) bad.push("the open sample's note did not follow the edit: " + note.textContent);
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Load button: " + fmtNum(shipped) + " (the sample's real count); after an edit the note reads " + fmtNum(now));
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; local.suspended = keepSusp;
+              updateStats();
+            }
+          } },
+        { id: "history.snapshots.share-pictures", feature: "history", name: "Every History snapshot — named or automatic — shares the book's pictures: the saved book writes each picture once, a picture the book has dropped is written once in historyPool however many snapshots hold it, it all reads back and restores exactly, and an older plain snapshot still reads",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              const dataA = "data:image/png;base64,iVBORw0KGgo" + "A".repeat(6000), dataB = "data:image/png;base64,iVBORw0KGgo" + "B".repeat(6000);
+              state.images = [{ id: "hsA", name: "Share A.png", mediaType: "image/png", ext: "png", data: dataA }, { id: "hsB", name: "Share B.png", mediaType: "image/png", ext: "png", data: dataB }];
+              state.meta.title = "Share Check"; state.sections.find((x) => x.type === "chapter").content = "Words before the snapshots.";
+              const n1 = takeSnapshot("Share one", null), n2 = takeSnapshot("Share two", null); takeSnapshot("", "import");
+              const copies = (doc, d) => JSON.stringify(doc).split(d).length - 1;
+              const ser1 = JSON.parse(JSON.stringify(serializeBook()));
+              if (copies(ser1, dataA) !== 1 || copies(ser1, dataB) !== 1) bad.push("three snapshots of a two-picture book: A written " + copies(ser1, dataA) + "×, B " + copies(ser1, dataB) + "× (want 1 each)");
+              if (ser1.history.some((h) => h.doc || !h.chopDoc)) bad.push("a snapshot was saved as plain “doc” (an older studio would restore it without its pictures)");
+              state.images = state.images.filter((im) => im.id !== "hsB");
+              const ser2 = JSON.parse(JSON.stringify(serializeBook()));
+              if (copies(ser2, dataB) !== 1 || ser2.historyPool.images.length !== 1 || ser2.historyPool.images[0].id !== "hsB") bad.push("the dropped picture is not written exactly once, in historyPool (" + copies(ser2, dataB) + "×)");
+              if (copies(ser2, dataA) !== 1) bad.push("the kept picture is written " + copies(ser2, dataA) + "×");
+              applyBookDoc(JSON.parse(JSON.stringify(ser2)));
+              if (state.history.length !== 3) bad.push("History read back " + state.history.length + " snapshots (want 3)");
+              if (!state.history.every((h) => h.doc && h.doc.images.length === 2 && h.doc.images.some((im) => im.id === "hsB" && im.data === dataB))) bad.push("a read-back snapshot lost the dropped picture");
+              restoreSnapshot(n1.id);
+              const b = (state.images || []).find((im) => im.id === "hsB");
+              if (!b || b.data !== dataB || state.meta.title !== "Share Check") bad.push("restoring “Share one” did not bring the dropped picture back exactly");
+              const legacy = normalizeHistory([{ id: "old1", name: "Old", at: "2026-01-01T00:00:00.000Z", words: 3, doc: { sections: [], images: [{ id: "hsZ", data: "x" }] } }]);
+              if (legacy.length !== 1 || legacy[0].doc.images[0].data !== "x") bad.push("an older plain snapshot no longer reads");
+              if (!n2) bad.push("fixture");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "3 snapshots of a 2-picture book: each picture written once (" + ser1.history.length + " packed entries); the dropped picture once, in historyPool; reads back and restores exactly; an older plain snapshot still reads");
             } finally {
               applyBookDoc(keepDoc);
               sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
