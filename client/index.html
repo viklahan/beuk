@@ -35316,6 +35316,224 @@
           } }
         /* ==== /BEUK:shelfguard ==== */
       ];
+      /* ==== BEUK:bugs ==== — self-checks for the round-6 fixes */
+      SELF_CHECKS_ASYNC.push(
+        { id: "shelf.reload.no-false-conflict", feature: "shelf", name: "A reload right after a shelf save never raises a false conflict: the new revision is written at once (no debounce left pending); a stale note whose shelf copy is this very book agrees quietly, on reload and on a 409; a shelf copy that really differs still raises the conflict notice",
+          async run() {
+            const keep = {
+              doc: JSON.parse(JSON.stringify(serializeBook())), sample: { loaded: sampleState.loaded, json: sampleState.loadedJson },
+              c: { user: cloud.user, available: cloud.available, linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision,
+                baseUpdatedAt: cloud.baseUpdatedAt, shelfUpdatedAt: cloud.shelfUpdatedAt, sessionEdited: cloud.sessionEdited, editedBeforeSignIn: cloud.editedBeforeSignIn,
+                pendingSyncs: cloud.pendingSyncs, conflict: cloud.conflict, shelf: cloud.shelf, syncStatus: cloud.syncStatus, lastEditAt: cloud.lastEditAt },
+              dirty: cloudDirty, susp: local.suspended, fetch: window.fetch, restoredLink: local.restoredLink, signedOut: local.signedOut
+            };
+            const at = "2026-01-02T00:00:00.000Z";
+            let shelfDoc = null, shelfRev = 4, putStatus = 200;
+            const calls = [];
+            window.fetch = async (path, opts) => {
+              const m = (opts && opts.method) || "GET"; calls.push(m + " " + path);
+              const res = (o, st) => ({ status: st || 200, ok: !st || st < 400, json: async () => o });
+              if (m === "GET" && path === "/api/manuscripts/sc-fc") return res({ manuscript: { id: "sc-fc", title: "x", doc: JSON.parse(JSON.stringify(shelfDoc)), revision: shelfRev, updatedAt: at } });
+              if (m === "PUT" && path === "/api/manuscripts/sc-fc") {
+                if (putStatus === 200) return res({ manuscript: { id: "sc-fc", title: "x", doc: JSON.parse(opts.body).doc, revision: shelfRev + 1, updatedAt: at } });
+                return res({ error: "revision conflict", manuscript: { id: "sc-fc", title: "x", doc: JSON.parse(JSON.stringify(shelfDoc)), revision: shelfRev, updatedAt: at } }, putStatus);
+              }
+              if (m === "GET" && path === "/api/manuscripts") return res({ manuscripts: [] });
+              return res({ error: "not in the fixture" }, 404);
+            };
+            const settle = () => new Promise((r) => setTimeout(r, 0));
+            const closeConflict = () => { cloud.conflict = null; $("modalConflict").classList.remove("open"); };
+            const desk = () => {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              state.meta.title = "Check Conflict Book";
+              state.sections.find((x) => x.type === "chapter").content = "Words saved on the shelf a moment ago — check " + uid();
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              cloud.user = { id: "sc-user", email: "check@beuk.invalid" }; cloud.available = true;
+              cloud.sessionEdited = false; cloud.pendingSyncs = 0; cloud.conflict = null; cloud.lastEditAt = 0;
+              calls.length = 0;
+            };
+            const reloadWith = (link) => {
+              cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; cloudDirty = false;
+              local.signedOut = false;
+              local.restoredLink = Object.assign({ userId: "sc-user", linkedId: "sc-fc", linkState: "linked", baseUpdatedAt: "2026-01-01T00:00:00.000Z" }, link);
+            };
+            const bad = [];
+            local.suspended = true;
+            try {
+              /* 1. the stale note of the original bug: base 3, "dirty", shelf at 4 holding this very book */
+              desk(); shelfDoc = serializeBook(); shelfRev = 4;
+              reloadWith({ baseRevision: 3, shelfDirty: true });
+              await localReconcileOnSignIn(); await settle();
+              if (cloud.conflict || $("modalConflict").classList.contains("open")) { bad.push("a reload whose shelf copy is this very book raised the conflict notice"); closeConflict(); }
+              if (cloud.baseRevision !== 4 || cloudDirty) bad.push("the same-book reload did not agree on revision 4 clean (rev " + cloud.baseRevision + ", dirty " + cloudDirty + ")");
+              /* 2. a real conflict on reload: the shelf copy differs */
+              desk(); shelfDoc = JSON.parse(JSON.stringify(serializeBook())); shelfDoc.sections.find((x) => x.type === "chapter").content = "Another device wrote this — check";
+              reloadWith({ baseRevision: 3, shelfDirty: true });
+              await localReconcileOnSignIn(); await settle();
+              if (!cloud.conflict || !$("modalConflict").classList.contains("open")) bad.push("a real two-device change on reload did NOT raise the conflict notice");
+              closeConflict();
+              /* 3. a 409 whose shelf copy is exactly what was sent */
+              desk(); cloud.linkedId = "sc-fc"; cloud.linkState = "linked"; cloud.baseRevision = 3; cloudDirty = true;
+              shelfDoc = serializeBook(); shelfRev = 5; putStatus = 409;
+              await cloudSaveRun(); await settle();
+              if (cloud.conflict || $("modalConflict").classList.contains("open")) { bad.push("a 409 carrying this very book raised the conflict notice"); closeConflict(); }
+              if (cloud.baseRevision !== 5 || cloudDirty || cloud.syncStatus !== "saved") bad.push("the same-book 409 did not settle on revision 5 saved (rev " + cloud.baseRevision + ", " + cloud.syncStatus + ")");
+              /* 4. a 409 with a different shelf copy is a real conflict */
+              desk(); cloud.linkedId = "sc-fc"; cloud.linkState = "linked"; cloud.baseRevision = 3; cloudDirty = true;
+              shelfDoc = JSON.parse(JSON.stringify(serializeBook())); shelfDoc.meta.title = "Changed elsewhere — check"; shelfRev = 5; putStatus = 409;
+              await cloudSaveRun(); await settle();
+              if (!cloud.conflict || !$("modalConflict").classList.contains("open")) bad.push("a 409 with a different shelf copy did NOT raise the conflict notice");
+              closeConflict();
+              /* 5. a 200 leaves no link write waiting on the debounce */
+              desk(); cloud.linkedId = "sc-fc"; cloud.linkState = "linked"; cloud.baseRevision = 3; cloudDirty = true; shelfRev = 3; putStatus = 200;
+              await cloudSaveRun();
+              if (localLinkTimer !== null) bad.push("after a 200 the new revision still waits on the 120 ms link debounce");
+              if (cloud.baseRevision !== 4) bad.push("the 200 did not move the base to revision 4");
+              if (typeof bookDocsSame !== "function" || bookDocsSame({ a: 1, b: { c: 2, d: undefined } }, { b: { c: 2 }, a: 1 }) !== true || bookDocsSame({ a: 1 }, { a: 2 }) !== false) bad.push("bookDocsSame does not compare key-order-free, undefined-as-absent");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "stale note + same book: no notice, agreed on rev 4; real change on reload: notice raised; same-book 409: settled on rev 5; different 409: notice raised; 200: link written at once (no debounce pending)");
+            } finally {
+              closeConflict();
+              await settle();
+              window.fetch = keep.fetch;
+              Object.assign(cloud, keep.c);
+              applyBookDoc(keep.doc);
+              sampleState.loaded = keep.sample.loaded; sampleState.loadedJson = keep.sample.json; renderSampleButton();
+              cloudDirty = keep.dirty;
+              local.restoredLink = keep.restoredLink; local.signedOut = keep.signedOut;
+              clearTimeout(localLinkTimer); localLinkTimer = null;
+              local.suspended = keep.susp;
+              setSyncStatus(keep.c.syncStatus);
+              renderShelfList();
+            }
+          } }
+      );
+      SELF_CHECKS.push(
+        { id: "ui.lang.live-account-desk", feature: "ui", name: "Switching the UI language redraws the account button (Sign in, its title) and the preview desk (total, basis, rail label, per-section pages) at once — Spanish, Arabic, Japanese",
+          run() {
+            const keepLang = getUiLang();
+            const bad = [];
+            try {
+              ["es", "ar", "ja"].forEach((L) => {
+                setUiLang(L, { persist: false });
+                const btn = $("btnAccount");
+                if (btn) {
+                  if (cloud.user) { if (btn.title !== t("top.accountTitle", { email: cloud.user.email })) bad.push(L + ": account title not redrawn"); }
+                  else {
+                    const lab = btn.querySelector(".tb-label");
+                    if (!lab || lab.textContent !== t("top.signIn") || btn.title !== t("top.signInTitle")) bad.push(L + ": Sign in not redrawn");
+                  }
+                }
+                const tot = $("deskTotal");
+                if (tot && tot.textContent) {
+                  const want = t("preview.desk.total", { title: state.meta.title || t("misc.untitledBook"), n: deskState.total, count: deskState.total, device: DEVICE_NAMES[state.device] || state.device });
+                  if (tot.textContent !== want) bad.push(L + ": desk total not redrawn");
+                  if ($("deskRail").getAttribute("aria-label") !== t("preview.desk.railLabel")) bad.push(L + ": desk rail label not redrawn");
+                  const first = $("deskRail").querySelector(".d-pages");
+                  const s0 = state.sections[0];
+                  if (first && s0) { const n0 = deskState.counts[s0.id] || 1; if (first.textContent !== t("preview.desk.pages", { n: n0, count: n0 })) bad.push(L + ": desk page counts not redrawn"); }
+                }
+              });
+            } finally { setUiLang(keepLang, { persist: false }); }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "es / ar / ja: Sign in (or the account title) and the desk's total, rail label and page counts redrawn from the new pack, no reload");
+          } },
+        { id: "ui.plural.counts", feature: "ui", name: "Word and page counts take each language's own plural form (CLDR rules via Intl.PluralRules): 1 word / ~1 page in English, Polish 5 słów, Russian 2 слова / 5 слов / 21 слово, Arabic 3 كلمات / 11 كلمة, French 1 mot",
+          run() {
+            const keepLang = getUiLang();
+            const bad = [];
+            const cases = [
+              ["en", "side.statsWords", 1, "1 word"], ["en", "side.statsWords", 107, "107 words"], ["en", "side.statsPages", 1, "~1 page"], ["en", "side.statsPages", 2, "~2 pages"],
+              ["en", "editor.countSection", 1, "1 word in this section"], ["en", "editor.countBook", 0, "0 words in the book"],
+              ["pl", "side.statsWords", 1, "1 słowo"], ["pl", "side.statsWords", 3, "3 słowa"], ["pl", "side.statsWords", 5, "5 słów"], ["pl", "side.statsWords", 22, "22 słowa"], ["pl", "side.statsPages", 12, "~12 stron"],
+              ["ru", "side.statsWords", 2, "2 слова"], ["ru", "side.statsWords", 5, "5 слов"], ["ru", "side.statsWords", 21, "21 слово"], ["ru", "side.statsPages", 3, "~3 страницы"], ["ru", "preview.desk.pages", 5, "≈ 5 страниц"],
+              ["ar", "side.statsWords", 3, "3 كلمات"], ["ar", "side.statsWords", 11, "11 كلمة"], ["ar", "side.statsPages", 1, "~1 صفحة"], ["ar", "preview.desk.pages", 13, "≈ 13 صفحة"],
+              ["fr", "side.statsWords", 1, "1 mot"], ["fr", "side.wordUnit", 1, "mot"], ["fr", "side.wordUnit", 4, "mots"], ["ar", "side.wordUnit", 3, "كلمات"], ["ar", "side.wordUnit", 12, "كلمة"],
+              ["de", "side.statsPages", 1, "~1 Seite"], ["es", "side.statsWords", 1, "1 palabra"], ["ja", "side.statsWords", 1, "1語"]
+            ];
+            try {
+              cases.forEach(([L, key, n, want]) => {
+                setUiLang(L, { persist: false });
+                const got = t(key, { n: n, count: n });
+                if (got !== want) bad.push(L + " " + key + "(" + n + ") = " + JSON.stringify(got) + ", want " + JSON.stringify(want));
+              });
+              setUiLang("en", { persist: false });
+              const el = $("sideStatusSummary");
+              if (el) {
+                renderSideStatusSummary(107);
+                if (el.textContent !== "107 words · ~1 page · " + t("stats.readingM", { m: 0 })) bad.push("sidebar summary at 107 words reads " + JSON.stringify(el.textContent));
+              }
+            } finally { setUiLang(keepLang, { persist: false }); if (typeof updateStats === "function" && $("statWords")) updateStats(); }
+            return scVerdict(bad.length === 0, bad.length ? bad.slice(0, 6).join("; ") : cases.length + " counted forms correct across en/pl/ru/ar/fr/de/es/ja; the sidebar reads \"107 words · ~1 page\"");
+          } },
+        { id: "sample.count.truthful", feature: "sample", name: "The sample's word counts are true: the Load button states the bundled sample's real count (counted as the stats count the desk), and while the sample is open its note follows every edit",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook()); sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
+              const shipped = sampleShippedWords();
+              const btn = $("btnSampleStory");
+              if (btn && btn.textContent.indexOf(fmtNum(shipped)) === -1) bad.push("Load button does not state the real count " + fmtNum(shipped) + ": " + btn.textContent);
+              applyBookDoc(buildSampleBook()); sampleState.loaded = true; sampleState.loadedJson = sampleComparableJson(); renderSampleButton(); updateStats();
+              if (bookWordTotal() !== shipped) bad.push("shipped count " + shipped + " ≠ the loaded sample's count " + bookWordTotal());
+              const ch = state.sections.find((x) => x.kind === "body" && String(x.content || "").trim());
+              ch.content += "\n\nSeven more words for the live count.";
+              updateStats();
+              const now = bookWordTotal();
+              const note = $("sampleNote");
+              if (now === shipped) bad.push("fixture: the edit did not change the count");
+              if (note && note.textContent !== t("side.sampleNoteLoaded", { n: fmtNum(now), count: now })) bad.push("the open sample's note did not follow the edit: " + note.textContent);
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Load button: " + fmtNum(shipped) + " (the sample's real count); after an edit the note reads " + fmtNum(now));
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; local.suspended = keepSusp;
+              updateStats();
+            }
+          } },
+        { id: "history.restore.empty-desk-no-prune", feature: "history", name: "Restoring the whole book over a truly empty desk takes no safety snapshot (nothing to keep) and so prunes no real automatic snapshot; its confirmation says so; anything on the desk — a title alone — and the snapshot is taken",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepSusp = local.suspended;
+            local.suspended = true;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              state.meta.title = "Check Target"; state.sections.find((x) => x.type === "chapter").content = "The words to restore — check.";
+              const target = takeSnapshot("Check target", null);
+              for (let i = 0; i < HISTORY_AUTO_CAP; i++) { state.meta.title = "Check auto " + i; takeSnapshot("", "import"); }
+              const autosBefore = state.history.filter((s) => s.auto).map((s) => s.id).join(",");
+              const keptHistory = state.history.slice();
+              applyBookDoc(buildEmptyBook()); state.history = keptHistory.slice();
+              if (!deskTrulyEmpty()) bad.push("a fresh blank desk is not recognised as truly empty");
+              if (t("history.restoreBodyEmpty", { name: "x" }) === t("history.restoreBody", { name: "x" })) bad.push("the empty-desk wording is not distinct");
+              const n0 = state.history.length;
+              restoreSnapshot(target.id);
+              if (state.history.length !== n0) bad.push("a snapshot was taken over the empty desk (history " + n0 + " → " + state.history.length + ")");
+              if (state.history.filter((s) => s.auto).map((s) => s.id).join(",") !== autosBefore) bad.push("a real automatic snapshot was pruned");
+              if (state.meta.title !== "Check Target") bad.push("the restore did not return the target");
+              /* anything on the desk: the snapshot is taken as before */
+              applyBookDoc(buildEmptyBook()); state.history = keptHistory.slice(); state.meta.title = "Only a title";
+              if (deskTrulyEmpty()) bad.push("a desk with a title counted as truly empty");
+              const n1 = state.history.length;
+              restoreSnapshot(target.id);
+              const s0 = state.history[0];
+              if (state.history.length !== n1 || !s0 || s0.auto !== "restore" || s0.doc.meta.title !== "Only a title") bad.push("no safety snapshot over a desk holding a title");
+              applyBookDoc(buildEmptyBook()); state.history = keptHistory.slice(); state.theme = Object.assign({}, state.theme, { fontSize: (state.theme.fontSize || 16) + 3 });
+              if (deskTrulyEmpty()) bad.push("a desk with changed typography counted as truly empty");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "empty desk: no snapshot, all " + HISTORY_AUTO_CAP + " automatic snapshots kept, distinct wording; a title or changed typography: snapshot taken");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; local.suspended = keepSusp;
+            }
+          } }
+      );
+      /* ==== /BEUK:bugs ==== */
       async function runAsyncSelfChecks() {
         const out = [];
         for (const c of SELF_CHECKS_ASYNC) {

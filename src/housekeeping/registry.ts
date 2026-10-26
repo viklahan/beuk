@@ -1761,9 +1761,40 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'history.restore.snapshot-always',
-    title: 'Restore the whole book always takes the snapshot its confirmation promises, the untouched sample included',
+    title: 'Restore the whole book takes the snapshot its confirmation promises (every desk but a truly empty one), the untouched sample included',
     kind: 'client-only',
     reason: 'History snapshots live in the in-browser book (state.history); restore runs in the client.',
+  },
+  /* ---- round-6 bugs (BEUK:bugs) ---- */
+  {
+    id: 'history.restore.empty-desk-no-prune',
+    title: 'Restoring over a truly empty desk takes no safety snapshot (prunes no real automatic one) and its confirmation says so; any content and the snapshot is taken',
+    kind: 'client-only',
+    reason: 'History snapshots live in the in-browser book (state.history); restore and its confirmation run in the client.',
+  },
+  {
+    id: 'shelf.reload.no-false-conflict',
+    title: 'A reload right after a shelf save raises no false conflict (revision written at once; a same-book stale note or 409 agrees quietly); a real two-device change still raises the notice',
+    kind: 'client-only',
+    reason: 'The device link record (IndexedDB) and the conflict notice live in the browser; asserted by the async client self-check window.runBeukAsyncSelfChecks().',
+  },
+  {
+    id: 'ui.lang.live-account-desk',
+    title: 'Switching the UI language redraws the account button and the preview desk at once (es, ar, ja)',
+    kind: 'client-only',
+    reason: 'Rendered studio chrome in the browser.',
+  },
+  {
+    id: 'ui.plural.counts',
+    title: 'Word and page counts take each language’s own CLDR plural form (Intl.PluralRules)',
+    kind: 'client-only',
+    reason: 'UI strings and Intl.PluralRules run in the browser.',
+  },
+  {
+    id: 'sample.count.truthful',
+    title: 'The sample’s word counts are true: the Load button states its real count; the open sample’s note follows every edit',
+    kind: 'client-only',
+    reason: 'The bundled sample and its counts live in the studio page.',
   },
 
   /* ---- Dictation language + Read Aloud section language (BEUK:dictlang) ---- */
