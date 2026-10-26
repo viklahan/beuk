@@ -177,6 +177,21 @@ export interface Config {
    *  24; 0 turns the schedule off). Local backups are never deleted
    *  automatically (local retention is not decided yet). */
   backupIntervalHours: number;
+  /** Legal pages (/privacy, /terms): who runs the service. Every slot
+   *  is null until the operator sets it in .env; while a slot is null
+   *  the page shows a visible "this part is being completed" notice in
+   *  its place — a name, address or jurisdiction is never invented.
+   *  contactEmail is LEGAL_CONTACT_EMAIL, falling back to SUPPORT_EMAIL
+   *  (see legalContactEmail()). effectiveDate is LEGAL_EFFECTIVE_DATE
+   *  (YYYY-MM-DD); null = the pages show the content file's own date. */
+  legal: {
+    operatorName: string | null;
+    contactEmail: string | null;
+    jurisdiction: string | null;
+    postalAddress: string | null;
+    hostingLocation: string | null;
+    effectiveDate: string | null;
+  };
   /** Off-site backups: restic to Backblaze B2 through B2's S3-compatible
    *  API (see src/housekeeping/offsite.ts for why). Off until all five
    *  of key id, application key, bucket, endpoint and RESTIC_PASSWORD
@@ -226,6 +241,18 @@ function nonNegativeInt(raw: string | undefined, fallback: number): number {
 function positiveInt(raw: string | undefined, fallback: number): number {
   const n = Number(raw);
   return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+/** A real calendar date written YYYY-MM-DD (2026-02-30 is refused). */
+export function isIsoDate(raw: string | undefined): boolean {
+  if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return false;
+  const d = new Date(`${raw}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === raw;
+}
+
+/** The address the legal pages give for privacy requests. */
+export function legalContactEmail(config: Config): string | null {
+  return config.legal.contactEmail ?? config.supportEmail;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -288,6 +315,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       ? env.MAIL_LOG_LINKS.toLowerCase() === 'true' || env.MAIL_LOG_LINKS === '1'
       : (env.NODE_ENV ?? '').toLowerCase() !== 'production',
     backupIntervalHours: nonNegativeNumber(env.BACKUP_INTERVAL_HOURS, 24),
+    legal: {
+      operatorName: env.LEGAL_OPERATOR_NAME?.trim() || null,
+      contactEmail: env.LEGAL_CONTACT_EMAIL?.trim() || null,
+      jurisdiction: env.LEGAL_JURISDICTION?.trim() || null,
+      postalAddress: env.LEGAL_POSTAL_ADDRESS?.trim() || null,
+      hostingLocation: env.LEGAL_HOSTING_LOCATION?.trim() || null,
+      effectiveDate: isIsoDate(env.LEGAL_EFFECTIVE_DATE?.trim()) ? env.LEGAL_EFFECTIVE_DATE!.trim() : null,
+    },
     offsite: {
       b2KeyId: env.OFFSITE_B2_KEY_ID || null,
       b2ApplicationKey: env.OFFSITE_B2_APPLICATION_KEY || null,

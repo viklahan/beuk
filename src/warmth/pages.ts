@@ -127,13 +127,23 @@ export async function readClientPage(
 
 /** Wrap rendered document HTML in the warmth page chrome (Paper style,
  *  the same stylesheet the static guides use). */
-export function pageChrome(config: Config, title: string, bodyHtml: string): string {
+/** The footer's links to the legal pages — on every warmth page, the
+ *  help shelf, the reading-copy reader and the studio. */
+export const LEGAL_LINKS_HTML =
+  '<a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>';
+
+export function pageChrome(
+  config: Config,
+  title: string,
+  bodyHtml: string,
+  opts: { titleSuffix?: string } = {},
+): string {
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(title)} — Beuk Help</title>
+    <title>${escapeHtml(title)} — ${escapeHtml(opts.titleSuffix ?? 'Beuk Help')}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap" rel="stylesheet" />
@@ -157,6 +167,7 @@ ${bodyHtml}
     <footer class="site-foot">
 ${kofiJarHtml(config)}
       <p class="foot-note">${escapeHtml(BRAND_FOOTNOTE)}</p>
+      <p class="foot-links">${LEGAL_LINKS_HTML}</p>
     </footer>
   </body>
 </html>

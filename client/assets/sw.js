@@ -119,11 +119,11 @@ self.addEventListener("fetch", (event) => {
      for the cached shell — straight to the network, untouched. */
   if (url.pathname.indexOf("/read/") === 0) return;
 
-  /* Help, support, thanks, changelog and roadmap are server-rendered
+  /* Help, support, thanks, changelog, roadmap, privacy and terms are server-rendered
      pages, not the studio, and are not precached: their HTML, CSS and
      scripts always go straight to the network, so a restyle reaches a
      returning visitor at once instead of waiting for a shell bump. */
-  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap)(\/|$)/.test(url.pathname)) return;
+  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms)(\/|$)/.test(url.pathname)) return;
 
   /* The shelf and its API: network-first, never cached. On failure
      the rejection propagates untouched — the page already knows how
