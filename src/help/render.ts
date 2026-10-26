@@ -30,8 +30,17 @@ import type { ShelfStatus } from './status.js';
  * those are set too. Unset means absent — no empty mailto, no promise.
  */
 
-const FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;1,7..72,400;1,7..72,500&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap';
+/* ==== BEUK:fonts ==== Self-hosted web fonts (client/assets/fonts/,
+   served by Caddy's static handler at /assets/ for every path): no
+   help page asks Google for anything. Literata, Karla and IBM Plex
+   Mono in the weights this page always used; only the two faces on
+   first paint (Literata headings, Karla text; Latin) are preloaded. */
+export const FONTS_HREF = '/assets/fonts/fonts.css';
+export const HELP_FONT_PRELOADS = [
+  '/assets/fonts/literata/literata-latin-normal-400_500_600_700.woff2',
+  '/assets/fonts/karla/karla-latin-normal-400_500_600_700.woff2'
+];
+/* ==== /BEUK:fonts ==== */
 
 export interface PageCtx {
   config: Config;
@@ -168,9 +177,8 @@ export function chrome(
     ${opts.description ? `<meta name="description" content="${esc(opts.description)}" />` : ''}
     <script src="${helpAssetUrl('theme.js')}"></script>
     <link rel="icon" href="/assets/logo.webp" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="${FONTS_HREF.replace(/&/g, '&amp;')}" />
+    ${HELP_FONT_PRELOADS.map((u) => `<link rel="preload" href="${u}" as="font" type="font/woff2" crossorigin />`).join('\n    ')}
+    <link rel="stylesheet" href="${FONTS_HREF}" />
     <link rel="stylesheet" href="${helpAssetUrl('help.css')}" />
     ${billingGateHtml(config)}
   </head>
