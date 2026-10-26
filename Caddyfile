@@ -182,6 +182,53 @@
 		file_server
 	}
 
+	# The site pages beside the landing page (client/site/): /features and
+	# the comparisons, /compare and /compare/<name>. Exact paths only; a
+	# trailing slash redirects to the bare path. Any other /compare/... path
+	# falls through to the studio like every unknown path.
+	redir /features/ /features 308
+	handle /features {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/features.html
+		file_server
+	}
+	redir /compare/ /compare 308
+	handle /compare {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/index.html
+		file_server
+	}
+	redir /compare/atticus/ /compare/atticus 308
+	handle /compare/atticus {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/atticus.html
+		file_server
+	}
+	redir /compare/vellum/ /compare/vellum 308
+	handle /compare/vellum {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/vellum.html
+		file_server
+	}
+	redir /compare/reedsy-studio/ /compare/reedsy-studio 308
+	handle /compare/reedsy-studio {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/reedsy-studio.html
+		file_server
+	}
+	redir /compare/dabble/ /compare/dabble 308
+	handle /compare/dabble {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/dabble.html
+		file_server
+	}
+
 	# === STATIC CLIENT ===
 	# The built Beuk web client lives in ./client (mounted at /srv/client).
 	# SPA fallback: unknown paths return index.html.

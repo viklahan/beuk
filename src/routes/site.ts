@@ -2,6 +2,9 @@ import { Router } from 'express';
 import type { Config } from '../config.js';
 import { getHelpContent } from '../help/content.js';
 
+/** The comparison pages (client/site/compare/<slug>.html, served by Caddy at /compare/<slug>). */
+export const COMPARE_SLUGS = ['atticus', 'vellum', 'reedsy-studio', 'dabble'] as const;
+
 /**
  * The public site's crawler files, served by the app (Caddy proxies these
  * two paths to it — see the Caddyfile) because they carry the configured
@@ -10,7 +13,8 @@ import { getHelpContent } from '../help/content.js';
  *   GET /robots.txt    what may be crawled, and where the sitemap is
  *   GET /sitemap.xml   every public page: the landing page, Help (each
  *                      guide and each error entry), the legal pages,
- *                      the changelog and roadmap, and /support while
+ *                      the changelog and roadmap, /features, /compare
+ *                      and each comparison, and /support while
  *                      KOFI_URL is set (it is a 404 otherwise)
  *
  * Kept out of search: the studio's app shell (/studio, /index.html), the
@@ -52,6 +56,9 @@ export function siteRoutes(config: Config): Router {
       '/roadmap',
       '/privacy',
       '/terms',
+      '/features',
+      '/compare',
+      ...COMPARE_SLUGS.map((s) => `/compare/${s}`),
       '/status',
       ...(config.kofiUrl ? ['/support'] : []),
     ];
