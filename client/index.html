@@ -425,6 +425,12 @@
       }
       .tool-btn:hover { background: var(--panel-3); border-color: var(--line); color: var(--ink); }
       .tool-btn svg { width: 14px; height: 14px; flex: 0 0 auto; }
+      /* The Zen leaf wears the Voyage Out blue (#14607a, from the landing-
+         page sample's --accent; 6.6:1 on Paper). On Candlelight that blue is
+         only 2.6:1, so the night leaf is a lighter tint of it (6.8:1). */
+      :root { --zen-leaf: #14607a; }
+      :root[data-theme="candlelight"] { --zen-leaf: #5fa9c2; }
+      #btnZen svg { color: var(--zen-leaf); }
       .tool-btn.accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
       .tool-btn.accent:hover { border-color: var(--accent); }
       /* Dictation, listening: the mic button stays visibly alive — a
