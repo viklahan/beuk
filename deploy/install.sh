@@ -260,6 +260,18 @@ fi
 log "Starting the stack"
 ${COMPOSE} "${COMPOSE_FILES[@]}" up -d --build
 
+# Caddyfile is a single-file bind mount: `git pull`/`git checkout`
+# replace the file (new inode), and a running Caddy keeps reading the
+# OLD one — `up -d` does not recreate it because the compose config did
+# not change (measured in the round-6 rehearsal). Restart Caddy when the
+# file it sees differs from the tree's.
+HOST_CADDY_SHA="$(sha256sum Caddyfile | cut -d' ' -f1)"
+LIVE_CADDY_SHA="$(${COMPOSE} "${COMPOSE_FILES[@]}" exec -T caddy sha256sum /etc/caddy/Caddyfile 2>/dev/null | cut -d' ' -f1 || true)"
+if [ "${HOST_CADDY_SHA}" != "${LIVE_CADDY_SHA}" ]; then
+  note "Caddyfile changed — restarting Caddy so it loads the new one"
+  ${COMPOSE} "${COMPOSE_FILES[@]}" restart caddy
+fi
+
 # ── 6. Health ────────────────────────────────────────────────────────────────
 log "Health check"
 HEALTH=""
