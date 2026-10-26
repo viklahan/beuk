@@ -16711,13 +16711,46 @@
         noteBookEdited();
         return true;
       }
+      /* ==== BEUK:bugs ==== — a desk that is truly empty: exactly the
+         blank book a new desk starts as (no words, no title or credit,
+         no cover, pictures, fonts or saved themes, the starting
+         sections untouched, the starting typography). Restoring over
+         it loses nothing, so no safety snapshot is taken — one would
+         only push a real automatic snapshot out of the ten kept. Any
+         difference at all, and the snapshot is taken as before. */
+      function deskTrulyEmpty() {
+        if (!isEmptyDesk()) return false;
+        if (state.cover || state.coverRecipe) return false;
+        if ((state.images || []).length || (state.fonts || []).length || (state.customThemes || []).length) return false;
+        const metaFree = ["language", "langSource", "langGuess", "year", "bookId", "legacyBookIds"];
+        const m = state.meta || {};
+        for (const k of Object.keys(m)) {
+          if (metaFree.indexOf(k) !== -1) continue;
+          if (typeof m[k] === "string" ? m[k].trim() : (m[k] !== null && m[k] !== undefined && m[k] !== false)) return false;
+        }
+        const blank = buildEmptyBook();
+        if (state.sections.length !== blank.sections.length) return false;
+        for (let i = 0; i < blank.sections.length; i++) {
+          const a = state.sections[i], b = blank.sections[i];
+          if (a.kind !== b.kind || a.type !== b.type || String(a.title || "") !== String(b.title || "") ||
+              String(a.subtitle || "") !== String(b.subtitle || "") || String(a.number || "") !== String(b.number || "") ||
+              a.plateId || a.backdropId || a.included === false) return false;
+        }
+        if (state.theme && state.theme.header) return false;
+        if (state.activePreset !== blank.activePreset) return false;
+        const themeNow = Object.assign({}, state.theme); delete themeNow.header;
+        return stableJson(themeNow) === stableJson(blank.theme);
+      }
+      /* ==== /BEUK:bugs ==== */
       function restoreSnapshot(id) {
         const snap = (state.history || []).find((s) => s.id === id);
         if (!snap) return false;
-        /* Every restore is itself undoable — always, the untouched sample
-           and an empty desk included, because the confirmation says a
-           snapshot is taken first (BEUK:shelfguard). */
-        takeSnapshot("", "restore");
+        /* Every restore is itself undoable — the untouched sample
+           included, because the confirmation says a snapshot is taken
+           first (BEUK:shelfguard). The one exception is a truly empty
+           desk (BEUK:bugs): there is nothing to keep, its confirmation
+           says no snapshot is taken, and none is. */
+        if (!deskTrulyEmpty()) takeSnapshot("", "restore");
         const doc = JSON.parse(JSON.stringify(snap.doc));
         delete doc.history; /* restoring a book never restores its history list */
         applyBookDoc(doc);
@@ -16900,7 +16933,7 @@
             const s = (state.history || []).find((x) => x.id === id);
             cloudConfirm({
               title: t("history.restoreTitle"),
-              body: t("history.restoreBody", { name: s ? snapshotLabel(s) : "" }),
+              body: t(deskTrulyEmpty() ? "history.restoreBodyEmpty" : "history.restoreBody", { name: s ? snapshotLabel(s) : "" }), /* BEUK:bugs — says only what restore will do */
               yes: t("history.restoreAll"), no: t("confirm.keep")
             }).then((ok) => {
               if (!ok) return;
@@ -35027,7 +35060,7 @@
       /* ==== /BEUK:acx ==== */
       /* ==== BEUK:shelfguard ==== */
       SELF_CHECKS.push(
-        { id: "history.restore.snapshot-always", feature: "history", name: "Restore the whole book takes the snapshot its confirmation promises in every case — the untouched sample included — and that snapshot gives the replaced book back exactly",
+        { id: "history.restore.snapshot-always", feature: "history", name: "Restore the whole book takes the snapshot its confirmation promises in every case but a truly empty desk — the untouched sample included — and that snapshot gives the replaced book back exactly",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
