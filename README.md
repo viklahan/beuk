@@ -266,8 +266,9 @@ to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
 service worker (cache `beuk-shell-v5`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
-each is kept in its own cache (`beuk-sound-v1`, which a shell version
-bump leaves alone) the first time it plays. Google Fonts are browser-specific and cannot be
+each is kept in its own cache (`beuk-sound-v2`, which a shell version
+bump leaves alone; it is bumped when a recording is replaced under the
+same name, and activate retires the older ones) the first time it plays. Google Fonts are browser-specific and cannot be
 precached ahead of time: the page hands the worker the stylesheet and
 the font files it actually loaded, so faces the studio has displayed
 online open offline; any other face falls back to the system fonts in
@@ -1268,24 +1269,32 @@ written by an agent and have not yet been reviewed by native speakers.
 
 ## Studio: Zen ambient sound (client-only)
 
-Zen mode's sound toggle plays **real field recordings**, nothing
-synthesized: gentle rain (Felix Blume, banana field, Veracruz), soft
-waves (Dsw4, Lake Ontario shore) and soft wind (alas23/sala, an old
-willow in Utena). All three are public domain; every source page, the
-exact licence line read on it, the sha256 of the original and of the
-shipped file, and every edit are in `client/assets/sound/CREDITS.md`
+Zen mode's sound toggle plays **pre-made sound files**, nothing
+synthesized in the browser: gentle rain (a CC0 field recording by
+Kresiek The Furry, OpenGameArt), soft waves (Dsw4's public-domain
+recording of the Lake Ontario shore) and soft wind (rendered offline
+for Beuk by `tools/sound/render_ambience.py`, seed 20261026, released
+CC0). All three are free to use commercially with no attribution; the
+earlier rain and wind (radio aporee uploads under a public-domain
+*mark*, which is a label, not the recordist's waiver) were replaced in
+round 6. Every source page, the exact licence line read on it, the
+sha256 of the original and of the shipped file, the render command and
+seed, and every edit are in `client/assets/sound/CREDITS.md`
 (`tests/sound.test.ts` keeps that file and the folder in lock-step and
 checks the size budget: ≤ 1.5 MB each, ≤ 4.5 MB together; today
 3 × 954 KB).
 
 - **Files.** `client/assets/sound/{rain,waves,wind}.mp3` — 0.5 s pad +
   60 s loop + 0.5 s pad, 44.1 kHz stereo MP3 128 kb/s, all mastered to
-  −27 LUFS. The loop seam is a 4 s equal-power crossfade; the pads are
+  −27 LUFS. For the recordings the loop seam is a 4 s equal-power
+  crossfade; the render is periodic by construction. The pads are
   the loop's own tail and head, so the audio is periodic and the studio
   loops `[0.5 s, 60.5 s)` of the decoded buffer. That keeps the seam
   clean whatever MP3 encoder delay/padding a browser leaves in (measured
   in Playwright: Chromium and Firefox decode exactly 61.000 s, WebKit
-  61.048 s). `tools/sound/build_loop.py` rebuilds them.
+  61.048 s). `tools/sound/build_loop.py` rebuilds the recordings and
+  `tools/sound/render_ambience.py` re-renders ours
+  (`tools/sound/README.md`).
 - **Playback.** Web Audio: the first play of a scene fetches its file
   from this origin, `decodeAudioData`, one `AudioBufferSourceNode`
   (`loop = true`) through a gain into a master gain (0.7); ~2 s fades on
@@ -1297,8 +1306,8 @@ checks the size budget: ≤ 1.5 MB each, ≤ 4.5 MB together; today
   so; if it cannot load (offline before its first play), cannot be
   decoded, or the browser keeps audio suspended, the popover says that
   and nothing claims to play.
-- **Offline.** The service worker keeps each recording in
-  `beuk-sound-v1` the first time it plays, so a scene that has played
+- **Offline.** The service worker keeps each file in
+  `beuk-sound-v2` the first time it plays, so a scene that has played
   once plays offline.
 - **Stored choice.** `beuk.zenScene.v1` — `rain` / `waves` / `wind`;
   the old synthesized `rain-drum` and anything unknown become `rain`.
@@ -1655,12 +1664,15 @@ Real restic against an S3 server is the full-stack proof under
 concurrency; on a small Docker VM, `node --import tsx --test
 --test-concurrency=4 "tests/*.test.ts"` is the same suite with fewer
 PGlite processes at once.
-Zen sound adds (`tests/sound.test.ts`): every recording in
+Zen sound adds (`tests/sound.test.ts`): every file in
 `client/assets/sound/` listed in its CREDITS.md with a matching sha256
 of the shipped bytes and nothing unlisted, each entry naming a CC0 /
-public-domain source with the licence line quoted, the size budget,
+public-domain source with the licence line quoted (never a
+public-domain mark), or for our own renders CC0 plus the render command
+whose seed matches the script's, the size budget,
 one file per scene with the synthesis gone, and both service-worker
-twins runtime-caching (never precaching) the recordings.
+twins runtime-caching (never precaching) the files in `beuk-sound-v2`
+and retiring older sound caches.
 M4 adds: every help page, the decoder, and the thanks page serving
 200 through the app; the tip jar present in the served HTML when
 `KOFI_URL` is set and entirely absent (with the word "donation"

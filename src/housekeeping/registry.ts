@@ -1694,7 +1694,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Zen is a client body-class layout state over the studio chrome.',
   },
-  /* ---- Zen ambient sound: real CC0 / public-domain recordings (BEUK:sound) ---- */
+  /* ---- Zen ambient sound: CC0 / public-domain sound files, two field recordings and one offline render (BEUK:sound) ---- */
   {
     id: 'zen.sound.files-decode',
     title: 'Zen sound files are same-origin audio/mpeg, within budget, decode to pad + loop + pad seconds and loop seamlessly on the decoded samples',

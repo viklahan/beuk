@@ -32922,7 +32922,7 @@
                 "reduced-motion entry presented the title moment statically at opacity " + titleOp + " with no settle or breath classes engaged, the wash layer crossed by opacity, and the sketch and vignette applied; exit removed the title, flash and art");
             } finally { window.beukZen.overrideReducedMotion(null); setZenMode(false); window.beukZen.settle(); }
           } },
-        /* ==== BEUK:sound ==== the zen sound checks assert the field-recording engine: opt-in, honest status, no synthesis */
+        /* ==== BEUK:sound ==== the zen sound checks assert the sound-file engine: opt-in, honest status, no synthesis */
         { id: "zen.sound.opt-in", feature: "zen", name: "Zen ambient sound is opt-in only: entering zen starts no audio (no context, toggle off); the writer's click starts it — the toggle reads “on” only once a recording is actually playing, never while it loads; a second click stops it and releases the context; the choice is remembered without ever auto-starting; exiting zen stops the sound",
           run() {
             const keepPref = (() => { try { return localStorage.getItem(ZEN_SOUND_KEY); } catch (e) { return null; } })();
@@ -32956,7 +32956,7 @@
               try { if (keepPref === null) localStorage.removeItem(ZEN_SOUND_KEY); else localStorage.setItem(ZEN_SOUND_KEY, keepPref); } catch (e) {}
             }
           } },
-        { id: "zen.sound.scenes", feature: "zen", name: "Zen ambient scenes are real recordings: the popover offers gentle rain, soft waves and soft wind (labelled in every locale), each scene maps to its own same-origin file /assets/sound/<scene>.mp3 with a 45–90 s loop between equal pads, an old “rain-drum” or unknown stored scene becomes rain, and starting, switching and stopping the sound creates no oscillator, no filter and no generated noise buffer — the synthesis and the 1.1 kHz master lowpass are gone",
+        { id: "zen.sound.scenes", feature: "zen", name: "Zen ambient scenes are pre-made sound files (no synthesis in the browser): the popover offers gentle rain, soft waves and soft wind (labelled in every locale), each scene maps to its own same-origin file /assets/sound/<scene>.mp3 with a 45–90 s loop between equal pads, an old “rain-drum” or unknown stored scene becomes rain, and starting, switching and stopping the sound creates no oscillator, no filter and no generated noise buffer — the synthesis and the 1.1 kHz master lowpass are gone",
           run() {
             const keepSnd = (() => { try { return localStorage.getItem(ZEN_SOUND_KEY); } catch (e) { return null; } })();
             const keepScene = (() => { try { return localStorage.getItem(ZEN_SCENE_KEY); } catch (e) { return null; } })();
@@ -36143,12 +36143,15 @@
         }
       }
       /* ==== BEUK:sound ==== */
-      /* Ambient sound: REAL field recordings, no synthesis. Three
-         scenes — gentle rain, soft waves on a shore, soft wind — each a
-         public-domain / CC0 recording (client/assets/sound/CREDITS.md
-         names every source page, licence line, sha256 and edit), cut
-         into a 45–90 s loop whose seam is crossfaded so the loop point
-         is inaudible, loudness-matched across scenes.
+      /* Ambient sound: pre-made sound FILES, no synthesis in the
+         browser. Three scenes — gentle rain and soft waves (field
+         recordings their recordists released CC0 / into the public
+         domain) and soft wind (rendered offline for Beuk by
+         tools/sound/render_ambience.py and released CC0) —
+         client/assets/sound/CREDITS.md names every source page, licence
+         line, sha256, seed and edit. Each is a 45–90 s loop whose seam
+         is inaudible (crossfaded, or periodic by construction),
+         loudness-matched across scenes.
 
          Playback is Web Audio: on the first play of a scene its file is
          fetched from this origin, decoded (decodeAudioData) and played

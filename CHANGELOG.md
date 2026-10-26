@@ -4,6 +4,19 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — Rain and wind you may build a business on
+
+- **New rain and wind in Zen.** For writers who listen while they work,
+  and for Beuk itself: the rain and wind recordings carried a
+  public-domain *label* rather than their recordists' own release, which
+  is not safe ground for a product people pay for. Rain is now a steady
+  rain recorded and given away under CC0 by Kresiek The Furry; wind is
+  our own: rendered by a computer for Beuk, modelled on how gusts and
+  leaves sound (not a recording), and given away under CC0 too. Waves
+  are unchanged. Your choice of scene is kept; once your studio updates,
+  the old files are cleared from your browser and the new ones download
+  the first time you play them (about 1 MB each), then work offline.
+
 ## 2026-10-25 — Help you can search, and codes that lead somewhere
 
 - **Search the help shelf, or paste the message.** For writers who were
