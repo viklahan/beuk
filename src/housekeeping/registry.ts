@@ -2474,6 +2474,38 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Script detection and the note are studio UI.',
   },
   /* ==== /BEUK:cast ==== */
+  /* ==== BEUK:imagelib ==== The image library: where a picture is used, and removing it (client-side) */
+  {
+    id: 'images.usage.finds-every-role',
+    title: 'Image library: one usage map finds a picture in every role (text, frontispiece, plate, backdrop, scene, cover artwork, flap photo, ornament, heading flourish, saved theme) and counts only unreferenced, non-sample pictures as unused',
+    kind: 'client-only',
+    reason: 'The usage map reads the client book document (imglibUsageMap); the server stores the book whole and never reads it.',
+  },
+  {
+    id: 'images.delete.unused-undo',
+    title: 'Image library: an unused picture is removed without a question, after a "Before removing a picture" snapshot, with a 10-second Undo that puts it back in place',
+    kind: 'client-only',
+    reason: 'The delete control, the History snapshot and the Undo toast are studio UI over the client book.',
+  },
+  {
+    id: 'images.delete.used-clears-roles',
+    title: 'Image library: a used picture asks first, listing where it is used; Remove it everywhere clears every role like the editor’s own controls; Undo restores the book byte for byte',
+    kind: 'client-only',
+    reason: 'The confirmation and the clearing of plates, backdrops, scenes, cover and flourishes happen in the studio on the client book.',
+  },
+  {
+    id: 'images.cleanup.unused-only',
+    title: 'Image library: Remove unused pictures removes exactly the unreferenced, non-sample pictures with their total size shown, and is disabled with a note when there are none',
+    kind: 'client-only',
+    reason: 'The cleanup button and its count are computed in the studio from the book on the device.',
+  },
+  {
+    id: 'images.delete.leaves-serialized-book',
+    title: 'Image library: a removed picture leaves serializeBook() and the device-save record; only the History snapshot taken before holds it, shared by a run of removals',
+    kind: 'client-only',
+    reason: 'serializeBook and the IndexedDB record are built in the browser; the shelf receives that document as opaque JSON.',
+  },
+  /* ==== /BEUK:imagelib ==== */
 ];
 
 /* ------------------------------------------------------------------ */

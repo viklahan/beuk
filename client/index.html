@@ -1720,6 +1720,19 @@
       .img-cell.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
       .img-empty { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 9px; padding: 16px; text-align: center; margin: 0; line-height: 1.5; }
       .img-lib-note { font-size: 12px; color: var(--muted); align-self: center; }
+      /* ==== BEUK:imagelib ==== the library's quiet delete control, the cleanup row and the used-in list */
+      .imglib-cell { position: relative; display: flex; min-width: 0; }
+      .imglib-cell > .img-cell { flex: 1 1 auto; min-width: 0; width: 100%; }
+      .imglib-del { position: absolute; top: 3px; inset-inline-end: 3px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--line-2); border-radius: 7px; background: var(--panel); color: var(--muted); cursor: pointer; opacity: 0.88; transition: opacity .15s; }
+      .imglib-del svg { width: 13px; height: 13px; }
+      .imglib-del:hover { color: var(--ink); opacity: 1; border-color: var(--accent); }
+      .imglib-del:focus-visible { color: var(--ink); opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+      @media (hover: hover) { .imglib-cell:not(:hover):not(:focus-within) .imglib-del { opacity: 0; } }
+      .imglib-tools { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: -6px 0 14px; }
+      .imglib-tools[hidden] { display: none; }
+      .imglib-tools .tb-btn[disabled] { opacity: 0.5; cursor: default; }
+      .imgrm-uses { margin: 2px 0 12px; padding-inline-start: 20px; font-size: 13px; color: var(--ink-2); line-height: 1.6; max-height: 190px; overflow: auto; }
+      /* ==== /BEUK:imagelib ==== */
       .sec-imgs { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); padding: 6px 14px 10px; }
       .sec-imgs h4 { margin: 10px 0 2px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 7px; }
       .sec-imgs h4 svg { width: 14px; height: 14px; }
@@ -1765,6 +1778,7 @@
         .insp-files { max-height: 180px; }
       }
       #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+      #toasts { width: min(92vw, 480px); } /* BEUK:imagelib — the box is as wide as a toast may be; each toast still sizes to its words (it was squeezed to half the window on a phone) */
       .toast {
         background: var(--ink); color: var(--panel); border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 500;
         box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; max-width: min(92vw, 480px);
@@ -1772,6 +1786,7 @@
       .toast svg { width: 15px; height: 15px; flex: 0 0 auto; }
       .toast-action { flex: 0 0 auto; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 9px; cursor: pointer; opacity: 0.9; }
       .toast-action:hover { opacity: 1; }
+      .toast-action { pointer-events: auto; } /* BEUK:imagelib — #toasts passes clicks through (pointer-events: none); its action button must still take them */
 
       /* ---------- UI language packs ---------- */
       html[dir="rtl"] .sec-item { text-align: right; }
@@ -2753,6 +2768,7 @@
           <button class="tb-btn" id="btnImgUpload" type="button" data-i18n="img.upload"><i data-lucide="upload"></i>Upload Image</button>
           <span class="img-lib-note" id="imgLibNote"></span>
         </div>
+        <div class="imglib-tools" id="imgLibTools" hidden></div><!-- BEUK:imagelib -->
         <div class="form-grid">
           <div class="full"><label class="field-lab" for="imgAlt" data-i18n="img.altLabel">Alt Text — read aloud by e-readers; describes the image for anyone who cannot see it</label><input class="txt-input" id="imgAlt" type="text" placeholder="The meridian chart, drawn in ink that never quite dried" data-i18n-ph="img.altPh" /></div>
           <div class="full">
@@ -2769,6 +2785,20 @@
         </div>
       </div>
     </div>
+    <!-- ==== BEUK:imagelib ==== removing a picture that is in use: where it is used, then "Remove it everywhere" or Cancel -->
+    <div class="modal-back" id="modalImgRemove" style="z-index:79;">
+      <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="imgRmTitle" aria-describedby="imgRmBody imgRmUses imgRmNote" style="max-width:460px;">
+        <h2><i data-lucide="trash-2"></i><span id="imgRmTitle"></span></h2>
+        <p class="m-sub" id="imgRmBody"></p>
+        <ul class="imgrm-uses" id="imgRmUses"></ul>
+        <p class="m-sub" id="imgRmNote"></p>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnImgRmCancel" type="button" data-i18n="imglib.cancel">Cancel</button>
+          <button class="tb-btn primary" id="btnImgRmYes" type="button"><i data-lucide="trash-2"></i><span data-i18n="imglib.removeEverywhere">Remove it everywhere</span></button>
+        </div>
+      </div>
+    </div>
+    <!-- ==== /BEUK:imagelib ==== -->
     <input type="file" id="imgFileInput" accept="image/jpeg,image/png,.jpg,.jpeg,.png" style="display:none;" />
     <input type="file" id="bdFileInput" accept="image/jpeg,image/png,.jpg,.jpeg,.png" style="display:none;" />
     <input type="file" id="plateFileInput" accept="image/jpeg,image/png,.jpg,.jpeg,.png" style="display:none;" />
@@ -15238,6 +15268,450 @@
         "acx.close": "关闭"
       });
       /* ==== /BEUK:acx ==== */
+      /* ==== BEUK:imagelib ==== strings: removing a picture from the book's library — all 13 packs */
+      Object.assign(UI_STRINGS.en, {
+        "history.auto.imgremove": "Before removing a picture",
+        "imglib.deleteAria": "Remove “{name}” from the book",
+        "imglib.confirmTitle": "Remove “{name}”?",
+        "imglib.confirmBody": "Used in:",
+        "imglib.confirmNote": "Removing it everywhere takes it out of each of these places. Undo puts everything back, and a copy stays in History (“Before removing a picture”).",
+        "imglib.coverNote": "It is your cover’s artwork, so the cover made with it is removed too.",
+        "imglib.removeEverywhere": "Remove it everywhere",
+        "imglib.cancel": "Cancel",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "in the text",
+        "imglib.role.frontispiece": "frontispiece",
+        "imglib.role.plate": "plate",
+        "imglib.role.backdrop": "backdrop",
+        "imglib.role.scene": "scene picture",
+        "imglib.role.cover": "cover artwork",
+        "imglib.role.coverKept": "kept in the cover maker",
+        "imglib.role.flap": "jacket flap photo",
+        "imglib.role.ornament": "scene-break ornament",
+        "imglib.role.headingFlourish": "heading flourish",
+        "imglib.where.cover": "Cover",
+        "imglib.where.styling": "Book styling",
+        "imglib.where.theme": "Saved theme “{name}”",
+        "imglib.removed": "Picture removed from the book",
+        "imglib.removedEverywhere": "Picture removed from the book and from every place it was used",
+        "imglib.undo": "Undo",
+        "imglib.undone": "Restored, with every place it was used",
+        "imglib.undoGone": "This book has changed since — the copy is in History (“Before removing a picture”)",
+        "imglib.cleanup": "Remove unused pictures ({n} · {size})",
+        "imglib.cleanupNone": "Every picture in the library is in use.",
+        "imglib.cleanupHistory": "Nothing in the book uses them. A copy stays in History (“Before removing a picture”), so the saved book gets smaller once that snapshot is deleted.",
+        "imglib.cleanupToast": "Unused pictures removed: {n} ({size})",
+        "imglib.sampleNote": "The sample story’s own pictures stay with it."
+      });
+      Object.assign(UI_STRINGS.es, {
+        "history.auto.imgremove": "Antes de quitar una imagen",
+        "imglib.deleteAria": "Quitar «{name}» del libro",
+        "imglib.confirmTitle": "¿Quitar «{name}»?",
+        "imglib.confirmBody": "Se usa en:",
+        "imglib.confirmNote": "Quitarla de todas partes la saca de cada uno de estos lugares. Deshacer lo devuelve todo, y una copia queda en el Historial («Antes de quitar una imagen»).",
+        "imglib.coverNote": "Es la imagen de tu cubierta, así que también se quita la cubierta hecha con ella.",
+        "imglib.removeEverywhere": "Quitarla de todas partes",
+        "imglib.cancel": "Cancelar",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "en el texto",
+        "imglib.role.frontispiece": "frontispicio",
+        "imglib.role.plate": "lámina",
+        "imglib.role.backdrop": "fondo",
+        "imglib.role.scene": "imagen de escena",
+        "imglib.role.cover": "imagen de cubierta",
+        "imglib.role.coverKept": "guardada en el creador de cubiertas",
+        "imglib.role.flap": "foto de la solapa",
+        "imglib.role.ornament": "adorno de cambio de escena",
+        "imglib.role.headingFlourish": "floritura del título",
+        "imglib.where.cover": "Cubierta",
+        "imglib.where.styling": "Estilo del libro",
+        "imglib.where.theme": "Tema guardado «{name}»",
+        "imglib.removed": "Imagen quitada del libro",
+        "imglib.removedEverywhere": "Imagen quitada del libro y de todos los lugares donde se usaba",
+        "imglib.undo": "Deshacer",
+        "imglib.undone": "Restaurado, con cada lugar donde se usaba",
+        "imglib.undoGone": "El libro ha cambiado desde entonces: la copia está en el Historial («Antes de quitar una imagen»)",
+        "imglib.cleanup": "Quitar imágenes sin usar ({n} · {size})",
+        "imglib.cleanupNone": "Todas las imágenes de la biblioteca están en uso.",
+        "imglib.cleanupHistory": "Nada del libro las usa. Una copia queda en el Historial («Antes de quitar una imagen»), así que el libro guardado ocupa menos cuando se borra esa instantánea.",
+        "imglib.cleanupToast": "Imágenes sin usar quitadas: {n} ({size})",
+        "imglib.sampleNote": "Las imágenes propias del relato de muestra se quedan con él."
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "history.auto.imgremove": "Avant de retirer une image",
+        "imglib.deleteAria": "Retirer « {name} » du livre",
+        "imglib.confirmTitle": "Retirer « {name} » ?",
+        "imglib.confirmBody": "Utilisée dans :",
+        "imglib.confirmNote": "La retirer partout la supprime de chacun de ces endroits. Annuler remet tout en place, et une copie reste dans l’Historique (« Avant de retirer une image »).",
+        "imglib.coverNote": "C’est l’illustration de votre couverture : la couverture faite avec elle est retirée aussi.",
+        "imglib.removeEverywhere": "La retirer partout",
+        "imglib.cancel": "Annuler",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "dans le texte",
+        "imglib.role.frontispiece": "frontispice",
+        "imglib.role.plate": "planche",
+        "imglib.role.backdrop": "arrière-plan",
+        "imglib.role.scene": "image de scène",
+        "imglib.role.cover": "illustration de couverture",
+        "imglib.role.coverKept": "gardée dans le créateur de couverture",
+        "imglib.role.flap": "photo du rabat",
+        "imglib.role.ornament": "ornement de changement de scène",
+        "imglib.role.headingFlourish": "fioriture de titre",
+        "imglib.where.cover": "Couverture",
+        "imglib.where.styling": "Style du livre",
+        "imglib.where.theme": "Thème enregistré « {name} »",
+        "imglib.removed": "Image retirée du livre",
+        "imglib.removedEverywhere": "Image retirée du livre et de chaque endroit où elle servait",
+        "imglib.undo": "Annuler",
+        "imglib.undone": "Rétabli, avec chaque endroit où elle servait",
+        "imglib.undoGone": "Le livre a changé depuis — la copie est dans l’Historique (« Avant de retirer une image »)",
+        "imglib.cleanup": "Retirer les images inutilisées ({n} · {size})",
+        "imglib.cleanupNone": "Chaque image de la bibliothèque est utilisée.",
+        "imglib.cleanupHistory": "Rien dans le livre ne les utilise. Une copie reste dans l’Historique (« Avant de retirer une image ») : le livre enregistré ne s’allège qu’une fois cet instantané supprimé.",
+        "imglib.cleanupToast": "Images inutilisées retirées : {n} ({size})",
+        "imglib.sampleNote": "Les images propres au récit d’exemple restent avec lui."
+      });
+      Object.assign(UI_STRINGS.de, {
+        "history.auto.imgremove": "Vor dem Entfernen eines Bildes",
+        "imglib.deleteAria": "„{name}“ aus dem Buch entfernen",
+        "imglib.confirmTitle": "„{name}“ entfernen?",
+        "imglib.confirmBody": "Verwendet in:",
+        "imglib.confirmNote": "Überall entfernen nimmt es aus jeder dieser Stellen. Rückgängig stellt alles wieder her, und eine Kopie bleibt im Verlauf („Vor dem Entfernen eines Bildes“).",
+        "imglib.coverNote": "Es ist das Motiv Ihres Covers, daher wird auch das damit gestaltete Cover entfernt.",
+        "imglib.removeEverywhere": "Überall entfernen",
+        "imglib.cancel": "Abbrechen",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "im Text",
+        "imglib.role.frontispiece": "Frontispiz",
+        "imglib.role.plate": "Bildtafel",
+        "imglib.role.backdrop": "Hintergrund",
+        "imglib.role.scene": "Szenenbild",
+        "imglib.role.cover": "Covermotiv",
+        "imglib.role.coverKept": "im Cover-Designer hinterlegt",
+        "imglib.role.flap": "Klappenfoto",
+        "imglib.role.ornament": "Szenenwechsel-Ornament",
+        "imglib.role.headingFlourish": "Überschriften-Verzierung",
+        "imglib.where.cover": "Cover",
+        "imglib.where.styling": "Buchgestaltung",
+        "imglib.where.theme": "Gespeichertes Thema „{name}“",
+        "imglib.removed": "Bild aus dem Buch entfernt",
+        "imglib.removedEverywhere": "Bild aus dem Buch und von jeder Stelle entfernt, an der es verwendet wurde",
+        "imglib.undo": "Rückgängig",
+        "imglib.undone": "Wiederhergestellt, mit jeder Stelle, an der es verwendet wurde",
+        "imglib.undoGone": "Das Buch hat sich seither geändert — die Kopie liegt im Verlauf („Vor dem Entfernen eines Bildes“)",
+        "imglib.cleanup": "Unbenutzte Bilder entfernen ({n} · {size})",
+        "imglib.cleanupNone": "Jedes Bild der Bibliothek wird verwendet.",
+        "imglib.cleanupHistory": "Nichts im Buch verwendet sie. Eine Kopie bleibt im Verlauf („Vor dem Entfernen eines Bildes“); das gespeicherte Buch wird erst kleiner, wenn dieser Schnappschuss gelöscht ist.",
+        "imglib.cleanupToast": "Unbenutzte Bilder entfernt: {n} ({size})",
+        "imglib.sampleNote": "Die eigenen Bilder der Beispielgeschichte bleiben bei ihr."
+      });
+      Object.assign(UI_STRINGS.it, {
+        "history.auto.imgremove": "Prima di rimuovere un’immagine",
+        "imglib.deleteAria": "Rimuovi «{name}» dal libro",
+        "imglib.confirmTitle": "Rimuovere «{name}»?",
+        "imglib.confirmBody": "Usata in:",
+        "imglib.confirmNote": "Rimuoverla ovunque la toglie da ciascuno di questi punti. Annulla rimette tutto a posto, e una copia resta nella Cronologia («Prima di rimuovere un’immagine»).",
+        "imglib.coverNote": "È l’immagine della tua copertina, quindi viene rimossa anche la copertina creata con essa.",
+        "imglib.removeEverywhere": "Rimuovila ovunque",
+        "imglib.cancel": "Annulla",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "nel testo",
+        "imglib.role.frontispiece": "antiporta",
+        "imglib.role.plate": "tavola",
+        "imglib.role.backdrop": "sfondo",
+        "imglib.role.scene": "immagine di scena",
+        "imglib.role.cover": "immagine di copertina",
+        "imglib.role.coverKept": "conservata nel creatore di copertine",
+        "imglib.role.flap": "foto del risvolto",
+        "imglib.role.ornament": "ornamento di cambio scena",
+        "imglib.role.headingFlourish": "fregio del titolo",
+        "imglib.where.cover": "Copertina",
+        "imglib.where.styling": "Stile del libro",
+        "imglib.where.theme": "Tema salvato «{name}»",
+        "imglib.removed": "Immagine rimossa dal libro",
+        "imglib.removedEverywhere": "Immagine rimossa dal libro e da ogni punto in cui era usata",
+        "imglib.undo": "Annulla",
+        "imglib.undone": "Ripristinato, con ogni punto in cui era usata",
+        "imglib.undoGone": "Il libro è cambiato nel frattempo: la copia è nella Cronologia («Prima di rimuovere un’immagine»)",
+        "imglib.cleanup": "Rimuovi immagini inutilizzate ({n} · {size})",
+        "imglib.cleanupNone": "Ogni immagine della biblioteca è in uso.",
+        "imglib.cleanupHistory": "Niente nel libro le usa. Una copia resta nella Cronologia («Prima di rimuovere un’immagine»): il libro salvato si alleggerisce solo dopo aver eliminato quell’istantanea.",
+        "imglib.cleanupToast": "Immagini inutilizzate rimosse: {n} ({size})",
+        "imglib.sampleNote": "Le immagini del racconto di esempio restano con esso."
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "history.auto.imgremove": "Antes de remover uma imagem",
+        "imglib.deleteAria": "Remover “{name}” do livro",
+        "imglib.confirmTitle": "Remover “{name}”?",
+        "imglib.confirmBody": "Usada em:",
+        "imglib.confirmNote": "Remover de todo lado tira-a de cada um destes lugares. Desfazer devolve tudo, e uma cópia fica no Histórico (“Antes de remover uma imagem”).",
+        "imglib.coverNote": "É a arte da sua capa, por isso a capa feita com ela também é removida.",
+        "imglib.removeEverywhere": "Remover de todo lado",
+        "imglib.cancel": "Cancelar",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "no texto",
+        "imglib.role.frontispiece": "frontispício",
+        "imglib.role.plate": "prancha",
+        "imglib.role.backdrop": "fundo",
+        "imglib.role.scene": "imagem de cena",
+        "imglib.role.cover": "arte da capa",
+        "imglib.role.coverKept": "guardada no criador de capas",
+        "imglib.role.flap": "foto da orelha",
+        "imglib.role.ornament": "ornamento de mudança de cena",
+        "imglib.role.headingFlourish": "floreio do título",
+        "imglib.where.cover": "Capa",
+        "imglib.where.styling": "Estilo do livro",
+        "imglib.where.theme": "Tema salvo “{name}”",
+        "imglib.removed": "Imagem removida do livro",
+        "imglib.removedEverywhere": "Imagem removida do livro e de cada lugar onde era usada",
+        "imglib.undo": "Desfazer",
+        "imglib.undone": "Restaurado, com cada lugar onde era usada",
+        "imglib.undoGone": "O livro mudou desde então — a cópia está no Histórico (“Antes de remover uma imagem”)",
+        "imglib.cleanup": "Remover imagens sem uso ({n} · {size})",
+        "imglib.cleanupNone": "Todas as imagens da biblioteca estão em uso.",
+        "imglib.cleanupHistory": "Nada no livro as usa. Uma cópia fica no Histórico (“Antes de remover uma imagem”), por isso o livro guardado só fica menor quando esse instantâneo for apagado.",
+        "imglib.cleanupToast": "Imagens sem uso removidas: {n} ({size})",
+        "imglib.sampleNote": "As imagens próprias da história de exemplo ficam com ela."
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "history.auto.imgremove": "Vóór het verwijderen van een afbeelding",
+        "imglib.deleteAria": "“{name}” uit het boek verwijderen",
+        "imglib.confirmTitle": "“{name}” verwijderen?",
+        "imglib.confirmBody": "Gebruikt in:",
+        "imglib.confirmNote": "Overal verwijderen haalt haar uit elk van deze plekken. Ongedaan maken zet alles terug, en een kopie blijft in Geschiedenis (“Vóór het verwijderen van een afbeelding”).",
+        "imglib.coverNote": "Het is de afbeelding van je omslag, dus het omslag dat ermee is gemaakt wordt ook verwijderd.",
+        "imglib.removeEverywhere": "Overal verwijderen",
+        "imglib.cancel": "Annuleren",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "in de tekst",
+        "imglib.role.frontispiece": "frontispice",
+        "imglib.role.plate": "plaat",
+        "imglib.role.backdrop": "achtergrond",
+        "imglib.role.scene": "scèneafbeelding",
+        "imglib.role.cover": "omslagafbeelding",
+        "imglib.role.coverKept": "bewaard in de omslagmaker",
+        "imglib.role.flap": "flapfoto",
+        "imglib.role.ornament": "scènewissel-ornament",
+        "imglib.role.headingFlourish": "kopversiering",
+        "imglib.where.cover": "Omslag",
+        "imglib.where.styling": "Boekopmaak",
+        "imglib.where.theme": "Opgeslagen thema “{name}”",
+        "imglib.removed": "Afbeelding uit het boek verwijderd",
+        "imglib.removedEverywhere": "Afbeelding uit het boek en van elke plek waar ze werd gebruikt verwijderd",
+        "imglib.undo": "Ongedaan maken",
+        "imglib.undone": "Hersteld, met elke plek waar ze werd gebruikt",
+        "imglib.undoGone": "Het boek is sindsdien veranderd — de kopie staat in Geschiedenis (“Vóór het verwijderen van een afbeelding”)",
+        "imglib.cleanup": "Ongebruikte afbeeldingen verwijderen ({n} · {size})",
+        "imglib.cleanupNone": "Elke afbeelding in de bibliotheek wordt gebruikt.",
+        "imglib.cleanupHistory": "Niets in het boek gebruikt ze. Een kopie blijft in Geschiedenis (“Vóór het verwijderen van een afbeelding”); het opgeslagen boek wordt pas kleiner als die momentopname is verwijderd.",
+        "imglib.cleanupToast": "Ongebruikte afbeeldingen verwijderd: {n} ({size})",
+        "imglib.sampleNote": "De eigen afbeeldingen van het voorbeeldverhaal blijven erbij."
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "history.auto.imgremove": "Przed usunięciem obrazu",
+        "imglib.deleteAria": "Usuń „{name}” z książki",
+        "imglib.confirmTitle": "Usunąć „{name}”?",
+        "imglib.confirmBody": "Użyty w:",
+        "imglib.confirmNote": "Usunięcie wszędzie zabiera go z każdego z tych miejsc. Cofnij przywraca wszystko, a kopia zostaje w Historii („Przed usunięciem obrazu”).",
+        "imglib.coverNote": "To grafika twojej okładki, więc okładka z nią zrobiona też zostanie usunięta.",
+        "imglib.removeEverywhere": "Usuń wszędzie",
+        "imglib.cancel": "Anuluj",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "w tekście",
+        "imglib.role.frontispiece": "frontyspis",
+        "imglib.role.plate": "plansza",
+        "imglib.role.backdrop": "tło",
+        "imglib.role.scene": "obraz sceny",
+        "imglib.role.cover": "grafika okładki",
+        "imglib.role.coverKept": "zachowany w kreatorze okładek",
+        "imglib.role.flap": "zdjęcie na skrzydełku",
+        "imglib.role.ornament": "ozdobnik zmiany sceny",
+        "imglib.role.headingFlourish": "ozdobnik tytułu",
+        "imglib.where.cover": "Okładka",
+        "imglib.where.styling": "Wygląd książki",
+        "imglib.where.theme": "Zapisany motyw „{name}”",
+        "imglib.removed": "Obraz usunięty z książki",
+        "imglib.removedEverywhere": "Obraz usunięty z książki i z każdego miejsca, w którym był użyty",
+        "imglib.undo": "Cofnij",
+        "imglib.undone": "Przywrócono, wraz z każdym miejscem użycia",
+        "imglib.undoGone": "Książka zmieniła się od tego czasu — kopia jest w Historii („Przed usunięciem obrazu”)",
+        "imglib.cleanup": "Usuń nieużywane obrazy ({n} · {size})",
+        "imglib.cleanupNone": "Każdy obraz w bibliotece jest w użyciu.",
+        "imglib.cleanupHistory": "Nic w książce ich nie używa. Kopia zostaje w Historii („Przed usunięciem obrazu”), więc zapisana książka zmniejszy się dopiero po usunięciu tej migawki.",
+        "imglib.cleanupToast": "Usunięte nieużywane obrazy: {n} ({size})",
+        "imglib.sampleNote": "Własne obrazy przykładowej opowieści zostają przy niej."
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "history.auto.imgremove": "Перед удалением изображения",
+        "imglib.deleteAria": "Удалить «{name}» из книги",
+        "imglib.confirmTitle": "Удалить «{name}»?",
+        "imglib.confirmBody": "Используется:",
+        "imglib.confirmNote": "«Удалить отовсюду» убирает его из каждого из этих мест. «Отменить» всё вернёт, а копия останется в Истории («Перед удалением изображения»).",
+        "imglib.coverNote": "Это изображение вашей обложки, поэтому обложка, сделанная с ним, тоже будет удалена.",
+        "imglib.removeEverywhere": "Удалить отовсюду",
+        "imglib.cancel": "Отмена",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "в тексте",
+        "imglib.role.frontispiece": "фронтиспис",
+        "imglib.role.plate": "вклейка",
+        "imglib.role.backdrop": "фон",
+        "imglib.role.scene": "изображение сцены",
+        "imglib.role.cover": "изображение обложки",
+        "imglib.role.coverKept": "сохранено в конструкторе обложек",
+        "imglib.role.flap": "фото на клапане",
+        "imglib.role.ornament": "орнамент смены сцены",
+        "imglib.role.headingFlourish": "виньетка заголовка",
+        "imglib.where.cover": "Обложка",
+        "imglib.where.styling": "Оформление книги",
+        "imglib.where.theme": "Сохранённая тема «{name}»",
+        "imglib.removed": "Изображение удалено из книги",
+        "imglib.removedEverywhere": "Изображение удалено из книги и из всех мест, где оно использовалось",
+        "imglib.undo": "Отменить",
+        "imglib.undone": "Восстановлено вместе со всеми местами использования",
+        "imglib.undoGone": "Книга с тех пор изменилась — копия в Истории («Перед удалением изображения»)",
+        "imglib.cleanup": "Удалить неиспользуемые изображения ({n} · {size})",
+        "imglib.cleanupNone": "Все изображения библиотеки используются.",
+        "imglib.cleanupHistory": "В книге они нигде не используются. Копия останется в Истории («Перед удалением изображения»), поэтому сохранённая книга станет меньше, только когда этот снимок будет удалён.",
+        "imglib.cleanupToast": "Удалено неиспользуемых изображений: {n} ({size})",
+        "imglib.sampleNote": "Собственные изображения примерной истории остаются с ней."
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "history.auto.imgremove": "Bir görseli kaldırmadan önce",
+        "imglib.deleteAria": "“{name}” görselini kitaptan kaldır",
+        "imglib.confirmTitle": "“{name}” kaldırılsın mı?",
+        "imglib.confirmBody": "Kullanıldığı yerler:",
+        "imglib.confirmNote": "Her yerden kaldırmak onu bu yerlerin her birinden çıkarır. Geri al her şeyi geri getirir ve bir kopya Geçmiş’te kalır (“Bir görseli kaldırmadan önce”).",
+        "imglib.coverNote": "Bu, kapağınızın görseli; bu yüzden onunla yapılan kapak da kaldırılır.",
+        "imglib.removeEverywhere": "Her yerden kaldır",
+        "imglib.cancel": "Vazgeç",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "metinde",
+        "imglib.role.frontispiece": "ön resim",
+        "imglib.role.plate": "levha",
+        "imglib.role.backdrop": "arka plan",
+        "imglib.role.scene": "sahne görseli",
+        "imglib.role.cover": "kapak görseli",
+        "imglib.role.coverKept": "kapak yapıcıda saklı",
+        "imglib.role.flap": "kapak kanadı fotoğrafı",
+        "imglib.role.ornament": "sahne geçişi süsü",
+        "imglib.role.headingFlourish": "başlık süsü",
+        "imglib.where.cover": "Kapak",
+        "imglib.where.styling": "Kitap biçemi",
+        "imglib.where.theme": "Kayıtlı tema “{name}”",
+        "imglib.removed": "Görsel kitaptan kaldırıldı",
+        "imglib.removedEverywhere": "Görsel kitaptan ve kullanıldığı her yerden kaldırıldı",
+        "imglib.undo": "Geri al",
+        "imglib.undone": "Geri getirildi, kullanıldığı her yerle birlikte",
+        "imglib.undoGone": "Kitap o zamandan beri değişti — kopya Geçmiş’te (“Bir görseli kaldırmadan önce”)",
+        "imglib.cleanup": "Kullanılmayan görselleri kaldır ({n} · {size})",
+        "imglib.cleanupNone": "Kitaplıktaki her görsel kullanılıyor.",
+        "imglib.cleanupHistory": "Kitapta hiçbir şey onları kullanmıyor. Bir kopya Geçmiş’te kalır (“Bir görseli kaldırmadan önce”); kayıtlı kitap ancak o anlık görüntü silinince küçülür.",
+        "imglib.cleanupToast": "Kaldırılan kullanılmayan görseller: {n} ({size})",
+        "imglib.sampleNote": "Örnek öykünün kendi görselleri onunla kalır."
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "history.auto.imgremove": "قبل إزالة صورة",
+        "imglib.deleteAria": "إزالة «{name}» من الكتاب",
+        "imglib.confirmTitle": "إزالة «{name}»؟",
+        "imglib.confirmBody": "مستخدمة في:",
+        "imglib.confirmNote": "الإزالة من كل مكان تُخرجها من كل موضع من هذه المواضع. «تراجع» يعيد كل شيء، وتبقى نسخة في السجل («قبل إزالة صورة»).",
+        "imglib.coverNote": "إنها صورة غلافك، لذا يُزال الغلاف المصنوع بها أيضًا.",
+        "imglib.removeEverywhere": "إزالتها من كل مكان",
+        "imglib.cancel": "إلغاء",
+        "imglib.useItem": "{where} ({role})",
+        "imglib.role.text": "في النص",
+        "imglib.role.frontispiece": "صورة الواجهة",
+        "imglib.role.plate": "لوحة",
+        "imglib.role.backdrop": "خلفية",
+        "imglib.role.scene": "صورة المشهد",
+        "imglib.role.cover": "صورة الغلاف",
+        "imglib.role.coverKept": "محفوظة في صانع الأغلفة",
+        "imglib.role.flap": "صورة الجناح",
+        "imglib.role.ornament": "زخرفة فاصل المشهد",
+        "imglib.role.headingFlourish": "زخرفة العنوان",
+        "imglib.where.cover": "الغلاف",
+        "imglib.where.styling": "تنسيق الكتاب",
+        "imglib.where.theme": "السمة المحفوظة «{name}»",
+        "imglib.removed": "أُزيلت الصورة من الكتاب",
+        "imglib.removedEverywhere": "أُزيلت الصورة من الكتاب ومن كل موضع استُخدمت فيه",
+        "imglib.undo": "تراجع",
+        "imglib.undone": "استُعيدت مع كل موضع استُخدمت فيه",
+        "imglib.undoGone": "تغيّر الكتاب منذ ذلك الحين — النسخة في السجل («قبل إزالة صورة»)",
+        "imglib.cleanup": "إزالة الصور غير المستخدمة ({n} · {size})",
+        "imglib.cleanupNone": "كل صورة في المكتبة مستخدمة.",
+        "imglib.cleanupHistory": "لا شيء في الكتاب يستخدمها. تبقى نسخة في السجل («قبل إزالة صورة»)، لذا لا يصغر الكتاب المحفوظ إلا بعد حذف تلك اللقطة.",
+        "imglib.cleanupToast": "الصور غير المستخدمة المُزالة: {n} ({size})",
+        "imglib.sampleNote": "صور القصة النموذجية تبقى معها."
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "history.auto.imgremove": "画像を削除する前",
+        "imglib.deleteAria": "「{name}」を本から削除",
+        "imglib.confirmTitle": "「{name}」を削除しますか？",
+        "imglib.confirmBody": "使用箇所：",
+        "imglib.confirmNote": "「すべての箇所から削除」で、これらの各箇所から取り除きます。「元に戻す」ですべて戻り、コピーは履歴（「画像を削除する前」）に残ります。",
+        "imglib.coverNote": "表紙のアートワークなので、この画像で作った表紙も削除されます。",
+        "imglib.removeEverywhere": "すべての箇所から削除",
+        "imglib.cancel": "キャンセル",
+        "imglib.useItem": "{where}（{role}）",
+        "imglib.role.text": "本文中",
+        "imglib.role.frontispiece": "口絵",
+        "imglib.role.plate": "扉絵",
+        "imglib.role.backdrop": "背景",
+        "imglib.role.scene": "場面画像",
+        "imglib.role.cover": "表紙のアートワーク",
+        "imglib.role.coverKept": "表紙メーカーに保存",
+        "imglib.role.flap": "カバー袖の写真",
+        "imglib.role.ornament": "場面転換の飾り",
+        "imglib.role.headingFlourish": "見出しの飾り",
+        "imglib.where.cover": "表紙",
+        "imglib.where.styling": "本のスタイル",
+        "imglib.where.theme": "保存したテーマ「{name}」",
+        "imglib.removed": "画像を本から削除しました",
+        "imglib.removedEverywhere": "画像を本と、使われていたすべての箇所から削除しました",
+        "imglib.undo": "元に戻す",
+        "imglib.undone": "使われていた箇所ごと元に戻しました",
+        "imglib.undoGone": "その後に本が変更されています — コピーは履歴（「画像を削除する前」）にあります",
+        "imglib.cleanup": "未使用の画像を削除（{n} · {size}）",
+        "imglib.cleanupNone": "ライブラリの画像はすべて使われています。",
+        "imglib.cleanupHistory": "本の中で使われていません。コピーは履歴（「画像を削除する前」）に残るため、保存された本が小さくなるのはそのスナップショットを削除したときです。",
+        "imglib.cleanupToast": "削除した未使用の画像：{n}（{size}）",
+        "imglib.sampleNote": "サンプルストーリーの画像はサンプルと一緒に残ります。"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "history.auto.imgremove": "移除图片之前",
+        "imglib.deleteAria": "从书中移除“{name}”",
+        "imglib.confirmTitle": "移除“{name}”？",
+        "imglib.confirmBody": "用于：",
+        "imglib.confirmNote": "“全部移除”会把它从以下每一处取下。撤销可恢复一切，历史中也保留一份副本（“移除图片之前”）。",
+        "imglib.coverNote": "这是封面的图片，因此用它制作的封面也会一并移除。",
+        "imglib.removeEverywhere": "全部移除",
+        "imglib.cancel": "取消",
+        "imglib.useItem": "{where}（{role}）",
+        "imglib.role.text": "正文中",
+        "imglib.role.frontispiece": "卷首插图",
+        "imglib.role.plate": "插页",
+        "imglib.role.backdrop": "背景",
+        "imglib.role.scene": "场景图片",
+        "imglib.role.cover": "封面图片",
+        "imglib.role.coverKept": "保存在封面制作器中",
+        "imglib.role.flap": "护封勒口照片",
+        "imglib.role.ornament": "场景转换饰纹",
+        "imglib.role.headingFlourish": "标题饰纹",
+        "imglib.where.cover": "封面",
+        "imglib.where.styling": "书的样式",
+        "imglib.where.theme": "已保存主题“{name}”",
+        "imglib.removed": "已从书中移除图片",
+        "imglib.removedEverywhere": "已从书中及其使用的每一处移除图片",
+        "imglib.undo": "撤销",
+        "imglib.undone": "已恢复，连同其使用的每一处",
+        "imglib.undoGone": "此后书已改动——副本在历史中（“移除图片之前”）",
+        "imglib.cleanup": "移除未使用的图片（{n} · {size}）",
+        "imglib.cleanupNone": "图片库中的每张图片都在使用中。",
+        "imglib.cleanupHistory": "书中没有任何地方使用它们。历史中保留一份副本（“移除图片之前”），因此删除该快照后，保存的书才会变小。",
+        "imglib.cleanupToast": "已移除未使用的图片：{n}（{size}）",
+        "imglib.sampleNote": "示例故事自带的图片随示例保留。"
+      });
+      /* ==== /BEUK:imagelib ==== */
       /* ================= Ornaments (inline SVG, em-sized) ================= */
       function starPath(cx, cy, r) {
         return "M" + cx + " " + (cy - r) + " L" + (cx + r * 0.28) + " " + (cy - r * 0.28) + " L" + (cx + r) + " " + cy +
@@ -18629,7 +19103,7 @@
           el.appendChild(b);
         }
         box.appendChild(el); icons();
-        setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 320); }, action ? 6000 : 3400);
+        setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 320); }, action ? (action.ms || 6000) : 3400); /* BEUK:imagelib — action.ms: a longer Undo window */
       }
 
       /* ================= UI: sidebar ================= */
@@ -19542,7 +20016,7 @@
           out.push({
             id: typeof e.id === "string" && e.id ? e.id : uid(),
             name: typeof e.name === "string" ? e.name : "",
-            auto: ["import", "sample", "restore", "conflict", "bookid", "backup", "sampleupdate"].indexOf(e.auto) !== -1 ? e.auto : null, /* BEUK:bookid — "bookid"; BEUK:sidebar — "backup" (was dropped on reload) and "sampleupdate" */
+            auto: ["import", "sample", "restore", "conflict", "bookid", "backup", "sampleupdate", "imgremove"].indexOf(e.auto) !== -1 ? e.auto : null, /* BEUK:bookid — "bookid"; BEUK:sidebar — "backup" (was dropped on reload) and "sampleupdate" */
             at: typeof e.at === "string" ? e.at : new Date(0).toISOString(),
             words: Math.max(0, Math.floor(Number(e.words) || 0)),
             doc: e.doc
@@ -20808,11 +21282,13 @@
             '<button type="button" class="img-cell' + (im.id === imgSelId ? " active" : "") + '" data-libimg="' + im.id + '"><img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/><span>' + esc(im.name) + "</span></button>"
           ).join("");
           lib.querySelectorAll("[data-libimg]").forEach((b) => b.addEventListener("click", () => selectLibImage(b.getAttribute("data-libimg"))));
+          imglibDecorate(lib, "data-libimg"); /* BEUK:imagelib */
         }
         const sel = imageById(imgSelId);
         $("imgLibNote").textContent = sel ? sel.name + " · " + fmtBytes(Math.round(sel.data.length * 3 / 4)) : (state.images.length ? "Pick an image above, or upload a new one." : "");
         $("btnDoInsertImage").disabled = !sel;
         $("btnDoInsertImage").style.opacity = sel ? "" : "0.5";
+        imglibRenderTools(); /* BEUK:imagelib */
         icons();
       }
       function selectLibImage(id) {
@@ -20870,6 +21346,7 @@
           renderSectionImages();
           toast(imgFull ? "Full-bleed image placed" : "Image placed", "image");
         });
+        imglibInit(); /* BEUK:imagelib */
       }
 
       /* ================= Scene images: the bar and the picker =================
@@ -20974,6 +21451,7 @@
             '<button type="button" class="img-cell' + (scenePending && im.id === scenePending.imageId ? " active" : "") + '" data-sceneimg="' + im.id + '"><img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/><span>' + esc(im.name) + "</span></button>"
           ).join("");
           lib.querySelectorAll("[data-sceneimg]").forEach((b) => b.addEventListener("click", () => sceneSelectImage(b.getAttribute("data-sceneimg"))));
+          imglibDecorate(lib, "data-sceneimg"); /* BEUK:imagelib */
         }
         const sel = scenePending ? imageById(scenePending.imageId) : null;
         $("sceneLibNote").textContent = sel ? sel.name + " · " + fmtBytes(Math.round(sel.data.length * 3 / 4)) : (state.images.length ? t("scene.pickFirst") : "");
@@ -21289,6 +21767,336 @@
         renderStudio(); renderPreview(); zenRenderSurface(); refreshImagePickers(); refreshExportTree();
         toast(t("flourish.removed"), "sparkles");
       }
+      /* ==== BEUK:imagelib ==== */
+      /* ================= The image library: where a picture is used, and taking it out =================
+         A picture lives once in state.images and is referenced by id
+         from many places: image markers in any section's text (the
+         frontispiece is one), a chapter's opening plate and backdrop,
+         a scene break's picture, the made cover's artwork and its
+         jacket flap photo, and — for flourishes — the book's
+         scene-break ornament and heading flourish, and the same two
+         choices inside the writer's saved themes. imglibUsageMap()
+         answers "where is this picture used" for every one of them in
+         a single pass; everything below reads it.
+         Removing a picture: a History snapshot is taken first ("Before
+         removing a picture" — one snapshot serves a run of removals
+         while it still holds every picture being removed), then every
+         use is cleared exactly as the editor's own controls clear it
+         (the marker line leaves the text like the section card's
+         remove; plate and backdrop go to "No plate" / "No backdrop";
+         a scene break drops its picture like the scene picker's
+         Remove; a cover whose artwork it is goes the way of Settings'
+         Remove cover; a jacket flap photo like the maker's own Remove;
+         a flourish falls back like removeFlourishImage), and the
+         picture leaves the library — so it is gone from
+         serializeBook(), the device save and the next shelf save. The
+         toast's Undo (10 s) puts the picture and every use back.
+         The sample story's own pictures (ids "sample-img-…") carry no
+         delete control and are never counted as unused: they belong
+         to the sample, which can always be reloaded exactly. */
+      const IMGLIB_UNDO_MS = 10000;
+      const IMGLIB_COVER_TYPES = ["image", "photo", "duotone"];
+      const imglibIsSample = (im) => !!im && typeof im.id === "string" && im.id.indexOf("sample-img-") === 0;
+      const imglibBytes = (im) => (im && typeof im.data === "string" ? Math.round(im.data.length * 3 / 4) : 0);
+      /* Sizes and file names are isolated (U+2066/U+2068 … U+2069) so a right-to-left sentence keeps "141.3 KB" and "ferry.png" whole. */
+      const imglibSize = (n) => "\u2066" + (n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : fmtBytes(n)) + "\u2069";
+      const imglibName = (im) => "\u2068" + String((im && im.name) || "") + "\u2069";
+      function imglibSecName(s) {
+        const title = String(s.title || "").trim();
+        if (title) return title;
+        if (s.kind === "body" && s.type === "chapter" && s.number) return t("side.chapterAbbr") + " " + s.number;
+        return t("side.untitled");
+      }
+      function imglibUsageMap() {
+        const map = {};
+        const add = (id, use) => { if (typeof id !== "string" || !id) return; (map[id] = map[id] || []).push(use); };
+        (state.sections || []).forEach((s) => {
+          const counts = {};
+          imageTokensIn(s.content).forEach((tk) => { counts[tk.id] = (counts[tk.id] || 0) + 1; });
+          Object.keys(counts).forEach((id) => add(id, { role: s.type === "frontispiece" ? "frontispiece" : "text", sectionId: s.id, where: imglibSecName(s), count: counts[id] }));
+          add(s.plateId, { role: "plate", sectionId: s.id, where: imglibSecName(s) });
+          add(s.backdropId, { role: "backdrop", sectionId: s.id, where: imglibSecName(s) });
+          const sc = {};
+          (Array.isArray(s.scenes) ? s.scenes : []).forEach((e) => { if (e && typeof e.imageId === "string") sc[e.imageId] = (sc[e.imageId] || 0) + 1; });
+          Object.keys(sc).forEach((id) => add(id, { role: "scene", sectionId: s.id, where: imglibSecName(s), count: sc[id] }));
+        });
+        const r = state.coverRecipe;
+        if (r) {
+          add(r.bgImageId, { role: IMGLIB_COVER_TYPES.indexOf(r.bgType) !== -1 ? "cover" : "coverKept", where: t("imglib.where.cover") });
+          if (r.wrap) add(r.wrap.flapPhotoId, { role: "flap", where: t("imglib.where.cover") });
+        }
+        const flId = (v) => (typeof v === "string" && v.indexOf(FLOURISH_PREFIX) === 0 ? v.slice(FLOURISH_PREFIX.length) : null);
+        const th = state.theme || {};
+        add(flId(th.ornament), { role: "ornament", where: t("imglib.where.styling") });
+        add(th.headingFlourish, { role: "headingFlourish", where: t("imglib.where.styling") });
+        (state.customThemes || []).forEach((ct) => {
+          const ctt = ct && ct.theme; if (!ctt) return;
+          const where = t("imglib.where.theme", { name: ct.name || "" });
+          add(flId(ctt.ornament), { role: "ornament", themeId: ct.id, where });
+          add(ctt.headingFlourish, { role: "headingFlourish", themeId: ct.id, where });
+        });
+        return map;
+      }
+      function imageUsage(id) { return (imglibUsageMap()[id] || []).slice(); }
+      const imglibUseText = (u) => t("imglib.useItem", { where: "\u2068" + u.where + "\u2069", role: t("imglib.role." + u.role) });
+      function imglibUnused() {
+        const map = imglibUsageMap();
+        return (state.images || []).filter((im) => im && !imglibIsSample(im) && !(map[im.id] && map[im.id].length));
+      }
+      /* One snapshot serves a run of removals: when the newest History
+         entry is the "Before removing a picture" snapshot this run took,
+         nothing else in the book has changed since the last removal,
+         and it holds every picture about to go (same id, same bytes),
+         it is the net for this removal too — no second full copy of
+         the book. Any other edit in between starts a new snapshot. */
+      let imglibRunSnapId = null, imglibRunSeq = -1;
+      function imglibSnapshot(ids) {
+        const head = (state.history || [])[0];
+        if (head && head.id === imglibRunSnapId && local.editSeq === imglibRunSeq && head.auto === "imgremove" && head.doc && Array.isArray(head.doc.images)) {
+          const held = ids.every((id) => { const im = imageById(id); return !!im && head.doc.images.some((x) => x && x.id === id && x.data === im.data); });
+          if (held) return head;
+        }
+        return autoSnapshot("imgremove");
+      }
+      function imglibRemove(ids) {
+        const idSet = new Set((ids || []).filter((id) => { const im = imageById(id); return !!im && !imglibIsSample(im); }));
+        if (!idSet.size) return null;
+        const list = Array.from(idSet);
+        const snap = imglibSnapshot(list);
+        const rec = { ids: list, bookId: state.meta.bookId || null, snapId: snap ? snap.id : null, used: false,
+          images: [], sections: [], theme: {}, customThemes: [], cover: null, recipeBg: null, flap: null, bytes: 0 };
+        (state.images || []).forEach((im, i) => { if (idSet.has(im.id)) { rec.images.push({ index: i, im: im }); rec.bytes += imglibBytes(im); } });
+        (state.sections || []).forEach((s) => {
+          const e = { id: s.id }; let touched = false;
+          const lines = String(s.content || "").split("\n");
+          if (lines.some((l) => { const tk = parseImageLine(l); return !!tk && idSet.has(tk.id); })) {
+            e.content = s.content; e.lines = [];
+            const kept = [];
+            lines.forEach((l) => { const tk = parseImageLine(l); if (tk && idSet.has(tk.id)) e.lines.push({ at: kept.length, line: l }); else kept.push(l); });
+            s.content = kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+            e.contentAfter = s.content; touched = true;
+          }
+          if (idSet.has(s.plateId)) { e.plateId = s.plateId; s.plateId = null; touched = true; }
+          if (idSet.has(s.backdropId)) { e.backdropId = s.backdropId; s.backdropId = null; touched = true; }
+          if (Array.isArray(s.scenes) && s.scenes.some((x) => x && idSet.has(x.imageId))) {
+            e.scenes = s.scenes.filter((x) => x && idSet.has(x.imageId)).map((x) => Object.assign({}, x));
+            s.scenes = s.scenes.filter((x) => !(x && idSet.has(x.imageId)));
+            touched = true;
+          }
+          if (touched) rec.sections.push(e);
+        });
+        const flHit = (v) => typeof v === "string" && v.indexOf(FLOURISH_PREFIX) === 0 && idSet.has(v.slice(FLOURISH_PREFIX.length));
+        if (flHit(state.theme.ornament)) { rec.theme.ornament = state.theme.ornament; state.theme.ornament = "fleuron"; }
+        if (idSet.has(state.theme.headingFlourish)) { rec.theme.headingFlourish = state.theme.headingFlourish; state.theme.headingFlourish = ""; }
+        (state.customThemes || []).forEach((ct) => {
+          const ctt = ct && ct.theme; if (!ctt) return;
+          const c = { id: ct.id }; let hit = false;
+          if (flHit(ctt.ornament)) { c.ornament = ctt.ornament; ctt.ornament = "fleuron"; hit = true; }
+          if (idSet.has(ctt.headingFlourish)) { c.headingFlourish = ctt.headingFlourish; ctt.headingFlourish = ""; hit = true; }
+          if (hit) rec.customThemes.push(c);
+        });
+        const r = state.coverRecipe;
+        if (r && idSet.has(r.bgImageId)) {
+          if (IMGLIB_COVER_TYPES.indexOf(r.bgType) !== -1) { rec.cover = { cover: state.cover, recipe: r }; clearCover(); }
+          else { rec.recipeBg = r.bgImageId; r.bgImageId = null; }
+        }
+        const r2 = state.coverRecipe;
+        if (r2 && r2.wrap && idSet.has(r2.wrap.flapPhotoId)) { rec.flap = r2.wrap.flapPhotoId; r2.wrap.flapPhotoId = null; }
+        if (cmRecipe) {
+          if (idSet.has(cmRecipe.bgImageId)) cmRecipe.bgImageId = null;
+          if (cmRecipe.wrap && idSet.has(cmRecipe.wrap.flapPhotoId)) cmRecipe.wrap.flapPhotoId = null;
+        }
+        rec.used = !!(rec.sections.length || rec.customThemes.length || rec.cover || rec.recipeBg || rec.flap || Object.keys(rec.theme).length);
+        state.images = (state.images || []).filter((im) => !idSet.has(im.id));
+        list.forEach((id) => { delete coverImgCache[id]; });
+        if (idSet.has(imgSelId)) imgSelId = null;
+        if (scenePending && idSet.has(scenePending.imageId)) scenePending.imageId = null;
+        noteBookEdited();
+        imglibRunSnapId = snap ? snap.id : null; imglibRunSeq = local.editSeq;
+        imglibRefresh(rec);
+        return rec;
+      }
+      /* Undo puts back what the removal took, without undoing anything
+         the writer did since: a use is restored only where its place
+         still stands empty, and a marker line returns to its paragraph
+         even when the text around it was edited meanwhile. */
+      function imglibUndo(rec) {
+        if (!rec || rec.undone) return false;
+        if ((state.meta.bookId || null) !== rec.bookId) return false;
+        rec.undone = true;
+        rec.images.slice().sort((a, b) => a.index - b.index).forEach((x) => {
+          if (!imageById(x.im.id)) state.images.splice(Math.min(x.index, state.images.length), 0, x.im);
+        });
+        rec.sections.forEach((e) => {
+          const s = state.sections.find((x) => x.id === e.id); if (!s) return;
+          if (e.content != null) {
+            if (s.content === e.contentAfter) s.content = e.content;
+            else {
+              const lines = String(s.content || "").split("\n");
+              let added = 0;
+              e.lines.forEach((l) => {
+                const at = Math.min(l.at + added, lines.length);
+                lines.splice(at, 0, "", l.line, ""); added += 3;
+              });
+              s.content = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+            }
+          }
+          if (e.plateId && !s.plateId) s.plateId = e.plateId;
+          if (e.backdropId && !s.backdropId) s.backdropId = e.backdropId;
+          if (e.scenes) {
+            const cur = Array.isArray(s.scenes) ? s.scenes.slice() : [];
+            e.scenes.forEach((sc) => { if (!cur.some((x) => x.at === sc.at)) cur.push(sc); });
+            cur.sort((a, b) => a.at - b.at);
+            s.scenes = cur;
+          }
+        });
+        if (rec.theme.ornament && state.theme.ornament === "fleuron") state.theme.ornament = rec.theme.ornament;
+        if (rec.theme.headingFlourish && !state.theme.headingFlourish) state.theme.headingFlourish = rec.theme.headingFlourish;
+        rec.customThemes.forEach((c) => {
+          const ct = (state.customThemes || []).find((x) => x && x.id === c.id); if (!ct || !ct.theme) return;
+          if (c.ornament && ct.theme.ornament === "fleuron") ct.theme.ornament = c.ornament;
+          if (c.headingFlourish && !ct.theme.headingFlourish) ct.theme.headingFlourish = c.headingFlourish;
+        });
+        if (rec.cover && !state.cover && !state.coverRecipe) { state.cover = rec.cover.cover; state.coverRecipe = rec.cover.recipe; }
+        if (rec.recipeBg && state.coverRecipe && !state.coverRecipe.bgImageId) state.coverRecipe.bgImageId = rec.recipeBg;
+        if (rec.flap && state.coverRecipe && state.coverRecipe.wrap && !state.coverRecipe.wrap.flapPhotoId) state.coverRecipe.wrap.flapPhotoId = rec.flap;
+        noteBookEdited();
+        imglibRefresh(rec);
+        return true;
+      }
+      /* Every surface that shows a picture or a use of one re-reads
+         the book: the library grids, the chapter pickers and the
+         section's image card, the styling (flourishes and ornament),
+         the cover in Settings, the preview, zen and the export tree. */
+      function imglibRefresh(rec) {
+        const act = activeSection();
+        if (act && rec && rec.sections.some((e) => e.id === act.id && e.content != null)) {
+          withEditorView(() => { $("editorArea").value = act.content; }, true);
+        }
+        renderImgLib();
+        if ($("modalScene") && $("modalScene").classList.contains("open")) renderSceneLib();
+        refreshImagePickers();
+        renderSectionImages();
+        if (rec && (Object.keys(rec.theme).length || rec.customThemes.length || rec.images.some((x) => isFlourishImage(x.im)))) renderStudio();
+        if (rec && (rec.cover || rec.flap || rec.recipeBg)) { renderCoverSettings(); renderSidebar(); }
+        sceneBarSig = ""; updateSceneBar();
+        updateStats(); renderPreview(); zenRenderSurface(); refreshExportTree();
+      }
+      function imglibToast(rec, msg) {
+        toast(msg, "trash-2", {
+          label: t("imglib.undo"), ms: IMGLIB_UNDO_MS,
+          onClick: () => { if (imglibUndo(rec)) toast(t("imglib.undone"), "rotate-ccw"); else if (!rec.undone) toast(t("imglib.undoGone"), "history"); }
+        });
+      }
+      let imglibLastAction = null;
+      function imglibRemoveWithToast(ids, cleanup) {
+        const rec = imglibRemove(ids);
+        if (!rec) return null;
+        imglibLastAction = rec;
+        imglibToast(rec, cleanup ? t("imglib.cleanupToast", { n: rec.ids.length, size: imglibSize(rec.bytes) })
+          : t(rec.used ? "imglib.removedEverywhere" : "imglib.removed"));
+        imglibFocusLibrary();
+        return rec;
+      }
+      function imglibCleanup() {
+        const ids = imglibUnused().map((im) => im.id);
+        return ids.length ? imglibRemoveWithToast(ids, true) : null;
+      }
+      /* After a removal the control that started it is gone with its
+         cell: focus lands on the library's first picture, else Upload. */
+      function imglibFocusLibrary() {
+        if (!$("modalImage").classList.contains("open")) return;
+        const first = $("imgLib").querySelector(".img-cell") || $("btnImgUpload");
+        try { first.focus({ preventScroll: true }); } catch (e) {}
+      }
+      let imglibPending = null, imglibOpener = null;
+      function imglibRequestDelete(id, opener) {
+        const im = imageById(id);
+        if (!im || imglibIsSample(im)) return;
+        const uses = imageUsage(id);
+        if (!uses.length) { imglibRemoveWithToast([id], false); return; }
+        imglibPending = id; imglibOpener = opener || null;
+        $("imgRmTitle").textContent = t("imglib.confirmTitle", { name: imglibName(im) });
+        $("imgRmBody").textContent = t("imglib.confirmBody");
+        $("imgRmUses").innerHTML = uses.map((u) => "<li>" + esc(imglibUseText(u)) + "</li>").join("");
+        $("imgRmNote").textContent = (uses.some((u) => u.role === "cover") ? t("imglib.coverNote") + " " : "") + t("imglib.confirmNote");
+        $("modalImgRemove").classList.add("open");
+        icons();
+        try { $("btnImgRmCancel").focus({ preventScroll: true }); } catch (e) {}
+      }
+      function imglibCloseConfirm(removed) {
+        $("modalImgRemove").classList.remove("open");
+        imglibPending = null;
+        const op = imglibOpener; imglibOpener = null;
+        if (!removed && op && document.body.contains(op)) { try { op.focus({ preventScroll: true }); } catch (e) {} }
+      }
+      /* A quiet delete control beside each picture of a library grid.
+         The cell stays the picker it was; the control sits in its
+         corner (seen on hover or keyboard focus where a pointer can
+         hover, always on touch). Sample pictures get none. */
+      function imglibDecorate(grid, attr) {
+        if (!grid) return;
+        grid.querySelectorAll("[" + attr + "]").forEach((cell) => {
+          const id = cell.getAttribute(attr);
+          const im = imageById(id);
+          const wrap = document.createElement("div");
+          wrap.className = "imglib-cell";
+          cell.parentNode.insertBefore(wrap, cell);
+          wrap.appendChild(cell);
+          if (!im || imglibIsSample(im)) return;
+          const b = document.createElement("button");
+          b.type = "button"; b.className = "imglib-del"; b.setAttribute("data-imgdel", id);
+          const label = t("imglib.deleteAria", { name: imglibName(im) });
+          b.setAttribute("aria-label", label); b.title = label;
+          b.innerHTML = '<i data-lucide="trash-2"></i>';
+          b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); imglibRequestDelete(id, b); });
+          wrap.appendChild(b);
+        });
+      }
+      function imglibRenderTools() {
+        const box = $("imgLibTools"); if (!box) return;
+        const imgs = state.images || [];
+        const hasSample = imgs.some(imglibIsSample);
+        if (!imgs.some((im) => !imglibIsSample(im))) {
+          box.hidden = !hasSample;
+          box.innerHTML = hasSample ? '<span class="img-lib-note">' + esc(t("imglib.sampleNote")) + "</span>" : "";
+          return;
+        }
+        const unused = imglibUnused();
+        const n = unused.length;
+        const size = imglibSize(unused.reduce((a, im) => a + imglibBytes(im), 0));
+        box.hidden = false;
+        box.innerHTML = '<button type="button" class="tb-btn" id="btnImgCleanup" aria-describedby="imgCleanupNote"' + (n ? "" : " disabled") + '><i data-lucide="eraser"></i><span>' +
+          esc(t("imglib.cleanup", { n: n, size: size })) + "</span></button>" +
+          '<span class="img-lib-note" id="imgCleanupNote">' + esc(t(n ? "imglib.cleanupHistory" : "imglib.cleanupNone")) + (hasSample ? " " + esc(t("imglib.sampleNote")) : "") + "</span>";
+        $("btnImgCleanup").addEventListener("click", imglibCleanup);
+      }
+      function imglibInit() {
+        $("btnImgRmCancel").addEventListener("click", () => imglibCloseConfirm(false));
+        $("btnImgRmYes").addEventListener("click", () => {
+          const id = imglibPending;
+          imglibCloseConfirm(true);
+          if (id) imglibRemoveWithToast([id], false);
+        });
+        const back = $("modalImgRemove");
+        back.addEventListener("click", (e) => { if (e.target === back) imglibCloseConfirm(false); });
+        /* Escape cancels here (and goes no further); Tab stays between the two choices. */
+        back.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); imglibCloseConfirm(false); return; }
+          if (e.key === "Tab") {
+            const a = $("btnImgRmCancel"), b = $("btnImgRmYes");
+            const order = [a, b];
+            const i = order.indexOf(document.activeElement);
+            e.preventDefault();
+            order[(i + (e.shiftKey ? order.length - 1 : 1)) % order.length].focus();
+          }
+        });
+      }
+      if (typeof window !== "undefined") {
+        window.beukImageLib = { usage: imageUsage, usageMap: imglibUsageMap, unused: imglibUnused, remove: imglibRemove, undo: imglibUndo,
+          requestDelete: imglibRequestDelete, cleanup: imglibCleanup, isSample: imglibIsSample, removeWithToast: imglibRemoveWithToast };
+      }
+      /* ==== /BEUK:imagelib ==== */
       /* ================= UI: my themes & the theme creator =================
          The writer's own themes stand in the gallery beside the
          built-ins: one click applies one book-wide, and each card
@@ -38573,6 +39381,199 @@
         /* ==== /BEUK:bookid ==== */
 
       ];
+      /* ==== BEUK:imagelib ==== self-checks: where a picture is used, and taking it out of the book */
+      /* A fixture book holding one picture in every role the studio
+         has, plus pictures nothing uses (one of them a sample-story
+         picture). Each case runs on it and restores the writer's desk. */
+      function imglibCheckFixture() {
+        applyBookDoc(buildEmptyBook());
+        state.history = [];
+        state.meta.title = "Image Library Fixture"; state.meta.author = "Fixture Author";
+        const mk = (id, extra) => Object.assign({ id: id, name: id + ".png", mediaType: "image/png", ext: "png", data: FAKE_PNG }, extra || {});
+        state.images = [
+          mk("ilA"), mk("ilB"), mk("ilC"), mk("ilD"), mk("ilE"), mk("ilF"), mk("ilG"),
+          mk("ilH", { flourish: true }), mk("ilI", { flourish: true }), mk("ilJ", { flourish: true }),
+          mk("ilK", { data: btoa("imglib-unused-K-" + uid()) }), mk("ilL", { data: btoa("imglib-unused-L-" + uid()) }),
+          mk("sample-img-ilS")
+        ];
+        const ch1 = mkSection("body", "chapter", "Chapter Three", { number: "3", content: "The harbour woke.\n\n![The ferry](img:ilA)\n\nGulls rose." });
+        const ch2 = mkSection("body", "chapter", "Chapter Five", { number: "5", content: "First words.\n\n***\n\nAfter the break.", plateId: "ilC", plateAlt: "The plate", backdropId: "ilD", backdropStrength: "whisper" });
+        ch2.scenes = [{ at: 0, imageId: "ilE", name: "Break", caption: "", alt: "A scene" }];
+        const fi = mkSection("front", "frontispiece", "Frontispiece", { content: "![The chart](img:ilB)" });
+        const at = state.sections.findIndex((s) => s.type === "chapter");
+        state.sections.splice(at, 0, ch1, ch2);
+        state.sections.splice(1, 0, fi);
+        state.activeId = ch1.id;
+        state.coverRecipe = normalizeCoverRecipe(Object.assign(defaultCoverRecipe(), { bgType: "image", bgImageId: "ilF" }));
+        state.coverRecipe.wrap = Object.assign(wrapDefaults(), { binding: "jacket", flapPhotoId: "ilG" });
+        state.cover = { data: FAKE_PNG, mediaType: "image/png", ext: "png", name: "Made cover.png" };
+        state.theme = Object.assign({}, state.theme, { ornament: FLOURISH_PREFIX + "ilH", headingFlourish: "ilI" });
+        state.customThemes = [{ id: "ilTheme", name: "Harbour Theme", theme: Object.assign({}, state.theme, { ornament: FLOURISH_PREFIX + "ilJ", headingFlourish: "" }) }];
+        syncEditor();
+        return { ch1, ch2, fi };
+      }
+      function imglibCheckRun(fn) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+        const keepSusp = local.suspended;
+        const keepSel = imgSelId;
+        local.suspended = true;
+        try { return fn(); }
+        finally {
+          $("modalImgRemove").classList.remove("open"); imglibPending = null; imglibOpener = null;
+          $("modalImage").classList.remove("open");
+          imgSelId = keepSel;
+          applyBookDoc(keepDoc);
+          sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+          local.suspended = keepSusp;
+        }
+      }
+      const imglibDeskJson = () => { const d = serializeBook(); delete d.history; delete d.activeId; return JSON.stringify(d); };
+      SELF_CHECKS.push(
+        { id: "images.usage.finds-every-role", feature: "images", name: "Image library: one usage map finds a picture in every role — text marker (by section name), frontispiece, plate, backdrop, scene break, cover artwork (or kept in the maker when the cover shows none), jacket flap photo, ornament, heading flourish and a saved theme's ornament — and only pictures nothing uses count as unused (sample pictures never)",
+          run() {
+            return imglibCheckRun(() => {
+              imglibCheckFixture();
+              const bad = [];
+              const want = { ilA: "text:Chapter Three", ilB: "frontispiece:Frontispiece", ilC: "plate:Chapter Five", ilD: "backdrop:Chapter Five", ilE: "scene:Chapter Five",
+                ilF: "cover:" + t("imglib.where.cover"), ilG: "flap:" + t("imglib.where.cover"), ilH: "ornament:" + t("imglib.where.styling"),
+                ilI: "headingFlourish:" + t("imglib.where.styling"), ilJ: "ornament:" + t("imglib.where.theme", { name: "Harbour Theme" }) };
+              Object.keys(want).forEach((id) => {
+                const got = imageUsage(id).map((u) => u.role + ":" + u.where).join("|");
+                if (got !== want[id]) bad.push(id + " → " + (got || "nothing") + " (want " + want[id] + ")");
+              });
+              const unused = imglibUnused().map((im) => im.id).join(",");
+              if (unused !== "ilK,ilL") bad.push("unused = " + unused + " (want ilK,ilL)");
+              const line = imglibUseText(imageUsage("ilA")[0]);
+              if (line !== t("imglib.useItem", { where: "\u2068Chapter Three\u2069", role: t("imglib.role.text") })) bad.push("use line reads " + line);
+              state.coverRecipe.bgType = "solid";
+              const kept = imageUsage("ilF").map((u) => u.role).join(",");
+              if (kept !== "coverKept") bad.push("art kept by a solid cover reads " + kept);
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "10 roles found by name (e.g. “" + line + "”); unused: ilK, ilL; the sample picture is never counted; art behind a solid cover reads as kept in the maker");
+            });
+          } },
+        { id: "images.delete.unused-undo", feature: "images", name: "Image library: deleting an unused picture from the Insert Image library takes no confirmation, snapshots History first (“Before removing a picture”), leaves the library, and the toast's Undo (10 s) puts it back in its place",
+          run() {
+            return imglibCheckRun(() => {
+              imglibCheckFixture();
+              const bad = [];
+              openImageModal();
+              const order = state.images.map((im) => im.id).join(",");
+              const ctl = document.querySelector('#imgLib [data-imgdel="ilK"]');
+              if (!ctl) bad.push("no delete control on the unused picture");
+              if (document.querySelector('#imgLib [data-imgdel="sample-img-ilS"]')) bad.push("a sample picture carries a delete control");
+              if (ctl && !/ilK/.test(ctl.getAttribute("aria-label") || "")) bad.push("the control's label does not name the picture");
+              const toastsBefore = $("toasts").children.length;
+              if (ctl) ctl.click();
+              if ($("modalImgRemove").classList.contains("open")) bad.push("an unused picture asked for confirmation");
+              if (imageById("ilK")) bad.push("the picture is still in the library");
+              const snap = state.history[0];
+              if (!snap || snap.auto !== "imgremove" || !snap.doc.images.some((x) => x.id === "ilK") || snapshotLabel(snap) !== t("history.auto.imgremove")) bad.push("no “Before removing a picture” snapshot holding it");
+              const tEl = $("toasts").children[$("toasts").children.length - 1];
+              const undoBtn = tEl && tEl.querySelector(".toast-action");
+              if ($("toasts").children.length <= toastsBefore || !undoBtn || undoBtn.textContent !== t("imglib.undo")) bad.push("no toast with Undo");
+              if (undoBtn) undoBtn.click();
+              if (state.images.map((im) => im.id).join(",") !== order) bad.push("Undo did not restore the library order (" + state.images.map((im) => im.id).join(",") + ")");
+              if (!document.querySelector('#imgLib [data-imgdel="ilK"]')) bad.push("the library grid did not show it again");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "removed without a question, snapshot “" + t("history.auto.imgremove") + "” holds it, toast Undo restored it at index " + order.split(",").indexOf("ilK") + "; sample picture has no control");
+            });
+          } },
+        { id: "images.delete.used-clears-roles", feature: "images", name: "Image library: deleting a used picture asks first, listing where it is used; Cancel changes nothing; Remove it everywhere clears every role the way the editor's own controls do (marker out of the text, No plate, No backdrop, scene picture off, cover removed, flap photo off, fleuron back, no heading flourish, saved theme's ornament back); Undo restores the picture and every use",
+          run() {
+            return imglibCheckRun(() => {
+              const f = imglibCheckFixture();
+              const bad = [];
+              const before = imglibDeskJson();
+              openImageModal();
+              document.querySelector('#imgLib [data-imgdel="ilA"]').click();
+              const open = $("modalImgRemove").classList.contains("open");
+              const listed = $("imgRmUses").textContent;
+              if (!open) bad.push("no confirmation for a used picture");
+              if (listed.indexOf(t("imglib.useItem", { where: "\u2068Chapter Three\u2069", role: t("imglib.role.text") })) === -1) bad.push("the confirm does not list “Chapter Three (in the text)”: " + listed);
+              if (document.activeElement !== $("btnImgRmCancel")) bad.push("focus is not on Cancel");
+              $("btnImgRmCancel").click();
+              if ($("modalImgRemove").classList.contains("open") || !imageById("ilA") || imglibDeskJson() !== before) bad.push("Cancel changed the book or left the dialog open");
+              document.querySelector('#imgLib [data-imgdel="ilA"]').click();
+              $("btnImgRmYes").click();
+              if (imageById("ilA") || f.ch1.content.indexOf("img:ilA") !== -1) bad.push("the marker or picture remained");
+              if (f.ch1.content !== "The harbour woke.\n\nGulls rose.") bad.push("text left as " + JSON.stringify(f.ch1.content));
+              const recs = [];
+              ["ilB", "ilC", "ilD", "ilE", "ilG"].forEach((id) => recs.push(imglibRemove([id])));
+              if (f.fi.content.indexOf("img:ilB") !== -1) bad.push("frontispiece kept its marker");
+              if (f.ch2.plateId !== null || f.ch2.plateAlt !== "The plate") bad.push("plate not cleared like No plate");
+              if (f.ch2.backdropId !== null) bad.push("backdrop not cleared");
+              if ((f.ch2.scenes || []).length) bad.push("scene picture kept");
+              if (!state.coverRecipe || state.coverRecipe.wrap.flapPhotoId !== null || !state.cover) bad.push("flap photo not cleared (or the cover went with it)");
+              recs.push(imglibRemove(["ilF"]));
+              if (state.cover || state.coverRecipe) bad.push("the cover made with the artwork stayed");
+              ["ilH", "ilI", "ilJ"].forEach((id) => recs.push(imglibRemove([id])));
+              if (state.theme.ornament !== "fleuron" || state.theme.headingFlourish !== "") bad.push("styling kept a flourish");
+              if (state.customThemes[0].theme.ornament !== "fleuron") bad.push("saved theme kept the flourish");
+              const left = Object.keys(imglibUsageMap()).filter((id) => /^il[A-J]$/.test(id));
+              if (left.length) bad.push("uses left: " + left.join(","));
+              const snaps = state.history.filter((s) => s.auto === "imgremove").length;
+              recs.reverse().forEach((r) => { if (!imglibUndo(r)) bad.push("undo refused"); });
+              const firstUndo = imglibUndo(imglibLastAction); /* the toast's own record (ilA) */
+              if (!firstUndo) bad.push("the toast record would not undo");
+              if (imglibDeskJson() !== before) bad.push("Undo did not restore every picture and use exactly");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "confirm listed “" + listed.slice(0, 80) + "”; Cancel kept the book; every role cleared (" + snaps + " snapshot(s) for 10 removals); Undo restored the book byte for byte");
+            });
+          } },
+        { id: "images.cleanup.unused-only", feature: "images", name: "Image library: Remove unused pictures counts only pictures nothing references (never the sample's), shows their total size, snapshots first, removes exactly those with an Undo toast, and is disabled with a quiet note when there are none",
+          run() {
+            return imglibCheckRun(() => {
+              imglibCheckFixture();
+              const bad = [];
+              openImageModal();
+              const btn = $("btnImgCleanup");
+              const bytes = imglibBytes(imageById("ilK")) + imglibBytes(imageById("ilL"));
+              const want = t("imglib.cleanup", { n: 2, size: imglibSize(bytes) });
+              if (!btn || btn.textContent.trim() !== want || btn.disabled) bad.push("button reads “" + (btn ? btn.textContent.trim() : "none") + "” (want “" + want + "”, enabled)");
+              const keepIds = state.images.map((im) => im.id).filter((id) => id !== "ilK" && id !== "ilL").join(",");
+              if (btn) btn.click();
+              if (state.images.map((im) => im.id).join(",") !== keepIds) bad.push("left " + state.images.map((im) => im.id).join(","));
+              if (!state.history[0] || state.history[0].auto !== "imgremove") bad.push("no snapshot first");
+              const tEl = $("toasts").lastElementChild;
+              if (!tEl || tEl.textContent.indexOf(t("imglib.cleanupToast", { n: 2, size: imglibSize(bytes) })) === -1 || !tEl.querySelector(".toast-action")) bad.push("no cleanup toast with Undo");
+              const btn0 = $("btnImgCleanup");
+              if (!btn0 || !btn0.disabled || $("imgCleanupNote").textContent.indexOf(t("imglib.cleanupNone")) === -1) bad.push("with none unused the button is not disabled with its note");
+              if (!imageById("sample-img-ilS")) bad.push("the sample picture was removed");
+              if (tEl && tEl.querySelector(".toast-action")) tEl.querySelector(".toast-action").click();
+              if (!imageById("ilK") || !imageById("ilL")) bad.push("Undo did not bring them back");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "“" + want + "” removed exactly ilK, ilL; then disabled with “" + t("imglib.cleanupNone") + "”; sample picture kept; Undo restored both");
+            });
+          } },
+        { id: "images.delete.leaves-serialized-book", feature: "images", name: "Image library: a removed picture is gone from serializeBook()'s images and from the record the device save writes, while the History snapshot taken before still holds it; a run of removals shares one snapshot so History does not multiply the book",
+          run() {
+            return imglibCheckRun(() => {
+              imglibCheckFixture();
+              const bad = [];
+              const data = imageById("ilK").data;
+              const sizeBefore = JSON.stringify(serializeBook().images).length;
+              imglibRemove(["ilK"]);
+              const doc = serializeBook();
+              if (doc.images.some((im) => im.id === "ilK")) bad.push("still in serializeBook().images");
+              const noHist = Object.assign({}, doc); delete noHist.history;
+              if (JSON.stringify(noHist).indexOf(data) !== -1) bad.push("its bytes remain in the book outside History");
+              const rec = JSON.parse(localRecordJson());
+              if (rec.book.images.some((im) => im.id === "ilK")) bad.push("still in the device-save record");
+              const holders = doc.history.filter((s) => s.doc.images.some((im) => im.id === "ilK" && im.data === data)).length;
+              if (holders !== 1) bad.push(holders + " History snapshots hold it (want 1)");
+              imglibRemove(["ilL"]);
+              const snaps = state.history.filter((s) => s.auto === "imgremove").length;
+              if (snaps !== 1) bad.push("two removals in a row took " + snaps + " snapshots");
+              const sizeAfter = JSON.stringify(serializeBook().images).length;
+              state.sections.find((s) => s.title === "Chapter Three").content += "\n\nA new line."; noteBookEdited();
+              imglibRemove(["ilA"]);
+              const snaps2 = state.history.filter((s) => s.auto === "imgremove").length;
+              if (snaps2 !== 2 || state.history[0].doc.sections.every((s) => String(s.content || "").indexOf("A new line.") === -1)) bad.push("an edit between removals did not start a fresh snapshot holding it (" + snaps2 + ")");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "library JSON " + sizeBefore + " → " + sizeAfter + " bytes after two removals; not in the device-save record; History holds it once, in one shared snapshot; an edit in between starts a fresh one");
+            });
+          } }
+      );
+      /* ==== /BEUK:imagelib ==== */
       /* ==== BEUK:store ==== */
       /* Store-ready self-checks: the rules are cited data, the verdict
          is never green when a required check could not run, and the
