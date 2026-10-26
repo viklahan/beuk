@@ -4,6 +4,21 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-25 — The day turns as you write
+
+- **Zen keeps you company through the day.** For writers who stay a
+  while: the harbour behind the page now moves from a cool dawn through
+  a bright midday to a golden afternoon and a soft dusk over about an
+  hour and a half of writing — in Candlelight, from dusk into a quiet
+  moonlit night as the stars come out one by one. It changes too slowly
+  to notice from one moment to the next, shows no clock and no numbers,
+  and it never goes dark on you: once it reaches dusk it stays there.
+  Only time in Zen counts; step out and back in and the day carries on,
+  and a fresh visit starts at dawn. With reduced motion nothing moves —
+  the light just changes, rarely and softly.
+- **The little reader on the shore is gone.** The harbour, the water and
+  the reeds stay.
+
 ## 2026-10-25 — Help you can search, and codes that lead somewhere
 
 - **Search the help shelf, or paste the message.** For writers who were

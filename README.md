@@ -1266,6 +1266,42 @@ Self-checks: `dictation.language-picker`, `dictation.language-suggest`,
 server registry). The 12 non-English translations of these strings were
 written by an agent and have not yet been reviewed by native speakers.
 
+## Studio: Zen day cycle (client-only)
+
+Zen's harbour sketch (horizon, distant harbour, still-water lines and
+reeds — the small reader figure is gone) follows **the time spent in Zen
+during this visit**, not the wall clock, and shows no numbers, clock or
+progress of any kind.
+
+- **Paper:** a cool, pale dawn with a low sun on the left; morning; a
+  bright midday (the sun has climbed out of view and its light crosses
+  the top of the frame); a golden afternoon with the sun high on the
+  right; a soft dusk at about 90 minutes, the sun low between the boats
+  and the lighthouse. Then it **holds** at that dusk — it never goes dark.
+- **Candlelight:** dusk at entry, deepening night, the moon rising slowly
+  in the left margin and nine stars appearing one by one; it holds at a
+  calm moonlit night.
+- **How.** A continuous phase 0 → 1 over 5,400 s. While Zen is open and
+  the tab is visible one 30 s timer sets the wash colours, top-light
+  position, water band and vignette edge (custom properties on `#zenArt`,
+  registered with `@property` so they ease over 8 s) and the sun / moon
+  and its water glint (CSS transforms on SVG groups, also eased). No
+  animation-frame loop; the timer stops when Zen closes, when the tab is
+  hidden (`visibilitychange`) and once the hold is reached. The time is
+  kept in memory only: leaving and re-entering Zen continues the day; a
+  reload starts a fresh dawn.
+- **Reduced motion** (`prefers-reduced-motion` or the studio override):
+  nothing glides — the sun or moon fades out, moves unseen and fades back
+  in, and the light changes only every ~3.6 minutes (phase step 0.04).
+- **Unchanged:** the title moment, the wash and vignette layers, the
+  breathing dot, the sound cluster, and the sketch's opacity (`--zao`).
+  The editor keeps its own opaque surface, so text contrast is untouched.
+- **Hooks (tests only, never in the UI):** `window.beukZen.dayPhase()`,
+  `setDayPhase(p)`, `dayTick()`, `dayClock(fn)`, `dayHidden(bool)`.
+- **Checks.** In-studio `zen.day.no-reader`, `zen.day.advances`,
+  `zen.day.holds-at-dusk`, `zen.day.reduced-motion`
+  (`runBeukSelfChecks()`; registered client-only in Housekeeping).
+
 ## Studio: Zen ambient sound (client-only)
 
 Zen mode's sound toggle plays **real field recordings**, nothing
