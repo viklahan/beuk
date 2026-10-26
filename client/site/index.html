@@ -66,6 +66,9 @@
       .topbar nav a.nl{color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;padding:8px 11px;border-radius:999px}
       .topbar nav a.nl:hover{background:var(--bg2)}
       @media(max-width:640px){.topbar nav a.nl{display:none}}
+      /* Features and Compare take the place of two in-page links in the bar (all four stay in the footer and the tour bar) */
+      .topbar nav a.nl[href="#ports"],.topbar nav a.nl[href="#manifest"]{display:none}
+      @media(max-width:1060px){.topbar nav a.nl[href^="#"]{display:none}}
       @media(max-width:560px){.topbar .btn-sm{display:none}.topbar-in{padding:10px 16px}}
       .btn-sm{background:var(--cta);color:var(--cta-ink);text-decoration:none;font-weight:800;font-size:14px;padding:10px 18px;border-radius:999px;white-space:nowrap;transition:transform .25s,box-shadow .25s}
       .btn-sm:hover{transform:translateY(-1px);box-shadow:0 10px 22px -10px rgba(13,74,95,.55)}
@@ -336,6 +339,8 @@
           <a class="nl" href="#ports">Ports of call</a>
           <a class="nl" href="#manifest">Manifest</a>
           <a class="nl" href="#helm">Take the helm</a>
+          <a class="nl" href="/features">Features</a>
+          <a class="nl" href="/compare">Compare</a>
           <a class="nl" href="/help">Help</a>
           <a class="nl" href="/studio?signin">Sign in</a>
           <a class="btn-sm" href="/studio">Start writing</a>
@@ -670,6 +675,8 @@
               <a href="#manifest">Manifest</a>
               <a href="#helm">Take the helm</a>
               <a href="/studio">The studio</a>
+              <a href="/features">Features</a>
+              <a href="/compare">Compare</a>
               <a href="/help">Help</a>
               <a href="/changelog">Changelog</a>
               <a href="/roadmap">Roadmap</a>

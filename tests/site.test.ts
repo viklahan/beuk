@@ -111,7 +111,7 @@ test('both service workers: the landing page is never cached as the studio; /stu
     const sw = read(...p);
     assert.match(sw, /url\.pathname === shellDir \+ "studio"/, p.join('/'));
     assert.match(sw, /res\.headers\.get\("X-Beuk-Page"\) !== "landing"/, p.join('/'));
-    assert.match(sw, /\(help\|support\|thanks\|changelog\|roadmap\|privacy\|terms\|site\|robots\\\.txt\|sitemap\\\.xml\)/, p.join('/'));
+    assert.match(sw, /\(help\|support\|thanks\|changelog\|roadmap\|privacy\|terms\|site\|robots\\\.txt\|sitemap\\\.xml[|a-z-]*\)/, p.join('/'));
   }
   // start_url stays the root: the synced studio copy is also hosted where only index.html + assets/
   // exist, and on beuk.studio the root sends a writer who has written straight to /studio.
