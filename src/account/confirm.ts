@@ -3,6 +3,7 @@ import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import type { Mailer, MailResult } from '../mailer.js';
 import { tokenHash } from '../auth.js';
+import { html, link as linkTo, para, renderEmail } from '../email/layout.js';
 
 /**
  * Email confirmation (sign-up) and change of email.
@@ -19,67 +20,68 @@ import { tokenHash } from '../auth.js';
 
 export const CONFIRM_TOKEN_TTL_HOURS = 48;
 
-const esc = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
 export function confirmLink(config: Config, token: string): string {
   return `${config.appBaseUrl}/account/confirm?token=${encodeURIComponent(token)}`;
 }
 
+/** The sign-up confirmation on its own: "Send the link again", and the
+ *  sign-up email on a server without mail (where it is only logged). */
 export function signupConfirmEmail(config: Config, link: string) {
-  const subject = 'Confirm your email address for Beuk';
-  const text = [
-    'Welcome to Beuk. To confirm that this is your address, open this link',
-    `(it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours):`,
-    link,
-    '',
-    'Your shelf works whether or not you confirm. Confirming means a',
-    'password-reset email can reach you if you ever need one.',
-    "If you didn't create a Beuk account, ignore this email.",
-    '',
-    `— Beuk (${config.appBaseUrl})`,
-  ].join('\n');
-  const html = `<p>Welcome to Beuk. To confirm that this is your address, <a href="${esc(link)}">open this link</a> — it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours.</p>
-<p>Your shelf works whether or not you confirm. Confirming means a password-reset email can reach you if you ever need one.</p>
-<p>If you didn't create a Beuk account, ignore this email.</p>`;
-  return { subject, text, html };
+  // email-layout: same words as before the shared layout; the "— Beuk
+  // (<site>)" sign-off became the layout's footer.
+  return renderEmail(config, {
+    subject: 'Confirm your email address for Beuk',
+    text: [
+      'Welcome to Beuk. To confirm that this is your address, open this link',
+      `(it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours):`,
+      link,
+      '',
+      'Your shelf works whether or not you confirm. Confirming means a',
+      'password-reset email can reach you if you ever need one.',
+      "If you didn't create a Beuk account, ignore this email.",
+    ],
+    html: html`${para(html`Welcome to Beuk. To confirm that this is your address, ${linkTo(link, 'open this link')} — it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours.`)}
+${para('Your shelf works whether or not you confirm. Confirming means a password-reset email can reach you if you ever need one.')}
+${para("If you didn't create a Beuk account, ignore this email.")}`,
+    reason: 'a Beuk account was created with this address',
+  });
 }
 
 export function changeConfirmEmail(config: Config, link: string, oldEmail: string) {
-  const subject = 'Confirm your new email address for Beuk';
-  const text = [
-    `Someone signed in to the Beuk account ${oldEmail} asked to move it to this address.`,
-    `To make the change, open this link (it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours):`,
-    link,
-    '',
-    'Until then the account keeps its old address.',
-    "If you didn't ask for this, ignore this email and nothing changes.",
-    '',
-    `— Beuk (${config.appBaseUrl})`,
-  ].join('\n');
-  const html = `<p>Someone signed in to the Beuk account ${esc(oldEmail)} asked to move it to this address.</p>
-<p><a href="${esc(link)}">Confirm the new address</a> — the link works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours. Until then the account keeps its old address.</p>
-<p>If you didn't ask for this, ignore this email and nothing changes.</p>`;
-  return { subject, text, html };
+  return renderEmail(config, {
+    subject: 'Confirm your new email address for Beuk',
+    text: [
+      `Someone signed in to the Beuk account ${oldEmail} asked to move it to this address.`,
+      `To make the change, open this link (it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours):`,
+      link,
+      '',
+      'Until then the account keeps its old address.',
+      "If you didn't ask for this, ignore this email and nothing changes.",
+    ],
+    html: html`${para(html`Someone signed in to the Beuk account ${oldEmail} asked to move it to this address.`)}
+${para(html`${linkTo(link, 'Confirm the new address')} — the link works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours. Until then the account keeps its old address.`)}
+${para("If you didn't ask for this, ignore this email and nothing changes.")}`,
+    reason: 'someone asked to move a Beuk account to this address',
+  });
 }
 
 export function changeNoticeEmail(config: Config, newEmail: string) {
-  const subject = 'Your Beuk email address is about to change';
-  const text = [
-    `Someone signed in to your Beuk account asked to move it to ${newEmail}.`,
-    'The change happens only when a link sent to that new address is opened.',
-    '',
-    'If this was you, there is nothing to do here.',
-    'If it was not you, sign in, change your password and use',
-    '"Sign out everywhere" on your account page:',
-    `${config.appBaseUrl}/account`,
-    'A pending change can also be cancelled there.',
-    '',
-    `— Beuk (${config.appBaseUrl})`,
-  ].join('\n');
-  const html = `<p>Someone signed in to your Beuk account asked to move it to ${esc(newEmail)}. The change happens only when a link sent to that new address is opened.</p>
-<p>If this was you, there is nothing to do here. If it was not you, sign in, change your password and use “Sign out everywhere” on <a href="${esc(config.appBaseUrl)}/account">your account page</a>, where a pending change can also be cancelled.</p>`;
-  return { subject, text, html };
+  return renderEmail(config, {
+    subject: 'Your Beuk email address is about to change',
+    text: [
+      `Someone signed in to your Beuk account asked to move it to ${newEmail}.`,
+      'The change happens only when a link sent to that new address is opened.',
+      '',
+      'If this was you, there is nothing to do here.',
+      'If it was not you, sign in, change your password and use',
+      '"Sign out everywhere" on your account page:',
+      `${config.appBaseUrl}/account`,
+      'A pending change can also be cancelled there.',
+    ],
+    html: html`${para(html`Someone signed in to your Beuk account asked to move it to ${newEmail}. The change happens only when a link sent to that new address is opened.`)}
+${para(html`If this was you, there is nothing to do here. If it was not you, sign in, change your password and use “Sign out everywhere” on ${linkTo(`${config.appBaseUrl}/account`, 'your account page')}, where a pending change can also be cancelled.`)}`,
+    reason: 'this is the address on a Beuk account, and a change of address was asked for',
+  });
 }
 
 /** Make a token row and return the token (never stored). */
@@ -113,6 +115,7 @@ export async function sendSignupConfirmation(
   user: { id: string; email: string },
 ): Promise<MailResult> {
   const token = await issueConfirmation(db, user.id, 'signup', user.email);
+  // email-kind: signup-confirm
   const result = await mailer.send({ to: user.email, ...signupConfirmEmail(config, confirmLink(config, token)) });
   if (!result.delivered && !result.loggedToConsole) console.warn(`email confirmation not emailed: ${result.reason}`);
   return result;

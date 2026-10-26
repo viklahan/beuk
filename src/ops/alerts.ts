@@ -305,6 +305,7 @@ export class BackupAlerts {
       if (!this.deps.mailer.status().configured) {
         results.push({ channel: 'email', ok: false, detail: "email isn't set up on this server (SMTP_URL / MAIL_FROM); no alert email was sent" });
       } else {
+        // email-kind: backup-alert
         const r = await this.deps.mailer.send({ to: o.alertEmail, subject: safeSubject, text: safeText });
         results.push(
           r.delivered

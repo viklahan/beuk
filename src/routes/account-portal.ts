@@ -37,6 +37,7 @@ import {
   signedOutPage,
 } from '../account/page.js';
 import { ZipWriter } from '../account/zip.js';
+import { sendSignupEmail } from '../email/welcome.js';
 
 /**
  * Accounts — "your typesetting portal".
@@ -112,12 +113,19 @@ function pageHeaders(res: Response): void {
   res.setHeader('X-Robots-Tag', 'noindex');
 }
 
-/** Send a confirmation email for a sign-up, after the response. Used by
- *  POST /api/auth/register (see app.ts). */
-export function signupConfirmationHook(deps: Pick<PortalDeps, 'db' | 'config' | 'mailer' | 'tasks'>) {
+/** Send the sign-up email after the response: with mail configured, the
+ *  welcome with the confirmation link inside (src/email/welcome.ts), once;
+ *  without, the plain confirmation, logged and never reported as sent.
+ *  Used by POST /api/auth/register (see app.ts). */
+export function signupConfirmationHook(
+  deps: Pick<PortalDeps, 'db' | 'config' | 'mailer' | 'tasks'> & { billing?: Pick<BillingProvider, 'checkoutConfigured'> },
+) {
   return (user: { id: string; email: string }) => {
     deps.tasks.run(async () => {
-      await sendSignupConfirmation(deps.db, deps.config, deps.mailer, user);
+      await sendSignupEmail(
+        { db: deps.db, config: deps.config, mailer: deps.mailer, billingOn: Boolean(deps.billing?.checkoutConfigured) },
+        user,
+      );
     });
     return { emailDelivery: deps.mailer.status().configured ? 'email' : 'not-configured' };
   };
@@ -278,6 +286,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       const taken = await db.query('select 1 from users where email = $1', [newEmail]);
       if (taken.rows.length) return res.status(409).json({ error: 'another account already uses that address' });
       const token = await issueConfirmation(db, user.id, 'change', newEmail);
+      // email-kind: email-change-confirm
       const toNew = await mailer.send({ to: newEmail, ...changeConfirmEmail(config, confirmLink(config, token), row.email) });
       if (!toNew.delivered) {
         // The link never left: retire it, change nothing, say so.
@@ -287,6 +296,7 @@ export function accountPortalRoutes(deps: PortalDeps): { pages: Router; api: Rou
       }
       // The notice to the old address is a courtesy; its failure changes nothing.
       tasks.run(async () => {
+        // email-kind: email-change-notice
         const notice = await mailer.send({ to: row.email, ...changeNoticeEmail(config, newEmail) });
         if (!notice.delivered) console.warn(`email change notice not sent: ${notice.reason}`);
       });

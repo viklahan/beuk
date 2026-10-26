@@ -372,6 +372,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       }
       // Unconfigured: prove the mailer refuses to claim a delivery.
       const quiet = createMailer({ ...config, mailLogLinks: false }, { log: () => {} });
+      // email-kind: self-check-probe (an unconfigured mailer only; never sent)
       const probe = await quiet.send({ to: 'probe@invalid.example', subject: 'probe', text: 'probe' });
       assert(!probe.delivered, 'an unconfigured mailer reported a delivery');
       const verified = await m.verify();

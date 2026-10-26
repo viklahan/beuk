@@ -124,8 +124,11 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
 
 ## 7. Email
 
-Password-reset emails (src/routes/account.ts:78-97), the email-confirmation
-link sent at sign-up and on "Send the link again", and for a change of
+Password-reset emails (src/routes/account.ts `resetEmail`), the welcome
+email sent once at sign-up when email is configured, which carries the
+email-confirmation link (src/email/welcome.ts), the plain confirmation link
+on "Send the link again" (and, while email is not configured, the would-be
+sign-up confirmation, logged and never sent), and for a change of
 address a confirmation link to the NEW address plus a short notice to the
 OLD one (src/account/confirm.ts), and the admin test email
 (src/routes/housekeeping.ts:620-626), and backup alerts to the
@@ -137,6 +140,14 @@ server the operator configures in SMTP_URL (src/config.ts `smtpUrl`;
 src/mailer.ts). The provider is not named in the code. Nothing is sent
 while SMTP_URL / MAIL_FROM are unset. No newsletters; the Founders' Shelf
 sends no email (src/routes/founders.ts:9-10).
+Every email to a writer uses one layout (src/email/layout.ts): plain text
+plus simple HTML, no images, no remote fonts, no tracking pixel, no link
+rewriting by Beuk, and a footer saying why it was sent, the sender
+(MAIL_FROM) and a link to /account. Beuk keeps no record of which emails
+were sent; the SMTP provider keeps its own delivery logs under its own
+terms. Payment receipts are Stripe's, sent by Stripe when turned on in its
+Dashboard; Beuk sends none. The full list of emails is in
+docs/email-setup.md.
 
 ## 8. Third parties
 
