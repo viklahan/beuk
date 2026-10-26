@@ -1400,6 +1400,47 @@ checks the size budget: ≤ 1.5 MB each, ≤ 4.5 MB together; today
   (`window.runBeukAsyncSelfChecks()`; registered client-only in
   Housekeeping).
 
+## Studio: Goals — the road so far, and History — what changed (client-only)
+
+**The road so far (Goals).** A quiet line of the book's length over time,
+between the goals and the habit calendar. Its data is the habit log
+(`localStorage` `beuk.writelog.v1`), which now also keeps, under `len`,
+the book's length at the studio's last observation of each day, per book
+id (`len[bookId][YYYY-MM-DD] = words`). The log never kept a length
+before this change, so days logged earlier — and every day the studio
+was not open — have none: the line shows only days that were actually
+observed, breaks wherever a day is missing (no line is drawn across a
+gap; a lone day is a dot), and the section stays hidden until a book has
+two such days. With a project target set it is drawn as a level line;
+with a deadline ahead as well, a dashed line runs from today's length to
+the target on the deadline — the steady pace, `(target − today) / days
+left` words a day (the key shows `goals.linePace`'s rounded-up figure),
+labelled as a pace, not a prediction. No pace line once the target is met
+or the deadline has passed. Inline SVG at the room's own pixel width
+(legible at 390 px, redrawn on resize); hover or tap for a crosshair and
+date + words; the chart is one tab stop and the arrow keys / Home / End
+step through the days with a polite live readout; a visually hidden table
+lists every logged day. Colours are the studio's tokens: the book's line
+`--ins-a`, the target `--zen-leaf` (the Voyage blue and its Candlelight
+tint), the pace a neutral `--ink-2` dash, text in text tokens. The time
+axis runs left to right in every language, Arabic included.
+
+**What changed since each snapshot (History).** Each snapshot row shows
+its change against the book as it stands now — "+1,240 words since",
+"−310 words since" or "same length as now" (snapshot `words` vs
+`bookWordTotal()`, plural per language). A snapshot's detail opens with
+**Since this snapshot**: sections matched by id, grouped as *Added
+since*, *No longer in the book* and *Changed* (word count moved, or the
+text changed at the same length — "same length, reworded"), each with
+its signed word change and a small centred bar. Both sides are counted
+by the same rule (`snapshotSectionWords`, the snapshot against its own
+meta); the section deltas sum to the book's change. Computed on the
+device from the stored snapshot; nothing new is stored. Automatic
+snapshot labels are unchanged.
+
+Self-checks (client-only in Housekeeping): `goals.road.only-logged-days`,
+`goals.road.pace-line`, `history.delta.words`, `history.delta.sections`.
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a

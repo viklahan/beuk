@@ -4,6 +4,21 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-26 — The road so far, and what changed since
+
+- **See the book grow.** Goals now draws the book's length over time —
+  one quiet line, only on the days the studio actually saw it (the log
+  starts keeping length today, so the line begins once two days are
+  kept; days it never saw stay as gaps, never guessed). Set a target and
+  it appears as a level line; add a deadline and a dashed line shows the
+  steady pace from today that would land it — a pace, not a forecast.
+  Hover, tap or use the arrow keys for any day's count.
+- **History says what changed.** Every snapshot shows how the book has
+  moved since — "+1,240 words since", "−310 words since" or "same length
+  as now" — and opening one lists the sections added since, the ones no
+  longer in the book, and the ones that changed, with their word counts.
+  All counted on your device from the snapshot you already have.
+
 ## 2026-10-26 — Your address stays with us
 
 - **No more Google Fonts.** Every typeface in the studio, Help, the
