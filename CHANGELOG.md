@@ -14,8 +14,9 @@ to make well.
   title page? The cleaned file name is used ("long-way-home_final v3
   (1).docx" becomes "long way home"). The import report says where each
   detail came from, and every step can be undone.
-- **Your own title is never overwritten.** A title you typed in Project
-  Settings stays when you import a new draft; the report tells you what
+- **Your own title is never overwritten.** A title (or author or
+  subtitle) you typed in Project Settings or on the Title Page / Copyright
+  page stays when you import a new draft; the report tells you what
   the document calls itself and offers a one-click "Use" instead. A title
   that only came from an earlier import is replaced by the next one.
 - **"Untitled Book" is no longer saved as a title.** Saving Project

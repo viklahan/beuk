@@ -2042,7 +2042,8 @@ Account-name defaults such as "Microsoft Office User", "User" or
 **Provenance.** `meta.titleSource`, `subtitleSource`, `authorSource`
 ("writer" or "import"; absent when unknown) ride with the book. A credit
 that came from an import may be replaced by the next import; one the
-writer typed in Project Settings (or a credit of unknown provenance,
+writer typed in Project Settings or on the Title Page / Copyright section
+editor (or a credit of unknown provenance,
 such as a book saved before this change) is never overwritten. The report
 says instead "Kept your title X. The document calls itself Y." with a
 **Use "Y"** button. When an import replaces an imported title with a

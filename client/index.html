@@ -17507,7 +17507,15 @@
       }
       function bindGenMeta(id, key) {
         const el = $(id); if (!el) return;
-        el.addEventListener("input", () => { state.meta[key] = el.value; genRefresh(); });
+        el.addEventListener("input", () => {
+          state.meta[key] = el.value;
+          /* BEUK:importmeta — this is the second door onto the book's
+             credits (Project Settings is the first): a credit typed here
+             is the writer's and no later import may replace it; one
+             emptied here is open to the next import again. */
+          if (key === "title" || key === "subtitle" || key === "author") imSetSource(key, imMetaValue(key) ? "writer" : "");
+          genRefresh();
+        });
       }
       function renderGenEditor(s) {
         const host = $("genEditor"); if (!host) return;
@@ -35739,6 +35747,30 @@
                 (document.querySelector('#irBody [data-irid="' + (k && k.id) + '"] .ir-done') || {}).textContent === t("ir.usedValue", { value: "THE LONG WAY HOME" });
               return scVerdict(first && replaced && undoOk && clearedOk && clearUndo && typed && kept && said && btnOk && used,
                 "first import filled (" + first + "), the next import replaced the imported title (" + replaced + ") and its undo restored it (" + undoOk + "), a different book cleared the earlier import's author (" + clearedOk + ") and undo brought it back (" + clearUndo + "), Settings marked the typed credit as the writer's (" + typed + "), the import kept it (" + kept + ") and said so for title and author (" + said + "), Use button (" + btnOk + ") applied the document's title (" + used + ")");
+            });
+          } },
+        { id: "import.title.keeps-section-editor", feature: "import", name: "A credit the writer types on the Title Page or Copyright section editor is theirs too: the next import keeps it and offers the document's own (emptying the field there opens it to imports again)",
+          run() {
+            return imCheckRun(() => {
+              importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
+              const imported = state.meta.title === "THE LONG WAY HOME" && state.meta.titleSource === "import" && state.meta.authorSource === "import";
+              const type = (id, v) => { const el = $(id); if (!el) return false; el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); return true; };
+              const tp = state.sections.find((x) => x.type === "titlepage");
+              if (tp) selectSection(tp.id);
+              const typedTp = !!tp && type("genTpTitle", "Typed On Title Page") && type("genTpSubtitle", "");
+              const cp = state.sections.find((x) => x.type === "copyright");
+              if (cp) selectSection(cp.id);
+              const typedCp = !!cp && type("genCpAuthor", "Typed Author");
+              const marked = typedTp && typedCp && state.meta.titleSource === "writer" && state.meta.authorSource === "writer" && !state.meta.subtitleSource;
+              const rep = importPlainManuscript("salt.txt", "Salt and Iron\nA Forge Story\nby R. K. Nolan\n\nChapter 1\n\nThe forge had been cold for a week.");
+              const kept = state.meta.title === "Typed On Title Page" && state.meta.author === "Typed Author" && state.meta.titleSource === "writer";
+              const k = rep && rep.items.find((i) => i.kind === "metaKept" && i.data.field === "title");
+              const ka = rep && rep.items.find((i) => i.kind === "metaKept" && i.data.field === "author");
+              const offered = !!k && !!ka && irItemLabel(k) === t("ir.k.metaKept.title", { kept: "Typed On Title Page", offered: "Salt and Iron" });
+              /* The subtitle was emptied on the section editor, so it is open to the import. */
+              const subFilled = state.meta.subtitle === "A Forge Story" && state.meta.subtitleSource === "import";
+              return scVerdict(imported && marked && kept && offered && subFilled,
+                "imported (" + imported + "), typing on the section editors marked the title/author as the writer's and the emptied subtitle as open (" + marked + "), the next import kept them (" + kept + ") and offered the document's own (" + offered + "), the emptied subtitle was filled (" + subFilled + ")");
             });
           } },
         { id: "settings.title.placeholder-not-stored", feature: "import", name: "\"Untitled Book\" is display-only: Settings Save with a blank title stores \"\" (the header still shows the placeholder, the desk still counts as empty), and a book whose stored title is the placeholder in any of the 13 languages is treated as untitled — the next import fills it",
