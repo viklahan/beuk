@@ -1456,9 +1456,9 @@
       .ins-tick { font-variant-numeric: tabular-nums; }
       .ins-grid { stroke: var(--line); stroke-width: 1; }
       .ins-base { stroke: var(--line-2); stroke-width: 1; }
-      .ins-ref { stroke: var(--gold); stroke-width: 1; opacity: .85; }
+      .ins-ref { stroke: var(--muted); stroke-width: 1; opacity: .9; } /* a quiet ink line, so it never reads as the data line in either theme */
       .ins-refkey { margin: -6px 0 6px; }
-      .ins-key-ref { display: inline-block; width: 16px; height: 0; border-top: 1.5px solid var(--gold); margin-inline-end: 6px; vertical-align: 3px; }
+      .ins-key-ref { display: inline-block; width: 16px; height: 0; border-top: 1.5px solid var(--muted); margin-inline-end: 6px; vertical-align: 3px; }
       .ins-ref-lab, .ins-cap-lab { font-size: 12px; font-style: italic; fill: var(--gold); paint-order: stroke; stroke: var(--panel-2); stroke-width: 3px; }
       .ins-cap-lab { fill: var(--ink-2); font-style: normal; }
       .ins-line { fill: none; stroke: var(--ins-b); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -16223,8 +16223,18 @@
         const ref = $("btnInsRefresh"); if (ref) ref.addEventListener("click", renderInsights);
         const back = $("modalInsights");
         if (back) back.addEventListener("click", (e) => { if (e.target === back) { insTipHide(); back.classList.remove("open"); } });
+        /* however the room closes (button, backdrop, Escape, a jump), the tooltip goes with it */
+        if (back && window.MutationObserver) new MutationObserver(() => { if (!back.classList.contains("open")) insTipHide(); }).observe(back, { attributes: true, attributeFilter: ["class"] });
         const box = back && back.querySelector(".modal");
-        if (box) box.addEventListener("scroll", insTipHide, { passive: true });
+        /* scrolling moves the marks: a focused mark keeps its tooltip
+           (re-placed beside it — focusing can itself scroll the box);
+           a hover tooltip is put away */
+        if (box) box.addEventListener("scroll", () => {
+          const a = document.activeElement;
+          const body = $("insBody");
+          const tgt = a && body && body.contains(a) && a.closest ? a.closest(".ins-mark, .ins-dlg-row, .ins-chip") : null;
+          if (tgt) insTipShow(tgt); else insTipHide();
+        }, { passive: true });
         const body = $("insBody");
         if (body) {
           body.addEventListener("click", (e) => {
@@ -16232,7 +16242,13 @@
             if (!b) return;
             insJump(b.getAttribute("data-sec"));
           });
-          body.addEventListener("keydown", (e) => { if (e.key === "Escape") insTipHide(); else insRovingKey(e); }); /* Escape dismisses the tooltip (WCAG 1.4.13) */
+          /* Escape first dismisses an open tooltip (WCAG 1.4.13) and only
+             then, on a second press, reaches the studio's close-the-room
+             handler */
+          body.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") { const tip = $("insTip"); if (tip && !tip.hidden) { insTipHide(); e.stopPropagation(); } return; }
+            insRovingKey(e);
+          });
           const tipTarget = (e) => (e.target && e.target.closest ? e.target.closest(".ins-mark, .ins-w, .ins-dlg-row, .ins-chip") : null);
           body.addEventListener("pointerover", (e) => { const m = tipTarget(e); if (m) insTipShow(m); });
           body.addEventListener("pointerout", (e) => { const m = tipTarget(e); if (m && !(e.relatedTarget && m.contains(e.relatedTarget))) insTipHide(); });
