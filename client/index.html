@@ -27409,8 +27409,25 @@
           cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
           if (typeof res.manuscript.revision === "number") cloud.baseRevision = res.manuscript.revision;
           setSyncStatus("saved");
+          if (typeof localWriteLinkNow === "function") localWriteLinkNow(); /* BEUK:bugs — the new revision reaches the device now, not 120 ms later */
           if (cloudDirty) cloudAutosaveTick();
           cloudLoadShelf();
+        } else if (res && res.__status === 409 && res.__body && res.__body.manuscript && res.__body.manuscript.doc &&
+            typeof res.__body.manuscript.revision === "number" && typeof bookDocsSame === "function" && bookDocsSame(res.__body.manuscript.doc, doc)) {
+          /* BEUK:bugs — the shelf already holds exactly the book this
+             save carried (an earlier save of it landed but its answer
+             was lost, or this device's revision note was behind):
+             there is nothing to choose between. Agree on the shelf's
+             revision; writing typed since stays due. */
+          const m = res.__body.manuscript;
+          cloudDirty = cloud.lastEditAt > sentAt;
+          cloud.pendingSyncs = 0;
+          cloud.baseRevision = m.revision;
+          cloud.baseUpdatedAt = m.updatedAt || cloud.baseUpdatedAt;
+          cloud.shelfUpdatedAt = cloud.baseUpdatedAt;
+          setSyncStatus("saved");
+          if (typeof localWriteLinkNow === "function") localWriteLinkNow();
+          if (cloudDirty) cloudAutosaveTick();
         } else if (res && (res.__status === 409 || res.__status === 428) && res.__body && res.__body.manuscript && res.__body.manuscript.doc) {
           /* BEUK:local — the shelf moved on since this device last
              agreed with it: the conflict notice, never an overwrite. */
@@ -35247,6 +35264,22 @@
         clearTimeout(localLinkTimer);
         localLinkTimer = setTimeout(localWriteLinkOnly, 120);
       }
+      /* ==== BEUK:bugs ==== — the moment a shelf save lands, the device
+         records the new shelf revision at once, not after the 120 ms
+         debounce: a reload inside that window used to restore the old
+         revision with "unsaved on the shelf", see the shelf one ahead,
+         and raise the "changed in two places" notice for a book that
+         changed in one. When the device copy itself still has a save
+         pending, the whole record (book + link) is written together in
+         one transaction, so the link never claims "on the shelf" for a
+         device copy older than the one the shelf took. */
+      function localWriteLinkNow() {
+        clearTimeout(localLinkTimer); localLinkTimer = null;
+        if (!local.ready || local.suspended) return;
+        if (local.dirty || local.timer || local.writing) { localSaveNow(); return; }
+        localWriteLinkOnly();
+      }
+      /* ==== /BEUK:bugs ==== */
       function localClassifyError(e) {
         const name = (e && e.name) || "Error";
         if (name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED") return "quota";
@@ -35347,7 +35380,8 @@
         if (local.guardOn && !localHasUnsaved()) { window.removeEventListener("beforeunload", localBeforeUnload); local.guardOn = false; }
       }
       function localFlushOnHide() {
-        if (local.ready && (local.dirty || local.timer)) localSaveNow();
+        if (local.ready && (local.dirty || local.timer)) { clearTimeout(localLinkTimer); localLinkTimer = null; localSaveNow(); }
+        else if (localLinkTimer) localWriteLinkNow(); /* BEUK:bugs — a link change still waiting on its debounce is written as the page goes */
       }
 
       /* ---- boot: restore before the desk is shown ---- */
@@ -35428,6 +35462,24 @@
          Never silently drops either copy: when both moved, the
          existing conflict notice asks (Keep mine / Use the shelf copy /
          Keep both). */
+      /* ==== BEUK:bugs ==== — two whole-book documents are the same book
+         when they serialize identically with their keys in one order
+         (the shelf stores the document as Postgres jsonb, which "does
+         not preserve the order of object keys" —
+         https://www.postgresql.org/docs/16/datatype-json.html). Both
+         pass through JSON first so an undefined field counts as absent,
+         as it is on the shelf. Any other difference (a number printed
+         differently, anything at all) makes them unequal, and the
+         writer is asked as before — the comparison can only ever
+         stand down for two copies that are the same, so agreeing on
+         the shelf's revision then loses nothing. */
+      function bookDocsSame(a, b) {
+        try {
+          if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
+          return stableJson(JSON.parse(JSON.stringify(a))) === stableJson(JSON.parse(JSON.stringify(b)));
+        } catch (e) { return false; }
+      }
+      /* ==== /BEUK:bugs ==== */
       async function localReconcileOnSignIn() {
         if (localRestorePromise) { try { await localRestorePromise; } catch (e) {} }
         const link = local.restoredLink;
@@ -35477,6 +35529,15 @@
           cloud.baseRevision = typeof m.revision === "number" ? m.revision : null;
           cloudDirty = true;
           cloudSaveNow();
+        } else if (m.doc && typeof bookDocsSame === "function" && bookDocsSame(m.doc, serializeBook())) {
+          /* BEUK:bugs — the device's note was a step behind (a reload
+             right as a shelf save landed), but the shelf copy IS this
+             device's book, word for word and setting for setting:
+             nothing moved in two places. Agree on the shelf's revision. */
+          cloud.baseUpdatedAt = m.updatedAt || null;
+          cloud.baseRevision = typeof m.revision === "number" ? m.revision : null;
+          cloudDirty = false;
+          setSyncStatus("saved");
         } else {
           /* Both moved: the writer chooses. */
           cloud.baseUpdatedAt = link.baseUpdatedAt || null;
