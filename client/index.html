@@ -1512,6 +1512,46 @@
       }
       /* ==== /BEUK:insights ==== */
 
+      /* ==== BEUK:cast ==== Names on stage heatmap: hairline cells on the
+         modal surface, one sequential hue (--ins-a) in five steps, an
+         en-dash for "not named", HTML labels beside an SVG plot. */
+      .cast-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 11.5px; color: var(--muted); margin: 0 0 10px; }
+      .cast-scale { display: inline-flex; align-items: center; gap: 3px; }
+      .cast-scale .ins-num { font-size: 13px; color: var(--ink-2); margin: 0 3px; }
+      .cast-sw { display: inline-block; width: 14px; height: 11px; border-radius: 2px; background: var(--ins-a); }
+      .cast-sw-none { display: inline-block; width: 14px; height: 11px; border-radius: 2px; border: 1px solid var(--line); background: linear-gradient(var(--line-2), var(--line-2)) center / 6px 1.5px no-repeat, var(--panel-2); margin-inline-end: 5px; }
+      .cast-wrap { position: relative; }
+      .cast-grid { display: grid; grid-template-columns: minmax(64px, 138px) minmax(0, 1fr) auto; column-gap: 10px; align-items: start; }
+      .cast-names, .cast-tots { display: flex; flex-direction: column; }
+      .cast-rh { height: 26px; display: flex; align-items: center; gap: 2px; min-width: 0; }
+      .cast-name { font-family: "EB Garamond", Georgia, serif; font-size: 15.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+      .cast-hide { flex: none; background: none; border: none; padding: 3px; margin: 0; border-radius: 6px; color: var(--muted); opacity: .42; cursor: pointer; line-height: 0; }
+      .cast-hide svg { width: 13px; height: 13px; }
+      .cast-rh:hover .cast-hide, .cast-hide:hover, .cast-hide:focus-visible { opacity: 1; color: var(--ink-2); }
+      .cast-hide:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .cast-tot { height: 26px; display: flex; align-items: center; justify-content: flex-end; font-size: 15px; color: var(--ink-2); min-width: 2.2em; }
+      .cast-plot { min-width: 0; }
+      .cast-svg { display: block; width: 100%; }
+      .cast-cell { cursor: pointer; outline: none; }
+      .cast-cols { display: grid; grid-template-columns: repeat(var(--cast-n), minmax(0, 1fr)); margin-top: 4px; font-family: "EB Garamond", Georgia, serif; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.2; }
+      .cast-cols span { overflow: hidden; white-space: nowrap; font-variant-numeric: lining-nums; }
+      .cast-tip { position: absolute; z-index: 3; pointer-events: none; max-width: min(320px, 100%); background: var(--panel); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow); padding: 6px 10px; font-size: 12.5px; line-height: 1.45; }
+      .cast-hidden { margin: 10px 0 4px; font-size: 12.5px; color: var(--ink-2); }
+      .cast-hidden summary { cursor: pointer; color: var(--muted); width: fit-content; border-radius: 6px; }
+      .cast-hidden summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .cast-hidden-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+      .cast-hidden-list li { display: inline-flex; align-items: center; gap: 8px; }
+      .cast-hname { font-family: "EB Garamond", Georgia, serif; font-size: 15px; color: var(--ink-2); }
+      .cast-show { padding: 3px 9px; font-size: 11.5px; }
+      @media (max-width: 560px) {
+        .cast-grid { grid-template-columns: minmax(56px, 92px) minmax(0, 1fr) auto; column-gap: 6px; }
+        .cast-name { font-size: 14.5px; }
+        .cast-tot { font-size: 13.5px; }
+        .cast-cols { font-size: 10px; }
+        .cast-cols .cast-c2 { visibility: hidden; }
+      }
+      /* ==== /BEUK:cast ==== */
+
       /* ---------- Writing goals & habit calendar ---------- */
       .goal-lines { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
       .goal-line { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
@@ -16926,6 +16966,794 @@
           crutch: insCrutch, histogram: insHistogram, readability: insReadability, syllables: insSyllables, flesch: insFlesch, renderers: INS_RENDERERS, cache: () => insCache, glancePages: insGlancePages };
       }
       /* ==== /BEUK:insights ==== */
+      /* ==== BEUK:cast ==== Names on stage — strings for all 13 packs,
+         plural extras by CLDR category (Intl.PluralRules, as BEUK:bugs). */
+      Object.assign(UI_STRINGS.en, {
+        "insights.castH": "Names on stage",
+        "insights.castSub": "Capitalised names that recur across the book — people, and places and ships too, since a capital letter can't tell them apart. Each row is a name and each column a section; the deeper the shade, the more often the name appears there. Choose a square to open that section at the first mention.",
+        "insights.castNote": "Found by capital letters, on this device — Beuk's own rule of thumb, not a reading of the story. A name appears here once it is used {n} times or more, in at least two sections. Hide any that aren't names.",
+        "insights.castDeNote": "German capitalises every noun, so a few ordinary nouns may slip in — hide them and they stay hidden with this book.",
+        "insights.castNone": "No name recurs across two sections yet — once someone walks on twice, they'll appear here.",
+        "insights.castCaseless": "This book's script doesn't mark names with capital letters, so Beuk can't pick them out honestly. This view stays quiet rather than guess.",
+        "insights.castLegend": "Mentions per 1,000 words",
+        "insights.castLegendNone": "not named",
+        "insights.castMentions": "{name} — {sec}: {n} mention", "insights.castMentionsPlural": "{name} — {sec}: {n} mentions",
+        "insights.castNotHere": "{name} — {sec}: not named here",
+        "insights.castTotal": "{n} mention in all", "insights.castTotalPlural": "{n} mentions in all",
+        "insights.castHide": "Hide {name}",
+        "insights.castHidden": "Hidden names ({n})",
+        "insights.castShow": "Show again",
+        "insights.castTable": "Mentions of each name, section by section",
+        "insights.castNameCol": "Name",
+        "insights.castTop": "The {n} most-mentioned of {m} names are shown."
+      });
+      Object.assign(UI_STRINGS.es, {
+        "insights.castH": "Nombres en escena",
+        "insights.castSub": "Nombres con mayúscula que vuelven a lo largo del libro — personas, pero también lugares y barcos, porque una mayúscula no los distingue. Cada fila es un nombre y cada columna una sección; cuanto más intenso el tono, más a menudo aparece el nombre allí. Elige una casilla para abrir esa sección en la primera mención.",
+        "insights.castNote": "Encontrados por sus mayúsculas, en este dispositivo — una regla práctica de Beuk, no una lectura de la historia. Un nombre aparece aquí cuando se usa {n} veces o más, en al menos dos secciones. Oculta los que no sean nombres.",
+        "insights.castDeNote": "El alemán escribe con mayúscula todos los sustantivos, así que pueden colarse algunos comunes — ocúltalos y seguirán ocultos con este libro.",
+        "insights.castNone": "Ningún nombre vuelve todavía en dos secciones — cuando alguien entre en escena dos veces, aparecerá aquí.",
+        "insights.castCaseless": "La escritura de este libro no marca los nombres con mayúsculas, así que Beuk no puede distinguirlos con honestidad. Esta vista prefiere callar antes que adivinar.",
+        "insights.castLegend": "Menciones por cada 1000 palabras",
+        "insights.castLegendNone": "sin mención",
+        "insights.castMentions": "{name} — {sec}: {n} mención", "insights.castMentionsPlural": "{name} — {sec}: {n} menciones",
+        "insights.castNotHere": "{name} — {sec}: no aparece aquí",
+        "insights.castTotal": "{n} mención en total", "insights.castTotalPlural": "{n} menciones en total",
+        "insights.castHide": "Ocultar {name}",
+        "insights.castHidden": "Nombres ocultos ({n})",
+        "insights.castShow": "Mostrar de nuevo",
+        "insights.castTable": "Menciones de cada nombre, sección por sección",
+        "insights.castNameCol": "Nombre",
+        "insights.castTop": "Se muestran los {n} nombres más mencionados de {m}."
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "insights.castH": "Les noms en scène",
+        "insights.castSub": "Les noms à majuscule qui reviennent au fil du livre — des personnes, mais aussi des lieux et des navires, car une majuscule ne les distingue pas. Chaque ligne est un nom et chaque colonne une section ; plus la teinte est profonde, plus le nom y revient. Choisissez une case pour ouvrir cette section à la première mention.",
+        "insights.castNote": "Repérés à leur majuscule, sur cet appareil — une règle empirique de Beuk, pas une lecture de l'histoire. Un nom figure ici dès qu'il revient {n} fois ou plus, dans au moins deux sections. Masquez ceux qui n'en sont pas.",
+        "insights.castDeNote": "L'allemand met une majuscule à tous les noms communs ; quelques-uns peuvent donc se glisser ici — masquez-les, ils resteront masqués avec ce livre.",
+        "insights.castNone": "Aucun nom ne revient encore dans deux sections — dès que quelqu'un entre deux fois en scène, il apparaîtra ici.",
+        "insights.castCaseless": "L'écriture de ce livre ne marque pas les noms d'une majuscule : Beuk ne peut pas les repérer honnêtement. Cette vue préfère se taire plutôt que deviner.",
+        "insights.castLegend": "Mentions pour 1 000 mots",
+        "insights.castLegendNone": "absent",
+        "insights.castMentions": "{name} — {sec} : {n} mention", "insights.castMentionsPlural": "{name} — {sec} : {n} mentions",
+        "insights.castNotHere": "{name} — {sec} : absent ici",
+        "insights.castTotal": "{n} mention en tout", "insights.castTotalPlural": "{n} mentions en tout",
+        "insights.castHide": "Masquer {name}",
+        "insights.castHidden": "Noms masqués ({n})",
+        "insights.castShow": "Réafficher",
+        "insights.castTable": "Mentions de chaque nom, section par section",
+        "insights.castNameCol": "Nom",
+        "insights.castTop": "Les {n} noms les plus cités sur {m} sont affichés."
+      });
+      Object.assign(UI_STRINGS.de, {
+        "insights.castH": "Namen auf der Bühne",
+        "insights.castSub": "Großgeschriebene Namen, die im Buch wiederkehren — Menschen, aber auch Orte und Schiffe, denn ein Großbuchstabe unterscheidet sie nicht. Jede Zeile ist ein Name, jede Spalte ein Abschnitt; je tiefer der Ton, desto öfter fällt der Name dort. Wählen Sie ein Feld, um den Abschnitt bei der ersten Nennung zu öffnen.",
+        "insights.castNote": "Anhand der Großschreibung gefunden, auf diesem Gerät — eine Faustregel von Beuk, keine Deutung der Geschichte. Ein Name erscheint hier, sobald er {n}-mal oder öfter fällt, in mindestens zwei Abschnitten. Blenden Sie aus, was kein Name ist.",
+        "insights.castDeNote": "Im Deutschen wird jedes Substantiv großgeschrieben, daher können sich einige gewöhnliche Nomen einschleichen — blenden Sie sie aus, dann bleiben sie mit diesem Buch ausgeblendet.",
+        "insights.castNone": "Noch kehrt kein Name in zwei Abschnitten wieder — sobald jemand zweimal auftritt, erscheint er hier.",
+        "insights.castCaseless": "Die Schrift dieses Buches kennzeichnet Namen nicht durch Großbuchstaben, daher kann Beuk sie nicht ehrlich erkennen. Diese Ansicht schweigt lieber, als zu raten.",
+        "insights.castLegend": "Nennungen je 1.000 Wörter",
+        "insights.castLegendNone": "nicht genannt",
+        "insights.castMentions": "{name} — {sec}: {n} Nennung", "insights.castMentionsPlural": "{name} — {sec}: {n} Nennungen",
+        "insights.castNotHere": "{name} — {sec}: hier nicht genannt",
+        "insights.castTotal": "{n} Nennung insgesamt", "insights.castTotalPlural": "{n} Nennungen insgesamt",
+        "insights.castHide": "{name} ausblenden",
+        "insights.castHidden": "Ausgeblendete Namen ({n})",
+        "insights.castShow": "Wieder zeigen",
+        "insights.castTable": "Nennungen jedes Namens, Abschnitt für Abschnitt",
+        "insights.castNameCol": "Name",
+        "insights.castTop": "Gezeigt werden die {n} meistgenannten von {m} Namen."
+      });
+      Object.assign(UI_STRINGS.it, {
+        "insights.castH": "Nomi in scena",
+        "insights.castSub": "Nomi con la maiuscola che ritornano nel libro — persone, ma anche luoghi e navi, perché una maiuscola non li distingue. Ogni riga è un nome e ogni colonna una sezione; più intensa la tinta, più spesso il nome compare lì. Scegli una casella per aprire quella sezione alla prima menzione.",
+        "insights.castNote": "Trovati dalle maiuscole, su questo dispositivo — una regola pratica di Beuk, non una lettura della storia. Un nome compare qui quando è usato {n} volte o più, in almeno due sezioni. Nascondi quelli che non sono nomi.",
+        "insights.castDeNote": "Il tedesco scrive con la maiuscola tutti i sostantivi, quindi qualche nome comune può infilarsi qui — nascondilo e resterà nascosto con questo libro.",
+        "insights.castNone": "Nessun nome ritorna ancora in due sezioni — quando qualcuno entra in scena due volte, comparirà qui.",
+        "insights.castCaseless": "La scrittura di questo libro non segna i nomi con la maiuscola, quindi Beuk non può riconoscerli onestamente. Questa vista preferisce tacere piuttosto che indovinare.",
+        "insights.castLegend": "Menzioni ogni 1.000 parole",
+        "insights.castLegendNone": "non nominato",
+        "insights.castMentions": "{name} — {sec}: {n} menzione", "insights.castMentionsPlural": "{name} — {sec}: {n} menzioni",
+        "insights.castNotHere": "{name} — {sec}: qui non compare",
+        "insights.castTotal": "{n} menzione in tutto", "insights.castTotalPlural": "{n} menzioni in tutto",
+        "insights.castHide": "Nascondi {name}",
+        "insights.castHidden": "Nomi nascosti ({n})",
+        "insights.castShow": "Mostra di nuovo",
+        "insights.castTable": "Menzioni di ogni nome, sezione per sezione",
+        "insights.castNameCol": "Nome",
+        "insights.castTop": "Sono mostrati i {n} nomi più citati su {m}."
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "insights.castH": "Nomes em cena",
+        "insights.castSub": "Nomes com maiúscula que voltam ao longo do livro — pessoas, mas também lugares e navios, porque uma maiúscula não os distingue. Cada linha é um nome e cada coluna uma secção; quanto mais intensa a cor, mais vezes o nome aparece aí. Escolha um quadrado para abrir essa secção na primeira menção.",
+        "insights.castNote": "Encontrados pelas maiúsculas, neste dispositivo — uma regra prática do Beuk, não uma leitura da história. Um nome aparece aqui quando é usado {n} vezes ou mais, em pelo menos duas secções. Oculte os que não forem nomes.",
+        "insights.castDeNote": "O alemão escreve todos os substantivos com maiúscula, por isso alguns nomes comuns podem infiltrar-se — oculte-os e ficarão ocultos com este livro.",
+        "insights.castNone": "Ainda nenhum nome volta em duas secções — quando alguém entrar em cena duas vezes, aparecerá aqui.",
+        "insights.castCaseless": "A escrita deste livro não marca os nomes com maiúscula, por isso o Beuk não os consegue identificar com honestidade. Esta vista prefere calar a adivinhar.",
+        "insights.castLegend": "Menções por cada 1000 palavras",
+        "insights.castLegendNone": "sem menção",
+        "insights.castMentions": "{name} — {sec}: {n} menção", "insights.castMentionsPlural": "{name} — {sec}: {n} menções",
+        "insights.castNotHere": "{name} — {sec}: não aparece aqui",
+        "insights.castTotal": "{n} menção ao todo", "insights.castTotalPlural": "{n} menções ao todo",
+        "insights.castHide": "Ocultar {name}",
+        "insights.castHidden": "Nomes ocultos ({n})",
+        "insights.castShow": "Mostrar de novo",
+        "insights.castTable": "Menções de cada nome, secção a secção",
+        "insights.castNameCol": "Nome",
+        "insights.castTop": "São mostrados os {n} nomes mais mencionados de {m}."
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "insights.castH": "Namen op het toneel",
+        "insights.castSub": "Namen met een hoofdletter die door het boek heen terugkeren — mensen, maar ook plaatsen en schepen, want een hoofdletter maakt geen onderscheid. Elke rij is een naam en elke kolom een sectie; hoe dieper de tint, hoe vaker de naam daar valt. Kies een vakje om die sectie bij de eerste vermelding te openen.",
+        "insights.castNote": "Gevonden aan de hoofdletter, op dit apparaat — een vuistregel van Beuk, geen lezing van het verhaal. Een naam verschijnt hier zodra hij {n} keer of vaker valt, in minstens twee secties. Verberg wat geen naam is.",
+        "insights.castDeNote": "Het Duits schrijft elk zelfstandig naamwoord met een hoofdletter, dus er kunnen gewone woorden tussen glippen — verberg ze en ze blijven verborgen bij dit boek.",
+        "insights.castNone": "Nog keert geen naam in twee secties terug — zodra iemand twee keer opkomt, verschijnt die hier.",
+        "insights.castCaseless": "Het schrift van dit boek markeert namen niet met hoofdletters, dus Beuk kan ze niet eerlijk herkennen. Deze weergave zwijgt liever dan te gissen.",
+        "insights.castLegend": "Vermeldingen per 1.000 woorden",
+        "insights.castLegendNone": "niet genoemd",
+        "insights.castMentions": "{name} — {sec}: {n} vermelding", "insights.castMentionsPlural": "{name} — {sec}: {n} vermeldingen",
+        "insights.castNotHere": "{name} — {sec}: hier niet genoemd",
+        "insights.castTotal": "{n} vermelding in totaal", "insights.castTotalPlural": "{n} vermeldingen in totaal",
+        "insights.castHide": "{name} verbergen",
+        "insights.castHidden": "Verborgen namen ({n})",
+        "insights.castShow": "Weer tonen",
+        "insights.castTable": "Vermeldingen van elke naam, sectie voor sectie",
+        "insights.castNameCol": "Naam",
+        "insights.castTop": "De {n} meest genoemde van {m} namen worden getoond."
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "insights.castH": "Imiona na scenie",
+        "insights.castSub": "Nazwy pisane wielką literą, które powracają w książce — ludzie, ale też miejsca i statki, bo wielka litera ich nie rozróżnia. Każdy wiersz to nazwa, każda kolumna to sekcja; im głębszy odcień, tym częściej pada tam nazwa. Wybierz pole, aby otworzyć tę sekcję przy pierwszej wzmiance.",
+        "insights.castNote": "Znalezione po wielkiej literze, na tym urządzeniu — praktyczna reguła Beuk, nie odczytanie historii. Nazwa pojawia się tu, gdy liczba wzmianek sięga {n}, w co najmniej dwóch sekcjach. Ukryj te, które nie są imionami.",
+        "insights.castDeNote": "Niemiecki zapisuje wielką literą każdy rzeczownik, więc może się tu wkraść kilka zwykłych słów — ukryj je, a pozostaną ukryte w tej książce.",
+        "insights.castNone": "Żadna nazwa nie powraca jeszcze w dwóch sekcjach — gdy ktoś pojawi się dwa razy, zobaczysz go tutaj.",
+        "insights.castCaseless": "Pismo tej książki nie oznacza imion wielką literą, więc Beuk nie może ich uczciwie wskazać. Ten widok woli milczeć, niż zgadywać.",
+        "insights.castLegend": "Wzmianki na 1000 słów",
+        "insights.castLegendNone": "brak wzmianki",
+        "insights.castMentions": "{name} — {sec}: {n} wzmianka", "insights.castMentionsPlural": "{name} — {sec}: {n} wzmianki",
+        "insights.castNotHere": "{name} — {sec}: tu nie pada",
+        "insights.castTotal": "{n} wzmianka w sumie", "insights.castTotalPlural": "{n} wzmianki w sumie",
+        "insights.castHide": "Ukryj: {name}",
+        "insights.castHidden": "Ukryte nazwy ({n})",
+        "insights.castShow": "Pokaż ponownie",
+        "insights.castTable": "Wzmianki każdej nazwy, sekcja po sekcji",
+        "insights.castNameCol": "Nazwa",
+        "insights.castTop": "Pokazano {n} najczęściej wymienianych z {m} nazw."
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "insights.castH": "Имена на сцене",
+        "insights.castSub": "Слова с заглавной буквы, которые возвращаются по всей книге, — люди, а также места и корабли: заглавная буква их не различает. Каждая строка — имя, каждый столбец — раздел; чем глубже оттенок, тем чаще там звучит имя. Выберите клетку, чтобы открыть раздел на первом упоминании.",
+        "insights.castNote": "Найдено по заглавным буквам, на этом устройстве, — эмпирическое правило Beuk, а не прочтение истории. Имя попадает сюда, когда число его упоминаний достигает {n}, хотя бы в двух разделах. Скройте то, что не является именем.",
+        "insights.castDeNote": "В немецком каждое существительное пишется с заглавной буквы, поэтому сюда могут попасть обычные слова — скройте их, и они останутся скрытыми в этой книге.",
+        "insights.castNone": "Пока ни одно имя не встречается в двух разделах — как только кто-то выйдет на сцену дважды, он появится здесь.",
+        "insights.castCaseless": "Письменность этой книги не выделяет имена заглавными буквами, поэтому Beuk не может честно их найти. Этот вид лучше промолчит, чем станет гадать.",
+        "insights.castLegend": "Упоминаний на 1000 слов",
+        "insights.castLegendNone": "не упомянуто",
+        "insights.castMentions": "{name} — {sec}: {n} упоминание", "insights.castMentionsPlural": "{name} — {sec}: {n} упоминаний",
+        "insights.castNotHere": "{name} — {sec}: здесь не упомянуто",
+        "insights.castTotal": "всего {n} упоминание", "insights.castTotalPlural": "всего {n} упоминаний",
+        "insights.castHide": "Скрыть: {name}",
+        "insights.castHidden": "Скрытые имена ({n})",
+        "insights.castShow": "Показать снова",
+        "insights.castTable": "Упоминания каждого имени по разделам",
+        "insights.castNameCol": "Имя",
+        "insights.castTop": "Показаны {n} самых упоминаемых имён из {m}."
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "insights.castH": "Sahnedeki adlar",
+        "insights.castSub": "Kitap boyunca geri dönen büyük harfli adlar — insanlar, ama yerler ve gemiler de, çünkü büyük harf onları ayırt etmez. Her satır bir ad, her sütun bir bölümdür; renk ne kadar koyuysa ad orada o kadar sık geçer. O bölümü adın ilk geçtiği yerde açmak için bir kare seçin.",
+        "insights.castNote": "Büyük harflerden, bu cihazda bulundu — Beuk'un kendi pratik kuralı, hikâyenin bir yorumu değil. Bir ad, en az iki bölümde {n} kez ya da daha fazla geçtiğinde burada görünür. Ad olmayanları gizleyin.",
+        "insights.castDeNote": "Almancada her isim büyük harfle yazılır, bu yüzden bazı sıradan isimler araya karışabilir — gizleyin, bu kitapla birlikte gizli kalırlar.",
+        "insights.castNone": "Henüz hiçbir ad iki bölümde geri dönmüyor — biri sahneye iki kez çıktığında burada görünecek.",
+        "insights.castCaseless": "Bu kitabın yazısı adları büyük harfle işaretlemiyor, bu yüzden Beuk onları dürüstçe seçemez. Bu görünüm tahmin etmektense sessiz kalır.",
+        "insights.castLegend": "1.000 kelimede geçiş",
+        "insights.castLegendNone": "geçmiyor",
+        "insights.castMentions": "{name} — {sec}: {n} kez", "insights.castMentionsPlural": "{name} — {sec}: {n} kez",
+        "insights.castNotHere": "{name} — {sec}: burada geçmiyor",
+        "insights.castTotal": "toplam {n} kez", "insights.castTotalPlural": "toplam {n} kez",
+        "insights.castHide": "{name} adını gizle",
+        "insights.castHidden": "Gizlenen adlar ({n})",
+        "insights.castShow": "Yeniden göster",
+        "insights.castTable": "Her adın bölüm bölüm geçişleri",
+        "insights.castNameCol": "Ad",
+        "insights.castTop": "{m} addan en çok geçen {n} tanesi gösteriliyor."
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "insights.castH": "أسماء على المسرح",
+        "insights.castSub": "أسماء تبدأ بحرف كبير تتكرر عبر الكتاب — أشخاص، وأماكن وسفن أيضًا، لأن الحرف الكبير لا يفرّق بينها. كل صف اسم وكل عمود قسم؛ كلما اشتد اللون زاد ورود الاسم فيه. اختر مربعًا لفتح ذلك القسم عند أول ذكر.",
+        "insights.castNote": "عُثر عليها من الحروف الكبيرة، على هذا الجهاز — قاعدة تقريبية من Beuk، لا قراءة للقصة. يظهر الاسم هنا متى بلغ عدد وروده {n} أو أكثر، في قسمين على الأقل. أخفِ ما ليس اسمًا.",
+        "insights.castDeNote": "في الألمانية يُكتب كل اسم بحرف كبير، لذا قد تتسلل بعض الأسماء العادية — أخفِها وستبقى مخفية مع هذا الكتاب.",
+        "insights.castNone": "لا يتكرر أي اسم في قسمين بعد — حين يظهر أحدهم مرتين، سيظهر هنا.",
+        "insights.castCaseless": "لا تميّز كتابة هذا الكتاب الأسماء بحروف كبيرة، لذا لا يستطيع Beuk التقاطها بأمانة. يفضّل هذا العرض الصمت على التخمين.",
+        "insights.castLegend": "مرات الذكر لكل 1000 كلمة",
+        "insights.castLegendNone": "غير مذكور",
+        "insights.castMentions": "{name} — {sec}: {n} مرة", "insights.castMentionsPlural": "{name} — {sec}: {n} مرة",
+        "insights.castNotHere": "{name} — {sec}: غير مذكور هنا",
+        "insights.castTotal": "{n} مرة إجمالًا", "insights.castTotalPlural": "{n} مرة إجمالًا",
+        "insights.castHide": "إخفاء {name}",
+        "insights.castHidden": "أسماء مخفية ({n})",
+        "insights.castShow": "إظهار مجددًا",
+        "insights.castTable": "مرات ذكر كل اسم، قسمًا قسمًا",
+        "insights.castNameCol": "الاسم",
+        "insights.castTop": "تُعرض الأسماء الـ{n} الأكثر ذكرًا من أصل {m}."
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "insights.castH": "舞台に立つ名前",
+        "insights.castSub": "本の中で繰り返し現れる、大文字で始まる名前 — 人物だけでなく、地名や船の名も含みます。大文字だけでは見分けられないからです。行が名前、列がセクションで、色が濃いほどその名前がよく出てきます。マスを選ぶと、そのセクションを最初の登場箇所で開きます。",
+        "insights.castNote": "この端末で、大文字を手がかりに見つけたもの — 物語を読んだ判断ではなく、Beuk独自の目安です。二つ以上のセクションにまたがり、{n}回以上使われた名前がここに並びます。名前でないものは隠してください。",
+        "insights.castDeNote": "ドイツ語ではすべての名詞が大文字で始まるため、普通の名詞が混じることがあります — 隠せば、この本と一緒に隠れたままになります。",
+        "insights.castNone": "まだ二つのセクションにまたがって現れる名前はありません — 誰かが二度登場すれば、ここに現れます。",
+        "insights.castCaseless": "この本の文字は名前を大文字で区別しないため、Beukは正直に名前を拾い出せません。推測するより、この表示は黙っていることにします。",
+        "insights.castLegend": "1,000語あたりの登場回数",
+        "insights.castLegendNone": "登場なし",
+        "insights.castMentions": "{name} — {sec}：{n}回", "insights.castMentionsPlural": "{name} — {sec}：{n}回",
+        "insights.castNotHere": "{name} — {sec}：ここには登場しません",
+        "insights.castTotal": "合計{n}回", "insights.castTotalPlural": "合計{n}回",
+        "insights.castHide": "{name}を隠す",
+        "insights.castHidden": "隠した名前（{n}）",
+        "insights.castShow": "もう一度表示",
+        "insights.castTable": "セクションごとの各名前の登場回数",
+        "insights.castNameCol": "名前",
+        "insights.castTop": "{m}件のうち、登場回数の多い{n}件を表示しています。"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "insights.castH": "登场的名字",
+        "insights.castSub": "在全书中反复出现、以大写字母开头的名字 — 不只是人物，也有地名和船名，因为大写字母无法区分它们。每一行是一个名字，每一列是一个章节；颜色越深，这个名字在那里出现得越频繁。点选方格，即可在第一次提到的地方打开该章节。",
+        "insights.castNote": "在此设备上凭大写字母找到 — 这是 Beuk 自己的经验规则，而不是对故事的解读。一个名字在至少两个章节中共出现 {n} 次或以上，才会列在这里。请隐藏那些不是名字的词。",
+        "insights.castDeNote": "德语中每个名词都大写，因此可能混入一些普通名词 — 隐藏它们后，它们会随这本书保持隐藏。",
+        "insights.castNone": "还没有名字在两个章节中重复出现 — 一旦有人第二次登场，就会出现在这里。",
+        "insights.castCaseless": "这本书的文字不用大写字母标记名字，所以 Beuk 无法如实地把名字挑出来。与其猜测，这里宁可保持安静。",
+        "insights.castLegend": "每 1,000 词中的提及次数",
+        "insights.castLegendNone": "未提及",
+        "insights.castMentions": "{name} — {sec}：{n} 次", "insights.castMentionsPlural": "{name} — {sec}：{n} 次",
+        "insights.castNotHere": "{name} — {sec}：此处未提及",
+        "insights.castTotal": "共 {n} 次", "insights.castTotalPlural": "共 {n} 次",
+        "insights.castHide": "隐藏 {name}",
+        "insights.castHidden": "已隐藏的名字（{n}）",
+        "insights.castShow": "重新显示",
+        "insights.castTable": "每个名字在各章节的提及次数",
+        "insights.castNameCol": "名字",
+        "insights.castTop": "显示了 {m} 个名字中提及最多的 {n} 个。"
+      });
+      UI_PLURAL_FORMS.pl = UI_PLURAL_FORMS.pl || {};
+      UI_PLURAL_FORMS.ru = UI_PLURAL_FORMS.ru || {};
+      UI_PLURAL_FORMS.ar = UI_PLURAL_FORMS.ar || {};
+      Object.assign(UI_PLURAL_FORMS.pl, { "insights.castMentions": { many: "{name} — {sec}: {n} wzmianek" }, "insights.castTotal": { many: "{n} wzmianek w sumie" } });
+      Object.assign(UI_PLURAL_FORMS.ru, { "insights.castMentions": { few: "{name} — {sec}: {n} упоминания" }, "insights.castTotal": { few: "всего {n} упоминания" } });
+      Object.assign(UI_PLURAL_FORMS.ar, { "insights.castMentions": { two: "{name} — {sec}: مرتان", few: "{name} — {sec}: {n} مرات" }, "insights.castTotal": { two: "مرتان إجمالًا", few: "{n} مرات إجمالًا" } });
+      /* ==== /BEUK:cast ==== */
+      /* ==== BEUK:cast ==== Names on stage — who appears in which section.
+         A heatmap of the names a book keeps returning to: rows are the
+         most-mentioned names, columns the body sections in book order,
+         and each square's shade is that name's mentions per 1,000 words
+         of that section. "Names", never "characters": the rule is
+         capital letters, and capital letters can't tell a woman from a
+         harbour or a ship — the copy says so plainly.
+         The rule (Beuk's own heuristic, documented in the README):
+         - a word is a candidate when it is capitalised somewhere that is
+           NOT the start of a sentence, a paragraph or a quotation, and
+           it is almost never written in lowercase (at most 1 in 10);
+         - it must recur at least N times (N grows with the book: 3 for
+           a short book, up to 12 at about 100,000 words) across at least
+           two sections;
+         - two capitalised words side by side ("Captain Hale", "Gull
+           Rock") form one name when the pair recurs; a pair of two names
+           that each stand alone (a first and last name) is counted as
+           its parts;
+         - possessives merge (Mara's → Mara); stopwords, pronouns,
+           interjections, days, months, titles on their own (Mr, Captain
+           — they stay as part of the name after them), heading words
+           (Chapter, Part…) and the book's own title words never count;
+           ALL-CAPS words are left out; markdown heading lines are
+           skipped;
+         - German capitalises every noun, so there a word that mostly
+           follows an article (der/die/das/ein…) is left out, and a note
+           says some nouns may still slip in;
+         - scripts without letter case (Arabic, Hebrew, Japanese,
+           Chinese, Korean, Devanagari, Thai…) get an honest note
+           instead of a guess.
+         Everything is computed on this device from the desk, cached by
+         a hash of the body text, and the writer's hidden names ride
+         with the book in meta.castHidden (serializeBook copies meta
+         whole; applyBookDoc reads it strictly so one book's hidden
+         names never leak into the next). */
+      const CAST_STOP = new Set([
+        "i'm", "i'll", "i've", "i'd", "oh", "ah", "aha", "yes", "yeah", "yep", "no", "nope", "okay", "ok", "hello", "hey", "hi", "please", "thanks", "sorry", "goodbye", "bye", "aye", "hmm", "mm", "um", "uh", "eh", "wow", "alas",
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december",
+        "montag", "dienstag", "mittwoch", "donnerstag", "freitag", "samstag", "sonntag", "januar", "februar", "märz", "mai", "juni", "juli", "oktober", "dezember",
+        "lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche",
+        "pazartesi", "salı", "çarşamba", "perşembe", "cuma", "cumartesi", "pazar", "ocak", "şubat", "mart", "nisan", "mayıs", "haziran", "temmuz", "ağustos", "eylül", "ekim", "kasım", "aralık",
+        "chapter", "part", "book", "prologue", "epilogue", "interlude", "act", "scene", "volume", "capítulo", "chapitre", "kapitel", "capitolo", "hoofdstuk", "rozdział", "глава", "bölüm"
+      ]);
+      const CAST_TITLES = new Set([
+        "mr", "mrs", "ms", "miss", "mx", "dr", "sir", "dame", "lady", "lord", "captain", "capt", "master", "mister", "madam", "madame", "mademoiselle", "monsieur", "mme", "mlle",
+        "father", "mother", "aunt", "auntie", "uncle", "grandma", "grandpa", "granny", "saint", "st", "king", "queen", "prince", "princess", "duke", "duchess", "count", "countess", "baron",
+        "professor", "prof", "doctor", "sister", "brother", "sergeant", "sgt", "lieutenant", "lt", "colonel", "col", "general", "major", "commander", "admiral", "officer", "inspector", "detective", "judge", "reverend", "rev", "pastor", "bishop",
+        "señor", "señora", "señorita", "don", "doña", "herr", "frau", "fräulein", "signor", "signore", "signora", "signorina", "senhor", "senhora", "dom", "dona", "meneer", "mevrouw", "pan", "pani", "panna"
+      ]);
+      const CAST_DET_DE = new Set(["der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem", "einer", "eines", "kein", "keine", "keinen", "keinem", "keiner", "mein", "meine", "meinen", "meinem", "meiner", "dein", "deine", "sein", "seine", "seinen", "seinem", "seiner", "ihr", "ihre", "ihren", "ihrem", "ihrer", "unser", "unsere", "euer", "eure", "im", "am", "zum", "zur", "vom", "beim", "ins", "ans", "diese", "dieser", "dieses", "diesen", "diesem", "jede", "jeder", "jedes", "jeden", "jedem"]);
+      const CAST_OPENERS = "“„«‘‚「『‹¿¡(—–";
+      const CAST_MAX_ROWS = 12;
+      const CAST_STEPS = [0.22, 0.4, 0.58, 0.78, 1];
+      function castNormalizeHidden(v) {
+        const out = [], seen = new Set();
+        (Array.isArray(v) ? v : []).forEach((x) => {
+          const s = typeof x === "string" ? x.replace(/\s+/g, " ").trim().slice(0, 80) : "";
+          const k = s.toLowerCase();
+          if (s && !seen.has(k) && out.length < 200) { seen.add(k); out.push(s); }
+        });
+        return out;
+      }
+      function castHiddenList() { return castNormalizeHidden(state.meta && state.meta.castHidden); }
+      function castSetHidden(list) {
+        const n = castNormalizeHidden(list);
+        if (n.length) state.meta.castHidden = n; else delete state.meta.castHidden;
+      }
+      /* Does the text's script mark names with capitals? Counted on
+         the letters themselves, so a book whose language setting is
+         wrong is still read for what it is. */
+      function castHasCase(text) {
+        let letters = 0, cased = 0;
+        const s = String(text || "").slice(0, 40000);
+        for (const ch of s) {
+          if (!/\p{L}/u.test(ch)) continue;
+          letters++;
+          if (ch.toLowerCase() !== ch.toUpperCase()) cased++;
+        }
+        return letters > 0 && cased / letters >= 0.5;
+      }
+      function castTokens(content) {
+        const out = [];
+        const text = insCleanText(String(content || "").split("\n").filter((l) => !/^\s{0,3}#/.test(l)).join("\n"));
+        text.split(/\n\s*\n/).forEach((block) => {
+          const flat = block.replace(/\s+/g, " ");
+          const re = new RegExp(INS_WORD_RE.source, "gu");
+          let m, prev = null, prevEnd = 0;
+          while ((m = re.exec(flat)) !== null) {
+            const tok = m[0];
+            const gap = flat.slice(prevEnd, m.index);
+            let init = false, join = false;
+            if (!prev) init = true;
+            else {
+              const g = gap.replace(/\s+$/, "");
+              const last = g.slice(-1);
+              if (/[.!?…]/.test(gap)) {
+                const abbrev = /^\.\s*$/.test(gap) && (prev.raw.length === 1 || INS_ABBREV.has(prev.lw) || CAST_TITLES.has(prev.lw));
+                init = !abbrev;
+              } else if (last && CAST_OPENERS.indexOf(last) !== -1) init = true;
+              else if ((last === '"' || last === "'") && (g.length === 1 || /\s/.test(g.charAt(g.length - 2)))) init = true;
+              join = /^ $/.test(gap) || (/^\. $/.test(gap) && CAST_TITLES.has(prev.lw));
+            }
+            const w = tok.replace(/['’][sS]$/, "");
+            const first = w.charAt(0);
+            const caps = w.length > 1 && w === w.toUpperCase() && w !== w.toLowerCase();
+            const cap = !caps && first !== first.toLowerCase();
+            const low = first !== first.toUpperCase();
+            const t2 = { raw: tok, w, lw: w.toLowerCase(), cap, caps, low, init, join, dot: join && gap.charAt(0) === "." };
+            out.push(t2);
+            prev = t2; prevEnd = m.index + tok.length;
+          }
+          /* a block break ends any pair */
+          if (out.length) out.push(null);
+        });
+        return out;
+      }
+      function castHash(str, h) {
+        h = h >>> 0;
+        for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+        return h;
+      }
+      function castSecLabel(s) {
+        const title = String(s.title || "").trim();
+        if (s.type === "chapter" && s.number) return insShortName(s) + (title ? " · " + title : "");
+        return title || insShortName(s);
+      }
+      /* the column's short mark: a chapter's numeral (its own when it
+         is written in digits, else its place among the chapters — "One"
+         and "Thirteen" do not fit a 16px column); other sections their
+         title's first letter. The tooltip carries the full name. */
+      function castColLabel(s, chapterPos) {
+        if (s.type === "chapter") return /^\d{1,4}$/.test(String(s.number || "").trim()) ? String(s.number).trim() : String(chapterPos);
+        const title = String(s.title || "").trim();
+        return title ? Array.from(title)[0].toUpperCase() : "·";
+      }
+      /* Pure over (sections, language, book title): the self-checks
+         hold it against a known text. */
+      /* The plain stopword lists only — not the Insights word list's
+         filler (INS_FILLER), which holds "mr", "dr"… and would stop a
+         title from joining the name after it ("Mr. Venn"). */
+      function castStopSet(lang) {
+        const set = new Set(INSIGHTS_STOP_EN);
+        (STOPWORDS[String(lang || "en").split("-")[0]] || []).forEach((w) => set.add(w));
+        (STOPWORDS.en || []).forEach((w) => set.add(w));
+        return set;
+      }
+      function castCompute(sections, lang, bookTitle) {
+        const cols = insBodySections(sections).filter((s) => sectionWords(s) > 0);
+        let chPos = 0;
+        const res = { caseless: false, minCount: 3, names: [], cols: cols.map((s) => ({ id: s.id, label: castSecLabel(s), col: castColLabel(s, s.type === "chapter" ? ++chPos : chPos), words: sectionWords(s) })) };
+        if (!cols.length) return res;
+        const sample = cols.map((s) => String(s.content || "").slice(0, 8000)).join(" ");
+        if (!castHasCase(sample)) { res.caseless = true; return res; }
+        const isDe = String(lang || "").split("-")[0] === "de";
+        const stop = castStopSet(lang);
+        const titleWords = new Set((String(bookTitle || "").toLowerCase().match(INS_WORD_RE) || []));
+        const totalWords = res.cols.reduce((a, c) => a + c.words, 0);
+        const N = Math.max(3, Math.min(12, Math.round(totalWords / 8000)));
+        res.minCount = N;
+        const toks = cols.map((s) => castTokens(s.content));
+        const uni = new Map(), bi = new Map();
+        const U = (lw) => { let e = uni.get(lw); if (!e) { e = { cap: 0, mid: 0, low: 0, det: 0, forms: new Map() }; uni.set(lw, e); } return e; };
+        toks.forEach((list) => {
+          for (let i = 0; i < list.length; i++) {
+            const tk = list[i]; if (!tk || tk.caps) continue;
+            const e = U(tk.lw);
+            if (tk.cap) {
+              e.cap++; if (!tk.init) e.mid++;
+              e.forms.set(tk.w, (e.forms.get(tk.w) || 0) + 1);
+              const pv = list[i - 1];
+              if (isDe && pv && tk.join && pv.low && CAST_DET_DE.has(pv.lw)) e.det++;
+              if (pv && pv.cap && tk.join) {
+                const key = pv.lw + " " + tk.lw;
+                let b = bi.get(key);
+                if (!b) { b = { a: pv.lw, b: tk.lw, n: 0, mid: 0, forms: new Map() }; bi.set(key, b); }
+                b.n++; if (!pv.init) b.mid++;
+                const form = pv.w + (tk.dot ? ". " : " ") + tk.w;
+                b.forms.set(form, (b.forms.get(form) || 0) + 1);
+              }
+            } else if (tk.low) e.low++;
+          }
+        });
+        const wordOk = (lw) => lw.length >= 2 && !stop.has(lw) && !CAST_STOP.has(lw) && !CAST_TITLES.has(lw) && !/\d/.test(lw);
+        const rareLower = (e) => !!e && e.low <= Math.floor(e.cap * 0.1);
+        const deOk = (e) => !isDe || e.det < e.cap * 0.25;
+        const standsAlone = (lw) => { const e = uni.get(lw); return wordOk(lw) && rareLower(e) && deOk(e) && !titleWords.has(lw); };
+        const bigNames = new Map();
+        bi.forEach((b, key) => {
+          if (b.n < N || b.mid < 1) return;
+          const aTitle = CAST_TITLES.has(b.a);
+          if (!wordOk(b.b) || stop.has(b.a) || CAST_STOP.has(b.a)) return;
+          if (!aTitle && !wordOk(b.a)) return;
+          if (titleWords.has(b.a) && titleWords.has(b.b)) return;
+          if (!aTitle && standsAlone(b.a) && standsAlone(b.b) && b.n < 0.5 * uni.get(b.a).cap) return;
+          bigNames.set(key, b);
+        });
+        const uniNames = new Set();
+        uni.forEach((e, lw) => {
+          if (e.cap >= N && e.mid >= 1 && standsAlone(lw)) uniNames.add(lw);
+        });
+        const found = new Map();
+        const hit = (key, form, si) => {
+          let f = found.get(key);
+          if (!f) { f = { key, forms: new Map(), per: res.cols.map(() => 0), total: 0 }; found.set(key, f); }
+          f.per[si]++; f.total++;
+          f.forms.set(form, (f.forms.get(form) || 0) + 1);
+        };
+        toks.forEach((list, si) => {
+          for (let i = 0; i < list.length; i++) {
+            const tk = list[i]; if (!tk || !tk.cap) continue;
+            const nx = list[i + 1];
+            if (nx && nx.cap && nx.join) {
+              const key = tk.lw + " " + nx.lw;
+              if (bigNames.has(key)) { hit(key, tk.w + (nx.dot ? ". " : " ") + nx.w, si); i++; continue; }
+            }
+            if (uniNames.has(tk.lw)) hit(tk.lw, tk.w, si);
+          }
+        });
+        const best = (forms) => { let b = "", n = -1; forms.forEach((c, f) => { if (c > n) { b = f; n = c; } }); return b; };
+        found.forEach((f) => {
+          const secs = f.per.filter((c) => c > 0).length;
+          if (f.total < N || secs < 2) return;
+          res.names.push({ key: f.key, name: best(f.forms), total: f.total, sections: secs, per: f.per });
+        });
+        res.names.sort((a, b) => b.total - a.total || (a.name < b.name ? -1 : 1));
+        res.names = res.names.slice(0, 80);
+        return res;
+      }
+      const castCache = { key: null, val: null, ms: 0 };
+      function castData() {
+        const lang = bookLang();
+        let h = castHash(lang + "\u0001" + String(state.meta.title || ""), 2166136261);
+        insBodySections(state.sections).forEach((s) => {
+          h = castHash("\u0002" + s.id + "\u0003" + (s.type || "") + "\u0003" + (s.number || "") + "\u0003" + (s.title || "") + "\u0003", h);
+          h = castHash(String(s.content || ""), h);
+        });
+        const key = h + ":" + uiLangState;
+        if (castCache.key === key && castCache.val) return castCache.val;
+        const t0 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+        const val = castCompute(state.sections, lang, state.meta.title);
+        castCache.ms = (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0;
+        castCache.key = key; castCache.val = val;
+        return val;
+      }
+      function castRateStr(v, lang) {
+        /* one decimal below 10 (fmtNum always rounds to a whole number, which printed a shaded cell's rate as "0");
+           a rate that is above zero but rounds to 0.0 reads "<0.1", so the legend never shows 0 for a named cell */
+        const L = lang || getUiLang();
+        const f = (x, d) => { try { return new Intl.NumberFormat(L, { maximumFractionDigits: d }).format(x); } catch (e) { return String(x); } };
+        if (!(v > 0)) return f(0, 0);
+        if (v >= 10) return f(Math.round(v), 0);
+        const r = Math.round(v * 10) / 10;
+        return r === 0 ? "<" + f(0.1, 1) : f(r, 1);
+      }
+      function castMentionText(name, sec, n) {
+        return n > 0 ? t("insights.castMentions", { count: n, n: fmtNum(n), name, sec }) : t("insights.castNotHere", { name, sec });
+      }
+      function castGridHtml(rows, d) {
+        const n = d.cols.length, R = rows.length;
+        const rtl = document.documentElement.getAttribute("dir") === "rtl";
+        let max = 0;
+        rows.forEach((r) => r.per.forEach((c, j) => { const v = d.cols[j].words ? (c / d.cols[j].words) * 1000 : 0; if (v > max) max = v; }));
+        let min = Infinity;
+        rows.forEach((r) => r.per.forEach((c, j) => { if (c > 0) { const v = (c / d.cols[j].words) * 1000; if (v < min) min = v; } }));
+        if (!isFinite(min)) min = 0;
+        const step = (v) => Math.min(CAST_STEPS.length - 1, Math.floor((v / (max || 1)) * CAST_STEPS.length));
+        let svg = '<svg class="cast-svg" viewBox="0 0 ' + n + " " + R + '" preserveAspectRatio="none" style="height:' + (R * 26) + 'px" role="group" aria-label="' + esc(t("insights.castTable")) + '">';
+        rows.forEach((r, i) => {
+          r.per.forEach((c, j) => {
+            const x = rtl ? n - 1 - j : j;
+            const label = castMentionText(r.name, d.cols[j].label, c);
+            const common = ' x="' + x + '" y="' + i + '" width="1" height="1" class="cast-cell" tabindex="' + (i === 0 && j === 0 ? "0" : "-1") + '" role="button" data-cast-r="' + i + '" data-cast-c="' + j + '" aria-label="' + esc(label) + '" stroke="var(--panel-2)" stroke-width="2" vector-effect="non-scaling-stroke"';
+            if (c > 0) {
+              const v = (c / d.cols[j].words) * 1000;
+              svg += "<rect" + common + ' fill="var(--ins-a)" fill-opacity="' + CAST_STEPS[step(v)] + '"/>';
+            } else {
+              svg += "<rect" + common + ' fill="var(--panel-2)"/>';
+              svg += '<line x1="' + (x + 0.36) + '" y1="' + (i + 0.5) + '" x2="' + (x + 0.64) + '" y2="' + (i + 0.5) + '" stroke="var(--line-2)" stroke-width="1.5" vector-effect="non-scaling-stroke" pointer-events="none"/>';
+            }
+          });
+        });
+        svg += '<rect class="cast-hl" x="0" y="0" width="1" height="1" fill="none" stroke="var(--ink)" stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none" visibility="hidden"/>';
+        svg += "</svg>";
+        let names = "", tots = "";
+        rows.forEach((r) => {
+          const hideLab = t("insights.castHide", { name: r.name });
+          names += '<div class="cast-rh"><span class="cast-name" title="' + esc(r.name) + '">' + esc(r.name) + '</span><button type="button" class="cast-hide" data-cast-hide="' + esc(r.name) + '" aria-label="' + esc(hideLab) + '" title="' + esc(hideLab) + '"><i data-lucide="eye-off"></i></button></div>';
+          tots += '<div class="cast-tot ins-num" title="' + esc(t("insights.castTotal", { count: r.total, n: fmtNum(r.total) })) + '">' + fmtNum(r.total) + "</div>";
+        });
+        const every = Math.max(1, Math.ceil(n / 24));
+        let colLabs = "";
+        d.cols.forEach((c, j) => {
+          const show = j % every === 0 || j === n - 1;
+          colLabs += '<span title="' + esc(c.label) + '"' + (j % 2 && j !== n - 1 && n > 10 ? ' class="cast-c2"' : "") + ">" + (show ? esc(c.col) : "") + "</span>";
+        });
+        let legend = '<div class="cast-legend"><span>' + esc(t("insights.castLegend")) + '</span><span class="cast-scale"><span class="ins-num">' + esc(castRateStr(min)) + "</span>";
+        CAST_STEPS.forEach((o) => { legend += '<span class="cast-sw" style="opacity:' + o + '"></span>'; });
+        legend += '<span class="ins-num">' + esc(castRateStr(max)) + '</span></span><span class="cast-scale"><span class="cast-sw-none"></span>' + esc(t("insights.castLegendNone")) + "</span></div>";
+        let table = '<table class="sr-only"><caption>' + esc(t("insights.castTable")) + '</caption><thead><tr><th scope="col">' + esc(t("insights.castNameCol")) + "</th>";
+        d.cols.forEach((c) => { table += '<th scope="col">' + esc(c.label) + "</th>"; });
+        table += "</tr></thead><tbody>";
+        rows.forEach((r) => {
+          table += '<tr><th scope="row">' + esc(r.name) + "</th>";
+          r.per.forEach((c) => { table += "<td>" + fmtNum(c) + "</td>"; });
+          table += "</tr>";
+        });
+        table += "</tbody></table>";
+        return legend + '<div class="cast-wrap"><div class="cast-grid" style="--cast-n:' + n + '">' +
+          '<div class="cast-names">' + names + '</div><div class="cast-plot">' + svg + '<div class="cast-cols" aria-hidden="true">' + colLabs + "</div></div>" +
+          '<div class="cast-tots" aria-hidden="true">' + tots + "</div></div>" +
+          '<div class="cast-tip" role="tooltip" hidden></div></div>' + table;
+      }
+      function castVisible(d, hidden) {
+        const hs = new Set(castNormalizeHidden(hidden).map((x) => x.toLowerCase()));
+        return d.names.filter((r) => !hs.has(r.name.toLowerCase()) && !hs.has(r.key));
+      }
+      function castInsightsSection(keepOpen) {
+        castBindOnce();
+        if (!keepOpen) castState.openHidden = false; /* a fresh Insights opens with the disclosure folded */
+        const d = castData();
+        let inner = "";
+        const hidden = castHiddenList();
+        if (d.caseless) inner = '<p class="ins-none">' + esc(t("insights.castCaseless")) + "</p>";
+        else {
+          const vis = castVisible(d, hidden);
+          const rows = vis.slice(0, CAST_MAX_ROWS);
+          castState.rows = rows; castState.data = d;
+          if (!rows.length) inner = '<p class="ins-none">' + esc(t("insights.castNone")) + "</p>";
+          else {
+            inner = castGridHtml(rows, d);
+            let cap = esc(t("insights.castNote", { n: fmtNum(d.minCount) }));
+            if (vis.length > rows.length) cap += " " + esc(t("insights.castTop", { n: fmtNum(rows.length), m: fmtNum(vis.length) }));
+            if (String(bookLang()).split("-")[0] === "de") cap += " " + esc(t("insights.castDeNote"));
+            inner += '<p class="ins-caption">' + cap + "</p>";
+          }
+          if (hidden.length) {
+            inner += '<details class="cast-hidden"' + (castState.openHidden ? " open" : "") + '><summary>' + esc(t("insights.castHidden", { n: fmtNum(hidden.length) })) + '</summary><ul class="cast-hidden-list">' +
+              hidden.map((x) => '<li><span class="cast-hname">' + esc(x) + '</span><button type="button" class="tb-btn cast-show" data-cast-show="' + esc(x) + '">' + esc(t("insights.castShow")) + "</button></li>").join("") + "</ul></details>";
+          }
+        }
+        return '<section class="ins-sec cast-sec" aria-labelledby="insCastH"><h3 class="ins-h" id="insCastH">' + esc(t("insights.castH")) + '</h3><p class="ins-sub">' + esc(t("insights.castSub")) + "</p>" + inner + "</section>";
+      }
+      const castState = { bound: false, rows: [], data: null, openHidden: false };
+      function castRerender(focusSel) {
+        const body = $("insBody"); if (!body) return;
+        const old = body.querySelector(".cast-sec"); if (!old) return;
+        old.outerHTML = castInsightsSection(true);
+        icons();
+        if (focusSel) { const el = body.querySelector(focusSel); if (el) el.focus(); }
+      }
+      function castHide(name) {
+        const list = castHiddenList();
+        if (!list.some((x) => x.toLowerCase() === name.toLowerCase())) list.push(name);
+        castSetHidden(list);
+        noteBookEdited();
+        const idx = castState.rows.findIndex((r) => r.name === name);
+        castRerender(null);
+        const body = $("insBody");
+        const btns = body ? body.querySelectorAll(".cast-hide") : [];
+        const target = btns[Math.min(idx, btns.length - 1)] || (body && body.querySelector(".cast-hidden summary"));
+        if (target) target.focus();
+      }
+      function castUnhide(name) {
+        castSetHidden(castHiddenList().filter((x) => x.toLowerCase() !== name.toLowerCase()));
+        noteBookEdited();
+        castState.openHidden = true;
+        castRerender(".cast-hidden summary");
+        if (!castHiddenList().length) { const h = $("insCastH"); if (h) { h.setAttribute("tabindex", "-1"); h.focus(); } }
+      }
+      function castJump(name, secId) {
+        const s = state.sections.find((x) => x.id === secId);
+        if (!s) return;
+        $("modalInsights").classList.remove("open");
+        selectSection(s.id);
+        if (typeof setCenterTab === "function") { currentCenterTab = "content"; setCenterTab("content"); }
+        const area = $("editorArea");
+        if (!area || area.offsetParent === null) return;
+        const parts = String(name).split(/\.?\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+        const re = new RegExp("(^|[^\\p{L}\\p{M}])(" + parts.join("\\.?\\s+") + ")(?![\\p{L}\\p{M}])", "u");
+        const m = re.exec(area.value);
+        if (!m) return;
+        const start = m.index + m[1].length, end = start + m[2].length;
+        area.focus();
+        area.setSelectionRange(start, end);
+        const before = area.value.slice(0, start).split("\n").length;
+        const lh = parseFloat(getComputedStyle(area).lineHeight) || 24;
+        area.scrollTop = Math.max(0, before * lh - area.clientHeight / 3);
+      }
+      function castShowTip(cell) {
+        const wrap = cell.closest(".cast-wrap"); if (!wrap) return;
+        const tip = wrap.querySelector(".cast-tip"), hl = wrap.querySelector(".cast-hl");
+        if (hl) { hl.setAttribute("x", cell.getAttribute("x")); hl.setAttribute("y", cell.getAttribute("y")); hl.setAttribute("visibility", "visible"); }
+        if (!tip) return;
+        tip.textContent = cell.getAttribute("aria-label") || "";
+        tip.hidden = false;
+        const wr = wrap.getBoundingClientRect(), cr = cell.getBoundingClientRect();
+        const tw = tip.offsetWidth, th = tip.offsetHeight;
+        let left = cr.left - wr.left + cr.width / 2 - tw / 2;
+        left = Math.max(0, Math.min(wr.width - tw, left));
+        let top = cr.top - wr.top - th - 6;
+        if (top < 0) top = cr.bottom - wr.top + 6;
+        tip.style.left = left + "px"; tip.style.top = top + "px";
+      }
+      function castHideTip(wrap) {
+        if (!wrap) return;
+        const tip = wrap.querySelector(".cast-tip"), hl = wrap.querySelector(".cast-hl");
+        if (tip) tip.hidden = true;
+        if (hl) hl.setAttribute("visibility", "hidden");
+      }
+      function castCellOpen(cell) {
+        const r = castState.rows[+cell.getAttribute("data-cast-r")];
+        const c = castState.data && castState.data.cols[+cell.getAttribute("data-cast-c")];
+        if (r && c) castJump(r.name, c.id);
+      }
+      function castBindOnce() {
+        if (castState.bound) return;
+        const body = $("insBody"); if (!body) return;
+        castState.bound = true;
+        body.addEventListener("click", (e) => {
+          const el = e.target && e.target.closest ? e.target.closest("[data-cast-hide],[data-cast-show],.cast-cell") : null;
+          if (!el) return;
+          if (el.hasAttribute("data-cast-hide")) castHide(el.getAttribute("data-cast-hide"));
+          else if (el.hasAttribute("data-cast-show")) castUnhide(el.getAttribute("data-cast-show"));
+          else castCellOpen(el);
+        });
+        body.addEventListener("toggle", (e) => {
+          if (e.target && e.target.classList && e.target.classList.contains("cast-hidden")) castState.openHidden = e.target.open;
+        }, true);
+        body.addEventListener("pointerover", (e) => {
+          const cell = e.target && e.target.closest ? e.target.closest(".cast-cell") : null;
+          if (cell) castShowTip(cell);
+        });
+        body.addEventListener("pointerout", (e) => {
+          const cell = e.target && e.target.closest ? e.target.closest(".cast-cell") : null;
+          if (cell && cell !== document.activeElement) castHideTip(cell.closest(".cast-wrap"));
+        });
+        body.addEventListener("focusin", (e) => {
+          if (e.target && e.target.classList && e.target.classList.contains("cast-cell")) castShowTip(e.target);
+        });
+        body.addEventListener("focusout", (e) => {
+          if (e.target && e.target.classList && e.target.classList.contains("cast-cell")) castHideTip(e.target.closest(".cast-wrap"));
+        });
+        body.addEventListener("keydown", (e) => {
+          const cell = e.target;
+          if (!cell || !cell.classList || !cell.classList.contains("cast-cell")) return;
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); castCellOpen(cell); return; }
+          const rtl = document.documentElement.getAttribute("dir") === "rtl";
+          const R = castState.rows.length, C = castState.data ? castState.data.cols.length : 0;
+          let r = +cell.getAttribute("data-cast-r"), c = +cell.getAttribute("data-cast-c");
+          if (e.key === "ArrowRight") c += rtl ? -1 : 1;
+          else if (e.key === "ArrowLeft") c += rtl ? 1 : -1;
+          else if (e.key === "ArrowDown") r++;
+          else if (e.key === "ArrowUp") r--;
+          else if (e.key === "Home") c = 0;
+          else if (e.key === "End") c = C - 1;
+          else return;
+          e.preventDefault();
+          r = Math.max(0, Math.min(R - 1, r)); c = Math.max(0, Math.min(C - 1, c));
+          const next = cell.ownerSVGElement && cell.ownerSVGElement.querySelector('.cast-cell[data-cast-r="' + r + '"][data-cast-c="' + c + '"]');
+          if (next && next !== cell) { cell.setAttribute("tabindex", "-1"); next.setAttribute("tabindex", "0"); next.focus(); }
+        });
+      }
+      function castSelfChecks() {
+        return [
+          { id: "insights.cast.detects", feature: "insights", name: "Names on stage: on a known text the recurring names are found (a title pair as one name, a possessive merged into its name), counted section by section, and a capitalised common word that only ever opens sentences is NOT taken for a name",
+            run() {
+              const secs = [
+                { id: "insc1", kind: "body", type: "chapter", number: "1", title: "The Quay", subtitle: "", content: "Slowly the fog held. At dawn Mara walked to the quay where Captain Hale was waiting. The ferry from Gullwick was late again. Slowly nobody spoke. Mara's lantern hissed in the damp, and the dog barked at Captain Hale." },
+                { id: "insc2", kind: "body", type: "chapter", number: "2", title: "Crossing", subtitle: "", content: "Slowly the sea turned grey. They left Gullwick behind, and Mara watched the gulls. Later Captain Hale said nothing at all. Slowly, the wind rose. By noon Mara was asleep and Gullwick was only a smudge on the line of the sea." }
+              ];
+              const r = castCompute(secs, "en", "A Test of Tides");
+              const by = (k) => r.names.find((x) => x.key === k);
+              const mara = by("mara"), hale = by("captain hale"), gull = by("gullwick");
+              const still = r.names.some((x) => x.key.split(" ").indexOf("slowly") !== -1);
+              const bareHale = !!by("hale"), bareCaptain = !!by("captain");
+              const maraOk = !!mara && mara.total === 4 && mara.per[0] === 2 && mara.per[1] === 2;
+              const haleOk = !!hale && hale.total === 3 && hale.name === "Captain Hale";
+              const gullOk = !!gull && gull.total === 3;
+              const rates = [0.37, 1.107, 8.28, 12.6, 0.03].map((v) => castRateStr(v, "en"));
+              const ratesOk = rates.join("|") === "0.4|1.1|8.3|13|<0.1";
+              return scVerdict(maraOk && haleOk && gullOk && !still && !bareHale && !bareCaptain && r.names.length === 3 && !r.caseless && ratesOk,
+                "found " + r.names.map((x) => x.name + " ×" + x.total + " (" + x.per.join("/") + ")").join(", ") + "; “Slowly” (opens sentences only, never lowercase, not a stopword) detected: " + still + "; bare “Hale”/“Captain” rows: " + bareHale + "/" + bareCaptain + "; legend rates 0.37/1.107/8.28/12.6/0.03 print as " + rates.join(" / "));
+            } },
+          { id: "insights.cast.hide-persists", feature: "insights", name: "Names on stage: a hidden name is kept with the book — it survives serializeBook → applyBookDoc, drops out of the rows, and a book arriving without hidden names does not inherit the last book's",
+            run() {
+              const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+              const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+              try {
+                castSetHidden(["Gullwick", "gullwick", "  Mara  "]);
+                const deduped = (state.meta.castHidden || []).join("|");
+                const doc = JSON.parse(JSON.stringify(serializeBook()));
+                const inDoc = doc.meta && Array.isArray(doc.meta.castHidden) && doc.meta.castHidden.join("|");
+                castSetHidden([]);
+                const cleared = !("castHidden" in state.meta);
+                applyBookDoc(doc);
+                const back = castHiddenList().join("|");
+                const fresh = JSON.parse(JSON.stringify(doc)); delete fresh.meta.castHidden;
+                applyBookDoc(fresh);
+                const leaked = "castHidden" in state.meta;
+                const fx = castCompute([
+                  { id: "insch1", kind: "body", type: "chapter", number: "1", title: "", subtitle: "", content: "At dawn Mara walked to Gullwick. The bell rang and Mara listened. Gullwick slept." },
+                  { id: "insch2", kind: "body", type: "chapter", number: "2", title: "", subtitle: "", content: "By noon Mara had left Gullwick behind, and the gulls followed." }
+                ], "en", "");
+                const shown = castVisible(fx, ["mara"]).map((x) => x.name).join("|");
+                return scVerdict(deduped === "Gullwick|Mara" && inDoc === "Gullwick|Mara" && cleared && back === "Gullwick|Mara" && !leaked && shown === "Gullwick",
+                  "normalised to “" + deduped + "”; in the serialized book: “" + inDoc + "”; emptied list removes the key: " + cleared + "; after applyBookDoc: “" + back + "”; a book without the list inherits it: " + leaked + "; rows with “mara” hidden: “" + shown + "”");
+              } finally {
+                applyBookDoc(keepDoc);
+                if (!(keepDoc.meta && keepDoc.meta.castHidden)) delete state.meta.castHidden;
+                cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              }
+            } },
+          { id: "insights.cast.caseless-note", feature: "insights", name: "Names on stage: a book in a script without letter case (Japanese, Arabic) gets the honest note instead of guessed names, while a cased script (Cyrillic) is read",
+            run() {
+              const ja = castCompute([{ id: "inscj", kind: "body", type: "chapter", number: "1", title: "", subtitle: "", content: "マラは港へ歩いた。ヘイル船長が待っていた。マラは灯りを掲げた。" }], "ja", "");
+              const ar = castCompute([{ id: "insca", kind: "body", type: "chapter", number: "1", title: "", subtitle: "", content: "مشت مارا إلى الميناء حيث كان القبطان هيل ينتظر. رفعت مارا الفانوس." }], "ar", "");
+              const ru = castCompute([
+                { id: "inscr1", kind: "body", type: "chapter", number: "1", title: "", subtitle: "", content: "Утром Мара пошла к причалу. Там её ждал старый Ольгин. Мара подняла фонарь, и Ольгин кивнул." },
+                { id: "inscr2", kind: "body", type: "chapter", number: "2", title: "", subtitle: "", content: "Вечером Мара вернулась домой, а Ольгин остался у воды." }
+              ], "ru", "");
+              const maraRu = ru.names.find((x) => x.key === "мара");
+              return scVerdict(ja.caseless && ar.caseless && ja.names.length === 0 && ar.names.length === 0 && !ru.caseless && !!maraRu && maraRu.total === 3,
+                "Japanese caseless: " + ja.caseless + ", Arabic caseless: " + ar.caseless + "; Russian read: " + !ru.caseless + " with " + ru.names.map((x) => x.name + " ×" + x.total).join(", "));
+            } }
+        ];
+      }
+      /* Names on stage joins Story Insights the way the insights unit asks:
+         spliced into INS_RENDERERS, last (a fresh render folds the hidden list). */
+      INS_RENDERERS.push(function insRenderCast() { return castInsightsSection(); });
+      if (typeof window !== "undefined") window.beukCast = { compute: castCompute, data: castData, cache: castCache, hidden: castHiddenList, setHidden: castSetHidden, hide: castHide, unhide: castUnhide, tokens: castTokens };
+      /* ==== /BEUK:cast ==== */
 
       /* ================= Book language =================
          One table drives everything language-shaped in the book:
@@ -22554,6 +23382,7 @@
           state.meta.rights = ""; state.meta.description = ""; state.meta.a11ySummary = "";
           state.meta.bookId = newBookId();
           delete state.meta.legacyBookIds; /* BEUK:bookid — a new book answers to no old ids */
+          delete state.meta.castHidden; /* BEUK:cast — nor to the last book's hidden names */
           state.meta.language = "en"; state.meta.langSource = "auto"; state.meta.langGuess = "";
           /* The manuscript's own copyright page speaks for the
              imprint too: its ISBN, publisher and year take the desk
@@ -29888,6 +30717,7 @@
         if (doc.meta) { const lg = bookIdNormalizeLegacyList(doc.meta.legacyBookIds); if (lg.length) state.meta.legacyBookIds = lg; else delete state.meta.legacyBookIds; }
         /* BEUK:importmeta — where each credit came from belongs to the arriving book alone; absent when unknown. */
         if (doc.meta) ["title", "subtitle", "author"].forEach((f) => imSetSource(f, doc.meta[f + "Source"]));
+        if (doc.meta) castSetHidden(doc.meta.castHidden); /* BEUK:cast — hidden names belong to the arriving book alone */
         /* Language bookkeeping backfill: books saved before detection
            existed carry no langSource. A non-English language in such
            a book was picked by hand in the old selector, so it counts
@@ -37970,6 +38800,7 @@
       /* ==== /BEUK:importmeta ==== */
       /* ==== BEUK:acx ==== */
       SELF_CHECKS.push(...acxSelfChecks());
+      SELF_CHECKS.push(...castSelfChecks()); /* BEUK:cast */
       /* ==== BEUK:print ==== */
       /* Print for press, checked from the document the print view and
          the server job actually receive (buildPrintHtml), and from the

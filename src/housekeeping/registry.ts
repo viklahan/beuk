@@ -2423,6 +2423,26 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Sample detection is a client concern (isSampleBookId).',
   },
+  /* ==== BEUK:cast ==== Story Insights — Names on stage (client-side) */
+  {
+    id: 'insights.cast.detects',
+    title: 'Names on stage: recurring capitalised names are found and counted per section (a title pair as one name, possessives merged); a capitalised word that only opens sentences is not taken for a name',
+    kind: 'client-only',
+    reason: 'Name detection runs in the studio on the book on the device (castCompute); nothing is sent to the server.',
+  },
+  {
+    id: 'insights.cast.hide-persists',
+    title: 'Names on stage: hidden names ride with the book (meta.castHidden) through serializeBook/applyBookDoc and never leak into the next book',
+    kind: 'client-only',
+    reason: 'The hidden list lives in the client book document; the server stores the document whole and never reads it.',
+  },
+  {
+    id: 'insights.cast.caseless-note',
+    title: 'Names on stage: scripts without letter case (Japanese, Arabic) get the honest note instead of guessed names; a cased script (Cyrillic) is read',
+    kind: 'client-only',
+    reason: 'Script detection and the note are studio UI.',
+  },
+  /* ==== /BEUK:cast ==== */
 ];
 
 /* ------------------------------------------------------------------ */

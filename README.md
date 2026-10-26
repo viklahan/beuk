@@ -1539,6 +1539,78 @@ cache hit in under 1 ms. Client self-checks: `insights.glance.numbers-true`,
 `insights.sentences.histogram`, `insights.readability.en-only`,
 `insights.perf` (sample under 600 ms from cold, cache hit on reopen).
 
+## Studio: Story Insights — Names on stage (client-only)
+
+The last section of Story Insights is a heatmap of the names a book
+keeps returning to: rows are the most-mentioned names (up to 12, by total
+mentions), columns are the body sections in book order, and each square's
+shade is that name's mentions **per 1,000 words of that section** (the
+same `sectionWords` count the sidebar and the Rhythm chart use), in five
+steps of one hue (`--ins-a`) on the modal surface. A square with no
+mention shows an en-dash, never a pale fill; the legend prints the
+lowest and highest rates actually shown (one decimal below 10; a rate
+above zero that would round to 0.0 reads "<0.1", so a shaded square is
+never labelled 0). Hover or focus a square for
+"Mara — Ch. Three · The Wrong-Way Water: 6 mentions"; click it (or Enter)
+to close Insights, open that section and select the first mention in the
+editor. Cells are one keyboard stop (roving tabindex; arrows, Home/End,
+mirrored in RTL); a visually-hidden table carries every count for screen
+readers. The plot is inline SVG (`preserveAspectRatio="none"`, so the
+cells fill the width at 390 px and 1440 px alike, with a non-scaling 2px
+surface gap); the labels are HTML.
+
+It says **names**, not characters: the rule is capital letters, and
+capital letters cannot tell a person from a harbour or a ship. The copy
+says so, and calls the rule what it is — Beuk's own rule of thumb, not a
+reading of the story. The rule (`castCompute`, pure over sections,
+language and title):
+
+- a word is a candidate when it is capitalised at least once somewhere
+  that is not the start of a sentence, a paragraph or a quotation, and
+  it is written in lowercase at most one time in ten;
+- it must be used at least N times — N = round(words / 8,000), between 3
+  and 12 — and in at least two sections;
+- two capitalised words side by side form one name when the pair
+  recurs ("Captain Hale", "East Bank", "Mr. Venn"); a pair whose parts
+  are each a name on their own and mostly appear apart (a first and last
+  name) is counted as its parts;
+- possessives merge ("Mara's" → Mara); stopwords, pronouns,
+  interjections, days, months, titles on their own (Mr, Captain — they
+  stay as part of the name after them), heading words (Chapter, Part,
+  Prologue…) and the book's own title words never count; ALL-CAPS words
+  and markdown heading lines are skipped;
+- German capitalises every noun, so there a word that mostly follows an
+  article (der/die/das/ein…) is left out, and a note says ordinary nouns
+  may still slip in;
+- a book whose letters are mostly caseless (Arabic, Hebrew, Japanese,
+  Chinese, Korean, Devanagari, Thai… — measured on the text, not the
+  language setting) gets a short note instead of guessed names.
+
+On the sample (24,828 words, N = 3) it finds 32 names; the 12 shown are
+Mara 120, Tomas 60, Gullwick 48, Nell 38, Agnes 29, Petra 25, Rill 22,
+Mr. Venn 20, Cormorant 18, Miss Vane 17, Venn 17, East Bank 16.
+Exact spellings stay separate rows (Vane, Miss Vane, Elias Vane): Beuk
+does not decide they are one person.
+
+**Hide a name.** Each row has a quiet hide control; hidden names are
+kept with the book in `meta.castHidden` (an array of the names as shown,
+deduplicated case-insensitively, absent when empty) — `serializeBook`
+copies meta whole, so the list rides through IndexedDB, shelf sync,
+History snapshots and the backup file; `applyBookDoc` reads it strictly
+from the arriving book, and importing a new manuscript clears it, so one
+book's hidden names never leak into the next. "Hidden names (n)" lists
+them with "Show again".
+
+**Cost.** Computed when Insights opens, cached by an FNV-1a hash of the
+body sections (id, type, number, title, text), the book's title and
+language and the UI language. Measured in headless Chromium: 50 ms on the
+sample; 139–213 ms cold (two runs) and under 2 ms cached on a 97,379-word
+book (the sample's body four times over).
+
+Self-checks (client-only in Housekeeping): `insights.cast.detects`,
+`insights.cast.hide-persists`, `insights.cast.caseless-note`. Strings:
+all 13 UI packs, with Polish, Russian and Arabic plural forms.
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a
