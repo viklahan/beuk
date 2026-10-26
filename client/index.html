@@ -1501,6 +1501,41 @@
         .hist-sec-row { flex-wrap: wrap; }
         .hist-detail-h { font-size: 19px; }
       }
+      /* ==== BEUK:goalshist ==== the road so far (Goals) and what changed since each snapshot (History).
+         Chart marks reuse the studio's tokens: the book's line wears --ins-a (the Insights accent), the
+         project target --zen-leaf (the Voyage brand blue and its Candlelight tint), the steady pace a
+         neutral --ink-2 dash; text always wears text tokens, never a mark colour. */
+      .road-key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 11.5px; color: var(--muted); margin: 0 0 8px; }
+      .road-key span { display: inline-flex; align-items: center; gap: 7px; }
+      .road-key svg { width: 18px; height: 8px; flex: 0 0 auto; }
+      .road-wrap { position: relative; border-radius: 8px; touch-action: pan-y; }
+      .road-wrap:focus { outline: none; }
+      .road-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+      .road-svg { display: block; width: 100%; height: auto; overflow: visible; }
+      .road-tip { position: absolute; top: 0; left: 0; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 5px 10px 6px; white-space: nowrap; z-index: 2; }
+      .road-tip b { display: block; font-family: "EB Garamond", Georgia, serif; font-size: 16.5px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+      .road-tip span { display: block; font-size: 11.5px; color: var(--muted); }
+      .hist-delta { display: inline-block; font-size: 11px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line); border-radius: 99px; padding: 0 7px; margin-inline-start: 7px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .hist-diff { border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 11px 13px 9px; margin: 6px 0 14px; }
+      .hist-diff-h { font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 600; color: var(--ink); margin: 0; }
+      .hist-diff-sub { font-size: 11.5px; color: var(--muted); margin: 1px 0 6px; line-height: 1.5; }
+      .hist-diff-lab { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 9px 0 2px; }
+      .hist-diff-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 78px; gap: 10px; align-items: center; padding: 3px 0; font-size: 13px; color: var(--ink); }
+      .hist-diff-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .hist-diff-n { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: end; max-width: 42vw; }
+      .hist-diff-bar { display: flex; height: 6px; }
+      .hist-diff-bar > span { flex: 1 1 0; display: flex; }
+      .hist-diff-bar > span:first-child { justify-content: flex-end; border-inline-end: 1px solid var(--line-2); }
+      .hist-diff-bar i { display: block; height: 100%; min-width: 2px; }
+      .hist-diff-bar .up { background: var(--ins-a); border-radius: 0 3px 3px 0; }
+      .hist-diff-bar .down { background: var(--zen-leaf); border-radius: 3px 0 0 3px; }
+      [dir="rtl"] .hist-diff-bar .up { border-radius: 3px 0 0 3px; }
+      [dir="rtl"] .hist-diff-bar .down { border-radius: 0 3px 3px 0; }
+      .hist-diff-none { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--muted); margin: 4px 0 2px; }
+      @media (max-width: 560px) {
+        .hist-diff-row { grid-template-columns: minmax(0, 1fr) auto 52px; gap: 8px; }
+      }
+      /* ==== /BEUK:goalshist ==== */
 
       /* ---------- Account, shelf & cloud sync (SaaS wiring) ---------- */
       .modal-back.open .modal { animation: beukRise .22s ease-out; }
@@ -2945,6 +2980,13 @@
         <h2 id="goalsH" data-i18n="goals.title"><i data-lucide="target"></i>Goals</h2>
         <p class="m-sub" data-i18n="goals.sub">Targets you set for yourself, kept quietly. Nothing here counts down at you — it only keeps the tally.</p>
         <div id="goalsProgress"></div>
+        <!-- ==== BEUK:goalshist ==== the road so far: the book's length on logged days -->
+        <section class="ins-sec" id="goalRoadSec" hidden>
+          <h3 class="ins-h" data-i18n="goals.roadH">The road so far</h3>
+          <p class="ins-sub" data-i18n="goals.roadSub">The book's length on each day the log kept it. Days it didn't — before the log began keeping length, or when the desk stayed closed — are left as gaps; the line never guesses across them.</p>
+          <div id="goalRoad"></div>
+        </section>
+        <!-- ==== /BEUK:goalshist ==== -->
         <section class="ins-sec">
           <h3 class="ins-h" data-i18n="goals.calH">The habit calendar</h3>
           <p class="ins-sub" data-i18n="goals.calSub">Words added, day by day, exactly as the log has kept them since it began. Days before the log started stay blank — nothing is filled in after the fact.</p>
@@ -16886,11 +16928,11 @@
           if (raw) {
             const v = JSON.parse(raw);
             if (v && typeof v === "object" && v.days && typeof v.days === "object") {
-              return { days: v.days, base: typeof v.base === "number" ? v.base : null, baseDay: typeof v.baseDay === "string" ? v.baseDay : "" };
+              return { days: v.days, base: typeof v.base === "number" ? v.base : null, baseDay: typeof v.baseDay === "string" ? v.baseDay : "", len: v.len && typeof v.len === "object" ? v.len : {} }; /* BEUK:goalshist — len */
             }
           }
         } catch (e) {}
-        return { days: wlogSeedDays(), base: null, baseDay: "" };
+        return { days: wlogSeedDays(), base: null, baseDay: "", len: {} }; /* BEUK:goalshist — no length was ever kept for seeded days */
       }
       let wlog = wlogLoad();
       let wlogRebase = true; /* the session's first observation only sets the baseline */
@@ -16910,8 +16952,23 @@
         if (!wlog.days[ds]) wlog.days[ds] = { w: 0, s: 0 };
         return wlog.days[ds];
       }
+      /* ==== BEUK:goalshist ==== the book's length, as the log saw it
+         at its last observation of each day, kept per book (by book
+         id) so two books on one desk never share a line. Only days
+         the studio actually observed are kept; nothing is ever
+         filled in for a day it did not see. */
+      function wlogBookKey() { return (state.meta && state.meta.bookId) || "_"; }
+      function wlogNoteLength(total, today) {
+        if (typeof total !== "number" || !isFinite(total)) return;
+        if (!wlog.len || typeof wlog.len !== "object") wlog.len = {};
+        const key = wlogBookKey();
+        const book = wlog.len[key] && typeof wlog.len[key] === "object" ? wlog.len[key] : (wlog.len[key] = {});
+        if (book[today] !== total) { book[today] = total; wlogSaveSoon(); }
+      }
+      /* ==== /BEUK:goalshist ==== */
       function wlogObserve(total) {
         const today = dayStr(new Date());
+        wlogNoteLength(total, today); /* BEUK:goalshist */
         if (wlogRebase || wlog.base === null) {
           wlog.base = total; wlog.baseDay = today; wlogRebase = false;
           wlogSaveSoon();
@@ -17090,6 +17147,7 @@
         noteBookEdited();
         renderGoalLines();
         renderGoalsProgress();
+        renderGoalRoad(); /* BEUK:goalshist */
       }
       function openGoals() {
         goalCalCursor = null;
@@ -17098,6 +17156,7 @@
         renderGoalCalendar();
         const m = $("modalGoals");
         m.classList.add("open");
+        renderGoalRoad(); /* BEUK:goalshist — drawn once open, at the room's own width */
         const box = m.querySelector(".modal");
         if (box) box.scrollTop = 0;
         icons();
@@ -17106,11 +17165,12 @@
       function goalsOnLangChange() {
         renderGoalLines();
         const m = $("modalGoals");
-        if (m && m.classList.contains("open")) { syncGoalInputs(); renderGoalsProgress(); renderGoalCalendar(); }
+        if (m && m.classList.contains("open")) { syncGoalInputs(); renderGoalsProgress(); renderGoalRoad(); renderGoalCalendar(); } /* BEUK:goalshist — road */
       }
       function initGoals() {
         const btn = $("btnGoals"); if (btn) btn.addEventListener("click", openGoals);
         const close = $("btnCloseGoals"); if (close) close.addEventListener("click", closeGoals);
+        initGoalRoad(); /* BEUK:goalshist */
         const back = $("modalGoals");
         if (back) back.addEventListener("click", (e) => { if (e.target === back) closeGoals(); });
         ["goalDailyInput", "goalProjectInput", "goalDeadlineInput"].forEach((id) => {
@@ -17144,6 +17204,256 @@
         window.addEventListener("beforeunload", wlogFlush);
         renderGoalLines();
       }
+      /* ==== BEUK:goalshist ==== The road so far — the book's length
+         on each day the habit log kept it (wlog.len, per book id),
+         drawn as one quiet line. A day the log did not keep is a gap:
+         the line breaks there and never draws across it, and days
+         before the log began keeping length stay blank. The project
+         target is a solid hairline; with a deadline ahead, the
+         steady pace from today's length to the target on that day
+         is a dashed line, labelled as a pace, never a forecast.
+         Hidden until there are at least two logged days. The math is
+         pure (roadPoints / roadSegments / roadModel) so the self-
+         checks can hold it; the SVG is drawn at the host's own pixel
+         width so its text stays legible at 390 px. */
+      const ROAD_DAY_MS = 86400000;
+      function roadDayIndex(ds) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ds || "");
+        return m ? Math.round(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) / ROAD_DAY_MS) : null;
+      }
+      function roadPoints(lenMap) {
+        const out = [];
+        if (!lenMap || typeof lenMap !== "object") return out;
+        Object.keys(lenMap).forEach((ds) => {
+          const day = roadDayIndex(ds);
+          const w = lenMap[ds];
+          if (day === null || typeof w !== "number" || !isFinite(w) || w < 0) return;
+          out.push({ ds, day, w: Math.round(w) });
+        });
+        return out.sort((a, b) => a.day - b.day);
+      }
+      function roadSegments(points) {
+        /* consecutive calendar days join; any skipped day breaks the line */
+        const segs = [];
+        points.forEach((p, i) => {
+          if (i === 0 || p.day - points[i - 1].day > 1) segs.push([p]);
+          else segs[segs.length - 1].push(p);
+        });
+        return segs;
+      }
+      function roadNiceStep(raw) {
+        if (!(raw > 0)) return 1;
+        const p = Math.pow(10, Math.floor(Math.log10(raw)));
+        const f = raw / p;
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+      }
+      function roadModel(points, goals, total, now) {
+        const g = normalizeGoals(goals);
+        const today = roadDayIndex(dayStr(now || new Date()));
+        const target = g.project || null;
+        const dlDay = g.deadline ? roadDayIndex(g.deadline) : null;
+        let pace = null;
+        if (target && dlDay !== null && dlDay > today && target > total) {
+          pace = { fromDay: today, fromW: total, toDay: dlDay, toW: target, perDay: (target - total) / (dlDay - today) };
+        }
+        const first = points.length ? points[0].day : today;
+        const last = points.length ? points[points.length - 1].day : today;
+        const xMin = Math.min(first, pace ? pace.fromDay : first);
+        const xMax = Math.max(last, pace ? pace.toDay : last);
+        const top = Math.max(1, Math.max.apply(null, points.map((p) => p.w).concat([target || 0, pace ? pace.fromW : 0])));
+        const step = roadNiceStep(top / 4);
+        const yMax = Math.ceil((top * 1.03) / step) * step;
+        const ticks = [];
+        for (let v = 0; v <= yMax + step / 2; v += step) ticks.push(v);
+        return { points, segments: roadSegments(points), target, pace, xMin, xMax, yMax, ticks, today };
+      }
+      function roadCompact(n) {
+        try { return new Intl.NumberFormat(getUiLang(), { notation: "compact", maximumFractionDigits: 1 }).format(n); }
+        catch (e) { return fmtNum(n); }
+      }
+      function roadShortDate(day) {
+        const d = new Date(day * ROAD_DAY_MS);
+        try { return new Intl.DateTimeFormat(getUiLang(), { month: "short", day: "numeric", timeZone: "UTC" }).format(d); }
+        catch (e) { return d.toISOString().slice(5, 10); }
+      }
+      function roadLongDate(day) {
+        const d = new Date(day * ROAD_DAY_MS);
+        try { return new Intl.DateTimeFormat(getUiLang(), { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(d); }
+        catch (e) { return d.toISOString().slice(0, 10); }
+      }
+      function roadGeom(model, width) {
+        const W = Math.max(260, Math.round(width || 640));
+        const narrow = W < 480;
+        const H = narrow ? 188 : 214;
+        const padL = 8 + Math.max.apply(null, model.ticks.map((v) => roadCompact(v).length)) * 6.6;
+        const padR = 12, padT = 14, padB = 26;
+        const span = model.xMax - model.xMin || 1;
+        const x = (day) => padL + ((day - model.xMin) / span) * (W - padL - padR);
+        const y = (w) => padT + (1 - w / model.yMax) * (H - padT - padB);
+        return { W, H, padL, padR, padT, padB, x, y, narrow };
+      }
+      let roadState = { model: null, geom: null, px: [], idx: -1, width: 0 };
+      function roadSvg(model, geom) {
+        const { W, H, padL, padR, padB, x, y } = geom;
+        const f1 = (v) => v.toFixed(1);
+        let out = '<svg class="road-svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '" aria-hidden="true" focusable="false">';
+        model.ticks.forEach((v) => {
+          const yy = f1(y(v));
+          out += '<line x1="' + f1(padL) + '" y1="' + yy + '" x2="' + f1(W - padR) + '" y2="' + yy + '" stroke="' + (v === 0 ? "var(--line-2)" : "var(--line)") + '" stroke-width="1"/>';
+          out += '<text x="' + f1(padL - 7) + '" y="' + f1(y(v) + 3.5) + '" text-anchor="end" font-size="10.5" fill="var(--muted)" font-family="var(--ui-font)" style="font-variant-numeric:tabular-nums">' + esc(roadCompact(v)) + "</text>";
+        });
+        /* x labels: the first logged day, the last, and the deadline when the pace runs to it — thinned so none collide */
+        const pts = model.points;
+        const labs = [{ day: pts[0].day, anchor: "start" }];
+        const lastDay = pts[pts.length - 1].day;
+        if (model.pace) { labs.push({ day: lastDay, anchor: "middle" }); labs.push({ day: model.pace.toDay, anchor: "end" }); }
+        else labs.push({ day: lastDay, anchor: "end" });
+        const kept = [];
+        labs.forEach((l) => {
+          const lx = l.anchor === "start" ? padL : l.anchor === "end" ? W - padR : x(l.day);
+          if (kept.some((k) => Math.abs(k.lx - lx) < 74)) return;
+          kept.push({ lx, l });
+        });
+        kept.forEach(({ lx, l }) => {
+          out += '<text x="' + f1(lx) + '" y="' + f1(H - padB + 17) + '" text-anchor="' + l.anchor + '" font-size="10.5" fill="var(--muted)" font-family="var(--ui-font)">' + esc(roadShortDate(l.day)) + "</text>";
+        });
+        if (model.target) {
+          const ty = f1(y(model.target));
+          out += '<line class="road-target" x1="' + f1(padL) + '" y1="' + ty + '" x2="' + f1(W - padR) + '" y2="' + ty + '" stroke="var(--zen-leaf)" stroke-width="1.5"/>';
+        }
+        model.segments.forEach((seg) => {
+          if (seg.length < 2) return; /* a line only, no area wash: under a broken line a wash reads as columns */
+          const line = seg.map((p) => f1(x(p.day)) + "," + f1(y(p.w))).join(" L");
+          out += '<path class="road-line" d="M' + line + '" fill="none" stroke="var(--ins-a)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+        });
+        if (model.pace) {
+          const p = model.pace;
+          out += '<line class="road-pace" x1="' + f1(x(p.fromDay)) + '" y1="' + f1(y(p.fromW)) + '" x2="' + f1(x(p.toDay)) + '" y2="' + f1(y(p.toW)) + '" stroke="var(--ink-2)" stroke-width="1.5" stroke-dasharray="5 4" stroke-linecap="round"/>';
+        }
+        /* a lone logged day (no neighbour to join) still shows, as a dot; the last day carries the end marker */
+        model.segments.forEach((seg) => {
+          if (seg.length === 1) out += '<circle class="road-dot" cx="' + f1(x(seg[0].day)) + '" cy="' + f1(y(seg[0].w)) + '" r="4" fill="var(--ins-a)" stroke="var(--panel-2)" stroke-width="2"/>';
+        });
+        const end = pts[pts.length - 1];
+        out += '<circle class="road-end" cx="' + f1(x(end.day)) + '" cy="' + f1(y(end.w)) + '" r="4.5" fill="var(--ins-a)" stroke="var(--panel-2)" stroke-width="2"/>';
+        const ex = x(end.day), nearRight = ex > W - padR - 40;
+        out += '<text class="road-endlab" x="' + f1(nearRight ? ex - 8 : ex) + '" y="' + f1(y(end.w) - 10) + '" text-anchor="' + (nearRight ? "end" : "middle") + '" font-size="12" font-weight="700" fill="var(--ink-2)" font-family="var(--ui-font)" stroke="var(--panel-2)" stroke-width="3" paint-order="stroke" style="font-variant-numeric:tabular-nums">' + esc(fmtNum(end.w)) + "</text>";
+        /* the hover layer: a crosshair and a focus marker, moved by pointer and keys */
+        out += '<line class="road-cross" x1="0" y1="' + f1(geom.padT) + '" x2="0" y2="' + f1(H - padB) + '" stroke="var(--line-2)" stroke-width="1" visibility="hidden"/>';
+        out += '<circle class="road-focus" cx="0" cy="0" r="5" fill="var(--ins-a)" stroke="var(--panel-2)" stroke-width="2" visibility="hidden"/>';
+        return out + "</svg>";
+      }
+      function roadKeyHtml(model, m) {
+        const key = (stroke, dash, label) => '<span><svg viewBox="0 0 18 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="17" y2="4" stroke="' + stroke + '" stroke-width="2"' + (dash ? ' stroke-dasharray="4 3"' : "") + ' stroke-linecap="round"/></svg>' + esc(label) + "</span>";
+        let html = key("var(--ins-a)", false, t("goals.roadLine"));
+        if (model.target) html += key("var(--zen-leaf)", false, t("goals.roadTarget", { n: fmtNum(model.target) }));
+        if (model.pace && m && m.deadline && m.deadline.pace) html += key("var(--ink-2)", true, t("goals.roadPace", { n: fmtNum(m.deadline.pace) }));
+        return '<div class="road-key">' + html + "</div>";
+      }
+      function roadPointLabel(p) {
+        return t("goals.roadPoint", { date: roadLongDate(p.day), n: fmtNum(p.w), count: p.w });
+      }
+      function renderGoalRoad() {
+        const sec = $("goalRoadSec"), host = $("goalRoad");
+        if (!sec || !host) return;
+        const pts = roadPoints(wlog.len && wlog.len[wlogBookKey()]);
+        if (pts.length < 2) { sec.hidden = true; host.innerHTML = ""; roadState = { model: null, geom: null, px: [], idx: -1, width: 0 }; return; }
+        sec.hidden = false;
+        const total = bookTotalWords();
+        const now = new Date();
+        const model = roadModel(pts, state.goals, total, now);
+        const m = goalMath(state.goals, total, wlogTodayWords(), now);
+        const width = host.clientWidth || (host.parentNode && host.parentNode.clientWidth) || 640;
+        const geom = roadGeom(model, width);
+        let cap = t("goals.roadCaption", { from: roadLongDate(pts[0].day), to: roadLongDate(pts[pts.length - 1].day) });
+        if (model.segments.length > 1) cap += " " + t("goals.roadGaps");
+        if (model.target) cap += " " + t("goals.roadTargetNote", { n: fmtNum(model.target) });
+        if (model.pace && m.deadline && m.deadline.pace) cap += " " + t("goals.roadPaceNote", { date: fmtDateIntl(parseDayStr(state.goals.deadline)), n: fmtNum(m.deadline.pace) });
+        let table = '<table class="sr-only"><caption>' + esc(t("goals.roadH")) + "</caption><thead><tr><th scope=\"col\">" + esc(t("goals.roadDay")) + '</th><th scope="col">' + esc(t("goals.roadWords")) + "</th></tr></thead><tbody>";
+        pts.forEach((p) => { table += "<tr><td>" + esc(roadLongDate(p.day)) + "</td><td>" + esc(fmtNum(p.w)) + "</td></tr>"; });
+        table += "</tbody></table>";
+        host.innerHTML = roadKeyHtml(model, m) +
+          '<div class="road-wrap" dir="ltr" tabindex="0" role="group" aria-label="' + esc(t("goals.roadAria")) + '">' + roadSvg(model, geom) +
+          '<div class="road-tip" hidden><b></b><span></span></div></div>' +
+          '<p class="ins-caption road-cap">' + esc(cap) + "</p>" + table +
+          '<p class="sr-only road-live" aria-live="polite"></p>';
+        roadState = { model, geom, px: pts.map((p) => geom.x(p.day)), idx: -1, width: geom.W };
+      }
+      function roadShow(idx, announce) {
+        const host = $("goalRoad"); if (!host || !roadState.model) return;
+        const pts = roadState.model.points;
+        if (idx < 0 || idx >= pts.length) return;
+        roadState.idx = idx;
+        const p = pts[idx], g = roadState.geom;
+        const px = g.x(p.day), py = g.y(p.w);
+        const cross = host.querySelector(".road-cross"), dot = host.querySelector(".road-focus");
+        if (cross) { cross.setAttribute("x1", px.toFixed(1)); cross.setAttribute("x2", px.toFixed(1)); cross.setAttribute("visibility", "visible"); }
+        if (dot) { dot.setAttribute("cx", px.toFixed(1)); dot.setAttribute("cy", py.toFixed(1)); dot.setAttribute("visibility", "visible"); }
+        const endLab = host.querySelector(".road-endlab"); if (endLab) endLab.setAttribute("visibility", "hidden"); /* the readout carries the value while it shows */
+        const tip = host.querySelector(".road-tip"), wrap = host.querySelector(".road-wrap");
+        if (tip && wrap) {
+          tip.querySelector("b").textContent = t("goals.roadTipWords", { n: fmtNum(p.w), count: p.w });
+          tip.querySelector("span").textContent = roadLongDate(p.day);
+          tip.setAttribute("dir", document.documentElement.getAttribute("dir") || "ltr");
+          tip.hidden = false;
+          const scale = wrap.clientWidth / g.W || 1;
+          const tw = tip.offsetWidth, th = tip.offsetHeight;
+          const left = Math.max(0, Math.min(wrap.clientWidth - tw, px * scale - tw / 2));
+          let top = py * scale - th - 12;
+          if (top < 0) top = py * scale + 14;
+          tip.style.left = left.toFixed(0) + "px"; tip.style.top = top.toFixed(0) + "px";
+        }
+        if (announce) { const live = host.querySelector(".road-live"); if (live) live.textContent = roadPointLabel(p); }
+      }
+      function roadHide() {
+        const host = $("goalRoad"); if (!host) return;
+        roadState.idx = -1;
+        host.querySelectorAll(".road-cross, .road-focus").forEach((el) => el.setAttribute("visibility", "hidden"));
+        const endLab = host.querySelector(".road-endlab"); if (endLab) endLab.removeAttribute("visibility");
+        const tip = host.querySelector(".road-tip"); if (tip) tip.hidden = true;
+      }
+      function roadNearest(clientX) {
+        const host = $("goalRoad"), wrap = host && host.querySelector(".road-wrap");
+        if (!wrap || !roadState.px.length) return -1;
+        const r = wrap.getBoundingClientRect();
+        const xIn = (clientX - r.left) * (roadState.geom.W / (r.width || roadState.geom.W));
+        let best = 0;
+        roadState.px.forEach((v, i) => { if (Math.abs(v - xIn) < Math.abs(roadState.px[best] - xIn)) best = i; });
+        return best;
+      }
+      function initGoalRoad() {
+        const host = $("goalRoad"); if (!host) return;
+        host.addEventListener("pointermove", (e) => { if (e.target.closest && e.target.closest(".road-wrap")) { const i = roadNearest(e.clientX); if (i >= 0) roadShow(i, false); } });
+        host.addEventListener("pointerdown", (e) => { if (e.target.closest && e.target.closest(".road-wrap")) { const i = roadNearest(e.clientX); if (i >= 0) roadShow(i, false); } });
+        host.addEventListener("pointerleave", () => { const w = host.querySelector(".road-wrap"); if (!w || document.activeElement !== w) roadHide(); });
+        host.addEventListener("focusin", (e) => { if (e.target.classList && e.target.classList.contains("road-wrap") && roadState.model) roadShow(roadState.idx >= 0 ? roadState.idx : roadState.model.points.length - 1, true); });
+        host.addEventListener("focusout", (e) => { if (e.target.classList && e.target.classList.contains("road-wrap")) roadHide(); });
+        host.addEventListener("keydown", (e) => {
+          if (!e.target.classList || !e.target.classList.contains("road-wrap") || !roadState.model) return;
+          const n = roadState.model.points.length;
+          let i = roadState.idx >= 0 ? roadState.idx : n - 1;
+          if (e.key === "ArrowLeft" || e.key === "ArrowDown") i = Math.max(0, i - 1);
+          else if (e.key === "ArrowRight" || e.key === "ArrowUp") i = Math.min(n - 1, i + 1);
+          else if (e.key === "Home") i = 0;
+          else if (e.key === "End") i = n - 1;
+          else if (e.key === "Escape") { if (roadState.idx >= 0) { e.preventDefault(); e.stopPropagation(); roadHide(); } return; }
+          else return;
+          e.preventDefault();
+          roadShow(i, true);
+        });
+        if (typeof ResizeObserver === "function") {
+          new ResizeObserver(() => {
+            const m = $("modalGoals");
+            if (!m || !m.classList.contains("open") || !roadState.model) return;
+            const w = host.clientWidth;
+            if (w && Math.abs(w - roadState.width) > 4) renderGoalRoad();
+          }).observe(host);
+        }
+      }
+      if (typeof window !== "undefined") {
+        window.beukGoalRoad = { points: roadPoints, segments: roadSegments, model: roadModel, geom: roadGeom, render: renderGoalRoad, show: roadShow, bookKey: () => wlogBookKey() };
+      }
+      /* ==== /BEUK:goalshist ==== */
       if (typeof window !== "undefined") {
         window.beukGoals = {
           math: goalMath, normalize: normalizeGoals, open: openGoals, close: closeGoals,
