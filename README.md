@@ -1456,6 +1456,54 @@ code wins, a real pasted EPUBCheck report, full text, trigram with and
 without pg_trgm — PGlite loads it from its contrib build —, the
 anonymous log, idempotent rebuild, rate limit, the no-JS page).
 
+## Privacy and terms pages
+
+`GET /privacy` and `GET /terms` (Caddy proxies `/privacy*` and
+`/terms*` to the app; `src/legal/render.ts`, route in
+`src/routes/warmth.ts`) render `content/legal/privacy.md` and
+`content/legal/terms.md` in the warmth chrome (Voyage, `warmth.css`).
+The text was written from what the code does: every statement traces to
+a row of **`docs/privacy-inventory.md`**, which cites file and line.
+When the code starts storing or sending something new, update the
+inventory and the page in the same change. The text is a draft, not
+legal advice — it has not been reviewed by a lawyer.
+
+- **Operator slots** (`.env`): `LEGAL_OPERATOR_NAME`,
+  `LEGAL_CONTACT_EMAIL` (falls back to `SUPPORT_EMAIL`),
+  `LEGAL_POSTAL_ADDRESS`, `LEGAL_JURISDICTION` (terms),
+  `LEGAL_HOSTING_LOCATION` (privacy), `LEGAL_EFFECTIVE_DATE`
+  (`YYYY-MM-DD`). An unset slot renders a visible "has not been
+  published yet — this part is being completed" notice in its place,
+  and a box under the title lists every missing detail. No name,
+  address or jurisdiction is ever invented.
+- **The date** under the title is `LEGAL_EFFECTIVE_DATE` ("In effect
+  from …") or, when unset, the content file's own `updated:` line
+  ("Last changed …"). Bump `updated:` whenever you edit the text.
+- **Content format:** `key: value` front matter ended by `===`
+  (`title`, `updated`, `note` — the note becomes an HTML comment), then
+  Markdown (`src/warmth/markdown.ts`). `[[if billing|kofi|offsite|stock|mail]]
+  … [[end]]` blocks appear only when that feature is on for this server
+  (billing = live-mode checkout configured, the same rule as
+  `/api/billing/status` `live`), so the page never describes something
+  this server does not do. `{{contact}}`, `{{hosting}}`, `{{whoruns}}`,
+  `{{jurisdiction}}` and the config numbers (`{{sessiondays}}`,
+  `{{backuphours}}`, `{{keepdaily}}`, `{{keepweekly}}`,
+  `{{keepmonthly}}`) are filled from config.
+- **Linked from** the footer of every Help page, the warmth pages
+  (changelog, roadmap, thanks, support), the reset page and the
+  beta-reader `/read/` page; in the studio from the sign-in / create
+  dialog and Project Settings → "Beuk on this device" (shown only when
+  the studio has its server). Four studio strings (`legal.*`) in all 13
+  locales. The service workers pass `/privacy` and `/terms` straight to
+  the network, like Help.
+- **Known gaps the pages state honestly:** no self-serve account
+  deletion (requests go by email); no retention limit for help search
+  records, Founders' Shelf entries, local backups and container logs;
+  the studio and these pages load Google Fonts, so visitors' IP
+  addresses reach Google.
+
+Tests: `tests/legal.test.ts`.
+
 ## Hardening (abuse, crashes, shutdown, headers)
 
 - **Rate limiting.** `POST /api/auth/login` and `POST /api/auth/register`
