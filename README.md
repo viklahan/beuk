@@ -1729,7 +1729,13 @@ public comment API.
 
 ## Deploy to Hetzner (outline)
 
-**Fast path:** copy this directory to the box, point DNS at it, then run
+**Step-by-step launch list:** `docs/launch-checklist.md` (server size,
+firewall, DNS, every `.env` value, first admin, backup + restore drill,
+smoke test, rollback). It was written from a full production rehearsal
+on a fresh Debian 12 box.
+
+**Fast path:** `git clone` this repository onto the box (a fresh clone,
+not a copy of a dev folder — see below), point DNS at it, then run
 `DEPLOY_DOMAIN=beuk.studio ./deploy/install.sh`.
 The script installs Docker if needed, writes a real `.env` (generating
 the Postgres password — it never overwrites an existing `.env` or
@@ -1737,7 +1743,34 @@ rotates an existing password), stamps the build, builds and starts the
 stack, verifies `/api/health`, and — unless `INSTALL_TOOLS=0` — adds
 the EPUBCheck/Ghostscript tools image described under "Jobs —
 Production setup". The manual outline below is the reference for
-everything it does.
+everything it does. What else it takes care of:
+
+- **`.env` pins the stack for later commands.** It writes
+  `COMPOSE_PROJECT_NAME` (default `beuk`) and `COMPOSE_FILE` (the base
+  file plus the tools overlay when the tools were installed), so a plain
+  `docker compose exec app …`, `logs` or `up -d` typed later in the same
+  directory reaches the same containers with the same files. Without
+  them Compose uses the directory name as the project (a clone named
+  `beuk-saas` found no running `app`) and drops the tools overlay.
+- **Re-runs keep the domain.** Re-running after `git pull` keeps the
+  `DOMAIN` already in `.env` unless `DEPLOY_DOMAIN` is given;
+  `APP_VERSION` moves with the build stamp unless you set your own.
+- **www.** By default it also sets `WWW_DOMAIN=www.<domain>`: Caddy gets
+  a certificate for it and answers every request with a permanent
+  redirect to the apex, so the studio, its cookie and its local saves
+  live on one origin. `DEPLOY_WWW=0` serves the apex only (then do not
+  create a www DNS record).
+- **Caddyfile changes go live.** The Caddyfile is a single-file bind
+  mount; a `git pull` replaces the file and the running Caddy would keep
+  the old one. The script restarts Caddy when the file it sees differs
+  from the tree's, and otherwise runs `caddy reload`.
+- **Refuses a dev override.** `docker-compose.override.yml`
+  (start-local.ps1's dev file: Caddy on `127.0.0.1:8090` only) is loaded
+  automatically by any bare `docker compose` command; the script stops
+  when it is present on a real domain.
+- **Logs rotate.** Every service logs through `json-file` with
+  `max-size 10m`, `max-file 3` (Docker's default is unlimited:
+  https://docs.docker.com/engine/logging/drivers/json-file/).
 
 1. Point DNS: `beuk.studio` (and `www` if wanted) A/AAAA records at the
    Hetzner box.
@@ -1745,7 +1778,10 @@ everything it does.
 3. `cp .env.example .env` and set real values **on the server only**:
    `DOMAIN=beuk.studio`, a strong `POSTGRES_PASSWORD`, `COOKIE_SECURE=true`.
    Never commit `.env`.
-4. `docker compose up -d --build`. Caddy fetches the Let's Encrypt
+4. `docker compose up -d --build` (by hand, also set
+   `COMPOSE_PROJECT_NAME`, `WWW_DOMAIN` and — with the tools overlay —
+   `COMPOSE_FILE=docker-compose.yml:deploy/docker-compose.tools.yml` in
+   `.env`, as install.sh does). Caddy fetches the Let's Encrypt
    certificate automatically; the app runs migrations on boot.
 5. Backups are owned by Housekeeping's Evidence pillar: a scheduled
    local backup every 24 h (DB + settings + export volume) and, once
@@ -1756,7 +1792,8 @@ everything it does.
    volume. Volume-level snapshots of `pgdata`, `exportdata` and
    `backupdata` remain a useful outer net.
 6. After first boot, register your account in the app and grant it
-   admin: `docker compose exec app node dist/admin-cli.js grant <email>`.
+   admin: `docker compose exec app node dist/admin-cli.js grant <email>`
+   (run in the deploy directory, so Compose reads `.env`).
    Set `BUILD_STAMP` (or `GIT_SHA`)
    per deploy so Self-checks runs and sign-offs stamp the right build.
 7. Warmth (M4, all in `.env`, all optional): set `SUPPORT_EMAIL` once the

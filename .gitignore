@@ -8,3 +8,6 @@ docker-compose.override.yml
 
 # per-agent scratch (Playwright/attack scratch files)
 .scratch/
+
+# install.sh run summary (no secrets; per box)
+deploy/last-install.txt

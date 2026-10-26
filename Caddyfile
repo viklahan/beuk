@@ -2,8 +2,18 @@
 # DOMAIN comes from .env: "localhost" for local dev (internal CA, https://localhost),
 # "beuk.studio" in production (automatic Let's Encrypt TLS).
 
-{$DOMAIN} {
+# WWW_DOMAIN (optional, e.g. www.beuk.studio): served on the same site
+# and permanently redirected to DOMAIN, so the studio, its cookies and
+# its local saves live on ONE origin. Unset/empty → expands to nothing
+# and only DOMAIN is served ("{$VAR}" is substituted before parsing and
+# may expand to nothing: https://caddyserver.com/docs/caddyfile/concepts).
+{$DOMAIN} {$WWW_DOMAIN} {
 	encode gzip
+
+	# "www.invalid" keeps the matcher non-empty when WWW_DOMAIN is empty
+	# (.invalid never resolves: RFC 2606 §2).
+	@www host {$WWW_DOMAIN} www.invalid
+	redir @www https://{$DOMAIN}{uri} permanent
 
 	# === SECURITY HEADERS (every response: studio, warmth pages, API) ===
 	# "?" = default only: pages that send their own stricter set (the

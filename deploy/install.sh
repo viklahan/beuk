@@ -25,7 +25,8 @@
 #     prints a summary with the next steps
 #
 # Optional knobs (environment variables):
-#   DEPLOY_DOMAIN       default beuk.studio (use "localhost" for a first
+#   DEPLOY_DOMAIN       default: the DOMAIN already in .env, else
+#                       beuk.studio (use "localhost" for a first
 #                       look over the raw IP — see the note at the end)
 #   SUPPORT_EMAIL / SUPPORT_NAME / SUPPORT_REPLY_PROMISE   Help-page contact
 #   KOFI_URL            Ko-fi page; unset → no tip jar is rendered anywhere
@@ -34,6 +35,8 @@
 #                       MAIL_FROM="Beuk <no-reply@beuk.studio>"; unset →
 #                       no email is sent (Housekeeping: "email not configured")
 #   APP_TIMEZONE        default UTC (e.g. America/Los_Angeles)
+#   DEPLOY_WWW          default 1: also serve www.<domain> and redirect it
+#                       to <domain> (needs a www DNS record too); 0 = apex only
 #   INSTALL_TOOLS       default 1; set 0 to skip EPUBCheck/Ghostscript
 #   EPUBCHECK_VERSION   default 5.2.1
 #
@@ -46,8 +49,23 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 
+# Compose project name. It is ALSO written into .env (below) so that a
+# bare `docker compose …` typed later in this directory talks to the same
+# stack: without it Compose falls back to the directory's basename (e.g.
+# "beuk-saas" for a git clone) and `docker compose exec app …` finds no
+# container, while `docker compose up -d` would start a SECOND, empty
+# stack. https://docs.docker.com/compose/how-tos/environment-variables/envvars/
+if [ -z "${COMPOSE_PROJECT_NAME:-}" ] && [ -f .env ]; then
+  COMPOSE_PROJECT_NAME="$(grep '^COMPOSE_PROJECT_NAME=' .env | tail -n 1 | cut -d= -f2- || true)"
+fi
 export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-beuk}"
 
+# A re-run (e.g. after `git pull`) keeps the domain already in .env
+# unless DEPLOY_DOMAIN says otherwise; only a first install defaults to
+# beuk.studio.
+if [ -z "${DEPLOY_DOMAIN:-}" ] && [ -f .env ]; then
+  DEPLOY_DOMAIN="$(grep '^DOMAIN=' .env | tail -n 1 | cut -d= -f2- || true)"
+fi
 DEPLOY_DOMAIN="${DEPLOY_DOMAIN:-beuk.studio}"
 APP_TIMEZONE="${APP_TIMEZONE:-UTC}"
 INSTALL_TOOLS="${INSTALL_TOOLS:-1}"
@@ -62,6 +80,16 @@ die()  { printf '\n\033[31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 SUDO=""
 if [ "$(id -u)" -ne 0 ]; then
   command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+fi
+
+# ── 0. Local-only files must not ride along to a real server ─────────────
+# docker-compose.override.yml is written by start-local.ps1 for a dev box
+# (Caddy on 127.0.0.1:8090 only). Compose loads it automatically for any
+# bare `docker compose up` in this directory, which on a server would
+# take the site off 80/443. This script always passes -f explicitly, but
+# a later hand-typed command would not — so refuse instead of guessing.
+if [ "${DEPLOY_DOMAIN}" != "localhost" ] && [ -f docker-compose.override.yml ]; then
+  die "docker-compose.override.yml is present (a LOCAL dev file from start-local.ps1). Deploy from a fresh 'git clone', or move that file out of this directory, then re-run."
 fi
 
 # ── 1. Docker ────────────────────────────────────────────────────────────────
@@ -119,13 +147,20 @@ else
   note "POSTGRES_PASSWORD already set — leaving it untouched"
 fi
 
+set_env COMPOSE_PROJECT_NAME "${COMPOSE_PROJECT_NAME}"
 set_env DOMAIN "${DEPLOY_DOMAIN}"
 if [ "${DEPLOY_DOMAIN}" = "localhost" ]; then
   set_env COOKIE_SECURE "false"
   set_env APP_BASE_URL "https://localhost"
+  set_env WWW_DOMAIN ""
 else
   set_env COOKIE_SECURE "true"
   set_env APP_BASE_URL "https://${DEPLOY_DOMAIN}"
+  if [ "${DEPLOY_WWW:-1}" = "1" ]; then
+    set_env WWW_DOMAIN "www.${DEPLOY_DOMAIN}"
+  else
+    set_env WWW_DOMAIN ""
+  fi
 fi
 set_env APP_TIMEZONE "${APP_TIMEZONE}"
 [ -n "${SUPPORT_EMAIL:-}" ]          && set_env SUPPORT_EMAIL "${SUPPORT_EMAIL}"
@@ -148,6 +183,7 @@ else
 fi
 
 # Build stamp for Housekeeping self-checks / promotion manifest.
+PREV_STAMP="$(get_env BUILD_STAMP)"
 if git -C "${REPO_ROOT}" rev-parse --short HEAD >/dev/null 2>&1; then
   SHA="$(git -C "${REPO_ROOT}" rev-parse --short HEAD)"
   set_env GIT_SHA "${SHA}"
@@ -156,11 +192,18 @@ else
   STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
   set_env BUILD_STAMP "${STAMP}"
 fi
-[ -z "$(get_env APP_VERSION)" ] && set_env APP_VERSION "$(get_env BUILD_STAMP)"
+# APP_VERSION (GET /api/status) follows the build stamp unless the
+# operator set their own: one this script wrote earlier equals the
+# previous stamp and is moved on, so a redeploy never reports the first
+# install's version.
+CUR_VERSION="$(get_env APP_VERSION)"
+if [ -z "${CUR_VERSION}" ] || [ "${CUR_VERSION}" = "${PREV_STAMP}" ]; then
+  set_env APP_VERSION "$(get_env BUILD_STAMP)"
+fi
 # Deploying this tree IS the clean-tree attestation the promotion gate asks for.
 set_env TREE_CLEAN "true"
 chmod 600 .env
-note "DOMAIN=${DEPLOY_DOMAIN}  APP_TIMEZONE=${APP_TIMEZONE}  BUILD_STAMP=$(get_env BUILD_STAMP)"
+note "DOMAIN=${DEPLOY_DOMAIN}  WWW_DOMAIN=$(get_env WWW_DOMAIN)  APP_TIMEZONE=${APP_TIMEZONE}  BUILD_STAMP=$(get_env BUILD_STAMP)"
 
 [ -f client/index.html ] || warn "client/index.html is missing — the studio bundle is not in this tree; Caddy will have nothing to serve at /."
 
@@ -199,9 +242,41 @@ if [ "${INSTALL_TOOLS}" = "1" ]; then
   fi
 fi
 
+# The same file set, written to .env as COMPOSE_FILE, so a bare
+# `docker compose up -d` / `exec` / `logs` typed later in this directory
+# uses exactly these files: without it Compose would load
+# docker-compose.yml (+ any docker-compose.override.yml) and NOT the
+# tools overlay, silently swapping the app back to the stock image
+# (EPUBCheck / PDF/X "not configured"). Paths are ':'-separated, the
+# default COMPOSE_PATH_SEPARATOR on Linux:
+# https://docs.docker.com/compose/how-tos/environment-variables/envvars/
+if [ "${#COMPOSE_FILES[@]}" -gt 2 ]; then
+  set_env COMPOSE_FILE "docker-compose.yml:deploy/docker-compose.tools.yml"
+else
+  set_env COMPOSE_FILE "docker-compose.yml"
+fi
+
 # ── 5. Up ────────────────────────────────────────────────────────────────────
 log "Starting the stack"
 ${COMPOSE} "${COMPOSE_FILES[@]}" up -d --build
+
+# Caddyfile is a single-file bind mount: `git pull`/`git checkout`
+# replace the file (new inode), and a running Caddy keeps reading the
+# OLD one — `up -d` does not recreate it because the compose config did
+# not change (measured in the round-6 rehearsal). Restart Caddy when the
+# file it sees differs from the tree's.
+HOST_CADDY_SHA="$(sha256sum Caddyfile | cut -d' ' -f1)"
+LIVE_CADDY_SHA="$(${COMPOSE} "${COMPOSE_FILES[@]}" exec -T caddy sha256sum /etc/caddy/Caddyfile 2>/dev/null | cut -d' ' -f1 || true)"
+# Same file but edited in place (same inode): the container sees the new
+# text, yet Caddy only reads it on (re)load — so reload it gracefully
+# (identical config = no reload; only --force reloads that).
+# https://caddyserver.com/docs/command-line#caddy-reload
+if [ "${HOST_CADDY_SHA}" != "${LIVE_CADDY_SHA}" ]; then
+  note "Caddyfile changed — restarting Caddy so it loads the new one"
+  ${COMPOSE} "${COMPOSE_FILES[@]}" restart caddy
+else
+  ${COMPOSE} "${COMPOSE_FILES[@]}" exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null 2>&1     && note "Caddy config reloaded"     || warn "caddy reload failed — check: ${COMPOSE} logs --tail=50 caddy"
+fi
 
 # ── 6. Health ────────────────────────────────────────────────────────────────
 log "Health check"
@@ -223,12 +298,15 @@ else
 fi
 
 # ── 7. Summary ───────────────────────────────────────────────────────────────
-COMPOSE_CMD="${COMPOSE} -f docker-compose.yml"
-[ "${#COMPOSE_FILES[@]}" -gt 1 ] && COMPOSE_CMD="${COMPOSE_CMD} -f deploy/docker-compose.tools.yml"
+# .env now carries COMPOSE_PROJECT_NAME and COMPOSE_FILE, so the plain
+# command reaches this exact stack from this directory.
+COMPOSE_CMD="${COMPOSE}"
 
 {
   echo "Beuk install — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "  domain:        ${DEPLOY_DOMAIN}"
+  echo "  www redirect:  $(get_env WWW_DOMAIN)"
+  echo "  compose proj:  ${COMPOSE_PROJECT_NAME}"
   echo "  build stamp:   $(get_env BUILD_STAMP)"
   echo "  tools:         ${TOOLS_STATE}"
   echo "  email:         ${MAIL_STATE}"
@@ -248,7 +326,9 @@ fi
 note "Next steps:"
 note "  1. Register your account in the app, then make it the Housekeeping admin:"
 note "       ${COMPOSE_CMD} exec app node dist/admin-cli.js grant <your-email>"
-note "  2. Open Housekeeping and run Rehearse, then a Self-checks run."
+note "  2. Run Housekeeping (API only, no UI) from this directory:"
+note "       ./deploy/hk.sh <your-email> rehearse     then:  ./deploy/hk.sh <your-email> self-checks"
+note "     Step-by-step launch list: docs/launch-checklist.md"
 note "  3. Write something and watch for \"On your shelf ✓\" (cloud sync working)."
 note "Tools: ${TOOLS_STATE}"
 note "Email: ${MAIL_STATE}"
