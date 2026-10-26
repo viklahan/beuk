@@ -18,6 +18,8 @@ export function collectSecrets(config: Config): string[] {
   add(config.offsite?.b2ApplicationKey);
   add(config.offsite?.b2KeyId);
   add(config.stripeWebhookSecret);
+  // Ops: a Slack/Discord-style webhook URL carries its own token.
+  add(config.ops?.alertWebhookUrl);
   // P0 #5: SMTP_URL carries the mail password.
   if (config.smtpUrl) {
     add(config.smtpUrl);

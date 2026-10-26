@@ -159,6 +159,10 @@
 	handle /sitemap.xml {
 		reverse_proxy app:3000
 	}
+	# The public status page (server-rendered; /api/status/public is its JSON).
+	handle /status* {
+		reverse_proxy app:3000
+	}
 	# The landing page is the site's front door; the studio lives at /studio
 	# (and still at /index.html, which its offline shell caches). Every other
 	# path keeps falling back to the studio, so old links still open it.

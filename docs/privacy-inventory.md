@@ -35,6 +35,9 @@ That is a fact about the code, not a policy decision.
 | Housekeeping audit | actor user id + **actor email** (admins only), action, params summary, result | migrations/006_housekeeping.sql:12-21 | No limit (append-only, excluded from backups and restore) |
 | Self-check runs / sign-offs | build stamp, counts, results; sign-off user id + email + note (admins only) | migrations/006_housekeeping.sql:27-50 | No limit |
 | help_docs | derived from content/help/ — no personal data | migrations/013_help_search.sql:21-33 | Rebuilt each boot |
+| Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], a quoted book/picture file name of any length → "[file]", other quoted text over 24 chars → "[…]", book/picture file names → [file] together with up to five capitalised or numbered words before them; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v7), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
+| Usage counts | usage_daily: day, counter name, a number, a final flag — **nothing else** (see §11) | migrations/015_ops.sql; src/ops/usage.ts | **No limit** (one row per day per counter). Excluded from backups |
+| Backup alert state | ops_alerts: whether a backup incident is open, which self-check ids are red and their scrubbed detail, when the last alert went out and what each channel answered, whether the opening alert was delivered and how many attempts it took. ALERT_EMAIL (the operator's own address) is configuration, not stored here | migrations/015_ops.sql; src/ops/alerts.ts | One row, overwritten on each change. Excluded from backups |
 
 ## 2. Server: cookies
 
@@ -48,7 +51,8 @@ No analytics, advertising or tracking cookies exist in the code (grep of
 
 ## 3. Server: in-memory only (lost on restart)
 
-Rate limits keyed by client IP or user id: login/register token buckets
+Rate limits keyed by client IP or user id: studio error reports per IP
+(src/ops/client-errors.ts), login/register token buckets
 (src/routes/auth.ts:34; src/ratelimit.ts:27-28), forgot/reset per IP and
 per email, password change per user (src/routes/account.ts:51-54,108-111),
 confirmation-link resend, email change, data download and account deletion per
@@ -109,7 +113,14 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
   for about a year. The bucket region is whatever endpoint the operator
   configures (OFFSITE_B2_ENDPOINT).
 - Excluded from backups: password_resets, housekeeping_*, help_docs,
-  search_log, schema_migrations (src/housekeeping/backup.ts:56-65).
+  search_log, schema_migrations, client_errors, usage_daily, ops_alerts
+  (src/housekeeping/backup.ts EXCLUDED_TABLES).
+- **Local retention (optional):** BACKUP_KEEP_DAYS / BACKUP_KEEP_COUNT.
+  **Unset (today) = keep everything**, as above. When set, older local
+  backups are deleted (src/ops/retention.ts), never the newest complete
+  one and never while a backup runs. Deleted data then leaves the box's
+  local backups after that many days / backups; off-site snapshots keep
+  their own restic retention.
 
 ## 7. Email
 
@@ -117,7 +128,9 @@ Password-reset emails (src/routes/account.ts:78-97), the email-confirmation
 link sent at sign-up and on "Send the link again", and for a change of
 address a confirmation link to the NEW address plus a short notice to the
 OLD one (src/account/confirm.ts), and the admin test email
-(src/routes/housekeeping.ts:620-626). While email is not configured a change
+(src/routes/housekeeping.ts:620-626), and backup alerts to the
+operator's own ALERT_EMAIL (src/ops/alerts.ts; no writer data: check
+names and their scrubbed detail). While email is not configured a change
 of address is refused (src/routes/account-portal.ts `POST /email` → 501), so
 an address never changes unconfirmed. Sent through the SMTP
 server the operator configures in SMTP_URL (src/config.ts `smtpUrl`;
@@ -137,6 +150,8 @@ sends no email (src/routes/founders.ts:9-10).
 | Stripe | the **server**, only when billing is configured (it is not live) | the account email (customer_email) and user id (client_reference_id, metadata) when the writer starts a checkout; card details go to Stripe's checkout page, never to Beuk | src/billing.ts:237-256; src/routes/billing.ts:94-127 |
 | SMTP provider | the server | the recipient address and the email (reset link, confirmation link, change-of-address notice) | §7 |
 | Backblaze B2 | the server, if off-site backups are configured | encrypted backup snapshots | §6 |
+| Alert webhook (e.g. Slack or Discord), only if ALERT_WEBHOOK_URL is set | the server, when a backup incident opens or closes, or on a test | the server's address (APP_BASE_URL), the time, the red backup check names and their scrubbed detail. No writer data | src/ops/alerts.ts |
+| An outside uptime monitor (not set up; V's choice) | the monitor, on a timer | it fetches /api/health or /api/status/public: no writer data in either | docs/uptime-monitoring.md |
 | CDN scripts | **none**: script-src is 'self' 'unsafe-inline'; the libraries are vendored under /assets/vendor/ | — | Caddyfile CSP comment + header; client/index.html:36-42 |
 
 ## 8b. "Download all my data"
@@ -160,7 +175,8 @@ are left out (src/account/data.ts `writeAccountExport`).
   shelf (client/index.html ~35134-35170).
 - **localStorage** (all prefixed `beuk.`): theme.v1, uiLang.v1,
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
-  zenSound.v1, betaTokens.v1 — the share-link tokens the writer made,
+  zenSound.v1, errors.v1 ("off" when the writer turns error reports off
+  in Project Settings; absent = on), betaTokens.v1 — the share-link tokens the writer made,
   kept so the studio can show the links again (client/index.html:38224-38231) —
   and desk ("1" once the writer has written on this device, so the landing
   page at / sends them straight back to the studio; no content, no id).
@@ -173,9 +189,73 @@ are left out (src/account/data.ts `writeAccountExport`).
 
 - No self-serve deletion of Founders' Shelf entries (account deletion
   exists since migration 014: /account, "Delete my account").
-- No analytics, ad trackers, fingerprinting, or third-party scripts.
+- No third-party analytics, ad trackers, fingerprinting, or third-party
+  scripts. Beuk's own usage counting is the daily aggregate in §11.
+- The public status page (/status, /api/status/public) shows no writer
+  data: component states, plain summaries, reading times.
 - No marketing email. (Email confirmation exists since migration 014;
   it never blocks writing, saving, exporting or the trial.)
 - No retention limit for: streak days, jobs, help search_log,
-  founders_applications, housekeeping records, local backups, container
-  logs.
+  founders_applications, housekeeping records, local backups (unless
+  BACKUP_KEEP_* is set), usage counts, container logs.
+
+## 11. Usage counts (src/ops/usage.ts, migration 015)
+
+**What is stored:** one row per day per counter in `usage_daily`: the
+day (APP_TIMEZONE), the counter's name, a number, and whether the day is
+final. No cookies are set, and no IP address, user id, email, session,
+user agent or per-event row is written anywhere for this.
+
+**What is counted** (only when the server's answer was a success):
+
+| Counter | Counted when |
+|---|---|
+| sign_ups | POST /api/auth/register answered 201 |
+| sign_ins | POST /api/auth/login answered 200 (a wrong password is not counted) |
+| first_shelf_saves | POST /api/manuscripts answered 201 and that account now has exactly one book on the shelf. To know that, the number of that account's manuscripts is read at that moment; the account is not written anywhere. An account that deletes all its books and saves again counts again |
+| exports_archived | POST /api/exports answered 201 |
+| epubcheck_runs | POST /api/jobs/epubcheck answered 2xx (a job was queued; whether EPUBCheck is installed is not part of it) |
+| share_links_created | POST /api/shares answered 201 |
+| came_back_after_7_days | computed from `streak_days` (already kept, §1): accounts with a writing day on that day whose previous writing day was 7 or more days earlier. Today is recomputed; a past day is computed one last time after it ends, then kept as it is |
+
+**What is NOT counted:** page views, visits, the landing page, Help
+reads, which features are used inside the studio, anything about books,
+anything that happens on a device without the server (writing never
+needs an account), failed requests.
+
+Shown to admins in Housekeeping (`GET /api/housekeeping/usage`, last 30
+days). No retention limit.
+
+## 12. Studio error reports (src/ops/client-errors.ts, client/index.html BEUK:errors)
+
+On by default; a writer turns them off in Project Settings, under "Beuk
+on this device" ("Send error reports when something breaks"), stored on that device as
+localStorage `beuk.errors.v1 = "off"`. When an uncaught error or an
+unhandled promise rejection happens in the studio, it sends at most 5
+reports per page load (each distinct error once) to POST
+/api/client-errors, **without cookies**. What is sent and kept: §1
+"Studio error reports". Scrubbing happens in the studio and again on the
+server. It is pattern-based, so it is a strong filter, not a proof:
+
+- a quoted file name is removed whole ("Failed to read 'The Lantern
+  Coast.epub'" → "Failed to read '[file]'");
+- an unquoted file name with spaces is removed with up to five words
+  before it that start with a capital letter or a digit ("Could not open
+  My Secret Novel.docx" → "Could not open [file]"), but a lower-case one
+  keeps its first words ("open my secret novel.docx" → "open my secret
+  [file]");
+- an error message that quotes 24 characters of text or fewer, or that
+  names a chapter or title without quotes ("Bad chapter: The Night My
+  Father Left"), keeps that text.
+
+The studio's settings note says this in plain words ("most file names",
+"an error that quotes a few of your own words could still carry them")
+rather than promising that no book text can ever be in a report. The
+gaps matter for error messages that quote what they choked on (from the
+browser, a library, or the studio itself); no audit of every error
+message in the studio has been made. Admins see reports
+grouped by message in Housekeeping (`GET /api/housekeeping/client-errors`).
+Kept CLIENT_ERRORS_KEEP_DAYS days (default 30). The studio note does not
+name a number ("kept for a limited time, then deleted"), so changing the
+setting never makes it wrong; the privacy page should either not name a
+number either or be updated when the setting changes.

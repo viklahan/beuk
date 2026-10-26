@@ -26,6 +26,11 @@ import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
+import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.js';
+import { OpsService } from './ops/service.js';
+import { usageCounter } from './ops/usage.js';
+import { opsHousekeepingRoutes } from './routes/ops-housekeeping.js';
+import { statusPageRoutes } from './routes/status-page.js';
 
 export interface AppDeps {
   db: Db;
@@ -46,6 +51,8 @@ export interface AppDeps {
   helpSearchLimits?: HelpSearchLimits;
   /** Accounts portal: rate limits for /api/account (tests tighten them). */
   portalLimits?: PortalLimits;
+  /** Production ops (tests inject a webhook fetch and the error-report limits). */
+  ops?: { fetchImpl?: typeof fetch; clientErrors?: ClientErrorOptions; now?: () => Date };
 }
 
 export function buildApp({
@@ -59,6 +66,7 @@ export function buildApp({
   cspReport,
   helpSearchLimits,
   portalLimits,
+  ops: opsDeps,
 }: AppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
@@ -82,6 +90,10 @@ export function buildApp({
   // (application/csp-report, application/reports+json), so they are
   // mounted before the global JSON parser and its manuscript-sized limit.
   app.use('/api/csp-report', cspReportRoutes(cspReport));
+  // Studio error reports: their own 4 KB cap and parser, like CSP reports.
+  app.use('/api/client-errors', clientErrorRoutes(db, config, opsDeps?.clientErrors));
+  // Daily usage counters (aggregates only): watches responses, never blocks.
+  app.use(usageCounter(db, config, opsDeps?.now ?? now));
   // Manuscripts are whole-book JSON documents (pictures and snapshots
   // included); allow generous payloads.
   app.use(express.json({ limit: config.manuscriptMaxBytes }));
@@ -123,6 +135,19 @@ export function buildApp({
     now: housekeeping?.now,
   });
   app.locals.backupScheduler = hk.backups;
+  // Ops: backup alerts + local retention ride on the scheduler's tick
+  // (index.ts); their Housekeeping views mount in front of the main router.
+  const opsService = new OpsService({
+    db,
+    config,
+    mailer: mail,
+    lock: hk.lock,
+    secrets: hk.secrets,
+    now: opsDeps?.now ?? housekeeping?.now,
+    fetchImpl: opsDeps?.fetchImpl,
+  });
+  app.locals.ops = opsService;
+  app.use('/api/housekeeping', opsHousekeepingRoutes(db, config, hk, opsService, mail));
   app.use('/api/housekeeping', housekeepingRoutes(db, config, hk, mail));
   // M5 jobs (EPUBCheck + PDF/X over the caller's own archive).
   const jobs = jobRoutes(db, config);
@@ -135,6 +160,9 @@ export function buildApp({
 
   // M4 warmth: public status + public config + Founders' Shelf intake.
   app.use('/api/status', statusRoutes(db, config));
+  // Public status: /status (page) and /api/status/public (monitors).
+  const statusPage = statusPageRoutes(db, config, mail);
+  app.use('/api/status', statusPage.api);
   app.use('/api/config', publicConfigRoutes(config));
   app.use('/api/founders', foundersRoutes(db));
 
@@ -159,6 +187,7 @@ export function buildApp({
   app.use(warmthRoutes(config));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).
   app.use(siteRoutes(config));
+  app.use(statusPage.page);
   // P0 #5: the "choose a new password" page the reset email links to.
   app.use(resetPageRoutes(config));
   // Accounts portal pages: /account, /account/confirm, /account/deleted.

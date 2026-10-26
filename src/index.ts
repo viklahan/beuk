@@ -10,6 +10,7 @@ import type { BootCheck } from './housekeeping/context.js';
 import { createPgScratchFactory } from './housekeeping/scratch.js';
 import type { JobRunner } from './jobs/runner.js';
 import type { BackupScheduler } from './housekeeping/offsite.js';
+import type { OpsService } from './ops/service.js';
 
 const config = loadConfig();
 if (!config.databaseUrl) {
@@ -92,7 +93,9 @@ purgeTimer.unref();
 // configured): a cheap due-check every 15 minutes, the work itself under
 // the Housekeeping lock and audited (src/housekeeping/offsite.ts).
 const backupScheduler = app.locals.backupScheduler as BackupScheduler;
-const backupTick = () => void backupScheduler.tick();
+// After each tick: local retention, backup alerts, error-report purge.
+const ops = app.locals.ops as OpsService;
+const backupTick = () => void backupScheduler.tick().then(() => ops.afterBackupTick());
 const backupTimer = setInterval(backupTick, 15 * 60_000);
 backupTimer.unref();
 setTimeout(backupTick, 30_000).unref();

@@ -174,7 +174,9 @@ export interface Config {
    *  default: on unless NODE_ENV=production. */
   mailLogLinks: boolean;
   /** Scheduled local backups: one every BACKUP_INTERVAL_HOURS (default
-   *  24; 0 turns the schedule off). Local backups are never deleted
+   *  24; 0 turns the schedule off). Local backups are kept until
+   *  BACKUP_KEEP_DAYS / BACKUP_KEEP_COUNT say otherwise (src/ops/retention.ts);
+   *  unset, they are never deleted
    *  automatically (local retention is not decided yet). */
   backupIntervalHours: number;
   /** Legal pages (/privacy, /terms): who runs the service. Every slot
@@ -224,6 +226,34 @@ export interface Config {
     drillIntervalHours: number;
     drillMaxAgeHours: number;
   };
+  /** Production ops (src/ops/): backup alerts, local backup retention,
+   *  studio error reports. Optional so older test configs need not
+   *  carry it; opsSettings() in src/ops/settings.ts fills the defaults. */
+  ops?: OpsConfig;
+}
+
+export interface OpsConfig {
+  /** ALERT_EMAIL: where backup alerts are emailed (only when SMTP_URL +
+   *  MAIL_FROM are set too). Null = no alert email. */
+  alertEmail: string | null;
+  /** ALERT_WEBHOOK_URL: a URL backup alerts are POSTed to as JSON.
+   *  Treated as a secret (Slack/Discord webhook URLs carry a token). */
+  alertWebhookUrl: string | null;
+  /** ALERT_WEBHOOK_FORMAT: json (default; the full alert object, with
+   *  `text` and `content` lines), slack ({"text"}) or discord ({"content"}). */
+  alertWebhookFormat: 'json' | 'slack' | 'discord';
+  /** BACKUP_KEEP_DAYS / BACKUP_KEEP_COUNT: local backup retention. Null =
+   *  unset = keep everything (V has not decided). */
+  backupKeepDays: number | null;
+  backupKeepCount: number | null;
+  /** CLIENT_ERRORS_KEEP_DAYS: days studio error reports are kept (default 30). */
+  clientErrorsKeepDays: number;
+}
+
+function positiveIntOrNull(raw: string | undefined): number | null {
+  if (raw === undefined || raw.trim() === '') return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 function nonNegativeNumber(raw: string | undefined, fallback: number): number {
@@ -341,6 +371,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       maxAgeHours: positiveInt(env.OFFSITE_MAX_AGE_HOURS, 36),
       drillIntervalHours: nonNegativeNumber(env.OFFSITE_DRILL_INTERVAL_HOURS, 168),
       drillMaxAgeHours: positiveInt(env.OFFSITE_DRILL_MAX_AGE_HOURS, 192),
+    },
+    ops: {
+      alertEmail: env.ALERT_EMAIL?.trim() || null,
+      alertWebhookUrl: env.ALERT_WEBHOOK_URL?.trim() || null,
+      alertWebhookFormat:
+        env.ALERT_WEBHOOK_FORMAT === 'slack' || env.ALERT_WEBHOOK_FORMAT === 'discord' ? env.ALERT_WEBHOOK_FORMAT : 'json',
+      backupKeepDays: positiveIntOrNull(env.BACKUP_KEEP_DAYS),
+      backupKeepCount: positiveIntOrNull(env.BACKUP_KEEP_COUNT),
+      clientErrorsKeepDays: positiveInt(env.CLIENT_ERRORS_KEEP_DAYS, 30),
     },
   };
 }

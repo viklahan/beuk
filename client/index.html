@@ -2569,6 +2569,7 @@
         <div class="about-box">
           <h3 data-i18n="about.title">Beuk on this device</h3>
           <p class="cover-note" data-i18n="about.offlineLine">Beuk keeps your book on this device first: writing and saving never wait on a connection. When you are signed in, anything written offline waits quietly and syncs to your shelf the moment the connection returns.</p>
+          <div id="errReportsRow" style="margin:10px 0;"><label class="acx-check" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" id="setErrReports" checked /> <span data-i18n="errs.toggle">Send error reports when something breaks</span></label><p class="cover-note" data-i18n="errs.note" style="margin-top:6px;">Only the error message and where in Beuk's code it happened. Web addresses, email addresses, long codes, long quoted text and most file names are filtered out first. The filter works on patterns, so an error that quotes a few of your own words could still carry them. Kept for a limited time, then deleted. This setting is for this device.</p></div>
           <p class="cover-note" id="installHint" data-i18n="about.installHint">To keep Beuk a tap away, add it to your home screen from your browser's menu — it installs as an app and opens offline.</p>
           <button class="tb-btn" id="btnInstall" type="button" style="display:none;"><i data-lucide="download"></i><span data-i18n="pwa.install">Install Beuk</span></button>
           <!-- ==== BEUK:legal ==== shown only when this studio has its server (openSettings) -->
@@ -7534,6 +7535,109 @@
         "covermk.wrap.pdfNote": "标准 PDF，尺寸精确到开本加出血 — 这正是 KDP Print、IngramSpark、Barnes & Noble Press、Lulu 和 BookVault 要求的文件。IngramSpark 更青睐 PDF/X：当你的书架上线后，Beuk 的服务器 PDF/X 转换（导出存档任务）可以应用于此文件 — 本次下载本身不是 PDF/X。",
         "covermk.wrap.pdfFail": "无法加载 PDF 库 — 请试用 JPG，或检查网络连接后重试。"
       });
+
+      /* ==== BEUK:errors ==== Studio error reports (server: src/ops/client-errors.ts).
+         window "error" / "unhandledrejection" send the error message and stack
+         (trimmed; web-address queries, emails, ids and token-like strings,
+         long quoted text and file names scrubbed) plus the shell build, the UI
+         language and a device class, to POST /api/client-errors, without
+         cookies. Never book text, titles, file names or user ids. At most
+         BEUK_ERR_MAX per page load, each distinct error once. Off when
+         localStorage beuk.errors.v1 = "off" (Project Settings toggle). */
+      const BEUK_ERRORS_KEY = "beuk.errors.v1";
+      const BEUK_ERR_MAX = 5;
+      let beukErrBuild = "unknown";
+      let beukErrCount = 0;
+      const beukErrSeen = {};
+      function beukErrorsOn() {
+        try { return localStorage.getItem(BEUK_ERRORS_KEY) !== "off"; } catch (e) { return true; }
+      }
+      /* BEUK:errscrub */
+      function beukErrScrub(raw) {
+        let s = String(raw == null ? "" : raw);
+        s = s.replace(/\b((?:https?|blob|wss?):\/\/[^\s?#)'"`]*)[?#][^\s)'"`]*/gi, "$1");
+        s = s.replace(/(\/[^\s?#)'"`]*)\?[^\s)'"`]+/g, "$1");
+        s = s.replace(/\/read\/[^\s/)'"`:]+/g, "/read/:token");
+        s = s.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, "[email]");
+        s = s.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, "[id]");
+        s = s.replace(/(?=[A-Za-z0-9_-]*\d)(?=[A-Za-z0-9_-]*[A-Za-z])[A-Za-z0-9_-]{24,}/g, "[token]");
+        s = s.replace(/"[^"\n]*?\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)"/gi, '"[file]"').replace(/'[^'\n]*?\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)'/gi, "'[file]'").replace(/“[^”\n]*?\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)”/gi, "“[file]”");
+        s = s.replace(/"[^"\n]{25,}"/g, '"[…]"').replace(/'[^'\n]{25,}'/g, "'[…]'").replace(/“[^”\n]{25,}”/g, "“[…]”");
+        s = s.replace(/[^\s/\\'"`()]+\.(?:docx?|epub|pdf|md|markdown|txt|rtf|odt|jpe?g|png|gif|webp|svg|tiff?|heic|mp3|wav|zip|beuk-backup\.json)\b/gi, "[file]");
+        s = s.replace(/(?:[\p{Lu}\p{N}][^\s/\\'"`()\[\]]*[ _]){1,5}\[file\]/gu, "[file]");
+        return s;
+      }
+      /* /BEUK:errscrub */
+      function beukErrDevice() {
+        try {
+          const w = Math.min(window.screen ? window.screen.width : 9999, window.innerWidth || 9999);
+          const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+          if (w <= 600) return "phone";
+          if (coarse && w <= 1280) return "tablet";
+          return "desktop";
+        } catch (e) { return "-"; }
+      }
+      function beukReportError(kind, message, stack) {
+        try {
+          if (!beukErrorsOn() || beukErrCount >= BEUK_ERR_MAX) return;
+          if (!/^https?:$/.test(location.protocol) || typeof fetch !== "function") return;
+          const msg = beukErrScrub(String(message == null ? "" : message).replace(/\s+/g, " ").trim()).slice(0, 300);
+          if (!msg || msg === "Script error.") return; /* cross-origin: nothing to learn */
+          const stk = beukErrScrub(String(stack == null ? "" : stack).split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 15).join("\n")).slice(0, 2000);
+          const key = kind + "|" + msg + "|" + (stk.split("\n").filter((l) => /:\d+/.test(l))[0] || "");
+          if (beukErrSeen[key]) return;
+          beukErrSeen[key] = 1;
+          beukErrCount++;
+          const hour = new Date(); hour.setMinutes(0, 0, 0);
+          fetch("/api/client-errors", {
+            method: "POST",
+            credentials: "omit",
+            keepalive: true,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              kind: kind, message: msg, stack: stk, build: beukErrBuild,
+              lang: (typeof uiLangState === "string" ? uiLangState : "-"),
+              device: beukErrDevice(), at: hour.toISOString()
+            })
+          }).catch(() => {});
+        } catch (e) { /* reporting must never break the studio */ }
+      }
+      window.addEventListener("error", (ev) => {
+        if (!ev || (ev.target && ev.target !== window)) return; /* a picture or script that failed to load */
+        const err = ev.error;
+        beukReportError("error", (err && err.message) || ev.message, (err && err.stack) || ((ev.filename || "") + ":" + (ev.lineno || 0) + ":" + (ev.colno || 0)));
+      });
+      window.addEventListener("unhandledrejection", (ev) => {
+        const r = ev ? ev.reason : null;
+        beukReportError("rejection", (r && r.message) || (typeof r === "string" ? r : "unhandled rejection"), (r && r.stack) || "");
+      });
+      try {
+        if (navigator.serviceWorker) navigator.serviceWorker.addEventListener("message", (e) => {
+          if (e.data && e.data.type === "BEUK_SHELL_READY" && typeof e.data.cache === "string" && /^[A-Za-z0-9._-]{1,40}$/.test(e.data.cache)) beukErrBuild = e.data.cache;
+        });
+      } catch (e) {}
+      (function wireErrToggle() {
+        const cb = document.getElementById("setErrReports");
+        if (!cb) return;
+        cb.checked = beukErrorsOn();
+        cb.addEventListener("change", () => {
+          try { if (cb.checked) localStorage.removeItem(BEUK_ERRORS_KEY); else localStorage.setItem(BEUK_ERRORS_KEY, "off"); } catch (e) {}
+        });
+      })();
+      Object.assign(UI_STRINGS.en, { "errs.toggle": "Send error reports when something breaks", "errs.note": "Only the error message and where in Beuk's code it happened. Web addresses, email addresses, long codes, long quoted text and most file names are filtered out first. The filter works on patterns, so an error that quotes a few of your own words could still carry them. Kept for a limited time, then deleted. This setting is for this device." });
+      Object.assign(UI_STRINGS.es, { "errs.toggle": "Enviar informes de error cuando algo falle", "errs.note": "Solo el mensaje de error y el lugar del código de Beuk donde ocurrió. Antes se filtran las direcciones web, las direcciones de correo, los códigos largos, los textos largos entre comillas y la mayoría de los nombres de archivo. El filtro funciona por patrones, así que un error que cite unas pocas palabras tuyas podría seguir llevándolas. Se guardan un tiempo limitado y luego se borran. Este ajuste es para este dispositivo." });
+      Object.assign(UI_STRINGS.fr, { "errs.toggle": "Envoyer des rapports d’erreur quand quelque chose ne marche pas", "errs.note": "Seulement le message d’erreur et l’endroit du code de Beuk où elle s’est produite. Les adresses web, les adresses e-mail, les longs codes, les longs textes entre guillemets et la plupart des noms de fichiers sont d’abord filtrés. Le filtre repose sur des motifs : une erreur qui cite quelques-uns de vos mots pourrait encore les contenir. Conservés pendant une durée limitée, puis supprimés. Ce réglage vaut pour cet appareil." });
+      Object.assign(UI_STRINGS.de, { "errs.toggle": "Fehlerberichte senden, wenn etwas nicht funktioniert", "errs.note": "Nur die Fehlermeldung und die Stelle in Beuks Code, an der sie auftrat. Webadressen, E-Mail-Adressen, lange Codes, längere Zitate und die meisten Dateinamen werden vorher herausgefiltert. Der Filter arbeitet mit Mustern; eine Fehlermeldung, die ein paar Ihrer eigenen Wörter zitiert, kann sie daher noch enthalten. Für begrenzte Zeit aufbewahrt, dann gelöscht. Diese Einstellung gilt für dieses Gerät." });
+      Object.assign(UI_STRINGS.it, { "errs.toggle": "Invia segnalazioni di errore quando qualcosa non funziona", "errs.note": "Solo il messaggio di errore e il punto del codice di Beuk in cui è avvenuto. Prima vengono filtrati indirizzi web, indirizzi email, codici lunghi, testi lunghi tra virgolette e la maggior parte dei nomi di file. Il filtro lavora per schemi, quindi un errore che cita poche parole tue potrebbe ancora contenerle. Conservate per un periodo limitato, poi eliminate. Questa impostazione vale per questo dispositivo." });
+      Object.assign(UI_STRINGS.pt, { "errs.toggle": "Enviar relatórios de erro quando algo falhar", "errs.note": "Apenas a mensagem de erro e o ponto do código do Beuk onde ocorreu. Antes são filtrados endereços web, endereços de e-mail, códigos longos, textos longos entre aspas e a maioria dos nomes de ficheiros. O filtro funciona por padrões, por isso um erro que cite algumas palavras suas pode ainda contê-las. Guardados durante um tempo limitado e depois apagados. Esta definição vale para este dispositivo." });
+      Object.assign(UI_STRINGS.nl, { "errs.toggle": "Foutrapporten versturen als er iets misgaat", "errs.note": "Alleen de foutmelding en de plek in de code van Beuk waar het gebeurde. Webadressen, e-mailadressen, lange codes, lange geciteerde tekst en de meeste bestandsnamen worden eerst weggefilterd. Het filter werkt met patronen, dus een foutmelding die een paar woorden van uzelf citeert, kan die nog bevatten. Een beperkte tijd bewaard en daarna verwijderd. Deze instelling geldt voor dit apparaat." });
+      Object.assign(UI_STRINGS.pl, { "errs.toggle": "Wysyłaj raporty o błędach, gdy coś nie działa", "errs.note": "Tylko komunikat o błędzie i miejsce w kodzie Beuka, w którym wystąpił. Najpierw usuwane są adresy stron, adresy e-mail, długie kody, dłuższe cytaty i większość nazw plików. Filtr działa na podstawie wzorców, więc błąd cytujący kilka twoich słów może je nadal zawierać. Przechowywane przez ograniczony czas, potem usuwane. To ustawienie dotyczy tego urządzenia." });
+      Object.assign(UI_STRINGS.ru, { "errs.toggle": "Отправлять отчёты об ошибках, когда что-то ломается", "errs.note": "Только текст ошибки и место в коде Beuk, где она произошла. Сначала из них удаляются веб-адреса, адреса электронной почты, длинные коды, длинные цитаты и большинство имён файлов. Фильтр работает по шаблонам, поэтому ошибка, в которой процитировано несколько ваших слов, может всё ещё их содержать. Хранятся ограниченное время, затем удаляются. Эта настройка действует для этого устройства." });
+      Object.assign(UI_STRINGS.tr, { "errs.toggle": "Bir şey bozulduğunda hata raporu gönder", "errs.note": "Yalnızca hata iletisi ve hatanın Beuk kodunda oluştuğu yer. Web adresleri, e-posta adresleri, uzun kodlar, uzun alıntılar ve dosya adlarının çoğu önce ayıklanır. Filtre kalıplara göre çalışır; bu yüzden sizin birkaç kelimenizi aktaran bir hata iletisi onları hâlâ içerebilir. Sınırlı bir süre saklanır, sonra silinir. Bu ayar yalnızca bu cihaz içindir." });
+      Object.assign(UI_STRINGS.ar, { "errs.toggle": "إرسال تقارير الأخطاء عند حدوث عطل", "errs.note": "رسالة الخطأ فقط وموضع حدوثه في شيفرة Beuk. تُحذف أولًا عناوين الويب وعناوين البريد الإلكتروني والرموز الطويلة والنصوص الطويلة بين علامات الاقتباس ومعظم أسماء الملفات. يعمل المرشّح وفق أنماط، لذا قد تبقى في رسالة الخطأ بضع كلمات من كلماتك إن اقتبستها. تُحفظ لمدة محدودة ثم تُحذف. هذا الإعداد خاص بهذا الجهاز." });
+      Object.assign(UI_STRINGS.ja, { "errs.toggle": "不具合が起きたときにエラーレポートを送信する", "errs.note": "送るのはエラーメッセージと、Beuk のコードのどこで起きたかだけです。ウェブアドレス、メールアドレス、長いコード、長い引用文、ほとんどのファイル名は先に取り除かれます。フィルターはパターンで判断するため、あなたの言葉を少しだけ引用したエラーメッセージでは、その言葉が残ることがあります。一定期間保存された後、削除されます。この設定はこのデバイスにのみ適用されます。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "errs.toggle": "出现故障时发送错误报告", "errs.note": "只发送错误信息和它在 Beuk 代码中发生的位置。网址、电子邮件地址、长代码、较长的引用文字和大多数文件名会先被过滤掉。过滤按模式进行，因此如果错误信息引用了你的几个词，这些词仍可能保留。保存一段有限的时间后删除。此设置仅适用于这台设备。" });
+      /* ==== /BEUK:errors ==== */
 
       /* The 3D book on the stand (Print Wrap) — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, {

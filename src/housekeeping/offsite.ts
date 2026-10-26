@@ -595,5 +595,5 @@ export async function scheduleHealth(config: Config, now = new Date()): Promise<
   const age = s.lastSuccessAt ? ageHours(s.lastSuccessAt, now) : Infinity;
   // Two intervals plus an hour of slack for the timer granularity.
   if (age > hours * 2 + 1) return { status: 'fail', detail: `last scheduled backup is ${age.toFixed(1)} h old (every ${hours} h)` };
-  return { status: 'pass', detail: `${s.lastBackupName}, ${age.toFixed(1)} h old (every ${hours} h; local backups are never deleted automatically)` };
+  return { status: 'pass', detail: `${s.lastBackupName}, ${age.toFixed(1)} h old (every ${hours} h; local retention: see GET /api/housekeeping/ops)` };
 }

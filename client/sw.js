@@ -135,7 +135,7 @@ self.addEventListener("fetch", (event) => {
      pages, not the studio, and are not precached: their HTML, CSS and
      scripts always go straight to the network, so a restyle reaches a
      returning visitor at once instead of waiting for a shell bump. */
-  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms|site|robots\.txt|sitemap\.xml|account)(\/|$)/.test(url.pathname)) return;
+  if (url.origin === self.location.origin && /^\/(help|support|thanks|changelog|roadmap|privacy|terms|site|robots\.txt|sitemap\.xml|account|status)(\/|$)/.test(url.pathname)) return;
 
   /* The shelf and its API: network-first, never cached. On failure
      the rejection propagates untouched — the page already knows how
