@@ -1,17 +1,19 @@
 # Zen ambient sound — sources and credits
 
-Every file in this folder is a loop cut from a **real field recording**
-that its author released into the **public domain**. No file needs
-attribution and every one may be redistributed and modified; the authors
-are named below anyway, with thanks. Nothing here is synthesized.
+Two of the three files in this folder are loops cut from **real field
+recordings** whose recordists released them **CC0** or **into the public
+domain** themselves; the third (wind) was **rendered offline for Beuk**
+by `tools/sound/render_ambience.py` and is released **CC0** by Beuk. No
+file needs attribution, every one may be redistributed, modified and
+used commercially; the recordists are named below anyway, with thanks.
+Nothing is synthesized in the browser: the studio only plays these files.
 
-Retrieved and processed on 2026-10-25 (BEUK:sound). The licence of each
-recording was read on the recording's own page (quoted below). Files
-from *radio aporee ::: maps* are mirrored by the project to the Internet
-Archive with the licence the recordist chose at upload; radio aporee's
-own info page says that choice is "one of 6 creative commons licences,
-and public domain" and that it cannot be changed later
-(https://aporee.org/maps/info/).
+Round 6 (2026-10-25, BEUK:sound): the earlier rain and wind loops were
+radio aporee uploads marked with the Creative Commons public-domain
+*mark*. That mark labels a work as already free of copyright; it is not
+the recordist's own waiver, so for a product that is sold those two were
+replaced. Waves (Commons PD-self: the author's own public-domain release
+with a fallback grant) stays.
 
 ## Shipped files
 
@@ -20,9 +22,9 @@ it, and that nothing else ships in this folder).
 
 | File | sha256 (shipped) | Bytes | Length |
 |---|---|---|---|
-| `rain.mp3` | `5dbdc4cc06b010ecf26a913aaac58564f8f490e2616b86382b09dbf60dcf01dc` | 977187 | 61.0 s |
+| `rain.mp3` | `cbae93f1898d752af13a21ae17dac35fc8641e92acc660d0fc892be5fc7fa35d` | 977187 | 61.0 s |
 | `waves.mp3` | `059c5890d0c335ae23e2b1a341f8f9c76c70e9475d5d48bd41ff70f050707ddb` | 977187 | 61.0 s |
-| `wind.mp3` | `b5b78cba9241b8c47d78cb92f3c84157cf4ab4d07ce523d7453dbd3f52af0140` | 977187 | 61.0 s |
+| `wind.mp3` | `2578760042c9439b1f0f54a0d2f792f0fa45ce6027e87f3ed1a67053ed8942c9` | 977187 | 61.0 s |
 
 Every file has the same shape: **0.5 s pad + 60 s loop + 0.5 s pad**, 44.1 kHz
 stereo MP3 at 128 kb/s CBR (LAME via FFmpeg 5.1.9, Xing/LAME header, no
@@ -33,23 +35,26 @@ whole interior; the studio loops `[0.5 s, 60.5 s)` of the decoded buffer
 padding a browser's MP3 decoder leaves in, that window is still exactly
 one period, so the loop point stays seamless. Loudness: all three
 mastered to **−27 LUFS integrated** (EBU R128, measured with FFmpeg
-`ebur128`); the studio plays them at master gain 0.7.
+`ebur128`); the studio plays them at master gain 0.7. The service
+worker keeps them in `beuk-sound-v2` (bumped from v1 when rain and wind
+were replaced, so a returning writer never keeps the old files).
 
 ## rain.mp3
 
 - Scene: Gentle rain (`zen.scene.rain`)
-- Recording: “Telaya, Veracruz, Mexico - Light Rain” — light rain in a field of banana trees, AB pair of B&K 4006, 2020-02-04
-- Author: Felix BLUME (radio aporee ::: maps)
-- Source page: https://archive.org/details/aporee_48133_54753
-- Direct download: https://archive.org/download/aporee_48133_54753/LegerepluiechampdebananesAB2016271296860567MX200201T04.mp3
-- Licence: Public domain (Public Domain Mark 1.0, https://creativecommons.org/publicdomain/mark/1.0/)
-- Licence line seen: “Public Domain Mark 1.0” (licence field of the item page, 2026-10-25)
+- Recording: “AMB Rain Loop 2” — steady rain, recorded on a GoPro Hero 12 Black with raw audio settings (submitted 2025-11-17)
+- Author: Kresiek The Furry (OpenGameArt.org)
+- Source page: https://opengameart.org/content/amb-rain-loop-2
+- Direct download: https://opengameart.org/sites/default/files/amb_rain2.flac
+- Licence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
+- Licence line seen: “License(s): CC0” (licence field of the submission page, linking to http://creativecommons.org/publicdomain/zero/1.0/, 2026-10-25); the page's description: “Recorded on a GoPro Hero 12 Black using raw audio settings.”
 - Retrieved: 2026-10-25
-- Original: MP3, 48 kHz stereo, 320 kb/s, 600.1 s, 24009024 bytes; sha1 `d2d574a659c9787f4fb9a18f8010368f7afadf87` (matches the Archive's file list)
-- Original sha256: `6a91521597d25e154863f4ac9341459395b52221bded06098551807b7c4df2ea`
-- Analysis of the original: no clipped samples (peak −0.56 dBFS); steady −33 to −37 dBFS RMS in 2 s blocks; 10 ms transients over the 2 s median stay ≤ 15 dB in the section used (one +24 dB event at 134.4 s and a short ~7 kHz chirp at ~258.5 s lie outside it); <200 Hz energy ≈ 2 %; no tonal lines (hum, voices, birdsong) found 300 Hz–16 kHz in 196–260 s.
-- Edits: decoded and resampled to 44.1 kHz; cut 192.0–256.0 s; the 4 s that follow the loop end (252.0–256.0 s) equal-power crossfaded into the loop head (sin/cos); gain +0.9 dB to −27 LUFS (true peak −1.9 dBTP); 0.5 s periodic pads added; encoded MP3 128 kb/s CBR.
-- Seam (decoded shipped file, FFmpeg): sample step across the loop point 0.0012 vs typical step 0.0053 (p99 0.0206); RMS step 50 ms either side −2.2 dB; a naive cut would step −5.8 dB.
+- Original: FLAC 16-bit, 48 kHz stereo, 733.0 s, 75502454 bytes; sha1 `a4a0919a972b0a2350b6aed1c9effd249fc3111c`
+- Original sha256: `c33d833842c88e9559882b35f6f149c3a96bbf236eb34491e36ea4cae8879985`
+- Analysis of the original (whole file): no clipped samples (peak −0.04 dBFS, at a single hit near 202.9 s); −21.6 LUFS, LRA 3.5 LU; two broadband 10 s swells at ~48 s and ~178 s; only three 10 ms transients more than 12 dB over the 2 s median (+12.8 dB at 139.4 s, +12.2 dB at 202.9 s and 451.3 s); <200 Hz energy ≈ 6 %; no tonal lines (hum, voices, birdsong) 300 Hz–16 kHz; stereo correlation 0.75. In the section used (600–664 s): −22.6 LUFS, LRA 0.8 LU, peak −7.9 dBFS, 2 s RMS −28.5 to −27.4 dBFS, no 10 ms transient over +10 dB, <200 Hz ≈ 6 %, no tonal lines.
+- Edits: decoded and resampled to 44.1 kHz (FFmpeg); cut 600.0–660.0 s; the 4 s that follow the loop end (660.0–664.0 s) equal-power crossfaded into the loop head (sin/cos); gain −4.4 dB to −27 LUFS (true peak −12.3 dBTP); 0.5 s periodic pads added; encoded MP3 128 kb/s CBR.
+- Seam (decoded shipped file, FFmpeg): sample step across the loop point 0.018 vs typical step 0.0073 (p99 0.024, so within the file's normal range); RMS step 50 ms either side +0.40 dB (a naive cut: −0.48 dB); the padded tail repeats the head with r = 0.983.
+
 
 ## waves.mp3
 
@@ -69,38 +74,55 @@ mastered to **−27 LUFS integrated** (EBU R128, measured with FFmpeg
 
 ## wind.mp3
 
+- Made for Beuk: rendered offline by `tools/sound/render_ambience.py` (NumPy 1.24.2, SciPy 1.10.1, FFmpeg 5.1.9 in `debian:bookworm-slim`); there is no recording and no sample of anyone else's work in it
 - Scene: Soft wind (`zen.scene.wind`)
-- Recording: “Utena, Lithuania, old willow tree in wind”, 2020-05-16 — wind in an old willow, small microphones placed in cracks of the bark
-- Author: alas23/sala (radio aporee ::: maps)
-- Source page: https://archive.org/details/aporee_49170_56039
-- Direct download: https://archive.org/download/aporee_49170_56039/zilvitistree.wav
-- Licence: Public domain (Public Domain Mark 1.0, https://creativecommons.org/publicdomain/mark/1.0/)
-- Licence line seen: “Public Domain Mark 1.0” (licence field of the item page, 2026-10-25)
-- Retrieved: 2026-10-25
-- Original: WAV PCM 16-bit, 44.1 kHz stereo, 292.3 s, 51569536 bytes; sha1 `7cf42e8acbfc5951ab0c151f666ced658d315a37` (matches the Archive's file list)
-- Original sha256: `7493815e69df7b1b3a1308201bd0e550d8dd634f46128e518279e7675f6bb967`
-- Analysis of the original: no clipped samples (peak −0.7 dBFS); gusts as slow broadband swells, 10 ms transients over the 2 s median ≤ 9 dB across the whole file and none > 10 dB in 130–210 s; no tonal lines in 138–206 s (a faint 120 Hz line in 20–120 s was avoided); energy concentrated below 300 Hz.
-- Edits: 2-pole high-pass at 80 Hz (takes out low gust rumble, the part that reads as “blowing into a microphone”); cut 140.0–204.0 s; the 4 s after the loop end (200.0–204.0 s) equal-power crossfaded into the loop head; gain −3.6 dB to −27 LUFS (true peak −11.3 dBTP); 0.5 s periodic pads; encoded MP3 128 kb/s CBR.
-- Seam (decoded shipped file): sample step 0.0029 vs typical 0.0018 (p99 0.0058); RMS step +1.0 dB; a naive cut would step −3.1 dB.
+- Author: Beuk
+- Licence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/)
+- Licence line seen: “Beuk releases wind.mp3 and tools/sound/render_ambience.py under CC0 1.0 Universal.” (our own dedication, this file)
+- Render: `python3 -I tools/sound/render_ambience.py wind <out_dir> 20261026`
+- Seed: 20261026 (NumPy PCG64). Rendering twice gave byte-identical WAV and MP3 (the MP3's sha256 is the one above).
+- What it is: brown-tilted noise shaped frame by frame (4200-sample frames, hop 1050, so the frames tile the 60 s loop exactly) by five broad bands centred near 300 Hz, 600 Hz, 1.1 kHz, 2 kHz and 3.6 kHz, each about an octave wide so nothing whistles, whose centres sweep slowly and whose levels follow irregular gust envelopes (modulation periods 4–40 s); gentle stereo movement; plus a leaf-rustle layer of 24004 tiny band-passed ticks (1.8–7 kHz) whose density rises with the gusts. Every layer is periodic with the 60 s loop by construction, so the loop needs no crossfade.
+- Analysis (shipped file, decoded): −27.4 LUFS, LRA 7.2 LU, peak −13.6 dBFS, 2 s RMS −38.7 to −29.6 dBFS (the gusts), no 10 ms transient over +10 dB, <200 Hz energy ≈ 6 % (the low rumble that reads as “blowing into a microphone” is what this avoids), spectral centroid 907 Hz, no tonal lines 300 Hz–15.9 kHz (the only flagged line sits on the MP3 encoder's ~16 kHz cut-off edge), stereo correlation 0.0.
+- Edits: none after rendering — gain −18.1 dB to −27 LUFS (true peak −13.1 dBTP), 0.5 s periodic pads and the MP3 128 kb/s CBR encode all happen inside the script.
+- Seam (decoded shipped file): sample step 0.0080 vs typical 0.0031 (p99 0.0101); RMS step +0.32 dB; the padded tail repeats the head with r = 0.984. Before encoding the step is 0.0021 vs typical 0.0032 — the loop is periodic.
 
 ## How the files were made
 
-`tools/sound/build_loop.py`, run with FFmpeg 5.1.9 and NumPy 1.24.2 in a
-`debian:bookworm-slim` container (originals never executed, only decoded):
+`tools/sound/build_loop.py` (recordings) and `tools/sound/render_ambience.py`
+(our renders), run with FFmpeg 5.1.9, NumPy 1.24.2 and SciPy 1.10.1 in a
+`debian:bookworm-slim` container (originals never executed, only decoded).
+`tools/sound/README.md` has the container and the steps.
 
 ```
-python3 -I tools/sound/build_loop.py <original> rain  192.0 60 4 0.5 -27 2 128k
-python3 -I tools/sound/build_loop.py Waves.ogg   waves 167.0 60 4 0.5 -27 2 128k 40
-python3 -I tools/sound/build_loop.py <original> wind  140.0 60 4 0.5 -27 2 128k 80
+python3 -I tools/sound/build_loop.py amb_rain2.flac rain  600.0 60 4 0.5 -27 2 128k
+python3 -I tools/sound/build_loop.py Waves.ogg      waves 167.0 60 4 0.5 -27 2 128k 40
+python3 -I tools/sound/render_ambience.py wind <out_dir> 20261026
 ```
 
-The script crossfades, normalises, pads, encodes, then decodes its own
-MP3 again and measures the seam on the decoded samples.
+`build_loop.py` crossfades, normalises, pads, encodes, then decodes its
+own MP3 again and measures the seam on the decoded samples;
+`render_ambience.py` renders, normalises, pads, encodes and measures the
+same way.
 
 ## Considered and not used
 
 | Candidate | Licence | Why not |
 |---|---|---|
+| Beuk's own rain render (`render_ambience.py rain`, seed 20261025) | CC0 (ours) | Kept for V to audition: a pink-noise bed plus ~480 drops/s in three tiers (far, mid, near: broadband ticks with a short resonant body, some with a rising air-bubble ring) and slow drips. A CC0 recording passed the cleanliness analysis clearly, so the recording ships. |
+| Previous rain: radio aporee “Telaya, Veracruz, Mexico - Light Rain” (Felix BLUME) | PD Mark | Replaced in round 6: a public-domain mark is a label, not the recordist's waiver. |
+| Previous wind: radio aporee “Utena, Lithuania, old willow tree in wind” (alas23/sala) | PD Mark | Replaced in round 6, same reason. |
+| OpenGameArt “AMB Rain Loop 1” (Kresiek The Furry) | CC0 | 88.6 s at an odd 37453 Hz sample rate; the author calls it “not the best quality”. |
+| OpenGameArt “Rain (Ambient, Not Loopable)”, long version (OveMelaa) | CC0 | Near-mono (L/R correlation 0.98), LRA 15.5 LU, 31 % of the energy below 200 Hz, centroid 916 Hz — dull and uneven. |
+| OpenGameArt “Rain (loopable)” (Ylmir) | CC0 | 25–45 s takes from one mono window mic “processed to sound stereo”, Vorbis 160 kb/s — too short for a 60 s loop. |
+| OpenGameArt “Wind” (IgnasD) | CC0 | Three clips of 1.7–6.7 s. |
+| OpenGameArt “wind1”–“wind5” (Luke.RUSTLTD) | CC0 | Synthesized in PureData, mono — no better than our own render. |
+| OpenGameArt “Mild Wind Background Noise”, “windy ambient noise” | CC0 | Bags shaking in the background / “atonal notes” in the wind, by their own descriptions. |
+| Commons “245286 dbspin grunewald.wav” (dbspin, Freesound mirror) | CC0 | Forest ambience, not wind: 100 transients over +12 dB, 69 % of the energy below 200 Hz, −44 LUFS. |
+| Commons “Rain.ogg” | PD | 10.3 s, mono. |
+| archive.org Soundica mirror “Rain in the Vietnam” (ltruong267, Freesound 812780) | CC0 | Mono AAC, LRA 10.9 LU over the first 10 min, transients to +15 dB. |
+| archive.org Soundica mirrors of Freesound 430765 “long easy rain 08” and 447408 “binaural wind sounds birds woods” | CC0 | Each mirror states its file is Freesound's public MP3 preview, not the original — previews are not shipped. |
+| Freesound CC0 previews (analysis only; downloading originals needs an account): 695619 “Forestia RainOnLeaves”, 200273 “Rain light 2 (rural)”, 554419 “light rain”, 397636 “Gentle suburb rain”, 664162, 767061, 523391; wind 669113, 844818, 653946, 523372 | CC0 (per Freesound's licence filter) | Rain: 13 transients to +18 dB (695619), mono (200273, 767061), 35–73 % of the energy below 200 Hz (554419, 397636, 664162, 767061), or −64 LUFS (523391). Wind: 83–84 % below 200 Hz (669113, 844818), a horse at 203 s (653946), birds (523372). None is cleaner than what ships. |
+| Commons rain/wind files by Gravity Sound, Robert EA Harvey, Acabashi, Zuvji, Sage Ross, W.carter, Missvain and others | CC BY / CC BY-SA / FAL | Attribution or share-alike licences are out of scope. |
 | Commons “Light Rain Distant Thunder July 5th 2016.wav” (kvgarlic) | CC0 | Description says individual raindrops hit the microphone windscreens: 24 transients 14–29 dB over the bed, peaks to −2 dBFS (handling-type thumps); thunder in 0–30 s; a singing bird. |
 | Commons “Rain (1).ogg” (ezwa, via pdsounds) | PD | Mono, 45 s, transcoded twice (MP3 → Vorbis); spectrally flat steady hiss with no drop detail — would sound like the old noise bed. |
 | Commons “Rain against the window.ogg” (cori, via pdsounds) | PD | Mono, double-lossy; 40–98 % of each second’s energy below 200 Hz (wind rumble). |
