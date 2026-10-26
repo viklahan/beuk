@@ -124,7 +124,7 @@ for (const family of families) {
   const lic = /license:\s*"([^"]+)"/.exec(meta);
   if (!lic || lic[1] !== 'OFL') { console.error('METADATA.pb licence is not OFL for ' + family); process.exit(1); }
   // the copyright header only — the licence body defines the term itself
-  const rfn = (text.split(/PREAMBLE/)[0].match(/Reserved Font Names?[^\n]*/gi) || []).join(' | ');
+  const rfn = (text.split(/PREAMBLE/)[0].match(/Reserved Font Names?[^\r\n]*/gi) || []).join(' | ');
   manifest.push([family, dir + '/OFL.txt', body.length, sha(body), url, 'METADATA.pb license: ' + lic[1] + (rfn ? '; ' + rfn : '; no Reserved Font Name')]);
 }
 

@@ -1,0 +1,3 @@
+# Self-hosted web fonts: byte-exact copies (sha256 in README.md) — never normalise.
+*.woff2 binary
+OFL.txt -text
