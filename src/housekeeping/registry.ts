@@ -1037,6 +1037,46 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason:
       'The EPUB is assembled in the client from the book state and the same-origin font files (asserted by window.runBeukAsyncSelfChecks()); the server archives the finished package without re-typesetting it.',
   },
+  /* BEUK:displayfaces — Pinyon Script, Patrick Hand, Abril Fatface: headings only */
+  {
+    id: 'fonts.display.heading-only',
+    title: 'Display faces are heading choices only: they reach the chapter title and drop cap at weight 400 in preview and export CSS, never the body',
+    kind: 'client-only',
+    reason:
+      'The heading and body stacks are built by the client stylesheet generator (asserted by window.runBeukSelfChecks()). The files, sha256s, licences and the renderer lock are tests/fonts-selfhosted.test.ts.',
+  },
+  {
+    id: 'fonts.display.preview-and-epub',
+    title: 'Display faces load from this origin in the preview, and an EPUB whose headings wear one embeds its TrueType with the OFL',
+    kind: 'client-only',
+    reason:
+      'Font matching is the browser’s and the EPUB is assembled in the client from the book state and the same-origin font files (asserted by window.runBeukAsyncSelfChecks()).',
+  },
+  /* BEUK:bookcolour — a book's accent colour and page tint */
+  {
+    id: 'colour.accent.reaches-every-output',
+    title: 'The book’s accent colour reaches chapter titles, numbers, drop caps, ornaments and the title page in preview, EPUB and print CSS; print blends the accent; the tint never reaches paper',
+    kind: 'client-only',
+    reason: 'Every surface’s CSS is generated in the client from the book state (asserted by window.runBeukSelfChecks()); tests/book-colour.test.ts checks the code statically.',
+  },
+  {
+    id: 'colour.unset.css-identical',
+    title: 'With no colour set, the book CSS, print tints and the book document are exactly as before',
+    kind: 'client-only',
+    reason: 'The CSS is generated in the client (asserted by window.runBeukSelfChecks()).',
+  },
+  {
+    id: 'colour.contrast.guard',
+    title: 'Contrast guard: an accent under 3:1 on the page, or a tint under 4.5:1 for black text, is refused plainly and changes nothing',
+    kind: 'client-only',
+    reason: 'The guard runs in the studio when a colour is picked (asserted by window.runBeukSelfChecks()).',
+  },
+  {
+    id: 'colour.persists-with-book',
+    title: 'The book’s colour is saved with the book and carried by History snapshots',
+    kind: 'client-only',
+    reason: 'The book document is serialized in the client; the server stores it as it arrives (asserted by window.runBeukSelfChecks()).',
+  },
   {
     id: 'themes.library.count-shelves-shape',
     title: 'Theme library: 15 themes across six genre shelves, all references resolve',

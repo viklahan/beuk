@@ -38,6 +38,7 @@
     <link rel="preload" href="assets/fonts/ebgaramond/ebgaramond-latin-normal-400_500_600.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="assets/fonts/fonts.css" />
     <link rel="stylesheet" href="assets/fonts/fonts-scripts.css" /><!-- BEUK:scriptfonts — Amiri + Noto Serif Devanagari, script subsets only -->
+    <link rel="stylesheet" href="assets/fonts/fonts-display.css" /><!-- BEUK:displayfaces — Pinyon Script, Patrick Hand, Abril Fatface: headings only -->
     <!-- ==== /BEUK:fonts ==== -->
     <!-- ==== BEUK:local ==== Studio libraries, vendored for offline use: byte-identical
          copies of the pinned releases (verified against cdnjs SRI and jsDelivr file hashes:
@@ -1045,6 +1046,16 @@
       .seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); padding: 9px 6px; font-size: 12.5px; font-weight: 600; }
       .seg button.active { background: var(--accent); color: var(--accent-ink); }
       .orn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      /* BEUK:bookcolour — the accent and page-tint swatches */
+      .colour-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+      .colour-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line-2); background: var(--sw, var(--panel-2)); padding: 0; cursor: pointer; }
+      .colour-sw.none { background: linear-gradient(135deg, transparent 46%, var(--muted) 46%, var(--muted) 54%, transparent 54%), var(--panel-2); }
+      .colour-sw[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .colour-custom { display: flex; align-items: center; gap: 10px; }
+      .colour-custom .field-lab { margin: 0; }
+      .colour-custom input[type="color"] { width: 44px; height: 30px; padding: 0 2px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--panel-2); cursor: pointer; }
+      .colour-msg { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; min-height: 1.2em; }
+      .colour-msg.warn { color: var(--bad); }
       .orn-btn {
         border: 1px solid var(--line-2); background: var(--panel-2); border-radius: 8px; padding: 10px 8px 7px;
         color: var(--ink-2); display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -2381,6 +2392,32 @@
                   </select>
                 </div>
               </div>
+
+              <!-- BEUK:bookcolour -->
+              <h3 class="studio-h" data-i18n="colour.h"><i data-lucide="palette"></i>Colour</h3>
+              <p class="studio-sub" data-i18n="colour.sub">One accent colour for the whole book: chapter titles and numbers, rules and ornaments, drop caps and the title page. With no accent, the type stays black, as before.</p>
+              <div class="ctl-grid">
+                <div class="full">
+                  <span class="field-lab" id="colourAccentLab" data-i18n="colour.accent">Accent colour</span>
+                  <div class="colour-row" id="colourAccentRow" role="group" aria-labelledby="colourAccentLab"></div>
+                  <div class="colour-custom">
+                    <input type="color" id="colourAccentCustom" value="#7a1f2b" />
+                    <label class="field-lab" for="colourAccentCustom" data-i18n="colour.custom">Your own accent</label>
+                  </div>
+                </div>
+                <div class="full">
+                  <span class="field-lab" id="colourTintLab" data-i18n="colour.tint">Page tint</span>
+                  <div class="colour-row" id="colourTintRow" role="group" aria-labelledby="colourTintLab"></div>
+                  <div class="colour-custom">
+                    <input type="color" id="colourTintCustom" value="#fbf5e6" />
+                    <label class="field-lab" for="colourTintCustom" data-i18n="colour.customTint">Your own tint</label>
+                  </div>
+                </div>
+              </div>
+              <p class="colour-msg" id="colourMsg" role="status" aria-live="polite"></p>
+              <p class="studio-sub" data-i18n="colour.tintNote">The tint colours the page on screens and in the EPUB. Print ignores it: the book prints on the paper you choose. Many reading apps replace it with their own page colour, and in night mode.</p>
+              <p class="studio-sub" data-i18n="colour.printNote">In print, the accent comes out in colour only in a colour-ink edition; a black-ink edition prints it in grey. Kindle and other e-ink readers show it in grey too.</p>
+              <!-- /BEUK:bookcolour -->
 
               <h3 class="studio-h" data-i18n="type.rhythmH"><i data-lucide="align-start-vertical"></i>Paragraph Rhythm</h3>
               <div class="ctl-grid">
@@ -16012,6 +16049,255 @@
           theme: { bodyFont: "Cormorant Garamond", headFont: "EB Garamond", fontSize: 17.5, lineHeight: 1.75, paraMode: "block", indentDepth: "1.5em", headerStyle: "classic_centered", dropDepth: 2, smallCapsWords: 2, ornament: "fleuron", justify: false, hyphens: false } }
       ];
 
+      /* ==== BEUK:displayfaces ====
+         Three display faces for headings — never for running text:
+         Pinyon Script (a formal copperplate script: poetry, romance,
+         invitations), Patrick Hand (a clear upright handwriting face:
+         children's books) and Abril Fatface (a heavy poster serif:
+         travel, food, thrillers). Self-hosted for the preview
+         (assets/fonts/fonts-display.css), installed in the print
+         renderer (deploy/renderer/fonts.lock), and embedded in an EPUB
+         whose headings wear one (no reading system has them), each
+         with its SIL OFL 1.1 licence (tools/fonts/vendor-display-fonts.mjs).
+         Each has one weight, 400, and no italic: every heading set in
+         one is set at 400, so no browser or reader fakes a bold. They
+         join the heading list only; a body text set in one is read
+         back in the default body face (bodyFaceOf). The script face's
+         small spaced capitals — chapter number, kickers, the title
+         page's author — fall to the body face: copperplate capitals
+         letter-spaced in a row are not readable. */
+      const DISPLAY_FONTS = [
+        { family: "Pinyon Script", dir: "pinyonscript", file: "Pinyon_Script-normal-400.ttf", sha256: "3683830e3bb3f1a2138b6098f8663ca5ceb66b1f397a4f30639aae139e344bb8", script: true },
+        { family: "Patrick Hand", dir: "patrickhand", file: "Patrick_Hand-normal-400.ttf", sha256: "8a384204c8ab3e9ed82954d46d8110a66fb5d7acf8f6b64c6f3980c1d0c01993", script: false },
+        { family: "Abril Fatface", dir: "abrilfatface", file: "Abril_Fatface-normal-400.ttf", sha256: "c426e1328c73a1d1c1c36809ead3353b487ae71d3b387ac8daca2d4b6d9124c0", script: false }
+      ];
+      const DISPLAY_FAMILIES = DISPLAY_FONTS.map((d) => d.family);
+      const displayFontOf = (fam) => DISPLAY_FONTS.find((d) => d.family === fam) || null;
+      HEAD_FONTS.push.apply(HEAD_FONTS, DISPLAY_FAMILIES);
+      /* A display face never sets running text. */
+      const bodyFaceOf = (fam) => (displayFontOf(fam) ? PRESETS[0].theme.bodyFont : fam);
+      /* The face for the small spaced capitals the heading face also sets. */
+      const labelFaceOf = (th) => { const d = displayFontOf(th.headFont); return d && d.script ? bodyFaceOf(th.bodyFont) : th.headFont; };
+      /* The extra rules a display face needs (none when the book wears none). */
+      function displayFaceRules(S, th, hd, bodyFf) {
+        const out = [];
+        const head = displayFontOf(th.headFont);
+        if (head) {
+          out.push([".chapter-title", ".dropcap", ".part-title", ".vol-title", ".tp-title", ".ht-title", ".toc-title", ".inhead"].map((x) => S + x).join(", ") + " { font-weight: 400; }");
+          if (head.script) out.push([".chapter-number", ".part-kicker", ".vol-kicker", ".tp-author", ".vol-author", ".endnotes-h"].map((x) => S + x).join(", ") + " { font-family: " + bodyFf + "; }");
+        }
+        if (hd) {
+          const sel = { number: ".chapter-number", title: ".chapter-title", subtitle: ".chapter-subtitle" };
+          HD_KEYS.forEach((k) => {
+            if (displayFontOf(hd[k].font)) out.push(S + ".chapter-opening " + sel[k] + " { font-weight: 400; }");
+            else if (head && k === "title") out.push(S + ".chapter-opening .chapter-title { font-weight: 600; }");
+          });
+        }
+        return out;
+      }
+      /* EPUB: the display faces the book's headings wear, fetched from
+         this origin once, sha256-checked, embedded whole (unsubset,
+         unmodified) with their licence. */
+      const displayFontData = {};
+      const displayFontOfl = {};
+      const displayFontTried = {};
+      function usedDisplayFonts() {
+        const th = state.theme || {};
+        const fams = [th.headFont];
+        if (th.header) HD_KEYS.forEach((k) => { if (th.header[k]) fams.push(th.header[k].font); });
+        return DISPLAY_FONTS.filter((d) => fams.indexOf(d.family) !== -1);
+      }
+      function displayFontsFor() {
+        return usedDisplayFonts().filter((d) => displayFontData[d.dir + "/" + d.file] && displayFontOfl[d.dir]).map((d) => ({
+          id: "df-" + d.dir, family: d.family, ext: "ttf", mediaType: FONT_MEDIA.ttf, file: d.file, weight: 400,
+          data: displayFontData[d.dir + "/" + d.file], ofl: displayFontOfl[d.dir] }));
+      }
+      async function ensureDisplayFonts() {
+        const need = usedDisplayFonts();
+        const failed = [];
+        for (const d of need) {
+          try {
+            if (!displayFontOfl[d.dir]) {
+              const r = await fetch(new URL("assets/fonts/" + d.dir + "/OFL.txt", document.baseURI).href, { credentials: "same-origin" });
+              const txt = r.ok ? await r.text() : "";
+              if (!/SIL OPEN FONT LICENSE Version 1\.1/i.test(txt)) throw new Error("licence " + (r.ok ? "unreadable" : "HTTP " + r.status));
+              displayFontOfl[d.dir] = txt;
+            }
+            const key = d.dir + "/" + d.file;
+            if (displayFontData[key]) continue;
+            const res = await fetch(new URL("assets/fonts/" + key, document.baseURI).href, { credentials: "same-origin" });
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            const buf = await res.arrayBuffer();
+            if (window.crypto && crypto.subtle) {
+              const hex = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buf))).map((x) => x.toString(16).padStart(2, "0")).join("");
+              if (hex !== d.sha256) throw new Error("sha256 mismatch for " + d.file);
+            }
+            displayFontData[key] = bufToBase64(buf);
+          } catch (e) { failed.push(d.family); }
+        }
+        return { needed: need.map((d) => d.family), failed: failed };
+      }
+      /* ==== /BEUK:displayfaces ==== */
+
+      /* ==== BEUK:bookcolour ====
+         One accent colour per book — chapter titles and numbers, rules
+         and ornaments, drop caps, part pages and the title page — and
+         an optional page tint. Book-level, not theme-level: it stays
+         when the writer tries another theme, rides with the book
+         (serializeBook "colour", only when set) and so with every
+         History snapshot. The one generator carries it: the preview,
+         zen, the EPUB and the print interior all read buildBookCss.
+         The tint colours the page on screens and in the EPUB only:
+         print-on-demand prints on the paper chosen at the store, and
+         the print interior's own page rule (white paper, black ink)
+         comes after it. Print keeps the accent, and its solid tints
+         (BEUK:print) blend the accent, not black, where the accent
+         stands. Contrast guard (WCAG 2.x relative luminance): the
+         accent must reach 3:1 — AA for large text — on the page (the
+         tint, or white), and a tint must keep black text at 4.5:1.
+         A colour that fails is refused, plainly, and nothing changes.
+         Unset, nothing is emitted: the CSS is exactly what it was. */
+      const COLOUR_ACCENTS = [
+        { id: "ember", hex: "#b4441c" }, { id: "tomato", hex: "#c23b2b" }, { id: "oxblood", hex: "#7a1f2b" },
+        { id: "brass", hex: "#8a6417" }, { id: "paddy", hex: "#3c7a2c" }, { id: "seaglass", hex: "#2a7a6a" },
+        { id: "azure", hex: "#1f62a8" }, { id: "ink", hex: "#1f3a64" }, { id: "fig", hex: "#6b2d5c" }, { id: "slate", hex: "#4a5560" }
+      ];
+      const COLOUR_TINTS = [
+        { id: "cream", hex: "#fbf5e6" }, { id: "sky", hex: "#f0f5fa" }, { id: "blush", hex: "#fbefec" }, { id: "sage", hex: "#eff4ea" }
+      ];
+      const COLOUR_PAGE = "#ffffff";
+      const COLOUR_TEXT = "#000000";
+      const COLOUR_MIN_LARGE = 3;
+      const COLOUR_MIN_TEXT = 4.5;
+      /* The elements the accent colours (their last simple selector):
+         print's solid tints blend the accent for these. */
+      const BOOK_ACCENT_TARGETS = [".chapter-number", ".chapter-title", ".chapter-rule", ".scene-break", ".dropcap", ".part-kicker", ".part-title", ".part-rule",
+        ".vol-kicker", ".vol-title", ".vol-rule", ".tp-top", ".tp-title", ".ht-title"];
+      function colourHex(v) {
+        const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/.exec(String(v == null ? "" : v).trim().toLowerCase());
+        if (!m) return "";
+        return "#" + (m[1].length === 3 ? m[1].split("").map((c) => c + c).join("") : m[1]);
+      }
+      function colourLum(hex) {
+        const h = colourHex(hex).slice(1);
+        const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)));
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      }
+      function colourContrast(a, b) {
+        const la = colourLum(a), lb = colourLum(b);
+        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+      }
+      /* Rounded down, so a colour just under a threshold never reads as on it. */
+      const colourRatioText = (r) => (Math.floor(r * 100) / 100).toFixed(2);
+      function bookColourNormalize(c) {
+        const o = c && typeof c === "object" ? c : {};
+        let tint = colourHex(o.tint), accent = colourHex(o.accent);
+        if (tint && colourContrast(tint, COLOUR_TEXT) < COLOUR_MIN_TEXT) tint = "";
+        if (accent && colourContrast(accent, tint || COLOUR_PAGE) < COLOUR_MIN_LARGE) accent = "";
+        return { accent: accent, tint: tint };
+      }
+      const bookColour = () => bookColourNormalize(state.bookColour);
+      const bookColourSet = () => { const c = bookColour(); return !!(c.accent || c.tint); };
+      /* The colour rules, for buildBookCss: [] when the book has none. */
+      function bookColourRules(S, root, scope) {
+        const c = bookColour();
+        const out = [];
+        if (c.accent) {
+          out.push(BOOK_ACCENT_TARGETS.map((x) => S + x).join(", ") + " { color: " + c.accent + "; }");
+          out.push(S + ".ch-ornate_framed { border-color: " + c.accent + "; }");
+        }
+        /* The page tint belongs to the whole document (EPUB, standalone
+           HTML); a scoped surface (the preview's flow, zen, the print
+           view) is a box inside the studio, coloured by its frame. */
+        if (c.tint && !scope) out.push(root + " { background-color: " + c.tint + "; --orn-bg: " + c.tint + "; }");
+        return out;
+      }
+      /* Print's ink where the accent stands. */
+      const printInkFor = (sel) => {
+        const acc = bookColour().accent;
+        if (!acc) return PRINT_INK;
+        const parts = sel.split(",").map((x) => x.trim().split(/\s+/).pop());
+        return parts.length && parts.every((x) => BOOK_ACCENT_TARGETS.indexOf(x) !== -1) ? acc : PRINT_INK;
+      };
+      const printOrnamentInk = () => bookColour().accent || PRINT_INK;
+      /* The guard: what a pick would make of the book's colour, or why not. */
+      function bookColourCheck(kind, hex, base) {
+        const cur = bookColourNormalize(base || state.bookColour);
+        const h = colourHex(hex);
+        if (kind === "accent") {
+          if (!h) return { ok: true, key: "colour.cleared", params: {}, next: { accent: "", tint: cur.tint } };
+          const r = colourContrast(h, cur.tint || COLOUR_PAGE);
+          if (r < COLOUR_MIN_LARGE) return { ok: false, key: "colour.refusedAccent", params: { hex: h, ratio: colourRatioText(r) } };
+          return { ok: true, key: "colour.okAccent", params: { hex: h, ratio: colourRatioText(r) }, next: { accent: h, tint: cur.tint } };
+        }
+        const page = h || COLOUR_PAGE;
+        if (h) {
+          const rt = colourContrast(h, COLOUR_TEXT);
+          if (rt < COLOUR_MIN_TEXT) return { ok: false, key: "colour.refusedTint", params: { hex: h, ratio: colourRatioText(rt) } };
+        }
+        if (cur.accent) {
+          const ra = colourContrast(cur.accent, page);
+          if (ra < COLOUR_MIN_LARGE) return { ok: false, key: "colour.refusedTintAccent", params: { hex: page, ratio: colourRatioText(ra) } };
+        }
+        if (!h) return { ok: true, key: "colour.tintCleared", params: {}, next: { accent: cur.accent, tint: "" } };
+        return { ok: true, key: "colour.okTint", params: { hex: h, ratio: colourRatioText(colourContrast(h, COLOUR_TEXT)) }, next: { accent: cur.accent, tint: h } };
+      }
+      function setBookColour(kind, hex) {
+        const r = bookColourCheck(kind, hex);
+        if (r.ok) {
+          const n = bookColourNormalize(r.next);
+          state.bookColour = n.accent || n.tint ? n : undefined;
+          noteBookEdited(); renderPreview(); zenRenderSurface();
+        }
+        renderBookColour();
+        const el = $("colourMsg");
+        if (el) { el.textContent = t(r.key, r.params); el.classList.toggle("warn", !r.ok); }
+        return r;
+      }
+      /* The preview's device screen wears the tint, as a reader's page
+         would — except the OLED phone, which shows a reader's dark page. */
+      function colourApplyPreviewTint() {
+        const scr = $("deviceScreen"), fr = $("deviceFrame");
+        if (!scr) return;
+        const tint = bookColour().tint;
+        scr.style.backgroundColor = tint && !(fr && fr.classList.contains("frame-phone")) ? tint : "";
+      }
+      function renderBookColour() {
+        const ar = $("colourAccentRow"), tr = $("colourTintRow");
+        if (!ar || !tr) return;
+        const c = bookColour();
+        const sw = (kind, hex, key) => '<button type="button" class="colour-sw' + (hex ? "" : " none") + '" data-colour-kind="' + kind + '" data-colour="' + hex + '"' +
+          (hex ? ' style="--sw:' + hex + '"' : "") + ' aria-pressed="' + String((kind === "accent" ? c.accent : c.tint) === hex) + '" aria-label="' + esc(t(key)) + '" title="' + esc(t(key)) +
+          '" data-i18n-aria="' + key + '" data-i18n-title="' + key + '"></button>';
+        ar.innerHTML = sw("accent", "", "colour.none") + COLOUR_ACCENTS.map((a) => sw("accent", a.hex, "colour.sw." + a.id)).join("");
+        tr.innerHTML = sw("tint", "", "colour.none") + COLOUR_TINTS.map((a) => sw("tint", a.hex, "colour.tw." + a.id)).join("");
+        $("colourAccentCustom").value = c.accent || "#7a1f2b";
+        $("colourTintCustom").value = c.tint || "#fbf5e6";
+      }
+      function initBookColour() {
+        ["colourAccentRow", "colourTintRow"].forEach((id) => $(id).addEventListener("click", (e) => {
+          const b = e.target.closest("[data-colour-kind]");
+          if (b) setBookColour(b.getAttribute("data-colour-kind"), b.getAttribute("data-colour"));
+        }));
+        $("colourAccentCustom").addEventListener("change", (e) => setBookColour("accent", e.target.value));
+        $("colourTintCustom").addEventListener("change", (e) => setBookColour("tint", e.target.value));
+        renderBookColour();
+      }
+      Object.assign(UI_STRINGS.en, {"fonts.displayGroup": "Display faces · headings only", "df.fetchFail": "The {list} heading face could not be loaded, so this EPUB does not embed it — reading apps will set the headings in their own font.", "colour.h": "Colour", "colour.sub": "One accent colour for the whole book: chapter titles and numbers, rules and ornaments, drop caps and the title page. With no accent, the type stays black, as before.", "colour.accent": "Accent colour", "colour.none": "None", "colour.custom": "Your own accent", "colour.tint": "Page tint", "colour.customTint": "Your own tint", "colour.tintNote": "The tint colours the page on screens and in the EPUB. Print ignores it: the book prints on the paper you choose. Many reading apps replace it with their own page colour, and in night mode.", "colour.printNote": "In print, the accent comes out in colour only in a colour-ink edition; a black-ink edition prints it in grey. Kindle and other e-ink readers show it in grey too.", "colour.refusedAccent": "{hex} is too light to read on this page: {ratio}:1 contrast, and headings need at least 3:1. The accent was not changed; pick a darker colour.", "colour.refusedTint": "{hex} is too dark for a page tint: black text on it has {ratio}:1 contrast, and running text needs at least 4.5:1. The tint was not changed; pick a lighter one.", "colour.refusedTintAccent": "On {hex} the accent colour would have only {ratio}:1 contrast, and headings need at least 3:1. The tint was not changed; pick a lighter tint or a darker accent.", "colour.okAccent": "Accent {hex}: {ratio}:1 contrast on the page.", "colour.okTint": "Page tint {hex}: black text on it has {ratio}:1 contrast.", "colour.cleared": "No accent: the book's type stays black.", "colour.tintCleared": "No page tint: the page keeps the reader's own colour.", "colour.sw.ember": "Ember", "colour.sw.tomato": "Tomato", "colour.sw.oxblood": "Oxblood", "colour.sw.brass": "Brass", "colour.sw.paddy": "Paddy green", "colour.sw.seaglass": "Sea glass", "colour.sw.azure": "Azure", "colour.sw.ink": "Ink blue", "colour.sw.fig": "Fig", "colour.sw.slate": "Slate", "colour.tw.cream": "Cream", "colour.tw.sky": "Sky", "colour.tw.blush": "Blush", "colour.tw.sage": "Sage"});
+      Object.assign(UI_STRINGS.es, {"fonts.displayGroup": "Fuentes de exhibición · solo títulos", "df.fetchFail": "No se pudo cargar la fuente de títulos {list}, así que este EPUB no la incrusta: las aplicaciones de lectura compondrán los títulos con su propia fuente.", "colour.h": "Color", "colour.sub": "Un color de acento para todo el libro: títulos y números de capítulo, filetes y ornamentos, capitulares y la portada. Sin acento, el texto sigue en negro, como hasta ahora.", "colour.accent": "Color de acento", "colour.none": "Ninguno", "colour.custom": "Tu propio acento", "colour.tint": "Tono de página", "colour.customTint": "Tu propio tono", "colour.tintNote": "El tono colorea la página en pantalla y en el EPUB. La impresión lo ignora: el libro se imprime en el papel que elijas. Muchas aplicaciones de lectura lo sustituyen por su propio color de página, también en modo nocturno.", "colour.printNote": "En papel, el acento sale en color solo en una edición con tinta de color; una edición en tinta negra lo imprime en gris. Kindle y otros lectores de tinta electrónica también lo muestran en gris.", "colour.refusedAccent": "{hex} es demasiado claro para leerse en esta página: contraste {ratio}:1, y los títulos necesitan al menos 3:1. El acento no ha cambiado; elige un color más oscuro.", "colour.refusedTint": "{hex} es demasiado oscuro como tono de página: el texto negro sobre él tiene un contraste {ratio}:1, y el texto corrido necesita al menos 4.5:1. El tono no ha cambiado; elige uno más claro.", "colour.refusedTintAccent": "Sobre {hex}, el color de acento tendría solo un contraste {ratio}:1, y los títulos necesitan al menos 3:1. El tono no ha cambiado; elige un tono más claro o un acento más oscuro.", "colour.okAccent": "Acento {hex}: contraste {ratio}:1 sobre la página.", "colour.okTint": "Tono de página {hex}: el texto negro tiene un contraste {ratio}:1.", "colour.cleared": "Sin acento: el texto del libro sigue en negro.", "colour.tintCleared": "Sin tono: la página conserva el color del lector.", "colour.sw.ember": "Brasa", "colour.sw.tomato": "Tomate", "colour.sw.oxblood": "Granate", "colour.sw.brass": "Latón", "colour.sw.paddy": "Verde arrozal", "colour.sw.seaglass": "Vidrio marino", "colour.sw.azure": "Azur", "colour.sw.ink": "Azul tinta", "colour.sw.fig": "Higo", "colour.sw.slate": "Pizarra", "colour.tw.cream": "Crema", "colour.tw.sky": "Cielo", "colour.tw.blush": "Rosa pálido", "colour.tw.sage": "Salvia"});
+      Object.assign(UI_STRINGS.fr, {"fonts.displayGroup": "Polices de titrage · titres seulement", "df.fetchFail": "La police de titres {list} n’a pas pu être chargée : cet EPUB ne l’intègre donc pas, et les applications de lecture composeront les titres dans leur propre police.", "colour.h": "Couleur", "colour.sub": "Une couleur d’accent pour tout le livre : titres et numéros de chapitre, filets et ornements, lettrines et page de titre. Sans accent, le texte reste noir, comme avant.", "colour.accent": "Couleur d’accent", "colour.none": "Aucune", "colour.custom": "Votre propre accent", "colour.tint": "Teinte de page", "colour.customTint": "Votre propre teinte", "colour.tintNote": "La teinte colore la page à l’écran et dans l’EPUB. L’impression l’ignore : le livre s’imprime sur le papier que vous choisissez. Beaucoup d’applications de lecture la remplacent par leur propre couleur de page, y compris en mode nuit.", "colour.printNote": "Sur papier, l’accent ne sort en couleur que dans une édition à encre couleur ; une édition à encre noire l’imprime en gris. Kindle et les autres liseuses à encre électronique l’affichent aussi en gris.", "colour.refusedAccent": "{hex} est trop clair pour être lu sur cette page : contraste de {ratio}:1, alors que les titres demandent au moins 3:1. L’accent n’a pas changé ; choisissez une couleur plus foncée.", "colour.refusedTint": "{hex} est trop foncé pour une teinte de page : le texte noir y a un contraste de {ratio}:1, alors que le texte courant demande au moins 4.5:1. La teinte n’a pas changé ; choisissez-en une plus claire.", "colour.refusedTintAccent": "Sur {hex}, la couleur d’accent n’aurait qu’un contraste de {ratio}:1, alors que les titres demandent au moins 3:1. La teinte n’a pas changé ; choisissez une teinte plus claire ou un accent plus foncé.", "colour.okAccent": "Accent {hex} : contraste de {ratio}:1 sur la page.", "colour.okTint": "Teinte {hex} : le texte noir y a un contraste de {ratio}:1.", "colour.cleared": "Pas d’accent : le texte du livre reste noir.", "colour.tintCleared": "Pas de teinte : la page garde la couleur de la liseuse.", "colour.sw.ember": "Braise", "colour.sw.tomato": "Tomate", "colour.sw.oxblood": "Sang-de-bœuf", "colour.sw.brass": "Laiton", "colour.sw.paddy": "Vert rizière", "colour.sw.seaglass": "Verre marin", "colour.sw.azure": "Azur", "colour.sw.ink": "Bleu encre", "colour.sw.fig": "Figue", "colour.sw.slate": "Ardoise", "colour.tw.cream": "Crème", "colour.tw.sky": "Ciel", "colour.tw.blush": "Rose pâle", "colour.tw.sage": "Sauge"});
+      Object.assign(UI_STRINGS.de, {"fonts.displayGroup": "Auszeichnungsschriften · nur Überschriften", "df.fetchFail": "Die Überschriftenschrift {list} konnte nicht geladen werden und ist daher nicht in dieses EPUB eingebettet – Lese-Apps setzen die Überschriften in ihrer eigenen Schrift.", "colour.h": "Farbe", "colour.sub": "Eine Akzentfarbe für das ganze Buch: Kapiteltitel und -nummern, Linien und Ornamente, Initialen und die Titelseite. Ohne Akzent bleibt die Schrift schwarz, wie bisher.", "colour.accent": "Akzentfarbe", "colour.none": "Keine", "colour.custom": "Eigene Akzentfarbe", "colour.tint": "Seitentönung", "colour.customTint": "Eigene Tönung", "colour.tintNote": "Die Tönung färbt die Seite am Bildschirm und im EPUB. Der Druck übergeht sie: Das Buch wird auf dem Papier gedruckt, das Sie wählen. Viele Lese-Apps ersetzen sie durch ihre eigene Seitenfarbe, auch im Nachtmodus.", "colour.printNote": "Auf Papier erscheint der Akzent nur in einer Ausgabe mit Farbdruck farbig; eine Ausgabe in Schwarzdruck druckt ihn grau. Kindle und andere E-Ink-Reader zeigen ihn ebenfalls grau.", "colour.refusedAccent": "{hex} ist auf dieser Seite zu hell zum Lesen: Kontrast {ratio}:1, Überschriften brauchen mindestens 3:1. Der Akzent wurde nicht geändert; wählen Sie eine dunklere Farbe.", "colour.refusedTint": "{hex} ist für eine Seitentönung zu dunkel: Schwarzer Text darauf hat einen Kontrast von {ratio}:1, Fließtext braucht mindestens 4.5:1. Die Tönung wurde nicht geändert; wählen Sie eine hellere.", "colour.refusedTintAccent": "Auf {hex} hätte die Akzentfarbe nur einen Kontrast von {ratio}:1, Überschriften brauchen mindestens 3:1. Die Tönung wurde nicht geändert; wählen Sie eine hellere Tönung oder einen dunkleren Akzent.", "colour.okAccent": "Akzent {hex}: Kontrast {ratio}:1 auf der Seite.", "colour.okTint": "Seitentönung {hex}: Schwarzer Text darauf hat einen Kontrast von {ratio}:1.", "colour.cleared": "Kein Akzent: Die Schrift des Buchs bleibt schwarz.", "colour.tintCleared": "Keine Tönung: Die Seite behält die Farbe des Lesegeräts.", "colour.sw.ember": "Glut", "colour.sw.tomato": "Tomate", "colour.sw.oxblood": "Ochsenblut", "colour.sw.brass": "Messing", "colour.sw.paddy": "Reisfeldgrün", "colour.sw.seaglass": "Meerglas", "colour.sw.azure": "Azur", "colour.sw.ink": "Tintenblau", "colour.sw.fig": "Feige", "colour.sw.slate": "Schiefer", "colour.tw.cream": "Creme", "colour.tw.sky": "Himmel", "colour.tw.blush": "Zartrosa", "colour.tw.sage": "Salbei"});
+      Object.assign(UI_STRINGS.it, {"fonts.displayGroup": "Caratteri da titolo · solo titoli", "df.fetchFail": "Non è stato possibile caricare il carattere dei titoli {list}, quindi questo EPUB non lo incorpora: le app di lettura comporranno i titoli con il proprio carattere.", "colour.h": "Colore", "colour.sub": "Un colore d’accento per tutto il libro: titoli e numeri dei capitoli, filetti e ornamenti, capilettera e frontespizio. Senza accento il testo resta nero, come prima.", "colour.accent": "Colore d’accento", "colour.none": "Nessuno", "colour.custom": "Il tuo accento", "colour.tint": "Tinta della pagina", "colour.customTint": "La tua tinta", "colour.tintNote": "La tinta colora la pagina sullo schermo e nell’EPUB. La stampa la ignora: il libro si stampa sulla carta che scegli. Molte app di lettura la sostituiscono con il proprio colore di pagina, anche in modalità notte.", "colour.printNote": "Su carta l’accento esce a colori solo in un’edizione con inchiostro a colori; un’edizione con inchiostro nero lo stampa in grigio. Anche Kindle e gli altri lettori a inchiostro elettronico lo mostrano in grigio.", "colour.refusedAccent": "{hex} è troppo chiaro per leggersi su questa pagina: contrasto {ratio}:1, e i titoli richiedono almeno 3:1. L’accento non è cambiato; scegli un colore più scuro.", "colour.refusedTint": "{hex} è troppo scuro come tinta di pagina: il testo nero ha un contrasto di {ratio}:1, e il testo corrente richiede almeno 4.5:1. La tinta non è cambiata; scegline una più chiara.", "colour.refusedTintAccent": "Su {hex} il colore d’accento avrebbe solo un contrasto di {ratio}:1, e i titoli richiedono almeno 3:1. La tinta non è cambiata; scegli una tinta più chiara o un accento più scuro.", "colour.okAccent": "Accento {hex}: contrasto {ratio}:1 sulla pagina.", "colour.okTint": "Tinta {hex}: il testo nero ha un contrasto di {ratio}:1.", "colour.cleared": "Nessun accento: il testo del libro resta nero.", "colour.tintCleared": "Nessuna tinta: la pagina mantiene il colore del lettore.", "colour.sw.ember": "Brace", "colour.sw.tomato": "Pomodoro", "colour.sw.oxblood": "Sangue di bue", "colour.sw.brass": "Ottone", "colour.sw.paddy": "Verde risaia", "colour.sw.seaglass": "Vetro di mare", "colour.sw.azure": "Azzurro", "colour.sw.ink": "Blu inchiostro", "colour.sw.fig": "Fico", "colour.sw.slate": "Ardesia", "colour.tw.cream": "Crema", "colour.tw.sky": "Cielo", "colour.tw.blush": "Rosa cipria", "colour.tw.sage": "Salvia"});
+      Object.assign(UI_STRINGS.pt, {"fonts.displayGroup": "Tipos de destaque · só títulos", "df.fetchFail": "Não foi possível carregar o tipo dos títulos {list}, por isso este EPUB não o incorpora — as aplicações de leitura vão compor os títulos com a sua própria fonte.", "colour.h": "Cor", "colour.sub": "Uma cor de destaque para o livro inteiro: títulos e números de capítulo, filetes e ornamentos, capitulares e a página de rosto. Sem destaque, o texto continua preto, como antes.", "colour.accent": "Cor de destaque", "colour.none": "Nenhuma", "colour.custom": "O seu destaque", "colour.tint": "Tom da página", "colour.customTint": "O seu tom", "colour.tintNote": "O tom colore a página no ecrã e no EPUB. A impressão ignora-o: o livro é impresso no papel que escolher. Muitas aplicações de leitura substituem-no pela sua própria cor de página, também no modo noturno.", "colour.printNote": "Em papel, o destaque só sai a cores numa edição com tinta de cor; uma edição a tinta preta imprime-o em cinzento. O Kindle e outros leitores de tinta eletrónica também o mostram em cinzento.", "colour.refusedAccent": "{hex} é demasiado claro para ler nesta página: contraste de {ratio}:1, e os títulos precisam de pelo menos 3:1. O destaque não foi alterado; escolha uma cor mais escura.", "colour.refusedTint": "{hex} é demasiado escuro para tom de página: o texto preto sobre ele tem contraste de {ratio}:1, e o texto corrido precisa de pelo menos 4.5:1. O tom não foi alterado; escolha um mais claro.", "colour.refusedTintAccent": "Sobre {hex}, a cor de destaque teria só {ratio}:1 de contraste, e os títulos precisam de pelo menos 3:1. O tom não foi alterado; escolha um tom mais claro ou um destaque mais escuro.", "colour.okAccent": "Destaque {hex}: contraste de {ratio}:1 na página.", "colour.okTint": "Tom {hex}: o texto preto tem contraste de {ratio}:1.", "colour.cleared": "Sem destaque: o texto do livro continua preto.", "colour.tintCleared": "Sem tom: a página mantém a cor do leitor.", "colour.sw.ember": "Brasa", "colour.sw.tomato": "Tomate", "colour.sw.oxblood": "Sangue de boi", "colour.sw.brass": "Latão", "colour.sw.paddy": "Verde arrozal", "colour.sw.seaglass": "Vidro do mar", "colour.sw.azure": "Azul-celeste", "colour.sw.ink": "Azul-tinta", "colour.sw.fig": "Figo", "colour.sw.slate": "Ardósia", "colour.tw.cream": "Creme", "colour.tw.sky": "Céu", "colour.tw.blush": "Rosa pálido", "colour.tw.sage": "Salva"});
+      Object.assign(UI_STRINGS.nl, {"fonts.displayGroup": "Displayletters · alleen koppen", "df.fetchFail": "De kopletter {list} kon niet worden geladen, dus dit EPUB sluit hem niet in — leesapps zetten de koppen in hun eigen lettertype.", "colour.h": "Kleur", "colour.sub": "Eén accentkleur voor het hele boek: hoofdstuktitels en -nummers, lijnen en ornamenten, initialen en de titelpagina. Zonder accent blijft de letter zwart, zoals voorheen.", "colour.accent": "Accentkleur", "colour.none": "Geen", "colour.custom": "Eigen accent", "colour.tint": "Paginatint", "colour.customTint": "Eigen tint", "colour.tintNote": "De tint kleurt de pagina op schermen en in het EPUB. Bij druk wordt hij genegeerd: het boek wordt gedrukt op het papier dat u kiest. Veel leesapps vervangen hem door hun eigen paginakleur, ook in nachtmodus.", "colour.printNote": "Op papier komt het accent alleen in kleur in een editie met kleureninkt; een editie in zwarte inkt drukt het grijs. Kindle en andere e-inklezers tonen het ook grijs.", "colour.refusedAccent": "{hex} is te licht om op deze pagina te lezen: contrast {ratio}:1, en koppen hebben minstens 3:1 nodig. Het accent is niet gewijzigd; kies een donkerdere kleur.", "colour.refusedTint": "{hex} is te donker voor een paginatint: zwarte tekst erop heeft contrast {ratio}:1, en lopende tekst heeft minstens 4.5:1 nodig. De tint is niet gewijzigd; kies een lichtere.", "colour.refusedTintAccent": "Op {hex} zou de accentkleur maar {ratio}:1 contrast hebben, en koppen hebben minstens 3:1 nodig. De tint is niet gewijzigd; kies een lichtere tint of een donkerder accent.", "colour.okAccent": "Accent {hex}: contrast {ratio}:1 op de pagina.", "colour.okTint": "Paginatint {hex}: zwarte tekst erop heeft contrast {ratio}:1.", "colour.cleared": "Geen accent: de letter van het boek blijft zwart.", "colour.tintCleared": "Geen tint: de pagina houdt de kleur van de lezer.", "colour.sw.ember": "Gloed", "colour.sw.tomato": "Tomaat", "colour.sw.oxblood": "Ossenbloed", "colour.sw.brass": "Messing", "colour.sw.paddy": "Rijstveldgroen", "colour.sw.seaglass": "Zeeglas", "colour.sw.azure": "Azuur", "colour.sw.ink": "Inktblauw", "colour.sw.fig": "Vijg", "colour.sw.slate": "Leisteen", "colour.tw.cream": "Crème", "colour.tw.sky": "Hemel", "colour.tw.blush": "Zachtroze", "colour.tw.sage": "Salie"});
+      Object.assign(UI_STRINGS.pl, {"fonts.displayGroup": "Kroje tytułowe · tylko nagłówki", "df.fetchFail": "Nie udało się wczytać kroju nagłówków {list}, więc ten EPUB go nie osadza — aplikacje do czytania złożą nagłówki własną czcionką.", "colour.h": "Kolor", "colour.sub": "Jeden kolor akcentu dla całej książki: tytuły i numery rozdziałów, linie i ozdobniki, inicjały i strona tytułowa. Bez akcentu tekst pozostaje czarny, jak dotąd.", "colour.accent": "Kolor akcentu", "colour.none": "Brak", "colour.custom": "Własny akcent", "colour.tint": "Odcień strony", "colour.customTint": "Własny odcień", "colour.tintNote": "Odcień barwi stronę na ekranie i w EPUB. Druk go pomija: książka jest drukowana na wybranym przez Ciebie papierze. Wiele aplikacji do czytania zastępuje go własnym kolorem strony, także w trybie nocnym.", "colour.printNote": "Na papierze akcent wychodzi w kolorze tylko w wydaniu z kolorowym tuszem; wydanie w czarnym tuszu drukuje go na szaro. Kindle i inne czytniki z e-papierem też pokazują go na szaro.", "colour.refusedAccent": "{hex} jest za jasny, by dało się go czytać na tej stronie: kontrast {ratio}:1, a nagłówki potrzebują co najmniej 3:1. Akcent nie został zmieniony; wybierz ciemniejszy kolor.", "colour.refusedTint": "{hex} jest za ciemny na odcień strony: czarny tekst ma na nim kontrast {ratio}:1, a tekst ciągły potrzebuje co najmniej 4.5:1. Odcień nie został zmieniony; wybierz jaśniejszy.", "colour.refusedTintAccent": "Na {hex} kolor akcentu miałby tylko kontrast {ratio}:1, a nagłówki potrzebują co najmniej 3:1. Odcień nie został zmieniony; wybierz jaśniejszy odcień albo ciemniejszy akcent.", "colour.okAccent": "Akcent {hex}: kontrast {ratio}:1 na stronie.", "colour.okTint": "Odcień strony {hex}: czarny tekst ma na nim kontrast {ratio}:1.", "colour.cleared": "Bez akcentu: tekst książki pozostaje czarny.", "colour.tintCleared": "Bez odcienia: strona zachowuje kolor czytnika.", "colour.sw.ember": "Żar", "colour.sw.tomato": "Pomidor", "colour.sw.oxblood": "Bordo", "colour.sw.brass": "Mosiądz", "colour.sw.paddy": "Zieleń ryżowa", "colour.sw.seaglass": "Szkło morskie", "colour.sw.azure": "Lazur", "colour.sw.ink": "Granat atramentowy", "colour.sw.fig": "Figa", "colour.sw.slate": "Łupek", "colour.tw.cream": "Krem", "colour.tw.sky": "Niebo", "colour.tw.blush": "Pudrowy róż", "colour.tw.sage": "Szałwia"});
+      Object.assign(UI_STRINGS.ru, {"fonts.displayGroup": "Акцидентные шрифты · только заголовки", "df.fetchFail": "Не удалось загрузить шрифт заголовков {list}, поэтому он не встроен в этот EPUB — приложения для чтения наберут заголовки своим шрифтом.", "colour.h": "Цвет", "colour.sub": "Один акцентный цвет для всей книги: названия и номера глав, линейки и орнаменты, буквицы и титульный лист. Без акцента текст остаётся чёрным, как прежде.", "colour.accent": "Акцентный цвет", "colour.none": "Нет", "colour.custom": "Свой акцент", "colour.tint": "Тон страницы", "colour.customTint": "Свой тон", "colour.tintNote": "Тон окрашивает страницу на экране и в EPUB. При печати он не учитывается: книга печатается на бумаге, которую вы выберете. Многие приложения для чтения заменяют его своим цветом страницы, в том числе в ночном режиме.", "colour.printNote": "На бумаге акцент выходит цветным только в издании с цветной печатью; издание, напечатанное чёрной краской, передаёт его серым. Kindle и другие устройства с электронными чернилами тоже показывают его серым.", "colour.refusedAccent": "{hex} слишком светлый для чтения на этой странице: контраст {ratio}:1, а заголовкам нужно не меньше 3:1. Акцент не изменён; выберите цвет темнее.", "colour.refusedTint": "{hex} слишком тёмный для тона страницы: у чёрного текста на нём контраст {ratio}:1, а основному тексту нужно не меньше 4.5:1. Тон не изменён; выберите светлее.", "colour.refusedTintAccent": "На {hex} у акцентного цвета был бы контраст всего {ratio}:1, а заголовкам нужно не меньше 3:1. Тон не изменён; выберите тон светлее или акцент темнее.", "colour.okAccent": "Акцент {hex}: контраст {ratio}:1 на странице.", "colour.okTint": "Тон страницы {hex}: у чёрного текста контраст {ratio}:1.", "colour.cleared": "Без акцента: текст книги остаётся чёрным.", "colour.tintCleared": "Без тона: страница сохраняет цвет читалки.", "colour.sw.ember": "Жар", "colour.sw.tomato": "Томат", "colour.sw.oxblood": "Бычья кровь", "colour.sw.brass": "Латунь", "colour.sw.paddy": "Рисовое поле", "colour.sw.seaglass": "Морское стекло", "colour.sw.azure": "Лазурь", "colour.sw.ink": "Чернильный синий", "colour.sw.fig": "Инжир", "colour.sw.slate": "Сланец", "colour.tw.cream": "Сливки", "colour.tw.sky": "Небо", "colour.tw.blush": "Пудра", "colour.tw.sage": "Шалфей"});
+      Object.assign(UI_STRINGS.tr, {"fonts.displayGroup": "Başlık yazı tipleri · yalnızca başlıklar", "df.fetchFail": "{list} başlık yazı tipi yüklenemedi, bu yüzden bu EPUB onu gömmüyor — okuma uygulamaları başlıkları kendi yazı tipleriyle dizecek.", "colour.h": "Renk", "colour.sub": "Bütün kitap için tek bir vurgu rengi: bölüm başlıkları ve numaraları, çizgiler ve süslemeler, büyük baş harfler ve iç kapak. Vurgu yoksa yazı eskisi gibi siyah kalır.", "colour.accent": "Vurgu rengi", "colour.none": "Yok", "colour.custom": "Kendi vurgunuz", "colour.tint": "Sayfa tonu", "colour.customTint": "Kendi tonunuz", "colour.tintNote": "Ton, sayfayı ekranda ve EPUB'da renklendirir. Baskı onu yok sayar: kitap seçtiğiniz kâğıda basılır. Birçok okuma uygulaması onu, gece modunda da, kendi sayfa rengiyle değiştirir.", "colour.printNote": "Kâğıtta vurgu yalnızca renkli mürekkepli bir baskıda renkli çıkar; siyah mürekkepli bir baskı onu gri basar. Kindle ve diğer e-mürekkep okuyucular da onu gri gösterir.", "colour.refusedAccent": "{hex} bu sayfada okunamayacak kadar açık: kontrast {ratio}:1, başlıklar ise en az 3:1 ister. Vurgu değiştirilmedi; daha koyu bir renk seçin.", "colour.refusedTint": "{hex} sayfa tonu için fazla koyu: üzerindeki siyah yazının kontrastı {ratio}:1, akan metin ise en az 4.5:1 ister. Ton değiştirilmedi; daha açık bir ton seçin.", "colour.refusedTintAccent": "{hex} üzerinde vurgu renginin kontrastı yalnızca {ratio}:1 olurdu, başlıklar ise en az 3:1 ister. Ton değiştirilmedi; daha açık bir ton ya da daha koyu bir vurgu seçin.", "colour.okAccent": "Vurgu {hex}: sayfada {ratio}:1 kontrast.", "colour.okTint": "Sayfa tonu {hex}: siyah yazının kontrastı {ratio}:1.", "colour.cleared": "Vurgu yok: kitabın yazısı siyah kalır.", "colour.tintCleared": "Ton yok: sayfa okuyucunun kendi rengini korur.", "colour.sw.ember": "Kor", "colour.sw.tomato": "Domates", "colour.sw.oxblood": "Bordo", "colour.sw.brass": "Pirinç", "colour.sw.paddy": "Çeltik yeşili", "colour.sw.seaglass": "Deniz camı", "colour.sw.azure": "Gök mavisi", "colour.sw.ink": "Mürekkep mavisi", "colour.sw.fig": "İncir", "colour.sw.slate": "Arduvaz", "colour.tw.cream": "Krem", "colour.tw.sky": "Gök", "colour.tw.blush": "Pudra", "colour.tw.sage": "Adaçayı"});
+      Object.assign(UI_STRINGS.ar, {"fonts.displayGroup": "خطوط العرض · للعناوين فقط", "df.fetchFail": "تعذّر تحميل خط العناوين {list}، لذا لا يتضمّنه ملف EPUB هذا — ستعرض تطبيقات القراءة العناوين بخطها الخاص.", "colour.h": "اللون", "colour.sub": "لون إبراز واحد للكتاب كله: عناوين الفصول وأرقامها، والخطوط والزخارف، والحروف الاستهلالية، وصفحة العنوان. من دون لون إبراز يبقى النص أسود كما كان.", "colour.accent": "لون الإبراز", "colour.none": "بلا", "colour.custom": "لون إبراز من اختيارك", "colour.tint": "صبغة الصفحة", "colour.customTint": "صبغة من اختيارك", "colour.tintNote": "تلوّن الصبغة الصفحة على الشاشات وفي ملف EPUB. أما الطباعة فتتجاهلها: يُطبع الكتاب على الورق الذي تختاره. وكثير من تطبيقات القراءة يستبدلها بلون صفحته الخاص، وكذلك في الوضع الليلي.", "colour.printNote": "على الورق لا يظهر لون الإبراز ملوّنًا إلا في طبعة بحبر ملوّن؛ أما الطبعة بالحبر الأسود فتطبعه رماديًا. وكيندل وغيره من أجهزة الحبر الإلكتروني تعرضه رماديًا أيضًا.", "colour.refusedAccent": "اللون {hex} فاتح جدًا لتُقرأ به هذه الصفحة: التباين {ratio}:1، والعناوين تحتاج إلى 3:1 على الأقل. لم يتغيّر لون الإبراز؛ اختر لونًا أغمق.", "colour.refusedTint": "اللون {hex} داكن جدًا لصبغة صفحة: تباين النص الأسود عليه {ratio}:1، والنص المتصل يحتاج إلى 4.5:1 على الأقل. لم تتغيّر الصبغة؛ اختر صبغة أفتح.", "colour.refusedTintAccent": "على {hex} سيكون تباين لون الإبراز {ratio}:1 فقط، والعناوين تحتاج إلى 3:1 على الأقل. لم تتغيّر الصبغة؛ اختر صبغة أفتح أو لون إبراز أغمق.", "colour.okAccent": "لون الإبراز {hex}: تباين {ratio}:1 على الصفحة.", "colour.okTint": "صبغة الصفحة {hex}: تباين النص الأسود عليها {ratio}:1.", "colour.cleared": "بلا لون إبراز: يبقى نص الكتاب أسود.", "colour.tintCleared": "بلا صبغة: تحتفظ الصفحة بلون جهاز القراءة.", "colour.sw.ember": "جمر", "colour.sw.tomato": "طماطم", "colour.sw.oxblood": "عنابي", "colour.sw.brass": "نحاس أصفر", "colour.sw.paddy": "أخضر حقول الأرز", "colour.sw.seaglass": "زجاج البحر", "colour.sw.azure": "لازوردي", "colour.sw.ink": "أزرق الحبر", "colour.sw.fig": "تين", "colour.sw.slate": "أردوازي", "colour.tw.cream": "كريمي", "colour.tw.sky": "سماوي", "colour.tw.blush": "وردي باهت", "colour.tw.sage": "مريمية"});
+      Object.assign(UI_STRINGS.ja, {"fonts.displayGroup": "ディスプレイ書体 · 見出し専用", "df.fetchFail": "見出し書体 {list} を読み込めなかったため、この EPUB には埋め込まれていません。読書アプリは見出しを独自のフォントで表示します。", "colour.h": "色", "colour.sub": "本全体に一つのアクセントカラー：章のタイトルと番号、罫線と飾り、ドロップキャップ、扉ページに使われます。アクセントなしなら、文字はこれまでどおり黒のままです。", "colour.accent": "アクセントカラー", "colour.none": "なし", "colour.custom": "自分で選んだアクセント", "colour.tint": "ページの色合い", "colour.customTint": "自分で選んだ色合い", "colour.tintNote": "色合いは画面上と EPUB でページに色を付けます。印刷では使われず、本は選んだ用紙に印刷されます。多くの読書アプリは、夜間モードも含め、独自のページ色に置き換えます。", "colour.printNote": "紙では、アクセントがカラーで出るのはカラーインクの版だけです。黒インクの版ではグレーで印刷されます。Kindle などの電子ペーパー端末でもグレーで表示されます。", "colour.refusedAccent": "{hex} はこのページで読むには明るすぎます。コントラストは {ratio}:1 で、見出しには 3:1 以上が必要です。アクセントは変更していません。もっと濃い色を選んでください。", "colour.refusedTint": "{hex} はページの色合いとしては暗すぎます。黒い文字とのコントラストは {ratio}:1 で、本文には 4.5:1 以上が必要です。色合いは変更していません。もっと明るい色を選んでください。", "colour.refusedTintAccent": "{hex} の上ではアクセントカラーのコントラストが {ratio}:1 しかなく、見出しには 3:1 以上が必要です。色合いは変更していません。もっと明るい色合いか、もっと濃いアクセントを選んでください。", "colour.okAccent": "アクセント {hex}：ページ上のコントラストは {ratio}:1 です。", "colour.okTint": "ページの色合い {hex}：黒い文字とのコントラストは {ratio}:1 です。", "colour.cleared": "アクセントなし：本の文字は黒のままです。", "colour.tintCleared": "色合いなし：ページは読書端末の色のままです。", "colour.sw.ember": "熾火", "colour.sw.tomato": "トマト", "colour.sw.oxblood": "牛血色", "colour.sw.brass": "真鍮", "colour.sw.paddy": "稲田の緑", "colour.sw.seaglass": "シーグラス", "colour.sw.azure": "紺碧", "colour.sw.ink": "インクブルー", "colour.sw.fig": "無花果", "colour.sw.slate": "スレート", "colour.tw.cream": "クリーム", "colour.tw.sky": "空色", "colour.tw.blush": "淡い桜色", "colour.tw.sage": "セージ"});
+      Object.assign(UI_STRINGS["zh-Hans"], {"fonts.displayGroup": "展示字体 · 仅用于标题", "df.fetchFail": "未能加载标题字体 {list}，因此此 EPUB 未嵌入该字体——阅读应用将用自己的字体显示标题。", "colour.h": "颜色", "colour.sub": "为整本书选一种强调色：章标题和章号、线条和装饰、首字下沉和扉页。不设强调色时，文字仍是黑色，与以前一样。", "colour.accent": "强调色", "colour.none": "无", "colour.custom": "自选强调色", "colour.tint": "页面底色", "colour.customTint": "自选底色", "colour.tintNote": "底色在屏幕上和 EPUB 中为页面着色。印刷时不使用：书印在你选择的纸张上。许多阅读应用会用自己的页面颜色替换它，夜间模式下也是如此。", "colour.printNote": "印在纸上时，只有彩色墨水版才会印出彩色强调色；黑色墨水版会把它印成灰色。Kindle 等电子墨水阅读器也会显示为灰色。", "colour.refusedAccent": "{hex} 太浅，在这页上难以阅读：对比度为 {ratio}:1，而标题至少需要 3:1。强调色未更改；请选择更深的颜色。", "colour.refusedTint": "{hex} 作为页面底色太深：黑色文字在上面的对比度为 {ratio}:1，而正文至少需要 4.5:1。底色未更改；请选择更浅的颜色。", "colour.refusedTintAccent": "在 {hex} 上，强调色的对比度只有 {ratio}:1，而标题至少需要 3:1。底色未更改；请选择更浅的底色或更深的强调色。", "colour.okAccent": "强调色 {hex}：在页面上的对比度为 {ratio}:1。", "colour.okTint": "页面底色 {hex}：黑色文字的对比度为 {ratio}:1。", "colour.cleared": "无强调色：书中文字仍为黑色。", "colour.tintCleared": "无底色：页面保持阅读器自己的颜色。", "colour.sw.ember": "余烬", "colour.sw.tomato": "番茄红", "colour.sw.oxblood": "牛血红", "colour.sw.brass": "黄铜", "colour.sw.paddy": "稻田绿", "colour.sw.seaglass": "海玻璃", "colour.sw.azure": "天蓝", "colour.sw.ink": "墨水蓝", "colour.sw.fig": "无花果紫", "colour.sw.slate": "石板灰", "colour.tw.cream": "奶油", "colour.tw.sky": "天空", "colour.tw.blush": "淡粉", "colour.tw.sage": "鼠尾草"});
+      /* ==== /BEUK:bookcolour ==== */
+
       /* ================= Custom themes & uploaded fonts =================
          The writer's own themes and faces, kept in the book document
          beside the manuscript (serializeBook / applyBookDoc), so they
@@ -16194,7 +16480,7 @@
       }
       /* Everything an EPUB package embeds: the uploaded faces the book
          wears, then the script faces its text needs. */
-      const epubFonts = (sections, lang, meta) => usedUploadedFonts().concat(scriptFontsFor(sections, lang, meta));
+      const epubFonts = (sections, lang, meta) => usedUploadedFonts().concat(scriptFontsFor(sections, lang, meta)).concat(displayFontsFor()); /* BEUK:displayfaces */
       function bufToBase64(buf) {
         const b = new Uint8Array(buf); let out = "";
         for (let i = 0; i < b.length; i += 0x8000) out += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
@@ -16228,12 +16514,19 @@
             }
           } catch (e) { failed.push(sf.family); }
         }
-        return { needed: need.map((k) => SCRIPT_FONTS[k].family), failed: failed };
+        const df = await ensureDisplayFonts(); /* BEUK:displayfaces — the heading face, the same way */
+        return { needed: need.map((k) => SCRIPT_FONTS[k].family), failed: failed, display: df.needed, displayFailed: df.failed };
       }
       /* The export tree shows what the package will hold: a book that
          needs a script face fetches it in the background, once. */
       const scriptFontTried = {};
       function prefetchScriptFonts(after) {
+        /* BEUK:displayfaces — the heading face the export tree will list */
+        const dneed = usedDisplayFonts().filter((d) => !displayFontTried[d.dir]);
+        if (dneed.length) {
+          dneed.forEach((d) => { displayFontTried[d.dir] = true; });
+          ensureDisplayFonts().then((r) => { if (after && r.needed.length > r.failed.length) after(); }).catch(() => {});
+        }
         const need = bookScripts(state.sections, state.meta.language, state.meta).filter((k) => !scriptFontTried[k]);
         if (!need.length) return;
         need.forEach((k) => { scriptFontTried[k] = true; });
@@ -16279,7 +16572,11 @@
          own heading — so a picker can never drift from the shelf. */
       function fontOptionsHtml(list) {
         let h = '<optgroup label="' + esc(t("fonts.libraryGroup")) + '">' +
-          list.map((f) => '<option value="' + esc(f) + '">' + esc(f) + "</option>").join("") + "</optgroup>";
+          list.filter((f) => !displayFontOf(f)).map((f) => '<option value="' + esc(f) + '">' + esc(f) + "</option>").join("") + "</optgroup>";
+        /* BEUK:displayfaces — heading-only faces, said so */
+        const disp = list.filter((f) => displayFontOf(f));
+        if (disp.length) h += '<optgroup label="' + esc(t("fonts.displayGroup")) + '">' +
+          disp.map((f) => '<option value="' + esc(f) + '">' + esc(f) + "</option>").join("") + "</optgroup>";
         const mine = uploadedFonts();
         if (mine.length) h += '<optgroup label="' + esc(t("fonts.mineGroup")) + '">' +
           mine.map((f) => '<option value="' + esc(f.family) + '">' + esc(f.family) + "</option>").join("") + "</optgroup>";
@@ -19260,7 +19557,7 @@
         const t = state.theme;
         const S = scope ? scope + " " : "";
         const root = scope || "body";
-        const bodyFf = fontStack(t.bodyFont), headFf = fontStack(t.headFont);
+        const bodyFf = fontStack(bodyFaceOf(t.bodyFont)), headFf = fontStack(t.headFont);
         /* A custom theme's header design rides the same generator:
            normalized here so every surface — preview, zen, print,
            EPUB — typesets from the one reading of it. Absent (every
@@ -19407,6 +19704,9 @@
             S + ".ch-editorial_left .chapter-number { border-left: 0; padding-left: 0; border-right: 0.22em solid currentColor; padding-right: 0.6em; }",
             S + ".toc-child { margin-left: 0; margin-right: 1.4em; }");
         }
+        /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
+           book wears a display face or a colour. */
+        css.push(...displayFaceRules(S, t, hd, bodyFf), ...bookColourRules(S, root, scope));
         return css.join("\n");
       }
 
@@ -22632,6 +22932,7 @@
         renderFlourishes();
         renderMyThemes();
         renderFonts();
+        renderBookColour(); /* BEUK:bookcolour */
       }
       /* The "Your flourishes" area: the writer's uploaded devices,
          each with its way out of the library, and the chapter-heading
@@ -23389,6 +23690,7 @@
           input.value = "";
           handleFlourishFile(file);
         });
+        initBookColour(); /* BEUK:bookcolour */
         $("btnNewTheme").addEventListener("click", () => openThemeCreator(null));
         $("btnTcClose").addEventListener("click", closeThemeCreator);
         $("btnTcSave").addEventListener("click", saveThemeCreator);
@@ -24090,6 +24392,7 @@
         const flow = $("pageFlow");
         flow.setAttribute("lang", state.meta.language || "en");
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
+        colourApplyPreviewTint(); /* BEUK:bookcolour */
         flow.style.setProperty("--orn-bg", getComputedStyle($("deviceScreen")).backgroundColor);
         flow.innerHTML = sectionHtml(s);
         $("rhBook").textContent = state.meta.title || "";
@@ -24194,6 +24497,7 @@
         requestAnimationFrame(pvTurn);
         setTimeout(() => { fitDeviceFrame(); if (state.page === pvLastSet) pvTurn(); else { measurePages(); goToPage(state.page, true); } scheduleDeskUpdate(60); }, 330);
         const flow = $("pageFlow");
+        colourApplyPreviewTint(); /* BEUK:bookcolour */
         flow.style.setProperty("--orn-bg", getComputedStyle($("deviceScreen")).backgroundColor);
         hcOnDevice(d); /* BEUK:hcpreview */
       }
@@ -28518,7 +28822,7 @@
       async function buildEpubBlob() {
         /* BEUK:scriptfonts — the script faces the book needs, before the package is assembled */
         const sf = await ensureScriptFonts(state.sections, state.meta.language, state.meta);
-        if (sf.failed.length) toast(t("sf.fetchFail", { list: sf.failed.join(", ") }), "alert-triangle");
+        if (sf.failed.length) toast(t("sf.fetchFail", { list: sf.failed.join(", ") }), "alert-triangle"); if (sf.displayFailed && sf.displayFailed.length) toast(t("df.fetchFail", { list: sf.displayFailed.join(", ") }), "alert-triangle");
         const files = epubFiles();
         const zip = new JSZip();
         files.forEach((f) => {
@@ -28804,7 +29108,7 @@
           S + "h2.inhead, " + S + "h3.inhead, " + S + ".chapter-opening, " + S + ".endnotes-h { page-break-after: avoid; break-after: avoid; page-break-inside: avoid; break-inside: avoid; }",
           S + ".scene-break { page-break-inside: avoid; break-inside: avoid; page-break-before: avoid; break-before: avoid; page-break-after: avoid; break-after: avoid; }",
           S + "figure.book-img, " + S + "figure.scene-img, " + S + ".plate-page { page-break-inside: avoid; break-inside: avoid; }",
-          S + ".lp-edition { text-align: center; text-indent: 0; margin: 2.2em 0 0 0; font-family: " + fontStack(state.theme.headFont) + "; font-size: 0.82em; letter-spacing: 0.22em; text-transform: uppercase; }"
+          S + ".lp-edition { text-align: center; text-indent: 0; margin: 2.2em 0 0 0; font-family: " + fontStack(labelFaceOf(state.theme)) + "; font-size: 0.82em; letter-spacing: 0.22em; text-transform: uppercase; }"
         ];
         if (state.printLargePrint) {
           rules.push(root + " { font-size: 18pt; line-height: 1.6; text-align: left; hyphens: manual; -webkit-hyphens: manual; }");
@@ -28826,7 +29130,7 @@
         const headCss = printHeadContentCss();
         const headBox = state.printHeadPlace === "bottom" ? "@bottom-center" : "@top-center";
         const folioPos = printFolioPos();
-        const headLine = (indent) => indent + headBox + " { content: " + headCss + "; font-family: " + fontStack(state.theme.headFont) + "; font-size: " + (lp ? "10pt" : "8.5pt") + "; letter-spacing: 0.14em; text-transform: uppercase; color: #555; }";
+        const headLine = (indent) => indent + headBox + " { content: " + headCss + "; font-family: " + fontStack(labelFaceOf(state.theme)) + "; font-size: " + (lp ? "10pt" : "8.5pt") + "; letter-spacing: 0.14em; text-transform: uppercase; color: #555; }";
         const folioDecl = "content: counter(page); font-family: " + fontStack(state.theme.bodyFont) + "; font-size: " + (lp ? "11.5pt" : "9.5pt") + "; color: #333;";
         const folioCentreLine = "  @bottom-center { " + folioDecl + " }";
         const sideRule = (sel, first, second, folioBox) =>
@@ -28977,7 +29281,7 @@
           if (!op || sel.charAt(0) === "@" || /\.bd-/.test(sel)) continue;
           const a = parseFloat(op[1]);
           if (!(a >= 0 && a < 1)) continue;
-          out.push(sel + " { opacity: 1; color: " + printBlendHex(PRINT_INK, PRINT_PAGE, a) + "; }");
+          out.push(sel + " { opacity: 1; color: " + printBlendHex(printInkFor(sel), PRINT_PAGE, a) + "; }"); /* BEUK:bookcolour */
         }
         return out.join("\n");
       }
@@ -29035,14 +29339,14 @@
             let ok = true;
             const solid = (v) => {
               if (v === "none") return v;
-              if (v === "currentColor") return printBlendHex(PRINT_INK, PRINT_PAGE, alpha);
+              if (v === "currentColor") return printBlendHex(printOrnamentInk(), PRINT_PAGE, alpha); /* BEUK:bookcolour — ornaments wear the accent */
               if (printHexRgb(v)) return printBlendHex(v, PRINT_PAGE, alpha);
               ok = false;
               return v;
             };
             const fillM = /\sfill="([^"]*)"/.exec(attrs);
             if (fillM) attrs = attrs.replace(fillM[0], ' fill="' + solid(fillM[1]) + '"');
-            else if (tag !== "g") attrs += ' fill="' + printBlendHex(PRINT_INK, PRINT_PAGE, alpha) + '"';
+            else if (tag !== "g") attrs += ' fill="' + printBlendHex(printOrnamentInk(), PRINT_PAGE, alpha) + '"';
             else ok = false;
             const strokeM = /\sstroke="([^"]*)"/.exec(attrs);
             if (strokeM) attrs = attrs.replace(strokeM[0], ' stroke="' + solid(strokeM[1]) + '"');
@@ -29837,7 +30141,7 @@
         btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>Building…'; icons();
         try {
           const sf = await ensureScriptFonts(boxSetVolumesAll().reduce((a, v) => a.concat(v.sections || []), []), state.meta.language, state.meta); /* BEUK:scriptfonts */
-          if (sf.failed.length) toast(t("sf.fetchFail", { list: sf.failed.join(", ") }), "alert-triangle");
+          if (sf.failed.length) toast(t("sf.fetchFail", { list: sf.failed.join(", ") }), "alert-triangle"); if (sf.displayFailed && sf.displayFailed.length) toast(t("df.fetchFail", { list: sf.displayFailed.join(", ") }), "alert-triangle");
           const files = boxSetFiles();
           const zip = new JSZip();
           files.forEach((f) => {
@@ -32689,6 +32993,7 @@
           meta: Object.assign({}, state.meta),
           theme: themeCopy,
           activePreset: state.activePreset,
+          ...(bookColourSet() ? { colour: bookColour() } : {}), /* BEUK:bookcolour — absent when unset */
           sections: state.sections.map(normalizeSection),
           cover: state.cover,
           coverRecipe: state.coverRecipe ? normalizeCoverRecipe(state.coverRecipe) : null,
@@ -32748,8 +33053,12 @@
              exactly the book it always was. */
           state.theme.header = doc.theme.header ? normalizeHeaderDesign(doc.theme.header, state.theme) : null;
           if (!state.theme.header) delete state.theme.header;
+          state.theme.bodyFont = bodyFaceOf(state.theme.bodyFont); /* BEUK:displayfaces — never running text */
         }
         state.activePreset = doc.activePreset || null;
+        /* BEUK:bookcolour — the book's colour is its own: a book without one has none */
+        state.bookColour = bookColourNormalize(doc.colour);
+        if (!state.bookColour.accent && !state.bookColour.tint) state.bookColour = undefined;
         if (Array.isArray(doc.sections) && doc.sections.length) {
           state.sections = doc.sections.map(normalizeSection);
           state.activeId = state.sections.some((s) => s.id === doc.activeId)
@@ -42808,6 +43117,189 @@
           } }
       );
       /* ==== /BEUK:scriptfonts ==== */
+      /* ==== BEUK:displayfaces + BEUK:bookcolour self-checks ==== */
+      SELF_CHECKS.push(
+        { id: "fonts.display.heading-only", feature: "fonts-themes", name: "Display faces (Pinyon Script, Patrick Hand, Abril Fatface) are heading choices only: each reaches the chapter title and drop cap rules, at weight 400, in the preview and the export CSS and never the body rule; no body picker lists one, and a body face named as one is set in the default body face",
+          run() {
+            const keep = state.theme; const bad = [];
+            try {
+              const opts = Array.prototype.map.call(($("selBodyFont") || { options: [] }).options, (o) => o.value);
+              DISPLAY_FONTS.forEach((d) => {
+                if (BODY_FONTS.indexOf(d.family) !== -1 || opts.indexOf(d.family) !== -1) bad.push(d.family + " is offered as a body face");
+                if (HEAD_FONTS.indexOf(d.family) === -1) bad.push(d.family + " is not a heading choice");
+                state.theme = Object.assign({}, keep, { headFont: d.family }); delete state.theme.header;
+                [[".fc-page", "preview"], ["", "export"]].forEach(([scope, where]) => {
+                  const S = scope ? scope + " " : "";
+                  const css = buildBookCss(scope);
+                  const ff = fontStack(d.family);
+                  if (css.indexOf(S + ".chapter-title { font-family: " + ff + ";") === -1) bad.push(where + ": the chapter title is not set in " + d.family);
+                  if (css.indexOf(S + ".dropcap { float: left; font-family: " + ff + ";") === -1) bad.push(where + ": the drop cap is not set in " + d.family);
+                  if (css.indexOf(S + ".chapter-title, " + S + ".dropcap, ") === -1 || !/\{ font-weight: 400; \}/.test(css)) bad.push(where + ": " + d.family + " headings are not held at 400");
+                  if (css.split("\n")[0].indexOf(d.family) !== -1) bad.push(where + ": " + d.family + " reached the body rule");
+                  if (d.script && css.indexOf(S + ".chapter-number, " + S + ".part-kicker") === -1) bad.push(where + ": the script face's spaced capitals stay in it");
+                });
+                state.theme = Object.assign({}, keep, { bodyFont: d.family }); delete state.theme.header;
+                const first = buildBookCss("").split("\n")[0];
+                if (first.indexOf(fontStack(PRESETS[0].theme.bodyFont)) === -1) bad.push(d.family + " as a body face is not replaced by " + PRESETS[0].theme.bodyFont);
+              });
+              if (applyBookDoc.toString().indexOf("state.theme.bodyFont = bodyFaceOf(state.theme.bodyFont)") === -1) bad.push("an arriving book's body face is not guarded");
+              state.theme = Object.assign({}, keep, { headFont: "Libre Baskerville" }); delete state.theme.header;
+              if (/\{ font-weight: 400; \}/.test(buildBookCss(""))) bad.push("a book in no display face gets display rules");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : DISPLAY_FAMILIES.join(", ") + ": headings only, at 400, in preview and export CSS; never the body");
+            } finally { state.theme = keep; }
+          } },
+        { id: "colour.accent.reaches-every-output", feature: "fonts-themes", name: "A book's accent colour reaches the chapter title, chapter number, drop cap, ornament rules and title page in the preview, EPUB and print CSS; print blends the accent (not black) for its solid tints and ornament parts; the page tint colours the EPUB page and never the printed paper",
+          run() {
+            const keep = state.bookColour; const bad = [];
+            const ACC = "#7a1f2b", TINT = "#fbf5e6";
+            try {
+              state.bookColour = { accent: ACC, tint: TINT };
+              const want = (css, S, where) => {
+                const line = css.split("\n").find((l) => l.indexOf(S + ".chapter-number, " + S + ".chapter-title, ") === 0) || "";
+                if (line.indexOf("{ color: " + ACC + "; }") === -1) bad.push(where + ": no accent rule");
+                [".chapter-title", ".chapter-number", ".dropcap", ".chapter-rule", ".scene-break", ".tp-title", ".tp-top", ".part-title"].forEach((x) => {
+                  if (line.indexOf(S + x + ",") === -1 && line.indexOf(S + x + " {") === -1) bad.push(where + ": " + x + " misses the accent");
+                });
+              };
+              const pv = buildBookCss(".fc-page");
+              want(pv, ".fc-page ", "preview");
+              if (pv.indexOf(TINT) !== -1) bad.push("the preview flow CSS carries the tint (the device screen wears it)");
+              const epub = buildBookCss("");
+              want(epub, "", "EPUB");
+              if (epub.indexOf("body { background-color: " + TINT + "; --orn-bg: " + TINT + "; }") === -1) bad.push("EPUB: no page tint");
+              const print = buildPrintHtml();
+              want(print, "", "print");
+              const iT = print.indexOf("background-color: " + TINT), iP = print.indexOf("html, body { margin: 0; padding: 0; background: " + PRINT_PAGE + ";");
+              if (iP === -1 || iP < iT) bad.push("print does not lay white paper over the tint");
+              const blend = printBlendHex(ACC, PRINT_PAGE, 0.75);
+              if (print.indexOf(".chapter-number { opacity: 1; color: " + blend + "; }") === -1) bad.push("print: the chapter number's solid tint is not " + blend);
+              if (print.indexOf(".chapter-subtitle { opacity: 1; color: " + printBlendHex(PRINT_INK, PRINT_PAGE, 0.85) + "; }") === -1) bad.push("print: the subtitle no longer blends black");
+              const orn = printSolidSvgHtml(ornamentSvg("fleuron"));
+              if (orn.indexOf('fill="' + printBlendHex(ACC, PRINT_PAGE, 0.8) + '"') === -1) bad.push("print: ornament parts do not blend the accent");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "accent " + ACC + " in preview, EPUB and print; print tints " + blend + "; tint " + TINT + " in the EPUB only");
+            } finally { state.bookColour = keep; }
+          } },
+        { id: "colour.unset.css-identical", feature: "fonts-themes", name: "No colour set: buildBookCss, print's solid tints and the book document are exactly as before — no colour rule, no colour key, ornaments blend black ink — and clearing a colour returns to the same bytes",
+          run() {
+            const keep = state.bookColour; const bad = [];
+            try {
+              const snap = () => [buildBookCss(".fc-page"), buildBookCss(""), buildBookCss(".zen-book"), printSolidTintCss(buildBookCss("")), printSolidSvgHtml(ornamentSvg("stars"))].join("\n/*--*/\n");
+              state.bookColour = undefined;
+              const a = snap();
+              state.bookColour = { accent: "#1f62a8", tint: "#f0f5fa" };
+              const mid = snap();
+              state.bookColour = { accent: "", tint: "" };
+              const b = snap();
+              if (a !== b) bad.push("a cleared colour leaves different CSS");
+              if (a === mid) bad.push("a colour changes nothing");
+              if (/#1f62a8|#f0f5fa/.test(a)) bad.push("the unset CSS names the colour");
+              if (bookColourRules("", "body", "").length || bookColourRules(".fc-page ", ".fc-page", ".fc-page").length) bad.push("colour rules with no colour");
+              if (printSolidSvgHtml(ornamentSvg("stars")).indexOf(printBlendHex(PRINT_INK, PRINT_PAGE, 0.7)) === -1) bad.push("print ornaments no longer blend black ink");
+              state.bookColour = undefined;
+              if ("colour" in serializeBook()) bad.push("a book with no colour writes a colour key");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "unset and cleared CSS are byte-identical (" + a.length + " chars), no colour key");
+            } finally { state.bookColour = keep; }
+          } },
+        { id: "colour.contrast.guard", feature: "fonts-themes", name: "Contrast guard: WCAG relative-luminance contrast is computed exactly; an accent under 3:1 on the page, a tint under 4.5:1 for black text, or a tint that drops the accent under 3:1 is refused with a plain message and changes nothing; every named swatch passes on white and on every tint",
+          run() {
+            const bad = [];
+            const near = (x, y) => Math.abs(x - y) < 0.01;
+            if (!near(colourContrast("#000000", "#ffffff"), 21) || !near(colourContrast("#777777", "#ffffff"), 4.48) || !near(colourContrast("#ffffff", "#ffffff"), 1)) bad.push("contrast math");
+            const none = { accent: "", tint: "" };
+            const pale = bookColourCheck("accent", "#ffd23f", none);
+            if (pale.ok || pale.key !== "colour.refusedAccent" || pale.params.ratio !== "1.44") bad.push("a pale yellow accent was not refused at 1.44:1 (" + JSON.stringify(pale) + ")");
+            const msg = t(pale.key, pale.params);
+            if (msg.indexOf("#ffd23f") === -1 || msg.indexOf("1.44:1") === -1 || msg.indexOf("3:1") === -1) bad.push("the refusal does not say the colour, its contrast and the need: " + msg);
+            const dark = bookColourCheck("tint", "#555555", none);
+            if (dark.ok || dark.key !== "colour.refusedTint") bad.push("a dark tint was not refused");
+            const clash = bookColourCheck("tint", "#a0a0a0", { accent: "#1f62a8", tint: "" });
+            if (clash.ok || clash.key !== "colour.refusedTintAccent" || clash.params.ratio !== "2.38") bad.push("a tint that drops the accent to 2.38:1 was not refused (" + JSON.stringify(clash) + ")");
+            if (bookColourNormalize({ accent: "#ffd23f" }).accent !== "" || bookColourNormalize({ tint: "#333333" }).tint !== "") bad.push("a failing colour in a book document is kept");
+            if (bookColourNormalize({ accent: "not a colour" }).accent !== "" || bookColourNormalize({ accent: "#036" }).accent !== "#003366") bad.push("colour values are not read strictly");
+            const keep = state.bookColour;
+            try {
+              state.bookColour = { accent: "#1f62a8", tint: "" };
+              if (setBookColour("accent", "#ffe9a0").ok || bookColour().accent !== "#1f62a8") bad.push("a refused accent changed the book");
+            } finally {
+              state.bookColour = keep; renderBookColour();
+              const m = $("colourMsg"); if (m) { m.textContent = ""; m.classList.remove("warn"); }
+            }
+            const pages = [COLOUR_PAGE].concat(COLOUR_TINTS.map((x) => x.hex));
+            COLOUR_ACCENTS.forEach((a) => pages.forEach((p) => { if (colourContrast(a.hex, p) < COLOUR_MIN_LARGE) bad.push(a.id + " on " + p); }));
+            COLOUR_TINTS.forEach((x) => { if (colourContrast(x.hex, COLOUR_TEXT) < COLOUR_MIN_TEXT) bad.push("tint " + x.id); });
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "refuses #ffd23f (1.44:1), #555555 as a tint, #a0a0a0 under #1f62a8 (2.38:1); " + COLOUR_ACCENTS.length + " swatches pass 3:1 on white and " + COLOUR_TINTS.length + " tints");
+          } },
+        { id: "colour.persists-with-book", feature: "fonts-themes", name: "The book's colour rides with the book: serializeBook carries it, a History snapshot carries it, it reads back exactly, and a book arriving without one has none",
+          run() {
+            const keep = state.bookColour; const bad = [];
+            try {
+              state.bookColour = { accent: "#3c7a2c", tint: "#eff4ea" };
+              const doc = serializeBook();
+              if (!doc.colour || doc.colour.accent !== "#3c7a2c" || doc.colour.tint !== "#eff4ea") bad.push("serializeBook: " + JSON.stringify(doc.colour));
+              const snap = snapshotBookDoc();
+              if (!snap.colour || snap.colour.accent !== "#3c7a2c") bad.push("a snapshot does not carry it");
+              const back = bookColourNormalize(JSON.parse(JSON.stringify(doc)).colour);
+              if (back.accent !== "#3c7a2c" || back.tint !== "#eff4ea") bad.push("it does not read back");
+              const src = applyBookDoc.toString();
+              if (src.indexOf("state.bookColour = bookColourNormalize(doc.colour);") === -1) bad.push("applyBookDoc does not read it (or clear it)");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "saved, snapshotted and read back: " + JSON.stringify(doc.colour));
+            } finally { state.bookColour = keep; }
+          } }
+      );
+      SELF_CHECKS_ASYNC.push(
+        { id: "fonts.display.preview-and-epub", feature: "fonts-themes", name: "Display faces in the preview and the EPUB: each is loaded from this origin's assets/fonts/ and sets a chapter title at 400 while the body text keeps the body face; an EPUB whose headings wear Pinyon Script embeds its TrueType (font/ttf, sha256-checked, @font-face + OFL.txt) and adds no validator error; a book in no display face embeds none",
+          async run() {
+            const keep = state.theme; const bad = []; const facts = [];
+            if (!document.getElementById("bookStyle")) { try { renderPreview(); } catch (e) {} }
+            if (!document.querySelector('link[rel="stylesheet"][href$="assets/fonts/fonts-display.css"]')) bad.push("fonts-display.css is not linked by the studio");
+            const host = document.createElement("div");
+            host.className = "dfchk";
+            host.setAttribute("aria-hidden", "true");
+            host.style.cssText = "position:absolute;left:-10000px;top:0;width:32em;visibility:hidden;";
+            const st = document.createElement("style");
+            document.head.appendChild(st); document.body.appendChild(host);
+            const errIds = (files) => validateEpubPackage(files).results.filter((r) => r.level === "error").map((r) => r.id).sort().join(",");
+            try {
+              for (const d of DISPLAY_FONTS) {
+                state.theme = Object.assign({}, keep, { headFont: d.family }); delete state.theme.header;
+                st.textContent = buildBookCss(".dfchk");
+                host.innerHTML = '<h1 class="chapter-title">Harbour Lights</h1><p class="first">Hamburgefonstiv</p>';
+                const h = host.querySelector("h1"), p = host.querySelector("p");
+                const cs = getComputedStyle(h);
+                if (cs.fontFamily.indexOf(d.family) === -1) { bad.push(d.family + " is not in the title's stack (" + cs.fontFamily + ")"); continue; }
+                if (cs.fontWeight !== "400") bad.push(d.family + ": the title is set at " + cs.fontWeight);
+                const faces = await document.fonts.load("400 " + cs.fontSize + " '" + d.family + "'", "Harbour Lights");
+                if (!faces.some((f) => f.family.replace(/["']/g, "") === d.family && f.status === "loaded")) bad.push(d.family + " did not load");
+                else facts.push(d.family + " 400");
+                if (getComputedStyle(p).fontFamily.indexOf(d.family) !== -1) bad.push(d.family + " reached the body text");
+              }
+              const own = new URL("assets/fonts/", document.baseURI).href;
+              const fetched = performance.getEntriesByType("resource").map((e) => e.name);
+              DISPLAY_FONTS.forEach((d) => { if (!fetched.some((u) => u.indexOf(own + d.dir + "/") === 0)) bad.push("no file was loaded from " + own + d.dir + "/"); });
+              state.theme = Object.assign({}, keep, { headFont: "Libre Baskerville" }); delete state.theme.header;
+              const base = errIds(epubFiles("generic"));
+              if (epubFiles("generic").some((f) => DISPLAY_FONTS.some((d) => f.path === "OEBPS/Fonts/" + d.file))) bad.push("a book in no display face embeds one");
+              const d = DISPLAY_FONTS[0];
+              state.theme = Object.assign({}, keep, { headFont: d.family }); delete state.theme.header;
+              const got = await ensureDisplayFonts();
+              if (got.failed.length) bad.push("could not load " + got.failed.join(", "));
+              else {
+                const files = epubFiles("generic");
+                const opf = scText(files, "OEBPS/package.opf"), css = scText(files, "OEBPS/Styles/blitz.css");
+                const f = files.find((x) => x.path === "OEBPS/Fonts/" + d.file);
+                if (!f || !f.binary || f.content !== displayFontData[d.dir + "/" + d.file]) bad.push(d.file + " is not in the package");
+                if (opf.indexOf('href="Fonts/' + d.file + '" media-type="font/ttf"') === -1) bad.push(d.file + " is not declared as font/ttf");
+                if (css.indexOf('@font-face { font-family: "' + d.family + '"; src: url("../Fonts/' + d.file + '") format("truetype"); font-weight: 400; font-style: normal; }') === -1) bad.push("no @font-face for " + d.family);
+                if (css.indexOf("/* " + d.family + " is embedded under the SIL Open Font License 1.1:") === -1) bad.push("the stylesheet does not carry " + d.family + "'s OFL.txt");
+                const now = errIds(files);
+                if (now !== base) bad.push("validator errors changed: [" + base + "] → [" + now + "]");
+                facts.push("EPUB embeds " + d.file);
+              }
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : facts.join(", ") + "; body text keeps its face; files from " + own);
+            } finally { state.theme = keep; host.remove(); st.remove(); }
+          } }
+      );
+      /* ==== /BEUK:displayfaces + BEUK:bookcolour self-checks ==== */
       async function runAsyncSelfChecks() {
         const out = [];
         for (const c of SELF_CHECKS_ASYNC) {
