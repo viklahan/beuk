@@ -1796,6 +1796,7 @@
       .toast-action { flex: 0 0 auto; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 9px; cursor: pointer; opacity: 0.9; }
       .toast-action:hover { opacity: 1; }
       .toast-action { pointer-events: auto; } /* BEUK:chapterops — the toast stack lets clicks through; its action buttons must take them */
+      #toasts { width: max-content; max-width: calc(100vw - 24px); } /* BEUK:chapterops — centred with left: 50%, the stack was squeezed to half a phone's width */
       .toast-action:focus-visible { outline: 2px solid var(--panel); outline-offset: 2px; }
 
       /* ---------- UI language packs ---------- */
