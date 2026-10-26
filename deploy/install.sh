@@ -227,6 +227,20 @@ if [ "${INSTALL_TOOLS}" = "1" ]; then
   fi
 fi
 
+# The same file set, written to .env as COMPOSE_FILE, so a bare
+# `docker compose up -d` / `exec` / `logs` typed later in this directory
+# uses exactly these files: without it Compose would load
+# docker-compose.yml (+ any docker-compose.override.yml) and NOT the
+# tools overlay, silently swapping the app back to the stock image
+# (EPUBCheck / PDF/X "not configured"). Paths are ':'-separated, the
+# default COMPOSE_PATH_SEPARATOR on Linux:
+# https://docs.docker.com/compose/how-tos/environment-variables/envvars/
+if [ "${#COMPOSE_FILES[@]}" -gt 2 ]; then
+  set_env COMPOSE_FILE "docker-compose.yml:deploy/docker-compose.tools.yml"
+else
+  set_env COMPOSE_FILE "docker-compose.yml"
+fi
+
 # ── 5. Up ────────────────────────────────────────────────────────────────────
 log "Starting the stack"
 ${COMPOSE} "${COMPOSE_FILES[@]}" up -d --build
@@ -251,8 +265,9 @@ else
 fi
 
 # ── 7. Summary ───────────────────────────────────────────────────────────────
-COMPOSE_CMD="${COMPOSE} -f docker-compose.yml"
-[ "${#COMPOSE_FILES[@]}" -gt 1 ] && COMPOSE_CMD="${COMPOSE_CMD} -f deploy/docker-compose.tools.yml"
+# .env now carries COMPOSE_PROJECT_NAME and COMPOSE_FILE, so the plain
+# command reaches this exact stack from this directory.
+COMPOSE_CMD="${COMPOSE}"
 
 {
   echo "Beuk install — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
