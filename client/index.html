@@ -1434,6 +1434,83 @@
         .ins-dlg-row { grid-template-columns: minmax(54px, 88px) 1fr 38px; gap: 8px; }
         .ins-h { font-size: 18.5px; }
       }
+      /* ==== BEUK:insights ==== — round 7 */
+      .ins-glance-sec { padding-bottom: 4px; }
+      .ins-glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+      .ins-g { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 9px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+      .ins-g-lab { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+      .ins-g-val { font-size: 26px; font-weight: 600; color: var(--ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ins-g-note { font-size: 11px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+      .ins-foot { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin: 10px 0 2px; }
+      .ins-words { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--ins-rows, 10), auto); grid-auto-flow: column; column-gap: 32px; }
+      .ins-w { display: grid; grid-template-columns: minmax(70px, 118px) 1fr 40px; align-items: center; gap: 10px; padding: 3px 0; border-radius: 6px; cursor: default; }
+      .ins-w.is-hot .ins-w-word { color: var(--accent); }
+      .ins-w-word { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ins-w-track { height: 6px; background: var(--panel-3); border-radius: 99px; overflow: hidden; }
+      .ins-w-bar { display: block; height: 100%; background: var(--ins-a); border-radius: 99px; opacity: .85; }
+      .ins-w-count { font-size: 15px; color: var(--ink-2); text-align: end; font-variant-numeric: tabular-nums; }
+      .ins-plotwrap { width: 100%; overflow: hidden; }
+      .ins-chart { width: 100%; height: auto; display: block; overflow: visible; direction: ltr; } /* positions are mirrored in code for RTL; anchors stay physical */
+      .ins-chart text { font-family: "EB Garamond", Georgia, serif; }
+      .ins-ax, .ins-tick { font-size: 11.5px; fill: var(--muted); }
+      .ins-tick { font-variant-numeric: tabular-nums; }
+      .ins-grid { stroke: var(--line); stroke-width: 1; }
+      .ins-base { stroke: var(--line-2); stroke-width: 1; }
+      .ins-ref { stroke: var(--muted); stroke-width: 1; opacity: .9; } /* a quiet ink line, so it never reads as the data line in either theme */
+      .ins-refkey { margin: -6px 0 6px; }
+      .ins-key-ref { display: inline-block; width: 16px; height: 0; border-top: 1.5px solid var(--muted); margin-inline-end: 6px; vertical-align: 3px; }
+      .ins-ref-lab, .ins-cap-lab { font-size: 12px; font-style: italic; fill: var(--gold); paint-order: stroke; stroke: var(--panel-2); stroke-width: 3px; }
+      .ins-cap-lab { fill: var(--ink-2); font-style: normal; }
+      .ins-line { fill: none; stroke: var(--ins-b); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+      .ins-mark { cursor: pointer; outline: none; }
+      .ins-mark-static { cursor: default; }
+      .ins-hit { fill: transparent; }
+      .ins-mark.is-hot .ins-hit { fill: var(--panel-3); opacity: .7; }
+      .ins-mark:focus-visible .ins-hit { fill: var(--accent-soft); opacity: .6; stroke: var(--accent); stroke-width: 1.5; }
+      .ins-bar { opacity: .82; transition: opacity .12s; }
+      .ins-bar-a { fill: var(--ins-a); }
+      .ins-bar-b { fill: var(--ins-b); }
+      .ins-mark.is-hot .ins-bar, .ins-mark:focus-visible .ins-bar { opacity: 1; }
+      .ins-xhair { stroke: var(--line-2); stroke-width: 1; opacity: 0; }
+      .ins-mark.is-hot .ins-xhair, .ins-mark:focus-visible .ins-xhair { opacity: 1; }
+      .ins-dot { fill: var(--ins-b); stroke: var(--panel-2); stroke-width: 2; transition: r .12s; }
+      .ins-mark.is-hot .ins-dot, .ins-mark:focus-visible .ins-dot { r: 5.5; }
+      .ins-tip { position: fixed; z-index: 95; pointer-events: none; max-width: 260px; background: var(--panel); color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 9px; box-shadow: var(--shadow); padding: 8px 11px 8px; font-size: 12px; line-height: 1.45; display: flex; flex-direction: column; gap: 1px; }
+      .ins-tip[hidden] { display: none; }
+      .ins-tip-v { font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+      .ins-tip-n { color: var(--ink-2); font-weight: 600; }
+      .ins-tip-m { color: var(--muted); }
+      .ins-tip-h { color: var(--muted); font-style: italic; margin-top: 3px; font-size: 11.5px; }
+      button.ins-dlg-row { width: 100%; background: none; border: none; color: inherit; font: inherit; text-align: start; cursor: pointer; border-radius: 6px; }
+      button.ins-dlg-row.is-hot .ins-dlg-name, button.ins-dlg-row:focus-visible .ins-dlg-name { color: var(--accent); }
+      button.ins-dlg-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .ins-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); margin: 0 0 10px; max-width: 100%; }
+      .ins-pick select { max-width: min(320px, 70vw); }
+      .ins-cr-head, .ins-cr-row { display: grid; grid-template-columns: minmax(96px, 150px) minmax(60px, 1fr) 44px minmax(0, 1.6fr); align-items: center; gap: 10px; }
+      .ins-cr-head { font-size: 11px; color: var(--muted); padding-bottom: 4px; border-bottom: 1px solid var(--line); margin-bottom: 3px; }
+      .ins-cr-unit { text-align: end; grid-column: 2 / 4; }
+      .ins-cr-row { padding: 4px 0; }
+      .ins-cr-suffix { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 9px; }
+      .ins-cr-term { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink); line-height: 1.25; }
+      .ins-cr-approx { display: block; font-family: var(--ui-font); font-size: 10.5px; color: var(--muted); }
+      .ins-cr-track { height: 6px; background: var(--panel-3); border-radius: 99px; overflow: hidden; }
+      .ins-cr-bar { display: block; height: 100%; background: var(--ins-a); border-radius: 99px; opacity: .7; }
+      .ins-cr-rate { font-size: 15px; color: var(--ink-2); text-align: end; font-variant-numeric: tabular-nums; }
+      .ins-cr-where { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+      .ins-chip { font: inherit; font-size: 11.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px; cursor: pointer; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+      .ins-chip:hover, .ins-chip:focus-visible { border-color: var(--accent); color: var(--accent); }
+      .ins-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      @media (max-width: 640px) {
+        .ins-words { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; }
+        .ins-cr-head { grid-template-columns: minmax(80px, 120px) 1fr 40px; }
+        .ins-cr-head > span:last-child { display: none; }
+        .ins-cr-row { grid-template-columns: minmax(80px, 120px) 1fr 40px; row-gap: 5px; }
+        .ins-cr-where { grid-column: 1 / -1; padding-inline-start: 0; }
+        .ins-g-val { font-size: 22px; }
+        .ins-glance { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+        .ins-g { padding: 8px 9px 7px; }
+      }
+      /* ==== /BEUK:insights ==== */
 
       /* ---------- Writing goals & habit calendar ---------- */
       .goal-lines { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
@@ -10914,6 +10991,413 @@
       Object.assign(UI_PLURAL_FORMS.ru, {"goals.roadPoint": {"few": "{date} · {n} слова"}, "goals.roadTipWords": {"few": "{n} слова"}, "history.deltaUp": {"few": "+{n} слова с тех пор"}, "history.deltaDown": {"few": "−{n} слова с тех пор"}, "history.dUp": {"few": "+{n} слова"}, "history.dDown": {"few": "−{n} слова"}});
       Object.assign(UI_PLURAL_FORMS.ar, {"goals.roadPoint": {"few": "{date} · {n} كلمات"}, "goals.roadTipWords": {"few": "{n} كلمات"}, "history.deltaUp": {"few": "\u2066+{n}\u2069 كلمات منذ ذلك الحين"}, "history.deltaDown": {"few": "\u2066−{n}\u2069 كلمات منذ ذلك الحين"}, "history.dUp": {"few": "\u2066+{n}\u2069 كلمات"}, "history.dDown": {"few": "\u2066−{n}\u2069 كلمات"}});
       /* ==== /BEUK:goalshist ==== */
+      /* ==== BEUK:insights ==== — Story Insights, round 7: the glance
+         strip, chart tooltips and tables, reading ease, sentence
+         variety and words to look at. One pack per language, so every
+         pack keeps every key; extra CLDR plural forms below. */
+      Object.assign(UI_STRINGS.en, {
+        "insights.glanceH": "At a glance",
+        "insights.gWords": "Words", "insights.gWordsNote": "counted as the sidebar counts them",
+        "insights.gChapters": "Chapters", "insights.gChaptersNote": "in the body of the book",
+        "insights.gChaptersMore": "and {n} more section", "insights.gChaptersMorePlural": "and {n} more sections",
+        "insights.gTime": "Reading time", "insights.gTimeNote": "at {n} words a minute",
+        "insights.gPages": "Pages", "insights.gPagesNote": "on {device}", "insights.gPagesWait": "the desk is still measuring for {device}",
+        "insights.gSentence": "Average sentence", "insights.gSentenceNote": "words long",
+        "insights.gDialogue": "Dialogue", "insights.gDialogueNote": "of the words are spoken",
+        "insights.glanceFoot": "Reading time uses the studio’s own pace of {n} words a minute, the same as the sidebar — a little slower than the 260 a minute that a 2019 review of 190 studies found for adults silently reading English fiction (Brysbaert, Journal of Memory and Language). Pages are the reading desk’s own count for this device.",
+        "insights.tipAvg": "sentences average {n} words", "insights.tipDlg": "{p}% dialogue", "insights.tipEase": "reading ease about {n}", "insights.tipOpen": "Click, or press Enter, to open it",
+        "insights.colSection": "Section", "insights.colWords": "Words", "insights.colAvg": "Average sentence, in words", "insights.colEase": "Reading ease (approximate)", "insights.colLength": "Sentence length, in words", "insights.colSentences": "Sentences",
+        "insights.easeH": "Reading ease", "insights.easeSub": "The Flesch Reading Ease score of each chapter. Higher scores mean shorter sentences and shorter words — it measures the shape of the prose, not its worth.",
+        "insights.easeCap": "Approximate: syllables are counted by a rule of thumb, not a dictionary. The formula is 206.835 − 1.015 × (words ÷ sentences) − 84.6 × (syllables ÷ words), from Rudolf Flesch’s “A new readability yardstick” (1948).",
+        "insights.easeBook": "whole book {n}",
+        "insights.easeOnlyEn": "Reading ease is measured for English books only — its formula was built on English words and sentences, so in another language it would mislead.",
+        "insights.varH": "Sentence variety", "insights.varSub": "How many sentences fall at each length, from the shortest to the longest.",
+        "insights.varAll": "The whole book", "insights.varPick": "Show",
+        "insights.varCap": "The most common length is {range} words. Half of these sentences are {median} words or shorter, and nine in ten are {p90} or shorter.",
+        "insights.varNone": "No sentences here yet.", "insights.varTipRange": "{range} words", "insights.varTipShare": "{p}% of these sentences",
+        "insights.nSentences": "{n} sentence", "insights.nSentencesPlural": "{n} sentences",
+        "insights.crutchH": "Words to look at",
+        "insights.crutchSub": "Small words that can stand between the reader and the scene — filtering, hedging, softening. Often they are exactly right. This only shows how often each comes up, and the chapters where it gathers most, so you can look for yourself.",
+        "insights.crutchUnit": "per 10,000 words", "insights.crutchMost": "gathers most in",
+        "insights.crutchSuffix": "words ending in -{s}", "insights.crutchApprox": "approximate",
+        "insights.crutchSuffixNote": "Words ending in -{s} are found by their ending, so that count is approximate — a few such words are not adverbs at all, and words listed above are not counted twice. A chapter needs 150 words or more to be named where a word gathers.",
+        "insights.crutchChipTip": "{r} per 10,000 words in this chapter",
+        "insights.crutchAbsent": "Not found anywhere in the book: {list}.", "insights.crutchNone": "None of these words appear in the book.",
+        "insights.crutchNoLang": "This section reads books in English, Spanish, French and German for now."
+      });
+      Object.assign(UI_STRINGS.es, {
+        "insights.glanceH": "De un vistazo",
+        "insights.gWords": "Palabras", "insights.gWordsNote": "contadas como las cuenta la barra lateral",
+        "insights.gChapters": "Capítulos", "insights.gChaptersNote": "en el cuerpo del libro",
+        "insights.gChaptersMore": "y {n} sección más", "insights.gChaptersMorePlural": "y {n} secciones más",
+        "insights.gTime": "Tiempo de lectura", "insights.gTimeNote": "a {n} palabras por minuto",
+        "insights.gPages": "Páginas", "insights.gPagesNote": "en {device}", "insights.gPagesWait": "el escritorio aún está midiendo para {device}",
+        "insights.gSentence": "Frase media", "insights.gSentenceNote": "palabras de largo",
+        "insights.gDialogue": "Diálogo", "insights.gDialogueNote": "de las palabras se dicen en voz alta",
+        "insights.glanceFoot": "El tiempo de lectura usa el ritmo propio del estudio, {n} palabras por minuto, el mismo que la barra lateral: algo más lento que las 260 por minuto que una revisión de 190 estudios (2019) halló en adultos que leen ficción en inglés en silencio (Brysbaert, Journal of Memory and Language). Las páginas son el recuento del propio escritorio de lectura para este dispositivo.",
+        "insights.tipAvg": "frases de {n} palabras de media", "insights.tipDlg": "{p}% de diálogo", "insights.tipEase": "facilidad de lectura de unos {n}", "insights.tipOpen": "Haz clic, o pulsa Intro, para abrirlo",
+        "insights.colSection": "Sección", "insights.colWords": "Palabras", "insights.colAvg": "Frase media, en palabras", "insights.colEase": "Facilidad de lectura (aproximada)", "insights.colLength": "Longitud de la frase, en palabras", "insights.colSentences": "Frases",
+        "insights.easeH": "Facilidad de lectura", "insights.easeSub": "La puntuación Flesch Reading Ease de cada capítulo. Una puntuación más alta significa frases y palabras más cortas: mide la forma de la prosa, no su valor.",
+        "insights.easeCap": "Aproximada: las sílabas se cuentan con una regla práctica, no con un diccionario. La fórmula es 206,835 − 1,015 × (palabras ÷ frases) − 84,6 × (sílabas ÷ palabras), de «A new readability yardstick» de Rudolf Flesch (1948).",
+        "insights.easeBook": "libro entero {n}",
+        "insights.easeOnlyEn": "La facilidad de lectura solo se mide en libros en inglés: su fórmula se construyó con palabras y frases inglesas, así que en otro idioma engañaría.",
+        "insights.varH": "Variedad de frases", "insights.varSub": "Cuántas frases hay de cada longitud, de la más corta a la más larga.",
+        "insights.varAll": "El libro entero", "insights.varPick": "Mostrar",
+        "insights.varCap": "La longitud más frecuente es de {range} palabras. La mitad de estas frases tienen {median} palabras o menos, y nueve de cada diez, {p90} o menos.",
+        "insights.varNone": "Todavía no hay frases aquí.", "insights.varTipRange": "{range} palabras", "insights.varTipShare": "{p}% de estas frases",
+        "insights.nSentences": "{n} frase", "insights.nSentencesPlural": "{n} frases",
+        "insights.crutchH": "Palabras para mirar",
+        "insights.crutchSub": "Palabras pequeñas que pueden interponerse entre el lector y la escena: filtran, matizan, suavizan. A menudo son justo las adecuadas. Esto solo muestra cuántas veces aparece cada una y los capítulos donde más se acumula, para que lo mires tú.",
+        "insights.crutchUnit": "por cada 10.000 palabras", "insights.crutchMost": "se acumula más en",
+        "insights.crutchSuffix": "palabras acabadas en -{s}", "insights.crutchApprox": "aproximado",
+        "insights.crutchSuffixNote": "Las palabras acabadas en -{s} se encuentran por su terminación, así que ese recuento es aproximado: algunas no son adverbios, y las palabras de la lista no se cuentan dos veces. Un capítulo necesita 150 palabras o más para aparecer donde una palabra se acumula.",
+        "insights.crutchChipTip": "{r} por cada 10.000 palabras en este capítulo",
+        "insights.crutchAbsent": "No aparecen en ninguna parte del libro: {list}.", "insights.crutchNone": "Ninguna de estas palabras aparece en el libro.",
+        "insights.crutchNoLang": "Por ahora, esta sección lee libros en inglés, español, francés y alemán."
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "insights.glanceH": "En un coup d’œil",
+        "insights.gWords": "Mots", "insights.gWordsNote": "comptés comme dans la barre latérale",
+        "insights.gChapters": "Chapitres", "insights.gChaptersNote": "dans le corps du livre",
+        "insights.gChaptersMore": "et {n} autre section", "insights.gChaptersMorePlural": "et {n} autres sections",
+        "insights.gTime": "Temps de lecture", "insights.gTimeNote": "à {n} mots par minute",
+        "insights.gPages": "Pages", "insights.gPagesNote": "sur {device}", "insights.gPagesWait": "le bureau mesure encore pour {device}",
+        "insights.gSentence": "Phrase moyenne", "insights.gSentenceNote": "mots de long",
+        "insights.gDialogue": "Dialogue", "insights.gDialogueNote": "des mots sont dits à voix haute",
+        "insights.glanceFoot": "Le temps de lecture suit le rythme propre au studio, {n} mots par minute, le même que la barre latérale — un peu plus lent que les 260 par minute qu’une synthèse de 190 études (2019) a trouvés chez les adultes lisant en silence de la fiction en anglais (Brysbaert, Journal of Memory and Language). Les pages sont le décompte du bureau de lecture pour cet appareil.",
+        "insights.tipAvg": "phrases de {n} mots en moyenne", "insights.tipDlg": "{p} % de dialogue", "insights.tipEase": "facilité de lecture d’environ {n}", "insights.tipOpen": "Cliquez, ou appuyez sur Entrée, pour l’ouvrir",
+        "insights.colSection": "Section", "insights.colWords": "Mots", "insights.colAvg": "Phrase moyenne, en mots", "insights.colEase": "Facilité de lecture (approximative)", "insights.colLength": "Longueur de phrase, en mots", "insights.colSentences": "Phrases",
+        "insights.easeH": "Facilité de lecture", "insights.easeSub": "Le score Flesch Reading Ease de chaque chapitre. Un score plus élevé signifie des phrases et des mots plus courts — il mesure la forme de la prose, pas sa valeur.",
+        "insights.easeCap": "Approximatif : les syllabes sont comptées par une règle empirique, pas par un dictionnaire. La formule est 206,835 − 1,015 × (mots ÷ phrases) − 84,6 × (syllabes ÷ mots), tirée de « A new readability yardstick » de Rudolf Flesch (1948).",
+        "insights.easeBook": "livre entier {n}",
+        "insights.easeOnlyEn": "La facilité de lecture n’est mesurée que pour les livres en anglais : sa formule a été bâtie sur des mots et des phrases anglais, et dans une autre langue elle induirait en erreur.",
+        "insights.varH": "Variété des phrases", "insights.varSub": "Combien de phrases tombent à chaque longueur, de la plus courte à la plus longue.",
+        "insights.varAll": "Le livre entier", "insights.varPick": "Afficher",
+        "insights.varCap": "La longueur la plus fréquente est de {range} mots. La moitié de ces phrases font {median} mots ou moins, et neuf sur dix {p90} ou moins.",
+        "insights.varNone": "Pas encore de phrases ici.", "insights.varTipRange": "{range} mots", "insights.varTipShare": "{p} % de ces phrases",
+        "insights.nSentences": "{n} phrase", "insights.nSentencesPlural": "{n} phrases",
+        "insights.crutchH": "Mots à regarder",
+        "insights.crutchSub": "De petits mots qui peuvent s’interposer entre le lecteur et la scène — ils filtrent, nuancent, adoucissent. Souvent, ils sont exactement justes. Ceci montre seulement combien de fois chacun revient, et les chapitres où il se rassemble le plus, pour que vous jugiez vous-même.",
+        "insights.crutchUnit": "pour 10 000 mots", "insights.crutchMost": "se rassemble surtout dans",
+        "insights.crutchSuffix": "mots en -{s}", "insights.crutchApprox": "approximatif",
+        "insights.crutchSuffixNote": "Les mots en -{s} sont repérés par leur terminaison : ce décompte est donc approximatif — quelques-uns ne sont pas des adverbes, et les mots de la liste ne sont pas comptés deux fois. Un chapitre doit compter au moins 150 mots pour être nommé là où un mot se rassemble.",
+        "insights.crutchChipTip": "{r} pour 10 000 mots dans ce chapitre",
+        "insights.crutchAbsent": "Absents de tout le livre : {list}.", "insights.crutchNone": "Aucun de ces mots n’apparaît dans le livre.",
+        "insights.crutchNoLang": "Pour l’instant, cette section lit les livres en anglais, espagnol, français et allemand."
+      });
+      Object.assign(UI_STRINGS.de, {
+        "insights.glanceH": "Auf einen Blick",
+        "insights.gWords": "Wörter", "insights.gWordsNote": "gezählt wie in der Seitenleiste",
+        "insights.gChapters": "Kapitel", "insights.gChaptersNote": "im Hauptteil des Buches",
+        "insights.gChaptersMore": "und {n} weiterer Abschnitt", "insights.gChaptersMorePlural": "und {n} weitere Abschnitte",
+        "insights.gTime": "Lesezeit", "insights.gTimeNote": "bei {n} Wörtern pro Minute",
+        "insights.gPages": "Seiten", "insights.gPagesNote": "auf {device}", "insights.gPagesWait": "der Schreibtisch misst noch für {device}",
+        "insights.gSentence": "Durchschnittssatz", "insights.gSentenceNote": "Wörter lang",
+        "insights.gDialogue": "Dialog", "insights.gDialogueNote": "der Wörter werden gesprochen",
+        "insights.glanceFoot": "Die Lesezeit nutzt das Tempo des Studios, {n} Wörter pro Minute, dasselbe wie die Seitenleiste – etwas langsamer als die 260 pro Minute, die eine Übersicht über 190 Studien (2019) für Erwachsene beim stillen Lesen englischer Belletristik fand (Brysbaert, Journal of Memory and Language). Die Seiten sind die eigene Zählung des Lesetischs für dieses Gerät.",
+        "insights.tipAvg": "Sätze mit durchschnittlich {n} Wörtern", "insights.tipDlg": "{p} % Dialog", "insights.tipEase": "Lesbarkeit etwa {n}", "insights.tipOpen": "Klicken oder Eingabe drücken, um es zu öffnen",
+        "insights.colSection": "Abschnitt", "insights.colWords": "Wörter", "insights.colAvg": "Durchschnittssatz, in Wörtern", "insights.colEase": "Lesbarkeit (ungefähr)", "insights.colLength": "Satzlänge, in Wörtern", "insights.colSentences": "Sätze",
+        "insights.easeH": "Lesbarkeit", "insights.easeSub": "Der Flesch-Reading-Ease-Wert jedes Kapitels. Höhere Werte bedeuten kürzere Sätze und kürzere Wörter – er misst die Gestalt der Prosa, nicht ihren Wert.",
+        "insights.easeCap": "Ungefähr: Silben werden nach einer Faustregel gezählt, nicht nach einem Wörterbuch. Die Formel lautet 206,835 − 1,015 × (Wörter ÷ Sätze) − 84,6 × (Silben ÷ Wörter), aus Rudolf Fleschs „A new readability yardstick“ (1948).",
+        "insights.easeBook": "ganzes Buch {n}",
+        "insights.easeOnlyEn": "Die Lesbarkeit wird nur für englische Bücher gemessen – ihre Formel wurde an englischen Wörtern und Sätzen gebildet und würde in einer anderen Sprache in die Irre führen.",
+        "insights.varH": "Satzvielfalt", "insights.varSub": "Wie viele Sätze auf jede Länge fallen, vom kürzesten bis zum längsten.",
+        "insights.varAll": "Das ganze Buch", "insights.varPick": "Zeigen",
+        "insights.varCap": "Die häufigste Länge sind {range} Wörter. Die Hälfte dieser Sätze hat {median} Wörter oder weniger, neun von zehn haben {p90} oder weniger.",
+        "insights.varNone": "Hier gibt es noch keine Sätze.", "insights.varTipRange": "{range} Wörter", "insights.varTipShare": "{p} % dieser Sätze",
+        "insights.nSentences": "{n} Satz", "insights.nSentencesPlural": "{n} Sätze",
+        "insights.crutchH": "Wörter zum Hinsehen",
+        "insights.crutchSub": "Kleine Wörter, die sich zwischen Leser und Szene stellen können – sie filtern, relativieren, mildern. Oft sind sie genau richtig. Hier steht nur, wie oft jedes vorkommt und in welchen Kapiteln es sich am meisten sammelt, damit Sie selbst hinsehen können.",
+        "insights.crutchUnit": "je 10.000 Wörter", "insights.crutchMost": "sammelt sich am meisten in",
+        "insights.crutchSuffix": "Wörter auf -{s}", "insights.crutchApprox": "ungefähr",
+        "insights.crutchSuffixNote": "Wörter auf -{s} werden an ihrer Endung erkannt, diese Zählung ist also ungefähr – einige davon sind gar keine Adverbien, und Wörter der Liste werden nicht doppelt gezählt. Ein Kapitel braucht mindestens 150 Wörter, um dort genannt zu werden, wo sich ein Wort sammelt.",
+        "insights.crutchChipTip": "{r} je 10.000 Wörter in diesem Kapitel",
+        "insights.crutchAbsent": "Nirgends im Buch zu finden: {list}.", "insights.crutchNone": "Keines dieser Wörter kommt im Buch vor.",
+        "insights.crutchNoLang": "Dieser Abschnitt liest vorerst Bücher auf Englisch, Spanisch, Französisch und Deutsch."
+      });
+      Object.assign(UI_STRINGS.it, {
+        "insights.glanceH": "A colpo d’occhio",
+        "insights.gWords": "Parole", "insights.gWordsNote": "contate come le conta la barra laterale",
+        "insights.gChapters": "Capitoli", "insights.gChaptersNote": "nel corpo del libro",
+        "insights.gChaptersMore": "e {n} altra sezione", "insights.gChaptersMorePlural": "e altre {n} sezioni",
+        "insights.gTime": "Tempo di lettura", "insights.gTimeNote": "a {n} parole al minuto",
+        "insights.gPages": "Pagine", "insights.gPagesNote": "su {device}", "insights.gPagesWait": "la scrivania sta ancora misurando per {device}",
+        "insights.gSentence": "Frase media", "insights.gSentenceNote": "parole di lunghezza",
+        "insights.gDialogue": "Dialogo", "insights.gDialogueNote": "delle parole sono pronunciate",
+        "insights.glanceFoot": "Il tempo di lettura usa il ritmo proprio dello studio, {n} parole al minuto, lo stesso della barra laterale: un po’ più lento delle 260 al minuto che una rassegna di 190 studi (2019) ha rilevato negli adulti che leggono in silenzio narrativa in inglese (Brysbaert, Journal of Memory and Language). Le pagine sono il conteggio della scrivania di lettura per questo dispositivo.",
+        "insights.tipAvg": "frasi di {n} parole in media", "insights.tipDlg": "{p}% di dialogo", "insights.tipEase": "leggibilità circa {n}", "insights.tipOpen": "Fai clic, o premi Invio, per aprirlo",
+        "insights.colSection": "Sezione", "insights.colWords": "Parole", "insights.colAvg": "Frase media, in parole", "insights.colEase": "Leggibilità (approssimativa)", "insights.colLength": "Lunghezza della frase, in parole", "insights.colSentences": "Frasi",
+        "insights.easeH": "Leggibilità", "insights.easeSub": "Il punteggio Flesch Reading Ease di ogni capitolo. Punteggi più alti significano frasi e parole più brevi: misura la forma della prosa, non il suo valore.",
+        "insights.easeCap": "Approssimativa: le sillabe sono contate con una regola pratica, non con un dizionario. La formula è 206,835 − 1,015 × (parole ÷ frasi) − 84,6 × (sillabe ÷ parole), da «A new readability yardstick» di Rudolf Flesch (1948).",
+        "insights.easeBook": "libro intero {n}",
+        "insights.easeOnlyEn": "La leggibilità si misura solo per i libri in inglese: la sua formula è stata costruita su parole e frasi inglesi, e in un’altra lingua trarrebbe in inganno.",
+        "insights.varH": "Varietà delle frasi", "insights.varSub": "Quante frasi cadono in ogni lunghezza, dalla più breve alla più lunga.",
+        "insights.varAll": "Il libro intero", "insights.varPick": "Mostra",
+        "insights.varCap": "La lunghezza più comune è di {range} parole. Metà di queste frasi ha {median} parole o meno, e nove su dieci {p90} o meno.",
+        "insights.varNone": "Qui non ci sono ancora frasi.", "insights.varTipRange": "{range} parole", "insights.varTipShare": "{p}% di queste frasi",
+        "insights.nSentences": "{n} frase", "insights.nSentencesPlural": "{n} frasi",
+        "insights.crutchH": "Parole da guardare",
+        "insights.crutchSub": "Piccole parole che possono mettersi tra il lettore e la scena: filtrano, attenuano, ammorbidiscono. Spesso sono proprio quelle giuste. Qui si vede solo quanto spesso ricorre ciascuna e i capitoli dove si raccoglie di più, perché tu possa guardare.",
+        "insights.crutchUnit": "ogni 10.000 parole", "insights.crutchMost": "si raccoglie di più in",
+        "insights.crutchSuffix": "parole in -{s}", "insights.crutchApprox": "approssimativo",
+        "insights.crutchSuffixNote": "Le parole in -{s} si trovano dalla desinenza, quindi quel conteggio è approssimativo: alcune non sono avverbi, e le parole già in elenco non sono contate due volte. Un capitolo deve avere almeno 150 parole per essere indicato dove una parola si raccoglie.",
+        "insights.crutchChipTip": "{r} ogni 10.000 parole in questo capitolo",
+        "insights.crutchAbsent": "Assenti da tutto il libro: {list}.", "insights.crutchNone": "Nessuna di queste parole compare nel libro.",
+        "insights.crutchNoLang": "Per ora questa sezione legge libri in inglese, spagnolo, francese e tedesco."
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "insights.glanceH": "Num relance",
+        "insights.gWords": "Palavras", "insights.gWordsNote": "contadas como a barra lateral as conta",
+        "insights.gChapters": "Capítulos", "insights.gChaptersNote": "no corpo do livro",
+        "insights.gChaptersMore": "e mais {n} secção", "insights.gChaptersMorePlural": "e mais {n} secções",
+        "insights.gTime": "Tempo de leitura", "insights.gTimeNote": "a {n} palavras por minuto",
+        "insights.gPages": "Páginas", "insights.gPagesNote": "no {device}", "insights.gPagesWait": "a mesa ainda está a medir para {device}",
+        "insights.gSentence": "Frase média", "insights.gSentenceNote": "palavras de comprimento",
+        "insights.gDialogue": "Diálogo", "insights.gDialogueNote": "das palavras são ditas em voz alta",
+        "insights.glanceFoot": "O tempo de leitura usa o ritmo próprio do estúdio, {n} palavras por minuto, o mesmo da barra lateral — um pouco mais lento do que as 260 por minuto que uma revisão de 190 estudos (2019) encontrou em adultos a ler ficção em inglês em silêncio (Brysbaert, Journal of Memory and Language). As páginas são a contagem da própria mesa de leitura para este dispositivo.",
+        "insights.tipAvg": "frases de {n} palavras em média", "insights.tipDlg": "{p}% de diálogo", "insights.tipEase": "facilidade de leitura de cerca de {n}", "insights.tipOpen": "Clique, ou prima Enter, para o abrir",
+        "insights.colSection": "Secção", "insights.colWords": "Palavras", "insights.colAvg": "Frase média, em palavras", "insights.colEase": "Facilidade de leitura (aproximada)", "insights.colLength": "Comprimento da frase, em palavras", "insights.colSentences": "Frases",
+        "insights.easeH": "Facilidade de leitura", "insights.easeSub": "A pontuação Flesch Reading Ease de cada capítulo. Pontuações mais altas significam frases e palavras mais curtas — mede a forma da prosa, não o seu valor.",
+        "insights.easeCap": "Aproximada: as sílabas são contadas por uma regra prática, não por um dicionário. A fórmula é 206,835 − 1,015 × (palavras ÷ frases) − 84,6 × (sílabas ÷ palavras), de «A new readability yardstick», de Rudolf Flesch (1948).",
+        "insights.easeBook": "livro inteiro {n}",
+        "insights.easeOnlyEn": "A facilidade de leitura só é medida em livros em inglês — a sua fórmula foi construída com palavras e frases inglesas e, noutra língua, induziria em erro.",
+        "insights.varH": "Variedade das frases", "insights.varSub": "Quantas frases caem em cada comprimento, da mais curta à mais longa.",
+        "insights.varAll": "O livro inteiro", "insights.varPick": "Mostrar",
+        "insights.varCap": "O comprimento mais comum é de {range} palavras. Metade destas frases tem {median} palavras ou menos, e nove em cada dez, {p90} ou menos.",
+        "insights.varNone": "Ainda não há frases aqui.", "insights.varTipRange": "{range} palavras", "insights.varTipShare": "{p}% destas frases",
+        "insights.nSentences": "{n} frase", "insights.nSentencesPlural": "{n} frases",
+        "insights.crutchH": "Palavras a observar",
+        "insights.crutchSub": "Pequenas palavras que se podem pôr entre o leitor e a cena — filtram, atenuam, suavizam. Muitas vezes são exatamente as certas. Aqui mostra-se apenas quantas vezes cada uma surge e os capítulos onde mais se junta, para que veja por si.",
+        "insights.crutchUnit": "por 10 000 palavras", "insights.crutchMost": "junta-se mais em",
+        "insights.crutchSuffix": "palavras terminadas em -{s}", "insights.crutchApprox": "aproximado",
+        "insights.crutchSuffixNote": "As palavras terminadas em -{s} são encontradas pela terminação, por isso essa contagem é aproximada — algumas não são advérbios, e as palavras da lista não são contadas duas vezes. Um capítulo precisa de 150 palavras ou mais para ser indicado onde uma palavra se junta.",
+        "insights.crutchChipTip": "{r} por 10 000 palavras neste capítulo",
+        "insights.crutchAbsent": "Não aparecem em parte nenhuma do livro: {list}.", "insights.crutchNone": "Nenhuma destas palavras aparece no livro.",
+        "insights.crutchNoLang": "Por agora, esta secção lê livros em inglês, espanhol, francês e alemão."
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "insights.glanceH": "In één oogopslag",
+        "insights.gWords": "Woorden", "insights.gWordsNote": "geteld zoals de zijbalk ze telt",
+        "insights.gChapters": "Hoofdstukken", "insights.gChaptersNote": "in de romp van het boek",
+        "insights.gChaptersMore": "en nog {n} sectie", "insights.gChaptersMorePlural": "en nog {n} secties",
+        "insights.gTime": "Leestijd", "insights.gTimeNote": "bij {n} woorden per minuut",
+        "insights.gPages": "Pagina’s", "insights.gPagesNote": "op {device}", "insights.gPagesWait": "het bureau meet nog voor {device}",
+        "insights.gSentence": "Gemiddelde zin", "insights.gSentenceNote": "woorden lang",
+        "insights.gDialogue": "Dialoog", "insights.gDialogueNote": "van de woorden wordt uitgesproken",
+        "insights.glanceFoot": "De leestijd gebruikt het eigen tempo van de studio, {n} woorden per minuut, hetzelfde als de zijbalk — iets trager dan de 260 per minuut die een overzicht van 190 studies (2019) vond voor volwassenen die stil Engelse fictie lezen (Brysbaert, Journal of Memory and Language). De pagina’s zijn de eigen telling van het leesbureau voor dit apparaat.",
+        "insights.tipAvg": "zinnen van gemiddeld {n} woorden", "insights.tipDlg": "{p}% dialoog", "insights.tipEase": "leesgemak ongeveer {n}", "insights.tipOpen": "Klik, of druk op Enter, om het te openen",
+        "insights.colSection": "Sectie", "insights.colWords": "Woorden", "insights.colAvg": "Gemiddelde zin, in woorden", "insights.colEase": "Leesgemak (bij benadering)", "insights.colLength": "Zinslengte, in woorden", "insights.colSentences": "Zinnen",
+        "insights.easeH": "Leesgemak", "insights.easeSub": "De Flesch Reading Ease-score van elk hoofdstuk. Hogere scores betekenen kortere zinnen en kortere woorden — het meet de vorm van het proza, niet de waarde ervan.",
+        "insights.easeCap": "Bij benadering: lettergrepen worden geteld met een vuistregel, niet met een woordenboek. De formule is 206,835 − 1,015 × (woorden ÷ zinnen) − 84,6 × (lettergrepen ÷ woorden), uit ‘A new readability yardstick’ van Rudolf Flesch (1948).",
+        "insights.easeBook": "heel het boek {n}",
+        "insights.easeOnlyEn": "Leesgemak wordt alleen gemeten voor Engelse boeken — de formule is gebouwd op Engelse woorden en zinnen en zou in een andere taal misleiden.",
+        "insights.varH": "Afwisseling in zinnen", "insights.varSub": "Hoeveel zinnen op elke lengte vallen, van de kortste tot de langste.",
+        "insights.varAll": "Het hele boek", "insights.varPick": "Toon",
+        "insights.varCap": "De meest voorkomende lengte is {range} woorden. De helft van deze zinnen telt {median} woorden of minder, en negen op de tien {p90} of minder.",
+        "insights.varNone": "Hier staan nog geen zinnen.", "insights.varTipRange": "{range} woorden", "insights.varTipShare": "{p}% van deze zinnen",
+        "insights.nSentences": "{n} zin", "insights.nSentencesPlural": "{n} zinnen",
+        "insights.crutchH": "Woorden om naar te kijken",
+        "insights.crutchSub": "Kleine woorden die tussen de lezer en de scène kunnen gaan staan — ze filteren, zwakken af, verzachten. Vaak zijn ze precies goed. Dit toont alleen hoe vaak elk voorkomt en in welke hoofdstukken het zich het meest verzamelt, zodat u zelf kunt kijken.",
+        "insights.crutchUnit": "per 10.000 woorden", "insights.crutchMost": "verzamelt zich vooral in",
+        "insights.crutchSuffix": "woorden op -{s}", "insights.crutchApprox": "bij benadering",
+        "insights.crutchSuffixNote": "Woorden op -{s} worden aan hun uitgang herkend, dus die telling is bij benadering — enkele zijn helemaal geen bijwoorden, en woorden uit de lijst worden niet dubbel geteld. Een hoofdstuk heeft minstens 150 woorden nodig om genoemd te worden waar een woord zich verzamelt.",
+        "insights.crutchChipTip": "{r} per 10.000 woorden in dit hoofdstuk",
+        "insights.crutchAbsent": "Nergens in het boek te vinden: {list}.", "insights.crutchNone": "Geen van deze woorden komt in het boek voor.",
+        "insights.crutchNoLang": "Dit onderdeel leest voorlopig boeken in het Engels, Spaans, Frans en Duits."
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "insights.glanceH": "W skrócie",
+        "insights.gWords": "Słowa", "insights.gWordsNote": "liczone tak jak na pasku bocznym",
+        "insights.gChapters": "Rozdziały", "insights.gChaptersNote": "w głównej części książki",
+        "insights.gChaptersMore": "i {n} sekcja więcej", "insights.gChaptersMorePlural": "i {n} sekcje więcej",
+        "insights.gTime": "Czas czytania", "insights.gTimeNote": "przy {n} słowach na minutę",
+        "insights.gPages": "Strony", "insights.gPagesNote": "na {device}", "insights.gPagesWait": "biurko wciąż mierzy dla {device}",
+        "insights.gSentence": "Średnie zdanie", "insights.gSentenceNote": "słów długości",
+        "insights.gDialogue": "Dialog", "insights.gDialogueNote": "słów pada na głos",
+        "insights.glanceFoot": "Czas czytania liczony jest we własnym tempie studia, {n} słów na minutę, tak jak na pasku bocznym — nieco wolniej niż 260 na minutę, które przegląd 190 badań (2019) wykazał u dorosłych czytających po cichu anglojęzyczną prozę (Brysbaert, Journal of Memory and Language). Strony to własne wyliczenie biurka czytelniczego dla tego urządzenia.",
+        "insights.tipAvg": "zdania średnio po {n} słów", "insights.tipDlg": "{p}% dialogu", "insights.tipEase": "łatwość czytania ok. {n}", "insights.tipOpen": "Kliknij lub naciśnij Enter, aby otworzyć",
+        "insights.colSection": "Sekcja", "insights.colWords": "Słowa", "insights.colAvg": "Średnie zdanie, w słowach", "insights.colEase": "Łatwość czytania (przybliżona)", "insights.colLength": "Długość zdania, w słowach", "insights.colSentences": "Zdania",
+        "insights.easeH": "Łatwość czytania", "insights.easeSub": "Wynik Flesch Reading Ease każdego rozdziału. Wyższy wynik oznacza krótsze zdania i krótsze słowa — mierzy kształt prozy, nie jej wartość.",
+        "insights.easeCap": "Przybliżone: sylaby liczone są według reguły kciuka, nie słownika. Wzór to 206,835 − 1,015 × (słowa ÷ zdania) − 84,6 × (sylaby ÷ słowa), z pracy Rudolfa Flescha „A new readability yardstick” (1948).",
+        "insights.easeBook": "cała książka {n}",
+        "insights.easeOnlyEn": "Łatwość czytania mierzymy tylko dla książek po angielsku — wzór zbudowano na angielskich słowach i zdaniach, więc w innym języku wprowadzałby w błąd.",
+        "insights.varH": "Różnorodność zdań", "insights.varSub": "Ile zdań przypada na każdą długość, od najkrótszych do najdłuższych.",
+        "insights.varAll": "Cała książka", "insights.varPick": "Pokaż",
+        "insights.varCap": "Najczęstsza długość to {range} słów. Połowa tych zdań ma {median} słów lub mniej, a dziewięć na dziesięć — {p90} lub mniej.",
+        "insights.varNone": "Nie ma tu jeszcze zdań.", "insights.varTipRange": "{range} słów", "insights.varTipShare": "{p}% tych zdań",
+        "insights.nSentences": "{n} zdanie", "insights.nSentencesPlural": "{n} zdania",
+        "insights.crutchH": "Słowa, którym warto się przyjrzeć",
+        "insights.crutchSub": "Małe słowa, które mogą stanąć między czytelnikiem a sceną — filtrują, asekurują, łagodzą. Często są dokładnie na miejscu. Tu widać tylko, jak często każde się pojawia i w których rozdziałach gromadzi się najbardziej, żebyś mógł przyjrzeć się sam.",
+        "insights.crutchUnit": "na 10 000 słów", "insights.crutchMost": "najwięcej w",
+        "insights.crutchSuffix": "słowa zakończone na -{s}", "insights.crutchApprox": "w przybliżeniu",
+        "insights.crutchSuffixNote": "Słowa zakończone na -{s} rozpoznawane są po końcówce, więc ta liczba jest przybliżona — niektóre wcale nie są przysłówkami, a słowa z listy nie są liczone dwa razy. Rozdział musi mieć co najmniej 150 słów, by trafić tam, gdzie słowo się gromadzi.",
+        "insights.crutchChipTip": "{r} na 10 000 słów w tym rozdziale",
+        "insights.crutchAbsent": "Nigdzie w książce: {list}.", "insights.crutchNone": "Żadne z tych słów nie pojawia się w książce.",
+        "insights.crutchNoLang": "Na razie ta sekcja czyta książki po angielsku, hiszpańsku, francusku i niemiecku."
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "insights.glanceH": "Коротко",
+        "insights.gWords": "Слова", "insights.gWordsNote": "посчитаны так же, как на боковой панели",
+        "insights.gChapters": "Главы", "insights.gChaptersNote": "в основной части книги",
+        "insights.gChaptersMore": "и ещё {n} раздел", "insights.gChaptersMorePlural": "и ещё {n} разделов",
+        "insights.gTime": "Время чтения", "insights.gTimeNote": "при {n} словах в минуту",
+        "insights.gPages": "Страницы", "insights.gPagesNote": "на {device}", "insights.gPagesWait": "стол ещё измеряет для {device}",
+        "insights.gSentence": "Средняя фраза", "insights.gSentenceNote": "слов в длину",
+        "insights.gDialogue": "Диалог", "insights.gDialogueNote": "слов звучит вслух",
+        "insights.glanceFoot": "Время чтения считается в собственном темпе студии — {n} слов в минуту, как на боковой панели. Это чуть медленнее, чем 260 слов в минуту, которые обзор 190 исследований (2019) нашёл у взрослых, молча читающих художественную прозу на английском (Brysbaert, Journal of Memory and Language). Страницы — собственный подсчёт стола для чтения на этом устройстве.",
+        "insights.tipAvg": "фразы в среднем по {n} слов", "insights.tipDlg": "{p}% диалога", "insights.tipEase": "лёгкость чтения около {n}", "insights.tipOpen": "Нажмите или нажмите Enter, чтобы открыть",
+        "insights.colSection": "Раздел", "insights.colWords": "Слова", "insights.colAvg": "Средняя фраза, в словах", "insights.colEase": "Лёгкость чтения (приблизительно)", "insights.colLength": "Длина фразы, в словах", "insights.colSentences": "Фразы",
+        "insights.easeH": "Лёгкость чтения", "insights.easeSub": "Оценка Flesch Reading Ease для каждой главы. Чем выше оценка, тем короче фразы и слова: она измеряет форму прозы, а не её ценность.",
+        "insights.easeCap": "Приблизительно: слоги считаются по эмпирическому правилу, а не по словарю. Формула: 206,835 − 1,015 × (слова ÷ фразы) − 84,6 × (слоги ÷ слова), из работы Рудольфа Флеша «A new readability yardstick» (1948).",
+        "insights.easeBook": "вся книга {n}",
+        "insights.easeOnlyEn": "Лёгкость чтения измеряется только для книг на английском: формула построена на английских словах и фразах и на другом языке вводила бы в заблуждение.",
+        "insights.varH": "Разнообразие фраз", "insights.varSub": "Сколько фраз приходится на каждую длину — от самых коротких до самых длинных.",
+        "insights.varAll": "Вся книга", "insights.varPick": "Показать",
+        "insights.varCap": "Чаще всего встречается длина {range} слов. Половина этих фраз — {median} слов или короче, девять из десяти — {p90} или короче.",
+        "insights.varNone": "Здесь пока нет фраз.", "insights.varTipRange": "{range} слов", "insights.varTipShare": "{p}% этих фраз",
+        "insights.nSentences": "{n} фраза", "insights.nSentencesPlural": "{n} фраз",
+        "insights.crutchH": "Слова, к которым стоит присмотреться",
+        "insights.crutchSub": "Маленькие слова, которые могут встать между читателем и сценой: они фильтруют, смягчают, оговаривают. Часто они именно на своём месте. Здесь показано лишь, как часто встречается каждое и в каких главах оно собирается больше всего, — чтобы вы посмотрели сами.",
+        "insights.crutchUnit": "на 10 000 слов", "insights.crutchMost": "больше всего в",
+        "insights.crutchSuffix": "слова на -{s}", "insights.crutchApprox": "приблизительно",
+        "insights.crutchSuffixNote": "Слова на -{s} находятся по окончанию, поэтому этот подсчёт приблизителен: некоторые из них вовсе не наречия, а слова из списка не считаются дважды. Чтобы глава попала туда, где собирается слово, в ней должно быть не меньше 150 слов.",
+        "insights.crutchChipTip": "{r} на 10 000 слов в этой главе",
+        "insights.crutchAbsent": "Нигде в книге не встречаются: {list}.", "insights.crutchNone": "Ни одно из этих слов не встречается в книге.",
+        "insights.crutchNoLang": "Пока этот раздел читает книги на английском, испанском, французском и немецком."
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "insights.glanceH": "Bir bakışta",
+        "insights.gWords": "Kelime", "insights.gWordsNote": "kenar çubuğunun saydığı gibi sayıldı",
+        "insights.gChapters": "Bölüm", "insights.gChaptersNote": "kitabın gövdesinde",
+        "insights.gChaptersMore": "ve {n} kısım daha", "insights.gChaptersMorePlural": "ve {n} kısım daha",
+        "insights.gTime": "Okuma süresi", "insights.gTimeNote": "dakikada {n} kelimeyle",
+        "insights.gPages": "Sayfa", "insights.gPagesNote": "{device} üzerinde", "insights.gPagesWait": "masa {device} için hâlâ ölçüyor",
+        "insights.gSentence": "Ortalama cümle", "insights.gSentenceNote": "kelime uzunluğunda",
+        "insights.gDialogue": "Diyalog", "insights.gDialogueNote": "kelimeler sesli söyleniyor",
+        "insights.glanceFoot": "Okuma süresi, stüdyonun kendi temposu olan dakikada {n} kelimeyi kullanır; kenar çubuğuyla aynıdır. Bu, 190 çalışmayı inceleyen bir derlemenin (2019) İngilizce kurmacayı sessizce okuyan yetişkinlerde bulduğu dakikada 260 kelimeden biraz yavaştır (Brysbaert, Journal of Memory and Language). Sayfalar, okuma masasının bu cihaz için kendi sayımıdır.",
+        "insights.tipAvg": "cümleler ortalama {n} kelime", "insights.tipDlg": "%{p} diyalog", "insights.tipEase": "okuma kolaylığı yaklaşık {n}", "insights.tipOpen": "Açmak için tıklayın ya da Enter’a basın",
+        "insights.colSection": "Kısım", "insights.colWords": "Kelime", "insights.colAvg": "Ortalama cümle, kelime olarak", "insights.colEase": "Okuma kolaylığı (yaklaşık)", "insights.colLength": "Cümle uzunluğu, kelime olarak", "insights.colSentences": "Cümle",
+        "insights.easeH": "Okuma kolaylığı", "insights.easeSub": "Her bölümün Flesch Reading Ease puanı. Yüksek puan daha kısa cümleler ve daha kısa kelimeler demektir; düzyazının biçimini ölçer, değerini değil.",
+        "insights.easeCap": "Yaklaşık: heceler sözlükle değil, pratik bir kuralla sayılır. Formül: 206,835 − 1,015 × (kelime ÷ cümle) − 84,6 × (hece ÷ kelime); Rudolf Flesch’in “A new readability yardstick” (1948) çalışmasından.",
+        "insights.easeBook": "kitabın tümü {n}",
+        "insights.easeOnlyEn": "Okuma kolaylığı yalnızca İngilizce kitaplar için ölçülür; formülü İngilizce kelime ve cümlelerle kurulmuştur, başka bir dilde yanıltır.",
+        "insights.varH": "Cümle çeşitliliği", "insights.varSub": "Her uzunlukta kaç cümle olduğu, en kısadan en uzuna.",
+        "insights.varAll": "Kitabın tümü", "insights.varPick": "Göster",
+        "insights.varCap": "En yaygın uzunluk {range} kelime. Bu cümlelerin yarısı {median} kelime ya da daha kısa, onda dokuzu {p90} ya da daha kısa.",
+        "insights.varNone": "Burada henüz cümle yok.", "insights.varTipRange": "{range} kelime", "insights.varTipShare": "bu cümlelerin %{p}’si",
+        "insights.nSentences": "{n} cümle", "insights.nSentencesPlural": "{n} cümle",
+        "insights.crutchH": "Bakılacak kelimeler",
+        "insights.crutchSub": "Okurla sahne arasına girebilen küçük kelimeler: süzer, çekince koyar, yumuşatır. Çoğu zaman tam yerindedirler. Burada yalnızca her birinin ne sıklıkla geçtiği ve en çok hangi bölümlerde toplandığı gösterilir; bakmak size kalır.",
+        "insights.crutchUnit": "10.000 kelimede", "insights.crutchMost": "en çok toplandığı yer",
+        "insights.crutchSuffix": "-{s} ile biten kelimeler", "insights.crutchApprox": "yaklaşık",
+        "insights.crutchSuffixNote": "-{s} ile biten kelimeler sonlarına bakılarak bulunur, bu yüzden o sayım yaklaşıktır: bazıları hiç zarf değildir ve listedeki kelimeler iki kez sayılmaz. Bir bölümün, bir kelimenin toplandığı yer olarak anılması için en az 150 kelime içermesi gerekir.",
+        "insights.crutchChipTip": "bu bölümde 10.000 kelimede {r}",
+        "insights.crutchAbsent": "Kitabın hiçbir yerinde yok: {list}.", "insights.crutchNone": "Bu kelimelerin hiçbiri kitapta geçmiyor.",
+        "insights.crutchNoLang": "Bu bölüm şimdilik İngilizce, İspanyolca, Fransızca ve Almanca kitapları okuyor."
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "insights.glanceH": "نظرة سريعة",
+        "insights.gWords": "الكلمات", "insights.gWordsNote": "محسوبة كما يحسبها الشريط الجانبي",
+        "insights.gChapters": "الفصول", "insights.gChaptersNote": "في متن الكتاب",
+        "insights.gChaptersMore": "وقسم آخر واحد", "insights.gChaptersMorePlural": "و{n} قسمًا آخر",
+        "insights.gTime": "مدة القراءة", "insights.gTimeNote": "بمعدل {n} كلمة في الدقيقة",
+        "insights.gPages": "الصفحات", "insights.gPagesNote": "على {device}", "insights.gPagesWait": "ما زال المكتب يقيس لـ {device}",
+        "insights.gSentence": "متوسط الجملة", "insights.gSentenceNote": "كلمة طولًا",
+        "insights.gDialogue": "الحوار", "insights.gDialogueNote": "من الكلمات تُقال بصوت عالٍ",
+        "insights.glanceFoot": "تعتمد مدة القراءة على وتيرة الاستوديو نفسه، {n} كلمة في الدقيقة، وهي نفسها في الشريط الجانبي — أبطأ قليلًا من 260 كلمة في الدقيقة التي وجدتها مراجعة لـ190 دراسة (2019) لدى البالغين الذين يقرؤون الأدب القصصي الإنجليزي بصمت (Brysbaert, Journal of Memory and Language). أما الصفحات فهي عدّ مكتب القراءة نفسه لهذا الجهاز.",
+        "insights.tipAvg": "متوسط الجمل {n} كلمة", "insights.tipDlg": "{p}% حوار", "insights.tipEase": "سهولة القراءة نحو {n}", "insights.tipOpen": "انقر، أو اضغط Enter، لفتحه",
+        "insights.colSection": "القسم", "insights.colWords": "الكلمات", "insights.colAvg": "متوسط الجملة بالكلمات", "insights.colEase": "سهولة القراءة (تقريبية)", "insights.colLength": "طول الجملة بالكلمات", "insights.colSentences": "الجمل",
+        "insights.easeH": "سهولة القراءة", "insights.easeSub": "درجة Flesch Reading Ease لكل فصل. الدرجة الأعلى تعني جملًا أقصر وكلمات أقصر — إنها تقيس شكل النثر لا قيمته.",
+        "insights.easeCap": "تقريبية: تُعدّ المقاطع الصوتية بقاعدة عملية لا بقاموس. المعادلة: 206.835 − 1.015 × (الكلمات ÷ الجمل) − 84.6 × (المقاطع ÷ الكلمات)، من بحث رودولف فليش «A new readability yardstick» (1948).",
+        "insights.easeBook": "الكتاب كله {n}",
+        "insights.easeOnlyEn": "تُقاس سهولة القراءة للكتب الإنجليزية فقط — بُنيت معادلتها على كلمات وجمل إنجليزية، وفي لغة أخرى ستكون مضلِّلة.",
+        "insights.varH": "تنوّع الجمل", "insights.varSub": "كم جملة تقع عند كل طول، من الأقصر إلى الأطول.",
+        "insights.varAll": "الكتاب كله", "insights.varPick": "اعرض",
+        "insights.varCap": "الطول الأكثر شيوعًا {range} كلمة. نصف هذه الجمل {median} كلمة أو أقصر، وتسع من كل عشر {p90} أو أقصر.",
+        "insights.varNone": "لا جمل هنا بعد.", "insights.varTipRange": "{range} كلمة", "insights.varTipShare": "{p}% من هذه الجمل",
+        "insights.nSentences": "جملة واحدة", "insights.nSentencesPlural": "{n} جملة",
+        "insights.crutchH": "كلمات تستحق النظر",
+        "insights.crutchSub": "كلمات صغيرة قد تقف بين القارئ والمشهد — تُرشِّح وتتحفّظ وتُليِّن. وكثيرًا ما تكون في مكانها تمامًا. هنا يظهر فقط كم مرة ترد كل منها، والفصول التي تتجمّع فيها أكثر، لتنظر بنفسك.",
+        "insights.crutchUnit": "لكل 10,000 كلمة", "insights.crutchMost": "تتجمّع أكثر في",
+        "insights.crutchSuffix": "كلمات تنتهي بـ -{s}", "insights.crutchApprox": "تقريبي",
+        "insights.crutchSuffixNote": "تُعرف الكلمات المنتهية بـ -{s} من نهايتها، لذا فهذا العدّ تقريبي — بعضها ليس ظرفًا أصلًا، والكلمات المدرجة أعلاه لا تُعدّ مرتين. يحتاج الفصل إلى 150 كلمة أو أكثر ليُذكر حيث تتجمّع كلمة.",
+        "insights.crutchChipTip": "{r} لكل 10,000 كلمة في هذا الفصل",
+        "insights.crutchAbsent": "لا تَرِد في أي موضع من الكتاب: {list}.", "insights.crutchNone": "لا ترد أيّ من هذه الكلمات في الكتاب.",
+        "insights.crutchNoLang": "يقرأ هذا القسم حاليًا الكتب بالإنجليزية والإسبانية والفرنسية والألمانية."
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "insights.glanceH": "ひと目で",
+        "insights.gWords": "語数", "insights.gWordsNote": "サイドバーと同じ数え方",
+        "insights.gChapters": "章", "insights.gChaptersNote": "本文のなかに",
+        "insights.gChaptersMore": "ほか{n}セクション", "insights.gChaptersMorePlural": "ほか{n}セクション",
+        "insights.gTime": "読む時間", "insights.gTimeNote": "1分あたり{n}語で",
+        "insights.gPages": "ページ", "insights.gPagesNote": "{device}で", "insights.gPagesWait": "デスクが{device}向けにまだ計測中です",
+        "insights.gSentence": "平均の文", "insights.gSentenceNote": "語の長さ",
+        "insights.gDialogue": "会話", "insights.gDialogueNote": "の語が声に出して語られる",
+        "insights.glanceFoot": "読む時間は、サイドバーと同じスタジオ独自のペース、1分あたり{n}語で計算しています。190件の研究をまとめた2019年のレビューが、英語の小説を黙読する大人について示した1分あたり260語より、少しゆっくりです（Brysbaert, Journal of Memory and Language）。ページ数は、このデバイスでの読書デスク自身の計測です。",
+        "insights.tipAvg": "文の平均は{n}語", "insights.tipDlg": "会話{p}%", "insights.tipEase": "読みやすさ 約{n}", "insights.tipOpen": "クリックするか Enter キーで開きます",
+        "insights.colSection": "セクション", "insights.colWords": "語数", "insights.colAvg": "平均の文（語）", "insights.colEase": "読みやすさ（概算）", "insights.colLength": "文の長さ（語）", "insights.colSentences": "文の数",
+        "insights.easeH": "読みやすさ", "insights.easeSub": "各章の Flesch Reading Ease スコア。スコアが高いほど文も語も短いことを示します。散文のかたちを測るもので、その価値を測るものではありません。",
+        "insights.easeCap": "概算です。音節は辞書ではなく経験則で数えています。式は 206.835 − 1.015 ×（語数 ÷ 文数）− 84.6 ×（音節数 ÷ 語数）で、Rudolf Flesch「A new readability yardstick」（1948年）によります。",
+        "insights.easeBook": "本全体 {n}",
+        "insights.easeOnlyEn": "読みやすさは英語の本だけで測ります。式が英語の語と文をもとに作られているため、ほかの言語では誤解を招きます。",
+        "insights.varH": "文のばらつき", "insights.varSub": "それぞれの長さの文がいくつあるか、いちばん短いものから長いものまで。",
+        "insights.varAll": "本全体", "insights.varPick": "表示",
+        "insights.varCap": "もっとも多い長さは{range}語です。これらの文の半分は{median}語以下、10文のうち9文は{p90}語以下です。",
+        "insights.varNone": "ここにはまだ文がありません。", "insights.varTipRange": "{range}語", "insights.varTipShare": "これらの文の{p}%",
+        "insights.nSentences": "{n}文", "insights.nSentencesPlural": "{n}文",
+        "insights.crutchH": "見直したいことば",
+        "insights.crutchSub": "読み手と場面のあいだに立つことのある小さなことば——ふるいにかけ、ぼかし、やわらげます。多くはまさにふさわしい言葉です。ここでは、それぞれがどれだけ出てくるか、どの章にいちばん集まるかを示すだけです。見るのはあなたです。",
+        "insights.crutchUnit": "1万語あたり", "insights.crutchMost": "多く集まる章",
+        "insights.crutchSuffix": "-{s} で終わる語", "insights.crutchApprox": "概算",
+        "insights.crutchSuffixNote": "-{s} で終わる語は語尾で見つけるため、その数は概算です。副詞でないものも少し含まれ、上の一覧にある語は二重に数えません。語が集まる章として挙げるのは、150語以上の章だけです。",
+        "insights.crutchChipTip": "この章では1万語あたり{r}",
+        "insights.crutchAbsent": "本のどこにも見つかりません：{list}。", "insights.crutchNone": "これらの語は本に出てきません。",
+        "insights.crutchNoLang": "この項目は、いまのところ英語・スペイン語・フランス語・ドイツ語の本を読みます。"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "insights.glanceH": "一览",
+        "insights.gWords": "字数", "insights.gWordsNote": "与侧边栏的计数方式相同",
+        "insights.gChapters": "章节", "insights.gChaptersNote": "在正文中",
+        "insights.gChaptersMore": "另有 {n} 个部分", "insights.gChaptersMorePlural": "另有 {n} 个部分",
+        "insights.gTime": "阅读时间", "insights.gTimeNote": "按每分钟 {n} 词计算",
+        "insights.gPages": "页数", "insights.gPagesNote": "在 {device} 上", "insights.gPagesWait": "书桌仍在为 {device} 测量",
+        "insights.gSentence": "平均句长", "insights.gSentenceNote": "个词",
+        "insights.gDialogue": "对话", "insights.gDialogueNote": "的词是说出口的",
+        "insights.glanceFoot": "阅读时间采用工作室自己的速度，每分钟 {n} 词，与侧边栏相同——比 2019 年一篇汇总 190 项研究的综述所得的每分钟 260 词（成年人默读英语小说）略慢（Brysbaert, Journal of Memory and Language）。页数是阅读书桌在此设备上自己的计数。",
+        "insights.tipAvg": "句子平均 {n} 词", "insights.tipDlg": "对话占 {p}%", "insights.tipEase": "阅读易度约 {n}", "insights.tipOpen": "点击或按 Enter 打开",
+        "insights.colSection": "部分", "insights.colWords": "词数", "insights.colAvg": "平均句长（词）", "insights.colEase": "阅读易度（近似）", "insights.colLength": "句长（词）", "insights.colSentences": "句子数",
+        "insights.easeH": "阅读易度", "insights.easeSub": "每章的 Flesch Reading Ease 分数。分数越高，句子和词越短——它衡量的是文字的形态，而不是价值。",
+        "insights.easeCap": "近似值：音节按经验规则计数，而非依据词典。公式为 206.835 − 1.015 ×（词数 ÷ 句数）− 84.6 ×（音节数 ÷ 词数），出自 Rudolf Flesch《A new readability yardstick》（1948）。",
+        "insights.easeBook": "全书 {n}",
+        "insights.easeOnlyEn": "阅读易度只为英语书计算——它的公式建立在英语的词和句子之上，用于其他语言会产生误导。",
+        "insights.varH": "句子的变化", "insights.varSub": "每种长度各有多少句子，从最短到最长。",
+        "insights.varAll": "全书", "insights.varPick": "显示",
+        "insights.varCap": "最常见的长度是 {range} 词。这些句子中有一半不超过 {median} 词，十句中有九句不超过 {p90} 词。",
+        "insights.varNone": "这里还没有句子。", "insights.varTipRange": "{range} 词", "insights.varTipShare": "占这些句子的 {p}%",
+        "insights.nSentences": "{n} 句", "insights.nSentencesPlural": "{n} 句",
+        "insights.crutchH": "值得一看的词",
+        "insights.crutchSub": "一些小词可能挡在读者与场景之间——过滤、含糊、缓和。它们常常恰到好处。这里只显示每个词出现的频率，以及它最集中的章节，由你自己去看。",
+        "insights.crutchUnit": "每 10,000 词", "insights.crutchMost": "最集中于",
+        "insights.crutchSuffix": "以 -{s} 结尾的词", "insights.crutchApprox": "近似",
+        "insights.crutchSuffixNote": "以 -{s} 结尾的词按词尾识别，因此该计数是近似的——其中少数并非副词，上面已列出的词不会重复计数。章节须有 150 词或以上，才会被列为某个词集中的地方。",
+        "insights.crutchChipTip": "本章每 10,000 词 {r} 次",
+        "insights.crutchAbsent": "全书中没有出现：{list}。", "insights.crutchNone": "这些词都没有出现在书中。",
+        "insights.crutchNoLang": "这一部分目前只读英语、西班牙语、法语和德语的书。"
+      });
+      Object.assign(UI_PLURAL_FORMS.pl, {
+        "insights.gChaptersMore": { many: "i {n} sekcji więcej" },
+        "insights.nSentences": { many: "{n} zdań" }
+      });
+      Object.assign(UI_PLURAL_FORMS.ru, {
+        "insights.gChaptersMore": { few: "и ещё {n} раздела" },
+        "insights.nSentences": { few: "{n} фразы" }
+      });
+      Object.assign(UI_PLURAL_FORMS.ar, {
+        "insights.gChaptersMore": { few: "و{n} أقسام أخرى", two: "وقسمان آخران" },
+        "insights.nSentences": { few: "{n} جمل", two: "جملتان" }
+      });
+      /* ==== /BEUK:insights ==== */
       /* ==== BEUK:auth ==== account basics (P0 #5): forgot password,
          change password, sign out everywhere — assigned per pack so
          completeness holds. */
@@ -15539,6 +16023,21 @@
          sidebar's own per-section counts. Charts are hairline SVG
          drawn in code; numerals wear the book's serif. */
       const INSIGHTS_STOP_EN = ["the", "of", "and", "a", "an", "in", "to", "is", "was", "were", "are", "be", "been", "being", "am", "it", "its", "he", "she", "they", "we", "you", "i", "me", "him", "her", "us", "them", "his", "hers", "their", "theirs", "our", "ours", "your", "yours", "my", "mine", "this", "that", "these", "those", "there", "here", "what", "which", "who", "whom", "whose", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "can", "could", "will", "would", "shall", "should", "may", "might", "must", "do", "does", "did", "have", "has", "had", "having", "if", "but", "or", "for", "with", "without", "within", "about", "above", "after", "again", "against", "below", "between", "into", "through", "during", "before", "under", "over", "out", "off", "on", "at", "by", "from", "up", "down", "as", "just", "also", "now", "once", "upon", "among", "along", "across", "behind", "toward", "towards", "until", "while", "though", "although", "because", "since", "around", "still", "even", "yet", "ever", "never", "always", "often", "much", "many", "well", "really", "quite", "rather", "almost", "nearly", "soon", "later", "ago", "away", "together", "himself", "herself", "itself", "themselves", "myself", "yourself", "ourselves", "something", "anything", "nothing", "everything", "someone", "anyone", "everyone", "nobody", "somebody", "everybody", "anybody", "per", "via"];
+      /* ==== BEUK:insights ==== — Beuk's own filler lists for the word
+         list, per book language: speech tags ("said", "asked"),
+         contractions, and very common verbs, adverbs and counting
+         words, so the list shows the words that carry this book rather
+         than the words that carry every book. Documented in README. */
+      const INS_FILLER = {
+        en: ["said", "says", "say", "saying", "asked", "asks", "ask", "replied", "told", "tell", "answered", "whispered", "like", "one", "two", "back", "then", "get", "got", "go", "went", "going", "gone", "goes", "come", "came", "coming", "comes", "know", "knew", "known", "think", "thought", "look", "looked", "looking", "looks", "see", "seen", "make", "made", "take", "took", "taken", "want", "wanted", "let", "put", "way", "thing", "things", "yes", "yeah", "okay", "oh", "little", "every", "another", "enough", "perhaps", "maybe", "first", "last", "next", "new", "old", "good", "long", "great", "right", "off", "out", "don't", "didn't", "doesn't", "can't", "couldn't", "wouldn't", "won't", "isn't", "wasn't", "weren't", "hadn't", "hasn't", "haven't", "shouldn't", "i'm", "i'd", "i'll", "i've", "you're", "we're", "they're", "you'll", "we'll", "they'll", "he'll", "she'll", "you'd", "he'd", "she'd", "we'd", "they'd", "you've", "we've", "they've", "let's", "there's", "here's", "what's", "who's", "where's", "mr", "mrs", "ms", "dr", "felt", "seemed", "began", "around", "through", "each", "must", "said", "away", "even", "still", "too", "very", "just", "really"],
+        es: ["dijo", "dice", "decía", "preguntó", "respondió", "contestó", "murmuró", "susurró", "ser", "estar", "era", "fue", "había", "hay", "tenía", "tiene", "hacer", "hizo", "eso", "esto", "algo", "nada", "todo", "todos", "toda", "todas", "uno", "dos", "así", "ahora", "entonces", "luego", "después", "donde", "dónde", "aquí", "allí", "sí", "bien", "solo", "sólo", "otro", "otra", "cada", "vez", "ella", "él", "ellos", "ellas", "nos", "les", "estaba", "son", "está", "sin", "sobre", "entre", "hasta", "desde", "qué", "cómo", "quién"],
+        fr: ["dit", "dis", "disait", "demanda", "répondit", "murmura", "chuchota", "être", "avoir", "fait", "faire", "avait", "été", "ont", "était", "c'est", "n'est", "qu'il", "qu'elle", "j'ai", "tout", "tous", "toute", "toutes", "rien", "quelque", "chose", "comme", "alors", "puis", "ici", "là", "oui", "non", "bien", "aussi", "encore", "déjà", "jamais", "toujours", "peu", "fois", "deux", "lui", "leur", "leurs", "ses", "ces", "mes", "tes", "nos", "vos", "notre", "votre", "même", "autre", "sans", "sous", "vers", "chez", "entre", "après", "avant", "quand", "comment", "où"],
+        de: ["sagte", "sagt", "sagen", "fragte", "antwortete", "flüsterte", "rief", "war", "waren", "sein", "hatte", "hatten", "haben", "habe", "ihr", "ihm", "ihn", "ihre", "seine", "seiner", "seinen", "wie", "was", "noch", "schon", "nur", "dann", "jetzt", "hier", "dort", "da", "ja", "nein", "doch", "mal", "etwas", "nichts", "alles", "alle", "einmal", "zwei", "kein", "keine", "mehr", "wieder", "immer", "durch", "über", "unter", "vor", "zum", "zur", "uns", "mir", "mich", "dich", "dir", "wir", "ich", "du", "oder", "denn", "ob", "wo", "wurde", "würde", "kann", "konnte", "muss", "musste"],
+        it: ["disse", "dice", "chiese", "rispose", "sussurrò", "essere", "avere", "aveva", "fatto", "fare", "tutto", "tutti", "niente", "qualcosa", "così", "poi", "allora", "ora", "qui", "lì", "sì", "bene", "solo", "altro", "altra", "ogni", "volta", "due", "suo", "loro", "non", "per", "dove", "quando", "anche"],
+        pt: ["disse", "diz", "perguntou", "respondeu", "sussurrou", "ser", "estar", "era", "tinha", "tem", "fazer", "feito", "tudo", "todos", "nada", "algo", "assim", "então", "depois", "agora", "aqui", "ali", "sim", "bem", "só", "outro", "outra", "cada", "vez", "dois", "ela", "eles", "elas", "estava", "nos", "lhe", "sem", "sobre", "entre", "até", "onde"],
+        nl: ["zei", "zegt", "zeggen", "vroeg", "antwoordde", "fluisterde", "had", "hebben", "heeft", "werd", "worden", "kan", "kon", "zou", "moet", "nu", "dan", "toen", "hier", "daar", "ja", "nee", "al", "alles", "niets", "iets", "twee", "weer", "nog", "zo", "wat", "hoe", "waar", "wie", "je", "ze", "we", "hem", "haar", "zich", "geen", "heel", "even"]
+      };
+      /* ==== /BEUK:insights ==== */
       const INS_WORD_RE = /[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)*/gu;
       function insCleanText(text) {
         return String(text || "")
@@ -15564,6 +16063,7 @@
         const base = String(lang || "en").split("-")[0];
         (STOPWORDS[base] || []).forEach((w) => set.add(w));
         (STOPWORDS.en || []).forEach((w) => set.add(w));
+        (INS_FILLER[base] || []).forEach((w) => set.add(w)); /* BEUK:insights */
         return set;
       }
       function insFrequency(sections, lang) {
@@ -15571,8 +16071,10 @@
         const freq = new Map();
         let total = 0;
         insProseSections(sections).forEach((s) => {
-          insTokens(s.content).forEach((w) => {
+          insTokens(s.content).forEach((w0) => {
             total++;
+            /* BEUK:insights — a possessive counts with its word (Mara’s → mara) */
+            const w = w0.replace(/’/g, "'").replace(/'s$/, "");
             if (w.length < 3 || stop.has(w)) return;
             freq.set(w, (freq.get(w) || 0) + 1);
           });
@@ -15618,7 +16120,7 @@
                    and a refrain that spans it is one phrase, not two */
                 const prev = flat[i - 1] || "", next = flat[i + 1] || "";
                 if (/\d/.test(prev) && /\d/.test(next)) { i++; continue; }
-                const wm = flat.slice(0, i).match(/[\p{L}\p{M}]+$/u);
+                const wm = flat.slice(Math.max(0, i - 48), i).match(/[\p{L}\p{M}]+$/u); /* BEUK:insights — a bounded look-back: the same word, in linear time */
                 const w = wm ? wm[0].toLowerCase() : "";
                 if (w && (w.length === 1 || INS_ABBREV.has(w))) { i++; continue; }
               }
@@ -15636,7 +16138,7 @@
         return runs;
       }
       function insSentences(text) {
-        return insSentenceRuns(text).map((r) => r.length);
+        return insRunsOf(text).map((r) => r.length); /* BEUK:insights — memoised runs */
       }
       function insCadence(sections) {
         const points = [];
@@ -15654,33 +16156,57 @@
         const prose = insProseSections(sections);
         const streams = [];
         prose.forEach((s, si) => {
-          insSentenceRuns(s.content).forEach((raw) => {
+          insRunsOf(s.content).forEach((raw) => { /* BEUK:insights — memoised runs */
             streams.push({ si, raw, low: raw.map((w) => w.toLowerCase()) });
           });
         });
         const counts = new Map();
-        for (let n = 3; n <= 8; n++) {
-          streams.forEach((st, sti) => {
-            const low = st.low;
-            for (let i = 0; i + n <= low.length; i++) {
-              const key = low.slice(i, i + n).join("\u0001");
-              let e = counts.get(key);
-              if (!e) { e = { key, count: 0, n, stream: sti, pos: i, secs: [] }; counts.set(key, e); }
-              e.count++;
-              if (e.secs[e.secs.length - 1] !== st.si) e.secs.push(st.si);
-            }
-          });
+        /* BEUK:insights — an (n+1)-word phrase can only return three
+           times if its first n words do, so each longer length is
+           counted only where the shorter one already returned: the
+           same phrases, counts and first places, for a fraction of the
+           work on a long book. */
+        let posS = [], posI = [];
+        streams.forEach((st, sti) => { for (let i = 0; i + 3 <= st.low.length; i++) { posS.push(sti); posI.push(i); } });
+        for (let n = 3; n <= 8 && posS.length; n++) {
+          const keys = new Array(posS.length);
+          for (let p = 0; p < posS.length; p++) {
+            const sti = posS[p], i = posI[p], st = streams[sti];
+            const key = st.low.slice(i, i + n).join("\u0001");
+            keys[p] = key;
+            let e = counts.get(key);
+            if (!e) { e = { key, count: 0, n, stream: sti, pos: i, secs: [] }; counts.set(key, e); }
+            e.count++;
+            if (e.secs[e.secs.length - 1] !== st.si) e.secs.push(st.si);
+          }
+          const nS = [], nI = [];
+          for (let p = 0; p < posS.length; p++) {
+            if (counts.get(keys[p]).count >= 3 && posI[p] + n + 1 <= streams[posS[p]].low.length) { nS.push(posS[p]); nI.push(posI[p]); }
+          }
+          posS = nS; posI = nI;
         }
+        /* BEUK:insights — a phrase is dropped when a longer kept phrase
+           with the same count contains it. Only such a phrase can hide
+           another, and it always sorts first in (count, length) order,
+           so the phrases are walked in the order they are shown and the
+           walk stops at fifteen; the kept phrases' inner runs sit in a
+           set, so each test is one lookup. The same fifteen, in the same
+           order, as testing every phrase against every kept one — but a
+           book pasted twice no longer stalls here. */
         const cands = Array.from(counts.values()).filter((e) => e.count >= 3)
-          .sort((a, b) => b.n - a.n || b.count - a.count);
+          .sort((a, b) => b.count - a.count || b.n - a.n);
         const kept = [];
-        cands.forEach((e) => {
-          const padded = "\u0001" + e.key + "\u0001";
-          const contained = kept.some((k) => k.count === e.count && ("\u0001" + k.key + "\u0001").indexOf(padded) !== -1);
-          if (!contained) kept.push(e);
-        });
-        kept.sort((a, b) => b.count - a.count || b.n - a.n);
-        return kept.slice(0, 15).map((e) => ({
+        const covered = new Set();
+        for (let c = 0; c < cands.length && kept.length < 15; c++) {
+          const e = cands[c];
+          if (covered.has(e.count + "\u0002" + e.key)) continue;
+          kept.push(e);
+          const toks = e.key.split("\u0001");
+          for (let m = 3; m < toks.length; m++) {
+            for (let i = 0; i + m <= toks.length; i++) covered.add(e.count + "\u0002" + toks.slice(i, i + m).join("\u0001"));
+          }
+        }
+        return kept.map((e) => ({
           phrase: streams[e.stream].raw.slice(e.pos, e.pos + e.n).join(" "),
           count: e.count,
           firstId: prose[streams[e.stream].si].id,
@@ -15714,125 +16240,626 @@
         });
         return { rows, dialogue: dlg, total: tot, share: tot ? dlg / tot : 0 };
       }
+      /* ==== BEUK:insights ==== — round 7: an at-a-glance strip, a
+         compact word list, explorable charts (hover or focus shows the
+         chapter's own facts; a click, Enter or Space opens it), words
+         to look at, sentence variety and reading ease. Every number is
+         computed here from the book on the desk. The whole result is
+         cached per book revision — each section's id, order, inclusion,
+         type, number, titles and a hash of its text, plus the book and
+         UI language — so opening an unchanged book again draws from
+         memory, and any edit anywhere recomputes. Sections are drawn
+         by an ordered list of renderers (INS_RENDERERS) so another
+         section can be slotted in without touching the rest. */
+      const INS_WPM = 225; /* the studio's own reading pace — the same one the sidebar's statistics use */
+      /* Words to look at — Beuk's own short lists (documented in the
+         README), per book language. Each term counts the exact forms
+         listed, never a guess at other inflections. -ly / -mente
+         adverbs are a suffix heuristic, labelled approximate in the UI,
+         with listed exceptions that are not adverbs. */
+      const INS_CRUTCH = {
+        en: { terms: [["felt"], ["saw"], ["heard"], ["realized", "realised"], ["noticed"], ["seemed"], ["just"], ["very"], ["really"], ["quite"], ["suddenly"], ["began to"], ["started to"]], suffix: "ly", minLen: 5,
+          not: ["family", "early", "reply", "supply", "apply", "belly", "holy", "ugly", "july", "italy", "rely", "ally", "bully", "jelly", "lily", "sally", "billy", "molly", "emily", "kelly", "holly", "polly", "folly", "silly", "chilly", "curly", "lonely", "lovely", "friendly", "unfriendly", "likely", "unlikely", "lively", "elderly", "costly", "deadly", "daily", "weekly", "monthly", "yearly", "hourly", "nightly", "assembly", "anomaly", "monopoly", "butterfly", "dragonfly", "firefly", "rally", "tally", "gully", "dolly", "jolly", "woolly", "wily", "oily", "hilly", "burly", "surly", "pearly", "scaly", "smelly", "bubbly", "cuddly", "wobbly", "prickly", "sparkly", "wrinkly", "ghastly", "ghostly", "beastly", "cowardly", "worldly", "orderly", "disorderly", "comely", "homely", "manly", "womanly", "motherly", "fatherly", "brotherly", "sisterly", "neighbourly", "neighborly", "heavenly", "earthly", "saintly", "princely", "stately", "timely", "untimely", "measly", "grisly", "grizzly", "lowly", "melancholy", "only", "ally", "belly", "frilly", "gangly", "gnarly", "shapely", "sickly", "wiggly", "squiggly", "kindly"] },
+        es: { terms: [["sintió", "sentía"], ["vio", "veía"], ["oyó", "oía", "escuchó"], ["notó", "notaba"], ["se dio cuenta"], ["pareció", "parecía"], ["muy"], ["realmente"], ["bastante"], ["de repente", "de pronto"], ["empezó a", "comenzó a"]], suffix: "mente", minLen: 8,
+          not: ["demente", "clemente", "vehemente", "aumente", "comente", "lamente", "fomente", "cimente", "alimente", "experimente", "complemente", "implemente", "sedimente", "atormente", "documente", "fragmente", "incremente", "reglamente", "segmente", "comentes", "lamentes"] },
+        fr: { terms: [["sentit", "sentait"], ["vit", "voyait"], ["entendit", "entendait"], ["remarqua"], ["se rendit compte"], ["sembla", "semblait"], ["juste"], ["très"], ["vraiment"], ["assez"], ["soudain", "soudainement", "tout à coup"], ["commença à", "se mit à"]] },
+        de: { terms: [["fühlte"], ["sah"], ["hörte"], ["bemerkte", "merkte"], ["schien"], ["sehr"], ["wirklich"], ["ziemlich"], ["eigentlich"], ["plötzlich"], ["begann zu", "fing an zu"]] }
+      };
+      const INS_BUCKETS = [[1, 5], [6, 10], [11, 15], [16, 20], [21, 25], [26, 30], [31, 35], [36, 40], [41, Infinity]];
+      const insRunsMemo = new Map();
+      /* Sentence runs per text, remembered by the text itself: cadence,
+         echoes, variety and the per-chapter facts all read the same
+         runs, so a chapter is split into sentences once per revision. */
+      function insRunsOf(text) {
+        const k = String(text || "");
+        let r = insRunsMemo.get(k);
+        if (!r) {
+          r = insSentenceRuns(k);
+          insRunsMemo.set(k, r);
+          while (insRunsMemo.size > 600) insRunsMemo.delete(insRunsMemo.keys().next().value);
+        }
+        return r;
+      }
+      const insBase = (lang) => String(lang || "en").split("-")[0];
+      /* Syllables by a rule of thumb (vowel groups, a silent final e,
+         -es/-ed endings): approximate, which the UI says. */
+      function insSyllables(word) {
+        let w = String(word || "").toLowerCase().replace(/[^a-z]/g, "");
+        if (!w) return 0;
+        if (w.length <= 3) return 1;
+        w = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, "").replace(/^y/, "");
+        const m = w.match(/[aeiouy]{1,2}/g);
+        return Math.max(1, m ? m.length : 1);
+      }
+      /* Flesch Reading Ease — 206.835 − 1.015 × (words ÷ sentences) −
+         84.6 × (syllables ÷ words) (Rudolf Flesch, "A new readability
+         yardstick", 1948; formula as given at
+         https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests).
+         Built for English, so it is computed for English books only. */
+      function insFlesch(words, sentences, syllables) {
+        if (!words || !sentences) return null;
+        return 206.835 - 1.015 * (words / sentences) - 84.6 * (syllables / words);
+      }
+      function insCrutchList(lang) {
+        const spec = INS_CRUTCH[insBase(lang)];
+        if (!spec) return null;
+        const first = new Map();
+        const terms = spec.terms.map((forms, ti) => {
+          forms.forEach((f) => {
+            const toks = f.split(" ");
+            if (!first.has(toks[0])) first.set(toks[0], []);
+            first.get(toks[0]).push({ ti, toks });
+          });
+          return { label: forms.join(" / "), forms };
+        });
+        const listed = new Set();
+        spec.terms.forEach((forms) => forms.forEach((f) => { if (f.indexOf(" ") === -1) listed.add(f); }));
+        return { terms, first, suffix: spec.suffix || "", minLen: spec.minLen || 0, not: new Set(spec.not || []), listed };
+      }
+      /* One chapter's facts, from its sentence runs: words (as the
+         analysis tokenises them), sentence lengths, syllables (English
+         only), and the words-to-look-at counts. */
+      function insSectionFacts(content, lang, crutch) {
+        const runs = insRunsOf(content);
+        const en = insBase(lang) === "en";
+        const lens = [];
+        let words = 0, syl = 0;
+        const counts = crutch ? new Array(crutch.terms.length + (crutch.suffix ? 1 : 0)).fill(0) : null;
+        for (let r = 0; r < runs.length; r++) {
+          const run = runs[r];
+          lens.push(run.length);
+          words += run.length;
+          let low = null;
+          if (crutch) low = run.map((w) => w.toLowerCase().replace(/’/g, "'"));
+          for (let i = 0; i < run.length; i++) {
+            if (en) syl += insSyllables(run[i]);
+            if (!crutch) continue;
+            const w = low[i];
+            const cands = crutch.first.get(w);
+            if (cands) {
+              for (let c = 0; c < cands.length; c++) {
+                const toks = cands[c].toks;
+                let ok = true;
+                for (let k = 1; k < toks.length; k++) { if (low[i + k] !== toks[k]) { ok = false; break; } }
+                if (ok) counts[cands[c].ti]++;
+              }
+            }
+            if (crutch.suffix && w.length >= crutch.minLen && w.endsWith(crutch.suffix) && !crutch.not.has(w) && !crutch.listed.has(w) && w.indexOf("'") === -1) counts[crutch.terms.length]++;
+          }
+        }
+        return { lens, words, sentences: runs.length, syl, counts };
+      }
+      function insCrutch(sections, lang) {
+        const list = insCrutchList(lang);
+        if (!list) return null;
+        const body = insBodySections(sections);
+        const per = body.map((s) => ({ s, f: insSectionFacts(s.content, lang, list) }));
+        const total = per.reduce((a, p) => a + p.f.words, 0);
+        const n = list.terms.length + (list.suffix ? 1 : 0);
+        const rows = [];
+        for (let ti = 0; ti < n; ti++) {
+          const count = per.reduce((a, p) => a + p.f.counts[ti], 0);
+          /* where it gathers: the highest rate per 10,000 words among
+             chapters of 150 words or more (a two-line scene would
+             otherwise top every list), ties broken by the raw count */
+          const top = per.filter((p) => p.f.counts[ti] > 0 && p.f.words >= 150)
+            .map((p) => ({ id: p.s.id, name: sectionLabel(p.s), short: insShortName(p.s), count: p.f.counts[ti], rate: (p.f.counts[ti] / p.f.words) * 10000 }))
+            .sort((a, b) => b.rate - a.rate || b.count - a.count).slice(0, 3);
+          rows.push({ label: ti < list.terms.length ? list.terms[ti].label : "-" + list.suffix, suffix: ti >= list.terms.length, count, rate: total ? (count / total) * 10000 : 0, top });
+        }
+        return { rows, total, suffix: list.suffix };
+      }
+      function insHistogram(lens) {
+        const buckets = INS_BUCKETS.map((b) => ({ lo: b[0], hi: b[1], count: 0 }));
+        lens.forEach((l) => {
+          for (let i = 0; i < buckets.length; i++) { if (l >= buckets[i].lo && l <= buckets[i].hi) { buckets[i].count++; break; } }
+        });
+        const sorted = lens.slice().sort((a, b) => a - b);
+        const n = sorted.length;
+        const rank = (q) => (n ? sorted[Math.max(0, Math.ceil(q * n) - 1)] : 0);
+        let mode = 0;
+        buckets.forEach((b, i) => { if (b.count > buckets[mode].count) mode = i; });
+        return { buckets, total: n, median: rank(0.5), p90: rank(0.9), mode: n ? mode : -1 };
+      }
+      function insVariety(sections) {
+        const secs = insBodySections(sections).map((s) => ({ id: s.id, name: sectionLabel(s), short: insShortName(s), lens: insRunsOf(s.content).map((r) => r.length) }));
+        const all = [];
+        secs.forEach((s) => { for (let i = 0; i < s.lens.length; i++) all.push(s.lens[i]); });
+        return { secs, all };
+      }
+      function insReadability(sections, lang) {
+        if (insBase(lang) !== "en") return null;
+        let W = 0, S = 0, Y = 0;
+        const points = insBodySections(sections).map((s) => {
+          const f = insSectionFacts(s.content, lang, null);
+          W += f.words; S += f.sentences; Y += f.syl;
+          return { id: s.id, name: sectionLabel(s), short: insShortName(s), score: insFlesch(f.words, f.sentences, f.syl), words: f.words, sentences: f.sentences, syl: f.syl };
+        });
+        return { points, overall: insFlesch(W, S, Y) };
+      }
+      /* Pure over (sections, language): what the self-checks and the
+         performance check hold against known books. */
+      function insComputeFor(sections, lang) {
+        const d = {
+          frequency: insFrequency(sections, lang),
+          rhythm: insRhythm(sections),
+          cadence: insCadence(sections),
+          echoes: insEchoes(sections, lang),
+          dialogue: insDialogue(sections, lang),
+          crutch: insCrutch(sections, lang),
+          variety: insVariety(sections),
+          readability: insReadability(sections, lang),
+          lang
+        };
+        const facts = {};
+        d.rhythm.forEach((r) => { facts[r.id] = { name: r.name, short: r.short, words: r.words, avg: null, dlg: null, ease: null }; });
+        d.cadence.points.forEach((p) => { if (facts[p.id]) facts[p.id].avg = p.avg; });
+        d.dialogue.rows.forEach((r) => { if (facts[r.id] && r.total > 0) facts[r.id].dlg = r.share; });
+        if (d.readability) d.readability.points.forEach((p) => { if (facts[p.id]) facts[p.id].ease = p.score; });
+        d.facts = facts;
+        d.chapters = insBodySections(sections).filter((s) => s.type === "chapter").length;
+        d.otherBody = insBodySections(sections).length - d.chapters;
+        return d;
+      }
+      let insCache = { key: "", d: null, ms: 0, hit: false };
+      function insBookKey() {
+        return [bookLang(), getUiLang(), state.meta.title || "", state.meta.author || "",
+          state.sections.map((s) => {
+            const c = String(s.content || "");
+            return s.id + ":" + (s.included ? 1 : 0) + ":" + s.kind + ":" + s.type + ":" + (s.number || "") + ":" + (s.title || "") + ":" + (s.subtitle || "") + ":" + c.length + ":" + pcHash(c);
+          }).join("|")].join("~");
+      }
       function computeInsights() {
-        const lang = bookLang();
+        const t0 = performance.now();
+        const key = insBookKey();
+        if (insCache.d && insCache.key === key) { insCache.hit = true; return insCache.d; }
+        const d = insComputeFor(state.sections, bookLang());
+        d.totalWords = bookWordTotal();
+        insCache = { key, d, ms: performance.now() - t0, hit: false };
+        return d;
+      }
+      let insFacts = {};
+      let insVarPick = "";
+      const insFmt1 = (n) => { try { return new Intl.NumberFormat(getUiLang(), { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(Number(n) || 0); } catch (e) { return (Math.round((Number(n) || 0) * 10) / 10).toFixed(1); } };
+      const insRtl = () => document.documentElement.getAttribute("dir") === "rtl";
+      function insNiceMax(v) {
+        if (!(v > 0)) return 1;
+        const p = Math.pow(10, Math.floor(Math.log10(v)));
+        const f = v / p;
+        return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+      }
+      /* Round ticks: about three gridlines, a clean step (1, 2, 2.5, 5 × 10ⁿ),
+         and a top that is the first step at or above the data. */
+      function insNiceScale(max, n) {
+        const step = insNiceMax((max > 0 ? max : 1) / (n || 3));
+        const hi = Math.max(step, Math.ceil((max > 0 ? max : 1) / step) * step);
+        const ticks = [];
+        for (let v = step; v <= hi + 1e-9; v += step) ticks.push(v);
+        return { hi, ticks };
+      }
+      function insFactValues(f) {
         return {
-          totalWords: bookWordTotal(),
-          frequency: insFrequency(state.sections, lang),
-          rhythm: insRhythm(state.sections),
-          cadence: insCadence(state.sections),
-          echoes: insEchoes(state.sections, lang),
-          dialogue: insDialogue(state.sections, lang)
+          words: t("side.statsWords", { n: fmtNum(f.words), count: f.words }),
+          avg: f.avg == null ? null : t("insights.tipAvg", { n: insFmt1(f.avg) }),
+          dlg: f.dlg == null ? null : t("insights.tipDlg", { p: fmtNum(f.dlg * 100) }),
+          ease: f.ease == null ? null : t("insights.tipEase", { n: fmtNum(f.ease) })
         };
       }
-      function insRhythmSvg(rows) {
-        const W = 720, H = 196, base = 160, topPad = 20;
-        const max = Math.max.apply(null, rows.map((r) => r.words).concat([1]));
+      function insFactAria(id, lead) {
+        const f = insFacts[id]; if (!f) return "";
+        const v = insFactValues(f);
+        const order = [lead].concat(["words", "avg", "dlg", "ease"].filter((k) => k !== lead));
+        return f.name + ": " + order.map((k) => v[k]).filter(Boolean).join(", ");
+      }
+      /* Shared x positions for every chapter chart: a gutter for the
+         tick labels on the reading-start side, slots in reading order
+         (mirrored in a right-to-left UI so chapter one sits where the
+         reader starts). */
+      function insFrame(n, W, gutter) {
+        const rtl = insRtl();
+        const x0 = rtl ? 4 : gutter, x1 = rtl ? W - gutter : W - 4;
+        const slot = (x1 - x0) / Math.max(1, n);
+        const cx = (i) => (rtl ? x1 - slot * (i + 0.5) : x0 + slot * (i + 0.5));
+        return { rtl, x0, x1, slot, cx, tickX: rtl ? W - 2 : 2, tickAnchor: rtl ? "end" : "start" };
+      }
+      function insAxisLabels(items, fr, y) {
+        const room = Math.max(1, Math.floor((fr.x1 - fr.x0) / 58));
+        const step = Math.max(1, Math.ceil(items.length / room));
+        let out = "";
+        items.forEach((it, i) => {
+          if (i % step !== 0 && i !== items.length - 1) return;
+          if (i === items.length - 1 && i % step !== 0 && items.length - 1 - (i - (i % step)) < step / 2) return;
+          out += '<text class="ins-ax" x="' + fr.cx(i).toFixed(1) + '" y="' + y + '" text-anchor="middle" aria-hidden="true">' + esc(it) + "</text>";
+        });
+        return out;
+      }
+      function insGrid(ticks, yOf, fr, W, fmt) {
+        let out = "";
+        ticks.forEach((v) => {
+          const y = yOf(v).toFixed(1);
+          out += '<line class="ins-grid" x1="' + (fr.rtl ? 0 : fr.x0) + '" y1="' + y + '" x2="' + (fr.rtl ? fr.x1 : W) + '" y2="' + y + '"/>';
+          out += '<text class="ins-tick" x="' + fr.tickX + '" y="' + (Number(y) + 3.5).toFixed(1) + '" text-anchor="' + fr.tickAnchor + '" aria-hidden="true">' + esc(fmt(v)) + "</text>";
+        });
+        return out;
+      }
+      /* A column with a 4px rounded data end, square at the baseline. */
+      function insBarPath(x, y, w, base) {
+        const h = base - y;
+        const r = Math.max(0, Math.min(4, w / 2, h));
+        return "M" + x.toFixed(1) + "," + base.toFixed(1) + "V" + (y + r).toFixed(1) + "Q" + x.toFixed(1) + "," + y.toFixed(1) + " " + (x + r).toFixed(1) + "," + y.toFixed(1) +
+          "H" + (x + w - r).toFixed(1) + "Q" + (x + w).toFixed(1) + "," + y.toFixed(1) + " " + (x + w).toFixed(1) + "," + (y + r).toFixed(1) + "V" + base.toFixed(1) + "Z";
+      }
+      /* The reference line is named in a key above the chart, never
+         as text on the plot, where it would collide with the marks. */
+      function insRefLine(v, yOf, fr) {
+        const y = yOf(v);
+        return '<line class="ins-ref" x1="' + fr.x0 + '" y1="' + y.toFixed(1) + '" x2="' + fr.x1 + '" y2="' + y.toFixed(1) + '"/>';
+      }
+      function insRefKey(label) {
+        return '<p class="ins-legend ins-refkey"><span><span class="ins-key-ref" aria-hidden="true"></span>' + esc(label) + "</span></p>";
+      }
+      function insTable(caption, heads, rows) {
+        return '<table class="sr-only"><caption>' + esc(caption) + "</caption><thead><tr>" + heads.map((h) => '<th scope="col">' + esc(h) + "</th>").join("") + "</tr></thead><tbody>" +
+          rows.map((r) => "<tr>" + r.map((c, i) => (i === 0 ? '<th scope="row">' : "<td>") + esc(c) + (i === 0 ? "</th>" : "</td>")).join("") + "</tr>").join("") + "</tbody></table>";
+      }
+      function insRhythmSvg(rows, W) {
+        W = W || 720;
+        const H = 200, base = 168, topPad = 14;
+        const fr = insFrame(rows.length, W, 40);
+        const sc = insNiceScale(Math.max.apply(null, rows.map((r) => r.words).concat([1])), 3);
+        const maxV = sc.hi;
         const avg = rows.reduce((a, r) => a + r.words, 0) / (rows.length || 1);
-        const slot = W / rows.length;
-        const bw = Math.max(3, Math.min(36, slot * 0.6));
-        const y = (v) => base - (v / max) * (base - topPad);
-        const step = Math.max(1, Math.ceil(rows.length / 12));
-        let out = '<svg class="ins-chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-hidden="true">';
+        const y = (v) => base - (v / maxV) * (base - topPad);
+        const bw = Math.max(3, Math.min(24, fr.slot - 4));
+        let out = '<svg class="ins-chart ins-plot" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' + esc(t("insights.rhythmH")) + '">';
+        out += insGrid(sc.ticks, y, fr, W, fmtNum);
         rows.forEach((r, i) => {
-          const x = slot * i + (slot - bw) / 2;
-          out += '<rect x="' + x.toFixed(1) + '" y="' + y(r.words).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + Math.max(1.5, base - y(r.words)).toFixed(1) + '" rx="1.5" fill="var(--ins-a)" opacity="0.88"><title>' + esc(r.name) + " · " + fmtNum(r.words) + "</title></rect>";
-          if (i % step === 0 || i === rows.length - 1) {
-            const anchor = i === 0 ? ' text-anchor="start" x="1"' : (i === rows.length - 1 ? ' text-anchor="end" x="' + (W - 1) + '"' : ' text-anchor="middle" x="' + (slot * i + slot / 2).toFixed(1) + '"');
-            out += "<text" + anchor + ' y="' + (base + 16) + '" font-size="10.5" fill="var(--muted)" font-family="EB Garamond, Georgia, serif">' + esc(r.short) + "</text>";
-          }
+          const cx = fr.cx(i);
+          out += '<g class="ins-mark" data-sec="' + esc(r.id) + '" data-lead="words" role="button" tabindex="' + (i === 0 ? 0 : -1) + '" aria-label="' + esc(insFactAria(r.id, "words")) + '">' +
+            '<rect class="ins-hit" x="' + (cx - fr.slot / 2).toFixed(1) + '" y="' + topPad + '" width="' + fr.slot.toFixed(1) + '" height="' + (base - topPad + 22) + '"/>' +
+            (r.words > 0 ? '<path class="ins-bar ins-bar-a" d="' + insBarPath(cx - bw / 2, Math.min(base - 1.5, y(r.words)), bw, base) + '"/>' : "") + "</g>";
         });
-        out += '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="var(--line-2)" stroke-width="1"/>';
-        out += '<line x1="0" y1="' + y(avg).toFixed(1) + '" x2="' + W + '" y2="' + y(avg).toFixed(1) + '" stroke="var(--gold)" stroke-width="1" stroke-dasharray="4 4"/>';
-        out += '<text x="' + (W - 2) + '" y="' + (y(avg) - 5).toFixed(1) + '" text-anchor="end" font-size="11.5" fill="var(--gold)" font-family="EB Garamond, Georgia, serif" font-style="italic" style="paint-order:stroke;" stroke="var(--panel-2)" stroke-width="3">' + esc(t("insights.average", { n: fmtNum(avg) })) + "</text>";
+        out += '<line class="ins-base" x1="' + fr.x0 + '" y1="' + base + '" x2="' + fr.x1 + '" y2="' + base + '"/>';
+        out += insRefLine(avg, y, fr);
+        out += insAxisLabels(rows.map((r) => r.short), fr, base + 17);
         return out + "</svg>";
       }
-      function insCadenceSvg(data) {
-        const pts = data.points.filter((p) => p.avg !== null);
-        if (!pts.length) return "";
-        const W = 720, H = 180, base = 148, topPad = 16, padX = 14;
-        const max = Math.max.apply(null, pts.map((p) => p.avg).concat([data.overall, 1])) * 1.12;
-        const x = (i) => pts.length === 1 ? W / 2 : padX + (W - padX * 2) * (i / (pts.length - 1));
-        const y = (v) => base - (v / max) * (base - topPad);
-        let out = '<svg class="ins-chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-hidden="true">';
-        out += '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" stroke="var(--line-2)" stroke-width="1"/>';
-        out += '<line x1="0" y1="' + y(data.overall).toFixed(1) + '" x2="' + W + '" y2="' + y(data.overall).toFixed(1) + '" stroke="var(--gold)" stroke-width="1" stroke-dasharray="4 4"/>';
-        out += '<text x="' + (W - 2) + '" y="' + (y(data.overall) - 5).toFixed(1) + '" text-anchor="end" font-size="11.5" fill="var(--gold)" font-family="EB Garamond, Georgia, serif" font-style="italic" style="paint-order:stroke;" stroke="var(--panel-2)" stroke-width="3">' + esc(t("insights.average", { n: fmtNum(data.overall) })) + "</text>";
-        if (pts.length > 1) {
-          out += '<polyline points="' + pts.map((p, i) => x(i).toFixed(1) + "," + y(p.avg).toFixed(1)).join(" ") + '" fill="none" stroke="var(--ins-b)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>';
-        }
-        const step = Math.max(1, Math.ceil(pts.length / 12));
+      /* One line, one measure: a 2px line, ringed 8px dots, and a
+         slot-wide hit strip per chapter with a crosshair hairline, so
+         the reader aims at a chapter, never at a 2px line. */
+      function insLineSvg(pts, W, opts) {
+        const H = 188, base = 152, topPad = 16;
+        const fr = insFrame(pts.length, W, 40);
+        const lo = opts.lo, hi = opts.hi;
+        const y = (v) => base - ((v - lo) / (hi - lo)) * (base - topPad);
+        let out = '<svg class="ins-chart ins-plot" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' + esc(opts.title) + '">';
+        out += insGrid(opts.ticks, y, fr, W, opts.fmt);
+        if (opts.ref != null) out += insRefLine(opts.ref, y, fr);
+        /* the line breaks across a chapter with no sentences */
+        let seg = [];
+        const segs = [];
+        pts.forEach((p, i) => { if (p.v === null) { if (seg.length) segs.push(seg); seg = []; } else seg.push(fr.cx(i).toFixed(1) + "," + y(p.v).toFixed(1)); });
+        if (seg.length) segs.push(seg);
+        segs.forEach((s) => { if (s.length > 1) out += '<polyline class="ins-line" points="' + s.join(" ") + '"/>'; });
         pts.forEach((p, i) => {
-          out += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p.avg).toFixed(1) + '" r="3" fill="var(--ins-b)"><title>' + esc(p.name) + " · " + fmtNum(p.avg) + "</title></circle>";
-          if (i % step === 0 || i === pts.length - 1) {
-            const anchor = i === 0 ? ' text-anchor="start" x="1"' : (i === pts.length - 1 ? ' text-anchor="end" x="' + (W - 1) + '"' : ' text-anchor="middle" x="' + x(i).toFixed(1) + '"');
-            out += "<text" + anchor + ' y="' + (base + 16) + '" font-size="10.5" fill="var(--muted)" font-family="EB Garamond, Georgia, serif">' + esc(p.short) + "</text>";
-          }
+          if (p.v === null) return;
+          const cx = fr.cx(i), cy = y(p.v);
+          out += '<g class="ins-mark" data-sec="' + esc(p.id) + '" data-lead="' + opts.lead + '" role="button" tabindex="' + (i === pts.findIndex((q) => q.v !== null) ? 0 : -1) + '" aria-label="' + esc(insFactAria(p.id, opts.lead)) + '">' +
+            '<rect class="ins-hit" x="' + (cx - fr.slot / 2).toFixed(1) + '" y="' + topPad + '" width="' + fr.slot.toFixed(1) + '" height="' + (base - topPad + 22) + '"/>' +
+            '<line class="ins-xhair" x1="' + cx.toFixed(1) + '" y1="' + topPad + '" x2="' + cx.toFixed(1) + '" y2="' + base + '"/>' +
+            '<circle class="ins-dot" cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4"/></g>';
         });
+        out += '<line class="ins-base" x1="' + fr.x0 + '" y1="' + base + '" x2="' + fr.x1 + '" y2="' + base + '"/>';
+        out += insAxisLabels(pts.map((p) => p.short), fr, base + 17);
         return out + "</svg>";
       }
-      function insSec(hKey, subKey, inner) {
-        return '<section class="ins-sec"><h3 class="ins-h">' + esc(t(hKey)) + '</h3><p class="ins-sub">' + esc(t(subKey)) + "</p>" + inner + "</section>";
+      function insCadenceSvg(data, W) {
+        W = W || 720;
+        const pts = data.points.map((p) => ({ id: p.id, short: p.short, v: p.avg }));
+        if (!pts.some((p) => p.v !== null)) return "";
+        const sc = insNiceScale(Math.max.apply(null, pts.filter((p) => p.v !== null).map((p) => p.v).concat([data.overall, 1])), 3);
+        return insLineSvg(pts, W, { lo: 0, hi: sc.hi, ticks: sc.ticks, fmt: fmtNum, ref: data.overall, lead: "avg", title: t("insights.cadenceH") });
+      }
+      function insEaseSvg(data, W) {
+        const pts = data.points.map((p) => ({ id: p.id, short: p.short, v: p.score }));
+        const vals = pts.filter((p) => p.v !== null).map((p) => p.v);
+        if (!vals.length) return "";
+        const lo = Math.min(0, Math.floor(Math.min.apply(null, vals) / 10) * 10);
+        const hi = Math.max(100, Math.ceil(Math.max.apply(null, vals) / 10) * 10);
+        return insLineSvg(pts, W, { lo, hi, ticks: [50, 100].concat(lo < 0 ? [lo] : []), fmt: fmtNum, ref: data.overall, lead: "ease", title: t("insights.easeH") });
+      }
+      function insHistSvg(h, W) {
+        const H = 190, base = 156, topPad = 18;
+        const fr = insFrame(h.buckets.length, W, 40);
+        const sc = insNiceScale(Math.max.apply(null, h.buckets.map((b) => b.count).concat([1])), 3);
+        const maxV = sc.hi;
+        const y = (v) => base - (v / maxV) * (base - topPad);
+        const bw = Math.max(6, Math.min(28, fr.slot - 6));
+        let out = '<svg class="ins-chart ins-plot" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H + '" role="group" aria-label="' + esc(t("insights.varH")) + '">';
+        out += insGrid(sc.ticks, y, fr, W, fmtNum);
+        h.buckets.forEach((b, i) => {
+          const cx = fr.cx(i);
+          const range = insRange(b);
+          const pct = h.total ? (b.count / h.total) * 100 : 0;
+          const tip = t("insights.nSentences", { n: fmtNum(b.count), count: b.count }) + "\n" + t("insights.varTipRange", { range }) + "\n" + t("insights.varTipShare", { p: fmtNum(pct) });
+          out += '<g class="ins-mark ins-mark-static" data-tip="' + esc(tip) + '" role="img" tabindex="' + (i === 0 ? 0 : -1) + '" aria-label="' + esc(tip.split("\n").join(", ")) + '">' +
+            '<rect class="ins-hit" x="' + (cx - fr.slot / 2).toFixed(1) + '" y="' + topPad + '" width="' + fr.slot.toFixed(1) + '" height="' + (base - topPad + 22) + '"/>' +
+            (b.count > 0 ? '<path class="ins-bar ins-bar-b" d="' + insBarPath(cx - bw / 2, Math.min(base - 1.5, y(b.count)), bw, base) + '"/>' : "") + "</g>";
+          if (i === h.mode && b.count > 0) out += '<text class="ins-cap-lab" x="' + cx.toFixed(1) + '" y="' + (y(b.count) - 6).toFixed(1) + '" text-anchor="middle" aria-hidden="true">' + esc(fmtNum(b.count)) + "</text>";
+        });
+        out += '<line class="ins-base" x1="' + fr.x0 + '" y1="' + base + '" x2="' + fr.x1 + '" y2="' + base + '"/>';
+        out += insAxisLabels(h.buckets.map((b) => insRange(b)), fr, base + 17);
+        return out + "</svg>";
+      }
+      function insRange(b) {
+        return b.hi === Infinity ? fmtNum(b.lo) + "+" : fmtNum(b.lo) + "–" + fmtNum(b.hi);
+      }
+      function insSec(hKey, subKey, inner, cls) {
+        return '<section class="ins-sec' + (cls ? " " + cls : "") + '"><h3 class="ins-h">' + esc(t(hKey)) + "</h3>" + (subKey ? '<p class="ins-sub">' + esc(t(subKey)) + "</p>" : "") + inner + "</section>";
+      }
+      /* The glance's page count is the reading desk's own measurement
+         for the device on the desk — shown only once that measurement
+         matches the book as it stands, never a stale or invented one. */
+      function insGlancePages() {
+        const device = DEVICE_NAMES[state.device] || state.device || "";
+        const ready = deskState.sig && deskState.sig === deskSignature() && deskState.total > 0;
+        return ready
+          ? { val: "≈ " + fmtNum(deskState.total), note: t("insights.gPagesNote", { device }), ready: true }
+          : { val: "…", note: t("insights.gPagesWait", { device }), ready: false };
+      }
+      function insGlanceCard(id, lab, val, note, title) {
+        return '<div class="ins-g"' + (id ? ' id="' + id + '"' : "") + (title ? ' title="' + esc(title) + '"' : "") + '><span class="ins-g-lab">' + esc(lab) + '</span><span class="ins-num ins-g-val">' + esc(val) + '</span><span class="ins-g-note">' + esc(note) + "</span></div>";
+      }
+      function insRenderGlance(d) {
+        const mins = Math.round(d.totalWords / INS_WPM);
+        const time = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
+        const pg = insGlancePages();
+        let cards = "";
+        cards += insGlanceCard("insGWords", t("insights.gWords"), fmtNum(d.totalWords), t("insights.gWordsNote"));
+        cards += insGlanceCard("insGChapters", t("insights.gChapters"), fmtNum(d.chapters), d.otherBody > 0 ? t("insights.gChaptersMore", { n: fmtNum(d.otherBody), count: d.otherBody }) : t("insights.gChaptersNote"));
+        cards += insGlanceCard("insGTime", t("insights.gTime"), time, t("insights.gTimeNote", { n: fmtNum(INS_WPM) }));
+        cards += insGlanceCard("insGPages", t("insights.gPages"), pg.val, pg.note);
+        cards += insGlanceCard("insGSentence", t("insights.gSentence"), d.cadence.overall ? insFmt1(d.cadence.overall) : "—", t("insights.gSentenceNote"));
+        cards += insGlanceCard("insGDialogue", t("insights.gDialogue"), d.dialogue.total ? fmtNum(d.dialogue.share * 100) + "%" : "—", t("insights.gDialogueNote"));
+        return '<section class="ins-sec ins-glance-sec"><h3 class="sr-only">' + esc(t("insights.glanceH")) + '</h3><div class="ins-glance">' + cards + '</div><p class="ins-foot">' + esc(t("insights.glanceFoot", { n: fmtNum(INS_WPM) })) + "</p></section>";
+      }
+      function insGlancePagesRefresh() {
+        const el = $("insGPages"); if (!el) return;
+        const pg = insGlancePages();
+        const v = el.querySelector(".ins-g-val"), n = el.querySelector(".ins-g-note");
+        if (v) v.textContent = pg.val;
+        if (n) n.textContent = pg.note;
+      }
+      function insRenderWords(d) {
+        if (!d.frequency.top.length) return "";
+        const max = d.frequency.top[0].count;
+        let rows = "";
+        d.frequency.top.forEach((w) => {
+          const pct = Math.max(2, Math.round((w.count / max) * 100));
+          const rate = d.frequency.total ? (w.count / d.frequency.total) * 10000 : 0;
+          const note = t("insights.per10k", { n: rate >= 10 ? fmtNum(rate) : insFmt1(rate) });
+          rows += '<li class="ins-w" data-tip="' + esc(fmtNum(w.count) + "\n" + w.word + "\n" + note) + '"><span class="ins-w-word">' + esc(w.word) + '</span><span class="ins-w-track" aria-hidden="true"><span class="ins-w-bar" style="width:' + pct + '%"></span></span><span class="ins-num ins-w-count">' + fmtNum(w.count) + '</span><span class="sr-only">, ' + esc(note) + "</span></li>";
+        });
+        return insSec("insights.freqH", "insights.freqSub", '<ol class="ins-words" style="--ins-rows:' + Math.ceil(d.frequency.top.length / 2) + '">' + rows + "</ol>");
+      }
+      function insRenderRhythm(d, ctx) {
+        if (!d.rhythm.length) return "";
+        const sorted = d.rhythm.slice().sort((a, b) => b.words - a.words);
+        const longest = sorted[0], shortest = sorted[sorted.length - 1];
+        let cap = "";
+        if (longest && longest.words > 0) {
+          cap = '<p class="ins-caption">' + esc(t("insights.longest", { name: longest.name, n: fmtNum(longest.words) })) + " " +
+            esc(t("insights.shortest", { name: shortest.name, n: fmtNum(shortest.words) })) + "</p>";
+        }
+        const table = insTable(t("insights.rhythmH"), [t("insights.colSection"), t("insights.colWords")], d.rhythm.map((r) => [r.name, fmtNum(r.words)]));
+        return insSec("insights.rhythmH", "insights.rhythmSub", insRefKey(t("insights.average", { n: fmtNum(d.rhythm.reduce((a, r) => a + r.words, 0) / (d.rhythm.length || 1)) })) + '<div class="ins-plotwrap">' + insRhythmSvg(d.rhythm, ctx.W) + "</div>" + cap + table);
+      }
+      function insRenderCadence(d, ctx) {
+        if (!d.cadence.points.some((p) => p.avg !== null)) return "";
+        const cap = '<p class="ins-caption">' + esc(t("insights.cadenceAvg", { n: insFmt1(d.cadence.overall) })) + "</p>";
+        const table = insTable(t("insights.cadenceH"), [t("insights.colSection"), t("insights.colAvg")], d.cadence.points.map((p) => [p.name, p.avg === null ? "—" : insFmt1(p.avg)]));
+        return insSec("insights.cadenceH", "insights.cadenceSub", insRefKey(t("insights.average", { n: insFmt1(d.cadence.overall) })) + '<div class="ins-plotwrap">' + insCadenceSvg(d.cadence, ctx.W) + "</div>" + cap + table);
+      }
+      function insRenderReadability(d, ctx) {
+        if (!d.readability) return insSec("insights.easeH", null, '<p class="ins-none">' + esc(t("insights.easeOnlyEn")) + "</p>", "ins-ease-sec");
+        if (!d.readability.points.some((p) => p.score !== null)) return "";
+        const cap = '<p class="ins-caption">' + esc(t("insights.easeCap")) + "</p>";
+        const table = insTable(t("insights.easeH"), [t("insights.colSection"), t("insights.colEase")], d.readability.points.map((p) => [p.name, p.score === null ? "—" : fmtNum(p.score)]));
+        return insSec("insights.easeH", "insights.easeSub", (d.readability.overall !== null ? insRefKey(t("insights.easeBook", { n: fmtNum(d.readability.overall) })) : "") + '<div class="ins-plotwrap">' + insEaseSvg(d.readability, ctx.W) + "</div>" + cap + table, "ins-ease-sec");
+      }
+      function insRenderDialogue(d) {
+        if (!(d.dialogue.rows.length && d.dialogue.total > 0)) return "";
+        let rows = '<p class="ins-legend"><span><span class="sw" style="background:var(--ins-b);"></span>' + esc(t("insights.dlgWord")) + '</span><span><span class="sw" style="background:var(--panel-3); border:1px solid var(--line);"></span>' + esc(t("insights.narrWord")) + "</span></p>";
+        d.dialogue.rows.forEach((r) => {
+          const pct = Math.round(r.share * 100);
+          rows += '<button type="button" class="ins-dlg-row" data-sec="' + esc(r.id) + '" data-lead="dlg" aria-label="' + esc(insFactAria(r.id, "dlg")) + '"><span class="ins-dlg-name">' + esc(r.short) + '</span><span class="ins-dlg-track"><span class="ins-dlg-seg" style="width:' + pct + '%"></span></span><span class="ins-num ins-dlg-pct">' + fmtNum(pct) + "%</span></button>";
+        });
+        rows += '<p class="ins-caption">' + esc(t("insights.dlgShare", { p: fmtNum(d.dialogue.share * 100) })) + "</p>";
+        return insSec("insights.dlgH", "insights.dlgSub", rows);
+      }
+      function insVarietyInner(d, ctx) {
+        const v = d.variety;
+        const pick = v.secs.find((s) => s.id === insVarPick);
+        const lens = pick ? pick.lens : v.all;
+        const h = insHistogram(lens);
+        if (!h.total) return '<p class="ins-none">' + esc(t("insights.varNone")) + "</p>";
+        const cap = '<p class="ins-caption">' + esc(t("insights.varCap", { range: insRange(h.buckets[h.mode]), median: fmtNum(h.median), p90: fmtNum(h.p90) })) + "</p>";
+        const table = insTable(t("insights.varH") + (pick ? " · " + pick.name : ""), [t("insights.colLength"), t("insights.colSentences")], h.buckets.map((b) => [insRange(b), fmtNum(b.count)]));
+        return '<div class="ins-plotwrap">' + insHistSvg(h, ctx.W) + "</div>" + cap + table;
+      }
+      function insRenderVariety(d, ctx) {
+        const v = d.variety;
+        if (!v.all.length) return "";
+        if (insVarPick && !v.secs.some((s) => s.id === insVarPick)) insVarPick = "";
+        let opts = '<option value="">' + esc(t("insights.varAll")) + "</option>";
+        v.secs.forEach((s) => { if (s.lens.length) opts += '<option value="' + esc(s.id) + '"' + (s.id === insVarPick ? " selected" : "") + ">" + esc(s.name) + "</option>"; });
+        const picker = '<label class="ins-pick"><span>' + esc(t("insights.varPick")) + '</span><select class="txt-input" id="insVarSel">' + opts + "</select></label>";
+        return insSec("insights.varH", "insights.varSub", picker + '<div id="insVarWrap" aria-live="polite">' + insVarietyInner(d, ctx) + "</div>");
+      }
+      function insRenderCrutch(d) {
+        if (!d.crutch) return insSec("insights.crutchH", null, '<p class="ins-none">' + esc(t("insights.crutchNoLang")) + "</p>", "ins-crutch-sec");
+        /* the listed words share one scale; the -ly / -mente family is a
+           different kind of count (a whole class of words), so it stands
+           last, on its own, without a bar that would dwarf the rest */
+        const found = d.crutch.rows.filter((r) => r.count > 0).sort((a, b) => (a.suffix ? 1 : 0) - (b.suffix ? 1 : 0) || b.rate - a.rate);
+        const absent = d.crutch.rows.filter((r) => r.count === 0).map((r) => (r.suffix ? t("insights.crutchSuffix", { s: d.crutch.suffix }) : r.label));
+        const maxRate = Math.max.apply(null, found.filter((r) => !r.suffix).map((r) => r.rate).concat([1e-9]));
+        const fmtRate = (r) => (r >= 10 ? fmtNum(r) : insFmt1(r));
+        let rows = '<div class="ins-cr-head" aria-hidden="true"><span></span><span></span><span class="ins-cr-unit">' + esc(t("insights.crutchUnit")) + "</span><span>" + esc(t("insights.crutchMost")) + "</span></div>";
+        found.forEach((r) => {
+          const term = r.suffix ? t("insights.crutchSuffix", { s: d.crutch.suffix }) : r.label;
+          const chips = r.top.map((c) => {
+            const tip = t("insights.crutchChipTip", { r: fmtRate(c.rate) });
+            return '<button type="button" class="ins-chip" data-sec="' + esc(c.id) + '" data-tip="' + esc(tip + "\n" + c.name) + '" aria-label="' + esc(c.name + ": " + tip) + '">' + esc(c.short) + "</button>";
+          }).join("");
+          rows += '<div class="ins-cr-row' + (r.suffix ? " ins-cr-suffix" : "") + '"><span class="ins-cr-term">' + esc(term) + (r.suffix ? '<span class="ins-cr-approx">' + esc(t("insights.crutchApprox")) + "</span>" : "") + "</span>" + (r.suffix ? '<span aria-hidden="true"></span>' : '<span class="ins-cr-track" aria-hidden="true"><span class="ins-cr-bar" style="width:' + Math.max(2, Math.round((r.rate / maxRate) * 100)) + '%"></span></span>') + '<span class="ins-num ins-cr-rate">' + esc(fmtRate(r.rate)) + '<span class="sr-only"> ' + esc(t("insights.crutchUnit")) + "</span></span>" +
+            '<span class="ins-cr-where">' + (chips ? '<span class="sr-only">' + esc(t("insights.crutchMost")) + " </span>" + chips : "") + "</span></div>";
+        });
+        if (!found.length) rows = '<p class="ins-none">' + esc(t("insights.crutchNone")) + "</p>";
+        if (absent.length && found.length) rows += '<p class="ins-caption">' + esc(t("insights.crutchAbsent", { list: absent.join(", ") })) + "</p>";
+        if (d.crutch.suffix) rows += '<p class="ins-foot">' + esc(t("insights.crutchSuffixNote", { s: d.crutch.suffix })) + "</p>";
+        return insSec("insights.crutchH", "insights.crutchSub", rows, "ins-crutch-sec");
+      }
+      function insRenderEchoes(d) {
+        let inner = "";
+        if (d.echoes.length) {
+          inner = d.echoes.map((e) =>
+            '<button type="button" class="ins-echo" data-sec="' + esc(e.firstId) + '"><span class="ins-echo-phrase">&ldquo;' + esc(e.phrase) + '&rdquo;</span><span class="ins-echo-meta">' + esc(t("insights.echoMeta", { n: fmtNum(e.count), names: e.names.join(", ") })) + "</span></button>"
+          ).join("");
+        } else {
+          inner = '<p class="ins-none">' + esc(t("insights.echoesNone")) + "</p>";
+        }
+        return insSec("insights.echoesH", "insights.echoesSub", inner);
+      }
+      /* The order the room is read in. Another section joins by
+         splicing its renderer in here (each takes (d, ctx) and returns
+         HTML, or "" to stay out). */
+      const INS_RENDERERS = [insRenderGlance, insRenderWords, insRenderRhythm, insRenderCadence, insRenderReadability, insRenderDialogue, insRenderVariety, insRenderCrutch, insRenderEchoes];
+      function insBuildHtml(d, ctx) {
+        insFacts = d.facts || {};
+        let html = "";
+        INS_RENDERERS.forEach((r) => { html += r(d, ctx) || ""; });
+        return html;
+      }
+      function insChartWidth() {
+        const body = $("insBody");
+        const w = body ? Math.round(body.clientWidth) : 0;
+        return w > 200 ? w : 720;
       }
       function renderInsights() {
         const body = $("insBody"); if (!body) return;
+        insTipHide();
         const d = computeInsights();
         if (!d.totalWords) {
           body.innerHTML = '<p class="ins-empty">' + esc(t("insights.empty")) + "</p>";
           return;
         }
-        let html = "";
-        if (d.frequency.top.length) {
-          const max = d.frequency.top[0].count;
-          let rows = "";
-          d.frequency.top.forEach((w) => {
-            const pct = Math.max(2, Math.round((w.count / max) * 100));
-            const rate = d.frequency.total ? (w.count / d.frequency.total) * 10000 : 0;
-            rows += '<div class="ins-freq-row"><span class="ins-freq-word">' + esc(w.word) + '</span><span class="ins-freq-track"><span class="ins-freq-bar" style="width:' + pct + '%"></span></span><span class="ins-num ins-freq-count">' + fmtNum(w.count) + "</span>" +
-              (rate >= 20 ? '<span class="ins-freq-note">' + esc(t("insights.per10k", { n: fmtNum(rate) })) + "</span>" : "") + "</div>";
-          });
-          html += insSec("insights.freqH", "insights.freqSub", rows);
-        }
-        if (d.rhythm.length) {
-          const sorted = d.rhythm.slice().sort((a, b) => b.words - a.words);
-          const longest = sorted[0], shortest = sorted[sorted.length - 1];
-          let cap = "";
-          if (longest && longest.words > 0) {
-            cap = '<p class="ins-caption">' + esc(t("insights.longest", { name: longest.name, n: fmtNum(longest.words) })) + " " +
-              esc(t("insights.shortest", { name: shortest.name, n: fmtNum(shortest.words) })) + "</p>";
-          }
-          html += insSec("insights.rhythmH", "insights.rhythmSub", insRhythmSvg(d.rhythm) + cap);
-        }
-        if (d.cadence.points.some((p) => p.avg !== null)) {
-          const cap = '<p class="ins-caption">' + esc(t("insights.cadenceAvg", { n: fmtNum(d.cadence.overall) })) + "</p>";
-          html += insSec("insights.cadenceH", "insights.cadenceSub", insCadenceSvg(d.cadence) + cap);
-        }
-        {
-          let inner = "";
-          if (d.echoes.length) {
-            inner = d.echoes.map((e) =>
-              '<button type="button" class="ins-echo" data-sec="' + esc(e.firstId) + '"><span class="ins-echo-phrase">&ldquo;' + esc(e.phrase) + '&rdquo;</span><span class="ins-echo-meta">' + esc(t("insights.echoMeta", { n: fmtNum(e.count), names: e.names.join(", ") })) + "</span></button>"
-            ).join("");
-          } else {
-            inner = '<p class="ins-none">' + esc(t("insights.echoesNone")) + "</p>";
-          }
-          html += insSec("insights.echoesH", "insights.echoesSub", inner);
-        }
-        if (d.dialogue.rows.length && d.dialogue.total > 0) {
-          let rows = '<p class="ins-legend"><span><span class="sw" style="background:var(--ins-b);"></span>' + esc(t("insights.dlgWord")) + '</span><span><span class="sw" style="background:var(--panel-3); border:1px solid var(--line);"></span>' + esc(t("insights.narrWord")) + "</span></p>";
-          d.dialogue.rows.forEach((r) => {
-            const pct = Math.round(r.share * 100);
-            rows += '<div class="ins-dlg-row"><span class="ins-dlg-name">' + esc(r.short) + '</span><span class="ins-dlg-track"><span class="ins-dlg-seg" style="width:' + pct + '%"></span></span><span class="ins-num ins-dlg-pct">' + fmtNum(pct) + "%</span></div>";
-          });
-          rows += '<p class="ins-caption">' + esc(t("insights.dlgShare", { p: fmtNum(d.dialogue.share * 100) })) + "</p>";
-          html += insSec("insights.dlgH", "insights.dlgSub", rows);
-        }
+        const ctx = { W: insChartWidth() };
+        let html = insBuildHtml(d, ctx);
         body.innerHTML = html;
+        body.setAttribute("data-w", String(ctx.W));
       }
+      /* ---- the hover / focus layer: one tooltip, values first ---- */
+      function insTipEl() {
+        let el = $("insTip");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "insTip"; el.className = "ins-tip"; el.setAttribute("role", "tooltip"); el.hidden = true;
+          document.body.appendChild(el);
+        }
+        return el;
+      }
+      function insTipHide() {
+        const el = $("insTip"); if (el) el.hidden = true;
+        const body = $("insBody");
+        if (body) body.querySelectorAll(".is-hot").forEach((n) => n.classList.remove("is-hot"));
+      }
+      function insTipShow(mark) {
+        const el = insTipEl();
+        el.innerHTML = "";
+        const sec = mark.getAttribute("data-sec");
+        const tip = mark.getAttribute("data-tip");
+        const add = (cls, txt) => { const s = document.createElement("span"); s.className = cls; s.textContent = txt; el.appendChild(s); };
+        if (tip) {
+          const lines = tip.split("\n");
+          add("ins-tip-v", lines[0]);
+          lines.slice(1).forEach((l, i) => add(i === 0 ? "ins-tip-n" : "ins-tip-m", l));
+        } else if (sec && insFacts[sec]) {
+          const f = insFacts[sec];
+          const v = insFactValues(f);
+          const lead = mark.getAttribute("data-lead") || "words";
+          add("ins-tip-v", v[lead] || v.words);
+          add("ins-tip-n", f.name);
+          ["words", "avg", "dlg", "ease"].filter((k) => k !== lead && v[k]).forEach((k) => add("ins-tip-m", v[k]));
+        } else return;
+        if (sec) add("ins-tip-h", t("insights.tipOpen"));
+        const body = $("insBody");
+        if (body) {
+          body.querySelectorAll(".is-hot").forEach((n) => n.classList.remove("is-hot"));
+          if (sec) body.querySelectorAll('[data-sec="' + (window.CSS && CSS.escape ? CSS.escape(sec) : sec) + '"]').forEach((n) => { if (!n.classList.contains("ins-echo") && !n.classList.contains("ins-chip")) n.classList.add("is-hot"); });
+          mark.classList.add("is-hot");
+        }
+        el.hidden = false;
+        const anchor = mark.querySelector(".ins-bar, .ins-dot") || mark;
+        const r = anchor.getBoundingClientRect();
+        const tw = el.offsetWidth, th = el.offsetHeight;
+        let left = r.left + r.width / 2 - tw / 2;
+        left = Math.max(8, Math.min(window.innerWidth - tw - 8, left));
+        let top = r.top - th - 10;
+        if (top < 8) top = r.bottom + 10;
+        el.style.left = Math.round(left) + "px";
+        el.style.top = Math.round(top) + "px";
+      }
+      function insJump(id) {
+        insTipHide();
+        $("modalInsights").classList.remove("open");
+        selectSection(id);
+      }
+      function insRovingKey(e) {
+        const mark = e.target && e.target.closest ? e.target.closest(".ins-mark") : null;
+        if (!mark) return false;
+        const svg = mark.closest("svg");
+        const marks = Array.prototype.slice.call(svg.querySelectorAll(".ins-mark"));
+        const i = marks.indexOf(mark);
+        const rtl = insRtl();
+        let j = -1;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") j = (e.key === "ArrowRight" && rtl) ? i - 1 : i + 1;
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") j = (e.key === "ArrowLeft" && rtl) ? i + 1 : i - 1;
+        else if (e.key === "Home") j = 0;
+        else if (e.key === "End") j = marks.length - 1;
+        else if ((e.key === "Enter" || e.key === " ") && mark.getAttribute("data-sec")) { e.preventDefault(); insJump(mark.getAttribute("data-sec")); return true; }
+        else return false;
+        e.preventDefault();
+        j = Math.max(0, Math.min(marks.length - 1, j));
+        marks.forEach((m, k) => m.setAttribute("tabindex", k === j ? "0" : "-1"));
+        marks[j].focus();
+        return true;
+      }
+      let insResizeTimer = null;
       function openInsights() {
-        renderInsights();
         const m = $("modalInsights");
-        m.classList.add("open");
+        m.classList.add("open"); /* open first, so the charts are drawn at the width they will have */
+        renderInsights();
         const box = m.querySelector(".modal");
         if (box) box.scrollTop = 0;
         icons();
@@ -15843,22 +16870,62 @@
       }
       function initInsights() {
         const btn = $("btnInsights"); if (btn) btn.addEventListener("click", openInsights);
-        const close = $("btnCloseInsights"); if (close) close.addEventListener("click", () => $("modalInsights").classList.remove("open"));
+        const close = $("btnCloseInsights"); if (close) close.addEventListener("click", () => { insTipHide(); $("modalInsights").classList.remove("open"); });
         const ref = $("btnInsRefresh"); if (ref) ref.addEventListener("click", renderInsights);
         const back = $("modalInsights");
-        if (back) back.addEventListener("click", (e) => { if (e.target === back) back.classList.remove("open"); });
+        if (back) back.addEventListener("click", (e) => { if (e.target === back) { insTipHide(); back.classList.remove("open"); } });
+        /* however the room closes (button, backdrop, Escape, a jump), the tooltip goes with it */
+        if (back && window.MutationObserver) new MutationObserver(() => { if (!back.classList.contains("open")) insTipHide(); }).observe(back, { attributes: true, attributeFilter: ["class"] });
+        const box = back && back.querySelector(".modal");
+        /* scrolling moves the marks: a focused mark keeps its tooltip
+           (re-placed beside it — focusing can itself scroll the box);
+           a hover tooltip is put away */
+        if (box) box.addEventListener("scroll", () => {
+          const a = document.activeElement;
+          const body = $("insBody");
+          const tgt = a && body && body.contains(a) && a.closest ? a.closest(".ins-mark, .ins-dlg-row, .ins-chip") : null;
+          if (tgt) insTipShow(tgt); else insTipHide();
+        }, { passive: true });
         const body = $("insBody");
-        if (body) body.addEventListener("click", (e) => {
-          const b = e.target && e.target.closest ? e.target.closest("[data-sec]") : null;
-          if (!b) return;
-          const id = b.getAttribute("data-sec");
-          $("modalInsights").classList.remove("open");
-          selectSection(id);
+        if (body) {
+          body.addEventListener("click", (e) => {
+            const b = e.target && e.target.closest ? e.target.closest("[data-sec]") : null;
+            if (!b) return;
+            insJump(b.getAttribute("data-sec"));
+          });
+          /* Escape first dismisses an open tooltip (WCAG 1.4.13) and only
+             then, on a second press, reaches the studio's close-the-room
+             handler */
+          body.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") { const tip = $("insTip"); if (tip && !tip.hidden) { insTipHide(); e.stopPropagation(); } return; }
+            insRovingKey(e);
+          });
+          const tipTarget = (e) => (e.target && e.target.closest ? e.target.closest(".ins-mark, .ins-w, .ins-dlg-row, .ins-chip") : null);
+          body.addEventListener("pointerover", (e) => { const m = tipTarget(e); if (m) insTipShow(m); });
+          body.addEventListener("pointerout", (e) => { const m = tipTarget(e); if (m && !(e.relatedTarget && m.contains(e.relatedTarget))) insTipHide(); });
+          body.addEventListener("focusin", (e) => { const m = tipTarget(e); if (m) insTipShow(m); });
+          body.addEventListener("focusout", () => insTipHide());
+          body.addEventListener("change", (e) => {
+            if (!e.target || e.target.id !== "insVarSel") return;
+            insVarPick = e.target.value || "";
+            const wrap = $("insVarWrap");
+            if (wrap && insCache.d) wrap.innerHTML = insVarietyInner(insCache.d, { W: insChartWidth() });
+          });
+        }
+        window.addEventListener("resize", () => {
+          clearTimeout(insResizeTimer);
+          insResizeTimer = setTimeout(() => {
+            const m = $("modalInsights"), b = $("insBody");
+            if (!m || !m.classList.contains("open") || !b) return;
+            if (Math.abs(insChartWidth() - Number(b.getAttribute("data-w") || 0)) > 24) renderInsights();
+          }, 160);
         });
       }
       if (typeof window !== "undefined") {
-        window.beukInsights = { compute: computeInsights, open: openInsights, render: renderInsights, frequency: insFrequency, rhythm: insRhythm, cadence: insCadence, echoes: insEchoes, dialogueText: insDialogueText, dialogue: insDialogue };
+        window.beukInsights = { compute: computeInsights, computeFor: insComputeFor, open: openInsights, render: renderInsights, frequency: insFrequency, rhythm: insRhythm, cadence: insCadence, echoes: insEchoes, dialogueText: insDialogueText, dialogue: insDialogue,
+          crutch: insCrutch, histogram: insHistogram, readability: insReadability, syllables: insSyllables, flesch: insFlesch, renderers: INS_RENDERERS, cache: () => insCache, glancePages: insGlancePages };
       }
+      /* ==== /BEUK:insights ==== */
 
       /* ================= Book language =================
          One table drives everything language-shaped in the book:
@@ -20148,6 +21215,7 @@
       }
       function renderDesk() {
         renderDeskFacts();
+        if (typeof insGlancePagesRefresh === "function") insGlancePagesRefresh(); /* BEUK:insights — the glance's page count follows the desk */
         $("deskTotal").textContent = t("preview.desk.total", {
           title: state.meta.title || t("misc.untitledBook"),
           n: deskState.total, count: deskState.total, device: DEVICE_NAMES[state.device] || state.device
@@ -34959,6 +36027,124 @@
               !!hit && hit.count === 3 && hit.firstId === "inse1" && !stitched && !!spanHit && dlg.share > 0.8 && nar.share === 0 && dlg.share > nar.share,
               "echo “the tide came in” found × " + (hit ? hit.count : 0) + "; no phrase stitched across a full stop (" + !stitched + "); in-sentence refrain spanning “Mr.” found whole × " + (spanHit ? spanHit.count : 0) + " as “" + (spanHit ? spanHit.phrase : "—") + "”; dialogue fixture share " + dlg.share.toFixed(2) + " (" + dlg.dialogue + "/" + dlg.total + ") vs narration fixture " + nar.share.toFixed(2));
           } },
+        /* ==== BEUK:insights ==== — round 7 checks */
+        { id: "insights.glance.numbers-true", feature: "insights", name: "Insights at a glance: words, reading time, chapters, average sentence and dialogue share equal the studio's own counts (the sidebar's words and reading time), and the page count is the reading desk's own measurement — or no number at all while it is still measuring",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            let pushed = false;
+            try {
+              if (!bookWordTotal()) {
+                state.sections.push(mkSection("body", "chapter", "Glance Fixture", { number: "1", content: "The bell rang over the water. “Come in,” she said. Gulls turned above the harbour wall in the cold bright air." }));
+                pushed = true;
+              }
+              updateStats();
+              renderInsights();
+              const val = (id) => { const el = $(id); const v = el && el.querySelector(".ins-g-val"); return v ? v.textContent : null; };
+              const total = bookWordTotal();
+              const cad = insCadence(state.sections), dl = insDialogue(state.sections, bookLang());
+              const expCh = insBodySections(state.sections).filter((s) => s.type === "chapter").length;
+              const pg = insGlancePages();
+              const pages = val("insGPages");
+              const pagesOk = pg.ready ? pages === "≈ " + fmtNum(deskState.total) : (pages !== null && !/\d/.test(pages));
+              const got = { words: val("insGWords"), time: val("insGTime"), ch: val("insGChapters"), sent: val("insGSentence"), dlg: val("insGDialogue") };
+              const exp = { words: fmtNum(total), time: $("statTime").textContent, ch: fmtNum(expCh), sent: cad.overall ? insFmt1(cad.overall) : "—", dlg: dl.total ? fmtNum(dl.share * 100) + "%" : "—" };
+              const ok = got.words === exp.words && got.words === $("statWords").textContent && got.time === exp.time && got.ch === exp.ch && got.sent === exp.sent && got.dlg === exp.dlg && pagesOk;
+              return scVerdict(ok, "glance " + JSON.stringify(got) + " vs studio " + JSON.stringify(exp) + " (sidebar words " + $("statWords").textContent + "); pages “" + pages + "” " + (pg.ready ? "= desk total " + deskState.total : "while the desk measures") + " (" + pagesOk + ")");
+            } finally {
+              if (pushed) applyBookDoc(keepDoc);
+              if (!$("modalInsights").classList.contains("open")) $("insBody").innerHTML = "";
+              else renderInsights();
+            }
+          } },
+        { id: "insights.chart.click-opens-chapter", feature: "insights", name: "Insights charts are explorable: clicking a chapter's column in Chapter rhythm, pressing Enter on its point in Cadence, and clicking its Dialogue row each close Insights and open that chapter; the marks carry the chapter's exact facts for screen readers",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const wasActive = state.activeId;
+            try {
+              const a = mkSection("body", "chapter", "Click Fixture One", { number: "91", content: "The bell rang over the water. Gulls turned above the harbour wall." });
+              const b = mkSection("body", "chapter", "Click Fixture Two", { number: "92", content: "“We sail at dawn,” she said. The ferry turned in the grey light and the quay fell away." });
+              state.sections.push(a, b);
+              const sel = (id, lead) => $("insBody").querySelector('[data-sec="' + id + '"][data-lead="' + lead + '"]');
+              openInsights();
+              const bar = sel(b.id, "words");
+              const aria = bar ? bar.getAttribute("aria-label") : "";
+              if (bar) bar.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+              const r1 = !!bar && !$("modalInsights").classList.contains("open") && state.activeId === b.id;
+              openInsights();
+              const dot = sel(a.id, "avg");
+              if (dot) { dot.focus(); dot.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); }
+              const r2 = !!dot && !$("modalInsights").classList.contains("open") && state.activeId === a.id;
+              openInsights();
+              const row = sel(b.id, "dlg");
+              if (row) row.click();
+              const r3 = !!row && row.tagName === "BUTTON" && !$("modalInsights").classList.contains("open") && state.activeId === b.id;
+              const factsOk = aria.indexOf("Click Fixture Two") !== -1 && aria.indexOf(fmtNum(sectionWords(b))) !== -1;
+              return scVerdict(r1 && r2 && r3 && factsOk, "rhythm click opens chapter " + r1 + "; cadence Enter opens chapter " + r2 + "; dialogue row click opens chapter " + r3 + "; mark label “" + aria + "” (" + factsOk + ")");
+            } finally {
+              insTipHide();
+              $("modalInsights").classList.remove("open");
+              applyBookDoc(keepDoc);
+              if (wasActive && state.sections.some((s) => s.id === wasActive)) selectSection(wasActive);
+            }
+          } },
+        { id: "insights.crutch.counts", feature: "insights", name: "Insights words to look at: on hand-built English and Spanish texts every listed word, phrase and the approximate -ly / -mente family is counted exactly (listed words and known non-adverbs never counted twice), rates are per 10,000 words of the same text, and a book language without a list shows none",
+          run() {
+            const en = "She felt the cold. He saw the light and heard the bell. She realised, then realized, that it seemed very, very still. It was just really quite sudden; suddenly she began to run and started to laugh. He walked quickly and slowly. The family was lovely.";
+            const r = insCrutch([{ id: "inscr1", kind: "body", type: "chapter", title: "", subtitle: "", content: en }], "en");
+            const want = { felt: 1, saw: 1, heard: 1, "realized / realised": 2, noticed: 0, seemed: 1, just: 1, very: 2, really: 1, quite: 1, suddenly: 1, "began to": 1, "started to": 1, "-ly": 2 };
+            const got = {};
+            r.rows.forEach((x) => { got[x.label] = x.count; });
+            const countsOk = Object.keys(want).every((k) => got[k] === want[k]) && r.rows.length === Object.keys(want).length;
+            const tokens = insTokens(en).length;
+            const rateOk = r.total === tokens && r.rows.every((x) => Math.abs(x.rate - (x.count / tokens) * 10000) < 1e-9);
+            const es = insCrutch([{ id: "inscr2", kind: "body", type: "chapter", title: "", subtitle: "", content: "De repente sintió frío. Se dio cuenta de que era muy tarde, realmente tarde, y caminó lentamente." }], "es");
+            const eg = {};
+            es.rows.forEach((x) => { eg[x.label] = x.count; });
+            const esOk = eg["de repente / de pronto"] === 1 && eg["sintió / sentía"] === 1 && eg["se dio cuenta"] === 1 && eg["muy"] === 1 && eg["realmente"] === 1 && eg["-mente"] === 1;
+            const none = insCrutch([{ id: "inscr3", kind: "body", type: "chapter", title: "", subtitle: "", content: "海は静かだった。" }], "ja") === null;
+            return scVerdict(countsOk && rateOk && esOk && none, "en counts " + JSON.stringify(got) + " (" + countsOk + "); rates per 10,000 of " + tokens + " tokens (" + rateOk + "); es " + JSON.stringify(eg) + " (" + esOk + "); ja shows no list (" + none + ")");
+          } },
+        { id: "insights.sentences.histogram", feature: "insights", name: "Insights sentence variety: known sentence lengths land in the right buckets (1–5 … 36–40, 41+), the median and nine-in-ten lengths are exact, and a chapter's own sentences are split as Cadence splits them",
+          run() {
+            const h = insHistogram([1, 5, 6, 10, 11, 40, 41, 100]);
+            const counts = h.buckets.map((b) => b.count).join(",");
+            const okB = counts === "2,2,1,0,0,0,0,1,2" && h.total === 8 && h.median === 10 && h.p90 === 100 && h.mode === 0;
+            const v = insVariety([{ id: "insh1", kind: "body", type: "chapter", title: "", subtitle: "", content: "One. Two words here. Three words are here now. Mr. Venn kept the light." }]);
+            const okV = v.all.join(",") === "1,3,5,5" && v.secs[0].lens.join(",") === insSentences("One. Two words here. Three words are here now. Mr. Venn kept the light.").join(",");
+            return scVerdict(okB && okV, "buckets " + counts + ", median " + h.median + ", nine-in-ten " + h.p90 + ", most common bucket " + h.mode + " (" + okB + "); fixture lengths " + v.all.join(",") + " (" + okV + ")");
+          } },
+        { id: "insights.readability.en-only", feature: "insights", name: "Insights reading ease: Flesch Reading Ease (206.835 − 1.015 × words/sentences − 84.6 × syllables/words) is exact on a known English sentence, the syllable rule of thumb counts known words, and any other book language gets a short note instead of a score",
+          run() {
+            const r = insReadability([{ id: "insrd1", kind: "body", type: "chapter", title: "", subtitle: "", content: "The cat sat on the mat." }], "en");
+            const score = r && r.points[0].score;
+            const exact = 206.835 - 1.015 * 6 - 84.6 * 1;
+            const okScore = r && Math.abs(score - exact) < 1e-9 && Math.abs(r.overall - exact) < 1e-9;
+            const syl = ["water", "table", "cake", "really", "harbour"].map((w) => insSyllables(w)).join(",");
+            const okSyl = syl === "2,2,1,2,2";
+            const es = insReadability([{ id: "insrd2", kind: "body", type: "chapter", title: "", subtitle: "", content: "El gato se sentó en la alfombra." }], "es");
+            const note = insRenderReadability({ readability: null }, { W: 720 });
+            const okOther = es === null && note.indexOf(esc(t("insights.easeOnlyEn"))) !== -1 && note.indexOf("<svg") === -1;
+            return scVerdict(okScore && okSyl && okOther, "“The cat sat on the mat.” scores " + score + " (expected " + exact + ", " + okScore + "); syllables water/table/cake/really/harbour = " + syl + " (" + okSyl + "); Spanish book: no score, a note instead (" + okOther + ")");
+          } },
+        { id: "insights.perf", feature: "insights", name: "Insights stay quick: on the sample book (24,828 words) every section is computed and drawn from cold in under 600 ms, and opening an unchanged book again is served from the per-revision cache",
+          run() {
+            const keepFacts = insFacts;
+            try {
+              const secs = buildSampleBook().sections.map((s) => Object.assign({}, s, { content: String(s.content || "") + (s.content ? " ​" : "") }));
+              const t0 = performance.now();
+              const d = insComputeFor(secs, "en");
+              d.totalWords = secs.reduce((n, s) => n + sectionWords(s), 0);
+              const html = insBuildHtml(d, { W: 720 });
+              const cold = performance.now() - t0;
+              computeInsights();
+              const t1 = performance.now();
+              computeInsights();
+              const warm = performance.now() - t1;
+              const hit = insCache.hit === true;
+              return scVerdict(cold < 600 && hit && warm < 50 && html.length > 1000, "sample from cold: " + Math.round(cold) + " ms (budget 600 ms) for its " + fmtNum(d.frequency.total) + " words of prose; unchanged book again: cache hit " + hit + " in " + warm.toFixed(1) + " ms");
+            } finally { insFacts = keepFacts; }
+          } },
+        /* ==== /BEUK:insights ==== */
         { id: "ui.sidebar.scroll-survives-rerender", feature: "ui", name: "Structure pane keeps its place: rebuilding the sidebar — which every section click does — restores the scroll position instead of snapping back to the top",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));

@@ -1465,6 +1465,80 @@ snapshot labels are unchanged.
 Self-checks (client-only in Housekeeping): `goals.road.only-logged-days`,
 `goals.road.pace-line`, `history.delta.words`, `history.delta.sections`.
 
+## Studio: Story Insights (client-only)
+
+The **Insights** button in the sidebar's tools row opens a quiet report on
+the book on the desk. Everything is computed in the browser from the
+manuscript as it stands — nothing is sent anywhere, no AI is involved,
+and nothing is graded. Sections, in order (`INS_RENDERERS` in
+`client/index.html`; another section joins by splicing its renderer in):
+
+- **At a glance** — words (the sidebar's own count), chapters (body
+  sections typed *chapter*, with any other body sections noted), reading
+  time, pages, average sentence length and the share of dialogue.
+  Reading time uses the studio's own pace of **225 words a minute** (the
+  same as the sidebar statistics) — Beuk's assumption, deliberately a
+  little slower than the 260 wpm that Brysbaert's 2019 meta-analysis of
+  190 studies found for adults silently reading English fiction
+  (M. Brysbaert, "How many words do we read per minute? A review and
+  meta-analysis of reading rate", *Journal of Memory and Language* 109,
+  2019, [doi:10.1016/j.jml.2019.104047](https://doi.org/10.1016/j.jml.2019.104047)).
+  Pages are the reading desk's own measured count for the device on the
+  desk; until the desk has measured the book as it stands the card says so
+  instead of showing a number.
+- **The words that carry the book** — the 20 most-used words in two
+  columns, with stopwords and **Beuk's own filler lists** set aside
+  (`INS_FILLER`, per book language: speech tags such as *said*/*asked*,
+  contractions, very common verbs, adverbs and counting words; en, es, fr,
+  de, it, pt, nl). A possessive counts with its word (*Mara's* → *mara*).
+  How often each comes up per 10,000 words is on hover and for screen
+  readers.
+- **Chapter rhythm**, **Cadence** (average sentence length) and
+  **Reading ease** — one chart each (never two scales on one chart). Hover
+  or keyboard focus on a chapter shows its words, average sentence,
+  dialogue share and reading ease; click, Enter or Space opens the chapter.
+  Arrow keys move along a chart (mirrored in right-to-left interfaces).
+- **Reading ease** is the Flesch Reading Ease score,
+  206.835 − 1.015 × (words ÷ sentences) − 84.6 × (syllables ÷ words)
+  (Rudolf Flesch, "A new readability yardstick", 1948; formula as given at
+  [Wikipedia: Flesch–Kincaid readability tests](https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests)).
+  It was built for English, so it is shown for English books only (other
+  languages get a one-line note). Syllables are counted by a rule of thumb
+  (vowel groups, a silent final *e*, *-es*/*-ed* endings), so the UI calls
+  every score approximate. No grade levels or "difficult" labels are shown.
+- **Dialogue and narration** — each chapter's row is a button that opens it.
+- **Sentence variety** — a histogram of sentence lengths (1–5, 6–10 … 36–40,
+  41+ words) for the whole book or one chapter, with a computed caption
+  (most common length, median, the length nine in ten stay within).
+- **Words to look at** — Beuk's own short lists of filter and hedge words
+  (`INS_CRUTCH`), counted exactly as listed (no guessed inflections), per
+  10,000 words, with the three chapters (of 150 words or more) where each
+  gathers most as buttons. English: *felt, saw, heard, realized/realised,
+  noticed, seemed, just, very, really, quite, suddenly, began to, started
+  to*, plus words ending in *-ly* (a suffix heuristic, labelled approximate,
+  with a list of common non-adverbs such as *family*, *lovely*, *only*
+  left out). Spanish, French and German have their own lists (Spanish adds
+  *-mente*); books in other languages see a line saying the section reads
+  those four languages for now. The copy presents them as words to look
+  at, not mistakes.
+- **Echoes** — phrases that return three times or more (unchanged).
+
+Every chart is inline SVG drawn with the studio's palette tokens
+(`--ins-a`, `--ins-b`, `--muted`, `--line`), carries a visually hidden
+table as its text equivalent, and is drawn at the modal's real width (so
+it stays legible at 390 px). Results are cached per book revision (each
+section's id, order, inclusion, type, titles and a hash of its text, plus
+the book and interface language): reopening an unchanged book draws from
+memory, any edit recomputes. Measured in headless Chromium (Playwright
+1.49 container): the 24,828-word sample computes from cold in about
+120 ms and is computed and drawn in about 200 ms; a ~99,000-word book
+(the sample plus three copies with each sentence's words shuffled)
+computes from cold in 430–470 ms; a reopen of an unchanged book is a
+cache hit in under 1 ms. Client self-checks: `insights.glance.numbers-true`,
+`insights.chart.click-opens-chapter`, `insights.crutch.counts`,
+`insights.sentences.histogram`, `insights.readability.en-only`,
+`insights.perf` (sample under 600 ms from cold, cache hit on reopen).
+
 ## Warmth Phase 0 (M4)
 
 The public surfaces that make Beuk feel like a place rather than a
