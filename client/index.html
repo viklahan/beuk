@@ -2082,6 +2082,49 @@
       .acx-add { display: flex; gap: 6px; margin: 6px 0 8px; }
       @media (max-width: 640px) { .acx-grid { grid-template-columns: 1fr; } }
       /* ==== /BEUK:acx ==== */
+      /* ==== BEUK:tour ==== — the first-run quick tour: a small card (not
+         modal, no backdrop) beside the control it describes, under every
+         dialog (.modal-back is z-index 60 and up). */
+      .tour-card {
+        position: fixed; z-index: 59; box-sizing: border-box; top: 12px; left: 12px;
+        width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; overflow-x: hidden;
+        background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 14px;
+        box-shadow: var(--shadow); padding: 12px 16px 14px;
+        animation: tourIn .18s ease-out;
+      }
+      .tour-card[hidden], .tour-card [hidden], .tour-ring[hidden] { display: none !important; }
+      .tour-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+      .tour-count { font-size: 11.5px; font-weight: 600; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+      .tour-x {
+        flex: 0 0 auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+        border: none; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; margin-inline-end: -6px;
+      }
+      .tour-x:hover { color: var(--ink); background: var(--panel-3); }
+      .tour-card h2 { margin: 2px 0 6px; font-size: 15.5px; font-weight: 700; line-height: 1.3; outline: none; overflow-wrap: anywhere; }
+      .tour-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.55; color: var(--ink-2); overflow-wrap: anywhere; }
+      .tour-card p.tour-q { margin: 0 0 2px; font-weight: 600; color: var(--ink); }
+      .tour-acts { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+      .tour-acts .tb-btn, .tour-nav .tb-btn { justify-content: center; white-space: normal; text-align: center; min-width: 0; max-width: 100%; }
+      .tour-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+      .tour-card :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .tour-card h2:focus, .tour-card h2:focus-visible { outline: none; }
+      .tour-ring {
+        position: fixed; z-index: 58; pointer-events: none; border-radius: 10px; box-sizing: border-box;
+        box-shadow: 0 0 0 3px var(--accent), 0 0 0 7px var(--accent-soft);
+        transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease;
+      }
+      .tour-live { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+      .tour-again {
+        display: inline-block; margin: 6px 2px 0; padding: 2px 0; border: none; background: none; cursor: pointer;
+        color: var(--accent); font: inherit; font-size: 11.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px;
+      }
+      .tour-again:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+      @keyframes tourIn { from { opacity: 0; } to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        .tour-card { animation: none; }
+        .tour-ring { transition: none; }
+      }
+      /* ==== /BEUK:tour ==== */
     </style>
   </head>
   <body>
@@ -2163,6 +2206,7 @@
           <div class="sample-bar">
             <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story</button><!-- BEUK:bugs — the real count is filled in by renderSampleButton -->
             <p class="sample-note" id="sampleNote">A complete novella, The Lantern Coast, at real book scale. Load puts it on the desk in a snap; Remove clears the desk completely, back to empty.</p>
+            <button type="button" class="tour-again" id="btnTourAgain" data-i18n="tour.show">Show the quick tour</button><!-- BEUK:tour -->
           </div>
           <div id="matterLib"></div>
           <div id="structureScroll">
@@ -3858,6 +3902,7 @@
         if (typeof historyOnLangChange === "function") historyOnLangChange();
         if (typeof irOnLangChange === "function") irOnLangChange();
         if (typeof pwaOnLangChange === "function") pwaOnLangChange();
+        if (typeof tourOnLangChange === "function") tourOnLangChange(); /* BEUK:tour */
         if (typeof localOnLangChange === "function") localOnLangChange(); /* BEUK:local */
         if (typeof dictOnLangChange === "function") dictOnLangChange();
         if (typeof syncThemeButton === "function" && $("themeLabel")) syncThemeButton();
@@ -45569,7 +45614,505 @@
         refreshExportTree();
         icons();
         tbLayoutInit(); /* BEUK:toolbar — after the icons are drawn */
+        tourInit(); /* BEUK:tour — after this device's book is restored */
       }
+      /* ==== BEUK:tour ==== */
+      /* The first-run tour: four short steps for a writer who is new to
+         this device, each pointing at the real control (Import / the
+         sample, the page and the preview, Typography Studio, Export).
+         - Shown only on a fresh device: no finished or skipped tour
+           stored under TOUR_KEY, no "beuk.desk" flag (set by the first
+           real save, see localSaveNow), and an empty desk once this
+           device's book has been restored. Where this browser keeps no
+           storage it is not shown at all, because nothing could stop
+           it coming back on every visit.
+         - It never blocks writing: the card is not modal, holds no
+           backdrop, and sits under every dialog; it hides while a
+           dialog is open or Zen is on, and comes back after.
+         - It ends at the writer's first action: an import, the sample
+           opened, or the first words typed (the desk stops being
+           empty, or a real edit lands), or one of the last step's
+           three buttons. Skip (the x, or Esc) ends it too. Either way
+           it is stored and never shown again by itself.
+         - "Show the quick tour" under the sample story, or /studio#tour,
+           shows it again on purpose. */
+      Object.assign(UI_STRINGS.en, {"tour.label": "Quick tour", "tour.count": "Step {step} of {total}", "tour.next": "Next", "tour.back": "Back", "tour.skip": "Skip the tour", "tour.show": "Show the quick tour", "tour.s1t": "Bring your book in", "tour.s1b": "Bring in a Word, Markdown or plain-text manuscript with “{import}”, or simply start typing on the empty page. To look around first, open the sample story. Your book saves on this device; no account is needed.", "tour.s2t": "Write here, see the book there", "tour.s2b": "You write on the page. The preview shows the book as a reader will see it, on the e-reader, tablet or phone you choose.", "tour.s3t": "Give it a look", "tour.s3b": "“{studio}” sets the type for the whole book. Pick a theme in one click, then change the faces, sizes and spacing if you like.", "tour.s4t": "Export when the book is ready", "tour.s4b": "“{export}” makes the EPUB, with presets for Amazon KDP, Apple Books, Kobo, Google Play and other stores, and a print edition in paperback or hardback. Export always stays open, with or without an account.", "tour.s4q": "Where would you like to begin?", "tour.actImport": "Import a manuscript", "tour.actSample": "Open the sample story", "tour.actWrite": "Start writing", "tour.skipped": "The tour is closed. “Show the quick tour”, under the sample story, brings it back.", "tour.live": "Step {step} of {total}: {title}"});
+      Object.assign(UI_STRINGS.es, {"tour.label": "Visita rápida", "tour.count": "Paso {step} de {total}", "tour.next": "Siguiente", "tour.back": "Atrás", "tour.skip": "Saltar la visita", "tour.show": "Ver la visita rápida", "tour.s1t": "Trae tu libro", "tour.s1b": "Trae un manuscrito de Word, Markdown o texto sin formato con «{import}», o empieza a escribir sin más en la página vacía. Si prefieres echar un vistazo antes, abre la historia de muestra. Tu libro se guarda en este dispositivo; no necesitas cuenta.", "tour.s2t": "Escribe aquí, mira el libro allí", "tour.s2b": "Escribes en la página. La vista previa muestra el libro tal como lo verá un lector, en el lector electrónico, la tableta o el teléfono que elijas.", "tour.s3t": "Dale un aspecto", "tour.s3b": "«{studio}» compone el texto de todo el libro. Elige un tema con un clic y, si quieres, cambia después las fuentes, los tamaños y los espaciados.", "tour.s4t": "Exporta cuando el libro esté listo", "tour.s4b": "«{export}» crea el EPUB, con ajustes para Amazon KDP, Apple Books, Kobo, Google Play y otras tiendas, y una edición impresa en tapa blanda o tapa dura. La exportación siempre está disponible, con cuenta o sin ella.", "tour.s4q": "¿Por dónde quieres empezar?", "tour.actImport": "Importar un manuscrito", "tour.actSample": "Abrir la historia de muestra", "tour.actWrite": "Empezar a escribir", "tour.skipped": "La visita se ha cerrado. «Ver la visita rápida», bajo la historia de muestra, la vuelve a abrir.", "tour.live": "Paso {step} de {total}: {title}"});
+      Object.assign(UI_STRINGS.fr, {"tour.label": "Visite rapide", "tour.count": "Étape {step} sur {total}", "tour.next": "Suivant", "tour.back": "Retour", "tour.skip": "Passer la visite", "tour.show": "Revoir la visite rapide", "tour.s1t": "Apportez votre livre", "tour.s1b": "Importez un manuscrit Word, Markdown ou texte brut avec « {import} », ou commencez simplement à écrire sur la page vide. Pour découvrir d’abord, ouvrez l’histoire d’exemple. Votre livre est enregistré sur cet appareil ; aucun compte n’est nécessaire.", "tour.s2t": "Écrivez ici, voyez le livre là", "tour.s2b": "Vous écrivez sur la page. L’aperçu montre le livre tel qu’un lecteur le verra, sur la liseuse, la tablette ou le téléphone de votre choix.", "tour.s3t": "Donnez-lui son allure", "tour.s3b": "« {studio} » compose tout le livre. Choisissez un thème en un clic, puis modifiez les polices, les tailles et les espacements si vous le souhaitez.", "tour.s4t": "Exportez quand le livre est prêt", "tour.s4b": "« {export} » crée l’EPUB, avec des préréglages pour Amazon KDP, Apple Books, Kobo, Google Play et d’autres librairies, ainsi qu’une édition imprimée, brochée ou reliée. L’export reste toujours ouvert, avec ou sans compte.", "tour.s4q": "Par où voulez-vous commencer ?", "tour.actImport": "Importer un manuscrit", "tour.actSample": "Ouvrir l’histoire d’exemple", "tour.actWrite": "Commencer à écrire", "tour.skipped": "La visite est fermée. « Revoir la visite rapide », sous l’histoire d’exemple, la rouvre.", "tour.live": "Étape {step} sur {total} : {title}"});
+      Object.assign(UI_STRINGS.de, {"tour.label": "Kurzer Rundgang", "tour.count": "Schritt {step} von {total}", "tour.next": "Weiter", "tour.back": "Zurück", "tour.skip": "Rundgang überspringen", "tour.show": "Kurzen Rundgang zeigen", "tour.s1t": "Bringen Sie Ihr Buch mit", "tour.s1b": "Holen Sie ein Manuskript als Word-, Markdown- oder Textdatei mit „{import}“ herein, oder beginnen Sie einfach auf der leeren Seite zu schreiben. Wer sich erst umsehen möchte, öffnet die Beispielgeschichte. Ihr Buch wird auf diesem Gerät gespeichert; ein Konto ist nicht nötig.", "tour.s2t": "Hier schreiben, dort das Buch sehen", "tour.s2b": "Sie schreiben auf der Seite. Die Vorschau zeigt das Buch so, wie Leserinnen und Leser es sehen werden, auf dem E-Reader, Tablet oder Telefon Ihrer Wahl.", "tour.s3t": "Geben Sie ihm ein Gesicht", "tour.s3b": "Im „{studio}“ setzen Sie das ganze Buch. Wählen Sie mit einem Klick ein Thema und ändern Sie danach nach Wunsch Schriften, Größen und Abstände.", "tour.s4t": "Exportieren, wenn das Buch fertig ist", "tour.s4b": "Unter „{export}“ entsteht das EPUB, mit Voreinstellungen für Amazon KDP, Apple Books, Kobo, Google Play und weitere Shops, dazu eine Druckausgabe als Taschenbuch oder Hardcover. Der Export steht immer offen, mit oder ohne Konto.", "tour.s4q": "Womit möchten Sie anfangen?", "tour.actImport": "Manuskript importieren", "tour.actSample": "Beispielgeschichte öffnen", "tour.actWrite": "Losschreiben", "tour.skipped": "Der Rundgang ist geschlossen. „Kurzen Rundgang zeigen“ unter der Beispielgeschichte öffnet ihn wieder.", "tour.live": "Schritt {step} von {total}: {title}"});
+      Object.assign(UI_STRINGS.it, {"tour.label": "Breve visita", "tour.count": "Passo {step} di {total}", "tour.next": "Avanti", "tour.back": "Indietro", "tour.skip": "Salta la visita", "tour.show": "Mostra la breve visita", "tour.s1t": "Porta il tuo libro", "tour.s1b": "Porta un manoscritto Word, Markdown o di testo semplice con «{import}», oppure inizia a scrivere sulla pagina vuota. Per guardarti intorno prima, apri la storia d’esempio. Il libro si salva su questo dispositivo; non serve un account.", "tour.s2t": "Scrivi qui, guarda il libro lì", "tour.s2b": "Scrivi sulla pagina. L’anteprima mostra il libro come lo vedrà un lettore, sull’e-reader, sul tablet o sul telefono che scegli.", "tour.s3t": "Dagli un aspetto", "tour.s3b": "«{studio}» compone il testo di tutto il libro. Scegli un tema con un clic, poi cambia caratteri, dimensioni e spaziature se vuoi.", "tour.s4t": "Esporta quando il libro è pronto", "tour.s4b": "«{export}» crea l’EPUB, con impostazioni per Amazon KDP, Apple Books, Kobo, Google Play e altri negozi, e un’edizione a stampa in brossura o rilegata. L’esportazione resta sempre aperta, con o senza account.", "tour.s4q": "Da dove vuoi cominciare?", "tour.actImport": "Importa un manoscritto", "tour.actSample": "Apri la storia d’esempio", "tour.actWrite": "Inizia a scrivere", "tour.skipped": "La visita è chiusa. «Mostra la breve visita», sotto la storia d’esempio, la riapre.", "tour.live": "Passo {step} di {total}: {title}"});
+      Object.assign(UI_STRINGS.pt, {"tour.label": "Visita rápida", "tour.count": "Passo {step} de {total}", "tour.next": "Seguinte", "tour.back": "Anterior", "tour.skip": "Saltar a visita", "tour.show": "Ver a visita rápida", "tour.s1t": "Traga o seu livro", "tour.s1b": "Importe um manuscrito em Word, Markdown ou texto simples com «{import}», ou comece simplesmente a escrever na página vazia. Para explorar primeiro, abra a história de exemplo. O seu livro fica guardado neste dispositivo; não precisa de conta.", "tour.s2t": "Escreva aqui, veja o livro ali", "tour.s2b": "Escreve na página. A pré-visualização mostra o livro como um leitor o verá, no leitor de livros eletrónicos, tablet ou telemóvel que escolher.", "tour.s3t": "Dê-lhe um aspeto", "tour.s3b": "«{studio}» compõe o livro inteiro. Escolha um tema com um clique e depois, se quiser, altere os tipos de letra, os tamanhos e os espaçamentos.", "tour.s4t": "Exporte quando o livro estiver pronto", "tour.s4b": "«{export}» cria o EPUB, com predefinições para Amazon KDP, Apple Books, Kobo, Google Play e outras lojas, e uma edição impressa de capa mole ou capa dura. A exportação está sempre disponível, com ou sem conta.", "tour.s4q": "Por onde quer começar?", "tour.actImport": "Importar um manuscrito", "tour.actSample": "Abrir a história de exemplo", "tour.actWrite": "Começar a escrever", "tour.skipped": "A visita foi fechada. «Ver a visita rápida», por baixo da história de exemplo, abre-a de novo.", "tour.live": "Passo {step} de {total}: {title}"});
+      Object.assign(UI_STRINGS.nl, {"tour.label": "Korte rondleiding", "tour.count": "Stap {step} van {total}", "tour.next": "Volgende", "tour.back": "Terug", "tour.skip": "Rondleiding overslaan", "tour.show": "Toon de korte rondleiding", "tour.s1t": "Breng je boek mee", "tour.s1b": "Haal een manuscript in Word, Markdown of platte tekst binnen met ‘{import}’, of begin gewoon te typen op de lege pagina. Wil je eerst rondkijken, open dan het voorbeeldverhaal. Je boek wordt op dit apparaat bewaard; een account is niet nodig.", "tour.s2t": "Hier schrijven, daar het boek zien", "tour.s2b": "Je schrijft op de pagina. Het voorbeeld toont het boek zoals een lezer het zal zien, op de e-reader, tablet of telefoon die je kiest.", "tour.s3t": "Geef het een gezicht", "tour.s3b": "In ‘{studio}’ zet je het hele boek. Kies met één klik een thema en pas daarna naar wens lettertypen, groottes en witruimte aan.", "tour.s4t": "Exporteer als het boek klaar is", "tour.s4b": "‘{export}’ maakt de EPUB, met voorinstellingen voor Amazon KDP, Apple Books, Kobo, Google Play en andere winkels, en een gedrukte editie als paperback of hardcover. Exporteren blijft altijd open, met of zonder account.", "tour.s4q": "Waar wil je beginnen?", "tour.actImport": "Een manuscript importeren", "tour.actSample": "Het voorbeeldverhaal openen", "tour.actWrite": "Beginnen met schrijven", "tour.skipped": "De rondleiding is gesloten. ‘Toon de korte rondleiding’, onder het voorbeeldverhaal, opent hem weer.", "tour.live": "Stap {step} van {total}: {title}"});
+      Object.assign(UI_STRINGS.pl, {"tour.label": "Krótki przewodnik", "tour.count": "Krok {step} z {total}", "tour.next": "Dalej", "tour.back": "Wstecz", "tour.skip": "Pomiń przewodnik", "tour.show": "Pokaż krótki przewodnik", "tour.s1t": "Przynieś swoją książkę", "tour.s1b": "Wczytaj maszynopis z pliku Word, Markdown lub zwykłego tekstu przyciskiem „{import}” albo po prostu zacznij pisać na pustej stronie. Jeśli wolisz się najpierw rozejrzeć, otwórz opowieść przykładową. Książka zapisuje się na tym urządzeniu; konto nie jest potrzebne.", "tour.s2t": "Tu piszesz, tam widzisz książkę", "tour.s2b": "Piszesz na stronie. Podgląd pokazuje książkę tak, jak zobaczy ją czytelnik, na wybranym czytniku, tablecie lub telefonie.", "tour.s3t": "Nadaj jej wygląd", "tour.s3b": "„{studio}” składa całą książkę. Wybierz motyw jednym kliknięciem, a potem, jeśli chcesz, zmień kroje pisma, rozmiary i odstępy.", "tour.s4t": "Eksportuj, gdy książka będzie gotowa", "tour.s4b": "„{export}” tworzy plik EPUB z ustawieniami dla Amazon KDP, Apple Books, Kobo, Google Play i innych księgarni oraz wydanie drukowane w miękkiej lub twardej oprawie. Eksport jest zawsze dostępny, z kontem lub bez.", "tour.s4q": "Od czego chcesz zacząć?", "tour.actImport": "Importuj maszynopis", "tour.actSample": "Otwórz opowieść przykładową", "tour.actWrite": "Zacznij pisać", "tour.skipped": "Przewodnik jest zamknięty. „Pokaż krótki przewodnik” pod opowieścią przykładową otworzy go ponownie.", "tour.live": "Krok {step} z {total}: {title}"});
+      Object.assign(UI_STRINGS.ru, {"tour.label": "Краткий обзор", "tour.count": "Шаг {step} из {total}", "tour.next": "Далее", "tour.back": "Назад", "tour.skip": "Пропустить обзор", "tour.show": "Показать краткий обзор", "tour.s1t": "Принесите свою книгу", "tour.s1b": "Загрузите рукопись в формате Word, Markdown или простого текста кнопкой «{import}» или просто начните печатать на пустой странице. Чтобы сначала осмотреться, откройте пример истории. Книга сохраняется на этом устройстве; учётная запись не нужна.", "tour.s2t": "Пишите здесь, смотрите книгу там", "tour.s2b": "Вы пишете на странице. Предпросмотр показывает книгу такой, какой её увидит читатель, на выбранной вами электронной книге, планшете или телефоне.", "tour.s3t": "Придайте ей облик", "tour.s3b": "«{studio}» набирает всю книгу. Выберите тему одним щелчком, а затем при желании измените шрифты, размеры и интервалы.", "tour.s4t": "Экспортируйте, когда книга готова", "tour.s4b": "«{export}» создаёт EPUB с предустановками для Amazon KDP, Apple Books, Kobo, Google Play и других магазинов, а также печатное издание в мягкой или твёрдой обложке. Экспорт всегда открыт, с учётной записью или без неё.", "tour.s4q": "С чего вы хотите начать?", "tour.actImport": "Импортировать рукопись", "tour.actSample": "Открыть пример истории", "tour.actWrite": "Начать писать", "tour.skipped": "Обзор закрыт. «Показать краткий обзор» под примером истории откроет его снова.", "tour.live": "Шаг {step} из {total}: {title}"});
+      Object.assign(UI_STRINGS.tr, {"tour.label": "Kısa tur", "tour.count": "Adım {step} / {total}", "tour.next": "İleri", "tour.back": "Geri", "tour.skip": "Turu atla", "tour.show": "Kısa turu göster", "tour.s1t": "Kitabınızı getirin", "tour.s1b": "Word, Markdown ya da düz metin bir taslağı “{import}” ile içeri alın veya boş sayfada hemen yazmaya başlayın. Önce etrafa bakmak isterseniz örnek hikâyeyi açın. Kitabınız bu cihazda kaydedilir; hesap gerekmez.", "tour.s2t": "Burada yazın, kitabı orada görün", "tour.s2b": "Sayfaya yazarsınız. Önizleme, kitabı bir okurun göreceği gibi, seçtiğiniz e-okuyucuda, tablette ya da telefonda gösterir.", "tour.s3t": "Ona bir görünüm verin", "tour.s3b": "“{studio}” tüm kitabın dizgisini yapar. Tek tıkla bir tema seçin, sonra isterseniz yazı tiplerini, boyutları ve aralıkları değiştirin.", "tour.s4t": "Kitap hazır olunca dışa aktarın", "tour.s4b": "“{export}”, Amazon KDP, Apple Books, Kobo, Google Play ve diğer mağazalar için hazır ayarlarla EPUB'u ve karton ya da sert kapaklı bir baskı sürümünü hazırlar. Dışa aktarma, hesapla ya da hesapsız, her zaman açıktır.", "tour.s4q": "Nereden başlamak istersiniz?", "tour.actImport": "Taslak içe aktar", "tour.actSample": "Örnek hikâyeyi aç", "tour.actWrite": "Yazmaya başla", "tour.skipped": "Tur kapandı. Örnek hikâyenin altındaki “Kısa turu göster” onu yeniden açar.", "tour.live": "Adım {step} / {total}: {title}"});
+      Object.assign(UI_STRINGS.ar, {"tour.label": "جولة سريعة", "tour.count": "الخطوة {step} من {total}", "tour.next": "التالي", "tour.back": "السابق", "tour.skip": "تخطَّ الجولة", "tour.show": "اعرض الجولة السريعة", "tour.s1t": "أحضِر كتابك", "tour.s1b": "استورد مخطوطة بصيغة Word أو Markdown أو نص عادي عبر «{import}»، أو ابدأ الكتابة مباشرة على الصفحة الفارغة. وإن أردت أن تتجوّل أولًا فافتح القصة النموذجية. يُحفظ كتابك على هذا الجهاز، ولا حاجة إلى حساب.", "tour.s2t": "اكتب هنا، وشاهد الكتاب هناك", "tour.s2b": "تكتب على الصفحة، وتعرض المعاينة الكتاب كما سيراه القارئ، على القارئ الإلكتروني أو الجهاز اللوحي أو الهاتف الذي تختاره.", "tour.s3t": "امنحه مظهره", "tour.s3b": "«{studio}» ينضّد الكتاب كله. اختر سمة بنقرة واحدة، ثم غيّر الخطوط والأحجام والمسافات إن شئت.", "tour.s4t": "صدِّر حين يصبح الكتاب جاهزًا", "tour.s4b": "«{export}» يُنشئ ملف EPUB بإعدادات جاهزة لـ Amazon KDP وApple Books وKobo وGoogle Play ومتاجر أخرى، ونسخة مطبوعة بغلاف ورقي أو مقوّى. التصدير متاح دائمًا، بحساب أو من دونه.", "tour.s4q": "من أين تحب أن تبدأ؟", "tour.actImport": "استورد مخطوطة", "tour.actSample": "افتح القصة النموذجية", "tour.actWrite": "ابدأ الكتابة", "tour.skipped": "أُغلقت الجولة. يعيد فتحها زر «اعرض الجولة السريعة» تحت القصة النموذجية.", "tour.live": "الخطوة {step} من {total}: {title}"});
+      Object.assign(UI_STRINGS.ja, {"tour.label": "クイックツアー", "tour.count": "ステップ {step} / {total}", "tour.next": "次へ", "tour.back": "戻る", "tour.skip": "ツアーをスキップ", "tour.show": "クイックツアーをもう一度見る", "tour.s1t": "原稿を持ち込む", "tour.s1b": "Word、Markdown、テキストの原稿は「{import}」で取り込めます。空のページにそのまま書き始めてもかまいません。まず様子を見たいときは、サンプル物語を開いてください。本はこの端末に保存され、アカウントは要りません。", "tour.s2t": "ここで書き、そこで本を見る", "tour.s2b": "ページに書くと、プレビューが読者の目に映るとおりの本を、選んだ電子書籍リーダー、タブレット、スマートフォンで表示します。", "tour.s3t": "本の見た目を整える", "tour.s3b": "「{studio}」で本全体を組版します。テーマをワンクリックで選び、必要なら書体、サイズ、間隔を調整してください。", "tour.s4t": "準備ができたら書き出す", "tour.s4b": "「{export}」では、Amazon KDP、Apple Books、Kobo、Google Play などのストア向けプリセット付きの EPUB と、ペーパーバックまたはハードカバーの印刷版を作れます。書き出しはアカウントの有無にかかわらず、いつでも使えます。", "tour.s4q": "どこから始めますか？", "tour.actImport": "原稿を取り込む", "tour.actSample": "サンプル物語を開く", "tour.actWrite": "書き始める", "tour.skipped": "ツアーを閉じました。サンプル物語の下にある「クイックツアーをもう一度見る」で再び開けます。", "tour.live": "ステップ {step} / {total}：{title}"});
+      Object.assign(UI_STRINGS["zh-Hans"], {"tour.label": "快速导览", "tour.count": "第 {step} 步，共 {total} 步", "tour.next": "下一步", "tour.back": "上一步", "tour.skip": "跳过导览", "tour.show": "再看一遍快速导览", "tour.s1t": "把你的书带进来", "tour.s1b": "用“{import}”导入 Word、Markdown 或纯文本稿件，也可以直接在空白页上开始写。想先四处看看，就打开示例故事。书保存在这台设备上，无需账户。", "tour.s2t": "在这里写，在那里看书", "tour.s2b": "你在页面上写作，预览会按读者看到的样子显示这本书，设备可选电子阅读器、平板或手机。", "tour.s3t": "给书定个样子", "tour.s3b": "“{studio}”为整本书排版。一键选一个主题，然后按需调整字体、字号和间距。", "tour.s4t": "准备好了就导出", "tour.s4b": "“{export}”可生成 EPUB，带有 Amazon KDP、Apple Books、Kobo、Google Play 等书店的预设，还能生成平装或精装的印刷版。无论有没有账户，导出始终开放。", "tour.s4q": "你想从哪里开始？", "tour.actImport": "导入稿件", "tour.actSample": "打开示例故事", "tour.actWrite": "开始写作", "tour.skipped": "导览已关闭。示例故事下方的“再看一遍快速导览”可以再次打开它。", "tour.live": "第 {step} 步，共 {total} 步：{title}"});
+      const TOUR_KEY = "beuk.tour.v1";
+      const TOUR_DESK_KEY = "beuk.desk";
+      /* Each step: groups of selectors; in each group the first visible
+         one is ringed (the wide layout's control, then the phone tab
+         that leads to it). anchor = the group the card sits beside. */
+      const TOUR_STEPS = [
+        { id: "start", title: "tour.s1t", body: "tour.s1b", anchor: 0, beside: true,
+          groups: [["#btnImport", '#mobileTabs [data-mpane="structure"]'], ["#btnSampleStory"]] },
+        { id: "write", title: "tour.s2t", body: "tour.s2b", anchor: 1,
+          groups: [["#editorArea", '#mobileTabs [data-mpane="center"]:not([data-mstyle])', "#tabBtnContent"], ["#deviceBar", '#mobileTabs [data-mpane="preview"]']] },
+        { id: "type", title: "tour.s3t", body: "tour.s3b", anchor: 0,
+          groups: [["#tabBtnType", "#mobileTabs [data-mstyle]"]] },
+        { id: "export", title: "tour.s4t", body: "tour.s4b", anchor: 0, last: true,
+          groups: [["#btnExport"]] }
+      ];
+      const tour = { active: false, dry: false, replay: false, step: 0, timer: null, autoTimer: null, rings: [], lastFocus: null, edits0: 0, lastResult: null, wouldStore: null };
+      /* The decision itself, kept pure so the self-check can feed it
+         every case: { storage, stored, desk, empty }. */
+      function tourDecide(d) {
+        if (!d || !d.storage) return false;
+        if (d.stored) return false;
+        if (d.desk === "1") return false;
+        return !!d.empty;
+      }
+      function tourReadDevice() {
+        const d = { storage: false, stored: null, desk: null, empty: isEmptyDesk() };
+        try {
+          d.stored = localStorage.getItem(TOUR_KEY);
+          d.desk = localStorage.getItem(TOUR_DESK_KEY);
+          d.storage = true;
+        } catch (e) { d.storage = false; }
+        return d;
+      }
+      const tourShouldOffer = () => tourDecide(tourReadDevice());
+      /* A dialog open, Zen on or on its way, or the desk still being
+         restored: the card steps aside. */
+      function tourBlocked() {
+        const b = document.body;
+        if (document.querySelector(".modal-back.open")) return true;
+        if (b.classList.contains("zen") || b.classList.contains("zen-fading") || b.classList.contains("zen-returning")) return true;
+        if (document.documentElement.hasAttribute("data-local-restore")) return true;
+        return false;
+      }
+      function tourVisible(el) {
+        if (!el || !el.isConnected || !el.getClientRects().length) return false;
+        const cs = getComputedStyle(el);
+        if (cs.visibility === "hidden" || cs.display === "none") return false;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) return false;
+        const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+        return r.right > 0 && r.bottom > 0 && r.left < vw && r.top < vh;
+      }
+      /* One element (or null) per group of the step. */
+      function tourTargets(i) {
+        const s = TOUR_STEPS[i];
+        return s.groups.map((g) => {
+          for (const sel of g) { const el = document.querySelector(sel); if (tourVisible(el)) return el; }
+          return null;
+        });
+      }
+      function tourBuild() {
+        if ($("tourCard")) return;
+        const card = document.createElement("div");
+        card.className = "tour-card"; card.id = "tourCard";
+        card.setAttribute("role", "dialog"); card.setAttribute("aria-modal", "false");
+        card.setAttribute("aria-describedby", "tourBody");
+        card.innerHTML =
+          '<div class="tour-top"><span class="tour-count" id="tourCount"></span>' +
+          '<button type="button" class="tour-x" id="tourSkip"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>' +
+          '<h2 id="tourTitle" tabindex="-1"></h2><p id="tourBody"></p>' +
+          '<div class="tour-acts" id="tourActs" hidden><p class="tour-q" id="tourQ"></p>' +
+          '<button type="button" class="tb-btn primary" data-tour-act="import"></button>' +
+          '<button type="button" class="tb-btn" data-tour-act="sample"></button>' +
+          '<button type="button" class="tb-btn" data-tour-act="write"></button></div>' +
+          '<div class="tour-nav"><button type="button" class="tb-btn" id="tourBack"></button><button type="button" class="tb-btn primary" id="tourNext"></button></div>';
+        document.body.appendChild(card);
+        const live = document.createElement("div");
+        live.className = "tour-live"; live.id = "tourLive";
+        live.setAttribute("role", "status"); live.setAttribute("aria-live", "polite");
+        document.body.appendChild(live);
+        $("tourSkip").addEventListener("click", () => tourEnd("skipped"));
+        $("tourBack").addEventListener("click", () => tourGo(tour.step - 1, "back"));
+        $("tourNext").addEventListener("click", () => tourGo(tour.step + 1, "next"));
+        card.querySelectorAll("[data-tour-act]").forEach((b) => b.addEventListener("click", () => tourAct(b.getAttribute("data-tour-act"))));
+      }
+      function tourRender() {
+        const card = $("tourCard"); if (!card) return;
+        const n = tour.step, total = TOUR_STEPS.length, s = TOUR_STEPS[n];
+        const phone = window.innerWidth <= 1023; /* the phone layout's breakpoint (#mobileTabs) */
+        const names = { import: t("side.import"), studio: phone ? t("tabs.style") : t("tab.type"), export: t("top.export") };
+        card.setAttribute("aria-label", t("tour.label") + ": " + t(s.title));
+        card.setAttribute("data-step", s.id);
+        $("tourCount").textContent = t("tour.count", { step: String(n + 1), total: String(total) });
+        $("tourTitle").textContent = t(s.title);
+        $("tourBody").textContent = t(s.body, names);
+        const skip = $("tourSkip");
+        skip.setAttribute("aria-label", t("tour.skip")); skip.setAttribute("title", t("tour.skip"));
+        $("tourBack").textContent = t("tour.back");
+        $("tourNext").textContent = t("tour.next");
+        $("tourBack").hidden = n === 0;
+        $("tourNext").hidden = !!s.last;
+        const acts = $("tourActs");
+        acts.hidden = !s.last;
+        $("tourQ").textContent = t("tour.s4q");
+        acts.querySelector('[data-tour-act="import"]').textContent = t("tour.actImport");
+        const sample = acts.querySelector('[data-tour-act="sample"]');
+        sample.textContent = t("tour.actSample");
+        sample.hidden = !!(typeof sampleState !== "undefined" && sampleState.loaded);
+        acts.querySelector('[data-tour-act="write"]').textContent = t("tour.actWrite");
+        const live = $("tourLive");
+        if (live) live.textContent = t("tour.live", { step: String(n + 1), total: String(total), title: t(s.title) });
+      }
+      function tourStart(opts) {
+        opts = opts || {};
+        if (tour.active) { tourGo(0, "title"); return; }
+        tour.active = true; tour.dry = !!opts.dry; tour.replay = !!opts.replay; tour.step = 0;
+        tour.lastResult = null; tour.wouldStore = null;
+        tour.lastFocus = document.activeElement;
+        tour.edits0 = (typeof local !== "undefined" && local) ? local.realEdits : 0;
+        tourBuild();
+        const typing = document.activeElement && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName);
+        tourGo(0, typing ? "" : "title");
+        if (!tour.dry) {
+          tour.timer = setInterval(tourTick, 400);
+          window.addEventListener("resize", tourOnResize);
+          window.addEventListener("scroll", tourPlace, true);
+        }
+      }
+      function tourGo(i, how) {
+        if (!tour.active) return;
+        tour.step = Math.max(0, Math.min(TOUR_STEPS.length - 1, i));
+        tourRender();
+        tourTick();
+        const card = $("tourCard"); if (!card || card.hidden) return;
+        const focus = (el) => { if (el && !el.hidden) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } return true; } return false; };
+        if (how === "title") focus($("tourTitle"));
+        else if (how === "next") { if (!focus($("tourNext"))) focus(card.querySelector("[data-tour-act]:not([hidden])")); }
+        else if (how === "back") { if ($("tourBack").hidden) focus($("tourNext")); else focus($("tourBack")); }
+      }
+      /* The writer has begun: words typed, a book imported, the sample
+         opened (whatever arrives on a desk that was empty). On a replay
+         the desk was never empty, so only a real edit counts. */
+      function tourWriterBegan() {
+        const edits = (typeof local !== "undefined" && local) ? local.realEdits : 0;
+        if (edits > tour.edits0) return true;
+        return !tour.replay && !isEmptyDesk();
+      }
+      function tourTick() {
+        if (!tour.active) return;
+        if (!tour.dry && tourWriterBegan()) { tourEnd("done"); return; }
+        const card = $("tourCard"); if (!card) return;
+        const blocked = tourBlocked();
+        if (blocked && card.contains(document.activeElement)) { try { document.activeElement.blur(); } catch (e) {} }
+        card.hidden = blocked;
+        if (blocked) tour.rings.forEach((r) => { r.hidden = true; });
+        else tourPlace();
+      }
+      function tourPlace() {
+        if (!tour.active) return;
+        const card = $("tourCard"); if (!card || card.hidden) return;
+        const els = tourTargets(tour.step);
+        const vis = els.filter(Boolean);
+        while (tour.rings.length < vis.length) {
+          const r = document.createElement("div"); r.className = "tour-ring"; r.setAttribute("aria-hidden", "true");
+          document.body.appendChild(r); tour.rings.push(r);
+        }
+        const vw = document.documentElement.clientWidth, vh = window.innerHeight, m = 12;
+        tour.rings.forEach((ring, k) => {
+          const el = vis[k];
+          if (!el) { ring.hidden = true; return; }
+          const r = el.getBoundingClientRect();
+          const L = Math.max(4, r.left - 4), T = Math.max(4, r.top - 4), R = Math.min(vw - 4, r.right + 4), B = Math.min(vh - 4, r.bottom + 4);
+          ring.hidden = false;
+          ring.style.left = Math.round(L) + "px"; ring.style.top = Math.round(T) + "px";
+          ring.style.width = Math.max(0, Math.round(R - L)) + "px"; ring.style.height = Math.max(0, Math.round(B - T)) + "px";
+        });
+        const narrow = vw < 640;
+        card.style.width = Math.max(0, narrow ? vw - 2 * m : Math.min(340, vw - 2 * m)) + "px";
+        card.style.maxHeight = Math.max(0, vh - 2 * m) + "px";
+        const cw = card.offsetWidth, ch = card.offsetHeight;
+        const anchor = els[TOUR_STEPS[tour.step].anchor] || vis[0] || null;
+        const rtl = document.documentElement.getAttribute("dir") === "rtl";
+        let left = (vw - cw) / 2, top = (vh - ch) / 2;
+        if (anchor) {
+          let r = anchor.getBoundingClientRect();
+          /* Beside: clear every ringed control of the step, not only the anchor. */
+          if (TOUR_STEPS[tour.step].beside) {
+            const rs = vis.map((e) => e.getBoundingClientRect());
+            r = { left: Math.min(...rs.map((x) => x.left)), right: Math.max(...rs.map((x) => x.right)), top: Math.min(...rs.map((x) => x.top)), bottom: Math.max(...rs.map((x) => x.bottom)) };
+          }
+          const before = rtl ? r.right + 10 : r.left - 10 - cw, after = rtl ? r.left - 10 - cw : r.right + 10;
+          const fits = (x) => x >= m && x + cw <= vw - m;
+          if (narrow) {
+            left = m;
+            top = (r.top + r.bottom) / 2 > vh / 2 ? m : vh - ch - m;
+          } else if (TOUR_STEPS[tour.step].beside && (fits(after) || fits(before))) {
+            top = r.top; left = fits(after) ? after : before;
+          } else if (r.bottom + 10 + ch <= vh - m) {
+            top = r.bottom + 10; left = rtl ? r.right - cw : r.left;
+          } else if (r.top - 10 - ch >= m) {
+            top = r.top - 10 - ch; left = rtl ? r.right - cw : r.left;
+          } else {
+            /* Too tall a target to sit above or below: beside it, on the
+               side with room (the reading side first). */
+            top = r.top;
+            left = fits(after) ? after : fits(before) ? before : left;
+          }
+        }
+        left = Math.max(m, Math.min(vw - cw - m, left));
+        top = Math.max(m, Math.min(vh - ch - m, top));
+        card.style.left = Math.round(left) + "px";
+        card.style.top = Math.round(top) + "px";
+      }
+      function tourTeardown() {
+        if (tour.timer) { clearInterval(tour.timer); tour.timer = null; }
+        window.removeEventListener("resize", tourOnResize);
+        window.removeEventListener("scroll", tourPlace, true);
+        const card = $("tourCard"); if (card) card.remove();
+        const live = $("tourLive"); if (live) live.remove();
+        tour.rings.forEach((r) => r.remove()); tour.rings = [];
+        tour.active = false;
+      }
+      function tourEnd(reason) {
+        if (!tour.active) return;
+        tour.lastResult = reason;
+        if (tour.dry) tour.wouldStore = reason;
+        else { try { localStorage.setItem(TOUR_KEY, reason); } catch (e) {} }
+        const card = $("tourCard");
+        const hadFocus = !!(card && card.contains(document.activeElement));
+        const dry = tour.dry;
+        tourTeardown();
+        if (hadFocus && reason === "skipped") {
+          const back = tour.lastFocus, again = $("btnTourAgain");
+          if (back && back.isConnected && back !== document.body && typeof back.focus === "function" && tourVisible(back)) { try { back.focus(); } catch (e) {} }
+          else if (tourVisible(again)) again.focus();
+        }
+        if (reason === "skipped" && !dry && typeof toast === "function") toast(t("tour.skipped"), "map");
+      }
+      /* The last step's three ways in. Each ends the tour first (it has
+         done its job), then does the real thing. */
+      function tourAct(what) {
+        if (tour.dry) { tour.lastResult = "act:" + what; return; }
+        tourEnd("done");
+        if (what === "import") { const b = $("btnImport"); if (b) b.click(); }
+        else if (what === "sample") { if (typeof loadSampleStory === "function") loadSampleStory(); }
+        else if (what === "write") {
+          currentCenterTab = "content"; setCenterTab("content");
+          if (window.innerWidth <= 1023) setMobilePane("center");
+          const ed = $("editorArea"); if (ed) { try { ed.focus({ preventScroll: false }); } catch (e) { ed.focus(); } }
+        }
+      }
+      /* Esc ends the tour, unless it is closing something else first (a
+         menu or popover that is open while focus is outside the card).
+         Capture phase, so this runs before those menus close. */
+      function tourOnKey(e) {
+        if (!tour.active || e.key !== "Escape") return;
+        const card = $("tourCard"); if (!card || card.hidden) return;
+        if (!card.contains(document.activeElement)) {
+          const open = ["uiLangMenu", "localPop", "raPop", "dictPop", "chopMenu"].some((id) => {
+            const el = $(id); return !!(el && !el.hidden && el.getClientRects().length);
+          });
+          if (open) return;
+        }
+        tourEnd("skipped");
+      }
+      function tourOnResize() { if (tour.active) { tourRender(); tourTick(); } }
+      function tourOnLangChange() {
+        if (!tour.active) return;
+        tourRender();
+        tourTick();
+      }
+      function tourInit() {
+        const again = $("btnTourAgain");
+        if (again) again.addEventListener("click", () => tourStart({ replay: true }));
+        document.addEventListener("keydown", tourOnKey, true);
+        const asked = /^#tour$/i.test(location.hash || "");
+        const p = (typeof localRestorePromise !== "undefined" && localRestorePromise) ? localRestorePromise : Promise.resolve(null);
+        p.catch(() => null).then(() => {
+          if (asked) {
+            try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+            setTimeout(() => tourStart({ replay: true }), 300);
+            return;
+          }
+          if (!tourShouldOffer()) return;
+          /* Wait for a quiet moment: nothing open, not in Zen. */
+          let waited = 0;
+          tour.autoTimer = setInterval(() => {
+            waited += 1;
+            if (tour.active || !tourShouldOffer()) { clearInterval(tour.autoTimer); tour.autoTimer = null; return; }
+            if (waited < 2 || tourBlocked()) return;
+            clearInterval(tour.autoTimer); tour.autoTimer = null;
+            tourStart({});
+          }, 400);
+        });
+      }
+      /* A Self-checks run drives the real studio (preview probes, Zen):
+         a tour open on this device steps aside for the run and comes
+         back at the same step afterwards. */
+      function tourSuspendForChecks() {
+        if (!tour.active || tour.dry) return () => {};
+        const keep = { step: tour.step, replay: tour.replay };
+        tourTeardown();
+        return () => {
+          if (tour.active) return;
+          tourStart({ replay: keep.replay });
+          tourGo(keep.step, "");
+        };
+      }
+      ["runBeukSelfChecks", "runBeukAsyncSelfChecks"].forEach((name) => {
+        const f = typeof window !== "undefined" ? window[name] : null;
+        if (typeof f !== "function") return;
+        window[name] = function () {
+          const resume = tourSuspendForChecks();
+          let out;
+          try { out = f.apply(this, arguments); } catch (e) { resume(); throw e; }
+          if (out && typeof out.then === "function") return out.then((v) => { resume(); return v; }, (e) => { resume(); throw e; });
+          resume();
+          return out;
+        };
+      });
+      if (typeof window !== "undefined") {
+        window.beukTour = { start: tourStart, end: tourEnd, go: tourGo, decide: tourDecide, device: tourReadDevice, shouldOffer: tourShouldOffer, steps: TOUR_STEPS, state: tour, key: TOUR_KEY };
+      }
+      /* Self-checks. Each runs a dry tour (nothing stored) and leaves
+         the studio as it found it. */
+      function tourCheckRun(fn) {
+        const keepLang = getUiLang();
+        try { return fn(); }
+        finally {
+          if (tour.active) tourTeardown();
+          tour.dry = false;
+          if (getUiLang() !== keepLang) setUiLang(keepLang, { persist: false });
+        }
+      }
+      SELF_CHECKS.push(
+        { id: "tour.fresh-device-only", feature: "tour", name: "The quick tour offers itself only on a fresh device: never once finished or skipped (beuk.tour.v1), never where beuk.desk is set or a book is on the desk, and not at all where this browser keeps no storage",
+          run() {
+            const cases = [
+              [{ storage: true, stored: null, desk: null, empty: true }, true, "fresh device"],
+              [{ storage: true, stored: "done", desk: null, empty: true }, false, "finished before"],
+              [{ storage: true, stored: "skipped", desk: null, empty: true }, false, "skipped before"],
+              [{ storage: true, stored: null, desk: "1", empty: true }, false, "beuk.desk set"],
+              [{ storage: true, stored: null, desk: null, empty: false }, false, "a book on the desk"],
+              [{ storage: false, stored: null, desk: null, empty: true }, false, "no storage"]
+            ];
+            const bad = cases.filter((c) => tourDecide(c[0]) !== c[1]).map((c) => c[2]);
+            const d = tourReadDevice();
+            const sampleNotEmpty = sampleShippedWords() > 0;
+            if (!sampleNotEmpty) bad.push("the sample on the desk reads as empty");
+            if (TOUR_DESK_KEY !== "beuk.desk") bad.push("the desk key is not the one the first save writes");
+            return scVerdict(bad.length === 0, cases.length + " cases decided as expected" + (bad.length ? " except: " + bad.join("; ") : "") +
+              "; the sample counts as a book (" + sampleNotEmpty + "); this device now: storage " + d.storage + ", tour " + (d.stored || "never shown to the end") + ", desk flag " + (d.desk || "unset") + ", empty desk " + d.empty + " → offer " + tourDecide(d));
+          } },
+        { id: "tour.never-over-dialog-or-zen", feature: "tour", name: "The quick tour never sits on top of an open dialog or Zen mode: it hides while Project Settings is open and while Zen is on, and comes back at the same step after",
+          run() {
+            return tourCheckRun(() => {
+              const bad = [];
+              tourStart({ replay: true, dry: true });
+              tourGo(2, "");
+              const card = () => $("tourCard");
+              const ringsShown = () => tour.rings.filter((r) => !r.hidden).length;
+              if (card().hidden) bad.push("hidden with nothing open");
+              const m = $("modalSettings");
+              const wasOpen = m.classList.contains("open");
+              m.classList.add("open"); tourTick();
+              if (!card().hidden || ringsShown()) bad.push("shown over Project Settings");
+              if (!wasOpen) m.classList.remove("open");
+              tourTick();
+              if (card().hidden) bad.push("did not come back after the dialog");
+              try {
+                window.beukZen.overrideReducedMotion(true);
+                setZenMode(true); window.beukZen.settle(); tourTick();
+                if (!card().hidden || ringsShown()) bad.push("shown over Zen");
+              } finally {
+                setZenMode(false); window.beukZen.settle(); window.beukZen.overrideReducedMotion(null);
+              }
+              tourTick();
+              if (card().hidden) bad.push("did not come back after Zen");
+              if (tour.step !== 2) bad.push("lost its step (" + (tour.step + 1) + ")");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "hidden under Project Settings and in Zen, back at step 3 after both; the card is not modal (aria-modal " + "false" + ") and has no backdrop");
+            });
+          } },
+        { id: "tour.targets-visible", feature: "tour", name: "Every step of the quick tour points at a real control that is on screen at this window size: Import (and the sample), the page and the preview, Typography Studio, Export; the card stays inside the window",
+          run() {
+            return tourCheckRun(() => {
+              const bad = [], bits = [];
+              const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+              const keepTab = currentCenterTab;
+              tourStart({ replay: true, dry: true });
+              TOUR_STEPS.forEach((s, i) => {
+                s.groups.forEach((g) => { if (!document.querySelector(g[0])) bad.push("step " + (i + 1) + ": " + g[0] + " is missing from the page"); });
+                tourGo(i, "");
+                const els = tourTargets(i), anchor = els[s.anchor];
+                if (!anchor) bad.push("step " + (i + 1) + ": nothing visible to point at");
+                const c = $("tourCard").getBoundingClientRect();
+                if (c.left < -0.5 || c.right > vw + 0.5 || c.top < -0.5 || c.bottom > vh + 0.5) bad.push("step " + (i + 1) + ": the card runs outside the window");
+                const shown = tour.rings.filter((r) => !r.hidden).length;
+                if (shown !== els.filter(Boolean).length) bad.push("step " + (i + 1) + ": " + shown + " rings for " + els.filter(Boolean).length + " targets");
+                bits.push((i + 1) + " " + els.filter(Boolean).map((e) => e.id ? "#" + e.id : (e.getAttribute("data-mpane") ? "tab " + e.getAttribute("data-mpane") + (e.hasAttribute("data-mstyle") ? "/style" : "") : e.tagName)).join(" + "));
+              });
+              if (currentCenterTab !== keepTab) bad.push("the tour changed the open tab");
+              return scVerdict(bad.length === 0, "at " + vw + "×" + vh + ": " + bits.join("; ") + (bad.length ? " — " + bad.join("; ") : ""));
+            });
+          } },
+        { id: "tour.skip-ends-for-good", feature: "tour", name: "Esc and Skip end the quick tour for good (stored as skipped, and a skipped tour is never offered again); Esc that closes an open menu leaves the tour; the last step ends at the writer's first action, with no Next or Done button",
+          run() {
+            return tourCheckRun(() => {
+              const bad = [];
+              tourStart({ replay: true, dry: true });
+              tourGo(1, "next");
+              document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+              if (tour.active || tour.wouldStore !== "skipped") bad.push("Esc did not end it as skipped");
+              tourStart({ replay: true, dry: true });
+              $("tourSkip").click();
+              if (tour.active || tour.wouldStore !== "skipped") bad.push("Skip did not end it as skipped");
+              if (tourDecide({ storage: true, stored: "skipped", desk: null, empty: true })) bad.push("a skipped tour would be offered again");
+              tourStart({ replay: true, dry: true });
+              const menu = $("uiLangMenu");
+              if (menu && $("btnUiLang") && tourVisible($("btnUiLang"))) {
+                if (document.activeElement && $("tourCard").contains(document.activeElement)) document.activeElement.blur();
+                menu.hidden = false;
+                document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+                if (!tour.active) bad.push("Esc closing the language menu also ended the tour");
+                closeUiLangMenu();
+              }
+              tourGo(TOUR_STEPS.length - 1, "next");
+              const acts = Array.from(document.querySelectorAll("#tourActs [data-tour-act]")).filter((b) => !b.hidden).map((b) => b.getAttribute("data-tour-act"));
+              if (!$("tourNext").hidden) bad.push("the last step still shows Next");
+              if (acts.indexOf("import") < 0 || acts.indexOf("write") < 0) bad.push("the last step lacks its first actions (" + acts.join(", ") + ")");
+              const focusOk = $("tourCard").contains(document.activeElement);
+              if (!focusOk) bad.push("focus did not stay in the card on the last step");
+              tourTeardown();
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Esc and Skip both store “skipped”; Esc with the language menu open closes only the menu; the last step offers " + acts.join(" / ") + " and no Next");
+            });
+          } },
+        { id: "tour.no-overflow-rtl-phone", feature: "tour", name: "The quick tour fits in every interface language, Arabic right to left included, at this window size (run at 390 px for phone width): the card, its text and its buttons stay inside the window and the page gains no horizontal scroll",
+          run() {
+            return tourCheckRun(() => {
+              const bad = [];
+              const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+              tourStart({ replay: true, dry: true });
+              let rtlOk = true;
+              UI_LANG_ORDER.forEach((L) => {
+                setUiLang(L, { persist: false });
+                TOUR_STEPS.forEach((s, i) => {
+                  tourGo(i, "");
+                  const card = $("tourCard"), c = card.getBoundingClientRect();
+                  if (c.left < -0.5 || c.right > vw + 0.5 || c.top < -0.5 || c.bottom > vh + 0.5) bad.push(L + " " + (i + 1) + ": card outside the window");
+                  if (card.scrollWidth > card.clientWidth + 1) bad.push(L + " " + (i + 1) + ": text wider than the card");
+                  card.querySelectorAll("button:not([hidden])").forEach((b) => {
+                    if (b.closest("[hidden]")) return;
+                    const r = b.getBoundingClientRect();
+                    if (r.left < c.left - 0.5 || r.right > c.right + 0.5) bad.push(L + " " + (i + 1) + ": a button sticks out");
+                  });
+                  if (document.documentElement.scrollWidth > vw + 1) bad.push(L + " " + (i + 1) + ": the page scrolls sideways (" + document.documentElement.scrollWidth + " > " + vw + ")");
+                });
+                if (L === "ar" && getComputedStyle($("tourCard")).direction !== "rtl") rtlOk = false;
+              });
+              if (!rtlOk) bad.push("the card is not right to left in Arabic");
+              return scVerdict(bad.length === 0, UI_LANG_ORDER.length + " languages × " + TOUR_STEPS.length + " steps at " + vw + "×" + vh + (bad.length ? ": " + bad.slice(0, 6).join("; ") : ": all inside, no sideways scroll, Arabic right to left"));
+            });
+          } }
+      );
+      /* ==== /BEUK:tour ==== */
       document.addEventListener("DOMContentLoaded", init);
       /* ==== BEUK:beta ==== */
       /* Beta-reader share links (studio side).

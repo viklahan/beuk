@@ -179,7 +179,9 @@ are left out (src/account/data.ts `writeAccountExport`).
   in Project Settings; absent = off), betaTokens.v1 — the share-link tokens the writer made,
   kept so the studio can show the links again (client/index.html:38224-38231) —
   and desk ("1" once the writer has written on this device, so the landing
-  page at / sends them straight back to the studio; no content, no id).
+  page at / sends them straight back to the studio; no content, no id),
+  and tour.v1 ("done" or "skipped" once the first-run quick tour has
+  ended, so it is not shown again; never sent to the server).
 - **Service worker caches**: beuk-shell-v8 (the app shell), beuk-sound-v2
   (ambient sound files), and the self-hosted font files under assets/fonts/ (client/sw.js).
 - **Backup files** (.beuk-backup.json) and exports are files the writer

@@ -1772,6 +1772,37 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Zen is a client body-class layout state over the studio chrome.',
   },
+  /* ---- First-run quick tour (BEUK:tour) ---- */
+  {
+    id: 'tour.fresh-device-only',
+    title: 'The quick tour offers itself only on a fresh device: never once finished or skipped, never where beuk.desk is set or a book is on the desk, not at all without storage',
+    kind: 'client-only',
+    reason: 'The quick tour is client UI state in the studio page (localStorage beuk.tour.v1 and beuk.desk, the desk restored from IndexedDB, layout at the window size); asserted by window.runBeukSelfChecks(). The static parts (strings in 13 locales, the keys, the target ids) are tests/tour.test.ts.',
+  },
+  {
+    id: 'tour.never-over-dialog-or-zen',
+    title: 'The quick tour never sits on top of an open dialog or Zen mode, and comes back at the same step after',
+    kind: 'client-only',
+    reason: 'The quick tour is client UI state in the studio page (localStorage beuk.tour.v1 and beuk.desk, the desk restored from IndexedDB, layout at the window size); asserted by window.runBeukSelfChecks(). The static parts (strings in 13 locales, the keys, the target ids) are tests/tour.test.ts.',
+  },
+  {
+    id: 'tour.targets-visible',
+    title: 'Every quick-tour step points at a real control that is on screen at the window size; the card stays inside the window',
+    kind: 'client-only',
+    reason: 'The quick tour is client UI state in the studio page (localStorage beuk.tour.v1 and beuk.desk, the desk restored from IndexedDB, layout at the window size); asserted by window.runBeukSelfChecks(). The static parts (strings in 13 locales, the keys, the target ids) are tests/tour.test.ts.',
+  },
+  {
+    id: 'tour.skip-ends-for-good',
+    title: 'Esc and Skip end the quick tour for good; Esc closing a menu leaves it; the last step ends at a first action, not a Done button',
+    kind: 'client-only',
+    reason: 'The quick tour is client UI state in the studio page (localStorage beuk.tour.v1 and beuk.desk, the desk restored from IndexedDB, layout at the window size); asserted by window.runBeukSelfChecks(). The static parts (strings in 13 locales, the keys, the target ids) are tests/tour.test.ts.',
+  },
+  {
+    id: 'tour.no-overflow-rtl-phone',
+    title: 'The quick tour fits in every interface language, Arabic right to left included, with no sideways scroll (run at 390 px for phone width)',
+    kind: 'client-only',
+    reason: 'The quick tour is client UI state in the studio page (localStorage beuk.tour.v1 and beuk.desk, the desk restored from IndexedDB, layout at the window size); asserted by window.runBeukSelfChecks(). The static parts (strings in 13 locales, the keys, the target ids) are tests/tour.test.ts.',
+  },
   /* ---- Zen day cycle: the harbour's light follows time spent in Zen (BEUK:daycycle) ---- */
   {
     id: 'zen.day.no-reader',
