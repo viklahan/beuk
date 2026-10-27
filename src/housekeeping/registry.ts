@@ -1987,6 +1987,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The layout, the spread view and the print file are built in the studio; the renderer half is covered by tests/print-spreads.test.ts.',
   },
   {
+    id: 'chapter.links',
+    title: 'Links: https / http / mailto links set in the preview (new tab, noopener) and the book; unsafe schemes stay text; the count counts only the words; Also by and call-to-action links print as plain words; the toolbar Link dialog places one',
+    kind: 'client-only',
+    reason: 'The link markup is parsed and typeset in the studio, and the Link dialog is part of the client editor.',
+  },
+  {
+    id: 'export.links',
+    title: 'Links in the exports: EPUB links validate, Word gets real hyperlinks on External relationships, Markdown keeps them, and Word web links import as links',
+    kind: 'client-only',
+    reason: 'The EPUB, Word and Markdown exports and the Word import are all built in the client.',
+  },
+  {
     id: 'sample.legacy-salt-meridian',
     title: 'A sample copy saved before the rename is snapshotted into History and replaced by the current sample; restoring the snapshot returns the old text exactly',
     kind: 'client-only',
