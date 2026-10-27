@@ -2450,6 +2450,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
   },
   {
+    id: 'import.docx.inline-formatting',
+    title:
+      'Word import keeps formatting: italic, bold and bold-italic come across as Beuk marks (also in subheadings, quotes, list items and footnotes), web and mail links as [words](address), and the report lists only what has no mark (underline, strike-through, sub/superscript, bookmark links, bold chapter-title lines)',
+    kind: 'client-only',
+    reason: 'Word conversion (Mammoth.js), the inline walk and the import report all run in the studio; the server never sees the .docx.',
+  },
+  {
     id: 'import.report.images-accounted',
     title:
       'Import report (Word): every picture is accounted for — images inside headings, list items and quotes are imported, and any the import cannot hold are listed as left out',

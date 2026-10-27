@@ -2775,8 +2775,9 @@ hold, such as one inside a footnote, is listed as left out), the language detect
 the manuscript. What the import **drops** is listed first and
 prominently: tables, unsupported image formats, Word comments, tracked
 changes (imported as if accepted), text boxes (text kept inline), page
-headers/footers, list formatting, link addresses, italic/bold, and every
-Mammoth.js warning verbatim. The Word behaviours are those of
+headers/footers, list formatting, addresses of links that are not web or
+mail links, underline, strike-through, sub/superscript, bold or italic on
+chapter-title lines, and every Mammoth.js warning verbatim. The Word behaviours are those of
 Mammoth.js 1.6.0, verified in its source (cited in the client code).
 
 Each reversible change has a real **Undo this** that acts on the book as
@@ -2788,6 +2789,38 @@ History snapshot the import takes. The report is stored with the book
 reachable from the import area until dismissed. This is the studio's
 main import only; Box Set volume import and Bulk import still use the
 plain converter without a report.
+
+### Word import keeps italic, bold and links
+
+The `.docx` import walks each paragraph's runs instead of taking its
+plain text, and writes the formatting back in Beuk's own marks:
+italic → `*words*`, bold → `**words**`, bold italic → `***words***`,
+and a link to a web (`http://`, `https://`) or mail (`mailto:`) address
+→ `[words](address)` (the links markup the rest of the studio renders).
+This holds in body paragraphs, demoted subheadings (Heading 3–6), quote
+paragraphs (each one its own `> ` line), list items and footnotes.
+Adjacent runs of the same kind are merged first (Word often splits one
+italic word into several runs), and the marks always hug the words —
+spaces stand outside them — so the preview, print, EPUB and Word export
+read them as formatting. Link addresses are held aside while the
+typography pass runs, so a date or `--` in an address is never turned
+into a dash; quotes just inside an italic mark (`*"Run!"*`) curl as
+opening quotes; emphasis marks are not word breaks in the word count
+(`*Titanic*'s` is one word).
+
+What has no Beuk mark keeps its words as plain text and is listed in the
+import report: underline (Mammoth is given `u => u` so underlining is
+seen and counted rather than silently ignored), strike-through,
+superscript/subscript (a footnote reference is not counted), and links
+to anywhere else (bookmarks, cross-references, files). Chapter titles
+(Heading 1/2), a bold or italic paragraph whose words open a chapter
+(`**Chapter Two**`), and short bold/italic lines before the first
+chapter (title page, "by …") are written plain so the chapter split and
+title-page reading still find them; the book's own styles set those
+lines, and the report counts them. Italic and bold that came across are
+no longer reported as dropped (`importReport.carried` records how many
+italic, bold and link passages were kept). Self-check:
+`import.docx.inline-formatting`.
 
 ### The book's title, subtitle and author on import (BEUK:importmeta)
 
