@@ -45,7 +45,7 @@ import os from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { planSections, needsFinishing, withPageMap, startPages, blanksFor, stampable, finalHtml, stampCss, stampSpreads } from './spreads.mjs';
-import { footnoteConfig, settleFootnotes, placedHtml, misplaced, withRefMap, readDests, placementsIn, stampFootnotes } from './footnotes.mjs';
+import { footnoteConfig, settleFootnotes, placedHtml, misplaced, withRefMap, readDests, placementsIn, stampFootnotes, footnoteHeader, FALLBACK } from './footnotes.mjs';
 
 // The share of the job's time the page-bottom notes may take to settle;
 // a section not settled by then keeps its notes at its end.
@@ -136,7 +136,7 @@ async function render(body) {
   // no page-bottom notes is rendered in one plain pass, as before.
   const html = Buffer.isBuffer(body) ? body.toString('utf8') : String(body);
   const started = Date.now();
-  const footnotes = { placed: 0, kept: 0, passes: 0 };
+  const footnotes = { placed: 0, kept: 0, passes: 0, fallbacks: [] };
   const profile = await mkdtemp(path.join(os.tmpdir(), 'beuk-render-'));
   let browser = null;
   let timer = null;
@@ -216,13 +216,16 @@ async function render(body) {
           log: (m) => console.log(m),
         });
         footnotes.passes = passes;
-        if (fn) Object.assign(footnotes, { placed: fn.placed, kept: fn.kept });
+        if (fn) Object.assign(footnotes, { placed: fn.placed, kept: fn.kept, fallbacks: fn.fallbacks.slice() });
         if (fn && !fn.results.length) fn = null;
       }
-      const dropNotes = (lost) => {
+      // sections whose settled notes go back to their end, and why
+      // (FALLBACK.book / FALLBACK.final) — reported with the PDF
+      const dropNotes = (lost, reason) => {
         const n = lost.reduce((k, r) => k + r.hide.length, 0);
         footnotes.kept += n;
         footnotes.placed -= n;
+        for (const r of lost) if (r.hide.length) footnotes.fallbacks.push({ id: r.sec.id, reason, notes: r.hide.length });
       };
       // The page map, the final pass and the stamping, for a document
       // with or without page-bottom notes. Returns null when the final
@@ -246,7 +249,7 @@ async function render(body) {
           const bad = misplaced(fnNow.results, starts);
           if (!bad.length) break;
           console.log('footnotes: ' + bad.map((r) => r.sec.id).join(', ') + ' broke differently in the book; notes kept at the section end');
-          dropNotes(bad);
+          dropNotes(bad, FALLBACK.book);
           fnNow.results = attempt < 1 ? fnNow.results.filter((r) => !bad.includes(r)) : [];
           if (!fnNow.results.length) return finish(null);
           fnNow.refIds = fnNow.results.flatMap((r) => r.refIds);
@@ -272,7 +275,7 @@ async function render(body) {
       const out = await finish(fn);
       if (out) return out;
       console.log('footnotes: the final pass moved a reference; every note kept at its section end');
-      dropNotes(fn.results);
+      dropNotes(fn.results, FALLBACK.final);
       return finish(null);
     })();
     // If the timeout wins, the browser is killed below and `work`
@@ -322,7 +325,7 @@ const server = http.createServer(async (req, res) => {
         (footnotes.passes ? `; footnotes: ${footnotes.placed} at the page foot, ${footnotes.kept} at the section end, ${footnotes.passes} measuring pass(es)` : ''),
     );
     res.setHeader('x-beuk-blocked-requests', String(blocked.length));
-    if (footnotes.passes) res.setHeader('x-beuk-footnotes', `placed=${footnotes.placed}; kept=${footnotes.kept}; passes=${footnotes.passes}`);
+    if (footnotes.passes) res.setHeader('x-beuk-footnotes', footnoteHeader(footnotes));
     return send(res, 200, pdf, 'application/pdf');
   } catch (err) {
     const status = err && err.status === 504 ? 504 : 500;

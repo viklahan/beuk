@@ -40,12 +40,13 @@
 //      the notes' own PDF (pdf-lib, a clipped form XObject), under a
 //      short rule — a full-width rule when the page continues a note.
 // A note too long for the page's note area (half the page area) runs
-// on at the foot of the next page, split between lines. A section that
-// cannot be settled in time keeps its notes at its end, as printed by
-// the studio — never a note lost, never one drawn over text.
+// on at the foot of the next page, split between lines — onto a page
+// added at the section's end when it runs past the last. A section that
+// cannot be settled (FALLBACK says why) keeps its notes at its end, as
+// printed by the studio — never a note lost, never one drawn over text.
 // Every step is plain data in, data out, so the tests run without a browser.
 
-import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, rgb } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFDict, PDFArray, PDFRef, PDFNumber, PDFNull, rgb } from 'pdf-lib';
 
 const SECTION_OPEN_RE = /<section class="print-sec[^"]*" id="(ps-\d+)"[^>]*>/g;
 const CONFIG_RE = /<meta name="beuk-footnotes" content="([^"]*)"\s*\/?>/;
@@ -56,7 +57,7 @@ const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input'
 const BLOCK = new Set('p div section article aside header footer nav figure figcaption blockquote ul ol li dl dt dd h1 h2 h3 h4 h5 h6 table pre hr main address details summary form fieldset'.split(' '));
 const ATOMIC_TAG = new Set(['figure', 'table', 'pre', 'hr', 'header', 'nav', 'details', 'form', 'fieldset']);
 const ATOMIC_CLASS = /\b(chapter-opening|scene-break|plate-page|part-divider|tp-top)\b/;
-const SKIP_CLASS = /\b(bd-layer|endnotes|print-blank)\b/;
+const SKIP_CLASS = /\b(bd-layer|endnotes|print-blank|fn-tail)\b/;
 const KEEP_NEXT_CLASS = /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker)\b/;
 const KEEP_PREV_CLASS = /\b(scene-break)\b/;
 const SPLITTABLE = new Set(['p', 'blockquote']);
@@ -194,7 +195,7 @@ export function sectionModel(secHtml) {
     }
   };
   visit(section);
-  return { html: secHtml, units, refs };
+  return { html: secHtml, units, refs, section };
 }
 
 /* A word starts where a run of non-space follows a space (or the
@@ -285,8 +286,10 @@ function piecesOf(model, cuts) {
 
 /** The section's markup with the cuts made, every unit's top and foot
  *  marked (kept in the final document too, so what was measured is
- *  what prints), and — on a fine pass — the words of `fine` wrapped. */
-export function buildSection(model, cuts, fine = new Set()) {
+ *  what prints), on a fine pass the words of `fine` wrapped, and
+ *  `tail` empty pages forced at the section's end: the room a note
+ *  referenced on its last page runs on into. */
+export function buildSection(model, cuts, fine = new Set(), tail = 0) {
   const html = model.html;
   const points = [];
   const tags = new Map();
@@ -334,6 +337,9 @@ export function buildSection(model, cuts, fine = new Set()) {
         put(w.end, 0, '</span><span id="fnx-' + u.i + '-' + k + '"></span>');
       });
     }
+  }
+  if (tail > 0 && model.section && model.section.tag === 'section') {
+    put(model.section.closeStart, 2, Array.from({ length: tail }, (_, k) => '<div class="fn-tail fn-brk" id="fnt-' + k + '" aria-hidden="true"></div>').join(''));
   }
   points.sort((a, b) => a.at - b.at || a.order - b.order);
   let out = '';
@@ -393,6 +399,8 @@ export function footnoteCss(cfg, hide = [], hideBlocks = []) {
     '.fn-brk { break-before: page !important; page-break-before: always !important; }',
     '.fn-split { margin-bottom: 0 !important; padding-bottom: 0 !important; border-bottom: 0 !important;' + (cfg.justify ? ' text-align-last: justify;' : '') + ' }',
     '.fn-cont { text-indent: 0 !important; margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }',
+    // a page only the notes run on into: one point of nothing, so it is a page
+    '.fn-tail { display: block !important; height: 1pt; margin: 0 !important; padding: 0 !important; border: 0 !important; }',
   ];
   if (hide.length) rules.push(hide.map((id) => '[id="' + id + '"]').join(', ') + ' { display: none !important; }');
   if (hideBlocks.length) rules.push(hideBlocks.map((id) => '#' + id + ' .endnotes.fn-page').join(', ') + ' { display: none !important; }');
@@ -717,10 +725,25 @@ export function unitsOnPage(model, cuts, dests, P, zoneTop = 0) {
   return out;
 }
 
+/** Why a section's notes stayed at its end, as the renderer reports it
+ *  (the x-beuk-footnotes header, and from there the studio): */
+export const FALLBACK = {
+  time: 'time', // not settled within the renderer's time share (or its pass limit)
+  full: 'full', // a page could keep no line above the notes it calls for
+  long: 'long', // a note ran on past even the pages added for it at the section's end
+  book: 'book', // the section broke differently in the whole book than measured alone
+  final: 'final', // the final pass put a reference on another page
+  note: 'note', // that note alone: it could not be measured, or its reference is not in the text
+};
+/* At most this many pages are added at a section's end for notes
+   running on from its last page. */
+const MAX_TAIL = 3;
+
 /**
  * Settle one section. `render(html) -> PDF bytes` prints a document;
  * `deadline` (ms epoch) stops the work in time. Returns the cuts and
- * the per-page note placement, or null to keep the notes at its end.
+ * the per-page note placement, or { fallback: reason } to keep the
+ * notes at its end.
  */
 export async function layoutSection({ html, sec, cfg, notes, heights, render, deadline, extraCss = '', log = () => {} }) {
   const model = sectionModel(sec.html);
@@ -743,11 +766,15 @@ export async function layoutSection({ html, sec, cfg, notes, heights, render, de
   // P + 1): when that page is the next to decide — notes falling page
   // after page — its words are measured already, and a pass is saved.
   let speculate = new Set();
+  // Empty pages forced at the section's end, for a note that runs on
+  // from its last page (the next section starts on a fresh page).
+  let tail = 0;
+  const giveUp = (reason, why) => { log('footnotes: ' + sec.id + ' ' + why); return { fallback: reason }; };
   for (;;) {
-    if (Date.now() > deadline || passes >= maxPasses) { log('footnotes: ' + sec.id + ' not settled after ' + passes + ' passes'); return null; }
+    if (Date.now() > deadline || passes >= maxPasses) return giveUp(FALLBACK.time, 'not settled after ' + passes + ' passes');
     passes += 1;
     const wrapped = speculate;
-    const coarse = await readDests(await render(sectionDoc(html, buildSection(model, cuts, wrapped), measureCss, passIds(model, cuts, wrapped, refIds))));
+    const coarse = await readDests(await render(sectionDoc(html, buildSection(model, cuts, wrapped, tail), measureCss, passIds(model, cuts, wrapped, refIds))));
     const layout = coarseLayout(model, cuts, coarse.dests, coarse.pages, cfg, notes, metrics);
     let from = 0;
     let decided = false;
@@ -756,14 +783,22 @@ export async function layoutSection({ html, sec, cfg, notes, heights, render, de
       const assignment = assignNotes(own, heights, cfg, coarse.pages);
       const P = firstOverfull(layout, assignment, cfg, from, okPages);
       if (P < 0) {
-        // settled: the placement every page carries
-        if (assignment.length > coarse.pages && assignment.slice(coarse.pages).some((a) => a.frags.length)) {
-          log('footnotes: ' + sec.id + ' notes run past the section end');
-          return null;
+        // settled — unless a note runs on past the section's last page:
+        // then that many empty pages more at its end, and measure again
+        // (the pages before are decided; the new ones hold no text)
+        let past = 0;
+        for (let p = coarse.pages; p < assignment.length; p++) if (assignment[p].frags.length) past = p - coarse.pages + 1;
+        if (past > 0) {
+          if (tail + past > MAX_TAIL) return giveUp(FALLBACK.long, 'notes run past the section end');
+          tail += past;
+          speculate = new Set();
+          decided = true;
+          continue;
         }
-        return { model, cuts, css, hide, placement: assignment.slice(0, coarse.pages), pages: coarse.pages, passes, refIds, refPage: layout.refPage };
+        // the placement every page carries
+        return { model, cuts, tail, css, hide, placement: assignment.slice(0, coarse.pages), pages: coarse.pages, passes, refIds, refPage: layout.refPage };
       }
-      if (Date.now() > deadline || passes >= maxPasses) { log('footnotes: ' + sec.id + ' out of time'); return null; }
+      if (Date.now() > deadline || passes >= maxPasses) return giveUp(FALLBACK.time, 'out of time');
       if (process.env.FN_DEBUG) log('  decide page ' + P + ': text to ' + layout.bottom[P].toFixed(1) + (layout.full[P] ? ' (runs on)' : '') + ', notes ' + assignment[P].area.toFixed(1) + ' of ' + cfg.contentH);
       const need = unitsOnPage(model, cuts, coarse.dests, P, zoneTop);
       let fineSet = wrapped;
@@ -771,13 +806,13 @@ export async function layoutSection({ html, sec, cfg, notes, heights, render, de
       if ([...need].some((u) => !wrapped.has(u))) {
         passes += 1;
         fineSet = need;
-        fineRun = await readDests(await render(sectionDoc(html, buildSection(model, cuts, fineSet), measureCss, passIds(model, cuts, fineSet, refIds))));
+        fineRun = await readDests(await render(sectionDoc(html, buildSection(model, cuts, fineSet, tail), measureCss, passIds(model, cuts, fineSet, refIds))));
       }
       const fine = fineLines(model, cuts, fineSet, fineRun.dests, cfg);
       for (const [u, mt] of fine.metrics) metrics.set(u, mt);
       const carryOwn = new Map([...own.entries()].filter(([p]) => p < P));
       const verdict = decidePage(P, { model, cuts, cfg, dests: fineRun.dests, notes, heights, carryOwn, fine, placeable });
-      if (verdict.fail) { log('footnotes: ' + sec.id + ' page ' + P + ' cannot hold its notes'); return null; }
+      if (verdict.fail) return giveUp(FALLBACK.full, 'page ' + P + ' cannot hold its notes');
       if (verdict.fits) { okPages.add(P); from = P + 1; continue; }
       const measured = cuts;
       cuts = cuts.filter((c) => c.page < P);
@@ -818,14 +853,31 @@ export async function settleFootnotes({ html, render, pool = null, deadline, ext
   await Promise.all((pool && pool.length ? pool : [render]).map(worker));
   const results = [];
   let kept = 0;
+  // every section (or note) left at its end, and why: { id, reason, notes }
+  const fallbacks = [];
   for (const j of jobs) {
-    if (j.r) {
+    if (j.r && !j.r.fallback) {
       results.push(Object.assign(j.r, { sec: j.s.sec, notes: j.s.notes, heights: j.h }));
-      kept += j.s.notes.length - j.r.hide.length;
-    } else kept += j.s.notes.length;
+      const left = j.s.notes.length - j.r.hide.length;
+      kept += left;
+      if (left) fallbacks.push({ id: j.s.sec.id, reason: FALLBACK.note, notes: left });
+    } else {
+      kept += j.s.notes.length;
+      fallbacks.push({ id: j.s.sec.id, reason: j.r ? j.r.fallback : FALLBACK.time, notes: j.s.notes.length });
+    }
   }
-  if (!results.length) return { cfg, results, notesPdf, html, refIds: [], placed: 0, kept };
-  return { cfg, results, notesPdf, html: placedHtml(html, results), refIds: results.flatMap((r) => r.refIds), placed: results.reduce((n, r) => n + r.hide.length, 0), kept };
+  if (!results.length) return { cfg, results, notesPdf, html, refIds: [], placed: 0, kept, fallbacks };
+  return { cfg, results, notesPdf, html: placedHtml(html, results), refIds: results.flatMap((r) => r.refIds), placed: results.reduce((n, r) => n + r.hide.length, 0), kept, fallbacks };
+}
+
+/** The renderer's account of the notes, for its x-beuk-footnotes
+ *  header (ASCII): "placed=N; kept=N; passes=N" and, when any note
+ *  stayed at its section's end, "; fallback=ps-3:time:2,ps-7:long:1"
+ *  — the print section, the reason (FALLBACK), the notes it kept. */
+export function footnoteHeader({ placed = 0, kept = 0, passes = 0, fallbacks = [] }) {
+  const safe = (s) => String(s).replace(/[^\w-]/g, '');
+  const fb = fallbacks.filter((f) => f.notes > 0).map((f) => safe(f.id) + ':' + safe(f.reason) + ':' + (f.notes | 0));
+  return 'placed=' + placed + '; kept=' + kept + '; passes=' + passes + (fb.length ? '; fallback=' + fb.join(',') : '');
 }
 
 /** The settled sections whose references did not land, in the whole
@@ -862,7 +914,7 @@ export function placementsIn(results, dests) {
       offset = o;
     }
     if (offset == null) continue;
-    out.push({ start: offset, placement: r.placement, notes: r.heights });
+    out.push({ start: offset, placement: r.placement, notes: r.heights, ids: r.notes.map((n) => n.id) });
   }
   return out;
 }
@@ -876,7 +928,7 @@ export function placedHtml(html, results) {
   let out = '';
   let pos = 0;
   for (const r of results) {
-    out += html.slice(pos, r.sec.at) + buildSection(r.model, r.cuts);
+    out += html.slice(pos, r.sec.at) + buildSection(r.model, r.cuts, new Set(), r.tail || 0);
     pos = r.sec.end;
     css.push(r.css);
   }
@@ -917,8 +969,57 @@ function stripNames(doc, ids) {
   }
 }
 
+/** A link to a named destination the file does not hold goes nowhere:
+ *  remove it. (A reference whose note moved to the page foot linked to
+ *  the note in its section's end list, which no longer prints; the
+ *  stamping names the note where it is drawn, so this is a net.) */
+function dropDeadLinks(doc) {
+  const dests = doc.catalog.lookupMaybe(PDFName.of('Dests'), PDFDict);
+  const have = new Set(dests ? [...dests.keys()].map((k) => k.decodeText()) : []);
+  const nameOf = (v) => (v && !(v instanceof PDFArray) && typeof v.decodeText === 'function' ? v.decodeText() : null);
+  let dropped = 0;
+  for (const page of doc.getPages()) {
+    const annots = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    if (!annots) continue;
+    for (let i = annots.size() - 1; i >= 0; i--) {
+      const a = annots.lookupMaybe(i, PDFDict);
+      if (!a) continue;
+      const action = a.lookupMaybe(PDFName.of('A'), PDFDict);
+      const goTo = !action || String(action.lookup(PDFName.of('S'))) === '/GoTo';
+      const target = nameOf(a.lookup(PDFName.of('Dest'))) || (action && goTo ? nameOf(action.lookup(PDFName.of('D'))) : null);
+      if (target && !have.has(target)) { annots.remove(i); dropped += 1; }
+    }
+  }
+  return dropped;
+}
+
+/** Every link annotation in a PDF that names a destination the file
+ *  does not hold (a dead link) — what the tests assert is none. */
+export async function deadLinks(pdfBytes) {
+  const doc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
+  const dests = doc.catalog.lookupMaybe(PDFName.of('Dests'), PDFDict);
+  const have = new Set(dests ? [...dests.keys()].map((k) => k.decodeText()) : []);
+  const nameOf = (v) => (v && !(v instanceof PDFArray) && typeof v.decodeText === 'function' ? v.decodeText() : null);
+  const out = [];
+  doc.getPages().forEach((page, p) => {
+    const annots = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+    if (!annots) return;
+    for (let i = 0; i < annots.size(); i++) {
+      const a = annots.lookupMaybe(i, PDFDict);
+      if (!a) continue;
+      const action = a.lookupMaybe(PDFName.of('A'), PDFDict);
+      const target = nameOf(a.lookup(PDFName.of('Dest'))) || (action ? nameOf(action.lookup(PDFName.of('D'))) : null);
+      if (target && !have.has(target)) out.push({ page: p, target });
+    }
+  });
+  return out;
+}
+
 /** Draw each page's notes into the room left at its foot: clipped from
- *  the notes PDF, under a short rule (full width when a note runs on). */
+ *  the notes PDF, under a short rule (full width when a note runs on).
+ *  Each note drawn from its first line is named there (its own id), so
+ *  its reference's link jumps to it at the foot of the page; a link
+ *  still naming nothing is removed. */
 export async function stampFootnotes(pdfBytes, notesPdfBytes, sections, cfg, strip = []) {
   const doc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
   const src = await PDFDocument.load(notesPdfBytes, { updateMetadata: false });
@@ -930,10 +1031,16 @@ export async function stampFootnotes(pdfBytes, notesPdfBytes, sections, cfg, str
   for (const s of sections) {
     s.placement.forEach((pl, p) => {
       if (!pl.frags.length) return;
-      cache.set(s.start + p, { pl, notes: s.notes });
+      cache.set(s.start + p, { pl, notes: s.notes, ids: s.ids || [] });
     });
   }
-  for (const [at, { pl, notes }] of [...cache.entries()].sort((a, b) => a[0] - b[0])) {
+  let dests = doc.catalog.lookupMaybe(PDFName.of('Dests'), PDFDict);
+  const name = (id, page, x, y) => {
+    if (!id) return;
+    if (!dests) { dests = doc.context.obj({}); doc.catalog.set(PDFName.of('Dests'), dests); }
+    dests.set(PDFName.of(id), doc.context.obj([page.ref, PDFName.of('XYZ'), PDFNumber.of(x), PDFNumber.of(y), PDFNull]));
+  };
+  for (const [at, { pl, notes, ids }] of [...cache.entries()].sort((a, b) => a[0] - b[0])) {
     const page = pages[at];
     if (!page) continue;
     const x0 = isRightPage(at, cfg.rtl) ? cfg.inside : cfg.outside;
@@ -953,9 +1060,11 @@ export async function stampFootnotes(pdfBytes, notesPdfBytes, sections, cfg, str
       const h = f.h;
       const emb = await doc.embedPage(sp, { left: 0, bottom: top - h, right: cfg.colW, top });
       page.drawPage(emb, { x: x0, y: y - h });
+      if (f.from === 0) name(ids[f.note], page, x0, Math.round(y * 100) / 100);
       y -= h;
       drawn += 1;
     }
   }
-  return { pdf: Buffer.from(await doc.save({ useObjectStreams: false })), drawn };
+  const dead = dropDeadLinks(doc);
+  return { pdf: Buffer.from(await doc.save({ useObjectStreams: false })), drawn, dead };
 }

@@ -1939,6 +1939,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The setting, the print interior and the spread view are built in the studio; the renderer half (measuring, cutting the pages, drawing the notes) is covered by tests/print-footnotes.test.ts.',
   },
   {
+    id: 'print.footnotes.runon',
+    title: 'Notes in print: a long note referenced on a chapter\'s last page runs on onto a page added at the chapter\'s end, in the Print Interior View as the renderer adds it; a note too long even for that keeps the chapter\'s notes at its end',
+    kind: 'client-only',
+    reason: 'The Print Interior View is laid out by the browser in the studio; the renderer\'s added pages are covered by tests/print-footnotes.test.ts.',
+  },
+  {
+    id: 'print.footnotes.report',
+    title: 'Notes in print: the store check reports what the renderer did with the notes, naming each chapter that kept its notes at its end and why',
+    kind: 'client-only',
+    reason: 'The store check is assembled in the studio from the PDF/X job result; the renderer header and its parsing into that result are covered by tests/print-footnotes.test.ts and tests/jobs.test.ts.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',

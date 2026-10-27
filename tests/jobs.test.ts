@@ -224,7 +224,8 @@ exit 0
         res.writeHead(200, { 'content-type': 'application/pdf' });
         res.end('<html>definitely not a pdf</html>');
       } else {
-        res.writeHead(200, { 'content-type': 'application/pdf' });
+        // a book with page-bottom notes: one section kept its notes at its end
+        res.writeHead(200, { 'content-type': 'application/pdf', 'x-beuk-footnotes': 'placed=3; kept=2; passes=9; fallback=ps-4:long:2' });
         res.end(FAKE_RENDERED_PDF);
       }
     });
@@ -371,6 +372,8 @@ test('pdfx job on a print interior renders HTML to PDF first, then archives the 
   assert.equal(result.gsVersion, '9.99-stub');
   assert.equal(result.artifactExportId, job.artifactExportId);
   assert.equal(result.renderedPdfBytes, FAKE_RENDERED_PDF.length);
+  // the renderer's account of the page-bottom notes rides the result
+  assert.deepEqual(result.footnotes, { placed: 3, kept: 2, passes: 9, fallbacks: [{ section: 'ps-4', reason: 'long', notes: 2 }] });
   // Store-ready tie-in: the converted file's own facts ride the result.
   // The stub "conversion" is a bare PDF with no pages, no fonts and no
   // PDF/X declaration — and the inspection says exactly that.

@@ -5,6 +5,7 @@ import { PDFArray, PDFDict, PDFDocument, PDFName, PDFNumber, PDFRawStream, PDFSt
 import * as fn from '../deploy/renderer/footnotes.mjs';
 // @ts-expect-error — a plain ES module of the renderer, no type declarations
 import * as spreads from '../deploy/renderer/spreads.mjs';
+import { parseFootnoteHeader } from '../src/jobs/tools.js';
 
 /* deploy/renderer/footnotes.mjs — page-bottom notes for the print PDF.
    Chromium sets no footnotes; the renderer measures where each reference
@@ -177,7 +178,9 @@ async function toyRender(html: string) {
     dests.set(id, { page: l.page, depth: l.depth + (unit ? 0 : H0) });
   }
   for (const k of [...dests.keys()]) if (k.startsWith('__')) dests.delete(k);
-  return toyPdf(page + 1, cfg.trimH, dests);
+  // the empty pages forced at the section's end, each a page of its own
+  const tails = (sec.match(/class="fn-tail/g) || []).length;
+  return toyPdf(page + 1 + tails, cfg.trimH, dests);
 }
 
 test('print footnotes: the settling loop cuts the page where a note needs room, and the result holds', async () => {
@@ -228,6 +231,38 @@ test('print footnotes: a section that cannot settle in time keeps its notes at i
   assert.equal(res.html, html, 'the document prints exactly as the studio wrote it');
 });
 
+test('print footnotes: a note running on past the section\'s last page gets a page added at the section end, not a fallback', async () => {
+  // the reference on the section's last line; the note is 14 lines, the cap 9
+  const html = DOC(SECTION(['<p class="first">' + words(30, 'a') + ' last' + ref('1') + '</p>'], [['1', 'LONG note that runs on.']]));
+  const res = await fn.settleFootnotes({ html, render: toyRender, deadline: Date.now() + 30000 });
+  assert.equal(res.results.length, 1, 'the section settles');
+  assert.equal(res.placed, 1);
+  assert.equal(res.kept, 0);
+  assert.deepEqual(res.fallbacks, []);
+  const r = res.results[0];
+  assert.equal(r.tail, 1, 'one empty page forced at the section end');
+  assert.equal(r.placement.length, 2);
+  assert.deepEqual(r.placement[0].frags.map((f: Any) => [f.note, f.from, f.to]), [[0, 0, 9]]);
+  assert.deepEqual(r.placement[1].frags.map((f: Any) => [f.note, f.from, f.to]), [[0, 9, 14]]);
+  assert.equal(r.placement[1].continued, true);
+  // the document prints the page: an empty forced-break block before the section closes
+  assert.ok(res.html.includes('</div></div>\n<div class="fn-tail fn-brk" id="fnt-0" aria-hidden="true"></div></section>'), res.html.slice(-300));
+  assert.ok(res.html.includes('.fn-tail {'));
+});
+
+test('print footnotes: why a section kept its notes is reported, and the header round-trips to the job result', async () => {
+  const html = DOC(SECTION(['<p>' + words(30, 'b') + ' ref' + ref('1') + '</p>'], [['1', 'Note.']]));
+  const late = await fn.settleFootnotes({ html, render: toyRender, deadline: Date.now() - 1 });
+  assert.deepEqual(late.fallbacks, [{ id: 'ps-1', reason: 'time', notes: 1 }]);
+  const header = fn.footnoteHeader({ placed: 3, kept: 3, passes: 7, fallbacks: [{ id: 'ps-4', reason: 'long', notes: 2 }, { id: 'ps-9', reason: 'note', notes: 1 }, { id: 'ps-2', reason: 'book', notes: 0 }] });
+  assert.equal(header, 'placed=3; kept=3; passes=7; fallback=ps-4:long:2,ps-9:note:1');
+  assert.equal(fn.footnoteHeader({ placed: 2, kept: 0, passes: 4 }), 'placed=2; kept=0; passes=4');
+  assert.deepEqual(parseFootnoteHeader(header), { placed: 3, kept: 3, passes: 7, fallbacks: [{ section: 'ps-4', reason: 'long', notes: 2 }, { section: 'ps-9', reason: 'note', notes: 1 }] });
+  assert.deepEqual(parseFootnoteHeader('placed=2; kept=0; passes=4'), { placed: 2, kept: 0, passes: 4, fallbacks: [] });
+  assert.equal(parseFootnoteHeader(null), null);
+  assert.equal(parseFootnoteHeader('nonsense'), null);
+});
+
 test('print footnotes: the finished pages are found from the shipped PDF, and a moved reference is refused', () => {
   const r = { sec: { id: 'ps-1' }, hide: ['s1-fn1', 's1-fn2'], notes: [{ id: 's1-fn1', ref: 'r1' }, { id: 's1-fn2', ref: 'r2' }], refPage: new Map([[0, { page: 1, depth: 50 }], [1, { page: 2, depth: 80 }]]), placement: [], heights: [] };
   const ok = new Map([['r1', { page: 9, depth: 50 }], ['r2', { page: 10, depth: 80 }]]);
@@ -258,12 +293,18 @@ test('print footnotes: each page\'s notes are drawn at its foot from the notes P
   (dests as PDFDict).set(PDFName.of('ps-1'), book.context.obj([book.getPages()[0].ref, PDFName.of('XYZ'), PDFNumber.of(0), PDFNumber.of(280), PDFNumber.of(0)]));
   book.catalog.set(PDFName.of('Dests'), dests);
   const link = book.context.register(book.context.obj({ Type: 'Annot', Subtype: 'Link', Rect: [0, 0, 1, 1], Dest: PDFString.of('s1-fnref1') }));
+  // the reference's link to its note, which no longer prints in the end list
+  // (Chromium writes the link, and no destination), and a link to nothing
+  const toNote = book.context.register(book.context.obj({ Type: 'Annot', Subtype: 'Link', Rect: [5, 5, 9, 9], Dest: PDFName.of('s1-fn1') }));
+  const toNothing = book.context.register(book.context.obj({ Type: 'Annot', Subtype: 'Link', Rect: [5, 5, 9, 9], A: { S: 'GoTo', D: PDFString.of('s1-fn9') } }));
   book.getPages()[0].node.set(PDFName.of('Annots'), book.context.obj([link]));
+  book.getPages()[1].node.set(PDFName.of('Annots'), book.context.obj([toNote, toNothing]));
+  assert.equal((await fn.deadLinks(Buffer.from(await book.save()))).length, 2, 'the unstamped file has two dead links');
   const notes = await PDFDocument.create();
   const np = notes.addPage([250, 7200]);
   np.drawRectangle({ x: 0, y: 7200 - 20, width: 250, height: 20, color: rgb(0, 0, 0) });
   const placement = [{ frags: [] }, { frags: [{ note: 0, from: 0, to: 2, h: 20, whole: true }], area: 30, continued: false }, { frags: [] }];
-  const { pdf, drawn } = await fn.stampFootnotes(Buffer.from(await book.save()), Buffer.from(await notes.save()), [{ start: 0, placement, notes: [{ page: 0, top: 0, h: 20 }] }], cfg, ['s1-fnref1']);
+  const { pdf, drawn } = await fn.stampFootnotes(Buffer.from(await book.save()), Buffer.from(await notes.save()), [{ start: 0, placement, notes: [{ page: 0, top: 0, h: 20 }], ids: ['s1-fn1'] }], cfg, ['s1-fnref1']);
   assert.equal(drawn, 1);
   const out = await PDFDocument.load(pdf);
   const ops = pageOps(out, 1);
@@ -274,8 +315,15 @@ test('print footnotes: each page\'s notes are drawn at its foot from the notes P
   assert.doesNotMatch(pageOps(out, 0), /Do/);
   assert.doesNotMatch(pageOps(out, 2), /Do/);
   const kept = out.catalog.lookup(PDFName.of('Dests'), PDFDict);
-  assert.deepEqual([...kept.keys()].map((k) => k.decodeText()), ['ps-1']);
+  assert.deepEqual([...kept.keys()].map((k) => k.decodeText()).sort(), ['ps-1', 's1-fn1']);
   assert.equal(out.getPages()[0].node.lookup(PDFName.of('Annots'), PDFArray).size(), 0);
+  // the note is named where it is drawn: page 1, at the notes' top (y 60)
+  const at = kept.lookup(PDFName.of('s1-fn1'), PDFArray);
+  assert.equal(at.get(0).toString(), out.getPages()[1].ref.toString());
+  assert.equal(String(at.get(3)), '60');
+  // the reference's link now lands on it; the link to nothing is gone
+  assert.equal(out.getPages()[1].node.lookup(PDFName.of('Annots'), PDFArray).size(), 1);
+  assert.deepEqual(await fn.deadLinks(pdf), [], 'no link in the stamped file names a missing destination');
 });
 
 test('print footnotes: the notes document sets each note alone at the column width, page boxes silenced', () => {

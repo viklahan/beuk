@@ -2858,7 +2858,7 @@
                 <option value="end" data-i18n="print.notesEnd">At the end of the chapter</option>
               </select>
             </div>
-            <p class="pm-hint" data-i18n="print.notesHint">Beuk's print PDF sets each note at the foot of the page its reference falls on. Printed from the browser, the notes stay at the end of each chapter. The e-book keeps its notes at the end of each chapter, linked both ways.</p>
+            <p class="pm-hint" data-i18n="print.notesHint">Beuk's print PDF sets each note at the foot of the page its reference falls on. Printed from the browser, the notes stay at the end of each chapter. The e-book keeps its notes at the end of each chapter, linked both ways. If a chapter's notes cannot be set at the page foot, they stay at its end and the store check says which.</p>
           </div>
           <p class="print-note" id="printNote"></p>
           <div class="fmt-actions">
@@ -9577,6 +9577,42 @@
         ["ja", "印刷での注", "ページの下部（脚注）", "章の末尾（後注）", "Beuk の印刷用 PDF は、各注を参照記号のあるページの下部に組みます。ブラウザーから印刷した場合、注は各章の末尾に置かれます。電子書籍では、注は各章の末尾に置かれ、双方向にリンクされます。"],
         ["zh-Hans", "印刷中的注释", "页面底部（脚注）", "章节末尾（尾注）", "Beuk 的印刷 PDF 会把每条注释排在其引用所在页的底部。从浏览器打印时，注释保留在每章末尾。电子书中的注释保留在每章末尾，并双向链接。"]
       ].forEach(([lang, notes, foot, end, hint]) => Object.assign(UI_STRINGS[lang], { "print.notes": notes, "print.notesFoot": foot, "print.notesEnd": end, "print.notesHint": hint }));
+      /* BEUK:footnotes — what the print renderer did with the notes, as the
+         store check reports it (its x-beuk-footnotes header, via the PDF/X
+         job): every note at its page foot, or which chapters kept theirs
+         at the end and why. The hint says the same can happen. */
+      [
+        ["en", " If a chapter's notes cannot be set at the page foot, they stay at its end and the store check says which.", "Notes at the foot of the page", "All {n} notes are set at the foot of the page their reference falls on, in the PDF the server made.", "{n} of the book's notes are printed at the end of their chapter instead of at the page foot: {list}.", "Shorten the long note, move its reference earlier in the paragraph, or choose “At the end of the chapter” under Notes in print.",
+          "the renderer ran out of time", "a page could not hold its notes", "a note runs on too far past the chapter's end", "the chapter broke differently in the whole book", "the final pass moved a reference", "the note's reference could not be found or the note measured"],
+        ["es", " Si las notas de un capítulo no caben al pie de la página, quedan al final del capítulo y la comprobación de tienda indica cuál.", "Notas al pie de página", "Las {n} notas van al pie de la página donde cae su llamada, en el PDF que generó el servidor.", "{n} notas del libro se imprimen al final de su capítulo en lugar de al pie de la página: {list}.", "Acorta la nota larga, adelanta su llamada en el párrafo o elige «Al final del capítulo» en Notas en la edición impresa.",
+          "el renderizador se quedó sin tiempo", "una página no podía contener sus notas", "una nota se extiende demasiado más allá del final del capítulo", "el capítulo se paginó de otra forma en el libro completo", "la pasada final movió una llamada", "no se pudo encontrar la llamada de la nota o medir la nota"],
+        ["fr", " Si les notes d'un chapitre ne peuvent être placées en bas de page, elles restent en fin de chapitre et la vérification boutique indique lequel.", "Notes en bas de page", "Les {n} notes sont placées en bas de la page où tombe leur appel, dans le PDF produit par le serveur.", "{n} notes du livre sont imprimées en fin de chapitre au lieu du bas de page : {list}.", "Raccourcissez la note longue, avancez son appel dans le paragraphe, ou choisissez « En fin de chapitre » sous Notes à l'impression.",
+          "le moteur de rendu a manqué de temps", "une page ne pouvait pas contenir ses notes", "une note déborde trop loin après la fin du chapitre", "le chapitre s'est mis en pages autrement dans le livre entier", "la passe finale a déplacé un appel", "l'appel de la note est introuvable ou la note n'a pu être mesurée"],
+        ["de", " Lassen sich die Anmerkungen eines Kapitels nicht am Seitenfuß setzen, bleiben sie am Kapitelende, und die Shop-Prüfung nennt das Kapitel.", "Fußnoten am Seitenfuß", "Alle {n} Anmerkungen stehen im vom Server erzeugten PDF am Fuß der Seite ihres Verweises.", "{n} Anmerkungen des Buchs stehen am Kapitelende statt am Seitenfuß: {list}.", "Kürzen Sie die lange Anmerkung, setzen Sie ihren Verweis früher im Absatz oder wählen Sie unter „Anmerkungen im Druck“ „Am Ende des Kapitels“.",
+          "der Renderer hatte keine Zeit mehr", "eine Seite konnte ihre Anmerkungen nicht aufnehmen", "eine Anmerkung läuft zu weit über das Kapitelende hinaus", "das Kapitel wurde im ganzen Buch anders umbrochen", "der letzte Durchgang hat einen Verweis verschoben", "der Verweis der Anmerkung wurde nicht gefunden oder die Anmerkung nicht gemessen"],
+        ["it", " Se le note di un capitolo non possono andare a piè di pagina, restano alla fine del capitolo e il controllo per lo store indica quale.", "Note a piè di pagina", "Tutte le {n} note sono a piè della pagina in cui cade il loro richiamo, nel PDF prodotto dal server.", "{n} note del libro sono stampate alla fine del capitolo anziché a piè di pagina: {list}.", "Accorcia la nota lunga, anticipa il suo richiamo nel paragrafo o scegli «Alla fine del capitolo» in Note nella stampa.",
+          "il renderer ha esaurito il tempo", "una pagina non poteva contenere le sue note", "una nota prosegue troppo oltre la fine del capitolo", "il capitolo è stato impaginato diversamente nel libro intero", "il passaggio finale ha spostato un richiamo", "il richiamo della nota non è stato trovato o la nota non è stata misurata"],
+        ["pt", " Se as notas de um capítulo não couberem no rodapé, ficam no fim do capítulo e a verificação da loja indica qual.", "Notas no rodapé", "As {n} notas estão no rodapé da página onde cai a sua chamada, no PDF gerado pelo servidor.", "{n} notas do livro são impressas no fim do capítulo em vez do rodapé: {list}.", "Encurte a nota longa, antecipe a sua chamada no parágrafo ou escolha «No fim do capítulo» em Notas na impressão.",
+          "o renderizador ficou sem tempo", "uma página não conseguia conter as suas notas", "uma nota continua demasiado para lá do fim do capítulo", "o capítulo foi paginado de outra forma no livro inteiro", "a passagem final moveu uma chamada", "a chamada da nota não foi encontrada ou a nota não pôde ser medida"],
+        ["nl", " Passen de noten van een hoofdstuk niet onderaan de pagina, dan blijven ze aan het einde ervan en de winkelcontrole zegt welk hoofdstuk.", "Voetnoten onderaan de pagina", "Alle {n} noten staan in de pdf van de server onderaan de pagina waar hun verwijzing staat.", "{n} noten van het boek staan aan het einde van hun hoofdstuk in plaats van onderaan de pagina: {list}.", "Kort de lange noot in, zet de verwijzing eerder in de alinea, of kies ‘Aan het einde van het hoofdstuk’ bij Noten in druk.",
+          "de renderer had geen tijd meer", "een pagina kon haar noten niet bevatten", "een noot loopt te ver door na het einde van het hoofdstuk", "het hoofdstuk brak in het hele boek anders af", "de laatste ronde verplaatste een verwijzing", "de verwijzing van de noot is niet gevonden of de noot kon niet worden gemeten"],
+        ["pl", " Jeśli przypisów rozdziału nie da się złożyć na dole strony, zostają na jego końcu, a kontrola sklepowa wskazuje który.", "Przypisy na dole strony", "Wszystkie przypisy ({n}) stoją w PDF-ie z serwera na dole strony, na której pada ich odsyłacz.", "Przypisy ({n}) są drukowane na końcu rozdziału zamiast na dole strony: {list}.", "Skróć długi przypis, przesuń jego odsyłacz wcześniej w akapicie albo wybierz „Na końcu rozdziału” w Przypisach w druku.",
+          "rendererowi zabrakło czasu", "strona nie mogła pomieścić swoich przypisów", "przypis wychodzi za daleko poza koniec rozdziału", "rozdział złamał się inaczej w całej książce", "ostatni przebieg przesunął odsyłacz", "nie znaleziono odsyłacza przypisu lub nie dało się zmierzyć przypisu"],
+        ["ru", " Если примечания главы нельзя поставить внизу страницы, они остаются в её конце, а проверка для магазина называет главу.", "Сноски внизу страницы", "Все примечания ({n}) стоят в PDF сервера внизу страницы, на которую приходится их сноска.", "Примечания ({n}) напечатаны в конце главы, а не внизу страницы: {list}.", "Сократите длинное примечание, перенесите сноску ближе к началу абзаца или выберите «В конце главы» в разделе «Примечания в печати».",
+          "рендереру не хватило времени", "страница не вместила свои примечания", "примечание выходит слишком далеко за конец главы", "в целой книге глава сверстана иначе", "последний проход сдвинул сноску", "сноска примечания не найдена или примечание не удалось измерить"],
+        ["tr", " Bir bölümün notları sayfa altına yerleştirilemezse bölüm sonunda kalır ve mağaza denetimi hangisi olduğunu söyler.", "Sayfa altı notları", "{n} notun tümü, sunucunun ürettiği PDF'te göndermesinin düştüğü sayfanın altında.", "Kitabın {n} notu sayfa altı yerine bölüm sonunda basılıyor: {list}.", "Uzun notu kısaltın, göndermesini paragrafta daha öne alın ya da Baskıda notlar altında “Bölümün sonunda”yı seçin.",
+          "işleyicinin süresi doldu", "bir sayfa notlarını sığdıramadı", "bir not bölüm sonunu çok fazla aşıyor", "bölüm kitabın tamamında farklı sayfalandı", "son geçiş bir göndermeyi taşıdı", "notun göndermesi bulunamadı ya da not ölçülemedi"],
+        ["ar", " إذا تعذّر وضع حواشي فصل أسفل الصفحة تبقى في نهايته، ويذكر فحص المتجر أيّ فصل.", "الحواشي أسفل الصفحة", "كل الحواشي ({n}) موضوعة أسفل الصفحة التي تقع فيها إحالتها، في ملف PDF الذي أنتجه الخادم.", "تُطبع {n} من حواشي الكتاب في نهاية فصلها بدلًا من أسفل الصفحة: {list}.", "اختصر الحاشية الطويلة، أو قدّم إحالتها في الفقرة، أو اختر «في نهاية الفصل» ضمن الحواشي في الطباعة.",
+          "نفد وقت أداة الإخراج", "لم تتسع صفحة لحواشيها", "حاشية تمتد كثيرًا بعد نهاية الفصل", "انقسم الفصل إلى صفحات بشكل مختلف في الكتاب كاملًا", "نقلت المرحلة الأخيرة إحالةً", "تعذّر العثور على إحالة الحاشية أو قياس الحاشية"],
+        ["ja", " 章の注をページ下部に組めない場合、その章の注は章末に残り、ストア向けチェックがどの章かを示します。", "ページ下部の脚注", "サーバーが作成した PDF では、{n} 件の注すべてが参照記号のあるページの下部に組まれています。", "{n} 件の注がページ下部ではなく章末に印刷されます：{list}。", "長い注を短くするか、参照記号を段落の前のほうへ移すか、「印刷での注」で「章の末尾（後注）」を選んでください。",
+          "レンダラーの時間が足りませんでした", "ページに注が収まりませんでした", "注が章末を越えて長く続きすぎます", "本全体では章の改ページが異なりました", "最終パスで参照記号が移動しました", "注の参照記号が見つからないか、注を計測できませんでした"],
+        ["zh-Hans", " 如果某章的注释无法排在页面底部，它们会留在章末，商店检查会指出是哪一章。", "页面底部脚注", "在服务器生成的 PDF 中，全部 {n} 条注释都排在其引用所在页的底部。", "有 {n} 条注释印在章末，而不是页面底部：{list}。", "缩短这条长注释、把它的引用移到段落前部，或在“印刷中的注释”中选择“章节末尾（尾注）”。",
+          "渲染器时间不够", "某一页容纳不下它的注释", "某条注释越过章末太多", "该章在整本书中的分页与单独测量时不同", "最后一遍排版移动了某个引用", "找不到注释的引用，或无法测量该注释"]
+      ].forEach(([lang, hintMore, name, ok, warn, fix, rTime, rFull, rLong, rBook, rFinal, rNote]) => Object.assign(UI_STRINGS[lang], {
+        "print.notesHint": UI_STRINGS[lang]["print.notesHint"] + hintMore,
+        "store.c.fnotes.name": name, "store.c.fnotes.ok": ok, "store.c.fnotes.warn": warn, "store.c.fnotes.fix": fix,
+        "store.c.fnotes.r.time": rTime, "store.c.fnotes.r.full": rFull, "store.c.fnotes.r.long": rLong, "store.c.fnotes.r.book": rBook, "store.c.fnotes.r.final": rFinal, "store.c.fnotes.r.note": rNote
+      }));
 
       /* Supplementary keys (custom theme creator + custom font
          uploads) — assigned per pack so completeness holds. */
@@ -29740,6 +29776,7 @@
          box). Mutates the flow — the moved notes hidden from the list, the
          cuts made — and returns its HTML with each column's notes, or null
          when the section has no note to move. */
+      const PIV_FN_MAX_TAIL = 3; /* the renderer's MAX_TAIL (deploy/renderer/footnotes.mjs) */
       function pivFootnoteLayout(flow, g) {
         const block = flow.querySelector(".endnotes.fn-page");
         if (!block) return null;
@@ -29772,6 +29809,9 @@
         });
         box.remove();
         if (!notes.some((n) => n.ref)) return null;
+        /* the flow as the studio wrote it: what prints when the renderer
+           keeps the section's notes at its end */
+        const original = flow.innerHTML;
         notes.forEach((n) => { if (n.ref) n.p.style.display = "none"; });
         if (notes.every((n) => n.ref)) block.style.display = "none";
         const capLines = Math.max(2, Math.floor((H * 0.5 - lineH) / lineH));
@@ -29892,7 +29932,14 @@
           m = measure();
           asg = pivFnAssign(ownOf(m.refCol), notes, capLines, lineH, m.cols);
         }
-        return { html: flow.innerHTML, cols: asg, notes: notes.map((n) => ({ html: n.html, h: n.h })), lineH };
+        /* A note running on past the section's last column gets pages of
+           its own at the section's end, as the renderer adds them (an empty
+           forced page each, at most PIV_FN_MAX_TAIL); past that the renderer
+           keeps the section's notes at its end, and so does the view. */
+        let extra = 0;
+        for (let k = m.cols; k < asg.length; k++) if (asg[k].frags.length) extra = k - m.cols + 1;
+        if (extra > PIV_FN_MAX_TAIL) { flow.innerHTML = original; return null; }
+        return { html: flow.innerHTML, cols: asg.slice(0, m.cols + extra), pages: m.cols + extra, notes: notes.map((n) => ({ html: n.html, h: n.h })), lineH };
       }
       /* Split a paragraph of the view's flow before the line `line` starts
          (moving a word hyphenated into that line whole): the tail becomes
@@ -30490,7 +30537,9 @@
              notes need room, with each column's notes to draw. */
           const fnl = printNotesAtFoot() ? pivFootnoteLayout(flow, g) : null;
           if (fnl) fnByPage.set(s.id, fnl);
-          const cols = Math.max(1, Math.round(flow.scrollWidth / (g.contentW + PIV_GAP)));
+          /* (a note running on past the section's text has pages added
+             at its end, holding only the note — fnl.pages counts them) */
+          const cols = Math.max(1, Math.round(flow.scrollWidth / (g.contentW + PIV_GAP)), fnl && fnl.pages ? fnl.pages : 0);
           for (let c = 0; c < cols; c++) pages.push({ n: next + c, blank: false, section: s, col: c, chapter: curChapter });
           next += cols;
         });
@@ -33163,6 +33212,21 @@
         if (!cloud.user) return t("store.nc.signin");
         return t("store.nc.notRun");
       }
+      /* BEUK:footnotes — the chapters whose notes the renderer kept at their
+         end, in the writer's words: the print section ps-k is the k-th
+         section the print interior carries (buildPrintHtml), each named
+         with the renderer's reason. */
+      function storeFootnoteFallbacks(list) {
+        const secs = state.sections.filter((s) => s.included && s.type !== "cover");
+        const known = ["time", "full", "long", "book", "final", "note"];
+        return (list || []).map((f) => {
+          const m = /^ps-(\d+)$/.exec(String(f.section || ""));
+          const s = m ? secs[Number(m[1])] : null;
+          const label = s ? (sectionLabel(s) || s.title || "") : String(f.section || "");
+          const why = known.indexOf(f.reason) !== -1 ? t("store.c.fnotes.r." + f.reason) : String(f.reason || "");
+          return label + " (" + why + ")";
+        }).join("; ");
+      }
       /* Font names as a reader knows them: the six-letter subset tag dropped, each name once. */
       function storeFontNames(fonts) {
         const out = [];
@@ -33323,6 +33387,14 @@
         /* Even page count: both stores pad an odd count themselves — advisory. */
         row("interior", "even", false, pages % 2 === 0 ? "pass" : "warn", t("store.c.even.name"),
           t(pages % 2 === 0 ? "store.c.even.ok" : "store.c.even.warn", PP));
+        /* BEUK:footnotes — notes at the foot of the page: what the renderer
+           did with them in the PDF it made (advisory). A chapter that kept
+           its notes at its end is named, with the renderer's reason. */
+        const fnr = insp && F.srv.pdfx.result.footnotes ? F.srv.pdfx.result.footnotes : null;
+        if (fnr && printNotesAtFoot() && (fnr.placed > 0 || fnr.kept > 0)) {
+          if (!fnr.kept) row("interior", "fnotes", false, "pass", t("store.c.fnotes.name"), t("store.c.fnotes.ok", { n: fmtNum(fnr.placed) }));
+          else row("interior", "fnotes", false, "warn", t("store.c.fnotes.name"), t("store.c.fnotes.warn", { n: fmtNum(fnr.kept), list: storeFootnoteFallbacks(fnr.fallbacks) }), t("store.c.fnotes.fix"));
+        }
         /* ==== BEUK:print ==== */
         /* Press facts the server measured on the converted file itself
            (src/jobs/pdfpress.ts): the ink every run of text is shown in,
@@ -36950,6 +37022,81 @@
               $("modalPrintView").classList.remove("open");
               applyBookDoc(keepDoc);
             }
+          } },
+        { id: "print.footnotes.runon", feature: "print", name: "Notes in print: a long note referenced on a chapter's last page runs on onto a page added at the chapter's end, as the renderer adds it — the Print Interior View shows that page with the note's last lines under a full rule, and the next chapter after it; a note too long even for that keeps the chapter's notes at its end in the view, as in the PDF",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const para = (w) => "The tide came in over the mud flats and the gulls rose all at once, crying over the harbour while the ferry sounded its horn twice for the far shore and the lamps came on along the quay one by one in the blue dusk" + (w || "") + ".";
+              const book = (sentences) => {
+                const parts = [];
+                for (let i = 0; i < 14; i++) parts.push(para(i === 13 ? "[^1]" : ""));
+                parts.push("[^1]: " + Array.from({ length: sentences }, () => "A long note runs on past the foot of its page, line after line, to show how a note continues.").join(" ") + " THE-END-OF-NOTE.");
+                const ch = mkSection("body", "chapter", "Run On", { number: "1", content: parts.join("\n\n") });
+                const ch2 = mkSection("body", "chapter", "After", { number: "2", content: "A second chapter, short." });
+                applyBookDoc({ meta: { title: "Run On", author: "Fixture Author", language: "en", langSource: "manual" }, sections: [ch, ch2], printNotes: "page" });
+                state.cover = null; state.images = [];
+                state.printTrim = "6x9"; state.printRecto = false; state.printLargePrint = false;
+                openPrintInteriorView();
+                const S0 = state.sections.find((s) => s.title === "Run On");
+                const S1 = state.sections.find((s) => s.title === "After");
+                const model = piv.model;
+                const flow = pivSectionFlow(S0, model.g);
+                $("pivMeasure").appendChild(flow);
+                const textCols = Math.max(1, Math.round(flow.scrollWidth / (model.g.contentW + PIV_GAP)));
+                $("pivMeasure").innerHTML = "";
+                return { model, fnl: model.fn.get(S0.id) || null, own: model.pages.filter((p) => p.section === S0), next: model.pages.find((p) => p.section === S1), textCols };
+              };
+              /* 40 sentences: about 36 note lines, more than one page's note area. */
+              const a = book(40);
+              let runOk = false, domOk = false, detail = "no footnote layout";
+              if (a.fnl) {
+                const last = a.own[a.own.length - 1];
+                const lines = Math.max(1, Math.round(a.fnl.notes[0].h / a.fnl.lineH));
+                const lastPl = a.fnl.cols[last.col];
+                const ends = !!lastPl && lastPl.continued && lastPl.frags.some((fr) => fr.note === 0 && fr.from > 0 && fr.to === lines);
+                runOk = a.own.length === a.textCols + 1 && a.fnl.pages === a.own.length && ends && !!a.next && a.next.n === last.n + 1;
+                piv.spread = Math.floor(last.n / 2);
+                renderPrintView();
+                const notesEl = $("pivSpread").querySelector('.piv-page[data-page="' + last.n + '"] .piv-fnotes');
+                domOk = !!notesEl && notesEl.classList.contains("piv-fncont") && !!notesEl.querySelector(".piv-fnrule") && notesEl.textContent.includes("THE-END-OF-NOTE");
+                detail = "text on " + a.textCols + " page(s), the chapter on " + a.own.length + " (one added), the note's last lines (to line " + lines + ") on page " + last.n + " (" + ends + "), chapter 2 on page " + (a.next ? a.next.n : "?") + "; the added page draws them under a full rule (" + domOk + ")";
+              }
+              /* 200 sentences: more than the pages the renderer adds — the notes stay at the end. */
+              const b = book(200);
+              const flowEnd = (() => { const f = pivSectionFlow(state.sections[0], b.model.g); return f.innerHTML.includes('class="endnotes fn-page"'); })();
+              const keptOk = !b.fnl && b.own.length === b.textCols && flowEnd;
+              return scVerdict(runOk && domOk && keptOk, detail + "; a note too long for the added pages keeps the chapter's notes at its end (no layout: " + !b.fnl + ", " + b.own.length + " page(s) = its text's " + b.textCols + ")");
+            } finally {
+              $("modalPrintView").classList.remove("open");
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "print.footnotes.report", feature: "print", name: "Notes in print: the store check reports what the renderer did with the notes — every note at its page foot passes; notes kept at a chapter's end warn, naming the chapter and the renderer's reason; no row when the notes are set at the chapter end or the server has not run",
+          run() {
+            return storeOnSample(() => {
+              state.printNotes = "page";
+              const insp = { pageCount: 120, firstPage: { mediaBox: { w: 6, h: 9 }, trimBox: { w: 6, h: 9 }, bleedBox: null }, pdfx: { version: "PDF/X-1:2001", conformance: "PDF/X-1a:2001", outputIntent: true, outputCondition: "CGATS TR 003" },
+                fonts: [{ name: "AAAAAA+EBGaramond-Regular", subtype: "Type1C", embedded: true }], fontsAllEmbedded: true, rgb: { colourSpaceRefs: 0, rgbOperators: 0 }, encrypted: false, notes: [] };
+              const secs = state.sections.filter((s) => s.included && s.type !== "cover");
+              const k = secs.findIndex((s) => s.kind === "body");
+              const label = sectionLabel(secs[k]) || secs[k].title;
+              const rowWith = (footnotes) => {
+                storeUi.server = { sig: storeBookSig(), at: new Date(), pdfx: { status: "done", result: { inspection: insp, press: null, footnotes: footnotes } }, epubcheck: null, error: "" };
+                const a = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" });
+                return a.groups.interior.find((r) => r.id === "fnotes") || null;
+              };
+              const all = rowWith({ placed: 4, kept: 0, passes: 14, fallbacks: [] });
+              const some = rowWith({ placed: 2, kept: 2, passes: 9, fallbacks: [{ section: "ps-" + k, reason: "long", notes: 2 }] });
+              const none = rowWith(null);
+              state.printNotes = "end";
+              const endMode = rowWith({ placed: 4, kept: 0, passes: 14, fallbacks: [] });
+              storeUi.server = null;
+              const ok = !!all && all.status === "pass" && all.evidence.indexOf("4") !== -1 &&
+                !!some && some.status === "warn" && some.evidence.indexOf(label) !== -1 && some.evidence.indexOf(t("store.c.fnotes.r.long")) !== -1 && !!some.fix &&
+                !none && !endMode;
+              return scVerdict(ok, "all placed: " + (all ? all.status : "no row") + "; two kept: " + (some ? some.status + " (“" + some.evidence.slice(0, 140) + "”)" : "no row") + "; no report: " + (none ? "row" : "no row") + "; notes at the chapter end: " + (endMode ? "row" : "no row"));
+            });
           } },
         { id: "print.view.guides", feature: "print", name: "Print interior view guides: the toggle draws the trim edge, margin boxes and gutter shading over the spread, and no guide markup ever reaches the exported print HTML",
           run() {

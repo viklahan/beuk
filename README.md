@@ -765,25 +765,46 @@ browser in `tests/print-footnotes.test.ts`) then sets them at the foot:
    notes are drawn by where the shipped pages put them. Each page's notes
    are drawn into the room left at its foot from the notes' PDF (pdf-lib,
    a clipped form XObject) under a short 0.5 pt rule; the measuring names
-   and their hidden links are stripped from the finished file.
+   and their hidden links are stripped from the finished file. Each note is
+   named (its own id, a named destination) where it is drawn, so its
+   reference's link jumps to it at the page foot; any link left naming a
+   destination the file does not hold is removed (no dead links).
 
 **A note longer than the note area** (half the page area) **continues** at
 the foot of the next page, split between its lines, under a full-width
 rule; a page's own notes still begin on their page (the continued note
-yields room, keeping two lines). A note that cannot be split cleanly (not
-on the line grid, e.g. holding a picture) and is taller than the area, a
-section that cannot settle within the job's time share
-(`RENDER_FOOTNOTE_SHARE`, 55% of `RENDER_TIMEOUT_MS`; `RENDER_FOOTNOTE_PAGES`
-sections settle at once, default 2), or a book whose final pass puts a
-reference elsewhere than measured, **falls back**: those notes print at their
-section's end exactly as the studio set them — a note is never lost and
-never drawn over text. The response header `x-beuk-footnotes:
-placed=N; kept=M; passes=P` says which happened.
+yields room, keeping two lines). When the note runs on past the section's
+last page — a long note referenced near a chapter's end — the renderer
+**adds a page at the section's end** (an empty forced-break block,
+`.fn-tail`, up to 3 such pages) and the note continues there; the next
+chapter starts after it.
+
+**Fallbacks** — those notes print at their section's end exactly as the
+studio set them; a note is never lost and never drawn over text:
+
+| reason | when |
+|---|---|
+| `time` | the section did not settle within the job's time share (`RENDER_FOOTNOTE_SHARE`, 55% of `RENDER_TIMEOUT_MS`; `RENDER_FOOTNOTE_PAGES` sections settle at once, default 2) or its pass limit |
+| `full` | a page could keep no line above the notes it calls for (e.g. a note not on the line grid — holding a picture — and taller than the note area) |
+| `long` | a note runs on past even the 3 pages added at the section's end |
+| `book` | the section broke differently in the whole book than measured alone |
+| `final` | the final pass put a reference on another page (every section falls back) |
+| `note` | that note alone: it could not be measured, or its reference is not in the text |
+
+The response header says what happened: `x-beuk-footnotes: placed=N;
+kept=M; passes=P` and, when any note stayed at its section's end,
+`; fallback=ps-3:long:2,…` (print section, reason, notes). The server reads
+it into the PDF/X job's result (`footnotes: { placed, kept, passes,
+fallbacks }`, `parseFootnoteHeader` in `src/jobs/tools.ts`), and the store
+check shows a **Notes at the foot of the page** row: a pass when every note
+is at its page foot, a warning naming each chapter that kept its notes at
+its end and why.
 
 **The Print Interior View** sets the notes the same way with the browser's
 own layout (`pivFootnoteLayout`: the same rules, measured on the view's
 multicol flow, cut with `break-before: column`), and draws each page's notes
-at its foot. On the sample all four notes land on the same pages as in the
+at its foot — adding the same pages at a section's end for a note that runs
+on past it, and keeping the notes at the end when the renderer would. On the sample all four notes land on the same pages as in the
 PDF (pp. 17, 45, 63, 92); the view is a browser layout, so a line can fall
 differently from the PDF on other books — the PDF is the proof.
 
