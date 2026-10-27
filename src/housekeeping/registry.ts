@@ -2778,6 +2778,31 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The estimate is computed in the client summary screen from word counts; nothing is recorded or measured.',
   },
+  /* ---- Submission manuscript export (all client-side) ---- */
+  {
+    id: 'export.manuscript',
+    title: 'Submission manuscript: title page (contact block, rounded word count, title, byline), Surname / TITLE / page header, 12 pt double-spaced (w:line 480) on 1 in margins, chapters on new pages, # scene breaks, END, italics kept or underlined, nothing typeset leaks',
+    kind: 'client-only',
+    reason: 'The manuscript .docx is built in the client from the open book with the Word export\'s own paragraph builder; the server never sees it.',
+  },
+  {
+    id: 'export.manuscript.contact-persists',
+    title: 'Submission manuscript: the contact block, pen name and page choices ride in the book file, and a book without them starts empty',
+    kind: 'client-only',
+    reason: 'The contact block is client book state; it rides the manuscript document the server stores opaquely.',
+  },
+  {
+    id: 'export.manuscript.wordcount',
+    title: 'Submission manuscript: the word count is rounded to the nearest 1,000 from 10,000 words up, to the nearest 100 below',
+    kind: 'client-only',
+    reason: 'The rounding is a client-side function of the counted words.',
+  },
+  {
+    id: 'export.manuscript.roundtrip',
+    title: 'Submission manuscript round trip: read back through the Word import, the chapters, italics, verse words, redaction and # scene breaks come back, and the title page is read as the credit',
+    kind: 'client-only',
+    reason: 'The manuscript export, Mammoth.js and the Word import all run in the studio; the server never sees the file.',
+  },
   /* ---- Beta-reader share links ---- */
   {
     id: 'shares.schema.tables-present',

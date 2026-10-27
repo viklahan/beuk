@@ -2122,6 +2122,21 @@
       .acx-add { display: flex; gap: 6px; margin: 6px 0 8px; }
       @media (max-width: 640px) { .acx-grid { grid-template-columns: 1fr; } }
       /* ==== /BEUK:acx ==== */
+      /* ==== BEUK:manuscript ==== */
+      .modal.ms-modal { max-width: 820px; }
+      .ms-grid textarea { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--panel); color: var(--ink); min-width: 0; resize: vertical; }
+      .ms-grid label:has(textarea) { grid-row: span 2; }
+      .ms-grid3 { grid-template-columns: 1fr 1fr 1fr; }
+      .ms-tp { position: relative; width: 100%; max-width: 340px; aspect-ratio: 8.5 / 11; margin: 4px auto 6px; background: #fff; color: #111; border: 1px solid var(--line-2); border-radius: 3px; box-shadow: 0 1px 4px rgba(0,0,0,.12); box-sizing: border-box; font-family: "Times New Roman", Times, serif; font-size: 9.5px; line-height: 1.25; text-align: left; overflow: hidden; }
+      .ms-tp.ms-a4 { aspect-ratio: 210 / 297; }
+      .ms-tp.ms-courier { font-family: "Courier New", Courier, monospace; }
+      .ms-tp-top { position: absolute; left: 11.8%; right: 11.8%; top: 9.1%; display: flex; justify-content: space-between; gap: 8px; } /* one-inch margins on an 8.5 x 11 in page */
+      .ms-tp-contact { min-width: 0; overflow-wrap: anywhere; }
+      .ms-tp-count { white-space: nowrap; }
+      .ms-tp-mid { position: absolute; left: 11.8%; right: 11.8%; top: 50%; text-align: center; line-height: 2.1; }
+      .ms-tp-title { overflow-wrap: anywhere; }
+      @media (max-width: 640px) { .ms-grid3 { grid-template-columns: 1fr; } .ms-grid label:has(textarea) { grid-row: auto; } }
+      /* ==== /BEUK:manuscript ==== */
       /* ==== BEUK:tour ==== — the first-run quick tour: a small card (not
          modal, no backdrop) beside the control it describes, under every
          dialog (.modal-back is z-index 60 and up). */
@@ -2738,6 +2753,20 @@
     </div>
     <!-- ==== /BEUK:acx ==== -->
 
+    <!-- ==== BEUK:manuscript ==== -->
+    <div class="modal-back" id="modalManuscript">
+      <div class="modal acx-modal ms-modal" role="dialog" aria-modal="true" aria-labelledby="msH">
+        <h2 id="msH" data-i18n="ms.title"><i data-lucide="file-pen-line"></i>Submission Manuscript</h2>
+        <p class="m-sub" data-i18n="ms.sub">Standard manuscript format.</p>
+        <div id="msBody"></div>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnMsClose" type="button" data-i18n="ms.close">Close</button>
+          <button class="tb-btn primary" id="btnMsDownload" type="button" data-i18n="ms.download"><i data-lucide="download"></i>Download Manuscript (.docx)</button>
+        </div>
+      </div>
+    </div>
+    <!-- ==== /BEUK:manuscript ==== -->
+
     <!-- Export modal -->
     <div class="modal-back" id="modalExport">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="expH">
@@ -2819,6 +2848,16 @@
             <button class="tb-btn" id="btnDownloadDocx" data-i18n="exp.downloadDocx"><i data-lucide="download"></i>Download .docx</button>
           </div>
         </div>
+
+        <!-- ==== BEUK:manuscript ==== -->
+        <div class="fmt-sec">
+          <h3 data-i18n="ms.secH"><i data-lucide="file-pen-line"></i>Submission Manuscript (.docx)</h3>
+          <p data-i18n="ms.secP">Standard manuscript format for querying agents and publishers.</p>
+          <div class="fmt-actions">
+            <button class="tb-btn" id="btnMsOpen" type="button" data-i18n="ms.open"><i data-lucide="file-pen-line"></i>Prepare Submission Manuscript</button>
+          </div>
+        </div>
+        <!-- ==== /BEUK:manuscript ==== -->
 
         <!-- ==== BEUK:acx ==== -->
         <div class="fmt-sec">
@@ -16169,6 +16208,739 @@
         "acx.close": "关闭"
       });
       /* ==== /BEUK:acx ==== */
+      /* ==== BEUK:manuscript ==== */
+      /* Submission manuscript strings — assigned per pack so ui.packs.complete holds.
+         The manuscript's own words (about … words, by, Chapter, END, Notes)
+         are the standard's English and are not translated. */
+      Object.assign(UI_STRINGS.en, {
+        "ms.secH": "Submission Manuscript (.docx)",
+        "ms.secP": "Standard manuscript format for querying agents and publishers: a title page with your contact details and word count, 12 pt Times New Roman, double-spaced, one-inch margins, each chapter on a new page and a Surname / TITLE / page header. None of the book's typesetting goes in.",
+        "ms.open": "Prepare Submission Manuscript",
+        "ms.title": "Submission Manuscript",
+        "ms.sub": "Standard manuscript format (the Shunn convention): 12 pt type, double-spaced, one-inch margins, half-inch first-line indents, ragged right, no hyphenation; a title page with your contact details top left and the word count top right, the title in capitals halfway down; each chapter on a new page a third of the way down; # for a scene break and END after the last chapter.",
+        "ms.contactH": "Your contact details",
+        "ms.legalName": "Legal name",
+        "ms.address": "Postal address",
+        "ms.phone": "Phone",
+        "ms.email": "Email",
+        "ms.byline": "Byline (pen name)",
+        "ms.bylinePh": "The book's author",
+        "ms.surname": "Surname in the header",
+        "ms.contactNote": "Empty fields are left off the title page; Beuk never fills them in. These details are saved with this book and appear only on the title page.",
+        "ms.pageH": "Page",
+        "ms.paper": "Paper",
+        "ms.paper.letter": "US Letter (8.5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Typeface",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Emphasis",
+        "ms.it.italic": "Italics stay italic",
+        "ms.it.underline": "Underline instead (older markets)",
+        "ms.previewH": "Title page",
+        "ms.headNote": "Every page of the text carries the header at the top right; the title page carries none, and the first page of the text is page 1.",
+        "ms.countH": "Word count",
+        "ms.count": "About {rounded} words on the title page — {exact} counted in {sections} sections of the text.",
+        "ms.countChars": "About {rounded} characters on the title page — {exact} counted in {sections} sections of the text.",
+        "ms.rule": "Rounded to the nearest 1,000 at 10,000 words and above, to the nearest 100 below that.",
+        "ms.inH": "In the manuscript",
+        "ms.in.title": "Title page: contact details, word count, title and byline",
+        "ms.in.sections": "Sections of the text: {sections}, each on a new page",
+        "ms.in.end": "END, centred after the last section",
+        "ms.in.notes": "Notes: {notes}, on a Notes page after END (as text: Beuk's Word export does not write Word footnotes)",
+        "ms.outH": "Left out",
+        "ms.out.typeset": "The book's typesetting: theme, fonts, drop caps, ornaments, running heads and page design",
+        "ms.out.front": "{name} (front matter)",
+        "ms.out.back": "{name} (back matter)",
+        "ms.out.pictures": "Pictures: {pictures} (pictures in the text with their captions, plates, backdrops and scene pictures)",
+        "ms.warnH": "Before you send it",
+        "ms.warn.noTitle": "The book has no title.",
+        "ms.warn.noName": "No legal name — the title page starts with the word count alone.",
+        "ms.warn.noReach": "No email, phone or address — an agent would have no way to reach you.",
+        "ms.warn.noByline": "No byline — add a pen name here or the author in Project Settings.",
+        "ms.warn.lang": "The manuscript's fixed words (about … words, by, Chapter, END, Notes) are in English, the format's own language.",
+        "ms.warn.none": "Nothing missing from the checks Beuk ran.",
+        "ms.pdfNote": "Word only: if a market asks for a PDF, open the file in Word, Google Docs or LibreOffice and save it as PDF.",
+        "ms.download": "Download Manuscript (.docx)",
+        "ms.building": "Building…",
+        "ms.done": "Submission manuscript downloaded — {sections} sections, about {words} words",
+        "ms.fail": "Manuscript export failed: {msg}",
+        "ms.empty": "Nothing to submit yet — the book has no chapters.",
+        "ms.close": "Close"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "ms.secH": "Manuscrito para envío (.docx)",
+        "ms.secP": "Formato estándar de manuscrito para enviar a agentes y editoriales: portada con tus datos de contacto y el número de palabras, Times New Roman de 12 pt, doble espacio, márgenes de una pulgada, cada capítulo en página nueva y un encabezado Apellido / TÍTULO / página. No incluye nada de la maquetación del libro.",
+        "ms.open": "Preparar manuscrito para envío",
+        "ms.title": "Manuscrito para envío",
+        "ms.sub": "Formato estándar de manuscrito (la convención Shunn): letra de 12 pt, doble espacio, márgenes de una pulgada, sangría de primera línea de media pulgada, sin justificar y sin guiones; portada con tus datos de contacto arriba a la izquierda y el número de palabras arriba a la derecha, y el título en mayúsculas a media página; cada capítulo en página nueva, a un tercio de altura; # para un cambio de escena y END tras el último capítulo.",
+        "ms.contactH": "Tus datos de contacto",
+        "ms.legalName": "Nombre legal",
+        "ms.address": "Dirección postal",
+        "ms.phone": "Teléfono",
+        "ms.email": "Correo electrónico",
+        "ms.byline": "Firma (seudónimo)",
+        "ms.bylinePh": "El autor del libro",
+        "ms.surname": "Apellido en el encabezado",
+        "ms.contactNote": "Los campos vacíos no aparecen en la portada; Beuk nunca los rellena. Estos datos se guardan con este libro y solo aparecen en la portada.",
+        "ms.pageH": "Página",
+        "ms.paper": "Papel",
+        "ms.paper.letter": "Carta EE. UU. (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Tipo de letra",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Énfasis",
+        "ms.it.italic": "La cursiva se mantiene",
+        "ms.it.underline": "Subrayado en su lugar (mercados tradicionales)",
+        "ms.previewH": "Portada",
+        "ms.headNote": "Cada página del texto lleva el encabezado arriba a la derecha; la portada no lleva ninguno y la primera página del texto es la página 1.",
+        "ms.countH": "Número de palabras",
+        "ms.count": "Unas {rounded} palabras en la portada — {exact} contadas en {sections} secciones del texto.",
+        "ms.countChars": "Unos {rounded} caracteres en la portada — {exact} contados en {sections} secciones del texto.",
+        "ms.rule": "Redondeado al millar más cercano a partir de 10.000 palabras y a la centena más cercana por debajo.",
+        "ms.inH": "En el manuscrito",
+        "ms.in.title": "Portada: datos de contacto, número de palabras, título y firma",
+        "ms.in.sections": "Secciones del texto: {sections}, cada una en página nueva",
+        "ms.in.end": "END, centrado tras la última sección",
+        "ms.in.notes": "Notas: {notes}, en una página de notas tras END (como texto: la exportación a Word de Beuk no crea notas al pie de Word)",
+        "ms.outH": "Lo que queda fuera",
+        "ms.out.typeset": "La maquetación del libro: tema, fuentes, capitulares, ornamentos, encabezados y diseño de página",
+        "ms.out.front": "{name} (páginas preliminares)",
+        "ms.out.back": "{name} (páginas finales)",
+        "ms.out.pictures": "Imágenes: {pictures} (imágenes del texto con sus pies, láminas, fondos e imágenes de escena)",
+        "ms.warnH": "Antes de enviarlo",
+        "ms.warn.noTitle": "El libro no tiene título.",
+        "ms.warn.noName": "Sin nombre legal: la portada empieza solo con el número de palabras.",
+        "ms.warn.noReach": "Sin correo, teléfono ni dirección: un agente no tendría cómo contactarte.",
+        "ms.warn.noByline": "Sin firma: añade aquí un seudónimo o el autor en los ajustes del proyecto.",
+        "ms.warn.lang": "Las palabras fijas del manuscrito (about … words, by, Chapter, END, Notes) están en inglés, el idioma propio del formato.",
+        "ms.warn.none": "No falta nada según las comprobaciones de Beuk.",
+        "ms.pdfNote": "Solo Word: si un mercado pide PDF, abre el archivo en Word, Google Docs o LibreOffice y guárdalo como PDF.",
+        "ms.download": "Descargar manuscrito (.docx)",
+        "ms.building": "Generando…",
+        "ms.done": "Manuscrito para envío descargado — {sections} secciones, unas {words} palabras",
+        "ms.fail": "Falló la exportación del manuscrito: {msg}",
+        "ms.empty": "Aún no hay nada que enviar: el libro no tiene capítulos.",
+        "ms.close": "Cerrar"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "ms.secH": "Manuscrit de soumission (.docx)",
+        "ms.secP": "Format standard de manuscrit pour démarcher agents et éditeurs : une page de titre avec vos coordonnées et le nombre de mots, Times New Roman 12 pt, double interligne, marges d'un pouce, chaque chapitre sur une nouvelle page et un en-tête Nom / TITRE / page. Rien de la mise en page du livre n'y entre.",
+        "ms.open": "Préparer le manuscrit de soumission",
+        "ms.title": "Manuscrit de soumission",
+        "ms.sub": "Format standard de manuscrit (la convention Shunn) : corps 12 pt, double interligne, marges d'un pouce, alinéa d'un demi-pouce, texte aligné à gauche sans césure ; une page de titre avec vos coordonnées en haut à gauche et le nombre de mots en haut à droite, le titre en capitales à mi-page ; chaque chapitre sur une nouvelle page, au tiers de la hauteur ; # pour un changement de scène et END après le dernier chapitre.",
+        "ms.contactH": "Vos coordonnées",
+        "ms.legalName": "Nom légal",
+        "ms.address": "Adresse postale",
+        "ms.phone": "Téléphone",
+        "ms.email": "E-mail",
+        "ms.byline": "Signature (nom de plume)",
+        "ms.bylinePh": "L'auteur du livre",
+        "ms.surname": "Nom dans l'en-tête",
+        "ms.contactNote": "Les champs vides n'apparaissent pas sur la page de titre ; Beuk ne les remplit jamais. Ces coordonnées sont enregistrées avec ce livre et n'apparaissent que sur la page de titre.",
+        "ms.pageH": "Page",
+        "ms.paper": "Papier",
+        "ms.paper.letter": "Lettre US (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Police",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Mise en valeur",
+        "ms.it.italic": "L'italique reste en italique",
+        "ms.it.underline": "Souligné à la place (marchés traditionnels)",
+        "ms.previewH": "Page de titre",
+        "ms.headNote": "Chaque page du texte porte l'en-tête en haut à droite ; la page de titre n'en a pas, et la première page du texte est la page 1.",
+        "ms.countH": "Nombre de mots",
+        "ms.count": "Environ {rounded} mots sur la page de titre — {exact} comptés dans {sections} sections du texte.",
+        "ms.countChars": "Environ {rounded} caractères sur la page de titre — {exact} comptés dans {sections} sections du texte.",
+        "ms.rule": "Arrondi au millier le plus proche à partir de 10 000 mots, à la centaine la plus proche en dessous.",
+        "ms.inH": "Dans le manuscrit",
+        "ms.in.title": "Page de titre : coordonnées, nombre de mots, titre et signature",
+        "ms.in.sections": "Sections du texte : {sections}, chacune sur une nouvelle page",
+        "ms.in.end": "END, centré après la dernière section",
+        "ms.in.notes": "Notes : {notes}, sur une page de notes après END (en texte : l'export Word de Beuk ne crée pas de notes de bas de page Word)",
+        "ms.outH": "Laissé de côté",
+        "ms.out.typeset": "La mise en page du livre : thème, polices, lettrines, ornements, titres courants et maquette",
+        "ms.out.front": "{name} (pages liminaires)",
+        "ms.out.back": "{name} (pages de fin)",
+        "ms.out.pictures": "Images : {pictures} (images du texte avec leurs légendes, planches, fonds et images de scène)",
+        "ms.warnH": "Avant de l'envoyer",
+        "ms.warn.noTitle": "Le livre n'a pas de titre.",
+        "ms.warn.noName": "Pas de nom légal : la page de titre commence par le seul nombre de mots.",
+        "ms.warn.noReach": "Ni e-mail, ni téléphone, ni adresse : un agent n'aurait aucun moyen de vous joindre.",
+        "ms.warn.noByline": "Pas de signature : ajoutez ici un nom de plume ou l'auteur dans les réglages du projet.",
+        "ms.warn.lang": "Les mots fixes du manuscrit (about … words, by, Chapter, END, Notes) sont en anglais, la langue du format.",
+        "ms.warn.none": "Rien ne manque d'après les vérifications de Beuk.",
+        "ms.pdfNote": "Word uniquement : si un marché demande un PDF, ouvrez le fichier dans Word, Google Docs ou LibreOffice et enregistrez-le en PDF.",
+        "ms.download": "Télécharger le manuscrit (.docx)",
+        "ms.building": "Création…",
+        "ms.done": "Manuscrit de soumission téléchargé — {sections} sections, environ {words} mots",
+        "ms.fail": "Échec de l'export du manuscrit : {msg}",
+        "ms.empty": "Rien à soumettre pour l'instant : le livre n'a pas de chapitres.",
+        "ms.close": "Fermer"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "ms.secH": "Einsendungsmanuskript (.docx)",
+        "ms.secP": "Standard-Manuskriptformat für Anfragen bei Agenturen und Verlagen: ein Titelblatt mit Ihren Kontaktdaten und der Wortzahl, Times New Roman 12 pt, doppelter Zeilenabstand, Ränder von einem Zoll, jedes Kapitel auf einer neuen Seite und eine Kopfzeile Nachname / TITEL / Seite. Nichts vom Satz des Buches kommt hinein.",
+        "ms.open": "Einsendungsmanuskript vorbereiten",
+        "ms.title": "Einsendungsmanuskript",
+        "ms.sub": "Standard-Manuskriptformat (die Shunn-Konvention): 12 pt Schrift, doppelter Zeilenabstand, Ränder von einem Zoll, Erstzeileneinzug von einem halben Zoll, Flattersatz, keine Silbentrennung; ein Titelblatt mit Ihren Kontaktdaten oben links und der Wortzahl oben rechts, der Titel in Großbuchstaben auf halber Höhe; jedes Kapitel auf einer neuen Seite, ein Drittel nach unten; # für einen Szenenwechsel und END nach dem letzten Kapitel.",
+        "ms.contactH": "Ihre Kontaktdaten",
+        "ms.legalName": "Bürgerlicher Name",
+        "ms.address": "Postanschrift",
+        "ms.phone": "Telefon",
+        "ms.email": "E-Mail",
+        "ms.byline": "Autorenname (Pseudonym)",
+        "ms.bylinePh": "Autor des Buches",
+        "ms.surname": "Nachname in der Kopfzeile",
+        "ms.contactNote": "Leere Felder fehlen auf dem Titelblatt; Beuk füllt sie nie aus. Diese Angaben werden mit diesem Buch gespeichert und erscheinen nur auf dem Titelblatt.",
+        "ms.pageH": "Seite",
+        "ms.paper": "Papier",
+        "ms.paper.letter": "US Letter (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Schrift",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Hervorhebung",
+        "ms.it.italic": "Kursiv bleibt kursiv",
+        "ms.it.underline": "Stattdessen unterstreichen (traditionelle Märkte)",
+        "ms.previewH": "Titelblatt",
+        "ms.headNote": "Jede Seite des Textes trägt die Kopfzeile oben rechts; das Titelblatt trägt keine, und die erste Seite des Textes ist Seite 1.",
+        "ms.countH": "Wortzahl",
+        "ms.count": "Etwa {rounded} Wörter auf dem Titelblatt — {exact} gezählt in {sections} Abschnitten des Textes.",
+        "ms.countChars": "Etwa {rounded} Zeichen auf dem Titelblatt — {exact} gezählt in {sections} Abschnitten des Textes.",
+        "ms.rule": "Ab 10.000 Wörtern auf volle Tausend gerundet, darunter auf volle Hundert.",
+        "ms.inH": "Im Manuskript",
+        "ms.in.title": "Titelblatt: Kontaktdaten, Wortzahl, Titel und Autorenname",
+        "ms.in.sections": "Abschnitte des Textes: {sections}, jeder auf einer neuen Seite",
+        "ms.in.end": "END, zentriert nach dem letzten Abschnitt",
+        "ms.in.notes": "Anmerkungen: {notes}, auf einer Seite „Notes“ nach END (als Text: Beuks Word-Export schreibt keine Word-Fußnoten)",
+        "ms.outH": "Weggelassen",
+        "ms.out.typeset": "Der Satz des Buches: Thema, Schriften, Initialen, Ornamente, Kolumnentitel und Seitengestaltung",
+        "ms.out.front": "{name} (Titelei)",
+        "ms.out.back": "{name} (Anhang)",
+        "ms.out.pictures": "Bilder: {pictures} (Bilder im Text mit ihren Bildunterschriften, Tafeln, Hintergründe und Szenenbilder)",
+        "ms.warnH": "Bevor Sie es senden",
+        "ms.warn.noTitle": "Das Buch hat keinen Titel.",
+        "ms.warn.noName": "Kein bürgerlicher Name — das Titelblatt beginnt nur mit der Wortzahl.",
+        "ms.warn.noReach": "Keine E-Mail, kein Telefon, keine Anschrift — eine Agentur könnte Sie nicht erreichen.",
+        "ms.warn.noByline": "Kein Autorenname — tragen Sie hier ein Pseudonym oder in den Projekteinstellungen den Autor ein.",
+        "ms.warn.lang": "Die festen Wörter des Manuskripts (about … words, by, Chapter, END, Notes) sind englisch, die Sprache des Formats.",
+        "ms.warn.none": "Nach Beuks Prüfungen fehlt nichts.",
+        "ms.pdfNote": "Nur Word: Wenn ein Markt ein PDF verlangt, öffnen Sie die Datei in Word, Google Docs oder LibreOffice und speichern Sie sie als PDF.",
+        "ms.download": "Manuskript herunterladen (.docx)",
+        "ms.building": "Wird erstellt…",
+        "ms.done": "Einsendungsmanuskript heruntergeladen — {sections} Abschnitte, etwa {words} Wörter",
+        "ms.fail": "Manuskript-Export fehlgeschlagen: {msg}",
+        "ms.empty": "Noch nichts einzusenden — das Buch hat keine Kapitel.",
+        "ms.close": "Schließen"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "ms.secH": "Manoscritto per l'invio (.docx)",
+        "ms.secP": "Formato standard del manoscritto per proporsi ad agenti ed editori: un frontespizio con i tuoi recapiti e il numero di parole, Times New Roman 12 pt, interlinea doppia, margini di un pollice, ogni capitolo su una nuova pagina e un'intestazione Cognome / TITOLO / pagina. Non entra nulla dell'impaginazione del libro.",
+        "ms.open": "Prepara il manoscritto per l'invio",
+        "ms.title": "Manoscritto per l'invio",
+        "ms.sub": "Formato standard del manoscritto (la convenzione Shunn): corpo 12 pt, interlinea doppia, margini di un pollice, rientro di prima riga di mezzo pollice, testo allineato a sinistra senza sillabazione; un frontespizio con i recapiti in alto a sinistra e il numero di parole in alto a destra, il titolo in maiuscolo a metà pagina; ogni capitolo su una nuova pagina, a un terzo dell'altezza; # per un cambio di scena ed END dopo l'ultimo capitolo.",
+        "ms.contactH": "I tuoi recapiti",
+        "ms.legalName": "Nome legale",
+        "ms.address": "Indirizzo postale",
+        "ms.phone": "Telefono",
+        "ms.email": "Email",
+        "ms.byline": "Firma (pseudonimo)",
+        "ms.bylinePh": "L'autore del libro",
+        "ms.surname": "Cognome nell'intestazione",
+        "ms.contactNote": "I campi vuoti non compaiono sul frontespizio; Beuk non li compila mai. Questi dati sono salvati con questo libro e compaiono solo sul frontespizio.",
+        "ms.pageH": "Pagina",
+        "ms.paper": "Carta",
+        "ms.paper.letter": "Lettera USA (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Carattere",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Enfasi",
+        "ms.it.italic": "Il corsivo resta corsivo",
+        "ms.it.underline": "Sottolineato al suo posto (mercati tradizionali)",
+        "ms.previewH": "Frontespizio",
+        "ms.headNote": "Ogni pagina del testo porta l'intestazione in alto a destra; il frontespizio non ne ha, e la prima pagina del testo è la pagina 1.",
+        "ms.countH": "Numero di parole",
+        "ms.count": "Circa {rounded} parole sul frontespizio — {exact} contate in {sections} sezioni del testo.",
+        "ms.countChars": "Circa {rounded} caratteri sul frontespizio — {exact} contati in {sections} sezioni del testo.",
+        "ms.rule": "Arrotondato al migliaio più vicino da 10.000 parole in su, al centinaio più vicino sotto.",
+        "ms.inH": "Nel manoscritto",
+        "ms.in.title": "Frontespizio: recapiti, numero di parole, titolo e firma",
+        "ms.in.sections": "Sezioni del testo: {sections}, ciascuna su una nuova pagina",
+        "ms.in.end": "END, centrato dopo l'ultima sezione",
+        "ms.in.notes": "Note: {notes}, su una pagina di note dopo END (come testo: l'esportazione Word di Beuk non scrive note a piè di pagina di Word)",
+        "ms.outH": "Lasciato fuori",
+        "ms.out.typeset": "L'impaginazione del libro: tema, caratteri, capilettera, ornamenti, testatine e grafica di pagina",
+        "ms.out.front": "{name} (pagine preliminari)",
+        "ms.out.back": "{name} (pagine finali)",
+        "ms.out.pictures": "Immagini: {pictures} (immagini nel testo con le didascalie, tavole, sfondi e immagini di scena)",
+        "ms.warnH": "Prima di inviarlo",
+        "ms.warn.noTitle": "Il libro non ha un titolo.",
+        "ms.warn.noName": "Nessun nome legale: il frontespizio comincia con il solo numero di parole.",
+        "ms.warn.noReach": "Nessuna email, telefono o indirizzo: un agente non avrebbe modo di contattarti.",
+        "ms.warn.noByline": "Nessuna firma: aggiungi qui uno pseudonimo o l'autore nelle impostazioni del progetto.",
+        "ms.warn.lang": "Le parole fisse del manoscritto (about … words, by, Chapter, END, Notes) sono in inglese, la lingua del formato.",
+        "ms.warn.none": "Non manca nulla secondo i controlli di Beuk.",
+        "ms.pdfNote": "Solo Word: se un mercato chiede un PDF, apri il file in Word, Google Docs o LibreOffice e salvalo come PDF.",
+        "ms.download": "Scarica il manoscritto (.docx)",
+        "ms.building": "Creazione…",
+        "ms.done": "Manoscritto per l'invio scaricato — {sections} sezioni, circa {words} parole",
+        "ms.fail": "Esportazione del manoscritto non riuscita: {msg}",
+        "ms.empty": "Ancora nulla da inviare: il libro non ha capitoli.",
+        "ms.close": "Chiudi"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "ms.secH": "Manuscrito para submissão (.docx)",
+        "ms.secP": "Formato padrão de manuscrito para enviar a agentes e editoras: folha de rosto com os seus contactos e o número de palavras, Times New Roman 12 pt, espaço duplo, margens de uma polegada, cada capítulo numa página nova e um cabeçalho Apelido / TÍTULO / página. Nada da paginação do livro entra.",
+        "ms.open": "Preparar manuscrito para submissão",
+        "ms.title": "Manuscrito para submissão",
+        "ms.sub": "Formato padrão de manuscrito (a convenção Shunn): letra de 12 pt, espaço duplo, margens de uma polegada, avanço de primeira linha de meia polegada, alinhado à esquerda, sem hifenização; folha de rosto com os contactos no canto superior esquerdo e o número de palavras no superior direito, o título em maiúsculas a meio da página; cada capítulo numa página nova, a um terço da altura; # para uma mudança de cena e END depois do último capítulo.",
+        "ms.contactH": "Os seus contactos",
+        "ms.legalName": "Nome legal",
+        "ms.address": "Morada",
+        "ms.phone": "Telefone",
+        "ms.email": "E-mail",
+        "ms.byline": "Assinatura (pseudónimo)",
+        "ms.bylinePh": "O autor do livro",
+        "ms.surname": "Apelido no cabeçalho",
+        "ms.contactNote": "Os campos vazios ficam fora da folha de rosto; o Beuk nunca os preenche. Estes dados são guardados com este livro e só aparecem na folha de rosto.",
+        "ms.pageH": "Página",
+        "ms.paper": "Papel",
+        "ms.paper.letter": "Carta EUA (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Tipo de letra",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Ênfase",
+        "ms.it.italic": "O itálico mantém-se itálico",
+        "ms.it.underline": "Sublinhado em vez disso (mercados tradicionais)",
+        "ms.previewH": "Folha de rosto",
+        "ms.headNote": "Cada página do texto leva o cabeçalho no canto superior direito; a folha de rosto não leva nenhum, e a primeira página do texto é a página 1.",
+        "ms.countH": "Número de palavras",
+        "ms.count": "Cerca de {rounded} palavras na folha de rosto — {exact} contadas em {sections} secções do texto.",
+        "ms.countChars": "Cerca de {rounded} caracteres na folha de rosto — {exact} contados em {sections} secções do texto.",
+        "ms.rule": "Arredondado ao milhar mais próximo a partir de 10 000 palavras e à centena mais próxima abaixo disso.",
+        "ms.inH": "No manuscrito",
+        "ms.in.title": "Folha de rosto: contactos, número de palavras, título e assinatura",
+        "ms.in.sections": "Secções do texto: {sections}, cada uma numa página nova",
+        "ms.in.end": "END, centrado depois da última secção",
+        "ms.in.notes": "Notas: {notes}, numa página de notas depois de END (como texto: a exportação Word do Beuk não escreve notas de rodapé do Word)",
+        "ms.outH": "Fica de fora",
+        "ms.out.typeset": "A paginação do livro: tema, tipos de letra, capitulares, ornamentos, cabeçalhos correntes e desenho da página",
+        "ms.out.front": "{name} (páginas preliminares)",
+        "ms.out.back": "{name} (páginas finais)",
+        "ms.out.pictures": "Imagens: {pictures} (imagens no texto com as legendas, estampas, fundos e imagens de cena)",
+        "ms.warnH": "Antes de enviar",
+        "ms.warn.noTitle": "O livro não tem título.",
+        "ms.warn.noName": "Sem nome legal: a folha de rosto começa só com o número de palavras.",
+        "ms.warn.noReach": "Sem e-mail, telefone nem morada: um agente não teria como contactá-lo.",
+        "ms.warn.noByline": "Sem assinatura: acrescente aqui um pseudónimo ou o autor nas definições do projeto.",
+        "ms.warn.lang": "As palavras fixas do manuscrito (about … words, by, Chapter, END, Notes) estão em inglês, a língua do formato.",
+        "ms.warn.none": "Não falta nada segundo as verificações do Beuk.",
+        "ms.pdfNote": "Só Word: se um mercado pedir PDF, abra o ficheiro no Word, Google Docs ou LibreOffice e guarde-o como PDF.",
+        "ms.download": "Transferir manuscrito (.docx)",
+        "ms.building": "A criar…",
+        "ms.done": "Manuscrito para submissão transferido — {sections} secções, cerca de {words} palavras",
+        "ms.fail": "A exportação do manuscrito falhou: {msg}",
+        "ms.empty": "Ainda nada para submeter: o livro não tem capítulos.",
+        "ms.close": "Fechar"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "ms.secH": "Inzendmanuscript (.docx)",
+        "ms.secP": "Standaard manuscriptopmaak voor inzendingen bij agenten en uitgevers: een titelpagina met je contactgegevens en het aantal woorden, Times New Roman 12 pt, dubbele regelafstand, marges van een inch, elk hoofdstuk op een nieuwe pagina en een koptekst Achternaam / TITEL / pagina. Niets van de opmaak van het boek gaat mee.",
+        "ms.open": "Inzendmanuscript voorbereiden",
+        "ms.title": "Inzendmanuscript",
+        "ms.sub": "Standaard manuscriptopmaak (de Shunn-conventie): 12 pt letters, dubbele regelafstand, marges van een inch, eerste regel een halve inch ingesprongen, links uitgelijnd zonder afbreken; een titelpagina met je contactgegevens linksboven en het aantal woorden rechtsboven, de titel in hoofdletters halverwege; elk hoofdstuk op een nieuwe pagina, op een derde van de hoogte; # voor een scènewissel en END na het laatste hoofdstuk.",
+        "ms.contactH": "Je contactgegevens",
+        "ms.legalName": "Wettelijke naam",
+        "ms.address": "Postadres",
+        "ms.phone": "Telefoon",
+        "ms.email": "E-mail",
+        "ms.byline": "Auteursnaam (pseudoniem)",
+        "ms.bylinePh": "De auteur van het boek",
+        "ms.surname": "Achternaam in de koptekst",
+        "ms.contactNote": "Lege velden blijven van de titelpagina weg; Beuk vult ze nooit in. Deze gegevens worden met dit boek bewaard en staan alleen op de titelpagina.",
+        "ms.pageH": "Pagina",
+        "ms.paper": "Papier",
+        "ms.paper.letter": "US Letter (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Lettertype",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Nadruk",
+        "ms.it.italic": "Cursief blijft cursief",
+        "ms.it.underline": "In plaats daarvan onderstrepen (traditionele markten)",
+        "ms.previewH": "Titelpagina",
+        "ms.headNote": "Elke pagina van de tekst draagt de koptekst rechtsboven; de titelpagina geen, en de eerste pagina van de tekst is pagina 1.",
+        "ms.countH": "Aantal woorden",
+        "ms.count": "Ongeveer {rounded} woorden op de titelpagina — {exact} geteld in {sections} delen van de tekst.",
+        "ms.countChars": "Ongeveer {rounded} tekens op de titelpagina — {exact} geteld in {sections} delen van de tekst.",
+        "ms.rule": "Vanaf 10.000 woorden afgerond op het dichtstbijzijnde duizendtal, daaronder op het dichtstbijzijnde honderdtal.",
+        "ms.inH": "In het manuscript",
+        "ms.in.title": "Titelpagina: contactgegevens, aantal woorden, titel en auteursnaam",
+        "ms.in.sections": "Delen van de tekst: {sections}, elk op een nieuwe pagina",
+        "ms.in.end": "END, gecentreerd na het laatste deel",
+        "ms.in.notes": "Noten: {notes}, op een notenpagina na END (als tekst: de Word-export van Beuk schrijft geen Word-voetnoten)",
+        "ms.outH": "Weggelaten",
+        "ms.out.typeset": "De opmaak van het boek: thema, lettertypen, initialen, ornamenten, kopregels en paginaontwerp",
+        "ms.out.front": "{name} (voorwerk)",
+        "ms.out.back": "{name} (nawerk)",
+        "ms.out.pictures": "Afbeeldingen: {pictures} (afbeeldingen in de tekst met hun bijschriften, platen, achtergronden en scèneafbeeldingen)",
+        "ms.warnH": "Voordat je het verstuurt",
+        "ms.warn.noTitle": "Het boek heeft geen titel.",
+        "ms.warn.noName": "Geen wettelijke naam — de titelpagina begint alleen met het aantal woorden.",
+        "ms.warn.noReach": "Geen e-mail, telefoon of adres — een agent kan je niet bereiken.",
+        "ms.warn.noByline": "Geen auteursnaam — vul hier een pseudoniem in of de auteur in de projectinstellingen.",
+        "ms.warn.lang": "De vaste woorden van het manuscript (about … words, by, Chapter, END, Notes) zijn Engels, de taal van de opmaak.",
+        "ms.warn.none": "Niets ontbreekt volgens de controles van Beuk.",
+        "ms.pdfNote": "Alleen Word: vraagt een markt om een pdf, open het bestand dan in Word, Google Docs of LibreOffice en sla het op als pdf.",
+        "ms.download": "Manuscript downloaden (.docx)",
+        "ms.building": "Bezig…",
+        "ms.done": "Inzendmanuscript gedownload — {sections} delen, ongeveer {words} woorden",
+        "ms.fail": "Manuscriptexport mislukt: {msg}",
+        "ms.empty": "Nog niets in te zenden — het boek heeft geen hoofdstukken.",
+        "ms.close": "Sluiten"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "ms.secH": "Maszynopis do wysyłki (.docx)",
+        "ms.secP": "Standardowy format maszynopisu dla agentów i wydawców: strona tytułowa z danymi kontaktowymi i liczbą słów, Times New Roman 12 pt, podwójna interlinia, marginesy jednego cala, każdy rozdział na nowej stronie i nagłówek Nazwisko / TYTUŁ / strona. Nic ze składu książki tu nie trafia.",
+        "ms.open": "Przygotuj maszynopis do wysyłki",
+        "ms.title": "Maszynopis do wysyłki",
+        "ms.sub": "Standardowy format maszynopisu (konwencja Shunna): pismo 12 pt, podwójna interlinia, marginesy jednego cala, wcięcie pierwszego wiersza pół cala, wyrównanie do lewej, bez przenoszenia wyrazów; strona tytułowa z danymi kontaktowymi w lewym górnym rogu i liczbą słów w prawym, tytuł wersalikami w połowie strony; każdy rozdział na nowej stronie, na jednej trzeciej wysokości; # jako zmiana sceny i END po ostatnim rozdziale.",
+        "ms.contactH": "Twoje dane kontaktowe",
+        "ms.legalName": "Imię i nazwisko",
+        "ms.address": "Adres pocztowy",
+        "ms.phone": "Telefon",
+        "ms.email": "E-mail",
+        "ms.byline": "Podpis (pseudonim)",
+        "ms.bylinePh": "Autor książki",
+        "ms.surname": "Nazwisko w nagłówku",
+        "ms.contactNote": "Puste pola nie trafiają na stronę tytułową; Beuk nigdy ich nie uzupełnia. Te dane są zapisywane z tą książką i pojawiają się tylko na stronie tytułowej.",
+        "ms.pageH": "Strona",
+        "ms.paper": "Papier",
+        "ms.paper.letter": "US Letter (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Krój pisma",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Wyróżnienie",
+        "ms.it.italic": "Kursywa zostaje kursywą",
+        "ms.it.underline": "Zamiast tego podkreślenie (tradycyjne rynki)",
+        "ms.previewH": "Strona tytułowa",
+        "ms.headNote": "Każda strona tekstu ma nagłówek w prawym górnym rogu; strona tytułowa nie ma żadnego, a pierwsza strona tekstu to strona 1.",
+        "ms.countH": "Liczba słów",
+        "ms.count": "Około {rounded} słów na stronie tytułowej — {exact} policzonych w {sections} częściach tekstu.",
+        "ms.countChars": "Około {rounded} znaków na stronie tytułowej — {exact} policzonych w {sections} częściach tekstu.",
+        "ms.rule": "Od 10 000 słów zaokrąglone do najbliższego tysiąca, poniżej do najbliższej setki.",
+        "ms.inH": "W maszynopisie",
+        "ms.in.title": "Strona tytułowa: dane kontaktowe, liczba słów, tytuł i podpis",
+        "ms.in.sections": "Części tekstu: {sections}, każda na nowej stronie",
+        "ms.in.end": "END, wyśrodkowane po ostatniej części",
+        "ms.in.notes": "Przypisy: {notes}, na stronie przypisów po END (jako tekst: eksport Worda w Beuk nie tworzy przypisów dolnych Worda)",
+        "ms.outH": "Pominięte",
+        "ms.out.typeset": "Skład książki: motyw, kroje pisma, inicjały, ozdobniki, żywa pagina i projekt strony",
+        "ms.out.front": "{name} (strony przedtytułowe)",
+        "ms.out.back": "{name} (strony końcowe)",
+        "ms.out.pictures": "Ilustracje: {pictures} (ilustracje w tekście z podpisami, plansze, tła i obrazy scen)",
+        "ms.warnH": "Zanim wyślesz",
+        "ms.warn.noTitle": "Książka nie ma tytułu.",
+        "ms.warn.noName": "Brak imienia i nazwiska — strona tytułowa zaczyna się samą liczbą słów.",
+        "ms.warn.noReach": "Brak e-maila, telefonu i adresu — agent nie miałby jak się z tobą skontaktować.",
+        "ms.warn.noByline": "Brak podpisu — dodaj tu pseudonim albo autora w ustawieniach projektu.",
+        "ms.warn.lang": "Stałe słowa maszynopisu (about … words, by, Chapter, END, Notes) są po angielsku, w języku tego formatu.",
+        "ms.warn.none": "Według kontroli Beuk niczego nie brakuje.",
+        "ms.pdfNote": "Tylko Word: jeśli rynek chce PDF, otwórz plik w Wordzie, Dokumentach Google lub LibreOffice i zapisz jako PDF.",
+        "ms.download": "Pobierz maszynopis (.docx)",
+        "ms.building": "Tworzenie…",
+        "ms.done": "Maszynopis do wysyłki pobrany — części: {sections}, około {words} słów",
+        "ms.fail": "Eksport maszynopisu nie powiódł się: {msg}",
+        "ms.empty": "Jeszcze nie ma czego wysłać — książka nie ma rozdziałów.",
+        "ms.close": "Zamknij"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "ms.secH": "Рукопись для подачи (.docx)",
+        "ms.secP": "Стандартный формат рукописи для литературных агентов и издательств: титульная страница с вашими контактами и числом слов, Times New Roman 12 pt, двойной интервал, поля в один дюйм, каждая глава с новой страницы и колонтитул Фамилия / НАЗВАНИЕ / страница. Ничего из вёрстки книги сюда не попадает.",
+        "ms.open": "Подготовить рукопись для подачи",
+        "ms.title": "Рукопись для подачи",
+        "ms.sub": "Стандартный формат рукописи (соглашение Шанна): шрифт 12 pt, двойной интервал, поля в один дюйм, абзацный отступ в полдюйма, выключка влево без переносов; титульная страница с контактами слева вверху и числом слов справа вверху, название прописными посередине страницы; каждая глава с новой страницы, на трети высоты; # как смена сцены и END после последней главы.",
+        "ms.contactH": "Ваши контакты",
+        "ms.legalName": "Имя по документам",
+        "ms.address": "Почтовый адрес",
+        "ms.phone": "Телефон",
+        "ms.email": "Эл. почта",
+        "ms.byline": "Подпись (псевдоним)",
+        "ms.bylinePh": "Автор книги",
+        "ms.surname": "Фамилия в колонтитуле",
+        "ms.contactNote": "Пустые поля не попадают на титульную страницу; Beuk никогда их не заполняет. Эти данные сохраняются с этой книгой и печатаются только на титульной странице.",
+        "ms.pageH": "Страница",
+        "ms.paper": "Бумага",
+        "ms.paper.letter": "US Letter (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 мм)",
+        "ms.font": "Шрифт",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Выделение",
+        "ms.it.italic": "Курсив остаётся курсивом",
+        "ms.it.underline": "Подчёркивание вместо курсива (традиционные рынки)",
+        "ms.previewH": "Титульная страница",
+        "ms.headNote": "На каждой странице текста колонтитул справа вверху; на титульной его нет, а первая страница текста — страница 1.",
+        "ms.countH": "Число слов",
+        "ms.count": "Около {rounded} слов на титульной странице — {exact} посчитано в частях текста: {sections}.",
+        "ms.countChars": "Около {rounded} знаков на титульной странице — {exact} посчитано в частях текста: {sections}.",
+        "ms.rule": "От 10 000 слов округляется до ближайшей тысячи, ниже — до ближайшей сотни.",
+        "ms.inH": "В рукописи",
+        "ms.in.title": "Титульная страница: контакты, число слов, название и подпись",
+        "ms.in.sections": "Части текста: {sections}, каждая с новой страницы",
+        "ms.in.end": "END по центру после последней части",
+        "ms.in.notes": "Примечания: {notes}, на странице примечаний после END (текстом: экспорт Beuk в Word не создаёт сносок Word)",
+        "ms.outH": "Не входит",
+        "ms.out.typeset": "Вёрстка книги: тема, шрифты, буквицы, орнаменты, колонтитулы и дизайн страниц",
+        "ms.out.front": "{name} (вступительная часть)",
+        "ms.out.back": "{name} (заключительная часть)",
+        "ms.out.pictures": "Изображения: {pictures} (изображения в тексте с подписями, вклейки, фоны и картинки сцен)",
+        "ms.warnH": "Перед отправкой",
+        "ms.warn.noTitle": "У книги нет названия.",
+        "ms.warn.noName": "Нет имени по документам — титульная страница начинается только с числа слов.",
+        "ms.warn.noReach": "Нет почты, телефона или адреса — агенту не удастся с вами связаться.",
+        "ms.warn.noByline": "Нет подписи — укажите здесь псевдоним или автора в настройках проекта.",
+        "ms.warn.lang": "Постоянные слова рукописи (about … words, by, Chapter, END, Notes) — английские, это язык самого формата.",
+        "ms.warn.none": "По проверкам Beuk ничего не упущено.",
+        "ms.pdfNote": "Только Word: если нужен PDF, откройте файл в Word, Google Документах или LibreOffice и сохраните как PDF.",
+        "ms.download": "Скачать рукопись (.docx)",
+        "ms.building": "Создание…",
+        "ms.done": "Рукопись для подачи скачана — частей: {sections}, около {words} слов",
+        "ms.fail": "Не удалось экспортировать рукопись: {msg}",
+        "ms.empty": "Пока нечего подавать — в книге нет глав.",
+        "ms.close": "Закрыть"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "ms.secH": "Gönderim müsveddesi (.docx)",
+        "ms.secP": "Ajanslara ve yayınevlerine başvuru için standart müsvedde biçimi: iletişim bilgilerinizi ve kelime sayısını taşıyan bir başlık sayfası, Times New Roman 12 pt, çift satır aralığı, bir inçlik kenar boşlukları, her bölüm yeni sayfada ve Soyadı / BAŞLIK / sayfa üst bilgisi. Kitabın dizgisinden hiçbir şey girmez.",
+        "ms.open": "Gönderim müsveddesini hazırla",
+        "ms.title": "Gönderim müsveddesi",
+        "ms.sub": "Standart müsvedde biçimi (Shunn kuralı): 12 pt yazı, çift satır aralığı, bir inçlik kenar boşlukları, yarım inçlik ilk satır girintisi, sola hizalı ve hecelemesiz; sol üstte iletişim bilgileriniz, sağ üstte kelime sayısı ve sayfanın ortasında büyük harfle başlık bulunan bir başlık sayfası; her bölüm yeni sayfada, üçte bir aşağıda; sahne geçişi için # ve son bölümden sonra END.",
+        "ms.contactH": "İletişim bilgileriniz",
+        "ms.legalName": "Yasal ad",
+        "ms.address": "Posta adresi",
+        "ms.phone": "Telefon",
+        "ms.email": "E-posta",
+        "ms.byline": "İmza (takma ad)",
+        "ms.bylinePh": "Kitabın yazarı",
+        "ms.surname": "Üst bilgideki soyadı",
+        "ms.contactNote": "Boş alanlar başlık sayfasına girmez; Beuk onları asla doldurmaz. Bu bilgiler bu kitapla birlikte kaydedilir ve yalnızca başlık sayfasında görünür.",
+        "ms.pageH": "Sayfa",
+        "ms.paper": "Kâğıt",
+        "ms.paper.letter": "US Letter (8,5 × 11 in)",
+        "ms.paper.a4": "A4 (210 × 297 mm)",
+        "ms.font": "Yazı tipi",
+        "ms.font.times": "Times New Roman, 12 pt",
+        "ms.font.courier": "Courier New, 12 pt",
+        "ms.italics": "Vurgu",
+        "ms.it.italic": "İtalik italik kalır",
+        "ms.it.underline": "Bunun yerine altı çizili (geleneksel pazarlar)",
+        "ms.previewH": "Başlık sayfası",
+        "ms.headNote": "Metnin her sayfasında sağ üstte üst bilgi bulunur; başlık sayfasında bulunmaz ve metnin ilk sayfası 1. sayfadır.",
+        "ms.countH": "Kelime sayısı",
+        "ms.count": "Başlık sayfasında yaklaşık {rounded} kelime — metnin {sections} bölümünde {exact} sayıldı.",
+        "ms.countChars": "Başlık sayfasında yaklaşık {rounded} karakter — metnin {sections} bölümünde {exact} sayıldı.",
+        "ms.rule": "10.000 kelime ve üzerinde en yakın bine, altında en yakın yüze yuvarlanır.",
+        "ms.inH": "Müsveddede",
+        "ms.in.title": "Başlık sayfası: iletişim bilgileri, kelime sayısı, başlık ve imza",
+        "ms.in.sections": "Metnin bölümleri: {sections}, her biri yeni sayfada",
+        "ms.in.end": "Son bölümden sonra ortalanmış END",
+        "ms.in.notes": "Notlar: {notes}, END'den sonra bir notlar sayfasında (metin olarak: Beuk'un Word dışa aktarımı Word dipnotu yazmaz)",
+        "ms.outH": "Dışarıda kalanlar",
+        "ms.out.typeset": "Kitabın dizgisi: tema, yazı tipleri, büyük ilk harfler, süslemeler, sayfa başlıkları ve sayfa tasarımı",
+        "ms.out.front": "{name} (ön kısım)",
+        "ms.out.back": "{name} (arka kısım)",
+        "ms.out.pictures": "Görseller: {pictures} (metindeki görseller ve alt yazıları, levhalar, arka planlar ve sahne görselleri)",
+        "ms.warnH": "Göndermeden önce",
+        "ms.warn.noTitle": "Kitabın başlığı yok.",
+        "ms.warn.noName": "Yasal ad yok — başlık sayfası yalnızca kelime sayısıyla başlıyor.",
+        "ms.warn.noReach": "E-posta, telefon ya da adres yok — bir ajans size ulaşamaz.",
+        "ms.warn.noByline": "İmza yok — buraya bir takma ad ya da proje ayarlarına yazarı ekleyin.",
+        "ms.warn.lang": "Müsveddenin sabit kelimeleri (about … words, by, Chapter, END, Notes) biçimin kendi dili olan İngilizcedir.",
+        "ms.warn.none": "Beuk'un yaptığı denetimlere göre eksik yok.",
+        "ms.pdfNote": "Yalnızca Word: bir pazar PDF isterse dosyayı Word, Google Dokümanlar ya da LibreOffice'te açıp PDF olarak kaydedin.",
+        "ms.download": "Müsveddeyi indir (.docx)",
+        "ms.building": "Oluşturuluyor…",
+        "ms.done": "Gönderim müsveddesi indirildi — {sections} bölüm, yaklaşık {words} kelime",
+        "ms.fail": "Müsvedde dışa aktarılamadı: {msg}",
+        "ms.empty": "Henüz gönderilecek bir şey yok — kitapta bölüm yok.",
+        "ms.close": "Kapat"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "ms.secH": "مخطوطة للتقديم (.docx)",
+        "ms.secP": "الصيغة القياسية للمخطوطات عند مراسلة الوكلاء الأدبيين ودور النشر: صفحة عنوان تحمل بيانات الاتصال وعدد الكلمات، بخط Times New Roman بحجم 12 نقطة، بتباعد مزدوج، وهوامش بعرض بوصة، وكل فصل في صفحة جديدة، وترويسة «اسم العائلة / العنوان / رقم الصفحة». لا يدخلها شيء من تنضيد الكتاب.",
+        "ms.open": "إعداد مخطوطة للتقديم",
+        "ms.title": "مخطوطة للتقديم",
+        "ms.sub": "الصيغة القياسية للمخطوطات (عُرف شَن): خط بحجم 12 نقطة، تباعد مزدوج، هوامش بعرض بوصة، إزاحة نصف بوصة لأول السطر، محاذاة بلا ضبط ولا تقسيم للكلمات؛ صفحة عنوان فيها بيانات الاتصال أعلى اليسار وعدد الكلمات أعلى اليمين، والعنوان بأحرف كبيرة في منتصف الصفحة؛ كل فصل في صفحة جديدة على ثلث ارتفاعها؛ ‎#‎ لفاصل المشهد وEND بعد الفصل الأخير.",
+        "ms.contactH": "بيانات الاتصال بك",
+        "ms.legalName": "الاسم القانوني",
+        "ms.address": "العنوان البريدي",
+        "ms.phone": "الهاتف",
+        "ms.email": "البريد الإلكتروني",
+        "ms.byline": "اسم التوقيع (الاسم المستعار)",
+        "ms.bylinePh": "مؤلف الكتاب",
+        "ms.surname": "اسم العائلة في الترويسة",
+        "ms.contactNote": "الحقول الفارغة لا تظهر في صفحة العنوان، ولا يملؤها Beuk أبدًا. تُحفظ هذه البيانات مع هذا الكتاب ولا تظهر إلا في صفحة العنوان.",
+        "ms.pageH": "الصفحة",
+        "ms.paper": "الورق",
+        "ms.paper.letter": "‏US Letter (8.5 × 11 بوصة)",
+        "ms.paper.a4": "‏A4 (210 × 297 مم)",
+        "ms.font": "الخط",
+        "ms.font.times": "‏Times New Roman، 12 نقطة",
+        "ms.font.courier": "‏Courier New، 12 نقطة",
+        "ms.italics": "التوكيد",
+        "ms.it.italic": "يبقى المائل مائلًا",
+        "ms.it.underline": "تسطير بدلًا منه (الأسواق التقليدية)",
+        "ms.previewH": "صفحة العنوان",
+        "ms.headNote": "تحمل كل صفحة من النص الترويسة أعلى اليمين؛ وصفحة العنوان بلا ترويسة، وأول صفحة من النص هي الصفحة 1.",
+        "ms.countH": "عدد الكلمات",
+        "ms.count": "نحو {rounded} كلمة في صفحة العنوان — عُدّت {exact} في أقسام النص: {sections}.",
+        "ms.countChars": "نحو {rounded} حرف في صفحة العنوان — عُدّت {exact} في أقسام النص: {sections}.",
+        "ms.rule": "يُقرَّب إلى أقرب ألف من 10٬000 كلمة فأكثر، وإلى أقرب مئة دون ذلك.",
+        "ms.inH": "في المخطوطة",
+        "ms.in.title": "صفحة العنوان: بيانات الاتصال وعدد الكلمات والعنوان واسم التوقيع",
+        "ms.in.sections": "أقسام النص: {sections}، كل منها في صفحة جديدة",
+        "ms.in.end": "‏END في الوسط بعد القسم الأخير",
+        "ms.in.notes": "الحواشي: {notes}، في صفحة حواشٍ بعد END (نصًّا: تصدير Beuk إلى Word لا يكتب حواشي Word السفلية)",
+        "ms.outH": "ما يُستبعد",
+        "ms.out.typeset": "تنضيد الكتاب: السمة والخطوط والأحرف الاستهلالية والزخارف والترويسات وتصميم الصفحات",
+        "ms.out.front": "{name} (الصفحات التمهيدية)",
+        "ms.out.back": "{name} (الصفحات الختامية)",
+        "ms.out.pictures": "الصور: {pictures} (صور النص مع تعليقاتها، واللوحات، والخلفيات، وصور المشاهد)",
+        "ms.warnH": "قبل أن ترسلها",
+        "ms.warn.noTitle": "ليس للكتاب عنوان.",
+        "ms.warn.noName": "لا اسم قانوني — تبدأ صفحة العنوان بعدد الكلمات وحده.",
+        "ms.warn.noReach": "لا بريد ولا هاتف ولا عنوان — لن يجد الوكيل طريقة للتواصل معك.",
+        "ms.warn.noByline": "لا اسم توقيع — أضف اسمًا مستعارًا هنا أو المؤلف في إعدادات المشروع.",
+        "ms.warn.lang": "الكلمات الثابتة في المخطوطة (about … words وby وChapter وEND وNotes) بالإنجليزية، لغة هذه الصيغة نفسها.",
+        "ms.warn.none": "لا شيء ناقص بحسب فحوص Beuk.",
+        "ms.pdfNote": "‏Word فقط: إن طلبت سوقٌ ملف PDF فافتح الملف في Word أو مستندات Google أو LibreOffice واحفظه بصيغة PDF.",
+        "ms.download": "تنزيل المخطوطة (.docx)",
+        "ms.building": "جارٍ الإنشاء…",
+        "ms.done": "نُزّلت مخطوطة التقديم — الأقسام: {sections}، نحو {words} كلمة",
+        "ms.fail": "تعذّر تصدير المخطوطة: {msg}",
+        "ms.empty": "لا شيء للتقديم بعد — ليس في الكتاب فصول.",
+        "ms.close": "إغلاق"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "ms.secH": "投稿用原稿（.docx）",
+        "ms.secP": "エージェントや出版社への投稿用の標準原稿書式です。連絡先と語数を載せた扉ページ、Times New Roman 12 pt、ダブルスペース、1インチの余白、章ごとに改ページ、「姓 / タイトル / ページ」のヘッダー。本の組版は一切含みません。",
+        "ms.open": "投稿用原稿を準備",
+        "ms.title": "投稿用原稿",
+        "ms.sub": "標準原稿書式（Shunn方式）：12 pt、ダブルスペース、1インチの余白、0.5インチの字下げ、左揃え・ハイフネーションなし。扉ページは左上に連絡先、右上に語数、ページ中央に大文字のタイトル。各章は新しいページの上から3分の1の位置から始まり、場面転換は #、最終章のあとに END。",
+        "ms.contactH": "連絡先",
+        "ms.legalName": "本名",
+        "ms.address": "住所",
+        "ms.phone": "電話番号",
+        "ms.email": "メール",
+        "ms.byline": "著者名（ペンネーム）",
+        "ms.bylinePh": "本の著者",
+        "ms.surname": "ヘッダーの姓",
+        "ms.contactNote": "空欄の項目は扉ページに載りません。Beuk が補うことはありません。これらの情報はこの本と一緒に保存され、扉ページにだけ載ります。",
+        "ms.pageH": "ページ",
+        "ms.paper": "用紙",
+        "ms.paper.letter": "USレター（8.5 × 11 in）",
+        "ms.paper.a4": "A4（210 × 297 mm）",
+        "ms.font": "書体",
+        "ms.font.times": "Times New Roman、12 pt",
+        "ms.font.courier": "Courier New、12 pt",
+        "ms.italics": "強調",
+        "ms.it.italic": "イタリックはそのまま",
+        "ms.it.underline": "代わりに下線（従来型の投稿先）",
+        "ms.previewH": "扉ページ",
+        "ms.headNote": "本文の各ページの右上にヘッダーが入ります。扉ページには入らず、本文の最初のページが1ページ目です。",
+        "ms.countH": "語数",
+        "ms.count": "扉ページには約 {rounded} 語 — 本文 {sections} 部分で {exact} 語を数えました。",
+        "ms.countChars": "扉ページには約 {rounded} 字 — 本文 {sections} 部分で {exact} 字を数えました。",
+        "ms.rule": "10,000語以上は1,000単位、それ未満は100単位で四捨五入します。",
+        "ms.inH": "原稿に含まれるもの",
+        "ms.in.title": "扉ページ：連絡先、語数、タイトル、著者名",
+        "ms.in.sections": "本文の部分：{sections}、それぞれ新しいページから",
+        "ms.in.end": "最後の部分のあとに中央揃えの END",
+        "ms.in.notes": "注：{notes}、END のあとの Notes ページに（テキストとして：Beuk の Word 書き出しは Word の脚注を作りません）",
+        "ms.outH": "含まれないもの",
+        "ms.out.typeset": "本の組版：テーマ、フォント、ドロップキャップ、飾り、柱、ページデザイン",
+        "ms.out.front": "{name}（前付け）",
+        "ms.out.back": "{name}（後付け）",
+        "ms.out.pictures": "画像：{pictures}（本文中の画像とキャプション、図版、背景、場面画像）",
+        "ms.warnH": "送る前に",
+        "ms.warn.noTitle": "本にタイトルがありません。",
+        "ms.warn.noName": "本名がありません。扉ページは語数だけで始まります。",
+        "ms.warn.noReach": "メール・電話・住所がありません。エージェントが連絡できません。",
+        "ms.warn.noByline": "著者名がありません。ここにペンネームを入れるか、プロジェクト設定で著者を入れてください。",
+        "ms.warn.lang": "原稿の定型の語（about … words、by、Chapter、END、Notes）は、この書式自体の言語である英語です。",
+        "ms.warn.none": "Beuk の確認では不足はありません。",
+        "ms.pdfNote": "Word のみ：PDF を求められたら、Word、Google ドキュメント、LibreOffice で開いて PDF として保存してください。",
+        "ms.download": "原稿をダウンロード（.docx）",
+        "ms.building": "作成中…",
+        "ms.done": "投稿用原稿をダウンロードしました — {sections} 部分、約 {words} 語",
+        "ms.fail": "原稿の書き出しに失敗しました：{msg}",
+        "ms.empty": "まだ投稿できるものがありません。本に章がありません。",
+        "ms.close": "閉じる"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "ms.secH": "投稿稿件（.docx）",
+        "ms.secP": "向文学经纪人和出版社投稿的标准稿件格式：带联系方式和字数的标题页，Times New Roman 12 磅，双倍行距，一英寸页边距，每章另起一页，页眉为“姓 / 标题 / 页码”。书的排版一概不带入。",
+        "ms.open": "准备投稿稿件",
+        "ms.title": "投稿稿件",
+        "ms.sub": "标准稿件格式（Shunn 约定）：12 磅字，双倍行距，一英寸页边距，首行缩进半英寸，左对齐，不断字；标题页左上为联系方式、右上为字数，标题大写置于页面中部；每章另起一页，从三分之一处开始；场景转换用 #，最后一章后为 END。",
+        "ms.contactH": "你的联系方式",
+        "ms.legalName": "法定姓名",
+        "ms.address": "通信地址",
+        "ms.phone": "电话",
+        "ms.email": "电子邮件",
+        "ms.byline": "署名（笔名）",
+        "ms.bylinePh": "本书作者",
+        "ms.surname": "页眉中的姓",
+        "ms.contactNote": "空白的栏目不会出现在标题页上，Beuk 从不代为填写。这些信息随本书保存，只出现在标题页上。",
+        "ms.pageH": "页面",
+        "ms.paper": "纸张",
+        "ms.paper.letter": "美国信纸（8.5 × 11 英寸）",
+        "ms.paper.a4": "A4（210 × 297 毫米）",
+        "ms.font": "字体",
+        "ms.font.times": "Times New Roman，12 磅",
+        "ms.font.courier": "Courier New，12 磅",
+        "ms.italics": "强调",
+        "ms.it.italic": "斜体保持斜体",
+        "ms.it.underline": "改用下划线（传统投稿方）",
+        "ms.previewH": "标题页",
+        "ms.headNote": "正文每页右上角都有页眉；标题页没有页眉，正文第一页为第 1 页。",
+        "ms.countH": "字数",
+        "ms.count": "标题页上约 {rounded} 词 —— 在正文 {sections} 个部分中数得 {exact}。",
+        "ms.countChars": "标题页上约 {rounded} 字 —— 在正文 {sections} 个部分中数得 {exact}。",
+        "ms.rule": "10,000 词及以上四舍五入到最接近的千位，以下到最接近的百位。",
+        "ms.inH": "稿件包含",
+        "ms.in.title": "标题页：联系方式、字数、标题和署名",
+        "ms.in.sections": "正文部分：{sections}，各自另起一页",
+        "ms.in.end": "最后一部分之后居中的 END",
+        "ms.in.notes": "注释：{notes}，放在 END 之后的 Notes 页（以文字形式：Beuk 的 Word 导出不生成 Word 脚注）",
+        "ms.outH": "不包含",
+        "ms.out.typeset": "书的排版：主题、字体、首字下沉、装饰、书眉和版面设计",
+        "ms.out.front": "{name}（前置部分）",
+        "ms.out.back": "{name}（后置部分）",
+        "ms.out.pictures": "图片：{pictures}（正文中的图片及其说明、插页、背景和场景图片）",
+        "ms.warnH": "发送之前",
+        "ms.warn.noTitle": "本书没有标题。",
+        "ms.warn.noName": "没有法定姓名 —— 标题页只以字数开头。",
+        "ms.warn.noReach": "没有电子邮件、电话或地址 —— 经纪人无法联系你。",
+        "ms.warn.noByline": "没有署名 —— 在此填写笔名，或在项目设置中填写作者。",
+        "ms.warn.lang": "稿件中的固定用语（about … words、by、Chapter、END、Notes）为英文，即该格式本身的语言。",
+        "ms.warn.none": "按 Beuk 的检查，没有缺漏。",
+        "ms.pdfNote": "仅 Word：如果投稿方要求 PDF，请用 Word、Google 文档或 LibreOffice 打开文件并另存为 PDF。",
+        "ms.download": "下载稿件（.docx）",
+        "ms.building": "正在生成…",
+        "ms.done": "投稿稿件已下载 —— {sections} 个部分，约 {words} 词",
+        "ms.fail": "稿件导出失败：{msg}",
+        "ms.empty": "还没有可投稿的内容 —— 本书没有章节。",
+        "ms.close": "关闭"
+      });
+      /* ==== /BEUK:manuscript ==== */
       /* ==== BEUK:imagelib ==== strings: removing a picture from the book's library — all 13 packs */
       Object.assign(UI_STRINGS.en, {
         "history.auto.imgremove": "Before removing a picture",
@@ -20700,7 +21472,7 @@
         s = s.replace(/\r\n?/g, "\n");
         s = holdContainerIndents(s);
         s = s.replace(/[ \t]+/g, " ");
-        s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,})[ \t]*$/gm, "***");
+        s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,}|#)[ \t]*$/gm, "***"); /* BEUK:manuscript — a lone "#" is standard manuscript format's scene break */
         s = s.replace(/[ \t]*\.\.\.([ \t]+)?/g, (m, trail) => "…" + (trail ? " " : ""));
         if (s.indexOf("\uE001") !== -1) s = s.replace(/\uE001/g, " ");
         s = s.replace(/---/g, "—").replace(/--/g, "—");
@@ -28601,7 +29373,7 @@
         let s = String(text == null ? "" : text);
         s = s.replace(/\r\n?/g, "\n");
         s = s.replace(/[ \t]+/g, " ");
-        s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,})[ \t]*$/gm, "***");
+        s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,}|#)[ \t]*$/gm, "***"); /* BEUK:manuscript — a lone "#" is standard manuscript format's scene break */
         s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
         s = s.replace(/\n{3,}/g, "\n\n");
         return s.trim();
@@ -35487,6 +36259,530 @@
         }
       }
 
+      /* ==== BEUK:manuscript ==== */
+      /* ================= Submission manuscript (standard manuscript format) =================
+         The plain manuscript agents and publishers ask for (the Shunn
+         convention): a title page with the writer's contact block top
+         left, an approximate word count top right, the title in
+         capitals halfway down and "by" + byline under it; then the text
+         in 12 pt Times New Roman (or Courier New), double-spaced, one-
+         inch margins, half-inch first-line indents, ragged right, no
+         hyphenation, each body section on a new page a third of the way
+         down, "#" for a scene break, "END" after the last section and a
+         "Surname / TITLE / page" header on every page of the text (the
+         title page carries none; the text's first page is page 1).
+
+         The body comes from the Word export's own paragraph builder
+         (docxContentParas): the same reading of emphasis, notes,
+         lists, quotes, containers and redactions. Only the dress
+         changes: a style sheet of plain manuscript styles under
+         Beuk's own style ids (so a verse keeps its line breaks, a
+         transcript its speakers, a log its monospace, and a round trip
+         through the Word import fences them back), pictures and their
+         captions out, column breaks out, inks out, "* * *" made "#".
+         Front and back matter and every typesetting choice stay out;
+         the dialog names each thing left out. Notes go on a Notes page
+         after END as text, as in the Word export (which writes no Word
+         footnotes). The contact block is the writer's own words, kept
+         with the book (state.manuscript) and never filled in. */
+      const MS_PAPER = { letter: { w: 12240, h: 15840 }, a4: { w: 11906, h: 16838 } };
+      const MS_FONTS = { times: "Times New Roman", courier: "Courier New" };
+      const MS_MARGIN = 1440; /* one inch, in twentieths of a point */
+      function msNormalize(m) {
+        m = m && typeof m === "object" ? m : {};
+        const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
+        return {
+          legalName: str(m.legalName, 200),
+          address: str(m.address, 600),
+          phone: str(m.phone, 80),
+          email: str(m.email, 200),
+          byline: str(m.byline, 200),
+          surname: str(m.surname, 80),
+          paper: m.paper === "a4" ? "a4" : "letter",
+          font: m.font === "courier" ? "courier" : "times",
+          italics: m.italics === "underline" ? "underline" : "italic"
+        };
+      }
+      state.manuscript = msNormalize(null);
+      function msEdited() { if (typeof noteBookEdited === "function") noteBookEdited(); }
+      /* The byline: the pen name typed here, else the book's author. */
+      const msByline = () => (state.manuscript.byline.trim() || String(state.meta.author || "").trim());
+      /* The header's surname: typed, else the byline's last word (a
+         "Jr." or "III" is passed over). */
+      function msSurname() {
+        const own = state.manuscript.surname.trim();
+        if (own) return own;
+        const words = msByline().split(/\s+/).map((w) => w.replace(/,$/, "")).filter(Boolean);
+        while (words.length > 1 && /^(jr|sr|ii|iii|iv|phd|md)\.?$/i.test(words[words.length - 1])) words.pop();
+        return words.length ? words[words.length - 1] : "";
+      }
+      /* The rounding a title page's word count follows: to the nearest
+         1,000 from 10,000 words up (a novel), to the nearest 100 below
+         that (short work), never below 100. */
+      function msRoundWords(n) {
+        n = Math.max(0, Math.round(Number(n) || 0));
+        if (!n) return 0;
+        if (n >= 10000) return Math.round(n / 1000) * 1000;
+        return Math.max(100, Math.round(n / 100) * 100);
+      }
+      const msUnit = () => (langPack(bookLang()).count === "characters" ? "characters" : "words");
+      function msPlan() {
+        const included = state.sections.filter((s) => s.included);
+        const body = included.filter((s) => s.kind === "body");
+        const left = included.filter((s) => s.kind !== "body").map((s) => ({ id: s.id, name: s.title || s.type, kind: s.kind === "back" ? "back" : "front" }));
+        let pictures = 0, notes = 0, words = 0;
+        body.forEach((s) => {
+          words += sectionWords(s);
+          pictures += imageTokensIn(s.content).length + (s.plateId ? 1 : 0) + (s.backdropId ? 1 : 0) + (s.scenes || []).filter((sc) => sc && sc.imageId).length;
+          notes += collectDocxNotesFrom(s.content).length;
+        });
+        const contact = msContactLines();
+        return { body, left, pictures, notes, words, rounded: msRoundWords(words), unit: msUnit(), contact,
+          warnings: [
+            !String(state.meta.title || "").trim() ? "noTitle" : null,
+            !state.manuscript.legalName.trim() ? "noName" : null,
+            !(state.manuscript.email.trim() || state.manuscript.phone.trim() || state.manuscript.address.trim()) ? "noReach" : null,
+            !msByline() ? "noByline" : null,
+            bookLang() !== "en" ? "lang" : null
+          ].filter(Boolean) };
+      }
+      /* The contact block, in order, empty fields left out. */
+      function msContactLines() {
+        const m = state.manuscript;
+        return [m.legalName].concat(String(m.address || "").split(/\r?\n/), [m.phone, m.email]).map((l) => String(l || "").trim()).filter(Boolean);
+      }
+      const msWordsLine = (plan) => "about " + plan.rounded.toLocaleString("en-US") + " " + plan.unit;
+      function msHeading(s) {
+        if (s.type === "chapter") return s.number ? "Chapter " + s.number + (s.title ? ": " + s.title : "") : (s.title || "Untitled Chapter");
+        if (s.type === "part") return s.number ? "Part " + s.number + (s.title ? ": " + s.title : "") : (s.title || "Part");
+        return s.title || "";
+      }
+      const msP = (style, runs, extra) => '<w:p><w:pPr><w:pStyle w:val="' + style + '"/>' + (extra || "") + "</w:pPr>" + (runs || "") + "</w:p>";
+      /* Manuscript dress for paragraphs from the Word builder. */
+      function msDress(paras) {
+        const br = docxPara("", "Normal", { align: "center", rawRuns: docxRun("* * *", {}) });
+        const hash = msP("MsBreak", docxRun("#", {}));
+        const under = state.manuscript.italics === "underline";
+        const out = [];
+        paras.forEach((item) => {
+          (String(item).match(/<w:p>[\s\S]*?<\/w:p>/g) || []).forEach((p) => {
+            if (p.indexOf('<w:pStyle w:val="Caption"/>') !== -1) return; /* a picture's place and its caption */
+            if (p.indexOf("<w:sectPr>") !== -1) return; /* a column break: the manuscript is one column */
+            if (p === br) { out.push(hash); return; }
+            p = p.replace(/<w:color w:val="[0-9A-Fa-f]{6}"\/>/g, "");
+            /* a centred or right-set paragraph carries no first-line indent */
+            p = p.replace(/(<w:jc w:val="(?:center|right)"\/>)/, '<w:ind w:firstLine="0"/>$1');
+            if (under) p = p.replace(/<w:rPr>([\s\S]*?)<\/w:rPr>/g, (m0, inner) => {
+              if (inner.indexOf("<w:i/>") === -1) return m0;
+              inner = inner.replace("<w:i/>", "");
+              const u = '<w:u w:val="single"/>';
+              inner = inner.indexOf("<w:vertAlign") !== -1 ? inner.replace("<w:vertAlign", u + "<w:vertAlign") : inner + u;
+              return "<w:rPr>" + inner + "</w:rPr>";
+            });
+            out.push(p);
+          });
+        });
+        return out;
+      }
+      function msPageProps(header) {
+        const pg = MS_PAPER[state.manuscript.paper];
+        return (header ? '<w:headerReference w:type="default" r:id="rIdMsHeader"/>' : "") +
+          '<w:pgSz w:w="' + pg.w + '" w:h="' + pg.h + '"/><w:pgMar w:top="' + MS_MARGIN + '" w:right="' + MS_MARGIN + '" w:bottom="' + MS_MARGIN + '" w:left="' + MS_MARGIN + '" w:header="720" w:footer="720" w:gutter="0"/>' +
+          (header ? '<w:pgNumType w:start="1"/>' : "");
+      }
+      function msDocumentXml(plan) {
+        const m = state.meta;
+        const pg = MS_PAPER[state.manuscript.paper];
+        const lang = bookLang();
+        /* ---- title page ---- */
+        const tp = [];
+        const contact = plan.contact;
+        tp.push({ style: "MsContact", runs: (contact[0] ? docxRun(contact[0], {}) : "") + "<w:r><w:tab/></w:r>" + docxRun(msWordsLine(plan), {}) });
+        contact.slice(1).forEach((l) => tp.push({ style: "MsContact", runs: docxRun(l, {}) }));
+        /* the title halfway down the page: half the page height, less the
+           top margin and the single-spaced contact block above it */
+        const before = Math.max(480, Math.round(pg.h / 2 - MS_MARGIN - Math.max(1, contact.length) * 276 - 240));
+        let title = String(m.title || "Untitled").trim();
+        try { title = title.toLocaleUpperCase(lang); } catch (e) { title = title.toUpperCase(); }
+        tp.push({ style: "Title", runs: docxRun(title, {}), extra: '<w:spacing w:before="' + before + '"/>' });
+        if (String(m.subtitle || "").trim()) tp.push({ style: "MsByline", runs: docxRun(m.subtitle.trim(), {}) });
+        if (msByline()) tp.push({ style: "MsByline", runs: docxRun("by " + msByline(), {}) });
+        tp[tp.length - 1].extra = (tp[tp.length - 1].extra || "") + "<w:sectPr>" + msPageProps(false) + "</w:sectPr>";
+        const parts = tp.map((x) => msP(x.style, x.runs, x.extra));
+        /* ---- the text ---- */
+        const notes = [];
+        plan.body.forEach((s, i) => {
+          const sn = collectDocxNotesFrom(s.content);
+          if (sn.length) notes.push({ label: sectionLabel(s), list: sn });
+          /* the first section opens the text's own page already (the
+             title page's section break), so it adds no page break */
+          parts.push(msP("Heading1", docxRun(msHeading(s), {}), i === 0 ? '<w:pageBreakBefore w:val="0"/>' : ""));
+          if (String(s.subtitle || "").trim()) parts.push(msP("ChapterSub", docxRun(s.subtitle.trim(), {})));
+          msDress(docxContentParas(s.content)).forEach((p) => parts.push(p));
+        });
+        parts.push(msP("MsEnd", docxRun("END", {})));
+        if (notes.length) {
+          parts.push(msP("Heading1", docxRun("Notes", {})));
+          notes.forEach((g) => {
+            parts.push(msP("Heading2", docxRun(g.label, {})));
+            g.list.forEach((nt) => msDress([msP("Normal", docxRun(nt.n + ". ", {}) + docxInlineRuns(nt.text))]).forEach((p) => parts.push(p)));
+          });
+        }
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>\n' +
+          parts.join("\n") + "\n<w:sectPr>" + msPageProps(true) + "</w:sectPr></w:body></w:document>";
+      }
+      function msHeaderXml() {
+        let title = String(state.meta.title || "Untitled").trim();
+        try { title = title.toLocaleUpperCase(bookLang()); } catch (e) { title = title.toUpperCase(); }
+        const lead = [msSurname(), title].filter(Boolean).join(" / ") + " / ";
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+          '<w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr>' + docxRun(lead, {}) +
+          '<w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:hdr>';
+      }
+      function msStylesXml() {
+        const F = MS_FONTS[state.manuscript.font];
+        const pg = MS_PAPER[state.manuscript.paper];
+        const textW = pg.w - 2 * MS_MARGIN;
+        const fonts = (f) => '<w:rFonts w:ascii="' + f + '" w:hAnsi="' + f + '" w:cs="' + f + '" w:eastAsia="' + f + '"/>';
+        const ind = (left, first, right, hanging) => '<w:ind w:left="' + (left || 0) + '"' + (right ? ' w:right="' + right + '"' : "") + (hanging ? ' w:hanging="' + hanging + '"' : ' w:firstLine="' + (first || 0) + '"') + "/>";
+        /* pPr children in schema order: keepNext, keepLines, pageBreakBefore, tabs, spacing, ind, jc, outlineLvl */
+        const pPr = (o) => "<w:pPr>" + (o.keepNext ? "<w:keepNext/>" : "") + (o.keepLines ? "<w:keepLines/>" : "") + (o.pageBreak ? "<w:pageBreakBefore/>" : "") +
+          (o.tabs || "") + (o.spacing || "") + (o.ind || "") + (o.jc ? '<w:jc w:val="' + o.jc + '"/>' : "") + (o.outline != null ? '<w:outlineLvl w:val="' + o.outline + '"/>' : "") + "</w:pPr>";
+        const style = (id, name, based, o, rPr) => '<w:style w:type="paragraph" w:styleId="' + id + '"><w:name w:val="' + name + '"/>' + (based ? '<w:basedOn w:val="' + based + '"/>' : "") + '<w:next w:val="Normal"/>' + pPr(o || {}) + "<w:rPr>" + (rPr || "") + "</w:rPr></w:style>";
+        const flush = ind(0, 0);
+        const third = Math.round(pg.h / 3 - MS_MARGIN);
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+          "<w:docDefaults><w:rPrDefault><w:rPr>" + fonts(F) + '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:before="0" w:after="0" w:line="480" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+          /* the body: double-spaced, half-inch first-line indent, no space between paragraphs, ragged right, no hyphenation */
+          '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:widowControl/><w:suppressAutoHyphens/><w:spacing w:before="0" w:after="0" w:line="480" w:lineRule="auto"/>' + ind(0, 720) + '<w:jc w:val="left"/></w:pPr><w:rPr>' + fonts(F) + '<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:style>' +
+          /* each body section on a new page, its heading centred a third of the way down */
+          style("Heading1", "heading 1", "Normal", { keepNext: true, pageBreak: true, spacing: '<w:spacing w:before="' + third + '" w:after="480"/>', ind: flush, jc: "center", outline: 0 }) +
+          style("ChapterSub", "Chapter Subtitle", "Normal", { keepNext: true, spacing: '<w:spacing w:after="480"/>', ind: flush, jc: "center" }) +
+          style("Heading2", "heading 2", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 1 }, "<w:b/>") +
+          style("Heading3", "heading 3", "Normal", { keepNext: true, ind: flush, jc: "left", outline: 2 }, "<w:b/>") +
+          style("Title", "Title", "Normal", { ind: flush, jc: "center" }) +
+          style("MsByline", "Byline", "Normal", { ind: flush, jc: "center" }) +
+          style("MsContact", "Contact Block", "Normal", { tabs: '<w:tabs><w:tab w:val="right" w:pos="' + textW + '"/></w:tabs>', spacing: '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>', ind: flush, jc: "left" }) +
+          style("MsBreak", "Scene Break", "Normal", { ind: flush, jc: "center" }) +
+          style("MsEnd", "End", "Normal", { spacing: '<w:spacing w:before="480"/>', ind: flush, jc: "center" }) +
+          style("Header", "header", "Normal", { spacing: '<w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>', ind: flush, jc: "right" }) +
+          /* Beuk's own container styles, in plain manuscript dress: a block set apart
+             (a quote, verse, a letter, messages, an insert, a margin note, a log) is
+             set in a full inch, so it never reads as a paragraph of the prose */
+          style("Quote", "Quote", "Normal", { ind: ind(1440, 0, 720) }) +
+          style("QuoteAttribution", "Quote Attribution", "Quote", { ind: ind(1440, 0, 720), jc: "right" }) +
+          style("Verse", "Verse", "Normal", { keepLines: true, ind: ind(1440, 0), jc: "left" }) +
+          style("Letter", "Letter", "Normal", { ind: ind(1440, 0, 720), jc: "left" }) +
+          style("TextSent", "Text Sent", "Normal", { keepLines: true, ind: ind(2160, 0), jc: "left" }) +
+          style("TextReceived", "Text Received", "Normal", { keepLines: true, ind: ind(1440, 0), jc: "left" }) +
+          style("TextNote", "Text Note", "Normal", { ind: flush, jc: "center" }) +
+          style("Transcript", "Transcript", "Normal", { ind: ind(720, 0, 0, 720), jc: "left" }) +
+          style("TranscriptDirection", "Transcript Direction", "Normal", { ind: ind(720, 0), jc: "left" }) +
+          style("Log", "Log", "Normal", { ind: ind(1440, 0, 0, 360), jc: "left" }, fonts("Courier New") + "<w:noProof/>") +
+          style("LogDark", "Log Dark", "Normal", { ind: ind(1440, 0, 0, 360), jc: "left" }, fonts("Courier New") + "<w:noProof/>") +
+          style("Insert", "Insert", "Normal", { ind: ind(1440, 0, 720), jc: "left" }) +
+          style("InsertTitle", "Insert Title", "Insert", { keepNext: true, ind: ind(1440, 0, 720) }, "<w:b/>") +
+          style("MarginNote", "Margin Note", "Normal", { ind: ind(1440, 0, 720), jc: "left" }) +
+          style("Sideways", "Sideways", "Normal", {}) +
+          style("UpsideDown", "Upside Down", "Normal", {}) +
+          style("Hanging", "Hanging", "Normal", { ind: ind(720, 0, 0, 720), jc: "left" }) +
+          style("Columns", "Columns", "Normal", {}) +
+          style("ColumnsHanging", "Columns Hanging", "Hanging", { ind: ind(720, 0, 0, 720) }) +
+          style("ListParagraph", "List Paragraph", "Normal", { ind: ind(720, 0) }) +
+          style("Caption", "Caption", "Normal", { ind: flush, jc: "center" }) +
+          /* a link is set as its words: no blue, no underline (an underline reads as italics in a manuscript) */
+          '<w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:rPr></w:rPr></w:style>' +
+          "</w:styles>";
+      }
+      function msFiles(plan) {
+        plan = plan || msPlan();
+        const m = state.meta;
+        docxNums = []; docxLinks = null; /* a link is set as its words alone (no relationship) */
+        const doc = msDocumentXml(plan);
+        docxHadColumns = false;
+        return [
+          { path: "[Content_Types].xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>' },
+          { path: "_rels/.rels", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>' },
+          { path: "word/document.xml", content: doc },
+          { path: "word/numbering.xml", content: buildDocxNumberingXml() },
+          { path: "word/styles.xml", content: msStylesXml() },
+          { path: "word/header1.xml", content: msHeaderXml() },
+          { path: "word/_rels/document.xml.rels", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/><Relationship Id="rIdMsHeader" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/></Relationships>' },
+          { path: "docProps/core.xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + esc(m.title || "") + "</dc:title>" + (msByline() ? "<dc:creator>" + esc(msByline()) + "</dc:creator>" : "") + "</cp:coreProperties>" },
+          { path: "docProps/app.xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Beuk</Application></Properties>' }
+        ];
+      }
+      async function msBlob(plan) {
+        const zip = new JSZip();
+        msFiles(plan).forEach((f) => zip.file(f.path, f.content));
+        return zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+      }
+      const msFilename = () => slug(state.meta.title || "book") + "-manuscript.docx";
+      async function msDownload() {
+        if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; }
+        const plan = msPlan();
+        if (!plan.body.length) { toast(t("ms.empty"), "alert-triangle"); return; }
+        const btn = $("btnMsDownload");
+        if (btn) { btn.disabled = true; btn.textContent = t("ms.building"); }
+        try {
+          const blob = await msBlob(plan);
+          downloadBlob(blob, msFilename());
+          toast(t("ms.done", { sections: fmtNum(plan.body.length), words: fmtNum(plan.rounded) }), "file-type-2");
+        } catch (err) {
+          toast(t("ms.fail", { msg: err && err.message ? err.message : "unknown error" }), "alert-triangle");
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>' + esc(t("ms.download")); icons(); }
+        }
+      }
+      /* ---- the dialog ---- */
+      function msField(id, key, value, opts) {
+        opts = opts || {};
+        const ph = opts.ph ? ' placeholder="' + esc(opts.ph) + '"' : "";
+        const ctl = opts.area
+          ? '<textarea id="' + id + '" rows="3" maxlength="' + (opts.max || 200) + '"' + ph + ">" + esc(value) + "</textarea>"
+          : '<input type="' + (opts.type || "text") + '" id="' + id + '" maxlength="' + (opts.max || 200) + '" value="' + esc(value) + '"' + ph + (opts.type === "email" ? ' autocomplete="email"' : "") + "/>";
+        return '<label' + (opts.wide ? ' class="ms-wide"' : "") + "><span>" + esc(t(key)) + "</span>" + ctl + "</label>";
+      }
+      function msSelect(id, key, value, options) {
+        return "<label><span>" + esc(t(key)) + '</span><select id="' + id + '">' + options.map((o) => '<option value="' + o[0] + '"' + (value === o[0] ? " selected" : "") + ">" + esc(t(o[1])) + "</option>").join("") + "</select></label>";
+      }
+      function msSummaryHtml() {
+        const plan = msPlan();
+        const ms = state.manuscript;
+        let h = "";
+        /* the title page as it will print, in the manuscript's own words */
+        let title = String(state.meta.title || "Untitled").trim();
+        try { title = title.toLocaleUpperCase(bookLang()); } catch (e) { title = title.toUpperCase(); }
+        h += '<h3 class="acx-h">' + esc(t("ms.previewH")) + "</h3>";
+        h += '<div class="ms-tp' + (ms.font === "courier" ? " ms-courier" : "") + (ms.paper === "a4" ? " ms-a4" : "") + '" id="msTitlePage" dir="ltr" aria-label="' + esc(t("ms.previewH")) + '">' +
+          '<div class="ms-tp-top"><div class="ms-tp-contact">' + (plan.contact.length ? plan.contact.map((l) => "<div>" + esc(l) + "</div>").join("") : "") + "</div>" +
+          '<div class="ms-tp-count">' + esc(msWordsLine(plan)) + "</div></div>" +
+          '<div class="ms-tp-mid"><div class="ms-tp-title">' + esc(title) + "</div>" +
+          (String(state.meta.subtitle || "").trim() ? "<div>" + esc(state.meta.subtitle.trim()) + "</div>" : "") +
+          (msByline() ? "<div>by " + esc(msByline()) + "</div>" : "") + "</div>" +
+          "</div>";
+        h += '<p class="acx-math" id="msHeaderLine" dir="ltr">' + esc([msSurname(), title].filter(Boolean).join(" / ") + " / 1") + "</p>";
+        h += '<p class="acx-note">' + esc(t("ms.headNote")) + "</p>";
+        h += '<h3 class="acx-h">' + esc(t("ms.countH")) + "</h3>";
+        h += '<p class="acx-math" id="msCount">' + esc(t(plan.unit === "characters" ? "ms.countChars" : "ms.count", { rounded: fmtNum(plan.rounded), exact: fmtNum(plan.words), sections: fmtNum(plan.body.length) })) + "</p>";
+        h += '<p class="acx-note">' + esc(t("ms.rule")) + "</p>";
+        h += '<h3 class="acx-h">' + esc(t("ms.inH")) + '</h3><ul class="acx-list" id="msIncluded">';
+        h += "<li>" + esc(t("ms.in.title")) + "</li>";
+        h += "<li>" + esc(t("ms.in.sections", { sections: fmtNum(plan.body.length) })) + "</li>";
+        h += "<li>" + esc(t("ms.in.end")) + "</li>";
+        if (plan.notes) h += "<li>" + esc(t("ms.in.notes", { notes: fmtNum(plan.notes) })) + "</li>";
+        h += "</ul>";
+        h += '<h3 class="acx-h">' + esc(t("ms.outH")) + '</h3><ul class="acx-list" id="msExcluded">';
+        h += "<li>" + esc(t("ms.out.typeset")) + "</li>";
+        plan.left.forEach((x) => { h += "<li>" + esc(t(x.kind === "back" ? "ms.out.back" : "ms.out.front", { name: x.name })) + "</li>"; });
+        if (plan.pictures) h += "<li>" + esc(t("ms.out.pictures", { pictures: fmtNum(plan.pictures) })) + "</li>";
+        h += "</ul>";
+        h += '<h3 class="acx-h">' + esc(t("ms.warnH")) + '</h3><ul class="acx-list" id="msWarnings">';
+        plan.warnings.forEach((w) => { h += "<li" + (w === "lang" ? "" : ' class="acx-warn"') + ">" + esc(t("ms.warn." + w)) + "</li>"; });
+        if (!plan.warnings.length) h += "<li>" + esc(t("ms.warn.none")) + "</li>";
+        h += "</ul>";
+        h += '<p class="acx-note">' + esc(t("ms.pdfNote")) + "</p>";
+        return h;
+      }
+      function msRender() {
+        const body = $("msBody"); if (!body) return;
+        const ms = state.manuscript;
+        let h = '<h3 class="acx-h">' + esc(t("ms.contactH")) + "</h3>";
+        h += '<div class="acx-grid ms-grid">' +
+          msField("msLegal", "ms.legalName", ms.legalName, { max: 200 }) +
+          msField("msEmail", "ms.email", ms.email, { max: 200, type: "email" }) +
+          msField("msAddress", "ms.address", ms.address, { area: true, max: 600 }) +
+          msField("msPhone", "ms.phone", ms.phone, { max: 80, type: "tel" }) +
+          msField("msByline", "ms.byline", ms.byline, { max: 200, ph: String(state.meta.author || "").trim() || t("ms.bylinePh") }) +
+          msField("msSurname", "ms.surname", ms.surname, { max: 80, ph: msSurname() }) +
+          "</div>";
+        h += '<p class="acx-note">' + esc(t("ms.contactNote")) + "</p>";
+        h += '<h3 class="acx-h">' + esc(t("ms.pageH")) + "</h3>";
+        h += '<div class="acx-grid ms-grid3">' +
+          msSelect("msPaper", "ms.paper", ms.paper, [["letter", "ms.paper.letter"], ["a4", "ms.paper.a4"]]) +
+          msSelect("msFont", "ms.font", ms.font, [["times", "ms.font.times"], ["courier", "ms.font.courier"]]) +
+          msSelect("msItalics", "ms.italics", ms.italics, [["italic", "ms.it.italic"], ["underline", "ms.it.underline"]]) +
+          "</div>";
+        h += '<div id="msSummary">' + msSummaryHtml() + "</div>";
+        body.innerHTML = h;
+        icons();
+      }
+      function msRefreshSummary() {
+        const box = $("msSummary"); if (box) box.innerHTML = msSummaryHtml();
+        const sn = $("msSurname"); if (sn) sn.setAttribute("placeholder", state.manuscript.surname.trim() ? "" : msSurname());
+      }
+      function msOpen() {
+        msRender();
+        const ex = $("modalExport"); if (ex) ex.classList.remove("open");
+        $("modalManuscript").classList.add("open");
+      }
+      const MS_FIELD_IDS = { msLegal: "legalName", msAddress: "address", msPhone: "phone", msEmail: "email", msByline: "byline", msSurname: "surname", msPaper: "paper", msFont: "font", msItalics: "italics" };
+      function msInit() {
+        const modal = $("modalManuscript"); if (!modal) return;
+        $("btnMsOpen").addEventListener("click", msOpen);
+        $("btnMsClose").addEventListener("click", () => modal.classList.remove("open"));
+        modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
+        $("btnMsDownload").addEventListener("click", msDownload);
+        const body = $("msBody");
+        const take = (el, persist) => {
+          const k = MS_FIELD_IDS[el.id]; if (!k) return;
+          state.manuscript = msNormalize(Object.assign({}, state.manuscript, { [k]: el.value }));
+          if (persist) msEdited();
+          msRefreshSummary();
+        };
+        body.addEventListener("input", (e) => take(e.target, false));
+        body.addEventListener("change", (e) => take(e.target, true));
+      }
+      /* ---- self-checks ---- */
+      function msSelfChecks() {
+        const withMsFixture = (fn) => {
+          const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+          const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+          try {
+            applyBookDoc({
+              meta: { title: "The Tide Ledger", subtitle: "", author: "Mara Quill", language: "en", langSource: "manual" },
+              theme: Object.assign({}, state.theme, { bodyFont: "Cormorant Garamond" }),
+              sections: [
+                mkSection("front", "titlepage", "Title Page"),
+                mkSection("front", "copyright", "Copyright"),
+                mkSection("front", "dedication", "Dedication", { content: "For the keepers of unlisted channels." }),
+                mkSection("body", "chapter", "Arrival", { number: "1", content: "The ferry left at *first light*.[^1]\n\n***\n\n![The quay at dusk](img:nope \"The quay at dusk\")\n\nShe opened the ||secret|| drawer.\n\n::: verse\nThe tide runs east,\nthe tide runs west.\n:::\n\n::: letter\nDear Mara,\n\nCome home.\n:::\n\n[^1]: The chart survives in no archive." }),
+                mkSection("body", "chapter", "Departure", { number: "2", content: "She left at dawn.\n\n::: columns\nA note in two columns.\n:::" }),
+                mkSection("back", "aboutauthor", "About the Author", { content: "Mara Quill lives by the sea." })
+              ],
+              manuscript: { legalName: "Margaret Quillon", address: "12 Harbour Row\nPortsalt PS1 2AB", phone: "+44 1234 567890", email: "mq@example.com", byline: "Mara Quill" }
+            });
+            return fn();
+          } finally {
+            applyBookDoc(keepDoc);
+            cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+          }
+        };
+        const docOf = (files) => (files.find((f) => f.path === "word/document.xml") || {}).content || "";
+        return [
+          { id: "export.manuscript", feature: "export", name: "Submission manuscript: the Word file has a title page (contact block, rounded word count, title in capitals, by-line), a Surname / TITLE / page header from the text's first page, 12 pt double-spaced type with half-inch indents on one-inch margins, each chapter on a new page, \"#\" scene breaks, END after the last chapter, the writer's italics kept (or underlined when chosen), and none of the book's typesetting, front or back matter or pictures",
+            run() {
+              return withMsFixture(() => {
+                const bad = [];
+                const files = msFiles();
+                const doc = docOf(files);
+                const sty = (files.find((f) => f.path === "word/styles.xml") || {}).content || "";
+                const hdr = (files.find((f) => f.path === "word/header1.xml") || {}).content || "";
+                const rels = (files.find((f) => f.path === "word/_rels/document.xml.rels") || {}).content || "";
+                const ct = (files.find((f) => f.path === "[Content_Types].xml") || {}).content || "";
+                const has = (s, what) => { if (doc.indexOf(s) === -1) bad.push("no " + what); };
+                ["Margaret Quillon", "12 Harbour Row", "Portsalt PS1 2AB", "+44 1234 567890", "mq@example.com"].forEach((s) => has(s, "contact line " + s));
+                has('<w:r><w:tab/></w:r><w:r><w:t xml:space="preserve">about 100 words</w:t></w:r>', "word count at the right of the first line");
+                has(">THE TIDE LEDGER<", "title in capitals");
+                has(">by Mara Quill<", "by-line");
+                if (/Mara Quill lives/.test(doc)) bad.push("about-the-author leaked");
+                ["For the keepers", "All rights reserved", "Typeset with Beuk", "* * *", "[Image:", "The quay at dusk", "Cormorant", "w:shd", "w:pBdr", "w:color", 'w:cols w:num="2"', "secret"].forEach((s) => { if (doc.indexOf(s) !== -1 || (s === "Cormorant" && sty.indexOf(s) !== -1)) bad.push("leaked: " + s); });
+                has(">Chapter 1: Arrival<", "chapter 1 heading");
+                has(">Chapter 2: Departure<", "chapter 2 heading");
+                has('<w:pStyle w:val="Heading1"/><w:pageBreakBefore w:val="0"/>', "first chapter without an extra page break");
+                if ((doc.match(/<w:pStyle w:val="Heading1"\/><\/w:pPr><w:r><w:t xml:space="preserve">Chapter 2/g) || []).length !== 1) bad.push("chapter 2 heading not a page-breaking Heading 1");
+                if (!/<w:style w:type="paragraph" w:styleId="Heading1">[\s\S]*?<w:pageBreakBefore\/>[\s\S]*?<\/w:style>/.test(sty)) bad.push("Heading 1 does not start a new page");
+                has('<w:pStyle w:val="MsBreak"/></w:pPr><w:r><w:t xml:space="preserve">#</w:t></w:r>', "# scene break");
+                has('<w:pStyle w:val="MsEnd"/></w:pPr><w:r><w:t xml:space="preserve">END</w:t></w:r>', "END");
+                if (doc.lastIndexOf(">END<") < doc.indexOf("She left at dawn")) bad.push("END is not after the last chapter");
+                has("<w:i/></w:rPr><w:t xml:space=\"preserve\">first light", "italics kept");
+                has("████", "the redaction blacked out");
+                has("The tide runs east,</w:t></w:r><w:r><w:br/></w:r>", "verse line break kept");
+                has(">Notes<", "Notes page");
+                has("The chart survives in no archive.", "the note's text");
+                if (!/<w:style w:type="paragraph" w:default="1" w:styleId="Normal">[\s\S]*?<w:spacing w:before="0" w:after="0" w:line="480" w:lineRule="auto"\/><w:ind w:left="0" w:firstLine="720"\/><w:jc w:val="left"\/>[\s\S]*?<w:sz w:val="24"\/>/.test(sty)) bad.push("Normal is not 12 pt, double-spaced (w:line 480), half-inch indent, ragged");
+                if (sty.indexOf("<w:suppressAutoHyphens/>") === -1) bad.push("hyphenation not off");
+                if (sty.indexOf('w:ascii="Times New Roman"') === -1) bad.push("not Times New Roman");
+                if (!/<w:sectPr><w:headerReference w:type="default" r:id="rIdMsHeader"\/><w:pgSz w:w="12240" w:h="15840"\/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"[^>]*\/><w:pgNumType w:start="1"\/><\/w:sectPr><\/w:body>/.test(doc)) bad.push("the text's section: no header, US Letter, 1 in margins or page 1 start");
+                if (!/<w:sectPr><w:pgSz w:w="12240" w:h="15840"\/><w:pgMar[^>]*\/><\/w:sectPr><\/w:pPr><w:r><w:t xml:space="preserve">by Mara Quill/.test(doc)) bad.push("the title page is not its own section without a header");
+                if (hdr.indexOf(">Quill / THE TIDE LEDGER / <") === -1 || hdr.indexOf(" PAGE ") === -1) bad.push("header is not Surname / TITLE / page");
+                if (rels.indexOf('Target="header1.xml"') === -1 || ct.indexOf("/word/header1.xml") === -1) bad.push("header part not wired");
+                /* underline instead of italics; A4; Courier */
+                state.manuscript = msNormalize(Object.assign({}, state.manuscript, { italics: "underline", paper: "a4", font: "courier" }));
+                const f2 = msFiles(), d2 = docOf(f2), s2 = (f2.find((f) => f.path === "word/styles.xml") || {}).content || "";
+                if (d2.indexOf('<w:u w:val="single"/></w:rPr><w:t xml:space="preserve">first light') === -1 || /<w:i\/><\/w:rPr><w:t xml:space="preserve">first light/.test(d2)) bad.push("underline option does not replace italics");
+                if (d2.indexOf('<w:pgSz w:w="11906" w:h="16838"/>') === -1) bad.push("A4 not applied");
+                if (s2.indexOf('w:ascii="Courier New"') === -1) bad.push("Courier option not applied");
+                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "title page, contact block, about 100 words, header Quill / THE TIDE LEDGER / page, 12 pt double-spaced (480), 1 in margins, chapters on new pages, # breaks, END, italics kept/underlined, nothing typeset leaks");
+              });
+            } },
+          { id: "export.manuscript.contact-persists", feature: "export", name: "Submission manuscript: the contact block, pen name and page choices ride in the book file (serializeBook → applyBookDoc) and a book without them starts empty — nothing is filled in",
+            run() {
+              return withMsFixture(() => {
+                const bad = [];
+                state.manuscript = msNormalize(Object.assign({}, state.manuscript, { paper: "a4", surname: "Quill-Smith" }));
+                const doc = JSON.parse(JSON.stringify(serializeBook()));
+                if (!doc.manuscript || doc.manuscript.email !== "mq@example.com") bad.push("serializeBook does not carry it");
+                state.manuscript = msNormalize(null);
+                applyBookDoc(doc);
+                const m = state.manuscript;
+                if (m.legalName !== "Margaret Quillon" || m.address !== "12 Harbour Row\nPortsalt PS1 2AB" || m.phone !== "+44 1234 567890" || m.byline !== "Mara Quill" || m.paper !== "a4" || m.surname !== "Quill-Smith") bad.push("applyBookDoc does not restore it: " + JSON.stringify(m));
+                delete doc.manuscript; applyBookDoc(doc);
+                const e = state.manuscript;
+                if (e.legalName || e.address || e.phone || e.email || e.byline || e.surname || e.paper !== "letter" || e.font !== "times" || e.italics !== "italic") bad.push("a book without it does not start empty");
+                const xml = docOf(msFiles());
+                if (/Margaret|Harbour Row|example\.com/.test(xml)) bad.push("an empty contact block still printed details");
+                if (xml.indexOf(">by Mara Quill<") === -1) bad.push("the byline does not fall back to the book's author");
+                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "contact block, pen name, surname and A4 round-trip with the book; a book without them prints no details and falls back to its author");
+              });
+            } },
+          { id: "export.manuscript.wordcount", feature: "export", name: "Submission manuscript: the title page's word count is rounded to the nearest 1,000 from 10,000 words up and to the nearest 100 below that",
+            run() {
+              const cases = [[0, 0], [40, 100], [149, 100], [151, 200], [9949, 9900], [9999, 10000], [10000, 10000], [84712, 85000], [85499, 85000], [120501, 121000]];
+              const off = cases.filter((c) => msRoundWords(c[0]) !== c[1]);
+              return scVerdict(!off.length, off.length ? off.map((c) => c[0] + " → " + msRoundWords(c[0]) + " (want " + c[1] + ")").join("; ") : cases.map((c) => c[0] + "→" + c[1]).join(", "));
+            } }
+        ];
+      }
+      function msAsyncSelfChecks() {
+        return [
+          { id: "export.manuscript.roundtrip", feature: "export", name: "Submission manuscript round trip: the manuscript .docx read back through Beuk's own Word import gives back the chapters by title in order, the italics, the verse's words in order and the redaction, with \"#\" read as a scene break and the title page read as the book's credit (on a desk without one), not as prose",
+            async run() {
+              if (!window.JSZip || !window.mammoth) return scVerdict(false, "JSZip or Mammoth.js is not loaded");
+              const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+              const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+              let html = "", messages = [], scan = null, identity = {};
+              try {
+                applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: "The Tide Ledger", subtitle: "", author: "Mara Quill", language: "en", langSource: "manual" }), theme: keepDoc.theme,
+                  sections: [mkSection("front", "titlepage", "Title Page"),
+                    mkSection("body", "chapter", "Arrival", { number: "1", content: "The ferry left at *first light*.\n\n***\n\nShe opened the ||secret|| drawer.\n\n::: verse\nThe tide runs east,\nthe tide runs west.\n:::" }),
+                    mkSection("body", "chapter", "Departure", { number: "2", content: "She left at dawn." })],
+                  images: [], manuscript: { legalName: "Margaret Quillon", email: "mq@example.com" } });
+                const buf = await (await msBlob()).arrayBuffer();
+                scan = await irScanDocxXml(buf);
+                identity = await readDocxCoreIdentity(buf);
+                const res = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
+                html = res.value; messages = res.messages || [];
+              } finally {
+                applyBookDoc(keepDoc);
+                cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+              }
+              return irCheckRun(() => {
+                const bad = [];
+                state.meta.title = ""; state.meta.author = ""; /* a desk without a credit, so the manuscript's may fill it */
+                importDocxConverted("the-tide-ledger-manuscript.docx", html, messages, scan, identity, null);
+                const chs = state.sections.filter((s) => s.kind === "body");
+                const titles = chs.map((s) => (s.number ? s.number + ":" : "") + s.title).join(" | ");
+                if (titles !== "1:Arrival | 2:Departure") bad.push("chapters came back as " + titles);
+                const c1 = chs[0] ? String(chs[0].content || "") : "";
+                if (c1.indexOf("*first light*") === -1) bad.push("italics lost");
+                if (!/^\*\*\*$/m.test(c1)) bad.push("the # scene break did not come back as a scene break");
+                if (c1.indexOf("████") === -1) bad.push("the redaction did not stay blacked out");
+                /* the Word import reads a verse stanza's line breaks as spaces (as it does for Beuk's own Word export): its words come back in order */
+                if (!/The tide runs east,\s+the tide runs west\./.test(c1)) bad.push("the verse's words did not come back");
+                if (/Margaret Quillon|about 100 words|THE TIDE LEDGER/.test(chs.map((s) => s.content).join("\n"))) bad.push("the title page came in as prose");
+                const end = chs[chs.length - 1] ? String(chs[chs.length - 1].content || "") : "";
+                if (!/She left at dawn\./.test(end)) bad.push("the last chapter's text is missing");
+                if (String(state.meta.title).toLowerCase() !== "the tide ledger" || state.meta.author !== "Mara Quill") bad.push("credit came back as " + JSON.stringify([state.meta.title, state.meta.author]));
+                return scVerdict(bad.length === 0, (bad.length ? bad.join("; ") + " — " : "") + "chapters: " + titles + "; chapter 1: " + JSON.stringify(c1.slice(0, 260)) + "; last: " + JSON.stringify(end.slice(-60)));
+              });
+            } }
+        ];
+      }
+      if (typeof window !== "undefined") window.beukManuscript = { plan: msPlan, files: msFiles, blob: msBlob, round: msRoundWords, open: msOpen, render: msRender };
+      /* ==== /BEUK:manuscript ==== */
+
       /* ==== BEUK:acx ==== */
       /* ================= Audio script export for ACX (feature 7) =================
          A narrator's script set for an audiobook made on ACX (Audible's
@@ -38190,6 +39486,8 @@
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
+          /* BEUK:manuscript — the submission manuscript's contact block and page choices ride with the book */
+          manuscript: msNormalize(state.manuscript),
           /* BEUK:dictlang — the dictation language picked for this book, and its recent picks */
           dictation: dictNormalize(state.dictation)
         };
@@ -38288,6 +39586,8 @@
         state.importReport = normalizeImportReport(doc.importReport);
         /* BEUK:acx — a book's audio plan is its own: one without it starts clean. */
         state.audio = acxNormalize(doc.audio);
+        /* BEUK:manuscript — a book's contact block is its own: one without it starts empty */
+        state.manuscript = msNormalize(doc.manuscript);
         /* BEUK:dictlang — the dictation language belongs to the book: one without it follows its own language. */
         state.dictation = dictNormalize(doc.dictation);
         /* BEUK:bookid — every arrival (local restore, shelf, backup file, conflict, snapshot) passes here: a pre-UUID id migrates now, once, after History has its snapshot. */
@@ -48965,6 +50265,7 @@
       /* ==== /BEUK:importmeta ==== */
       /* ==== BEUK:acx ==== */
       SELF_CHECKS.push(...acxSelfChecks());
+      SELF_CHECKS.push(...msSelfChecks()); /* BEUK:manuscript */
       SELF_CHECKS.push(...castSelfChecks()); /* BEUK:cast */
       /* ==== BEUK:print ==== */
       /* Print for press, checked from the document the print view and
@@ -51503,6 +52804,7 @@
         }
         return out;
       }
+      SELF_CHECKS_ASYNC.push(...msAsyncSelfChecks()); /* BEUK:manuscript */
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS_ASYNC = SELF_CHECKS_ASYNC; window.runBeukAsyncSelfChecks = runAsyncSelfChecks; }
       /* ==== /BEUK:sound ==== */
 
@@ -54258,6 +55560,7 @@
         initPlatform();
         initBulk();
         acxInit(); /* BEUK:acx */
+        msInit(); /* BEUK:manuscript */
         updateStats();
         renderPreview();
         refreshExportTree();

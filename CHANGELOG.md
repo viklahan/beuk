@@ -11,6 +11,9 @@ to make well.
 - It is off until you turn it on. When your book has plates or backdrops, the print settings and the store check suggest it.
 - The Print Interior View shows the bleed, shaded beyond a dashed trim line.
 - Printing from the browser still gives a PDF at the trim size; the bleed comes from Beuk's own print PDF.
+- **Submission manuscript** (Export → Submission Manuscript): a Word file in standard manuscript format for querying agents and publishers. A title page with your contact details and the word count, then the text in 12 pt Times New Roman (or Courier), double-spaced, one-inch margins, each chapter on a new page, # for scene breaks, END at the end, and a Surname / TITLE / page header. US Letter or A4; italics kept or underlined.
+- Your contact details are saved with the book and printed only on that title page; empty fields are left out. The dialog lists everything left out — front and back matter by name, pictures, the typesetting — so nothing disappears without your knowing. Notes go on a Notes page after END.
+- Importing a manuscript now reads a line with just # as a scene break.
 
 **Goals that plan with you**
 - **Writing days.** Choose the days of the week you write, and whether the deadline day counts.
