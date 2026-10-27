@@ -2105,6 +2105,178 @@
       .acx-add { display: flex; gap: 6px; margin: 6px 0 8px; }
       @media (max-width: 640px) { .acx-grid { grid-template-columns: 1fr; } }
       /* ==== /BEUK:acx ==== */
+      /* ==== BEUK:outline ==== — Cards and List over the book's own sections: synopsis, status, tags, saved filters */
+      :root {
+        --ol-s-todo: #8a837a; --ol-s-draft: #b7791f; --ol-s-revised: #3b6ea5; --ol-s-final: #3d7a4a;
+        --ol-c0: #b7791f; --ol-c1: #b3523a; --ol-c2: #5f7f3a; --ol-c3: #2f7a83; --ol-c4: #4f6587; --ol-c5: #7d4f86; --ol-c6: #b04a6b; --ol-c7: #7a6a4f;
+      }
+      :root[data-theme="candlelight"] {
+        --ol-s-todo: #a39e93; --ol-s-draft: #e0a84b; --ol-s-revised: #84aee0; --ol-s-final: #7fbf8f;
+        --ol-c0: #e0a84b; --ol-c1: #e58a6f; --ol-c2: #a9c77a; --ol-c3: #6cc3cb; --ol-c4: #93a9d6; --ol-c5: #c29ad0; --ol-c6: #e88fae; --ol-c7: #c8b594;
+      }
+      .ol-inner { max-width: 1120px; container-type: inline-size; }
+      .ol-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+      .ol-head h2 { margin: 0; font-family: "EB Garamond", Georgia, serif; font-size: 24px; font-weight: 600; line-height: 1.15; }
+      .ol-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; max-width: 60ch; }
+      .ol-head .seg { flex: 0 0 auto; min-width: 180px; }
+      .ol-head .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; }
+      .ol-head .seg svg { width: 14px; height: 14px; }
+      .ol-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 16px; padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 11px; }
+      .ol-bar-lab { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-inline-end: 2px; }
+      .ol-bar-sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
+      .ol-chip {
+        display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink-2);
+        border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; line-height: 1.5;
+      }
+      .ol-chip:hover { border-color: var(--muted); color: var(--ink); }
+      .ol-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+      .ol-chip[aria-pressed="true"]::before { content: "✓"; font-size: 11px; color: var(--accent); }
+      .ol-chip:focus-visible, .ol-mini:focus-visible, .ol-open:focus-visible, .ol-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .ol-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--ol-st, transparent); border: 1.5px solid var(--ol-st, var(--line-2)); box-sizing: border-box; }
+      .ol-dot.none { background: transparent; border-style: dashed; border-color: var(--muted); }
+      .ol-tagdot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; background: var(--ol-tc); }
+      .ol-count { margin-inline-start: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
+      .ol-count b { color: var(--ink); font-weight: 600; }
+      .ol-link { border: none; background: none; padding: 2px 4px; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+      .ol-link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+      .ol-saved { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+      .ol-saved .txt-input { width: auto; flex: 0 1 220px; padding: 5px 10px; font-size: 12.5px; }
+      .ol-saved .tb-btn { padding: 5px 12px; font-size: 12px; }
+      .ol-saved .tb-btn svg { width: 14px; height: 14px; }
+      .ol-savedchip { display: inline-flex; align-items: center; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel); overflow: hidden; }
+      .ol-savedchip .ol-chip { border: none; border-radius: 0; background: transparent; }
+      .ol-savedchip .ol-chip[aria-pressed="true"] { background: var(--accent-soft); }
+      .ol-savedchip .ol-mini { border-radius: 0; height: 26px; width: 24px; }
+      .ol-tagmgr { margin-top: 8px; font-size: 12.5px; }
+      .ol-tagmgr summary { cursor: pointer; color: var(--ink-2); font-weight: 600; font-size: 12px; padding: 3px 0; width: max-content; }
+      .ol-tagmgr summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+      .ol-tagrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+      .ol-tagrow:last-child { border-bottom: none; }
+      .ol-tagrow .ol-tagname { min-width: 90px; font-weight: 600; }
+      .ol-tagrow .ol-uses { color: var(--muted); font-size: 11.5px; }
+      .ol-swatches { display: inline-flex; gap: 4px; margin-inline-start: auto; }
+      .ol-swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; background: var(--ol-tc); padding: 0; cursor: pointer; box-shadow: inset 0 0 0 2px var(--panel-2); }
+      .ol-swatch[aria-pressed="true"] { border-color: var(--ink); }
+      .ol-mini {
+        display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: none;
+        background: transparent; color: var(--muted); padding: 0; cursor: pointer; flex: 0 0 auto;
+      }
+      .ol-mini:hover { background: var(--accent-soft); color: var(--ink); }
+      .ol-mini:disabled { opacity: .35; cursor: default; background: transparent; }
+      .ol-mini svg { width: 14px; height: 14px; }
+      .ol-group { margin-top: 22px; }
+      .ol-group > h3 { margin: 0 0 10px; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+      .ol-group > h3 span { font-family: var(--mono-font); letter-spacing: 0; font-weight: 500; }
+      .ol-empty { padding: 18px; text-align: center; color: var(--muted); font-size: 13px; border: 1px dashed var(--line-2); border-radius: 10px; }
+      /* Cards: one index card per section */
+      .ol-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(206px, 1fr)); gap: 12px; }
+      .ol-card {
+        position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 178px; box-sizing: border-box;
+        background: var(--panel-2); border: 1px solid var(--line); border-top: 4px solid var(--ol-st, var(--line-2)); border-radius: 6px 6px 10px 10px;
+        padding: 10px 12px 10px; box-shadow: 0 1px 3px rgba(30,24,14,.07); transition: box-shadow .15s, transform .15s, opacity .15s;
+      }
+      .ol-card:hover { box-shadow: 0 4px 14px rgba(30,24,14,.12); }
+      .ol-card:focus-visible, .ol-row:focus-visible, .ol-partband:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .ol-card.active { box-shadow: 0 0 0 1px var(--accent), 0 4px 14px rgba(30,24,14,.12); }
+      .ol-card.excluded, .ol-row.excluded { opacity: .55; }
+      .ol-card.dragging, .ol-row.dragging, .ol-partband.dragging { opacity: .4; }
+      .ol-card.drop-before::before, .ol-card.drop-after::after {
+        content: ""; position: absolute; top: 6px; bottom: 6px; width: 3px; border-radius: 3px; background: var(--accent);
+      }
+      .ol-card.drop-before::before { inset-inline-start: -8px; }
+      .ol-card.drop-after::after { inset-inline-end: -8px; }
+      .ol-card-head { display: flex; align-items: flex-start; gap: 6px; }
+      .ol-card-head .ol-tx { flex: 1 1 auto; min-width: 0; }
+      .ol-num { display: block; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+      .ol-open {
+        display: block; max-width: 100%; border: none; background: none; padding: 0; margin: 1px 0 0; text-align: start; cursor: pointer;
+        font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 600; line-height: 1.2; color: var(--ink);
+      }
+      .ol-open:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+      .ol-moves { display: inline-flex; flex: 0 0 auto; margin-inline-end: -6px; margin-top: -3px; opacity: 0; transition: opacity .12s; }
+      .ol-card:hover .ol-moves, .ol-card:focus-within .ol-moves, .ol-partband:hover .ol-moves, .ol-partband:focus-within .ol-moves { opacity: 1; }
+      @media (hover: none) { .ol-moves { opacity: 1; } }
+      .ol-syn {
+        flex: 1 1 auto; width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical; border: 1px solid transparent; border-radius: 6px;
+        background: transparent; padding: 4px 6px; margin: 0 -6px; width: calc(100% + 12px); font: inherit; font-size: 13px; line-height: 1.5; color: var(--ink-2);
+      }
+      .ol-syn::placeholder, .ol-pov::placeholder, .ol-tagin::placeholder { color: var(--muted); opacity: .85; font-style: italic; }
+      .ol-syn:hover { border-color: var(--line); }
+      .ol-syn:focus, .ol-pov:focus { outline: none; border-color: var(--accent); background: var(--panel); box-shadow: 0 0 0 3px var(--accent-soft); }
+      .ol-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+      .ol-tag {
+        display: inline-flex; align-items: center; gap: 3px; border-radius: 999px; padding: 1px 3px 1px 8px; font-size: 11.5px; font-weight: 600; line-height: 1.5;
+        color: var(--ink); background: color-mix(in srgb, var(--ol-tc) 16%, var(--panel-2)); border: 1px solid color-mix(in srgb, var(--ol-tc) 55%, transparent);
+      }
+      .ol-tag .ol-tagx { width: 17px; height: 17px; border-radius: 50%; }
+      .ol-tag .ol-tagx svg { width: 11px; height: 11px; }
+      .ol-tagin {
+        flex: 1 1 70px; min-width: 64px; max-width: 140px; border: 1px dashed var(--line-2); border-radius: 999px; background: transparent;
+        padding: 2px 9px; font: inherit; font-size: 11.5px; color: var(--ink);
+      }
+      .ol-tagin:focus { outline: none; border-style: solid; border-color: var(--accent); background: var(--panel); }
+      .ol-card-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: auto; }
+      .ol-stat { display: inline-flex; align-items: center; gap: 6px; position: relative; flex: 0 0 auto; }
+      .ol-stat select {
+        appearance: none; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel); color: var(--ink);
+        font: inherit; font-size: 12px; font-weight: 600; padding: 2px 22px 2px 24px; cursor: pointer; max-width: 100%;
+      }
+      .ol-stat select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .ol-stat .ol-dot { position: absolute; inset-inline-start: 9px; pointer-events: none; }
+      .ol-stat .ol-chev { position: absolute; inset-inline-end: 7px; width: 11px; height: 11px; pointer-events: none; color: var(--muted); }
+      .ol-meta { font-family: var(--mono-font); font-size: 10.5px; color: var(--muted); white-space: nowrap; text-align: end; margin-inline-start: auto; }
+      .ol-syn { resize: none; field-sizing: content; max-height: 200px; }
+      .ol-partband {
+        grid-column: 1 / -1; position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-top: 6px;
+        border-radius: 8px; border: 1px solid var(--line); background: var(--panel-3);
+      }
+      .ol-partband .ol-open { font-size: 16px; }
+      .ol-partband > svg { width: 15px; height: 15px; color: var(--accent); flex: 0 0 auto; }
+      .ol-partband .ol-tx { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+      .ol-partband.drop-before { box-shadow: inset 0 3px 0 var(--accent); }
+      .ol-partband.drop-after { box-shadow: inset 0 -3px 0 var(--accent); }
+      /* List: the same items as rows */
+      .ol-rows { border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); overflow: hidden; }
+      .ol-row, .ol-rowhead {
+        display: grid; grid-template-columns: 30px minmax(110px, 1fr) minmax(150px, 1.7fr) 112px minmax(100px, 1fr) 62px;
+        gap: 10px; align-items: start; padding: 9px 10px; border-bottom: 1px solid var(--line); position: relative;
+      }
+      .ol-row:last-child { border-bottom: none; }
+      .ol-rowhead { background: var(--panel-3); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-block: 7px; align-items: center; }
+      .ol-row { border-inline-start: 4px solid var(--ol-st, transparent); }
+      .ol-row.active { background: var(--panel); }
+      .ol-row.drop-before { box-shadow: inset 0 3px 0 var(--accent); }
+      .ol-row.drop-after { box-shadow: inset 0 -3px 0 var(--accent); }
+      .ol-row .ol-moves { opacity: 1; margin: 0; flex-direction: column; }
+      .ol-row .ol-open { font-size: 15px; }
+      .ol-row .ol-syn { min-height: 44px; margin: -4px -6px; resize: vertical; }
+      .ol-row .ol-meta { padding-top: 4px; }
+      .ol-row .ol-sc { display: block; margin-top: 2px; font-size: 10px; }
+      .ol-row.ol-partrow { background: var(--panel-3); border-inline-start-color: var(--accent); }
+      .ol-c-pv { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+      .ol-c-pv svg { width: 12px; height: 12px; color: var(--muted); flex: 0 0 auto; }
+      .ol-pov { width: 100%; min-width: 0; font-size: 12px !important; box-sizing: border-box; border: 1px solid transparent; border-radius: 6px; background: transparent; padding: 3px 6px; font: inherit; font-size: 12.5px; color: var(--ink-2); }
+      .ol-pov:hover { border-color: var(--line); }
+      .ol-cl { display: none; }
+      @container (max-width: 600px) {
+        .ol-rowhead { display: none; }
+        .ol-row { grid-template-columns: 30px 1fr auto; grid-template-areas: "mv ti wd" "mv sy sy" "mv st st" "mv tg tg"; row-gap: 6px; }
+        .ol-row > .ol-c-mv { grid-area: mv; } .ol-row > .ol-c-ti { grid-area: ti; } .ol-row > .ol-c-wd { grid-area: wd; }
+        .ol-row > .ol-c-sy { grid-area: sy; } .ol-row > .ol-c-st { grid-area: st; } .ol-row > .ol-c-tg { grid-area: tg; }
+        .ol-row .ol-c-st, .ol-row .ol-c-tg { display: flex; align-items: center; gap: 10px; }
+        .ol-cl { display: inline; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); flex: 0 0 auto; }
+        .ol-row .ol-syn { margin: 0; width: 100%; }
+        .ol-row.ol-partrow { grid-template-areas: "mv ti wd"; }
+      }
+      @container (max-width: 460px) {
+        .ol-cards { grid-template-columns: minmax(0, 1fr); }
+        .ol-card { min-height: 0; }
+        .ol-count { margin-inline-start: 0; width: 100%; }
+      }
+      .ol-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
+      body.zen #tabBtnOutline { display: none; }
+      @media (prefers-reduced-motion: reduce) { .ol-card, .ol-moves { transition: none; } }
+      /* ==== /BEUK:outline ==== */
       /* ==== BEUK:tour ==== — the first-run quick tour: a small card (not
          modal, no backdrop) beside the control it describes, under every
          dialog (.modal-back is z-index 60 and up). */
@@ -2271,6 +2443,7 @@
           <div class="center-tabs" role="tablist">
             <button class="ctab active" id="tabBtnContent" role="tab" data-i18n="tab.content"><i data-lucide="pen-line"></i>Chapter Content</button>
             <button class="ctab" id="tabBtnType" role="tab" data-i18n="tab.type"><i data-lucide="type"></i>Typography Studio</button>
+            <button class="ctab" id="tabBtnOutline" role="tab" data-i18n="ol.tab"><i data-lucide="layout-grid"></i>Outline</button><!-- BEUK:outline -->
           </div>
           <div class="center-body">
             <!-- Tab: content -->
@@ -2407,6 +2580,9 @@
             </div>
 
             <!-- Tab: typography -->
+            <!-- ==== BEUK:outline ==== — Cards and List over the book's own sections -->
+            <div id="panelOutline" class="center-inner ol-inner" style="display:none;"><div id="olRoot"></div><div id="olLive" class="sr-only" aria-live="polite"></div></div>
+            <!-- ==== /BEUK:outline ==== -->
             <div id="panelType" class="center-inner" style="display:none;">
               <h3 class="studio-h" data-i18n="type.presetsH"><i data-lucide="swatch-book"></i>Theme Presets</h3>
               <p class="studio-sub" data-i18n="type.presetsSub">Fifteen full-book themes across the fiction, nonfiction, memoir, academic, children's and poetry shelves. Applying one sets fonts, rhythm, paragraph style and ornaments together — every value stays adjustable below.</p>
@@ -4043,6 +4219,7 @@
         if (typeof historyOnLangChange === "function") historyOnLangChange();
         if (typeof irOnLangChange === "function") irOnLangChange();
         if (typeof pwaOnLangChange === "function") pwaOnLangChange();
+        if (typeof olOnLangChange === "function") olOnLangChange(); /* BEUK:outline */
         if (typeof tourOnLangChange === "function") tourOnLangChange(); /* BEUK:tour */
         if (typeof localOnLangChange === "function") localOnLangChange(); /* BEUK:local */
         if (typeof dictOnLangChange === "function") dictOnLangChange();
@@ -6740,6 +6917,141 @@
       };
       Object.keys(CHOP_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], CHOP_STRINGS[code]); });
       /* ==== /BEUK:chapterops ==== */
+      /* ==== BEUK:outline ==== — the Cards and List words, all 13 packs */
+      const OL_STRINGS = {
+        "en": { "ol.tab": "Outline", "ol.title": "Outline", "ol.sub": "Each card is a section of the book itself. Drag one to reorder the book, or open it on the desk from its title. Synopses, statuses and tags are notes for you: they stay in the book file and are never exported or counted as words.",
+          "ol.viewAria": "Outline view", "ol.viewCards": "Cards", "ol.viewList": "List", "ol.matter": "Front and back matter", "ol.filter": "Filter",
+          "ol.status.none": "No status", "ol.status.todo": "To do", "ol.status.draft": "Draft", "ol.status.revised": "Revised", "ol.status.final": "Final",
+          "ol.statusFor": "Status of {name}", "ol.synPh": "Synopsis — what happens here", "ol.synFor": "Synopsis of {name}", "ol.tagAdd": "Add tag", "ol.tagAddFor": "Add a tag to {name}", "ol.tagRemove": "Remove the tag {tag} from {name}", "ol.povPh": "Point of view", "ol.povFor": "Point of view in {name}",
+          "ol.colTitle": "Title", "ol.colSyn": "Synopsis", "ol.colStatus": "Status", "ol.colTags": "Tags", "ol.colPov": "POV", "ol.colWords": "Words",
+          "ol.scenes": "scenes: {n}", "ol.shown": "Showing {shown} of {total}", "ol.hidden": "hidden by the filter: {n}", "ol.clear": "Clear filter",
+          "ol.saved": "Saved filters", "ol.savedNone": "None yet. Pick a status or tags, then name the filter to keep it.", "ol.saveName": "Name for this filter", "ol.saveNamePh": "Name it, e.g. Needs work", "ol.saveDo": "Save filter", "ol.savedDel": "Delete the saved filter {name}", "ol.savedToast": "Filter saved: {name}",
+          "ol.tagsNone": "No tags yet — type one on a card.", "ol.tagsManage": "Tags in this book ({n})", "ol.tagUses": "sections: {n}", "ol.tagColourFor": "Colour of {tag}", "ol.tagColourN": "Colour {n}", "ol.tagDelete": "Remove {tag} from the whole book", "ol.tagDeleted": "Tag removed: {tag}",
+          "ol.moved": "Moved {name}", "ol.movedPos": "{name}: position {pos} of {total}", "ol.moveEarlier": "Move earlier", "ol.moveLater": "Move later", "ol.moveEarlierFor": "Move {name} earlier", "ol.moveLaterFor": "Move {name} later", "ol.openFor": "Open {name} on the desk",
+          "ol.kbdHint": "Keyboard: Alt + arrow keys move the focused card or row; Enter opens it on the desk.", "ol.empty": "Nothing in this group matches the filter.", "history.auto.chopMove": "Before moving {name}" },
+        "es": { "ol.tab": "Esquema", "ol.title": "Esquema", "ol.sub": "Cada tarjeta es una sección del propio libro. Arrástrala para reordenar el libro o ábrela en el escritorio desde su título. Las sinopsis, los estados y las etiquetas son notas para ti: se guardan en el archivo del libro y nunca se exportan ni cuentan como palabras.",
+          "ol.viewAria": "Vista del esquema", "ol.viewCards": "Tarjetas", "ol.viewList": "Lista", "ol.matter": "Preliminares y finales", "ol.filter": "Filtro",
+          "ol.status.none": "Sin estado", "ol.status.todo": "Por hacer", "ol.status.draft": "Borrador", "ol.status.revised": "Revisado", "ol.status.final": "Final",
+          "ol.statusFor": "Estado de {name}", "ol.synPh": "Sinopsis: qué ocurre aquí", "ol.synFor": "Sinopsis de {name}", "ol.tagAdd": "Añadir etiqueta", "ol.tagAddFor": "Añadir una etiqueta a {name}", "ol.tagRemove": "Quitar la etiqueta {tag} de {name}", "ol.povPh": "Punto de vista", "ol.povFor": "Punto de vista en {name}",
+          "ol.colTitle": "Título", "ol.colSyn": "Sinopsis", "ol.colStatus": "Estado", "ol.colTags": "Etiquetas", "ol.colPov": "PDV", "ol.colWords": "Palabras",
+          "ol.scenes": "escenas: {n}", "ol.shown": "Se muestran {shown} de {total}", "ol.hidden": "ocultas por el filtro: {n}", "ol.clear": "Quitar filtro",
+          "ol.saved": "Filtros guardados", "ol.savedNone": "Aún ninguno. Elige un estado o etiquetas y ponle nombre al filtro para guardarlo.", "ol.saveName": "Nombre de este filtro", "ol.saveNamePh": "Ponle nombre, p. ej. Pendiente", "ol.saveDo": "Guardar filtro", "ol.savedDel": "Eliminar el filtro guardado {name}", "ol.savedToast": "Filtro guardado: {name}",
+          "ol.tagsNone": "Aún no hay etiquetas: escribe una en una tarjeta.", "ol.tagsManage": "Etiquetas de este libro ({n})", "ol.tagUses": "secciones: {n}", "ol.tagColourFor": "Color de {tag}", "ol.tagColourN": "Color {n}", "ol.tagDelete": "Quitar {tag} de todo el libro", "ol.tagDeleted": "Etiqueta quitada: {tag}",
+          "ol.moved": "Movida: {name}", "ol.movedPos": "{name}: posición {pos} de {total}", "ol.moveEarlier": "Mover antes", "ol.moveLater": "Mover después", "ol.moveEarlierFor": "Mover {name} antes", "ol.moveLaterFor": "Mover {name} después", "ol.openFor": "Abrir {name} en el escritorio",
+          "ol.kbdHint": "Teclado: Alt + flechas mueven la tarjeta o fila enfocada; Intro la abre en el escritorio.", "ol.empty": "Nada de este grupo coincide con el filtro.", "history.auto.chopMove": "Antes de mover {name}" },
+        "fr": { "ol.tab": "Plan", "ol.title": "Plan", "ol.sub": "Chaque fiche est une section du livre lui-même. Faites-la glisser pour réordonner le livre, ou ouvrez-la sur le bureau depuis son titre. Synopsis, statuts et étiquettes sont des notes pour vous : ils restent dans le fichier du livre, ne sont jamais exportés ni comptés comme mots.",
+          "ol.viewAria": "Vue du plan", "ol.viewCards": "Fiches", "ol.viewList": "Liste", "ol.matter": "Pages liminaires et finales", "ol.filter": "Filtre",
+          "ol.status.none": "Sans statut", "ol.status.todo": "À faire", "ol.status.draft": "Brouillon", "ol.status.revised": "Révisé", "ol.status.final": "Final",
+          "ol.statusFor": "Statut de {name}", "ol.synPh": "Synopsis — ce qui se passe ici", "ol.synFor": "Synopsis de {name}", "ol.tagAdd": "Ajouter une étiquette", "ol.tagAddFor": "Ajouter une étiquette à {name}", "ol.tagRemove": "Retirer l’étiquette {tag} de {name}", "ol.povPh": "Point de vue", "ol.povFor": "Point de vue dans {name}",
+          "ol.colTitle": "Titre", "ol.colSyn": "Synopsis", "ol.colStatus": "Statut", "ol.colTags": "Étiquettes", "ol.colPov": "PDV", "ol.colWords": "Mots",
+          "ol.scenes": "scènes : {n}", "ol.shown": "{shown} affichées sur {total}", "ol.hidden": "masquées par le filtre : {n}", "ol.clear": "Effacer le filtre",
+          "ol.saved": "Filtres enregistrés", "ol.savedNone": "Aucun pour l’instant. Choisissez un statut ou des étiquettes, puis nommez le filtre pour le garder.", "ol.saveName": "Nom de ce filtre", "ol.saveNamePh": "Nommez-le, p. ex. À reprendre", "ol.saveDo": "Enregistrer le filtre", "ol.savedDel": "Supprimer le filtre enregistré {name}", "ol.savedToast": "Filtre enregistré : {name}",
+          "ol.tagsNone": "Pas encore d’étiquettes — tapez-en une sur une fiche.", "ol.tagsManage": "Étiquettes de ce livre ({n})", "ol.tagUses": "sections : {n}", "ol.tagColourFor": "Couleur de {tag}", "ol.tagColourN": "Couleur {n}", "ol.tagDelete": "Retirer {tag} de tout le livre", "ol.tagDeleted": "Étiquette retirée : {tag}",
+          "ol.moved": "Déplacé : {name}", "ol.movedPos": "{name} : position {pos} sur {total}", "ol.moveEarlier": "Avancer", "ol.moveLater": "Reculer", "ol.moveEarlierFor": "Avancer {name}", "ol.moveLaterFor": "Reculer {name}", "ol.openFor": "Ouvrir {name} sur le bureau",
+          "ol.kbdHint": "Clavier : Alt + flèches déplacent la fiche ou la ligne active ; Entrée l’ouvre sur le bureau.", "ol.empty": "Rien dans ce groupe ne correspond au filtre.", "history.auto.chopMove": "Avant de déplacer {name}" },
+        "de": { "ol.tab": "Gliederung", "ol.title": "Gliederung", "ol.sub": "Jede Karte ist ein Abschnitt des Buches selbst. Ziehen Sie sie, um das Buch neu zu ordnen, oder öffnen Sie sie über ihren Titel am Schreibtisch. Exposés, Status und Schlagwörter sind Notizen für Sie: Sie bleiben in der Buchdatei und werden nie exportiert oder als Wörter gezählt.",
+          "ol.viewAria": "Ansicht der Gliederung", "ol.viewCards": "Karten", "ol.viewList": "Liste", "ol.matter": "Titelei und Anhang", "ol.filter": "Filter",
+          "ol.status.none": "Kein Status", "ol.status.todo": "Offen", "ol.status.draft": "Entwurf", "ol.status.revised": "Überarbeitet", "ol.status.final": "Fertig",
+          "ol.statusFor": "Status von {name}", "ol.synPh": "Exposé – was hier geschieht", "ol.synFor": "Exposé von {name}", "ol.tagAdd": "Schlagwort hinzufügen", "ol.tagAddFor": "Ein Schlagwort zu {name} hinzufügen", "ol.tagRemove": "Schlagwort {tag} von {name} entfernen", "ol.povPh": "Erzählperspektive", "ol.povFor": "Erzählperspektive in {name}",
+          "ol.colTitle": "Titel", "ol.colSyn": "Exposé", "ol.colStatus": "Status", "ol.colTags": "Schlagwörter", "ol.colPov": "Perspektive", "ol.colWords": "Wörter",
+          "ol.scenes": "Szenen: {n}", "ol.shown": "{shown} von {total} sichtbar", "ol.hidden": "vom Filter ausgeblendet: {n}", "ol.clear": "Filter löschen",
+          "ol.saved": "Gespeicherte Filter", "ol.savedNone": "Noch keine. Wählen Sie einen Status oder Schlagwörter und benennen Sie den Filter, um ihn zu behalten.", "ol.saveName": "Name dieses Filters", "ol.saveNamePh": "Benennen, z. B. Noch zu tun", "ol.saveDo": "Filter speichern", "ol.savedDel": "Gespeicherten Filter {name} löschen", "ol.savedToast": "Filter gespeichert: {name}",
+          "ol.tagsNone": "Noch keine Schlagwörter – tippen Sie eines auf einer Karte ein.", "ol.tagsManage": "Schlagwörter in diesem Buch ({n})", "ol.tagUses": "Abschnitte: {n}", "ol.tagColourFor": "Farbe von {tag}", "ol.tagColourN": "Farbe {n}", "ol.tagDelete": "{tag} aus dem ganzen Buch entfernen", "ol.tagDeleted": "Schlagwort entfernt: {tag}",
+          "ol.moved": "Verschoben: {name}", "ol.movedPos": "{name}: Position {pos} von {total}", "ol.moveEarlier": "Nach vorn", "ol.moveLater": "Nach hinten", "ol.moveEarlierFor": "{name} nach vorn verschieben", "ol.moveLaterFor": "{name} nach hinten verschieben", "ol.openFor": "{name} am Schreibtisch öffnen",
+          "ol.kbdHint": "Tastatur: Alt + Pfeiltasten verschieben die fokussierte Karte oder Zeile; Eingabe öffnet sie am Schreibtisch.", "ol.empty": "In dieser Gruppe passt nichts zum Filter.", "history.auto.chopMove": "Vor dem Verschieben von {name}" },
+        "it": { "ol.tab": "Scaletta", "ol.title": "Scaletta", "ol.sub": "Ogni scheda è una sezione del libro stesso. Trascinala per riordinare il libro, oppure aprila sulla scrivania dal suo titolo. Sinossi, stati ed etichette sono note per te: restano nel file del libro e non vengono mai esportati né contati come parole.",
+          "ol.viewAria": "Vista della scaletta", "ol.viewCards": "Schede", "ol.viewList": "Elenco", "ol.matter": "Pagine iniziali e finali", "ol.filter": "Filtro",
+          "ol.status.none": "Nessuno stato", "ol.status.todo": "Da fare", "ol.status.draft": "Bozza", "ol.status.revised": "Rivisto", "ol.status.final": "Definitivo",
+          "ol.statusFor": "Stato di {name}", "ol.synPh": "Sinossi: cosa succede qui", "ol.synFor": "Sinossi di {name}", "ol.tagAdd": "Aggiungi etichetta", "ol.tagAddFor": "Aggiungi un’etichetta a {name}", "ol.tagRemove": "Togli l’etichetta {tag} da {name}", "ol.povPh": "Punto di vista", "ol.povFor": "Punto di vista in {name}",
+          "ol.colTitle": "Titolo", "ol.colSyn": "Sinossi", "ol.colStatus": "Stato", "ol.colTags": "Etichette", "ol.colPov": "PDV", "ol.colWords": "Parole",
+          "ol.scenes": "scene: {n}", "ol.shown": "Visibili {shown} su {total}", "ol.hidden": "nascoste dal filtro: {n}", "ol.clear": "Togli filtro",
+          "ol.saved": "Filtri salvati", "ol.savedNone": "Ancora nessuno. Scegli uno stato o delle etichette, poi dai un nome al filtro per tenerlo.", "ol.saveName": "Nome di questo filtro", "ol.saveNamePh": "Dagli un nome, ad es. Da rivedere", "ol.saveDo": "Salva filtro", "ol.savedDel": "Elimina il filtro salvato {name}", "ol.savedToast": "Filtro salvato: {name}",
+          "ol.tagsNone": "Ancora nessuna etichetta: scrivine una su una scheda.", "ol.tagsManage": "Etichette di questo libro ({n})", "ol.tagUses": "sezioni: {n}", "ol.tagColourFor": "Colore di {tag}", "ol.tagColourN": "Colore {n}", "ol.tagDelete": "Togli {tag} da tutto il libro", "ol.tagDeleted": "Etichetta tolta: {tag}",
+          "ol.moved": "Spostata: {name}", "ol.movedPos": "{name}: posizione {pos} di {total}", "ol.moveEarlier": "Sposta prima", "ol.moveLater": "Sposta dopo", "ol.moveEarlierFor": "Sposta {name} prima", "ol.moveLaterFor": "Sposta {name} dopo", "ol.openFor": "Apri {name} sulla scrivania",
+          "ol.kbdHint": "Tastiera: Alt + frecce spostano la scheda o la riga attiva; Invio la apre sulla scrivania.", "ol.empty": "Niente in questo gruppo corrisponde al filtro.", "history.auto.chopMove": "Prima di spostare {name}" },
+        "pt": { "ol.tab": "Esquema", "ol.title": "Esquema", "ol.sub": "Cada cartão é uma secção do próprio livro. Arraste-o para reordenar o livro ou abra-o na secretária a partir do título. Sinopses, estados e etiquetas são notas para si: ficam no ficheiro do livro e nunca são exportados nem contados como palavras.",
+          "ol.viewAria": "Vista do esquema", "ol.viewCards": "Cartões", "ol.viewList": "Lista", "ol.matter": "Pré e pós-textuais", "ol.filter": "Filtro",
+          "ol.status.none": "Sem estado", "ol.status.todo": "Por fazer", "ol.status.draft": "Rascunho", "ol.status.revised": "Revisto", "ol.status.final": "Final",
+          "ol.statusFor": "Estado de {name}", "ol.synPh": "Sinopse — o que acontece aqui", "ol.synFor": "Sinopse de {name}", "ol.tagAdd": "Adicionar etiqueta", "ol.tagAddFor": "Adicionar uma etiqueta a {name}", "ol.tagRemove": "Retirar a etiqueta {tag} de {name}", "ol.povPh": "Ponto de vista", "ol.povFor": "Ponto de vista em {name}",
+          "ol.colTitle": "Título", "ol.colSyn": "Sinopse", "ol.colStatus": "Estado", "ol.colTags": "Etiquetas", "ol.colPov": "PDV", "ol.colWords": "Palavras",
+          "ol.scenes": "cenas: {n}", "ol.shown": "A mostrar {shown} de {total}", "ol.hidden": "ocultas pelo filtro: {n}", "ol.clear": "Limpar filtro",
+          "ol.saved": "Filtros guardados", "ol.savedNone": "Ainda nenhum. Escolha um estado ou etiquetas e dê um nome ao filtro para o guardar.", "ol.saveName": "Nome deste filtro", "ol.saveNamePh": "Dê-lhe um nome, p. ex. A rever", "ol.saveDo": "Guardar filtro", "ol.savedDel": "Eliminar o filtro guardado {name}", "ol.savedToast": "Filtro guardado: {name}",
+          "ol.tagsNone": "Ainda sem etiquetas — escreva uma num cartão.", "ol.tagsManage": "Etiquetas deste livro ({n})", "ol.tagUses": "secções: {n}", "ol.tagColourFor": "Cor de {tag}", "ol.tagColourN": "Cor {n}", "ol.tagDelete": "Retirar {tag} de todo o livro", "ol.tagDeleted": "Etiqueta retirada: {tag}",
+          "ol.moved": "Movida: {name}", "ol.movedPos": "{name}: posição {pos} de {total}", "ol.moveEarlier": "Mover para antes", "ol.moveLater": "Mover para depois", "ol.moveEarlierFor": "Mover {name} para antes", "ol.moveLaterFor": "Mover {name} para depois", "ol.openFor": "Abrir {name} na secretária",
+          "ol.kbdHint": "Teclado: Alt + setas movem o cartão ou a linha em foco; Enter abre-o na secretária.", "ol.empty": "Nada neste grupo corresponde ao filtro.", "history.auto.chopMove": "Antes de mover {name}" },
+        "nl": { "ol.tab": "Opzet", "ol.title": "Opzet", "ol.sub": "Elke kaart is een deel van het boek zelf. Sleep een kaart om het boek te herordenen, of open hem via de titel op het bureau. Synopsissen, statussen en labels zijn notities voor jou: ze blijven in het boekbestand en worden nooit geëxporteerd of als woorden geteld.",
+          "ol.viewAria": "Weergave van de opzet", "ol.viewCards": "Kaarten", "ol.viewList": "Lijst", "ol.matter": "Voorwerk en nawerk", "ol.filter": "Filter",
+          "ol.status.none": "Geen status", "ol.status.todo": "Te doen", "ol.status.draft": "Concept", "ol.status.revised": "Herzien", "ol.status.final": "Definitief",
+          "ol.statusFor": "Status van {name}", "ol.synPh": "Synopsis — wat hier gebeurt", "ol.synFor": "Synopsis van {name}", "ol.tagAdd": "Label toevoegen", "ol.tagAddFor": "Een label toevoegen aan {name}", "ol.tagRemove": "Label {tag} van {name} verwijderen", "ol.povPh": "Perspectief", "ol.povFor": "Perspectief in {name}",
+          "ol.colTitle": "Titel", "ol.colSyn": "Synopsis", "ol.colStatus": "Status", "ol.colTags": "Labels", "ol.colPov": "Perspectief", "ol.colWords": "Woorden",
+          "ol.scenes": "scènes: {n}", "ol.shown": "{shown} van {total} zichtbaar", "ol.hidden": "verborgen door het filter: {n}", "ol.clear": "Filter wissen",
+          "ol.saved": "Bewaarde filters", "ol.savedNone": "Nog geen. Kies een status of labels en geef het filter een naam om het te bewaren.", "ol.saveName": "Naam van dit filter", "ol.saveNamePh": "Geef een naam, bijv. Nog doen", "ol.saveDo": "Filter bewaren", "ol.savedDel": "Bewaard filter {name} verwijderen", "ol.savedToast": "Filter bewaard: {name}",
+          "ol.tagsNone": "Nog geen labels — typ er een op een kaart.", "ol.tagsManage": "Labels in dit boek ({n})", "ol.tagUses": "delen: {n}", "ol.tagColourFor": "Kleur van {tag}", "ol.tagColourN": "Kleur {n}", "ol.tagDelete": "{tag} uit het hele boek verwijderen", "ol.tagDeleted": "Label verwijderd: {tag}",
+          "ol.moved": "Verplaatst: {name}", "ol.movedPos": "{name}: plaats {pos} van {total}", "ol.moveEarlier": "Naar voren", "ol.moveLater": "Naar achteren", "ol.moveEarlierFor": "{name} naar voren", "ol.moveLaterFor": "{name} naar achteren", "ol.openFor": "{name} op het bureau openen",
+          "ol.kbdHint": "Toetsenbord: Alt + pijltjes verplaatsen de kaart of rij met focus; Enter opent hem op het bureau.", "ol.empty": "Niets in deze groep past bij het filter.", "history.auto.chopMove": "Vóór het verplaatsen van {name}" },
+        "pl": { "ol.tab": "Konspekt", "ol.title": "Konspekt", "ol.sub": "Każda karta to sekcja samej książki. Przeciągnij ją, by zmienić kolejność w książce, albo otwórz ją na biurku z poziomu tytułu. Streszczenia, statusy i tagi to notatki dla ciebie: zostają w pliku książki i nigdy nie trafiają do eksportu ani do liczby słów.",
+          "ol.viewAria": "Widok konspektu", "ol.viewCards": "Karty", "ol.viewList": "Lista", "ol.matter": "Strony przednie i końcowe", "ol.filter": "Filtr",
+          "ol.status.none": "Bez statusu", "ol.status.todo": "Do zrobienia", "ol.status.draft": "Szkic", "ol.status.revised": "Poprawione", "ol.status.final": "Gotowe",
+          "ol.statusFor": "Status: {name}", "ol.synPh": "Streszczenie — co się tu dzieje", "ol.synFor": "Streszczenie: {name}", "ol.tagAdd": "Dodaj tag", "ol.tagAddFor": "Dodaj tag: {name}", "ol.tagRemove": "Usuń tag {tag} z: {name}", "ol.povPh": "Punkt widzenia", "ol.povFor": "Punkt widzenia: {name}",
+          "ol.colTitle": "Tytuł", "ol.colSyn": "Streszczenie", "ol.colStatus": "Status", "ol.colTags": "Tagi", "ol.colPov": "Narrator", "ol.colWords": "Słowa",
+          "ol.scenes": "sceny: {n}", "ol.shown": "Widoczne: {shown} z {total}", "ol.hidden": "ukryte przez filtr: {n}", "ol.clear": "Wyczyść filtr",
+          "ol.saved": "Zapisane filtry", "ol.savedNone": "Jeszcze żadnych. Wybierz status lub tagi, a potem nazwij filtr, by go zachować.", "ol.saveName": "Nazwa tego filtra", "ol.saveNamePh": "Nazwij go, np. Do poprawy", "ol.saveDo": "Zapisz filtr", "ol.savedDel": "Usuń zapisany filtr {name}", "ol.savedToast": "Zapisano filtr: {name}",
+          "ol.tagsNone": "Jeszcze nie ma tagów — wpisz jeden na karcie.", "ol.tagsManage": "Tagi w tej książce ({n})", "ol.tagUses": "sekcje: {n}", "ol.tagColourFor": "Kolor tagu {tag}", "ol.tagColourN": "Kolor {n}", "ol.tagDelete": "Usuń {tag} z całej książki", "ol.tagDeleted": "Usunięto tag: {tag}",
+          "ol.moved": "Przeniesiono: {name}", "ol.movedPos": "{name}: pozycja {pos} z {total}", "ol.moveEarlier": "Przenieś wcześniej", "ol.moveLater": "Przenieś później", "ol.moveEarlierFor": "Przenieś wcześniej: {name}", "ol.moveLaterFor": "Przenieś później: {name}", "ol.openFor": "Otwórz na biurku: {name}",
+          "ol.kbdHint": "Klawiatura: Alt + strzałki przesuwają aktywną kartę lub wiersz; Enter otwiera ją na biurku.", "ol.empty": "Nic w tej grupie nie pasuje do filtra.", "history.auto.chopMove": "Przed przeniesieniem: {name}" },
+        "ru": { "ol.tab": "План", "ol.title": "План", "ol.sub": "Каждая карточка — это раздел самой книги. Перетащите её, чтобы изменить порядок в книге, или откройте её на рабочем столе по заголовку. Синопсисы, статусы и метки — это заметки для вас: они хранятся в файле книги и никогда не попадают в экспорт и в подсчёт слов.",
+          "ol.viewAria": "Вид плана", "ol.viewCards": "Карточки", "ol.viewList": "Список", "ol.matter": "Начальные и конечные страницы", "ol.filter": "Фильтр",
+          "ol.status.none": "Без статуса", "ol.status.todo": "Сделать", "ol.status.draft": "Черновик", "ol.status.revised": "Исправлено", "ol.status.final": "Готово",
+          "ol.statusFor": "Статус: {name}", "ol.synPh": "Синопсис — что здесь происходит", "ol.synFor": "Синопсис: {name}", "ol.tagAdd": "Добавить метку", "ol.tagAddFor": "Добавить метку: {name}", "ol.tagRemove": "Снять метку {tag}: {name}", "ol.povPh": "Точка зрения", "ol.povFor": "Точка зрения: {name}",
+          "ol.colTitle": "Название", "ol.colSyn": "Синопсис", "ol.colStatus": "Статус", "ol.colTags": "Метки", "ol.colPov": "Рассказчик", "ol.colWords": "Слова",
+          "ol.scenes": "сцены: {n}", "ol.shown": "Показано: {shown} из {total}", "ol.hidden": "скрыто фильтром: {n}", "ol.clear": "Сбросить фильтр",
+          "ol.saved": "Сохранённые фильтры", "ol.savedNone": "Пока нет. Выберите статус или метки и дайте фильтру имя, чтобы сохранить его.", "ol.saveName": "Имя этого фильтра", "ol.saveNamePh": "Дайте имя, например «Доработать»", "ol.saveDo": "Сохранить фильтр", "ol.savedDel": "Удалить сохранённый фильтр {name}", "ol.savedToast": "Фильтр сохранён: {name}",
+          "ol.tagsNone": "Меток пока нет — введите метку на карточке.", "ol.tagsManage": "Метки этой книги ({n})", "ol.tagUses": "разделы: {n}", "ol.tagColourFor": "Цвет метки {tag}", "ol.tagColourN": "Цвет {n}", "ol.tagDelete": "Снять {tag} во всей книге", "ol.tagDeleted": "Метка снята: {tag}",
+          "ol.moved": "Перемещено: {name}", "ol.movedPos": "{name}: позиция {pos} из {total}", "ol.moveEarlier": "Переместить раньше", "ol.moveLater": "Переместить позже", "ol.moveEarlierFor": "Переместить раньше: {name}", "ol.moveLaterFor": "Переместить позже: {name}", "ol.openFor": "Открыть на рабочем столе: {name}",
+          "ol.kbdHint": "Клавиатура: Alt + стрелки перемещают выбранную карточку или строку; Enter открывает её на рабочем столе.", "ol.empty": "В этой группе ничего не подходит под фильтр.", "history.auto.chopMove": "Перед перемещением: {name}" },
+        "tr": { "ol.tab": "Taslak planı", "ol.title": "Taslak planı", "ol.sub": "Her kart kitabın kendi bölümlerinden biridir. Kitabı yeniden sıralamak için kartı sürükleyin ya da başlığından masada açın. Özetler, durumlar ve etiketler sizin için notlardır: kitap dosyasında kalır, asla dışa aktarılmaz ve sözcük olarak sayılmaz.",
+          "ol.viewAria": "Plan görünümü", "ol.viewCards": "Kartlar", "ol.viewList": "Liste", "ol.matter": "Ön ve arka sayfalar", "ol.filter": "Süzgeç",
+          "ol.status.none": "Durum yok", "ol.status.todo": "Yapılacak", "ol.status.draft": "Taslak", "ol.status.revised": "Gözden geçirildi", "ol.status.final": "Son",
+          "ol.statusFor": "{name} durumu", "ol.synPh": "Özet — burada ne oluyor", "ol.synFor": "{name} özeti", "ol.tagAdd": "Etiket ekle", "ol.tagAddFor": "{name} bölümüne etiket ekle", "ol.tagRemove": "{tag} etiketini {name} bölümünden kaldır", "ol.povPh": "Bakış açısı", "ol.povFor": "{name} bakış açısı",
+          "ol.colTitle": "Başlık", "ol.colSyn": "Özet", "ol.colStatus": "Durum", "ol.colTags": "Etiketler", "ol.colPov": "Bakış", "ol.colWords": "Sözcük",
+          "ol.scenes": "sahne: {n}", "ol.shown": "{total} içinden {shown} gösteriliyor", "ol.hidden": "süzgecin gizlediği: {n}", "ol.clear": "Süzgeci temizle",
+          "ol.saved": "Kayıtlı süzgeçler", "ol.savedNone": "Henüz yok. Bir durum ya da etiket seçin, süzgeci saklamak için ona bir ad verin.", "ol.saveName": "Bu süzgecin adı", "ol.saveNamePh": "Bir ad verin, ör. Elden geçecek", "ol.saveDo": "Süzgeci kaydet", "ol.savedDel": "Kayıtlı {name} süzgecini sil", "ol.savedToast": "Süzgeç kaydedildi: {name}",
+          "ol.tagsNone": "Henüz etiket yok — bir karta yazın.", "ol.tagsManage": "Bu kitaptaki etiketler ({n})", "ol.tagUses": "bölüm: {n}", "ol.tagColourFor": "{tag} rengi", "ol.tagColourN": "Renk {n}", "ol.tagDelete": "{tag} etiketini bütün kitaptan kaldır", "ol.tagDeleted": "Etiket kaldırıldı: {tag}",
+          "ol.moved": "Taşındı: {name}", "ol.movedPos": "{name}: {total} içinde {pos}. sıra", "ol.moveEarlier": "Öne al", "ol.moveLater": "Geriye al", "ol.moveEarlierFor": "{name} bölümünü öne al", "ol.moveLaterFor": "{name} bölümünü geriye al", "ol.openFor": "{name} bölümünü masada aç",
+          "ol.kbdHint": "Klavye: Alt + ok tuşları odaktaki kartı ya da satırı taşır; Enter onu masada açar.", "ol.empty": "Bu gruptaki hiçbir şey süzgece uymuyor.", "history.auto.chopMove": "{name} taşınmadan önce" },
+        "ar": { "ol.tab": "المخطط", "ol.title": "المخطط", "ol.sub": "كل بطاقة قسمٌ من الكتاب نفسه. اسحبها لإعادة ترتيب الكتاب، أو افتحها على المكتب من عنوانها. الملخصات والحالات والوسوم ملاحظات لك: تبقى في ملف الكتاب ولا تُصدَّر أبدًا ولا تُحسب كلماتٍ.",
+          "ol.viewAria": "عرض المخطط", "ol.viewCards": "بطاقات", "ol.viewList": "قائمة", "ol.matter": "الصفحات التمهيدية والختامية", "ol.filter": "تصفية",
+          "ol.status.none": "بلا حالة", "ol.status.todo": "للإنجاز", "ol.status.draft": "مسودة", "ol.status.revised": "منقّح", "ol.status.final": "نهائي",
+          "ol.statusFor": "حالة {name}", "ol.synPh": "الملخص — ما يجري هنا", "ol.synFor": "ملخص {name}", "ol.tagAdd": "أضف وسمًا", "ol.tagAddFor": "أضف وسمًا إلى {name}", "ol.tagRemove": "أزل الوسم {tag} من {name}", "ol.povPh": "وجهة النظر", "ol.povFor": "وجهة النظر في {name}",
+          "ol.colTitle": "العنوان", "ol.colSyn": "الملخص", "ol.colStatus": "الحالة", "ol.colTags": "الوسوم", "ol.colPov": "الراوي", "ol.colWords": "الكلمات",
+          "ol.scenes": "المشاهد: {n}", "ol.shown": "المعروض {shown} من {total}", "ol.hidden": "أخفاها المرشّح: {n}", "ol.clear": "امسح التصفية",
+          "ol.saved": "مرشّحات محفوظة", "ol.savedNone": "لا شيء بعد. اختر حالةً أو وسومًا، ثم سمِّ المرشّح لتحتفظ به.", "ol.saveName": "اسم هذا المرشّح", "ol.saveNamePh": "سمِّه، مثلًا: يحتاج عملًا", "ol.saveDo": "احفظ المرشّح", "ol.savedDel": "احذف المرشّح المحفوظ {name}", "ol.savedToast": "حُفظ المرشّح: {name}",
+          "ol.tagsNone": "لا وسوم بعد — اكتب وسمًا على بطاقة.", "ol.tagsManage": "وسوم هذا الكتاب ({n})", "ol.tagUses": "الأقسام: {n}", "ol.tagColourFor": "لون {tag}", "ol.tagColourN": "اللون {n}", "ol.tagDelete": "أزل {tag} من الكتاب كله", "ol.tagDeleted": "أُزيل الوسم: {tag}",
+          "ol.moved": "نُقل: {name}", "ol.movedPos": "{name}: الموضع {pos} من {total}", "ol.moveEarlier": "انقل إلى الأمام", "ol.moveLater": "انقل إلى الخلف", "ol.moveEarlierFor": "انقل {name} إلى الأمام", "ol.moveLaterFor": "انقل {name} إلى الخلف", "ol.openFor": "افتح {name} على المكتب",
+          "ol.kbdHint": "لوحة المفاتيح: Alt مع الأسهم تنقل البطاقة أو الصف المحدد؛ و‏Enter يفتحه على المكتب.", "ol.empty": "لا شيء في هذه المجموعة يطابق التصفية.", "history.auto.chopMove": "قبل نقل {name}" },
+        "ja": { "ol.tab": "アウトライン", "ol.title": "アウトライン", "ol.sub": "カード一枚一枚が本そのもののセクションです。ドラッグすると本の順序が変わり、タイトルからデスクで開けます。あらすじ・ステータス・タグはあなたのためのメモで、本のファイルに残りますが、書き出されることも語数に数えられることもありません。",
+          "ol.viewAria": "アウトラインの表示", "ol.viewCards": "カード", "ol.viewList": "リスト", "ol.matter": "前付けと後付け", "ol.filter": "絞り込み",
+          "ol.status.none": "ステータスなし", "ol.status.todo": "未着手", "ol.status.draft": "下書き", "ol.status.revised": "推敲済み", "ol.status.final": "完成",
+          "ol.statusFor": "{name} のステータス", "ol.synPh": "あらすじ — ここで起きること", "ol.synFor": "{name} のあらすじ", "ol.tagAdd": "タグを追加", "ol.tagAddFor": "{name} にタグを追加", "ol.tagRemove": "{name} からタグ {tag} を外す", "ol.povPh": "視点", "ol.povFor": "{name} の視点",
+          "ol.colTitle": "タイトル", "ol.colSyn": "あらすじ", "ol.colStatus": "ステータス", "ol.colTags": "タグ", "ol.colPov": "視点", "ol.colWords": "語数",
+          "ol.scenes": "場面: {n}", "ol.shown": "{total} 件中 {shown} 件を表示", "ol.hidden": "絞り込みで非表示: {n}", "ol.clear": "絞り込みを解除",
+          "ol.saved": "保存した絞り込み", "ol.savedNone": "まだありません。ステータスかタグを選び、名前を付けると保存できます。", "ol.saveName": "この絞り込みの名前", "ol.saveNamePh": "名前を付ける（例: 要手直し）", "ol.saveDo": "絞り込みを保存", "ol.savedDel": "保存した絞り込み {name} を削除", "ol.savedToast": "絞り込みを保存しました: {name}",
+          "ol.tagsNone": "タグはまだありません。カードに入力してください。", "ol.tagsManage": "この本のタグ（{n}）", "ol.tagUses": "セクション: {n}", "ol.tagColourFor": "{tag} の色", "ol.tagColourN": "色 {n}", "ol.tagDelete": "{tag} を本全体から外す", "ol.tagDeleted": "タグを外しました: {tag}",
+          "ol.moved": "移動しました: {name}", "ol.movedPos": "{name}: {total} 件中 {pos} 番目", "ol.moveEarlier": "前へ移動", "ol.moveLater": "後ろへ移動", "ol.moveEarlierFor": "{name} を前へ移動", "ol.moveLaterFor": "{name} を後ろへ移動", "ol.openFor": "{name} をデスクで開く",
+          "ol.kbdHint": "キーボード: Alt + 矢印キーで選択中のカードや行を移動、Enter でデスクに開きます。", "ol.empty": "このグループには絞り込みに合うものがありません。", "history.auto.chopMove": "{name} の移動前" },
+        "zh-Hans": { "ol.tab": "大纲", "ol.title": "大纲", "ol.sub": "每张卡片都是书本身的一个部分。拖动卡片即可调整全书顺序，点标题可在书桌上打开。梗概、状态和标签是写给你自己的笔记：它们保存在书的文件里，从不导出，也不计入字数。",
+          "ol.viewAria": "大纲视图", "ol.viewCards": "卡片", "ol.viewList": "列表", "ol.matter": "前辅文与后辅文", "ol.filter": "筛选",
+          "ol.status.none": "无状态", "ol.status.todo": "待写", "ol.status.draft": "初稿", "ol.status.revised": "已修改", "ol.status.final": "定稿",
+          "ol.statusFor": "{name} 的状态", "ol.synPh": "梗概——这里发生了什么", "ol.synFor": "{name} 的梗概", "ol.tagAdd": "添加标签", "ol.tagAddFor": "为 {name} 添加标签", "ol.tagRemove": "从 {name} 移除标签 {tag}", "ol.povPh": "视角", "ol.povFor": "{name} 的视角",
+          "ol.colTitle": "标题", "ol.colSyn": "梗概", "ol.colStatus": "状态", "ol.colTags": "标签", "ol.colPov": "视角", "ol.colWords": "字数",
+          "ol.scenes": "场景：{n}", "ol.shown": "显示 {shown} / {total}", "ol.hidden": "被筛选隐藏：{n}", "ol.clear": "清除筛选",
+          "ol.saved": "已保存的筛选", "ol.savedNone": "还没有。选一个状态或标签，再给筛选起个名字即可保存。", "ol.saveName": "此筛选的名称", "ol.saveNamePh": "起个名字，例如：待修改", "ol.saveDo": "保存筛选", "ol.savedDel": "删除已保存的筛选 {name}", "ol.savedToast": "筛选已保存：{name}",
+          "ol.tagsNone": "还没有标签——在卡片上输入一个。", "ol.tagsManage": "本书的标签（{n}）", "ol.tagUses": "部分：{n}", "ol.tagColourFor": "{tag} 的颜色", "ol.tagColourN": "颜色 {n}", "ol.tagDelete": "从全书移除 {tag}", "ol.tagDeleted": "标签已移除：{tag}",
+          "ol.moved": "已移动：{name}", "ol.movedPos": "{name}：第 {pos} 个，共 {total} 个", "ol.moveEarlier": "前移", "ol.moveLater": "后移", "ol.moveEarlierFor": "将 {name} 前移", "ol.moveLaterFor": "将 {name} 后移", "ol.openFor": "在书桌上打开 {name}",
+          "ol.kbdHint": "键盘：Alt + 方向键移动当前卡片或行；Enter 在书桌上打开。", "ol.empty": "此组中没有符合筛选的内容。", "history.auto.chopMove": "移动 {name} 之前" }
+      };
+      Object.keys(OL_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_STRINGS[code]); });
+      /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
         "en": { "shelf.guardDeviceBody": "“{title}” is only on this device — it isn't on your shelf as it stands here. Opening another book replaces it here. Put it on your shelf first and you can open it again any time.", "shelf.guardKeep": "Keep my book", "shelf.guardReplace": "Open and replace it", "shelf.guardSaveFirst": "Put it on my shelf, then open", "shelf.guardSaveFailed": "“{title}” could not be put on your shelf, so nothing was replaced — it is still open here." },
@@ -17443,6 +17755,7 @@
         state.printTrim = d.printTrim; state.printRecto = d.printRecto; state.printLargePrint = d.printLargePrint; state.printPictureBook = false;
         state.printBleed = false; /* BEUK:bleed */
         state.printNotes = d.printNotes; /* BEUK:footnotes */
+        state.outline = null; /* BEUK:outline */
       }
       const isEmptyDesk = () => bookWordTotal() === 0 &&
         !imRealTitle() && /* BEUK:importmeta — a stored placeholder is no title */ !String(state.meta.author || "").trim() &&
@@ -21707,6 +22020,7 @@
         icons();
         if (scroller && keepScroll) scroller.scrollTop = keepScroll;
         if (typeof chopPlaceMenu === "function") chopPlaceMenu(); /* BEUK:chapterops — an open row menu follows its re-rendered row */
+        if (typeof olOnStructure === "function") olOnStructure(); /* BEUK:outline — the cards follow the binder */
       }
       function sectionAction(id, act) {
         const idx = state.sections.findIndex((s) => s.id === id);
@@ -23138,10 +23452,11 @@
           const a = state.sections[i], b = blank.sections[i];
           if (a.kind !== b.kind || a.type !== b.type || String(a.title || "") !== String(b.title || "") ||
               String(a.subtitle || "") !== String(b.subtitle || "") || String(a.number || "") !== String(b.number || "") ||
-              a.plateId || a.backdropId || a.included === false) return false;
+              a.plateId || a.backdropId || a.included === false || Object.keys(olSectionFields(a)).length /* BEUK:outline */) return false;
         }
         if (state.theme && state.theme.header) return false;
         if (state.activePreset !== blank.activePreset) return false;
+        if (olBookSet()) return false; /* BEUK:outline */
         const themeNow = Object.assign({}, state.theme); delete themeNow.header;
         return stableJson(themeNow) === stableJson(blank.theme);
       }
@@ -23650,6 +23965,551 @@
         renderSidebar(); renderPreview(); refreshExportTree();
         return true;
       }
+      /* ==== BEUK:outline ==== — Cards and List: a third view of the book beside the desk.
+         One data model: the cards and rows ARE the book's sections, never
+         copies of their text. Per section, optionally: synopsis, status
+         (To do / Draft / Revised / Final), tags and a point of view — each
+         absent when empty, so a book saved before them serializes exactly
+         as it always has. The book carries its tag colours and its saved
+         filters in `outline`, absent when it has none. None of it is book
+         text: no export reads these fields and no word count counts them.
+         Scenes are not first-class in Beuk — a scene is the run of text
+         between two breaks (***), and the breaks move as the writer edits —
+         so the planning fields live on the section; a card shows how many
+         scenes its text holds, counted from the breaks as they stand. */
+      const OL_STATUSES = ["todo", "draft", "revised", "final"];
+      const OL_TAG_COLOURS = 8;
+      const OL_PREFS_KEY = "beuk.outline.v1";
+      const olTagKey = (n) => String(n || "").trim().toLowerCase();
+      function olCleanTag(n) { return String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 40); }
+      /* The section's own planning fields, read strictly; only the ones it has. */
+      function olSectionFields(s) {
+        const out = {};
+        if (!s || typeof s !== "object") return out;
+        if (typeof s.synopsis === "string" && s.synopsis.trim()) out.synopsis = s.synopsis.slice(0, 4000);
+        if (OL_STATUSES.includes(s.status)) out.status = s.status;
+        if (Array.isArray(s.tags)) {
+          const seen = new Set(), tags = [];
+          s.tags.forEach((x) => { const n = olCleanTag(x), k = olTagKey(n); if (n && !seen.has(k)) { seen.add(k); tags.push(n); } });
+          if (tags.length) out.tags = tags.slice(0, 30);
+        }
+        if (typeof s.pov === "string" && s.pov.trim()) out.pov = s.pov.slice(0, 80);
+        return out;
+      }
+      /* The book's tag registry (name + colour) and saved filters. A tag a
+         section carries but the registry lacks is registered on arrival. */
+      function olNormalize(o, sections) {
+        const src = o && typeof o === "object" ? o : {};
+        const tags = [], seen = new Set();
+        (Array.isArray(src.tags) ? src.tags : []).forEach((x) => {
+          if (!x || typeof x !== "object") return;
+          const n = olCleanTag(x.name), k = olTagKey(n);
+          if (!n || seen.has(k)) return;
+          const c = Math.floor(Number(x.colour));
+          seen.add(k);
+          tags.push({ name: n, colour: isFinite(c) && c >= 0 && c < OL_TAG_COLOURS ? c : tags.length % OL_TAG_COLOURS });
+        });
+        (sections || []).forEach((s) => (Array.isArray(s && s.tags) ? s.tags : []).forEach((n) => {
+          const nn = olCleanTag(n), k = olTagKey(nn);
+          if (nn && !seen.has(k)) { seen.add(k); tags.push({ name: nn, colour: tags.length % OL_TAG_COLOURS }); }
+        }));
+        const filters = [], names = new Set();
+        (Array.isArray(src.filters) ? src.filters : []).forEach((f) => {
+          if (!f || typeof f !== "object") return;
+          const name = String(f.name == null ? "" : f.name).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
+          if (!name || names.has(name.toLowerCase())) return;
+          names.add(name.toLowerCase());
+          const st = (Array.isArray(f.status) ? f.status : []).filter((x) => x === "none" || OL_STATUSES.includes(x));
+          const tg = (Array.isArray(f.tags) ? f.tags : []).map(olCleanTag).filter((n) => n && seen.has(olTagKey(n)));
+          filters.push({ id: typeof f.id === "string" && f.id ? f.id.slice(0, 64) : uid(), name: name, status: Array.from(new Set(st)), tags: Array.from(new Set(tg)) });
+        });
+        return { tags: tags, filters: filters.slice(0, 40) };
+      }
+      function olBook() {
+        if (!state.outline || !Array.isArray(state.outline.tags) || !Array.isArray(state.outline.filters)) state.outline = olNormalize(state.outline, state.sections);
+        return state.outline;
+      }
+      const olBookSet = () => !!(state.outline && ((state.outline.tags || []).length || (state.outline.filters || []).length)) ||
+        state.sections.some((s) => Array.isArray(s.tags) && s.tags.length);
+      const olBookPack = () => JSON.parse(JSON.stringify(olNormalize(state.outline, state.sections)));
+      const olTagOf = (name) => olBook().tags.find((x) => olTagKey(x.name) === olTagKey(name)) || null;
+
+      /* ---- the view's own state: per device, never in the book ---- */
+      const olUi = { view: "cards", matter: false, status: [], tags: [], savedId: null, focus: null, tagsOpen: false, renderQueued: false };
+      try {
+        const raw = window.localStorage && localStorage.getItem(OL_PREFS_KEY);
+        const v = raw ? JSON.parse(raw) : null;
+        if (v && v.view === "list") olUi.view = "list";
+        if (v && v.matter === true) olUi.matter = true;
+      } catch (e) {}
+      function olSavePrefs() { try { if (window.localStorage) localStorage.setItem(OL_PREFS_KEY, JSON.stringify({ view: olUi.view, matter: olUi.matter })); } catch (e) {} }
+      const olShown = () => { const p = $("panelOutline"); return !!(p && p.style.display !== "none"); };
+      const olFilterOn = () => olUi.status.length > 0 || olUi.tags.length > 0;
+      /* Status: any of the picked ones. Tags: every picked tag (novl's rule). */
+      function olMatches(s) {
+        if (s.type === "part") return true;
+        if (olUi.status.length && !olUi.status.includes(s.status || "none")) return false;
+        if (olUi.tags.length) {
+          const have = new Set((s.tags || []).map(olTagKey));
+          if (!olUi.tags.every((n) => have.has(olTagKey(n)))) return false;
+        }
+        return true;
+      }
+      const olItems = () => state.sections.filter((s) => olUi.matter || s.kind === "body");
+      function olNumLabel(s) {
+        if (s.type === "part") return t("import.type.part") + (s.number ? " " + s.number : "");
+        if (s.type === "chapter") return t("import.type.chapter") + (s.number ? " " + s.number : "");
+        const k = "import.type." + s.type, l = t(k);
+        return l !== k ? l : "";
+      }
+      const olName = (s) => { const n = olNumLabel(s), ti = String(s.title || "").trim(); return ti ? (s.type === "chapter" && s.number ? n + " — " + ti : ti) : (n || t("side.untitled")); };
+      function olScenes(s) {
+        const txt = String(s.content || "");
+        if (!txt.trim() || AUTO_TYPES.includes(s.type) || s.type === "part") return 0;
+        return txt.split(/\n\s*\n/).filter((b) => SCENE_BREAK_BLOCK_RE.test(b.trim())).length + 1;
+      }
+      const olStatusVar = (st) => (OL_STATUSES.includes(st) ? "var(--ol-s-" + st + ")" : "transparent");
+      const olStatusLabel = (st) => t("ol.status." + (OL_STATUSES.includes(st) ? st : "none"));
+      function olKindBounds(s) {
+        const same = state.sections.filter((x) => x.kind === s.kind);
+        return { first: same[0] === s, last: same[same.length - 1] === s, pos: same.indexOf(s) + 1, total: same.length };
+      }
+
+      /* ---- drawing ---- */
+      function olMoveButtons(s, list) {
+        const b = olKindBounds(s), rtl = document.documentElement.getAttribute("dir") === "rtl";
+        const ic1 = list ? "chevron-up" : (rtl ? "chevron-right" : "chevron-left"), ic2 = list ? "chevron-down" : (rtl ? "chevron-left" : "chevron-right");
+        return '<span class="ol-moves">' +
+          '<button type="button" class="ol-mini" data-olmv="-1" title="' + esc(t("ol.moveEarlier")) + '" aria-label="' + esc(t("ol.moveEarlierFor", { name: olName(s) })) + '"' + (b.first ? " disabled" : "") + '><i data-lucide="' + ic1 + '"></i></button>' +
+          '<button type="button" class="ol-mini" data-olmv="1" title="' + esc(t("ol.moveLater")) + '" aria-label="' + esc(t("ol.moveLaterFor", { name: olName(s) })) + '"' + (b.last ? " disabled" : "") + '><i data-lucide="' + ic2 + '"></i></button></span>';
+      }
+      function olStatusSelect(s) {
+        const st = OL_STATUSES.includes(s.status) ? s.status : "";
+        return '<span class="ol-stat"><span class="ol-dot' + (st ? "" : " none") + '" style="--ol-st:' + olStatusVar(st) + '" aria-hidden="true"></span>' +
+          '<select data-olf="status" aria-label="' + esc(t("ol.statusFor", { name: olName(s) })) + '">' +
+          ['""'].concat(OL_STATUSES).map((x, i) => { const v = i === 0 ? "" : x; return '<option value="' + v + '"' + (v === st ? " selected" : "") + ">" + esc(olStatusLabel(v)) + "</option>"; }).join("") +
+          '</select><i data-lucide="chevron-down" class="ol-chev" aria-hidden="true"></i></span>';
+      }
+      function olTagsCell(s) {
+        return '<div class="ol-tags">' + (s.tags || []).map((n) => {
+          const tg = olTagOf(n), c = tg ? tg.colour : 0;
+          return '<span class="ol-tag" style="--ol-tc:var(--ol-c' + c + ')">' + esc(n) +
+            '<button type="button" class="ol-mini ol-tagx" data-oltagx="' + esc(n) + '" aria-label="' + esc(t("ol.tagRemove", { tag: n, name: olName(s) })) + '"><i data-lucide="x"></i></button></span>';
+        }).join("") +
+          '<input type="text" class="ol-tagin" data-olf="tagin" list="olTagList" maxlength="40" autocomplete="off" placeholder="' + esc(t("ol.tagAdd")) + '" aria-label="' + esc(t("ol.tagAddFor", { name: olName(s) })) + '"></div>';
+      }
+      function olMetaText(s) {
+        const w = sectionWords(s), sc = olScenes(s);
+        return fmtNum(w) + " " + t("side.wordUnit", { count: w }) + (sc > 1 ? " · " + t("ol.scenes", { n: fmtNum(sc) }) : "");
+      }
+      function olCard(s) {
+        const st = OL_STATUSES.includes(s.status) ? s.status : "";
+        const cls = "ol-card" + (s.id === state.activeId ? " active" : "") + (s.included ? "" : " excluded");
+        const head = olNumLabel(s), ti = String(s.title || "").trim() || t("side.untitled");
+        return '<article class="' + cls + '" data-ol="' + esc(s.id) + '" tabindex="0" draggable="true" style="--ol-st:' + olStatusVar(st) + '" aria-label="' + esc(olName(s) + " — " + olStatusLabel(st)) + '" aria-describedby="olKbdHint">' +
+          '<div class="ol-card-head"><div class="ol-tx">' + (head && s.title ? '<span class="ol-num">' + esc(head) + "</span>" : "") +
+          '<button type="button" class="ol-open" title="' + esc(t("ol.openFor", { name: olName(s) })) + '">' + esc(ti) + "</button></div>" + olMoveButtons(s, false) + "</div>" +
+          '<textarea class="ol-syn" dir="auto" data-olf="synopsis" rows="3" maxlength="4000" placeholder="' + esc(t("ol.synPh")) + '" aria-label="' + esc(t("ol.synFor", { name: olName(s) })) + '">' + esc(s.synopsis || "") + "</textarea>" +
+          olTagsCell(s) +
+          '<div class="ol-card-foot">' + olStatusSelect(s) + '<span class="ol-meta">' + esc(olMetaText(s)) + "</span></div></article>";
+      }
+      function olPartBand(s, list) {
+        const ti = String(s.title || "").trim() || t("side.untitled");
+        if (list) {
+          return '<div class="ol-row ol-partrow" data-ol="' + esc(s.id) + '" tabindex="0" draggable="true" aria-label="' + esc(olName(s)) + '" aria-describedby="olKbdHint">' +
+            '<div class="ol-c-mv">' + olMoveButtons(s, true) + '</div><div class="ol-c-ti"><span class="ol-num">' + esc(olNumLabel(s)) + '</span><button type="button" class="ol-open" title="' + esc(t("ol.openFor", { name: olName(s) })) + '">' + esc(ti) + "</button></div></div>";
+        }
+        return '<div class="ol-partband" data-ol="' + esc(s.id) + '" tabindex="0" draggable="true" aria-label="' + esc(olName(s)) + '" aria-describedby="olKbdHint"><i data-lucide="bookmark" aria-hidden="true"></i>' +
+          '<div class="ol-tx"><span class="ol-num">' + esc(olNumLabel(s)) + '</span><button type="button" class="ol-open" title="' + esc(t("ol.openFor", { name: olName(s) })) + '">' + esc(ti) + "</button></div>" + olMoveButtons(s, false) + "</div>";
+      }
+      function olRow(s) {
+        const st = OL_STATUSES.includes(s.status) ? s.status : "";
+        const cls = "ol-row" + (s.id === state.activeId ? " active" : "") + (s.included ? "" : " excluded");
+        const head = olNumLabel(s), ti = String(s.title || "").trim() || t("side.untitled");
+        return '<div class="' + cls + '" data-ol="' + esc(s.id) + '" tabindex="0" draggable="true" style="--ol-st:' + olStatusVar(st) + '" aria-label="' + esc(olName(s) + " — " + olStatusLabel(st)) + '" aria-describedby="olKbdHint">' +
+          '<div class="ol-c-mv">' + olMoveButtons(s, true) + "</div>" +
+          '<div class="ol-c-ti">' + (head && s.title ? '<span class="ol-num">' + esc(head) + "</span>" : "") + '<button type="button" class="ol-open" title="' + esc(t("ol.openFor", { name: olName(s) })) + '">' + esc(ti) + "</button>" +
+            '<div class="ol-c-pv"><i data-lucide="eye" aria-hidden="true"></i><input type="text" class="ol-pov" dir="auto" data-olf="pov" maxlength="80" value="' + esc(s.pov || "") + '" placeholder="' + esc(t("ol.povPh")) + '" aria-label="' + esc(t("ol.povFor", { name: olName(s) })) + '"></div></div>' +
+          '<div class="ol-c-sy"><textarea class="ol-syn" dir="auto" data-olf="synopsis" rows="2" maxlength="4000" placeholder="' + esc(t("ol.synPh")) + '" aria-label="' + esc(t("ol.synFor", { name: olName(s) })) + '">' + esc(s.synopsis || "") + "</textarea></div>" +
+          '<div class="ol-c-st"><span class="ol-cl" aria-hidden="true">' + esc(t("ol.colStatus")) + "</span>" + olStatusSelect(s) + "</div>" +
+          '<div class="ol-c-tg"><span class="ol-cl" aria-hidden="true">' + esc(t("ol.colTags")) + "</span>" + olTagsCell(s) + "</div>" +
+          '<div class="ol-c-wd ol-meta">' + esc(fmtNum(sectionWords(s))) + (olScenes(s) > 1 ? '<span class="ol-sc">' + esc(t("ol.scenes", { n: fmtNum(olScenes(s)) })) + "</span>" : "") + "</div></div>";
+      }
+      function olSavedMatches(f) {
+        const a = (x) => x.slice().map(String).sort().join("\u0001");
+        return a(f.status) === a(olUi.status) && a(f.tags.map(olTagKey)) === a(olUi.tags.map(olTagKey));
+      }
+      function olRender() {
+        const root = $("olRoot");
+        if (!root) return;
+        olUi.renderQueued = false;
+        const ob = olBook();
+        const known = new Set(ob.tags.map((x) => olTagKey(x.name)));
+        olUi.tags = olUi.tags.filter((n) => known.has(olTagKey(n)));
+        if (olUi.savedId && !ob.filters.some((f) => f.id === olUi.savedId)) olUi.savedId = null;
+        /* the field being typed in keeps its focus and caret across the redraw */
+        const ae = document.activeElement;
+        if (!olUi.focus && ae && root.contains(ae)) {
+          const host = ae.closest("[data-ol]");
+          if (ae.id) olUi.focus = { domId: ae.id, a: ae.selectionStart, b: ae.selectionEnd };
+          else if (host) {
+            const f = ae.getAttribute("data-olf"), mv = ae.getAttribute("data-olmv");
+            olUi.focus = { id: host.getAttribute("data-ol"), sel: f ? '[data-olf="' + f + '"]' : mv ? '[data-olmv="' + mv + '"]' : ae.classList.contains("ol-open") ? ".ol-open" : null, a: ae.selectionStart, b: ae.selectionEnd };
+          } else if (ae.getAttribute("data-olkey")) olUi.focus = { key: ae.getAttribute("data-olkey") };
+        }
+        const items = olItems();
+        const countable = items.filter((s) => s.type !== "part");
+        const shown = countable.filter(olMatches).length, hidden = countable.length - shown;
+        const list = olUi.view === "list";
+        let h = '<div class="ol-head"><div><h2 id="olTitle">' + esc(t("ol.title")) + "</h2><p>" + esc(t("ol.sub")) + "</p></div>" +
+          '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
+          '<div class="seg" role="group" aria-label="' + esc(t("ol.viewAria")) + '">' +
+          '<button type="button" data-olview="cards" data-olkey="v-cards" class="' + (list ? "" : "active") + '" aria-pressed="' + !list + '"><i data-lucide="layout-grid"></i>' + esc(t("ol.viewCards")) + "</button>" +
+          '<button type="button" data-olview="list" data-olkey="v-list" class="' + (list ? "active" : "") + '" aria-pressed="' + list + '"><i data-lucide="list"></i>' + esc(t("ol.viewList")) + "</button></div>" +
+          '<button type="button" class="ol-chip" data-olmatter="1" data-olkey="matter" aria-pressed="' + olUi.matter + '">' + esc(t("ol.matter")) + "</button></div></div>";
+        /* filter bar */
+        h += '<div class="ol-bar" role="group" aria-label="' + esc(t("ol.filter")) + '"><span class="ol-bar-lab">' + esc(t("ol.filter")) + "</span>";
+        ["none"].concat(OL_STATUSES).forEach((st) => {
+          h += '<button type="button" class="ol-chip" data-olst="' + st + '" data-olkey="st-' + st + '" aria-pressed="' + olUi.status.includes(st) + '"><span class="ol-dot' + (st === "none" ? " none" : "") + '" style="--ol-st:' + olStatusVar(st) + '" aria-hidden="true"></span>' + esc(olStatusLabel(st)) + "</button>";
+        });
+        h += '<span class="ol-bar-sep" aria-hidden="true"></span>';
+        if (ob.tags.length) ob.tags.forEach((tg) => {
+          h += '<button type="button" class="ol-chip" data-oltag="' + esc(tg.name) + '" data-olkey="tg-' + esc(olTagKey(tg.name)) + '" aria-pressed="' + olUi.tags.some((n) => olTagKey(n) === olTagKey(tg.name)) + '"><span class="ol-tagdot" style="--ol-tc:var(--ol-c' + tg.colour + ')" aria-hidden="true"></span>' + esc(tg.name) + "</button>";
+        });
+        else h += '<span class="ol-meta" style="font-family:inherit; font-size:12px;">' + esc(t("ol.tagsNone")) + "</span>";
+        h += '<span class="ol-count" id="olCount" role="status">' + esc(t("ol.shown", { shown: fmtNum(shown), total: fmtNum(countable.length) })) +
+          (olFilterOn() ? " · <b>" + esc(t("ol.hidden", { n: fmtNum(hidden) })) + "</b>" : "") + "</span>" +
+          '<button type="button" class="ol-link" id="olClear"' + (olFilterOn() ? "" : " disabled") + ">" + esc(t("ol.clear")) + "</button></div>";
+        /* saved filters */
+        h += '<div class="ol-saved"><span class="ol-bar-lab">' + esc(t("ol.saved")) + "</span>";
+        if (ob.filters.length) ob.filters.forEach((f) => {
+          const on = olUi.savedId === f.id && olSavedMatches(f);
+          h += '<span class="ol-savedchip"><button type="button" class="ol-chip" data-olsaved="' + esc(f.id) + '" data-olkey="sv-' + esc(f.id) + '" aria-pressed="' + on + '"><i data-lucide="filter" style="width:12px;height:12px;" aria-hidden="true"></i>' + esc(f.name) + "</button>" +
+            '<button type="button" class="ol-mini" data-olsaveddel="' + esc(f.id) + '" aria-label="' + esc(t("ol.savedDel", { name: f.name })) + '" title="' + esc(t("ol.savedDel", { name: f.name })) + '"><i data-lucide="x"></i></button></span>';
+        });
+        else h += '<span class="ol-meta" style="font-family:inherit; font-size:12px;">' + esc(t("ol.savedNone")) + "</span>";
+        if (olFilterOn() && !ob.filters.some((f) => olSavedMatches(f))) {
+          h += '<input type="text" class="txt-input" id="olSaveName" maxlength="60" placeholder="' + esc(t("ol.saveNamePh")) + '" aria-label="' + esc(t("ol.saveName")) + '">' +
+            '<button type="button" class="tb-btn" id="olSaveDo"><i data-lucide="bookmark-plus"></i>' + esc(t("ol.saveDo")) + "</button>";
+        }
+        h += "</div>";
+        /* tags in this book */
+        if (ob.tags.length) {
+          h += '<details class="ol-tagmgr" id="olTagMgr"' + (olUi.tagsOpen ? " open" : "") + "><summary>" + esc(t("ol.tagsManage", { n: fmtNum(ob.tags.length) })) + "</summary>";
+          ob.tags.forEach((tg) => {
+            const uses = state.sections.filter((s) => (s.tags || []).some((n) => olTagKey(n) === olTagKey(tg.name))).length;
+            h += '<div class="ol-tagrow"><span class="ol-tag" style="--ol-tc:var(--ol-c' + tg.colour + '); padding-inline-end:8px;">' + esc(tg.name) + '</span><span class="ol-uses">' + esc(t("ol.tagUses", { n: fmtNum(uses) })) + "</span>" +
+              '<span class="ol-swatches" role="group" aria-label="' + esc(t("ol.tagColourFor", { tag: tg.name })) + '">';
+            for (let c = 0; c < OL_TAG_COLOURS; c++) {
+              h += '<button type="button" class="ol-swatch" style="--ol-tc:var(--ol-c' + c + ')" data-olswatch="' + c + '" data-oltagname="' + esc(tg.name) + '" data-olkey="sw-' + esc(olTagKey(tg.name)) + "-" + c + '" aria-pressed="' + (tg.colour === c) + '" aria-label="' + esc(t("ol.tagColourN", { n: c + 1 })) + '"></button>';
+            }
+            h += '</span><button type="button" class="ol-mini" data-oltagdel="' + esc(tg.name) + '" data-olkey="td-' + esc(olTagKey(tg.name)) + '" aria-label="' + esc(t("ol.tagDelete", { tag: tg.name })) + '" title="' + esc(t("ol.tagDelete", { tag: tg.name })) + '"><i data-lucide="trash-2"></i></button></div>';
+          });
+          h += "</details>";
+        }
+        /* the groups */
+        [["front", t("side.groupFront")], ["body", t("side.groupBody")], ["back", t("side.groupBack")]].forEach(([kind, label]) => {
+          const gi = items.filter((s) => s.kind === kind);
+          if (!gi.length) return;
+          const vis = gi.filter(olMatches);
+          const real = gi.filter((s) => s.type !== "part");
+          h += '<section class="ol-group" aria-label="' + esc(label) + '"><h3>' + esc(label) + "<span>" + fmtNum(real.length) + "</span></h3>";
+          if (real.length && !real.some(olMatches)) { h += '<div class="ol-empty">' + esc(t("ol.empty")) + "</div></section>"; return; }
+          if (list) {
+            h += '<div class="ol-rows" data-olkind="' + kind + '"><div class="ol-rowhead" aria-hidden="true"><span></span><span>' + esc(t("ol.colTitle")) + "</span><span>" + esc(t("ol.colSyn")) + "</span><span>" + esc(t("ol.colStatus")) + "</span><span>" + esc(t("ol.colTags")) + "</span><span>" + esc(t("ol.colWords")) + "</span></div>" +
+              vis.map((s) => (s.type === "part" ? olPartBand(s, true) : olRow(s))).join("") + "</div>";
+          } else {
+            h += '<div class="ol-cards" data-olkind="' + kind + '">' + vis.map((s) => (s.type === "part" ? olPartBand(s, false) : olCard(s))).join("") + "</div>";
+          }
+          h += "</section>";
+        });
+        h += '<p class="ol-hint" id="olKbdHint">' + esc(t("ol.kbdHint")) + "</p>";
+        h += '<datalist id="olTagList">' + ob.tags.map((tg) => '<option value="' + esc(tg.name) + '"></option>').join("") + "</datalist>";
+        root.innerHTML = h;
+        icons();
+        const f = olUi.focus; olUi.focus = null;
+        if (f) {
+          let el = null;
+          if (f.domId) el = document.getElementById(f.domId);
+          else if (f.key) el = root.querySelector('[data-olkey="' + (window.CSS && CSS.escape ? CSS.escape(f.key) : f.key) + '"]');
+          else if (f.id) {
+            const host = root.querySelector('[data-ol="' + (window.CSS && CSS.escape ? CSS.escape(f.id) : f.id) + '"]');
+            el = host && f.sel ? host.querySelector(f.sel) : host;
+            if (el && el.disabled) el = host;
+          }
+          if (el) {
+            try { el.focus({ preventScroll: false }); } catch (e) { el.focus(); }
+            if (typeof f.a === "number" && typeof el.setSelectionRange === "function") { try { el.setSelectionRange(f.a, f.b); } catch (e) {} }
+          }
+        }
+      }
+      /* Anything that redraws the binder redraws the view while it is open
+         — once per frame, however many times the binder redraws. */
+      function olOnStructure() {
+        if (!olShown() || olUi.renderQueued) return;
+        olUi.renderQueued = true;
+        requestAnimationFrame(() => { if (olUi.renderQueued) olRender(); });
+      }
+      function olOnLangChange() { if (olShown()) olRender(); }
+      const olLive = (msg) => { const el = $("olLive"); if (el) { el.textContent = ""; setTimeout(() => { el.textContent = msg; }, 30); } };
+
+      /* ---- reordering: the studio's own structural path ----
+         A move runs through chopRun like delete, duplicate, split and
+         merge: a "Before moving …" snapshot in History, the tier law
+         (front, body and back matter stay in their groups), chapter
+         numbers kept in sequence when the book was numbered in
+         sequence, and a ten-second Undo that puts the section back
+         beside its old neighbours. Only the order moves; no text is
+         read or written. */
+      function olMoveTo(dragId, targetId, after) {
+        const from = state.sections.findIndex((s) => s.id === dragId), to = state.sections.findIndex((s) => s.id === targetId);
+        if (from < 0 || to < 0 || from === to) return null;
+        if (state.sections[from].kind !== state.sections[to].kind) { toast(t("toast.moveTier"), "alert-triangle"); return null; }
+        const ids = state.sections.map((s) => s.id);
+        const sim = ids.filter((x) => x !== dragId);
+        sim.splice(sim.indexOf(targetId) + (after ? 1 : 0), 0, dragId);
+        if (sim.join(",") === ids.join(",")) return null;
+        const name = chopName(state.sections[from]);
+        const rec = chopRun({
+          op: "move", a: name, icon: "move", msg: t("ol.moved", { name: name }),
+          apply() {
+            const i = state.sections.findIndex((x) => x.id === dragId);
+            if (i < 0) return null;
+            const anchor = chopAnchor(i);
+            const s = state.sections.splice(i, 1)[0];
+            let at = state.sections.findIndex((x) => x.id === targetId);
+            if (at < 0) { state.sections.splice(i, 0, s); return null; }
+            state.sections.splice(at + (after ? 1 : 0), 0, s);
+            return { id: dragId, anchor: anchor, activeId: state.activeId };
+          },
+          undo(d) {
+            const i = state.sections.findIndex((x) => x.id === d.id);
+            if (i < 0) return true;
+            const s = state.sections.splice(i, 1)[0];
+            chopInsertAt(s, d.anchor);
+            return true;
+          }
+        });
+        if (rec) {
+          const s = state.sections.find((x) => x.id === dragId);
+          if (s) { const b = olKindBounds(s); olLive(t("ol.movedPos", { name: chopName(s), pos: fmtNum(b.pos), total: fmtNum(b.total) })); }
+        }
+        return rec;
+      }
+      function olMoveStep(id, dir) {
+        const i = state.sections.findIndex((s) => s.id === id);
+        const j = i + (dir < 0 ? -1 : 1);
+        if (i < 0 || j < 0 || j >= state.sections.length || state.sections[j].kind !== state.sections[i].kind) return null;
+        return olMoveTo(id, state.sections[j].id, dir > 0);
+      }
+      function olOpen(id) {
+        if (!state.sections.some((s) => s.id === id)) return;
+        currentCenterTab = "content"; setCenterTab("content");
+        selectSection(id);
+        const a = $("editorArea");
+        if (a && a.offsetParent) { try { a.focus({ preventScroll: true }); } catch (e) {} }
+      }
+
+      /* ---- editing the planning fields ---- */
+      const olSec = (el) => { const host = el && el.closest("[data-ol]"); return host ? state.sections.find((s) => s.id === host.getAttribute("data-ol")) : null; };
+      function olSetField(s, field, value) {
+        if (!s) return;
+        if (field === "status") { if (OL_STATUSES.includes(value)) s.status = value; else delete s.status; }
+        else if (field === "synopsis") { if (String(value).trim()) s.synopsis = String(value).slice(0, 4000); else delete s.synopsis; }
+        else if (field === "pov") { if (String(value).trim()) s.pov = String(value).slice(0, 80); else delete s.pov; }
+        noteBookEdited();
+      }
+      function olAddTag(s, raw) {
+        const n = olCleanTag(raw);
+        if (!s || !n) return false;
+        const ob = olBook();
+        let tg = olTagOf(n);
+        if (!tg) { tg = { name: n, colour: ob.tags.length % OL_TAG_COLOURS }; ob.tags.push(tg); }
+        const cur = Array.isArray(s.tags) ? s.tags : [];
+        if (cur.some((x) => olTagKey(x) === olTagKey(n))) return false;
+        s.tags = cur.concat([tg.name]).slice(0, 30);
+        noteBookEdited();
+        return true;
+      }
+      function olRemoveTag(s, n) {
+        if (!s || !Array.isArray(s.tags)) return false;
+        const next = s.tags.filter((x) => olTagKey(x) !== olTagKey(n));
+        if (next.length === s.tags.length) return false;
+        if (next.length) s.tags = next; else delete s.tags;
+        noteBookEdited();
+        return true;
+      }
+      /* Removing a tag from the book takes it off every section and out of
+         the saved filters, with an Undo that puts all of it back. */
+      function olDeleteTag(name) {
+        const ob = olBook(), k = olTagKey(name);
+        const before = { reg: JSON.parse(JSON.stringify(ob)), secs: {} };
+        state.sections.forEach((s) => { if (Array.isArray(s.tags)) before.secs[s.id] = s.tags.slice(); });
+        ob.tags = ob.tags.filter((x) => olTagKey(x.name) !== k);
+        ob.filters.forEach((f) => { f.tags = f.tags.filter((x) => olTagKey(x) !== k); });
+        state.sections.forEach((s) => { if (Array.isArray(s.tags)) { s.tags = s.tags.filter((x) => olTagKey(x) !== k); if (!s.tags.length) delete s.tags; } });
+        olUi.tags = olUi.tags.filter((x) => olTagKey(x) !== k);
+        noteBookEdited();
+        olRender();
+        toast(t("ol.tagDeleted", { tag: name }), "tag", { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => {
+          state.outline = before.reg;
+          state.sections.forEach((s) => { if (before.secs[s.id]) s.tags = before.secs[s.id]; });
+          noteBookEdited(); olRender();
+        } });
+      }
+      function olSaveFilter(name) {
+        const n = String(name || "").replace(/\s+/g, " ").trim().slice(0, 60);
+        if (!n || !olFilterOn()) return null;
+        const ob = olBook();
+        let f = ob.filters.find((x) => x.name.toLowerCase() === n.toLowerCase());
+        if (f) { f.status = olUi.status.slice(); f.tags = olUi.tags.slice(); }
+        else { f = { id: uid(), name: n, status: olUi.status.slice(), tags: olUi.tags.slice() }; ob.filters.push(f); }
+        olUi.savedId = f.id;
+        noteBookEdited();
+        toast(t("ol.savedToast", { name: n }), "bookmark-plus");
+        return f;
+      }
+      function olApplySaved(id) {
+        const f = olBook().filters.find((x) => x.id === id);
+        if (!f) return false;
+        if (olUi.savedId === id && olSavedMatches(f)) { olUi.status = []; olUi.tags = []; olUi.savedId = null; }
+        else { olUi.status = f.status.slice(); olUi.tags = f.tags.slice(); olUi.savedId = id; }
+        return true;
+      }
+
+      /* ---- wiring (once; the view redraws inside #olRoot) ---- */
+      function initOutline() {
+        const root = $("olRoot");
+        if (!root || root.getAttribute("data-wired")) return;
+        root.setAttribute("data-wired", "1");
+        root.addEventListener("click", (e) => {
+          const el = e.target.closest("button, summary");
+          if (!el || !root.contains(el) || el.disabled) return;
+          const s = olSec(el);
+          if (el.hasAttribute("data-olview")) { olUi.view = el.getAttribute("data-olview") === "list" ? "list" : "cards"; olSavePrefs(); olRender(); return; }
+          if (el.hasAttribute("data-olmatter")) { olUi.matter = !olUi.matter; olSavePrefs(); olRender(); return; }
+          if (el.hasAttribute("data-olst")) {
+            const st = el.getAttribute("data-olst");
+            olUi.status = olUi.status.includes(st) ? olUi.status.filter((x) => x !== st) : olUi.status.concat([st]);
+            olUi.savedId = null; olRender(); return;
+          }
+          if (el.hasAttribute("data-oltag")) {
+            const n = el.getAttribute("data-oltag");
+            olUi.tags = olUi.tags.some((x) => olTagKey(x) === olTagKey(n)) ? olUi.tags.filter((x) => olTagKey(x) !== olTagKey(n)) : olUi.tags.concat([n]);
+            olUi.savedId = null; olRender(); return;
+          }
+          if (el.id === "olClear") { olUi.status = []; olUi.tags = []; olUi.savedId = null; olUi.focus = { key: "st-none" }; olRender(); return; }
+          if (el.id === "olSaveDo") {
+            const inp = $("olSaveName");
+            if (!inp || !inp.value.trim()) { if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } return; }
+            const f = olSaveFilter(inp.value);
+            if (f) { olUi.focus = { key: "sv-" + f.id }; olRender(); }
+            return;
+          }
+          if (el.hasAttribute("data-olsaved")) { olApplySaved(el.getAttribute("data-olsaved")); olRender(); return; }
+          if (el.hasAttribute("data-olsaveddel")) {
+            const id = el.getAttribute("data-olsaveddel"), ob = olBook();
+            ob.filters = ob.filters.filter((x) => x.id !== id);
+            if (olUi.savedId === id) olUi.savedId = null;
+            noteBookEdited(); olUi.focus = { key: "st-none" }; olRender(); return;
+          }
+          if (el.hasAttribute("data-olswatch")) {
+            const tg = olTagOf(el.getAttribute("data-oltagname"));
+            if (tg) { tg.colour = Math.max(0, Math.min(OL_TAG_COLOURS - 1, Number(el.getAttribute("data-olswatch")) || 0)); noteBookEdited(); olRender(); }
+            return;
+          }
+          if (el.hasAttribute("data-oltagdel")) { olDeleteTag(el.getAttribute("data-oltagdel")); return; }
+          if (el.tagName === "SUMMARY") { setTimeout(() => { const d = $("olTagMgr"); olUi.tagsOpen = !!(d && d.open); }, 0); return; }
+          if (!s) return;
+          if (el.classList.contains("ol-open")) { olOpen(s.id); return; }
+          if (el.hasAttribute("data-olmv")) { olUi.focus = { id: s.id, sel: '[data-olmv="' + el.getAttribute("data-olmv") + '"]' }; if (!olMoveStep(s.id, Number(el.getAttribute("data-olmv")))) olUi.focus = null; return; }
+          if (el.hasAttribute("data-oltagx")) { if (olRemoveTag(s, el.getAttribute("data-oltagx"))) { olUi.focus = { id: s.id, sel: ".ol-tagin" }; olRender(); } return; }
+        });
+        root.addEventListener("input", (e) => {
+          const el = e.target, f = el.getAttribute && el.getAttribute("data-olf");
+          if (el.id === "olSaveName") { el.removeAttribute("aria-invalid"); return; }
+          if (f === "synopsis" || f === "pov") { olSetField(olSec(el), f, el.value); return; }
+          /* a suggestion picked from the list arrives whole */
+          if (f === "tagin" && (!e.inputType || e.inputType === "insertReplacementText") && el.value.trim()) {
+            const s = olSec(el);
+            if (olAddTag(s, el.value)) { olUi.focus = { id: s.id, sel: ".ol-tagin" }; olRender(); } else el.value = "";
+          }
+        });
+        root.addEventListener("change", (e) => {
+          const el = e.target;
+          if (el.getAttribute && el.getAttribute("data-olf") === "status") {
+            const s = olSec(el);
+            olSetField(s, "status", el.value);
+            olUi.focus = { id: s.id, sel: '[data-olf="status"]' }; olRender();
+          }
+        });
+        root.addEventListener("keydown", (e) => {
+          const el = e.target;
+          if (el.id === "olSaveName" && e.key === "Enter") { e.preventDefault(); const b = $("olSaveDo"); if (b) b.click(); return; }
+          if (el.getAttribute && el.getAttribute("data-olf") === "tagin") {
+            if ((e.key === "Enter" || e.key === ",") && el.value.trim()) {
+              e.preventDefault();
+              const s = olSec(el);
+              if (olAddTag(s, el.value)) { olUi.focus = { id: s.id, sel: ".ol-tagin" }; olRender(); } else el.value = "";
+            }
+            return;
+          }
+          if (!el.hasAttribute || !el.hasAttribute("data-ol")) return;
+          const id = el.getAttribute("data-ol");
+          if (e.key === "Enter") { e.preventDefault(); olOpen(id); return; }
+          if (e.altKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+            e.preventDefault();
+            const rtl = document.documentElement.getAttribute("dir") === "rtl";
+            const earlier = e.key === "ArrowUp" || (e.key === "ArrowLeft" ? !rtl : rtl);
+            olUi.focus = { id: id, sel: null };
+            if (!olMoveStep(id, earlier ? -1 : 1)) olUi.focus = null;
+          }
+        });
+        /* drag: a text field inside a card stays a text field */
+        let dragId = null;
+        root.addEventListener("pointerdown", (e) => {
+          const host = e.target.closest && e.target.closest("[data-ol]");
+          if (host) host.draggable = !e.target.closest("textarea, input, select");
+        });
+        const clearDrop = () => root.querySelectorAll(".drop-before, .drop-after").forEach((x) => x.classList.remove("drop-before", "drop-after"));
+        const dropSide = (host, ev) => {
+          const r = host.getBoundingClientRect();
+          if (host.classList.contains("ol-card")) {
+            const rtl = document.documentElement.getAttribute("dir") === "rtl";
+            const pastMid = ev.clientX - r.left >= r.width / 2;
+            return rtl ? !pastMid : pastMid;
+          }
+          return ev.clientY - r.top >= r.height / 2;
+        };
+        root.addEventListener("dragstart", (e) => {
+          const host = e.target.closest && e.target.closest("[data-ol]");
+          if (!host) return;
+          dragId = host.getAttribute("data-ol");
+          host.classList.add("dragging");
+          try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", dragId); } catch (err) {}
+        });
+        root.addEventListener("dragend", () => { dragId = null; clearDrop(); root.querySelectorAll(".dragging").forEach((x) => x.classList.remove("dragging")); });
+        root.addEventListener("dragover", (e) => {
+          if (!dragId) return;
+          const host = e.target.closest && e.target.closest("[data-ol]");
+          clearDrop();
+          if (!host || host.getAttribute("data-ol") === dragId) return;
+          const a = state.sections.find((s) => s.id === dragId), b = state.sections.find((s) => s.id === host.getAttribute("data-ol"));
+          if (!a || !b || a.kind !== b.kind) return;
+          e.preventDefault();
+          host.classList.add(dropSide(host, e) ? "drop-after" : "drop-before");
+        });
+        root.addEventListener("drop", (e) => {
+          if (!dragId) return;
+          const host = e.target.closest && e.target.closest("[data-ol]");
+          e.preventDefault();
+          const id = dragId; dragId = null; clearDrop();
+          if (!host || host.getAttribute("data-ol") === id) return;
+          olUi.focus = { id: id, sel: null };
+          if (!olMoveTo(id, host.getAttribute("data-ol"), dropSide(host, e))) olUi.focus = null;
+        });
+      }
+      /* ==== /BEUK:outline ==== */
       /* ---- Within-book Parts ----
          A Part is a body divider: it groups the chapters that
          follow it, up to the next Part (or the body's end). It is
@@ -25818,6 +26678,10 @@
         $("tabBtnType").classList.toggle("active", which === "type");
         $("panelContent").style.display = which === "content" ? "" : "none";
         $("panelType").style.display = which === "type" ? "" : "none";
+        /* BEUK:outline */
+        const olTab = $("tabBtnOutline"), olPanel = $("panelOutline");
+        if (olTab) olTab.classList.toggle("active", which === "outline");
+        if (olPanel) { olPanel.style.display = which === "outline" ? "" : "none"; if (which === "outline" && typeof olRender === "function") olRender(); }
       }
       function setMobilePane(p) {
         if (p !== "preview") pvLeaving(); /* BEUK:reader */
@@ -37508,7 +38372,8 @@
           htLine1: typeof s.htLine1 === "string" ? s.htLine1 : null,
           htLine2: typeof s.htLine2 === "string" ? s.htLine2 : "",
           tocHeading: typeof s.tocHeading === "string" ? s.tocHeading : null,
-          scenes: normalizeScenes(s.scenes)
+          scenes: normalizeScenes(s.scenes),
+          ...olSectionFields(s) /* BEUK:outline — synopsis, status, tags, pov: only the ones it has */
         };
       }
       /* Scene images ride on the section as metadata, like the plate
@@ -37546,6 +38411,7 @@
           theme: themeCopy,
           activePreset: state.activePreset,
           ...(bookColourSet() ? { colour: bookColour() } : {}), /* BEUK:bookcolour — absent when unset */
+          ...(olBookSet() ? { outline: olBookPack() } : {}), /* BEUK:outline — tag colours and saved filters, absent when the book has none */
           sections: state.sections.map(normalizeSection),
           cover: state.cover,
           coverRecipe: state.coverRecipe ? normalizeCoverRecipe(state.coverRecipe) : null,
@@ -37622,6 +38488,7 @@
         }
         state.cover = doc.cover || null;
         state.coverRecipe = doc.coverRecipe ? normalizeCoverRecipe(doc.coverRecipe) : null;
+        state.outline = olNormalize(doc.outline, state.sections); /* BEUK:outline — a book without them has none */
         state.images = Array.isArray(doc.images) ? doc.images : [];
         state.fonts = Array.isArray(doc.fonts) ? doc.fonts.map(normalizeCustomFont).filter(Boolean) : [];
         state.customThemes = Array.isArray(doc.customThemes) ? doc.customThemes.map(normalizeCustomTheme).filter(Boolean) : [];
@@ -49255,6 +50122,217 @@
           } }
       );
       /* ==== /BEUK:chapterops ==== */
+      /* ==== BEUK:outline ==== — Cards and List self-checks */
+      function olCheckRun(fn) {
+        const keepUi = JSON.parse(JSON.stringify({ view: olUi.view, matter: olUi.matter, status: olUi.status, tags: olUi.tags, savedId: olUi.savedId }));
+        const keepTab = currentCenterTab;
+        return chopCheckRun(() => {
+          try { return fn(); }
+          finally {
+            Object.assign(olUi, keepUi, { focus: null });
+            currentCenterTab = keepTab; setCenterTab(keepTab);
+            document.querySelectorAll("#toasts .toast").forEach((el) => el.remove());
+          }
+        });
+      }
+      function olCheckFixture() {
+        applyBookDoc(buildEmptyBook());
+        state.history = [];
+        state.meta.title = "Outline Fixture"; state.meta.author = "Fixture Author";
+        const c1 = mkSection("body", "chapter", "Harbour", { number: "1", content: "Alpha one words.\n\n***\n\nAlpha two words." });
+        const c2 = mkSection("body", "chapter", "Lantern", { number: "2", content: "Bravo text here." });
+        const c3 = mkSection("body", "chapter", "Tide", { number: "3", content: "Charlie text here." });
+        const c4 = mkSection("body", "chapter", "Ledger", { number: "4", content: "Delta text here." });
+        state.sections = state.sections.filter((s) => s.kind === "front").concat([c1, c2, c3, c4], state.sections.filter((s) => s.kind === "back"));
+        state.activeId = c1.id;
+        renderSidebar(); syncEditor(); updateStats();
+        return { c1, c2, c3, c4 };
+      }
+      const olCheckOpen = (view) => { olUi.view = view || "cards"; olUi.matter = false; olUi.status = []; olUi.tags = []; olUi.savedId = null; currentCenterTab = "outline"; setCenterTab("outline"); olRender(); };
+      const olVisibleIds = () => Array.from(document.querySelectorAll("#olRoot [data-ol]")).map((el) => el.getAttribute("data-ol"));
+      SELF_CHECKS.push(
+        { id: "outline.cards.reorder", feature: "outline", name: "Cards and List reorder the book itself: Alt+arrow on a focused card and a drag-and-drop between cards move the section in state.sections (the binder follows), every section's text is untouched, chapter numbers stay in sequence, a \"Before moving\" snapshot is taken and Undo puts the section back; a drop across front/body/back matter is refused and nothing moves",
+          run() {
+            return olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              const texts = {}; state.sections.forEach((s) => { texts[s.id] = s.content; });
+              const order = () => state.sections.filter((s) => s.type === "chapter").map((s) => s.title).join(",");
+              const nums = () => state.sections.filter((s) => s.type === "chapter").map((s) => s.number).join(",");
+              const textOk = () => state.sections.every((s) => texts[s.id] === s.content) && Object.keys(texts).length === state.sections.length;
+              olCheckOpen("cards");
+              const card = document.querySelector('#olRoot .ol-card[data-ol="' + f.c1.id + '"]');
+              if (!card) return scVerdict(false, "no card drawn for the first chapter");
+              card.focus();
+              card.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", altKey: true, bubbles: true }));
+              const kbOk = order() === "Lantern,Harbour,Tide,Ledger" && nums() === "1,2,3,4" && textOk();
+              if (!kbOk) bad.push("Alt+ArrowRight gave " + order() + " numbered " + nums());
+              const snap = (state.history || [])[0];
+              const snapOk = !!snap && snap.auto === "chapterop" && snap.chop && snap.chop.op === "move" && snapshotLabel(snap) === t("history.auto.chopMove", { name: "Harbour" });
+              if (!snapOk) bad.push("no Before moving snapshot");
+              const binderOk = Array.from(document.querySelectorAll("#structureList .sec-item")).map((el) => el.getAttribute("data-sec")).join(",") === state.sections.map((s) => s.id).join(",");
+              if (!binderOk) bad.push("the binder did not follow");
+              const undoOk = chopUndo(chopLastRec) === true && order() === "Harbour,Lantern,Tide,Ledger" && nums() === "1,2,3,4" && textOk();
+              if (!undoOk) bad.push("Undo gave " + order());
+              /* drag-and-drop through the real handlers: Ledger dropped on Lantern's leading half */
+              olRender();
+              const src = document.querySelector('#olRoot .ol-card[data-ol="' + f.c4.id + '"]'), dst = document.querySelector('#olRoot .ol-card[data-ol="' + f.c2.id + '"]');
+              let dndOk = false;
+              if (src && dst) {
+                const dt = new DataTransfer(), r = dst.getBoundingClientRect();
+                const rtl = document.documentElement.getAttribute("dir") === "rtl";
+                const x = rtl ? r.right - 4 : r.left + 4, y = r.top + r.height / 2;
+                src.dispatchEvent(new DragEvent("dragstart", { bubbles: true, dataTransfer: dt }));
+                dst.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }));
+                dst.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }));
+                src.dispatchEvent(new DragEvent("dragend", { bubbles: true, dataTransfer: dt }));
+                dndOk = order() === "Harbour,Ledger,Lantern,Tide" && nums() === "1,2,3,4" && textOk();
+              }
+              if (!dndOk) bad.push("drag-and-drop gave " + order());
+              /* the List's move buttons take the same path */
+              olCheckOpen("list");
+              const upBtn = document.querySelector('#olRoot .ol-row[data-ol="' + f.c3.id + '"] [data-olmv="-1"]');
+              if (upBtn) upBtn.click();
+              const listOk = order() === "Harbour,Ledger,Tide,Lantern" && textOk();
+              if (!listOk) bad.push("List move earlier gave " + order());
+              /* the tier law: a chapter dropped onto the back matter stays put */
+              const before = state.sections.map((s) => s.id).join(",");
+              const back = state.sections.find((s) => s.kind === "back");
+              const refused = !olMoveTo(f.c1.id, back.id, false) && state.sections.map((s) => s.id).join(",") === before;
+              if (!refused) bad.push("a cross-tier move was not refused");
+              /* round trip of the order */
+              applyBookDoc(JSON.parse(JSON.stringify(serializeBook())));
+              const persistOk = order() === "Harbour,Ledger,Tide,Lantern" && textOk();
+              if (!persistOk) bad.push("the order did not survive the book file");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Alt+ArrowRight moved Harbour after Lantern, numbers kept 1–4, \"" + snapshotLabel(snap) + "\" snapshot, binder followed, Undo restored; drag-and-drop put Ledger before Lantern; List move earlier worked; cross-tier move refused; order persists; every section's text unchanged");
+            });
+          } },
+        { id: "outline.synopsis.notexported", feature: "outline", name: "Synopsis, status, tags and point of view are not book text: with all of them set on every section, the EPUB package, the print interior and the Word manuscript are identical to the same book without them, none of their words appear in any export, and the book's word count and each section's count are unchanged",
+          run() {
+            return olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              const stamp = (s) => String(s).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "T").replace(/urn:uuid:[0-9a-f-]+/gi, "U");
+              const grab = () => {
+                const epub = epubFiles("generic").map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n");
+                const print = buildPrintHtml();
+                const docx = buildDocxFiles().map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n");
+                return { epub: stamp(epub), print: stamp(print), docx: stamp(docx), words: bookWordTotal(), per: state.sections.map((s) => sectionWords(s)).join(",") };
+              };
+              const a = grab();
+              state.sections.forEach((s, i) => {
+                s.synopsis = "Zynopsismark" + i + " the harbour plan"; s.status = OL_STATUSES[i % 4];
+                s.tags = ["Tagmarkalpha", "Tagmarkbeta" + i]; s.pov = "Povmarkmara";
+              });
+              state.outline = olNormalize({ filters: [{ name: "Filtermarkname", status: ["draft"], tags: ["Tagmarkalpha"] }] }, state.sections);
+              applyBookDoc(JSON.parse(JSON.stringify(serializeBook())));
+              const fieldsKept = state.sections.every((s) => /^Zynopsismark/.test(s.synopsis || ""));
+              if (!fieldsKept) bad.push("the planning fields did not reach the book");
+              const b = grab();
+              ["epub", "print", "docx"].forEach((k) => { if (a[k] !== b[k]) bad.push(k + " output changed"); });
+              const all = b.epub + b.print + b.docx;
+              ["Zynopsismark", "Tagmarkalpha", "Tagmarkbeta", "Povmarkmara", "Filtermarkname"].forEach((m) => { if (all.indexOf(m) !== -1) bad.push(m + " found in an export"); });
+              if (a.words !== b.words || a.per !== b.per) bad.push("word counts moved: " + a.words + " → " + b.words);
+              return scVerdict(bad.length === 0 && fieldsKept, bad.length ? bad.join("; ") : "EPUB (" + b.epub.length + " chars), print interior (" + b.print.length + ") and Word (" + b.docx.length + ") identical with and without the planning fields; no marker in any export; " + b.words + " words before and after, per-section counts equal");
+            });
+          } },
+        { id: "outline.status.tags", feature: "outline", name: "Status, tags (with their colours), synopsis, point of view and saved filters ride the book file: they survive serializeBook → applyBookDoc and a backup file round trip byte for byte; a book saved before them loads with none and serializes without them; values outside the fixed set are dropped",
+          run() {
+            return olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              /* set them through the real card controls */
+              olCheckOpen("cards");
+              const card = () => document.querySelector('#olRoot .ol-card[data-ol="' + f.c2.id + '"]');
+              const sel = card().querySelector('select[data-olf="status"]'); sel.value = "revised"; sel.dispatchEvent(new Event("change", { bubbles: true }));
+              const syn = card().querySelector('textarea[data-olf="synopsis"]'); syn.value = "Mara finds the drawer."; syn.dispatchEvent(new Event("input", { bubbles: true }));
+              ["Mara", "Clue"].forEach((n) => { const inp = card().querySelector(".ol-tagin"); inp.value = n; inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); });
+              const uiOk = f.c2.status === "revised" && f.c2.synopsis === "Mara finds the drawer." && (f.c2.tags || []).join(",") === "Mara,Clue" &&
+                !!card() && card().style.getPropertyValue("--ol-st").indexOf("revised") !== -1 && card().querySelectorAll(".ol-tag").length === 2;
+              if (!uiOk) bad.push("the card controls did not set the fields");
+              const label = card() ? card().querySelector('select[data-olf="status"]').selectedOptions[0].textContent : "";
+              if (label !== t("ol.status.revised")) bad.push("the status shows no text label");
+              olTagOf("Clue").colour = 5;
+              f.c3.pov = "Tomas"; f.c3.tags = ["mara"]; /* same tag, other case: one tag */
+              olAddTag(f.c4, "Ledger thread");
+              state.outline.filters.push({ id: "olf1", name: "Needs work", status: ["draft", "none"], tags: ["Mara"] });
+              const doc1 = serializeBook();
+              const json1 = JSON.stringify({ s: doc1.sections, o: doc1.outline });
+              applyBookDoc(JSON.parse(JSON.stringify(doc1)));
+              const doc2 = serializeBook();
+              const rtOk = JSON.stringify({ s: doc2.sections, o: doc2.outline }) === json1;
+              if (!rtOk) bad.push("serializeBook → applyBookDoc changed them");
+              const tagOk = doc2.outline && doc2.outline.tags.map((x) => x.name + ":" + x.colour).join(",") === "Mara:0,Clue:5,Ledger thread:2";
+              if (!tagOk) bad.push("tag registry " + JSON.stringify(doc2.outline && doc2.outline.tags));
+              const book = localParseBackup(JSON.stringify({ format: "beuk-backup", version: 1, exportedAt: new Date().toISOString(), book: serializeBook() }));
+              let bkOk = false;
+              if (book) { applyBookDoc(JSON.parse(JSON.stringify(book))); const d3 = serializeBook(); bkOk = JSON.stringify({ s: d3.sections, o: d3.outline }) === json1; }
+              if (!bkOk) bad.push("the backup file round trip changed them");
+              /* an old book: no fields, no outline key */
+              applyBookDoc(buildEmptyBook());
+              const d4 = serializeBook();
+              const oldOk = !("outline" in d4) && d4.sections.every((s) => !("synopsis" in s) && !("status" in s) && !("tags" in s) && !("pov" in s));
+              if (!oldOk) bad.push("an old book gained planning fields");
+              /* strict reading */
+              const junk = buildEmptyBook();
+              junk.sections[0].status = "bogus"; junk.sections[0].tags = "not a list"; junk.sections[0].synopsis = "   "; junk.sections[1].tags = ["", "  ", "Ok", "ok"];
+              junk.outline = { tags: [{ name: "Ok", colour: 99 }, { name: "" }], filters: [{ name: "", status: ["x"] }, { name: "F", status: ["final", "x"], tags: ["Gone"] }] };
+              applyBookDoc(JSON.parse(JSON.stringify(junk)));
+              const d5 = serializeBook();
+              const strictOk = !("status" in d5.sections[0]) && !("tags" in d5.sections[0]) && !("synopsis" in d5.sections[0]) && (d5.sections[1].tags || []).join(",") === "Ok" &&
+                d5.outline && d5.outline.tags.length === 1 && d5.outline.tags[0].colour === 0 && d5.outline.filters.length === 1 && d5.outline.filters[0].status.join(",") === "final" && d5.outline.filters[0].tags.length === 0;
+              if (!strictOk) bad.push("strict reading let through " + JSON.stringify(d5.outline));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "card controls set Revised (labelled), synopsis and two tags; Mara/mara are one tag; colours " + doc2.outline.tags.map((x) => x.name + ":" + x.colour).join(", ") + " and the saved filter survive applyBookDoc and a backup file byte for byte; an old book carries none; bad values dropped");
+            });
+          } },
+        { id: "outline.filter.saved", feature: "outline", name: "Filters: status chips match any picked status, tag chips match only items carrying every picked tag (AND), the count says how many are hidden, a filter saved under a name rides the book and reopening it shows the same cards; the List view filters the same items",
+          run() {
+            return olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              f.c1.status = "draft"; f.c1.tags = ["Mara", "Sea"];
+              f.c2.status = "draft"; f.c2.tags = ["Mara"];
+              f.c3.status = "final"; f.c3.tags = ["Mara", "Sea"];
+              /* c4: no status, no tags */
+              state.outline = olNormalize(null, state.sections);
+              olCheckOpen("cards");
+              const click = (sel) => { const b = document.querySelector("#olRoot " + sel); if (b) b.click(); return !!b; };
+              click('[data-olst="draft"]');
+              const st1 = olVisibleIds().join(",") === [f.c1.id, f.c2.id].join(",");
+              click('[data-oltag="Mara"]'); click('[data-oltag="Sea"]');
+              const andIds = olVisibleIds().join(",");
+              const andOk = andIds === f.c1.id;
+              const countTxt = ($("olCount") || {}).textContent || "";
+              const countOk = countTxt.indexOf(t("ol.hidden", { n: fmtNum(3) })) !== -1 && countTxt.indexOf(t("ol.shown", { shown: fmtNum(1), total: fmtNum(4) })) !== -1;
+              if (!st1) bad.push("status filter showed " + olVisibleIds().length);
+              if (!andOk) bad.push("AND filter showed " + andIds);
+              if (!countOk) bad.push("count said: " + countTxt);
+              /* none-status chip finds the unmarked chapter alone */
+              click("#olClear"); click('[data-olst="none"]');
+              const noneOk = olVisibleIds().join(",") === f.c4.id;
+              if (!noneOk) bad.push("No status chip showed " + olVisibleIds().length);
+              /* save "Needs work" = Draft + Mara + Sea */
+              click("#olClear"); click('[data-olst="draft"]'); click('[data-oltag="Mara"]'); click('[data-oltag="Sea"]');
+              const name = $("olSaveName");
+              if (name) { name.value = "Needs work"; } else bad.push("no name field for saving");
+              click("#olSaveDo");
+              const saved = olBook().filters.find((x) => x.name === "Needs work");
+              const saveOk = !!saved && saved.status.join(",") === "draft" && saved.tags.join(",") === "Mara,Sea";
+              if (!saveOk) bad.push("the filter was not saved");
+              /* the saved filter rides the book */
+              click("#olClear");
+              applyBookDoc(JSON.parse(JSON.stringify(serializeBook())));
+              olCheckOpen("cards");
+              const all = olVisibleIds().length === 4;
+              const again = olBook().filters.find((x) => x.name === "Needs work");
+              if (again) click('[data-olsaved="' + again.id + '"]');
+              const reopenOk = !!again && olVisibleIds().join(",") === f.c1.id && document.querySelector('#olRoot [data-olsaved="' + again.id + '"]').getAttribute("aria-pressed") === "true";
+              if (!all || !reopenOk) bad.push("reopening the saved filter showed " + olVisibleIds().length);
+              /* the List view honours the same filter */
+              olUi.view = "list"; olRender();
+              const listOk = Array.from(document.querySelectorAll("#olRoot .ol-row[data-ol]")).map((el) => el.getAttribute("data-ol")).join(",") === f.c1.id;
+              if (!listOk) bad.push("List view showed other rows");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Draft → 2 cards; Draft + Mara + Sea → 1 card (AND), count \"" + countTxt.trim() + "\"; No status → the unmarked chapter; saved as \"Needs work\", survived the book file, reopened to the same card, pressed; List agrees");
+            });
+          } }
+      );
+      /* ==== /BEUK:outline ==== */
       function runSelfChecks() {
         return SELF_CHECKS.map((c) => {
           try { const r = c.run(); return { id: c.id, feature: c.feature, name: c.name, pass: !!r.pass, detail: r.detail || "" }; }
@@ -51853,6 +52931,7 @@
         on = !!on;
         zenClearTimers();
         if (on) {
+          if (currentCenterTab === "outline") { currentCenterTab = "content"; setCenterTab("content"); } /* BEUK:outline — Zen is the desk */
           zenBuildLayer();
           document.body.classList.remove("zen-returning");
           document.body.classList.add("zen");
@@ -53337,6 +54416,8 @@
         });
         $("tabBtnContent").addEventListener("click", () => { currentCenterTab = "content"; setCenterTab("content"); });
         $("tabBtnType").addEventListener("click", () => { currentCenterTab = "type"; setCenterTab("type"); });
+        $("tabBtnOutline").addEventListener("click", () => { currentCenterTab = "outline"; setCenterTab("outline"); }); /* BEUK:outline */
+        initOutline();
         document.querySelectorAll("#mobileTabs button").forEach((b) => b.addEventListener("click", () => {
           const p = b.getAttribute("data-mpane");
           if (p === "center") { currentCenterTab = b.hasAttribute("data-mstyle") ? "type" : "content"; setCenterTab(currentCenterTab); }
