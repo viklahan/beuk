@@ -11,6 +11,7 @@ to make well.
 - It is off until you turn it on. When your book has plates or backdrops, the print settings and the store check suggest it.
 - The Print Interior View shows the bleed, shaded beyond a dashed trim line.
 - Printing from the browser still gives a PDF at the trim size; the bleed comes from Beuk's own print PDF.
+- **Story Bible** (sidebar → Bible): keep the characters, places, things, groups and lore of your book with the book — names, nicknames, a line, notes, a picture from the image library, tags. Start from the names Story Insights found (you choose which, and what each one is), or by hand. Names are underlined faintly in the writing desk; point at one, tap it or press Alt+Enter for its card. Each entry shows where it appears — a bar across the chapters, first and last appearance, every passage, one click to jump there. Export it to a file and import it into the next book of a series. Nothing in it is printed, exported or counted as words.
 
 ## 2026-10-27 — Ramp opens like a book
 

@@ -2916,6 +2916,44 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Script detection and the note are studio UI.',
   },
   /* ==== /BEUK:cast ==== */
+  /* ==== BEUK:bible ==== Story Bible (client-side) */
+  {
+    id: 'bible.seed.frominsights',
+    title: 'Story Bible: Add from Story Insights offers only the names Names on stage found, with counts; nothing is created until the writer picks a type and presses Add',
+    kind: 'client-only',
+    reason: 'The Story Bible lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
+    id: 'bible.mentions.match',
+    title: 'Story Bible mentions: whole words in any script (Arabic tested), aliases, English possessive/plural, exclusion phrases, exact-case option, longest name wins, ambiguous phrases skipped',
+    kind: 'client-only',
+    reason: 'The Story Bible lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
+    id: 'bible.mentions.heatmap',
+    title: 'Story Bible mentions view: per-section counts equal an independent brute-force count on the book; cells, first and last appearance follow the hits',
+    kind: 'client-only',
+    reason: 'The Story Bible lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
+    id: 'bible.notexported',
+    title: 'Story Bible is never exported: EPUB, print, Word and word counts are identical with and without entries; the bible key is absent when empty',
+    kind: 'client-only',
+    reason: 'The Story Bible lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
+    id: 'bible.series.roundtrip',
+    title: 'Story Bible series: JSON export/import round-trips every field and pictures; duplicates by name are skipped and reported; foreign files refused',
+    kind: 'client-only',
+    reason: 'The Story Bible lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
+    id: 'bible.editor.perf',
+    title: 'Story Bible underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
+    kind: 'client-only',
+    reason: 'Measured in a real browser against the studio desk (a textarea mirror); there is nothing for the server to run.',
+  },
+  /* ==== /BEUK:bible ==== */
   /* ==== BEUK:imagelib ==== The image library: where a picture is used, and removing it (client-side) */
   {
     id: 'images.usage.finds-every-role',
