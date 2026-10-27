@@ -4,6 +4,14 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-27 — Print bleed
+
+- **Bleed** (Export → Print Interior): turn it on and Beuk's print PDF has pages 0.125 in larger on the top, bottom and outer edge, the way KDP and IngramSpark ask for a book whose pictures run to the edge. A 6 × 9 book prints at 6.125 × 9.25 in.
+- Full-page plates and spread backdrops now run out into that bleed, so the printer trims through the picture instead of leaving a white sliver. The words, running heads and page numbers don't move.
+- It is off until you turn it on. When your book has plates or backdrops, the print settings and the store check suggest it.
+- The Print Interior View shows the bleed, shaded beyond a dashed trim line.
+- Printing from the browser still gives a PDF at the trim size; the bleed comes from Beuk's own print PDF.
+
 ## 2026-10-27 — Ramp opens like a book
 
 - **Turn the pages.** A Ramp book now lies open on a desk under a lamp, in a room lit by the book's own colour: violet for The Woolly School, deep sea for The Travel Guide, ember for The Sunken Vault. The page lifts and turns over the spine, and its back is the real next page. Page edges thicken on the left and thin on the right as you read, the gutter is shaded, and a folded corner shows where to turn. Click a page, swipe, or use the arrow keys.

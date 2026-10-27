@@ -29,6 +29,7 @@ import {
   PDFDocument, PDFName, PDFDict, PDFArray, PDFRef,
   pushGraphicsState, popGraphicsState, concatTransformationMatrix, drawObject,
 } from 'pdf-lib';
+import { coverRect, bleedSides } from './bleed.mjs';
 
 const SECTION_RE = /<section class="(print-sec[^"]*)" id="(ps-\d+)"(?: data-start="(recto|verso)")?>/g;
 // (the figure may carry attributes after its class: the footnote
@@ -137,7 +138,11 @@ export function stampCss(stamped) {
 
 function dataUrlBytes(url) {
   const comma = url.indexOf(',');
-  return { png: url.startsWith('data:image/png'), bytes: Buffer.from(url.slice(comma + 1), 'base64') };
+  // A copy in its own ArrayBuffer: pdf-lib's JPEG reader views the whole
+  // `.buffer` from offset 0, and a small Buffer.from() lives at an offset
+  // in Node's shared pool — a picture under 4 KB then read as garbage
+  // ("SOI not found in JPEG"; seen in tests/print-bleed.test.ts).
+  return { png: url.startsWith('data:image/png'), bytes: new Uint8Array(Buffer.from(url.slice(comma + 1), 'base64')) };
 }
 
 async function embed(doc, url) {
@@ -165,15 +170,16 @@ export async function stampable(plan) {
 }
 
 /** Draw `image` over the whole page — covering it, centred, never
- *  stretched — beneath everything already on it. */
-function drawBeneath(doc, page, image, name) {
+ *  stretched — beneath everything already on it. With bleed `sides`
+ *  (bleed.mjs), it covers the bleed beyond the trim too: drawn past the
+ *  page edge here, it shows once applyBleed grows the page. */
+function drawBeneath(doc, page, image, name, sides = null) {
   const { width, height } = page.getSize();
-  const k = Math.max(width / image.width, height / image.height);
-  const w = image.width * k, h = image.height * k;
+  const r = coverRect(image.width, image.height, width, height, sides);
   const key = page.node.newXObject(name, image.ref);
   const under = doc.context.register(doc.context.contentStream([
     pushGraphicsState(),
-    concatTransformationMatrix(w, 0, 0, h, (width - w) / 2, (height - h) / 2),
+    concatTransformationMatrix(r.w, 0, 0, r.h, r.x, r.y),
     drawObject(key),
     popGraphicsState(),
   ]));
@@ -182,16 +188,19 @@ function drawBeneath(doc, page, image, name) {
 }
 
 /** The finished PDF: each spread's plate on its verso, its backdrop
- *  on the facing recto, drawn beneath the page content. */
-export async function stampSpreads(pdfBytes, plan, finalStart, stamped) {
+ *  on the facing recto, drawn beneath the page content — out to the
+ *  bleed on the page's top, bottom and outer edge when the book asks
+ *  for bleed (`bleed`: bleed.bleedConfig). */
+export async function stampSpreads(pdfBytes, plan, finalStart, stamped, bleed = null) {
   const doc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
   const pages = doc.getPages();
   let n = 0;
   for (const s of plan) {
     if (!stamped.has(s.id) || !finalStart.has(s.id)) continue;
     const at = finalStart.get(s.id);
-    if (s.plate && pages[at]) drawBeneath(doc, pages[at], await embed(doc, s.plate), 'BeukPlate' + (n += 1));
-    if (s.layer && pages[at + 1]) drawBeneath(doc, pages[at + 1], await embed(doc, s.layer), 'BeukSpread' + (n += 1));
+    const sides = (i) => (bleed ? bleedSides(i, bleed) : null);
+    if (s.plate && pages[at]) drawBeneath(doc, pages[at], await embed(doc, s.plate), 'BeukPlate' + (n += 1), sides(at));
+    if (s.layer && pages[at + 1]) drawBeneath(doc, pages[at + 1], await embed(doc, s.layer), 'BeukSpread' + (n += 1), sides(at + 1));
   }
   return Buffer.from(await doc.save({ useObjectStreams: false }));
 }
