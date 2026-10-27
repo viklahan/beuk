@@ -84,9 +84,25 @@ test('sidebar: the packaged sample cover is the re-lettered one, never the stale
   const html = await clientHtml();
   const data = /\n {6}const SAMPLE_COVER = \{ data: "([A-Za-z0-9+/=]+)"/.exec(html);
   assert.ok(data, 'SAMPLE_COVER present');
-  const stale = /const SAMPLE_COVER_STALE = \{ len: (\d+), sha1: "([0-9a-f]{40})" \}/.exec(html);
-  assert.ok(stale, 'stale-cover fingerprint present');
+  const list = /const SAMPLE_COVER_STALE = \[([\s\S]*?)\];/.exec(html);
+  assert.ok(list, 'stale-cover fingerprints present');
+  const stale = [...list[1].matchAll(/\{ len: (\d+), sha1: "([0-9a-f]{40})" \}/g)];
+  assert.equal(stale.length, 2, 'the old-title cover and the old-author cover');
   const sha = createHash('sha1').update(data[1], 'utf8').digest('hex');
-  assert.notEqual(sha, stale[2], 'the shipped cover must not be the stale one');
-  assert.ok(data[1].length !== Number(stale[1]) || sha !== stale[2]);
+  for (const s of stale) {
+    assert.notEqual(sha, s[2], 'the shipped cover must not be a stale one');
+    assert.ok(data[1].length !== Number(s[1]) || sha !== s[2]);
+  }
+});
+
+test('sidebar: the sample is by April Carooke; the old name lives only where old copies are recognised', async () => {
+  const html = await clientHtml();
+  assert.match(html, /const SAMPLE_AUTHOR = "April Carooke";/);
+  const marlowe = html.split('\n').filter((l) => l.includes('E. Marlowe') && !l.includes('SAMPLE_OLD_AUTHOR') && !/^\s*\/\*/.test(l));
+  assert.deepEqual(marlowe, [], 'E. Marlowe outside SAMPLE_OLD_AUTHOR');
+  const siteDir = path.join(here, '..', 'client', 'site');
+  for (const f of ['index.html', 'features.html']) {
+    const page = await readFile(path.join(siteDir, f), 'utf8');
+    assert.ok(!/Salt Meridian|Marlowe|salt-meridian/i.test(page), `${f} still names the old sample`);
+  }
 });

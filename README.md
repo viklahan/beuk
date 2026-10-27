@@ -230,7 +230,7 @@ newer copy at sign-in, the conflict choice "use the shelf copy", Open a
 backup…) the studio checks for that copy **by identity**: the old
 pre-UUID sample id, its UUIDv5, either in `meta.legacyBookIds`, or the
 fixed sample UUID — and the copy must still read as the sample (its old
-title, or E. Marlowe as author under an old id; a retitled and
+title, or its old author E. Marlowe under an old id; a retitled and
 re-authored book is never touched). Such a copy is snapshotted into
 History (**"Before sample update"**) and replaced by the current sample,
 marked as loaded; a non-blocking notice with a History button says so.
@@ -245,6 +245,15 @@ its file name changed), which is what the Hardcover device and every
 sample EPUB showed. That title band is re-lettered in the shipped style,
 and a desk carrying the stale JPEG (exact SHA-1 match) gets the new one
 (an edited sample takes a History snapshot first).
+
+The sample's author is **April Carooke** (`SAMPLE_AUTHOR`); it was E. Marlowe
+until 26 October 2026, and that name was painted into the packaged cover
+too. The cover's author band was re-lettered in the shipped face
+(Liberation Serif, same size, tracking and colour). A desk holding the
+sample with either earlier cover (exact SHA-1 match, `SAMPLE_COVER_STALE`)
+or still credited to E. Marlowe gets the current cover and author on the
+cover recipe, the About the Author page and the portrait's name; an
+edited sample keeps every word and is snapshotted into History first.
 
 **A book that exists only on this device is never replaced silently.**
 `deskHoldsUnshelvedWork()` is true when the desk's book exists nowhere
@@ -297,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v9`; both `client/sw.js` and
+service worker (cache `beuk-shell-v10`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the

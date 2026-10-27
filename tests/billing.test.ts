@@ -691,7 +691,7 @@ test('P4: a lapsed writer can still list, read, save and export their books, and
 
   // Work made while subscribed.
   const doc = {
-    meta: { title: 'The Lantern Coast', author: 'E. Marlowe', language: 'en' },
+    meta: { title: 'The Lantern Coast', author: 'April Carooke', language: 'en' },
     sections: [{ id: 'sec-one', kind: 'body', type: 'chapter', title: 'First Light', content: 'It began with the tide.' }],
     images: [],
   };

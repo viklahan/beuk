@@ -119,14 +119,8 @@
       .station-panel p{color:var(--muted);margin:0 0 12px}
       .station-panel p b{color:var(--ink)}
       .stage-viz{min-height:190px;border:1px dashed var(--line);border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
-      .chiprow{display:flex;flex-wrap:wrap;gap:7px}
-      .chip{font-size:12.5px;font-weight:700;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;color:var(--ink)}
-      .chip.hot{border-color:var(--amber);color:var(--amber2);background:transparent}
-      .seal{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12.5px;font-weight:600;border:1.5px solid var(--accent);color:var(--accent2);border-radius:999px;padding:6px 14px}
-      .mini-page{background:#fffdf7;border:1px solid var(--line);box-shadow:0 10px 22px -12px rgba(13,74,95,.35);padding:16px 18px;width:190px;font-family:var(--book);color:#33302a}
-      .mini-page .mp-t{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#8a7c62;text-align:center;margin-bottom:8px}
-      .mini-page p{font-size:11.5px;line-height:1.55;margin:0;color:#4c463c}
-      .mini-page p::first-letter{font-size:26px;float:left;line-height:.85;padding:2px 6px 0 0;color:var(--accent2);font-weight:700}
+      .stage-viz.art{min-height:0;aspect-ratio:8/5;padding:0;border:0;border-radius:12px;background:#1d3b4c;box-shadow:0 18px 34px -22px rgba(13,74,95,.55)}
+      .stage-viz.art svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 
       /* ---------- ports ---------- */
       .portlist{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
@@ -419,15 +413,62 @@
               <button class="station-btn" role="tab" aria-selected="false"><span class="n">Port 6</span><span class="t">Home port</span></button>
             </div>
             <article class="station-panel on">
-              <div class="stage-viz"><div class="chiprow" style="justify-content:center"><span class="chip">.docx — Word</span><span class="chip">.md — Markdown</span><span class="chip">.txt — plain text</span><span class="chip hot">36 languages aboard</span></div></div>
+              <div class="stage-viz art"><svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Dawn at the quay: three crates marked .docx, .md and .txt wait on a wooden pier beside a moored ship hung with bunting">
+                <defs><linearGradient id="p1sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8fc3d6"/><stop offset=".55" stop-color="#f7c99b"/><stop offset="1" stop-color="#f08f6a"/></linearGradient></defs>
+                <rect width="480" height="300" fill="url(#p1sky)"/>
+                <circle cx="372" cy="186" r="38" fill="#ffe6a8"/>
+                <path d="M0 196 L60 170 L120 184 L190 160 L260 182 L330 166 L400 184 L480 172 L480 206 L0 206Z" fill="#7aa3a6"/>
+                <rect y="202" width="480" height="98" fill="#24788d"/>
+                <path d="M300 222 h120 M330 238 h90 M286 256 h70 M352 272 h100" stroke="#ffd9a0" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+                <path d="M40 232 h60 M70 262 h50 M150 284 h70" stroke="#5fb0c0" stroke-width="3" stroke-linecap="round"/>
+                <!-- ship -->
+                <path d="M286 206 L460 206 L444 238 L300 238Z" fill="#1d3b4c"/>
+                <rect x="286" y="206" width="174" height="7" fill="#d9573f"/>
+                <rect x="318" y="178" width="96" height="28" rx="3" fill="#fbf4e6"/>
+                <g fill="#1d3b4c"><rect x="328" y="186" width="9" height="9"/><rect x="344" y="186" width="9" height="9"/><rect x="360" y="186" width="9" height="9"/><rect x="376" y="186" width="9" height="9"/><rect x="392" y="186" width="9" height="9"/></g>
+                <rect x="392" y="154" width="14" height="24" fill="#e8b84a"/><rect x="392" y="154" width="14" height="5" fill="#1d3b4c"/>
+                <path d="M350 178 V118" stroke="#1d3b4c" stroke-width="3"/>
+                <path d="M350 120 L250 196" stroke="#1d3b4c" stroke-width="1.5"/>
+                <g><path d="M340 133 l-8 14 l-8 -10z" fill="#e8b84a"/><path d="M322 146 l-8 14 l-8 -10z" fill="#d9573f"/><path d="M304 160 l-8 14 l-8 -10z" fill="#3fa58b"/><path d="M286 174 l-8 14 l-8 -10z" fill="#8a6fc0"/><path d="M268 187 l-6 10 l-7 -7z" fill="#f2f0e6"/></g>
+                <!-- pier -->
+                <rect x="0" y="198" width="268" height="14" fill="#8b5a3a"/>
+                <g fill="#6b4329"><rect x="22" y="212" width="9" height="62"/><rect x="104" y="212" width="9" height="62"/><rect x="186" y="212" width="9" height="62"/><rect x="250" y="212" width="9" height="56"/></g>
+                <path d="M268 204 L300 196" stroke="#5a3a24" stroke-width="5" stroke-linecap="round"/>
+                <!-- crates -->
+                <g font-family="IBM Plex Mono, monospace" font-size="15" font-weight="600" text-anchor="middle">
+                  <rect x="34" y="150" width="62" height="48" rx="3" fill="#e8b84a"/><path d="M34 166 h62" stroke="#b48a2e" stroke-width="2"/><text x="65" y="189" fill="#4a3412">.docx</text>
+                  <rect x="104" y="160" width="56" height="38" rx="3" fill="#e7745a"/><path d="M104 172 h56" stroke="#b9523c" stroke-width="2"/><text x="132" y="191" fill="#fff6ea">.md</text>
+                  <rect x="168" y="146" width="58" height="52" rx="3" fill="#5fb3a2"/><path d="M168 162 h58" stroke="#3b8676" stroke-width="2"/><text x="197" y="187" fill="#0f3b33">.txt</text>
+                </g>
+                <g fill="#2a3a40"><path d="M60 96 q6 -6 12 0 q6 -6 12 0" fill="none" stroke="#2a3a40" stroke-width="2"/><path d="M118 74 q5 -5 10 0 q5 -5 10 0" fill="none" stroke="#2a3a40" stroke-width="2"/></g>
+              </svg></div>
               <div><h3>Bring your manuscript</h3><p>The manuscript boards as a <b>Word, Markdown or plain-text</b> file — or is written on deck, starting from an empty desk. Its <b>language is recognised automatically</b>, one of 36, and no ticket — no account — is asked for at the gangway.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Word / Markdown / text import</li><li>Language recognised automatically</li><li>Or start from an empty desk</li></ul><!-- /BLEND --></div>
             </article>
             <article class="station-panel">
-              <div class="stage-viz"><div class="mini-page"><div class="mp-t">The Log, Day One</div><p>The harbour woke before the town did. Gulls turned in the pale air above the moored boats, and the water took the first light along its edges.</p></div></div>
+              <div class="stage-viz art"><svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Noon on open water: a small boat sails under a mainsail that is a typeset page, its first line opening with a gold drop cap">
+                <defs><linearGradient id="p2sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fb6d8"/><stop offset="1" stop-color="#c9eef3"/></linearGradient></defs>
+                <rect width="480" height="300" fill="url(#p2sky)"/>
+                <circle cx="404" cy="58" r="26" fill="#fff1b8"/><circle cx="404" cy="58" r="40" fill="#fff1b8" opacity=".25"/>
+                <g fill="#ffffff"><ellipse cx="96" cy="66" rx="46" ry="15"/><ellipse cx="124" cy="56" rx="30" ry="15"/><ellipse cx="290" cy="94" rx="36" ry="11"/><ellipse cx="308" cy="86" rx="20" ry="10"/></g>
+                <rect y="196" width="480" height="104" fill="#1a7690"/>
+                <path d="M0 212 q20 -9 40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 t40 0 V300 H0Z" fill="#2593ad"/>
+                <path d="M0 246 q30 -11 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 V300 H0Z" fill="#3fb0c4"/>
+                <path d="M0 278 q24 -8 48 0 t48 0 t48 0 t48 0 t48 0 t48 0 t48 0 t48 0 t48 0 t48 0 V300 H0Z" fill="#7fd0d8"/>
+                <!-- boat -->
+                <path d="M160 222 L330 222 L306 252 L182 252Z" fill="#c8443a"/>
+                <rect x="160" y="222" width="170" height="6" fill="#f7e7c6"/>
+                <path d="M246 222 V58" stroke="#3a2a20" stroke-width="4"/>
+                <path d="M250 64 L338 214 L250 214Z" fill="#fbf4e6" stroke="#d9cdb2" stroke-width="1.5"/>
+                <g stroke="#9aa6a8" stroke-width="3" stroke-linecap="round"><path d="M276 140 h26"/><path d="M262 154 h48"/><path d="M262 166 h56"/><path d="M262 178 h64"/><path d="M262 190 h70"/><path d="M262 202 h66"/></g>
+                <text x="258" y="146" font-family="Literata, Georgia, serif" font-size="30" font-weight="700" fill="#c99b3f">T</text>
+                <path d="M242 74 L176 210 L242 210Z" fill="#e8b84a"/>
+                <path d="M246 58 l22 7 l-22 7z" fill="#d9573f"/>
+                <g fill="none" stroke="#24434d" stroke-width="2"><path d="M60 140 q7 -7 14 0 q7 -7 14 0"/><path d="M98 120 q5 -5 10 0 q5 -5 10 0"/><path d="M380 150 q6 -6 12 0 q6 -6 12 0"/></g>
+              </svg></div>
               <div><h3>Write &amp; typeset</h3><p>Open water for writing and typesetting together: <b>studio fonts and themes</b>, chapter tools, <b>footnotes and images</b>, previews on <b>Kindle, phone and print</b> — with <b>zen mode</b> for the night watch and a <b>gentle streak</b> that rewards steady sailing, day after day.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Book fonts &amp; themes</li><li>Drop caps &amp; chapter styles</li><li>Device previews</li><li>Zen mode</li></ul><!-- /BLEND --></div>
               <!-- BLEND (trial): the helm — the real studio, in a browser frame -->
               <div class="blend-studio">
-                <div class="bs-frame" role="img" aria-label="The Beuk studio in Paper: the beuk and beuk.studio lockup with its tagline, a chapter list for The Salt Meridian on the left, a typeset page with a drop cap in the middle, and Kindle, phone and print preview choices above the page">
+                <div class="bs-frame" role="img" aria-label="The Beuk studio in Paper: the beuk and beuk.studio lockup with its tagline, a chapter list for The Lantern Coast on the left, a typeset page with a drop cap in the middle, and Kindle, phone and print preview choices above the page">
                   <div class="bs-bar"><span class="bs-dot"></span><span class="bs-dot"></span><span class="bs-dot"></span><span class="bs-url">beuk.studio/studio</span></div>
                   <div class="bs-head">
                     <svg width="20" height="24" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="#22333a"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="#22333a"/><circle cx="27" cy="35" r="6" fill="#faf7f2"/></svg>
@@ -436,22 +477,22 @@
                   </div>
                   <div class="bs-body">
                     <aside class="bs-side">
-                      <p class="bs-book-t">The Salt Meridian</p>
+                      <p class="bs-book-t">The Lantern Coast</p>
                       <ul>
-                        <li>Front matter</li>
-                        <li class="on">Chapter One — The Harbour</li>
-                        <li>Chapter Two</li>
-                        <li>Chapter Three</li>
-                        <li>Chapter Four</li>
-                        <li>Notes</li>
+                        <li>Prologue</li>
+                        <li class="on">One — The Ferry Crossing</li>
+                        <li>Two — The House at Gull Terrace</li>
+                        <li>Three — The Wrong-Way Water</li>
+                        <li>Four — The Tide Table for Next Year</li>
+                        <li>Back matter</li>
                       </ul>
                     </aside>
                     <div class="bs-main">
                       <div class="bs-chips"><span class="on">Kindle</span><span>Phone</span><span>Print</span></div>
                       <div class="bs-page">
-                        <div class="bp-chap">Chapter One — The Harbour</div>
-                        <p class="drop">The harbour woke before the town did. Gulls turned in the pale air above the moored boats, and the water, still dark with night, took the first light along its edges — a thin bright line, like the gilt on the spine of a book not yet opened.</p>
-                        <p>Marlowe read the tide the way other men read a letter: slowly, and twice.</p>
+                        <div class="bp-chap">Chapter One — The Ferry Crossing</div>
+                        <p class="drop">The ferry left the harbour at the first light, when the water was pewter and the gulls had not yet begun their arguing. Mara stood at the rail with her father’s chart case held against her ribs like a shield, watching the town fold itself slowly away behind the headland.</p>
+                        <p>She had not meant to come back.</p>
                       </div>
                     </div>
                   </div>
@@ -461,19 +502,116 @@
               <!-- /BLEND -->
             </article>
             <article class="station-panel">
-              <div class="stage-viz"><img src="/site/salt-meridian.webp" alt="A tall ship at first light — the painting used as the example book's cover" style="height:180px;border-radius:4px;box-shadow:0 14px 26px -12px rgba(20,50,60,.5)" /></div>
+              <div class="stage-viz art"><svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Afternoon in the shipyard: a hull on the slipway is painted as a book cover, a crane lowers a pot of colour, and a measuring rule across the spine reads 0.58 inches">
+                <defs><linearGradient id="p3sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd77e"/><stop offset="1" stop-color="#f4a05a"/></linearGradient></defs>
+                <rect width="480" height="300" fill="url(#p3sky)"/>
+                <circle cx="96" cy="78" r="30" fill="#fff0c2"/>
+                <path d="M0 214 L480 214 L480 300 L0 300Z" fill="#2b7d8f"/>
+                <path d="M0 214 L480 214 L480 232 L0 232Z" fill="#3f98a6"/>
+                <!-- slipway -->
+                <path d="M110 300 L440 196 L480 196 L480 214 L160 300Z" fill="#9b6a43"/>
+                <g stroke="#6e472b" stroke-width="3"><path d="M170 282 l14 -24"/><path d="M230 263 l14 -24"/><path d="M290 244 l14 -24"/><path d="M350 225 l14 -24"/></g>
+                <!-- crane -->
+                <g stroke="#d9573f" stroke-width="5" fill="none" stroke-linecap="square"><path d="M420 214 V34"/><path d="M420 40 H250"/><path d="M420 90 L360 40"/><path d="M406 214 L434 214"/></g>
+                <path d="M300 40 V108" stroke="#2b2b2b" stroke-width="1.5"/>
+                <path d="M288 108 h24 l-3 22 h-18z" fill="#3fa58b"/><path d="M288 108 h24" stroke="#1d3b4c" stroke-width="2"/>
+                <!-- hull as cover -->
+                <g transform="translate(-6 34) rotate(-17 270 196)">
+                  <path d="M150 150 L392 150 L370 214 L176 214Z" fill="#1d3b4c"/>
+                  <path d="M150 150 L392 150 L388 162 L154 162Z" fill="#e8b84a"/>
+                  <rect x="196" y="170" width="118" height="34" rx="2" fill="#f7efdc"/>
+                  <text x="255" y="185" text-anchor="middle" font-family="Literata, Georgia, serif" font-size="9" font-weight="700" fill="#1d3b4c" letter-spacing=".8">THE LANTERN COAST</text>
+                  <text x="255" y="198" text-anchor="middle" font-family="Karla, sans-serif" font-size="7" fill="#5d6d66" letter-spacing="1.2">APRIL CAROOKE</text>
+                  <path d="M330 168 q14 8 28 0 q-6 18 -28 26z" fill="#e7745a"/>
+                  <path d="M136 150 V214 M137 140 V150" stroke="#1d3b4c" stroke-width="1.5"/>
+                  <path d="M130 150 h12 M130 214 h12" stroke="#1d3b4c" stroke-width="1.5"/>
+                  <rect x="112" y="122" width="50" height="18" rx="9" fill="#fffaf0"/>
+                  <text x="137" y="135" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" font-weight="600" fill="#14607a">0.58″</text>
+                </g>
+                <!-- painter's swatches -->
+                <g><rect x="156" y="28" width="18" height="18" rx="3" fill="#e7745a"/><rect x="178" y="28" width="18" height="18" rx="3" fill="#c8443a"/><rect x="200" y="28" width="18" height="18" rx="3" fill="#3fa58b"/><rect x="222" y="28" width="18" height="18" rx="3" fill="#8a6fc0"/></g>
+              </svg></div>
               <div><h3>Design the cover</h3><p>Here the vessel gets its colours: the <b>cover maker</b> for the front, a full <b>print wrap</b> with the <b>spine calculated</b> from true tonnage — page count and paper stock — and a <b>3D book</b> you can walk around before launch. Try it at the helm below.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Cover maker</li><li>Print wrap + spine calculator</li><li>The turning 3D book</li></ul><!-- /BLEND --></div>
             </article>
             <article class="station-panel">
-              <div class="stage-viz"><span class="seal">✓ Checked before it sails</span></div>
+              <div class="stage-viz art"><svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Late afternoon at the customs house: an open crate is examined under a lamp and a large green stamp reads Checked, EPUB">
+                <defs><linearGradient id="p4sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6b980"/><stop offset="1" stop-color="#e27c67"/></linearGradient></defs>
+                <rect width="480" height="300" fill="url(#p4sky)"/>
+                <rect y="238" width="480" height="62" fill="#2a6f86"/>
+                <path d="M0 238 H480 V246 H0Z" fill="#3f8ea0"/>
+                <!-- customs house -->
+                <path d="M60 236 V120 L180 78 L300 120 V236Z" fill="#f4e6c8"/>
+                <path d="M48 124 L180 74 L312 124 L300 128 L180 86 L60 128Z" fill="#c8443a"/>
+                <g fill="#e9d6ae"><rect x="80" y="136" width="14" height="100"/><rect x="128" y="136" width="14" height="100"/><rect x="218" y="136" width="14" height="100"/><rect x="266" y="136" width="14" height="100"/></g>
+                <rect x="156" y="170" width="48" height="66" rx="22" fill="#1d3b4c"/>
+                <rect x="112" y="102" width="136" height="22" rx="3" fill="#1d3b4c"/>
+                <text x="180" y="117" text-anchor="middle" font-family="Karla, sans-serif" font-size="11" font-weight="700" fill="#f4e6c8" letter-spacing="3">CUSTOMS</text>
+                <path d="M180 78 V40" stroke="#1d3b4c" stroke-width="3"/><path d="M182 42 h34 l-8 9 l8 9 h-34z" fill="#3fa58b"/>
+                <!-- crate under lamp -->
+                <path d="M392 120 V60 H352" stroke="#1d3b4c" stroke-width="3" fill="none"/>
+                <path d="M392 120 l-16 18 h32z" fill="#1d3b4c"/><path d="M378 138 L336 236 H452 L406 138Z" fill="#fff3b0" opacity=".38"/>
+                <rect x="348" y="196" width="92" height="40" rx="3" fill="#b9813f"/><path d="M348 210 h92" stroke="#8a5d2c" stroke-width="2"/>
+                <g><rect x="364" y="178" width="12" height="20" fill="#e7745a"/><rect x="378" y="174" width="10" height="24" fill="#3fa58b"/><rect x="390" y="180" width="13" height="18" fill="#e8b84a"/><rect x="405" y="176" width="10" height="22" fill="#8a6fc0"/></g>
+                <!-- stamp -->
+                <g transform="rotate(-12 250 196)">
+                  <circle cx="250" cy="196" r="42" fill="#fffaf0" opacity=".92"/>
+                  <circle cx="250" cy="196" r="38" fill="none" stroke="#2e8b6a" stroke-width="4"/>
+                  <circle cx="250" cy="196" r="31" fill="none" stroke="#2e8b6a" stroke-width="1.5"/>
+                  <text x="250" y="192" text-anchor="middle" font-family="Karla, sans-serif" font-size="12" font-weight="800" fill="#2e8b6a" letter-spacing="1.5">CHECKED</text>
+                  <path d="M236 202 l9 9 l17 -19" stroke="#2e8b6a" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                  <text x="250" y="224" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="8" font-weight="600" fill="#2e8b6a">EPUB</text>
+                </g>
+              </svg></div>
               <div><h3>Check it</h3><p>No cargo leaves unexamined: <b>structural validation</b> and the <b>package inspector</b> open every crate — files, links, metadata — and with an account, the <b>official EPUBCheck</b> runs on Beuk's server before the book clears customs. A store's own rules come with each preset.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Structural validation</li><li>Package inspector</li><li>Official EPUBCheck</li></ul><!-- /BLEND --></div>
             </article>
             <article class="station-panel">
-              <div class="stage-viz"><div class="chiprow" style="justify-content:center"><span class="chip">KDP</span><span class="chip">Apple Books</span><span class="chip">Kobo</span><span class="chip">Nook</span><span class="chip">Draft2Digital</span><span class="chip">Smashwords</span><span class="chip">OverDrive</span><span class="chip">Tolino</span><span class="chip">Scribd</span><span class="chip">Google Play</span><span class="chip hot">+ the press</span></div></div>
+              <div class="stage-viz art"><svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="A sea chart at golden hour: a dotted route winds from a small ship past eleven harbours, each marked with its own coloured flag">
+                <defs><radialGradient id="p5sea" cx=".5" cy=".45" r=".75"><stop offset="0" stop-color="#4fb3bf"/><stop offset="1" stop-color="#1e6f86"/></radialGradient></defs>
+                <rect width="480" height="300" fill="url(#p5sea)"/>
+                <g stroke="#ffffff" stroke-opacity=".12"><path d="M0 75 H480 M0 150 H480 M0 225 H480 M120 0 V300 M240 0 V300 M360 0 V300"/></g>
+                <g fill="#f3dfaa"><path d="M30 40 q30 -22 70 -6 q22 14 6 34 q-34 16 -64 4 q-22 -14 -12 -32z"/><path d="M188 196 q38 -18 70 2 q16 20 -10 34 q-40 10 -62 -6 q-12 -16 2 -30z"/><path d="M330 46 q40 -14 64 8 q10 20 -18 28 q-36 6 -50 -10 q-8 -16 4 -26z"/><path d="M380 210 q32 -10 52 12 q6 24 -24 28 q-30 0 -34 -18 q-2 -16 6 -22z"/><path d="M96 200 q22 -6 32 10 q2 16 -20 18 q-20 -2 -20 -14 q0 -10 8 -14z"/></g>
+                <g fill="#9cc77a"><path d="M52 44 q20 -10 36 0 q6 12 -10 18 q-22 4 -28 -6 q-4 -8 2 -12z"/><path d="M206 204 q22 -8 36 4 q4 12 -14 16 q-20 2 -24 -8 q-2 -8 2 -12z"/><path d="M346 52 q22 -6 34 6 q2 12 -14 14 q-20 0 -22 -8 q-2 -8 2 -12z"/></g>
+                <path d="M34 262 C90 250 70 180 132 170 S190 112 240 120 S300 60 352 84 S430 140 404 182 S300 196 262 240 S360 286 448 262" fill="none" stroke="#ffe08a" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/>
+                <g stroke="#1d3b4c" stroke-width="1.6">
+                  <path d="M92 228 v-18"/><path d="M132 170 v-18"/><path d="M186 132 v-18"/><path d="M240 120 v-18"/><path d="M300 76 v-18"/><path d="M352 84 v-18"/><path d="M398 112 v-18"/><path d="M406 176 v-18"/><path d="M330 196 v-18"/><path d="M276 228 v-18"/><path d="M372 274 v-18"/>
+                </g>
+                <g><path d="M93 210 h14 l-4 5 l4 5 h-14z" fill="#e7745a"/><path d="M133 152 h14 l-4 5 l4 5 h-14z" fill="#e8b84a"/><path d="M187 114 h14 l-4 5 l4 5 h-14z" fill="#8a6fc0"/><path d="M241 102 h14 l-4 5 l4 5 h-14z" fill="#f7f1e2"/><path d="M301 58 h14 l-4 5 l4 5 h-14z" fill="#d9573f"/><path d="M353 66 h14 l-4 5 l4 5 h-14z" fill="#3fa58b"/><path d="M399 94 h14 l-4 5 l4 5 h-14z" fill="#e8b84a"/><path d="M407 158 h14 l-4 5 l4 5 h-14z" fill="#e7745a"/><path d="M331 178 h14 l-4 5 l4 5 h-14z" fill="#f7f1e2"/><path d="M277 210 h14 l-4 5 l4 5 h-14z" fill="#8a6fc0"/><path d="M373 256 h14 l-4 5 l4 5 h-14z" fill="#3fa58b"/></g>
+                <g fill="#1d3b4c"><circle cx="92" cy="229" r="3"/><circle cx="132" cy="171" r="3"/><circle cx="186" cy="133" r="3"/><circle cx="240" cy="121" r="3"/><circle cx="300" cy="77" r="3"/><circle cx="352" cy="85" r="3"/><circle cx="398" cy="113" r="3"/><circle cx="406" cy="177" r="3"/><circle cx="330" cy="197" r="3"/><circle cx="276" cy="229" r="3"/><circle cx="372" cy="275" r="3"/></g>
+                <path d="M22 262 h28 l-5 10 h-18z" fill="#c8443a"/><path d="M36 262 v-16" stroke="#1d3b4c" stroke-width="2"/><path d="M37 248 l10 12 h-10z" fill="#fbf4e6"/>
+                <g transform="translate(440 46)"><circle r="22" fill="none" stroke="#ffe08a" stroke-width="1.5"/><path d="M0 -26 L5 0 L0 26 L-5 0Z" fill="#ffe08a"/><path d="M-26 0 L0 -5 L26 0 L0 5Z" fill="#ffe08a" opacity=".6"/></g>
+              </svg></div>
               <div><h3>Send it everywhere</h3><p><b>Eleven export presets</b> — one shaped for every port — plus <b>Markdown, HTML and DOCX</b> in the hold, <b>print-ready interiors</b> for paperback and hardback, and <b>narrator scripts</b> for an audiobook.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Eleven store presets</li><li>Markdown / HTML / DOCX</li><li>Print-ready interiors</li><li>ACX narrator scripts</li></ul><!-- /BLEND --></div>
             </article>
             <article class="station-panel">
-              <div class="stage-viz"><div class="chiprow" style="justify-content:center"><span class="chip">Cloud shelf</span><span class="chip">Export archive</span><span class="chip">Beta-reader links</span><span class="chip hot">Free for 7 days</span></div></div>
+              <div class="stage-viz art"><svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Dusk in the home harbour: lit windows climb the hill, the lighthouse sweeps its beam, and in the nearest window a shelf of coloured books">
+                <defs><linearGradient id="p6sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26305e"/><stop offset=".6" stop-color="#7a4f86"/><stop offset="1" stop-color="#f08b6c"/></linearGradient></defs>
+                <rect width="480" height="300" fill="url(#p6sky)"/>
+                <g fill="#fff6d6"><circle cx="40" cy="30" r="1.6"/><circle cx="96" cy="58" r="1.2"/><circle cx="150" cy="22" r="1.8"/><circle cx="228" cy="46" r="1.2"/><circle cx="300" cy="18" r="1.6"/><circle cx="352" cy="52" r="1.2"/><circle cx="430" cy="28" r="1.8"/><circle cx="196" cy="84" r="1"/></g>
+                <path d="M406 70 a20 20 0 1 0 14 34 a16 16 0 1 1 -14 -34z" fill="#fff1c4"/>
+                <rect y="226" width="480" height="74" fill="#1f4a63"/>
+                <path d="M120 240 h60 M150 256 h80 M310 248 h70 M60 270 h50" stroke="#ffd36e" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+                <!-- lighthouse and beam -->
+                <path d="M36 226 L44 128 L62 128 L70 226Z" fill="#fbf4e6"/><path d="M41 170 h24 v14 h-25z" fill="#c8443a"/>
+                <rect x="42" y="112" width="22" height="16" fill="#ffd36e"/><path d="M38 112 h30 l-15 -14z" fill="#1d3b4c"/>
+                <path d="M64 116 L250 66 L250 156Z" fill="#ffe9a6" opacity=".5"/>
+                <!-- hill town -->
+                <path d="M150 226 C200 180 260 150 330 146 C400 142 450 170 480 186 V226Z" fill="#2c3f5c"/>
+                <g>
+                  <rect x="214" y="170" width="34" height="56" fill="#e7745a"/><path d="M210 172 l21 -20 l21 20z" fill="#7a3a33"/>
+                  <rect x="252" y="158" width="40" height="68" fill="#e8b84a"/><path d="M248 160 l24 -22 l24 22z" fill="#8a5d2c"/>
+                  <rect x="296" y="150" width="34" height="76" fill="#5fb3a2"/><path d="M292 152 l21 -20 l21 20z" fill="#2f6e62"/>
+                  <rect x="334" y="160" width="40" height="66" fill="#8a6fc0"/><path d="M330 162 l24 -22 l24 22z" fill="#4e3d78"/>
+                  <rect x="378" y="172" width="34" height="54" fill="#f2ead6"/><path d="M374 174 l21 -20 l21 20z" fill="#7a3a33"/>
+                </g>
+                <g fill="#ffd36e"><rect x="223" y="182" width="8" height="10"/><rect x="262" y="172" width="8" height="10"/><rect x="276" y="196" width="8" height="10"/><rect x="304" y="164" width="8" height="10"/><rect x="316" y="190" width="8" height="10"/><rect x="344" y="176" width="8" height="10"/><rect x="386" y="186" width="8" height="10"/></g>
+                <!-- the near window with the shelf -->
+                <rect x="420" y="128" width="60" height="98" fill="#d9573f"/><path d="M414 130 l36 -30 l36 30z" fill="#7a3a33"/>
+                <rect x="430" y="146" width="40" height="44" fill="#ffd98a"/>
+                <path d="M430 176 h40" stroke="#8a5d2c" stroke-width="2.5"/>
+                <g><rect x="433" y="158" width="5" height="18" fill="#14607a"/><rect x="439" y="161" width="5" height="15" fill="#c8443a"/><rect x="445" y="156" width="6" height="20" fill="#3fa58b"/><rect x="452" y="160" width="4" height="16" fill="#8a6fc0"/><rect x="457" y="157" width="6" height="19" fill="#1d3b4c"/><path d="M464 176 l3 -17 l4 1 l-3 16z" fill="#e8b84a"/></g>
+                <!-- ship home, sails furled -->
+                <path d="M96 226 L196 226 L184 246 L106 246Z" fill="#14202e"/><path d="M146 226 V170" stroke="#14202e" stroke-width="3"/><path d="M128 184 h36" stroke="#f2ead6" stroke-width="5" stroke-linecap="round"/><path d="M132 200 h28" stroke="#f2ead6" stroke-width="5" stroke-linecap="round"/>
+              </svg></div>
               <div><h3>Home to your shelf</h3><p>An <b>account</b> keeps the log synced to a cloud shelf, with an archive of every crossing, <b>reading links for beta readers</b> and the <b>official EPUBCheck</b>. The first week is free, and writing on this device never needs one: <b>your book is always yours to export</b>.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Cloud shelf, device to device</li><li>Export archive</li><li>Beta-reader links</li><li>Free for 7 days</li></ul><!-- /BLEND --></div>
             </article>
           </div>
@@ -545,16 +683,16 @@
               <div class="book3d-wrap">
                 <div class="scene3d"><div class="book3d" data-book3d tabindex="0" role="img" aria-label="A rotatable 3D book — drag to turn it, or focus it and use the arrow keys">
                   <div class="face f-back"></div>
-                  <div class="face f-spine"><span data-cov="spine">The Salt Meridian · E. Marlowe</span></div>
+                  <div class="face f-spine"><span data-cov="spine">The Lantern Coast · April Carooke</span></div>
                   <div class="face f-pages"></div>
                   <div class="face f-top"></div>
-                  <div class="face f-front"><img src="/site/salt-meridian.webp" alt="" /><div class="cover-txt"><span class="ct-title" data-cov="title">The Salt Meridian</span><span class="ct-rule"></span><span class="ct-author" data-cov="author">E. Marlowe</span></div></div>
+                  <div class="face f-front"><img src="/site/lantern-coast.webp" alt="" /><div class="cover-txt"><span class="ct-title" data-cov="title">The Lantern Coast</span><span class="ct-rule"></span><span class="ct-author" data-cov="author">April Carooke</span></div></div>
                 </div></div>
                 <span class="draghint">← drag to turn the book · arrow keys work too →</span>
                 <div class="readout" data-book="dims">Trim&nbsp;&nbsp;<b>9″ H × 6″ W</b> · 228.60 × 152.40 mm<br />Spine&nbsp;&nbsp;<b>0.58″</b> · 14.81 mm</div>
               </div>
-              <div class="field"><label for="cov-title">Your book's title</label><input type="text" id="cov-title" data-cov-in="title" placeholder="The Salt Meridian" autocomplete="off" /></div>
-              <div class="field"><label for="cov-author">Author</label><input type="text" id="cov-author" data-cov-in="author" placeholder="E. Marlowe" autocomplete="off" /></div>
+              <div class="field"><label for="cov-title">Your book's title</label><input type="text" id="cov-title" data-cov-in="title" placeholder="The Lantern Coast" autocomplete="off" /></div>
+              <div class="field"><label for="cov-author">Author</label><input type="text" id="cov-author" data-cov-in="author" placeholder="April Carooke" autocomplete="off" /></div>
             </div>
             <div class="lab reveal d1" data-lab="spine">
               <h3>Take its measure</h3>
@@ -574,8 +712,8 @@
                 <div class="grp"><span>Room</span><span class="seg"><button data-ty-mode="paper" aria-pressed="true">Paper</button><button data-ty-mode="candle" aria-pressed="false">Candlelight</button></span></div>
               </div>
               <div class="type-prev" data-ty="prev" data-font="literata" data-mode="paper">
-                <div class="tp-chap">Chapter One — The Harbour</div>
-                <p>The harbour woke before the town did. Gulls turned in the pale air above the moored boats, and the water, still dark with night, took the first light along its edges — a thin bright line, like the gilt on the spine of a book not yet opened.</p>
+                <div class="tp-chap">Chapter One — The Ferry Crossing</div>
+                <p>The ferry left the harbour at the first light, when the water was pewter and the gulls had not yet begun their arguing. Mara stood at the rail with her father’s chart case held against her ribs like a shield, watching the town fold itself slowly away behind the headland.</p>
               </div>
             </div>
           </div>
@@ -588,14 +726,14 @@
           <div class="sec-head reveal">
             <p class="kicker">The proof</p>
             <h2>One book, every shore.</h2>
-            <p><i>The Salt Meridian</i> — a full novel of 24,828 words, written and typeset in Beuk — in the forms it actually sails in. No borrowed praise: the artefact is the evidence.</p>
+            <p><i>The Lantern Coast</i> — the complete sample novella, 24,828 words, typeset in Beuk — in the forms it actually sails in. No borrowed praise: the artefact is the evidence.</p>
           </div>
           <div class="bp-grid">
             <div class="bp-card reveal">
               <div class="bp-stage">
                 <div class="bp-devices">
-                  <div class="bp-reader"><div class="r-t">The Salt Meridian</div><div class="r-a">E. Marlowe</div><p>The harbour woke before the town did. Gulls turned in the pale air above the moored boats, and the water took the first light along its edges.</p><p>Marlowe read the tide the way other men read a letter: slowly, and twice.</p></div>
-                  <div class="bp-phone"><div class="r-t">The Salt Meridian</div><p>The harbour woke before the town did. Gulls turned in the pale air above the moored boats…</p></div>
+                  <div class="bp-reader"><div class="r-t">The Lantern Coast</div><div class="r-a">April Carooke</div><p>The ferry left the harbour at the first light, when the water was pewter and the gulls had not yet begun their arguing.</p><p>She had not meant to come back.</p></div>
+                  <div class="bp-phone"><div class="r-t">The Lantern Coast</div><p>The ferry left the harbour at the first light, when the water was pewter…</p></div>
                 </div>
               </div>
               <h3>The EPUB, on readers</h3>
@@ -604,9 +742,9 @@
             <div class="bp-card reveal d1">
               <div class="bp-stage">
                 <div class="bp-wrap">
-                  <div class="w-back"><i></i><i></i><i></i><i></i><span class="w-quote">A novel of harbours, tides, and the long way home.</span></div>
-                  <div class="w-spine"><span>The Salt Meridian · E. Marlowe</span></div>
-                  <div class="w-front"><img src="/site/salt-meridian.webp" alt="" /><div class="cover-txt"><span class="ct-title" style="font-size:16px">The Salt Meridian</span><span class="ct-rule"></span><span class="ct-author">E. Marlowe</span></div></div>
+                  <div class="w-back"><i></i><i></i><i></i><i></i><span class="w-quote">A buried channel. A true ledger. And the town that sold its own sea back to itself.</span></div>
+                  <div class="w-spine"><span>The Lantern Coast · April Carooke</span></div>
+                  <div class="w-front"><img src="/site/lantern-coast.webp" alt="" /><div class="cover-txt"><span class="ct-title" style="font-size:16px">The Lantern Coast</span><span class="ct-rule"></span><span class="ct-author">April Carooke</span></div></div>
                 </div>
               </div>
               <h3>The paperback, wrapped</h3>
@@ -614,12 +752,12 @@
             </div>
             <div class="bp-card reveal d2">
               <div class="bp-stage">
-                <div class="scene3d"><div class="book3d" data-book3d tabindex="0" role="img" aria-label="The Salt Meridian as a turning 3D book — drag to turn it, or focus it and use the arrow keys">
+                <div class="scene3d"><div class="book3d" data-book3d tabindex="0" role="img" aria-label="The Lantern Coast as a turning 3D book — drag to turn it, or focus it and use the arrow keys">
                   <div class="face f-back"></div>
-                  <div class="face f-spine"><span>The Salt Meridian · E. Marlowe</span></div>
+                  <div class="face f-spine"><span>The Lantern Coast · April Carooke</span></div>
                   <div class="face f-pages"></div>
                   <div class="face f-top"></div>
-                  <div class="face f-front"><img src="/site/salt-meridian.webp" alt="" /><div class="cover-txt"><span class="ct-title">The Salt Meridian</span><span class="ct-rule"></span><span class="ct-author">E. Marlowe</span></div></div>
+                  <div class="face f-front"><img src="/site/lantern-coast.webp" alt="" /><div class="cover-txt"><span class="ct-title">The Lantern Coast</span><span class="ct-rule"></span><span class="ct-author">April Carooke</span></div></div>
                 </div></div>
               </div>
               <h3>The book, turning</h3>
@@ -759,7 +897,7 @@
           var tOut = lab.querySelector('[data-cov="title"]');
           var aOut = lab.querySelector('[data-cov="author"]');
           var spine = lab.querySelector('[data-cov="spine"]');
-          var dT = "The Salt Meridian", dA = "E. Marlowe";
+          var dT = "The Lantern Coast", dA = "April Carooke";
           var hcTitle = document.getElementById("hc-title");
           function upd(){
             var typed = (tIn.value || "").trim();
