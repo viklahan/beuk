@@ -2589,8 +2589,12 @@ lines inside a `keepIndent` kind). The kinds today:
   line's leading spaces kept as its indent (a tab is four). Set flush left
   and ragged whatever the book's justification, no first-line indent or
   drop cap, a long line's turn-over hung, a stanza kept on one page when it
-  fits. In Word: one `Verse`-style paragraph per stanza with real line
-  breaks.
+  fits (in a right-to-left book: flush right, the inset and turn-over on
+  the right edge). In Word: one `Verse`-style paragraph per stanza with
+  real line breaks. A scene break, a note definition (`[^1]: …`, a stanza
+  of its own) or a picture line inside a verse takes the ordinary block
+  path: the definition joins the section's notes, the picture stands as a
+  figure (split out of its stanza), never set as verse lines.
 - `center` / `right` — the enclosed paragraphs set centred / flush right
   with no first-line indent (signs, notes, sign-offs); in Word the same
   paragraphs with `w:jc` center / right.

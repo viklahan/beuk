@@ -19354,6 +19354,24 @@
         return "\u00A0".repeat(m.replace(/\t/g, "    ").length);
       }
       const CONTAINER_BREAK_RE = /^(\*\*\*|❦|⁂)$/;
+      const CONTAINER_NOTEDEF_RE = /^\[\^?\d{1,3}\]:/;
+      /* A verse's stanzas as parts: { lines } is a stanza to set line
+         by line; { block } goes through the ordinary block path — a
+         scene break, a note definition (collected with the section's
+         notes, never set as a line) or a picture line (split out of
+         its stanza to stand as a figure, as it would in prose). */
+      function verseParts(seg) {
+        const parts = [];
+        containerStanzas(seg).forEach((st) => {
+          if (st.length === 1 && CONTAINER_BREAK_RE.test(st[0].trim())) { parts.push({ block: st[0].trim() }); return; }
+          if (CONTAINER_NOTEDEF_RE.test(st[0].trim())) { parts.push({ block: st.map((l) => l.trim()).join("\n") }); return; }
+          let buf = [];
+          const flush = () => { if (buf.length) { parts.push({ lines: buf }); buf = []; } };
+          st.forEach((l) => { if (parseImageLine(l)) { flush(); parts.push({ block: l.trim() }); } else buf.push(l); });
+          flush();
+        });
+        return parts;
+      }
       const CONTAINER_KINDS = {
         /* Verse: every line break is the poet's. One <p> per stanza, a
            block-level span per line (so a long line hangs its turn-over)
@@ -19361,17 +19379,17 @@
         verse: {
           keepLines: true, keepIndent: true,
           html(seg, cx) {
-            return '<div class="verse">' + containerStanzas(seg).map((st) =>
-              (st.length === 1 && CONTAINER_BREAK_RE.test(st[0].trim()))
-                ? cx.blocks(st[0].trim())
-                : '<p class="stanza">' + st.map((l) => '<span class="vl">' + containerIndent(l) + cx.inline(l.trim()) + "</span>").join("<br/>") + "</p>"
+            return '<div class="verse">' + verseParts(seg).map((pt) =>
+              pt.block != null
+                ? cx.blocks(pt.block)
+                : '<p class="stanza">' + pt.lines.map((l) => '<span class="vl">' + containerIndent(l) + cx.inline(l.trim()) + "</span>").join("<br/>") + "</p>"
             ).join("") + "</div>";
           },
           docx(seg, cx) {
-            return containerStanzas(seg).map((st) =>
-              (st.length === 1 && CONTAINER_BREAK_RE.test(st[0].trim()))
-                ? cx.blocks(st[0].trim()).join("")
-                : cx.para("Verse", st.map((l) => (containerIndent(l) ? cx.run(containerIndent(l)) : "") + cx.runs(l.trim())).join(cx.lineBreak)));
+            return verseParts(seg).map((pt) =>
+              pt.block != null
+                ? cx.blocks(pt.block).join("")
+                : cx.para("Verse", pt.lines.map((l) => (containerIndent(l) ? cx.run(containerIndent(l)) : "") + cx.runs(l.trim())).join(cx.lineBreak)));
           }
         },
         /* Centre / right: the enclosed paragraphs set as they are,
@@ -20112,7 +20130,13 @@
               S + ".ch-editorial_left, " + S + ".ch-editorial_left .chapter-title, " + S + ".ch-editorial_left .chapter-subtitle, " +
               S + ".copyright p, " + S + ".inhead, " + S + ".part-body { text-align: right; }",
             S + ".ch-editorial_left .chapter-number { border-left: 0; padding-left: 0; border-right: 0.22em solid currentColor; padding-right: 0.6em; }",
-            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }");
+            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }",
+            /* Verse: flush right, its inset and a line's hung turn-over
+               on the right edge (text-indent already follows the line's
+               direction). */
+            S + ".verse { margin: 1em 1.5em 1em 0; text-align: right; }",
+            S + ".verse p.stanza { text-align: right; }",
+            S + ".verse .vl { padding-left: 0; padding-right: 1.5em; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -38077,7 +38101,40 @@
               const sty = (docx.find((f) => f.path === "word/styles.xml") || {}).content || "";
               const verseParas = doc.match(/<w:p><w:pPr><w:pStyle w:val="Verse"\/><\/w:pPr>[\s\S]*?<\/w:p>/g) || [];
               if (verseParas.length !== 2 || (verseParas[0].match(/<w:br\/>/g) || []).length !== 2 || verseParas[0].indexOf(NB.repeat(4)) === -1 || !sty.includes('w:styleId="Verse"')) bad.push("the Word export did not set stanzas as Verse paragraphs with line breaks (" + verseParas.length + ")");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "verse kept its line breaks and indent (beautifier too), 2 stanzas, no drop cap inside, prose after it opens the chapter; computed flush-left, unindented, a line box per line; EPUB carries it, validator errors 0; Word: 2 Verse paragraphs, real line breaks");
+              /* A note definition and a picture inside a verse take the
+                 ordinary block path: the definition is collected with
+                 the section's notes (never set as a line), the picture
+                 stands as a figure / the Word image caption. */
+              const nsrc = "::: verse\nThe sea[^1] is calm\n\n[^1]: A note on the sea.\n\nA line\n![A gull](img:sc-no-such-img)\nAnother line\n:::\n\nAfter.";
+              const ns = mkSection("body", "chapter", "Verse notes", { number: "2", content: nsrc });
+              const nh = contentBlocksToHtml(ns.content, ns, true, false, true);
+              const nVerse = (nh.match(/<div class="verse">[\s\S]*?<\/div>\n?/) || [""])[0];
+              if (/A note on the sea/.test(nVerse) || !/<div class="endnotes"[\s\S]*A note on the sea\./.test(nh) || (nh.match(/class="noteref"/g) || []).length !== 1) bad.push("a note definition inside verse was not collected as a note: " + JSON.stringify(nh.slice(0, 500)));
+              if (/!\[A gull\]/.test(nh) || !/<div class="verse">[\s\S]*<span class="vl">A line<\/span><\/p><figure class="book-img[\s\S]*<p class="stanza"><span class="vl">Another line<\/span>/.test(nh)) bad.push("a picture inside verse did not stand as a figure: " + JSON.stringify(nVerse.slice(0, 500)));
+              const nd = docxContentParas(nsrc).join("");
+              if (/A note on the sea/.test(nd) || !/\[Image: A gull\]/.test(nd) || /!\[A gull\]/.test(nd) || (nd.match(/w:val="Verse"/g) || []).length !== 3) bad.push("the Word export set a verse note definition or picture as verse: " + JSON.stringify(nd.slice(0, 600)));
+              /* A right-to-left book: the verse sits flush right, its
+                 inset and hung turn-over on the right edge. */
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { language: "ar" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              let rtlNote = "";
+              if (!isRtlLang(bookLang())) bad.push("an Arabic book did not read as right-to-left");
+              else {
+                const rp = document.createElement("div");
+                rp.className = "sc-verse-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:400px";
+                const rst = document.createElement("style"); rst.textContent = buildBookCss(".sc-verse-rtl");
+                rp.innerHTML = contentBlocksToHtml("::: verse\nسطر أول قصير\nسطر ثان\n:::", s, false, true, true);
+                document.body.appendChild(rst); document.body.appendChild(rp);
+                try {
+                  const v = rp.querySelector(".verse"), sp = rp.querySelector(".verse p.stanza"), l0 = rp.querySelector(".verse .vl");
+                  const vcs = getComputedStyle(v), pcs = getComputedStyle(sp), lcs = getComputedStyle(l0);
+                  const box = rp.getBoundingClientRect(), rng = document.createRange(); rng.selectNodeContents(l0);
+                  const tr = rng.getBoundingClientRect();
+                  rtlNote = "align " + pcs.textAlign + ", margin L" + vcs.marginLeft + "/R" + vcs.marginRight + ", pad R" + lcs.paddingRight + ", text right gap " + Math.round(box.right - tr.right) + "px";
+                  if (pcs.textAlign !== "right" || vcs.marginLeft !== "0px" || parseFloat(vcs.marginRight) <= 0 || lcs.paddingLeft !== "0px" || parseFloat(lcs.paddingRight) <= 0) bad.push("RTL verse computed: " + rtlNote);
+                  if (box.right - tr.right > 80 || tr.left - box.left < 150) bad.push("RTL verse text does not sit at the right edge: " + rtlNote);
+                } finally { rp.remove(); rst.remove(); }
+              }
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "verse kept its line breaks and indent (beautifier too), 2 stanzas, no drop cap inside, prose after it opens the chapter; computed flush-left, unindented, a line box per line; EPUB carries it, validator errors 0; Word: 2 Verse paragraphs, real line breaks; a note definition inside verse is collected as a note (1 ref, in the endnotes, not a line) and a picture stands as a figure, in HTML and Word; RTL book: " + rtlNote);
             } finally {
               applyBookDoc(keepDoc);
             }
