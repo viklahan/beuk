@@ -2830,6 +2830,22 @@ entries are. Narration reads the entries, never the fences. Toolbar:
 Columns and Hanging indent, in all 13 languages. Self-checks:
 `chapter.hanging`, `chapter.columns`, `import.docx.backmatter` (async).
 
+Notes at the foot of the page and columns: the print renderer
+(`deploy/renderer/footnotes.mjs`) knows a `.columns` block. Its entries
+are units like any paragraph; their lines are told apart by column (a line
+set higher than the one before it in the same block starts the next
+column), and a reference in the columns is placed on the line holding the
+word it follows. Only a multicol block's last fragment is balanced, so a
+cut inside the columns ends the block there and reopens it on the next
+page (`fn-brk fn-mc`; a numbered list reopens at its next number, and the
+elements between block and entry close and reopen with it); the page
+keeps as many column lines as, balanced anew in two columns, fit above its
+notes. A block that runs over several pages, with references before and
+inside it, now settles in a few passes with every note at the foot of its
+reference's page (it once fell back to the section end after 60 passes,
+where the Print Interior View still showed the notes at the page feet).
+Test: `tests/print-footnotes.test.ts` (a two-column toy paginator).
+
 ## Title page centring and picture-book type (round 13)
 
 - The title page's subtitle, author and publisher are centred like the
@@ -2850,6 +2866,13 @@ Columns and Hanging indent, in all 13 languages. Self-checks:
   not added. `printPictureBook` rides the book file (a file without it
   clears it). The studio preview does not follow print type sizes (it
   never has), so it is unchanged. Self-check `print.picturebook`.
+- The title page at big type (Large Print or picture-book) is sized by
+  the page, not by the body: its type stays at 18pt (picture-book's 24pt
+  comes down to it), the publisher's drop (34% of the page's width, which
+  on an 11 × 8.5 landscape page ran the publisher onto a second page under
+  a running head and folio) is capped at 7em, and the block is kept on one
+  page. `print.picturebook` lays the 11 × 8.5 picture-book title page out
+  in the Print Interior View and asserts every line sits on its first page.
 
 
 **Image captions.** An image marker may carry a caption as a quoted title:

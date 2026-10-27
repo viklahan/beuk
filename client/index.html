@@ -31850,6 +31850,15 @@
         if (printPictureBookOn()) rules.push(S + ".chapter-opening.ch-untitled { display: none; }");
         if (printBigType()) {
           rules.push(root + " { font-size: " + printBaseFontPt() + "pt; line-height: " + printBigLead() + "; text-align: " + (isRtlLang(bookLang()) ? "right" : "left") + "; hyphens: manual; -webkit-hyphens: manual; }");
+          /* The title page is display type sized by the page, not by the
+             body: at 18pt or 24pt its em-sized lines and the publisher's
+             width-relative drop (34% of a landscape page's width) ran the
+             publisher onto a second page on 11 × 8.5. Its type stays at
+             the 18pt Large Print floor (picture-book 24pt comes down to
+             it: the title 45pt), the drop is capped at 7em, and the
+             block is kept on one page. */
+          rules.push(S + ".titlepage { font-size: 18pt; break-inside: avoid; page-break-inside: avoid; }");
+          rules.push(S + ".titlepage .tp-publisher { margin-top: min(34%, 7em); }");
         }
         return rules.join("\n");
       }
@@ -41463,6 +41472,23 @@
               $("modalPrintView").classList.remove("open");
               const chPages = model ? model.pages.filter((p) => p.section === ch) : [];
               if (!model || model.g.pageW !== 1056 || model.g.pageH !== 816 || chPages.length !== 2) bad.push("the view: " + (model ? model.g.pageW + "x" + model.g.pageH + ", " + chPages.length + " chapter pages" : "no model"));
+              /* The 11 × 8.5 title page at picture-book type stays one page:
+                 every line in its flow's first page, above the page foot. */
+              const tpSec = state.sections.find((s) => s.type === "titlepage") || mkSection("front", "titlepage", "Title Page");
+              const keepTpMeta = state.meta;
+              state.meta = Object.assign({}, state.meta, { title: "The Moon Kite", subtitle: "A Bedtime Story", author: "Ana Writer", publisher: "Little Owl" });
+              try {
+                const g = pivGeometry();
+                const fl = pivSectionFlow(tpSec, g);
+                $("pivMeasure").appendChild(fl);
+                try {
+                  const box = fl.getBoundingClientRect();
+                  ["tp-title", "tp-subtitle", "tp-author", "tp-publisher"].forEach((c) => {
+                    const el = fl.querySelector("." + c), r = el && el.getBoundingClientRect();
+                    if (!r || r.left - box.left >= g.contentW || r.bottom - box.top > g.contentH + 0.5) bad.push("the 11 × 8.5 title page: ." + c + (r ? " at " + Math.round(r.left - box.left) + "," + Math.round(r.bottom - box.top) : " missing") + " on a " + Math.round(g.contentW) + "×" + Math.round(g.contentH) + "px page");
+                  });
+                } finally { $("pivMeasure").innerHTML = ""; }
+              } finally { state.meta = keepTpMeta; }
               const pbHtml = buildPrintHtml();
               if (!pbHtml.includes("plate-page")) bad.push("the print file has no plate");
               if (!pbHtml.includes("ch-untitled") || !pbHtml.includes(".chapter-opening.ch-untitled { display: none; }")) bad.push("the untitled picture page still sets an opening");
@@ -41497,7 +41523,7 @@
               state.printPictureBook = keepPB;
               renderPrintControls();
             }
-            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "24pt (inside 22–28pt), 1.4 leading, ragged, unhyphenated, running head 10pt in the print stylesheet and file; the view's stylesheet at 24pt; computed 32px centred lines; 11 × 8.5 view: 1056×816px pages, the plate and the four lines on 2 pages; Large Print and picture-book type replace each other; the book file carries it (and a file without it clears it); manuscript and words unmoved; strings in 13 languages; off is 11pt");
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "24pt (inside 22–28pt), 1.4 leading, ragged, unhyphenated, running head 10pt in the print stylesheet and file; the view's stylesheet at 24pt; computed 32px centred lines; 11 × 8.5 view: 1056×816px pages, the plate and the four lines on 2 pages, the title page (title, subtitle, author, publisher) on one; Large Print and picture-book type replace each other; the book file carries it (and a file without it clears it); manuscript and words unmoved; strings in 13 languages; off is 11pt");
           } },
         { id: "chapter.letter", feature: "chapter", name: "Letter: \"::: letter\" sets a written note in a hairline box, the body face in italic, every line break kept, a short first line ending \",\" as the salutation and the closing \"Yours,\" paragraph flush right (a P.S. after it stays a P.S.), in the preview, print and EPUB (validates); the Word export sets Letter paragraphs with real line breaks and the sign-off right-aligned",
           run() {

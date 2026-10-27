@@ -148,7 +148,35 @@ async function toyRender(html: string) {
   let page = 0;
   let y = 0;
   const lineAt: Array<{ at: number; page: number; depth: number }> = [];
+  let doneMc = -1;
   for (const u of model.units) {
+    if (u.mc >= 0) {
+      // a multicol block, two columns: a fragment that runs on fills the
+      // page's foot, column after column; the last fragment is balanced
+      if (u.mc === doneMc) continue;
+      doneMc = u.mc;
+      if (/\bfn-brk\b/.test(u.mcPath[0].cls) && y > 0) { page += 1; y = 0; }
+      const ls: number[] = [];
+      for (const v of model.units.filter((w: Any) => w.mc === u.mc)) {
+        const n = Math.max(1, Math.ceil(v.words.length / PER_LINE));
+        for (let l = 0; l < n; l++) ls.push(l === 0 ? v.el.start : v.words[l * PER_LINE].cutAt);
+      }
+      let i = 0;
+      while (i < ls.length) {
+        const rows = Math.floor((cfg.contentH - y) / 10);
+        const left = ls.length - i;
+        if (left > 2 * rows) {
+          for (let c = 0; c < 2; c++) for (let r = 0; r < rows; r++) lineAt.push({ at: ls[i++], page, depth: y + r * 10 });
+          page += 1;
+          y = 0;
+        } else {
+          const rr = Math.ceil(left / 2);
+          for (let r = 0; r < left; r++) lineAt.push({ at: ls[i++], page, depth: y + (r % rr) * 10 });
+          y += rr * 10;
+        }
+      }
+      continue;
+    }
     const brk = /\bfn-brk\b/.test(u.el.cls);
     if (brk && y > 0) { page += 1; y = 0; }
     if (u.atomic) {
@@ -221,6 +249,48 @@ test('print footnotes: the settling loop cuts the page where a note needs room, 
   assert.ok(res.html.includes('fn-brk'));
   assert.ok(res.html.includes('[id="s1-fn1"], [id="s1-fn2"] { display: none !important; }'));
   assert.ok(res.html.includes('#ps-1 .endnotes.fn-page { display: none !important; }'));
+});
+
+test('print footnotes: a cut inside "::: columns" ends the columns there and reopens them on the next page, a list at its next number', () => {
+  const sec = '<section class="print-sec chapter-sec" id="ps-1">\n<div class="columns"><ol class="book-list" start="3"><li>a b</li><li>c d</li></ol><p class="hg">e f</p></div>\n</section>';
+  const model = fn.sectionModel(sec);
+  assert.deepEqual(model.units.map((u: Any) => [u.tag, u.mc]), [['li', 0], ['li', 0], ['p', 0]]);
+  const li2 = fn.buildSection(model, [{ id: 0, type: 'before', unit: 1, page: 0 }]);
+  assert.ok(li2.includes('</ol></div><div class="columns fn-brk fn-mc"><ol class="book-list" start="4"><li id="fnu-1">c d'), li2);
+  const first = fn.buildSection(model, [{ id: 0, type: 'before', unit: 0, page: 0 }]);
+  assert.ok(first.startsWith('<section class="print-sec chapter-sec" id="ps-1">\n<div class="columns fn-brk"><ol'), 'the whole block moves: ' + first);
+  const split = fn.buildSection(model, [{ id: 0, type: 'split', unit: 2, word: 1, page: 0 }]);
+  assert.ok(split.includes('<span id="fncz-0">e</span></p></div><div class="columns fn-brk fn-mc"><p class="hg fn-cont" id="fncu-0"> f'), split);
+});
+
+test('print footnotes: references before and inside a "::: columns" block that runs over pages settle at the foot of their pages', async () => {
+  // contentH 200 = 20 lines; the opening (30pt), a paragraph with a
+  // reference, then 20 two-line entries in two columns with references
+  // in the third and the twelfth: the columns run on from page 0.
+  const entries = Array.from({ length: 20 }, (_, i) => '<p class="hg">' + words(11, 'e' + i + 'x') + ' end' + (i === 2 ? ref('1') : i === 11 ? ref('2') : '') + '</p>');
+  const paras = ['<p class="first">' + words(11, 'a') + ' gone' + ref('3') + '</p>', '<div class="columns">' + entries.join('') + '</div>', '<p>' + words(12, 'z') + '</p>'];
+  const html = DOC(SECTION(paras, [['1', 'Note one.'], ['2', 'Note two.'], ['3', 'Note three.']]));
+  let passes = 0;
+  const res = await fn.settleFootnotes({ html, render: (h: string) => { passes += 1; return toyRender(h); }, deadline: Date.now() + 30000 });
+  assert.ok(res && res.results.length === 1, 'the section settles: ' + JSON.stringify(res && res.fallbacks));
+  assert.equal(res.placed, 3);
+  assert.ok(passes < 20, 'in a handful of passes: ' + passes);
+  const r = res.results[0];
+  assert.ok(res.html.includes('fn-mc'), 'the columns were ended at a cut and reopened');
+  const final = await fn.readDests(await toyRender(fn.sectionDoc(html, fn.buildSection(r.model, r.cuts), r.css, fn.passIds(r.model, r.cuts, new Set(), r.refIds))));
+  const cfg = res.cfg;
+  const foot = new Map<number, number>();
+  for (const [k, d] of final.dests as Map<string, Any>) if (/^fnu(e|-)|^fncz-/.test(k)) foot.set(d.page, Math.max(foot.get(d.page) || 0, d.depth + (k.startsWith('fnu-') ? 0 : cfg.pitch - H0)));
+  r.placement.forEach((pl: Any, p: number) => {
+    if (!pl.frags.length) return;
+    assert.ok((foot.get(p) || 0) <= cfg.contentH - pl.area + 1, 'page ' + p + ': text to ' + foot.get(p) + ', notes from ' + (cfg.contentH - pl.area));
+  });
+  for (const [i, d] of r.refPage as Map<number, Any>) {
+    assert.ok(r.placement[d.page].frags.some((f: Any) => f.note === i && f.from === 0), 'note ' + (i + 1) + ' begins on its reference\'s page ' + d.page);
+  }
+  // notes 3 and 1 on the first page; note 2 later
+  assert.equal(r.refPage.get(2).page, 0);
+  assert.equal(r.refPage.get(0).page, 0);
 });
 
 test('print footnotes: a section that cannot settle in time keeps its notes at its end', async () => {
