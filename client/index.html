@@ -1608,6 +1608,110 @@
         .cast-cols .cast-c2 { visibility: hidden; }
       }
       /* ==== /BEUK:cast ==== */
+      /* ==== BEUK:bible ==== Story Bible: the room (entries, the
+         Insights seed list, mentions), the mirrored underline layer
+         over the writing desk, and the entry card. */
+      .bib-modal { max-width: 1000px; }
+      .bib-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 4px; }
+      .bib-bar .tb-btn { padding: 7px 12px; font-size: 12.5px; }
+      .bib-bar-gap { flex: 1 1 auto; }
+      .bib-marks-row { padding: 8px 0 10px; }
+      .bib-status { margin: 8px 0 0; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 12.5px; color: var(--ink-2); line-height: 1.55; }
+      .bib-status[hidden] { display: none; }
+      .bib-main { display: grid; grid-template-columns: minmax(210px, 270px) minmax(0, 1fr); gap: 22px; margin-top: 14px; align-items: start; }
+      .bib-side { min-width: 0; }
+      .bib-search { margin: 0 0 10px; font-size: 13px; padding: 7px 11px; }
+      .bib-group { margin: 12px 0 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+      .bib-group:first-child { margin-top: 2px; }
+      .bib-list { list-style: none; margin: 0; padding: 0; }
+      .bib-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
+      .bib-item:hover { background: var(--panel); border-color: var(--line); }
+      .bib-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .bib-item.is-sel { background: var(--accent-soft); border-color: var(--accent); }
+      .bib-item svg { width: 15px; height: 15px; color: var(--muted); flex: 0 0 auto; }
+      .bib-thumb { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; flex: 0 0 auto; border: 1px solid var(--line); }
+      .bib-item-name { flex: 1 1 auto; min-width: 0; font-family: "EB Garamond", Georgia, serif; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .bib-item-name.is-blank { color: var(--muted); font-style: italic; }
+      .bib-item-n { flex: 0 0 auto; font-size: 14px; color: var(--muted); }
+      .bib-none { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink-2); line-height: 1.6; margin: 6px 0; }
+      .bib-detail { min-width: 0; }
+      .bib-back { display: none; margin: 0 0 10px; }
+      .bib-form { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px 14px; }
+      .bib-form .full { grid-column: 1 / -1; }
+      .bib-form .txt-input { font-size: 13.5px; }
+      .bib-form textarea.txt-input { resize: vertical; font-family: inherit; line-height: 1.5; min-height: 84px; }
+      .bib-name-input { font-family: "EB Garamond", Georgia, serif; font-size: 18px !important; }
+      .bib-pic { display: flex; align-items: center; gap: 12px; }
+      .bib-pic img { width: 58px; height: 58px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line-2); flex: 0 0 auto; }
+      .bib-pic select { flex: 1 1 auto; min-width: 0; }
+      .bib-hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.5; }
+      .bib-entry-foot { display: flex; justify-content: flex-end; margin-top: 4px; }
+      .bib-entry-foot .tb-btn { padding: 6px 12px; font-size: 12.5px; }
+      .bib-men { border-top: 1px solid var(--line); margin-top: 18px; padding-top: 16px; }
+      .bib-heat { display: grid; grid-template-columns: repeat(var(--bib-n), minmax(0, 1fr)); gap: 2px; direction: inherit; }
+      .bib-cell { height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); cursor: pointer; position: relative; overflow: hidden; }
+      .bib-cell[data-n="0"] { cursor: default; background: linear-gradient(var(--line-2), var(--line-2)) center / 6px 1px no-repeat, var(--panel-2); }
+      .bib-cell > span { position: absolute; inset: 0; background: var(--ins-a); }
+      .bib-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 1; }
+      .bib-cell:hover { border-color: var(--ink-2); }
+      .bib-cols { display: grid; grid-template-columns: repeat(var(--bib-n), minmax(0, 1fr)); gap: 2px; margin-top: 4px; font-family: "EB Garamond", Georgia, serif; font-size: 11px; color: var(--muted); text-align: center; }
+      .bib-cols span { overflow: hidden; white-space: nowrap; font-variant-numeric: lining-nums; }
+      .bib-fl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 14px 0 0; align-items: baseline; }
+      .bib-fl dt { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+      .bib-fl dd { margin: 0; min-width: 0; }
+      .bib-pass-h { margin: 16px 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+      .bib-pass { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+      .bib-pass li + li { border-top: 1px solid var(--line); }
+      .bib-jump { display: block; width: 100%; padding: 7px 11px; border: 0; background: transparent; color: var(--ink); font: inherit; text-align: start; cursor: pointer; border-radius: 8px; }
+      .bib-fl .bib-jump { padding: 2px 0; }
+      .bib-jump:hover { background: var(--panel-2); }
+      .bib-jump:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+      .bib-where { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 1px; }
+      .bib-snip { font-family: "EB Garamond", Georgia, serif; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+      .bib-snip mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 2px; }
+      .bib-seed-list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); max-height: 420px; overflow-y: auto; }
+      .bib-seed-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(120px, 150px); align-items: center; gap: 12px; padding: 6px 12px; }
+      .bib-seed-row + .bib-seed-row { border-top: 1px solid var(--line); }
+      .bib-seed-name { font-family: "EB Garamond", Georgia, serif; font-size: 16.5px; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .bib-seed-n { font-size: 15px; color: var(--ink-2); }
+      .bib-seed-row select { padding: 5px 9px; font-size: 12.5px; }
+      .bib-seed-in { font-size: 12px; color: var(--muted); text-align: end; }
+      .bib-seed-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 12px; }
+      .bib-seed-actions .tb-btn:disabled { opacity: .45; cursor: default; filter: none; }
+      /* The desk layer: a mirror of the textarea's text, laid out with
+         the textarea's own font, padding and wrapping, transparent
+         except for the underlines; it never takes the pointer. */
+      #panelContent > .bible-ov-host { position: relative; height: 0; margin: 0; padding: 0; }
+      .bible-ov { position: absolute; overflow: hidden; pointer-events: none; z-index: 1; }
+      .bible-ov[hidden] { display: none; }
+      .bible-ov-text { box-sizing: border-box; color: transparent; margin: 0; border: 0; white-space: pre-wrap; overflow-wrap: break-word; will-change: transform; }
+      .bible-ov-text .bm { text-decoration-line: underline; text-decoration-style: solid; text-decoration-thickness: 1.5px; text-underline-offset: 3px;
+        text-decoration-color: color-mix(in srgb, var(--accent) 48%, transparent); text-decoration-skip-ink: none; }
+      .bible-ov-text .bm.is-hot { text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+      body.zen .bible-ov-text .bm { text-decoration-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+      .bib-card { position: fixed; z-index: 80; width: 300px; max-width: calc(100vw - 24px); box-sizing: border-box; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: var(--shadow); padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+      .bib-card[hidden] { display: none; }
+      .bib-card-top { display: flex; gap: 11px; align-items: center; }
+      .bib-card-top img { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line); flex: 0 0 auto; }
+      .bib-card-type { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+      .bib-card-type svg { width: 13px; height: 13px; }
+      .bib-card-name { font-family: "EB Garamond", Georgia, serif; font-size: 19px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+      .bib-card p { margin: 7px 0 0; color: var(--ink-2); }
+      .bib-card .bib-card-also { font-size: 12px; color: var(--muted); }
+      .bib-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+      .bib-tag { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--ink-2); }
+      .bib-card .tb-btn { margin-top: 10px; padding: 5px 11px; font-size: 12px; }
+      @media (max-width: 760px) {
+        .bib-main { grid-template-columns: minmax(0, 1fr); }
+        .bib-main.is-detail .bib-side { display: none; }
+        .bib-main:not(.is-detail) .bib-detail { display: none; }
+        .bib-back { display: inline-flex; }
+        .bib-form { grid-template-columns: minmax(0, 1fr); }
+        .bib-seed-row { grid-template-columns: minmax(0, 1fr) auto; }
+        .bib-seed-row select, .bib-seed-row .bib-seed-in { grid-column: 1 / -1; }
+        .bib-seed-row .bib-seed-in { text-align: start; }
+      }
+      /* ==== /BEUK:bible ==== */
 
       /* ---------- Writing goals & habit calendar ---------- */
       .goal-lines { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
@@ -2445,6 +2549,7 @@
             <button class="side-tool" id="btnInsights" type="button" title="Story Insights" aria-label="Story Insights" data-i18n-title="insights.open" data-i18n-aria="insights.open"><i data-lucide="activity"></i><span class="side-tool-lab" data-i18n="side.toolInsights">Insights</span></button>
             <button class="side-tool" id="btnGoals" type="button" title="Goals" aria-label="Goals" data-i18n-title="goals.open" data-i18n-aria="goals.open"><i data-lucide="target"></i><span class="side-tool-lab" data-i18n="side.toolGoals">Goals</span></button>
             <button class="side-tool" id="btnHistory" type="button" title="History" aria-label="History" data-i18n-title="history.open" data-i18n-aria="history.open"><i data-lucide="history"></i><span class="side-tool-lab" data-i18n="side.toolHistory">History</span></button>
+            <button class="side-tool" id="btnBible" type="button" title="Story Bible" aria-label="Story Bible" data-i18n-title="bible.open" data-i18n-aria="bible.open"><i data-lucide="book-marked"></i><span class="side-tool-lab" data-i18n="side.toolBible">Bible</span></button><!-- BEUK:bible -->
             </div>
               <div class="sync-row" id="syncRow" style="display:none;"><i data-lucide="cloud"></i><span id="syncText">On your shelf ✓</span></div>
             <div class="side-status" id="sideStatus">
@@ -3682,6 +3787,38 @@
       </div>
     </div>
 
+    <!-- ==== BEUK:bible ==== Story Bible: the book's people, places and things, kept with the book -->
+    <div class="modal-back" id="modalBible" style="z-index:70;">
+      <div class="modal wide bib-modal" role="dialog" aria-modal="true" aria-labelledby="bibH">
+        <h2 id="bibH" data-i18n="bible.title"><i data-lucide="book-marked"></i>Story Bible</h2>
+        <p class="m-sub" data-i18n="bible.sub">The people, places and things of this book, kept with the book.</p>
+        <div class="bib-bar">
+          <button class="tb-btn" id="btnBibNew" type="button" data-i18n="bible.new"><i data-lucide="plus"></i>New entry</button>
+          <button class="tb-btn" id="btnBibSeed" type="button" data-i18n="bible.seed"><i data-lucide="sparkles"></i>Add from Story Insights</button>
+          <span class="bib-bar-gap"></span>
+          <button class="tb-btn" id="btnBibExport" type="button" data-i18n="bible.export"><i data-lucide="download"></i>Export</button>
+          <button class="tb-btn" id="btnBibImport" type="button" data-i18n="bible.import"><i data-lucide="upload"></i>Import</button>
+          <input type="file" id="bibFile" accept=".json,application/json" hidden />
+        </div>
+        <div class="switch-row bib-marks-row">
+          <div class="sw-txt"><b data-i18n="bible.marks">Underline mentions in the writing desk</b><span data-i18n="bible.marksDesc">A faint line under each name the Bible knows.</span></div>
+          <button class="switch" id="tglBibMarks" type="button" aria-pressed="true" aria-label="Underline mentions in the writing desk" data-i18n-aria="bible.marks"></button>
+        </div>
+        <p class="bib-status" id="bibStatus" role="status" aria-live="polite" hidden></p>
+        <div class="bib-main" id="bibMain">
+          <div class="bib-side">
+            <input class="txt-input bib-search" id="bibSearch" type="search" placeholder="Find an entry" aria-label="Find an entry" data-i18n-ph="bible.search" data-i18n-aria="bible.search" />
+            <div id="bibList"></div>
+          </div>
+          <div class="bib-detail" id="bibDetail"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnCloseBible" type="button" data-i18n="bible.close">Close</button>
+        </div>
+      </div>
+    </div>
+    <!-- ==== /BEUK:bible ==== -->
+
     <!-- Account / sign-in modal (SaaS wiring) -->
     <div class="modal-back" id="modalAuth" style="z-index:66;">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authH" style="max-width:440px;">
@@ -4321,6 +4458,7 @@
         if (typeof raRefresh === "function" && $("raPop")) raRefresh();
         if (typeof tbLayoutOnLangChange === "function") tbLayoutOnLangChange(); /* BEUK:toolbar */
         if (typeof insOnLangChange === "function") insOnLangChange();
+        if (typeof bibleOnLangChange === "function") bibleOnLangChange(); /* BEUK:bible */
         if (typeof betaOnLangChange === "function") betaOnLangChange(); /* BEUK:beta */
         if (typeof goalsOnLangChange === "function") goalsOnLangChange();
         if (typeof historyOnLangChange === "function") historyOnLangChange();
@@ -18484,6 +18622,7 @@
         printOmitBlankHead: true,
         printFolio: "centre",
         printNotes: "page", /* BEUK:footnotes — "page": notes at the foot of their page in print; "end": at the end of each chapter */
+        bible: { entries: [] }, /* BEUK:bible — the Story Bible rides the book; serialized only when it holds an entry */
         goals: { daily: 0, project: 0, deadline: "" },
         history: [],
         dictation: { lang: "", recent: [] } /* BEUK:dictlang — the dictation language the writer picked for this book ("" = follow the book) */
@@ -18788,6 +18927,7 @@
         state.printBleed = false; /* BEUK:bleed */
         state.printNotes = d.printNotes; /* BEUK:footnotes */
         state.outline = null; /* BEUK:outline */
+        state.bible = { entries: [] }; /* BEUK:bible — an empty desk keeps no Story Bible */
       }
       const isEmptyDesk = () => bookWordTotal() === 0 &&
         !imRealTitle() && /* BEUK:importmeta — a stored placeholder is no title */ !String(state.meta.author || "").trim() &&
@@ -20766,6 +20906,2306 @@
       INS_RENDERERS.push(function insRenderCast() { return castInsightsSection(); });
       if (typeof window !== "undefined") window.beukCast = { compute: castCompute, data: castData, cache: castCache, hidden: castHiddenList, setHidden: castSetHidden, hide: castHide, unhide: castUnhide, tokens: castTokens };
       /* ==== /BEUK:cast ==== */
+      /* ==== BEUK:bible ==== Story Bible — strings for all 13 packs;
+         plural extras by CLDR category (Intl.PluralRules, as BEUK:bugs). */
+      Object.assign(UI_STRINGS.en, {
+        "side.toolBible": "Bible",
+        "bible.open": "Story Bible",
+        "bible.title": "Story Bible",
+        "bible.sub": "The people, places and things of this book, kept with the book. The entries are yours; Beuk only finds where their names appear in your text, on this device. Nothing here is printed or exported.",
+        "bible.new": "New entry",
+        "bible.seed": "Add from Story Insights",
+        "bible.export": "Export",
+        "bible.import": "Import",
+        "bible.marks": "Underline mentions in the writing desk",
+        "bible.marksDesc": "A faint line under each name the Bible knows. Point at one, tap it, or press Alt+Enter on it to see its entry. Your text never changes.",
+        "bible.close": "Close",
+        "bible.search": "Find an entry",
+        "bible.empty": "No entries yet. Start one by hand, or choose from the names Story Insights found in this book.",
+        "bible.noMatch": "No entry matches “{q}”.",
+        "bible.type.character": "Character",
+        "bible.type.place": "Place",
+        "bible.type.thing": "Thing",
+        "bible.type.group": "Group",
+        "bible.type.lore": "Lore",
+        "bible.typePl.character": "Characters",
+        "bible.typePl.place": "Places",
+        "bible.typePl.thing": "Things",
+        "bible.typePl.group": "Groups",
+        "bible.typePl.lore": "Lore",
+        "bible.untitled": "Untitled entry",
+        "bible.back": "All entries",
+        "bible.f.type": "Type",
+        "bible.f.name": "Name",
+        "bible.f.aliases": "Also called",
+        "bible.f.aliasesPh": "Nicknames and short forms, separated by commas",
+        "bible.f.desc": "In a line",
+        "bible.f.descPh": "A short description",
+        "bible.f.notes": "Notes",
+        "bible.f.notesPh": "Anything you want to remember",
+        "bible.f.picture": "Picture",
+        "bible.f.pictureNone": "No picture",
+        "bible.f.pictureNoLib": "The book's image library is empty.",
+        "bible.f.tags": "Tags",
+        "bible.f.tagsPh": "Separated by commas",
+        "bible.f.exact": "Match exact case",
+        "bible.f.exactDesc": "Only the name written exactly as above counts — useful for a name that is also a word, like Will or Rose.",
+        "bible.f.exclude": "Not a mention",
+        "bible.f.excludePh": "Phrases to ignore, such as Will you, separated by commas",
+        "bible.f.excludeDesc": "A name inside one of these phrases is not counted or underlined.",
+        "bible.delete": "Delete entry",
+        "bible.deleted": "Deleted {name}",
+        "bible.undo": "Undo",
+        "bible.mentionsH": "Where it appears",
+        "bible.mentionsSub": "Counted in the story — prologue, chapters, epilogue — by the name and every name it is also called, as whole words. Choose a square or a passage to open it in the writing desk.",
+        "bible.mentionsNone": "Not named in the story yet.",
+        "bible.mentionsNoStory": "The story has no words yet.",
+        "bible.nMentions": "{n} mention", "bible.nMentionsPlural": "{n} mentions",
+        "bible.nSections": "in {n} section", "bible.nSectionsPlural": "in {n} sections",
+        "bible.heatAria": "Mentions in each section, in book order",
+        "bible.cellTip": "{sec}: {n} mention", "bible.cellTipPlural": "{sec}: {n} mentions",
+        "bible.cellNone": "{sec}: not named",
+        "bible.first": "First",
+        "bible.last": "Last",
+        "bible.passagesH": "Passages",
+        "bible.passagesMore": "Showing the first {n} of {m}.",
+        "bible.ambiguous": "{n} place where this name also belongs to another entry is left out.", "bible.ambiguousPlural": "{n} places where this name also belongs to another entry are left out.",
+        "bible.seedH": "Names Story Insights found",
+        "bible.seedSub": "The recurring capitalised names Story Insights found in this book, with how often each appears. Choose a type for each one you want — nothing is added until you press Add.",
+        "bible.seedSkip": "Don't add",
+        "bible.seedIn": "In the Bible",
+        "bible.seedAdd": "Add {n} entry", "bible.seedAddPlural": "Add {n} entries",
+        "bible.seedNone": "Story Insights found no recurring names in this book yet.",
+        "bible.seedCaseless": "Story Insights can't pick out names in this book's script, so there is nothing to offer here. Add entries by hand.",
+        "bible.seedHidden": "{n} name you hid in Story Insights is left out.", "bible.seedHiddenPlural": "{n} names you hid in Story Insights are left out.",
+        "bible.seedCancel": "Cancel",
+        "bible.seedAdded": "{n} entry added.", "bible.seedAddedPlural": "{n} entries added.",
+        "bible.exportEmpty": "There are no entries to export yet.",
+        "bible.exported": "{n} entry saved to {file}.", "bible.exportedPlural": "{n} entries saved to {file}.",
+        "bible.importDone": "{n} entry added.", "bible.importDonePlural": "{n} entries added.",
+        "bible.importNone": "Nothing was added.",
+        "bible.importSkipped": "{n} skipped, already in this book: {list}.", "bible.importSkippedPlural": "{n} skipped, already in this book: {list}.",
+        "bible.importPics": "{n} picture joined the image library.", "bible.importPicsPlural": "{n} pictures joined the image library.",
+        "bible.importBad": "That file isn't a Story Bible export.",
+        "bible.cardOpen": "Open in Story Bible",
+        "bible.cardAlso": "Also called {list}",
+        "bible.cardAria": "Story Bible entry",
+        "imglib.role.bible": "picture of an entry"
+      });
+      Object.assign(UI_STRINGS.es, {
+        "side.toolBible": "Biblia",
+        "bible.open": "Biblia de la historia",
+        "bible.title": "Biblia de la historia",
+        "bible.sub": "Las personas, lugares y cosas de este libro, guardados con el libro. Las entradas son tuyas; Beuk solo encuentra dónde aparecen sus nombres en tu texto, en este dispositivo. Nada de esto se imprime ni se exporta.",
+        "bible.new": "Nueva entrada",
+        "bible.seed": "Añadir desde Story Insights",
+        "bible.export": "Exportar",
+        "bible.import": "Importar",
+        "bible.marks": "Subrayar las menciones en el escritorio",
+        "bible.marksDesc": "Una línea tenue bajo cada nombre que la Biblia conoce. Señala uno, tócalo o pulsa Alt+Intro sobre él para ver su entrada. Tu texto nunca cambia.",
+        "bible.close": "Cerrar",
+        "bible.search": "Buscar una entrada",
+        "bible.empty": "Aún no hay entradas. Crea una a mano o elige entre los nombres que Story Insights encontró en este libro.",
+        "bible.noMatch": "Ninguna entrada coincide con «{q}».",
+        "bible.type.character": "Personaje",
+        "bible.type.place": "Lugar",
+        "bible.type.thing": "Objeto",
+        "bible.type.group": "Grupo",
+        "bible.type.lore": "Saber",
+        "bible.typePl.character": "Personajes",
+        "bible.typePl.place": "Lugares",
+        "bible.typePl.thing": "Objetos",
+        "bible.typePl.group": "Grupos",
+        "bible.typePl.lore": "Saber",
+        "bible.untitled": "Entrada sin nombre",
+        "bible.back": "Todas las entradas",
+        "bible.f.type": "Tipo",
+        "bible.f.name": "Nombre",
+        "bible.f.aliases": "También llamado",
+        "bible.f.aliasesPh": "Apodos y formas cortas, separados por comas",
+        "bible.f.desc": "En una línea",
+        "bible.f.descPh": "Una descripción breve",
+        "bible.f.notes": "Notas",
+        "bible.f.notesPh": "Todo lo que quieras recordar",
+        "bible.f.picture": "Imagen",
+        "bible.f.pictureNone": "Sin imagen",
+        "bible.f.pictureNoLib": "La biblioteca de imágenes del libro está vacía.",
+        "bible.f.tags": "Etiquetas",
+        "bible.f.tagsPh": "Separadas por comas",
+        "bible.f.exact": "Respetar mayúsculas",
+        "bible.f.exactDesc": "Solo cuenta el nombre escrito exactamente como arriba — útil para un nombre que también es una palabra, como Rosa o Luz.",
+        "bible.f.exclude": "No es una mención",
+        "bible.f.excludePh": "Frases que ignorar, separadas por comas",
+        "bible.f.excludeDesc": "Un nombre dentro de una de estas frases no se cuenta ni se subraya.",
+        "bible.delete": "Eliminar entrada",
+        "bible.deleted": "Se eliminó {name}",
+        "bible.undo": "Deshacer",
+        "bible.mentionsH": "Dónde aparece",
+        "bible.mentionsSub": "Contado en la historia — prólogo, capítulos, epílogo — por el nombre y cada nombre con el que también se le llama, como palabras completas. Elige un cuadro o un pasaje para abrirlo en el escritorio.",
+        "bible.mentionsNone": "Aún no se nombra en la historia.",
+        "bible.mentionsNoStory": "La historia aún no tiene palabras.",
+        "bible.nMentions": "{n} mención", "bible.nMentionsPlural": "{n} menciones",
+        "bible.nSections": "en {n} sección", "bible.nSectionsPlural": "en {n} secciones",
+        "bible.heatAria": "Menciones en cada sección, en el orden del libro",
+        "bible.cellTip": "{sec}: {n} mención", "bible.cellTipPlural": "{sec}: {n} menciones",
+        "bible.cellNone": "{sec}: no se nombra",
+        "bible.first": "Primera",
+        "bible.last": "Última",
+        "bible.passagesH": "Pasajes",
+        "bible.passagesMore": "Se muestran los primeros {n} de {m}.",
+        "bible.ambiguous": "Se omite {n} lugar donde este nombre también pertenece a otra entrada.", "bible.ambiguousPlural": "Se omiten {n} lugares donde este nombre también pertenece a otra entrada.",
+        "bible.seedH": "Nombres que encontró Story Insights",
+        "bible.seedSub": "Los nombres con mayúscula que se repiten y que Story Insights encontró en este libro, con cuántas veces aparece cada uno. Elige un tipo para cada uno que quieras — no se añade nada hasta que pulses Añadir.",
+        "bible.seedSkip": "No añadir",
+        "bible.seedIn": "En la Biblia",
+        "bible.seedAdd": "Añadir {n} entrada", "bible.seedAddPlural": "Añadir {n} entradas",
+        "bible.seedNone": "Story Insights aún no encontró nombres que se repitan en este libro.",
+        "bible.seedCaseless": "Story Insights no puede distinguir nombres en la escritura de este libro, así que aquí no hay nada que ofrecer. Añade las entradas a mano.",
+        "bible.seedHidden": "Se omite {n} nombre que ocultaste en Story Insights.", "bible.seedHiddenPlural": "Se omiten {n} nombres que ocultaste en Story Insights.",
+        "bible.seedCancel": "Cancelar",
+        "bible.seedAdded": "Se añadió {n} entrada.", "bible.seedAddedPlural": "Se añadieron {n} entradas.",
+        "bible.exportEmpty": "Aún no hay entradas que exportar.",
+        "bible.exported": "{n} entrada guardada en {file}.", "bible.exportedPlural": "{n} entradas guardadas en {file}.",
+        "bible.importDone": "Se añadió {n} entrada.", "bible.importDonePlural": "Se añadieron {n} entradas.",
+        "bible.importNone": "No se añadió nada.",
+        "bible.importSkipped": "{n} omitida, ya está en este libro: {list}.", "bible.importSkippedPlural": "{n} omitidas, ya están en este libro: {list}.",
+        "bible.importPics": "{n} imagen se unió a la biblioteca de imágenes.", "bible.importPicsPlural": "{n} imágenes se unieron a la biblioteca de imágenes.",
+        "bible.importBad": "Ese archivo no es una exportación de la Biblia de la historia.",
+        "bible.cardOpen": "Abrir en la Biblia",
+        "bible.cardAlso": "También llamado {list}",
+        "bible.cardAria": "Entrada de la Biblia de la historia",
+        "imglib.role.bible": "imagen de una entrada"
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "side.toolBible": "Bible",
+        "bible.open": "Bible du récit",
+        "bible.title": "Bible du récit",
+        "bible.sub": "Les personnes, les lieux et les choses de ce livre, gardés avec le livre. Les fiches sont à vous ; Beuk se contente de trouver où leurs noms apparaissent dans votre texte, sur cet appareil. Rien ici n'est imprimé ni exporté.",
+        "bible.new": "Nouvelle fiche",
+        "bible.seed": "Ajouter depuis Story Insights",
+        "bible.export": "Exporter",
+        "bible.import": "Importer",
+        "bible.marks": "Souligner les mentions dans l'espace d'écriture",
+        "bible.marksDesc": "Un trait discret sous chaque nom que la Bible connaît. Pointez-en un, touchez-le ou appuyez sur Alt+Entrée dessus pour voir sa fiche. Votre texte ne change jamais.",
+        "bible.close": "Fermer",
+        "bible.search": "Chercher une fiche",
+        "bible.empty": "Aucune fiche pour l'instant. Créez-en une à la main, ou choisissez parmi les noms que Story Insights a trouvés dans ce livre.",
+        "bible.noMatch": "Aucune fiche ne correspond à « {q} ».",
+        "bible.type.character": "Personnage",
+        "bible.type.place": "Lieu",
+        "bible.type.thing": "Objet",
+        "bible.type.group": "Groupe",
+        "bible.type.lore": "Savoir",
+        "bible.typePl.character": "Personnages",
+        "bible.typePl.place": "Lieux",
+        "bible.typePl.thing": "Objets",
+        "bible.typePl.group": "Groupes",
+        "bible.typePl.lore": "Savoir",
+        "bible.untitled": "Fiche sans nom",
+        "bible.back": "Toutes les fiches",
+        "bible.f.type": "Type",
+        "bible.f.name": "Nom",
+        "bible.f.aliases": "Aussi appelé",
+        "bible.f.aliasesPh": "Surnoms et formes courtes, séparés par des virgules",
+        "bible.f.desc": "En une ligne",
+        "bible.f.descPh": "Une courte description",
+        "bible.f.notes": "Notes",
+        "bible.f.notesPh": "Tout ce que vous voulez retenir",
+        "bible.f.picture": "Image",
+        "bible.f.pictureNone": "Aucune image",
+        "bible.f.pictureNoLib": "La bibliothèque d'images du livre est vide.",
+        "bible.f.tags": "Étiquettes",
+        "bible.f.tagsPh": "Séparées par des virgules",
+        "bible.f.exact": "Respecter la casse",
+        "bible.f.exactDesc": "Seul le nom écrit exactement comme ci-dessus compte — utile pour un nom qui est aussi un mot, comme Rose ou Pierre.",
+        "bible.f.exclude": "Pas une mention",
+        "bible.f.excludePh": "Expressions à ignorer, séparées par des virgules",
+        "bible.f.excludeDesc": "Un nom pris dans l'une de ces expressions n'est ni compté ni souligné.",
+        "bible.delete": "Supprimer la fiche",
+        "bible.deleted": "{name} supprimé",
+        "bible.undo": "Annuler",
+        "bible.mentionsH": "Où il apparaît",
+        "bible.mentionsSub": "Compté dans le récit — prologue, chapitres, épilogue — par le nom et chacun des noms sous lesquels il est aussi connu, en mots entiers. Choisissez une case ou un passage pour l'ouvrir dans l'espace d'écriture.",
+        "bible.mentionsNone": "Pas encore nommé dans le récit.",
+        "bible.mentionsNoStory": "Le récit n'a pas encore de mots.",
+        "bible.nMentions": "{n} mention", "bible.nMentionsPlural": "{n} mentions",
+        "bible.nSections": "dans {n} section", "bible.nSectionsPlural": "dans {n} sections",
+        "bible.heatAria": "Mentions dans chaque section, dans l'ordre du livre",
+        "bible.cellTip": "{sec} : {n} mention", "bible.cellTipPlural": "{sec} : {n} mentions",
+        "bible.cellNone": "{sec} : pas nommé",
+        "bible.first": "Première",
+        "bible.last": "Dernière",
+        "bible.passagesH": "Passages",
+        "bible.passagesMore": "Les {n} premiers sur {m} sont affichés.",
+        "bible.ambiguous": "{n} endroit où ce nom appartient aussi à une autre fiche est laissé de côté.", "bible.ambiguousPlural": "{n} endroits où ce nom appartient aussi à une autre fiche sont laissés de côté.",
+        "bible.seedH": "Les noms trouvés par Story Insights",
+        "bible.seedSub": "Les noms à majuscule qui reviennent et que Story Insights a trouvés dans ce livre, avec leur nombre d'apparitions. Choisissez un type pour chacun de ceux que vous voulez — rien n'est ajouté avant que vous appuyiez sur Ajouter.",
+        "bible.seedSkip": "Ne pas ajouter",
+        "bible.seedIn": "Dans la Bible",
+        "bible.seedAdd": "Ajouter {n} fiche", "bible.seedAddPlural": "Ajouter {n} fiches",
+        "bible.seedNone": "Story Insights n'a encore trouvé aucun nom récurrent dans ce livre.",
+        "bible.seedCaseless": "Story Insights ne peut pas repérer les noms dans l'écriture de ce livre ; il n'y a donc rien à proposer ici. Ajoutez les fiches à la main.",
+        "bible.seedHidden": "{n} nom masqué dans Story Insights est laissé de côté.", "bible.seedHiddenPlural": "{n} noms masqués dans Story Insights sont laissés de côté.",
+        "bible.seedCancel": "Annuler",
+        "bible.seedAdded": "{n} fiche ajoutée.", "bible.seedAddedPlural": "{n} fiches ajoutées.",
+        "bible.exportEmpty": "Il n'y a encore aucune fiche à exporter.",
+        "bible.exported": "{n} fiche enregistrée dans {file}.", "bible.exportedPlural": "{n} fiches enregistrées dans {file}.",
+        "bible.importDone": "{n} fiche ajoutée.", "bible.importDonePlural": "{n} fiches ajoutées.",
+        "bible.importNone": "Rien n'a été ajouté.",
+        "bible.importSkipped": "{n} ignorée, déjà dans ce livre : {list}.", "bible.importSkippedPlural": "{n} ignorées, déjà dans ce livre : {list}.",
+        "bible.importPics": "{n} image a rejoint la bibliothèque d'images.", "bible.importPicsPlural": "{n} images ont rejoint la bibliothèque d'images.",
+        "bible.importBad": "Ce fichier n'est pas un export de Bible du récit.",
+        "bible.cardOpen": "Ouvrir dans la Bible",
+        "bible.cardAlso": "Aussi appelé {list}",
+        "bible.cardAria": "Fiche de la Bible du récit",
+        "imglib.role.bible": "image d'une fiche"
+      });
+      Object.assign(UI_STRINGS.de, {
+        "side.toolBible": "Bibel",
+        "bible.open": "Story-Bibel",
+        "bible.title": "Story-Bibel",
+        "bible.sub": "Die Menschen, Orte und Dinge dieses Buchs, beim Buch aufbewahrt. Die Einträge gehören dir; Beuk findet nur, wo ihre Namen in deinem Text vorkommen, auf diesem Gerät. Nichts davon wird gedruckt oder exportiert.",
+        "bible.new": "Neuer Eintrag",
+        "bible.seed": "Aus Story Insights hinzufügen",
+        "bible.export": "Exportieren",
+        "bible.import": "Importieren",
+        "bible.marks": "Erwähnungen am Schreibtisch unterstreichen",
+        "bible.marksDesc": "Eine zarte Linie unter jedem Namen, den die Bibel kennt. Zeige auf einen, tippe ihn an oder drücke Alt+Eingabe darauf, um seinen Eintrag zu sehen. Dein Text ändert sich nie.",
+        "bible.close": "Schließen",
+        "bible.search": "Eintrag suchen",
+        "bible.empty": "Noch keine Einträge. Lege einen von Hand an oder wähle aus den Namen, die Story Insights in diesem Buch gefunden hat.",
+        "bible.noMatch": "Kein Eintrag passt zu „{q}“.",
+        "bible.type.character": "Figur",
+        "bible.type.place": "Ort",
+        "bible.type.thing": "Gegenstand",
+        "bible.type.group": "Gruppe",
+        "bible.type.lore": "Wissen",
+        "bible.typePl.character": "Figuren",
+        "bible.typePl.place": "Orte",
+        "bible.typePl.thing": "Gegenstände",
+        "bible.typePl.group": "Gruppen",
+        "bible.typePl.lore": "Wissen",
+        "bible.untitled": "Eintrag ohne Namen",
+        "bible.back": "Alle Einträge",
+        "bible.f.type": "Art",
+        "bible.f.name": "Name",
+        "bible.f.aliases": "Auch genannt",
+        "bible.f.aliasesPh": "Spitznamen und Kurzformen, durch Kommas getrennt",
+        "bible.f.desc": "In einer Zeile",
+        "bible.f.descPh": "Eine kurze Beschreibung",
+        "bible.f.notes": "Notizen",
+        "bible.f.notesPh": "Alles, was du dir merken willst",
+        "bible.f.picture": "Bild",
+        "bible.f.pictureNone": "Kein Bild",
+        "bible.f.pictureNoLib": "Die Bildbibliothek des Buchs ist leer.",
+        "bible.f.tags": "Schlagwörter",
+        "bible.f.tagsPh": "Durch Kommas getrennt",
+        "bible.f.exact": "Groß- und Kleinschreibung beachten",
+        "bible.f.exactDesc": "Nur der Name genau wie oben geschrieben zählt — nützlich für einen Namen, der auch ein Wort ist, wie Will oder Rose.",
+        "bible.f.exclude": "Keine Erwähnung",
+        "bible.f.excludePh": "Wendungen, die übergangen werden, durch Kommas getrennt",
+        "bible.f.excludeDesc": "Ein Name innerhalb einer dieser Wendungen wird weder gezählt noch unterstrichen.",
+        "bible.delete": "Eintrag löschen",
+        "bible.deleted": "{name} gelöscht",
+        "bible.undo": "Rückgängig",
+        "bible.mentionsH": "Wo er vorkommt",
+        "bible.mentionsSub": "Gezählt in der Geschichte — Prolog, Kapitel, Epilog — nach dem Namen und jedem Namen, unter dem er auch bekannt ist, als ganze Wörter. Wähle ein Feld oder eine Passage, um sie am Schreibtisch zu öffnen.",
+        "bible.mentionsNone": "In der Geschichte noch nicht genannt.",
+        "bible.mentionsNoStory": "Die Geschichte hat noch keine Wörter.",
+        "bible.nMentions": "{n} Erwähnung", "bible.nMentionsPlural": "{n} Erwähnungen",
+        "bible.nSections": "in {n} Abschnitt", "bible.nSectionsPlural": "in {n} Abschnitten",
+        "bible.heatAria": "Erwähnungen in jedem Abschnitt, in der Reihenfolge des Buchs",
+        "bible.cellTip": "{sec}: {n} Erwähnung", "bible.cellTipPlural": "{sec}: {n} Erwähnungen",
+        "bible.cellNone": "{sec}: nicht genannt",
+        "bible.first": "Erste",
+        "bible.last": "Letzte",
+        "bible.passagesH": "Passagen",
+        "bible.passagesMore": "Die ersten {n} von {m} werden gezeigt.",
+        "bible.ambiguous": "{n} Stelle, an der dieser Name auch zu einem anderen Eintrag gehört, bleibt außen vor.", "bible.ambiguousPlural": "{n} Stellen, an denen dieser Name auch zu einem anderen Eintrag gehört, bleiben außen vor.",
+        "bible.seedH": "Von Story Insights gefundene Namen",
+        "bible.seedSub": "Die wiederkehrenden großgeschriebenen Namen, die Story Insights in diesem Buch gefunden hat, mit ihrer Häufigkeit. Wähle eine Art für jeden, den du willst — nichts wird hinzugefügt, bevor du Hinzufügen drückst.",
+        "bible.seedSkip": "Nicht hinzufügen",
+        "bible.seedIn": "In der Bibel",
+        "bible.seedAdd": "{n} Eintrag hinzufügen", "bible.seedAddPlural": "{n} Einträge hinzufügen",
+        "bible.seedNone": "Story Insights hat in diesem Buch noch keine wiederkehrenden Namen gefunden.",
+        "bible.seedCaseless": "Story Insights kann in der Schrift dieses Buchs keine Namen erkennen, daher gibt es hier nichts anzubieten. Lege die Einträge von Hand an.",
+        "bible.seedHidden": "{n} in Story Insights ausgeblendeter Name bleibt außen vor.", "bible.seedHiddenPlural": "{n} in Story Insights ausgeblendete Namen bleiben außen vor.",
+        "bible.seedCancel": "Abbrechen",
+        "bible.seedAdded": "{n} Eintrag hinzugefügt.", "bible.seedAddedPlural": "{n} Einträge hinzugefügt.",
+        "bible.exportEmpty": "Es gibt noch keine Einträge zum Exportieren.",
+        "bible.exported": "{n} Eintrag in {file} gespeichert.", "bible.exportedPlural": "{n} Einträge in {file} gespeichert.",
+        "bible.importDone": "{n} Eintrag hinzugefügt.", "bible.importDonePlural": "{n} Einträge hinzugefügt.",
+        "bible.importNone": "Nichts wurde hinzugefügt.",
+        "bible.importSkipped": "{n} übersprungen, schon in diesem Buch: {list}.", "bible.importSkippedPlural": "{n} übersprungen, schon in diesem Buch: {list}.",
+        "bible.importPics": "{n} Bild kam in die Bildbibliothek.", "bible.importPicsPlural": "{n} Bilder kamen in die Bildbibliothek.",
+        "bible.importBad": "Diese Datei ist kein Export einer Story-Bibel.",
+        "bible.cardOpen": "In der Story-Bibel öffnen",
+        "bible.cardAlso": "Auch genannt {list}",
+        "bible.cardAria": "Eintrag der Story-Bibel",
+        "imglib.role.bible": "Bild eines Eintrags"
+      });
+      Object.assign(UI_STRINGS.it, {
+        "side.toolBible": "Bibbia",
+        "bible.open": "Bibbia della storia",
+        "bible.title": "Bibbia della storia",
+        "bible.sub": "Le persone, i luoghi e le cose di questo libro, conservati con il libro. Le voci sono tue; Beuk trova solo dove compaiono i loro nomi nel tuo testo, su questo dispositivo. Niente di tutto ciò viene stampato o esportato.",
+        "bible.new": "Nuova voce",
+        "bible.seed": "Aggiungi da Story Insights",
+        "bible.export": "Esporta",
+        "bible.import": "Importa",
+        "bible.marks": "Sottolinea le menzioni nello scrittoio",
+        "bible.marksDesc": "Una linea leggera sotto ogni nome che la Bibbia conosce. Puntane uno, toccalo o premi Alt+Invio su di esso per vederne la voce. Il tuo testo non cambia mai.",
+        "bible.close": "Chiudi",
+        "bible.search": "Cerca una voce",
+        "bible.empty": "Ancora nessuna voce. Creane una a mano, o scegli tra i nomi che Story Insights ha trovato in questo libro.",
+        "bible.noMatch": "Nessuna voce corrisponde a «{q}».",
+        "bible.type.character": "Personaggio",
+        "bible.type.place": "Luogo",
+        "bible.type.thing": "Oggetto",
+        "bible.type.group": "Gruppo",
+        "bible.type.lore": "Sapere",
+        "bible.typePl.character": "Personaggi",
+        "bible.typePl.place": "Luoghi",
+        "bible.typePl.thing": "Oggetti",
+        "bible.typePl.group": "Gruppi",
+        "bible.typePl.lore": "Sapere",
+        "bible.untitled": "Voce senza nome",
+        "bible.back": "Tutte le voci",
+        "bible.f.type": "Tipo",
+        "bible.f.name": "Nome",
+        "bible.f.aliases": "Detto anche",
+        "bible.f.aliasesPh": "Soprannomi e forme brevi, separati da virgole",
+        "bible.f.desc": "In una riga",
+        "bible.f.descPh": "Una breve descrizione",
+        "bible.f.notes": "Note",
+        "bible.f.notesPh": "Tutto ciò che vuoi ricordare",
+        "bible.f.picture": "Immagine",
+        "bible.f.pictureNone": "Nessuna immagine",
+        "bible.f.pictureNoLib": "La biblioteca di immagini del libro è vuota.",
+        "bible.f.tags": "Etichette",
+        "bible.f.tagsPh": "Separate da virgole",
+        "bible.f.exact": "Rispetta maiuscole e minuscole",
+        "bible.f.exactDesc": "Conta solo il nome scritto esattamente come sopra — utile per un nome che è anche una parola, come Rosa o Stella.",
+        "bible.f.exclude": "Non è una menzione",
+        "bible.f.excludePh": "Frasi da ignorare, separate da virgole",
+        "bible.f.excludeDesc": "Un nome dentro una di queste frasi non viene contato né sottolineato.",
+        "bible.delete": "Elimina voce",
+        "bible.deleted": "{name} eliminato",
+        "bible.undo": "Annulla",
+        "bible.mentionsH": "Dove compare",
+        "bible.mentionsSub": "Contato nella storia — prologo, capitoli, epilogo — con il nome e ogni nome con cui è detto anche, come parole intere. Scegli un riquadro o un passo per aprirlo nello scrittoio.",
+        "bible.mentionsNone": "Non ancora nominato nella storia.",
+        "bible.mentionsNoStory": "La storia non ha ancora parole.",
+        "bible.nMentions": "{n} menzione", "bible.nMentionsPlural": "{n} menzioni",
+        "bible.nSections": "in {n} sezione", "bible.nSectionsPlural": "in {n} sezioni",
+        "bible.heatAria": "Menzioni in ogni sezione, nell'ordine del libro",
+        "bible.cellTip": "{sec}: {n} menzione", "bible.cellTipPlural": "{sec}: {n} menzioni",
+        "bible.cellNone": "{sec}: non nominato",
+        "bible.first": "Prima",
+        "bible.last": "Ultima",
+        "bible.passagesH": "Passi",
+        "bible.passagesMore": "Sono mostrati i primi {n} di {m}.",
+        "bible.ambiguous": "È escluso {n} punto in cui questo nome appartiene anche a un'altra voce.", "bible.ambiguousPlural": "Sono esclusi {n} punti in cui questo nome appartiene anche a un'altra voce.",
+        "bible.seedH": "Nomi trovati da Story Insights",
+        "bible.seedSub": "I nomi con la maiuscola che ritornano e che Story Insights ha trovato in questo libro, con quante volte compare ciascuno. Scegli un tipo per ognuno che vuoi — nulla viene aggiunto finché non premi Aggiungi.",
+        "bible.seedSkip": "Non aggiungere",
+        "bible.seedIn": "Nella Bibbia",
+        "bible.seedAdd": "Aggiungi {n} voce", "bible.seedAddPlural": "Aggiungi {n} voci",
+        "bible.seedNone": "Story Insights non ha ancora trovato nomi ricorrenti in questo libro.",
+        "bible.seedCaseless": "Story Insights non può individuare i nomi nella scrittura di questo libro, quindi qui non c'è nulla da proporre. Aggiungi le voci a mano.",
+        "bible.seedHidden": "È escluso {n} nome che hai nascosto in Story Insights.", "bible.seedHiddenPlural": "Sono esclusi {n} nomi che hai nascosto in Story Insights.",
+        "bible.seedCancel": "Annulla",
+        "bible.seedAdded": "{n} voce aggiunta.", "bible.seedAddedPlural": "{n} voci aggiunte.",
+        "bible.exportEmpty": "Non ci sono ancora voci da esportare.",
+        "bible.exported": "{n} voce salvata in {file}.", "bible.exportedPlural": "{n} voci salvate in {file}.",
+        "bible.importDone": "{n} voce aggiunta.", "bible.importDonePlural": "{n} voci aggiunte.",
+        "bible.importNone": "Non è stato aggiunto nulla.",
+        "bible.importSkipped": "{n} saltata, già in questo libro: {list}.", "bible.importSkippedPlural": "{n} saltate, già in questo libro: {list}.",
+        "bible.importPics": "{n} immagine è entrata nella biblioteca di immagini.", "bible.importPicsPlural": "{n} immagini sono entrate nella biblioteca di immagini.",
+        "bible.importBad": "Quel file non è un'esportazione della Bibbia della storia.",
+        "bible.cardOpen": "Apri nella Bibbia",
+        "bible.cardAlso": "Detto anche {list}",
+        "bible.cardAria": "Voce della Bibbia della storia",
+        "imglib.role.bible": "immagine di una voce"
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "side.toolBible": "Bíblia",
+        "bible.open": "Bíblia da história",
+        "bible.title": "Bíblia da história",
+        "bible.sub": "As pessoas, os lugares e as coisas deste livro, guardados com o livro. As entradas são suas; o Beuk só encontra onde os nomes aparecem no seu texto, neste dispositivo. Nada aqui é impresso nem exportado.",
+        "bible.new": "Nova entrada",
+        "bible.seed": "Adicionar do Story Insights",
+        "bible.export": "Exportar",
+        "bible.import": "Importar",
+        "bible.marks": "Sublinhar as menções na mesa de escrita",
+        "bible.marksDesc": "Uma linha discreta sob cada nome que a Bíblia conhece. Aponte para um, toque nele ou prima Alt+Enter sobre ele para ver a sua entrada. O seu texto nunca muda.",
+        "bible.close": "Fechar",
+        "bible.search": "Procurar uma entrada",
+        "bible.empty": "Ainda não há entradas. Crie uma à mão ou escolha entre os nomes que o Story Insights encontrou neste livro.",
+        "bible.noMatch": "Nenhuma entrada corresponde a «{q}».",
+        "bible.type.character": "Personagem",
+        "bible.type.place": "Lugar",
+        "bible.type.thing": "Objeto",
+        "bible.type.group": "Grupo",
+        "bible.type.lore": "Saber",
+        "bible.typePl.character": "Personagens",
+        "bible.typePl.place": "Lugares",
+        "bible.typePl.thing": "Objetos",
+        "bible.typePl.group": "Grupos",
+        "bible.typePl.lore": "Saber",
+        "bible.untitled": "Entrada sem nome",
+        "bible.back": "Todas as entradas",
+        "bible.f.type": "Tipo",
+        "bible.f.name": "Nome",
+        "bible.f.aliases": "Também chamado",
+        "bible.f.aliasesPh": "Alcunhas e formas curtas, separadas por vírgulas",
+        "bible.f.desc": "Numa linha",
+        "bible.f.descPh": "Uma descrição curta",
+        "bible.f.notes": "Notas",
+        "bible.f.notesPh": "Tudo o que quiser lembrar",
+        "bible.f.picture": "Imagem",
+        "bible.f.pictureNone": "Sem imagem",
+        "bible.f.pictureNoLib": "A biblioteca de imagens do livro está vazia.",
+        "bible.f.tags": "Etiquetas",
+        "bible.f.tagsPh": "Separadas por vírgulas",
+        "bible.f.exact": "Respeitar maiúsculas",
+        "bible.f.exactDesc": "Só conta o nome escrito exatamente como acima — útil para um nome que também é uma palavra, como Rosa ou Luz.",
+        "bible.f.exclude": "Não é uma menção",
+        "bible.f.excludePh": "Frases a ignorar, separadas por vírgulas",
+        "bible.f.excludeDesc": "Um nome dentro de uma destas frases não é contado nem sublinhado.",
+        "bible.delete": "Eliminar entrada",
+        "bible.deleted": "{name} eliminado",
+        "bible.undo": "Desfazer",
+        "bible.mentionsH": "Onde aparece",
+        "bible.mentionsSub": "Contado na história — prólogo, capítulos, epílogo — pelo nome e por cada nome por que também é chamado, como palavras inteiras. Escolha um quadrado ou um trecho para o abrir na mesa de escrita.",
+        "bible.mentionsNone": "Ainda não é nomeado na história.",
+        "bible.mentionsNoStory": "A história ainda não tem palavras.",
+        "bible.nMentions": "{n} menção", "bible.nMentionsPlural": "{n} menções",
+        "bible.nSections": "em {n} secção", "bible.nSectionsPlural": "em {n} secções",
+        "bible.heatAria": "Menções em cada secção, pela ordem do livro",
+        "bible.cellTip": "{sec}: {n} menção", "bible.cellTipPlural": "{sec}: {n} menções",
+        "bible.cellNone": "{sec}: não nomeado",
+        "bible.first": "Primeira",
+        "bible.last": "Última",
+        "bible.passagesH": "Trechos",
+        "bible.passagesMore": "A mostrar os primeiros {n} de {m}.",
+        "bible.ambiguous": "Fica de fora {n} lugar onde este nome também pertence a outra entrada.", "bible.ambiguousPlural": "Ficam de fora {n} lugares onde este nome também pertence a outra entrada.",
+        "bible.seedH": "Nomes que o Story Insights encontrou",
+        "bible.seedSub": "Os nomes com maiúscula que se repetem e que o Story Insights encontrou neste livro, com quantas vezes cada um aparece. Escolha um tipo para cada um que quiser — nada é adicionado até premir Adicionar.",
+        "bible.seedSkip": "Não adicionar",
+        "bible.seedIn": "Na Bíblia",
+        "bible.seedAdd": "Adicionar {n} entrada", "bible.seedAddPlural": "Adicionar {n} entradas",
+        "bible.seedNone": "O Story Insights ainda não encontrou nomes repetidos neste livro.",
+        "bible.seedCaseless": "O Story Insights não consegue distinguir nomes na escrita deste livro, por isso não há nada a oferecer aqui. Adicione as entradas à mão.",
+        "bible.seedHidden": "Fica de fora {n} nome que ocultou no Story Insights.", "bible.seedHiddenPlural": "Ficam de fora {n} nomes que ocultou no Story Insights.",
+        "bible.seedCancel": "Cancelar",
+        "bible.seedAdded": "{n} entrada adicionada.", "bible.seedAddedPlural": "{n} entradas adicionadas.",
+        "bible.exportEmpty": "Ainda não há entradas para exportar.",
+        "bible.exported": "{n} entrada guardada em {file}.", "bible.exportedPlural": "{n} entradas guardadas em {file}.",
+        "bible.importDone": "{n} entrada adicionada.", "bible.importDonePlural": "{n} entradas adicionadas.",
+        "bible.importNone": "Nada foi adicionado.",
+        "bible.importSkipped": "{n} ignorada, já está neste livro: {list}.", "bible.importSkippedPlural": "{n} ignoradas, já estão neste livro: {list}.",
+        "bible.importPics": "{n} imagem juntou-se à biblioteca de imagens.", "bible.importPicsPlural": "{n} imagens juntaram-se à biblioteca de imagens.",
+        "bible.importBad": "Esse ficheiro não é uma exportação da Bíblia da história.",
+        "bible.cardOpen": "Abrir na Bíblia",
+        "bible.cardAlso": "Também chamado {list}",
+        "bible.cardAria": "Entrada da Bíblia da história",
+        "imglib.role.bible": "imagem de uma entrada"
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "side.toolBible": "Bijbel",
+        "bible.open": "Verhaalbijbel",
+        "bible.title": "Verhaalbijbel",
+        "bible.sub": "De mensen, plaatsen en dingen van dit boek, bewaard bij het boek. De items zijn van jou; Beuk zoekt alleen op waar hun namen in je tekst voorkomen, op dit apparaat. Niets hiervan wordt gedrukt of geëxporteerd.",
+        "bible.new": "Nieuw item",
+        "bible.seed": "Toevoegen uit Story Insights",
+        "bible.export": "Exporteren",
+        "bible.import": "Importeren",
+        "bible.marks": "Vermeldingen onderstrepen in de schrijftafel",
+        "bible.marksDesc": "Een vage lijn onder elke naam die de Bijbel kent. Wijs er een aan, tik erop of druk Alt+Enter erop om het item te zien. Je tekst verandert nooit.",
+        "bible.close": "Sluiten",
+        "bible.search": "Een item zoeken",
+        "bible.empty": "Nog geen items. Maak er een met de hand, of kies uit de namen die Story Insights in dit boek vond.",
+        "bible.noMatch": "Geen item past bij ‘{q}’.",
+        "bible.type.character": "Personage",
+        "bible.type.place": "Plaats",
+        "bible.type.thing": "Voorwerp",
+        "bible.type.group": "Groep",
+        "bible.type.lore": "Kennis",
+        "bible.typePl.character": "Personages",
+        "bible.typePl.place": "Plaatsen",
+        "bible.typePl.thing": "Voorwerpen",
+        "bible.typePl.group": "Groepen",
+        "bible.typePl.lore": "Kennis",
+        "bible.untitled": "Item zonder naam",
+        "bible.back": "Alle items",
+        "bible.f.type": "Soort",
+        "bible.f.name": "Naam",
+        "bible.f.aliases": "Ook genoemd",
+        "bible.f.aliasesPh": "Bijnamen en korte vormen, gescheiden door komma's",
+        "bible.f.desc": "In één regel",
+        "bible.f.descPh": "Een korte beschrijving",
+        "bible.f.notes": "Notities",
+        "bible.f.notesPh": "Alles wat je wilt onthouden",
+        "bible.f.picture": "Afbeelding",
+        "bible.f.pictureNone": "Geen afbeelding",
+        "bible.f.pictureNoLib": "De afbeeldingenbibliotheek van het boek is leeg.",
+        "bible.f.tags": "Labels",
+        "bible.f.tagsPh": "Gescheiden door komma's",
+        "bible.f.exact": "Hoofdletters precies volgen",
+        "bible.f.exactDesc": "Alleen de naam precies zoals hierboven geschreven telt — handig voor een naam die ook een woord is, zoals Roos of Will.",
+        "bible.f.exclude": "Geen vermelding",
+        "bible.f.excludePh": "Zinsdelen om over te slaan, gescheiden door komma's",
+        "bible.f.excludeDesc": "Een naam binnen een van deze zinsdelen wordt niet geteld of onderstreept.",
+        "bible.delete": "Item verwijderen",
+        "bible.deleted": "{name} verwijderd",
+        "bible.undo": "Ongedaan maken",
+        "bible.mentionsH": "Waar het voorkomt",
+        "bible.mentionsSub": "Geteld in het verhaal — proloog, hoofdstukken, epiloog — op de naam en elke naam waaronder het ook bekend is, als hele woorden. Kies een vakje of een passage om die in de schrijftafel te openen.",
+        "bible.mentionsNone": "Nog niet genoemd in het verhaal.",
+        "bible.mentionsNoStory": "Het verhaal heeft nog geen woorden.",
+        "bible.nMentions": "{n} vermelding", "bible.nMentionsPlural": "{n} vermeldingen",
+        "bible.nSections": "in {n} sectie", "bible.nSectionsPlural": "in {n} secties",
+        "bible.heatAria": "Vermeldingen in elke sectie, in de volgorde van het boek",
+        "bible.cellTip": "{sec}: {n} vermelding", "bible.cellTipPlural": "{sec}: {n} vermeldingen",
+        "bible.cellNone": "{sec}: niet genoemd",
+        "bible.first": "Eerste",
+        "bible.last": "Laatste",
+        "bible.passagesH": "Passages",
+        "bible.passagesMore": "De eerste {n} van {m} worden getoond.",
+        "bible.ambiguous": "{n} plek waar deze naam ook bij een ander item hoort, blijft buiten beschouwing.", "bible.ambiguousPlural": "{n} plekken waar deze naam ook bij een ander item hoort, blijven buiten beschouwing.",
+        "bible.seedH": "Namen die Story Insights vond",
+        "bible.seedSub": "De terugkerende namen met een hoofdletter die Story Insights in dit boek vond, met hoe vaak elk voorkomt. Kies een soort voor elke naam die je wilt — er wordt niets toegevoegd tot je op Toevoegen drukt.",
+        "bible.seedSkip": "Niet toevoegen",
+        "bible.seedIn": "In de Bijbel",
+        "bible.seedAdd": "{n} item toevoegen", "bible.seedAddPlural": "{n} items toevoegen",
+        "bible.seedNone": "Story Insights vond nog geen terugkerende namen in dit boek.",
+        "bible.seedCaseless": "Story Insights kan in het schrift van dit boek geen namen herkennen, dus er is hier niets aan te bieden. Voeg de items met de hand toe.",
+        "bible.seedHidden": "{n} naam die je in Story Insights verborg, blijft buiten beschouwing.", "bible.seedHiddenPlural": "{n} namen die je in Story Insights verborg, blijven buiten beschouwing.",
+        "bible.seedCancel": "Annuleren",
+        "bible.seedAdded": "{n} item toegevoegd.", "bible.seedAddedPlural": "{n} items toegevoegd.",
+        "bible.exportEmpty": "Er zijn nog geen items om te exporteren.",
+        "bible.exported": "{n} item opgeslagen in {file}.", "bible.exportedPlural": "{n} items opgeslagen in {file}.",
+        "bible.importDone": "{n} item toegevoegd.", "bible.importDonePlural": "{n} items toegevoegd.",
+        "bible.importNone": "Er is niets toegevoegd.",
+        "bible.importSkipped": "{n} overgeslagen, al in dit boek: {list}.", "bible.importSkippedPlural": "{n} overgeslagen, al in dit boek: {list}.",
+        "bible.importPics": "{n} afbeelding kwam in de afbeeldingenbibliotheek.", "bible.importPicsPlural": "{n} afbeeldingen kwamen in de afbeeldingenbibliotheek.",
+        "bible.importBad": "Dat bestand is geen export van een Verhaalbijbel.",
+        "bible.cardOpen": "Openen in de Verhaalbijbel",
+        "bible.cardAlso": "Ook genoemd {list}",
+        "bible.cardAria": "Item van de Verhaalbijbel",
+        "imglib.role.bible": "afbeelding van een item"
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "side.toolBible": "Biblia",
+        "bible.open": "Biblia opowieści",
+        "bible.title": "Biblia opowieści",
+        "bible.sub": "Ludzie, miejsca i rzeczy tej książki, przechowywane razem z nią. Wpisy należą do ciebie; Beuk tylko odnajduje, gdzie ich nazwy pojawiają się w twoim tekście, na tym urządzeniu. Nic z tego nie trafia do druku ani eksportu.",
+        "bible.new": "Nowy wpis",
+        "bible.seed": "Dodaj ze Story Insights",
+        "bible.export": "Eksportuj",
+        "bible.import": "Importuj",
+        "bible.marks": "Podkreślaj wzmianki przy biurku",
+        "bible.marksDesc": "Delikatna linia pod każdą nazwą, którą zna Biblia. Wskaż ją, dotknij lub naciśnij na niej Alt+Enter, aby zobaczyć wpis. Twój tekst nigdy się nie zmienia.",
+        "bible.close": "Zamknij",
+        "bible.search": "Znajdź wpis",
+        "bible.empty": "Nie ma jeszcze wpisów. Utwórz wpis ręcznie albo wybierz spośród imion, które Story Insights znalazło w tej książce.",
+        "bible.noMatch": "Żaden wpis nie pasuje do „{q}”.",
+        "bible.type.character": "Postać",
+        "bible.type.place": "Miejsce",
+        "bible.type.thing": "Przedmiot",
+        "bible.type.group": "Grupa",
+        "bible.type.lore": "Wiedza",
+        "bible.typePl.character": "Postacie",
+        "bible.typePl.place": "Miejsca",
+        "bible.typePl.thing": "Przedmioty",
+        "bible.typePl.group": "Grupy",
+        "bible.typePl.lore": "Wiedza",
+        "bible.untitled": "Wpis bez nazwy",
+        "bible.back": "Wszystkie wpisy",
+        "bible.f.type": "Rodzaj",
+        "bible.f.name": "Nazwa",
+        "bible.f.aliases": "Zwany też",
+        "bible.f.aliasesPh": "Przezwiska i formy skrócone, oddzielone przecinkami",
+        "bible.f.desc": "W jednym zdaniu",
+        "bible.f.descPh": "Krótki opis",
+        "bible.f.notes": "Notatki",
+        "bible.f.notesPh": "Wszystko, co chcesz zapamiętać",
+        "bible.f.picture": "Obraz",
+        "bible.f.pictureNone": "Bez obrazu",
+        "bible.f.pictureNoLib": "Biblioteka obrazów książki jest pusta.",
+        "bible.f.tags": "Tagi",
+        "bible.f.tagsPh": "Oddzielone przecinkami",
+        "bible.f.exact": "Uwzględniaj wielkość liter",
+        "bible.f.exactDesc": "Liczy się tylko nazwa zapisana dokładnie jak wyżej — przydatne dla imienia, które jest też słowem, jak Róża czy Wiara.",
+        "bible.f.exclude": "To nie wzmianka",
+        "bible.f.excludePh": "Wyrażenia do pominięcia, oddzielone przecinkami",
+        "bible.f.excludeDesc": "Nazwa wewnątrz jednego z tych wyrażeń nie jest liczona ani podkreślana.",
+        "bible.delete": "Usuń wpis",
+        "bible.deleted": "Usunięto: {name}",
+        "bible.undo": "Cofnij",
+        "bible.mentionsH": "Gdzie się pojawia",
+        "bible.mentionsSub": "Liczone w opowieści — prolog, rozdziały, epilog — po nazwie i każdej nazwie, pod którą jest też znany, jako całe słowa. Wybierz kwadrat lub fragment, aby otworzyć go przy biurku.",
+        "bible.mentionsNone": "Jeszcze nie pada w opowieści.",
+        "bible.mentionsNoStory": "Opowieść nie ma jeszcze słów.",
+        "bible.nMentions": "{n} wzmianka", "bible.nMentionsPlural": "{n} wzmianki",
+        "bible.nSections": "w {n} sekcji", "bible.nSectionsPlural": "w {n} sekcjach",
+        "bible.heatAria": "Wzmianki w każdej sekcji, w kolejności książki",
+        "bible.cellTip": "{sec}: {n} wzmianka", "bible.cellTipPlural": "{sec}: {n} wzmianki",
+        "bible.cellNone": "{sec}: nie pada",
+        "bible.first": "Pierwsza",
+        "bible.last": "Ostatnia",
+        "bible.passagesH": "Fragmenty",
+        "bible.passagesMore": "Pokazano pierwsze {n} z {m}.",
+        "bible.ambiguous": "Pominięto {n} miejsce, w którym ta nazwa należy też do innego wpisu.", "bible.ambiguousPlural": "Pominięto {n} miejsca, w których ta nazwa należy też do innego wpisu.",
+        "bible.seedH": "Imiona znalezione przez Story Insights",
+        "bible.seedSub": "Powracające nazwy pisane wielką literą, które Story Insights znalazło w tej książce, wraz z liczbą wystąpień. Wybierz rodzaj dla każdej, którą chcesz — nic nie zostanie dodane, dopóki nie naciśniesz Dodaj.",
+        "bible.seedSkip": "Nie dodawaj",
+        "bible.seedIn": "W Biblii",
+        "bible.seedAdd": "Dodaj {n} wpis", "bible.seedAddPlural": "Dodaj {n} wpisy",
+        "bible.seedNone": "Story Insights nie znalazło jeszcze powracających imion w tej książce.",
+        "bible.seedCaseless": "Story Insights nie potrafi wyróżnić imion w piśmie tej książki, więc nie ma tu nic do zaproponowania. Dodaj wpisy ręcznie.",
+        "bible.seedHidden": "Pominięto {n} imię ukryte w Story Insights.", "bible.seedHiddenPlural": "Pominięto {n} imiona ukryte w Story Insights.",
+        "bible.seedCancel": "Anuluj",
+        "bible.seedAdded": "Dodano {n} wpis.", "bible.seedAddedPlural": "Dodano {n} wpisy.",
+        "bible.exportEmpty": "Nie ma jeszcze wpisów do eksportu.",
+        "bible.exported": "Zapisano {n} wpis w {file}.", "bible.exportedPlural": "Zapisano {n} wpisy w {file}.",
+        "bible.importDone": "Dodano {n} wpis.", "bible.importDonePlural": "Dodano {n} wpisy.",
+        "bible.importNone": "Nic nie dodano.",
+        "bible.importSkipped": "Pominięto {n}, już w tej książce: {list}.", "bible.importSkippedPlural": "Pominięto {n}, już w tej książce: {list}.",
+        "bible.importPics": "{n} obraz trafił do biblioteki obrazów.", "bible.importPicsPlural": "{n} obrazy trafiły do biblioteki obrazów.",
+        "bible.importBad": "Ten plik nie jest eksportem Biblii opowieści.",
+        "bible.cardOpen": "Otwórz w Biblii",
+        "bible.cardAlso": "Zwany też {list}",
+        "bible.cardAria": "Wpis Biblii opowieści",
+        "imglib.role.bible": "obraz wpisu"
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "side.toolBible": "Библия",
+        "bible.open": "Библия истории",
+        "bible.title": "Библия истории",
+        "bible.sub": "Люди, места и вещи этой книги, хранящиеся вместе с ней. Записи — ваши; Beuk лишь находит, где их имена встречаются в вашем тексте, на этом устройстве. Ничего отсюда не печатается и не экспортируется.",
+        "bible.new": "Новая запись",
+        "bible.seed": "Добавить из Story Insights",
+        "bible.export": "Экспорт",
+        "bible.import": "Импорт",
+        "bible.marks": "Подчёркивать упоминания за рабочим столом",
+        "bible.marksDesc": "Тонкая линия под каждым именем, которое знает Библия. Наведите на него, коснитесь или нажмите на нём Alt+Enter, чтобы увидеть запись. Ваш текст никогда не меняется.",
+        "bible.close": "Закрыть",
+        "bible.search": "Найти запись",
+        "bible.empty": "Записей пока нет. Создайте запись вручную или выберите из имён, которые Story Insights нашёл в этой книге.",
+        "bible.noMatch": "Ни одна запись не подходит к «{q}».",
+        "bible.type.character": "Персонаж",
+        "bible.type.place": "Место",
+        "bible.type.thing": "Предмет",
+        "bible.type.group": "Группа",
+        "bible.type.lore": "Знание",
+        "bible.typePl.character": "Персонажи",
+        "bible.typePl.place": "Места",
+        "bible.typePl.thing": "Предметы",
+        "bible.typePl.group": "Группы",
+        "bible.typePl.lore": "Знания",
+        "bible.untitled": "Запись без имени",
+        "bible.back": "Все записи",
+        "bible.f.type": "Тип",
+        "bible.f.name": "Имя",
+        "bible.f.aliases": "Также зовётся",
+        "bible.f.aliasesPh": "Прозвища и краткие формы через запятую",
+        "bible.f.desc": "Одной строкой",
+        "bible.f.descPh": "Краткое описание",
+        "bible.f.notes": "Заметки",
+        "bible.f.notesPh": "Всё, что хочется запомнить",
+        "bible.f.picture": "Изображение",
+        "bible.f.pictureNone": "Без изображения",
+        "bible.f.pictureNoLib": "Библиотека изображений книги пуста.",
+        "bible.f.tags": "Метки",
+        "bible.f.tagsPh": "Через запятую",
+        "bible.f.exact": "Учитывать регистр",
+        "bible.f.exactDesc": "Считается только имя, написанное точно как выше, — удобно для имени, которое также слово, как Вера или Роза.",
+        "bible.f.exclude": "Не упоминание",
+        "bible.f.excludePh": "Обороты, которые нужно пропускать, через запятую",
+        "bible.f.excludeDesc": "Имя внутри одного из этих оборотов не считается и не подчёркивается.",
+        "bible.delete": "Удалить запись",
+        "bible.deleted": "Удалено: {name}",
+        "bible.undo": "Отменить",
+        "bible.mentionsH": "Где встречается",
+        "bible.mentionsSub": "Считается в истории — пролог, главы, эпилог — по имени и по каждому имени, которым его также называют, целыми словами. Выберите клетку или отрывок, чтобы открыть его за рабочим столом.",
+        "bible.mentionsNone": "В истории пока не названо.",
+        "bible.mentionsNoStory": "В истории пока нет слов.",
+        "bible.nMentions": "{n} упоминание", "bible.nMentionsPlural": "{n} упоминаний",
+        "bible.nSections": "в {n} разделе", "bible.nSectionsPlural": "в {n} разделах",
+        "bible.heatAria": "Упоминания в каждом разделе, в порядке книги",
+        "bible.cellTip": "{sec}: {n} упоминание", "bible.cellTipPlural": "{sec}: {n} упоминаний",
+        "bible.cellNone": "{sec}: не названо",
+        "bible.first": "Первое",
+        "bible.last": "Последнее",
+        "bible.passagesH": "Отрывки",
+        "bible.passagesMore": "Показаны первые {n} из {m}.",
+        "bible.ambiguous": "Пропущено {n} место, где это имя принадлежит и другой записи.", "bible.ambiguousPlural": "Пропущено {n} мест, где это имя принадлежит и другой записи.",
+        "bible.seedH": "Имена, найденные Story Insights",
+        "bible.seedSub": "Повторяющиеся имена с заглавной буквы, которые Story Insights нашёл в этой книге, и сколько раз встречается каждое. Выберите тип для каждого нужного — ничего не добавится, пока вы не нажмёте «Добавить».",
+        "bible.seedSkip": "Не добавлять",
+        "bible.seedIn": "Уже в Библии",
+        "bible.seedAdd": "Добавить {n} запись", "bible.seedAddPlural": "Добавить {n} записей",
+        "bible.seedNone": "Story Insights пока не нашёл повторяющихся имён в этой книге.",
+        "bible.seedCaseless": "Story Insights не может выделить имена в письменности этой книги, поэтому здесь нечего предложить. Добавьте записи вручную.",
+        "bible.seedHidden": "Пропущено {n} имя, скрытое в Story Insights.", "bible.seedHiddenPlural": "Пропущено {n} имён, скрытых в Story Insights.",
+        "bible.seedCancel": "Отмена",
+        "bible.seedAdded": "Добавлена {n} запись.", "bible.seedAddedPlural": "Добавлено {n} записей.",
+        "bible.exportEmpty": "Пока нет записей для экспорта.",
+        "bible.exported": "{n} запись сохранена в {file}.", "bible.exportedPlural": "{n} записей сохранено в {file}.",
+        "bible.importDone": "Добавлена {n} запись.", "bible.importDonePlural": "Добавлено {n} записей.",
+        "bible.importNone": "Ничего не добавлено.",
+        "bible.importSkipped": "Пропущено {n}, уже есть в этой книге: {list}.", "bible.importSkippedPlural": "Пропущено {n}, уже есть в этой книге: {list}.",
+        "bible.importPics": "{n} изображение добавлено в библиотеку изображений.", "bible.importPicsPlural": "{n} изображений добавлено в библиотеку изображений.",
+        "bible.importBad": "Этот файл не является экспортом Библии истории.",
+        "bible.cardOpen": "Открыть в Библии",
+        "bible.cardAlso": "Также зовётся {list}",
+        "bible.cardAria": "Запись Библии истории",
+        "imglib.role.bible": "изображение записи"
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "side.toolBible": "Rehber",
+        "bible.open": "Hikâye rehberi",
+        "bible.title": "Hikâye rehberi",
+        "bible.sub": "Bu kitabın insanları, yerleri ve nesneleri, kitapla birlikte saklanır. Kayıtlar sizindir; Beuk yalnızca adlarının metninizde nerede geçtiğini bu cihazda bulur. Buradaki hiçbir şey basılmaz ya da dışa aktarılmaz.",
+        "bible.new": "Yeni kayıt",
+        "bible.seed": "Story Insights'tan ekle",
+        "bible.export": "Dışa aktar",
+        "bible.import": "İçe aktar",
+        "bible.marks": "Yazı masasında geçtiği yerlerin altını çiz",
+        "bible.marksDesc": "Hikâye rehberinin bildiği her adın altında silik bir çizgi. Kaydını görmek için birinin üzerine gelin, dokunun ya da üzerindeyken Alt+Enter'a basın. Metniniz asla değişmez.",
+        "bible.close": "Kapat",
+        "bible.search": "Bir kayıt bul",
+        "bible.empty": "Henüz kayıt yok. Elle bir tane başlatın ya da Story Insights'ın bu kitapta bulduğu adlardan seçin.",
+        "bible.noMatch": "“{q}” ile eşleşen kayıt yok.",
+        "bible.type.character": "Karakter",
+        "bible.type.place": "Yer",
+        "bible.type.thing": "Nesne",
+        "bible.type.group": "Topluluk",
+        "bible.type.lore": "Bilgi",
+        "bible.typePl.character": "Karakterler",
+        "bible.typePl.place": "Yerler",
+        "bible.typePl.thing": "Nesneler",
+        "bible.typePl.group": "Topluluklar",
+        "bible.typePl.lore": "Bilgi",
+        "bible.untitled": "Adsız kayıt",
+        "bible.back": "Tüm kayıtlar",
+        "bible.f.type": "Tür",
+        "bible.f.name": "Ad",
+        "bible.f.aliases": "Diğer adları",
+        "bible.f.aliasesPh": "Lakaplar ve kısa biçimler, virgülle ayrılmış",
+        "bible.f.desc": "Tek satırda",
+        "bible.f.descPh": "Kısa bir tanım",
+        "bible.f.notes": "Notlar",
+        "bible.f.notesPh": "Hatırlamak istediğiniz her şey",
+        "bible.f.picture": "Görsel",
+        "bible.f.pictureNone": "Görsel yok",
+        "bible.f.pictureNoLib": "Kitabın görsel kitaplığı boş.",
+        "bible.f.tags": "Etiketler",
+        "bible.f.tagsPh": "Virgülle ayrılmış",
+        "bible.f.exact": "Büyük-küçük harfe uy",
+        "bible.f.exactDesc": "Yalnızca yukarıda yazıldığı gibi yazılan ad sayılır — aynı zamanda bir sözcük olan adlar için kullanışlıdır, Gül ya da Umut gibi.",
+        "bible.f.exclude": "Geçme sayılmaz",
+        "bible.f.excludePh": "Yok sayılacak ifadeler, virgülle ayrılmış",
+        "bible.f.excludeDesc": "Bu ifadelerden birinin içindeki ad sayılmaz ve altı çizilmez.",
+        "bible.delete": "Kaydı sil",
+        "bible.deleted": "{name} silindi",
+        "bible.undo": "Geri al",
+        "bible.mentionsH": "Nerede geçiyor",
+        "bible.mentionsSub": "Hikâyede — ön söz, bölümler, son söz — adına ve diğer tüm adlarına göre, tam sözcük olarak sayılır. Yazı masasında açmak için bir kare ya da bir pasaj seçin.",
+        "bible.mentionsNone": "Hikâyede henüz geçmiyor.",
+        "bible.mentionsNoStory": "Hikâyede henüz sözcük yok.",
+        "bible.nMentions": "{n} geçiş", "bible.nMentionsPlural": "{n} geçiş",
+        "bible.nSections": "{n} bölümde", "bible.nSectionsPlural": "{n} bölümde",
+        "bible.heatAria": "Kitap sırasıyla her bölümdeki geçişler",
+        "bible.cellTip": "{sec}: {n} geçiş", "bible.cellTipPlural": "{sec}: {n} geçiş",
+        "bible.cellNone": "{sec}: geçmiyor",
+        "bible.first": "İlk",
+        "bible.last": "Son",
+        "bible.passagesH": "Pasajlar",
+        "bible.passagesMore": "{m} pasajın ilk {n} tanesi gösteriliyor.",
+        "bible.ambiguous": "Bu adın başka bir kayda da ait olduğu {n} yer dışarıda bırakıldı.", "bible.ambiguousPlural": "Bu adın başka bir kayda da ait olduğu {n} yer dışarıda bırakıldı.",
+        "bible.seedH": "Story Insights'ın bulduğu adlar",
+        "bible.seedSub": "Story Insights'ın bu kitapta bulduğu, büyük harfle başlayan ve tekrar eden adlar ile her birinin kaç kez geçtiği. İstediğiniz her biri için bir tür seçin — Ekle'ye basana dek hiçbir şey eklenmez.",
+        "bible.seedSkip": "Ekleme",
+        "bible.seedIn": "Hikâye rehberinde",
+        "bible.seedAdd": "{n} kayıt ekle", "bible.seedAddPlural": "{n} kayıt ekle",
+        "bible.seedNone": "Story Insights bu kitapta henüz tekrar eden bir ad bulmadı.",
+        "bible.seedCaseless": "Story Insights bu kitabın yazısında adları ayırt edemiyor, bu yüzden burada sunacak bir şey yok. Kayıtları elle ekleyin.",
+        "bible.seedHidden": "Story Insights'ta gizlediğiniz {n} ad dışarıda bırakıldı.", "bible.seedHiddenPlural": "Story Insights'ta gizlediğiniz {n} ad dışarıda bırakıldı.",
+        "bible.seedCancel": "Vazgeç",
+        "bible.seedAdded": "{n} kayıt eklendi.", "bible.seedAddedPlural": "{n} kayıt eklendi.",
+        "bible.exportEmpty": "Henüz dışa aktarılacak kayıt yok.",
+        "bible.exported": "{n} kayıt {file} dosyasına kaydedildi.", "bible.exportedPlural": "{n} kayıt {file} dosyasına kaydedildi.",
+        "bible.importDone": "{n} kayıt eklendi.", "bible.importDonePlural": "{n} kayıt eklendi.",
+        "bible.importNone": "Hiçbir şey eklenmedi.",
+        "bible.importSkipped": "{n} kayıt atlandı, bu kitapta zaten var: {list}.", "bible.importSkippedPlural": "{n} kayıt atlandı, bu kitapta zaten var: {list}.",
+        "bible.importPics": "{n} görsel görsel kitaplığına katıldı.", "bible.importPicsPlural": "{n} görsel görsel kitaplığına katıldı.",
+        "bible.importBad": "Bu dosya bir Hikâye rehberi dışa aktarımı değil.",
+        "bible.cardOpen": "Hikâye rehberinde aç",
+        "bible.cardAlso": "Diğer adları: {list}",
+        "bible.cardAria": "Hikâye rehberi kaydı",
+        "imglib.role.bible": "bir kaydın görseli"
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "side.toolBible": "المرجع",
+        "bible.open": "مرجع القصة",
+        "bible.title": "مرجع القصة",
+        "bible.sub": "أشخاص هذا الكتاب وأماكنه وأشياؤه، محفوظة مع الكتاب. المداخل لك؛ لا يفعل Beuk سوى أن يجد أين تظهر أسماؤها في نصك، على هذا الجهاز. لا شيء هنا يُطبع أو يُصدَّر.",
+        "bible.new": "مدخل جديد",
+        "bible.seed": "إضافة من Story Insights",
+        "bible.export": "تصدير",
+        "bible.import": "استيراد",
+        "bible.marks": "سطر تحت الإشارات في مكتب الكتابة",
+        "bible.marksDesc": "خط خافت تحت كل اسم يعرفه المرجع. أشر إليه أو المسه أو اضغط Alt+Enter عليه لترى مدخله. نصك لا يتغير أبدًا.",
+        "bible.close": "إغلاق",
+        "bible.search": "ابحث عن مدخل",
+        "bible.empty": "لا مداخل بعد. ابدأ واحدًا بيدك، أو اختر من الأسماء التي وجدها Story Insights في هذا الكتاب.",
+        "bible.noMatch": "لا مدخل يطابق «{q}».",
+        "bible.type.character": "شخصية",
+        "bible.type.place": "مكان",
+        "bible.type.thing": "شيء",
+        "bible.type.group": "جماعة",
+        "bible.type.lore": "معرفة",
+        "bible.typePl.character": "الشخصيات",
+        "bible.typePl.place": "الأماكن",
+        "bible.typePl.thing": "الأشياء",
+        "bible.typePl.group": "الجماعات",
+        "bible.typePl.lore": "المعرفة",
+        "bible.untitled": "مدخل بلا اسم",
+        "bible.back": "كل المداخل",
+        "bible.f.type": "النوع",
+        "bible.f.name": "الاسم",
+        "bible.f.aliases": "يُدعى أيضًا",
+        "bible.f.aliasesPh": "الألقاب والصيغ المختصرة، مفصولة بفواصل",
+        "bible.f.desc": "في سطر",
+        "bible.f.descPh": "وصف قصير",
+        "bible.f.notes": "ملاحظات",
+        "bible.f.notesPh": "كل ما تريد أن تتذكره",
+        "bible.f.picture": "صورة",
+        "bible.f.pictureNone": "بلا صورة",
+        "bible.f.pictureNoLib": "مكتبة صور الكتاب فارغة.",
+        "bible.f.tags": "وسوم",
+        "bible.f.tagsPh": "مفصولة بفواصل",
+        "bible.f.exact": "طابق حالة الأحرف تمامًا",
+        "bible.f.exactDesc": "لا يُحسب إلا الاسم المكتوب كما في الأعلى تمامًا — مفيد في الكتب ذات الأحرف الكبيرة والصغيرة، لاسم هو أيضًا كلمة.",
+        "bible.f.exclude": "ليست إشارة",
+        "bible.f.excludePh": "عبارات تُتجاهل، مفصولة بفواصل",
+        "bible.f.excludeDesc": "الاسم داخل إحدى هذه العبارات لا يُحسب ولا يُسطَّر تحته.",
+        "bible.delete": "حذف المدخل",
+        "bible.deleted": "حُذف {name}",
+        "bible.undo": "تراجع",
+        "bible.mentionsH": "أين يظهر",
+        "bible.mentionsSub": "يُحسب في القصة — التمهيد والفصول والخاتمة — بالاسم وبكل اسم يُدعى به أيضًا، كلماتٍ كاملة. اختر مربعًا أو مقطعًا لفتحه في مكتب الكتابة.",
+        "bible.mentionsNone": "لم يُذكر في القصة بعد.",
+        "bible.mentionsNoStory": "لا كلمات في القصة بعد.",
+        "bible.nMentions": "إشارة واحدة", "bible.nMentionsPlural": "{n} إشارة",
+        "bible.nSections": "في قسم واحد", "bible.nSectionsPlural": "في {n} قسم",
+        "bible.heatAria": "الإشارات في كل قسم، بترتيب الكتاب",
+        "bible.cellTip": "{sec}: إشارة واحدة", "bible.cellTipPlural": "{sec}: {n} إشارة",
+        "bible.cellNone": "{sec}: لم يُذكر",
+        "bible.first": "الأولى",
+        "bible.last": "الأخيرة",
+        "bible.passagesH": "مقاطع",
+        "bible.passagesMore": "يُعرض أول {n} من {m}.",
+        "bible.ambiguous": "استُبعد موضع واحد يعود فيه هذا الاسم إلى مدخل آخر أيضًا.", "bible.ambiguousPlural": "استُبعد {n} موضع يعود فيها هذا الاسم إلى مدخل آخر أيضًا.",
+        "bible.seedH": "أسماء وجدها Story Insights",
+        "bible.seedSub": "الأسماء المتكررة المكتوبة بحرف كبير التي وجدها Story Insights في هذا الكتاب، مع عدد مرات ظهور كل منها. اختر نوعًا لكل اسم تريده — لا يُضاف شيء حتى تضغط «إضافة».",
+        "bible.seedSkip": "لا تُضف",
+        "bible.seedIn": "في المرجع",
+        "bible.seedAdd": "إضافة مدخل واحد", "bible.seedAddPlural": "إضافة {n} مدخل",
+        "bible.seedNone": "لم يجد Story Insights أسماء متكررة في هذا الكتاب بعد.",
+        "bible.seedCaseless": "لا يستطيع Story Insights تمييز الأسماء في خط هذا الكتاب، فلا شيء يُعرض هنا. أضف المداخل بيدك.",
+        "bible.seedHidden": "استُبعد اسم واحد أخفيته في Story Insights.", "bible.seedHiddenPlural": "استُبعد {n} اسم أخفيتها في Story Insights.",
+        "bible.seedCancel": "إلغاء",
+        "bible.seedAdded": "أُضيف مدخل واحد.", "bible.seedAddedPlural": "أُضيف {n} مدخل.",
+        "bible.exportEmpty": "لا مداخل للتصدير بعد.",
+        "bible.exported": "حُفظ مدخل واحد في {file}.", "bible.exportedPlural": "حُفظ {n} مدخل في {file}.",
+        "bible.importDone": "أُضيف مدخل واحد.", "bible.importDonePlural": "أُضيف {n} مدخل.",
+        "bible.importNone": "لم يُضف شيء.",
+        "bible.importSkipped": "تُخطّي مدخل واحد موجود في هذا الكتاب: {list}.", "bible.importSkippedPlural": "تُخطّي {n} مدخل موجود في هذا الكتاب: {list}.",
+        "bible.importPics": "انضمت صورة واحدة إلى مكتبة الصور.", "bible.importPicsPlural": "انضمت {n} صورة إلى مكتبة الصور.",
+        "bible.importBad": "هذا الملف ليس تصديرًا لمرجع القصة.",
+        "bible.cardOpen": "افتح في مرجع القصة",
+        "bible.cardAlso": "يُدعى أيضًا {list}",
+        "bible.cardAria": "مدخل في مرجع القصة",
+        "imglib.role.bible": "صورة مدخل"
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "side.toolBible": "設定集",
+        "bible.open": "ストーリー設定集",
+        "bible.title": "ストーリー設定集",
+        "bible.sub": "この本の人物・場所・物を、本と一緒に保管します。項目はあなたのものです。Beuk は、その名前が本文のどこに出てくるかをこの端末で探すだけです。ここにあるものは印刷にも書き出しにも含まれません。",
+        "bible.new": "新しい項目",
+        "bible.seed": "Story Insights から追加",
+        "bible.export": "書き出す",
+        "bible.import": "読み込む",
+        "bible.marks": "執筆机で登場箇所に下線を引く",
+        "bible.marksDesc": "設定集が知っている名前の下に、薄い線を引きます。名前を指す、タップする、または名前の上で Alt+Enter を押すと項目が表示されます。本文は決して変わりません。",
+        "bible.close": "閉じる",
+        "bible.search": "項目を探す",
+        "bible.empty": "まだ項目がありません。手で作るか、Story Insights がこの本で見つけた名前から選んでください。",
+        "bible.noMatch": "「{q}」に一致する項目はありません。",
+        "bible.type.character": "人物",
+        "bible.type.place": "場所",
+        "bible.type.thing": "物",
+        "bible.type.group": "集団",
+        "bible.type.lore": "伝承",
+        "bible.typePl.character": "人物",
+        "bible.typePl.place": "場所",
+        "bible.typePl.thing": "物",
+        "bible.typePl.group": "集団",
+        "bible.typePl.lore": "伝承",
+        "bible.untitled": "名前のない項目",
+        "bible.back": "すべての項目",
+        "bible.f.type": "種類",
+        "bible.f.name": "名前",
+        "bible.f.aliases": "別名",
+        "bible.f.aliasesPh": "愛称や略称をカンマで区切って",
+        "bible.f.desc": "一行で",
+        "bible.f.descPh": "短い説明",
+        "bible.f.notes": "メモ",
+        "bible.f.notesPh": "覚えておきたいことを何でも",
+        "bible.f.picture": "画像",
+        "bible.f.pictureNone": "画像なし",
+        "bible.f.pictureNoLib": "この本の画像ライブラリは空です。",
+        "bible.f.tags": "タグ",
+        "bible.f.tagsPh": "カンマで区切って",
+        "bible.f.exact": "大文字と小文字を区別する",
+        "bible.f.exactDesc": "上の表記どおりの名前だけを数えます。ラテン文字の本で、名前が普通の単語でもある場合（Will や Rose など）に便利です。",
+        "bible.f.exclude": "登場ではない語句",
+        "bible.f.excludePh": "無視する語句をカンマで区切って",
+        "bible.f.excludeDesc": "これらの語句の中にある名前は数えず、下線も引きません。",
+        "bible.delete": "項目を削除",
+        "bible.deleted": "{name} を削除しました",
+        "bible.undo": "元に戻す",
+        "bible.mentionsH": "登場箇所",
+        "bible.mentionsSub": "物語（プロローグ・各章・エピローグ）の中で、名前とすべての別名を語単位で数えています。マスや一節を選ぶと執筆机で開きます。",
+        "bible.mentionsNone": "物語にはまだ登場しません。",
+        "bible.mentionsNoStory": "物語にはまだ言葉がありません。",
+        "bible.nMentions": "{n} 回", "bible.nMentionsPlural": "{n} 回",
+        "bible.nSections": "{n} セクション", "bible.nSectionsPlural": "{n} セクション",
+        "bible.heatAria": "本の順に並べた、各セクションでの登場回数",
+        "bible.cellTip": "{sec}：{n} 回", "bible.cellTipPlural": "{sec}：{n} 回",
+        "bible.cellNone": "{sec}：登場なし",
+        "bible.first": "初登場",
+        "bible.last": "最後",
+        "bible.passagesH": "一節",
+        "bible.passagesMore": "{m} 件のうち最初の {n} 件を表示しています。",
+        "bible.ambiguous": "この名前が別の項目にも属する {n} 箇所は除外しています。", "bible.ambiguousPlural": "この名前が別の項目にも属する {n} 箇所は除外しています。",
+        "bible.seedH": "Story Insights が見つけた名前",
+        "bible.seedSub": "Story Insights がこの本で見つけた、大文字で始まり繰り返し出てくる名前と、それぞれの登場回数です。追加したい名前ごとに種類を選んでください。「追加」を押すまで何も追加されません。",
+        "bible.seedSkip": "追加しない",
+        "bible.seedIn": "設定集にあり",
+        "bible.seedAdd": "{n} 件を追加", "bible.seedAddPlural": "{n} 件を追加",
+        "bible.seedNone": "Story Insights はこの本でまだ繰り返し出てくる名前を見つけていません。",
+        "bible.seedCaseless": "この本の文字では Story Insights が名前を見分けられないため、ここに提案できるものはありません。項目は手で追加してください。",
+        "bible.seedHidden": "Story Insights で隠した {n} 件の名前は除外しています。", "bible.seedHiddenPlural": "Story Insights で隠した {n} 件の名前は除外しています。",
+        "bible.seedCancel": "キャンセル",
+        "bible.seedAdded": "{n} 件を追加しました。", "bible.seedAddedPlural": "{n} 件を追加しました。",
+        "bible.exportEmpty": "書き出す項目がまだありません。",
+        "bible.exported": "{n} 件を {file} に保存しました。", "bible.exportedPlural": "{n} 件を {file} に保存しました。",
+        "bible.importDone": "{n} 件を追加しました。", "bible.importDonePlural": "{n} 件を追加しました。",
+        "bible.importNone": "何も追加されませんでした。",
+        "bible.importSkipped": "この本にすでにある {n} 件を飛ばしました：{list}。", "bible.importSkippedPlural": "この本にすでにある {n} 件を飛ばしました：{list}。",
+        "bible.importPics": "{n} 枚の画像が画像ライブラリに加わりました。", "bible.importPicsPlural": "{n} 枚の画像が画像ライブラリに加わりました。",
+        "bible.importBad": "このファイルはストーリー設定集の書き出しではありません。",
+        "bible.cardOpen": "設定集で開く",
+        "bible.cardAlso": "別名：{list}",
+        "bible.cardAria": "ストーリー設定集の項目",
+        "imglib.role.bible": "項目の画像"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "side.toolBible": "设定集",
+        "bible.open": "故事设定集",
+        "bible.title": "故事设定集",
+        "bible.sub": "这本书里的人物、地点和物件，随书一同保存。条目由你来写；Beuk 只在这台设备上找出它们的名字出现在正文的哪些地方。这里的内容不会被印刷或导出。",
+        "bible.new": "新建条目",
+        "bible.seed": "从 Story Insights 添加",
+        "bible.export": "导出",
+        "bible.import": "导入",
+        "bible.marks": "在写作台标出提及之处",
+        "bible.marksDesc": "在设定集认识的每个名字下画一条淡淡的线。指向、轻点名字，或在名字上按 Alt+Enter，即可看到它的条目。正文绝不会改变。",
+        "bible.close": "关闭",
+        "bible.search": "查找条目",
+        "bible.empty": "还没有条目。可以手动新建，或从 Story Insights 在这本书中找到的名字里挑选。",
+        "bible.noMatch": "没有与“{q}”相符的条目。",
+        "bible.type.character": "人物",
+        "bible.type.place": "地点",
+        "bible.type.thing": "物件",
+        "bible.type.group": "群体",
+        "bible.type.lore": "背景知识",
+        "bible.typePl.character": "人物",
+        "bible.typePl.place": "地点",
+        "bible.typePl.thing": "物件",
+        "bible.typePl.group": "群体",
+        "bible.typePl.lore": "背景知识",
+        "bible.untitled": "未命名条目",
+        "bible.back": "全部条目",
+        "bible.f.type": "类型",
+        "bible.f.name": "名字",
+        "bible.f.aliases": "又称",
+        "bible.f.aliasesPh": "昵称和简称，用逗号分隔",
+        "bible.f.desc": "一句话",
+        "bible.f.descPh": "简短描述",
+        "bible.f.notes": "笔记",
+        "bible.f.notesPh": "任何想记住的事",
+        "bible.f.picture": "图片",
+        "bible.f.pictureNone": "无图片",
+        "bible.f.pictureNoLib": "这本书的图片库是空的。",
+        "bible.f.tags": "标签",
+        "bible.f.tagsPh": "用逗号分隔",
+        "bible.f.exact": "区分大小写",
+        "bible.f.exactDesc": "只计算与上面写法完全相同的名字——适用于拉丁字母书中同时也是普通单词的名字，例如 Will 或 Rose。",
+        "bible.f.exclude": "不算提及",
+        "bible.f.excludePh": "要忽略的短语，用逗号分隔",
+        "bible.f.excludeDesc": "出现在这些短语里的名字不计数，也不画线。",
+        "bible.delete": "删除条目",
+        "bible.deleted": "已删除 {name}",
+        "bible.undo": "撤销",
+        "bible.mentionsH": "出现在哪里",
+        "bible.mentionsSub": "在故事（序章、各章、尾声）中按名字及其所有别称、以完整词计数。选择一个方格或一段文字，即可在写作台中打开。",
+        "bible.mentionsNone": "故事中尚未提到。",
+        "bible.mentionsNoStory": "故事还没有文字。",
+        "bible.nMentions": "{n} 次提及", "bible.nMentionsPlural": "{n} 次提及",
+        "bible.nSections": "分布在 {n} 个章节", "bible.nSectionsPlural": "分布在 {n} 个章节",
+        "bible.heatAria": "按书中顺序，各章节中的提及次数",
+        "bible.cellTip": "{sec}：{n} 次", "bible.cellTipPlural": "{sec}：{n} 次",
+        "bible.cellNone": "{sec}：未提及",
+        "bible.first": "首次",
+        "bible.last": "最后",
+        "bible.passagesH": "段落",
+        "bible.passagesMore": "显示 {m} 处中的前 {n} 处。",
+        "bible.ambiguous": "这个名字同时属于另一个条目的 {n} 处已略去。", "bible.ambiguousPlural": "这个名字同时属于另一个条目的 {n} 处已略去。",
+        "bible.seedH": "Story Insights 找到的名字",
+        "bible.seedSub": "Story Insights 在这本书中找到的、反复出现的大写开头名字，以及每个名字出现的次数。为想要的每个名字选择一个类型——在你按“添加”之前，什么都不会添加。",
+        "bible.seedSkip": "不添加",
+        "bible.seedIn": "已在设定集",
+        "bible.seedAdd": "添加 {n} 个条目", "bible.seedAddPlural": "添加 {n} 个条目",
+        "bible.seedNone": "Story Insights 尚未在这本书中找到反复出现的名字。",
+        "bible.seedCaseless": "Story Insights 无法在这本书的文字中辨认名字，所以这里没有可提供的内容。请手动添加条目。",
+        "bible.seedHidden": "你在 Story Insights 中隐藏的 {n} 个名字已略去。", "bible.seedHiddenPlural": "你在 Story Insights 中隐藏的 {n} 个名字已略去。",
+        "bible.seedCancel": "取消",
+        "bible.seedAdded": "已添加 {n} 个条目。", "bible.seedAddedPlural": "已添加 {n} 个条目。",
+        "bible.exportEmpty": "还没有可导出的条目。",
+        "bible.exported": "已将 {n} 个条目保存到 {file}。", "bible.exportedPlural": "已将 {n} 个条目保存到 {file}。",
+        "bible.importDone": "已添加 {n} 个条目。", "bible.importDonePlural": "已添加 {n} 个条目。",
+        "bible.importNone": "没有添加任何内容。",
+        "bible.importSkipped": "已跳过 {n} 个本书中已有的条目：{list}。", "bible.importSkippedPlural": "已跳过 {n} 个本书中已有的条目：{list}。",
+        "bible.importPics": "{n} 张图片已加入图片库。", "bible.importPicsPlural": "{n} 张图片已加入图片库。",
+        "bible.importBad": "这个文件不是故事设定集的导出文件。",
+        "bible.cardOpen": "在设定集中打开",
+        "bible.cardAlso": "又称 {list}",
+        "bible.cardAria": "故事设定集条目",
+        "imglib.role.bible": "条目的图片"
+      });
+      UI_PLURAL_FORMS.pl = UI_PLURAL_FORMS.pl || {};
+      UI_PLURAL_FORMS.ru = UI_PLURAL_FORMS.ru || {};
+      UI_PLURAL_FORMS.ar = UI_PLURAL_FORMS.ar || {};
+      Object.assign(UI_PLURAL_FORMS.pl, {
+        "bible.nMentions": { many: "{n} wzmianek" }, "bible.cellTip": { many: "{sec}: {n} wzmianek" },
+        "bible.ambiguous": { many: "Pominięto {n} miejsc, w których ta nazwa należy też do innego wpisu." },
+        "bible.seedAdd": { many: "Dodaj {n} wpisów" }, "bible.seedAdded": { many: "Dodano {n} wpisów." }, "bible.importDone": { many: "Dodano {n} wpisów." },
+        "bible.exported": { many: "Zapisano {n} wpisów w {file}." }, "bible.seedHidden": { many: "Pominięto {n} imion ukrytych w Story Insights." },
+        "bible.importPics": { many: "{n} obrazów trafiło do biblioteki obrazów." }
+      });
+      Object.assign(UI_PLURAL_FORMS.ru, {
+        "bible.nMentions": { few: "{n} упоминания" }, "bible.cellTip": { few: "{sec}: {n} упоминания" },
+        "bible.ambiguous": { few: "Пропущено {n} места, где это имя принадлежит и другой записи." },
+        "bible.seedAdd": { few: "Добавить {n} записи" }, "bible.seedAdded": { few: "Добавлено {n} записи." }, "bible.importDone": { few: "Добавлено {n} записи." },
+        "bible.exported": { few: "{n} записи сохранено в {file}." }, "bible.seedHidden": { few: "Пропущено {n} имени, скрытых в Story Insights." },
+        "bible.importPics": { few: "{n} изображения добавлено в библиотеку изображений." }
+      });
+      Object.assign(UI_PLURAL_FORMS.ar, {
+        "bible.nMentions": { two: "إشارتان", few: "{n} إشارات" }, "bible.nSections": { two: "في قسمين", few: "في {n} أقسام" },
+        "bible.cellTip": { two: "{sec}: إشارتان", few: "{sec}: {n} إشارات" },
+        "bible.seedAdd": { two: "إضافة مدخلين", few: "إضافة {n} مداخل" }, "bible.seedAdded": { two: "أُضيف مدخلان.", few: "أُضيفت {n} مداخل." },
+        "bible.importDone": { two: "أُضيف مدخلان.", few: "أُضيفت {n} مداخل." }, "bible.exported": { two: "حُفظ مدخلان في {file}.", few: "حُفظت {n} مداخل في {file}." },
+        "bible.importPics": { two: "انضمت صورتان إلى مكتبة الصور.", few: "انضمت {n} صور إلى مكتبة الصور." }
+      });
+      /* ==== /BEUK:bible ==== */
+      /* ==== BEUK:bible ==== Story Bible — the people, places, things,
+         groups and lore of the book, kept with the book (state.bible,
+         serialized only when it holds an entry, so a book without one
+         is byte-for-byte the book it always was). Nothing here writes
+         into the manuscript and nothing reaches an export: EPUB, print
+         and Word read sections, never state.bible.
+         - Entries are the writer's. "Add from Story Insights" offers
+           only the names Names on stage actually found (castData), with
+           their counts; nothing is created until the writer picks a type
+           and presses Add.
+         - Mentions: an entry's name and aliases, as whole words in any
+           script (a letter, mark or digit on either side stops a match,
+           so Arabic and Cyrillic work like Latin), case-insensitive
+           unless the entry asks for exact case; in an English book a
+           possessive or plural rides with the name (Mara's, Maras); a
+           phrase from the entry's "not a mention" list masks a hit
+           inside it (Will you); a phrase that two entries both claim is
+           left out and counted as ambiguous; the longest name wins
+           where names overlap (Captain Hale over Hale). Words inside an
+           image token or a link's address are never mentions.
+         - The writing desk is a textarea, so the underlines are drawn
+           on a mirror laid over it: the same text in the textarea's own
+           font, padding and wrapping, transparent but for the lines,
+           scrolled with it, re-laid on resize, never taking the pointer.
+           Hover, a tap/click, or Alt+Enter at the cursor opens the
+           entry's card. Only the active section is mirrored. */
+      const BIBLE_TYPES = ["character", "place", "thing", "group", "lore"];
+      const BIBLE_ICONS = { character: "user-round", place: "map-pin", thing: "gem", group: "users", lore: "scroll-text" };
+      const BIBLE_MAX = 2000;
+      const BIBLE_FORMAT = "beuk-story-bible";
+      const BIBLE_MARKS_KEY = "beuk.bible.marks";
+      const BIBLE_PASSAGES_SHOWN = 300;
+      function bibleStr(v, max) { return typeof v === "string" ? v.replace(/\r\n?/g, "\n").slice(0, max) : ""; }
+      function bibleLine(v, max) { return (typeof v === "string" ? v : "").replace(/\s+/g, " ").trim().slice(0, max); }
+      function bibleList(v, max, itemMax) {
+        const out = [], seen = new Set();
+        (Array.isArray(v) ? v : typeof v === "string" ? v.split(",") : []).forEach((x) => {
+          const s = bibleLine(x, itemMax || 80), k = s.toLowerCase();
+          if (s && !seen.has(k) && out.length < (max || 50)) { seen.add(k); out.push(s); }
+        });
+        return out;
+      }
+      function bibleNewId() { return "b" + Math.random().toString(36).slice(2, 10); }
+      function bibleNormalizeEntry(e) {
+        if (!e || typeof e !== "object") return null;
+        const name = bibleLine(e.name, 120);
+        const nk = name.toLowerCase();
+        return {
+          id: typeof e.id === "string" && /^[\w-]{1,40}$/.test(e.id) ? e.id : bibleNewId(),
+          /* a type outside the five (a hand-edited file) files under Lore, the catch-all */
+          type: BIBLE_TYPES.indexOf(e.type) !== -1 ? e.type : "lore",
+          name: name,
+          aliases: bibleList(e.aliases, 30, 120).filter((a) => a.toLowerCase() !== nk),
+          description: bibleLine(e.description, 400),
+          notes: bibleStr(e.notes, 20000),
+          imageId: typeof e.imageId === "string" && e.imageId ? e.imageId.slice(0, 80) : null,
+          tags: bibleList(e.tags, 30, 60),
+          exactCase: e.exactCase === true,
+          exclude: bibleList(e.exclude, 40, 120)
+        };
+      }
+      function bibleNormalize(b) {
+        const out = { entries: [] }, ids = new Set();
+        const list = b && typeof b === "object" && Array.isArray(b.entries) ? b.entries : [];
+        for (let i = 0; i < list.length && out.entries.length < BIBLE_MAX; i++) {
+          const e = bibleNormalizeEntry(list[i]); if (!e) continue;
+          while (ids.has(e.id)) e.id = bibleNewId();
+          ids.add(e.id); out.entries.push(e);
+        }
+        return out;
+      }
+      function bibleEntries() { return state.bible && Array.isArray(state.bible.entries) ? state.bible.entries : []; }
+      function bibleHas() { return bibleEntries().length > 0; }
+      function bibleById(id) { return bibleEntries().find((e) => e.id === id) || null; }
+      function bibleTypeLabel(type, plural) { return t((plural ? "bible.typePl." : "bible.type.") + type); }
+      function bibleName(e) { return e && e.name ? e.name : t("bible.untitled"); }
+
+      /* ---- matching ---- */
+      const BIBLE_GAP = "(?:[ \\t\\u00A0]+|[ \\t\\u00A0]*\\n[ \\t\\u00A0]*)";
+      const BIBLE_BEFORE = "(?<![\\p{L}\\p{M}\\p{N}_])", BIBLE_AFTER = "(?![\\p{L}\\p{M}\\p{N}_])";
+      const bibleKey = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
+      const bibleEscRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const bibleTermSrc = (k) => k.split(" ").map(bibleEscRe).join(BIBLE_GAP);
+      function bibleEnglish(lang) { return String(lang || "en").split("-")[0] === "en"; }
+      function bibleBuildMatcher(entries, lang) {
+        const terms = new Map(), ex = new Map();
+        (entries || []).forEach((e) => {
+          if (!e) return;
+          [e.name].concat(e.aliases || []).forEach((raw) => {
+            const k = bibleKey(raw);
+            if (!k || !/[\p{L}\p{N}]/u.test(k)) return;
+            let l = terms.get(k); if (!l) terms.set(k, (l = []));
+            const form = String(raw).replace(/\s+/g, " ").trim();
+            if (!l.some((x) => x.id === e.id && x.raw === form)) l.push({ id: e.id, raw: form, exact: e.exactCase === true });
+          });
+          (e.exclude || []).forEach((raw) => {
+            const k = bibleKey(raw); if (!k || !/[\p{L}\p{N}]/u.test(k)) return;
+            let l = ex.get(k); if (!l) ex.set(k, (l = new Set()));
+            l.add(e.id);
+          });
+        });
+        if (!terms.size) return null;
+        const byLen = (a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0);
+        const keys = Array.from(terms.keys()).sort(byLen);
+        const suffix = bibleEnglish(lang) ? "((?:['\\u2019][sS])|[sS])?" : "()";
+        const re = new RegExp(BIBLE_BEFORE + "(" + keys.map(bibleTermSrc).join("|") + ")" + suffix + BIBLE_AFTER, "giu");
+        const exKeys = Array.from(ex.keys()).sort(byLen);
+        const exRe = exKeys.length ? new RegExp(BIBLE_BEFORE + "(" + exKeys.map(bibleTermSrc).join("|") + ")" + BIBLE_AFTER, "giu") : null;
+        return { re: re, exRe: exRe, terms: terms, ex: ex };
+      }
+      const BIBLE_MARKUP_RE = /!\[[^\]\n]*\]\([^)\n]*\)|\]\([^)\n]*\)/g;
+      /* One pass over one text: [{ s, e, id }] in order, plus the
+         ambiguous phrases left out ({ s, e, ids }). Pure. */
+      function bibleScan(text, m) {
+        const out = { hits: [], ambiguous: [] };
+        const str = String(text || "");
+        if (!m || !str) return out;
+        const skip = [];
+        let x;
+        BIBLE_MARKUP_RE.lastIndex = 0;
+        while ((x = BIBLE_MARKUP_RE.exec(str))) skip.push([x.index, x.index + x[0].length]);
+        const exc = [];
+        if (m.exRe) {
+          m.exRe.lastIndex = 0;
+          while ((x = m.exRe.exec(str))) exc.push([x.index, x.index + x[0].length, m.ex.get(bibleKey(x[1]))]);
+        }
+        const re = m.re;
+        re.lastIndex = 0;
+        let si = 0;
+        while ((x = re.exec(str))) {
+          const s = x.index, e = s + x[0].length;
+          while (si < skip.length && skip[si][1] <= s) si++;
+          if (si < skip.length && skip[si][0] < e) continue;
+          const base = x[1].replace(/\s+/g, " ");
+          const cands = m.terms.get(base.toLowerCase()) || [];
+          const ids = [];
+          cands.forEach((c) => { if ((!c.exact || c.raw === base) && ids.indexOf(c.id) === -1) ids.push(c.id); });
+          if (!ids.length) continue;
+          if (ids.length > 1) { out.ambiguous.push({ s: s, e: e, ids: ids }); continue; }
+          let masked = false;
+          for (let k = 0; k < exc.length && exc[k][0] <= s; k++) { if (exc[k][1] >= e && exc[k][2] && exc[k][2].has(ids[0])) { masked = true; break; } }
+          if (masked) continue;
+          out.hits.push({ s: s, e: e, id: ids[0] });
+        }
+        return out;
+      }
+      /* the matcher for the desk, rebuilt only when an entry's matching
+         fields (or the book's language) change */
+      const bibleMk = { key: null, val: null };
+      function bibleMatcherKey(entries, lang) {
+        return String(lang) + "\u0001" + entries.map((e) => e.id + "\u0002" + e.name + "\u0002" + e.aliases.join("\u0003") + "\u0002" + (e.exactCase ? 1 : 0) + "\u0002" + e.exclude.join("\u0003")).join("\u0001");
+      }
+      function bibleMatcherNow() {
+        const entries = bibleEntries(), lang = bookLang();
+        const key = bibleMatcherKey(entries, lang);
+        if (bibleMk.key !== key) { bibleMk.key = key; bibleMk.val = bibleBuildMatcher(entries, lang); }
+        return bibleMk.val;
+      }
+      /* The story's sections — the same columns Names on stage draws:
+         body sections (prologue, chapters, epilogue) that hold words. */
+      function bibleColumns(sections) {
+        let chPos = 0;
+        return insBodySections(sections).filter((s) => sectionWords(s) > 0).map((s) => ({
+          sec: s, id: s.id, label: castSecLabel(s), col: castColLabel(s, s.type === "chapter" ? ++chPos : chPos)
+        }));
+      }
+      function bibleMentionsCompute(sections, entries, lang) {
+        const t0 = (typeof performance !== "undefined" ? performance.now() : Date.now());
+        const m = bibleBuildMatcher(entries, lang);
+        const cols = bibleColumns(sections);
+        const per = {};
+        (entries || []).forEach((e) => { per[e.id] = { total: 0, counts: cols.map(() => 0), hits: [], ambiguous: 0 }; });
+        let ambiguous = 0;
+        cols.forEach((c, ci) => {
+          const r = bibleScan(c.sec.content, m);
+          r.hits.forEach((h) => { const p = per[h.id]; if (!p) return; p.total++; p.counts[ci]++; p.hits.push({ sec: c.id, ci: ci, s: h.s, e: h.e }); });
+          r.ambiguous.forEach((a) => { ambiguous++; a.ids.forEach((id) => { if (per[id]) per[id].ambiguous++; }); });
+        });
+        const ms = (typeof performance !== "undefined" ? performance.now() : Date.now()) - t0;
+        return { cols: cols.map((c) => ({ id: c.id, label: c.label, col: c.col })), per: per, ambiguous: ambiguous, ms: ms };
+      }
+      const bibleMenCache = { key: null, val: null };
+      function bibleMentions() {
+        const lang = bookLang();
+        let h = castHash(bibleMatcherKey(bibleEntries(), lang), 2166136261);
+        insBodySections(state.sections).forEach((s) => {
+          h = castHash("\u0002" + s.id + "\u0003" + (s.type || "") + "\u0003" + (s.number || "") + "\u0003" + (s.title || "") + "\u0003", h);
+          h = castHash(String(s.content || ""), h);
+        });
+        const key = h + ":" + uiLangState;
+        if (bibleMenCache.key === key && bibleMenCache.val) return bibleMenCache.val;
+        bibleMenCache.val = bibleMentionsCompute(state.sections, bibleEntries(), lang);
+        bibleMenCache.key = key;
+        return bibleMenCache.val;
+      }
+      /* a passage: the hit with its neighbours, inside its paragraph,
+         markup set aside */
+      function bibleSnippet(text, s, e) {
+        const str = String(text || "");
+        const ps = Math.max(str.lastIndexOf("\n", s - 1) + 1, s - 90);
+        let pe = str.indexOf("\n", e); if (pe < 0) pe = str.length; pe = Math.min(pe, e + 90);
+        const clean = (v) => v.replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(mdLinkRe(), "$1").replace(/\[\^?\d{1,3}\]:?/g, "").replace(/[*_#>^]/g, "");
+        let before = clean(str.slice(ps, s)), after = clean(str.slice(e, pe));
+        if (ps > 0 && str.charAt(ps - 1) !== "\n") before = before.replace(/^\S*\s/, "");
+        if (pe < str.length && str.charAt(pe) !== "\n") after = after.replace(/\s\S*$/, "");
+        return { before: before.replace(/^\s+/, ""), mid: clean(str.slice(s, e)), after: after.replace(/\s+$/, ""), cutStart: ps > 0 && str.charAt(ps - 1) !== "\n", cutEnd: pe < str.length && str.charAt(pe) !== "\n" };
+      }
+      function bibleSnippetHtml(text, s, e) {
+        const sn = bibleSnippet(text, s, e);
+        return (sn.cutStart ? "…" : "") + esc(sn.before) + "<mark>" + esc(sn.mid) + "</mark>" + esc(sn.after) + (sn.cutEnd ? "…" : "");
+      }
+
+      /* ---- the writing desk: underline mirror ---- */
+      let bibleMarksPref = null;
+      function bibleMarksOn() {
+        if (bibleMarksPref === null) {
+          bibleMarksPref = true;
+          try { bibleMarksPref = localStorage.getItem(BIBLE_MARKS_KEY) !== "off"; } catch (e) {}
+        }
+        return bibleMarksPref;
+      }
+      function bibleSetMarks(on) {
+        bibleMarksPref = !!on;
+        try { localStorage.setItem(BIBLE_MARKS_KEY, on ? "on" : "off"); } catch (e) {}
+        const sw = $("tglBibMarks"); if (sw) sw.setAttribute("aria-pressed", String(!!on));
+        bibleDeskRender(true);
+      }
+      const bibleDesk = { host: null, box: null, inner: null, val: null, mk: null, hits: [], rects: null, raf: 0, times: [], hot: -1, ro: null, bound: false };
+      const BIBLE_COPY = ["fontFamily", "fontSize", "fontWeight", "fontStyle", "fontStretch", "fontVariant", "fontFeatureSettings", "fontKerning", "fontVariationSettings", "fontOpticalSizing", "lineHeight", "letterSpacing", "wordSpacing", "textIndent", "textTransform", "textAlign", "tabSize", "whiteSpace", "overflowWrap", "wordBreak", "hyphens", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "direction", "unicodeBidi", "textRendering"];
+      function bibleDeskEnsure() {
+        const area = $("editorArea"); if (!area) return null;
+        if (!bibleDesk.host || !bibleDesk.host.isConnected || bibleDesk.host.previousElementSibling !== area) {
+          if (bibleDesk.host) bibleDesk.host.remove();
+          const host = document.createElement("div"); host.className = "bible-ov-host"; host.setAttribute("aria-hidden", "true");
+          const box = document.createElement("div"); box.className = "bible-ov"; box.hidden = true;
+          const inner = document.createElement("div"); inner.className = "bible-ov-text";
+          box.appendChild(inner); host.appendChild(box);
+          area.insertAdjacentElement("afterend", host);
+          bibleDesk.host = host; bibleDesk.box = box; bibleDesk.inner = inner; bibleDesk.val = null; bibleDesk.rects = null;
+        }
+        return area;
+      }
+      function bibleDeskLive(area) {
+        return !!area && bibleMarksOn() && bibleHas() && !area.disabled && area.style.display !== "none" && area.offsetParent !== null;
+      }
+      function bibleDeskLayout(area) {
+        const d = bibleDesk;
+        const cs = getComputedStyle(area);
+        const top = area.offsetTop - d.host.offsetTop + area.clientTop, left = area.offsetLeft - d.host.offsetLeft + area.clientLeft;
+        const w = area.clientWidth, h = area.clientHeight;
+        BIBLE_COPY.forEach((p) => { if (d.inner.style[p] !== cs[p]) d.inner.style[p] = cs[p]; });
+        d.box.style.top = top + "px"; d.box.style.left = left + "px";
+        d.box.style.width = w + "px"; d.box.style.height = h + "px";
+        d.inner.style.width = w + "px";
+      }
+      function bibleDeskScroll() {
+        const area = $("editorArea"), d = bibleDesk;
+        if (!area || !d.inner || d.box.hidden) return;
+        d.inner.style.transform = "translate3d(0," + (-area.scrollTop) + "px,0)";
+      }
+      function bibleDeskHtml(val, hits) {
+        let html = "", p = 0;
+        for (let i = 0; i < hits.length; i++) {
+          const h = hits[i];
+          html += esc(val.slice(p, h.s)) + '<span class="bm" data-i="' + i + '">' + esc(val.slice(h.s, h.e)) + "</span>";
+          p = h.e;
+        }
+        /* a zero-width end keeps a trailing empty line in the mirror's height */
+        return html + esc(val.slice(p)) + "​";
+      }
+      function bibleDeskRender(force) {
+        if (bibleDesk.raf) { cancelAnimationFrame(bibleDesk.raf); bibleDesk.raf = 0; }
+        const area = $("editorArea");
+        const d = bibleDesk;
+        if (!bibleDeskLive(area)) {
+          if (d.box && !d.box.hidden) { d.box.hidden = true; d.inner.textContent = ""; }
+          d.val = null; d.hits = []; d.rects = null;
+          bibleCardHide();
+          return;
+        }
+        bibleDeskEnsure();
+        bibleDeskBind();
+        const t0 = performance.now();
+        const val = area.value;
+        const mk = bibleMatcherNow();
+        bibleDeskLayout(area);
+        if (force || val !== d.val || mk !== d.mk) {
+          const r = bibleScan(val, mk);
+          d.inner.innerHTML = bibleDeskHtml(val, r.hits);
+          d.hits = r.hits; d.val = val; d.mk = mk; d.rects = null; d.hot = -1;
+        }
+        d.box.hidden = false;
+        bibleDeskScroll();
+        d.times.push(performance.now() - t0);
+        if (d.times.length > 60) d.times.shift();
+      }
+      function bibleDeskSchedule() {
+        if (bibleDesk.raf) return;
+        bibleDesk.raf = requestAnimationFrame(() => { bibleDesk.raf = 0; bibleDeskRender(false); });
+      }
+      function bibleDeskRects() {
+        const d = bibleDesk;
+        if (d.rects) return d.rects;
+        const base = d.inner.getBoundingClientRect();
+        const out = [];
+        d.inner.querySelectorAll(".bm").forEach((sp) => {
+          const i = Number(sp.getAttribute("data-i"));
+          Array.prototype.forEach.call(sp.getClientRects(), (r) => out.push({ i: i, l: r.left - base.left, t: r.top - base.top, r: r.right - base.left, b: r.bottom - base.top }));
+        });
+        d.rects = out;
+        return out;
+      }
+      function bibleDeskHitAt(x, y) {
+        const d = bibleDesk;
+        if (!d.hits.length || !d.inner || d.box.hidden) return null;
+        const base = d.inner.getBoundingClientRect();
+        const px = x - base.left, py = y - base.top;
+        const rs = bibleDeskRects();
+        for (let k = 0; k < rs.length; k++) { const r = rs[k]; if (px >= r.l && px <= r.r && py >= r.t && py <= r.b) return { i: r.i, rect: r }; }
+        return null;
+      }
+      function bibleDeskHitAtCaret(pos) {
+        const hs = bibleDesk.hits;
+        for (let i = 0; i < hs.length; i++) { if (hs[i].s <= pos && pos <= hs[i].e) return i; if (hs[i].s > pos) break; }
+        return -1;
+      }
+      function bibleDeskSpanRect(i) {
+        const sp = bibleDesk.inner && bibleDesk.inner.querySelector('.bm[data-i="' + i + '"]');
+        if (!sp) return null;
+        const rs = sp.getClientRects();
+        return rs.length ? rs[0] : sp.getBoundingClientRect();
+      }
+      function bibleDeskSetHot(i) {
+        const d = bibleDesk;
+        if (d.hot === i) return;
+        if (d.hot >= 0) { const o = d.inner.querySelector('.bm[data-i="' + d.hot + '"]'); if (o) o.classList.remove("is-hot"); }
+        d.hot = i;
+        if (i >= 0) { const n = d.inner.querySelector('.bm[data-i="' + i + '"]'); if (n) n.classList.add("is-hot"); }
+      }
+      /* the vertical place of a text offset in the textarea, measured on
+         the mirror (also when the underlines are off) */
+      function bibleOffsetY(area, offset) {
+        bibleDeskEnsure();
+        const d = bibleDesk;
+        const wasHidden = d.box.hidden;
+        d.box.style.visibility = "hidden"; d.box.hidden = false;
+        bibleDeskLayout(area);
+        const val = area.value;
+        d.inner.innerHTML = esc(val.slice(0, offset)) + '<span class="bm-probe">​</span>' + esc(val.slice(offset)) + "​";
+        const probe = d.inner.querySelector(".bm-probe");
+        const y = probe ? probe.offsetTop : 0;
+        d.val = null; d.box.style.visibility = "";
+        if (wasHidden) { d.box.hidden = true; d.inner.textContent = ""; }
+        return y;
+      }
+      let bibleHoverTimer = null, bibleHideTimer = null, bibleMoveRaf = 0, bibleLastPt = null;
+      function bibleDeskBind() {
+        if (bibleDesk.bound) return;
+        const area = $("editorArea"); if (!area) return;
+        bibleDesk.bound = true;
+        area.addEventListener("input", () => { bibleCardHide(); bibleDeskSchedule(); });
+        area.addEventListener("scroll", () => { bibleDeskScroll(); if (bibleDesk.val !== null && area.value !== bibleDesk.val) bibleDeskSchedule(); bibleCardHide(); }, { passive: true });
+        area.addEventListener("mousemove", (e) => {
+          bibleLastPt = { x: e.clientX, y: e.clientY };
+          if (bibleMoveRaf || !bibleDesk.hits.length) return;
+          bibleMoveRaf = requestAnimationFrame(() => {
+            bibleMoveRaf = 0;
+            const pt = bibleLastPt; if (!pt) return;
+            const hit = bibleDeskHitAt(pt.x, pt.y);
+            const card = $("bibleCard");
+            if (hit) {
+              clearTimeout(bibleHideTimer);
+              if (card && !card.hidden && Number(card.getAttribute("data-i")) === hit.i) return;
+              clearTimeout(bibleHoverTimer);
+              bibleHoverTimer = setTimeout(() => bibleCardShowHit(hit.i, false), 380);
+            } else {
+              clearTimeout(bibleHoverTimer);
+              if (card && !card.hidden && card.getAttribute("data-how") === "hover") { clearTimeout(bibleHideTimer); bibleHideTimer = setTimeout(bibleCardHide, 260); }
+              else bibleDeskSetHot(-1);
+            }
+          });
+        }, { passive: true });
+        area.addEventListener("mouseleave", () => {
+          clearTimeout(bibleHoverTimer); bibleLastPt = null;
+          const card = $("bibleCard");
+          if (card && !card.hidden && card.getAttribute("data-how") === "hover") { clearTimeout(bibleHideTimer); bibleHideTimer = setTimeout(bibleCardHide, 260); }
+        });
+        /* a click or a tap that lands the caret on a name shows its card;
+           the caret goes where the writer put it */
+        area.addEventListener("mouseup", () => {
+          setTimeout(() => {
+            if (area.selectionStart !== area.selectionEnd || !bibleDesk.hits.length || bibleDesk.box.hidden) return;
+            if (area.value !== bibleDesk.val) return;
+            const i = bibleDeskHitAtCaret(area.selectionStart);
+            if (i >= 0) bibleCardShowHit(i, true); else bibleCardHide();
+          }, 0);
+        });
+        area.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            if (area.value !== bibleDesk.val) bibleDeskRender(false);
+            const i = bibleDeskHitAtCaret(area.selectionStart);
+            if (i >= 0) { e.preventDefault(); bibleCardShowHit(i, true); }
+            return;
+          }
+          if (e.key === "Escape") { const c = $("bibleCard"); if (c && !c.hidden) { e.preventDefault(); e.stopPropagation(); bibleCardHide(); } return; }
+          if (e.key !== "Shift" && e.key !== "Alt" && e.key !== "Control" && e.key !== "Meta") bibleCardHide();
+        });
+        area.addEventListener("blur", () => { setTimeout(() => { const c = $("bibleCard"); if (c && !c.hidden && c.getAttribute("data-how") === "caret" && !c.contains(document.activeElement)) bibleCardHide(); }, 120); });
+        if (window.ResizeObserver) { bibleDesk.ro = new ResizeObserver(() => { bibleDesk.rects = null; bibleDeskSchedule(); }); bibleDesk.ro.observe(area); }
+        window.addEventListener("resize", () => { bibleDesk.rects = null; bibleDeskSchedule(); });
+        if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", () => { bibleDesk.rects = null; bibleDeskSchedule(); });
+      }
+
+      /* ---- the entry card ---- */
+      function bibleImgSrc(id) {
+        const im = id ? imageById(id) : null;
+        return im && typeof im.data === "string" ? esc("data:" + (im.mediaType || "image/jpeg") + ";base64," + im.data) : "";
+      }
+      /* the card draws its two icons itself: a document-wide icon pass here
+         would touch the whole studio under the writer's pointer */
+      function bibleIconSvg(name) {
+        try {
+          const key = String(name).replace(/(^|-)([a-z0-9])/g, (m, a, c) => c.toUpperCase());
+          const ic = window.lucide && lucide.icons && lucide.icons[key];
+          if (ic && typeof lucide.createElement === "function") { const el = lucide.createElement(ic); el.setAttribute("aria-hidden", "true"); return el.outerHTML; }
+        } catch (e) {}
+        return "";
+      }
+      function bibleCardEl() {
+        let el = $("bibleCard");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "bibleCard"; el.className = "bib-card"; el.hidden = true;
+          el.setAttribute("role", "dialog"); el.setAttribute("aria-live", "polite");
+          document.body.appendChild(el);
+          el.addEventListener("mouseenter", () => { clearTimeout(bibleHideTimer); });
+          el.addEventListener("mouseleave", () => { if (el.getAttribute("data-how") === "hover") { clearTimeout(bibleHideTimer); bibleHideTimer = setTimeout(bibleCardHide, 260); } });
+          el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); bibleCardHide(); const a = $("editorArea"); if (a) a.focus(); } });
+          el.addEventListener("click", (e) => {
+            const b = e.target && e.target.closest ? e.target.closest("[data-bib-open]") : null;
+            if (!b) return;
+            const id = b.getAttribute("data-bib-open");
+            bibleCardHide();
+            openBible(id);
+          });
+        }
+        return el;
+      }
+      function bibleCardHtml(e) {
+        const src = bibleImgSrc(e.imageId);
+        let html = '<div class="bib-card-top">' + (src ? '<img src="' + src + '" alt="" />' : "") +
+          '<div><div class="bib-card-type">' + bibleIconSvg(BIBLE_ICONS[e.type]) + esc(bibleTypeLabel(e.type)) + "</div>" +
+          '<div class="bib-card-name">' + esc(bibleName(e)) + "</div></div></div>";
+        if (e.aliases.length) html += '<p class="bib-card-also">' + esc(t("bible.cardAlso", { list: e.aliases.join(", ") })) + "</p>";
+        if (e.description) html += "<p>" + esc(e.description) + "</p>";
+        if (e.tags.length) html += '<div class="bib-tags">' + e.tags.map((g) => '<span class="bib-tag">' + esc(g) + "</span>").join("") + "</div>";
+        html += '<button type="button" class="tb-btn" data-bib-open="' + esc(e.id) + '">' + bibleIconSvg("book-marked") + esc(t("bible.cardOpen")) + "</button>";
+        return html;
+      }
+      function bibleCardShowHit(i, byCaret) {
+        clearTimeout(bibleHoverTimer); clearTimeout(bibleHideTimer);
+        const h = bibleDesk.hits[i]; if (!h) return;
+        const e = bibleById(h.id); if (!e) return;
+        const r = bibleDeskSpanRect(i); if (!r) return;
+        const el = bibleCardEl();
+        el.innerHTML = bibleCardHtml(e);
+        el.setAttribute("aria-label", t("bible.cardAria") + ": " + bibleName(e));
+        el.setAttribute("data-i", String(i));
+        el.setAttribute("data-how", byCaret ? "caret" : "hover");
+        el.hidden = false;
+        bibleDeskSetHot(i);
+        const cw = el.offsetWidth, ch = el.offsetHeight;
+        const rtl = document.documentElement.getAttribute("dir") === "rtl";
+        let left = rtl ? r.right - cw : r.left;
+        left = Math.max(12, Math.min(window.innerWidth - cw - 12, left));
+        let top = r.bottom + 8;
+        if (top + ch > window.innerHeight - 8) top = Math.max(8, r.top - ch - 8);
+        el.style.left = Math.round(left) + "px"; el.style.top = Math.round(top) + "px";
+      }
+      function bibleCardHide() {
+        clearTimeout(bibleHoverTimer); clearTimeout(bibleHideTimer);
+        const el = $("bibleCard");
+        if (el && !el.hidden) { el.hidden = true; el.innerHTML = ""; }
+        if (bibleDesk.inner) bibleDeskSetHot(-1);
+      }
+
+      /* ---- the room ---- */
+      const bibleUi = { sel: null, mode: "entry", query: "", detail: false, menTimer: null, saveTimer: null };
+      function bibleTouched(matching) {
+        clearTimeout(bibleUi.saveTimer);
+        bibleUi.saveTimer = setTimeout(() => noteBookEdited(), 300);
+        if (matching) {
+          clearTimeout(bibleUi.menTimer);
+          bibleUi.menTimer = setTimeout(() => { bibleRenderList(); bibleRenderMentions(); }, 260);
+        }
+        bibleDeskSchedule();
+      }
+      function openBible(id) {
+        const m = $("modalBible"); if (!m) return;
+        bibleCardHide();
+        if (id && bibleById(id)) { bibleUi.sel = id; bibleUi.mode = "entry"; bibleUi.detail = true; }
+        else if (!bibleById(bibleUi.sel)) { bibleUi.sel = bibleEntries().length ? bibleEntries()[0].id : null; bibleUi.detail = false; }
+        m.classList.add("open");
+        bibleStatus("");
+        const sw = $("tglBibMarks"); if (sw) sw.setAttribute("aria-pressed", String(bibleMarksOn()));
+        bibleRender();
+        const box = m.querySelector(".modal"); if (box) box.scrollTop = 0;
+      }
+      function bibleClose() { $("modalBible").classList.remove("open"); }
+      function bibleStatus(msg) {
+        const el = $("bibStatus"); if (!el) return;
+        el.textContent = msg || ""; el.hidden = !msg;
+      }
+      function bibleRender() {
+        const main = $("bibMain"); if (!main) return;
+        main.classList.toggle("is-detail", !!bibleUi.detail && (bibleUi.mode === "seed" || !!bibleById(bibleUi.sel)));
+        bibleRenderList();
+        if (bibleUi.mode === "seed") bibleRenderSeed(); else bibleRenderEntry();
+        icons();
+      }
+      function bibleRenderList() {
+        const host = $("bibList"); if (!host) return;
+        const entries = bibleEntries();
+        if (!entries.length) { host.innerHTML = '<p class="bib-none">' + esc(t("bible.empty")) + "</p>"; return; }
+        const men = bibleMentions();
+        const q = bibleKey(bibleUi.query);
+        const fits = (e) => !q || bibleKey(e.name).indexOf(q) !== -1 || e.aliases.some((a) => bibleKey(a).indexOf(q) !== -1) || e.tags.some((g) => bibleKey(g).indexOf(q) !== -1);
+        let html = "", shown = 0;
+        BIBLE_TYPES.forEach((type) => {
+          const list = entries.filter((e) => e.type === type && fits(e));
+          if (!list.length) return;
+          shown += list.length;
+          html += '<h4 class="bib-group"><span>' + esc(bibleTypeLabel(type, true)) + '</span><span class="ins-num">' + esc(fmtNum(list.length)) + "</span></h4><ul class=\"bib-list\">";
+          list.forEach((e) => {
+            const src = bibleImgSrc(e.imageId);
+            const n = men.per[e.id] ? men.per[e.id].total : 0;
+            html += '<li><button type="button" class="bib-item' + (e.id === bibleUi.sel && bibleUi.mode === "entry" ? " is-sel" : "") + '" data-bib-id="' + esc(e.id) + '"' + (e.id === bibleUi.sel && bibleUi.mode === "entry" ? ' aria-current="true"' : "") + ">" +
+              (src ? '<img class="bib-thumb" src="' + src + '" alt="" />' : '<i data-lucide="' + BIBLE_ICONS[type] + '"></i>') +
+              '<span class="bib-item-name' + (e.name ? "" : " is-blank") + '">' + esc(bibleName(e)) + "</span>" +
+              '<span class="bib-item-n ins-num" aria-label="' + esc(t("bible.nMentions", { count: n, n: fmtNum(n) })) + '">' + esc(fmtNum(n)) + "</span></button></li>";
+          });
+          html += "</ul>";
+        });
+        if (!shown) html = '<p class="bib-none">' + esc(t("bible.noMatch", { q: bibleUi.query.trim() })) + "</p>";
+        host.innerHTML = html;
+        icons();
+      }
+      function bibleFieldHtml(id, label, inner, full) {
+        return '<div' + (full ? ' class="full"' : "") + '><label class="field-lab" for="' + id + '">' + esc(label) + "</label>" + inner + "</div>";
+      }
+      function bibleRenderEntry() {
+        const host = $("bibDetail"); if (!host) return;
+        const e = bibleById(bibleUi.sel);
+        const back = '<button type="button" class="tb-btn bib-back" id="btnBibBack"><i data-lucide="arrow-left"></i>' + esc(t("bible.back")) + "</button>";
+        if (!e) { host.innerHTML = ""; return; }
+        const typeSel = '<select class="txt-input" id="bibFType" data-f="type">' + BIBLE_TYPES.map((ty) => '<option value="' + ty + '"' + (ty === e.type ? " selected" : "") + ">" + esc(bibleTypeLabel(ty)) + "</option>").join("") + "</select>";
+        const imgs = (state.images || []).filter((im) => im && /^image\//.test(im.mediaType || ""));
+        const picSel = imgs.length || e.imageId
+          ? '<div class="bib-pic">' + (bibleImgSrc(e.imageId) ? '<img id="bibPicThumb" src="' + bibleImgSrc(e.imageId) + '" alt="" />' : "") +
+            '<select class="txt-input" id="bibFPic" data-f="imageId"><option value="">' + esc(t("bible.f.pictureNone")) + "</option>" +
+            imgs.map((im) => '<option value="' + esc(im.id) + '"' + (im.id === e.imageId ? " selected" : "") + ">" + esc(im.name || im.id) + "</option>").join("") + "</select></div>"
+          : '<p class="bib-hint" style="margin:0">' + esc(t("bible.f.pictureNoLib")) + "</p>";
+        host.innerHTML = back +
+          '<div class="bib-form">' +
+          bibleFieldHtml("bibFType", t("bible.f.type"), typeSel) +
+          bibleFieldHtml("bibFName", t("bible.f.name"), '<input class="txt-input bib-name-input" id="bibFName" data-f="name" type="text" maxlength="120" value="' + esc(e.name) + '" />') +
+          bibleFieldHtml("bibFAliases", t("bible.f.aliases"), '<input class="txt-input" id="bibFAliases" data-f="aliases" type="text" value="' + esc(e.aliases.join(", ")) + '" placeholder="' + esc(t("bible.f.aliasesPh")) + '" />', true) +
+          bibleFieldHtml("bibFDesc", t("bible.f.desc"), '<input class="txt-input" id="bibFDesc" data-f="description" type="text" maxlength="400" value="' + esc(e.description) + '" placeholder="' + esc(t("bible.f.descPh")) + '" />', true) +
+          bibleFieldHtml("bibFNotes", t("bible.f.notes"), '<textarea class="txt-input" id="bibFNotes" data-f="notes" rows="4" placeholder="' + esc(t("bible.f.notesPh")) + '">' + esc(e.notes) + "</textarea>", true) +
+          bibleFieldHtml("bibFPic", t("bible.f.picture"), picSel) +
+          bibleFieldHtml("bibFTags", t("bible.f.tags"), '<input class="txt-input" id="bibFTags" data-f="tags" type="text" value="' + esc(e.tags.join(", ")) + '" placeholder="' + esc(t("bible.f.tagsPh")) + '" />') +
+          '<div class="full"><div class="switch-row"><div class="sw-txt"><b>' + esc(t("bible.f.exact")) + "</b><span>" + esc(t("bible.f.exactDesc")) + '</span></div><button type="button" class="switch" id="tglBibExact" aria-pressed="' + String(e.exactCase) + '" aria-label="' + esc(t("bible.f.exact")) + '"></button></div></div>' +
+          bibleFieldHtml("bibFExclude", t("bible.f.exclude"), '<input class="txt-input" id="bibFExclude" data-f="exclude" type="text" value="' + esc(e.exclude.join(", ")) + '" placeholder="' + esc(t("bible.f.excludePh")) + '" /><p class="bib-hint">' + esc(t("bible.f.excludeDesc")) + "</p>", true) +
+          '<div class="full bib-entry-foot"><button type="button" class="tb-btn" id="btnBibDelete"><i data-lucide="trash-2"></i>' + esc(t("bible.delete")) + "</button></div>" +
+          "</div>" +
+          '<section class="bib-men" id="bibMentions" aria-live="polite"></section>';
+        bibleRenderMentions();
+      }
+      function bibleRenderMentions() {
+        const host = $("bibMentions"); if (!host) return;
+        const e = bibleById(bibleUi.sel); if (!e) { host.innerHTML = ""; return; }
+        const men = bibleMentions();
+        const p = men.per[e.id] || { total: 0, counts: [], hits: [], ambiguous: 0 };
+        let html = '<h3 class="ins-h">' + esc(t("bible.mentionsH")) + '</h3><p class="ins-sub">' + esc(t("bible.mentionsSub")) + "</p>";
+        if (!men.cols.length) { host.innerHTML = html + '<p class="bib-none">' + esc(t("bible.mentionsNoStory")) + "</p>"; return; }
+        const secs = p.counts.filter((c) => c > 0).length;
+        html += '<p class="ins-caption" id="bibMenSum">' + (p.total ? esc(t("bible.nMentions", { count: p.total, n: fmtNum(p.total) }) + " · " + t("bible.nSections", { count: secs, n: fmtNum(secs) })) : esc(t("bible.mentionsNone"))) + "</p>";
+        const max = Math.max(1, ...p.counts);
+        html += '<div class="bib-heat" id="bibHeat" style="--bib-n:' + men.cols.length + '" role="group" aria-label="' + esc(t("bible.heatAria")) + '">' +
+          men.cols.map((c, i) => {
+            const n = p.counts[i] || 0;
+            const tip = n ? t("bible.cellTip", { count: n, n: fmtNum(n), sec: c.label }) : t("bible.cellNone", { sec: c.label });
+            const lv = n ? CAST_STEPS[Math.min(CAST_STEPS.length - 1, Math.floor((n / max) * (CAST_STEPS.length - 1e-9)))] : 0;
+            return '<button type="button" class="bib-cell" data-n="' + n + '" data-sec="' + esc(c.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '"' + (n ? "" : ' tabindex="-1"') + ">" + (n ? '<span style="opacity:' + lv + '"></span>' : "") + "</button>";
+          }).join("") + "</div>";
+        html += '<div class="bib-cols" aria-hidden="true" style="--bib-n:' + men.cols.length + '">' + men.cols.map((c) => "<span>" + esc(c.col) + "</span>").join("") + "</div>";
+        const secById = {};
+        insBodySections(state.sections).forEach((s) => { secById[s.id] = s; });
+        const jumpBtn = (hh) => {
+          const s = secById[hh.sec]; const col = men.cols[hh.ci];
+          return '<button type="button" class="bib-jump" data-sec="' + esc(hh.sec) + '" data-s="' + hh.s + '" data-e="' + hh.e + '"><span class="bib-where">' + esc(col ? col.label : "") + '</span><span class="bib-snip">' + bibleSnippetHtml(s ? s.content : "", hh.s, hh.e) + "</span></button>";
+        };
+        if (p.hits.length) {
+          html += '<dl class="bib-fl"><dt>' + esc(t("bible.first")) + "</dt><dd>" + jumpBtn(p.hits[0]) + "</dd>" +
+            (p.hits.length > 1 ? "<dt>" + esc(t("bible.last")) + "</dt><dd>" + jumpBtn(p.hits[p.hits.length - 1]) + "</dd>" : "") + "</dl>";
+          html += '<h4 class="bib-pass-h">' + esc(t("bible.passagesH")) + "</h4>";
+          html += '<ol class="bib-pass">' + p.hits.slice(0, BIBLE_PASSAGES_SHOWN).map((hh) => "<li>" + jumpBtn(hh) + "</li>").join("") + "</ol>";
+          if (p.hits.length > BIBLE_PASSAGES_SHOWN) html += '<p class="ins-caption">' + esc(t("bible.passagesMore", { n: fmtNum(BIBLE_PASSAGES_SHOWN), m: fmtNum(p.hits.length) })) + "</p>";
+        }
+        if (p.ambiguous) html += '<p class="ins-caption">' + esc(t("bible.ambiguous", { count: p.ambiguous, n: fmtNum(p.ambiguous) })) + "</p>";
+        host.innerHTML = html;
+      }
+      /* ---- seeding from Story Insights: only names it found ---- */
+      function bibleSeedCandidates() {
+        const d = castData();
+        if (d.caseless) return { caseless: true, list: [], hidden: 0 };
+        const hidden = castHiddenList();
+        const vis = castVisible(d, hidden);
+        const taken = new Set();
+        bibleEntries().forEach((e) => { [e.name].concat(e.aliases).forEach((a) => { const k = bibleKey(a); if (k) taken.add(k); }); });
+        return { caseless: false, hidden: d.names.length - vis.length, list: vis.map((x) => ({ key: x.key, name: x.name, total: x.total, taken: taken.has(bibleKey(x.name)) })) };
+      }
+      function bibleRenderSeed() {
+        const host = $("bibDetail"); if (!host) return;
+        const c = bibleSeedCandidates();
+        let html = '<button type="button" class="tb-btn bib-back" id="btnBibBack"><i data-lucide="arrow-left"></i>' + esc(t("bible.back")) + "</button>" +
+          '<h3 class="ins-h">' + esc(t("bible.seedH")) + '</h3><p class="ins-sub">' + esc(t("bible.seedSub")) + "</p>";
+        if (c.caseless) html += '<p class="bib-none">' + esc(t("bible.seedCaseless")) + "</p>";
+        else if (!c.list.length) html += '<p class="bib-none">' + esc(t("bible.seedNone")) + "</p>";
+        else {
+          html += '<div class="bib-seed-list" id="bibSeedList">' + c.list.map((x, i) =>
+            '<div class="bib-seed-row"><span class="bib-seed-name" id="bibSeedN' + i + '">' + esc(x.name) + '</span><span class="bib-seed-n ins-num" aria-label="' + esc(t("bible.nMentions", { count: x.total, n: fmtNum(x.total) })) + '">' + esc(fmtNum(x.total)) + "</span>" +
+            (x.taken ? '<span class="bib-seed-in">' + esc(t("bible.seedIn")) + "</span>"
+              : '<select class="txt-input" data-seed-name="' + esc(x.name) + '" aria-labelledby="bibSeedN' + i + '"><option value="">' + esc(t("bible.seedSkip")) + "</option>" + BIBLE_TYPES.map((ty) => '<option value="' + ty + '">' + esc(bibleTypeLabel(ty)) + "</option>").join("") + "</select>") +
+            "</div>").join("") + "</div>";
+        }
+        if (c.hidden > 0) html += '<p class="ins-caption">' + esc(t("bible.seedHidden", { count: c.hidden, n: fmtNum(c.hidden) })) + "</p>";
+        html += '<div class="bib-seed-actions"><button type="button" class="tb-btn" id="btnBibSeedCancel">' + esc(t("bible.seedCancel")) + "</button>" +
+          (c.list.length ? '<button type="button" class="tb-btn primary" id="btnBibSeedAdd" disabled><i data-lucide="plus"></i><span>' + esc(t("bible.seedAdd", { count: 0, n: fmtNum(0) })) + "</span></button>" : "") + "</div>";
+        host.innerHTML = html;
+      }
+      function bibleSeedPicked() {
+        const out = [];
+        document.querySelectorAll("#bibSeedList select[data-seed-name]").forEach((s) => { if (BIBLE_TYPES.indexOf(s.value) !== -1) out.push({ name: s.getAttribute("data-seed-name"), type: s.value }); });
+        return out;
+      }
+      function bibleSeedSync() {
+        const b = $("btnBibSeedAdd"); if (!b) return;
+        const n = bibleSeedPicked().length;
+        b.disabled = n === 0;
+        const sp = b.querySelector("span"); if (sp) sp.textContent = t("bible.seedAdd", { count: n, n: fmtNum(n) });
+      }
+      function bibleSeedAdd() {
+        const picked = bibleSeedPicked();
+        const offered = new Set(bibleSeedCandidates().list.filter((x) => !x.taken).map((x) => x.name));
+        const added = [];
+        picked.forEach((p) => {
+          if (!offered.has(p.name) || bibleEntries().length >= BIBLE_MAX) return; /* only a name Insights found */
+          const e = bibleNormalizeEntry({ name: p.name, type: p.type });
+          state.bible.entries.push(e); added.push(e);
+        });
+        if (!added.length) return added;
+        bibleUi.mode = "entry"; bibleUi.sel = added[0].id; bibleUi.detail = false;
+        bibleTouched(false);
+        bibleRender();
+        bibleStatus(t("bible.seedAdded", { count: added.length, n: fmtNum(added.length) }));
+        return added;
+      }
+      /* ---- entries ---- */
+      function bibleNewEntry() {
+        if (bibleEntries().length >= BIBLE_MAX) return null;
+        if (!state.bible) state.bible = { entries: [] };
+        const e = bibleNormalizeEntry({ name: "", type: "character" });
+        state.bible.entries.push(e);
+        bibleUi.sel = e.id; bibleUi.mode = "entry"; bibleUi.detail = true;
+        bibleTouched(false);
+        bibleRender();
+        const f = $("bibFName"); if (f) f.focus();
+        return e;
+      }
+      function bibleDelete(id) {
+        const list = bibleEntries();
+        const at = list.findIndex((e) => e.id === id); if (at < 0) return;
+        const gone = list.splice(at, 1)[0];
+        const bookId = state.meta.bookId || null;
+        bibleUi.sel = list.length ? list[Math.min(at, list.length - 1)].id : null;
+        bibleUi.detail = false;
+        bibleTouched(false);
+        bibleRender();
+        toast(t("bible.deleted", { name: bibleName(gone) }), "trash-2", { label: t("bible.undo"), ms: 10000, onClick: () => {
+          if ((state.meta.bookId || null) !== bookId || bibleById(gone.id)) return;
+          bibleEntries().splice(Math.min(at, bibleEntries().length), 0, gone);
+          bibleUi.sel = gone.id; bibleUi.mode = "entry";
+          bibleTouched(false);
+          if ($("modalBible").classList.contains("open")) bibleRender();
+        } });
+      }
+      function bibleOnField(el) {
+        const e = bibleById(bibleUi.sel); if (!e) return;
+        const f = el.getAttribute("data-f"), v = el.value;
+        if (f === "name") {
+          e.name = bibleLine(v, 120);
+          const nk = e.name.toLowerCase(); e.aliases = e.aliases.filter((a) => a.toLowerCase() !== nk);
+          const it = document.querySelector('.bib-item[data-bib-id="' + (window.CSS && CSS.escape ? CSS.escape(e.id) : e.id) + '"] .bib-item-name');
+          if (it) { it.textContent = bibleName(e); it.classList.toggle("is-blank", !e.name); }
+          bibleTouched(true);
+        } else if (f === "aliases") { const nk = e.name.toLowerCase(); e.aliases = bibleList(v, 30, 120).filter((a) => a.toLowerCase() !== nk); bibleTouched(true); }
+        else if (f === "description") { e.description = bibleLine(v, 400); bibleTouched(false); }
+        else if (f === "notes") { e.notes = bibleStr(v, 20000); bibleTouched(false); }
+        else if (f === "tags") { e.tags = bibleList(v, 30, 60); bibleTouched(false); }
+        else if (f === "exclude") { e.exclude = bibleList(v, 40, 120); bibleTouched(true); }
+        else if (f === "type") { if (BIBLE_TYPES.indexOf(v) !== -1) e.type = v; bibleTouched(false); bibleRenderList(); }
+        else if (f === "imageId") {
+          e.imageId = v || null; bibleTouched(false);
+          const keep = document.activeElement && document.activeElement.id;
+          bibleRenderEntry(); bibleRenderList(); icons();
+          if (keep && $(keep)) $(keep).focus();
+        }
+      }
+      function bibleJump(secId, s, e) {
+        const sec = state.sections.find((x) => x.id === secId); if (!sec) return;
+        bibleClose();
+        selectSection(sec.id);
+        if (typeof setCenterTab === "function") { currentCenterTab = "content"; setCenterTab("content"); }
+        const area = $("editorArea");
+        if (!area || area.offsetParent === null) return;
+        const len = area.value.length;
+        s = Math.max(0, Math.min(len, s)); e = Math.max(s, Math.min(len, e));
+        area.focus();
+        area.setSelectionRange(s, e);
+        const y = bibleOffsetY(area, s);
+        area.scrollTop = Math.max(0, y - area.clientHeight / 3);
+        bibleDeskRender(true);
+      }
+      /* ---- series: export and import ---- */
+      function bibleExportDoc() {
+        const b = bibleNormalize(state.bible);
+        const ids = new Set(b.entries.map((e) => e.imageId).filter(Boolean));
+        const images = (state.images || []).filter((im) => im && ids.has(im.id) && typeof im.data === "string")
+          .map((im) => ({ id: im.id, name: im.name || "", mediaType: im.mediaType, ext: im.ext, data: im.data }));
+        b.entries.forEach((e) => { if (e.imageId && !images.some((im) => im.id === e.imageId)) e.imageId = null; });
+        return { format: BIBLE_FORMAT, version: 1, book: String(state.meta.title || ""), exportedAt: new Date().toISOString(), entries: b.entries, images: images };
+      }
+      function bibleExportName() {
+        const base = String(state.meta.title || "").trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "book";
+        return base + "-story-bible.json";
+      }
+      function bibleExport() {
+        if (!bibleHas()) { bibleStatus(t("bible.exportEmpty")); return; }
+        const blob = new Blob([JSON.stringify(bibleExportDoc(), null, 2)], { type: "application/json" });
+        downloadBlob(blob, bibleExportName());
+        bibleStatus(t("bible.exported", { count: bibleEntries().length, n: fmtNum(bibleEntries().length), file: bibleExportName() }));
+      }
+      const BIBLE_IMG_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
+      function bibleImportDoc(doc) {
+        if (!doc || typeof doc !== "object" || doc.format !== BIBLE_FORMAT || !Array.isArray(doc.entries)) return { ok: false, added: [], skipped: [], pics: 0 };
+        if (!state.bible) state.bible = { entries: [] };
+        const have = new Set();
+        bibleEntries().forEach((e) => { const k = bibleKey(e.name); if (k) have.add(k); });
+        const srcImgs = Array.isArray(doc.images) ? doc.images : [];
+        const imgMap = {};
+        const added = [], skipped = [];
+        let pics = 0;
+        doc.entries.forEach((raw) => {
+          const e = bibleNormalizeEntry(raw); if (!e) return;
+          const k = bibleKey(e.name);
+          if (k && have.has(k)) { skipped.push(e.name); return; }
+          if (bibleEntries().length + added.length >= BIBLE_MAX) { skipped.push(bibleName(e)); return; }
+          if (k) have.add(k);
+          e.id = bibleNewId();
+          while (bibleById(e.id) || added.some((x) => x.id === e.id)) e.id = bibleNewId();
+          if (e.imageId) {
+            const src = e.imageId;
+            if (!(src in imgMap)) {
+              const im = srcImgs.find((x) => x && x.id === src);
+              let to = null;
+              if (im && typeof im.data === "string" && BIBLE_IMG_TYPES[im.mediaType] && /^[A-Za-z0-9+/=\s]+$/.test(im.data)) {
+                const same = (state.images || []).find((x) => x && x.data === im.data);
+                if (same) to = same.id;
+                else {
+                  let nid = "img" + Math.random().toString(36).slice(2, 10);
+                  while (imageById(nid)) nid = "img" + Math.random().toString(36).slice(2, 10);
+                  state.images.push({ id: nid, name: bibleLine(im.name, 160) || nid, mediaType: im.mediaType, ext: BIBLE_IMG_TYPES[im.mediaType], data: im.data });
+                  to = nid; pics++;
+                }
+              }
+              imgMap[src] = to;
+            }
+            e.imageId = imgMap[src];
+          }
+          added.push(e);
+        });
+        added.forEach((e) => state.bible.entries.push(e));
+        return { ok: true, added: added, skipped: skipped, pics: pics };
+      }
+      function bibleImportReport(r) {
+        if (!r.ok) return t("bible.importBad");
+        const parts = [];
+        parts.push(r.added.length ? t("bible.importDone", { count: r.added.length, n: fmtNum(r.added.length) }) : t("bible.importNone"));
+        if (r.skipped.length) parts.push(t("bible.importSkipped", { count: r.skipped.length, n: fmtNum(r.skipped.length), list: r.skipped.join(", ") }));
+        if (r.pics) parts.push(t("bible.importPics", { count: r.pics, n: fmtNum(r.pics) }));
+        return parts.join(" ");
+      }
+      function bibleImportFile(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          let doc = null;
+          try { doc = JSON.parse(String(reader.result || "")); } catch (e) { doc = null; }
+          const r = bibleImportDoc(doc);
+          if (r.ok && (r.added.length || r.pics)) {
+            if (r.added.length) { bibleUi.sel = r.added[0].id; bibleUi.mode = "entry"; }
+            bibleTouched(false);
+            if (r.pics && typeof imglibRefresh === "function") { try { imglibRefresh(null); } catch (e) {} }
+          }
+          bibleRender();
+          bibleStatus(bibleImportReport(r));
+        };
+        reader.onerror = () => bibleStatus(t("bible.importBad"));
+        reader.readAsText(file);
+      }
+      /* ---- the image library: a picture an entry wears is a use ---- */
+      function bibleImgUses(add) {
+        bibleEntries().forEach((e) => { if (e.imageId) add(e.imageId, { role: "bible", where: t("bible.title") + " · " + bibleName(e) }); });
+      }
+      function bibleImgRemove(idSet) {
+        const out = [];
+        bibleEntries().forEach((e) => { if (e.imageId && idSet.has(e.imageId)) { out.push({ id: e.id, imageId: e.imageId }); e.imageId = null; } });
+        return out;
+      }
+      function bibleImgUndo(list) {
+        (list || []).forEach((x) => { const e = bibleById(x.id); if (e && !e.imageId && imageById(x.imageId)) e.imageId = x.imageId; });
+      }
+      /* a whole book arrived (load, sample, restore): its Bible is its own */
+      function bibleBookArrived() {
+        bibleMk.key = null; bibleMenCache.key = null;
+        bibleUi.sel = null; bibleUi.mode = "entry"; bibleUi.detail = false;
+        bibleCardHide();
+        const m = $("modalBible");
+        if (m && m.classList.contains("open")) bibleRender();
+        bibleDeskSchedule();
+      }
+      function bibleOnLangChange() {
+        const m = $("modalBible");
+        if (m && m.classList.contains("open")) bibleRender();
+      }
+      function initBible() {
+        if (!state.bible) state.bible = { entries: [] };
+        const btn = $("btnBible"); if (btn) btn.addEventListener("click", () => openBible());
+        const m = $("modalBible"); if (!m) return;
+        $("btnCloseBible").addEventListener("click", bibleClose);
+        m.addEventListener("click", (e) => { if (e.target === m) bibleClose(); });
+        $("btnBibNew").addEventListener("click", bibleNewEntry);
+        $("btnBibSeed").addEventListener("click", () => { bibleUi.mode = "seed"; bibleUi.detail = true; bibleStatus(""); bibleRender(); });
+        $("btnBibExport").addEventListener("click", bibleExport);
+        $("btnBibImport").addEventListener("click", () => $("bibFile").click());
+        $("bibFile").addEventListener("change", () => { const f = $("bibFile").files && $("bibFile").files[0]; $("bibFile").value = ""; bibleImportFile(f); });
+        $("tglBibMarks").addEventListener("click", () => bibleSetMarks(!bibleMarksOn()));
+        $("bibSearch").addEventListener("input", (e) => { bibleUi.query = e.target.value || ""; bibleRenderList(); });
+        $("bibList").addEventListener("click", (e) => {
+          const b = e.target && e.target.closest ? e.target.closest("[data-bib-id]") : null; if (!b) return;
+          bibleUi.sel = b.getAttribute("data-bib-id"); bibleUi.mode = "entry"; bibleUi.detail = true;
+          bibleRender();
+          const back = $("btnBibBack"); if (back && back.offsetParent !== null) back.focus();
+        });
+        const det = $("bibDetail");
+        det.addEventListener("input", (e) => { if (e.target && e.target.getAttribute && e.target.getAttribute("data-f") && e.target.tagName !== "SELECT") bibleOnField(e.target); });
+        det.addEventListener("change", (e) => {
+          if (!e.target || !e.target.getAttribute) return;
+          if (e.target.hasAttribute("data-seed-name")) { bibleSeedSync(); return; }
+          if (e.target.tagName === "SELECT" && e.target.getAttribute("data-f")) bibleOnField(e.target);
+        });
+        det.addEventListener("click", (e) => {
+          const tg = e.target && e.target.closest ? e.target : null; if (!tg) return;
+          const jump = tg.closest(".bib-jump");
+          if (jump) { bibleJump(jump.getAttribute("data-sec"), Number(jump.getAttribute("data-s")), Number(jump.getAttribute("data-e"))); return; }
+          const cell = tg.closest(".bib-cell");
+          if (cell) {
+            const ent = bibleById(bibleUi.sel); const p = ent && bibleMentions().per[ent.id];
+            const h = p && p.hits.find((x) => x.sec === cell.getAttribute("data-sec"));
+            if (h) bibleJump(h.sec, h.s, h.e);
+            return;
+          }
+          if (tg.closest("#btnBibBack")) { bibleUi.detail = false; bibleUi.mode = "entry"; bibleRender(); return; }
+          if (tg.closest("#btnBibDelete")) { bibleDelete(bibleUi.sel); return; }
+          if (tg.closest("#tglBibExact")) {
+            const ent = bibleById(bibleUi.sel); if (!ent) return;
+            ent.exactCase = !ent.exactCase; $("tglBibExact").setAttribute("aria-pressed", String(ent.exactCase)); bibleTouched(true); return;
+          }
+          if (tg.closest("#btnBibSeedCancel")) { bibleUi.mode = "entry"; bibleUi.detail = false; bibleRender(); return; }
+          if (tg.closest("#btnBibSeedAdd")) { bibleSeedAdd(); return; }
+        });
+        if (window.MutationObserver) new MutationObserver(() => { if (!m.classList.contains("open")) bibleDeskSchedule(); }).observe(m, { attributes: true, attributeFilter: ["class"] });
+        bibleDeskSchedule();
+      }
+      if (typeof window !== "undefined") {
+        window.beukBible = { normalize: bibleNormalize, matcher: bibleBuildMatcher, scan: bibleScan, mentions: bibleMentions, compute: bibleMentionsCompute, seed: bibleSeedCandidates,
+          exportDoc: bibleExportDoc, importDoc: bibleImportDoc, open: openBible, desk: bibleDesk, render: bibleDeskRender, offsetY: bibleOffsetY, card: bibleCardShowHit, setMarks: bibleSetMarks };
+      }
+      /* ==== /BEUK:bible ==== */
+      /* ==== BEUK:bible ==== self-checks */
+      const BIBLE_FIXTURE_SECS = () => [
+        { id: "bibc1", kind: "body", type: "chapter", number: "1", title: "The Quay", subtitle: "", content: "Slowly the fog held. At dawn Mara walked to the quay where Captain Hale was waiting. The ferry from Gullwick was late again. Slowly nobody spoke. Mara's lantern hissed in the damp, and the dog barked at Captain Hale." },
+        { id: "bibc2", kind: "body", type: "chapter", number: "2", title: "Crossing", subtitle: "", content: "Slowly the sea turned grey. They left Gullwick behind, and Mara watched the gulls. Later Captain Hale said nothing at all. Slowly, the wind rose. By noon Mara was asleep and Gullwick was only a smudge on the line of the sea." }
+      ];
+      const BIBLE_TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      function bibleCheckGuard(fn) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+        const m = $("modalBible"), wasOpen = !!(m && m.classList.contains("open"));
+        const keepUi = Object.assign({}, bibleUi), keepMarks = bibleMarksPref;
+        try { return fn(); }
+        finally {
+          clearTimeout(bibleUi.saveTimer); clearTimeout(bibleUi.menTimer);
+          applyBookDoc(keepDoc);
+          if (!(keepDoc.meta && keepDoc.meta.castHidden)) delete state.meta.castHidden;
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+          Object.assign(bibleUi, keepUi); bibleMarksPref = keepMarks;
+          if (m && !wasOpen) m.classList.remove("open");
+          bibleStatus("");
+          syncEditor(); renderSidebar();
+          bibleDeskRender(true);
+        }
+      }
+      /* an independent count: every occurrence of every term as a whole
+         word (with the English possessive/plural), resolved leftmost-
+         longest and non-overlapping — no regex alternation involved */
+      function bibleBruteCount(text, entries, english) {
+        const isW = (ch) => !!ch && /[\p{L}\p{M}\p{N}_]/u.test(ch);
+        let str = String(text || "").replace(/!\[[^\]\n]*\]\([^)\n]*\)|\]\([^)\n]*\)/g, (x) => " ".repeat(x.length));
+        const low = str.toLowerCase();
+        const cands = [];
+        entries.forEach((e) => {
+          [e.name].concat(e.aliases || []).forEach((term) => {
+            const k = bibleKey(term); if (!k) return;
+            let from = 0, at;
+            while ((at = low.indexOf(k, from)) !== -1) {
+              from = at + 1;
+              if (isW(str.charAt(at - 1))) continue;
+              let end = at + k.length;
+              const tail = str.slice(end, end + 2);
+              let ok = !isW(str.charAt(end));
+              if (english) {
+                if (/^['’][sS]$/.test(tail) && !isW(str.charAt(end + 2))) { end += 2; ok = true; }
+                else if (/^[sS]/.test(tail) && !isW(str.charAt(end + 1))) { end += 1; ok = true; }
+              }
+              if (!ok) continue;
+              if (e.exactCase && str.slice(at, at + k.length) !== String(term).replace(/\s+/g, " ").trim()) continue;
+              cands.push({ s: at, e: end, len: k.length, id: e.id });
+            }
+          });
+        });
+        cands.sort((a, b) => a.s - b.s || b.len - a.len || b.e - a.e);
+        const counts = {}; let last = -1;
+        for (let i = 0; i < cands.length; i++) {
+          const c = cands[i];
+          if (c.s < last) continue;
+          const same = cands.filter((x) => x.s === c.s && x.len === c.len);
+          const ids = Array.from(new Set(same.map((x) => x.id)));
+          last = c.e;
+          if (ids.length === 1) counts[c.id] = (counts[c.id] || 0) + 1;
+        }
+        return counts;
+      }
+      function bibleSelfChecks() {
+        return [
+          { id: "bible.seed.frominsights", feature: "bible", name: "Story Bible: “Add from Story Insights” offers exactly the names Names on stage found, with their counts; opening it, or pressing Add with nothing chosen, creates nothing; a name it did not find cannot be slipped in; only the name the writer gave a type becomes an entry, of that type, with no invented aliases",
+            run() {
+              return bibleCheckGuard(() => {
+                applyBookDoc({ meta: { title: "A Test of Tides", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS() });
+                const found = castVisible(castData(), castHiddenList());
+                openBible();
+                $("btnBibSeed").click();
+                const sels = Array.prototype.slice.call(document.querySelectorAll("#bibSeedList select[data-seed-name]"));
+                const offered = sels.map((s) => s.getAttribute("data-seed-name"));
+                const countsShown = Array.prototype.slice.call(document.querySelectorAll("#bibSeedList .bib-seed-n")).map((n) => n.textContent.trim());
+                const offeredOk = offered.length === found.length && found.every((f, i) => offered[i] === f.name && countsShown[i] === fmtNum(f.total));
+                const noneOnOpen = bibleEntries().length === 0;
+                const addBtn = $("btnBibSeedAdd");
+                const startDisabled = !!addBtn && addBtn.disabled;
+                bibleSeedAdd();
+                const noneOnEmptyAdd = bibleEntries().length === 0;
+                const mara = sels.find((s) => s.getAttribute("data-seed-name") === "Mara");
+                if (mara) { mara.value = "character"; mara.dispatchEvent(new Event("change", { bubbles: true })); }
+                /* a forged row for a name Insights never found */
+                const forged = document.createElement("select");
+                forged.setAttribute("data-seed-name", "Invented Person");
+                forged.innerHTML = '<option value="place" selected>place</option>';
+                $("bibSeedList").appendChild(forged);
+                const enabled = !!addBtn && !addBtn.disabled;
+                if (addBtn) addBtn.click();
+                const es = bibleEntries();
+                const addedOk = es.length === 1 && es[0].name === "Mara" && es[0].type === "character" && es[0].aliases.length === 0 && !es.some((e) => e.name === "Invented Person");
+                $("btnBibSeed").click();
+                const taken = Array.prototype.slice.call(document.querySelectorAll("#bibSeedList .bib-seed-row")).filter((r) => r.querySelector(".bib-seed-in")).map((r) => r.querySelector(".bib-seed-name").textContent);
+                return scVerdict(found.length >= 2 && offeredOk && noneOnOpen && startDisabled && noneOnEmptyAdd && enabled && addedOk && taken.join("|") === "Mara",
+                  "Insights found " + found.map((f) => f.name + " ×" + f.total).join(", ") + "; offered " + offered.join(", ") + " with counts " + countsShown.join("/") + " (" + offeredOk + "); entries after opening: " + (noneOnOpen ? 0 : "some") + ", Add disabled at first: " + startDisabled + ", entries after an empty Add: " + (noneOnEmptyAdd ? 0 : "some") +
+                  "; after choosing Character for Mara (+ a forged row): " + es.map((e) => e.name + " (" + e.type + ")").join(", ") + " (" + addedOk + "); marked as already in the Bible: " + (taken.join(", ") || "none"));
+              });
+            } },
+          { id: "bible.mentions.match", feature: "bible", name: "Story Bible mentions: names and aliases as whole words, case-insensitive; English possessive and plural ride with the name (Mara's, Mara’s, Maras) but Maraschino does not; an exclusion phrase masks a hit (Will you); exact case keeps “will” out; the longest name wins (Mara Quill, Captain Hale); a phrase two entries claim (Quill) is skipped as ambiguous; image tokens and link addresses are never mentions; no plural rule outside English; Arabic names match as whole words",
+            run() {
+              const E = (o) => bibleNormalizeEntry(o);
+              const mara = E({ id: "bm1", type: "character", name: "Mara Quill", aliases: ["Mara", "Quill"] });
+              const will = E({ id: "bm2", type: "character", name: "Will", exactCase: true, exclude: ["Will you"] });
+              const hale = E({ id: "bm3", type: "character", name: "Captain Hale", aliases: ["Hale"] });
+              const ned = E({ id: "bm4", type: "character", name: "Ned Quill", aliases: ["Quill"] });
+              const text = "Mara walked to the quay. Mara's lantern hissed; the Maras of Gullwick were many, and Mara’s boat was late. Maraschino is not a name. Will you come? Will said no, and his will held. Mara Quill met Ned Quill. Quill nodded. Captain Hale waved;\nHale smiled. ![Mara](sample-img-x) [a link](https://mara.example/Hale).";
+              const m = bibleBuildMatcher([mara, will, hale, ned], "en");
+              const r = bibleScan(text, m);
+              const by = (id) => r.hits.filter((h) => h.id === id).length;
+              const words = r.hits.map((h) => text.slice(h.s, h.e)).join("|");
+              const wantWords = "Mara|Mara's|Maras|Mara’s|Will|Mara Quill|Ned Quill|Captain Hale|Hale";
+              const enOk = by("bm1") === 5 && by("bm2") === 1 && by("bm3") === 2 && by("bm4") === 1 && r.ambiguous.length === 1 && text.slice(r.ambiguous[0].s, r.ambiguous[0].e) === "Quill" && words === wantWords;
+              const loose = E({ id: "bm2", type: "character", name: "Will", exactCase: false, exclude: ["Will you"] });
+              const r2 = bibleScan(text, bibleBuildMatcher([mara, loose, hale, ned], "en"));
+              const looseWill = r2.hits.filter((h) => h.id === "bm2").map((h) => text.slice(h.s, h.e)).join("|");
+              const caseOk = looseWill === "Will|will";
+              const fr = bibleScan("Les Maras de Gullwick. Mara vint, et Mara's aussi.", bibleBuildMatcher([E({ id: "f1", type: "character", name: "Mara" })], "fr"));
+              const frOk = fr.hits.length === 2;
+              const arText = "مشت مارا إلى الميناء، ورفعت مارا، ثم الفانوس. مارالي ليست هي، ومارا ليست هنا، ثم القبطان هيل ينتظر. القبطان هيل ابتسم.";
+              const ar = bibleScan(arText, bibleBuildMatcher([E({ id: "a1", type: "character", name: "مارا" }), E({ id: "a2", type: "character", name: "القبطان هيل", aliases: ["هيل"] }), E({ id: "a3", type: "thing", name: "الفانوس" })], "ar"));
+              const arBy = (id) => ar.hits.filter((h) => h.id === id).map((h) => arText.slice(h.s, h.e));
+              const arOk = arBy("a1").length === 2 && arBy("a2").join("|") === "القبطان هيل|القبطان هيل" && arBy("a3").length === 1;
+              return scVerdict(enOk && caseOk && frOk && arOk,
+                "English hits “" + words + "” (want “" + wantWords + "”): Mara Quill ×" + by("bm1") + ", Will ×" + by("bm2") + ", Captain Hale ×" + by("bm3") + ", Ned Quill ×" + by("bm4") + ", ambiguous " + r.ambiguous.map((a) => "“" + text.slice(a.s, a.e) + "”").join(", ") +
+                "; without exact case Will matches “" + looseWill + "”; French book (no plural rule): " + fr.hits.length + " hits; Arabic: مارا ×" + arBy("a1").length + " (مارالي and ومارا are other words), القبطان هيل as " + arBy("a2").join(" / ") + ", الفانوس ×" + arBy("a3").length);
+            } },
+          { id: "bible.mentions.heatmap", feature: "bible", name: "Story Bible mentions view: on the book on the desk (the sample in the harness), with eight entries taken from the names Insights found, every section's count in the heatmap equals an independent brute-force count, the drawn cells carry those counts, and first/last appearances are the first and last hits",
+            run() {
+              return bibleCheckGuard(() => {
+                if (!bibleColumns(state.sections).length) applyBookDoc({ meta: { title: "A Test of Tides", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS() });
+                const names = castData().names.slice(0, 8);
+                if (!names.length) return scVerdict(false, "Insights found no names on this desk to test with");
+                const entries = names.map((n, i) => bibleNormalizeEntry({ id: "bh" + i, type: "character", name: n.name }));
+                const lang = bookLang();
+                const r = bibleMentionsCompute(state.sections, entries, lang);
+                const cols = bibleColumns(state.sections);
+                const bad = [];
+                let total = 0;
+                cols.forEach((c, ci) => {
+                  const brute = bibleBruteCount(c.sec.content, entries, bibleEnglish(lang));
+                  entries.forEach((e) => {
+                    const got = r.per[e.id].counts[ci], want = brute[e.id] || 0;
+                    total += got;
+                    if (got !== want && bad.length < 6) bad.push(e.name + " in " + c.label + ": " + got + " vs " + want);
+                  });
+                });
+                state.bible = { entries: entries };
+                bibleBookArrived();
+                openBible("bh0");
+                const cells = Array.prototype.slice.call(document.querySelectorAll("#bibHeat .bib-cell")).map((b) => Number(b.getAttribute("data-n")));
+                const p0 = r.per.bh0;
+                const cellsOk = cells.length === cols.length && cells.join(",") === p0.counts.join(",");
+                const jumps = Array.prototype.slice.call(document.querySelectorAll("#bibMentions .bib-fl .bib-jump"));
+                const flOk = p0.hits.length > 0 && jumps.length >= 1 && jumps[0].getAttribute("data-sec") === p0.hits[0].sec && Number(jumps[0].getAttribute("data-s")) === p0.hits[0].s &&
+                  (p0.hits.length < 2 || (jumps[1] && Number(jumps[1].getAttribute("data-s")) === p0.hits[p0.hits.length - 1].s && jumps[1].getAttribute("data-sec") === p0.hits[p0.hits.length - 1].sec));
+                const pass = Array.prototype.slice.call(document.querySelectorAll("#bibMentions .bib-pass .bib-jump")).length === Math.min(p0.hits.length, BIBLE_PASSAGES_SHOWN);
+                return scVerdict(!bad.length && total > 0 && cellsOk && flOk && pass,
+                  entries.length + " entries (" + entries.map((e) => e.name + " ×" + r.per[e.id].total).join(", ") + "), " + cols.length + " sections, " + total + " mentions; brute-force mismatches: " + (bad.join("; ") || "none") +
+                  "; " + entries[0].name + "'s cells " + cells.join(",") + " (" + cellsOk + "); first/last link to the first and last hits: " + flOk + "; passages listed: " + pass + "; ambiguous left out: " + r.ambiguous + "; pass took " + r.ms.toFixed(1) + " ms");
+              });
+            } },
+          { id: "bible.notexported", feature: "bible", name: "Story Bible is never exported: with entries (notes, tags, a picture from the library, exclusions) the EPUB files, the print document, the Word package and every word count are exactly what they are without them; the Bible rides the book file, and a book with no entries serializes with no bible key",
+            run() {
+              return bibleCheckGuard(() => {
+                const norm = (v) => String(v).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, "<t>");
+                const snap = () => ({
+                  epub: epubFiles().map((f) => f.path + "\u0001" + (f.binary ? String(f.content).length + ":" + castHash(String(f.content), 7) : norm(f.content))).join("\u0002"),
+                  print: norm(buildPrintHtml()),
+                  docx: buildDocxFiles().map((f) => f.path + "\u0001" + norm(f.content)).join("\u0002"),
+                  words: bookWordTotal() + "/" + state.sections.map((s) => countWords(s.content, bookLang())).join(",")
+                });
+                state.bible = { entries: [] };
+                const before = snap();
+                const noKey = !("bible" in serializeBook());
+                const pic = (state.images || [])[0];
+                state.bible = bibleNormalize({ entries: [
+                  { type: "character", name: "Zzbible Person", aliases: ["Zzalias"], description: "Zzdescription line", notes: "Zznotes never printed", tags: ["zztag"], imageId: pic ? pic.id : null, exclude: ["Zzbible Person Bay"] },
+                  { type: "lore", name: "Zzlore", notes: "more zz" }
+                ] });
+                bibleBookArrived();
+                const after = snap();
+                const ser = serializeBook();
+                const rides = !!ser.bible && ser.bible.entries.length === 2 && ser.bible.entries[0].notes === "Zznotes never printed";
+                const leak = [after.epub, after.print, after.docx].some((x) => /Zznotes|Zzdescription|zztag|Zzlore/.test(x));
+                const same = ["epub", "print", "docx", "words"].filter((k) => before[k] !== after[k]);
+                return scVerdict(noKey && rides && !leak && !same.length,
+                  "no entries → no bible key: " + noKey + "; with 2 entries" + (pic ? " (one wearing library picture " + pic.id + ")" : "") + " the book file carries them: " + rides + "; entry text found in an export: " + leak + "; outputs that changed: " + (same.join(", ") || "none") + " (EPUB " + before.epub.length + " chars, print " + before.print.length + ", Word " + before.docx.length + ", words " + before.words.split("/")[0] + ")");
+              });
+            } },
+          { id: "bible.series.roundtrip", feature: "bible", name: "Story Bible for a series: export to a JSON file and import into another book — entries keep their type, aliases, notes, tags, exact case and exclusions; a picture travels and joins the library once; an entry whose name the book already has (any case) is skipped and reported; a second import adds nothing; a foreign file is refused; the Bible survives the book file and an old book arrives with none",
+            run() {
+              return bibleCheckGuard(() => {
+                const img = { id: "bibimgA", name: "gullwick.png", mediaType: "image/png", ext: "png", data: BIBLE_TINY_PNG };
+                applyBookDoc({ meta: { title: "Book A", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [img], bible: { entries: [
+                  { id: "x1", type: "character", name: "Mara Quill", aliases: ["Mara"], description: "Keeper of the light", notes: "Line one\nLine two", tags: ["crew"], exclude: ["Mara Bay"] },
+                  { id: "x2", type: "place", name: "Gullwick", imageId: "bibimgA", tags: ["town"] },
+                  { id: "x3", type: "thing", name: "The Ledger", exactCase: true }
+                ] } });
+                const fileText = JSON.stringify(bibleExportDoc(), null, 2);
+                const doc = JSON.parse(fileText);
+                const formatOk = doc.format === "beuk-story-bible" && doc.version === 1 && doc.entries.length === 3 && doc.images.length === 1 && doc.images[0].data === BIBLE_TINY_PNG;
+                applyBookDoc({ meta: { title: "Book B", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [], bible: { entries: [{ id: "y1", type: "character", name: "mara quill" }] } });
+                const r = bibleImportDoc(doc);
+                const es = bibleEntries();
+                const g = es.find((e) => e.name === "Gullwick"), l = es.find((e) => e.name === "The Ledger");
+                const gImg = g && imageById(g.imageId);
+                const addedOk = r.ok && r.added.map((e) => e.name).join("|") === "Gullwick|The Ledger" && r.skipped.join("|") === "Mara Quill" && es.length === 3 &&
+                  !!g && g.type === "place" && g.tags.join() === "town" && !!gImg && gImg.data === BIBLE_TINY_PNG && r.pics === 1 && !!l && l.exactCase === true && l.type === "thing";
+                const report = bibleImportReport(r);
+                const reported = report.indexOf("Mara Quill") !== -1;
+                const r2 = bibleImportDoc(doc);
+                const againOk = r2.ok && r2.added.length === 0 && r2.skipped.length === 3 && r2.pics === 0 && state.images.length === 1 && bibleEntries().length === 3;
+                const r3 = bibleImportDoc({ format: "something-else", entries: [{ name: "X" }] });
+                const refused = !r3.ok && bibleEntries().length === 3;
+                /* the full entry's fields survive the file and the book file */
+                applyBookDoc({ meta: { title: "Book C", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [] });
+                const emptyArrival = bibleEntries().length === 0;
+                bibleImportDoc(JSON.parse(fileText));
+                const ser = JSON.parse(JSON.stringify(serializeBook()));
+                applyBookDoc(ser);
+                const mq = bibleEntries().find((e) => e.name === "Mara Quill");
+                const fieldsOk = !!mq && mq.aliases.join() === "Mara" && mq.notes === "Line one\nLine two" && mq.description === "Keeper of the light" && mq.exclude.join() === "Mara Bay" && mq.tags.join() === "crew" && bibleEntries().length === 3;
+                return scVerdict(formatOk && addedOk && reported && againOk && refused && emptyArrival && fieldsOk,
+                  "export file: " + fileText.length + " chars, format ok " + formatOk + "; import into a book that has “mara quill”: added " + r.added.map((e) => e.name).join(", ") + ", skipped " + r.skipped.join(", ") + ", pictures " + r.pics + " (" + addedOk + "); report: “" + report + "”; second import added " + r2.added.length + ", skipped " + r2.skipped.length + ", pictures " + r2.pics + " (" + againOk + "); foreign file refused: " + refused +
+                  "; an old book arrives with none: " + emptyArrival + "; fields through file + book file: " + fieldsOk);
+              });
+            } },
+          { id: "bible.editor.perf", feature: "bible", name: "Story Bible underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
+            run() {
+              return bibleCheckGuard(() => {
+                if (!bibleColumns(state.sections).length) return scVerdict(false, "no story on the desk to measure");
+                const names = castData().names.slice(0, 8);
+                const entries = names.map((n, i) => bibleNormalizeEntry({ id: "bp" + i, type: "character", name: n.name, aliases: i === 0 && /\s/.test(n.name) ? [n.name.split(/\s+/).pop()] : [] }));
+                if (!entries.length) return scVerdict(false, "Insights found no names to measure with");
+                state.bible = { entries: entries };
+                bibleBookArrived();
+                bibleMarksPref = true;
+                const lang = bookLang();
+                const med = (a) => { const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+                const book = [];
+                for (let i = 0; i < 5; i++) book.push(bibleMentionsCompute(state.sections, entries, lang).ms);
+                const words = bibleColumns(state.sections).reduce((n, c) => n + sectionWords(c.sec), 0);
+                const big = bibleColumns(state.sections).map((c) => c.sec).sort((a, b) => String(b.content).length - String(a.content).length)[0];
+                selectSection(big.id);
+                if (typeof setCenterTab === "function") { currentCenterTab = "content"; setCenterTab("content"); }
+                const area = $("editorArea");
+                if (!area || area.offsetParent === null) return scVerdict(false, "the writing desk is not on screen");
+                let t0 = performance.now();
+                bibleDeskRender(true);
+                void bibleDesk.inner.offsetHeight;
+                const cold = performance.now() - t0;
+                const heightGap = Math.abs(bibleDesk.inner.offsetHeight - area.scrollHeight);
+                const deskHits = bibleDesk.hits.length;
+                const ci = bibleColumns(state.sections).findIndex((c) => c.id === big.id);
+                const r = bibleMentionsCompute(state.sections, entries, lang);
+                const want = entries.reduce((n, e) => n + r.per[e.id].counts[ci], 0);
+                const orig = area.value;
+                const keys = [];
+                try {
+                  let v = orig, at = Math.floor(orig.length / 2);
+                  for (let i = 0; i < 24; i++) {
+                    v = v.slice(0, at) + "e" + v.slice(at); at++;
+                    area.value = v;
+                    t0 = performance.now();
+                    bibleDeskRender(false);
+                    void bibleDesk.inner.offsetHeight;
+                    keys.push(performance.now() - t0);
+                  }
+                } finally { area.value = orig; }
+                const BUDGET = { book: 150, cold: 60, keyMed: 10, keyMax: 24 };
+                const bookMs = med(book), keyMed = med(keys), keyMax = Math.max.apply(null, keys);
+                const within = bookMs <= BUDGET.book && cold <= BUDGET.cold && keyMed <= BUDGET.keyMed && keyMax <= BUDGET.keyMax;
+                return scVerdict(within && heightGap <= 2 && deskHits === want && want > 0,
+                  words + " story words, " + entries.length + " entries: whole-book pass median " + bookMs.toFixed(1) + " ms (budget " + BUDGET.book + "); longest section “" + castSecLabel(big) + "” (" + orig.length + " chars) first draw " + cold.toFixed(1) + " ms (budget " + BUDGET.cold + ") with " + deskHits + " underlines (" + want + " in the mentions pass); 24 keystrokes: median " + keyMed.toFixed(2) + " ms, max " + keyMax.toFixed(2) + " ms (budgets " + BUDGET.keyMed + "/" + BUDGET.keyMax + "); mirror height vs textarea scrollHeight: " + bibleDesk.inner.offsetHeight + "/" + area.scrollHeight);
+              });
+            } }
+        ];
+      }
+      /* ==== /BEUK:bible ==== */
 
       /* ================= Book language =================
          One table drives everything language-shaped in the book:
@@ -26034,6 +28474,7 @@
         renderSectionImages();
         updateSceneBar();
         zenRenderSurface();
+        if (typeof bibleDeskSchedule === "function") bibleDeskSchedule(); /* BEUK:bible — the underlines follow the text on the desk */
       }
       /* ---- Generated pages carry their own editors ----
          A page the book generates is never a notice telling the
@@ -27430,6 +29871,7 @@
           add(flId(ctt.ornament), { role: "ornament", themeId: ct.id, where });
           add(ctt.headingFlourish, { role: "headingFlourish", themeId: ct.id, where });
         });
+        bibleImgUses(add); /* BEUK:bible — a picture an entry wears is in use */
         return map;
       }
       function imageUsage(id) { return (imglibUsageMap()[id] || []).slice(); }
@@ -27501,7 +29943,8 @@
           if (idSet.has(cmRecipe.bgImageId)) cmRecipe.bgImageId = null;
           if (cmRecipe.wrap && idSet.has(cmRecipe.wrap.flapPhotoId)) cmRecipe.wrap.flapPhotoId = null;
         }
-        rec.used = !!(rec.sections.length || rec.customThemes.length || rec.cover || rec.recipeBg || rec.flap || Object.keys(rec.theme).length);
+        rec.bible = bibleImgRemove(idSet); /* BEUK:bible */
+        rec.used = !!(rec.sections.length || rec.customThemes.length || rec.cover || rec.recipeBg || rec.flap || rec.bible.length || Object.keys(rec.theme).length);
         state.images = (state.images || []).filter((im) => !idSet.has(im.id));
         list.forEach((id) => { delete coverImgCache[id]; });
         if (idSet.has(imgSelId)) imgSelId = null;
@@ -27555,6 +29998,7 @@
         if (rec.cover && !state.cover && !state.coverRecipe) { state.cover = rec.cover.cover; state.coverRecipe = rec.cover.recipe; }
         if (rec.recipeBg && state.coverRecipe && !state.coverRecipe.bgImageId) state.coverRecipe.bgImageId = rec.recipeBg;
         if (rec.flap && state.coverRecipe && state.coverRecipe.wrap && !state.coverRecipe.wrap.flapPhotoId) state.coverRecipe.wrap.flapPhotoId = rec.flap;
+        bibleImgUndo(rec.bible); /* BEUK:bible */
         noteBookEdited();
         imglibRefresh(rec);
         return true;
@@ -30059,6 +32503,7 @@
           state.meta.bookId = newBookId();
           delete state.meta.legacyBookIds; /* BEUK:bookid — a new book answers to no old ids */
           delete state.meta.castHidden; /* BEUK:cast — nor to the last book's hidden names */
+          state.bible = { entries: [] }; bibleBookArrived(); /* BEUK:bible — nor the sample's Story Bible */
           state.meta.language = "en"; state.meta.langSource = "auto"; state.meta.langGuess = "";
           /* The manuscript's own copyright page speaks for the
              imprint too: its ISBN, publisher and year take the desk
@@ -40350,6 +42795,7 @@
           history: hist.history,
           historyPool: hist.pool,
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
+          ...(bibleHas() ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
           /* BEUK:manuscript — the submission manuscript's contact block and page choices ride with the book */
@@ -40457,6 +42903,9 @@
         state.manuscript = msNormalize(doc.manuscript);
         /* BEUK:dictlang — the dictation language belongs to the book: one without it follows its own language. */
         state.dictation = dictNormalize(doc.dictation);
+        /* BEUK:bible — a book's Story Bible is its own: one without it arrives with none */
+        state.bible = bibleNormalize(doc.bible);
+        bibleBookArrived();
         /* BEUK:bookid — every arrival (local restore, shelf, backup file, conflict, snapshot) passes here: a pre-UUID id migrates now, once, after History has its snapshot. */
         bookIdMigrateDesk();
         if (typeof chopBookArrived === "function") chopBookArrived(); /* BEUK:chapterops — a pending Undo belongs to the book it was offered on */
@@ -51134,6 +53583,7 @@
       SELF_CHECKS.push(...acxSelfChecks());
       SELF_CHECKS.push(...msSelfChecks()); /* BEUK:manuscript */
       SELF_CHECKS.push(...castSelfChecks()); /* BEUK:cast */
+      SELF_CHECKS.push(...bibleSelfChecks()); /* BEUK:bible */
       /* ==== BEUK:print ==== */
       /* Print for press, checked from the document the print view and
          the server job actually receive (buildPrintHtml), and from the
@@ -56627,6 +59077,7 @@
         initSample();
         initInsights();
         initGoals();
+        initBible(); /* BEUK:bible */
         initHistory();
         sideInit(); /* BEUK:sidebar */
         initExport();
