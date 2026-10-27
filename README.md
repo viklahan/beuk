@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v14`; both `client/sw.js` and
+service worker (cache `beuk-shell-v15`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -3181,10 +3181,26 @@ and its spreads rendered from that PDF to WebP under `client/site/ramp/<slug>/`,
 untouched. A book opens on four spreads (four turns) in a full-screen
 reader: arrow keys, click either half, swipe, or `/ramp#<slug>` to open one
 directly. Today: *Rain on Calder Street* (noir, 8 × 8 in), *Four Kitchens*
-(cookbook, 8.5 × 8.5 in) and *The Sunken Vault* (fantasy, 6 × 9 in). The
-pictures are V's, made with AI image tools and owner-licensed; each has a
-row in the gallery's `pictures.tsv`. The words are written for the gallery
-and every name is invented. `tests/site-pages.test.ts` checks every spread
+(cookbook, 8.5 × 8.5 in), *The Sunken Vault* (fantasy, 6 × 9 in), *Luna's
+Beach Treasure Hunt* and *The Woolly School* (picture books, 11 × 8.5 in
+landscape), *Salt Road* (memoir, 6 × 9 in), *The Book That Reads You*
+(ergodic novel, 6 × 9 in) and *The Travel Guide* (photo travel book, 11 ×
+8.5 in landscape). The pictures are V's, made with AI image tools and
+owner-licensed; each has a row in the gallery's `pictures.tsv`, which also
+says where a picture was enlarged to print resolution. The words are written
+for the gallery; in the stories every name is invented, and the travel
+guide's places are real.
+
+**Adding a picture book** (the Luna pattern: a picture facing each page of
+words) is three scripts in `beuk-whole-project/10-ramp-gallery/tools/`:
+`make_picture_book.py specs/<slug>.json` writes the book file from a spec
+(words, alt text, theme, colour, trim, the source pictures);
+`print_and_sheet.py <dir>` sends the studio's print interior (saved from
+`buildPrintHtml()` in the browser) to Beuk's renderer through the app
+container and makes a contact sheet of every page; `spreads.py <dir> <slug>
+L-R …` renders the four chosen spreads to `client/site/ramp/<slug>/`. Then
+add the book's shelf button and its `BOOKS` entry to `ramp.html`, and its
+slug to `tests/site-pages.test.ts`. `tests/site-pages.test.ts` checks every spread
 file against the size the reader states.
 
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`

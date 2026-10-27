@@ -31,7 +31,7 @@ test('the site pages exist, make no false claims, carry link previews and a cano
     assert.ok(existsSync(path.join(root, ...p.file)), p.file.join('/'));
     const html = read(...p.file);
     // Text only (no tags, comments or scripts) for the copy rules.
-    const text = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ');
+    const text = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<(script|style)\b[\s\S]*?<\/\1>/g, ' ').replace(/<[^>]+>/g, ' ');
     for (const bad of FALSE_CLAIMS.slice(0, 10)) assert.doesNotMatch(html, bad, `${p.url}: ${bad}`);
     for (const bad of FALSE_CLAIMS.slice(10)) assert.doesNotMatch(text, bad, `${p.url}: ${bad}`);
     assert.match(html, new RegExp(`<link rel="canonical" href="https://beuk\\.studio${p.url.replace(/\//g, '\\/')}" />`), p.url);
@@ -245,13 +245,14 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
 test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP of the size the reader states, each described', () => {
   const html = read('client', 'site', 'ramp.html');
   const books = [...html.matchAll(/"([a-z-]+)": \{ title: "([^"]+)", c: "(#[0-9a-f]{6})", w: (\d+), h: (\d+), spreads: \[([\s\S]*?)\]\}/g)];
-  assert.deepEqual(books.map((b) => b[1]), ['rain-on-calder-street', 'four-kitchens', 'the-sunken-vault', 'lunas-beach-treasure-hunt', 'salt-road', 'the-book-that-reads-you']);
+  assert.deepEqual(books.map((b) => b[1]), ['rain-on-calder-street', 'four-kitchens', 'the-sunken-vault', 'lunas-beach-treasure-hunt', 'salt-road', 'the-book-that-reads-you', 'the-woolly-school', 'the-travel-guide']);
   for (const [, slug, title, , w, h, body] of books) {
     const spreads = [...body.matchAll(/\["([^"]+)", "([^"]+)"\]/g)];
     assert.equal(spreads.length, 4, `${slug}: four spreads (a book ends in four turns)`);
     spreads.forEach(([, caption, alt], i) => {
       assert.ok(caption.length > 30, `${slug} spread ${i + 1} has a caption`);
       assert.ok(alt.length > 40, `${slug} spread ${i + 1} is described`);
+      for (const t of [caption, alt]) assert.doesNotMatch(t, /!/, `${slug} spread ${i + 1}: no exclamation marks in the copy`);
       const file = path.join(root, 'client', 'site', 'ramp', slug, `spread-${i + 1}.webp`);
       assert.ok(existsSync(file), file);
       const buf = readFileSync(file);
@@ -265,10 +266,11 @@ test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP o
     });
     assert.ok(html.includes(`data-book="${slug}"`) && html.includes(`aria-label="Open ${title}"`), `${slug} is on the shelf`);
   }
-  // Honest provenance: printed by Beuk's renderer, pictures made with AI tools and licensed, words invented.
+  // Honest provenance: printed by Beuk's renderer, pictures made with AI tools and licensed, stories invented, the travel guide's places real.
   assert.match(html, /printed to PDF by Beuk's own print renderer/);
   assert.match(html, /Pictures made for Beuk with AI image tools and licensed by Beuk's owner/);
-  assert.match(html, /every name, place and event is invented/);
+  assert.match(html, /in the stories every name, place and event is invented/);
+  assert.match(html, /The travel guide's places are real; its photographs are made images, not photographs of those places\./);
   // Every site page beside it links Ramp.
   for (const f of [['client', 'site', 'index.html'], ['client', 'site', 'features.html'], ['client', 'site', 'compare', 'index.html']])
     assert.ok(read(...f).includes('href="/ramp"'), `${f.join('/')} links /ramp`);

@@ -4,6 +4,16 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-27 — Ramp opens like a book
+
+- **Turn the pages.** A Ramp book now lies open on a desk under a lamp, in a room lit by the book's own colour: violet for The Woolly School, deep sea for The Travel Guide, ember for The Sunken Vault. The page lifts and turns over the spine, and its back is the real next page. Page edges thicken on the left and thin on the right as you read, the gutter is shaded, and a folded corner shows where to turn. Click a page, swipe, or use the arrow keys.
+- **On a phone held upright**, one page at a time, turning the same way; a blank left page is skipped.
+- With reduced motion the pages change with a quiet fade instead of turning.
+- The pages are still Beuk's print, untouched; the reader adds only the light, the gutter, the edges and the turn.
+- **Two new books:** The Woolly School and the Runaway Ball of Yarn, a clay-animation picture book, and The Travel Guide, ten places on seven continents. Eight books in all.
+- **The sample story's Chapter One has a new painting:** a watercolour of the ferry crossing the harbour at first light. It shows when you load the sample.
+- The studio offers this update ("A new Beuk is ready").
+
 ## 2026-10-26 — Your free week, a quick tour, and colour
 
 **Your free week, and after it** (once billing is switched on; until then everything stays open and no price is shown)
