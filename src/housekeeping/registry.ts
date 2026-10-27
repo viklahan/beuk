@@ -2450,6 +2450,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Word conversion (Mammoth.js) and the report are client-side; the server never sees the .docx.',
   },
   {
+    id: 'import.pdf',
+    title:
+      'PDF import: a PDF written in the check imports through the vendored PDF.js (SRI) as two chapters with running heads and page numbers left out and reported, the line-end hyphen joined, italic and bold carried, a paragraph running on over the page break, a scene break, the table reported and the picture imported; a text-less scan is refused; undo restores the prior book',
+    kind: 'client-only',
+    reason: 'PDF.js reads the file in the browser and the import pipeline and report run against the book there; the server never sees the PDF.',
+  },
+  {
     id: 'import.report.images-accounted',
     title:
       'Import report (Word): every picture is accounted for — images inside headings, list items and quotes are imported, and any the import cannot hold are listed as left out',
