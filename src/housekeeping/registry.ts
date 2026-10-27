@@ -1963,6 +1963,30 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The letter is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
   },
   {
+    id: 'chapter.hanging',
+    title: 'Hanging: "::: hanging" sets one entry per line with its turn-over hung (bibliography, chronology, index) in preview, print, the Print Interior View and EPUB, mirrored right to left, and as Hanging paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The entries are typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.columns',
+    title: 'Columns: "::: columns" sets compact back matter in two balanced columns in print, the Print Interior View and the wide preview, one column in the EPUB, and a two-column Word section',
+    kind: 'client-only',
+    reason: 'The columns are laid out by the studio renderer and the print stylesheet, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'titlepage.centred',
+    title: 'Title page: the subtitle, author and publisher are centred like the title in every theme, at standard, Large Print and picture-book type, and right to left',
+    kind: 'client-only',
+    reason: 'The title page is typeset by the studio renderer and the print stylesheet; the check measures it in the browser.',
+  },
+  {
+    id: 'print.picturebook',
+    title: 'Picture-book type: a 24pt print type size beside Large Print for the print interior and the Print Interior View, carried by the book file',
+    kind: 'client-only',
+    reason: 'The print interior and its view are typeset in the browser from the print stylesheet.',
+  },
+  {
     id: 'chapter.captions',
     title: 'Image captions: a figcaption under the picture in preview, print and EPUB, a Caption paragraph in Word, written from the image dialog, and read from Word Caption-styled paragraphs',
     kind: 'client-only',
@@ -2549,6 +2573,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   {
     id: 'import.docx.beuk-roundtrip',
     title: 'Word round trip: a Beuk Word export read back by the Word import keeps bold italic, links, lists, a quote with its attribution and a centred block, and its container styles fence nothing',
+    kind: 'client-only',
+    reason: 'The Word export, Mammoth.js and the import walk all run in the studio; the server never sees the file.',
+  },
+  {
+    id: 'import.docx.backmatter',
+    title: 'Word round trip (back matter): Hanging, Columns and Columns Hanging paragraphs from a Beuk Word export come back fenced as "::: hanging", "::: columns" and "::: columns hanging"',
     kind: 'client-only',
     reason: 'The Word export, Mammoth.js and the import walk all run in the studio; the server never sees the file.',
   },
