@@ -1484,6 +1484,69 @@ so the scripts leave those calls to the author/narrator. Audio specs
 (bit rate, levels, room tone) apply to recordings and are reported as
 not checked.
 
+## Studio: submission manuscript (client-only)
+
+Export → **Submission Manuscript (.docx)** opens a dialog and downloads
+`<title>-manuscript.docx` in standard manuscript format (the Shunn
+convention agents and publishers ask for), built in the browser with
+JSZip — no server call.
+
+- **Title page**: the writer's contact block top left (legal name,
+  postal address, phone, email — single-spaced; empty fields are left
+  out, never filled in), the approximate word count top right
+  ("about 85,000 words"), the title in capitals halfway down, the
+  subtitle if the book has one, and "by" + byline. The byline is a pen
+  name typed in the dialog, else the book's author. The contact block,
+  pen name, header surname and page choices ride in the book file
+  (`serializeBook().manuscript`); a book without them starts empty.
+- **Word count rounding**: to the nearest 1,000 at 10,000 words and
+  above, to the nearest 100 below that (never below 100). It counts the
+  body sections (chapters, prologue, epilogue, parts) with the studio's
+  own `sectionWords`; character-counted languages say "characters".
+- **The text**: 12 pt Times New Roman (Courier New option), double
+  spacing (`w:line="480"`), one-inch margins, 0.5 in first-line
+  indents, no space between paragraphs, left-aligned (ragged right),
+  hyphenation suppressed; US Letter by default, A4 option. Each body
+  section starts on a new page with its heading ("Chapter 1: Arrival")
+  centred a third of the way down; scene breaks are a centred `#`;
+  `END` is centred after the last section. A "Surname / TITLE / page"
+  header sits top right on every page of the text; the title page is
+  its own section with no header, and the first page of the text is
+  page 1. Italics stay italic, or become underlines (option, for
+  older markets).
+- **Reuse, not a second Word writer**: the body is
+  `docxContentParas` — the Word export's own reading of emphasis,
+  notes, lists, quotes, containers and redactions — re-dressed: a
+  manuscript style sheet under Beuk's own style ids (verse keeps its
+  line breaks, a transcript its speakers, a log its monospace; blocks
+  set apart are indented a full inch), picture placeholders and their
+  captions dropped, column breaks dropped, inks dropped, `* * *` made
+  `#`, links set as their words. Redactions stay `█` blocks.
+- **Left out, and listed in the dialog**: the book's typesetting
+  (theme, fonts, drop caps, ornaments, running heads, page design),
+  every front and back matter section by name (cover, half title,
+  title page, copyright, epigraph, dedication, contents, about the
+  author, also by, colophon …), and every picture (in-text pictures
+  with their captions, plates, backdrops, scene pictures) with a count.
+- **Notes**: Beuk's Word export writes no Word footnotes, so notes go
+  on a "Notes" page after END, grouped by section — as text.
+- **PDF**: not made by Beuk. The dialog says so: open the .docx in
+  Word, Google Docs or LibreOffice and save as PDF.
+- The manuscript's fixed words ("about … words", "by", "Chapter",
+  "END", "Notes") are the format's English; the dialog says so for a
+  book in another language.
+- The Word import now also reads a lone `#` line as a scene break
+  (`beautifyText` and its structural twin), so a standard manuscript —
+  Beuk's or anyone's — comes back with its breaks.
+
+Self-checks: `export.manuscript` (document.xml: title page, contact
+block, word count, header, 480 line spacing, 12 pt, 1 in margins,
+chapter page breaks, `#`, END, italics/underline, nothing typeset
+leaks), `export.manuscript.contact-persists`,
+`export.manuscript.wordcount`, and the async
+`export.manuscript.roundtrip` (the .docx read back through Beuk's own
+Word import).
+
 ## Studio: dictation language (client-only)
 
 **The browser cannot detect which language is being spoken.** The Web
