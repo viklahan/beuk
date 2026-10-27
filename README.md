@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v12`; both `client/sw.js` and
+service worker (cache `beuk-shell-v13`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -3047,7 +3047,15 @@ italic → `*words*`, bold → `**words**`, bold italic → `***words***`,
 and a link to a web (`http://`, `https://`) or mail (`mailto:`) address
 → `[words](address)` (the links markup the rest of the studio renders).
 This holds in body paragraphs, demoted subheadings (Heading 3–6), quote
-paragraphs (each one its own `> ` line), list items and footnotes.
+paragraphs (the quote's lines kept together as one `> ` block), list
+items and footnotes. A paragraph in Word's Quote style (and Beuk's own
+Quote Attribution, written under it by the Word export) is mapped to a
+quotation, so a Beuk Word file's quote and its `> — Name` attribution
+come back as one quote. A centred or right-set paragraph in the styles
+Beuk's Word export uses for verse, letters, text messages, captions and
+attributions is not fenced as `::: center` / `::: right` (that alignment
+is the style's, not a block the writer centred), and a superscript `[1]`
+note mark from a Beuk Word export is not reported as lost formatting.
 Adjacent runs of the same kind are merged first (Word often splits one
 italic word into several runs), and the marks always hug the words —
 spaces stand outside them — so the preview, print, EPUB and Word export
@@ -3183,10 +3191,12 @@ surface:
 - **Word count**, read-aloud and Insights count and read the words, never
   the address.
 - **Word import**: a Word file's web and mail links come in as
-  `[words](address)`, an italic or bold linked title keeping its emphasis
-  as `*…*` / `**…**` (an emphasis nested inside another is counted in the
-  report as lost); a bookmark or other link stays text and is counted in
-  the import report as dropped.
+  `[words](address)` through the Word import's run walk (see "Word import
+  keeps italic, bold and links"), an italic or bold linked title keeping
+  its emphasis as `*…*` / `**…**` / `***…***` (an italic inside a bold
+  title is kept as bold italic, not lost); a space or parenthesis in the
+  address is percent-encoded; a bookmark or other link stays text and is
+  counted in the import report as dropped.
 
 The typographic pass (Auto-Format, smart quotes, dashes) never touches an
 address. A drop cap is not set on a paragraph that opens with a link, and a

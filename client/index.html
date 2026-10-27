@@ -27029,8 +27029,19 @@
          (beautifyText leaves the addresses themselves alone.) */
       /* Mammoth drops underlining silently by default; mapped to <u>,
          it reaches the walk, which keeps the words and counts it. */
-      const IR_MAMMOTH_OPTS = { styleMap: ["u => u"] };
-      const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S+$/i;
+      /* Word's Quote style (and the Quote Attribution Beuk's own Word
+         export writes under it) is a quotation: Mammoth's default map
+         sets it as a plain paragraph, so it is mapped to a blockquote,
+         neighbours sharing one, and the attribution line stays with
+         its quote. */
+      const IR_MAMMOTH_OPTS = { styleMap: ["u => u", "p[style-name='Quote'] => blockquote > p:fresh", "p[style-name='Quote Attribution'] => blockquote > p:fresh",
+        /* Beuk's own Word export styles: known, read as paragraphs (no
+           "unrecognised style" converter note for each). */
+        "p[style-name='Verse'] => p:fresh", "p[style-name='Letter'] => p:fresh", "p[style-name='Text Sent'] => p:fresh",
+        "p[style-name='Text Received'] => p:fresh", "p[style-name='Text Note'] => p:fresh", "p[style-name='Caption'] => p:fresh"] };
+      /* A web or mail address; a space or parenthesis inside it (Word
+         keeps them raw) is percent-encoded by irRunsToMd, not refused. */
+      const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S/i;
       function irInlineRuns(node, ir, skipLists, noLinks) {
         const runs = [];
         const d = ir.drops;
@@ -27051,7 +27062,7 @@
               if (IR_LINK_OK.test(href) && !f.href && !noLinks) { g = Object.assign({}, f, { href }); ir.carried.links++; }
               else if (!f.href) d.links = (d.links || 0) + 1;
             }
-          } else if ((tag === "sub" || tag === "sup") && has && !/^\s*\[\^\d{1,3}\]\s*$/.test(n.textContent)) d.subsup = (d.subsup || 0) + 1;
+          } else if ((tag === "sub" || tag === "sup") && has && !/^\s*\[\^?\d{1,3}\]\s*$/.test(n.textContent)) d.subsup = (d.subsup || 0) + 1; /* a note mark ([^1], or [1] as Beuk's Word export sets it) is not lost */
           else if (tag === "u" && has) d.underline = (d.underline || 0) + 1;
           else if ((tag === "s" || tag === "del" || tag === "strike") && has) d.strike = (d.strike || 0) + 1;
           const block = /^(p|div|li|h[1-6]|blockquote|tr|td|th|table|ul|ol)$/.test(tag) && n !== node;
@@ -27245,7 +27256,11 @@
             /* One quoted line per paragraph of the quote, each with its
                own inline formatting. */
             const paras = Array.prototype.filter.call(node.children, (c) => /^(p|div)$/i.test(c.tagName));
-            (paras.length ? paras : [node]).forEach((pn) => { const l = carry(irRunsToMd(irInlineRuns(pn, ir), ir, false)); if (l) push("> " + l); });
+            /* The lines stay one quote block, so a last "> — Name" line
+               is read as the quote's attribution. */
+            const ql = [];
+            (paras.length ? paras : [node]).forEach((pn) => { const l = carry(irRunsToMd(irInlineRuns(pn, ir), ir, false)); if (l) ql.push("> " + l); });
+            if (ql.length) parts.push(ql.join("\n"));
             pushImages(node);
           }
           else if (tag === "ul" || tag === "ol") {
@@ -27353,6 +27368,15 @@
             styles[id] = { jc: norm(val(kid(ppr, "jc"))), based: val(kid(st, "basedOn")), name: val(kid(st, "name")).toLowerCase() };
           });
         }
+        /* The styles Beuk's own Word export sets its containers and
+           figures in (verse, a letter, text messages, a picture's
+           caption, a quote's attribution) carry an alignment of their
+           own: it is the style's, not a centred or right-set block the
+           writer made, so a paragraph in one of them never fences a
+           "::: center" / "::: right" (nor does its own w:jc: the export
+           sets a centred caption and a right-set sign-off that way). */
+        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption"]);
+        const ownStyle = (id) => { for (let k = 0; id && k < 12; k++) { if (OWN_SET.has(id)) return true; if (!styles[id]) return false; id = styles[id].based; } return false; };
         const styleJc = (id) => { for (let k = 0; id && styles[id] && k < 12; k++) { if (styles[id].jc) return styles[id].jc; id = styles[id].based; } return ""; };
         /* Word's own Caption style (by id or by name, through basedOn):
            the paragraph is a picture's caption. */
@@ -27361,7 +27385,8 @@
         if (dd.getElementsByTagName("parsererror").length) return null;
         return Array.prototype.map.call(dd.getElementsByTagNameNS(W, "p"), (p) => {
           const ppr = kid(p, "pPr");
-          const al = norm(val(kid(ppr, "jc"))) || styleJc(val(kid(ppr, "pStyle")));
+          const ps = val(kid(ppr, "pStyle"));
+          const al = ownStyle(ps) ? "" : (norm(val(kid(ppr, "jc"))) || styleJc(ps));
           let txt = "";
           Array.prototype.forEach.call(p.getElementsByTagNameNS(W, "t"), (t) => { txt += t.textContent; });
           return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null, caption: styleCaption(val(kid(ppr, "pStyle"))) };
@@ -37184,7 +37209,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v12"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v13"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -39959,8 +39984,15 @@
               try {
                 imp2 = irDocxHtmlToText('<p>Also: <a href="https://books.example.com/w"><em>The Winter Soundings</em></a>, <a href="https://books.example.com/f"><strong>A <i>Field</i> Guide</strong></a> and <em>plain</em>.</p>', ir2);
               } finally { irAbort(); }
-              if (!imp2.includes("[*The Winter Soundings*](https://books.example.com/w)") || !imp2.includes("[**A Field Guide**](https://books.example.com/f)")) bad.push("an italic / bold linked title lost its emphasis: " + JSON.stringify(imp2));
-              if (ir2.drops.em !== 2 || ir2.drops.strong !== 0) bad.push("the import report counts the emphasis wrong (em " + ir2.drops.em + ", strong " + ir2.drops.strong + "; expected 2 italics lost — the one outside the links and the one nested in the bold title — and 0 bold)");
+              /* The Word import's run walk keeps every level: the italic
+                 nested in the bold title comes in as ***both***. */
+              if (!imp2.includes("[*The Winter Soundings*](https://books.example.com/w)") || !imp2.includes("[**A** ***Field*** **Guide**](https://books.example.com/f)") || !imp2.includes(" and *plain*.")) bad.push("an italic / bold linked title lost its emphasis: " + JSON.stringify(imp2));
+              if (ir2.drops.em || ir2.drops.strong || ir2.carried.em !== 3 || ir2.carried.strong !== 3 || ir2.carried.links !== 2) bad.push("the import report counts the emphasis wrong (lost em " + ir2.drops.em + ", strong " + ir2.drops.strong + "; carried " + JSON.stringify(ir2.carried) + "; expected nothing lost, 3 italic, 3 bold and 2 links carried)");
+              docxLinks = [];
+              try {
+                const rt = docxInlineRuns(imp2);
+                if (!rt.includes('<w:rPr><w:rStyle w:val="Hyperlink"/><w:b/><w:i/></w:rPr><w:t xml:space="preserve">Field</w:t>') || /<w:t[^>]*>[^<]*\*/.test(rt)) bad.push("the imported bold-italic link words did not export to Word: " + rt);
+              } finally { docxLinks = null; }
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "EPUB: links in prose, list, quote and Also by, validator 0 errors, no remote-resources; Word: 5 w:hyperlink runs on External relationships (address escaped), an italic line around a link stays italic on both sides and on the link, a digit-worded link is a link not a note, an address's * leaves emphasis alone, Hyperlink style, parts well-formed; Markdown verbatim; standalone HTML links; ACX reads the words; Word import brings a web link in as [words](address) and leaves a bookmark and a javascript: link as counted text, and an italic / bold linked title keeps its emphasis");
             } finally {
               applyBookDoc(keepDoc);
@@ -47817,6 +47849,62 @@
           } }
       );
       /* ==== /BEUK:pdfimport self-check ==== */
+      /* Integration (r12): a Beuk Word export read back by the Word
+         import keeps what the Word file can carry — italic, bold, bold
+         italic, links, lists, a quote with its attribution, a centred
+         block — and Beuk's own container styles neither fence stray
+         "::: center / right" blocks nor raise converter notes. */
+      SELF_CHECKS_ASYNC.push(
+        { id: "import.docx.beuk-roundtrip", feature: "import", name: "Word round trip: a chapter with bold italic, a link, both list kinds, a quote with its \"> — Name\" attribution, a centred sign, a text conversation, a letter, a captioned picture and a note, exported to Word and imported back, keeps the formatting, the links, the lists, the quote and its attribution, and the one centred block; the texts, letter and caption styles fence nothing and raise no converter notes, and the note mark is not reported as lost formatting",
+          async run() {
+            if (!window.JSZip || !window.mammoth) return scVerdict(false, "JSZip or Mammoth.js is not loaded");
+            const src = [
+              "She read *Moby-Dick* twice, **slowly**, and ***never*** again.[^1]",
+              "Visit [the *Beuk* store](https://shop.example.com/a--b?x=1) now.",
+              "- a rope\n- *two* candles",
+              "1. Leave at dawn.\n2. Never look back.",
+              "> The sea does not reward the impatient.\n> -- Anne Morrow Lindbergh",
+              "::: center\nKEEP OUT\n:::",
+              "::: texts Ana\nAna: are you up?\nBen: no\n:::",
+              "::: letter\nDear Tom,\n\nYours ever,\nMargaret\n:::",
+              '![The harbour](img:sc-rt1 "The harbour at dawn")',
+              "[^1]: A *note*."
+            ].join("\n\n");
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            let html = "", messages = [], scan = null;
+            try {
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: "Round Trip Check", author: "A. Writer" }), theme: keepDoc.theme,
+                sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "Round Trip", { number: "1", content: src })],
+                images: [{ id: "sc-rt1", name: "Harbour.png", mediaType: "image/png", ext: "png", data: FAKE_PNG }] });
+              const buf = await (await buildDocxBlob()).arrayBuffer();
+              scan = await irScanDocxXml(buf);
+              const res = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
+              html = res.value; messages = res.messages || [];
+            } finally {
+              applyBookDoc(keepDoc);
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+            return irCheckRun(() => {
+              const bad = [];
+              const rep = importDocxConverted("roundtrip.docx", html, messages, scan, {}, null);
+              const ch = state.sections.find((s) => s.type === "chapter" && /Round Trip/.test(s.title));
+              const c = ch ? String(ch.content || "") : "";
+              const want = ["She read *Moby-Dick* twice, **slowly**, and ***never*** again.", "[the *Beuk* store](https://shop.example.com/a--b?x=1)",
+                "- a rope\n- *two* candles", "1. Leave at dawn.\n2. Never look back.",
+                "> The sea does not reward the impatient.\n> — Anne Morrow Lindbergh", "::: center\nKEEP OUT\n:::"];
+              want.forEach((w) => { if (c.indexOf(w) === -1) bad.push("missing " + JSON.stringify(w)); });
+              const fences = (c.match(/^::: (?:center|right)$/gm) || []).length;
+              if (fences !== 1) bad.push(fences + " centre/right fences (want 1, the sign)");
+              if (ch && contentBlocksToHtml(c, ch, false, true, true).indexOf('<p class="attribution">— Anne Morrow Lindbergh</p>') === -1) bad.push("the attribution does not set");
+              const items = rep ? rep.items : [];
+              if (items.some((i) => i.kind === "subsup")) bad.push("the note mark was reported as lost superscript");
+              const notes = items.filter((i) => i.kind === "mammoth" && /Unrecognised paragraph style: '(Quote|Quote Attribution|Verse|Letter|Text Sent|Text Received|Text Note|Caption)'/.test(i.data.message));
+              if (notes.length) bad.push("converter notes for Beuk's own styles: " + notes.map((i) => i.data.message).join(" | "));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") + " — content: " + JSON.stringify(c.slice(0, 600)) : "bold italic, link, both lists, quote + attribution (set), one centred block; texts/letter/caption fence nothing; no converter notes for Beuk's styles; the note mark not reported as lost");
+            });
+          } }
+      );
       async function runAsyncSelfChecks() {
         const out = [];
         for (const c of SELF_CHECKS_ASYNC) {
