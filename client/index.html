@@ -17240,7 +17240,7 @@
            One's first scene break, in the flow of the text. It reuses
            a picture already in the sample's library and rides as
            section metadata, so the manuscript text — and its counts,
-           exactly 24,828 words — stays precisely as written. */
+           exactly 24,825 words — stays precisely as written. */
         const sceneFor = (title, at, id, name, alt, caption) => {
           const s = secs.find((x) => x.title === title);
           if (s) s.scenes = [{ at: at, imageId: id, name: name, caption: caption, alt: alt }];
@@ -17536,7 +17536,8 @@
           .replace(/!\[[^\]]*\]\(img:[^)\s"“”]*(?:[ \t]+["“”]([^"“”\n]*)["“”])?\)/g, (m0, cap) => " " + (cap || "") + " ")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
           .replace(mdLinkRe(), " $1 ") /* a link counts its words, never its address */
-          .replace(/\[\^?\d{1,3}\]:?/g, " ")
+          .replace(/\[\^?\d{1,3}\]:/g, " ")
+          .replace(/\[\^?\d{1,3}\]/g, "") /* a note mark goes without a trace: "ledger[^1]," is one word, not "ledger" and "," */
           .replace(/^([ \t]*>[ \t]*)(?:—|―|-{1,3})[ \t]+/gm, "$1 ") /* a quote attribution's dash is not a word */
           .replace(/^[ \t]*(?:[-•]|\d{1,3}[.)])[ \t]+/gm, " ") /* a list's markers are not words */
           .replace(/\*+/g, "") /* nor are emphasis marks: *Titanic*'s is one word */
@@ -20324,6 +20325,13 @@
         s = s.replace(/(\S) - (\S)/g, (m0, a, b, off, str) => (a === ">" && (off === 0 || str[off - 1] === "\n")) ? m0 : a + " — " + b);
         s = curlify(s);
         s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
+        /* A note definition starts its own block. Writers (and Markdown)
+           put one definition per line — "[^1]: …" straight under
+           "[^2]: …" — and every surface splits blocks on blank lines,
+           so without this the second definition ran into the first
+           note's text and printed as "[2]: …". Held logs are already
+           out of the way, so a log line is never split. */
+        s = s.replace(/([^\n])\n(?=\[\^?\d{1,3}\]:)/g, "$1\n\n");
         s = s.replace(/\n{3,}/g, "\n\n");
         if (linkUrls.length) s = s.replace(/(\d+)/g, (m, i) => linkUrls[+i]);
         s = s.trim();
@@ -23080,7 +23088,7 @@
         return t("history.unnamed");
       }
       function histWordCount(n) {
-        /* The count is formatted (24,828) before it reaches t(), so
+        /* The count is formatted (24,825) before it reaches t(), so
            the plural form is chosen here rather than by t()'s
            numeric-{n} rule. */
         return t(n === 1 ? "history.words" : "history.wordsPlural", { n: fmtNum(n) });
@@ -41507,7 +41515,7 @@
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
-        { id: "sample.toggle.empty-to-sample-to-empty", feature: "sample", name: "Sample toggle 0 ↔ 25K: from the empty desk Load lands the full 24,828 words, Remove returns exactly 0 words and the genuine empty state (blank title/author, no content in any section, stats 0 words / 0 pages), and Load again lands 24,828 — a stable toggle; nothing is ever restored",
+        { id: "sample.toggle.empty-to-sample-to-empty", feature: "sample", name: "Sample toggle 0 ↔ 25K: from the empty desk Load lands the full 24,825 words, Remove returns exactly 0 words and the genuine empty state (blank title/author, no content in any section, stats 0 words / 0 pages), and Load again lands 24,825 — a stable toggle; nothing is ever restored",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
@@ -41516,7 +41524,7 @@
               sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
               if (!isEmptyDesk() || bookWordTotal() !== 0) return scVerdict(false, "fixture failed: the desk did not start empty");
               if (!loadSampleStory()) return scVerdict(false, "load refused from the empty desk");
-              if (bookWordTotal() !== 24828 || !sampleState.loaded) return scVerdict(false, "load landed " + bookWordTotal() + " words, not 24,828");
+              if (bookWordTotal() !== 24825 || !sampleState.loaded) return scVerdict(false, "load landed " + bookWordTotal() + " words, not 24,825");
               if (!removeSampleStory()) return scVerdict(false, "remove refused");
               const emptyOk = bookWordTotal() === 0 && isEmptyDesk() && !sampleState.loaded &&
                 state.meta.title === "" && state.meta.author === "" &&
@@ -41524,14 +41532,14 @@
               const statsOk = $("statWords").textContent === "0" && $("statPages").textContent === "0";
               if (!emptyOk || !statsOk) return scVerdict(false, "remove left " + bookWordTotal() + " words (empty state " + emptyOk + ", stats 0/0 " + statsOk + ") — the desk is not empty");
               if (!loadSampleStory()) return scVerdict(false, "second load refused — the toggle is not stable");
-              return scVerdict(bookWordTotal() === 24828 && sampleState.loaded,
-                "0 → 24,828 → 0 → 24,828: Load fills the desk, Remove empties it completely, Load fills it again");
+              return scVerdict(bookWordTotal() === 24825 && sampleState.loaded,
+                "0 → 24,825 → 0 → 24,825: Load fills the desk, Remove empties it completely, Load fills it again");
             } finally {
               applyBookDoc(keepDoc);
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
-        { id: "sample.load.instant-single-swap", feature: "sample", name: "Instant load: a single Load from the empty desk lands the full 24,828 words and the first chapter's full content synchronously — asserted in the same tick the load call returns, with the first chapter open and the stats already updated; no timers, no polling, no staged reveal",
+        { id: "sample.load.instant-single-swap", feature: "sample", name: "Instant load: a single Load from the empty desk lands the full 24,825 words and the first chapter's full content synchronously — asserted in the same tick the load call returns, with the first chapter open and the stats already updated; no timers, no polling, no staged reveal",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
@@ -41542,11 +41550,11 @@
               const first = state.sections.find((s) => s.type === "chapter");
               const active = activeSection();
               return scVerdict(
-                ok && sampleState.loaded && bookWordTotal() === 24828 &&
+                ok && sampleState.loaded && bookWordTotal() === 24825 &&
                 !!first && String(first.content || "").length > 500 &&
                 !!active && active.id === first.id &&
-                $("statWords").textContent === fmtNum(24828),
-                "in one synchronous swap the story is simply there: 24,828 words counted, first chapter open with its full text, stats already reading " + $("statWords").textContent);
+                $("statWords").textContent === fmtNum(24825),
+                "in one synchronous swap the story is simply there: 24,825 words counted, first chapter open with its full text, stats already reading " + $("statWords").textContent);
             } finally {
               applyBookDoc(keepDoc);
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
@@ -41715,7 +41723,7 @@
               applyBookDoc(keepDoc);
             }
           } },
-        { id: "chapter.backdrop.export", feature: "chapter", name: "Chapter backdrop exports: on the sample, Chapter One's backdrop ships in the EPUB as a packaged image with a manifest entry, referenced as a decorative CSS background from the chapter's own XHTML (never as an <img>, no alt demanded), its plate still ships as its own XHTML, the print interior carries the backdrop full-bleed on the opening page, and the sample's counts stay exactly 24,828 words",
+        { id: "chapter.backdrop.export", feature: "chapter", name: "Chapter backdrop exports: on the sample, Chapter One's backdrop ships in the EPUB as a packaged image with a manifest entry, referenced as a decorative CSS background from the chapter's own XHTML (never as an <img>, no alt demanded), its plate still ships as its own XHTML, the print interior carries the backdrop full-bleed on the opening page, and the sample's counts stay exactly 24,825 words",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
@@ -41739,16 +41747,16 @@
               const print = buildPrintHtml();
               const printOk = print.includes("bd-layer bd-whisper") && print.includes("background-image:url(data:image") &&
                 print.includes(".print-sec .bd-layer") && print.includes("print-color-adjust: exact");
-              const wordsOk = bookWordTotal() === 24828;
+              const wordsOk = bookWordTotal() === 24825;
               const val = validateEpubPackage(files);
               return scVerdict(packaged && manifestOk && refOk && plateOk && printOk && wordsOk && val.errors === 0,
-                "backdrop image packaged (" + packaged + ") and declared in the manifest (" + manifestOk + "); the chapter XHTML references it as a decorative CSS background, never an <img> (" + refOk + "); the plate still ships as its own XHTML (" + plateOk + "); the print interior carries the backdrop with its full-bleed rule (" + printOk + "); words still 24,828 (" + wordsOk + "); validator errors " + val.errors);
+                "backdrop image packaged (" + packaged + ") and declared in the manifest (" + manifestOk + "); the chapter XHTML references it as a decorative CSS background, never an <img> (" + refOk + "); the plate still ships as its own XHTML (" + plateOk + "); the print interior carries the backdrop with its full-bleed rule (" + printOk + "); words still 24,825 (" + wordsOk + "); validator errors " + val.errors);
             } finally {
               applyBookDoc(keepDoc);
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
-        { id: "sample.spreadbleed", feature: "sample", name: "Spread-bleed, sample-wide: every body section of The Lantern Coast carries its own diptych — two distinct library halves, the left a full-bleed plate with alt text, the right the Whisper backdrop; the plate leaf stands immediately before the opening leaf, the painting continuing across the turn of the page, and the exported print HTML carries each plate and each opening's backdrop full-bleed to trim; a section without a painting keeps the plain recto law; the book stays exactly 24,828 words",
+        { id: "sample.spreadbleed", feature: "sample", name: "Spread-bleed, sample-wide: every body section of The Lantern Coast carries its own diptych — two distinct library halves, the left a full-bleed plate with alt text, the right the Whisper backdrop; the plate leaf stands immediately before the opening leaf, the painting continuing across the turn of the page, and the exported print HTML carries each plate and each opening's backdrop full-bleed to trim; a section without a painting keeps the plain recto law; the book stays exactly 24,825 words",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
@@ -41843,11 +41851,11 @@
                     fails.push(label + ": plate leaf does not render the left half plain");
                 }
               });
-              const wordsOk = bookWordTotal() === 24828;
+              const wordsOk = bookWordTotal() === 24825;
               const allOk = printRuleOk && ch1Ok && wordsOk && missing.length === 0 && unpaired.length === 0 && fails.length === 0;
               return scVerdict(allOk,
                 pairCount + " of " + body.length + " body sections carry their own diptych, facing across the gutter, " + spreadCount + " of them full-strength Spreads (Chapter One template pairing intact: " + ch1Ok + "); " +
-                "print carries the full-bleed backdrop rule (" + printRuleOk + "); words still 24,828 (" + wordsOk + ")" +
+                "print carries the full-bleed backdrop rule (" + printRuleOk + "); words still 24,825 (" + wordsOk + ")" +
                 (missing.length ? "; no painting yet: " + missing.join(", ") : "") +
                 (unpaired.length ? "; plated but still awaiting its diptych: " + unpaired.join(", ") : "") +
                 (fails.length ? "; failures — " + fails.join(" | ") : ""));
@@ -41889,6 +41897,23 @@
             } finally {
               applyBookDoc(keepDoc);
             }
+          } },
+        { id: "chapter.notes.lines", feature: "chapter", name: "Notes: definitions written one per line (\"[^1]: …\" straight under \"[^2]: …\", no blank line between) are each their own note in the preview, print, EPUB and Word, never one note with \"[2]:\" run into it; a log keeps such lines as typed",
+          run() {
+            const bad = [];
+            const content = "One ledger[^1], two[^2] and three[^3].\n[^1]: First note.\n[^2]: Second note.\n[^3]: Third note.";
+            const s = mkSection("body", "chapter", "Notes", { number: "1", content: content });
+            const html = contentBlocksToHtml(s.content, s, false, true, true);
+            const ends = (html.match(/class="endnote"/g) || []).length;
+            if (ends !== 3) bad.push("expected 3 notes, got " + ends);
+            if (/\[\^?\d\]:/.test(html)) bad.push("a definition leaked into the text: " + (html.match(/.{0,40}\[\^?\d\]:.{0,40}/) || [""])[0]);
+            if (!/First note\.\s*<\/p>/.test(html.replace(/<a [^>]*>[^<]*<\/a>/g, "")) && !/First note\./.test(html)) bad.push("note 1 lost its text");
+            const docxNotes = collectDocxNotesFrom(content);
+            if (docxNotes.length !== 3 || docxNotes[1].text.indexOf("Second note.") !== 0) bad.push("Word notes: " + JSON.stringify(docxNotes.map((n) => n.text)));
+            const logged = beautifyText("::: log\n[^1]: raw one\n[^2]: raw two\n:::");
+            if (logged.indexOf("[^1]: raw one\n[^2]: raw two") === -1) bad.push("a log's lines were split: " + JSON.stringify(logged));
+            if (countWords(content) !== 11) bad.push("word count " + countWords(content));
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "three one-per-line definitions set as three notes (preview/print/EPUB markup and Word); none leaked as \"[2]:\"; a log keeps its lines; " + countWords(content) + " words");
           } },
         { id: "chapter.containers", feature: "chapter", name: "Containers: \"::: kind\" … \":::\" fences are read before the text splits into blocks (content spans blank lines, an unclosed one runs to the end, a stray close is dropped, an unknown kind sets its content as ordinary paragraphs); the fence lines are not words, not narrated, keep their fences in the Markdown export; the toolbar fences a selection or the cursor's paragraph and takes the fences away again",
           run() {
@@ -44265,7 +44290,7 @@
               const sec = $("edSecWords").textContent, book = $("edBookWords").textContent, zen = $("zenCount").textContent;
               /* BEUK:selfchecks — a section's count is its body words
                  plus its title and subtitle (sectionWords, the one
-                 function every count reads, and the sample's 24,828
+                 function every count reads, and the sample's 24,825
                  total rests on it). The old test looked for a bare "5",
                  true only on an untitled section: on the sample's
                  Chapter One ("The Ferry Crossing" / "In which Mara
@@ -45785,7 +45810,7 @@
             const okOther = es === null && note.indexOf(esc(t("insights.easeOnlyEn"))) !== -1 && note.indexOf("<svg") === -1;
             return scVerdict(okScore && okSyl && okOther, "“The cat sat on the mat.” scores " + score + " (expected " + exact + ", " + okScore + "); syllables water/table/cake/really/harbour = " + syl + " (" + okSyl + "); Spanish book: no score, a note instead (" + okOther + ")");
           } },
-        { id: "insights.perf", feature: "insights", name: "Insights stay quick: on the sample book (24,828 words) every section is computed and drawn from cold in under 600 ms, and opening an unchanged book again is served from the per-revision cache",
+        { id: "insights.perf", feature: "insights", name: "Insights stay quick: on the sample book (24,825 words) every section is computed and drawn from cold in under 600 ms, and opening an unchanged book again is served from the per-revision cache",
           run() {
             const keepFacts = insFacts;
             try {

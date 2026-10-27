@@ -1933,6 +1933,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The list markup is parsed and typeset in the studio; the Word import and export are built there too.',
   },
   {
+    id: 'chapter.notes.lines',
+    title: 'Notes: definitions written one per line each become their own note, never one note with the next run into it',
+    kind: 'client-only',
+    reason: 'Notes are parsed and typeset in the studio (beautifyText splits definitions apart before every surface reads them).',
+  },
+  {
     id: 'chapter.containers',
     title: 'Containers: "::: kind" … ":::" fences are read before blocks split, unknown kinds set as paragraphs, fences are never words, and the toolbar fences and unfences',
     kind: 'client-only',

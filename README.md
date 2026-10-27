@@ -292,7 +292,7 @@ repeats them. Story Insights, Goals, History and Reader comments are one
 always-visible row of small labelled icon buttons (full names as tooltip
 and accessible name). The statistics (counts, streak, goals, Front /
 Body / Back progress) are a disclosure whose header carries a one-line
-live summary (`24,828 words · ~100 pages · 1h 50m`), closed by default;
+live summary (`24,825 words · ~100 pages · 1h 50m`), closed by default;
 the shelf line stays outside it so a sync warning is never folded away.
 The outline's Front Matter / Body / Back Matter headings are toggles
 with a section count; arriving at a section (click, next/prev, search,
@@ -1683,7 +1683,7 @@ it stays legible at 390 px). Results are cached per book revision (each
 section's id, order, inclusion, type, titles and a hash of its text, plus
 the book and interface language): reopening an unchanged book draws from
 memory, any edit recomputes. Measured in headless Chromium (Playwright
-1.49 container): the 24,828-word sample computes from cold in about
+1.49 container): the 24,825-word sample computes from cold in about
 120 ms and is computed and drawn in about 200 ms; a ~99,000-word book
 (the sample plus three copies with each sentence's words shuffled)
 computes from cold in 430–470 ms; a reopen of an unchanged book is a
@@ -1739,7 +1739,7 @@ language and title):
   Chinese, Korean, Devanagari, Thai… — measured on the text, not the
   language setting) gets a short note instead of guessed names.
 
-On the sample (24,828 words, N = 3) it finds 32 names; the 12 shown are
+On the sample (24,825 words, N = 3) it finds 32 names; the 12 shown are
 Mara 120, Tomas 60, Gullwick 48, Nell 38, Agnes 29, Petra 25, Rill 22,
 Mr. Venn 20, Cormorant 18, Miss Vane 17, Venn 17, East Bank 16.
 Exact spellings stay separate rows (Vane, Miss Vane, Elias Vane): Beuk
