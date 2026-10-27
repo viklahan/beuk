@@ -2569,6 +2569,43 @@ flattened. The marks are not counted as words. The editor's toolbar has
 List and Numbered buttons that turn the selected lines (or the paragraph)
 into a list and back. Self-check: `chapter.lists`.
 
+## Containers: verse, centre, right
+
+A line exactly `::: kind` (an optional argument may follow the kind) opens a
+container and a line exactly `:::` closes it; what lies between may span
+blank lines. Containers are read before the text is split into blocks
+(`parseContainers` in `client/index.html`); an unclosed one runs to the
+end of the section, a stray `:::` is dropped, containers do not nest, and
+a kind Beuk does not know sets its content as ordinary paragraphs. The
+fence lines are markup: never counted as words, never narrated, and kept as
+fences in the Markdown export (the same fenced-div syntax Pandoc reads).
+
+Each kind is one entry in `CONTAINER_KINDS` — `html(seg, cx)` for the
+preview, print interior and EPUB, `docx(seg, cx)` for the Word export, and
+`keepLines` / `keepIndent` flags (the beautifier keeps the leading indent of
+lines inside a `keepIndent` kind). The kinds today:
+
+- `verse` — every line break kept, stanzas separated by blank lines, a
+  line's leading spaces kept as its indent (a tab is four). Set flush left
+  and ragged whatever the book's justification, no first-line indent or
+  drop cap, a long line's turn-over hung, a stanza kept on one page when it
+  fits. In Word: one `Verse`-style paragraph per stanza with real line
+  breaks.
+- `center` / `right` — the enclosed paragraphs set centred / flush right
+  with no first-line indent (signs, notes, sign-offs); in Word the same
+  paragraphs with `w:jc` center / right.
+
+The editor toolbar's Verse, Centre and Right buttons fence the selected
+lines (or the cursor's paragraph) and take the fences away again. A Word
+file's centred and right-aligned paragraphs — Mammoth's HTML carries no
+alignment, so it is read from `word/document.xml` itself, the paragraph's
+own `w:jc` or its style's through `basedOn` (`irDocxParaAligns`) — come in
+as `::: center` / `::: right`, a run of neighbours sharing one container.
+That happens only after the manuscript's first heading, so a centred title
+page stays the lines the title-page reader expects, and a centred chapter
+heading line stays a heading. Self-checks: `chapter.containers`,
+`chapter.verse`, `chapter.align`.
+
 ## Ramp: `/ramp`
 
 `/ramp` (`client/site/ramp.html`) is a gallery of books set in Beuk and

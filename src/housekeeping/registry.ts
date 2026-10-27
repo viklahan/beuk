@@ -1933,6 +1933,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The list markup is parsed and typeset in the studio; the Word import and export are built there too.',
   },
   {
+    id: 'chapter.containers',
+    title: 'Containers: "::: kind" … ":::" fences are read before blocks split, unknown kinds set as paragraphs, fences are never words, and the toolbar fences and unfences',
+    kind: 'client-only',
+    reason: 'The container parser, word counts, Markdown export and editor toolbar all run in the studio.',
+  },
+  {
+    id: 'chapter.verse',
+    title: 'Verse: line breaks and indents kept, stanzas set ragged and unindented in preview, print and EPUB, and as Verse paragraphs with real line breaks in Word',
+    kind: 'client-only',
+    reason: 'The verse is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.align',
+    title: 'Centre and right: aligned blocks in preview, print and EPUB, w:jc in the Word export, and centred/right paragraphs come in from Word as containers',
+    kind: 'client-only',
+    reason: 'The alignment is typeset by the studio renderer; the Word import reads the package in the browser.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',
