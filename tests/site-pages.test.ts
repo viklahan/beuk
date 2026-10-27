@@ -26,7 +26,7 @@ const FALSE_CLAIMS = [
 ];
 
 test('the site pages exist, make no false claims, carry link previews and a canonical URL', () => {
-  assert.deepEqual([...COMPARE_SLUGS], ['atticus', 'vellum', 'reedsy-studio', 'dabble']);
+  assert.deepEqual([...COMPARE_SLUGS], ['atticus', 'vellum', 'reedsy-studio', 'dabble', 'scrivener', 'novelcrafter']);
   for (const p of PAGES) {
     assert.ok(existsSync(path.join(root, ...p.file)), p.file.join('/'));
     const html = read(...p.file);
@@ -92,11 +92,15 @@ test('every comparison page has a sources list of links to the vendor, with the 
     vellum: /^https:\/\/vellum\.pub\//,
     'reedsy-studio': /^https:\/\/reedsy\.com\/studio/,
     dabble: /^https:\/\/www\.dabblewriter\.com\//,
+    scrivener: /^https:\/\/www\.literatureandlatte\.com\//,
+    novelcrafter: /^https:\/\/www\.novelcrafter\.com\//,
   };
   for (const slug of COMPARE_SLUGS) {
     const html = read('client', 'site', 'compare', `${slug}.html`);
     const sources = /<section class="sources" id="sources"[\s\S]*?<ol>([\s\S]*?)<\/ol>/.exec(html)?.[1] ?? '';
-    const items = [...sources.matchAll(/<li id="src-(\d+)"><a href="([^"]+)"[^>]*>[^<]+<\/a>[^<]*Checked 26 October 2026\.<\/li>/g)];
+    const checked = /checked (\d{1,2} [A-Z][a-z]+ 20\d\d)/.exec(html)?.[1] ?? '';
+    assert.ok(checked, `${slug}: the date it was checked is visible above the table`);
+    const items = [...sources.matchAll(new RegExp(`<li id="src-(\\d+)"><a href="([^"]+)"[^>]*>[^<]+<\\/a>[^<]*Checked ${checked}\\.<\\/li>`, 'g'))];
     assert.ok(items.length >= 1, `${slug}: a sources list`);
     assert.equal(items.length, (sources.match(/<li /g) ?? []).length, `${slug}: every source carries its link and the date`);
     for (const [, , url] of items) assert.match(url, vendorHost[slug], `${slug}: ${url} is the vendor's own site`);
@@ -105,7 +109,6 @@ test('every comparison page has a sources list of links to the vendor, with the 
     assert.ok(marks.length >= 5, `${slug}: facts carry source marks`);
     for (const id of marks) assert.ok(ids.has(id), `${slug}: [${id}] is listed`);
     for (const id of ids) assert.ok(marks.includes(id), `${slug}: source ${id} is used`);
-    assert.match(html, /checked 26 October 2026/, `${slug}: the date is visible above the table`);
     // Fair: says where the other tool is stronger, and what Beuk doesn't do.
     assert.match(html, /<h2 id="h-honest">Where [^<]+ is stronger<\/h2>/, slug);
     assert.match(html, /What Beuk doesn't do/, slug);

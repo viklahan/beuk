@@ -3,7 +3,7 @@ import type { Config } from '../config.js';
 import { getHelpContent } from '../help/content.js';
 
 /** The comparison pages (client/site/compare/<slug>.html, served by Caddy at /compare/<slug>). */
-export const COMPARE_SLUGS = ['atticus', 'vellum', 'reedsy-studio', 'dabble'] as const;
+export const COMPARE_SLUGS = ['atticus', 'vellum', 'reedsy-studio', 'dabble', 'scrivener', 'novelcrafter'] as const;
 
 /**
  * The public site's crawler files, served by the app (Caddy proxies these

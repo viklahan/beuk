@@ -239,6 +239,20 @@
 		rewrite * /site/compare/dabble.html
 		file_server
 	}
+	redir /compare/scrivener/ /compare/scrivener 308
+	handle /compare/scrivener {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/scrivener.html
+		file_server
+	}
+	redir /compare/novelcrafter/ /compare/novelcrafter 308
+	handle /compare/novelcrafter {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/compare/novelcrafter.html
+		file_server
+	}
 
 	# === STATIC CLIENT ===
 	# The built Beuk web client lives in ./client (mounted at /srv/client).
