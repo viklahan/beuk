@@ -1661,6 +1661,90 @@ snapshot labels are unchanged.
 Self-checks (client-only in Housekeeping): `goals.road.only-logged-days`,
 `goals.road.pace-line`, `history.delta.words`, `history.delta.sections`.
 
+## Studio: Goals — writing days, a plan from the deadline, pace, written vs kept (client-only)
+
+All of this lives in the existing **Goals** room and the sidebar's goal
+lines; nothing new appears anywhere until the writer sets it.
+
+**Writing days.** Seven weekday toggles (Monday first, as the habit
+calendar). Default: every day. At least one stays on. Stored with the
+book's goals as `goals.days` (Sun..Sat, `Date.getDay` order) — kept only
+when it differs from "every day", so books with plain goals keep their old
+shape. **The deadline day counts** (`goals.dlDay`, default off: the
+deadline is the hand-in day, as in Scrivener's "Allow writing on day of
+deadline").
+
+**Set my daily target from the deadline** (`goals.auto`; needs a project
+target and a deadline, otherwise the switch rests and says so). The daily
+target becomes `ceil(words left at the start of today ÷ writing days
+left)`, today included when it is a writing day (`goalPlan`). Today's
+words count toward today, so the figure holds still while you write; it
+is worked out from the numbers as they stand each day, so a missed day
+spreads over the days still to come, and words removed raise it. The room
+shows the arithmetic under the daily line — "15,000 words left over 10
+writing days → 1,500 a day" (Scrivener's own example). On a rest day:
+"Today is a rest day; words you write still count", and the words left
+spread over the writing days ahead. Passed deadline, target reached, no
+writing days left, and no target/deadline each get one plain sentence and
+no number. While it is on, the daily field shows the figure, read-only;
+the separate "N words a day from here" line steps aside so two figures
+never sit side by side. That "from here" pace (and the road chart's key)
+now also counts writing days; with every day a writing day and the
+deadline day off it is exactly the old calendar figure.
+
+**On pace** (`goalOnPace`). When a deadline is set (or changed) in the
+room, the book's length that day is stored as the start point
+(`goals.start = { day, w }`, rides the book). A book that had a deadline
+before this change gets its start point the first time Goals is opened —
+from that day, never earlier. One line, in the room and the sidebar:
+"On pace with the straight line from <date>." / "Behind by N words…" /
+"Ahead by N words…", against the straight line from the start point to
+the target on the deadline, stepped by writing days and read at the start
+of today (only writing days already behind you are asked for, so a
+morning never opens behind). "On pace" means within 1% of the whole
+distance or 10 words. Nothing shows past the deadline, once the target is
+reached, or without a start point. No red, no countdown.
+
+**Written and kept.** The day log (`beuk.writelog.v1`) only ever kept one
+net figure a day, floored at zero, so it cannot say what was written and
+what was taken away. From the first observation after this change it also
+keeps, per book, every rise in the count (written, `a`) and every fall
+(removed, `r`) — the same count movement at the same funnel
+(`updateStats` → `wlogObserve`), so imports and book arrivals never
+count: `wlog.ar[bookId] = { from, days: { YYYY-MM-DD: { a, r } } }`.
+`from` is the first day kept; if that day already had words in the old
+tally the split starts the next day, so no day is half-counted. Nothing
+before `from` is estimated or back-filled. The room shows Today / Last 7
+days / Last 30 days: Written, Removed and Kept (net, signed), and "From
+<date>, when the log began keeping words written and removed" whenever
+the period starts before the split did. "Written" is count movement
+observed at each edit, so replacing five words with three reads as two
+removed, not five removed and three written.
+
+**Rest days don't break the streak.** The local streak steps over every
+day that is not a writing day (`goalStreakBridges`): Friday → Monday
+continues on weekdays-only, a missed writing day still ends it, writing
+on a rest day adds to it, and a rest day today reads "N-day writing
+streak — today is a rest day. The streak is safe." The streak uses the
+writing days of the book on the desk. The server streak shown when signed
+in is computed by the server and does not know writing days yet.
+
+**Just write** (`beuk.justwrite.v1`, per browser). Pauses the goal lines
+beside the stats, the streak line ("Just writing — tracking is paused."),
+and the room's progress, pace, written-and-kept, road and calendar; a note
+in the room says so. Words, the streak and the split are still logged.
+
+**Clear tracking data.** A button in the room's Tracking section; asks in
+the studio's own confirm dialog (`cloudConfirm`, the safe choice holds
+focus — never `window.confirm`). Yes wipes, on this device, the habit log
+(days, the road's lengths, the written/removed split) and the local
+streak, and restarts the pace line's start point from today. The goals
+themselves stay and no section, meta or history is touched.
+
+Self-checks (client-only in Housekeeping): `goals.deadline.daily`,
+`goals.pace`, `goals.kept`, `goals.restdays.streak`,
+`goals.justwrite.clear`.
+
 ## Studio: Story Insights (client-only)
 
 The **Insights** button in the sidebar's tools row opens a quiet report on

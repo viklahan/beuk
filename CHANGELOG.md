@@ -12,6 +12,14 @@ to make well.
 - The Print Interior View shows the bleed, shaded beyond a dashed trim line.
 - Printing from the browser still gives a PDF at the trim size; the bleed comes from Beuk's own print PDF.
 
+**Goals that plan with you**
+- **Writing days.** Choose the days of the week you write, and whether the deadline day counts.
+- **Set my daily target from the deadline.** With a project target and a deadline, Beuk works out the daily target for you and shows the sum: "15,000 words left over 10 writing days → 1,500 a day". It is worked out again each day, so a missed day spreads over the days still to come.
+- **On pace.** One line tells you whether the book is on pace, behind or ahead of a straight line from the day you set the deadline. It never counts down at you.
+- **Written and kept.** See the words you wrote and the words the book kept after deletions, today or over the last 7 or 30 days. Beuk starts keeping these from today; earlier days are not guessed.
+- **Rest days don't break your streak.** Days you don't write on are skipped.
+- **Just write.** Turn the goals, streak and pace off and write; your words are still counted. **Clear tracking data** wipes the log and the streak on this device and never touches a word of your book.
+
 ## 2026-10-27 — Ramp opens like a book
 
 - **Turn the pages.** A Ramp book now lies open on a desk under a lamp, in a room lit by the book's own colour: violet for The Woolly School, deep sea for The Travel Guide, ember for The Sunken Vault. The page lifts and turns over the spine, and its back is the real next page. Page edges thicken on the left and thin on the right as you read, the gutter is shaded, and a folded corner shows where to turn. Click a page, swipe, or use the arrow keys.
