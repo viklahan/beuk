@@ -1933,6 +1933,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The list markup is parsed and typeset in the studio; the Word import and export are built there too.',
   },
   {
+    id: 'print.footnotes.page',
+    title: 'Notes in print: at the foot of the page (new books) or at the end of the chapter (books saved before the choice); the print interior carries the notes and the page geometry, the EPUB keeps linked endnotes, and the Print Interior View sets each note at its reference\'s page foot',
+    kind: 'client-only',
+    reason: 'The setting, the print interior and the spread view are built in the studio; the renderer half (measuring, cutting the pages, drawing the notes) is covered by tests/print-footnotes.test.ts.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',

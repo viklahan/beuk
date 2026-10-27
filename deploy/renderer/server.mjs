@@ -44,7 +44,14 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
-import { planSections, needsFinishing, withPageMap, startPages, blanksFor, stampable, finalHtml, stampSpreads } from './spreads.mjs';
+import { planSections, needsFinishing, withPageMap, startPages, blanksFor, stampable, finalHtml, stampCss, stampSpreads } from './spreads.mjs';
+import { footnoteConfig, settleFootnotes, placedHtml, misplaced, withRefMap, readDests, placementsIn, stampFootnotes } from './footnotes.mjs';
+
+// The share of the job's time the page-bottom notes may take to settle;
+// a section not settled by then keeps its notes at its end.
+const FOOTNOTE_SHARE = Number(process.env.RENDER_FOOTNOTE_SHARE ?? 0.55);
+// Pages settling sections at once.
+const FOOTNOTE_PAGES = Math.max(1, Math.min(4, Number(process.env.RENDER_FOOTNOTE_PAGES ?? 2)));
 
 const PORT = Number(process.env.RENDER_PORT ?? 3100);
 const CHROMIUM = process.env.RENDER_CHROMIUM_BIN ?? '/usr/bin/chromium';
@@ -123,13 +130,13 @@ function readBody(req) {
 }
 
 async function render(body) {
-  // The document the page is answered with: the measuring pass's, then
-  // the final one (see spreads.mjs). A book with no side to keep and no
-  // spread is rendered in one plain pass, as before.
+  // The document the page is answered with: page-bottom notes' own
+  // measuring passes (see footnotes.mjs), the page map, then the final
+  // one (see spreads.mjs). A book with no side to keep, no spread and
+  // no page-bottom notes is rendered in one plain pass, as before.
   const html = Buffer.isBuffer(body) ? body.toString('utf8') : String(body);
-  const plan = planSections(html);
-  const finishing = needsFinishing(plan);
-  let doc = finishing ? withPageMap(html, plan) : html;
+  const started = Date.now();
+  const footnotes = { placed: 0, kept: 0, passes: 0 };
   const profile = await mkdtemp(path.join(os.tmpdir(), 'beuk-render-'));
   let browser = null;
   let timer = null;
@@ -144,50 +151,129 @@ async function render(body) {
         args: CHROMIUM_ARGS,
         env: { HOME: profile, XDG_CONFIG_HOME: profile, XDG_CACHE_HOME: profile, PATH: process.env.PATH ?? '' },
       });
-      const page = await browser.newPage();
-      await page.setJavaScriptEnabled(false);
-      await page.setRequestInterception(true);
-      page.on('request', (request) => {
-        if (request.isInterceptResolutionHandled()) return;
-        const url = request.url();
-        if (url.startsWith('data:')) {
-          request.continue();
-          return;
+      // A fenced page that prints whatever document it is handed; each
+      // page answers its own navigation with its own document.
+      const openPage = async () => {
+        const page = await browser.newPage();
+        let doc = '';
+        await page.setJavaScriptEnabled(false);
+        await page.setRequestInterception(true);
+        page.on('request', (request) => {
+          if (request.isInterceptResolutionHandled()) return;
+          const url = request.url();
+          if (url.startsWith('data:')) {
+            request.continue();
+            return;
+          }
+          if (url === DOC_URL && request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+            request.respond({
+              status: 200,
+              contentType: 'text/html; charset=utf-8',
+              headers: { 'content-security-policy': CSP, 'cache-control': 'no-store' },
+              body: doc,
+            });
+            return;
+          }
+          if (blocked.length < 200) blocked.push(url.slice(0, 200));
+          request.abort('blockedbyclient');
+        });
+        // Same print parameters the previous in-app `chromium --headless
+        // --print-to-pdf --no-pdf-header-footer` call used: Chromium's
+        // headless command harness hard-codes printBackground and
+        // preferCSSPageSize to true and tags the PDF unless told not to
+        // (https://chromium.googlesource.com/chromium/src/+/HEAD/components/headless/command_handler/headless_command.js),
+        // and --no-pdf-header-footer turned displayHeaderFooter off.
+        return async (h) => {
+          doc = h;
+          await page.goto(DOC_URL, { waitUntil: 'load', timeout: TIMEOUT_MS });
+          return Buffer.from(await page.pdf({
+            preferCSSPageSize: true,
+            printBackground: true,
+            displayHeaderFooter: false,
+            tagged: true,
+            timeout: TIMEOUT_MS,
+          }));
+        };
+      };
+      const printDoc = await openPage();
+      // Page-bottom notes first: each section with notes is settled on
+      // its own, and comes back with its pages cut where its notes need.
+      let fn = null;
+      if (footnoteConfig(html)) {
+        let passes = 0;
+        // Sections settle independently: a second page lets two settle
+        // at once (the container has a CPU and a half).
+        const pool = [printDoc];
+        for (let i = 1; i < FOOTNOTE_PAGES; i++) pool.push(await openPage());
+        fn = await settleFootnotes({
+          html,
+          // a section is measured as it will print: a stamped spread's
+          // in-page pictures already stood down (see spreads.stampCss)
+          extraCss: stampCss(await stampable(planSections(html))),
+          render: (h) => { passes += 1; return printDoc(h); },
+          pool: pool.map((r) => (h) => { passes += 1; return r(h); }),
+          deadline: started + TIMEOUT_MS * FOOTNOTE_SHARE,
+          log: (m) => console.log(m),
+        });
+        footnotes.passes = passes;
+        if (fn) Object.assign(footnotes, { placed: fn.placed, kept: fn.kept });
+        if (fn && !fn.results.length) fn = null;
+      }
+      const dropNotes = (lost) => {
+        const n = lost.reduce((k, r) => k + r.hide.length, 0);
+        footnotes.kept += n;
+        footnotes.placed -= n;
+      };
+      // The page map, the final pass and the stamping, for a document
+      // with or without page-bottom notes. Returns null when the final
+      // pass put a settled section's references on other pages than
+      // its own pass did (then the book is finished again with every
+      // note at its section's end — a note is never drawn astray).
+      const finish = async (fnNow) => {
+        let source = fnNow ? placedHtml(html, fnNow.results) : html;
+        let plan = planSections(source);
+        if (!needsFinishing(plan) && !fnNow) return printDoc(source);
+        // With notes placed, a check that every section set in the book
+        // breaks where it broke on its own; one that does not keeps its
+        // notes at its end instead.
+        // The page map is measured wearing the final pass's own rules, so
+        // the pages it counts are the pages that print.
+        let stamped = await stampable(plan);
+        let starts = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          starts = await startPages(await printDoc(withRefMap(withPageMap(finalHtml(source, new Set(), stamped), plan), fnNow ? fnNow.refIds : [])));
+          if (!fnNow) break;
+          const bad = misplaced(fnNow.results, starts);
+          if (!bad.length) break;
+          console.log('footnotes: ' + bad.map((r) => r.sec.id).join(', ') + ' broke differently in the book; notes kept at the section end');
+          dropNotes(bad);
+          fnNow.results = attempt < 1 ? fnNow.results.filter((r) => !bad.includes(r)) : [];
+          if (!fnNow.results.length) return finish(null);
+          fnNow.refIds = fnNow.results.flatMap((r) => r.refIds);
+          source = placedHtml(html, fnNow.results);
+          plan = planSections(source);
+          stamped = await stampable(plan);
         }
-        if (url === DOC_URL && request.isNavigationRequest() && request.frame() === page.mainFrame()) {
-          request.respond({
-            status: 200,
-            contentType: 'text/html; charset=utf-8',
-            headers: { 'content-security-policy': CSP, 'cache-control': 'no-store' },
-            body: doc,
-          });
-          return;
+        const { before, finalStart } = blanksFor(plan, starts);
+        const finalDoc = finalHtml(source, before, stamped);
+        // The final pass names its references too: the notes are drawn
+        // by where the shipped pages put them, not by where they were
+        // expected.
+        let out = await printDoc(fnNow ? withRefMap(finalDoc, fnNow.refIds) : finalDoc);
+        let sections = null;
+        if (fnNow) {
+          sections = placementsIn(fnNow.results, (await readDests(out)).dests);
+          if (!sections) return null;
         }
-        if (blocked.length < 200) blocked.push(url.slice(0, 200));
-        request.abort('blockedbyclient');
-      });
-      await page.goto(DOC_URL, { waitUntil: 'load', timeout: TIMEOUT_MS });
-      // Same print parameters the previous in-app `chromium --headless
-      // --print-to-pdf --no-pdf-header-footer` call used: Chromium's
-      // headless command harness hard-codes printBackground and
-      // preferCSSPageSize to true and tags the PDF unless told not to
-      // (https://chromium.googlesource.com/chromium/src/+/HEAD/components/headless/command_handler/headless_command.js),
-      // and --no-pdf-header-footer turned displayHeaderFooter off.
-      const print = async () => Buffer.from(await page.pdf({
-        preferCSSPageSize: true,
-        printBackground: true,
-        displayHeaderFooter: false,
-        tagged: true,
-        timeout: TIMEOUT_MS,
-      }));
-      const first = await print();
-      if (!finishing) return first;
-      const { before, finalStart } = blanksFor(plan, await startPages(first));
-      const stamped = await stampable(plan);
-      doc = finalHtml(html, before, stamped);
-      await page.goto(DOC_URL, { waitUntil: 'load', timeout: TIMEOUT_MS });
-      const final = await print();
-      return stamped.size ? stampSpreads(final, plan, finalStart, stamped) : final;
+        if (stamped.size) out = await stampSpreads(out, plan, finalStart, stamped);
+        if (fnNow) out = (await stampFootnotes(out, fnNow.notesPdf, sections, fnNow.cfg, fnNow.refIds)).pdf;
+        return out;
+      };
+      const out = await finish(fn);
+      if (out) return out;
+      console.log('footnotes: the final pass moved a reference; every note kept at its section end');
+      dropNotes(fn.results);
+      return finish(null);
     })();
     // If the timeout wins, the browser is killed below and `work`
     // rejects later; that late rejection must not crash the process.
@@ -196,7 +282,7 @@ async function render(body) {
       timer = setTimeout(() => reject(Object.assign(new Error('timeout'), { status: 504 })), TIMEOUT_MS);
     });
     const pdf = await Promise.race([work, timeout]);
-    return { pdf, blocked };
+    return { pdf, blocked, footnotes };
   } finally {
     clearTimeout(timer);
     if (browser) {
@@ -230,11 +316,13 @@ const server = http.createServer(async (req, res) => {
     }
     if (!html.length) return send(res, 400, { error: 'empty document' });
     const started = Date.now();
-    const { pdf, blocked } = await render(html);
+    const { pdf, blocked, footnotes } = await render(html);
     console.log(
-      `render ok: ${html.length} B html -> ${pdf.length} B pdf in ${Date.now() - started} ms; ${blocked.length} request(s) blocked`,
+      `render ok: ${html.length} B html -> ${pdf.length} B pdf in ${Date.now() - started} ms; ${blocked.length} request(s) blocked` +
+        (footnotes.passes ? `; footnotes: ${footnotes.placed} at the page foot, ${footnotes.kept} at the section end, ${footnotes.passes} measuring pass(es)` : ''),
     );
     res.setHeader('x-beuk-blocked-requests', String(blocked.length));
+    if (footnotes.passes) res.setHeader('x-beuk-footnotes', `placed=${footnotes.placed}; kept=${footnotes.kept}; passes=${footnotes.passes}`);
     return send(res, 200, pdf, 'application/pdf');
   } catch (err) {
     const status = err && err.status === 504 ? 504 : 500;

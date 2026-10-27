@@ -54,6 +54,11 @@ test('print spreads: blank pages go exactly where a side was missed, and later s
   assert.equal(html.split('<div class="print-blank" aria-hidden="true"></div><section').length - 1, 2);
   assert.ok(html.includes('<div class="print-blank" aria-hidden="true"></div><section class="print-sec chapter-sec" id="ps-1"'));
   assert.ok(html.includes('#ps-2 .plate-page img { visibility: hidden !important; } #ps-2 .bd-layer.bd-page { display: none !important; }'));
+  // The measuring pass must wear the same rules (spreads.stampCss): the
+  // trim-wide layer otherwise overflows the page and Chromium shrinks
+  // the whole document, so the page map would not match the pages printed.
+  assert.ok(html.includes(spreads.stampCss(new Set(['ps-2']))));
+  assert.equal(spreads.stampCss(new Set()), '');
   assert.ok(html.includes('html, body { background: transparent !important; }'), 'the white page colour must not cover the pictures beneath');
   assert.ok(!spreads.finalHtml(DOC, new Set(), new Set()).includes('visibility: hidden'));
 });

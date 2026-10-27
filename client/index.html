@@ -1340,6 +1340,7 @@
       .pm-fields input { background: var(--panel); border: 1px solid var(--line-2); color: var(--ink); border-radius: 8px; padding: 7px 9px; font-size: 13.5px; width: 100%; }
       .pm-fields .tb-btn { grid-column: 1 / -1; justify-self: start; }
       .pm-block .switch-row { border: none; padding: 7px 0; }
+      .pm-hint { font-size: 12px; color: var(--muted); margin: 0 0 6px; line-height: 1.45; } /* BEUK:footnotes */
 
       /* ---------- Print interior view: facing-page spreads ----------
          The stage and chrome follow the app's theme; the PAGE itself
@@ -1361,6 +1362,11 @@
       .piv-spine { flex: none; width: 14px; background: linear-gradient(to right, rgba(24,18,8,.26), rgba(24,18,8,.04) 50%, rgba(24,18,8,.26)); }
       .piv-page { position: relative; flex: none; overflow: hidden; background: #fff; color: #191713; box-shadow: 0 3px 16px rgba(20,14,4,.30); }
       .piv-clip { position: absolute; overflow: hidden; }
+      /* BEUK:footnotes — a page's notes in the Print Interior View, at its foot */
+      .piv-fnotes { position: absolute; overflow: hidden; color: #000; }
+      .piv-fnrule { border-top: 0.5pt solid #000; width: 30%; min-width: 36pt; }
+      .piv-fnotes.piv-fncont .piv-fnrule { width: 100%; }
+      .piv-fnfrag { overflow: hidden; }
       .piv-plate-full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
       /* A paired spread (a chapter carrying both a plate and a backdrop):
          the opening leaf's backdrop leaves the clip and takes the print
@@ -2844,6 +2850,15 @@
                 <option value="none" data-i18n="print.folioNone">None</option>
               </select>
             </div>
+            <!-- BEUK:footnotes -->
+            <div class="pm-row">
+              <label for="selPrintNotes" data-i18n="print.notes">Notes in print</label>
+              <select id="selPrintNotes">
+                <option value="page" data-i18n="print.notesFoot">At the foot of the page</option>
+                <option value="end" data-i18n="print.notesEnd">At the end of the chapter</option>
+              </select>
+            </div>
+            <p class="pm-hint" data-i18n="print.notesHint">Beuk's print PDF sets each note at the foot of the page its reference falls on. Printed from the browser, the notes stay at the end of each chapter. The e-book keeps its notes at the end of each chapter, linked both ways.</p>
           </div>
           <p class="print-note" id="printNote"></p>
           <div class="fmt-actions">
@@ -3466,6 +3481,7 @@
           <div class="piv-switchrow"><button class="switch" id="tglPivRecto" type="button" aria-pressed="true" data-i18n-aria="exp.rectoTitle"></button><span data-i18n="exp.rectoTitle">Chapters open on a recto page</span></div>
           <div class="piv-switchrow"><button class="switch" id="tglPivLargePrint" type="button" aria-pressed="false" data-i18n-aria="exp.largePrintTitle"></button><span data-i18n="exp.largePrintTitle">Large Print edition</span></div>
           <div class="piv-switchrow"><button class="switch" id="tglPivGuides" type="button" aria-pressed="true" data-i18n-aria="piv.guides"></button><span data-i18n="piv.guides">Guides</span></div>
+          <label class="piv-ctl"><span data-i18n="print.notes">Notes in print</span><select id="pivNotes"><option value="page" data-i18n="print.notesFoot">At the foot of the page</option><option value="end" data-i18n="print.notesEnd">At the end of the chapter</option></select></label><!-- BEUK:footnotes -->
           <div class="piv-ctl"><span data-i18n="piv.zoom">Zoom</span>
             <div class="seg piv-zoomseg"><button type="button" id="pivZoomFit" data-i18n="piv.fit">Fit to window</button><button type="button" id="pivZoomActual" data-i18n="piv.actual">Actual size</button></div>
           </div>
@@ -9545,6 +9561,22 @@
         "print.omitBlankDesc": "空白的对页缓冲——章前的空左页——将完全裸印。",
         "print.folio": "页码", "print.folioCentre": "底部居中", "print.folioOuter": "底部外侧角", "print.folioNone": "无"
       });
+      /* BEUK:footnotes — Notes in print: at the foot of the page / at the end of the chapter. */
+      [
+        ["en", "Notes in print", "At the foot of the page", "At the end of the chapter", "Beuk's print PDF sets each note at the foot of the page its reference falls on. Printed from the browser, the notes stay at the end of each chapter. The e-book keeps its notes at the end of each chapter, linked both ways."],
+        ["es", "Notas en la edición impresa", "Al pie de la página", "Al final del capítulo", "El PDF de impresión de Beuk coloca cada nota al pie de la página donde cae su llamada. Si imprimes desde el navegador, las notas quedan al final de cada capítulo. El libro electrónico conserva las notas al final de cada capítulo, enlazadas en ambos sentidos."],
+        ["fr", "Notes à l'impression", "En bas de page", "En fin de chapitre", "Le PDF d'impression de Beuk place chaque note en bas de la page où tombe son appel. Imprimées depuis le navigateur, les notes restent en fin de chapitre. Le livre numérique garde ses notes en fin de chapitre, liées dans les deux sens."],
+        ["de", "Anmerkungen im Druck", "Am Fuß der Seite", "Am Ende des Kapitels", "Das Druck-PDF von Beuk setzt jede Anmerkung an den Fuß der Seite, auf der ihr Verweis steht. Aus dem Browser gedruckt, bleiben die Anmerkungen am Kapitelende. Das E-Book behält seine Anmerkungen am Kapitelende, in beide Richtungen verlinkt."],
+        ["it", "Note nella stampa", "A piè di pagina", "Alla fine del capitolo", "Il PDF di stampa di Beuk mette ogni nota a piè della pagina in cui cade il suo richiamo. Stampando dal browser, le note restano alla fine di ogni capitolo. L'e-book conserva le note alla fine di ogni capitolo, collegate nei due sensi."],
+        ["pt", "Notas na impressão", "No rodapé da página", "No fim do capítulo", "O PDF de impressão do Beuk coloca cada nota no rodapé da página onde cai a sua chamada. Ao imprimir pelo navegador, as notas ficam no fim de cada capítulo. O e-book mantém as notas no fim de cada capítulo, ligadas nos dois sentidos."],
+        ["nl", "Noten in druk", "Onderaan de pagina", "Aan het einde van het hoofdstuk", "De druk-pdf van Beuk zet elke noot onderaan de pagina waar de verwijzing staat. Afgedrukt vanuit de browser blijven de noten aan het einde van elk hoofdstuk. Het e-book houdt zijn noten aan het einde van elk hoofdstuk, in beide richtingen gelinkt."],
+        ["pl", "Przypisy w druku", "Na dole strony", "Na końcu rozdziału", "Drukowy PDF Beuk umieszcza każdy przypis na dole strony, na której pada jego odsyłacz. Przy drukowaniu z przeglądarki przypisy zostają na końcu każdego rozdziału. E-book zachowuje przypisy na końcu rozdziału, połączone w obie strony."],
+        ["ru", "Примечания в печати", "Внизу страницы", "В конце главы", "Печатный PDF Beuk ставит каждое примечание внизу страницы, на которую приходится его сноска. При печати из браузера примечания остаются в конце каждой главы. Электронная книга сохраняет примечания в конце главы, со ссылками в обе стороны."],
+        ["tr", "Baskıda notlar", "Sayfanın altında", "Bölümün sonunda", "Beuk'un baskı PDF'i her notu, gönderminin düştüğü sayfanın altına yerleştirir. Tarayıcıdan yazdırıldığında notlar her bölümün sonunda kalır. E-kitap notlarını her bölümün sonunda, iki yönlü bağlantılı olarak tutar."],
+        ["ar", "الحواشي في الطباعة", "أسفل الصفحة", "في نهاية الفصل", "يضع ملف PDF الطباعي من Beuk كل حاشية أسفل الصفحة التي تقع فيها إحالتها. عند الطباعة من المتصفح تبقى الحواشي في نهاية كل فصل. ويحتفظ الكتاب الإلكتروني بحواشيه في نهاية كل فصل، مرتبطة في الاتجاهين."],
+        ["ja", "印刷での注", "ページの下部（脚注）", "章の末尾（後注）", "Beuk の印刷用 PDF は、各注を参照記号のあるページの下部に組みます。ブラウザーから印刷した場合、注は各章の末尾に置かれます。電子書籍では、注は各章の末尾に置かれ、双方向にリンクされます。"],
+        ["zh-Hans", "印刷中的注释", "页面底部（脚注）", "章节末尾（尾注）", "Beuk 的印刷 PDF 会把每条注释排在其引用所在页的底部。从浏览器打印时，注释保留在每章末尾。电子书中的注释保留在每章末尾，并双向链接。"]
+      ].forEach(([lang, notes, foot, end, hint]) => Object.assign(UI_STRINGS[lang], { "print.notes": notes, "print.notesFoot": foot, "print.notesEnd": end, "print.notesHint": hint }));
 
       /* Supplementary keys (custom theme creator + custom font
          uploads) — assigned per pack so completeness holds. */
@@ -16771,6 +16803,7 @@
         printOmitChapterHead: false,
         printOmitBlankHead: true,
         printFolio: "centre",
+        printNotes: "page", /* BEUK:footnotes — "page": notes at the foot of their page in print; "end": at the end of each chapter */
         goals: { daily: 0, project: 0, deadline: "" },
         history: [],
         dictation: { lang: "", recent: [] } /* BEUK:dictlang — the dictation language the writer picked for this book ("" = follow the book) */
@@ -17034,7 +17067,8 @@
           exportPlatform: "generic",
           printTrim: "6x9",
           printRecto: true,
-          printLargePrint: false
+          printLargePrint: false,
+          printNotes: "page" /* BEUK:footnotes — a new book sets its notes at the foot of the page */
         };
       }
       /* The genuine empty desk: blank title/author, the bare section
@@ -17059,7 +17093,8 @@
           exportPlatform: "generic",
           printTrim: "6x9",
           printRecto: true,
-          printLargePrint: false
+          printLargePrint: false,
+          printNotes: "page" /* BEUK:footnotes — a new book sets its notes at the foot of the page */
         };
       }
       function seedEmptyDesk() {
@@ -17068,6 +17103,7 @@
         state.sections = d.sections; state.cover = null; state.coverRecipe = null; state.images = [];
         state.activeId = d.activeId; state.exportPlatform = d.exportPlatform;
         state.printTrim = d.printTrim; state.printRecto = d.printRecto; state.printLargePrint = d.printLargePrint;
+        state.printNotes = d.printNotes; /* BEUK:footnotes */
       }
       const isEmptyDesk = () => bookWordTotal() === 0 &&
         !imRealTitle() && /* BEUK:importmeta — a stored placeholder is no title */ !String(state.meta.author || "").trim() &&
@@ -19310,7 +19346,8 @@
           if (noteCtx && noteCtx.defined.has(n)) {
             const idAttr = noteCtx.seen.has(n) ? "" : ' id="' + noteCtx.prefix + "fnref" + n + '"';
             noteCtx.seen.add(n);
-            return '<a class="noteref" epub:type="noteref"' + idAttr + ' href="#' + noteCtx.prefix + "fn" + n + '"><sup class="endnote-ref">[' + n + "]</sup></a>";
+            /* BEUK:footnotes — a page-bottom note is called by a bare superior figure, the printed convention */
+            return '<a class="noteref" epub:type="noteref"' + idAttr + ' href="#' + noteCtx.prefix + "fn" + n + '"><sup class="endnote-ref">' + (noteCtx.foot ? n : "[" + n + "]") + "</sup></a>";
           }
           return '<sup class="endnote-ref">[' + n + "]</sup>";
         });
@@ -19552,6 +19589,10 @@
         if (!ordered && items.length < 2) return null;
         return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1 };
       }
+      /* BEUK:footnotes — true only while a print surface (the print
+         interior, the Print Interior View) builds its section HTML with
+         the book's notes set at the foot of the page. */
+      var printNotesAtFootNow = false;
       function contentBlocksToHtml(rawContent, section, isFirst, forExport, dataMedia) {
         const text = beautifyText(rawContent || "");
         if (!text) return forExport ? "" : '<p class="empty-note">This section has no text yet. Write in the editor to see it typeset here.</p>';
@@ -19563,7 +19604,13 @@
         const prefix = "s" + Math.max(0, state.sections.indexOf(section)) + "-";
         const defined = new Set();
         blocks.forEach((b) => { const dm = b.match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
-        const noteCtx = { prefix, defined, seen: new Set() };
+        /* BEUK:footnotes — while the print interior is built with notes
+           at the foot of the page, the notes still stand at the section's
+           end (class fn-page): the print renderer moves each to the foot
+           of its reference's page, and any print that never reaches the
+           renderer (the browser's own print) reads them where they are. */
+        const foot = printNotesAtFootNow;
+        const noteCtx = { prefix, defined, seen: new Set(), foot };
         const notes = [];
         const out = [];
         let firstParaDone = false;
@@ -19650,8 +19697,8 @@
           emitText(block);
         });
         if (notes.length) {
-          out.push('<div class="endnotes" epub:type="endnotes"><p class="endnotes-h">Notes</p>' +
-            notes.map((nt) => '<p class="endnote" id="' + prefix + "fn" + nt.n + '" epub:type="endnote"><a class="note-back" href="#' + prefix + "fnref" + nt.n + '" title="Back to the reference"><sup>[' + nt.n + "]</sup></a> " + inlineMd(nt.text, noteCtx) + "</p>").join("") + "</div>");
+          out.push('<div class="endnotes' + (foot ? " fn-page" : "") + '" epub:type="endnotes"><p class="endnotes-h">Notes</p>' +
+            notes.map((nt) => '<p class="endnote" id="' + prefix + "fn" + nt.n + '" epub:type="endnote"><a class="note-back" href="#' + prefix + "fnref" + nt.n + '" title="Back to the reference"><sup>' + (foot ? nt.n : "[" + nt.n + "]") + "</sup></a> " + inlineMd(nt.text, noteCtx) + "</p>").join("") + "</div>");
         }
         return out.join("\n");
       }
@@ -19816,10 +19863,15 @@
           S + "blockquote { margin: 1.1em 1.6em; font-style: italic; }",
           S + "blockquote p { text-indent: 0; }",
           /* Lists: hung markers, the items set flush, a breath above and below. */
-          S + ".book-list { margin: 0.55em 0 0.85em 0; padding: 0 0 0 1.5em; text-indent: 0; }",
+          /* The marker hangs on the line's start side: logical padding, so a
+             right-to-left book's markers stay inside the page (with physical
+             padding-left they hung past it and Chromium shifted the whole
+             printed page 13.5pt into the gutter); the physical value first
+             for readers without logical properties. */
+          S + ".book-list { margin: 0.55em 0 0.85em 0; padding: 0 0 0 1.5em; padding-inline-start: 1.5em; padding-inline-end: 0; text-indent: 0; }",
           S + "ul.book-list { list-style: disc outside; }",
           S + "ol.book-list { list-style: decimal outside; }",
-          S + ".book-list li { margin: 0 0 0.3em 0; padding-left: 0.15em; text-indent: 0; text-align: left; hyphens: manual; }",
+          S + ".book-list li { margin: 0 0 0.3em 0; padding-left: 0.15em; padding-inline-start: 0.15em; padding-inline-end: 0; text-indent: 0; text-align: left; text-align: start; hyphens: manual; }",
           S + ".book-list li::marker { color: currentColor; }",
           S + ".chapter-opening { text-align: center; margin: 2.2em 0 1.6em 0; page-break-after: avoid; }",
           S + ".chapter-number { font-family: " + headFf + "; font-size: 0.78em; letter-spacing: 0.32em; text-transform: uppercase; text-indent: 0; margin: 0 0 0.9em 0; opacity: 0.75; }",
@@ -29565,9 +29617,352 @@
              onto a page of its own), its picture still sized to the page. */
           ".print-sec .bd-layer.bd-page, .print-sec .bd-layer.bd-spread { top: " + inCss(-(mg.top + printOpeningLeadIn())) + "; left: " + inCss(-mg.inside) + "; right: auto; width: " + inCss(t.w) + "; height: " + inCss(t.h - mg.bottom) + "; }",
           ".print-sec .bd-layer.bd-page.bd-baked, .print-sec .bd-layer.bd-spread.bd-baked { background-size: " + inCss(t.w) + " " + inCss(t.h) + "; background-position: 0 0; }",
-          '[dir="rtl"] .print-sec .bd-layer.bd-page, [dir="rtl"] .print-sec .bd-layer.bd-spread { left: auto; right: ' + inCss(-mg.inside) + "; }"
+          '[dir="rtl"] .print-sec .bd-layer.bd-page, [dir="rtl"] .print-sec .bd-layer.bd-spread { left: auto; right: ' + inCss(-mg.inside) + "; }",
+          /* BEUK:footnotes — the type of a note at the foot of the page,
+             for the renderer's notes document (body.beuk-fn-doc). */
+          ...(printNotesAtFoot() ? [printFootnoteCss(".beuk-fn-doc")] : [])
         ]).join("\n");
       }
+      /* ==== BEUK:footnotes ==== */
+      /* Notes in print: at the foot of the page where each reference
+         falls ("page", every new book's choice) or at the end of each
+         chapter ("end", the look every book had before the choice
+         existed). Chromium sets no footnotes itself, so the print
+         interior still carries each chapter's notes at its end (class
+         fn-page) with the page geometry in a <meta name="beuk-footnotes">;
+         the print renderer (deploy/renderer/footnotes.mjs) measures
+         where each reference lands, shortens that page's text to make
+         room, and draws the note at its foot. A print that never reaches
+         the renderer — the browser's own Print — keeps them at the end.
+         The EPUB is untouched: noterefs and endnotes are right for a
+         reflowable book. */
+      function printNotesAtFoot() { return state.printNotes === "page"; }
+      /* A note's type: 82% of the body size, on its own fixed line so the
+         renderer can carry a long note onto the next page between lines. */
+      function printNoteFontPt() { return Math.round(printBaseFontPt() * 0.82 * 10) / 10; }
+      function printNoteLinePt() { return Math.round(printNoteFontPt() * (state.printLargePrint ? 1.4 : 1.3) * 100) / 100; }
+      function printFootnoteCss(scope) {
+        const S = scope + " ";
+        const justify = !!state.theme.justify && !state.printLargePrint;
+        return [
+          S + ".fn-note { font-size: " + printNoteFontPt() + "pt; line-height: " + printNoteLinePt() + "pt; text-indent: 0; margin: 0; padding: 0; text-align: " + (justify ? "justify" : "left") + "; }",
+          S + ".fn-note sup, " + S + ".fn-note sub { line-height: 0; }",
+          S + ".fn-note .fn-num { margin-inline-end: 0.3em; }"
+        ].join("\n");
+      }
+      /* The geometry the renderer lays the notes out by, in points. */
+      function printFootnoteConfig() {
+        const tr = trimSize();
+        const mg = printMargins(state.printTrim);
+        const pt = (n) => Math.round(n * 72 * 1000) / 1000;
+        return {
+          trimW: pt(tr.w), trimH: pt(tr.h), top: pt(mg.top), bottom: pt(mg.bottom), inside: pt(mg.inside), outside: pt(mg.outside),
+          pitch: Math.round(printBaseFontPt() * (state.printLargePrint ? 1.6 : Number(state.theme.lineHeight) || 1.5) * 1000) / 1000,
+          noteLine: printNoteLinePt(), rtl: isRtlLang(state.meta.language || "en"),
+          justify: !!state.theme.justify && !state.printLargePrint, cap: 0.5, orphans: 3, widows: 3
+        };
+      }
+      /* The Print Interior View sets the notes the way the renderer does
+         (deploy/renderer/footnotes.mjs) — the same rules, measured on the
+         view's own multicol flow instead of a PDF: each note set alone at
+         the column's width; the first column whose notes (with any
+         carried over) do not fit below its text is cut — a paragraph
+         split at the first word of the first line that moves (a word
+         hyphenated across that line moves whole), or a whole block moved
+         — no orphan or widow under three lines, no heading left at a
+         column's foot; then the next column, until every column fits. A
+         note longer than the note area (half the page) runs on at the
+         next column's foot. The view is a browser's layout, so a line can
+         fall differently from the PDF's: it shows where the notes go, the
+         PDF is the proof. */
+      function pivFootnoteCutCss() {
+        const justify = !!state.theme.justify && !state.printLargePrint;
+        return [
+          ".piv-book .fn-brk { break-before: column; -webkit-column-break-before: always; }",
+          ".piv-book .fn-split { margin-bottom: 0 !important; padding-bottom: 0 !important;" + (justify ? " text-align-last: justify;" : "") + " }",
+          ".piv-book .fn-cont { text-indent: 0 !important; margin-top: 0 !important; padding-top: 0 !important; }"
+        ].join("\n");
+      }
+      /* How notes fall onto columns — the renderer's assignNotes, in px:
+         carried lines first (yielding to the column's own notes, two
+         lines kept), then the column's own notes, up to the cap; a note
+         splits only between its lines; one that cannot begin on its
+         reference's column is `displaced`. */
+      function pivFnAssign(ownByCol, notes, capLines, lineH, colCount) {
+        const pages = [];
+        let carry = [];
+        for (let p = 0; p < colCount || carry.length; p++) {
+          if (p > colCount + 200) break;
+          const own = ownByCol.get(p) || [];
+          const carryLeft = carry.reduce((k, c) => k + notes[c.note].lines - c.from, 0);
+          const ownLines = own.reduce((k, n) => k + notes[n].lines, 0);
+          const carryCap = own.length ? Math.max(Math.min(2, carryLeft), capLines - ownLines) : capLines;
+          const frags = [];
+          const next = [];
+          let used = 0, usedPx = 0, displaced = false;
+          const place = (note, from, room, isOwn) => {
+            const nt = notes[note];
+            const left = nt.lines - from;
+            if (left <= room) {
+              const h = from === 0 ? nt.h : left * lineH;
+              frags.push({ note, from, to: nt.lines, h });
+              used += left; usedPx += h;
+            } else if (room >= Math.min(2, left) && nt.grid) {
+              frags.push({ note, from, to: from + room, h: room * lineH });
+              used += room; usedPx += room * lineH;
+              next.push({ note, from: from + room });
+            } else {
+              next.push({ note, from });
+              if (isOwn && from === 0) displaced = true;
+            }
+          };
+          let carryUsed = 0;
+          carry.forEach((c) => {
+            const before = used;
+            const room = Math.min(capLines - used, carryCap - carryUsed);
+            if (room <= 0) { next.push(c); return; }
+            place(c.note, c.from, room, false);
+            carryUsed += used - before;
+          });
+          let blocked = false;
+          own.forEach((n) => {
+            if (blocked) { next.push({ note: n, from: 0 }); displaced = true; return; }
+            const had = next.length;
+            place(n, 0, capLines - used, true);
+            if (next.length > had && next[next.length - 1].from === 0) blocked = true;
+          });
+          carry = next;
+          pages.push({ frags, area: frags.length ? usedPx + lineH : 0, displaced, continued: frags.length > 0 && frags[0].from > 0 });
+        }
+        return pages;
+      }
+      /* Lay a section's notes out on its view flow (already in the measure
+         box). Mutates the flow — the moved notes hidden from the list, the
+         cuts made — and returns its HTML with each column's notes, or null
+         when the section has no note to move. */
+      function pivFootnoteLayout(flow, g) {
+        const block = flow.querySelector(".endnotes.fn-page");
+        if (!block) return null;
+        const lineH = printNoteLinePt() * PIV_PX / 72;
+        const pitch = printBaseFontPt() * (state.printLargePrint ? 1.6 : Number(state.theme.lineHeight) || 1.5) * PIV_PX / 72;
+        const W = g.contentW, H = g.contentH, step = W + PIV_GAP;
+        const rtl = flow.dir === "rtl";
+        const box = document.createElement("div");
+        box.className = "piv-book";
+        box.dir = flow.dir;
+        box.setAttribute("lang", flow.getAttribute("lang") || "en");
+        box.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;width:" + W + "px;";
+        flow.parentNode.appendChild(box);
+        const notes = [];
+        block.querySelectorAll("p.endnote").forEach((p) => {
+          const back = p.querySelector("a.note-back");
+          const refId = back ? (back.getAttribute("href") || "").slice(1) : "";
+          const ref = refId ? Array.from(flow.querySelectorAll("a.noteref")).find((a) => a.id === refId) || null : null;
+          const body = p.cloneNode(true);
+          const b = body.querySelector("a.note-back");
+          if (b) b.remove();
+          const html = '<span class="fn-num">' + (back ? back.innerHTML : "") + "</span>" + body.innerHTML;
+          const el = document.createElement("div");
+          el.className = "fn-note";
+          el.innerHTML = html;
+          box.appendChild(el);
+          const h = el.getBoundingClientRect().height;
+          const lines = Math.max(1, Math.round(h / lineH));
+          notes.push({ p, ref, html, h, lines, grid: Math.abs(h - lines * lineH) < lineH * 0.3 });
+        });
+        box.remove();
+        if (!notes.some((n) => n.ref)) return null;
+        notes.forEach((n) => { if (n.ref) n.p.style.display = "none"; });
+        if (notes.every((n) => n.ref)) block.style.display = "none";
+        const capLines = Math.max(2, Math.floor((H * 0.5 - lineH) / lineH));
+        const colOf = (r, f) => Math.max(0, Math.floor(((rtl ? f.right - r.right : r.left - f.left) + PIV_GAP / 2) / step));
+        const BLOCKS = "p, li, h1, h2, h3, h4, h5, h6, blockquote, figure, header, dd, dt, pre, table, div";
+        const keepNext = (el) => !!el && (/^H[1-6]$/.test(el.tagName) || /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker)\b/.test(el.className || ""));
+        const keepPrev = (el) => !!el && /\bscene-break\b/.test(el.className || "");
+        const splittable = (el) => !!el && /^(P|BLOCKQUOTE)$/.test(el.tagName) && !el.closest("header, figure");
+        /* Every line on every column: text fragments and pictures, grouped
+           by column and height, each with the block it belongs to. */
+        const measure = () => {
+          const f = flow.getBoundingClientRect();
+          const frags = [];
+          const walker = document.createTreeWalker(flow, NodeFilter.SHOW_TEXT);
+          const range = document.createRange();
+          let node;
+          while ((node = walker.nextNode())) {
+            if (!node.nodeValue.trim()) continue;
+            const par = node.parentElement;
+            if (!par || par.closest(".endnotes, .bd-layer")) continue;
+            const blk = par.closest("header.chapter-opening, figure") || par.closest(BLOCKS);
+            range.selectNodeContents(node);
+            for (const r of range.getClientRects()) {
+              if (!r.height) continue;
+              frags.push({ col: colOf(r, f), top: r.top - f.top, bottom: r.bottom - f.top, blk, text: true });
+            }
+          }
+          flow.querySelectorAll("img, svg, hr").forEach((el) => {
+            if (el.closest(".endnotes, .bd-layer")) return;
+            const r = el.getBoundingClientRect();
+            if (!r.height) return;
+            frags.push({ col: colOf(r, f), top: r.top - f.top, bottom: r.bottom - f.top, blk: el.closest("header.chapter-opening, figure, .scene-break") || el.closest(BLOCKS) || el, text: false });
+          });
+          frags.sort((a, b) => a.col - b.col || a.top - b.top);
+          /* Fragments overlapping by more than half the shorter one share
+             a line (a raised superscript included); a text line's box
+             reaches a little below its glyphs (the half-leading). */
+          const lines = [];
+          frags.forEach((fr) => {
+            const last = lines[lines.length - 1];
+            const overlap = last ? Math.min(last.gb, fr.bottom) - Math.max(last.top, fr.top) : 0;
+            if (last && last.col === fr.col && last.blk === fr.blk && overlap > 0.5 * Math.min(last.gb - last.top, fr.bottom - fr.top)) {
+              last.top = Math.min(last.top, fr.top); last.gb = Math.max(last.gb, fr.bottom);
+              last.text = last.text || fr.text;
+              return;
+            }
+            lines.push({ col: fr.col, top: fr.top, gb: fr.bottom, blk: fr.blk, text: fr.text });
+          });
+          lines.forEach((l) => { l.bottom = l.gb + (l.text ? pitch * 0.25 : 0); });
+          const cols = Math.max(1, Math.round(flow.scrollWidth / step));
+          const refCol = new Map();
+          notes.forEach((n, i) => {
+            if (!n.ref) return;
+            const r = n.ref.getBoundingClientRect();
+            const c = colOf(r, f);
+            const mid = (r.top + r.bottom) / 2 - f.top;
+            let li = -1;
+            lines.forEach((l, j) => { if (l.col === c && l.top <= mid + 1) li = j; });
+            refCol.set(i, { col: c, line: li });
+          });
+          return { lines, cols, refCol };
+        };
+        const ownOf = (refCol, upTo) => {
+          const own = new Map();
+          [...refCol.entries()].sort((a, b) => a[1].col - b[1].col || a[1].line - b[1].line || a[0] - b[0]).forEach(([i, d]) => {
+            if (upTo && !upTo(i, d)) return;
+            if (!own.has(d.col)) own.set(d.col, []);
+            own.get(d.col).push(i);
+          });
+          return own;
+        };
+        const ok = new Set();
+        let m = measure();
+        let asg = pivFnAssign(ownOf(m.refCol), notes, capLines, lineH, m.cols);
+        for (let guard = 0; guard < 6 * m.cols + 40; guard++) {
+          let c = -1;
+          for (let k = 0; k < m.cols; k++) {
+            if (ok.has(k)) continue;
+            const a = asg[k];
+            if (!a || (!a.area && !a.displaced)) continue;
+            const reach = m.lines.filter((l) => l.col === k).reduce((x, l) => Math.max(x, l.bottom), 0);
+            if (a.displaced || reach > H - a.area) { c = k; break; }
+          }
+          if (c < 0) break;
+          const L = m.lines.filter((l) => l.col === c);
+          const lineIdx = new Map(L.map((l, j) => [l, j]));
+          const blkLines = (blk) => m.lines.filter((l) => l.blk === blk);
+          let cut = null, fits = false;
+          const tries = [{ keep: true, orph: true, disp: true }, { keep: false, orph: true, disp: true }, { keep: false, orph: false, disp: true }, { keep: false, orph: false, disp: false }];
+          outer: for (const rule of tries) {
+            for (let k = L.length; k >= 1; k--) {
+              const a = L[k - 1], b = L[k];
+              if (k < L.length) {
+                if (a.blk === b.blk) {
+                  if (!splittable(a.blk)) continue;
+                  if (rule.orph) {
+                    const all = blkLines(a.blk);
+                    const at = all.indexOf(b);
+                    if (at < 3 || all.length - at < 3) continue;
+                  }
+                } else if (rule.keep && (keepNext(a.blk) || keepPrev(b.blk))) continue;
+              }
+              const own = ownOf(m.refCol, (i, d) => d.col !== c || (d.line >= 0 && lineIdx.get(m.lines[d.line]) < k));
+              const pl = pivFnAssign(own, notes, capLines, lineH, c + 1)[c];
+              if (rule.disp && pl.displaced) continue;
+              const reach = L.slice(0, k).reduce((x, l) => Math.max(x, l.bottom), 0);
+              if (reach > H - pl.area) continue;
+              if (k === L.length) { fits = true; break outer; }
+              cut = { a, b, split: a.blk === b.blk };
+              break outer;
+            }
+          }
+          if (fits) { ok.add(c); continue; }
+          if (!cut) { ok.add(c); continue; }
+          if (cut.split) pivSplitBefore(cut.b, flow, colOf, c);
+          else cut.b.blk.classList.add("fn-brk");
+          [...ok].forEach((k) => { if (k >= c) ok.delete(k); });
+          m = measure();
+          asg = pivFnAssign(ownOf(m.refCol), notes, capLines, lineH, m.cols);
+        }
+        return { html: flow.innerHTML, cols: asg, notes: notes.map((n) => ({ html: n.html, h: n.h })), lineH };
+      }
+      /* Split a paragraph of the view's flow before the line `line` starts
+         (moving a word hyphenated into that line whole): the tail becomes
+         its own block, forced to the next column. */
+      function pivSplitBefore(line, flow, colOf, col) {
+        const blk = line.blk;
+        const f = flow.getBoundingClientRect();
+        const walker = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        let node, at = null;
+        const onLine = (r) => r && (colOf(r, f) > col || (colOf(r, f) === col && r.top - f.top >= line.top - 1));
+        while ((node = walker.nextNode()) && !at) {
+          const text = node.nodeValue;
+          if (!text.trim() || node.parentElement.closest(".endnotes")) continue;
+          range.selectNodeContents(node);
+          const rects = Array.from(range.getClientRects());
+          if (!rects.some(onLine)) continue;
+          let lo = 0, hi = text.length - 1;
+          while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            range.setStart(node, mid); range.setEnd(node, mid + 1);
+            if (onLine(range.getClientRects()[0])) hi = mid; else lo = mid + 1;
+          }
+          let i = lo;
+          while (i > 0 && !/\s/.test(text[i - 1])) i -= 1;
+          at = { node, i };
+        }
+        if (!at) { blk.classList.add("fn-brk"); return; }
+        range.setStart(at.node, at.i);
+        range.setEnd(blk, blk.childNodes.length);
+        const tail = blk.cloneNode(false);
+        tail.removeAttribute("id");
+        tail.classList.remove("first", "has-dropcap");
+        tail.classList.add("fn-cont", "fn-brk");
+        tail.appendChild(range.extractContents());
+        blk.classList.add("fn-split");
+        blk.after(tail);
+      }
+      /* A page's notes in the view: the rule (full width when a note runs
+         on), then each note or part of one, clipped between its lines. */
+      function pivFootnotesEl(fnl, col, g, mLeft, dir) {
+        const pl = fnl.cols[col];
+        if (!pl || !pl.frags.length) return null;
+        const el = document.createElement("div");
+        el.className = "piv-fnotes piv-book" + (pl.continued ? " piv-fncont" : "");
+        el.dir = dir;
+        el.setAttribute("aria-label", t("print.notes"));
+        el.style.left = mLeft + "px";
+        el.style.width = g.contentW + "px";
+        el.style.top = (g.mg.top * PIV_PX + g.contentH - pl.area) + "px";
+        el.style.height = pl.area + "px";
+        const rule = document.createElement("div");
+        rule.className = "piv-fnrule";
+        rule.style.marginTop = (fnl.lineH * 0.45) + "px";
+        rule.style.marginBottom = Math.max(0, fnl.lineH * 0.55 - 1) + "px";
+        el.appendChild(rule);
+        pl.frags.forEach((fr) => {
+          const wrap = document.createElement("div");
+          wrap.className = "piv-fnfrag";
+          wrap.style.height = fr.h + "px";
+          const n = document.createElement("div");
+          n.className = "fn-note";
+          n.innerHTML = fnl.notes[fr.note].html;
+          if (fr.from) n.style.marginTop = (-fr.from * fnl.lineH) + "px";
+          wrap.appendChild(n);
+          el.appendChild(wrap);
+        });
+        return el;
+      }
+      /* ==== /BEUK:footnotes ==== */
       /* A paired spread's backdrop is the whole opening page (bd-page),
          centred like its plate, so the two halves meet at the gutter. */
       function printPagedLayer(s, html) {
@@ -29598,8 +29993,13 @@
           printColourCss("") + /* BEUK:bookcolour — the accent in black ink, when chosen */
           "body { font-size: " + printBaseFontPt() + "pt; }\n" +
           printPressCss();
-        const pairs = state.sections.filter((s) => s.included && s.type !== "cover")
-          .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, sectionHtml(s, true, true))) + "\n</section>" }));
+        const atFoot = printNotesAtFoot(); /* BEUK:footnotes */
+        let pairs;
+        printNotesAtFootNow = atFoot;
+        try {
+          pairs = state.sections.filter((s) => s.included && s.type !== "cover")
+            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, sectionHtml(s, true, true))) + "\n</section>" }));
+        } finally { printNotesAtFootNow = false; }
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
            edition line — or the copyright page when the book has no
@@ -29609,7 +30009,8 @@
           target.html = target.html.replace(/<\/section>\s*$/, '<p class="lp-edition">' + esc(t("print.lpEdition")) + "</p>\n</section>");
         }
         const secs = pairs.map((p) => p.html).join("\n");
-        return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n<title>' +
+        return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n' +
+          (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") + "<title>" +
           esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
       /* ==== BEUK:print ==== */
@@ -29941,6 +30342,7 @@
         const hc = $("selHeadContent"); if (hc) hc.value = state.printHeadContent;
         const hp = $("selHeadPlace"); if (hp) hp.value = state.printHeadPlace;
         const sf = $("selFolio"); if (sf) sf.value = state.printFolio;
+        const sn = $("selPrintNotes"); if (sn) sn.value = state.printNotes === "end" ? "end" : "page"; /* BEUK:footnotes */
         const oc = $("tglOmitChapter"); if (oc) oc.setAttribute("aria-pressed", String(!!state.printOmitChapterHead));
         const ob = $("tglOmitBlank"); if (ob) ob.setAttribute("aria-pressed", String(!!state.printOmitBlankHead));
         icons();
@@ -29977,6 +30379,7 @@
         $("selHeadContent").addEventListener("change", (e) => { state.printHeadContent = e.target.value; renderPrintControls(); });
         $("selHeadPlace").addEventListener("change", (e) => { state.printHeadPlace = e.target.value; renderPrintControls(); });
         $("selFolio").addEventListener("change", (e) => { state.printFolio = e.target.value; renderPrintControls(); });
+        $("selPrintNotes").addEventListener("change", (e) => { state.printNotes = e.target.value === "end" ? "end" : "page"; renderPrintControls(); }); /* BEUK:footnotes */
         $("tglOmitChapter").addEventListener("click", () => { state.printOmitChapterHead = !state.printOmitChapterHead; renderPrintControls(); });
         $("tglOmitBlank").addEventListener("click", () => { state.printOmitBlankHead = !state.printOmitBlankHead; renderPrintControls(); });
         $("btnClosePrint").addEventListener("click", () => $("modalPrint").classList.remove("open"));
@@ -30026,6 +30429,9 @@
            ships, scoped to the view's pages, so a Large Print
            edition re-typesets here exactly as it prints. */
         el.textContent = buildBookCss(".piv-book") + "\n" + printTypeCss(".piv-book") + "\n.piv-book { font-size: " + printBaseFontPt() + "pt; }" +
+          /* BEUK:footnotes — notes at the page foot: their type, and the
+             column breaks the view's own layout inserts (pivFootnoteLayout) */
+          "\n" + printFootnoteCss(".piv-book") + "\n" + pivFootnoteCutCss() +
           /* The spread shows the press tints the print file carries (BEUK:print). */
           "\n" + printColourCss(".piv-book ") + printSolidTintCss(buildBookCss(".piv-book"));
       }
@@ -30051,7 +30457,8 @@
            columns out leftward (pivPageEl turns them the other way) */
         flow.setAttribute("lang", state.meta.language || "en");
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
-        flow.innerHTML = sectionHtml(s, true, true);
+        printNotesAtFootNow = printNotesAtFoot(); /* BEUK:footnotes */
+        try { flow.innerHTML = sectionHtml(s, true, true); } finally { printNotesAtFootNow = false; }
         return flow;
       }
       function buildPrintViewModel() {
@@ -30062,6 +30469,7 @@
         const pages = [];
         let next = 1;
         let curChapter = null;
+        const fnByPage = new Map(); /* BEUK:footnotes */
         const secs = state.sections.filter((s) => s.included && s.type !== "cover");
         secs.forEach((s) => {
           /* A paired spread opens on a verso (its plate) so the opening
@@ -30077,12 +30485,17 @@
           if (s.kind === "body") curChapter = s;
           const flow = pivSectionFlow(s, g);
           measure.appendChild(flow);
+          /* BEUK:footnotes — notes at the page foot, laid out the way the
+             print renderer lays them: the flow comes back cut where its
+             notes need room, with each column's notes to draw. */
+          const fnl = printNotesAtFoot() ? pivFootnoteLayout(flow, g) : null;
+          if (fnl) fnByPage.set(s.id, fnl);
           const cols = Math.max(1, Math.round(flow.scrollWidth / (g.contentW + PIV_GAP)));
           for (let c = 0; c < cols; c++) pages.push({ n: next + c, blank: false, section: s, col: c, chapter: curChapter });
           next += cols;
         });
         measure.innerHTML = "";
-        return { g, pages, sections: secs, spreads: pages.length ? Math.ceil((pages.length + 1) / 2) : 0 };
+        return { g, pages, sections: secs, spreads: pages.length ? Math.ceil((pages.length + 1) / 2) : 0, fn: fnByPage };
       }
       function pivSpreadPages(model, s) {
         const P = model.pages.length;
@@ -30190,6 +30603,8 @@
           clip.style.width = g.contentW + "px";
           clip.style.height = g.contentH + "px";
           const flow = pivSectionFlow(page.section, g);
+          const fnl = model.fn && model.fn.get(page.section.id); /* BEUK:footnotes */
+          if (fnl) flow.innerHTML = fnl.html;
           if (pairedOpening) {
             const inFlow = flow.querySelector(".bd-layer");
             if (inFlow) inFlow.style.display = "none";
@@ -30197,6 +30612,8 @@
           flow.style.transform = "translateX(" + ((flow.dir === "rtl" ? 1 : -1) * page.col * (g.contentW + PIV_GAP)) + "px)";
           clip.appendChild(flow);
           el.appendChild(clip);
+          const notesEl = fnl ? pivFootnotesEl(fnl, page.col, g, mLeft, flow.dir) : null;
+          if (notesEl) el.appendChild(notesEl);
         }
         if (piv.guides) {
           const trim = document.createElement("div");
@@ -30244,6 +30661,7 @@
         }
         $("tglPivRecto").setAttribute("aria-pressed", String(!!state.printRecto));
         $("tglPivLargePrint").setAttribute("aria-pressed", String(!!state.printLargePrint));
+        const pn = $("pivNotes"); if (pn) pn.value = state.printNotes === "end" ? "end" : "page"; /* BEUK:footnotes */
         $("tglPivGuides").setAttribute("aria-pressed", String(!!piv.guides));
         $("pivZoomFit").classList.toggle("active", piv.zoom === "fit");
         $("pivZoomActual").classList.toggle("active", piv.zoom === "actual");
@@ -30351,6 +30769,7 @@
         });
         $("tglPivRecto").addEventListener("click", () => { state.printRecto = !state.printRecto; renderPrintControls(); pivSyncChrome(); pivRebuild(true); });
         $("tglPivLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; renderPrintControls(); pivSyncChrome(); pivRebuild(true); });
+        $("pivNotes").addEventListener("change", (e) => { state.printNotes = e.target.value === "end" ? "end" : "page"; renderPrintControls(); pivSyncChrome(); pivRebuild(true); }); /* BEUK:footnotes */
         $("tglPivGuides").addEventListener("click", () => { piv.guides = !piv.guides; $("tglPivGuides").setAttribute("aria-pressed", String(!!piv.guides)); renderPrintView(); });
         $("pivZoomFit").addEventListener("click", () => { piv.zoom = "fit"; pivSyncChrome(); renderPrintView(); });
         $("pivZoomActual").addEventListener("click", () => { piv.zoom = "actual"; pivSyncChrome(); renderPrintView(); });
@@ -33456,6 +33875,7 @@
           printOmitChapterHead: state.printOmitChapterHead,
           printOmitBlankHead: state.printOmitBlankHead,
           printFolio: state.printFolio,
+          printNotes: state.printNotes, /* BEUK:footnotes */
           storeCheck: normalizeStoreCheck(state.storeCheck), /* BEUK:store */
           goals: Object.assign({}, state.goals),
           history: hist.history,
@@ -33539,6 +33959,11 @@
         if (typeof doc.printOmitChapterHead === "boolean") state.printOmitChapterHead = doc.printOmitChapterHead;
         if (typeof doc.printOmitBlankHead === "boolean") state.printOmitBlankHead = doc.printOmitBlankHead;
         if (["centre", "outer", "none"].includes(doc.printFolio)) state.printFolio = doc.printFolio;
+        /* BEUK:footnotes — notes at the foot of the page are the new
+           books' default; a book saved before the choice existed was
+           set with its notes at each chapter's end, and keeps that look
+           until the writer changes it. */
+        state.printNotes = doc.printNotes === "page" || doc.printNotes === "end" ? doc.printNotes : "end";
         state.goals = normalizeGoals(doc.goals);
         /* Snapshots live with the book: a document that carries
            them brings them; one that predates them (the sample, an
@@ -36432,6 +36857,97 @@
             } finally {
               $("modalPrintView").classList.remove("open");
               piv.guides = keepGuides;
+              applyBookDoc(keepDoc);
+            }
+          } },
+        /* BEUK:footnotes */
+        { id: "print.footnotes.page", feature: "print", name: "Notes in print: a new book sets its notes at the foot of the page, a book saved before the choice keeps them at each chapter's end; the print interior carries the notes and the page geometry the renderer lays them out by, the EPUB keeps its linked endnotes, and the Print Interior View sets each note at the foot of its reference's page — the text stopping above it, a long note running on to the next page",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              /* The setting: new books "page"; a saved book without it "end"; it round-trips. */
+              const fresh = buildEmptyBook();
+              const legacy = JSON.parse(JSON.stringify(keepDoc));
+              delete legacy.printNotes;
+              applyBookDoc(legacy);
+              const legacyEnd = state.printNotes === "end";
+              applyBookDoc(Object.assign(JSON.parse(JSON.stringify(keepDoc)), { printNotes: "page" }));
+              const settingOk = fresh.printNotes === "page" && legacyEnd && state.printNotes === "page" && serializeBook().printNotes === "page";
+              /* A fixture chapter: three notes, the second long enough to run on. */
+              state.cover = null; state.images = [];
+              const para = "The tide came in over the mud flats and the gulls rose all at once, crying over the harbour while the ferry sounded its horn twice for the far shore and the lamps came on along the quay one by one in the blue dusk.";
+              const parts = [];
+              for (let i = 0; i < 46; i++) parts.push(i === 4 || i === 13 || i === 30 ? para.replace("harbour", "harbour[^" + (i === 4 ? 1 : i === 13 ? 2 : 3) + "]") : para);
+              const longNote = Array.from({ length: 30 }, () => "A long note runs on past the foot of its page, line after line, to show how a note continues.").join(" ");
+              parts.push("[^1]: The first note, a short one.", "[^2]: " + longNote, "[^3]: The third note.");
+              const ch = mkSection("body", "chapter", "Notes Fixture", { number: "1", content: parts.join("\n\n") });
+              state.sections = [ch];
+              state.activeId = ch.id;
+              state.meta.title = "Notes Fixture"; state.meta.author = "Fixture Author"; state.meta.language = "en";
+              state.printTrim = "6x9"; state.printRecto = false; state.printLargePrint = false;
+              /* The print interior at the foot of the page: notes still in the
+                 chapter (class fn-page) for any print that never reaches the
+                 renderer, bare superior figures, the geometry in its meta. */
+              state.printNotes = "page";
+              const html = buildPrintHtml();
+              const metaM = /<meta name="beuk-footnotes" content="([^"]*)"/.exec(html);
+              let geo = null;
+              try { geo = metaM ? JSON.parse(metaM[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&")) : null; } catch (e) { geo = null; }
+              const printOk = !!geo && geo.trimW === 432 && geo.trimH === 648 && geo.noteLine > 0 && geo.pitch > 0 && geo.cap === 0.5 &&
+                html.includes('<div class="endnotes fn-page" epub:type="endnotes">') &&
+                html.includes('<sup class="endnote-ref">1</sup>') && !html.includes('<sup class="endnote-ref">[1]</sup>') &&
+                html.includes(".beuk-fn-doc .fn-note {");
+              state.printNotes = "end";
+              const endHtml = buildPrintHtml();
+              const endOk = !endHtml.includes('name="beuk-footnotes"') && !endHtml.includes("fn-page") && endHtml.includes('<sup class="endnote-ref">[1]</sup>');
+              /* The EPUB keeps linked endnotes whatever the print choice. */
+              state.printNotes = "page";
+              const epubCh = sectionHtml(ch, true, false);
+              const epubOk = epubCh.includes('<div class="endnotes" epub:type="endnotes">') && epubCh.includes('<sup class="endnote-ref">[1]</sup>') && !epubCh.includes("fn-page");
+              /* The Print Interior View: each note on its reference's page,
+                 the text above it, the long note running on. */
+              openPrintInteriorView();
+              const model = piv.model, g = model.g;
+              const fnl = model.fn && model.fn.get(ch.id);
+              let viewOk = false, runOn = false, domOk = false, detail = "no footnote layout";
+              if (fnl) {
+                const box = $("pivMeasure");
+                const flow = pivSectionFlow(ch, g);
+                flow.innerHTML = fnl.html;
+                box.appendChild(flow);
+                const f = flow.getBoundingClientRect();
+                const step = g.contentW + PIV_GAP;
+                const colOf = (r) => Math.floor((r.left - f.left + PIV_GAP / 2) / step);
+                const bottoms = new Map();
+                const walker = document.createTreeWalker(flow, NodeFilter.SHOW_TEXT);
+                const range = document.createRange();
+                let nd;
+                while ((nd = walker.nextNode())) {
+                  if (!nd.nodeValue.trim() || nd.parentElement.closest(".endnotes")) continue;
+                  range.selectNodeContents(nd);
+                  for (const r of range.getClientRects()) if (r.height) bottoms.set(colOf(r), Math.max(bottoms.get(colOf(r)) || 0, r.bottom - f.top));
+                }
+                const cols = [1, 2, 3].map((n) => { const a = Array.from(flow.querySelectorAll("a.noteref")).find((x) => x.id.endsWith("fnref" + n)); return a ? colOf(a.getBoundingClientRect()) : -1; });
+                box.innerHTML = "";
+                const per = cols.map((c, i) => {
+                  const pl = fnl.cols[c];
+                  return c >= 0 && !!pl && pl.frags.some((fr) => fr.note === i && fr.from === 0) && (bottoms.get(c) || 0) <= g.contentH - pl.area + 0.5;
+                });
+                viewOk = per.every(Boolean);
+                runOn = fnl.cols.some((pl, c) => c > cols[1] && pl.continued && pl.frags.some((fr) => fr.note === 1 && fr.from > 0));
+                const page = model.pages.find((p) => p.section === ch && p.col === cols[0]);
+                if (page) {
+                  piv.spread = Math.floor(page.n / 2);
+                  renderPrintView();
+                  const notesEl = $("pivSpread").querySelector('.piv-page[data-page="' + page.n + '"] .piv-fnotes');
+                  domOk = !!notesEl && notesEl.textContent.includes("The first note, a short one.") && !!notesEl.querySelector(".piv-fnrule");
+                }
+                detail = "notes on columns " + cols.join(", ") + " (each at its reference's page foot, text above it: " + per.join("/") + "); the long note runs on (" + runOn + "); the view draws page " + (page ? page.n : "?") + "'s note under a rule (" + domOk + ")";
+              }
+              return scVerdict(settingOk && printOk && endOk && epubOk && viewOk && runOn && domOk,
+                "new book page / saved book end / round-trip (" + settingOk + "); print interior: fn-page notes, bare figures, geometry meta " + (geo ? geo.trimW + "x" + geo.trimH + "pt, note line " + geo.noteLine + "pt" : "missing") + " (" + printOk + "); at the chapter end: no meta, bracketed refs (" + endOk + "); EPUB linked endnotes (" + epubOk + "); " + detail);
+            } finally {
+              $("modalPrintView").classList.remove("open");
               applyBookDoc(keepDoc);
             }
           } },
