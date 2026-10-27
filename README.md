@@ -2675,6 +2675,48 @@ Toolbar: Texts (fences the selection as `::: texts <first speaker>`, or
 from a Word import: an imported conversation or letter arrives as ordinary
 paragraphs. Self-checks: `chapter.texts`, `chapter.letter`.
 
+## Captions and quote attribution
+
+**Image captions.** An image marker may carry a caption as a quoted title:
+`![alt text](img:<id> "Caption")` (also with `|full`). The caption is set
+under the picture as a `<figcaption>` (small, italic, centred; inline
+`*emphasis*` kept and turned roman) in the preview, the print interior and
+the EPUB; the alt text stays the alt text. The beautifier curls the quotes,
+so straight and curly quotes both close a caption; a caption holds no
+double quote of its own (`cleanCaption` drops them) and may hold
+parentheses. Caption words are counted (they are read); the marker and the
+alt are not. In the Word export a `Caption`-style paragraph follows the
+image's `[Image: …]` placeholder; the Markdown export keeps the title. The
+Insert Image dialog has a Caption field and the section's image card edits
+it. Word import: a paragraph in Word's `Caption` style (by id or name,
+through `basedOn`; read from `word/document.xml` beside the alignments in
+`irDocxParaAligns`) straight after an imported picture becomes that
+picture's caption. A frontispiece's caption is set under its plate
+(`<p class="plate-caption">` in the `plate-full` page) in the preview, zen,
+print and EPUB, and counted. In print a captioned picture — in the text or
+the frontispiece — is held to the page area's height less 5.5em, so a tall
+picture and its caption (up to three lines) never part across a page:
+Chromium splits a figure taller than a page despite `break-inside: avoid`.
+
+**Quote attribution.** In a `>` blockquote of two or more lines, a last line
+opening with an em dash — `> — Name`, or `> -- Name`, which the beautifier
+makes an em dash — is the quote's attribution
+(`quoteAttribution`): set as `<p class="attribution">` on its own line under
+the quote, ranged right (left in a right-to-left book: the line's end) and
+upright, the quote kept whole across a page break. A one-line dash-led quote
+stays a quote. A hyphen never names a speaker (`> - item` is a list mark,
+and the beautifier leaves a hyphen at a quote line's head alone), and when
+any earlier line of the quote also opens with a dash the quote is dialogue
+(French, Spanish, Russian and Polish open spoken lines with `—`) or a list,
+so its last line is not an attribution. The dash is not a word. In
+Word the attribution is its own right-aligned `QuoteAttribution` paragraph
+(based on `Quote`) under the Quote. The toolbar's Attribution button quotes
+the cursor's paragraph if needed and adds the `> — ` line, cursor on it.
+The Word export writes no right-to-left paragraphs (no `w:bidi`) for any
+book, so its `QuoteAttribution` stays `jc=right`, the end of those
+left-to-right paragraphs. Self-checks: `chapter.captions`,
+`chapter.attribution`, `chapter.platecaption`.
+
 ## Ramp: `/ramp`
 
 `/ramp` (`client/site/ramp.html`) is a gallery of books set in Beuk and
