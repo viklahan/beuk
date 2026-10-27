@@ -2822,6 +2822,19 @@ no longer reported as dropped (`importReport.carried` records how many
 italic, bold and link passages were kept). Self-check:
 `import.docx.inline-formatting`.
 
+The marks survive the round trip: the Word export reads `***words***` as
+one run that is both bold and italic (it no longer leaves stray
+asterisks), and `import.docx.inline-formatting` exports the imported
+chapter and checks that no `<w:t>` carries a literal `*`. A first
+paragraph that opens inside emphasis (`*It was night* …`, `**It**`,
+`*“Run!”*`) keeps its drop cap, set inside the italic/bold; a
+small-caps lead-in that ends inside the italic closes and reopens the
+emphasis around its span so the XHTML stays well-formed
+(`import.docx.dropcap-emphasis`). The box-set volume import and bulk
+import read Word with the same Mammoth options and the same run walk,
+so their text keeps italic, bold and links too (they have no import
+report, so nothing is counted there) — `import.docx.other-paths-formatting`.
+
 ### The book's title, subtitle and author on import (BEUK:importmeta)
 
 An import looks for the book's credit in this order, best evidence first:

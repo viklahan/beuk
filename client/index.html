@@ -19526,16 +19526,27 @@
         });
         const parts = [];
         const push = (t) => { const v = (t || "").replace(/\s+/g, " ").trim(); if (v) parts.push(v); };
+        /* Italic, bold and web/mail links survive as Beuk's marks, through
+           the same run walk the main Word import uses (box-set volumes
+           and bulk import come here); its counts go to a throwaway
+           record, as these paths have no import report. */
+        const ir = { drops: {}, carried: { em: 0, strong: 0, links: 0 } };
+        const md = (n, skipLists) => irRunsToMd(irInlineRuns(n, ir, skipLists), ir, false).md;
         doc.body.childNodes.forEach((node) => {
           if (node.nodeType === 3) { push(node.textContent); return; }
           if (node.nodeType !== 1) return;
           const tag = node.tagName.toLowerCase();
           const txt = node.textContent.replace(/ /g, " ");
           if (tag === "h1" || tag === "h2") push("# " + txt.trim());
-          else if (tag === "blockquote") txt.split(/\n+/).forEach((l) => push("> " + l.trim()));
-          else if (tag === "ul" || tag === "ol") node.querySelectorAll("li").forEach((li) => push(li.textContent));
+          else if (tag === "blockquote") {
+            const paras = Array.prototype.filter.call(node.children, (c) => /^(p|div)$/i.test(c.tagName));
+            (paras.length ? paras : [node]).forEach((pn) => { const l = md(pn); if (l) push("> " + l); });
+          }
+          else if (tag === "ul" || tag === "ol") node.querySelectorAll("li").forEach((li) => push(md(li, true)));
           else if (tag === "table") { /* tables are dropped in narrative flow */ }
-          else push(txt);
+          /* A "Chapter One" paragraph stays plain so the chapter split finds it. */
+          else if (isSegmentBoundary(txt.replace(/\s+/g, " ").trim())) push(txt);
+          else push(md(node));
         });
         return beautifyText(parts.join("\n\n"));
       }
@@ -19584,12 +19595,19 @@
             firstParaDone = true;
             if (section.dropCap) {
               const plain = chunk.replace(/\n/g, " ");
-              const m = plain.match(/^([“"'‘(\[]?)([A-Za-zÀ-ÖØ-öø-ÿ])/);
-              if (m) {
-                const lead = m[1] || "";
-                const letter = m[2];
+              /* A paragraph may open inside emphasis (*It was…*, a bold
+                 first word — Word import writes the marks). The letter is
+                 fenced with two private-use characters so inlineMd still
+                 opens and closes the emphasis around it, then the fence
+                 becomes the drop-cap span. */
+              const m = plain.match(/^(\*{0,3})([“"'‘(\[]?)([A-Za-zÀ-ÖØ-öø-ÿ])/);
+              if (m && plain.indexOf("") < 0 && plain.indexOf("") < 0) {
+                const marks = m[1] || "";
+                const lead = m[2] || "";
+                const letter = m[3];
                 const rest = plain.slice(m[0].length);
-                let inner = esc(lead) + '<span class="dropcap">' + esc(letter) + "</span>" + inlineMd(rest, noteCtx);
+                let inner = inlineMd(marks + lead + "" + letter + "" + rest, noteCtx)
+                  .replace(/([\s\S]*?)/, '<span class="dropcap">$1</span>');
                 if (section.smallCaps) inner = applyLeadIn(inner, state.theme.smallCapsWords);
                 out.push('<p class="first has-dropcap">' + inner + "</p>");
                 return;
@@ -19681,7 +19699,21 @@
         }
         if (words === 0) return html;
         if (closeAt === -1) closeAt = html.length;
-        return '<span class="leadin">' + html.slice(0, closeAt) + "</span>" + html.slice(closeAt);
+        /* The lead-in may end inside emphasis (*It was night*): close the
+           tags still open at that point before the span ends and reopen
+           them after it, so the markup stays nested (valid XHTML). */
+        const open = [];
+        const tagRe = /<(\/?)([a-zA-Z][\w:-]*)\b[^>]*?(\/?)>/g;
+        let tm;
+        const head = html.slice(0, closeAt);
+        while ((tm = tagRe.exec(head)) !== null) {
+          if (tm[3]) continue;
+          if (tm[1]) { if (open.length && open[open.length - 1].name === tm[2]) open.pop(); }
+          else open.push({ name: tm[2], tag: tm[0] });
+        }
+        const closeTags = open.slice().reverse().map((o) => "</" + o.name + ">").join("");
+        const reopen = open.map((o) => o.tag.replace(/\s+id="[^"]*"/, "")).join("");
+        return '<span class="leadin">' + head + closeTags + "</span>" + reopen + html.slice(closeAt);
       }
       function chapterOpeningHtml(section, bdLayer, forExport, dataMedia) {
         const t = state.theme;
@@ -30738,7 +30770,7 @@
         if (lower.endsWith(".docx")) {
           if (!window.mammoth) throw new Error("Mammoth.js is still loading — try again in a moment");
           const buf = await file.arrayBuffer();
-          const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+          const result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
           text = sanitizeHtmlToText(result.value);
         } else {
           text = beautifyText(await file.text());
@@ -30788,13 +30820,16 @@
         return "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(text) + "</w:t></w:r>";
       }
       function docxInlineRuns(text) {
-        const re = /(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[\^\d{1,3}\]|\[\d{1,3}\])/g;
+        /* ***bold italic*** first (Word import writes it), or the bold
+           alternative would take the inner **…** and leave a stray *. */
+        const re = /(\*\*\*[^*]+\*\*\*)|(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[\^\d{1,3}\]|\[\d{1,3}\])/g;
         let out = "", last = 0, mm;
         while ((mm = re.exec(text)) !== null) {
           if (mm.index > last) out += docxRun(text.slice(last, mm.index), {});
-          if (mm[1]) out += docxRun(mm[1].slice(2, -2), { b: true });
-          else if (mm[2]) out += docxRun(mm[2].slice(1, -1), { i: true });
-          else out += docxRun("[" + mm[3].replace(/[^0-9]/g, "") + "]", { sup: true });
+          if (mm[1]) out += docxRun(mm[1].slice(3, -3), { b: true, i: true });
+          else if (mm[2]) out += docxRun(mm[2].slice(2, -2), { b: true });
+          else if (mm[3]) out += docxRun(mm[3].slice(1, -1), { i: true });
+          else out += docxRun("[" + mm[4].replace(/[^0-9]/g, "") + "]", { sup: true });
           last = mm.index + mm[0].length;
         }
         if (last < text.length) out += docxRun(text.slice(last), {});
@@ -35180,7 +35215,7 @@
             }
           } catch (e) { /* metadata is a bonus, never a blocker */ }
         }
-        const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+        const result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
         return { text: sanitizeHtmlToText(result.value), docxLang: det && det.strong ? det.code : null, docTitle };
       }
       /* Read every dropped/picked entry once, in order: manuscripts
@@ -42004,6 +42039,14 @@
               const render = out.includes("<em>Moby-Dick</em>") && out.includes("<strong>slowly</strong>") && /<em><strong>never<\/strong><\/em>|<strong><em>never<\/em><\/strong>/.test(out) &&
                 out.includes("<em>tide</em>") && out.includes("<em>fish</em>") && out.includes("<em>Ledger</em>");
               const words = countWords("She read *Moby-Dick* twice, **slowly**, and ***never*** again. It’s *Titanic*’s wake.") === countWords("She read Moby-Dick twice, slowly, and never again. It’s Titanic’s wake.");
+              /* Round trip: the imported chapter through the Word export
+                 carries no literal asterisk, and ***never*** / ***of***
+                 come out as runs that are both bold and italic. */
+              const xml = ch1 ? docxContentParas(ch1.content).join("") : "";
+              const wts = Array.from(xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g), (x) => x[1]);
+              const biRun = (w) => new RegExp("<w:rPr><w:b/><w:i/></w:rPr><w:t[^>]*>" + w + "</w:t>").test(xml);
+              const docxOk = wts.length > 0 && !wts.some((t) => t.includes("*")) && biRun("never") && biRun("of") &&
+                /<w:rPr><w:b\/><\/w:rPr><w:t[^>]*>All<\/w:t>/.test(xml) && /<w:rPr><w:b\/><\/w:rPr><w:t[^>]*>it<\/w:t>/.test(xml);
               /* Undo still finds its lines: the smartened dialogue goes
                  back to straight quotes with its italic intact, and the
                  demoted subheading is promoted again. */
@@ -42013,12 +42056,59 @@
               const dem = has("demoted");
               const rd = dem ? irUndoItem(dem.id) : { ok: false };
               const demBack = rd.ok && String(ch1.content).includes("## Low *tide*");
-              return scVerdict(walkOk && marks && links && blocks && plainKept && heads && reportOk && render && words && typoBack && demBack,
+              return scVerdict(walkOk && marks && links && blocks && plainKept && heads && reportOk && render && words && docxOk && typoBack && demBack,
                 "400 generated run patterns render with their italic/bold (" + walkOk + (bad ? ", " + bad + " bad, e.g. " + firstBad : "") + "), *, ** and *** marks in prose (" + marks + "), links as [words](address) with the address intact (" + links +
                 "), subheading/quote/list/footnote keep theirs (" + blocks + "), underline/sub/sup/strike words kept plain (" + plainKept + "), bold chapter line still splits, titles plain (" + heads +
                 "), report lists only what has no mark (" + reportOk + (rep && rep.carried ? ", carried " + JSON.stringify(rep.carried) : "") + "), preview renders the marks (" + render + "), marks are not words (" + words +
-                "), typography undo keeps the marks (" + typoBack + "), subheading undo (" + demBack + ")");
+                "), Word export: no stray *, bold-italic runs (" + docxOk + (docxOk ? "" : ", " + JSON.stringify(wts.filter((t) => t.includes("*")).slice(0, 3))) + "), typography undo keeps the marks (" + typoBack + "), subheading undo (" + demBack + ")");
             });
+          } },
+        { id: "import.docx.dropcap-emphasis", feature: "import", name: "Drop cap on an opening in emphasis: a first paragraph that starts *It was…*, **It was**, ***Never***, or *“Run!”* (Word import writes these marks) still gets its drop cap inside the emphasis, the plain opening is unchanged, the note reference keeps a single id, and with small-caps lead-in words ending inside the italic the markup stays well-formed XHTML",
+          run() {
+            const sec = mkSection("body", "chapter", "Drop", { content: "" });
+            sec.dropCap = true; sec.smallCaps = false;
+            const first = (c) => { const h = contentBlocksToHtml(c, sec, true, true); const m = h.match(/<p class="first[^"]*">[\s\S]*?<\/p>/); return m ? m[0] : h; };
+            const cases = [
+              ["It was night and the tide came in.", '<p class="first has-dropcap"><span class="dropcap">I</span>t was night and'],
+              ["*It was night* and the tide came in.", '<p class="first has-dropcap"><em><span class="dropcap">I</span>t was night</em> and'],
+              ["**It was** night and the tide came in.", '<p class="first has-dropcap"><strong><span class="dropcap">I</span>t was</strong> night'],
+              ["***Never*** again, she said.", '<span class="dropcap">N</span>ever</strong></em> again'],
+              ["*“Run!”* she said and ran.", '<p class="first has-dropcap"><em>“<span class="dropcap">R</span>un!”</em> she said']
+            ];
+            const bad = cases.filter(([c, want]) => !first(c).includes(want)).map(([c]) => c + " -> " + first(c).slice(0, 120));
+            const noFence = cases.every(([c]) => !/[]/.test(first(c)));
+            const nh = contentBlocksToHtml("*It was* night.[^1]\n\n[^1]: A note.", sec, true, true);
+            const oneId = (nh.match(/id="[^"]*fnref1"/g) || []).length === 1 && nh.includes('<span class="dropcap">I</span>');
+            /* Small-caps lead-in of two words ending inside the italic. */
+            const savedW = state.theme.smallCapsWords;
+            let wf = false, lead = "";
+            try {
+              state.theme.smallCapsWords = 2; sec.smallCaps = true;
+              lead = first("*It was night* and the tide came in.");
+              const x = new DOMParser().parseFromString('<div xmlns="http://www.w3.org/1999/xhtml">' + lead + "</div>", "application/xhtml+xml");
+              const ok = !x.getElementsByTagName("parsererror").length;
+              const li = ok ? x.querySelector(".leadin") : null;
+              const ems = ok ? Array.from(x.getElementsByTagName("em")).map((e) => e.textContent).join("|") : "";
+              wf = ok && !!li && li.textContent === "It was" && ems === "It was| night";
+            } finally { state.theme.smallCapsWords = savedW; sec.smallCaps = false; }
+            return scVerdict(!bad.length && noFence && oneId && wf,
+              "drop cap inside emphasis (" + (bad.length ? bad.join("; ") : "all 5 openings") + "), no fence left (" + noFence + "), note ref keeps one id (" + oneId + "), lead-in inside italic stays well-formed (" + wf + (wf ? "" : ": " + lead.slice(0, 160)) + ")");
+          } },
+        { id: "import.docx.other-paths-formatting", feature: "import", name: "Box-set volume and bulk Word import keep formatting too: they read Word with the same Mammoth options as the main import, and their text keeps *italic*, **bold**, ***both***, [words](address) links, quotes and list items, while a bold \"Chapter 2\" line stays plain so the chapter split finds it",
+          run() {
+            const html = '<p>She read <em>Moby-Dick</em> and <strong><em>never</em></strong> again, see <a href="https://example.com/a">the <em>site</em></a>.</p>' +
+              "<p><strong>Chapter 2</strong></p><p>Second <strong>part</strong>.</p>" +
+              "<blockquote><p>To <em>be</em>.</p><p>Or <strong>not</strong>.</p></blockquote><ul><li>One <em>fish</em></li><li>Two</li></ul>";
+            const text = sanitizeHtmlToText(html);
+            const marks = text.includes("She read *Moby-Dick* and ***never*** again, see [the *site*](https://example.com/a).") &&
+              text.includes("Second **part**.") && text.includes("> To *be*.") && text.includes("> Or **not**.") && text.includes("One *fish*") && !text.includes("**Chapter 2**");
+            const chs = splitIntoChapters(text, "Vol");
+            const split = chs.length === 2;
+            const src = (f) => (typeof f === "function" ? String(f) : "");
+            const opts = /convertToHtml\(\{ arrayBuffer: buf \}, IR_MAMMOTH_OPTS\)/.test(src(typeof manuscriptFileToVolume === "function" ? manuscriptFileToVolume : null)) &&
+              /convertToHtml\(\{ arrayBuffer: buf \}, IR_MAMMOTH_OPTS\)/.test(src(typeof bulkReadDocx === "function" ? bulkReadDocx : null));
+            return scVerdict(marks && split && opts,
+              "marks kept (" + marks + (marks ? "" : ": " + JSON.stringify(text.slice(0, 300))) + "), chapter line still splits (" + split + ", " + chs.length + "), both readers use the import's Mammoth options (" + opts + ")");
           } },
         { id: "import.report.images-accounted", feature: "import", name: "Import report (Word): every picture is accounted for — images inside a Heading 1, a Heading 3, a list item and a quote are imported into the library, and one the import cannot hold (inside a footnote) is listed as left out, so the all-clear line never appears",
           run() {
