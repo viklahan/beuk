@@ -44,6 +44,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
+import { planSections, needsFinishing, withPageMap, startPages, blanksFor, stampable, finalHtml, stampSpreads } from './spreads.mjs';
 
 const PORT = Number(process.env.RENDER_PORT ?? 3100);
 const CHROMIUM = process.env.RENDER_CHROMIUM_BIN ?? '/usr/bin/chromium';
@@ -121,7 +122,14 @@ function readBody(req) {
   });
 }
 
-async function render(html) {
+async function render(body) {
+  // The document the page is answered with: the measuring pass's, then
+  // the final one (see spreads.mjs). A book with no side to keep and no
+  // spread is rendered in one plain pass, as before.
+  const html = Buffer.isBuffer(body) ? body.toString('utf8') : String(body);
+  const plan = planSections(html);
+  const finishing = needsFinishing(plan);
+  let doc = finishing ? withPageMap(html, plan) : html;
   const profile = await mkdtemp(path.join(os.tmpdir(), 'beuk-render-'));
   let browser = null;
   let timer = null;
@@ -151,7 +159,7 @@ async function render(html) {
             status: 200,
             contentType: 'text/html; charset=utf-8',
             headers: { 'content-security-policy': CSP, 'cache-control': 'no-store' },
-            body: html,
+            body: doc,
           });
           return;
         }
@@ -165,14 +173,21 @@ async function render(html) {
       // preferCSSPageSize to true and tags the PDF unless told not to
       // (https://chromium.googlesource.com/chromium/src/+/HEAD/components/headless/command_handler/headless_command.js),
       // and --no-pdf-header-footer turned displayHeaderFooter off.
-      const pdf = await page.pdf({
+      const print = async () => Buffer.from(await page.pdf({
         preferCSSPageSize: true,
         printBackground: true,
         displayHeaderFooter: false,
         tagged: true,
         timeout: TIMEOUT_MS,
-      });
-      return Buffer.from(pdf);
+      }));
+      const first = await print();
+      if (!finishing) return first;
+      const { before, finalStart } = blanksFor(plan, await startPages(first));
+      const stamped = await stampable(plan);
+      doc = finalHtml(html, before, stamped);
+      await page.goto(DOC_URL, { waitUntil: 'load', timeout: TIMEOUT_MS });
+      const final = await print();
+      return stamped.size ? stampSpreads(final, plan, finalStart, stamped) : final;
     })();
     // If the timeout wins, the browser is killed below and `work`
     // rejects later; that late rejection must not crash the process.

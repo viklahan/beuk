@@ -70,7 +70,7 @@ test('the colour flows through the one generator, and only when set (unset = the
   // every surface reads the one generator
   assert.ok(html.includes('styleEl.textContent = buildBookCss(".fc-page");'));
   assert.ok(html.includes('files.push({ path: "OEBPS/Styles/blitz.css", content: buildBookCss("")'));
-  assert.ok(html.includes('const css = buildBookCss("") + "\\n" + buildPrintCss() + "\\n" +'));
+  assert.ok(html.includes('const css = buildBookCss("") + "\\n" + buildPrintCss(state.printTrim, !!state.printRecto) + "\\n" +'));
 });
 
 test('print keeps the accent, blends it for its solid tints and ornaments, and prints on white paper whatever the tint', () => {

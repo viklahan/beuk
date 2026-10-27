@@ -1927,6 +1927,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The outline is rendered by the client sidebar renderer from the in-browser book model.',
   },
   {
+    id: 'chapter.backdrop.spread',
+    title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
+    kind: 'client-only',
+    reason: 'The layout, the spread view and the print file are built in the studio; the renderer half is covered by tests/print-spreads.test.ts.',
+  },
+  {
     id: 'sample.legacy-salt-meridian',
     title: 'A sample copy saved before the rename is snapshotted into History and replaced by the current sample; restoring the snapshot returns the old text exactly',
     kind: 'client-only',

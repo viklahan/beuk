@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v10`; both `client/sw.js` and
+service worker (cache `beuk-shell-v11`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -678,6 +678,44 @@ is explicitly permitted — the job passes `--permit-file-read=` for
 exactly the `BeukICCPath` file (without it every pdfx job failed with
 `/invalidfileaccess`). If the profile is missing (no tools image),
 pdfx jobs fail as "not configured", never a fake pass.
+
+### Facing pages and painted spreads (renderer)
+
+Measured on the renderer's own engine (Chromium 131): `break-before:
+left | right | recto | verso` inserts **no blank page** (each is a plain
+page break), and nothing a page paints reaches its margins (content is
+clipped to the page area; an `@page` background starts at its corner).
+So until 2026-10-26 "Chapters open on a recto page" never reached the
+print PDF (the print file did not even ask for it — `buildPrintCss()`
+was called without the setting), and a plate printed inside the margins.
+
+The renderer now finishes the PDF itself (`deploy/renderer/spreads.mjs`,
+pdf-lib 1.17.1, tested in `tests/print-spreads.test.ts` without a browser):
+
+1. The studio marks every print section `id="ps-N"` with the side it must
+   start on: `data-start="recto"` for a chapter when chapters open on a
+   recto, `data-start="verso"` for a **paired spread** (a chapter with both
+   a plate and a backdrop: `spread-sec`).
+2. A measuring pass adds hidden links to every section, so Chromium writes
+   a named destination for each; its page is read from the PDF.
+3. A blank page (`.print-blank`, bare when blanks print bare) goes before
+   every section that missed its side. Each section already starts on a
+   fresh page, so this moves what follows by exactly one page and reflows
+   nothing; the final pass renders with them.
+4. Each paired spread's pictures are drawn **beneath** the page content:
+   the plate edge to edge on its verso (its in-page copy hidden), and its
+   backdrop — baked by the studio at the page's own size (`bd-page`),
+   centred like the plate so the halves meet at the gutter — over the
+   whole facing recto.
+
+The **Spread** backdrop strength (`spread`, beside Whisper/Soft/Strong)
+is a true double-page spread: full strength across the gutter, thinning
+to a trace by the inner margin and gone 1.2 in past it
+(`spreadFadeStops`), so the words are never set on the painting. On a
+screen (preview, EPUB, Zen) it leans in from the binding edge and is gone
+a third of the way across. A chapter backdrop without a plate prints over
+the opening's text area only (before, its 1.15 in overhang above the
+page area was painted onto the foot of the previous page).
 
 ## Store-ready? report (studio + jobs)
 
