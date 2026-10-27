@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v11`; both `client/sw.js` and
+service worker (cache `beuk-shell-v12`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -2553,6 +2553,21 @@ Rate limits, per user and in memory: resend 3/hour, email change 5/hour, data do
 In the studio, the shelf dialog links to the account page and shows a calm line when the address isn't confirmed. Right after you sign in or create an account, a book on the desk that has real writing and isn't on your shelf is offered a place there once ("Bring it to my shelf" / "Not now"). It is never uploaded unless you choose.
 
 `GET /api/account/export/check` (signed in) answers 200, 413 or 429 without counting against the download limit; the account page asks it first, so a refusal shows on the page instead of being saved as a file. With a Stripe key, deleting an account cancels its subscription at Stripe (`cancelBillingForDeletedAccount()` in `src/account/plan.ts`); without one, the Delete section says it doesn't and who to ask. The Plan section reads `accountPlan()` (same file). Accounts made before migration 014 start as "not confirmed".
+
+## Lists
+
+A block whose first line starts `- `, `* ` or `• ` sets as a bulleted list
+(two items or more, so one dash-led line stays prose); one whose first line
+starts `1. ` or `1) ` sets as a numbered list, starting at that number. A
+marked line starts an item, an unmarked line continues it, and bold and
+italic work inside items (`listItemsOf` / `contentBlocksToHtml` in
+`client/index.html`). Lists set in the preview, the print interior and the
+EPUB (`<ul>`/`<ol class="book-list">`); the Word export writes real Word
+lists (`word/numbering.xml`, one numbering instance per list, so a numbered
+list keeps its start); a Word file's lists import as lists instead of being
+flattened. The marks are not counted as words. The editor's toolbar has
+List and Numbered buttons that turn the selected lines (or the paragraph)
+into a list and back. Self-check: `chapter.lists`.
 
 ## Ramp: `/ramp`
 

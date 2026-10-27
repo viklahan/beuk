@@ -1927,6 +1927,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The outline is rendered by the client sidebar renderer from the in-browser book model.',
   },
   {
+    id: 'chapter.lists',
+    title: 'Lists: bulleted and numbered lists set in the preview, print and EPUB, export to Word as real lists, and come in from Word as lists',
+    kind: 'client-only',
+    reason: 'The list markup is parsed and typeset in the studio; the Word import and export are built there too.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',
