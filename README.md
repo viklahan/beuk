@@ -2878,12 +2878,19 @@ surface:
   in the text colour — no blue, no underline, no clickable box in the PDF
   (`printUnlink`).
 - **Word export**: a real `w:hyperlink` on an External relationship in
-  `word/_rels/document.xml.rels`, in Word's Hyperlink style.
+  `word/_rels/document.xml.rels`, in Word's Hyperlink style. Links are set
+  aside before emphasis is read (as in the preview), so an italic line
+  around a link stays italic on both sides and on the link's own runs, a
+  link whose words are digits is never a note marker, and a `*` in an
+  address never closes an emphasis.
 - **Markdown** keeps `[words](address)` as is; the standalone HTML links;
   the ACX script reads the words only.
-- **Word count** counts the words, never the address.
+- **Word count**, read-aloud and Insights count and read the words, never
+  the address.
 - **Word import**: a Word file's web and mail links come in as
-  `[words](address)`; a bookmark or other link stays text and is counted in
+  `[words](address)`, an italic or bold linked title keeping its emphasis
+  as `*…*` / `**…**` (an emphasis nested inside another is counted in the
+  report as lost); a bookmark or other link stays text and is counted in
   the import report as dropped.
 
 The typographic pass (Auto-Format, smart quotes, dashes) never touches an

@@ -17387,7 +17387,9 @@
       /* ==== /BEUK:insights ==== */
       const INS_WORD_RE = /[\p{L}\p{M}]+(?:['\u2019][\p{L}\p{M}]+)*/gu;
       function insCleanText(text) {
+        /* A link reads as its words; its address is not words. */
         return String(text || "")
+          .replace(mdLinkRe(), "$1")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
           .replace(/\[\^?\d{1,3}\]:?/g, " ")
           .replace(/[#>*_[\]^]/g, " ");
@@ -26415,18 +26417,41 @@
         /* Web and store links come in as Beuk links, [words](address):
            only https / http / mailto (anything else — an internal
            bookmark, a file: path — stays counted as a dropped link).
-           The words lose any "[ ]" that would end the label early; the
-           address's spaces and parentheses are percent-encoded. */
+           The words lose any "[ ]" that would end the label early, and
+           keep their italic / bold as *…* / **…** (link words carry
+           emphasis on every surface), so an "Also by" page's italic
+           linked titles stay italic; the address's spaces and
+           parentheses are percent-encoded. */
+        /* One level of emphasis: an italic inside a bold (or the
+           reverse) keeps the outer mark only, and the inner one is
+           counted in the report as lost — never silently. */
+        const linkWords = (node, outer, lost) => {
+          if (node.nodeType === 3) return node.nodeValue.replace(/[\[\]*]/g, "");
+          if (node.nodeType !== 1) return "";
+          const tag = node.tagName.toLowerCase();
+          let mark = (tag === "em" || tag === "i") ? "*" : (tag === "strong" || tag === "b") ? "**" : "";
+          if (mark && outer) {
+            if (mark !== outer) lost[mark === "*" ? "em" : "strong"]++;
+            mark = "";
+          }
+          const inner = Array.from(node.childNodes).map((c) => linkWords(c, outer || mark, lost)).join("");
+          if (!mark || !inner.trim()) return inner;
+          const m = inner.match(/^(\s*)([\s\S]*?)(\s*)$/);
+          return m[1] + mark + m[2] + mark + m[3];
+        };
+        const linkLost = { em: 0, strong: 0 };
         doc.body.querySelectorAll("a[href]").forEach((a) => {
           const href = String(a.getAttribute("href") || "").trim();
-          const words = a.textContent.replace(/[\[\]]/g, "").replace(/\s+/g, " ").trim();
+          const lost = { em: 0, strong: 0 };
+          const words = linkWords(a, "", lost).replace(/\s+/g, " ").trim();
           if (!/^(?:https?:\/\/|mailto:)\S/i.test(href) || !words) return;
           const url = href.replace(/\s/g, "%20").replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/</g, "%3C").replace(/>/g, "%3E");
+          linkLost.em += lost.em; linkLost.strong += lost.strong;
           a.replaceWith(doc.createTextNode("[" + words + "](" + url + ")"));
         });
         /* Formatting the plain-text walk cannot carry. */
-        ir.drops.em = doc.body.querySelectorAll("em, i").length;
-        ir.drops.strong = doc.body.querySelectorAll("strong, b").length;
+        ir.drops.em = doc.body.querySelectorAll("em, i").length + linkLost.em;
+        ir.drops.strong = doc.body.querySelectorAll("strong, b").length + linkLost.strong;
         ir.drops.links = doc.body.querySelectorAll("a[href]").length;
         doc.querySelectorAll("*").forEach((el) => { el.removeAttribute("style"); el.removeAttribute("class"); el.removeAttribute("lang"); });
         const parts = [];
@@ -30808,31 +30833,43 @@
          is set as its words alone. */
       let docxLinks = null;
       function docxInlineRuns(text) {
-        const re = new RegExp("(\\*\\*[^*]+\\*\\*)|(\\*[^*\\n]+\\*)|(\\[\\^\\d{1,3}\\]|\\[\\d{1,3}\\])|" + mdLinkRe().source, "gi");
-        let out = "", last = 0, mm;
-        while ((mm = re.exec(text)) !== null) {
-          if (mm.index > last) out += docxRun(text.slice(last, mm.index), {});
-          if (mm[4]) {
-            /* A link: its words (bold / italic kept) inside a real
-               w:hyperlink, its address an External relationship. */
-            const words = docxLinkWordRuns(mm[4]);
-            if (docxLinks) {
-              docxLinks.push(mm[5]);
-              out += '<w:hyperlink r:id="rIdLink' + docxLinks.length + '" w:history="1">' + words + "</w:hyperlink>";
-            } else out += docxLinkWordRuns(mm[4], true);
+        /* Links first, each set aside whole behind a sentinel — the
+           way inlineMd does it — so emphasis may span a link (an
+           italic "Available at [the store](…)" line), a link's words
+           may be digits without turning into a note marker, and an
+           address's own "*" can never close an emphasis. */
+        const links = [];
+        const s = String(text).replace(mdLinkRe(), (m, label, url) => { links.push({ label, url }); return "" + (links.length - 1) + ""; });
+        /* Plain text: the sentinels become hyperlinks, carrying the
+           surrounding bold / italic (inh) onto the link's runs. */
+        const plain = (t, inh) => t.split(/(\d+)/).map((seg, k) => {
+          if (!(k % 2)) return seg ? docxRun(seg, inh) : "";
+          const lk = links[+seg];
+          /* A link: its words (bold / italic kept) inside a real
+             w:hyperlink, its address an External relationship. */
+          if (!docxLinks) return docxLinkWordRuns(lk.label, true, inh);
+          docxLinks.push(lk.url);
+          return '<w:hyperlink r:id="rIdLink' + docxLinks.length + '" w:history="1">' + docxLinkWordRuns(lk.label, false, inh) + "</w:hyperlink>";
+        }).join("");
+        const emit = (t, inh) => {
+          const re = /(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[\^\d{1,3}\]|\[\d{1,3}\])/g;
+          let out = "", last = 0, mm;
+          while ((mm = re.exec(t)) !== null) {
+            if (mm.index > last) out += plain(t.slice(last, mm.index), inh);
+            if (mm[1]) out += emit(mm[1].slice(2, -2), Object.assign({}, inh, { b: true }));
+            else if (mm[2]) out += emit(mm[2].slice(1, -1), Object.assign({}, inh, { i: true }));
+            else out += docxRun("[" + mm[3].replace(/[^0-9]/g, "") + "]", Object.assign({}, inh, { sup: true }));
+            last = mm.index + mm[0].length;
           }
-          else if (mm[1]) out += docxRun(mm[1].slice(2, -2), { b: true });
-          else if (mm[2]) out += docxRun(mm[2].slice(1, -1), { i: true });
-          else out += docxRun("[" + mm[3].replace(/[^0-9]/g, "") + "]", { sup: true });
-          last = mm.index + mm[0].length;
-        }
-        if (last < text.length) out += docxRun(text.slice(last), {});
-        return out || docxRun("", {});
+          if (last < t.length) out += plain(t.slice(last), inh);
+          return out;
+        };
+        return emit(s, {}) || docxRun("", {});
       }
-      function docxLinkWordRuns(label, plain) {
+      function docxLinkWordRuns(label, plain, inh) {
         const re = /(\*\*[^*]+\*\*)|(\*[^*\n]+\*)/g;
         let out = "", last = 0, mm;
-        const run = (t, o) => docxRun(t, Object.assign({ link: !plain }, o));
+        const run = (t, o) => docxRun(t, Object.assign({ link: !plain }, inh || {}, o));
         while ((mm = re.exec(label)) !== null) {
           if (mm.index > last) out += run(label.slice(last, mm.index), {});
           out += mm[1] ? run(mm[1].slice(2, -2), { b: true }) : run(mm[2].slice(1, -1), { i: true });
@@ -37165,6 +37202,11 @@
               if (html.includes("target=")) bad.push("the export link carries a target");
               const wc = countWords("Buy [The Winter Soundings](https://books.example.com/x-y) now");
               if (wc !== 5) bad.push("the word count counts the address (" + wc + ", expected 5)");
+              /* Read-aloud and Insights read the words, never the address. */
+              const ra = raCleanText("Buy [The Book](https://books.example.com/winter-soundings) now");
+              if (ra !== "Buy The Book now") bad.push("read-aloud reads the address: " + JSON.stringify(ra));
+              const it = insTokens("Buy [The Book](https://books.example.com/winter-soundings) now").join(",");
+              if (it !== "buy,the,book,now") bad.push("Insights tokenises the address: " + it);
               /* A paragraph opening on a link, with a drop cap and a small-caps lead-in. */
               const dc = mkSection("body", "chapter", "Open", { number: "2", content: "[Read the first chapter](https://e.example.com/read) of the sequel here, today." });
               dc.dropCap = true; dc.smallCaps = true;
@@ -37201,7 +37243,7 @@
                 return "";
               });
               if (tool) bad.push(tool);
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "https / mailto links set (address escaped and untouched, italic words inside); javascript: / data: stay text; a quote cannot leave the href; balanced parentheses kept; the preview opens a new tab with noopener; drop cap and lead-in keep the link whole; the count is 5 words; Also by and a call to action link in the preview, and print sets their words as plain text; the toolbar places [words](https://…) over the selection and refuses an unsafe address");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "https / mailto links set (address escaped and untouched, italic words inside); javascript: / data: stay text; a quote cannot leave the href; balanced parentheses kept; the preview opens a new tab with noopener; drop cap and lead-in keep the link whole; the count is 5 words; read-aloud and Insights read only the words; Also by and a call to action link in the preview, and print sets their words as plain text; the toolbar places [words](https://…) over the selection and refuses an unsafe address");
             } finally {
               applyBookDoc(keepDoc);
             }
@@ -37212,7 +37254,7 @@
             try {
               const bad = [];
               const url = "https://books.example.com/isbn/978-1-23?a=1&b=2";
-              const ch = mkSection("body", "chapter", "Links", { number: "1", content: "Buy [**The Winter Soundings**](" + url + ") now.\n\n- a list with [a link](https://e.example.com/l)\n- and a second item\n\n> A quote with [mail](mailto:april@example.com)" });
+              const ch = mkSection("body", "chapter", "Links", { number: "1", content: "Buy [**The Winter Soundings**](" + url + ") now.\n\n- a list with [a link](https://e.example.com/l)\n- and a second item\n\n> A quote with [mail](mailto:april@example.com)\n\n*Read [this book](https://e.example.com/b) today.*" });
               const also = mkSection("back", "alsoby", "Also by the Author", { content: "[The Winter Soundings](https://books.example.com/winter-soundings)\nA Field Guide to Vanishing Channels" });
               applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), ch, also], images: [], printTrim: "6x9" });
               const files = epubFiles("generic");
@@ -37230,12 +37272,25 @@
               const rels = String((docx.find((f) => f.path === "word/_rels/document.xml.rels") || {}).content || "");
               const sty = String((docx.find((f) => f.path === "word/styles.xml") || {}).content || "");
               const hl = (doc.match(/<w:hyperlink r:id="rIdLink\d+" w:history="1">/g) || []).length;
-              if (hl !== 4) bad.push("the Word export has " + hl + " hyperlinks, expected 4");
+              if (hl !== 5) bad.push("the Word export has " + hl + " hyperlinks, expected 5");
+              /* Emphasis spanning a link: the italic holds on both sides and on the link's own runs. */
+              if (!doc.includes('<w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve">Read </w:t></w:r><w:hyperlink r:id="rIdLink4" w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/><w:i/></w:rPr><w:t xml:space="preserve">this book</w:t></w:r></w:hyperlink><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> today.</w:t></w:r>')) bad.push("an italic line around a link did not export as italic runs and an italic hyperlink");
+              if (/\]\((?:https?|mailto):/.test(doc)) bad.push("raw link markup reached document.xml");
+              if (!rels.includes('Id="rIdLink4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://e.example.com/b"')) bad.push("the italic line's link has no relationship");
               if (!/<w:hyperlink r:id="rIdLink1" w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"\/><w:b\/><\/w:rPr><w:t xml:space="preserve">The Winter Soundings<\/w:t><\/w:r><\/w:hyperlink>/.test(doc)) bad.push("the first Word hyperlink is not the bold store title");
               if (!rels.includes('<Relationship Id="rIdLink1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://books.example.com/isbn/978-1-23?a=1&amp;b=2" TargetMode="External"/>')) bad.push("the Word relationship is missing or unescaped");
               if (!sty.includes('w:styleId="Hyperlink"')) bad.push("the Word styles lack Hyperlink");
               if (!parseXmlDoc(doc) || !parseXmlDoc(rels) || !parseXmlDoc(sty)) bad.push("a Word part is not well-formed");
               if (docxLinks !== null) bad.push("the hyperlink collector stayed open after the export");
+              /* A link whose words are digits is not a note marker; an address's "*" does not close an emphasis. */
+              docxLinks = [];
+              try {
+                const dg = docxInlineRuns("See [12](https://e.example.com/b) here");
+                if (dg !== '<w:r><w:t xml:space="preserve">See </w:t></w:r><w:hyperlink r:id="rIdLink1" w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr><w:t xml:space="preserve">12</w:t></w:r></w:hyperlink><w:r><w:t xml:space="preserve"> here</w:t></w:r>' || docxLinks[0] !== "https://e.example.com/b") bad.push("a digit-worded link exported wrong: " + dg);
+                docxLinks = [];
+                const st = docxInlineRuns("*one* [x](https://e.example.com/a*b) *two*");
+                if (docxLinks[0] !== "https://e.example.com/a*b" || !st.includes('<w:rPr><w:i/></w:rPr><w:t xml:space="preserve">one</w:t>') || !st.includes('<w:rPr><w:i/></w:rPr><w:t xml:space="preserve">two</w:t>')) bad.push("an address with * broke the emphasis: " + st);
+              } finally { docxLinks = null; }
               const md = buildMarkdown();
               if (!md.includes("Buy [**The Winter Soundings**](" + url + ") now.")) bad.push("Markdown did not keep the link verbatim");
               const sa = buildStandaloneHtml();
@@ -37249,7 +37304,15 @@
               } finally { irAbort(); }
               if (!imported.includes("[The Winter Book](https://books.example.com/a%20b%281%29)")) bad.push("a Word web link did not come in as a Beuk link: " + JSON.stringify(imported));
               if (/\]\((?:#|javascript)/.test(imported) || !imported.includes("chapter two") || ir.drops.links !== 2) bad.push("a bookmark / unsafe Word link was not left as counted text (" + ir.drops.links + ")");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "EPUB: links in prose, list, quote and Also by, validator 0 errors, no remote-resources; Word: 4 w:hyperlink runs on External relationships (address escaped), Hyperlink style, parts well-formed; Markdown verbatim; standalone HTML links; ACX reads the words; Word import brings a web link in as [words](address) and leaves a bookmark and a javascript: link as counted text");
+              /* An italic linked title ("Also by" in Word) keeps its italic inside the link words. */
+              const ir2 = irBegin("alsoby.docx", "docx");
+              let imp2 = "";
+              try {
+                imp2 = irDocxHtmlToText('<p>Also: <a href="https://books.example.com/w"><em>The Winter Soundings</em></a>, <a href="https://books.example.com/f"><strong>A <i>Field</i> Guide</strong></a> and <em>plain</em>.</p>', ir2);
+              } finally { irAbort(); }
+              if (!imp2.includes("[*The Winter Soundings*](https://books.example.com/w)") || !imp2.includes("[**A Field Guide**](https://books.example.com/f)")) bad.push("an italic / bold linked title lost its emphasis: " + JSON.stringify(imp2));
+              if (ir2.drops.em !== 2 || ir2.drops.strong !== 0) bad.push("the import report counts the emphasis wrong (em " + ir2.drops.em + ", strong " + ir2.drops.strong + "; expected 2 italics lost — the one outside the links and the one nested in the bold title — and 0 bold)");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "EPUB: links in prose, list, quote and Also by, validator 0 errors, no remote-resources; Word: 5 w:hyperlink runs on External relationships (address escaped), an italic line around a link stays italic on both sides and on the link, a digit-worded link is a link not a note, an address's * leaves emphasis alone, Hyperlink style, parts well-formed; Markdown verbatim; standalone HTML links; ACX reads the words; Word import brings a web link in as [words](address) and leaves a bookmark and a javascript: link as counted text, and an italic / bold linked title keeps its emphasis");
             } finally {
               applyBookDoc(keepDoc);
             }
@@ -45952,7 +46015,9 @@
         return s ? (s.title || t("side.untitled")) : "";
       }
       function raCleanText(raw) {
+        /* A link is read aloud as its words, never its address. */
         return String(raw || "")
+          .replace(mdLinkRe(), "$1")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
           .replace(/\[\^[^\]]+\]:[^\n]*/g, " ")
           .replace(/\[\^[^\]]+\]/g, "")
