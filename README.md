@@ -2640,7 +2640,11 @@ P.S. Bring string.
   a run; a blank line starts a new run. A line that is not `Name: message`
   (a time, "Read 9:41") is a small centred note. A name starts with a
   letter and holds letters, spaces and `.'-` only (so "Tuesday, 9:41" is a
-  note, not a speaker). With no `<MeName>` the first speaker is the sender.
+  note, not a speaker). An ASCII colon needs a space after it; the
+  full-width colon of Japanese and Chinese (`アナ：起きてる？`) needs none.
+  A note definition (`[^1]: …`) on a line of its own inside the
+  conversation is collected as a note and its reference links to it.
+  With no `<MeName>` the first speaker is the sender.
   Bubbles are inline blocks on left- or right-set lines (no flexbox), so
   older reading systems keep the two sides; with no stylesheet at all each
   message still reads as the name and then the text. In Word: one `Text
@@ -2655,6 +2659,11 @@ P.S. Bring string.
   lines is the sign-off, set flush right. In Word: `Letter`-style
   paragraphs (italic, indented both sides) with real line breaks, the
   sign-off right-aligned.
+
+In a right-to-left book (Arabic) both mirror: the letter is set flush
+right and signs off at the left; sent bubbles stand at the left, received
+at the right, with the bubble tails turned (plain `left`/`right`, which
+older reading systems understand, not logical `start`/`end`).
 
 The speaker names are words (they are on the page); the fences are not.
 Toolbar: Texts (fences the selection as `::: texts <first speaker>`, or

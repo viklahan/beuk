@@ -19458,19 +19458,23 @@
         const l = lines[0].trim();
         return CONTAINER_BREAK_RE.test(l) || !!parseImageLine(l) || /^\[\^?\d{1,3}\]:/.test(l);
       }
-      /* A letter's paragraphs: [role|null] per stanza (salute / signoff / ps). */
+      /* A letter's paragraphs: [role|null] per stanza (salute / signoff / ps).
+         The comma is any script's: "," "،" (Arabic) "，" "、" (CJK). */
       function letterRoles(st) {
         const role = st.map(() => null);
         if (st.length < 2) return role;
-        if (st[0].length === 1 && st[0][0].trim().length <= 60 && /[,:]$/.test(st[0][0].trim())) role[0] = "salute";
+        if (st[0].length === 1 && st[0][0].trim().length <= 60 && /[,:،，、：]$/.test(st[0][0].trim())) role[0] = "salute";
         let end = st.length - 1;
         while (end > 0 && /^P\.?\s?S\b/i.test(st[end][0].trim())) { role[end] = "ps"; end--; }
         const so = st[end];
-        if (end > 0 && role[end] !== "salute" && so.length <= 3 && /,$/.test(so[0].trim()) && so.every((l) => l.trim().length <= 48)) role[end] = "signoff";
+        if (end > 0 && role[end] !== "salute" && so.length <= 3 && /[,،，、]$/.test(so[0].trim()) && so.every((l) => l.trim().length <= 48)) role[end] = "signoff";
         return role;
       }
-      /* A texts container's lines -> [{ who, text, sent, first } | { meta, text } | { pass, text }]. */
-      const TEXTS_LINE_RE = /^([\p{L}\p{M}][\p{L}\p{M} .'’-]{0,39}?)[ \t]*:[ \t]+(\S.*)$/u;
+      /* A texts container's lines -> [{ who, text, sent, first } | { meta, text } | { pass, text }].
+         "Name: message": an ASCII colon needs a space after it (so
+         "9:41" is never a speaker); the full-width colon of Japanese
+         and Chinese ("アナ：起きてる？") needs none. */
+      const TEXTS_LINE_RE = /^([\p{L}\p{M}][\p{L}\p{M} .'’・-]{0,39}?)[ \t]*(?::[ \t]+|[：﹕][ \t]*)(\S.*)$/u;
       function textsItems(seg) {
         const me = String(seg.arg || "").trim().toLowerCase();
         let meName = me, prev = null;
@@ -19788,6 +19792,12 @@
         const prefix = "s" + Math.max(0, state.sections.indexOf(section)) + "-";
         const defined = new Set();
         blocks.forEach((b) => { const dm = b.match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
+        /* A texts conversation hands each "[^n]:" line on as a note of
+           its own even with no blank line around it (textsItems), so
+           such a line defines its note too and its reference links. */
+        if (text.indexOf(":::") !== -1) parseContainers(text).forEach((seg) => {
+          if (seg.kind === "texts") seg.lines.forEach((l) => { const dm = l.trim().match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
+        });
         const noteCtx = { prefix, defined, seen: new Set() };
         const notes = [];
         const out = [];
@@ -20242,7 +20252,14 @@
               S + ".ch-editorial_left, " + S + ".ch-editorial_left .chapter-title, " + S + ".ch-editorial_left .chapter-subtitle, " +
               S + ".copyright p, " + S + ".inhead, " + S + ".part-body { text-align: right; }",
             S + ".ch-editorial_left .chapter-number { border-left: 0; padding-left: 0; border-right: 0.22em solid currentColor; padding-right: 0.6em; }",
-            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }");
+            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }",
+            /* Letters and texts mirror: the letter reads from the right
+               and signs off at the left; sent bubbles stand at the left
+               (the closing side), received at the right, tails turned. */
+            S + ".letter, " + S + ".letter p, " + S + ".texts .tx-b, " + S + ".texts .tx-recv { text-align: right; }",
+            S + ".letter p.signoff, " + S + ".texts .tx-sent { text-align: left; }",
+            S + ".texts .tx-sent .tx-b { border-bottom-right-radius: 0.95em; border-bottom-left-radius: 0.25em; }",
+            S + ".texts .tx-recv .tx-b { border-bottom-left-radius: 0.95em; border-bottom-right-radius: 0.25em; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -38294,6 +38311,34 @@
               if (/:::|texts Ana/.test(html)) bad.push("a fence line reached the page");
               const noArg = textsItems(parseContainers("::: texts\nZoe: hi\nMax: hey\n:::")[0]);
               if (!(noArg[0].sent && !noArg[1].sent)) bad.push("with no <MeName> the first speaker is not the sender");
+              /* Japanese / Chinese write the full-width colon, no space after it. */
+              const ja = contentBlocksToHtml("::: texts アナ\nアナ：起きてる？\nベン：まだ\n9:41\n:::", s, false, true, true);
+              if (!ja.includes('<div class="tx tx-sent tx-first"><p class="tx-who">アナ</p><p class="tx-b">起きてる？</p></div><div class="tx tx-recv tx-first"><p class="tx-who">ベン</p><p class="tx-b">まだ</p></div><p class="tx-meta">9:41</p>')) bad.push("full-width colons: " + JSON.stringify(ja));
+              /* A note defined on a line of its own inside the conversation links both ways. */
+              const noteSrc = "::: texts Ana\nAna: see this[^1]\n[^1]: a note on it\nBen: ok\n:::";
+              const nt = mkSection("body", "chapter", "Noted", { number: "2", content: noteSrc });
+              const ntHtml = contentBlocksToHtml(noteSrc, nt, false, true, true);
+              if (!/<a class="noteref"[^>]* id="s\d+-fnref1"/.test(ntHtml) || !ntHtml.includes('class="note-back"')) bad.push("a note defined inside the texts is not linked: " + JSON.stringify(ntHtml));
+              /* A right-to-left book mirrors: letter text flush right, the sign-off and sent bubbles at the left. */
+              const arRoles = letterRoles([["أمي العزيزة،"], ["كتبت إليك."], ["ابنك،", "سامي"]]);
+              if (arRoles[0] !== "salute" || arRoles[2] !== "signoff") bad.push("the Arabic comma does not mark the salutation / sign-off: " + JSON.stringify(arRoles));
+              const keepLang = state.meta.language;
+              state.meta.language = "ar";
+              const rp = document.createElement("div");
+              rp.className = "sc-texts-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
+              const rst = document.createElement("style");
+              try {
+                rst.textContent = buildBookCss(".sc-texts-rtl");
+                rp.innerHTML = '<div class="letter"><p>أمي العزيزة، كتبت إليك هذه الرسالة الطويلة من المدينة البعيدة لأخبرك بكل ما جرى</p><p class="signoff">ابنك،<br/>سامي</p></div>' +
+                  contentBlocksToHtml("::: texts سامي\nسامي: هل أنت مستيقظة؟ أريد أن أخبرك بشيء مهم الليلة\nمنى: نعم\n:::", s, false, true, true);
+                document.body.appendChild(rst); document.body.appendChild(rp);
+                const tb = rp.querySelector(".texts").getBoundingClientRect();
+                const rs = rp.querySelector(".tx-sent .tx-b").getBoundingClientRect(), rr2 = rp.querySelector(".tx-recv .tx-b").getBoundingClientRect();
+                const lp = getComputedStyle(rp.querySelector(".letter p")).textAlign, so2 = getComputedStyle(rp.querySelector(".letter p.signoff")).textAlign;
+                const ba = getComputedStyle(rp.querySelector(".tx-sent .tx-b")).textAlign;
+                if (lp !== "right" || so2 !== "left" || ba !== "right") bad.push("RTL alignment: letter " + lp + ", sign-off " + so2 + ", bubble text " + ba);
+                if (!(Math.abs(rs.left - tb.left) < 2 && Math.abs(rr2.right - tb.right) < 2)) bad.push("RTL bubbles are not mirrored (sent " + Math.round(rs.left) + "-" + Math.round(rs.right) + ", received " + Math.round(rr2.left) + "-" + Math.round(rr2.right) + " in " + Math.round(tb.left) + "-" + Math.round(tb.right) + ")");
+              } finally { rp.remove(); rst.remove(); state.meta.language = keepLang; }
               /* As the page sets it: sent bubbles at the right edge and tinted, received at the left and outlined. */
               const probe = document.createElement("div");
               probe.className = "sc-texts-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
@@ -38326,13 +38371,13 @@
               if (!document.querySelector('#insertToolbar [data-insert="texts"]')) bad.push("the toolbar lacks Texts");
               const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.texts", "tool.textsTitle"].some((k) => !UI_STRINGS[c][k]));
               if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
-              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s, nt], images: [], printTrim: "6x9" });
               const files = epubFiles("generic");
               const val = validateEpubPackage(files);
               if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="tx tx-recv tx-first">'))) bad.push("the EPUB chapter carries no texts");
               if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
               if (!buildPrintHtml().includes('<p class="tx-who">Ben</p>')) bad.push("the print file carries no texts");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "4 bubbles + a time line; computed: sent at the right edge and tinted, received at the left and outlined, the time centred; names above the first of each run; print sets the tint solid; Word: 2 Text Sent + 2 Text Received + a Text Note, bold name and a line break; names counted, fences not; Markdown keeps it; toolbar fences with the first speaker; EPUB validator errors 0");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "4 bubbles + a time line; computed: sent at the right edge and tinted, received at the left and outlined, the time centred; names above the first of each run; print sets the tint solid; Word: 2 Text Sent + 2 Text Received + a Text Note, bold name and a line break; names counted, fences not; Markdown keeps it; toolbar fences with the first speaker; full-width colons (ja) read as speakers, a time is not; a note defined inside the conversation links both ways; right-to-left mirrors the letter, sign-off and bubbles; EPUB validator errors 0 (with the noted chapter)");
             } finally {
               applyBookDoc(keepDoc);
             }
