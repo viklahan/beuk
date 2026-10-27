@@ -1988,6 +1988,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Redaction is applied by the studio renderer and the browser-built EPUB and Word files; the beta-reader share renderer is covered by tests/shares.test.ts.',
   },
   {
+    id: 'chapter.margin',
+    title: 'Margin notes: "::: margin <Name>" floats a reader\'s note into an outer column beside its paragraph in print, the Print Interior View and a wide preview (one ink and rule per name), an <aside> after it in the EPUB, and Margin Note paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The note and its column are typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.sideways',
+    title: 'Sideways: "::: sideways" sets its content on a page of its own turned 90 degrees clockwise in print, the Print Interior View and a wide preview, upright in a box in the EPUB, and as Sideways paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The turned page is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.upsidedown',
+    title: 'Upside down: "::: upside-down" turns its content 180 degrees in the preview and print, upright in the EPUB, and as Upside Down paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The turned block is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
     id: 'chapter.captions',
     title: 'Image captions: a figcaption under the picture in preview, print and EPUB, a Caption paragraph in Word, written from the image dialog, and read from Word Caption-styled paragraphs',
     kind: 'client-only',

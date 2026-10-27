@@ -2890,6 +2890,113 @@ languages. Self-checks: `chapter.transcript`, `chapter.log`,
 reaches the chapter HTML, the preview DOM, the EPUB, the print file, Word
 `document.xml`, the narration script or read-aloud).
 
+## Containers: margin notes, sideways, upside down (BEUK:layout)
+
+Three `CONTAINER_KINDS` that place their content on the page rather than
+style it — for annotated copies, found documents and ergodic books:
+
+```
+The second paragraph, the one both readers wrote beside.
+
+::: margin M.
+Not the ninth — the tenth.
+:::
+
+::: margin J.
+The ninth. M. is using the new-style calendar again.
+:::
+
+::: sideways
+**Soundings, March, in fathoms**
+
+Watch 1 · 14 · 16 · 15 · 18 · 22
+:::
+
+::: upside-down
+If you are reading this, turn the book back the right way up.
+:::
+```
+
+- `margin <Name>` — a reader's note written beside the paragraph just
+  before it (the block immediately above the fence; several notes in a
+  row all stand beside that paragraph, stacked in order).
+  - **Print, the Print Interior View and a wide preview** (a page of the
+    preview at least 420 px wide — Kindle, Kobo, Oasis, Forma; not a phone
+    or the iPad's two-up pages): the note floats into a narrow column at
+    the side of the page area, smaller, in a handwriting face (Patrick
+    Hand, already in the studio and the renderer) set italic, the name
+    above it. Chromium clips print content to the page area, so the column
+    lives **inside** it: a section that carries any margin note sets its
+    text in a narrower measure (`.mn-body`, the text 68.5% of the area, a
+    4.5% gap, the notes 27%), and each note floats (`float: right`,
+    `clear: right`, a negative outer margin) into the room that leaves.
+    Nothing overlaps or clips; the chapter opening and the page-foot notes
+    keep the full width. The body is a `display: flow-root` box, so notes
+    running past the section's last paragraph push the chapter's Notes
+    block below them. In print the note's markup stands **before** its
+    paragraph, so it floats level with the paragraph's first line.
+  - **Side:** the column is on the right of every page (left in a
+    right-to-left book), not the outer edge of each page: an element in
+    Chromium's paged flow cannot know whether it lands on a recto or a
+    verso, so on versos the notes sit by the gutter. Documented limitation.
+  - **Inks:** each name gets an ink in the order the names first appear in
+    the book as it stands (decided by its margin names alone, so the edit
+    history never changes them) — blue / solid rule, red / dashed rule, green / dotted rule,
+    violet / double rule, then round again — and its name's underline
+    takes the same style, so two readers' notes stay apart in a greyscale
+    print. Every ink is at least 7:1 on white; on a dark preview screen
+    (true black, night) each takes a light tint, at least 7:1 on black.
+  - **EPUB and a narrow preview:** an indented, ruled `<aside class="mnote">`
+    after the paragraph, the name above the note (no rotation, no float —
+    reading systems differ too much).
+  - **Page-foot notes:** a note is a float, so the renderer's footnote
+    pass (and the view's) takes it as no line of the page: its foot rides
+    with the line it stands beside (its paragraph's first line on that
+    page), and the page's text stops short of the foot notes only where a
+    note would reach them. When one would, the paragraph moves to the next
+    page with its notes — the forced break carried by an empty block before
+    the first note (`fn-flbrk`), since Chromium ignores a float's own break.
+    Notes Chromium pushes on to a later page constrain that page instead
+    (`deploy/renderer/footnotes.mjs`, `FLOAT_CLASS`, `decidePage`). A
+    stack taller than a page runs on beside the next page's text. A
+    paragraph after a scene break, heading, quote or container keeps its
+    unindented opening with a note set before it (`p.mn-ni`).
+  - **Word:** a `Margin Note` paragraph (small italic, set in 3", a rule
+    on its left) after the paragraph, the name in bold in its ink and a
+    line break, then the note.
+- `sideways` — the content on a page of its own, turned 90° clockwise and
+  centred in the page area, in print (a page break before and after), the
+  Print Interior View (a column of its own) and a wide preview. Content
+  longer than one turned page is never cut: its blocks are measured in the
+  turned box and set on as many turned pages as they fill
+  (`sidewaysPrintPages`; a wide preview splits the same way in its laid-out
+  flow); a single paragraph taller than a page is set smaller to fit
+  (`zoom`, down to half size), and one too long even then is marked
+  `sw-clip` and named by Print Preflight. EPUB and a narrow preview: set upright in a hairline box.
+  Word: `Sideways` paragraphs in a box (Word does not turn them).
+- `upside-down` — the content turned 180° where it stands, kept whole on
+  its page, in the preview, the Print Interior View and print. The EPUB
+  sets it upright (a turned block breaks some reading systems). Word:
+  `Upside Down` paragraphs (not turned).
+
+Right-to-left books mirror the margin column to the left (the note's rule
+on its right). In print, a turned block's own box runs left to right with
+its content right to left: Chromium writes no position for the footnote
+pass's empty foot marker in a right-to-left box (measured: the chapter's
+notes fell back to its end).
+
+The note's words are words; its name (in the fence) and the fences are
+not. Read-aloud and narration skip the fences and read a margin note where
+it stands, after its paragraph; turned text reads as it is. Word import
+knows the three styles (no "unrecognised style" note) and brings them in
+as ordinary paragraphs, as round one's Verse / Letter / Text styles.
+Toolbar: Margin Note (a dialog asks whose note it is — the book's last
+margin name offered — and takes its words, prefilled from the selection
+when there is one, which stays where it is; the fenced note goes after the
+paragraph the selection ends in), Sideways and Upside
+Down (fence the selection), in all 13 languages. Self-checks:
+`chapter.margin`, `chapter.sideways`, `chapter.upsidedown`.
+
 ## Captions and quote attribution
 
 **Image captions.** An image marker may carry a caption as a quoted title:

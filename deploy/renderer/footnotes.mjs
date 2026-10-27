@@ -56,7 +56,13 @@ const NOTE_RE = /<p class="endnote" id="([^"]+)"[^>]*><a class="note-back" href=
 const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 const BLOCK = new Set('p div section article aside header footer nav figure figcaption blockquote ul ol li dl dt dd h1 h2 h3 h4 h5 h6 table pre hr main address details summary form fieldset'.split(' '));
 const ATOMIC_TAG = new Set(['figure', 'table', 'pre', 'hr', 'header', 'nav', 'details', 'form', 'fieldset']);
-const ATOMIC_CLASS = /\b(chapter-opening|scene-break|plate-page|part-divider|tp-top)\b/;
+// A margin note (floated beside the paragraph after it), a sideways page
+// and an upside-down block are never broken. A margin note is a float: it
+// takes no height in the flow, so it is no line of the page — its foot is
+// a constraint carried by the line it stands beside (FLOAT_CLASS,
+// decidePage), and a page break before its paragraph goes before it.
+const ATOMIC_CLASS = /\b(chapter-opening|scene-break|plate-page|part-divider|tp-top|mnote|sideways|upside-down)\b/;
+const FLOAT_CLASS = /\bmn-float\b/;
 const SKIP_CLASS = /\b(bd-layer|endnotes|print-blank|fn-tail)\b/;
 const KEEP_NEXT_CLASS = /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker)\b/;
 const KEEP_PREV_CLASS = /\b(scene-break)\b/;
@@ -185,6 +191,7 @@ export function sectionModel(secHtml) {
       const u = {
         i: units.length, el: k, tag: k.tag, atomic,
         hasBlockKids: blockKids(k).length > 0,
+        float: FLOAT_CLASS.test(k.cls),
         splittable: !atomic && SPLITTABLE.has(k.tag),
         keepNext: /^h[1-6]$/.test(k.tag) || KEEP_NEXT_CLASS.test(k.cls),
         keepPrev: KEEP_PREV_CLASS.test(k.cls),
@@ -304,7 +311,11 @@ export function buildSection(model, cuts, fine = new Set(), tail = 0) {
     const splits = mine.filter((c) => c.type === 'split').sort((a, b) => a.word - b.word);
     const add = [];
     if (splits.length) add.push('fn-split');
-    if (mine.some((c) => c.type === 'before')) add.push('fn-brk');
+    // a float ignores a forced break of its own: an empty block before it carries it
+    if (mine.some((c) => c.type === 'before')) {
+      if (u.float) put(u.el.start, 1, '<div class="fn-brk fn-flbrk" aria-hidden="true"></div>');
+      else add.push('fn-brk');
+    }
     tags.set(u.el.start, { end: u.el.openEnd, text: withAttrs(u.el.open, { id: unitId(u), addClass: add }) });
     if (u.atomic) {
       if (!VOID.has(u.tag)) put(u.el.closeStart, 3, '<span id="fnue-' + u.i + '">' + (u.hasBlockKids ? '' : ZWSP) + '</span>');
@@ -636,20 +647,45 @@ export function decidePage(P, ctx) {
   const { lines: fl } = fine;
   // The page's lines in document order: wrapped words, or one line per atomic / unwrapped piece.
   const pageLines = [];
+  // Margin notes (floats) on this page, waiting for the line after them:
+  // that line carries their foot (floatBottom), and a break before it
+  // goes before the first of them (floatFrom).
+  let floats = [];
+  const takeFloats = (l) => {
+    if (!floats.length) return l;
+    l.floatBottom = Math.max(...floats.map((f) => f.bottom));
+    const first = floats.find((f) => f.unit != null);
+    if (first) l.floatFrom = first.unit;
+    floats = [];
+    return l;
+  };
   for (const u of model.units) {
     const pcs = pieces.get(u.i);
+    if (u.float) {
+      const a = dests.get(pcs[0].top), b = dests.get(pcs[0].end);
+      const bottom = b && b.page === P ? footOf(u, b, fine.metrics, cfg) : cfg.contentH;
+      if (a && a.page === P) floats.push({ unit: u.i, bottom });
+      else if (a && a.page < P && (!b || b.page >= P)) floats.push({ unit: null, bottom });
+      continue;
+    }
     const mine = fl.filter((l) => l.unit === u.i && l.page === P);
-    if (mine.length) { pageLines.push(...mine.map((l) => Object.assign({ atomic: false }, l))); continue; }
+    if (mine.length) { pageLines.push(...mine.map((l, j) => (j ? Object.assign({ atomic: false }, l) : takeFloats(Object.assign({ atomic: false }, l))))); continue; }
     if (fl.some((l) => l.unit === u.i)) continue; // wrapped, but no line on this page
     pcs.forEach((pc, k) => {
       const a = dests.get(pc.top), b = dests.get(pc.end);
       if (!a || a.page > P || (b && b.page < P)) return;
       const bottom = b && b.page === P ? footOf(u, b, fine.metrics, cfg) : cfg.contentH;
       // a unit from an earlier page reaching into this one starts at its top
-      pageLines.push({ unit: u.i, piece: k, page: P, boxTop: a.page < P ? 0 : a.depth, bottom, atomic: true });
+      pageLines.push(takeFloats({ unit: u.i, piece: k, page: P, boxTop: a.page < P ? 0 : a.depth, bottom, atomic: true }));
     });
   }
   if (!pageLines.length) return { fits: true };
+  // notes after the page's last line: that line carries them
+  if (floats.length) {
+    const last = pageLines[pageLines.length - 1];
+    last.floatBottom = Math.max(last.floatBottom || 0, ...floats.map((f) => f.bottom));
+    floats = [];
+  }
   // Which line each reference sits on.
   const refLine = new Map();
   notes.forEach((n, i) => {
@@ -667,7 +703,7 @@ export function decidePage(P, ctx) {
   const m = pageLines.length;
   // the lowest any kept line reaches, for each count of kept lines
   const reach = [];
-  pageLines.forEach((l, j) => { reach[j] = Math.max(j ? reach[j - 1] : 0, l.bottom); });
+  pageLines.forEach((l, j) => { reach[j] = Math.max(j ? reach[j - 1] : 0, l.bottom, l.floatBottom || 0); });
   const tries = [{ keep: true, orph: true, disp: true }, { keep: false, orph: true, disp: true }, { keep: false, orph: false, disp: true }, { keep: false, orph: false, disp: false }];
   for (const rule of tries) {
     for (let k = m; k >= 1; k--) {
@@ -702,7 +738,7 @@ export function decidePage(P, ctx) {
         if (prev > a.firstWord && x && x.page === b.page && Math.abs(x.depth - b.top) < SAME) word = prev;
         return { cut: { type: 'split', unit: b.unit, word, page: P } };
       }
-      return { cut: { type: 'before', unit: b.unit, page: P } };
+      return { cut: { type: 'before', unit: b.floatFrom != null ? b.floatFrom : b.unit, page: P } };
     }
   }
   return { fail: true };
