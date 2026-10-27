@@ -69,6 +69,9 @@ const KEEP_PREV_CLASS = /\b(scene-break)\b/;
 const SPLITTABLE = new Set(['p', 'blockquote']);
 const NO_WORDS_TAG = new Set(['sup', 'sub', 'svg', 'script', 'style', 'math']);
 const NO_WORDS_CLASS = /\b(dropcap|noteref)\b/;
+/* A block set in columns: the studio's "::: columns" (two in print). */
+const MULTICOL_CLASS = /\bcolumns\b/;
+const MC_COLS = 2;
 
 const ZWSP = '​';
 
@@ -183,13 +186,22 @@ export function sectionModel(secHtml) {
   const section = root.kids.find((k) => isEl(k) && k.tag === 'section') || root;
   const units = [];
   const refs = new Map();
-  const visit = (el) => {
+  const refWord = new Map();
+  let mcCount = 0;
+  // mc: the multicol block the blocks being visited sit in — its id and
+  // `path`, the elements from the block down to their parent — or null
+  const visit = (el, mc) => {
     for (const k of el.kids) {
       if (!isEl(k) || !BLOCK.has(k.tag) || SKIP_CLASS.test(k.cls)) continue;
       const atomic = ATOMIC_TAG.has(k.tag) || ATOMIC_CLASS.test(k.cls);
-      if (!atomic && blockKids(k).length) { visit(k); continue; }
+      if (!atomic && blockKids(k).length) {
+        if (!mc && k.tag === 'div' && MULTICOL_CLASS.test(k.cls)) visit(k, { id: mcCount++, path: [k] });
+        else visit(k, mc ? { id: mc.id, path: mc.path.concat([k]) } : null);
+        continue;
+      }
       const u = {
         i: units.length, el: k, tag: k.tag, atomic,
+        mc: mc ? mc.id : -1, mcPath: mc ? mc.path : null,
         hasBlockKids: blockKids(k).length > 0,
         float: FLOAT_CLASS.test(k.cls),
         splittable: !atomic && SPLITTABLE.has(k.tag),
@@ -198,11 +210,11 @@ export function sectionModel(secHtml) {
         words: [],
       };
       units.push(u);
-      collectWords(secHtml, u, refs);
+      collectWords(secHtml, u, refs, refWord);
     }
   };
-  visit(section);
-  return { html: secHtml, units, refs, section };
+  visit(section, null);
+  return { html: secHtml, units, refs, refWord, section };
 }
 
 /* A word starts where a run of non-space follows a space (or the
@@ -215,13 +227,17 @@ export function sectionModel(secHtml) {
    of the space before it (with the elements open there), so the head
    ends on its last word, a reference glued to that word ("ledger¹.")
    included, and the space falls to the tail. */
-function collectWords(html, u, refs) {
+/* A reference also records the word it follows (-1: none). */
+function collectWords(html, u, refs, refWord) {
   let prevSpace = true;
   let ws = null;
   const walk = (el, stack, quiet) => {
     for (const k of el.kids) {
       if (isEl(k)) {
-        if (k.id && /\bnoteref\b/.test(k.cls)) refs.set(k.id, u.i);
+        if (k.id && /\bnoteref\b/.test(k.cls)) {
+          refs.set(k.id, u.i);
+          if (refWord) refWord.set(k.id, u.words.length - 1);
+        }
         walk(k, stack.concat([k]), quiet || NO_WORDS_TAG.has(k.tag) || NO_WORDS_CLASS.test(k.cls));
         if (k.tag === 'br') { prevSpace = true; ws = null; }
         continue;
@@ -291,6 +307,37 @@ function piecesOf(model, cuts) {
   return out;
 }
 
+/* A cut inside a multicol block ends the block there and opens a new
+   one on the next page. Only a block's last fragment is balanced: a
+   forced break inside the columns leaves them run to the page's foot,
+   over the room the notes need (measured on the renderer). Ending the
+   block makes the cut page's columns its last fragment, balanced above
+   the notes. The elements between the block and the unit close and
+   reopen with it; a list reopens at its next number. */
+const mcClose = (u) => u.mcPath.slice().reverse().map((e) => '</' + e.tag + '>').join('');
+function mcReopen(u) {
+  return u.mcPath.map((e, i) => {
+    let t = withAttrs(e.open, { dropId: true, addClass: i === 0 ? ['fn-brk', 'fn-mc'] : [] });
+    if (e.tag === 'ol') {
+      const child = u.mcPath[i + 1] || u.el;
+      const n = e.kids.filter((k) => isEl(k) && k.tag === 'li').indexOf(child);
+      if (n > 0) {
+        const start = ' start="' + ((parseInt(attrOf(e.open, 'start'), 10) || 1) + n) + '"';
+        t = /\sstart="/.test(t) ? t.replace(/\sstart="[^"]*"/, start) : t.replace(/\s*(\/?)>$/, start + '$1>');
+      }
+    }
+    return t;
+  }).join('');
+}
+/* Nothing of its block comes before the unit: a cut before it moves the
+   whole block. */
+function mcFirst(model, u) {
+  return u.mcPath.every((e, i) => {
+    const child = u.mcPath[i + 1] || u.el;
+    return e.kids.find((k) => isEl(k) || /\S/.test(model.html.slice(k.start, k.end))) === child;
+  });
+}
+
 /** The section's markup with the cuts made, every unit's top and foot
  *  marked (kept in the final document too, so what was measured is
  *  what prints), on a fine pass the words of `fine` wrapped, and
@@ -310,11 +357,16 @@ export function buildSection(model, cuts, fine = new Set(), tail = 0) {
     const mine = byUnit.get(u.i) || [];
     const splits = mine.filter((c) => c.type === 'split').sort((a, b) => a.word - b.word);
     const add = [];
+    const mc = u.mc >= 0;
     if (splits.length) add.push('fn-split');
     // a float ignores a forced break of its own: an empty block before it carries it
     if (mine.some((c) => c.type === 'before')) {
       if (u.float) put(u.el.start, 1, '<div class="fn-brk fn-flbrk" aria-hidden="true"></div>');
-      else add.push('fn-brk');
+      else if (!mc) add.push('fn-brk');
+      else if (mcFirst(model, u)) {
+        const box = u.mcPath[0];
+        tags.set(box.start, { end: box.openEnd, text: withAttrs(box.open, { addClass: ['fn-brk'] }) });
+      } else put(u.el.start, 1, mcClose(u) + mcReopen(u));
     }
     tags.set(u.el.start, { end: u.el.openEnd, text: withAttrs(u.el.open, { id: unitId(u), addClass: add }) });
     if (u.atomic) {
@@ -332,9 +384,9 @@ export function buildSection(model, cuts, fine = new Set(), tail = 0) {
       // line justified to its end loses its destination (measured).
       const at = w.cutAt;
       const inner = w.cutStack;
-      const close = inner.slice().reverse().map((e) => '</' + e.tag + '>').join('') + '</' + u.tag + '>';
-      const cont = withAttrs(u.el.open, { dropId: true, id: 'fncu-' + c.id, dropClass: ['first', 'has-dropcap'], addClass: ['fn-cont', 'fn-brk'].concat(n + 1 < splits.length ? ['fn-split'] : []) });
-      const reopen = cont + inner.map((e) => withAttrs(e.open, { dropId: true })).join('');
+      const close = inner.slice().reverse().map((e) => '</' + e.tag + '>').join('') + '</' + u.tag + '>' + (mc ? mcClose(u) : '');
+      const cont = withAttrs(u.el.open, { dropId: true, id: 'fncu-' + c.id, dropClass: ['first', 'has-dropcap'], addClass: ['fn-cont'].concat(mc ? [] : ['fn-brk'], n + 1 < splits.length ? ['fn-split'] : []) });
+      const reopen = (mc ? mcReopen(u) : '') + cont + inner.map((e) => withAttrs(e.open, { dropId: true })).join('');
       const last = u.words[c.word - 1];
       if (last) {
         put(last.start, 6, '<span id="fncz-' + c.id + '">');
@@ -410,6 +462,8 @@ export function footnoteCss(cfg, hide = [], hideBlocks = []) {
     '.fn-brk { break-before: page !important; page-break-before: always !important; }',
     '.fn-split { margin-bottom: 0 !important; padding-bottom: 0 !important; border-bottom: 0 !important;' + (cfg.justify ? ' text-align-last: justify;' : '') + ' }',
     '.fn-cont { text-indent: 0 !important; margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }',
+    // columns reopened on the next page after a cut: flush at its top
+    '.fn-mc { margin-top: 0 !important; padding-top: 0 !important; }',
     // a page only the notes run on into: one point of nothing, so it is a page
     '.fn-tail { display: block !important; height: 1pt; margin: 0 !important; padding: 0 !important; border: 0 !important; }',
   ];
@@ -694,7 +748,11 @@ export function decidePage(P, ctx) {
     if (!d || d.page !== P) return;
     const unit = model.refs.get(n.ref);
     let best = -1;
-    pageLines.forEach((l, j) => { if (l.unit === unit && (l.atomic || l.boxTop <= d.depth + SAME)) best = j; });
+    // in columns a depth names no line (each column starts at the top):
+    // the line holding the word the reference follows
+    const wi = model.units[unit] && model.units[unit].mc >= 0 && model.refWord ? model.refWord.get(n.ref) : undefined;
+    if (wi != null && wi >= 0) best = pageLines.findIndex((l) => l.unit === unit && !l.atomic && l.firstWord <= wi && wi <= l.lastWord);
+    if (best < 0) pageLines.forEach((l, j) => { if (l.unit === unit && (l.atomic || l.boxTop <= d.depth + SAME)) best = j; });
     if (best < 0) best = pageLines.findIndex((l) => l.unit === unit);
     if (best < 0) best = pageLines.length - 1;
     refLine.set(i, best);
@@ -703,7 +761,46 @@ export function decidePage(P, ctx) {
   const m = pageLines.length;
   // the lowest any kept line reaches, for each count of kept lines
   const reach = [];
+  // a line also reaches as low as the margin notes it carries (floatBottom)
   pageLines.forEach((l, j) => { reach[j] = Math.max(j ? reach[j - 1] : 0, l.bottom, l.floatBottom || 0); });
+  // Columns: a block's lines run down one column, then up to the top of
+  // the next. Kept whole, a block reaches as measured; cut, its kept
+  // lines are balanced anew in a fragment of their own (buildSection
+  // ends the block at the cut): about their columns' total over
+  // MC_COLS, a line more for the balancing's grain.
+  const colAt = new Map();
+  pageLines.forEach((l) => {
+    const id = model.units[l.unit].mc;
+    l.mc = id;
+    if (id < 0) return;
+    const prev = colAt.get(id);
+    l.col = !prev ? 0 : l.boxTop < prev.top - SAME ? prev.col + 1 : prev.col;
+    colAt.set(id, { top: l.boxTop, col: l.col });
+  });
+  if (colAt.size) {
+    const lastOf = new Map();
+    pageLines.forEach((l, j) => { if (l.mc >= 0) lastOf.set(l.mc, j); });
+    for (let k = 1; k <= pageLines.length; k++) {
+      let r = 0;
+      const blocks = new Map();
+      for (let j = 0; j < k; j++) {
+        const l = pageLines[j];
+        r = Math.max(r, l.floatBottom || 0);
+        if (l.mc < 0 || lastOf.get(l.mc) < k) { r = Math.max(r, l.bottom); continue; }
+        if (!blocks.has(l.mc)) blocks.set(l.mc, { top: l.boxTop, low: 0, cols: new Map() });
+        const bl = blocks.get(l.mc);
+        bl.top = Math.min(bl.top, l.boxTop);
+        bl.low = Math.max(bl.low, l.bottom);
+        bl.cols.set(l.col, Math.max(bl.cols.get(l.col) || 0, l.bottom));
+      }
+      for (const bl of blocks.values()) {
+        let total = 0;
+        for (const low of bl.cols.values()) total += Math.max(0, low - bl.top);
+        r = Math.max(r, Math.min(bl.low, bl.top + total / MC_COLS + cfg.pitch));
+      }
+      reach[k - 1] = r;
+    }
+  }
   const tries = [{ keep: true, orph: true, disp: true }, { keep: false, orph: true, disp: true }, { keep: false, orph: false, disp: true }, { keep: false, orph: false, disp: false }];
   for (const rule of tries) {
     for (let k = m; k >= 1; k--) {
@@ -755,7 +852,8 @@ export function unitsOnPage(model, cuts, dests, P, zoneTop = 0) {
     if (!u.words.length) continue;
     for (const pc of pieces.get(u.i)) {
       const a = dests.get(pc.top), b = dests.get(pc.end);
-      if (a && a.page <= P && (!b || b.page > P || (b.page === P && b.depth >= zoneTop))) out.add(u.i);
+      // in columns a cut can fall anywhere on the page: every line counts
+      if (a && a.page <= P && (!b || b.page > P || (b.page === P && (u.mc >= 0 || b.depth >= zoneTop)))) out.add(u.i);
     }
   }
   return out;

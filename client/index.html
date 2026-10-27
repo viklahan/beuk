@@ -2340,6 +2340,8 @@
                   <button class="tool-btn" data-collapse="2" data-insert="attribution" title="Attribution — add a “— Name” line under the quote the cursor is in" data-i18n-title="tool.attributionTitle"><i data-lucide="signature"></i><span class="tl" data-i18n="tool.attribution">Attribution</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="ul" title="Bulleted list — each line becomes an item" data-i18n-title="tool.ulTitle"><i data-lucide="list"></i><span class="tl" data-i18n="tool.ul">List</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="ol" title="Numbered list — each line becomes a numbered step" data-i18n-title="tool.olTitle"><i data-lucide="list-ordered"></i><span class="tl" data-i18n="tool.ol">Numbered</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="columns" title="Columns — set the selected back matter (notes, a chronology, an index) in two balanced columns in print" data-i18n-title="tool.columnsTitle"><i data-lucide="columns-2"></i><span class="tl" data-i18n="tool.columns">Columns</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="hanging" title="Hanging indent — one entry per line, each entry's turn-over lines hung under it (a bibliography, a chronology, an index)" data-i18n-title="tool.hangingTitle"><i data-lucide="indent-increase"></i><span class="tl" data-i18n="tool.hanging">Hanging indent</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="verse" title="Verse — keep every line break of the selected lines (a poem, a song)" data-i18n-title="tool.verseTitle"><i data-lucide="feather"></i><span class="tl" data-i18n="tool.verse">Verse</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="center" title="Centre — set the selected paragraphs centred (a sign, a note)" data-i18n-title="tool.centerTitle"><i data-lucide="align-center"></i><span class="tl" data-i18n="tool.center">Centre</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="right" title="Right — set the selected paragraphs flush right (a sign-off, a date line)" data-i18n-title="tool.rightTitle"><i data-lucide="align-right"></i><span class="tl" data-i18n="tool.right">Right</span></button>
@@ -2815,6 +2817,10 @@
           <div class="switch-row" style="border:none; padding:2px 0 10px;">
             <div class="sw-txt"><b data-i18n="exp.largePrintTitle">Large Print edition</b><span data-i18n="exp.largePrintDesc">Re-typesets the print interior to large-print conventions — 18pt type minimum, generous leading, left-aligned ragged-right text, chapter furniture scaled to match. It composes with any trim size; the manuscript and its word counts never change, and the book's colophon notes the edition.</span></div>
             <button class="switch" id="tglLargePrint" aria-pressed="false" data-i18n-aria="exp.largePrintTitle" aria-label="Toggle Large Print edition"></button>
+          </div>
+          <div class="switch-row" style="border:none; padding:2px 0 10px;">
+            <div class="sw-txt"><b data-i18n="exp.pictureBookTitle">Picture book type</b><span data-i18n="exp.pictureBookDesc">Sets the print interior's words at 24pt for a picture book — a few lines facing or under each picture, read aloud — ragged and unhyphenated, with the running head and page numbers scaled to match. Use it with a landscape or square trim such as 11 × 8.5 in; it replaces Large Print, and the manuscript never changes.</span></div>
+            <button class="switch" id="tglPictureBook" aria-pressed="false" data-i18n-aria="exp.pictureBookTitle" aria-label="Toggle picture book type"></button>
           </div>
           <div class="pm-block">
             <p class="pm-head" data-i18n="print.layoutH">Margins, running head &amp; page numbers</p>
@@ -3528,6 +3534,7 @@
           <label class="piv-ctl"><span data-i18n="piv.goTo">Jump to section</span><select id="pivJump"></select></label>
           <div class="piv-switchrow"><button class="switch" id="tglPivRecto" type="button" aria-pressed="true" data-i18n-aria="exp.rectoTitle"></button><span data-i18n="exp.rectoTitle">Chapters open on a recto page</span></div>
           <div class="piv-switchrow"><button class="switch" id="tglPivLargePrint" type="button" aria-pressed="false" data-i18n-aria="exp.largePrintTitle"></button><span data-i18n="exp.largePrintTitle">Large Print edition</span></div>
+          <div class="piv-switchrow"><button class="switch" id="tglPivPictureBook" type="button" aria-pressed="false" data-i18n-aria="exp.pictureBookTitle"></button><span data-i18n="exp.pictureBookTitle">Picture book type</span></div>
           <div class="piv-switchrow"><button class="switch" id="tglPivGuides" type="button" aria-pressed="true" data-i18n-aria="piv.guides"></button><span data-i18n="piv.guides">Guides</span></div>
           <label class="piv-ctl"><span data-i18n="print.notes">Notes in print</span><select id="pivNotes"><option value="page" data-i18n="print.notesFoot">At the foot of the page</option><option value="end" data-i18n="print.notesEnd">At the end of the chapter</option></select></label><!-- BEUK:footnotes -->
           <div class="piv-ctl"><span data-i18n="piv.zoom">Zoom</span>
@@ -3791,7 +3798,7 @@
         "tool.boldTitle": "Bold (Ctrl/Cmd+B)", "tool.italicTitle": "Italic (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — make the selected words a web or store link", "lnk.title": "Add a link", "lnk.text": "Link words", "lnk.textPh": "The words readers see", "lnk.url": "Web address", "lnk.urlPh": "https://", "lnk.hint": "Starts with https://, http:// or mailto:. In the ebook it is a link; in print the words are set as plain text.", "lnk.bad": "That address can't be a link — use one that starts with https://, http:// or mailto:.", "lnk.cancel": "Cancel", "lnk.add": "Add Link",
         /* BEUK:layout */ "tool.margin": "Margin Note", "tool.marginTitle": "Margin note — a reader's note in the margin beside the paragraph before it, in their own ink", "tool.sideways": "Sideways", "tool.sidewaysTitle": "Sideways — set the selected paragraphs on a page of their own, turned a quarter clockwise", "tool.upsideDown": "Upside Down", "tool.upsideDownTitle": "Upside down — set the selected paragraphs turned upside down on the page", "mn.title": "Add a margin note", "mn.name": "Whose note", "mn.namePh": "M.", "mn.text": "The note", "mn.textPh": "What they wrote in the margin", "mn.hint": "Set beside the paragraph before it, in the outer margin of the printed page; each name has its own ink. In the ebook it follows the paragraph.", "mn.bad": "Give the note a name — whose hand it is in.", "mn.cancel": "Cancel", "mn.add": "Add Note", "sw.clipName": "A sideways page is too long", "sw.clipDetail": "A sideways block in {section} holds a paragraph too long for a turned page, even set at half size: its end would be cut off in print. Break it into shorter paragraphs.",
-        "tool.blockquoteTitle": "Blockquote — set this paragraph apart as a quotation", "tool.ul": "List", "tool.ulTitle": "Bulleted list — each line becomes an item", "tool.ol": "Numbered", "tool.olTitle": "Numbered list — each line becomes a numbered step", "tool.sceneBreakTitle": "Scene break — becomes an ornament in the book",
+        "tool.blockquoteTitle": "Blockquote — set this paragraph apart as a quotation", "tool.ul": "List", "tool.ulTitle": "Bulleted list — each line becomes an item", "tool.ol": "Numbered", "tool.olTitle": "Numbered list — each line becomes a numbered step", "tool.columns": "Columns", "tool.columnsTitle": "Columns — set the selected back matter (notes, a chronology, an index) in two balanced columns in print", "tool.hanging": "Hanging indent", "tool.hangingTitle": "Hanging indent — one entry per line, each entry's turn-over lines hung under it (a bibliography, a chronology, an index)", "tool.sceneBreakTitle": "Scene break — becomes an ornament in the book",
         "tool.emDashTitle": "Em dash", "tool.footnoteTitle": "Footnote — typesets as a linked endnote",
         "tool.verse": "Verse", "tool.verseTitle": "Verse — keep every line break of the selected lines (a poem, a song)", "tool.center": "Centre", "tool.centerTitle": "Centre — set the selected paragraphs centred (a sign, a note)", "tool.right": "Right", "tool.rightTitle": "Right — set the selected paragraphs flush right (a sign-off, a date line)",
         "tool.texts": "Texts", "tool.textsTitle": "Texts — set the selected lines as a text-message conversation, one \"Name: message\" per line", "tool.letter": "Letter", "tool.letterTitle": "Letter — set the selected paragraphs as a written letter or note, line breaks kept",
@@ -4202,7 +4209,7 @@
         "tool.boldTitle": "Negrita (Ctrl/Cmd+B)", "tool.italicTitle": "Cursiva (Ctrl/Cmd+I)",
         "tool.link": "Enlace", "tool.linkTitle": "Enlace — convierte las palabras seleccionadas en un enlace web o de tienda", "lnk.title": "Añadir un enlace", "lnk.text": "Texto del enlace", "lnk.textPh": "Las palabras que ve el lector", "lnk.url": "Dirección web", "lnk.urlPh": "https://", "lnk.hint": "Empieza por https://, http:// o mailto:. En el libro electrónico es un enlace; en papel las palabras se componen como texto normal.", "lnk.bad": "Esa dirección no puede ser un enlace: usa una que empiece por https://, http:// o mailto:.", "lnk.cancel": "Cancelar", "lnk.add": "Añadir enlace",
         /* BEUK:layout */ "tool.margin": "Nota al margen", "tool.marginTitle": "Nota al margen — la nota de un lector en el margen, junto al párrafo anterior, con su propia tinta", "tool.sideways": "De lado", "tool.sidewaysTitle": "De lado — pone los párrafos elegidos en una página propia, girados un cuarto en el sentido de las agujas del reloj", "tool.upsideDown": "Del revés", "tool.upsideDownTitle": "Del revés — pone los párrafos elegidos boca abajo en la página", "mn.title": "Añadir una nota al margen", "mn.name": "De quién es la nota", "mn.namePh": "M.", "mn.text": "La nota", "mn.textPh": "Lo que escribió en el margen", "mn.hint": "Va junto al párrafo anterior, en el margen exterior de la página impresa; cada nombre tiene su propia tinta. En el libro electrónico sigue al párrafo.", "mn.bad": "Pon un nombre a la nota: de quién es la letra.", "mn.cancel": "Cancelar", "mn.add": "Añadir nota", "sw.clipName": "Una página de lado no cabe", "sw.clipDetail": "Un bloque de lado en {section} tiene un párrafo demasiado largo para una página girada, incluso a la mitad de tamaño: su final se cortaría en la impresión. Divídelo en párrafos más cortos.",
-        "tool.blockquoteTitle": "Cita — aparta este párrafo como una cita", "tool.ul": "Lista", "tool.ulTitle": "Lista con viñetas — cada línea es un elemento", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada línea es un paso numerado", "tool.sceneBreakTitle": "Cambio de escena — se convierte en un adorno en el libro",
+        "tool.blockquoteTitle": "Cita — aparta este párrafo como una cita", "tool.ul": "Lista", "tool.ulTitle": "Lista con viñetas — cada línea es un elemento", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada línea es un paso numerado", "tool.columns": "Columnas", "tool.columnsTitle": "Columnas — compone el apéndice elegido (notas, cronología, índice) en dos columnas equilibradas en la impresión", "tool.hanging": "Sangría francesa", "tool.hangingTitle": "Sangría francesa — una entrada por línea, con las líneas siguientes sangradas (bibliografía, cronología, índice)", "tool.sceneBreakTitle": "Cambio de escena — se convierte en un adorno en el libro",
         "tool.emDashTitle": "Raya", "tool.footnoteTitle": "Nota al pie — se compone como nota final enlazada",
         "tool.verse": "Verso", "tool.verseTitle": "Verso — conserva cada salto de línea de las líneas elegidas (un poema, una canción)", "tool.center": "Centrar", "tool.centerTitle": "Centrar — centra los párrafos elegidos (un letrero, una nota)", "tool.right": "Derecha", "tool.rightTitle": "Derecha — alinea a la derecha los párrafos elegidos (una despedida, una fecha)",
         "tool.texts": "Mensajes", "tool.textsTitle": "Mensajes — muestra las líneas elegidas como una conversación de mensajes, un «Nombre: mensaje» por línea", "tool.letter": "Carta", "tool.letterTitle": "Carta — muestra los párrafos elegidos como una carta o nota escrita, con sus saltos de línea",
@@ -4405,7 +4412,7 @@
         "tool.boldTitle": "Gras (Ctrl/Cmd+B)", "tool.italicTitle": "Italique (Ctrl/Cmd+I)",
         "tool.link": "Lien", "tool.linkTitle": "Lien — faire des mots sélectionnés un lien web ou vers une librairie", "lnk.title": "Ajouter un lien", "lnk.text": "Texte du lien", "lnk.textPh": "Les mots que voit le lecteur", "lnk.url": "Adresse web", "lnk.urlPh": "https://", "lnk.hint": "Commence par https://, http:// ou mailto:. Dans le livre numérique c'est un lien ; à l'impression, les mots sont composés en texte simple.", "lnk.bad": "Cette adresse ne peut pas être un lien — utilisez-en une qui commence par https://, http:// ou mailto:.", "lnk.cancel": "Annuler", "lnk.add": "Ajouter le lien",
         /* BEUK:layout */ "tool.margin": "Note en marge", "tool.marginTitle": "Note en marge — la note d’un lecteur dans la marge, à côté du paragraphe précédent, dans son encre", "tool.sideways": "De côté", "tool.sidewaysTitle": "De côté — met les paragraphes choisis sur une page à part, tournés d’un quart de tour dans le sens horaire", "tool.upsideDown": "À l’envers", "tool.upsideDownTitle": "À l’envers — met les paragraphes choisis tête-bêche sur la page", "mn.title": "Ajouter une note en marge", "mn.name": "De qui est la note", "mn.namePh": "M.", "mn.text": "La note", "mn.textPh": "Ce qu’il ou elle a écrit dans la marge", "mn.hint": "Placée à côté du paragraphe précédent, dans la marge extérieure de la page imprimée ; chaque nom a son encre. Dans le livre numérique, elle suit le paragraphe.", "mn.bad": "Donnez un nom à la note : de quelle main est-elle ?", "mn.cancel": "Annuler", "mn.add": "Ajouter la note", "sw.clipName": "Une page de côté ne tient pas", "sw.clipDetail": "Un bloc de côté dans {section} contient un paragraphe trop long pour une page tournée, même réduit de moitié : sa fin serait coupée à l’impression. Coupez-le en paragraphes plus courts.",
-        "tool.blockquoteTitle": "Citation — met ce paragraphe à part comme une citation", "tool.ul": "Liste", "tool.ulTitle": "Liste à puces — chaque ligne devient un élément", "tool.ol": "Numérotée", "tool.olTitle": "Liste numérotée — chaque ligne devient une étape numérotée", "tool.sceneBreakTitle": "Saut de scène — devient un ornement dans le livre",
+        "tool.blockquoteTitle": "Citation — met ce paragraphe à part comme une citation", "tool.ul": "Liste", "tool.ulTitle": "Liste à puces — chaque ligne devient un élément", "tool.ol": "Numérotée", "tool.olTitle": "Liste numérotée — chaque ligne devient une étape numérotée", "tool.columns": "Colonnes", "tool.columnsTitle": "Colonnes — compose les pages de fin choisies (notes, chronologie, index) sur deux colonnes équilibrées à l’impression", "tool.hanging": "Retrait suspendu", "tool.hangingTitle": "Retrait suspendu — une entrée par ligne, la suite de chaque entrée en retrait (bibliographie, chronologie, index)", "tool.sceneBreakTitle": "Saut de scène — devient un ornement dans le livre",
         "tool.emDashTitle": "Tiret cadratin", "tool.footnoteTitle": "Note de bas de page — composée comme note de fin liée",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — garde chaque retour à la ligne des lignes choisies (un poème, une chanson)", "tool.center": "Centrer", "tool.centerTitle": "Centrer — centre les paragraphes choisis (une enseigne, un mot)", "tool.right": "Droite", "tool.rightTitle": "Droite — aligne à droite les paragraphes choisis (une signature, une date)",
         "tool.texts": "Textos", "tool.textsTitle": "Textos — met les lignes choisies en conversation de SMS, un « Nom : message » par ligne", "tool.letter": "Lettre", "tool.letterTitle": "Lettre — met les paragraphes choisis en lettre ou mot écrit, retours à la ligne gardés",
@@ -4608,7 +4615,7 @@
         "tool.boldTitle": "Fett (Ctrl/Cmd+B)", "tool.italicTitle": "Kursiv (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — die markierten Wörter zu einem Web- oder Shop-Link machen", "lnk.title": "Einen Link hinzufügen", "lnk.text": "Linktext", "lnk.textPh": "Die Wörter, die Leser sehen", "lnk.url": "Webadresse", "lnk.urlPh": "https://", "lnk.hint": "Beginnt mit https://, http:// oder mailto:. Im E-Book ist es ein Link; im Druck werden die Wörter als normaler Text gesetzt.", "lnk.bad": "Diese Adresse kann kein Link sein — verwenden Sie eine, die mit https://, http:// oder mailto: beginnt.", "lnk.cancel": "Abbrechen", "lnk.add": "Link hinzufügen",
         /* BEUK:layout */ "tool.margin": "Randnotiz", "tool.marginTitle": "Randnotiz — die Notiz eines Lesers am Rand, neben dem Absatz davor, in eigener Tinte", "tool.sideways": "Quer", "tool.sidewaysTitle": "Quer — setzt die gewählten Absätze auf eine eigene Seite, um eine Vierteldrehung im Uhrzeigersinn gedreht", "tool.upsideDown": "Kopfüber", "tool.upsideDownTitle": "Kopfüber — setzt die gewählten Absätze auf dem Kopf stehend auf die Seite", "mn.title": "Eine Randnotiz hinzufügen", "mn.name": "Wessen Notiz", "mn.namePh": "M.", "mn.text": "Die Notiz", "mn.textPh": "Was am Rand steht", "mn.hint": "Steht neben dem Absatz davor, im äußeren Rand der gedruckten Seite; jeder Name hat seine eigene Tinte. Im E-Book folgt sie dem Absatz.", "mn.bad": "Gib der Notiz einen Namen — wessen Hand es ist.", "mn.cancel": "Abbrechen", "mn.add": "Notiz hinzufügen", "sw.clipName": "Eine Querseite passt nicht", "sw.clipDetail": "Ein Querblock in {section} enthält einen Absatz, der selbst auf halbe Größe verkleinert zu lang für eine gedrehte Seite ist: sein Ende würde im Druck abgeschnitten. Teile ihn in kürzere Absätze.",
-        "tool.blockquoteTitle": "Blockzitat — diesen Absatz als Zitat absetzen", "tool.ul": "Liste", "tool.ulTitle": "Aufzählung — jede Zeile wird ein Punkt", "tool.ol": "Nummeriert", "tool.olTitle": "Nummerierte Liste — jede Zeile wird ein nummerierter Schritt", "tool.sceneBreakTitle": "Szenenwechsel — wird im Buch zu einem Ornament",
+        "tool.blockquoteTitle": "Blockzitat — diesen Absatz als Zitat absetzen", "tool.ul": "Liste", "tool.ulTitle": "Aufzählung — jede Zeile wird ein Punkt", "tool.ol": "Nummeriert", "tool.olTitle": "Nummerierte Liste — jede Zeile wird ein nummerierter Schritt", "tool.columns": "Spalten", "tool.columnsTitle": "Spalten — setzt den gewählten Anhang (Anmerkungen, Zeittafel, Register) im Druck in zwei ausgeglichenen Spalten", "tool.hanging": "Hängender Einzug", "tool.hangingTitle": "Hängender Einzug — ein Eintrag pro Zeile, Folgezeilen eingerückt (Bibliografie, Zeittafel, Register)", "tool.sceneBreakTitle": "Szenenwechsel — wird im Buch zu einem Ornament",
         "tool.emDashTitle": "Gedankenstrich", "tool.footnoteTitle": "Fußnote — wird als verlinkte Endnote gesetzt",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — behält jeden Zeilenumbruch der gewählten Zeilen (ein Gedicht, ein Lied)", "tool.center": "Zentriert", "tool.centerTitle": "Zentriert — setzt die gewählten Absätze mittig (ein Schild, eine Notiz)", "tool.right": "Rechts", "tool.rightTitle": "Rechts — setzt die gewählten Absätze rechtsbündig (ein Gruß, eine Datumszeile)",
         "tool.texts": "Nachrichten", "tool.textsTitle": "Nachrichten — setzt die gewählten Zeilen als Chatverlauf, je Zeile „Name: Nachricht“", "tool.letter": "Brief", "tool.letterTitle": "Brief — setzt die gewählten Absätze als geschriebenen Brief oder Zettel, Zeilenumbrüche bleiben",
@@ -4811,7 +4818,7 @@
         "tool.boldTitle": "Grassetto (Ctrl/Cmd+B)", "tool.italicTitle": "Corsivo (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — trasforma le parole selezionate in un link web o a un negozio", "lnk.title": "Aggiungi un link", "lnk.text": "Testo del link", "lnk.textPh": "Le parole che vede il lettore", "lnk.url": "Indirizzo web", "lnk.urlPh": "https://", "lnk.hint": "Inizia con https://, http:// o mailto:. Nell'ebook è un link; in stampa le parole sono composte come testo normale.", "lnk.bad": "Quell'indirizzo non può essere un link: usane uno che inizi con https://, http:// o mailto:.", "lnk.cancel": "Annulla", "lnk.add": "Aggiungi link",
         /* BEUK:layout */ "tool.margin": "Nota a margine", "tool.marginTitle": "Nota a margine — la nota di un lettore a margine, accanto al paragrafo precedente, nel suo inchiostro", "tool.sideways": "Di lato", "tool.sidewaysTitle": "Di lato — mette i paragrafi scelti su una pagina a sé, ruotati di un quarto in senso orario", "tool.upsideDown": "Capovolto", "tool.upsideDownTitle": "Capovolto — mette i paragrafi scelti capovolti sulla pagina", "mn.title": "Aggiungi una nota a margine", "mn.name": "Di chi è la nota", "mn.namePh": "M.", "mn.text": "La nota", "mn.textPh": "Cosa ha scritto a margine", "mn.hint": "Accanto al paragrafo precedente, nel margine esterno della pagina stampata; ogni nome ha il suo inchiostro. Nell’ebook segue il paragrafo.", "mn.bad": "Dai un nome alla nota: di chi è la mano.", "mn.cancel": "Annulla", "mn.add": "Aggiungi nota", "sw.clipName": "Una pagina di lato non ci sta", "sw.clipDetail": "Un blocco di lato in {section} contiene un paragrafo troppo lungo per una pagina ruotata, anche a metà dimensione: la sua fine verrebbe tagliata in stampa. Dividilo in paragrafi più brevi.",
-        "tool.blockquoteTitle": "Citazione — mette da parte questo paragrafo come citazione", "tool.ul": "Elenco", "tool.ulTitle": "Elenco puntato — ogni riga diventa una voce", "tool.ol": "Numerato", "tool.olTitle": "Elenco numerato — ogni riga diventa un passo numerato", "tool.sceneBreakTitle": "Cambio di scena — diventa un ornamento nel libro",
+        "tool.blockquoteTitle": "Citazione — mette da parte questo paragrafo come citazione", "tool.ul": "Elenco", "tool.ulTitle": "Elenco puntato — ogni riga diventa una voce", "tool.ol": "Numerato", "tool.olTitle": "Elenco numerato — ogni riga diventa un passo numerato", "tool.columns": "Colonne", "tool.columnsTitle": "Colonne — imposta l’apparato scelto (note, cronologia, indice) su due colonne bilanciate in stampa", "tool.hanging": "Rientro sporgente", "tool.hangingTitle": "Rientro sporgente — una voce per riga, le righe successive rientrate (bibliografia, cronologia, indice)", "tool.sceneBreakTitle": "Cambio di scena — diventa un ornamento nel libro",
         "tool.emDashTitle": "Trattino lungo", "tool.footnoteTitle": "Nota a piè di pagina — composta come nota finale collegata",
         "tool.verse": "Versi", "tool.verseTitle": "Versi — conserva ogni a capo delle righe scelte (una poesia, una canzone)", "tool.center": "Centra", "tool.centerTitle": "Centra — centra i paragrafi scelti (un cartello, un biglietto)", "tool.right": "Destra", "tool.rightTitle": "Destra — allinea a destra i paragrafi scelti (un congedo, una data)",
         "tool.texts": "Messaggi", "tool.textsTitle": "Messaggi — imposta le righe scelte come una conversazione di messaggi, un «Nome: messaggio» per riga", "tool.letter": "Lettera", "tool.letterTitle": "Lettera — imposta i paragrafi scelti come una lettera o un biglietto scritto, a capo conservati",
@@ -5014,7 +5021,7 @@
         "tool.boldTitle": "Negrito (Ctrl/Cmd+B)", "tool.italicTitle": "Itálico (Ctrl/Cmd+I)",
         "tool.link": "Ligação", "tool.linkTitle": "Ligação — transforma as palavras selecionadas numa ligação web ou de loja", "lnk.title": "Adicionar uma ligação", "lnk.text": "Texto da ligação", "lnk.textPh": "As palavras que o leitor vê", "lnk.url": "Endereço web", "lnk.urlPh": "https://", "lnk.hint": "Começa por https://, http:// ou mailto:. No ebook é uma ligação; na impressão as palavras são compostas como texto simples.", "lnk.bad": "Esse endereço não pode ser uma ligação — use um que comece por https://, http:// ou mailto:.", "lnk.cancel": "Cancelar", "lnk.add": "Adicionar ligação",
         /* BEUK:layout */ "tool.margin": "Nota na margem", "tool.marginTitle": "Nota na margem — a nota de um leitor na margem, ao lado do parágrafo anterior, com a sua tinta", "tool.sideways": "De lado", "tool.sidewaysTitle": "De lado — põe os parágrafos escolhidos numa página própria, rodados um quarto no sentido dos ponteiros do relógio", "tool.upsideDown": "De pernas para o ar", "tool.upsideDownTitle": "De pernas para o ar — põe os parágrafos escolhidos virados ao contrário na página", "mn.title": "Adicionar uma nota na margem", "mn.name": "De quem é a nota", "mn.namePh": "M.", "mn.text": "A nota", "mn.textPh": "O que escreveu na margem", "mn.hint": "Fica ao lado do parágrafo anterior, na margem exterior da página impressa; cada nome tem a sua tinta. No ebook segue o parágrafo.", "mn.bad": "Dê um nome à nota: de quem é a letra.", "mn.cancel": "Cancelar", "mn.add": "Adicionar nota", "sw.clipName": "Uma página de lado não cabe", "sw.clipDetail": "Um bloco de lado em {section} tem um parágrafo demasiado longo para uma página rodada, mesmo a metade do tamanho: o seu fim seria cortado na impressão. Divida-o em parágrafos mais curtos.",
-        "tool.blockquoteTitle": "Citação — destaca este parágrafo como uma citação", "tool.ul": "Lista", "tool.ulTitle": "Lista com marcadores — cada linha vira um item", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada linha vira um passo numerado", "tool.sceneBreakTitle": "Mudança de cena — torna-se um ornamento no livro",
+        "tool.blockquoteTitle": "Citação — destaca este parágrafo como uma citação", "tool.ul": "Lista", "tool.ulTitle": "Lista com marcadores — cada linha vira um item", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada linha vira um passo numerado", "tool.columns": "Colunas", "tool.columnsTitle": "Colunas — compõe o apêndice escolhido (notas, cronologia, índice) em duas colunas equilibradas na impressão", "tool.hanging": "Recuo deslocado", "tool.hangingTitle": "Recuo deslocado — uma entrada por linha, com as linhas seguintes recuadas (bibliografia, cronologia, índice)", "tool.sceneBreakTitle": "Mudança de cena — torna-se um ornamento no livro",
         "tool.emDashTitle": "Travessão", "tool.footnoteTitle": "Nota de rodapé — composta como nota final ligada",
         "tool.verse": "Verso", "tool.verseTitle": "Verso — mantém cada quebra de linha das linhas escolhidas (um poema, uma canção)", "tool.center": "Centrar", "tool.centerTitle": "Centrar — centra os parágrafos escolhidos (uma placa, um bilhete)", "tool.right": "Direita", "tool.rightTitle": "Direita — alinha à direita os parágrafos escolhidos (uma despedida, uma data)",
         "tool.texts": "Mensagens", "tool.textsTitle": "Mensagens — mostra as linhas escolhidas como uma conversa de mensagens, um «Nome: mensagem» por linha", "tool.letter": "Carta", "tool.letterTitle": "Carta — mostra os parágrafos escolhidos como uma carta ou bilhete escrito, com as quebras de linha",
@@ -5217,7 +5224,7 @@
         "tool.boldTitle": "Vet (Ctrl/Cmd+B)", "tool.italicTitle": "Cursief (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — maak van de geselecteerde woorden een web- of winkellink", "lnk.title": "Een link toevoegen", "lnk.text": "Linktekst", "lnk.textPh": "De woorden die lezers zien", "lnk.url": "Webadres", "lnk.urlPh": "https://", "lnk.hint": "Begint met https://, http:// of mailto:. In het e-book is het een link; in druk worden de woorden als gewone tekst gezet.", "lnk.bad": "Dat adres kan geen link zijn — gebruik er een dat begint met https://, http:// of mailto:.", "lnk.cancel": "Annuleren", "lnk.add": "Link toevoegen",
         /* BEUK:layout */ "tool.margin": "Kanttekening", "tool.marginTitle": "Kanttekening — de notitie van een lezer in de marge, naast de alinea ervoor, in eigen inkt", "tool.sideways": "Gekanteld", "tool.sidewaysTitle": "Gekanteld — zet de gekozen alinea's op een eigen pagina, een kwartslag met de klok mee gedraaid", "tool.upsideDown": "Ondersteboven", "tool.upsideDownTitle": "Ondersteboven — zet de gekozen alinea's ondersteboven op de pagina", "mn.title": "Een kanttekening toevoegen", "mn.name": "Van wie de notitie is", "mn.namePh": "M.", "mn.text": "De notitie", "mn.textPh": "Wat er in de marge staat", "mn.hint": "Staat naast de alinea ervoor, in de buitenmarge van de gedrukte pagina; elke naam heeft zijn eigen inkt. In het e-book volgt ze de alinea.", "mn.bad": "Geef de notitie een naam — van wiens hand ze is.", "mn.cancel": "Annuleren", "mn.add": "Notitie toevoegen", "sw.clipName": "Een gekantelde pagina past niet", "sw.clipDetail": "Een gekanteld blok in {section} bevat een alinea die zelfs op halve grootte te lang is voor een gedraaide pagina: het einde zou in druk wegvallen. Deel hem op in kortere alinea's.",
-        "tool.blockquoteTitle": "Blokcitaat — zet deze alinea apart als citaat", "tool.ul": "Lijst", "tool.ulTitle": "Opsomming — elke regel wordt een punt", "tool.ol": "Genummerd", "tool.olTitle": "Genummerde lijst — elke regel wordt een genummerde stap", "tool.sceneBreakTitle": "Scènewissel — wordt een ornament in het boek",
+        "tool.blockquoteTitle": "Blokcitaat — zet deze alinea apart als citaat", "tool.ul": "Lijst", "tool.ulTitle": "Opsomming — elke regel wordt een punt", "tool.ol": "Genummerd", "tool.olTitle": "Genummerde lijst — elke regel wordt een genummerde stap", "tool.columns": "Kolommen", "tool.columnsTitle": "Kolommen — zet de gekozen nawerken (noten, tijdlijn, register) in druk in twee gelijke kolommen", "tool.hanging": "Hangend inspringen", "tool.hangingTitle": "Hangend inspringen — één ingang per regel, vervolgregels ingesprongen (bibliografie, tijdlijn, register)", "tool.sceneBreakTitle": "Scènewissel — wordt een ornament in het boek",
         "tool.emDashTitle": "Gedachtestreepje", "tool.footnoteTitle": "Voetnoot — wordt opgemaakt als gekoppelde eindnoot",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — behoudt elke regelafbreking van de gekozen regels (een gedicht, een lied)", "tool.center": "Centreren", "tool.centerTitle": "Centreren — zet de gekozen alinea's gecentreerd (een bord, een briefje)", "tool.right": "Rechts", "tool.rightTitle": "Rechts — lijnt de gekozen alinea's rechts uit (een groet, een datumregel)",
         "tool.texts": "Berichten", "tool.textsTitle": "Berichten — zet de gekozen regels als een berichtengesprek, één „Naam: bericht” per regel", "tool.letter": "Brief", "tool.letterTitle": "Brief — zet de gekozen alinea's als een geschreven brief of briefje, regelafbrekingen blijven",
@@ -5420,7 +5427,7 @@
         "tool.boldTitle": "Pogrubienie (Ctrl/Cmd+B)", "tool.italicTitle": "Kursywa (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — zamień zaznaczone słowa w link do strony lub sklepu", "lnk.title": "Dodaj link", "lnk.text": "Tekst linku", "lnk.textPh": "Słowa, które widzi czytelnik", "lnk.url": "Adres internetowy", "lnk.urlPh": "https://", "lnk.hint": "Zaczyna się od https://, http:// lub mailto:. W e-booku to link; w druku słowa są składane jako zwykły tekst.", "lnk.bad": "Ten adres nie może być linkiem — użyj takiego, który zaczyna się od https://, http:// lub mailto:.", "lnk.cancel": "Anuluj", "lnk.add": "Dodaj link",
         /* BEUK:layout */ "tool.margin": "Notatka na marginesie", "tool.marginTitle": "Notatka na marginesie — uwaga czytelnika na marginesie obok poprzedniego akapitu, jego własnym atramentem", "tool.sideways": "Bokiem", "tool.sidewaysTitle": "Bokiem — składa wybrane akapity na osobnej stronie, obrócone o ćwierć obrotu zgodnie z ruchem wskazówek zegara", "tool.upsideDown": "Do góry nogami", "tool.upsideDownTitle": "Do góry nogami — składa wybrane akapity odwrócone na stronie", "mn.title": "Dodaj notatkę na marginesie", "mn.name": "Czyja notatka", "mn.namePh": "M.", "mn.text": "Notatka", "mn.textPh": "Co napisano na marginesie", "mn.hint": "Stoi obok poprzedniego akapitu, na zewnętrznym marginesie drukowanej strony; każde imię ma własny atrament. W e-booku następuje po akapicie.", "mn.bad": "Nadaj notatce imię — czyja to ręka.", "mn.cancel": "Anuluj", "mn.add": "Dodaj notatkę", "sw.clipName": "Strona bokiem się nie mieści", "sw.clipDetail": "Blok bokiem w {section} zawiera akapit zbyt długi na obróconą stronę, nawet w połowie rozmiaru: jego koniec zostałby ucięty w druku. Podziel go na krótsze akapity.",
-        "tool.blockquoteTitle": "Cytat blokowy — wydziela ten akapit jako cytat", "tool.ul": "Lista", "tool.ulTitle": "Lista punktowana — każda linia to punkt", "tool.ol": "Numerowana", "tool.olTitle": "Lista numerowana — każda linia to numerowany krok", "tool.sceneBreakTitle": "Przerwa sceny — staje się ornamentem w książce",
+        "tool.blockquoteTitle": "Cytat blokowy — wydziela ten akapit jako cytat", "tool.ul": "Lista", "tool.ulTitle": "Lista punktowana — każda linia to punkt", "tool.ol": "Numerowana", "tool.olTitle": "Lista numerowana — każda linia to numerowany krok", "tool.columns": "Kolumny", "tool.columnsTitle": "Kolumny — składa wybrane materiały końcowe (przypisy, chronologię, indeks) w druku w dwóch wyrównanych kolumnach", "tool.hanging": "Wcięcie wiszące", "tool.hangingTitle": "Wcięcie wiszące — jedna pozycja na linię, kolejne wiersze wcięte (bibliografia, chronologia, indeks)", "tool.sceneBreakTitle": "Przerwa sceny — staje się ornamentem w książce",
         "tool.emDashTitle": "Myślnik", "tool.footnoteTitle": "Przypis — składany jako przypis końcowy z odnośnikiem",
         "tool.verse": "Wiersz", "tool.verseTitle": "Wiersz — zachowuje każdy podział wiersza wybranych linii (wiersz, piosenka)", "tool.center": "Wyśrodkuj", "tool.centerTitle": "Wyśrodkuj — wyśrodkowuje wybrane akapity (szyld, notatka)", "tool.right": "Do prawej", "tool.rightTitle": "Do prawej — wyrównuje wybrane akapity do prawej (pożegnanie, data)",
         "tool.texts": "Wiadomości", "tool.textsTitle": "Wiadomości — składa wybrane linie jako rozmowę SMS, jedno „Imię: wiadomość” na linię", "tool.letter": "List", "tool.letterTitle": "List — składa wybrane akapity jako napisany list lub liścik, z zachowaniem podziałów wierszy",
@@ -5623,7 +5630,7 @@
         "tool.boldTitle": "Полужирный (Ctrl/Cmd+B)", "tool.italicTitle": "Курсив (Ctrl/Cmd+I)",
         "tool.link": "Ссылка", "tool.linkTitle": "Ссылка — сделать выделенные слова ссылкой на сайт или магазин", "lnk.title": "Добавить ссылку", "lnk.text": "Текст ссылки", "lnk.textPh": "Слова, которые видит читатель", "lnk.url": "Веб-адрес", "lnk.urlPh": "https://", "lnk.hint": "Начинается с https://, http:// или mailto:. В электронной книге это ссылка; в печати слова набираются обычным текстом.", "lnk.bad": "Этот адрес не может быть ссылкой — укажите адрес, начинающийся с https://, http:// или mailto:.", "lnk.cancel": "Отмена", "lnk.add": "Добавить ссылку",
         /* BEUK:layout */ "tool.margin": "Заметка на полях", "tool.marginTitle": "Заметка на полях — пометка читателя на полях рядом с предыдущим абзацем, его собственными чернилами", "tool.sideways": "Боком", "tool.sidewaysTitle": "Боком — ставит выбранные абзацы на отдельную страницу, повёрнутыми на четверть оборота по часовой стрелке", "tool.upsideDown": "Вверх ногами", "tool.upsideDownTitle": "Вверх ногами — ставит выбранные абзацы на страницу перевёрнутыми", "mn.title": "Добавить заметку на полях", "mn.name": "Чья заметка", "mn.namePh": "М.", "mn.text": "Заметка", "mn.textPh": "Что написано на полях", "mn.hint": "Стоит рядом с предыдущим абзацем, на внешнем поле печатной страницы; у каждого имени свои чернила. В электронной книге идёт после абзаца.", "mn.bad": "Дайте заметке имя — чья это рука.", "mn.cancel": "Отмена", "mn.add": "Добавить заметку", "sw.clipName": "Страница боком не помещается", "sw.clipDetail": "Блок боком в {section} содержит абзац, слишком длинный для повёрнутой страницы даже в половинном размере: его конец будет обрезан при печати. Разбейте его на более короткие абзацы.",
-        "tool.blockquoteTitle": "Цитата — выделяет этот абзац как цитату", "tool.ul": "Список", "tool.ulTitle": "Маркированный список — каждая строка становится пунктом", "tool.ol": "Нумерованный", "tool.olTitle": "Нумерованный список — каждая строка становится шагом", "tool.sceneBreakTitle": "Смена сцены — становится орнаментом в книге",
+        "tool.blockquoteTitle": "Цитата — выделяет этот абзац как цитату", "tool.ul": "Список", "tool.ulTitle": "Маркированный список — каждая строка становится пунктом", "tool.ol": "Нумерованный", "tool.olTitle": "Нумерованный список — каждая строка становится шагом", "tool.columns": "Колонки", "tool.columnsTitle": "Колонки — набирает выбранный справочный аппарат (примечания, хронологию, указатель) в печати в две выровненные колонки", "tool.hanging": "Висячий отступ", "tool.hangingTitle": "Висячий отступ — одна запись в строке, перенос каждой записи с отступом (библиография, хронология, указатель)", "tool.sceneBreakTitle": "Смена сцены — становится орнаментом в книге",
         "tool.emDashTitle": "Тире", "tool.footnoteTitle": "Сноска — набирается как связанная концевая сноска",
         "tool.verse": "Стихи", "tool.verseTitle": "Стихи — сохраняет каждый перенос строки в выбранных строках (стихотворение, песня)", "tool.center": "По центру", "tool.centerTitle": "По центру — выравнивает выбранные абзацы по центру (вывеска, записка)", "tool.right": "Вправо", "tool.rightTitle": "Вправо — выравнивает выбранные абзацы по правому краю (подпись, дата)",
         "tool.texts": "Сообщения", "tool.textsTitle": "Сообщения — оформляет выбранные строки как переписку, по одному «Имя: сообщение» в строке", "tool.letter": "Письмо", "tool.letterTitle": "Письмо — оформляет выбранные абзацы как письмо или записку, с сохранением переносов строк",
@@ -5826,7 +5833,7 @@
         "tool.boldTitle": "Kalın (Ctrl/Cmd+B)", "tool.italicTitle": "İtalik (Ctrl/Cmd+I)",
         "tool.link": "Bağlantı", "tool.linkTitle": "Bağlantı — seçili sözcükleri bir web ya da mağaza bağlantısı yap", "lnk.title": "Bağlantı ekle", "lnk.text": "Bağlantı metni", "lnk.textPh": "Okurun gördüğü sözcükler", "lnk.url": "Web adresi", "lnk.urlPh": "https://", "lnk.hint": "https://, http:// ya da mailto: ile başlar. E-kitapta bir bağlantıdır; baskıda sözcükler düz metin olarak dizilir.", "lnk.bad": "Bu adres bağlantı olamaz — https://, http:// ya da mailto: ile başlayan bir adres kullanın.", "lnk.cancel": "İptal", "lnk.add": "Bağlantı ekle",
         /* BEUK:layout */ "tool.margin": "Kenar notu", "tool.marginTitle": "Kenar notu — bir okurun önceki paragrafın yanına, kenar boşluğuna kendi mürekkebiyle düştüğü not", "tool.sideways": "Yan", "tool.sidewaysTitle": "Yan — seçili paragrafları kendi sayfasında, saat yönünde çeyrek tur döndürülmüş olarak dizer", "tool.upsideDown": "Baş aşağı", "tool.upsideDownTitle": "Baş aşağı — seçili paragrafları sayfada baş aşağı dizer", "mn.title": "Kenar notu ekle", "mn.name": "Not kimin", "mn.namePh": "M.", "mn.text": "Not", "mn.textPh": "Kenara ne yazdı", "mn.hint": "Basılı sayfanın dış kenar boşluğunda, önceki paragrafın yanında durur; her adın kendi mürekkebi vardır. E-kitapta paragrafın ardından gelir.", "mn.bad": "Nota bir ad verin — kimin eli olduğunu.", "mn.cancel": "İptal", "mn.add": "Not ekle", "sw.clipName": "Yan sayfa sığmıyor", "sw.clipDetail": "{section} içindeki bir yan blokta, yarı boyutta bile döndürülmüş bir sayfaya sığmayacak kadar uzun bir paragraf var: sonu baskıda kesilir. Onu daha kısa paragraflara bölün.",
-        "tool.blockquoteTitle": "Alıntı — bu paragrafı alıntı olarak ayırır", "tool.ul": "Liste", "tool.ulTitle": "Madde işaretli liste — her satır bir madde olur", "tool.ol": "Numaralı", "tool.olTitle": "Numaralı liste — her satır numaralı bir adım olur", "tool.sceneBreakTitle": "Sahne arası — kitapta bir süse dönüşür",
+        "tool.blockquoteTitle": "Alıntı — bu paragrafı alıntı olarak ayırır", "tool.ul": "Liste", "tool.ulTitle": "Madde işaretli liste — her satır bir madde olur", "tool.ol": "Numaralı", "tool.olTitle": "Numaralı liste — her satır numaralı bir adım olur", "tool.columns": "Sütunlar", "tool.columnsTitle": "Sütunlar — seçili son bölümleri (notlar, kronoloji, dizin) baskıda iki dengeli sütuna dizer", "tool.hanging": "Asılı girinti", "tool.hangingTitle": "Asılı girinti — her satırda bir girdi, devam satırları girintili (kaynakça, kronoloji, dizin)", "tool.sceneBreakTitle": "Sahne arası — kitapta bir süse dönüşür",
         "tool.emDashTitle": "Uzun tire", "tool.footnoteTitle": "Dipnot — bağlantılı bir sonnot olarak dizilir",
         "tool.verse": "Şiir", "tool.verseTitle": "Şiir — seçili satırların her satır sonunu korur (bir şiir, bir şarkı)", "tool.center": "Ortala", "tool.centerTitle": "Ortala — seçili paragrafları ortalar (bir tabela, bir not)", "tool.right": "Sağa", "tool.rightTitle": "Sağa — seçili paragrafları sağa hizalar (bir veda, bir tarih satırı)",
         "tool.texts": "Mesajlar", "tool.textsTitle": "Mesajlar — seçili satırları bir mesajlaşma olarak dizer, her satırda bir \"Ad: mesaj\"", "tool.letter": "Mektup", "tool.letterTitle": "Mektup — seçili paragrafları satır sonlarını koruyarak yazılı bir mektup ya da not olarak dizer",
@@ -6029,7 +6036,7 @@
         "tool.boldTitle": "عريض (Ctrl/Cmd+B)", "tool.italicTitle": "مائل (Ctrl/Cmd+I)",
         "tool.link": "رابط", "tool.linkTitle": "رابط — اجعل الكلمات المحددة رابطًا إلى موقع أو متجر", "lnk.title": "إضافة رابط", "lnk.text": "نص الرابط", "lnk.textPh": "الكلمات التي يراها القارئ", "lnk.url": "عنوان الويب", "lnk.urlPh": "https://", "lnk.hint": "يبدأ بـ https:// أو http:// أو mailto:. في الكتاب الإلكتروني يكون رابطًا؛ وفي الطباعة تُصفّ الكلمات نصًا عاديًا.", "lnk.bad": "لا يمكن أن يكون هذا العنوان رابطًا — استخدم عنوانًا يبدأ بـ https:// أو http:// أو mailto:.", "lnk.cancel": "إلغاء", "lnk.add": "إضافة الرابط",
         /* BEUK:layout */ "tool.margin": "حاشية", "tool.marginTitle": "حاشية — ملاحظة قارئ في الهامش بجانب الفقرة السابقة، بحبره الخاص", "tool.sideways": "جانبيًا", "tool.sidewaysTitle": "جانبيًا — يضع الفقرات المحددة في صفحة مستقلة مُدارة ربع دورة باتجاه عقارب الساعة", "tool.upsideDown": "مقلوبًا", "tool.upsideDownTitle": "مقلوبًا — يضع الفقرات المحددة مقلوبة رأسًا على عقب في الصفحة", "mn.title": "إضافة حاشية", "mn.name": "صاحب الحاشية", "mn.namePh": "م.", "mn.text": "الحاشية", "mn.textPh": "ما كُتب في الهامش", "mn.hint": "توضع بجانب الفقرة السابقة في الهامش الخارجي للصفحة المطبوعة، ولكل اسم حبره. وفي الكتاب الإلكتروني تأتي بعد الفقرة.", "mn.bad": "أعطِ الحاشية اسمًا: بخطّ من هي.", "mn.cancel": "إلغاء", "mn.add": "إضافة الحاشية", "sw.clipName": "صفحة جانبية لا تتسع", "sw.clipDetail": "تحتوي كتلة جانبية في {section} على فقرة أطول من أن تتسع لصفحة مُدارة حتى بنصف الحجم: سيُقطع آخرها في الطباعة. قسّمها إلى فقرات أقصر.",
-        "tool.blockquoteTitle": "اقتباس — يفصل هذه الفقرة كاقتباس", "tool.ul": "قائمة", "tool.ulTitle": "قائمة نقطية — يصبح كل سطر بندًا", "tool.ol": "مرقّمة", "tool.olTitle": "قائمة مرقّمة — يصبح كل سطر خطوة مرقّمة", "tool.sceneBreakTitle": "فاصل مشهد — يصبح زخرفة في الكتاب",
+        "tool.blockquoteTitle": "اقتباس — يفصل هذه الفقرة كاقتباس", "tool.ul": "قائمة", "tool.ulTitle": "قائمة نقطية — يصبح كل سطر بندًا", "tool.ol": "مرقّمة", "tool.olTitle": "قائمة مرقّمة — يصبح كل سطر خطوة مرقّمة", "tool.columns": "أعمدة", "tool.columnsTitle": "أعمدة — يضع الملاحق المحددة (الحواشي، التسلسل الزمني، الفهرس) في عمودين متوازنين في الطباعة", "tool.hanging": "مسافة بادئة معلقة", "tool.hangingTitle": "مسافة بادئة معلقة — مدخل واحد في كل سطر، وتُزاح بقية أسطره (المراجع، التسلسل الزمني، الفهرس)", "tool.sceneBreakTitle": "فاصل مشهد — يصبح زخرفة في الكتاب",
         "tool.emDashTitle": "شرطة طويلة", "tool.footnoteTitle": "حاشية — تُنضَّد كحاشية ختامية مرتبطة",
         "tool.verse": "شعر", "tool.verseTitle": "شعر — يحافظ على كل فاصل أسطر في الأسطر المحددة (قصيدة، أغنية)", "tool.center": "توسيط", "tool.centerTitle": "توسيط — يوسّط الفقرات المحددة (لافتة، ملاحظة)", "tool.right": "يمين", "tool.rightTitle": "يمين — يحاذي الفقرات المحددة إلى اليمين (توقيع ختامي، سطر تاريخ)",
         "tool.texts": "رسائل", "tool.textsTitle": "رسائل — يجعل الأسطر المحددة محادثة رسائل نصية، «الاسم: الرسالة» في كل سطر", "tool.letter": "خطاب", "tool.letterTitle": "خطاب — يجعل الفقرات المحددة خطابًا أو ملاحظة مكتوبة مع الحفاظ على فواصل الأسطر",
@@ -6232,7 +6239,7 @@
         "tool.boldTitle": "太字（Ctrl/Cmd+B）", "tool.italicTitle": "斜体（Ctrl/Cmd+I）",
         "tool.link": "リンク", "tool.linkTitle": "リンク — 選択した語をウェブやストアへのリンクにする", "lnk.title": "リンクを追加", "lnk.text": "リンクの文字", "lnk.textPh": "読者に見える文字", "lnk.url": "ウェブアドレス", "lnk.urlPh": "https://", "lnk.hint": "https://、http://、mailto: のいずれかで始まります。電子書籍ではリンクになり、印刷では文字だけが通常の本文として組まれます。", "lnk.bad": "そのアドレスはリンクにできません。https://、http://、mailto: で始まるアドレスを使ってください。", "lnk.cancel": "キャンセル", "lnk.add": "リンクを追加",
         /* BEUK:layout */ "tool.margin": "書き込み", "tool.marginTitle": "書き込み — 直前の段落の横、余白に読者が書いたメモ（人ごとに色を変えます）", "tool.sideways": "横向き", "tool.sidewaysTitle": "横向き — 選んだ段落を専用のページに、時計回りに90度回して組みます", "tool.upsideDown": "上下逆さ", "tool.upsideDownTitle": "上下逆さ — 選んだ段落をページ上で逆さまに組みます", "mn.title": "余白の書き込みを追加", "mn.name": "書いた人", "mn.namePh": "M.", "mn.text": "書き込み", "mn.textPh": "余白に書かれたこと", "mn.hint": "印刷ページの外側の余白、直前の段落の横に置きます。名前ごとに色が分かれます。電子書籍では段落の後に続きます。", "mn.bad": "書き込みに名前を付けてください（誰の筆跡か）。", "mn.cancel": "キャンセル", "mn.add": "書き込みを追加", "sw.clipName": "横向きのページに収まりません", "sw.clipDetail": "{section} の横向きブロックに、半分の大きさにしても回したページに収まらない長い段落があります。印刷では末尾が切れてしまいます。短い段落に分けてください。",
-        "tool.blockquoteTitle": "引用 — この段落を引用として分けます", "tool.ul": "箇条書き", "tool.ulTitle": "箇条書き — 各行が項目になります", "tool.ol": "番号付き", "tool.olTitle": "番号付きリスト — 各行が番号付きの手順になります", "tool.sceneBreakTitle": "場面転換 — 本の中では装飾になります",
+        "tool.blockquoteTitle": "引用 — この段落を引用として分けます", "tool.ul": "箇条書き", "tool.ulTitle": "箇条書き — 各行が項目になります", "tool.ol": "番号付き", "tool.olTitle": "番号付きリスト — 各行が番号付きの手順になります", "tool.columns": "段組み", "tool.columnsTitle": "段組み — 選んだ巻末資料（注、年表、索引）を印刷で2段にそろえて組みます", "tool.hanging": "ぶら下げ", "tool.hangingTitle": "ぶら下げ — 1行に1項目、折り返しを字下げします（参考文献、年表、索引）", "tool.sceneBreakTitle": "場面転換 — 本の中では装飾になります",
         "tool.emDashTitle": "ダッシュ", "tool.footnoteTitle": "脚注 — リンク付きの巻末注として組まれます",
         "tool.verse": "韻文", "tool.verseTitle": "韻文 — 選んだ行の改行をすべて保ちます（詩、歌）", "tool.center": "中央", "tool.centerTitle": "中央 — 選んだ段落を中央揃えにします（看板、メモ）", "tool.right": "右寄せ", "tool.rightTitle": "右寄せ — 選んだ段落を右揃えにします（結びの言葉、日付）",
         "tool.texts": "メッセージ", "tool.textsTitle": "メッセージ — 選んだ行をメッセージのやり取りとして組みます（1行に「名前: 本文」）", "tool.letter": "手紙", "tool.letterTitle": "手紙 — 選んだ段落を手紙やメモとして組みます（改行は保ちます）",
@@ -6435,7 +6442,7 @@
         "tool.boldTitle": "粗体 (Ctrl/Cmd+B)", "tool.italicTitle": "斜体 (Ctrl/Cmd+I)",
         "tool.link": "链接", "tool.linkTitle": "链接——把选中的文字设为网站或书店链接", "lnk.title": "添加链接", "lnk.text": "链接文字", "lnk.textPh": "读者看到的文字", "lnk.url": "网址", "lnk.urlPh": "https://", "lnk.hint": "以 https://、http:// 或 mailto: 开头。在电子书中是链接；在印刷版中文字按普通正文排版。", "lnk.bad": "这个地址不能作为链接——请使用以 https://、http:// 或 mailto: 开头的地址。", "lnk.cancel": "取消", "lnk.add": "添加链接",
         /* BEUK:layout */ "tool.margin": "页边批注", "tool.marginTitle": "页边批注——读者写在上一段旁边页边上的批注，各用各的墨色", "tool.sideways": "横排", "tool.sidewaysTitle": "横排——将所选段落单独排成一页，顺时针旋转九十度", "tool.upsideDown": "倒置", "tool.upsideDownTitle": "倒置——将所选段落在页面上倒过来排", "mn.title": "添加页边批注", "mn.name": "批注人", "mn.namePh": "M.", "mn.text": "批注", "mn.textPh": "页边上写了什么", "mn.hint": "排在上一段旁边、印刷页的外侧页边；每个名字各有墨色。电子书中排在该段之后。", "mn.bad": "请给批注署名——是谁的笔迹。", "mn.cancel": "取消", "mn.add": "添加批注", "sw.clipName": "横排页面排不下", "sw.clipDetail": "{section} 中的横排块有一段过长，即使缩到一半也排不进旋转后的页面：印刷时末尾会被裁掉。请将其拆成较短的段落。",
-        "tool.blockquoteTitle": "引用块 — 将此段落作为引文单独排版", "tool.ul": "列表", "tool.ulTitle": "项目符号列表 — 每行成为一项", "tool.ol": "编号", "tool.olTitle": "编号列表 — 每行成为一个编号步骤", "tool.sceneBreakTitle": "场景分隔 — 在书中成为装饰纹样",
+        "tool.blockquoteTitle": "引用块 — 将此段落作为引文单独排版", "tool.ul": "列表", "tool.ulTitle": "项目符号列表 — 每行成为一项", "tool.ol": "编号", "tool.olTitle": "编号列表 — 每行成为一个编号步骤", "tool.columns": "分栏", "tool.columnsTitle": "分栏 — 将所选书末内容（注释、年表、索引）在印刷版中排成均衡的两栏", "tool.hanging": "悬挂缩进", "tool.hangingTitle": "悬挂缩进 — 每行一个条目，转行缩进（参考文献、年表、索引）", "tool.sceneBreakTitle": "场景分隔 — 在书中成为装饰纹样",
         "tool.emDashTitle": "破折号", "tool.footnoteTitle": "脚注 — 排版为带链接的尾注",
         "tool.verse": "诗行", "tool.verseTitle": "诗行 — 保留所选各行的每个换行（诗歌、歌词）", "tool.center": "居中", "tool.centerTitle": "居中 — 将所选段落居中排版（招牌、便条）", "tool.right": "右对齐", "tool.rightTitle": "右对齐 — 将所选段落右对齐（落款、日期行）",
         "tool.texts": "短信", "tool.textsTitle": "短信 — 将所选各行排成短信对话，每行一条“姓名: 消息”", "tool.letter": "书信", "tool.letterTitle": "书信 — 将所选段落排成书信或便条，保留换行",
@@ -9196,6 +9203,8 @@
         "print.group.large": "Large & illustrated", "print.group.square": "Square & landscape",
         "print.lpEdition": "Large Print Edition", "print.lpTag": "Large Print",
         "print.lpNote": "the interior is set as a Large Print edition — 18pt type, generous leading, left-aligned.",
+        "exp.pictureBookTitle": "Picture book type", "exp.pictureBookDesc": "Sets the print interior's words at 24pt for a picture book — a few lines facing or under each picture, read aloud — ragged and unhyphenated, with the running head and page numbers scaled to match. Use it with a landscape or square trim such as 11 × 8.5 in; it replaces Large Print, and the manuscript never changes.",
+        "print.pbTag": "Picture book", "print.pbNote": "the interior's words are set at 24pt picture-book type, ragged and unhyphenated.",
         "preflight.intro": "A pre-press check over the print interior itself — the same pages the Print Interior View lays out: margins and gutter against the printer minimums for this book's page count and trim, every picture's effective resolution at the size it will print, the page count against KDP's limits for the chosen trim, and the fonts in use, listed plainly. One standing truth: true PDF/X-1a conversion happens in the server pipeline — this check exists so the interior passes it the first time.",
         "preflight.clean": "This interior is ready for the printer",
         "preflight.cleanSub": "Margins and gutter sit above the printer minimums for this page count, every picture carries print resolution at its placed size, and the page count sits inside KDP's range for this trim.",
@@ -9221,6 +9230,8 @@
         "print.group.large": "Grandes e ilustrados", "print.group.square": "Cuadrados y apaisados",
         "print.lpEdition": "Edición en letra grande", "print.lpTag": "Letra grande",
         "print.lpNote": "el interior está compuesto como edición en letra grande — cuerpo de 18 pt, interlineado generoso, alineado a la izquierda.",
+        "exp.pictureBookTitle": "Letra de libro ilustrado", "exp.pictureBookDesc": "Compone las palabras del interior de imprenta a 24 pt para un libro ilustrado — unas pocas líneas frente a cada imagen o bajo ella, para leer en voz alta —, sin justificar ni dividir palabras, con el titulillo y los números de página a juego. Úsalo con un formato apaisado o cuadrado como 11 × 8,5 in; sustituye a la letra grande y el manuscrito no cambia.",
+        "print.pbTag": "Libro ilustrado", "print.pbNote": "las palabras del interior van a 24 pt, letra de libro ilustrado, sin justificar ni dividir.",
         "preflight.intro": "Una comprobación previa sobre el propio interior de imprenta — las mismas páginas que compone la vista del interior: márgenes y margen de lomo frente a los mínimos de la imprenta para el número de páginas y el corte de este libro, la resolución efectiva de cada imagen al tamaño al que se imprimirá, el número de páginas frente a los límites de KDP para el corte elegido, y las fuentes en uso, enumeradas con claridad. Una verdad permanente: la conversión verdadera a PDF/X-1a ocurre en el servidor — esta comprobación existe para que el interior la supere a la primera.",
         "preflight.clean": "Este interior está listo para la imprenta",
         "preflight.cleanSub": "Los márgenes y el margen de lomo superan los mínimos de la imprenta para este número de páginas, cada imagen tiene resolución de imprenta a su tamaño colocado, y el número de páginas está dentro del rango de KDP para este corte.",
@@ -9246,6 +9257,8 @@
         "print.group.large": "Grands formats et illustrés", "print.group.square": "Carrés et paysage",
         "print.lpEdition": "Édition en gros caractères", "print.lpTag": "Gros caractères",
         "print.lpNote": "l’intérieur est composé en édition gros caractères — corps de 18 pt, interlignage généreux, aligné à gauche.",
+        "exp.pictureBookTitle": "Corps d’album illustré", "exp.pictureBookDesc": "Compose le texte de l’intérieur imprimé en 24 pt pour un album — quelques lignes face à chaque image ou dessous, lues à voix haute —, en drapeau et sans césure, titre courant et folios à l’échelle. À utiliser avec un format à l’italienne ou carré comme 11 × 8,5 in ; remplace les gros caractères, le manuscrit ne change pas.",
+        "print.pbTag": "Album illustré", "print.pbNote": "le texte de l’intérieur est composé en corps d’album, 24 pt, en drapeau et sans césure.",
         "preflight.intro": "Un contrôle prépresse de l’intérieur imprimé lui-même — les mêmes pages que compose l’aperçu de l’intérieur : marges et gouttière face aux minimums de l’imprimeur pour ce nombre de pages et ce format, résolution effective de chaque image à la taille où elle sera imprimée, nombre de pages face aux limites de KDP pour le format choisi, et les polices utilisées, énumérées clairement. Une vérité permanente : la vraie conversion PDF/X-1a a lieu dans la chaîne du serveur — ce contrôle existe pour que l’intérieur la réussisse du premier coup.",
         "preflight.clean": "Cet intérieur est prêt pour l’imprimeur",
         "preflight.cleanSub": "Les marges et la gouttière dépassent les minimums de l’imprimeur pour ce nombre de pages, chaque image a la résolution d’impression à sa taille placée, et le nombre de pages se situe dans la plage de KDP pour ce format.",
@@ -9271,6 +9284,8 @@
         "print.group.large": "Groß & illustriert", "print.group.square": "Quadrat & Querformat",
         "print.lpEdition": "Großdruck-Ausgabe", "print.lpTag": "Großdruck",
         "print.lpNote": "das Innenleben ist als Großdruck-Ausgabe gesetzt — 18 pt Schrift, großzügiger Zeilenabstand, linksbündig.",
+        "exp.pictureBookTitle": "Bilderbuchschrift", "exp.pictureBookDesc": "Setzt den Text des Druckinnenlebens für ein Bilderbuch in 24 pt — wenige Zeilen neben oder unter jedem Bild, zum Vorlesen —, im Flattersatz ohne Silbentrennung, Kolumnentitel und Seitenzahlen passend skaliert. Für ein Quer- oder Quadratformat wie 11 × 8,5 in; ersetzt den Großdruck, das Manuskript bleibt unverändert.",
+        "print.pbTag": "Bilderbuch", "print.pbNote": "der Text des Innenlebens ist in 24 pt Bilderbuchschrift gesetzt, Flattersatz, ohne Trennung.",
         "preflight.intro": "Eine Prüfung der Druckvorstufe am Druckinnenleben selbst — denselben Seiten, die die Druckansicht setzt: Ränder und Bundsteg gegen die Mindestwerte der Druckerei für diese Seitenzahl und diesen Beschnitt, die wirksame Auflösung jedes Bildes in der Größe, in der es gedruckt wird, die Seitenzahl gegen die KDP-Grenzen für das gewählte Format und die verwendeten Schriften, klar aufgeführt. Eine bleibende Wahrheit: Die echte PDF/X-1a-Umwandlung geschieht in der Server-Pipeline — diese Prüfung sorgt dafür, dass das Innenleben sie beim ersten Mal besteht.",
         "preflight.clean": "Dieses Innenleben ist bereit für die Druckerei",
         "preflight.cleanSub": "Ränder und Bundsteg liegen über den Mindestwerten der Druckerei für diese Seitenzahl, jedes Bild trägt Druckauflösung in seiner platzierten Größe, und die Seitenzahl liegt im KDP-Bereich für dieses Format.",
@@ -9296,6 +9311,8 @@
         "print.group.large": "Grandi e illustrati", "print.group.square": "Quadrati e orizzontali",
         "print.lpEdition": "Edizione a caratteri grandi", "print.lpTag": "Caratteri grandi",
         "print.lpNote": "l’interno è composto come edizione a caratteri grandi — corpo di 18 pt, interlinea generosa, allineato a sinistra.",
+        "exp.pictureBookTitle": "Corpo da albo illustrato", "exp.pictureBookDesc": "Imposta il testo dell’interno di stampa a 24 pt per un albo illustrato — poche righe accanto o sotto ogni immagine, da leggere ad alta voce —, a bandiera e senza sillabazione, con testatina e numeri di pagina in scala. Da usare con un formato orizzontale o quadrato come 11 × 8,5 in; sostituisce i caratteri grandi, il manoscritto non cambia.",
+        "print.pbTag": "Albo illustrato", "print.pbNote": "il testo dell’interno è composto a 24 pt, corpo da albo illustrato, a bandiera e senza sillabazione.",
         "preflight.intro": "Un controllo prestampa sull’interno di stampa stesso — le stesse pagine che compone la vista dell’interno: margini e margine di rilegatura a confronto con i minimi dello stampatore per questo numero di pagine e questo taglio, la risoluzione effettiva di ogni immagine alla dimensione a cui verrà stampata, il numero di pagine a confronto con i limiti KDP per il taglio scelto, e i caratteri in uso, elencati con chiarezza. Una verità permanente: la vera conversione PDF/X-1a avviene nella pipeline del server — questo controllo esiste perché l’interno la superi al primo colpo.",
         "preflight.clean": "Questo interno è pronto per lo stampatore",
         "preflight.cleanSub": "Margini e margine di rilegatura superano i minimi dello stampatore per questo numero di pagine, ogni immagine ha risoluzione di stampa alla sua dimensione collocata, e il numero di pagine rientra nell’intervallo KDP per questo taglio.",
@@ -9321,6 +9338,8 @@
         "print.group.large": "Grandes e ilustrados", "print.group.square": "Quadrados e paisagem",
         "print.lpEdition": "Edição em letra grande", "print.lpTag": "Letra grande",
         "print.lpNote": "o interior está composto como edição em letra grande — corpo de 18 pt, entrelinha generosa, alinhado à esquerda.",
+        "exp.pictureBookTitle": "Letra de livro ilustrado", "exp.pictureBookDesc": "Compõe as palavras do interior de impressão a 24 pt para um livro ilustrado — poucas linhas ao lado ou por baixo de cada imagem, para ler em voz alta —, sem justificar nem hifenizar, com o cabeço e os números de página à escala. Use com um formato horizontal ou quadrado como 11 × 8,5 in; substitui a letra grande e o manuscrito não muda.",
+        "print.pbTag": "Livro ilustrado", "print.pbNote": "as palavras do interior estão a 24 pt, letra de livro ilustrado, sem justificar nem hifenizar.",
         "preflight.intro": "Uma verificação pré-impressão sobre o próprio interior de impressão — as mesmas páginas que a vista do interior compõe: margens e margem de lombada face aos mínimos da gráfica para este número de páginas e este corte, a resolução efetiva de cada imagem ao tamanho a que será impressa, o número de páginas face aos limites da KDP para o corte escolhido, e os tipos em uso, listados com clareza. Uma verdade permanente: a verdadeira conversão para PDF/X-1a acontece na linha do servidor — esta verificação existe para o interior a passar à primeira.",
         "preflight.clean": "Este interior está pronto para a gráfica",
         "preflight.cleanSub": "As margens e a margem de lombada superam os mínimos da gráfica para este número de páginas, cada imagem tem resolução de impressão ao seu tamanho colocado, e o número de páginas está dentro do intervalo da KDP para este corte.",
@@ -9346,6 +9365,8 @@
         "print.group.large": "Groot & geïllustreerd", "print.group.square": "Vierkant & liggend",
         "print.lpEdition": "Grootlettereditie", "print.lpTag": "Grote letters",
         "print.lpNote": "het binnenwerk is gezet als grootlettereditie — 18 pt corps, ruime regelafstand, links uitgelijnd.",
+        "exp.pictureBookTitle": "Prentenboekletter", "exp.pictureBookDesc": "Zet de tekst van het drukbinnenwerk voor een prentenboek in 24 pt — een paar regels naast of onder elke prent, om voor te lezen —, ongelijnd en zonder afbreken, met kopregel en paginanummers op schaal. Gebruik het met een liggend of vierkant formaat zoals 11 × 8,5 in; het vervangt grote letters en het manuscript verandert niet.",
+        "print.pbTag": "Prentenboek", "print.pbNote": "de tekst van het binnenwerk is gezet in 24 pt prentenboekletter, ongelijnd, zonder afbreken.",
         "preflight.intro": "Een drukvoorcontrole over het drukbinnenwerk zelf — dezelfde pagina’s die het drukvoorbeeld zet: marges en rugmarge tegen de minimums van de drukker voor dit aantal pagina’s en dit snijformaat, de werkelijke resolutie van elke afbeelding op het formaat waarop ze wordt gedrukt, het aantal pagina’s tegen de KDP-grenzen voor het gekozen formaat, en de gebruikte letters, duidelijk opgesomd. Eén blijvende waarheid: de echte PDF/X-1a-omzetting gebeurt in de serverpijplijn — deze controle bestaat zodat het binnenwerk er de eerste keer doorheen komt.",
         "preflight.clean": "Dit binnenwerk is klaar voor de drukker",
         "preflight.cleanSub": "Marges en rugmarge liggen boven de minimums van de drukker voor dit aantal pagina’s, elke afbeelding draagt drukresolutie op haar geplaatste formaat, en het aantal pagina’s valt binnen het KDP-bereik voor dit formaat.",
@@ -9371,6 +9392,8 @@
         "print.group.large": "Duże i ilustrowane", "print.group.square": "Kwadratowe i poziome",
         "print.lpEdition": "Wydanie dużym drukiem", "print.lpTag": "Duży druk",
         "print.lpNote": "wnętrze jest złożone jako wydanie dużym drukiem — krój 18 pt, szczodra interlinia, wyrównanie do lewej.",
+        "exp.pictureBookTitle": "Krój książki obrazkowej", "exp.pictureBookDesc": "Składa tekst wnętrza do druku w 24 pt dla książki obrazkowej — kilka wierszy obok lub pod każdą ilustracją, do czytania na głos — bez justowania i dzielenia wyrazów, z żywą paginą i numerami stron w skali. Do formatu poziomego lub kwadratowego, np. 11 × 8,5 in; zastępuje duży druk, a rękopis się nie zmienia.",
+        "print.pbTag": "Książka obrazkowa", "print.pbNote": "tekst wnętrza jest złożony krojem 24 pt książki obrazkowej, bez justowania i dzielenia.",
         "preflight.intro": "Kontrola przeddrukowa samego wnętrza do druku — tych samych stron, które składa podgląd wnętrza: marginesy i margines grzbietowy wobec minimów drukarni dla tej liczby stron i tego formatu, rzeczywista rozdzielczość każdego obrazu w rozmiarze, w jakim zostanie wydrukowany, liczba stron wobec limitów KDP dla wybranego formatu oraz użyte kroje, wymienione wprost. Jedna stała prawda: prawdziwa konwersja do PDF/X-1a odbywa się w potoku serwera — ta kontrola istnieje po to, by wnętrze przeszło ją za pierwszym razem.",
         "preflight.clean": "To wnętrze jest gotowe dla drukarni",
         "preflight.cleanSub": "Marginesy i margines grzbietowy przekraczają minima drukarni dla tej liczby stron, każdy obraz ma rozdzielczość druku w swoim umieszczonym rozmiarze, a liczba stron mieści się w zakresie KDP dla tego formatu.",
@@ -9396,6 +9419,8 @@
         "print.group.large": "Большие и иллюстрированные", "print.group.square": "Квадратные и альбомные",
         "print.lpEdition": "Издание крупным шрифтом", "print.lpTag": "Крупный шрифт",
         "print.lpNote": "блок набран как издание крупным шрифтом — кегль 18 pt, щедрый интерлиньяж, выключка по левому краю.",
+        "exp.pictureBookTitle": "Шрифт книжки с картинками", "exp.pictureBookDesc": "Набирает текст печатного блока кеглем 24 pt для книжки с картинками — несколько строк рядом с каждой иллюстрацией или под ней, для чтения вслух, — без выключки и переносов, колонтитул и номера страниц в масштабе. Для альбомного или квадратного формата, например 11 × 8,5 in; заменяет крупный шрифт, рукопись не меняется.",
+        "print.pbTag": "Книжка с картинками", "print.pbNote": "текст блока набран кеглем 24 pt для книжки с картинками, без выключки и переносов.",
         "preflight.intro": "Предпечатная проверка самого печатного блока — тех же страниц, что набирает просмотр блока: поля и корешковое поле против минимумов типографии для этого числа страниц и этого формата, фактическое разрешение каждой картинки в размере, в котором она будет напечатана, число страниц против пределов KDP для выбранного формата и используемые шрифты, перечисленные открыто. Одна неизменная истина: настоящее преобразование в PDF/X-1a происходит в серверном конвейере — эта проверка существует, чтобы блок прошёл его с первого раза.",
         "preflight.clean": "Этот блок готов к типографии",
         "preflight.cleanSub": "Поля и корешковое поле выше минимумов типографии для этого числа страниц, каждая картинка несёт печатное разрешение в своём размещённом размере, а число страниц внутри диапазона KDP для этого формата.",
@@ -9421,6 +9446,8 @@
         "print.group.large": "Büyük ve resimli", "print.group.square": "Kare ve yatay",
         "print.lpEdition": "Büyük Puntolu Baskı", "print.lpTag": "Büyük baskı",
         "print.lpNote": "iç, büyük puntolu baskı olarak dizildi — 18 punto, cömert satır aralığı, sola dayalı.",
+        "exp.pictureBookTitle": "Resimli kitap puntosu", "exp.pictureBookDesc": "Baskı içinin metnini resimli kitap için 24 puntoda dizer — her resmin yanında ya da altında, sesli okunacak birkaç satır —, iki yana yaslamadan ve hecelemeden; üst bilgi ve sayfa numaraları da orantılı. 11 × 8,5 in gibi yatay ya da kare bir boyutla kullanın; büyük baskının yerini alır, el yazması değişmez.",
+        "print.pbTag": "Resimli kitap", "print.pbNote": "iç metin 24 punto resimli kitap puntosuyla, yaslamadan ve hecelemeden dizildi.",
         "preflight.intro": "Baskı içinin kendisinin baskı öncesi kontrolü — Baskı İçi Görünümün dizdiği aynı sayfalar: bu sayfa sayısı ve kesim için yazıcının minimumlarına karşı kenar boşlukları ve cilt payı, her resmin basılacağı boyuttaki etkin çözünürlüğü, seçilen kesim için KDP sınırlarına karşı sayfa sayısı ve kullanılan yazı tipleri, açıkça listelenmiş. Bir kalıcı gerçek: gerçek PDF/X-1a dönüştürmesi sunucu hattında olur — bu kontrol, için ilk seferde geçmesi için var.",
         "preflight.clean": "Bu iç baskıya hazır",
         "preflight.cleanSub": "Kenar boşlukları ve cilt payı bu sayfa sayısı için yazıcının minimumlarının üzerinde, her resim yerleştirildiği boyutta baskı çözünürlüğü taşıyor ve sayfa sayısı bu kesim için KDP aralığında.",
@@ -9446,6 +9473,8 @@
         "print.group.large": "الكبيرة والمصوّرة", "print.group.square": "المربعة والأفقية",
         "print.lpEdition": "طبعة بالخط الكبير", "print.lpTag": "خط كبير",
         "print.lpNote": "الداخلية منضّدة كطبعة بالخط الكبير — 18 نقطة، تباعد سخي، محاذاة إلى اليسار.",
+        "exp.pictureBookTitle": "خط كتاب مصوّر", "exp.pictureBookDesc": "يضع كلمات داخلية الطباعة بحجم 24 نقطة لكتاب مصوّر — بضعة أسطر بجوار كل صورة أو تحتها، تُقرأ بصوت عالٍ — بلا ضبط للحواف ولا تقسيم للكلمات، مع ترويسة وأرقام صفحات بالمقياس نفسه. استخدمه مع قياس أفقي أو مربع مثل 11 × 8.5 بوصة؛ يحل محل الخط الكبير ولا تتغير المخطوطة.",
+        "print.pbTag": "كتاب مصوّر", "print.pbNote": "كلمات الداخلية مضبوطة بخط الكتاب المصوّر 24 نقطة، بلا ضبط حواف ولا تقسيم.",
         "preflight.intro": "فحص قبل الطباعة لداخلية الطباعة نفسها — الصفحات ذاتها التي ينضّدها عرض داخلية الطباعة: الهوامش وهامش التجليد مقابل حدود المطبعة الدنيا لعدد صفحات هذا الكتاب ومقاسه، والدقة الفعلية لكل صورة بالمقاس الذي ستُطبع به، وعدد الصفحات مقابل حدود KDP للمقاس المختار، والخطوط المستخدمة مدرجة بوضوح. حقيقة ثابتة: التحويل الحقيقي إلى PDF/X-1a يحدث في خط أنابيب الخادم — وهذا الفحص موجود لتجتازه الداخلية من أول مرة.",
         "preflight.clean": "هذه الداخلية جاهزة للمطبعة",
         "preflight.cleanSub": "الهوامش وهامش التجليد فوق حدود المطبعة الدنيا لعدد الصفحات هذا، وكل صورة تحمل دقة طباعة بمقاسها الموضوع، وعدد الصفحات داخل نطاق KDP لهذا المقاس.",
@@ -9471,6 +9500,8 @@
         "print.group.large": "大型＆イラスト", "print.group.square": "スクエア＆横型",
         "print.lpEdition": "大きな活字版", "print.lpTag": "大きな活字",
         "print.lpNote": "内面は大きな活字版として組まれています — 18pt、ゆったりした行間、左寄せ。",
+        "exp.pictureBookTitle": "絵本の文字サイズ", "exp.pictureBookDesc": "絵本のために印刷内面の文字を24ptで組みます（各絵の横や下に数行、読み聞かせ向け）。行末をそろえず、ハイフネーションなし、柱とノンブルも合わせて拡大します。11 × 8.5 in などの横長・正方形の判型でお使いください。大きな活字版に代わるもので、原稿は変わりません。",
+        "print.pbTag": "絵本", "print.pbNote": "内面の文字は絵本用の24ptで、行末をそろえず、分綴なしで組まれています。",
         "preflight.intro": "印刷内面そのもののプリフライト検査 — 印刷内面ビューが組むのと同じページで：この本のページ数と仕上がりに対する印刷所の最小値と余白・ノドを比べ、すべての絵が印刷される大きさでの実効解像度、選んだ仕上がりに対するKDPの制限とページ数、使用中のフォントを明快に並べます。一つ変わらない真実：本当のPDF/X-1a変換はサーバーのパイプラインで行われます — この検査は、内面が一回で合格するためのものです。",
         "preflight.clean": "この内面は印刷所に出せます",
         "preflight.cleanSub": "余白とノドはこのページ数に対する印刷所の最小値を上回り、すべての絵は置かれた大きさで印刷解像度を備え、ページ数はこの仕上がりに対するKDPの範囲内です。",
@@ -9496,6 +9527,8 @@
         "print.group.large": "大开本与图册", "print.group.square": "方形与横开",
         "print.lpEdition": "大字版", "print.lpTag": "大字版",
         "print.lpNote": "内页按大字版排印——18pt字号，行距宽松，左对齐。",
+        "exp.pictureBookTitle": "绘本字号", "exp.pictureBookDesc": "为绘本将印刷内页的文字排成24pt——每幅图旁或图下几行字，供朗读——不两端对齐、不断词，页眉与页码随之放大。适用于11 × 8.5 in等横向或方形开本；它取代大字版，手稿不会改变。",
+        "print.pbTag": "绘本", "print.pbNote": "内页文字以24pt绘本字号排印，不两端对齐，不断词。",
         "preflight.intro": "对印刷内页本身的印前检查——与印刷内页视图所排的同一批页面：页边距与订口对照印刷厂对本书页数和开本的最低要求，每张图片在其印刷尺寸下的实际分辨率，页数对照所选开本的KDP限制，以及所用字体，清楚列明。一条不变的事实：真正的PDF/X-1a转换在服务器管线中完成——这项检查的存在，是为了让内页一次通过。",
         "preflight.clean": "这份内页可以送印了",
         "preflight.cleanSub": "页边距与订口高于印刷厂对这一页数的最低要求，每张图片在其放置尺寸下都具备印刷分辨率，页数也落在该开本的KDP范围内。",
@@ -16971,6 +17004,7 @@
         printTrim: "6x9",
         printRecto: true,
         printLargePrint: false,
+        printPictureBook: false,
         printMarginMode: "auto",
         printCustomMargins: { inside: 0.625, outside: 0.5, top: 0.6, bottom: 0.75 },
         printHeadContent: "titleauthor",
@@ -17277,7 +17311,7 @@
         state.meta = d.meta; state.theme = d.theme; state.activePreset = d.activePreset;
         state.sections = d.sections; state.cover = null; state.coverRecipe = null; state.images = [];
         state.activeId = d.activeId; state.exportPlatform = d.exportPlatform;
-        state.printTrim = d.printTrim; state.printRecto = d.printRecto; state.printLargePrint = d.printLargePrint;
+        state.printTrim = d.printTrim; state.printRecto = d.printRecto; state.printLargePrint = d.printLargePrint; state.printPictureBook = false;
         state.printNotes = d.printNotes; /* BEUK:footnotes */
       }
       const isEmptyDesk = () => bookWordTotal() === 0 &&
@@ -19641,17 +19675,17 @@
            sent (set to the right, a tinted bubble), everyone else's
            received (to the left, an outlined bubble), so the two sides
            read apart in black ink alone. The sender's name stands small
-           above the first message of a run; a blank line starts a new
-           run. A line that is not "Name: message" (a time, "Read 9:41")
+           above the first message of a run of one sender's messages (a
+           blank line inside a run is a pause, never a repeated name). A line that is not "Name: message" (a time, "Read 9:41")
            is a small centred note between the bubbles. With no
            <MeName>, the first speaker is taken as the sender. */
         texts: {
-          keepLines: true,
+          keepLines: true, lineNotes: true,
           html(seg, cx) {
             return '<div class="texts">' + textsItems(seg).map((it) => {
               if (it.pass) return cx.blocks(it.text);
               if (it.meta) return '<p class="tx-meta">' + cx.inline(it.text) + "</p>";
-              return '<div class="tx ' + (it.sent ? "tx-sent" : "tx-recv") + (it.first ? " tx-first" : "") + '">' +
+              return '<div class="tx ' + (it.sent ? "tx-sent" : "tx-recv") + (it.first ? " tx-first" : "") + (it.gap ? " tx-gap" : "") + '">' +
                 (it.first ? '<p class="tx-who">' + cx.inline(it.who) + "</p>" : "") +
                 '<p class="tx-b">' + cx.inline(it.text) + "</p></div>";
             }).join("") + "</div>";
@@ -19778,6 +19812,31 @@
         "upside-down": {
           html: (seg, cx) => '<div class="upside-down"><div class="ud-in">' + cx.blocks(seg.text) + "</div></div>",
           docx: (seg, cx) => layoutStyled(cx.blocks(seg.text), "UpsideDown")
+        },
+        /* Hanging: one entry per line — a bibliography, a chronology,
+           an index — each set flush with its turn-over lines hung
+           under it, no first-line indent, ragged. A blank line between
+           entries is a breath (a new letter of an index, a new year). */
+        hanging: {
+          keepLines: true, lineNotes: true,
+          html: (seg, cx) => hangingHtml(seg, cx, "hanging"),
+          docx: (seg, cx) => hangingDocx(seg, cx, "Hanging")
+        },
+        /* Columns: compact back matter (endnotes, a chronology, an
+           index) set in two balanced columns in print and the wide
+           preview; one column in the EPUB and the narrow preview.
+           "::: columns hanging" sets its lines as hanging entries
+           (an index) inside the columns. */
+        columns: {
+          keepLines: (seg) => columnsHanging(seg),
+          html(seg, cx) {
+            if (columnsHanging(seg)) return hangingHtml(seg, cx, "columns cols-hanging");
+            return '<div class="columns">' + cx.blocks(seg.text) + "</div>";
+          },
+          docx(seg, cx) {
+            const body = columnsHanging(seg) ? hangingDocx(seg, cx, "ColumnsHanging") : cx.blocks(seg.text, { style: "Columns" });
+            return [cx.sectionBreak(1)].concat(body, [cx.sectionBreak(2)]);
+          }
         }
       };
       /* BEUK:documents — a card too tall to stand on one page. A
@@ -20125,6 +20184,34 @@
         ] : []).join("\n");
       }
       /* ==== /BEUK:layout ==== */
+      const columnsHanging = (seg) => /^hanging$/i.test(String(seg.arg || "").trim());
+      /* A kind's keepLines may depend on its argument ("::: columns hanging"). */
+      const containerKeepsLines = (k, seg) => !!(k && (typeof k.keepLines === "function" ? k.keepLines(seg) : k.keepLines));
+      /* A hanging container's lines -> [{ text, gap } | { block }]: an
+         entry per non-blank line, gap true after a blank line; a scene
+         break, picture or note definition on its line passes through. */
+      function hangingParts(seg) {
+        const out = [];
+        let gap = false;
+        seg.lines.forEach((raw) => {
+          const l = raw.trim();
+          if (!l) { if (out.length) gap = true; return; }
+          if (containerPassThrough([l])) { out.push({ block: l }); gap = false; return; }
+          out.push({ text: l, gap });
+          gap = false;
+        });
+        return out;
+      }
+      function hangingHtml(seg, cx, cls) {
+        return '<div class="' + cls + '">' + hangingParts(seg).map((pt) => pt.block != null
+          ? cx.blocks(pt.block)
+          : '<p class="hg' + (pt.gap ? " hg-gap" : "") + '">' + cx.inline(pt.text) + "</p>").join("") + "</div>";
+      }
+      function hangingDocx(seg, cx, style) {
+        return hangingParts(seg).map((pt) => pt.block != null
+          ? cx.blocks(pt.block).join("")
+          : cx.para(style, cx.runs(pt.text), pt.gap ? { before: 160 } : null));
+      }
       /* A kept-lines stanza that is really a block of its own — a scene
          break, a picture, a note's definition — sets as one. */
       function containerPassThrough(lines) {
@@ -20149,20 +20236,25 @@
          "9:41" is never a speaker); the full-width colon of Japanese
          and Chinese ("アナ：起きてる？") needs none. */
       const TEXTS_LINE_RE = /^([\p{L}\p{M}][\p{L}\p{M} .'’・-]{0,39}?)[ \t]*(?::[ \t]+|[：﹕][ \t]*)(\S.*)$/u;
+      /* The name stands above the first bubble of a sender's run only: a
+         blank line between two of one sender's messages is a pause
+         (gap: a little more space), not a new run, so the name is not
+         repeated; a time line or a picture between them starts one. */
       function textsItems(seg) {
         const me = String(seg.arg || "").trim().toLowerCase();
-        let meName = me, prev = null;
+        let meName = me, prev = null, gap = false;
         const out = [];
         seg.lines.forEach((raw) => {
           const l = raw.trim();
-          if (!l) { prev = null; return; }
-          if (containerPassThrough([l])) { out.push({ pass: true, text: l }); prev = null; return; }
+          if (!l) { gap = true; return; }
+          if (containerPassThrough([l])) { out.push({ pass: true, text: l }); prev = null; gap = false; return; }
           const m = l.match(TEXTS_LINE_RE);
-          if (!m) { out.push({ meta: true, text: l }); prev = null; return; }
+          if (!m) { out.push({ meta: true, text: l }); prev = null; gap = false; return; }
           const who = m[1].trim(), key = who.toLowerCase();
           if (!meName) meName = key;
-          out.push({ who, text: m[2].trim(), sent: key === meName, first: prev !== key });
-          prev = key;
+          const first = prev !== key;
+          out.push({ who, text: m[2].trim(), sent: key === meName, first, gap: gap && !first });
+          prev = key; gap = false;
         });
         return out;
       }
@@ -20589,7 +20681,8 @@
            its own even with no blank line around it (textsItems), so
            such a line defines its note too and its reference links. */
         if (text.indexOf(":::") !== -1) parseContainers(text).forEach((seg) => {
-          if (seg.kind === "texts" || seg.kind === "transcript") seg.lines.forEach((l) => { const dm = l.trim().match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
+          const lk = containerKind(seg.kind);
+          if (lk && (lk.lineNotes || seg.kind === "texts" || seg.kind === "transcript" || (seg.kind === "columns" && columnsHanging(seg)))) seg.lines.forEach((l) => { const dm = l.trim().match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
         });
         /* BEUK:footnotes — while the print interior is built with notes
            at the foot of the page, the notes still stand at the section's
@@ -20804,7 +20897,10 @@
            art anchors to the opening page itself — in the paginated
            preview's columns, in print, and in a reader — while the
            layer's height carries it down the first page of text. */
-        let h = '<header class="chapter-opening ch-' + style + (bdLayer ? " has-bd" : "") + '">' + (bdLayer || "");
+        /* ch-untitled: a chapter with neither number nor title (a picture
+           book's page) — picture-book print sets no opening for it. */
+        const untitled = section.type === "chapter" && !section.number && !String(section.title || "").trim();
+        let h = '<header class="chapter-opening ch-' + style + (bdLayer ? " has-bd" : "") + (untitled ? " ch-untitled" : "") + '">' + (bdLayer || "");
         if (section.type === "chapter" && section.number) h += '<p class="chapter-number">Chapter ' + esc(section.number) + "</p>";
         /* The heading flourish stands with the title — above it by
            default, or below it (under any subtitle) — book-wide,
@@ -20990,6 +21086,7 @@
           S + ".texts p { margin: 0; text-indent: 0; }",
           S + ".texts .tx { margin: 0.2em 0 0 0; break-inside: avoid; page-break-inside: avoid; }",
           S + ".texts .tx-first { margin-top: 0.65em; }",
+          S + ".texts .tx-gap { margin-top: 0.5em; }",
           S + ".texts .tx-sent { text-align: right; }",
           S + ".texts .tx-recv { text-align: left; }",
           S + ".texts .tx-b { display: inline-block; max-width: 74%; padding: 0.28em 0.75em 0.32em 0.75em; border: 0.75px solid currentColor; border-radius: 0.95em; font-size: 0.92em; line-height: 1.32; text-align: left; }",
@@ -21067,6 +21164,24 @@
             root + ".lay-wide .sideways { break-before: column; break-after: column; break-inside: avoid; position: relative; width: var(--pv-w, 100%); height: var(--pv-h, 30em); margin: 0; padding: 0; border: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }",
             root + ".lay-wide .sideways .sw-in { position: absolute; top: 0; left: var(--pv-w, 100%); width: var(--pv-h, 30em); height: var(--pv-w, 100%); box-sizing: border-box; padding: 0 1em; transform-origin: 0 0; transform: rotate(90deg); display: flex; flex-direction: column; justify-content: center; overflow: hidden; }"
           ]) : []),
+          /* Back matter. Hanging: one entry per line, flush, its turn-
+             over hung 1.5em (logical, so a right-to-left book hangs at
+             the right), ragged, no first-line indent; a blank line is a
+             breath. Columns: compact type, block paragraphs, ragged. The
+             EPUB and print documents (scope "") set one column here —
+             print adds its two in printTypeCss; the studio's preview
+             (a scope) sets two when the page is wide enough for two
+             13em columns, one when it is narrow. */
+          S + ".hanging { margin: 0.9em 0; text-indent: 0; text-align: left; hyphens: manual; -webkit-hyphens: manual; }",
+          S + ".hanging p.hg, " + S + ".cols-hanging p.hg { margin: 0 0 0.28em 0; padding: 0 0 0 1.5em; padding-inline-start: 1.5em; padding-inline-end: 0; text-indent: -1.5em; text-align: left; orphans: 2; widows: 2; }",
+          S + ".hanging p.hg-gap, " + S + ".cols-hanging p.hg-gap { margin-top: 0.85em; }",
+          S + ".columns { margin: 0.9em 0; font-size: 0.9em; text-indent: 0; text-align: left; }",
+          S + ".columns p { margin: 0 0 0.5em 0; text-indent: 0; text-align: left; }",
+          S + ".cols-hanging p.hg { margin-bottom: 0.12em; padding-left: 1em; padding-inline-start: 1em; padding-inline-end: 0; text-indent: -1em; }",
+          S + ".columns h2, " + S + ".columns h3 { break-after: avoid; page-break-after: avoid; }",
+          S + ".columns > :first-child, " + S + ".hanging > :first-child { margin-top: 0; }",
+          S + ".hanging + p, " + S + ".columns + p { text-indent: 0; }",
+          ...(scope ? [S + ".columns { columns: 2 13em; -webkit-columns: 2 13em; column-gap: 1.6em; column-fill: balance; }"] : []),
           S + ".chapter-opening { text-align: center; margin: 2.2em 0 1.6em 0; page-break-after: avoid; }",
           S + ".chapter-number { font-family: " + headFf + "; font-size: 0.78em; letter-spacing: 0.32em; text-transform: uppercase; text-indent: 0; margin: 0 0 0.9em 0; opacity: 0.75; }",
           S + ".chapter-title { font-family: " + headFf + "; font-weight: 600; font-size: 1.85em; line-height: 1.2; margin: 0; text-align: center; }",
@@ -21240,7 +21355,10 @@
                (its floated copy goes to the left column: marginColumnRules). */
             S + ".mnote { margin: 0.45em 1.6em 0.85em 0; padding: 0.1em 0.75em 0.1em 0; border-left: 0; border-right: 1.5px solid currentColor; text-align: right; }",
             S + ".mnote p { text-align: right; }",
-            ...MARGIN_INKS.map((k, i) => S + ".mnote.mn-ink-" + (i + 1) + " { border-left-style: none; border-right-style: " + k.rule + ";" + (k.rule === "double" ? " border-right-width: 3px;" : k.rule === "dotted" ? " border-right-width: 2px;" : "") + " }"));
+            ...MARGIN_INKS.map((k, i) => S + ".mnote.mn-ink-" + (i + 1) + " { border-left-style: none; border-right-style: " + k.rule + ";" + (k.rule === "double" ? " border-right-width: 3px;" : k.rule === "dotted" ? " border-right-width: 2px;" : "") + " }"),
+            /* Back matter reads from the right: hanging entries flush right
+               (their turn-over hung at the right, by the logical padding). */
+            S + ".hanging, " + S + ".hanging p.hg, " + S + ".columns, " + S + ".columns p { text-align: right; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -24239,6 +24357,7 @@
           else if (kind === "blockquote") applyBlockquote(area);
           else if (kind === "attribution") applyAttribution(area);
           else if (kind === "ul" || kind === "ol") applyList(area, kind === "ol");
+          else if (kind === "columns" || kind === "hanging") applyContainer(area, kind);
           else if (kind === "verse" || kind === "center" || kind === "right") applyContainer(area, kind);
           else if (kind === "letter" || kind === "texts") applyContainer(area, kind);
           else if (kind === "transcript" || kind === "log" || kind === "insert") applyContainer(area, kind); /* BEUK:documents */
@@ -27842,7 +27961,8 @@
         "p[style-name='Transcript'] => p:fresh", "p[style-name='Transcript Direction'] => p:fresh", "p[style-name='Log'] => p:fresh",
         "p[style-name='Log Dark'] => p:fresh", "p[style-name='Insert'] => p:fresh", "p[style-name='Insert Title'] => p:fresh",
         /* BEUK:layout — margin notes, sideways and upside-down blocks */
-        "p[style-name='Margin Note'] => p:fresh", "p[style-name='Sideways'] => p:fresh", "p[style-name='Upside Down'] => p:fresh"] };
+        "p[style-name='Margin Note'] => p:fresh", "p[style-name='Sideways'] => p:fresh", "p[style-name='Upside Down'] => p:fresh",
+        "p[style-name='Hanging'] => p:fresh", "p[style-name='Columns'] => p:fresh", "p[style-name='Columns Hanging'] => p:fresh"] };
       /* A web or mail address; a space or parenthesis inside it (Word
          keeps them raw) is percent-encoded by irRunsToMd, not refused. */
       const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S/i;
@@ -27985,13 +28105,14 @@
            title-page reader expects, and a centred heading line stays
            a heading so the chapter split is never fenced across. */
         const aligns = (ir.scan && Array.isArray(ir.scan.aligns)) ? ir.scan.aligns : null;
-        let alignAt = 0, seenHead = false, alignRun = null;
+        let alignAt = 0, seenHead = false, alignRun = null, alignBack = null;
         const alignOf = (txt) => {
+          alignBack = null;
           if (!aligns) return null;
           const key = irLoose(String(txt).replace(/\[\^\d{1,3}\]/g, ""));
           if (!key) return null;
           for (let j = alignAt; j < Math.min(aligns.length, alignAt + 400); j++) {
-            if (aligns[j] && aligns[j].key === key) { alignAt = j + 1; return aligns[j].align; }
+            if (aligns[j] && aligns[j].key === key) { alignAt = j + 1; alignBack = aligns[j].back || null; return aligns[j].align; }
           }
           return null;
         };
@@ -28014,8 +28135,10 @@
         const isHeadLine = (t) => t.length > 2 && (CHAPTER_HEAD_RE.test(t) || !!MATTER_HEADINGS[normHeading(t)] || normHeading(t).indexOf("also by") === 0);
         const flushAlign = () => {
           if (!alignRun) return;
-          parts.push("::: " + alignRun.kind + "\n" + alignRun.paras.join("\n\n") + "\n:::");
-          ir.aligned = (ir.aligned || 0) + alignRun.paras.length;
+          /* A hanging run's entries are its lines; every other run's are paragraphs. */
+          parts.push("::: " + alignRun.kind + "\n" + alignRun.paras.join(/hanging/.test(alignRun.kind) ? "\n" : "\n\n") + "\n:::");
+          if (alignRun.back) ir.backFenced = (ir.backFenced || 0) + alignRun.paras.length;
+          else ir.aligned = (ir.aligned || 0) + alignRun.paras.length;
           alignRun = null;
         };
         doc.body.childNodes.forEach((node) => {
@@ -28028,6 +28151,14 @@
             if (capRec) { capRec.caption = cleanCaption(v); ir.captions = (ir.captions || 0) + 1; return; }
             if (v && !IR_BREAK_RE.test(v)) {
               const al = alignOf(v);
+              /* A paragraph in one of Beuk's back-matter styles goes back
+                 into its container, a run of one style sharing one. */
+              if (alignBack) {
+                if (alignRun && alignRun.kind !== alignBack) flushAlign();
+                if (!alignRun) alignRun = { kind: alignBack, paras: [], back: true };
+                alignRun.paras.push(carry(irRunsToMd(irInlineRuns(node, ir), ir, false)) || v);
+                return;
+              }
               if (isHeadLine(v)) seenHead = true;
               else if (al && seenHead) {
                 if (alignRun && alignRun.kind !== al) flushAlign();
@@ -28182,7 +28313,12 @@
            writer made, so a paragraph in one of them never fences a
            "::: center" / "::: right" (nor does its own w:jc: the export
            sets a centred caption and a right-set sign-off that way). */
-        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption", "Transcript", "TranscriptDirection", "Log", "LogDark", "Insert", "InsertTitle", "MarginNote", "Sideways", "UpsideDown"]); /* BEUK:documents + BEUK:layout */
+        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption", "Transcript", "TranscriptDirection", "Log", "LogDark", "Insert", "InsertTitle", "MarginNote", "Sideways", "UpsideDown", "Hanging", "Columns", "ColumnsHanging"]); /* BEUK:documents + BEUK:layout + back matter */
+        /* Beuk's own back-matter styles fence their paragraphs back into
+           the container they came from ("::: hanging", "::: columns",
+           "::: columns hanging"), by style id through the basedOn chain. */
+        const BACK_KIND = { Hanging: "hanging", Columns: "columns", ColumnsHanging: "columns hanging" };
+        const backKind = (id) => { for (let k = 0; id && k < 12; k++) { if (BACK_KIND[id]) return BACK_KIND[id]; if (!styles[id]) return null; id = styles[id].based; } return null; };
         const ownStyle = (id) => { for (let k = 0; id && k < 12; k++) { if (OWN_SET.has(id)) return true; if (!styles[id]) return false; id = styles[id].based; } return false; };
         const styleJc = (id) => { for (let k = 0; id && styles[id] && k < 12; k++) { if (styles[id].jc) return styles[id].jc; id = styles[id].based; } return ""; };
         /* Word's own Caption style (by id or by name, through basedOn):
@@ -28196,7 +28332,7 @@
           const al = ownStyle(ps) ? "" : (norm(val(kid(ppr, "jc"))) || styleJc(ps));
           let txt = "";
           Array.prototype.forEach.call(p.getElementsByTagNameNS(W, "t"), (t) => { txt += t.textContent; });
-          return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null, caption: styleCaption(val(kid(ppr, "pStyle"))) };
+          return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null, caption: styleCaption(val(kid(ppr, "pStyle"))), back: backKind(ps) };
         });
       }
       /* Word features the HTML never shows — read from the package
@@ -32234,7 +32370,7 @@
            its lines, every other kind's content exports as blocks. */
         return parseContainers(text).map((seg) => {
           const k = containerKind(seg.kind);
-          const body = (k && k.keepLines) ? containerStanzas(seg).map((st) => st.join("\n")).join("\n\n") : mdBlocks(seg.text);
+          const body = containerKeepsLines(k, seg) ? containerStanzas(seg).map((st) => st.join("\n")).join("\n\n") : mdBlocks(seg.text);
           if (!seg.kind) return body;
           return "::: " + seg.kind + (seg.arg ? " " + seg.arg : "") + "\n" + body + "\n:::";
         }).filter(Boolean).join("\n\n");
@@ -32442,7 +32578,19 @@
          18pt — the large-print floor — for a Large Print edition.
          One helper, read by the print document and the spread view
          alike, so the two can never set different type. */
-      function printBaseFontPt() { return state.printLargePrint ? 18 : 11; }
+      function printBaseFontPt() { return printPictureBookOn() ? PRINT_PICTURE_BOOK_PT : state.printLargePrint ? 18 : 11; }
+      /* Picture-book type: a picture book (often 11 × 8.5 landscape, a
+         few lines facing or under each picture) is read aloud and read
+         by new readers — its words are set at 24pt, inside the 22–28pt
+         range picture books use, with the large-print conventions
+         (ragged, unhyphenated) and a slightly closer 1.4 leading for
+         type that size. One of the print type sizes beside Large Print;
+         the two never stand together. */
+      const PRINT_PICTURE_BOOK_PT = 24;
+      function printPictureBookOn() { return !!state.printPictureBook && !state.printLargePrint; }
+      /* Large Print or picture-book type: the big-type conventions. */
+      function printBigType() { return !!state.printLargePrint || printPictureBookOn(); }
+      function printBigLead() { return printPictureBookOn() ? 1.4 : 1.6; }
       /* The chapter opening's own lead (its 2.2em top margin), in inches. */
       function printOpeningLeadIn() { return 2.2 * printBaseFontPt() / 72; }
       const inCss = (n) => (Math.round(n * 1000) / 1000) + "in";
@@ -32498,16 +32646,33 @@
           S + "figure.book-img, " + S + "figure.scene-img, " + S + ".plate-page { page-break-inside: avoid; break-inside: avoid; }",
           S + ".lp-edition { text-align: center; text-indent: 0; margin: 2.2em 0 0 0; font-family: " + fontStack(labelFaceOf(state.theme)) + "; font-size: 0.82em; letter-spacing: 0.22em; text-transform: uppercase; }"
         ];
-        if (state.printLargePrint) {
-          rules.push(root + " { font-size: 18pt; line-height: 1.6; text-align: left; hyphens: manual; -webkit-hyphens: manual; }");
-          rules.push(S + "p { text-align: left; }");
+        /* "::: columns": two balanced columns on the printed page (and
+           on the spread view's), whatever the trim. */
+        rules.push(S + ".columns { column-count: 2; -webkit-column-count: 2; column-width: auto; column-gap: 0.25in; column-fill: balance; }");
+        /* The big type is set on the root and inherited: never on every
+           p, which would pull the title page's centred subtitle, author
+           and publisher (and a chapter's centred subtitle) flush left. */
+        /* A picture book's untitled page carries its words alone: no
+           "Untitled Chapter" opening above them. */
+        if (printPictureBookOn()) rules.push(S + ".chapter-opening.ch-untitled { display: none; }");
+        if (printBigType()) {
+          rules.push(root + " { font-size: " + printBaseFontPt() + "pt; line-height: " + printBigLead() + "; text-align: " + (isRtlLang(bookLang()) ? "right" : "left") + "; hyphens: manual; -webkit-hyphens: manual; }");
+          /* The title page is display type sized by the page, not by the
+             body: at 18pt or 24pt its em-sized lines and the publisher's
+             width-relative drop (34% of a landscape page's width) ran the
+             publisher onto a second page on 11 × 8.5. Its type stays at
+             the 18pt Large Print floor (picture-book 24pt comes down to
+             it: the title 45pt), the drop is capped at 7em, and the
+             block is kept on one page. */
+          rules.push(S + ".titlepage { font-size: 18pt; break-inside: avoid; page-break-inside: avoid; }");
+          rules.push(S + ".titlepage .tp-publisher { margin-top: min(34%, 7em); }");
         }
         return rules.join("\n");
       }
       function buildPrintCss(trimId, recto) {
         const t = trimSize(trimId);
         const mg = printMargins(trimId);
-        const lp = !!state.printLargePrint;
+        const lp = printBigType();
         /* The margin-box furniture, built once and shared by every
            @page rule below: the running head in its chosen box, the
            folio centred or at the outer corners. The first page
@@ -32643,10 +32808,10 @@
       /* A note's type: 82% of the body size, on its own fixed line so the
          renderer can carry a long note onto the next page between lines. */
       function printNoteFontPt() { return Math.round(printBaseFontPt() * 0.82 * 10) / 10; }
-      function printNoteLinePt() { return Math.round(printNoteFontPt() * (state.printLargePrint ? 1.4 : 1.3) * 100) / 100; }
+      function printNoteLinePt() { return Math.round(printNoteFontPt() * (printBigType() ? 1.4 : 1.3) * 100) / 100; }
       function printFootnoteCss(scope) {
         const S = scope + " ";
-        const justify = !!state.theme.justify && !state.printLargePrint;
+        const justify = !!state.theme.justify && !printBigType();
         return [
           S + ".fn-note { font-size: " + printNoteFontPt() + "pt; line-height: " + printNoteLinePt() + "pt; text-indent: 0; margin: 0; padding: 0; text-align: " + (justify ? "justify" : "left") + "; }",
           S + ".fn-note sup, " + S + ".fn-note sub { line-height: 0; }",
@@ -32660,9 +32825,9 @@
         const pt = (n) => Math.round(n * 72 * 1000) / 1000;
         return {
           trimW: pt(tr.w), trimH: pt(tr.h), top: pt(mg.top), bottom: pt(mg.bottom), inside: pt(mg.inside), outside: pt(mg.outside),
-          pitch: Math.round(printBaseFontPt() * (state.printLargePrint ? 1.6 : Number(state.theme.lineHeight) || 1.5) * 1000) / 1000,
+          pitch: Math.round(printBaseFontPt() * (printBigType() ? printBigLead() : Number(state.theme.lineHeight) || 1.5) * 1000) / 1000,
           noteLine: printNoteLinePt(), rtl: isRtlLang(state.meta.language || "en"),
-          justify: !!state.theme.justify && !state.printLargePrint, cap: 0.5, orphans: 3, widows: 3
+          justify: !!state.theme.justify && !printBigType(), cap: 0.5, orphans: 3, widows: 3
         };
       }
       /* The Print Interior View sets the notes the way the renderer does
@@ -32679,7 +32844,7 @@
          fall differently from the PDF's: it shows where the notes go, the
          PDF is the proof. */
       function pivFootnoteCutCss() {
-        const justify = !!state.theme.justify && !state.printLargePrint;
+        const justify = !!state.theme.justify && !printBigType();
         return [
           ".piv-book .fn-brk { break-before: column; -webkit-column-break-before: always; }",
           ".piv-book .fn-split { margin-bottom: 0 !important; padding-bottom: 0 !important;" + (justify ? " text-align-last: justify;" : "") + " }",
@@ -32748,7 +32913,7 @@
         const block = flow.querySelector(".endnotes.fn-page");
         if (!block) return null;
         const lineH = printNoteLinePt() * PIV_PX / 72;
-        const pitch = printBaseFontPt() * (state.printLargePrint ? 1.6 : Number(state.theme.lineHeight) || 1.5) * PIV_PX / 72;
+        const pitch = printBaseFontPt() * (printBigType() ? printBigLead() : Number(state.theme.lineHeight) || 1.5) * PIV_PX / 72;
         const W = g.contentW, H = g.contentH, step = W + PIV_GAP;
         const rtl = flow.dir === "rtl";
         const box = document.createElement("div");
@@ -33021,7 +33186,7 @@
         if (s.kind === "body" && state.printRecto) return ' data-start="recto"';
         return "";
       }
-      const printFilename = () => slug(state.meta.title) + "-print-" + String(state.printTrim).replace(/\./g, "_") + (state.printLargePrint ? "-large-print" : "") + ".html";
+      const printFilename = () => slug(state.meta.title) + "-print-" + String(state.printTrim).replace(/\./g, "_") + (state.printLargePrint ? "-large-print" : printPictureBookOn() ? "-picture-book" : "") + ".html";
       function buildPrintHtml() {
         const m = state.meta;
         const tr = trimSize();
@@ -33373,13 +33538,16 @@
         const tr = trimSize();
         const mg = printMargins();
         const note = $("printNote");
-        if (note) note.innerHTML = "<b>" + tr.label + " trim</b> · about " + printPageEstimate() + " pages at this trim" + (state.printLargePrint ? " and type size" : "") + ". Margins — top " + mg.top + " in, foot " + mg.bottom + " in, outside " + mg.outside + " in, gutter (inside) " + mg.inside + " in" + (state.printMarginMode === "custom" ? ", set by hand above." : ", widened for the binding at this page count.") +
+        if (note) note.innerHTML = "<b>" + tr.label + " trim</b> · about " + printPageEstimate() + " pages at this trim" + (printBigType() ? " and type size" : "") + ". Margins — top " + mg.top + " in, foot " + mg.bottom + " in, outside " + mg.outside + " in, gutter (inside) " + mg.inside + " in" + (state.printMarginMode === "custom" ? ", set by hand above." : ", widened for the binding at this page count.") +
           (state.printLargePrint ? " <b>" + esc(t("print.lpTag")) + ":</b> " + esc(t("print.lpNote")) : "") +
+          (printPictureBookOn() ? " <b>" + esc(t("print.pbTag")) + ":</b> " + esc(t("print.pbNote")) : "") +
           " <b>Honest note:</b> this produces a print-ready interior PDF through your browser's print-to-PDF; true PDF/X-1a conversion happens in the server phase, so the file is not PDF/X — most print-on-demand services accept it as a standard PDF interior.";
         const tg = $("tglRecto");
         if (tg) tg.setAttribute("aria-pressed", String(!!state.printRecto));
         const lg = $("tglLargePrint");
         if (lg) lg.setAttribute("aria-pressed", String(!!state.printLargePrint));
+        const pbt = $("tglPictureBook");
+        if (pbt) pbt.setAttribute("aria-pressed", String(printPictureBookOn()));
         const mm = $("selMarginMode"); if (mm) mm.value = state.printMarginMode;
         const pf = $("pmFields"); if (pf) pf.hidden = state.printMarginMode !== "custom";
         const cm = state.printCustomMargins || {};
@@ -33396,7 +33564,7 @@
       function openPrintView() {
         renderPrintControls();
         const tr = trimSize();
-        $("printSub").textContent = (state.meta.title || "Untitled Book") + " · " + tr.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : "") + " · " + (state.printRecto ? "chapters open on recto (right-hand) pages" : "chapters open on the next page") + ". To make the PDF: Print / Save as PDF below, paper size " + tr.label + ", margins None, background graphics on. The downloaded Print HTML file prints exactly the same way.";
+        $("printSub").textContent = (state.meta.title || "Untitled Book") + " · " + tr.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : printPictureBookOn() ? " · " + t("print.pbTag") : "") + " · " + (state.printRecto ? "chapters open on recto (right-hand) pages" : "chapters open on the next page") + ". To make the PDF: Print / Save as PDF below, paper size " + tr.label + ", margins None, background graphics on. The downloaded Print HTML file prints exactly the same way.";
         const first = buildPrintHtml();
         $("printFrame").srcdoc = first;
         $("modalExport").classList.remove("open");
@@ -33417,7 +33585,8 @@
           toast("Print interior downloaded — open it and Print → Save as PDF at the " + trimSize().label + " trim", "printer");
         });
         $("tglRecto").addEventListener("click", () => { state.printRecto = !state.printRecto; renderPrintControls(); });
-        $("tglLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; renderPrintControls(); });
+        $("tglLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; if (state.printLargePrint) state.printPictureBook = false; renderPrintControls(); });
+        $("tglPictureBook").addEventListener("click", () => { state.printPictureBook = !printPictureBookOn(); if (state.printPictureBook) state.printLargePrint = false; renderPrintControls(); });
         $("selMarginMode").addEventListener("change", (e) => { state.printMarginMode = e.target.value === "custom" ? "custom" : "auto"; renderPrintControls(); });
         const marginInput = (id, key) => { const el = $(id); if (!el) return; el.addEventListener("change", () => { const v = parseFloat(el.value); if (isFinite(v)) state.printCustomMargins[key] = Math.min(3, Math.max(0, v)); renderPrintControls(); }); };
         marginInput("pmIn", "inside"); marginInput("pmOut", "outside"); marginInput("pmTop", "top"); marginInput("pmBottom", "bottom");
@@ -33696,7 +33865,7 @@
       function pivSyncChrome() {
         const model = piv.model;
         const g = model ? model.g : pivGeometry();
-        $("pivSub").textContent = (state.meta.title || t("misc.untitledBook")) + " · " + g.trim.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : "") + " · " + t("piv.pages", { n: model ? model.pages.length : 0 });
+        $("pivSub").textContent = (state.meta.title || t("misc.untitledBook")) + " · " + g.trim.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : printPictureBookOn() ? " · " + t("print.pbTag") : "") + " · " + t("piv.pages", { n: model ? model.pages.length : 0 });
         const ts = $("pivTrim");
         ts.innerHTML = trimOptionsHtml();
         ts.value = state.printTrim;
@@ -33712,6 +33881,7 @@
         }
         $("tglPivRecto").setAttribute("aria-pressed", String(!!state.printRecto));
         $("tglPivLargePrint").setAttribute("aria-pressed", String(!!state.printLargePrint));
+        $("tglPivPictureBook").setAttribute("aria-pressed", String(printPictureBookOn()));
         const pn = $("pivNotes"); if (pn) pn.value = state.printNotes === "end" ? "end" : "page"; /* BEUK:footnotes */
         $("tglPivGuides").setAttribute("aria-pressed", String(!!piv.guides));
         $("pivZoomFit").classList.toggle("active", piv.zoom === "fit");
@@ -33819,7 +33989,8 @@
           renderPrintView();
         });
         $("tglPivRecto").addEventListener("click", () => { state.printRecto = !state.printRecto; renderPrintControls(); pivSyncChrome(); pivRebuild(true); });
-        $("tglPivLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; renderPrintControls(); pivSyncChrome(); pivRebuild(true); });
+        $("tglPivLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; if (state.printLargePrint) state.printPictureBook = false; renderPrintControls(); pivSyncChrome(); pivRebuild(true); });
+        $("tglPivPictureBook").addEventListener("click", () => { state.printPictureBook = !printPictureBookOn(); if (state.printPictureBook) state.printLargePrint = false; renderPrintControls(); pivSyncChrome(); pivRebuild(true); });
         $("pivNotes").addEventListener("change", (e) => { state.printNotes = e.target.value === "end" ? "end" : "page"; renderPrintControls(); pivSyncChrome(); pivRebuild(true); }); /* BEUK:footnotes */
         $("tglPivGuides").addEventListener("click", () => { piv.guides = !piv.guides; $("tglPivGuides").setAttribute("aria-pressed", String(!!piv.guides)); renderPrintView(); });
         $("pivZoomFit").addEventListener("click", () => { piv.zoom = "fit"; pivSyncChrome(); renderPrintView(); });
@@ -34177,7 +34348,8 @@
       }
       function docxPara(text, style, opts) {
         opts = opts || {};
-        const pPr = "<w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + (opts.spaceBefore ? '<w:spacing w:before="' + opts.spaceBefore + '"/>' : "") + (opts.align ? '<w:jc w:val="' + opts.align + '"/>' : "") + "</w:pPr>";
+        const spaceBefore = opts.spaceBefore || opts.before; /* BEUK:documents spaceBefore, back matter before */
+        const pPr = "<w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + (spaceBefore ? '<w:spacing w:before="' + spaceBefore + '"/>' : "") + (opts.align ? '<w:jc w:val="' + opts.align + '"/>' : "") + "</w:pPr>";
         const runs = opts.rawRuns != null ? opts.rawRuns : docxInlineRuns(String(text == null ? "" : text));
         return "<w:p>" + pPr + runs + "</w:p>";
       }
@@ -34191,6 +34363,19 @@
           if (nm) notes.push({ n: nm[1], text: nm[2].replace(/\n/g, " ").trim() });
         });
         return notes;
+      }
+      /* Two real Word columns ("::: columns"): Word sets columns per
+         section, so the container is fenced by two continuous section
+         breaks — the first closes the single-column text before it,
+         the second closes the two-column run (w:cols num 2). The text
+         after runs on in one column without a page break: the body's
+         own last section is made continuous too (docxHadColumns). */
+      const DOCX_PAGE_PROPS = '<w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440" w:header="720" w:footer="720"/>';
+      let docxHadColumns = false;
+      function docxColumnBreak(cols) {
+        docxHadColumns = true;
+        return '<w:p><w:pPr><w:spacing w:before="0" w:after="0"/><w:sectPr><w:type w:val="continuous"/>' + DOCX_PAGE_PROPS +
+          (cols > 1 ? '<w:cols w:num="' + cols + '" w:space="567"/>' : '<w:cols w:space="720"/>') + "</w:sectPr></w:pPr></w:p>";
       }
       /* The Word lists of the document being built (buildDocxFiles resets it). */
       let docxNums = [];
@@ -34238,7 +34423,7 @@
             list.items.forEach((it) => into.push('<w:p><w:pPr><w:pStyle w:val="ListParagraph"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + numId + '"/></w:numPr></w:pPr>' + docxInlineRuns(it) + "</w:p>"));
             return;
           }
-          into.push(docxPara(lines.join(" "), "Normal", al));
+          into.push(docxPara(lines.join(" "), (opts && opts.style) || "Normal", al));
         };
         const blocksOf = (txt, opts) => {
           const into = [];
@@ -34253,7 +34438,8 @@
           runs: (s, inh) => docxInlineRuns(s, inh),
           run: (s) => docxRun(s, {}),
           lineBreak: "<w:r><w:br/></w:r>",
-          para: (style, runsXml, opts) => docxPara("", style, Object.assign({}, opts || {}, { rawRuns: runsXml }))
+          para: (style, runsXml, opts) => docxPara("", style, Object.assign({}, opts || {}, { rawRuns: runsXml })),
+          sectionBreak: docxColumnBreak
         };
         parseContainers(text).forEach((seg) => {
           const k = containerKind(seg.kind);
@@ -34266,6 +34452,7 @@
       function buildDocxDocumentXml() {
         const m = state.meta;
         const parts = [];
+        docxHadColumns = false;
         parts.push(docxPara(m.title || "Untitled Book", "Title", { align: "center" }));
         if (m.subtitle) parts.push(docxPara(m.subtitle, "Subtitle", { align: "center" }));
         if (m.author) parts.push(docxPara(m.author, "Normal", { align: "center" }));
@@ -34308,7 +34495,7 @@
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
           '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>\n' +
           parts.join("\n") +
-          '\n<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440" w:header="720" w:footer="720"/></w:sectPr></w:body></w:document>';
+          "\n<w:sectPr>" + (docxHadColumns ? '<w:type w:val="continuous"/>' : "") + DOCX_PAGE_PROPS + "</w:sectPr></w:body></w:document>";
       }
       function buildDocxStylesXml() {
         const bodyF = state.theme.bodyFont || "Georgia", headF = state.theme.headFont || "Georgia";
@@ -34349,6 +34536,12 @@
           style("MarginNote", "Margin Note", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="19"/>', '<w:pPr><w:keepLines/><w:pBdr><w:left w:val="single" w:sz="8" w:space="6" w:color="auto"/></w:pBdr><w:spacing w:before="40" w:after="120" w:line="264" w:lineRule="auto"/><w:ind w:left="4320"/><w:jc w:val="left"/></w:pPr>') +
           style("Sideways", "Sideways", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:left w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="4" w:color="auto"/></w:pBdr><w:spacing w:after="120"/><w:ind w:left="240" w:right="240"/></w:pPr>') +
           style("UpsideDown", "Upside Down", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:spacing w:after="160"/></w:pPr>') +
+          /* Back matter: a hanging entry (bibliography, chronology) — its
+             turn-over lines hung half an inch; a paragraph of the two-
+             column run; an index entry hung inside the columns. */
+          style("Hanging", "Hanging", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:spacing w:after="40"/><w:ind w:left="720" w:hanging="720"/><w:jc w:val="left"/></w:pPr>') +
+          style("Columns", "Columns", "Normal", fonts(bodyF) + '<w:sz w:val="20"/>', '<w:pPr><w:spacing w:after="100" w:line="276" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>') +
+          style("ColumnsHanging", "Columns Hanging", "Hanging", fonts(bodyF) + '<w:sz w:val="20"/>', '<w:pPr><w:spacing w:after="20" w:line="276" w:lineRule="auto"/><w:ind w:left="360" w:hanging="360"/></w:pPr>') +
           /* A quote's attribution line: ranged right under the Quote, upright. */
           style("QuoteAttribution", "Quote Attribution", "Quote", fonts(bodyF) + '<w:i w:val="0"/><w:sz w:val="22"/>', '<w:pPr><w:ind w:left="720" w:right="720"/><w:spacing w:before="0" w:after="200"/><w:jc w:val="right"/></w:pPr>') +
           style("ListParagraph", "List Paragraph", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:spacing w:after="80"/><w:ind w:left="720"/></w:pPr>') +
@@ -36091,7 +36284,7 @@
         }
         return {
           findings: findings,
-          facts: { trim: tr, pages: pages, mg: mg, bodyFont: state.theme.bodyFont, headFont: state.theme.headFont, largePrint: !!state.printLargePrint }
+          facts: { trim: tr, pages: pages, mg: mg, bodyFont: state.theme.bodyFont, headFont: state.theme.headFont, largePrint: !!state.printLargePrint, pictureBook: printPictureBookOn() }
         };
       }
       function preflightJumpTo(jump) {
@@ -36326,7 +36519,7 @@
          trim, the edition and the words. Anything else is stale. */
       function storeBookSig() {
         const words = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
-        return [state.printTrim, state.printLargePrint ? 1 : 0, state.printMarginMode, words, state.sections.length].join("|");
+        return [state.printTrim, state.printLargePrint ? 1 : printPictureBookOn() ? 2 : 0, state.printMarginMode, words, state.sections.length].join("|");
       }
       function storeServerFresh() {
         const s = storeUi.server;
@@ -37078,6 +37271,7 @@
           printTrim: state.printTrim,
           printRecto: state.printRecto,
           printLargePrint: state.printLargePrint,
+          printPictureBook: !!state.printPictureBook,
           printMarginMode: state.printMarginMode,
           printCustomMargins: Object.assign({}, state.printCustomMargins),
           printHeadContent: state.printHeadContent,
@@ -37152,6 +37346,7 @@
         if (doc.printTrim) state.printTrim = doc.printTrim;
         if (typeof doc.printRecto === "boolean") state.printRecto = doc.printRecto;
         if (typeof doc.printLargePrint === "boolean") state.printLargePrint = doc.printLargePrint;
+        state.printPictureBook = doc.printPictureBook === true && !state.printLargePrint;
         state.storeCheck = normalizeStoreCheck(doc.storeCheck); /* BEUK:store */
         /* The print layout rules ride the book the same way: a
            document that carries them brings them; one that predates
@@ -41805,9 +42000,15 @@
                 '<div class="tx tx-sent tx-first"><p class="tx-who">Ana</p><p class="tx-b">are you up?</p></div>' +
                 '<div class="tx tx-sent"><p class="tx-b">the <em>lights</em> are on</p></div>' +
                 '<div class="tx tx-recv tx-first"><p class="tx-who">Ben</p><p class="tx-b">no — asleep</p></div>' +
-                '<div class="tx tx-recv tx-first"><p class="tx-who">Ben</p><p class="tx-b">go home</p></div></div>';
+                '<div class="tx tx-recv tx-gap"><p class="tx-b">go home</p></div></div>';
               if (!html.includes(want)) bad.push("the texts did not set: " + JSON.stringify(html));
               if (/:::|texts Ana/.test(html)) bad.push("a fence line reached the page");
+              /* The name above the first bubble of a run only — a blank line
+                 between one sender's bubbles never repeats it; a time line
+                 between them starts a new run. */
+              const runSrc = "::: texts Ana\nAna: here\nBen: one\n\nBen: two\nBen: three\n\n\nBen: four\nAna: ok\nBen: five\n10:02\nBen: six\n:::";
+              const runWho = textsItems(parseContainers(runSrc)[0]).filter((it) => it.who && it.first).map((it) => it.who + ":" + it.text).join(",");
+              if (runWho !== "Ana:here,Ben:one,Ana:ok,Ben:five,Ben:six") bad.push("names above runs: " + runWho);
               const noArg = textsItems(parseContainers("::: texts\nZoe: hi\nMax: hey\n:::")[0]);
               if (!(noArg[0].sent && !noArg[1].sent)) bad.push("with no <MeName> the first speaker is not the sender");
               /* Japanese / Chinese write the full-width colon, no space after it. */
@@ -41859,6 +42060,7 @@
               const sent = paras.filter((p) => p.includes('<w:pStyle w:val="TextSent"/>')), recv = paras.filter((p) => p.includes('<w:pStyle w:val="TextReceived"/>'));
               if (sent.length !== 2 || recv.length !== 2 || !paras.some((p) => p.includes('<w:pStyle w:val="TextNote"/>'))) bad.push("Word paragraphs: sent " + sent.length + ", received " + recv.length);
               else if (!(sent[0].includes("<w:b/>") && sent[0].includes(">Ana<") && sent[0].includes("<w:br/>") && !sent[1].includes(">Ana<"))) bad.push("Word: the name is not bold above the first of a run");
+              else if (!recv[0].includes(">Ben<") || recv[1].includes(">Ben<")) bad.push("Word: Ben's name repeats over his second bubble");
               const wc = countWords("::: texts Ana\nAna: are you up?\nBen: no\n:::");
               if (wc !== 6) bad.push("word count " + wc + " (want 6: names are words, fences are not)");
               const md = contentToMarkdown("::: texts Ana\nAna: hi\nBen: hey\n:::");
@@ -41875,11 +42077,341 @@
               const val = validateEpubPackage(files);
               if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="tx tx-recv tx-first">'))) bad.push("the EPUB chapter carries no texts");
               if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
-              if (!buildPrintHtml().includes('<p class="tx-who">Ben</p>')) bad.push("the print file carries no texts");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "4 bubbles + a time line; computed: sent at the right edge and tinted, received at the left and outlined, the time centred; names above the first of each run; print sets the tint solid; Word: 2 Text Sent + 2 Text Received + a Text Note, bold name and a line break; names counted, fences not; Markdown keeps it; toolbar fences with the first speaker; full-width colons (ja) read as speakers, a time is not; a note defined inside the conversation links both ways; right-to-left mirrors the letter, sign-off and bubbles; EPUB validator errors 0 (with the noted chapter)");
+              const printed = buildPrintHtml();
+              if (!printed.includes('<p class="tx-who">Ben</p>')) bad.push("the print file carries no texts");
+              /* In print: Ben's name once over his two bubbles (s), once in the noted chapter. */
+              const benN = (printed.match(/<p class="tx-who">Ben<\/p>/g) || []).length;
+              if (benN !== 2) bad.push("print sets Ben's name " + benN + " times (want 2: one per run)");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "4 bubbles + a time line; computed: sent at the right edge and tinted, received at the left and outlined, the time centred; names above the first of each run only (a blank line inside a run never repeats the name, in the preview, print and Word; a time line starts a new run); print sets the tint solid; Word: 2 Text Sent + 2 Text Received + a Text Note, bold name and a line break; names counted, fences not; Markdown keeps it; toolbar fences with the first speaker; full-width colons (ja) read as speakers, a time is not; a note defined inside the conversation links both ways; right-to-left mirrors the letter, sign-off and bubbles; EPUB validator errors 0 (with the noted chapter)");
             } finally {
               applyBookDoc(keepDoc);
             }
+          } },
+        { id: "chapter.hanging", feature: "chapter", name: "Hanging: \"::: hanging\" sets one entry per line (a bibliography, a chronology, an index), each flush with its turn-over lines hung 1.5em under it, no first-line indent, ragged, a blank line a breath before the next entry — in the preview, print, the Print Interior View and EPUB (validates); right-to-left books hang at the right; the Word export sets Hanging paragraphs (a real hanging indent); entries count as words, fences do not; the narration reads the entries; Markdown keeps the lines; a Hanging toolbar button",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "Back.\n\n::: hanging\nAchebe, Chinua. *Things Fall Apart*. London: Heinemann, 1958, a first edition that ran to many printings in the years after.\nBaldwin, James. *Go Tell It on the Mountain*. New York: Knopf, 1953.\n\nCarson, Rachel. *Silent Spring*. Boston: Houghton Mifflin, 1962.\n:::\n\nAfter.";
+              const s = mkSection("back", "acknowledgments", "Bibliography", { content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              const want = '<div class="hanging"><p class="hg">Achebe, Chinua. <em>Things Fall Apart</em>. London: Heinemann, 1958, a first edition that ran to many printings in the years after.</p>' +
+                '<p class="hg">Baldwin, James. <em>Go Tell It on the Mountain</em>. New York: Knopf, 1953.</p>' +
+                '<p class="hg hg-gap">Carson, Rachel. <em>Silent Spring</em>. Boston: Houghton Mifflin, 1962.</p></div>';
+              if (!html.includes(want)) bad.push("the entries did not set: " + JSON.stringify(html));
+              if (/:::|>hanging/.test(html)) bad.push("a fence line reached the page");
+              /* As set: the first line flush, the turn-over lines hung by the indent. */
+              const measureHang = (scopeCls, css, dir, width) => {
+                const probe = document.createElement("div");
+                probe.className = scopeCls; probe.dir = dir; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:" + width + "px";
+                const st = document.createElement("style"); st.textContent = css;
+                probe.innerHTML = html; document.body.appendChild(st); document.body.appendChild(probe);
+                try {
+                  const p = probe.querySelector(".hanging p.hg");
+                  const rg = document.createRange(); rg.selectNodeContents(p);
+                  const rects = Array.prototype.filter.call(rg.getClientRects(), (r) => r.width > 0.5);
+                  const tops = []; rects.forEach((r) => { if (!tops.some((t) => Math.abs(t.top - r.top) < 3)) tops.push(r); });
+                  const pb = p.getBoundingClientRect(), cs = getComputedStyle(p);
+                  const fontPx = parseFloat(cs.fontSize);
+                  const firstLine = rects.filter((r) => Math.abs(r.top - tops[0].top) < 3), lastLine = rects.filter((r) => Math.abs(r.top - tops[tops.length - 1].top) < 3);
+                  const edge = (rs, side) => side === "left" ? Math.min.apply(null, rs.map((r) => r.left)) : Math.max.apply(null, rs.map((r) => r.right));
+                  const side = dir === "rtl" ? "right" : "left";
+                  const firstOff = Math.abs(edge(firstLine, side) - pb[side]), turnOff = Math.abs(edge(lastLine, side) - pb[side]);
+                  return { lines: tops.length, firstOff, turnOff, fontPx, align: cs.textAlign, indent: parseFloat(cs.textIndent), gapTop: parseFloat(getComputedStyle(probe.querySelector("p.hg-gap")).marginTop) };
+                } finally { probe.remove(); st.remove(); }
+              };
+              const prev = measureHang("sc-hg-probe", buildBookCss(".sc-hg-probe"), "ltr", 300);
+              if (!(prev.lines >= 2 && prev.firstOff < 2 && Math.abs(prev.turnOff - 1.5 * prev.fontPx) < 3)) bad.push("preview hang: " + JSON.stringify(prev));
+              if (prev.align !== "left" || !(prev.indent < 0)) bad.push("preview entry alignment/indent: " + prev.align + " " + prev.indent);
+              if (!(prev.gapTop > 8)) bad.push("the blank line is no breath (" + prev.gapTop + "px)");
+              /* The print page and the Print Interior View read the same rules. */
+              const pr = measureHang("sc-hg-print", buildBookCss(".sc-hg-print") + "\n" + printTypeCss(".sc-hg-print") + "\n.sc-hg-print { font-size: 11pt; }", "ltr", 300);
+              if (!(pr.lines >= 2 && pr.firstOff < 2 && Math.abs(pr.turnOff - 1.5 * pr.fontPx) < 3)) bad.push("print hang: " + JSON.stringify(pr));
+              /* Right to left: flush right, hung at the right. */
+              const keepLang = state.meta.language;
+              let rtl;
+              try { state.meta.language = "ar"; rtl = measureHang("sc-hg-rtl", buildBookCss(".sc-hg-rtl"), "rtl", 300); } finally { state.meta.language = keepLang; }
+              if (!(rtl.align === "right" && rtl.firstOff < 2 && Math.abs(rtl.turnOff - 1.5 * rtl.fontPx) < 3)) bad.push("RTL hang: " + JSON.stringify(rtl));
+              /* Word: one Hanging paragraph per entry, a real hanging indent. */
+              const paras = docxContentParas(src).filter((p) => p.includes('<w:pStyle w:val="Hanging"/>'));
+              if (paras.length !== 3) bad.push(paras.length + " Word Hanging paragraphs (want 3)");
+              else if (!paras[2].includes('<w:spacing w:before="160"/>') || paras[0].includes("w:before") || !paras[0].includes("<w:i/>")) bad.push("Word: the breath / the italic title is lost");
+              const sty = buildDocxStylesXml ? buildDocxStylesXml() : "";
+              if (!/w:styleId="Hanging"[\s\S]*?<w:ind w:left="720" w:hanging="720"\/>/.test(sty)) bad.push("the Word Hanging style lacks its hanging indent");
+              const wc = countWords("::: hanging\nSmith, J. Tides.\nDoe, A. Salt.\n:::");
+              if (wc !== 6) bad.push("word count " + wc + " (want 6: entries are words, fences are not)");
+              const md = contentToMarkdown("::: hanging\nSmith, J. Tides.\nDoe, A. Salt.\n:::");
+              if (md !== "::: hanging\nSmith, J. Tides.\nDoe, A. Salt.\n:::") bad.push("Markdown export: " + JSON.stringify(md));
+              const nar = acxSectionLines(mkSection("body", "chapter", "N", { content: "::: hanging\nSmith, J. Tides.\nDoe, A. Salt.\n:::" }), "");
+              const narText = nar.map((l) => String(l.text || "")).join(" ");
+              if (/:::|hanging/.test(narText) || !/Tides/.test(narText) || !/Salt/.test(narText)) bad.push("narration: " + JSON.stringify(narText));
+              const ta = document.createElement("textarea");
+              ta.value = "Smith, J. Tides.\nDoe, A. Salt."; ta.setSelectionRange(0, ta.value.length);
+              applyContainer(ta, "hanging");
+              if (ta.value !== "::: hanging\nSmith, J. Tides.\nDoe, A. Salt.\n:::") bad.push("toolbar: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="hanging"]')) bad.push("the toolbar lacks Hanging indent");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.hanging", "tool.hangingTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "One", { number: "1", content: "Words." }), s], images: [], printTrim: "6x9" });
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<p class="hg hg-gap">'))) bad.push("the EPUB carries no hanging entries");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              if (!buildPrintHtml().includes('<div class="hanging"><p class="hg">Achebe')) bad.push("the print file carries no hanging entries");
+              pivEnsureStyle();
+              if (!$("pivBookStyle").textContent.includes(".piv-book .hanging p.hg, .piv-book .cols-hanging p.hg {")) bad.push("the Print Interior View lacks the hanging rules");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "3 entries, the third after a breath (" + Math.round(prev.gapTop) + "px); computed: first line flush, turn-over hung " + Math.round(prev.turnOff) + "px = 1.5em in the preview, " + Math.round(pr.turnOff) + "px in print type, hung at the right in RTL; Word: 3 Hanging paragraphs (hanging 720 twips), italics kept; 6 words; narrated without fences; Markdown keeps the lines; toolbar fences; EPUB validator errors 0; print and the Print Interior View carry it");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.columns", feature: "chapter", name: "Columns: \"::: columns\" sets compact back matter (endnotes, a chronology) in two balanced columns in print, the Print Interior View and the wide preview — one column in the EPUB (validates) and the narrow preview; \"::: columns hanging\" sets an index's entries hung inside the columns; the Word export sets Columns paragraphs inside a two-column Word section (continuous breaks, no page break); fences are not words; right-to-left columns read from the right",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const paras = ["Note 1: The harbour master's log for that winter survives only in a copy made in 1911, now in the county archive.", "Note 2: Letters between the two brothers, never published, were read in the family's keeping in the summer of 1987.", "Note 3: The figure of forty boats comes from the parish register; other sources give thirty-six.", "Note 4: On the tide tables of the period see Hughes, *Tables and Tides* (1960), chapter four.", "Note 5: The lighthouse keeper's widow told the story differently in each of the three interviews she gave.", "Note 6: The ferry company's minute books were lost in the fire of 1952."];
+              const src = "::: columns\n" + paras.join("\n\n") + "\n:::\n\nAfter.";
+              const s = mkSection("back", "acknowledgments", "Notes", { content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              if (!html.startsWith('<div class="columns"><p>Note 1: The harbour') || !html.includes("<em>Tables and Tides</em>") || (html.match(/<p>/g) || []).length !== 7) bad.push("the columns did not set: " + JSON.stringify(html.slice(0, 300)));
+              if (/:::|>columns/.test(html)) bad.push("a fence line reached the page");
+              const ix = contentBlocksToHtml("::: columns hanging\nAnchors, 12, 40\nBoats, fishing, 3, 7–9\n\nCarson, Rachel, 88\n:::", s, false, true, true);
+              if (ix !== '<div class="columns cols-hanging"><p class="hg">Anchors, 12, 40</p><p class="hg">Boats, fishing, 3, 7–9</p><p class="hg hg-gap">Carson, Rachel, 88</p></div>') bad.push("columns hanging: " + JSON.stringify(ix));
+              /* As set: column boxes by where the paragraphs fall. */
+              const measureCols = (scopeCls, css, width, body, dir) => {
+                const probe = document.createElement("div");
+                probe.className = scopeCls; probe.dir = dir || "ltr"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:" + width + "px";
+                const st = document.createElement("style"); st.textContent = css;
+                probe.innerHTML = body; document.body.appendChild(st); document.body.appendChild(probe);
+                try {
+                  const box = probe.querySelector(".columns");
+                  /* Each column's content height, by where the paragraph boxes fall. */
+                  const cols = [];
+                  Array.prototype.forEach.call(box.querySelectorAll("p"), (p) => { Array.prototype.forEach.call(p.getClientRects(), (r) => {
+                    let c = cols.find((x) => Math.abs(x.left - r.left) < 4);
+                    if (!c) { c = { left: r.left, top: r.top, bottom: r.bottom }; cols.push(c); }
+                    c.top = Math.min(c.top, r.top); c.bottom = Math.max(c.bottom, r.bottom);
+                  }); });
+                  const count = getComputedStyle(box).columnCount;
+                  const lineH = parseFloat(getComputedStyle(box.querySelector("p")).lineHeight) || 20;
+                  const hs = cols.map((c) => c.bottom - c.top);
+                  return { cols: cols.length, uneven: hs.length > 1 ? Math.round(Math.max.apply(null, hs) - Math.min.apply(null, hs)) : 0, lineH: Math.round(lineH), count, align: getComputedStyle(box.querySelector("p")).textAlign };
+                } finally { probe.remove(); st.remove(); }
+              };
+              const wide = measureCols("sc-col-wide", buildBookCss(".sc-col-wide"), 720, html);
+              if (!(wide.cols === 2 && wide.uneven <= 2.5 * wide.lineH)) bad.push("wide preview: " + JSON.stringify(wide));
+              const narrow = measureCols("sc-col-narrow", buildBookCss(".sc-col-narrow"), 320, html);
+              if (narrow.cols !== 1) bad.push("narrow preview: " + JSON.stringify(narrow));
+              const printCss = (sc) => buildBookCss(sc) + "\n" + printTypeCss(sc) + "\n" + sc + " { font-size: 11pt; }";
+              const pr = measureCols("sc-col-print", printCss(".sc-col-print"), 312, html);
+              if (!(pr.cols === 2 && pr.count === "2" && pr.uneven <= 2.5 * pr.lineH)) bad.push("print (a 4.33in 6x9 text block): " + JSON.stringify(pr));
+              const pix = measureCols("sc-col-pix", printCss(".sc-col-pix"), 312, ix);
+              if (pix.cols !== 2) bad.push("print index columns: " + JSON.stringify(pix));
+              const keepLang = state.meta.language;
+              let rtl;
+              try { state.meta.language = "ar"; rtl = measureCols("sc-col-rtl", buildBookCss(".sc-col-rtl"), 720, html, "rtl"); } finally { state.meta.language = keepLang; }
+              if (!(rtl.cols === 2 && rtl.align === "right")) bad.push("RTL columns: " + JSON.stringify(rtl));
+              /* The EPUB stylesheet (and the print document before its own
+                 print rules) is one column: no multicol for reading systems. */
+              if (/\.columns \{[^}]*column/.test(buildBookCss(""))) bad.push("the EPUB stylesheet sets columns");
+              if (!buildPrintCss("6x9", false).includes(".columns { column-count: 2;")) bad.push("the print stylesheet does not set two columns");
+              /* Word: two continuous section breaks around Columns paragraphs, the second closing a two-column section. */
+              const dp = docxContentParas(src);
+              const brk = dp.map((p, i) => /<w:sectPr>/.test(p) ? i : -1).filter((i) => i >= 0);
+              const colParas = dp.filter((p) => p.includes('<w:pStyle w:val="Columns"/>'));
+              if (brk.length !== 2 || colParas.length !== 6 || !/<w:type w:val="continuous"\/>/.test(dp[brk[0]]) || /w:num=/.test(dp[brk[0]]) || !/<w:cols w:num="2"/.test(dp[brk[1]])) bad.push("Word columns: breaks at " + brk.join(",") + ", " + colParas.length + " Columns paragraphs");
+              if (!docxContentParas("::: columns hanging\nAnchors, 12\n:::").some((p) => p.includes('<w:pStyle w:val="ColumnsHanging"/>'))) bad.push("Word: an index entry is not Columns Hanging");
+              const sty = buildDocxStylesXml();
+              if (!["Columns", "ColumnsHanging", "Hanging"].every((id) => sty.includes('w:styleId="' + id + '"'))) bad.push("the Word styles lack Columns / Columns Hanging");
+              const wc = countWords("::: columns hanging\nAnchors, 12\nBoats, 3\n:::"), wc0 = countWords("Anchors, 12\nBoats, 3");
+              if (wc !== wc0) bad.push("word count " + wc + " vs " + wc0 + " unfenced (fences are not words)");
+              const md = contentToMarkdown("::: columns hanging\nAnchors, 12\nBoats, 3\n:::\n\n::: columns\nOne.\n\nTwo.\n:::");
+              if (md !== "::: columns hanging\nAnchors, 12\nBoats, 3\n:::\n\n::: columns\nOne.\n\nTwo.\n:::") bad.push("Markdown export: " + JSON.stringify(md));
+              const ta = document.createElement("textarea");
+              ta.value = "One.\n\nTwo."; ta.setSelectionRange(0, ta.value.length);
+              applyContainer(ta, "columns");
+              if (ta.value !== "::: columns\nOne.\n\nTwo.\n:::") bad.push("toolbar: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="columns"]')) bad.push("the toolbar lacks Columns");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.columns", "tool.columnsTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "One", { number: "1", content: "Words." }), s], images: [], printTrim: "6x9", printRecto: false });
+              const doc = buildDocxDocumentXml();
+              const dd = new DOMParser().parseFromString(doc, "application/xml");
+              if (dd.getElementsByTagName("parsererror").length) bad.push("the Word document is not well-formed");
+              if (!/<w:sectPr><w:type w:val="continuous"\/><w:pgSz/.test(doc.slice(doc.lastIndexOf("<w:sectPr>")))) bad.push("the Word body's last section does not run on continuously after the columns");
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="columns"><p>Note 1: The harbour'))) bad.push("the EPUB carries no columns");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              if (!buildPrintHtml().includes('<div class="columns"><p>Note 1: The harbour')) bad.push("the print file carries no columns");
+              /* The Print Interior View: the section's flow on its page, two columns. */
+              pivEnsureStyle();
+              const g = pivGeometry();
+              const flow = pivSectionFlow(s, g);
+              const meas = $("pivMeasure");
+              meas.appendChild(flow);
+              let pivCols = 0;
+              try {
+                const fl = flow.getBoundingClientRect().left;
+                const lefts = [];
+                flow.querySelectorAll(".columns p").forEach((p) => { const r = p.getBoundingClientRect(); if (r.left - fl < g.contentW && !lefts.some((x) => Math.abs(x - r.left) < 4)) lefts.push(r.left); });
+                pivCols = lefts.length;
+              } finally { flow.remove(); }
+              if (pivCols !== 2) bad.push("the Print Interior View sets " + pivCols + " column(s) on the notes page");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "6 notes in a columns block, an index hung inside one; computed: wide preview 2 columns balanced (heights within " + wide.uneven + "px, a line is " + wide.lineH + "px), narrow preview 1, print type 2 at a 6x9 text width (within " + pr.uneven + "px), the index 2, RTL 2 flush right; the EPUB stylesheet sets no multicol and validates (0 errors); Word: Columns paragraphs between 2 continuous section breaks (cols 2), the body runs on continuously, styles present, XML well-formed; fences not words; Markdown keeps them; toolbar fences; the Print Interior View lays the notes in 2 columns");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "titlepage.centred", feature: "print", name: "Title page: in every built-in theme the subtitle, author and publisher lines are centred like the title — computed, in the preview, the EPUB and print stylesheets and the Print Interior View's, at standard, Large Print and picture-book type, and in a right-to-left book (Large Print once set every paragraph flush left, pulling the title page's lines left with it)",
+          run() {
+            const keepTheme = state.theme, keepPreset = state.activePreset, keepMeta = state.meta;
+            const keepLP = state.printLargePrint, keepPB = state.printPictureBook, keepLang = state.meta.language;
+            const bad = [];
+            let probes = 0;
+            try {
+              state.meta = Object.assign({}, state.meta, { title: "The Moon Kite", subtitle: "A Story for Bedtime", author: "Ana Writer", publisher: "Little Owl Press" });
+              const tp = state.sections.find((s) => s.type === "titlepage") || mkSection("front", "titlepage", "Title Page");
+              const cls = ["tp-title", "tp-subtitle", "tp-author", "tp-publisher"];
+              const measure = (label, cssOf, dir) => {
+                const sc = "sc-tp-" + (probes++);
+                const host = document.createElement("div");
+                host.className = sc; host.dir = dir; host.style.cssText = "position:absolute;left:-9999px;top:0;width:420px;height:640px";
+                const st = document.createElement("style"); st.textContent = cssOf("." + sc);
+                host.innerHTML = sectionHtml(tp, true, true);
+                document.body.appendChild(st); document.body.appendChild(host);
+                try {
+                  const box = host.querySelector(".titlepage").getBoundingClientRect();
+                  const mid = (box.left + box.right) / 2;
+                  cls.forEach((c) => {
+                    const el = host.querySelector("." + c);
+                    if (!el) { bad.push(label + ": no ." + c); return; }
+                    const rg = document.createRange(); rg.selectNodeContents(el);
+                    const r = rg.getBoundingClientRect();
+                    const off = (r.left + r.right) / 2 - mid;
+                    const al = getComputedStyle(el).textAlign;
+                    if (al !== "center" || Math.abs(off) > 2) bad.push(label + " ." + c + " " + al + " " + Math.round(off) + "px off centre");
+                  });
+                } finally { host.remove(); st.remove(); }
+              };
+              const modes = [["standard", false, false], ["large print", true, false], ["picture book", false, true]];
+              PRESETS.forEach((p) => {
+                state.theme = Object.assign({}, p.theme); state.activePreset = p.id;
+                modes.forEach(([mode, lp, pb]) => {
+                  state.printLargePrint = lp; state.printPictureBook = pb;
+                  if (mode === "standard") measure(p.id + " preview/EPUB", (sc) => buildBookCss(sc), "ltr");
+                  measure(p.id + " print " + mode, (sc) => buildBookCss(sc) + "\n" + printTypeCss(sc) + "\n" + sc + " { font-size: " + printBaseFontPt() + "pt; }", "ltr");
+                });
+              });
+              /* The view's own stylesheet, as it is built (Large Print). */
+              state.theme = Object.assign({}, (PRESETS.find((p) => p.id === "childrens") || PRESETS[0]).theme);
+              state.printLargePrint = true; state.printPictureBook = false;
+              pivEnsureStyle();
+              const viewCss = $("pivBookStyle").textContent;
+              measure("childrens Print Interior View (large print)", (sc) => viewCss.split(".piv-book").join(sc), "ltr");
+              /* Right to left. */
+              state.meta.language = "ar";
+              modes.forEach(([mode, lp, pb]) => {
+                state.printLargePrint = lp; state.printPictureBook = pb;
+                measure("childrens RTL print " + mode, (sc) => buildBookCss(sc) + "\n" + printTypeCss(sc), "rtl");
+              });
+            } finally {
+              state.theme = keepTheme; state.activePreset = keepPreset; state.meta = keepMeta; state.meta.language = keepLang;
+              state.printLargePrint = keepLP; state.printPictureBook = keepPB;
+              pivEnsureStyle();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.slice(0, 12).join("; ") + (bad.length > 12 ? " … (" + bad.length + ")" : "") : probes + " title pages measured (" + PRESETS.length + " themes × preview + print at standard, Large Print and picture-book type, the Print Interior View's stylesheet, RTL): title, subtitle, author and publisher all text-align center and within 2px of the page's centre");
+          } },
+        { id: "print.picturebook", feature: "print", name: "Picture-book type: a print type size beside Large Print sets the print interior and the Print Interior View at 24pt (picture books use 22–28pt), 1.4 leading, ragged and unhyphenated, with the running head and folio scaled; it and Large Print never stand together; the choice rides the book file; the manuscript and word count never move; 11 × 8.5 landscape lays a plate facing four short centred lines; switches and strings in 13 languages",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepTrim = state.printTrim, keepLP = state.printLargePrint, keepPB = state.printPictureBook, keepRecto = state.printRecto;
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook());
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = ""; ch.number = "";
+              ch.content = "::: center\nThe kite went up.\nThe kite went high.\nIt found the moon\nand said goodbye.\n:::";
+              const words = bookWordTotal(), content = ch.content;
+              state.printLargePrint = false; state.printPictureBook = true; state.printTrim = "11x8.5"; state.printRecto = false;
+              if (printBaseFontPt() !== 24 || !(printBaseFontPt() >= 22 && printBaseFontPt() <= 28)) bad.push("base size " + printBaseFontPt() + "pt");
+              const css = buildPrintCss("11x8.5", false);
+              if (!(css.includes("body { font-size: 24pt; line-height: 1.4; text-align: left; hyphens: manual;") && css.includes("font-size: 10pt; letter-spacing: 0.14em"))) bad.push("the print stylesheet does not set picture-book type (24pt / 1.4 / ragged / head 10pt)");
+              const html = buildPrintHtml();
+              if (!html.includes("body { font-size: 24pt; }") || html.includes('class="lp-edition"')) bad.push("the print file: 24pt body " + html.includes("body { font-size: 24pt; }") + ", Large Print colophon line " + html.includes('class="lp-edition"'));
+              pivEnsureStyle();
+              if (!$("pivBookStyle").textContent.includes(".piv-book { font-size: 24pt; }")) bad.push("the Print Interior View is not at 24pt");
+              /* As set: the words at 24pt (32px), no hyphens, ragged. */
+              const probe = document.createElement("div");
+              probe.className = "sc-pb-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:700px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-pb-probe") + "\n" + printTypeCss(".sc-pb-probe");
+              probe.innerHTML = contentBlocksToHtml(ch.content, ch, false, true, true) + "<p class=\"sc-pb-plain\">A plain line of text.</p>";
+              document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const pc = getComputedStyle(probe.querySelector(".align-center p")), pp = getComputedStyle(probe.querySelector("p.sc-pb-plain"));
+                if (Math.abs(parseFloat(pc.fontSize) - 32) > 0.5 || pc.textAlign !== "center" || pp.textAlign !== "left" || pp.hyphens !== "manual") bad.push("computed: " + pc.fontSize + " " + pc.textAlign + " / " + pp.textAlign + " " + pp.hyphens);
+              } finally { probe.remove(); st.remove(); }
+              /* The Print Interior View lays the 11 × 8.5 spread: a plate, then the four lines. */
+              const plateImg = { id: "sc-pb-plate", name: "Moon.png", mediaType: "image/png", ext: "png", data: FAKE_PNG };
+              state.images.push(plateImg); ch.plateId = plateImg.id; ch.plateAlt = "A red kite against a full moon";
+              openPrintInteriorView();
+              const model = piv.model;
+              $("modalPrintView").classList.remove("open");
+              const chPages = model ? model.pages.filter((p) => p.section === ch) : [];
+              if (!model || model.g.pageW !== 1056 || model.g.pageH !== 816 || chPages.length !== 2) bad.push("the view: " + (model ? model.g.pageW + "x" + model.g.pageH + ", " + chPages.length + " chapter pages" : "no model"));
+              /* The 11 × 8.5 title page at picture-book type stays one page:
+                 every line in its flow's first page, above the page foot. */
+              const tpSec = state.sections.find((s) => s.type === "titlepage") || mkSection("front", "titlepage", "Title Page");
+              const keepTpMeta = state.meta;
+              state.meta = Object.assign({}, state.meta, { title: "The Moon Kite", subtitle: "A Bedtime Story", author: "Ana Writer", publisher: "Little Owl" });
+              try {
+                const g = pivGeometry();
+                const fl = pivSectionFlow(tpSec, g);
+                $("pivMeasure").appendChild(fl);
+                try {
+                  const box = fl.getBoundingClientRect();
+                  ["tp-title", "tp-subtitle", "tp-author", "tp-publisher"].forEach((c) => {
+                    const el = fl.querySelector("." + c), r = el && el.getBoundingClientRect();
+                    if (!r || r.left - box.left >= g.contentW || r.bottom - box.top > g.contentH + 0.5) bad.push("the 11 × 8.5 title page: ." + c + (r ? " at " + Math.round(r.left - box.left) + "," + Math.round(r.bottom - box.top) : " missing") + " on a " + Math.round(g.contentW) + "×" + Math.round(g.contentH) + "px page");
+                  });
+                } finally { $("pivMeasure").innerHTML = ""; }
+              } finally { state.meta = keepTpMeta; }
+              const pbHtml = buildPrintHtml();
+              if (!pbHtml.includes("plate-page")) bad.push("the print file has no plate");
+              if (!pbHtml.includes("ch-untitled") || !pbHtml.includes(".chapter-opening.ch-untitled { display: none; }")) bad.push("the untitled picture page still sets an opening");
+              /* One edition at a time; the switches; the book file. */
+              const t1 = $("tglPictureBook"), t2 = $("tglPivPictureBook");
+              if (!t1 || !t2) bad.push("a picture-book switch is missing");
+              else {
+                state.printPictureBook = false; state.printLargePrint = true;
+                t1.click();
+                if (!(state.printPictureBook && !state.printLargePrint && t1.getAttribute("aria-pressed") === "true")) bad.push("the switch does not set picture-book type over Large Print");
+                $("tglLargePrint").click();
+                if (!(state.printLargePrint && !printPictureBookOn() && printBaseFontPt() === 18)) bad.push("Large Print does not replace picture-book type");
+                state.printLargePrint = false; t1.click();
+              }
+              const ser = serializeBook();
+              if (ser.printPictureBook !== true) bad.push("the book file does not carry the choice");
+              state.printPictureBook = false;
+              applyBookDoc(ser);
+              if (!printPictureBookOn()) bad.push("the book file does not bring the choice back");
+              applyBookDoc(Object.assign({}, ser, { printPictureBook: undefined }));
+              if (printPictureBookOn()) bad.push("a book without the choice keeps it");
+              const ch2 = state.sections.find((s) => s.type === "chapter");
+              if (bookWordTotal() !== words || ch2.content !== content) bad.push("the manuscript or word count moved");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["exp.pictureBookTitle", "exp.pictureBookDesc", "print.pbTag", "print.pbNote"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              state.printPictureBook = false;
+              if (printBaseFontPt() !== 11 || buildPrintCss("11x8.5", false).includes("24pt")) bad.push("off is not off");
+            } finally {
+              $("modalPrintView").classList.remove("open");
+              state.printTrim = keepTrim; state.printLargePrint = keepLP; state.printPictureBook = keepPB; state.printRecto = keepRecto;
+              applyBookDoc(keepDoc);
+              state.printPictureBook = keepPB;
+              renderPrintControls();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "24pt (inside 22–28pt), 1.4 leading, ragged, unhyphenated, running head 10pt in the print stylesheet and file; the view's stylesheet at 24pt; computed 32px centred lines; 11 × 8.5 view: 1056×816px pages, the plate and the four lines on 2 pages, the title page (title, subtitle, author, publisher) on one; Large Print and picture-book type replace each other; the book file carries it (and a file without it clears it); manuscript and words unmoved; strings in 13 languages; off is 11pt");
           } },
         { id: "chapter.letter", feature: "chapter", name: "Letter: \"::: letter\" sets a written note in a hairline box, the body face in italic, every line break kept, a short first line ending \",\" as the salutation and the closing \"Yours,\" paragraph flush right (a P.S. after it stays a P.S.), in the preview, print and EPUB (validates); the Word export sets Letter paragraphs with real line breaks and the sign-off right-aligned",
           run() {
@@ -49572,6 +50104,55 @@
               const notes = items.filter((i) => i.kind === "mammoth" && /Unrecognised paragraph style: '(Quote|Quote Attribution|Verse|Letter|Text Sent|Text Received|Text Note|Caption|Transcript|Transcript Direction|Log|Log Dark|Insert|Insert Title)'/.test(i.data.message));
               if (notes.length) bad.push("converter notes for Beuk's own styles: " + notes.map((i) => i.data.message).join(" | "));
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") + " — content: " + JSON.stringify(c.slice(0, 600)) : "bold italic, link, both lists, quote + attribution (set), one centred block; texts/letter/caption fence nothing; no converter notes for Beuk's styles; the note mark not reported as lost");
+            });
+          } }
+      );
+      /* Round 13: Beuk's back-matter containers read back from its own
+         Word export: the Hanging, Columns and Columns Hanging styles fence
+         their paragraphs back into "::: hanging" / "::: columns" /
+         "::: columns hanging" (no converter notes, no stray fences). */
+      SELF_CHECKS_ASYNC.push(
+        { id: "import.docx.backmatter", feature: "import", name: "Word round trip (back matter): a bibliography in \"::: hanging\", notes in \"::: columns\" and an index in \"::: columns hanging\", exported to Word and imported back, come back fenced as the same containers with their entries, italics and line-per-entry shape, with no converter notes for Beuk's Hanging / Columns styles",
+          async run() {
+            if (!window.JSZip || !window.mammoth) return scVerdict(false, "JSZip or Mammoth.js is not loaded");
+            const src = [
+              "The book's last words.",
+              "::: hanging\nAchebe, Chinua. *Things Fall Apart*. London: Heinemann, 1958.\nBaldwin, James. *Go Tell It on the Mountain*. New York: Knopf, 1953.\n:::",
+              "Between the lists.",
+              "::: columns\nFirst note on the harbour log.\n\nSecond note on the *letters*.\n:::",
+              "::: columns hanging\nAnchors, 12, 40\nBoats, fishing, 3, 7\n:::",
+              "The end."
+            ].join("\n\n");
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            let html = "", messages = [], scan = null;
+            try {
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: "Back Matter Check", author: "A. Writer" }), theme: keepDoc.theme,
+                sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "Back Matter", { number: "1", content: src })], images: [] });
+              const buf = await (await buildDocxBlob()).arrayBuffer();
+              scan = await irScanDocxXml(buf);
+              const res = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
+              html = res.value; messages = res.messages || [];
+            } finally {
+              applyBookDoc(keepDoc);
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+            return irCheckRun(() => {
+              const bad = [];
+              const rep = importDocxConverted("backmatter.docx", html, messages, scan, {}, null);
+              const ch = state.sections.find((s) => s.type === "chapter" && /Back Matter/.test(s.title));
+              const c = ch ? String(ch.content || "") : "";
+              const want = [
+                "::: hanging\nAchebe, Chinua. *Things Fall Apart*. London: Heinemann, 1958.\nBaldwin, James. *Go Tell It on the Mountain*. New York: Knopf, 1953.\n:::",
+                "::: columns\nFirst note on the harbour log.\n\nSecond note on the *letters*.\n:::",
+                "::: columns hanging\nAnchors, 12, 40\nBoats, fishing, 3, 7\n:::",
+                "The book’s last words.", "Between the lists.", "The end."];
+              want.forEach((w) => { if (c.indexOf(w) === -1) bad.push("missing " + JSON.stringify(w)); });
+              if ((c.match(/^::: /gm) || []).length !== 3) bad.push((c.match(/^::: /gm) || []).length + " fences (want 3)");
+              const items = rep ? rep.items : [];
+              const notes = items.filter((i) => i.kind === "mammoth" && /Unrecognised paragraph style: '(Hanging|Columns|Columns Hanging)'/.test(i.data.message));
+              if (notes.length) bad.push("converter notes: " + notes.map((i) => i.data.message).join(" | "));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") + " — content: " + JSON.stringify(c.slice(0, 700)) : "hanging, columns and columns-hanging come back as their fences with every entry, italics kept, one entry per line; the prose around them unfenced; no converter notes");
             });
           } }
       );

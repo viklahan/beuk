@@ -2742,7 +2742,10 @@ P.S. Bring string.
   versus outline, never by colour alone, so they read apart in black ink;
   the print file sets the tint as a solid grey (`#e6e6e6`, no
   transparency). The sender's name stands small above the first message of
-  a run; a blank line starts a new run. A line that is not `Name: message`
+  a run of one sender's messages only: a blank line between two of Ben's
+  messages is a pause (a little more space, class `tx-gap`), never a
+  repeated "Ben"; a time line or a picture between them starts a new run
+  (round 13 fix — before, every blank line repeated the name). A line that is not `Name: message`
   (a time, "Read 9:41") is a small centred note. A name starts with a
   letter and holds letters, spaces and `.'-` only (so "Tuesday, 9:41" is a
   note, not a speaker). An ASCII colon needs a space after it; the
@@ -2996,6 +2999,101 @@ when there is one, which stays where it is; the fenced note goes after the
 paragraph the selection ends in), Sideways and Upside
 Down (fence the selection), in all 13 languages. Self-checks:
 `chapter.margin`, `chapter.sideways`, `chapter.upsidedown`.
+
+## Containers: back matter — hanging and columns (round 13)
+
+```
+::: hanging
+Achebe, Chinua. *Things Fall Apart*. London: Heinemann, 1958.
+Baldwin, James. *Go Tell It on the Mountain*. New York: Knopf, 1953.
+
+Carson, Rachel. *Silent Spring*. Boston: Houghton Mifflin, 1962.
+:::
+
+::: columns
+1. The harbour master's log survives only in a copy made in 1911.
+
+2. Letters between the two brothers were read in the family's keeping.
+:::
+
+::: columns hanging
+Anchors, 12, 40
+Boats, fishing, 3, 7–9
+:::
+```
+
+- `hanging` — one entry per line (a bibliography, a chronology, an index):
+  each entry flush, its turn-over lines hung 1.5em under it, no first-line
+  indent, set ragged whatever the book's justification. A blank line
+  between entries is a breath (`hg-gap`: a new letter of an index, a new
+  year). Scene breaks, pictures and note definitions on a line of their own
+  pass through. The hang uses logical padding, so a right-to-left book
+  hangs at the right and sets the entries flush right. Word: one `Hanging`
+  paragraph per entry (left 720, hanging 720 twips; a breath is
+  `w:spacing before`).
+- `columns` — compact back matter (endnotes, a chronology, an index) in two
+  balanced columns (`column-fill: balance`) on the printed page and in the
+  Print Interior View (`printTypeCss`, so the two always agree), and in the
+  studio preview when the page is wide enough for two 13em columns (one
+  when it is narrow). The EPUB stylesheet (`buildBookCss("")`) sets no
+  multicol at all: reading systems get one column. Type is 0.9em, block
+  paragraphs, ragged. `columns hanging` sets its lines as hanging entries
+  inside the columns (an index). Word: the paragraphs (`Columns`, or
+  `Columns Hanging` for an index) stand in a real two-column Word section,
+  fenced by two continuous section breaks; the body's last section is made
+  continuous too so no page break follows the columns.
+
+The Word import reads Beuk's own `Hanging`, `Columns` and `Columns Hanging`
+styles back into their fences (`::: hanging`, one entry per line;
+`::: columns`; `::: columns hanging`) with no converter notes; the
+breath between hanging entries does not come back. Fences are not words;
+entries are. Narration reads the entries, never the fences. Toolbar:
+Columns and Hanging indent, in all 13 languages. Self-checks:
+`chapter.hanging`, `chapter.columns`, `import.docx.backmatter` (async).
+
+Notes at the foot of the page and columns: the print renderer
+(`deploy/renderer/footnotes.mjs`) knows a `.columns` block. Its entries
+are units like any paragraph; their lines are told apart by column (a line
+set higher than the one before it in the same block starts the next
+column), and a reference in the columns is placed on the line holding the
+word it follows. Only a multicol block's last fragment is balanced, so a
+cut inside the columns ends the block there and reopens it on the next
+page (`fn-brk fn-mc`; a numbered list reopens at its next number, and the
+elements between block and entry close and reopen with it); the page
+keeps as many column lines as, balanced anew in two columns, fit above its
+notes. A block that runs over several pages, with references before and
+inside it, now settles in a few passes with every note at the foot of its
+reference's page (it once fell back to the section end after 60 passes,
+where the Print Interior View still showed the notes at the page feet).
+Test: `tests/print-footnotes.test.ts` (a two-column toy paginator).
+
+## Title page centring and picture-book type (round 13)
+
+- The title page's subtitle, author and publisher are centred like the
+  title in every theme. The cause was Large Print: its ruleset set
+  `p { text-align: left }` on every paragraph, which beat the title page's
+  inherited centring (and a chapter's centred subtitle). Large Print now
+  sets its ragged alignment on the root only (flush right for a
+  right-to-left book) and paragraphs inherit. Self-check
+  `titlepage.centred` measures every preset in the preview/EPUB and print
+  stylesheets at standard, Large Print and picture-book type, the Print
+  Interior View's own stylesheet, and right to left.
+- Picture-book type: a print type size beside Large Print (Export → Print
+  Interior, and the Print Interior View toolbar) that sets the print
+  interior's words at 24pt (`PRINT_PICTURE_BOOK_PT`, inside the 22–28pt
+  picture books use) with 1.4 leading, ragged and unhyphenated, the running
+  head and folio at the big-type sizes. It and Large Print replace each
+  other (`printBigType()` covers both); the Large Print colophon line is
+  not added. `printPictureBook` rides the book file (a file without it
+  clears it). The studio preview does not follow print type sizes (it
+  never has), so it is unchanged. Self-check `print.picturebook`.
+- The title page at big type (Large Print or picture-book) is sized by
+  the page, not by the body: its type stays at 18pt (picture-book's 24pt
+  comes down to it), the publisher's drop (34% of the page's width, which
+  on an 11 × 8.5 landscape page ran the publisher onto a second page under
+  a running head and folio) is capped at 7em, and the block is kept on one
+  page. `print.picturebook` lays the 11 × 8.5 picture-book title page out
+  in the Print Interior View and asserts every line sits on its first page.
 
 ## Captions and quote attribution
 
