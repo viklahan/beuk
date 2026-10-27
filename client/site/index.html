@@ -215,7 +215,14 @@
       .tb-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--accent);background:var(--bg);padding:0;position:relative;z-index:1;transition:background .25s,transform .25s;flex:none}
       .tb-dot:hover{transform:scale(1.25)}
       .tb-dot.seen{background:#bcd6de}
-      .tb-dot.now{background:var(--amber);border-color:var(--amber2);transform:scale(1.2)}
+      .tb-dot.now{background:var(--accent);border-color:var(--accent2)}
+      /* the boat sails the route line as the page scrolls; it bobs, and turns about when you scroll back */
+      .tb-boat{position:absolute;left:0;top:50%;width:24px;height:18px;margin-top:-16px;transform:translateX(-50%);transition:left .3s ease;z-index:2;pointer-events:none}
+      .tb-boat .tb-hull{display:block;transition:transform .35s ease}
+      .tb-boat.back .tb-hull{transform:scaleX(-1)}
+      .tb-boat svg{display:block;animation:tbBob 2.6s ease-in-out infinite;transform-origin:50% 90%}
+      @keyframes tbBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-1.5px) rotate(3deg)}}
+      @media (prefers-reduced-motion: reduce){.tb-boat,.tb-boat .tb-hull{transition:none}.tb-boat svg{animation:none}}
       .tb-port{font-family:var(--mono);font-size:12px;color:var(--accent2);white-space:nowrap}
       .tb-port b{color:var(--ink)}
 
@@ -340,6 +347,7 @@
           <span class="tb-label">The tour</span>
           <div class="tb-track">
             <div class="tb-fill" id="tb-fill"></div>
+            <span class="tb-boat" id="tb-boat" aria-hidden="true"><span class="tb-hull"><svg viewBox="0 0 24 18" width="24" height="18"><path d="M12 1.2V12" stroke="var(--ink)" stroke-width="1.2"/><path d="M12.7 1.8 20 11.2h-7.3z" fill="var(--card)" stroke="var(--ink)" stroke-width=".8" stroke-linejoin="round"/><path d="M11.3 3.4 6.2 11.2h5.1z" fill="var(--amber)"/><path d="m12 1.2 4 1.2-4 1.2z" fill="#c8443a"/><path d="M2.5 12h19l-3 4H5.5z" fill="var(--accent2)"/></svg></span></span>
             <div class="tb-dots" id="tb-dots">
               <button class="tb-dot now" data-port="0" aria-label="Port 1 of 6 — Embarkation: bring your manuscript"></button>
               <button class="tb-dot" data-port="1" aria-label="Port 2 of 6 — The writing sea: write and typeset"></button>
@@ -866,11 +874,19 @@
 
         /* ---------- route line fills as you sail down the page ---------- */
         var tbFill = document.getElementById("tb-fill");
+        var tbBoat = document.getElementById("tb-boat");
+        var lastY = window.scrollY;
         function updRoute(){
           if(!tbFill) return;
           var max = document.documentElement.scrollHeight - window.innerHeight;
           var f = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
           tbFill.style.width = (f * 100).toFixed(1) + "%";
+          if(tbBoat){
+            tbBoat.style.left = (f * 100).toFixed(1) + "%";
+            if(window.scrollY < lastY - 2) tbBoat.classList.add("back");
+            else if(window.scrollY > lastY + 2) tbBoat.classList.remove("back");
+          }
+          lastY = window.scrollY;
         }
 
         observeReveals(); updRoute();
