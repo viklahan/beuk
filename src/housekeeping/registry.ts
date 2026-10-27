@@ -1951,6 +1951,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The alignment is typeset by the studio renderer; the Word import reads the package in the browser.',
   },
   {
+    id: 'chapter.captions',
+    title: 'Image captions: a figcaption under the picture in preview, print and EPUB, a Caption paragraph in Word, written from the image dialog, and read from Word Caption-styled paragraphs',
+    kind: 'client-only',
+    reason: 'The figure is typeset by the studio renderer; the EPUB, the Word export and the Word import all run in the browser.',
+  },
+  {
+    id: 'chapter.attribution',
+    title: 'Quote attribution: a last "> — Name" line set right under the quote in preview, print and EPUB, and as a right-aligned paragraph in Word',
+    kind: 'client-only',
+    reason: 'The quote is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',

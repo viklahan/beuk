@@ -2328,6 +2328,7 @@
                 <span class="tool-break" aria-hidden="true"></span>
                 <div class="tool-group" data-tg="structure"><span class="tool-sep" aria-hidden="true"></span>
                   <button class="tool-btn" data-collapse="2" data-insert="blockquote" title="Blockquote — set this paragraph apart as a quotation" data-i18n-title="tool.blockquoteTitle"><i data-lucide="quote"></i><span class="tl" data-i18n="tool.blockquote">Blockquote</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="attribution" title="Attribution — add a “— Name” line under the quote the cursor is in" data-i18n-title="tool.attributionTitle"><i data-lucide="signature"></i><span class="tl" data-i18n="tool.attribution">Attribution</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="ul" title="Bulleted list — each line becomes an item" data-i18n-title="tool.ulTitle"><i data-lucide="list"></i><span class="tl" data-i18n="tool.ul">List</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="ol" title="Numbered list — each line becomes a numbered step" data-i18n-title="tool.olTitle"><i data-lucide="list-ordered"></i><span class="tl" data-i18n="tool.ol">Numbered</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="verse" title="Verse — keep every line break of the selected lines (a poem, a song)" data-i18n-title="tool.verseTitle"><i data-lucide="feather"></i><span class="tl" data-i18n="tool.verse">Verse</span></button>
@@ -2900,6 +2901,7 @@
         <div class="imglib-tools" id="imgLibTools" hidden></div><!-- BEUK:imagelib -->
         <div class="form-grid">
           <div class="full"><label class="field-lab" for="imgAlt" data-i18n="img.altLabel">Alt Text — read aloud by e-readers; describes the image for anyone who cannot see it</label><input class="txt-input" id="imgAlt" type="text" placeholder="The meridian chart, drawn in ink that never quite dried" data-i18n-ph="img.altPh" /></div>
+          <div class="full"><label class="field-lab" for="imgCaption" data-i18n="img.captionLabel">Caption — optional; printed under the picture for every reader</label><input class="txt-input" id="imgCaption" type="text" maxlength="300" placeholder="The harbour chart of 1871" data-i18n-ph="img.captionPh" /></div>
           <div class="full">
             <label class="field-lab" data-i18n="img.display">Display</label>
             <div class="seg" id="segImgDisplay">
@@ -3792,6 +3794,8 @@
         "img.title": "Insert Image", "img.upload": "Upload Image",
         "img.altLabel": "Alt Text — read aloud by e-readers; describes the image for anyone who cannot see it",
         "img.altPh": "The meridian chart, drawn in ink that never quite dried",
+        "img.captionLabel": "Caption — optional; printed under the picture for every reader", "img.captionPh": "The harbour chart of 1871", "img.captionCardPh": "Caption (optional) — shown under the picture",
+        "tool.attribution": "Attribution", "tool.attributionTitle": "Attribution — add a “— Name” line under the quote the cursor is in",
         "img.display": "Display", "img.standard": "Standard · centred in the column", "img.fullBleed": "Full-bleed · edge to edge",
         "img.cancel": "Cancel", "img.insert": "Insert Image",
         "fn.title": "Add a footnote", "fn.titleN": "Footnote {n}", "fn.placeholder": "Write the note…", "fn.cancel": "Cancel", "fn.add": "Add Footnote",
@@ -4197,6 +4201,8 @@
         "img.title": "Insertar imagen", "img.upload": "Subir imagen",
         "img.altLabel": "Texto alternativo — los lectores electrónicos lo leen en voz alta; describe la imagen para quien no puede verla",
         "img.altPh": "La carta del meridiano, dibujada con tinta que nunca se secaba del todo",
+        "img.captionLabel": "Pie de foto — opcional; se imprime bajo la imagen para todos los lectores", "img.captionPh": "La carta del puerto de 1871", "img.captionCardPh": "Pie de foto (opcional) — se muestra bajo la imagen",
+        "tool.attribution": "Atribución", "tool.attributionTitle": "Atribución — añade una línea «— Nombre» bajo la cita donde está el cursor",
         "img.display": "Presentación", "img.standard": "Estándar · centrada en la columna", "img.fullBleed": "A sangre completa · de borde a borde",
         "img.cancel": "Cancelar", "img.insert": "Insertar imagen",
         "fn.title": "Añadir una nota al pie", "fn.titleN": "Nota al pie {n}", "fn.placeholder": "Escribe la nota…", "fn.cancel": "Cancelar", "fn.add": "Añadir nota",
@@ -4394,6 +4400,8 @@
         "img.title": "Insérer une image", "img.upload": "Téléverser une image",
         "img.altLabel": "Texte alternatif — lu à voix haute par les liseuses ; décrit l'image à qui ne peut pas la voir",
         "img.altPh": "La carte du méridien, dessinée à l'encre qui ne séchait jamais tout à fait",
+        "img.captionLabel": "Légende — facultative ; imprimée sous l'image pour tous les lecteurs", "img.captionPh": "La carte du port de 1871", "img.captionCardPh": "Légende (facultative) — affichée sous l'image",
+        "tool.attribution": "Attribution", "tool.attributionTitle": "Attribution — ajoute une ligne « — Nom » sous la citation où se trouve le curseur",
         "img.display": "Affichage", "img.standard": "Standard · centrée dans la colonne", "img.fullBleed": "Pleine page · bord à bord",
         "img.cancel": "Annuler", "img.insert": "Insérer l'image",
         "fn.title": "Ajouter une note de bas de page", "fn.titleN": "Note {n}", "fn.placeholder": "Écrivez la note…", "fn.cancel": "Annuler", "fn.add": "Ajouter la note",
@@ -4591,6 +4599,8 @@
         "img.title": "Bild einfügen", "img.upload": "Bild hochladen",
         "img.altLabel": "Alt-Text — wird von E-Readern vorgelesen; beschreibt das Bild für alle, die es nicht sehen können",
         "img.altPh": "Die Meridiankarte, gezeichnet in Tinte, die nie ganz trocknete",
+        "img.captionLabel": "Bildunterschrift — optional; wird für alle Leser unter dem Bild gedruckt", "img.captionPh": "Die Hafenkarte von 1871", "img.captionCardPh": "Bildunterschrift (optional) — unter dem Bild angezeigt",
+        "tool.attribution": "Quelle", "tool.attributionTitle": "Quelle — fügt unter dem Zitat am Cursor eine Zeile „— Name“ an",
         "img.display": "Darstellung", "img.standard": "Standard · in der Spalte zentriert", "img.fullBleed": "Randabfallend · von Kante zu Kante",
         "img.cancel": "Abbrechen", "img.insert": "Bild einfügen",
         "fn.title": "Eine Fußnote hinzufügen", "fn.titleN": "Fußnote {n}", "fn.placeholder": "Die Notiz schreiben…", "fn.cancel": "Abbrechen", "fn.add": "Fußnote hinzufügen",
@@ -4788,6 +4798,8 @@
         "img.title": "Inserisci immagine", "img.upload": "Carica immagine",
         "img.altLabel": "Testo alternativo — letto ad alta voce dagli e-reader; descrive l'immagine a chi non può vederla",
         "img.altPh": "La carta del meridiano, disegnata con inchiostro che non si asciugava mai del tutto",
+        "img.captionLabel": "Didascalia — facoltativa; stampata sotto l'immagine per ogni lettore", "img.captionPh": "La carta del porto del 1871", "img.captionCardPh": "Didascalia (facoltativa) — mostrata sotto l'immagine",
+        "tool.attribution": "Attribuzione", "tool.attributionTitle": "Attribuzione — aggiunge una riga «— Nome» sotto la citazione in cui si trova il cursore",
         "img.display": "Visualizzazione", "img.standard": "Standard · centrata nella colonna", "img.fullBleed": "Al vivo · da bordo a bordo",
         "img.cancel": "Annulla", "img.insert": "Inserisci immagine",
         "fn.title": "Aggiungi una nota a piè di pagina", "fn.titleN": "Nota {n}", "fn.placeholder": "Scrivi la nota…", "fn.cancel": "Annulla", "fn.add": "Aggiungi nota",
@@ -4985,6 +4997,8 @@
         "img.title": "Inserir imagem", "img.upload": "Carregar imagem",
         "img.altLabel": "Texto alternativo — lido em voz alta pelos leitores eletrónicos; descreve a imagem a quem não a pode ver",
         "img.altPh": "A carta do meridiano, desenhada com tinta que nunca secava por completo",
+        "img.captionLabel": "Legenda — opcional; impressa sob a imagem para todos os leitores", "img.captionPh": "A carta do porto de 1871", "img.captionCardPh": "Legenda (opcional) — mostrada sob a imagem",
+        "tool.attribution": "Atribuição", "tool.attributionTitle": "Atribuição — acrescenta uma linha «— Nome» sob a citação onde está o cursor",
         "img.display": "Apresentação", "img.standard": "Padrão · centrada na coluna", "img.fullBleed": "Sangria total · de margem a margem",
         "img.cancel": "Cancelar", "img.insert": "Inserir imagem",
         "fn.title": "Adicionar uma nota de rodapé", "fn.titleN": "Nota {n}", "fn.placeholder": "Escreva a nota…", "fn.cancel": "Cancelar", "fn.add": "Adicionar nota",
@@ -5182,6 +5196,8 @@
         "img.title": "Afbeelding invoegen", "img.upload": "Afbeelding uploaden",
         "img.altLabel": "Alt-tekst — hardop voorgelezen door e-readers; beschrijft de afbeelding voor wie hem niet kan zien",
         "img.altPh": "De meridiaankaart, getekend in inkt die nooit helemaal droogde",
+        "img.captionLabel": "Bijschrift — optioneel; onder de afbeelding gedrukt voor elke lezer", "img.captionPh": "De havenkaart van 1871", "img.captionCardPh": "Bijschrift (optioneel) — getoond onder de afbeelding",
+        "tool.attribution": "Bron", "tool.attributionTitle": "Bron — voegt een regel ‘— Naam’ toe onder het citaat waarin de cursor staat",
         "img.display": "Weergave", "img.standard": "Standaard · gecentreerd in de kolom", "img.fullBleed": "Aflopend · van rand tot rand",
         "img.cancel": "Annuleren", "img.insert": "Afbeelding invoegen",
         "fn.title": "Een voetnoot toevoegen", "fn.titleN": "Voetnoot {n}", "fn.placeholder": "Schrijf de noot…", "fn.cancel": "Annuleren", "fn.add": "Voetnoot toevoegen",
@@ -5379,6 +5395,8 @@
         "img.title": "Wstaw obraz", "img.upload": "Prześlij obraz",
         "img.altLabel": "Tekst alternatywny — czytany na głos przez czytniki; opisuje obraz tym, którzy go nie widzą",
         "img.altPh": "Mapa południka, narysowana atramentem, który nigdy całkiem nie wysechł",
+        "img.captionLabel": "Podpis — opcjonalny; drukowany pod obrazem dla każdego czytelnika", "img.captionPh": "Mapa portu z 1871 roku", "img.captionCardPh": "Podpis (opcjonalny) — widoczny pod obrazem",
+        "tool.attribution": "Autor cytatu", "tool.attributionTitle": "Autor cytatu — dodaje wiersz „— Imię” pod cytatem, w którym jest kursor",
         "img.display": "Wyświetlanie", "img.standard": "Standard · wyśrodkowany w kolumnie", "img.fullBleed": "Na spad · od krawędzi do krawędzi",
         "img.cancel": "Anuluj", "img.insert": "Wstaw obraz",
         "fn.title": "Dodaj przypis", "fn.titleN": "Przypis {n}", "fn.placeholder": "Napisz przypis…", "fn.cancel": "Anuluj", "fn.add": "Dodaj przypis",
@@ -5576,6 +5594,8 @@
         "img.title": "Вставить изображение", "img.upload": "Загрузить изображение",
         "img.altLabel": "Альтернативный текст — читается вслух читалками; описывает изображение тем, кто его не видит",
         "img.altPh": "Карта меридиана, начерченная чернилами, которые так и не высохли до конца",
+        "img.captionLabel": "Подпись — необязательно; печатается под изображением для всех читателей", "img.captionPh": "Карта гавани 1871 года", "img.captionCardPh": "Подпись (необязательно) — под изображением",
+        "tool.attribution": "Автор цитаты", "tool.attributionTitle": "Автор цитаты — добавляет строку «— Имя» под цитатой, где стоит курсор",
         "img.display": "Отображение", "img.standard": "Стандартно · по центру колонки", "img.fullBleed": "Навылет · от края до края",
         "img.cancel": "Отмена", "img.insert": "Вставить изображение",
         "fn.title": "Добавить сноску", "fn.titleN": "Сноска {n}", "fn.placeholder": "Напишите сноску…", "fn.cancel": "Отмена", "fn.add": "Добавить сноску",
@@ -5773,6 +5793,8 @@
         "img.title": "Resim ekle", "img.upload": "Resim yükle",
         "img.altLabel": "Alternatif metin — e-okuyucular tarafından sesli okunur; resmi göremeyenlere anlatır",
         "img.altPh": "Meridyen haritası, asla tam kurumayan mürekkeple çizilmiş",
+        "img.captionLabel": "Altyazı — isteğe bağlı; her okur için resmin altında basılır", "img.captionPh": "1871 tarihli liman haritası", "img.captionCardPh": "Altyazı (isteğe bağlı) — resmin altında gösterilir",
+        "tool.attribution": "Kaynak", "tool.attributionTitle": "Kaynak — imlecin bulunduğu alıntının altına “— Ad” satırı ekler",
         "img.display": "Görünüm", "img.standard": "Standart · sütunda ortalı", "img.fullBleed": "Tam taşma · kenardan kenara",
         "img.cancel": "Vazgeç", "img.insert": "Resim ekle",
         "fn.title": "Bir dipnot ekle", "fn.titleN": "Dipnot {n}", "fn.placeholder": "Notu yazın…", "fn.cancel": "Vazgeç", "fn.add": "Dipnot ekle",
@@ -5970,6 +5992,8 @@
         "img.title": "إدراج صورة", "img.upload": "رفع صورة",
         "img.altLabel": "النص البديل — تقرؤه القارئات الإلكترونية بصوت عالٍ؛ يصف الصورة لمن لا يستطيع رؤيتها",
         "img.altPh": "خريطة خط الطول، مرسومة بحبر لم يجفّ تمامًا قط",
+        "img.captionLabel": "التعليق — اختياري؛ يُطبع تحت الصورة لكل القرّاء", "img.captionPh": "خريطة الميناء لعام 1871", "img.captionCardPh": "التعليق (اختياري) — يظهر تحت الصورة",
+        "tool.attribution": "القائل", "tool.attributionTitle": "القائل — يضيف سطر «— الاسم» تحت الاقتباس الذي فيه المؤشر",
         "img.display": "العرض", "img.standard": "قياسي · في وسط العمود", "img.fullBleed": "هامش كامل · من الحافة إلى الحافة",
         "img.cancel": "إلغاء", "img.insert": "إدراج الصورة",
         "fn.title": "إضافة حاشية", "fn.titleN": "الحاشية {n}", "fn.placeholder": "اكتب الحاشية…", "fn.cancel": "إلغاء", "fn.add": "إضافة الحاشية",
@@ -6167,6 +6191,8 @@
         "img.title": "画像を挿入", "img.upload": "画像をアップロード",
         "img.altLabel": "代替テキスト — 電子書籍リーダーが読み上げます。画像を見られない人のために説明します",
         "img.altPh": "決して完全に乾かなかったインクで描かれた、子午線の海図",
+        "img.captionLabel": "キャプション — 任意。すべての読者向けに画像の下に印刷されます", "img.captionPh": "1871年の港の海図", "img.captionCardPh": "キャプション(任意)— 画像の下に表示",
+        "tool.attribution": "出典", "tool.attributionTitle": "出典 — カーソルのある引用の下に「— 名前」の行を加えます",
         "img.display": "表示", "img.standard": "標準 · 段の中央", "img.fullBleed": "全面 · 端から端まで",
         "img.cancel": "キャンセル", "img.insert": "画像を挿入",
         "fn.title": "脚注を追加", "fn.titleN": "脚注 {n}", "fn.placeholder": "注を書く…", "fn.cancel": "キャンセル", "fn.add": "脚注を追加",
@@ -6364,6 +6390,8 @@
         "img.title": "插入图片", "img.upload": "上传图片",
         "img.altLabel": "替代文本 — 电子阅读器会朗读它；为看不见图片的人描述图片",
         "img.altPh": "子午线海图，用从未完全干透的墨水绘成",
+        "img.captionLabel": "图注 — 可选；印在图片下方，供所有读者阅读", "img.captionPh": "1871 年的港口海图", "img.captionCardPh": "图注（可选）— 显示在图片下方",
+        "tool.attribution": "出处", "tool.attributionTitle": "出处 — 在光标所在的引文下添加一行“— 姓名”",
         "img.display": "显示方式", "img.standard": "标准 · 在栏内居中", "img.fullBleed": "满版 · 边到边",
         "img.cancel": "取消", "img.insert": "插入图片",
         "fn.title": "添加脚注", "fn.titleN": "脚注 {n}", "fn.placeholder": "写下注释…", "fn.cancel": "取消", "fn.add": "添加脚注",
@@ -17297,7 +17325,10 @@
       /* ================= Text utilities ================= */
       function countWords(text, langCode) {
         const clean = String(text || "").replace(/^[ \t]*:::(?:[ \t]+[A-Za-z][^\n]*)?[ \t]*$/gm, " ") /* container markers ("::: verse", ":::") are markup, not words */
+          /* an image marker is not words, but its caption is read */
+          .replace(/!\[[^\]]*\]\(img:[^)\s"“”]*(?:[ \t]+["“”]([^"“”\n]*)["“”])?\)/g, (m0, cap) => " " + (cap || "") + " ")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[\^?\d{1,3}\]:?/g, " ")
+          .replace(/^([ \t]*>[ \t]*)(?:—|―|-{1,3})[ \t]+/gm, "$1 ") /* a quote attribution's dash is not a word */
           .replace(/^[ \t]*(?:[-•]|\d{1,3}[.)])[ \t]+/gm, " ") /* a list's markers are not words */
           .replace(/[#>*_[\]^]/g, " ").trim();
         if (!clean) return 0;
@@ -19449,15 +19480,21 @@
          An image is a one-line marker in the manuscript text:
            ![alt text](img:<id>)          standard, centred in the column
            ![alt text](img:<id>|full)    full-bleed, edge to edge
-         (No quote characters in the marker, so the beautifier cannot
-         mangle it.) The picture itself lives in state.images and is
-         packaged into OEBPS/Images/ on export. */
+           ![alt text](img:<id> "Caption")  with a visible caption under it
+         The marker's own parts carry no quote characters; a caption's
+         quotes are the one exception, and the beautifier curls them,
+         so straight and curly quotes both close a caption (a caption
+         holds no double quote of its own). The picture itself lives in
+         state.images and is packaged into OEBPS/Images/ on export. */
       const imageById = (id) => state.images.find((im) => im.id === id) || null;
+      const IMAGE_LINE_RE = /^!\[([^\]]*)\]\(img:([A-Za-z0-9-]+)(\|full)?(?:[ \t]+["“”]([^"“”\n]*)["“”])?\)$/;
       function parseImageLine(line) {
-        const m = String(line == null ? "" : line).trim().match(/^!\[([^\]]*)\]\(img:([A-Za-z0-9-]+)(\|full)?\)$/);
-        return m ? { alt: m[1], id: m[2], full: !!m[3] } : null;
+        const m = String(line == null ? "" : line).trim().match(IMAGE_LINE_RE);
+        return m ? { alt: m[1], id: m[2], full: !!m[3], caption: (m[4] || "").trim() } : null;
       }
-      const imageTokenText = (t) => "![" + t.alt + "](img:" + t.id + (t.full ? "|full" : "") + ")";
+      /* A caption as the marker can hold it: one line, no double quotes. */
+      const cleanCaption = (v) => String(v || "").replace(/["“”]/g, "").replace(/\s+/g, " ").trim();
+      const imageTokenText = (t) => "![" + t.alt + "](img:" + t.id + (t.full ? "|full" : "") + (cleanCaption(t.caption) ? ' "' + cleanCaption(t.caption) + '"' : "") + ")";
       function imageTokensIn(content) {
         const out = [];
         String(content || "").split("\n").forEach((l) => { const t = parseImageLine(l); if (t) out.push(t); });
@@ -19583,7 +19620,10 @@
         const img = imageById(tok.id);
         if (!img) return forExport ? "" : '<figure class="book-img img-missing"><p class="empty-note">An image marker points to a picture that is no longer in this book\u2019s library.</p></figure>';
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(img) : "data:" + img.mediaType + ";base64," + img.data;
-        return '<figure class="book-img' + (tok.full ? " full-bleed" : "") + '"><img src="' + src + '" alt="' + esc(tok.alt) + '"/></figure>';
+        /* A caption is read with the picture: set under it, inline
+           emphasis kept, the alt text still the alt. */
+        const cap = tok.caption ? "<figcaption>" + inlineMd(tok.caption) + "</figcaption>" : "";
+        return '<figure class="book-img' + (tok.full ? " full-bleed" : "") + (cap ? " has-caption" : "") + '"><img src="' + src + '" alt="' + esc(tok.alt) + '"/>' + cap + "</figure>";
       }
       /* ---- Scene images ----
          A section may carry scene images: artwork anchored at its
@@ -19674,6 +19714,16 @@
         if (!ordered && items.length < 2) return null;
         return { ordered, items, start: ordered ? parseInt(lines[0].match(LIST_NUMBER)[1], 10) : 1 };
       }
+      /* Quote attribution: in a ">" blockquote of two or more lines, a
+         last line that opens with a dash ("> — Name"; the beautifier
+         makes "--" the em dash) names who said it. Returns the name
+         (the dash dropped), or null. */
+      const QUOTE_ATTR_RE = /^>\s?[ \t]*(?:—|―|--?)[ \t]+(\S[\s\S]*)$/;
+      function quoteAttribution(lines) {
+        if (!lines || lines.length < 2) return null;
+        const m = String(lines[lines.length - 1]).match(QUOTE_ATTR_RE);
+        return m ? m[1].trim() : null;
+      }
       function contentBlocksToHtml(rawContent, section, isFirst, forExport, dataMedia) {
         const text = beautifyText(rawContent || "");
         if (!text) return forExport ? "" : '<p class="empty-note">This section has no text yet. Write in the editor to see it typeset here.</p>';
@@ -19729,7 +19779,12 @@
             return;
           }
           if (lines.every((l) => l.startsWith(">"))) {
-            out.push("<blockquote>" + lines.map((l) => inlineMd(l.replace(/^>\s?/, ""), noteCtx)).join("<br/>") + "</blockquote>"); return;
+            /* A last line "> — Name" is the quote's attribution, set
+               on its own line, ranged right, under the quote. */
+            const qa = quoteAttribution(lines);
+            const body = qa ? lines.slice(0, -1) : lines;
+            out.push("<blockquote" + (qa ? ' class="has-attribution"' : "") + ">" + body.map((l) => inlineMd(l.replace(/^>\s?/, ""), noteCtx)).join("<br/>") +
+              (qa ? '<p class="attribution">— ' + inlineMd(qa, noteCtx) + "</p>" : "") + "</blockquote>"); return;
           }
           if (chunk.startsWith("## ")) { out.push('<h3 class="inhead">' + inlineMd(chunk.slice(3), noteCtx) + "</h3>"); return; }
           if (chunk.startsWith("# ")) { out.push('<h2 class="inhead">' + inlineMd(chunk.slice(2), noteCtx) + "</h2>"); return; }
@@ -19959,6 +20014,9 @@
           para,
           S + "blockquote { margin: 1.1em 1.6em; font-style: italic; }",
           S + "blockquote p { text-indent: 0; }",
+          /* A quote's attribution: its own line, ranged right, upright. */
+          S + "blockquote p.attribution { margin: 0.35em 0 0 0; text-align: right; font-style: normal; font-size: 0.92em; hyphens: manual; -webkit-hyphens: manual; }",
+          S + "blockquote.has-attribution { page-break-inside: avoid; break-inside: avoid; }",
           /* Lists: hung markers, the items set flush, a breath above and below. */
           S + ".book-list { margin: 0.55em 0 0.85em 0; padding: 0 0 0 1.5em; text-indent: 0; }",
           S + "ul.book-list { list-style: disc outside; }",
@@ -20041,6 +20099,7 @@
           S + "figure.book-img { margin: 1.4em auto; text-align: center; text-indent: 0; page-break-inside: avoid; break-inside: avoid; }",
           S + "figure.book-img img { display: block; margin: 0 auto; max-width: 88%; height: auto; }",
           S + "figure.book-img figcaption { font-size: 0.85em; font-style: italic; text-align: center; margin-top: 0.55em; text-indent: 0; opacity: 0.85; }",
+          S + "figure.book-img figcaption em { font-style: normal; }", /* emphasis inside an italic caption turns roman */
           /* A scene image stands full-width in the flow at its break. */
           S + "figure.scene-img { margin: 1.6em 0; page-break-inside: avoid; break-inside: avoid; }",
           S + "figure.scene-img img { max-width: 100%; width: 100%; }",
@@ -22697,6 +22756,27 @@
         ta.dispatchEvent(new Event("input"));
         ta.scrollTop = st0; ta.scrollLeft = sl0;
       }
+      /* Attribution: the paragraph the cursor sits in becomes (or
+         stays) a blockquote and gains a last "> — " line, the cursor
+         left on it for the name. A quote already attributed is left
+         as it is, the cursor moved to its name. */
+      function applyAttribution(ta) {
+        const st0 = ta.scrollTop, sl0 = ta.scrollLeft;
+        const val = ta.value;
+        const start = ta.selectionStart || 0;
+        let bStart = start === 0 ? -2 : val.lastIndexOf("\n\n", start - 1);
+        bStart = bStart < 0 ? 0 : bStart + 2;
+        let bEnd = val.indexOf("\n\n", start); if (bEnd < 0) bEnd = val.length;
+        const block = val.slice(bStart, bEnd).replace(/\s+$/, "");
+        if (!block.trim()) { insertAtCursor(ta, "> — "); return; }
+        const lines = block.split("\n").map((l) => (l.startsWith(">") ? l : "> " + l));
+        const quoted = quoteAttribution(lines) ? lines.join("\n") : lines.join("\n") + "\n> — ";
+        ta.value = val.slice(0, bStart) + quoted + val.slice(bStart + block.length);
+        const caret = bStart + quoted.length;
+        ta.focus(); ta.setSelectionRange(caret, caret);
+        ta.dispatchEvent(new Event("input"));
+        ta.scrollTop = st0; ta.scrollLeft = sl0;
+      }
       /* ---- Footnote dialog: ask for the note, then place the pair —
          the [^n] marker at the cursor and its definition at the end
          of the section, numbered against the notes already there. ---- */
@@ -22893,6 +22973,7 @@
           else if (kind === "emdash") insertAtCursor(area, "—");
           else if (kind === "endnote") openFootnoteDialog();
           else if (kind === "blockquote") applyBlockquote(area);
+          else if (kind === "attribution") applyAttribution(area);
           else if (kind === "ul" || kind === "ol") applyList(area, kind === "ol");
           else if (kind === "verse" || kind === "center" || kind === "right") applyContainer(area, kind);
         });
@@ -22948,18 +23029,23 @@
         const toks = (s && !AUTO_TYPES.includes(s.type)) ? imageTokensIn(s.content) : [];
         if (!toks.length) { box.style.display = "none"; box.innerHTML = ""; return; }
         box.style.display = "";
+        const capPh = t("img.captionCardPh");
         box.innerHTML = '<div class="sec-imgs"><h4><i data-lucide="images"></i>Images in this section</h4>' +
           toks.map((t, i) => {
             const im = imageById(t.id);
             const thumb = im ? '<img src="data:' + im.mediaType + ";base64," + im.data + '" alt=""/>' : '<span class="si-missing">missing</span>';
             return '<div class="sec-img-row">' + thumb +
               '<div class="si-main"><input class="txt-input si-alt" data-tokalt="' + i + '" type="text" value="' + esc(t.alt) + '" placeholder="Alt text for this image" aria-label="Alt text"/>' +
+              '<input class="txt-input si-alt si-cap" data-tokcap="' + i + '" type="text" maxlength="300" value="' + esc(t.caption || "") + '" placeholder="' + esc(capPh) + '" aria-label="' + esc(capPh) + '"/>' +
               '<div class="si-name">' + (im ? esc(im.name) + " · " + fmtBytes(Math.round(im.data.length * 3 / 4)) : "Not in the image library") + "</div></div>" +
               '<button class="si-btn' + (t.full ? " on" : "") + '" data-tokdisp="' + i + '" title="Toggle full-bleed display"><i data-lucide="' + (t.full ? "expand" : "shrink") + '"></i>' + (t.full ? "Full-bleed" : "Standard") + "</button>" +
               '<button class="si-btn" data-tokdel="' + i + '" title="Remove image from this section"><i data-lucide="trash-2"></i></button></div>';
           }).join("") + "</div>";
         box.querySelectorAll("[data-tokalt]").forEach((inp) => inp.addEventListener("change", () => {
           updateImageToken(parseInt(inp.getAttribute("data-tokalt"), 10), { alt: cleanAlt(inp.value) });
+        }));
+        box.querySelectorAll("[data-tokcap]").forEach((inp) => inp.addEventListener("change", () => {
+          updateImageToken(parseInt(inp.getAttribute("data-tokcap"), 10), { caption: cleanCaption(inp.value) });
         }));
         box.querySelectorAll("[data-tokdisp]").forEach((b) => b.addEventListener("click", () => {
           const i = parseInt(b.getAttribute("data-tokdisp"), 10);
@@ -23069,7 +23155,9 @@
           const im = imageById(imgSelId);
           if (!im) { toast("Pick or upload an image first", "image"); return; }
           const alt = cleanAlt($("imgAlt").value) || cleanAlt(String(im.name || "").replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ")) || "Image";
-          insertAtCursor($("editorArea"), "\n\n" + imageTokenText({ alt, id: im.id, full: imgFull }) + "\n\n");
+          const caption = cleanCaption($("imgCaption").value);
+          insertAtCursor($("editorArea"), "\n\n" + imageTokenText({ alt, id: im.id, full: imgFull, caption }) + "\n\n");
+          $("imgCaption").value = ""; /* a caption belongs to one placement */
           $("modalImage").classList.remove("open");
           renderSectionImages();
           toast(imgFull ? "Full-bleed image placed" : "Image placed", "image");
@@ -26503,6 +26591,22 @@
           }
           return null;
         };
+        /* A Caption-styled paragraph straight after a picture is that
+           picture's caption: it rides on the image marker, never left
+           as a stray paragraph. Matched by text, in order, like the
+           alignments. */
+        let capAt = 0;
+        const captionFor = (txt) => {
+          if (!aligns) return null;
+          const last = parts.length ? IR_SENT_RE.exec(String(parts[parts.length - 1]).trim()) : null;
+          if (!last || last[1] !== "IMG" || !ir.images[Number(last[2])] || !ir.images[Number(last[2])].imported || ir.images[Number(last[2])].caption) return null;
+          const key = irLoose(txt);
+          if (!key) return null;
+          for (let j = capAt; j < Math.min(aligns.length, capAt + 400); j++) {
+            if (aligns[j] && aligns[j].key === key) { if (!aligns[j].caption) return null; capAt = j + 1; return ir.images[Number(last[2])]; }
+          }
+          return null;
+        };
         const isHeadLine = (t) => t.length > 2 && (CHAPTER_HEAD_RE.test(t) || !!MATTER_HEADINGS[normHeading(t)] || normHeading(t).indexOf("also by") === 0);
         const flushAlign = () => {
           if (!alignRun) return;
@@ -26516,6 +26620,8 @@
           const tag = node.tagName.toLowerCase();
           if (tag === "p" && !node.querySelector("img")) {
             const v = node.textContent.replace(/\s+/g, " ").trim();
+            const capRec = v && !alignRun ? captionFor(v) : null;
+            if (capRec) { capRec.caption = cleanCaption(v); ir.captions = (ir.captions || 0) + 1; return; }
             if (v && !IR_BREAK_RE.test(v)) {
               const al = alignOf(v);
               if (isHeadLine(v)) seenHead = true;
@@ -26619,10 +26725,13 @@
             if ((st.getAttributeNS(W, "type") || st.getAttribute("w:type")) !== "paragraph") return;
             const id = st.getAttributeNS(W, "styleId") || st.getAttribute("w:styleId");
             const ppr = kid(st, "pPr");
-            styles[id] = { jc: norm(val(kid(ppr, "jc"))), based: val(kid(st, "basedOn")) };
+            styles[id] = { jc: norm(val(kid(ppr, "jc"))), based: val(kid(st, "basedOn")), name: val(kid(st, "name")).toLowerCase() };
           });
         }
         const styleJc = (id) => { for (let k = 0; id && styles[id] && k < 12; k++) { if (styles[id].jc) return styles[id].jc; id = styles[id].based; } return ""; };
+        /* Word's own Caption style (by id or by name, through basedOn):
+           the paragraph is a picture's caption. */
+        const styleCaption = (id) => { for (let k = 0; id && k < 12; k++) { if (id === "Caption" || (styles[id] && styles[id].name === "caption")) return true; if (!styles[id]) return false; id = styles[id].based; } return false; };
         const dd = parse(docXml);
         if (dd.getElementsByTagName("parsererror").length) return null;
         return Array.prototype.map.call(dd.getElementsByTagNameNS(W, "p"), (p) => {
@@ -26630,7 +26739,7 @@
           const al = norm(val(kid(ppr, "jc"))) || styleJc(val(kid(ppr, "pStyle")));
           let txt = "";
           Array.prototype.forEach.call(p.getElementsByTagNameNS(W, "t"), (t) => { txt += t.textContent; });
-          return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null };
+          return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null, caption: styleCaption(val(kid(ppr, "pStyle"))) };
         });
       }
       /* Word features the HTML never shows — read from the package
@@ -26682,7 +26791,7 @@
             else if (m[1] === "IMG" && ir.images[n]) {
               const rec = ir.images[n];
               rec.secId = s.id;
-              if (rec.imported) { state.images.push(rec.image); out.push(imageTokenText({ alt: rec.alt, id: rec.image.id, full: false })); }
+              if (rec.imported) { state.images.push(rec.image); out.push(imageTokenText({ alt: rec.alt, id: rec.image.id, full: false, caption: rec.caption || "" })); }
             } else if (m[1] === "TBL" && ir.tables[n]) { ir.tables[n].secId = s.id; ir.tables[n].prev = out.length ? out[out.length - 1].trim() : ""; }
           });
           marks.forEach((mk) => { mk.rec.prev = (out[mk.at - 1] || "").trim(); mk.rec.next = (out[mk.at + 1] || "").trim(); });
@@ -29492,7 +29601,7 @@
           const b = block.trim();
           if (!b) return "";
           const tok = parseImageLine(b);
-          if (tok) { const im = imageById(tok.id); return "![" + tok.alt + "](images/" + (im ? imageFileName(im) : tok.id) + ")"; }
+          if (tok) { const im = imageById(tok.id); return "![" + tok.alt + "](images/" + (im ? imageFileName(im) : tok.id) + (tok.caption ? ' "' + tok.caption + '"' : "") + ")"; }
           if (/^(\*\*\*|❦|⁂)$/.test(b)) return "* * *";
           const lines = b.split("\n");
           if (lines.every((l) => l.startsWith(">"))) return lines.join("\n");
@@ -30974,10 +31083,21 @@
           const al = opts && opts.align ? { align: opts.align } : {};
           if (/^\[\^?\d{1,3}\]:/.test(block)) return; /* definitions ship in the Endnotes section */
           const tok = parseImageLine(block);
-          if (tok) { into.push(docxPara("[Image: " + (tok.alt || "untitled") + "]", "Caption", { align: "center" })); return; }
+          if (tok) {
+            into.push(docxPara("[Image: " + (tok.alt || "untitled") + "]", "Caption", { align: "center" }));
+            /* The writer's caption: a Caption paragraph under the picture's place. */
+            if (tok.caption) into.push(docxPara(tok.caption, "Caption", { align: "center" }));
+            return;
+          }
           if (/^(\*\*\*|❦|⁂)$/.test(block)) { into.push(docxPara("", "Normal", { align: "center", rawRuns: docxRun("* * *", {}) })); return; }
           const lines = block.split("\n");
-          if (lines.every((l) => l.startsWith(">"))) { into.push(docxPara(lines.map((l) => l.replace(/^>\s?/, "")).join(" "), "Quote", al)); return; }
+          if (lines.every((l) => l.startsWith(">"))) {
+            const qa = quoteAttribution(lines);
+            into.push(docxPara((qa ? lines.slice(0, -1) : lines).map((l) => l.replace(/^>\s?/, "")).join(" "), "Quote", al));
+            /* The attribution: its own paragraph, ranged right under the quote. */
+            if (qa) into.push(docxPara("— " + qa, "QuoteAttribution", { align: "right" }));
+            return;
+          }
           if (block.startsWith("## ")) { into.push(docxPara(block.slice(3).trim(), "Heading3", al)); return; }
           if (block.startsWith("# ")) { into.push(docxPara(block.slice(2).trim(), "Heading2", al)); return; }
           const list = listItemsOf(lines);
@@ -31077,6 +31197,8 @@
           /* A verse stanza: one paragraph, its lines real line breaks, set ragged and kept whole. */
           style("Verse", "Verse", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:keepLines/><w:spacing w:after="240"/><w:ind w:left="720"/><w:jc w:val="left"/></w:pPr>') +
           style("Caption", "Caption", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="20"/>', '<w:pPr><w:spacing w:after="160"/></w:pPr>') +
+          /* A quote's attribution line: ranged right under the Quote, upright. */
+          style("QuoteAttribution", "Quote Attribution", "Quote", fonts(bodyF) + '<w:i w:val="0"/><w:sz w:val="22"/>', '<w:pPr><w:ind w:left="720" w:right="720"/><w:spacing w:before="0" w:after="200"/><w:jc w:val="right"/></w:pPr>') +
           style("ListParagraph", "List Paragraph", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:spacing w:after="80"/><w:ind w:left="720"/></w:pPr>') +
           "</w:styles>";
       }
@@ -38126,6 +38248,151 @@
               if (content.indexOf("::: center\nKEEP OUT\n\nDanger of falling rock\n:::") === -1 || content.indexOf("::: right\nYours, M.\n:::") === -1) bad.push("Word import did not fence the aligned paragraphs: " + JSON.stringify(content.slice(0, 400)));
               if (/::: center\nThe Shore Book/.test(content)) bad.push("the centred title page was fenced");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "centre/right set (computed centre and right, no indent); Word export carries w:jc center/right on 2+2 paragraphs; EPUB carries them, validator errors 0; Word import reads alignment direct, by style and through basedOn, and fences KEEP OUT/Danger as one centre run and the sign-off as right, title page untouched");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.captions", feature: "chapter", name: "Image captions: ![alt](img:id \"Caption\") sets the caption under the picture as a figcaption (inline emphasis kept, the alt still the alt; straight or curled quotes, parentheses inside) in the preview, print and EPUB (validates); caption words count, the marker does not; the Word export puts a Caption paragraph under the image's place; the Insert Image dialog and the section's image card write the caption; a Word file's Caption-styled paragraph after a picture comes in as its caption",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const im = { id: "sc-cap1", name: "Gull.png", mediaType: "image/png", ext: "png", data: FAKE_PNG };
+              const tk = parseImageLine('![A gull on a post](img:sc-cap1 "The *first* gull (detail), 1871")');
+              if (!tk || tk.caption !== "The *first* gull (detail), 1871" || tk.alt !== "A gull on a post") bad.push("parse: " + JSON.stringify(tk));
+              const tc = parseImageLine("![A gull](img:sc-cap1|full “Curled caption”)");
+              if (!tc || !tc.full || tc.caption !== "Curled caption") bad.push("curled quotes: " + JSON.stringify(tc));
+              const back = imageTokenText({ alt: "A", id: "sc-cap1", full: true, caption: 'Say "hi"\nthere' });
+              if (back !== '![A](img:sc-cap1|full "Say hi there")') bad.push("token text: " + back);
+              if (imageTokenText({ alt: "A", id: "x", full: false }) !== "![A](img:x)") bad.push("an uncaptioned marker changed");
+              const src = 'Before the picture.\n\n![A gull on a post](img:sc-cap1 "The *first* gull (detail), 1871")\n\n![Plain](img:sc-cap1)\n\nAfter.';
+              const s = mkSection("body", "chapter", "Captions", { number: "1", content: src });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: keepDoc.meta.title || "Caption Check", author: keepDoc.meta.author || "A. Writer" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [im], printTrim: "6x9" });
+              const sec = state.sections.find((x) => x.type === "chapter");
+              const html = contentBlocksToHtml(sec.content, sec, false, true, true);
+              const wantFig = '<figure class="book-img has-caption"><img src="data:image/png;base64,' + FAKE_PNG + '" alt="A gull on a post"/><figcaption>The <em>first</em> gull (detail), 1871</figcaption></figure>';
+              if (!html.includes(wantFig)) bad.push("the captioned figure did not set: " + JSON.stringify(html.replace(FAKE_PNG, "…").slice(0, 400)));
+              if (!html.includes('<figure class="book-img"><img src="data:image/png;base64,' + FAKE_PNG + '" alt="Plain"/></figure>')) bad.push("an uncaptioned figure changed");
+              const wc = countWords(src);
+              if (wc !== 9) bad.push("word count " + wc + " (want 9: 3 + caption 5 + 1, marker and alt not words)");
+              /* As the page sets it: centred under the picture, no indent. */
+              const probe = document.createElement("div");
+              probe.className = "sc-cap-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-cap-probe");
+              probe.innerHTML = html; document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const fc = probe.querySelector("figcaption"), img = probe.querySelector("figure.has-caption img");
+                const cs = getComputedStyle(fc);
+                if (cs.textAlign !== "center" || cs.textIndent !== "0px" || cs.fontStyle !== "italic") bad.push("caption computed: " + cs.textAlign + "/" + cs.textIndent + "/" + cs.fontStyle);
+                if (!(fc.getBoundingClientRect().top >= img.getBoundingClientRect().bottom)) bad.push("the caption is not under the picture");
+              } finally { probe.remove(); st.remove(); }
+              selectSection(sec.id); renderPreview();
+              const flow = $("pageFlow") ? $("pageFlow").innerHTML : "";
+              if (!flow.includes("<figcaption>The <em>first</em> gull (detail), 1871</figcaption>")) bad.push("the preview carries no caption");
+              const print = buildPrintHtml();
+              if (!print.includes("<figcaption>The <em>first</em> gull (detail), 1871</figcaption>")) bad.push("the print interior carries no caption");
+              const files = epubFiles("generic");
+              const chap = files.find((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes("<figcaption>The <em>first</em> gull (detail), 1871</figcaption>"));
+              const val = validateEpubPackage(files);
+              if (!chap) bad.push("the EPUB chapter carries no caption");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              const doc = ((buildDocxFiles().find((f) => f.path === "word/document.xml") || {}).content) || "";
+              const ip = doc.indexOf("[Image: A gull on a post]"), cp = doc.indexOf("(detail), 1871");
+              if (!(ip > 0 && cp > ip && /<w:pStyle w:val="Caption"\/><w:jc w:val="center"\/><\/w:pPr><w:r><w:t xml:space="preserve">The <\/w:t><\/w:r><w:r><w:rPr><w:i\/><\/w:rPr><w:t xml:space="preserve">first<\/w:t>/.test(doc))) bad.push("the Word export has no Caption paragraph under the image");
+              const md = sectionToMarkdown(sec);
+              if (!md.includes('"The *first* gull (detail), 1871")')) bad.push("the Markdown export lost the caption");
+              /* The Insert Image dialog writes the caption into the marker. */
+              const ta = $("editorArea");
+              selectSection(sec.id);
+              ta.value = "Opening."; ta.setSelectionRange(ta.value.length, ta.value.length);
+              openImageModal(); selectLibImage("sc-cap1");
+              $("imgAlt").value = "A gull"; $("imgCaption").value = 'Gull, "early" light';
+              $("btnDoInsertImage").click();
+              const placed = imageTokensIn(ta.value)[0];
+              if (!placed || placed.caption !== "Gull, early light" || $("imgCaption").value !== "") bad.push("the dialog did not write the caption: " + JSON.stringify(ta.value));
+              /* The section's image card edits it. */
+              sec.content = ta.value; renderSectionImages();
+              const capIn = document.querySelector('#sectionImages [data-tokcap="0"]');
+              if (!capIn) bad.push("the image card has no caption field");
+              else { capIn.value = "Edited caption"; capIn.dispatchEvent(new Event("change")); if ((imageTokensIn(sec.content)[0] || {}).caption !== "Edited caption") bad.push("the image card did not edit the caption"); }
+              /* Word import: a Caption-styled paragraph after a picture. */
+              const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+              const para = (ppr, t) => "<w:p>" + (ppr ? "<w:pPr>" + ppr + "</w:pPr>" : "") + "<w:r><w:t>" + t + "</w:t></w:r></w:p>";
+              const docXml = "<w:document " + W + "><w:body>" + para('<w:pStyle w:val="Heading1"/>', "Chapter One") + para("", "Words before.") + "<w:p><w:r><w:drawing/></w:r></w:p>" +
+                para('<w:pStyle w:val="FigCap"/>', "Figure 1. The old pier") + para('<w:pStyle w:val="FigCap"/>', "A stray caption-styled line") + para("", "Words after.") + "</w:body></w:document>";
+              const stylesXml = "<w:styles " + W + '><w:style w:type="paragraph" w:styleId="Caption"><w:name w:val="caption"/></w:style><w:style w:type="paragraph" w:styleId="FigCap"><w:name w:val="Fig Cap"/><w:basedOn w:val="Caption"/></w:style></w:styles>';
+              const aligns = irDocxParaAligns(docXml, stylesXml);
+              const caps = (aligns || []).map((a) => a.caption ? 1 : 0).join("");
+              if (caps !== "000110") bad.push("Caption style read as " + caps);
+              let content = "";
+              irCheckRun(() => {
+                importDocxConverted("captions.docx", '<h1>Chapter One</h1><p>Words before.</p><p><img src="data:image/png;base64,' + FAKE_PNG + '" alt="Pier"/></p><p>Figure 1. The old pier</p><p>A stray caption-styled line</p><p>Words after.</p>',
+                  [], { comments: 0, ins: 0, del: 0, textboxes: 0, headers: 0, scanned: true, aligns }, {}, null);
+                content = state.sections.map((x) => String(x.content || "")).join("\n\n=====\n\n");
+                return scVerdict(true, "");
+              });
+              if (!/!\[Pier\]\(img:[A-Za-z0-9-]+ ["“]Figure 1\. The old pier["”]\)/.test(content) || /\n\nFigure 1\. The old pier/.test(content) || content.indexOf("A stray caption-styled line") === -1) bad.push("Word import did not attach the caption: " + JSON.stringify(content.slice(0, 400)));
+              const locs = Object.keys(UI_STRINGS);
+              const missing = locs.filter((c) => ["img.captionLabel", "img.captionPh", "img.captionCardPh"].some((k) => !UI_STRINGS[c][k]));
+              if (locs.length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "caption parsed (straight and curled quotes, parentheses kept), set as figcaption under the picture (computed centred, italic, unindented, below the image) in preview, print and EPUB, validator errors 0; 9 words counted (caption yes, marker no); Word: a Caption paragraph with italics under [Image]; Markdown keeps it; the dialog and the image card write it; Word import attaches a Caption-styled paragraph (through basedOn) to the picture before it and leaves a later one as text; strings in " + locs.length + " languages");
+            } finally {
+              $("modalImage").classList.remove("open");
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.attribution", feature: "chapter", name: "Quote attribution: in a \">\" blockquote of two or more lines, a last line \"> — Name\" (or \"> -- Name\") sets as the quote's attribution, on its own line, ranged right and upright, in the preview, print and EPUB (validates); the dash is not a word; the Word export sets it as a right-aligned Quote Attribution paragraph under the Quote; the Attribution toolbar button adds the line",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "Prose first.\n\n> The sea is *calm* tonight.\n> The tide is full.\n> -- Matthew Arnold, Dover Beach\n\n> -- a dash-led quote of one line\n\n> A quote\n> with no attribution";
+              const s = mkSection("body", "chapter", "Quotes", { number: "1", content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              const want = '<blockquote class="has-attribution">The sea is <em>calm</em> tonight.<br/>The tide is full.<p class="attribution">— Matthew Arnold, Dover Beach</p></blockquote>';
+              if (!html.includes(want)) bad.push("the attribution did not set: " + JSON.stringify(html));
+              if (!html.includes("<blockquote>— a dash-led quote of one line</blockquote>")) bad.push("a one-line dash quote was taken as an attribution");
+              if (!html.includes("<blockquote>A quote<br/>with no attribution</blockquote>")) bad.push("a plain quote changed");
+              const wc = countWords("> The sea is calm.\n> -- Matthew Arnold\n\n> — Anon");
+              if (wc !== 7) bad.push("word count " + wc + " (want 7: the dashes are not words)");
+              const probe = document.createElement("div");
+              probe.className = "sc-attr-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-attr-probe");
+              probe.innerHTML = html; document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const a = probe.querySelector("p.attribution");
+                const cs = getComputedStyle(a);
+                const qr = a.parentElement.getBoundingClientRect(), ar = a.getBoundingClientRect();
+                if (cs.textAlign !== "right" || cs.fontStyle !== "normal" || cs.textIndent !== "0px") bad.push("attribution computed: " + cs.textAlign + "/" + cs.fontStyle + "/" + cs.textIndent);
+                if (!(ar.top > qr.top + 10 && ar.bottom <= qr.bottom + 1)) bad.push("the attribution does not stand on its own line under the quote");
+              } finally { probe.remove(); st.remove(); }
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: keepDoc.meta.title || "Attribution Check", author: keepDoc.meta.author || "A. Writer" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              selectSection(state.sections.find((x) => x.type === "chapter").id); renderPreview();
+              const flow = $("pageFlow") ? $("pageFlow").innerHTML : "";
+              if (!flow.includes('<p class="attribution">— Matthew Arnold, Dover Beach</p>')) bad.push("the preview carries no attribution");
+              const print = buildPrintHtml();
+              if (!print.includes('<p class="attribution">— Matthew Arnold, Dover Beach</p>')) bad.push("the print interior carries no attribution");
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<p class="attribution">— Matthew Arnold, Dover Beach</p>'))) bad.push("the EPUB carries no attribution");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              const docx = buildDocxFiles();
+              const doc = (docx.find((f) => f.path === "word/document.xml") || {}).content || "";
+              const sty = (docx.find((f) => f.path === "word/styles.xml") || {}).content || "";
+              const qi = doc.indexOf("The tide is full."), ai = doc.indexOf('<w:pStyle w:val="QuoteAttribution"/><w:jc w:val="right"/></w:pPr><w:r><w:t xml:space="preserve">— Matthew Arnold, Dover Beach</w:t>');
+              if (!(qi > 0 && ai > qi) || !sty.includes('w:styleId="QuoteAttribution"') || doc.indexOf("Dover Beach") !== doc.lastIndexOf("Dover Beach")) bad.push("the Word export has no attribution paragraph under the quote");
+              /* The toolbar: quote the cursor's paragraph and add the line. */
+              const ta = document.createElement("textarea");
+              ta.value = "A\n\nTo be or not.\n\nC"; ta.setSelectionRange(5, 5);
+              applyAttribution(ta);
+              if (ta.value !== "A\n\n> To be or not.\n> — \n\nC" || ta.selectionStart !== 23) bad.push("toolbar: " + JSON.stringify(ta.value) + " @" + ta.selectionStart);
+              ta.value = "> Said.\n> — Her"; ta.setSelectionRange(2, 2); applyAttribution(ta);
+              if (ta.value !== "> Said.\n> — Her") bad.push("toolbar doubled an attribution: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="attribution"]')) bad.push("the toolbar lacks Attribution");
+              const locs = Object.keys(UI_STRINGS);
+              const missing = locs.filter((c) => ["tool.attribution", "tool.attributionTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (locs.length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "attribution set under the quote (computed right, upright, its own line), a one-line dash quote and a plain quote untouched; dashes not counted; preview, print and EPUB carry it, validator errors 0; Word: a right-aligned Quote Attribution paragraph after the Quote; toolbar adds the line once; strings in " + locs.length + " languages");
             } finally {
               applyBookDoc(keepDoc);
             }

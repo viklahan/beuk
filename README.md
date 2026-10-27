@@ -2606,6 +2606,35 @@ page stays the lines the title-page reader expects, and a centred chapter
 heading line stays a heading. Self-checks: `chapter.containers`,
 `chapter.verse`, `chapter.align`.
 
+## Captions and quote attribution
+
+**Image captions.** An image marker may carry a caption as a quoted title:
+`![alt text](img:<id> "Caption")` (also with `|full`). The caption is set
+under the picture as a `<figcaption>` (small, italic, centred; inline
+`*emphasis*` kept and turned roman) in the preview, the print interior and
+the EPUB; the alt text stays the alt text. The beautifier curls the quotes,
+so straight and curly quotes both close a caption; a caption holds no
+double quote of its own (`cleanCaption` drops them) and may hold
+parentheses. Caption words are counted (they are read); the marker and the
+alt are not. In the Word export a `Caption`-style paragraph follows the
+image's `[Image: …]` placeholder; the Markdown export keeps the title. The
+Insert Image dialog has a Caption field and the section's image card edits
+it. Word import: a paragraph in Word's `Caption` style (by id or name,
+through `basedOn`; read from `word/document.xml` beside the alignments in
+`irDocxParaAligns`) straight after an imported picture becomes that
+picture's caption.
+
+**Quote attribution.** In a `>` blockquote of two or more lines, a last line
+opening with a dash — `> — Name`, or `> -- Name` / `> - Name`, which the
+beautifier makes an em dash — is the quote's attribution
+(`quoteAttribution`): set as `<p class="attribution">` on its own line under
+the quote, ranged right and upright, the quote kept whole across a page
+break. A one-line dash-led quote stays a quote. The dash is not a word. In
+Word the attribution is its own right-aligned `QuoteAttribution` paragraph
+(based on `Quote`) under the Quote. The toolbar's Attribution button quotes
+the cursor's paragraph if needed and adds the `> — ` line, cursor on it.
+Self-checks: `chapter.captions`, `chapter.attribution`.
+
 ## Ramp: `/ramp`
 
 `/ramp` (`client/site/ramp.html`) is a gallery of books set in Beuk and
