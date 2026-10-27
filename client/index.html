@@ -1627,6 +1627,23 @@
       .goal-field-txt span { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; line-height: 1.45; }
       .goal-num { width: 132px; flex: 0 0 auto; }
       .goal-date { width: 172px; flex: 0 0 auto; }
+      /* ==== BEUK:goalspace ==== */
+      .goal-days { display: flex; gap: 4px; flex-wrap: wrap; }
+      .goal-day { min-width: 40px; padding: 7px 6px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel-2); color: var(--muted); font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; }
+      .goal-day[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+      .goal-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .goal-switch { padding: 6px 0; border-bottom: none; }
+      .goal-switch .sw-txt { flex: 1 1 auto; min-width: 0; }
+      .switch:disabled { opacity: .45; cursor: not-allowed; }
+      .goal-num:disabled { opacity: .7; }
+      .goal-plan { margin-top: 4px; font-variant-numeric: tabular-nums; }
+      .goal-onpace { color: var(--ink-2); }
+      .goal-jw-note { font-size: 13px; color: var(--ink-2); border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 10px 13px; margin: 4px 0 6px; line-height: 1.5; }
+      .goal-kept-seg { display: inline-flex; margin: 2px 0 10px; }
+      .goal-kept-seg button { flex: 0 0 auto; padding: 7px 12px; }
+      .goal-kept-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .goal-kept-cell .goal-big { font-variant-numeric: tabular-nums; }
+      /* ==== /BEUK:goalspace ==== */
       .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
       .cal-month { font-family: "EB Garamond", Georgia, serif; font-size: 17.5px; font-weight: 600; color: var(--ink); }
       .cal-nav { padding: 5px 9px; }
@@ -3339,7 +3356,15 @@
       <div class="modal wide ins-modal" role="dialog" aria-modal="true" aria-labelledby="goalsH">
         <h2 id="goalsH" data-i18n="goals.title"><i data-lucide="target"></i>Goals</h2>
         <p class="m-sub" data-i18n="goals.sub">Targets you set for yourself, kept quietly. Nothing here counts down at you — it only keeps the tally.</p>
+        <p class="goal-jw-note" id="goalJwNote" hidden data-i18n="goals.justWriteOn">Just writing — goals, streak and pace are paused. Words are still logged; turn it off below whenever you like.</p><!-- BEUK:goalspace -->
         <div id="goalsProgress"></div>
+        <!-- ==== BEUK:goalspace ==== words written vs words kept, from the day the log began keeping the split -->
+        <section class="ins-sec" id="goalKeptSec">
+          <h3 class="ins-h" data-i18n="goals.keptH">Written and kept</h3>
+          <p class="ins-sub" data-i18n="goals.keptSub">Written counts every word you added; kept is what the book gained once deletions are taken off. Both come from the log, from the day it began keeping them — nothing earlier is estimated.</p>
+          <div id="goalKept"></div>
+        </section>
+        <!-- ==== /BEUK:goalspace ==== -->
         <!-- ==== BEUK:goalshist ==== the road so far: the book's length on logged days -->
         <section class="ins-sec" id="goalRoadSec" hidden>
           <h3 class="ins-h" data-i18n="goals.roadH">The road so far</h3>
@@ -3347,7 +3372,7 @@
           <div id="goalRoad"></div>
         </section>
         <!-- ==== /BEUK:goalshist ==== -->
-        <section class="ins-sec">
+        <section class="ins-sec" id="goalCalSec">
           <h3 class="ins-h" data-i18n="goals.calH">The habit calendar</h3>
           <p class="ins-sub" data-i18n="goals.calSub">Words added, day by day, exactly as the log has kept them since it began. Days before the log started stay blank — nothing is filled in after the fact.</p>
           <div id="goalCal"></div>
@@ -3357,7 +3382,7 @@
           <p class="ins-sub" data-i18n="goals.setSub">Each is optional, and each stands alone. Clear a field to put that goal away — its line leaves the sidebar too.</p>
           <div class="goal-form">
             <div class="goal-field">
-              <div class="goal-field-txt"><b data-i18n="goals.daily">Daily target</b><span data-i18n="goals.dailyHint">Words you'd like to add in a day.</span></div>
+              <div class="goal-field-txt"><b data-i18n="goals.daily">Daily target</b><span id="goalDailyHint">Words you'd like to add in a day.</span></div>
               <input class="txt-input goal-num" id="goalDailyInput" type="number" min="0" step="50" inputmode="numeric" data-i18n-ph="goals.wordsPh" data-i18n-aria="goals.daily" aria-label="Daily target" placeholder="Words" />
               <button type="button" class="linkish" data-gclear="daily" data-i18n="goals.clear">Clear</button>
             </div>
@@ -3371,8 +3396,35 @@
               <input class="txt-input goal-date" id="goalDeadlineInput" type="date" data-i18n-aria="goals.deadline" aria-label="Deadline" />
               <button type="button" class="linkish" data-gclear="deadline" data-i18n="goals.clear">Clear</button>
             </div>
+            <!-- ==== BEUK:goalspace ==== writing days and the daily target that follows the deadline -->
+            <div class="goal-field goal-days-field">
+              <div class="goal-field-txt"><b id="goalDaysLab" data-i18n="goals.days">Writing days</b><span data-i18n="goals.daysHint">The days of the week you write. The plan counts only these, and a rest day never breaks the streak.</span></div>
+              <div class="goal-days" id="goalDays" role="group" aria-labelledby="goalDaysLab"></div>
+            </div>
+            <div class="switch-row goal-switch">
+              <div class="sw-txt"><b data-i18n="goals.dlDay">The deadline day counts</b><span data-i18n="goals.dlDayHint">Plan to write on the deadline day itself, too.</span></div>
+              <button class="switch" id="tglGoalDlDay" type="button" aria-pressed="false" aria-label="The deadline day counts" data-i18n-aria="goals.dlDay"></button>
+            </div>
+            <div class="switch-row goal-switch">
+              <div class="sw-txt"><b data-i18n="goals.auto">Set my daily target from the deadline</b><span id="goalAutoHint">Words left ÷ writing days left, worked out again each day, so a missed day spreads over the days still to come.</span></div>
+              <button class="switch" id="tglGoalAuto" type="button" aria-pressed="false" aria-label="Set my daily target from the deadline" data-i18n-aria="goals.auto"></button>
+            </div>
+            <!-- ==== /BEUK:goalspace ==== -->
           </div>
         </section>
+        <!-- ==== BEUK:goalspace ==== just write, and clearing the tracking data (never the book) -->
+        <section class="ins-sec">
+          <h3 class="ins-h" data-i18n="goals.trackH">Tracking</h3>
+          <div class="switch-row goal-switch">
+            <div class="sw-txt"><b data-i18n="goals.justWrite">Just write</b><span data-i18n="goals.justWriteHint">Turn the readouts off — goals, streak and pace step aside. Words are still logged, so nothing is lost.</span></div>
+            <button class="switch" id="tglGoalJustWrite" type="button" aria-pressed="false" aria-label="Just write" data-i18n-aria="goals.justWrite"></button>
+          </div>
+          <div class="switch-row goal-switch">
+            <div class="sw-txt"><b data-i18n="goals.clearData">Clear tracking data</b><span data-i18n="goals.clearDataHint">Wipes the habit log, the streak and the pace history on this device. Your goals and every word of the book stay.</span></div>
+            <button class="tb-btn" id="btnGoalClearData" type="button" data-i18n="goals.clearDataBtn">Clear…</button>
+          </div>
+        </section>
+        <!-- ==== /BEUK:goalspace ==== -->
         <div class="modal-actions">
           <button class="tb-btn" id="btnCloseGoals" data-i18n="goals.close">Close</button>
         </div>
@@ -3795,6 +3847,22 @@
         "goals.dailyHint": "Words you'd like to add in a day.", "goals.project": "Project target", "goals.projectHint": "The length you're steering the book toward.",
         "goals.deadline": "Deadline", "goals.deadlineHint": "A date to be finished by.", "goals.wordsPh": "Words",
         "goals.clear": "Clear",
+        /* BEUK:goalspace */
+        "goals.days": "Writing days", "goals.daysHint": "The days of the week you write. The plan counts only these, and a rest day never breaks the streak.", "goals.dlDay": "The deadline day counts",
+        "goals.dlDayHint": "Plan to write on the deadline day itself, too.", "goals.auto": "Set my daily target from the deadline", "goals.autoHint": "Words left ÷ writing days left, worked out again each day, so a missed day spreads over the days still to come.",
+        "goals.dailyAutoHint": "Set from the deadline. Turn that off below to choose your own.", "goals.planMath": "{left} words left over {days} writing day → {daily} a day", "goals.planMathPlural": "{left} words left over {days} writing days → {daily} a day",
+        "goals.planRestNote": "Today is a rest day; words you write still count.", "goals.planReached": "Target reached — there is nothing left to plan.", "goals.planPast": "The deadline has passed. Choose a new date to plan from it.",
+        "goals.planNoDays": "No writing days are left before the deadline.", "goals.planNeeds": "Set a project target and a deadline to plan from them.", "goals.lineRest": "A rest day — {done} words today",
+        "goals.paceOn": "On pace with the straight line from {date}.", "goals.paceBehind": "Behind by {n} word, against the straight line from {date}.", "goals.paceBehindPlural": "Behind by {n} words, against the straight line from {date}.",
+        "goals.paceAhead": "Ahead by {n} word, against the straight line from {date}.", "goals.paceAheadPlural": "Ahead by {n} words, against the straight line from {date}.", "goals.keptH": "Written and kept",
+        "goals.keptSub": "Written counts every word you added; kept is what the book gained once deletions are taken off. Both come from the log, from the day it began keeping them — nothing earlier is estimated.", "goals.keptToday": "Today", "goals.kept7": "Last 7 days",
+        "goals.kept30": "Last 30 days", "goals.keptWritten": "Written", "goals.keptRemoved": "Removed",
+        "goals.keptNet": "Kept", "goals.keptFrom": "From {date}, when the log began keeping words written and removed.", "goals.keptNone": "Nothing written or removed in this book in this period, as far as the log has kept.",
+        "goals.keptNotYet": "The log keeps words written and removed from {date}.", "goals.trackH": "Tracking", "goals.justWrite": "Just write",
+        "goals.justWriteHint": "Turn the readouts off — goals, streak and pace step aside. Words are still logged, so nothing is lost.", "goals.justWriteOn": "Just writing — goals, streak and pace are paused. Words are still logged; turn it off below whenever you like.", "goals.justWriteSide": "Just writing — tracking is paused.",
+        "goals.clearData": "Clear tracking data", "goals.clearDataHint": "Wipes the habit log, the streak and the pace history on this device. Your goals and every word of the book stay.", "goals.clearDataBtn": "Clear…",
+        "goals.clearTitle": "Clear tracking data?", "goals.clearBody": "This wipes the habit calendar, the written-and-kept log, the road so far, the streak and the pace line's start on this device. Your goals stay, and not a word of the book changes.", "goals.clearYes": "Clear tracking data",
+        "goals.clearKeep": "Keep it", "goals.cleared": "Tracking data cleared. The book is unchanged.", "streak.restHtml": "<b>{n}-day writing streak</b> — today is a rest day. The streak is safe.",
         "sync.onShelf": "On your shelf ✓",
         "tab.content": "Chapter Content", "tab.type": "Typography Studio",
         "editor.chapterNumber": "Chapter №", "editor.chapterTitle": "Chapter Title", "editor.chapterSubtitle": "Subtitle (optional)",
@@ -4206,6 +4274,22 @@
         "goals.dailyHint": "Palabras que te gustaría añadir en un día.", "goals.project": "Meta del proyecto", "goals.projectHint": "La extensión hacia la que llevas el libro.",
         "goals.deadline": "Fecha límite", "goals.deadlineHint": "Una fecha para haber terminado.", "goals.wordsPh": "Palabras",
         "goals.clear": "Borrar",
+        /* BEUK:goalspace */
+        "goals.days": "Días de escritura", "goals.daysHint": "Los días de la semana en que escribes. El plan cuenta solo estos, y un día de descanso nunca rompe la racha.", "goals.dlDay": "El día límite cuenta",
+        "goals.dlDayHint": "Planea escribir también el mismo día de la fecha límite.", "goals.auto": "Fijar mi objetivo diario a partir de la fecha límite", "goals.autoHint": "Palabras restantes ÷ días de escritura restantes, recalculado cada día, de modo que un día perdido se reparte entre los que quedan.",
+        "goals.dailyAutoHint": "Fijado a partir de la fecha límite. Desactívalo abajo para elegir el tuyo.", "goals.planMath": "Quedan {left} palabras en {days} día de escritura → {daily} al día", "goals.planMathPlural": "Quedan {left} palabras en {days} días de escritura → {daily} al día",
+        "goals.planRestNote": "Hoy es día de descanso; lo que escribas sigue contando.", "goals.planReached": "Objetivo alcanzado — no queda nada que planear.", "goals.planPast": "La fecha límite ya pasó. Elige una nueva fecha para planear a partir de ella.",
+        "goals.planNoDays": "No quedan días de escritura antes de la fecha límite.", "goals.planNeeds": "Fija un objetivo del proyecto y una fecha límite para planear a partir de ellos.", "goals.lineRest": "Día de descanso — {done} palabras hoy",
+        "goals.paceOn": "Al ritmo de la línea recta desde el {date}.", "goals.paceBehind": "{n} palabra por detrás de la línea recta desde el {date}.", "goals.paceBehindPlural": "{n} palabras por detrás de la línea recta desde el {date}.",
+        "goals.paceAhead": "{n} palabra por delante de la línea recta desde el {date}.", "goals.paceAheadPlural": "{n} palabras por delante de la línea recta desde el {date}.", "goals.keptH": "Escrito y conservado",
+        "goals.keptSub": "Escrito cuenta cada palabra que añadiste; conservado es lo que ganó el libro una vez restado lo borrado. Ambos salen del registro, desde el día en que empezó a guardarlos — nada anterior se estima.", "goals.keptToday": "Hoy", "goals.kept7": "Últimos 7 días",
+        "goals.kept30": "Últimos 30 días", "goals.keptWritten": "Escrito", "goals.keptRemoved": "Borrado",
+        "goals.keptNet": "Conservado", "goals.keptFrom": "Desde el {date}, cuando el registro empezó a guardar lo escrito y lo borrado.", "goals.keptNone": "Nada escrito ni borrado en este libro en este periodo, según lo que guarda el registro.",
+        "goals.keptNotYet": "El registro guarda lo escrito y lo borrado desde el {date}.", "goals.trackH": "Seguimiento", "goals.justWrite": "Solo escribir",
+        "goals.justWriteHint": "Apaga los indicadores — objetivos, racha y ritmo se apartan. Las palabras se siguen registrando, así que no se pierde nada.", "goals.justWriteOn": "Solo escribiendo — objetivos, racha y ritmo están en pausa. Las palabras se siguen registrando; desactívalo abajo cuando quieras.", "goals.justWriteSide": "Solo escribiendo — el seguimiento está en pausa.",
+        "goals.clearData": "Borrar datos de seguimiento", "goals.clearDataHint": "Borra el registro de hábitos, la racha y el historial de ritmo en este dispositivo. Tus objetivos y cada palabra del libro se quedan.", "goals.clearDataBtn": "Borrar…",
+        "goals.clearTitle": "¿Borrar los datos de seguimiento?", "goals.clearBody": "Esto borra el calendario de hábitos, el registro de escrito y conservado, el camino recorrido, la racha y el inicio de la línea de ritmo en este dispositivo. Tus objetivos se quedan y no cambia ni una palabra del libro.", "goals.clearYes": "Borrar datos de seguimiento",
+        "goals.clearKeep": "Conservarlos", "goals.cleared": "Datos de seguimiento borrados. El libro no ha cambiado.", "streak.restHtml": "<b>Racha de escritura de {n} días</b> — hoy es día de descanso. La racha está a salvo.",
         "sync.onShelf": "En tu estantería ✓",
         "tab.content": "Contenido del capítulo", "tab.type": "Estudio de tipografía",
         "editor.chapterNumber": "Capítulo n.º", "editor.chapterTitle": "Título del capítulo", "editor.chapterSubtitle": "Subtítulo (opcional)",
@@ -4409,6 +4493,22 @@
         "goals.dailyHint": "Les mots que vous aimeriez ajouter en un jour.", "goals.project": "Objectif du projet", "goals.projectHint": "La longueur vers laquelle vous menez le livre.",
         "goals.deadline": "Date butoir", "goals.deadlineHint": "Une date pour avoir terminé.", "goals.wordsPh": "Mots",
         "goals.clear": "Effacer",
+        /* BEUK:goalspace */
+        "goals.days": "Jours d'écriture", "goals.daysHint": "Les jours de la semaine où vous écrivez. Le plan ne compte que ceux-là, et un jour de repos ne rompt jamais la série.", "goals.dlDay": "Le jour de l'échéance compte",
+        "goals.dlDayHint": "Prévoir d'écrire aussi le jour même de l'échéance.", "goals.auto": "Fixer mon objectif quotidien d'après l'échéance", "goals.autoHint": "Mots restants ÷ jours d'écriture restants, recalculé chaque jour : un jour manqué se répartit sur ceux qui restent.",
+        "goals.dailyAutoHint": "Fixé d'après l'échéance. Désactivez-le plus bas pour choisir le vôtre.", "goals.planMath": "{left} mots restants sur {days} jour d'écriture → {daily} par jour", "goals.planMathPlural": "{left} mots restants sur {days} jours d'écriture → {daily} par jour",
+        "goals.planRestNote": "Aujourd'hui est un jour de repos ; ce que vous écrivez compte quand même.", "goals.planReached": "Objectif atteint — il n'y a plus rien à planifier.", "goals.planPast": "L'échéance est passée. Choisissez une nouvelle date pour planifier à partir d'elle.",
+        "goals.planNoDays": "Il ne reste aucun jour d'écriture avant l'échéance.", "goals.planNeeds": "Fixez un objectif de projet et une échéance pour planifier à partir d'eux.", "goals.lineRest": "Jour de repos — {done} mots aujourd'hui",
+        "goals.paceOn": "Au rythme de la ligne droite depuis le {date}.", "goals.paceBehind": "{n} mot de retard sur la ligne droite depuis le {date}.", "goals.paceBehindPlural": "{n} mots de retard sur la ligne droite depuis le {date}.",
+        "goals.paceAhead": "{n} mot d'avance sur la ligne droite depuis le {date}.", "goals.paceAheadPlural": "{n} mots d'avance sur la ligne droite depuis le {date}.", "goals.keptH": "Écrit et conservé",
+        "goals.keptSub": "Écrit compte chaque mot ajouté ; conservé est ce que le livre a gagné une fois les suppressions retirées. Les deux viennent du journal, depuis le jour où il a commencé à les garder — rien d'antérieur n'est estimé.", "goals.keptToday": "Aujourd'hui", "goals.kept7": "7 derniers jours",
+        "goals.kept30": "30 derniers jours", "goals.keptWritten": "Écrit", "goals.keptRemoved": "Supprimé",
+        "goals.keptNet": "Conservé", "goals.keptFrom": "Depuis le {date}, quand le journal a commencé à garder l'écrit et le supprimé.", "goals.keptNone": "Rien d'écrit ni de supprimé dans ce livre sur cette période, d'après le journal.",
+        "goals.keptNotYet": "Le journal garde l'écrit et le supprimé à partir du {date}.", "goals.trackH": "Suivi", "goals.justWrite": "Juste écrire",
+        "goals.justWriteHint": "Éteindre les indicateurs — objectifs, série et rythme s'effacent. Les mots sont toujours notés, rien n'est perdu.", "goals.justWriteOn": "Juste écrire — objectifs, série et rythme sont en pause. Les mots sont toujours notés ; désactivez-le plus bas quand vous voulez.", "goals.justWriteSide": "Juste écrire — le suivi est en pause.",
+        "goals.clearData": "Effacer les données de suivi", "goals.clearDataHint": "Efface le journal d'habitudes, la série et l'historique de rythme sur cet appareil. Vos objectifs et chaque mot du livre restent.", "goals.clearDataBtn": "Effacer…",
+        "goals.clearTitle": "Effacer les données de suivi ?", "goals.clearBody": "Cela efface le calendrier d'habitudes, le journal écrit et conservé, le chemin parcouru, la série et le départ de la ligne de rythme sur cet appareil. Vos objectifs restent, et pas un mot du livre ne change.", "goals.clearYes": "Effacer les données de suivi",
+        "goals.clearKeep": "Les garder", "goals.cleared": "Données de suivi effacées. Le livre est inchangé.", "streak.restHtml": "<b>Série d'écriture de {n} jours</b> — aujourd'hui est un jour de repos. La série est en sécurité.",
         "sync.onShelf": "Sur votre étagère ✓",
         "tab.content": "Contenu du chapitre", "tab.type": "Studio de typographie",
         "editor.chapterNumber": "Chapitre n°", "editor.chapterTitle": "Titre du chapitre", "editor.chapterSubtitle": "Sous-titre (facultatif)",
@@ -4612,6 +4712,22 @@
         "goals.dailyHint": "Wörter, die Sie an einem Tag hinzufügen möchten.", "goals.project": "Projektziel", "goals.projectHint": "Die Länge, auf die Sie das Buch zusteuern.",
         "goals.deadline": "Abgabetermin", "goals.deadlineHint": "Ein Datum, bis zu dem Sie fertig sein möchten.", "goals.wordsPh": "Wörter",
         "goals.clear": "Leeren",
+        /* BEUK:goalspace */
+        "goals.days": "Schreibtage", "goals.daysHint": "Die Wochentage, an denen Sie schreiben. Der Plan zählt nur diese, und ein Ruhetag bricht die Serie nie.", "goals.dlDay": "Der Abgabetag zählt",
+        "goals.dlDayHint": "Auch am Abgabetag selbst schreiben.", "goals.auto": "Tagesziel aus dem Abgabetermin ableiten", "goals.autoHint": "Verbleibende Wörter ÷ verbleibende Schreibtage, jeden Tag neu berechnet – ein verpasster Tag verteilt sich auf die kommenden.",
+        "goals.dailyAutoHint": "Aus dem Abgabetermin abgeleitet. Schalten Sie das unten aus, um selbst zu wählen.", "goals.planMath": "{left} Wörter übrig auf {days} Schreibtag → {daily} pro Tag", "goals.planMathPlural": "{left} Wörter übrig auf {days} Schreibtage → {daily} pro Tag",
+        "goals.planRestNote": "Heute ist ein Ruhetag; was Sie schreiben, zählt trotzdem.", "goals.planReached": "Ziel erreicht – es gibt nichts mehr zu planen.", "goals.planPast": "Der Abgabetermin ist vorbei. Wählen Sie ein neues Datum, um davon aus zu planen.",
+        "goals.planNoDays": "Vor dem Abgabetermin bleiben keine Schreibtage.", "goals.planNeeds": "Setzen Sie ein Projektziel und einen Abgabetermin, um davon aus zu planen.", "goals.lineRest": "Ruhetag – heute {done} Wörter",
+        "goals.paceOn": "Im Tempo der geraden Linie seit {date}.", "goals.paceBehind": "{n} Wort hinter der geraden Linie seit {date}.", "goals.paceBehindPlural": "{n} Wörter hinter der geraden Linie seit {date}.",
+        "goals.paceAhead": "{n} Wort vor der geraden Linie seit {date}.", "goals.paceAheadPlural": "{n} Wörter vor der geraden Linie seit {date}.", "goals.keptH": "Geschrieben und behalten",
+        "goals.keptSub": "Geschrieben zählt jedes hinzugefügte Wort; behalten ist, was das Buch nach Abzug der Löschungen gewonnen hat. Beides stammt aus dem Protokoll, ab dem Tag, an dem es begann, beides festzuhalten – nichts davor wird geschätzt.", "goals.keptToday": "Heute", "goals.kept7": "Letzte 7 Tage",
+        "goals.kept30": "Letzte 30 Tage", "goals.keptWritten": "Geschrieben", "goals.keptRemoved": "Gelöscht",
+        "goals.keptNet": "Behalten", "goals.keptFrom": "Ab {date}, als das Protokoll begann, Geschriebenes und Gelöschtes festzuhalten.", "goals.keptNone": "In diesem Zeitraum wurde in diesem Buch nichts geschrieben oder gelöscht, soweit das Protokoll es festhält.",
+        "goals.keptNotYet": "Das Protokoll hält Geschriebenes und Gelöschtes ab {date} fest.", "goals.trackH": "Aufzeichnung", "goals.justWrite": "Einfach schreiben",
+        "goals.justWriteHint": "Die Anzeigen ausschalten – Ziele, Serie und Tempo treten zurück. Wörter werden weiter protokolliert, nichts geht verloren.", "goals.justWriteOn": "Einfach schreiben – Ziele, Serie und Tempo pausieren. Wörter werden weiter protokolliert; schalten Sie es unten aus, wann immer Sie möchten.", "goals.justWriteSide": "Einfach schreiben – die Aufzeichnung pausiert.",
+        "goals.clearData": "Aufzeichnungen löschen", "goals.clearDataHint": "Löscht das Gewohnheitsprotokoll, die Serie und den Tempoverlauf auf diesem Gerät. Ihre Ziele und jedes Wort des Buches bleiben.", "goals.clearDataBtn": "Löschen…",
+        "goals.clearTitle": "Aufzeichnungen löschen?", "goals.clearBody": "Damit werden der Gewohnheitskalender, das Protokoll von Geschriebenem und Behaltenem, der bisherige Weg, die Serie und der Startpunkt der Tempolinie auf diesem Gerät gelöscht. Ihre Ziele bleiben, und kein Wort des Buches ändert sich.", "goals.clearYes": "Aufzeichnungen löschen",
+        "goals.clearKeep": "Behalten", "goals.cleared": "Aufzeichnungen gelöscht. Das Buch ist unverändert.", "streak.restHtml": "<b>{n}-tägige Schreibserie</b> – heute ist ein Ruhetag. Die Serie ist sicher.",
         "sync.onShelf": "In Ihrem Regal ✓",
         "tab.content": "Kapitelinhalt", "tab.type": "Typografie-Studio",
         "editor.chapterNumber": "Kapitel Nr.", "editor.chapterTitle": "Kapiteltitel", "editor.chapterSubtitle": "Untertitel (optional)",
@@ -4815,6 +4931,22 @@
         "goals.dailyHint": "Parole che vorresti aggiungere in un giorno.", "goals.project": "Obiettivo del progetto", "goals.projectHint": "La lunghezza verso cui stai portando il libro.",
         "goals.deadline": "Scadenza", "goals.deadlineHint": "Una data entro cui finire.", "goals.wordsPh": "Parole",
         "goals.clear": "Azzera",
+        /* BEUK:goalspace */
+        "goals.days": "Giorni di scrittura", "goals.daysHint": "I giorni della settimana in cui scrivi. Il piano conta solo questi, e un giorno di riposo non interrompe mai la serie.", "goals.dlDay": "Il giorno della scadenza conta",
+        "goals.dlDayHint": "Prevedi di scrivere anche il giorno stesso della scadenza.", "goals.auto": "Imposta l'obiettivo giornaliero dalla scadenza", "goals.autoHint": "Parole rimaste ÷ giorni di scrittura rimasti, ricalcolato ogni giorno: un giorno saltato si distribuisce su quelli che restano.",
+        "goals.dailyAutoHint": "Impostato dalla scadenza. Disattivalo qui sotto per sceglierne uno tuo.", "goals.planMath": "{left} parole rimaste su {days} giorno di scrittura → {daily} al giorno", "goals.planMathPlural": "{left} parole rimaste su {days} giorni di scrittura → {daily} al giorno",
+        "goals.planRestNote": "Oggi è un giorno di riposo; ciò che scrivi conta comunque.", "goals.planReached": "Obiettivo raggiunto — non resta nulla da pianificare.", "goals.planPast": "La scadenza è passata. Scegli una nuova data da cui pianificare.",
+        "goals.planNoDays": "Non restano giorni di scrittura prima della scadenza.", "goals.planNeeds": "Imposta un obiettivo di progetto e una scadenza per pianificare da essi.", "goals.lineRest": "Giorno di riposo — {done} parole oggi",
+        "goals.paceOn": "Al passo con la linea retta dal {date}.", "goals.paceBehind": "Indietro di {n} parola rispetto alla linea retta dal {date}.", "goals.paceBehindPlural": "Indietro di {n} parole rispetto alla linea retta dal {date}.",
+        "goals.paceAhead": "Avanti di {n} parola rispetto alla linea retta dal {date}.", "goals.paceAheadPlural": "Avanti di {n} parole rispetto alla linea retta dal {date}.", "goals.keptH": "Scritto e tenuto",
+        "goals.keptSub": "Scritto conta ogni parola aggiunta; tenuto è ciò che il libro ha guadagnato tolte le cancellazioni. Entrambi vengono dal registro, dal giorno in cui ha iniziato a tenerli — nulla di precedente è stimato.", "goals.keptToday": "Oggi", "goals.kept7": "Ultimi 7 giorni",
+        "goals.kept30": "Ultimi 30 giorni", "goals.keptWritten": "Scritto", "goals.keptRemoved": "Rimosso",
+        "goals.keptNet": "Tenuto", "goals.keptFrom": "Dal {date}, quando il registro ha iniziato a tenere scritto e rimosso.", "goals.keptNone": "Nulla di scritto o rimosso in questo libro nel periodo, per quanto il registro ha tenuto.",
+        "goals.keptNotYet": "Il registro tiene scritto e rimosso dal {date}.", "goals.trackH": "Monitoraggio", "goals.justWrite": "Scrivi e basta",
+        "goals.justWriteHint": "Spegni gli indicatori — obiettivi, serie e ritmo si fanno da parte. Le parole vengono ancora registrate, quindi nulla va perso.", "goals.justWriteOn": "Scrivi e basta — obiettivi, serie e ritmo sono in pausa. Le parole vengono ancora registrate; disattivalo qui sotto quando vuoi.", "goals.justWriteSide": "Scrivi e basta — il monitoraggio è in pausa.",
+        "goals.clearData": "Cancella i dati di monitoraggio", "goals.clearDataHint": "Cancella il registro delle abitudini, la serie e lo storico del ritmo su questo dispositivo. I tuoi obiettivi e ogni parola del libro restano.", "goals.clearDataBtn": "Cancella…",
+        "goals.clearTitle": "Cancellare i dati di monitoraggio?", "goals.clearBody": "Questo cancella il calendario delle abitudini, il registro di scritto e tenuto, la strada percorsa, la serie e l'inizio della linea del ritmo su questo dispositivo. I tuoi obiettivi restano e non cambia una sola parola del libro.", "goals.clearYes": "Cancella i dati di monitoraggio",
+        "goals.clearKeep": "Tienili", "goals.cleared": "Dati di monitoraggio cancellati. Il libro è invariato.", "streak.restHtml": "<b>Serie di scrittura di {n} giorni</b> — oggi è un giorno di riposo. La serie è al sicuro.",
         "sync.onShelf": "Nella tua libreria ✓",
         "tab.content": "Contenuto del capitolo", "tab.type": "Studio di tipografia",
         "editor.chapterNumber": "Capitolo n.", "editor.chapterTitle": "Titolo del capitolo", "editor.chapterSubtitle": "Sottotitolo (facoltativo)",
@@ -5018,6 +5150,22 @@
         "goals.dailyHint": "Palavras que gostarias de acrescentar num dia.", "goals.project": "Meta do projeto", "goals.projectHint": "A extensão para a qual estás a levar o livro.",
         "goals.deadline": "Prazo", "goals.deadlineHint": "Uma data para teres terminado.", "goals.wordsPh": "Palavras",
         "goals.clear": "Limpar",
+        /* BEUK:goalspace */
+        "goals.days": "Dias de escrita", "goals.daysHint": "Os dias da semana em que escreves. O plano conta só estes, e um dia de descanso nunca quebra a sequência.", "goals.dlDay": "O dia do prazo conta",
+        "goals.dlDayHint": "Planear escrever também no próprio dia do prazo.", "goals.auto": "Definir a meta diária a partir do prazo", "goals.autoHint": "Palavras em falta ÷ dias de escrita em falta, recalculado todos os dias, para que um dia falhado se reparta pelos que faltam.",
+        "goals.dailyAutoHint": "Definida a partir do prazo. Desliga isso abaixo para escolheres a tua.", "goals.planMath": "Faltam {left} palavras em {days} dia de escrita → {daily} por dia", "goals.planMathPlural": "Faltam {left} palavras em {days} dias de escrita → {daily} por dia",
+        "goals.planRestNote": "Hoje é dia de descanso; o que escreveres continua a contar.", "goals.planReached": "Meta alcançada — não resta nada para planear.", "goals.planPast": "O prazo já passou. Escolhe uma nova data para planear a partir dela.",
+        "goals.planNoDays": "Não restam dias de escrita antes do prazo.", "goals.planNeeds": "Define uma meta do projeto e um prazo para planear a partir deles.", "goals.lineRest": "Dia de descanso — {done} palavras hoje",
+        "goals.paceOn": "Ao ritmo da linha reta desde {date}.", "goals.paceBehind": "{n} palavra atrás da linha reta desde {date}.", "goals.paceBehindPlural": "{n} palavras atrás da linha reta desde {date}.",
+        "goals.paceAhead": "{n} palavra à frente da linha reta desde {date}.", "goals.paceAheadPlural": "{n} palavras à frente da linha reta desde {date}.", "goals.keptH": "Escrito e mantido",
+        "goals.keptSub": "Escrito conta cada palavra que acrescentaste; mantido é o que o livro ganhou depois de descontadas as eliminações. Ambos vêm do registo, desde o dia em que começou a guardá-los — nada anterior é estimado.", "goals.keptToday": "Hoje", "goals.kept7": "Últimos 7 dias",
+        "goals.kept30": "Últimos 30 dias", "goals.keptWritten": "Escrito", "goals.keptRemoved": "Removido",
+        "goals.keptNet": "Mantido", "goals.keptFrom": "Desde {date}, quando o registo começou a guardar o escrito e o removido.", "goals.keptNone": "Nada escrito nem removido neste livro neste período, tanto quanto o registo guardou.",
+        "goals.keptNotYet": "O registo guarda o escrito e o removido a partir de {date}.", "goals.trackH": "Registo", "goals.justWrite": "Só escrever",
+        "goals.justWriteHint": "Desliga os indicadores — metas, sequência e ritmo afastam-se. As palavras continuam a ser registadas, por isso nada se perde.", "goals.justWriteOn": "Só a escrever — metas, sequência e ritmo estão em pausa. As palavras continuam a ser registadas; desliga abaixo quando quiseres.", "goals.justWriteSide": "Só a escrever — o registo está em pausa.",
+        "goals.clearData": "Limpar dados de registo", "goals.clearDataHint": "Apaga o registo de hábitos, a sequência e o histórico de ritmo neste dispositivo. As tuas metas e cada palavra do livro ficam.", "goals.clearDataBtn": "Limpar…",
+        "goals.clearTitle": "Limpar os dados de registo?", "goals.clearBody": "Isto apaga o calendário de hábitos, o registo de escrito e mantido, o caminho até aqui, a sequência e o início da linha de ritmo neste dispositivo. As tuas metas ficam e não muda uma palavra do livro.", "goals.clearYes": "Limpar dados de registo",
+        "goals.clearKeep": "Manter", "goals.cleared": "Dados de registo limpos. O livro não mudou.", "streak.restHtml": "<b>Sequência de escrita de {n} dias</b> — hoje é dia de descanso. A sequência está a salvo.",
         "sync.onShelf": "Na sua estante ✓",
         "tab.content": "Conteúdo do capítulo", "tab.type": "Estúdio de tipografia",
         "editor.chapterNumber": "Capítulo n.º", "editor.chapterTitle": "Título do capítulo", "editor.chapterSubtitle": "Subtítulo (opcional)",
@@ -5221,6 +5369,22 @@
         "goals.dailyHint": "Woorden die je op een dag wilt toevoegen.", "goals.project": "Projectdoel", "goals.projectHint": "De lengte waar je het boek naartoe stuurt.",
         "goals.deadline": "Deadline", "goals.deadlineHint": "Een datum om klaar te zijn.", "goals.wordsPh": "Woorden",
         "goals.clear": "Wissen",
+        /* BEUK:goalspace */
+        "goals.days": "Schrijfdagen", "goals.daysHint": "De dagen van de week waarop je schrijft. Het plan telt alleen deze, en een rustdag breekt de reeks nooit.", "goals.dlDay": "De deadlinedag telt mee",
+        "goals.dlDayHint": "Ook op de deadlinedag zelf schrijven.", "goals.auto": "Mijn dagdoel afleiden van de deadline", "goals.autoHint": "Resterende woorden ÷ resterende schrijfdagen, elke dag opnieuw berekend, zodat een gemiste dag zich over de komende dagen verdeelt.",
+        "goals.dailyAutoHint": "Afgeleid van de deadline. Zet dat hieronder uit om zelf te kiezen.", "goals.planMath": "{left} woorden over in {days} schrijfdag → {daily} per dag", "goals.planMathPlural": "{left} woorden over in {days} schrijfdagen → {daily} per dag",
+        "goals.planRestNote": "Vandaag is een rustdag; wat je schrijft telt wel mee.", "goals.planReached": "Doel bereikt — er valt niets meer te plannen.", "goals.planPast": "De deadline is voorbij. Kies een nieuwe datum om vanaf te plannen.",
+        "goals.planNoDays": "Er zijn geen schrijfdagen meer voor de deadline.", "goals.planNeeds": "Stel een projectdoel en een deadline in om daarvan te plannen.", "goals.lineRest": "Rustdag — vandaag {done} woorden",
+        "goals.paceOn": "Op koers met de rechte lijn vanaf {date}.", "goals.paceBehind": "{n} woord achter op de rechte lijn vanaf {date}.", "goals.paceBehindPlural": "{n} woorden achter op de rechte lijn vanaf {date}.",
+        "goals.paceAhead": "{n} woord voor op de rechte lijn vanaf {date}.", "goals.paceAheadPlural": "{n} woorden voor op de rechte lijn vanaf {date}.", "goals.keptH": "Geschreven en behouden",
+        "goals.keptSub": "Geschreven telt elk woord dat je toevoegde; behouden is wat het boek won na aftrek van wat je wiste. Beide komen uit het logboek, vanaf de dag dat het ze ging bijhouden — niets daarvoor wordt geschat.", "goals.keptToday": "Vandaag", "goals.kept7": "Laatste 7 dagen",
+        "goals.kept30": "Laatste 30 dagen", "goals.keptWritten": "Geschreven", "goals.keptRemoved": "Gewist",
+        "goals.keptNet": "Behouden", "goals.keptFrom": "Vanaf {date}, toen het logboek geschreven en gewiste woorden ging bijhouden.", "goals.keptNone": "Niets geschreven of gewist in dit boek in deze periode, voor zover het logboek bijhoudt.",
+        "goals.keptNotYet": "Het logboek houdt geschreven en gewiste woorden bij vanaf {date}.", "goals.trackH": "Bijhouden", "goals.justWrite": "Gewoon schrijven",
+        "goals.justWriteHint": "Zet de weergaven uit — doelen, reeks en tempo stappen opzij. Woorden worden nog steeds gelogd, dus er gaat niets verloren.", "goals.justWriteOn": "Gewoon schrijven — doelen, reeks en tempo zijn gepauzeerd. Woorden worden nog steeds gelogd; zet het hieronder uit wanneer je wilt.", "goals.justWriteSide": "Gewoon schrijven — bijhouden is gepauzeerd.",
+        "goals.clearData": "Bijgehouden gegevens wissen", "goals.clearDataHint": "Wist het gewoontelogboek, de reeks en de tempogeschiedenis op dit apparaat. Je doelen en elk woord van het boek blijven.", "goals.clearDataBtn": "Wissen…",
+        "goals.clearTitle": "Bijgehouden gegevens wissen?", "goals.clearBody": "Dit wist de gewoontekalender, het logboek van geschreven en behouden, de weg tot nu toe, de reeks en het beginpunt van de tempolijn op dit apparaat. Je doelen blijven, en geen woord van het boek verandert.", "goals.clearYes": "Bijgehouden gegevens wissen",
+        "goals.clearKeep": "Bewaren", "goals.cleared": "Bijgehouden gegevens gewist. Het boek is ongewijzigd.", "streak.restHtml": "<b>Schrijfreeks van {n} dagen</b> — vandaag is een rustdag. De reeks is veilig.",
         "sync.onShelf": "Op uw boekenplank ✓",
         "tab.content": "Hoofdstukinhoud", "tab.type": "Typografiestudio",
         "editor.chapterNumber": "Hoofdstuk nr.", "editor.chapterTitle": "Hoofdstuktitel", "editor.chapterSubtitle": "Ondertitel (optioneel)",
@@ -5424,6 +5588,22 @@
         "goals.dailyHint": "Słowa, które chcesz dodawać w ciągu dnia.", "goals.project": "Cel projektu", "goals.projectHint": "Długość, do której prowadzisz książkę.",
         "goals.deadline": "Termin", "goals.deadlineHint": "Data, do której chcesz skończyć.", "goals.wordsPh": "Słowa",
         "goals.clear": "Wyczyść",
+        /* BEUK:goalspace */
+        "goals.days": "Dni pisania", "goals.daysHint": "Dni tygodnia, w które piszesz. Plan liczy tylko je, a dzień odpoczynku nigdy nie przerywa serii.", "goals.dlDay": "Dzień terminu się liczy",
+        "goals.dlDayHint": "Pisz także w sam dzień terminu.", "goals.auto": "Ustaw dzienny cel na podstawie terminu", "goals.autoHint": "Pozostałe słowa ÷ pozostałe dni pisania, liczone na nowo każdego dnia, więc opuszczony dzień rozkłada się na kolejne.",
+        "goals.dailyAutoHint": "Ustawiony na podstawie terminu. Wyłącz to niżej, aby wybrać własny.", "goals.planMath": "Pozostało słów: {left}, dni pisania: {days} → {daily} dziennie", "goals.planMathPlural": "Pozostało słów: {left}, dni pisania: {days} → {daily} dziennie",
+        "goals.planRestNote": "Dziś dzień odpoczynku; to, co napiszesz, i tak się liczy.", "goals.planReached": "Cel osiągnięty — nie ma już czego planować.", "goals.planPast": "Termin minął. Wybierz nową datę, aby planować od niej.",
+        "goals.planNoDays": "Przed terminem nie zostały żadne dni pisania.", "goals.planNeeds": "Ustaw cel projektu i termin, aby planować na ich podstawie.", "goals.lineRest": "Dzień odpoczynku — dziś słów: {done}",
+        "goals.paceOn": "Zgodnie z prostą linią od {date}.", "goals.paceBehind": "Za prostą linią od {date} — słów: {n}.", "goals.paceBehindPlural": "Za prostą linią od {date} — słów: {n}.",
+        "goals.paceAhead": "Przed prostą linią od {date} — słów: {n}.", "goals.paceAheadPlural": "Przed prostą linią od {date} — słów: {n}.", "goals.keptH": "Napisane i zachowane",
+        "goals.keptSub": "Napisane liczy każde dodane słowo; zachowane to to, co książka zyskała po odjęciu usunięć. Oba pochodzą z dziennika, od dnia, w którym zaczął je zapisywać — nic wcześniejszego nie jest szacowane.", "goals.keptToday": "Dziś", "goals.kept7": "Ostatnie 7 dni",
+        "goals.kept30": "Ostatnie 30 dni", "goals.keptWritten": "Napisane", "goals.keptRemoved": "Usunięte",
+        "goals.keptNet": "Zachowane", "goals.keptFrom": "Od {date}, gdy dziennik zaczął zapisywać słowa napisane i usunięte.", "goals.keptNone": "W tym okresie w tej książce nic nie napisano ani nie usunięto, o ile dziennik to zapisał.",
+        "goals.keptNotYet": "Dziennik zapisuje słowa napisane i usunięte od {date}.", "goals.trackH": "Śledzenie", "goals.justWrite": "Po prostu pisz",
+        "goals.justWriteHint": "Wyłącz odczyty — cele, seria i tempo schodzą na bok. Słowa nadal są zapisywane, więc nic nie ginie.", "goals.justWriteOn": "Po prostu piszesz — cele, seria i tempo są wstrzymane. Słowa nadal są zapisywane; wyłącz to niżej, kiedy zechcesz.", "goals.justWriteSide": "Po prostu piszesz — śledzenie wstrzymane.",
+        "goals.clearData": "Wyczyść dane śledzenia", "goals.clearDataHint": "Usuwa dziennik nawyków, serię i historię tempa na tym urządzeniu. Twoje cele i każde słowo książki zostają.", "goals.clearDataBtn": "Wyczyść…",
+        "goals.clearTitle": "Wyczyścić dane śledzenia?", "goals.clearBody": "To usuwa kalendarz nawyków, dziennik napisanego i zachowanego, dotychczasową drogę, serię i początek linii tempa na tym urządzeniu. Twoje cele zostają, a w książce nie zmienia się ani jedno słowo.", "goals.clearYes": "Wyczyść dane śledzenia",
+        "goals.clearKeep": "Zachowaj", "goals.cleared": "Dane śledzenia wyczyszczone. Książka bez zmian.", "streak.restHtml": "<b>Seria pisania: {n} dni</b> — dziś dzień odpoczynku. Seria jest bezpieczna.",
         "sync.onShelf": "Na twojej półce ✓",
         "tab.content": "Treść rozdziału", "tab.type": "Studio typografii",
         "editor.chapterNumber": "Rozdział nr", "editor.chapterTitle": "Tytuł rozdziału", "editor.chapterSubtitle": "Podtytuł (opcjonalnie)",
@@ -5627,6 +5807,22 @@
         "goals.dailyHint": "Слова, которые вы хотели бы добавлять за день.", "goals.project": "Цель проекта", "goals.projectHint": "Длина, к которой вы ведёте книгу.",
         "goals.deadline": "Срок", "goals.deadlineHint": "Дата, к которой нужно закончить.", "goals.wordsPh": "Слова",
         "goals.clear": "Сбросить",
+        /* BEUK:goalspace */
+        "goals.days": "Дни письма", "goals.daysHint": "Дни недели, в которые вы пишете. План считает только их, а день отдыха никогда не прерывает серию.", "goals.dlDay": "День срока считается",
+        "goals.dlDayHint": "Писать и в сам день срока.", "goals.auto": "Задавать дневную цель по сроку", "goals.autoHint": "Оставшиеся слова ÷ оставшиеся дни письма, заново каждый день, так что пропущенный день распределяется по оставшимся.",
+        "goals.dailyAutoHint": "Задано по сроку. Выключите это ниже, чтобы выбрать свою цель.", "goals.planMath": "Осталось слов: {left}, дней письма: {days} → {daily} в день", "goals.planMathPlural": "Осталось слов: {left}, дней письма: {days} → {daily} в день",
+        "goals.planRestNote": "Сегодня день отдыха; написанное всё равно засчитывается.", "goals.planReached": "Цель достигнута — планировать больше нечего.", "goals.planPast": "Срок прошёл. Выберите новую дату, чтобы планировать от неё.",
+        "goals.planNoDays": "До срока не осталось дней письма.", "goals.planNeeds": "Задайте цель проекта и срок, чтобы планировать от них.", "goals.lineRest": "День отдыха — сегодня слов: {done}",
+        "goals.paceOn": "В темпе прямой линии от {date}.", "goals.paceBehind": "Отставание от прямой линии с {date} — слов: {n}.", "goals.paceBehindPlural": "Отставание от прямой линии с {date} — слов: {n}.",
+        "goals.paceAhead": "Опережение прямой линии с {date} — слов: {n}.", "goals.paceAheadPlural": "Опережение прямой линии с {date} — слов: {n}.", "goals.keptH": "Написано и оставлено",
+        "goals.keptSub": "«Написано» считает каждое добавленное слово; «оставлено» — то, что книга получила за вычетом удалённого. Оба числа берутся из журнала, со дня, когда он начал их вести, — ничего раньше не оценивается.", "goals.keptToday": "Сегодня", "goals.kept7": "7 дней",
+        "goals.kept30": "30 дней", "goals.keptWritten": "Написано", "goals.keptRemoved": "Удалено",
+        "goals.keptNet": "Оставлено", "goals.keptFrom": "С {date}, когда журнал начал вести написанное и удалённое.", "goals.keptNone": "За этот период в этой книге ничего не написано и не удалено — насколько ведёт журнал.",
+        "goals.keptNotYet": "Журнал ведёт написанное и удалённое с {date}.", "goals.trackH": "Учёт", "goals.justWrite": "Просто писать",
+        "goals.justWriteHint": "Выключить показатели — цели, серия и темп отходят в сторону. Слова по-прежнему записываются, так что ничего не теряется.", "goals.justWriteOn": "Просто пишете — цели, серия и темп на паузе. Слова по-прежнему записываются; выключите это ниже, когда захотите.", "goals.justWriteSide": "Просто пишете — учёт на паузе.",
+        "goals.clearData": "Очистить данные учёта", "goals.clearDataHint": "Стирает журнал привычки, серию и историю темпа на этом устройстве. Цели и каждое слово книги остаются.", "goals.clearDataBtn": "Очистить…",
+        "goals.clearTitle": "Очистить данные учёта?", "goals.clearBody": "Будут стёрты календарь привычки, журнал написанного и оставленного, пройденный путь, серия и начало линии темпа на этом устройстве. Цели останутся, и ни одно слово книги не изменится.", "goals.clearYes": "Очистить данные учёта",
+        "goals.clearKeep": "Оставить", "goals.cleared": "Данные учёта очищены. Книга не изменилась.", "streak.restHtml": "<b>Серия письма — {n} дн.</b> — сегодня день отдыха. Серия в безопасности.",
         "sync.onShelf": "На вашей полке ✓",
         "tab.content": "Содержание главы", "tab.type": "Студия типографики",
         "editor.chapterNumber": "Глава №", "editor.chapterTitle": "Название главы", "editor.chapterSubtitle": "Подзаголовок (необязательно)",
@@ -5830,6 +6026,22 @@
         "goals.dailyHint": "Bir günde eklemek istediğiniz kelimeler.", "goals.project": "Proje hedefi", "goals.projectHint": "Kitabı götürmek istediğiniz uzunluk.",
         "goals.deadline": "Son tarih", "goals.deadlineHint": "Bitirmiş olmak istediğiniz bir tarih.", "goals.wordsPh": "Kelime",
         "goals.clear": "Temizle",
+        /* BEUK:goalspace */
+        "goals.days": "Yazma günleri", "goals.daysHint": "Haftanın yazdığınız günleri. Plan yalnızca bunları sayar ve dinlenme günü seriyi asla bozmaz.", "goals.dlDay": "Son tarih günü sayılır",
+        "goals.dlDayHint": "Son tarihin kendisinde de yazmayı planlayın.", "goals.auto": "Günlük hedefimi son tarihe göre belirle", "goals.autoHint": "Kalan kelime ÷ kalan yazma günü, her gün yeniden hesaplanır; kaçan bir gün kalan günlere dağılır.",
+        "goals.dailyAutoHint": "Son tarihe göre belirlendi. Kendiniz seçmek için aşağıdan kapatın.", "goals.planMath": "{days} yazma gününe {left} kelime kaldı → günde {daily}", "goals.planMathPlural": "{days} yazma gününe {left} kelime kaldı → günde {daily}",
+        "goals.planRestNote": "Bugün dinlenme günü; yazdıklarınız yine de sayılır.", "goals.planReached": "Hedefe ulaşıldı — planlanacak bir şey kalmadı.", "goals.planPast": "Son tarih geçti. Ondan plan yapmak için yeni bir tarih seçin.",
+        "goals.planNoDays": "Son tarihten önce yazma günü kalmadı.", "goals.planNeeds": "Onlardan plan yapmak için bir proje hedefi ve son tarih belirleyin.", "goals.lineRest": "Dinlenme günü — bugün {done} kelime",
+        "goals.paceOn": "{date} tarihinden bu yana düz çizgiyle aynı tempoda.", "goals.paceBehind": "{date} tarihinden bu yana düz çizginin {n} kelime gerisinde.", "goals.paceBehindPlural": "{date} tarihinden bu yana düz çizginin {n} kelime gerisinde.",
+        "goals.paceAhead": "{date} tarihinden bu yana düz çizginin {n} kelime önünde.", "goals.paceAheadPlural": "{date} tarihinden bu yana düz çizginin {n} kelime önünde.", "goals.keptH": "Yazılan ve kalan",
+        "goals.keptSub": "Yazılan, eklediğiniz her kelimeyi sayar; kalan, silinenler düşüldükten sonra kitabın kazandığıdır. İkisi de günlükten gelir, günlüğün onları tutmaya başladığı günden itibaren — öncesi tahmin edilmez.", "goals.keptToday": "Bugün", "goals.kept7": "Son 7 gün",
+        "goals.kept30": "Son 30 gün", "goals.keptWritten": "Yazılan", "goals.keptRemoved": "Silinen",
+        "goals.keptNet": "Kalan", "goals.keptFrom": "{date} tarihinden itibaren; günlük yazılan ve silineni o gün tutmaya başladı.", "goals.keptNone": "Günlüğün tuttuğu kadarıyla bu dönemde bu kitapta hiçbir şey yazılmadı ya da silinmedi.",
+        "goals.keptNotYet": "Günlük yazılan ve sileni {date} tarihinden itibaren tutar.", "goals.trackH": "Takip", "goals.justWrite": "Sadece yaz",
+        "goals.justWriteHint": "Göstergeleri kapatın — hedefler, seri ve tempo kenara çekilir. Kelimeler kaydedilmeye devam eder, hiçbir şey kaybolmaz.", "goals.justWriteOn": "Sadece yazıyorsunuz — hedefler, seri ve tempo duraklatıldı. Kelimeler kaydedilmeye devam ediyor; istediğiniz zaman aşağıdan kapatın.", "goals.justWriteSide": "Sadece yazıyorsunuz — takip duraklatıldı.",
+        "goals.clearData": "Takip verilerini temizle", "goals.clearDataHint": "Bu cihazdaki alışkanlık günlüğünü, seriyi ve tempo geçmişini siler. Hedefleriniz ve kitabın her kelimesi kalır.", "goals.clearDataBtn": "Temizle…",
+        "goals.clearTitle": "Takip verileri temizlensin mi?", "goals.clearBody": "Bu, bu cihazdaki alışkanlık takvimini, yazılan ve kalan günlüğünü, şimdiye kadarki yolu, seriyi ve tempo çizgisinin başlangıcını siler. Hedefleriniz kalır ve kitabın tek bir kelimesi değişmez.", "goals.clearYes": "Takip verilerini temizle",
+        "goals.clearKeep": "Kalsın", "goals.cleared": "Takip verileri temizlendi. Kitap değişmedi.", "streak.restHtml": "<b>{n} günlük yazma serisi</b> — bugün dinlenme günü. Seri güvende.",
         "sync.onShelf": "Rafınızda ✓",
         "tab.content": "Bölüm içeriği", "tab.type": "Tipografi stüdyosu",
         "editor.chapterNumber": "Bölüm no", "editor.chapterTitle": "Bölüm başlığı", "editor.chapterSubtitle": "Alt başlık (isteğe bağlı)",
@@ -6033,6 +6245,22 @@
         "goals.dailyHint": "الكلمات التي تودّ إضافتها في يوم.", "goals.project": "هدف المشروع", "goals.projectHint": "الطول الذي تقود الكتاب نحوه.",
         "goals.deadline": "الموعد النهائي", "goals.deadlineHint": "تاريخ تكون قد انتهيت بحلوله.", "goals.wordsPh": "كلمات",
         "goals.clear": "مسح",
+        /* BEUK:goalspace */
+        "goals.days": "أيام الكتابة", "goals.daysHint": "أيام الأسبوع التي تكتب فيها. لا تحسب الخطة سواها، ويوم الراحة لا يقطع السلسلة أبدًا.", "goals.dlDay": "يوم الموعد النهائي يُحتسب",
+        "goals.dlDayHint": "خطّط للكتابة في يوم الموعد النهائي نفسه أيضًا.", "goals.auto": "اضبط هدفي اليومي من الموعد النهائي", "goals.autoHint": "الكلمات المتبقية ÷ أيام الكتابة المتبقية، تُحسب من جديد كل يوم، فيتوزّع اليوم الفائت على الأيام القادمة.",
+        "goals.dailyAutoHint": "مضبوط من الموعد النهائي. أوقف ذلك أدناه لتختار هدفك بنفسك.", "goals.planMath": "الكلمات المتبقية: {left} · أيام الكتابة المتبقية: {days} ← {daily} في اليوم", "goals.planMathPlural": "الكلمات المتبقية: {left} · أيام الكتابة المتبقية: {days} ← {daily} في اليوم",
+        "goals.planRestNote": "اليوم يوم راحة؛ وما تكتبه يُحتسب مع ذلك.", "goals.planReached": "بلغت الهدف — لم يبق ما يُخطَّط له.", "goals.planPast": "مضى الموعد النهائي. اختر تاريخًا جديدًا للتخطيط منه.",
+        "goals.planNoDays": "لم يبق أي يوم كتابة قبل الموعد النهائي.", "goals.planNeeds": "حدّد هدف المشروع وموعدًا نهائيًا للتخطيط منهما.", "goals.lineRest": "يوم راحة — الكلمات اليوم: {done}",
+        "goals.paceOn": "على وتيرة الخط المستقيم منذ {date}.", "goals.paceBehind": "متأخر عن الخط المستقيم منذ {date} بعدد كلمات: {n}.", "goals.paceBehindPlural": "متأخر عن الخط المستقيم منذ {date} بعدد كلمات: {n}.",
+        "goals.paceAhead": "متقدّم على الخط المستقيم منذ {date} بعدد كلمات: {n}.", "goals.paceAheadPlural": "متقدّم على الخط المستقيم منذ {date} بعدد كلمات: {n}.", "goals.keptH": "المكتوب والباقي",
+        "goals.keptSub": "المكتوب يعدّ كل كلمة أضفتها؛ والباقي هو ما كسبه الكتاب بعد طرح ما حُذف. كلاهما من السجل، منذ اليوم الذي بدأ فيه بحفظهما — ولا يُقدَّر شيء قبله.", "goals.keptToday": "اليوم", "goals.kept7": "آخر 7 أيام",
+        "goals.kept30": "آخر 30 يومًا", "goals.keptWritten": "المكتوب", "goals.keptRemoved": "المحذوف",
+        "goals.keptNet": "الباقي", "goals.keptFrom": "منذ {date}، حين بدأ السجل بحفظ المكتوب والمحذوف.", "goals.keptNone": "لم يُكتب ولم يُحذف شيء في هذا الكتاب خلال هذه المدة، بحسب ما حفظه السجل.",
+        "goals.keptNotYet": "يحفظ السجل المكتوب والمحذوف بدءًا من {date}.", "goals.trackH": "التتبّع", "goals.justWrite": "اكتب فحسب",
+        "goals.justWriteHint": "أطفئ المؤشرات — تتنحّى الأهداف والسلسلة والوتيرة. وتبقى الكلمات مسجّلة، فلا يضيع شيء.", "goals.justWriteOn": "تكتب فحسب — الأهداف والسلسلة والوتيرة متوقفة مؤقتًا. وما زالت الكلمات تُسجَّل؛ أوقف ذلك أدناه متى شئت.", "goals.justWriteSide": "تكتب فحسب — التتبّع متوقف مؤقتًا.",
+        "goals.clearData": "مسح بيانات التتبّع", "goals.clearDataHint": "يمسح سجل العادة والسلسلة وتاريخ الوتيرة على هذا الجهاز. تبقى أهدافك وكل كلمة في الكتاب.", "goals.clearDataBtn": "مسح…",
+        "goals.clearTitle": "مسح بيانات التتبّع؟", "goals.clearBody": "سيُمسح تقويم العادة وسجل المكتوب والباقي والطريق حتى الآن والسلسلة وبداية خط الوتيرة على هذا الجهاز. تبقى أهدافك، ولا تتغير كلمة واحدة في الكتاب.", "goals.clearYes": "مسح بيانات التتبّع",
+        "goals.clearKeep": "الإبقاء عليها", "goals.cleared": "مُسحت بيانات التتبّع. الكتاب لم يتغير.", "streak.restHtml": "<b>سلسلة كتابة من {n} يوم</b> — اليوم يوم راحة. السلسلة في أمان.",
         "sync.onShelf": "على رفّك ✓",
         "tab.content": "محتوى الفصل", "tab.type": "استوديو التنضيد",
         "editor.chapterNumber": "رقم الفصل", "editor.chapterTitle": "عنوان الفصل", "editor.chapterSubtitle": "العنوان الفرعي (اختياري)",
@@ -6236,6 +6464,22 @@
         "goals.dailyHint": "一日に加えたい語数。", "goals.project": "プロジェクトの目標", "goals.projectHint": "本を向かわせたい長さ。",
         "goals.deadline": "締め切り", "goals.deadlineHint": "書き終えていたい日付。", "goals.wordsPh": "語数",
         "goals.clear": "クリア",
+        /* BEUK:goalspace */
+        "goals.days": "執筆日", "goals.daysHint": "書く曜日です。計画はこの日だけを数え、休みの日でストリークが途切れることはありません。", "goals.dlDay": "締め切り当日も数える",
+        "goals.dlDayHint": "締め切りの当日にも書く予定にします。", "goals.auto": "締め切りから1日の目標を決める", "goals.autoHint": "残りの語数 ÷ 残りの執筆日。毎日計算し直すので、書けなかった日の分は残りの日に振り分けられます。",
+        "goals.dailyAutoHint": "締め切りから決めています。自分で決めるには下でオフにしてください。", "goals.planMath": "残り {left} 語を {days} 執筆日で → 1日 {daily} 語", "goals.planMathPlural": "残り {left} 語を {days} 執筆日で → 1日 {daily} 語",
+        "goals.planRestNote": "今日は休みの日です。書いた分はそれでも数えられます。", "goals.planReached": "目標に到達しました — 計画することはもうありません。", "goals.planPast": "締め切りを過ぎました。計画するには新しい日付を選んでください。",
+        "goals.planNoDays": "締め切りまでに執筆日が残っていません。", "goals.planNeeds": "計画するには、プロジェクトの目標と締め切りを設定してください。", "goals.lineRest": "休みの日 — 今日 {done} 語",
+        "goals.paceOn": "{date} からの直線どおりのペースです。", "goals.paceBehind": "{date} からの直線より {n} 語遅れています。", "goals.paceBehindPlural": "{date} からの直線より {n} 語遅れています。",
+        "goals.paceAhead": "{date} からの直線より {n} 語進んでいます。", "goals.paceAheadPlural": "{date} からの直線より {n} 語進んでいます。", "goals.keptH": "書いた語と残った語",
+        "goals.keptSub": "書いた語は加えたすべての語、残った語は削除を差し引いて本が増えた分です。どちらも記録から、記録が付け始めた日以降のものです — それより前は推定しません。", "goals.keptToday": "今日", "goals.kept7": "過去7日",
+        "goals.kept30": "過去30日", "goals.keptWritten": "書いた", "goals.keptRemoved": "削除",
+        "goals.keptNet": "残った", "goals.keptFrom": "{date} から — 記録が書いた語と削除した語を付け始めた日です。", "goals.keptNone": "記録の範囲では、この期間にこの本で書いた語も削除した語もありません。",
+        "goals.keptNotYet": "記録は {date} から書いた語と削除した語を付けます。", "goals.trackH": "記録", "goals.justWrite": "ただ書く",
+        "goals.justWriteHint": "表示をオフにします — 目標、ストリーク、ペースは脇に退きます。語数の記録は続くので、何も失われません。", "goals.justWriteOn": "ただ書いています — 目標、ストリーク、ペースは一時停止中です。語数の記録は続いています。いつでも下でオフにできます。", "goals.justWriteSide": "ただ書いています — 記録の表示は一時停止中です。",
+        "goals.clearData": "記録データを消去", "goals.clearDataHint": "このデバイスの習慣の記録、ストリーク、ペースの履歴を消去します。目標と本の言葉はひとつも消えません。", "goals.clearDataBtn": "消去…",
+        "goals.clearTitle": "記録データを消去しますか", "goals.clearBody": "このデバイスの習慣カレンダー、書いた語と残った語の記録、これまでの道のり、ストリーク、ペースの直線の起点を消去します。目標は残り、本の言葉はひとつも変わりません。", "goals.clearYes": "記録データを消去",
+        "goals.clearKeep": "残す", "goals.cleared": "記録データを消去しました。本は変わっていません。", "streak.restHtml": "<b>{n}日間の執筆ストリーク</b> — 今日は休みの日です。ストリークは無事です。",
         "sync.onShelf": "あなたの本棚にあります ✓",
         "tab.content": "章の内容", "tab.type": "タイポグラフィ・スタジオ",
         "editor.chapterNumber": "章番号", "editor.chapterTitle": "章タイトル", "editor.chapterSubtitle": "サブタイトル（任意）",
@@ -6439,6 +6683,22 @@
         "goals.dailyHint": "你希望一天新增的词数。", "goals.project": "全书目标", "goals.projectHint": "你想把这本书写到的长度。",
         "goals.deadline": "截止日期", "goals.deadlineHint": "希望完成的那一天。", "goals.wordsPh": "词数",
         "goals.clear": "清除",
+        /* BEUK:goalspace */
+        "goals.days": "写作日", "goals.daysHint": "你一周中写作的日子。计划只计算这些天，休息日永远不会中断连续记录。", "goals.dlDay": "截止日当天也算",
+        "goals.dlDayHint": "截止日当天也计划写作。", "goals.auto": "根据截止日期设定每日目标", "goals.autoHint": "剩余字数 ÷ 剩余写作日，每天重新计算，错过的一天会分摊到之后的日子。",
+        "goals.dailyAutoHint": "根据截止日期设定。若要自己选择，请在下方关闭。", "goals.planMath": "剩余 {left} 字，{days} 个写作日 → 每天 {daily} 字", "goals.planMathPlural": "剩余 {left} 字，{days} 个写作日 → 每天 {daily} 字",
+        "goals.planRestNote": "今天是休息日；写下的字仍然算数。", "goals.planReached": "已达到目标 — 没有需要计划的了。", "goals.planPast": "截止日期已过。请选择新的日期来重新计划。",
+        "goals.planNoDays": "截止日期前已没有写作日。", "goals.planNeeds": "设定项目目标和截止日期后即可据此计划。", "goals.lineRest": "休息日 — 今天 {done} 字",
+        "goals.paceOn": "与自 {date} 起的直线进度一致。", "goals.paceBehind": "比自 {date} 起的直线落后 {n} 字。", "goals.paceBehindPlural": "比自 {date} 起的直线落后 {n} 字。",
+        "goals.paceAhead": "比自 {date} 起的直线领先 {n} 字。", "goals.paceAheadPlural": "比自 {date} 起的直线领先 {n} 字。", "goals.keptH": "写下与留下",
+        "goals.keptSub": "写下计算你添加的每个字；留下是扣除删除后书增加的字数。两者都来自记录，从记录开始保存它们的那天算起 — 之前的不做估算。", "goals.keptToday": "今天", "goals.kept7": "最近 7 天",
+        "goals.kept30": "最近 30 天", "goals.keptWritten": "写下", "goals.keptRemoved": "删除",
+        "goals.keptNet": "留下", "goals.keptFrom": "自 {date} 起，记录从那天开始保存写下与删除的字数。", "goals.keptNone": "就记录所及，这段时间这本书没有写下或删除任何字。",
+        "goals.keptNotYet": "记录从 {date} 起保存写下与删除的字数。", "goals.trackH": "记录", "goals.justWrite": "只管写",
+        "goals.justWriteHint": "关闭显示 — 目标、连续记录和进度退到一旁。字数仍会记录，什么都不会丢失。", "goals.justWriteOn": "只管写 — 目标、连续记录和进度已暂停。字数仍在记录；随时可在下方关闭。", "goals.justWriteSide": "只管写 — 记录显示已暂停。",
+        "goals.clearData": "清除记录数据", "goals.clearDataHint": "清除此设备上的习惯记录、连续记录和进度历史。你的目标和书中的每个字都会保留。", "goals.clearDataBtn": "清除…",
+        "goals.clearTitle": "清除记录数据？", "goals.clearBody": "这将清除此设备上的习惯日历、写下与留下的记录、一路走来的轨迹、连续记录以及进度直线的起点。你的目标会保留，书中一个字都不会改变。", "goals.clearYes": "清除记录数据",
+        "goals.clearKeep": "保留", "goals.cleared": "记录数据已清除。书没有改变。", "streak.restHtml": "<b>连续写作 {n} 天</b> — 今天是休息日。连续记录安然无恙。",
         "sync.onShelf": "在你的书架上 ✓",
         "tab.content": "章节内容", "tab.type": "排版工作室",
         "editor.chapterNumber": "章节号", "editor.chapterTitle": "章节标题", "editor.chapterSubtitle": "副标题（可选）",
@@ -22299,14 +22559,16 @@
         cloudHeartbeat();
         const today = dayStr(new Date());
         if (streakState.lastDay === today) return;
-        const y = new Date(); y.setDate(y.getDate() - 1);
-        streakState.streak = streakState.lastDay === dayStr(y) ? streakState.streak + 1 : 1;
+        /* BEUK:goalspace — the streak follows the habit the writer set: days that
+           are not writing days are stepped over, never counted as missed */
+        streakState.streak = goalStreakBridges(streakState.lastDay, new Date(), state.goals) ? streakState.streak + 1 : 1;
         streakState.lastDay = today;
         saveStreak();
         renderStreak();
       }
       function renderStreak() {
         const el = $("streakText"); if (!el) return;
+        if (goalJustWrite()) { el.textContent = t("goals.justWriteSide"); return; } /* BEUK:goalspace — the streak steps aside, still kept */
         /* Signed in, the SERVER streak wins — it is stamped server-side
            and follows the writer across devices. Signed out, the local
            streak below is exactly the pre-SaaS behavior. */
@@ -22323,11 +22585,10 @@
           return;
         }
         const today = dayStr(new Date());
-        const y = new Date(); y.setDate(y.getDate() - 1);
         if (streakState.lastDay === today && streakState.streak > 0) {
           el.innerHTML = t("streak.todayHtml", { n: streakState.streak });
-        } else if (streakState.lastDay === dayStr(y) && streakState.streak > 0) {
-          el.innerHTML = t("streak.keepHtml", { n: streakState.streak });
+        } else if (streakState.streak > 0 && goalStreakBridges(streakState.lastDay, new Date(), state.goals)) { /* BEUK:goalspace — rest days never break it */
+          el.innerHTML = goalIsWritingDay(normalizeGoals(state.goals), new Date()) ? t("streak.keepHtml", { n: streakState.streak }) : t("streak.restHtml", { n: streakState.streak });
         } else if (streakState.streak > 0) {
           el.innerHTML = t("streak.lastHtml", { n: streakState.streak });
         } else {
@@ -22361,7 +22622,23 @@
       function normalizeGoals(g) {
         const num = (v) => { const n = Math.floor(Number(v) || 0); return n > 0 ? n : 0; };
         const dl = g && typeof g.deadline === "string" && parseDayStr(g.deadline) ? g.deadline : "";
-        return { daily: num(g && g.daily), project: num(g && g.project), deadline: dl };
+        const out = { daily: num(g && g.daily), project: num(g && g.project), deadline: dl };
+        /* ==== BEUK:goalspace ==== writing days (Sun..Sat, as Date.getDay
+           counts them), whether the deadline day itself counts, the daily
+           target set from the deadline, and the pace line's start point
+           (the book's length on the day the deadline was set). Each is
+           kept only when it differs from the default, so a book with
+           plain goals keeps exactly its old shape. */
+        if (g && Array.isArray(g.days) && g.days.length === 7) {
+          const days = g.days.map((v) => (v ? 1 : 0));
+          if (days.some(Boolean) && !days.every(Boolean)) out.days = days;
+        }
+        if (g && g.dlDay) out.dlDay = true;
+        if (g && g.auto) out.auto = true;
+        if (g && g.start && typeof g.start === "object" && typeof g.start.day === "string" && parseDayStr(g.start.day) &&
+          typeof g.start.w === "number" && isFinite(g.start.w) && g.start.w >= 0) out.start = { day: g.start.day, w: Math.round(g.start.w) };
+        /* ==== /BEUK:goalspace ==== */
+        return out;
       }
       function wlogSeedDays() {
         /* The streak record truly knows its own days: a streak of N
@@ -22386,11 +22663,11 @@
           if (raw) {
             const v = JSON.parse(raw);
             if (v && typeof v === "object" && v.days && typeof v.days === "object") {
-              return { days: v.days, base: typeof v.base === "number" ? v.base : null, baseDay: typeof v.baseDay === "string" ? v.baseDay : "", len: v.len && typeof v.len === "object" ? v.len : {} }; /* BEUK:goalshist — len */
+              return { days: v.days, base: typeof v.base === "number" ? v.base : null, baseDay: typeof v.baseDay === "string" ? v.baseDay : "", len: v.len && typeof v.len === "object" ? v.len : {}, ar: v.ar && typeof v.ar === "object" ? v.ar : {} }; /* BEUK:goalshist — len; BEUK:goalspace — ar */
             }
           }
         } catch (e) {}
-        return { days: wlogSeedDays(), base: null, baseDay: "", len: {} }; /* BEUK:goalshist — no length was ever kept for seeded days */
+        return { days: wlogSeedDays(), base: null, baseDay: "", len: {}, ar: {} }; /* BEUK:goalshist — no length was ever kept for seeded days */
       }
       let wlog = wlogLoad();
       let wlogRebase = true; /* the session's first observation only sets the baseline */
@@ -22427,6 +22704,7 @@
       function wlogObserve(total) {
         const today = dayStr(new Date());
         wlogNoteLength(total, today); /* BEUK:goalshist */
+        wlogArBook(today); /* BEUK:goalspace — the written/removed split starts at the first observation it sees */
         if (wlogRebase || wlog.base === null) {
           wlog.base = total; wlog.baseDay = today; wlogRebase = false;
           wlogSaveSoon();
@@ -22438,9 +22716,56 @@
           const rec = wlogDay(today);
           rec.w = Math.max(0, (typeof rec.w === "number" ? rec.w : 0) + delta);
           if (rec.seed) delete rec.seed;
+          wlogNoteSplit(today, delta); /* BEUK:goalspace */
           wlogSaveSoon();
         }
       }
+      /* ==== BEUK:goalspace ==== words written vs words kept. The day log
+         above keeps one figure a day (a net tally, floored at zero), so it
+         cannot say how much was written and how much taken away. From the
+         first observation after this change, the log also keeps, per book,
+         every rise in the count (written, `a`) and every fall (removed,
+         `r`) — the same count movement, observed at the same funnel, so
+         an import or a book arriving never counts. `from` is the first day
+         the split was kept; nothing before it is filled in. If the day the
+         split begins already had words in the old tally, the split starts
+         the next day, so no day is ever half-counted. */
+      function wlogArBook(today) {
+        if (!wlog.ar || typeof wlog.ar !== "object") wlog.ar = {};
+        const key = wlogBookKey();
+        let book = wlog.ar[key];
+        if (!book || typeof book !== "object" || typeof book.from !== "string" || !book.days || typeof book.days !== "object") {
+          const rec = wlog.days[today];
+          let from = today;
+          if (rec && typeof rec.w === "number" && rec.w > 0) { const d = parseDayStr(today); d.setDate(d.getDate() + 1); from = dayStr(d); }
+          book = wlog.ar[key] = { from, days: {} };
+          wlogSaveSoon();
+        }
+        return book;
+      }
+      function wlogNoteSplit(today, delta) {
+        const book = wlogArBook(today);
+        if (today < book.from) return;
+        const rec = book.days[today] || (book.days[today] = { a: 0, r: 0 });
+        if (delta > 0) rec.a += delta; else rec.r += -delta;
+      }
+      /* pure: the split over [fromDs, toDs] from a book's record */
+      function goalKept(book, fromDs, toDs) {
+        const out = { a: 0, r: 0, net: 0, from: book && book.from ? book.from : null, partial: false, none: true };
+        if (!book || !book.from || !book.days) return out;
+        if (book.from > toDs) { out.notYet = true; return out; }
+        if (book.from > fromDs) out.partial = true;
+        Object.keys(book.days).forEach((ds) => {
+          if (ds < fromDs || ds > toDs || ds < book.from) return;
+          const r = book.days[ds];
+          const a = Math.max(0, Math.round(Number(r && r.a) || 0)), rm = Math.max(0, Math.round(Number(r && r.r) || 0));
+          out.a += a; out.r += rm;
+        });
+        out.net = out.a - out.r;
+        out.none = out.a === 0 && out.r === 0;
+        return out;
+      }
+      /* ==== /BEUK:goalspace ==== */
       function wlogTodayWords() {
         const rec = wlog.days[dayStr(new Date())];
         return rec && typeof rec.w === "number" ? rec.w : 0;
@@ -22473,20 +22798,110 @@
       function bookTotalWords() {
         return state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
       }
+      /* ==== BEUK:goalspace ==== writing days, the daily target that
+         follows the deadline, and the one honest pace line. All pure:
+         dates in, numbers out, so the self-checks can hold them. */
+      const GOAL_ALL_DAYS = [1, 1, 1, 1, 1, 1, 1];
+      function goalDays(g) { return g && Array.isArray(g.days) && g.days.length === 7 && g.days.some(Boolean) ? g.days : GOAL_ALL_DAYS; }
+      function goalIsWritingDay(g, d) { return !!goalDays(g)[d.getDay()]; }
+      function goalMidnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+      /* writing days from `from` (inclusive) to `to` (exclusive, or inclusive when `incl`) */
+      function goalWritingDaysBetween(g, from, to, incl) {
+        const a = goalMidnight(from), b = goalMidnight(to);
+        let n = 0;
+        for (let i = 0; i < 4000; i++) {
+          const d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + i);
+          if (d > b || (!incl && d.getTime() === b.getTime())) break;
+          if (goalIsWritingDay(g, d)) n++;
+        }
+        return n;
+      }
+      function goalNextWritingDay(g, from) {
+        const a = goalMidnight(from);
+        for (let i = 1; i <= 7; i++) { const d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + i); if (goalIsWritingDay(g, d)) return d; }
+        return null;
+      }
+      /* The daily target from the deadline (Scrivener's rule): words left
+         at the start of today ÷ writing days left, today included when it
+         is a writing day, the deadline day only when the writer says it
+         counts. Worked out from the numbers as they stand, so a missed day
+         simply spreads its words over the days still to come. */
+      function goalPlan(goals, total, todayDone, now) {
+        const g = normalizeGoals(goals);
+        if (!g.project || !g.deadline) return { state: "needs" };
+        const dl = parseDayStr(g.deadline);
+        const t0 = goalMidnight(now);
+        const done = Math.max(0, todayDone || 0);
+        if (total >= g.project) return { state: "reached" };
+        if (dl < t0) return { state: "past" };
+        const restToday = !goalIsWritingDay(g, t0);
+        const days = goalWritingDaysBetween(g, t0, dl, !!g.dlDay);
+        if (days <= 0) return { state: "nodays" };
+        /* today's words count toward today: the figure is set from where the
+           day began, so it holds still while the writer writes. On a rest
+           day there is no today to fill — the words left now spread over
+           the writing days ahead. */
+        const left = restToday ? g.project - total : Math.max(0, g.project - (total - done));
+        const daily = Math.ceil(left / days);
+        return { state: "ok", left, days, daily, restToday, next: restToday ? goalNextWritingDay(g, t0) : null };
+      }
+      /* On pace: actual length against the straight line from the start
+         point (the book's length the day the deadline was set) to the
+         target on the deadline, stepped by writing days. Read at the start
+         of today — the line asks only for the writing days already behind
+         the writer, so a morning never opens behind. */
+      function goalOnPace(goals, total, now) {
+        const g = normalizeGoals(goals);
+        if (!g.project || !g.deadline || !g.start) return null;
+        const dl = parseDayStr(g.deadline), st = parseDayStr(g.start.day), t0 = goalMidnight(now);
+        if (!dl || !st || dl < t0 || st > dl || total >= g.project || g.start.w >= g.project) return null;
+        const span = goalWritingDaysBetween(g, st, dl, !!g.dlDay);
+        if (span <= 0) return null;
+        const elapsed = Math.min(span, goalWritingDaysBetween(g, st, t0 < st ? st : t0, false));
+        const expected = Math.round(g.start.w + (g.project - g.start.w) * (elapsed / span));
+        const diff = total - expected;
+        const tol = Math.max(10, Math.round((g.project - g.start.w) * 0.01));
+        return { state: Math.abs(diff) <= tol ? "on" : diff < 0 ? "behind" : "ahead", n: Math.abs(diff), expected, since: g.start.day, elapsed, span };
+      }
+      /* the streak's bridge: every day strictly between lastDay and today is a rest day */
+      function goalStreakBridges(lastDay, today, goals) {
+        const a = parseDayStr(lastDay); if (!a) return false;
+        const b = goalMidnight(today);
+        if (a >= b) return false;
+        const g = normalizeGoals(goals);
+        for (let i = 1; i <= 8; i++) {
+          const d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + i);
+          if (d.getTime() >= b.getTime()) return true;
+          if (goalIsWritingDay(g, d)) return false;
+        }
+        return false;
+      }
+      /* ==== /BEUK:goalspace ==== */
       function goalMath(goals, total, todayWords, now) {
         const g = normalizeGoals(goals);
-        const out = { has: !!(g.daily || g.project || g.deadline), daily: null, project: null, deadline: null };
-        if (g.daily) out.daily = { target: g.daily, done: todayWords, met: todayWords >= g.daily };
+        const out = { has: !!(g.daily || g.project || g.deadline), daily: null, project: null, deadline: null, plan: null, pace: null };
+        /* BEUK:goalspace — with the daily target set from the deadline, today's target is the plan's */
+        out.plan = goalPlan(g, total, todayWords, now);
+        if (g.auto && out.plan.state !== "needs") {
+          out.has = true;
+          if (out.plan.state === "ok") out.daily = out.plan.restToday ? { rest: true, auto: true, target: out.plan.daily, done: todayWords, met: false } : { auto: true, target: out.plan.daily, done: todayWords, met: todayWords >= out.plan.daily };
+        }
+        else if (g.daily) out.daily = { target: g.daily, done: todayWords, met: todayWords >= g.daily };
+        out.pace = goalOnPace(g, total, now);
         if (g.project) out.project = { target: g.project, done: total, met: total >= g.project, pct: Math.max(0, Math.min(100, Math.round((total / g.project) * 100))) };
         if (g.deadline) {
           const d = parseDayStr(g.deadline);
           const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const daysLeft = d ? Math.round((d.getTime() - t0.getTime()) / 86400000) : 0;
           const remaining = g.project ? Math.max(0, g.project - total) : null;
+          /* BEUK:goalspace — the pace from here spreads the words left over the writing days left
+             (today on, the deadline day only when it counts); with every day a writing day and the
+             deadline day not counted, that is exactly the calendar days left, as before */
+          const wdLeft = d && daysLeft >= 0 ? goalWritingDaysBetween(g, t0, d, !!g.dlDay) : 0;
           out.deadline = {
-            date: g.deadline, daysLeft, remaining,
+            date: g.deadline, daysLeft, remaining, writingDaysLeft: wdLeft,
             met: remaining === 0, past: daysLeft < 0, dueToday: daysLeft === 0,
-            pace: remaining !== null && remaining > 0 && daysLeft > 0 ? Math.ceil(remaining / daysLeft) : null
+            pace: remaining !== null && remaining > 0 && wdLeft > 0 ? Math.ceil(remaining / wdLeft) : null
           };
         }
         return out;
@@ -22494,10 +22909,10 @@
       function goalStreakNow() {
         if (typeof cloud !== "undefined" && cloud.user && cloud.serverStreak) return cloud.serverStreak.current || 0;
         const today = dayStr(new Date());
-        const y = new Date(); y.setDate(y.getDate() - 1);
-        return (streakState.lastDay === today || streakState.lastDay === dayStr(y)) ? streakState.streak : 0;
+        return (streakState.lastDay === today || goalStreakBridges(streakState.lastDay, new Date(), state.goals)) ? streakState.streak : 0; /* BEUK:goalspace */
       }
       function goalDailyLine(d) {
+        if (d.rest) return t("goals.lineRest", { done: fmtNum(d.done) }); /* BEUK:goalspace */
         return t("goals.lineToday", { done: fmtNum(d.done), target: fmtNum(d.target) }) + (d.met ? " " + t("goals.metNote") : "");
       }
       function goalProjectLine(p) {
@@ -22510,18 +22925,159 @@
         if (dl.dueToday) return dl.remaining !== null ? t("goals.lineDueToday", { date: dateTxt, n: fmtNum(dl.remaining) }) : t("goals.lineDueBare", { date: dateTxt });
         return t("goals.lineDeadline", { date: dateTxt, n: dl.daysLeft });
       }
+      /* ==== BEUK:goalspace ==== the plan's arithmetic, said plainly, and the one pace line */
+      function goalPlanLine(plan) {
+        if (!plan) return "";
+        if (plan.state === "reached") return t("goals.planReached");
+        if (plan.state === "past") return t("goals.planPast");
+        if (plan.state === "nodays") return t("goals.planNoDays");
+        if (plan.state === "needs") return t("goals.planNeeds");
+        const s = t("goals.planMath", { left: fmtNum(plan.left), days: fmtNum(plan.days), daily: fmtNum(plan.daily), count: plan.days });
+        return plan.restToday ? t("goals.planRestNote") + " " + s : s;
+      }
+      function goalPaceLine(p) {
+        if (!p) return "";
+        const date = fmtDateIntl(parseDayStr(p.since));
+        if (p.state === "on") return t("goals.paceOn", { date });
+        return t(p.state === "behind" ? "goals.paceBehind" : "goals.paceAhead", { n: fmtNum(p.n), count: p.n, date });
+      }
+      /* "Just write": the readouts step aside; the log keeps going. A
+         writer's own preference, kept in this browser like the streak. */
+      var goalJustWriteCache; /* var, not let: renderStreak may ask before this line has run */
+      function goalJustWrite() {
+        if (goalJustWriteCache == null) { try { goalJustWriteCache = !!(window.localStorage && localStorage.getItem("beuk.justwrite.v1") === "1"); } catch (e) { goalJustWriteCache = false; } }
+        return goalJustWriteCache;
+      }
+      function goalSetJustWrite(on) {
+        goalJustWriteCache = !!on;
+        try { if (window.localStorage) { if (on) localStorage.setItem("beuk.justwrite.v1", "1"); else localStorage.removeItem("beuk.justwrite.v1"); } } catch (e) {}
+        renderStreak(); renderGoalLines();
+        const m = $("modalGoals");
+        if (m && m.classList.contains("open")) { goalsRenderRoom(); renderGoalCalendar(); }
+      }
+      /* Clear tracking data: the habit log (days, the road's lengths, the
+         written/removed split), the local streak and the pace line's start.
+         Goals themselves stay; the manuscript is never touched — this
+         function reads the book's length and writes no section. */
+      function goalClearTracking() {
+        wlog = { days: {}, base: null, baseDay: "", len: {}, ar: {} };
+        wlogRebase = true;
+        wlogFlush();
+        streakState.streak = 0; streakState.lastDay = "";
+        saveStreak();
+        const g = normalizeGoals(state.goals);
+        if (g.start) {
+          delete g.start;
+          if (g.deadline) g.start = { day: dayStr(new Date()), w: bookTotalWords() }; /* the straight line starts again from today */
+          state.goals = normalizeGoals(g);
+          noteBookEdited();
+        }
+        wlogObserve(bookTotalWords()); /* the new log's baseline, so nothing already written counts as today's */
+        wlogFlush();
+        renderStreak(); renderGoalLines();
+        const m = $("modalGoals");
+        if (m && m.classList.contains("open")) { goalsRenderRoom(); renderGoalCalendar(); }
+      }
+      function goalAskClearTracking() {
+        return cloudConfirm({ title: t("goals.clearTitle"), body: t("goals.clearBody"), yes: t("goals.clearYes"), no: t("goals.clearKeep"), defaultNo: true }).then((ok) => {
+          if (ok !== true) return false;
+          goalClearTracking();
+          toast(t("goals.cleared"), "target");
+          return true;
+        });
+      }
+      /* A book with a deadline but no start point (set before the pace
+         line existed) gets one the first time the writer opens Goals —
+         from that day, never earlier: no history is invented. */
+      function goalEnsureStart() {
+        const g = normalizeGoals(state.goals);
+        if (!g.deadline || g.start) return;
+        g.start = { day: dayStr(new Date()), w: bookTotalWords() };
+        state.goals = normalizeGoals(g);
+        noteBookEdited();
+      }
+      let goalKeptPeriod = "today";
+      function goalKeptRange(period, now) {
+        const to = dayStr(now);
+        if (period === "today") return { from: to, to };
+        const d = goalMidnight(now); d.setDate(d.getDate() - (period === "30" ? 29 : 6));
+        return { from: dayStr(d), to };
+      }
+      function renderGoalKept() {
+        const host = $("goalKept"); if (!host) return;
+        const book = wlog.ar && wlog.ar[wlogBookKey()];
+        const r = goalKeptRange(goalKeptPeriod, new Date());
+        const k = goalKept(book, r.from, r.to);
+        const seg = [["today", "goals.keptToday"], ["7", "goals.kept7"], ["30", "goals.kept30"]].map(([v, key]) =>
+          '<button type="button" data-kperiod="' + v + '" aria-pressed="' + (goalKeptPeriod === v) + '"' + (goalKeptPeriod === v ? ' class="active"' : "") + ">" + esc(t(key)) + "</button>").join("");
+        let html = '<div class="seg goal-kept-seg" role="group" aria-label="' + esc(t("goals.keptH")) + '">' + seg + "</div>";
+        if (k.notYet) html += '<p class="ins-none">' + esc(t("goals.keptNotYet", { date: fmtDateIntl(parseDayStr(k.from)) })) + "</p>";
+        else if (!k.from) html += '<p class="ins-none">' + esc(t("goals.keptNone")) + "</p>";
+        else {
+          const sign = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + fmtNum(Math.abs(n));
+          html += '<div class="goal-kept-row">' +
+            '<div class="goal-kept-cell"><div class="goal-lab">' + esc(t("goals.keptWritten")) + '</div><div class="goal-big">' + esc(fmtNum(k.a)) + "</div></div>" +
+            '<div class="goal-kept-cell"><div class="goal-lab">' + esc(t("goals.keptRemoved")) + '</div><div class="goal-big">' + esc(fmtNum(k.r)) + "</div></div>" +
+            '<div class="goal-kept-cell"><div class="goal-lab">' + esc(t("goals.keptNet")) + '</div><div class="goal-big"><bdi dir="ltr">' + esc(sign(k.net)) + "</bdi></div></div></div>";
+          if (k.none) html += '<p class="ins-caption">' + esc(t("goals.keptNone")) + "</p>";
+          if (k.partial) html += '<p class="ins-caption">' + esc(t("goals.keptFrom", { date: fmtDateIntl(parseDayStr(k.from)) })) + "</p>";
+        }
+        host.innerHTML = html;
+      }
+      /* the room's settings that are not plain inputs: weekdays and switches */
+      function syncGoalPlanInputs() {
+        const g = normalizeGoals(state.goals);
+        const days = goalDays(g);
+        const wrap = $("goalDays");
+        if (wrap) {
+          let html = "";
+          for (let i = 0; i < 7; i++) {
+            const dow = (i + 1) % 7; /* the week starts on Monday, as the calendar's does */
+            const ref = new Date(2024, 0, 1 + i); /* 2024-01-01 was a Monday */
+            const short = new Intl.DateTimeFormat(getUiLang(), { weekday: "short" }).format(ref);
+            const full = new Intl.DateTimeFormat(getUiLang(), { weekday: "long" }).format(ref);
+            html += '<button type="button" class="goal-day" data-gday="' + dow + '" aria-pressed="' + (!!days[dow]) + '" aria-label="' + esc(full) + '" title="' + esc(full) + '">' + esc(short) + "</button>";
+          }
+          wrap.innerHTML = html;
+        }
+        const canPlan = !!(g.project && g.deadline);
+        const dlSw = $("tglGoalDlDay"); if (dlSw) dlSw.setAttribute("aria-pressed", String(!!g.dlDay));
+        const auto = $("tglGoalAuto");
+        if (auto) { auto.setAttribute("aria-pressed", String(!!g.auto && canPlan)); auto.disabled = !canPlan; }
+        const autoHint = $("goalAutoHint"); if (autoHint) autoHint.textContent = t(canPlan ? "goals.autoHint" : "goals.planNeeds");
+        const di = $("goalDailyInput");
+        const autoOn = !!g.auto && canPlan;
+        if (di) {
+          di.disabled = autoOn;
+          if (autoOn) { const p = goalPlan(g, bookTotalWords(), wlogTodayWords(), new Date()); di.value = p.state === "ok" ? String(p.daily) : ""; }
+          else di.value = g.daily ? String(g.daily) : "";
+        }
+        const dh = $("goalDailyHint"); if (dh) dh.textContent = t(autoOn ? "goals.dailyAutoHint" : "goals.dailyHint");
+        const dc = document.querySelector('[data-gclear="daily"]'); if (dc) { dc.style.visibility = autoOn ? "hidden" : ""; dc.disabled = autoOn; }
+        const jw = $("tglGoalJustWrite"); if (jw) jw.setAttribute("aria-pressed", String(goalJustWrite()));
+      }
+      function goalsRenderRoom() {
+        const jw = goalJustWrite();
+        const note = $("goalJwNote"); if (note) note.hidden = !jw;
+        ["goalsProgress", "goalKeptSec", "goalCalSec"].forEach((id) => { const el = $(id); if (el) el.hidden = jw; });
+        if (jw) { const rs = $("goalRoadSec"); if (rs) rs.hidden = true; }
+        else { renderGoalsProgress(); renderGoalKept(); renderGoalRoad(); }
+        syncGoalPlanInputs();
+      }
+      /* ==== /BEUK:goalspace ==== */
       /* ---- the compact lines beside the stats ---- */
       function renderGoalLines() {
         const wrap = $("goalLines"); if (!wrap) return;
         const total = bookTotalWords();
         const m = goalMath(state.goals, total, wlogTodayWords(), new Date());
-        if (!m.has) { wrap.style.display = "none"; wrap.innerHTML = ""; return; }
+        if (!m.has || goalJustWrite()) { wrap.style.display = "none"; wrap.innerHTML = ""; return; } /* BEUK:goalspace — just write */
         let html = "";
         if (m.daily) html += '<div class="goal-line">' + esc(goalDailyLine(m.daily)) + "</div>";
         if (m.project) html += '<div class="goal-line"><span>' + esc(goalProjectLine(m.project)) + '</span><span class="goal-track"><span class="goal-fill" style="width:' + m.project.pct + '%"></span></span></div>';
         if (m.deadline) {
           html += '<div class="goal-line">' + esc(goalDeadlineLine(m.deadline, total)) + "</div>";
-          if (m.deadline.pace) html += '<div class="goal-line goal-pace">' + esc(t("goals.linePace", { n: fmtNum(m.deadline.pace) })) + "</div>";
+          if (m.deadline.pace && !(m.daily && m.daily.auto)) html += '<div class="goal-line goal-pace">' + esc(t("goals.linePace", { n: fmtNum(m.deadline.pace) })) + "</div>"; /* BEUK:goalspace — the plan's own figure stands in for it */
+          if (m.pace) html += '<div class="goal-line goal-pace goal-onpace">' + esc(goalPaceLine(m.pace)) + "</div>"; /* BEUK:goalspace */
         }
         wrap.innerHTML = html;
         wrap.style.display = "";
@@ -22534,13 +23090,21 @@
         const body = $("goalsProgress"); if (!body) return;
         const total = bookTotalWords();
         const m = goalMath(state.goals, total, wlogTodayWords(), new Date());
+        const g = normalizeGoals(state.goals);
         let html = "";
         if (!m.has) html += '<p class="ins-none">' + esc(t("goals.noneSet")) + "</p>";
-        if (m.daily) html += goalBlock(t("goals.daily"), '<div class="goal-big">' + esc(goalDailyLine(m.daily)) + "</div>");
+        /* BEUK:goalspace — a daily target set from the deadline shows its arithmetic beneath it */
+        const autoPlan = g.auto && m.plan && m.plan.state !== "needs";
+        if (m.daily || autoPlan) {
+          let inner = m.daily ? '<div class="goal-big">' + esc(goalDailyLine(m.daily)) + "</div>" : "";
+          if (autoPlan) inner += '<p class="ins-caption goal-plan">' + esc(goalPlanLine(m.plan)) + "</p>";
+          html += goalBlock(t("goals.daily"), inner);
+        }
         if (m.project) html += goalBlock(t("goals.project"), '<div class="goal-big">' + esc(goalProjectLine(m.project)) + '</div><div class="goal-track big"><span class="goal-fill" style="width:' + m.project.pct + '%"></span></div>');
         if (m.deadline) {
           let inner = '<div class="goal-big">' + esc(goalDeadlineLine(m.deadline, total)) + "</div>";
-          if (m.deadline.pace) inner += '<p class="ins-caption">' + esc(t("goals.linePace", { n: fmtNum(m.deadline.pace) })) + "</p>";
+          if (m.deadline.pace && !(m.daily && m.daily.auto)) inner += '<p class="ins-caption">' + esc(t("goals.linePace", { n: fmtNum(m.deadline.pace) })) + "</p>"; /* BEUK:goalspace */
+          if (m.pace) inner += '<p class="ins-caption goal-onpace">' + esc(goalPaceLine(m.pace)) + "</p>"; /* BEUK:goalspace */
           html += goalBlock(t("goals.deadline"), inner);
         }
         html += '<p class="ins-caption goal-stand">' + esc(t("goals.streakLine", { n: goalStreakNow() })) + " · " + esc(t("goals.minutesLine", { n: wlogTodayMinutes() })) + "</p>";
@@ -22594,27 +23158,44 @@
         if (d) d.value = g.daily ? String(g.daily) : "";
         if (p) p.value = g.project ? String(g.project) : "";
         if (dl) dl.value = g.deadline || "";
+        syncGoalPlanInputs(); /* BEUK:goalspace */
+      }
+      /* BEUK:goalspace — the plain fields are read here; writing days, the
+         deadline-day switch and the daily-from-deadline switch ride along
+         untouched. A new or changed deadline stamps the pace line's start
+         point: today, at the book's length now. */
+      function goalsApply(next) {
+        const prev = normalizeGoals(state.goals);
+        const g = normalizeGoals(Object.assign({}, prev, next));
+        if (g.deadline !== prev.deadline) {
+          delete g.start;
+          if (g.deadline) g.start = { day: dayStr(new Date()), w: bookTotalWords() };
+        }
+        if (!g.deadline) delete g.start;
+        state.goals = normalizeGoals(g);
+        noteBookEdited();
+        renderGoalLines();
+        renderStreak();
+        goalsRenderRoom();
       }
       function commitGoals() {
         const d = $("goalDailyInput"), p = $("goalProjectInput"), dl = $("goalDeadlineInput");
-        state.goals = normalizeGoals({
-          daily: d ? parseInt(d.value, 10) : 0,
+        const prev = normalizeGoals(state.goals);
+        const autoOn = !!(prev.auto && prev.project && prev.deadline);
+        goalsApply({
+          daily: autoOn ? prev.daily : (d ? parseInt(d.value, 10) : 0),
           project: p ? parseInt(p.value, 10) : 0,
           deadline: dl ? dl.value : ""
         });
-        noteBookEdited();
-        renderGoalLines();
-        renderGoalsProgress();
-        renderGoalRoad(); /* BEUK:goalshist */
       }
       function openGoals() {
         goalCalCursor = null;
+        goalEnsureStart(); /* BEUK:goalspace */
         syncGoalInputs();
-        renderGoalsProgress();
         renderGoalCalendar();
         const m = $("modalGoals");
         m.classList.add("open");
-        renderGoalRoad(); /* BEUK:goalshist — drawn once open, at the room's own width */
+        goalsRenderRoom(); /* BEUK:goalspace — progress, written and kept, and the road (drawn once open, at the room's own width) */
         const box = m.querySelector(".modal");
         if (box) box.scrollTop = 0;
         icons();
@@ -22623,7 +23204,7 @@
       function goalsOnLangChange() {
         renderGoalLines();
         const m = $("modalGoals");
-        if (m && m.classList.contains("open")) { syncGoalInputs(); renderGoalsProgress(); renderGoalRoad(); renderGoalCalendar(); } /* BEUK:goalshist — road */
+        if (m && m.classList.contains("open")) { syncGoalInputs(); goalsRenderRoom(); renderGoalCalendar(); } /* BEUK:goalshist — road; BEUK:goalspace */
       }
       function initGoals() {
         const btn = $("btnGoals"); if (btn) btn.addEventListener("click", openGoals);
@@ -22642,6 +23223,39 @@
           const el = which === "daily" ? $("goalDailyInput") : which === "project" ? $("goalProjectInput") : $("goalDeadlineInput");
           if (el) { el.value = ""; commitGoals(); }
         });
+        /* ==== BEUK:goalspace ==== writing days, the two plan switches, just write, clear */
+        const daysWrap = $("goalDays");
+        if (daysWrap) daysWrap.addEventListener("click", (e) => {
+          const b = e.target && e.target.closest ? e.target.closest("[data-gday]") : null;
+          if (!b) return;
+          const dow = parseInt(b.getAttribute("data-gday"), 10);
+          const days = goalDays(normalizeGoals(state.goals)).slice();
+          days[dow] = days[dow] ? 0 : 1;
+          if (!days.some(Boolean)) return; /* at least one writing day stays: a week of rest days plans nothing */
+          goalsApply({ days });
+          const again = daysWrap.querySelector('[data-gday="' + dow + '"]'); if (again) again.focus();
+        });
+        const dlSw = $("tglGoalDlDay");
+        if (dlSw) dlSw.addEventListener("click", () => goalsApply({ dlDay: !normalizeGoals(state.goals).dlDay }));
+        const autoSw = $("tglGoalAuto");
+        if (autoSw) autoSw.addEventListener("click", () => {
+          const g = normalizeGoals(state.goals);
+          if (!g.project || !g.deadline) return;
+          goalsApply({ auto: !g.auto });
+        });
+        const jwSw = $("tglGoalJustWrite");
+        if (jwSw) jwSw.addEventListener("click", () => goalSetJustWrite(!goalJustWrite()));
+        const clr = $("btnGoalClearData");
+        if (clr) clr.addEventListener("click", () => { goalAskClearTracking(); });
+        const kept = $("goalKept");
+        if (kept) kept.addEventListener("click", (e) => {
+          const b = e.target && e.target.closest ? e.target.closest("[data-kperiod]") : null;
+          if (!b) return;
+          goalKeptPeriod = b.getAttribute("data-kperiod") || "today";
+          renderGoalKept();
+          const again = kept.querySelector('[data-kperiod="' + goalKeptPeriod + '"]'); if (again) again.focus();
+        });
+        /* ==== /BEUK:goalspace ==== */
         const cal = $("goalCal");
         if (cal) cal.addEventListener("click", (e) => {
           const b = e.target && e.target.closest ? e.target.closest("[data-calnav]") : null;
@@ -22919,7 +23533,9 @@
           observe: wlogObserve, tick: wlogTick, flush: wlogFlush,
           todayWords: wlogTodayWords, todayMinutes: wlogTodayMinutes,
           setForeground: (v) => { wlogFgOverride = v === null ? null : !!v; },
-          renderLines: renderGoalLines, renderProgress: renderGoalsProgress, calendar: renderGoalCalendar
+          renderLines: renderGoalLines, renderProgress: renderGoalsProgress, calendar: renderGoalCalendar,
+          plan: goalPlan, onPace: goalOnPace, kept: goalKept, bridges: goalStreakBridges, writingDays: goalWritingDaysBetween, /* BEUK:goalspace */
+          clearTracking: goalClearTracking, askClear: goalAskClearTracking, justWrite: goalJustWrite, setJustWrite: goalSetJustWrite
         };
       }
 
@@ -48592,6 +49208,268 @@
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "model: 400 → 1,000 over 5 days = 120 a day; drawn: the dashed line runs from today's length (" + fmtNum(total) + ") to the target on the deadline at 120 a day, the target line is level, key and caption name it a pace; no pace past the deadline or once the target is met");
             } finally { ghRestore(k); }
           } },
+        /* ==== BEUK:goalspace ==== writing days, the plan, pace, written vs kept, rest days, just write */
+        { id: "goals.deadline.daily", feature: "goals", name: "The daily target set from the deadline is words left ÷ writing days left (Scrivener's 85k of 100k with 10 days → 1,500 a day): weekdays only, the deadline-day switch, today's words holding it still, a missed day rebalancing forward, words removed, a rest day today, a passed deadline, a reached target and no writing days left — and the room shows the arithmetic and drives the daily field",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const setInput = (id, v) => { const el = $(id); el.value = v; el.dispatchEvent(new Event("change", { bubbles: true })); };
+            try {
+              local.suspended = true;
+              const D = (m, d) => new Date(2024, m, d, 10, 0); /* 2024-01-01 was a Monday */
+              const mon = D(0, 1);
+              const all = { project: 100000, deadline: "2024-01-11" };
+              const wk = [0, 1, 1, 1, 1, 1, 0];
+              const eq = (label, got, want) => { if (got !== want) bad.push(label + ": " + got + " ≠ " + want); };
+              let p = goalPlan(all, 85000, 0, mon);
+              eq("Scrivener's case days", p.days, 10); eq("Scrivener's case left", p.left, 15000); eq("Scrivener's case daily", p.daily, 1500);
+              eq("arithmetic line", goalPlanLine(p), t("goals.planMath", { left: fmtNum(15000), days: fmtNum(10), daily: fmtNum(1500), count: 10 }));
+              p = goalPlan({ project: 100000, deadline: "2024-01-15", days: wk }, 85000, 0, mon);
+              eq("weekdays only (Jan 1–12, deadline day off) days", p.days, 10); eq("weekdays only daily", p.daily, 1500);
+              p = goalPlan({ project: 100000, deadline: "2024-01-15", days: wk, dlDay: true }, 85000, 0, mon);
+              eq("deadline day counts: days", p.days, 11); eq("deadline day counts: daily", p.daily, Math.ceil(15000 / 11));
+              p = goalPlan(all, 85600, 600, mon);
+              eq("today's 600 words hold the figure still", p.daily, 1500);
+              p = goalPlan(all, 85000, 0, D(0, 2));
+              eq("a missed day rebalances: days", p.days, 9); eq("a missed day rebalances: daily", p.daily, Math.ceil(15000 / 9));
+              p = goalPlan(all, 84000, 0, mon);
+              eq("1,000 words removed: daily", p.daily, 1600);
+              p = goalPlan({ project: 100000, deadline: "2024-01-15", days: wk }, 85000, 200, D(0, 6));
+              eq("Saturday rest day: restToday", p.restToday, true); eq("rest day: days", p.days, 5); eq("rest day: left (today's words already off)", p.left, 15000); eq("rest day: daily", p.daily, 3000);
+              const mr = goalMath({ project: 100000, deadline: "2024-01-15", days: wk, auto: true }, 85000, 200, D(0, 6));
+              if (!mr.daily || !mr.daily.rest) bad.push("goalMath does not name the rest day");
+              eq("passed deadline", goalPlan({ project: 100000, deadline: "2023-12-31" }, 85000, 0, mon).state, "past");
+              eq("reached", goalPlan(all, 100000, 0, mon).state, "reached");
+              eq("deadline today, deadline day off", goalPlan({ project: 100000, deadline: "2024-01-01" }, 85000, 0, mon).state, "nodays");
+              eq("Saturday deadline from a Saturday, weekdays only", goalPlan({ project: 100000, deadline: "2024-01-06", days: wk, dlDay: true }, 85000, 0, D(0, 6)).state, "nodays");
+              eq("no target", goalPlan({ deadline: "2024-01-11" }, 85000, 0, mon).state, "needs");
+              /* the pace from here follows writing days too, and equals the old calendar figure with every day a writing day */
+              eq("pace from here, every day", goalMath(all, 85000, 0, mon).deadline.pace, 1500);
+              eq("pace from here, weekdays", goalMath({ project: 100000, deadline: "2024-01-15", days: wk }, 85000, 0, mon).deadline.pace, 1500);
+              /* the room: target and deadline through its own fields, then the switch */
+              applyBookDoc(buildEmptyBook());
+              state.sections = [mkSection("body", "chapter", "Plan Chapter", { number: "1", content: Array(400).fill("word").join(" ") })];
+              state.activeId = state.sections[0].id;
+              wlogRebase = true; updateStats();
+              openGoals();
+              const now = new Date();
+              const dl = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 10);
+              setInput("goalProjectInput", "10400");
+              setInput("goalDeadlineInput", dayStr(dl));
+              const sw = $("tglGoalAuto");
+              if (sw.disabled) bad.push("the switch is disabled with a target and a deadline set");
+              sw.click();
+              const g = normalizeGoals(state.goals);
+              if (!g.auto) bad.push("the switch did not turn the plan on");
+              const total = bookTotalWords();
+              const live = goalPlan(state.goals, total, wlogTodayWords(), new Date());
+              if (live.state !== "ok") bad.push("live plan " + live.state);
+              else {
+                if (!$("goalDailyInput").disabled || $("goalDailyInput").value !== String(live.daily)) bad.push("the daily field does not show the plan's " + live.daily + " (value " + $("goalDailyInput").value + ")");
+                if ($("goalsProgress").textContent.indexOf(goalPlanLine(live)) === -1) bad.push("the room does not show the arithmetic");
+                if ($("goalLines").textContent.indexOf(t("goals.lineToday", { done: fmtNum(wlogTodayWords()), target: fmtNum(live.daily) })) === -1) bad.push("the sidebar's daily line does not carry the plan's figure");
+              }
+              setInput("goalDeadlineInput", "");
+              if (!$("tglGoalAuto").disabled || $("goalDailyInput").disabled) bad.push("with no deadline the switch should rest and the daily field return");
+              closeGoals();
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "85,000 of 100,000 with 10 writing days → 1,500 a day, said as \"" + goalPlanLine(goalPlan(all, 85000, 0, mon)) + "\"; weekdays only 10 days → 1,500, deadline day counting 11 → 1,364; today's 600 words hold 1,500; a missed day → 1,667 over 9; 1,000 removed → 1,600; a Saturday rest day → 3,000 over the 5 weekdays ahead; past / reached / no days / needs each named; the room's switch fills the daily field and the sidebar with the plan");
+            } finally { closeGoals(); ghRestore(k); }
+          } },
+        { id: "goals.pace", feature: "goals", name: "On pace compares the book to the straight line from the start point (its length the day the deadline was set) to the target on the deadline, stepped by writing days and read at the start of today: on pace / behind by N / ahead by N; nothing past the deadline, once reached or with no start point; setting a deadline stamps today as the start, never an earlier day",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const setInput = (id, v) => { const el = $(id); el.value = v; el.dispatchEvent(new Event("change", { bubbles: true })); };
+            try {
+              local.suspended = true;
+              const D = (m, d) => new Date(2024, m, d, 10, 0);
+              const g = { project: 20000, deadline: "2024-01-11", start: { day: "2024-01-01", w: 10000 } };
+              const eq = (label, got, want) => { if (got !== want) bad.push(label + ": " + got + " ≠ " + want); };
+              let p = goalOnPace(g, 15000, D(0, 6));
+              eq("expected after 5 of 10 writing days", p && p.expected, 15000); eq("at the line", p && p.state, "on");
+              p = goalOnPace(g, 14000, D(0, 6)); eq("1,000 short", p && p.state + " " + p.n, "behind 1000");
+              p = goalOnPace(g, 16500, D(0, 6)); eq("1,500 over", p && p.state + " " + p.n, "ahead 1500");
+              p = goalOnPace(g, 10000, D(0, 1)); eq("the start day itself", p && p.state, "on");
+              const wk = { project: 20000, deadline: "2024-01-15", days: [0, 1, 1, 1, 1, 1, 0], start: { day: "2024-01-01", w: 10000 } };
+              eq("weekdays: Saturday expects five days' share", goalOnPace(wk, 15000, D(0, 6)).expected, 15000);
+              eq("weekdays: Monday still five (the weekend asks nothing)", goalOnPace(wk, 15000, D(0, 8)).expected, 15000);
+              eq("past the deadline", goalOnPace(g, 15000, D(0, 12)), null);
+              eq("reached", goalOnPace(g, 20000, D(0, 6)), null);
+              eq("no start point", goalOnPace({ project: 20000, deadline: "2024-01-11" }, 15000, D(0, 6)), null);
+              eq("line text behind", goalPaceLine(goalOnPace(g, 14000, D(0, 6))), t("goals.paceBehind", { n: fmtNum(1000), count: 1000, date: fmtDateIntl(D(0, 1)) }));
+              /* the room: a deadline set today starts the line today, at today's length */
+              applyBookDoc(buildEmptyBook());
+              state.sections = [mkSection("body", "chapter", "Pace Chapter", { number: "1", content: Array(300).fill("word").join(" ") })];
+              state.activeId = state.sections[0].id;
+              wlogRebase = true; updateStats();
+              openGoals();
+              const now = new Date();
+              setInput("goalProjectInput", "3300");
+              setInput("goalDeadlineInput", dayStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 30)));
+              const st = normalizeGoals(state.goals).start;
+              if (!st || st.day !== dayStr(now) || st.w !== bookTotalWords()) bad.push("start point " + JSON.stringify(st) + " ≠ today at " + bookTotalWords());
+              const live = goalOnPace(state.goals, bookTotalWords(), now);
+              if (!live || live.state !== "on") bad.push("on the day it is set the book is on its own line (" + JSON.stringify(live) + ")");
+              else {
+                const line = goalPaceLine(live);
+                if ($("goalsProgress").textContent.indexOf(line) === -1) bad.push("the room does not carry the pace line");
+                if ($("goalLines").textContent.indexOf(line) === -1) bad.push("the sidebar does not carry the pace line");
+              }
+              closeGoals();
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "10,000 → 20,000 over 10 writing days: day 6 expects 15,000 — at 15,000 on pace, at 14,000 \"" + goalPaceLine(goalOnPace(g, 14000, D(0, 6))) + "\", at 16,500 ahead by 1,500; weekdays-only, Saturday and Monday both expect 15,000; none past the deadline, once reached or without a start; a deadline set in the room starts the line today at today's length, shown in the room and the sidebar");
+            } finally { closeGoals(); ghRestore(k); }
+          } },
+        { id: "goals.kept", feature: "goals", name: "Words written vs words kept: a simulated session (+100, −30, +20 words) logs 120 written, 30 removed, +90 kept for this book; the split begins the day it was first observed and is never back-filled (an earlier logged day stays out, the room says 'from <date>'); a day the old tally already counted starts the split tomorrow",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            const words = (n) => Array(n).fill("word").join(" ");
+            try {
+              local.suspended = true;
+              applyBookDoc(buildEmptyBook());
+              state.sections = [mkSection("body", "chapter", "Kept Chapter", { number: "1", content: words(400) })];
+              state.activeId = state.sections[0].id;
+              const now = new Date();
+              const today = dayStr(now);
+              const yd = dayStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2));
+              wlog = { days: {}, base: null, baseDay: "", len: {}, ar: {} };
+              wlog.days[yd] = { w: 500, s: 0 }; /* an older day the tally kept, net only */
+              wlogRebase = true; updateStats(); /* the arrival: a baseline, no words credited */
+              const key = wlogBookKey();
+              const book = () => wlog.ar[key];
+              if (!book() || book().from !== today) bad.push("the split did not begin today (" + JSON.stringify(book()) + ")");
+              if (book() && Object.keys(book().days).length) bad.push("the arrival credited words");
+              state.sections[0].content = words(500); updateStats();
+              state.sections[0].content = words(470); updateStats();
+              state.sections[0].content = words(490); updateStats();
+              const kt = goalKept(book(), today, today);
+              if (kt.a !== 120 || kt.r !== 30 || kt.net !== 90) bad.push("today " + kt.a + " written / " + kt.r + " removed / " + kt.net + " kept ≠ 120 / 30 / +90");
+              if (wlogTodayWords() !== 90) bad.push("the old day tally reads " + wlogTodayWords() + ", expected 90");
+              const r7 = goalKeptRange("7", now);
+              const k7 = goalKept(book(), r7.from, r7.to);
+              if (k7.a !== 120 || !k7.partial || k7.from !== today) bad.push("7 days " + JSON.stringify(k7) + " — the older net-only day must stay out and the period must say where the split begins");
+              openGoals();
+              goalKeptPeriod = "7"; renderGoalKept();
+              const txt = $("goalKept").textContent;
+              if (txt.indexOf(fmtNum(120)) === -1 || txt.indexOf("+" + fmtNum(90)) === -1 || txt.indexOf(t("goals.keptFrom", { date: fmtDateIntl(parseDayStr(today)) })) === -1) bad.push("the room reads \"" + txt.slice(0, 160) + "\"");
+              goalKeptPeriod = "today"; renderGoalKept();
+              closeGoals();
+              /* the upgrade day: the old tally already holds words today, so the split waits for tomorrow */
+              wlog = { days: {}, base: null, baseDay: "", len: {}, ar: {} };
+              wlog.days[today] = { w: 250, s: 0 };
+              wlogRebase = true; updateStats();
+              const tm = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+              if (!book() || book().from !== dayStr(tm)) bad.push("on a day already tallied the split should begin tomorrow (" + JSON.stringify(book()) + ")");
+              state.sections[0].content = words(520); updateStats();
+              const kn = goalKept(book(), today, today);
+              if (!kn.notYet || kn.a !== 0) bad.push("today should read 'not kept yet', got " + JSON.stringify(kn));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "+100, −30, +20 → 120 written, 30 removed, +90 kept (the day tally agrees at 90); 7 days stays 120 with an older net-only day left out and 'from " + today + "' said; on a day the old tally already counted, the split begins tomorrow and today reads not kept yet");
+            } finally { goalKeptPeriod = "today"; closeGoals(); ghRestore(k); }
+          } },
+        { id: "goals.restdays.streak", feature: "goals", name: "Rest days don't break the streak: with writing days set, days that are not writing days are stepped over (Friday → Monday continues on weekdays only; a missed writing day still ends it), writing after a rest day adds to the streak, and a rest day today reads as safe — never a countdown",
+          run() {
+            const k = ghKeep();
+            const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
+            const bad = [];
+            try {
+              local.suspended = true;
+              const D = (m, d) => new Date(2024, m, d, 10, 0);
+              const wk = { days: [0, 1, 1, 1, 1, 1, 0] };
+              if (!goalStreakBridges("2024-01-05", D(0, 8), wk)) bad.push("Friday → Monday breaks on weekdays only");
+              if (goalStreakBridges("2024-01-05", D(0, 8), {})) bad.push("Friday → Monday holds with every day a writing day");
+              if (goalStreakBridges("2024-01-04", D(0, 8), wk)) bad.push("a missed Friday still holds");
+              if (!goalStreakBridges("2024-01-07", D(0, 8), {})) bad.push("yesterday → today does not hold");
+              /* live: yesterday's weekday is a rest day; the last writing was two days ago */
+              const now = new Date();
+              const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+              const y2 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 2);
+              const days = [1, 1, 1, 1, 1, 1, 1]; days[y.getDay()] = 0;
+              state.goals = normalizeGoals({ days });
+              streakState.streak = 4; streakState.lastDay = dayStr(y2);
+              renderStreak();
+              if ($("streakText").innerHTML !== t("streak.keepHtml", { n: 4 })) bad.push("over a rest day the streak should wait for today (" + $("streakText").textContent + ")");
+              if (goalStreakNow() !== 4) bad.push("the room's streak reads " + goalStreakNow());
+              markWritingActivity();
+              if (streakState.streak !== 5 || streakState.lastDay !== dayStr(now)) bad.push("writing today after a rest day gives " + streakState.streak + ", expected 5");
+              /* every day a writing day: the same gap ends it */
+              state.goals = normalizeGoals({});
+              streakState.streak = 4; streakState.lastDay = dayStr(y2);
+              renderStreak();
+              if ($("streakText").innerHTML !== t("streak.lastHtml", { n: 4 })) bad.push("with no rest days a missed day should end the streak");
+              /* today a rest day, yesterday written */
+              const d2 = [1, 1, 1, 1, 1, 1, 1]; d2[now.getDay()] = 0;
+              state.goals = normalizeGoals({ days: d2 });
+              streakState.streak = 3; streakState.lastDay = dayStr(y);
+              renderStreak();
+              if ($("streakText").innerHTML !== t("streak.restHtml", { n: 3 })) bad.push("a rest day today should read as safe (" + $("streakText").textContent + ")");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "weekdays only: Fri → Mon continues, a missed Friday ends it; live, a rest day yesterday keeps a 4-day streak waiting and writing today makes it 5; with no rest days the same gap ends it; a rest day today reads \"" + $("streakText").textContent + "\"");
+            } finally {
+              streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay; saveStreak();
+              ghRestore(k); renderStreak();
+            }
+          } },
+        { id: "goals.justwrite.clear", feature: "goals", name: "Just write pauses the goal readouts, the streak and the pace (sidebar and room) while still logging words, and persists; Clear tracking data asks through the studio's own dialog (never window.confirm) and wipes the habit log, written/kept split, road lengths, streak and pace start — never a word of the book",
+          run() {
+            const k = ghKeep();
+            const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
+            const keepJw = goalJustWrite();
+            const keepConfirm = window.confirm;
+            let confirmCalls = 0;
+            const bad = [];
+            try {
+              local.suspended = true;
+              window.confirm = () => { confirmCalls++; return false; };
+              applyBookDoc(buildEmptyBook());
+              state.sections = [mkSection("body", "chapter", "Quiet Chapter", { number: "1", content: Array(200).fill("word").join(" ") })];
+              state.activeId = state.sections[0].id;
+              wlogRebase = true; updateStats();
+              const now = new Date();
+              state.goals = normalizeGoals({ daily: 500, project: 5000, deadline: dayStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 20)), start: { day: dayStr(now), w: bookTotalWords() } });
+              streakState.streak = 6; streakState.lastDay = dayStr(now);
+              goalSetJustWrite(false);
+              openGoals();
+              $("tglGoalJustWrite").click();
+              let stored = null; try { stored = localStorage.getItem("beuk.justwrite.v1"); } catch (e) {}
+              if (!goalJustWrite() || stored !== "1") bad.push("just write did not persist (" + stored + ")");
+              if ($("goalLines").style.display !== "none") bad.push("the sidebar's goal lines still show");
+              if ($("streakText").textContent !== t("goals.justWriteSide")) bad.push("the streak still shows: " + $("streakText").textContent);
+              if (!$("goalsProgress").hidden || !$("goalKeptSec").hidden || !$("goalCalSec").hidden || !$("goalRoadSec").hidden || $("goalJwNote").hidden) bad.push("the room's readouts did not step aside");
+              const before = wlogTodayWords();
+              state.sections[0].content += " " + Array(25).fill("word").join(" ");
+              updateStats();
+              if (wlogTodayWords() !== before + 25) bad.push("words were not logged while just writing (" + before + " → " + wlogTodayWords() + ")");
+              $("tglGoalJustWrite").click();
+              if (goalJustWrite() || $("goalLines").style.display === "none" || $("goalsProgress").hidden) bad.push("turning just write off did not bring the readouts back");
+              /* clear: the studio's own dialog, the safe choice first */
+              const bookBefore = JSON.stringify({ sections: state.sections, meta: state.meta, history: state.history });
+              $("btnGoalClearData").click();
+              if (!$("modalConfirm").classList.contains("open")) bad.push("no confirmation dialog");
+              if ($("confirmTitle").textContent !== t("goals.clearTitle")) bad.push("the dialog's title is \"" + $("confirmTitle").textContent + "\"");
+              if (confirmCalls) bad.push("window.confirm was called");
+              cloudConfirmDone(false);
+              if (!Object.keys(wlog.days).length) bad.push("cancelling cleared the log");
+              goalClearTracking(); /* what the dialog's yes runs */
+              const wiped = Object.keys(wlog.days).length === 0 && Object.keys(wlog.ar[wlogBookKey()] ? wlog.ar[wlogBookKey()].days : {}).length === 0 &&
+                Object.keys(wlog.len).every((b) => Object.keys(wlog.len[b]).length <= 1) && streakState.streak === 0 && streakState.lastDay === "";
+              if (!wiped) bad.push("tracking not wiped: " + JSON.stringify({ days: Object.keys(wlog.days).length, streak: streakState.streak }));
+              let ls = null; try { ls = JSON.parse(localStorage.getItem(STREAK_KEY)); } catch (e) {}
+              if (!ls || ls.streak !== 0) bad.push("the stored streak was not cleared");
+              const g = normalizeGoals(state.goals);
+              if (g.daily !== 500 || g.project !== 5000 || !g.deadline) bad.push("the goals themselves were cleared");
+              if (!g.start || g.start.day !== dayStr(now)) bad.push("the pace start should restart today");
+              if (JSON.stringify({ sections: state.sections, meta: state.meta, history: state.history }) !== bookBefore) bad.push("the book changed");
+              if (confirmCalls) bad.push("window.confirm was called");
+              closeGoals();
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "just write hides the sidebar lines, the streak and the room's readouts, persists as beuk.justwrite.v1, and still logged 25 words; off brings them back; Clear asks in the studio dialog (window.confirm untouched), cancel keeps the log, yes wipes log, split, road lengths and streak, keeps the goals, restarts the pace line today and leaves sections, meta and history byte-identical");
+            } finally {
+              window.confirm = keepConfirm;
+              if ($("modalConfirm").classList.contains("open")) cloudConfirmDone(false);
+              goalSetJustWrite(keepJw);
+              streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay; saveStreak();
+              closeGoals(); ghRestore(k); renderStreak();
+            }
+          } },
+        /* ==== /BEUK:goalspace ==== */
         { id: "history.delta.words", feature: "history", name: "Each snapshot in History shows its change against the book as it stands now — +N words, −N words, or same length — with each language's plural form (Polish 1 słowo / 22 słowa / 5 słów)",
           run() {
             const k = ghKeep();

@@ -2140,6 +2140,37 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Goals ride the in-browser book and the chart geometry is computed in the studio; asserted by window.runBeukSelfChecks().',
   },
+  /* ---- goals: writing days, plan, pace, written vs kept (BEUK:goalspace) ---- */
+  {
+    id: 'goals.deadline.daily',
+    title: "The daily target set from the deadline is words left / writing days left (85k of 100k with 10 days -> 1,500 a day), with weekdays, the deadline-day switch, a missed day rebalancing, words removed, a rest day, a passed deadline, a reached target and no writing days left",
+    kind: 'client-only',
+    reason: "Goals ride the in-browser book and the plan is computed and rendered in the studio; asserted by window.runBeukSelfChecks().",
+  },
+  {
+    id: 'goals.pace',
+    title: "On pace compares the book to the straight line from the start point (its length the day the deadline was set) to the target, by writing days: on pace / behind by N / ahead by N; nothing past the deadline, once reached or without a start",
+    kind: 'client-only',
+    reason: "Goals (with the pace start point) ride the in-browser book; the comparison is computed in the studio; asserted by window.runBeukSelfChecks().",
+  },
+  {
+    id: 'goals.kept',
+    title: "Words written vs words kept: a simulated session with deletions logs written, removed and net for the book, from the day the split began, never back-filled",
+    kind: 'client-only',
+    reason: "The writing log lives in this browser's localStorage and is fed by the studio's word count; asserted by window.runBeukSelfChecks().",
+  },
+  {
+    id: 'goals.restdays.streak',
+    title: "Rest days (days that are not writing days) are stepped over by the streak; a missed writing day still ends it; a rest day today reads as safe",
+    kind: 'client-only',
+    reason: "The local streak lives in this browser's localStorage and the writing days ride the in-browser book; asserted by window.runBeukSelfChecks().",
+  },
+  {
+    id: 'goals.justwrite.clear',
+    title: "Just write pauses goal readouts, streak and pace while still logging and persists; Clear tracking data asks in the studio dialog and wipes the log, streak and pace start, never a word of the book",
+    kind: 'client-only',
+    reason: "Both act on this browser's localStorage and the in-browser book and dialog; asserted by window.runBeukSelfChecks().",
+  },
   {
     id: 'history.delta.words',
     title: "Each snapshot shows its change against the book now (+N words / -N words / same length) with each language's plural form",
