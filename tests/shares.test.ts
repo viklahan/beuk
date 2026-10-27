@@ -370,6 +370,35 @@ test('render unit: a redaction ("||words||") never reaches the reading copy — 
   assert.match(html, /Source: <span class="redacted">█{8}<\/span>\./);
 });
 
+test('render unit: a redaction in a picture\'s alt text or caption (inline, scene, plate) is said or barred, never its words', () => {
+  const doc = {
+    meta: { title: 'Exhibit', author: 'A. Writer', language: 'en' },
+    images: [
+      { id: 'img-a', name: 'a.png', mediaType: 'image/png', data: 'iVBORw0KGgo=' },
+    ],
+    sections: [
+      {
+        id: 'sec-a',
+        kind: 'body',
+        type: 'chapter',
+        number: '1',
+        title: 'Pictured ||SecretTitle||',
+        content: 'Before.\n\n![Alt ||SecretAlt||](img:img-a)\n\n***\n\nAfter.',
+        plateId: 'img-a',
+        plateAlt: 'Plate of ||SecretPlate|| house',
+        scenes: [{ at: 0, imageId: 'img-a', alt: 'Scene ||SecretScene||', caption: 'Cap ||SecretCap||' }],
+      },
+    ],
+  };
+  const { snapshot } = renderSnapshot(doc, 'x');
+  const html = snapshot.sections.map((s) => s.html).join('') + JSON.stringify(snapshot);
+  for (const w of ['SecretTitle', 'SecretAlt', 'SecretPlate', 'SecretScene', 'SecretCap', '||']) assert.equal(html.includes(w), false, `"${w}" leaked`);
+  assert.match(html, /<img src="beuk-img:img-a" alt="Alt redacted">/);
+  assert.match(html, /alt="Plate of redacted house"/);
+  assert.match(html, /<h2 class="ch-title">Pictured <span class="redacted">█{11}<\/span><\/h2>/);
+  assert.match(html, /alt="Scene redacted"><figcaption>Cap <span class="redacted">█{9}<\/span><\/figcaption>/);
+});
+
 test('comment rate limit: per IP per share, then per share overall', async () => {
   const mid = await newManuscript(alice, studioDoc);
   const { token } = await newShare(alice, mid);

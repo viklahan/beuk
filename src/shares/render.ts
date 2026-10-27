@@ -96,6 +96,16 @@ export function redactBlocks(words: string): string {
   return words.trim().split(/\s+/).filter(Boolean).map((w) => '█'.repeat([...w].length)).join(' ');
 }
 
+/** Plain text set escaped, each redaction in it as a bar (a caption, a title). */
+function barredEsc(text: string): string {
+  const bars: string[] = [];
+  const s = esc(String(text ?? '').replace(REDACT_RE, (_m, words: string) => {
+    bars.push(`<span class="redacted">${redactBlocks(words)}</span>`);
+    return `${bars.length - 1}`;
+  }));
+  return bars.length ? s.replace(REDACT_MARK, (_m, i: string) => bars[Number(i)] ?? '') : s;
+}
+
 function inline(text: string, notes: NoteCtx): string {
   const bars: string[] = [];
   let s = String(text ?? '').replace(REDACT_RE, (_m, words: string) => {
@@ -133,8 +143,11 @@ interface RenderCtx {
 function figure(id: string, alt: string, cls: string, ctx: RenderCtx, caption = ''): string {
   if (!ctx.images.has(id) || !SAFE_ID.test(id)) return '';
   ctx.used.add(id);
-  let h = `<figure class="${cls}"><img src="beuk-img:${id}" alt="${esc(alt)}">`;
-  if (caption.trim()) h += `<figcaption>${esc(caption)}</figcaption>`;
+  // An alt text is read aloud, so a redaction in it is said as
+  // "redacted", never its words; a caption's is set as a bar.
+  const saidAlt = String(alt ?? '').replace(REDACT_RE, ' redacted ').replace(/ {2,}/g, ' ').trim();
+  let h = `<figure class="${cls}"><img src="beuk-img:${id}" alt="${esc(saidAlt)}">`;
+  if (caption.trim()) h += `<figcaption>${barredEsc(caption)}</figcaption>`;
   return h + '</figure>';
 }
 
@@ -301,11 +314,12 @@ export function renderSnapshot(
       sec.plateId && sec.plateAlt.trim() ? figure(sec.plateId, sec.plateAlt, 'plate', ctx) : '';
     if (!body && !plate) return; // nothing to read
     const heading =
-      (sec.number ? `<p class="ch-num">${esc(sec.number)}</p>` : '') +
-      (sec.title ? `<h2 class="ch-title">${esc(sec.title)}</h2>` : '') +
-      (sec.subtitle ? `<p class="ch-sub">${esc(sec.subtitle)}</p>` : '');
+      (sec.number ? `<p class="ch-num">${barredEsc(sec.number)}</p>` : '') +
+      (sec.title ? `<h2 class="ch-title">${barredEsc(sec.title)}</h2>` : '') +
+      (sec.subtitle ? `<p class="ch-sub">${barredEsc(sec.subtitle)}</p>` : '');
     body = plate + heading + body;
-    const label = [sec.number, sec.title].filter(Boolean).join(' · ') || sec.type;
+    const label =
+      [sec.number, sec.title].filter(Boolean).join(' · ').replace(REDACT_RE, (_m, w: string) => redactBlocks(w)) || sec.type;
     sections.push({
       id: sec.id,
       kind: sec.kind,

@@ -2837,7 +2837,11 @@ The agent met ||Harriet Vance|| at the dock.
 - `insert` / `insert <Title>` — a loose insert: a paper card (`#fcfaf3`
   with its own ink, a hairline and a soft shadow), its title small and
   letterspaced at its head, every line break kept, never split across a
-  page. The preview, the Print Interior View and the print interior turn
+  page — unless it cannot fit on one: a card of more than 20 rows (title,
+  stanza gaps and wrapped lines counted, `insertIsLong`) gets `ins-long`
+  and is set square and allowed to break, each piece closed on its own
+  page (`box-decoration-break: clone`), since a turned box cut at a page
+  edge leaves a slanted sliver and stepped edges. The preview, the Print Interior View and the print interior turn
   it `-1.5deg`; the EPUB does not (some reading systems mis-set a
   transformed block) — there it is a plain box, square. The rotation lives
   in the scoped (studio) book CSS and in `buildPrintCss`, never in the
@@ -2859,7 +2863,11 @@ The agent met ||Harriet Vance|| at the dock.
   import turns a run of full blocks back into `||███||`. The narration
   script and read-aloud say the book language's word for "redacted"
   (`tool.redactSpoken`). Works inside transcripts (speaker or words), logs
-  and insert titles. A redaction runs to the next `||` on the same line
+  and insert titles. A picture's alt text (inline, plate, scene picture)
+  is read aloud, so a redaction in it becomes the word for "redacted"
+  (`altSaid`) before it reaches any `alt` attribute — preview, print,
+  EPUB, narration and the share page; a scene picture's caption and a
+  chapter title on the share page are barred. A redaction runs to the next `||` on the same line
   and must not start or end with a space (so a shell's `a || b` is left
   alone). The manuscript itself — the editor, the `.md` export, a backup —
   keeps the words: they are the writer's source.
@@ -2867,10 +2875,16 @@ The agent met ||Harriet Vance|| at the dock.
 Word counts: speaker labels and an insert's title are words (they are on
 the page); fences and redactions are not. In a right-to-left book the
 transcript and the log hang from the right (the log's rule moves to the
-right edge) and the insert is set from the right and turned the other
+right edge) — but each log line carries its own `dir` (`logLineDir`:
+`rtl` when its first strong letter is Hebrew or Arabic, else `ltr`), so
+the bidi algorithm never reorders a Latin line (`$ rm -rf build/ && echo
+'ok'` stays as typed in an Arabic book) and the insert is set from the right and turned the other
 way (`+1.5deg`). Word import knows all six paragraph styles (no converter
 notes; they come in as ordinary paragraphs, not fenced again). Toolbar:
-Redact (wraps the selection in `||…||`), Transcript, Log, Insert — all 13
+Redact (fits the selection: spaces at its ends stay outside the marks, a
+selection over lines or paragraphs is redacted line by line with list,
+quote and heading marks kept, a bare cursor redacts its word, and an
+empty `||||` is never planted), Transcript, Log, Insert — all 13
 languages. Self-checks: `chapter.transcript`, `chapter.log`,
 `chapter.insert`, `chapter.redaction` (proves none of twelve hidden words
 reaches the chapter HTML, the preview DOM, the EPUB, the print file, Word

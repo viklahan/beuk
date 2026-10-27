@@ -19672,7 +19672,7 @@
           keepLines: true, keepIndent: true, raw: true,
           html(seg) {
             return '<div class="log' + (logIsDark(seg) ? " log-dark" : "") + '">' +
-              logLines(seg).map((l) => '<p class="lg">' + (l ? logLineHtml(l) : " ") + "</p>").join("") + "</div>";
+              logLines(seg).map((l) => '<p class="lg" dir="' + logLineDir(l) + '">' + (l ? logLineHtml(l) : " ") + "</p>").join("") + "</div>";
           },
           docx(seg, cx) {
             const st = logIsDark(seg) ? "LogDark" : "Log";
@@ -19690,7 +19690,7 @@
           keepLines: true,
           html(seg, cx) {
             const title = String(seg.arg || "").trim();
-            return '<div class="insert">' + (title ? '<p class="ins-title">' + cx.inline(title) + "</p>" : "") +
+            return '<div class="insert' + (insertIsLong(seg) ? " ins-long" : "") + '">' + (title ? '<p class="ins-title">' + cx.inline(title) + "</p>" : "") +
               containerStanzas(seg).map((lines) => containerPassThrough(lines)
                 ? cx.blocks(lines[0].trim())
                 : "<p>" + lines.map((l) => cx.inline(l.trim())).join("<br/>") + "</p>").join("") + "</div>";
@@ -19703,6 +19703,24 @@
           }
         }
       };
+      /* BEUK:documents — a card too tall to stand on one page. A
+         turned card can only be kept whole on a page: one taller than
+         the page is broken across pages, and a turned box cut at a
+         page edge leaves a slanted sliver and stepped edges. So a long
+         card (more than INSERT_LONG_ROWS rows, its title and the gaps
+         between stanzas counted, a line longer than a row counted as
+         the rows it wraps to) is set square and allowed to break, each
+         piece closed on its own page (box-decoration-break: clone).
+         20 rows sit well inside the smallest trim's text block. */
+      const INSERT_LONG_ROWS = 20, INSERT_ROW_CHARS = 50;
+      function insertIsLong(seg) {
+        let rows = String(seg.arg || "").trim() ? 1.5 : 0;
+        containerStanzas(seg).forEach((lines, i) => {
+          if (i) rows += 0.6;
+          lines.forEach((l) => { rows += Math.max(1, Math.ceil([...String(l).trim()].length / INSERT_ROW_CHARS)); });
+        });
+        return rows > INSERT_LONG_ROWS;
+      }
       /* BEUK:documents — a transcript's lines -> [{ who, colon, lines, gap } | { dir, text, gap } | { pass, text }].
          The speaker is up to 40 letters, figures, spaces and ". ' ( ) & -"
          (a redacted name "||…||" too) before a colon: an ASCII colon
@@ -19737,6 +19755,18 @@
         while (ls.length && !ls[0]) ls.shift();
         while (ls.length && !ls[ls.length - 1]) ls.pop();
         return ls;
+      }
+      /* BEUK:documents — a log line's own direction, so the bidi
+         algorithm never reorders it: right to left when its first
+         strong letter is Hebrew or Arabic script, else left to right
+         (a line of only figures and signs — "$ 12:00" — included, as a
+         terminal sets it), whatever the book's direction. The hidden
+         words of a redaction are not read for it. */
+      const LOG_RTL_CH = /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/;
+      function logLineDir(line) {
+        const vis = splitRedactions(line).map((p) => p.redacted != null ? "" : p.text).join("");
+        const m = vis.match(/\p{L}/u);
+        return m && LOG_RTL_CH.test(m[0]) ? "rtl" : "ltr";
       }
       /* One log line as HTML: escaped, its spaces held (a run of spaces
          keeps its width in a reader that ignores white-space: pre-wrap,
@@ -19801,6 +19831,18 @@
         return out;
       }
       const unredactForReading = (text, said) => String(text == null ? "" : text).replace(new RegExp(REDACT_RE.source, "g"), " " + (said == null ? "redacted" : said) + " ");
+      /* An image's alt text is read aloud by e-readers and screen
+         readers, so a redaction in it is said, never its words: each
+         "||…||" becomes the book's word for "redacted" before the alt
+         is written into any attribute (preview, print, EPUB). */
+      const altSaid = (alt) => {
+        const s = String(alt == null ? "" : alt);
+        if (s.indexOf("||") === -1) return s;
+        return unredactForReading(s, typeof t === "function" ? t("tool.redactSpoken") : "redacted").replace(/[ \t]{2,}/g, " ").trim();
+      };
+      /* Plain text set escaped (a scene picture's caption), its
+         redactions set as bars. */
+      const escRedacted = (text) => splitRedactions(text).map((p) => p.redacted != null ? redactBarHtml(p.redacted) : esc(p.text)).join("");
       /* A kept-lines stanza that is really a block of its own — a scene
          break, a picture, a note's definition — sets as one. */
       function containerPassThrough(lines) {
@@ -20063,7 +20105,7 @@
         const p = plateImage(section);
         if (!p) return "";
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(p.img) : "data:" + p.img.mediaType + ";base64," + p.img.data;
-        const imgTag = '<img src="' + src + '" alt="' + esc(p.alt) + '"/>';
+        const imgTag = '<img src="' + src + '" alt="' + esc(altSaid(p.alt)) + '"/>';
         return ownPage
           ? '<div class="plate-full">' + imgTag + "</div>"
           : '<figure class="plate-page">' + imgTag + "</figure>";
@@ -20122,7 +20164,7 @@
         /* A caption is read with the picture: set under it, inline
            emphasis kept, the alt text still the alt. */
         const cap = tok.caption ? "<figcaption>" + inlineMd(tok.caption) + "</figcaption>" : "";
-        return '<figure class="book-img' + (tok.full ? " full-bleed" : "") + (cap ? " has-caption" : "") + '"><img src="' + src + '" alt="' + esc(tok.alt) + '"/>' + cap + "</figure>";
+        return '<figure class="book-img' + (tok.full ? " full-bleed" : "") + (cap ? " has-caption" : "") + '"><img src="' + src + '" alt="' + esc(altSaid(tok.alt)) + '"/>' + cap + "</figure>";
       }
       /* ---- Scene images ----
          A section may carry scene images: artwork anchored at its
@@ -20156,8 +20198,8 @@
         const sc = sceneImageAt(section, idx);
         if (!sc) return "";
         const src = (forExport && !dataMedia) ? "../Images/" + imageFileName(sc.img) : "data:" + sc.img.mediaType + ";base64," + sc.img.data;
-        let h = '<figure class="book-img scene-img"><img src="' + src + '" alt="' + esc(sc.entry.alt) + '"/>';
-        if (String(sc.entry.caption || "").trim()) h += "<figcaption>" + esc(sc.entry.caption) + "</figcaption>";
+        let h = '<figure class="book-img scene-img"><img src="' + src + '" alt="' + esc(altSaid(sc.entry.alt)) + '"/>';
+        if (String(sc.entry.caption || "").trim()) h += "<figcaption>" + escRedacted(sc.entry.caption) + "</figcaption>";
         return h + "</figure>";
       }
       /* The breaks of a section, counted the way the typesetter
@@ -20481,7 +20523,7 @@
          (the picture is held short enough for it, see buildBookCss). */
       function frontispiecePlateHtml(src, tok) {
         const cap = tok.caption ? '<p class="plate-caption">' + inlineMd(tok.caption) + "</p>" : "";
-        return '<div class="plate-full' + (cap ? " has-caption" : "") + '"><img src="' + src + '" alt="' + esc(tok.alt) + '"/>' + cap + "</div>";
+        return '<div class="plate-full' + (cap ? " has-caption" : "") + '"><img src="' + src + '" alt="' + esc(altSaid(tok.alt)) + '"/>' + cap + "</div>";
       }
       function frontBackHtml(section, forExport, dataCover) {
         const m = state.meta;
@@ -20666,6 +20708,8 @@
           S + ".log p.lg { margin: 0; padding-left: 2em; padding-right: 0; text-indent: -2em; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word; hyphens: none; -webkit-hyphens: none; orphans: 1; widows: 1; }",
           S + ".log.log-dark { border-left: 0; padding: 0.8em 1em; background: #161616; background-color: #161616; color: #f2f2f2; }",
           S + ".log.log-dark p.lg { color: #f2f2f2; }",
+          /* a right-to-left line (dir="rtl", logLineDir) hangs from the right */
+          S + ".log p.lg[dir=\"rtl\"] { padding-left: 0; padding-right: 2em; text-align: right; }",
           /* Insert: a paper card set apart, ragged, its line breaks kept,
              its title small above. Here square and boxed (the EPUB); the
              preview and the print turn it and soften its edge. */
@@ -20674,6 +20718,8 @@
           S + ".insert p:last-child { margin-bottom: 0; }",
           S + ".insert p.ins-title { font-size: 0.72em; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-bottom: 0.75em; }",
           ...(scope ? [S + ".insert { " + INSERT_CARD_LOOK + " }"] : []),
+          /* a card too tall for a page (insertIsLong) is set square and breaks, each piece closed */
+          S + ".insert.ins-long { transform: none; break-inside: auto; page-break-inside: auto; -webkit-box-decoration-break: clone; box-decoration-break: clone; }",
           /* Redaction: a solid bar in the ink, a bar per word (so a long
              one still wraps), the words themselves never written. */
           S + ".redact { white-space: normal; }",
@@ -20845,8 +20891,9 @@
             /* BEUK:documents — a transcript and a log hang their turn-overs
                from the right edge, the log's rule on the right; an insert
                is set from the right and turned the other way. */
-            S + ".transcript, " + S + ".transcript p, " + S + ".log, " + S + ".log p.lg, " + S + ".insert, " + S + ".insert p { text-align: right; }",
-            S + ".transcript p, " + S + ".log p.lg { padding-left: 0; padding-right: 2em; }",
+            /* a log line keeps its own direction (dir, logLineDir): only the panel is mirrored */
+            S + ".transcript, " + S + ".transcript p, " + S + ".log, " + S + ".insert, " + S + ".insert p { text-align: right; }",
+            S + ".transcript p { padding-left: 0; padding-right: 2em; }",
             S + ".log { padding: 0.15em 0.85em 0.15em 0; border-left: 0; border-right: 1.5px solid currentColor; }",
             S + ".log.log-dark { border-right: 0; padding: 0.8em 1em; }",
             ...(scope ? [S + ".insert { transform: rotate(1.5deg); }"] : []));
@@ -23344,6 +23391,54 @@
           insertAtCursor(ta, marker + marker, marker.length);
         }
       }
+      /* BEUK:documents — the toolbar's Redact. A redaction is "||…||"
+         around words with no space just inside its marks and no line
+         break in it, so the selection is fitted to that: the spaces at
+         its ends (a double-click takes the trailing one) stay outside
+         the marks, a selection over several lines or paragraphs is
+         redacted line by line (a list's "- ", a quote's "> ", a
+         heading's "#" and a container fence stay as they are), and a
+         bare cursor redacts the word it stands in — or does nothing,
+         never planting an empty "||||". */
+      function redactSelection(ta) {
+        const st0 = ta.scrollTop, sl0 = ta.scrollLeft;
+        const val = ta.value;
+        let start = ta.selectionStart || 0, end = ta.selectionEnd || 0;
+        if (end <= start) {
+          const isW = (ch) => !!ch && /[\p{L}\p{M}\p{N}'’_-]/u.test(ch);
+          let a = start, b = start;
+          while (a > 0 && isW(val[a - 1])) a--;
+          while (b < val.length && isW(val[b])) b++;
+          while (a < b && /['’_-]/.test(val[a])) a++;
+          while (b > a && /['’_-]/.test(val[b - 1])) b--;
+          if (b <= a) return false;
+          start = a; end = b;
+        }
+        const sel = val.slice(start, end);
+        let first = -1, last = -1, grown = 0;
+        const out = sel.split("\n").map((line, i, all) => {
+          const off = start + grown + all.slice(0, i).reduce((n, l) => n + l.length + 1, 0);
+          /* a selection's first line may start mid-line: only a whole line's block prefix is markup */
+          const atLineStart = i > 0 || start === 0 || val[start - 1] === "\n";
+          if (/^\s*:::/.test(line) && atLineStart) return line;
+          const pre = (atLineStart ? (line.match(/^(\s*(?:#{1,6}\s+|>\s?|[-*+]\s+|\d{1,3}[.)]\s+)?)/) || [""])[0] : (line.match(/^\s*/) || [""])[0]);
+          const rest = line.slice(pre.length);
+          const lead = (rest.match(/^[\s|]*/) || [""])[0];
+          const core = rest.slice(lead.length).replace(/[\s|]+$/, "");
+          if (!core || core.indexOf("|") !== -1) return line;
+          const tail = rest.slice(lead.length + core.length);
+          if (first < 0) first = off + pre.length + lead.length;
+          last = off + pre.length + lead.length + core.length + 4;
+          grown += 4;
+          return pre + lead + "||" + core + "||" + tail;
+        }).join("\n");
+        if (first < 0) return false;
+        ta.value = val.slice(0, start) + out + val.slice(end);
+        ta.focus(); ta.setSelectionRange(first, last);
+        ta.dispatchEvent(new Event("input"));
+        ta.scrollTop = st0; ta.scrollLeft = sl0;
+        return true;
+      }
       /* Lists from the toolbar: the selected lines (or the paragraph the
          cursor is in) become list items, "- " or "1. ", "2. "…; pressing
          it again on a list of that kind turns the items back into lines. */
@@ -23731,7 +23826,7 @@
           else if (kind === "verse" || kind === "center" || kind === "right") applyContainer(area, kind);
           else if (kind === "letter" || kind === "texts") applyContainer(area, kind);
           else if (kind === "transcript" || kind === "log" || kind === "insert") applyContainer(area, kind); /* BEUK:documents */
-          else if (kind === "redact") wrapSelection(area, "||");
+          else if (kind === "redact") redactSelection(area);
         });
         area.addEventListener("keydown", (e) => {
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
@@ -32066,6 +32161,7 @@
              other way in a right-to-left book); a dark log's panel and a
              redaction's bar print solid. */
           ".insert { " + INSERT_CARD_LOOK + (isRtlLang(bookLang()) ? " transform: rotate(1.5deg);" : "") + " }",
+          ".insert.ins-long { transform: none; break-inside: auto; page-break-inside: auto; -webkit-box-decoration-break: clone; box-decoration-break: clone; }",
           ".log.log-dark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }",
           /* A chapter backdrop prints over the opening page's text
              area, from its top: anchored in the opening header, which
@@ -33947,7 +34043,7 @@
         const lines = (prefix || []).slice();
         lines.push({ k: "head", text: acxSpokenHeader(s) });
         if (s.subtitle) lines.push({ k: "sub", text: s.subtitle });
-        if (s.plateId && s.plateAlt) lines.push({ k: "image", text: s.plateAlt });
+        if (s.plateId && s.plateAlt) lines.push({ k: "image", text: altSaid(s.plateAlt) });
         /* Generated pages the author chose to narrate anyway: read what the page shows. */
         if (s.type === "toc") {
           state.sections.filter((x) => x.included && x.kind === "body" && x.type !== "part").forEach((x) => lines.push({ k: "para", text: sectionLabel(x) }));
@@ -33965,7 +34061,7 @@
           if (ACX_SCENE_BREAK.test(block)) {
             lines.push({ k: "pause", text: "" });
             const sc = sceneEntryAt(s, breakIdx);
-            if (sc && sc.alt) lines.push({ k: "image", text: sc.alt });
+            if (sc && sc.alt) lines.push({ k: "image", text: altSaid(sc.alt) });
             breakIdx++;
             return;
           }
@@ -41437,8 +41533,8 @@
               if (!bt.startsWith("Before “this”.") || !bt.endsWith("After…")) bad.push("the prose around the log was not beautified: " + JSON.stringify(bt));
               const s = mkSection("body", "chapter", "Log", { number: "1", content: src });
               const html = contentBlocksToHtml(s.content, s, false, true, true);
-              const want = '<div class="log"><p class="lg">09:14:02 &lt;ana&gt; it\'s &quot;done&quot; -- really...</p><p class="lg">  indented  two  spaces</p><p class="lg"> </p><p class="lg">*not emphasis* and 1-2 and --flag</p></div>' +
-                '\n<div class="log log-dark"><p class="lg">$ rm -rf build/ &amp;&amp; echo \'ok\'</p></div>';
+              const want = '<div class="log"><p class="lg" dir="ltr">09:14:02 &lt;ana&gt; it\'s &quot;done&quot; -- really...</p><p class="lg" dir="ltr">  indented  two  spaces</p><p class="lg" dir="ltr"> </p><p class="lg" dir="ltr">*not emphasis* and 1-2 and --flag</p></div>' +
+                '\n<div class="log log-dark"><p class="lg" dir="ltr">$ rm -rf build/ &amp;&amp; echo \'ok\'</p></div>';
               if (!html.includes(want)) bad.push("the log did not set: " + JSON.stringify(html));
               const probe = document.createElement("div");
               probe.className = "sc-log-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:300px";
@@ -41466,14 +41562,25 @@
               const keepLang = state.meta.language;
               state.meta.language = "ar";
               const rp = document.createElement("div");
-              rp.className = "sc-log-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:300px";
+              rp.className = "sc-log-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:560px";
               const rst = document.createElement("style");
               try {
                 rst.textContent = buildBookCss(".sc-log-rtl");
-                rp.innerHTML = contentBlocksToHtml("::: log\nسامي: وصلت\n:::", s, false, true, true);
+                rp.innerHTML = contentBlocksToHtml("::: log\nسامي: وصلت\n$ rm -rf build/ && echo 'ok'\n[09:14] <ana> it's \"done\" -- really...\n:::", s, false, true, true);
                 document.body.appendChild(rst); document.body.appendChild(rp);
                 const rc = getComputedStyle(rp.querySelector(".log p.lg")), rb = getComputedStyle(rp.querySelector(".log"));
                 if (!(parseFloat(rc.paddingRight) > 10 && parseFloat(rc.paddingLeft) === 0 && parseFloat(rb.borderRightWidth) > 0 && parseFloat(rb.borderLeftWidth) === 0)) bad.push("RTL log: padding " + rc.paddingLeft + "/" + rc.paddingRight + ", rule " + rb.borderLeftWidth + "/" + rb.borderRightWidth);
+                /* A Latin line in a right-to-left book keeps its own order: set left to right, its first character leftmost. */
+                const lat = rp.querySelectorAll(".log p.lg");
+                if (rp.querySelector(".log p.lg").getAttribute("dir") !== "rtl") bad.push("RTL log: the Arabic line is not right to left");
+                [1, 2].forEach((k) => {
+                  const lp = lat[k], lc = lp && getComputedStyle(lp);
+                  if (!lp || lp.getAttribute("dir") !== "ltr" || lc.direction !== "ltr" || !(parseFloat(lc.paddingLeft) > 10)) { bad.push("RTL log: Latin line " + k + " is not set left to right (" + (lp ? lp.getAttribute("dir") + " " + lc.direction + " " + lc.paddingLeft : "missing") + ")"); return; }
+                  const tn = lp.firstChild, txt = tn.textContent, rg = document.createRange();
+                  const at = (i) => { rg.setStart(tn, i); rg.setEnd(tn, i + 1); return rg.getBoundingClientRect(); };
+                  const xs = [0, 2, txt.length - 1].map((i) => at(i).left);
+                  if (!(xs[0] < xs[1] && xs[1] < xs[2])) bad.push("RTL log: Latin line " + k + " is reordered (" + xs.map(Math.round).join(",") + ")");
+                });
               } finally { rp.remove(); rst.remove(); state.meta.language = keepLang; }
               const paras = docxContentParas(src);
               const lgP = paras.filter((p) => p.includes('<w:pStyle w:val="Log"/>')), dkP = paras.filter((p) => p.includes('<w:pStyle w:val="LogDark"/>'));
@@ -41494,10 +41601,10 @@
               applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
               const files = epubFiles("generic");
               const val = validateEpubPackage(files);
-              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="log log-dark"><p class="lg">$ rm -rf build/ &amp;&amp; echo \'ok\'</p></div>'))) bad.push("the EPUB chapter carries no log");
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="log log-dark"><p class="lg" dir="ltr">$ rm -rf build/ &amp;&amp; echo \'ok\'</p></div>'))) bad.push("the EPUB chapter carries no log");
               if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
               if (!buildPrintHtml().includes("it's &quot;done&quot; -- really...")) bad.push("the print file carries no log (or changed it)");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "every log line as typed (straight quotes, --, ..., 1-2, runs of spaces held as no-break spaces, *marks* literal) while the prose around it is beautified; computed monospace, pre-wrap, no hyphenation, hung, a long line wraps under the hang inside the column; dark panel solid near-black, contrast >= 7:1, inside the text block, printed exact; RTL hangs from the right; Word: 4 Log + 1 Log Dark paragraphs, text unchanged; Word styles + import map; toolbar + 13 languages; EPUB validator errors 0; in the print file");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "every log line as typed (straight quotes, --, ..., 1-2, runs of spaces held as no-break spaces, *marks* literal) while the prose around it is beautified; computed monospace, pre-wrap, no hyphenation, hung, a long line wraps under the hang inside the column; dark panel solid near-black, contrast >= 7:1, inside the text block, printed exact; RTL mirrors the panel while each line keeps its own direction (an Arabic line rtl, Latin lines ltr in their typed order); Word: 4 Log + 1 Log Dark paragraphs, text unchanged; Word styles + import map; toolbar + 13 languages; EPUB validator errors 0; in the print file");
             } finally {
               applyBookDoc(keepDoc);
             }
@@ -41547,7 +41654,28 @@
                 const a = angle(rp.querySelector(".insert")), al = getComputedStyle(rp.querySelector(".insert p")).textAlign;
                 if (!(a > 1.2 && a < 1.8) || al !== "right") bad.push("RTL insert: angle " + a.toFixed(2) + ", align " + al);
                 if (!/\.insert \{[^}]*rotate\(1\.5deg\)/.test(buildPrintCss("6x9", false))) bad.push("RTL print does not turn the insert the other way");
+                /* A card too tall for a page is set square and breaks, each piece closed — RTL too. */
+                rp.innerHTML = contentBlocksToHtml("::: insert\n" + Array.from({ length: 30 }, (_, i) => "سطر " + (i + 1)).join("\n") + "\n:::", s, false, true, true);
+                if (!rp.querySelector(".insert.ins-long") || Math.abs(angle(rp.querySelector(".insert"))) > 0.01) bad.push("RTL: a long card is turned or not marked long");
               } finally { rp.remove(); rst.remove(); state.meta.language = keepLang; }
+              {
+                const longSrc = "::: insert Found in the coat\n" + Array.from({ length: 48 }, (_, i) => "Line " + (i + 1) + " of the note.").join("\n") + "\n:::";
+                const lh = contentBlocksToHtml(longSrc, s, false, true, true);
+                if (!lh.startsWith('<div class="insert ins-long"><p class="ins-title">')) bad.push("a 48-line card is not marked long: " + lh.slice(0, 80));
+                const edge = contentBlocksToHtml("::: insert\n" + Array.from({ length: 18 }, (_, i) => "Line " + i).join("\n") + "\n:::", s, false, true, true);
+                if (edge.includes("ins-long")) bad.push("an 18-line card is marked long");
+                const wrapped = contentBlocksToHtml("::: insert\n" + Array.from({ length: 8 }, () => "word ".repeat(40).trim()).join("\n") + "\n:::", s, false, true, true);
+                if (!wrapped.includes("ins-long")) bad.push("a card of 8 long (wrapping) lines is not marked long");
+                const lp = document.createElement("div");
+                lp.className = "sc-ins-long"; lp.style.cssText = "position:absolute;left:-9999px;top:0;width:360px";
+                const lst = document.createElement("style"); lst.textContent = buildBookCss(".sc-ins-long");
+                lp.innerHTML = lh; document.body.appendChild(lst); document.body.appendChild(lp);
+                try {
+                  const lc = getComputedStyle(lp.querySelector(".insert"));
+                  if (Math.abs(angle(lp.querySelector(".insert"))) > 0.01 || lc.breakInside !== "auto" || !/clone/.test(lc.boxDecorationBreak || lc.webkitBoxDecorationBreak || "")) bad.push("a long card in the preview: transform " + lc.transform + ", break-inside " + lc.breakInside + ", decoration " + (lc.boxDecorationBreak || lc.webkitBoxDecorationBreak));
+                } finally { lp.remove(); lst.remove(); }
+                if (!/\.insert\.ins-long \{ transform: none; break-inside: auto;[^}]*box-decoration-break: clone/.test(buildPrintCss("6x9", false))) bad.push("the print stylesheet does not set a long card square and breakable");
+              }
               const paras = docxContentParas(src);
               const ti = paras.filter((p) => p.includes('<w:pStyle w:val="InsertTitle"/>')), ip = paras.filter((p) => p.includes('<w:pStyle w:val="Insert"/>'));
               if (ti.length !== 1 || ip.length !== 2 || !ip[0].includes("<w:br/>") || !ti[0].includes(">Found in the coat<")) bad.push("Word paragraphs: " + ti.length + " Insert Title, " + ip.length + " Insert");
@@ -41571,7 +41699,7 @@
               if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes(want))) bad.push("the EPUB chapter carries no insert");
               if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
               if (!buildPrintHtml().includes('<p class="ins-title">Found in the coat</p>')) bad.push("the print file carries no insert");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "titled + untitled cards, the line break kept; computed: turned -1.5deg, paper #fcfaf3 with its own ink, a soft shadow, inside the column; the EPUB stylesheet boxes it square, print and the Print Interior View turn it, RTL turns it +1.5deg (preview and print) and sets it from the right; Word: Insert Title + 2 Insert paragraphs, a real break; Word styles + import map; the title counted and narrated, fences not; toolbar + 13 languages; EPUB validator errors 0; in the print file");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "titled + untitled cards, the line break kept; computed: turned -1.5deg, paper #fcfaf3 with its own ink, a soft shadow, inside the column; the EPUB stylesheet boxes it square, print and the Print Interior View turn it, RTL turns it +1.5deg (preview and print) and sets it from the right; a card taller than 20 rows (wrapped lines counted) is set square and breakable with each piece closed (preview, print, RTL), a short one is not; Word: Insert Title + 2 Insert paragraphs, a real break; Word styles + import map; the title counted and narrated, fences not; toolbar + 13 languages; EPUB validator errors 0; in the print file");
             } finally {
               applyBookDoc(keepDoc);
             }
@@ -41619,8 +41747,50 @@
               leaks("read aloud", raCleanText(src));
               const ta = document.createElement("textarea");
               ta.value = "met Vance there"; ta.setSelectionRange(4, 9);
-              wrapSelection(ta, "||");
+              redactSelection(ta);
               if (ta.value !== "met ||Vance|| there") bad.push("toolbar wrap: " + JSON.stringify(ta.value));
+              /* The toolbar fits the selection to the markup: the spaces at its ends stay outside, a selection over
+                 paragraphs or lines is redacted line by line (block marks kept), a bare cursor takes its word, and
+                 nothing at all is never "||||". Each result must really black the words out. */
+              const tbCase = (val, a, b, want) => {
+                ta.value = val; ta.setSelectionRange(a, b);
+                redactSelection(ta);
+                if (ta.value !== want) { bad.push("toolbar " + JSON.stringify(val.slice(a, b)) + " -> " + JSON.stringify(ta.value) + " (want " + JSON.stringify(want) + ")"); return; }
+                const h = contentBlocksToHtml(ta.value, s, false, true, true);
+                if (h.indexOf("||") !== -1 || /Vance|Alpha|Bravo|Corsair/.test(h)) bad.push("toolbar " + JSON.stringify(want) + " does not redact: " + h.slice(0, 200));
+              };
+              tbCase("met Vance there", 4, 10, "met ||Vance|| there");
+              tbCase("met Vance there", 3, 9, "met ||Vance|| there");
+              tbCase("one Alpha\n\nBravo two", 4, 16, "one ||Alpha||\n\n||Bravo|| two");
+              tbCase("- Alpha\n- Bravo", 0, 15, "- ||Alpha||\n- ||Bravo||");
+              tbCase("a Vance b", 4, 4, "a ||Vance|| b");
+              ta.value = "a  b"; ta.setSelectionRange(2, 2);
+              if (redactSelection(ta) !== false || ta.value !== "a  b") bad.push("toolbar with nothing to redact planted: " + JSON.stringify(ta.value));
+              ta.value = "a   b"; ta.setSelectionRange(1, 4);
+              redactSelection(ta);
+              if (ta.value !== "a   b") bad.push("toolbar on spaces only planted: " + JSON.stringify(ta.value));
+              /* A redaction in a picture's alt text is said, never its words; in a scene picture's caption, a bar. */
+              {
+                const altSrc = "![Alt ||SecretAlt||](img:sc-rd-alt \"Cap ||SecretCap||\")";
+                const kd = JSON.parse(JSON.stringify(serializeBook()));
+                try {
+                  const as = mkSection("body", "chapter", "Pictured", { number: "1", content: "Before.\n\n" + altSrc + "\n\n***\n\nAfter." });
+                  as.plateId = "sc-rd-alt"; as.plateAlt = "Plate of ||SecretPlate||";
+                  as.scenes = [{ at: 0, imageId: "sc-rd-alt", alt: "Scene ||SecretScene||", caption: "Under ||SecretUnder||" }];
+                  applyBookDoc({ meta: Object.assign({}, kd.meta), theme: kd.theme, sections: [mkSection("front", "titlepage", "Title Page"), as], images: [{ id: "sc-rd-alt", name: "a.png", mediaType: "image/png", data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" }], printTrim: "6x9" });
+                  const AS = ["SecretAlt", "SecretCap", "SecretPlate", "SecretScene", "SecretUnder"];
+                  const altLeak = (where, txt) => { const hit = AS.filter((w) => String(txt).includes(w)); if (hit.length) bad.push(where + " leaks " + hit.join(", ")); };
+                  const fh = contentBlocksToHtml(as.content, as, false, true, true);
+                  altLeak("an alt in the chapter HTML", fh);
+                  if (!fh.includes('alt="Alt redacted"')) bad.push("the alt does not say redacted: " + (fh.match(/alt="[^"]*"/) || [""])[0]);
+                  altLeak("an alt in the print file", buildPrintHtml());
+                  epubFiles("generic").filter((f) => !f.binary).forEach((f) => altLeak("an alt in EPUB " + f.path, f.content));
+                  altLeak("an alt in the Word paragraphs", docxContentParas(as.content).join(""));
+                  altLeak("an alt in the narration script", JSON.stringify(acxSectionLines(as)));
+                  state.activeId = as.id; renderPreview();
+                  altLeak("an alt in the preview DOM", $("pageFlow").innerHTML);
+                } finally { applyBookDoc(kd); }
+              }
               if (!document.querySelector('#insertToolbar [data-insert="redact"]')) bad.push("the toolbar lacks Redact");
               const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.redact", "tool.redactTitle", "tool.redactSpoken"].some((k) => !UI_STRINGS[c][k]));
               if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
@@ -41642,7 +41812,7 @@
               const docXml = (buildDocxFiles().find((f) => f.path === "word/document.xml") || {}).content || "";
               leaks("Word document.xml", docXml);
               if (docXml.indexOf("█") === -1) bad.push("Word document.xml has no full blocks");
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "11 redactions (prose, bold, quote, heading, note, link words, transcript speaker + words, log line, insert title + words) set as role=img bars, a bar per word sized from its characters (CJK a whole em), solid, about the words' width, empty of text; none of the 12 hidden words in the chapter HTML, the preview DOM, any EPUB file (validator errors 0), the print file, Word document.xml (full blocks there, bold kept), the narration script or read-aloud; not counted as words; the toolbar wraps the selection; 13 languages");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "11 redactions (prose, bold, quote, heading, note, link words, transcript speaker + words, log line, insert title + words) set as role=img bars, a bar per word sized from its characters (CJK a whole em), solid, about the words' width, empty of text; none of the 12 hidden words in the chapter HTML, the preview DOM, any EPUB file (validator errors 0), the print file, Word document.xml (full blocks there, bold kept), the narration script or read-aloud; not counted as words; the toolbar fits the selection (end spaces outside, line by line across paragraphs and list items, a bare cursor takes its word, never \"||||\"); a picture's alt (inline, plate, scene) says \"redacted\" and a scene caption is barred in the HTML, print, EPUB, Word, narration and preview; 13 languages");
             } finally {
               applyBookDoc(keepDoc);
             }
