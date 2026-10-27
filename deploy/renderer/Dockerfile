@@ -31,7 +31,7 @@ RUN node /tmp/fonts/fetch-fonts.mjs /tmp/fonts/fonts.lock /usr/share/fonts/truet
 WORKDIR /renderer
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
-COPY server.mjs spreads.mjs ./
+COPY server.mjs spreads.mjs footnotes.mjs ./
 USER node
 EXPOSE 3100
 HEALTHCHECK --interval=10s --timeout=3s --retries=6 \

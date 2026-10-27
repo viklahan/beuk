@@ -717,6 +717,107 @@ a third of the way across. A chapter backdrop without a plate prints over
 the opening's text area only (before, its 1.15 in overhang above the
 page area was painted onto the foot of the previous page).
 
+### Notes at the foot of the page (renderer)
+
+**Notes in print** (Export → Print Interior, and the Print Interior View
+toolbar): *At the foot of the page* or *At the end of the chapter*. Every
+new book — the empty desk, the sample — starts at the foot of the page; a
+book saved before the choice existed has no `printNotes` and loads as *end
+of the chapter*, the look it was set with, until the writer changes it
+(`applyBookDoc`). The EPUB is untouched either way: EPUB 3 noterefs and
+linked endnotes are right for a reflowable book.
+
+Chromium 156 (the renderer's engine) has no CSS GCPM footnotes
+(`float: footnote`) and no `@page :nth()` (measured), and the renderer runs
+no script in the page, so the studio cannot place a note at a page's foot.
+It writes the print interior as before — each chapter's notes at its end,
+now in `<div class="endnotes fn-page">`, refs as bare superior figures —
+plus `<meta name="beuk-footnotes">` with the page geometry (trim, margins,
+body line pitch, the notes' fixed line, RTL, justification). A print that
+never reaches the renderer (the browser's own Print) reads the notes where
+they are. The renderer (`deploy/renderer/footnotes.mjs`, tested without a
+browser in `tests/print-footnotes.test.ts`) then sets them at the foot:
+
+1. **Measure the notes**: each note alone at the top of a 100 in page as
+   wide as the text column, in the book's own stylesheet
+   (`body.beuk-fn-doc .fn-note`, 82% of the body size on a fixed line);
+   named destinations before and after give its height.
+2. **Measure a section**: every section with notes is printed alone (each
+   section starts on a fresh page, so it breaks the same as in the book).
+   Named destinations — whose `y` is the page height less the target's
+   depth below the page area's top, whatever the top margin (measured) —
+   mark every block's top and foot and every reference. The first page
+   whose notes (with any carried over) do not fit below its text is decided
+   next.
+3. **Decide that page**: a second pass wraps the words of that page's
+   lower blocks in spans (a span around a word always gets a destination;
+   an empty marker at a line end loses it; each destination costs about a
+   millisecond, so only the page being decided is wrapped). The page keeps
+   as many lines as fit above the notes those lines call for — no orphan or
+   widow under three lines, a heading never left at the foot — and the rest
+   is forced onto the next page: a paragraph is split at the space before
+   the first word that moves (the head justified to its end, the tail
+   unindented, open `<em>`s closed and reopened), or a whole block moves. A
+   word hyphenated across the cut moves whole.
+4. Repeat until every page fits (the pass that checks a cut also wraps the
+   next page's words, so a run of notes costs about one pass a page). Then
+   the page map and the final pass, which name the references too: the
+   notes are drawn by where the shipped pages put them. Each page's notes
+   are drawn into the room left at its foot from the notes' PDF (pdf-lib,
+   a clipped form XObject) under a short 0.5 pt rule; the measuring names
+   and their hidden links are stripped from the finished file. Each note is
+   named (its own id, a named destination) where it is drawn, so its
+   reference's link jumps to it at the page foot; any link left naming a
+   destination the file does not hold is removed (no dead links).
+
+**A note longer than the note area** (half the page area) **continues** at
+the foot of the next page, split between its lines, under a full-width
+rule; a page's own notes still begin on their page (the continued note
+yields room, keeping two lines). When the note runs on past the section's
+last page — a long note referenced near a chapter's end — the renderer
+**adds a page at the section's end** (an empty forced-break block,
+`.fn-tail`, up to 3 such pages) and the note continues there; the next
+chapter starts after it.
+
+**Fallbacks** — those notes print at their section's end exactly as the
+studio set them; a note is never lost and never drawn over text:
+
+| reason | when |
+|---|---|
+| `time` | the section did not settle within the job's time share (`RENDER_FOOTNOTE_SHARE`, 55% of `RENDER_TIMEOUT_MS`; `RENDER_FOOTNOTE_PAGES` sections settle at once, default 2) or its pass limit |
+| `full` | a page could keep no line above the notes it calls for (e.g. a note not on the line grid — holding a picture — and taller than the note area) |
+| `long` | a note runs on past even the 3 pages added at the section's end |
+| `book` | the section broke differently in the whole book than measured alone |
+| `final` | the final pass put a reference on another page (every section falls back) |
+| `note` | that note alone: it could not be measured, or its reference is not in the text |
+
+The response header says what happened: `x-beuk-footnotes: placed=N;
+kept=M; passes=P` and, when any note stayed at its section's end,
+`; fallback=ps-3:long:2,…` (print section, reason, notes). The server reads
+it into the PDF/X job's result (`footnotes: { placed, kept, passes,
+fallbacks }`, `parseFootnoteHeader` in `src/jobs/tools.ts`), and the store
+check shows a **Notes at the foot of the page** row: a pass when every note
+is at its page foot, a warning naming each chapter that kept its notes at
+its end and why.
+
+**The Print Interior View** sets the notes the same way with the browser's
+own layout (`pivFootnoteLayout`: the same rules, measured on the view's
+multicol flow, cut with `break-before: column`), and draws each page's notes
+at its foot — adding the same pages at a section's end for a note that runs
+on past it, and keeping the notes at the end when the renderer would. On the sample all four notes land on the same pages as in the
+PDF (pp. 17, 45, 63, 92); the view is a browser layout, so a line can fall
+differently from the PDF on other books — the PDF is the proof.
+
+Two fixes the measurements needed, both in other features' code:
+the page map is now measured wearing the final pass's own stamped-spread
+rules (`spreads.stampCss`) — the trim-wide backdrop layer overflowed the
+page and Chromium shrank the whole measuring pass (sample: body at 9.97pt
+instead of 11pt, 92 pages instead of 99), so each spread's backdrop was
+drawn on a bare page after its plate; and lists use logical padding
+(`padding-inline-start`), because in a right-to-left book the markers hung
+past the page and Chromium shifted and shrank every page (13.5pt into the
+gutter, body at 10.6pt).
+
 ## Store-ready? report (studio + jobs)
 
 The studio's Export dialog opens with a **Store-ready?** button: one

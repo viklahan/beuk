@@ -31,7 +31,9 @@ import {
 } from 'pdf-lib';
 
 const SECTION_RE = /<section class="(print-sec[^"]*)" id="(ps-\d+)"(?: data-start="(recto|verso)")?>/g;
-const PLATE_RE = /<figure class="plate-page"><img src="(data:image\/(?:jpeg|png);base64,[^"]+)"/;
+// (the figure may carry attributes after its class: the footnote
+// layout marks every block it measures — see footnotes.mjs)
+const PLATE_RE = /<figure class="plate-page"[^>]*><img src="(data:image\/(?:jpeg|png);base64,[^"]+)"/;
 // A paired spread's backdrop, baked by the studio at the page's size (bd-page).
 const LAYER_RE = /<div class="bd-layer bd-(?:whisper|soft|strong|spread) bd-page bd-baked" style="background-image:url\((data:image\/(?:jpeg|png);base64,[^)]+)\)"/;
 
@@ -111,15 +113,26 @@ export function blanksFor(plan, starts) {
  *  stood down — the same pictures are drawn beneath the page instead. */
 export function finalHtml(html, before, stamped) {
   let out = html.replace(SECTION_RE, (tag, cls, id) => (before.has(id) ? '<div class="print-blank" aria-hidden="true"></div>' : '') + tag);
-  if (stamped.size) {
-    const plates = [...stamped].map((id) => '#' + id + ' .plate-page img').join(', ');
-    const layers = [...stamped].map((id) => '#' + id + ' .bd-layer.bd-page').join(', ');
-    // The plate keeps its place (its page); the stamped layer leaves the
-    // layout altogether. The print page colour is white (the paper
-    // itself); left painted, it would cover whatever is drawn beneath.
-    out = out.replace(/<\/head>/i, '<style>' + plates + ' { visibility: hidden !important; } ' + layers + ' { display: none !important; } html, body { background: transparent !important; }</style></head>');
-  }
+  if (stamped.size) out = out.replace(/<\/head>/i, '<style>' + stampCss(stamped) + '</style></head>');
   return out;
+}
+
+/** The rules that stand a stamped spread's in-page pictures down. The
+ *  plate keeps its place (its page); the stamped layer leaves the layout
+ *  altogether. The print page colour is white (the paper itself); left
+ *  painted, it would cover whatever is drawn beneath.
+ *  Every measuring pass carries these rules too: the layer is as wide
+ *  as the trim and starts in the gutter margin, so while it is in the
+ *  layout it overflows the page and Chromium shrinks the whole document
+ *  to fit — measured on the sample, body type at 9.97pt instead of 11pt,
+ *  92 pages instead of 99 — and the page map no longer matched the
+ *  pages printed: each backdrop was drawn on a bare page after its
+ *  plate, its opening one page later. */
+export function stampCss(stamped) {
+  if (!stamped.size) return '';
+  const plates = [...stamped].map((id) => '#' + id + ' .plate-page img').join(', ');
+  const layers = [...stamped].map((id) => '#' + id + ' .bd-layer.bd-page').join(', ');
+  return plates + ' { visibility: hidden !important; } ' + layers + ' { display: none !important; } html, body { background: transparent !important; }';
 }
 
 function dataUrlBytes(url) {

@@ -342,6 +342,40 @@ export function pdfRenderProblem(config: Config): string | null {
   return null;
 }
 
+/** What the renderer did with a book's page-bottom notes, read from its
+ *  x-beuk-footnotes header (deploy/renderer/footnotes.mjs footnoteHeader):
+ *  how many notes it set at the foot of their page, how many stayed at
+ *  the end of their section, and for each such section why. */
+export interface FootnoteReport {
+  placed: number;
+  kept: number;
+  passes: number;
+  fallbacks: Array<{ section: string; reason: string; notes: number }>;
+}
+
+/** Parse an x-beuk-footnotes header; null when it is absent or not the
+ *  renderer's own shape (then nothing is claimed either way). */
+export function parseFootnoteHeader(value: string | null | undefined): FootnoteReport | null {
+  if (!value) return null;
+  const fields = new Map<string, string>();
+  for (const part of value.split(';')) {
+    const at = part.indexOf('=');
+    if (at > 0) fields.set(part.slice(0, at).trim(), part.slice(at + 1).trim());
+  }
+  const num = (k: string): number | null => {
+    const v = fields.get(k);
+    return v != null && /^\d+$/.test(v) ? Number(v) : null;
+  };
+  const placed = num('placed'), kept = num('kept'), passes = num('passes');
+  if (placed == null || kept == null || passes == null) return null;
+  const fallbacks: FootnoteReport['fallbacks'] = [];
+  for (const item of (fields.get('fallback') ?? '').split(',')) {
+    const m = /^([\w-]+):([\w-]+):(\d+)$/.exec(item.trim());
+    if (m) fallbacks.push({ section: m[1], reason: m[2], notes: Number(m[3]) });
+  }
+  return { placed, kept, passes, fallbacks };
+}
+
 /**
  * Render a print-html interior to PDF in the isolated renderer service
  * (deploy/renderer/server.mjs): the HTML bytes are POSTed to
@@ -355,7 +389,7 @@ export async function renderPrintPdf(
   config: Config,
   inputPath: string,
   outputPath: string,
-): Promise<ToolOutcome<{ pdfBytes: number }>> {
+): Promise<ToolOutcome<{ pdfBytes: number; footnotes: FootnoteReport | null }>> {
   const html = await readFile(inputPath);
   let response: Response;
   try {
@@ -422,7 +456,7 @@ export async function renderPrintPdf(
     };
   }
   await writeFile(outputPath, body);
-  return { ok: true, value: { pdfBytes: body.length } };
+  return { ok: true, value: { pdfBytes: body.length, footnotes: parseFootnoteHeader(response.headers.get('x-beuk-footnotes')) } };
 }
 
 /* ------------------------------ PDF/X (Ghostscript) ------------------------------ */

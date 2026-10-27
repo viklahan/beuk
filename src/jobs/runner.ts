@@ -357,6 +357,9 @@ export class JobRunner {
         tool: 'ghostscript',
         gsVersion: outcome.value.gsVersion,
         renderedPdfBytes: rendered.value.pdfBytes,
+        // page-bottom notes: placed / kept at a section's end, and why
+        // (the renderer's x-beuk-footnotes header); null when it set none
+        footnotes: rendered.value.footnotes,
         artifactExportId: artifactId,
         outputBytes: bytes.length,
         outputSha256: sha256,
