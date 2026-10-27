@@ -294,7 +294,7 @@ test('legal: Caddy proxies the pages to the app, and the workers leave them to t
   assert.match(caddy.slice(legal, legal + 60), /reverse_proxy app:3000/);
   for (const sw of [read('client', 'sw.js'), read('client', 'assets', 'sw.js')]) {
     assert.match(sw, /\(help\|support\|thanks\|changelog\|roadmap\|privacy\|terms[|)]/);
-    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v16"/);
+    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v17"/);
   }
   const env = read('.env.example');
   for (const k of ['LEGAL_OPERATOR_NAME', 'LEGAL_CONTACT_EMAIL', 'LEGAL_POSTAL_ADDRESS', 'LEGAL_JURISDICTION', 'LEGAL_HOSTING_LOCATION', 'LEGAL_EFFECTIVE_DATE']) {
