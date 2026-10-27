@@ -82,8 +82,11 @@ test('sidebar: the pre-rename sample title survives only inside the legacy-recog
 test('sidebar: the packaged sample cover is the re-lettered one, never the stale JPEG the stale-cover sweep looks for', async () => {
   const { createHash } = await import('node:crypto');
   const html = await clientHtml();
-  const data = /\n {6}const SAMPLE_COVER = \{ data: "([A-Za-z0-9+/=]+)"/.exec(html);
-  assert.ok(data, 'SAMPLE_COVER present');
+  /* BEUK:slim — the packaged cover is a file now (assets/sample/sample-cover.jpg);
+     the stale-cover fingerprints are over its base64 text, as the studio holds it. */
+  assert.match(html, /const SAMPLE_COVER_FILE = \{"name":"the-lantern-coast-cover\.jpg"/, 'SAMPLE_COVER_FILE present');
+  const coverBytes = await readFile(path.join(here, '..', 'client', 'assets', 'sample', 'sample-cover.jpg'));
+  const data = [null, coverBytes.toString('base64')] as const;
   const list = /const SAMPLE_COVER_STALE = \[([\s\S]*?)\];/.exec(html);
   assert.ok(list, 'stale-cover fingerprints present');
   const stale = [...list[1].matchAll(/\{ len: (\d+), sha1: "([0-9a-f]{40})" \}/g)];

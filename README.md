@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v17`; both `client/sw.js` and
+service worker (cache `beuk-shell-v18`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -2205,6 +2205,59 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   `dir="auto"`. All 13 locales. Self-checks: `outline.cards.reorder`,
   `outline.synopsis.notexported`, `outline.status.tags`,
   `outline.filter.saved`.
+
+## Studio: slim shell — the sample's pictures are files (BEUK:slim)
+
+Step 1 of the staged refactor of `client/index.html`. The sample story's
+36 pictures and its packaged cover used to ride inside the page as ~10.7 MB
+of base64 (`SAMPLE_IMAGES`, `SAMPLE_COVER`), so every first visit downloaded
+them before the studio could be used. They are now files:
+`client/assets/sample/<id>.jpg` and `client/assets/sample/sample-cover.jpg`,
+the exact JPEG bytes (decoded from the old base64, never re-encoded; the
+base64 round-trips to the old text byte for byte), listed with size and
+SHA-256 in `client/assets/sample/manifest.json` and in the page's own
+`SAMPLE_IMAGE_FILES` / `SAMPLE_COVER_FILE`. The other big line,
+`SAMPLE_SECTIONS` (~139 KB), is the novella's text and stays in the page.
+
+- **Text stays synchronous.** Load still swaps the whole novella onto the
+  desk in one synchronous state change. A picture that has not arrived yet
+  rides as its usual entry with empty `data` and is filled in place when the
+  file lands (every `applyBookDoc` fills from what is already here), so the
+  book ends up with exactly the entries it always had — same id, name,
+  mediaType, ext and base64 data; exports, backups, EPUB, print and the
+  self-checks see the same book. Whether the sample is untouched ignores
+  whether its pictures have arrived yet.
+- **Where the files come from.** Cache Storage first, then the network;
+  only bytes with the listed length and SHA-256 are accepted. Both service
+  workers precache them (`BEUK_SAMPLE` in `client/sw.js` and
+  `client/assets/sw.js`), but after the worker controls the page, on the
+  page's request (`BEUK_SAMPLE_CACHE` → `BEUK_SAMPLE_READY`) — not in
+  install (8 MB there would hold back the first visit's takeover reload by
+  seconds) and not in activate (that would hold every fetch). The page
+  warms them once that answer comes (or after 20 s without one), and at
+  once when the sample is opened. Measured: the 37 files are downloaded
+  once per first visit, by the worker.
+- **Never exported without them.** EPUB, Word, box set, print view, print
+  interior, print HTML, Markdown, standalone HTML, the archive exports,
+  cover/wrap downloads, the backup file, the store-ready server run and the
+  shelf save all wait for the sample's pictures when the sample is on the
+  desk. If they cannot be fetched (a first visit that lost the network),
+  the writer is told plainly ("The sample's pictures could not be
+  downloaded…") and the export does not run; they are fetched again when
+  the device comes back online. 2 new strings, 13 locales.
+- **Measured** (Playwright 1.49.1 Chromium, fresh profile, the static
+  server the self-checks use, no compression, median of 5):
+  `index.html` 16,430,441 → 5,746,092 bytes (after this change's own code);
+  bytes before the studio is usable 18,273,031 → 7,588,609 (document +
+  scripts 17,895,636 → 7,211,214); time to usable 1,990 → 1,078 ms (an
+  earlier pair of runs: 3,452 → 1,087 ms). Counting the service worker's
+  traffic, a whole first visit with the sample opened moved 67.8 MB → 21.6
+  MB (the old worker also re-downloaded the 16 MB page for its shell
+  cache).
+- Shell cache `beuk-shell-v18`. Self-check `shell.sample.external` (async);
+  `tests/slim-shell.test.ts` holds the size budget (5,800,000 bytes), every
+  manifest file's size and SHA-256, and the page / manifest / both workers
+  naming the same files.
 
 ## Studio: removing pictures from the image library (client-only)
 

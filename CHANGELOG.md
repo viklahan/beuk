@@ -6,6 +6,7 @@ to make well.
 
 ## 2026-10-27 — Print bleed
 
+- **The studio opens with a much smaller download.** The sample story's 37 pictures are now separate files instead of being packed into the studio page, so a first visit downloads less than half as much before you can write (about 7.6 MB instead of 18.3 MB). The sample still opens in one click, its pictures follow a moment later, and after one visit it opens with all of them offline. Exports and print wait for the sample's pictures; if they could not be downloaded, Beuk says so instead of exporting without them.
 - **Outline: cards and a list of your book.** A new Outline tab beside Chapter Content shows every chapter as an index card, or as a list. Drag a card, or use Alt + the arrow keys, to reorder the book; Undo and a History snapshot come with every move. Click a title to open the chapter.
 - Give each chapter a short synopsis, a status (To do, Draft, Revised, Final) and tags in your own colours, plus a point of view in the list. They are notes for you: they stay in the book file and never appear in an EPUB, print or Word export or in your word count.
 - Filter the cards by status and tags (a card must have every tag you pick); the view says how many it hides. Save a filter under a name, like "Needs work", and reopen it in one click.

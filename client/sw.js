@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v17"; /* v17: submission manuscript, goals that plan, Outline (cards, status, tags, filters), Story Bible */
+const BEUK_CACHE = "beuk-shell-v18"; /* v18: the sample's pictures moved out of index.html into assets/sample/ (precached below). v17: submission manuscript, goals that plan, Outline (cards, status, tags, filters), Story Bible */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell
@@ -49,6 +49,65 @@ const BEUK_SHELL = [
   "./assets/vendor/lucide.min.js",
   "./assets/vendor/jspdf.umd.min.js"
 ];
+
+/* ==== BEUK:slim ==== The sample story's pictures, as files (they used
+   to ride inside index.html as ~10 MB of base64), kept in the shell
+   cache so the sample opens with its pictures offline after one visit;
+   the page reads them from this cache before the network. Exactly the
+   files in assets/sample/manifest.json (tests hold the two lists
+   together). Precached right AFTER this worker controls the page, not
+   during install: ~8 MB in install would hold back the first visit's
+   takeover (and its one reload) by seconds, and inside activate it
+   would hold every fetch. The page asks (BEUK_SAMPLE_CACHE) once it is
+   controlled; the message's waitUntil keeps the worker alive for it,
+   each file is added on its own, a file already cached is not fetched
+   again, and the page is told when they are all in
+   (BEUK_SAMPLE_READY). */
+function precacheSample() {
+  return caches.open(BEUK_CACHE).then((cache) => Promise.all(BEUK_SAMPLE.map((u) =>
+    cache.match(u).then((hit) => hit || cache.add(u)).then(() => true, () => false)
+  ))).then((done) => done.every(Boolean));
+}
+const BEUK_SAMPLE = [
+  "./assets/sample/sample-img-cover-art.jpg",
+  "./assets/sample/sample-img-chart.jpg",
+  "./assets/sample/sample-img-prologue-left.jpg",
+  "./assets/sample/sample-img-prologue-right.jpg",
+  "./assets/sample/sample-img-ferry-left.jpg",
+  "./assets/sample/sample-img-ferry-right.jpg",
+  "./assets/sample/sample-img-gull-terrace-left.jpg",
+  "./assets/sample/sample-img-gull-terrace-right.jpg",
+  "./assets/sample/sample-img-wrong-way-left.jpg",
+  "./assets/sample/sample-img-wrong-way-right.jpg",
+  "./assets/sample/sample-img-tide-table-left.jpg",
+  "./assets/sample/sample-img-tide-table-right.jpg",
+  "./assets/sample/sample-img-ledger-left.jpg",
+  "./assets/sample/sample-img-ledger-right.jpg",
+  "./assets/sample/sample-img-beacon-east-left.jpg",
+  "./assets/sample/sample-img-beacon-east-right.jpg",
+  "./assets/sample/sample-img-keepers-letter-left.jpg",
+  "./assets/sample/sample-img-keepers-letter-right.jpg",
+  "./assets/sample/sample-img-soundings-left.jpg",
+  "./assets/sample/sample-img-soundings-right.jpg",
+  "./assets/sample/sample-img-harrow-venn-left.jpg",
+  "./assets/sample/sample-img-harrow-venn-right.jpg",
+  "./assets/sample/sample-img-ferry-berth-left.jpg",
+  "./assets/sample/sample-img-ferry-berth-right.jpg",
+  "./assets/sample/sample-img-nell-left.jpg",
+  "./assets/sample/sample-img-nell-right.jpg",
+  "./assets/sample/sample-img-council-left.jpg",
+  "./assets/sample/sample-img-council-right.jpg",
+  "./assets/sample/sample-img-portrait.jpg",
+  "./assets/sample/sample-img-channel-east-left.jpg",
+  "./assets/sample/sample-img-channel-east-right.jpg",
+  "./assets/sample/sample-img-dedication.jpg",
+  "./assets/sample/sample-img-chart-cost-left.jpg",
+  "./assets/sample/sample-img-chart-cost-right.jpg",
+  "./assets/sample/sample-img-fair-sheet-left.jpg",
+  "./assets/sample/sample-img-fair-sheet-right.jpg",
+  "./assets/sample/sample-cover.jpg"
+];
+/* ==== /BEUK:slim ==== */
 
 /* ==== BEUK:fonts ==== The web fonts for offline use. They are
    self-hosted under assets/fonts/ (same origin — no font request
@@ -107,6 +166,11 @@ function retireOlderShells() {
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
+  /* BEUK:slim — the sample's pictures, on the page's word */
+  if (event.data && event.data.type === "BEUK_SAMPLE_CACHE") {
+    const src = event.source;
+    event.waitUntil(precacheSample().then((ok) => { if (src) src.postMessage({ type: "BEUK_SAMPLE_READY", ok: ok, cache: BEUK_CACHE }); }).catch(() => {}));
+  }
   if (event.data && event.data.type === "BEUK_PING") event.waitUntil(retireOlderShells().catch(() => {}));
   if (event.data && event.data.type === "BEUK_PING" && event.source)
     event.source.postMessage({ type: "BEUK_SHELL_READY", cache: BEUK_CACHE });

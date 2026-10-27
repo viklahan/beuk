@@ -1629,6 +1629,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Immediacy of the state swap is observable only in the client.',
   },
   {
+    id: 'shell.sample.external',
+    title: 'Slim shell: sample pictures are files (byte-identical to the manifest), text still swaps synchronously, the EPUB waits for every picture',
+    kind: 'client-only',
+    reason: 'Fetching the pictures, filling the desk in place and building the EPUB run in the browser (window.runBeukAsyncSelfChecks()); tests/slim-shell.test.ts holds the files, hashes and page size on the server side.',
+  },
+  {
     id: 'sample.toggle.empty-to-sample-to-empty',
     title: 'Remove empties the desk completely (0 ↔ 25K toggle, no restore)',
     kind: 'client-only',

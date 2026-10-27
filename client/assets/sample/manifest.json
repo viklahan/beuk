@@ -1,0 +1,339 @@
+{
+  "format": "beuk-sample-assets",
+  "version": 1,
+  "book": "The Lantern Coast",
+  "images": [
+    {
+      "id": "sample-img-cover-art",
+      "name": "Harbour at dawn — cover artwork",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-cover-art.jpg",
+      "bytes": 101203,
+      "sha256": "935bb37b4d0f2f33b929e56753db869d7b0c9a0162b279ab1ca2d61047da2b01"
+    },
+    {
+      "id": "sample-img-chart",
+      "name": "The harbour chart — frontispiece",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-chart.jpg",
+      "bytes": 138520,
+      "sha256": "0a2fd1ad9ec30b64a10f213352823870e537338b794cf64692c69df94951e490"
+    },
+    {
+      "id": "sample-img-prologue-left",
+      "name": "The beacon at first light — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-prologue-left.jpg",
+      "bytes": 226024,
+      "sha256": "7edfbdec36464a2b4f1abe6d09c4d19ccdb951177eeb59b93c06ae2dc5929468"
+    },
+    {
+      "id": "sample-img-prologue-right",
+      "name": "The beacon at first light — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-prologue-right.jpg",
+      "bytes": 130442,
+      "sha256": "0131218cac8688056c1af60803d630254d47468700e012b849b7132a3fefa372"
+    },
+    {
+      "id": "sample-img-ferry-left",
+      "name": "The ferry spread — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-ferry-left.jpg",
+      "bytes": 262224,
+      "sha256": "f5f0ba6325a1aa799bb055d6628eca3072aa48a060604c2ecb0a9d18ffcd5075"
+    },
+    {
+      "id": "sample-img-ferry-right",
+      "name": "The ferry spread — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-ferry-right.jpg",
+      "bytes": 247866,
+      "sha256": "a9ba1335e3abc807ad90f3c5e961ba24de6c435bb8766637a6eae4834aafd906"
+    },
+    {
+      "id": "sample-img-gull-terrace-left",
+      "name": "The house at Gull Terrace — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-gull-terrace-left.jpg",
+      "bytes": 295817,
+      "sha256": "2e81e36ee723928a1d11f63d355dca76fed60b543577001322e2f8a6ffe73dab"
+    },
+    {
+      "id": "sample-img-gull-terrace-right",
+      "name": "The house at Gull Terrace — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-gull-terrace-right.jpg",
+      "bytes": 133611,
+      "sha256": "1020b71a2288a0c8f23bbf0ae7684dad2018b05e62ee736300f1264c1ca2eb9b"
+    },
+    {
+      "id": "sample-img-wrong-way-left",
+      "name": "The wrong-way water — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-wrong-way-left.jpg",
+      "bytes": 284042,
+      "sha256": "e631a1582e3a5221e08d70357ce48288f3bb5dcb6d3f860f6000a52e6bd084eb"
+    },
+    {
+      "id": "sample-img-wrong-way-right",
+      "name": "The wrong-way water — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-wrong-way-right.jpg",
+      "bytes": 175209,
+      "sha256": "f590bafe78d424791bf99f17d88e23ffa27d74b6c7fad28efad43b19e4818ba9"
+    },
+    {
+      "id": "sample-img-tide-table-left",
+      "name": "The tide table — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-tide-table-left.jpg",
+      "bytes": 353965,
+      "sha256": "eccc42fc5ac44b6647abf5376c4138a89cf04993857c60cf528c4925e4a06f4d"
+    },
+    {
+      "id": "sample-img-tide-table-right",
+      "name": "The tide table — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-tide-table-right.jpg",
+      "bytes": 124322,
+      "sha256": "5cf65d550bbe0dedf977d67897f2ad9204947c8e5745f9b84a750ac4f30c9163"
+    },
+    {
+      "id": "sample-img-ledger-left",
+      "name": "The harbourmaster’s ledger — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-ledger-left.jpg",
+      "bytes": 230221,
+      "sha256": "e756039f9b6567473824cf1fd630ba36eb27f78ee16eda6021759c110d315569"
+    },
+    {
+      "id": "sample-img-ledger-right",
+      "name": "The harbourmaster’s ledger — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-ledger-right.jpg",
+      "bytes": 155932,
+      "sha256": "8ab56408912a699176ff6429cef145810bdec48474d0059f2be9fe343e0d7c84"
+    },
+    {
+      "id": "sample-img-beacon-east-left",
+      "name": "A light east of the beacon — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-beacon-east-left.jpg",
+      "bytes": 217957,
+      "sha256": "90c8c2c5e21c30a4a1f99a4f8df13e79967866071e2a81e8fc806a02e372b905"
+    },
+    {
+      "id": "sample-img-beacon-east-right",
+      "name": "A light east of the beacon — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-beacon-east-right.jpg",
+      "bytes": 143412,
+      "sha256": "4b08e4a0d28739cfc2c4d82da844ec01aa06a7c860a364c3a119f69d54d65668"
+    },
+    {
+      "id": "sample-img-keepers-letter-left",
+      "name": "The keeper’s letter — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-keepers-letter-left.jpg",
+      "bytes": 210746,
+      "sha256": "9bf439365e641b29e7d2c4eb8f69b7356d9e49728c0aa4bceea371ab3829fa29"
+    },
+    {
+      "id": "sample-img-keepers-letter-right",
+      "name": "The keeper’s letter — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-keepers-letter-right.jpg",
+      "bytes": 143024,
+      "sha256": "dc2f43b124db8d7e7ca84e204e24169817b2c12b87173ff03ddd853b893f2317"
+    },
+    {
+      "id": "sample-img-soundings-left",
+      "name": "Soundings at low water — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-soundings-left.jpg",
+      "bytes": 270852,
+      "sha256": "ffeaadd83379a34dd250641573f1b094eb755b3c48b5a4ea6366bf1cc82f205d"
+    },
+    {
+      "id": "sample-img-soundings-right",
+      "name": "Soundings at low water — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-soundings-right.jpg",
+      "bytes": 176374,
+      "sha256": "11f78d584b710a7fdc36738b2323643eec49cf41d78f3d981c60196d61306719"
+    },
+    {
+      "id": "sample-img-harrow-venn-left",
+      "name": "Harrow and Venn — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-harrow-venn-left.jpg",
+      "bytes": 358561,
+      "sha256": "b95320ffd9f6c034fd649b8a8e118a6ea8ce13336aaf6b0abed7d58d9640859e"
+    },
+    {
+      "id": "sample-img-harrow-venn-right",
+      "name": "Harrow and Venn — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-harrow-venn-right.jpg",
+      "bytes": 175646,
+      "sha256": "201ec64be6723f8ad3486dbd65e99e9603ae3f33178a40e415241e457e962935"
+    },
+    {
+      "id": "sample-img-ferry-berth-left",
+      "name": "The ferry that did not run — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-ferry-berth-left.jpg",
+      "bytes": 300289,
+      "sha256": "76496a5ded1ae1ce5063ab46148e7eb9b79a6b12cc55ed65bdc70214f873532c"
+    },
+    {
+      "id": "sample-img-ferry-berth-right",
+      "name": "The ferry that did not run — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-ferry-berth-right.jpg",
+      "bytes": 130888,
+      "sha256": "56688332b525e1845e55c3789bb78af7cdaac1615504a7cfd9b3470bd1996651"
+    },
+    {
+      "id": "sample-img-nell-left",
+      "name": "Nell — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-nell-left.jpg",
+      "bytes": 262372,
+      "sha256": "5dd84321897fe69f31592418144e5da4356b75e9dcc996366e67e73fb4569b51"
+    },
+    {
+      "id": "sample-img-nell-right",
+      "name": "Nell — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-nell-right.jpg",
+      "bytes": 118925,
+      "sha256": "d8bb100d779ba6e5f4b661bcfb888e7293a5a0c65f25e1c8d7856ac49ed30b63"
+    },
+    {
+      "id": "sample-img-council-left",
+      "name": "The Council of Pilots — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-council-left.jpg",
+      "bytes": 272475,
+      "sha256": "5a1a601eaae505e36bf5192d047a82849ba8fbe947d921cf31866ec0fca04672"
+    },
+    {
+      "id": "sample-img-council-right",
+      "name": "The Council of Pilots — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-council-right.jpg",
+      "bytes": 130657,
+      "sha256": "280efa3c785ad95ea394c66121a61945930257ed2e4874daaa1d60eede0c96b2"
+    },
+    {
+      "id": "sample-img-portrait",
+      "name": "April Carooke — author portrait",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-portrait.jpg",
+      "bytes": 115976,
+      "sha256": "32c0d70cb2c288fc0193e16080900ee2faa7829b8aa7e353ad18c33e31f61715"
+    },
+    {
+      "id": "sample-img-channel-east-left",
+      "name": "The channel runs east — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-channel-east-left.jpg",
+      "bytes": 312155,
+      "sha256": "2dcb8ff7b4007ffe156b6ccf1b93b4d83e5b2805573d7f112f6c23819675a04f"
+    },
+    {
+      "id": "sample-img-channel-east-right",
+      "name": "The channel runs east — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-channel-east-right.jpg",
+      "bytes": 253115,
+      "sha256": "b7183884024df24bcbe67d2e73778622ac0323bbab7702522b8e69b06f739901"
+    },
+    {
+      "id": "sample-img-dedication",
+      "name": "For the keepers of unlisted channels — dedication plate",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-dedication.jpg",
+      "bytes": 310381,
+      "sha256": "b4935926418266cf0e063264641db9dbfec6c4e315865b61607d37fea9978ef2"
+    },
+    {
+      "id": "sample-img-chart-cost-left",
+      "name": "What the chart cost — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-chart-cost-left.jpg",
+      "bytes": 320299,
+      "sha256": "0a760616ee1c82ddb9ee12b6d9b969d6fa3e2ca4941253a2fe7d7ed793a8a1ef"
+    },
+    {
+      "id": "sample-img-chart-cost-right",
+      "name": "What the chart cost — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-chart-cost-right.jpg",
+      "bytes": 194583,
+      "sha256": "c1264d1a8aee218584651503e4fffc0c479f0912ec84a969b754ddb65785705e"
+    },
+    {
+      "id": "sample-img-fair-sheet-left",
+      "name": "The fair sheet — left page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-fair-sheet-left.jpg",
+      "bytes": 306908,
+      "sha256": "8a73361563f7c02f1d4cc3d29a6ec7296018165a80414c4516862e6ce33e2a2c"
+    },
+    {
+      "id": "sample-img-fair-sheet-right",
+      "name": "The fair sheet — right page",
+      "mediaType": "image/jpeg",
+      "ext": "jpg",
+      "file": "sample-img-fair-sheet-right.jpg",
+      "bytes": 181515,
+      "sha256": "7cf787ee54be7e80ffe35783e3a5ccfa823180ea0149ebc6726fee64ab8dadd4"
+    }
+  ],
+  "cover": {
+    "name": "the-lantern-coast-cover.jpg",
+    "mediaType": "image/jpeg",
+    "ext": "jpg",
+    "file": "sample-cover.jpg",
+    "bytes": 267669,
+    "sha256": "d488b56ce3ff184b29d06ccf1cd3674cb34f23bb6064c935548524ccc304e1fc"
+  }
+}
