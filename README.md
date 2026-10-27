@@ -2137,6 +2137,54 @@ copyright, contents) have no menu.
   (`del`, `duplicate`, `split`, `merge`, `undo`, `last`, `mergeWhy`,
   `splitPlan`, `menu`, `closeMenu`).
 
+## Studio: Outline — cards, list, status, tags and saved filters (client-only)
+
+A third tab beside **Chapter Content** and **Typography Studio**:
+**Outline** (`BEUK:outline`). It shows the book's own sections — never
+copies of their text — as **Cards** (a corkboard, one index card per
+section) or as a **List** (title, point of view, synopsis, status, tags,
+words). The sidebar stays the binder; both views redraw whenever it does.
+
+- **One data model.** Per section, optionally: `synopsis`, `status`
+  (`todo` / `draft` / `revised` / `final`), `tags` (names) and `pov`.
+  Each key is written only when it has a value (`normalizeSection` →
+  `olSectionFields`), so a book saved before them serializes exactly as
+  it always has. The book's tag colours and saved filters ride in
+  `outline: { tags: [{ name, colour }], filters: [{ id, name, status, tags }] }`,
+  absent when the book has none. Values outside the fixed set are dropped
+  on load; a tag a section carries but the registry lacks is registered.
+- **Not book text.** No export reads these fields: the EPUB, the print
+  interior and the Word manuscript are byte-identical with and without
+  them, and no word count counts them (`outline.synopsis.notexported`).
+- **Scenes.** Beuk's scenes are the runs of text between scene breaks
+  (`***`), and the breaks move as the writer edits, so planning fields
+  live on the section. A card shows how many scenes its text holds,
+  counted from the breaks as they stand.
+- **Reordering** (drag a card or row; Alt + arrow keys on a focused card
+  or row; the move buttons) runs through the chapter-operations path
+  (`chopRun`): a "Before moving <name>" History snapshot, the tier law
+  (front, body and back matter stay in their groups), chapter numbers
+  kept in sequence when the book was numbered in sequence, and a
+  ten-second Undo. Only the order moves. A Part moves as its divider,
+  as in the binder.
+- **Status** shows as a coloured stripe and dot *and* its text label.
+  **Tags** are free text (case-insensitive: "Mara" and "mara" are one
+  tag), up to 30 per section, each with one of eight colours chosen in
+  *Tags in this book*, where a tag can also be removed from the whole
+  book (with Undo).
+- **Filters.** Status chips match any picked status (including "No
+  status"); tag chips match only sections carrying every picked tag. The
+  bar says how many are shown and how many the filter hides. A filter can
+  be saved under a name ("Needs work") and reopened in one click; saved
+  filters ride the book.
+- **Per device:** Cards or List and whether front and back matter show
+  (`beuk.outline.v1` in localStorage, guarded). Not in the book.
+- Phone width: cards become one column and list rows stack (container
+  queries on the view). Arabic mirrors; planning text fields are
+  `dir="auto"`. All 13 locales. Self-checks: `outline.cards.reorder`,
+  `outline.synopsis.notexported`, `outline.status.tags`,
+  `outline.filter.saved`.
+
 ## Studio: removing pictures from the image library (client-only)
 
 A picture lives once in the book's image library (`state.images`) and is

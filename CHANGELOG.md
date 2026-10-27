@@ -6,6 +6,9 @@ to make well.
 
 ## 2026-10-27 — Print bleed
 
+- **Outline: cards and a list of your book.** A new Outline tab beside Chapter Content shows every chapter as an index card, or as a list. Drag a card, or use Alt + the arrow keys, to reorder the book; Undo and a History snapshot come with every move. Click a title to open the chapter.
+- Give each chapter a short synopsis, a status (To do, Draft, Revised, Final) and tags in your own colours, plus a point of view in the list. They are notes for you: they stay in the book file and never appear in an EPUB, print or Word export or in your word count.
+- Filter the cards by status and tags (a card must have every tag you pick); the view says how many it hides. Save a filter under a name, like "Needs work", and reopen it in one click.
 - **Bleed** (Export → Print Interior): turn it on and Beuk's print PDF has pages 0.125 in larger on the top, bottom and outer edge, the way KDP and IngramSpark ask for a book whose pictures run to the edge. A 6 × 9 book prints at 6.125 × 9.25 in.
 - Full-page plates and spread backdrops now run out into that bleed, so the printer trims through the picture instead of leaving a white sliver. The words, running heads and page numbers don't move.
 - It is off until you turn it on. When your book has plates or backdrops, the print settings and the store check suggest it.

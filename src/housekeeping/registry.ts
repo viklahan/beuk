@@ -2628,6 +2628,32 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Vault parsing (frontmatter, [[links]], embeds) is client import behavior.',
   },
 
+  /* ==== BEUK:outline ==== Cards and List: synopsis, status, tags, saved filters (client-side) */
+  {
+    id: 'outline.cards.reorder',
+    title: 'Cards and List: Alt+arrow, drag-and-drop and the move buttons reorder the book itself through the chapter-operations path (Before moving snapshot, numbers kept in sequence, Undo); text untouched; cross-tier moves refused',
+    kind: 'client-only',
+    reason: 'The cards, the drag handlers and state.sections live in the studio; the server stores the book document whole and never reads its order.',
+  },
+  {
+    id: 'outline.synopsis.notexported',
+    title: 'Cards and List: synopsis, status, tags and point of view never reach the EPUB, the print interior or the Word manuscript, and never change a word count',
+    kind: 'client-only',
+    reason: 'epubFiles, buildPrintHtml and buildDocxFiles are built in the browser from the client book document.',
+  },
+  {
+    id: 'outline.status.tags',
+    title: 'Cards and List: status, tags with their colours, synopsis, point of view and saved filters round-trip through serializeBook/applyBookDoc and a backup file; an older book loads with none; bad values are dropped',
+    kind: 'client-only',
+    reason: 'The fields ride the client book document; the server stores it as opaque JSON.',
+  },
+  {
+    id: 'outline.filter.saved',
+    title: 'Cards and List: status filters match any picked status, tag filters need every picked tag, the hidden count is shown, and a named saved filter reopens to the same items',
+    kind: 'client-only',
+    reason: 'Filtering and the saved filters are studio UI over the client book.',
+  },
+  /* ==== /BEUK:outline ==== */
   /* ---- Word import report (client-side; BEUK:importreport) ---- */
   {
     id: 'import.report.txt-records-and-undo',
