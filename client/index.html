@@ -1993,6 +1993,7 @@
       .bulk-summary p { font-size: 12.5px; color: var(--ink-2); margin: 4px 0; line-height: 1.5; }
       .bulk-summary ul { margin: 4px 0 8px; padding-left: 18px; font-size: 12px; color: var(--muted); line-height: 1.55; }
       .note-link { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 3px; }
+      #lnkHint.is-bad { color: var(--bad); }
 
       /* ---------- Import recognition summary ---------- */
       .import-summary { margin: 0 14px 12px; padding: 11px 13px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
@@ -2324,6 +2325,7 @@
                 <div class="tool-group" data-tg="format">
                   <button class="tool-btn" data-collapse="1" data-insert="bold" title="Bold (Ctrl/Cmd+B)" data-i18n-title="tool.boldTitle"><i data-lucide="bold"></i><span class="tl" data-i18n="tool.bold">Bold</span></button>
                   <button class="tool-btn" data-collapse="1" data-insert="italic" title="Italic (Ctrl/Cmd+I)" data-i18n-title="tool.italicTitle"><i data-lucide="italic"></i><span class="tl" data-i18n="tool.italic">Italic</span></button>
+                  <button class="tool-btn" data-collapse="1" data-insert="link" title="Link — make the selected words a web or store link" data-i18n-title="tool.linkTitle"><i data-lucide="link"></i><span class="tl" data-i18n="tool.link">Link</span></button>
                 </div>
                 <span class="tool-break" aria-hidden="true"></span>
                 <div class="tool-group" data-tg="structure"><span class="tool-sep" aria-hidden="true"></span>
@@ -2942,6 +2944,22 @@
         <div class="modal-actions">
           <button class="tb-btn" id="btnCancelFootnote" data-i18n="fn.cancel">Cancel</button>
           <button class="tb-btn primary" id="btnDoFootnote" data-i18n="fn.add"><i data-lucide="check"></i>Add Footnote</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Link dialog: the words and the web / store address; places [words](address) at the cursor -->
+    <div class="modal-back" id="modalLink" style="z-index:66;">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lnkH" style="max-width:460px;">
+        <h2 id="lnkH"><i data-lucide="link"></i><span data-i18n="lnk.title">Add a link</span></h2>
+        <div class="form-grid" style="margin-top:16px;">
+          <div class="full"><label class="field-lab" for="lnkText" data-i18n="lnk.text">Link words</label><input class="txt-input" id="lnkText" type="text" placeholder="The words readers see" data-i18n-ph="lnk.textPh" style="width:100%;" /></div>
+          <div class="full"><label class="field-lab" for="lnkUrl" data-i18n="lnk.url">Web address</label><input class="txt-input" id="lnkUrl" type="url" inputmode="url" spellcheck="false" placeholder="https://" data-i18n-ph="lnk.urlPh" style="width:100%;" /></div>
+          <div class="full"><p class="cover-note" id="lnkHint" data-i18n="lnk.hint" style="margin:0;">Starts with https://, http:// or mailto:. In the ebook it is a link; in print the words are set as plain text.</p></div>
+        </div>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnCancelLink" data-i18n="lnk.cancel">Cancel</button>
+          <button class="tb-btn primary" id="btnDoLink" data-i18n="lnk.add"><i data-lucide="check"></i>Add Link</button>
         </div>
       </div>
     </div>
@@ -3725,6 +3743,7 @@
         "tool.bold": "Bold", "tool.italic": "Italic", "tool.blockquote": "Blockquote", "tool.sceneBreak": "Scene Break", "tool.emDash": "Em Dash —",
         "tool.footnote": "Footnote", "tool.insertImage": "Insert Image", "tool.autoFormat": "Auto-Format",
         "tool.boldTitle": "Bold (Ctrl/Cmd+B)", "tool.italicTitle": "Italic (Ctrl/Cmd+I)",
+        "tool.link": "Link", "tool.linkTitle": "Link — make the selected words a web or store link", "lnk.title": "Add a link", "lnk.text": "Link words", "lnk.textPh": "The words readers see", "lnk.url": "Web address", "lnk.urlPh": "https://", "lnk.hint": "Starts with https://, http:// or mailto:. In the ebook it is a link; in print the words are set as plain text.", "lnk.bad": "That address can't be a link — use one that starts with https://, http:// or mailto:.", "lnk.cancel": "Cancel", "lnk.add": "Add Link",
         "tool.blockquoteTitle": "Blockquote — set this paragraph apart as a quotation", "tool.ul": "List", "tool.ulTitle": "Bulleted list — each line becomes an item", "tool.ol": "Numbered", "tool.olTitle": "Numbered list — each line becomes a numbered step", "tool.sceneBreakTitle": "Scene break — becomes an ornament in the book",
         "tool.emDashTitle": "Em dash", "tool.footnoteTitle": "Footnote — typesets as a linked endnote",
         "tool.insertImageTitle": "Insert a picture from the book's image library", "tool.autoFormatTitle": "Polish the text — smart quotes, em-dashes, ellipses",
@@ -4129,6 +4148,7 @@
         "tool.bold": "Negrita", "tool.italic": "Cursiva", "tool.blockquote": "Cita", "tool.sceneBreak": "Cambio de escena", "tool.emDash": "Raya —",
         "tool.footnote": "Nota al pie", "tool.insertImage": "Insertar imagen", "tool.autoFormat": "Formato automático",
         "tool.boldTitle": "Negrita (Ctrl/Cmd+B)", "tool.italicTitle": "Cursiva (Ctrl/Cmd+I)",
+        "tool.link": "Enlace", "tool.linkTitle": "Enlace — convierte las palabras seleccionadas en un enlace web o de tienda", "lnk.title": "Añadir un enlace", "lnk.text": "Texto del enlace", "lnk.textPh": "Las palabras que ve el lector", "lnk.url": "Dirección web", "lnk.urlPh": "https://", "lnk.hint": "Empieza por https://, http:// o mailto:. En el libro electrónico es un enlace; en papel las palabras se componen como texto normal.", "lnk.bad": "Esa dirección no puede ser un enlace: usa una que empiece por https://, http:// o mailto:.", "lnk.cancel": "Cancelar", "lnk.add": "Añadir enlace",
         "tool.blockquoteTitle": "Cita — aparta este párrafo como una cita", "tool.ul": "Lista", "tool.ulTitle": "Lista con viñetas — cada línea es un elemento", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada línea es un paso numerado", "tool.sceneBreakTitle": "Cambio de escena — se convierte en un adorno en el libro",
         "tool.emDashTitle": "Raya", "tool.footnoteTitle": "Nota al pie — se compone como nota final enlazada",
         "tool.insertImageTitle": "Insertar una imagen de la biblioteca del libro", "tool.autoFormatTitle": "Pule el texto — comillas tipográficas, rayas y puntos suspensivos",
@@ -4325,6 +4345,7 @@
         "tool.bold": "Gras", "tool.italic": "Italique", "tool.blockquote": "Citation", "tool.sceneBreak": "Saut de scène", "tool.emDash": "Tiret cadratin —",
         "tool.footnote": "Note de bas de page", "tool.insertImage": "Insérer une image", "tool.autoFormat": "Formatage auto",
         "tool.boldTitle": "Gras (Ctrl/Cmd+B)", "tool.italicTitle": "Italique (Ctrl/Cmd+I)",
+        "tool.link": "Lien", "tool.linkTitle": "Lien — faire des mots sélectionnés un lien web ou vers une librairie", "lnk.title": "Ajouter un lien", "lnk.text": "Texte du lien", "lnk.textPh": "Les mots que voit le lecteur", "lnk.url": "Adresse web", "lnk.urlPh": "https://", "lnk.hint": "Commence par https://, http:// ou mailto:. Dans le livre numérique c'est un lien ; à l'impression, les mots sont composés en texte simple.", "lnk.bad": "Cette adresse ne peut pas être un lien — utilisez-en une qui commence par https://, http:// ou mailto:.", "lnk.cancel": "Annuler", "lnk.add": "Ajouter le lien",
         "tool.blockquoteTitle": "Citation — met ce paragraphe à part comme une citation", "tool.ul": "Liste", "tool.ulTitle": "Liste à puces — chaque ligne devient un élément", "tool.ol": "Numérotée", "tool.olTitle": "Liste numérotée — chaque ligne devient une étape numérotée", "tool.sceneBreakTitle": "Saut de scène — devient un ornement dans le livre",
         "tool.emDashTitle": "Tiret cadratin", "tool.footnoteTitle": "Note de bas de page — composée comme note de fin liée",
         "tool.insertImageTitle": "Insérer une image de la bibliothèque du livre", "tool.autoFormatTitle": "Polit le texte — guillemets typographiques, tirets cadratins, points de suspension",
@@ -4521,6 +4542,7 @@
         "tool.bold": "Fett", "tool.italic": "Kursiv", "tool.blockquote": "Blockzitat", "tool.sceneBreak": "Szenenwechsel", "tool.emDash": "Gedankenstrich —",
         "tool.footnote": "Fußnote", "tool.insertImage": "Bild einfügen", "tool.autoFormat": "Auto-Format",
         "tool.boldTitle": "Fett (Ctrl/Cmd+B)", "tool.italicTitle": "Kursiv (Ctrl/Cmd+I)",
+        "tool.link": "Link", "tool.linkTitle": "Link — die markierten Wörter zu einem Web- oder Shop-Link machen", "lnk.title": "Einen Link hinzufügen", "lnk.text": "Linktext", "lnk.textPh": "Die Wörter, die Leser sehen", "lnk.url": "Webadresse", "lnk.urlPh": "https://", "lnk.hint": "Beginnt mit https://, http:// oder mailto:. Im E-Book ist es ein Link; im Druck werden die Wörter als normaler Text gesetzt.", "lnk.bad": "Diese Adresse kann kein Link sein — verwenden Sie eine, die mit https://, http:// oder mailto: beginnt.", "lnk.cancel": "Abbrechen", "lnk.add": "Link hinzufügen",
         "tool.blockquoteTitle": "Blockzitat — diesen Absatz als Zitat absetzen", "tool.ul": "Liste", "tool.ulTitle": "Aufzählung — jede Zeile wird ein Punkt", "tool.ol": "Nummeriert", "tool.olTitle": "Nummerierte Liste — jede Zeile wird ein nummerierter Schritt", "tool.sceneBreakTitle": "Szenenwechsel — wird im Buch zu einem Ornament",
         "tool.emDashTitle": "Gedankenstrich", "tool.footnoteTitle": "Fußnote — wird als verlinkte Endnote gesetzt",
         "tool.insertImageTitle": "Ein Bild aus der Bildbibliothek des Buches einfügen", "tool.autoFormatTitle": "Den Text polieren — typografische Anführungszeichen, Gedankenstriche, Auslassungspunkte",
@@ -4717,6 +4739,7 @@
         "tool.bold": "Grassetto", "tool.italic": "Corsivo", "tool.blockquote": "Citazione", "tool.sceneBreak": "Cambio di scena", "tool.emDash": "Trattino lungo —",
         "tool.footnote": "Nota a piè di pagina", "tool.insertImage": "Inserisci immagine", "tool.autoFormat": "Formattazione automatica",
         "tool.boldTitle": "Grassetto (Ctrl/Cmd+B)", "tool.italicTitle": "Corsivo (Ctrl/Cmd+I)",
+        "tool.link": "Link", "tool.linkTitle": "Link — trasforma le parole selezionate in un link web o a un negozio", "lnk.title": "Aggiungi un link", "lnk.text": "Testo del link", "lnk.textPh": "Le parole che vede il lettore", "lnk.url": "Indirizzo web", "lnk.urlPh": "https://", "lnk.hint": "Inizia con https://, http:// o mailto:. Nell'ebook è un link; in stampa le parole sono composte come testo normale.", "lnk.bad": "Quell'indirizzo non può essere un link: usane uno che inizi con https://, http:// o mailto:.", "lnk.cancel": "Annulla", "lnk.add": "Aggiungi link",
         "tool.blockquoteTitle": "Citazione — mette da parte questo paragrafo come citazione", "tool.ul": "Elenco", "tool.ulTitle": "Elenco puntato — ogni riga diventa una voce", "tool.ol": "Numerato", "tool.olTitle": "Elenco numerato — ogni riga diventa un passo numerato", "tool.sceneBreakTitle": "Cambio di scena — diventa un ornamento nel libro",
         "tool.emDashTitle": "Trattino lungo", "tool.footnoteTitle": "Nota a piè di pagina — composta come nota finale collegata",
         "tool.insertImageTitle": "Inserisci un'immagine dalla libreria immagini del libro", "tool.autoFormatTitle": "Rifinisce il testo — virgolette tipografiche, trattini lunghi, puntini di sospensione",
@@ -4913,6 +4936,7 @@
         "tool.bold": "Negrito", "tool.italic": "Itálico", "tool.blockquote": "Citação", "tool.sceneBreak": "Mudança de cena", "tool.emDash": "Travessão —",
         "tool.footnote": "Nota de rodapé", "tool.insertImage": "Inserir imagem", "tool.autoFormat": "Formatação automática",
         "tool.boldTitle": "Negrito (Ctrl/Cmd+B)", "tool.italicTitle": "Itálico (Ctrl/Cmd+I)",
+        "tool.link": "Ligação", "tool.linkTitle": "Ligação — transforma as palavras selecionadas numa ligação web ou de loja", "lnk.title": "Adicionar uma ligação", "lnk.text": "Texto da ligação", "lnk.textPh": "As palavras que o leitor vê", "lnk.url": "Endereço web", "lnk.urlPh": "https://", "lnk.hint": "Começa por https://, http:// ou mailto:. No ebook é uma ligação; na impressão as palavras são compostas como texto simples.", "lnk.bad": "Esse endereço não pode ser uma ligação — use um que comece por https://, http:// ou mailto:.", "lnk.cancel": "Cancelar", "lnk.add": "Adicionar ligação",
         "tool.blockquoteTitle": "Citação — destaca este parágrafo como uma citação", "tool.ul": "Lista", "tool.ulTitle": "Lista com marcadores — cada linha vira um item", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada linha vira um passo numerado", "tool.sceneBreakTitle": "Mudança de cena — torna-se um ornamento no livro",
         "tool.emDashTitle": "Travessão", "tool.footnoteTitle": "Nota de rodapé — composta como nota final ligada",
         "tool.insertImageTitle": "Inserir uma imagem da biblioteca de imagens do livro", "tool.autoFormatTitle": "Aperfeiçoa o texto — aspas tipográficas, travessões e reticências",
@@ -5109,6 +5133,7 @@
         "tool.bold": "Vet", "tool.italic": "Cursief", "tool.blockquote": "Blokcitaat", "tool.sceneBreak": "Scènewissel", "tool.emDash": "Gedachtestreepje —",
         "tool.footnote": "Voetnoot", "tool.insertImage": "Afbeelding invoegen", "tool.autoFormat": "Auto-opmaak",
         "tool.boldTitle": "Vet (Ctrl/Cmd+B)", "tool.italicTitle": "Cursief (Ctrl/Cmd+I)",
+        "tool.link": "Link", "tool.linkTitle": "Link — maak van de geselecteerde woorden een web- of winkellink", "lnk.title": "Een link toevoegen", "lnk.text": "Linktekst", "lnk.textPh": "De woorden die lezers zien", "lnk.url": "Webadres", "lnk.urlPh": "https://", "lnk.hint": "Begint met https://, http:// of mailto:. In het e-book is het een link; in druk worden de woorden als gewone tekst gezet.", "lnk.bad": "Dat adres kan geen link zijn — gebruik er een dat begint met https://, http:// of mailto:.", "lnk.cancel": "Annuleren", "lnk.add": "Link toevoegen",
         "tool.blockquoteTitle": "Blokcitaat — zet deze alinea apart als citaat", "tool.ul": "Lijst", "tool.ulTitle": "Opsomming — elke regel wordt een punt", "tool.ol": "Genummerd", "tool.olTitle": "Genummerde lijst — elke regel wordt een genummerde stap", "tool.sceneBreakTitle": "Scènewissel — wordt een ornament in het boek",
         "tool.emDashTitle": "Gedachtestreepje", "tool.footnoteTitle": "Voetnoot — wordt opgemaakt als gekoppelde eindnoot",
         "tool.insertImageTitle": "Voeg een afbeelding uit de beeldbibliotheek van het boek in", "tool.autoFormatTitle": "Poets de tekst op — typografische aanhalingstekens, gedachtestreepjes, beletseltekens",
@@ -5305,6 +5330,7 @@
         "tool.bold": "Pogrubienie", "tool.italic": "Kursywa", "tool.blockquote": "Cytat blokowy", "tool.sceneBreak": "Przerwa sceny", "tool.emDash": "Myślnik —",
         "tool.footnote": "Przypis", "tool.insertImage": "Wstaw obraz", "tool.autoFormat": "Autoformatowanie",
         "tool.boldTitle": "Pogrubienie (Ctrl/Cmd+B)", "tool.italicTitle": "Kursywa (Ctrl/Cmd+I)",
+        "tool.link": "Link", "tool.linkTitle": "Link — zamień zaznaczone słowa w link do strony lub sklepu", "lnk.title": "Dodaj link", "lnk.text": "Tekst linku", "lnk.textPh": "Słowa, które widzi czytelnik", "lnk.url": "Adres internetowy", "lnk.urlPh": "https://", "lnk.hint": "Zaczyna się od https://, http:// lub mailto:. W e-booku to link; w druku słowa są składane jako zwykły tekst.", "lnk.bad": "Ten adres nie może być linkiem — użyj takiego, który zaczyna się od https://, http:// lub mailto:.", "lnk.cancel": "Anuluj", "lnk.add": "Dodaj link",
         "tool.blockquoteTitle": "Cytat blokowy — wydziela ten akapit jako cytat", "tool.ul": "Lista", "tool.ulTitle": "Lista punktowana — każda linia to punkt", "tool.ol": "Numerowana", "tool.olTitle": "Lista numerowana — każda linia to numerowany krok", "tool.sceneBreakTitle": "Przerwa sceny — staje się ornamentem w książce",
         "tool.emDashTitle": "Myślnik", "tool.footnoteTitle": "Przypis — składany jako przypis końcowy z odnośnikiem",
         "tool.insertImageTitle": "Wstaw obraz z biblioteki obrazów książki", "tool.autoFormatTitle": "Wygładza tekst — cudzysłowy typograficzne, myślniki i wielokropki",
@@ -5501,6 +5527,7 @@
         "tool.bold": "Полужирный", "tool.italic": "Курсив", "tool.blockquote": "Цитата", "tool.sceneBreak": "Смена сцены", "tool.emDash": "Тире —",
         "tool.footnote": "Сноска", "tool.insertImage": "Вставить изображение", "tool.autoFormat": "Автоформат",
         "tool.boldTitle": "Полужирный (Ctrl/Cmd+B)", "tool.italicTitle": "Курсив (Ctrl/Cmd+I)",
+        "tool.link": "Ссылка", "tool.linkTitle": "Ссылка — сделать выделенные слова ссылкой на сайт или магазин", "lnk.title": "Добавить ссылку", "lnk.text": "Текст ссылки", "lnk.textPh": "Слова, которые видит читатель", "lnk.url": "Веб-адрес", "lnk.urlPh": "https://", "lnk.hint": "Начинается с https://, http:// или mailto:. В электронной книге это ссылка; в печати слова набираются обычным текстом.", "lnk.bad": "Этот адрес не может быть ссылкой — укажите адрес, начинающийся с https://, http:// или mailto:.", "lnk.cancel": "Отмена", "lnk.add": "Добавить ссылку",
         "tool.blockquoteTitle": "Цитата — выделяет этот абзац как цитату", "tool.ul": "Список", "tool.ulTitle": "Маркированный список — каждая строка становится пунктом", "tool.ol": "Нумерованный", "tool.olTitle": "Нумерованный список — каждая строка становится шагом", "tool.sceneBreakTitle": "Смена сцены — становится орнаментом в книге",
         "tool.emDashTitle": "Тире", "tool.footnoteTitle": "Сноска — набирается как связанная концевая сноска",
         "tool.insertImageTitle": "Вставить изображение из библиотеки изображений книги", "tool.autoFormatTitle": "Причёсывает текст — типографские кавычки, тире и многоточия",
@@ -5697,6 +5724,7 @@
         "tool.bold": "Kalın", "tool.italic": "İtalik", "tool.blockquote": "Alıntı", "tool.sceneBreak": "Sahne arası", "tool.emDash": "Uzun tire —",
         "tool.footnote": "Dipnot", "tool.insertImage": "Resim ekle", "tool.autoFormat": "Otomatik biçim",
         "tool.boldTitle": "Kalın (Ctrl/Cmd+B)", "tool.italicTitle": "İtalik (Ctrl/Cmd+I)",
+        "tool.link": "Bağlantı", "tool.linkTitle": "Bağlantı — seçili sözcükleri bir web ya da mağaza bağlantısı yap", "lnk.title": "Bağlantı ekle", "lnk.text": "Bağlantı metni", "lnk.textPh": "Okurun gördüğü sözcükler", "lnk.url": "Web adresi", "lnk.urlPh": "https://", "lnk.hint": "https://, http:// ya da mailto: ile başlar. E-kitapta bir bağlantıdır; baskıda sözcükler düz metin olarak dizilir.", "lnk.bad": "Bu adres bağlantı olamaz — https://, http:// ya da mailto: ile başlayan bir adres kullanın.", "lnk.cancel": "İptal", "lnk.add": "Bağlantı ekle",
         "tool.blockquoteTitle": "Alıntı — bu paragrafı alıntı olarak ayırır", "tool.ul": "Liste", "tool.ulTitle": "Madde işaretli liste — her satır bir madde olur", "tool.ol": "Numaralı", "tool.olTitle": "Numaralı liste — her satır numaralı bir adım olur", "tool.sceneBreakTitle": "Sahne arası — kitapta bir süse dönüşür",
         "tool.emDashTitle": "Uzun tire", "tool.footnoteTitle": "Dipnot — bağlantılı bir sonnot olarak dizilir",
         "tool.insertImageTitle": "Kitabın resim kitaplığından bir resim ekler", "tool.autoFormatTitle": "Metni parlatır — akıllı tırnaklar, uzun tireler, üç noktalar",
@@ -5893,6 +5921,7 @@
         "tool.bold": "عريض", "tool.italic": "مائل", "tool.blockquote": "اقتباس", "tool.sceneBreak": "فاصل مشهد", "tool.emDash": "شرطة طويلة —",
         "tool.footnote": "حاشية", "tool.insertImage": "إدراج صورة", "tool.autoFormat": "تنسيق تلقائي",
         "tool.boldTitle": "عريض (Ctrl/Cmd+B)", "tool.italicTitle": "مائل (Ctrl/Cmd+I)",
+        "tool.link": "رابط", "tool.linkTitle": "رابط — اجعل الكلمات المحددة رابطًا إلى موقع أو متجر", "lnk.title": "إضافة رابط", "lnk.text": "نص الرابط", "lnk.textPh": "الكلمات التي يراها القارئ", "lnk.url": "عنوان الويب", "lnk.urlPh": "https://", "lnk.hint": "يبدأ بـ https:// أو http:// أو mailto:. في الكتاب الإلكتروني يكون رابطًا؛ وفي الطباعة تُصفّ الكلمات نصًا عاديًا.", "lnk.bad": "لا يمكن أن يكون هذا العنوان رابطًا — استخدم عنوانًا يبدأ بـ https:// أو http:// أو mailto:.", "lnk.cancel": "إلغاء", "lnk.add": "إضافة الرابط",
         "tool.blockquoteTitle": "اقتباس — يفصل هذه الفقرة كاقتباس", "tool.ul": "قائمة", "tool.ulTitle": "قائمة نقطية — يصبح كل سطر بندًا", "tool.ol": "مرقّمة", "tool.olTitle": "قائمة مرقّمة — يصبح كل سطر خطوة مرقّمة", "tool.sceneBreakTitle": "فاصل مشهد — يصبح زخرفة في الكتاب",
         "tool.emDashTitle": "شرطة طويلة", "tool.footnoteTitle": "حاشية — تُنضَّد كحاشية ختامية مرتبطة",
         "tool.insertImageTitle": "إدراج صورة من مكتبة صور الكتاب", "tool.autoFormatTitle": "يصقل النص — علامات اقتباس ذكية وشرطات طويلة ونقاط حذف",
@@ -6089,6 +6118,7 @@
         "tool.bold": "太字", "tool.italic": "斜体", "tool.blockquote": "引用", "tool.sceneBreak": "場面転換", "tool.emDash": "ダッシュ —",
         "tool.footnote": "脚注", "tool.insertImage": "画像を挿入", "tool.autoFormat": "自動整形",
         "tool.boldTitle": "太字（Ctrl/Cmd+B）", "tool.italicTitle": "斜体（Ctrl/Cmd+I）",
+        "tool.link": "リンク", "tool.linkTitle": "リンク — 選択した語をウェブやストアへのリンクにする", "lnk.title": "リンクを追加", "lnk.text": "リンクの文字", "lnk.textPh": "読者に見える文字", "lnk.url": "ウェブアドレス", "lnk.urlPh": "https://", "lnk.hint": "https://、http://、mailto: のいずれかで始まります。電子書籍ではリンクになり、印刷では文字だけが通常の本文として組まれます。", "lnk.bad": "そのアドレスはリンクにできません。https://、http://、mailto: で始まるアドレスを使ってください。", "lnk.cancel": "キャンセル", "lnk.add": "リンクを追加",
         "tool.blockquoteTitle": "引用 — この段落を引用として分けます", "tool.ul": "箇条書き", "tool.ulTitle": "箇条書き — 各行が項目になります", "tool.ol": "番号付き", "tool.olTitle": "番号付きリスト — 各行が番号付きの手順になります", "tool.sceneBreakTitle": "場面転換 — 本の中では装飾になります",
         "tool.emDashTitle": "ダッシュ", "tool.footnoteTitle": "脚注 — リンク付きの巻末注として組まれます",
         "tool.insertImageTitle": "本の画像ライブラリから画像を挿入", "tool.autoFormatTitle": "テキストを整えます — スマートクォート、ダッシュ、省略符号",
@@ -6285,6 +6315,7 @@
         "tool.bold": "粗体", "tool.italic": "斜体", "tool.blockquote": "引用块", "tool.sceneBreak": "场景分隔", "tool.emDash": "破折号 —",
         "tool.footnote": "脚注", "tool.insertImage": "插入图片", "tool.autoFormat": "自动排版",
         "tool.boldTitle": "粗体 (Ctrl/Cmd+B)", "tool.italicTitle": "斜体 (Ctrl/Cmd+I)",
+        "tool.link": "链接", "tool.linkTitle": "链接——把选中的文字设为网站或书店链接", "lnk.title": "添加链接", "lnk.text": "链接文字", "lnk.textPh": "读者看到的文字", "lnk.url": "网址", "lnk.urlPh": "https://", "lnk.hint": "以 https://、http:// 或 mailto: 开头。在电子书中是链接；在印刷版中文字按普通正文排版。", "lnk.bad": "这个地址不能作为链接——请使用以 https://、http:// 或 mailto: 开头的地址。", "lnk.cancel": "取消", "lnk.add": "添加链接",
         "tool.blockquoteTitle": "引用块 — 将此段落作为引文单独排版", "tool.ul": "列表", "tool.ulTitle": "项目符号列表 — 每行成为一项", "tool.ol": "编号", "tool.olTitle": "编号列表 — 每行成为一个编号步骤", "tool.sceneBreakTitle": "场景分隔 — 在书中成为装饰纹样",
         "tool.emDashTitle": "破折号", "tool.footnoteTitle": "脚注 — 排版为带链接的尾注",
         "tool.insertImageTitle": "从本书的图片库插入图片", "tool.autoFormatTitle": "润色文本 — 智能引号、破折号与省略号",
@@ -17280,7 +17311,9 @@
 
       /* ================= Text utilities ================= */
       function countWords(text, langCode) {
-        const clean = String(text || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[\^?\d{1,3}\]:?/g, " ")
+        const clean = String(text || "").replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+          .replace(mdLinkRe(), " $1 ") /* a link counts its words, never its address */
+          .replace(/\[\^?\d{1,3}\]:?/g, " ")
           .replace(/^[ \t]*(?:[-•]|\d{1,3}[.)])[ \t]+/gm, " ") /* a list's markers are not words */
           .replace(/[#>*_[\]^]/g, " ").trim();
         if (!clean) return 0;
@@ -19283,6 +19316,11 @@
       }
       function beautifyText(text) {
         let s = String(text == null ? "" : text);
+        /* A link's address is not prose: it is set aside before the
+           typographic pass (which would turn "978-1-23" into en
+           dashes and "--" into an em dash) and put back untouched. */
+        const linkUrls = [];
+        s = s.replace(mdLinkRe(), (m, label, url) => { linkUrls.push(url); return "[" + label + "](" + (linkUrls.length - 1) + ")"; });
         s = s.replace(/\r\n?/g, "\n");
         s = s.replace(/[ \t]+/g, " ");
         s = s.replace(/^[ \t]*([*#]{3,}|-{3,}|_{3,})[ \t]*$/gm, "***");
@@ -19293,7 +19331,27 @@
         s = curlify(s);
         s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
         s = s.replace(/\n{3,}/g, "\n\n");
+        if (linkUrls.length) s = s.replace(/(\d+)/g, (m, i) => linkUrls[+i]);
         return s.trim();
+      }
+      /* ---- Links ----
+         [words](https://…), [words](http://…) and [words](mailto:…)
+         are links: the store page an "Also by" title points at, the
+         sign-up page of a call to action. No other scheme is a link —
+         javascript:, data:, file: and the rest stay plain text, so no
+         script can ever ride in on one. The address runs to the first
+         space or unbalanced ")", one level of balanced parentheses
+         allowed (Wikipedia-style addresses). Every surface reads the
+         one pattern: the EPUB and preview carry a real <a href>, print
+         sets the words alone, Word gets a real hyperlink, and the word
+         count counts the words, never the address. */
+      function mdLinkRe() {
+        return /(?<!!)\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s()<>]+(?:\([^\s()<>]*\)[^\s()<>]*)*)\)/gi;
+      }
+      /* Print sets a link's words as text: no colour, no underline, no
+         clickable box in the PDF — a printed page cannot be tapped. */
+      function printUnlink(html) {
+        return String(html).replace(/<a class="ext-link"[^>]*>([\s\S]*?)<\/a>/g, '<span class="ext-link">$1</span>');
       }
       /* Footnote refs: [^n] and [n] both count. When the section defines
          note n, the ref becomes a real EPUB noteref link (epub:type=
@@ -19303,8 +19361,17 @@
          dead link. */
       function inlineMd(text, noteCtx) {
         let s = esc(text);
-        s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+        /* Links first, each set aside whole: its words take their own
+           bold / italic, and its address can never be read as emphasis
+           or a note ref. The text is escaped already, so the address
+           lands in the href attribute-safe. */
+        const links = [];
+        const emph = (h) => h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+        s = s.replace(mdLinkRe(), (m, label, url) => {
+          links.push('<a class="ext-link" href="' + url + '">' + emph(label) + "</a>");
+          return "" + (links.length - 1) + "";
+        });
+        s = emph(s);
         s = s.replace(/\[\^(\d{1,3})\]|\[(\d{1,3})\]/g, (m, a, b) => {
           const n = a || b;
           if (noteCtx && noteCtx.defined.has(n)) {
@@ -19320,6 +19387,7 @@
            a sibling book on the shelf, so this is deliberately NOT an
            anchor: no dead link can ever reach a reader or a validator. */
         s = s.replace(/\[([^\]]+)\]\(note:([a-z0-9-]+)\)/g, '<span class="note-link" data-note="$2">$1</span>');
+        if (links.length) s = s.replace(/(\d+)/g, (m, i) => links[+i]);
         return s;
       }
 
@@ -19575,7 +19643,9 @@
             firstParaDone = true;
             if (section.dropCap) {
               const plain = chunk.replace(/\n/g, " ");
-              const m = plain.match(/^([“"'‘(\[]?)([A-Za-zÀ-ÖØ-öø-ÿ])/);
+              /* A paragraph that opens on a link keeps the link whole:
+                 the drop cap would split its "[" from its words. */
+              const m = /^\[[^\]\n]+\]\((?:https?:|mailto:)/i.test(plain) ? null : plain.match(/^([“"'‘(\[]?)([A-Za-zÀ-ÖØ-öø-ÿ])/);
               if (m) {
                 const lead = m[1] || "";
                 const letter = m[2];
@@ -19653,6 +19723,10 @@
           out.push('<div class="endnotes" epub:type="endnotes"><p class="endnotes-h">Notes</p>' +
             notes.map((nt) => '<p class="endnote" id="' + prefix + "fn" + nt.n + '" epub:type="endnote"><a class="note-back" href="#' + prefix + "fnref" + nt.n + '" title="Back to the reference"><sup>[' + nt.n + "]</sup></a> " + inlineMd(nt.text, noteCtx) + "</p>").join("") + "</div>");
         }
+        /* In the studio's preview a link opens in a new tab, cut off
+           from the studio (noopener noreferrer); exported files carry
+           the bare link and the reader app decides. */
+        if (!forExport) return out.join("\n").replace(/<a class="ext-link" href=/g, '<a class="ext-link" target="_blank" rel="noopener noreferrer" href=');
         return out.join("\n");
       }
       function applyLeadIn(html, wordCount) {
@@ -19672,6 +19746,13 @@
         }
         if (words === 0) return html;
         if (closeAt === -1) closeAt = html.length;
+        /* Never close the lead-in inside a link: run on to its </a>,
+           so the markup stays nested (well-formed XHTML). */
+        const head = html.slice(0, closeAt);
+        if ((head.match(/<a\s/g) || []).length > (head.match(/<\/a>/g) || []).length) {
+          const endA = html.indexOf("</a>", closeAt);
+          if (endA !== -1) closeAt = endA + 4;
+        }
         return '<span class="leadin">' + html.slice(0, closeAt) + "</span>" + html.slice(closeAt);
       }
       function chapterOpeningHtml(section, bdLayer, forExport, dataMedia) {
@@ -19874,6 +19955,10 @@
           S + ".dropcap { float: left; font-family: " + headFf + "; font-weight: 600; font-size: " + (t.dropDepth * 0.92) + "em; line-height: 0.82; padding: 0.06em 0.14em 0 0; }",
           "@supports (initial-letter: " + t.dropDepth + ") { " + S + ".dropcap { float: none; padding: 0; initial-letter: " + t.dropDepth + "; -webkit-initial-letter: " + t.dropDepth + "; } }",
           S + ".leadin { font-variant: small-caps; -webkit-font-variant: small-caps; letter-spacing: 0.045em; font-weight: 600; }",
+          /* A link wears the text's own ink, underlined; in print it is
+             a plain span (printUnlink) and reads as the words alone. */
+          S + "a.ext-link { color: inherit; text-decoration: underline; text-underline-offset: 0.15em; }",
+          S + "span.ext-link { color: inherit; text-decoration: none; }",
           S + ".endnote-ref { font-size: 0.72em; line-height: 0; }",
           S + ".endnotes { margin-top: 2em; border-top: 1px solid currentColor; padding-top: 0.8em; font-size: 0.85em; }",
           S + ".endnotes-h { text-indent: 0; font-family: " + headFf + "; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.8em; }",
@@ -22563,6 +22648,72 @@
           else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); confirmFootnote(); }
         });
       }
+      /* ---- Link dialog: the words (the selection, when there is one)
+         and the address; confirming places [words](address) over the
+         selection. Only https / http / mailto addresses are links — a
+         bare "www.…" is taken as https, a bare e-mail address as
+         mailto, and anything else (javascript:, data:, …) is refused
+         in the dialog, never written into the text. ---- */
+      let lnkPending = null;
+      function normalizeLinkUrl(raw) {
+        let u = String(raw || "").trim();
+        if (!u) return null;
+        if (/^[^\s@:/]+@[^\s@:/]+\.[^\s@:/]+$/.test(u)) u = "mailto:" + u;
+        else if (/^www\.[^\s]+$/i.test(u) || (!/^[a-z][a-z0-9+.-]*:/i.test(u) && /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(u))) u = "https://" + u;
+        if (!/^(?:https?:\/\/[^\s/]|mailto:\S)/i.test(u) || /\s/.test(u) || /[<>"]/.test(u)) return null;
+        /* Parentheses would end the marker early: percent-encode them. */
+        return u.replace(/\(/g, "%28").replace(/\)/g, "%29");
+      }
+      function openLinkDialog() {
+        const area = $("editorArea");
+        const s = activeSection();
+        if (!s || AUTO_TYPES.includes(s.type)) return;
+        const start = area.selectionStart || 0, end = area.selectionEnd || 0;
+        lnkPending = { start: start, end: end, view: editorViewSnapshot() };
+        $("lnkText").value = area.value.slice(start, end).replace(/\s*\n\s*/g, " ").trim();
+        $("lnkUrl").value = "";
+        $("lnkHint").textContent = t("lnk.hint");
+        $("lnkHint").classList.remove("is-bad");
+        $("modalLink").classList.add("open");
+        icons();
+        setTimeout(() => { if ($("modalLink").classList.contains("open")) ($("lnkText").value ? $("lnkUrl") : $("lnkText")).focus(); }, 40);
+      }
+      function closeLinkDialog() {
+        $("modalLink").classList.remove("open");
+        const view = lnkPending ? lnkPending.view : null;
+        lnkPending = null;
+        $("editorArea").focus();
+        if (view) editorViewRestore(view, true);
+      }
+      function confirmLink() {
+        if (!lnkPending) return;
+        const url = normalizeLinkUrl($("lnkUrl").value);
+        if (!url) {
+          $("lnkHint").textContent = t("lnk.bad");
+          $("lnkHint").classList.add("is-bad");
+          $("lnkUrl").focus();
+          return;
+        }
+        let words = $("lnkText").value.replace(/[\[\]]/g, "").replace(/\s+/g, " ").trim();
+        if (!words) words = url.replace(/^mailto:/i, "").replace(/^https?:\/\//i, "").replace(/\/$/, "");
+        const area = $("editorArea");
+        const view = lnkPending.view || editorViewSnapshot();
+        $("modalLink").classList.remove("open");
+        area.focus();
+        area.setSelectionRange(lnkPending.start, lnkPending.end);
+        insertAtCursor(area, "[" + words + "](" + url + ")");
+        if (view) editorViewRestore(view, false);
+        lnkPending = null;
+      }
+      function initLink() {
+        $("btnCancelLink").addEventListener("click", closeLinkDialog);
+        $("btnDoLink").addEventListener("click", confirmLink);
+        $("modalLink").addEventListener("click", (e) => { if (e.target === $("modalLink")) closeLinkDialog(); });
+        ["lnkText", "lnkUrl"].forEach((id) => $(id).addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.preventDefault(); closeLinkDialog(); }
+          else if (e.key === "Enter") { e.preventDefault(); confirmLink(); }
+        }));
+      }
       function initEditor() {
         const area = $("editorArea");
         let debounce = null;
@@ -22695,6 +22846,7 @@
           }
           else if (kind === "emdash") insertAtCursor(area, "—");
           else if (kind === "endnote") openFootnoteDialog();
+          else if (kind === "link") openLinkDialog();
           else if (kind === "blockquote") applyBlockquote(area);
           else if (kind === "ul" || kind === "ol") applyList(area, kind === "ol");
         });
@@ -26260,6 +26412,18 @@
           host.replaceWith(doc.createTextNode("[^" + m[1] + "]"));
         });
         ir.docNotes = Object.keys(notesById).map((k) => notesById[k]);
+        /* Web and store links come in as Beuk links, [words](address):
+           only https / http / mailto (anything else — an internal
+           bookmark, a file: path — stays counted as a dropped link).
+           The words lose any "[ ]" that would end the label early; the
+           address's spaces and parentheses are percent-encoded. */
+        doc.body.querySelectorAll("a[href]").forEach((a) => {
+          const href = String(a.getAttribute("href") || "").trim();
+          const words = a.textContent.replace(/[\[\]]/g, "").replace(/\s+/g, " ").trim();
+          if (!/^(?:https?:\/\/|mailto:)\S/i.test(href) || !words) return;
+          const url = href.replace(/\s/g, "%20").replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/</g, "%3C").replace(/>/g, "%3E");
+          a.replaceWith(doc.createTextNode("[" + words + "](" + url + ")"));
+        });
         /* Formatting the plain-text walk cannot carry. */
         ir.drops.em = doc.body.querySelectorAll("em, i").length;
         ir.drops.strong = doc.body.querySelectorAll("strong, b").length;
@@ -29599,7 +29763,7 @@
           "body { font-size: " + printBaseFontPt() + "pt; }\n" +
           printPressCss();
         const pairs = state.sections.filter((s) => s.included && s.type !== "cover")
-          .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, sectionHtml(s, true, true))) + "\n</section>" }));
+          .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
            edition line — or the copyright page when the book has no
@@ -30051,7 +30215,7 @@
            columns out leftward (pivPageEl turns them the other way) */
         flow.setAttribute("lang", state.meta.language || "en");
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
-        flow.innerHTML = sectionHtml(s, true, true);
+        flow.innerHTML = printUnlink(sectionHtml(s, true, true)); /* print sets a link's words only */
         return flow;
       }
       function buildPrintViewModel() {
@@ -30634,21 +30798,48 @@
          Housekeeping checks assert on exactly what downloads. */
       function docxRun(text, opts) {
         opts = opts || {};
-        const rPr = (opts.b || opts.i || opts.sup) ? "<w:rPr>" + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
+        const rPr = (opts.b || opts.i || opts.sup || opts.link) ? "<w:rPr>" + (opts.link ? '<w:rStyle w:val="Hyperlink"/>' : "") + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
         return "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(text) + "</w:t></w:r>";
       }
+      /* The hyperlinks of the document being built (buildDocxFiles
+         resets it to []): each becomes an external relationship in
+         word/_rels/document.xml.rels. Null outside a Word export that
+         writes those relationships (the ACX script), where a link
+         is set as its words alone. */
+      let docxLinks = null;
       function docxInlineRuns(text) {
-        const re = /(\*\*[^*]+\*\*)|(\*[^*\n]+\*)|(\[\^\d{1,3}\]|\[\d{1,3}\])/g;
+        const re = new RegExp("(\\*\\*[^*]+\\*\\*)|(\\*[^*\\n]+\\*)|(\\[\\^\\d{1,3}\\]|\\[\\d{1,3}\\])|" + mdLinkRe().source, "gi");
         let out = "", last = 0, mm;
         while ((mm = re.exec(text)) !== null) {
           if (mm.index > last) out += docxRun(text.slice(last, mm.index), {});
-          if (mm[1]) out += docxRun(mm[1].slice(2, -2), { b: true });
+          if (mm[4]) {
+            /* A link: its words (bold / italic kept) inside a real
+               w:hyperlink, its address an External relationship. */
+            const words = docxLinkWordRuns(mm[4]);
+            if (docxLinks) {
+              docxLinks.push(mm[5]);
+              out += '<w:hyperlink r:id="rIdLink' + docxLinks.length + '" w:history="1">' + words + "</w:hyperlink>";
+            } else out += docxLinkWordRuns(mm[4], true);
+          }
+          else if (mm[1]) out += docxRun(mm[1].slice(2, -2), { b: true });
           else if (mm[2]) out += docxRun(mm[2].slice(1, -1), { i: true });
           else out += docxRun("[" + mm[3].replace(/[^0-9]/g, "") + "]", { sup: true });
           last = mm.index + mm[0].length;
         }
         if (last < text.length) out += docxRun(text.slice(last), {});
         return out || docxRun("", {});
+      }
+      function docxLinkWordRuns(label, plain) {
+        const re = /(\*\*[^*]+\*\*)|(\*[^*\n]+\*)/g;
+        let out = "", last = 0, mm;
+        const run = (t, o) => docxRun(t, Object.assign({ link: !plain }, o));
+        while ((mm = re.exec(label)) !== null) {
+          if (mm.index > last) out += run(label.slice(last, mm.index), {});
+          out += mm[1] ? run(mm[1].slice(2, -2), { b: true }) : run(mm[2].slice(1, -1), { i: true });
+          last = mm.index + mm[0].length;
+        }
+        if (last < label.length) out += run(label.slice(last), {});
+        return out;
       }
       function docxPara(text, style, opts) {
         opts = opts || {};
@@ -30746,7 +30937,7 @@
           notes.forEach((nt) => parts.push(docxPara("", "Normal", { rawRuns: docxRun("[" + nt.n + "] ", { b: true }) + docxRun("(" + nt.label + ") ", { i: true }) + docxInlineRuns(nt.text) })));
         }
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
-          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>\n' +
+          '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>\n' +
           parts.join("\n") +
           '\n<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:bottom="1440" w:left="1440" w:right="1440" w:header="720" w:footer="720"/></w:sectPr></w:body></w:document>';
       }
@@ -30766,17 +30957,29 @@
           style("Quote", "Quote", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="24"/>', '<w:pPr><w:ind w:left="720" w:right="720"/><w:spacing w:after="160"/></w:pPr>') +
           style("Caption", "Caption", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="20"/>', '<w:pPr><w:spacing w:after="160"/></w:pPr>') +
           style("ListParagraph", "List Paragraph", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:spacing w:after="80"/><w:ind w:left="720"/></w:pPr>') +
+          /* Word's own character style for a link: blue, underlined. */
+          '<w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:uiPriority w:val="99"/><w:unhideWhenUsed/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>' +
           "</w:styles>";
+      }
+      /* The document's relationships: styles, numbering, and one
+         External hyperlink relationship per link the text carried
+         (read once document.xml is built, then the collector closes). */
+      function docxDocumentRelsXml() {
+        const links = docxLinks || [];
+        docxLinks = null;
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>' +
+          links.map((u, i) => '<Relationship Id="rIdLink' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="' + esc(u) + '" TargetMode="External"/>').join("") +
+          "</Relationships>";
       }
       function buildDocxFiles() {
         const m = state.meta;
         return [
           { path: "[Content_Types].xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>' },
           { path: "_rels/.rels", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>' },
-          { path: "word/document.xml", content: (docxNums = [], buildDocxDocumentXml()) },
+          { path: "word/document.xml", content: (docxNums = [], docxLinks = [], buildDocxDocumentXml()) },
           { path: "word/numbering.xml", content: buildDocxNumberingXml() },
           { path: "word/styles.xml", content: buildDocxStylesXml() },
-          { path: "word/_rels/document.xml.rels", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/></Relationships>' },
+          { path: "word/_rels/document.xml.rels", content: docxDocumentRelsXml() },
           { path: "docProps/core.xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + esc(m.title || "") + "</dc:title>" + (m.author ? "<dc:creator>" + esc(m.author) + "</dc:creator>" : "") + "<cp:lastModifiedBy>Beuk</cp:lastModifiedBy></cp:coreProperties>" },
           { path: "docProps/app.xml", content: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>Beuk</Application></Properties>' }
         ];
@@ -30899,7 +31102,7 @@
       const acxRound = (n, d) => { const f = Math.pow(10, d); return Math.round(n * f) / f; };
       /* The spoken words of a line: markup and bracketed narrator notes out. */
       const acxSpoken = (text) => String(text || "").replace(ACX_NOTE_MARK, " ").replace(/\[(NOTE|IMAGE|PAUSE|PRONUNCIATION|NARRATOR)[^\]]*\]/g, " ").replace(/\*\*|\*/g, "");
-      const acxPlainInline = (text) => String(text || "").replace(ACX_NOTE_MARK, (m, n) => " [NOTE " + n + "]").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
+      const acxPlainInline = (text) => String(text || "").replace(mdLinkRe(), "$1").replace(ACX_NOTE_MARK, (m, n) => " [NOTE " + n + "]").replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*\n]+)\*/g, "$1").replace(/ {2,}/g, " ").trim();
       function acxSectionSkipReason(s) {
         const own = state.audio.include[s.id];
         if (own === false) return "user";
@@ -36943,6 +37146,114 @@
             }
           } },
         /* ==== /BEUK:pagecount ==== */
+        { id: "chapter.links", feature: "chapter", name: "Links: [words](https://…) / (http://…) / (mailto:…) set as real links in the preview (new tab, noopener) and the book HTML, the address escaped and untouched by the typographic pass; javascript: and data: stay plain text; a drop cap or small-caps lead-in keeps a link whole; the word count counts only the words; an \"Also by\" title and a call to action link to their store pages, and print sets their words as plain text; the toolbar Link button places a link over the selection and refuses an unsafe address",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const txt = "Buy [*The Winter Soundings*](https://books.example.com/isbn/978-1-23?a=1&b=2--x) now -- or write to [the author](mailto:april@example.com). " +
+                "Not links: [x](javascript:alert(1)) and [y](data:text/html,hi). Odd: [q](https://e.example.com/a\"onmouseover=\"x) and [wiki](https://en.example.org/wiki/Tide_(sea)).";
+              const s = mkSection("body", "chapter", "Links", { number: "1", content: txt });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              if (!html.includes('<a class="ext-link" href="https://books.example.com/isbn/978-1-23?a=1&amp;b=2--x"><em>The Winter Soundings</em></a>')) bad.push("the store link did not set whole (address escaped, untouched by the dashes pass, its words in italic)");
+              if (!html.includes('<a class="ext-link" href="mailto:april@example.com">the author</a>')) bad.push("the mailto link did not set");
+              if (/href="(?:javascript|data):/i.test(html) || !html.includes("[x](javascript:alert(1))")) bad.push("a javascript: or data: address became a link");
+              if (/"onmouseover/.test(html) || !html.includes("a&quot;onmouseover=&quot;x")) bad.push("a quote in an address broke out of the href");
+              if (!html.includes('href="https://en.example.org/wiki/Tide_(sea)">wiki</a>')) bad.push("an address with balanced parentheses was cut short");
+              const prev = contentBlocksToHtml(s.content, s, false, false, true);
+              if (!prev.includes('<a class="ext-link" target="_blank" rel="noopener noreferrer" href="https://books.example.com/')) bad.push("the preview link does not open in a new tab with noopener");
+              if (html.includes("target=")) bad.push("the export link carries a target");
+              const wc = countWords("Buy [The Winter Soundings](https://books.example.com/x-y) now");
+              if (wc !== 5) bad.push("the word count counts the address (" + wc + ", expected 5)");
+              /* A paragraph opening on a link, with a drop cap and a small-caps lead-in. */
+              const dc = mkSection("body", "chapter", "Open", { number: "2", content: "[Read the first chapter](https://e.example.com/read) of the sequel here, today." });
+              dc.dropCap = true; dc.smallCaps = true;
+              const dch = contentBlocksToHtml(dc.content, dc, true, true, true);
+              if (!dch.includes('<a class="ext-link" href="https://e.example.com/read">Read the first chapter</a>')) bad.push("the drop cap split the link: " + dch.slice(0, 160));
+              if (!parseXmlDoc('<div xmlns="http://www.w3.org/1999/xhtml">' + dch + "</div>")) bad.push("the lead-in left the link markup misnested");
+              const lead = applyLeadIn('<a class="ext-link" href="https://e.example.com/">one two three four</a> five', 2);
+              if (lead !== '<span class="leadin"><a class="ext-link" href="https://e.example.com/">one two three four</a></span> five') bad.push("applyLeadIn closed inside a link: " + lead);
+              /* "Also by" and a call to action, through the real book: preview and print. */
+              const also = mkSection("back", "alsoby", "Also by the Author", { content: "[The Winter Soundings](https://books.example.com/winter-soundings)\nA Field Guide to Vanishing Channels" });
+              const cta = mkSection("back", "cta", "Stay in Touch", { content: "Join the newsletter at [april-carooke.example.com](https://april-carooke.example.com/news) for the next book." });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s, also, cta], images: [], printTrim: "6x9" });
+              const alsoNow = state.sections.find((x) => x.type === "alsoby"), ctaNow = state.sections.find((x) => x.type === "cta");
+              const alsoPrev = sectionHtml(alsoNow), ctaPrev = sectionHtml(ctaNow);
+              if (!alsoPrev.includes('href="https://books.example.com/winter-soundings">The Winter Soundings</a>')) bad.push("the Also by title is not a link in the preview");
+              if (!ctaPrev.includes('href="https://april-carooke.example.com/news">april-carooke.example.com</a>')) bad.push("the call to action is not a link in the preview");
+              const print = buildPrintHtml();
+              if (/class="ext-link" (?:target="[^"]*" rel="[^"]*" )?href=/.test(print) || print.includes('href="https://books.example.com')) bad.push("print still carries a link");
+              if (!print.includes('<span class="ext-link">The Winter Soundings</span>') || !print.includes('<span class="ext-link">april-carooke.example.com</span>')) bad.push("print lost the link words");
+              if (!buildBookCss("").includes("span.ext-link { color: inherit; text-decoration: none; }")) bad.push("the book stylesheet does not set a printed link as text");
+              /* The toolbar: a link over the selection; an unsafe address refused. */
+              const tool = withEditorFixture((area, sec) => {
+                area.value = "Find The Winter Soundings in any shop."; area.dispatchEvent(new Event("input"));
+                area.focus(); area.setSelectionRange(5, 25);
+                document.querySelector('[data-insert="link"]').click();
+                if (!$("modalLink").classList.contains("open") || $("lnkText").value !== "The Winter Soundings") return "the Link button did not open the dialog with the selection";
+                $("lnkUrl").value = "javascript:alert(1)"; $("btnDoLink").click();
+                if (!$("modalLink").classList.contains("open") || !$("lnkHint").classList.contains("is-bad") || area.value.includes("javascript")) return "an unsafe address was not refused";
+                $("lnkUrl").value = "www.example.com/winter (2nd ed)"; $("btnDoLink").click();
+                if (!$("modalLink").classList.contains("open")) return "an address with a space was accepted";
+                $("lnkUrl").value = "books.example.com/winter_(2nd)"; $("btnDoLink").click();
+                const want = "Find [The Winter Soundings](https://books.example.com/winter_%282nd%29) in any shop.";
+                if (area.value !== want || sec.content !== want || $("modalLink").classList.contains("open")) return "the link was not placed: " + JSON.stringify(area.value);
+                return "";
+              });
+              if (tool) bad.push(tool);
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "https / mailto links set (address escaped and untouched, italic words inside); javascript: / data: stay text; a quote cannot leave the href; balanced parentheses kept; the preview opens a new tab with noopener; drop cap and lead-in keep the link whole; the count is 5 words; Also by and a call to action link in the preview, and print sets their words as plain text; the toolbar places [words](https://…) over the selection and refuses an unsafe address");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "export.links", feature: "chapter", name: "Links in the exports: the EPUB carries real <a href> links that validate (validator 0 errors, no remote-resources flag for a link out); the Word export makes a real w:hyperlink on an External relationship; Markdown keeps [words](address) verbatim; the standalone HTML links; the ACX script reads the words; and a Word file's web links come in as Beuk links",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const url = "https://books.example.com/isbn/978-1-23?a=1&b=2";
+              const ch = mkSection("body", "chapter", "Links", { number: "1", content: "Buy [**The Winter Soundings**](" + url + ") now.\n\n- a list with [a link](https://e.example.com/l)\n- and a second item\n\n> A quote with [mail](mailto:april@example.com)" });
+              const also = mkSection("back", "alsoby", "Also by the Author", { content: "[The Winter Soundings](https://books.example.com/winter-soundings)\nA Field Guide to Vanishing Channels" });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), ch, also], images: [], printTrim: "6x9" });
+              const files = epubFiles("generic");
+              const xh = files.filter((f) => /\.xhtml$/.test(f.path)).map((f) => String(f.content)).join("\n");
+              if (!xh.includes('<a class="ext-link" href="https://books.example.com/isbn/978-1-23?a=1&amp;b=2"><strong>The Winter Soundings</strong></a>')) bad.push("the EPUB chapter lacks the store link");
+              if (!xh.includes('<li>a list with <a class="ext-link" href="https://e.example.com/l">a link</a></li>') || !xh.includes('href="mailto:april@example.com"')) bad.push("a link in a list or quote did not carry into the EPUB");
+              if (!xh.includes('href="https://books.example.com/winter-soundings">The Winter Soundings</a>')) bad.push("the EPUB Also by page lacks its link");
+              if (/target=|rel="noopener/.test(xh)) bad.push("the EPUB carries preview-only attributes");
+              const val = validateEpubPackage(files);
+              if (!val || val.errors) bad.push("EPUB validator errors: " + (val ? val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | ") : "none run"));
+              const opf = String((files.find((f) => /\.opf$/.test(f.path)) || {}).content || "");
+              if (/remote-resources/.test(opf)) bad.push("a link out was flagged as a remote resource");
+              const docx = buildDocxFiles();
+              const doc = String((docx.find((f) => f.path === "word/document.xml") || {}).content || "");
+              const rels = String((docx.find((f) => f.path === "word/_rels/document.xml.rels") || {}).content || "");
+              const sty = String((docx.find((f) => f.path === "word/styles.xml") || {}).content || "");
+              const hl = (doc.match(/<w:hyperlink r:id="rIdLink\d+" w:history="1">/g) || []).length;
+              if (hl !== 4) bad.push("the Word export has " + hl + " hyperlinks, expected 4");
+              if (!/<w:hyperlink r:id="rIdLink1" w:history="1"><w:r><w:rPr><w:rStyle w:val="Hyperlink"\/><w:b\/><\/w:rPr><w:t xml:space="preserve">The Winter Soundings<\/w:t><\/w:r><\/w:hyperlink>/.test(doc)) bad.push("the first Word hyperlink is not the bold store title");
+              if (!rels.includes('<Relationship Id="rIdLink1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://books.example.com/isbn/978-1-23?a=1&amp;b=2" TargetMode="External"/>')) bad.push("the Word relationship is missing or unescaped");
+              if (!sty.includes('w:styleId="Hyperlink"')) bad.push("the Word styles lack Hyperlink");
+              if (!parseXmlDoc(doc) || !parseXmlDoc(rels) || !parseXmlDoc(sty)) bad.push("a Word part is not well-formed");
+              if (docxLinks !== null) bad.push("the hyperlink collector stayed open after the export");
+              const md = buildMarkdown();
+              if (!md.includes("Buy [**The Winter Soundings**](" + url + ") now.")) bad.push("Markdown did not keep the link verbatim");
+              const sa = buildStandaloneHtml();
+              if (!sa.includes('href="https://books.example.com/isbn/978-1-23?a=1&amp;b=2"')) bad.push("the standalone HTML lacks the link");
+              if (acxPlainInline("Buy [the book](https://e.example.com/b) now") !== "Buy the book now") bad.push("the ACX script reads the address");
+              /* Word import: an external link comes in as a Beuk link; a bookmark or unsafe scheme stays text and is counted. */
+              const ir = irBegin("links.docx", "docx");
+              let imported = "";
+              try {
+                imported = irDocxHtmlToText('<p>Buy <a href="https://books.example.com/a b(1)">The [Winter] Book</a>, see <a href="#_Toc1">chapter two</a>, or <a href="javascript:alert(1)">this</a>.</p>', ir);
+              } finally { irAbort(); }
+              if (!imported.includes("[The Winter Book](https://books.example.com/a%20b%281%29)")) bad.push("a Word web link did not come in as a Beuk link: " + JSON.stringify(imported));
+              if (/\]\((?:#|javascript)/.test(imported) || !imported.includes("chapter two") || ir.drops.links !== 2) bad.push("a bookmark / unsafe Word link was not left as counted text (" + ir.drops.links + ")");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "EPUB: links in prose, list, quote and Also by, validator 0 errors, no remote-resources; Word: 4 w:hyperlink runs on External relationships (address escaped), Hyperlink style, parts well-formed; Markdown verbatim; standalone HTML links; ACX reads the words; Word import brings a web link in as [words](address) and leaves a bookmark and a javascript: link as counted text");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
         { id: "export.preset.googleplay", feature: "presets", name: "Google Play preset: the eleventh platform preset — the standard validated package with no store-specific files, its own -google-play filename and checklist line; the other ten presets are untouched",
           run() {
             const p = PLATFORM_PRESETS.find((x) => x.id === "googleplay");
@@ -46691,6 +47002,7 @@
         syncEditor();
         initEditor();
         initFootnote();
+        initLink();
         initImages();
         initSceneImages();
         initStudio();

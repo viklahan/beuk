@@ -2860,6 +2860,41 @@ Bulk import uses the same title-page reading (the page is lifted from the
 text, without a report) and falls back to the cleaned file name instead of
 storing "Untitled Book".
 
+## Web and store links
+
+`[words](https://…)`, `[words](http://…)` and `[words](mailto:…)` in the
+text are links — a title on the "Also by the Author" page pointing at its
+store page, a call to action's sign-up page, any https store at all (no
+special scheme). Any other scheme (`javascript:`, `data:`, `file:` …) is not
+a link and stays plain text; image markers `![alt](img:id)` and notes are
+untouched. One pattern (`mdLinkRe` in `client/index.html`) is read by every
+surface:
+
+- **Preview and EPUB**: a real `<a class="ext-link" href="…">` (the address
+  attribute-escaped); in the studio's preview it opens in a new tab with
+  `rel="noopener noreferrer"`. The EPUB link validates (a link out is not a
+  remote resource) and wears the text's own ink, underlined.
+- **Print** (print interior and its view): the words alone, as a plain span
+  in the text colour — no blue, no underline, no clickable box in the PDF
+  (`printUnlink`).
+- **Word export**: a real `w:hyperlink` on an External relationship in
+  `word/_rels/document.xml.rels`, in Word's Hyperlink style.
+- **Markdown** keeps `[words](address)` as is; the standalone HTML links;
+  the ACX script reads the words only.
+- **Word count** counts the words, never the address.
+- **Word import**: a Word file's web and mail links come in as
+  `[words](address)`; a bookmark or other link stays text and is counted in
+  the import report as dropped.
+
+The typographic pass (Auto-Format, smart quotes, dashes) never touches an
+address. A drop cap is not set on a paragraph that opens with a link, and a
+small-caps lead-in never ends inside one. The toolbar's **Link** button
+opens a dialog for the words (the selection, when there is one) and the
+address: a bare `www.…` or `shop.example.com/…` is taken as https, a bare
+e-mail address as mailto, parentheses are percent-encoded, and an unsafe or
+spaced address is refused in the dialog. Self-checks: `chapter.links`,
+`export.links`.
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — everything is built (verified, deduplicated,
