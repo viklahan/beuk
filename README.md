@@ -2889,11 +2889,21 @@ import).
   is closed up only where that is certain (one heading word, or a chapter
   label and its number).
 - **Running heads and page numbers.** A page's outer lines (top and bottom
-  fifth, small type) that repeat on other pages once their digits are set
-  aside ("Page 4 • Title", "TITLE · 12"), or are a bare page number, are
-  left out and counted. A chapter label is never treated as one.
+  fifth) that stand in a fixed place — the same words, once their digits
+  are set aside ("Page 4 • Title", "TITLE · 12"), at the same height
+  (±2 pt) on another page — or are a bare page number, are left out and
+  counted. One set in the body's own size must also stand more than 1.3
+  leads from the nearest text line and outside the band the book's text
+  lines fill, so a short line of the story ("Why?") closing two pages at
+  the text's leading is kept. A chapter label is never treated as one. The
+  report lists each distinct line left out with its count.
 - **Paragraphs.** A first-line indent, a taller gap (measured against the
-  line's own leading), or a short line ending a sentence starts one; a
+  line's own leading), or a short line ending a sentence starts one. The
+  indent is measured from the low end of the page's line starts and, on a
+  one-column page, from the book's own margin for that side of the spread
+  (so a page of nothing but indented one-line dialogue keeps its
+  paragraphs apart); lines centred under each other run on unless the line
+  above closed a sentence; a
   paragraph runs on over a page or column break. A gap of about three lines
   between body lines is a scene break (`***`), except above a chapter's
   drop cap. Line-end hyphens (`-`, U+2010 from `hyphens: auto`, soft
@@ -2921,18 +2931,38 @@ import).
 - **Tables**: three or more lines of cells separated by wide gaps are taken
   out of the prose like a Word table (listed with their rows; words back on
   undo). Cells of running prose are read as columns, not a table.
+- **Right to left.** A line mostly in a right-to-left script (Hebrew,
+  Arabic, Syriac, Thaana, N'Ko) is read from its right edge, and its
+  column's paragraph rules are mirrored (the indent at the right, the
+  short last line at the left). The report lists the pages read this way
+  and asks the writer to check paragraph breaks and the order of numbers
+  or Latin words inside them (mixed-direction lines are ordered run by
+  run, not by the full Unicode bidi algorithm). Arabic presentation forms
+  are set back to their letters.
+- **Unreadable glyphs.** Glyphs the PDF gives no letter for arrive from
+  PDF.js as control characters (U+0000 …); they, non-characters and lone
+  surrogates are taken out (they would make the EPUB's XHTML malformed)
+  and counted in the report; above 2 % of the text the report says the
+  text layer is unreliable.
 - **Scanned PDFs** (almost no text layer, pages that are pictures) are
-  refused with a plain message; no text is ever guessed. Password-protected
+  refused with a plain message; no text is ever guessed. In a PDF that
+  mixes typed and scanned pages, every page with no text under a picture
+  covering half of it or more is listed in the report (imported as a
+  picture; its words, if any, not read — run OCR first). Password-protected
   and unreadable files get their own message.
 
 The report adds what only a PDF import knows: the layout caveat (footnotes
 arrive as plain text where they stood; drawings made of lines are not
 imported), italic/bold counts, rejoined hyphens, columned pages, small-cap
-openings, running heads left out (with an example), contents pages, the
+openings, running heads left out (each distinct line with its count), pages read
+right to left, pages with no text layer, unreadable glyphs, contents pages, the
 half-title, backgrounds, decorations, stencils, repeats, rotated text and
-link addresses (link text is kept). Self-check: `import.pdf` (async; it
+link addresses (link text is kept). Self-checks: `import.pdf` (async; it
 writes a three-page PDF byte by byte and a text-less "scan", imports both
-through the real pipeline, and undoes). Verified on Beuk's own print PDF
+through the real pipeline, and undoes) and `import.pdf.layout` (the layout
+reader on pages laid out as PDF.js hands them over: "Why?" at two page
+feet kept, one-line indented paragraphs apart, an Arabic page right to
+left, a text-less picture page reported, control characters out). Verified on Beuk's own print PDF
 of the sample book (rendered by `deploy/renderer`): 15 chapters plus
 prologue and epilogue come back with their numbers and titles, and 212 of
 214 of the sample's body paragraphs are found verbatim in the matching
@@ -2940,7 +2970,7 @@ section.
 
 Limits: PDFs whose fonts use predefined CJK CMaps without a ToUnicode table
 are not readable (the `cmaps/` folder is not vendored); right-to-left
-reading order is PDF.js's; a chapter subtitle arrives as an italic first
+lines are ordered run by run (see above), not by the full bidi algorithm; a chapter subtitle arrives as an italic first
 paragraph, not in the Subtitle field; footnote numbers stay inline as
 `[n]`; Box Set volume import and Bulk import do not take PDFs yet.
 

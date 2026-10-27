@@ -27052,14 +27052,28 @@
       const pdfWait = (p, ms) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), ms))]);
       /* Pass 1 — read every page: text items with their size, place and
          style, the pictures the page paints (with where), its links. */
+      /* Letters of the right-to-left scripts (Hebrew, Arabic, Syriac,
+         Thaana, N'Ko and their presentation forms). */
+      const PDF_RTL_RE = /[֐-ࣿיִ-﷿ﹰ-ﻼ]/g;
+      /* A text-layer string made safe: glyphs the PDF gives no letter for
+         arrive as control characters (U+0000 …) — not text, and they
+         would break the book's XHTML — so they go, with non-characters
+         and lone surrogates, and are counted; Arabic presentation forms
+         go back to their letters. */
+      function pdfCleanText(str) {
+        let bad = 0;
+        let s = String(str).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f￾￿]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, () => { bad++; return ""; });
+        if (/[ﭐ-﷿ﹰ-ﻼ]/.test(s)) s = s.replace(/[ﭐ-﷿ﹰ-ﻼ]+/g, (m) => m.normalize("NFKC"));
+        return { s, bad };
+      }
       async function pdfExtract(lib, data, opts) {
         opts = opts || {};
         const task = lib.getDocument({ data, verbosity: 0, fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined" });
         const doc = await task.promise;
-        const out = { numPages: doc.numPages, title: "", author: "", pages: [], textChars: 0, links: 0, imgErrors: 0 };
+        const out = { numPages: doc.numPages, title: "", author: "", pages: [], textChars: 0, links: 0, imgErrors: 0, badGlyphs: 0, rtlChars: 0 };
         try {
           const meta = await pdfWait(doc.getMetadata().catch(() => null), 4000);
-          if (meta && meta.info) { out.title = String(meta.info.Title || "").trim(); out.author = String(meta.info.Author || "").trim(); }
+          if (meta && meta.info) { out.title = pdfCleanText(meta.info.Title || "").s.trim(); out.author = pdfCleanText(meta.info.Author || "").s.trim(); }
           const OPS = lib.OPS;
           const seenImg = new Map();
           for (let pn = 1; pn <= doc.numPages; pn++) {
@@ -27079,14 +27093,22 @@
             };
             tc.items.forEach((it) => {
               if (!it || typeof it.str !== "string" || !it.str) return;
+              const cl = pdfCleanText(it.str);
+              out.badGlyphs += cl.bad;
+              const str = cl.s;
+              if (!str) return;
               const m = lib.Util.transform(vp.transform, it.transform);
               const size = Math.hypot(m[2], m[3]);
               if (!(size > 0.5)) return;
               /* Sideways or upside-down text (a spine line, a stamp): not prose. */
-              if (Math.abs(m[1]) > 0.05 * size || Math.abs(m[2]) > 0.05 * size || m[0] < 0) { if (it.str.trim()) pg.rotated++; return; }
+              if (Math.abs(m[1]) > 0.05 * size || Math.abs(m[2]) > 0.05 * size || m[0] < 0) { if (str.trim()) pg.rotated++; return; }
               const st = styleOf(it.fontName);
-              pg.items.push({ s: it.str, x: m[4], y: m[5], w: it.width * (vp.scale || 1), size, b: st.b, i: st.i });
-              out.textChars += it.str.replace(/\s+/g, "").length;
+              /* Right-to-left runs: PDF.js gives each one in reading order;
+                 the line puts them in order right to left. */
+              const rtl = (str.match(PDF_RTL_RE) || []).length;
+              pg.items.push({ s: str, x: m[4], y: m[5], w: it.width * (vp.scale || 1), size, b: st.b, i: st.i, rtl });
+              out.textChars += str.replace(/\s+/g, "").length;
+              out.rtlChars += rtl;
             });
             /* Pictures: follow the transformation matrix through the
                operator list to know where each one sits on the page. */
@@ -27221,7 +27243,12 @@
             else lines.push({ y: it.y, size: it.size, items: [it] });
           });
           return lines.map((ln) => {
-            const its = ln.items.slice().sort((a, b) => a.x - b.x);
+            /* A line mostly in a right-to-left script reads from its right
+               edge: its runs go in order of falling x. */
+            let rl = 0, letters = 0;
+            ln.items.forEach((it) => { rl += it.rtl || 0; letters += (it.s.match(/\p{L}/gu) || []).length; });
+            const rtl = rl > 0 && rl * 2 >= letters;
+            const its = ln.items.slice().sort(rtl ? (a, b) => (b.x + b.w) - (a.x + a.w) : (a, b) => a.x - b.x);
             /* The baseline and size of the line are its body text's: the
                run carrying the most characters (not a drop cap, not a
                superscript). */
@@ -27234,8 +27261,10 @@
             /* Letter-spaced type ("C H A P T E R") arrives one glyph per
                item: words are where the gap is wider than the spacing. */
             const spaced = solid.length >= 4 && solid.filter((it) => it.s.trim().length === 1).length >= solid.length * 0.7;
+            /* The space between two runs in reading order. */
+            const gapOf = (prev, it) => rtl ? prev.x - (it.x + it.w) : it.x - (prev.x + prev.w);
             const gaps = [];
-            for (let q = 1; q < solid.length; q++) gaps.push(solid[q].x - (solid[q - 1].x + solid[q - 1].w));
+            for (let q = 1; q < solid.length; q++) gaps.push(gapOf(solid[q - 1], solid[q]));
             const base = spaced ? median(gaps) : 0;
             const runs = [], cells = [[]];
             let prevEnd = null, prevText = "";
@@ -27243,7 +27272,7 @@
               let s = clean(it.s);
               if (spaced) s = s.trim();
               if (prevEnd !== null) {
-                const gap = it.x - prevEnd;
+                const gap = rtl ? prevEnd - (it.x + it.w) : it.x - prevEnd;
                 const small = Math.min(it.size, size || it.size);
                 /* A wide gap — or the wide space item PDF.js fills it with —
                    parts table cells. */
@@ -27256,7 +27285,7 @@
               }
               runs.push({ t: s, b: it.b, i: it.i, size: it.size });
               if (s.trim()) cells[cells.length - 1].push(s.trim());
-              prevEnd = Math.max(prevEnd === null ? -1e9 : prevEnd, it.x + it.w);
+              prevEnd = rtl ? Math.min(prevEnd === null ? 1e9 : prevEnd, it.x) : Math.max(prevEnd === null ? -1e9 : prevEnd, it.x + it.w);
               prevText = s;
             });
             let text = runs.map((r) => r.t).join("").replace(/\s+/g, " ").trim();
@@ -27270,11 +27299,12 @@
               const one = /^(chapter|part|book|prologue|epilogue|contents|epigraph|dedication|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)$/iu.test(solidT);
               if (lab || one) { text = lab ? lab[1] + " " + lab[2] : solidT; runs.splice(0, runs.length, { t: text, b: runs[0].b, i: runs[0].i, size: runs[0].size }); }
             }
-            const x0 = solid.length ? solid[0].x : its[0].x;
-            const x1 = solid.length ? Math.max.apply(null, solid.map((it) => it.x + it.w)) : x0;
+            const edge = solid.length ? solid : its;
+            const x0 = Math.min.apply(null, edge.map((it) => it.x));
+            const x1 = Math.max.apply(null, edge.map((it) => it.x + it.w));
             const first = solid[0];
             const dropCap = !!first && first.s.trim().length <= 2 && first.size >= size * 1.8 && solid.length > 1;
-            return { y, size, x0, x1, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? first.size : 0 };
+            return { y, size, x0, x1, rtl, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? first.size : 0 };
           }).filter((l) => l.text);
         };
         const pages = ext.pages.map((pg) => {
@@ -27305,6 +27335,15 @@
         });
         const allLines = [];
         pages.forEach((p) => p.cols.forEach((c) => c.forEach((l) => allLines.push(l))));
+        /* Pages read right to left, and pages with no text at all but a
+           picture over half of them (a scanned page, or a plate): what
+           they say in words is not read, and the report says so. */
+        st.rtlPages = []; st.noText = [];
+        pages.forEach((p) => {
+          const ls = []; p.cols.forEach((c) => c.forEach((l) => ls.push(l)));
+          if (ls.length && ls.filter((l) => l.rtl).length * 2 > ls.length) st.rtlPages.push(p.n);
+          if (!ls.length && p.images.some((im) => (im.x1 - im.x0) * (im.y1 - im.y0) >= p.w * p.h * 0.5)) st.noText.push(p.n);
+        });
         /* 2. The body type: the size carrying most characters. */
         const sizeW = new Map();
         allLines.forEach((l) => { const k = Math.round(l.size * 2) / 2; sizeW.set(k, (sizeW.get(k) || 0) + l.text.length); });
@@ -27327,16 +27366,61 @@
           return pick.filter((l) => (l.y < p.h * 0.2 || l.y > p.h * 0.8) && l.size <= body * 1.15 && l.text.length <= 120 &&
             !/^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+\S+$/iu.test(l.text.trim()));
         };
-        const keyPages = new Map();
-        pages.forEach((p) => outer(p).forEach((l) => { const k = runKey(l.text); if (!k) return; if (!keyPages.has(k)) keyPages.set(k, new Set()); keyPages.get(k).add(p.n); }));
-        pages.forEach((p) => outer(p).forEach((l) => {
-          const k = runKey(l.text);
-          const repeated = !!k && pages.length >= 3 && keyPages.get(k).size >= 2;
-          if (repeated || pageNumRe.test(l.text.trim())) {
+        /* A running line stands where the type area is not: in a fixed
+           place (the same words at the same height, ±2pt, on other pages —
+           rectos and versos each keep theirs). One set in the text's own
+           size must also stand apart from the text (more than 1.3 leads
+           from the nearest line of it) and outside the band the book's
+           text lines fill: a line of the story at the text's own leading
+           — a "Why?" closing a page — is never one. */
+        const keyAt = new Map();
+        pages.forEach((p) => outer(p).forEach((l) => { const k = runKey(l.text); if (!k) return; if (!keyAt.has(k)) keyAt.set(k, []); keyAt.get(k).push({ n: p.n, y: l.y }); }));
+        /* The band: per page, the highest and lowest body line set at the
+           text's leading from a neighbour; the book's band is the median. */
+        const tops = [], bots = [];
+        pages.forEach((p) => {
+          const ls = []; p.cols.forEach((c) => c.forEach((l) => ls.push(l)));
+          ls.sort((a, b) => a.y - b.y);
+          const leaded = ls.filter((l, q) => Math.abs(l.size - body) < 0.6 &&
+            ((q > 0 && Math.abs(l.y - ls[q - 1].y - lead) <= lead * 0.15) || (q + 1 < ls.length && Math.abs(ls[q + 1].y - l.y - lead) <= lead * 0.15)));
+          if (leaded.length >= 5) { tops.push(leaded[0].y); bots.push(leaded[leaded.length - 1].y); }
+        });
+        const bandTop = tops.length ? median(tops) : -1e9, bandBot = bots.length ? median(bots) : 1e9;
+        const headTexts = new Map();
+        pages.forEach((p) => {
+          const outs = outer(p);
+          const fixed = (l) => {
+            const k = runKey(l.text);
+            if (!k || pages.length < 3) return false;
+            return keyAt.get(k).filter((e) => e.n !== p.n && Math.abs(e.y - l.y) <= 2).length >= 1;
+          };
+          /* With no band to go by (no page of leaded text), the gap alone decides. */
+          const banded = tops.length > 0;
+          const cand = outs.filter((l) => fixed(l) || pageNumRe.test(l.text.trim()));
+          if (!cand.length) return;
+          const ls = []; p.cols.forEach((c) => c.forEach((l) => ls.push(l)));
+          cand.forEach((l) => {
+            const top = l.y < p.h / 2;
+            /* The nearest line toward the text that is not itself a
+               running line. */
+            const inward = ls.filter((o) => cand.indexOf(o) < 0 && (top ? o.y > l.y : o.y < l.y));
+            const gap = inward.length ? Math.min.apply(null, inward.map((o) => Math.abs(o.y - l.y))) : 1e9;
+            const myLead = lead * Math.max(l.size, body) / body;
+            const outside = !banded || (top ? l.y < bandTop - lead * 0.25 : l.y > bandBot + lead * 0.25);
+            /* Set in the text's own size, it must stand apart from the
+               text; set smaller, its fixed place is enough. */
+            const bodySize = l.size >= body * 0.9;
+            if (bodySize && (gap <= myLead * 1.3 || !outside)) return;
             l.drop = "head"; st.heads++; st.headPages.add(p.n);
-            if (!st.headSample && repeated) st.headSample = l.text;
-          }
-        }));
+            const isNum = pageNumRe.test(l.text.trim());
+            const tk = isNum ? "#" : runKey(l.text);
+            if (!headTexts.has(tk)) headTexts.set(tk, { text: isNum ? "1, 2, 3…" : "“" + l.text.replace(/\s+/g, " ").trim() + "”", n: 0 });
+            headTexts.get(tk).n++;
+          });
+        });
+        /* What was left out, each distinct line with its count, so a line
+           of the story taken for a running head shows. */
+        st.headSample = Array.from(headTexts.values()).sort((a, b) => b.n - a.n).map((e) => e.text + " ×" + e.n).join(" · ");
         /* 4. Headings. */
         const labelRe = /^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+[\p{L}\p{N}]+\.?$/iu;
         const numRe = /^(?:\d{1,3}|[ivxlcdm]{1,7})\.?$/i;
@@ -27388,6 +27472,20 @@
         });
         const names = new Set();
         capN.forEach((n, k) => { if (n > (lowN.get(k) || 0)) names.add(k); });
+        /* The book's margins, per side of the spread (odd and even pages
+           mirror) and per reading direction, from all its pages of one
+           column: where the body lines start (low end) and end. */
+        const pct = (a, f) => { if (!a.length) return 0; const s = a.slice().sort((p, q) => p - q); return s[Math.min(s.length - 1, Math.floor(f * (s.length - 1)))]; };
+        const bookMargins = [0, 1, 2, 3].map((k) => {
+          const x0s = [], x1s = [];
+          pages.forEach((p) => {
+            if (p.cols.length !== 1 || (p.n & 1) !== (k & 1)) return;
+            const ls = p.cols[0].filter((l) => !l.drop && !l.head && Math.abs(l.size - body) < 0.6);
+            if ((ls.filter((l) => l.rtl).length * 2 > ls.length) !== (k >= 2)) return;
+            ls.forEach((l) => { x0s.push(l.x0); x1s.push(l.x1); });
+          });
+          return x0s.length >= 8 ? { left: pct(x0s, 0.1), right: pct(x1s, 0.9) } : null;
+        });
         const blocks = [];
         let para = null, prevLine = null, pendingPlate = null, capUntil = -1, capPage = 0;
         let sinceHead = 99;
@@ -27497,8 +27595,24 @@
             ls.forEach((l) => { if (!l.head) { const k = Math.round(l.size * 2) / 2; cw.set(k, (cw.get(k) || 0) + l.text.length); } });
             let colSize = body, cwMax = -1; cw.forEach((v, k) => { if (v > cwMax) { cwMax = v; colSize = k; } });
             const body0 = ls.filter((l) => Math.abs(l.size - colSize) < 0.6 && !l.head);
-            const colLeft = body0.length ? median(body0.map((l) => Math.round(l.x0))) : (ls.length ? Math.min.apply(null, ls.map((l) => l.x0)) : 0);
-            const colRight = body0.length ? Math.max.apply(null, body0.map((l) => l.x1)) : p.w;
+            /* The column's edges: where its full lines start and end. Taken
+               from the low end of the lines' starts (a page of short
+               dialogue is mostly indented first lines, so a middle value
+               would be the indent), and on a page of one column from the
+               book's own margins for that side of the spread too. A column
+               read right to left mirrors it: the indent is at the right. */
+            const colRtl = ls.filter((l) => l.rtl).length * 2 > ls.length;
+            const margins = p.cols.length === 1 ? bookMargins[(p.n & 1) + (colRtl ? 2 : 0)] : null;
+            let colLeft = body0.length ? pct(body0.map((l) => l.x0), colRtl ? 0 : 0.1) : (ls.length ? Math.min.apply(null, ls.map((l) => l.x0)) : 0);
+            let colRight = body0.length ? pct(body0.map((l) => l.x1), colRtl ? 0.9 : 1) : p.w;
+            if (margins && body0.length) {
+              if (Math.abs(margins.left - colLeft) <= body * 3) colLeft = Math.min(colLeft, margins.left);
+              if (Math.abs(margins.right - colRight) <= body * 3) colRight = Math.max(colRight, margins.right);
+            }
+            /* How far a line starts in from the column's opening edge, and
+               how short it falls of the closing one. */
+            const indentOf = (l) => colRtl ? colRight - l.x1 : l.x0 - colLeft;
+            const shortOf = (l, cl, cr, rt) => rt ? l.x0 > cl + (cr - cl) * 0.22 : l.x1 < cr - (cr - cl) * 0.22;
             /* Tables: three or more consecutive lines of two or more cells. */
             for (let q = 0; q < ls.length; q++) {
               let r = q;
@@ -27559,21 +27673,30 @@
                 else if (/^[—–]\s/.test(prevLine.text) && prevLine.text.length <= 80) fresh = true;
                 else {
                   const inCap = capPage === l.page && l.y <= capUntil;
-                  if (!inCap && l.x0 - colLeft > body * 0.6) fresh = true;
-                  else if (prevLine.x1 < colRight - (colRight - colLeft) * 0.22 && /[.!?:;"”’»)\]…]$/.test(prevLine.text)) fresh = true;
+                  /* Lines centred one under the other (a dedication, a
+                     sign) run on — their inset is the centring, not an
+                     indent — unless the line above closed a sentence. */
+                  const mid = (x) => (x.x0 + x.x1) / 2;
+                  const inL = l.x0 - colLeft, inR = colRight - l.x1;
+                  const centred = Math.abs(mid(l) - mid(prevLine)) <= Math.max(1.1, body * 0.1) && inL > body * 0.3 && inR > body * 0.3 &&
+                    Math.abs(inL - inR) <= Math.max(body * 1.5, (colRight - colLeft) * 0.15);
+                  if (centred && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
+                  else if (centred) { /* runs on */ }
+                  else if (!inCap && indentOf(l) > body * 0.6) fresh = true;
+                  else if (shortOf(prevLine, colLeft, colRight, colRtl) && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
                 }
               } else if (!fresh && !prevLine) {
                 /* A new page or column: the paragraph runs on unless this
                    line is indented, or the last one ended short. */
                 const last = para && para.lastLine;
-                if (l.x0 - colLeft > body * 0.6) fresh = true;
+                if (indentOf(l) > body * 0.6) fresh = true;
                 /* The last page stopped well short of the foot: its text ended there. */
                 else if (last && last.page !== l.page && last.y < bottomY - lead * 1.5) fresh = true;
-                else if (last && last.x1 < last.colRight - (last.colRight - last.colLeft) * 0.22 && /[.!?:;"”’»)\]…]$/.test(last.text)) fresh = true;
+                else if (last && shortOf(last, last.colLeft, last.colRight, last.rtl) && /[.!?:;"”’»)\]…؟。！？]$/.test(last.text)) fresh = true;
               }
               if (fresh) flush();
               joinRuns(l);
-              para.lastLine = { x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight };
+              para.lastLine = { x0: l.x0, x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight, rtl: colRtl };
               para.lines = (para.lines || 0) + 1;
               if (l.dropCap) { capPage = l.page; capUntil = l.y + l.capSize * 1.05; }
               prevLine = l;
@@ -27672,7 +27795,12 @@
         if (st.smallCaps) add({ kind: "pdfSmallCaps", group: "structure", data: { n: st.smallCaps } });
         if (st.joined || st.kept) add({ kind: "pdfHyphens", group: "structure", data: { n: st.joined, kept: st.kept } });
         if (st.columns.length) add({ kind: "pdfColumns", group: "structure", before: pdfPageList(st.columns), data: { n: st.columns.length } });
-        if (st.heads) add({ kind: "pdfHeads", group: "dropped", before: irClip(st.headSample, 120), data: { n: st.headPages } });
+        if (st.rtlPages.length) add({ kind: "pdfRtl", group: "structure", before: pdfPageList(st.rtlPages), data: { n: st.rtlPages.length } });
+        if (st.heads) add({ kind: "pdfHeads", group: "dropped", before: irClip(st.headSample, 320), data: { n: st.headPages } });
+        if (st.noText.length) add({ kind: "pdfNoText", group: "dropped", before: pdfPageList(st.noText), data: { n: st.noText.length } });
+        /* Glyphs with no letter behind them: a few are noise; many mean
+           the text layer itself cannot be trusted. */
+        if (ext.badGlyphs) add({ kind: ext.badGlyphs > (ext.textChars + ext.badGlyphs) * 0.02 ? "pdfBadGlyphsMany" : "pdfBadGlyphs", group: "dropped", data: { n: ext.badGlyphs } });
         if (st.toc.length) add({ kind: "pdfToc", group: "dropped", before: pdfPageList(st.toc), data: { n: st.toc.length } });
         if (st.halfTitle) add({ kind: "pdfHalfTitle", group: "dropped", before: irClip(st.halfTitle, 90), data: {} });
         if (st.imgLost) add({ kind: "pdfImagesLost", group: "dropped", data: { n: st.imgLost } });
@@ -27700,6 +27828,10 @@
           case "pdfHyphens": return t("ir.k.pdfHyphens", { n: d.n, kept: d.kept });
           case "pdfColumns": return t("ir.k.pdfColumns", { n: d.n });
           case "pdfHeads": return t("ir.k.pdfHeads", { n: d.n });
+          case "pdfRtl": return t("ir.k.pdfRtl", { n: d.n });
+          case "pdfNoText": return t("ir.k.pdfNoText", { n: d.n });
+          case "pdfBadGlyphs": return t("ir.k.pdfBadGlyphs", { n: d.n });
+          case "pdfBadGlyphsMany": return t("ir.k.pdfBadGlyphsMany", { n: d.n });
           case "pdfToc": return t("ir.k.pdfToc", { n: d.n });
           case "pdfHalfTitle": return t("ir.k.pdfHalfTitle");
           case "pdfImagesLost": return t("ir.k.pdfImagesLost", { n: d.n });
@@ -27759,7 +27891,11 @@
           "ir.k.pdfMasks": "{n} one-colour stencil shape (an ornament or rule) was left out", "ir.k.pdfMasksPlural": "{n} one-colour stencil shapes (ornaments or rules) were left out",
           "ir.k.pdfDupImages": "{n} repeat of a picture already imported was left out", "ir.k.pdfDupImagesPlural": "{n} repeats of pictures already imported were left out",
           "ir.k.pdfRotated": "{n} line of sideways or rotated text was left out", "ir.k.pdfRotatedPlural": "{n} lines of sideways or rotated text were left out",
-          "ir.k.pdfLinks": "{n} link's web address was left out; its text is kept", "ir.k.pdfLinksPlural": "{n} links' web addresses were left out; their text is kept" },
+          "ir.k.pdfLinks": "{n} link's web address was left out; its text is kept", "ir.k.pdfLinksPlural": "{n} links' web addresses were left out; their text is kept",
+          "ir.k.pdfRtl": "{n} page was read right to left: check its paragraph breaks, and the order of any numbers or Latin-script words in it", "ir.k.pdfRtlPlural": "{n} pages were read right to left: check their paragraph breaks, and the order of any numbers or Latin-script words in them",
+          "ir.k.pdfNoText": "{n} page has no text layer, only a picture: it was imported as a picture and its words, if any, were not read — if it is a scanned page of text, run the PDF through text recognition (OCR) first", "ir.k.pdfNoTextPlural": "{n} pages have no text layer, only a picture: they were imported as pictures and their words, if any, were not read — if they are scanned pages of text, run the PDF through text recognition (OCR) first",
+          "ir.k.pdfBadGlyphs": "{n} glyph had no letter behind it in the PDF and was left out", "ir.k.pdfBadGlyphsPlural": "{n} glyphs had no letter behind them in the PDF and were left out",
+          "ir.k.pdfBadGlyphsMany": "{n} glyphs had no letter behind them in the PDF and were left out — this PDF's text layer is unreliable: compare the text with the PDF, or import the original manuscript", "ir.k.pdfBadGlyphsManyPlural": "{n} glyphs had no letter behind them in the PDF and were left out — this PDF's text layer is unreliable: compare the text with the PDF, or import the original manuscript" },
         "es": { "side.importTitle": "Importar un manuscrito: Word (.docx), Markdown (.md), texto plano (.txt) o PDF (.pdf)", "pdf.reading": "Leyendo {name}…", "pdf.loadFailed": "No se pudo cargar el lector de PDF: comprueba la conexión y vuelve a intentarlo", "pdf.scanned": "Este PDF no tiene texto que leer: sus páginas son imágenes (un escaneo). Beuk no adivina palabras: pásalo antes por un reconocimiento de texto (OCR) o importa el manuscrito original.", "pdf.password": "Este PDF está protegido con contraseña. Quítala en el programa que lo creó y vuelve a importarlo.", "pdf.broken": "Este archivo no se pudo leer como PDF.",
           "ir.from.pdf": "un encabezado más grande o en negrita en el PDF: «{heading}»", "ir.why.pdf": "así se reconstruyó el texto del PDF; no hay nada aparte que devolver",
           "ir.k.pdfLimits": "Un PDF guarda líneas colocadas en páginas, no párrafos: los párrafos, encabezados, saltos de escena, cursivas y negritas se reconstruyeron a partir de la maquetación. Las notas al pie llegan como texto normal donde estaban y los dibujos hechos con líneas no se importan: revisa el libro entero.",
@@ -27776,7 +27912,11 @@
           "ir.k.pdfMasks": "Se omitió {n} forma de plantilla de un solo color (un adorno o filete)", "ir.k.pdfMasksPlural": "Se omitieron {n} formas de plantilla de un solo color (adornos o filetes)",
           "ir.k.pdfDupImages": "Se omitió {n} repetición de una imagen ya importada", "ir.k.pdfDupImagesPlural": "Se omitieron {n} repeticiones de imágenes ya importadas",
           "ir.k.pdfRotated": "Se omitió {n} línea de texto girado o de lado", "ir.k.pdfRotatedPlural": "Se omitieron {n} líneas de texto girado o de lado",
-          "ir.k.pdfLinks": "Se omitió la dirección web de {n} enlace; su texto se conserva", "ir.k.pdfLinksPlural": "Se omitieron las direcciones web de {n} enlaces; su texto se conserva" },
+          "ir.k.pdfLinks": "Se omitió la dirección web de {n} enlace; su texto se conserva", "ir.k.pdfLinksPlural": "Se omitieron las direcciones web de {n} enlaces; su texto se conserva",
+          "ir.k.pdfRtl": "{n} página se leyó de derecha a izquierda: revisa sus saltos de párrafo y el orden de los números o palabras en alfabeto latino que contenga", "ir.k.pdfRtlPlural": "{n} páginas se leyeron de derecha a izquierda: revisa sus saltos de párrafo y el orden de los números o palabras en alfabeto latino que contengan",
+          "ir.k.pdfNoText": "{n} página no tiene capa de texto, solo una imagen: se importó como imagen y sus palabras, si las hay, no se leyeron; si es una página de texto escaneada, pasa antes el PDF por un reconocimiento de texto (OCR)", "ir.k.pdfNoTextPlural": "{n} páginas no tienen capa de texto, solo una imagen: se importaron como imágenes y sus palabras, si las hay, no se leyeron; si son páginas de texto escaneadas, pasa antes el PDF por un reconocimiento de texto (OCR)",
+          "ir.k.pdfBadGlyphs": "{n} glifo no tenía ninguna letra detrás en el PDF y se omitió", "ir.k.pdfBadGlyphsPlural": "{n} glifos no tenían ninguna letra detrás en el PDF y se omitieron",
+          "ir.k.pdfBadGlyphsMany": "{n} glifos no tenían ninguna letra detrás en el PDF y se omitieron: la capa de texto de este PDF no es fiable; compara el texto con el PDF o importa el manuscrito original", "ir.k.pdfBadGlyphsManyPlural": "{n} glifos no tenían ninguna letra detrás en el PDF y se omitieron: la capa de texto de este PDF no es fiable; compara el texto con el PDF o importa el manuscrito original" },
         "fr": { "side.importTitle": "Importer un manuscrit : Word (.docx), Markdown (.md), texte brut (.txt) ou PDF (.pdf)", "pdf.reading": "Lecture de {name}…", "pdf.loadFailed": "Le lecteur PDF n’a pas pu être chargé — vérifiez la connexion et réessayez", "pdf.scanned": "Ce PDF n’a pas de texte à lire — ses pages sont des images (un scan). Beuk ne devine pas les mots : passez-le d’abord par une reconnaissance de texte (OCR), ou importez le manuscrit d’origine.", "pdf.password": "Ce PDF est protégé par un mot de passe. Retirez-le dans le logiciel qui l’a créé, puis importez-le à nouveau.", "pdf.broken": "Ce fichier n’a pas pu être lu comme un PDF.",
           "ir.from.pdf": "un titre composé plus grand ou en gras dans le PDF : « {heading} »", "ir.why.pdf": "c’est ainsi que le texte du PDF a été reconstruit ; il n’y a rien de séparé à remettre",
           "ir.k.pdfLimits": "Un PDF garde des lignes posées sur des pages, pas des paragraphes : paragraphes, titres, changements de scène, italique et gras ont été reconstruits d’après la mise en page. Les notes arrivent en texte simple à leur place et les dessins faits de traits ne sont pas importés — relisez le livre en entier.",
@@ -27793,7 +27933,11 @@
           "ir.k.pdfMasks": "{n} forme au pochoir d’une seule couleur (un ornement ou un filet) a été écartée", "ir.k.pdfMasksPlural": "{n} formes au pochoir d’une seule couleur (ornements ou filets) ont été écartées",
           "ir.k.pdfDupImages": "{n} répétition d’une image déjà importée a été écartée", "ir.k.pdfDupImagesPlural": "{n} répétitions d’images déjà importées ont été écartées",
           "ir.k.pdfRotated": "{n} ligne de texte pivoté ou de côté a été écartée", "ir.k.pdfRotatedPlural": "{n} lignes de texte pivoté ou de côté ont été écartées",
-          "ir.k.pdfLinks": "L’adresse web de {n} lien a été écartée ; son texte est gardé", "ir.k.pdfLinksPlural": "Les adresses web de {n} liens ont été écartées ; leur texte est gardé" },
+          "ir.k.pdfLinks": "L’adresse web de {n} lien a été écartée ; son texte est gardé", "ir.k.pdfLinksPlural": "Les adresses web de {n} liens ont été écartées ; leur texte est gardé",
+          "ir.k.pdfRtl": "{n} page a été lue de droite à gauche : vérifiez ses changements de paragraphe et l’ordre des nombres ou des mots en alphabet latin qu’elle contient", "ir.k.pdfRtlPlural": "{n} pages ont été lues de droite à gauche : vérifiez leurs changements de paragraphe et l’ordre des nombres ou des mots en alphabet latin qu’elles contiennent",
+          "ir.k.pdfNoText": "{n} page n’a pas de couche de texte, seulement une image : elle a été importée comme image et ses mots, s’il y en a, n’ont pas été lus ; si c’est une page de texte numérisée, passez d’abord le PDF dans une reconnaissance de texte (OCR)", "ir.k.pdfNoTextPlural": "{n} pages n’ont pas de couche de texte, seulement une image : elles ont été importées comme images et leurs mots, s’il y en a, n’ont pas été lus ; si ce sont des pages de texte numérisées, passez d’abord le PDF dans une reconnaissance de texte (OCR)",
+          "ir.k.pdfBadGlyphs": "{n} glyphe n’avait aucune lettre derrière lui dans le PDF et a été écarté", "ir.k.pdfBadGlyphsPlural": "{n} glyphes n’avaient aucune lettre derrière eux dans le PDF et ont été écartés",
+          "ir.k.pdfBadGlyphsMany": "{n} glyphes n’avaient aucune lettre derrière eux dans le PDF et ont été écartés : la couche de texte de ce PDF n’est pas fiable ; comparez le texte au PDF ou importez le manuscrit d’origine", "ir.k.pdfBadGlyphsManyPlural": "{n} glyphes n’avaient aucune lettre derrière eux dans le PDF et ont été écartés : la couche de texte de ce PDF n’est pas fiable ; comparez le texte au PDF ou importez le manuscrit d’origine" },
         "de": { "side.importTitle": "Manuskript importieren: Word (.docx), Markdown (.md), reiner Text (.txt) oder PDF (.pdf)", "pdf.reading": "{name} wird gelesen…", "pdf.loadFailed": "Der PDF-Leser konnte nicht geladen werden — Verbindung prüfen und erneut versuchen", "pdf.scanned": "Dieses PDF enthält keinen lesbaren Text — seine Seiten sind Bilder (ein Scan). Beuk rät keine Wörter: lassen Sie es zuerst durch eine Texterkennung (OCR) laufen oder importieren Sie das Originalmanuskript.", "pdf.password": "Dieses PDF ist passwortgeschützt. Entfernen Sie das Passwort in dem Programm, mit dem es erstellt wurde, und importieren Sie es erneut.", "pdf.broken": "Diese Datei ließ sich nicht als PDF lesen.",
           "ir.from.pdf": "eine im PDF größer oder fett gesetzte Überschrift: „{heading}“", "ir.why.pdf": "so wurde der Text des PDFs neu aufgebaut; es gibt nichts Getrenntes zurückzulegen",
           "ir.k.pdfLimits": "Ein PDF speichert auf Seiten platzierte Zeilen, keine Absätze: Absätze, Überschriften, Szenenwechsel, Kursiv und Fett wurden aus dem Satzbild wieder aufgebaut. Fußnoten kommen als normaler Text an ihrer Stelle an, und aus Linien gezeichnete Grafiken werden nicht importiert — lesen Sie das Buch einmal durch.",
@@ -27810,7 +27954,11 @@
           "ir.k.pdfMasks": "{n} einfarbige Schablonenform (ein Ornament oder eine Linie) wurde weggelassen", "ir.k.pdfMasksPlural": "{n} einfarbige Schablonenformen (Ornamente oder Linien) wurden weggelassen",
           "ir.k.pdfDupImages": "{n} Wiederholung eines bereits importierten Bildes wurde weggelassen", "ir.k.pdfDupImagesPlural": "{n} Wiederholungen bereits importierter Bilder wurden weggelassen",
           "ir.k.pdfRotated": "{n} Zeile gedrehten oder seitlichen Textes wurde weggelassen", "ir.k.pdfRotatedPlural": "{n} Zeilen gedrehten oder seitlichen Textes wurden weggelassen",
-          "ir.k.pdfLinks": "Die Webadresse von {n} Link wurde weggelassen; sein Text bleibt", "ir.k.pdfLinksPlural": "Die Webadressen von {n} Links wurden weggelassen; ihr Text bleibt" },
+          "ir.k.pdfLinks": "Die Webadresse von {n} Link wurde weggelassen; sein Text bleibt", "ir.k.pdfLinksPlural": "Die Webadressen von {n} Links wurden weggelassen; ihr Text bleibt",
+          "ir.k.pdfRtl": "{n} Seite wurde von rechts nach links gelesen: Prüfe ihre Absatzumbrüche und die Reihenfolge von Zahlen oder Wörtern in lateinischer Schrift darin", "ir.k.pdfRtlPlural": "{n} Seiten wurden von rechts nach links gelesen: Prüfe ihre Absatzumbrüche und die Reihenfolge von Zahlen oder Wörtern in lateinischer Schrift darin",
+          "ir.k.pdfNoText": "{n} Seite hat keine Textebene, nur ein Bild: Sie wurde als Bild importiert, ihre Wörter (falls vorhanden) wurden nicht gelesen – ist es eine gescannte Textseite, lass das PDF zuerst durch eine Texterkennung (OCR) laufen", "ir.k.pdfNoTextPlural": "{n} Seiten haben keine Textebene, nur ein Bild: Sie wurden als Bilder importiert, ihre Wörter (falls vorhanden) wurden nicht gelesen – sind es gescannte Textseiten, lass das PDF zuerst durch eine Texterkennung (OCR) laufen",
+          "ir.k.pdfBadGlyphs": "{n} Glyphe hatte im PDF keinen Buchstaben dahinter und wurde weggelassen", "ir.k.pdfBadGlyphsPlural": "{n} Glyphen hatten im PDF keinen Buchstaben dahinter und wurden weggelassen",
+          "ir.k.pdfBadGlyphsMany": "{n} Glyphen hatten im PDF keinen Buchstaben dahinter und wurden weggelassen – die Textebene dieses PDFs ist unzuverlässig: Vergleiche den Text mit dem PDF oder importiere das Originalmanuskript", "ir.k.pdfBadGlyphsManyPlural": "{n} Glyphen hatten im PDF keinen Buchstaben dahinter und wurden weggelassen – die Textebene dieses PDFs ist unzuverlässig: Vergleiche den Text mit dem PDF oder importiere das Originalmanuskript" },
         "it": { "side.importTitle": "Importa un manoscritto: Word (.docx), Markdown (.md), testo semplice (.txt) o PDF (.pdf)", "pdf.reading": "Lettura di {name}…", "pdf.loadFailed": "Non è stato possibile caricare il lettore PDF: controlla la connessione e riprova", "pdf.scanned": "Questo PDF non ha testo da leggere: le sue pagine sono immagini (una scansione). Beuk non indovina le parole: passalo prima a un riconoscimento del testo (OCR) oppure importa il manoscritto originale.", "pdf.password": "Questo PDF è protetto da password. Rimuovila nel programma che lo ha creato, poi importalo di nuovo.", "pdf.broken": "Non è stato possibile leggere questo file come PDF.",
           "ir.from.pdf": "un titolo composto più grande o in grassetto nel PDF: «{heading}»", "ir.why.pdf": "è così che è stato ricostruito il testo del PDF; non c’è nulla di separato da rimettere",
           "ir.k.pdfLimits": "Un PDF conserva righe posate sulle pagine, non paragrafi: paragrafi, titoli, cambi di scena, corsivo e grassetto sono stati ricostruiti dall’impaginazione. Le note arrivano come testo normale dov’erano e i disegni fatti di linee non vengono importati: rileggi tutto il libro.",
@@ -27827,7 +27975,11 @@
           "ir.k.pdfMasks": "{n} forma a stampino di un solo colore (un fregio o un filetto) è stata omessa", "ir.k.pdfMasksPlural": "{n} forme a stampino di un solo colore (fregi o filetti) sono state omesse",
           "ir.k.pdfDupImages": "{n} ripetizione di un’immagine già importata è stata omessa", "ir.k.pdfDupImagesPlural": "{n} ripetizioni di immagini già importate sono state omesse",
           "ir.k.pdfRotated": "{n} riga di testo ruotato o di lato è stata omessa", "ir.k.pdfRotatedPlural": "{n} righe di testo ruotato o di lato sono state omesse",
-          "ir.k.pdfLinks": "L’indirizzo web di {n} link è stato omesso; il testo resta", "ir.k.pdfLinksPlural": "Gli indirizzi web di {n} link sono stati omessi; il testo resta" },
+          "ir.k.pdfLinks": "L’indirizzo web di {n} link è stato omesso; il testo resta", "ir.k.pdfLinksPlural": "Gli indirizzi web di {n} link sono stati omessi; il testo resta",
+          "ir.k.pdfRtl": "{n} pagina è stata letta da destra a sinistra: controlla i suoi a capo di paragrafo e l’ordine di numeri o parole in alfabeto latino al suo interno", "ir.k.pdfRtlPlural": "{n} pagine sono state lette da destra a sinistra: controlla i loro a capo di paragrafo e l’ordine di numeri o parole in alfabeto latino al loro interno",
+          "ir.k.pdfNoText": "{n} pagina non ha un livello di testo, solo un’immagine: è stata importata come immagine e le sue parole, se ce ne sono, non sono state lette; se è una pagina di testo scansionata, passa prima il PDF in un riconoscimento del testo (OCR)", "ir.k.pdfNoTextPlural": "{n} pagine non hanno un livello di testo, solo un’immagine: sono state importate come immagini e le loro parole, se ce ne sono, non sono state lette; se sono pagine di testo scansionate, passa prima il PDF in un riconoscimento del testo (OCR)",
+          "ir.k.pdfBadGlyphs": "{n} glifo non aveva alcuna lettera dietro di sé nel PDF ed è stato omesso", "ir.k.pdfBadGlyphsPlural": "{n} glifi non avevano alcuna lettera dietro di sé nel PDF e sono stati omessi",
+          "ir.k.pdfBadGlyphsMany": "{n} glifi non avevano alcuna lettera dietro di sé nel PDF e sono stati omessi: il livello di testo di questo PDF non è affidabile; confronta il testo con il PDF o importa il manoscritto originale", "ir.k.pdfBadGlyphsManyPlural": "{n} glifi non avevano alcuna lettera dietro di sé nel PDF e sono stati omessi: il livello di testo di questo PDF non è affidabile; confronta il testo con il PDF o importa il manoscritto originale" },
         "pt": { "side.importTitle": "Importar um manuscrito: Word (.docx), Markdown (.md), texto simples (.txt) ou PDF (.pdf)", "pdf.reading": "A ler {name}…", "pdf.loadFailed": "Não foi possível carregar o leitor de PDF — verifique a ligação e tente de novo", "pdf.scanned": "Este PDF não tem texto para ler — as suas páginas são imagens (uma digitalização). O Beuk não adivinha palavras: passe-o primeiro por um reconhecimento de texto (OCR) ou importe o manuscrito original.", "pdf.password": "Este PDF está protegido por palavra-passe. Retire-a no programa que o criou e importe-o de novo.", "pdf.broken": "Não foi possível ler este ficheiro como PDF.",
           "ir.from.pdf": "um título composto maior ou a negrito no PDF: «{heading}»", "ir.why.pdf": "foi assim que o texto do PDF foi reconstruído; não há nada à parte para repor",
           "ir.k.pdfLimits": "Um PDF guarda linhas colocadas em páginas, não parágrafos: parágrafos, títulos, mudanças de cena, itálico e negrito foram reconstruídos a partir da paginação. As notas de rodapé chegam como texto simples onde estavam e os desenhos feitos de linhas não são importados — leia o livro todo.",
@@ -27844,7 +27996,11 @@
           "ir.k.pdfMasks": "{n} forma de stencil de uma só cor (um ornamento ou filete) foi omitida", "ir.k.pdfMasksPlural": "{n} formas de stencil de uma só cor (ornamentos ou filetes) foram omitidas",
           "ir.k.pdfDupImages": "{n} repetição de uma imagem já importada foi omitida", "ir.k.pdfDupImagesPlural": "{n} repetições de imagens já importadas foram omitidas",
           "ir.k.pdfRotated": "{n} linha de texto rodado ou de lado foi omitida", "ir.k.pdfRotatedPlural": "{n} linhas de texto rodado ou de lado foram omitidas",
-          "ir.k.pdfLinks": "O endereço web de {n} ligação foi omitido; o texto mantém-se", "ir.k.pdfLinksPlural": "Os endereços web de {n} ligações foram omitidos; o texto mantém-se" },
+          "ir.k.pdfLinks": "O endereço web de {n} ligação foi omitido; o texto mantém-se", "ir.k.pdfLinksPlural": "Os endereços web de {n} ligações foram omitidos; o texto mantém-se",
+          "ir.k.pdfRtl": "{n} página foi lida da direita para a esquerda: verifique as quebras de parágrafo e a ordem de números ou palavras em alfabeto latino nela", "ir.k.pdfRtlPlural": "{n} páginas foram lidas da direita para a esquerda: verifique as quebras de parágrafo e a ordem de números ou palavras em alfabeto latino nelas",
+          "ir.k.pdfNoText": "{n} página não tem camada de texto, apenas uma imagem: foi importada como imagem e as suas palavras, se houver, não foram lidas; se for uma página de texto digitalizada, passe antes o PDF por um reconhecimento de texto (OCR)", "ir.k.pdfNoTextPlural": "{n} páginas não têm camada de texto, apenas uma imagem: foram importadas como imagens e as suas palavras, se houver, não foram lidas; se forem páginas de texto digitalizadas, passe antes o PDF por um reconhecimento de texto (OCR)",
+          "ir.k.pdfBadGlyphs": "{n} glifo não tinha nenhuma letra por trás no PDF e foi omitido", "ir.k.pdfBadGlyphsPlural": "{n} glifos não tinham nenhuma letra por trás no PDF e foram omitidos",
+          "ir.k.pdfBadGlyphsMany": "{n} glifos não tinham nenhuma letra por trás no PDF e foram omitidos: a camada de texto deste PDF não é fiável; compare o texto com o PDF ou importe o manuscrito original", "ir.k.pdfBadGlyphsManyPlural": "{n} glifos não tinham nenhuma letra por trás no PDF e foram omitidos: a camada de texto deste PDF não é fiável; compare o texto com o PDF ou importe o manuscrito original" },
         "nl": { "side.importTitle": "Een manuscript importeren: Word (.docx), Markdown (.md), platte tekst (.txt) of PDF (.pdf)", "pdf.reading": "{name} wordt gelezen…", "pdf.loadFailed": "De pdf-lezer kon niet worden geladen — controleer de verbinding en probeer het opnieuw", "pdf.scanned": "Deze pdf heeft geen tekst om te lezen — de pagina’s zijn afbeeldingen (een scan). Beuk raadt geen woorden: haal hem eerst door tekstherkenning (OCR), of importeer het oorspronkelijke manuscript.", "pdf.password": "Deze pdf is met een wachtwoord beveiligd. Verwijder het wachtwoord in het programma waarmee hij is gemaakt en importeer hem opnieuw.", "pdf.broken": "Dit bestand kon niet als pdf worden gelezen.",
           "ir.from.pdf": "een kop die in de pdf groter of vet is gezet: ‘{heading}’", "ir.why.pdf": "zo is de tekst van de pdf opnieuw opgebouwd; er is niets aparts om terug te zetten",
           "ir.k.pdfLimits": "Een pdf bewaart regels die op pagina’s staan, geen alinea’s: alinea’s, koppen, scènewisselingen, cursief en vet zijn uit de opmaak opnieuw opgebouwd. Voetnoten komen als gewone tekst op hun plek binnen en tekeningen van lijnen worden niet geïmporteerd — lees het boek helemaal door.",
@@ -27861,7 +28017,11 @@
           "ir.k.pdfMasks": "{n} eenkleurige sjabloonvorm (een ornament of lijn) is weggelaten", "ir.k.pdfMasksPlural": "{n} eenkleurige sjabloonvormen (ornamenten of lijnen) zijn weggelaten",
           "ir.k.pdfDupImages": "{n} herhaling van een al geïmporteerde afbeelding is weggelaten", "ir.k.pdfDupImagesPlural": "{n} herhalingen van al geïmporteerde afbeeldingen zijn weggelaten",
           "ir.k.pdfRotated": "{n} regel gedraaide of zijwaartse tekst is weggelaten", "ir.k.pdfRotatedPlural": "{n} regels gedraaide of zijwaartse tekst zijn weggelaten",
-          "ir.k.pdfLinks": "Het webadres van {n} link is weggelaten; de tekst blijft staan", "ir.k.pdfLinksPlural": "De webadressen van {n} links zijn weggelaten; de tekst blijft staan" },
+          "ir.k.pdfLinks": "Het webadres van {n} link is weggelaten; de tekst blijft staan", "ir.k.pdfLinksPlural": "De webadressen van {n} links zijn weggelaten; de tekst blijft staan",
+          "ir.k.pdfRtl": "{n} pagina is van rechts naar links gelezen: controleer de alinea-overgangen en de volgorde van getallen of woorden in Latijns schrift erin", "ir.k.pdfRtlPlural": "{n} pagina’s zijn van rechts naar links gelezen: controleer de alinea-overgangen en de volgorde van getallen of woorden in Latijns schrift erin",
+          "ir.k.pdfNoText": "{n} pagina heeft geen tekstlaag, alleen een afbeelding: ze is als afbeelding geïmporteerd en haar woorden, als die er zijn, zijn niet gelezen — is het een gescande tekstpagina, haal de pdf dan eerst door tekstherkenning (OCR)", "ir.k.pdfNoTextPlural": "{n} pagina’s hebben geen tekstlaag, alleen een afbeelding: ze zijn als afbeeldingen geïmporteerd en hun woorden, als die er zijn, zijn niet gelezen — zijn het gescande tekstpagina’s, haal de pdf dan eerst door tekstherkenning (OCR)",
+          "ir.k.pdfBadGlyphs": "{n} glyph had in de pdf geen letter erachter en is weggelaten", "ir.k.pdfBadGlyphsPlural": "{n} glyphs hadden in de pdf geen letter erachter en zijn weggelaten",
+          "ir.k.pdfBadGlyphsMany": "{n} glyphs hadden in de pdf geen letter erachter en zijn weggelaten — de tekstlaag van deze pdf is onbetrouwbaar: vergelijk de tekst met de pdf of importeer het oorspronkelijke manuscript", "ir.k.pdfBadGlyphsManyPlural": "{n} glyphs hadden in de pdf geen letter erachter en zijn weggelaten — de tekstlaag van deze pdf is onbetrouwbaar: vergelijk de tekst met de pdf of importeer het oorspronkelijke manuscript" },
         "pl": { "side.importTitle": "Importuj rękopis: Word (.docx), Markdown (.md), zwykły tekst (.txt) lub PDF (.pdf)", "pdf.reading": "Czytanie pliku {name}…", "pdf.loadFailed": "Nie udało się wczytać czytnika PDF — sprawdź połączenie i spróbuj ponownie", "pdf.scanned": "Ten PDF nie ma tekstu do odczytania — jego strony to obrazy (skan). Beuk nie zgaduje słów: najpierw przepuść go przez rozpoznawanie tekstu (OCR) albo zaimportuj oryginalny rękopis.", "pdf.password": "Ten PDF jest chroniony hasłem. Usuń hasło w programie, w którym go utworzono, i zaimportuj go ponownie.", "pdf.broken": "Nie udało się odczytać tego pliku jako PDF.",
           "ir.from.pdf": "nagłówek złożony w PDF większą lub pogrubioną czcionką: „{heading}”", "ir.why.pdf": "tak został odbudowany tekst PDF; nie ma nic osobnego do przywrócenia",
           "ir.k.pdfLimits": "PDF przechowuje wiersze rozmieszczone na stronach, nie akapity: akapity, nagłówki, przerwy między scenami, kursywę i pogrubienie odbudowano z układu stron. Przypisy trafiają jako zwykły tekst tam, gdzie stały, a rysunki z linii nie są importowane — przeczytaj całą książkę.",
@@ -27878,7 +28038,11 @@
           "ir.k.pdfMasks": "Pominięto jednobarwne kształty szablonowe (ozdobniki lub linie): {n}", "ir.k.pdfMasksPlural": "Pominięto jednobarwne kształty szablonowe (ozdobniki lub linie): {n}",
           "ir.k.pdfDupImages": "Pominięto powtórzenia już zaimportowanych obrazów: {n}", "ir.k.pdfDupImagesPlural": "Pominięto powtórzenia już zaimportowanych obrazów: {n}",
           "ir.k.pdfRotated": "Pominięto wiersze tekstu obróconego lub bocznego: {n}", "ir.k.pdfRotatedPlural": "Pominięto wiersze tekstu obróconego lub bocznego: {n}",
-          "ir.k.pdfLinks": "Pominięto adresy internetowe linków: {n}; ich tekst zostaje", "ir.k.pdfLinksPlural": "Pominięto adresy internetowe linków: {n}; ich tekst zostaje" },
+          "ir.k.pdfLinks": "Pominięto adresy internetowe linków: {n}; ich tekst zostaje", "ir.k.pdfLinksPlural": "Pominięto adresy internetowe linków: {n}; ich tekst zostaje",
+          "ir.k.pdfRtl": "Strony czytane od prawej do lewej: {n} — sprawdź podziały akapitów i kolejność liczb lub słów w alfabecie łacińskim", "ir.k.pdfRtlPlural": "Strony czytane od prawej do lewej: {n} — sprawdź podziały akapitów i kolejność liczb lub słów w alfabecie łacińskim",
+          "ir.k.pdfNoText": "Strony bez warstwy tekstu, tylko z obrazem: {n} — zaimportowano je jako obrazy, a ich słów (jeśli są) nie odczytano; jeśli to zeskanowane strony tekstu, najpierw przepuść PDF przez rozpoznawanie tekstu (OCR)", "ir.k.pdfNoTextPlural": "Strony bez warstwy tekstu, tylko z obrazem: {n} — zaimportowano je jako obrazy, a ich słów (jeśli są) nie odczytano; jeśli to zeskanowane strony tekstu, najpierw przepuść PDF przez rozpoznawanie tekstu (OCR)",
+          "ir.k.pdfBadGlyphs": "Pominięto glify bez litery w PDF: {n}", "ir.k.pdfBadGlyphsPlural": "Pominięto glify bez litery w PDF: {n}",
+          "ir.k.pdfBadGlyphsMany": "Pominięto glify bez litery w PDF: {n} — warstwa tekstu tego PDF jest niewiarygodna: porównaj tekst z PDF lub zaimportuj oryginalny rękopis", "ir.k.pdfBadGlyphsManyPlural": "Pominięto glify bez litery w PDF: {n} — warstwa tekstu tego PDF jest niewiarygodna: porównaj tekst z PDF lub zaimportuj oryginalny rękopis" },
         "ru": { "side.importTitle": "Импорт рукописи: Word (.docx), Markdown (.md), простой текст (.txt) или PDF (.pdf)", "pdf.reading": "Читаем {name}…", "pdf.loadFailed": "Не удалось загрузить средство чтения PDF — проверьте соединение и попробуйте ещё раз", "pdf.scanned": "В этом PDF нет текста для чтения — его страницы являются изображениями (скан). Beuk не угадывает слова: сначала пропустите его через распознавание текста (OCR) или импортируйте исходную рукопись.", "pdf.password": "Этот PDF защищён паролем. Снимите пароль в программе, в которой он создан, и импортируйте его снова.", "pdf.broken": "Этот файл не удалось прочитать как PDF.",
           "ir.from.pdf": "заголовок, набранный в PDF крупнее или жирным: «{heading}»", "ir.why.pdf": "так был восстановлен текст PDF; возвращать отдельно нечего",
           "ir.k.pdfLimits": "PDF хранит строки, размещённые на страницах, а не абзацы: абзацы, заголовки, смены сцен, курсив и жирный восстановлены по вёрстке. Сноски приходят обычным текстом на своём месте, а рисунки из линий не импортируются — прочитайте книгу целиком.",
@@ -27895,7 +28059,11 @@
           "ir.k.pdfMasks": "Пропущены одноцветные трафаретные фигуры (украшения или линейки): {n}", "ir.k.pdfMasksPlural": "Пропущены одноцветные трафаретные фигуры (украшения или линейки): {n}",
           "ir.k.pdfDupImages": "Пропущены повторы уже импортированных изображений: {n}", "ir.k.pdfDupImagesPlural": "Пропущены повторы уже импортированных изображений: {n}",
           "ir.k.pdfRotated": "Пропущены строки повёрнутого или бокового текста: {n}", "ir.k.pdfRotatedPlural": "Пропущены строки повёрнутого или бокового текста: {n}",
-          "ir.k.pdfLinks": "Пропущены веб-адреса ссылок: {n}; их текст сохранён", "ir.k.pdfLinksPlural": "Пропущены веб-адреса ссылок: {n}; их текст сохранён" },
+          "ir.k.pdfLinks": "Пропущены веб-адреса ссылок: {n}; их текст сохранён", "ir.k.pdfLinksPlural": "Пропущены веб-адреса ссылок: {n}; их текст сохранён",
+          "ir.k.pdfRtl": "Страниц, прочитанных справа налево: {n} — проверьте разбивку на абзацы и порядок чисел или слов латиницей в них", "ir.k.pdfRtlPlural": "Страниц, прочитанных справа налево: {n} — проверьте разбивку на абзацы и порядок чисел или слов латиницей в них",
+          "ir.k.pdfNoText": "Страниц без текстового слоя, только с изображением: {n} — они импортированы как изображения, их слова (если есть) не прочитаны; если это отсканированные страницы текста, сначала пропустите PDF через распознавание текста (OCR)", "ir.k.pdfNoTextPlural": "Страниц без текстового слоя, только с изображением: {n} — они импортированы как изображения, их слова (если есть) не прочитаны; если это отсканированные страницы текста, сначала пропустите PDF через распознавание текста (OCR)",
+          "ir.k.pdfBadGlyphs": "Пропущено глифов, за которыми в PDF нет буквы: {n}", "ir.k.pdfBadGlyphsPlural": "Пропущено глифов, за которыми в PDF нет буквы: {n}",
+          "ir.k.pdfBadGlyphsMany": "Пропущено глифов, за которыми в PDF нет буквы: {n} — текстовому слою этого PDF нельзя доверять: сверьте текст с PDF или импортируйте исходную рукопись", "ir.k.pdfBadGlyphsManyPlural": "Пропущено глифов, за которыми в PDF нет буквы: {n} — текстовому слою этого PDF нельзя доверять: сверьте текст с PDF или импортируйте исходную рукопись" },
         "tr": { "side.importTitle": "Bir el yazması içe aktarın: Word (.docx), Markdown (.md), düz metin (.txt) veya PDF (.pdf)", "pdf.reading": "{name} okunuyor…", "pdf.loadFailed": "PDF okuyucu yüklenemedi — bağlantıyı kontrol edip yeniden deneyin", "pdf.scanned": "Bu PDF'de okunacak metin yok — sayfaları resim (bir tarama). Beuk kelime tahmin etmez: önce bir metin tanıma (OCR) işleminden geçirin ya da özgün el yazmasını içe aktarın.", "pdf.password": "Bu PDF parola korumalı. Parolayı onu oluşturan programda kaldırın, sonra yeniden içe aktarın.", "pdf.broken": "Bu dosya PDF olarak okunamadı.",
           "ir.from.pdf": "PDF'de daha büyük ya da kalın dizilmiş bir başlık: “{heading}”", "ir.why.pdf": "PDF'nin metni bu şekilde yeniden kuruldu; ayrıca geri konacak bir şey yok",
           "ir.k.pdfLimits": "Bir PDF paragraf değil, sayfalara yerleştirilmiş satırlar saklar: paragraflar, başlıklar, sahne geçişleri, italik ve kalın sayfa düzeninden yeniden kuruldu. Dipnotlar durdukları yerde düz metin olarak gelir, çizgilerle yapılmış çizimler içe aktarılmaz — kitabı baştan sona okuyun.",
@@ -27912,7 +28080,11 @@
           "ir.k.pdfMasks": "{n} tek renkli şablon şekli (bir süs ya da çizgi) dışarıda bırakıldı", "ir.k.pdfMasksPlural": "{n} tek renkli şablon şekli (süsler ya da çizgiler) dışarıda bırakıldı",
           "ir.k.pdfDupImages": "Zaten içe aktarılmış bir resmin {n} tekrarı dışarıda bırakıldı", "ir.k.pdfDupImagesPlural": "Zaten içe aktarılmış resimlerin {n} tekrarı dışarıda bırakıldı",
           "ir.k.pdfRotated": "Döndürülmüş ya da yan duran {n} metin satırı dışarıda bırakıldı", "ir.k.pdfRotatedPlural": "Döndürülmüş ya da yan duran {n} metin satırı dışarıda bırakıldı",
-          "ir.k.pdfLinks": "{n} bağlantının web adresi dışarıda bırakıldı; metni korundu", "ir.k.pdfLinksPlural": "{n} bağlantının web adresi dışarıda bırakıldı; metinleri korundu" },
+          "ir.k.pdfLinks": "{n} bağlantının web adresi dışarıda bırakıldı; metni korundu", "ir.k.pdfLinksPlural": "{n} bağlantının web adresi dışarıda bırakıldı; metinleri korundu",
+          "ir.k.pdfRtl": "{n} sayfa sağdan sola okundu: paragraf geçişlerini ve içindeki sayıların ya da Latin harfli sözcüklerin sırasını denetleyin", "ir.k.pdfRtlPlural": "{n} sayfa sağdan sola okundu: paragraf geçişlerini ve içlerindeki sayıların ya da Latin harfli sözcüklerin sırasını denetleyin",
+          "ir.k.pdfNoText": "{n} sayfanın metin katmanı yok, yalnızca bir resim var: resim olarak içe aktarıldı ve varsa sözcükleri okunmadı; taranmış bir metin sayfasıysa PDF’yi önce metin tanımadan (OCR) geçirin", "ir.k.pdfNoTextPlural": "{n} sayfanın metin katmanı yok, yalnızca birer resim var: resim olarak içe aktarıldılar ve varsa sözcükleri okunmadı; taranmış metin sayfalarıysa PDF’yi önce metin tanımadan (OCR) geçirin",
+          "ir.k.pdfBadGlyphs": "PDF’de arkasında harf olmayan {n} glif dışarıda bırakıldı", "ir.k.pdfBadGlyphsPlural": "PDF’de arkasında harf olmayan {n} glif dışarıda bırakıldı",
+          "ir.k.pdfBadGlyphsMany": "PDF’de arkasında harf olmayan {n} glif dışarıda bırakıldı — bu PDF’nin metin katmanı güvenilir değil: metni PDF ile karşılaştırın ya da özgün el yazmasını içe aktarın", "ir.k.pdfBadGlyphsManyPlural": "PDF’de arkasında harf olmayan {n} glif dışarıda bırakıldı — bu PDF’nin metin katmanı güvenilir değil: metni PDF ile karşılaştırın ya da özgün el yazmasını içe aktarın" },
         "ar": { "side.importTitle": "استيراد مخطوطة: Word (.docx) أو Markdown (.md) أو نص عادي (.txt) أو PDF (.pdf)", "pdf.reading": "جارٍ قراءة {name}…", "pdf.loadFailed": "تعذّر تحميل قارئ PDF — تحقّق من الاتصال وحاول مجددًا", "pdf.scanned": "لا يحتوي ملف PDF هذا على نص يمكن قراءته — صفحاته صور (مسح ضوئي). لا يخمّن Beuk الكلمات: مرّره أولًا على أداة للتعرّف على النصوص (OCR)، أو استورد المخطوطة الأصلية.", "pdf.password": "ملف PDF هذا محمي بكلمة مرور. أزل كلمة المرور في البرنامج الذي أنشأه، ثم استورده مجددًا.", "pdf.broken": "تعذّرت قراءة هذا الملف بوصفه PDF.",
           "ir.from.pdf": "عنوان مصفوف بخط أكبر أو عريض في ملف PDF: «{heading}»", "ir.why.pdf": "هكذا أُعيد بناء نص ملف PDF؛ لا يوجد شيء منفصل لإعادته",
           "ir.k.pdfLimits": "يحفظ ملف PDF أسطرًا موضوعة على الصفحات لا فقرات: أُعيد بناء الفقرات والعناوين وفواصل المشاهد والمائل والعريض من التخطيط. تصل الحواشي نصًا عاديًا في مواضعها، ولا تُستورد الرسوم المصنوعة من خطوط — اقرأ الكتاب كاملًا.",
@@ -27929,7 +28101,11 @@
           "ir.k.pdfMasks": "أشكال استنسل بلون واحد (زخارف أو خطوط) حُذفت: {n}", "ir.k.pdfMasksPlural": "أشكال استنسل بلون واحد (زخارف أو خطوط) حُذفت: {n}",
           "ir.k.pdfDupImages": "تكرارات لصور مستوردة من قبل حُذفت: {n}", "ir.k.pdfDupImagesPlural": "تكرارات لصور مستوردة من قبل حُذفت: {n}",
           "ir.k.pdfRotated": "أسطر نص مُدار أو جانبي حُذفت: {n}", "ir.k.pdfRotatedPlural": "أسطر نص مُدار أو جانبي حُذفت: {n}",
-          "ir.k.pdfLinks": "حُذفت عناوين الويب لروابط عددها {n}؛ وبقي نصها", "ir.k.pdfLinksPlural": "حُذفت عناوين الويب لروابط عددها {n}؛ وبقي نصها" },
+          "ir.k.pdfLinks": "حُذفت عناوين الويب لروابط عددها {n}؛ وبقي نصها", "ir.k.pdfLinksPlural": "حُذفت عناوين الويب لروابط عددها {n}؛ وبقي نصها",
+          "ir.k.pdfRtl": "قُرئت من اليمين إلى اليسار صفحات عددها: {n} — راجع فواصل الفقرات فيها وترتيب ما فيها من أرقام أو كلمات بالحروف اللاتينية", "ir.k.pdfRtlPlural": "قُرئت من اليمين إلى اليسار صفحات عددها: {n} — راجع فواصل الفقرات فيها وترتيب ما فيها من أرقام أو كلمات بالحروف اللاتينية",
+          "ir.k.pdfNoText": "صفحات بلا طبقة نص، فيها صورة فقط، عددها: {n} — استُوردت صورًا ولم تُقرأ كلماتها إن وُجدت؛ إن كانت صفحات نص ممسوحة ضوئيًا فمرّر ملف PDF أولًا على التعرّف الضوئي على النص (OCR)", "ir.k.pdfNoTextPlural": "صفحات بلا طبقة نص، فيها صورة فقط، عددها: {n} — استُوردت صورًا ولم تُقرأ كلماتها إن وُجدت؛ إن كانت صفحات نص ممسوحة ضوئيًا فمرّر ملف PDF أولًا على التعرّف الضوئي على النص (OCR)",
+          "ir.k.pdfBadGlyphs": "حُذفت رموز لا يقابلها حرف في ملف PDF عددها: {n}", "ir.k.pdfBadGlyphsPlural": "حُذفت رموز لا يقابلها حرف في ملف PDF عددها: {n}",
+          "ir.k.pdfBadGlyphsMany": "حُذفت رموز لا يقابلها حرف في ملف PDF عددها: {n} — طبقة النص في هذا الملف غير موثوقة: قارن النص بملف PDF أو استورد المخطوطة الأصلية", "ir.k.pdfBadGlyphsManyPlural": "حُذفت رموز لا يقابلها حرف في ملف PDF عددها: {n} — طبقة النص في هذا الملف غير موثوقة: قارن النص بملف PDF أو استورد المخطوطة الأصلية" },
         "ja": { "side.importTitle": "原稿を読み込む：Word（.docx）、Markdown（.md）、テキスト（.txt）、PDF（.pdf）", "pdf.reading": "{name} を読み込んでいます…", "pdf.loadFailed": "PDF リーダーを読み込めませんでした。接続を確認して、もう一度お試しください", "pdf.scanned": "この PDF には読み取れる文字がありません。ページが画像（スキャン）です。Beuk は文字を推測しません。先に文字認識（OCR）にかけるか、元の原稿を読み込んでください。", "pdf.password": "この PDF はパスワードで保護されています。作成したアプリでパスワードを外してから、もう一度読み込んでください。", "pdf.broken": "このファイルは PDF として読み取れませんでした。",
           "ir.from.pdf": "PDF で大きく、または太字で組まれた見出し：「{heading}」", "ir.why.pdf": "PDF の文章はこのように組み立て直されました。別に戻すものはありません",
           "ir.k.pdfLimits": "PDF が持つのはページに置かれた行で、段落ではありません。段落・見出し・場面転換・斜体・太字はレイアウトから組み立て直しました。脚注は元の位置に普通の文として入り、線で描かれた図は読み込まれません。本全体を読み返してください。",
@@ -27946,7 +28122,11 @@
           "ir.k.pdfMasks": "単色のステンシル図形（飾りや罫線）{n} 点を除きました", "ir.k.pdfMasksPlural": "単色のステンシル図形（飾りや罫線）{n} 点を除きました",
           "ir.k.pdfDupImages": "読み込み済みの画像のくり返し {n} 点を除きました", "ir.k.pdfDupImagesPlural": "読み込み済みの画像のくり返し {n} 点を除きました",
           "ir.k.pdfRotated": "回転した、または横向きの文字 {n} 行を除きました", "ir.k.pdfRotatedPlural": "回転した、または横向きの文字 {n} 行を除きました",
-          "ir.k.pdfLinks": "リンク {n} 件の Web アドレスを除きました。文字はそのまま残ります", "ir.k.pdfLinksPlural": "リンク {n} 件の Web アドレスを除きました。文字はそのまま残ります" },
+          "ir.k.pdfLinks": "リンク {n} 件の Web アドレスを除きました。文字はそのまま残ります", "ir.k.pdfLinksPlural": "リンク {n} 件の Web アドレスを除きました。文字はそのまま残ります",
+          "ir.k.pdfRtl": "{n} ページを右から左へ読みました。段落の区切りと、中の数字やラテン文字の語の順序を確かめてください", "ir.k.pdfRtlPlural": "{n} ページを右から左へ読みました。段落の区切りと、中の数字やラテン文字の語の順序を確かめてください",
+          "ir.k.pdfNoText": "{n} ページにはテキスト層がなく画像だけです。画像として取り込み、文字があっても読んでいません。スキャンした文章のページなら、先に PDF を文字認識（OCR）にかけてください", "ir.k.pdfNoTextPlural": "{n} ページにはテキスト層がなく画像だけです。画像として取り込み、文字があっても読んでいません。スキャンした文章のページなら、先に PDF を文字認識（OCR）にかけてください",
+          "ir.k.pdfBadGlyphs": "PDF 内で文字に対応しないグリフ {n} 個を除きました", "ir.k.pdfBadGlyphsPlural": "PDF 内で文字に対応しないグリフ {n} 個を除きました",
+          "ir.k.pdfBadGlyphsMany": "PDF 内で文字に対応しないグリフ {n} 個を除きました。この PDF のテキスト層は信頼できません。本文を PDF と見比べるか、元の原稿を取り込んでください", "ir.k.pdfBadGlyphsManyPlural": "PDF 内で文字に対応しないグリフ {n} 個を除きました。この PDF のテキスト層は信頼できません。本文を PDF と見比べるか、元の原稿を取り込んでください" },
         "zh-Hans": { "side.importTitle": "导入书稿：Word（.docx）、Markdown（.md）、纯文本（.txt）或 PDF（.pdf）", "pdf.reading": "正在读取 {name}…", "pdf.loadFailed": "无法加载 PDF 阅读器——请检查网络连接后重试", "pdf.scanned": "这个 PDF 没有可读取的文字——它的页面是图片（扫描件）。Beuk 不会猜测文字：请先用文字识别（OCR）处理，或导入原始书稿。", "pdf.password": "这个 PDF 受密码保护。请在创建它的程序中去掉密码，然后重新导入。", "pdf.broken": "无法将此文件作为 PDF 读取。",
           "ir.from.pdf": "PDF 中以更大或加粗字体排出的标题：“{heading}”", "ir.why.pdf": "PDF 的文字就是这样重建的；没有单独可还原的内容",
           "ir.k.pdfLimits": "PDF 保存的是放在页面上的行，而不是段落：段落、标题、场景分隔、斜体和粗体都是根据版面重建的。脚注以普通文字留在原处，用线条画成的图不会导入——请通读全书。",
@@ -27963,7 +28143,11 @@
           "ir.k.pdfMasks": "已略去 {n} 个单色模板图形（装饰或线条）", "ir.k.pdfMasksPlural": "已略去 {n} 个单色模板图形（装饰或线条）",
           "ir.k.pdfDupImages": "已略去 {n} 处已导入图片的重复", "ir.k.pdfDupImagesPlural": "已略去 {n} 处已导入图片的重复",
           "ir.k.pdfRotated": "已略去 {n} 行旋转或侧排的文字", "ir.k.pdfRotatedPlural": "已略去 {n} 行旋转或侧排的文字",
-          "ir.k.pdfLinks": "已略去 {n} 个链接的网址；链接文字保留", "ir.k.pdfLinksPlural": "已略去 {n} 个链接的网址；链接文字保留" }
+          "ir.k.pdfLinks": "已略去 {n} 个链接的网址；链接文字保留", "ir.k.pdfLinksPlural": "已略去 {n} 个链接的网址；链接文字保留",
+          "ir.k.pdfRtl": "已从右到左读取 {n} 页：请检查其中的分段，以及数字或拉丁字母单词的顺序", "ir.k.pdfRtlPlural": "已从右到左读取 {n} 页：请检查其中的分段，以及数字或拉丁字母单词的顺序",
+          "ir.k.pdfNoText": "{n} 页没有文字层，只有图片：已作为图片导入，其中的文字（如有）未被读取；如果是扫描的文字页，请先用文字识别（OCR）处理该 PDF", "ir.k.pdfNoTextPlural": "{n} 页没有文字层，只有图片：已作为图片导入，其中的文字（如有）未被读取；如果是扫描的文字页，请先用文字识别（OCR）处理该 PDF",
+          "ir.k.pdfBadGlyphs": "已略去 PDF 中 {n} 个没有对应字符的字形", "ir.k.pdfBadGlyphsPlural": "已略去 PDF 中 {n} 个没有对应字符的字形",
+          "ir.k.pdfBadGlyphsMany": "已略去 PDF 中 {n} 个没有对应字符的字形——此 PDF 的文字层不可靠：请将文字与 PDF 对照，或导入原稿", "ir.k.pdfBadGlyphsManyPlural": "已略去 PDF 中 {n} 个没有对应字符的字形——此 PDF 的文字层不可靠：请将文字与 PDF 对照，或导入原稿" }
       };
       Object.keys(PDFIMP_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], PDFIMP_STRINGS[code]); });
       /* ==== /BEUK:pdfimport ==== */
@@ -45071,6 +45255,73 @@
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
               cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
             }
+          } }
+      );
+      /* The layout reader on pages laid out here as PDF.js would hand
+         them over (no PDF, no book touched): short lines of dialogue at
+         the foot of pages keep their place in the story, a page of
+         nothing but indented one-line paragraphs keeps them apart, an
+         Arabic page reads right to left with its paragraphs, a page with
+         no text over a full-page picture is counted, and glyphs with no
+         letter are taken out of the text. */
+      function pdfLayoutFixture() {
+        const W = 300, H = 400, it = (s, x, y, w, size, rtl) => ({ s, x, y, w, size: size || 11, b: false, i: false, rtl: rtl ? s.length : 0 });
+        const words = "the sea ran grey under a low sky and the boats lay hauled up on the shingle while the men mended nets".split(" ");
+        const full = (k) => { const ws = []; for (let q = 0; q < 8; q++) ws.push(words[(k * 3 + q) % words.length]); return ws.join(" "); };
+        const chrome = (n) => [it("THE LAYOUT BOOK", 118, 20, 64, 8), it(String(n), 148, 385, 5, 8)];
+        const pages = [];
+        /* Pages 1 and 2: 23 lines of prose ending on a one-line "Why?". */
+        for (let n = 1; n <= 2; n++) {
+          const items = chrome(n);
+          for (let k = 0; k < 22; k++) {
+            const first = k % 6 === 0, last = k % 6 === 5;
+            items.push(it(full(k) + (last ? "." : ""), first ? 52 : 40, 50 + k * 14, last ? 120 : (first ? 208 : 220)));
+          }
+          items.push(it("“Why?”", 52, 50 + 22 * 14, 26));
+          pages.push({ n, w: W, h: H, items, images: [] });
+        }
+        /* Page 3: only short indented paragraphs. */
+        pages.push({ n: 3, w: W, h: H, images: [], items: chrome(3).concat(["“No.”", "“Yes.”", "“Why?”", "“Never.”"].map((s, k) => it(s, 52, 50 + k * 14, 28))) });
+        /* Page 4: Arabic, set right to left: an indented first line, a
+           full line, a short last line; then a new indented paragraph. */
+        /* Words placed from the right edge; a justified line spreads its
+           spaces to reach the left margin. */
+        const arLine = (ws, right, y, left) => {
+          const wds = ws.map((w) => w.length * 3.8), sum = wds.reduce((a, b) => a + b, 0);
+          const gap = left == null ? 3 : (right - left - sum) / (ws.length - 1);
+          let x = right;
+          return ws.map((w, q) => { x -= wds[q]; const r = it(w, x, y, wds[q], 11, true); x -= gap; return r; });
+        };
+        const ar4 = chrome(4)
+          .concat(arLine(["كان", "البحر", "رماديا", "تحت", "سماء", "منخفضة", "وكانت", "القوارب", "مسحوبة"], 248, 50, 40))
+          .concat(arLine(["على", "الحصى", "بينما", "كان", "الرجال", "يصلحون", "الشباك", "ويتحدثون", "عن", "الطقس"], 260, 64, 40))
+          .concat(arLine(["وعن", "السمك", "كثيرة", "جدا."], 260, 78))
+          .concat(arLine(["لم", "يصدقه", "أحد."], 248, 92));
+        pages.push({ n: 4, w: W, h: H, images: [], items: ar4 });
+        /* Page 5: no text, a picture over the whole page (a scan). */
+        pages.push({ n: 5, w: W, h: H, items: [], images: [{ x0: 0, x1: W, y0: 0, y1: H, pw: 600, ph: 800, img: null, dup: false, error: "" }] });
+        return { numPages: pages.length, title: "", author: "", pages, textChars: 4000, links: 0, imgErrors: 0, badGlyphs: 0, rtlChars: 60 };
+      }
+      SELF_CHECKS_ASYNC.push(
+        { id: "import.pdf.layout", feature: "import", name: "PDF import layout: a “Why?” at the foot of two pages at the text's leading is kept (only the running head and page numbers, listed with counts, are left out), a page of indented one-line paragraphs keeps them apart (the book's margin, not the page's middle), an Arabic page reads right to left with its paragraph break at the right-hand indent, a text-less page under a full-page picture is reported, and control characters from the text layer are taken out and counted",
+          async run() {
+            const bad = [];
+            const lay = pdfLayout(pdfLayoutFixture());
+            const paras = lay.blocks.filter((b) => b.kind === "p").map((b) => b.md);
+            const whys = paras.filter((p) => p === "“Why?”").length;
+            if (whys !== 3) bad.push(whys + " “Why?” paragraphs of 3");
+            ["“No.”", "“Yes.”", "“Never.”"].forEach((s) => { if (paras.indexOf(s) < 0) bad.push(s + " is not a paragraph of its own"); });
+            if (lay.st.heads !== 8) bad.push(lay.st.heads + " running lines left out, not 8");
+            if (!/“THE LAYOUT BOOK” ×4/.test(lay.st.headSample) || !/×4.*×4/.test(lay.st.headSample)) bad.push("dropped lines listed as " + lay.st.headSample);
+            const ar1 = "كان البحر رماديا تحت سماء منخفضة وكانت القوارب مسحوبة على الحصى بينما كان الرجال يصلحون الشباك ويتحدثون عن الطقس وعن السمك كثيرة جدا.";
+            if (paras.indexOf(ar1) < 0) bad.push("Arabic paragraph not in reading order: " + (paras.find((p) => /[؀-ۿ]/.test(p)) || "none").slice(0, 60));
+            if (paras.indexOf("لم يصدقه أحد.") < 0) bad.push("the indented Arabic line did not start a paragraph");
+            if (lay.st.rtlPages.join() !== "4") bad.push("right-to-left pages " + lay.st.rtlPages.join());
+            if (lay.st.noText.join() !== "5") bad.push("text-less picture pages " + lay.st.noText.join());
+            const cl = pdfCleanText("A\u0000B\u0007C\ud800Dﺍ");
+            if (cl.s !== "ABCDا" || cl.bad !== 3) bad.push("cleaned " + JSON.stringify(cl));
+            ["pdfRtl", "pdfNoText", "pdfBadGlyphs", "pdfBadGlyphsMany"].forEach((k) => { const s = pdfItemLabel({ kind: k, data: { n: 6 } }); if (!/6/.test(s) || /ir\.k\./.test(s)) bad.push(k + " has no words: " + s); });
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : paras.length + " paragraphs; 3 “Why?” kept; heads: " + lay.st.headSample + "; Arabic read right to left; page 5 reported as text-less; 3 control characters out");
           } }
       );
       /* ==== /BEUK:pdfimport self-check ==== */

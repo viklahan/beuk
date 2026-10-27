@@ -2457,6 +2457,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'PDF.js reads the file in the browser and the import pipeline and report run against the book there; the server never sees the PDF.',
   },
   {
+    id: 'import.pdf.layout',
+    title:
+      'PDF import layout: short dialogue lines at the foot of pages are kept (only fixed-place running heads and page numbers are left out, listed with counts), indented one-line paragraphs stay apart, an Arabic page reads right to left with its paragraphs, a text-less page under a full-page picture is reported, and control characters from the text layer are removed and counted',
+    kind: 'client-only',
+    reason: 'The layout reader runs in the browser on what PDF.js extracts there; the server never sees the PDF.',
+  },
+  {
     id: 'import.report.images-accounted',
     title:
       'Import report (Word): every picture is accounted for — images inside headings, list items and quotes are imported, and any the import cannot hold are listed as left out',
