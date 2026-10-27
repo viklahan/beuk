@@ -2622,18 +2622,31 @@ Insert Image dialog has a Caption field and the section's image card edits
 it. Word import: a paragraph in Word's `Caption` style (by id or name,
 through `basedOn`; read from `word/document.xml` beside the alignments in
 `irDocxParaAligns`) straight after an imported picture becomes that
-picture's caption.
+picture's caption. A frontispiece's caption is set under its plate
+(`<p class="plate-caption">` in the `plate-full` page) in the preview, zen,
+print and EPUB, and counted. In print a captioned picture — in the text or
+the frontispiece — is held to the page area's height less 5.5em, so a tall
+picture and its caption (up to three lines) never part across a page:
+Chromium splits a figure taller than a page despite `break-inside: avoid`.
 
 **Quote attribution.** In a `>` blockquote of two or more lines, a last line
-opening with a dash — `> — Name`, or `> -- Name` / `> - Name`, which the
-beautifier makes an em dash — is the quote's attribution
+opening with an em dash — `> — Name`, or `> -- Name`, which the beautifier
+makes an em dash — is the quote's attribution
 (`quoteAttribution`): set as `<p class="attribution">` on its own line under
-the quote, ranged right and upright, the quote kept whole across a page
-break. A one-line dash-led quote stays a quote. The dash is not a word. In
+the quote, ranged right (left in a right-to-left book: the line's end) and
+upright, the quote kept whole across a page break. A one-line dash-led quote
+stays a quote. A hyphen never names a speaker (`> - item` is a list mark,
+and the beautifier leaves a hyphen at a quote line's head alone), and when
+any earlier line of the quote also opens with a dash the quote is dialogue
+(French, Spanish, Russian and Polish open spoken lines with `—`) or a list,
+so its last line is not an attribution. The dash is not a word. In
 Word the attribution is its own right-aligned `QuoteAttribution` paragraph
 (based on `Quote`) under the Quote. The toolbar's Attribution button quotes
 the cursor's paragraph if needed and adds the `> — ` line, cursor on it.
-Self-checks: `chapter.captions`, `chapter.attribution`.
+The Word export writes no right-to-left paragraphs (no `w:bidi`) for any
+book, so its `QuoteAttribution` stays `jc=right`, the end of those
+left-to-right paragraphs. Self-checks: `chapter.captions`,
+`chapter.attribution`, `chapter.platecaption`.
 
 ## Ramp: `/ramp`
 

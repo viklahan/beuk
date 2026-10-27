@@ -17342,10 +17342,15 @@
         }
         return clean.split(/\s+/).filter(Boolean).length;
       }
+      /* The caption of a frontispiece's picture ("" when it has none). */
+      function frontispieceCaption(s) {
+        const tok = imageTokensIn(s.content)[0];
+        return tok && tok.caption ? tok.caption : "";
+      }
       function sectionWords(s) {
         if (s.type === "cover") return 0;
         if (s.type === "part") return 0; /* a divider is structure, not prose */
-        if (s.type === "frontispiece") return 0; /* a plate is a picture, not prose */
+        if (s.type === "frontispiece") return countWords(frontispieceCaption(s)); /* a plate is a picture, not prose: only its caption is read */
         if (s.type === "toc") return state.sections.filter((x) => x.kind === "body").reduce((n, x) => n + countWords(x.title), 0);
         if (s.type === "copyright" && String(s.content || "").trim()) return countWords(s.content) + countWords(s.title);
         if (AUTO_TYPES.includes(s.type)) { const gen = countWords(state.meta.title) + countWords(state.meta.author); return gen ? gen + 24 : 0; }
@@ -19442,7 +19447,10 @@
         if (s.indexOf("\uE001") !== -1) s = s.replace(/\uE001/g, " ");
         s = s.replace(/---/g, "—").replace(/--/g, "—");
         s = s.replace(/(\d)\s*-\s*(\d)/g, "$1–$2");
-        s = s.replace(/(\S) - (\S)/g, "$1 — $2");
+        /* A spaced hyphen between words is a dash; one that opens a
+           quote line ("> - rope") is a list mark and stays a hyphen, or
+           it would read as a quote attribution's em dash. */
+        s = s.replace(/(\S) - (\S)/g, (m0, a, b, off, str) => (a === ">" && (off === 0 || str[off - 1] === "\n")) ? m0 : a + " — " + b);
         s = curlify(s);
         s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
         s = s.replace(/\n{3,}/g, "\n\n");
@@ -19717,12 +19725,20 @@
       /* Quote attribution: in a ">" blockquote of two or more lines, a
          last line that opens with a dash ("> — Name"; the beautifier
          makes "--" the em dash) names who said it. Returns the name
-         (the dash dropped), or null. */
-      const QUOTE_ATTR_RE = /^>\s?[ \t]*(?:—|―|--?)[ \t]+(\S[\s\S]*)$/;
+         (the dash dropped), or null. Only the em dash (or a
+         horizontal bar, or "--") names a speaker: a hyphen is a list
+         mark. And when an earlier line of the quote also opens with a
+         dash, the quote is dialogue (French, Spanish, Russian and
+         Polish open every spoken line with "—") or a list, so its last
+         line is one more line of it, never an attribution. */
+      const QUOTE_ATTR_RE = /^>\s?[ \t]*(?:—|―|--)[ \t]+(\S[\s\S]*)$/;
+      const QUOTE_DASH_LINE_RE = /^>\s?[ \t]*(?:—|―|–|-{1,2})\s/;
       function quoteAttribution(lines) {
         if (!lines || lines.length < 2) return null;
         const m = String(lines[lines.length - 1]).match(QUOTE_ATTR_RE);
-        return m ? m[1].trim() : null;
+        if (!m) return null;
+        if (lines.slice(0, -1).some((l) => QUOTE_DASH_LINE_RE.test(String(l)))) return null;
+        return m[1].trim();
       }
       function contentBlocksToHtml(rawContent, section, isFirst, forExport, dataMedia) {
         const text = beautifyText(rawContent || "");
@@ -19906,6 +19922,13 @@
       function halfTitleLine1(s) { return (s && typeof s.htLine1 === "string" && s.htLine1 !== "") ? s.htLine1 : (state.meta.title || ""); }
       function halfTitleLine2(s) { return (s && typeof s.htLine2 === "string") ? s.htLine2 : ""; }
       function tocHeadingOf(s) { return (s && typeof s.tocHeading === "string" && s.tocHeading.trim()) ? s.tocHeading : "Contents"; }
+      /* The frontispiece plate: its picture, and under it the writer's
+         caption when the marker has one — kept on the plate's page
+         (the picture is held short enough for it, see buildBookCss). */
+      function frontispiecePlateHtml(src, tok) {
+        const cap = tok.caption ? '<p class="plate-caption">' + inlineMd(tok.caption) + "</p>" : "";
+        return '<div class="plate-full' + (cap ? " has-caption" : "") + '"><img src="' + src + '" alt="' + esc(tok.alt) + '"/>' + cap + "</div>";
+      }
       function frontBackHtml(section, forExport, dataCover) {
         const m = state.meta;
         switch (section.type) {
@@ -19920,7 +19943,7 @@
             const img = imageById(tok.id);
             if (!img) return forExport ? "" : '<p class="empty-note">This plate points to a picture that is no longer in the library.</p>';
             const src = (forExport && !dataCover) ? "../Images/" + imageFileName(img) : "data:" + img.mediaType + ";base64," + img.data;
-            return '<div class="plate-full"><img src="' + src + '" alt="' + esc(tok.alt) + '"/></div>';
+            return frontispiecePlateHtml(src, tok);
           }
           case "halftitle": {
             const l2 = halfTitleLine2(section);
@@ -20128,6 +20151,12 @@
           '[dir="rtl"] ' + S + ".bd-spread, " + S + '[dir="rtl"] .bd-spread { -webkit-mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 97%), linear-gradient(to left, rgba(0,0,0,.34) 0%, rgba(0,0,0,.14) 8%, rgba(0,0,0,.04) 20%, rgba(0,0,0,0) 36%); mask-image: linear-gradient(to bottom, #000 50%, rgba(0,0,0,0) 97%), linear-gradient(to left, rgba(0,0,0,.34) 0%, rgba(0,0,0,.14) 8%, rgba(0,0,0,.04) 20%, rgba(0,0,0,0) 36%); }',
           S + ".plate-full { margin: 0; text-align: center; text-indent: 0; }",
           S + ".plate-full img { display: block; width: 100%; height: auto; margin: 0 auto; }",
+          /* A captioned frontispiece: the picture held short enough for
+             its caption to stay on the plate, the caption set as a
+             figure's is (print holds the picture to the page area). */
+          S + ".plate-full.has-caption img { width: auto; max-width: 100%; max-height: 82vh; }",
+          S + ".plate-full .plate-caption { font-size: 0.85em; font-style: italic; text-align: center; text-indent: 0; margin: 0.6em 0 0 0; opacity: 0.85; }",
+          S + ".plate-full .plate-caption em { font-style: normal; }",
           S + ".halftitle { text-align: center; padding-top: 22%; }",
           S + ".cover-page { text-align: center; margin: 0; }",
           S + ".cover-page img.cover-img { display: block; width: 100%; height: auto; margin: 0 auto; }",
@@ -20171,7 +20200,9 @@
               S + ".ch-editorial_left, " + S + ".ch-editorial_left .chapter-title, " + S + ".ch-editorial_left .chapter-subtitle, " +
               S + ".copyright p, " + S + ".inhead, " + S + ".part-body { text-align: right; }",
             S + ".ch-editorial_left .chapter-number { border-left: 0; padding-left: 0; border-right: 0.22em solid currentColor; padding-right: 0.6em; }",
-            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }");
+            S + ".toc-child { margin-left: 0; margin-right: 1.4em; }",
+            /* A quote's attribution stands at the line's end: the left. */
+            S + "blockquote p.attribution { text-align: left; }");
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -21914,7 +21945,8 @@
            snapshot's own meta, or a restored-era half title would
            borrow today's title and author. */
         const lang = doc.meta && doc.meta.language;
-        if (s.type === "cover" || s.type === "part" || s.type === "frontispiece") return 0;
+        if (s.type === "cover" || s.type === "part") return 0;
+        if (s.type === "frontispiece") return countWords(frontispieceCaption(s), lang);
         if (s.type === "toc") return doc.sections.filter((x) => x.kind === "body").reduce((n, x) => n + countWords(x.title, lang), 0);
         if (s.type === "copyright" && String(s.content || "").trim()) return countWords(s.content, lang) + countWords(s.title, lang);
         if (AUTO_TYPES.includes(s.type)) { const gen = countWords(doc.meta ? doc.meta.title : "", lang) + countWords(doc.meta ? doc.meta.author : "", lang); return gen ? gen + 24 : 0; }
@@ -29939,6 +29971,12 @@
              taller one (a square picture on a square page) spilled onto the
              next page, which then took the plate's bare page type. */
           ".print-sec .plate-page { height: " + inCss(t.h - mg.top - mg.bottom) + "; overflow: hidden; }",
+          /* A captioned picture is held short enough that the picture
+             and its caption always share one page: Chromium splits a
+             figure too tall for a page despite break-inside: avoid, and
+             the caption was left alone at the head of the next one. The
+             room kept is for a caption of up to three lines. */
+          ".print-sec figure.book-img.has-caption img, .print-sec .plate-full.has-caption img { max-height: calc(" + inCss(t.h - mg.top - mg.bottom) + " - 5.5em); width: auto; }",
           /* A blank page the renderer inserts; bare when blanks print bare. */
           ".print-blank { break-before: page; break-after: page; height: 1px; }",
           ...(state.printOmitBlankHead && suppressRule("blankleaf", blankBoxes) ? [suppressRule("blankleaf", blankBoxes), ".print-blank { page: blankleaf; }"] : []),
@@ -32705,7 +32743,7 @@
             const c = text(p);
             const typeM = c.match(/<body[^>]*epub:type="([^"]*)"/);
             if (typeM && /\b(halftitle|toc)\b/.test(typeM[1])) return;
-            if (/class="(plate-full|cover-page)"/.test(c) || /plate_\d+\.xhtml$/.test(p)) return;
+            if (/class="(plate-full|cover-page)[" ]/.test(c) || /plate_\d+\.xhtml$/.test(p)) return;
             add("nav.reach", t("a11y.f.nav.name"), t("a11y.f.nav.detail", { section: secName(p) }), jumpSection(p));
           });
           const tocPairs = [];
@@ -38353,6 +38391,20 @@
               if (!html.includes(want)) bad.push("the attribution did not set: " + JSON.stringify(html));
               if (!html.includes("<blockquote>— a dash-led quote of one line</blockquote>")) bad.push("a one-line dash quote was taken as an attribution");
               if (!html.includes("<blockquote>A quote<br/>with no attribution</blockquote>")) bad.push("a plain quote changed");
+              /* Dialogue and lists in a quote are not attributions: a
+                 French exchange opens every line with "—", a list each
+                 item with "-" (which stays a hyphen at a quote line's
+                 head), and a hyphen alone never names a speaker. */
+              const notAttr = [
+                ["> — Bonjour, dit-il.\n> — Bonsoir, répondit-elle.", "<blockquote>— Bonjour, dit-il.<br/>— Bonsoir, répondit-elle.</blockquote>"],
+                ["> Pack these:\n> - rope\n> - lamp", "<blockquote>Pack these:<br/>- rope<br/>- lamp</blockquote>"],
+                ["> Who goes there?\n> - Only me, said the boy.", "<blockquote>Who goes there?<br/>- Only me, said the boy.</blockquote>"],
+                ["> — Who goes there?\n> -- Only me.", "<blockquote>— Who goes there?<br/>— Only me.</blockquote>"]
+              ];
+              notAttr.forEach(([q, w]) => {
+                const h = contentBlocksToHtml(q, s, false, true, true);
+                if (!h.includes(w)) bad.push("not an attribution, yet: " + JSON.stringify(h));
+              });
               const wc = countWords("> The sea is calm.\n> -- Matthew Arnold\n\n> — Anon");
               if (wc !== 7) bad.push("word count " + wc + " (want 7: the dashes are not words)");
               const probe = document.createElement("div");
@@ -38366,6 +38418,20 @@
                 if (cs.textAlign !== "right" || cs.fontStyle !== "normal" || cs.textIndent !== "0px") bad.push("attribution computed: " + cs.textAlign + "/" + cs.fontStyle + "/" + cs.textIndent);
                 if (!(ar.top > qr.top + 10 && ar.bottom <= qr.bottom + 1)) bad.push("the attribution does not stand on its own line under the quote");
               } finally { probe.remove(); st.remove(); }
+              /* A right-to-left book sets it at the line's end: the left. */
+              const lang0 = state.meta.language;
+              const rp = document.createElement("div");
+              rp.className = "sc-attr-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:420px";
+              let rst = null;
+              try {
+                state.meta.language = "ar";
+                rst = document.createElement("style"); rst.textContent = buildBookCss(".sc-attr-rtl");
+                rp.innerHTML = contentBlocksToHtml("> نص الاقتباس\n> سطر ثان\n> — المؤلف", s, false, true, true);
+                document.body.appendChild(rst); document.body.appendChild(rp);
+                const a = rp.querySelector("p.attribution");
+                const rg = document.createRange(); if (a) rg.selectNodeContents(a);
+                if (!a || getComputedStyle(a).textAlign !== "left" || Math.abs(rg.getBoundingClientRect().left - a.getBoundingClientRect().left) > 1) bad.push("RTL: the attribution is not at the quote's end (left) edge: " + (a ? getComputedStyle(a).textAlign : "none"));
+              } finally { state.meta.language = lang0; rp.remove(); if (rst) rst.remove(); }
               applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: keepDoc.meta.title || "Attribution Check", author: keepDoc.meta.author || "A. Writer" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
               selectSection(state.sections.find((x) => x.type === "chapter").id); renderPreview();
               const flow = $("pageFlow") ? $("pageFlow").innerHTML : "";
@@ -38392,7 +38458,40 @@
               const locs = Object.keys(UI_STRINGS);
               const missing = locs.filter((c) => ["tool.attribution", "tool.attributionTitle"].some((k) => !UI_STRINGS[c][k]));
               if (locs.length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
-              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "attribution set under the quote (computed right, upright, its own line), a one-line dash quote and a plain quote untouched; dashes not counted; preview, print and EPUB carry it, validator errors 0; Word: a right-aligned Quote Attribution paragraph after the Quote; toolbar adds the line once; strings in " + locs.length + " languages");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "attribution set under the quote (computed right, upright, its own line), a one-line dash quote and a plain quote untouched; French dialogue, dash and hyphen lists and a hyphen-led reply stay quote lines; RTL: set at the left (line end); dashes not counted; preview, print and EPUB carry it, validator errors 0; Word: a right-aligned Quote Attribution paragraph after the Quote; toolbar adds the line once; strings in " + locs.length + " languages");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.platecaption", feature: "chapter", name: "Captions on the page: a frontispiece's caption prints under its plate in the preview, print and EPUB (validates) and is counted, an uncaptioned plate is unchanged; in print a captioned picture (in the text or the frontispiece) is held to the page area less room for its caption, so the two never part across a page",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const im = { id: "sc-pcap1", name: "Harbour.png", mediaType: "image/png", ext: "png", data: FAKE_PNG };
+              const fi = mkSection("front", "frontispiece", "Frontispiece", { content: '![The harbour](img:sc-pcap1 "The harbour at *dawn*")' });
+              const ch = mkSection("body", "chapter", "One", { number: "1", content: 'Text.\n\n![Tall](img:sc-pcap1 "Under the tall picture")' });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: keepDoc.meta.title || "Plate Caption Check", author: keepDoc.meta.author || "A. Writer" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), fi, ch], images: [im], printTrim: "6x9" });
+              const f = state.sections.find((x) => x.type === "frontispiece");
+              const want = '<div class="plate-full has-caption"><img src="data:image/png;base64,' + FAKE_PNG + '" alt="The harbour"/><p class="plate-caption">The harbour at <em>dawn</em></p></div>';
+              const h = frontBackHtml(f, false, true);
+              if (h !== want) bad.push("the plate: " + JSON.stringify(h.replace(FAKE_PNG, "…")));
+              if (!zenStageHtml(f).includes('<p class="plate-caption">The harbour at <em>dawn</em></p>')) bad.push("the zen stage drops the caption");
+              const plain = Object.assign({}, f, { content: "![The harbour](img:sc-pcap1)" });
+              if (frontBackHtml(plain, false, true) !== '<div class="plate-full"><img src="data:image/png;base64,' + FAKE_PNG + '" alt="The harbour"/></div>') bad.push("an uncaptioned plate changed");
+              if (sectionWords(f) !== 4) bad.push("frontispiece words " + sectionWords(f) + " (want 4: the caption)");
+              selectSection(f.id); renderPreview();
+              if (!($("pageFlow") ? $("pageFlow").innerHTML : "").includes('<p class="plate-caption">')) bad.push("the preview carries no plate caption");
+              const print = buildPrintHtml();
+              if (!print.includes('<p class="plate-caption">The harbour at <em>dawn</em></p>')) bad.push("the print interior carries no plate caption");
+              const tr = trimSize("6x9"), mg = printMargins("6x9");
+              const cap = "max-height: calc(" + inCss(tr.h - mg.top - mg.bottom) + " - 5.5em); width: auto;";
+              if (!print.includes(".print-sec figure.book-img.has-caption img, .print-sec .plate-full.has-caption img { " + cap)) bad.push("print does not hold a captioned picture to the page area");
+              const files = epubFiles("generic");
+              if (!files.some((f2) => /Text\/.*\.xhtml/.test(f2.path) && String(f2.content).includes('<p class="plate-caption">The harbour at <em>dawn</em></p>'))) bad.push("the EPUB carries no plate caption");
+              const val = validateEpubPackage(files);
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "frontispiece caption under the plate in preview, zen, print and EPUB (validator errors 0), 4 words counted, an uncaptioned plate unchanged; print caps a captioned picture at the 6x9 text height less 5.5em");
             } finally {
               applyBookDoc(keepDoc);
             }
@@ -45760,7 +45859,7 @@
           state.theme.ornament || "", state.theme.headingFlourish || "", state.theme.headingFlourishPos || "",
           state.cover ? (state.cover.name || "") + ":" + state.cover.data.length : "",
           state.meta.title || "", state.meta.author || "",
-          imageTokensIn(s.content).map((x) => x.id + ":" + x.alt + ":" + (x.full ? 1 : 0)).join(","),
+          imageTokensIn(s.content).map((x) => x.id + ":" + x.alt + ":" + (x.full ? 1 : 0) + ":" + (x.caption || "")).join(","),
           (s.scenes || []).map((e) => e.at + ":" + e.imageId + ":" + (e.alt || "") + ":" + (e.caption || "")).join(",")
         ].join("|");
       }
@@ -45771,7 +45870,7 @@
           const tok = imageTokensIn(s.content)[0];
           const img = tok ? imageById(tok.id) : null;
           if (!tok || !img) return "";
-          return '<div class="plate-full"><img src="data:' + img.mediaType + ";base64," + img.data + '" alt="' + esc(tok.alt) + '"/></div>';
+          return frontispiecePlateHtml("data:" + img.mediaType + ";base64," + img.data, tok);
         }
         if (AUTO_TYPES.includes(s.type)) return frontBackHtml(s, false, true);
         let h = "";
