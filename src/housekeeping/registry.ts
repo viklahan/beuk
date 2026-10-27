@@ -1933,6 +1933,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The list markup is parsed and typeset in the studio; the Word import and export are built there too.',
   },
   {
+    id: 'print.displayleaf',
+    title: 'Print: the title page and other display pages carry no running head and no folio',
+    kind: 'client-only',
+    reason: 'The print interior HTML and its page rules are built in the studio.',
+  },
+  {
     id: 'chapter.notes.lines',
     title: 'Notes: definitions written one per line each become their own note, never one note with the next run into it',
     kind: 'client-only',

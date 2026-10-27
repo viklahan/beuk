@@ -32809,6 +32809,9 @@
           ".print-sec.chapter-sec.spread-sec { page-break-before: left; break-before: verso; }",
           suppressRule("plateleaf", blankBoxes) || "@page plateleaf { }",
           ".print-sec.spread-sec .plate-page { page: plateleaf; }",
+          /* The title page and the other display pages: no head, no folio. */
+          suppressRule("displayleaf", blankBoxes) || "@page displayleaf { }",
+          ".print-sec.display-sec { page: displayleaf; }",
           /* A plate is exactly the page area, its picture cropped to it: a
              taller one (a square picture on a square page) spilled onto the
              next page, which then took the plate's bare page type. */
@@ -33252,6 +33255,12 @@
         if (s.kind === "body" && state.printRecto) return ' data-start="recto"';
         return "";
       }
+      /* Display pages carry no running head and no folio, as in any
+         printed book: the title page, half title, copyright page,
+         dedication and epigraph. Print gives them the named page
+         "displayleaf"; the Print Interior View reads the same test. */
+      const PRINT_DISPLAY_TYPES = new Set(["titlepage", "halftitle", "copyright", "dedication", "epigraph"]);
+      function printIsDisplaySec(s) { return !!s && s.kind === "front" && PRINT_DISPLAY_TYPES.has(s.type); }
       const printFilename = () => slug(state.meta.title) + "-print-" + String(state.printTrim).replace(/\./g, "_") + (state.printLargePrint ? "-large-print" : printPictureBookOn() ? "-picture-book" : "") + ".html";
       function buildPrintHtml() {
         const m = state.meta;
@@ -33275,7 +33284,7 @@
         printLayoutNow = true; /* BEUK:layout */
         try {
           pairs = state.sections.filter((s) => s.included && s.type !== "cover")
-            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
+            .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
         } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
@@ -33817,8 +33826,9 @@
         const plateLeaf = paired && page.col === 0;
         const chapterOpening = !page.blank && page.col === (paired ? 1 : 0) && !!page.section && page.section.kind === "body";
         const bareBlank = page.blank && state.printOmitBlankHead;
-        const showHead = page.n !== 1 && !plateLeaf && !bareBlank && !!headText && !(chapterOpening && state.printOmitChapterHead);
-        const showFolio = page.n !== 1 && !plateLeaf && !bareBlank && folioPos !== "none";
+        const displayLeaf = !page.blank && printIsDisplaySec(page.section) && !plateLeaf;
+        const showHead = page.n !== 1 && !plateLeaf && !bareBlank && !displayLeaf && !!headText && !(chapterOpening && state.printOmitChapterHead);
+        const showFolio = page.n !== 1 && !plateLeaf && !bareBlank && !displayLeaf && folioPos !== "none";
         if (showHead) {
           const head = document.createElement("div");
           head.className = "piv-runhead";
@@ -41914,6 +41924,25 @@
             if (logged.indexOf("[^1]: raw one\n[^2]: raw two") === -1) bad.push("a log's lines were split: " + JSON.stringify(logged));
             if (countWords(content) !== 11) bad.push("word count " + countWords(content));
             return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "three one-per-line definitions set as three notes (preview/print/EPUB markup and Word); none leaked as \"[2]:\"; a log keeps its lines; " + countWords(content) + " words");
+          } },
+        { id: "print.displayleaf", feature: "print", name: "Display pages print bare: the title page, half title, copyright page, dedication and epigraph carry no running head and no folio (named page \"displayleaf\"); a chapter still carries both",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: "Display Test", author: "A. Writer" }), theme: keepDoc.theme, images: [], printTrim: "6x9",
+                sections: [mkSection("front", "titlepage", "Title Page"), mkSection("front", "dedication", "Dedication", { content: "For you." }), mkSection("front", "preface", "Preface", { content: "A word first." }), mkSection("body", "chapter", "One", { number: "1", content: "Words." })] });
+              const html = buildPrintHtml();
+              const secs = (html.match(/<section class="print-sec[^"]*"/g) || []);
+              const isDisplay = secs.map((c) => / display-sec\b/.test(c));
+              if (JSON.stringify(isDisplay) !== JSON.stringify([true, true, false, false])) bad.push("display-sec on " + JSON.stringify(secs));
+              if (!/@page displayleaf \{[^}]*@top-center \{ content: none; \}/.test(html)) bad.push("no displayleaf page rule dropping the head");
+              if (!/@page displayleaf \{(?:[^{}]|\{[^{}]*\})*@bottom-(center|left|right) \{ content: none; \}/.test(html)) bad.push("no displayleaf page rule dropping the folio: " + (html.match(/@page displayleaf[^\n]*/) || ["none"])[0]);
+              if (!html.includes(".print-sec.display-sec { page: displayleaf; }")) bad.push("display sections are not put on the displayleaf page");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "title page and dedication print on the bare displayleaf page; the preface and the chapter keep their head and folio");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
           } },
         { id: "chapter.containers", feature: "chapter", name: "Containers: \"::: kind\" … \":::\" fences are read before the text splits into blocks (content spans blank lines, an unclosed one runs to the end, a stray close is dropped, an unknown kind sets its content as ordinary paragraphs); the fence lines are not words, not narrated, keep their fences in the Markdown export; the toolbar fences a selection or the cursor's paragraph and takes the fences away again",
           run() {
