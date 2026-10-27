@@ -71,7 +71,10 @@
 	#      decodes them with Web Audio (fetch() is governed by connect-src:
 	#      https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/connect-src).
 	#      file_server types them audio/mpeg (the caddy image's /etc/mime.types).
-	#  worker-src 'self' — the service worker (/sw.js).
+	#  worker-src 'self' — the service worker (/sw.js). PDF import
+	#      (BEUK:pdfimport) needs nothing more: PDF.js is loaded from
+	#      'self' as SRI-pinned module scripts (.mjs, typed text/javascript
+	#      by file_server) and parses on the main thread — no worker, no eval.
 	#  frame-src 'self' — the print-preview iframe (srcdoc) and help.
 	#  form-action / base-uri 'self', object-src 'none',
 	#  frame-ancestors 'self' — no foreign form targets, no <base>

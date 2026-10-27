@@ -3197,6 +3197,120 @@ e-mail address as mailto, parentheses are percent-encoded, and an unsafe or
 spaced address is refused in the dialog. Self-checks: `chapter.links`,
 `export.links`.
 
+## Studio: PDF import (BEUK:pdfimport)
+
+**Import Document** also takes a `.pdf`. A PDF keeps no paragraphs,
+headings or styles, only glyphs placed on pages, so the import reads the
+text layer and rebuilds the manuscript from the layout, then hands it to
+the same pipeline and the same **"Here's what we changed"** report as a
+Word or Markdown import (chapters split, front and back matter by heading
+or shape, scene breaks, typography, per-item undo and Undo the whole
+import).
+
+- **Reader.** Mozilla PDF.js 6.4.299 (legacy build), vendored in
+  `client/assets/vendor/pdfjs-6.4.299/` with its Apache-2.0 licence and a
+  README of hashes (byte-identical to the npm release; checked against the
+  registry integrity and jsDelivr's file hashes). It loads **only when a
+  PDF is chosen**, as two `<script type="module">` elements carrying SRI
+  (`sha384`), the worker build first: with `globalThis.pdfjsWorker` set,
+  PDF.js parses on the main thread and never spawns a worker from a URL, so
+  the production CSP (`script-src 'self'`, `worker-src 'self'`) needs no
+  change and no `eval` is attempted (checked under the Caddyfile CSP: zero
+  violation reports). The folder name carries the version, so the service
+  worker's cache-first rule cannot serve a stale copy after an upgrade; it
+  is not precached (about 1.8 MB), only kept after first use.
+- **Lines and columns.** Glyph runs on one baseline make a line. A page with
+  an empty gutter down the middle that both sides share baselines across is
+  read as two columns, left first; full-width lines above them (a heading,
+  an opening sentence) are read first. Letter-spaced type ("C H A P T E R")
+  is closed up only where that is certain (one heading word, or a chapter
+  label and its number).
+- **Running heads and page numbers.** A page's outer lines (top and bottom
+  fifth) that stand in a fixed place — the same words, once their digits
+  are set aside ("Page 4 • Title", "TITLE · 12"), at the same height
+  (±2 pt) on another page — or are a bare page number, are left out and
+  counted. One set in the body's own size must also stand more than 1.3
+  leads from the nearest text line and outside the band the book's text
+  lines fill, so a short line of the story ("Why?") closing two pages at
+  the text's leading is kept. A chapter label is never treated as one. The
+  report lists each distinct line left out with its count.
+- **Paragraphs.** A first-line indent, a taller gap (measured against the
+  line's own leading), or a short line ending a sentence starts one. The
+  indent is measured from the low end of the page's line starts and, on a
+  one-column page, from the book's own margin for that side of the spread
+  (so a page of nothing but indented one-line dialogue keeps its
+  paragraphs apart); lines centred under each other run on unless the line
+  above closed a sentence; a
+  paragraph runs on over a page or column break. A gap of about three lines
+  between body lines is a scene break (`***`), except above a chapter's
+  drop cap. Line-end hyphens (`-`, U+2010 from `hyphens: auto`, soft
+  hyphens) are removed when the joined word reads as one word, and kept
+  when the hyphenated word appears elsewhere in the text.
+- **Headings.** A line set clearly larger than the body type (×1.22), a
+  short bold line standing alone, or a "Chapter …" label over a larger
+  title, merged into one `# Chapter One: Title` heading. A contents page is
+  left out (Beuk builds its own); a half-title page repeating the title page
+  is dropped. The PDF's Title (minus a label after a dash, e.g. Beuk's own
+  "— Print Interior (6 × 9 in)") and Author fill the book's credit like a
+  Word file's properties; tool defaults ("untitled", "anonymous") are not
+  used.
+- **Italic and bold** come from the font names (`…-Italic`, `…Oblique`,
+  `…-BoldIt`, `…Semibold`) as `*…*` and `**…**`. A drop cap and small
+  capitals are not emphasis; a small-capital chapter opening is set back in
+  ordinary case (true small capitals keep the writer's own capitals at full
+  size, and words the book capitalises mid-sentence keep their capital).
+- **Pictures** are decoded in the browser and imported into the image
+  library at their place in the text (JPEG, or PNG when transparent; capped
+  at 3000 px). A full-page picture on a page of its own goes after the next
+  chapter heading; a full-page picture behind text is a background. Repeats,
+  decorations under 24 px, stencil masks and pictures that cannot be decoded
+  (no JPEG 2000 / JBIG2 decoders are vendored) are counted as left out.
+- **Tables**: three or more lines of cells separated by wide gaps are taken
+  out of the prose like a Word table (listed with their rows; words back on
+  undo). Cells of running prose are read as columns, not a table.
+- **Right to left.** A line mostly in a right-to-left script (Hebrew,
+  Arabic, Syriac, Thaana, N'Ko) is read from its right edge, and its
+  column's paragraph rules are mirrored (the indent at the right, the
+  short last line at the left). The report lists the pages read this way
+  and asks the writer to check paragraph breaks and the order of numbers
+  or Latin words inside them (mixed-direction lines are ordered run by
+  run, not by the full Unicode bidi algorithm). Arabic presentation forms
+  are set back to their letters.
+- **Unreadable glyphs.** Glyphs the PDF gives no letter for arrive from
+  PDF.js as control characters (U+0000 …); they, non-characters and lone
+  surrogates are taken out (they would make the EPUB's XHTML malformed)
+  and counted in the report; above 2 % of the text the report says the
+  text layer is unreliable.
+- **Scanned PDFs** (almost no text layer, pages that are pictures) are
+  refused with a plain message; no text is ever guessed. In a PDF that
+  mixes typed and scanned pages, every page with no text under a picture
+  covering half of it or more is listed in the report (imported as a
+  picture; its words, if any, not read — run OCR first). Password-protected
+  and unreadable files get their own message.
+
+The report adds what only a PDF import knows: the layout caveat (footnotes
+arrive as plain text where they stood; drawings made of lines are not
+imported), italic/bold counts, rejoined hyphens, columned pages, small-cap
+openings, running heads left out (each distinct line with its count), pages read
+right to left, pages with no text layer, unreadable glyphs, contents pages, the
+half-title, backgrounds, decorations, stencils, repeats, rotated text and
+link addresses (link text is kept). Self-checks: `import.pdf` (async; it
+writes a three-page PDF byte by byte and a text-less "scan", imports both
+through the real pipeline, and undoes) and `import.pdf.layout` (the layout
+reader on pages laid out as PDF.js hands them over: "Why?" at two page
+feet kept, one-line indented paragraphs apart, an Arabic page right to
+left, a text-less picture page reported, control characters out). Verified on Beuk's own print PDF
+of the sample book (rendered by `deploy/renderer`): 15 chapters plus
+prologue and epilogue come back with their numbers and titles, and 212 of
+214 of the sample's body paragraphs are found verbatim in the matching
+section.
+
+Limits: PDFs whose fonts use predefined CJK CMaps without a ToUnicode table
+are not readable (the `cmaps/` folder is not vendored); right-to-left
+lines are ordered run by run (see above), not by the full bidi algorithm; a chapter subtitle arrives as an italic first
+paragraph, not in the Subtitle field; footnote numbers stay inline as
+`[n]`; Box Set volume import and Bulk import do not take PDFs yet.
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — everything is built (verified, deduplicated,
