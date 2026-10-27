@@ -2344,6 +2344,9 @@
                   <button class="tool-btn" data-collapse="2" data-insert="right" title="Right — set the selected paragraphs flush right (a sign-off, a date line)" data-i18n-title="tool.rightTitle"><i data-lucide="align-right"></i><span class="tl" data-i18n="tool.right">Right</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="texts" title="Texts — set the selected lines as a text-message conversation, one &quot;Name: message&quot; per line" data-i18n-title="tool.textsTitle"><i data-lucide="messages-square"></i><span class="tl" data-i18n="tool.texts">Texts</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="letter" title="Letter — set the selected paragraphs as a written letter or note, line breaks kept" data-i18n-title="tool.letterTitle"><i data-lucide="mail-open"></i><span class="tl" data-i18n="tool.letter">Letter</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="margin" title="Margin note — a reader's note in the margin beside the paragraph before it, in their own ink" data-i18n-title="tool.marginTitle"><i data-lucide="sticky-note"></i><span class="tl" data-i18n="tool.margin">Margin Note</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="sideways" title="Sideways — set the selected paragraphs on a page of their own, turned a quarter clockwise" data-i18n-title="tool.sidewaysTitle"><i data-lucide="rotate-cw"></i><span class="tl" data-i18n="tool.sideways">Sideways</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="upsidedown" title="Upside down — set the selected paragraphs turned upside down on the page" data-i18n-title="tool.upsideDownTitle"><i data-lucide="flip-vertical-2"></i><span class="tl" data-i18n="tool.upsideDown">Upside Down</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="scenebreak" title="Scene break — becomes an ornament in the book" data-i18n-title="tool.sceneBreakTitle"><i data-lucide="sparkle"></i><span class="tl" data-i18n="tool.sceneBreak">Scene Break</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="emdash" title="Em dash" data-i18n-title="tool.emDashTitle"><i data-lucide="minus"></i><span class="tl" data-i18n="tool.emDash">Em Dash —</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i><span class="tl" data-i18n="tool.footnote">Footnote</span></button>
@@ -2982,6 +2985,22 @@
         <div class="modal-actions">
           <button class="tb-btn" id="btnCancelLink" data-i18n="lnk.cancel">Cancel</button>
           <button class="tb-btn primary" id="btnDoLink" data-i18n="lnk.add"><i data-lucide="check"></i>Add Link</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BEUK:layout — Margin note dialog: whose note it is and its words; places "::: margin <Name>" after the paragraph -->
+    <div class="modal-back" id="modalMargin" style="z-index:66;">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mnH" style="max-width:460px;">
+        <h2 id="mnH"><i data-lucide="sticky-note"></i><span data-i18n="mn.title">Add a margin note</span></h2>
+        <div class="form-grid" style="margin-top:16px;">
+          <div class="full"><label class="field-lab" for="mnName" data-i18n="mn.name">Whose note</label><input class="txt-input" id="mnName" type="text" maxlength="40" placeholder="M." data-i18n-ph="mn.namePh" style="width:100%;" /></div>
+          <div class="full"><label class="field-lab" for="mnText" data-i18n="mn.text">The note</label><textarea class="txt-input" id="mnText" rows="3" placeholder="What they wrote in the margin" data-i18n-ph="mn.textPh" style="width:100%;resize:vertical;"></textarea></div>
+          <div class="full"><p class="cover-note" id="mnHint" data-i18n="mn.hint" style="margin:0;">Set beside the paragraph before it, in the outer margin of the printed page; each name has its own ink. In the ebook it follows the paragraph.</p></div>
+        </div>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnCancelMargin" data-i18n="mn.cancel">Cancel</button>
+          <button class="tb-btn primary" id="btnDoMargin" data-i18n="mn.add"><i data-lucide="check"></i>Add Note</button>
         </div>
       </div>
     </div>
@@ -3767,6 +3786,7 @@
         "tool.footnote": "Footnote", "tool.insertImage": "Insert Image", "tool.autoFormat": "Auto-Format",
         "tool.boldTitle": "Bold (Ctrl/Cmd+B)", "tool.italicTitle": "Italic (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — make the selected words a web or store link", "lnk.title": "Add a link", "lnk.text": "Link words", "lnk.textPh": "The words readers see", "lnk.url": "Web address", "lnk.urlPh": "https://", "lnk.hint": "Starts with https://, http:// or mailto:. In the ebook it is a link; in print the words are set as plain text.", "lnk.bad": "That address can't be a link — use one that starts with https://, http:// or mailto:.", "lnk.cancel": "Cancel", "lnk.add": "Add Link",
+        /* BEUK:layout */ "tool.margin": "Margin Note", "tool.marginTitle": "Margin note — a reader's note in the margin beside the paragraph before it, in their own ink", "tool.sideways": "Sideways", "tool.sidewaysTitle": "Sideways — set the selected paragraphs on a page of their own, turned a quarter clockwise", "tool.upsideDown": "Upside Down", "tool.upsideDownTitle": "Upside down — set the selected paragraphs turned upside down on the page", "mn.title": "Add a margin note", "mn.name": "Whose note", "mn.namePh": "M.", "mn.text": "The note", "mn.textPh": "What they wrote in the margin", "mn.hint": "Set beside the paragraph before it, in the outer margin of the printed page; each name has its own ink. In the ebook it follows the paragraph.", "mn.bad": "Give the note a name — whose hand it is in.", "mn.cancel": "Cancel", "mn.add": "Add Note",
         "tool.blockquoteTitle": "Blockquote — set this paragraph apart as a quotation", "tool.ul": "List", "tool.ulTitle": "Bulleted list — each line becomes an item", "tool.ol": "Numbered", "tool.olTitle": "Numbered list — each line becomes a numbered step", "tool.sceneBreakTitle": "Scene break — becomes an ornament in the book",
         "tool.emDashTitle": "Em dash", "tool.footnoteTitle": "Footnote — typesets as a linked endnote",
         "tool.verse": "Verse", "tool.verseTitle": "Verse — keep every line break of the selected lines (a poem, a song)", "tool.center": "Centre", "tool.centerTitle": "Centre — set the selected paragraphs centred (a sign, a note)", "tool.right": "Right", "tool.rightTitle": "Right — set the selected paragraphs flush right (a sign-off, a date line)",
@@ -4176,6 +4196,7 @@
         "tool.footnote": "Nota al pie", "tool.insertImage": "Insertar imagen", "tool.autoFormat": "Formato automático",
         "tool.boldTitle": "Negrita (Ctrl/Cmd+B)", "tool.italicTitle": "Cursiva (Ctrl/Cmd+I)",
         "tool.link": "Enlace", "tool.linkTitle": "Enlace — convierte las palabras seleccionadas en un enlace web o de tienda", "lnk.title": "Añadir un enlace", "lnk.text": "Texto del enlace", "lnk.textPh": "Las palabras que ve el lector", "lnk.url": "Dirección web", "lnk.urlPh": "https://", "lnk.hint": "Empieza por https://, http:// o mailto:. En el libro electrónico es un enlace; en papel las palabras se componen como texto normal.", "lnk.bad": "Esa dirección no puede ser un enlace: usa una que empiece por https://, http:// o mailto:.", "lnk.cancel": "Cancelar", "lnk.add": "Añadir enlace",
+        /* BEUK:layout */ "tool.margin": "Nota al margen", "tool.marginTitle": "Nota al margen — la nota de un lector en el margen, junto al párrafo anterior, con su propia tinta", "tool.sideways": "De lado", "tool.sidewaysTitle": "De lado — pone los párrafos elegidos en una página propia, girados un cuarto en el sentido de las agujas del reloj", "tool.upsideDown": "Del revés", "tool.upsideDownTitle": "Del revés — pone los párrafos elegidos boca abajo en la página", "mn.title": "Añadir una nota al margen", "mn.name": "De quién es la nota", "mn.namePh": "M.", "mn.text": "La nota", "mn.textPh": "Lo que escribió en el margen", "mn.hint": "Va junto al párrafo anterior, en el margen exterior de la página impresa; cada nombre tiene su propia tinta. En el libro electrónico sigue al párrafo.", "mn.bad": "Pon un nombre a la nota: de quién es la letra.", "mn.cancel": "Cancelar", "mn.add": "Añadir nota",
         "tool.blockquoteTitle": "Cita — aparta este párrafo como una cita", "tool.ul": "Lista", "tool.ulTitle": "Lista con viñetas — cada línea es un elemento", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada línea es un paso numerado", "tool.sceneBreakTitle": "Cambio de escena — se convierte en un adorno en el libro",
         "tool.emDashTitle": "Raya", "tool.footnoteTitle": "Nota al pie — se compone como nota final enlazada",
         "tool.verse": "Verso", "tool.verseTitle": "Verso — conserva cada salto de línea de las líneas elegidas (un poema, una canción)", "tool.center": "Centrar", "tool.centerTitle": "Centrar — centra los párrafos elegidos (un letrero, una nota)", "tool.right": "Derecha", "tool.rightTitle": "Derecha — alinea a la derecha los párrafos elegidos (una despedida, una fecha)",
@@ -4377,6 +4398,7 @@
         "tool.footnote": "Note de bas de page", "tool.insertImage": "Insérer une image", "tool.autoFormat": "Formatage auto",
         "tool.boldTitle": "Gras (Ctrl/Cmd+B)", "tool.italicTitle": "Italique (Ctrl/Cmd+I)",
         "tool.link": "Lien", "tool.linkTitle": "Lien — faire des mots sélectionnés un lien web ou vers une librairie", "lnk.title": "Ajouter un lien", "lnk.text": "Texte du lien", "lnk.textPh": "Les mots que voit le lecteur", "lnk.url": "Adresse web", "lnk.urlPh": "https://", "lnk.hint": "Commence par https://, http:// ou mailto:. Dans le livre numérique c'est un lien ; à l'impression, les mots sont composés en texte simple.", "lnk.bad": "Cette adresse ne peut pas être un lien — utilisez-en une qui commence par https://, http:// ou mailto:.", "lnk.cancel": "Annuler", "lnk.add": "Ajouter le lien",
+        /* BEUK:layout */ "tool.margin": "Note en marge", "tool.marginTitle": "Note en marge — la note d’un lecteur dans la marge, à côté du paragraphe précédent, dans son encre", "tool.sideways": "De côté", "tool.sidewaysTitle": "De côté — met les paragraphes choisis sur une page à part, tournés d’un quart de tour dans le sens horaire", "tool.upsideDown": "À l’envers", "tool.upsideDownTitle": "À l’envers — met les paragraphes choisis tête-bêche sur la page", "mn.title": "Ajouter une note en marge", "mn.name": "De qui est la note", "mn.namePh": "M.", "mn.text": "La note", "mn.textPh": "Ce qu’il ou elle a écrit dans la marge", "mn.hint": "Placée à côté du paragraphe précédent, dans la marge extérieure de la page imprimée ; chaque nom a son encre. Dans le livre numérique, elle suit le paragraphe.", "mn.bad": "Donnez un nom à la note : de quelle main est-elle ?", "mn.cancel": "Annuler", "mn.add": "Ajouter la note",
         "tool.blockquoteTitle": "Citation — met ce paragraphe à part comme une citation", "tool.ul": "Liste", "tool.ulTitle": "Liste à puces — chaque ligne devient un élément", "tool.ol": "Numérotée", "tool.olTitle": "Liste numérotée — chaque ligne devient une étape numérotée", "tool.sceneBreakTitle": "Saut de scène — devient un ornement dans le livre",
         "tool.emDashTitle": "Tiret cadratin", "tool.footnoteTitle": "Note de bas de page — composée comme note de fin liée",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — garde chaque retour à la ligne des lignes choisies (un poème, une chanson)", "tool.center": "Centrer", "tool.centerTitle": "Centrer — centre les paragraphes choisis (une enseigne, un mot)", "tool.right": "Droite", "tool.rightTitle": "Droite — aligne à droite les paragraphes choisis (une signature, une date)",
@@ -4578,6 +4600,7 @@
         "tool.footnote": "Fußnote", "tool.insertImage": "Bild einfügen", "tool.autoFormat": "Auto-Format",
         "tool.boldTitle": "Fett (Ctrl/Cmd+B)", "tool.italicTitle": "Kursiv (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — die markierten Wörter zu einem Web- oder Shop-Link machen", "lnk.title": "Einen Link hinzufügen", "lnk.text": "Linktext", "lnk.textPh": "Die Wörter, die Leser sehen", "lnk.url": "Webadresse", "lnk.urlPh": "https://", "lnk.hint": "Beginnt mit https://, http:// oder mailto:. Im E-Book ist es ein Link; im Druck werden die Wörter als normaler Text gesetzt.", "lnk.bad": "Diese Adresse kann kein Link sein — verwenden Sie eine, die mit https://, http:// oder mailto: beginnt.", "lnk.cancel": "Abbrechen", "lnk.add": "Link hinzufügen",
+        /* BEUK:layout */ "tool.margin": "Randnotiz", "tool.marginTitle": "Randnotiz — die Notiz eines Lesers am Rand, neben dem Absatz davor, in eigener Tinte", "tool.sideways": "Quer", "tool.sidewaysTitle": "Quer — setzt die gewählten Absätze auf eine eigene Seite, um eine Vierteldrehung im Uhrzeigersinn gedreht", "tool.upsideDown": "Kopfüber", "tool.upsideDownTitle": "Kopfüber — setzt die gewählten Absätze auf dem Kopf stehend auf die Seite", "mn.title": "Eine Randnotiz hinzufügen", "mn.name": "Wessen Notiz", "mn.namePh": "M.", "mn.text": "Die Notiz", "mn.textPh": "Was am Rand steht", "mn.hint": "Steht neben dem Absatz davor, im äußeren Rand der gedruckten Seite; jeder Name hat seine eigene Tinte. Im E-Book folgt sie dem Absatz.", "mn.bad": "Gib der Notiz einen Namen — wessen Hand es ist.", "mn.cancel": "Abbrechen", "mn.add": "Notiz hinzufügen",
         "tool.blockquoteTitle": "Blockzitat — diesen Absatz als Zitat absetzen", "tool.ul": "Liste", "tool.ulTitle": "Aufzählung — jede Zeile wird ein Punkt", "tool.ol": "Nummeriert", "tool.olTitle": "Nummerierte Liste — jede Zeile wird ein nummerierter Schritt", "tool.sceneBreakTitle": "Szenenwechsel — wird im Buch zu einem Ornament",
         "tool.emDashTitle": "Gedankenstrich", "tool.footnoteTitle": "Fußnote — wird als verlinkte Endnote gesetzt",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — behält jeden Zeilenumbruch der gewählten Zeilen (ein Gedicht, ein Lied)", "tool.center": "Zentriert", "tool.centerTitle": "Zentriert — setzt die gewählten Absätze mittig (ein Schild, eine Notiz)", "tool.right": "Rechts", "tool.rightTitle": "Rechts — setzt die gewählten Absätze rechtsbündig (ein Gruß, eine Datumszeile)",
@@ -4779,6 +4802,7 @@
         "tool.footnote": "Nota a piè di pagina", "tool.insertImage": "Inserisci immagine", "tool.autoFormat": "Formattazione automatica",
         "tool.boldTitle": "Grassetto (Ctrl/Cmd+B)", "tool.italicTitle": "Corsivo (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — trasforma le parole selezionate in un link web o a un negozio", "lnk.title": "Aggiungi un link", "lnk.text": "Testo del link", "lnk.textPh": "Le parole che vede il lettore", "lnk.url": "Indirizzo web", "lnk.urlPh": "https://", "lnk.hint": "Inizia con https://, http:// o mailto:. Nell'ebook è un link; in stampa le parole sono composte come testo normale.", "lnk.bad": "Quell'indirizzo non può essere un link: usane uno che inizi con https://, http:// o mailto:.", "lnk.cancel": "Annulla", "lnk.add": "Aggiungi link",
+        /* BEUK:layout */ "tool.margin": "Nota a margine", "tool.marginTitle": "Nota a margine — la nota di un lettore a margine, accanto al paragrafo precedente, nel suo inchiostro", "tool.sideways": "Di lato", "tool.sidewaysTitle": "Di lato — mette i paragrafi scelti su una pagina a sé, ruotati di un quarto in senso orario", "tool.upsideDown": "Capovolto", "tool.upsideDownTitle": "Capovolto — mette i paragrafi scelti capovolti sulla pagina", "mn.title": "Aggiungi una nota a margine", "mn.name": "Di chi è la nota", "mn.namePh": "M.", "mn.text": "La nota", "mn.textPh": "Cosa ha scritto a margine", "mn.hint": "Accanto al paragrafo precedente, nel margine esterno della pagina stampata; ogni nome ha il suo inchiostro. Nell’ebook segue il paragrafo.", "mn.bad": "Dai un nome alla nota: di chi è la mano.", "mn.cancel": "Annulla", "mn.add": "Aggiungi nota",
         "tool.blockquoteTitle": "Citazione — mette da parte questo paragrafo come citazione", "tool.ul": "Elenco", "tool.ulTitle": "Elenco puntato — ogni riga diventa una voce", "tool.ol": "Numerato", "tool.olTitle": "Elenco numerato — ogni riga diventa un passo numerato", "tool.sceneBreakTitle": "Cambio di scena — diventa un ornamento nel libro",
         "tool.emDashTitle": "Trattino lungo", "tool.footnoteTitle": "Nota a piè di pagina — composta come nota finale collegata",
         "tool.verse": "Versi", "tool.verseTitle": "Versi — conserva ogni a capo delle righe scelte (una poesia, una canzone)", "tool.center": "Centra", "tool.centerTitle": "Centra — centra i paragrafi scelti (un cartello, un biglietto)", "tool.right": "Destra", "tool.rightTitle": "Destra — allinea a destra i paragrafi scelti (un congedo, una data)",
@@ -4980,6 +5004,7 @@
         "tool.footnote": "Nota de rodapé", "tool.insertImage": "Inserir imagem", "tool.autoFormat": "Formatação automática",
         "tool.boldTitle": "Negrito (Ctrl/Cmd+B)", "tool.italicTitle": "Itálico (Ctrl/Cmd+I)",
         "tool.link": "Ligação", "tool.linkTitle": "Ligação — transforma as palavras selecionadas numa ligação web ou de loja", "lnk.title": "Adicionar uma ligação", "lnk.text": "Texto da ligação", "lnk.textPh": "As palavras que o leitor vê", "lnk.url": "Endereço web", "lnk.urlPh": "https://", "lnk.hint": "Começa por https://, http:// ou mailto:. No ebook é uma ligação; na impressão as palavras são compostas como texto simples.", "lnk.bad": "Esse endereço não pode ser uma ligação — use um que comece por https://, http:// ou mailto:.", "lnk.cancel": "Cancelar", "lnk.add": "Adicionar ligação",
+        /* BEUK:layout */ "tool.margin": "Nota na margem", "tool.marginTitle": "Nota na margem — a nota de um leitor na margem, ao lado do parágrafo anterior, com a sua tinta", "tool.sideways": "De lado", "tool.sidewaysTitle": "De lado — põe os parágrafos escolhidos numa página própria, rodados um quarto no sentido dos ponteiros do relógio", "tool.upsideDown": "De pernas para o ar", "tool.upsideDownTitle": "De pernas para o ar — põe os parágrafos escolhidos virados ao contrário na página", "mn.title": "Adicionar uma nota na margem", "mn.name": "De quem é a nota", "mn.namePh": "M.", "mn.text": "A nota", "mn.textPh": "O que escreveu na margem", "mn.hint": "Fica ao lado do parágrafo anterior, na margem exterior da página impressa; cada nome tem a sua tinta. No ebook segue o parágrafo.", "mn.bad": "Dê um nome à nota: de quem é a letra.", "mn.cancel": "Cancelar", "mn.add": "Adicionar nota",
         "tool.blockquoteTitle": "Citação — destaca este parágrafo como uma citação", "tool.ul": "Lista", "tool.ulTitle": "Lista com marcadores — cada linha vira um item", "tool.ol": "Numerada", "tool.olTitle": "Lista numerada — cada linha vira um passo numerado", "tool.sceneBreakTitle": "Mudança de cena — torna-se um ornamento no livro",
         "tool.emDashTitle": "Travessão", "tool.footnoteTitle": "Nota de rodapé — composta como nota final ligada",
         "tool.verse": "Verso", "tool.verseTitle": "Verso — mantém cada quebra de linha das linhas escolhidas (um poema, uma canção)", "tool.center": "Centrar", "tool.centerTitle": "Centrar — centra os parágrafos escolhidos (uma placa, um bilhete)", "tool.right": "Direita", "tool.rightTitle": "Direita — alinha à direita os parágrafos escolhidos (uma despedida, uma data)",
@@ -5181,6 +5206,7 @@
         "tool.footnote": "Voetnoot", "tool.insertImage": "Afbeelding invoegen", "tool.autoFormat": "Auto-opmaak",
         "tool.boldTitle": "Vet (Ctrl/Cmd+B)", "tool.italicTitle": "Cursief (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — maak van de geselecteerde woorden een web- of winkellink", "lnk.title": "Een link toevoegen", "lnk.text": "Linktekst", "lnk.textPh": "De woorden die lezers zien", "lnk.url": "Webadres", "lnk.urlPh": "https://", "lnk.hint": "Begint met https://, http:// of mailto:. In het e-book is het een link; in druk worden de woorden als gewone tekst gezet.", "lnk.bad": "Dat adres kan geen link zijn — gebruik er een dat begint met https://, http:// of mailto:.", "lnk.cancel": "Annuleren", "lnk.add": "Link toevoegen",
+        /* BEUK:layout */ "tool.margin": "Kanttekening", "tool.marginTitle": "Kanttekening — de notitie van een lezer in de marge, naast de alinea ervoor, in eigen inkt", "tool.sideways": "Gekanteld", "tool.sidewaysTitle": "Gekanteld — zet de gekozen alinea's op een eigen pagina, een kwartslag met de klok mee gedraaid", "tool.upsideDown": "Ondersteboven", "tool.upsideDownTitle": "Ondersteboven — zet de gekozen alinea's ondersteboven op de pagina", "mn.title": "Een kanttekening toevoegen", "mn.name": "Van wie de notitie is", "mn.namePh": "M.", "mn.text": "De notitie", "mn.textPh": "Wat er in de marge staat", "mn.hint": "Staat naast de alinea ervoor, in de buitenmarge van de gedrukte pagina; elke naam heeft zijn eigen inkt. In het e-book volgt ze de alinea.", "mn.bad": "Geef de notitie een naam — van wiens hand ze is.", "mn.cancel": "Annuleren", "mn.add": "Notitie toevoegen",
         "tool.blockquoteTitle": "Blokcitaat — zet deze alinea apart als citaat", "tool.ul": "Lijst", "tool.ulTitle": "Opsomming — elke regel wordt een punt", "tool.ol": "Genummerd", "tool.olTitle": "Genummerde lijst — elke regel wordt een genummerde stap", "tool.sceneBreakTitle": "Scènewissel — wordt een ornament in het boek",
         "tool.emDashTitle": "Gedachtestreepje", "tool.footnoteTitle": "Voetnoot — wordt opgemaakt als gekoppelde eindnoot",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — behoudt elke regelafbreking van de gekozen regels (een gedicht, een lied)", "tool.center": "Centreren", "tool.centerTitle": "Centreren — zet de gekozen alinea's gecentreerd (een bord, een briefje)", "tool.right": "Rechts", "tool.rightTitle": "Rechts — lijnt de gekozen alinea's rechts uit (een groet, een datumregel)",
@@ -5382,6 +5408,7 @@
         "tool.footnote": "Przypis", "tool.insertImage": "Wstaw obraz", "tool.autoFormat": "Autoformatowanie",
         "tool.boldTitle": "Pogrubienie (Ctrl/Cmd+B)", "tool.italicTitle": "Kursywa (Ctrl/Cmd+I)",
         "tool.link": "Link", "tool.linkTitle": "Link — zamień zaznaczone słowa w link do strony lub sklepu", "lnk.title": "Dodaj link", "lnk.text": "Tekst linku", "lnk.textPh": "Słowa, które widzi czytelnik", "lnk.url": "Adres internetowy", "lnk.urlPh": "https://", "lnk.hint": "Zaczyna się od https://, http:// lub mailto:. W e-booku to link; w druku słowa są składane jako zwykły tekst.", "lnk.bad": "Ten adres nie może być linkiem — użyj takiego, który zaczyna się od https://, http:// lub mailto:.", "lnk.cancel": "Anuluj", "lnk.add": "Dodaj link",
+        /* BEUK:layout */ "tool.margin": "Notatka na marginesie", "tool.marginTitle": "Notatka na marginesie — uwaga czytelnika na marginesie obok poprzedniego akapitu, jego własnym atramentem", "tool.sideways": "Bokiem", "tool.sidewaysTitle": "Bokiem — składa wybrane akapity na osobnej stronie, obrócone o ćwierć obrotu zgodnie z ruchem wskazówek zegara", "tool.upsideDown": "Do góry nogami", "tool.upsideDownTitle": "Do góry nogami — składa wybrane akapity odwrócone na stronie", "mn.title": "Dodaj notatkę na marginesie", "mn.name": "Czyja notatka", "mn.namePh": "M.", "mn.text": "Notatka", "mn.textPh": "Co napisano na marginesie", "mn.hint": "Stoi obok poprzedniego akapitu, na zewnętrznym marginesie drukowanej strony; każde imię ma własny atrament. W e-booku następuje po akapicie.", "mn.bad": "Nadaj notatce imię — czyja to ręka.", "mn.cancel": "Anuluj", "mn.add": "Dodaj notatkę",
         "tool.blockquoteTitle": "Cytat blokowy — wydziela ten akapit jako cytat", "tool.ul": "Lista", "tool.ulTitle": "Lista punktowana — każda linia to punkt", "tool.ol": "Numerowana", "tool.olTitle": "Lista numerowana — każda linia to numerowany krok", "tool.sceneBreakTitle": "Przerwa sceny — staje się ornamentem w książce",
         "tool.emDashTitle": "Myślnik", "tool.footnoteTitle": "Przypis — składany jako przypis końcowy z odnośnikiem",
         "tool.verse": "Wiersz", "tool.verseTitle": "Wiersz — zachowuje każdy podział wiersza wybranych linii (wiersz, piosenka)", "tool.center": "Wyśrodkuj", "tool.centerTitle": "Wyśrodkuj — wyśrodkowuje wybrane akapity (szyld, notatka)", "tool.right": "Do prawej", "tool.rightTitle": "Do prawej — wyrównuje wybrane akapity do prawej (pożegnanie, data)",
@@ -5583,6 +5610,7 @@
         "tool.footnote": "Сноска", "tool.insertImage": "Вставить изображение", "tool.autoFormat": "Автоформат",
         "tool.boldTitle": "Полужирный (Ctrl/Cmd+B)", "tool.italicTitle": "Курсив (Ctrl/Cmd+I)",
         "tool.link": "Ссылка", "tool.linkTitle": "Ссылка — сделать выделенные слова ссылкой на сайт или магазин", "lnk.title": "Добавить ссылку", "lnk.text": "Текст ссылки", "lnk.textPh": "Слова, которые видит читатель", "lnk.url": "Веб-адрес", "lnk.urlPh": "https://", "lnk.hint": "Начинается с https://, http:// или mailto:. В электронной книге это ссылка; в печати слова набираются обычным текстом.", "lnk.bad": "Этот адрес не может быть ссылкой — укажите адрес, начинающийся с https://, http:// или mailto:.", "lnk.cancel": "Отмена", "lnk.add": "Добавить ссылку",
+        /* BEUK:layout */ "tool.margin": "Заметка на полях", "tool.marginTitle": "Заметка на полях — пометка читателя на полях рядом с предыдущим абзацем, его собственными чернилами", "tool.sideways": "Боком", "tool.sidewaysTitle": "Боком — ставит выбранные абзацы на отдельную страницу, повёрнутыми на четверть оборота по часовой стрелке", "tool.upsideDown": "Вверх ногами", "tool.upsideDownTitle": "Вверх ногами — ставит выбранные абзацы на страницу перевёрнутыми", "mn.title": "Добавить заметку на полях", "mn.name": "Чья заметка", "mn.namePh": "М.", "mn.text": "Заметка", "mn.textPh": "Что написано на полях", "mn.hint": "Стоит рядом с предыдущим абзацем, на внешнем поле печатной страницы; у каждого имени свои чернила. В электронной книге идёт после абзаца.", "mn.bad": "Дайте заметке имя — чья это рука.", "mn.cancel": "Отмена", "mn.add": "Добавить заметку",
         "tool.blockquoteTitle": "Цитата — выделяет этот абзац как цитату", "tool.ul": "Список", "tool.ulTitle": "Маркированный список — каждая строка становится пунктом", "tool.ol": "Нумерованный", "tool.olTitle": "Нумерованный список — каждая строка становится шагом", "tool.sceneBreakTitle": "Смена сцены — становится орнаментом в книге",
         "tool.emDashTitle": "Тире", "tool.footnoteTitle": "Сноска — набирается как связанная концевая сноска",
         "tool.verse": "Стихи", "tool.verseTitle": "Стихи — сохраняет каждый перенос строки в выбранных строках (стихотворение, песня)", "tool.center": "По центру", "tool.centerTitle": "По центру — выравнивает выбранные абзацы по центру (вывеска, записка)", "tool.right": "Вправо", "tool.rightTitle": "Вправо — выравнивает выбранные абзацы по правому краю (подпись, дата)",
@@ -5784,6 +5812,7 @@
         "tool.footnote": "Dipnot", "tool.insertImage": "Resim ekle", "tool.autoFormat": "Otomatik biçim",
         "tool.boldTitle": "Kalın (Ctrl/Cmd+B)", "tool.italicTitle": "İtalik (Ctrl/Cmd+I)",
         "tool.link": "Bağlantı", "tool.linkTitle": "Bağlantı — seçili sözcükleri bir web ya da mağaza bağlantısı yap", "lnk.title": "Bağlantı ekle", "lnk.text": "Bağlantı metni", "lnk.textPh": "Okurun gördüğü sözcükler", "lnk.url": "Web adresi", "lnk.urlPh": "https://", "lnk.hint": "https://, http:// ya da mailto: ile başlar. E-kitapta bir bağlantıdır; baskıda sözcükler düz metin olarak dizilir.", "lnk.bad": "Bu adres bağlantı olamaz — https://, http:// ya da mailto: ile başlayan bir adres kullanın.", "lnk.cancel": "İptal", "lnk.add": "Bağlantı ekle",
+        /* BEUK:layout */ "tool.margin": "Kenar notu", "tool.marginTitle": "Kenar notu — bir okurun önceki paragrafın yanına, kenar boşluğuna kendi mürekkebiyle düştüğü not", "tool.sideways": "Yan", "tool.sidewaysTitle": "Yan — seçili paragrafları kendi sayfasında, saat yönünde çeyrek tur döndürülmüş olarak dizer", "tool.upsideDown": "Baş aşağı", "tool.upsideDownTitle": "Baş aşağı — seçili paragrafları sayfada baş aşağı dizer", "mn.title": "Kenar notu ekle", "mn.name": "Not kimin", "mn.namePh": "M.", "mn.text": "Not", "mn.textPh": "Kenara ne yazdı", "mn.hint": "Basılı sayfanın dış kenar boşluğunda, önceki paragrafın yanında durur; her adın kendi mürekkebi vardır. E-kitapta paragrafın ardından gelir.", "mn.bad": "Nota bir ad verin — kimin eli olduğunu.", "mn.cancel": "İptal", "mn.add": "Not ekle",
         "tool.blockquoteTitle": "Alıntı — bu paragrafı alıntı olarak ayırır", "tool.ul": "Liste", "tool.ulTitle": "Madde işaretli liste — her satır bir madde olur", "tool.ol": "Numaralı", "tool.olTitle": "Numaralı liste — her satır numaralı bir adım olur", "tool.sceneBreakTitle": "Sahne arası — kitapta bir süse dönüşür",
         "tool.emDashTitle": "Uzun tire", "tool.footnoteTitle": "Dipnot — bağlantılı bir sonnot olarak dizilir",
         "tool.verse": "Şiir", "tool.verseTitle": "Şiir — seçili satırların her satır sonunu korur (bir şiir, bir şarkı)", "tool.center": "Ortala", "tool.centerTitle": "Ortala — seçili paragrafları ortalar (bir tabela, bir not)", "tool.right": "Sağa", "tool.rightTitle": "Sağa — seçili paragrafları sağa hizalar (bir veda, bir tarih satırı)",
@@ -5985,6 +6014,7 @@
         "tool.footnote": "حاشية", "tool.insertImage": "إدراج صورة", "tool.autoFormat": "تنسيق تلقائي",
         "tool.boldTitle": "عريض (Ctrl/Cmd+B)", "tool.italicTitle": "مائل (Ctrl/Cmd+I)",
         "tool.link": "رابط", "tool.linkTitle": "رابط — اجعل الكلمات المحددة رابطًا إلى موقع أو متجر", "lnk.title": "إضافة رابط", "lnk.text": "نص الرابط", "lnk.textPh": "الكلمات التي يراها القارئ", "lnk.url": "عنوان الويب", "lnk.urlPh": "https://", "lnk.hint": "يبدأ بـ https:// أو http:// أو mailto:. في الكتاب الإلكتروني يكون رابطًا؛ وفي الطباعة تُصفّ الكلمات نصًا عاديًا.", "lnk.bad": "لا يمكن أن يكون هذا العنوان رابطًا — استخدم عنوانًا يبدأ بـ https:// أو http:// أو mailto:.", "lnk.cancel": "إلغاء", "lnk.add": "إضافة الرابط",
+        /* BEUK:layout */ "tool.margin": "حاشية", "tool.marginTitle": "حاشية — ملاحظة قارئ في الهامش بجانب الفقرة السابقة، بحبره الخاص", "tool.sideways": "جانبيًا", "tool.sidewaysTitle": "جانبيًا — يضع الفقرات المحددة في صفحة مستقلة مُدارة ربع دورة باتجاه عقارب الساعة", "tool.upsideDown": "مقلوبًا", "tool.upsideDownTitle": "مقلوبًا — يضع الفقرات المحددة مقلوبة رأسًا على عقب في الصفحة", "mn.title": "إضافة حاشية", "mn.name": "صاحب الحاشية", "mn.namePh": "م.", "mn.text": "الحاشية", "mn.textPh": "ما كُتب في الهامش", "mn.hint": "توضع بجانب الفقرة السابقة في الهامش الخارجي للصفحة المطبوعة، ولكل اسم حبره. وفي الكتاب الإلكتروني تأتي بعد الفقرة.", "mn.bad": "أعطِ الحاشية اسمًا: بخطّ من هي.", "mn.cancel": "إلغاء", "mn.add": "إضافة الحاشية",
         "tool.blockquoteTitle": "اقتباس — يفصل هذه الفقرة كاقتباس", "tool.ul": "قائمة", "tool.ulTitle": "قائمة نقطية — يصبح كل سطر بندًا", "tool.ol": "مرقّمة", "tool.olTitle": "قائمة مرقّمة — يصبح كل سطر خطوة مرقّمة", "tool.sceneBreakTitle": "فاصل مشهد — يصبح زخرفة في الكتاب",
         "tool.emDashTitle": "شرطة طويلة", "tool.footnoteTitle": "حاشية — تُنضَّد كحاشية ختامية مرتبطة",
         "tool.verse": "شعر", "tool.verseTitle": "شعر — يحافظ على كل فاصل أسطر في الأسطر المحددة (قصيدة، أغنية)", "tool.center": "توسيط", "tool.centerTitle": "توسيط — يوسّط الفقرات المحددة (لافتة، ملاحظة)", "tool.right": "يمين", "tool.rightTitle": "يمين — يحاذي الفقرات المحددة إلى اليمين (توقيع ختامي، سطر تاريخ)",
@@ -6186,6 +6216,7 @@
         "tool.footnote": "脚注", "tool.insertImage": "画像を挿入", "tool.autoFormat": "自動整形",
         "tool.boldTitle": "太字（Ctrl/Cmd+B）", "tool.italicTitle": "斜体（Ctrl/Cmd+I）",
         "tool.link": "リンク", "tool.linkTitle": "リンク — 選択した語をウェブやストアへのリンクにする", "lnk.title": "リンクを追加", "lnk.text": "リンクの文字", "lnk.textPh": "読者に見える文字", "lnk.url": "ウェブアドレス", "lnk.urlPh": "https://", "lnk.hint": "https://、http://、mailto: のいずれかで始まります。電子書籍ではリンクになり、印刷では文字だけが通常の本文として組まれます。", "lnk.bad": "そのアドレスはリンクにできません。https://、http://、mailto: で始まるアドレスを使ってください。", "lnk.cancel": "キャンセル", "lnk.add": "リンクを追加",
+        /* BEUK:layout */ "tool.margin": "書き込み", "tool.marginTitle": "書き込み — 直前の段落の横、余白に読者が書いたメモ（人ごとに色を変えます）", "tool.sideways": "横向き", "tool.sidewaysTitle": "横向き — 選んだ段落を専用のページに、時計回りに90度回して組みます", "tool.upsideDown": "上下逆さ", "tool.upsideDownTitle": "上下逆さ — 選んだ段落をページ上で逆さまに組みます", "mn.title": "余白の書き込みを追加", "mn.name": "書いた人", "mn.namePh": "M.", "mn.text": "書き込み", "mn.textPh": "余白に書かれたこと", "mn.hint": "印刷ページの外側の余白、直前の段落の横に置きます。名前ごとに色が分かれます。電子書籍では段落の後に続きます。", "mn.bad": "書き込みに名前を付けてください（誰の筆跡か）。", "mn.cancel": "キャンセル", "mn.add": "書き込みを追加",
         "tool.blockquoteTitle": "引用 — この段落を引用として分けます", "tool.ul": "箇条書き", "tool.ulTitle": "箇条書き — 各行が項目になります", "tool.ol": "番号付き", "tool.olTitle": "番号付きリスト — 各行が番号付きの手順になります", "tool.sceneBreakTitle": "場面転換 — 本の中では装飾になります",
         "tool.emDashTitle": "ダッシュ", "tool.footnoteTitle": "脚注 — リンク付きの巻末注として組まれます",
         "tool.verse": "韻文", "tool.verseTitle": "韻文 — 選んだ行の改行をすべて保ちます（詩、歌）", "tool.center": "中央", "tool.centerTitle": "中央 — 選んだ段落を中央揃えにします（看板、メモ）", "tool.right": "右寄せ", "tool.rightTitle": "右寄せ — 選んだ段落を右揃えにします（結びの言葉、日付）",
@@ -6387,6 +6418,7 @@
         "tool.footnote": "脚注", "tool.insertImage": "插入图片", "tool.autoFormat": "自动排版",
         "tool.boldTitle": "粗体 (Ctrl/Cmd+B)", "tool.italicTitle": "斜体 (Ctrl/Cmd+I)",
         "tool.link": "链接", "tool.linkTitle": "链接——把选中的文字设为网站或书店链接", "lnk.title": "添加链接", "lnk.text": "链接文字", "lnk.textPh": "读者看到的文字", "lnk.url": "网址", "lnk.urlPh": "https://", "lnk.hint": "以 https://、http:// 或 mailto: 开头。在电子书中是链接；在印刷版中文字按普通正文排版。", "lnk.bad": "这个地址不能作为链接——请使用以 https://、http:// 或 mailto: 开头的地址。", "lnk.cancel": "取消", "lnk.add": "添加链接",
+        /* BEUK:layout */ "tool.margin": "页边批注", "tool.marginTitle": "页边批注——读者写在上一段旁边页边上的批注，各用各的墨色", "tool.sideways": "横排", "tool.sidewaysTitle": "横排——将所选段落单独排成一页，顺时针旋转九十度", "tool.upsideDown": "倒置", "tool.upsideDownTitle": "倒置——将所选段落在页面上倒过来排", "mn.title": "添加页边批注", "mn.name": "批注人", "mn.namePh": "M.", "mn.text": "批注", "mn.textPh": "页边上写了什么", "mn.hint": "排在上一段旁边、印刷页的外侧页边；每个名字各有墨色。电子书中排在该段之后。", "mn.bad": "请给批注署名——是谁的笔迹。", "mn.cancel": "取消", "mn.add": "添加批注",
         "tool.blockquoteTitle": "引用块 — 将此段落作为引文单独排版", "tool.ul": "列表", "tool.ulTitle": "项目符号列表 — 每行成为一项", "tool.ol": "编号", "tool.olTitle": "编号列表 — 每行成为一个编号步骤", "tool.sceneBreakTitle": "场景分隔 — 在书中成为装饰纹样",
         "tool.emDashTitle": "破折号", "tool.footnoteTitle": "脚注 — 排版为带链接的尾注",
         "tool.verse": "诗行", "tool.verseTitle": "诗行 — 保留所选各行的每个换行（诗歌、歌词）", "tool.center": "居中", "tool.centerTitle": "居中 — 将所选段落居中排版（招牌、便条）", "tool.right": "右对齐", "tool.rightTitle": "右对齐 — 将所选段落右对齐（落款、日期行）",
@@ -19613,8 +19645,144 @@
                 (it.first ? docxRun(it.who, { b: true }) + cx.lineBreak : "") + cx.runs(it.text));
             });
           }
+        },
+        /* BEUK:layout — a margin note, "::: margin <Name>": a reader's
+           note written beside the paragraph just before it. Print, the
+           Print Interior View and a wide preview float it into a
+           narrow outer column the section keeps for its notes (the
+           text column narrowed, so nothing overlaps or is clipped); the
+           EPUB and a narrow preview set it as an indented, ruled
+           <aside> after the paragraph. The name stands above the note;
+           every name in the book has its own ink (marginInkOf). */
+        margin: {
+          html(seg, cx) {
+            const make = (where) => marginNoteHtml(seg, cx, where);
+            if (cx.layout === "print") { cx.beforeAnchor(make("float")); return ""; }
+            if (cx.layout === "preview") { cx.beforeAnchor(make("float")); return make("after"); }
+            return make("after");
+          },
+          docx(seg, cx) {
+            const name = String(seg.arg || "").trim();
+            const ink = MARGIN_INKS[(marginInkOf(name) - 1) % MARGIN_INKS.length];
+            return marginNoteParas(seg).map((txt, i) => cx.para("MarginNote",
+              (i === 0 && name ? '<w:r><w:rPr><w:b/><w:i w:val="0"/><w:color w:val="' + ink.hex.slice(1) + '"/></w:rPr><w:t xml:space="preserve">' + esc(name) + "</w:t></w:r>" + cx.lineBreak : "") + cx.runs(txt)));
+          }
+        },
+        /* BEUK:layout — "::: sideways": the content on a page of its own,
+           turned 90 degrees clockwise and centred in the page area (a
+           wide table, a map's legend, a document set landscape) in
+           print, the Print Interior View and a wide preview; the EPUB
+           and a narrow preview set it upright in a ruled box. */
+        sideways: {
+          html: (seg, cx) => '<div class="sideways"><div class="sw-in">' + cx.blocks(seg.text) + "</div></div>",
+          docx: (seg, cx) => layoutStyled(cx.blocks(seg.text), "Sideways")
+        },
+        /* BEUK:layout — "::: upside-down": the content turned 180 degrees
+           where it stands, in the preview and in print; the EPUB sets
+           it upright (a turned block breaks some reading systems). */
+        "upside-down": {
+          html: (seg, cx) => '<div class="upside-down"><div class="ud-in">' + cx.blocks(seg.text) + "</div></div>",
+          docx: (seg, cx) => layoutStyled(cx.blocks(seg.text), "UpsideDown")
         }
       };
+      /* ==== BEUK:layout ==== */
+      /* Margin-note inks: one per name, in the order the names first
+         appear in the book, then round again. Each ink pairs a colour
+         with its own rule (solid, dashed, dotted, double) and the
+         name's underline, so two readers' notes stay apart in a
+         greyscale print too. Every colour is at least 7:1 on white; on a dark
+         preview screen (pv-dark) each name takes a light tint of its ink,
+         at least 7:1 on black. */
+      const MARGIN_INKS = [
+        { hex: "#1d4f91", dark: "#9dbcf0", rule: "solid" },
+        { hex: "#a1232b", dark: "#f2a0a5", rule: "dashed" },
+        { hex: "#2b6334", dark: "#94d6a0", rule: "dotted" },
+        { hex: "#5a3d8a", dark: "#c9b0f2", rule: "double" }
+      ];
+      const MARGIN_OPEN_RE = /^[ \t]*:::[ \t]+margin(?:[ \t]+(.*?))?[ \t]*$/i;
+      let marginInkCache = { sig: null, map: null };
+      /* The 1-based ink number of a note's name across the whole book. */
+      function marginInkOf(name) {
+        const key = String(name || "").trim().toLowerCase();
+        const secs = (state && state.sections) || [];
+        const sig = secs.map((s) => s.id + ":" + String(s.content || "").length).join(",");
+        if (marginInkCache.sig !== sig) {
+          const map = new Map();
+          secs.forEach((s) => {
+            const c = String(s.content || "");
+            if (c.indexOf(":::") === -1) return;
+            c.split("\n").forEach((l) => {
+              const m = l.match(MARGIN_OPEN_RE);
+              if (!m) return;
+              const k = String(m[1] || "").trim().toLowerCase();
+              if (!map.has(k)) map.set(k, map.size + 1);
+            });
+          });
+          marginInkCache = { sig, map };
+        }
+        const map = marginInkCache.map;
+        if (!map.has(key)) map.set(key, map.size + 1);
+        return map.get(key);
+      }
+      /* A note's paragraphs: its blank-line-separated runs, each one
+         line of words (a note is a few lines in a narrow column). */
+      function marginNoteParas(seg) {
+        return containerStanzas(seg).map((st) => st.map((l) => l.trim()).join(" ")).filter((s) => s && !/^\[\^?\d{1,3}\]:/.test(s));
+      }
+      function marginNoteHtml(seg, cx, where) {
+        const name = String(seg.arg || "").trim();
+        const ink = ((marginInkOf(name) - 1) % MARGIN_INKS.length) + 1;
+        return '<aside class="mnote mn-ink-' + ink + " mn-" + where + '">' +
+          (name ? '<span class="mn-who">' + cx.inline(name) + "</span>" : "") +
+          marginNoteParas(seg).map((p) => "<p>" + cx.inline(p) + "</p>").join("") + "</aside>";
+      }
+      /* A sideways / upside-down block's Word paragraphs: the body
+         paragraphs it encloses take the kind's own named style. */
+      function layoutStyled(paras, style) {
+        return paras.map((p) => String(p).replace('<w:pStyle w:val="Normal"/>', '<w:pStyle w:val="' + style + '"/>'));
+      }
+      /* The margin column's share of the text area: the notes column
+         and the gap before it, as percentages of a section's width. */
+      const MN_NOTE = 0.27, MN_GAP = 0.045;
+      /* The rules that open the outer column and float the notes into
+         it, under `pre` (a print scope, or a wide preview's root). */
+      function marginColumnRules(pre, rtl) {
+        const end = rtl ? "left" : "right", start = rtl ? "right" : "left";
+        const textW = 1 - MN_NOTE - MN_GAP;
+        const pc = (n) => (Math.round(n * 10000) / 100) + "%";
+        return [
+          pre + ".mn-body { padding-" + end + ": " + pc(MN_NOTE + MN_GAP) + "; }",
+          pre + ".mnote.mn-float { display: block; float: " + end + "; clear: " + end + "; width: " + pc(MN_NOTE / textW) + "; box-sizing: border-box; margin: 0.15em 0 0.7em 0; margin-" + end + ": -" + pc((MN_NOTE + MN_GAP) / textW) + "; margin-" + start + ": 0; padding-" + start + ": 0.55em; padding-" + end + ": 0; font-size: 0.8em; line-height: 1.32; }",
+          pre + ".mnote.mn-after { display: none; }"
+        ];
+      }
+      /* Print and the Print Interior View: the margin column, a
+         sideways page sized to the page area and turned clockwise, an
+         upside-down block. `cols`: the view's multicol flow, where a
+         page is a column. */
+      function printLayoutCss(scope, trimId, cols) {
+        const S = scope ? scope + " " : "";
+        const tr = trimSize(trimId), mg = printMargins(trimId);
+        const W = tr.w - mg.inside - mg.outside, H = tr.h - mg.top - mg.bottom - 0.02;
+        const brk = cols ? "column" : "page";
+        return marginColumnRules(S, isRtlLang(bookLang())).concat([
+          S + ".mnote.mn-float { break-inside: avoid; page-break-inside: avoid; }",
+          S + ".mnote { font-family: 'Patrick Hand', " + fontStack(bodyFaceOf(state.theme.bodyFont)) + "; }",
+          S + ".sideways { break-before: " + brk + "; break-after: " + brk + ";" + (cols ? "" : " page-break-before: always; page-break-after: always;") + " break-inside: avoid; position: relative; width: " + inCss(W) + "; height: " + inCss(H) + "; margin: 0; padding: 0; border: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }",
+          S + ".sideways .sw-in { position: absolute; top: 0; left: " + inCss(W) + "; width: " + inCss(H) + "; height: " + inCss(W) + "; box-sizing: border-box; padding: 0 0.1in; transform-origin: 0 0; transform: rotate(90deg); display: flex; flex-direction: column; justify-content: center; overflow: hidden; }",
+          S + ".upside-down .ud-in { transform: rotate(180deg); }"
+        ], isRtlLang(bookLang()) ? [
+          /* A right-to-left book: the turned block's own box runs left to
+             right, its content right to left. The renderer's footnote pass
+             marks a block's foot with an empty inline after its content,
+             and Chromium writes no position for that marker in a
+             right-to-left box (measured 2026-10-27: the chapter's notes
+             fell back to its end). */
+          S + ".upside-down, " + S + ".sideways { direction: ltr; }",
+          S + ".upside-down .ud-in, " + S + ".sideways .sw-in { direction: rtl; }"
+        ] : []).join("\n");
+      }
+      /* ==== /BEUK:layout ==== */
       /* A kept-lines stanza that is really a block of its own — a scene
          break, a picture, a note's definition — sets as one. */
       function containerPassThrough(lines) {
@@ -20026,6 +20194,10 @@
          interior, the Print Interior View) builds its section HTML with
          the book's notes set at the foot of the page. */
       var printNotesAtFootNow = false;
+      /* BEUK:layout — true only while a print surface (the print
+         interior, the Print Interior View) builds its section HTML:
+         margin notes float into their column, there is no narrow copy. */
+      var printLayoutNow = false;
       function contentBlocksToHtml(rawContent, section, isFirst, forExport, dataMedia) {
         const text = beautifyText(rawContent || "");
         if (!text) return forExport ? "" : '<p class="empty-note">This section has no text yet. Write in the editor to see it typeset here.</p>';
@@ -20163,14 +20335,30 @@
             inContainer++;
             try { runBlocks(String(txt || "")); } finally { inContainer--; }
             return out.splice(at).join("\n");
+          },
+          /* BEUK:layout — the surface being set ("print": the print
+             interior and the Print Interior View; "preview"; "epub":
+             every other export), and a block set just before the last
+             block so far (a margin note before its paragraph, past any
+             notes already standing there). */
+          layout: printLayoutNow ? "print" : forExport ? "epub" : "preview",
+          beforeAnchor: (html) => {
+            let at = out.length;
+            while (at > 0 && out[at - 1].indexOf('<aside class="mnote') === 0) at--;
+            out.splice(Math.max(0, at - 1), 0, html);
           }
         };
-        parseContainers(text).forEach((seg) => {
+        const segs = parseContainers(text);
+        segs.forEach((seg) => {
           const k = containerKind(seg.kind);
           if (!k) { runBlocks(seg.text); return; }
           const html = k.html(seg, cx);
           if (html) out.push(html);
         });
+        /* BEUK:layout — a section that carries margin notes keeps its
+           outer column for them in print and the preview: the text set
+           in the narrower measure (the notes below it at full width). */
+        if (cx.layout !== "epub" && segs.some((sg) => sg.kind === "margin") && out.length) out.splice(0, out.length, '<div class="mn-body">' + out.join("\n") + "</div>");
         if (notes.length) {
           out.push('<div class="endnotes' + (foot ? " fn-page" : "") + '" epub:type="endnotes"><p class="endnotes-h">Notes</p>' +
             notes.map((nt) => '<p class="endnote" id="' + prefix + "fn" + nt.n + '" epub:type="endnote"><a class="note-back" href="#' + prefix + "fnref" + nt.n + '" title="Back to the reference"><sup>' + (foot ? nt.n : "[" + nt.n + "]") + "</sup></a> " + inlineMd(nt.text, noteCtx) + "</p>").join("") + "</div>");
@@ -20426,6 +20614,34 @@
           S + ".texts .tx-meta { text-align: center; font-size: 0.7em; letter-spacing: 0.06em; margin: 0.8em 0 0.2em 0; opacity: 0.72; }",
           S + ".texts > .tx-meta:first-child, " + S + ".texts > .tx:first-child { margin-top: 0; }",
           S + ".letter + p, " + S + ".texts + p { text-indent: 0; }",
+          /* BEUK:layout — a margin note, as the EPUB and a narrow preview
+             set it: an indented, ruled aside after its paragraph, smaller,
+             in italic (the studio's surfaces in a handwriting face), the
+             name above it in its ink. The floated copy (.mn-float) shows
+             only where a margin column is open (marginColumnRules). */
+          S + ".mnote { display: block; margin: 0.45em 0 0.85em 1.6em; padding: 0.1em 0 0.1em 0.75em; border-left: 1.5px solid currentColor; font-style: italic; font-size: 0.86em; line-height: 1.35; text-align: left; text-indent: 0; hyphens: manual; -webkit-hyphens: manual; break-inside: avoid; page-break-inside: avoid; }",
+          ...(scope ? [S + ".mnote { font-family: 'Patrick Hand', " + bodyFf + "; }"] : []),
+          S + ".mnote p { margin: 0 0 0.3em 0; text-indent: 0; text-align: left; orphans: 1; widows: 1; }",
+          S + ".mnote p:last-child { margin-bottom: 0; }",
+          S + ".mnote .mn-who { display: block; font-style: normal; font-weight: 700; font-size: 0.8em; letter-spacing: 0.06em; margin: 0 0 0.15em 0; text-decoration-line: underline; text-underline-offset: 0.18em; text-decoration-thickness: 1px; }",
+          S + ".mnote.mn-float { display: none; }",
+          S + ".mnote em, " + S + ".mnote i { font-style: normal; }",
+          ...(scope ? MARGIN_INKS.map((k, i) => root + ".pv-dark .mnote.mn-ink-" + (i + 1) + " { color: " + k.dark + "; }") : []),
+          ...MARGIN_INKS.map((k, i) => S + ".mnote.mn-ink-" + (i + 1) + " { color: " + k.hex + "; border-left-style: " + k.rule + ";" + (k.rule === "double" ? " border-left-width: 3px;" : k.rule === "dotted" ? " border-left-width: 2px;" : "") + " } " + S + ".mn-ink-" + (i + 1) + " .mn-who { text-decoration-style: " + k.rule + "; }"),
+          /* Sideways, upside-down: set upright in the EPUB and a narrow
+             preview, the turned content in a ruled box like a figure. */
+          S + ".sideways { margin: 1.2em 0; padding: 0.75em 0.9em; border: 0.75px solid currentColor; break-inside: avoid; page-break-inside: avoid; text-indent: 0; }",
+          S + ".sideways p:first-child, " + S + ".upside-down p:first-child { text-indent: 0; }",
+          S + ".upside-down { margin: 1em 0; break-inside: avoid; page-break-inside: avoid; }",
+          ...(scope ? [S + ".upside-down .ud-in { transform: rotate(180deg); }"] : []),
+          S + ".sideways + p, " + S + ".upside-down + p { text-indent: 0; }",
+          /* A wide preview opens the margin column and turns a sideways
+             block on a page of its own (--pv-w / --pv-h: the page's
+             column, set by measurePages). */
+          ...(scope ? marginColumnRules(root + ".lay-wide ", isRtlLang(bookLang())).concat([
+            root + ".lay-wide .sideways { break-before: column; break-after: column; break-inside: avoid; position: relative; width: var(--pv-w, 100%); height: var(--pv-h, 30em); margin: 0; padding: 0; border: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }",
+            root + ".lay-wide .sideways .sw-in { position: absolute; top: 0; left: var(--pv-w, 100%); width: var(--pv-h, 30em); height: var(--pv-w, 100%); box-sizing: border-box; padding: 0 1em; transform-origin: 0 0; transform: rotate(90deg); display: flex; flex-direction: column; justify-content: center; overflow: hidden; }"
+          ]) : []),
           S + ".chapter-opening { text-align: center; margin: 2.2em 0 1.6em 0; page-break-after: avoid; }",
           S + ".chapter-number { font-family: " + headFf + "; font-size: 0.78em; letter-spacing: 0.32em; text-transform: uppercase; text-indent: 0; margin: 0 0 0.9em 0; opacity: 0.75; }",
           S + ".chapter-title { font-family: " + headFf + "; font-weight: 600; font-size: 1.85em; line-height: 1.2; margin: 0; text-align: center; }",
@@ -20585,7 +20801,12 @@
             S + ".texts .tx-sent .tx-b { border-bottom-right-radius: 0.95em; border-bottom-left-radius: 0.25em; }",
             S + ".texts .tx-recv .tx-b { border-bottom-left-radius: 0.95em; border-bottom-right-radius: 0.25em; }",
             /* A quote's attribution stands at the line's end: the left. */
-            S + "blockquote p.attribution { text-align: left; }");
+            S + "blockquote p.attribution { text-align: left; }",
+            /* BEUK:layout — a margin note's inset and rule on the right
+               (its floated copy goes to the left column: marginColumnRules). */
+            S + ".mnote { margin: 0.45em 1.6em 0.85em 0; padding: 0.1em 0.75em 0.1em 0; border-left: 0; border-right: 1.5px solid currentColor; text-align: right; }",
+            S + ".mnote p { text-align: right; }",
+            ...MARGIN_INKS.map((k, i) => S + ".mnote.mn-ink-" + (i + 1) + " { border-left-style: none; border-right-style: " + k.rule + ";" + (k.rule === "double" ? " border-right-width: 3px;" : k.rule === "dotted" ? " border-right-width: 2px;" : "") + " }"));
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -23328,6 +23549,79 @@
           else if (e.key === "Enter") { e.preventDefault(); confirmLink(); }
         }));
       }
+      /* ---- BEUK:layout — Margin note dialog ----
+         Names the note's writer (the book's last margin name offered
+         first) and takes its words — the selected text when there is
+         one, which the note then replaces. The note is placed after
+         the paragraph the cursor stands in: "::: margin <Name>". */
+      let mnPending = null;
+      function openMarginDialog() {
+        const area = $("editorArea");
+        const s = activeSection();
+        if (!s || AUTO_TYPES.includes(s.type)) return;
+        const start = area.selectionStart || 0, end = area.selectionEnd || 0;
+        mnPending = { start: start, end: end, view: editorViewSnapshot() };
+        let last = "";
+        state.sections.forEach((x) => String(x.content || "").split("\n").forEach((l) => { const m = l.match(MARGIN_OPEN_RE); if (m && m[1]) last = m[1].trim(); }));
+        $("mnName").value = last;
+        $("mnText").value = area.value.slice(start, end).trim();
+        $("mnHint").textContent = t("mn.hint");
+        $("mnHint").classList.remove("is-bad");
+        $("modalMargin").classList.add("open");
+        icons();
+        setTimeout(() => { if ($("modalMargin").classList.contains("open")) ($("mnName").value ? $("mnText") : $("mnName")).focus(); }, 40);
+      }
+      function closeMarginDialog() {
+        $("modalMargin").classList.remove("open");
+        const view = mnPending ? mnPending.view : null;
+        mnPending = null;
+        $("editorArea").focus();
+        if (view) editorViewRestore(view, true);
+      }
+      function confirmMargin() {
+        if (!mnPending) return;
+        const name = $("mnName").value.replace(/[\r\n:]+/g, " ").replace(/\s+/g, " ").trim();
+        if (!name) {
+          $("mnHint").textContent = t("mn.bad");
+          $("mnHint").classList.add("is-bad");
+          $("mnName").focus();
+          return;
+        }
+        const words = $("mnText").value.replace(/\r\n?/g, "\n").split("\n").filter((l) => !isContainerMarkLine(l)).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+        const area = $("editorArea");
+        const view = mnPending.view || editorViewSnapshot();
+        const val = area.value;
+        let a = mnPending.start, b = mnPending.end;
+        if (b <= a) {
+          /* no selection: after the paragraph the cursor stands in */
+          const nx = val.indexOf("\n\n", a);
+          a = b = nx < 0 ? val.replace(/\s+$/, "").length : nx;
+        }
+        const head = val.slice(0, a).replace(/\s+$/, ""), tail = val.slice(b).replace(/^\s+/, "");
+        const opener = "::: margin " + name + "\n";
+        const next = (head ? head + "\n\n" : "") + opener + words + "\n:::" + (tail ? "\n\n" + tail : "");
+        $("modalMargin").classList.remove("open");
+        area.focus();
+        area.value = next;
+        const caret = (head ? head.length + 2 : 0) + opener.length + words.length;
+        area.setSelectionRange(caret, caret);
+        area.dispatchEvent(new Event("input"));
+        if (view) editorViewRestore(view, false);
+        mnPending = null;
+      }
+      function initMarginNote() {
+        $("btnCancelMargin").addEventListener("click", closeMarginDialog);
+        $("btnDoMargin").addEventListener("click", confirmMargin);
+        $("modalMargin").addEventListener("click", (e) => { if (e.target === $("modalMargin")) closeMarginDialog(); });
+        $("mnName").addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.preventDefault(); closeMarginDialog(); }
+          else if (e.key === "Enter") { e.preventDefault(); confirmMargin(); }
+        });
+        $("mnText").addEventListener("keydown", (e) => {
+          if (e.key === "Escape") { e.preventDefault(); closeMarginDialog(); }
+          else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); confirmMargin(); }
+        });
+      }
       function initEditor() {
         const area = $("editorArea");
         let debounce = null;
@@ -23466,6 +23760,9 @@
           else if (kind === "ul" || kind === "ol") applyList(area, kind === "ol");
           else if (kind === "verse" || kind === "center" || kind === "right") applyContainer(area, kind);
           else if (kind === "letter" || kind === "texts") applyContainer(area, kind);
+          else if (kind === "margin") openMarginDialog(); /* BEUK:layout */
+          else if (kind === "sideways") applyContainer(area, "sideways");
+          else if (kind === "upsidedown") applyContainer(area, "upside-down");
         });
         area.addEventListener("keydown", (e) => {
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
@@ -24962,6 +25259,7 @@
         flow.style.height = h + "px";
         flow.style.columnWidth = (twoUp ? (w - COL_GAP) / 2 : w) + "px";
         flow.style.columnGap = COL_GAP + "px";
+        pvLayoutGeometry(flow, twoUp ? (w - COL_GAP) / 2 : w, h); /* BEUK:layout */
         flow.setAttribute("lang", state.meta.language || "en");
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
         return flow;
@@ -25278,7 +25576,9 @@
       function pvCandidates(flow) {
         return Array.prototype.filter.call(flow.querySelectorAll("p, blockquote, h2.inhead, h3.inhead"), (el) =>
           !el.closest(".chapter-opening, .endnotes, figure, .empty-note, .part-divider > p, .tp-top") &&
-          !(el.tagName === "P" && el.parentElement && el.parentElement.closest("blockquote")));
+          !(el.tagName === "P" && el.parentElement && el.parentElement.closest("blockquote")) &&
+          /* BEUK:layout — a margin note's copy for the other width is not shown */
+          !(el.closest(".mnote") && !el.closest(".mnote").getClientRects().length));
       }
       function pvLetters(el) {
         const out = [];
@@ -25490,6 +25790,18 @@
         wrap.style.clipPath = "inset(" + f.oy.toFixed(2) + "px " + f.ox.toFixed(2) + "px)";
         return "translate(" + f.ox.toFixed(2) + "px, " + f.oy.toFixed(2) + "px) scale(" + f.s.toFixed(5) + ") translateX(" + (previewTurnSign() * (page - 1) * (area.w + COL_GAP)) + "px)";
       }
+      /* BEUK:layout — a page of the preview wide enough for a margin
+         column (PV_WIDE_PX) opens it and turns a sideways block on a
+         page of its own, sized by the page's column (--pv-w, --pv-h). */
+      var PV_WIDE_PX = 420;
+      function pvLayoutGeometry(flow, colW, colH) {
+        flow.classList.toggle("lay-wide", colW >= PV_WIDE_PX);
+        /* a dark screen (a phone in true black, night reading): margin inks in their light tints */
+        const bg = (getComputedStyle($("deviceScreen") || flow).backgroundColor.match(/[0-9.]+/g) || []).map(Number);
+        flow.classList.toggle("pv-dark", bg.length >= 3 && (bg.length < 4 || bg[3] > 0.5) && 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2] < 110);
+        flow.style.setProperty("--pv-w", Math.floor(colW) + "px");
+        flow.style.setProperty("--pv-h", Math.floor(colH) + "px");
+      }
       function measurePages() {
         const wrap = $("flowWrap"), flow = $("pageFlow");
         const area = deviceReadingArea();
@@ -25499,6 +25811,7 @@
           flow.style.transformOrigin = "0 0";
           flow.style.columnWidth = (area.twoUp ? (area.w - COL_GAP) / 2 : area.w) + "px";
           flow.style.columnGap = COL_GAP + "px";
+          pvLayoutGeometry(flow, area.twoUp ? (area.w - COL_GAP) / 2 : area.w, area.h); /* BEUK:layout */
           /* Repairs read on-screen boxes: measure unscaled, then put the
              scaled transform back without animating. */
           flow.style.transition = "none";
@@ -25525,6 +25838,7 @@
         const twoUp = state.device === "ipad";
         flow.style.columnWidth = (twoUp ? (w - COL_GAP) / 2 : w) + "px";
         flow.style.columnGap = COL_GAP + "px";
+        pvLayoutGeometry(flow, twoUp ? (w - COL_GAP) / 2 : w, h); /* BEUK:layout */
         /* BEUK:selfchecks — repairs are made for one geometry: undo the
            last ones from the pristine render, then repair afresh. */
         undoOrnamentRepairs(flow);
@@ -27038,7 +27352,9 @@
         /* Beuk's own Word export styles: known, read as paragraphs (no
            "unrecognised style" converter note for each). */
         "p[style-name='Verse'] => p:fresh", "p[style-name='Letter'] => p:fresh", "p[style-name='Text Sent'] => p:fresh",
-        "p[style-name='Text Received'] => p:fresh", "p[style-name='Text Note'] => p:fresh", "p[style-name='Caption'] => p:fresh"] };
+        "p[style-name='Text Received'] => p:fresh", "p[style-name='Text Note'] => p:fresh", "p[style-name='Caption'] => p:fresh",
+        /* BEUK:layout — margin notes, sideways and upside-down blocks */
+        "p[style-name='Margin Note'] => p:fresh", "p[style-name='Sideways'] => p:fresh", "p[style-name='Upside Down'] => p:fresh"] };
       /* A web or mail address; a space or parenthesis inside it (Word
          keeps them raw) is percent-encoded by irRunsToMd, not refused. */
       const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S/i;
@@ -27375,7 +27691,7 @@
            writer made, so a paragraph in one of them never fences a
            "::: center" / "::: right" (nor does its own w:jc: the export
            sets a centred caption and a right-set sign-off that way). */
-        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption"]);
+        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption", "MarginNote", "Sideways", "UpsideDown"]); /* BEUK:layout — the last three */
         const ownStyle = (id) => { for (let k = 0; id && k < 12; k++) { if (OWN_SET.has(id)) return true; if (!styles[id]) return false; id = styles[id].based; } return false; };
         const styleJc = (id) => { for (let k = 0; id && styles[id] && k < 12; k++) { if (styles[id].jc) return styles[id].jc; id = styles[id].based; } return ""; };
         /* Word's own Caption style (by id or by name, through basedOn):
@@ -31790,6 +32106,8 @@
           /* A sent text bubble's tint prints as a solid grey (no
              transparency in the print file), the same tone on white. */
           ".texts .tx-sent .tx-b { background: #e6e6e6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }",
+          /* BEUK:layout — the margin column, sideways pages, upside-down blocks. */
+          printLayoutCss("", trimId, false),
           /* A chapter backdrop prints over the opening page's text
              area, from its top: anchored in the opening header, which
              sits its own 2.2em lead below it. (Chromium clips what a
@@ -31969,7 +32287,7 @@
         const capLines = Math.max(2, Math.floor((H * 0.5 - lineH) / lineH));
         const colOf = (r, f) => Math.max(0, Math.floor(((rtl ? f.right - r.right : r.left - f.left) + PIV_GAP / 2) / step));
         const BLOCKS = "p, li, h1, h2, h3, h4, h5, h6, blockquote, figure, header, dd, dt, pre, table, div";
-        const keepNext = (el) => !!el && (/^H[1-6]$/.test(el.tagName) || /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker)\b/.test(el.className || ""));
+        const keepNext = (el) => !!el && (/^H[1-6]$/.test(el.tagName) || /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker|mnote)\b/.test(el.className || "")); /* BEUK:layout — a margin note keeps with its paragraph */
         const keepPrev = (el) => !!el && /\bscene-break\b/.test(el.className || "");
         const splittable = (el) => !!el && /^(P|BLOCKQUOTE)$/.test(el.tagName) && !el.closest("header, figure");
         /* Every line on every column: text fragments and pictures, grouped
@@ -31984,6 +32302,7 @@
             if (!node.nodeValue.trim()) continue;
             const par = node.parentElement;
             if (!par || par.closest(".endnotes, .bd-layer")) continue;
+            if (par.closest(".mnote, .sideways, .upside-down")) continue; /* BEUK:layout — measured whole, below */
             const blk = par.closest("header.chapter-opening, figure") || par.closest(BLOCKS);
             range.selectNodeContents(node);
             for (const r of range.getClientRects()) {
@@ -31992,10 +32311,22 @@
             }
           }
           flow.querySelectorAll("img, svg, hr").forEach((el) => {
-            if (el.closest(".endnotes, .bd-layer")) return;
+            if (el.closest(".endnotes, .bd-layer, .mnote, .sideways, .upside-down")) return;
             const r = el.getBoundingClientRect();
             if (!r.height) return;
             frags.push({ col: colOf(r, f), top: r.top - f.top, bottom: r.bottom - f.top, blk: el.closest("header.chapter-opening, figure, .scene-break") || el.closest(BLOCKS) || el, text: false });
+          });
+          /* BEUK:layout — a margin note, a sideways page, an upside-down
+             block: one unbroken line each, as the renderer takes them; a
+             note stands from its paragraph's top, so it is never cut off
+             the paragraph it keeps with. */
+          flow.querySelectorAll(".mnote, .sideways, .upside-down").forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (!r.height) return;
+            let anc = el.nextElementSibling;
+            while (anc && anc.classList.contains("mnote")) anc = anc.nextElementSibling;
+            const top = el.classList.contains("mnote") && anc ? Math.min(r.top, anc.getBoundingClientRect().top) : r.top;
+            frags.push({ col: colOf(r, f), top: top - f.top, bottom: r.bottom - f.top, blk: el, text: false });
           });
           frags.sort((a, b) => a.col - b.col || a.top - b.top);
           /* Fragments overlapping by more than half the shorter one share
@@ -32195,10 +32526,11 @@
         const atFoot = printNotesAtFoot(); /* BEUK:footnotes */
         let pairs;
         printNotesAtFootNow = atFoot;
+        printLayoutNow = true; /* BEUK:layout */
         try {
           pairs = state.sections.filter((s) => s.included && s.type !== "cover")
             .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
-        } finally { printNotesAtFootNow = false; }
+        } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         /* A Large Print edition says so in the book itself, in the
            position the typesetter controls: the colophon carries the
            edition line — or the copyright page when the book has no
@@ -32631,6 +32963,8 @@
           /* BEUK:footnotes — notes at the page foot: their type, and the
              column breaks the view's own layout inserts (pivFootnoteLayout) */
           "\n" + printFootnoteCss(".piv-book") + "\n" + pivFootnoteCutCss() +
+          /* BEUK:layout — margin notes, sideways and upside-down, as they print (a page is a column here). */
+          "\n" + printLayoutCss(".piv-book", state.printTrim, true) +
           /* The spread shows the press tints the print file carries (BEUK:print). */
           "\n" + printColourCss(".piv-book ") + printSolidTintCss(buildBookCss(".piv-book"));
       }
@@ -32657,7 +32991,8 @@
         flow.setAttribute("lang", state.meta.language || "en");
         flow.dir = isRtlLang(bookLang()) ? "rtl" : "ltr";
         printNotesAtFootNow = printNotesAtFoot(); /* BEUK:footnotes */
-        try { flow.innerHTML = printUnlink(sectionHtml(s, true, true)); /* print sets a link's words only */ } finally { printNotesAtFootNow = false; }
+        printLayoutNow = true; /* BEUK:layout */
+        try { flow.innerHTML = printUnlink(sectionHtml(s, true, true)); /* print sets a link's words only */ } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         return flow;
       }
       function buildPrintViewModel() {
@@ -33470,6 +33805,11 @@
           style("TextReceived", "Text Received", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:keepLines/><w:pBdr><w:left w:val="single" w:sz="6" w:space="6" w:color="auto"/></w:pBdr><w:spacing w:after="80"/><w:ind w:right="2880"/><w:jc w:val="left"/></w:pPr>') +
           style("TextNote", "Text Note", "Normal", fonts(bodyF) + '<w:sz w:val="18"/>', '<w:pPr><w:spacing w:before="120" w:after="80"/><w:jc w:val="center"/></w:pPr>') +
           style("Caption", "Caption", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="20"/>', '<w:pPr><w:spacing w:after="160"/></w:pPr>') +
+          /* BEUK:layout — a margin note: small italic, set in from the left with a rule (its writer's name in their ink, bold);
+             a sideways block in a ruled box; an upside-down block named so (Word turns neither). */
+          style("MarginNote", "Margin Note", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="19"/>', '<w:pPr><w:keepLines/><w:pBdr><w:left w:val="single" w:sz="8" w:space="6" w:color="auto"/></w:pBdr><w:spacing w:before="40" w:after="120" w:line="264" w:lineRule="auto"/><w:ind w:left="4320"/><w:jc w:val="left"/></w:pPr>') +
+          style("Sideways", "Sideways", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:left w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="4" w:color="auto"/></w:pBdr><w:spacing w:after="120"/><w:ind w:left="240" w:right="240"/></w:pPr>') +
+          style("UpsideDown", "Upside Down", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:spacing w:after="160"/></w:pPr>') +
           /* A quote's attribution line: ranged right under the Quote, upright. */
           style("QuoteAttribution", "Quote Attribution", "Quote", fonts(bodyF) + '<w:i w:val="0"/><w:sz w:val="22"/>', '<w:pPr><w:ind w:left="720" w:right="720"/><w:spacing w:before="0" w:after="200"/><w:jc w:val="right"/></w:pPr>') +
           style("ListParagraph", "List Paragraph", "Normal", fonts(bodyF) + '<w:sz w:val="24"/>', '<w:pPr><w:spacing w:after="80"/><w:ind w:left="720"/></w:pPr>') +
@@ -41041,6 +41381,247 @@
               applyBookDoc(keepDoc);
             }
           } },
+        /* ==== BEUK:layout ==== */
+        { id: "chapter.margin", feature: "chapter", name: "Margin notes: \"::: margin <Name>\" sets a reader's note beside the paragraph before it — in print, the Print Interior View and a wide preview floated into a narrow outer column the section keeps for it (the text measure narrowed, the note's box inside the page area, beside its paragraph, nothing overlapping), two names in two inks with their own rules (solid / dashed, apart in greyscale), mirrored to the left in a right-to-left book; in the EPUB (validates) and a narrow preview an indented, ruled <aside> after the paragraph, the name shown; Word Margin Note paragraphs; the name and fences are not counted, nor read aloud; the toolbar asks for the name in a dialog",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "First paragraph of the chapter, plain.\n\nThe second paragraph, the one both readers wrote beside, runs on for a few lines so the notes have a paragraph to stand next to in the narrow column of the page.\n\n::: margin M.\nNot so — he was *there*.\n:::\n\n::: margin J.\nAgreed.\n:::\n\nThe third paragraph follows.";
+              const s = mkSection("body", "chapter", "Margins", { number: "1", content: src });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { language: "en" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const sec = state.sections.find((x) => x.type === "chapter");
+              const noteM = '<aside class="mnote mn-ink-1 mn-after"><span class="mn-who">M.</span><p>Not so — he was <em>there</em>.</p></aside>';
+              const noteJ = '<aside class="mnote mn-ink-2 mn-after"><span class="mn-who">J.</span><p>Agreed.</p></aside>';
+              const epubHtml = contentBlocksToHtml(sec.content, sec, false, true, true);
+              if (!epubHtml.includes("the narrow column of the page.</p>\n" + noteM + "\n" + noteJ + "\n<p>The third")) bad.push("EPUB: the notes do not follow their paragraph: " + JSON.stringify(epubHtml.slice(0, 600)));
+              if (epubHtml.includes("mn-float") || epubHtml.includes("mn-body")) bad.push("EPUB carries the print column");
+              const prevHtml = contentBlocksToHtml(sec.content, sec, false, false, false);
+              if (!/^<div class="mn-body">/.test(prevHtml) || (prevHtml.match(/mn-float/g) || []).length !== 2 || (prevHtml.match(/mn-after/g) || []).length !== 2) bad.push("preview: not one float + one aside per note in a margin body");
+              let printHtml;
+              printLayoutNow = true;
+              try { printHtml = contentBlocksToHtml(sec.content, sec, false, true, true); } finally { printLayoutNow = false; }
+              const fM = printHtml.indexOf('<aside class="mnote mn-ink-1 mn-float">'), fJ = printHtml.indexOf('<aside class="mnote mn-ink-2 mn-float">'), p2 = printHtml.indexOf("<p>The second paragraph");
+              if (!(fM >= 0 && fJ > fM && p2 > fJ) || printHtml.includes("mn-after") || !/^<div class="mn-body">/.test(printHtml)) bad.push("print: the floats do not stand before their paragraph (M. then J.) in a margin body");
+              /* computed: the narrow preview, the wide preview, the print page area */
+              const st = document.createElement("style");
+              const g = pivGeometry();
+              st.textContent = buildBookCss(".sc-mn-n") + "\n" + buildBookCss(".sc-mn-w") + "\n" + buildBookCss(".sc-mn-p") + "\n" + printLayoutCss(".sc-mn-p", "6x9", true);
+              const mk = (cls, w, html) => { const d = document.createElement("div"); d.className = cls; d.style.cssText = "position:absolute;left:-9999px;top:0;width:" + w + "px"; d.innerHTML = html; document.body.appendChild(d); return d; };
+              document.body.appendChild(st);
+              const nar = mk("sc-mn-n", 360, prevHtml), wide = mk("sc-mn-w lay-wide", 620, prevHtml), pr = mk("sc-mn-p", Math.round(g.contentW), printHtml);
+              try {
+                const cs = (el) => getComputedStyle(el);
+                const nA = nar.querySelectorAll(".mnote.mn-after"), nF = nar.querySelector(".mnote.mn-float");
+                if (cs(nF).display !== "none" || cs(nA[0]).display !== "block" || cs(nA[0]).fontStyle !== "italic") bad.push("narrow: the aside is not the one shown (float " + cs(nF).display + ")");
+                if (!(parseFloat(cs(nA[0]).marginLeft) > 0) || cs(nA[0]).borderLeftStyle !== "solid" || cs(nA[1]).borderLeftStyle !== "dashed") bad.push("narrow: not indented and ruled solid / dashed: " + cs(nA[0]).borderLeftStyle + " / " + cs(nA[1]).borderLeftStyle);
+                if (cs(nA[0]).color === cs(nA[1]).color) bad.push("the two names share one ink");
+                if (cs(nA[0].querySelector(".mn-who")).textDecorationStyle === cs(nA[1].querySelector(".mn-who")).textDecorationStyle) bad.push("the two names' underlines are alike");
+                const beside = (box, where) => {
+                  const fl = box.querySelectorAll(".mnote.mn-float");
+                  const host = box.getBoundingClientRect();
+                  const para = Array.from(box.querySelectorAll(".mn-body > p")).find((p) => /second paragraph/.test(p.textContent)).getBoundingClientRect();
+                  const a = fl[0].getBoundingClientRect(), b = fl[1].getBoundingClientRect();
+                  if (cs(fl[0]).display !== "block" || cs(fl[0]).cssFloat !== "right") return where + ": the note does not float right (" + cs(fl[0]).display + "/" + cs(fl[0]).cssFloat + ")";
+                  if (box.querySelector(".mnote.mn-after") && cs(box.querySelector(".mnote.mn-after")).display !== "none") return where + ": the aside copy still shows";
+                  if (a.right > host.right + 0.5 || a.left < para.right - 0.5) return where + ": the note overlaps the text or leaves the page area (note " + Math.round(a.left) + "-" + Math.round(a.right) + ", text to " + Math.round(para.right) + ", area to " + Math.round(host.right) + ")";
+                  if (Math.abs(a.top - para.top) > 12) return where + ": the note is not beside its paragraph (" + Math.round(a.top - para.top) + "px)";
+                  if (b.top < a.bottom - 0.5) return where + ": the two notes overlap";
+                  const widest = Math.max(...Array.from(box.querySelectorAll(".mn-body > p")).map((p) => p.getBoundingClientRect().right));
+                  if (widest > a.left + 0.5) return where + ": a paragraph runs under the margin column";
+                  return "";
+                };
+                [beside(wide, "wide preview"), beside(pr, "print")].forEach((e) => { if (e) bad.push(e); });
+              } finally { nar.remove(); wide.remove(); pr.remove(); st.remove(); }
+              /* right-to-left: the column on the left, the rule on the right */
+              state.meta.language = "ar";
+              try {
+                const rst = document.createElement("style");
+                rst.textContent = buildBookCss(".sc-mn-r") + "\n" + printLayoutCss(".sc-mn-r", "6x9", true);
+                document.body.appendChild(rst);
+                const rp = document.createElement("div"); rp.className = "sc-mn-r"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:" + Math.round(g.contentW) + "px";
+                rp.innerHTML = printHtml + '<aside class="mnote mn-ink-1 mn-after"><span class="mn-who">M.</span><p>x</p></aside>';
+                document.body.appendChild(rp);
+                try {
+                  const f = rp.querySelector(".mnote.mn-float"), para = Array.from(rp.querySelectorAll(".mn-body > p")).find((p) => /second paragraph/.test(p.textContent));
+                  const fr = f.getBoundingClientRect(), pr2 = para.getBoundingClientRect(), host = rp.getBoundingClientRect();
+                  if (getComputedStyle(f).cssFloat !== "left" || fr.left < host.left - 0.5 || fr.right > pr2.left + 0.5) bad.push("right-to-left: the margin column is not mirrored to the left (" + getComputedStyle(f).cssFloat + ")");
+                  const ra = rp.querySelector(".mnote.mn-after");
+                  if (getComputedStyle(ra).borderRightStyle !== "solid" || getComputedStyle(ra).borderLeftStyle !== "none") bad.push("right-to-left: the aside's rule is not on the right");
+                } finally { rp.remove(); rst.remove(); }
+              } finally { state.meta.language = "en"; }
+              /* the real exports */
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes(noteM))) bad.push("the EPUB chapter carries no margin note");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              const ph = buildPrintHtml();
+              if (!ph.includes('<div class="mn-body">') || !ph.includes('<aside class="mnote mn-ink-2 mn-float">') || ph.slice(ph.indexOf("<body")).includes("mn-after") || !ph.includes(".mnote.mn-float { display: block; float: right;")) bad.push("the print file lacks the margin column");
+              const paras = docxContentParas(src).filter((p) => p.includes('<w:pStyle w:val="MarginNote"/>'));
+              if (paras.length !== 2 || !paras[0].includes(">M.</w:t>") || !paras[0].includes('w:color w:val="1d4f91"') || !paras[1].includes('w:color w:val="a1232b"') || !paras[0].includes("<w:br/>")) bad.push("Word Margin Note paragraphs: " + paras.length);
+              const docx = buildDocxFiles();
+              const sty = (docx.find((f) => f.path === "word/styles.xml") || {}).content || "";
+              if (!sty.includes('w:styleId="MarginNote"') || !sty.includes('<w:name w:val="Margin Note"/>')) bad.push("the Word styles lack Margin Note");
+              if (!IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Margin Note'] => p:fresh")) bad.push("Word import does not know Margin Note");
+              const wc = countWords("::: margin M.\nNot so.\n:::");
+              if (wc !== 2) bad.push("word count " + wc + " (want 2: the note, not the name or fences)");
+              const ra = raCleanText("Para.\n\n::: margin M.\nNot so.\n:::");
+              if (ra.includes(":::") || ra.includes("margin") || !ra.includes("Not so.")) bad.push("read-aloud reads the fence: " + JSON.stringify(ra));
+              /* the toolbar: a dialog asks whose note, refuses none, places the note after the paragraph */
+              const tool = withEditorFixture((area) => {
+                area.value = "One para.\n\nTwo para."; area.dispatchEvent(new Event("input"));
+                area.focus(); area.setSelectionRange(3, 3);
+                document.querySelector('#insertToolbar [data-insert="margin"]').click();
+                if (!$("modalMargin").classList.contains("open")) return "the Margin note button opened no dialog";
+                $("mnName").value = ""; $("mnText").value = "Hm."; $("btnDoMargin").click();
+                if (!$("modalMargin").classList.contains("open") || !$("mnHint").classList.contains("is-bad")) return "a note with no name was accepted";
+                $("mnName").value = "K."; $("btnDoMargin").click();
+                const want = "One para.\n\n::: margin K.\nHm.\n:::\n\nTwo para.";
+                if (area.value !== want || $("modalMargin").classList.contains("open")) return "the note was not placed: " + JSON.stringify(area.value);
+                return "";
+              });
+              if (tool) bad.push(tool);
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.margin", "tool.marginTitle", "mn.title", "mn.name", "mn.namePh", "mn.text", "mn.textPh", "mn.hint", "mn.bad", "mn.cancel", "mn.add"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "EPUB: two asides after their paragraph (validator errors 0); preview: a float + an aside each in a margin body; print: floats before the paragraph, M. then J.; computed: narrow shows the indented aside (solid / dashed rules, two inks, two underlines), wide preview and print float right inside the area, beside the paragraph, stacked, the text narrowed; right-to-left mirrors to the left with the rule on the right; Word: 2 Margin Note paragraphs in two inks with the name and a break, style + import map; 2 words; read-aloud skips fences; the dialog refuses no name and places \"::: margin K.\" after the paragraph; 13 languages");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.sideways", feature: "chapter", name: "Sideways: \"::: sideways\" sets its content on a page of its own, turned 90 degrees clockwise and centred in the page area, in print (a page break each side) and the Print Interior View (a column of its own) and a wide preview, mirrored safely in a right-to-left book; the EPUB (validates) and a narrow preview set it upright in a ruled box; Word Sideways paragraphs; fences not counted; the toolbar fences the selection",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "Before the turn.\n\n::: sideways\nA wide table, set long-ways across the page.\n\nIts second line.\n:::\n\nAfter the turn.";
+              const s = mkSection("body", "chapter", "Sideways", { number: "1", content: src });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { language: "en" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const sec = state.sections.find((x) => x.type === "chapter");
+              const html = contentBlocksToHtml(sec.content, sec, false, true, true);
+              if (!/<div class="sideways"><div class="sw-in"><p[^>]*>A wide table, set long-ways across the page\.<\/p>\n<p[^>]*>Its second line\.<\/p><\/div><\/div>/.test(html)) bad.push("the block did not set: " + JSON.stringify(html));
+              const mx = (el) => { const m = getComputedStyle(el).transform.match(/matrix\(([^)]+)\)/); return m ? m[1].split(",").map(Number) : null; };
+              const g = pivGeometry();
+              const st = document.createElement("style");
+              st.textContent = buildBookCss(".sc-sw-n") + "\n" + buildBookCss(".sc-sw-p") + "\n" + printLayoutCss(".sc-sw-p", "6x9", true);
+              document.body.appendChild(st);
+              const flow = (cls, dir) => {
+                const d = document.createElement("div"); d.className = cls; d.dir = dir || "ltr";
+                d.style.cssText = "position:absolute;left:-99999px;top:0;width:" + g.contentW + "px;height:" + g.contentH + "px;column-width:" + g.contentW + "px;column-gap:" + PIV_GAP + "px;column-fill:auto";
+                d.innerHTML = html; document.body.appendChild(d); return d;
+              };
+              const nar = document.createElement("div"); nar.className = "sc-sw-n"; nar.style.cssText = "position:absolute;left:-9999px;top:0;width:360px"; nar.innerHTML = html; document.body.appendChild(nar);
+              const pv = flow("sc-sw-p"), rv = flow("sc-sw-p", "rtl");
+              try {
+                const sn = nar.querySelector(".sideways");
+                if (getComputedStyle(nar.querySelector(".sw-in")).transform !== "none" || getComputedStyle(sn).borderTopStyle !== "solid") bad.push("narrow / EPUB look: not upright in a ruled box");
+                [[pv, "Print Interior View"], [rv, "right-to-left"]].forEach(([box, where]) => {
+                  const f = box.getBoundingClientRect();
+                  const step = g.contentW + PIV_GAP;
+                  const colOf = (r) => Math.round((where === "right-to-left" ? f.right - r.right : r.left - f.left) / step);
+                  const sw = box.querySelector(".sideways"), inn = box.querySelector(".sw-in");
+                  const r = sw.getBoundingClientRect(), ri = inn.getBoundingClientRect();
+                  const ps = box.querySelectorAll(":scope > p");
+                  const c0 = colOf(ps[0].getBoundingClientRect()), c1 = colOf(r), c2 = colOf(ps[ps.length - 1].getBoundingClientRect());
+                  if (!(c0 === 0 && c1 === 1 && c2 === 2)) bad.push(where + ": not a page of its own (columns " + c0 + "/" + c1 + "/" + c2 + ")");
+                  if (Math.abs(r.height - g.contentH) > 3 || Math.abs(r.width - g.contentW) > 1) bad.push(where + ": the page is " + Math.round(r.width) + "x" + Math.round(r.height) + ", the area " + Math.round(g.contentW) + "x" + Math.round(g.contentH));
+                  const m = mx(inn);
+                  if (!m || Math.abs(m[0]) > 0.001 || Math.abs(m[1] - 1) > 0.001 || Math.abs(m[2] + 1) > 0.001) bad.push(where + ": not turned clockwise (" + getComputedStyle(inn).transform + ")");
+                  if (ri.left < r.left - 1 || ri.right > r.right + 1 || ri.top < r.top - 1 || ri.bottom > r.bottom + 1) bad.push(where + ": the turned box leaves the page area");
+                  const rg = document.createRange(); rg.selectNodeContents(inn.querySelector("p"));
+                  const tr = rg.getBoundingClientRect();
+                  if (!(tr.height > tr.width)) bad.push(where + ": the text line does not run down the page");
+                  const mid = (ri.top + ri.bottom) / 2, tmid = (tr.top + tr.bottom) / 2;
+                  if (tr.top < r.top - 1 || tr.bottom > r.bottom + 1) bad.push(where + ": the text leaves the page");
+                  if (Math.abs((tr.left + tr.right) / 2 - (r.left + r.right) / 2) > g.contentW * 0.35 || Math.abs(tmid - mid) > g.contentH * 0.45) bad.push(where + ": the content is not centred");
+                });
+              } finally { nar.remove(); pv.remove(); rv.remove(); st.remove(); }
+              const pc = buildPrintCss("6x9", false);
+              if (!pc.includes(".sideways { break-before: page; break-after: page; page-break-before: always; page-break-after: always;") || !pc.includes("transform: rotate(90deg)")) bad.push("the print stylesheet does not give it a turned page");
+              if (/rotate\(/.test(buildBookCss(""))) bad.push("the EPUB stylesheet turns something");
+              const ph = buildPrintHtml();
+              if (!ph.includes('<div class="sideways"><div class="sw-in">')) bad.push("the print file carries no sideways page");
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="sideways"><div class="sw-in">'))) bad.push("the EPUB chapter carries no sideways block");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              const paras = docxContentParas(src).filter((p) => p.includes('<w:pStyle w:val="Sideways"/>'));
+              if (paras.length !== 2) bad.push("Word Sideways paragraphs: " + paras.length);
+              const sty = (buildDocxFiles().find((f) => f.path === "word/styles.xml") || {}).content || "";
+              if (!sty.includes('w:styleId="Sideways"') || !IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Sideways'] => p:fresh")) bad.push("the Word style or its import map is missing");
+              const wc = countWords("::: sideways\nA wide table.\n:::");
+              if (wc !== 3) bad.push("word count " + wc);
+              const tool = withEditorFixture((area) => {
+                area.value = "Map legend."; area.dispatchEvent(new Event("input"));
+                area.focus(); area.setSelectionRange(2, 2);
+                document.querySelector('#insertToolbar [data-insert="sideways"]').click();
+                return area.value === "::: sideways\nMap legend.\n:::" ? "" : "the toolbar did not fence it: " + JSON.stringify(area.value);
+              });
+              if (tool) bad.push(tool);
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.sideways", "tool.sidewaysTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "the content in a turned box; the view: its own column (page) between the text before and after, the page area's size, turned clockwise, the box and the text inside the area, the line running down the page, centred — the same in right-to-left; print: page breaks both sides and the turn; narrow / EPUB: upright in a ruled box, the EPUB stylesheet turns nothing, validator errors 0; Word: 2 Sideways paragraphs, style + import map; fences not counted; the toolbar fences it");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.upsidedown", feature: "chapter", name: "Upside down: \"::: upside-down\" turns its content 180 degrees where it stands in the preview, the Print Interior View and print (kept whole on its page), right-to-left too; the EPUB (validates) sets it upright; Word Upside Down paragraphs; fences not counted; the toolbar fences the selection",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "Read on.\n\n::: upside-down\nTurn the book to read this.\n:::\n\nAnd on.";
+              const s = mkSection("body", "chapter", "Turned", { number: "1", content: src });
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { language: "en" }), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const sec = state.sections.find((x) => x.type === "chapter");
+              const html = contentBlocksToHtml(sec.content, sec, false, true, true);
+              if (!/<div class="upside-down"><div class="ud-in"><p[^>]*>Turn the book to read this\.<\/p><\/div><\/div>/.test(html)) bad.push("the block did not set: " + JSON.stringify(html));
+              const turned = (css, cls, dir) => {
+                const st = document.createElement("style"); st.textContent = css; document.body.appendChild(st);
+                const d = document.createElement("div"); d.className = cls; d.dir = dir || "ltr"; d.style.cssText = "position:absolute;left:-9999px;top:0;width:420px"; d.innerHTML = html; document.body.appendChild(d);
+                try {
+                  const inn = d.querySelector(".ud-in"), out = d.querySelector(".upside-down");
+                  const m = (getComputedStyle(inn).transform.match(/matrix\(([^)]+)\)/) || [0, ""])[1].split(",").map(Number);
+                  const ri = inn.getBoundingClientRect(), ro = out.getBoundingClientRect();
+                  return { ok: m.length === 6 && Math.abs(m[0] + 1) < 0.001 && Math.abs(m[3] + 1) < 0.001 && Math.abs(m[1]) < 0.001, inside: ri.left >= ro.left - 1 && ri.right <= ro.right + 1 && ri.top >= ro.top - 1 && ri.bottom <= ro.bottom + 1, avoid: getComputedStyle(out).breakInside };
+                } finally { d.remove(); st.remove(); }
+              };
+              const pvw = turned(buildBookCss(".sc-ud-v"), "sc-ud-v");
+              if (!pvw.ok || !pvw.inside) bad.push("preview: not turned 180 degrees in its place");
+              const piv = turned(buildBookCss(".sc-ud-p") + "\n" + printLayoutCss(".sc-ud-p", "6x9", true), "sc-ud-p");
+              if (!piv.ok || !piv.inside || piv.avoid !== "avoid") bad.push("Print Interior View: not turned / not kept whole (" + piv.avoid + ")");
+              state.meta.language = "ar";
+              try {
+                const rtl = turned(buildBookCss(".sc-ud-r") + "\n" + printLayoutCss(".sc-ud-r", "6x9", true), "sc-ud-r", "rtl");
+                if (!rtl.ok || !rtl.inside) bad.push("right-to-left: not turned in its place");
+              } finally { state.meta.language = "en"; }
+              if (!buildPrintCss("6x9", false).includes(".upside-down .ud-in { transform: rotate(180deg); }")) bad.push("the print stylesheet does not turn it");
+              if (/rotate\(/.test(buildBookCss(""))) bad.push("the EPUB stylesheet turns it");
+              if (!buildPrintHtml().includes('<div class="upside-down"><div class="ud-in">')) bad.push("the print file carries no turned block");
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="upside-down"><div class="ud-in">'))) bad.push("the EPUB chapter carries no block");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              const paras = docxContentParas(src).filter((p) => p.includes('<w:pStyle w:val="UpsideDown"/>'));
+              if (paras.length !== 1) bad.push("Word Upside Down paragraphs: " + paras.length);
+              const sty = (buildDocxFiles().find((f) => f.path === "word/styles.xml") || {}).content || "";
+              if (!sty.includes('w:styleId="UpsideDown"') || !IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Upside Down'] => p:fresh")) bad.push("the Word style or its import map is missing");
+              const wc = countWords("::: upside-down\nTurn the book.\n:::");
+              if (wc !== 3) bad.push("word count " + wc);
+              const tool = withEditorFixture((area) => {
+                area.value = "Read me turned."; area.dispatchEvent(new Event("input"));
+                area.focus(); area.setSelectionRange(2, 2);
+                document.querySelector('#insertToolbar [data-insert="upsidedown"]').click();
+                return area.value === "::: upside-down\nRead me turned.\n:::" ? "" : "the toolbar did not fence it: " + JSON.stringify(area.value);
+              });
+              if (tool) bad.push(tool);
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.upsideDown", "tool.upsideDownTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "computed: turned 180 degrees in its own box in the preview, the Print Interior View (kept whole) and right-to-left; print turns it, the EPUB stylesheet does not (validator errors 0); Word: an Upside Down paragraph, style + import map; fences not counted; the toolbar fences it");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        /* ==== /BEUK:layout ==== */
         { id: "chapter.captions", feature: "chapter", name: "Image captions: ![alt](img:id \"Caption\") sets the caption under the picture as a figcaption (inline emphasis kept, the alt still the alt; straight or curled quotes, parentheses inside) in the preview, print and EPUB (validates); caption words count, the marker does not; the Word export puts a Caption paragraph under the image's place; the Insert Image dialog and the section's image card write the caption; a Word file's Caption-styled paragraph after a picture comes in as its caption",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -49585,8 +50166,11 @@
         return s ? (s.title || t("side.untitled")) : "";
       }
       function raCleanText(raw) {
-        /* A link is read aloud as its words, never its address. */
-        return String(raw || "")
+        /* A link is read aloud as its words, never its address. A
+           container's fences ("::: margin M.", ":::") are markup, never
+           read (BEUK:layout): a margin note is read where it stands,
+           after its paragraph; turned blocks read as they are. */
+        return stripContainerMarks(String(raw || ""))
           .replace(mdLinkRe(), "$1")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
           .replace(/\[\^[^\]]+\]:[^\n]*/g, " ")
@@ -50638,6 +51222,7 @@
         initEditor();
         initFootnote();
         initLink();
+        initMarginNote(); /* BEUK:layout */
         initImages();
         initSceneImages();
         initStudio();

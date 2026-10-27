@@ -336,3 +336,21 @@ test('print footnotes: the notes document sets each note alone at the column wid
   assert.ok(d.includes('<a href="#fnne-1">.</a>'));
   assert.ok(d.includes('html, body { margin: 0 !important; padding: 0 !important; background: transparent !important; }'), 'transparent, so the page beneath shows through');
 });
+
+/* BEUK:layout — a margin note (floated beside the paragraph after it), a
+   sideways page and an upside-down block are single units the pass never
+   breaks, and a margin note keeps with its paragraph; the margin column's
+   wrapper (mn-body) is walked through to the paragraphs inside it. */
+test('layout blocks: margin notes, sideways and upside-down are unbroken units, a note keeps with its paragraph', () => {
+  const sec = '<section class="print-sec chapter-sec" id="ps-1"><div class="mn-body">' +
+    '<p>First words here.</p>' +
+    '<aside class="mnote mn-ink-1 mn-float"><span class="mn-who">M.</span><p>Not so at all.</p></aside>' +
+    '<p>The annotated paragraph runs on.</p>' +
+    '<div class="sideways"><div class="sw-in"><p>A wide table.</p></div></div>' +
+    '<div class="upside-down"><div class="ud-in"><p>Turn me.</p></div></div>' +
+    '</div></section>';
+  const model = fn.sectionModel(sec);
+  const kinds = model.units.map((u: Any) => (u.el.cls.split(' ')[0] || u.tag) + (u.atomic ? ':atomic' : '') + (u.keepNext ? ':keep' : '') + ':' + u.words.length);
+  assert.deepEqual(kinds, ['p:3', 'mnote:atomic:keep:0', 'p:5', 'sideways:atomic:0', 'upside-down:atomic:0']);
+  assert.equal(model.units[2].splittable, true);
+});

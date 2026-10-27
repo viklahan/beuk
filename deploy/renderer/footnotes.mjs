@@ -56,9 +56,12 @@ const NOTE_RE = /<p class="endnote" id="([^"]+)"[^>]*><a class="note-back" href=
 const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 const BLOCK = new Set('p div section article aside header footer nav figure figcaption blockquote ul ol li dl dt dd h1 h2 h3 h4 h5 h6 table pre hr main address details summary form fieldset'.split(' '));
 const ATOMIC_TAG = new Set(['figure', 'table', 'pre', 'hr', 'header', 'nav', 'details', 'form', 'fieldset']);
-const ATOMIC_CLASS = /\b(chapter-opening|scene-break|plate-page|part-divider|tp-top)\b/;
+// A margin note (floated beside the paragraph after it), a sideways page
+// and an upside-down block are never broken; a margin note keeps with the
+// paragraph it annotates.
+const ATOMIC_CLASS = /\b(chapter-opening|scene-break|plate-page|part-divider|tp-top|mnote|sideways|upside-down)\b/;
 const SKIP_CLASS = /\b(bd-layer|endnotes|print-blank|fn-tail)\b/;
-const KEEP_NEXT_CLASS = /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker)\b/;
+const KEEP_NEXT_CLASS = /\b(inhead|chapter-opening|pre-break|endnotes-h|chapter-number|part-kicker|mnote)\b/;
 const KEEP_PREV_CLASS = /\b(scene-break)\b/;
 const SPLITTABLE = new Set(['p', 'blockquote']);
 const NO_WORDS_TAG = new Set(['sup', 'sub', 'svg', 'script', 'style', 'math']);
