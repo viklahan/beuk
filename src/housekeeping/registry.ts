@@ -2078,6 +2078,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The store check is assembled in the studio from the PDF/X job result; the renderer header and its parsing into that result are covered by tests/print-footnotes.test.ts and tests/jobs.test.ts.',
   },
   {
+    id: 'print.bleed',
+    title: 'Print bleed: a Bleed setting carried by the book file asks the print renderer for KDP-style pages of trim + 0.125 in on the top, bottom and outer edge; the store check and the Print Interior View follow it',
+    kind: 'client-only',
+    reason: 'The setting, the print document, the store check and the Print Interior View are built in the studio; the renderer half (page sizes per side, TrimBox/BleedBox, art covering the bleed) is covered by tests/print-bleed.test.ts.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',

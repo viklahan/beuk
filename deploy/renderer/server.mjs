@@ -45,6 +45,7 @@ import os from 'node:os';
 import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { planSections, needsFinishing, withPageMap, startPages, blanksFor, stampable, finalHtml, stampCss, stampSpreads } from './spreads.mjs';
+import { bleedConfig, applyBleed } from './bleed.mjs';
 import { footnoteConfig, settleFootnotes, placedHtml, misplaced, withRefMap, readDests, placementsIn, stampFootnotes, footnoteHeader, FALLBACK } from './footnotes.mjs';
 
 // The share of the job's time the page-bottom notes may take to settle;
@@ -137,6 +138,9 @@ async function render(body) {
   const html = Buffer.isBuffer(body) ? body.toString('utf8') : String(body);
   const started = Date.now();
   const footnotes = { placed: 0, kept: 0, passes: 0, fallbacks: [] };
+  // Bleed (bleed.mjs): asked for by the document, added to the finished
+  // PDF last, once every page's side is final.
+  const bleed = bleedConfig(html);
   const profile = await mkdtemp(path.join(os.tmpdir(), 'beuk-render-'));
   let browser = null;
   let timer = null;
@@ -268,15 +272,17 @@ async function render(body) {
           sections = placementsIn(fnNow.results, (await readDests(out)).dests);
           if (!sections) return null;
         }
-        if (stamped.size) out = await stampSpreads(out, plan, finalStart, stamped);
+        if (stamped.size) out = await stampSpreads(out, plan, finalStart, stamped, bleed);
         if (fnNow) out = (await stampFootnotes(out, fnNow.notesPdf, sections, fnNow.cfg, fnNow.refIds)).pdf;
         return out;
       };
-      const out = await finish(fn);
-      if (out) return out;
-      console.log('footnotes: the final pass moved a reference; every note kept at its section end');
-      dropNotes(fn.results, FALLBACK.final);
-      return finish(null);
+      let out = await finish(fn);
+      if (!out) {
+        console.log('footnotes: the final pass moved a reference; every note kept at its section end');
+        dropNotes(fn.results, FALLBACK.final);
+        out = await finish(null);
+      }
+      return bleed ? applyBleed(out, bleed) : out;
     })();
     // If the timeout wins, the browser is killed below and `work`
     // rejects later; that late rejection must not crash the process.

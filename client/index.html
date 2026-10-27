@@ -1378,6 +1378,9 @@
       .piv-folio { position: absolute; left: 0; right: 0; text-align: center; font-size: 9.5pt; color: #333; }
       .piv-guide { position: absolute; pointer-events: none; }
       .piv-guide-trim { inset: 0; border: 1.5px solid rgba(206,52,38,.72); }
+      /* BEUK:bleed — the trim box inside a page drawn with bleed, and its trim line: the bleed beyond it shaded */
+      .piv-trimbox { position: absolute; }
+      .piv-trimline { position: absolute; pointer-events: none; z-index: 4; border: 1px dashed rgba(206,52,38,.95); box-sizing: border-box; box-shadow: 0 0 0 48px rgba(96,104,120,.32); }
       .piv-guide-margin { border: 1px dashed rgba(38,92,206,.85); }
       .piv-guide-gutter { top: 0; bottom: 0; }
       .piv-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
@@ -2825,6 +2828,11 @@
           <div class="switch-row" style="border:none; padding:2px 0 10px;">
             <div class="sw-txt"><b data-i18n="exp.pictureBookTitle">Picture book type</b><span data-i18n="exp.pictureBookDesc">Sets the print interior's words at 24pt for a picture book — a few lines facing or under each picture, read aloud — ragged and unhyphenated, with the running head and page numbers scaled to match. Use it with a landscape or square trim such as 11 × 8.5 in; it replaces Large Print, and the manuscript never changes.</span></div>
             <button class="switch" id="tglPictureBook" aria-pressed="false" data-i18n-aria="exp.pictureBookTitle" aria-label="Toggle picture book type"></button>
+          </div>
+          <!-- BEUK:bleed -->
+          <div class="switch-row" style="border:none; padding:2px 0 10px;">
+            <div class="sw-txt"><b data-i18n="exp.bleedTitle">Bleed</b><span data-i18n="exp.bleedDesc">Prints art to the page edge: Beuk's print PDF gets pages 0.125 in larger on the top, bottom and outer edge, the plates and spread backdrops carried into that bleed, the words exactly where they were. Choose “Bleed” when you upload to KDP or IngramSpark.</span></div>
+            <button class="switch" id="tglBleed" aria-pressed="false" data-i18n-aria="exp.bleedTitle" aria-label="Toggle bleed"></button>
           </div>
           <div class="pm-block">
             <p class="pm-head" data-i18n="print.layoutH">Margins, running head &amp; page numbers</p>
@@ -9788,6 +9796,120 @@
         "print.notesHint": UI_STRINGS[lang]["print.notesHint"] + hintMore,
         "store.c.fnotes.name": name, "store.c.fnotes.ok": ok, "store.c.fnotes.warn": warn, "store.c.fnotes.fix": fix,
         "store.c.fnotes.r.time": rTime, "store.c.fnotes.r.full": rFull, "store.c.fnotes.r.long": rLong, "store.c.fnotes.r.book": rBook, "store.c.fnotes.r.final": rFinal, "store.c.fnotes.r.note": rNote
+      }));
+      /* BEUK:bleed — the Bleed setting (Export → Print Interior), its note in
+         the print settings, its suggestion when the book carries art to the
+         page edge, and the store check's Bleed row now that Beuk's print PDF
+         can carry bleed (these supersede the earlier "Beuk doesn't yet
+         export bleed" fail and fix lines in each pack). */
+      [
+        ["en", "Bleed", "Prints art to the page edge: Beuk's print PDF gets pages 0.125 in larger on the top, bottom and outer edge, the plates and spread backdrops carried into that bleed, the words exactly where they were. Choose “Bleed” when you upload to KDP or IngramSpark.",
+          "Bleed", "Beuk's print PDF is {w} × {h} in — the {trim} trim plus 0.125 in on the top, bottom and outer edge — its art carried into the bleed. Printed from the browser, the PDF stays at the trim.",
+          "{n} chapter(s) carry art that prints to the page edge: turn Bleed on above so the printer trims through art, not white paper.",
+          "{n} chapter(s) carry art that prints to the page edge ({sections}), but this book's Bleed setting is off, so its print PDF is the trim size. {store} needs {bleed} in bleed on any page whose art reaches the edge.",
+          "Turn Bleed on in Export → Print Interior: Beuk's print PDF then carries 0.125 in bleed on the top, bottom and outer edge.",
+          "Bleed is on: Beuk's print PDF is {w} × {h} in — the {trim} trim plus {bleed} in on the top, bottom and outer edge — with its TrimBox at the trim. Choose “Bleed” when you upload to {store}.",
+          "Bleed is on, but the PDF the server read is {w} × {h} in, not the trim plus {bleed} in on the top, bottom and outer edge.",
+          "Run the PDF/X conversion again so the server's PDF is made with the current settings."],
+        ["es", "Sangrado", "Imprime las ilustraciones hasta el borde: el PDF de impresión de Beuk tiene páginas 0,125 pulg. más grandes por arriba, por abajo y por el borde exterior, con las láminas y los fondos a doble página llevados al sangrado y el texto exactamente donde estaba. Elige «Sangrado» al subirlo a KDP o IngramSpark.",
+          "Sangrado", "El PDF de impresión de Beuk mide {w} × {h} pulg. — el corte {trim} más 0,125 pulg. arriba, abajo y en el borde exterior —, con las ilustraciones llevadas al sangrado. Si imprimes desde el navegador, el PDF queda al tamaño de corte.",
+          "{n} capítulo(s) llevan ilustraciones que llegan al borde de la página: activa Sangrado arriba para que la imprenta corte sobre la ilustración y no sobre papel blanco.",
+          "{n} capítulo(s) llevan ilustraciones que se imprimen hasta el borde de la página ({sections}), pero el Sangrado de este libro está desactivado, así que su PDF de impresión tiene el tamaño de corte. {store} necesita {bleed} pulg. de sangrado en cualquier página cuya ilustración llegue al borde.",
+          "Activa Sangrado en Exportar → Interior de imprenta: el PDF de impresión de Beuk llevará entonces 0,125 pulg. de sangrado arriba, abajo y en el borde exterior.",
+          "El sangrado está activado: el PDF de impresión de Beuk mide {w} × {h} pulg. — el corte {trim} más {bleed} pulg. arriba, abajo y en el borde exterior —, con su TrimBox en el corte. Elige «Sangrado» al subirlo a {store}.",
+          "El sangrado está activado, pero el PDF que leyó el servidor mide {w} × {h} pulg., no el corte más {bleed} pulg. arriba, abajo y en el borde exterior.",
+          "Vuelve a ejecutar la conversión PDF/X para que el servidor genere el PDF con los ajustes actuales."],
+        ["fr", "Fond perdu", "Imprime les illustrations jusqu'au bord : le PDF d'impression de Beuk a des pages plus grandes de 0,125 po en haut, en bas et sur le bord extérieur, les planches et les fonds en double page prolongés dans ce fond perdu, le texte exactement à sa place. Choisissez « Fond perdu » en le déposant sur KDP ou IngramSpark.",
+          "Fond perdu", "Le PDF d'impression de Beuk mesure {w} × {h} po — le format {trim} plus 0,125 po en haut, en bas et sur le bord extérieur —, ses illustrations prolongées dans le fond perdu. Imprimé depuis le navigateur, le PDF reste au format rogné.",
+          "{n} chapitre(s) portent des illustrations qui vont jusqu'au bord de la page : activez Fond perdu ci-dessus pour que l'imprimeur coupe dans l'illustration et non dans du papier blanc.",
+          "{n} chapitre(s) portent des illustrations imprimées jusqu'au bord de la page ({sections}), mais le Fond perdu de ce livre est désactivé : son PDF d'impression est au format rogné. {store} exige {bleed} po de fond perdu sur toute page dont l'illustration atteint le bord.",
+          "Activez Fond perdu dans Exporter → Intérieur d’impression : le PDF d'impression de Beuk porte alors 0,125 po de fond perdu en haut, en bas et sur le bord extérieur.",
+          "Le fond perdu est activé : le PDF d'impression de Beuk mesure {w} × {h} po — le format {trim} plus {bleed} po en haut, en bas et sur le bord extérieur —, sa TrimBox au format rogné. Choisissez « Fond perdu » en le déposant sur {store}.",
+          "Le fond perdu est activé, mais le PDF lu par le serveur mesure {w} × {h} po, et non le format rogné plus {bleed} po en haut, en bas et sur le bord extérieur.",
+          "Relancez la conversion PDF/X pour que le serveur produise le PDF avec les réglages actuels."],
+        ["de", "Beschnitt", "Druckt Bilder bis an den Seitenrand: Das Druck-PDF von Beuk bekommt Seiten, die oben, unten und am Außenrand 0,125 in größer sind; Tafeln und Doppelseiten-Hintergründe reichen in diesen Beschnitt, der Text bleibt genau, wo er war. Wähle beim Hochladen zu KDP oder IngramSpark „Beschnitt“.",
+          "Beschnitt", "Das Druck-PDF von Beuk misst {w} × {h} in — das Format {trim} plus 0,125 in oben, unten und am Außenrand —, seine Bilder reichen in den Beschnitt. Aus dem Browser gedruckt, bleibt das PDF im Endformat.",
+          "{n} Kapitel tragen Bilder, die bis an den Seitenrand drucken: Schalte oben Beschnitt ein, damit die Druckerei durch das Bild schneidet und nicht durch weißes Papier.",
+          "{n} Kapitel tragen Bilder, die bis an den Seitenrand drucken ({sections}), aber der Beschnitt dieses Buchs ist aus, also hat sein Druck-PDF das Endformat. {store} verlangt {bleed} in Beschnitt auf jeder Seite, deren Bild den Rand erreicht.",
+          "Schalte Beschnitt unter Exportieren → Druckinnenleben ein: Das Druck-PDF von Beuk trägt dann 0,125 in Beschnitt oben, unten und am Außenrand.",
+          "Beschnitt ist an: Das Druck-PDF von Beuk misst {w} × {h} in — das Format {trim} plus {bleed} in oben, unten und am Außenrand —, seine TrimBox im Endformat. Wähle beim Hochladen zu {store} „Beschnitt“.",
+          "Beschnitt ist an, aber das vom Server gelesene PDF misst {w} × {h} in, nicht das Endformat plus {bleed} in oben, unten und am Außenrand.",
+          "Starte die PDF/X-Umwandlung erneut, damit der Server das PDF mit den aktuellen Einstellungen erzeugt."],
+        ["it", "Abbondanza", "Stampa le illustrazioni fino al bordo: il PDF di stampa di Beuk ha pagine più grandi di 0,125 in in alto, in basso e sul bordo esterno, le tavole e gli sfondi a doppia pagina portati nell'abbondanza, il testo esattamente dov'era. Scegli «Abbondanza» quando lo carichi su KDP o IngramSpark.",
+          "Abbondanza", "Il PDF di stampa di Beuk misura {w} × {h} in — il formato {trim} più 0,125 in in alto, in basso e sul bordo esterno —, con le illustrazioni portate nell'abbondanza. Stampando dal browser, il PDF resta al formato rifilato.",
+          "{n} capitolo/i hanno illustrazioni che arrivano al bordo della pagina: attiva Abbondanza qui sopra perché la tipografia tagli nell'illustrazione e non nella carta bianca.",
+          "{n} capitolo/i hanno illustrazioni stampate fino al bordo della pagina ({sections}), ma l'Abbondanza di questo libro è disattivata, quindi il suo PDF di stampa è al formato rifilato. {store} richiede {bleed} in di abbondanza su ogni pagina la cui illustrazione raggiunge il bordo.",
+          "Attiva Abbondanza in Esporta → Interno di stampa: il PDF di stampa di Beuk avrà allora 0,125 in di abbondanza in alto, in basso e sul bordo esterno.",
+          "L'abbondanza è attiva: il PDF di stampa di Beuk misura {w} × {h} in — il formato {trim} più {bleed} in in alto, in basso e sul bordo esterno —, con la TrimBox al formato rifilato. Scegli «Abbondanza» quando lo carichi su {store}.",
+          "L'abbondanza è attiva, ma il PDF letto dal server misura {w} × {h} in, non il formato rifilato più {bleed} in in alto, in basso e sul bordo esterno.",
+          "Esegui di nuovo la conversione PDF/X perché il server generi il PDF con le impostazioni attuali."],
+        ["pt", "Sangria", "Imprime as ilustrações até à margem: o PDF de impressão do Beuk tem páginas 0,125 pol. maiores em cima, em baixo e na margem exterior, com as pranchas e os fundos de página dupla levados à sangria e o texto exatamente onde estava. Escolha «Sangria» ao enviá-lo para a KDP ou a IngramSpark.",
+          "Sangria", "O PDF de impressão do Beuk mede {w} × {h} pol. — o formato {trim} mais 0,125 pol. em cima, em baixo e na margem exterior —, com as ilustrações levadas à sangria. Ao imprimir pelo navegador, o PDF fica no formato final.",
+          "{n} capítulo(s) têm ilustrações que chegam à margem da página: ative a Sangria acima para que a gráfica corte na ilustração e não em papel branco.",
+          "{n} capítulo(s) têm ilustrações impressas até à margem da página ({sections}), mas a Sangria deste livro está desativada, por isso o seu PDF de impressão está no formato final. A {store} exige {bleed} pol. de sangria em qualquer página cuja ilustração chegue à margem.",
+          "Ative a Sangria em Exportar → Interior de impressão: o PDF de impressão do Beuk passa a ter 0,125 pol. de sangria em cima, em baixo e na margem exterior.",
+          "A sangria está ativa: o PDF de impressão do Beuk mede {w} × {h} pol. — o formato {trim} mais {bleed} pol. em cima, em baixo e na margem exterior —, com a TrimBox no formato final. Escolha «Sangria» ao enviá-lo para a {store}.",
+          "A sangria está ativa, mas o PDF lido pelo servidor mede {w} × {h} pol., e não o formato final mais {bleed} pol. em cima, em baixo e na margem exterior.",
+          "Execute de novo a conversão PDF/X para que o servidor gere o PDF com as definições atuais."],
+        ["nl", "Afloop", "Drukt beeld tot aan de paginarand: de druk-pdf van Beuk krijgt pagina's die boven, onder en aan de buitenrand 0,125 in groter zijn, met de platen en de achtergronden van dubbele pagina's doorgetrokken in die afloop en de tekst precies waar hij stond. Kies „Afloop” bij het uploaden naar KDP of IngramSpark.",
+          "Afloop", "De druk-pdf van Beuk is {w} × {h} in — het formaat {trim} plus 0,125 in boven, onder en aan de buitenrand —, het beeld doorgetrokken in de afloop. Afgedrukt vanuit de browser blijft de pdf op het eindformaat.",
+          "{n} hoofdstuk(ken) hebben beeld dat tot de paginarand drukt: zet Afloop hierboven aan, zodat de drukker door beeld snijdt en niet door wit papier.",
+          "{n} hoofdstuk(ken) hebben beeld dat tot de paginarand drukt ({sections}), maar de Afloop van dit boek staat uit, dus de druk-pdf heeft het eindformaat. {store} vraagt {bleed} in afloop op elke pagina waarvan het beeld de rand raakt.",
+          "Zet Afloop aan onder Exporteren → Drukbinnenwerk: de druk-pdf van Beuk krijgt dan 0,125 in afloop boven, onder en aan de buitenrand.",
+          "Afloop staat aan: de druk-pdf van Beuk is {w} × {h} in — het formaat {trim} plus {bleed} in boven, onder en aan de buitenrand —, met de TrimBox op het eindformaat. Kies „Afloop” bij het uploaden naar {store}.",
+          "Afloop staat aan, maar de pdf die de server las is {w} × {h} in, niet het eindformaat plus {bleed} in boven, onder en aan de buitenrand.",
+          "Voer de PDF/X-conversie opnieuw uit, zodat de server de pdf met de huidige instellingen maakt."],
+        ["pl", "Spad", "Drukuje grafikę do krawędzi strony: drukowy PDF Beuk ma strony większe o 0,125 in u góry, u dołu i przy zewnętrznej krawędzi, z planszami i tłami rozkładówek przedłużonymi w spad, a tekstem dokładnie tam, gdzie był. Przy wysyłce do KDP lub IngramSpark wybierz „Spad”.",
+          "Spad", "Drukowy PDF Beuk ma {w} × {h} in — format {trim} plus 0,125 in u góry, u dołu i przy zewnętrznej krawędzi — z grafiką przedłużoną w spad. Wydrukowany z przeglądarki PDF zostaje w formacie netto.",
+          "{n} rozdział(y) mają grafikę drukowaną do krawędzi strony: włącz Spad powyżej, by drukarnia cięła przez grafikę, a nie przez biały papier.",
+          "{n} rozdział(y) mają grafikę drukowaną do krawędzi strony ({sections}), ale Spad tej książki jest wyłączony, więc jej drukowy PDF ma format netto. {store} wymaga {bleed} in spadu na każdej stronie, której grafika sięga krawędzi.",
+          "Włącz Spad w Eksport → Wnętrze do druku: drukowy PDF Beuk będzie miał wtedy 0,125 in spadu u góry, u dołu i przy zewnętrznej krawędzi.",
+          "Spad jest włączony: drukowy PDF Beuk ma {w} × {h} in — format {trim} plus {bleed} in u góry, u dołu i przy zewnętrznej krawędzi — z TrimBox w formacie netto. Przy wysyłce do {store} wybierz „Spad”.",
+          "Spad jest włączony, ale PDF odczytany przez serwer ma {w} × {h} in, a nie format netto plus {bleed} in u góry, u dołu i przy zewnętrznej krawędzi.",
+          "Uruchom ponownie konwersję PDF/X, aby serwer utworzył PDF z bieżącymi ustawieniami."],
+        ["ru", "Вылеты", "Печатает иллюстрации до края страницы: печатный PDF Beuk получает страницы на 0,125 in больше сверху, снизу и по внешнему краю, вклейки и фоны разворотов продолжаются в вылеты, а текст остаётся точно на месте. При загрузке в KDP или IngramSpark выберите «Вылеты» (Bleed).",
+          "Вылеты", "Печатный PDF Beuk — {w} × {h} in: формат {trim} плюс 0,125 in сверху, снизу и по внешнему краю, иллюстрации продолжены в вылеты. При печати из браузера PDF остаётся в обрезном формате.",
+          "В {n} главе(ах) есть иллюстрации до края страницы: включите «Вылеты» выше, чтобы типография резала по иллюстрации, а не по белой бумаге.",
+          "В {n} главе(ах) есть иллюстрации, печатаемые до края страницы ({sections}), но «Вылеты» у этой книги выключены, поэтому её печатный PDF — в обрезном формате. {store} требует {bleed} in вылетов на каждой странице, где иллюстрация доходит до края.",
+          "Включите «Вылеты» в Экспорт → Печатный блок: тогда печатный PDF Beuk получит 0,125 in вылетов сверху, снизу и по внешнему краю.",
+          "Вылеты включены: печатный PDF Beuk — {w} × {h} in: формат {trim} плюс {bleed} in сверху, снизу и по внешнему краю, TrimBox — по обрезному формату. При загрузке в {store} выберите «Вылеты» (Bleed).",
+          "Вылеты включены, но PDF, прочитанный сервером, — {w} × {h} in, а не обрезной формат плюс {bleed} in сверху, снизу и по внешнему краю.",
+          "Запустите преобразование в PDF/X ещё раз, чтобы сервер сделал PDF с текущими настройками."],
+        ["tr", "Taşma payı", "Görselleri sayfa kenarına kadar basar: Beuk'un baskı PDF'inin sayfaları üstte, altta ve dış kenarda 0,125 inç büyür; levhalar ve çift sayfa arka planları bu taşma payına uzar, metin tam olarak yerinde kalır. KDP'ye veya IngramSpark'a yüklerken “Taşma payı” (Bleed) seçin.",
+          "Taşma payı", "Beuk'un baskı PDF'i {w} × {h} inç — {trim} kesim boyutu artı üstte, altta ve dış kenarda 0,125 inç — ve görselleri taşma payına uzanıyor. Tarayıcıdan yazdırıldığında PDF kesim boyutunda kalır.",
+          "{n} bölümde sayfa kenarına kadar basılan görsel var: matbaa beyaz kâğıttan değil görselin içinden kessin diye yukarıdan Taşma payını açın.",
+          "{n} bölümde sayfa kenarına kadar basılan görsel var ({sections}), ama bu kitabın Taşma payı kapalı, bu yüzden baskı PDF'i kesim boyutunda. {store}, görseli kenara ulaşan her sayfada {bleed} inç taşma payı ister.",
+          "Dışa aktar → Baskı içi'ndan Taşma payını açın: Beuk'un baskı PDF'i o zaman üstte, altta ve dış kenarda 0,125 inç taşma payı taşır.",
+          "Taşma payı açık: Beuk'un baskı PDF'i {w} × {h} inç — {trim} kesim boyutu artı üstte, altta ve dış kenarda {bleed} inç — ve TrimBox kesim boyutunda. {store}'a yüklerken “Taşma payı” (Bleed) seçin.",
+          "Taşma payı açık, ama sunucunun okuduğu PDF {w} × {h} inç; kesim boyutu artı üstte, altta ve dış kenarda {bleed} inç değil.",
+          "Sunucunun PDF'i güncel ayarlarla üretmesi için PDF/X dönüştürmesini yeniden çalıştırın."],
+        ["ar", "هامش النزف", "يطبع الرسوم حتى حافة الصفحة: تصبح صفحات ملف PDF الطباعي من Beuk أكبر بمقدار 0.125 بوصة من الأعلى والأسفل والحافة الخارجية، وتمتد اللوحات وخلفيات الصفحات المزدوجة إلى هامش النزف، ويبقى النص في مكانه تمامًا. اختر «النزف» (Bleed) عند الرفع إلى KDP أو IngramSpark.",
+          "هامش النزف", "ملف PDF الطباعي من Beuk مقاسه {w} × {h} بوصة — مقاس القص {trim} مع 0.125 بوصة من الأعلى والأسفل والحافة الخارجية — وتمتد رسومه إلى هامش النزف. عند الطباعة من المتصفح يبقى الملف بمقاس القص.",
+          "في {n} فصل/فصول رسوم تُطبع حتى حافة الصفحة: فعّل هامش النزف أعلاه لتقصّ المطبعة عبر الرسم لا عبر الورق الأبيض.",
+          "في {n} فصل/فصول رسوم تُطبع حتى حافة الصفحة ({sections})، لكن هامش النزف في هذا الكتاب معطّل، فملف PDF الطباعي بمقاس القص. يتطلب {store} نزفًا بمقدار {bleed} بوصة في كل صفحة يصل رسمها إلى الحافة.",
+          "فعّل هامش النزف من تصدير ← داخلية الطباعة: عندها يحمل ملف PDF الطباعي من Beuk نزفًا بمقدار 0.125 بوصة من الأعلى والأسفل والحافة الخارجية.",
+          "هامش النزف مفعّل: ملف PDF الطباعي من Beuk مقاسه {w} × {h} بوصة — مقاس القص {trim} مع {bleed} بوصة من الأعلى والأسفل والحافة الخارجية — وTrimBox بمقاس القص. اختر «النزف» (Bleed) عند الرفع إلى {store}.",
+          "هامش النزف مفعّل، لكن ملف PDF الذي قرأه الخادم مقاسه {w} × {h} بوصة، لا مقاس القص مع {bleed} بوصة من الأعلى والأسفل والحافة الخارجية.",
+          "شغّل تحويل PDF/X مرة أخرى ليصنع الخادم الملف بالإعدادات الحالية."],
+        ["ja", "塗り足し", "絵をページの端まで印刷します。Beuk の印刷用 PDF のページを天・地・小口側で 0.125 in 大きくし、図版と見開きの背景をその塗り足しまで延ばします。文字の位置はまったく変わりません。KDP や IngramSpark にアップロードするときは「塗り足しあり」(Bleed) を選んでください。",
+          "塗り足し", "Beuk の印刷用 PDF は {w} × {h} in（判型 {trim} に天・地・小口側 0.125 in を加えたもの）で、絵は塗り足しまで延びています。ブラウザーから印刷した場合、PDF は仕上がりサイズのままです。",
+          "{n} 章にページの端まで印刷される絵があります。白い紙ではなく絵の上で断裁されるよう、上の「塗り足し」をオンにしてください。",
+          "{n} 章にページの端まで印刷される絵があります（{sections}）が、この本の「塗り足し」はオフなので、印刷用 PDF は仕上がりサイズです。{store} では、絵が端に届くページに {bleed} in の塗り足しが必要です。",
+          "エクスポート → 印刷用内面で「塗り足し」をオンにしてください。Beuk の印刷用 PDF に天・地・小口側 0.125 in の塗り足しが付きます。",
+          "塗り足しはオンです。Beuk の印刷用 PDF は {w} × {h} in（判型 {trim} に天・地・小口側 {bleed} in を加えたもの）で、TrimBox は仕上がりサイズです。{store} にアップロードするときは「塗り足しあり」(Bleed) を選んでください。",
+          "塗り足しはオンですが、サーバーが読んだ PDF は {w} × {h} in で、仕上がりサイズに天・地・小口側 {bleed} in を加えたサイズではありません。",
+          "現在の設定で PDF が作られるよう、PDF/X 変換をもう一度実行してください。"],
+        ["zh-Hans", "出血", "把图片印到页边：Beuk 的印刷 PDF 页面在上、下和外侧各加大 0.125 英寸，插页和跨页背景延伸到出血区，文字位置完全不变。上传到 KDP 或 IngramSpark 时请选择“出血”(Bleed)。",
+          "出血", "Beuk 的印刷 PDF 为 {w} × {h} 英寸——{trim} 成品尺寸加上、下和外侧各 0.125 英寸——图片延伸到出血区。从浏览器打印时，PDF 保持成品尺寸。",
+          "有 {n} 章的图片印到页边：请在上方打开“出血”，让印厂裁在图片上，而不是白纸上。",
+          "有 {n} 章的图片印到页边（{sections}），但本书的“出血”已关闭，所以印刷 PDF 为成品尺寸。{store} 要求图片到达页边的每一页都有 {bleed} 英寸出血。",
+          "在“导出 → 印刷内页”中打开“出血”：Beuk 的印刷 PDF 就会在上、下和外侧带 0.125 英寸出血。",
+          "出血已打开：Beuk 的印刷 PDF 为 {w} × {h} 英寸——{trim} 成品尺寸加上、下和外侧各 {bleed} 英寸——TrimBox 为成品尺寸。上传到 {store} 时请选择“出血”(Bleed)。",
+          "出血已打开，但服务器读取的 PDF 为 {w} × {h} 英寸，而不是成品尺寸加上、下和外侧各 {bleed} 英寸。",
+          "请重新运行 PDF/X 转换，让服务器按当前设置生成 PDF。"]
+      ].forEach(([lang, title, desc, tag, note, suggest, fail, fix, on, pdfOff, pdfFix]) => Object.assign(UI_STRINGS[lang], {
+        "exp.bleedTitle": title, "exp.bleedDesc": desc, "print.bleedTag": tag, "print.bleedNote": note, "print.bleedSuggest": suggest,
+        "store.c.bleed.fail": fail, "store.c.bleed.fix": fix, "store.c.bleed.on": on, "store.c.bleed.pdfOff": pdfOff, "store.c.bleed.pdfFix": pdfFix
       }));
 
       /* Supplementary keys (custom theme creator + custom font
@@ -17009,6 +17131,7 @@
         printRecto: true,
         printLargePrint: false,
         printPictureBook: false,
+        printBleed: false, /* BEUK:bleed — the print PDF at trim + 0.125 in on the top, bottom and outer edge */
         printMarginMode: "auto",
         printCustomMargins: { inside: 0.625, outside: 0.5, top: 0.6, bottom: 0.75 },
         printHeadContent: "titleauthor",
@@ -17281,6 +17404,7 @@
           printTrim: "6x9",
           printRecto: true,
           printLargePrint: false,
+          printBleed: false, /* BEUK:bleed */
           printNotes: "page" /* BEUK:footnotes — a new book sets its notes at the foot of the page */
         };
       }
@@ -17307,6 +17431,7 @@
           printTrim: "6x9",
           printRecto: true,
           printLargePrint: false,
+          printBleed: false, /* BEUK:bleed */
           printNotes: "page" /* BEUK:footnotes — a new book sets its notes at the foot of the page */
         };
       }
@@ -17316,6 +17441,7 @@
         state.sections = d.sections; state.cover = null; state.coverRecipe = null; state.images = [];
         state.activeId = d.activeId; state.exportPlatform = d.exportPlatform;
         state.printTrim = d.printTrim; state.printRecto = d.printRecto; state.printLargePrint = d.printLargePrint; state.printPictureBook = false;
+        state.printBleed = false; /* BEUK:bleed */
         state.printNotes = d.printNotes; /* BEUK:footnotes */
       }
       const isEmptyDesk = () => bookWordTotal() === 0 &&
@@ -32640,6 +32766,45 @@
         return pages <= 150 ? 0.375 : pages <= 300 ? 0.5 : pages <= 500 ? 0.625 : pages <= 700 ? 0.75 : 0.875;
       }
       const KDP_EDGE_MIN = 0.25;
+      /* BEUK:bleed — with bleed, KDP's top, bottom and outside minimum is
+         0.375 in from the trim (GVBQ3CMEQW3W2VL6: "a minimum of 0.25 inches
+         for books without bleed and 0.375 inches (9.6mm) for books with
+         bleed"): live text stays clear of the blade's wander. */
+      const KDP_EDGE_MIN_BLEED = 0.375;
+      function kdpEdgeMin() { return printBleedOn() ? KDP_EDGE_MIN_BLEED : KDP_EDGE_MIN; }
+      /* ==== BEUK:bleed ==== Print bleed, the KDP / IngramSpark way: with
+         the book's Bleed setting on, Beuk's print PDF has pages of trim +
+         0.125 in on the top, the bottom and the OUTER edge (a right-hand
+         page bleeds right, a left-hand page left; the gutter edge never),
+         its spread plates and backdrops carried out to that edge, and its
+         TrimBox at the trim — while the type, the running heads and the
+         folios stay exactly where they were relative to the trim: the
+         layout does not change at all. The print document is still set at
+         the trim; it asks for bleed with <meta name="beuk-bleed">, and the
+         print renderer adds it as the last step of its finishing pass,
+         when each page's final side is known
+         (deploy/renderer/bleed.mjs). The browser's own Print cannot: its
+         PDF stays at the trim. Off by default, never turned on for the
+         writer — the print settings and the store check suggest it when
+         the book carries art that prints to the edge. */
+      const PRINT_BLEED_IN = 0.125;
+      function printBleedOn() { return !!state.printBleed; }
+      /* The included chapters whose art prints to the page edge: a
+         plate (always a paired spread's edge-to-edge verso) or a backdrop. */
+      function printEdgeSections() {
+        return state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && (plateImage(s) || backdropImage(s)));
+      }
+      function printBleedConfig() { return { in: PRINT_BLEED_IN, rtl: isRtlLang(state.meta.language || "en") }; }
+      const bleedInStr = (n) => String(Math.round(n * 1000) / 1000);
+      /* The print settings' note: the page size with bleed when it is on;
+         when it is off and the book carries art to the edge, the
+         suggestion to turn it on (never turned on for the writer). */
+      function printBleedNoteHtml(tr) {
+        if (printBleedOn()) return " <b>" + esc(t("print.bleedTag")) + ":</b> " + esc(t("print.bleedNote", { w: bleedInStr(tr.w + PRINT_BLEED_IN), h: bleedInStr(tr.h + 2 * PRINT_BLEED_IN), trim: tr.label }));
+        const n = printEdgeSections().length;
+        return n ? ' <b class="print-bleed-suggest">' + esc(t("print.bleedTag")) + ":</b> " + esc(t("print.bleedSuggest", { n: n })) : "";
+      }
+      /* ==== /BEUK:bleed ==== */
       /* The print body's base size: 11pt for a standard interior,
          18pt — the large-print floor — for a Large Print edition.
          One helper, read by the print document and the spread view
@@ -33296,7 +33461,8 @@
         }
         const secs = pairs.map((p) => p.html).join("\n");
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n' +
-          (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") + "<title>" +
+          (atFoot ? '<meta name="beuk-footnotes" content="' + esc(JSON.stringify(printFootnoteConfig())) + '"/>\n' : "") +
+          (printBleedOn() ? '<meta name="beuk-bleed" content="' + esc(JSON.stringify(printBleedConfig())) + '"/>\n' : "") + /* BEUK:bleed */ "<title>" +
           esc(m.title) + " — Print Interior (" + tr.label + (state.printLargePrint ? ", " + t("print.lpTag") : "") + ')</title>\n<style>\n' + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
       }
       /* ==== BEUK:print ==== */
@@ -33616,6 +33782,7 @@
         if (note) note.innerHTML = "<b>" + tr.label + " trim</b> · about " + printPageEstimate() + " pages at this trim" + (printBigType() ? " and type size" : "") + ". Margins — top " + mg.top + " in, foot " + mg.bottom + " in, outside " + mg.outside + " in, gutter (inside) " + mg.inside + " in" + (state.printMarginMode === "custom" ? ", set by hand above." : ", widened for the binding at this page count.") +
           (state.printLargePrint ? " <b>" + esc(t("print.lpTag")) + ":</b> " + esc(t("print.lpNote")) : "") +
           (printPictureBookOn() ? " <b>" + esc(t("print.pbTag")) + ":</b> " + esc(t("print.pbNote")) : "") +
+          printBleedNoteHtml(tr) + /* BEUK:bleed */
           " <b>Honest note:</b> this produces a print-ready interior PDF through your browser's print-to-PDF; true PDF/X-1a conversion happens in the server phase, so the file is not PDF/X — most print-on-demand services accept it as a standard PDF interior.";
         const tg = $("tglRecto");
         if (tg) tg.setAttribute("aria-pressed", String(!!state.printRecto));
@@ -33623,6 +33790,8 @@
         if (lg) lg.setAttribute("aria-pressed", String(!!state.printLargePrint));
         const pbt = $("tglPictureBook");
         if (pbt) pbt.setAttribute("aria-pressed", String(printPictureBookOn()));
+        const blt = $("tglBleed"); /* BEUK:bleed */
+        if (blt) blt.setAttribute("aria-pressed", String(printBleedOn()));
         const mm = $("selMarginMode"); if (mm) mm.value = state.printMarginMode;
         const pf = $("pmFields"); if (pf) pf.hidden = state.printMarginMode !== "custom";
         const cm = state.printCustomMargins || {};
@@ -33662,6 +33831,7 @@
         $("tglRecto").addEventListener("click", () => { state.printRecto = !state.printRecto; renderPrintControls(); });
         $("tglLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; if (state.printLargePrint) state.printPictureBook = false; renderPrintControls(); });
         $("tglPictureBook").addEventListener("click", () => { state.printPictureBook = !printPictureBookOn(); if (state.printPictureBook) state.printLargePrint = false; renderPrintControls(); });
+        $("tglBleed").addEventListener("click", () => { state.printBleed = !printBleedOn(); renderPrintControls(); }); /* BEUK:bleed */
         $("selMarginMode").addEventListener("change", (e) => { state.printMarginMode = e.target.value === "custom" ? "custom" : "auto"; renderPrintControls(); });
         const marginInput = (id, key) => { const el = $(id); if (!el) return; el.addEventListener("change", () => { const v = parseFloat(el.value); if (isFinite(v)) state.printCustomMargins[key] = Math.min(3, Math.max(0, v)); renderPrintControls(); }); };
         marginInput("pmIn", "inside"); marginInput("pmOut", "outside"); marginInput("pmTop", "top"); marginInput("pmBottom", "bottom");
@@ -33733,6 +33903,7 @@
         return {
           trim, mg,
           pageW: trim.w * PIV_PX, pageH: trim.h * PIV_PX,
+          bleedPx: printBleedOn() ? PRINT_BLEED_IN * PIV_PX : 0, /* BEUK:bleed — the page is drawn this much larger on its top, bottom and outer edge */
           contentW: (trim.w - mg.inside - mg.outside) * PIV_PX,
           contentH: (trim.h - mg.top - mg.bottom) * PIV_PX
         };
@@ -33803,9 +33974,24 @@
         const g = model.g, mg = g.mg;
         const el = document.createElement("div");
         el.className = "piv-page piv-" + side + (page.blank ? " piv-blank" : "");
-        el.style.width = g.pageW + "px";
-        el.style.height = g.pageH + "px";
+        /* BEUK:bleed — with bleed on, the page is drawn at trim + bleed
+           (top, bottom, outer edge): everything that sits relative to the
+           trim goes into a trim box placed inside it, the edge-to-edge art
+           fills the whole page, and a dashed trim line with the bleed
+           shaded beyond it shows what the printer cuts away. */
+        const bpx = g.bleedPx || 0;
+        el.style.width = (g.pageW + bpx) + "px";
+        el.style.height = (g.pageH + 2 * bpx) + "px";
         el.setAttribute("data-page", String(page.n));
+        let host = el;
+        if (bpx) {
+          el.classList.add("piv-bleed-on");
+          host = document.createElement("div");
+          host.className = "piv-trimbox";
+          host.style.left = (side === "left" ? bpx : 0) + "px"; host.style.top = bpx + "px";
+          host.style.width = g.pageW + "px"; host.style.height = g.pageH + "px";
+          el.appendChild(host);
+        }
         if (page.blank) { el.setAttribute("data-blank", "true"); el.setAttribute("aria-label", t("piv.blank")); }
         const insidePx = mg.inside * PIV_PX, outsidePx = mg.outside * PIV_PX;
         const mLeft = side === "left" ? outsidePx : insidePx;
@@ -33836,7 +34022,7 @@
           if (state.printHeadPlace === "bottom") head.style.bottom = Math.max(2, (mg.bottom * PIV_PX - 14) / 2 + 17) + "px";
           else head.style.top = Math.max(2, (mg.top * PIV_PX - 13) / 2) + "px";
           head.textContent = headText;
-          el.appendChild(head);
+          host.appendChild(head);
         }
         if (showFolio) {
           const fol = document.createElement("div");
@@ -33845,7 +34031,7 @@
           fol.style.fontFamily = fontStack(state.theme.bodyFont);
           if (folioPos === "outer") { fol.style.textAlign = side === "left" ? "left" : "right"; fol.style.padding = "0 12px"; }
           fol.textContent = String(page.n);
-          el.appendChild(fol);
+          host.appendChild(fol);
         }
         /* A paired spread: a chapter carrying BOTH a plate and a
            backdrop. The print file prints that chapter's backdrop
@@ -33869,10 +34055,11 @@
           /* The whole leaf, centred like the plate it continues: a
              Spread fades from the gutter, the others from the head. */
           bleed.style.top = "0px"; bleed.style.left = "0px";
-          bleed.style.width = g.pageW + "px"; bleed.style.height = g.pageH + "px";
-          bleed.style.backgroundPosition = "center center";
+          bleed.style.width = (g.pageW + bpx) + "px"; bleed.style.height = (g.pageH + 2 * bpx) + "px";
+          /* (with bleed it covers the bleed too, held at the gutter edge as the renderer draws it) */
+          bleed.style.backgroundPosition = bpx ? (side === "left" ? "right center" : "left center") : "center center";
           if (pairedBd.strength === "spread") {
-            const mask = spreadMaskCss(spreadFadeStops(g.trim.w, mg.inside), side === "left" ? "to left" : "to right");
+            const mask = spreadMaskCss(spreadFadeStops(g.trim.w + (bpx ? PRINT_BLEED_IN : 0), mg.inside), side === "left" ? "to left" : "to right");
             bleed.style.webkitMaskImage = mask; bleed.style.maskImage = mask;
             bleed.style.opacity = "1";
           } else {
@@ -33889,7 +34076,8 @@
           im.className = "piv-plate-full";
           im.src = "data:" + pl.img.mediaType + ";base64," + pl.img.data;
           im.alt = pl.alt;
-          el.appendChild(im);
+          if (bpx) im.style.objectPosition = side === "left" ? "right center" : "left center"; /* BEUK:bleed */
+          el.insertBefore(im, host === el ? null : host);
           el.classList.add("piv-plate-leaf");
         } else if (!page.blank && page.section) {
           const clip = document.createElement("div");
@@ -33907,27 +34095,35 @@
           }
           flow.style.transform = "translateX(" + ((flow.dir === "rtl" ? 1 : -1) * page.col * (g.contentW + PIV_GAP)) + "px)";
           clip.appendChild(flow);
-          el.appendChild(clip);
+          host.appendChild(clip);
           const notesEl = fnl ? pivFootnotesEl(fnl, page.col, g, mLeft, flow.dir) : null;
-          if (notesEl) el.appendChild(notesEl);
+          if (notesEl) host.appendChild(notesEl);
         }
         if (piv.guides) {
           const trim = document.createElement("div");
           trim.className = "piv-guide piv-guide-trim";
-          el.appendChild(trim);
+          host.appendChild(trim);
           const mbox = document.createElement("div");
           mbox.className = "piv-guide piv-guide-margin";
           mbox.style.left = mLeft + "px";
           mbox.style.right = mRight + "px";
           mbox.style.top = (mg.top * PIV_PX) + "px";
           mbox.style.bottom = (mg.bottom * PIV_PX) + "px";
-          el.appendChild(mbox);
+          host.appendChild(mbox);
           const gut = document.createElement("div");
           gut.className = "piv-guide piv-guide-gutter";
           gut.style.width = insidePx + "px";
           if (side === "left") { gut.style.right = "0"; gut.style.background = "linear-gradient(to left, rgba(38,92,206,.20), rgba(38,92,206,0))"; }
           else { gut.style.left = "0"; gut.style.background = "linear-gradient(to right, rgba(38,92,206,.20), rgba(38,92,206,0))"; }
-          el.appendChild(gut);
+          host.appendChild(gut);
+        }
+        if (bpx) {
+          const tl = document.createElement("div");
+          tl.className = "piv-trimline";
+          tl.setAttribute("aria-hidden", "true");
+          tl.style.left = (side === "left" ? bpx : 0) + "px"; tl.style.top = bpx + "px";
+          tl.style.width = g.pageW + "px"; tl.style.height = g.pageH + "px";
+          el.appendChild(tl);
         }
         return el;
       }
@@ -33941,7 +34137,7 @@
       function pivSyncChrome() {
         const model = piv.model;
         const g = model ? model.g : pivGeometry();
-        $("pivSub").textContent = (state.meta.title || t("misc.untitledBook")) + " · " + g.trim.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : printPictureBookOn() ? " · " + t("print.pbTag") : "") + " · " + t("piv.pages", { n: model ? model.pages.length : 0 });
+        $("pivSub").textContent = (state.meta.title || t("misc.untitledBook")) + " · " + g.trim.label + " trim" + (state.printLargePrint ? " · " + t("print.lpTag") : printPictureBookOn() ? " · " + t("print.pbTag") : "") + (printBleedOn() ? " · " + t("print.bleedTag") : "") + " · " + t("piv.pages", { n: model ? model.pages.length : 0 });
         const ts = $("pivTrim");
         ts.innerHTML = trimOptionsHtml();
         ts.value = state.printTrim;
@@ -33985,15 +34181,16 @@
         if (pr.left && pr.right && !stacked) {
           const sp = document.createElement("div");
           sp.className = "piv-spine";
-          sp.style.height = model.g.pageH + "px";
+          sp.style.height = (model.g.pageH + 2 * (model.g.bleedPx || 0)) + "px";
           spreadEl.appendChild(sp);
         }
         if (pr.right) spreadEl.appendChild(pivPageEl(pr.right, "right", model));
         const g = model.g;
         const shown = (pr.left ? 1 : 0) + (pr.right ? 1 : 0);
         let contentW, contentH;
-        if (stacked) { contentW = g.pageW; contentH = g.pageH * shown + (shown === 2 ? PIV_STACK_GAP : 0); }
-        else { contentW = g.pageW * shown + (shown === 2 ? PIV_SPINE : 0); contentH = g.pageH; }
+        const bpx = g.bleedPx || 0; /* BEUK:bleed — each page is drawn trim + bleed */
+        if (stacked) { contentW = g.pageW + bpx; contentH = (g.pageH + 2 * bpx) * shown + (shown === 2 ? PIV_STACK_GAP : 0); }
+        else { contentW = (g.pageW + bpx) * shown + (shown === 2 ? PIV_SPINE : 0); contentH = g.pageH + 2 * bpx; }
         const availW = Math.max(160, stage.clientWidth - 28);
         const availH = Math.max(160, stage.clientHeight - 44);
         let scale = piv.zoom === "actual" ? 1 : Math.min(availW / contentW, availH / contentH);
@@ -36331,9 +36528,9 @@
             t("preflight.f.margin.detail", { which: t("preflight.m.gutter"), have: fmtIn(mg.inside), need: fmtIn(gmin), pages: fmtNum(pages) }), J_PRINT);
         }
         [["preflight.m.outside", mg.outside], ["preflight.m.top", mg.top], ["preflight.m.bottom", mg.bottom]].forEach((pair) => {
-          if (pair[1] < KDP_EDGE_MIN) {
+          if (pair[1] < kdpEdgeMin()) {
             add("margins.minimum", t("preflight.f.margin.name"),
-              t("preflight.f.margin.detail", { which: t(pair[0]), have: fmtIn(pair[1]), need: fmtIn(KDP_EDGE_MIN), pages: fmtNum(pages) }), J_PRINT);
+              t("preflight.f.margin.detail", { which: t(pair[0]), have: fmtIn(pair[1]), need: fmtIn(kdpEdgeMin()), pages: fmtNum(pages) }), J_PRINT);
           }
         });
         printPlacements().forEach((p) => {
@@ -36458,7 +36655,7 @@
           },
           /* GVBQ3CMEQW3W2VL6 margins table: inside by page count; outside/top/bottom at least 0.25 in without bleed. */
           gutter: [[150, 0.375], [300, 0.5], [500, 0.625], [700, 0.75], [Infinity, 0.875]],
-          edgeMin: 0.25, edgeRecommend: null,
+          edgeMin: 0.25, edgeMinBleed: 0.375, /* GVBQ3CMEQW3W2VL6: 0.375 in "for books with bleed" (BEUK:bleed) */ edgeRecommend: null,
           minDpi: 300, bleed: 0.125,
           /* G202145060: "books need at least 79 pages to have spine text", "at least 0.0625" of clearance on each side". */
           spineTextMinPages: 79, spineTextClear: 0.0625,
@@ -36595,7 +36792,7 @@
          trim, the edition and the words. Anything else is stale. */
       function storeBookSig() {
         const words = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
-        return [state.printTrim, state.printLargePrint ? 1 : printPictureBookOn() ? 2 : 0, state.printMarginMode, words, state.sections.length].join("|");
+        return [state.printTrim, state.printLargePrint ? 1 : printPictureBookOn() ? 2 : 0, state.printMarginMode, words, state.sections.length].join("|") + (printBleedOn() ? "|bleed" : ""); /* BEUK:bleed */
       }
       function storeServerFresh() {
         const s = storeUi.server;
@@ -36722,7 +36919,8 @@
           const need = R.gutter.find((g) => pages <= g[0])[1];
           const bad = [];
           if (mg.inside < need) bad.push(t("store.c.margins.fail", Object.assign({ which: t("preflight.m.gutter"), have: storeIn(mg.inside), need: storeIn(need) }, P)));
-          marginNames.forEach((m) => { if (m[1] < R.edgeMin) bad.push(t("store.c.margins.fail", Object.assign({ which: t(m[0]), have: storeIn(m[1]), need: storeIn(R.edgeMin) }, P))); });
+          const edgeMin = printBleedOn() && R.edgeMinBleed ? R.edgeMinBleed : R.edgeMin; /* BEUK:bleed */
+          marginNames.forEach((m) => { if (m[1] < edgeMin) bad.push(t("store.c.margins.fail", Object.assign({ which: t(m[0]), have: storeIn(m[1]), need: storeIn(edgeMin) }, P))); });
           if (bad.length) row("interior", "margins", true, "fail", t("store.c.margins.name"), bad.join(" "), t("store.c.margins.fix"), { kind: "print", label: t("preflight.fixPrint") });
           else row("interior", "margins", true, "pass", t("store.c.margins.name"),
             t("store.c.margins.ok", Object.assign({ inside: storeIn(mg.inside), need: storeIn(need), outside: storeIn(mg.outside), top: storeIn(mg.top), bottom: storeIn(mg.bottom) }, P)));
@@ -36749,13 +36947,25 @@
             t("store.c.dpi.fix", { needPx: fmtNum(needPx), maxIn: storeIn(maxIn) }),
             { kind: "section", sectionId: p.section.id, label: t("preflight.fix") });
         });
-        /* Bleed: Beuk's interior is set at trim size with no bleed. Full-bleed plates and chapter backdrops reach the trim edge
-           in the print file, and both stores require 0.125 in bleed on any page whose art reaches the edge. */
-        const edgeSecs = state.sections.filter((s) => s.included && s.type !== "cover" && s.kind === "body" && (plateImage(s) || backdropImage(s)));
-        if (!edgeSecs.length) row("interior", "bleed", true, "pass", t("store.c.bleed.name"), t("store.c.bleed.ok", P));
+        /* Bleed (BEUK:bleed): full-bleed plates and chapter backdrops reach the trim edge in the print file, and both stores
+           require 0.125 in bleed on any page whose art reaches the edge. With the book's Bleed setting on, Beuk's print PDF is
+           trim + bleed on the top, bottom and outer edge (deploy/renderer/bleed.mjs); when the server has read the converted
+           file, its first page's boxes are held to that. */
+        const edgeSecs = printEdgeSections();
+        const bleedOn = printBleedOn();
+        const bleedList = edgeSecs.slice(0, 4).map((s) => sectionLabel(s) || s.title).join(", ") + (edgeSecs.length > 4 ? "…" : "");
+        const bleedBoxes = F.insp && F.insp.firstPage ? F.insp.firstPage : null;
+        const bleedPdfOk = !bleedBoxes || !bleedBoxes.mediaBox ? null :
+          !!bleedBoxes.trimBox && Math.abs(bleedBoxes.trimBox.w - tr.w) <= 0.01 && Math.abs(bleedBoxes.trimBox.h - tr.h) <= 0.01 &&
+          Math.abs(bleedBoxes.mediaBox.w - (tr.w + PRINT_BLEED_IN)) <= 0.01 && Math.abs(bleedBoxes.mediaBox.h - (tr.h + 2 * PRINT_BLEED_IN)) <= 0.01;
+        if (bleedOn && bleedPdfOk === false) row("interior", "bleed", true, "fail", t("store.c.bleed.name"),
+          t("store.c.bleed.pdfOff", Object.assign({ w: storeIn(bleedBoxes.mediaBox.w), h: storeIn(bleedBoxes.mediaBox.h), bleed: storeIn(PRINT_BLEED_IN) }, P)), t("store.c.bleed.pdfFix"));
+        else if (bleedOn) row("interior", "bleed", true, "pass", t("store.c.bleed.name"),
+          t("store.c.bleed.on", Object.assign({ w: storeIn(tr.w + PRINT_BLEED_IN), h: storeIn(tr.h + 2 * PRINT_BLEED_IN), bleed: storeIn(PRINT_BLEED_IN), trim: tr.label }, P)));
+        else if (!edgeSecs.length) row("interior", "bleed", true, "pass", t("store.c.bleed.name"), t("store.c.bleed.ok", P));
         else row("interior", "bleed", true, "fail", t("store.c.bleed.name"),
-          t("store.c.bleed.fail", Object.assign({ n: edgeSecs.length, sections: edgeSecs.slice(0, 4).map((s) => sectionLabel(s) || s.title).join(", ") + (edgeSecs.length > 4 ? "…" : ""), bleed: storeIn(R.bleed) }, P)),
-          t("store.c.bleed.fix"), { kind: "section", sectionId: edgeSecs[0].id, label: t("preflight.fix") });
+          t("store.c.bleed.fail", Object.assign({ n: edgeSecs.length, sections: bleedList, bleed: storeIn(R.bleed) }, P)),
+          t("store.c.bleed.fix"), { kind: "print", label: t("preflight.fixPrint") });
         /* Server-read facts about the converted file. */
         const insp = F.insp;
         const why = insp ? "" : storeServerReason("pdfx");
@@ -37348,6 +37558,7 @@
           printRecto: state.printRecto,
           printLargePrint: state.printLargePrint,
           printPictureBook: !!state.printPictureBook,
+          printBleed: !!state.printBleed, /* BEUK:bleed */
           printMarginMode: state.printMarginMode,
           printCustomMargins: Object.assign({}, state.printCustomMargins),
           printHeadContent: state.printHeadContent,
@@ -37423,6 +37634,9 @@
         if (typeof doc.printRecto === "boolean") state.printRecto = doc.printRecto;
         if (typeof doc.printLargePrint === "boolean") state.printLargePrint = doc.printLargePrint;
         state.printPictureBook = doc.printPictureBook === true && !state.printLargePrint;
+        /* BEUK:bleed — a book carries its own Bleed choice; one saved
+           before the choice existed printed at the trim, and still does. */
+        state.printBleed = doc.printBleed === true;
         state.storeCheck = normalizeStoreCheck(doc.storeCheck); /* BEUK:store */
         /* The print layout rules ride the book the same way: a
            document that carries them brings them; one that predates
@@ -38367,7 +38581,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v15"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v16"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -40505,6 +40719,89 @@
                 !!some && some.status === "warn" && some.evidence.indexOf(label) !== -1 && some.evidence.indexOf(t("store.c.fnotes.r.long")) !== -1 && !!some.fix &&
                 !none && !endMode;
               return scVerdict(ok, "all placed: " + (all ? all.status : "no row") + "; two kept: " + (some ? some.status + " (“" + some.evidence.slice(0, 140) + "”)" : "no row") + "; no report: " + (none ? "row" : "no row") + "; notes at the chapter end: " + (endMode ? "row" : "no row"));
+            });
+          } },
+        { id: "print.bleed", feature: "print", name: "Print bleed: the book's Bleed setting (off by default, carried by the book file, suggested when art prints to the edge) asks the print renderer for trim + 0.125 in on the top, bottom and outer edge without moving a word; the store check and the Print Interior View follow it",
+          run() {
+            const keepPiv = { spread: piv.spread, model: piv.model, guides: piv.guides };
+            return storeOnSample(() => {
+              const bad = [];
+              const metaOf = (html) => { const m = /<meta name="beuk-bleed" content="([^"]*)"\/>\n/.exec(html); return m ? m : null; };
+              /* Off by default: a new book, the sample, a book saved before the setting. */
+              if (buildEmptyBook().printBleed !== false || state.printBleed !== false) bad.push("not off by default");
+              const edge = printEdgeSections().length;
+              if (!edge) bad.push("the sample has no art at the page edge");
+              const offHtml = buildPrintHtml();
+              if (metaOf(offHtml)) bad.push("the print file asks for bleed while it is off");
+              renderPrintControls();
+              const sug = t("print.bleedSuggest", { n: edge });
+              if (!$("printNote").textContent.includes(sug)) bad.push("no suggestion in the print settings");
+              if (state.printBleed) bad.push("the suggestion turned bleed on");
+              const offStore = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" }).groups.interior.find((r) => r.id === "bleed");
+              if (!offStore || offStore.status !== "fail" || !offStore.action || offStore.action.kind !== "print") bad.push("store row with bleed off: " + (offStore ? offStore.status : "none"));
+              /* The switch. */
+              const sw = $("tglBleed");
+              if (!sw) bad.push("no Bleed switch");
+              else {
+                sw.click();
+                if (!state.printBleed || sw.getAttribute("aria-pressed") !== "true") bad.push("the switch does not turn bleed on");
+                if (!$("printNote").textContent.includes(t("print.bleedNote", { w: "6.125", h: "9.25", trim: trimSize().label }))) bad.push("the print note does not give 6.125 × 9.25 in");
+              }
+              const onHtml = buildPrintHtml();
+              const m = metaOf(onHtml);
+              let cfg = null;
+              try { cfg = m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&")) : null; } catch (e) { cfg = null; }
+              if (!cfg || cfg.in !== 0.125 || cfg.rtl !== false) bad.push("the print file's bleed request: " + (m ? m[1] : "none"));
+              /* The layout does not change: the document is the same, word for word, but for the request. */
+              if (!m || onHtml.replace(m[0], "") !== offHtml) bad.push("the print document changed beyond the bleed request");
+              /* The book file carries it; a book without it prints at the trim. */
+              const doc = JSON.parse(JSON.stringify(serializeBook()));
+              if (doc.printBleed !== true) bad.push("serializeBook does not carry it");
+              delete doc.printBleed; applyBookDoc(doc);
+              if (state.printBleed !== false) bad.push("a book saved before the setting does not print at the trim");
+              doc.printBleed = true; applyBookDoc(doc);
+              if (state.printBleed !== true) bad.push("applyBookDoc does not restore it");
+              /* The store check: on passes, its sizes stated; a server PDF at the trim fails; one at trim + bleed passes. KDP's
+                 outside/top/bottom minimum is 0.375 in with bleed. */
+              const rowWith = (insp) => {
+                storeUi.server = insp ? { sig: storeBookSig(), at: new Date(), pdfx: { status: "done", result: { inspection: insp, press: null } }, epubcheck: null, error: "" } : null;
+                return storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" }).groups.interior.find((r) => r.id === "bleed");
+              };
+              const inspAt = (mw, mh, tw, th) => ({ pageCount: 120, firstPage: { mediaBox: { w: mw, h: mh }, trimBox: tw ? { w: tw, h: th } : null, bleedBox: tw ? { w: mw, h: mh } : null },
+                pdfx: { version: "PDF/X-1:2001", conformance: "PDF/X-1a:2001", outputIntent: true, outputCondition: "CGATS TR 003" },
+                fonts: [], fontsAllEmbedded: true, rgb: { colourSpaceRefs: 0, rgbOperators: 0 }, encrypted: false, notes: [] });
+              const onRow = rowWith(null), trimRow = rowWith(inspAt(6, 9, 0, 0)), bleedRow = rowWith(inspAt(6.125, 9.25, 6, 9));
+              storeUi.server = null;
+              if (!onRow || onRow.status !== "pass" || onRow.evidence.indexOf("6.125") === -1) bad.push("store row with bleed on: " + (onRow ? onRow.status : "none"));
+              if (!trimRow || trimRow.status !== "fail") bad.push("a server PDF at the trim: " + (trimRow ? trimRow.status : "none"));
+              if (!bleedRow || bleedRow.status !== "pass") bad.push("a server PDF at trim + bleed: " + (bleedRow ? bleedRow.status : "none"));
+              if (kdpEdgeMin() !== 0.375 || STORE_RULES.kdp.edgeMinBleed !== 0.375) bad.push("KDP's minimum with bleed is not 0.375 in");
+              /* The Print Interior View: pages drawn at trim + bleed, a trim line at the trim, the plate filling the bleed. */
+              openPrintInteriorView();
+              try {
+                const model = piv.model;
+                const plate = model ? model.pages.find((pg) => !pg.blank && isPairedSpread(pg.section) && pg.col === 0) : null;
+                if (!plate) bad.push("the view has no plate page");
+                else {
+                  piv.spread = Math.floor(plate.n / 2); renderPrintView();
+                  const el = $("pivSpread").querySelector('.piv-page[data-page="' + plate.n + '"]');
+                  const bpx = 0.125 * PIV_PX, side = plate.n % 2 === 0 ? "left" : "right";
+                  const tl = el && el.querySelector(".piv-trimline"), im = el && el.querySelector(".piv-plate-full"), host = el && el.querySelector(".piv-trimbox");
+                  const okEl = !!el && el.offsetWidth === Math.round(model.g.pageW + bpx) && el.offsetHeight === Math.round(model.g.pageH + 2 * bpx);
+                  const okTl = !!tl && tl.offsetLeft === (side === "left" ? bpx : 0) && tl.offsetTop === bpx && tl.offsetWidth === model.g.pageW;
+                  const okIm = !!im && im.offsetWidth === el.offsetWidth && im.offsetHeight === el.offsetHeight;
+                  if (!(okEl && okTl && okIm && host)) bad.push("the view's plate page: page " + (el ? el.offsetWidth + "×" + el.offsetHeight : "none") + ", trim line " + (tl ? tl.offsetLeft + "," + tl.offsetTop : "none") + ", plate " + (im ? im.offsetWidth + "×" + im.offsetHeight : "none"));
+                }
+              } finally { $("modalPrintView").classList.remove("open"); }
+              if (sw) {
+                sw.click();
+                if (state.printBleed || metaOf(buildPrintHtml())) bad.push("the switch does not turn bleed off");
+              }
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["exp.bleedTitle", "exp.bleedDesc", "print.bleedTag", "print.bleedNote", "print.bleedSuggest", "store.c.bleed.on", "store.c.bleed.pdfOff", "store.c.bleed.pdfFix"].some((k) => !UI_STRINGS[c][k]));
+              if (missing.length || Object.keys(UI_STRINGS).length < 13) bad.push("strings missing in " + missing.join(", "));
+              piv.spread = keepPiv.spread; piv.model = keepPiv.model; piv.guides = keepPiv.guides;
+              renderPrintControls();
+              return scVerdict(!bad.length, bad.length ? bad.join("; ") : "off by default and for a book saved before it; " + edge + " chapter(s) with edge art get the suggestion, never the setting; on, the print file asks for 0.125 in and is otherwise byte-identical; the store row passes at 6.125 × 9.25 in and fails a server PDF at the trim; KDP's edge minimum is 0.375 in; the view draws trim + bleed with the trim line and the plate filling the bleed; 13 languages");
             });
           } },
         { id: "print.view.guides", feature: "print", name: "Print interior view guides: the toggle draws the trim edge, margin boxes and gutter shading over the spread, and no guide markup ever reaches the exported print HTML",

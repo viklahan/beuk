@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v15`; both `client/sw.js` and
+service worker (cache `beuk-shell-v16`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -716,6 +716,54 @@ screen (preview, EPUB, Zen) it leans in from the binding edge and is gone
 a third of the way across. A chapter backdrop without a plate prints over
 the opening's text area only (before, its 1.15 in overhang above the
 page area was painted onto the foot of the previous page).
+
+### Print bleed (renderer)
+
+**Bleed** (Export → Print Interior; `state.printBleed`, carried by the book
+file as `printBleed`, off by default and for any book saved before it)
+makes Beuk's print PDF the way KDP asks for a book whose art runs to the
+edge (https://kdp.amazon.com/en_US/help/topic/GVBQ3CMEQW3W2VL6): pages
+of trim + 0.125 in on the **top, bottom and outer edge** — a 6 × 9 trim
+prints at 6.125 × 9.25 in — with the inner (gutter) edge never bled. The
+setting is never turned on for the writer: the print settings note and
+the store check's Bleed row suggest it when an included chapter carries
+a plate or a backdrop.
+
+Nothing in the layout changes. The print document is still set at the
+trim (identical, byte for byte, but for a `<meta name="beuk-bleed">`
+asking for it), and the renderer adds the bleed as the very last step of
+its finishing pass (`deploy/renderer/bleed.mjs`, tested in
+`tests/print-bleed.test.ts`), when every page's final side is known —
+after the blank pages that settle parity are in:
+
+- every page's MediaBox grows by 9 pt on its top, bottom and outer edge
+  (a right-hand page bleeds right, a left-hand page left; mirrored for a
+  right-to-left book); BleedBox = MediaBox; TrimBox = the trim;
+- the page's content is moved by the bleed on its left and bottom edges,
+  so the text block, running heads, folios and page-foot notes stay
+  exactly where they were relative to the trim; links and named
+  destinations move with it;
+- each paired spread's plate and backdrop are drawn to cover the trim
+  **and** the bleed — scaled, never stretched, about the middle of the
+  gutter edge, so the two halves of a painting still meet at the spine.
+
+Measured on the sample (The Lantern Coast, 6 × 9, 2026-10-27): 113 pages
+either way; with bleed every page is 441 × 666 pt, rectos TrimBox
+`[0 9 432 657]`, versos `[9 9 441 657]`; all 25,687 words sit exactly
+(0, 9) pt (rectos) or (9, 9) pt (versos) from where they sit without
+bleed — the same place on the trim; each plate and backdrop is drawn over
+the whole 441 × 666 page. Without bleed the PDF is the one the renderer
+made before (same pages, sizes and boxes; only the creation date
+differs). Ghostscript 10.00.0's PDF/X-1a conversion keeps the TrimBox and
+BleedBox. With bleed on, the store check holds KDP's top, bottom and
+outside margins to 0.375 in (the same KDP page: "0.375 inches (9.6mm)
+for books with bleed"); Beuk's Auto margins are 0.5 in or more.
+
+The browser's own Print cannot bleed (Chromium clips a page's content to
+the page area), so a PDF printed from the browser stays at the trim. The
+Print Interior View draws each page at trim + bleed when Bleed is on:
+the bleed shaded beyond a dashed red trim line, the plates and spread
+backdrops running out to the bleed edge. The cover is not affected.
 
 ### Notes at the foot of the page (renderer)
 
