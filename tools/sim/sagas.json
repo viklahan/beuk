@@ -1,0 +1,428 @@
+{
+  "note": "Public-domain sagas from gutenberg.org. Ebook numbers were looked up in the Gutenberg catalogue (https://www.gutenberg.org/cache/epub/feeds/pg_catalog.csv, read 2026-10-27), never guessed. The Vicomte de Bragelonne cycle is used as Gutenberg splits it (2609, 2681, 2710, 2759); 1258 'Ten Years Later' is an older edition of the same text and is not used. Oz: the illustrated HTML editions (each with its original Denslow / Neill pictures) were chosen by counting <img> elements in each candidate edition's HTML; the unillustrated editions (55, 486, 420, 485, 517, 955, 956, 957, 958, 959, 960, 419, 961) have none.",
+  "series": [
+    {
+      "key": "dartagnan",
+      "name": "The d'Artagnan Romances",
+      "author": "Alexandre Dumas",
+      "persona": "sim01-dumas",
+      "volumes": [
+        {
+          "ebook": 1257,
+          "catalogTitle": "The three musketeers",
+          "title": "The Three Musketeers"
+        },
+        {
+          "ebook": 1259,
+          "catalogTitle": "Twenty years after",
+          "title": "Twenty Years After"
+        },
+        {
+          "ebook": 2609,
+          "catalogTitle": "The Vicomte de Bragelonne",
+          "title": "The Vicomte de Bragelonne"
+        },
+        {
+          "ebook": 2681,
+          "catalogTitle": "Ten Years Later",
+          "title": "Ten Years Later"
+        },
+        {
+          "ebook": 2710,
+          "catalogTitle": "Louise de la Vallière",
+          "title": "Louise de la Vallière"
+        },
+        {
+          "ebook": 2759,
+          "catalogTitle": "The Man in the Iron Mask",
+          "title": "The Man in the Iron Mask"
+        }
+      ],
+      "bibleAccept": [
+        [
+          "d’Artagnan",
+          "character"
+        ],
+        [
+          "Athos",
+          "character"
+        ],
+        [
+          "Porthos",
+          "character"
+        ],
+        [
+          "Aramis",
+          "character"
+        ],
+        [
+          "Milady",
+          "character"
+        ],
+        [
+          "Richelieu",
+          "character"
+        ],
+        [
+          "Mazarin",
+          "character"
+        ],
+        [
+          "Buckingham",
+          "character"
+        ],
+        [
+          "Planchet",
+          "character"
+        ],
+        [
+          "Bonacieux",
+          "character"
+        ],
+        [
+          "Tréville",
+          "character"
+        ],
+        [
+          "Rochefort",
+          "character"
+        ],
+        [
+          "Raoul",
+          "character"
+        ],
+        [
+          "Fouquet",
+          "character"
+        ],
+        [
+          "Colbert",
+          "character"
+        ],
+        [
+          "Louise",
+          "character"
+        ],
+        [
+          "Paris",
+          "place"
+        ],
+        [
+          "London",
+          "place"
+        ],
+        [
+          "La Rochelle",
+          "place"
+        ],
+        [
+          "Louvre",
+          "place"
+        ]
+      ]
+    },
+    {
+      "key": "valois",
+      "name": "The Valois Romances",
+      "author": "Alexandre Dumas",
+      "persona": "sim01-dumas",
+      "volumes": [
+        {
+          "ebook": 33609,
+          "catalogTitle": "Marguerite de Valois",
+          "title": "Marguerite de Valois"
+        },
+        {
+          "ebook": 7426,
+          "catalogTitle": "Chicot the Jester",
+          "title": "Chicot the Jester"
+        },
+        {
+          "ebook": 13626,
+          "catalogTitle": "The forty-five guardsmen",
+          "title": "The Forty-Five Guardsmen"
+        }
+      ],
+      "bibleAccept": [
+        [
+          "Marguerite",
+          "character"
+        ],
+        [
+          "Henri",
+          "character"
+        ],
+        [
+          "Charles",
+          "character"
+        ],
+        [
+          "Catherine",
+          "character"
+        ],
+        [
+          "La Mole",
+          "character"
+        ],
+        [
+          "Coconnas",
+          "character"
+        ],
+        [
+          "Chicot",
+          "character"
+        ],
+        [
+          "Bussy",
+          "character"
+        ],
+        [
+          "Diana",
+          "character"
+        ],
+        [
+          "Monsoreau",
+          "character"
+        ],
+        [
+          "Guise",
+          "character"
+        ],
+        [
+          "Navarre",
+          "place"
+        ],
+        [
+          "Paris",
+          "place"
+        ],
+        [
+          "Louvre",
+          "place"
+        ],
+        [
+          "Anjou",
+          "place"
+        ]
+      ]
+    },
+    {
+      "key": "oz",
+      "name": "The Oz Books",
+      "author": "L. Frank Baum",
+      "persona": "sim02-baum",
+      "volumes": [
+        {
+          "ebook": 43936,
+          "catalogTitle": "The Wonderful Wizard of Oz",
+          "title": "The Wonderful Wizard of Oz",
+          "illustrator": "W. W. Denslow",
+          "prep": {
+            "chapterAnchor": "^Chapter_[IVXL]+$",
+            "titleFrom": "toc"
+          }
+        },
+        {
+          "ebook": 54,
+          "catalogTitle": "The Marvelous Land of Oz",
+          "title": "The Marvelous Land of Oz",
+          "illustrator": "John R. Neill",
+          "prep": {
+            "chapterAnchor": "^chap[0-9]+$"
+          }
+        },
+        {
+          "ebook": 33361,
+          "catalogTitle": "Ozma of Oz",
+          "title": "Ozma of Oz",
+          "illustrator": "John R. Neill",
+          "prep": {
+            "startAt": "The Girl in the Chicken Coop"
+          }
+        },
+        {
+          "ebook": 22566,
+          "catalogTitle": "Dorothy and the Wizard in Oz",
+          "title": "Dorothy and the Wizard in Oz",
+          "illustrator": "John R. Neill"
+        },
+        {
+          "ebook": 26624,
+          "catalogTitle": "The Road to Oz",
+          "title": "The Road to Oz",
+          "illustrator": "John R. Neill",
+          "prep": {
+            "chapterAnchor": "^CHAP_[0-9]+$",
+            "titleFrom": "imgAlt"
+          }
+        },
+        {
+          "ebook": 41667,
+          "catalogTitle": "The Emerald City of Oz",
+          "title": "The Emerald City of Oz",
+          "illustrator": "John R. Neill",
+          "prep": {
+            "chapterHeading": "^[0-9]+[.] "
+          }
+        },
+        {
+          "ebook": 32094,
+          "catalogTitle": "The Patchwork Girl of Oz",
+          "title": "The Patchwork Girl of Oz",
+          "illustrator": "John R. Neill",
+          "prep": {
+            "chapterClass": "(^| )chap( |$)"
+          }
+        },
+        {
+          "ebook": 52176,
+          "catalogTitle": "Tik-Tok of Oz",
+          "title": "Tik-Tok of Oz",
+          "illustrator": "John R. Neill"
+        },
+        {
+          "ebook": 51263,
+          "catalogTitle": "The Scarecrow of Oz",
+          "title": "The Scarecrow of Oz",
+          "illustrator": "John R. Neill"
+        },
+        {
+          "ebook": 25581,
+          "catalogTitle": "Rinkitink in Oz",
+          "title": "Rinkitink in Oz",
+          "illustrator": "John R. Neill"
+        },
+        {
+          "ebook": 24459,
+          "catalogTitle": "The Lost Princess of Oz",
+          "title": "The Lost Princess of Oz",
+          "illustrator": "John R. Neill",
+          "prep": {
+            "chapterHeadIsProse": true,
+            "titleFrom": "anchor"
+          }
+        },
+        {
+          "ebook": 30852,
+          "catalogTitle": "The Tin Woodman of Oz",
+          "title": "The Tin Woodman of Oz",
+          "illustrator": "John R. Neill"
+        },
+        {
+          "ebook": 50194,
+          "catalogTitle": "The Magic of Oz",
+          "title": "The Magic of Oz",
+          "illustrator": "John R. Neill"
+        },
+        {
+          "ebook": 39868,
+          "catalogTitle": "Glinda of Oz",
+          "title": "Glinda of Oz",
+          "illustrator": "John R. Neill"
+        }
+      ],
+      "bibleAccept": [
+        [
+          "Dorothy",
+          "character"
+        ],
+        [
+          "Toto",
+          "character"
+        ],
+        [
+          "Scarecrow",
+          "character"
+        ],
+        [
+          "Tin Woodman",
+          "character"
+        ],
+        [
+          "Lion",
+          "character"
+        ],
+        [
+          "Wizard",
+          "character"
+        ],
+        [
+          "Ozma",
+          "character"
+        ],
+        [
+          "Glinda",
+          "character"
+        ],
+        [
+          "Tip",
+          "character"
+        ],
+        [
+          "Jack Pumpkinhead",
+          "character"
+        ],
+        [
+          "Tik-Tok",
+          "character"
+        ],
+        [
+          "Billina",
+          "character"
+        ],
+        [
+          "Shaggy Man",
+          "character"
+        ],
+        [
+          "Button-Bright",
+          "character"
+        ],
+        [
+          "Patchwork Girl",
+          "character"
+        ],
+        [
+          "Scraps",
+          "character"
+        ],
+        [
+          "Betsy",
+          "character"
+        ],
+        [
+          "Trot",
+          "character"
+        ],
+        [
+          "Cap'n Bill",
+          "character"
+        ],
+        [
+          "Nome King",
+          "character"
+        ],
+        [
+          "Oz",
+          "place"
+        ],
+        [
+          "Emerald City",
+          "place"
+        ],
+        [
+          "Kansas",
+          "place"
+        ],
+        [
+          "Munchkins",
+          "group"
+        ],
+        [
+          "Winkies",
+          "group"
+        ]
+      ]
+    }
+  ]
+}

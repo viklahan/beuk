@@ -1,0 +1,89 @@
+{
+  "seed": 20261027,
+  "sagaPersonas": [
+    {
+      "key": "sim01-dumas",
+      "name": "Sim Writer 01 (Dumas shelf)"
+    },
+    {
+      "key": "sim02-baum",
+      "name": "Sim Writer 02 (Baum shelf)"
+    }
+  ],
+  "labPersona": {
+    "key": "sim09-importlab",
+    "name": "Sim Writer 09 (import lab)",
+    "compare": [
+      1257,
+      43936
+    ]
+  },
+  "rampPersonas": [
+    {
+      "key": "sim03",
+      "name": "Sim Writer 03"
+    },
+    {
+      "key": "sim04",
+      "name": "Sim Writer 04"
+    },
+    {
+      "key": "sim05",
+      "name": "Sim Writer 05"
+    },
+    {
+      "key": "sim06",
+      "name": "Sim Writer 06"
+    },
+    {
+      "key": "sim07",
+      "name": "Sim Writer 07"
+    },
+    {
+      "key": "sim08",
+      "name": "Sim Writer 08"
+    }
+  ],
+  "genres": {
+    "sample": "literary fiction",
+    "four-kitchens": "cookbook",
+    "lunas-beach-treasure-hunt": "picture book",
+    "rain-on-calder-street": "noir",
+    "salt-road": "memoir",
+    "the-book-that-reads-you": "interactive fiction",
+    "the-sunken-vault": "adventure",
+    "the-travel-guide": "travel guide",
+    "the-woolly-school": "picture book"
+  },
+  "recutBibleTop": 6,
+  "maxCommentsPerShare": 8,
+  "monster": {
+    "title": "SIM LOAD TEST — not a book",
+    "targetWords": 10000000,
+    "steps": [
+      250000,
+      1000000,
+      2500000,
+      5000000,
+      10000000
+    ],
+    "printVolumes": [
+      43936,
+      33361
+    ],
+    "limitsMs": {
+      "import": 900000,
+      "op": 300000,
+      "save": 600000,
+      "export": 900000,
+      "pdfx": 1800000
+    },
+    "pdfxSteps": [
+      250000
+    ]
+  },
+  "loadPersona": {
+    "key": "sim10-loadtest",
+    "name": "Sim Writer 10 (load test)"
+  }
+}

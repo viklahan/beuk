@@ -1,0 +1,21 @@
+# Simulation overlay (tools/sim/sim.mjs), used ONLY as
+#   docker compose -p beuk-sim --env-file tools/sim/sim.env \
+#     -f docker-compose.yml -f deploy/docker-compose.tools.yml \
+#     -f tools/sim/docker-compose.sim.yml ...
+# It never touches the local "beuk-saas" stack: its own project name
+# (so its own containers, network and volumes), its own image tags
+# (beuk-sim-*, so beuk-app:latest / beuk-app-tools:latest /
+# beuk-renderer:latest are never rebuilt or retagged), and its own port.
+# The app is the stock image plus the job tools (deploy/Dockerfile.tools,
+# built FROM beuk-sim-base:latest), with the isolated PDF renderer.
+services:
+  app:
+    build:
+      args:
+        BASE_IMAGE: beuk-sim-base:latest
+    image: beuk-sim-app:latest
+  renderer:
+    image: beuk-sim-renderer:latest
+  caddy:
+    ports: !override
+      - "127.0.0.1:8190:8190"
