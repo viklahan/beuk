@@ -148,9 +148,27 @@ async function toyRender(html: string) {
   let page = 0;
   let y = 0;
   const lineAt: Array<{ at: number; page: number; depth: number }> = [];
+  // margin notes (mn-float): no height in the flow, stacked beside it from
+  // where they stand, pushed whole to the next page when they do not fit;
+  // a float ignores a forced break of its own (as Chromium does)
+  let floatPage = -1;
+  let floatY = 0;
   for (const u of model.units) {
+    if (u.float) {
+      const h = /TALL/.test(sec.slice(u.el.start, u.el.closeStart)) ? 50 : 30;
+      let fp = page;
+      let fy = y;
+      if (floatPage > page) { fp = floatPage; fy = floatY; } else if (floatPage === page) fy = Math.max(y, floatY);
+      if (fy + h > cfg.contentH) { fp += 1; fy = 0; }
+      dests.set('__top' + u.el.start, { page: fp, depth: fy });
+      dests.set('__foot' + u.el.start, { page: fp, depth: fy + h });
+      floatPage = fp;
+      floatY = fy + h;
+      continue;
+    }
     const brk = /\bfn-brk\b/.test(u.el.cls);
     if (brk && y > 0) { page += 1; y = 0; }
+    if (/\bfn-flbrk\b/.test(u.el.cls)) continue; // the empty block carrying a float's break
     if (u.atomic) {
       if (y + 30 > cfg.contentH) { page += 1; y = 0; }
       lineAt.push({ at: u.el.start, page, depth: y });
@@ -180,7 +198,7 @@ async function toyRender(html: string) {
   for (const k of [...dests.keys()]) if (k.startsWith('__')) dests.delete(k);
   // the empty pages forced at the section's end, each a page of its own
   const tails = (sec.match(/class="fn-tail/g) || []).length;
-  return toyPdf(page + 1 + tails, cfg.trimH, dests);
+  return toyPdf(Math.max(page, floatPage) + 1 + tails, cfg.trimH, dests);
 }
 
 test('print footnotes: the settling loop cuts the page where a note needs room, and the result holds', async () => {
@@ -339,9 +357,10 @@ test('print footnotes: the notes document sets each note alone at the column wid
 
 /* BEUK:layout — a margin note (floated beside the paragraph after it), a
    sideways page and an upside-down block are single units the pass never
-   breaks, and a margin note keeps with its paragraph; the margin column's
-   wrapper (mn-body) is walked through to the paragraphs inside it. */
-test('layout blocks: margin notes, sideways and upside-down are unbroken units, a note keeps with its paragraph', () => {
+   breaks; a margin note is a float (no line of the page — its foot rides
+   with the paragraph's first line); the margin column's wrapper (mn-body)
+   is walked through to the paragraphs inside it. */
+test('layout blocks: margin notes, sideways and upside-down are unbroken units, a note is a float', () => {
   const sec = '<section class="print-sec chapter-sec" id="ps-1"><div class="mn-body">' +
     '<p>First words here.</p>' +
     '<aside class="mnote mn-ink-1 mn-float"><span class="mn-who">M.</span><p>Not so at all.</p></aside>' +
@@ -351,6 +370,46 @@ test('layout blocks: margin notes, sideways and upside-down are unbroken units, 
     '</div></section>';
   const model = fn.sectionModel(sec);
   const kinds = model.units.map((u: Any) => (u.el.cls.split(' ')[0] || u.tag) + (u.atomic ? ':atomic' : '') + (u.keepNext ? ':keep' : '') + ':' + u.words.length);
-  assert.deepEqual(kinds, ['p:3', 'mnote:atomic:keep:0', 'p:5', 'sideways:atomic:0', 'upside-down:atomic:0']);
+  assert.deepEqual(kinds, ['p:3', 'mnote:atomic:0', 'p:5', 'sideways:atomic:0', 'upside-down:atomic:0']);
+  assert.deepEqual(model.units.map((u: Any) => !!u.float), [false, true, false, false, false]);
   assert.equal(model.units[2].splittable, true);
+});
+
+/* Three tall margin notes beside a footnoted paragraph low on a page: the
+   stack would reach into the page's note area, so the paragraph moves to
+   the next page with its notes — the break carried by an empty block
+   before the first note (a float ignores its own) — and the footnote is
+   placed there, settled in a few passes, never a fallback. */
+test('layout blocks: a stack of tall margin notes on a footnoted paragraph settles, the break before the notes', async () => {
+  const tall = (who: string) => '<aside class="mnote mn-ink-1 mn-float"><span class="mn-who">' + who + '</span><p>TALL note.</p></aside>';
+  const paras = [
+    '<div class="mn-body"><p class="first">' + words(60, 'a') + '</p>',
+    tall('M.'), tall('J.'), tall('K.'),
+    '<p>' + words(6, 'b') + ' ref' + ref('1') + ' ' + words(5, 'c') + '</p>',
+    '<p>' + words(30, 'd') + '</p></div>',
+  ];
+  const html = DOC(SECTION(paras, [['1', 'A short note.']]));
+  let passes = 0;
+  const res = await fn.settleFootnotes({ html, render: (h: string) => { passes += 1; return toyRender(h); }, deadline: Date.now() + 30000 });
+  assert.ok(res && res.results.length === 1, 'the section settles');
+  assert.equal(res.placed, 1);
+  assert.deepEqual(res.fallbacks, []);
+  assert.equal(fn.footnoteHeader({ placed: res.placed, kept: res.kept, passes, fallbacks: res.fallbacks }).includes('fallback'), false);
+  assert.ok(passes < 12, 'settled in a few passes: ' + passes);
+  const r = res.results[0];
+  const first = r.model.units.findIndex((u: Any) => u.float);
+  assert.ok(r.cuts.some((c: Any) => c.type === 'before' && c.unit === first), 'the break goes before the first note: ' + JSON.stringify(r.cuts));
+  assert.ok(/<div class="fn-brk fn-flbrk" aria-hidden="true"><\/div><aside class="mnote mn-ink-1 mn-float"/.test(res.html), 'an empty block carries the break');
+  assert.ok(!/<aside class="[^"]*fn-brk/.test(res.html), 'no break on the float itself');
+  // the reference and all three notes now stand on the page after the opening's
+  const final = await fn.readDests(await toyRender(fn.sectionDoc(html, fn.buildSection(r.model, r.cuts), r.css, fn.passIds(r.model, r.cuts, new Set(), r.refIds))));
+  const refPage = (final.dests as Map<string, Any>).get('s1-fnref1').page;
+  assert.equal(refPage, 1);
+  const pl = r.placement[refPage];
+  for (let k = 0; k < 3; k++) {
+    const u = r.model.units[first + k];
+    const top = (final.dests as Map<string, Any>).get('fnu-' + u.i), foot = (final.dests as Map<string, Any>).get('fnue-' + u.i);
+    assert.equal(top.page, 1, 'note ' + k + ' with its paragraph');
+    assert.ok(foot.depth <= res.cfg.contentH - pl.area + 1, 'note ' + k + ' clear of the page-foot notes: ' + foot.depth + ' vs ' + (res.cfg.contentH - pl.area));
+  }
 });

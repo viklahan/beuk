@@ -2817,14 +2817,17 @@ If you are reading this, turn the book back the right way up.
     4.5% gap, the notes 27%), and each note floats (`float: right`,
     `clear: right`, a negative outer margin) into the room that leaves.
     Nothing overlaps or clips; the chapter opening and the page-foot notes
-    keep the full width. In print the note's markup stands **before** its
+    keep the full width. The body is a `display: flow-root` box, so notes
+    running past the section's last paragraph push the chapter's Notes
+    block below them. In print the note's markup stands **before** its
     paragraph, so it floats level with the paragraph's first line.
   - **Side:** the column is on the right of every page (left in a
     right-to-left book), not the outer edge of each page: an element in
     Chromium's paged flow cannot know whether it lands on a recto or a
     verso, so on versos the notes sit by the gutter. Documented limitation.
   - **Inks:** each name gets an ink in the order the names first appear in
-    the book — blue / solid rule, red / dashed rule, green / dotted rule,
+    the book as it stands (decided by its margin names alone, so the edit
+    history never changes them) — blue / solid rule, red / dashed rule, green / dotted rule,
     violet / double rule, then round again — and its name's underline
     takes the same style, so two readers' notes stay apart in a greyscale
     print. Every ink is at least 7:1 on white; on a dark preview screen
@@ -2832,20 +2835,30 @@ If you are reading this, turn the book back the right way up.
   - **EPUB and a narrow preview:** an indented, ruled `<aside class="mnote">`
     after the paragraph, the name above the note (no rotation, no float —
     reading systems differ too much).
-  - **Page-foot notes:** the renderer's footnote pass (and the view's)
-    treats a note as one unbroken unit that keeps with the paragraph after
-    it, and counts its foot when it makes room for the notes, so a note
-    is never drawn over (`deploy/renderer/footnotes.mjs`, `ATOMIC_CLASS`
-    / `KEEP_NEXT_CLASS`).
+  - **Page-foot notes:** a note is a float, so the renderer's footnote
+    pass (and the view's) takes it as no line of the page: its foot rides
+    with the line it stands beside (its paragraph's first line on that
+    page), and the page's text stops short of the foot notes only where a
+    note would reach them. When one would, the paragraph moves to the next
+    page with its notes — the forced break carried by an empty block before
+    the first note (`fn-flbrk`), since Chromium ignores a float's own break.
+    Notes Chromium pushes on to a later page constrain that page instead
+    (`deploy/renderer/footnotes.mjs`, `FLOAT_CLASS`, `decidePage`). A
+    stack taller than a page runs on beside the next page's text. A
+    paragraph after a scene break, heading, quote or container keeps its
+    unindented opening with a note set before it (`p.mn-ni`).
   - **Word:** a `Margin Note` paragraph (small italic, set in 3", a rule
     on its left) after the paragraph, the name in bold in its ink and a
     line break, then the note.
 - `sideways` — the content on a page of its own, turned 90° clockwise and
   centred in the page area, in print (a page break before and after), the
-  Print Interior View (a column of its own) and a wide preview. The turned
-  box is exactly the page area, so content longer than one page's width
-  is clipped (keep a sideways block to a table, a chart's legend, a short
-  document). EPUB and a narrow preview: set upright in a hairline box.
+  Print Interior View (a column of its own) and a wide preview. Content
+  longer than one turned page is never cut: its blocks are measured in the
+  turned box and set on as many turned pages as they fill
+  (`sidewaysPrintPages`; a wide preview splits the same way in its laid-out
+  flow); a single paragraph taller than a page is set smaller to fit
+  (`zoom`, down to half size), and one too long even then is marked
+  `sw-clip` and named by Print Preflight. EPUB and a narrow preview: set upright in a hairline box.
   Word: `Sideways` paragraphs in a box (Word does not turn them).
 - `upside-down` — the content turned 180° where it stands, kept whole on
   its page, in the preview, the Print Interior View and print. The EPUB
@@ -2864,8 +2877,9 @@ it stands, after its paragraph; turned text reads as it is. Word import
 knows the three styles (no "unrecognised style" note) and brings them in
 as ordinary paragraphs, as round one's Verse / Letter / Text styles.
 Toolbar: Margin Note (a dialog asks whose note it is — the book's last
-margin name offered — and takes its words, the selection when there is
-one, and places the fenced note after the paragraph), Sideways and Upside
+margin name offered — and takes its words, prefilled from the selection
+when there is one, which stays where it is; the fenced note goes after the
+paragraph the selection ends in), Sideways and Upside
 Down (fence the selection), in all 13 languages. Self-checks:
 `chapter.margin`, `chapter.sideways`, `chapter.upsidedown`.
 
