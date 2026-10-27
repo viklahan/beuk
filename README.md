@@ -2776,6 +2776,106 @@ Toolbar: Texts (fences the selection as `::: texts <first speaker>`, or
 from a Word import: an imported conversation or letter arrives as ordinary
 paragraphs. Self-checks: `chapter.texts`, `chapter.letter`.
 
+## Containers: transcripts, logs, inserts and redaction (BEUK:documents)
+
+Documents inside a story — an interview, a chat export, a card found in a
+coat, a page with names blacked out. Three more `CONTAINER_KINDS` and one
+inline mark:
+
+```
+::: transcript
+DET. RUIZ: Where were you on the night of the ninth?
+HALE: At home.
+[The witness looks at his hands.]
+
+RUIZ: Alone?
+:::
+
+::: log dark
+09:14:02 <ana> it's "done" -- really...
+  indented  two  spaces
+:::
+
+::: insert Found in the coat
+Meet me at the pier.
+Ten sharp.
+:::
+
+The agent met ||Harriet Vance|| at the dock.
+```
+
+- `transcript` — one turn per line as `SPEAKER: words`. The speaker is set
+  in bold small capitals (`font-variant: all-small-caps`, `small-caps` for
+  older readers), the words hung under it (`padding-left: 2em;
+  text-indent: -2em`), ragged. A line wholly in `[square brackets]` is a
+  stage direction, set in italic. A blank line starts a new exchange (a
+  breath above it). A line that names no speaker runs on the turn before
+  it with its line break kept, so `10:42 pm, she left.` is never a speaker
+  (an ASCII colon needs a space after it; the full-width colon of Japanese
+  and Chinese needs none). A speaker is up to 40 letters, figures, spaces
+  and `. ' ( ) & -`, and may itself be redacted (`||WITNESS||: …`).
+  Word: one `Transcript` paragraph per turn (hanging indent, the speaker's
+  run bold small caps, a run-on line a real line break, a new exchange
+  with space before it) and `Transcript Direction` (italic).
+- `log` / `log dark` — a log file or chat export in a monospace face
+  (`'Courier New', 'Liberation Mono', 'DejaVu Sans Mono', … monospace`),
+  every line exactly as typed. The beautifier never sees its body
+  (`holdRawContainers` sets it aside before the typographic pass and puts
+  it back after): straight quotes, `--`, `...`, `1-2` and runs of spaces
+  survive, and `*stars*` are characters, not emphasis. Leading spaces and
+  runs of spaces are held as no-break spaces (the last space of a run
+  stays breakable) and the stylesheet sets `white-space: pre-wrap`, so
+  columns line up; nothing is hyphenated (`hyphens: none`, no ligatures);
+  a long line wraps under a hanging indent and breaks anywhere rather than
+  overflow. A plain log has a hairline down its start edge; `dark` is
+  light type on a solid near-black panel (`#f2f2f2` on `#161616`, contrast
+  about 16:1, the self-check requires >= 7:1), inside the text block,
+  closed on each page it runs over (`box-decoration-break: clone`), printed
+  solid (`print-color-adjust: exact`). Word: one `Log` / `Log Dark`
+  paragraph per line, Courier New 9pt, hung; the dark one shaded `161616`
+  with light type.
+- `insert` / `insert <Title>` — a loose insert: a paper card (`#fcfaf3`
+  with its own ink, a hairline and a soft shadow), its title small and
+  letterspaced at its head, every line break kept, never split across a
+  page. The preview, the Print Interior View and the print interior turn
+  it `-1.5deg`; the EPUB does not (some reading systems mis-set a
+  transformed block) — there it is a plain box, square. The rotation lives
+  in the scoped (studio) book CSS and in `buildPrintCss`, never in the
+  unscoped stylesheet the EPUB and the standalone HTML ship. Ruled lines
+  are not drawn. Word: `Insert Title` and `Insert` paragraphs (a shaded,
+  bordered box).
+- `||words||` — a redaction: a solid bar in the ink, the width of the
+  words. Each word is its own `inline-block` bar (`0.5em` a character,
+  `1em` for a wide CJK character, plus the space after it) joined by
+  `<wbr/>`, so the bar reads as one stroke yet a long redaction still
+  wraps; the whole is one `<span class="redact" role="img"
+  aria-label="redacted">`, empty of text. The hidden words are written
+  nowhere: `inlineMd` swaps each redaction for its bar before any other
+  inline pass can read it (links, emphasis, notes), so they are absent
+  from the preview DOM, the print HTML (so the PDF text layer), every EPUB
+  file and the beta-reader share page (`src/shares/render.ts`, a bar of
+  full blocks there because the share page allows no `style`). Word sets a
+  run of U+2588 full blocks, one per character (bold/italic kept); Word
+  import turns a run of full blocks back into `||███||`. The narration
+  script and read-aloud say the book language's word for "redacted"
+  (`tool.redactSpoken`). Works inside transcripts (speaker or words), logs
+  and insert titles. A redaction runs to the next `||` on the same line
+  and must not start or end with a space (so a shell's `a || b` is left
+  alone). The manuscript itself — the editor, the `.md` export, a backup —
+  keeps the words: they are the writer's source.
+
+Word counts: speaker labels and an insert's title are words (they are on
+the page); fences and redactions are not. In a right-to-left book the
+transcript and the log hang from the right (the log's rule moves to the
+right edge) and the insert is set from the right and turned the other
+way (`+1.5deg`). Word import knows all six paragraph styles (no converter
+notes; they come in as ordinary paragraphs, not fenced again). Toolbar:
+Redact (wraps the selection in `||…||`), Transcript, Log, Insert — all 13
+languages. Self-checks: `chapter.transcript`, `chapter.log`,
+`chapter.insert`, `chapter.redaction` (proves none of twelve hidden words
+reaches the chapter HTML, the preview DOM, the EPUB, the print file, Word
+`document.xml`, the narration script or read-aloud).
+
 ## Captions and quote attribution
 
 **Image captions.** An image marker may carry a caption as a quoted title:

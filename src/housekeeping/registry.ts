@@ -1962,6 +1962,31 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The letter is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
   },
+  // BEUK:documents
+  {
+    id: 'chapter.transcript',
+    title: 'Transcript: "::: transcript" sets "SPEAKER: words" turns (speaker in small caps, hanging indent) and italic [stage directions] in preview, print and EPUB, and Transcript / Transcript Direction paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The transcript is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.log',
+    title: 'Log: "::: log" / "::: log dark" sets a monospace log with every line exactly as typed (no beautify, no hyphenation, hanging wraps), dark on a solid panel, in preview, print and EPUB, and Log / Log Dark paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The log is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.insert',
+    title: 'Insert: "::: insert [Title]" sets a paper card turned -1.5deg in preview and print, boxed square in EPUB, and Insert / Insert Title paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The insert is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.redaction',
+    title: 'Redaction: "||words||" sets a solid role=img bar the words\' width, and the words appear in no output (preview, EPUB, print, Word, narration); not counted as words',
+    kind: 'client-only',
+    reason: 'Redaction is applied by the studio renderer and the browser-built EPUB and Word files; the beta-reader share renderer is covered by tests/shares.test.ts.',
+  },
   {
     id: 'chapter.captions',
     title: 'Image captions: a figcaption under the picture in preview, print and EPUB, a Caption paragraph in Word, written from the image dialog, and read from Word Caption-styled paragraphs',

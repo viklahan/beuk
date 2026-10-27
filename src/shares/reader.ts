@@ -62,6 +62,7 @@ const READER_CSS = `
 .rd-page p.ch-num,.rd-page p.ch-sub,.rd-page .endnote,.rd-page .endnotes-h{text-indent:0}
 .rd-page h2+p,.rd-page .ch-sub+p,.rd-page .scene-break+p,.rd-page h3+p,.rd-page h4+p{text-indent:0}
 .rd-page .scene-break{text-align:center;margin:1em 0;color:var(--ink-soft)}
+.rd-page .redacted{background:currentColor;letter-spacing:0;user-select:none}
 .rd-page figure{margin:1.2em 0;text-align:center}
 .rd-page img{max-width:100%;height:auto}
 .rd-page figcaption{font-size:.95rem;color:var(--ink-soft);font-style:italic}

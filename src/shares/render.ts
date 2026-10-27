@@ -82,8 +82,27 @@ interface NoteCtx {
   seen: Set<string>;
 }
 
+/**
+ * A redaction ("||words||", the studio's REDACT_RE): the words never
+ * reach the reading copy. Each is set aside before anything reads the
+ * text and comes back as a bar of full blocks (U+2588), one per
+ * character, the spaces between words kept — the share page allows no
+ * style attribute, so the bar's width is in its glyphs.
+ */
+const REDACT_RE = /\|\|(?=[^|\s])([^|\n]*?[^|\s])\|\|/g;
+const REDACT_MARK = /(\d+)/g;
+
+export function redactBlocks(words: string): string {
+  return words.trim().split(/\s+/).filter(Boolean).map((w) => '█'.repeat([...w].length)).join(' ');
+}
+
 function inline(text: string, notes: NoteCtx): string {
-  let s = esc(text);
+  const bars: string[] = [];
+  let s = String(text ?? '').replace(REDACT_RE, (_m, words: string) => {
+    bars.push(`<span class="redacted">${redactBlocks(words)}</span>`);
+    return `${bars.length - 1}`;
+  });
+  s = esc(s);
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
   s = s.replace(/\[\^(\d{1,3})\]|\[(\d{1,3})\]/g, (_m, a: string, b: string) => {
@@ -97,6 +116,7 @@ function inline(text: string, notes: NoteCtx): string {
   });
   // Shelf references ([label](note:slug)) are styled text, never links.
   s = s.replace(/\[([^\]]+)\]\(note:([a-z0-9-]+)\)/g, '<span class="note-link">$1</span>');
+  if (bars.length) s = s.replace(REDACT_MARK, (_m, i: string) => bars[Number(i)] ?? '');
   return s;
 }
 

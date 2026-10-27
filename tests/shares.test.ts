@@ -348,6 +348,28 @@ test('render unit: paragraph indexes follow the studio block split', () => {
   assert.deepEqual(Object.keys(images), ['img-chart']);
 });
 
+test('render unit: a redaction ("||words||") never reaches the reading copy — a bar of full blocks instead', () => {
+  const doc = {
+    meta: { title: 'Exhibit', author: 'A. Writer', language: 'en' },
+    sections: [
+      {
+        id: 'sec-r',
+        kind: 'body',
+        type: 'chapter',
+        number: '1',
+        title: 'Filed',
+        content: 'The agent met ||Harriet Vance|| at the **||Corsair||** dock.\n\n> She said ||nothing useful||.\n\n[^1]: Source: ||Bluebird||.\n\nSee note.[^1]',
+      },
+    ],
+  };
+  const { snapshot } = renderSnapshot(doc, 'x');
+  const html = snapshot.sections.map((s) => s.html).join('');
+  for (const w of ['Harriet', 'Vance', 'Corsair', 'nothing useful', 'Bluebird', '||']) assert.equal(html.includes(w), false, `"${w}" leaked`);
+  assert.match(html, /met <span class="redacted">█{7} █{5}<\/span> at the <strong><span class="redacted">█{7}<\/span><\/strong> dock/);
+  assert.match(html, /<span class="redacted">█{7} █{6}<\/span>\./);
+  assert.match(html, /Source: <span class="redacted">█{8}<\/span>\./);
+});
+
 test('comment rate limit: per IP per share, then per share overall', async () => {
   const mid = await newManuscript(alice, studioDoc);
   const { token } = await newShare(alice, mid);

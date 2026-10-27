@@ -2332,6 +2332,7 @@
                   <button class="tool-btn" data-collapse="1" data-insert="bold" title="Bold (Ctrl/Cmd+B)" data-i18n-title="tool.boldTitle"><i data-lucide="bold"></i><span class="tl" data-i18n="tool.bold">Bold</span></button>
                   <button class="tool-btn" data-collapse="1" data-insert="italic" title="Italic (Ctrl/Cmd+I)" data-i18n-title="tool.italicTitle"><i data-lucide="italic"></i><span class="tl" data-i18n="tool.italic">Italic</span></button>
                   <button class="tool-btn" data-collapse="1" data-insert="link" title="Link — make the selected words a web or store link" data-i18n-title="tool.linkTitle"><i data-lucide="link"></i><span class="tl" data-i18n="tool.link">Link</span></button>
+                  <button class="tool-btn" data-collapse="1" data-insert="redact" title="Redact — black out the selected words: a solid bar the width of the words, the words themselves written nowhere" data-i18n-title="tool.redactTitle"><i data-lucide="eye-off"></i><span class="tl" data-i18n="tool.redact">Redact</span></button>
                 </div>
                 <span class="tool-break" aria-hidden="true"></span>
                 <div class="tool-group" data-tg="structure"><span class="tool-sep" aria-hidden="true"></span>
@@ -2344,6 +2345,9 @@
                   <button class="tool-btn" data-collapse="2" data-insert="right" title="Right — set the selected paragraphs flush right (a sign-off, a date line)" data-i18n-title="tool.rightTitle"><i data-lucide="align-right"></i><span class="tl" data-i18n="tool.right">Right</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="texts" title="Texts — set the selected lines as a text-message conversation, one &quot;Name: message&quot; per line" data-i18n-title="tool.textsTitle"><i data-lucide="messages-square"></i><span class="tl" data-i18n="tool.texts">Texts</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="letter" title="Letter — set the selected paragraphs as a written letter or note, line breaks kept" data-i18n-title="tool.letterTitle"><i data-lucide="mail-open"></i><span class="tl" data-i18n="tool.letter">Letter</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="transcript" title="Transcript — set the selected lines as an interview transcript, one &quot;SPEAKER: words&quot; per line, [directions] in italic" data-i18n-title="tool.transcriptTitle"><i data-lucide="mic-vocal"></i><span class="tl" data-i18n="tool.transcript">Transcript</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="log" title="Log — set the selected lines as a log or chat file, monospace, every line exactly as typed" data-i18n-title="tool.logTitle"><i data-lucide="square-terminal"></i><span class="tl" data-i18n="tool.log">Log</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="insert" title="Insert — set the selected lines as a loose paper card slipped into the book, line breaks kept" data-i18n-title="tool.insertTitle"><i data-lucide="sticky-note"></i><span class="tl" data-i18n="tool.insert">Insert</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="scenebreak" title="Scene break — becomes an ornament in the book" data-i18n-title="tool.sceneBreakTitle"><i data-lucide="sparkle"></i><span class="tl" data-i18n="tool.sceneBreak">Scene Break</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="emdash" title="Em dash" data-i18n-title="tool.emDashTitle"><i data-lucide="minus"></i><span class="tl" data-i18n="tool.emDash">Em Dash —</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i><span class="tl" data-i18n="tool.footnote">Footnote</span></button>
@@ -3771,6 +3775,7 @@
         "tool.emDashTitle": "Em dash", "tool.footnoteTitle": "Footnote — typesets as a linked endnote",
         "tool.verse": "Verse", "tool.verseTitle": "Verse — keep every line break of the selected lines (a poem, a song)", "tool.center": "Centre", "tool.centerTitle": "Centre — set the selected paragraphs centred (a sign, a note)", "tool.right": "Right", "tool.rightTitle": "Right — set the selected paragraphs flush right (a sign-off, a date line)",
         "tool.texts": "Texts", "tool.textsTitle": "Texts — set the selected lines as a text-message conversation, one \"Name: message\" per line", "tool.letter": "Letter", "tool.letterTitle": "Letter — set the selected paragraphs as a written letter or note, line breaks kept",
+        "tool.transcript": "Transcript", "tool.transcriptTitle": "Transcript — set the selected lines as an interview transcript, one \"SPEAKER: words\" per line, [directions] in italic", "tool.log": "Log", "tool.logTitle": "Log — set the selected lines as a log or chat file, monospace, every line exactly as typed", "tool.insert": "Insert", "tool.insertTitle": "Insert — set the selected lines as a loose paper card slipped into the book, line breaks kept", "tool.redact": "Redact", "tool.redactTitle": "Redact — black out the selected words: a solid bar the width of the words, the words themselves written nowhere", "tool.redactSpoken": "redacted",
         "tool.insertImageTitle": "Insert a picture from the book's image library", "tool.autoFormatTitle": "Polish the text — smart quotes, em-dashes, ellipses",
         "auto.cover": "The <b>cover page</b> shows the cover image uploaded in Project Settings. In the EPUB it ships as the packaged cover image with its own cover page and a cover landmark in the navigation document.",
         "auto.halftitle": "The <b>half title</b> is generated automatically from your book title in Project Settings.",
@@ -4180,6 +4185,7 @@
         "tool.emDashTitle": "Raya", "tool.footnoteTitle": "Nota al pie — se compone como nota final enlazada",
         "tool.verse": "Verso", "tool.verseTitle": "Verso — conserva cada salto de línea de las líneas elegidas (un poema, una canción)", "tool.center": "Centrar", "tool.centerTitle": "Centrar — centra los párrafos elegidos (un letrero, una nota)", "tool.right": "Derecha", "tool.rightTitle": "Derecha — alinea a la derecha los párrafos elegidos (una despedida, una fecha)",
         "tool.texts": "Mensajes", "tool.textsTitle": "Mensajes — muestra las líneas elegidas como una conversación de mensajes, un «Nombre: mensaje» por línea", "tool.letter": "Carta", "tool.letterTitle": "Carta — muestra los párrafos elegidos como una carta o nota escrita, con sus saltos de línea",
+        "tool.transcript": "Transcripción", "tool.transcriptTitle": "Transcripción — muestra las líneas elegidas como la transcripción de una entrevista, un «HABLANTE: palabras» por línea, las [acotaciones] en cursiva", "tool.log": "Registro", "tool.logTitle": "Registro — muestra las líneas elegidas como un archivo de registro o de chat, en monoespaciada, cada línea tal como se escribió", "tool.insert": "Inserto", "tool.insertTitle": "Inserto — muestra las líneas elegidas como una tarjeta de papel suelta dentro del libro, con sus saltos de línea", "tool.redact": "Tachar", "tool.redactTitle": "Tachar — cubre las palabras elegidas con una barra negra de su ancho; las palabras no se escriben en ninguna parte", "tool.redactSpoken": "censurado",
         "tool.insertImageTitle": "Insertar una imagen de la biblioteca del libro", "tool.autoFormatTitle": "Pule el texto — comillas tipográficas, rayas y puntos suspensivos",
         "auto.cover": "La <b>página de portada</b> muestra la imagen de portada subida en Ajustes del proyecto. En el EPUB viaja como la imagen de portada del paquete, con su propia página y una marca de portada en el documento de navegación.",
         "auto.halftitle": "La <b>anteportada</b> se genera automáticamente a partir del título del libro en Ajustes del proyecto.",
@@ -4381,6 +4387,7 @@
         "tool.emDashTitle": "Tiret cadratin", "tool.footnoteTitle": "Note de bas de page — composée comme note de fin liée",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — garde chaque retour à la ligne des lignes choisies (un poème, une chanson)", "tool.center": "Centrer", "tool.centerTitle": "Centrer — centre les paragraphes choisis (une enseigne, un mot)", "tool.right": "Droite", "tool.rightTitle": "Droite — aligne à droite les paragraphes choisis (une signature, une date)",
         "tool.texts": "Textos", "tool.textsTitle": "Textos — met les lignes choisies en conversation de SMS, un « Nom : message » par ligne", "tool.letter": "Lettre", "tool.letterTitle": "Lettre — met les paragraphes choisis en lettre ou mot écrit, retours à la ligne gardés",
+        "tool.transcript": "Transcription", "tool.transcriptTitle": "Transcription — met les lignes choisies en transcription d’entretien, un « LOCUTEUR : paroles » par ligne, les [didascalies] en italique", "tool.log": "Journal", "tool.logTitle": "Journal — met les lignes choisies en fichier journal ou de discussion, en chasse fixe, chaque ligne telle quelle", "tool.insert": "Encart", "tool.insertTitle": "Encart — met les lignes choisies en carte de papier glissée dans le livre, retours à la ligne gardés", "tool.redact": "Caviarder", "tool.redactTitle": "Caviarder — couvre les mots choisis d’une barre noire de leur largeur ; les mots ne sont écrits nulle part", "tool.redactSpoken": "caviardé",
         "tool.insertImageTitle": "Insérer une image de la bibliothèque du livre", "tool.autoFormatTitle": "Polit le texte — guillemets typographiques, tirets cadratins, points de suspension",
         "auto.cover": "La <b>page de couverture</b> affiche l'image de couverture téléversée dans les Réglages du projet. Dans l'EPUB, elle voyage comme image de couverture du paquet, avec sa propre page et un repère de couverture dans le document de navigation.",
         "auto.halftitle": "Le <b>faux-titre</b> est généré automatiquement à partir du titre du livre dans les Réglages du projet.",
@@ -4582,6 +4589,7 @@
         "tool.emDashTitle": "Gedankenstrich", "tool.footnoteTitle": "Fußnote — wird als verlinkte Endnote gesetzt",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — behält jeden Zeilenumbruch der gewählten Zeilen (ein Gedicht, ein Lied)", "tool.center": "Zentriert", "tool.centerTitle": "Zentriert — setzt die gewählten Absätze mittig (ein Schild, eine Notiz)", "tool.right": "Rechts", "tool.rightTitle": "Rechts — setzt die gewählten Absätze rechtsbündig (ein Gruß, eine Datumszeile)",
         "tool.texts": "Nachrichten", "tool.textsTitle": "Nachrichten — setzt die gewählten Zeilen als Chatverlauf, je Zeile „Name: Nachricht“", "tool.letter": "Brief", "tool.letterTitle": "Brief — setzt die gewählten Absätze als geschriebenen Brief oder Zettel, Zeilenumbrüche bleiben",
+        "tool.transcript": "Protokoll", "tool.transcriptTitle": "Protokoll — setzt die gewählten Zeilen als Interview-Abschrift, je Zeile „SPRECHER: Worte“, [Regieanweisungen] kursiv", "tool.log": "Log", "tool.logTitle": "Log — setzt die gewählten Zeilen als Log- oder Chatdatei, in Festbreitenschrift, jede Zeile genau wie getippt", "tool.insert": "Einleger", "tool.insertTitle": "Einleger — setzt die gewählten Zeilen als lose Papierkarte im Buch, Zeilenumbrüche bleiben", "tool.redact": "Schwärzen", "tool.redactTitle": "Schwärzen — deckt die gewählten Wörter mit einem schwarzen Balken ihrer Breite ab; die Wörter selbst werden nirgends geschrieben", "tool.redactSpoken": "geschwärzt",
         "tool.insertImageTitle": "Ein Bild aus der Bildbibliothek des Buches einfügen", "tool.autoFormatTitle": "Den Text polieren — typografische Anführungszeichen, Gedankenstriche, Auslassungspunkte",
         "auto.cover": "Die <b>Titelseite</b> zeigt das in den Projekteinstellungen hochgeladene Coverbild. Im EPUB reist es als verpacktes Coverbild mit eigener Seite und einem Cover-Lesezeichen im Navigationsdokument.",
         "auto.halftitle": "Der <b>Schmutztitel</b> wird automatisch aus Ihrem Buchtitel in den Projekteinstellungen erzeugt.",
@@ -4783,6 +4791,7 @@
         "tool.emDashTitle": "Trattino lungo", "tool.footnoteTitle": "Nota a piè di pagina — composta come nota finale collegata",
         "tool.verse": "Versi", "tool.verseTitle": "Versi — conserva ogni a capo delle righe scelte (una poesia, una canzone)", "tool.center": "Centra", "tool.centerTitle": "Centra — centra i paragrafi scelti (un cartello, un biglietto)", "tool.right": "Destra", "tool.rightTitle": "Destra — allinea a destra i paragrafi scelti (un congedo, una data)",
         "tool.texts": "Messaggi", "tool.textsTitle": "Messaggi — imposta le righe scelte come una conversazione di messaggi, un «Nome: messaggio» per riga", "tool.letter": "Lettera", "tool.letterTitle": "Lettera — imposta i paragrafi scelti come una lettera o un biglietto scritto, a capo conservati",
+        "tool.transcript": "Trascrizione", "tool.transcriptTitle": "Trascrizione — imposta le righe scelte come la trascrizione di un’intervista, un «PARLANTE: parole» per riga, le [didascalie] in corsivo", "tool.log": "Log", "tool.logTitle": "Log — imposta le righe scelte come un file di log o di chat, a spaziatura fissa, ogni riga così come è scritta", "tool.insert": "Inserto", "tool.insertTitle": "Inserto — imposta le righe scelte come un cartoncino sciolto infilato nel libro, a capo conservati", "tool.redact": "Oscura", "tool.redactTitle": "Oscura — copre le parole scelte con una barra nera della loro larghezza; le parole non sono scritte da nessuna parte", "tool.redactSpoken": "omissis",
         "tool.insertImageTitle": "Inserisci un'immagine dalla libreria immagini del libro", "tool.autoFormatTitle": "Rifinisce il testo — virgolette tipografiche, trattini lunghi, puntini di sospensione",
         "auto.cover": "La <b>pagina di copertina</b> mostra l'immagine di copertina caricata nelle Impostazioni del progetto. Nell'EPUB viaggia come immagine di copertina del pacchetto, con una sua pagina e un segnalibro di copertina nel documento di navigazione.",
         "auto.halftitle": "L'<b>occhietto</b> è generato automaticamente dal titolo del libro nelle Impostazioni del progetto.",
@@ -4984,6 +4993,7 @@
         "tool.emDashTitle": "Travessão", "tool.footnoteTitle": "Nota de rodapé — composta como nota final ligada",
         "tool.verse": "Verso", "tool.verseTitle": "Verso — mantém cada quebra de linha das linhas escolhidas (um poema, uma canção)", "tool.center": "Centrar", "tool.centerTitle": "Centrar — centra os parágrafos escolhidos (uma placa, um bilhete)", "tool.right": "Direita", "tool.rightTitle": "Direita — alinha à direita os parágrafos escolhidos (uma despedida, uma data)",
         "tool.texts": "Mensagens", "tool.textsTitle": "Mensagens — mostra as linhas escolhidas como uma conversa de mensagens, um «Nome: mensagem» por linha", "tool.letter": "Carta", "tool.letterTitle": "Carta — mostra os parágrafos escolhidos como uma carta ou bilhete escrito, com as quebras de linha",
+        "tool.transcript": "Transcrição", "tool.transcriptTitle": "Transcrição — mostra as linhas escolhidas como a transcrição de uma entrevista, um «ORADOR: palavras» por linha, as [rubricas] em itálico", "tool.log": "Registo", "tool.logTitle": "Registo — mostra as linhas escolhidas como um ficheiro de registo ou de conversa, em monoespaçada, cada linha tal como foi escrita", "tool.insert": "Encarte", "tool.insertTitle": "Encarte — mostra as linhas escolhidas como um cartão de papel solto dentro do livro, com as quebras de linha", "tool.redact": "Rasurar", "tool.redactTitle": "Rasurar — cobre as palavras escolhidas com uma barra preta da sua largura; as palavras não ficam escritas em lado nenhum", "tool.redactSpoken": "rasurado",
         "tool.insertImageTitle": "Inserir uma imagem da biblioteca de imagens do livro", "tool.autoFormatTitle": "Aperfeiçoa o texto — aspas tipográficas, travessões e reticências",
         "auto.cover": "A <b>página de capa</b> mostra a imagem de capa carregada nas Definições do projeto. No EPUB, viaja como a imagem de capa do pacote, com a sua própria página e um marco de capa no documento de navegação.",
         "auto.halftitle": "A <b>anterrosto</b> é gerada automaticamente a partir do título do livro nas Definições do projeto.",
@@ -5185,6 +5195,7 @@
         "tool.emDashTitle": "Gedachtestreepje", "tool.footnoteTitle": "Voetnoot — wordt opgemaakt als gekoppelde eindnoot",
         "tool.verse": "Vers", "tool.verseTitle": "Vers — behoudt elke regelafbreking van de gekozen regels (een gedicht, een lied)", "tool.center": "Centreren", "tool.centerTitle": "Centreren — zet de gekozen alinea's gecentreerd (een bord, een briefje)", "tool.right": "Rechts", "tool.rightTitle": "Rechts — lijnt de gekozen alinea's rechts uit (een groet, een datumregel)",
         "tool.texts": "Berichten", "tool.textsTitle": "Berichten — zet de gekozen regels als een berichtengesprek, één „Naam: bericht” per regel", "tool.letter": "Brief", "tool.letterTitle": "Brief — zet de gekozen alinea's als een geschreven brief of briefje, regelafbrekingen blijven",
+        "tool.transcript": "Transcript", "tool.transcriptTitle": "Transcript — zet de gekozen regels als een interviewtranscript, één „SPREKER: woorden” per regel, [regieaanwijzingen] cursief", "tool.log": "Log", "tool.logTitle": "Log — zet de gekozen regels als een log- of chatbestand, in vaste breedte, elke regel precies zoals getypt", "tool.insert": "Inlegvel", "tool.insertTitle": "Inlegvel — zet de gekozen regels als een los papieren kaartje in het boek, regelafbrekingen blijven", "tool.redact": "Zwartlakken", "tool.redactTitle": "Zwartlakken — bedekt de gekozen woorden met een zwarte balk van hun breedte; de woorden zelf staan nergens", "tool.redactSpoken": "zwartgelakt",
         "tool.insertImageTitle": "Voeg een afbeelding uit de beeldbibliotheek van het boek in", "tool.autoFormatTitle": "Poets de tekst op — typografische aanhalingstekens, gedachtestreepjes, beletseltekens",
         "auto.cover": "De <b>omslagpagina</b> toont de omslagafbeelding die is geüpload bij Projectinstellingen. In de EPUB reist hij mee als de verpakte omslagafbeelding, met een eigen pagina en een omslagmarkering in het navigatiedocument.",
         "auto.halftitle": "De <b>Franse titel</b> wordt automatisch gemaakt van uw boektitel bij Projectinstellingen.",
@@ -5386,6 +5397,7 @@
         "tool.emDashTitle": "Myślnik", "tool.footnoteTitle": "Przypis — składany jako przypis końcowy z odnośnikiem",
         "tool.verse": "Wiersz", "tool.verseTitle": "Wiersz — zachowuje każdy podział wiersza wybranych linii (wiersz, piosenka)", "tool.center": "Wyśrodkuj", "tool.centerTitle": "Wyśrodkuj — wyśrodkowuje wybrane akapity (szyld, notatka)", "tool.right": "Do prawej", "tool.rightTitle": "Do prawej — wyrównuje wybrane akapity do prawej (pożegnanie, data)",
         "tool.texts": "Wiadomości", "tool.textsTitle": "Wiadomości — składa wybrane linie jako rozmowę SMS, jedno „Imię: wiadomość” na linię", "tool.letter": "List", "tool.letterTitle": "List — składa wybrane akapity jako napisany list lub liścik, z zachowaniem podziałów wierszy",
+        "tool.transcript": "Transkrypcja", "tool.transcriptTitle": "Transkrypcja — składa wybrane linie jako zapis wywiadu, jedno „MÓWCA: słowa” na linię, [didaskalia] kursywą", "tool.log": "Log", "tool.logTitle": "Log — składa wybrane linie jako plik logu lub czatu, czcionką o stałej szerokości, każda linia dokładnie tak, jak wpisana", "tool.insert": "Wkładka", "tool.insertTitle": "Wkładka — składa wybrane linie jako luźną papierową kartkę włożoną do książki, z zachowaniem podziałów wierszy", "tool.redact": "Zaczernij", "tool.redactTitle": "Zaczernij — zakrywa wybrane słowa czarnym paskiem ich szerokości; same słowa nie są nigdzie zapisane", "tool.redactSpoken": "utajnione",
         "tool.insertImageTitle": "Wstaw obraz z biblioteki obrazów książki", "tool.autoFormatTitle": "Wygładza tekst — cudzysłowy typograficzne, myślniki i wielokropki",
         "auto.cover": "<b>Strona tytułowa okładki</b> pokazuje obraz okładki przesłany w Ustawieniach projektu. W EPUB-ie jedzie jako zapakowany obraz okładki, z własną stroną i znacznikiem okładki w dokumencie nawigacji.",
         "auto.halftitle": "<b>Przedtytuł</b> jest generowany automatycznie z tytułu książki w Ustawieniach projektu.",
@@ -5587,6 +5599,7 @@
         "tool.emDashTitle": "Тире", "tool.footnoteTitle": "Сноска — набирается как связанная концевая сноска",
         "tool.verse": "Стихи", "tool.verseTitle": "Стихи — сохраняет каждый перенос строки в выбранных строках (стихотворение, песня)", "tool.center": "По центру", "tool.centerTitle": "По центру — выравнивает выбранные абзацы по центру (вывеска, записка)", "tool.right": "Вправо", "tool.rightTitle": "Вправо — выравнивает выбранные абзацы по правому краю (подпись, дата)",
         "tool.texts": "Сообщения", "tool.textsTitle": "Сообщения — оформляет выбранные строки как переписку, по одному «Имя: сообщение» в строке", "tool.letter": "Письмо", "tool.letterTitle": "Письмо — оформляет выбранные абзацы как письмо или записку, с сохранением переносов строк",
+        "tool.transcript": "Стенограмма", "tool.transcriptTitle": "Стенограмма — оформляет выбранные строки как запись интервью, по одному «ГОВОРЯЩИЙ: слова» в строке, [ремарки] курсивом", "tool.log": "Лог", "tool.logTitle": "Лог — оформляет выбранные строки как файл журнала или чата, моноширинным шрифтом, каждая строка ровно как набрана", "tool.insert": "Вкладыш", "tool.insertTitle": "Вкладыш — оформляет выбранные строки как вложенную в книгу бумажную карточку, с сохранением переносов строк", "tool.redact": "Скрыть", "tool.redactTitle": "Скрыть — закрывает выбранные слова чёрной полосой их ширины; сами слова нигде не записываются", "tool.redactSpoken": "скрыто",
         "tool.insertImageTitle": "Вставить изображение из библиотеки изображений книги", "tool.autoFormatTitle": "Причёсывает текст — типографские кавычки, тире и многоточия",
         "auto.cover": "<b>Страница обложки</b> показывает изображение обложки, загруженное в Настройках проекта. В EPUB оно едет как упакованное изображение обложки, со своей страницей и меткой обложки в навигационном документе.",
         "auto.halftitle": "<b>Шмуцтитул</b> создаётся автоматически из названия книги в Настройках проекта.",
@@ -5788,6 +5801,7 @@
         "tool.emDashTitle": "Uzun tire", "tool.footnoteTitle": "Dipnot — bağlantılı bir sonnot olarak dizilir",
         "tool.verse": "Şiir", "tool.verseTitle": "Şiir — seçili satırların her satır sonunu korur (bir şiir, bir şarkı)", "tool.center": "Ortala", "tool.centerTitle": "Ortala — seçili paragrafları ortalar (bir tabela, bir not)", "tool.right": "Sağa", "tool.rightTitle": "Sağa — seçili paragrafları sağa hizalar (bir veda, bir tarih satırı)",
         "tool.texts": "Mesajlar", "tool.textsTitle": "Mesajlar — seçili satırları bir mesajlaşma olarak dizer, her satırda bir \"Ad: mesaj\"", "tool.letter": "Mektup", "tool.letterTitle": "Mektup — seçili paragrafları satır sonlarını koruyarak yazılı bir mektup ya da not olarak dizer",
+        "tool.transcript": "Döküm", "tool.transcriptTitle": "Döküm — seçili satırları bir röportaj dökümü olarak dizer, her satırda bir \"KONUŞAN: sözler\", [sahne notları] italik", "tool.log": "Kayıt", "tool.logTitle": "Kayıt — seçili satırları sabit genişlikli yazıyla, her satırı yazıldığı gibi bir kayıt ya da sohbet dosyası olarak dizer", "tool.insert": "Ek kart", "tool.insertTitle": "Ek kart — seçili satırları satır sonlarını koruyarak kitabın arasına konmuş gevşek bir kâğıt kart olarak dizer", "tool.redact": "Karart", "tool.redactTitle": "Karart — seçili sözcükleri genişlikleri kadar siyah bir şeritle örter; sözcüklerin kendisi hiçbir yere yazılmaz", "tool.redactSpoken": "karartıldı",
         "tool.insertImageTitle": "Kitabın resim kitaplığından bir resim ekler", "tool.autoFormatTitle": "Metni parlatır — akıllı tırnaklar, uzun tireler, üç noktalar",
         "auto.cover": "<b>Kapak sayfası</b>, Proje ayarlarında yüklenen kapak resmini gösterir. EPUB'da paketin kapak resmi olarak, kendi sayfası ve gezinme belgesinde bir kapak işaretiyle yolculuk eder.",
         "auto.halftitle": "<b>Yarım başlık sayfası</b>, Proje ayarlarındaki kitap başlığınızdan otomatik olarak oluşturulur.",
@@ -5989,6 +6003,7 @@
         "tool.emDashTitle": "شرطة طويلة", "tool.footnoteTitle": "حاشية — تُنضَّد كحاشية ختامية مرتبطة",
         "tool.verse": "شعر", "tool.verseTitle": "شعر — يحافظ على كل فاصل أسطر في الأسطر المحددة (قصيدة، أغنية)", "tool.center": "توسيط", "tool.centerTitle": "توسيط — يوسّط الفقرات المحددة (لافتة، ملاحظة)", "tool.right": "يمين", "tool.rightTitle": "يمين — يحاذي الفقرات المحددة إلى اليمين (توقيع ختامي، سطر تاريخ)",
         "tool.texts": "رسائل", "tool.textsTitle": "رسائل — يجعل الأسطر المحددة محادثة رسائل نصية، «الاسم: الرسالة» في كل سطر", "tool.letter": "خطاب", "tool.letterTitle": "خطاب — يجعل الفقرات المحددة خطابًا أو ملاحظة مكتوبة مع الحفاظ على فواصل الأسطر",
+        "tool.transcript": "محضر", "tool.transcriptTitle": "محضر — يجعل الأسطر المحددة محضر مقابلة، «المتحدث: الكلام» في كل سطر، و[الإرشادات] بخط مائل", "tool.log": "سجل", "tool.logTitle": "سجل — يجعل الأسطر المحددة ملف سجل أو محادثة بخط ثابت العرض، كل سطر كما كُتب تمامًا", "tool.insert": "بطاقة", "tool.insertTitle": "بطاقة — يجعل الأسطر المحددة بطاقة ورقية مدسوسة في الكتاب مع الحفاظ على فواصل الأسطر", "tool.redact": "حجب", "tool.redactTitle": "حجب — يغطي الكلمات المحددة بشريط أسود بعرضها، ولا تُكتب الكلمات نفسها في أي مكان", "tool.redactSpoken": "محجوب",
         "tool.insertImageTitle": "إدراج صورة من مكتبة صور الكتاب", "tool.autoFormatTitle": "يصقل النص — علامات اقتباس ذكية وشرطات طويلة ونقاط حذف",
         "auto.cover": "تُظهر <b>صفحة الغلاف</b> صورة الغلاف المرفوعة في إعدادات المشروع. وفي EPUB تسافر كصورة غلاف الحزمة، بصفحتها الخاصة وعلامة غلاف في مستند التنقل.",
         "auto.halftitle": "يُولَّد <b>العنوان المختصر</b> تلقائيًا من عنوان كتابك في إعدادات المشروع.",
@@ -6190,6 +6205,7 @@
         "tool.emDashTitle": "ダッシュ", "tool.footnoteTitle": "脚注 — リンク付きの巻末注として組まれます",
         "tool.verse": "韻文", "tool.verseTitle": "韻文 — 選んだ行の改行をすべて保ちます（詩、歌）", "tool.center": "中央", "tool.centerTitle": "中央 — 選んだ段落を中央揃えにします（看板、メモ）", "tool.right": "右寄せ", "tool.rightTitle": "右寄せ — 選んだ段落を右揃えにします（結びの言葉、日付）",
         "tool.texts": "メッセージ", "tool.textsTitle": "メッセージ — 選んだ行をメッセージのやり取りとして組みます（1行に「名前: 本文」）", "tool.letter": "手紙", "tool.letterTitle": "手紙 — 選んだ段落を手紙やメモとして組みます（改行は保ちます）",
+        "tool.transcript": "記録", "tool.transcriptTitle": "記録 — 選んだ行をインタビューの記録として組みます（1行に「話者: 発言」、[ト書き]は斜体）", "tool.log": "ログ", "tool.logTitle": "ログ — 選んだ行をログやチャットのファイルとして等幅で組みます（各行は入力どおり）", "tool.insert": "挟み込み", "tool.insertTitle": "挟み込み — 選んだ行を本に挟んだ紙のカードとして組みます（改行は保ちます）", "tool.redact": "黒塗り", "tool.redactTitle": "黒塗り — 選んだ語をその幅の黒い帯で覆います（語そのものはどこにも書かれません）", "tool.redactSpoken": "黒塗り",
         "tool.insertImageTitle": "本の画像ライブラリから画像を挿入", "tool.autoFormatTitle": "テキストを整えます — スマートクォート、ダッシュ、省略符号",
         "auto.cover": "<b>表紙ページ</b>には、プロジェクト設定でアップロードした表紙画像が表示されます。EPUBではパッケージの表紙画像として、専用ページとナビゲーション文書の表紙ランドマーク付きで収録されます。",
         "auto.halftitle": "<b>扉（半タイトル）</b>は、プロジェクト設定の書名から自動生成されます。",
@@ -6391,6 +6407,7 @@
         "tool.emDashTitle": "破折号", "tool.footnoteTitle": "脚注 — 排版为带链接的尾注",
         "tool.verse": "诗行", "tool.verseTitle": "诗行 — 保留所选各行的每个换行（诗歌、歌词）", "tool.center": "居中", "tool.centerTitle": "居中 — 将所选段落居中排版（招牌、便条）", "tool.right": "右对齐", "tool.rightTitle": "右对齐 — 将所选段落右对齐（落款、日期行）",
         "tool.texts": "短信", "tool.textsTitle": "短信 — 将所选各行排成短信对话，每行一条“姓名: 消息”", "tool.letter": "书信", "tool.letterTitle": "书信 — 将所选段落排成书信或便条，保留换行",
+        "tool.transcript": "笔录", "tool.transcriptTitle": "笔录 — 将所选各行排成访谈笔录，每行一条“发言人: 话语”，[舞台说明]用斜体", "tool.log": "日志", "tool.logTitle": "日志 — 将所选各行以等宽字体排成日志或聊天文件，每行完全照录", "tool.insert": "夹页", "tool.insertTitle": "夹页 — 将所选各行排成夹在书中的一张纸卡，保留换行", "tool.redact": "涂黑", "tool.redactTitle": "涂黑 — 用与所选文字等宽的黑条遮住它们，文字本身不写入任何地方", "tool.redactSpoken": "已涂黑",
         "tool.insertImageTitle": "从本书的图片库插入图片", "tool.autoFormatTitle": "润色文本 — 智能引号、破折号与省略号",
         "auto.cover": "<b>封面页</b>显示在项目设置中上传的封面图片。在 EPUB 中，它作为打包的封面图片随行，带有自己的页面和导航文档中的封面地标。",
         "auto.halftitle": "<b>扉页（半标题页）</b>由项目设置中的书名自动生成。",
@@ -17442,7 +17459,9 @@
 
       /* ================= Text utilities ================= */
       function countWords(text, langCode) {
-        const clean = String(text || "").replace(/^[ \t]*:::(?:[ \t]+[A-Za-z][^\n]*)?[ \t]*$/gm, " ") /* container markers ("::: verse", ":::") are markup, not words */
+        const clean = String(text || "").replace(/\|\|(?=[^|\s])[^|\n]*?[^|\s]\|\|/g, " ") /* BEUK:documents — a redaction's words are never read: not words */
+          .replace(/^[ \t]*:::[ \t]+insert(?:[ \t]+(\S[^\n]*?))?[ \t]*$/gim, (m0, title) => " " + (title || "") + " ") /* an insert's title is set on the page: words */
+          .replace(/^[ \t]*:::(?:[ \t]+[A-Za-z][^\n]*)?[ \t]*$/gm, " ") /* container markers ("::: verse", ":::") are markup, not words */
           /* an image marker is not words, but its caption is read */
           .replace(/!\[[^\]]*\]\(img:[^)\s"“”]*(?:[ \t]+["“”]([^"“”\n]*)["“”])?\)/g, (m0, cap) => " " + (cap || "") + " ")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
@@ -19613,8 +19632,175 @@
                 (it.first ? docxRun(it.who, { b: true }) + cx.lineBreak : "") + cx.runs(it.text));
             });
           }
+        },
+        /* BEUK:documents — Transcript: an interview or an exhibit, a
+           line per turn as "SPEAKER: words". The speaker stands in
+           small capitals, the words hung under it; a line wholly in
+           [square brackets] is a stage direction, set in italic; a
+           blank line starts a new exchange (a breath above it); a line
+           that names no speaker runs on the turn before it, its break
+           kept. */
+        transcript: {
+          keepLines: true,
+          html(seg, cx) {
+            return '<div class="transcript">' + transcriptItems(seg).map((it) => {
+              if (it.pass) return cx.blocks(it.text);
+              const gap = it.gap ? " tr-gap" : "";
+              if (it.dir) return '<p class="tr-dir' + gap + '">' + cx.inline(it.text) + "</p>";
+              return '<p class="tr-turn' + gap + '">' + (it.who ? '<span class="tr-who">' + cx.inline(it.who) + it.colon + "</span> " : "") +
+                it.lines.map((l) => cx.inline(l)).join("<br/>") + "</p>";
+            }).join("") + "</div>";
+          },
+          docx(seg, cx) {
+            return transcriptItems(seg).map((it) => {
+              if (it.pass) return cx.blocks(it.text).join("");
+              const o = it.gap ? { spaceBefore: 200 } : null;
+              if (it.dir) return cx.para("TranscriptDirection", cx.runs(it.text), o);
+              return cx.para("Transcript", (it.who ? cx.runs(it.who, { b: true, sc: true }) + docxRun(it.colon + " ", { b: true, sc: true }) : "") +
+                it.lines.map((l) => cx.runs(l)).join(cx.lineBreak), o);
+            });
+          }
+        },
+        /* BEUK:documents — Log: "::: log" (or "::: log dark", light on
+           a dark panel), a log file or a chat export set in a monospace
+           face with every line exactly as typed: the beautifier never
+           touches it (no curled quotes, no dashes, no folded spaces —
+           holdRawContainers), nothing is hyphenated, emphasis marks are
+           characters, and a long line wraps under a hanging indent. A
+           redaction ("||…||") still blacks its words out. */
+        log: {
+          keepLines: true, keepIndent: true, raw: true,
+          html(seg) {
+            return '<div class="log' + (logIsDark(seg) ? " log-dark" : "") + '">' +
+              logLines(seg).map((l) => '<p class="lg">' + (l ? logLineHtml(l) : " ") + "</p>").join("") + "</div>";
+          },
+          docx(seg, cx) {
+            const st = logIsDark(seg) ? "LogDark" : "Log";
+            return logLines(seg).map((l) => cx.para(st, l ? docxRedactedPlainRuns(l) : ""));
+          }
+        },
+        /* BEUK:documents — Insert: "::: insert" or "::: insert <Title>",
+           a loose paper slipped into the book — a card, a clipping, a
+           note found in a drawer. Set as a paper card with a soft edge,
+           turned a little off square in the preview and the print (the
+           EPUB keeps it square and boxed: some reading systems mis-set
+           a turned block); its title, when it has one, stands small at
+           its head; every line break kept. */
+        insert: {
+          keepLines: true,
+          html(seg, cx) {
+            const title = String(seg.arg || "").trim();
+            return '<div class="insert">' + (title ? '<p class="ins-title">' + cx.inline(title) + "</p>" : "") +
+              containerStanzas(seg).map((lines) => containerPassThrough(lines)
+                ? cx.blocks(lines[0].trim())
+                : "<p>" + lines.map((l) => cx.inline(l.trim())).join("<br/>") + "</p>").join("") + "</div>";
+          },
+          docx(seg, cx) {
+            const title = String(seg.arg || "").trim();
+            return (title ? [cx.para("InsertTitle", cx.runs(title))] : []).concat(containerStanzas(seg).map((lines) => containerPassThrough(lines)
+              ? cx.blocks(lines[0].trim()).join("")
+              : cx.para("Insert", lines.map((l) => cx.runs(l.trim())).join(cx.lineBreak))));
+          }
         }
       };
+      /* BEUK:documents — a transcript's lines -> [{ who, colon, lines, gap } | { dir, text, gap } | { pass, text }].
+         The speaker is up to 40 letters, figures, spaces and ". ' ( ) & -"
+         (a redacted name "||…||" too) before a colon: an ASCII colon
+         needs a space after it (so "10:42" is never a speaker), the
+         full-width colon of Japanese and Chinese none. */
+      const TRANSCRIPT_LINE_RE = /^([\p{L}\p{N}|][\p{L}\p{M}\p{N}| .'’()&-]{0,39}?)[ \t]*(:[ \t]+|[：﹕][ \t]*)(\S.*)$/u;
+      const TRANSCRIPT_DIR_RE = /^\[[^\[\]\n]+\]$/;
+      function transcriptItems(seg) {
+        const out = [];
+        let gap = false, cur = null;
+        seg.lines.forEach((raw) => {
+          const l = raw.trim();
+          if (!l) { if (out.length) gap = true; cur = null; return; }
+          if (containerPassThrough([l])) { out.push({ pass: true, text: l }); cur = null; return; }
+          if (TRANSCRIPT_DIR_RE.test(l)) { out.push({ dir: true, text: l, gap }); gap = false; cur = null; return; }
+          const m = l.match(TRANSCRIPT_LINE_RE);
+          if (m && (m[1].match(/\|/g) || []).length % 4 === 0) {
+            cur = { who: m[1].trim(), colon: /[：﹕]/.test(m[2]) ? "：" : ":", lines: [m[3].trim()], gap };
+            out.push(cur); gap = false; return;
+          }
+          if (cur) { cur.lines.push(l); return; }
+          cur = { who: "", colon: "", lines: [l], gap };
+          out.push(cur); gap = false;
+        });
+        return out;
+      }
+      /* BEUK:documents — a log's lines: tabs as four spaces, the blank
+         lines at its head and foot dropped, every other line as typed. */
+      const logIsDark = (seg) => /(^|\s)dark(\s|$)/i.test(String(seg.arg || ""));
+      function logLines(seg) {
+        const ls = seg.lines.map((l) => String(l).replace(/\r$/, "").replace(/\t/g, "    ").replace(/\s+$/, ""));
+        while (ls.length && !ls[0]) ls.shift();
+        while (ls.length && !ls[ls.length - 1]) ls.pop();
+        return ls;
+      }
+      /* One log line as HTML: escaped, its spaces held (a run of spaces
+         keeps its width in a reader that ignores white-space: pre-wrap,
+         its last space still a place to wrap), redactions blacked out. */
+      function logLineHtml(line) {
+        return splitRedactions(line).map((p) => p.redacted != null ? redactBarHtml(p.redacted)
+          : esc(p.text).replace(/^ +/, (m) => " ".repeat(m.length)).replace(/ (?= )/g, " ")).join("");
+      }
+      /* ---- BEUK:documents — Redaction ----
+         "||words||" blacks the words out: a solid bar the width of the
+         words (a bar per word, so a long redaction still wraps), the
+         words themselves written nowhere — not in the preview, the
+         print file, the EPUB or the Word export (a run of U+2588 full
+         blocks there). The bar is one role="img" element labelled
+         "redacted", so a screen reader says what it is. A redaction is
+         not words: the count leaves it out. The words inside run to the
+         first "||" on the same line. */
+      const REDACT_RE = /\|\|(?=[^|\s])([^|\n]*?[^|\s])\|\|/g;
+      /* text -> [{ text } | { redacted }] */
+      function splitRedactions(text) {
+        const s = String(text == null ? "" : text), out = [];
+        let last = 0, m;
+        const re = new RegExp(REDACT_RE.source, "g");
+        while ((m = re.exec(s)) !== null) {
+          if (m.index > last) out.push({ text: s.slice(last, m.index) });
+          out.push({ redacted: m[1] });
+          last = m.index + m[0].length;
+        }
+        if (last < s.length || !out.length) out.push({ text: s.slice(last) });
+        return out;
+      }
+      /* A character's width in the bar: a wide (CJK, full-width) one a
+         whole em, any other half an em. */
+      const redactCharEm = (ch) => /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/.test(ch) ? 1 : 0.5;
+      function redactBarHtml(words) {
+        const ws = String(words).trim().split(/\s+/).filter(Boolean);
+        return '<span class="redact" role="img" aria-label="redacted">' + ws.map((w, i) => {
+          const em = [...w].reduce((a, ch) => a + redactCharEm(ch), 0) + (i < ws.length - 1 ? 0.5 : 0);
+          return '<span class="rd-w" style="width: ' + (Math.round(em * 100) / 100) + 'em"></span>';
+        }).join("<wbr/>") + "</span>";
+      }
+      /* The bar as Word sets it: one full block per character, the
+         spaces between words kept so the line can still wrap. */
+      const redactBlocks = (words) => String(words).trim().split(/\s+/).filter(Boolean).map((w) => "█".repeat([...w].length)).join(" ");
+      /* Plain text for every reader of the words (the narrator, read
+         aloud): a redaction is said as "redacted", never its words. */
+      /* BEUK:documents — an insert as a card: paper-white with its own
+         ink (so it reads on a dark studio surface too), a hairline and
+         a soft shadow for its edge, turned -1.5deg. The preview, the
+         Print Interior View and the print interior set it; the EPUB
+         keeps the plain box. */
+      const INSERT_CARD_LOOK = "background: #fcfaf3; background-color: #fcfaf3; color: #1f1c17; border: 0.5px solid #cbc3ae; border-radius: 2px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.12); transform: rotate(-1.5deg); -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+      /* The words a reader of the text says (the narration script,
+         read aloud): each redaction as the book's word for "redacted"
+         (or `said`), and an insert's title as a line of its own ahead
+         of the card's words. The fences themselves stay for the caller
+         to strip. */
+      function spokenContainerText(text, said) {
+        const sayWord = said != null ? said : (typeof t === "function" ? t("tool.redactSpoken") : "redacted");
+        let out = unredactForReading(text, sayWord);
+        if (out.indexOf(":::") !== -1) out = out.replace(/^([ \t]*:::[ \t]+insert)[ \t]+(\S[^\n]*?)[ \t]*$/gim, "$1\n\n$2\n\n");
+        return out;
+      }
+      const unredactForReading = (text, said) => String(text == null ? "" : text).replace(new RegExp(REDACT_RE.source, "g"), " " + (said == null ? "redacted" : said) + " ");
       /* A kept-lines stanza that is really a block of its own — a scene
          break, a picture, a note's definition — sets as one. */
       function containerPassThrough(lines) {
@@ -19672,8 +19858,33 @@
           return m ? "\uE001".repeat(m[0].replace(/\t/g, "    ").length) + l.slice(m[0].length) : l;
         }).join("\n");
       }
+      /* BEUK:documents — a raw container (a log) is the writer's to the
+         character: its body is set aside, whole, before the beautifier
+         runs (as one placeholder line, U+E052 n U+E053) and put back
+         untouched after it. */
+      function holdRawContainers(s, held) {
+        if (s.indexOf(":::") === -1) return s;
+        const out = [];
+        let body = null;
+        const close = () => { held.push(body.join("\n")); out.push("" + (held.length - 1) + ""); body = null; };
+        s.split("\n").forEach((l) => {
+          const om = l.match(CONTAINER_OPEN_RE);
+          if (om || CONTAINER_CLOSE_RE.test(l)) {
+            if (body) close();
+            const k = om ? containerKind(om[1].toLowerCase()) : null;
+            out.push(l);
+            if (k && k.raw) body = [];
+            return;
+          }
+          if (body) body.push(l); else out.push(l);
+        });
+        if (body) close();
+        return out.join("\n");
+      }
       function beautifyText(text) {
         let s = String(text == null ? "" : text);
+        const rawHeld = [];
+        if (s.indexOf(":::") !== -1) s = holdRawContainers(s.replace(/\r\n?/g, "\n"), rawHeld);
         /* A link's address is not prose: it is set aside before the
            typographic pass (which would turn "978-1-23" into en
            dashes and "--" into an em dash) and put back untouched. */
@@ -19695,7 +19906,9 @@
         s = s.split("\n").map((l) => l.replace(/\s+$/g, "")).join("\n");
         s = s.replace(/\n{3,}/g, "\n\n");
         if (linkUrls.length) s = s.replace(/(\d+)/g, (m, i) => linkUrls[+i]);
-        return s.trim();
+        s = s.trim();
+        if (rawHeld.length) s = s.replace(/(\d+)/g, (m, i) => rawHeld[+i]);
+        return s;
       }
       /* ---- Links ----
          [words](https://…), [words](http://…) and [words](mailto:…)
@@ -19723,7 +19936,13 @@
          no matching definition stays a plain superscript — never a
          dead link. */
       function inlineMd(text, noteCtx) {
-        let s = esc(text);
+        /* BEUK:documents — a redaction goes first, before anything can
+           read its words (a link, emphasis, a note mark): each becomes
+           its bar behind a sentinel, the words dropped here. */
+        const bars = [];
+        let s = String(text == null ? "" : text);
+        if (s.indexOf("||") !== -1) s = splitRedactions(s).map((p) => p.redacted != null ? (bars.push(redactBarHtml(p.redacted)), "" + (bars.length - 1) + "") : p.text).join("");
+        s = esc(s);
         /* Links first, each set aside whole: its words take their own
            bold / italic, and its address can never be read as emphasis
            or a note ref. The text is escaped already, so the address
@@ -19752,6 +19971,7 @@
            anchor: no dead link can ever reach a reader or a validator. */
         s = s.replace(/\[([^\]]+)\]\(note:([a-z0-9-]+)\)/g, '<span class="note-link" data-note="$2">$1</span>');
         if (links.length) s = s.replace(/(\d+)/g, (m, i) => links[+i]);
+        if (bars.length) s = s.replace(/(\d+)/g, (m, i) => bars[+i]);
         return s;
       }
 
@@ -20041,7 +20261,7 @@
            its own even with no blank line around it (textsItems), so
            such a line defines its note too and its reference links. */
         if (text.indexOf(":::") !== -1) parseContainers(text).forEach((seg) => {
-          if (seg.kind === "texts") seg.lines.forEach((l) => { const dm = l.trim().match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
+          if (seg.kind === "texts" || seg.kind === "transcript") seg.lines.forEach((l) => { const dm = l.trim().match(/^\[\^?(\d{1,3})\]:/); if (dm) defined.add(dm[1]); });
         });
         /* BEUK:footnotes — while the print interior is built with notes
            at the foot of the page, the notes still stand at the section's
@@ -20426,6 +20646,42 @@
           S + ".texts .tx-meta { text-align: center; font-size: 0.7em; letter-spacing: 0.06em; margin: 0.8em 0 0.2em 0; opacity: 0.72; }",
           S + ".texts > .tx-meta:first-child, " + S + ".texts > .tx:first-child { margin-top: 0; }",
           S + ".letter + p, " + S + ".texts + p { text-indent: 0; }",
+          /* BEUK:documents — Transcript: the speaker in small capitals,
+             each turn hung under it, set ragged; a stage direction in
+             italic; a breath before each new exchange. */
+          S + ".transcript { margin: 1em 0; text-align: left; hyphens: manual; -webkit-hyphens: manual; }",
+          S + ".transcript p { margin: 0 0 0.3em 0; padding-left: 2em; padding-right: 0; text-indent: -2em; text-align: left; }",
+          S + ".transcript p.tr-gap { margin-top: 0.85em; }",
+          S + ".transcript p:first-child { margin-top: 0; }",
+          S + ".transcript .tr-who { font-variant: small-caps; font-variant: all-small-caps; font-weight: 600; letter-spacing: 0.05em; }",
+          S + ".transcript p.tr-dir { font-style: italic; }",
+          S + ".transcript p.tr-dir em, " + S + ".transcript p.tr-dir i { font-style: normal; }",
+          /* Log: monospace, every line as typed (white space kept, no
+             hyphenation, no ligatures), a long line wrapped under a
+             hanging indent; a hairline down its start edge. Dark: light
+             type on a solid near-black panel (#f2f2f2 on #161616, a
+             contrast of about 16:1), the panel inside the text block,
+             closed on each page it runs over. */
+          S + ".log { margin: 1em 0; padding: 0.15em 0 0.15em 0.85em; border-left: 1.5px solid currentColor; font-family: 'Courier New', 'Liberation Mono', 'DejaVu Sans Mono', Menlo, Consolas, monospace; font-size: 0.78em; line-height: 1.45; text-align: left; text-indent: 0; hyphens: none; -webkit-hyphens: none; font-variant-ligatures: none; letter-spacing: 0; word-spacing: 0; -webkit-box-decoration-break: clone; box-decoration-break: clone; }",
+          S + ".log p.lg { margin: 0; padding-left: 2em; padding-right: 0; text-indent: -2em; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; word-wrap: break-word; hyphens: none; -webkit-hyphens: none; orphans: 1; widows: 1; }",
+          S + ".log.log-dark { border-left: 0; padding: 0.8em 1em; background: #161616; background-color: #161616; color: #f2f2f2; }",
+          S + ".log.log-dark p.lg { color: #f2f2f2; }",
+          /* Insert: a paper card set apart, ragged, its line breaks kept,
+             its title small above. Here square and boxed (the EPUB); the
+             preview and the print turn it and soften its edge. */
+          S + ".insert { margin: 1.4em 1.2em; padding: 0.9em 1.15em; border: 0.75px solid currentColor; font-size: 0.95em; text-align: left; text-indent: 0; hyphens: manual; -webkit-hyphens: manual; break-inside: avoid; page-break-inside: avoid; }",
+          S + ".insert p { margin: 0 0 0.6em 0; text-indent: 0; text-align: left; }",
+          S + ".insert p:last-child { margin-bottom: 0; }",
+          S + ".insert p.ins-title { font-size: 0.72em; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-bottom: 0.75em; }",
+          ...(scope ? [S + ".insert { " + INSERT_CARD_LOOK + " }"] : []),
+          /* Redaction: a solid bar in the ink, a bar per word (so a long
+             one still wraps), the words themselves never written. */
+          S + ".redact { white-space: normal; }",
+          S + ".redact .rd-w { display: inline-block; height: 0.95em; vertical-align: -0.17em; background: currentColor; -webkit-print-color-adjust: exact; print-color-adjust: exact; }",
+          /* A hard (unblurred) shadow laps each bar over the next, so no
+             hairline seam shows between the words of one redaction. */
+          S + ".redact .rd-w:not(:last-child) { box-shadow: 0.1em 0 0 currentColor; }",
+          S + ".transcript + p, " + S + ".log + p, " + S + ".insert + p { text-indent: 0; }",
           S + ".chapter-opening { text-align: center; margin: 2.2em 0 1.6em 0; page-break-after: avoid; }",
           S + ".chapter-number { font-family: " + headFf + "; font-size: 0.78em; letter-spacing: 0.32em; text-transform: uppercase; text-indent: 0; margin: 0 0 0.9em 0; opacity: 0.75; }",
           S + ".chapter-title { font-family: " + headFf + "; font-weight: 600; font-size: 1.85em; line-height: 1.2; margin: 0; text-align: center; }",
@@ -20585,7 +20841,15 @@
             S + ".texts .tx-sent .tx-b { border-bottom-right-radius: 0.95em; border-bottom-left-radius: 0.25em; }",
             S + ".texts .tx-recv .tx-b { border-bottom-left-radius: 0.95em; border-bottom-right-radius: 0.25em; }",
             /* A quote's attribution stands at the line's end: the left. */
-            S + "blockquote p.attribution { text-align: left; }");
+            S + "blockquote p.attribution { text-align: left; }",
+            /* BEUK:documents — a transcript and a log hang their turn-overs
+               from the right edge, the log's rule on the right; an insert
+               is set from the right and turned the other way. */
+            S + ".transcript, " + S + ".transcript p, " + S + ".log, " + S + ".log p.lg, " + S + ".insert, " + S + ".insert p { text-align: right; }",
+            S + ".transcript p, " + S + ".log p.lg { padding-left: 0; padding-right: 2em; }",
+            S + ".log { padding: 0.15em 0.85em 0.15em 0; border-left: 0; border-right: 1.5px solid currentColor; }",
+            S + ".log.log-dark { border-right: 0; padding: 0.8em 1em; }",
+            ...(scope ? [S + ".insert { transform: rotate(1.5deg); }"] : []));
         }
         /* BEUK:displayfaces + BEUK:bookcolour — nothing at all unless the
            book wears a display face or a colour. */
@@ -23466,6 +23730,8 @@
           else if (kind === "ul" || kind === "ol") applyList(area, kind === "ol");
           else if (kind === "verse" || kind === "center" || kind === "right") applyContainer(area, kind);
           else if (kind === "letter" || kind === "texts") applyContainer(area, kind);
+          else if (kind === "transcript" || kind === "log" || kind === "insert") applyContainer(area, kind); /* BEUK:documents */
+          else if (kind === "redact") wrapSelection(area, "||");
         });
         area.addEventListener("keydown", (e) => {
           if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
@@ -27038,7 +27304,10 @@
         /* Beuk's own Word export styles: known, read as paragraphs (no
            "unrecognised style" converter note for each). */
         "p[style-name='Verse'] => p:fresh", "p[style-name='Letter'] => p:fresh", "p[style-name='Text Sent'] => p:fresh",
-        "p[style-name='Text Received'] => p:fresh", "p[style-name='Text Note'] => p:fresh", "p[style-name='Caption'] => p:fresh"] };
+        "p[style-name='Text Received'] => p:fresh", "p[style-name='Text Note'] => p:fresh", "p[style-name='Caption'] => p:fresh",
+        /* BEUK:documents */
+        "p[style-name='Transcript'] => p:fresh", "p[style-name='Transcript Direction'] => p:fresh", "p[style-name='Log'] => p:fresh",
+        "p[style-name='Log Dark'] => p:fresh", "p[style-name='Insert'] => p:fresh", "p[style-name='Insert Title'] => p:fresh"] };
       /* A web or mail address; a space or parenthesis inside it (Word
          keeps them raw) is percent-encoded by irRunsToMd, not refused. */
       const IR_LINK_OK = /^(?:https?:\/\/|mailto:)\S/i;
@@ -27330,7 +27599,10 @@
           nt.plain = irStructural(nt.text);
           nt.smart = beautifyText(nt.text);
         });
-        return irTypoPrep(parts.join("\n\n"), ir);
+        /* BEUK:documents — a run of full blocks (U+2588) is a redaction
+           (Beuk's own Word export writes one so): it comes back fenced
+           "||…||", a bar again, never counted as words. */
+        return irTypoPrep(parts.join("\n\n").replace(/(\|\|)?(█+(?:[  ]█+)*)(\|\|)?/g, (m, a, body, b) => (a && b) ? m : (a || "") + "||" + body.replace(/ /g, " ") + "||" + (b || "")), ir);
       }
       /* Markdown / plain text: the same break markers, as lines. */
       function irPlainTextPrep(raw, ir) {
@@ -27375,7 +27647,7 @@
            writer made, so a paragraph in one of them never fences a
            "::: center" / "::: right" (nor does its own w:jc: the export
            sets a centred caption and a right-set sign-off that way). */
-        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption"]);
+        const OWN_SET = new Set(["Verse", "Letter", "TextSent", "TextReceived", "TextNote", "QuoteAttribution", "Caption", "Transcript", "TranscriptDirection", "Log", "LogDark", "Insert", "InsertTitle"]);
         const ownStyle = (id) => { for (let k = 0; id && k < 12; k++) { if (OWN_SET.has(id)) return true; if (!styles[id]) return false; id = styles[id].based; } return false; };
         const styleJc = (id) => { for (let k = 0; id && styles[id] && k < 12; k++) { if (styles[id].jc) return styles[id].jc; id = styles[id].based; } return ""; };
         /* Word's own Caption style (by id or by name, through basedOn):
@@ -31790,6 +32062,11 @@
           /* A sent text bubble's tint prints as a solid grey (no
              transparency in the print file), the same tone on white. */
           ".texts .tx-sent .tx-b { background: #e6e6e6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }",
+          /* BEUK:documents — an insert prints as its card, turned (the
+             other way in a right-to-left book); a dark log's panel and a
+             redaction's bar print solid. */
+          ".insert { " + INSERT_CARD_LOOK + (isRtlLang(bookLang()) ? " transform: rotate(1.5deg);" : "") + " }",
+          ".log.log-dark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }",
           /* A chapter backdrop prints over the opening page's text
              area, from its top: anchored in the opening header, which
              sits its own 2.2em lead below it. (Chromium clips what a
@@ -33254,7 +33531,7 @@
          Housekeeping checks assert on exactly what downloads. */
       function docxRun(text, opts) {
         opts = opts || {};
-        const rPr = (opts.b || opts.i || opts.sup || opts.link) ? "<w:rPr>" + (opts.link ? '<w:rStyle w:val="Hyperlink"/>' : "") + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
+        const rPr = (opts.b || opts.i || opts.sup || opts.link || opts.sc) ? "<w:rPr>" + (opts.link ? '<w:rStyle w:val="Hyperlink"/>' : "") + (opts.b ? "<w:b/>" : "") + (opts.i ? "<w:i/>" : "") + (opts.sc ? "<w:smallCaps/>" : "") + (opts.sup ? '<w:vertAlign w:val="superscript"/>' : "") + "</w:rPr>" : "";
         return "<w:r>" + rPr + '<w:t xml:space="preserve">' + esc(text) + "</w:t></w:r>";
       }
       /* The hyperlinks of the document being built (buildDocxFiles
@@ -33263,18 +33540,31 @@
          writes those relationships (the ACX script), where a link
          is set as its words alone. */
       let docxLinks = null;
-      function docxInlineRuns(text) {
+      /* BEUK:documents — a redaction in Word: a run of full blocks
+         (U+2588), one per character, carrying the surrounding bold /
+         italic; the words themselves are never written. */
+      const docxRedactRun = (words, inh) => docxRun(redactBlocks(words), Object.assign({}, inh || {}, { link: false }));
+      /* Plain text (a log line: no emphasis, no notes, no links), its
+         redactions blacked out. */
+      function docxRedactedPlainRuns(text) {
+        return splitRedactions(text).map((p) => p.redacted != null ? docxRedactRun(p.redacted) : (p.text ? docxRun(p.text, {}) : "")).join("") || docxRun("", {});
+      }
+      function docxInlineRuns(text, inh0) {
         /* Links first, each set aside whole behind a sentinel — the
            way inlineMd does it — so emphasis may span a link (an
            italic "Available at [the store](…)" line), a link's words
            may be digits without turning into a note marker, and an
            address's own "*" can never close an emphasis. */
         const links = [];
-        const s = String(text).replace(mdLinkRe(), (m, label, url) => { links.push({ label, url }); return "" + (links.length - 1) + ""; });
+        /* A redaction first, behind its own sentinel (U+E050 n U+E051),
+           so nothing below can read its words. */
+        const reds = [];
+        const s = splitRedactions(String(text)).map((p) => p.redacted != null ? (reds.push(p.redacted), "" + (reds.length - 1) + "") : p.text).join("")
+          .replace(mdLinkRe(), (m, label, url) => { links.push({ label: reds.length ? label.replace(/(\d+)/g, (x, i) => redactBlocks(reds[+i])) : label, url }); return "" + (links.length - 1) + ""; });
         /* Plain text: the sentinels become hyperlinks, carrying the
            surrounding bold / italic (inh) onto the link's runs. */
         const plain = (t, inh) => t.split(/(\d+)/).map((seg, k) => {
-          if (!(k % 2)) return seg ? docxRun(seg, inh) : "";
+          if (!(k % 2)) return seg ? (seg.indexOf("") === -1 ? docxRun(seg, inh) : seg.split(/(\d+)/).map((x, j) => (j % 2) ? docxRedactRun(reds[+x], inh) : (x ? docxRun(x, inh) : "")).join("")) : "";
           const lk = links[+seg];
           /* A link: its words (bold / italic kept) inside a real
              w:hyperlink, its address an External relationship. */
@@ -33298,7 +33588,7 @@
           if (last < t.length) out += plain(t.slice(last), inh);
           return out;
         };
-        return emit(s, {}) || docxRun("", {});
+        return emit(s, inh0 || {}) || docxRun("", {});
       }
       function docxLinkWordRuns(label, plain, inh) {
         const re = /(\*\*\*[^*]+\*\*\*)|(\*\*[^*]+\*\*)|(\*[^*\n]+\*)/g;
@@ -33314,7 +33604,7 @@
       }
       function docxPara(text, style, opts) {
         opts = opts || {};
-        const pPr = "<w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + (opts.align ? '<w:jc w:val="' + opts.align + '"/>' : "") + "</w:pPr>";
+        const pPr = "<w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + (opts.spaceBefore ? '<w:spacing w:before="' + opts.spaceBefore + '"/>' : "") + (opts.align ? '<w:jc w:val="' + opts.align + '"/>' : "") + "</w:pPr>";
         const runs = opts.rawRuns != null ? opts.rawRuns : docxInlineRuns(String(text == null ? "" : text));
         return "<w:p>" + pPr + runs + "</w:p>";
       }
@@ -33387,7 +33677,7 @@
            a real Word break inside one paragraph. */
         const cx = {
           blocks: blocksOf,
-          runs: (s) => docxInlineRuns(s),
+          runs: (s, inh) => docxInlineRuns(s, inh),
           run: (s) => docxRun(s, {}),
           lineBreak: "<w:r><w:br/></w:r>",
           para: (style, runsXml, opts) => docxPara("", style, Object.assign({}, opts || {}, { rawRuns: runsXml }))
@@ -33469,6 +33759,17 @@
           style("TextSent", "Text Sent", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:keepLines/><w:shd w:val="clear" w:color="auto" w:fill="E6E6E6"/><w:spacing w:after="80"/><w:ind w:left="2880"/><w:jc w:val="right"/></w:pPr>') +
           style("TextReceived", "Text Received", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:keepLines/><w:pBdr><w:left w:val="single" w:sz="6" w:space="6" w:color="auto"/></w:pBdr><w:spacing w:after="80"/><w:ind w:right="2880"/><w:jc w:val="left"/></w:pPr>') +
           style("TextNote", "Text Note", "Normal", fonts(bodyF) + '<w:sz w:val="18"/>', '<w:pPr><w:spacing w:before="120" w:after="80"/><w:jc w:val="center"/></w:pPr>') +
+          /* BEUK:documents — a transcript's turn (the speaker's run in
+             bold small capitals, the words hung under it) and its stage
+             directions in italic; a log line in a monospace face, kept
+             whole and hung, the dark one light on a near-black shading;
+             an insert's paragraphs in a shaded box, its title small. */
+          style("Transcript", "Transcript", "Normal", fonts(bodyF) + '<w:sz w:val="23"/>', '<w:pPr><w:spacing w:after="60"/><w:ind w:left="720" w:hanging="720"/><w:jc w:val="left"/></w:pPr>') +
+          style("TranscriptDirection", "Transcript Direction", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="23"/>', '<w:pPr><w:spacing w:after="60"/><w:ind w:left="720"/><w:jc w:val="left"/></w:pPr>') +
+          style("Log", "Log", "Normal", fonts("Courier New") + '<w:noProof/><w:sz w:val="18"/>', '<w:pPr><w:pBdr><w:left w:val="single" w:sz="8" w:space="6" w:color="auto"/></w:pBdr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:ind w:left="720" w:hanging="360"/><w:jc w:val="left"/></w:pPr>') +
+          style("LogDark", "Log Dark", "Normal", fonts("Courier New") + '<w:noProof/><w:color w:val="F2F2F2"/><w:sz w:val="18"/>', '<w:pPr><w:shd w:val="clear" w:color="auto" w:fill="161616"/><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:ind w:left="720" w:hanging="360"/><w:jc w:val="left"/></w:pPr>') +
+          style("Insert", "Insert", "Normal", fonts(bodyF) + '<w:sz w:val="22"/>', '<w:pPr><w:keepLines/><w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:left w:val="single" w:sz="4" w:space="6" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="4" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="6" w:color="auto"/></w:pBdr><w:shd w:val="clear" w:color="auto" w:fill="FCFAF3"/><w:spacing w:after="0"/><w:ind w:left="720" w:right="720"/><w:jc w:val="left"/></w:pPr>') +
+          style("InsertTitle", "Insert Title", "Insert", fonts(bodyF) + '<w:b/><w:caps/><w:spacing w:val="20"/><w:sz w:val="16"/>', '<w:pPr><w:keepNext/><w:spacing w:after="0"/></w:pPr>') +
           style("Caption", "Caption", "Normal", fonts(bodyF) + '<w:i/><w:sz w:val="20"/>', '<w:pPr><w:spacing w:after="160"/></w:pPr>') +
           /* A quote's attribution line: ranged right under the Quote, upright. */
           style("QuoteAttribution", "Quote Attribution", "Quote", fonts(bodyF) + '<w:i w:val="0"/><w:sz w:val="22"/>', '<w:pPr><w:ind w:left="720" w:right="720"/><w:spacing w:before="0" w:after="200"/><w:jc w:val="right"/></w:pPr>') +
@@ -33654,8 +33955,8 @@
         }
         if (s.type === "copyright" && !String(s.content || "").trim()) { lines.push({ k: "para", text: rightsLine() }); return lines; }
         const notes = {};
-        collectDocxNotesFrom(s.content).forEach((n) => { notes[n.n] = n.text; });
-        const text = stripContainerMarks(beautifyText(s.content || "")); /* container markers are markup: the narrator reads the words */
+        collectDocxNotesFrom(s.content).forEach((n) => { notes[n.n] = unredactForReading(n.text, t("tool.redactSpoken")); }); /* BEUK:documents — a note's redaction is said, never read */
+        const text = stripContainerMarks(spokenContainerText(beautifyText(s.content || ""))); /* container markers are markup: the narrator reads the words */
         let breakIdx = 0;
         text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean).forEach((block) => {
           if (/^\[\^?\d{1,3}\]:/.test(block)) return;
@@ -33824,7 +34125,7 @@
         };
         state.sections.filter((s) => s.included && !acxSectionSkipReason(s)).forEach((s) => {
           const label = sectionLabel(s);
-          stripContainerMarks(beautifyText(s.content || "")).split(/\n\s*\n/).forEach((block) => {
+          stripContainerMarks(spokenContainerText(beautifyText(s.content || ""), " ")).split(/\n\s*\n/).forEach((block) => {
             block = block.trim();
             if (!block || parseImageLine(block) || ACX_SCENE_BREAK.test(block)) return;
             block = block.replace(/^\[\^?\d{1,3}\]:\s*/, "").replace(/^>\s?/gm, "").replace(/^#{1,6}\s+/, "").replace(/\*\*/g, "").replace(ACX_NOTE_MARK, " ");
@@ -41041,6 +41342,311 @@
               applyBookDoc(keepDoc);
             }
           } },
+        /* ==== BEUK:documents — transcript, log, insert, redaction ==== */
+        { id: "chapter.transcript", feature: "chapter", name: "Transcript: \"::: transcript\" sets each \"SPEAKER: words\" line as a turn — the speaker in bold small capitals, the words hung under it — a line wholly in [brackets] as an italic stage direction, a blank line as a breath before the next exchange, a speakerless line run on with its break kept; in the preview, print and EPUB (validates); right-to-left books hang from the right; the Word export sets Transcript / Transcript Direction paragraphs (the speaker's run bold small caps); speaker labels count as words, fences do not; toolbar + 13 languages",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "Before.\n\n::: transcript\nDET. RUIZ: Where were you on the night of the -- ninth?\nHALE: At home.\n[The witness looks at his hands.]\n\nRUIZ: Alone?\nHALE: With my *sister*.\n10:42 pm, she left.\n:::\n\nAfter.";
+              const s = mkSection("body", "chapter", "Transcript", { number: "1", content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              const want = '<div class="transcript"><p class="tr-turn"><span class="tr-who">DET. RUIZ:</span> Where were you on the night of the — ninth?</p>' +
+                '<p class="tr-turn"><span class="tr-who">HALE:</span> At home.</p><p class="tr-dir">[The witness looks at his hands.]</p>' +
+                '<p class="tr-turn tr-gap"><span class="tr-who">RUIZ:</span> Alone?</p><p class="tr-turn"><span class="tr-who">HALE:</span> With my <em>sister</em>.<br/>10:42 pm, she left.</p></div>';
+              if (!html.includes(want)) bad.push("the transcript did not set: " + JSON.stringify(html));
+              if (/:::|transcript\n/.test(html)) bad.push("a fence line reached the page");
+              const ja = contentBlocksToHtml("::: transcript\n記者：本当ですか？\n:::", s, false, true, true);
+              if (ja !== '<div class="transcript"><p class="tr-turn"><span class="tr-who">記者：</span> 本当ですか？</p></div>') bad.push("full-width colon: " + JSON.stringify(ja));
+              const probe = document.createElement("div");
+              probe.className = "sc-tr-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:320px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-tr-probe");
+              probe.innerHTML = html + contentBlocksToHtml("::: transcript\nHALE: I was at home all night with the radio on and the door locked, and nobody came to the house until the morning.\n:::", s, false, true, true);
+              document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const who = getComputedStyle(probe.querySelector(".tr-who")), turn = probe.querySelectorAll(".tr-turn"), dir = getComputedStyle(probe.querySelector(".tr-dir"));
+                if (who.fontVariantCaps !== "all-small-caps" || !(parseInt(who.fontWeight, 10) >= 600)) bad.push("speaker computed: " + who.fontVariantCaps + " / " + who.fontWeight);
+                const tc = getComputedStyle(turn[0]);
+                if (!(parseFloat(tc.paddingLeft) > 10 && Math.abs(parseFloat(tc.paddingLeft) + parseFloat(tc.textIndent)) < 0.5)) bad.push("not a hanging indent: padding " + tc.paddingLeft + ", indent " + tc.textIndent);
+                if (dir.fontStyle !== "italic") bad.push("the stage direction is not italic");
+                const gapM = parseFloat(getComputedStyle(probe.querySelector(".tr-gap")).marginTop), plainM = parseFloat(getComputedStyle(turn[1]).marginTop);
+                if (!(gapM > plainM + 4)) bad.push("no breath before a new exchange (" + gapM + " vs " + plainM + ")");
+                /* The long turn wraps: its second line starts at the hang, right of the speaker's start. */
+                const long = turn[turn.length - 1], r = document.createRange(); r.selectNodeContents(long);
+                const rects = Array.prototype.filter.call(r.getClientRects(), (x) => x.width > 2);
+                const lb = long.getBoundingClientRect();
+                const firstLeft = Math.min(...rects.map((x) => x.left)), lastRect = rects[rects.length - 1];
+                if (!(rects.length > 2 && Math.abs(firstLeft - lb.left) < 2 && lastRect.left > lb.left + parseFloat(tc.paddingLeft) - 2)) bad.push("the turn-over does not hang (" + rects.length + " rects, first " + Math.round(firstLeft - lb.left) + ", last " + Math.round(lastRect.left - lb.left) + ")");
+              } finally { probe.remove(); st.remove(); }
+              const keepLang = state.meta.language;
+              state.meta.language = "ar";
+              const rp = document.createElement("div");
+              rp.className = "sc-tr-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:320px";
+              const rst = document.createElement("style");
+              try {
+                rst.textContent = buildBookCss(".sc-tr-rtl");
+                rp.innerHTML = contentBlocksToHtml("::: transcript\nسامي: كنت في البيت\n:::", s, false, true, true);
+                document.body.appendChild(rst); document.body.appendChild(rp);
+                const rc = getComputedStyle(rp.querySelector(".tr-turn"));
+                if (!(parseFloat(rc.paddingRight) > 10 && parseFloat(rc.paddingLeft) === 0 && rc.textAlign === "right")) bad.push("RTL transcript: padding " + rc.paddingLeft + "/" + rc.paddingRight + ", align " + rc.textAlign);
+              } finally { rp.remove(); rst.remove(); state.meta.language = keepLang; }
+              const paras = docxContentParas(src);
+              const tp = paras.filter((p) => p.includes('<w:pStyle w:val="Transcript"/>')), dp = paras.filter((p) => p.includes('<w:pStyle w:val="TranscriptDirection"/>'));
+              if (tp.length !== 4 || dp.length !== 1) bad.push("Word paragraphs: " + tp.length + " Transcript, " + dp.length + " Transcript Direction");
+              else {
+                if (!(tp[0].includes("<w:b/><w:smallCaps/>") && tp[0].includes(">DET. RUIZ<"))) bad.push("Word: the speaker is not bold small caps: " + tp[0].slice(0, 300));
+                if (!tp[2].includes('<w:spacing w:before="200"/>') || tp[1].includes("w:before")) bad.push("Word: the new exchange has no space before it");
+                if (!tp[3].includes("<w:br/>") || !tp[3].includes("<w:i/>")) bad.push("Word: the run-on line or the emphasis is lost");
+              }
+              const sty = ((buildDocxFiles().find((f) => f.path === "word/styles.xml") || {}).content) || "";
+              if (!['w:styleId="Transcript"', 'w:styleId="TranscriptDirection"', 'w:hanging="720"'].every((x) => sty.includes(x))) bad.push("the Word styles lack Transcript / Transcript Direction");
+              if (!IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Transcript'] => p:fresh") || !IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Transcript Direction'] => p:fresh")) bad.push("Word import does not know the Transcript styles");
+              const wc = countWords("::: transcript\nRUIZ: Alone?\n[He nods.]\n:::");
+              if (wc !== 4) bad.push("word count " + wc + " (want 4: the speaker is a word, fences are not)");
+              const md = contentToMarkdown("::: transcript\nRUIZ: Alone?\n:::");
+              if (md !== "::: transcript\nRUIZ: Alone?\n:::") bad.push("Markdown export: " + JSON.stringify(md));
+              const acx = acxSectionLines(s).map((l) => l.text).join(" | ");
+              if (!acx.includes("DET. RUIZ: Where were you") || /:::/.test(acx)) bad.push("narration: " + acx.slice(0, 200));
+              const ta = document.createElement("textarea");
+              ta.value = "Q: Name?\nA: Hale."; ta.setSelectionRange(0, ta.value.length);
+              applyContainer(ta, "transcript");
+              if (ta.value !== "::: transcript\nQ: Name?\nA: Hale.\n:::") bad.push("toolbar: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="transcript"]')) bad.push("the toolbar lacks Transcript");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.transcript", "tool.transcriptTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<p class="tr-dir">[The witness looks at his hands.]</p>'))) bad.push("the EPUB chapter carries no transcript");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              if (!buildPrintHtml().includes('<span class="tr-who">HALE:</span> At home.')) bad.push("the print file carries no transcript");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "4 turns + a direction; computed: speaker all-small-caps 600, turns hung (padding = -indent, a wrapped turn's second line at the hang), direction italic, a breath before the new exchange; a time line is not a speaker; full-width colon (ja); RTL hangs from the right; Word: 4 Transcript + 1 Transcript Direction, bold small-caps speaker run, space before the new exchange, the run-on break; Word styles + import map; the speaker counted, fences not; narration reads the turns; toolbar + 13 languages; EPUB validator errors 0; in the print file");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.log", feature: "chapter", name: "Log: \"::: log\" / \"::: log dark\" sets a log or chat file in a monospace face with every line exactly as typed — quotes, dashes, dots and runs of spaces untouched by the beautifier, emphasis marks kept as characters, nothing hyphenated, a long line wrapped under a hanging indent; dark is light type on a solid near-black panel (contrast at least 7:1, printed solid); in the preview, print and EPUB (validates); right-to-left books hang from the right; the Word export sets Log / Log Dark paragraphs, a line each; toolbar + 13 languages",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const body = "09:14:02 <ana> it's \"done\" -- really...\n  indented  two  spaces\n\n*not emphasis* and 1-2 and --flag";
+              const src = "Before \"this\".\n\n::: log\n" + body + "\n:::\n\n::: log dark\n$ rm -rf build/ && echo 'ok'\n:::\n\nAfter...";
+              const bt = beautifyText(src);
+              if (!bt.includes("::: log\n" + body + "\n:::") || !bt.includes("$ rm -rf build/ && echo 'ok'")) bad.push("the beautifier touched the log: " + JSON.stringify(bt));
+              if (!bt.startsWith("Before “this”.") || !bt.endsWith("After…")) bad.push("the prose around the log was not beautified: " + JSON.stringify(bt));
+              const s = mkSection("body", "chapter", "Log", { number: "1", content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              const want = '<div class="log"><p class="lg">09:14:02 &lt;ana&gt; it\'s &quot;done&quot; -- really...</p><p class="lg">  indented  two  spaces</p><p class="lg"> </p><p class="lg">*not emphasis* and 1-2 and --flag</p></div>' +
+                '\n<div class="log log-dark"><p class="lg">$ rm -rf build/ &amp;&amp; echo \'ok\'</p></div>';
+              if (!html.includes(want)) bad.push("the log did not set: " + JSON.stringify(html));
+              const probe = document.createElement("div");
+              probe.className = "sc-log-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:300px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-log-probe");
+              probe.innerHTML = html + contentBlocksToHtml("::: log\n2026-10-27T09:14:02Z worker[4411]: retry 3 of 5 for job=export-epub after timeout waiting on the renderer queue\n:::", s, false, true, true);
+              document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const lg = getComputedStyle(probe.querySelector(".log")), ln = getComputedStyle(probe.querySelector(".log p.lg"));
+                if (!/monospace/.test(lg.fontFamily) || ln.whiteSpace !== "pre-wrap" || (ln.hyphens || ln.webkitHyphens) !== "none") bad.push("log computed: " + lg.fontFamily + " / " + ln.whiteSpace + " / " + ln.hyphens);
+                if (!(parseFloat(ln.paddingLeft) > 10 && Math.abs(parseFloat(ln.paddingLeft) + parseFloat(ln.textIndent)) < 0.5)) bad.push("not a hanging indent: " + ln.paddingLeft + " / " + ln.textIndent);
+                const longP = probe.querySelectorAll(".log p.lg"), lp = longP[longP.length - 1];
+                const r = document.createRange(); r.selectNodeContents(lp);
+                /* (a wrapped line's trailing space may hang past the edge, as pre-wrap allows: the words are measured) */
+                const rects = Array.prototype.filter.call(r.getClientRects(), (x) => x.width > 10), lb = lp.getBoundingClientRect();
+                if (!(rects.length >= 2 && Math.abs(rects[0].left - lb.left) < 2 && rects[rects.length - 1].left > lb.left + parseFloat(ln.paddingLeft) - 2 && rects.every((x) => x.right <= lb.right + 1))) bad.push("the long line does not wrap under the hang (" + rects.map((x) => Math.round(x.left - lb.left) + "-" + Math.round(x.right - lb.left) + "@" + Math.round(x.top - lb.top)).join(" ") + " in " + Math.round(lb.width) + ")");
+                const dk = probe.querySelector(".log-dark"), dc = getComputedStyle(dk), dl = getComputedStyle(dk.querySelector("p.lg"));
+                const rgb = (v) => (v.match(/[\d.]+/g) || []).slice(0, 3).map(Number);
+                const lum = (c) => { const a = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; };
+                const L1 = lum(rgb(dl.color)), L2 = lum(rgb(dc.backgroundColor));
+                const ratio = (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05);
+                if (!(ratio >= 7) || rgb(dc.backgroundColor).some((v) => v > 40)) bad.push("dark panel: " + dc.backgroundColor + " / " + dl.color + " contrast " + ratio.toFixed(1));
+                if (dk.getBoundingClientRect().right > probe.getBoundingClientRect().right + 0.5 || dk.getBoundingClientRect().left < probe.getBoundingClientRect().left - 0.5) bad.push("the dark panel overflows the text block");
+              } finally { probe.remove(); st.remove(); }
+              if (!buildPrintCss("6x9", false).includes(".log.log-dark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }")) bad.push("the print stylesheet does not print the dark panel solid");
+              const keepLang = state.meta.language;
+              state.meta.language = "ar";
+              const rp = document.createElement("div");
+              rp.className = "sc-log-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:300px";
+              const rst = document.createElement("style");
+              try {
+                rst.textContent = buildBookCss(".sc-log-rtl");
+                rp.innerHTML = contentBlocksToHtml("::: log\nسامي: وصلت\n:::", s, false, true, true);
+                document.body.appendChild(rst); document.body.appendChild(rp);
+                const rc = getComputedStyle(rp.querySelector(".log p.lg")), rb = getComputedStyle(rp.querySelector(".log"));
+                if (!(parseFloat(rc.paddingRight) > 10 && parseFloat(rc.paddingLeft) === 0 && parseFloat(rb.borderRightWidth) > 0 && parseFloat(rb.borderLeftWidth) === 0)) bad.push("RTL log: padding " + rc.paddingLeft + "/" + rc.paddingRight + ", rule " + rb.borderLeftWidth + "/" + rb.borderRightWidth);
+              } finally { rp.remove(); rst.remove(); state.meta.language = keepLang; }
+              const paras = docxContentParas(src);
+              const lgP = paras.filter((p) => p.includes('<w:pStyle w:val="Log"/>')), dkP = paras.filter((p) => p.includes('<w:pStyle w:val="LogDark"/>'));
+              if (lgP.length !== 4 || dkP.length !== 1) bad.push("Word paragraphs: " + lgP.length + " Log, " + dkP.length + " Log Dark");
+              else if (!lgP[0].includes(">09:14:02 &lt;ana&gt; it's &quot;done&quot; -- really...<") || !lgP[1].includes('xml:space="preserve">  indented  two  spaces<') || lgP[3].includes("<w:i/>")) bad.push("Word: a log line was changed: " + lgP.slice(0, 2).join(" ").slice(0, 300));
+              const sty = ((buildDocxFiles().find((f) => f.path === "word/styles.xml") || {}).content) || "";
+              if (!['w:styleId="Log"', 'w:styleId="LogDark"', 'w:fill="161616"', "Courier New"].every((x) => sty.includes(x))) bad.push("the Word styles lack Log / Log Dark");
+              if (!IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Log'] => p:fresh") || !IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Log Dark'] => p:fresh")) bad.push("Word import does not know the Log styles");
+              const wc = countWords("::: log\nuser logged in\n:::");
+              if (wc !== 3) bad.push("word count " + wc);
+              const ta = document.createElement("textarea");
+              ta.value = "$ ls\nfile.txt"; ta.setSelectionRange(0, ta.value.length);
+              applyContainer(ta, "log");
+              if (ta.value !== "::: log\n$ ls\nfile.txt\n:::") bad.push("toolbar: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="log"]')) bad.push("the toolbar lacks Log");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.log", "tool.logTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('<div class="log log-dark"><p class="lg">$ rm -rf build/ &amp;&amp; echo \'ok\'</p></div>'))) bad.push("the EPUB chapter carries no log");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              if (!buildPrintHtml().includes("it's &quot;done&quot; -- really...")) bad.push("the print file carries no log (or changed it)");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "every log line as typed (straight quotes, --, ..., 1-2, runs of spaces held as no-break spaces, *marks* literal) while the prose around it is beautified; computed monospace, pre-wrap, no hyphenation, hung, a long line wraps under the hang inside the column; dark panel solid near-black, contrast >= 7:1, inside the text block, printed exact; RTL hangs from the right; Word: 4 Log + 1 Log Dark paragraphs, text unchanged; Word styles + import map; toolbar + 13 languages; EPUB validator errors 0; in the print file");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.insert", feature: "chapter", name: "Insert: \"::: insert\" / \"::: insert <Title>\" sets a loose paper card — paper-white with its own ink, a hairline and a soft shadow, turned about -1.5deg in the preview, the Print Interior View and the print (the other way in a right-to-left book), never turned in the EPUB (boxed square instead); its title small at its head, every line break kept; the Word export sets Insert Title / Insert paragraphs; the title counts as words and is narrated; toolbar + 13 languages",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const src = "Before.\n\n::: insert Found in the coat\nMeet me at the *pier*.\nTen sharp.\n\nBurn this.\n:::\n\nAfter.";
+              const s = mkSection("body", "chapter", "Insert", { number: "1", content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              const want = '<div class="insert"><p class="ins-title">Found in the coat</p><p>Meet me at the <em>pier</em>.<br/>Ten sharp.</p><p>Burn this.</p></div>';
+              if (!html.includes(want)) bad.push("the insert did not set: " + JSON.stringify(html));
+              const bare = contentBlocksToHtml("::: insert\nA ticket stub.\n:::", s, false, true, true);
+              if (bare !== '<div class="insert"><p>A ticket stub.</p></div>') bad.push("an untitled insert: " + JSON.stringify(bare));
+              const angle = (el) => { const m = getComputedStyle(el).transform.match(/matrix\(([^)]+)\)/); if (!m) return 0; const v = m[1].split(",").map(Number); return Math.atan2(v[1], v[0]) * 180 / Math.PI; };
+              const probe = document.createElement("div");
+              probe.className = "sc-ins-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:360px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-ins-probe");
+              probe.innerHTML = html; document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const card = probe.querySelector(".insert"), cc = getComputedStyle(card);
+                const a = angle(card);
+                if (!(a < -1.2 && a > -1.8)) bad.push("the card is not turned about -1.5deg (" + a.toFixed(2) + ")");
+                if (cc.boxShadow === "none" || cc.backgroundColor !== "rgb(252, 250, 243)" || cc.color !== "rgb(31, 28, 23)") bad.push("card look: " + cc.backgroundColor + " / " + cc.color + " / " + cc.boxShadow);
+                const br = card.getBoundingClientRect(), pr = probe.getBoundingClientRect();
+                if (br.left < pr.left - 0.5 || br.right > pr.right + 0.5) bad.push("the turned card overhangs the column");
+                if (probe.querySelectorAll(".insert br").length !== 1) bad.push("the card's line break did not survive");
+                const tt = getComputedStyle(probe.querySelector(".ins-title"));
+                if (tt.textTransform !== "uppercase" || !(parseFloat(tt.fontSize) < parseFloat(cc.fontSize))) bad.push("the title is not small capitals-style");
+              } finally { probe.remove(); st.remove(); }
+              /* The EPUB's stylesheet: boxed, never turned. */
+              const epubCss = buildBookCss("");
+              if (/\.insert \{[^}]*rotate/.test(epubCss) || !/\.insert \{[^}]*border: 0\.75px solid currentColor/.test(epubCss)) bad.push("the EPUB stylesheet turns the insert or does not box it");
+              if (!/\.insert \{[^}]*rotate\(-1\.5deg\)/.test(buildPrintCss("6x9", false))) bad.push("the print stylesheet does not turn the insert");
+              if (!/\.piv-book \.insert \{[^}]*rotate\(-1\.5deg\)/.test(buildBookCss(".piv-book"))) bad.push("the Print Interior View does not turn the insert");
+              const keepLang = state.meta.language;
+              state.meta.language = "ar";
+              const rp = document.createElement("div");
+              rp.className = "sc-ins-rtl"; rp.dir = "rtl"; rp.style.cssText = "position:absolute;left:-9999px;top:0;width:360px";
+              const rst = document.createElement("style");
+              try {
+                rst.textContent = buildBookCss(".sc-ins-rtl");
+                rp.innerHTML = contentBlocksToHtml("::: insert\nقابلني عند الرصيف\n:::", s, false, true, true);
+                document.body.appendChild(rst); document.body.appendChild(rp);
+                const a = angle(rp.querySelector(".insert")), al = getComputedStyle(rp.querySelector(".insert p")).textAlign;
+                if (!(a > 1.2 && a < 1.8) || al !== "right") bad.push("RTL insert: angle " + a.toFixed(2) + ", align " + al);
+                if (!/\.insert \{[^}]*rotate\(1\.5deg\)/.test(buildPrintCss("6x9", false))) bad.push("RTL print does not turn the insert the other way");
+              } finally { rp.remove(); rst.remove(); state.meta.language = keepLang; }
+              const paras = docxContentParas(src);
+              const ti = paras.filter((p) => p.includes('<w:pStyle w:val="InsertTitle"/>')), ip = paras.filter((p) => p.includes('<w:pStyle w:val="Insert"/>'));
+              if (ti.length !== 1 || ip.length !== 2 || !ip[0].includes("<w:br/>") || !ti[0].includes(">Found in the coat<")) bad.push("Word paragraphs: " + ti.length + " Insert Title, " + ip.length + " Insert");
+              const sty = ((buildDocxFiles().find((f) => f.path === "word/styles.xml") || {}).content) || "";
+              if (!['w:styleId="Insert"', 'w:styleId="InsertTitle"', 'w:fill="FCFAF3"'].every((x) => sty.includes(x))) bad.push("the Word styles lack Insert / Insert Title");
+              if (!IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Insert'] => p:fresh") || !IR_MAMMOTH_OPTS.styleMap.includes("p[style-name='Insert Title'] => p:fresh")) bad.push("Word import does not know the Insert styles");
+              const wc = countWords("::: insert Found note\nBurn this.\n:::"), wc0 = countWords("::: insert\nBurn this.\n:::");
+              if (wc !== 4 || wc0 !== 2) bad.push("word count " + wc + " / " + wc0 + " (want 4 / 2: the title is words, fences are not)");
+              const acx = acxSectionLines(s).map((l) => l.text);
+              if (!acx.includes("Found in the coat") || acx.some((x) => /:::/.test(x))) bad.push("narration: " + JSON.stringify(acx).slice(0, 200));
+              const ta = document.createElement("textarea");
+              ta.value = "Call home."; ta.setSelectionRange(0, ta.value.length);
+              applyContainer(ta, "insert");
+              if (ta.value !== "::: insert\nCall home.\n:::") bad.push("toolbar: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="insert"]')) bad.push("the toolbar lacks Insert");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.insert", "tool.insertTitle"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              const files = epubFiles("generic");
+              const val = validateEpubPackage(files);
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes(want))) bad.push("the EPUB chapter carries no insert");
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              if (!buildPrintHtml().includes('<p class="ins-title">Found in the coat</p>')) bad.push("the print file carries no insert");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "titled + untitled cards, the line break kept; computed: turned -1.5deg, paper #fcfaf3 with its own ink, a soft shadow, inside the column; the EPUB stylesheet boxes it square, print and the Print Interior View turn it, RTL turns it +1.5deg (preview and print) and sets it from the right; Word: Insert Title + 2 Insert paragraphs, a real break; Word styles + import map; the title counted and narrated, fences not; toolbar + 13 languages; EPUB validator errors 0; in the print file");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
+        { id: "chapter.redaction", feature: "chapter", name: "Redaction: \"||words||\" sets a solid bar the width of the words (a bar per word, role=\"img\" aria-label=\"redacted\") wherever text is set — prose, bold, a quote, a heading, a note, a link's words, a transcript's speaker, a log line, an insert's title — and the hidden words appear nowhere: not in the preview's DOM, the EPUB's files, the print file or the Word document (a run of U+2588 full blocks there), nor in the narration script or read-aloud; a redaction is not counted as words; the toolbar's Redact wraps the selection; 13 languages",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const bad = [];
+              const SECRETS = ["Harriet", "Vance", "Corsair", "nothing at all", "Nightjar", "WITNESS", "Marlowe", "Quillon", "Saltmarsh", "Ferrante", "Kestrel", "Bluebird"];
+              const src = "The agent met ||Harriet Vance|| at the **||Corsair||** dock.[^1]\n\n> She said ||nothing at all||.\n\n## The ||Nightjar|| file\n\n::: transcript\n||WITNESS||: I saw ||Marlowe||.\n:::\n\n::: log\n10:02 user=||Quillon|| login ok\n:::\n\n::: insert ||Saltmarsh||\nCall ||Ferrante||.\n:::\n\nRead [the ||Kestrel|| memo](https://example.com/m).\n\n[^1]: Source: ||Bluebird||.";
+              const leaks = (where, txt) => { const hit = SECRETS.filter((w) => String(txt).includes(w)); if (hit.length) bad.push(where + " leaks " + hit.join(", ")); };
+              const s = mkSection("body", "chapter", "Exhibit", { number: "1", content: src });
+              const html = contentBlocksToHtml(s.content, s, false, true, true);
+              leaks("the chapter HTML", html);
+              const bars = (html.match(/<span class="redact" role="img" aria-label="redacted">/g) || []).length;
+              if (bars !== 11) bad.push(bars + " bars (want 11)");
+              if (!html.includes('met <span class="redact" role="img" aria-label="redacted"><span class="rd-w" style="width: 4em"></span><wbr/><span class="rd-w" style="width: 2.5em"></span></span> at the <strong><span class="redact"')) bad.push("the bar is not per word / sized by its characters: " + JSON.stringify(html.slice(0, 400)));
+              if (html.indexOf("||") !== -1) bad.push("a || mark reached the page");
+              const zh = redactBarHtml("北京");
+              if (!zh.includes('style="width: 2em"')) bad.push("a wide (CJK) character is not a whole em: " + zh);
+              /* The bar as set: solid, the words' width. */
+              const probe = document.createElement("div");
+              probe.className = "sc-rd-probe"; probe.style.cssText = "position:absolute;left:-9999px;top:0;width:400px;font-size:20px";
+              const st = document.createElement("style"); st.textContent = buildBookCss(".sc-rd-probe");
+              probe.innerHTML = '<p>Met <span id="sc-rd-ref">Harriet Vance</span> at</p>' + contentBlocksToHtml("Met ||Harriet Vance|| at", s, false, true, true);
+              document.body.appendChild(st); document.body.appendChild(probe);
+              try {
+                const bar = probe.querySelector(".redact"), seg = probe.querySelector(".rd-w"), sc = getComputedStyle(seg);
+                const bw = bar.getBoundingClientRect().width, rw = probe.querySelector("#sc-rd-ref").getBoundingClientRect().width;
+                if (sc.display !== "inline-block" || sc.backgroundColor === "rgba(0, 0, 0, 0)" || !(parseFloat(sc.height) > 10)) bad.push("the bar is not solid: " + sc.display + " " + sc.backgroundColor + " " + sc.height);
+                if (!(bw > rw * 0.6 && bw < rw * 1.6)) bad.push("the bar is not about the words' width (" + Math.round(bw) + " vs " + Math.round(rw) + ")");
+                if (bar.textContent !== "") bad.push("the bar carries text");
+              } finally { probe.remove(); st.remove(); }
+              /* Word: full blocks, never the words. */
+              const paras = docxContentParas(src).join("");
+              leaks("the Word paragraphs", paras);
+              if (!paras.includes(">███████ █████<") || !paras.includes("<w:b/></w:rPr><w:t xml:space=\"preserve\">███████<")) bad.push("Word does not set full blocks (bold kept): " + paras.slice(0, 400));
+              if (!paras.includes(">the ███████ memo<") || /[]/.test(paras)) bad.push("Word: a link's redacted words are not full blocks");
+              const wc = countWords("a ||b c|| d"), wc2 = countWords("::: insert ||Saltmarsh||\nCall ||Ferrante||.\n:::");
+              if (wc !== 2 || wc2 !== 2) bad.push("word count " + wc + " / " + wc2 + " (want 2 / 2: a redaction is not words)");
+              const acx = JSON.stringify(acxSectionLines(s));
+              leaks("the narration script", acx);
+              if (!/redacted/.test(acx)) bad.push("the narration does not say \"redacted\"");
+              leaks("read aloud", raCleanText(src));
+              const ta = document.createElement("textarea");
+              ta.value = "met Vance there"; ta.setSelectionRange(4, 9);
+              wrapSelection(ta, "||");
+              if (ta.value !== "met ||Vance|| there") bad.push("toolbar wrap: " + JSON.stringify(ta.value));
+              if (!document.querySelector('#insertToolbar [data-insert="redact"]')) bad.push("the toolbar lacks Redact");
+              const missing = Object.keys(UI_STRINGS).filter((c) => ["tool.redact", "tool.redactTitle", "tool.redactSpoken"].some((k) => !UI_STRINGS[c][k]));
+              if (Object.keys(UI_STRINGS).length < 13 || missing.length) bad.push("UI strings missing in: " + missing.join(","));
+              /* The whole book: the preview's DOM, every EPUB file, the print file, the Word document. */
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta), theme: keepDoc.theme, sections: [mkSection("front", "titlepage", "Title Page"), s], images: [], printTrim: "6x9" });
+              state.activeId = s.id;
+              renderPreview();
+              const flow = $("pageFlow");
+              leaks("the preview DOM", flow.innerHTML + " " + flow.textContent);
+              if (flow.querySelectorAll('.redact[role="img"][aria-label="redacted"]').length !== 11) bad.push("the preview shows " + flow.querySelectorAll(".redact").length + " bars");
+              const files = epubFiles("generic");
+              files.filter((f) => !f.binary).forEach((f) => leaks("EPUB " + f.path, f.content));
+              const val = validateEpubPackage(files);
+              if (val && val.errors) bad.push("EPUB validator errors: " + val.results.filter((x) => x.level === "error").map((x) => x.id + ": " + String(x.detail).slice(0, 160)).join(" | "));
+              if (!files.some((f) => /Text\/.*\.xhtml/.test(f.path) && String(f.content).includes('aria-label="redacted"'))) bad.push("the EPUB carries no bar");
+              const ph = buildPrintHtml();
+              leaks("the print file", ph);
+              if ((ph.match(/class="redact"/g) || []).length !== 11) bad.push("the print file carries " + (ph.match(/class="redact"/g) || []).length + " bars");
+              const docXml = (buildDocxFiles().find((f) => f.path === "word/document.xml") || {}).content || "";
+              leaks("Word document.xml", docXml);
+              if (docXml.indexOf("█") === -1) bad.push("Word document.xml has no full blocks");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "11 redactions (prose, bold, quote, heading, note, link words, transcript speaker + words, log line, insert title + words) set as role=img bars, a bar per word sized from its characters (CJK a whole em), solid, about the words' width, empty of text; none of the 12 hidden words in the chapter HTML, the preview DOM, any EPUB file (validator errors 0), the print file, Word document.xml (full blocks there, bold kept), the narration script or read-aloud; not counted as words; the toolbar wraps the selection; 13 languages");
+            } finally {
+              applyBookDoc(keepDoc);
+            }
+          } },
         { id: "chapter.captions", feature: "chapter", name: "Image captions: ![alt](img:id \"Caption\") sets the caption under the picture as a figcaption (inline emphasis kept, the alt still the alt; straight or curled quotes, parentheses inside) in the preview, print and EPUB (validates); caption words count, the marker does not; the Word export puts a Caption paragraph under the image's place; the Insert Image dialog and the section's image card write the caption; a Word file's Caption-styled paragraph after a picture comes in as its caption",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -47899,7 +48505,7 @@
               if (ch && contentBlocksToHtml(c, ch, false, true, true).indexOf('<p class="attribution">— Anne Morrow Lindbergh</p>') === -1) bad.push("the attribution does not set");
               const items = rep ? rep.items : [];
               if (items.some((i) => i.kind === "subsup")) bad.push("the note mark was reported as lost superscript");
-              const notes = items.filter((i) => i.kind === "mammoth" && /Unrecognised paragraph style: '(Quote|Quote Attribution|Verse|Letter|Text Sent|Text Received|Text Note|Caption)'/.test(i.data.message));
+              const notes = items.filter((i) => i.kind === "mammoth" && /Unrecognised paragraph style: '(Quote|Quote Attribution|Verse|Letter|Text Sent|Text Received|Text Note|Caption|Transcript|Transcript Direction|Log|Log Dark|Insert|Insert Title)'/.test(i.data.message));
               if (notes.length) bad.push("converter notes for Beuk's own styles: " + notes.map((i) => i.data.message).join(" | "));
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") + " — content: " + JSON.stringify(c.slice(0, 600)) : "bold italic, link, both lists, quote + attribution (set), one centred block; texts/letter/caption fence nothing; no converter notes for Beuk's styles; the note mark not reported as lost");
             });
@@ -49585,8 +50191,10 @@
         return s ? (s.title || t("side.untitled")) : "";
       }
       function raCleanText(raw) {
-        /* A link is read aloud as its words, never its address. */
-        return String(raw || "")
+        /* A link is read aloud as its words, never its address. A
+           redaction is said as "redacted", never its words; container
+           fences are markup (BEUK:documents). */
+        return stripContainerMarks(spokenContainerText(String(raw || "")))
           .replace(mdLinkRe(), "$1")
           .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
           .replace(/\[\^[^\]]+\]:[^\n]*/g, " ")
