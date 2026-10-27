@@ -57,6 +57,7 @@ export function siteRoutes(config: Config): Router {
       '/privacy',
       '/terms',
       '/features',
+      '/ramp',
       '/compare',
       ...COMPARE_SLUGS.map((s) => `/compare/${s}`),
       '/status',

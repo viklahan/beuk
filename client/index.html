@@ -29459,6 +29459,10 @@
           ".print-sec.chapter-sec.spread-sec { page-break-before: left; break-before: verso; }",
           suppressRule("plateleaf", blankBoxes) || "@page plateleaf { }",
           ".print-sec.spread-sec .plate-page { page: plateleaf; }",
+          /* A plate is exactly the page area, its picture cropped to it: a
+             taller one (a square picture on a square page) spilled onto the
+             next page, which then took the plate's bare page type. */
+          ".print-sec .plate-page { height: " + inCss(t.h - mg.top - mg.bottom) + "; overflow: hidden; }",
           /* A blank page the renderer inserts; bare when blanks print bare. */
           ".print-blank { break-before: page; break-after: page; height: 1px; }",
           ...(state.printOmitBlankHead && suppressRule("blankleaf", blankBoxes) ? [suppressRule("blankleaf", blankBoxes), ".print-blank { page: blankleaf; }"] : []),
@@ -29476,7 +29480,10 @@
              trim, from the gutter edge — so it meets the verso plate's
              half of the painting at the binding. The opening sits below
              the top margin and its own 2.2em lead. */
-          ".print-sec .bd-layer.bd-page, .print-sec .bd-layer.bd-spread { top: " + inCss(-(mg.top + printOpeningLeadIn())) + "; left: " + inCss(-mg.inside) + "; right: auto; width: " + inCss(t.w) + "; height: " + inCss(t.h) + "; }",
+          /* It stops at the foot of the page area (anything below spills
+             onto a page of its own), its picture still sized to the page. */
+          ".print-sec .bd-layer.bd-page, .print-sec .bd-layer.bd-spread { top: " + inCss(-(mg.top + printOpeningLeadIn())) + "; left: " + inCss(-mg.inside) + "; right: auto; width: " + inCss(t.w) + "; height: " + inCss(t.h - mg.bottom) + "; }",
+          ".print-sec .bd-layer.bd-page.bd-baked, .print-sec .bd-layer.bd-spread.bd-baked { background-size: " + inCss(t.w) + " " + inCss(t.h) + "; background-position: 0 0; }",
           '[dir="rtl"] .print-sec .bd-layer.bd-page, [dir="rtl"] .print-sec .bd-layer.bd-spread { left: auto; right: ' + inCss(-mg.inside) + "; }"
         ]).join("\n");
       }

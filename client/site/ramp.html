@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="Ramp: books set in Beuk and printed by Beuk's own renderer from real book files. A noir thriller, a cookbook and a fantasy novel, four spreads each." />
+    <title>Ramp — Beuk</title>
+    <link rel="canonical" href="https://beuk.studio/ramp" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Beuk" />
+    <meta property="og:url" content="https://beuk.studio/ramp" />
+    <meta property="og:title" content="Ramp — Beuk" />
+    <meta property="og:description" content="Three books set in Beuk and printed by its own renderer: open one and turn the pages." />
+    <meta property="og:image" content="https://beuk.studio/site/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Beuk — one book, bound for every shore." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Self-hosted (assets/fonts): opening Beuk tells no font host the visitor's address. -->
+    <link rel="stylesheet" href="/assets/fonts/fonts-site.css" />
+    <link rel="stylesheet" href="/site/site.css" />
+    <style>
+      /* Ramp: the gallery stays quiet (paper, ink, space) so each book's own colour lands. */
+      .ramp-hero{padding:56px 0 18px}
+      .ramp-hero h1{font-size:clamp(34px,5vw,54px);max-width:16em;text-wrap:balance}
+      .ramp-hero .lede{font-family:var(--book);font-size:19px;color:var(--muted);max-width:40em;margin:16px 0 0}
+      .shelf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;padding:30px 0 10px}
+      @media(max-width:900px){.shelf{grid-template-columns:1fr}}
+      .book{--c:var(--accent);display:grid;gap:14px;text-align:left;background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer}
+      .book .cover{position:relative;aspect-ratio:2/1;border-radius:6px;overflow:hidden;box-shadow:0 26px 50px -28px rgba(20,32,36,.55),0 2px 6px rgba(20,32,36,.12);background:var(--bg2);display:flex;align-items:center;justify-content:center}
+      .book .cover::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:var(--c)}
+      .book img{width:100%;height:100%;object-fit:contain;transition:transform .5s ease}
+      .book:hover img{transform:scale(1.02)}
+      .book .t{font-family:var(--book);font-size:22px;font-weight:600;line-height:1.2}
+      .book .m{font-size:14px;color:var(--muted);line-height:1.55}
+      .book .m b{color:var(--c);font-weight:800}
+      .book .open{font-size:14px;font-weight:800;color:var(--c)}
+      .book:focus-visible{outline:2px solid var(--c);outline-offset:6px;border-radius:8px}
+      .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px 40px;padding-top:8px}
+      .notes h2{font-size:21px;margin-bottom:6px}
+      .notes p{margin:0;color:var(--muted);font-size:15px;max-width:34em}
+      .cta-band{border-top:1px solid var(--line);padding:46px 0 10px;display:grid;gap:14px;justify-items:start}
+      .cta-band h2{font-size:clamp(24px,3.2vw,32px)}
+      /* the reader: one spread at a time, full screen */
+      dialog.reader{border:0;padding:0;margin:0;width:100vw;height:100vh;max-width:none;max-height:none;background:#1a1d1c;color:#eef0ea}
+      dialog.reader::backdrop{background:#1a1d1c}
+      .reader-in{height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) max(14px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+      .reader-top{display:flex;align-items:center;gap:14px}
+      .reader-top .rt{font-family:var(--book);font-size:18px;font-weight:600}
+      .reader-top .rn{font-family:var(--mono);font-size:13px;color:#b9c2bd;margin-left:auto}
+      .reader button{font:inherit;cursor:pointer}
+      .rclose{background:transparent;border:1px solid #4a514e;color:#eef0ea;border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px}
+      .stage{position:relative;min-height:0;display:flex;align-items:center;justify-content:center}
+      .stage img{max-width:100%;max-height:100%;width:auto;height:auto;box-shadow:0 30px 60px -30px rgba(0,0,0,.8);background:#fff}
+      .stage .spine{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;pointer-events:none}
+      .rnav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:1px solid #4a514e;background:rgba(26,29,28,.75);color:#eef0ea;font-size:20px;display:flex;align-items:center;justify-content:center}
+      .rnav:disabled{opacity:.3;cursor:default}
+      .rprev{left:4px}.rnext{right:4px}
+      .reader-cap{font-size:14.5px;color:#cfd5d1;max-width:60em;margin:0 auto;text-align:center;line-height:1.55}
+      .reader-cap b{color:#fff}
+      .dots{display:flex;gap:7px;justify-content:center;margin-top:8px}
+      .dots span{width:8px;height:8px;border-radius:50%;background:#4a514e}
+      .dots span.on{background:var(--c,#c99b3f)}
+      @media (prefers-reduced-motion: reduce){.book img{transition:none}}
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#top">Skip to the books</a>
+    <header class="topbar">
+      <div class="topbar-in">
+        <a class="lockup" href="/?home" aria-label="Beuk — home">
+          <svg class="mark" width="26" height="31" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>
+          <span><span class="word">beuk</span><span class="sub">beuk.studio</span></span>
+          <span class="tagline">your EPUB &amp; print studio</span>
+        </a>
+        <nav aria-label="Site">
+          <a class="nl" href="/features">Features</a>
+          <a class="nl" href="/ramp" aria-current="page">Ramp</a>
+          <a class="nl" href="/compare">Compare</a>
+          <a class="nl opt" href="/help">Help</a>
+          <a class="nl opt" href="/studio?signin">Sign in</a>
+          <a class="btn-sm" href="/studio">Start writing</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <div class="wrap">
+        <header class="ramp-hero">
+          <p class="kicker">Ramp</p>
+          <h1>Books set in Beuk, printed by Beuk.</h1>
+          <p class="lede">Each book here is a real Beuk book file, typeset in the studio and printed to PDF by Beuk's own print renderer. These are its pages exactly as they came out. Open one and turn the spreads.</p>
+        </header>
+
+        <div class="shelf" role="list">
+          <button class="book" role="listitem" data-book="rain-on-calder-street" style="--c:#8a5a12" aria-label="Open Rain on Calder Street">
+            <span class="cover"><img src="/site/ramp/rain-on-calder-street/spread-2.webp" width="2208" height="1104" alt="" loading="eager" decoding="async" /></span>
+            <span class="t">Rain on Calder Street</span>
+            <span class="m"><b>Noir thriller</b> · 8 × 8 in · Oswald over Merriweather, in sodium-lamp amber. One painting per chapter crosses the gutter.</span>
+            <span class="open">Open the book →</span>
+          </button>
+          <button class="book" role="listitem" data-book="four-kitchens" style="--c:#a33a1c" aria-label="Open Four Kitchens">
+            <span class="cover"><img src="/site/ramp/four-kitchens/spread-2.webp" width="2194" height="1097" alt="" loading="eager" decoding="async" /></span>
+            <span class="t">Four Kitchens</span>
+            <span class="m"><b>Cookbook</b> · 8.5 × 8.5 in · Abril Fatface over Source Sans 3, in tomato red. A photograph faces every recipe, edge to edge.</span>
+            <span class="open">Open the book →</span>
+          </button>
+          <button class="book" role="listitem" data-book="the-sunken-vault" style="--c:#8c2a17" aria-label="Open The Sunken Vault">
+            <span class="cover"><img src="/site/ramp/the-sunken-vault/spread-4.webp" width="1464" height="1098" alt="" loading="eager" decoding="async" /></span>
+            <span class="t">The Sunken Vault</span>
+            <span class="m"><b>Fantasy novel</b> · 6 × 9 in · Cinzel in an ornate frame over Spectral, in ember red. A full-page plate faces each chapter.</span>
+            <span class="open">Open the book →</span>
+          </button>
+        </div>
+
+        <section class="notes" aria-label="About these books">
+          <div>
+            <h2>What you are looking at</h2>
+            <p>Every page is a page of Beuk's print PDF, rendered at screen size. Nothing was retouched or laid out by hand. The first page of a book stands alone on the right, the way a printed book opens.</p>
+          </div>
+          <div>
+            <h2>How the pictures sit</h2>
+            <p>A picture always takes the left page, edge to edge, and faces its chapter. When a painting is made for two pages, its right half carries on across the gutter and fades away before the first line of text.</p>
+          </div>
+          <div>
+            <h2>Credits</h2>
+            <p>Pictures made for Beuk with AI image tools and licensed by Beuk's owner. Words written for this gallery; every name, place and event is invented.</p>
+          </div>
+        </section>
+
+        <section class="cta-band" aria-label="Start writing">
+          <h2>Your book, set the same way.</h2>
+          <p class="micro"><b>No account needed to start.</b> With an account: a 7-day free trial, then one price — announced before launch.</p>
+          <a class="btn" href="/studio">Start writing <span class="arr">→</span></a>
+        </section>
+      </div>
+    </main>
+
+    <dialog class="reader" id="reader" aria-label="Book reader">
+      <div class="reader-in">
+        <div class="reader-top">
+          <span class="rt" id="rTitle"></span>
+          <span class="rn" id="rCount" aria-live="polite"></span>
+          <button class="rclose" id="rClose" type="button">Close</button>
+        </div>
+        <div class="stage" id="rStage">
+          <img id="rImg" alt="" />
+          <button class="rnav rprev" id="rPrev" type="button" aria-label="Previous spread">‹</button>
+          <button class="rnav rnext" id="rNext" type="button" aria-label="Next spread">›</button>
+        </div>
+        <div>
+          <p class="reader-cap" id="rCap"></p>
+          <div class="dots" id="rDots" aria-hidden="true"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <footer>
+      <div class="wrap">
+        <div class="foot-in">
+          <div class="fl">
+            <a class="lockup" href="/?home" aria-label="Beuk — home">
+              <svg class="mark" width="24" height="28" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>
+              <span><span class="word" style="font-size:23px">beuk</span><span class="sub">beuk.studio</span></span>
+            </a>
+            <p>Beuk is a writing and typesetting studio: bring a manuscript in, and send a finished book out as an ebook and in print.</p>
+          </div>
+          <nav aria-label="Footer">
+            <a href="/?home">Home</a>
+            <a href="/features">Features</a>
+            <a href="/ramp">Ramp</a>
+            <a href="/compare">Compare</a>
+            <a href="/studio">The studio</a>
+            <a href="/help">Help</a>
+            <a href="/changelog">Changelog</a>
+            <a href="/roadmap">Roadmap</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+          </nav>
+        </div>
+        <p class="footline">beuk.studio — your EPUB &amp; print studio. Ramp pages printed by Beuk's renderer on 26 October 2026.</p>
+      </div>
+    </footer>
+
+    <script>
+      (function(){
+        var BOOKS = {
+          "rain-on-calder-street": { title: "Rain on Calder Street", c: "#8a5a12", w: 2208, h: 1104, spreads: [
+            ["The title page, set from the book's own details: title, subtitle and author. A printed book opens on a right-hand page.", "The title page of Rain on Calder Street, a novel by J. R. Vance, on a right-hand page with the left page blank"],
+            ["<b>Spread.</b> The left half of the painting fills the page edge to edge; the right half crosses the gutter and fades out before the first line.", "Left: a detective in a fedora stands in the rain under a street lamp while a woman waits in a shop doorway. Right: Chapter 1, The Ninth Ring, its text beside the fog that fades in from the gutter"],
+            ["The chapter number and title in Oswald, set in the book's amber; the text in Merriweather with a three-line drop cap.", "Left: the detective at his desk under a lamp with photographs and whisky, a woman's silhouette in the doorway. Right: Chapter 2, Sealed"],
+            ["The same painting style, a different scene: a rooftop chase across the gutter.", "Left: a man in a hat and coat runs across a wet rooftop past a water tower. Right: Chapter 3, Over the Roofs"]
+          ]},
+          "four-kitchens": { title: "Four Kitchens", c: "#a33a1c", w: 2194, h: 1097, spreads: [
+            ["A photograph fills the left page edge to edge and faces its recipe. Dish names in Abril Fatface, in the book's tomato red.", "Left: chicken biryani in a copper pot surrounded by spices, raita and naan. Right: the recipe for Hyderabadi Chicken Biryani"],
+            ["Ingredients grouped by what they are for, then the method step by step.", "Left: a Neapolitan margherita pizza on a floured board with tomatoes and basil. Right: the recipe for Pizza Margherita"],
+            ["The same page each time, so the cook always knows where to look.", "Left: an omakase spread of nigiri and sashimi on dark boards. Right: the recipe for Omakase at Home"],
+            ["A square 8.5 × 8.5 inch trim, set for a book that lies open on the counter.", "Left: tacos al pastor with pineapple, onion and coriander, limes and salsas. Right: the recipe for Tacos al Pastor"]
+          ]},
+          "the-sunken-vault": { title: "The Sunken Vault", c: "#8c2a17", w: 1464, h: 1098, spreads: [
+            ["The title page, set in the Epic Fantasy theme: Cinzel for the title, Spectral for the text.", "The title page of The Sunken Vault, a novel by Isra Calloway, on a right-hand page with the left page blank"],
+            ["A full-page plate faces each chapter. The heading sits in the theme's ornate frame, in ember red.", "Left: three travellers at a tavern table by the fire with a map pinned by a knife. Right: Chapter One, The Map Under the Knife"],
+            ["The painting fades to paper at its foot, and the plate keeps the whole page.", "Left: a rune-carved door between serpent pillars with a line of red fire across it. Right: Chapter Two, The Door of Serpents"],
+            ["A four-line drop cap and small capitals open every chapter.", "Left: a chained dragon coiled around a great ruby in a cavern of lava. Right: Chapter Three, Ignis"]
+          ]}
+        };
+        var dlg = document.getElementById("reader"), img = document.getElementById("rImg");
+        var tEl = document.getElementById("rTitle"), nEl = document.getElementById("rCount"), cap = document.getElementById("rCap"), dots = document.getElementById("rDots");
+        var prev = document.getElementById("rPrev"), next = document.getElementById("rNext");
+        var cur = null, i = 0, opener = null;
+        function show(){
+          var b = BOOKS[cur], s = b.spreads[i];
+          img.src = "/site/ramp/" + cur + "/spread-" + (i + 1) + ".webp";
+          img.width = b.w; img.height = b.h; img.alt = s[1];
+          cap.innerHTML = s[0];
+          nEl.textContent = "Spread " + (i + 1) + " of " + b.spreads.length;
+          prev.disabled = i === 0; next.disabled = i === b.spreads.length - 1;
+          dots.innerHTML = b.spreads.map(function(_, k){ return '<span' + (k === i ? ' class="on"' : '') + '></span>'; }).join("");
+          // warm the next spread
+          if (i + 1 < b.spreads.length) { var pre = new Image(); pre.src = "/site/ramp/" + cur + "/spread-" + (i + 2) + ".webp"; }
+        }
+        function open(slug, from){
+          if (!BOOKS[slug]) return;
+          cur = slug; i = 0; opener = from || null;
+          dlg.style.setProperty("--c", BOOKS[slug].c);
+          tEl.textContent = BOOKS[slug].title;
+          show();
+          if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
+          try { history.replaceState(null, "", "#" + slug); } catch (e) {}
+          next.focus();
+        }
+        function close(){
+          if (dlg.open) dlg.close();
+        }
+        dlg.addEventListener("close", function(){
+          try { history.replaceState(null, "", location.pathname); } catch (e) {}
+          if (opener) opener.focus();
+        });
+        function go(d){ var b = BOOKS[cur]; var j = i + d; if (j >= 0 && j < b.spreads.length) { i = j; show(); } }
+        prev.addEventListener("click", function(){ go(-1); });
+        next.addEventListener("click", function(){ go(1); });
+        document.getElementById("rClose").addEventListener("click", close);
+        img.addEventListener("click", function(e){ var r = img.getBoundingClientRect(); go(e.clientX - r.left < r.width / 2 ? -1 : 1); });
+        dlg.addEventListener("keydown", function(e){
+          if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); go(1); }
+          else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(-1); }
+        });
+        var tx = null;
+        dlg.addEventListener("touchstart", function(e){ tx = e.touches[0].clientX; }, { passive: true });
+        dlg.addEventListener("touchend", function(e){ if (tx == null) return; var dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); tx = null; });
+        Array.prototype.forEach.call(document.querySelectorAll(".book"), function(btn){
+          btn.addEventListener("click", function(){ open(btn.getAttribute("data-book"), btn); });
+        });
+        var start = location.hash.replace("#", "");
+        if (BOOKS[start]) open(start, document.querySelector('.book[data-book="' + start + '"]'));
+      })();
+    </script>
+  </body>
+</html>

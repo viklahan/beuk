@@ -11,6 +11,7 @@ const read = (...p: string[]) => readFileSync(path.join(root, ...p), 'utf8');
 // The site pages beside the landing page: /features, /compare and /compare/<slug>.
 const PAGES: { file: string[]; url: string }[] = [
   { file: ['client', 'site', 'features.html'], url: '/features' },
+  { file: ['client', 'site', 'ramp.html'], url: '/ramp' },
   { file: ['client', 'site', 'compare', 'index.html'], url: '/compare' },
   ...COMPARE_SLUGS.map((s) => ({ file: ['client', 'site', 'compare', `${s}.html`], url: `/compare/${s}` })),
 ];
@@ -153,12 +154,13 @@ test('both service workers leave /features and /compare to the network', () => {
   }
 });
 
-test('the landing page links Features and Compare in its top bar and footer', () => {
+test('the landing page links Features, Ramp and Compare in its top bar and footer', () => {
   const html = read('client', 'site', 'index.html');
   assert.equal((html.match(/href="\/features"/g) ?? []).length, 2);
+  assert.equal((html.match(/href="\/ramp"/g) ?? []).length, 2);
   assert.equal((html.match(/href="\/compare"/g) ?? []).length, 2);
-  assert.match(html, /<a class="nl" href="\/features">Features<\/a>\n\s+<a class="nl" href="\/compare">Compare<\/a>/);
-  assert.match(html, /<a href="\/features">Features<\/a>\n\s+<a href="\/compare">Compare<\/a>/);
+  assert.match(html, /<a class="nl" href="\/features">Features<\/a>\n\s+<a class="nl" href="\/ramp">Ramp<\/a>\n\s+<a class="nl" href="\/compare">Compare<\/a>/);
+  assert.match(html, /<a href="\/features">Features<\/a>\n\s+<a href="\/ramp">Ramp<\/a>\n\s+<a href="\/compare">Compare<\/a>/);
 });
 
 test('the landing top bar hides nothing of its own: the two in-page links it gave up are still in the footer', () => {
@@ -238,4 +240,36 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
     assert.match(read('client', 'site', 'compare', `${slug}.html`), /With an account, Beuk's server converts the print interior to PDF\/X-1a\./, slug);
     assert.match(read('client', 'site', 'compare', `${slug}.html`), /Writing and exporting on your device need no Beuk account/, slug);
   }
+});
+
+test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP of the size the reader states, each described', () => {
+  const html = read('client', 'site', 'ramp.html');
+  const books = [...html.matchAll(/"([a-z-]+)": \{ title: "([^"]+)", c: "(#[0-9a-f]{6})", w: (\d+), h: (\d+), spreads: \[([\s\S]*?)\]\}/g)];
+  assert.deepEqual(books.map((b) => b[1]), ['rain-on-calder-street', 'four-kitchens', 'the-sunken-vault']);
+  for (const [, slug, title, , w, h, body] of books) {
+    const spreads = [...body.matchAll(/\["([^"]+)", "([^"]+)"\]/g)];
+    assert.equal(spreads.length, 4, `${slug}: four spreads (a book ends in four turns)`);
+    spreads.forEach(([, caption, alt], i) => {
+      assert.ok(caption.length > 30, `${slug} spread ${i + 1} has a caption`);
+      assert.ok(alt.length > 40, `${slug} spread ${i + 1} is described`);
+      const file = path.join(root, 'client', 'site', 'ramp', slug, `spread-${i + 1}.webp`);
+      assert.ok(existsSync(file), file);
+      const buf = readFileSync(file);
+      assert.equal(buf.toString('ascii', 8, 12), 'WEBP', file);
+      const kind = buf.toString('ascii', 12, 16);
+      const dims = kind === 'VP8 ' ? [buf.readUInt16LE(26) & 0x3fff, buf.readUInt16LE(28) & 0x3fff]
+        : kind === 'VP8L' ? [(buf.readUInt32LE(21) & 0x3fff) + 1, ((buf.readUInt32LE(21) >> 14) & 0x3fff) + 1]
+        : [buf.readUIntLE(24, 3) + 1, buf.readUIntLE(27, 3) + 1];
+      assert.deepEqual(dims, [Number(w), Number(h)], `${file} is ${dims.join('×')}`);
+      assert.ok(buf.length < 400_000, `${file} stays small (${buf.length} bytes)`);
+    });
+    assert.ok(html.includes(`data-book="${slug}"`) && html.includes(`aria-label="Open ${title}"`), `${slug} is on the shelf`);
+  }
+  // Honest provenance: printed by Beuk's renderer, pictures made with AI tools and licensed, words invented.
+  assert.match(html, /printed to PDF by Beuk's own print renderer/);
+  assert.match(html, /Pictures made for Beuk with AI image tools and licensed by Beuk's owner/);
+  assert.match(html, /every name, place and event is invented/);
+  // Every site page beside it links Ramp.
+  for (const f of [['client', 'site', 'index.html'], ['client', 'site', 'features.html'], ['client', 'site', 'compare', 'index.html']])
+    assert.ok(read(...f).includes('href="/ramp"'), `${f.join('/')} links /ramp`);
 });

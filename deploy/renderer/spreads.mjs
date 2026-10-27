@@ -112,10 +112,12 @@ export function blanksFor(plan, starts) {
 export function finalHtml(html, before, stamped) {
   let out = html.replace(SECTION_RE, (tag, cls, id) => (before.has(id) ? '<div class="print-blank" aria-hidden="true"></div>' : '') + tag);
   if (stamped.size) {
-    const sel = [...stamped].map((id) => '#' + id + ' .plate-page img, #' + id + ' .bd-layer.bd-page').join(', ');
-    // The print page colour is white (the paper itself); left painted, it
-    // would cover whatever is drawn beneath the page area.
-    out = out.replace(/<\/head>/i, '<style>' + sel + ' { visibility: hidden !important; } html, body { background: transparent !important; }</style></head>');
+    const plates = [...stamped].map((id) => '#' + id + ' .plate-page img').join(', ');
+    const layers = [...stamped].map((id) => '#' + id + ' .bd-layer.bd-page').join(', ');
+    // The plate keeps its place (its page); the stamped layer leaves the
+    // layout altogether. The print page colour is white (the paper
+    // itself); left painted, it would cover whatever is drawn beneath.
+    out = out.replace(/<\/head>/i, '<style>' + plates + ' { visibility: hidden !important; } ' + layers + ' { display: none !important; } html, body { background: transparent !important; }</style></head>');
   }
   return out;
 }

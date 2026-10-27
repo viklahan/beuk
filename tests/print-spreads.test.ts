@@ -53,7 +53,7 @@ test('print spreads: blank pages go exactly where a side was missed, and later s
   const html = spreads.finalHtml(DOC, before, new Set(['ps-2']));
   assert.equal(html.split('<div class="print-blank" aria-hidden="true"></div><section').length - 1, 2);
   assert.ok(html.includes('<div class="print-blank" aria-hidden="true"></div><section class="print-sec chapter-sec" id="ps-1"'));
-  assert.ok(html.includes('#ps-2 .plate-page img, #ps-2 .bd-layer.bd-page { visibility: hidden !important; }'));
+  assert.ok(html.includes('#ps-2 .plate-page img { visibility: hidden !important; } #ps-2 .bd-layer.bd-page { display: none !important; }'));
   assert.ok(html.includes('html, body { background: transparent !important; }'), 'the white page colour must not cover the pictures beneath');
   assert.ok(!spreads.finalHtml(DOC, new Set(), new Set()).includes('visibility: hidden'));
 });

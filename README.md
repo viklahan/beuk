@@ -2554,6 +2554,24 @@ In the studio, the shelf dialog links to the account page and shows a calm line 
 
 `GET /api/account/export/check` (signed in) answers 200, 413 or 429 without counting against the download limit; the account page asks it first, so a refusal shows on the page instead of being saved as a file. With a Stripe key, deleting an account cancels its subscription at Stripe (`cancelBillingForDeletedAccount()` in `src/account/plan.ts`); without one, the Delete section says it doesn't and who to ask. The Plan section reads `accountPlan()` (same file). Accounts made before migration 014 start as "not confirmed".
 
+## Ramp: `/ramp`
+
+`/ramp` (`client/site/ramp.html`) is a gallery of books set in Beuk and
+printed by Beuk's own renderer. Each book is a real Beuk book file (a
+`.beuk-backup.json`, openable with Open a backup; kept outside the repo in
+`beuk-whole-project/10-ramp-gallery/books/` with `ramp-books.json`, the words
+and picture plan they were built from). Each was typeset in the studio,
+printed to PDF through `deploy/renderer` (the facing-pages pass included),
+and its spreads rendered from that PDF to WebP under `client/site/ramp/<slug>/`,
+untouched. A book opens on four spreads (four turns) in a full-screen
+reader: arrow keys, click either half, swipe, or `/ramp#<slug>` to open one
+directly. Today: *Rain on Calder Street* (noir, 8 × 8 in), *Four Kitchens*
+(cookbook, 8.5 × 8.5 in) and *The Sunken Vault* (fantasy, 6 × 9 in). The
+pictures are V's, made with AI image tools and owner-licensed; each has a
+row in the gallery's `pictures.tsv`. The words are written for the gallery
+and every name is invented. `tests/site-pages.test.ts` checks every spread
+file against the size the reader states.
+
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
 
 - **`/features`** (`client/site/features.html`) shows the studio feature by feature in nine real screenshots under `client/site/shots/` (WebP, 600–1280 px wide, all under 100 KB, each with alt text and its real size). They were taken in the studio with the bundled sample, *The Lantern Coast*, on 26 October 2026: the writing desk with the device preview, the Typography Studio, the Print Interior View, the cover maker and print wrap, the export dialog with its store presets, Story Insights, the Goals habit calendar and a History snapshot. Every line describes the studio as it is today. Beta-reader links need an account, so that section says there is no picture instead of showing a mock-up. The road-so-far chart isn't pictured because the browser had logged the sample's length on only one day.

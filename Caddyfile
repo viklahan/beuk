@@ -193,6 +193,14 @@
 		rewrite * /site/features.html
 		file_server
 	}
+	# Ramp: books set and printed by Beuk (client/site/ramp.html).
+	redir /ramp/ /ramp 308
+	handle /ramp {
+		header Cache-Control "no-cache"
+		root * /srv/client
+		rewrite * /site/ramp.html
+		file_server
+	}
 	redir /compare/ /compare 308
 	handle /compare {
 		header Cache-Control "no-cache"
