@@ -2606,6 +2606,62 @@ page stays the lines the title-page reader expects, and a centred chapter
 heading line stays a heading. Self-checks: `chapter.containers`,
 `chapter.verse`, `chapter.align`.
 
+## Containers: texts and letters
+
+Two more `CONTAINER_KINDS`, for fiction:
+
+```
+::: texts Ana
+Tuesday, 9:41 pm
+Ana: are you up?
+Ben: no -- asleep
+:::
+
+::: letter
+Dear Tom,
+
+The roof leaks again.
+The cat is fine.
+
+Yours ever,
+Margaret
+
+P.S. Bring string.
+:::
+```
+
+- `texts <MeName>` — a text-message conversation, one `Name: message` per
+  line. Lines from `<MeName>` (case does not matter) are *sent*: set to the
+  right in a tinted bubble; everyone else's are *received*: set to the left
+  in an outlined bubble. The two sides differ by alignment and by tint
+  versus outline, never by colour alone, so they read apart in black ink;
+  the print file sets the tint as a solid grey (`#e6e6e6`, no
+  transparency). The sender's name stands small above the first message of
+  a run; a blank line starts a new run. A line that is not `Name: message`
+  (a time, "Read 9:41") is a small centred note. A name starts with a
+  letter and holds letters, spaces and `.'-` only (so "Tuesday, 9:41" is a
+  note, not a speaker). With no `<MeName>` the first speaker is the sender.
+  Bubbles are inline blocks on left- or right-set lines (no flexbox), so
+  older reading systems keep the two sides; with no stylesheet at all each
+  message still reads as the name and then the text. In Word: one `Text
+  Sent` (right-aligned, shaded) or `Text Received` (left, with a bar)
+  paragraph per message, the run's first carrying the name in bold and a
+  line break; notes as `Text Note`.
+- `letter` — a written note or letter: the book's body face in italic
+  (emphasis inside turns upright) in a hairline box, set ragged, every line
+  break kept, paragraphs separated by blank lines. A first paragraph that
+  is one short line ending `,` or `:` is the salutation; the last paragraph
+  (before any `P.S.`) whose first line ends `,` in at most three short
+  lines is the sign-off, set flush right. In Word: `Letter`-style
+  paragraphs (italic, indented both sides) with real line breaks, the
+  sign-off right-aligned.
+
+The speaker names are words (they are on the page); the fences are not.
+Toolbar: Texts (fences the selection as `::: texts <first speaker>`, or
+`Me` when there is none) and Letter, in all 13 languages. Not read back
+from a Word import: an imported conversation or letter arrives as ordinary
+paragraphs. Self-checks: `chapter.texts`, `chapter.letter`.
+
 ## Ramp: `/ramp`
 
 `/ramp` (`client/site/ramp.html`) is a gallery of books set in Beuk and

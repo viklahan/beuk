@@ -1951,6 +1951,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The alignment is typeset by the studio renderer; the Word import reads the package in the browser.',
   },
   {
+    id: 'chapter.texts',
+    title: 'Texts: "::: texts <MeName>" sets message bubbles (sent right and tinted, received left and outlined, names above each run) in preview, print and EPUB, and Text Sent / Text Received paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The conversation is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
+    id: 'chapter.letter',
+    title: 'Letter: "::: letter" sets an italic note in a hairline box with its line breaks, salutation and right-set sign-off, in preview, print and EPUB, and as Letter paragraphs in Word',
+    kind: 'client-only',
+    reason: 'The letter is typeset by the studio renderer, and the EPUB and Word files are built in the browser.',
+  },
+  {
     id: 'chapter.backdrop.spread',
     title: 'Spread backdrop: a plated chapter faces its plate across the gutter, the art at full strength there and fading before the words',
     kind: 'client-only',
