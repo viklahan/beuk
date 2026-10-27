@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v13"; /* v13: Word import formatting, verse/centre/right/letter/texts containers, links, captions and attribution, page-foot notes, PDF import */
+const BEUK_CACHE = "beuk-shell-v14"; /* v14: transcript, log, insert containers and ||redaction||; margin notes, sideways and upside-down blocks; hanging and two-column back matter; picture-book title page */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell

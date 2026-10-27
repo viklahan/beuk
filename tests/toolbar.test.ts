@@ -25,7 +25,7 @@ test('toolbar: every client editor.toolbar.* self-check is registered server-sid
   }
 });
 
-test('toolbar: grouped markup keeps every hook, four whole groups, no inline margin-left:auto', async () => {
+test('toolbar: grouped markup keeps every hook, five whole groups, no inline margin-left:auto', async () => {
   const html = await clientHtml();
   const start = html.indexOf('<div class="toolbar" id="insertToolbar">');
   const end = html.indexOf('<div id="sceneBar">', start);
@@ -38,9 +38,9 @@ test('toolbar: grouped markup keeps every hook, four whole groups, no inline mar
     'data-i18n-aria="top.readAloudAria"',
   ]) assert.ok(tb.includes(hook), `toolbar keeps ${hook}`);
   const groups = [...tb.matchAll(/class="tool-group[^"]*" data-tg="([a-z]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(groups, ['format', 'structure', 'assist', 'focus']);
+  assert.deepEqual(groups, ['format', 'structure', 'blocks', 'assist', 'focus']);
   assert.ok(/class="tool-group focus-cluster"/.test(tb), 'the Focus group keeps the focus-cluster class zen relies on');
-  assert.equal((tb.match(/class="tool-break"/g) || []).length, 3, 'one possible break between each pair of groups');
+  assert.equal((tb.match(/class="tool-break"/g) || []).length, 4, 'one possible break between each pair of groups');
   assert.ok(!/margin-left:\s*auto/.test(tb), 'nothing is pushed to a corner with margin-left:auto');
   for (const key of ['tool.bold', 'tool.italic', 'tool.blockquote', 'tool.sceneBreak', 'tool.emDash', 'tool.footnote', 'tool.insertImage', 'tool.autoFormat']) {
     assert.ok(tb.includes(`<span class="tl" data-i18n="${key}">`), `${key} label sits in a foldable span`);

@@ -2626,6 +2626,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Word export, Mammoth.js and the import walk all run in the studio; the server never sees the file.',
   },
   {
+    id: 'import.docx.ergodic',
+    title: 'Word round trip (round two): Transcript, Log Dark, Insert, Margin Note, Sideways and Upside Down paragraphs from a Beuk Word export come back fenced as their containers (speaker, name, title and lines kept), redactions still bars',
+    kind: 'client-only',
+    reason: 'The Word export, Mammoth.js and the import walk all run in the studio; the server never sees the file.',
+  },
+  {
     id: 'import.pdf',
     title:
       'PDF import: a PDF written in the check imports through the vendored PDF.js (SRI) as two chapters with running heads and page numbers left out and reported, the line-end hyphen joined, italic and bold carried, a paragraph running on over the page break, a scene break, the table reported and the picture imported; a text-less scan is refused; undo restores the prior book',

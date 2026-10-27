@@ -2340,6 +2340,13 @@
                   <button class="tool-btn" data-collapse="2" data-insert="attribution" title="Attribution — add a “— Name” line under the quote the cursor is in" data-i18n-title="tool.attributionTitle"><i data-lucide="signature"></i><span class="tl" data-i18n="tool.attribution">Attribution</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="ul" title="Bulleted list — each line becomes an item" data-i18n-title="tool.ulTitle"><i data-lucide="list"></i><span class="tl" data-i18n="tool.ul">List</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="ol" title="Numbered list — each line becomes a numbered step" data-i18n-title="tool.olTitle"><i data-lucide="list-ordered"></i><span class="tl" data-i18n="tool.ol">Numbered</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="scenebreak" title="Scene break — becomes an ornament in the book" data-i18n-title="tool.sceneBreakTitle"><i data-lucide="sparkle"></i><span class="tl" data-i18n="tool.sceneBreak">Scene Break</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="emdash" title="Em dash" data-i18n-title="tool.emDashTitle"><i data-lucide="minus"></i><span class="tl" data-i18n="tool.emDash">Em Dash —</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i><span class="tl" data-i18n="tool.footnote">Footnote</span></button>
+                </div>
+                <span class="tool-break" aria-hidden="true"></span>
+                <!-- BEUK:ergodic-r13 — the "::: " container blocks stand in a group of their own, so Structure and Blocks each fit one row -->
+                <div class="tool-group" data-tg="blocks"><span class="tool-sep" aria-hidden="true"></span>
                   <button class="tool-btn" data-collapse="2" data-insert="columns" title="Columns — set the selected back matter (notes, a chronology, an index) in two balanced columns in print" data-i18n-title="tool.columnsTitle"><i data-lucide="columns-2"></i><span class="tl" data-i18n="tool.columns">Columns</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="hanging" title="Hanging indent — one entry per line, each entry's turn-over lines hung under it (a bibliography, a chronology, an index)" data-i18n-title="tool.hangingTitle"><i data-lucide="indent-increase"></i><span class="tl" data-i18n="tool.hanging">Hanging indent</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="verse" title="Verse — keep every line break of the selected lines (a poem, a song)" data-i18n-title="tool.verseTitle"><i data-lucide="feather"></i><span class="tl" data-i18n="tool.verse">Verse</span></button>
@@ -2350,12 +2357,9 @@
                   <button class="tool-btn" data-collapse="2" data-insert="transcript" title="Transcript — set the selected lines as an interview transcript, one &quot;SPEAKER: words&quot; per line, [directions] in italic" data-i18n-title="tool.transcriptTitle"><i data-lucide="mic-vocal"></i><span class="tl" data-i18n="tool.transcript">Transcript</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="log" title="Log — set the selected lines as a log or chat file, monospace, every line exactly as typed" data-i18n-title="tool.logTitle"><i data-lucide="square-terminal"></i><span class="tl" data-i18n="tool.log">Log</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="insert" title="Insert — set the selected lines as a loose paper card slipped into the book, line breaks kept" data-i18n-title="tool.insertTitle"><i data-lucide="sticky-note"></i><span class="tl" data-i18n="tool.insert">Insert</span></button>
-                  <button class="tool-btn" data-collapse="2" data-insert="margin" title="Margin note — a reader's note in the margin beside the paragraph before it, in their own ink" data-i18n-title="tool.marginTitle"><i data-lucide="sticky-note"></i><span class="tl" data-i18n="tool.margin">Margin Note</span></button>
+                  <button class="tool-btn" data-collapse="2" data-insert="margin" title="Margin note — a reader's note in the margin beside the paragraph before it, in their own ink" data-i18n-title="tool.marginTitle"><i data-lucide="pen-line"></i><span class="tl" data-i18n="tool.margin">Margin Note</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="sideways" title="Sideways — set the selected paragraphs on a page of their own, turned a quarter clockwise" data-i18n-title="tool.sidewaysTitle"><i data-lucide="rotate-cw"></i><span class="tl" data-i18n="tool.sideways">Sideways</span></button>
                   <button class="tool-btn" data-collapse="2" data-insert="upsidedown" title="Upside down — set the selected paragraphs turned upside down on the page" data-i18n-title="tool.upsideDownTitle"><i data-lucide="flip-vertical-2"></i><span class="tl" data-i18n="tool.upsideDown">Upside Down</span></button>
-                  <button class="tool-btn" data-collapse="2" data-insert="scenebreak" title="Scene break — becomes an ornament in the book" data-i18n-title="tool.sceneBreakTitle"><i data-lucide="sparkle"></i><span class="tl" data-i18n="tool.sceneBreak">Scene Break</span></button>
-                  <button class="tool-btn" data-collapse="2" data-insert="emdash" title="Em dash" data-i18n-title="tool.emDashTitle"><i data-lucide="minus"></i><span class="tl" data-i18n="tool.emDash">Em Dash —</span></button>
-                  <button class="tool-btn" data-collapse="2" data-insert="endnote" title="Footnote — typesets as a linked endnote" data-i18n-title="tool.footnoteTitle"><i data-lucide="notebook-pen"></i><span class="tl" data-i18n="tool.footnote">Footnote</span></button>
                 </div>
                 <span class="tool-break" aria-hidden="true"></span>
                 <div class="tool-group" data-tg="assist"><span class="tool-sep" aria-hidden="true"></span>
@@ -28105,16 +28109,58 @@
            title-page reader expects, and a centred heading line stays
            a heading so the chapter split is never fenced across. */
         const aligns = (ir.scan && Array.isArray(ir.scan.aligns)) ? ir.scan.aligns : null;
-        let alignAt = 0, seenHead = false, alignRun = null, alignBack = null;
+        let alignAt = 0, seenHead = false, alignRun = null, alignBack = null, alignRec = null;
         const alignOf = (txt) => {
-          alignBack = null;
+          alignBack = null; alignRec = null;
           if (!aligns) return null;
           const key = irLoose(String(txt).replace(/\[\^\d{1,3}\]/g, ""));
           if (!key) return null;
           for (let j = alignAt; j < Math.min(aligns.length, alignAt + 400); j++) {
-            if (aligns[j] && aligns[j].key === key) { alignAt = j + 1; alignBack = aligns[j].back || null; return aligns[j].align; }
+            if (aligns[j] && aligns[j].key === key) { alignAt = j + 1; alignBack = aligns[j].back || null; alignRec = aligns[j]; return aligns[j].align; }
           }
           return null;
+        };
+        /* BEUK:ergodic-r13 — a paragraph's lines, split at its line
+           breaks (a <br> among its own children), each as marked-up
+           text: an insert, a margin note and a transcript turn keep
+           their lines. */
+        const irLinesMd = (node) => {
+          const segs = [[]];
+          node.childNodes.forEach((c) => { if (c.nodeType === 1 && c.tagName.toLowerCase() === "br") segs.push([]); else segs[segs.length - 1].push(c); });
+          return segs.map((cs) => {
+            const w = node.ownerDocument.createElement("span");
+            cs.forEach((c) => w.appendChild(c.cloneNode(true)));
+            return carry(irRunsToMd(irInlineRuns(w, ir), ir, false));
+          }).filter((l) => l !== "");
+        };
+        /* A log line as typed: its text exactly (spaces kept, nothing
+           marked up), Word's full blocks put back as a redaction. */
+        const irLogLine = (node) => node.textContent.replace(/ /g, " ").replace(/\s+$/, "")
+          .replace(/█+(?:[ \t]+█+)*/g, (m) => "||" + m + "||");
+        /* One paragraph in one of the round-two styles -> its container
+           line(s); a new margin note (its name first) or a titled insert
+           opens a container of its own. */
+        const backPara = (node, v, rec) => {
+          const kind = alignBack, st = rec ? rec.backStyle : "";
+          if (kind === "margin") {
+            const lines = irLinesMd(node);
+            const nm = lines.length > 1 ? /^\*\*([^*]+)\*\*$/.exec(lines[0]) : null;
+            if (nm) { flushAlign(); alignRun = { kind, arg: nm[1].trim(), paras: [], back: true }; lines.shift(); }
+            return lines.join("\n");
+          }
+          if (kind === "insert" && st === "InsertTitle") {
+            flushAlign();
+            alignRun = { kind, arg: v, paras: [], back: true };
+            return null;
+          }
+          if (kind === "insert" || kind === "sideways" || kind === "upside-down") return irLinesMd(node).join("\n");
+          if (kind === "log" || kind === "log dark") return irLogLine(node);
+          if (kind === "transcript") {
+            const lines = irLinesMd(node);
+            if (lines.length) lines[0] = lines[0].replace(/^\*\*([^*\n]+?)([:：﹕])\*\*\s*/, (m, who, colon) => who + colon + (colon === ":" ? " " : ""));
+            return (rec && rec.gap && alignRun && alignRun.paras.length ? "\n" : "") + lines.join("\n");
+          }
+          return carry(irRunsToMd(irInlineRuns(node, ir), ir, false)) || v;
         };
         /* A Caption-styled paragraph straight after a picture is that
            picture's caption: it rides on the image marker, never left
@@ -28135,8 +28181,10 @@
         const isHeadLine = (t) => t.length > 2 && (CHAPTER_HEAD_RE.test(t) || !!MATTER_HEADINGS[normHeading(t)] || normHeading(t).indexOf("also by") === 0);
         const flushAlign = () => {
           if (!alignRun) return;
-          /* A hanging run's entries are its lines; every other run's are paragraphs. */
-          parts.push("::: " + alignRun.kind + "\n" + alignRun.paras.join(/hanging/.test(alignRun.kind) ? "\n" : "\n\n") + "\n:::");
+          /* A hanging run's entries are its lines (a transcript's and a
+             log's too); every other run's are paragraphs. */
+          if (!alignRun.paras.length && alignRun.kind === "insert" && alignRun.arg) alignRun.paras.push("");
+          parts.push("::: " + alignRun.kind + (alignRun.arg ? " " + alignRun.arg : "") + "\n" + alignRun.paras.join(/hanging|^transcript$|^log/.test(alignRun.kind) ? "\n" : "\n\n") + "\n:::");
           if (alignRun.back) ir.backFenced = (ir.backFenced || 0) + alignRun.paras.length;
           else ir.aligned = (ir.aligned || 0) + alignRun.paras.length;
           alignRun = null;
@@ -28155,8 +28203,10 @@
                  into its container, a run of one style sharing one. */
               if (alignBack) {
                 if (alignRun && alignRun.kind !== alignBack) flushAlign();
+                const rec = alignRec;
+                const line = backPara(node, v, rec);
                 if (!alignRun) alignRun = { kind: alignBack, paras: [], back: true };
-                alignRun.paras.push(carry(irRunsToMd(irInlineRuns(node, ir), ir, false)) || v);
+                if (line != null) alignRun.paras.push(line);
                 return;
               }
               if (isHeadLine(v)) seenHead = true;
@@ -28317,8 +28367,14 @@
         /* Beuk's own back-matter styles fence their paragraphs back into
            the container they came from ("::: hanging", "::: columns",
            "::: columns hanging"), by style id through the basedOn chain. */
-        const BACK_KIND = { Hanging: "hanging", Columns: "columns", ColumnsHanging: "columns hanging" };
-        const backKind = (id) => { for (let k = 0; id && k < 12; k++) { if (BACK_KIND[id]) return BACK_KIND[id]; if (!styles[id]) return null; id = styles[id].based; } return null; };
+        /* BEUK:ergodic-r13 — and so do the round-two styles: a
+           transcript, a log, an insert (its title the fence's argument),
+           a margin note (its name), a sideways and an upside-down block. */
+        const BACK_KIND = { Hanging: "hanging", Columns: "columns", ColumnsHanging: "columns hanging",
+          Transcript: "transcript", TranscriptDirection: "transcript", Log: "log", LogDark: "log dark", Insert: "insert", InsertTitle: "insert",
+          MarginNote: "margin", Sideways: "sideways", UpsideDown: "upside-down" };
+        const backStyleOf = (id) => { for (let k = 0; id && k < 12; k++) { if (BACK_KIND[id]) return id; if (!styles[id]) return null; id = styles[id].based; } return null; };
+        const backKind = (id) => { const b = backStyleOf(id); return b ? BACK_KIND[b] : null; };
         const ownStyle = (id) => { for (let k = 0; id && k < 12; k++) { if (OWN_SET.has(id)) return true; if (!styles[id]) return false; id = styles[id].based; } return false; };
         const styleJc = (id) => { for (let k = 0; id && styles[id] && k < 12; k++) { if (styles[id].jc) return styles[id].jc; id = styles[id].based; } return ""; };
         /* Word's own Caption style (by id or by name, through basedOn):
@@ -28332,7 +28388,9 @@
           const al = ownStyle(ps) ? "" : (norm(val(kid(ppr, "jc"))) || styleJc(ps));
           let txt = "";
           Array.prototype.forEach.call(p.getElementsByTagNameNS(W, "t"), (t) => { txt += t.textContent; });
-          return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null, caption: styleCaption(val(kid(ppr, "pStyle"))), back: backKind(ps) };
+          const sp = kid(ppr, "spacing");
+          return { key: irLoose(txt), align: (al === "center" || al === "right") ? al : null, caption: styleCaption(val(kid(ppr, "pStyle"))), back: backKind(ps),
+            backStyle: backStyleOf(ps), gap: !!(sp && Number(sp.getAttributeNS(W, "before") || sp.getAttribute("w:before") || 0) > 0) };
         });
       }
       /* Word features the HTML never shows — read from the package
@@ -38291,7 +38349,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v13"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v14"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -44732,7 +44790,7 @@
             } finally { setUiLang(keep); closeUiLangMenu(); }
           } },
         /* ==== BEUK:toolbar ==== */
-        { id: "editor.toolbar.layout", feature: "editor-toolbar", name: "Editor toolbar layout at this width: the four groups (Format · Structure · Assist · Focus) each stay on one row, every row fills the toolbar edge to edge, no divider stands at a row's edge, no gap between neighbours is wider than one divider slot, and any label folded to an icon keeps its text for screen readers and a tooltip",
+        { id: "editor.toolbar.layout", feature: "editor-toolbar", name: "Editor toolbar layout at this width: the five groups (Format · Structure · Blocks · Assist · Focus) each stay on one row, every row fills the toolbar edge to edge, no divider stands at a row's edge, no gap between neighbours is wider than one divider slot, and any label folded to an icon keeps its text for screen readers and a tooltip",
           run() {
             const tb = $("insertToolbar");
             if (!tb || typeof tbLayout !== "function") return scVerdict(false, "the toolbar or its layout routine is missing");
@@ -50154,6 +50212,58 @@
               if (notes.length) bad.push("converter notes: " + notes.map((i) => i.data.message).join(" | "));
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") + " — content: " + JSON.stringify(c.slice(0, 700)) : "hanging, columns and columns-hanging come back as their fences with every entry, italics kept, one entry per line; the prose around them unfenced; no converter notes");
             });
+          } },
+        /* BEUK:ergodic-r13 — the round-two containers come back from Beuk's own Word export as their fences. */
+        { id: "import.docx.ergodic", feature: "import", name: "Word round trip (round two): a transcript (speakers, a stage direction, a breath between exchanges), a dark log (every line as typed), a titled insert (its lines kept), two margin notes by two names, a sideways and an upside-down block, exported to Word and imported back, come back fenced as the same containers, a redaction still a bar and its words nowhere",
+          async run() {
+            if (!window.JSZip || !window.mammoth) return scVerdict(false, "JSZip or Mammoth.js is not loaded");
+            const src = [
+              "The paragraph both readers wrote beside, plain and long enough.",
+              "::: margin M.\nNot so — he was *there*.\n:::",
+              "::: margin J.\nAgreed.\n:::",
+              "::: transcript\nDET. RUIZ: Where were you?\nHALE: At home with ||Quorlane||.\n[He looks away.]\n\nRUIZ: Alone?\n:::",
+              "::: log dark\n[09:41] keeper: lamp 2 -- \"ok\"\n[09:58] ferry: no reply ...\n:::",
+              "::: insert A card\nMeet me at the steps.\nBring the key.\n:::",
+              "::: sideways\nTIDE TABLE\n\nMonday 04:12.\n:::",
+              "::: upside-down\nThe keeper lied.\n:::",
+              "The end."
+            ].join("\n\n");
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            let html = "", messages = [], scan = null;
+            try {
+              applyBookDoc({ meta: Object.assign({}, keepDoc.meta, { title: "Round Two Check", author: "A. Writer" }), theme: keepDoc.theme,
+                sections: [mkSection("front", "titlepage", "Title Page"), mkSection("body", "chapter", "Documents", { number: "1", content: src })], images: [] });
+              const buf = await (await buildDocxBlob()).arrayBuffer();
+              scan = await irScanDocxXml(buf);
+              const res = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
+              html = res.value; messages = res.messages || [];
+            } finally {
+              applyBookDoc(keepDoc);
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+            return irCheckRun(() => {
+              const bad = [];
+              const rep = importDocxConverted("ergodic.docx", html, messages, scan, {}, null);
+              const ch = state.sections.find((s) => s.type === "chapter" && /Documents/.test(s.title));
+              const c = ch ? String(ch.content || "") : "";
+              const want = [
+                "::: margin M.\nNot so — he was *there*.\n:::",
+                "::: margin J.\nAgreed.\n:::",
+                "::: transcript\nDET. RUIZ: Where were you?\nHALE: At home with ||████████||.\n[He looks away.]\n\nRUIZ: Alone?\n:::",
+                "::: log dark\n[09:41] keeper: lamp 2 -- \"ok\"\n[09:58] ferry: no reply ...\n:::",
+                "::: insert A card\nMeet me at the steps.\nBring the key.\n:::",
+                "::: sideways\nTIDE TABLE\n\nMonday 04:12.\n:::",
+                "::: upside-down\nThe keeper lied.\n:::",
+                "The end."];
+              want.forEach((w) => { if (c.indexOf(w) === -1) bad.push("missing " + JSON.stringify(w)); });
+              if ((c.match(/^::: /gm) || []).length !== 7) bad.push((c.match(/^::: /gm) || []).length + " fences (want 7)");
+              if (c.indexOf("Quorlane") !== -1) bad.push("the redacted word came back");
+              const items = rep ? rep.items : [];
+              const notes = items.filter((i) => i.kind === "mammoth" && /Unrecognised paragraph style: '(Transcript|Transcript Direction|Log|Log Dark|Insert|Insert Title|Margin Note|Sideways|Upside Down)'/.test(i.data.message));
+              if (notes.length) bad.push("converter notes: " + notes.map((i) => i.data.message).join(" | "));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") + " — content: " + JSON.stringify(c.slice(0, 900)) : "two margin notes under their own names, a transcript with its speakers, direction and breath, a dark log line for line (no curled quotes, no dashes made), a titled insert with its line breaks, a sideways and an upside-down block — each back in its fence; the redaction a bar, its word gone; no converter notes for the round-two styles");
+            });
           } }
       );
       async function runAsyncSelfChecks() {
@@ -52008,7 +52118,7 @@
         if (btn) btn.setAttribute("aria-expanded", "false");
       }
       /* ==== BEUK:toolbar ==== */
-      /* Editor toolbar layout. The four groups wrap whole; this picks
+      /* Editor toolbar layout. The five groups wrap whole; this picks
          (a) how many secondary labels fold to icons and (b) where the
          rows break, from the groups' measured natural widths:
            - for fold level 0 (all labels) … 3, find the fewest rows
@@ -52033,7 +52143,7 @@
       function tbBestSplit(widths, cost, gap, W) {
         /* widths[i]: group i with its divider; cost[i]: what that
            divider adds (0 for the first group). Brute force over the
-           2^(n-1) ways to break n ≤ 4 groups into rows. */
+           2^(n-1) ways to break n ≤ 5 groups into rows. */
         const n = widths.length;
         let best = null;
         for (let mask = 0; mask < (1 << Math.max(0, n - 1)); mask++) {

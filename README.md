@@ -306,7 +306,7 @@ shows 13 rows (it showed 4).
 and jsPDF 2.5.2 are vendored in `client/assets/vendor/` (byte-identical
 to the CDN releases, pinned with SRI; the Housekeeping case
 `infra.deploy.vendored-libraries` re-hashes them) and precached by the
-service worker (cache `beuk-shell-v13`; both `client/sw.js` and
+service worker (cache `beuk-shell-v14`; both `client/sw.js` and
 `client/assets/sw.js`). The zen ambient recordings are not precached:
 each is kept in its own cache (`beuk-sound-v2`, which a shell version
 bump leaves alone; it is bumped when a recording is replaced under the
@@ -2883,7 +2883,8 @@ right edge) — but each log line carries its own `dir` (`logLineDir`:
 the bidi algorithm never reorders a Latin line (`$ rm -rf build/ && echo
 'ok'` stays as typed in an Arabic book) and the insert is set from the right and turned the other
 way (`+1.5deg`). Word import knows all six paragraph styles (no converter
-notes; they come in as ordinary paragraphs, not fenced again). Toolbar:
+notes) and fences them back into their containers (see "Round two
+together" below). Toolbar:
 Redact (fits the selection: spaces at its ends stay outside the marks, a
 selection over lines or paragraphs is redacted line by line with list,
 quote and heading marks kept, a bare cursor redacts its word, and an
@@ -2991,8 +2992,8 @@ notes fell back to its end).
 The note's words are words; its name (in the fence) and the fences are
 not. Read-aloud and narration skip the fences and read a margin note where
 it stands, after its paragraph; turned text reads as it is. Word import
-knows the three styles (no "unrecognised style" note) and brings them in
-as ordinary paragraphs, as round one's Verse / Letter / Text styles.
+knows the three styles (no "unrecognised style" note) and fences them
+back into their containers (see "Round two together" below).
 Toolbar: Margin Note (a dialog asks whose note it is — the book's last
 margin name offered — and takes its words, prefilled from the selection
 when there is one, which stays where it is; the fenced note goes after the
@@ -3066,6 +3067,37 @@ inside it, now settles in a few passes with every note at the foot of its
 reference's page (it once fell back to the section end after 60 passes,
 where the Print Interior View still showed the notes at the page feet).
 Test: `tests/print-footnotes.test.ts` (a two-column toy paginator).
+
+## Round two together (integration, studio cache v14)
+
+- **Toolbar.** The ":::" container buttons (Columns, Hanging, Verse,
+  Centre, Right, Texts, Letter, Transcript, Log, Insert, Margin Note,
+  Sideways, Upside Down) stand in a fifth group of their own, Blocks,
+  between Structure (quote, attribution, lists, scene break, em dash,
+  footnote) and Assist. With all three branches' buttons in one Structure
+  group it no longer fit one row at a 642px toolbar
+  (`editor.toolbar.layout`). Margin Note's icon is a pen line, so it
+  does not share Insert's note icon.
+- **Word round trip.** The import walk fences Beuk's own round-two Word
+  styles back into their containers, by style id through `basedOn`, the
+  way the back-matter styles are: `Transcript` / `Transcript Direction`
+  -> `::: transcript` (the bold speaker becomes `SPEAKER: ` again, a
+  paragraph with space before it starts a new exchange after a blank
+  line), `Log` / `Log Dark` -> `::: log` / `::: log dark` (each paragraph
+  one line, its text exactly as typed, Word's full blocks put back as
+  `||███||`), `Insert Title` + `Insert` -> `::: insert <Title>` (line
+  breaks kept), `Margin Note` -> `::: margin <Name>` (the bold first line
+  is the name; a new name opens a new note), `Sideways` / `Upside Down`
+  -> `::: sideways` / `::: upside-down`. A redaction comes back as a bar,
+  never its words. Not fenced back: a blank line inside a log (Word keeps
+  no empty paragraph), two untitled inserts or two logs in a row (they
+  merge into one), and round one's texts and letters (as before).
+  Self-check: `import.docx.ergodic` (async).
+- **Renderer.** The page-foot note pass handles both a margin note's
+  float and a two-column block on one page: a forced break before a
+  float still goes on an empty block before it, a cut inside the columns
+  still ends and reopens the block, and a line's reach counts the notes
+  it carries (`floatBottom`) inside and outside the columns.
 
 ## Title page centring and picture-book type (round 13)
 
