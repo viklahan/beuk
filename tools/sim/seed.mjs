@@ -136,6 +136,8 @@ async function seedPersona(browser, pKey, importPath) {
       // what the desk's metadata says before the writer sets anything (evidence for the meta-carry-over check)
       rec.metaBeforeSet = await page.evaluate(() => ({ series: state.meta.series === undefined ? null : state.meta.series, title: state.meta.title }));
       await page.evaluate((m) => __sim.setMeta(m), { title: b.title, author: b.author, series: b.series ? b.series.name : null });
+      // the Gutenberg sagas are public-domain texts: their copyright page and dc:rights say so (Project Settings → Rights → Public domain); no first-publication year is set, as none is sourced in sagas.json
+      if (b.source.kind === 'saga') await page.evaluate((m) => __sim.setMeta(m), { rightsMode: 'pd', rights: '' });
       if (b.source.kind !== 'saga') await page.evaluate(() => { state.meta.bookId = newBookId(); });
       // 3. Also by: the siblings in reading order
       if (S) {

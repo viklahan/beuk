@@ -3074,6 +3074,32 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'serializeBook and the IndexedDB record are built in the browser; the shelf receives that document as opaque JSON.',
   },
   /* ==== /BEUK:imagelib ==== */
+  /* ==== BEUK:rights ==== */
+  {
+    id: 'rights.pd.everywhere',
+    title: 'Rights · Public domain: copyright page (print, EPUB, Markdown, Word) and dc:rights say the work is in the public domain, with first-publication year and edition line; never All rights reserved',
+    kind: 'client-only',
+    reason: 'The copyright page and the EPUB package are generated in the browser from the client book.',
+  },
+  {
+    id: 'rights.cc.licence',
+    title: 'Rights · Creative Commons: each of the six licences names itself and its URL on the copyright page and in dc:rights; CC0 reads as a waiver',
+    kind: 'client-only',
+    reason: 'The copyright page and the EPUB package are generated in the browser from the client book.',
+  },
+  {
+    id: 'rights.legacy.unchanged',
+    title: 'Rights · an old book keeps its exact copyright page and serializes no new keys; a book carries its rights choice and never inherits the last book’s',
+    kind: 'client-only',
+    reason: 'serializeBook / applyBookDoc and the generated page run in the browser; the shelf stores the document as opaque JSON.',
+  },
+  {
+    id: 'rights.settings.form',
+    title: 'Rights · Project Settings: the choice shows only its own fields, the preview follows the form, Save stores the choice, reopening shows it',
+    kind: 'client-only',
+    reason: 'The Rights controls are studio UI over the client book.',
+  },
+  /* ==== /BEUK:rights ==== */
 ];
 
 /* ------------------------------------------------------------------ */
