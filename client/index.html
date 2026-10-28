@@ -2987,7 +2987,13 @@
           <div><label class="field-lab" for="setPublisher" data-i18n="set.publisher">Publisher</label><input class="txt-input" id="setPublisher" type="text" /></div>
           <div><label class="field-lab" for="setIsbn" data-i18n="set.isbn">ISBN (optional)</label><input class="txt-input" id="setIsbn" type="text" placeholder="978-1-23456-789-0" /></div>
           <div><label class="field-lab" for="setYear" data-i18n="set.year">Year</label><input class="txt-input" id="setYear" type="text" inputmode="numeric" placeholder="2026" /></div>
-          <div class="full"><label class="field-lab" for="setRights" data-i18n="set.rights">Rights (optional)</label><input class="txt-input" id="setRights" type="text" placeholder="Defaults to a standard copyright line" /></div>
+          <div class="full"><label class="field-lab" for="setRightsMode" data-i18n="rights.label">Rights</label><select class="txt-input" id="setRightsMode"><option value="reserved" data-i18n="rights.reserved">All rights reserved</option><option value="pd" data-i18n="rights.pd">Public domain</option><option value="cc" data-i18n="rights.cc">Creative Commons</option><option value="custom" data-i18n="rights.custom">Custom</option></select></div>
+          <div class="full" id="rowRightsCustom" hidden><label class="field-lab" for="setRights" data-i18n="rights.customText">Rights line</label><input class="txt-input" id="setRights" type="text" data-i18n-ph="rights.customPh" placeholder="Your own rights statement" /></div>
+          <div class="full" id="rowRightsCc" hidden><label class="field-lab" for="setCcLicence" data-i18n="rights.licence">Licence</label><select class="txt-input" id="setCcLicence"></select></div>
+          <div id="rowRightsPdYear" hidden><label class="field-lab" for="setFirstPublished" data-i18n="rights.firstPublished">First published (year, optional)</label><input class="txt-input" id="setFirstPublished" type="text" inputmode="numeric" placeholder="1844" /></div>
+          <div id="rowRightsPdEd" hidden><label class="field-lab" for="setEditionHolder" data-i18n="rights.editionHolder">This edition © (optional)</label><input class="txt-input" id="setEditionHolder" type="text" data-i18n-ph="rights.editionPh" placeholder="Publisher or editor" /></div>
+          <div class="full" id="rowRightsPdNote" hidden><p class="cover-note" data-i18n="rights.editionNote" style="margin-top:0;">Only for what this edition adds of its own, such as an introduction, notes or new pictures.</p></div>
+          <div class="full"><p class="cover-note" id="rightsPreview" style="margin-top:0;"></p></div>
           <div>
             <label class="field-lab" for="setLang" data-i18n="set.bookLanguage">Book language</label>
             <select class="txt-input" id="setLang"></select>
@@ -19452,11 +19458,105 @@
         if (s.kind === "body") return (s.type === "chapter" && s.number ? "Chapter " + s.number + " · " : "") + (s.title || "Untitled");
         return s.title;
       }
-      function rightsLine() {
-        const m = state.meta;
-        if (m.rights && m.rights.trim()) return m.rights.trim();
+      /* ==== BEUK:rights ==== — what the book says about its own rights.
+         Four choices: All rights reserved (the default), Public domain,
+         Creative Commons (one of the six licences, with its URL) and
+         Custom (the writer's own line, the old free-text field). Only
+         Public domain and Creative Commons are stored (meta.rightsMode,
+         meta.ccLicence, meta.firstPublished, meta.editionHolder); a book
+         without them is read exactly as before: its own line if it has
+         one, else the standard copyright line — so an old book prints,
+         exports and saves byte for byte as it always did. */
+      const CC_LICENCES = {
+        "by": { name: "Creative Commons Attribution 4.0 International", short: "CC BY 4.0", url: "https://creativecommons.org/licenses/by/4.0/" },
+        "by-sa": { name: "Creative Commons Attribution-ShareAlike 4.0 International", short: "CC BY-SA 4.0", url: "https://creativecommons.org/licenses/by-sa/4.0/" },
+        "by-nc": { name: "Creative Commons Attribution-NonCommercial 4.0 International", short: "CC BY-NC 4.0", url: "https://creativecommons.org/licenses/by-nc/4.0/" },
+        "by-nc-sa": { name: "Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International", short: "CC BY-NC-SA 4.0", url: "https://creativecommons.org/licenses/by-nc-sa/4.0/" },
+        "by-nd": { name: "Creative Commons Attribution-NoDerivatives 4.0 International", short: "CC BY-ND 4.0", url: "https://creativecommons.org/licenses/by-nd/4.0/" },
+        "cc0": { name: "CC0 1.0 Universal", short: "CC0 1.0", url: "https://creativecommons.org/publicdomain/zero/1.0/" }
+      };
+      const RIGHTS_KEYS = ["rightsMode", "ccLicence", "firstPublished", "editionHolder"];
+      function rightsModeOf(m) {
+        m = m || state.meta;
+        if (m.rightsMode === "pd") return "pd";
+        if (m.rightsMode === "cc" && CC_LICENCES[m.ccLicence]) return "cc";
+        return m.rights && String(m.rights).trim() ? "custom" : "reserved";
+      }
+      /* Read strictly from an arriving book: a choice outside the known
+         sets is dropped, and a book without one carries none (never the
+         last book's). */
+      function rightsNormalizeInto(target, src) {
+        RIGHTS_KEYS.forEach((k) => delete target[k]);
+        if (!src || typeof src !== "object") return;
+        const str = (v) => typeof v === "string" ? v.trim().slice(0, 300) : "";
+        if (src.rightsMode === "pd") target.rightsMode = "pd";
+        else if (src.rightsMode === "cc" && CC_LICENCES[src.ccLicence]) { target.rightsMode = "cc"; target.ccLicence = src.ccLicence; }
+        else return;
+        if (target.rightsMode === "pd") {
+          if (str(src.firstPublished)) target.firstPublished = str(src.firstPublished);
+          if (str(src.editionHolder)) target.editionHolder = str(src.editionHolder);
+        }
+      }
+      function rightsYear(m) { return m.year || new Date().getFullYear(); }
+      /* The statement itself, one line: dc:rights, the Markdown
+         frontmatter, the audio closing credits. */
+      function rightsLine(meta) {
+        const m = meta || state.meta;
+        const mode = rightsModeOf(m);
+        if (mode === "custom") return m.rights.trim();
+        if (mode === "pd" || mode === "cc") return copyrightRightsParas(m).join(" ");
         return "Copyright © " + (m.year || new Date().getFullYear()) + " " + (m.author || "") + ". All rights reserved.";
       }
+      /* The rights paragraphs of the generated copyright page for the
+         public-domain and Creative Commons choices. */
+      function copyrightRightsParas(m) {
+        const mode = rightsModeOf(m);
+        if (mode === "pd") {
+          const p = ["This work is in the public domain."];
+          if (m.firstPublished) p.push("First published in " + m.firstPublished + ".");
+          if (m.editionHolder) p.push("This edition © " + rightsYear(m) + " " + m.editionHolder + ".");
+          return p;
+        }
+        const lic = CC_LICENCES[m.ccLicence];
+        if (m.ccLicence === "cc0")
+          return ["To the extent possible under law, " + (m.author || "the author") + " has waived all copyright and related or neighbouring rights to this work under " + lic.name + " (" + lic.short + "): " + lic.url];
+        return ["Copyright © " + rightsYear(m) + (m.author ? " " + m.author : "") + ".",
+          "This work is licensed under the " + lic.name + " licence (" + lic.short + "): " + lic.url];
+      }
+      const CP_NO_PART = "No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.";
+      const CP_FICTION = "This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental.";
+      /* Every paragraph of the generated copyright page, in order — print,
+         EPUB, Markdown and Word all set these. All rights reserved and
+         Custom keep today's page exactly. Public domain drops the
+         permission line (there is none to ask for) and the fiction
+         notice (the original author never made it); Creative Commons
+         drops the permission line the licence replaces. */
+      function copyrightPageParas() {
+        const m = state.meta;
+        const mode = rightsModeOf(m);
+        const p = mode === "pd" ? copyrightRightsParas(m)
+          : mode === "cc" ? copyrightRightsParas(m).concat([CP_FICTION])
+          : [rightsLine(), CP_NO_PART, CP_FICTION];
+        if (m.publisher) p.push("Published by " + m.publisher);
+        if (m.isbn) p.push("ISBN " + m.isbn);
+        p.push("Typeset with Beuk.");
+        return p;
+      }
+      /* BEUK:rights — the Rights choice in Project Settings, in every interface language */
+      Object.assign(UI_STRINGS.en, { "rights.label": "Rights", "rights.reserved": "All rights reserved", "rights.pd": "Public domain", "rights.cc": "Creative Commons", "rights.custom": "Custom", "rights.customText": "Rights line", "rights.customPh": "Your own rights statement", "rights.licence": "Licence", "rights.firstPublished": "First published (year, optional)", "rights.editionHolder": "This edition © (optional)", "rights.editionPh": "Publisher or editor", "rights.editionNote": "Only for what this edition adds of its own, such as an introduction, notes or new pictures.", "rights.preview": "The copyright page and the EPUB say: {line}", "rights.inDetails": "Rights: {choice}. Change it in {where}." });
+      Object.assign(UI_STRINGS.es, { "rights.label": "Derechos", "rights.reserved": "Todos los derechos reservados", "rights.pd": "Dominio público", "rights.cc": "Creative Commons", "rights.custom": "Personalizado", "rights.customText": "Línea de derechos", "rights.customPh": "Tu propia declaración de derechos", "rights.licence": "Licencia", "rights.firstPublished": "Primera publicación (año, opcional)", "rights.editionHolder": "Esta edición © (opcional)", "rights.editionPh": "Editorial o editor", "rights.editionNote": "Solo para lo que esta edición añade por su cuenta, como una introducción, notas o nuevas ilustraciones.", "rights.preview": "La página de créditos y el EPUB dicen: {line}", "rights.inDetails": "Derechos: {choice}. Cámbialo en {where}." });
+      Object.assign(UI_STRINGS.fr, { "rights.label": "Droits", "rights.reserved": "Tous droits réservés", "rights.pd": "Domaine public", "rights.cc": "Creative Commons", "rights.custom": "Personnalisé", "rights.customText": "Mention des droits", "rights.customPh": "Votre propre mention des droits", "rights.licence": "Licence", "rights.firstPublished": "Première publication (année, facultatif)", "rights.editionHolder": "Cette édition © (facultatif)", "rights.editionPh": "Éditeur ou responsable d’édition", "rights.editionNote": "Uniquement pour ce que cette édition ajoute en propre : une introduction, des notes ou de nouvelles illustrations.", "rights.preview": "La page de copyright et l’EPUB indiquent : {line}", "rights.inDetails": "Droits : {choice}. Modifiez-les dans {where}." });
+      Object.assign(UI_STRINGS.de, { "rights.label": "Rechte", "rights.reserved": "Alle Rechte vorbehalten", "rights.pd": "Gemeinfrei", "rights.cc": "Creative Commons", "rights.custom": "Eigener Text", "rights.customText": "Rechtevermerk", "rights.customPh": "Ihr eigener Rechtevermerk", "rights.licence": "Lizenz", "rights.firstPublished": "Erstveröffentlichung (Jahr, optional)", "rights.editionHolder": "Diese Ausgabe © (optional)", "rights.editionPh": "Verlag oder Herausgeber", "rights.editionNote": "Nur für das, was diese Ausgabe selbst hinzufügt, etwa eine Einleitung, Anmerkungen oder neue Bilder.", "rights.preview": "Impressum und EPUB lauten: {line}", "rights.inDetails": "Rechte: {choice}. Ändern Sie das in {where}." });
+      Object.assign(UI_STRINGS.it, { "rights.label": "Diritti", "rights.reserved": "Tutti i diritti riservati", "rights.pd": "Pubblico dominio", "rights.cc": "Creative Commons", "rights.custom": "Personalizzato", "rights.customText": "Dicitura dei diritti", "rights.customPh": "La tua dicitura dei diritti", "rights.licence": "Licenza", "rights.firstPublished": "Prima pubblicazione (anno, facoltativo)", "rights.editionHolder": "Questa edizione © (facoltativo)", "rights.editionPh": "Editore o curatore", "rights.editionNote": "Solo per ciò che questa edizione aggiunge di suo, come un’introduzione, note o nuove illustrazioni.", "rights.preview": "La pagina del copyright e l’EPUB dicono: {line}", "rights.inDetails": "Diritti: {choice}. Puoi cambiarlo in {where}." });
+      Object.assign(UI_STRINGS.pt, { "rights.label": "Direitos", "rights.reserved": "Todos os direitos reservados", "rights.pd": "Domínio público", "rights.cc": "Creative Commons", "rights.custom": "Personalizado", "rights.customText": "Linha de direitos", "rights.customPh": "A sua própria declaração de direitos", "rights.licence": "Licença", "rights.firstPublished": "Primeira publicação (ano, opcional)", "rights.editionHolder": "Esta edição © (opcional)", "rights.editionPh": "Editora ou editor", "rights.editionNote": "Apenas para o que esta edição acrescenta por si, como uma introdução, notas ou novas ilustrações.", "rights.preview": "A página de direitos e o EPUB dizem: {line}", "rights.inDetails": "Direitos: {choice}. Altere em {where}." });
+      Object.assign(UI_STRINGS.nl, { "rights.label": "Rechten", "rights.reserved": "Alle rechten voorbehouden", "rights.pd": "Publiek domein", "rights.cc": "Creative Commons", "rights.custom": "Eigen tekst", "rights.customText": "Rechtenregel", "rights.customPh": "Uw eigen rechtenvermelding", "rights.licence": "Licentie", "rights.firstPublished": "Eerst verschenen (jaar, optioneel)", "rights.editionHolder": "Deze editie © (optioneel)", "rights.editionPh": "Uitgever of redacteur", "rights.editionNote": "Alleen voor wat deze editie zelf toevoegt, zoals een inleiding, noten of nieuwe illustraties.", "rights.preview": "De copyrightpagina en de EPUB zeggen: {line}", "rights.inDetails": "Rechten: {choice}. Wijzig dit in {where}." });
+      Object.assign(UI_STRINGS.pl, { "rights.label": "Prawa", "rights.reserved": "Wszelkie prawa zastrzeżone", "rights.pd": "Domena publiczna", "rights.cc": "Creative Commons", "rights.custom": "Własny tekst", "rights.customText": "Nota o prawach", "rights.customPh": "Twoja własna nota o prawach", "rights.licence": "Licencja", "rights.firstPublished": "Pierwsze wydanie (rok, opcjonalnie)", "rights.editionHolder": "To wydanie © (opcjonalnie)", "rights.editionPh": "Wydawca lub redaktor", "rights.editionNote": "Tylko dla tego, co to wydanie dodaje od siebie, np. wstępu, przypisów lub nowych ilustracji.", "rights.preview": "Strona redakcyjna i EPUB podają: {line}", "rights.inDetails": "Prawa: {choice}. Zmień to w: {where}." });
+      Object.assign(UI_STRINGS.ru, { "rights.label": "Права", "rights.reserved": "Все права защищены", "rights.pd": "Общественное достояние", "rights.cc": "Creative Commons", "rights.custom": "Свой текст", "rights.customText": "Строка о правах", "rights.customPh": "Ваше собственное заявление о правах", "rights.licence": "Лицензия", "rights.firstPublished": "Первая публикация (год, необязательно)", "rights.editionHolder": "Это издание © (необязательно)", "rights.editionPh": "Издатель или редактор", "rights.editionNote": "Только для того, что это издание добавляет от себя: предисловия, примечаний или новых иллюстраций.", "rights.preview": "На странице авторских прав и в EPUB: {line}", "rights.inDetails": "Права: {choice}. Изменить можно в разделе «{where}»." });
+      Object.assign(UI_STRINGS.tr, { "rights.label": "Haklar", "rights.reserved": "Tüm hakları saklıdır", "rights.pd": "Kamu malı", "rights.cc": "Creative Commons", "rights.custom": "Özel", "rights.customText": "Haklar satırı", "rights.customPh": "Kendi haklar beyanınız", "rights.licence": "Lisans", "rights.firstPublished": "İlk yayım (yıl, isteğe bağlı)", "rights.editionHolder": "Bu baskı © (isteğe bağlı)", "rights.editionPh": "Yayıncı ya da editör", "rights.editionNote": "Yalnızca bu baskının kendi eklediği şeyler için; örneğin bir giriş, notlar ya da yeni resimler.", "rights.preview": "Telif sayfası ve EPUB şunu söyler: {line}", "rights.inDetails": "Haklar: {choice}. {where} içinden değiştirin." });
+      Object.assign(UI_STRINGS.ar, { "rights.label": "الحقوق", "rights.reserved": "جميع الحقوق محفوظة", "rights.pd": "ملكية عامة", "rights.cc": "المشاع الإبداعي (Creative Commons)", "rights.custom": "نص مخصص", "rights.customText": "سطر الحقوق", "rights.customPh": "بيان الحقوق الخاص بك", "rights.licence": "الترخيص", "rights.firstPublished": "أول نشر (السنة، اختياري)", "rights.editionHolder": "هذه الطبعة © (اختياري)", "rights.editionPh": "الناشر أو المحرر", "rights.editionNote": "فقط لما تضيفه هذه الطبعة من عندها، مثل مقدمة أو حواشٍ أو صور جديدة.", "rights.preview": "تقول صفحة حقوق النشر وملف EPUB: {line}", "rights.inDetails": "الحقوق: {choice}. يمكنك تغييرها في {where}." });
+      Object.assign(UI_STRINGS.ja, { "rights.label": "権利", "rights.reserved": "著作権所有（All rights reserved）", "rights.pd": "パブリックドメイン", "rights.cc": "クリエイティブ・コモンズ", "rights.custom": "カスタム", "rights.customText": "権利表記", "rights.customPh": "独自の権利表記", "rights.licence": "ライセンス", "rights.firstPublished": "初版（年、任意）", "rights.editionHolder": "この版 ©（任意）", "rights.editionPh": "出版社または編者", "rights.editionNote": "序文、注釈、新しい挿絵など、この版が独自に加えたものについてだけ記入します。", "rights.preview": "著作権ページと EPUB の表記：{line}", "rights.inDetails": "権利：{choice}。{where} で変更できます。" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "rights.label": "权利", "rights.reserved": "保留所有权利", "rights.pd": "公有领域", "rights.cc": "知识共享（Creative Commons）", "rights.custom": "自定义", "rights.customText": "权利声明", "rights.customPh": "你自己的权利声明", "rights.licence": "许可协议", "rights.firstPublished": "首次出版（年份，可选）", "rights.editionHolder": "本版 ©（可选）", "rights.editionPh": "出版者或编者", "rights.editionNote": "仅用于本版自己增加的内容，例如导言、注释或新插图。", "rights.preview": "版权页和 EPUB 中写的是：{line}", "rights.inDetails": "权利：{choice}。可在“{where}”中更改。" });
+      /* ==== /BEUK:rights ==== */
 
       /* ================= Story Insights =================
          A calm mirror of the writer's own book: frequency, chapter
@@ -25145,13 +25245,7 @@
                its own words; the generated page stands otherwise. */
             if (String(section.content || "").trim())
               return '<div class="copyright">' + contentBlocksToHtml(section.content, section, false, forExport, dataCover) + "</div>";
-            return '<div class="copyright">' +
-              "<p>" + esc(rightsLine()) + "</p>" +
-              "<p>No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.</p>" +
-              "<p>This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental.</p>" +
-              (m.publisher ? "<p>Published by " + esc(m.publisher) + "</p>" : "") +
-              (m.isbn ? "<p>ISBN " + esc(m.isbn) + "</p>" : "") +
-              "<p>Typeset with Beuk.</p></div>";
+            return '<div class="copyright">' + copyrightPageParas().map((p) => "<p>" + esc(p) + "</p>").join("") + "</div>"; /* BEUK:rights */
           }
           case "dedication": {
             const inner = contentBlocksToHtml(section.content, section, false, forExport, dataCover);
@@ -28824,7 +28918,9 @@
             genFieldHtml("genCpPublisher", t("set.publisher"), m.publisher) +
             genFieldHtml("genCpIsbn", t("set.isbn"), m.isbn) +
             genFieldHtml("genCpYear", t("set.year"), m.year) +
-            genFieldHtml("genCpRights", t("set.rights"), m.rights, true) +
+            (rightsModeOf(m) === "pd" || rightsModeOf(m) === "cc" /* BEUK:rights — a chosen licence is set in Project Settings, not typed here */
+              ? '<div class="wide"><p class="cover-note" id="genCpRightsNote" style="margin-top:0;">' + esc(t("rights.inDetails", { choice: rightsModeOf(m) === "pd" ? t("rights.pd") : CC_LICENCES[m.ccLicence].short, where: t("set.title") })) + "</p></div>"
+              : genFieldHtml("genCpRights", t("set.rights"), m.rights, true)) +
             "</div></div>";
           bindGenMeta("genCpAuthor", "author"); bindGenMeta("genCpPublisher", "publisher");
           bindGenMeta("genCpIsbn", "isbn"); bindGenMeta("genCpYear", "year"); bindGenMeta("genCpRights", "rights");
@@ -32761,6 +32857,7 @@
           state.meta.bookId = newBookId();
           delete state.meta.legacyBookIds; /* BEUK:bookid — a new book answers to no old ids */
           delete state.meta.castHidden; /* BEUK:cast — nor to the last book's hidden names */
+          RIGHTS_KEYS.forEach((k) => delete state.meta[k]); /* BEUK:rights — nor to the last book's rights choice */
           state.bible = { entries: [] }; bibleBookArrived(); /* BEUK:bible — nor the sample's Story Bible */
           state.meta.language = "en"; state.meta.langSource = "auto"; state.meta.langGuess = "";
           /* The manuscript's own copyright page speaks for the
@@ -35360,11 +35457,48 @@
       Object.assign(UI_STRINGS.ja, { "support.settingsLine": "ご質問や、うまく動かないことがあれば {email} までご連絡ください。" });
       Object.assign(UI_STRINGS["zh-Hans"], { "support.settingsLine": "有问题，或者有什么不正常？请写信至 {email}。" });
       /* ==== /BEUK:support ==== */
+      /* BEUK:rights — the Rights choice in Project Settings: the rows
+         that belong to the choice, and a live line of what the book
+         will say. */
+      function rightsFormMeta() {
+        const m = { year: $("setYear").value.trim(), author: $("setAuthor").value.trim(), rights: "" };
+        const mode = $("setRightsMode").value;
+        if (mode === "custom") m.rights = $("setRights").value.trim();
+        rightsNormalizeInto(m, { rightsMode: mode, ccLicence: $("setCcLicence").value, firstPublished: $("setFirstPublished").value, editionHolder: $("setEditionHolder").value });
+        return m;
+      }
+      function rightsFormApply(meta) {
+        const m = rightsFormMeta();
+        RIGHTS_KEYS.forEach((k) => { if (m[k] !== undefined) meta[k] = m[k]; else delete meta[k]; });
+        meta.rights = m.rights;
+      }
+      function rightsFormSync() {
+        const mode = $("setRightsMode").value;
+        const show = (id, on) => { const el = $(id); el.hidden = !on; el.style.display = on ? "" : "none"; };
+        show("rowRightsCustom", mode === "custom");
+        show("rowRightsCc", mode === "cc");
+        ["rowRightsPdYear", "rowRightsPdEd", "rowRightsPdNote"].forEach((id) => show(id, mode === "pd"));
+        $("rightsPreview").textContent = t("rights.preview", { line: rightsLine(rightsFormMeta()) });
+      }
+      function rightsFormFill() {
+        const m = state.meta, mode = rightsModeOf(m);
+        $("setRightsMode").value = mode;
+        $("setCcLicence").value = mode === "cc" ? m.ccLicence : "by";
+        $("setFirstPublished").value = m.firstPublished || "";
+        $("setEditionHolder").value = m.editionHolder || "";
+        rightsFormSync();
+      }
+      function rightsFormInit() {
+        $("setCcLicence").innerHTML = Object.keys(CC_LICENCES).map((k) => '<option value="' + k + '">' + esc(CC_LICENCES[k].short) + "</option>").join("");
+        ["setRightsMode", "setCcLicence"].forEach((id) => $(id).addEventListener("change", rightsFormSync));
+        ["setRights", "setFirstPublished", "setEditionHolder", "setYear", "setAuthor"].forEach((id) => $(id).addEventListener("input", rightsFormSync));
+      }
       function openSettings() {
         $("setTitle").value = imRealTitle(); $("setTitle").placeholder = t("misc.untitledBook"); $("setSubtitle").value = state.meta.subtitle; /* BEUK:importmeta */
         $("setAuthor").value = state.meta.author;
         $("setPublisher").value = state.meta.publisher; $("setIsbn").value = state.meta.isbn;
         $("setYear").value = state.meta.year; $("setRights").value = state.meta.rights;
+        rightsFormFill(); /* BEUK:rights */
         $("setLang").value = state.meta.language; $("setDesc").value = state.meta.description;
         $("setA11ySummary").value = state.meta.a11ySummary || "";
         $("setA11ySummary").placeholder = a11ySummaryDefault();
@@ -35379,6 +35513,7 @@
       function initSettings() {
         $("btnSettings2").addEventListener("click", openSettings);
         $("btnCloseSettings").addEventListener("click", () => $("modalSettings").classList.remove("open"));
+        rightsFormInit(); /* BEUK:rights */
         $("modalSettings").addEventListener("click", (e) => { if (e.target === $("modalSettings")) $("modalSettings").classList.remove("open"); });
         $("btnCoverUpload").addEventListener("click", () => $("coverInput").click());
         $("coverInput").addEventListener("change", () => {
@@ -35443,7 +35578,7 @@
           state.meta.publisher = $("setPublisher").value.trim();
           state.meta.isbn = $("setIsbn").value.trim();
           state.meta.year = $("setYear").value.trim();
-          state.meta.rights = $("setRights").value.trim();
+          rightsFormApply(state.meta); /* BEUK:rights — the choice, and the custom line only when Custom is chosen */
           const chosenLang = $("setLang").value;
           if (chosenLang && chosenLang !== state.meta.language) {
             /* Picking a language by hand locks it: detection and
@@ -37548,13 +37683,7 @@
             return "# " + m.title + (m.subtitle ? "\n\n*" + m.subtitle + "*" : "") + (m.author ? "\n\n" + m.author : "") + (m.publisher ? "\n\n" + m.publisher : "");
           case "copyright": {
             if (String(s.content || "").trim()) return "## Copyright\n\n" + contentToMarkdown(s.content);
-            const p = [rightsLine(),
-              "No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.",
-              "This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental."];
-            if (m.publisher) p.push("Published by " + m.publisher);
-            if (m.isbn) p.push("ISBN " + m.isbn);
-            p.push("Typeset with Beuk.");
-            return "## Copyright\n\n" + p.join("\n\n");
+            return "## Copyright\n\n" + copyrightPageParas().join("\n\n"); /* BEUK:rights */
           }
           case "toc": {
             return "## " + tocHeadingOf(s) + "\n\n" + tocTree().map((e) => "- " + sectionLabel(e.s) + e.children.map((c) => "\n  - " + sectionLabel(c.s)).join("")).join("\n");
@@ -39759,13 +39888,7 @@
           if (s.type === "halftitle") { parts.push(docxPara(halfTitleLine1(s) || "", "Title", { align: "center" })); if (halfTitleLine2(s)) parts.push(docxPara(halfTitleLine2(s), "Subtitle", { align: "center" })); return; }
           if (s.type === "copyright") {
             parts.push(docxPara("Copyright", "Heading1"));
-            [rightsLine(),
-              "No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.",
-              "This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental."]
-              .concat(m.publisher ? ["Published by " + m.publisher] : [])
-              .concat(m.isbn ? ["ISBN " + m.isbn] : [])
-              .concat(["Typeset with Beuk."])
-              .forEach((p) => parts.push(docxPara(p, "Normal")));
+            copyrightPageParas().forEach((p) => parts.push(docxPara(p, "Normal"))); /* BEUK:rights */
             return;
           }
           if (s.type === "toc") {
@@ -43351,6 +43474,7 @@
         /* BEUK:importmeta — where each credit came from belongs to the arriving book alone; absent when unknown. */
         if (doc.meta) ["title", "subtitle", "author"].forEach((f) => imSetSource(f, doc.meta[f + "Source"]));
         if (doc.meta) castSetHidden(doc.meta.castHidden); /* BEUK:cast — hidden names belong to the arriving book alone */
+        if (doc.meta) rightsNormalizeInto(state.meta, doc.meta); /* BEUK:rights — the rights choice belongs to the arriving book alone */
         /* Language bookkeeping backfill: books saved before detection
            existed carry no langSource. A non-English language in such
            a book was picked by hand in the old selector, so it counts
@@ -45193,6 +45317,119 @@
                 "generic package without a cover stays exactly the pre-cover package");
             } finally { state.cover = keep; }
           } },
+        /* ==== BEUK:rights ==== */
+        { id: "rights.pd.everywhere", feature: "rights", name: "Rights · Public domain: the copyright page (print, EPUB, Markdown, Word) and the EPUB's dc:rights say the work is in the public domain, with the first-publication year and the edition line, and never 'All rights reserved' or the permission line",
+          run() {
+            const keepMeta = Object.assign({}, state.meta);
+            const cp = state.sections.find((s) => s.type === "copyright");
+            if (!cp) return scVerdict(false, "no copyright page in the sample");
+            const keepCp = cp.content, keepInc = cp.included;
+            try {
+              cp.content = ""; cp.included = true;
+              Object.assign(state.meta, { author: "Alexandre Dumas", year: "2026", publisher: "Quiet Shelf Studio", rights: "", rightsMode: "pd", firstPublished: "1844", editionHolder: "Quiet Shelf Studio" });
+              const files = epubFiles("generic");
+              const opf = scText(files, "OEBPS/package.opf");
+              const cpx = (files.find((f) => /copyright/i.test(f.path) && /\.xhtml$/.test(f.path)) || {}).content || "";
+              const print = buildPrintHtml();
+              const md = buildMarkdown();
+              const docx = buildDocxDocumentXml();
+              const want = ["This work is in the public domain.", "First published in 1844.", "This edition © 2026 Quiet Shelf Studio."];
+              const bad = [];
+              [["opf", opf], ["epub page", cpx], ["print", print], ["markdown", md], ["word", docx]].forEach(([k, txt]) => {
+                want.forEach((w) => { if (txt.indexOf(w) === -1 && !(k === "opf" && w.indexOf("©") !== -1 && txt.indexOf(esc(w)) !== -1)) bad.push(k + " lacks “" + w + "”"); });
+                if (/All rights reserved/.test(txt)) bad.push(k + " says All rights reserved");
+                if (/No part of this book may be reproduced/.test(txt)) bad.push(k + " keeps the permission line");
+              });
+              const dc = (opf.match(/<dc:rights>([^<]*)<\/dc:rights>/) || [])[1] || "";
+              return scVerdict(!bad.length && dc === "This work is in the public domain. First published in 1844. This edition © 2026 Quiet Shelf Studio.",
+                bad.length ? bad.join("; ") : "dc:rights “" + dc + "”; the page agrees in print, EPUB, Markdown and Word");
+            } finally {
+              cp.content = keepCp; cp.included = keepInc;
+              state.meta = keepMeta;
+            }
+          } },
+        { id: "rights.cc.licence", feature: "rights", name: "Rights · Creative Commons: each of the six licences names itself and its licence URL on the copyright page and in dc:rights; CC0 reads as a waiver; no 'All rights reserved', no permission line",
+          run() {
+            const keepMeta = Object.assign({}, state.meta);
+            const cp = state.sections.find((s) => s.type === "copyright");
+            if (!cp) return scVerdict(false, "no copyright page in the sample");
+            const keepCp = cp.content;
+            try {
+              cp.content = "";
+              const bad = [];
+              Object.keys(CC_LICENCES).forEach((k) => {
+                const lic = CC_LICENCES[k];
+                Object.assign(state.meta, { author: "Ana Writer", year: "2026", rights: "", rightsMode: "cc", ccLicence: k });
+                const page = sectionHtml(cp, true);
+                const dc = (scText(epubFiles("generic"), "OEBPS/package.opf").match(/<dc:rights>([^<]*)<\/dc:rights>/) || [])[1] || "";
+                [["page", page], ["dc:rights", dc]].forEach(([w, txt]) => {
+                  if (txt.indexOf(lic.url) === -1 || txt.indexOf(lic.short) === -1) bad.push(k + " " + w + " lacks the licence or its URL");
+                  if (/All rights reserved|No part of this book may be reproduced/.test(txt)) bad.push(k + " " + w + " reserves rights");
+                  if (k === "cc0" && txt.indexOf("has waived all copyright") === -1) bad.push("cc0 " + w + " is not a waiver");
+                  if (k !== "cc0" && txt.indexOf("Copyright © 2026 Ana Writer.") === -1) bad.push(k + " " + w + " lacks the copyright holder");
+                });
+              });
+              return scVerdict(!bad.length, bad.length ? bad.join("; ") : Object.keys(CC_LICENCES).length + " licences, each with its URL");
+            } finally { cp.content = keepCp; state.meta = keepMeta; }
+          } },
+        { id: "rights.legacy.unchanged", feature: "rights", name: "Rights · an old book keeps its exact output: no choice stored means the standard line (or the book's own line) and the same copyright page as before; a book carries its choice and never inherits the last book's",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            try {
+              const cp = state.sections.find((s) => s.type === "copyright"); cp.content = "";
+              const OLD = (line) => [line,
+                "No part of this book may be reproduced in any form or by any electronic or mechanical means, including information storage and retrieval systems, without written permission from the author, except for the use of brief quotations in a book review.",
+                "This is a work of fiction. Names, characters, places, and incidents either are the product of the author's imagination or are used fictitiously. Any resemblance to actual persons, living or dead, events, or locales is entirely coincidental."]
+                .concat(state.meta.publisher ? ["Published by " + state.meta.publisher] : []).concat(state.meta.isbn ? ["ISBN " + state.meta.isbn] : []).concat(["Typeset with Beuk."]);
+              const pageOf = () => sectionHtml(cp, true);
+              const oldHtml = (line) => '<div class="copyright">' + OLD(line).map((p) => "<p>" + esc(p) + "</p>").join("") + "</div>";
+              RIGHTS_KEYS.forEach((k) => delete state.meta[k]);
+              state.meta.rights = "";
+              const std = "Copyright © " + state.meta.year + " " + state.meta.author + ". All rights reserved.";
+              const a = pageOf() === oldHtml(std) && rightsLine() === std;
+              state.meta.rights = "© 2026 The Lantern Trust. Some rights reserved.";
+              const b = pageOf() === oldHtml("© 2026 The Lantern Trust. Some rights reserved.");
+              const noKeys = RIGHTS_KEYS.every((k) => !(k in serializeBook().meta));
+              /* a public-domain book, then an old one: the old one must not inherit the choice */
+              const pd = JSON.parse(JSON.stringify(keepDoc)); Object.assign(pd.meta, { rightsMode: "pd", firstPublished: "1900", editionHolder: "Ed" });
+              applyBookDoc(pd);
+              const carried = state.meta.rightsMode === "pd" && serializeBook().meta.firstPublished === "1900";
+              const old = JSON.parse(JSON.stringify(keepDoc)); RIGHTS_KEYS.forEach((k) => delete old.meta[k]);
+              applyBookDoc(old);
+              const notInherited = RIGHTS_KEYS.every((k) => !(k in state.meta)) && rightsModeOf() === (String(old.meta.rights || "").trim() ? "custom" : "reserved");
+              return scVerdict(a && b && noKeys && carried && notInherited,
+                "standard page byte-equal (" + a + "), own line kept (" + b + "), nothing new serialized (" + noKeys + "), choice rides the book (" + carried + "), not inherited by the next book (" + notInherited + ")");
+            } finally { applyBookDoc(keepDoc); }
+          } },
+        { id: "rights.settings.form", feature: "rights", name: "Rights · Project Settings: the choice shows only its own fields, the preview line follows the form, Save stores the choice and Custom alone keeps a typed line; reopening shows the saved choice",
+          run() {
+            const keepMeta = Object.assign({}, state.meta);
+            const vis = (id) => $(id).style.display !== "none" && !$(id).hidden;
+            try {
+              state.meta.rights = ""; RIGHTS_KEYS.forEach((k) => delete state.meta[k]);
+              openSettings();
+              const r0 = $("setRightsMode").value === "reserved" && !vis("rowRightsCustom") && !vis("rowRightsCc") && !vis("rowRightsPdYear");
+              $("setRightsMode").value = "pd"; $("setRightsMode").dispatchEvent(new Event("change"));
+              $("setFirstPublished").value = "1900"; $("setFirstPublished").dispatchEvent(new Event("input"));
+              const r1 = vis("rowRightsPdYear") && vis("rowRightsPdEd") && !vis("rowRightsCustom") && $("rightsPreview").textContent.indexOf("This work is in the public domain. First published in 1900.") !== -1;
+              $("setRights").value = "typed but not chosen";
+              $("btnSaveSettings").click();
+              const r2 = state.meta.rightsMode === "pd" && state.meta.firstPublished === "1900" && state.meta.rights === "" && !("editionHolder" in state.meta) && !("ccLicence" in state.meta);
+              openSettings();
+              const r3 = $("setRightsMode").value === "pd" && $("setFirstPublished").value === "1900";
+              $("setRightsMode").value = "cc"; $("setRightsMode").dispatchEvent(new Event("change"));
+              $("setCcLicence").value = "by-nc"; $("setCcLicence").dispatchEvent(new Event("change"));
+              const r4 = vis("rowRightsCc") && !vis("rowRightsPdYear") && $("rightsPreview").textContent.indexOf(CC_LICENCES["by-nc"].url) !== -1;
+              $("btnSaveSettings").click();
+              const r5 = state.meta.rightsMode === "cc" && state.meta.ccLicence === "by-nc" && !("firstPublished" in state.meta);
+              openSettings();
+              $("setRightsMode").value = "custom"; $("setRightsMode").dispatchEvent(new Event("change"));
+              $("setRights").value = "Text licensed by arrangement."; $("btnSaveSettings").click();
+              const r6 = rightsModeOf() === "custom" && !("rightsMode" in state.meta) && rightsLine() === "Text licensed by arrangement.";
+              return scVerdict(r0 && r1 && r2 && r3 && r4 && r5 && r6, [r0, r1, r2, r3, r4, r5, r6].join(","));
+            } finally { $("modalSettings").classList.remove("open"); state.meta = keepMeta; }
+          } },
+        /* ==== /BEUK:rights ==== */
         { id: "cover.present.packages-cover", feature: "cover", name: "Cover uploaded: image packaged, manifest cover-image + meta, cover page first in spine, cover landmark in nav",
           run() {
             const keep = state.cover;

@@ -254,6 +254,15 @@ async function main() {
       if (!/belongs-to-collection|calibre:series/.test(opf)) gap('series.epub-no-series-metadata', 'A series volume\'s EPUB does not name its series or its place in it (no belongs-to-collection / group-position), although the book carries meta.series.', { file: f, opfMetadata: (opf.match(/<metadata[\s\S]*?<\/metadata>/) || [''])[0].replace(/\s+/g, ' ').slice(0, 900) });
     }
   }
+  // rights: a public-domain saga volume's EPUB must not claim all rights reserved
+  if (existsSync(ep)) {
+    const rows = readdirSync(ep).filter((x) => /^(dartagnan|valois|oz)-/.test(x)).map((f) => {
+      let opf = '';
+      try { opf = execFileSync('unzip', ['-p', path.join(ep, f), 'OEBPS/package.opf']).toString(); } catch (e) { opf = 'unzip failed: ' + e.message; }
+      return { file: f, dcRights: (opf.match(/<dc:rights>([^<]*)<\/dc:rights>/) || [])[1] || null };
+    });
+    if (rows.length) add('rights.saga-public-domain', 'Every public-domain saga volume’s EPUB says it is in the public domain (dc:rights), never "All rights reserved"', rows.every((r) => r.dcRights && /public domain/i.test(r.dcRights) && !/all rights reserved/i.test(r.dcRights)), rows.slice(0, 6).concat(rows.length > 6 ? [{ more: rows.length - 6 }] : []));
+  }
   // also-by pages are plain text typed into every volume
   const sagaAlso = world.series.filter((s) => s.kind === 'saga').map((s) => ({ series: s.key, volumes: s.books.length, linesTypedAcrossVolumes: s.books.length * (s.books.length - 1) }));
   gap('series.alsoby-by-hand', 'Also-by pages are plain text in each volume: a series of N books needs N×(N−1) links typed and kept up to date by hand; nothing links one shelf book to another.', sagaAlso);

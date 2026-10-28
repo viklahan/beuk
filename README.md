@@ -2234,6 +2234,44 @@ the preview of the book are untouched.
   marks and focus rings); self-check `ui.theme.palette` measures them, the
   computed colours of Export, an on toggle and the lockup, and scans the
   studio stylesheet for the old brown/maroon hex.
+## Studio: Rights — all rights reserved, public domain, Creative Commons (client-only)
+
+Project Settings has a **Rights** choice; it decides the generated copyright
+page (print, EPUB, Markdown, Word) and the EPUB's `dc:rights`, and the
+audio script's closing credits when they carry the rights line.
+
+- **All rights reserved** (the default): `Copyright © <year> <author>. All
+  rights reserved.`, the permission line and the fiction notice — exactly
+  the page Beuk has always made.
+- **Public domain**: "This work is in the public domain.", then "First
+  published in <year>." when the original year is given, and "This edition ©
+  <year> <name>." when a publisher or editor is named for what the edition
+  adds of its own. The permission line and the fiction notice are left out
+  (there is no permission to ask for, and the original author never made the
+  notice).
+- **Creative Commons**: one of CC BY, BY-SA, BY-NC, BY-NC-SA, BY-ND (all 4.0
+  International) or CC0 1.0, each named with its licence URL. The copyright
+  line stays (`Copyright © <year> <author>.`) with "This work is licensed
+  under the … licence (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/";
+  CC0 reads as the standard waiver. The permission line is left out — the
+  licence replaces it.
+- **Custom**: the writer's own line (the old free-text Rights field), with
+  the rest of the page as before.
+- **Book file.** Only Public domain and Creative Commons are stored:
+  `meta.rightsMode` (`"pd"` / `"cc"`), `meta.ccLicence`, and for public
+  domain `meta.firstPublished` and `meta.editionHolder` when filled. A book
+  without them is read exactly as before, from `meta.rights`, so old books
+  keep their exact output and serialize unchanged. The keys are read
+  strictly on arrival and never carried from the last book on the desk.
+- The copyright page's own editor shows the Rights field for All rights
+  reserved and Custom; for Public domain and Creative Commons it names the
+  choice and points to Project Settings.
+- The page's words are English, as the generated copyright page has always
+  been; the controls are in all 13 interface languages.
+- Self-checks: `rights.pd.everywhere`, `rights.cc.licence`,
+  `rights.legacy.unchanged`, `rights.settings.form`. The simulation marks
+  its Gutenberg saga volumes public domain and checks their EPUBs
+  (`rights.saga-public-domain`).
 
 ## Studio: slim shell — the sample's pictures are files (BEUK:slim)
 
