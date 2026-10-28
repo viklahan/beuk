@@ -1259,6 +1259,20 @@
       }
       /* ==== /BEUK:hcpreview ==== */
       #deskFlow { position: relative; }
+      /* ==== BEUK:tips ==== — the studio's one tooltip (see tipInit) */
+      .beuk-tip {
+        position: fixed; left: 0; top: 0; z-index: 1000; pointer-events: none;
+        max-width: min(300px, calc(100vw - 16px)); box-sizing: border-box;
+        background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px;
+        box-shadow: var(--shadow); padding: 6px 10px; font-family: var(--ui-font); font-size: 12.5px; font-weight: 500;
+        line-height: 1.4; text-align: start; white-space: pre-line; overflow-wrap: break-word;
+        opacity: 0; transition: opacity .12s ease-out;
+      }
+      .beuk-tip.on { opacity: 1; }
+      .beuk-tip[hidden] { display: none; }
+      @media (prefers-reduced-motion: reduce) { .beuk-tip { transition: none; } }
+      @media (forced-colors: active) { .beuk-tip { border-color: CanvasText; } }
+      /* ==== /BEUK:tips ==== */
 
       /* ---------- Modals / toast ---------- */
       .modal-back {
@@ -2493,14 +2507,14 @@
         </div>
         <!-- ==== /BEUK:local ==== -->
         <div class="lang-wrap">
-          <button class="tb-btn" id="btnUiLang" aria-haspopup="listbox" aria-expanded="false" aria-label="Interface language" data-i18n-aria="set.uiLanguage"><i data-lucide="globe" class="lang-globe"></i><span class="lang-name" id="uiLangName">English</span><i data-lucide="chevron-down" class="lang-chev"></i></button>
+          <button class="tb-btn" id="btnUiLang" data-tip="tips.uiLang" data-tip-place="bottom" aria-haspopup="listbox" aria-expanded="false" aria-label="Interface language" data-i18n-aria="set.uiLanguage"><i data-lucide="globe" class="lang-globe"></i><span class="lang-name" id="uiLangName">English</span><i data-lucide="chevron-down" class="lang-chev"></i></button>
           <div class="lang-menu" id="uiLangMenu" role="listbox" aria-label="Interface language" data-i18n-aria="set.uiLanguage" hidden></div>
         </div>
-        <button class="tb-btn" id="btnAccount" aria-label="Account and your shelf" data-i18n-aria="top.accountAria" style="display:none;"><i data-lucide="cloud"></i><span class="tb-label">Sign in</span></button>
-        <button class="tb-btn" id="btnTheme" aria-label="Toggle Paper / Candlelight theme" data-i18n-aria="top.themeAria"><span id="themeIcon" style="display:inline-flex;"><i data-lucide="flame"></i></span><span class="tb-label" id="themeLabel">Candlelight</span></button>
-        <button class="tb-btn" id="btnHelp" aria-label="Open the help reading room" data-i18n-aria="top.helpAria"><i data-lucide="life-buoy"></i><span class="tb-label lbl-collapse" data-i18n="top.help">Help</span></button>
-        <button class="tb-btn" id="btnSupport" aria-label="Support — write to a human" data-i18n-aria="top.supportAria"><i data-lucide="coffee"></i><span class="tb-label lbl-collapse" data-i18n="top.support">Support</span></button>
-        <button class="tb-btn primary" id="btnExport" aria-label="Export book"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><span class="tb-label" data-i18n="top.export">Export</span></button>
+        <button class="tb-btn" id="btnAccount" data-tip="tips.account" data-tip-place="bottom" aria-label="Account and your shelf" data-i18n-aria="top.accountAria" style="display:none;"><i data-lucide="cloud"></i><span class="tb-label">Sign in</span></button>
+        <button class="tb-btn" id="btnTheme" data-tip="tips.theme" data-tip-place="bottom" aria-label="Toggle Paper / Candlelight theme" data-i18n-aria="top.themeAria"><span id="themeIcon" style="display:inline-flex;"><i data-lucide="flame"></i></span><span class="tb-label" id="themeLabel">Candlelight</span></button>
+        <button class="tb-btn" id="btnHelp" data-tip="tips.help" data-tip-place="bottom" aria-label="Open the help reading room" data-i18n-aria="top.helpAria"><i data-lucide="life-buoy"></i><span class="tb-label lbl-collapse" data-i18n="top.help">Help</span></button>
+        <button class="tb-btn" id="btnSupport" data-tip="tips.support" data-tip-place="bottom" aria-label="Support — write to a human" data-i18n-aria="top.supportAria"><i data-lucide="coffee"></i><span class="tb-label lbl-collapse" data-i18n="top.support">Support</span></button>
+        <button class="tb-btn primary" id="btnExport" data-tip="tips.export" data-tip-place="bottom" aria-label="Export book"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><span class="tb-label" data-i18n="top.export">Export</span></button>
       </header>
 
       <div class="update-bar" id="updateBar" hidden role="status">
@@ -2546,10 +2560,10 @@
           <!-- ==== BEUK:sidebar ==== -->
           <div class="side-dock">
             <div class="side-tools" id="sideTools" role="group" aria-label="Book tools" data-i18n-aria="side.toolsAria">
-            <button class="side-tool" id="btnInsights" type="button" title="Story Insights" aria-label="Story Insights" data-i18n-title="insights.open" data-i18n-aria="insights.open"><i data-lucide="activity"></i><span class="side-tool-lab" data-i18n="side.toolInsights">Insights</span></button>
-            <button class="side-tool" id="btnGoals" type="button" title="Goals" aria-label="Goals" data-i18n-title="goals.open" data-i18n-aria="goals.open"><i data-lucide="target"></i><span class="side-tool-lab" data-i18n="side.toolGoals">Goals</span></button>
-            <button class="side-tool" id="btnHistory" type="button" title="History" aria-label="History" data-i18n-title="history.open" data-i18n-aria="history.open"><i data-lucide="history"></i><span class="side-tool-lab" data-i18n="side.toolHistory">History</span></button>
-            <button class="side-tool" id="btnBible" type="button" title="Story Bible" aria-label="Story Bible" data-i18n-title="bible.open" data-i18n-aria="bible.open"><i data-lucide="book-marked"></i><span class="side-tool-lab" data-i18n="side.toolBible">Bible</span></button><!-- BEUK:bible -->
+            <button class="side-tool" id="btnInsights" data-tip="tips.insights" type="button" title="Story Insights" aria-label="Story Insights" data-i18n-title="insights.open" data-i18n-aria="insights.open"><i data-lucide="activity"></i><span class="side-tool-lab" data-i18n="side.toolInsights">Insights</span></button>
+            <button class="side-tool" id="btnGoals" data-tip="tips.goals" type="button" title="Goals" aria-label="Goals" data-i18n-title="goals.open" data-i18n-aria="goals.open"><i data-lucide="target"></i><span class="side-tool-lab" data-i18n="side.toolGoals">Goals</span></button>
+            <button class="side-tool" id="btnHistory" data-tip="tips.history" type="button" title="History" aria-label="History" data-i18n-title="history.open" data-i18n-aria="history.open"><i data-lucide="history"></i><span class="side-tool-lab" data-i18n="side.toolHistory">History</span></button>
+            <button class="side-tool" id="btnBible" data-tip="tips.bible" type="button" title="Story Bible" aria-label="Story Bible" data-i18n-title="bible.open" data-i18n-aria="bible.open"><i data-lucide="book-marked"></i><span class="side-tool-lab" data-i18n="side.toolBible">Bible</span></button><!-- BEUK:bible -->
             </div>
               <div class="sync-row" id="syncRow" style="display:none;"><i data-lucide="cloud"></i><span id="syncText">On your shelf ✓</span></div>
             <div class="side-status" id="sideStatus">
@@ -2684,7 +2698,7 @@
                 <div class="tool-group focus-cluster" data-tg="focus">
                   <span class="tool-sep" aria-hidden="true"></span>
                   <div class="ra-wrap">
-                    <button class="tool-btn" id="btnReadAloud" aria-haspopup="dialog" aria-expanded="false" aria-label="Read this section aloud" data-i18n-aria="top.readAloudAria"><i data-lucide="volume-2"></i><span data-i18n="top.readAloud">Read Aloud</span></button>
+                    <button class="tool-btn" id="btnReadAloud" data-tip="tips.readAloud" aria-haspopup="dialog" aria-expanded="false" aria-label="Read this section aloud" data-i18n-aria="top.readAloudAria"><i data-lucide="volume-2"></i><span data-i18n="top.readAloud">Read Aloud</span></button>
                     <div id="raPop" role="dialog" aria-label="Read Aloud" data-i18n-aria="top.readAloud" hidden>
                       <div class="ra-head"><span data-i18n="top.readAloud">Read Aloud</span><span class="ra-status" id="raStatus"></span></div>
                       <div class="ra-controls">
@@ -2698,7 +2712,7 @@
                       <div id="raLangSug" hidden></div>
                     </div>
                   </div>
-                  <button class="tool-btn" id="btnZen" aria-label="Zen mode — hide everything but the page"><i data-lucide="leaf"></i><span data-i18n="top.zen">Zen</span></button>
+                  <button class="tool-btn" id="btnZen" data-tip="tips.zen" aria-label="Zen mode — hide everything but the page"><i data-lucide="leaf"></i><span data-i18n="top.zen">Zen</span></button>
                 </div>
                 <!-- ==== /BEUK:toolbar ==== -->
               </div>
@@ -4332,6 +4346,7 @@
         "toast.copiedFile": "Copied {path}", "toast.binaryNoCopy": "This image file is binary — nothing to copy",
         "toast.jszipLoading": "JSZip is still loading — try again in a moment",
         "bulk.title": "Bulk import",
+        /* BEUK:tips */ "tips.uiLang": "The language of the studio’s menus and buttons. Your book keeps its own language.", "tips.theme": "Switch between Paper (light) and Candlelight (dark)", "tips.help": "Open the help reading room in a new tab", "tips.support": "Write to a human about Beuk, in a new tab", "tips.export": "Export the book: EPUB, print PDF, Word, Markdown or HTML, built in your browser", "tips.account": "Your account and your shelf of books", "tips.insights": "Chapter rhythm, your most-used words and the cast, read from the manuscript on this device", "tips.goals": "The targets you set yourself, with a tally of your writing days", "tips.history": "Snapshots of the manuscript to look back at, read and restore", "tips.bible": "The people, places and things of this book, and where their names appear", "tips.comments": "What your beta readers wrote", "tips.readAloud": "Read this section aloud in one of your browser’s voices", "tips.zen": "Only the page and your words. Esc leaves", "tips.device": "Preview on this screen: {size}, {res} pixels, {ppi} ppi", "tips.deviceHardcover": "Preview the printed book as a hardcover you can open and page through",
         "bulk.sub": "Bring many manuscripts at once — each becomes its own book on your shelf, its language detected as it arrives. An Obsidian vault dropped as a folder keeps its frontmatter, links and images.",
         "bulk.filesBtn": "Choose files",
         "bulk.folderBtn": "Choose a folder",
@@ -4544,6 +4559,329 @@
       if (typeof window !== "undefined") {
         window.BEUK_I18N = { strings: UI_STRINGS, order: UI_LANG_ORDER, names: UI_LANG_NAMES, t: t, get: getUiLang, set: setUiLang, detectDefault: detectDefaultUiLang, resolveStored: resolveStoredUiLang, apply: applyUiLang, key: UI_LANG_KEY };
       }
+      /* ==== BEUK:tips ==== — one tooltip for the whole studio.
+         Declarative: data-tip="i18n.key" (optional data-tip-place =
+         top | bottom | start | end) on any element. Help-style title
+         attributes are absorbed: a title set in the markup, by
+         setAttribute or by el.title = … moves into data-tip-text (the
+         element's .title still reads it back), so the browser's own
+         tooltip never shows and every help text gets this one look.
+         An icon-only button with an accessible name and no tip of its
+         own shows that name. The tip appears on hover after a short
+         delay, at once on keyboard focus, and on a long press on touch
+         screens; Escape dismisses it; it sits beside the control (never
+         over it), flips at the screen edges, follows the page direction
+         and is wired to its control by aria-describedby while shown —
+         the control's accessible name is never replaced. Title stays
+         where it means something to the browser itself: iframes, abbr,
+         dfn, options, inputs with a pattern, and the book pages. */
+      const TIP_KEEP_TAGS = { IFRAME: 1, FRAME: 1, ABBR: 1, DFN: 1, LINK: 1, STYLE: 1, META: 1, OPTION: 1, OPTGROUP: 1, TITLE: 1 };
+      const TIP_KEEP_SCOPE = "[data-keep-titles], .fc-page, .piv-book";
+      const TIP_DELAY = 450, TIP_WARM = 90, TIP_LONGPRESS = 500, TIP_TOUCH_HOLD = 3500;
+      /* dynamic controls (drawn by their own renderers) get their tip here */
+      const TIP_MAP = [
+        ["#btnBetaComments", "tips.comments"],
+        ["#deviceBar .dev-btn[data-device]:not([data-device='hardcover'])", "tips.device"],
+        ["#deviceBar .dev-btn[data-device='hardcover']", "tips.deviceHardcover"]
+      ];
+      const TIP_PARAMS = {
+        "tips.device": (el) => {
+          const f = typeof DEVICE_FACTS === "object" && DEVICE_FACTS[el.getAttribute("data-device")];
+          return f ? { size: f.size, res: f.res, ppi: f.ppi } : null;
+        }
+      };
+      let tipEl = null, tipCur = null, tipTimer = 0, tipHoldTimer = 0, tipPress = null, tipSuppressClickUntil = 0, tipLastHide = 0, tipKeyboard = false, tipSweep = null;
+      function tipKeepsTitle(el) {
+        if (!el || !el.tagName || TIP_KEEP_TAGS[el.tagName]) return true;
+        if (el.tagName === "INPUT" && el.hasAttribute("pattern")) return true;
+        return !!(el.closest && el.closest(TIP_KEEP_SCOPE));
+      }
+      /* el.title reads and writes the tip text, never the native attribute */
+      const tipTitleDesc = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "title");
+      if (tipTitleDesc && tipTitleDesc.get && tipTitleDesc.set) {
+        Object.defineProperty(HTMLElement.prototype, "title", {
+          configurable: true, enumerable: tipTitleDesc.enumerable,
+          get() {
+            if (!tipKeepsTitle(this) && !this.hasAttribute("title") && this.hasAttribute("data-tip-text")) return this.getAttribute("data-tip-text");
+            return tipTitleDesc.get.call(this);
+          },
+          set(v) {
+            if (tipKeepsTitle(this)) { tipTitleDesc.set.call(this, v); return; }
+            if (this.hasAttribute("title")) this.removeAttribute("title");
+            this.setAttribute("data-tip-text", v == null ? "" : String(v));
+            if (tipCur && tipCur.el === this) tipRender();
+          }
+        });
+      }
+      function tipAbsorb(el) {
+        if (!(el instanceof HTMLElement) || !el.hasAttribute("title") || tipKeepsTitle(el)) return;
+        const v = el.getAttribute("title");
+        /* a control whose only name was its title keeps that name */
+        if (v.trim() && tipIsControl(el) && !el.hasAttribute("aria-label") && !el.hasAttribute("aria-labelledby") && !(el.textContent || "").trim()) el.setAttribute("aria-label", v);
+        el.removeAttribute("title");
+        el.setAttribute("data-tip-text", v);
+        if (tipCur && tipCur.el === el) tipRender();
+      }
+      function tipApplyMap(root) {
+        TIP_MAP.forEach((m) => {
+          const list = [];
+          if (root.matches && root.matches(m[0])) list.push(root);
+          if (root.querySelectorAll) root.querySelectorAll(m[0]).forEach((x) => list.push(x));
+          list.forEach((x) => { if (!x.hasAttribute("data-tip")) x.setAttribute("data-tip", m[1]); });
+        });
+      }
+      function tipScan(root) {
+        root = root || document.body;
+        if (!root || root.nodeType !== 1) return;
+        tipAbsorb(root);
+        root.querySelectorAll("[title]").forEach(tipAbsorb);
+        tipApplyMap(root);
+      }
+      /* No MutationObserver: under heavy rendering (whole books drawn and
+         redrawn) its records would hold every removed subtree until the
+         next microtask. Titles are absorbed when a pointer or focus
+         reaches them (before the browser's own tooltip delay runs out)
+         and by a light sweep every 1.5 s. */
+      function tipFlush() {
+        tipScan(document.body);
+        if (tipCur) { if (!tipCur.el.isConnected) tipHide(); else tipRender(); }
+      }
+      function tipKeyOk(k) { return !!k && /^[A-Za-z][\w-]*(\.[\w-]+)+$/.test(k) && UI_STRINGS.en[k] != null; }
+      function tipIsControl(el) {
+        return el.tagName === "BUTTON" || el.tagName === "SUMMARY" || (el.tagName === "A" && el.hasAttribute("href")) || el.getAttribute("role") === "button" || el.getAttribute("role") === "tab" || el.getAttribute("role") === "switch";
+      }
+      /* the words a sighted reader sees on the control (sr-only, aria-hidden and folded labels do not count) */
+      function tipVisibleText(el) {
+        const rendered = el.getClientRects().length > 0;
+        let out = "";
+        const walk = (n) => {
+          for (let c = n.firstChild; c; c = c.nextSibling) {
+            if (c.nodeType === 3) { out += c.textContent; continue; }
+            if (c.nodeType !== 1 || c.tagName === "svg" || c.tagName === "SVG" || c.tagName === "I" && c.hasAttribute("data-lucide")) continue;
+            if (c.hidden || c.classList.contains("sr-only") || c.getAttribute("aria-hidden") === "true") continue;
+            if (rendered) {
+              const r = c.getBoundingClientRect();
+              if (r.width <= 1 || r.height <= 1) continue;
+              const cs = getComputedStyle(c);
+              if (cs.display === "none" || cs.visibility === "hidden") continue;
+            }
+            walk(c);
+          }
+        };
+        walk(el);
+        return out.replace(/\s+/g, " ").trim();
+      }
+      function tipName(el) {
+        const al = (el.getAttribute("aria-label") || "").trim();
+        if (al) return al;
+        const lb = el.getAttribute("aria-labelledby");
+        if (lb) {
+          const s = lb.split(/\s+/).map((id) => { const x = document.getElementById(id); return x ? x.textContent : ""; }).join(" ").replace(/\s+/g, " ").trim();
+          if (s) return s;
+        }
+        return (el.textContent || "").replace(/\s+/g, " ").trim();
+      }
+      function tipIconOnly(el) {
+        if (!tipIsControl(el) || tipVisibleText(el)) return false;
+        /* a control not on screen counts only when it carries an icon (an empty button waits for its label) */
+        return el.getClientRects().length > 0 || !!el.querySelector("svg, i[data-lucide], img");
+      }
+      function tipTextFor(el) {
+        const k = el.getAttribute("data-tip");
+        if (k && tipKeyOk(k)) {
+          const p = TIP_PARAMS[k] ? TIP_PARAMS[k](el) : null;
+          const s = t(k, p || undefined);
+          if (s && !/\{\w+\}/.test(s)) return s;
+        }
+        if (el.hasAttribute("data-tip-text")) return el.getAttribute("data-tip-text").trim();
+        if (tipIconOnly(el)) return tipName(el);
+        return "";
+      }
+      /* the element a pointer or focus at `node` would explain (titles inherit, as they do in the browser) */
+      function tipTargetOf(node) {
+        let el = node && node.nodeType === 1 ? node : node && node.parentElement;
+        while (el && el !== document.body && el !== document.documentElement) {
+          if (el === tipEl) return null;
+          if (el.hasAttribute("title")) tipAbsorb(el);
+          if (!el.hasAttribute("data-tip")) for (let i = 0; i < TIP_MAP.length; i++) if (el.matches(TIP_MAP[i][0])) { el.setAttribute("data-tip", TIP_MAP[i][1]); break; }
+          if (el.hasAttribute("data-tip")) return tipKeyOk(el.getAttribute("data-tip")) ? el : null; /* other values belong to a room's own layer (Story Insights) */
+          if (el.hasAttribute("data-tip-text")) return el.getAttribute("data-tip-text").trim() ? el : null;
+          if (tipIsControl(el)) return tipIconOnly(el) && tipName(el) ? el : null;
+          el = el.parentElement;
+        }
+        return null;
+      }
+      function tipEnsure() {
+        if (tipEl && tipEl.isConnected) return tipEl;
+        tipEl = document.createElement("div");
+        tipEl.id = "beukTip"; tipEl.className = "beuk-tip"; tipEl.setAttribute("role", "tooltip"); tipEl.hidden = true;
+        document.body.appendChild(tipEl);
+        return tipEl;
+      }
+      function tipPlace() {
+        if (!tipCur) return;
+        const el = tipCur.el, tip = tipEl;
+        const r = el.getBoundingClientRect();
+        if (!el.isConnected || (!r.width && !r.height)) { tipHide(); return; }
+        const vw = document.documentElement.clientWidth || window.innerWidth, vh = document.documentElement.clientHeight || window.innerHeight;
+        tip.style.left = "0px"; tip.style.top = "0px";
+        const w = tip.offsetWidth, h = tip.offsetHeight, gap = 6, m = 8;
+        const rtl = (document.documentElement.getAttribute("dir") || "") === "rtl";
+        let pref = el.getAttribute("data-tip-place") || "top";
+        if (pref === "start") pref = rtl ? "right" : "left";
+        if (pref === "end") pref = rtl ? "left" : "right";
+        const fits = { top: r.top - gap - h >= m, bottom: r.bottom + gap + h <= vh - m, left: r.left - gap - w >= m, right: r.right + gap + w <= vw - m };
+        const opp = { top: "bottom", bottom: "top", left: "right", right: "left" };
+        const cross = pref === "top" || pref === "bottom" ? (rtl ? ["left", "right"] : ["right", "left"]) : ["top", "bottom"];
+        const side = [pref, opp[pref]].concat(cross).find((s) => fits[s]) || (r.top > vh - r.bottom ? "top" : "bottom");
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi));
+        let x, y;
+        if (side === "top" || side === "bottom") {
+          x = clamp(r.left + r.width / 2 - w / 2, m, vw - w - m);
+          y = side === "top" ? r.top - gap - h : r.bottom + gap;
+        } else {
+          y = clamp(r.top + r.height / 2 - h / 2, m, vh - h - m);
+          x = side === "left" ? r.left - gap - w : r.right + gap;
+        }
+        tip.style.left = Math.round(x) + "px"; tip.style.top = Math.round(y) + "px";
+        tip.setAttribute("data-side", side);
+      }
+      function tipUnwire() {
+        if (!tipCur || !tipCur.wired) return;
+        const el = tipCur.el;
+        const ids = (el.getAttribute("aria-describedby") || "").split(/\s+/).filter((x) => x && x !== "beukTip");
+        if (ids.length) el.setAttribute("aria-describedby", ids.join(" ")); else el.removeAttribute("aria-describedby");
+        tipCur.wired = false;
+      }
+      function tipRender() {
+        if (!tipCur) return;
+        const text = tipTextFor(tipCur.el);
+        if (!text) { tipHide(); return; }
+        tipEl.textContent = text;
+        const norm = (s) => String(s || "").replace(/\s+/g, " ").trim().toLowerCase();
+        const same = norm(tipName(tipCur.el)) === norm(text);
+        if (!same && !tipCur.wired) {
+          const ids = (tipCur.el.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean);
+          if (ids.indexOf("beukTip") === -1) ids.push("beukTip");
+          tipCur.el.setAttribute("aria-describedby", ids.join(" "));
+          tipCur.wired = true;
+        } else if (same) tipUnwire();
+        tipPlace();
+      }
+      function tipShow(el, via) {
+        clearTimeout(tipTimer); tipTimer = 0;
+        if (!el || !el.isConnected) return false;
+        tipEnsure();
+        if (tipCur && tipCur.el !== el) tipHide(true);
+        if (!tipCur) tipCur = { el: el, via: via, wired: false };
+        else tipCur.via = via;
+        if (typeof insTipHide === "function") { const it = document.getElementById("insTip"); if (it && !it.hidden) insTipHide(); } /* one tooltip at a time */
+        tipEl.hidden = false;
+        tipRender();
+        if (!tipCur) return false;
+        tipEl.classList.add("on");
+        return true;
+      }
+      function tipHide(quiet) {
+        clearTimeout(tipTimer); tipTimer = 0;
+        clearTimeout(tipHoldTimer); tipHoldTimer = 0;
+        if (!tipCur) return;
+        tipUnwire();
+        tipCur = null;
+        if (tipEl) { tipEl.classList.remove("on"); tipEl.hidden = true; tipEl.textContent = ""; }
+        if (!quiet) tipLastHide = Date.now();
+      }
+      function tipSchedule(el, via, delay) {
+        clearTimeout(tipTimer);
+        tipTimer = setTimeout(() => { tipTimer = 0; tipShow(el, via); }, delay);
+      }
+      function tipInit() {
+        if (tipSweep || !document.body) return;
+        tipEnsure();
+        tipScan(document.body);
+        tipSweep = setInterval(() => { if (!document.hidden) tipFlush(); }, 1500);
+        const doc = document;
+        doc.addEventListener("pointerover", (e) => {
+          if (e.pointerType === "touch") return;
+          const el = tipTargetOf(e.target);
+          if (tipCur && el === tipCur.el) return;
+          if (!el) { if (tipCur && tipCur.via === "hover") tipHide(); else clearTimeout(tipTimer); return; }
+          if (tipCur && tipCur.via !== "hover") return; /* a focused control keeps its tip while the mouse wanders */
+          const warm = !!tipCur || Date.now() - tipLastHide < 300;
+          if (tipCur) tipHide(true);
+          tipSchedule(el, "hover", warm ? TIP_WARM : TIP_DELAY);
+        }, true);
+        doc.addEventListener("pointerout", (e) => {
+          if (e.pointerType === "touch" || e.relatedTarget) return;
+          clearTimeout(tipTimer);
+          if (tipCur && tipCur.via === "hover") tipHide();
+        }, true);
+        doc.addEventListener("pointerdown", (e) => {
+          tipKeyboard = false;
+          if (e.pointerType !== "touch") { if (tipCur) tipHide(); else clearTimeout(tipTimer); return; }
+          const el = tipTargetOf(e.target);
+          if (tipCur && tipCur.el !== el) tipHide();
+          clearTimeout(tipTimer);
+          tipPress = el ? { el: el, x: e.clientX, y: e.clientY, shown: false } : null;
+          if (el) tipTimer = setTimeout(() => {
+            tipTimer = 0;
+            if (tipPress && tipPress.el === el && tipShow(el, "touch")) tipPress.shown = true;
+          }, TIP_LONGPRESS);
+        }, true);
+        doc.addEventListener("pointermove", (e) => {
+          if (e.pointerType !== "touch" || !tipPress || tipPress.shown) return;
+          if (Math.abs(e.clientX - tipPress.x) > 10 || Math.abs(e.clientY - tipPress.y) > 10) { clearTimeout(tipTimer); tipPress = null; }
+        }, true);
+        const pressEnd = (e) => {
+          if (e.pointerType !== "touch") return;
+          clearTimeout(tipTimer); tipTimer = 0;
+          if (tipPress && tipPress.shown) {
+            tipSuppressClickUntil = Date.now() + 700; /* the long press was for reading, not pressing */
+            clearTimeout(tipHoldTimer);
+            tipHoldTimer = setTimeout(() => { if (tipCur && tipCur.via === "touch") tipHide(); }, TIP_TOUCH_HOLD);
+          }
+          tipPress = null;
+        };
+        doc.addEventListener("pointerup", pressEnd, true);
+        doc.addEventListener("pointercancel", pressEnd, true);
+        doc.addEventListener("click", (e) => {
+          if (Date.now() < tipSuppressClickUntil && tipCur && tipCur.via === "touch" && tipCur.el.contains(e.target)) {
+            e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+            tipSuppressClickUntil = 0;
+          }
+        }, true);
+        doc.addEventListener("contextmenu", (e) => {
+          if ((tipPress && tipPress.el.contains(e.target)) || (tipCur && tipCur.via === "touch" && tipCur.el.contains(e.target))) e.preventDefault();
+        }, true);
+        doc.addEventListener("focusin", (e) => {
+          const el = e.target;
+          if (!el || el.nodeType !== 1 || tipTargetOf(el) !== el) return;
+          let kb = tipKeyboard;
+          try { kb = kb || el.matches(":focus-visible"); } catch (x) {}
+          if (kb) tipShow(el, "focus");
+        });
+        doc.addEventListener("focusout", (e) => {
+          if (tipCur && tipCur.via === "focus" && tipCur.el === e.target) tipHide();
+        });
+        window.addEventListener("keydown", (e) => {
+          if (e.key !== "Shift" && e.key !== "Control" && e.key !== "Alt" && e.key !== "Meta") tipKeyboard = true;
+          if (e.key === "Escape" && tipCur) {
+            const via = tipCur.via;
+            tipHide();
+            /* WCAG 1.4.13: Escape puts away the tip first; a focused control's
+               dialog closes on the next press */
+            if (via === "focus" || via === "touch") { e.preventDefault(); e.stopPropagation(); }
+          }
+        }, true);
+        window.addEventListener("scroll", () => { if (!tipCur) return; if (tipCur.via === "focus") tipPlace(); else tipHide(); }, true);
+        window.addEventListener("resize", () => { if (tipCur) tipPlace(); });
+        window.addEventListener("blur", () => { if (tipCur && tipCur.via !== "focus") tipHide(); });
+      }
+      tipInit();
+      if (typeof window !== "undefined") {
+        window.beukTips = { show: tipShow, hide: tipHide, flush: tipFlush, scan: tipScan, textFor: tipTextFor, nameOf: tipName, iconOnly: tipIconOnly, targetOf: tipTargetOf, keepsTitle: tipKeepsTitle, current: () => tipCur, setKeyboard: (v) => { tipKeyboard = !!v; } };
+      }
+      /* ==== /BEUK:tips ==== */
 
       /* ================= Appearance theme (Paper / Candlelight) =================
          Paper is the studio's default look: with no saved preference
@@ -4761,6 +5099,7 @@
         "toast.copiedFile": "{path} copiado", "toast.binaryNoCopy": "Este archivo de imagen es binario — no hay nada que copiar",
         "toast.jszipLoading": "JSZip aún se está cargando — inténtalo de nuevo en un momento",
         "bulk.title": "Importación en lote",
+        /* BEUK:tips */ "tips.uiLang": "El idioma de los menús y botones del estudio. Tu libro conserva su propio idioma.", "tips.theme": "Cambiar entre Papel (claro) y Luz de vela (oscuro)", "tips.help": "Abrir la sala de lectura de ayuda en una pestaña nueva", "tips.support": "Escribir a una persona sobre Beuk, en una pestaña nueva", "tips.export": "Exportar el libro: EPUB, PDF de imprenta, Word, Markdown o HTML, creados en tu navegador", "tips.account": "Tu cuenta y tu estantería de libros", "tips.insights": "El ritmo de los capítulos, tus palabras más usadas y el reparto, leídos del manuscrito en este dispositivo", "tips.goals": "Las metas que te pones, con el recuento de tus días de escritura", "tips.history": "Instantáneas del manuscrito para revisar, leer y restaurar", "tips.bible": "Las personas, lugares y cosas de este libro, y dónde aparecen sus nombres", "tips.comments": "Lo que escribieron tus lectores beta", "tips.readAloud": "Leer esta sección en voz alta con una de las voces de tu navegador", "tips.zen": "Solo la página y tus palabras. Esc para salir", "tips.device": "Vista previa en esta pantalla: {size}, {res} píxeles, {ppi} ppp", "tips.deviceHardcover": "Ver el libro impreso como una tapa dura que puedes abrir y hojear",
         "bulk.sub": "Trae muchos manuscritos a la vez — cada uno se convierte en un libro en tu estantería, con su idioma detectado al llegar. Una bóveda de Obsidian soltada como carpeta conserva sus metadatos, enlaces e imágenes.",
         "bulk.filesBtn": "Elegir archivos",
         "bulk.folderBtn": "Elegir una carpeta",
@@ -4980,6 +5319,7 @@
         "toast.copiedFile": "{path} copié", "toast.binaryNoCopy": "Ce fichier image est binaire — rien à copier",
         "toast.jszipLoading": "JSZip est encore en chargement — réessayez dans un instant",
         "bulk.title": "Import en lot",
+        /* BEUK:tips */ "tips.uiLang": "La langue des menus et des boutons du studio. Votre livre garde sa propre langue.", "tips.theme": "Basculer entre Papier (clair) et Chandelle (sombre)", "tips.help": "Ouvrir la salle de lecture de l’aide dans un nouvel onglet", "tips.support": "Écrire à une personne au sujet de Beuk, dans un nouvel onglet", "tips.export": "Exporter le livre : EPUB, PDF d’impression, Word, Markdown ou HTML, construits dans votre navigateur", "tips.account": "Votre compte et votre étagère de livres", "tips.insights": "Le rythme des chapitres, vos mots les plus employés et les personnages, lus dans le manuscrit sur cet appareil", "tips.goals": "Les cibles que vous vous fixez, avec le décompte de vos jours d’écriture", "tips.history": "Des instantanés du manuscrit à revoir, lire et restaurer", "tips.bible": "Les personnes, lieux et objets de ce livre, et où leurs noms apparaissent", "tips.comments": "Ce qu’ont écrit vos bêta-lecteurs", "tips.readAloud": "Lire cette section à voix haute avec l’une des voix de votre navigateur", "tips.zen": "Seulement la page et vos mots. Échap pour sortir", "tips.device": "Aperçu sur cet écran : {size}, {res} pixels, {ppi} ppp", "tips.deviceHardcover": "Voir le livre imprimé en couverture rigide, à ouvrir et feuilleter",
         "bulk.sub": "Apportez plusieurs manuscrits à la fois — chacun devient un livre sur votre étagère, sa langue détectée à l’arrivée. Un coffre Obsidian déposé comme dossier conserve ses métadonnées, liens et images.",
         "bulk.filesBtn": "Choisir des fichiers",
         "bulk.folderBtn": "Choisir un dossier",
@@ -5199,6 +5539,7 @@
         "toast.copiedFile": "{path} kopiert", "toast.binaryNoCopy": "Diese Bilddatei ist binär — nichts zu kopieren",
         "toast.jszipLoading": "JSZip lädt noch — versuchen Sie es in einem Moment noch einmal",
         "bulk.title": "Stapelimport",
+        /* BEUK:tips */ "tips.uiLang": "Die Sprache der Menüs und Schaltflächen im Studio. Ihr Buch behält seine eigene Sprache.", "tips.theme": "Zwischen Papier (hell) und Kerzenlicht (dunkel) wechseln", "tips.help": "Den Hilfe-Lesesaal in einem neuen Tab öffnen", "tips.support": "Einem Menschen über Beuk schreiben, in einem neuen Tab", "tips.export": "Das Buch exportieren: EPUB, Druck-PDF, Word, Markdown oder HTML, erstellt in Ihrem Browser", "tips.account": "Ihr Konto und Ihr Bücherregal", "tips.insights": "Kapitelrhythmus, Ihre häufigsten Wörter und die Figuren, gelesen aus dem Manuskript auf diesem Gerät", "tips.goals": "Die Vorgaben, die Sie sich selbst setzen, mit einer Zählung Ihrer Schreibtage", "tips.history": "Schnappschüsse des Manuskripts zum Zurückblicken, Lesen und Wiederherstellen", "tips.bible": "Die Menschen, Orte und Dinge dieses Buchs, und wo ihre Namen vorkommen", "tips.comments": "Was Ihre Testleser geschrieben haben", "tips.readAloud": "Diesen Abschnitt mit einer Stimme Ihres Browsers vorlesen", "tips.zen": "Nur die Seite und Ihre Worte. Esc beendet den Zen-Modus", "tips.device": "Vorschau auf diesem Bildschirm: {size}, {res} Pixel, {ppi} ppi", "tips.deviceHardcover": "Das gedruckte Buch als Hardcover ansehen, zum Aufschlagen und Blättern",
         "bulk.sub": "Bringen Sie viele Manuskripte auf einmal — jedes wird ein eigenes Buch in Ihrem Regal, seine Sprache beim Eintreffen erkannt. Ein als Ordner abgelegter Obsidian-Vault behält Frontmatter, Links und Bilder.",
         "bulk.filesBtn": "Dateien wählen",
         "bulk.folderBtn": "Ordner wählen",
@@ -5418,6 +5759,7 @@
         "toast.copiedFile": "{path} copiato", "toast.binaryNoCopy": "Questo file immagine è binario — niente da copiare",
         "toast.jszipLoading": "JSZip si sta ancora caricando — riprova tra un attimo",
         "bulk.title": "Importazione multipla",
+        /* BEUK:tips */ "tips.uiLang": "La lingua dei menu e dei pulsanti dello studio. Il tuo libro mantiene la sua lingua.", "tips.theme": "Passa da Carta (chiaro) a Lume di candela (scuro)", "tips.help": "Apri la sala di lettura dell’aiuto in una nuova scheda", "tips.support": "Scrivi a una persona a proposito di Beuk, in una nuova scheda", "tips.export": "Esporta il libro: EPUB, PDF per la stampa, Word, Markdown o HTML, creati nel tuo browser", "tips.account": "Il tuo account e il tuo scaffale di libri", "tips.insights": "Il ritmo dei capitoli, le parole che usi di più e i personaggi, letti dal manoscritto su questo dispositivo", "tips.goals": "I traguardi che ti dai, con il conteggio dei tuoi giorni di scrittura", "tips.history": "Istantanee del manoscritto da rivedere, leggere e ripristinare", "tips.bible": "Le persone, i luoghi e le cose di questo libro, e dove compaiono i loro nomi", "tips.comments": "Ciò che hanno scritto i tuoi lettori beta", "tips.readAloud": "Leggi questa sezione ad alta voce con una delle voci del browser", "tips.zen": "Solo la pagina e le tue parole. Esc per uscire", "tips.device": "Anteprima su questo schermo: {size}, {res} pixel, {ppi} ppi", "tips.deviceHardcover": "Guarda il libro stampato come un volume rilegato da aprire e sfogliare",
         "bulk.sub": "Porta molti manoscritti insieme — ciascuno diventa un libro sul tuo scaffale, con la lingua rilevata all’arrivo. Un vault Obsidian trascinato come cartella conserva metadati, collegamenti e immagini.",
         "bulk.filesBtn": "Scegli file",
         "bulk.folderBtn": "Scegli una cartella",
@@ -5637,6 +5979,7 @@
         "toast.copiedFile": "{path} copiado", "toast.binaryNoCopy": "Este ficheiro de imagem é binário — não há nada para copiar",
         "toast.jszipLoading": "O JSZip ainda está a carregar — tente outra vez daqui a um momento",
         "bulk.title": "Importação em lote",
+        /* BEUK:tips */ "tips.uiLang": "O idioma dos menus e botões do estúdio. O seu livro mantém o próprio idioma.", "tips.theme": "Alternar entre Papel (claro) e Luz de vela (escuro)", "tips.help": "Abrir a sala de leitura da ajuda num novo separador", "tips.support": "Escrever a uma pessoa sobre o Beuk, num novo separador", "tips.export": "Exportar o livro: EPUB, PDF de impressão, Word, Markdown ou HTML, criados no seu navegador", "tips.account": "A sua conta e a sua estante de livros", "tips.insights": "O ritmo dos capítulos, as palavras que mais usa e as personagens, lidos do manuscrito neste dispositivo", "tips.goals": "Os objetivos que define para si, com a contagem dos seus dias de escrita", "tips.history": "Instantâneos do manuscrito para rever, ler e restaurar", "tips.bible": "As pessoas, os lugares e as coisas deste livro, e onde os seus nomes aparecem", "tips.comments": "O que escreveram os seus leitores beta", "tips.readAloud": "Ler esta secção em voz alta com uma das vozes do navegador", "tips.zen": "Só a página e as suas palavras. Esc para sair", "tips.device": "Pré-visualizar neste ecrã: {size}, {res} píxeis, {ppi} ppp", "tips.deviceHardcover": "Ver o livro impresso como capa dura, para abrir e folhear",
         "bulk.sub": "Traga muitos manuscritos de uma vez — cada um torna-se um livro na sua estante, com o idioma detetado à chegada. Um cofre Obsidian largado como pasta mantém os metadados, ligações e imagens.",
         "bulk.filesBtn": "Escolher ficheiros",
         "bulk.folderBtn": "Escolher uma pasta",
@@ -5856,6 +6199,7 @@
         "toast.copiedFile": "{path} gekopieerd", "toast.binaryNoCopy": "Dit afbeeldingsbestand is binair — niets te kopiëren",
         "toast.jszipLoading": "JSZip laadt nog — probeer het zo meteen opnieuw",
         "bulk.title": "Bulkimport",
+        /* BEUK:tips */ "tips.uiLang": "De taal van de menu’s en knoppen van de studio. Je boek houdt zijn eigen taal.", "tips.theme": "Wisselen tussen Papier (licht) en Kaarslicht (donker)", "tips.help": "De leeszaal van de hulp openen in een nieuw tabblad", "tips.support": "Een mens schrijven over Beuk, in een nieuw tabblad", "tips.export": "Het boek exporteren: EPUB, drukklare pdf, Word, Markdown of HTML, gebouwd in je browser", "tips.account": "Je account en je boekenplank", "tips.insights": "Het ritme van de hoofdstukken, je meest gebruikte woorden en de personages, gelezen uit het manuscript op dit apparaat", "tips.goals": "De doelen die je jezelf stelt, met een telling van je schrijfdagen", "tips.history": "Momentopnamen van het manuscript om terug te kijken, te lezen en te herstellen", "tips.bible": "De mensen, plaatsen en dingen van dit boek, en waar hun namen voorkomen", "tips.comments": "Wat je proeflezers schreven", "tips.readAloud": "Deze sectie voorlezen met een van de stemmen van je browser", "tips.zen": "Alleen de pagina en je woorden. Esc om te stoppen", "tips.device": "Voorbeeld op dit scherm: {size}, {res} pixels, {ppi} ppi", "tips.deviceHardcover": "Het gedrukte boek bekijken als gebonden boek om open te slaan en door te bladeren",
         "bulk.sub": "Breng veel manuscripten tegelijk — elk wordt een eigen boek op uw plank, met de taal herkend bij aankomst. Een Obsidian-vault die als map wordt neergezet, behoudt frontmatter, links en afbeeldingen.",
         "bulk.filesBtn": "Bestanden kiezen",
         "bulk.folderBtn": "Een map kiezen",
@@ -6075,6 +6419,7 @@
         "toast.copiedFile": "Skopiowano {path}", "toast.binaryNoCopy": "Ten plik obrazu jest binarny — nie ma czego kopiować",
         "toast.jszipLoading": "JSZip wciąż się ładuje — spróbuj ponownie za chwilę",
         "bulk.title": "Import zbiorczy",
+        /* BEUK:tips */ "tips.uiLang": "Język menu i przycisków studia. Twoja książka zachowuje własny język.", "tips.theme": "Przełącz między motywem Papier (jasny) a Blask świec (ciemny)", "tips.help": "Otwórz czytelnię pomocy w nowej karcie", "tips.support": "Napisz do człowieka w sprawie Beuk, w nowej karcie", "tips.export": "Eksportuj książkę: EPUB, PDF do druku, Word, Markdown lub HTML, tworzone w przeglądarce", "tips.account": "Twoje konto i twoja półka z książkami", "tips.insights": "Rytm rozdziałów, twoje najczęstsze słowa i postacie, odczytane z rękopisu na tym urządzeniu", "tips.goals": "Cele, które sam sobie wyznaczasz, z licznikiem dni pisania", "tips.history": "Migawki rękopisu do przejrzenia, przeczytania i przywrócenia", "tips.bible": "Ludzie, miejsca i rzeczy tej książki oraz miejsca, w których pojawiają się ich imiona", "tips.comments": "To, co napisali twoi beta-czytelnicy", "tips.readAloud": "Przeczytaj tę sekcję na głos jednym z głosów przeglądarki", "tips.zen": "Tylko strona i twoje słowa. Esc, aby wyjść", "tips.device": "Podgląd na tym ekranie: {size}, {res} pikseli, {ppi} ppi", "tips.deviceHardcover": "Zobacz wydrukowaną książkę w twardej oprawie, którą można otworzyć i kartkować",
         "bulk.sub": "Przynieś wiele manuskryptów naraz — każdy staje się osobną książką na Twojej półce, z językiem wykrytym przy odbiorze. Skarbiec Obsidian upuszczony jako folder zachowuje metadane, linki i obrazy.",
         "bulk.filesBtn": "Wybierz pliki",
         "bulk.folderBtn": "Wybierz folder",
@@ -6294,6 +6639,7 @@
         "toast.copiedFile": "Скопировано: {path}", "toast.binaryNoCopy": "Этот файл изображения бинарный — копировать нечего",
         "toast.jszipLoading": "JSZip ещё загружается — попробуйте снова через мгновение",
         "bulk.title": "Пакетный импорт",
+        /* BEUK:tips */ "tips.uiLang": "Язык меню и кнопок студии. У книги остаётся свой язык.", "tips.theme": "Переключить тему: «Бумага» (светлая) или «При свечах» (тёмная)", "tips.help": "Открыть читальный зал справки в новой вкладке", "tips.support": "Написать живому человеку о Beuk, в новой вкладке", "tips.export": "Экспорт книги: EPUB, PDF для печати, Word, Markdown или HTML, собираются в вашем браузере", "tips.account": "Ваша учётная запись и книжная полка", "tips.insights": "Ритм глав, самые частые слова и персонажи — по рукописи на этом устройстве", "tips.goals": "Задачи, которые вы ставите себе сами, и счёт дней письма", "tips.history": "Снимки рукописи, чтобы оглянуться назад, прочитать и восстановить", "tips.bible": "Люди, места и вещи этой книги и где встречаются их имена", "tips.comments": "Что написали ваши бета-читатели", "tips.readAloud": "Прочитать этот раздел вслух одним из голосов браузера", "tips.zen": "Только страница и ваши слова. Esc — выход", "tips.device": "Просмотр на этом экране: {size}, {res} пикселей, {ppi} ppi", "tips.deviceHardcover": "Посмотреть печатную книгу в твёрдой обложке: открыть и листать",
         "bulk.sub": "Принесите много рукописей сразу — каждая станет отдельной книгой на вашей полке, а её язык определится при поступлении. Хранилище Obsidian, перетащенное как папка, сохраняет метаданные, ссылки и изображения.",
         "bulk.filesBtn": "Выбрать файлы",
         "bulk.folderBtn": "Выбрать папку",
@@ -6513,6 +6859,7 @@
         "toast.copiedFile": "{path} kopyalandı", "toast.binaryNoCopy": "Bu resim dosyası ikili — kopyalanacak bir şey yok",
         "toast.jszipLoading": "JSZip hâlâ yükleniyor — birazdan yeniden deneyin",
         "bulk.title": "Toplu içe aktarma",
+        /* BEUK:tips */ "tips.uiLang": "Stüdyonun menü ve düğmelerinin dili. Kitabınız kendi dilini korur.", "tips.theme": "Kâğıt (açık) ile Mum ışığı (koyu) arasında geçiş yap", "tips.help": "Yardım okuma odasını yeni sekmede aç", "tips.support": "Beuk hakkında bir insana yaz, yeni sekmede", "tips.export": "Kitabı dışa aktar: EPUB, baskı PDF’i, Word, Markdown veya HTML, tarayıcınızda hazırlanır", "tips.account": "Hesabınız ve kitap rafınız", "tips.insights": "Bölüm ritmi, en çok kullandığınız sözcükler ve karakterler, bu cihazdaki taslaktan okunur", "tips.goals": "Kendinize koyduğunuz hedefler ve yazdığınız günlerin sayımı", "tips.history": "Geriye bakmak, okumak ve geri yüklemek için taslağın anlık görüntüleri", "tips.bible": "Bu kitabın kişileri, yerleri ve nesneleri, adlarının geçtiği yerlerle", "tips.comments": "Beta okurlarınızın yazdıkları", "tips.readAloud": "Bu bölümü tarayıcınızın seslerinden biriyle sesli oku", "tips.zen": "Yalnızca sayfa ve sözcükleriniz. Çıkmak için Esc", "tips.device": "Bu ekranda önizle: {size}, {res} piksel, {ppi} ppi", "tips.deviceHardcover": "Basılı kitabı açıp sayfalarını çevirebileceğiniz ciltli bir kitap olarak önizle",
         "bulk.sub": "Birçok el yazmasını tek seferde getirin — her biri rafınızda kendi kitabı olur, dili varışta algılanır. Klasör olarak bırakılan bir Obsidian kasası ön bilgisini, bağlantılarını ve görsellerini korur.",
         "bulk.filesBtn": "Dosya seç",
         "bulk.folderBtn": "Klasör seç",
@@ -6732,6 +7079,7 @@
         "toast.copiedFile": "نُسخ {path}", "toast.binaryNoCopy": "ملف الصورة هذا ثنائي — لا شيء لنسخه",
         "toast.jszipLoading": "JSZip ما زال يُحمَّل — حاول مجددًا بعد لحظة",
         "bulk.title": "استيراد جماعي",
+        /* BEUK:tips */ "tips.uiLang": "لغة قوائم الاستوديو وأزراره. يحتفظ كتابك بلغته الخاصة.", "tips.theme": "التبديل بين الورق (فاتح) وضوء الشموع (داكن)", "tips.help": "فتح قاعة قراءة المساعدة في علامة تبويب جديدة", "tips.support": "الكتابة إلى إنسان بشأن Beuk، في علامة تبويب جديدة", "tips.export": "تصدير الكتاب: EPUB أو PDF للطباعة أو Word أو Markdown أو HTML، تُبنى في متصفحك", "tips.account": "حسابك ورف كتبك", "tips.insights": "إيقاع الفصول والكلمات الأكثر استخدامًا والشخصيات، مقروءة من المخطوطة على هذا الجهاز", "tips.goals": "الأهداف التي تضعها لنفسك، مع عدّ أيام كتابتك", "tips.history": "لقطات من المخطوطة للرجوع إليها وقراءتها واستعادتها", "tips.bible": "أشخاص هذا الكتاب وأماكنه وأشياؤه، وأين تظهر أسماؤهم", "tips.comments": "ما كتبه قرّاؤك التجريبيون", "tips.readAloud": "قراءة هذا القسم بصوت عالٍ بأحد أصوات متصفحك", "tips.zen": "الصفحة وكلماتك فقط. Esc للخروج", "tips.device": "معاينة على هذه الشاشة: {size}، {res} بكسل، {ppi} ppi", "tips.deviceHardcover": "معاينة الكتاب المطبوع بغلاف مقوّى يمكنك فتحه وتقليب صفحاته",
         "bulk.sub": "أحضر مخطوطات كثيرة دفعة واحدة — كل واحدة تصبح كتابًا على رفك، وتُكتشف لغتها عند وصولها. خزنة Obsidian تُسقط كمجلد تحتفظ ببياناتها الوصفية وروابطها وصورها.",
         "bulk.filesBtn": "اختيار ملفات",
         "bulk.folderBtn": "اختيار مجلد",
@@ -6951,6 +7299,7 @@
         "toast.copiedFile": "{path}をコピーしました", "toast.binaryNoCopy": "この画像ファイルはバイナリです — コピーするものはありません",
         "toast.jszipLoading": "JSZipはまだ読み込み中です — 少し待ってからお試しください",
         "bulk.title": "一括インポート",
+        /* BEUK:tips */ "tips.uiLang": "スタジオのメニューとボタンの言語です。本は独自の言語のままです。", "tips.theme": "ペーパー（ライト）とキャンドルライト（ダーク）を切り替え", "tips.help": "ヘルプの閲覧室を新しいタブで開く", "tips.support": "Beuk について人に問い合わせる（新しいタブ）", "tips.export": "本を書き出す：EPUB、印刷用 PDF、Word、Markdown、HTML をブラウザ内で作成", "tips.account": "アカウントと本棚", "tips.insights": "章のリズム、よく使う語、登場人物を、この端末の原稿から読み取ります", "tips.goals": "自分で決めた目標と、書いた日の記録", "tips.history": "原稿のスナップショットを振り返り、読み、復元できます", "tips.bible": "この本の人物・場所・物と、その名前が出てくる箇所", "tips.comments": "ベータ読者が書いたこと", "tips.readAloud": "このセクションをブラウザの音声で読み上げる", "tips.zen": "ページとあなたの言葉だけ。Esc で終了", "tips.device": "この画面でプレビュー：{size}、{res} ピクセル、{ppi} ppi", "tips.deviceHardcover": "印刷した本を、開いてめくれるハードカバーとしてプレビュー",
         "bulk.sub": "原稿をまとめて持ち込めます — それぞれが本棚の独立した本になり、言語は到着時に検出されます。フォルダとしてドロップした Obsidian 保管庫は、フロントマター・リンク・画像を保持します。",
         "bulk.filesBtn": "ファイルを選ぶ",
         "bulk.folderBtn": "フォルダを選ぶ",
@@ -7170,6 +7519,7 @@
         "toast.copiedFile": "已复制 {path}", "toast.binaryNoCopy": "此图片文件是二进制的 — 没有可复制的内容",
         "toast.jszipLoading": "JSZip 仍在加载 — 请稍后再试",
         "bulk.title": "批量导入",
+        /* BEUK:tips */ "tips.uiLang": "工作室菜单和按钮的语言。你的书保留自己的语言。", "tips.theme": "在纸面（浅色）和烛光（深色）之间切换", "tips.help": "在新标签页中打开帮助阅览室", "tips.support": "就 Beuk 写信给真人，在新标签页中打开", "tips.export": "导出本书：EPUB、印刷 PDF、Word、Markdown 或 HTML，在浏览器中生成", "tips.account": "你的账户和书架", "tips.insights": "章节节奏、最常用的词和人物，从本设备上的书稿读取", "tips.goals": "你为自己设定的目标，以及写作天数的记录", "tips.history": "书稿的快照，可回顾、阅读和恢复", "tips.bible": "本书的人物、地点和事物，以及它们的名字出现在哪里", "tips.comments": "你的试读读者写下的内容", "tips.readAloud": "用浏览器的一种声音朗读本节", "tips.zen": "只有页面和你的文字。按 Esc 退出", "tips.device": "在此屏幕上预览：{size}，{res} 像素，{ppi} ppi", "tips.deviceHardcover": "以可打开翻阅的精装书预览印刷版",
         "bulk.sub": "一次带来许多稿件 — 每部都成为书架上独立的一本书，语言在到达时自动检测。以文件夹形式放下的 Obsidian 仓库会保留其元数据、链接和图片。",
         "bulk.filesBtn": "选择文件",
         "bulk.folderBtn": "选择文件夹",
@@ -26221,7 +26571,7 @@
         const id = chopMenuFor, act = it.getAttribute("data-chop-act");
         if (it.getAttribute("aria-disabled") === "true") {
           /* Refused, said plainly — on a touch screen there is no hover to read the reason from. */
-          toast(it.getAttribute("title") || "", "info");
+          toast(it.title || "", "info"); /* BEUK:tips — the reason rides data-tip-text */
           return;
         }
         chopCloseMenu(false);
@@ -50664,7 +51014,7 @@
               return new Set(tops).size > 1;
             }).map((g) => g.getAttribute("data-tg"));
             const folded = Array.prototype.slice.call(tb.querySelectorAll(".tool-btn.folded"));
-            const foldedOk = folded.every((b) => { const l = b.querySelector(".tl"); return !!l && l.textContent.trim().length > 0 && !!b.getAttribute("title"); });
+            const foldedOk = folded.every((b) => { const l = b.querySelector(".tl"); return !!l && l.textContent.trim().length > 0 && !!b.title; }); /* BEUK:tips — the tooltip text rides data-tip-text; .title reads it */
             const gapOk = slot > 0 ? worstGap <= slot + 0.5 : worstGap <= 6;
             return scVerdict(
               rows.length > 0 && edgeSep === 0 && worstSlack <= 1.5 && gapOk && split.length === 0 && foldedOk,
@@ -55000,7 +55350,7 @@
               renderSidebar();
               window.beukChapters.menu(f.fw.id);
               const it = document.querySelector('#chopMenu [data-chop-act="merge"]');
-              const menuOk = !!it && it.getAttribute("aria-disabled") === "true" && it.getAttribute("title") === fwWhy &&
+              const menuOk = !!it && it.getAttribute("aria-disabled") === "true" && it.title === fwWhy &&
                 !!document.getElementById(it.getAttribute("aria-describedby") || "x") && document.querySelector("#chopMenu").getAttribute("role") === "menu";
               window.beukChapters.closeMenu();
               return scVerdict(across && refused && unchanged && partWhy && genOk && menuOk,
@@ -55232,6 +55582,39 @@
          answer synchronously: window.runBeukAsyncSelfChecks() runs them
          and resolves to the same result shape as runBeukSelfChecks(). */
       const SELF_CHECKS_ASYNC = [
+        /* ==== BEUK:tips ==== */
+        { id: "ui.tooltips.touch", feature: "ui", name: "Tooltips on touch screens: a long press shows the tip beside the control without pressing it; a short tap presses it and shows nothing",
+          async run() {
+            const T = window.beukTips;
+            if (!T) return scVerdict(false, "window.beukTips missing");
+            const bad = [];
+            const b = document.createElement("button");
+            b.type = "button"; b.setAttribute("aria-label", "Theme"); b.setAttribute("data-tip", "tips.theme"); b.innerHTML = '<svg width="16" height="16" aria-hidden="true"></svg>';
+            b.style.cssText = "position:fixed;left:200px;top:200px;width:34px;height:30px;z-index:5;";
+            let presses = 0;
+            b.addEventListener("click", () => { presses++; });
+            document.body.appendChild(b);
+            const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+            const pe = (type) => b.dispatchEvent(new PointerEvent(type, { pointerType: "touch", isPrimary: true, pointerId: 7, clientX: 215, clientY: 215, bubbles: true, cancelable: true }));
+            const shown = () => { const x = $("beukTip"); return !!(x && !x.hidden && T.current() && T.current().el === b); };
+            try {
+              T.hide();
+              pe("pointerdown"); await wait(150); pe("pointerup"); b.click();
+              if (shown()) bad.push("a short tap showed the tip");
+              if (presses !== 1) bad.push("a short tap did not press the button (" + presses + ")");
+              pe("pointerdown"); await wait(700);
+              if (!shown()) bad.push("a long press did not show the tip");
+              else {
+                const r = $("beukTip").getBoundingClientRect(), br = b.getBoundingClientRect();
+                if (r.left < br.right && br.left < r.right && r.top < br.bottom && br.top < r.bottom) bad.push("the tip covers the pressed control");
+              }
+              pe("pointerup"); b.click();
+              if (presses !== 1) bad.push("the long press also pressed the button");
+              if (!shown()) bad.push("the tip vanished on release");
+            } finally { T.hide(); b.remove(); }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "short tap presses (1 press, no tip); long press shows the tip beside the control, the release does not press it");
+          } },
+        /* ==== /BEUK:tips ==== */
         { id: "zen.sound.files-decode", feature: "zen", name: "Zen sound files: every scene's recording is served from this origin as audio/mpeg, is at most 1.5 MB (4.5 MB together), decodes in this browser to pad + loop + pad seconds, and its loop is seamless on the decoded samples — the loop end runs into the loop start with no level step and the padded tail repeats the head",
           async run() {
             const snd = window.beukZenSound;
@@ -55796,6 +56179,91 @@
             } finally { setUiLang(keepLang, { persist: false }); if (typeof updateStats === "function" && $("statWords")) updateStats(); }
             return scVerdict(bad.length === 0, bad.length ? bad.slice(0, 6).join("; ") : cases.length + " counted forms correct across en/pl/ru/ar/fr/de/es/ja; the sidebar reads \"107 words · ~1 page\"");
           } },
+        /* ==== BEUK:tips ==== */
+        { id: "ui.tooltips", feature: "ui", name: "One tooltip system: every icon-only button has an accessible name and a tip; a tip appears on keyboard focus beside its control (role=tooltip, wired by aria-describedby, the name untouched), flips at the screen edge, follows right-to-left, and Escape hides it; no help-style title attribute is left for the browser to show",
+          run() {
+            const T = window.beukTips;
+            if (!T) return scVerdict(false, "window.beukTips missing");
+            T.flush();
+            const bad = [];
+            const desc = (el) => (el.id ? "#" + el.id : el.tagName.toLowerCase() + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).join(".") : ""));
+            const left = Array.prototype.filter.call(document.querySelectorAll("[title]"), (el) => el instanceof HTMLElement && !T.keepsTitle(el));
+            if (left.length) bad.push(left.length + " help title(s) left: " + left.slice(0, 4).map(desc).join(", "));
+            const kept = document.querySelectorAll("[title]").length;
+            let icon = 0, explicit = 0, absorbed = 0, byName = 0;
+            const noName = [], noTip = [];
+            document.querySelectorAll("button, [role='button'], a[href]").forEach((el) => {
+              if (el.closest(".fc-page, .piv-book, [data-keep-titles]") || el.closest("#beukTip")) return;
+              if (!T.iconOnly(el)) return;
+              icon++;
+              if (!T.nameOf(el)) noName.push(desc(el));
+              const tx = T.textFor(el);
+              if (!tx) noTip.push(desc(el));
+              else if (el.hasAttribute("data-tip")) explicit++;
+              else if ((el.getAttribute("data-tip-text") || "").trim()) absorbed++;
+              else byName++;
+            });
+            if (noName.length) bad.push(noName.length + " icon-only control(s) without an accessible name: " + noName.slice(0, 5).join(", "));
+            if (noTip.length) bad.push(noTip.length + " icon-only control(s) without a tip: " + noTip.slice(0, 5).join(", "));
+            if (icon < 5) bad.push("only " + icon + " icon-only controls found — the scan is not seeing the studio");
+            /* behaviour, on a scratch control: focus shows, Escape hides, edges flip, RTL mirrors */
+            const keepFocus = document.activeElement;
+            const keepDir = document.documentElement.getAttribute("dir");
+            const b = document.createElement("button");
+            b.type = "button"; b.setAttribute("aria-label", "Theme"); b.setAttribute("data-tip", "tips.theme"); b.innerHTML = '<svg width="16" height="16" aria-hidden="true"></svg>';
+            b.style.cssText = "position:fixed;left:0;top:0;width:34px;height:30px;z-index:5;";
+            document.body.appendChild(b);
+            const tipBox = () => { const x = $("beukTip"); return x && !x.hidden ? x.getBoundingClientRect() : null; };
+            const overlaps = (a, c) => a.left < c.right && c.left < a.right && a.top < c.bottom && c.top < a.bottom;
+            const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+            let detail = "";
+            try {
+              T.hide(); T.setKeyboard(true);
+              b.focus();
+              const tip = $("beukTip"), r1 = tipBox(), br = b.getBoundingClientRect();
+              if (!tip || tip.getAttribute("role") !== "tooltip") bad.push("no role=tooltip element");
+              if (!r1) bad.push("keyboard focus did not show the tip");
+              else {
+                if (tip.textContent !== t("tips.theme")) bad.push("tip text is not the tips.theme string");
+                if ((b.getAttribute("aria-describedby") || "").split(/\s+/).indexOf("beukTip") === -1) bad.push("aria-describedby not wired to the tooltip");
+                if (b.getAttribute("aria-label") !== "Theme") bad.push("the accessible name was replaced");
+                if (overlaps(r1, br)) bad.push("the tip covers its control");
+                if (r1.left < 0 || r1.top < 0 || r1.right > vw || r1.bottom > vh) bad.push("the tip leaves the screen");
+                if (tip.getAttribute("data-side") !== "bottom") bad.push("at the top edge the tip did not flip below (" + tip.getAttribute("data-side") + ")");
+              }
+              b.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+              if (tipBox()) bad.push("Escape did not hide the tip");
+              if ((b.getAttribute("aria-describedby") || "").indexOf("beukTip") !== -1) bad.push("aria-describedby left behind after Escape");
+              if (document.activeElement !== b) bad.push("Escape moved focus");
+              /* start placement mirrors in right-to-left */
+              b.blur(); b.style.top = "200px"; b.style.left = Math.round(vw / 2) + "px"; b.setAttribute("data-tip-place", "start");
+              T.show(b, "focus");
+              const ltr = $("beukTip").getAttribute("data-side");
+              T.hide();
+              document.documentElement.setAttribute("dir", "rtl");
+              T.show(b, "focus");
+              const rtl = $("beukTip").getAttribute("data-side");
+              T.hide();
+              if (ltr !== "left" || rtl !== "right") bad.push("start placement: ltr " + ltr + ", rtl " + rtl + " (want left, right)");
+              /* one tooltip at a time */
+              const b2 = b.cloneNode(true); b2.style.left = "400px"; document.body.appendChild(b2);
+              T.show(b, "hover"); T.show(b2, "hover");
+              if ((b.getAttribute("aria-describedby") || "").indexOf("beukTip") !== -1 || document.querySelectorAll(".beuk-tip:not([hidden])").length !== 1) bad.push("more than one tip at a time");
+              T.hide(); b2.remove();
+              /* a title written by code becomes the tip, and .title still reads it */
+              b.title = "Written by code";
+              if (b.hasAttribute("title") || b.title !== "Written by code" || T.textFor(b) !== t("tips.theme")) bad.push("el.title is not absorbed (attr " + b.hasAttribute("title") + ", .title " + b.title + ")");
+              detail = icon + " icon-only controls, each named and tipped (" + explicit + " written tips, " + absorbed + " from their old titles, " + byName + " showing their name); focus shows beside the control, flips at the top edge, start mirrors in RTL, Escape hides; " + kept + " title(s) kept where the browser needs them (iframe, abbr, book pages)";
+            } finally {
+              T.hide(); T.setKeyboard(false);
+              if (keepDir == null) document.documentElement.removeAttribute("dir"); else document.documentElement.setAttribute("dir", keepDir);
+              b.remove();
+              if (keepFocus && keepFocus.focus && keepFocus !== document.body) { try { keepFocus.focus({ preventScroll: true }); } catch (e) {} }
+              T.hide();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.slice(0, 6).join("; ") : detail);
+          } },
+        /* ==== /BEUK:tips ==== */
         { id: "sample.count.truthful", feature: "sample", name: "The sample's word counts are true: the Load button states the bundled sample's real count (counted as the stats count the desk), and while the sample is open its note follows every edit",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -57837,7 +58305,7 @@
           stage.style.display = html ? "" : "none";
           stage.querySelectorAll("img").forEach((im) => {
             const alt = im.getAttribute("alt");
-            if (alt && !im.getAttribute("title")) im.setAttribute("title", alt);
+            if (alt && !im.title) im.setAttribute("title", alt);
           });
         }
         const panel = $("panelContent");

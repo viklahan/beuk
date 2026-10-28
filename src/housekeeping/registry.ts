@@ -2233,6 +2233,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'UI strings and Intl.PluralRules run in the browser.',
   },
+  // BEUK:tips — the studio's one tooltip system.
+  {
+    id: 'ui.tooltips',
+    title: 'One tooltip system: every icon-only button has an accessible name and a tip; focus shows it beside the control (aria-describedby to role=tooltip), it flips at edges and mirrors in RTL, Escape hides it; no help-style title attributes remain',
+    kind: 'client-only',
+    reason: 'Tooltips are studio chrome: the check reads the live DOM and drives the tooltip layer in the browser.',
+  },
+  {
+    id: 'ui.tooltips.touch',
+    title: 'On touch screens a long press shows the tip without pressing the control; a short tap presses it and shows nothing',
+    kind: 'client-only',
+    reason: 'Pointer and touch handling run in the browser.',
+  },
   {
     id: 'sample.count.truthful',
     title: 'The sample’s word counts are true: the Load button states its real count; the open sample’s note follows every edit',
