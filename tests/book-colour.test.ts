@@ -120,14 +120,14 @@ test('new studio strings exist in all 13 languages, with their placeholders, and
 test('on the studio dark surfaces the accent is lifted to 3:1; the grounds it measures are the studio’s own', () => {
   // the reference failure: a dark accent on the OLED phone's black screen, and on Candlelight's ground
   assert.ok(contrast('#1f3a64', '#000000') < 3);
-  assert.ok(contrast('#7a1f2b', '#100e0c') < 3);
+  assert.ok(contrast('#7a1f2b', '#0a1317') < 3);
   // the grounds named in the code are the ones the studio paints
   assert.ok(html.includes('.frame-phone .screen { background: #000000; color: #e9e9e9;'));
   const candle = /:root\[data-theme="candlelight"\] \{([\s\S]*?)\}/.exec(html)![1];
-  for (const [tok, hex] of [['--bg', '#100e0c'], ['--panel', '#181715'], ['--panel-2', '#22201d'], ['--panel-3', '#262320']]) assert.ok(candle.includes(`${tok}: ${hex};`), `${tok} ${hex}`);
-  assert.ok(html.includes('background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%);'));
+  for (const [tok, hex] of [['--bg', '#0a1317'], ['--panel', '#0f1b20'], ['--panel-2', '#152429'], ['--panel-3', '#1a2b31'], ['--stage-glow', '#173039']]) assert.ok(candle.includes(`${tok}: ${hex};`), `${tok} ${hex}`);
+  assert.ok(html.includes('background: radial-gradient(120% 85% at 50% -10%, var(--stage-glow) 0%, var(--panel-3) 58%);'));
   assert.ok(html.includes('{ scope: ".fc-page", on: ".frame-phone ", bgs: ["#000000"] },'));
-  assert.ok(html.includes('{ scope: ".zen-book", on: \':root[data-theme="candlelight"] \', bgs: ["#100e0c", "#181715", "#22201d", "#262320", "#2e2416"] }'));
+  assert.ok(html.includes('{ scope: ".zen-book", on: \':root[data-theme="candlelight"] \', bgs: ["#0a1317", "#0f1b20", "#152429", "#1a2b31", "#173039"] }'));
   // the lift: mixed with white in 5% steps until 3:1 on every ground, emitted only for the scoped surface
   assert.ok(html.includes('const h = "#" + rgb.map((v) => Math.round(v + (255 - v) * k / 20).toString(16).padStart(2, "0")).join("");'));
   assert.ok(html.includes('if (bgs.every((b) => colourContrast(h, b) >= COLOUR_MIN_LARGE)) return h;'));
@@ -144,7 +144,7 @@ test('on the studio dark surfaces the accent is lifted to 3:1; the grounds it me
     return '#ffffff';
   };
   for (const a of swatches('COLOUR_ACCENTS'))
-    for (const bgs of [['#000000'], ['#100e0c', '#181715', '#22201d', '#262320', '#2e2416']]) {
+    for (const bgs of [['#000000'], ['#0a1317', '#0f1b20', '#152429', '#1a2b31', '#173039']]) {
       const h = lift(a.hex, bgs);
       for (const b of bgs) assert.ok(contrast(h, b) >= 3, `${a.id} -> ${h} on ${b}`);
     }

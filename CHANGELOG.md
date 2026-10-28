@@ -21,6 +21,8 @@ to make well.
 - Your contact details are saved with the book and printed only on that title page; empty fields are left out. The dialog lists everything left out — front and back matter by name, pictures, the typesetting — so nothing disappears without your knowing. Notes go on a Notes page after END.
 - Importing a manuscript now reads a line with just # as a scene break.
 
+- **The studio wears the site's colours.** The writing studio now uses the same sea blue and amber on warm paper as the beuk.studio home page, and Candlelight is the same blue and amber at night. Your book's own colours and fonts are unchanged. Text and buttons meet the WCAG AA contrast minimums in both looks, and every control shows a visible focus ring.
+
 **Goals that plan with you**
 - **Writing days.** Choose the days of the week you write, and whether the deadline day counts.
 - **Set my daily target from the deadline.** With a project target and a deadline, Beuk works out the daily target for you and shows the sum: "15,000 words left over 10 writing days → 1,500 a day". It is worked out again each day, so a missed day spreads over the days still to come.

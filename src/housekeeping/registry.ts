@@ -1834,6 +1834,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       'The header lockup, the page title and the 13-locale brand.tagline string table are client chrome. V decided on 2026-10-25: the sub-brand is the production domain beuk.studio, and the “free & open-source” claim is removed because the repo carries no licence. The case fails if either word returns in any locale.',
   },
   {
+    id: 'ui.theme.palette',
+    title: 'Studio palette matches the site (sea blue + amber) in Paper and Candlelight; contrast passes AA',
+    kind: 'client-only',
+    reason:
+      'Theme tokens, computed control colours and the studio stylesheet exist only in the browser: the case reads the computed tokens of both themes against client/site/site.css, checks the Export button, an on toggle, the brand lockup and the focus-ring rule, scans the studio stylesheet for the old brown/maroon hex, and measures every text/surface pair against WCAG AA (4.5:1 text, 3:1 marks and rings).',
+  },
+  {
     id: 'ui.zen.mode-hides-the-room',
     title: 'Zen mode hides the structure pane, preview and topbar; leaving restores the room',
     kind: 'client-only',
