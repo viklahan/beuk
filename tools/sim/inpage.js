@@ -153,7 +153,9 @@
     const t0 = now();
     await cloudSaveNow();
     const ms = now() - t0;
-    return { ms, bytes, id: cloud.linkedId, revision: cloud.baseRevision, status: cloud.syncStatus, error: cloud.shelfError || null };
+    /* what actually went to the shelf: the doc as sent (pictures named) and the pictures uploaded with it */
+    const wire = typeof shelfPics === "object" && shelfPics.stats ? Object.assign({}, shelfPics.stats) : null;
+    return { ms, bytes, wire, id: cloud.linkedId, revision: cloud.baseRevision, status: cloud.syncStatus, error: cloud.shelfError || null };
   }
   async function openFromShelf(id) {
     const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(id), {});

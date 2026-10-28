@@ -17,6 +17,15 @@ export interface Config {
    *  default 64 MiB). A book carries its pictures and its snapshot
    *  history, so the sample book alone is ~23 MB. */
   manuscriptMaxBytes: number;
+  /** Shelf pictures (src/pictures.ts): the largest one picture, decoded
+   *  (PICTURE_MAX_BYTES, default 32 MiB), every picture an account holds
+   *  together (PICTURE_QUOTA_BYTES, default 2 GiB), and how long an
+   *  upload no book names yet is kept before it is collected
+   *  (PICTURE_GC_GRACE_SECONDS, default 3600: a save uploads its
+   *  pictures first, then the doc that names them). */
+  pictureMaxBytes: number;
+  pictureQuotaBytes: number;
+  pictureGcGraceSeconds: number;
   /** RESTORE_ENABLED (default true). Restore now carries every data
    *  table (shares, comments, readers and jobs included; the completeness
    *  self-check fails on any unclassified table). Set false to turn
@@ -315,6 +324,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     exportDir: env.EXPORT_DIR ?? path.resolve(process.cwd(), 'data', 'exports'),
     exportMaxBytes: Number(env.EXPORT_MAX_BYTES ?? 50 * 1024 * 1024),
     manuscriptMaxBytes: Number(env.MANUSCRIPT_MAX_BYTES ?? 64 * 1024 * 1024),
+    pictureMaxBytes: positiveInt(env.PICTURE_MAX_BYTES, 32 * 1024 * 1024),
+    pictureQuotaBytes: positiveInt(env.PICTURE_QUOTA_BYTES, 2 * 1024 * 1024 * 1024),
+    pictureGcGraceSeconds: nonNegativeInt(env.PICTURE_GC_GRACE_SECONDS, 3600),
     restoreEnabled: (env.RESTORE_ENABLED ?? 'true').toLowerCase() !== 'false',
     stripeSecretKey: env.STRIPE_SECRET_KEY || null,
     stripeWebhookSecret: env.STRIPE_WEBHOOK_SECRET || null,

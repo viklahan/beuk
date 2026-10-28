@@ -42,7 +42,10 @@ test('shelfguard: the shelf-open guard no longer depends on edits made this sess
   assert.doesNotMatch(body, /cloudDirty \|\| \(cloud\.linkState !== "linked" && cloud\.sessionEdited\)/);
   assert.match(body, /if \(deskHoldsUnshelvedWork\(\)\) \{/);
   // The guard runs before the shelf book is fetched.
-  assert.ok(body.indexOf('deskHoldsUnshelvedWork()') < body.indexOf('apiFetch("/api/manuscripts/"'));
+  // BEUK:pics — the fetch is shelfGetBook (named pictures, filled in from the desk).
+  const fetchAt = body.indexOf('await shelfGetBook(id, true)');
+  assert.ok(fetchAt > 0, 'the shelf book is fetched through shelfGetBook');
+  assert.ok(body.indexOf('deskHoldsUnshelvedWork()') < fetchAt);
 });
 
 test('shelfguard: a whole-book restore snapshots every desk but a truly empty one, and its confirmation says which', async () => {
