@@ -3240,13 +3240,13 @@
 
         <div class="fmt-sec">
           <h3 data-i18n="exp.boxsetH"><i data-lucide="library-big"></i>Box Set — Combined EPUB</h3>
-          <p>Assemble a box set in one EPUB. The book open in the studio is always <b>Book One</b>; import further manuscripts (DOCX, Markdown or plain text) as Books Two, Three and so on. Each book keeps its own sections under a volume divider with its own title page, in order, under one combined Contents — and each book's cover, images and endnotes travel with it. The platform preset above applies to the combined package.</p>
+          <p>Assemble a box set in one EPUB. The book open in the studio is always <b>Book One</b>; add further books as Books Two, Three and so on — a Beuk backup file (.beuk-backup.json) brings a book whole, with its cover and pictures; a manuscript (DOCX, Markdown or plain text) brings its text. Each book keeps its own sections under a volume divider with its own title page, in order, under one combined Contents — and each book's cover, images and endnotes travel with it. The platform preset above applies to the combined package.</p>
           <div class="bs-list" id="boxSetList"></div>
           <div class="fmt-actions">
             <button class="tb-btn" id="btnBoxSetAdd" type="button" data-i18n="exp.addBook"><i data-lucide="book-plus"></i>Add a Book…</button>
             <button class="tb-btn primary" id="btnBuildBoxSet" type="button" data-i18n="exp.buildBoxSet"><i data-lucide="download"></i>Build Box Set .epub</button>
           </div>
-          <input type="file" id="boxSetFileInput" accept=".docx,.md,.markdown,.txt" multiple style="display:none;" />
+          <input type="file" id="boxSetFileInput" accept=".json,.docx,.md,.markdown,.txt" multiple style="display:none;" />
         </div>
 
         <div class="fmt-sec" id="archiveSec" style="display:none;">
@@ -39444,25 +39444,82 @@
           btn.disabled = false; btn.innerHTML = '<i data-lucide="download"></i>Build Box Set .epub'; icons();
         }
       }
+      /* BEUK:boxsetvols — a volume's title is the book's own: a Beuk
+         backup's meta title, a Markdown file's frontmatter title, a
+         Word file's document title (docProps/core.xml). The file name
+         is the last resort, and is used as written — only the
+         extension comes off, so "Tik-Tok of Oz.md" stays "Tik-Tok of Oz". */
+      function boxSetNameTitle(name) {
+        return String(name || "").replace(/\.beuk-backup\.json$/i, "").replace(/\.(json|docx|md|markdown|txt)$/i, "").trim() || "Untitled Book";
+      }
+      function boxSetVolumeMeta(fields) {
+        const base = { title: "", subtitle: "", author: state.meta.author || "", publisher: "", isbn: "", language: state.meta.language || "en", langSource: state.meta.langSource || "auto", langGuess: "", year: state.meta.year || String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() };
+        return Object.assign(base, fields || {});
+      }
+      /* A Beuk book (the backup file the studio writes) arrives whole:
+         its sections, cover and pictures. Picture ids are only unique
+         inside one book — two books made from the same art, or the same
+         book added twice, carry the same ids — so every picture is
+         renamed under this volume's own id, and every place the book
+         names a picture (in-text markers, plates, backdrops, scene
+         images) follows the rename. Book One, open in the studio, keeps
+         its ids; no added volume can collide with it or with another. */
+      function bookDocToVolume(book, fileName) {
+        const doc = JSON.parse(JSON.stringify(book || {}));
+        const volId = uid();
+        const ids = new Map();
+        const images = (Array.isArray(doc.images) ? doc.images : [])
+          .filter((img) => img && typeof img.id === "string" && /^[A-Za-z0-9-]+$/.test(img.id) && typeof img.data === "string" && img.data && img.mediaType && img.ext)
+          .map((img) => { const nid = volId + "-" + img.id; ids.set(img.id, nid); return Object.assign({}, img, { id: nid }); });
+        const re = (id) => (typeof id === "string" && ids.has(id) ? ids.get(id) : id);
+        const sections = (Array.isArray(doc.sections) ? doc.sections : []).map(normalizeSection).map((s) => Object.assign(s, {
+          content: String(s.content || "").replace(/\]\(img:([A-Za-z0-9-]+)/g, (m0, id) => "](img:" + re(id)),
+          plateId: re(s.plateId), backdropId: re(s.backdropId),
+          scenes: (s.scenes || []).map((sc) => Object.assign({}, sc, { imageId: re(sc.imageId) }))
+        }));
+        const dm = doc.meta && typeof doc.meta === "object" ? doc.meta : {};
+        const meta = boxSetVolumeMeta(Object.assign({}, dm, { bookId: dm.bookId || newBookId() }));
+        meta.title = String(dm.title || "").trim() || boxSetNameTitle(fileName);
+        if (!LANG_PACKS[meta.language]) meta.language = "en";
+        const c = doc.cover;
+        const cover = c && typeof c === "object" && typeof c.data === "string" && c.data && /^image\//.test(String(c.mediaType || "")) && c.ext ? c : null;
+        return { id: volId, meta, sections, cover, images };
+      }
       async function manuscriptFileToVolume(file) {
         const name = file.name;
         const lower = name.toLowerCase();
+        if (lower.endsWith(".json")) {
+          const book = localParseBackup(await file.text());
+          if (!book) throw new Error("this is not a Beuk backup file");
+          return bookDocToVolume(book, name);
+        }
         let text = "";
+        const own = {};
         if (lower.endsWith(".docx")) {
           if (!window.mammoth) throw new Error("Mammoth.js is still loading — try again in a moment");
           const buf = await file.arrayBuffer();
+          const id = await readDocxCoreIdentity(buf);
+          if (id.title) own.title = id.title;
+          if (id.author) own.author = id.author;
           const result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
           text = sanitizeHtmlToText(result.value);
         } else {
-          text = beautifyText(await file.text());
+          /* A Markdown file's frontmatter names the book (the studio's
+             own Markdown export writes it); it is metadata, not text. */
+          const fm = bulkParseFrontmatter(await file.text());
+          ["title", "subtitle", "author", "language"].forEach((k) => { if (fm.meta[k]) own[k] = fm.meta[k]; });
+          text = beautifyText(fm.body);
         }
-        const fallback = name.replace(/\.(docx|md|markdown|txt)$/i, "").replace(/[-_]+/g, " ").trim() || "Untitled Book";
-        const chapters = splitIntoChapters(text, fallback);
+        const title = String(own.title || "").trim() || boxSetNameTitle(name);
+        const chapters = splitIntoChapters(text, title);
         const sections = [mkSection("front", "titlepage", "Title Page")].concat(
           chapters.map((c, i) => mkSection("body", "chapter", c.title || ("Chapter " + (i + 1)), { number: c.number || String(i + 1), content: beautifyText(c.body.join("\n")) }))
         );
-        return { id: uid(), meta: { title: fallback, subtitle: "", author: state.meta.author || "", publisher: "", isbn: "", language: state.meta.language || "en", langSource: state.meta.langSource || "auto", langGuess: "", year: state.meta.year || String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() }, sections, cover: null, images: [] };
+        const meta = boxSetVolumeMeta(Object.assign({}, own, { title }));
+        if (!LANG_PACKS[meta.language]) meta.language = state.meta.language || "en";
+        return { id: uid(), meta, sections, cover: null, images: [] };
       }
+      /* ==== /BEUK:boxsetvols ==== */
       function renderBoxSetList() {
         const box = $("boxSetList"); if (!box) return;
         const row = (vi, title, metaLine, volId) =>
@@ -39475,7 +39532,7 @@
         };
         let html = row(0, state.meta.title || "Untitled Book", stats({ sections: state.sections, cover: state.cover, images: state.images }), null);
         (state.boxSetVolumes || []).forEach((vol, i) => { html += row(i + 1, (vol.meta && vol.meta.title) || "Untitled Book", stats(vol), vol.id); });
-        if (!(state.boxSetVolumes || []).length) html += '<p class="bs-empty">No further books yet. Add a Book imports a manuscript as the next volume — its title comes from the file name, and you can remove it again before building. Nothing is built until you press Build Box Set.</p>';
+        if (!(state.boxSetVolumes || []).length) html += '<p class="bs-empty">No further books yet. Add a Book brings in a Beuk backup file or a manuscript as the next volume — its title is the book’s own (a backup’s title, a Markdown file’s frontmatter title, a Word file’s document title; the file name only when the file names none), and you can remove it again before building. Nothing is built until you press Build Box Set.</p>';
         box.innerHTML = html;
         box.querySelectorAll("[data-bsremove]").forEach((b) => b.addEventListener("click", () => {
           state.boxSetVolumes = (state.boxSetVolumes || []).filter((v) => v.id !== b.getAttribute("data-bsremove"));
@@ -56591,6 +56648,60 @@
         return out;
       }
       SELF_CHECKS_ASYNC.push(...msAsyncSelfChecks()); /* BEUK:manuscript */
+      /* ==== BEUK:boxsetvols ==== */
+      SELF_CHECKS_ASYNC.push({ id: "boxset.volumes.whole-books", feature: "boxset-docx",
+        name: "Box set from whole books: Add a Book takes a Beuk backup file whole — every added volume's pictures (ids that collide with Book One's and with each other, renamed per volume) and its cover ship in the box-set EPUB, which the validator passes; each volume's title is the book's own (backup meta title, Markdown frontmatter title), and a file name is used unmangled (hyphens kept)",
+        async run() {
+          const bad = [], notes = [];
+          const keepVols = state.boxSetVolumes;
+          try {
+            /* Picture ids taken from the open book itself, so the added books collide with Book One. */
+            const own = (state.images || []).filter((im) => im && im.id).slice(0, 2).map((im) => im.id);
+            while (own.length < 2) own.push("scbsvimg" + own.length);
+            const pic = (id, name) => ({ id, name, mediaType: "image/png", ext: "png", data: FAKE_PNG });
+            const bookOf = (title) => ({ meta: { title, author: "L. Frank Baum", language: "en", bookId: "urn:uuid:sc-bsv-" + slug(title) },
+              sections: [mkSection("front", "cover", "Cover"), mkSection("front", "titlepage", "Title Page"),
+                Object.assign(mkSection("body", "chapter", "The Rose Princess", { number: "1", content: "Betsy looked up.\n\n![The rose garden](img:" + own[0] + ")\n\nThen she ran.\n\n***\n\nThe end of the day." }), { plateId: own[1], plateAlt: "The Rose Princess", scenes: [{ at: 0, imageId: "scbsvscene", name: "", caption: "", alt: "A scene" }] })],
+              cover: { data: FAKE_PNG, mediaType: "image/png", ext: "png", name: title + " cover.png" },
+              images: [pic(own[0], "Rose Garden.png"), pic(own[1], "Plate.png"), pic("scbsvscene", "Scene.png")] });
+            const backup = (title, file) => new File([JSON.stringify({ format: "beuk-backup", version: 1, exportedAt: new Date().toISOString(), book: bookOf(title) })], file, { type: "application/json" });
+            const vols = [];
+            vols.push(await manuscriptFileToVolume(backup("Tik-Tok of Oz", "tik-tok-of-oz-2026-10-27.beuk-backup.json")));
+            vols.push(await manuscriptFileToVolume(backup("The Forty-Five Guardsmen", "the-forty-five-guardsmen-2026-10-27.beuk-backup.json")));
+            vols.push(await manuscriptFileToVolume(new File(["---\ntitle: \"Glinda of Oz\"\nauthor: \"L. Frank Baum\"\n---\n\n# Chapter 1\n\nThe Call to Duty.\n"], "glinda_of_oz.md", { type: "text/markdown" })));
+            vols.push(await manuscriptFileToVolume(new File(["# Chapter 1\n\nA Hungry Tiger.\n"], "Tik-Tok of Oz.md", { type: "text/markdown" })));
+            const wantTitles = ["Tik-Tok of Oz", "The Forty-Five Guardsmen", "Glinda of Oz", "Tik-Tok of Oz"];
+            vols.forEach((v, i) => { if (v.meta.title !== wantTitles[i]) bad.push("volume " + (i + 2) + " titled “" + v.meta.title + "”, want “" + wantTitles[i] + "”"); });
+            if ((vols[2].sections || []).some((s) => /title:\s*"Glinda/.test(s.content || ""))) bad.push("the Markdown frontmatter landed in the text");
+            state.boxSetVolumes = vols;
+            const files = boxSetFiles("generic");
+            const byPath = new Map(files.map((f) => [f.path, f]));
+            const opf = scText(files, "OEBPS/package.opf");
+            const hrefs = Array.from(opf.matchAll(/<item id="([^"]+)" href="(Images\/[^"]+)"/g)).map((m) => ({ id: m[1], href: m[2] }));
+            if (new Set(hrefs.map((h) => h.href)).size !== hrefs.length) bad.push("an image is declared twice in the manifest");
+            if (new Set(files.map((f) => f.path)).size !== files.length) bad.push("two package files share one path");
+            hrefs.forEach((h) => { if (!byPath.has("OEBPS/" + h.href)) bad.push("manifest names a missing " + h.href); });
+            [2, 3].forEach((n) => {
+              const vp = "vol" + String(n).padStart(2, "0");
+              const ch = scText(files, "OEBPS/Text/" + vp + "-chapter_01.xhtml");
+              const srcs = Array.from(ch.matchAll(/src="\.\.\/(Images\/[^"]+)"/g)).map((m) => m[1]);
+              const shipped = srcs.filter((p) => byPath.has("OEBPS/" + p) && hrefs.some((h) => h.href === p));
+              if (shipped.length < 3) bad.push("Book " + n + "'s chapter shows " + shipped.length + " of its 3 pictures (" + srcs.join(", ") + ")");
+              if (!byPath.has("OEBPS/Images/" + vp + "-cover.png") || !scText(files, "OEBPS/Text/" + vp + "-cover.xhtml").includes(vp + "-cover.png")) bad.push("Book " + n + "'s cover is missing");
+              notes.push("Book " + n + ": " + shipped.length + " pictures + cover");
+            });
+            const v2 = Array.from(scText(files, "OEBPS/Text/vol02-chapter_01.xhtml").matchAll(/src="\.\.\/(Images\/[^"]+)"/g)).map((m) => m[1]);
+            const v3 = Array.from(scText(files, "OEBPS/Text/vol03-chapter_01.xhtml").matchAll(/src="\.\.\/(Images\/[^"]+)"/g)).map((m) => m[1]);
+            if (v2.some((p) => v3.includes(p))) bad.push("Books Two and Three share a picture file though each brought its own");
+            const nav = scText(files, "OEBPS/nav.xhtml");
+            wantTitles.forEach((tt) => { if (!nav.includes(esc(tt))) bad.push("Contents lacks “" + tt + "”"); });
+            const errs = validateEpubPackage(files).results.filter((r) => r.level === "error");
+            if (errs.length) bad.push("validator: " + errs.map((r) => r.id + " " + r.detail).join(" | ").slice(0, 400));
+            else notes.push("validator: 0 errors");
+          } finally { state.boxSetVolumes = keepVols; }
+          return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : notes.join("; "));
+        } });
+      /* ==== /BEUK:boxsetvols ==== */
       /* ==== BEUK:slim ==== */
       SELF_CHECKS_ASYNC.push({ id: "shell.sample.external", feature: "sample",
         name: "Slim shell: the page carries no base64 picture over 50 KB; the sample's pictures resolve from assets/sample/ byte-identical to the manifest; loading the sample still lands its text synchronously while its pictures are on their way; the sample's EPUB, exported before they arrived, carries every picture",

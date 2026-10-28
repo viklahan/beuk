@@ -4005,6 +4005,33 @@ lines are ordered run by run (see above), not by the full bidi algorithm; a chap
 paragraph, not in the Subtitle field; footnote numbers stay inline as
 `[n]`; Box Set volume import and Bulk import do not take PDFs yet.
 
+## Box sets from whole books (Add a Book takes a backup)
+
+Export → Box Set builds one EPUB from several books. The book open in the
+studio is Book One; **Add a Book…** adds the others. It takes:
+
+- **A Beuk backup file** (`.beuk-backup.json`, from Download a backup) —
+  the book arrives whole: its sections, its cover and every picture.
+  Picture ids are only unique inside one book (two books made from the
+  same art, or the same book added twice, share ids), so each added
+  volume's pictures are renamed under the volume's own id
+  (`<volume id>-<picture id>`) and every reference follows — in-text
+  markers, plates, backdrops and scene images. Book One keeps its ids.
+- **A manuscript** (DOCX, Markdown, plain text) — its text only, as before.
+
+A volume's title is the book's own: the backup's meta title, a Markdown
+file's frontmatter `title:` (the frontmatter no longer lands in the
+text), a Word file's `dc:title`. Only when the file names none does the
+file name serve, with just the extension removed — hyphens and
+underscores are kept.
+
+Check: `boxset.volumes.whole-books` (async, `window.runBeukAsyncSelfChecks()`)
+adds two backups whose picture ids collide with Book One's and with each
+other plus two Markdown files, builds the box set and requires every
+added volume's three pictures and cover to be shipped, declared once and
+shown, the validator to report no error, and the four titles to be exact.
+The simulation's box sets (tools/sim) now add volumes this way.
+
 ## Simulation (tools/sim): many writers, series, readers — find gaps, test correctness
 
 A deterministic simulation of Beuk in use: writer personas with shelves of

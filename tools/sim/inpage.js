@@ -201,8 +201,10 @@
     return { bytes: text.length };
   }
   /** Box set through the studio's own path: the open book is Book One;
-   *  each sibling is exported as Markdown (the studio's Markdown export)
-   *  and added with "Add a Book…" (manuscriptFileToVolume). */
+   *  each sibling is written as the studio's own backup file (the
+   *  "Download a backup" payload) and added with "Add a Book…"
+   *  (manuscriptFileToVolume), which takes a backup whole — text,
+   *  cover and pictures. */
   async function boxSet(siblings, saveAs) {
     const docs = [];
     for (const s of siblings) {
@@ -214,11 +216,11 @@
     const mds = [];
     for (let i = 0; i < docs.length; i++) {
       applyBookDoc(docs[i]);
-      mds.push({ name: siblings[i].fileName, md: buildMarkdown(), imagesInBook: (state.images || []).length });
+      mds.push({ name: siblings[i].fileName, json: JSON.stringify({ format: "beuk-backup", version: 1, exportedAt: new Date().toISOString(), book: serializeBook() }), imagesInBook: (state.images || []).length });
     }
     applyBookDoc(keep); cloud.linkedId = keepLink.id; cloud.baseRevision = keepLink.rev; cloudDirty = false; clearTimeout(cloudSaveTimer);
     state.boxSetVolumes = [];
-    for (const m of mds) state.boxSetVolumes.push(await manuscriptFileToVolume(new File([m.md], m.name, { type: "text/markdown" })));
+    for (const m of mds) state.boxSetVolumes.push(await manuscriptFileToVolume(new File([m.json], m.name, { type: "application/json" })));
     const t0 = now();
     const files = boxSetFiles();
     const zip = new JSZip();

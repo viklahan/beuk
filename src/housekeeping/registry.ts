@@ -1628,6 +1628,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Immediacy of the state swap is observable only in the client.',
   },
+  /* ==== BEUK:boxsetvols ==== */
+  {
+    id: 'boxset.volumes.whole-books',
+    title: 'Box set from whole books: an added backup brings its cover and every picture (ids renamed per volume), the validator passes, and each volume keeps its own title (hyphens kept)',
+    kind: 'client-only',
+    reason: 'Add a Book reads the file, renames the pictures and builds the combined package in the browser (window.runBeukAsyncSelfChecks()); the server never sees a box set being assembled.',
+  },
+  /* ==== /BEUK:boxsetvols ==== */
   {
     id: 'shell.sample.external',
     title: 'Slim shell: sample pictures are files (byte-identical to the manifest), text still swaps synchronously, the EPUB waits for every picture',

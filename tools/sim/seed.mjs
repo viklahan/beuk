@@ -198,7 +198,7 @@ async function seedPersona(browser, pKey, importPath) {
       await inject(page);
       const first = seed.books[S.boxSet.in];
       await page.evaluate((id) => __sim.openFromShelf(id), first.shelfId);
-      const sibs = S.boxSet.volumes.slice(1).map((id) => ({ id: seed.books[id].shelfId, fileName: `${bookById(id).title}.md` }));
+      const sibs = S.boxSet.volumes.slice(1).map((id) => ({ id: seed.books[id].shelfId, fileName: `${slug(bookById(id).title)}.beuk-backup.json` }));
       const t0 = Date.now();
       const bs = await page.evaluate(([s, n]) => __sim.boxSet(s, n), [sibs, `epub/${S.key}-box-set.epub`]);
       bs.totalMs = Date.now() - t0;
