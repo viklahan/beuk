@@ -248,7 +248,7 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
 test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP of the size the reader states, each described', () => {
   const html = read('client', 'site', 'ramp.html');
   const books = [...html.matchAll(/"([a-z-]+)": \{ title: "([^"]+)", c: "(#[0-9a-f]{6})", w: (\d+), h: (\d+), spreads: \[([\s\S]*?)\]\}/g)];
-  assert.deepEqual(books.map((b) => b[1]), ['rain-on-calder-street', 'four-kitchens', 'the-sunken-vault', 'lunas-beach-treasure-hunt', 'salt-road', 'the-book-that-reads-you', 'the-woolly-school', 'the-travel-guide']);
+  assert.deepEqual(books.map((b) => b[1]), ['rain-on-calder-street', 'four-kitchens', 'the-sunken-vault', 'lunas-beach-treasure-hunt', 'salt-road', 'the-book-that-reads-you', 'the-woolly-school', 'the-travel-guide', 'the-bookbinders-letter']);
   for (const [, slug, title, , w, h, body] of books) {
     const spreads = [...body.matchAll(/\["([^"]+)", "([^"]+)"\]/g)];
     assert.equal(spreads.length, 4, `${slug}: four spreads (a book ends in four turns)`);
