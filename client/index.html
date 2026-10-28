@@ -6,7 +6,7 @@
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="assets/logo.webp" />
     <link rel="manifest" href="assets/manifest.webmanifest" />
-    <meta name="theme-color" content="#ece5d8" />
+    <meta name="theme-color" content="#eceee0" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -59,46 +59,59 @@
       @property --zd-vig { syntax: "<color>"; inherits: true; initial-value: rgba(0, 0, 0, 0); }
       @property --zd-gx { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
       @property --zd-gy { syntax: "<percentage>"; inherits: true; initial-value: -10%; }
-      /* Paper theme (default): warm antique parchment, sepia ink, amber accent. */
+      /* Paper theme (default): the site's warm paper with its deep
+         sea-blue accent and amber highlight (client/site/site.css
+         :root) — the studio and the landing page are one product. */
       :root {
         color-scheme: light;
-        --bg: #ece5d8;
-        --panel: #faf7f2;
-        --panel-2: #fffdf8;
-        --panel-3: #f1ebdf;
-        --ink: #1c1917;
-        --ink-2: #44403c;
-        --muted: #78716c;
-        --line: #ddd6c8;
-        --line-2: #cfc6b4;
-        --accent: #92400e;
-        --accent-soft: #f3e3d0;
-        --accent-ink: #fff8ec;
-        --gold: #a3802f;
-        --good: #3d7a4a;
+        --bg: #eceee0;
+        --panel: #f8f4e9;
+        --panel-2: #fffdf4;
+        --panel-3: #efeee1;
+        --ink: #22333a;
+        --ink-2: #3a4b51;
+        --muted: #5d6d66;
+        --line: #d5dcc9;
+        --line-2: #c2cbb5;
+        --control-edge: #7a8a81;
+        --accent: #14607a;
+        --accent-soft: #dcebea;
+        --accent-ink: #f4fbfa;
+        --gold: #a87e2c;
+        --gold-ink: #7f5f1c;
+        --good: #2f6f45;
         --bad: #b3352b;
-        --shadow: 0 10px 30px rgba(56, 42, 20, 0.16);
+        --focus: #14607a;
+        --scrim: rgba(16, 32, 38, .46);
+        --stage-glow: var(--panel-3);
+        --shadow: 0 10px 30px rgba(20, 44, 52, 0.15);
         --ui-font: "Karla", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans Arabic", "Geeza Pro", Tahoma, sans-serif;
         --mono-font: "IBM Plex Mono", ui-monospace, monospace;
       }
-      /* Candlelight theme: the nocturnal writer's study. */
+      /* Candlelight theme: the same sea-blue and amber, at night — a
+         harbour after dark, the lamp still lit. */
       :root[data-theme="candlelight"] {
         color-scheme: dark;
-        --bg: #100e0c;
-        --panel: #181715;
-        --panel-2: #22201d;
-        --panel-3: #262320;
-        --ink: #faf7f2;
-        --ink-2: #d8d2c6;
-        --muted: #a39e93;
-        --line: #38342e;
-        --line-2: #4a453c;
-        --accent: #e0973b;
-        --accent-soft: #3a2c1a;
-        --accent-ink: #201304;
-        --gold: #c9a959;
+        --bg: #0a1317;
+        --panel: #0f1b20;
+        --panel-2: #152429;
+        --panel-3: #1a2b31;
+        --ink: #eef1ea;
+        --ink-2: #c8d3cf;
+        --muted: #94a7a4;
+        --line: #253840;
+        --line-2: #334b53;
+        --control-edge: #62797f;
+        --accent: #5fb0c9;
+        --accent-soft: #173a45;
+        --accent-ink: #05161c;
+        --gold: #d6a94f;
+        --gold-ink: #d6a94f;
         --good: #7fbf8f;
-        --bad: #e58a7a;
+        --bad: #ee8f7f;
+        --focus: #5fb0c9;
+        --scrim: rgba(2, 8, 11, .62);
+        --stage-glow: #173039;
         --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
       }
       html, body { height: 100%; }
@@ -113,6 +126,7 @@
       button { font-family: inherit; cursor: pointer; }
       input, select, textarea { font-family: inherit; color: var(--ink); }
       ::selection { background: var(--accent-soft); }
+      :where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
       /* ---------- App frame ---------- */
       #app { display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
@@ -144,11 +158,12 @@
 
       /* ---------- Brand lockup ---------- */
       .brand { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-      .brand img { width: 30px; height: 36px; object-fit: contain; display: block; }
-      :root[data-theme="candlelight"] .brand img { filter: invert(0.92) sepia(0.22) saturate(1.6) hue-rotate(-12deg); }
+      .brand .brand-mark { width: 26px; height: 31px; display: block; color: var(--ink); flex: 0 0 auto; }
+      .brand-mark .bm-band { fill: var(--gold); }
+      .brand-mark .bm-eye { fill: var(--panel); }
       .brand-txt { line-height: 1.05; }
       .brand-name { font-family: "EB Garamond", Georgia, serif; font-size: 21px; font-weight: 600; letter-spacing: .01em; }
-      .brand-sub { font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); font-weight: 700; margin-top: 1px; }
+      .brand-sub { font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-top: 1px; }
       .brand-div { width: 1px; align-self: stretch; background: var(--line); flex: 0 0 auto; }
       /* The quiet descriptor beside the wordmark: what Beuk is, in
          one line. Muted and smaller than the name — a caption, not a
@@ -211,7 +226,7 @@
       .local-pill[data-state="saved"][data-evictable] .local-warn,
       .local-pill[data-state="blocked"] .local-warn, .local-pill[data-state="quota"] .local-warn, .local-pill[data-state="error"] .local-warn { display: inline; }
       .local-pill[data-state="saved"][data-evictable] { border-color: var(--gold); }
-      .local-pill[data-state="saved"][data-evictable] .local-warn { color: var(--gold); }
+      .local-pill[data-state="saved"][data-evictable] .local-warn { color: var(--gold-ink); }
       .local-pill-btn { background: none; border: 0; padding: 0; color: inherit; font: inherit; display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
       .local-backup-inline { border: 1px solid var(--bad); background: var(--panel); color: var(--bad); border-radius: 999px; padding: 2px 9px; font-size: 11.5px; font-weight: 600; flex: 0 0 auto; }
       .local-pop {
@@ -274,7 +289,7 @@
         padding: 7px 8px; color: var(--ink-2); font-size: 13px;
       }
       .sec-item:hover { background: var(--panel-2); }
-      .sec-item.active { background: var(--panel-2); border-color: var(--line); color: var(--ink); box-shadow: 0 1px 4px rgba(30,24,14,.06); }
+      .sec-item.active { background: var(--panel-2); border-color: var(--line); color: var(--ink); box-shadow: 0 1px 4px rgba(20,44,52,.07); }
       .sec-item.excluded { opacity: .45; }
       .sec-item .sec-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
       .sec-item .sec-wc { font-family: var(--mono-font); font-size: 10.5px; color: var(--muted); flex: 0 0 auto; }
@@ -402,7 +417,7 @@
       .prog-track { height: 5px; border-radius: 99px; background: var(--panel-3); border: 1px solid var(--line); overflow: hidden; }
       .prog-fill { height: 100%; background: var(--gold); border-radius: 99px; transition: width .3s; }
       :root[data-theme="candlelight"] #pane-preview {
-        background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%);
+        background: radial-gradient(120% 85% at 50% -10%, var(--stage-glow) 0%, var(--panel-3) 58%);
       }
       .stat-cell .stat-num { font-family: var(--mono-font); font-size: 16px; font-weight: 500; color: var(--ink); }
       .stat-cell .stat-lab { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 1px; }
@@ -440,7 +455,7 @@
       .switch-row .sw-txt b { display: block; font-size: 13.5px; font-weight: 600; }
       .switch-row .sw-txt span { font-size: 12px; color: var(--muted); }
       .switch {
-        flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px; border: 1px solid var(--line-2);
+        flex: 0 0 auto; width: 42px; height: 24px; border-radius: 999px; border: 1px solid var(--control-edge);
         background: var(--panel-3); position: relative; padding: 0; transition: background .15s;
       }
       .switch::after {
@@ -462,11 +477,9 @@
       }
       .tool-btn:hover { background: var(--panel-3); border-color: var(--line); color: var(--ink); }
       .tool-btn svg { width: 14px; height: 14px; flex: 0 0 auto; }
-      /* The Zen leaf wears the Voyage Out blue (#14607a, from the landing-
-         page sample's --accent; 6.6:1 on Paper). On Candlelight that blue is
-         only 2.6:1, so the night leaf is a lighter tint of it (6.8:1). */
-      :root { --zen-leaf: #14607a; }
-      :root[data-theme="candlelight"] { --zen-leaf: #5fa9c2; }
+      /* The Zen leaf wears the studio accent: the site's sea blue on Paper,
+         its lighter night tint on Candlelight. */
+      :root { --zen-leaf: var(--accent); }
       #btnZen svg { color: var(--zen-leaf); }
       .tool-btn.accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
       .tool-btn.accent:hover { border-color: var(--accent); }
@@ -684,9 +697,9 @@
       body.zen .center-body, body.zen-returning .center-body { background: transparent; }
       #zenArt {
         position: fixed; inset: 0; z-index: -1; pointer-events: none;
-        color: #241d15; --zao: .065; --zao-lo: .04;
+        color: var(--ink); --zao: .065; --zao-lo: .04;
       }
-      :root[data-theme="candlelight"] #zenArt { color: #c9a959; --zao: .075; --zao-lo: .048; }
+      :root[data-theme="candlelight"] #zenArt { color: var(--gold); --zao: .075; --zao-lo: .048; }
       /* The room's warm tone in zen: a clear colour shift, not a hint —
          a warm field under a soft top light, present the whole session. */
       /* ==== BEUK:daycycle ==== the light of the day, as custom
@@ -700,8 +713,8 @@
         transition: --zd-tint 8s ease-in-out, --zd-glow 8s ease-in-out, --zd-water 8s ease-in-out, --zd-vig 8s ease-in-out, --zd-gx 8s ease-in-out, --zd-gy 8s ease-in-out;
       }
       :root[data-theme="candlelight"] #zenArt {
-        --zd-tint: rgba(206, 124, 74, .17); --zd-glow: rgba(232, 142, 78, .26);
-        --zd-water: rgba(190, 118, 84, .1); --zd-vig: rgba(201, 150, 89, .14);
+        --zd-tint: rgba(40, 104, 128, .16); --zd-glow: rgba(214, 169, 79, .2);
+        --zd-water: rgba(52, 120, 146, .12); --zd-vig: rgba(201, 155, 63, .12);
         --zd-gx: 86%; --zd-gy: 52%; --zd-gx2: 86%; --zd-gy2: 52%;
       }
       /* Reduced motion: the colours still ease, but the top light's
@@ -759,7 +772,7 @@
       :root[data-theme="candlelight"] #zenFlash {
         --zwp: .42;
         background:
-          radial-gradient(120% 90% at 50% -20%, rgba(255, 196, 110, .8) 0%, rgba(224, 151, 59, .45) 45%, rgba(160, 96, 32, .3) 100%);
+          radial-gradient(120% 90% at 50% -20%, rgba(232, 200, 119, .7) 0%, rgba(95, 176, 201, .36) 45%, rgba(20, 96, 122, .3) 100%);
       }
       #zenFlash.go { animation: zenWashCross 1.6s ease both; }
       #zenFlash.go-out { animation: zenWashCross 1s ease both; }
@@ -1246,7 +1259,7 @@
       .hc-bar .hc-full { padding: 8px 10px; }
       .hc-bar .hc-full[hidden] { display: none; }
       #previewStage:fullscreen { background: var(--bg); padding: 18px; }
-      :root[data-theme="candlelight"] #previewStage:fullscreen { background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%); }
+      :root[data-theme="candlelight"] #previewStage:fullscreen { background: radial-gradient(120% 85% at 50% -10%, var(--stage-glow) 0%, var(--panel-3) 58%); }
       .hc-meta { text-align: center; padding: 2px 12px 8px; max-width: 460px; }
       .hc-counter { font-family: var(--mono-font); font-size: 12.5px; color: var(--ink-2); }
       .hc-facts { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
@@ -1262,7 +1275,7 @@
 
       /* ---------- Modals / toast ---------- */
       .modal-back {
-        position: fixed; inset: 0; background: rgba(18, 14, 8, .48); backdrop-filter: blur(3px);
+        position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(3px);
         display: none; align-items: center; justify-content: center; z-index: 60; padding: 18px;
       }
       .modal-back.open { display: flex; }
@@ -1456,8 +1469,7 @@
       /* ==== /BEUK:store ==== */
 
       /* ---------- Story Insights ---------- */
-      :root { --ins-a: var(--accent); --ins-b: #14665a; }
-      :root[data-theme="candlelight"] { --ins-a: var(--accent); --ins-b: var(--gold); }
+      :root { --ins-a: var(--accent); --ins-b: var(--gold); }
       .ins-modal { max-width: 780px; }
       .ins-sec { border-top: 1px solid var(--line); padding: 19px 0 8px; }
       .ins-sec:first-child { border-top: none; padding-top: 4px; }
@@ -1516,7 +1528,7 @@
       .ins-ref { stroke: var(--muted); stroke-width: 1; opacity: .9; } /* a quiet ink line, so it never reads as the data line in either theme */
       .ins-refkey { margin: -6px 0 6px; }
       .ins-key-ref { display: inline-block; width: 16px; height: 0; border-top: 1.5px solid var(--muted); margin-inline-end: 6px; vertical-align: 3px; }
-      .ins-ref-lab, .ins-cap-lab { font-size: 12px; font-style: italic; fill: var(--gold); paint-order: stroke; stroke: var(--panel-2); stroke-width: 3px; }
+      .ins-ref-lab, .ins-cap-lab { font-size: 12px; font-style: italic; fill: var(--gold-ink); paint-order: stroke; stroke: var(--panel-2); stroke-width: 3px; }
       .ins-cap-lab { fill: var(--ink-2); font-style: normal; }
       .ins-line { fill: none; stroke: var(--ins-b); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
       .ins-mark { cursor: pointer; outline: none; }
@@ -1775,7 +1787,7 @@
       .hist-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--panel); border-radius: 9px; padding: 8px 10px 8px 12px; margin-bottom: 7px; }
       .hist-main { flex: 1 1 auto; min-width: 0; background: none; border: none; text-align: left; cursor: pointer; font-family: inherit; padding: 2px 0; color: inherit; }
       .hist-name { display: block; font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .hist-auto { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--line); border-radius: 99px; padding: 1px 6px; vertical-align: 1px; white-space: nowrap; }
+      .hist-auto { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-ink); border: 1px solid var(--line); border-radius: 99px; padding: 1px 6px; vertical-align: 1px; white-space: nowrap; }
       .hist-meta { display: block; font-size: 11.5px; color: var(--muted); margin-top: 1px; }
       .hist-del { flex: 0 0 auto; padding: 6px 10px; font-size: 12px; }
       .hist-note { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 14px 0 0; }
@@ -1798,7 +1810,7 @@
       }
       /* ==== BEUK:goalshist ==== the road so far (Goals) and what changed since each snapshot (History).
          Chart marks reuse the studio's tokens: the book's line wears --ins-a (the Insights accent), the
-         project target --zen-leaf (the Voyage brand blue and its Candlelight tint), the steady pace a
+         project target --ins-b (the amber beside the sea-blue accent), the steady pace a
          neutral --ink-2 dash; text always wears text tokens, never a mark colour. */
       .road-key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 11.5px; color: var(--muted); margin: 0 0 8px; }
       .road-key span { display: inline-flex; align-items: center; gap: 7px; }
@@ -1823,7 +1835,7 @@
       .hist-diff-bar > span:first-child { justify-content: flex-end; border-inline-end: 1px solid var(--line-2); }
       .hist-diff-bar i { display: block; height: 100%; min-width: 2px; }
       .hist-diff-bar .up { background: var(--ins-a); border-radius: 0 3px 3px 0; }
-      .hist-diff-bar .down { background: var(--zen-leaf); border-radius: 3px 0 0 3px; }
+      .hist-diff-bar .down { background: var(--ins-b); border-radius: 3px 0 0 3px; }
       [dir="rtl"] .hist-diff-bar .up { border-radius: 3px 0 0 3px; }
       [dir="rtl"] .hist-diff-bar .down { border-radius: 0 3px 3px 0; }
       .hist-diff-none { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--muted); margin: 4px 0 2px; }
@@ -1944,10 +1956,10 @@
         max-height: 52dvh; overflow: auto; white-space: pre;
       }
       .insp-code .tok-tag { color: var(--accent); font-weight: 600; }
-      .insp-code .tok-attr { color: var(--gold); }
+      .insp-code .tok-attr { color: var(--gold-ink); }
       .insp-code .tok-str { color: var(--good); }
       .insp-code .tok-com { color: var(--muted); font-style: italic; }
-      .insp-code .tok-prop { color: var(--gold); }
+      .insp-code .tok-prop { color: var(--gold-ink); }
       @media (max-width: 700px) {
         .insp-layout { grid-template-columns: 1fr; }
         .insp-files { max-height: 180px; }
@@ -2309,11 +2321,11 @@
       .ol-card {
         position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 178px; box-sizing: border-box;
         background: var(--panel-2); border: 1px solid var(--line); border-top: 4px solid var(--ol-st, var(--line-2)); border-radius: 6px 6px 10px 10px;
-        padding: 10px 12px 10px; box-shadow: 0 1px 3px rgba(30,24,14,.07); transition: box-shadow .15s, transform .15s, opacity .15s;
+        padding: 10px 12px 10px; box-shadow: 0 1px 3px rgba(20,44,52,.08); transition: box-shadow .15s, transform .15s, opacity .15s;
       }
-      .ol-card:hover { box-shadow: 0 4px 14px rgba(30,24,14,.12); }
+      .ol-card:hover { box-shadow: 0 4px 14px rgba(20,44,52,.13); }
       .ol-card:focus-visible, .ol-row:focus-visible, .ol-partband:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .ol-card.active { box-shadow: 0 0 0 1px var(--accent), 0 4px 14px rgba(30,24,14,.12); }
+      .ol-card.active { box-shadow: 0 0 0 1px var(--accent), 0 4px 14px rgba(20,44,52,.13); }
       .ol-card.excluded, .ol-row.excluded { opacity: .55; }
       .ol-card.dragging, .ol-row.dragging, .ol-partband.dragging { opacity: .4; }
       .ol-card.drop-before::before, .ol-card.drop-after::after {
@@ -2462,7 +2474,7 @@
     <div id="app">
       <header id="topbar">
         <div class="brand">
-          <img src="assets/logo.webp" alt="" width="30" height="36" />
+          <svg class="brand-mark" width="26" height="31" viewBox="0 0 44 52" aria-hidden="true" focusable="false"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect class="bm-band" x="7" y="13" width="9" height="2.4"/><rect class="bm-band" x="7" y="36" width="9" height="2.4"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle class="bm-eye" cx="27" cy="35" r="6"/></svg>
           <div class="brand-txt">
             <div class="brand-name">beuk</div>
             <div class="brand-sub">beuk.studio</div>
@@ -18146,11 +18158,11 @@
          light: the OLED phone frame around the preview's flow
          (.frame-phone .screen, #000) and zen under Candlelight (its
          --bg, --panel, --panel-2, --panel-3, and the preview pane's
-         #2e2416). The guard measures the accent on the page; these
+         #173039). The guard measures the accent on the page; these
          grounds are the studio's, not the book's. */
       const COLOUR_DARK_SURFACES = [
         { scope: ".fc-page", on: ".frame-phone ", bgs: ["#000000"] },
-        { scope: ".zen-book", on: ':root[data-theme="candlelight"] ', bgs: ["#100e0c", "#181715", "#22201d", "#262320", "#2e2416"] }
+        { scope: ".zen-book", on: ':root[data-theme="candlelight"] ', bgs: ["#0a1317", "#0f1b20", "#152429", "#1a2b31", "#173039"] }
       ];
       /* The accent as a dark surface shows it: itself when it already
          reaches 3:1 on every one of the grounds, else mixed with white
@@ -27162,7 +27174,7 @@
         });
         if (model.target) {
           const ty = f1(y(model.target));
-          out += '<line class="road-target" x1="' + f1(padL) + '" y1="' + ty + '" x2="' + f1(W - padR) + '" y2="' + ty + '" stroke="var(--zen-leaf)" stroke-width="1.5"/>';
+          out += '<line class="road-target" x1="' + f1(padL) + '" y1="' + ty + '" x2="' + f1(W - padR) + '" y2="' + ty + '" stroke="var(--ins-b)" stroke-width="1.5"/>';
         }
         model.segments.forEach((seg) => {
           if (seg.length < 2) return; /* a line only, no area wash: under a broken line a wash reads as columns */
@@ -27189,7 +27201,7 @@
       function roadKeyHtml(model, m) {
         const key = (stroke, dash, label) => '<span><svg viewBox="0 0 18 8" aria-hidden="true" focusable="false"><line x1="1" y1="4" x2="17" y2="4" stroke="' + stroke + '" stroke-width="2"' + (dash ? ' stroke-dasharray="4 3"' : "") + ' stroke-linecap="round"/></svg>' + esc(label) + "</span>";
         let html = key("var(--ins-a)", false, t("goals.roadLine"));
-        if (model.target) html += key("var(--zen-leaf)", false, t("goals.roadTarget", { n: fmtNum(model.target) }));
+        if (model.target) html += key("var(--ins-b)", false, t("goals.roadTarget", { n: fmtNum(model.target) }));
         if (model.pace && m && m.deadline && m.deadline.pace) html += key("var(--ink-2)", true, t("goals.roadPace", { n: fmtNum(m.deadline.pace) }));
         return '<div class="road-key">' + html + "</div>";
       }
@@ -50480,7 +50492,7 @@
               const openedPaper = initTheme() === "paper" && getTheme() === "paper" &&
                 document.documentElement.getAttribute("data-theme") !== "candlelight" &&
                 resolveStoredTheme() === null;
-              const paperPanel = getComputedStyle(document.documentElement).getPropertyValue("--panel").trim().toLowerCase() === "#faf7f2";
+              const paperPanel = getComputedStyle(document.documentElement).getPropertyValue("--panel").trim().toLowerCase() === "#f8f4e9";
               const offersCandle = $("themeLabel") && $("themeLabel").textContent === t("top.themeToCandle");
               /* A saved Candlelight choice beats the Paper default. */
               try { localStorage.setItem(THEME_KEY, "candlelight"); } catch (e) {}
@@ -50493,7 +50505,7 @@
                 setTheme("candlelight") === "candlelight" && resolveStoredTheme() === "candlelight" && getTheme() === "candlelight";
               return scVerdict(
                 noPrefResolvesPaper && openedPaper && paperPanel && offersCandle && savedCandleWins && togglePersists,
-                "no stored " + THEME_KEY + " -> resolveTheme() = paper, the studio opens in Paper (--panel #FAF7F2, no data-theme) and the toggle offers “" + t("top.themeToCandle") + "”; stored candlelight -> resolveTheme() = candlelight and the studio opens in Candlelight (saved preference beats the default); setTheme() persists paper and candlelight alike");
+                "no stored " + THEME_KEY + " -> resolveTheme() = paper, the studio opens in Paper (--panel #F8F4E9, no data-theme) and the toggle offers “" + t("top.themeToCandle") + "”; stored candlelight -> resolveTheme() = candlelight and the studio opens in Candlelight (saved preference beats the default); setTheme() persists paper and candlelight alike");
             } finally {
               try {
                 if (keepStored === null) localStorage.removeItem(THEME_KEY);
@@ -50502,6 +50514,72 @@
               applyTheme(keepTheme, { persist: false });
               if (typeof renderPreview === "function") renderPreview();
             }
+          } },
+        /* BEUK:studio-blue — the studio wears the site's palette */
+        { id: "ui.theme.palette", feature: "ui", name: "Studio palette matches the site: Paper's tokens are the landing page's (client/site/site.css — sea-blue accent #14607a on warm paper, amber #a87e2c), Candlelight is the same blue and amber at night; the Export button, an on toggle, the brand lockup and the focus ring read those tokens; no old brown/maroon accent hex is left in the studio stylesheet; every text/surface pair meets WCAG AA in both themes",
+          run() {
+            const keep = getTheme();
+            const hex2rgb = (h) => { h = String(h || "").trim().toLowerCase().replace("#", ""); if (h.length === 3) h = h.split("").map((c) => c + c).join(""); return "rgb(" + [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)).join(", ") + ")"; };
+            const lum = (h) => { h = String(h).trim().replace("#", ""); const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4))); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+            const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+            const WANT = {
+              paper: { "--bg": "#eceee0", "--panel": "#f8f4e9", "--panel-2": "#fffdf4", "--ink": "#22333a", "--muted": "#5d6d66", "--line": "#d5dcc9", "--accent": "#14607a", "--accent-ink": "#f4fbfa", "--gold": "#a87e2c" },
+              candlelight: { "--bg": "#0a1317", "--panel": "#0f1b20", "--panel-2": "#152429", "--ink": "#eef1ea", "--accent": "#5fb0c9", "--gold": "#d6a94f" }
+            };
+            /* [text token, surface token, minimum]: 4.5 for text, 3 for marks and rings. */
+            const PAIRS = [];
+            ["--bg", "--panel", "--panel-2", "--panel-3"].forEach((bg) => {
+              ["--ink", "--ink-2", "--muted", "--accent", "--gold-ink", "--bad"].forEach((fg) => PAIRS.push([fg, bg, 4.5]));
+              ["--gold", "--focus", "--good", "--control-edge"].forEach((fg) => PAIRS.push([fg, bg, 3]));
+            });
+            PAIRS.push(["--accent-ink", "--accent", 4.5], ["--accent", "--accent-soft", 4.5], ["--ink", "--accent-soft", 4.5], ["--focus", "--accent-soft", 3]);
+            const bad = [], seen = [];
+            const tmp = document.createElement("button");
+            tmp.className = "switch"; tmp.setAttribute("aria-pressed", "true"); tmp.style.position = "fixed"; tmp.style.left = "-999px";
+            document.body.appendChild(tmp);
+            /* Read settled colours, not a background mid-transition. */
+            const still = document.createElement("style");
+            still.textContent = "*, *::before, *::after { transition: none !important; }";
+            document.head.appendChild(still);
+            try {
+              ["paper", "candlelight"].forEach((theme) => {
+                applyTheme(theme, { persist: false });
+                const cs = getComputedStyle(document.documentElement);
+                const tok = (n) => cs.getPropertyValue(n).trim().toLowerCase();
+                Object.keys(WANT[theme]).forEach((k) => { if (tok(k) !== WANT[theme][k]) bad.push(theme + " " + k + " is " + tok(k) + ", not " + WANT[theme][k]); });
+                const acc = hex2rgb(tok("--accent"));
+                const exp = $("btnExport");
+                if (!exp || getComputedStyle(exp).backgroundColor !== acc || getComputedStyle(exp).color !== hex2rgb(tok("--accent-ink"))) bad.push(theme + " Export button does not wear --accent / --accent-ink");
+                if (getComputedStyle(tmp).backgroundColor !== acc) bad.push(theme + " an on toggle is " + getComputedStyle(tmp).backgroundColor + ", not --accent");
+                const sub = document.querySelector("#topbar .brand-sub");
+                if (!sub || getComputedStyle(sub).color !== acc) bad.push(theme + " brand-sub is not --accent");
+                const mark = document.querySelector("#topbar .brand-mark");
+                const band = mark && mark.querySelector(".bm-band");
+                if (!mark || getComputedStyle(mark).color !== hex2rgb(tok("--ink")) || !band || getComputedStyle(band).fill !== hex2rgb(tok("--gold"))) bad.push(theme + " brand mark is not --ink with --gold bands");
+                PAIRS.forEach(([fg, bg, min]) => {
+                  const r = ratio(tok(fg), tok(bg));
+                  seen.push(theme + " " + fg + "/" + bg + " " + (Math.floor(r * 100) / 100).toFixed(2));
+                  if (!(r >= min)) bad.push(theme + " " + fg + " " + tok(fg) + " on " + bg + " " + tok(bg) + " is " + r.toFixed(2) + ":1 (< " + min + ")");
+                });
+              });
+            } finally {
+              tmp.remove();
+              still.remove();
+              applyTheme(keep, { persist: false });
+            }
+            /* The focus ring rule every control falls back to. */
+            let ring = false;
+            const main = Array.from(document.querySelectorAll("head style")).find((st) => st.textContent.indexOf(".brand-name") !== -1);
+            if (main && main.sheet) Array.from(main.sheet.cssRules).forEach((r) => { if (r.selectorText && r.selectorText.indexOf(":where(") === 0 && /focus-visible/.test(r.selectorText) && /var\(--focus\)/.test(r.style.outline || r.style.outlineColor || "")) ring = true; });
+            if (!ring) bad.push("no :where(...):focus-visible fallback ring on --focus");
+            /* No old brown/maroon chrome colour left in the studio stylesheet. */
+            const OLD = ["#92400e", "#b45309", "#c2410c", "#9a3412", "#7c2d12", "#e0973b", "#f3e3d0", "#fff8ec", "#201304", "#3a2c1a", "#2e2416", "#241d15", "#a3802f", "#ece5d8", "#100e0c", "#181715", "#22201d", "#262320", "rgba(18, 14, 8", "rgba(30,24,14", "rgba(206, 124, 74", "rgba(255, 196, 110"];
+            const src = main ? main.textContent.toLowerCase() : "";
+            const left = OLD.filter((h) => src.indexOf(h) !== -1);
+            if (!main) bad.push("studio stylesheet not found");
+            if (left.length) bad.push("old brown/maroon colours still in the studio stylesheet: " + left.join(", "));
+            if (document.querySelector('#topbar .brand img[src*="logo.webp"]')) bad.push("the topbar still shows the old raster mark");
+            return scVerdict(!bad.length, bad.length ? bad.join("; ") : "Paper and Candlelight tokens match the site palette; Export, an on toggle, beuk.studio and the mark read them; focus ring on --focus; no old brown/maroon hex left; " + PAIRS.length * 2 + " contrast pairs pass — " + seen.slice(0, 6).join(", ") + " …");
           } },
         { id: "ui.independence.book-untouched", feature: "ui", name: "UI language is independent of the book: switching the UI to Japanese changes neither the book's language nor its word count, while the preview keeps speaking the book's language",
           run() {
@@ -57425,8 +57503,8 @@
           { p: 1,    tint: [236, 194, 164, .3],  glow: [252, 216, 182, .54], gx: 88, gy: 54,  water: [204, 170, 178, .2],  vig: [98, 60, 52, .11] }
         ],
         candlelight: [
-          { p: 0,    tint: [206, 124, 74, .17],  glow: [232, 142, 78, .26],  gx: 86, gy: 52,  water: [190, 118, 84, .1],   vig: [201, 150, 89, .14] },
-          { p: .5,   tint: [162, 120, 112, .13], glow: [204, 152, 118, .17], gx: 40, gy: 20,  water: [146, 128, 142, .09], vig: [198, 160, 92, .14] },
+          { p: 0,    tint: [40, 104, 128, .16],  glow: [214, 169, 79, .2],   gx: 86, gy: 52,  water: [52, 120, 146, .12],  vig: [201, 155, 63, .12] },
+          { p: .5,   tint: [60, 104, 136, .13],  glow: [196, 168, 120, .16], gx: 40, gy: 20,  water: [96, 132, 168, .1],   vig: [198, 160, 92, .13] },
           { p: 1,    tint: [128, 120, 146, .12], glow: [210, 204, 214, .15], gx: 14, gy: 14,  water: [150, 160, 194, .1],  vig: [196, 168, 100, .14] }
         ]
       };

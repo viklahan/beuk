@@ -2206,6 +2206,33 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   `outline.synopsis.notexported`, `outline.status.tags`,
   `outline.filter.saved`.
 
+## Studio: one palette with the site — sea blue and amber (client-only)
+
+The studio's chrome wears the landing page's palette (`client/site/site.css`
+`:root`), so `/` and `/studio` read as one product (`BEUK:studio-blue`).
+Only interface tokens changed; the book's own themes, fonts, colours and
+the preview of the book are untouched.
+
+- **Paper** (default): `--bg #eceee0`, `--panel #f8f4e9`, `--panel-2
+  #fffdf4`, `--ink #22333a`, `--muted #5d6d66`, `--line #d5dcc9`,
+  `--accent #14607a` (the site's sea blue), `--gold #a87e2c` (the site's
+  amber, for marks, bars and warnings) and `--gold-ink #7f5f1c` where amber
+  is text.
+- **Candlelight**: the same identity at night — deep sea-dark surfaces
+  (`--bg #0a1317` … `--panel-3 #1a2b31`), a lighter sea blue accent
+  `#5fb0c9` and lamp amber `#d6a94f`; Zen at night opens on a blue field
+  with an amber lamp glow.
+- New tokens: `--gold-ink`, `--focus` (a fallback `:focus-visible` ring for
+  every control without its own), `--scrim` (dialog backdrop) and
+  `--stage-glow` (the preview stage under Candlelight) and `--control-edge`
+  (the off toggle's outline, 3:1 on every surface).
+- The header mark is the site's own SVG lockup mark (ink stem, amber
+  bands) instead of the raster logo.
+- Every text/surface pair meets WCAG AA in both themes (4.5:1 text, 3:1
+  marks and focus rings); self-check `ui.theme.palette` measures them, the
+  computed colours of Export, an on toggle and the lockup, and scans the
+  studio stylesheet for the old brown/maroon hex.
+
 ## Studio: slim shell — the sample's pictures are files (BEUK:slim)
 
 Step 1 of the staged refactor of `client/index.html`. The sample story's
