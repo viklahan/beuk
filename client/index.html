@@ -43078,13 +43078,17 @@
           if (!r || !Array.isArray(r.missing)) return Object.assign({ doc }, st); /* no picture store / out of reach: inline, as before */
           const missing = new Set(r.missing);
           for (const h of unknown.slice(i, i + 5000)) if (!missing.has(h)) { shelfPics.held.add(uid + "|" + h); ok.add(h); }
-          for (const h of r.missing) {
-            if (typeof h !== "string" || !want.has(h)) continue;
-            const p = want.get(h);
-            const up = await apiFetch("/api/pictures/" + h, { method: "PUT", body: JSON.stringify({ mediaType: p.mediaType, data: p.data }) });
-            if (up && up.picture && up.picture.sha256 === h) { shelfPics.held.add(uid + "|" + h); ok.add(h); st.uploaded++; st.uploadBytes += p.data.length; }
-            /* refused (too large, no room) or unreachable: this one rides inline */
-          }
+          const todo = r.missing.filter((h) => typeof h === "string" && want.has(h));
+          let next = 0;
+          const worker = async () => {
+            while (next < todo.length) {
+              const h = todo[next++], p = want.get(h);
+              const up = await apiFetch("/api/pictures/" + h, { method: "PUT", body: JSON.stringify({ mediaType: p.mediaType, data: p.data }) });
+              if (up && up.picture && up.picture.sha256 === h) { shelfPics.held.add(uid + "|" + h); ok.add(h); st.uploaded++; st.uploadBytes += p.data.length; }
+              /* refused (too large, no room) or unreachable: this one rides inline */
+            }
+          };
+          await Promise.all([worker(), worker(), worker()]); /* three at a time */
         }
         if (cloud.user && cloud.user.id !== uid) return Object.assign({ doc }, st); /* the account changed under the save: the caller stands down */
         const packed = picSwap(doc, (data) => {

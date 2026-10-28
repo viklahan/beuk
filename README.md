@@ -4068,18 +4068,20 @@ Now:
 
 Measured (studio's own `cloudSaveNow` / `cloudOpenBook` in headless
 Chromium, server + Postgres 16 on this machine; bytes from the requests,
-times from the studio; the machine was heavily loaded, so times vary):
+times from the studio; the machine was heavily loaded by other work, so times vary
+run to run — the text-only rows are two interleaved runs of each build, and
+their times are the same within that noise; the bytes are exact):
 
 | Book | Save | Before (main): up / down / time | After (this branch): up / down / time |
 |---|---|---|---|
-| The Marvelous Land of Oz — 41,768 words, 137 pictures, 49.8 MB file | first save (POST) | 47.5 MB / 47.5 MB / 19.2 s | 47.5 MB (137 pictures uploaded once + 0.29 MB doc) / 0.02 MB / 40.8 s |
-| | autosave (PUT) | 47.5 MB / 47.5 MB / 45.4 s, 123.8 s | **0.29 MB / 0 MB / 0.40 s, 0.33 s** |
-| | open from the shelf, new session | 47.5 MB down / 10.5 s | 47.5 MB down (doc + 137 pictures) / 5.0 s |
-| | first autosave after reopening | 47.5 MB / 47.5 MB / 28.9 s | **0.29 MB / 0 MB / 0.35 s** (no upload, no question) |
+| The Marvelous Land of Oz — 41,768 words, 137 pictures, 49.8 MB file | first save (POST) | 47.5 MB / 47.5 MB / 19.2 s | 47.5 MB (137 pictures uploaded once, three at a time, + 0.29 MB doc) / 0.02 MB / 21.4 s |
+| | autosave (PUT) | 47.5 MB / 47.5 MB / 45.4 s, 123.8 s | **0.29 MB / 0 MB / 0.33–0.66 s** |
+| | open from the shelf, new session | 47.5 MB down / 10.5 s | 47.5 MB down (doc + 137 pictures, four at a time) / 5.0–7.7 s |
+| | first autosave after reopening | 47.5 MB / 47.5 MB / 28.9 s | **0.29 MB / 0 MB / 0.35–1.05 s** (no upload, no question) |
 | | next autosave | 47.5 MB / 47.5 MB / 30.5 s | **0.29 MB / 0 MB / 0.49 s** |
-| Twenty Years After — 241,642 words, no pictures, 1.46 MB file | first save (POST) | 1.44 MB / 1.44 MB / 1.2 s | 1.44 MB / 0 MB / 2.8–3.4 s |
-| | autosave (PUT) | 1.44 MB / 1.44 MB / 0.6–1.6 s | **1.44 MB / 0 MB** / 0.8–1.7 s |
-| | open from the shelf | 1.44 MB down / 1.0 s | 1.44 MB down / 0.9–1.2 s |
+| Twenty Years After — 241,642 words, no pictures, 1.46 MB file | first save (POST) | 1.44 MB / 1.44 MB / 0.75–1.2 s | 1.44 MB / **0 MB** / 1.1–1.2 s |
+| | autosave (PUT) | 1.44 MB / 1.44 MB / 0.53–1.33 s | 1.44 MB / **0 MB** / 0.46–1.32 s |
+| | open from the shelf | 1.44 MB down / 0.92–1.0 s | 1.44 MB down / 1.05–1.13 s |
 
 **Decided against (for now): a section-level delta.** After the
 pictures are out, a save is the book's text: 1.4 MB for a 240,000-word
