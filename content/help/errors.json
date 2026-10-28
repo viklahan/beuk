@@ -355,16 +355,16 @@
       "severity": "error",
       "says": [
         { "from": "server", "code": "epubcheck", "text": "EPUBCheck did not finish within 120000 ms and was stopped." },
-        { "from": "server", "code": "pdfx", "text": "Ghostscript did not finish within 900000 ms (PDFX_TIMEOUT_MS) and was stopped. Pages with any transparency are flattened to images, which is slow on picture-heavy books." }
+        { "from": "server", "code": "pdfx", "text": "Ghostscript did not finish within 1800000 ms (PDFX_TIMEOUT_MS) and was stopped" }
       ],
-      "cause": "Each server job step gets a fixed allowance: EPUBCheck and the print renderer 2 minutes by default (JOB_TIMEOUT_MS), the PDF/X conversion step 15 minutes (PDFX_TIMEOUT_MS). An overrun is stopped and the job is reported as failed, not left hanging. The numbers in the message are this server's settings.",
+      "cause": "Each server job step gets a fixed allowance: EPUBCheck and the print renderer 2 minutes by default (JOB_TIMEOUT_MS), the PDF/X conversion 30 minutes for every part of the book together (PDFX_TIMEOUT_MS; a long book is converted 40 pages at a time and the message names the pages it was on). Pages with any transparency are flattened to images, which is slow on picture-heavy books. An overrun is stopped and the job is reported as failed, not left hanging. The numbers in the message are this server's settings.",
       "steps": [
         "Run the check again — a busy moment is the usual cause.",
         "If it fails the same way twice, the book may need longer than this server allows; the job id identifies the run."
       ],
       "guide": "check-your-book",
       "maps": { "epubcheck": [], "validator": [], "http": [], "store": [] },
-      "sources": ["src/jobs/tools.ts runEpubCheck and runPdfx timeout messages", "src/config.ts jobTimeoutMs (default 120000) and pdfxTimeoutMs (default 900000)"]
+      "sources": ["src/jobs/tools.ts runEpubCheck and runPdfx timeout messages", "src/config.ts jobTimeoutMs (default 120000) and pdfxTimeoutMs (default 1800000)"]
     },
     {
       "code": "BEUK-J702",

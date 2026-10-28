@@ -16,9 +16,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const client = path.join(here, '..', 'client');
 const sampleDir = path.join(client, 'assets', 'sample');
 
-/* Measured after the move: 5,746,092 bytes (was 16,430,441). The budget
-   sits just above it, so a picture pasted back into the page fails here. */
-const INDEX_BUDGET_BYTES = 5_800_000;
+/* Measured after the move: 5,746,092 bytes (was 16,430,441). Re-measured
+   2026-10-27 after twelve features landed together (tooltips, rights,
+   full screen, typing perf and more: code, no pictures): 5,923,387. The
+   budget sits just above it, so a picture pasted back into the page fails
+   here; the base64 check below catches one on its own. */
+const INDEX_BUDGET_BYTES = 6_000_000;
 
 type Pic = { id?: string; name: string; mediaType: string; ext: string; file: string; bytes: number; sha256: string };
 const manifest = async () => JSON.parse(await readFile(path.join(sampleDir, 'manifest.json'), 'utf8')) as { format: string; version: number; images: Pic[]; cover: Pic };
