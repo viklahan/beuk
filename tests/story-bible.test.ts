@@ -61,3 +61,14 @@ test('story bible: the export file format is named and versioned', async () => {
   assert.match(html, /const BIBLE_FORMAT = "beuk-story-bible";/);
   assert.match(html, /format: BIBLE_FORMAT, version: 1,/);
 });
+
+test('covenant rename: the export is named -covenant.json while the format id stays beuk-story-bible, and no locale still says Bible', async () => {
+  const html = await clientHtml();
+  assert.match(html, /return base \+ "-covenant\.json";/);
+  assert.doesNotMatch(html, /-story-bible\.json/);
+  const start = html.indexOf('/* ==== BEUK:bible ==== Story Bible — strings');
+  const end = html.indexOf('/* ==== /BEUK:bible ==== */', start);
+  const block = html.slice(html.indexOf('Object.assign(UI_STRINGS.en', start), end);
+  assert.doesNotMatch(block, /": "[^"]*(?:Bible|Biblia|Bibel|Bibbia|Bíblia|Bijbel|Biblii|Библи[яию]|[Rr]ehber|مرجع|設定集|设定集)/, "a translated value still names the old feature");
+  assert.match(block, /"side\.toolBible": "Covenant"/);
+});
