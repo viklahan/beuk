@@ -1,0 +1,21 @@
+{
+ "format": "beuk-story-bible",
+ "version": 1,
+ "book": "Salt Road — Book One",
+ "exportedAt": "2026-10-27T23:52:57.746Z",
+ "entries": [
+  {
+   "id": "b4mhexewz",
+   "type": "character",
+   "name": "Tanaka",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  }
+ ],
+ "images": []
+}

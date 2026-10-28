@@ -1,0 +1,105 @@
+{
+ "format": "beuk-story-bible",
+ "version": 1,
+ "book": "Marguerite de Valois",
+ "exportedAt": "2026-10-27T23:52:01.794Z",
+ "entries": [
+  {
+   "id": "bs4xd1vky",
+   "type": "character",
+   "name": "Charles",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bwyxrf75d",
+   "type": "character",
+   "name": "La Mole",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "beun2yjke",
+   "type": "character",
+   "name": "Coconnas",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "blnm77htd",
+   "type": "character",
+   "name": "Guise",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bbtedjok2",
+   "type": "place",
+   "name": "Navarre",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b0q28upk7",
+   "type": "place",
+   "name": "Paris",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b2qm4edp2",
+   "type": "place",
+   "name": "Louvre",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b1j6ow0ee",
+   "type": "place",
+   "name": "Anjou",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  }
+ ],
+ "images": []
+}

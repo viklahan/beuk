@@ -1,0 +1,1506 @@
+{
+ "startedAt": "2026-10-28T00:07:22.642Z",
+ "sessions": {
+  "sim03": {
+   "persona": "sim03",
+   "book": "b028",
+   "steps": [
+    {
+     "name": "sign-in",
+     "at": "2026-10-28T00:07:36.072Z",
+     "user": "sim03@sim.beuk.test"
+    },
+    {
+     "name": "open",
+     "at": "2026-10-28T00:07:42.232Z",
+     "shelfId": "4ec5f0dd-7e22-41b9-9dbe-0373af29980e",
+     "words": 24825,
+     "revision": 2,
+     "order": [
+      "sample-sec-0",
+      "sample-sec-1",
+      "sample-sec-2",
+      "sample-sec-3",
+      "sample-sec-4",
+      "sample-sec-5",
+      "sample-sec-6",
+      "sample-sec-7",
+      "sample-sec-8",
+      "sample-sec-9",
+      "sample-sec-10",
+      "sample-sec-11",
+      "sample-sec-12",
+      "sample-sec-13",
+      "sample-sec-14",
+      "sample-sec-15",
+      "sample-sec-16",
+      "sample-sec-17",
+      "sample-sec-18",
+      "sample-sec-19",
+      "sample-sec-20",
+      "sample-sec-21",
+      "sample-sec-22",
+      "sample-sec-23",
+      "sample-sec-24",
+      "sample-sec-25",
+      "sample-sec-26",
+      "sample-sec-27",
+      "sample-sec-28"
+     ],
+     "shot": "shots/sim03-01-open.png"
+    },
+    {
+     "name": "type",
+     "at": "2026-10-28T00:07:52.504Z",
+     "chapter": "Epilogue",
+     "typed": "SIMTYPED-sim03 Every chart is a promise the sea never signed.",
+     "typedWords": 10,
+     "totalAfterType": 24835,
+     "totalDelta": 10,
+     "sectionAfter": {
+      "words": 661,
+      "tail": "n after season, after the storm, after the vote, after the funeral, in the fair hand and the steady light, for as long as the water runs.\n\nSIMTYPED-sim03 Every chart is a promise the sea never signed."
+     }
+    },
+    {
+     "name": "delete",
+     "at": "2026-10-28T00:07:53.150Z",
+     "chapter": "The Harbourmaster's Ledger",
+     "deletedText": "Mara walked her down the hill to the harbour office, through a town that observed their progress with the stunned attention of a congregation watching the bishop arm in arm with the regicide. At the o",
+     "deletedWords": 190,
+     "totalAfterDelete": 24645,
+     "totalDelta": -190
+    },
+    {
+     "name": "outline-move",
+     "at": "2026-10-28T00:08:18.903Z",
+     "chapter": "Soundings at Low Water",
+     "moved": true,
+     "from": 16,
+     "to": 17,
+     "shot": "shots/sim03-02-outline.png"
+    },
+    {
+     "name": "bible",
+     "at": "2026-10-28T00:08:29.800Z",
+     "candidate": "Mara",
+     "bibleNote": "description",
+     "bible": [
+      {
+       "name": "Mara",
+       "type": "character",
+       "description": "[sim] noted in a UI session"
+      }
+     ],
+     "shot": "shots/sim03-03-bible.png"
+    },
+    {
+     "name": "goals",
+     "at": "2026-10-28T00:08:42.057Z",
+     "asked": {
+      "daily": 250,
+      "project": 50000
+     },
+     "state": {
+      "daily": 250,
+      "project": 50000,
+      "deadline": ""
+     },
+     "shot": "shots/sim03-04-goals.png"
+    },
+    {
+     "name": "autosave",
+     "at": "2026-10-28T00:08:44.876Z",
+     "ms": 2,
+     "revision": 6
+    },
+    {
+     "name": "export-epub",
+     "at": "2026-10-28T00:09:21.886Z",
+     "file": "sim03.epub",
+     "bytes": 8184538,
+     "epubcheck": {
+      "status": "done",
+      "passed": true,
+      "fatal": 0,
+      "errors": 0,
+      "warnings": 0,
+      "messages": []
+     }
+    },
+    {
+     "name": "export-submission",
+     "at": "2026-10-28T00:09:23.384Z",
+     "file": "sim03-submission.docx",
+     "bytes": 176594,
+     "zip": true,
+     "hasDocumentXml": true,
+     "shot": "shots/sim03-05-manuscript.png"
+    },
+    {
+     "name": "share-ui",
+     "at": "2026-10-28T00:09:54.577Z",
+     "status": 201,
+     "shareId": "17645d75-fdae-465d-b8ca-773ed32f01ff",
+     "link": "http://localhost:8190/read/<token>",
+     "revisionAtShare": 6,
+     "wordsAtShare": 24645,
+     "shot": "shots/sim03-06-share.png"
+    },
+    {
+     "name": "comments",
+     "at": "2026-10-28T00:09:57.624Z",
+     "listed": 4,
+     "resolved": [
+      {
+       "id": "6a5fd534-dab4-4127-8fab-46601e8f5007",
+       "status": 200
+      },
+      {
+       "id": "0202106c-de89-4520-bc60-8490a580371e",
+       "status": 200
+      },
+      {
+       "id": "3154a30a-a073-4c89-a770-45e461549a8a",
+       "status": 200
+      }
+     ],
+     "jumps": [
+      {
+       "id": "6a5fd534-dab4-4127-8fab-46601e8f5007",
+       "found": true,
+       "exact": true,
+       "text": "The Board of Gullwick Harbour met, as it had met for sixty y"
+      },
+      {
+       "id": "0202106c-de89-4520-bc60-8490a580371e",
+       "found": true,
+       "exact": true,
+       "text": "The letter was addressed, in that same uncompromising hand,"
+      },
+      {
+       "id": "3154a30a-a073-4c89-a770-45e461549a8a",
+       "found": true,
+       "exact": true,
+       "text": "Gull Terrace ran along the top of the town in a crescent of"
+      },
+      {
+       "id": "4dac1b26-c942-454f-a929-f6c19b96fd4e",
+       "found": true,
+       "exact": true,
+       "text": "East of the beacon, where the fair sheet promised a bank of"
+      }
+     ],
+     "shot": "shots/sim03-07-comments.png"
+    },
+    {
+     "name": "end",
+     "at": "2026-10-28T00:09:57.707Z",
+     "words": 24645,
+     "revision": 6,
+     "syncStatus": "saved",
+     "order": [
+      "sample-sec-0",
+      "sample-sec-1",
+      "sample-sec-2",
+      "sample-sec-3",
+      "sample-sec-4",
+      "sample-sec-5",
+      "sample-sec-6",
+      "sample-sec-7",
+      "sample-sec-8",
+      "sample-sec-9",
+      "sample-sec-10",
+      "sample-sec-11",
+      "sample-sec-12",
+      "sample-sec-13",
+      "sample-sec-14",
+      "sample-sec-15",
+      "sample-sec-17",
+      "sample-sec-16",
+      "sample-sec-18",
+      "sample-sec-19",
+      "sample-sec-20",
+      "sample-sec-21",
+      "sample-sec-22",
+      "sample-sec-23",
+      "sample-sec-24",
+      "sample-sec-25",
+      "sample-sec-26",
+      "sample-sec-27",
+      "sample-sec-28"
+     ],
+     "expectedWords": 24645
+    }
+   ],
+   "shots": [],
+   "uiShareToken": "XjGgygYgGV4ZWVmByruvkV2K0xfnRVaz",
+   "expected": {
+    "wordsBefore": 24825,
+    "typedWords": 10,
+    "deletedWords": 190,
+    "expectedWords": 24645,
+    "typedMarker": "SIMTYPED-sim03 Every chart is a promise the sea never signed.",
+    "deletedText": "Mara walked her down the hill to the harbour office, through a town that observed their progress with the stunned attention of a congregation watching the bishop arm in arm with the regicide. At the office door Agnes paused. \"He knew you'd come, you know. Your father. Not the manner of it — he wasn't a prophet, whatever Tomas says after two glasses. But the year before he died he renewed the gauge house clock's contract for thirty years, out of his own pocket, and entered you in the office book as his deputy Keeper, in the appendix where deputies go back to the first lampman. The Board struck the entry out. I kept the page.\" She opened the sailcloth ledger at its ribbon, one final time, and showed Mara the appendix: her own name, in her father's hand, in the column of deputies, with the Board's deletion ruled through it in another hand, and beneath the deletion, in Agnes's small, furious script of twenty-two years ago, the single word: Noted. \"You were never not the Keeper, Miss Vane,\" the harbourmaster said. \"You were only ever out of the room.\"",
+    "orderAfter": [
+     "sample-sec-0",
+     "sample-sec-1",
+     "sample-sec-2",
+     "sample-sec-3",
+     "sample-sec-4",
+     "sample-sec-5",
+     "sample-sec-6",
+     "sample-sec-7",
+     "sample-sec-8",
+     "sample-sec-9",
+     "sample-sec-10",
+     "sample-sec-11",
+     "sample-sec-12",
+     "sample-sec-13",
+     "sample-sec-14",
+     "sample-sec-15",
+     "sample-sec-17",
+     "sample-sec-16",
+     "sample-sec-18",
+     "sample-sec-19",
+     "sample-sec-20",
+     "sample-sec-21",
+     "sample-sec-22",
+     "sample-sec-23",
+     "sample-sec-24",
+     "sample-sec-25",
+     "sample-sec-26",
+     "sample-sec-27",
+     "sample-sec-28"
+    ],
+    "shelfId": "4ec5f0dd-7e22-41b9-9dbe-0373af29980e"
+   },
+   "pageErrors": []
+  },
+  "sim04": {
+   "persona": "sim04",
+   "book": "b033",
+   "steps": [
+    {
+     "name": "sign-in",
+     "at": "2026-10-28T00:07:36.172Z",
+     "user": "sim04@sim.beuk.test"
+    },
+    {
+     "name": "open",
+     "at": "2026-10-28T00:07:42.373Z",
+     "shelfId": "b45b4e66-afcf-4ef4-b011-6d71084f4dd2",
+     "words": 617,
+     "revision": 2,
+     "order": [
+      "sj0qha8p",
+      "s88e4o7o",
+      "svsn5fk2",
+      "soj7wx4v"
+     ],
+     "shot": "shots/sim04-01-open.png"
+    },
+    {
+     "name": "type",
+     "at": "2026-10-28T00:07:52.941Z",
+     "chapter": "The Ninth Ring",
+     "typed": "SIMTYPED-sim04 At three in the morning the office smelled of cold coffee and the rain that had come in with him.",
+     "typedWords": 21,
+     "totalAfterType": 638,
+     "totalDelta": 21,
+     "sectionAfter": {
+      "words": 201,
+      "tail": "o is walk through it.\n\nThe second worst thing is to walk away.\n\nHe crossed the street.\n\nSIMTYPED-sim04 At three in the morning the office smelled of cold coffee and the rain that had come in with him."
+     }
+    },
+    {
+     "name": "delete",
+     "at": "2026-10-28T00:07:54.877Z",
+     "chapter": "Sealed",
+     "deletedText": "\"The last person who saw her alive,\" she said. \"Except for you.\"",
+     "deletedWords": 12,
+     "totalAfterDelete": 626,
+     "totalDelta": -12
+    },
+    {
+     "name": "outline-move",
+     "at": "2026-10-28T00:08:22.329Z",
+     "chapter": "The Ninth Ring",
+     "moved": true,
+     "from": 1,
+     "to": 2,
+     "shot": "shots/sim04-02-outline.png"
+    },
+    {
+     "name": "bible",
+     "at": "2026-10-28T00:08:32.678Z",
+     "candidate": "Kell",
+     "bibleNote": "description",
+     "bible": [
+      {
+       "name": "Kell",
+       "type": "character",
+       "description": "[sim] noted in a UI session"
+      }
+     ],
+     "shot": "shots/sim04-03-bible.png"
+    },
+    {
+     "name": "goals",
+     "at": "2026-10-28T00:08:42.019Z",
+     "asked": {
+      "daily": 1000,
+      "project": 20000
+     },
+     "state": {
+      "daily": 1000,
+      "project": 20000,
+      "deadline": ""
+     },
+     "shot": "shots/sim04-04-goals.png"
+    },
+    {
+     "name": "autosave",
+     "at": "2026-10-28T00:08:44.869Z",
+     "ms": 3,
+     "revision": 6
+    },
+    {
+     "name": "export-epub",
+     "at": "2026-10-28T00:09:03.903Z",
+     "file": "sim04.epub",
+     "bytes": 3653677,
+     "epubcheck": {
+      "status": "done",
+      "passed": true,
+      "fatal": 0,
+      "errors": 0,
+      "warnings": 0,
+      "messages": []
+     }
+    },
+    {
+     "name": "export-submission",
+     "at": "2026-10-28T00:09:05.598Z",
+     "file": "sim04-submission.docx",
+     "bytes": 20855,
+     "zip": true,
+     "hasDocumentXml": true,
+     "shot": "shots/sim04-05-manuscript.png"
+    },
+    {
+     "name": "share-ui",
+     "at": "2026-10-28T00:09:36.824Z",
+     "status": 201,
+     "shareId": "a751fe51-5cb1-4cc2-8a34-a9ea90eedb3d",
+     "link": "http://localhost:8190/read/<token>",
+     "revisionAtShare": 6,
+     "wordsAtShare": 626,
+     "shot": "shots/sim04-06-share.png"
+    },
+    {
+     "name": "comments",
+     "at": "2026-10-28T00:09:39.760Z",
+     "listed": 6,
+     "resolved": [
+      {
+       "id": "61b60b65-bf3b-424c-a66a-3cd3589d9097",
+       "status": 200
+      },
+      {
+       "id": "74275e62-fe39-4d50-ba0d-a3678cd74080",
+       "status": 200
+      }
+     ],
+     "jumps": [
+      {
+       "id": "61bd926b-04e1-4746-9d5c-f76f2b6f43e9",
+       "found": true,
+       "exact": true,
+       "text": "The second worst thing is to walk away."
+      },
+      {
+       "id": "a3b14af0-4af3-48ba-ac40-b26e8647dd2a",
+       "found": true,
+       "exact": true,
+       "text": "She was faster than him. She had always been going to be fas"
+      },
+      {
+       "id": "61b60b65-bf3b-424c-a66a-3cd3589d9097",
+       "found": true,
+       "exact": true,
+       "text": "Then the phone inside began to ring."
+      },
+      {
+       "id": "e84ccd9b-60e8-4755-a8c6-c8af8a77f455",
+       "found": true,
+       "exact": true,
+       "text": "At three in the morning the office smelled of cold coffee an"
+      },
+      {
+       "id": "74275e62-fe39-4d50-ba0d-a3678cd74080",
+       "found": true,
+       "exact": true,
+       "text": "Nobody had paid that line since the night his partner died."
+      },
+      {
+       "id": "eb78c2c8-2ad2-4d2f-a0e3-5485fc3ab2a9",
+       "found": true,
+       "exact": true,
+       "text": "At three in the morning the office smelled of cold coffee an"
+      }
+     ],
+     "shot": "shots/sim04-07-comments.png"
+    },
+    {
+     "name": "end",
+     "at": "2026-10-28T00:09:39.856Z",
+     "words": 626,
+     "revision": 6,
+     "syncStatus": "saved",
+     "order": [
+      "sj0qha8p",
+      "svsn5fk2",
+      "s88e4o7o",
+      "soj7wx4v"
+     ],
+     "expectedWords": 626
+    }
+   ],
+   "shots": [],
+   "uiShareToken": "9La71ZmC3tfVEraqzkDzeSATFAvSZHgf",
+   "expected": {
+    "wordsBefore": 617,
+    "typedWords": 21,
+    "deletedWords": 12,
+    "expectedWords": 626,
+    "typedMarker": "SIMTYPED-sim04 At three in the morning the office smelled of cold coffee and the rain that had come in with him.",
+    "deletedText": "\"The last person who saw her alive,\" she said. \"Except for you.\"",
+    "orderAfter": [
+     "sj0qha8p",
+     "svsn5fk2",
+     "s88e4o7o",
+     "soj7wx4v"
+    ],
+    "shelfId": "b45b4e66-afcf-4ef4-b011-6d71084f4dd2"
+   },
+   "pageErrors": []
+  },
+  "sim05": {
+   "persona": "sim05",
+   "book": "b039",
+   "steps": [
+    {
+     "name": "sign-in",
+     "at": "2026-10-28T00:07:36.107Z",
+     "user": "sim05@sim.beuk.test"
+    },
+    {
+     "name": "open",
+     "at": "2026-10-28T00:07:41.736Z",
+     "shelfId": "11f0157a-5e3e-4756-8ac7-d5127b348df4",
+     "words": 649,
+     "revision": 2,
+     "order": [
+      "sdiyrjhr",
+      "soaw0dwx",
+      "sy0whq0g",
+      "ss4dny0o"
+     ],
+     "shot": "shots/sim05-01-open.png"
+    },
+    {
+     "name": "type",
+     "at": "2026-10-28T00:07:51.150Z",
+     "chapter": "The Map Under the Knife",
+     "typed": "SIMTYPED-sim05 The stair went down for an hour, and at the bottom of it the dark had a door.",
+     "typedWords": 19,
+     "totalAfterType": 668,
+     "totalDelta": 19,
+     "sectionAfter": {
+      "words": 205,
+      "tail": "ers: a key, long as her hand, black iron gone red at the teeth.\n\n\"And this,\" she said, \"is how we get in.\"\n\nSIMTYPED-sim05 The stair went down for an hour, and at the bottom of it the dark had a door."
+     }
+    },
+    {
+     "name": "delete",
+     "at": "2026-10-28T00:07:51.865Z",
+     "chapter": "The Door of Serpents",
+     "deletedText": "Wren did not answer. The runes had begun, one ring at a time, to turn.",
+     "deletedWords": 15,
+     "totalAfterDelete": 653,
+     "totalDelta": -15
+    },
+    {
+     "name": "outline-move",
+     "at": "2026-10-28T00:07:54.227Z",
+     "chapter": "Ignis",
+     "moved": false,
+     "from": 3,
+     "to": 3,
+     "shot": "shots/sim05-02-outline.png"
+    },
+    {
+     "name": "bible",
+     "at": "2026-10-28T00:08:18.089Z",
+     "candidate": "Brannoc",
+     "bibleNote": "description",
+     "bible": [
+      {
+       "name": "Brannoc",
+       "type": "character",
+       "description": "[sim] noted in a UI session"
+      }
+     ],
+     "shot": "shots/sim05-03-bible.png"
+    },
+    {
+     "name": "goals",
+     "at": "2026-10-28T00:08:29.878Z",
+     "asked": {
+      "daily": 500,
+      "project": 80000
+     },
+     "state": {
+      "daily": 500,
+      "project": 80000,
+      "deadline": ""
+     },
+     "shot": "shots/sim05-04-goals.png"
+    },
+    {
+     "name": "autosave",
+     "at": "2026-10-28T00:08:35.549Z",
+     "ms": 3,
+     "revision": 5
+    },
+    {
+     "name": "export-epub",
+     "at": "2026-10-28T00:08:57.504Z",
+     "file": "sim05.epub",
+     "bytes": 3946208,
+     "epubcheck": {
+      "status": "done",
+      "passed": true,
+      "fatal": 0,
+      "errors": 0,
+      "warnings": 0,
+      "messages": []
+     }
+    },
+    {
+     "name": "export-submission",
+     "at": "2026-10-28T00:08:59.172Z",
+     "file": "sim05-submission.docx",
+     "bytes": 21351,
+     "zip": true,
+     "hasDocumentXml": true,
+     "shot": "shots/sim05-05-manuscript.png"
+    },
+    {
+     "name": "share-ui",
+     "at": "2026-10-28T00:09:30.929Z",
+     "status": 201,
+     "shareId": "b419f4ce-dcb0-4fbb-b22b-989eb7bdd772",
+     "link": "http://localhost:8190/read/<token>",
+     "revisionAtShare": 5,
+     "wordsAtShare": 653,
+     "shot": "shots/sim05-06-share.png"
+    },
+    {
+     "name": "comments",
+     "at": "2026-10-28T00:09:34.371Z",
+     "listed": 5,
+     "resolved": [
+      {
+       "id": "992eb7b4-fb68-4b90-839a-0e1b35a286b1",
+       "status": 200
+      },
+      {
+       "id": "fb1d2564-48b3-4b10-b64c-fabe98845849",
+       "status": 200
+      }
+     ],
+     "jumps": [
+      {
+       "id": "e7bf78cc-474c-430e-a9c8-a604c85d14fd",
+       "found": true,
+       "exact": true,
+       "text": "They had taken three steps when the air across the doorway c"
+      },
+      {
+       "id": "c64c47a9-009a-4d8c-8442-ed1e38fabca5",
+       "found": true,
+       "exact": true,
+       "text": "\"Here,\" Brannoc said. The blade stood quivering in a blot of"
+      },
+      {
+       "id": "cbf8b9a5-2d93-48e0-9417-276c0cddd5fa",
+       "found": true,
+       "exact": true,
+       "text": "\"There was,\" Brannoc said. \"Three hundred years ago. Then th"
+      },
+      {
+       "id": "992eb7b4-fb68-4b90-839a-0e1b35a286b1",
+       "found": true,
+       "exact": true,
+       "text": "\"It isn't guarding the stone,\" Wren said. \"The stone is guar"
+      },
+      {
+       "id": "fb1d2564-48b3-4b10-b64c-fabe98845849",
+       "found": false,
+       "exact": false,
+       "text": null
+      }
+     ],
+     "shot": "shots/sim05-07-comments.png"
+    },
+    {
+     "name": "end",
+     "at": "2026-10-28T00:09:34.538Z",
+     "words": 653,
+     "revision": 5,
+     "syncStatus": "saved",
+     "order": [
+      "sdiyrjhr",
+      "soaw0dwx",
+      "sy0whq0g",
+      "ss4dny0o"
+     ],
+     "expectedWords": 653
+    }
+   ],
+   "shots": [],
+   "uiShareToken": "Jjxr66YJFIdAXdbh-ph3OmnvJFLsKwuW",
+   "expected": {
+    "wordsBefore": 649,
+    "typedWords": 19,
+    "deletedWords": 15,
+    "expectedWords": 653,
+    "typedMarker": "SIMTYPED-sim05 The stair went down for an hour, and at the bottom of it the dark had a door.",
+    "deletedText": "Wren did not answer. The runes had begun, one ring at a time, to turn.",
+    "orderAfter": [
+     "sdiyrjhr",
+     "soaw0dwx",
+     "sy0whq0g",
+     "ss4dny0o"
+    ],
+    "shelfId": "11f0157a-5e3e-4756-8ac7-d5127b348df4"
+   },
+   "pageErrors": []
+  },
+  "sim06": {
+   "persona": "sim06",
+   "book": "b044",
+   "steps": [
+    {
+     "name": "sign-in",
+     "at": "2026-10-28T00:07:37.390Z",
+     "user": "sim06@sim.beuk.test"
+    },
+    {
+     "name": "open",
+     "at": "2026-10-28T00:07:44.267Z",
+     "shelfId": "b52e6630-3da1-4f2c-bf72-a07b31a67a9e",
+     "words": 24825,
+     "revision": 2,
+     "order": [
+      "sample-sec-0",
+      "sample-sec-1",
+      "sample-sec-2",
+      "sample-sec-3",
+      "sample-sec-4",
+      "sample-sec-5",
+      "sample-sec-6",
+      "sample-sec-7",
+      "sample-sec-8",
+      "sample-sec-9",
+      "sample-sec-10",
+      "sample-sec-11",
+      "sample-sec-12",
+      "sample-sec-13",
+      "sample-sec-14",
+      "sample-sec-15",
+      "sample-sec-16",
+      "sample-sec-17",
+      "sample-sec-18",
+      "sample-sec-19",
+      "sample-sec-20",
+      "sample-sec-21",
+      "sample-sec-22",
+      "sample-sec-23",
+      "sample-sec-24",
+      "sample-sec-25",
+      "sample-sec-26",
+      "sample-sec-27",
+      "sample-sec-28"
+     ],
+     "shot": "shots/sim06-01-open.png"
+    },
+    {
+     "name": "type",
+     "at": "2026-10-28T00:07:54.779Z",
+     "chapter": "Nell",
+     "typed": "SIMTYPED-sim06 Every chart is a promise the sea never signed.",
+     "typedWords": 10,
+     "totalAfterType": 24835,
+     "totalDelta": 10,
+     "sectionAfter": {
+      "words": 1487,
+      "tail": "r, and the record — being Petra's record — preserves even that: Witness paused. Tea was taken. The truth, when it resumed, was unchanged.\n\nSIMTYPED-sim06 Every chart is a promise the sea never signed."
+     }
+    },
+    {
+     "name": "delete",
+     "at": "2026-10-28T00:07:57.419Z",
+     "chapter": "The Ferry That Did Not Run",
+     "deletedText": "It was Petra who pointed out, when the door had closed, that the Finn had called it his paper — your father's paper — and that this was, in the end, the verdict the whole affair had been sailing towar",
+     "deletedWords": 109,
+     "totalAfterDelete": 24726,
+     "totalDelta": -109
+    },
+    {
+     "name": "outline-move",
+     "at": "2026-10-28T00:08:18.107Z",
+     "chapter": "The Tide Table for Next Year",
+     "moved": true,
+     "from": 12,
+     "to": 13,
+     "shot": "shots/sim06-02-outline.png"
+    },
+    {
+     "name": "bible",
+     "at": "2026-10-28T00:08:34.068Z",
+     "candidate": "Mara",
+     "bibleNote": "description",
+     "bible": [
+      {
+       "name": "Mara",
+       "type": "character",
+       "description": "[sim] noted in a UI session"
+      }
+     ],
+     "shot": "shots/sim06-03-bible.png"
+    },
+    {
+     "name": "goals",
+     "at": "2026-10-28T00:08:44.832Z",
+     "asked": {
+      "daily": 250,
+      "project": 80000
+     },
+     "state": {
+      "daily": 250,
+      "project": 80000,
+      "deadline": ""
+     },
+     "shot": "shots/sim06-04-goals.png"
+    },
+    {
+     "name": "autosave",
+     "at": "2026-10-28T00:08:45.451Z",
+     "ms": 2,
+     "revision": 6
+    },
+    {
+     "name": "export-epub",
+     "at": "2026-10-28T00:09:12.109Z",
+     "file": "sim06.epub",
+     "bytes": 8185046,
+     "epubcheck": {
+      "status": "done",
+      "passed": true,
+      "fatal": 0,
+      "errors": 0,
+      "warnings": 0,
+      "messages": []
+     }
+    },
+    {
+     "name": "export-submission",
+     "at": "2026-10-28T00:09:13.414Z",
+     "file": "sim06-submission.docx",
+     "bytes": 177103,
+     "zip": true,
+     "hasDocumentXml": true,
+     "shot": "shots/sim06-05-manuscript.png"
+    },
+    {
+     "name": "share-ui",
+     "at": "2026-10-28T00:09:44.617Z",
+     "status": 201,
+     "shareId": "7a829b82-6a94-43f6-99b4-4466d5bbce05",
+     "link": "http://localhost:8190/read/<token>",
+     "revisionAtShare": 6,
+     "wordsAtShare": 24726,
+     "shot": "shots/sim06-06-share.png"
+    },
+    {
+     "name": "comments",
+     "at": "2026-10-28T00:09:47.767Z",
+     "listed": 8,
+     "resolved": [
+      {
+       "id": "0a640f52-40fc-4413-81cb-bf362048e184",
+       "status": 200
+      },
+      {
+       "id": "af87107f-d969-4b29-bc9c-b60c445d7164",
+       "status": 200
+      },
+      {
+       "id": "baac9714-671a-4249-9296-ee71e84e870f",
+       "status": 200
+      }
+     ],
+     "jumps": [
+      {
+       "id": "0a640f52-40fc-4413-81cb-bf362048e184",
+       "found": true,
+       "exact": true,
+       "text": "\"Now,\" said Tomas, from the doorway, with the air of a man r"
+      },
+      {
+       "id": "235d4358-77a3-44de-afaa-234448c945b4",
+       "found": true,
+       "exact": true,
+       "text": "The author thanks the harbour pilots of three coasts, who an"
+      },
+      {
+       "id": "af87107f-d969-4b29-bc9c-b60c445d7164",
+       "found": true,
+       "exact": true,
+       "text": "Mara had rehearsed three versions of this on the walk down t"
+      },
+      {
+       "id": "23b4c837-f31a-41dc-8d7b-b16ebb90675d",
+       "found": true,
+       "exact": true,
+       "text": "The walk down to the harbour took her past everything the to"
+      },
+      {
+       "id": "938ac507-21d7-498a-9245-c2bd187a4c1d",
+       "found": true,
+       "exact": true,
+       "text": "In the survey book, opposite the equinox figures, someone —"
+      },
+      {
+       "id": "baac9714-671a-4249-9296-ee71e84e870f",
+       "found": true,
+       "exact": true,
+       "text": "Mr. Venn spoke first, for the underwriters, and he was — Mar"
+      },
+      {
+       "id": "06207f69-53b9-469f-9ee6-d459190ec168",
+       "found": true,
+       "exact": true,
+       "text": "East of the beacon, where the fair sheet promised a bank of"
+      },
+      {
+       "id": "65382b9a-11bb-4bc8-a440-fa15d75fda34",
+       "found": true,
+       "exact": true,
+       "text": "April Carooke writes fiction about coasts, charts, and the p"
+      }
+     ],
+     "shot": "shots/sim06-07-comments.png"
+    },
+    {
+     "name": "end",
+     "at": "2026-10-28T00:09:47.841Z",
+     "words": 24726,
+     "revision": 6,
+     "syncStatus": "saved",
+     "order": [
+      "sample-sec-0",
+      "sample-sec-1",
+      "sample-sec-2",
+      "sample-sec-3",
+      "sample-sec-4",
+      "sample-sec-5",
+      "sample-sec-6",
+      "sample-sec-7",
+      "sample-sec-8",
+      "sample-sec-9",
+      "sample-sec-10",
+      "sample-sec-11",
+      "sample-sec-13",
+      "sample-sec-12",
+      "sample-sec-14",
+      "sample-sec-15",
+      "sample-sec-16",
+      "sample-sec-17",
+      "sample-sec-18",
+      "sample-sec-19",
+      "sample-sec-20",
+      "sample-sec-21",
+      "sample-sec-22",
+      "sample-sec-23",
+      "sample-sec-24",
+      "sample-sec-25",
+      "sample-sec-26",
+      "sample-sec-27",
+      "sample-sec-28"
+     ],
+     "expectedWords": 24726
+    }
+   ],
+   "shots": [],
+   "uiShareToken": "SRrdVuu5fqkVtrZkOuLdUwcnSERB9bfJ",
+   "expected": {
+    "wordsBefore": 24825,
+    "typedWords": 10,
+    "deletedWords": 109,
+    "expectedWords": 24726,
+    "typedMarker": "SIMTYPED-sim06 Every chart is a promise the sea never signed.",
+    "deletedText": "It was Petra who pointed out, when the door had closed, that the Finn had called it his paper — your father's paper — and that this was, in the end, the verdict the whole affair had been sailing toward: not Mara's chart, not the Board's channel, not the firm's salvage ground. A dead man's paper, read at last in the weather it was written for, by strangers, in the dark, exactly as he had intended when he ruled the columns and left her the blank ones. The chart had done what charts are for. It had outlived its maker by being useful to people he would never meet.",
+    "orderAfter": [
+     "sample-sec-0",
+     "sample-sec-1",
+     "sample-sec-2",
+     "sample-sec-3",
+     "sample-sec-4",
+     "sample-sec-5",
+     "sample-sec-6",
+     "sample-sec-7",
+     "sample-sec-8",
+     "sample-sec-9",
+     "sample-sec-10",
+     "sample-sec-11",
+     "sample-sec-13",
+     "sample-sec-12",
+     "sample-sec-14",
+     "sample-sec-15",
+     "sample-sec-16",
+     "sample-sec-17",
+     "sample-sec-18",
+     "sample-sec-19",
+     "sample-sec-20",
+     "sample-sec-21",
+     "sample-sec-22",
+     "sample-sec-23",
+     "sample-sec-24",
+     "sample-sec-25",
+     "sample-sec-26",
+     "sample-sec-27",
+     "sample-sec-28"
+    ],
+    "shelfId": "b52e6630-3da1-4f2c-bf72-a07b31a67a9e"
+   },
+   "pageErrors": []
+  },
+  "sim07": {
+   "persona": "sim07",
+   "book": "b050",
+   "steps": [
+    {
+     "name": "sign-in",
+     "at": "2026-10-28T00:07:35.639Z",
+     "user": "sim07@sim.beuk.test"
+    },
+    {
+     "name": "open",
+     "at": "2026-10-28T00:07:42.128Z",
+     "shelfId": "6ca2bc75-6f5e-4b72-ac80-3199068f2c0d",
+     "words": 125,
+     "revision": 2,
+     "order": [
+      "s02qasd3",
+      "s2q82khw",
+      "s8tvr30t",
+      "sh9lbppj",
+      "shsqyw2j",
+      "s6znulk9",
+      "skfaontv",
+      "s9gj61nu",
+      "s5ikdjja",
+      "sdec9u5a",
+      "sb7t6ilw"
+     ],
+     "shot": "shots/sim07-01-open.png"
+    },
+    {
+     "name": "type",
+     "at": "2026-10-28T00:07:52.716Z",
+     "chapter": "Machu Picchu, Peru",
+     "typed": "SIMTYPED-sim07 White villages above a blue Aegean sunset.",
+     "typedWords": 8,
+     "totalAfterType": 133,
+     "totalDelta": 8,
+     "sectionAfter": {
+      "words": 20,
+      "tail": "::: center\nAn ancient Inca city above the clouds.\n:::\n\nSIMTYPED-sim07 White villages above a blue Aegean sunset."
+     }
+    },
+    {
+     "name": "delete",
+     "at": "2026-10-28T00:07:54.479Z",
+     "chapter": "Banff, Canada",
+     "deletedText": "::: center\nTurquoise water beneath the Rocky Mountains.\n:::",
+     "deletedWords": 6,
+     "totalAfterDelete": 123,
+     "totalDelta": -10
+    },
+    {
+     "name": "outline-move",
+     "at": "2026-10-28T00:08:18.555Z",
+     "chapter": "Antarctic Peninsula",
+     "moved": true,
+     "from": 7,
+     "to": 8,
+     "shot": "shots/sim07-02-outline.png"
+    },
+    {
+     "name": "bible",
+     "at": "2026-10-28T00:08:34.125Z",
+     "candidate": "White",
+     "bibleNote": "description",
+     "bible": [
+      {
+       "name": "White",
+       "type": "character",
+       "description": "[sim] noted in a UI session"
+      }
+     ],
+     "shot": "shots/sim07-03-bible.png"
+    },
+    {
+     "name": "goals",
+     "at": "2026-10-28T00:08:45.277Z",
+     "asked": {
+      "daily": 500,
+      "project": 50000
+     },
+     "state": {
+      "daily": 500,
+      "project": 50000,
+      "deadline": ""
+     },
+     "shot": "shots/sim07-04-goals.png"
+    },
+    {
+     "name": "autosave",
+     "at": "2026-10-28T00:08:47.667Z",
+     "ms": 1547,
+     "revision": 6
+    },
+    {
+     "name": "export-epub",
+     "at": "2026-10-28T00:09:38.226Z",
+     "file": "sim07.epub",
+     "bytes": 15403896,
+     "epubcheck": {
+      "status": "done",
+      "passed": true,
+      "fatal": 0,
+      "errors": 0,
+      "warnings": 0,
+      "messages": []
+     }
+    },
+    {
+     "name": "export-submission",
+     "at": "2026-10-28T00:09:39.600Z",
+     "file": "sim07-submission.docx",
+     "bytes": 19055,
+     "zip": true,
+     "hasDocumentXml": true,
+     "shot": "shots/sim07-05-manuscript.png"
+    },
+    {
+     "name": "share-ui",
+     "at": "2026-10-28T00:10:11.587Z",
+     "status": 201,
+     "shareId": "8f7c5246-ea93-45f4-bf32-7a5df388c00b",
+     "link": "http://localhost:8190/read/<token>",
+     "revisionAtShare": 6,
+     "wordsAtShare": 123,
+     "shot": "shots/sim07-06-share.png"
+    },
+    {
+     "name": "comments",
+     "at": "2026-10-28T00:10:14.274Z",
+     "listed": 5,
+     "resolved": [
+      {
+       "id": "dc276019-114f-4f03-ad65-1edfca6365c7",
+       "status": 200
+      },
+      {
+       "id": "af629730-7225-437b-ab48-129acb7ff96e",
+       "status": 200
+      }
+     ],
+     "jumps": [
+      {
+       "id": "dc276019-114f-4f03-ad65-1edfca6365c7",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nIcebergs, penguins and perfect silence.\n:::"
+      },
+      {
+       "id": "7f90abb2-c6ce-459b-8614-2249ee1b7f0c",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nWhite sails and steel arches at sunset.\n:::"
+      },
+      {
+       "id": "212fdc20-cd1a-451d-8a94-42369ab184d0",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nAn ancient Inca city above the clouds.\n:::"
+      },
+      {
+       "id": "af629730-7225-437b-ab48-129acb7ff96e",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nWaterfalls falling into a misty fjord.\n:::"
+      },
+      {
+       "id": "6466e375-5584-4a33-8688-2e00e6fceaa3",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nWhite sails and steel arches at sunset.\n:::"
+      }
+     ],
+     "shot": "shots/sim07-07-comments.png"
+    },
+    {
+     "name": "end",
+     "at": "2026-10-28T00:10:14.349Z",
+     "words": 123,
+     "revision": 6,
+     "syncStatus": "saved",
+     "order": [
+      "s02qasd3",
+      "s2q82khw",
+      "s8tvr30t",
+      "sh9lbppj",
+      "shsqyw2j",
+      "s6znulk9",
+      "skfaontv",
+      "s5ikdjja",
+      "s9gj61nu",
+      "sdec9u5a",
+      "sb7t6ilw"
+     ],
+     "expectedWords": 127
+    }
+   ],
+   "shots": [],
+   "uiShareToken": "IhmIs5-DOFT98UQsHoEgbW_SE_SxNbGm",
+   "expected": {
+    "wordsBefore": 125,
+    "typedWords": 8,
+    "deletedWords": 6,
+    "expectedWords": 127,
+    "typedMarker": "SIMTYPED-sim07 White villages above a blue Aegean sunset.",
+    "deletedText": "::: center\nTurquoise water beneath the Rocky Mountains.\n:::",
+    "orderAfter": [
+     "s02qasd3",
+     "s2q82khw",
+     "s8tvr30t",
+     "sh9lbppj",
+     "shsqyw2j",
+     "s6znulk9",
+     "skfaontv",
+     "s5ikdjja",
+     "s9gj61nu",
+     "sdec9u5a",
+     "sb7t6ilw"
+    ],
+    "shelfId": "6ca2bc75-6f5e-4b72-ac80-3199068f2c0d"
+   },
+   "pageErrors": []
+  },
+  "sim08": {
+   "persona": "sim08",
+   "book": "b055",
+   "steps": [
+    {
+     "name": "sign-in",
+     "at": "2026-10-28T00:07:35.597Z",
+     "user": "sim08@sim.beuk.test"
+    },
+    {
+     "name": "open",
+     "at": "2026-10-28T00:07:41.787Z",
+     "shelfId": "b7c1ee6c-3f7a-4b64-96de-e9c7ea2d2a23",
+     "words": 274,
+     "revision": 2,
+     "order": [
+      "sn81or82",
+      "s0mny0ht",
+      "sd670iom",
+      "szv9flci",
+      "szrfhq0l",
+      "s999qr9p",
+      "sb28miqx",
+      "stgmfnip",
+      "sij2pcg3",
+      "s9ku0ypu"
+     ],
+     "shot": "shots/sim08-01-open.png"
+    },
+    {
+     "name": "type",
+     "at": "2026-10-28T00:07:52.493Z",
+     "chapter": "A Very Big Ball of Yarn",
+     "typed": "SIMTYPED-sim08 Pip, Lila and Sam run to school with their bags.",
+     "typedWords": 11,
+     "totalAfterType": 285,
+     "totalDelta": 11,
+     "sectionAfter": {
+      "words": 41,
+      "tail": " is art day! Mr. Cardigan holds up a ball\n\nso big, so round, and so rainbow-bright!\n\n\"Red, orange, yellow, green, blue and purple!\"\n:::\n\nSIMTYPED-sim08 Pip, Lila and Sam run to school with their bags."
+     }
+    },
+    {
+     "name": "delete",
+     "at": "2026-10-28T00:07:54.361Z",
+     "chapter": "Goodbye, Woolly School!",
+     "deletedText": "The End.\n:::",
+     "deletedWords": 2,
+     "totalAfterDelete": 283,
+     "totalDelta": -2
+    },
+    {
+     "name": "outline-move",
+     "at": "2026-10-28T00:08:22.428Z",
+     "chapter": "Oh No! It Rolls Away!",
+     "moved": true,
+     "from": 3,
+     "to": 4,
+     "shot": "shots/sim08-02-outline.png"
+    },
+    {
+     "name": "bible",
+     "at": "2026-10-28T00:08:32.361Z",
+     "candidate": "Lila",
+     "bibleNote": "description",
+     "bible": [
+      {
+       "name": "Lila",
+       "type": "character",
+       "description": "[sim] noted in a UI session"
+      }
+     ],
+     "shot": "shots/sim08-03-bible.png"
+    },
+    {
+     "name": "goals",
+     "at": "2026-10-28T00:08:44.825Z",
+     "asked": {
+      "daily": 250,
+      "project": 20000
+     },
+     "state": {
+      "daily": 250,
+      "project": 20000,
+      "deadline": ""
+     },
+     "shot": "shots/sim08-04-goals.png"
+    },
+    {
+     "name": "autosave",
+     "at": "2026-10-28T00:08:46.363Z",
+     "ms": 2,
+     "revision": 6
+    },
+    {
+     "name": "export-epub",
+     "at": "2026-10-28T00:09:27.918Z",
+     "file": "sim08.epub",
+     "bytes": 11604791,
+     "epubcheck": {
+      "status": "done",
+      "passed": true,
+      "fatal": 0,
+      "errors": 0,
+      "warnings": 0,
+      "messages": []
+     }
+    },
+    {
+     "name": "export-submission",
+     "at": "2026-10-28T00:09:29.013Z",
+     "file": "sim08-submission.docx",
+     "bytes": 21344,
+     "zip": true,
+     "hasDocumentXml": true,
+     "shot": "shots/sim08-05-manuscript.png"
+    },
+    {
+     "name": "share-ui",
+     "at": "2026-10-28T00:10:00.319Z",
+     "status": 201,
+     "shareId": "164536fa-495d-470b-b4ca-849b19c62115",
+     "link": "http://localhost:8190/read/<token>",
+     "revisionAtShare": 6,
+     "wordsAtShare": 283,
+     "shot": "shots/sim08-06-share.png"
+    },
+    {
+     "name": "comments",
+     "at": "2026-10-28T00:10:04.273Z",
+     "listed": 8,
+     "resolved": [
+      {
+       "id": "e89ef53b-2452-40c1-8fdb-f97ddc835b4f",
+       "status": 200
+      },
+      {
+       "id": "35db56d0-8a84-48df-9a7a-4d4199c3b23b",
+       "status": 200
+      },
+      {
+       "id": "5c5c47a6-7ad4-4424-9385-710a2484240b",
+       "status": 200
+      },
+      {
+       "id": "465bdfa0-75d8-43aa-8239-0070561c151b",
+       "status": 200
+      },
+      {
+       "id": "22dd77d3-b586-4139-a67f-7f2c2be65d95",
+       "status": 200
+      }
+     ],
+     "jumps": [
+      {
+       "id": "e3813b7f-b7bb-48f5-8f1a-66bfe0ad41c0",
+       "found": true,
+       "exact": true,
+       "text": "\"Thank you!\" say the teachers, smiling.\n:::"
+      },
+      {
+       "id": "e89ef53b-2452-40c1-8fdb-f97ddc835b4f",
+       "found": true,
+       "exact": true,
+       "text": "Mr. Cardigan waves at the door and smiles."
+      },
+      {
+       "id": "35db56d0-8a84-48df-9a7a-4d4199c3b23b",
+       "found": true,
+       "exact": true,
+       "text": "and Sam makes a star — all out of yarn!\n:::"
+      },
+      {
+       "id": "5c5c47a6-7ad4-4424-9385-710a2484240b",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nDing-dong! The school bell rings."
+      },
+      {
+       "id": "aaef6e53-7e98-4070-aa72-1211a364af1e",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nOh dear! The yarn is all in a tangle."
+      },
+      {
+       "id": "b4a914de-b8d1-4124-a9fd-0012799d3f05",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nDing-dong! The school bell rings."
+      },
+      {
+       "id": "465bdfa0-75d8-43aa-8239-0070561c151b",
+       "found": true,
+       "exact": true,
+       "text": "\"After it!\" shout Pip, Lila and Sam.\n:::"
+      },
+      {
+       "id": "22dd77d3-b586-4139-a67f-7f2c2be65d95",
+       "found": true,
+       "exact": true,
+       "text": "::: center\nMs. Wool is watering the flowers when the yarn"
+      }
+     ],
+     "shot": "shots/sim08-07-comments.png"
+    },
+    {
+     "name": "end",
+     "at": "2026-10-28T00:10:04.361Z",
+     "words": 283,
+     "revision": 6,
+     "syncStatus": "saved",
+     "order": [
+      "sn81or82",
+      "s0mny0ht",
+      "sd670iom",
+      "szrfhq0l",
+      "szv9flci",
+      "s999qr9p",
+      "sb28miqx",
+      "stgmfnip",
+      "sij2pcg3",
+      "s9ku0ypu"
+     ],
+     "expectedWords": 283
+    }
+   ],
+   "shots": [],
+   "uiShareToken": "whlxIIkSnoE2q0vgAbOmpxPeUH3TaY7q",
+   "expected": {
+    "wordsBefore": 274,
+    "typedWords": 11,
+    "deletedWords": 2,
+    "expectedWords": 283,
+    "typedMarker": "SIMTYPED-sim08 Pip, Lila and Sam run to school with their bags.",
+    "deletedText": "The End.\n:::",
+    "orderAfter": [
+     "sn81or82",
+     "s0mny0ht",
+     "sd670iom",
+     "szrfhq0l",
+     "szv9flci",
+     "s999qr9p",
+     "sb28miqx",
+     "stgmfnip",
+     "sij2pcg3",
+     "s9ku0ypu"
+    ],
+    "shelfId": "b7c1ee6c-3f7a-4b64-96de-e9c7ea2d2a23"
+   },
+   "pageErrors": []
+  }
+ },
+ "twoDevices": {
+  "persona": "sim03",
+  "book": "b029",
+  "shelfId": "2ac7fddc-c990-47c5-86cc-8d647e5e4e35",
+  "steps": [],
+  "error": "Error: waitFor timed out: () => !!(cloud.user && cloud.user.email)\n    at waitFor (file:///sim/driver.mjs:99:44)\n    at async uiSignIn (file:///sim/personas.mjs:27:3)\n    at async twoDevices (file:///sim/personas.mjs:219:28)\n    at async file:///sim/personas.mjs:313:3"
+ },
+ "errors": [
+  {
+   "twoDevices": true,
+   "error": "Error: waitFor timed out: () => !!(cloud.user && cloud.user.email)\n    at waitFor (file:///sim/driver.mjs:99:44)\n    at async uiSignIn (file:///sim/personas.mjs:27:3)\n    at async twoDevices (file:///sim/personas.mjs:219:28)\n    at async file:///sim/personas.mjs:313:3"
+  }
+ ],
+ "metaCarryOver": {
+  "persona": "sim04",
+  "seriesBook": "b030",
+  "standalone": "b034",
+  "steps": [
+   {
+    "opened": "series book",
+    "series": "Salt Road"
+   },
+   {
+    "opened": "standalone",
+    "seriesOnDesk": "Salt Road",
+    "shot": "shots/sim04-meta-01.png"
+   }
+  ],
+  "standaloneOnShelfBefore": {
+   "series": null,
+   "revision": 2
+  },
+  "standaloneOnShelfAfterEdit": {
+   "series": "Salt Road",
+   "revision": 3
+  }
+ },
+ "finishedAt": "2026-10-28T00:11:45.008Z"
+}

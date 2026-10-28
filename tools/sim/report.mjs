@@ -104,7 +104,7 @@ if (printed.length) {
   for (const b of printed) {
     const r = seed.books[b.id]; const res = r.pdfx.result || {};
     const pages = (res.inspect && res.inspect.pageCount) ?? (res.pdf && res.pdf.pageCount) ?? (res.facts && res.facts.pageCount) ?? (JSON.stringify(res).match(/"pageCount":(\d+)/) || [])[1];
-    P(`| ${b.title} | ${ms(r.print && r.print.ms)} (${MB(r.print && r.print.bytes)} MB) | ${r.pdfx.status} | ${ms(r.pdfx.ms)} | ${pages ?? '–'} | ${(res.error || res.passed === false ? 'not passed: ' + String(res.error || '').slice(0, 120) : res.passed ? 'passed' : JSON.stringify(res).slice(0, 120)).replace(/\|/g, '/')} |`);
+    P(`| ${b.title} | ${ms(r.print && r.print.ms)} (${MB(r.print && r.print.bytes)} MB) | ${r.pdfx.status} | ${ms(r.pdfx.ms)} | ${pages ?? '–'} | ${(res.error ? 'failed: ' + String(res.error).slice(0, 120) : res.inspection && res.inspection.pdfx ? res.inspection.pdfx.conformance + ', fonts embedded: ' + res.inspection.fontsAllEmbedded + ', ' + MB(res.outputBytes) + ' MB' : JSON.stringify(res).slice(0, 120)).replace(/[|]/g, '/')} |`);
   }
   P('');
 }
@@ -156,11 +156,17 @@ if (monster) {
   P('### Limits found');
   P('');
   const lim = [];
+  const bad = (s, k) => { const o = s.ops[k]; if (!o) return false; if (k === 'pdfx') return o.status !== 'done'; if (!o.ok) return true; const v = o.value || {}; if ((k === 'post' || k === 'put') && v.status !== 'saved') return true; if ((k === 'epub' || k === 'printHtml') && v.archive && !v.archive.id) return true; return false; };
   for (const k of ops) {
-    const firstBad = monster.steps.find((s) => { const o = s.ops[k]; if (!o) return false; if (k === 'pdfx') return o.status && o.status !== 'done'; if (!o.ok) return true; const v = o.value || {}; if ((k === 'post' || k === 'put') && v.status !== 'saved') return true; if ((k === 'epub' || k === 'printHtml') && v.archive && !v.archive.id) return true; return false; });
-    const lastGood = [...monster.steps].reverse().find((s) => s.ops[k] && s.ops[k].ok && !(s.ops[k].value && (s.ops[k].value.status && s.ops[k].value.status !== 'saved' && (k === 'post' || k === 'put'))));
-    if (firstBad) lim.push(`- **${k}**: works at ${lastGood ? num(lastGood.targetWords) : 'no step'} words; first failure at ${num(firstBad.targetWords)} words — ${j(firstBad.ops[k].error || firstBad.ops[k].value || firstBad.ops[k], 400).replace(/\n/g, ' ')}`);
+    const firstBad = monster.steps.find((s) => bad(s, k));
+    const before = firstBad ? monster.steps.slice(0, monster.steps.indexOf(firstBad)) : monster.steps;
+    const lastGood = [...before].reverse().find((s) => s.ops[k] && !bad(s, k));
+    const o = firstBad && firstBad.ops[k];
+    const what = o ? (o.error || (o.value && (o.value.error || (o.value.archive && !o.value.archive.id && o.value.archive))) || o.result || o.value || o) : null;
+    if (firstBad) lim.push(`- **${k}**: ${lastGood ? 'works up to ' + num(lastGood.targetWords) + ' words' : 'fails at every step tried'}; fails at ${num(firstBad.targetWords)} words — ${j(what, 500).replace(/\n/g, ' ')}`);
   }
+  const typ = monster.steps.filter((s) => s.ops.typing && s.ops.typing.ok).map((s) => `${num(s.targetWords)} words: ${Math.round(s.ops.typing.value.ms10 / 10)} ms per input`);
+  if (typ.length) lim.push(`- **typing** (10 input events into the last chapter, each running the studio's own input handling): ${typ.join('; ')}.`);
   P(lim.length ? lim.join('\n') : '- No operation failed up to the largest step.');
   P('');
 }

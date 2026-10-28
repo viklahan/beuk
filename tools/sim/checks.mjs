@@ -285,6 +285,22 @@ async function main() {
   /* 15. import lab decision */
   if (seed.lab) add('import.lab', `import path chosen by measurement: ${seed.lab.chosen} (titles, pictures placed, captions, italics)`, true, { totals: seed.lab.totals, volumes: seed.lab.volumes.map((v) => ({ ebook: v.ebook, title: v.title, single: v.paths.single && v.paths.single.score, bulk: v.paths.bulk && (v.paths.bulk.score || v.paths.bulk.error) })) });
 
+  /* load and size: what the saga volumes and the load-test book showed */
+  const bigBook = Object.values(seed.books).filter((r) => r.stats && r.put).sort((a, b) => b.stats.docBytes - a.stats.docBytes)[0];
+  if (bigBook) gap('perf.autosave-sends-whole-book', 'Every autosave sends the whole book, pictures included: the largest illustrated volume re-uploads its full JSON on each save.', { book: bigBook.title, pictures: bigBook.stats.images, words: bigBook.stats.words, bytesPerSave: bigBook.put.bytes, putMs: Math.round(bigBook.put.ms), postMs: Math.round(bigBook.post.ms) });
+  if (monster) {
+    const typing = monster.steps.filter((s) => s.ops.typing && s.ops.typing.ok).map((s) => ({ words: s.targetWords, msPerInput: Math.round(s.ops.typing.value.ms10 / 10) }));
+    if (typing.length && typing[0].msPerInput > 50) gap('perf.typing-latency', 'Typing slows with the size of the whole book, not the chapter: each input event in the last chapter takes this long (the studio\'s own input handling, 10 events per step).', typing);
+    const tooBig = monster.steps.find((s) => s.ops.post && s.ops.post.value && s.ops.post.value.status !== 'saved');
+    if (tooBig) gap('limit.shelf-book-size', 'A book over the shelf\'s size limit (MANUSCRIPT_MAX_BYTES, 64 MiB of JSON) cannot be saved to the shelf; the studio says so and keeps it on the device.', { words: tooBig.targetWords, post: tooBig.ops.post.value });
+    const arch = monster.steps.find((s) => s.ops.epub && s.ops.epub.ok && s.ops.epub.value.archive && !s.ops.epub.value.archive.id);
+    if (arch) gap('limit.export-archive-size', 'An export over EXPORT_MAX_BYTES (50 MB) is built in the browser but cannot be saved to the export archive or checked by EPUBCheck on the server.', { words: arch.targetWords, epubBytes: arch.ops.epub.value.bytes, archive: arch.ops.epub.value.archive });
+    const pdf = monster.steps.find((s) => s.ops.pdfx && s.ops.pdfx.status !== 'done');
+    if (pdf) gap('limit.pdfx-long-book', 'The print PDF/X job did not finish for a book of this length (the saga-length volumes of ~40,000 words printed).', { words: pdf.targetWords, job: pdf.ops.pdfx });
+    const crashed = monster.steps.filter((s) => (s.pageErrors || []).some((e) => /CRASH/.test(e))).map((s) => s.targetWords);
+    if (crashed.length) gap('limit.page-crash', 'The studio page crashed while working on the load-test book.', { atWords: crashed });
+  }
+
   if (pers) add('auth.ui-sign-in-first-time', 'every sign-in through the UI with the right email and password succeeded at the first attempt', !(pers.signInRefused || []).length && !(pers.signInFailures || []).length, { refused: pers.signInRefused || [], failed: pers.signInFailures || [] });
 
   /* 16. errors anywhere */

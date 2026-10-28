@@ -1,0 +1,774 @@
+{
+ "title": "SIM LOAD TEST — not a book",
+ "persona": "sim10-loadtest",
+ "limitsMs": {
+  "export": 900000,
+  "import": 900000,
+  "op": 300000,
+  "pdfx": 1800000,
+  "save": 600000
+ },
+ "steps": [
+  {
+   "targetWords": 250000,
+   "mdBytes": 1457178,
+   "ops": {
+    "import": {
+     "ok": true,
+     "ms": 1202,
+     "value": {
+      "ms": 1042.3999999761581,
+      "found": [
+       "75 chapters"
+      ]
+     }
+    },
+    "wordCount": {
+     "ok": true,
+     "ms": 65,
+     "value": {
+      "words": 250147,
+      "ms": 34.199999928474426,
+      "chapters": 75
+     }
+    },
+    "heap": {
+     "ok": true,
+     "ms": 5,
+     "value": {
+      "usedMB": 87,
+      "limitMB": 3586
+     }
+    },
+    "bibleMentionPass": {
+     "ok": true,
+     "ms": 74,
+     "value": {
+      "ms": 69.29999995231628,
+      "studioMs": 69.19999992847443,
+      "per": {
+       "d’Artagnan": {
+        "total": 1994,
+        "sections": 69
+       },
+       "Athos": {
+        "total": 966,
+        "sections": 53
+       },
+       "Porthos": {
+        "total": 590,
+        "sections": 48
+       },
+       "Aramis": {
+        "total": 527,
+        "sections": 47
+       },
+       "Milady": {
+        "total": 705,
+        "sections": 39
+       },
+       "Richelieu": {
+        "total": 77,
+        "sections": 25
+       },
+       "Mazarin": {
+        "total": 118,
+        "sections": 7
+       },
+       "Buckingham": {
+        "total": 179,
+        "sections": 40
+       }
+      },
+      "ambiguous": 0,
+      "sections": 75
+     }
+    },
+    "serialize": {
+     "ok": true,
+     "ms": 73,
+     "value": {
+      "bytes": 1490639,
+      "ms": 70.5
+     }
+    },
+    "post": {
+     "ok": true,
+     "ms": 736,
+     "value": {
+      "ms": 686,
+      "bytes": 1490639,
+      "id": "feef1998-a8f3-47ea-adc0-3ef17019ba7f",
+      "revision": 1,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "put": {
+     "ok": true,
+     "ms": 1003,
+     "value": {
+      "ms": 892.1000000238419,
+      "bytes": 1490639,
+      "id": "feef1998-a8f3-47ea-adc0-3ef17019ba7f",
+      "revision": 2,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "reopen": {
+     "ok": true,
+     "ms": 706,
+     "value": {
+      "ok": true,
+      "revision": 2,
+      "ms": 638.6000000238419
+     }
+    },
+    "typing": {
+     "ok": true,
+     "ms": 2179,
+     "value": {
+      "ms10": 1971.8000000715256
+     }
+    },
+    "epub": {
+     "ok": true,
+     "ms": 2138,
+     "value": {
+      "ms": 1965.2999999523163,
+      "bytes": 1667184,
+      "archive": {
+       "ms": 107.5,
+       "id": "87db701c-36cf-4e96-98b0-5fba6ec9e4a9",
+       "sha256": "ca2cf30ef7e65cdcd2255c4bcb65b26a259d6f996e029ae041d2fd3d3417b43d"
+      }
+     }
+    },
+    "printHtml": {
+     "ok": true,
+     "ms": 449,
+     "value": {
+      "ms": 217.39999997615814,
+      "bytes": 1604948,
+      "archive": {
+       "ms": 202.39999997615814,
+       "id": "2cc63793-883d-40a6-af9b-a387ff29fbeb",
+       "sha256": "292e9d061f259e1e03e834fee3828ce228b51463a134fdd0a050f67d5ea482ba"
+      }
+     }
+    },
+    "pdfx": {
+     "created": true,
+     "status": "failed",
+     "ms": 114525,
+     "error": "Ghostscript exited with code null and produced no converted file.",
+     "result": "{\"tool\":\"ghostscript\",\"error\":\"Ghostscript exited with code null and produced no converted file.\",\"configured\":true}"
+    }
+   },
+   "signIn": true,
+   "pageErrors": []
+  },
+  {
+   "targetWords": 1000000,
+   "mdBytes": 5876702,
+   "ops": {
+    "import": {
+     "ok": true,
+     "ms": 6065,
+     "value": {
+      "ms": 5498.600000023842,
+      "found": [
+       "363 chapters"
+      ]
+     }
+    },
+    "wordCount": {
+     "ok": true,
+     "ms": 157,
+     "value": {
+      "words": 1000720,
+      "ms": 102.39999997615814,
+      "chapters": 363
+     }
+    },
+    "heap": {
+     "ok": true,
+     "ms": 303,
+     "value": {
+      "usedMB": 150,
+      "limitMB": 3586
+     }
+    },
+    "bibleMentionPass": {
+     "ok": true,
+     "ms": 347,
+     "value": {
+      "ms": 276,
+      "studioMs": 275.8000000715256,
+      "per": {
+       "d’Artagnan": {
+        "total": 5168,
+        "sections": 223
+       },
+       "Athos": {
+        "total": 2457,
+        "sections": 156
+       },
+       "Porthos": {
+        "total": 1986,
+        "sections": 137
+       },
+       "Aramis": {
+        "total": 1813,
+        "sections": 142
+       },
+       "Milady": {
+        "total": 724,
+        "sections": 48
+       },
+       "Richelieu": {
+        "total": 124,
+        "sections": 61
+       },
+       "Mazarin": {
+        "total": 894,
+        "sections": 129
+       },
+       "Buckingham": {
+        "total": 495,
+        "sections": 85
+       }
+      },
+      "ambiguous": 0,
+      "sections": 363
+     }
+    },
+    "serialize": {
+     "ok": true,
+     "ms": 230,
+     "value": {
+      "bytes": 6024986,
+      "ms": 126.5
+     }
+    },
+    "post": {
+     "ok": true,
+     "ms": 2893,
+     "value": {
+      "ms": 2781.5,
+      "bytes": 6024986,
+      "id": "2917014a-71bb-483b-8047-b2766e1d97f3",
+      "revision": 1,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "put": {
+     "ok": true,
+     "ms": 2077,
+     "value": {
+      "ms": 1887.2999999523163,
+      "bytes": 6024986,
+      "id": "2917014a-71bb-483b-8047-b2766e1d97f3",
+      "revision": 2,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "reopen": {
+     "ok": true,
+     "ms": 1763,
+     "value": {
+      "ok": true,
+      "revision": 2,
+      "ms": 1696.1000000238419
+     }
+    },
+    "typing": {
+     "ok": true,
+     "ms": 5463,
+     "value": {
+      "ms10": 4939.400000095367
+     }
+    },
+    "epub": {
+     "ok": true,
+     "ms": 7952,
+     "value": {
+      "ms": 7404.5,
+      "bytes": 6725738,
+      "archive": {
+       "ms": 305.5,
+       "id": "f404854b-f435-40a3-945c-e6da8a27fcdb",
+       "sha256": "82785e44bcd1055e48db5712f2eb20b08236aa8a9f1efc09f77a32e66c81acda"
+      }
+     }
+    },
+    "printHtml": {
+     "ok": true,
+     "ms": 1007,
+     "value": {
+      "ms": 642.1000000238419,
+      "bytes": 6433111,
+      "archive": {
+       "ms": 296.7999999523163,
+       "id": "73fa26f1-dac5-42f7-a536-e60aa105f579",
+       "sha256": "6304d5da7904e82de720d01d6dca552392176d34c0b3e489d58903c17eae2d71"
+      }
+     }
+    }
+   },
+   "signIn": true,
+   "pageErrors": []
+  },
+  {
+   "targetWords": 2500000,
+   "mdBytes": 14346224,
+   "ops": {
+    "import": {
+     "ok": true,
+     "ms": 10952,
+     "value": {
+      "ms": 10166.100000023842,
+      "found": [
+       "1090 chapters"
+      ]
+     }
+    },
+    "wordCount": {
+     "ok": true,
+     "ms": 376,
+     "value": {
+      "words": 2502054,
+      "ms": 256,
+      "chapters": 1090
+     }
+    },
+    "heap": {
+     "ok": true,
+     "ms": 662,
+     "value": {
+      "usedMB": 497,
+      "limitMB": 3586
+     }
+    },
+    "bibleMentionPass": {
+     "ok": true,
+     "ms": 674,
+     "value": {
+      "ms": 625.3999999761581,
+      "studioMs": 625.2000000476837,
+      "per": {
+       "d’Artagnan": {
+        "total": 7786,
+        "sections": 329
+       },
+       "Athos": {
+        "total": 3586,
+        "sections": 223
+       },
+       "Porthos": {
+        "total": 3016,
+        "sections": 209
+       },
+       "Aramis": {
+        "total": 3074,
+        "sections": 225
+       },
+       "Milady": {
+        "total": 1232,
+        "sections": 81
+       },
+       "Richelieu": {
+        "total": 176,
+        "sections": 89
+       },
+       "Mazarin": {
+        "total": 920,
+        "sections": 145
+       },
+       "Buckingham": {
+        "total": 625,
+        "sections": 118
+       }
+      },
+      "ambiguous": 0,
+      "sections": 1090
+     }
+    },
+    "serialize": {
+     "ok": true,
+     "ms": 977,
+     "value": {
+      "bytes": 18496270,
+      "ms": 532.3999999761581
+     }
+    },
+    "post": {
+     "ok": true,
+     "ms": 6923,
+     "value": {
+      "ms": 6573.100000023842,
+      "bytes": 18496270,
+      "id": "1ac3411f-8b9a-46be-b6f8-6097b631f9e3",
+      "revision": 1,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "put": {
+     "ok": true,
+     "ms": 6161,
+     "value": {
+      "ms": 5746.100000023842,
+      "bytes": 18496270,
+      "id": "1ac3411f-8b9a-46be-b6f8-6097b631f9e3",
+      "revision": 2,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "reopen": {
+     "ok": true,
+     "ms": 3911,
+     "value": {
+      "ok": true,
+      "revision": 2,
+      "ms": 3757.9000000953674
+     }
+    },
+    "typing": {
+     "ok": true,
+     "ms": 14271,
+     "value": {
+      "ms10": 13070.400000095367
+     }
+    },
+    "epub": {
+     "ok": true,
+     "ms": 24561,
+     "value": {
+      "ms": 23220.899999976158,
+      "bytes": 16847181,
+      "archive": {
+       "ms": 880.6000000238419,
+       "id": "2cce9b71-48d5-49f1-aaa8-91e5cfe7dedb",
+       "sha256": "1588eecbad0b7ca5b3b7b65370b81bbe4266e12dbc4e190167636bde9de0bfc6"
+      }
+     }
+    },
+    "printHtml": {
+     "ok": true,
+     "ms": 2412,
+     "value": {
+      "ms": 1508.1000000238419,
+      "bytes": 15979293,
+      "archive": {
+       "ms": 732.0999999046326,
+       "id": "1984806d-ed89-49b2-9116-a445e1350186",
+       "sha256": "42d19c58d16429c45818dc801f4a2e23a17412cece07ba36231159c2d9044597"
+      }
+     }
+    }
+   },
+   "signIn": true,
+   "pageErrors": []
+  },
+  {
+   "targetWords": 5000000,
+   "mdBytes": 28697918,
+   "ops": {
+    "import": {
+     "ok": true,
+     "ms": 21535,
+     "value": {
+      "ms": 19456.600000023842,
+      "found": [
+       "2191 chapters"
+      ]
+     }
+    },
+    "wordCount": {
+     "ok": true,
+     "ms": 814,
+     "value": {
+      "words": 5004090,
+      "ms": 556.7999999523163,
+      "chapters": 2191
+     }
+    },
+    "heap": {
+     "ok": true,
+     "ms": 1541,
+     "value": {
+      "usedMB": 368,
+      "limitMB": 3586
+     }
+    },
+    "bibleMentionPass": {
+     "ok": true,
+     "ms": 1287,
+     "value": {
+      "ms": 1241.6000000238419,
+      "studioMs": 1241.2999999523163,
+      "per": {
+       "d’Artagnan": {
+        "total": 15294,
+        "sections": 659
+       },
+       "Athos": {
+        "total": 7122,
+        "sections": 447
+       },
+       "Porthos": {
+        "total": 6045,
+        "sections": 423
+       },
+       "Aramis": {
+        "total": 6089,
+        "sections": 450
+       },
+       "Milady": {
+        "total": 2176,
+        "sections": 148
+       },
+       "Richelieu": {
+        "total": 378,
+        "sections": 183
+       },
+       "Mazarin": {
+        "total": 2267,
+        "sections": 335
+       },
+       "Buckingham": {
+        "total": 1182,
+        "sections": 218
+       }
+      },
+      "ambiguous": 0,
+      "sections": 2191
+     }
+    },
+    "serialize": {
+     "ok": true,
+     "ms": 829,
+     "value": {
+      "bytes": 36949809,
+      "ms": 467
+     }
+    },
+    "post": {
+     "ok": true,
+     "ms": 18730,
+     "value": {
+      "ms": 18209.700000047684,
+      "bytes": 36949809,
+      "id": "400ed3f6-1f97-4e40-a27c-95dda41a7a49",
+      "revision": 1,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "put": {
+     "ok": true,
+     "ms": 20717,
+     "value": {
+      "ms": 19887.700000047684,
+      "bytes": 36949809,
+      "id": "400ed3f6-1f97-4e40-a27c-95dda41a7a49",
+      "revision": 2,
+      "status": "saved",
+      "error": null
+     }
+    },
+    "reopen": {
+     "ok": true,
+     "ms": 9047,
+     "value": {
+      "ok": true,
+      "revision": 2,
+      "ms": 8844
+     }
+    },
+    "typing": {
+     "ok": true,
+     "ms": 30875,
+     "value": {
+      "ms10": 28133.200000047684
+     }
+    },
+    "epub": {
+     "ok": true,
+     "ms": 62695,
+     "value": {
+      "ms": 59993.5,
+      "bytes": 33702063,
+      "archive": {
+       "ms": 2511.7999999523163,
+       "id": "3685ec4f-ea9c-4494-a608-6a4961215739",
+       "sha256": "58689a97ea56757b69230b1a4e212133e7da8fb1edb0db025953dbb36dcf1c98"
+      }
+     }
+    },
+    "printHtml": {
+     "ok": true,
+     "ms": 6169,
+     "value": {
+      "ms": 3816.600000023842,
+      "bytes": 31952112,
+      "archive": {
+       "ms": 1915,
+       "id": "06c70bbf-ddc8-4e7f-a988-65742f960ab3",
+       "sha256": "10da0bf877be8e8e8b24692f2bf0ceb6635ff0c475b1a4ef380545c6717ab160"
+      }
+     }
+    }
+   },
+   "signIn": true,
+   "pageErrors": []
+  },
+  {
+   "targetWords": 10000000,
+   "mdBytes": 57421748,
+   "ops": {
+    "import": {
+     "ok": true,
+     "ms": 49601,
+     "value": {
+      "ms": 45527.09999990463,
+      "found": [
+       "4413 chapters"
+      ]
+     }
+    },
+    "wordCount": {
+     "ok": true,
+     "ms": 1504,
+     "value": {
+      "words": 10008280,
+      "ms": 1188.7999999523163,
+      "chapters": 4413
+     }
+    },
+    "heap": {
+     "ok": true,
+     "ms": 6159,
+     "value": {
+      "usedMB": 670,
+      "limitMB": 3586
+     }
+    },
+    "bibleMentionPass": {
+     "ok": true,
+     "ms": 3396,
+     "value": {
+      "ms": 2689.7999999523163,
+      "studioMs": 2689.399999976158,
+      "per": {
+       "d’Artagnan": {
+        "total": 29127,
+        "sections": 1292
+       },
+       "Athos": {
+        "total": 13461,
+        "sections": 871
+       },
+       "Porthos": {
+        "total": 11507,
+        "sections": 803
+       },
+       "Aramis": {
+        "total": 11917,
+        "sections": 878
+       },
+       "Milady": {
+        "total": 3634,
+        "sections": 251
+       },
+       "Richelieu": {
+        "total": 677,
+        "sections": 339
+       },
+       "Mazarin": {
+        "total": 4539,
+        "sections": 693
+       },
+       "Buckingham": {
+        "total": 2439,
+        "sections": 425
+       }
+      },
+      "ambiguous": 0,
+      "sections": 4413
+     }
+    },
+    "serialize": {
+     "ok": true,
+     "ms": 974,
+     "value": {
+      "bytes": 73919706,
+      "ms": 919.2000000476837
+     }
+    },
+    "post": {
+     "ok": true,
+     "ms": 18315,
+     "value": {
+      "ms": 17326.300000071526,
+      "bytes": 73919706,
+      "id": null,
+      "revision": null,
+      "status": "failed",
+      "error": {
+       "tooLarge": true,
+       "mb": "70.5"
+      }
+     }
+    },
+    "typing": {
+     "ok": true,
+     "ms": 68763,
+     "value": {
+      "ms10": 62328.5
+     }
+    },
+    "epub": {
+     "ok": true,
+     "ms": 134458,
+     "value": {
+      "ms": 126812.69999992847,
+      "bytes": 67451743,
+      "archive": {
+       "ms": 5629.200000047684,
+       "id": null,
+       "status": 413,
+       "error": "export too large",
+       "sha256": null
+      }
+     }
+    },
+    "printHtml": {
+     "ok": true,
+     "ms": 12170,
+     "value": {
+      "ms": 8104,
+      "bytes": 63920847,
+      "archive": {
+       "ms": 3364.5,
+       "id": null,
+       "status": 413,
+       "error": "export too large",
+       "sha256": null
+      }
+     }
+    }
+   },
+   "signIn": true,
+   "pageErrors": []
+  }
+ ],
+ "startedAt": "2026-10-28T00:11:49.211Z",
+ "corpusWords": 2298130,
+ "finishedAt": "2026-10-28T00:24:02.872Z"
+}
