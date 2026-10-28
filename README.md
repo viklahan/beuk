@@ -375,17 +375,69 @@ at a time** (one Hetzner box; the tools are heavy) with a per-step
 timeout — an overrun is killed, process group and all, and fails
 with the timeout stated: `JOB_TIMEOUT_MS` (default 2 minutes) for
 EPUBCheck and for the pdfx job's renderer request, and
-`PDFX_TIMEOUT_MS` (default 15 minutes) for the pdfx job's Ghostscript
-step. Measured on the bundled sample (2026-10-25, compose project
+`PDFX_TIMEOUT_MS` (default 30 minutes) for the pdfx job's Ghostscript
+step, all its runs together. Measured on the bundled sample (2026-10-25, compose project
 `beuk-print`): before the press fixes below, Ghostscript flattened 70
 of the 81 pages to 300 ppi page pictures (PDF/X-1a forbids
 transparency), which took 408 s on its own on that (busy) host; with
 the print interior free of transparency the whole job — render,
-convert, read back, measure ink — took 65 s for 73 pages. 15 minutes
+convert, read back, measure ink — took 65 s for 73 pages. 30 minutes
 is an operational allowance for longer, picture-heavier books, not a
 measured limit. On boot,
 jobs a dead process left `running` are failed honestly and `queued`
 ones are picked up again.
+
+### PDF/X on long books (page runs)
+
+The simulation's load test found that a 250,000-word book never got a
+PDF/X file: the job failed with "Ghostscript exited with code null".
+Reproduced on a disposable stack with *Twenty Years After* (241,642
+words, 873 pages at 6 × 9): GPL Ghostscript 10.00.0 grew to 6.0 GB
+resident and the kernel's out-of-memory killer stopped it (`dmesg`:
+`Out of memory: Killed process … (gs) … anon-rss:6039076kB`). Node
+reports a process killed by a signal as exit code `null`, and the job
+said nothing more.
+
+Why it needs that much: when pdfwrite converts a PDF's colour to CMYK,
+Ghostscript 10.00.0 keeps memory for every page it reads, and how much
+follows the size of the CMYK profile — about 1.5 MB a page with its own
+187 KB `default_cmyk.icc`, about 21 MB a page with the 2.7 MB SWOP press
+profile the tools image uses (measured on the same file: 50 pages
+1.1 GB, 100 pages 2.2 GB, 200 pages 3.2 GB peak; the same 200 pages
+from a PostScript file that sets its page size once stay under 50 MB;
+the same PostScript calling `setpagedevice` on every page, as a PDF
+interpreter does, grew about 5 MB a page). The memory is only returned
+when the process exits. `-dNOOUTERSAVE`, `-dFIXEDMEDIA`,
+`-dNOTRANSPARENCY`, `-dOverrideICC`, `-dNOCACHE` and
+`-dICCProfileCacheSize=0` did not change it (50 pages: 1.1 GB each);
+the deprecated legacy PDF interpreter still grew (859 MB for 50 pages).
+
+So a book longer than `PDFX_CHUNK_PAGES` (default 40) is converted in
+runs of that many pages (`-dFirstPage`/`-dLastPage`, the same PDF/X
+arguments as before), each its own process, and the parts are joined
+in one last pass with `-sColorConversionStrategy=LeaveColorUnchanged`
+(their colour is already CMYK; that pass measured 45 MB for 200 pages).
+The ink measurement rasters the same page runs, so the scratch space
+holds one run's rasters instead of the whole book's. Shorter books still
+take one run. The job result's `conversion` says how it went (`parts`,
+`chunkPages`, `partMs`, `joinMs`, `totalMs`).
+
+Measured on the sim stack (2026-10-27, a host shared with a dozen other
+test containers): the 873-page volume converted in 22 runs + the join,
+Ghostscript 648 s (runs 370 s, join 278 s), whole job 942 s including
+the renderer and the ink raster; Ghostscript's peak resident memory
+707 MB (was 6.0 GB and killed). The file reads as PDF/X-1a:2001 with
+its OutputIntent (CGATS TR 003), 873 pages, every font embedded, no RGB
+left, all 41,976 text shows in black ink only, highest total ink 100 %.
+Rastered at 72 dpi against a one-run conversion of the same 200 input
+pages, 3 of 13 sampled pages were byte-identical and 10 differed in 23
+to 101 of their 1.1 million raster bytes.
+
+When Ghostscript is killed by a signal the job now says so, with the
+pages it was on: "Ghostscript was killed by SIGKILL while converting
+pages 41–80 of 873 … on Linux that is how the kernel stops a process
+when the server runs out of memory … a smaller value [of
+PDFX_CHUNK_PAGES] needs less memory."
 
 Admission is capped so one account can't flood that single worker:
 a user may hold at most `JOB_MAX_ACTIVE_PER_USER` jobs (default 2)

@@ -275,7 +275,11 @@ export class JobRunner {
       : { profileDir: null, through: "Ghostscript's built-in default_cmyk.icc — NOT the profile the OutputIntent declares (PDFX_ICC_DIR is not set)" };
     // Step 2: convert the rendered PDF to PDF/X-1a.
     const outputPath = path.join(workDir, 'converted.pdf');
-    const outcome = await runPdfx(this.config, gsInput, outputPath);
+    // A long book is converted in runs of PDFX_CHUNK_PAGES pages
+    // (src/jobs/tools.ts runPdfx says why); the page count comes from the
+    // renderer's own PDF.
+    const pageCount = renderedText ? renderedText.pageCount : null;
+    const outcome = await runPdfx(this.config, gsInput, outputPath, { pageCount, workDir });
     if (!outcome.ok) {
       return this.finish(job.id, 'failed', {
         tool: 'ghostscript',
@@ -327,7 +331,7 @@ export class JobRunner {
         flattenedPages: renderedText.pageCount === outText.pageCount ? lost.slice(0, 200) : null,
       };
     }
-    const ink = await measureTac(this.config, outputPath, workDir);
+    const ink = await measureTac(this.config, outputPath, workDir, outText ? outText.pageCount : pageCount);
     press.ink = ink.ok ? (ink.value satisfies TacMeasurement) : { error: ink.error };
     const sha256 = createHash('sha256').update(bytes).digest('hex');
     const base = source.filename.replace(/\.[^.]*$/, '') || 'beuk-export';
@@ -356,6 +360,7 @@ export class JobRunner {
       {
         tool: 'ghostscript',
         gsVersion: outcome.value.gsVersion,
+        conversion: outcome.value.conversion,
         renderedPdfBytes: rendered.value.pdfBytes,
         // page-bottom notes: placed / kept at a section's end, and why
         // (the renderer's x-beuk-footnotes header); null when it set none

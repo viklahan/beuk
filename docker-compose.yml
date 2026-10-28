@@ -115,8 +115,10 @@ services:
       JOB_MAX_ACTIVE_PER_USER: ${JOB_MAX_ACTIVE_PER_USER:-2}
       JOB_MAX_QUEUED: ${JOB_MAX_QUEUED:-20}
       PDFX_INK_DPI: ${PDFX_INK_DPI:-100}
-      # Ghostscript step of a pdfx job (flattening is slow): 15 min.
-      PDFX_TIMEOUT_MS: ${PDFX_TIMEOUT_MS:-900000}
+      # Ghostscript step of a pdfx job, all its runs together: 30 min.
+      PDFX_TIMEOUT_MS: ${PDFX_TIMEOUT_MS:-1800000}
+      # Pages per Ghostscript run in a pdfx job (memory per run): 40.
+      PDFX_CHUNK_PAGES: ${PDFX_CHUNK_PAGES:-40}
       # Stock photos for the cover maker (Pexels). Key unset → the
       # stock search endpoint answers 501 "stock photos not
       # configured"; the key is used server-side only.

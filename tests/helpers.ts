@@ -154,6 +154,7 @@ export function testConfig(overrides?: Partial<Config>): Config {
     legacyHtmlPdfBin: null,
     jobTimeoutMs: 120_000,
     pdfxTimeoutMs: 900_000,
+    pdfxChunkPages: 40,
     javaMaxHeap: '512m',
     jobMaxActivePerUser: 2,
     jobMaxQueued: 20,

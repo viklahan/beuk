@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
 import { beukCodeForEpubcheck } from '../help/codes.js';
@@ -65,6 +65,11 @@ interface CommandResult {
   timedOut: boolean;
   /** Set when the process could not be started at all (e.g. ENOENT). */
   spawnError: string | null;
+  /** The signal that ended the process when it did not exit by itself
+   *  (then `code` is null) — e.g. SIGKILL from the kernel's
+   *  out-of-memory killer. Null when it exited, or on our own timeout
+   *  kill (that is `timedOut`). */
+  signal: NodeJS.Signals | null;
 }
 
 const OUTPUT_CAP = 16 * 1024 * 1024;
@@ -88,6 +93,7 @@ function runCommand(command: string, args: string[], timeoutMs: number): Promise
         stderr: '',
         timedOut: false,
         spawnError: err instanceof Error ? err.message : String(err),
+        signal: null,
       });
     }
     let stdout = '';
@@ -114,7 +120,7 @@ function runCommand(command: string, args: string[], timeoutMs: number): Promise
       }
       child.stdout?.destroy();
       child.stderr?.destroy();
-      finish({ code: null, stdout, stderr, timedOut, spawnError: null });
+      finish({ code: null, stdout, stderr, timedOut, spawnError: null, signal: null });
     }, timeoutMs);
     child.stdout!.on('data', (chunk: Buffer) => {
       if (stdout.length < OUTPUT_CAP) stdout += chunk.toString('utf8');
@@ -123,10 +129,10 @@ function runCommand(command: string, args: string[], timeoutMs: number): Promise
       if (stderr.length < OUTPUT_CAP) stderr += chunk.toString('utf8');
     });
     child.on('error', (err) => {
-      finish({ code: null, stdout, stderr, timedOut, spawnError: err.message });
+      finish({ code: null, stdout, stderr, timedOut, spawnError: err.message, signal: null });
     });
-    child.on('close', (code) => {
-      finish({ code, stdout, stderr, timedOut, spawnError: null });
+    child.on('close', (code, signal) => {
+      finish({ code, stdout, stderr, timedOut, spawnError: null, signal: signal ?? null });
     });
   });
 }
@@ -530,7 +536,12 @@ export function pdfxIccPath(defPath: string): string | null {
   return match ? match[1] : null;
 }
 
-export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPath: string): string[] {
+export function ghostscriptPdfxArgs(
+  config: Config,
+  inputPath: string,
+  outputPath: string,
+  range: PageRange | null = null,
+): string[] {
   // The rendered PDF carries user-influenced content (text, images, and
   // the writer's uploaded fonts, subset-embedded by Chromium), so it is
   // interpreted under -dSAFER — file access limited to the inputs named
@@ -567,10 +578,50 @@ export function ghostscriptPdfxArgs(config: Config, inputPath: string, outputPat
     '-dPDFSETTINGS=/prepress',
     '-sColorConversionStrategy=CMYK',
     '-sProcessColorModel=DeviceCMYK',
+    ...(range ? [`-dFirstPage=${range.first}`, `-dLastPage=${range.last}`] : []),
     `-sOutputFile=${outputPath}`,
     config.pdfxDefPath,
     inputPath,
   ];
+}
+
+/** Pages first..last (1-based, inclusive) of the rendered PDF. */
+export interface PageRange {
+  first: number;
+  last: number;
+}
+
+/** The page runs a conversion of `pageCount` pages is split into, at
+ *  most `chunkPages` pages each, in order and covering every page once.
+ *  One run (null range) when the book fits in one or its page count is
+ *  unknown. */
+export function pdfxPageRanges(pageCount: number | null, chunkPages: number): PageRange[] | null {
+  if (!pageCount || pageCount <= chunkPages || chunkPages < 1) return null;
+  const ranges: PageRange[] = [];
+  for (let first = 1; first <= pageCount; first += chunkPages) {
+    ranges.push({ first, last: Math.min(pageCount, first + chunkPages - 1) });
+  }
+  return ranges;
+}
+
+/**
+ * The last pass of a chunked conversion: the PDF/X parts (each already
+ * CMYK / DeviceGray, converted by ghostscriptPdfxArgs with a page range)
+ * joined in order into one PDF/X file. Same SAFER, PDF/X definition,
+ * annotation and device settings, but -sColorConversionStrategy=
+ * LeaveColorUnchanged: the parts' colour was converted once already and
+ * must not be converted again. That is also what keeps this pass small —
+ * Ghostscript 10.00.0's per-page memory growth comes with the CMYK
+ * conversion (measured 2026-10-27 on a 200-page part: 45 MB peak with
+ * LeaveColorUnchanged, killed at the 3 GB cap with CMYK).
+ * https://ghostscript.readthedocs.io/en/latest/VectorDevices.html (ColorConversionStrategy)
+ */
+export function ghostscriptPdfxJoinArgs(config: Config, partPaths: string[], outputPath: string): string[] {
+  const one = ghostscriptPdfxArgs(config, '__part__', outputPath);
+  const head = one.slice(0, -1).map((a) =>
+    a === '-sColorConversionStrategy=CMYK' ? '-sColorConversionStrategy=LeaveColorUnchanged' : a,
+  );
+  return [...head, ...partPaths];
 }
 
 /**
@@ -619,59 +670,139 @@ export function pdfxRevertMessage(output: string): string | null {
   return parts.map((p) => p.trim()).join(' ').slice(0, 300);
 }
 
-export async function runPdfx(
-  config: Config,
-  inputPath: string,
-  outputPath: string,
-): Promise<ToolOutcome<{ gsVersion: string | null }>> {
-  const versionProbe = spawnSync(config.gsBin!, ['--version'], { timeout: 5_000, encoding: 'utf8' });
-  const gsVersion =
-    !versionProbe.error && typeof versionProbe.stdout === 'string'
-      ? versionProbe.stdout.trim() || null
-      : null;
-  const run = await runCommand(
-    config.gsBin!,
-    ghostscriptPdfxArgs(config, inputPath, outputPath),
-    config.pdfxTimeoutMs,
-  );
+/** What the Ghostscript step did: one run, or `parts` runs of at most
+ *  `chunkPages` pages joined by one last pass; milliseconds per run. */
+export interface PdfxConversion {
+  pageCount: number | null;
+  chunkPages: number;
+  parts: number;
+  partMs: number[];
+  joinMs: number | null;
+  totalMs: number;
+}
+
+const pagesLabel = (range: PageRange | null, pageCount: number | null): string =>
+  range ? `pages ${range.first}–${range.last} of ${pageCount}` : 'the whole book';
+
+/** One Ghostscript run's failure, in plain words, or null when it ran
+ *  to a clean exit and kept the file PDF/X. */
+function pdfxRunProblem(config: Config, run: CommandResult, what: string, timeoutMs: number): string | null {
   if (run.timedOut) {
-    return {
-      ok: false,
-      error:
-        `Ghostscript did not finish within ${config.pdfxTimeoutMs} ms (PDFX_TIMEOUT_MS) and was stopped. ` +
-        'Pages with any transparency are flattened to images, which is slow on picture-heavy books.',
-    };
+    return (
+      `Ghostscript did not finish within ${config.pdfxTimeoutMs} ms (PDFX_TIMEOUT_MS) and was stopped ` +
+      `(${what}${timeoutMs < config.pdfxTimeoutMs ? ', the last of the time that was left' : ''}). ` +
+      'Pages with any transparency are flattened to images, which is slow on picture-heavy books.'
+    );
   }
   if (run.spawnError) {
-    return {
-      ok: false,
-      error:
-        `Ghostscript could not be started (GS_BIN="${config.gsBin}": ${run.spawnError}). ` +
-        'This is a server setup gap, not a finding about your book.',
-    };
+    return (
+      `Ghostscript could not be started (GS_BIN="${config.gsBin}": ${run.spawnError}). ` +
+      'This is a server setup gap, not a finding about your book.'
+    );
+  }
+  if (run.signal) {
+    return (
+      `Ghostscript was killed by ${run.signal} while converting ${what}, so no converted file exists. ` +
+      "Beuk's own time limit had not run out, so the signal came from outside it" +
+      (run.signal === 'SIGKILL'
+        ? ' — on Linux that is how the kernel stops a process when the server runs out of memory. '
+        : '. ') +
+      `One Ghostscript run converts at most ${config.pdfxChunkPages} pages (PDFX_CHUNK_PAGES); a smaller value needs less memory.` +
+      stderrTail(run.stderr)
+    );
   }
   if (run.code !== 0) {
-    return {
-      ok: false,
-      error:
-        `Ghostscript exited with code ${run.code} and produced no converted file.` +
-        stderrTail(run.stderr),
-    };
+    return `Ghostscript exited with code ${run.code} while converting ${what} and produced no converted file.` + stderrTail(run.stderr);
   }
   // Ghostscript gives up on PDF/X for things it cannot make conformant
   // (it says "... not permitted in PDF/X, reverting to normal PDF
   // output") yet still exits 0 — and the definition file has already
   // stamped the PDF/X keys. Such a file would CLAIM PDF/X falsely, so
   // the job fails with Ghostscript's own words instead.
-  const said = `${run.stdout}\n${run.stderr}`;
-  const revert = pdfxRevertMessage(said);
+  const revert = pdfxRevertMessage(`${run.stdout}\n${run.stderr}`);
   if (revert) {
-    return {
-      ok: false,
-      error:
-        `Ghostscript could not keep this file PDF/X and wrote a plain PDF instead, so no PDF/X file exists. Ghostscript said: ${revert}`,
-    };
+    return `Ghostscript could not keep this file PDF/X and wrote a plain PDF instead, so no PDF/X file exists. Ghostscript said: ${revert}`;
   }
+  return null;
+}
+
+/**
+ * PDF → PDF/X-1a. A book longer than PDFX_CHUNK_PAGES is converted in
+ * runs of that many pages (-dFirstPage/-dLastPage), each a separate
+ * Ghostscript process whose memory is returned when it exits, then the
+ * parts are joined by ghostscriptPdfxJoinArgs. Why: GPL Ghostscript
+ * 10.00.0's pdfwrite keeps memory for every page it converts to CMYK
+ * (about 21 MB per page with the SWOP press profile; src/config.ts
+ * pdfxChunkPages has the measurements), so one run over an 873-page
+ * novel grew past 6 GB and was killed by the kernel — which the job then
+ * reported as "exited with code null". PDFX_TIMEOUT_MS bounds the whole
+ * step (every run together), as it did for the single run.
+ */
+export async function runPdfx(
+  config: Config,
+  inputPath: string,
+  outputPath: string,
+  opts: { pageCount?: number | null; workDir?: string } = {},
+): Promise<ToolOutcome<{ gsVersion: string | null; conversion: PdfxConversion }>> {
+  const versionProbe = spawnSync(config.gsBin!, ['--version'], { timeout: 5_000, encoding: 'utf8' });
+  const gsVersion =
+    !versionProbe.error && typeof versionProbe.stdout === 'string'
+      ? versionProbe.stdout.trim() || null
+      : null;
+  const pageCount = opts.pageCount ?? null;
+  const ranges = pdfxPageRanges(pageCount, config.pdfxChunkPages);
+  const started = Date.now();
+  const deadline = started + config.pdfxTimeoutMs;
+  const conversion: PdfxConversion = {
+    pageCount,
+    chunkPages: config.pdfxChunkPages,
+    parts: ranges ? ranges.length : 1,
+    partMs: [],
+    joinMs: null,
+    totalMs: 0,
+  };
+  const step = async (args: string[], what: string): Promise<string | null> => {
+    const left = deadline - Date.now();
+    if (left <= 0) {
+      return `Ghostscript did not finish within ${config.pdfxTimeoutMs} ms (PDFX_TIMEOUT_MS) and was stopped (before ${what}).`;
+    }
+    const run = await runCommand(config.gsBin!, args, left);
+    return pdfxRunProblem(config, run, what, left);
+  };
+  if (!ranges) {
+    const t = Date.now();
+    const problem = await step(ghostscriptPdfxArgs(config, inputPath, outputPath), pagesLabel(null, pageCount));
+    conversion.partMs.push(Date.now() - t);
+    if (problem) return { ok: false, error: problem };
+  } else {
+    const partsDir = path.join(opts.workDir ?? path.dirname(outputPath), 'pdfx-parts');
+    await mkdir(partsDir, { recursive: true });
+    try {
+      const parts: string[] = [];
+      for (const range of ranges) {
+        const part = path.join(partsDir, `part-${String(range.first).padStart(6, '0')}.pdf`);
+        const t = Date.now();
+        const problem = await step(ghostscriptPdfxArgs(config, inputPath, part, range), pagesLabel(range, pageCount));
+        conversion.partMs.push(Date.now() - t);
+        if (problem) return { ok: false, error: problem };
+        const made = await stat(part).then((st) => st.size).catch(() => 0);
+        if (!made) {
+          return { ok: false, error: `Ghostscript reported success on ${pagesLabel(range, pageCount)} but left no output file, so no converted file exists.` };
+        }
+        parts.push(part);
+      }
+      const t = Date.now();
+      const problem = await step(
+        ghostscriptPdfxJoinArgs(config, parts, outputPath),
+        `the last pass that joins the ${parts.length} converted parts`,
+      );
+      conversion.joinMs = Date.now() - t;
+      if (problem) return { ok: false, error: problem };
+    } finally {
+      await rm(partsDir, { recursive: true, force: true });
+    }
+  }
+  conversion.totalMs = Date.now() - started;
   const produced = await readFile(outputPath).catch(() => null);
   if (!produced || produced.length === 0) {
     return {
@@ -679,7 +810,7 @@ export async function runPdfx(
       error: 'Ghostscript reported success but left no output file, so no converted file exists.',
     };
   }
-  return { ok: true, value: { gsVersion } };
+  return { ok: true, value: { gsVersion, conversion } };
 }
 
 /* ------------------------------ total ink (Ghostscript pamcmyk32) ------------------------------ */
@@ -710,41 +841,51 @@ export async function measureTac(
   config: Config,
   pdfPath: string,
   workDir: string,
+  pageCount: number | null = null,
 ): Promise<ToolOutcome<TacMeasurement>> {
   const dir = path.join(workDir, 'ink');
   await mkdir(dir, { recursive: true });
   const dpi = config.pdfxInkDpi;
-  const run = await runCommand(
-    config.gsBin!,
-    [
-      '-dSAFER',
-      ...pdfxIccDirArgs(config),
-      '-dBATCH',
-      '-dNOPAUSE',
-      '-dQUIET',
-      '-sDEVICE=pamcmyk32',
-      `-r${dpi}`,
-      '-dTextAlphaBits=1',
-      '-dGraphicsAlphaBits=1',
-      `-sOutputFile=${path.join(dir, 'p%05d.pam')}`,
-      pdfPath,
-    ],
-    config.pdfxTimeoutMs,
-  );
+  // A long book is rastered PDFX_CHUNK_PAGES pages at a time and each
+  // page's raster is read and deleted before the next run, so the
+  // scratch space holds one run's rasters (~2 MB a 6x9 page at 100 dpi),
+  // not the whole book's.
+  const ranges = pdfxPageRanges(pageCount, config.pdfxChunkPages) ?? [null];
+  const perPagePct: number[] = [];
   try {
-    if (run.timedOut) return { ok: false, error: `the ink measurement did not finish within ${config.pdfxTimeoutMs} ms and was stopped` };
-    if (run.spawnError || run.code !== 0) {
-      return { ok: false, error: `Ghostscript could not render the file to measure its ink (exit ${run.code ?? 'none'}).${stderrTail(run.stderr)}` };
-    }
-    const files = (await readdir(dir)).filter((f) => /^p\d{5}\.pam$/.test(f)).sort();
-    if (!files.length) return { ok: false, error: 'Ghostscript rendered no pages, so no ink was measured' };
-    const perPagePct: number[] = [];
-    for (const f of files) {
-      const img = parsePam(await readFile(path.join(dir, f)));
-      const tac = img ? tacFromPam(img) : null;
-      if (tac === null) return { ok: false, error: `page raster ${f} is not an 8-bit CMYK PAM, so no ink was measured` };
-      perPagePct.push(tac);
-      await rm(path.join(dir, f), { force: true });
+    for (const range of ranges) {
+      const run = await runCommand(
+        config.gsBin!,
+        [
+          '-dSAFER',
+          ...pdfxIccDirArgs(config),
+          '-dBATCH',
+          '-dNOPAUSE',
+          '-dQUIET',
+          '-sDEVICE=pamcmyk32',
+          `-r${dpi}`,
+          '-dTextAlphaBits=1',
+          '-dGraphicsAlphaBits=1',
+          ...(range ? [`-dFirstPage=${range.first}`, `-dLastPage=${range.last}`] : []),
+          `-sOutputFile=${path.join(dir, 'p%05d.pam')}`,
+          pdfPath,
+        ],
+        config.pdfxTimeoutMs,
+      );
+      if (run.timedOut) return { ok: false, error: `the ink measurement did not finish within ${config.pdfxTimeoutMs} ms and was stopped` };
+      if (run.spawnError || run.code !== 0) {
+        const how = run.signal ? `killed by ${run.signal}` : `exit ${run.code ?? 'none'}`;
+        return { ok: false, error: `Ghostscript could not render the file to measure its ink (${how}).${stderrTail(run.stderr)}` };
+      }
+      const files = (await readdir(dir)).filter((f) => /^p\d{5}\.pam$/.test(f)).sort();
+      if (!files.length) return { ok: false, error: 'Ghostscript rendered no pages, so no ink was measured' };
+      for (const f of files) {
+        const img = parsePam(await readFile(path.join(dir, f)));
+        const tac = img ? tacFromPam(img) : null;
+        if (tac === null) return { ok: false, error: `page raster ${f} is not an 8-bit CMYK PAM, so no ink was measured` };
+        perPagePct.push(tac);
+        await rm(path.join(dir, f), { force: true });
+      }
     }
     return { ok: true, value: { maxTacPct: Math.max(...perPagePct), perPagePct, dpi } };
   } finally {
