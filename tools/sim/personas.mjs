@@ -23,8 +23,31 @@ async function uiSignIn(page, p) {
   await waitFor(page, () => document.getElementById('modalAuth').classList.contains('open'));
   await page.fill('#authEmail', p.email);
   await page.fill('#authPassword', p.password);
+  const resp = page.waitForResponse((r) => r.url().endsWith('/api/auth/login'), { timeout: 60000 }).catch(() => null);
   await page.click('#btnAuthSubmit');
-  await waitFor(page, () => !!(cloud.user && cloud.user.email), null, 60000);
+  let r = await resp;
+  if (r && r.status() === 401) {
+    // the right email and password were refused once (seen in a full run): record what was sent, then try again as a writer would
+    const sent = r.request().postDataJSON ? r.request().postDataJSON() : null;
+    (results.signInRefused = results.signInRefused || []).push({ persona: p.key, status: 401, emailSentMatches: !!sent && sent.email === p.email, passwordSentMatches: !!sent && sent.password === p.password, fields: await page.evaluate(() => ({ email: document.getElementById('authEmail').value, passwordLength: document.getElementById('authPassword').value.length })) });
+    save();
+    await page.fill('#authEmail', p.email);
+    await page.fill('#authPassword', p.password);
+    const resp2 = page.waitForResponse((x) => x.url().endsWith('/api/auth/login'), { timeout: 60000 }).catch(() => null);
+    await page.click('#btnAuthSubmit');
+    r = await resp2;
+  }
+  try {
+    await waitFor(page, () => !!(cloud.user && cloud.user.email), null, 60000);
+  } catch (e) {
+    // evidence for the report: what the sign-in dialog and the server said
+    const seen = await page.evaluate(() => ({ authError: document.getElementById('authError').textContent, modalOpen: document.getElementById('modalAuth').classList.contains('open'), available: cloud.available }));
+    const f = `shots/signin-fail-${p.key}-${Date.now() % 100000}.png`;
+    await page.screenshot({ path: path.join(OUT, f) });
+    (results.signInFailures = results.signInFailures || []).push({ persona: p.key, loginStatus: r && r.status(), ...seen, shot: f });
+    save();
+    throw new Error(`UI sign-in did not complete: login answered ${r && r.status()}, dialog says "${seen.authError}" (${f})`);
+  }
   await sleep(1500);
   // a fresh device may be offered "bring this book to your shelf" for its desk; the desk here is empty
   await page.evaluate(() => { const m = document.getElementById('modalConfirm'); if (m && m.classList.contains('open')) { const no = m.querySelector('[data-confirm="no"], #btnConfirmNo'); if (no) no.click(); } });
@@ -82,10 +105,13 @@ async function session(browser, S) {
       a.focus(); a.setSelectionRange(last.s, last.e);
       return last;
     });
+    const secCount = (id) => page.evaluate((x) => { const s = state.sections.find((y) => y.id === x); return { sectionWords: sectionWords(s), textWords: countWords(s.content || '', state.meta.language), titleWords: countWords(s.title || '') + countWords(s.subtitle || '') }; }, delCh.id);
+    const secBefore = await secCount(delCh.id);
     if (del) { await page.keyboard.press('Backspace'); }
     const deletedWords = del ? await words(page, del.text) : 0;
     const totalAfterDelete = await page.evaluate(() => bookWordTotal());
-    step('delete', { chapter: delCh.title, deletedText: del && del.text.slice(0, 200), deletedWords, totalAfterDelete, totalDelta: totalAfterDelete - totalAfterType });
+    const secAfter = await secCount(delCh.id);
+    step('delete', { chapter: delCh.title, deletedText: del && del.text.slice(0, 200), deletedWords, totalAfterDelete, totalDelta: totalAfterDelete - totalAfterType, sectionBefore: secBefore, sectionAfter: secAfter });
     // Outline: move one chapter a place later
     await page.click('#tabBtnOutline');
     await sleep(600);

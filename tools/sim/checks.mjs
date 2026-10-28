@@ -83,6 +83,7 @@ async function main() {
   const digest = sha256(JSON.stringify(contentDigest));
 
   /* 4. persona sessions: typed words landed, deleted words gone, nothing else moved */
+  const emptiedTitle = [];
   if (pers) {
     for (const [k, s] of Object.entries(pers.sessions)) {
       if (s.error || !s.expected) { add(`session.${k}`, `${k}: the UI session completed`, false, { error: s.error && s.error.split('\n')[0], shots: s.shots }); continue; }
@@ -93,7 +94,11 @@ async function main() {
       add(`session.${k}.deleted-gone`, `${k}: the deleted paragraph is no longer on the shelf`, !s.expected.deletedText || !all.includes(s.expected.deletedText), { deleted: (s.expected.deletedText || '').slice(0, 80) });
       const ty = s.steps.find((x) => x.name === 'type'), de = s.steps.find((x) => x.name === 'delete');
       add(`session.${k}.typed-counted`, `${k}: typing N words raises the book's word total by N (studio count)`, ty && ty.totalDelta === ty.typedWords, { typed: ty && ty.typed, typedWords: ty && ty.typedWords, totalBefore: s.expected.wordsBefore, totalAfter: ty && ty.totalAfterType, sectionAfter: ty && ty.sectionAfter });
-      add(`session.${k}.deleted-counted`, `${k}: deleting a paragraph of N words lowers the total by N (studio count)`, de && de.totalDelta === -de.deletedWords, { deleted: de && de.deletedText, deletedWords: de && de.deletedWords, totalDelta: de && de.totalDelta });
+      // the studio counts a chapter's title only while the chapter has text (sectionWords), so emptying a chapter also drops its title words
+      const emptied = de && de.sectionAfter && de.sectionAfter.textWords === 0;
+      const wantDelta = de ? -(de.deletedWords + (emptied ? de.sectionBefore.titleWords : 0)) : null;
+      add(`session.${k}.deleted-counted`, `${k}: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty)`, de && de.totalDelta === wantDelta, { deleted: de && de.deletedText, deletedWords: de && de.deletedWords, chapterLeftEmpty: emptied, expectedDelta: wantDelta, totalDelta: de && de.totalDelta, section: de && { before: de.sectionBefore, after: de.sectionAfter } });
+      if (emptied && de.sectionBefore.titleWords > 0 && de.totalDelta === wantDelta) emptiedTitle.push({ persona: k, chapter: de.chapter, deletedWords: de.deletedWords, titleWords: de.sectionBefore.titleWords, totalDelta: de.totalDelta });
       add(`session.${k}.word-total`, `${k}: reordering, the Bible, goals, exports and sharing leave the word total alone`, endStep && de && endStep.words === de.totalAfterDelete, { afterEdits: de && de.totalAfterDelete, atEnd: endStep && endStep.words });
       const shelfOrder = g.json.manuscript.doc.sections.map((x) => x.id);
       add(`session.${k}.order-saved`, `${k}: the Outline move is in the shelf copy's section order`, JSON.stringify(shelfOrder) === JSON.stringify(s.expected.orderAfter), { move: s.steps.find((x) => x.name === 'outline-move') });
@@ -105,12 +110,14 @@ async function main() {
       add(`session.${k}.submission-docx`, `${k}: the submission manuscript downloads as a Word file`, ms && ms.zip && ms.hasDocumentXml, ms);
       const cm = s.steps.find((x) => x.name === 'comments');
       const ssh = seed.shares.find((x) => x.owner === k);
-      const onDeleted = (j) => { const c0 = ssh && ssh.comments.find((x) => x.comment && x.comment.id === j.id); return !!(c0 && s.expected.deletedText && c0.comment.quote && s.expected.deletedText.replace(/s+/g, ' ').includes(c0.comment.quote.slice(0, 40))); };
+      const onDeleted = (j) => { const c0 = ssh && ssh.comments.find((x) => x.comment && x.comment.id === j.id); return !!(c0 && s.expected.deletedText && c0.comment.quote && s.expected.deletedText.replace(/\s+/g, ' ').includes(c0.comment.quote.slice(0, 40))); };
       const jumpsLive = cm ? cm.jumps.filter((j) => !onDeleted(j)) : [];
       add(`session.${k}.comments-jump`, `${k}: "jump to passage" finds every reader comment's passage exactly (comments on a paragraph the writer has since deleted are expected not to be found)`, cm && jumpsLive.every((j) => j.found && j.exact), { jumps: cm && cm.jumps, onDeletedParagraph: cm ? cm.jumps.filter(onDeleted).map((j) => j.id) : [] });
       add(`session.${k}.comments-resolved`, `${k}: comments resolved in the comments panel are resolved on the server`, cm && cm.resolved.every((r) => r.status === 200), cm && cm.resolved);
     }
   }
+
+  if (emptiedTitle.length) gap('count.empty-chapter-title', "When a chapter is left with no text, its title stops counting toward the book's word total, so deleting its last paragraph lowers the total by more than the words deleted.", emptiedTitle);
 
   /* 5. revisions: every accepted PUT moved the revision by exactly one */
   const putsBy = {};
@@ -277,6 +284,8 @@ async function main() {
 
   /* 15. import lab decision */
   if (seed.lab) add('import.lab', `import path chosen by measurement: ${seed.lab.chosen} (titles, pictures placed, captions, italics)`, true, { totals: seed.lab.totals, volumes: seed.lab.volumes.map((v) => ({ ebook: v.ebook, title: v.title, single: v.paths.single && v.paths.single.score, bulk: v.paths.bulk && (v.paths.bulk.score || v.paths.bulk.error) })) });
+
+  if (pers) add('auth.ui-sign-in-first-time', 'every sign-in through the UI with the right email and password succeeded at the first attempt', !(pers.signInRefused || []).length && !(pers.signInFailures || []).length, { refused: pers.signInRefused || [], failed: pers.signInFailures || [] });
 
   /* 16. errors anywhere */
   add('run.no-errors', 'no step of the seed or the persona runs errored', !seed.errors.length && !(pers && pers.errors.length), { seed: seed.errors.map((e) => ({ ...e, error: String(e.error || e.fatal || '').split('\n')[0] })), personas: pers ? pers.errors.map((e) => ({ ...e, error: String(e.error).split('\n')[0] })) : 'personas not run' });
