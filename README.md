@@ -4356,6 +4356,53 @@ with no print choices, sample, Remove, backup, History restore, import over
 the sample), the async `shelf.open.no-meta-carryover` (real `cloudOpenBook`
 then the autosave PUT against a stand-in shelf) and
 `tests/open-book-meta.test.ts`.
+## Typing in long books (BEUK:typingperf)
+
+A keystroke costs what the section being written costs, not what the
+whole book costs. The simulation (`perf.typing-latency`) measured ~140 ms
+per input event at 250,000 words, ~0.5 s at 1M and ~7 s at 10M; a CPU
+profile of a real d'Artagnan volume put almost all of it in whole-book
+work on every keystroke:
+
+- **Word counts.** `updateStats()` (and the goals line, the sidebar
+  summary and the desk) re-ran `countWords()` — a dozen regex passes —
+  over every section on every keystroke. Each section's prose count is
+  now remembered against exactly what it was counted from (its text,
+  title, subtitle and the book's language; `sectionProseWords`), so a
+  keystroke recounts only its own section; short strings (titles,
+  credits) are remembered by text. `bookWordTotalFresh()` counts the same
+  total from scratch with nothing remembered — the self-check holds the
+  two equal.
+- **The desk's page count.** Every edit changed the desk signature and
+  re-laid-out *every* section in the hidden twin flow (40 ms slices, so
+  in a long book it never finished while the writer typed). A section is
+  now laid out again only when its own inputs (its text and every
+  setting it carries) or the inputs every section shares (profile,
+  reading area, fonts, theme, credits, the outline, pictures) changed;
+  the others keep the count they were measured at under those very
+  inputs. Slices are 8 ms, and a pass yields while the writer is typing
+  (900 ms of quiet) and finishes in the next pause.
+- **The hardcover preview** rebuilds its print model (the whole book) in
+  the writer's pause, never between keystrokes.
+- Smaller: one number / time formatter per UI language instead of a new
+  `Intl` object per call; a sidebar row's count is rewritten only when
+  it changed; the language suggestion gathers only the 60,000 characters
+  it reads instead of joining the whole book first.
+
+What the writer sees once the typing settles is unchanged: the same
+totals, the same page counts. Self-check `perf.typing.longbook` (async)
+builds a ~254,000-word book from the sample's chapters, types into its
+last chapter and the sample's, and asserts the per-keystroke budget
+(handler median ≤ 40 ms, p95 ≤ 150 ms — targets 16 and 50, with headroom
+for slow hosts — and no growth with the book's size) and that every count
+is exact afterwards (a from-scratch recount, the editor and sidebar
+counts, and the desk total against a pass that forgets every remembered
+count).
+
+Not changed here: the device autosave still serializes the whole book
+800 ms after the last keystroke (a separate piece of work: saving only
+what changed), and the hardcover print model is still whole-book when it
+does run.
 
 ## What is deliberately NOT here yet
 

@@ -3076,6 +3076,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Measured in a real browser against the studio desk (a textarea mirror); there is nothing for the server to run.',
   },
   /* ==== /BEUK:bible ==== */
+  /* ==== BEUK:typingperf ==== */
+  {
+    id: 'perf.typing.longbook',
+    title: 'Typing in a long book: a keystroke in a ~250,000-word book is handled within budget and no slower than in the 25,000-word sample; every count is exact once the typing settles (recount, editor, sidebar, desk pages)',
+    kind: 'client-only',
+    reason: 'Measured in a real browser on the studio editor, its word counts and the preview desk; the server stores the book whole and runs none of it.',
+  },
+  /* ==== /BEUK:typingperf ==== */
   /* ==== BEUK:imagelib ==== The image library: where a picture is used, and removing it (client-side) */
   {
     id: 'images.usage.finds-every-role',
