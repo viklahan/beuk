@@ -19138,6 +19138,23 @@
          scaffold (front matter, one unwritten chapter, back matter)
          with no content in any section — 0 words, 0 pages. Remove
          lands here, and the app itself starts here. */
+      /* ==== BEUK:metaleak ==== — what a book is when it says nothing:
+         every arrival (shelf open, sync, backup, sample, Remove,
+         History restore) starts from these and lays the arriving
+         book's own values over them, so nothing the last book on the
+         desk held — its series, its credits, its print rules — can
+         ride onto the next one. */
+      function bookMetaDefaults() {
+        return { title: "", subtitle: "", author: "", publisher: "", isbn: "", language: "en", langSource: "auto", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() };
+      }
+      function bookPrintDefaults() {
+        return {
+          exportPlatform: "generic", printTrim: "6x9", printRecto: true, printLargePrint: false,
+          printMarginMode: "auto", printCustomMargins: { inside: 0.625, outside: 0.5, top: 0.6, bottom: 0.75 },
+          printHeadContent: "titleauthor", printHeadPlace: "top", printOmitChapterHead: false, printOmitBlankHead: true, printFolio: "centre"
+        };
+      }
+      /* ==== /BEUK:metaleak ==== */
       function buildEmptyBook() {
         const secs = [];
         FRONT.forEach((f) => secs.push(mkSection("front", f.type, f.label)));
@@ -19145,7 +19162,7 @@
         BACK.forEach((b) => secs.push(mkSection("back", b.type, b.label)));
         const chapter = secs.find((s) => s.type === "chapter");
         return {
-          meta: { title: "", subtitle: "", author: "", publisher: "", isbn: "", language: "en", langSource: "auto", langGuess: "", year: String(new Date().getFullYear()), rights: "", description: "", a11ySummary: "", bookId: newBookId() },
+          meta: bookMetaDefaults(), /* BEUK:metaleak */
           theme: Object.assign({}, PRESETS[0].theme),
           activePreset: "classic",
           sections: secs,
@@ -19223,7 +19240,7 @@
         /* The writer's own writing is about to leave the desk:
            the History room takes its safety snapshot first. */
         autoSnapshot("sample");
-        applyBookDoc(buildSampleBook());
+        applyBookDoc(buildSampleBook(), { keepHistory: true }); /* BEUK:metaleak */
         sampleState.loaded = true;
         sampleState.loadedJson = sampleComparableJson();
         renderSampleButton();
@@ -19314,7 +19331,7 @@
         if (!sampleIsPreRenameCopy(state.meta)) return sampleSweepStaleCover();
         const oldTitle = String(state.meta.title || "").trim() || t("misc.untitledBook");
         const snap = takeSnapshot("", "sampleupdate");
-        applyBookDoc(buildSampleBook());
+        applyBookDoc(buildSampleBook(), { keepHistory: true }); /* BEUK:metaleak */
         if (snap) {
           state.history = [snap].concat((state.history || []).filter((h) => h.id !== snap.id));
           pruneAutoSnapshots();
@@ -19350,7 +19367,7 @@
       }
       function clearDeskToEmpty() {
         sampleState.loaded = false; sampleState.loadedJson = null;
-        applyBookDoc(buildEmptyBook());
+        applyBookDoc(buildEmptyBook(), { keepHistory: true }); /* BEUK:metaleak — Remove keeps the History safety net */
         renderSampleButton();
       }
       function removeSampleStory() {
@@ -27545,7 +27562,7 @@
         if (!deskTrulyEmpty()) takeSnapshot("", "restore");
         const doc = JSON.parse(JSON.stringify(snap.doc));
         delete doc.history; delete doc.historyPool; /* restoring a book never restores its history list */
-        applyBookDoc(doc);
+        applyBookDoc(doc, { keepHistory: true }); /* BEUK:metaleak */
         /* BEUK:sidebar — the writer chose the pre-rename sample back: it
            becomes a book of their own (fresh id, no sample ids), so the
            next arrival does not swap it out again. Its text is exactly
@@ -32742,12 +32759,10 @@
           const front = placeMatterPieces(scaffold.sections.filter((s) => s.kind === "front"), frontPieces, "front", sink);
           const back = placeMatterPieces(scaffold.sections.filter((s) => s.kind === "back"), backPieces, "back", sink);
           state.sections = front.concat(body, back);
+          /* BEUK:metaleak — the displaced sample's meta is replaced whole (series and every other field it held), not cleared field by field */
+          state.meta = bookMetaDefaults();
           imApplyIdentity(pieces, sourceName, identity, true); /* BEUK:importmeta — title, subtitle, author */
-          state.meta.publisher = ""; state.meta.isbn = "";
-          state.meta.rights = ""; state.meta.description = ""; state.meta.a11ySummary = "";
-          state.meta.bookId = newBookId();
-          delete state.meta.legacyBookIds; /* BEUK:bookid — a new book answers to no old ids */
-          delete state.meta.castHidden; /* BEUK:cast — nor to the last book's hidden names */
+          /* BEUK:bookid — the fresh meta carries a new book id and no old ids; BEUK:cast — nor the last book's hidden names */
           state.bible = { entries: [] }; bibleBookArrived(); /* BEUK:bible — nor the sample's Story Bible */
           state.meta.language = "en"; state.meta.langSource = "auto"; state.meta.langGuess = "";
           /* The manuscript's own copyright page speaks for the
@@ -33934,7 +33949,7 @@
         else if (av.via === "sample") applySampleBookSync();
         else {
           autoSnapshot("restore");
-          applyBookDoc(JSON.parse(JSON.stringify(rep.undo.preDoc)));
+          applyBookDoc(JSON.parse(JSON.stringify(rep.undo.preDoc)), { keepHistory: true }); /* BEUK:metaleak */
           noteBookEdited();
         }
         /* Whatever the restored book carried, this import's report is done. */
@@ -43058,20 +43073,38 @@
           dictation: dictNormalize(state.dictation)
         };
       }
-      function applyBookDoc(doc) {
+      /* BEUK:metaleak — an arriving book REPLACES the desk's book: every
+         field it carries is its own, every field it does not carry takes
+         the default (bookMetaDefaults / bookPrintDefaults), never the
+         last book's value. opts.keepHistory: the arrival is a swap on
+         this same desk (the sample, Remove, a History restore) whose
+         safety-net snapshots must survive it; a book arriving without a
+         History of its own otherwise keeps the desk's only when it is
+         the same book (same bookId). */
+      function applyBookDoc(doc, opts) {
         if (!doc || typeof doc !== "object") return false;
+        opts = opts || {};
+        const arrMeta = doc.meta && typeof doc.meta === "object" ? doc.meta : {};
+        const sameBook = !!arrMeta.bookId && !!state.meta && arrMeta.bookId === state.meta.bookId;
         /* A whole book arriving — shelf load, sample, check fixture —
            is not writing: the habit log rebases on its word count
            instead of crediting the difference to today. */
         wlogRebase = true;
         if (typeof raStop === "function") raStop();
         if (typeof dictDiscard === "function") dictDiscard();
-        if (doc.meta) state.meta = Object.assign({}, state.meta, doc.meta);
+        /* BEUK:metaleak — the arriving meta over the defaults, never over the
+           desk's meta. langSource / langGuess are left to the backfill below,
+           which reads their absence as a book saved before detection. */
+        const baseMeta = bookMetaDefaults(); delete baseMeta.langSource; delete baseMeta.langGuess;
+        state.meta = Object.assign(baseMeta, arrMeta);
+        if (!state.meta.bookId) state.meta.bookId = newBookId();
         /* BEUK:bookid — legacy ids belong to the arriving book alone (never inherited from the desk), and the key is absent when empty so an untouched sample compares as it always has. */
-        if (doc.meta) { const lg = bookIdNormalizeLegacyList(doc.meta.legacyBookIds); if (lg.length) state.meta.legacyBookIds = lg; else delete state.meta.legacyBookIds; }
+        { const lg = bookIdNormalizeLegacyList(arrMeta.legacyBookIds); if (lg.length) state.meta.legacyBookIds = lg; else delete state.meta.legacyBookIds; }
         /* BEUK:importmeta — where each credit came from belongs to the arriving book alone; absent when unknown. */
-        if (doc.meta) ["title", "subtitle", "author"].forEach((f) => imSetSource(f, doc.meta[f + "Source"]));
-        if (doc.meta) castSetHidden(doc.meta.castHidden); /* BEUK:cast — hidden names belong to the arriving book alone */
+        ["title", "subtitle", "author"].forEach((f) => imSetSource(f, arrMeta[f + "Source"]));
+        castSetHidden(arrMeta.castHidden); /* BEUK:cast — hidden names belong to the arriving book alone */
+        /* BEUK:metaleak — box-set volumes added this session belong to the book they were added to */
+        if (!sameBook) state.boxSetVolumes = [];
         /* Language bookkeeping backfill: books saved before detection
            existed carry no langSource. A non-English language in such
            a book was picked by hand in the old selector, so it counts
@@ -43081,7 +43114,8 @@
         if (state.meta.langSource !== "manual" && state.meta.langSource !== "auto")
           state.meta.langSource = state.meta.language !== "en" ? "manual" : "auto";
         if (typeof state.meta.langGuess !== "string") state.meta.langGuess = "";
-        if (doc.theme) {
+        if (!doc.theme) { state.theme = Object.assign({}, PRESETS[0].theme); } /* BEUK:metaleak — no theme of its own: the default, not the last book's */
+        else {
           state.theme = Object.assign({}, PRESETS[0].theme, doc.theme);
           /* The active theme's header design, read strictly: a
              book carrying one keeps it; a book without one is
@@ -43090,7 +43124,7 @@
           if (!state.theme.header) delete state.theme.header;
           state.theme.bodyFont = bodyFaceOf(state.theme.bodyFont); /* BEUK:displayfaces — never running text */
         }
-        state.activePreset = doc.activePreset || null;
+        state.activePreset = doc.activePreset || (doc.theme ? null : PRESETS[0].id);
         /* BEUK:bookcolour — the book's colour is its own: a book without one has none */
         state.bookColour = bookColourNormalize(doc.colour);
         if (!state.bookColour.accent && !state.bookColour.tint) state.bookColour = undefined;
@@ -43099,6 +43133,9 @@
           state.activeId = state.sections.some((s) => s.id === doc.activeId)
             ? doc.activeId
             : (state.sections.find((s) => s.type === "chapter") || state.sections[0]).id;
+        } else {
+          /* BEUK:metaleak — a book with no sections arrives as the bare scaffold, never on the last book's text */
+          const e = buildEmptyBook(); state.sections = e.sections; state.activeId = e.activeId;
         }
         state.cover = doc.cover || null;
         state.coverRecipe = doc.coverRecipe ? normalizeCoverRecipe(doc.coverRecipe) : null;
@@ -43110,6 +43147,9 @@
            sets type in them from the first render. */
         fontPickerSig = null;
         registerAllFonts();
+        /* BEUK:metaleak — every print and export choice the book does not carry starts from the default */
+        const pd = bookPrintDefaults();
+        Object.keys(pd).forEach((k) => { state[k] = pd[k]; });
         if (doc.exportPlatform) state.exportPlatform = doc.exportPlatform;
         if (doc.printTrim) state.printTrim = doc.printTrim;
         if (typeof doc.printRecto === "boolean") state.printRecto = doc.printRecto;
@@ -43121,7 +43161,7 @@
         state.storeCheck = normalizeStoreCheck(doc.storeCheck); /* BEUK:store */
         /* The print layout rules ride the book the same way: a
            document that carries them brings them; one that predates
-           them leaves the standing rules untouched. Values are read
+           them takes the defaults (BEUK:metaleak). Values are read
            strictly — a mode, content, placement or folio outside the
            known sets is ignored rather than trusted. */
         if (doc.printMarginMode === "custom" || doc.printMarginMode === "auto") state.printMarginMode = doc.printMarginMode;
@@ -43142,11 +43182,15 @@
         state.printNotes = doc.printNotes === "page" || doc.printNotes === "end" ? doc.printNotes : "end";
         state.goals = normalizeGoals(doc.goals);
         /* Snapshots live with the book: a document that carries
-           them brings them; one that predates them (the sample, an
-           empty desk, a legacy shelf copy) leaves the standing
-           history untouched — the safety net taken before a swap
-           must survive the swap itself. */
+           them brings them. One that carries none keeps the standing
+           history only on a swap on this same desk (opts.keepHistory:
+           the sample, Remove, a History restore — the safety net
+           taken before a swap must survive the swap itself) or when it
+           is the same book; any other book arrives with none
+           (BEUK:metaleak — a bulk-imported shelf book carries no
+           history, and must not inherit the last book's). */
         if (Array.isArray(doc.history)) state.history = normalizeHistory(doc.history, doc.historyPool);
+        else if (!opts.keepHistory && !sameBook) state.history = []; /* BEUK:metaleak — another book's snapshots never ride onto this one */
         /* The import report belongs to the book it describes: a book
            arriving without one clears the desk's (a different book's
            report must never describe this one). */
@@ -53842,6 +53886,107 @@
       SELF_CHECKS.push(...msSelfChecks()); /* BEUK:manuscript */
       SELF_CHECKS.push(...castSelfChecks()); /* BEUK:cast */
       SELF_CHECKS.push(...bibleSelfChecks()); /* BEUK:bible */
+      /* ==== BEUK:metaleak ==== — a book arriving on the desk replaces the
+         one there: nothing of the last book (its series, credits, Story
+         Bible, outline, goals, manuscript contact, print rules, History,
+         box-set volumes) rides onto the next. mlMakeRichDesk turns the
+         desk into such a book in place; mlLeaks names every field of the
+         desk that is not the arriving book's own value or its default. */
+      function mlMakeRichDesk(title) {
+        state.meta.title = title || "Check Leak A"; state.meta.author = "Ada Leak"; state.meta.subtitle = "A Tale of Leaks";
+        state.meta.series = "Salt Road"; state.meta.publisher = "Harbour Press"; state.meta.isbn = "9780000000002";
+        state.meta.description = "Book A's own blurb."; state.meta.rights = "All rights reserved — A"; state.meta.year = "1999";
+        state.meta.a11ySummary = "Book A's summary."; state.meta.legacyBookIds = ["sc-leak-a-old"];
+        castSetHidden(["Mara"]);
+        state.bible = bibleNormalize({ entries: [{ id: "lka1", type: "character", name: "Mara Quill" }] });
+        state.goals = normalizeGoals({ daily: 500, project: 80000, deadline: "2027-01-01" });
+        state.manuscript = msNormalize({ legalName: "Ada Leak", address: "1 Quay Street", phone: "555 0100", email: "ada@leak.invalid" });
+        state.outline = olNormalize({ tags: [{ name: "subplot", colour: 1 }] }, state.sections);
+        state.printMarginMode = "custom"; state.printCustomMargins = { inside: 1, outside: 0.9, top: 0.8, bottom: 0.8 };
+        state.printHeadContent = "chapter"; state.printHeadPlace = "bottom"; state.printOmitChapterHead = true; state.printOmitBlankHead = false;
+        state.printFolio = "outer"; state.exportPlatform = "kdp"; state.printTrim = "5x8"; state.printRecto = false;
+        state.boxSetVolumes = [{ id: "sc-leak-vol", meta: { title: "Leaked Volume" }, sections: [], images: [] }];
+        takeSnapshot("Check leak A", null);
+      }
+      function mlBookB() {
+        /* shaped like a bulk-imported shelf book: no History, no goals, no print rules, no series */
+        const B = buildEmptyBook();
+        B.meta.title = "Check Leak B"; B.meta.author = "Other Writer";
+        B.sections.find((x) => x.type === "chapter").content = "Book B's own words.";
+        return B;
+      }
+      function mlLeaks(E, opts) {
+        opts = opts || {};
+        const bad = [], em = (E && E.meta) || {}, dm = bookMetaDefaults();
+        const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+        Object.keys(state.meta).concat(Object.keys(em)).forEach((k, i, all) => {
+          if (all.indexOf(k) !== i || ["langSource", "langGuess", "bookId"].indexOf(k) !== -1) return;
+          const want = k in em ? em[k] : dm[k];
+          if (!same(state.meta[k], want)) bad.push("meta." + k + " " + JSON.stringify(state.meta[k]) + " (book's own: " + JSON.stringify(want) + ")");
+        });
+        if (bibleEntries().length !== bibleNormalize(E.bible).entries.length) bad.push("Story Bible holds " + bibleEntries().length + " entries");
+        if (!same(state.goals, normalizeGoals(E.goals))) bad.push("goals " + JSON.stringify(state.goals));
+        if (!same(state.manuscript, msNormalize(E.manuscript))) bad.push("manuscript contact " + JSON.stringify(state.manuscript.legalName));
+        if (olBook().tags.length !== olNormalize(E.outline, state.sections).tags.length) bad.push("outline tags " + olBook().tags.map((x) => x.name).join(","));
+        const pd = bookPrintDefaults();
+        Object.keys(pd).forEach((k) => { if (E[k] === undefined && !same(state[k], pd[k])) bad.push(k + " " + JSON.stringify(state[k])); });
+        if ((state.boxSetVolumes || []).length) bad.push((state.boxSetVolumes || []).length + " box-set volumes");
+        if (!opts.keepHistory && !Array.isArray(E.history) && (state.history || []).length) bad.push((state.history || []).length + " History snapshots");
+        return bad;
+      }
+      SELF_CHECKS.push(
+        { id: "book.arrival.replaces-whole", feature: "cloud", name: "A book arriving on the desk replaces the one there — through applyBookDoc (shelf open, sync, local restore, conflict), the sample, Remove, a backup file, a History restore and an import over the sample, nothing of the last book (series, credits, hidden names, Story Bible, outline, goals, manuscript contact, print rules, box-set volumes, History) rides onto the next, and what the next save would write is the arriving book's own",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepLinked = cloud.linkedId, keepLinkState = cloud.linkState, keepBox = state.boxSetVolumes;
+            const keepSusp = local.suspended;
+            const bad = [];
+            local.suspended = true;
+            try {
+              const fresh = () => { applyBookDoc(buildEmptyBook()); state.history = []; sampleState.loaded = false; sampleState.loadedJson = null; mlMakeRichDesk(); };
+              /* 1. applyBookDoc: the shelf, sync, local-restore and conflict arrivals all pass here */
+              fresh(); let B = mlBookB(); applyBookDoc(JSON.parse(JSON.stringify(B)));
+              mlLeaks(B).forEach((x) => bad.push("open: " + x));
+              const saved = serializeBook();
+              if (saved.meta.series !== undefined || saved.bible || saved.outline || saved.goals.daily || saved.manuscript.legalName || (saved.history || []).length) bad.push("open: the next save would write the last book's series/Bible/outline/goals/contact/History");
+              /* 2. a legacy book carrying no print or export choices */
+              fresh(); B = mlBookB(); delete B.exportPlatform; delete B.printTrim; delete B.printRecto; delete B.printLargePrint; delete B.theme; delete B.activePreset;
+              applyBookDoc(JSON.parse(JSON.stringify(B)));
+              mlLeaks(B).forEach((x) => bad.push("legacy book: " + x));
+              if (stableJson(state.theme) !== stableJson(Object.assign({}, PRESETS[0].theme))) bad.push("legacy book: theme is not the default");
+              /* 3. the sample (History keeps its safety net) */
+              fresh(); applySampleBookSync();
+              mlLeaks(buildSampleBook(), { keepHistory: true }).forEach((x) => bad.push("sample: " + x));
+              if (!(state.history || []).some((h) => h.name === "Check leak A")) bad.push("sample: the History safety net was lost");
+              /* 4. Remove */
+              fresh(); clearDeskToEmpty();
+              mlLeaks(buildEmptyBook(), { keepHistory: true }).forEach((x) => bad.push("remove: " + x));
+              /* 5. a backup file */
+              fresh(); B = mlBookB(); localApplyBackup(JSON.parse(JSON.stringify(B)));
+              mlLeaks(B, { keepHistory: true }).forEach((x) => bad.push("backup: " + x));
+              /* 6. History restore of a book-B snapshot over the rich desk */
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              B = mlBookB(); applyBookDoc(JSON.parse(JSON.stringify(B)));
+              const snapB = takeSnapshot("Check leak B", null);
+              mlMakeRichDesk(); state.meta.bookId = newBookId(); /* the desk now holds another book */
+              restoreSnapshot(snapB.id);
+              mlLeaks(B, { keepHistory: true }).forEach((x) => bad.push("history restore: " + x));
+              /* 7. an import over the sample */
+              fresh(); applySampleBookSync(); state.meta.series = "Salt Road";
+              replaceBodyChapters([{ title: "One", body: ["Imported words."] }], "leak-import.txt", {});
+              if (state.meta.series !== undefined) bad.push("import over the sample: meta.series " + JSON.stringify(state.meta.series));
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "open, legacy book, sample, Remove, backup, History restore and import over the sample each arrived with only their own meta, Story Bible, outline, goals, contact, print rules and History — no series, credit or box-set volume of the last book");
+            } finally {
+              applyBookDoc(keepDoc);
+              state.boxSetVolumes = keepBox;
+              sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; cloud.linkedId = keepLinked; cloud.linkState = keepLinkState;
+              local.suspended = keepSusp;
+            }
+          } }
+      );
+      /* ==== /BEUK:metaleak ==== */
       /* ==== BEUK:print ==== */
       /* Print for press, checked from the document the print view and
          the server job actually receive (buildPrintHtml), and from the
@@ -53932,7 +54077,7 @@
               state.sections.find((x) => x.type === "chapter").content = "Words kept in a named snapshot — check.";
               const mineText = text();
               const mine = takeSnapshot("Check mine", null);
-              applyBookDoc(buildSampleBook());
+              applyBookDoc(buildSampleBook(), { keepHistory: true }); /* BEUK:metaleak — the sample swap, as applySampleBookSync makes it */
               sampleState.loaded = true; sampleState.loadedJson = sampleComparableJson();
               const sampleText = text();
               if (!deskIsUntouchedSample()) bad.push("fixture: the sample is not untouched");
@@ -55618,6 +55763,56 @@
       }
       const scTick = (ms) => new Promise((r) => setTimeout(r, ms || 0));
       const scEdit = (more) => { state.sections.find((x) => x.type === "chapter").content += more; noteBookEdited(); clearTimeout(cloudSaveTimer); cloudSaveTimer = null; };
+      /* ==== BEUK:metaleak ==== — the simulation's finding, end to end:
+         open a rich linked book, then open a bulk-imported shelf book
+         through the real shelf path; edit; the autosave PUT must carry
+         that book's own meta exactly (no series, Bible, outline, goals,
+         contact, print rules or History of the first). */
+      SELF_CHECKS_ASYNC.push(
+        { id: "shelf.open.no-meta-carryover", feature: "shelf", name: "Opening a shelf book never carries the previous book onto it: after a book with a series, Story Bible, outline, goals, manuscript contact, print rules and History, a bulk-imported shelf book with none opens with none, and the next autosave writes its own meta unchanged",
+          async run() {
+            const release = await scShelfHold();
+            const keep = scShelfKeep();
+            const keepBox = state.boxSetVolumes;
+            const bad = [];
+            local.suspended = true;
+            try {
+              scShelfDesk("Book A's words");
+              mlMakeRichDesk("Check Leak A");
+              cloud.linkedId = "sc-leak-a"; cloud.linkState = "linked"; cloudDirty = false; cloud.pendingSyncs = 0;
+              if (deskHoldsUnshelvedWork()) bad.push("the linked synced book A was held");
+              const B = mlBookB();
+              const sh = scStandInShelf("sc-leak-b", 2, B); window.fetch = sh.fetch;
+              await cloudOpenBook("sc-leak-b"); await scTick(5);
+              if ($("modalConfirm").classList.contains("open")) { bad.push("opening asked to confirm"); cloudConfirmDone(false); }
+              if (state.meta.title !== "Check Leak B" || cloud.linkedId !== "sc-leak-b") bad.push("book B did not open (" + state.meta.title + ", " + cloud.linkedId + ")");
+              mlLeaks(B).forEach((x) => bad.push("desk: " + x));
+              scEdit(" An edit after opening.");
+              await cloudSaveNow(); await scTick(5);
+              const puts = sh.calls.filter((c) => c.indexOf("PUT") === 0);
+              if (puts.length !== 1) bad.push("expected one autosave PUT, saw " + sh.calls.join(", "));
+              const m = sh.doc.meta || {};
+              const extra = Object.keys(m).filter((k) => !(k in B.meta) && m[k] !== undefined);
+              const changed = Object.keys(B.meta).filter((k) => JSON.stringify(m[k]) !== JSON.stringify(B.meta[k]));
+              if (extra.length) bad.push("the shelf copy gained meta " + extra.map((k) => k + "=" + JSON.stringify(m[k])).join(", "));
+              if (changed.length) bad.push("the shelf copy's meta changed: " + changed.map((k) => k + "=" + JSON.stringify(m[k])).join(", "));
+              if (sh.doc.bible || sh.doc.outline || (sh.doc.goals && (sh.doc.goals.daily || sh.doc.goals.project)) || (sh.doc.manuscript && sh.doc.manuscript.legalName) || (sh.doc.history || []).length)
+                bad.push("the shelf copy gained book A's Bible/outline/goals/contact/History");
+              if (sh.doc.printMarginMode !== "auto" || sh.doc.printFolio !== "centre") bad.push("the shelf copy gained book A's print rules (" + sh.doc.printMarginMode + ", " + sh.doc.printFolio + ")");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "book B opened over book A (series Salt Road, Bible, outline, goals, contact, custom print rules, a snapshot) with none of them; the autosave PUT on revision 2 wrote B's meta key for key, nothing added");
+            } finally {
+              if ($("modalConfirm").classList.contains("open")) cloudConfirmDone(false);
+              await scTick(0);
+              scShelfPutBack(keep);
+              applyBookDoc(keep.doc);
+              state.boxSetVolumes = keepBox;
+              sampleState.loaded = keep.sample.loaded; sampleState.loadedJson = keep.sample.json; renderSampleButton();
+              cloudDirty = keep.dirty; net.online = keep.online; local.suspended = keep.susp;
+              release();
+            }
+          } }
+      );
+      /* ==== /BEUK:metaleak ==== */
       SELF_CHECKS_ASYNC.push(
         { id: "shelf.save.single-flight", feature: "shelf", name: "Shelf saves are single-flight: a save asked for while one is in flight sends nothing until the answer, then runs once on the revision that answer returned (never two PUTs on one If-Match, never a 409); an answer for a book no longer on the desk moves nothing; no path out of a save leaves “Saving to your shelf…” standing",
           async run() {
@@ -57157,7 +57352,8 @@
         sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
         /* A different book than the shelf link: it becomes its own
            shelf book on the next save instead of overwriting this one. */
-        if (cloud.linkedId && arrivingMeta && bookIdsOf(arrivingMeta).length && !bookIdsMatch(arrivingMeta, localPrevBookMeta)) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; }
+        /* BEUK:metaleak — a backup that names no id is not known to be the linked book (it no longer borrows the desk's id), so it too goes to the shelf as its own book rather than over the linked one. */
+        if (cloud.linkedId && !bookIdsMatch(arrivingMeta || {}, localPrevBookMeta)) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; }
         noteBookEdited();
         toast(t("local.backupOpened", { title: state.meta.title || t("misc.untitledBook") }), "hard-drive");
         if (typeof sampleSweepPreRename === "function") sampleSweepPreRename(); /* BEUK:sidebar */

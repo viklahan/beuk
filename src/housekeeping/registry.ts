@@ -1243,6 +1243,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason:
       'The round-trip runs through the client serializer and its API client; the server stores the book as opaque JSON by design.',
   },
+  /* ---- opening a book replaces the desk's book (BEUK:metaleak) ---- */
+  {
+    id: 'book.arrival.replaces-whole',
+    title: 'A book arriving on the desk (shelf open, sync, sample, Remove, backup, History restore, import over the sample) replaces the one there: no series, credit, Story Bible, outline, goals, manuscript contact, print rule, box-set volume or History of the last book rides onto it',
+    kind: 'client-only',
+    reason: 'The desk state and applyBookDoc live in the browser; the server stores the book as opaque JSON, so the carry-over can only be observed in the client self-check window.runBeukSelfChecks().',
+  },
+  {
+    id: 'shelf.open.no-meta-carryover',
+    title: 'Opening a bulk-imported shelf book after a rich book opens it with none of the first book’s meta, and the next autosave PUT writes its own meta unchanged',
+    kind: 'client-only',
+    reason: 'Drives the real shelf open and autosave in the browser against a stand-in shelf that keeps this server’s If-Match contract; asserted by window.runBeukAsyncSelfChecks().',
+  },
   {
     id: 'cloud.signedout.no-api-calls',
     title: 'Signed out, the studio makes no API calls',
