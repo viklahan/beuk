@@ -216,6 +216,13 @@
       .tb-dot:hover{transform:scale(1.25)}
       .tb-dot.seen{background:#bcd6de}
       .tb-dot.now{background:var(--accent);border-color:var(--accent2)}
+      /* BEUK:tips — the dots carry no words: hover or keyboard focus shows each port's name beneath it (its aria-label, unchanged) */
+      .tb-dot::after{content:attr(aria-label);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:240px;padding:5px 9px;border-radius:7px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 18px rgba(34,51,58,.16);font-size:12px;font-weight:600;line-height:1.35;text-align:left;white-space:normal;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s ease-out;z-index:3}
+      .tb-dot:first-child::after{left:0;transform:none}
+      .tb-dot:last-child::after{left:auto;right:0;transform:none}
+      .tb-dot:hover::after,.tb-dot:focus-visible::after{opacity:1;visibility:visible}
+      .tb-dot:hover{z-index:4}
+      @media (prefers-reduced-motion: reduce){.tb-dot::after{transition:none}}
       /* the boat sails the route line as the page scrolls; it bobs, and turns about when you scroll back */
       .tb-boat{position:absolute;left:0;top:50%;width:24px;height:18px;margin-top:-16px;transform:translateX(-50%);transition:left .3s ease;z-index:2;pointer-events:none}
       .tb-boat .tb-hull{display:block;transition:transform .35s ease}

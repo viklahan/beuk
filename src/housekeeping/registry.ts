@@ -1246,7 +1246,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   /* ---- opening a book replaces the desk's book (BEUK:metaleak) ---- */
   {
     id: 'book.arrival.replaces-whole',
-    title: 'A book arriving on the desk (shelf open, sync, sample, Remove, backup, History restore, import over the sample) replaces the one there: no series, credit, Story Bible, outline, goals, manuscript contact, print rule, box-set volume or History of the last book rides onto it',
+    title: 'A book arriving on the desk (shelf open, sync, sample, Remove, backup, History restore, import over the sample) replaces the one there: no series, credit, Covenant, outline, goals, manuscript contact, print rule, box-set volume or History of the last book rides onto it',
     kind: 'client-only',
     reason: 'The desk state and applyBookDoc live in the browser; the server stores the book as opaque JSON, so the carry-over can only be observed in the client self-check window.runBeukSelfChecks().',
   },
@@ -2266,6 +2266,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'Word and page counts take each language’s own CLDR plural form (Intl.PluralRules)',
     kind: 'client-only',
     reason: 'UI strings and Intl.PluralRules run in the browser.',
+  },
+  // BEUK:tips — the studio's one tooltip system.
+  {
+    id: 'ui.tooltips',
+    title: 'One tooltip system: every icon-only button has an accessible name and a tip; focus shows it beside the control (aria-describedby to role=tooltip), it flips at edges and mirrors in RTL, Escape hides it; no help-style title attributes remain',
+    kind: 'client-only',
+    reason: 'Tooltips are studio chrome: the check reads the live DOM and drives the tooltip layer in the browser.',
+  },
+  {
+    id: 'ui.tooltips.touch',
+    title: 'On touch screens a long press shows the tip without pressing the control; a short tap presses it and shows nothing',
+    kind: 'client-only',
+    reason: 'Pointer and touch handling run in the browser.',
   },
   {
     id: 'sample.count.truthful',

@@ -3808,6 +3808,25 @@ Where the browser keeps no storage it is not shown at all, because nothing could
 
 Also reachable from the Help guide "Import a manuscript". Reopened on an empty desk it ends at the first import, the sample opening or the first words; reopened over a book, at the first real edit, or when finished or skipped.
 
+## Studio: one tooltip for the whole studio (client-only, BEUK:tips)
+
+Every help text in the studio now shows in one small, styled tip instead of the browser's own grey box. The code is one section in `client/index.html` (grep `BEUK:tips`: CSS beside the modal styles, the module right after the i18n block). No vendored library: about 300 lines of plain JS do it, and nothing new crosses the CSP.
+
+**How a control gets a tip.**
+- `data-tip="tips.export"` — an i18n key, resolved in the UI language at the moment it shows. Optional `data-tip-place="top|bottom|start|end"` (`start`/`end` follow the page direction). Default is top, flipping to whichever side fits.
+- Any `title` — in the markup, through `setAttribute("title", …)`, `data-i18n-title`, or `el.title = …` — is absorbed (at once for `el.title = …`, the moment a pointer or focus reaches it, and by a light sweep every 1.5 s; no MutationObserver, so heavy re-rendering holds no extra memory): it moves into `data-tip-text` and `el.title` still reads it back, so existing code keeps working and the browser never shows its own tooltip. A control whose only name was its title keeps it as `aria-label`.
+- An icon-only button with an accessible name and no tip of its own shows its name.
+- Controls drawn by their own renderers get a tip from `TIP_MAP` in the module (the Comments tool, the preview device buttons — those read the screen size, resolution and ppi from `DEVICE_FACTS`).
+- `title` stays where the browser itself uses it: `iframe`, `abbr`, `dfn`, `option`, inputs with a `pattern`, and the book pages (`.fc-page`, `.piv-book`, or any `[data-keep-titles]`).
+
+**Behaviour.** Hover shows the tip after 450 ms (moving to the next control shows it straight away); keyboard focus shows it at once; on a touch screen a long press (500 ms) shows it and the release does not press the button; a short tap presses as usual. Escape hides it; with a focused or long-pressed control Escape is spent on the tip first (WCAG 1.4.13), the next Escape closes the dialog. One tip at a time, including Story Insights' own chart tip. The tip sits beside its control, never over it, clamps to the screen, mirrors in Arabic, has no motion under reduced motion, follows Paper and Candlelight, and stacks above dialogs (z-index 1000). While shown, the control's `aria-describedby` points at the `role="tooltip"` element (`#beukTip`) unless the tip only repeats the control's name; the accessible name is never changed.
+
+**Strings.** 15 `tips.*` keys in all 13 UI languages (top bar, sidebar tools, Read Aloud, Zen, the preview devices).
+
+**Public site.** The six port dots on the landing page's tour bar have a CSS-only tip showing their existing `aria-label` on hover and keyboard focus.
+
+**Self-checks.** `ui.tooltips` (every icon-only button has a name and a tip; no help-style `title` left; focus shows a wired tip beside the control; top-edge flip; `start` mirrors in RTL; Escape hides; one at a time; `el.title` absorbed) and the async `ui.tooltips.touch` (long press shows without pressing; a tap presses without a tip).
+
 ## Display faces and book colour (Typography Studio)
 
 - **Display faces for headings.** Three new heading faces sit in their own group in the Heading Font picker, "Display faces · headings only": **Pinyon Script** (a formal copperplate script), **Patrick Hand** (a clear handwriting face for children's books) and **Abril Fatface** (a heavy poster serif). They set chapter titles, drop caps, part and title pages, never running text. No body picker lists them, and a book that names one as its body face is set in the default body face. Each has one weight, so headings in them are set at 400 and nothing fakes a bold. With Pinyon Script, the small spaced capitals (chapter number, kickers, the title page's author, running heads) use the body face.
