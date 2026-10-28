@@ -55046,7 +55046,7 @@
         { id: "import.title.from-titlepage", feature: "import", name: "Import credit from the manuscript's title page: a Word file with an empty dc:title and a title page (title, subtitle, \"by Jane Doe\") gives the book its title, subtitle and author — the by-line outranks the Author property Word fills from its User name setting — the title page leaves the body and is reported as lifted (undo puts it back); a lead line of prose is never taken as a title",
           run() {
             return imCheckRun(() => {
-              const rep = importDocxConverted("manuscript.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "vikra" }, null);
+              const rep = importDocxConverted("manuscript.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "jsmith" }, null);
               const credit = state.meta.title === "THE LONG WAY HOME" && state.meta.subtitle === "A Novel of the Northern Roads" && state.meta.author === "Jane Doe" &&
                 state.meta.titleSource === "import" && state.meta.authorSource === "import" &&
                 $("projectTitleDisplay").textContent === "THE LONG WAY HOME";

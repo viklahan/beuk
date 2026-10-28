@@ -44,7 +44,7 @@ statements, `toast(` calls), so treat it as an upper bound.
 1440×900, Paper theme, Chapter Content tab, after **Load the sample story** (The Lantern Coast, 24,828 words, 15
 chapters). `document.querySelectorAll(sel).length` for each selector (script: `.scratch/inv.mjs`).
 
-**Screenshots** (not committed) are in `C:/Users/vikra/Projects/beuk-whole-project/.playwright-mcp/round5/`, named
+**Screenshots** (not committed) are in `beuk-whole-project/.playwright-mcp/round5/` (beside this repo's folder), named
 `inventory-NN-*.png`. They are cited below by their short name, e.g. `[01-studio-paper]`.
 
 | Shot | What it shows |

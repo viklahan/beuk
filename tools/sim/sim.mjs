@@ -17,8 +17,8 @@ const REPO = path.resolve(HERE, '..', '..');
 const OUT = path.join(HERE, 'out');
 const PROJECT = 'beuk-sim';
 const BASE_URL = 'http://localhost:8190';
-const RAMP = process.env.SIM_RAMP_DIR || 'C:\\Users\\vikra\\Projects\\beuk-whole-project\\10-ramp-gallery\\books';
-const SAGAS = process.env.SIM_SAGAS_DIR || 'C:\\Users\\vikra\\Projects\\beuk-whole-project\\10-ramp-gallery\\sagas';
+const RAMP = process.env.SIM_RAMP_DIR || path.resolve(HERE, '..', '..', '..', '..', 'beuk-whole-project', '10-ramp-gallery', 'books');
+const SAGAS = process.env.SIM_SAGAS_DIR || path.resolve(HERE, '..', '..', '..', '..', 'beuk-whole-project', '10-ramp-gallery', 'sagas');
 const COMPOSE = ['compose', '-p', PROJECT, '--env-file', 'tools/sim/sim.env', '-f', 'docker-compose.yml', '-f', 'deploy/docker-compose.tools.yml', '-f', 'tools/sim/docker-compose.sim.yml'];
 const PW_IMAGE = 'mcr.microsoft.com/playwright:v1.49.1-noble';
 
@@ -32,7 +32,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function up() {
   if (!existsSync(path.join(REPO, 'tools-bin', 'epubcheck.jar'))) {
-    const main = process.env.SIM_TOOLS_BIN || 'C:\\Users\\vikra\\Projects\\beuk-final\\beuk-saas\\tools-bin';
+    const main = process.env.SIM_TOOLS_BIN || path.resolve(HERE, '..', '..', '..', '..', 'beuk-final', 'beuk-saas', 'tools-bin');
     if (!existsSync(path.join(main, 'epubcheck.jar'))) throw new Error('tools-bin/epubcheck.jar missing (set SIM_TOOLS_BIN to a folder holding it)');
     cpSync(main, path.join(REPO, 'tools-bin'), { recursive: true });
   }

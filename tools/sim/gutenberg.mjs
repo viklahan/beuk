@@ -7,7 +7,7 @@
 // Gutenberg catalogue, pg_catalog.csv, never guessed). Downloads go to
 // <SAGAS>/_sources/pg<id>/ and the record of every download (URL, date,
 // sha256) to <SAGAS>/sources.json. SAGAS defaults to
-// C:\Users\vikra\Projects\beuk-whole-project\10-ramp-gallery\sagas.
+// <Projects>/beuk-whole-project/10-ramp-gallery/sagas (SIM_SAGAS_DIR to point elsewhere).
 //
 // Prep keeps the prose exactly as the HTML has it (entities decoded,
 // whitespace collapsed the way a browser shows it); it only turns markup
@@ -26,7 +26,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const SAGAS_DIR = process.env.SIM_SAGAS_DIR || 'C:\\Users\\vikra\\Projects\\beuk-whole-project\\10-ramp-gallery\\sagas';
+export const SAGAS_DIR = process.env.SIM_SAGAS_DIR || path.resolve(HERE, '..', '..', '..', '..', 'beuk-whole-project', '10-ramp-gallery', 'sagas');
 const SRC_DIR = path.join(SAGAS_DIR, '_sources');
 const PREP_DIR = path.join(SAGAS_DIR, '_prepared');
 

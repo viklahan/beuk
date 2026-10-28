@@ -15,7 +15,7 @@ import { SAGAS_DIR, allVolumes } from './gutenberg.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
-export const RAMP_DIR = process.env.SIM_RAMP_DIR || 'C:\\Users\\vikra\\Projects\\beuk-whole-project\\10-ramp-gallery\\books';
+export const RAMP_DIR = process.env.SIM_RAMP_DIR || path.resolve(HERE, '..', '..', '..', '..', 'beuk-whole-project', '10-ramp-gallery', 'books');
 
 const words = (t) => String(t || '').split(/\s+/).filter(Boolean).length;
 const paras = (t) => String(t || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).length;
