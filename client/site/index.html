@@ -190,6 +190,16 @@
       .book3d .f-pages{width:calc(var(--sp) - 2px);height:250px;right:calc((2px - var(--sp))/2);top:4px;transform:rotateY(90deg);background:repeating-linear-gradient(90deg,#f3ecd8 0 2px,#ddd2b8 2px 3px)}
       .book3d .f-top{width:186px;height:calc(var(--sp) - 2px);top:calc((2px - var(--sp))/2);left:2px;transform:rotateX(90deg);background:repeating-linear-gradient(0deg,#f3ecd8 0 2px,#ddd2b8 2px 3px)}
       .draghint{font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+      /* Full screen for the turning book (BEUK:fullscreen): the Fullscreen API, or, where a
+         browser has none (iPhone Safari), the same box filling the window ("Fill the window"). */
+      .fs3d{font:inherit;font-size:13px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+      .fs3d:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+      .fs3d[hidden]{display:none}
+      .fs3d-box:fullscreen{background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px}
+      .fs3d-box:-webkit-full-screen{background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px}
+      .fs3d-box.fs3d-imm{position:fixed;inset:0;z-index:2147483000;width:100vw;height:100vh;height:100dvh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+      .fs3d-box.fs3d-on .scene3d{transform:scale(var(--fs3d,1.6));margin:calc((var(--fs3d,1.6) - 1) * 129px) 0}
+      html.fs3d-lock,html.fs3d-lock body{overflow:hidden}
 
       /* type bench */
       .type-prev{border:1px solid var(--line);border-radius:10px;padding:26px 28px;transition:background .4s,color .4s;margin-top:16px}
@@ -552,7 +562,7 @@
             <div class="lab reveal" data-lab="cover">
               <h3>Christen the vessel</h3>
               <p class="lab-sub">Type the name and watch it painted on the hull — front cover and down the spine, live. Then take the book for a turn.</p>
-              <div class="book3d-wrap">
+              <div class="book3d-wrap fs3d-box">
                 <div class="scene3d"><div class="book3d" data-book3d tabindex="0" role="img" aria-label="A rotatable 3D book — drag to turn it, or focus it and use the arrow keys">
                   <div class="face f-back"></div>
                   <div class="face f-spine"><span data-cov="spine">The Lantern Coast · April Carooke</span></div>
@@ -561,6 +571,7 @@
                   <div class="face f-front"><img src="/site/lantern-coast.webp" alt="" /><div class="cover-txt"><span class="ct-title" data-cov="title">The Lantern Coast</span><span class="ct-rule"></span><span class="ct-author" data-cov="author">April Carooke</span></div></div>
                 </div></div>
                 <span class="draghint">← drag to turn the book · arrow keys work too →</span>
+                <button type="button" class="fs3d" hidden aria-pressed="false" aria-keyshortcuts="F">Full screen</button>
                 <div class="readout" data-book="dims">Trim&nbsp;&nbsp;<b>9″ H × 6″ W</b> · 228.60 × 152.40 mm<br />Spine&nbsp;&nbsp;<b>0.58″</b> · 14.81 mm</div>
               </div>
               <div class="field"><label for="cov-title">Your book's title</label><input type="text" id="cov-title" data-cov-in="title" placeholder="The Lantern Coast" autocomplete="off" /></div>
@@ -623,7 +634,7 @@
               <p>Front, spine and back in one print wrap — the spine measured from the true page count, bound for print-on-demand.</p>
             </div>
             <div class="bp-card reveal d2">
-              <div class="bp-stage">
+              <div class="bp-stage fs3d-box">
                 <div class="scene3d"><div class="book3d" data-book3d tabindex="0" role="img" aria-label="The Lantern Coast as a turning 3D book — drag to turn it, or focus it and use the arrow keys">
                   <div class="face f-back"></div>
                   <div class="face f-spine"><span>The Lantern Coast · April Carooke</span></div>
@@ -631,6 +642,7 @@
                   <div class="face f-top"></div>
                   <div class="face f-front"><img src="/site/lantern-coast.webp" alt="" /><div class="cover-txt"><span class="ct-title">The Lantern Coast</span><span class="ct-rule"></span><span class="ct-author">April Carooke</span></div></div>
                 </div></div>
+                <button type="button" class="fs3d" hidden aria-pressed="false" aria-keyshortcuts="F">Full screen</button>
               </div>
               <h3>The book, turning</h3>
               <p>The same book you can walk around at the shipyard — cover, spine and page block, inspected before it exists in paper.</p>
@@ -880,6 +892,59 @@
           });
           apply();
         });
+
+        /* ---------- full screen for the turning book (BEUK:fullscreen) ----------
+           The Fullscreen API with the webkit one for Safari/iPad; where neither
+           exists (iPhone Safari) the box fills the window and the button says
+           "Fill the window", never "Full screen". F toggles the book that has
+           focus (not while typing); Escape leaves. */
+        (function(){
+          var boxes = document.querySelectorAll(".fs3d-box"); if(!boxes.length) return;
+          var de = document.documentElement, imm = null;
+          function can(el){ return !!((el.requestFullscreen || el.webkitRequestFullscreen) && (document.fullscreenEnabled || document.webkitFullscreenEnabled)); }
+          function now(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+          function scale(box){
+            var on = now() === box || imm === box;
+            box.classList.toggle("fs3d-on", on);
+            if(on){ var s = Math.min(window.innerHeight * 0.62 / 258, window.innerWidth * 0.7 / 190, 3.2); box.style.setProperty("--fs3d", Math.max(1, s).toFixed(2)); }
+          }
+          function sync(){
+            Array.prototype.forEach.call(boxes, function(box){
+              var b = box.querySelector(".fs3d"); if(!b) return;
+              var on = now() === box || imm === box;
+              b.setAttribute("aria-pressed", on ? "true" : "false");
+              b.textContent = on ? (imm === box ? "Exit full window" : "Exit full screen") : (can(box) ? "Full screen" : "Fill the window");
+              b.title = b.textContent + " (F)";
+              scale(box);
+            });
+            de.classList.toggle("fs3d-lock", !!imm);
+          }
+          function setImm(box){ if(imm) imm.classList.remove("fs3d-imm"); imm = box; if(box) box.classList.add("fs3d-imm"); sync(); }
+          function toggle(box){
+            if(imm){ var was = imm; setImm(null); if(was === box) return; }
+            if(now()){ var x = document.exitFullscreen || document.webkitExitFullscreen; try{ var r = x.call(document); if(r && r.catch) r.catch(function(){}); }catch(e){} if(now() === box) return; }
+            if(can(box)){ try{ var q = (box.requestFullscreen || box.webkitRequestFullscreen).call(box); if(q && q.catch) q.catch(function(){ setImm(box); }); return; }catch(e){} }
+            setImm(box);
+          }
+          Array.prototype.forEach.call(boxes, function(box){
+            var b = box.querySelector(".fs3d"); if(!b) return;
+            b.hidden = false;
+            b.addEventListener("click", function(){ toggle(box); });
+          });
+          document.addEventListener("fullscreenchange", sync);
+          document.addEventListener("webkitfullscreenchange", sync);
+          window.addEventListener("resize", sync);
+          document.addEventListener("keydown", function(e){
+            if(e.key === "Escape" && imm){ e.preventDefault(); setImm(null); return; }
+            if((e.key !== "f" && e.key !== "F") || e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return;
+            var t = e.target, tag = t && t.tagName;
+            if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+            var box = imm || now() || (t && t.closest ? t.closest(".fs3d-box") : null);
+            if(!box || !box.classList || !box.classList.contains("fs3d-box")) return;
+            e.preventDefault(); toggle(box);
+          });
+          sync();
+        })();
 
         /* ---------- route line fills as you sail down the page ---------- */
         var tbFill = document.getElementById("tb-fill");

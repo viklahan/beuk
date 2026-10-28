@@ -84,12 +84,58 @@ const READER_CSS = `
 .rd-msg{font-size:.98rem;color:var(--ink-soft)}
 .rd-hint{font-size:.95rem;color:var(--ink-soft);font-style:italic}
 @media (max-width:520px){.rd-page,.rd-head,.rd-box,.rd-pager{padding-left:1rem;padding-right:1rem}.rd-book{font-size:1.4rem}}
+/* Full screen (BEUK:fullscreen): the button exists only once the script runs; without
+   element full screen (iPhone Safari) it offers "Just the text" instead, which hides the
+   page's surroundings (header details, comments, footer) and keeps the chapter. */
+.rd-full{float:right;font:inherit;font-size:.9rem;background:transparent;color:var(--amber);border:1px solid var(--line);border-radius:999px;padding:.3rem .85rem;margin:0 0 .4rem .8rem;cursor:pointer}
+[dir=rtl] .rd-full{float:left;margin:0 .8rem .4rem 0}
+.rd-full[aria-pressed=true]{background:var(--amber-soft)}
+.rd-full:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.rd-full[hidden]{display:none}
+html:fullscreen{background:var(--paper,#fbf8f1);overflow-y:auto}
+html.rd-imm .rd-kicker,html.rd-imm .rd-by,html.rd-imm .rd-box,html.rd-imm .site-foot{display:none}
+html.rd-imm .rd-head{position:sticky;top:0;z-index:4;background:var(--paper,#fbf8f1);padding-top:max(.6rem,env(safe-area-inset-top))}
+html.rd-imm .rd-book{font-size:1.15rem}
+html.rd-imm .rd-pager{padding-bottom:max(1.5rem,env(safe-area-inset-bottom))}
 `;
 
 /* The comment helper. It reads the share's path from the page, never
  * writes HTML from data (textContent only), and talks only to this
  * share's own comments endpoint. */
 const READER_JS = `
+(function(){
+  /* Full screen (BEUK:fullscreen): the Fullscreen API with the webkit one for Safari/iPad;
+     where neither exists (iPhone Safari) the button says "Just the text" and only hides
+     the page's surroundings. F toggles it (not while typing); Escape leaves it. */
+  var b=document.getElementById('rdFull'); if(!b) return;
+  var de=document.documentElement;
+  var can=!!((de.requestFullscreen||de.webkitRequestFullscreen)&&(document.fullscreenEnabled||document.webkitFullscreenEnabled));
+  function now(){return document.fullscreenElement||document.webkitFullscreenElement||null;}
+  function imm(){return de.classList.contains('rd-imm');}
+  function sync(){
+    var on=!!now()||imm(), native=can&&!imm();
+    b.setAttribute('aria-pressed',on?'true':'false');
+    b.textContent=b.getAttribute(on?(native?'data-exit':'data-fill-exit'):(can?'data-enter':'data-fill'));
+    b.title=b.textContent+' (F)';
+  }
+  function setImm(on){de.classList.toggle('rd-imm',on); sync();}
+  function toggle(){
+    if(imm()){setImm(false);return;}
+    if(now()){var x=document.exitFullscreen||document.webkitExitFullscreen; try{var r=x.call(document); if(r&&r.catch)r.catch(function(){});}catch(e){} return;}
+    if(can){try{var q=(de.requestFullscreen||de.webkitRequestFullscreen).call(de); if(q&&q.catch)q.catch(function(){can=false;setImm(true);});return;}catch(e){can=false;}}
+    setImm(true);
+  }
+  b.hidden=false; sync();
+  b.addEventListener('click',toggle);
+  document.addEventListener('fullscreenchange',sync); document.addEventListener('webkitfullscreenchange',sync);
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&imm()){e.preventDefault();setImm(false);return;}
+    if((e.key!=='f'&&e.key!=='F')||e.ctrlKey||e.metaKey||e.altKey||e.repeat||e.isComposing) return;
+    var t=e.target, tag=t&&t.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable)) return;
+    e.preventDefault(); toggle();
+  });
+})();
 (function(){
   var root=document.getElementById('rdRoot'); if(!root) return;
   var base=root.getAttribute('data-base'); var sec=root.getAttribute('data-section');
@@ -211,6 +257,7 @@ export function renderReaderPage(input: ReaderPageInput): string {
     : '<p class="rd-hint">The writer has turned comments off for this copy.</p>';
   const body = `
     <header class="rd-head">
+      <button type="button" class="rd-full" id="rdFull" hidden aria-pressed="false" aria-keyshortcuts="F" data-enter="Full screen" data-exit="Exit full screen" data-fill="Just the text" data-fill-exit="Show the whole page">Full screen</button>
       <p class="rd-kicker">A reading copy, shared with you</p>
       <h1 class="rd-book">${esc(snapshot.title)}</h1>
       ${snapshot.subtitle ? `<p class="rd-by"><em>${esc(snapshot.subtitle)}</em></p>` : ''}

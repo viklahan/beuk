@@ -57,9 +57,21 @@
       .rbar .rn{font-family:var(--book);font-style:italic;font-size:15px;color:var(--soft);margin-left:auto}
       .rbar .rn,.rclose{white-space:nowrap}
       @media(max-width:560px){.rbar{gap:12px;padding-top:14px}.rbar .rt{font-size:16px;line-height:1.25}.rbar .rn{font-size:14px}}
+      @media(max-width:430px){.rbar{flex-wrap:wrap;row-gap:6px}.rbar .rt{flex:1 1 100%}.rbar .rn{margin-left:0;margin-right:auto}}
       .reader button{font:inherit;cursor:pointer}
       .rclose{background:none;border:0;color:#f3eee4;font-weight:700;font-size:15px;padding:6px 2px;border-bottom:1px solid var(--soft)}
       .rclose:focus-visible{outline:2px solid #f3eee4;outline-offset:3px}
+      /* Full screen (BEUK:fullscreen): the room fills the screen. Where a browser has no
+         element full screen (iPhone Safari) the room already fills the window, so the
+         control offers "Just the pages" instead: the title and the note step aside. */
+      .rclose[hidden]{display:none}
+      .room:fullscreen{width:100vw;height:100vh}
+      .room:-webkit-full-screen{width:100vw;height:100vh}
+      .reader.imm .rbar .rt,.reader.imm .reader-cap{visibility:hidden}
+      .reader.imm .reader-cap{min-height:0;height:0;overflow:hidden}
+      /* While a spread is still on its way the book lies open on blank paper and its
+         pages arrive whole, never half drawn (BEUK:rampload). */
+      .rretry{background:none;border:0;color:#f3eee4;font:inherit;font-style:normal;font-weight:700;padding:2px 0;margin-left:.4em;border-bottom:1px solid var(--soft);cursor:pointer}
       .hit:focus-visible{outline:none}.hit:focus-visible::before{content:"";position:absolute;inset:10px;border:2px solid rgba(255,255,255,.0);box-shadow:inset 0 0 0 2px var(--c);border-radius:4px;opacity:.65}
       .desk{position:relative;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(18px,3.4vh,34px);perspective:2600px;padding:10px 0 max(18px,env(safe-area-inset-bottom,0px))}
       .book3d{position:relative;width:var(--bw,60vw);height:var(--bh,30vw);transform-style:preserve-3d}
@@ -222,10 +234,11 @@
     </main>
 
     <dialog class="reader" id="reader" aria-label="Book reader">
-      <div class="room">
+      <div class="room" id="rRoom">
         <div class="rbar">
           <span class="rt" id="rTitle"></span>
           <span class="rn" id="rCount" aria-live="polite"></span>
+          <button class="rclose" id="rFull" type="button" aria-pressed="false" aria-keyshortcuts="F" hidden>Full screen</button>
           <button class="rclose" id="rClose" type="button">Close</button>
         </div>
         <div class="desk" id="rDesk">
@@ -331,18 +344,28 @@
           ]}
         };
         var dlg = document.getElementById("reader"), bookEl = document.getElementById("rBook"), desk = document.getElementById("rDesk");
+        var room = document.getElementById("rRoom"), fullBtn = document.getElementById("rFull");
         var L = document.getElementById("rL"), R = document.getElementById("rR"), turnEl = document.getElementById("rTurn");
         var tF = turnEl.querySelector(".f"), tB = turnEl.querySelector(".b");
         var tEl = document.getElementById("rTitle"), nEl = document.getElementById("rCount"), cap = document.getElementById("rCap");
         var prev = document.getElementById("rPrev"), next = document.getElementById("rNext");
         var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var cur = null, i = 0, p = 0, single = false, busy = false, opener = null, pages = [];
+        var cur = null, i = 0, p = 0, single = false, busy = false, opener = null, pages = [], shown = false, gen = 0, waitT = null;
         var blank = {}; // "slug/n" -> true when a spread's left page is blank paper
+        // BEUK:rampload — every spread is downloaded AND decoded before the reader shows it
+        // or turns to it, one at a time in reading order (the spread being read gets the
+        // connection to itself), retried twice on a failed request. The decoded images are
+        // kept for the page's life, so a book opened again is instant. Before this, the
+        // reader painted the spread the moment the book opened: on a slow phone connection
+        // the first page showed half drawn (the top of the picture, white below) or, on a
+        // phone, the blank left side of the title spread as "Page 1", until the book was
+        // closed and opened again.
+        var loads = {}, keep = {}, src = {};
 
         function url(n){ return "/site/ramp/" + cur + "/spread-" + (n + 1) + ".webp"; }
         function paint(el, n, half){
           if (n == null) { el.style.backgroundImage = "none"; return; }
-          el.style.backgroundImage = 'url("' + url(n) + '")';
+          el.style.backgroundImage = 'url("' + (src[cur + "/" + n] || url(n)) + '")';
           el.style.backgroundPosition = half ? "100% 0" : "0 0";
         }
         function hex(c){ c = c.replace("#", ""); return [0, 2, 4].map(function(k){ return parseInt(c.substr(k, 2), 16); }); }
@@ -356,23 +379,51 @@
         }
         // Which left pages are blank paper (the title page of a printed book stands
         // alone on the right): sampled once from the spread itself, so a new book needs no flag.
-        function probe(n, done){
-          var key = cur + "/" + n;
-          if (key in blank) return done();
-          var im = new Image();
-          im.onload = function(){
-            try {
-              var c = document.createElement("canvas"); c.width = 48; c.height = 24;
-              var g = c.getContext("2d"); g.drawImage(im, 0, 0, 48, 24);
-              var d = g.getImageData(2, 2, 20, 20).data, white = true;
-              for (var k = 0; k < d.length; k += 4) if (d[k] < 246 || d[k + 1] < 246 || d[k + 2] < 246) { white = false; break; }
-              blank[key] = white;
-            } catch (e) { blank[key] = false; }
-            done();
-          };
-          im.onerror = function(){ blank[key] = false; done(); };
-          im.src = url(n);
+        function probe(im, key){
+          try {
+            var c = document.createElement("canvas"); c.width = 48; c.height = 24;
+            var g = c.getContext("2d"); g.drawImage(im, 0, 0, 48, 24);
+            var d = g.getImageData(2, 2, 20, 20).data, white = true;
+            for (var k = 0; k < d.length; k += 4) if (d[k] < 246 || d[k + 1] < 246 || d[k + 2] < 246) { white = false; break; }
+            blank[key] = white;
+          } catch (e) { blank[key] = false; }
         }
+        var pending = []; // images still downloading: a closed book's are cancelled, so they never hold up the next book
+        function fetchImg(u, tries, slug){
+          return new Promise(function(res, rej){
+            var im = new Image();
+            im.decoding = "async";
+            pending.push(im);
+            var ok = function(){ res(im); }, bad = function(){ rej(new Error("load")); };
+            if (im.decode) { im.src = u; im.decode().then(ok, function(){ if (im.complete && im.naturalWidth) ok(); else bad(); }); }
+            else { im.onload = ok; im.onerror = bad; im.src = u; }
+          }).then(function(im){ pending = pending.filter(function(x){ return x !== im; }); return im; }, function(err){
+            if (tries >= 2 || cur !== slug) throw err; // no retry for a book that has been closed
+            return new Promise(function(r){ setTimeout(r, 800 * (tries + 1)); }).then(function(){
+              if (cur !== slug) throw err;
+              return fetchImg(u.split("?")[0] + "?retry=" + (tries + 1), tries + 1, slug);
+            });
+          });
+        }
+        function ready(n){
+          var key = cur + "/" + n;
+          if (!loads[key]) {
+            loads[key] = fetchImg(url(n), 0, cur).then(function(im){
+              keep[key] = im; src[key] = im.src.replace(location.origin, ""); probe(im, key);
+              return im;
+            }, function(err){ delete loads[key]; throw err; });
+          }
+          return loads[key];
+        }
+        // the rest of the book, in reading order, one spread at a time
+        function preload(slug, n, g){
+          if (g !== gen || cur !== slug || n >= BOOKS[slug].spreads.length) return;
+          ready(n).then(function(){
+            if (g === gen && shown && !busy && !dlg.classList.contains("waiting")) words(); // "Page 1" becomes "Page 1 of 7" once every spread is here
+            preload(slug, n + 1, g);
+          }, function(){});
+        }
+        function known(){ var b = BOOKS[cur]; for (var n = 0; n < b.spreads.length; n++) if (!(cur + "/" + n in blank)) return false; return true; }
         function buildPages(){
           var b = BOOKS[cur]; pages = [];
           for (var n = 0; n < b.spreads.length; n++) {
@@ -396,18 +447,38 @@
           bookEl.style.setProperty("--er", Math.round(3 + t * (1 - frac)) + "px");
         }
         function words(){
+          buildPages(); // a spread that has arrived since may have a blank left page; the pages up to this one never move
           var b = BOOKS[cur], s = b.spreads[i];
           bookEl.setAttribute("aria-label", s[1]);
           cap.innerHTML = s[0];
-          nEl.textContent = single ? "Page " + (p + 1) + " of " + pages.length : "Spread " + (i + 1) + " of " + b.spreads.length;
+          // the page count is only given once every spread has been looked at
+          nEl.textContent = single ? "Page " + (p + 1) + (known() ? " of " + pages.length : "") : "Spread " + (i + 1) + " of " + b.spreads.length;
           prev.disabled = single ? p === 0 : i === 0;
-          next.disabled = single ? p === pages.length - 1 : i === b.spreads.length - 1;
+          next.disabled = single ? (known() && p === pages.length - 1) || (pages[p] && pages[p].n === b.spreads.length - 1 && pages[p].half === 1) : i === b.spreads.length - 1;
           edges(single ? p / Math.max(1, pages.length - 1) : i / Math.max(1, b.spreads.length - 1));
         }
         function render(){
-          if (single) { var pg = pages[p]; i = pg.n; paint(R, pg.n, pg.half); }
+          if (!shown) return;
+          buildPages();
+          if (single) { var pg = pages[Math.min(p, pages.length - 1)]; i = pg.n; paint(R, pg.n, pg.half); }
           else { paint(L, i, 0); paint(R, i, 1); }
           words();
+        }
+        function waiting(on, line){
+          clearTimeout(waitT);
+          bookEl.setAttribute("aria-busy", on ? "true" : "false");
+          dlg.classList.toggle("waiting", !!on);
+          // say so only when it takes a moment, so a cached spread never flickers a word
+          if (on) waitT = setTimeout(function(){ nEl.textContent = line; }, 160);
+        }
+        function failed(again){
+          busy = false; waiting(false);
+          nEl.textContent = "";
+          cap.innerHTML = "This page did not arrive. Check the connection and";
+          var b = document.createElement("button"); b.type = "button"; b.className = "rretry"; b.textContent = "try again";
+          b.addEventListener("click", again);
+          cap.appendChild(b);
+          try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); }
         }
         function finish(cb){
           var done = false;
@@ -415,8 +486,7 @@
           turnEl.addEventListener("animationend", end, { once: true });
           setTimeout(end, 1400);
         }
-        function go(d){
-          if (busy || !cur) return;
+        function turn(d){
           var b = BOOKS[cur];
           if (single) {
             var q = p + d; if (q < 0 || q >= pages.length) return;
@@ -439,19 +509,53 @@
           void turnEl.offsetWidth; turnEl.classList.add("go");
           finish(function(){ paint(L, j, 0); paint(R, j, 1); });
         }
+        function go(d){
+          if (busy || !cur || !shown) return;
+          var b = BOOKS[cur];
+          // the spread the turn lands on (in single mode the page after the right half
+          // of spread n is on spread n + 1, whatever its left page turns out to be)
+          var target = single ? (pages[p + d] ? pages[p + d].n : (d > 0 && pages[p] && pages[p].n + 1 < b.spreads.length ? pages[p].n + 1 : -1)) : i + d;
+          if (target < 0 || target >= b.spreads.length) return;
+          var g = gen, slug = cur;
+          busy = true; waiting(true, "Loading the next page…");
+          ready(target).then(function(){
+            if (g !== gen || cur !== slug) return;
+            busy = false; waiting(false); buildPages(); turn(d);
+          }, function(){
+            if (g !== gen || cur !== slug) return;
+            failed(function(){ words(); go(d); });
+          });
+        }
         function open(slug, from){
           if (!BOOKS[slug]) return;
-          cur = slug; i = 0; p = 0; opener = from || null; busy = false;
-          var b = BOOKS[slug];
+          gen++;
+          cur = slug; i = 0; p = 0; opener = from || null; busy = false; shown = false;
+          var b = BOOKS[slug], g = gen;
           light(b.c);
           tEl.textContent = b.title;
           if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", "");
           document.documentElement.style.overflow = "hidden";
           fit();
-          for (var n = 0; n < b.spreads.length; n++) { var pre = new Image(); pre.src = url(n); }
-          var left = b.spreads.length;
-          for (var m = 0; m < b.spreads.length; m++) probe(m, function(){ if (--left === 0) { buildPages(); render(); } });
-          buildPages(); render();
+          // the book lies open on blank paper until its first spread is here, whole
+          paint(L, null); paint(R, null);
+          bookEl.setAttribute("aria-label", b.title);
+          cap.innerHTML = b.spreads[0][0];
+          prev.disabled = next.disabled = true;
+          dlg.classList.add("loading");
+          waiting(true, "Opening the book…");
+          var first = function(){
+            ready(0).then(function(){
+              if (g !== gen) return;
+              shown = true; dlg.classList.remove("loading"); waiting(false);
+              buildPages(); render();
+              preload(slug, 1, g);
+            }, function(){
+              if (g !== gen) return;
+              dlg.classList.remove("loading");
+              failed(function(){ dlg.classList.add("loading"); waiting(true, "Opening the book…"); cap.innerHTML = b.spreads[0][0]; first(); });
+            });
+          };
+          first();
           try { history.replaceState(null, "", "#" + slug); } catch (e) {}
           // the book comes out of its place on the shelf
           var img = from && from.querySelector("img");
@@ -464,11 +568,63 @@
               ], { duration: 700, easing: "cubic-bezier(.2,.7,.2,1)" });
             }
           }
+          syncFull();
           try { next.focus({ preventScroll: true, focusVisible: false }); } catch (e) { next.focus(); }
         }
+
+        /* ---- Full screen (BEUK:fullscreen) ----
+           The room goes full screen (a <dialog> itself cannot: https://fullscreen.spec.whatwg.org/#fullscreen-element-ready-check),
+           with the webkit-prefixed API for Safari and iPad. Where neither exists (iPhone
+           Safari) the room already fills the window, so the control offers "Just the pages"
+           (the title and the note step aside) and never claims full screen. F toggles it;
+           Escape leaves it before it closes the book. */
+        var fsCan = !!((room.requestFullscreen || room.webkitRequestFullscreen) && (document.fullscreenEnabled || document.webkitFullscreenEnabled));
+        function fsNow(){ return document.fullscreenElement || document.webkitFullscreenElement || null; }
+        function fsOn(){ return fsNow() === room || dlg.classList.contains("imm"); }
+        function syncFull(){
+          var on = fsOn(), imm = dlg.classList.contains("imm");
+          fullBtn.hidden = false;
+          fullBtn.setAttribute("aria-pressed", on ? "true" : "false");
+          fullBtn.textContent = on ? (imm ? "Show the notes" : "Exit full screen") : (fsCan ? "Full screen" : "Just the pages");
+          fullBtn.title = fullBtn.textContent + " (F)";
+        }
+        function fsExit(){
+          if (dlg.classList.contains("imm")) { dlg.classList.remove("imm"); syncFull(); refit(); return; }
+          if (!fsNow()) return;
+          var x = document.exitFullscreen || document.webkitExitFullscreen;
+          try { var r = x.call(document); if (r && r.catch) r.catch(function(){}); } catch (e) {}
+        }
+        function fsToggle(){
+          if (fsOn()) { fsExit(); return; }
+          if (fsCan) {
+            try {
+              var q = (room.requestFullscreen || room.webkitRequestFullscreen).call(room);
+              if (q && q.catch) q.catch(function(){ fsCan = false; dlg.classList.add("imm"); syncFull(); refit(); });
+              return;
+            } catch (e) { fsCan = false; }
+          }
+          dlg.classList.add("imm"); syncFull(); refit();
+        }
+        function refit(){
+          if (!cur) return;
+          var was = single; fit();
+          if (was !== single) { if (single) { p = Math.max(0, pages.findIndex(function(x){ return x.n === i; })); } render(); } else if (shown) words();
+        }
+        fullBtn.addEventListener("click", fsToggle);
+        document.addEventListener("fullscreenchange", function(){ syncFull(); refit(); });
+        document.addEventListener("webkitfullscreenchange", function(){ syncFull(); refit(); });
+        // Escape leaves full screen (or "just the pages") first; a second Escape closes the book
+        dlg.addEventListener("cancel", function(e){ if (fsOn()) { e.preventDefault(); fsExit(); } });
+
         function close(){ if (dlg.open) dlg.close(); }
         dlg.addEventListener("close", function(){
-          cur = null;
+          gen++;
+          // stop downloading the closed book: setting src to "" cancels the request
+          var stop = pending; pending = [];
+          stop.forEach(function(im){ if (!im.complete) { try { im.removeAttribute("src"); im.src = ""; } catch (e) {} } });
+          cur = null; shown = false; busy = false; waiting(false);
+          dlg.classList.remove("loading"); dlg.classList.remove("imm");
+          if (fsNow()) fsExit();
           document.documentElement.style.overflow = "";
           try { history.replaceState(null, "", location.pathname); } catch (e) {}
           if (opener) opener.focus();
@@ -477,17 +633,15 @@
         next.addEventListener("click", function(){ go(1); });
         document.getElementById("rClose").addEventListener("click", close);
         dlg.addEventListener("keydown", function(e){
-          if (e.key === "ArrowRight" || e.key === "PageDown" || (e.key === " " && e.target.tagName !== "BUTTON")) { e.preventDefault(); go(1); }
+          if (e.key === "Escape" && fsOn()) { e.preventDefault(); fsExit(); }
+          else if ((e.key === "f" || e.key === "F") && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat) { e.preventDefault(); fsToggle(); }
+          else if (e.key === "ArrowRight" || e.key === "PageDown" || (e.key === " " && e.target.tagName !== "BUTTON")) { e.preventDefault(); go(1); }
           else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); go(-1); }
         });
         var tx = null;
         dlg.addEventListener("touchstart", function(e){ tx = e.touches[0].clientX; }, { passive: true });
         dlg.addEventListener("touchend", function(e){ if (tx == null) return; var dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); tx = null; });
-        window.addEventListener("resize", function(){
-          if (!cur) return;
-          var was = single; fit();
-          if (was !== single) { if (single) { p = Math.max(0, pages.findIndex(function(x){ return x.n === i; })); } render(); } else words();
-        });
+        window.addEventListener("resize", refit);
         Array.prototype.forEach.call(document.querySelectorAll(".book"), function(btn){
           btn.addEventListener("click", function(){ open(btn.getAttribute("data-book"), btn); });
         });
