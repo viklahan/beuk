@@ -1,20 +1,20 @@
 {
  "run": {
-  "at": "2026-10-28T00:25:09.101Z",
-  "commit": "571a690",
+  "at": "2026-10-28T01:20:53.606Z",
+  "commit": "33ebb0e",
   "seed": 20261027,
   "worldSha256": "c6774c7e68efd0be3118b5ce7be541593b655bdda44068e6b8abd35d23085d9b",
   "contentDigest": "74c402a23fe336639e1f7adb4426f5bee460f29cede5f4e87bb900cfa708e5cf",
   "checks": 112,
-  "fails": 7,
-  "gaps": 17,
+  "fails": 1,
+  "gaps": 24,
   "bugs": 3
  },
  "headline": {
   "checks": 112,
-  "pass": 105,
-  "fail": 7,
-  "gaps": 17,
+  "pass": 111,
+  "fail": 1,
+  "gaps": 24,
   "bugs": 3,
   "books": 56,
   "words": 2390430,
@@ -22,78 +22,6 @@
   "comments": 46
  },
  "failing": [
-  {
-   "id": "session.sim05.comments-jump",
-   "title": "sim05: \"jump to passage\" finds every reader comment's passage exactly (comments on a paragraph the writer has since deleted are expected not to be found)",
-   "pass": false,
-   "evidence": {
-    "jumps": [
-     {
-      "id": "e7bf78cc-474c-430e-a9c8-a604c85d14fd",
-      "found": true,
-      "exact": true,
-      "text": "They had taken three steps when the air across the doorway c"
-     },
-     {
-      "id": "c64c47a9-009a-4d8c-8442-ed1e38fabca5",
-      "found": true,
-      "exact": true,
-      "text": "\"Here,\" Brannoc said. The blade stood quivering in a blot of"
-     },
-     {
-      "id": "cbf8b9a5-2d93-48e0-9417-276c0cddd5fa",
-      "found": true,
-      "exact": true,
-      "text": "\"There was,\" Brannoc said. \"Three hundred years ago. Then th"
-     },
-     {
-      "id": "992eb7b4-fb68-4b90-839a-0e1b35a286b1",
-      "found": true,
-      "exact": true,
-      "text": "\"It isn't guarding the stone,\" Wren said. \"The stone is guar"
-     },
-     {
-      "id": "fb1d2564-48b3-4b10-b64c-fabe98845849",
-      "found": false,
-      "exact": false,
-      "text": null
-     }
-    ],
-    "onDeletedParagraph": []
-   }
-  },
-  {
-   "id": "session.sim07.deleted-counted",
-   "title": "sim07: deleting a paragraph of N words lowers the total by N (studio count)",
-   "pass": false,
-   "evidence": {
-    "deleted": "::: center\nTurquoise water beneath the Rocky Mountains.\n:::",
-    "deletedWords": 6,
-    "totalDelta": -10
-   }
-  },
-  {
-   "id": "sync.conflict-surfaced",
-   "title": "a save from a device holding an older revision is refused (409) and the conflict notice is shown — never a silent overwrite",
-   "pass": false,
-   "evidence": {
-    "round1": {},
-    "round2": {},
-    "error": "Error: waitFor timed out: () => !!(cloud.user && cloud.user.email)\n    at waitFor (file:///sim/driver.mjs:99:44)\n    at async uiSignIn (file:///sim/personas.mjs:27:3)\n    at async twoDevices (file:///sim/personas.mjs:219:28)\n    at async file:///sim/personas.mjs:313:3"
-   }
-  },
-  {
-   "id": "sync.no-silent-loss-keep-both",
-   "title": "\"Keep both\": this device's writing is on the shelf and the other device's is kept in History",
-   "pass": false,
-   "evidence": {}
-  },
-  {
-   "id": "sync.no-silent-loss-use-shelf",
-   "title": "\"Use the shelf copy\": the shelf keeps the other device's writing and this device's is kept in History",
-   "pass": false,
-   "evidence": {}
-  },
   {
    "id": "meta.own-book",
    "title": "opening another shelf book never carries the previous book's metadata onto it",
@@ -122,23 +50,35 @@
      "revision": 3
     }
    }
-  },
-  {
-   "id": "run.no-errors",
-   "title": "no step of the seed or the persona runs errored",
-   "pass": false,
-   "evidence": {
-    "seed": [],
-    "personas": [
-     {
-      "twoDevices": true,
-      "error": "Error: waitFor timed out: () => !!(cloud.user && cloud.user.email)"
-     }
-    ]
-   }
   }
  ],
  "gaps": [
+  {
+   "id": "count.empty-chapter-title",
+   "title": "When a chapter is left with no text, its title stops counting toward the book's word total, so deleting its last paragraph lowers the total by more than the words deleted.",
+   "evidence": [
+    {
+     "persona": "sim07",
+     "chapter": "Banff, Canada",
+     "deletedWords": 6,
+     "titleWords": 4,
+     "totalDelta": -10
+    }
+   ]
+  },
+  {
+   "id": "series.sync-no-merge",
+   "title": "Edits to DIFFERENT chapters on two devices are not merged: the writer must pick one copy; the other copy's chapter survives only inside a History snapshot.",
+   "evidence": {
+    "afterKeepBoth": {
+     "revision": 4,
+     "hasA1": false,
+     "hasB1": true
+    },
+    "round1PutStatus": 409,
+    "shot": "shots/sim03-twodev-01-conflict.png"
+   }
+  },
   {
    "id": "series.boxset-drops-pictures",
    "title": "A box set can only add later volumes as Word/Markdown/text files (\"Add a Book…\"), so every volume after the first arrives without its pictures, cover or front/back matter.",
@@ -304,12 +244,12 @@
    "title": "The box set EPUB carries no series metadata (no belongs-to-collection) and is titled \"<book one> — The Complete Box Set\".",
    "evidence": [
     {
-     "series": "dartagnan",
-     "opfTitle": "The Three Musketeers — The Complete Box Set"
-    },
-    {
      "series": "sim03-lunas-beach-treasure-hunt",
      "opfTitle": "Luna's Beach Treasure Hunt — Book One — The Complete Box Set"
+    },
+    {
+     "series": "dartagnan",
+     "opfTitle": "The Three Musketeers — The Complete Box Set"
     },
     {
      "series": "oz",
@@ -521,7 +461,7 @@
    "title": "A series volume's EPUB does not name its series or its place in it (no belongs-to-collection / group-position), although the book carries meta.series.",
    "evidence": {
     "file": "dartagnan-01-the-three-musketeers.epub",
-    "opfMetadata": "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"> <dc:identifier id=\"pub-id\">urn:uuid:f90d71e9-f956-4be1-be7c-410d48f5b20b</dc:identifier> <dc:title>The Three Musketeers</dc:title> <dc:language>en</dc:language> <dc:creator>Alexandre Dumas</dc:creator> <dc:rights>Copyright © 2026 Alexandre Dumas. All rights reserved.</dc:rights> <dc:date>2026</dc:date> <meta property=\"dcterms:modified\">2026-10-27T23:49:35Z</meta> <meta property=\"schema:accessMode\">textual</meta> <meta property=\"schema:accessModeSufficient\">textual</meta> <meta property=\"schema:accessibilityFeature\">structuralNavigation</meta> <meta property=\"schema:accessibilityFeature\">tableOfContents</meta> <meta property=\"schema:accessibilityHazard\">none</meta> <meta property=\"schema:accessibilitySummary\">This book is published as accessible text: it has structural navigation and a table of contents, and it can be read from start "
+    "opfMetadata": "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"> <dc:identifier id=\"pub-id\">urn:uuid:61645be5-afee-4dcd-a353-fbc2351b8c0d</dc:identifier> <dc:title>The Three Musketeers</dc:title> <dc:language>en</dc:language> <dc:creator>Alexandre Dumas</dc:creator> <dc:rights>Copyright © 2026 Alexandre Dumas. All rights reserved.</dc:rights> <dc:date>2026</dc:date> <meta property=\"dcterms:modified\">2026-10-28T00:29:22Z</meta> <meta property=\"schema:accessMode\">textual</meta> <meta property=\"schema:accessModeSufficient\">textual</meta> <meta property=\"schema:accessibilityFeature\">structuralNavigation</meta> <meta property=\"schema:accessibilityFeature\">tableOfContents</meta> <meta property=\"schema:accessibilityHazard\">none</meta> <meta property=\"schema:accessibilitySummary\">This book is published as accessible text: it has structural navigation and a table of contents, and it can be read from start "
    }
   },
   {
@@ -550,8 +490,8 @@
    "title": "Story Insights and the Bible's mentions work on the open book only; who appears in which volume of a series could only be computed by opening each volume (the simulation did this to build the presence table).",
    "evidence": {
     "presenceComputedFor": [
-     "dartagnan",
      "sim03-lunas-beach-treasure-hunt",
+     "dartagnan",
      "oz",
      "valois",
      "sim04-salt-road",
@@ -590,6 +530,85 @@
      "POST /api/shares/:id/comments/:cid/resolve",
      "POST /api/shares/:id/comments/:cid/unresolve",
      "DELETE /api/shares/:id/comments/:cid"
+    ]
+   }
+  },
+  {
+   "id": "perf.autosave-sends-whole-book",
+   "title": "Every autosave sends the whole book, pictures included: the largest illustrated volume re-uploads its full JSON on each save.",
+   "evidence": {
+    "book": "The Marvelous Land of Oz",
+    "pictures": 137,
+    "words": 41768,
+    "bytesPerSave": 49799886,
+    "putMs": 22805,
+    "postMs": 21293
+   }
+  },
+  {
+   "id": "perf.typing-latency",
+   "title": "Typing slows with the size of the whole book, not the chapter: each input event in the last chapter takes this long (the studio's own input handling, 10 events per step).",
+   "evidence": [
+    {
+     "words": 250000,
+     "msPerInput": 140
+    },
+    {
+     "words": 1000000,
+     "msPerInput": 482
+    },
+    {
+     "words": 2500000,
+     "msPerInput": 1248
+    },
+    {
+     "words": 5000000,
+     "msPerInput": 3576
+    },
+    {
+     "words": 10000000,
+     "msPerInput": 7075
+    }
+   ]
+  },
+  {
+   "id": "limit.shelf-book-size",
+   "title": "A book over the shelf's size limit (MANUSCRIPT_MAX_BYTES, 64 MiB of JSON) cannot be saved to the shelf; the studio says so and keeps it on the device.",
+   "evidence": {
+    "words": 10000000,
+    "post": {
+     "ms": 23771,
+     "bytes": 73919706,
+     "id": null,
+     "revision": null,
+     "status": "failed",
+     "error": {
+      "tooLarge": true,
+      "mb": "70.5"
+     }
+    }
+   }
+  },
+  {
+   "id": "limit.pdfx-long-book",
+   "title": "The print PDF/X job did not finish for a book of this length (the saga-length volumes of ~40,000 words printed).",
+   "evidence": {
+    "words": 250000,
+    "job": {
+     "created": true,
+     "status": "failed",
+     "ms": 276562,
+     "error": "Ghostscript exited with code null and produced no converted file.",
+     "result": "{\"tool\":\"ghostscript\",\"error\":\"Ghostscript exited with code null and produced no converted file.\",\"configured\":true}"
+    }
+   }
+  },
+  {
+   "id": "limit.page-crash",
+   "title": "The studio page crashed while working on the load-test book.",
+   "evidence": {
+    "atWords": [
+     10000000
     ]
    }
   }
@@ -694,6 +713,17 @@
    "checks": 112,
    "fails": 7,
    "gaps": 17,
+   "bugs": 3
+  },
+  {
+   "at": "2026-10-28T01:20:53.606Z",
+   "commit": "33ebb0e",
+   "seed": 20261027,
+   "worldSha256": "c6774c7e68efd0be3118b5ce7be541593b655bdda44068e6b8abd35d23085d9b",
+   "contentDigest": "74c402a23fe336639e1f7adb4426f5bee460f29cede5f4e87bb900cfa708e5cf",
+   "checks": 112,
+   "fails": 1,
+   "gaps": 24,
    "bugs": 3
   }
  ]

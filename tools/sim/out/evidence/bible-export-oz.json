@@ -2,10 +2,10 @@
  "format": "beuk-story-bible",
  "version": 1,
  "book": "The Wonderful Wizard of Oz",
- "exportedAt": "2026-10-27T23:49:37.229Z",
+ "exportedAt": "2026-10-28T00:29:22.619Z",
  "entries": [
   {
-   "id": "bzvxvd9yj",
+   "id": "b89q3ztdp",
    "type": "character",
    "name": "Dorothy",
    "aliases": [],
@@ -17,7 +17,7 @@
    "exclude": []
   },
   {
-   "id": "bx7u4c66f",
+   "id": "bjp78taoj",
    "type": "character",
    "name": "Toto",
    "aliases": [],
@@ -29,7 +29,7 @@
    "exclude": []
   },
   {
-   "id": "b131uwd56",
+   "id": "bngxsa74i",
    "type": "character",
    "name": "Scarecrow",
    "aliases": [],
@@ -41,7 +41,7 @@
    "exclude": []
   },
   {
-   "id": "bx8yzgc7s",
+   "id": "bs0uafrer",
    "type": "character",
    "name": "Tin Woodman",
    "aliases": [],
@@ -53,7 +53,7 @@
    "exclude": []
   },
   {
-   "id": "btbpptaxv",
+   "id": "bjhbuc3op",
    "type": "character",
    "name": "Lion",
    "aliases": [],
@@ -65,7 +65,7 @@
    "exclude": []
   },
   {
-   "id": "boukqc476",
+   "id": "bgs6lsq44",
    "type": "character",
    "name": "Glinda",
    "aliases": [],
@@ -77,7 +77,7 @@
    "exclude": []
   },
   {
-   "id": "b6tj0cw0a",
+   "id": "b2xzjb1cz",
    "type": "place",
    "name": "Emerald City",
    "aliases": [],
@@ -89,7 +89,7 @@
    "exclude": []
   },
   {
-   "id": "bd1nd2k83",
+   "id": "bst6ymr36",
    "type": "place",
    "name": "Kansas",
    "aliases": [],
@@ -101,7 +101,7 @@
    "exclude": []
   },
   {
-   "id": "bsty5iwzl",
+   "id": "ba6o938t7",
    "type": "group",
    "name": "Munchkins",
    "aliases": [],
@@ -113,7 +113,7 @@
    "exclude": []
   },
   {
-   "id": "boyqrjl3x",
+   "id": "b50ot8z0g",
    "type": "group",
    "name": "Winkies",
    "aliases": [],

@@ -2,10 +2,10 @@
  "format": "beuk-story-bible",
  "version": 1,
  "book": "Marguerite de Valois",
- "exportedAt": "2026-10-27T23:52:01.794Z",
+ "exportedAt": "2026-10-28T00:31:50.165Z",
  "entries": [
   {
-   "id": "bs4xd1vky",
+   "id": "b8oyps9cl",
    "type": "character",
    "name": "Charles",
    "aliases": [],
@@ -17,7 +17,7 @@
    "exclude": []
   },
   {
-   "id": "bwyxrf75d",
+   "id": "bd5ta2ul6",
    "type": "character",
    "name": "La Mole",
    "aliases": [],
@@ -29,7 +29,7 @@
    "exclude": []
   },
   {
-   "id": "beun2yjke",
+   "id": "bj5nsa0n1",
    "type": "character",
    "name": "Coconnas",
    "aliases": [],
@@ -41,7 +41,7 @@
    "exclude": []
   },
   {
-   "id": "blnm77htd",
+   "id": "bwzstagvo",
    "type": "character",
    "name": "Guise",
    "aliases": [],
@@ -53,7 +53,7 @@
    "exclude": []
   },
   {
-   "id": "bbtedjok2",
+   "id": "bsgnopbx5",
    "type": "place",
    "name": "Navarre",
    "aliases": [],
@@ -65,7 +65,7 @@
    "exclude": []
   },
   {
-   "id": "b0q28upk7",
+   "id": "bmbfqk06e",
    "type": "place",
    "name": "Paris",
    "aliases": [],
@@ -77,7 +77,7 @@
    "exclude": []
   },
   {
-   "id": "b2qm4edp2",
+   "id": "bswyqq7fz",
    "type": "place",
    "name": "Louvre",
    "aliases": [],
@@ -89,7 +89,7 @@
    "exclude": []
   },
   {
-   "id": "b1j6ow0ee",
+   "id": "bnpkohnvk",
    "type": "place",
    "name": "Anjou",
    "aliases": [],

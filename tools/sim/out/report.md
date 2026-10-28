@@ -1,12 +1,13 @@
 # Beuk world simulation — report
 
-Generated 2026-10-28T00:25:09.101Z from branch `feat/sim-world` at `571a690`, seed **20261027**. Every figure below is read from this run's own files in `tools/sim/out/`; every gap and failure cites the observation that shows it.
+Generated 2026-10-28T01:20:53.606Z from branch `feat/sim-world` at `33ebb0e`, seed **20261027**. Every figure below is read from this run's own files in `tools/sim/out/`; every gap and failure cites the observation that shows it.
 
 ## Headline
 
-- **112 checks: 105 pass, 7 fail.** 17 series/product gaps and 3 bug(s) recorded with evidence.
+- **112 checks: 111 pass, 1 fail.** 24 series/product gaps and 3 bug(s) recorded with evidence.
 - World: 10 personas (8 writers, an import-lab writer and a load-test writer), 56 books (23 public-domain saga volumes), 9 series, 2,390,430 words and 1,799 pictures on the shelves (studio counts), 8 beta-reader links, 46 reader comments.
 - World spec sha256 `c6774c7e68efd0be3118b5ce7be541593b655bdda44068e6b8abd35d23085d9b`; content digest of the seeded books `74c402a23fe336639e1f7adb4426f5bee460f29cede5f4e87bb900cfa708e5cf`.
+- Determinism across 2 runs with this seed: world spec identical (c6774c7e68ef), content digest identical (74c402a23fe3).
 
 ## World
 
@@ -35,7 +36,7 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | pass | `session.sim03.typed-landed` | sim03: the typed sentence is on the shelf |
 | pass | `session.sim03.deleted-gone` | sim03: the deleted paragraph is no longer on the shelf |
 | pass | `session.sim03.typed-counted` | sim03: typing N words raises the book's word total by N (studio count) |
-| pass | `session.sim03.deleted-counted` | sim03: deleting a paragraph of N words lowers the total by N (studio count) |
+| pass | `session.sim03.deleted-counted` | sim03: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty) |
 | pass | `session.sim03.word-total` | sim03: reordering, the Bible, goals, exports and sharing leave the word total alone |
 | pass | `session.sim03.order-saved` | sim03: the Outline move is in the shelf copy's section order |
 | pass | `session.sim03.goals` | sim03: goals typed in the Goals panel are the book's goals |
@@ -46,7 +47,7 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | pass | `session.sim04.typed-landed` | sim04: the typed sentence is on the shelf |
 | pass | `session.sim04.deleted-gone` | sim04: the deleted paragraph is no longer on the shelf |
 | pass | `session.sim04.typed-counted` | sim04: typing N words raises the book's word total by N (studio count) |
-| pass | `session.sim04.deleted-counted` | sim04: deleting a paragraph of N words lowers the total by N (studio count) |
+| pass | `session.sim04.deleted-counted` | sim04: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty) |
 | pass | `session.sim04.word-total` | sim04: reordering, the Bible, goals, exports and sharing leave the word total alone |
 | pass | `session.sim04.order-saved` | sim04: the Outline move is in the shelf copy's section order |
 | pass | `session.sim04.goals` | sim04: goals typed in the Goals panel are the book's goals |
@@ -57,18 +58,18 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | pass | `session.sim05.typed-landed` | sim05: the typed sentence is on the shelf |
 | pass | `session.sim05.deleted-gone` | sim05: the deleted paragraph is no longer on the shelf |
 | pass | `session.sim05.typed-counted` | sim05: typing N words raises the book's word total by N (studio count) |
-| pass | `session.sim05.deleted-counted` | sim05: deleting a paragraph of N words lowers the total by N (studio count) |
+| pass | `session.sim05.deleted-counted` | sim05: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty) |
 | pass | `session.sim05.word-total` | sim05: reordering, the Bible, goals, exports and sharing leave the word total alone |
 | pass | `session.sim05.order-saved` | sim05: the Outline move is in the shelf copy's section order |
 | pass | `session.sim05.goals` | sim05: goals typed in the Goals panel are the book's goals |
 | pass | `session.sim05.epub-valid` | sim05: the EPUB downloaded from Export passes EPUBCheck (0 fatal, 0 errors) |
 | pass | `session.sim05.submission-docx` | sim05: the submission manuscript downloads as a Word file |
-| **FAIL** | `session.sim05.comments-jump` | sim05: "jump to passage" finds every reader comment's passage exactly (comments on a paragraph the writer has since deleted are expected not to be found) |
+| pass | `session.sim05.comments-jump` | sim05: "jump to passage" finds every reader comment's passage exactly (comments on a paragraph the writer has since deleted are expected not to be found) |
 | pass | `session.sim05.comments-resolved` | sim05: comments resolved in the comments panel are resolved on the server |
 | pass | `session.sim06.typed-landed` | sim06: the typed sentence is on the shelf |
 | pass | `session.sim06.deleted-gone` | sim06: the deleted paragraph is no longer on the shelf |
 | pass | `session.sim06.typed-counted` | sim06: typing N words raises the book's word total by N (studio count) |
-| pass | `session.sim06.deleted-counted` | sim06: deleting a paragraph of N words lowers the total by N (studio count) |
+| pass | `session.sim06.deleted-counted` | sim06: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty) |
 | pass | `session.sim06.word-total` | sim06: reordering, the Bible, goals, exports and sharing leave the word total alone |
 | pass | `session.sim06.order-saved` | sim06: the Outline move is in the shelf copy's section order |
 | pass | `session.sim06.goals` | sim06: goals typed in the Goals panel are the book's goals |
@@ -79,7 +80,7 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | pass | `session.sim07.typed-landed` | sim07: the typed sentence is on the shelf |
 | pass | `session.sim07.deleted-gone` | sim07: the deleted paragraph is no longer on the shelf |
 | pass | `session.sim07.typed-counted` | sim07: typing N words raises the book's word total by N (studio count) |
-| **FAIL** | `session.sim07.deleted-counted` | sim07: deleting a paragraph of N words lowers the total by N (studio count) |
+| pass | `session.sim07.deleted-counted` | sim07: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty) |
 | pass | `session.sim07.word-total` | sim07: reordering, the Bible, goals, exports and sharing leave the word total alone |
 | pass | `session.sim07.order-saved` | sim07: the Outline move is in the shelf copy's section order |
 | pass | `session.sim07.goals` | sim07: goals typed in the Goals panel are the book's goals |
@@ -90,7 +91,7 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | pass | `session.sim08.typed-landed` | sim08: the typed sentence is on the shelf |
 | pass | `session.sim08.deleted-gone` | sim08: the deleted paragraph is no longer on the shelf |
 | pass | `session.sim08.typed-counted` | sim08: typing N words raises the book's word total by N (studio count) |
-| pass | `session.sim08.deleted-counted` | sim08: deleting a paragraph of N words lowers the total by N (studio count) |
+| pass | `session.sim08.deleted-counted` | sim08: deleting a paragraph of N words lowers the total by N (plus the chapter title's words when the chapter is left empty) |
 | pass | `session.sim08.word-total` | sim08: reordering, the Bible, goals, exports and sharing leave the word total alone |
 | pass | `session.sim08.order-saved` | sim08: the Outline move is in the shelf copy's section order |
 | pass | `session.sim08.goals` | sim08: goals typed in the Goals panel are the book's goals |
@@ -99,9 +100,9 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | pass | `session.sim08.comments-jump` | sim08: "jump to passage" finds every reader comment's passage exactly (comments on a paragraph the writer has since deleted are expected not to be found) |
 | pass | `session.sim08.comments-resolved` | sim08: comments resolved in the comments panel are resolved on the server |
 | pass | `revisions.one-per-save` | each book's revision = 1 (create) + the number of accepted saves the browsers made |
-| **FAIL** | `sync.conflict-surfaced` | a save from a device holding an older revision is refused (409) and the conflict notice is shown — never a silent overwrite |
-| **FAIL** | `sync.no-silent-loss-keep-both` | "Keep both": this device's writing is on the shelf and the other device's is kept in History |
-| **FAIL** | `sync.no-silent-loss-use-shelf` | "Use the shelf copy": the shelf keeps the other device's writing and this device's is kept in History |
+| pass | `sync.conflict-surfaced` | a save from a device holding an older revision is refused (409) and the conflict notice is shown — never a silent overwrite |
+| pass | `sync.no-silent-loss-keep-both` | "Keep both": this device's writing is on the shelf and the other device's is kept in History |
+| pass | `sync.no-silent-loss-use-shelf` | "Use the shelf copy": the shelf keeps the other device's writing and this device's is kept in History |
 | pass | `isolation.cross-user` | sim03 cannot read, change, delete, share or download sim04's book (404/401, nothing leaked) and the book is untouched |
 | pass | `share.sim03.frozen` | sim03: the reading copy made before the session's edits does not show them |
 | pass | `share.sim03.ui-share-current` | sim03: a link made in the UI after the edits shows them |
@@ -140,81 +141,9 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 | **FAIL** | `meta.own-book` | opening another shelf book never carries the previous book's metadata onto it |
 | pass | `import.lab` | import path chosen by measurement: single (titles, pictures placed, captions, italics) |
 | pass | `auth.ui-sign-in-first-time` | every sign-in through the UI with the right email and password succeeded at the first attempt |
-| **FAIL** | `run.no-errors` | no step of the seed or the persona runs errored |
+| pass | `run.no-errors` | no step of the seed or the persona runs errored |
 
 ### Failing checks, with evidence
-
-#### `session.sim05.comments-jump` — sim05: "jump to passage" finds every reader comment's passage exactly (comments on a paragraph the writer has since deleted are expected not to be found)
-
-```json
-{
- "jumps": [
-  {
-   "id": "e7bf78cc-474c-430e-a9c8-a604c85d14fd",
-   "found": true,
-   "exact": true,
-   "text": "They had taken three steps when the air across the doorway c"
-  },
-  {
-   "id": "c64c47a9-009a-4d8c-8442-ed1e38fabca5",
-   "found": true,
-   "exact": true,
-   "text": "\"Here,\" Brannoc said. The blade stood quivering in a blot of"
-  },
-  {
-   "id": "cbf8b9a5-2d93-48e0-9417-276c0cddd5fa",
-   "found": true,
-   "exact": true,
-   "text": "\"There was,\" Brannoc said. \"Three hundred years ago. Then th"
-  },
-  {
-   "id": "992eb7b4-fb68-4b90-839a-0e1b35a286b1",
-   "found": true,
-   "exact": true,
-   "text": "\"It isn't guarding the stone,\" Wren said. \"The stone is guar"
-  },
-  {
-   "id": "fb1d2564-48b3-4b10-b64c-fabe98845849",
-   "found": false,
-   "exact": false,
-   "text": null
-  }
- ],
- "onDeletedParagraph": []
-}
-```
-
-#### `session.sim07.deleted-counted` — sim07: deleting a paragraph of N words lowers the total by N (studio count)
-
-```json
-{
- "deleted": "::: center\nTurquoise water beneath the Rocky Mountains.\n:::",
- "deletedWords": 6,
- "totalDelta": -10
-}
-```
-
-#### `sync.conflict-surfaced` — a save from a device holding an older revision is refused (409) and the conflict notice is shown — never a silent overwrite
-
-```json
-{
- "round1": {},
- "round2": {},
- "error": "Error: waitFor timed out: () => !!(cloud.user && cloud.user.email)\n    at waitFor (file:///sim/driver.mjs:99:44)\n    at async uiSignIn (file:///sim/personas.mjs:27:3)\n    at async twoDevices (file:///sim/personas.mjs:219:28)\n    at async file:///sim/personas.mjs:313:3"
-}
-```
-
-#### `sync.no-silent-loss-keep-both` — "Keep both": this device's writing is on the shelf and the other device's is kept in History
-
-```json
-{}
-```
-
-#### `sync.no-silent-loss-use-shelf` — "Use the shelf copy": the shelf keeps the other device's writing and this device's is kept in History
-
-```json
-{}
-```
 
 #### `meta.own-book` — opening another shelf book never carries the previous book's metadata onto it
 
@@ -245,21 +174,23 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 }
 ```
 
-#### `run.no-errors` — no step of the seed or the persona runs errored
+## Series gaps — what a writer of an interconnected series cannot do today
+
+### Edits to DIFFERENT chapters on two devices are not merged: the writer must pick one copy; the other copy's chapter survives only inside a History snapshot.
+
+`series.sync-no-merge`
 
 ```json
 {
- "seed": [],
- "personas": [
-  {
-   "twoDevices": true,
-   "error": "Error: waitFor timed out: () => !!(cloud.user && cloud.user.email)"
-  }
- ]
+ "afterKeepBoth": {
+  "revision": 4,
+  "hasA1": false,
+  "hasB1": true
+ },
+ "round1PutStatus": 409,
+ "shot": "shots/sim03-twodev-01-conflict.png"
 }
 ```
-
-## Series gaps — what a writer of an interconnected series cannot do today
 
 ### A box set can only add later volumes as Word/Markdown/text files ("Add a Book…"), so every volume after the first arrives without its pictures, cover or front/back matter.
 
@@ -431,12 +362,12 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 ```json
 [
  {
-  "series": "dartagnan",
-  "opfTitle": "The Three Musketeers — The Complete Box Set"
- },
- {
   "series": "sim03-lunas-beach-treasure-hunt",
   "opfTitle": "Luna's Beach Treasure Hunt — Book One — The Complete Box Set"
+ },
+ {
+  "series": "dartagnan",
+  "opfTitle": "The Three Musketeers — The Complete Box Set"
  },
  {
   "series": "oz",
@@ -669,7 +600,7 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 ```json
 {
  "file": "dartagnan-01-the-three-musketeers.epub",
- "opfMetadata": "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"> <dc:identifier id=\"pub-id\">urn:uuid:f90d71e9-f956-4be1-be7c-410d48f5b20b</dc:identifier> <dc:title>The Three Musketeers</dc:title> <dc:language>en</dc:language> <dc:creator>Alexandre Dumas</dc:creator> <dc:rights>Copyright © 2026 Alexandre Dumas. All rights reserved.</dc:rights> <dc:date>2026</dc:date> <meta property=\"dcterms:modified\">2026-10-27T23:49:35Z</meta> <meta property=\"schema:accessMode\">textual</meta> <meta property=\"schema:accessModeSufficient\">textual</meta> <meta property=\"schema:accessibilityFeature\">structuralNavigation</meta> <meta property=\"schema:accessibilityFeature\">tableOfContents</meta> <meta property=\"schema:accessibilityHazard\">none</meta> <meta property=\"schema:accessibilitySummary\">This book is published as accessible text: it has structural navigation and a table of contents, and it can be read from start "
+ "opfMetadata": "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"> <dc:identifier id=\"pub-id\">urn:uuid:61645be5-afee-4dcd-a353-fbc2351b8c0d</dc:identifier> <dc:title>The Three Musketeers</dc:title> <dc:language>en</dc:language> <dc:creator>Alexandre Dumas</dc:creator> <dc:rights>Copyright © 2026 Alexandre Dumas. All rights reserved.</dc:rights> <dc:date>2026</dc:date> <meta property=\"dcterms:modified\">2026-10-28T00:29:22Z</meta> <meta property=\"schema:accessMode\">textual</meta> <meta property=\"schema:accessModeSufficient\">textual</meta> <meta property=\"schema:accessibilityFeature\">structuralNavigation</meta> <meta property=\"schema:accessibilityFeature\">tableOfContents</meta> <meta property=\"schema:accessibilityHazard\">none</meta> <meta property=\"schema:accessibilitySummary\">This book is published as accessible text: it has structural navigation and a table of contents, and it can be read from start "
 }
 ```
 
@@ -704,8 +635,8 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 ```json
 {
  "presenceComputedFor": [
-  "dartagnan",
   "sim03-lunas-beach-treasure-hunt",
+  "dartagnan",
   "oz",
   "valois",
   "sim04-salt-road",
@@ -718,6 +649,22 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
 ```
 
 ## Other gaps and bugs found
+
+### Gap: When a chapter is left with no text, its title stops counting toward the book's word total, so deleting its last paragraph lowers the total by more than the words deleted.
+
+`count.empty-chapter-title`
+
+```json
+[
+ {
+  "persona": "sim07",
+  "chapter": "Banff, Canada",
+  "deletedWords": 6,
+  "titleWords": 4,
+  "totalDelta": -10
+ }
+]
+```
 
 ### Gap: Bulk import places Markdown pictures but drops their captions ("![alt](file \"caption\")").
 
@@ -764,6 +711,100 @@ Books come only from existing content: the studio's sample, the Ramp gallery boo
   "POST /api/shares/:id/comments/:cid/resolve",
   "POST /api/shares/:id/comments/:cid/unresolve",
   "DELETE /api/shares/:id/comments/:cid"
+ ]
+}
+```
+
+### Gap: Every autosave sends the whole book, pictures included: the largest illustrated volume re-uploads its full JSON on each save.
+
+`perf.autosave-sends-whole-book`
+
+```json
+{
+ "book": "The Marvelous Land of Oz",
+ "pictures": 137,
+ "words": 41768,
+ "bytesPerSave": 49799886,
+ "putMs": 22805,
+ "postMs": 21293
+}
+```
+
+### Gap: Typing slows with the size of the whole book, not the chapter: each input event in the last chapter takes this long (the studio's own input handling, 10 events per step).
+
+`perf.typing-latency`
+
+```json
+[
+ {
+  "words": 250000,
+  "msPerInput": 140
+ },
+ {
+  "words": 1000000,
+  "msPerInput": 482
+ },
+ {
+  "words": 2500000,
+  "msPerInput": 1248
+ },
+ {
+  "words": 5000000,
+  "msPerInput": 3576
+ },
+ {
+  "words": 10000000,
+  "msPerInput": 7075
+ }
+]
+```
+
+### Gap: A book over the shelf's size limit (MANUSCRIPT_MAX_BYTES, 64 MiB of JSON) cannot be saved to the shelf; the studio says so and keeps it on the device.
+
+`limit.shelf-book-size`
+
+```json
+{
+ "words": 10000000,
+ "post": {
+  "ms": 23771,
+  "bytes": 73919706,
+  "id": null,
+  "revision": null,
+  "status": "failed",
+  "error": {
+   "tooLarge": true,
+   "mb": "70.5"
+  }
+ }
+}
+```
+
+### Gap: The print PDF/X job did not finish for a book of this length (the saga-length volumes of ~40,000 words printed).
+
+`limit.pdfx-long-book`
+
+```json
+{
+ "words": 250000,
+ "job": {
+  "created": true,
+  "status": "failed",
+  "ms": 276562,
+  "error": "Ghostscript exited with code null and produced no converted file.",
+  "result": "{\"tool\":\"ghostscript\",\"error\":\"Ghostscript exited with code null and produced no converted file.\",\"configured\":true}"
+ }
+}
+```
+
+### Gap: The studio page crashed while working on the load-test book.
+
+`limit.page-crash`
+
+```json
+{
+ "atWords": [
+  10000000
  ]
 }
 ```
@@ -873,52 +914,52 @@ Measured in the studio (headless Chromium, the sim stack): words/sections/pictur
 | # | Volume | Words | Sections | Pictures | Doc MB | POST | PUT | Bible pass | EPUB build | EPUB MB | EPUBCheck |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | | **The d'Artagnan Romances** | | | | | | | | | | |
-| 1 | The Three Musketeers | 229,144 | 79 | 0 | 1.3 | 815 ms | 827 ms | 112 ms | 544 ms | 1.5 | 0 errors, 0 warnings |
-| 2 | Twenty Years After | 241,642 | 101 | 0 | 1.4 | 729 ms | 636 ms | 94 ms | 1.1 s | 1.6 | 0 errors, 0 warnings |
-| 3 | The Vicomte de Bragelonne | 187,586 | 86 | 0 | 1.1 | 609 ms | 684 ms | 51 ms | 1.4 s | 1.2 | 0 errors, 0 warnings |
-| 4 | Ten Years Later | 186,520 | 77 | 0 | 1.1 | 996 ms | 799 ms | 93 ms | 1.3 s | 1.2 | 0 errors, 0 warnings |
-| 5 | Louise de la Vallière | 166,847 | 79 | 0 | 1.0 | 1.0 s | 382 ms | 54 ms | 392 ms | 1.1 | 0 errors, 0 warnings |
-| 6 | The Man in the Iron Mask | 172,342 | 72 | 0 | 1.0 | 788 ms | 832 ms | 79 ms | 964 ms | 1.1 | 0 errors, 0 warnings |
+| 1 | The Three Musketeers | 229,144 | 79 | 0 | 1.3 | 942 ms | 420 ms | 81 ms | 384 ms | 1.5 | 0 errors, 0 warnings |
+| 2 | Twenty Years After | 241,642 | 101 | 0 | 1.4 | 643 ms | 611 ms | 89 ms | 1.0 s | 1.6 | 0 errors, 0 warnings |
+| 3 | The Vicomte de Bragelonne | 187,586 | 86 | 0 | 1.1 | 570 ms | 946 ms | 84 ms | 352 ms | 1.2 | 0 errors, 0 warnings |
+| 4 | Ten Years Later | 186,520 | 77 | 0 | 1.1 | 967 ms | 499 ms | 114 ms | 557 ms | 1.2 | 0 errors, 0 warnings |
+| 5 | Louise de la Vallière | 166,847 | 79 | 0 | 1.0 | 441 ms | 618 ms | 65 ms | 1.0 s | 1.1 | 0 errors, 0 warnings |
+| 6 | The Man in the Iron Mask | 172,342 | 72 | 0 | 1.0 | 535 ms | 609 ms | 58 ms | 466 ms | 1.1 | 0 errors, 0 warnings |
 | | **The Valois Romances** | | | | | | | | | | |
-| 1 | Marguerite de Valois | 201,925 | 78 | 2 | 2.3 | 1.2 s | 1.4 s | 43 ms | 395 ms | 1.5 | 0 errors, 0 warnings |
-| 2 | Chicot the Jester | 137,927 | 108 | 0 | 0.8 | 395 ms | 564 ms | 34 ms | 1.1 s | 1.0 | 0 errors, 0 warnings |
-| 3 | The Forty-Five Guardsmen | 150,265 | 102 | 6 | 3.6 | 1.7 s | 1.6 s | 45 ms | 724 ms | 2.6 | 0 errors, 0 warnings |
+| 1 | Marguerite de Valois | 201,925 | 78 | 2 | 2.3 | 999 ms | 927 ms | 46 ms | 560 ms | 1.5 | 0 errors, 0 warnings |
+| 2 | Chicot the Jester | 137,927 | 108 | 0 | 0.8 | 666 ms | 603 ms | 30 ms | 1.0 s | 1.0 | 0 errors, 0 warnings |
+| 3 | The Forty-Five Guardsmen | 150,265 | 102 | 6 | 3.6 | 1.5 s | 1.1 s | 40 ms | 380 ms | 2.6 | 0 errors, 0 warnings |
 | | **The Oz Books** | | | | | | | | | | |
-| 1 | The Wonderful Wizard of Oz | 39,895 | 36 | 148 | 13.5 | 3.8 s | 3.9 s | 20 ms | 717 ms | 10.2 | 0 errors, 0 warnings |
-| 2 | The Marvelous Land of Oz | 41,768 | 36 | 137 | 47.5 | 19 s | 23 s | 16 ms | 2.9 s | 35.8 | 0 errors, 0 warnings |
-| 3 | Ozma of Oz | 38,962 | 33 | 110 | 6.2 | 2.3 s | 4.3 s | 102 ms | 634 ms | 4.7 | 0 errors, 0 warnings |
-| 4 | Dorothy and the Wizard in Oz | 42,218 | 32 | 87 | 4.6 | 1.5 s | 1.6 s | 24 ms | 401 ms | 3.5 | 0 errors, 0 warnings |
-| 5 | The Road to Oz | 39,727 | 36 | 130 | 6.4 | 2.6 s | 1.6 s | 20 ms | 428 ms | 4.8 | 0 errors, 0 warnings |
-| 6 | The Emerald City of Oz | 53,573 | 42 | 115 | 5.7 | 2.3 s | 1.6 s | 31 ms | 408 ms | 4.3 | 0 errors, 0 warnings |
-| 7 | The Patchwork Girl of Oz | 57,958 | 40 | 151 | 12.9 | 4.6 s | 5.3 s | 21 ms | 794 ms | 9.7 | 0 errors, 0 warnings |
-| 8 | Tik-Tok of Oz | 48,221 | 37 | 82 | 4.4 | 2.0 s | 1.7 s | 28 ms | 414 ms | 3.4 | 0 errors, 0 warnings |
-| 9 | The Scarecrow of Oz | 45,434 | 36 | 111 | 9.1 | 4.3 s | 4.4 s | 23 ms | 633 ms | 6.9 | 0 errors, 0 warnings |
-| 10 | Rinkitink in Oz | 49,161 | 36 | 113 | 7.5 | 4.2 s | 3.8 s | 20 ms | 331 ms | 5.6 | 0 errors, 0 warnings |
-| 11 | The Lost Princess of Oz | 46,879 | 38 | 114 | 5.3 | 1.4 s | 1.2 s | 23 ms | 264 ms | 4.0 | 0 errors, 0 warnings |
-| 12 | The Tin Woodman of Oz | 44,333 | 36 | 72 | 4.1 | 2.3 s | 1.7 s | 18 ms | 293 ms | 3.1 | 0 errors, 0 warnings |
-| 13 | The Magic of Oz | 41,165 | 35 | 109 | 7.6 | 3.4 s | 2.5 s | 33 ms | 468 ms | 5.9 | 0 errors, 0 warnings |
-| 14 | Glinda of Oz | 39,869 | 36 | 103 | 3.5 | 1.1 s | 1.4 s | 11 ms | 256 ms | 2.7 | 0 errors, 0 warnings |
+| 1 | The Wonderful Wizard of Oz | 39,895 | 36 | 148 | 13.5 | 7.0 s | 3.3 s | 12 ms | 1.3 s | 10.2 | 0 errors, 0 warnings |
+| 2 | The Marvelous Land of Oz | 41,768 | 36 | 137 | 47.5 | 21 s | 23 s | 18 ms | 3.0 s | 35.8 | 0 errors, 0 warnings |
+| 3 | Ozma of Oz | 38,962 | 33 | 110 | 6.2 | 2.2 s | 2.4 s | 84 ms | 398 ms | 4.7 | 0 errors, 0 warnings |
+| 4 | Dorothy and the Wizard in Oz | 42,218 | 32 | 87 | 4.6 | 1.5 s | 1.4 s | 18 ms | 308 ms | 3.5 | 0 errors, 0 warnings |
+| 5 | The Road to Oz | 39,727 | 36 | 130 | 6.4 | 1.9 s | 1.9 s | 12 ms | 355 ms | 4.8 | 0 errors, 0 warnings |
+| 6 | The Emerald City of Oz | 53,573 | 42 | 115 | 5.7 | 2.0 s | 1.8 s | 20 ms | 399 ms | 4.3 | 0 errors, 0 warnings |
+| 7 | The Patchwork Girl of Oz | 57,958 | 40 | 151 | 12.9 | 4.8 s | 4.4 s | 22 ms | 747 ms | 9.7 | 0 errors, 0 warnings |
+| 8 | Tik-Tok of Oz | 48,221 | 37 | 82 | 4.4 | 1.2 s | 1.0 s | 19 ms | 292 ms | 3.4 | 0 errors, 0 warnings |
+| 9 | The Scarecrow of Oz | 45,434 | 36 | 111 | 9.1 | 2.3 s | 1.9 s | 17 ms | 470 ms | 6.9 | 0 errors, 0 warnings |
+| 10 | Rinkitink in Oz | 49,161 | 36 | 113 | 7.5 | 2.5 s | 1.8 s | 27 ms | 435 ms | 5.6 | 0 errors, 0 warnings |
+| 11 | The Lost Princess of Oz | 46,879 | 38 | 114 | 5.3 | 1.1 s | 1.3 s | 12 ms | 254 ms | 4.0 | 0 errors, 0 warnings |
+| 12 | The Tin Woodman of Oz | 44,333 | 36 | 72 | 4.1 | 1.3 s | 965 ms | 25 ms | 219 ms | 3.1 | 0 errors, 0 warnings |
+| 13 | The Magic of Oz | 41,165 | 35 | 109 | 7.6 | 1.8 s | 2.7 s | 18 ms | 398 ms | 5.9 | 0 errors, 0 warnings |
+| 14 | Glinda of Oz | 39,869 | 36 | 103 | 3.5 | 849 ms | 870 ms | 11 ms | 243 ms | 2.7 | 0 errors, 0 warnings |
 
 ### Real print PDFs (renderer + Ghostscript PDF/X job)
 
 | Volume | Print HTML build | Job | Job time | Pages | Result |
 |---|---|---|---|---|---|
-| The Wonderful Wizard of Oz | 242 ms (13.4 MB) | done | 111 s | 264 | {"tool":"ghostscript","press":{"ink":{"dpi":100,"maxTacPct":323.9,"perPagePct":[100,100,100,100,0,100,100,0,318.4,315.7, |
-| Ozma of Oz | 227 ms (6.1 MB) | done | 71 s | 232 | {"tool":"ghostscript","press":{"ink":{"dpi":100,"maxTacPct":324.3,"perPagePct":[100,100,100,100,0,100,100,0,318.4,314.5, |
+| The Wonderful Wizard of Oz | 179 ms (13.4 MB) | done | 102 s | 264 | PDF/X-1a:2001, fonts embedded: true, 33.1 MB |
+| Ozma of Oz | 144 ms (6.1 MB) | done | 81 s | 232 | PDF/X-1a:2001, fonts embedded: true, 19.4 MB |
 
 ## Box sets (the studio's own box-set path)
 
 | Series | Volumes | Build | Size MB | Pictures in volumes after the first (source → box set) | EPUBCheck |
 |---|---|---|---|---|---|
-| The d'Artagnan Romances | 6 | 2.0 s | 7.6 | 0→0, 0→0, 0→0, 0→0, 0→0 | 0 fatal, 0 errors |
-| The Valois Romances | 3 | 1.3 s | 3.5 | 0→0, 6→0 | 0 fatal, 0 errors |
-| The Oz Books | 14 | 1.3 s | 14.2 | 137→0, 110→0, 87→0, 130→0, 115→0, 151→0, 82→0, 111→0, 113→0, 114→0, 72→0, 109→0, 103→0 | 0 fatal, 0 errors |
-| Luna's Beach Treasure Hunt | 4 | 432 ms | 3.5 | 3→0, 3→0, 3→0 | 0 fatal, 0 errors |
-| Salt Road | 3 | 87 ms | 1.1 | 3→0, 1→0 | 0 fatal, 0 errors |
-| The Lantern Coast | 4 | 396 ms | 3.1 | 11→0, 11→0, 10→0 | 0 fatal, 0 errors |
-| The Travel Guide | 3 | 243 ms | 6.2 | 3→0, 3→0 | 0 fatal, 0 errors |
-| Four Kitchens | 4 | 111 ms | 1.2 | 1→0, 1→0, 1→0 | 0 fatal, 0 errors |
-| The Book That Reads You | 3 | 26 ms | 0.1 | 0→0, 0→0 | 0 fatal, 0 errors |
+| The d'Artagnan Romances | 6 | 1.3 s | 7.6 | 0→0, 0→0, 0→0, 0→0, 0→0 | 0 fatal, 0 errors |
+| The Valois Romances | 3 | 1.2 s | 3.5 | 0→0, 6→0 | 0 fatal, 0 errors |
+| The Oz Books | 14 | 2.1 s | 14.2 | 137→0, 110→0, 87→0, 130→0, 115→0, 151→0, 82→0, 111→0, 113→0, 114→0, 72→0, 109→0, 103→0 | 0 fatal, 0 errors |
+| Luna's Beach Treasure Hunt | 4 | 178 ms | 3.5 | 3→0, 3→0, 3→0 | 0 fatal, 0 errors |
+| Salt Road | 3 | 70 ms | 1.1 | 3→0, 1→0 | 0 fatal, 0 errors |
+| The Lantern Coast | 4 | 408 ms | 3.1 | 11→0, 11→0, 10→0 | 0 fatal, 0 errors |
+| The Travel Guide | 3 | 226 ms | 6.2 | 3→0, 3→0 | 0 fatal, 0 errors |
+| Four Kitchens | 4 | 54 ms | 1.2 | 1→0, 1→0, 1→0 | 0 fatal, 0 errors |
+| The Book That Reads You | 3 | 28 ms | 0.1 | 0→0, 0→0 | 0 fatal, 0 errors |
 
 ## Which import path keeps a saga best (measured)
 
@@ -926,10 +967,10 @@ Decision rule (fixed in code): more chapter titles kept, then more pictures plac
 
 | Volume | Path | Chapter sections | Titles kept | Pictures placed | Captions | Italic spans | Series from frontmatter | Import time |
 |---|---|---|---|---|---|---|---|---|
-| The Three Musketeers | Import (one file) + image library | 68 (prepared 67) | 67/67 | 0/0 | 0 | 323 | no | 1.3 s |
-| The Three Musketeers | Bulk import (.md + picture files) | 68 (prepared 67) | 67/67 | 0/0 | 0 | 323 | yes | 1.7 s |
-| The Wonderful Wizard of Oz | Import (one file) + image library | 25 (prepared 24) | 24/24 | 148/148 | 23 | 0 | no | 471 ms |
-| The Wonderful Wizard of Oz | Bulk import (.md + picture files) | 25 (prepared 24) | 24/24 | 148/148 | 0 | 0 | yes | 8.1 s |
+| The Three Musketeers | Import (one file) + image library | 68 (prepared 67) | 67/67 | 0/0 | 0 | 323 | no | 812 ms |
+| The Three Musketeers | Bulk import (.md + picture files) | 68 (prepared 67) | 67/67 | 0/0 | 0 | 323 | yes | 1.1 s |
+| The Wonderful Wizard of Oz | Import (one file) + image library | 25 (prepared 24) | 24/24 | 148/148 | 23 | 0 | no | 430 ms |
+| The Wonderful Wizard of Oz | Bulk import (.md + picture files) | 25 (prepared 24) | 24/24 | 148/148 | 0 | 0 | yes | 9.1 s |
 
 ## Load test: "SIM LOAD TEST — not a book"
 
@@ -937,18 +978,19 @@ Real saga text (2,298,130 words) repeated to each target, imported as one book o
 
 | Target words | Markdown MB | import | wordCount | bibleMentionPass | serialize | post | put | reopen | typing | epub | printHtml | pdfx |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 250,000 | 1.4 | 1.2 s | 250,147 w, 75 ch, 34 ms | 69 ms | 1.4 MB, 71 ms | saved 686 ms | saved 892 ms | 706 ms | 10 inputs 2.0 s | 2.0 s, 1.6 MB, archive saved | 217 ms, 1.5 MB, archive saved | failed 115 s |
-| 1,000,000 | 5.6 | 6.1 s | 1,000,720 w, 363 ch, 102 ms | 276 ms | 5.7 MB, 127 ms | saved 2.8 s | saved 1.9 s | 1.8 s | 10 inputs 4.9 s | 7.4 s, 6.4 MB, archive saved | 642 ms, 6.1 MB, archive saved | – |
-| 2,500,000 | 13.7 | 11 s | 2,502,054 w, 1090 ch, 256 ms | 625 ms | 17.6 MB, 532 ms | saved 6.6 s | saved 5.7 s | 3.9 s | 10 inputs 13 s | 23 s, 16.1 MB, archive saved | 1.5 s, 15.2 MB, archive saved | – |
-| 5,000,000 | 27.4 | 22 s | 5,004,090 w, 2191 ch, 557 ms | 1.2 s | 35.2 MB, 467 ms | saved 18 s | saved 20 s | 9.0 s | 10 inputs 28 s | 60 s, 32.1 MB, archive saved | 3.8 s, 30.5 MB, archive saved | – |
-| 10,000,000 | 54.8 | 50 s | 10,008,280 w, 4413 ch, 1.2 s | 2.7 s | 70.5 MB, 919 ms | **failed** 17 s {"tooLarge":true,"mb":"70.5"} | – | – | 10 inputs 62 s | 127 s, 64.3 MB, archive **413** export too large | 8.1 s, 61.0 MB, archive **413** export too large | – |
+| 250,000 | 1.4 | 1.1 s | 250,147 w, 75 ch, 32 ms | 78 ms | 1.4 MB, 15 ms | saved 731 ms | saved 600 ms | 690 ms | 10 inputs 1.4 s | 1.1 s, 1.6 MB, archive saved | 162 ms, 1.5 MB, archive saved | failed 277 s |
+| 1,000,000 | 5.6 | 6.7 s | 1,000,720 w, 363 ch, 104 ms | 290 ms | 5.7 MB, 122 ms | saved 4.0 s | saved 1.9 s | 2.7 s | 10 inputs 4.8 s | 7.0 s, 6.4 MB, archive saved | 678 ms, 6.1 MB, archive saved | – |
+| 2,500,000 | 13.7 | 11 s | 2,502,054 w, 1090 ch, 275 ms | 669 ms | 17.6 MB, 621 ms | saved 8.1 s | saved 7.2 s | 5.2 s | 10 inputs 12 s | 24 s, 16.1 MB, archive saved | 1.7 s, 15.2 MB, archive saved | – |
+| 5,000,000 | 27.4 | 21 s | 5,004,090 w, 2191 ch, 611 ms | 1.3 s | 35.2 MB, 506 ms | saved 14 s | saved 17 s | 11 s | 10 inputs 36 s | 68 s, 32.1 MB, archive saved | 5.0 s, 30.5 MB, archive saved | – |
+| 10,000,000 | 54.8 | 61 s | 10,008,280 w, 4413 ch, 1.2 s | 2.6 s | 70.5 MB, 1.9 s | **failed** 24 s {"tooLarge":true,"mb":"70.5"} | – | – | 10 inputs 71 s | **FAIL** 900 s: over the 900 s limit | **FAIL** 0 ms: not run: the page was still busy with an operation that ran over its limit | – |
 
 ### Limits found
 
-- **post**: works at 5,000,000 words; first failure at 10,000,000 words — {  "ms": 17326.300000071526,  "bytes": 73919706,  "id": null,  "revision": null,  "status": "failed",  "error": {   "tooLarge": true,   "mb": "70.5"  } }
-- **epub**: works at 10,000,000 words; first failure at 10,000,000 words — {  "ms": 126812.69999992847,  "bytes": 67451743,  "archive": {   "ms": 5629.200000047684,   "id": null,   "status": 413,   "error": "export too large",   "sha256": null  } }
-- **printHtml**: works at 10,000,000 words; first failure at 10,000,000 words — {  "ms": 8104,  "bytes": 63920847,  "archive": {   "ms": 3364.5,   "id": null,   "status": 413,   "error": "export too large",   "sha256": null  } }
-- **pdfx**: works at no step words; first failure at 250,000 words — "Ghostscript exited with code null and produced no converted file."
+- **post**: works up to 5,000,000 words; fails at 10,000,000 words — {  "tooLarge": true,  "mb": "70.5" }
+- **epub**: works up to 5,000,000 words; fails at 10,000,000 words — "over the 900 s limit"
+- **printHtml**: works up to 5,000,000 words; fails at 10,000,000 words — "not run: the page was still busy with an operation that ran over its limit"
+- **pdfx**: fails at every step tried; fails at 250,000 words — "Ghostscript exited with code null and produced no converted file."
+- **typing** (10 input events into the last chapter, each running the studio's own input handling): 250,000 words: 140 ms per input; 1,000,000 words: 482 ms per input; 2,500,000 words: 1248 ms per input; 5,000,000 words: 3576 ms per input; 10,000,000 words: 7075 ms per input.
 
 ## Persona sessions (real UI, in parallel)
 
@@ -964,13 +1006,118 @@ Real saga text (2,298,130 words) repeated to each target, imported as one book o
 ### One writer, two devices
 
 ```json
-[]
+[
+ {
+  "step": "both-open",
+  "name": "both-open",
+  "at": "2026-10-28T00:49:30.611Z",
+  "revA": 2,
+  "revB": 2,
+  "chapterA": "Sydney Harbour, Australia",
+  "chapterB": "Machu Picchu, Peru"
+ },
+ {
+  "step": "A-saved",
+  "name": "A-saved",
+  "at": "2026-10-28T00:49:55.863Z",
+  "revA": 3
+ },
+ {
+  "step": "B-saves-different-chapter",
+  "name": "B-saves-different-chapter",
+  "at": "2026-10-28T00:50:16.209Z",
+  "putStatus": 409,
+  "open": true,
+  "conflict": true,
+  "status": "local",
+  "shot": "shots/sim03-twodev-01-conflict.png"
+ },
+ {
+  "step": "after-keep-both",
+  "name": "after-keep-both",
+  "at": "2026-10-28T00:50:23.195Z",
+  "choice": "Keep both",
+  "shelf": {
+   "revision": 4,
+   "hasA1": false,
+   "hasB1": true
+  },
+  "historyOnB": [
+   {
+    "name": "Shelf copy, kept from a sync conflict",
+    "auto": "conflict",
+    "hasA1": true,
+    "hasB1": false
+   }
+  ]
+ },
+ {
+  "step": "C-saved",
+  "name": "C-saved",
+  "at": "2026-10-28T00:50:50.936Z",
+  "revC": 5,
+  "revB": 4
+ },
+ {
+  "step": "B-saves-same-chapter",
+  "name": "B-saves-same-chapter",
+  "at": "2026-10-28T00:51:02.212Z",
+  "putStatus": 409,
+  "open": true,
+  "conflict": true,
+  "shot": "shots/sim03-twodev-02-conflict.png"
+ },
+ {
+  "step": "after-use-shelf",
+  "name": "after-use-shelf",
+  "at": "2026-10-28T00:51:11.850Z",
+  "choice": "Use the shelf copy",
+  "shelf": {
+   "revision": 6,
+   "hasA2": true,
+   "hasB2": false,
+   "historyHasB2": true,
+   "historyHasA1": false
+  },
+  "historyOnB": [
+   {
+    "name": "This device's copy, kept from a sync conflict",
+    "auto": "conflict",
+    "words": 135,
+    "hasB2": true
+   },
+   {
+    "name": "Shelf copy, kept from a sync conflict",
+    "auto": "conflict",
+    "words": 130,
+    "hasB2": false
+   }
+  ],
+  "historyOnShelf": [
+   {
+    "name": "This device's copy, kept from a sync conflict",
+    "auto": "conflict",
+    "hasB2": true
+   },
+   {
+    "name": "Shelf copy, kept from a sync conflict",
+    "auto": "conflict",
+    "hasB2": false
+   }
+  ],
+  "deviceBStatus": {
+   "syncStatus": "saved",
+   "dirty": false,
+   "revision": 6
+  }
+ }
+]
 ```
 
 ## Timings
 
-up 158 s · world 157 ms · seed 1106 s · personas 267 s · monster 741 s · check 61 s
-Seed 2026-10-27T23:48:56.699Z → 2026-10-28T00:07:16.901Z; 1546 /api and /read requests logged (out/evidence/net-*.jsonl).
+up 125 s · world 129 ms · seed 1009 s · personas 362 s · monster 1703 s · check 62 s
+Seed 2026-10-28T00:28:41.070Z → 2026-10-28T00:45:25.199Z; 1554 /api and /read requests logged (out/evidence/net-*.jsonl).
 
 ## Limitations
 

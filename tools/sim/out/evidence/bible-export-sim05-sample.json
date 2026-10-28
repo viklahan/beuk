@@ -2,10 +2,10 @@
  "format": "beuk-story-bible",
  "version": 1,
  "book": "The Lantern Coast — Book One",
- "exportedAt": "2026-10-27T23:55:25.126Z",
+ "exportedAt": "2026-10-28T00:34:27.244Z",
  "entries": [
   {
-   "id": "bygzizwqt",
+   "id": "b6p4k8r2h",
    "type": "character",
    "name": "Mara",
    "aliases": [],
@@ -17,7 +17,7 @@
    "exclude": []
   },
   {
-   "id": "b5res0iev",
+   "id": "b8mauvpa0",
    "type": "character",
    "name": "Gullwick",
    "aliases": [],
@@ -29,7 +29,7 @@
    "exclude": []
   },
   {
-   "id": "b2lko54d1",
+   "id": "bkdl37dfi",
    "type": "character",
    "name": "Tomas",
    "aliases": [],
@@ -41,7 +41,7 @@
    "exclude": []
   },
   {
-   "id": "bpc8ace6d",
+   "id": "bb51hzocx",
    "type": "character",
    "name": "Board",
    "aliases": [],
@@ -53,7 +53,7 @@
    "exclude": []
   },
   {
-   "id": "begd3dpju",
+   "id": "bjcoh82oz",
    "type": "character",
    "name": "East Bank",
    "aliases": [],
@@ -65,7 +65,7 @@
    "exclude": []
   },
   {
-   "id": "bviyatyt2",
+   "id": "b1tcu3an3",
    "type": "character",
    "name": "Vane",
    "aliases": [],
