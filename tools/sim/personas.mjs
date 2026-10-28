@@ -26,10 +26,11 @@ async function uiSignIn(page, p) {
   const resp = page.waitForResponse((r) => r.url().endsWith('/api/auth/login'), { timeout: 60000 }).catch(() => null);
   await page.click('#btnAuthSubmit');
   let r = await resp;
-  if (r && r.status() === 401) {
-    // the right email and password were refused once (seen in a full run): record what was sent, then try again as a writer would
-    const sent = r.request().postDataJSON ? r.request().postDataJSON() : null;
-    (results.signInRefused = results.signInRefused || []).push({ persona: p.key, status: 401, emailSentMatches: !!sent && sent.email === p.email, passwordSentMatches: !!sent && sent.password === p.password, fields: await page.evaluate(() => ({ email: document.getElementById('authEmail').value, passwordLength: document.getElementById('authPassword').value.length })) });
+  if (!r || r.status() !== 200) {
+    // the right email and password were refused once (seen in run 1 — the cause was a proxy 502 on a reset
+    // keep-alive connection, src/http-server.ts): record the real status, then try again as a writer would
+    const sent = r && r.request().postDataJSON ? r.request().postDataJSON() : null;
+    (results.signInRefused = results.signInRefused || []).push({ persona: p.key, status: r ? r.status() : 'no response', body: r ? (await r.text().catch(() => '')).slice(0, 120) : null, emailSentMatches: !!sent && sent.email === p.email, passwordSentMatches: !!sent && sent.password === p.password, fields: await page.evaluate(() => ({ email: document.getElementById('authEmail').value, passwordLength: document.getElementById('authPassword').value.length })) });
     save();
     await page.fill('#authEmail', p.email);
     await page.fill('#authPassword', p.password);

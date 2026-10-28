@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
-import { dummyPasswordHash, hashPassword, verifyAgainstDummy, verifyPassword } from '../password.js';
+import { checkPassword, dummyPasswordHash, hashPassword, verifyAgainstDummy } from '../password.js';
 import { rateLimit, TokenBucketLimiter } from '../ratelimit.js';
 import {
   clearSessionCookie,
@@ -27,6 +27,14 @@ export interface AuthHooks {
   /** Accounts portal: runs after a successful sign-up (sends the email
    *  confirmation after the response); its fields join the 201 body. */
   afterRegister?: (user: { id: string; email: string }) => Record<string, unknown> | void;
+}
+
+/** BEUK:login — the refusal log line (stdout, JSON, one line). */
+export function logLoginRefusal(fields: {
+  reason: 'no_account' | 'mismatch' | 'error';
+  userId: string | null;
+}): void {
+  console.log(JSON.stringify({ event: 'auth.login.refused', at: new Date().toISOString(), ...fields }));
 }
 
 export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}): Router {
@@ -92,10 +100,19 @@ export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}): Route
       const user = found.rows[0];
       // Same response — and the same argon2 work — for unknown email
       // and wrong password (no timing oracle on which emails exist).
-      const ok = user
-        ? await verifyPassword(user.password_hash, password)
-        : await verifyAgainstDummy(password);
-      if (!user || !ok) {
+      let refusal: 'no_account' | 'mismatch' | 'error' | null = 'no_account';
+      if (user) {
+        const outcome = await checkPassword(user.password_hash, password);
+        refusal = outcome === 'match' ? null : outcome;
+      } else {
+        await verifyAgainstDummy(password);
+      }
+      if (!user || refusal) {
+        // One structured line per refusal with its precise reason, so an
+        // unexplained 401 explains itself (no email, no password, no hash:
+        // the user id only when the account exists). The response stays
+        // the same for every reason (no oracle on which emails exist).
+        logLoginRefusal({ reason: refusal ?? 'no_account', userId: user?.id ?? null });
         return res.status(401).json({ error: 'invalid email or password' });
       }
       const session = await createSession(db, user.id, config.sessionTtlDays);

@@ -2579,6 +2579,26 @@ Tests: `tests/legal.test.ts`.
   (Docker's tini as PID 1) and `stop_grace_period: 30s`.
 - **Expired sessions** are deleted at boot and every
   `SESSION_PURGE_INTERVAL_MS` (default 1 h).
+- **Keep-alive outlives the proxy pool** (`src/http-server.ts`). Caddy
+  keeps idle connections to the app for 2 minutes and reuses them; Node
+  closed idle keep-alive sockets after 5 s. A request Caddy wrote onto a
+  socket at the moment Node closed it came back **502** ("read: connection
+  reset by peer" in Caddy's log) and a POST is not retried — that is how a
+  sign-in with the right password failed on a second device in simulation
+  run 1, and it reproduces on demand with parallel sign-ins after ~5 s of
+  idle. The app now keeps idle sockets 125 s (`keepAliveTimeout`, above
+  Caddy's 2 min) with `headersTimeout` above that, so the proxy is always
+  the side that closes. `tests/upstream-keepalive.test.ts`.
+- **Sign-in refusals explain themselves.** Every refused `POST
+  /api/auth/login` writes one JSON line to the app log:
+  `{"event":"auth.login.refused","at":…,"reason":"no_account"|"mismatch"|"error","userId":…}`
+  (`error` = argon2 threw, e.g. a malformed hash, which used to read as a
+  wrong password). No email, password or hash is logged; the answer to
+  the client is the same 401 for every reason.
+- **The sign-in dialog says what really happened.** Only a 401 says the
+  email and password don't match; a 5xx (a proxy 502 included) or no
+  answer says the shelf is out of reach and to try again; a 429 shows the
+  wait message. Self-check `auth.signin.error-by-status`.
 - **Healthchecks.** `app` probes `/api/health` with node's `fetch` (the
   image has no curl); `caddy` probes its admin API on `localhost:2019`
   (independent of DOMAIN/TLS mode) and only starts once `app` is
