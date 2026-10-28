@@ -1,0 +1,730 @@
+{
+ "run": {
+  "at": "2026-10-28T01:20:53.606Z",
+  "commit": "33ebb0e",
+  "seed": 20261027,
+  "worldSha256": "c6774c7e68efd0be3118b5ce7be541593b655bdda44068e6b8abd35d23085d9b",
+  "contentDigest": "74c402a23fe336639e1f7adb4426f5bee460f29cede5f4e87bb900cfa708e5cf",
+  "checks": 112,
+  "fails": 1,
+  "gaps": 24,
+  "bugs": 3
+ },
+ "headline": {
+  "checks": 112,
+  "pass": 111,
+  "fail": 1,
+  "gaps": 24,
+  "bugs": 3,
+  "books": 56,
+  "words": 2390430,
+  "pictures": 1799,
+  "comments": 46
+ },
+ "failing": [
+  {
+   "id": "meta.own-book",
+   "title": "opening another shelf book never carries the previous book's metadata onto it",
+   "pass": false,
+   "evidence": {
+    "persona": "sim04",
+    "seriesBook": "b030",
+    "standalone": "b034",
+    "steps": [
+     {
+      "opened": "series book",
+      "series": "Salt Road"
+     },
+     {
+      "opened": "standalone",
+      "seriesOnDesk": "Salt Road",
+      "shot": "shots/sim04-meta-01.png"
+     }
+    ],
+    "standaloneOnShelfBefore": {
+     "series": null,
+     "revision": 2
+    },
+    "standaloneOnShelfAfterEdit": {
+     "series": "Salt Road",
+     "revision": 3
+    }
+   }
+  }
+ ],
+ "gaps": [
+  {
+   "id": "count.empty-chapter-title",
+   "title": "When a chapter is left with no text, its title stops counting toward the book's word total, so deleting its last paragraph lowers the total by more than the words deleted.",
+   "evidence": [
+    {
+     "persona": "sim07",
+     "chapter": "Banff, Canada",
+     "deletedWords": 6,
+     "titleWords": 4,
+     "totalDelta": -10
+    }
+   ]
+  },
+  {
+   "id": "series.sync-no-merge",
+   "title": "Edits to DIFFERENT chapters on two devices are not merged: the writer must pick one copy; the other copy's chapter survives only inside a History snapshot.",
+   "evidence": {
+    "afterKeepBoth": {
+     "revision": 4,
+     "hasA1": false,
+     "hasB1": true
+    },
+    "round1PutStatus": 409,
+    "shot": "shots/sim03-twodev-01-conflict.png"
+   }
+  },
+  {
+   "id": "series.boxset-drops-pictures",
+   "title": "A box set can only add later volumes as Word/Markdown/text files (\"Add a Book…\"), so every volume after the first arrives without its pictures, cover or front/back matter.",
+   "evidence": [
+    {
+     "series": "sim03-lunas-beach-treasure-hunt",
+     "picturesInEachVolume": [
+      3,
+      3,
+      3
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      false,
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "series": "oz",
+     "picturesInEachVolume": [
+      137,
+      110,
+      87,
+      130,
+      115,
+      151,
+      82,
+      111,
+      113,
+      114,
+      72,
+      109,
+      103
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "series": "valois",
+     "picturesInEachVolume": [
+      0,
+      6
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "series": "sim04-salt-road",
+     "picturesInEachVolume": [
+      3,
+      1
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "series": "sim05-sample",
+     "picturesInEachVolume": [
+      11,
+      11,
+      10
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      true,
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "series": "sim06-the-travel-guide",
+     "picturesInEachVolume": [
+      3,
+      3
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      false,
+      false,
+      false
+     ]
+    },
+    {
+     "series": "sim07-four-kitchens",
+     "picturesInEachVolume": [
+      1,
+      1,
+      1
+     ],
+     "picturesInBoxSetVolumes": [
+      0,
+      0,
+      0
+     ],
+     "coversInBoxSet": [
+      false,
+      false,
+      false,
+      false
+     ]
+    }
+   ]
+  },
+  {
+   "id": "series.boxset-no-series-metadata",
+   "title": "The box set EPUB carries no series metadata (no belongs-to-collection) and is titled \"<book one> — The Complete Box Set\".",
+   "evidence": [
+    {
+     "series": "sim03-lunas-beach-treasure-hunt",
+     "opfTitle": "Luna's Beach Treasure Hunt — Book One — The Complete Box Set"
+    },
+    {
+     "series": "dartagnan",
+     "opfTitle": "The Three Musketeers — The Complete Box Set"
+    },
+    {
+     "series": "oz",
+     "opfTitle": "The Wonderful Wizard of Oz — The Complete Box Set"
+    }
+   ]
+  },
+  {
+   "id": "series.boxset-not-saved",
+   "title": "A box set is not part of any book: the volume list lives only in the open page (state.boxSetVolumes is not in the saved book), so it must be rebuilt by hand each time.",
+   "evidence": {
+    "savedBookKeys": [
+     "activeId",
+     "activePreset",
+     "audio",
+     "bible",
+     "cover",
+     "coverRecipe",
+     "customThemes",
+     "dictation",
+     "exportPlatform",
+     "fonts",
+     "goals",
+     "history",
+     "historyPool",
+     "images",
+     "importReport",
+     "manuscript",
+     "meta",
+     "printBleed",
+     "printCustomMargins",
+     "printFolio",
+     "printHeadContent",
+     "printHeadPlace",
+     "printLargePrint",
+     "printMarginMode",
+     "printNotes",
+     "printOmitBlankHead",
+     "printOmitChapterHead",
+     "printPictureBook",
+     "printRecto",
+     "printTrim",
+     "sections",
+     "storeCheck",
+     "theme"
+    ]
+   }
+  },
+  {
+   "id": "series.bible-diverges.dartagnan",
+   "title": "The d'Artagnan Romances: a Story Bible edit in one volume never reaches its siblings — each volume holds its own copy.",
+   "evidence": {
+    "entry": "D’Artagnan",
+    "editedIn": "The Vicomte de Bragelonne",
+    "editedEntry": {
+     "aliases": [
+      "SIM-EDIT-ALIAS"
+     ],
+     "description": "[sim] edited in The Vicomte de Bragelonne only"
+    },
+    "sibling": "The Man in the Iron Mask",
+    "siblingEntry": {
+     "aliases": [],
+     "description": ""
+    }
+   }
+  },
+  {
+   "id": "series.bible-diverges.valois",
+   "title": "The Valois Romances: a Story Bible edit in one volume never reaches its siblings — each volume holds its own copy.",
+   "evidence": {
+    "entry": "Charles",
+    "editedIn": "The Forty-Five Guardsmen",
+    "editedEntry": {
+     "aliases": [
+      "SIM-EDIT-ALIAS"
+     ],
+     "description": "[sim] edited in The Forty-Five Guardsmen only"
+    },
+    "sibling": "Chicot the Jester",
+    "siblingEntry": {
+     "aliases": [],
+     "description": ""
+    }
+   }
+  },
+  {
+   "id": "series.bible-diverges.oz",
+   "title": "The Oz Books: a Story Bible edit in one volume never reaches its siblings — each volume holds its own copy.",
+   "evidence": {
+    "entry": "Dorothy",
+    "editedIn": "Ozma of Oz",
+    "editedEntry": {
+     "aliases": [
+      "SIM-EDIT-ALIAS"
+     ],
+     "description": "[sim] edited in Ozma of Oz only"
+    },
+    "sibling": "Glinda of Oz",
+    "siblingEntry": {
+     "aliases": [],
+     "description": ""
+    }
+   }
+  },
+  {
+   "id": "series.bible-diverges.sim04-salt-road",
+   "title": "Salt Road: a Story Bible edit in one volume never reaches its siblings — each volume holds its own copy.",
+   "evidence": {
+    "entry": "Tanaka",
+    "editedIn": "Salt Road — Book Three",
+    "editedEntry": {
+     "aliases": [
+      "SIM-EDIT-ALIAS"
+     ],
+     "description": "[sim] edited in Salt Road — Book Three only"
+    },
+    "sibling": "Salt Road — Book Two",
+    "siblingEntry": {
+     "aliases": [],
+     "description": ""
+    }
+   }
+  },
+  {
+   "id": "series.bible-diverges.sim05-sample",
+   "title": "The Lantern Coast: a Story Bible edit in one volume never reaches its siblings — each volume holds its own copy.",
+   "evidence": {
+    "entry": "Mara",
+    "editedIn": "The Lantern Coast — Book Three",
+    "editedEntry": {
+     "aliases": [
+      "SIM-EDIT-ALIAS"
+     ],
+     "description": "[sim] edited in The Lantern Coast — Book Three only"
+    },
+    "sibling": "The Lantern Coast — Book Four",
+    "siblingEntry": {
+     "aliases": [],
+     "description": ""
+    }
+   }
+  },
+  {
+   "id": "series.no-series-on-shelf",
+   "title": "The shelf has no series: each list entry is only {createdAt, id, revision, title, updatedAt}, ordered by last edit, so a series' volumes are not grouped or in reading order.",
+   "evidence": {
+    "shelfOrderAsListed": [
+     "The Forty-Five Guardsmen",
+     "Chicot the Jester",
+     "Marguerite de Valois",
+     "The Man in the Iron Mask",
+     "Louise de la Vallière",
+     "Ten Years Later",
+     "The Vicomte de Bragelonne",
+     "Twenty Years After",
+     "The Three Musketeers"
+    ],
+    "readingOrder": [
+     [
+      "The Three Musketeers",
+      "Twenty Years After",
+      "The Vicomte de Bragelonne",
+      "Ten Years Later",
+      "Louise de la Vallière",
+      "The Man in the Iron Mask"
+     ],
+     [
+      "Marguerite de Valois",
+      "Chicot the Jester",
+      "The Forty-Five Guardsmen"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "series.single-import-ignores-series",
+   "title": "Single-file Import reads title and author from Markdown frontmatter but not \"series:\"; only Bulk import keeps it.",
+   "evidence": {
+    "frontmatter": "series: The d'Artagnan Romances",
+    "singleImportMeta": {
+     "title": "The Three Musketeers",
+     "author": "Alexandre Dumas",
+     "series": ""
+    },
+    "bulkImportSeries": "The d'Artagnan Romances"
+   }
+  },
+  {
+   "id": "series.no-series-field",
+   "title": "No book-details field holds the series: the only inputs named for a series are the cover maker's \"Series Line\".",
+   "evidence": {
+    "inputsWithSeriesInId": [
+     "#cmSeries"
+    ]
+   }
+  },
+  {
+   "id": "import.bulk-drops-captions",
+   "title": "Bulk import places Markdown pictures but drops their captions (\"![alt](file \\\"caption\\\")\").",
+   "evidence": {
+    "ebook": 43936,
+    "captionsSingle": 23,
+    "captionsBulk": 0
+   }
+  },
+  {
+   "id": "series.epub-no-series-metadata",
+   "title": "A series volume's EPUB does not name its series or its place in it (no belongs-to-collection / group-position), although the book carries meta.series.",
+   "evidence": {
+    "file": "dartagnan-01-the-three-musketeers.epub",
+    "opfMetadata": "<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"> <dc:identifier id=\"pub-id\">urn:uuid:61645be5-afee-4dcd-a353-fbc2351b8c0d</dc:identifier> <dc:title>The Three Musketeers</dc:title> <dc:language>en</dc:language> <dc:creator>Alexandre Dumas</dc:creator> <dc:rights>Copyright © 2026 Alexandre Dumas. All rights reserved.</dc:rights> <dc:date>2026</dc:date> <meta property=\"dcterms:modified\">2026-10-28T00:29:22Z</meta> <meta property=\"schema:accessMode\">textual</meta> <meta property=\"schema:accessModeSufficient\">textual</meta> <meta property=\"schema:accessibilityFeature\">structuralNavigation</meta> <meta property=\"schema:accessibilityFeature\">tableOfContents</meta> <meta property=\"schema:accessibilityHazard\">none</meta> <meta property=\"schema:accessibilitySummary\">This book is published as accessible text: it has structural navigation and a table of contents, and it can be read from start "
+   }
+  },
+  {
+   "id": "series.alsoby-by-hand",
+   "title": "Also-by pages are plain text in each volume: a series of N books needs N×(N−1) links typed and kept up to date by hand; nothing links one shelf book to another.",
+   "evidence": [
+    {
+     "series": "dartagnan",
+     "volumes": 6,
+     "linesTypedAcrossVolumes": 30
+    },
+    {
+     "series": "valois",
+     "volumes": 3,
+     "linesTypedAcrossVolumes": 6
+    },
+    {
+     "series": "oz",
+     "volumes": 14,
+     "linesTypedAcrossVolumes": 182
+    }
+   ]
+  },
+  {
+   "id": "series.no-cross-volume-view",
+   "title": "Story Insights and the Bible's mentions work on the open book only; who appears in which volume of a series could only be computed by opening each volume (the simulation did this to build the presence table).",
+   "evidence": {
+    "presenceComputedFor": [
+     "sim03-lunas-beach-treasure-hunt",
+     "dartagnan",
+     "oz",
+     "valois",
+     "sim04-salt-road",
+     "sim05-sample",
+     "sim06-the-travel-guide",
+     "sim07-four-kitchens",
+     "sim08-the-book-that-reads-you"
+    ]
+   }
+  },
+  {
+   "id": "readers.one-address-cap",
+   "title": "Beta readers who share one internet address (a writing group, a library, a household) can leave only 10 comments per link per 10 minutes between them; the 11th gets 429.",
+   "evidence": {
+    "statusesOf11": [
+     201,
+     201,
+     201,
+     201,
+     201,
+     201,
+     201,
+     201,
+     201,
+     201,
+     429
+    ],
+    "shares": 2
+   }
+  },
+  {
+   "id": "readers.no-reply",
+   "title": "The writer cannot answer a reader comment: the owner API offers resolve, unresolve and delete only (src/routes/shares.ts), and the comments panel has no reply control.",
+   "evidence": {
+    "ownerCommentRoutes": [
+     "POST /api/shares/:id/comments/:cid/resolve",
+     "POST /api/shares/:id/comments/:cid/unresolve",
+     "DELETE /api/shares/:id/comments/:cid"
+    ]
+   }
+  },
+  {
+   "id": "perf.autosave-sends-whole-book",
+   "title": "Every autosave sends the whole book, pictures included: the largest illustrated volume re-uploads its full JSON on each save.",
+   "evidence": {
+    "book": "The Marvelous Land of Oz",
+    "pictures": 137,
+    "words": 41768,
+    "bytesPerSave": 49799886,
+    "putMs": 22805,
+    "postMs": 21293
+   }
+  },
+  {
+   "id": "perf.typing-latency",
+   "title": "Typing slows with the size of the whole book, not the chapter: each input event in the last chapter takes this long (the studio's own input handling, 10 events per step).",
+   "evidence": [
+    {
+     "words": 250000,
+     "msPerInput": 140
+    },
+    {
+     "words": 1000000,
+     "msPerInput": 482
+    },
+    {
+     "words": 2500000,
+     "msPerInput": 1248
+    },
+    {
+     "words": 5000000,
+     "msPerInput": 3576
+    },
+    {
+     "words": 10000000,
+     "msPerInput": 7075
+    }
+   ]
+  },
+  {
+   "id": "limit.shelf-book-size",
+   "title": "A book over the shelf's size limit (MANUSCRIPT_MAX_BYTES, 64 MiB of JSON) cannot be saved to the shelf; the studio says so and keeps it on the device.",
+   "evidence": {
+    "words": 10000000,
+    "post": {
+     "ms": 23771,
+     "bytes": 73919706,
+     "id": null,
+     "revision": null,
+     "status": "failed",
+     "error": {
+      "tooLarge": true,
+      "mb": "70.5"
+     }
+    }
+   }
+  },
+  {
+   "id": "limit.pdfx-long-book",
+   "title": "The print PDF/X job did not finish for a book of this length (the saga-length volumes of ~40,000 words printed).",
+   "evidence": {
+    "words": 250000,
+    "job": {
+     "created": true,
+     "status": "failed",
+     "ms": 276562,
+     "error": "Ghostscript exited with code null and produced no converted file.",
+     "result": "{\"tool\":\"ghostscript\",\"error\":\"Ghostscript exited with code null and produced no converted file.\",\"configured\":true}"
+    }
+   }
+  },
+  {
+   "id": "limit.page-crash",
+   "title": "The studio page crashed while working on the load-test book.",
+   "evidence": {
+    "atWords": [
+     10000000
+    ]
+   }
+  }
+ ],
+ "bugs": [
+  {
+   "id": "bug.boxset-title-from-filename",
+   "title": "A volume added to a box set takes its title from the file name with hyphens and underscores turned into spaces, so \"Tik-Tok of Oz\" becomes \"Tik Tok of Oz\" in the box set (manuscriptFileToVolume); the title is not editable there.",
+   "evidence": [
+    {
+     "series": "valois",
+     "renamed": [
+      {
+       "title": "The Forty-Five Guardsmen",
+       "inBoxSet": "The Forty Five Guardsmen"
+      }
+     ]
+    },
+    {
+     "series": "oz",
+     "renamed": [
+      {
+       "title": "Tik-Tok of Oz",
+       "inBoxSet": "Tik Tok of Oz"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bug.meta-series-carries-over",
+   "title": "Opening a book carries the PREVIOUS book's series onto it (applyBookDoc merges meta onto the old meta; the arriving book has no \"series\" key), and the next autosave writes it to the shelf.",
+   "evidence": {
+    "persona": "sim04",
+    "seriesBook": "b030",
+    "standalone": "b034",
+    "steps": [
+     {
+      "opened": "series book",
+      "series": "Salt Road"
+     },
+     {
+      "opened": "standalone",
+      "seriesOnDesk": "Salt Road",
+      "shot": "shots/sim04-meta-01.png"
+     }
+    ],
+    "standaloneOnShelfBefore": {
+     "series": null,
+     "revision": 2
+    },
+    "standaloneOnShelfAfterEdit": {
+     "series": "Salt Road",
+     "revision": 3
+    }
+   }
+  },
+  {
+   "id": "bug.meta-series-carries-over-seed",
+   "title": "Seen while seeding too: a standalone book opened after a series book arrived carrying that series.",
+   "evidence": [
+    {
+     "id": "b028",
+     "title": "The Lantern Coast",
+     "seriesOnDeskBeforeSet": "Luna's Beach Treasure Hunt"
+    },
+    {
+     "id": "b033",
+     "title": "Rain on Calder Street",
+     "seriesOnDeskBeforeSet": "Salt Road"
+    },
+    {
+     "id": "b039",
+     "title": "The Sunken Vault",
+     "seriesOnDeskBeforeSet": "The Lantern Coast"
+    },
+    {
+     "id": "b044",
+     "title": "The Lantern Coast",
+     "seriesOnDeskBeforeSet": "The Travel Guide"
+    },
+    {
+     "id": "b050",
+     "title": "The Travel Guide",
+     "seriesOnDeskBeforeSet": "Four Kitchens"
+    },
+    {
+     "id": "b055",
+     "title": "The Woolly School and the Runaway Ball of Yarn",
+     "seriesOnDeskBeforeSet": "The Book That Reads You"
+    }
+   ]
+  }
+ ],
+ "runs": [
+  {
+   "at": "2026-10-28T00:25:09.101Z",
+   "commit": "571a690",
+   "seed": 20261027,
+   "worldSha256": "c6774c7e68efd0be3118b5ce7be541593b655bdda44068e6b8abd35d23085d9b",
+   "contentDigest": "74c402a23fe336639e1f7adb4426f5bee460f29cede5f4e87bb900cfa708e5cf",
+   "checks": 112,
+   "fails": 7,
+   "gaps": 17,
+   "bugs": 3
+  },
+  {
+   "at": "2026-10-28T01:20:53.606Z",
+   "commit": "33ebb0e",
+   "seed": 20261027,
+   "worldSha256": "c6774c7e68efd0be3118b5ce7be541593b655bdda44068e6b8abd35d23085d9b",
+   "contentDigest": "74c402a23fe336639e1f7adb4426f5bee460f29cede5f4e87bb900cfa708e5cf",
+   "checks": 112,
+   "fails": 1,
+   "gaps": 24,
+   "bugs": 3
+  }
+ ]
+}

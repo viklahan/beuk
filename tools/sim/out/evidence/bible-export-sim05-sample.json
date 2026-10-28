@@ -1,0 +1,81 @@
+{
+ "format": "beuk-story-bible",
+ "version": 1,
+ "book": "The Lantern Coast — Book One",
+ "exportedAt": "2026-10-28T00:34:27.244Z",
+ "entries": [
+  {
+   "id": "b6p4k8r2h",
+   "type": "character",
+   "name": "Mara",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b8mauvpa0",
+   "type": "character",
+   "name": "Gullwick",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bkdl37dfi",
+   "type": "character",
+   "name": "Tomas",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bb51hzocx",
+   "type": "character",
+   "name": "Board",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bjcoh82oz",
+   "type": "character",
+   "name": "East Bank",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b1tcu3an3",
+   "type": "character",
+   "name": "Vane",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  }
+ ],
+ "images": []
+}

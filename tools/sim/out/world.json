@@ -1,0 +1,2377 @@
+{
+ "books": [
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/1257",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b001",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "dartagnan",
+    "name": "The d'Artagnan Romances",
+    "of": 6,
+    "order": 1
+   },
+   "source": {
+    "chapters": 67,
+    "ebook": 1257,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "355356cfe2612c51e35ad74f0f5cdf024b52b9dc8e4af61ac4c461ca8f924851"
+   },
+   "title": "The Three Musketeers"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/1259",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b002",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "dartagnan",
+    "name": "The d'Artagnan Romances",
+    "of": 6,
+    "order": 2
+   },
+   "source": {
+    "chapters": 90,
+    "ebook": 1259,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "dd5bdb158168c9e852f31bd5c11a5845ed495b9d19e400e82ae12dd5eda6c595"
+   },
+   "title": "Twenty Years After"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/2609",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b003",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "dartagnan",
+    "name": "The d'Artagnan Romances",
+    "of": 6,
+    "order": 3
+   },
+   "source": {
+    "chapters": 75,
+    "ebook": 2609,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "107d8658670e2dcb1ee7e1bd12cc0f7efb5a00ecae7a9d460fd443b675ca24ae"
+   },
+   "title": "The Vicomte de Bragelonne"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/2681",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b004",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "dartagnan",
+    "name": "The d'Artagnan Romances",
+    "of": 6,
+    "order": 4
+   },
+   "source": {
+    "chapters": 65,
+    "ebook": 2681,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "3b88da5de6cc5b79b4e431e7a94b5bf7416e9aaba6076f33060c5199b15b5fd5"
+   },
+   "title": "Ten Years Later"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/2710",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b005",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "dartagnan",
+    "name": "The d'Artagnan Romances",
+    "of": 6,
+    "order": 5
+   },
+   "source": {
+    "chapters": 67,
+    "ebook": 2710,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "06e9f1467640bd905b2260f1905959a0ffa9e23ab2ff074b71500043d51023b9"
+   },
+   "title": "Louise de la Vallière"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/2759",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b006",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "dartagnan",
+    "name": "The d'Artagnan Romances",
+    "of": 6,
+    "order": 6
+   },
+   "source": {
+    "chapters": 60,
+    "ebook": 2759,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "949af85fe11c6b8da1f7b32ad16dbf60504747f71350416b907deda0b77349ec"
+   },
+   "title": "The Man in the Iron Mask"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/33609",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b007",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "valois",
+    "name": "The Valois Romances",
+    "of": 3,
+    "order": 1
+   },
+   "source": {
+    "chapters": 66,
+    "ebook": 33609,
+    "images": 2,
+    "kind": "saga",
+    "mdSha256": "acb49fb03f05d49ffe775f129cf318c994d5a15cc89bbe89e7a8b8b018d346f0"
+   },
+   "title": "Marguerite de Valois"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/7426",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b008",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "valois",
+    "name": "The Valois Romances",
+    "of": 3,
+    "order": 2
+   },
+   "source": {
+    "chapters": 97,
+    "ebook": 7426,
+    "images": 0,
+    "kind": "saga",
+    "mdSha256": "a4e0c425cd67a1e74b2fb26c86884e6aabe5c60cbaa1a0c81d3762f8e1f9cc66"
+   },
+   "title": "Chicot the Jester"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/13626",
+   "author": "Alexandre Dumas",
+   "genre": "historical adventure",
+   "id": "b009",
+   "persona": "sim01-dumas",
+   "series": {
+    "key": "valois",
+    "name": "The Valois Romances",
+    "of": 3,
+    "order": 3
+   },
+   "source": {
+    "chapters": 90,
+    "ebook": 13626,
+    "images": 6,
+    "kind": "saga",
+    "mdSha256": "be78c4c1144e5b6c4ef5bc601452ac4d84d85d58af7b0752d9bdf57c29fa74f2"
+   },
+   "title": "The Forty-Five Guardsmen"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/43936",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b010",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 1
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 43936,
+    "images": 148,
+    "kind": "saga",
+    "mdSha256": "3d1d28dbb362c44eb1ba485301703f38c2417a608cbed8693818f66b64ed8048"
+   },
+   "title": "The Wonderful Wizard of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/54",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b011",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 2
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 54,
+    "images": 137,
+    "kind": "saga",
+    "mdSha256": "2c07dfda13f081cfd6911e24e6f3d9fcc05291950e029f00189e52c8cac49dea"
+   },
+   "title": "The Marvelous Land of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/33361",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b012",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 3
+   },
+   "source": {
+    "chapters": 21,
+    "ebook": 33361,
+    "images": 110,
+    "kind": "saga",
+    "mdSha256": "d31c40fb7d18836aa619c3314fcc6a2081d3b6365dcdb687d71970bd81917573"
+   },
+   "title": "Ozma of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/22566",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b013",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 4
+   },
+   "source": {
+    "chapters": 20,
+    "ebook": 22566,
+    "images": 87,
+    "kind": "saga",
+    "mdSha256": "af874e6be94d191b55f2ee592db0a1cb96db9ed1befa48ab09d4d953681087f5"
+   },
+   "title": "Dorothy and the Wizard in Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/26624",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b014",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 5
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 26624,
+    "images": 130,
+    "kind": "saga",
+    "mdSha256": "4a2d0f8c09a0d24f4b6439bc38e278cb16e33693b428195701438ea44d2841ed"
+   },
+   "title": "The Road to Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/41667",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b015",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 6
+   },
+   "source": {
+    "chapters": 30,
+    "ebook": 41667,
+    "images": 115,
+    "kind": "saga",
+    "mdSha256": "4f2a651f0db29e55a44667994e8ddaceadea3fafada54adeaca6cdf3e5cea788"
+   },
+   "title": "The Emerald City of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/32094",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b016",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 7
+   },
+   "source": {
+    "chapters": 28,
+    "ebook": 32094,
+    "images": 151,
+    "kind": "saga",
+    "mdSha256": "3fc9daba942ef1698bdb8b5a31e868b8583b9b88834f42b24f88e6ee0a06aaf6"
+   },
+   "title": "The Patchwork Girl of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/52176",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b017",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 8
+   },
+   "source": {
+    "chapters": 25,
+    "ebook": 52176,
+    "images": 82,
+    "kind": "saga",
+    "mdSha256": "245ef832e2dd0d7be285c9731837f876d14ef66effa6beaf3a5947fa20b93ad2"
+   },
+   "title": "Tik-Tok of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/51263",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b018",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 9
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 51263,
+    "images": 111,
+    "kind": "saga",
+    "mdSha256": "01ed09afd48dd56c1c9e434824124d3e74404d17a82b3d9fe69ada6080738f56"
+   },
+   "title": "The Scarecrow of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/25581",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b019",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 10
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 25581,
+    "images": 113,
+    "kind": "saga",
+    "mdSha256": "9fa7bc871236940827cae68a1060ac622c46c5e161dd4a534c399a327ee786ea"
+   },
+   "title": "Rinkitink in Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/24459",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b020",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 11
+   },
+   "source": {
+    "chapters": 26,
+    "ebook": 24459,
+    "images": 114,
+    "kind": "saga",
+    "mdSha256": "32ee044ac9be84114ec33ef2ca6343c4dd7ed54383b6546a44bff0546783a884"
+   },
+   "title": "The Lost Princess of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/30852",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b021",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 12
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 30852,
+    "images": 72,
+    "kind": "saga",
+    "mdSha256": "4f52a6fcc2d81d94e25007833d958ceca1d8f0402738871633d4f3f068ccd0fd"
+   },
+   "title": "The Tin Woodman of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/50194",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b022",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 13
+   },
+   "source": {
+    "chapters": 23,
+    "ebook": 50194,
+    "images": 109,
+    "kind": "saga",
+    "mdSha256": "4d25b0ce58b8c018789f7a254799214dcb7d2de878175efbd2e09014ecfa9bc5"
+   },
+   "title": "The Magic of Oz"
+  },
+  {
+   "alsoByLink": "https://www.gutenberg.org/ebooks/39868",
+   "author": "L. Frank Baum",
+   "genre": "children’s fantasy",
+   "id": "b023",
+   "persona": "sim02-baum",
+   "series": {
+    "key": "oz",
+    "name": "The Oz Books",
+    "of": 14,
+    "order": 14
+   },
+   "source": {
+    "chapters": 24,
+    "ebook": 39868,
+    "images": 103,
+    "kind": "saga",
+    "mdSha256": "76f952958d0eda58821dc7bca51d91949c5c60bb95d2f24e95504884397a38b5"
+   },
+   "title": "Glinda of Oz"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/luna-s-beach-treasure-hunt-1",
+   "author": "Sakura M",
+   "genre": "picture book",
+   "id": "b024",
+   "persona": "sim03",
+   "series": {
+    "key": "sim03-lunas-beach-treasure-hunt",
+    "name": "Luna's Beach Treasure Hunt",
+    "of": 4,
+    "order": 1
+   },
+   "source": {
+    "key": "lunas-beach-treasure-hunt",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      1,
+      2,
+      3
+     ]
+    },
+    "sha256": "525a941fe87068572bfcc534dc0340439831ed36796c66aa62209977657f1c8b"
+   },
+   "title": "Luna's Beach Treasure Hunt — Book One"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/luna-s-beach-treasure-hunt-2",
+   "author": "Sakura M",
+   "genre": "picture book",
+   "id": "b025",
+   "persona": "sim03",
+   "series": {
+    "key": "sim03-lunas-beach-treasure-hunt",
+    "name": "Luna's Beach Treasure Hunt",
+    "of": 4,
+    "order": 2
+   },
+   "source": {
+    "key": "lunas-beach-treasure-hunt",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      4,
+      5
+     ]
+    },
+    "sha256": "525a941fe87068572bfcc534dc0340439831ed36796c66aa62209977657f1c8b"
+   },
+   "title": "Luna's Beach Treasure Hunt — Book Two"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/luna-s-beach-treasure-hunt-3",
+   "author": "Sakura M",
+   "genre": "picture book",
+   "id": "b026",
+   "persona": "sim03",
+   "series": {
+    "key": "sim03-lunas-beach-treasure-hunt",
+    "name": "Luna's Beach Treasure Hunt",
+    "of": 4,
+    "order": 3
+   },
+   "source": {
+    "key": "lunas-beach-treasure-hunt",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      6,
+      7
+     ]
+    },
+    "sha256": "525a941fe87068572bfcc534dc0340439831ed36796c66aa62209977657f1c8b"
+   },
+   "title": "Luna's Beach Treasure Hunt — Book Three"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/luna-s-beach-treasure-hunt-4",
+   "author": "Sakura M",
+   "genre": "picture book",
+   "id": "b027",
+   "persona": "sim03",
+   "series": {
+    "key": "sim03-lunas-beach-treasure-hunt",
+    "name": "Luna's Beach Treasure Hunt",
+    "of": 4,
+    "order": 4
+   },
+   "source": {
+    "key": "lunas-beach-treasure-hunt",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      8,
+      9
+     ]
+    },
+    "sha256": "525a941fe87068572bfcc534dc0340439831ed36796c66aa62209977657f1c8b"
+   },
+   "title": "Luna's Beach Treasure Hunt — Book Four"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-lantern-coast",
+   "author": "April Carooke",
+   "genre": "literary fiction",
+   "id": "b028",
+   "persona": "sim03",
+   "role": "standalone",
+   "series": null,
+   "source": {
+    "key": "sample",
+    "kind": "sample",
+    "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192"
+   },
+   "title": "The Lantern Coast"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-travel-guide",
+   "author": "",
+   "genre": "travel guide",
+   "id": "b029",
+   "persona": "sim03",
+   "role": "other-genre",
+   "series": null,
+   "source": {
+    "key": "the-travel-guide",
+    "kind": "ramp",
+    "sha256": "6335fd09f2677ab6c9d0747a6737c6c3b840a5fdfeb07a71beaca59225bba586"
+   },
+   "title": "The Travel Guide"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/salt-road-1",
+   "author": "Jabooki Tanaka",
+   "genre": "memoir",
+   "id": "b030",
+   "persona": "sim04",
+   "series": {
+    "key": "sim04-salt-road",
+    "name": "Salt Road",
+    "of": 3,
+    "order": 1
+   },
+   "source": {
+    "key": "salt-road",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      2,
+      3
+     ]
+    },
+    "sha256": "d70afe6652c3cfea1b42406baaebeb4428e19b47afa4d35839167acb10c89892"
+   },
+   "title": "Salt Road — Book One"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/salt-road-2",
+   "author": "Jabooki Tanaka",
+   "genre": "memoir",
+   "id": "b031",
+   "persona": "sim04",
+   "series": {
+    "key": "sim04-salt-road",
+    "name": "Salt Road",
+    "of": 3,
+    "order": 2
+   },
+   "source": {
+    "key": "salt-road",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      4,
+      5
+     ]
+    },
+    "sha256": "d70afe6652c3cfea1b42406baaebeb4428e19b47afa4d35839167acb10c89892"
+   },
+   "title": "Salt Road — Book Two"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/salt-road-3",
+   "author": "Jabooki Tanaka",
+   "genre": "memoir",
+   "id": "b032",
+   "persona": "sim04",
+   "series": {
+    "key": "sim04-salt-road",
+    "name": "Salt Road",
+    "of": 3,
+    "order": 3
+   },
+   "source": {
+    "key": "salt-road",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      6
+     ]
+    },
+    "sha256": "d70afe6652c3cfea1b42406baaebeb4428e19b47afa4d35839167acb10c89892"
+   },
+   "title": "Salt Road — Book Three"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/rain-on-calder-street",
+   "author": "J. R. Vance",
+   "genre": "noir",
+   "id": "b033",
+   "persona": "sim04",
+   "role": "standalone",
+   "series": null,
+   "source": {
+    "key": "rain-on-calder-street",
+    "kind": "ramp",
+    "sha256": "721fcadda2abb7d70934e377a5a8bf19c8439b99f2968fcfdcc150e045074fa3"
+   },
+   "title": "Rain on Calder Street"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-book-that-reads-you",
+   "author": "Xavier Phillipe",
+   "genre": "interactive fiction",
+   "id": "b034",
+   "persona": "sim04",
+   "role": "other-genre",
+   "series": null,
+   "source": {
+    "key": "the-book-that-reads-you",
+    "kind": "ramp",
+    "sha256": "050d542f1b2b50f56982ec29f86aa2aa96d8625bb5cc1198026dd06db27431b3"
+   },
+   "title": "The Book That Reads You"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-lantern-coast-1",
+   "author": "April Carooke",
+   "genre": "literary fiction",
+   "id": "b035",
+   "persona": "sim05",
+   "series": {
+    "key": "sim05-sample",
+    "name": "The Lantern Coast",
+    "of": 4,
+    "order": 1
+   },
+   "source": {
+    "key": "sample",
+    "kind": "sample",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      8,
+      9,
+      10,
+      11,
+      12
+     ]
+    },
+    "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192"
+   },
+   "title": "The Lantern Coast — Book One"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-lantern-coast-2",
+   "author": "April Carooke",
+   "genre": "literary fiction",
+   "id": "b036",
+   "persona": "sim05",
+   "series": {
+    "key": "sim05-sample",
+    "name": "The Lantern Coast",
+    "of": 4,
+    "order": 2
+   },
+   "source": {
+    "key": "sample",
+    "kind": "sample",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      13,
+      14,
+      15,
+      16
+     ]
+    },
+    "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192"
+   },
+   "title": "The Lantern Coast — Book Two"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-lantern-coast-3",
+   "author": "April Carooke",
+   "genre": "literary fiction",
+   "id": "b037",
+   "persona": "sim05",
+   "series": {
+    "key": "sim05-sample",
+    "name": "The Lantern Coast",
+    "of": 4,
+    "order": 3
+   },
+   "source": {
+    "key": "sample",
+    "kind": "sample",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      17,
+      18,
+      19,
+      20
+     ]
+    },
+    "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192"
+   },
+   "title": "The Lantern Coast — Book Three"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-lantern-coast-4",
+   "author": "April Carooke",
+   "genre": "literary fiction",
+   "id": "b038",
+   "persona": "sim05",
+   "series": {
+    "key": "sim05-sample",
+    "name": "The Lantern Coast",
+    "of": 4,
+    "order": 4
+   },
+   "source": {
+    "key": "sample",
+    "kind": "sample",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      21,
+      22,
+      23,
+      24
+     ]
+    },
+    "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192"
+   },
+   "title": "The Lantern Coast — Book Four"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-sunken-vault",
+   "author": "Isra Calloway",
+   "genre": "adventure",
+   "id": "b039",
+   "persona": "sim05",
+   "role": "standalone",
+   "series": null,
+   "source": {
+    "key": "the-sunken-vault",
+    "kind": "ramp",
+    "sha256": "bb68f59358df485d2031a7712afb542c0ac52f12f7b2b648736b069b298295f2"
+   },
+   "title": "The Sunken Vault"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/rain-on-calder-street",
+   "author": "J. R. Vance",
+   "genre": "noir",
+   "id": "b040",
+   "persona": "sim05",
+   "role": "other-genre",
+   "series": null,
+   "source": {
+    "key": "rain-on-calder-street",
+    "kind": "ramp",
+    "sha256": "721fcadda2abb7d70934e377a5a8bf19c8439b99f2968fcfdcc150e045074fa3"
+   },
+   "title": "Rain on Calder Street"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-travel-guide-1",
+   "author": "",
+   "genre": "travel guide",
+   "id": "b041",
+   "persona": "sim06",
+   "series": {
+    "key": "sim06-the-travel-guide",
+    "name": "The Travel Guide",
+    "of": 3,
+    "order": 1
+   },
+   "source": {
+    "key": "the-travel-guide",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      1,
+      2,
+      3,
+      4
+     ]
+    },
+    "sha256": "6335fd09f2677ab6c9d0747a6737c6c3b840a5fdfeb07a71beaca59225bba586"
+   },
+   "title": "The Travel Guide — Book One"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-travel-guide-2",
+   "author": "",
+   "genre": "travel guide",
+   "id": "b042",
+   "persona": "sim06",
+   "series": {
+    "key": "sim06-the-travel-guide",
+    "name": "The Travel Guide",
+    "of": 3,
+    "order": 2
+   },
+   "source": {
+    "key": "the-travel-guide",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      5,
+      6,
+      7
+     ]
+    },
+    "sha256": "6335fd09f2677ab6c9d0747a6737c6c3b840a5fdfeb07a71beaca59225bba586"
+   },
+   "title": "The Travel Guide — Book Two"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-travel-guide-3",
+   "author": "",
+   "genre": "travel guide",
+   "id": "b043",
+   "persona": "sim06",
+   "series": {
+    "key": "sim06-the-travel-guide",
+    "name": "The Travel Guide",
+    "of": 3,
+    "order": 3
+   },
+   "source": {
+    "key": "the-travel-guide",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      8,
+      9,
+      10
+     ]
+    },
+    "sha256": "6335fd09f2677ab6c9d0747a6737c6c3b840a5fdfeb07a71beaca59225bba586"
+   },
+   "title": "The Travel Guide — Book Three"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-lantern-coast",
+   "author": "April Carooke",
+   "genre": "literary fiction",
+   "id": "b044",
+   "persona": "sim06",
+   "role": "standalone",
+   "series": null,
+   "source": {
+    "key": "sample",
+    "kind": "sample",
+    "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192"
+   },
+   "title": "The Lantern Coast"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-book-that-reads-you",
+   "author": "Xavier Phillipe",
+   "genre": "interactive fiction",
+   "id": "b045",
+   "persona": "sim06",
+   "role": "other-genre",
+   "series": null,
+   "source": {
+    "key": "the-book-that-reads-you",
+    "kind": "ramp",
+    "sha256": "050d542f1b2b50f56982ec29f86aa2aa96d8625bb5cc1198026dd06db27431b3"
+   },
+   "title": "The Book That Reads You"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/four-kitchens-1",
+   "author": "Mina Ortega",
+   "genre": "cookbook",
+   "id": "b046",
+   "persona": "sim07",
+   "series": {
+    "key": "sim07-four-kitchens",
+    "name": "Four Kitchens",
+    "of": 4,
+    "order": 1
+   },
+   "source": {
+    "key": "four-kitchens",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      1
+     ]
+    },
+    "sha256": "351fe113953dfbc4ebcf0564d62258dceca9b36affba029db5a07b981d44712d"
+   },
+   "title": "Four Kitchens — Book One"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/four-kitchens-2",
+   "author": "Mina Ortega",
+   "genre": "cookbook",
+   "id": "b047",
+   "persona": "sim07",
+   "series": {
+    "key": "sim07-four-kitchens",
+    "name": "Four Kitchens",
+    "of": 4,
+    "order": 2
+   },
+   "source": {
+    "key": "four-kitchens",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      2
+     ]
+    },
+    "sha256": "351fe113953dfbc4ebcf0564d62258dceca9b36affba029db5a07b981d44712d"
+   },
+   "title": "Four Kitchens — Book Two"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/four-kitchens-3",
+   "author": "Mina Ortega",
+   "genre": "cookbook",
+   "id": "b048",
+   "persona": "sim07",
+   "series": {
+    "key": "sim07-four-kitchens",
+    "name": "Four Kitchens",
+    "of": 4,
+    "order": 3
+   },
+   "source": {
+    "key": "four-kitchens",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      3
+     ]
+    },
+    "sha256": "351fe113953dfbc4ebcf0564d62258dceca9b36affba029db5a07b981d44712d"
+   },
+   "title": "Four Kitchens — Book Three"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/four-kitchens-4",
+   "author": "Mina Ortega",
+   "genre": "cookbook",
+   "id": "b049",
+   "persona": "sim07",
+   "series": {
+    "key": "sim07-four-kitchens",
+    "name": "Four Kitchens",
+    "of": 4,
+    "order": 4
+   },
+   "source": {
+    "key": "four-kitchens",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      4
+     ]
+    },
+    "sha256": "351fe113953dfbc4ebcf0564d62258dceca9b36affba029db5a07b981d44712d"
+   },
+   "title": "Four Kitchens — Book Four"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-travel-guide",
+   "author": "",
+   "genre": "travel guide",
+   "id": "b050",
+   "persona": "sim07",
+   "role": "standalone",
+   "series": null,
+   "source": {
+    "key": "the-travel-guide",
+    "kind": "ramp",
+    "sha256": "6335fd09f2677ab6c9d0747a6737c6c3b840a5fdfeb07a71beaca59225bba586"
+   },
+   "title": "The Travel Guide"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/salt-road",
+   "author": "Jabooki Tanaka",
+   "genre": "memoir",
+   "id": "b051",
+   "persona": "sim07",
+   "role": "other-genre",
+   "series": null,
+   "source": {
+    "key": "salt-road",
+    "kind": "ramp",
+    "sha256": "d70afe6652c3cfea1b42406baaebeb4428e19b47afa4d35839167acb10c89892"
+   },
+   "title": "Salt Road"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-book-that-reads-you-1",
+   "author": "Xavier Phillipe",
+   "genre": "interactive fiction",
+   "id": "b052",
+   "persona": "sim08",
+   "series": {
+    "key": "sim08-the-book-that-reads-you",
+    "name": "The Book That Reads You",
+    "of": 3,
+    "order": 1
+   },
+   "source": {
+    "key": "the-book-that-reads-you",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      2,
+      3,
+      4
+     ]
+    },
+    "sha256": "050d542f1b2b50f56982ec29f86aa2aa96d8625bb5cc1198026dd06db27431b3"
+   },
+   "title": "The Book That Reads You — Book One"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-book-that-reads-you-2",
+   "author": "Xavier Phillipe",
+   "genre": "interactive fiction",
+   "id": "b053",
+   "persona": "sim08",
+   "series": {
+    "key": "sim08-the-book-that-reads-you",
+    "name": "The Book That Reads You",
+    "of": 3,
+    "order": 2
+   },
+   "source": {
+    "key": "the-book-that-reads-you",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      5,
+      6,
+      7
+     ]
+    },
+    "sha256": "050d542f1b2b50f56982ec29f86aa2aa96d8625bb5cc1198026dd06db27431b3"
+   },
+   "title": "The Book That Reads You — Book Two"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-book-that-reads-you-3",
+   "author": "Xavier Phillipe",
+   "genre": "interactive fiction",
+   "id": "b054",
+   "persona": "sim08",
+   "series": {
+    "key": "sim08-the-book-that-reads-you",
+    "name": "The Book That Reads You",
+    "of": 3,
+    "order": 3
+   },
+   "source": {
+    "key": "the-book-that-reads-you",
+    "kind": "ramp",
+    "recut": {
+     "backMatterInLast": true,
+     "body": [
+      8,
+      9
+     ]
+    },
+    "sha256": "050d542f1b2b50f56982ec29f86aa2aa96d8625bb5cc1198026dd06db27431b3"
+   },
+   "title": "The Book That Reads You — Book Three"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-woolly-school-and-the-runaway-ball-of-yarn",
+   "author": "",
+   "genre": "picture book",
+   "id": "b055",
+   "persona": "sim08",
+   "role": "standalone",
+   "series": null,
+   "source": {
+    "key": "the-woolly-school",
+    "kind": "ramp",
+    "sha256": "d9d3e20a96c3a642014c5411594d8992a73933968b6ca00d519d92037e4c6e5c"
+   },
+   "title": "The Woolly School and the Runaway Ball of Yarn"
+  },
+  {
+   "alsoByLink": "https://sim.beuk.test/books/the-travel-guide",
+   "author": "",
+   "genre": "travel guide",
+   "id": "b056",
+   "persona": "sim08",
+   "role": "other-genre",
+   "series": null,
+   "source": {
+    "key": "the-travel-guide",
+    "kind": "ramp",
+    "sha256": "6335fd09f2677ab6c9d0747a6737c6c3b840a5fdfeb07a71beaca59225bba586"
+   },
+   "title": "The Travel Guide"
+  }
+ ],
+ "lab": {
+  "persona": "sim09-importlab",
+  "volumes": [
+   1257,
+   43936
+  ]
+ },
+ "monster": {
+  "limitsMs": {
+   "export": 900000,
+   "import": 900000,
+   "op": 300000,
+   "pdfx": 1800000,
+   "save": 600000
+  },
+  "pdfxSteps": [
+   250000
+  ],
+  "printVolumes": [
+   43936,
+   33361
+  ],
+  "steps": [
+   250000,
+   1000000,
+   2500000,
+   5000000,
+   10000000
+  ],
+  "targetWords": 10000000,
+  "title": "SIM LOAD TEST — not a book"
+ },
+ "note": "Generated by tools/sim/world.mjs from the seed and the committed catalog. Emails use the reserved .test top-level domain (RFC 2606); passwords exist only in this disposable simulation.",
+ "personas": [
+  {
+   "email": "sim01-dumas@sim.beuk.test",
+   "key": "sim01-dumas",
+   "kind": "saga",
+   "name": "Sim Writer 01 (Dumas shelf)",
+   "password": "sim-6c1f3e2d308d7aca6550"
+  },
+  {
+   "email": "sim02-baum@sim.beuk.test",
+   "key": "sim02-baum",
+   "kind": "saga",
+   "name": "Sim Writer 02 (Baum shelf)",
+   "password": "sim-d2064dde4caadddf2996"
+  },
+  {
+   "email": "sim03@sim.beuk.test",
+   "key": "sim03",
+   "kind": "ramp",
+   "name": "Sim Writer 03",
+   "password": "sim-8aa8290ec14bc8266ccd"
+  },
+  {
+   "email": "sim04@sim.beuk.test",
+   "key": "sim04",
+   "kind": "ramp",
+   "name": "Sim Writer 04",
+   "password": "sim-f10ca659e0f4d7c6200f"
+  },
+  {
+   "email": "sim05@sim.beuk.test",
+   "key": "sim05",
+   "kind": "ramp",
+   "name": "Sim Writer 05",
+   "password": "sim-c59426556056205fd81a"
+  },
+  {
+   "email": "sim06@sim.beuk.test",
+   "key": "sim06",
+   "kind": "ramp",
+   "name": "Sim Writer 06",
+   "password": "sim-8112c555527b10365a20"
+  },
+  {
+   "email": "sim07@sim.beuk.test",
+   "key": "sim07",
+   "kind": "ramp",
+   "name": "Sim Writer 07",
+   "password": "sim-e23fa7aa93e3a53c231e"
+  },
+  {
+   "email": "sim08@sim.beuk.test",
+   "key": "sim08",
+   "kind": "ramp",
+   "name": "Sim Writer 08",
+   "password": "sim-87a731fe153a01dd949b"
+  },
+  {
+   "email": "sim09-importlab@sim.beuk.test",
+   "key": "sim09-importlab",
+   "kind": "lab",
+   "name": "Sim Writer 09 (import lab)",
+   "password": "sim-89a753b64fe45aa585b4"
+  },
+  {
+   "email": "sim10-loadtest@sim.beuk.test",
+   "key": "sim10-loadtest",
+   "kind": "load",
+   "name": "Sim Writer 10 (load test)",
+   "password": "sim-8c31c7cf51413556751b"
+  }
+ ],
+ "seed": 20261027,
+ "series": [
+  {
+   "bible": {
+    "authorIn": "b001",
+    "editIn": "b003",
+    "importInto": [
+     "b002",
+     "b003",
+     "b004",
+     "b005",
+     "b006"
+    ],
+    "seedTop": null,
+    "untouched": "b006"
+   },
+   "bibleAccept": [
+    [
+     "d’Artagnan",
+     "character"
+    ],
+    [
+     "Athos",
+     "character"
+    ],
+    [
+     "Porthos",
+     "character"
+    ],
+    [
+     "Aramis",
+     "character"
+    ],
+    [
+     "Milady",
+     "character"
+    ],
+    [
+     "Richelieu",
+     "character"
+    ],
+    [
+     "Mazarin",
+     "character"
+    ],
+    [
+     "Buckingham",
+     "character"
+    ],
+    [
+     "Planchet",
+     "character"
+    ],
+    [
+     "Bonacieux",
+     "character"
+    ],
+    [
+     "Tréville",
+     "character"
+    ],
+    [
+     "Rochefort",
+     "character"
+    ],
+    [
+     "Raoul",
+     "character"
+    ],
+    [
+     "Fouquet",
+     "character"
+    ],
+    [
+     "Colbert",
+     "character"
+    ],
+    [
+     "Louise",
+     "character"
+    ],
+    [
+     "Paris",
+     "place"
+    ],
+    [
+     "London",
+     "place"
+    ],
+    [
+     "La Rochelle",
+     "place"
+    ],
+    [
+     "Louvre",
+     "place"
+    ]
+   ],
+   "books": [
+    "b001",
+    "b002",
+    "b003",
+    "b004",
+    "b005",
+    "b006"
+   ],
+   "boxSet": {
+    "in": "b001",
+    "volumes": [
+     "b001",
+     "b002",
+     "b003",
+     "b004",
+     "b005",
+     "b006"
+    ]
+   },
+   "key": "dartagnan",
+   "kind": "saga",
+   "name": "The d'Artagnan Romances",
+   "persona": "sim01-dumas"
+  },
+  {
+   "bible": {
+    "authorIn": "b007",
+    "editIn": "b009",
+    "importInto": [
+     "b008",
+     "b009"
+    ],
+    "seedTop": null,
+    "untouched": "b008"
+   },
+   "bibleAccept": [
+    [
+     "Marguerite",
+     "character"
+    ],
+    [
+     "Henri",
+     "character"
+    ],
+    [
+     "Charles",
+     "character"
+    ],
+    [
+     "Catherine",
+     "character"
+    ],
+    [
+     "La Mole",
+     "character"
+    ],
+    [
+     "Coconnas",
+     "character"
+    ],
+    [
+     "Chicot",
+     "character"
+    ],
+    [
+     "Bussy",
+     "character"
+    ],
+    [
+     "Diana",
+     "character"
+    ],
+    [
+     "Monsoreau",
+     "character"
+    ],
+    [
+     "Guise",
+     "character"
+    ],
+    [
+     "Navarre",
+     "place"
+    ],
+    [
+     "Paris",
+     "place"
+    ],
+    [
+     "Louvre",
+     "place"
+    ],
+    [
+     "Anjou",
+     "place"
+    ]
+   ],
+   "books": [
+    "b007",
+    "b008",
+    "b009"
+   ],
+   "boxSet": {
+    "in": "b007",
+    "volumes": [
+     "b007",
+     "b008",
+     "b009"
+    ]
+   },
+   "key": "valois",
+   "kind": "saga",
+   "name": "The Valois Romances",
+   "persona": "sim01-dumas"
+  },
+  {
+   "bible": {
+    "authorIn": "b010",
+    "editIn": "b012",
+    "importInto": [
+     "b011",
+     "b012",
+     "b013",
+     "b014",
+     "b015",
+     "b016",
+     "b017",
+     "b018",
+     "b019",
+     "b020",
+     "b021",
+     "b022",
+     "b023"
+    ],
+    "seedTop": null,
+    "untouched": "b023"
+   },
+   "bibleAccept": [
+    [
+     "Dorothy",
+     "character"
+    ],
+    [
+     "Toto",
+     "character"
+    ],
+    [
+     "Scarecrow",
+     "character"
+    ],
+    [
+     "Tin Woodman",
+     "character"
+    ],
+    [
+     "Lion",
+     "character"
+    ],
+    [
+     "Wizard",
+     "character"
+    ],
+    [
+     "Ozma",
+     "character"
+    ],
+    [
+     "Glinda",
+     "character"
+    ],
+    [
+     "Tip",
+     "character"
+    ],
+    [
+     "Jack Pumpkinhead",
+     "character"
+    ],
+    [
+     "Tik-Tok",
+     "character"
+    ],
+    [
+     "Billina",
+     "character"
+    ],
+    [
+     "Shaggy Man",
+     "character"
+    ],
+    [
+     "Button-Bright",
+     "character"
+    ],
+    [
+     "Patchwork Girl",
+     "character"
+    ],
+    [
+     "Scraps",
+     "character"
+    ],
+    [
+     "Betsy",
+     "character"
+    ],
+    [
+     "Trot",
+     "character"
+    ],
+    [
+     "Cap'n Bill",
+     "character"
+    ],
+    [
+     "Nome King",
+     "character"
+    ],
+    [
+     "Oz",
+     "place"
+    ],
+    [
+     "Emerald City",
+     "place"
+    ],
+    [
+     "Kansas",
+     "place"
+    ],
+    [
+     "Munchkins",
+     "group"
+    ],
+    [
+     "Winkies",
+     "group"
+    ]
+   ],
+   "books": [
+    "b010",
+    "b011",
+    "b012",
+    "b013",
+    "b014",
+    "b015",
+    "b016",
+    "b017",
+    "b018",
+    "b019",
+    "b020",
+    "b021",
+    "b022",
+    "b023"
+   ],
+   "boxSet": {
+    "in": "b010",
+    "volumes": [
+     "b010",
+     "b011",
+     "b012",
+     "b013",
+     "b014",
+     "b015",
+     "b016",
+     "b017",
+     "b018",
+     "b019",
+     "b020",
+     "b021",
+     "b022",
+     "b023"
+    ]
+   },
+   "key": "oz",
+   "kind": "saga",
+   "name": "The Oz Books",
+   "persona": "sim02-baum"
+  },
+  {
+   "bible": {
+    "authorIn": "b024",
+    "editIn": "b026",
+    "importInto": [
+     "b025",
+     "b026",
+     "b027"
+    ],
+    "seedTop": 6,
+    "untouched": "b027"
+   },
+   "bibleAccept": null,
+   "books": [
+    "b024",
+    "b025",
+    "b026",
+    "b027"
+   ],
+   "boxSet": {
+    "in": "b024",
+    "volumes": [
+     "b024",
+     "b025",
+     "b026",
+     "b027"
+    ]
+   },
+   "key": "sim03-lunas-beach-treasure-hunt",
+   "kind": "recut",
+   "name": "Luna's Beach Treasure Hunt",
+   "persona": "sim03"
+  },
+  {
+   "bible": {
+    "authorIn": "b030",
+    "editIn": "b032",
+    "importInto": [
+     "b031",
+     "b032"
+    ],
+    "seedTop": 6,
+    "untouched": "b031"
+   },
+   "bibleAccept": null,
+   "books": [
+    "b030",
+    "b031",
+    "b032"
+   ],
+   "boxSet": {
+    "in": "b030",
+    "volumes": [
+     "b030",
+     "b031",
+     "b032"
+    ]
+   },
+   "key": "sim04-salt-road",
+   "kind": "recut",
+   "name": "Salt Road",
+   "persona": "sim04"
+  },
+  {
+   "bible": {
+    "authorIn": "b035",
+    "editIn": "b037",
+    "importInto": [
+     "b036",
+     "b037",
+     "b038"
+    ],
+    "seedTop": 6,
+    "untouched": "b038"
+   },
+   "bibleAccept": null,
+   "books": [
+    "b035",
+    "b036",
+    "b037",
+    "b038"
+   ],
+   "boxSet": {
+    "in": "b035",
+    "volumes": [
+     "b035",
+     "b036",
+     "b037",
+     "b038"
+    ]
+   },
+   "key": "sim05-sample",
+   "kind": "recut",
+   "name": "The Lantern Coast",
+   "persona": "sim05"
+  },
+  {
+   "bible": {
+    "authorIn": "b041",
+    "editIn": "b043",
+    "importInto": [
+     "b042",
+     "b043"
+    ],
+    "seedTop": 6,
+    "untouched": "b042"
+   },
+   "bibleAccept": null,
+   "books": [
+    "b041",
+    "b042",
+    "b043"
+   ],
+   "boxSet": {
+    "in": "b041",
+    "volumes": [
+     "b041",
+     "b042",
+     "b043"
+    ]
+   },
+   "key": "sim06-the-travel-guide",
+   "kind": "recut",
+   "name": "The Travel Guide",
+   "persona": "sim06"
+  },
+  {
+   "bible": {
+    "authorIn": "b046",
+    "editIn": "b048",
+    "importInto": [
+     "b047",
+     "b048",
+     "b049"
+    ],
+    "seedTop": 6,
+    "untouched": "b049"
+   },
+   "bibleAccept": null,
+   "books": [
+    "b046",
+    "b047",
+    "b048",
+    "b049"
+   ],
+   "boxSet": {
+    "in": "b046",
+    "volumes": [
+     "b046",
+     "b047",
+     "b048",
+     "b049"
+    ]
+   },
+   "key": "sim07-four-kitchens",
+   "kind": "recut",
+   "name": "Four Kitchens",
+   "persona": "sim07"
+  },
+  {
+   "bible": {
+    "authorIn": "b052",
+    "editIn": "b054",
+    "importInto": [
+     "b053",
+     "b054"
+    ],
+    "seedTop": 6,
+    "untouched": "b053"
+   },
+   "bibleAccept": null,
+   "books": [
+    "b052",
+    "b053",
+    "b054"
+   ],
+   "boxSet": {
+    "in": "b052",
+    "volumes": [
+     "b052",
+     "b053",
+     "b054"
+    ]
+   },
+   "key": "sim08-the-book-that-reads-you",
+   "kind": "recut",
+   "name": "The Book That Reads You",
+   "persona": "sim08"
+  }
+ ],
+ "sessions": [
+  {
+   "book": "b028",
+   "deleteAt": 0.360847,
+   "exports": [
+    "epub",
+    "submission"
+   ],
+   "goals": {
+    "daily": 250,
+    "project": 50000
+   },
+   "moveAt": 0.482192,
+   "persona": "sim03",
+   "resolveViaUi": true,
+   "share": true,
+   "typeAt": 0.94593
+  },
+  {
+   "book": "b033",
+   "deleteAt": 0.123392,
+   "exports": [
+    "epub",
+    "submission"
+   ],
+   "goals": {
+    "daily": 1000,
+    "project": 20000
+   },
+   "moveAt": 0.030868,
+   "persona": "sim04",
+   "resolveViaUi": true,
+   "share": true,
+   "typeAt": 0.207507
+  },
+  {
+   "book": "b039",
+   "deleteAt": 0.19101,
+   "exports": [
+    "epub",
+    "submission"
+   ],
+   "goals": {
+    "daily": 500,
+    "project": 80000
+   },
+   "moveAt": 0.964227,
+   "persona": "sim05",
+   "resolveViaUi": true,
+   "share": true,
+   "typeAt": 0.329167
+  },
+  {
+   "book": "b044",
+   "deleteAt": 0.636412,
+   "exports": [
+    "epub",
+    "submission"
+   ],
+   "goals": {
+    "daily": 250,
+    "project": 80000
+   },
+   "moveAt": 0.265963,
+   "persona": "sim06",
+   "resolveViaUi": true,
+   "share": true,
+   "typeAt": 0.690431
+  },
+  {
+   "book": "b050",
+   "deleteAt": 0.236001,
+   "exports": [
+    "epub",
+    "submission"
+   ],
+   "goals": {
+    "daily": 500,
+    "project": 50000
+   },
+   "moveAt": 0.691325,
+   "persona": "sim07",
+   "resolveViaUi": true,
+   "share": true,
+   "typeAt": 0.345407
+  },
+  {
+   "book": "b055",
+   "deleteAt": 0.911735,
+   "exports": [
+    "epub",
+    "submission"
+   ],
+   "goals": {
+    "daily": 250,
+    "project": 20000
+   },
+   "moveAt": 0.277968,
+   "persona": "sim08",
+   "resolveViaUi": true,
+   "share": true,
+   "typeAt": 0.111397
+  }
+ ],
+ "shares": [
+  {
+   "book": "b001",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim03 on sim01-dumas's draft",
+     "paragraph": 0.671381,
+     "reader": "sim03",
+     "section": 0.925585
+    },
+    {
+     "body": "[sim] comment 2 from sim03 on sim01-dumas's draft",
+     "paragraph": 0.989458,
+     "reader": "sim03",
+     "section": 0.028658
+    },
+    {
+     "body": "[sim] comment 3 from sim03 on sim01-dumas's draft",
+     "paragraph": 0.324388,
+     "reader": "sim03",
+     "section": 0.477999
+    },
+    {
+     "body": "[sim] comment 4 from sim02-baum on sim01-dumas's draft",
+     "paragraph": 0.176938,
+     "reader": "sim02-baum",
+     "section": 0.875891
+    },
+    {
+     "body": "[sim] comment 5 from sim02-baum on sim01-dumas's draft",
+     "paragraph": 0.003697,
+     "reader": "sim02-baum",
+     "section": 0.167857
+    }
+   ],
+   "owner": "sim01-dumas",
+   "resolve": [
+    1,
+    4
+   ],
+   "ui": true
+  },
+  {
+   "book": "b010",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim07 on sim02-baum's draft",
+     "paragraph": 0.589121,
+     "reader": "sim07",
+     "section": 0.186125
+    },
+    {
+     "body": "[sim] comment 2 from sim07 on sim02-baum's draft",
+     "paragraph": 0.643535,
+     "reader": "sim07",
+     "section": 0.430517
+    },
+    {
+     "body": "[sim] comment 3 from sim07 on sim02-baum's draft",
+     "paragraph": 0.621076,
+     "reader": "sim07",
+     "section": 0.349585
+    },
+    {
+     "body": "[sim] comment 4 from sim04 on sim02-baum's draft",
+     "paragraph": 0.475461,
+     "reader": "sim04",
+     "section": 0.518055
+    },
+    {
+     "body": "[sim] comment 5 from sim04 on sim02-baum's draft",
+     "paragraph": 0.150292,
+     "reader": "sim04",
+     "section": 0.67297
+    }
+   ],
+   "owner": "sim02-baum",
+   "resolve": [
+    4
+   ],
+   "ui": false
+  },
+  {
+   "book": "b028",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim07 on sim03's draft",
+     "paragraph": 0.000239,
+     "reader": "sim07",
+     "section": 0.661449
+    },
+    {
+     "body": "[sim] comment 2 from sim07 on sim03's draft",
+     "paragraph": 0.390874,
+     "reader": "sim07",
+     "section": 0.240005
+    },
+    {
+     "body": "[sim] comment 3 from sim01-dumas on sim03's draft",
+     "paragraph": 0.785617,
+     "reader": "sim01-dumas",
+     "section": 0.17263
+    },
+    {
+     "body": "[sim] comment 4 from sim01-dumas on sim03's draft",
+     "paragraph": 0.219153,
+     "reader": "sim01-dumas",
+     "section": 0.147796
+    }
+   ],
+   "owner": "sim03",
+   "resolve": [
+    0,
+    1,
+    2
+   ],
+   "ui": false
+  },
+  {
+   "book": "b033",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim03 on sim04's draft",
+     "paragraph": 0.776153,
+     "reader": "sim03",
+     "section": 0.247424
+    },
+    {
+     "body": "[sim] comment 2 from sim03 on sim04's draft",
+     "paragraph": 0.367687,
+     "reader": "sim03",
+     "section": 0.867857
+    },
+    {
+     "body": "[sim] comment 3 from sim03 on sim04's draft",
+     "paragraph": 0.355534,
+     "reader": "sim03",
+     "section": 0.088784
+    },
+    {
+     "body": "[sim] comment 4 from sim07 on sim04's draft",
+     "paragraph": 0.090032,
+     "reader": "sim07",
+     "section": 0.380117
+    },
+    {
+     "body": "[sim] comment 5 from sim07 on sim04's draft",
+     "paragraph": 0.513216,
+     "reader": "sim07",
+     "section": 0.05466
+    },
+    {
+     "body": "[sim] comment 6 from sim07 on sim04's draft",
+     "paragraph": 0.098703,
+     "reader": "sim07",
+     "section": 0.404634
+    }
+   ],
+   "owner": "sim04",
+   "resolve": [
+    2,
+    4
+   ],
+   "ui": false
+  },
+  {
+   "book": "b039",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim08 on sim05's draft",
+     "paragraph": 0.552309,
+     "reader": "sim08",
+     "section": 0.575793
+    },
+    {
+     "body": "[sim] comment 2 from sim08 on sim05's draft",
+     "paragraph": 0.312706,
+     "reader": "sim08",
+     "section": 0.320542
+    },
+    {
+     "body": "[sim] comment 3 from sim04 on sim05's draft",
+     "paragraph": 0.659473,
+     "reader": "sim04",
+     "section": 0.161037
+    },
+    {
+     "body": "[sim] comment 4 from sim04 on sim05's draft",
+     "paragraph": 0.411386,
+     "reader": "sim04",
+     "section": 0.968875
+    },
+    {
+     "body": "[sim] comment 5 from sim04 on sim05's draft",
+     "paragraph": 0.941284,
+     "reader": "sim04",
+     "section": 0.625736
+    }
+   ],
+   "owner": "sim05",
+   "resolve": [
+    3,
+    4
+   ],
+   "ui": false
+  },
+  {
+   "book": "b044",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim04 on sim06's draft",
+     "paragraph": 0.608839,
+     "reader": "sim04",
+     "section": 0.49333
+    },
+    {
+     "body": "[sim] comment 2 from sim04 on sim06's draft",
+     "paragraph": 0.162948,
+     "reader": "sim04",
+     "section": 0.852467
+    },
+    {
+     "body": "[sim] comment 3 from sim02-baum on sim06's draft",
+     "paragraph": 0.27174,
+     "reader": "sim02-baum",
+     "section": 0.331916
+    },
+    {
+     "body": "[sim] comment 4 from sim02-baum on sim06's draft",
+     "paragraph": 0.730726,
+     "reader": "sim02-baum",
+     "section": 0.244569
+    },
+    {
+     "body": "[sim] comment 5 from sim02-baum on sim06's draft",
+     "paragraph": 0.78267,
+     "reader": "sim02-baum",
+     "section": 0.752159
+    },
+    {
+     "body": "[sim] comment 6 from sim05 on sim06's draft",
+     "paragraph": 0.221547,
+     "reader": "sim05",
+     "section": 0.663154
+    },
+    {
+     "body": "[sim] comment 7 from sim05 on sim06's draft",
+     "paragraph": 0.270352,
+     "reader": "sim05",
+     "section": 0.098318
+    },
+    {
+     "body": "[sim] comment 8 from sim05 on sim06's draft",
+     "paragraph": 0.602375,
+     "reader": "sim05",
+     "section": 0.881854
+    }
+   ],
+   "owner": "sim06",
+   "resolve": [
+    0,
+    2,
+    5
+   ],
+   "ui": false
+  },
+  {
+   "book": "b050",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim03 on sim07's draft",
+     "paragraph": 0.715713,
+     "reader": "sim03",
+     "section": 0.637408
+    },
+    {
+     "body": "[sim] comment 2 from sim03 on sim07's draft",
+     "paragraph": 0.395126,
+     "reader": "sim03",
+     "section": 0.50608
+    },
+    {
+     "body": "[sim] comment 3 from sim05 on sim07's draft",
+     "paragraph": 0.530165,
+     "reader": "sim05",
+     "section": 0.375162
+    },
+    {
+     "body": "[sim] comment 4 from sim05 on sim07's draft",
+     "paragraph": 0.876564,
+     "reader": "sim05",
+     "section": 0.937606
+    },
+    {
+     "body": "[sim] comment 5 from sim05 on sim07's draft",
+     "paragraph": 0.500956,
+     "reader": "sim05",
+     "section": 0.504946
+    }
+   ],
+   "owner": "sim07",
+   "resolve": [
+    0,
+    3
+   ],
+   "ui": false
+  },
+  {
+   "book": "b055",
+   "comments": [
+    {
+     "body": "[sim] comment 1 from sim03 on sim08's draft",
+     "paragraph": 0.947341,
+     "reader": "sim03",
+     "section": 0.859947
+    },
+    {
+     "body": "[sim] comment 2 from sim03 on sim08's draft",
+     "paragraph": 0.407096,
+     "reader": "sim03",
+     "section": 0.10031
+    },
+    {
+     "body": "[sim] comment 3 from sim06 on sim08's draft",
+     "paragraph": 0.908853,
+     "reader": "sim06",
+     "section": 0.673391
+    },
+    {
+     "body": "[sim] comment 4 from sim06 on sim08's draft",
+     "paragraph": 0.461779,
+     "reader": "sim06",
+     "section": 0.955283
+    },
+    {
+     "body": "[sim] comment 5 from sim06 on sim08's draft",
+     "paragraph": 0.049825,
+     "reader": "sim06",
+     "section": 0.591875
+    },
+    {
+     "body": "[sim] comment 6 from sim07 on sim08's draft",
+     "paragraph": 0.196573,
+     "reader": "sim07",
+     "section": 0.946076
+    },
+    {
+     "body": "[sim] comment 7 from sim07 on sim08's draft",
+     "paragraph": 0.944631,
+     "reader": "sim07",
+     "section": 0.232169
+    },
+    {
+     "body": "[sim] comment 8 from sim07 on sim08's draft",
+     "paragraph": 0.283667,
+     "reader": "sim07",
+     "section": 0.445393
+    }
+   ],
+   "owner": "sim08",
+   "resolve": [
+    1,
+    2,
+    3,
+    6,
+    7
+   ],
+   "ui": false
+  }
+ ],
+ "twoDevices": {
+  "book": "b029",
+  "chapterA": 0.502818,
+  "chapterB": 0.41251,
+  "persona": "sim03"
+ },
+ "version": 1
+}

@@ -1,0 +1,129 @@
+{
+ "format": "beuk-story-bible",
+ "version": 1,
+ "book": "The Wonderful Wizard of Oz",
+ "exportedAt": "2026-10-28T00:29:22.619Z",
+ "entries": [
+  {
+   "id": "b89q3ztdp",
+   "type": "character",
+   "name": "Dorothy",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bjp78taoj",
+   "type": "character",
+   "name": "Toto",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bngxsa74i",
+   "type": "character",
+   "name": "Scarecrow",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bs0uafrer",
+   "type": "character",
+   "name": "Tin Woodman",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bjhbuc3op",
+   "type": "character",
+   "name": "Lion",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bgs6lsq44",
+   "type": "character",
+   "name": "Glinda",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b2xzjb1cz",
+   "type": "place",
+   "name": "Emerald City",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "bst6ymr36",
+   "type": "place",
+   "name": "Kansas",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "ba6o938t7",
+   "type": "group",
+   "name": "Munchkins",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  },
+  {
+   "id": "b50ot8z0g",
+   "type": "group",
+   "name": "Winkies",
+   "aliases": [],
+   "description": "",
+   "notes": "",
+   "imageId": null,
+   "tags": [],
+   "exactCase": false,
+   "exclude": []
+  }
+ ],
+ "images": []
+}

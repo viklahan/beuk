@@ -4005,6 +4005,64 @@ lines are ordered run by run (see above), not by the full bidi algorithm; a chap
 paragraph, not in the Subtitle field; footnote numbers stay inline as
 `[n]`; Box Set volume import and Bulk import do not take PDFs yet.
 
+## Simulation (tools/sim): many writers, series, readers — find gaps, test correctness
+
+A deterministic simulation of Beuk in use: writer personas with shelves of
+real books (the studio's sample, the Ramp gallery books and their re-cuts
+into 3–4 volume series, and public-domain sagas — Dumas' d'Artagnan and
+Valois romances, Baum's fourteen Oz books with their original
+illustrations), Story Bibles carried from volume to volume, Also-by pages,
+box sets, beta-reader links with reader comments, persona browsers working
+in the real UI at the same time, one writer on two devices, and a load-test
+book. It ends in a generated report of every check (pass/fail with
+evidence) and every gap found, especially what a writer of an
+interconnected series cannot do.
+
+One command (Windows, Docker Desktop; Node 20+ on the host):
+
+```
+node tools/sim/sim.mjs all          # up -> world -> seed -> personas -> monster -> check -> report -> down
+```
+
+or phase by phase: `node tools/sim/sim.mjs up | world | seed | personas | monster | check | report | down [--images]`
+(`all --keep` leaves the stack running). The report is
+`tools/sim/out/report.md` (+ `report.json`).
+
+- **Its own disposable stack.** Compose project `beuk-sim` on
+  http://localhost:8190 (`tools/sim/docker-compose.sim.yml`,
+  `tools/sim/sim.env`), its own volumes and its own image tags
+  (`beuk-sim-*`). It never starts, stops or reads the local `beuk-saas`
+  stack (start-local.ps1, port 8090) or its data. `down` removes the sim
+  containers and volumes; `down --images` also removes the `beuk-sim-*`
+  images. The tools overlay needs `tools-bin/epubcheck.jar`; `up` copies
+  it from the main checkout (`SIM_TOOLS_BIN` to point elsewhere).
+- **No new server flag.** The sim stack raises the existing
+  `AUTH_RATE_BURST` knob for itself (many sign-ups from one address) and
+  leaves billing unset, so `src/access.ts` keeps every account open; no
+  product code changes.
+- **Deterministic.** `tools/sim/world.mjs` builds the whole world (who,
+  which books, which series, the reading order, which readers comment on
+  what, every UI session's choices) from a seed and the committed
+  `tools/sim/catalog.json` / `sagas.json` / `world.config.json` — no
+  clock, no `Math.random`. `tests/sim-world.test.ts` holds it to that
+  without the stack. Each run records the world's sha256 and a content
+  digest of the seeded books in `out/runs.jsonl`; the report compares runs.
+- **Nothing invented.** Books are real existing text; the only words the
+  simulation writes are marked (`[sim] …` comments, `SIMTYPED-…` edits).
+- **Sagas.** `node tools/sim/gutenberg.mjs fetch` downloads each ebook's
+  HTML (with pictures) from gutenberg.org once and records URL, date and
+  sha256 in `10-ramp-gallery/sagas/sources.json`; `prep` turns each into
+  Markdown for Beuk's own importer (the Gutenberg header, footer and
+  licence removed, the prose untouched; per-edition chapter rules in
+  `sagas.json`); `node tools/sim/catalog.mjs` refreshes the catalog. The
+  seed saves every built book as a `.beuk-backup.json` the studio opens,
+  with `manifest.json` (series, reading order, words, Bible entries, and
+  which characters appear in which volume, counted by the studio's own
+  Story Bible matcher) in `10-ramp-gallery/sagas/`.
+- **Browsers.** The Playwright image `mcr.microsoft.com/playwright:v1.49.1-noble`
+  shares the sim Caddy's network namespace, so the studio runs on its real
+  origin; Playwright itself is cached on the `beuk-pw-cache` volume.
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — everything is built (verified, deduplicated,
