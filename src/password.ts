@@ -7,10 +7,20 @@ export function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(hash: string, password: string): Promise<boolean> {
+  return (await checkPassword(hash, password)) === 'match';
+}
+
+/** Like verifyPassword, but tells a thrown argon2 error (a malformed
+ *  stored hash, a native allocation failure) apart from a real mismatch,
+ *  so a refusal can be logged with its true reason. Never logs. */
+export async function checkPassword(
+  hash: string,
+  password: string,
+): Promise<'match' | 'mismatch' | 'error'> {
   try {
-    return await argon2.verify(hash, password);
+    return (await argon2.verify(hash, password)) ? 'match' : 'mismatch';
   } catch {
-    return false;
+    return 'error';
   }
 }
 

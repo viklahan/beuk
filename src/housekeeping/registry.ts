@@ -3089,6 +3089,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'serializeBook and the IndexedDB record are built in the browser; the shelf receives that document as opaque JSON.',
   },
   /* ==== /BEUK:imagelib ==== */
+  /* ==== BEUK:login ==== */
+  {
+    id: 'auth.signin.error-by-status',
+    title: 'Sign-in dialog: a 502 from the proxy, a 503 and no answer say the shelf is out of reach; only a 401 says the email and password do not match; a 429 shows the wait message',
+    kind: 'client-only',
+    reason: 'The message is chosen in the studio from the status the browser received; the server side (keep-alive outliving the proxy pool) is tested in tests/upstream-keepalive.test.ts.',
+  },
+  /* ==== /BEUK:login ==== */
 ];
 
 /* ------------------------------------------------------------------ */

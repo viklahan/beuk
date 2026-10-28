@@ -1,3 +1,4 @@
+import { applyUpstreamKeepAlive } from './http-server.js';
 import type { Server } from 'node:http';
 import { buildApp } from './app.js';
 import { purgeExpiredSessions } from './auth.js';
@@ -114,9 +115,13 @@ const trialTimer = setInterval(trialTick, 60 * 60_000);
 trialTimer.unref();
 setTimeout(trialTick, 90_000).unref();
 
-const server = app.listen(config.port, () => {
-  console.log(`beuk-api listening on :${config.port} (timezone ${config.timeZone})`);
-});
+// Idle keep-alive sockets outlive Caddy's pool (src/http-server.ts):
+// otherwise a request on a just-closed pooled socket is a 502.
+const server = applyUpstreamKeepAlive(
+  app.listen(config.port, () => {
+    console.log(`beuk-api listening on :${config.port} (timezone ${config.timeZone})`);
+  }),
+);
 
 const shutdown = createShutdown({
   server,
