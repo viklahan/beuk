@@ -43460,7 +43460,7 @@
            below from the pictures this desk holds. */
         const picStart = Date.now();
         let pack = await picPackForShelf(doc);
-        if (cloudSaveOwner() !== sentFor) { cloudSettleStatus(); if (cloudDirty && cloud.user) cloudAutosaveTick(); return; }
+        if (sentFor !== cloudSaveOwner()) { cloudSettleStatus(); if (cloudDirty && cloud.user) cloudAutosaveTick(); return; } /* the account or book changed while pictures uploaded */
         let payload = JSON.stringify({ title: title, doc: pack.doc });
         const shelfHeaders = { "Beuk-Pictures": "ref", "Prefer": "return=minimal" };
         let res;
@@ -43481,10 +43481,10 @@
           }
           /* The shelf no longer holds a picture this desk thought it did
              (collected after the book dropped it): upload it again, once. */
-          if (!(res && res.__status === 422 && res.__body && Array.isArray(res.__body.missingPictures)) || attempt > 0 || cloudSaveOwner() !== sentFor) break;
+          if (!(res && res.__status === 422 && res.__body && Array.isArray(res.__body.missingPictures)) || attempt > 0 || sentFor !== cloudSaveOwner()) break;
           if (cloud.user) res.__body.missingPictures.forEach((h) => shelfPics.held.delete(cloud.user.id + "|" + h));
           pack = await picPackForShelf(doc);
-          if (cloudSaveOwner() !== sentFor) break;
+          if (sentFor !== cloudSaveOwner()) break;
           payload = JSON.stringify({ title: title, doc: pack.doc });
         }
         shelfPics.stats = { bytes: payload.length, named: pack.named, uploaded: pack.uploaded, uploadBytes: pack.uploadBytes, inline: pack.inline, ms: Date.now() - picStart, status: res && res.__status ? res.__status : (res ? 200 : 0) };
