@@ -210,6 +210,14 @@ export function buildApp({
     if ((err as { type?: string }).type === 'entity.too.large') {
       return res.status(413).json({ error: 'book is too large for the shelf', limitBytes: config.manuscriptMaxBytes });
     }
+    // A body that is not JSON (or not in a charset the parser reads) is the
+    // client's mistake: 400 / 415, nothing logged as a server fault.
+    if ((err as { type?: string }).type === 'entity.parse.failed') {
+      return res.status(400).json({ error: 'the request body is not valid JSON' });
+    }
+    if ((err as { type?: string }).type === 'encoding.unsupported' || (err as { type?: string }).type === 'charset.unsupported') {
+      return res.status(415).json({ error: 'the request body is in an encoding the server does not read' });
+    }
     console.error(err);
     return res.status(500).json({ error: 'internal error' });
   });

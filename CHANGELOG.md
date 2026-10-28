@@ -4,6 +4,10 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-28 — Clean edges
+
+- **A request that is not valid JSON is answered as the sender's mistake.** The server used to answer a broken JSON body (a hand-made request, a cut-off upload) with 500 "internal error" and log it as a fault of its own. It now answers 400 "the request body is not valid JSON", or 415 for a body in an encoding it does not read, and logs nothing. Nothing changes for the studio, which always sends valid JSON.
+
 ## 2026-10-27 — Print bleed
 
 - **Box sets keep every book whole.** Add a Book (Export → Box Set) now takes a Beuk backup file (.beuk-backup.json, from Download a backup), so Book Two, Three and on arrive with their own cover and every picture, not just their text. Pictures from different books never mix up, even when two books share the same art.

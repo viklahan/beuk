@@ -368,10 +368,6 @@ with `git checkout main && git pull && ./deploy/install.sh`.
 
 ## Known and accepted at launch
 
-- A request with broken JSON (e.g. a hand-made `curl` to
-  `/api/auth/login`) answers **500** `{"error":"internal error"}` and
-  logs a parser stack trace; no stack reaches the client [measured]. It
-  should be a 400 — a product fix, not done on this branch.
 - HTTP/3 is not offered: Compose publishes 443/tcp only. Browsers use
   HTTP/2 [measured]. Not needed for launch.
 - Unknown paths (including `/.env`, `/.git/config`) answer the studio
