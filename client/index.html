@@ -1723,6 +1723,7 @@
         .bib-seed-row select, .bib-seed-row .bib-seed-in { grid-column: 1 / -1; }
         .bib-seed-row .bib-seed-in { text-align: start; }
       }
+      #btnBible .side-tool-lab { letter-spacing: -0.03em; } /* "Covenant" is a hair wider than its column at 10.5px; this keeps it whole instead of "Covena…" */
       /* ==== /BEUK:bible ==== */
 
       /* ---------- Writing goals & habit calendar ---------- */
@@ -2561,7 +2562,7 @@
             <button class="side-tool" id="btnInsights" type="button" title="Story Insights" aria-label="Story Insights" data-i18n-title="insights.open" data-i18n-aria="insights.open"><i data-lucide="activity"></i><span class="side-tool-lab" data-i18n="side.toolInsights">Insights</span></button>
             <button class="side-tool" id="btnGoals" type="button" title="Goals" aria-label="Goals" data-i18n-title="goals.open" data-i18n-aria="goals.open"><i data-lucide="target"></i><span class="side-tool-lab" data-i18n="side.toolGoals">Goals</span></button>
             <button class="side-tool" id="btnHistory" type="button" title="History" aria-label="History" data-i18n-title="history.open" data-i18n-aria="history.open"><i data-lucide="history"></i><span class="side-tool-lab" data-i18n="side.toolHistory">History</span></button>
-            <button class="side-tool" id="btnBible" type="button" title="Story Bible" aria-label="Story Bible" data-i18n-title="bible.open" data-i18n-aria="bible.open"><i data-lucide="book-marked"></i><span class="side-tool-lab" data-i18n="side.toolBible">Bible</span></button><!-- BEUK:bible -->
+            <button class="side-tool" id="btnBible" type="button" title="Covenant" aria-label="Covenant" data-i18n-title="bible.open" data-i18n-aria="bible.open"><i data-lucide="book-marked"></i><span class="side-tool-lab" data-i18n="side.toolBible">Covenant</span></button><!-- BEUK:bible -->
             </div>
               <div class="sync-row" id="syncRow" style="display:none;"><i data-lucide="cloud"></i><span id="syncText">On your shelf ✓</span></div>
             <div class="side-status" id="sideStatus">
@@ -3802,7 +3803,7 @@
     <!-- ==== BEUK:bible ==== Story Bible: the book's people, places and things, kept with the book -->
     <div class="modal-back" id="modalBible" style="z-index:70;">
       <div class="modal wide bib-modal" role="dialog" aria-modal="true" aria-labelledby="bibH">
-        <h2 id="bibH" data-i18n="bible.title"><i data-lucide="book-marked"></i>Story Bible</h2>
+        <h2 id="bibH" data-i18n="bible.title"><i data-lucide="book-marked"></i>Covenant</h2>
         <p class="m-sub" data-i18n="bible.sub">The people, places and things of this book, kept with the book.</p>
         <div class="bib-bar">
           <button class="tb-btn" id="btnBibNew" type="button" data-i18n="bible.new"><i data-lucide="plus"></i>New entry</button>
@@ -3813,7 +3814,7 @@
           <input type="file" id="bibFile" accept=".json,application/json" hidden />
         </div>
         <div class="switch-row bib-marks-row">
-          <div class="sw-txt"><b data-i18n="bible.marks">Underline mentions in the writing desk</b><span data-i18n="bible.marksDesc">A faint line under each name the Bible knows.</span></div>
+          <div class="sw-txt"><b data-i18n="bible.marks">Underline mentions in the writing desk</b><span data-i18n="bible.marksDesc">A faint line under each name the Covenant knows.</span></div>
           <button class="switch" id="tglBibMarks" type="button" aria-pressed="true" aria-label="Underline mentions in the writing desk" data-i18n-aria="bible.marks"></button>
         </div>
         <p class="bib-status" id="bibStatus" role="status" aria-live="polite" hidden></p>
@@ -21166,16 +21167,16 @@
       /* ==== BEUK:bible ==== Story Bible — strings for all 13 packs;
          plural extras by CLDR category (Intl.PluralRules, as BEUK:bugs). */
       Object.assign(UI_STRINGS.en, {
-        "side.toolBible": "Bible",
-        "bible.open": "Story Bible",
-        "bible.title": "Story Bible",
+        "side.toolBible": "Covenant",
+        "bible.open": "Covenant",
+        "bible.title": "Covenant",
         "bible.sub": "The people, places and things of this book, kept with the book. The entries are yours; Beuk only finds where their names appear in your text, on this device. Nothing here is printed or exported.",
         "bible.new": "New entry",
         "bible.seed": "Add from Story Insights",
         "bible.export": "Export",
         "bible.import": "Import",
         "bible.marks": "Underline mentions in the writing desk",
-        "bible.marksDesc": "A faint line under each name the Bible knows. Point at one, tap it, or press Alt+Enter on it to see its entry. Your text never changes.",
+        "bible.marksDesc": "A faint line under each name the Covenant knows. Point at one, tap it, or press Alt+Enter on it to see its entry. Your text never changes.",
         "bible.close": "Close",
         "bible.search": "Find an entry",
         "bible.empty": "No entries yet. Start one by hand, or choose from the names Story Insights found in this book.",
@@ -21230,7 +21231,7 @@
         "bible.seedH": "Names Story Insights found",
         "bible.seedSub": "The recurring capitalised names Story Insights found in this book, with how often each appears. Choose a type for each one you want — nothing is added until you press Add.",
         "bible.seedSkip": "Don't add",
-        "bible.seedIn": "In the Bible",
+        "bible.seedIn": "In the Covenant",
         "bible.seedAdd": "Add {n} entry", "bible.seedAddPlural": "Add {n} entries",
         "bible.seedNone": "Story Insights found no recurring names in this book yet.",
         "bible.seedCaseless": "Story Insights can't pick out names in this book's script, so there is nothing to offer here. Add entries by hand.",
@@ -21243,23 +21244,23 @@
         "bible.importNone": "Nothing was added.",
         "bible.importSkipped": "{n} skipped, already in this book: {list}.", "bible.importSkippedPlural": "{n} skipped, already in this book: {list}.",
         "bible.importPics": "{n} picture joined the image library.", "bible.importPicsPlural": "{n} pictures joined the image library.",
-        "bible.importBad": "That file isn't a Story Bible export.",
-        "bible.cardOpen": "Open in Story Bible",
+        "bible.importBad": "That file isn't a Covenant export.",
+        "bible.cardOpen": "Open in the Covenant",
         "bible.cardAlso": "Also called {list}",
-        "bible.cardAria": "Story Bible entry",
+        "bible.cardAria": "Covenant entry",
         "imglib.role.bible": "picture of an entry"
       });
       Object.assign(UI_STRINGS.es, {
-        "side.toolBible": "Biblia",
-        "bible.open": "Biblia de la historia",
-        "bible.title": "Biblia de la historia",
+        "side.toolBible": "Pacto",
+        "bible.open": "Pacto",
+        "bible.title": "Pacto",
         "bible.sub": "Las personas, lugares y cosas de este libro, guardados con el libro. Las entradas son tuyas; Beuk solo encuentra dónde aparecen sus nombres en tu texto, en este dispositivo. Nada de esto se imprime ni se exporta.",
         "bible.new": "Nueva entrada",
         "bible.seed": "Añadir desde Story Insights",
         "bible.export": "Exportar",
         "bible.import": "Importar",
         "bible.marks": "Subrayar las menciones en el escritorio",
-        "bible.marksDesc": "Una línea tenue bajo cada nombre que la Biblia conoce. Señala uno, tócalo o pulsa Alt+Intro sobre él para ver su entrada. Tu texto nunca cambia.",
+        "bible.marksDesc": "Una línea tenue bajo cada nombre que el Pacto conoce. Señala uno, tócalo o pulsa Alt+Intro sobre él para ver su entrada. Tu texto nunca cambia.",
         "bible.close": "Cerrar",
         "bible.search": "Buscar una entrada",
         "bible.empty": "Aún no hay entradas. Crea una a mano o elige entre los nombres que Story Insights encontró en este libro.",
@@ -21314,7 +21315,7 @@
         "bible.seedH": "Nombres que encontró Story Insights",
         "bible.seedSub": "Los nombres con mayúscula que se repiten y que Story Insights encontró en este libro, con cuántas veces aparece cada uno. Elige un tipo para cada uno que quieras — no se añade nada hasta que pulses Añadir.",
         "bible.seedSkip": "No añadir",
-        "bible.seedIn": "En la Biblia",
+        "bible.seedIn": "En el Pacto",
         "bible.seedAdd": "Añadir {n} entrada", "bible.seedAddPlural": "Añadir {n} entradas",
         "bible.seedNone": "Story Insights aún no encontró nombres que se repitan en este libro.",
         "bible.seedCaseless": "Story Insights no puede distinguir nombres en la escritura de este libro, así que aquí no hay nada que ofrecer. Añade las entradas a mano.",
@@ -21327,23 +21328,23 @@
         "bible.importNone": "No se añadió nada.",
         "bible.importSkipped": "{n} omitida, ya está en este libro: {list}.", "bible.importSkippedPlural": "{n} omitidas, ya están en este libro: {list}.",
         "bible.importPics": "{n} imagen se unió a la biblioteca de imágenes.", "bible.importPicsPlural": "{n} imágenes se unieron a la biblioteca de imágenes.",
-        "bible.importBad": "Ese archivo no es una exportación de la Biblia de la historia.",
-        "bible.cardOpen": "Abrir en la Biblia",
+        "bible.importBad": "Ese archivo no es una exportación del Pacto.",
+        "bible.cardOpen": "Abrir en el Pacto",
         "bible.cardAlso": "También llamado {list}",
-        "bible.cardAria": "Entrada de la Biblia de la historia",
+        "bible.cardAria": "Entrada del Pacto",
         "imglib.role.bible": "imagen de una entrada"
       });
       Object.assign(UI_STRINGS.fr, {
-        "side.toolBible": "Bible",
-        "bible.open": "Bible du récit",
-        "bible.title": "Bible du récit",
+        "side.toolBible": "Pacte",
+        "bible.open": "Pacte",
+        "bible.title": "Pacte",
         "bible.sub": "Les personnes, les lieux et les choses de ce livre, gardés avec le livre. Les fiches sont à vous ; Beuk se contente de trouver où leurs noms apparaissent dans votre texte, sur cet appareil. Rien ici n'est imprimé ni exporté.",
         "bible.new": "Nouvelle fiche",
         "bible.seed": "Ajouter depuis Story Insights",
         "bible.export": "Exporter",
         "bible.import": "Importer",
         "bible.marks": "Souligner les mentions dans l'espace d'écriture",
-        "bible.marksDesc": "Un trait discret sous chaque nom que la Bible connaît. Pointez-en un, touchez-le ou appuyez sur Alt+Entrée dessus pour voir sa fiche. Votre texte ne change jamais.",
+        "bible.marksDesc": "Un trait discret sous chaque nom que le Pacte connaît. Pointez-en un, touchez-le ou appuyez sur Alt+Entrée dessus pour voir sa fiche. Votre texte ne change jamais.",
         "bible.close": "Fermer",
         "bible.search": "Chercher une fiche",
         "bible.empty": "Aucune fiche pour l'instant. Créez-en une à la main, ou choisissez parmi les noms que Story Insights a trouvés dans ce livre.",
@@ -21398,7 +21399,7 @@
         "bible.seedH": "Les noms trouvés par Story Insights",
         "bible.seedSub": "Les noms à majuscule qui reviennent et que Story Insights a trouvés dans ce livre, avec leur nombre d'apparitions. Choisissez un type pour chacun de ceux que vous voulez — rien n'est ajouté avant que vous appuyiez sur Ajouter.",
         "bible.seedSkip": "Ne pas ajouter",
-        "bible.seedIn": "Dans la Bible",
+        "bible.seedIn": "Dans le Pacte",
         "bible.seedAdd": "Ajouter {n} fiche", "bible.seedAddPlural": "Ajouter {n} fiches",
         "bible.seedNone": "Story Insights n'a encore trouvé aucun nom récurrent dans ce livre.",
         "bible.seedCaseless": "Story Insights ne peut pas repérer les noms dans l'écriture de ce livre ; il n'y a donc rien à proposer ici. Ajoutez les fiches à la main.",
@@ -21411,23 +21412,23 @@
         "bible.importNone": "Rien n'a été ajouté.",
         "bible.importSkipped": "{n} ignorée, déjà dans ce livre : {list}.", "bible.importSkippedPlural": "{n} ignorées, déjà dans ce livre : {list}.",
         "bible.importPics": "{n} image a rejoint la bibliothèque d'images.", "bible.importPicsPlural": "{n} images ont rejoint la bibliothèque d'images.",
-        "bible.importBad": "Ce fichier n'est pas un export de Bible du récit.",
-        "bible.cardOpen": "Ouvrir dans la Bible",
+        "bible.importBad": "Ce fichier n'est pas un export du Pacte.",
+        "bible.cardOpen": "Ouvrir dans le Pacte",
         "bible.cardAlso": "Aussi appelé {list}",
-        "bible.cardAria": "Fiche de la Bible du récit",
+        "bible.cardAria": "Fiche du Pacte",
         "imglib.role.bible": "image d'une fiche"
       });
       Object.assign(UI_STRINGS.de, {
-        "side.toolBible": "Bibel",
-        "bible.open": "Story-Bibel",
-        "bible.title": "Story-Bibel",
+        "side.toolBible": "Pakt",
+        "bible.open": "Pakt",
+        "bible.title": "Pakt",
         "bible.sub": "Die Menschen, Orte und Dinge dieses Buchs, beim Buch aufbewahrt. Die Einträge gehören dir; Beuk findet nur, wo ihre Namen in deinem Text vorkommen, auf diesem Gerät. Nichts davon wird gedruckt oder exportiert.",
         "bible.new": "Neuer Eintrag",
         "bible.seed": "Aus Story Insights hinzufügen",
         "bible.export": "Exportieren",
         "bible.import": "Importieren",
         "bible.marks": "Erwähnungen am Schreibtisch unterstreichen",
-        "bible.marksDesc": "Eine zarte Linie unter jedem Namen, den die Bibel kennt. Zeige auf einen, tippe ihn an oder drücke Alt+Eingabe darauf, um seinen Eintrag zu sehen. Dein Text ändert sich nie.",
+        "bible.marksDesc": "Eine zarte Linie unter jedem Namen, den der Pakt kennt. Zeige auf einen, tippe ihn an oder drücke Alt+Eingabe darauf, um seinen Eintrag zu sehen. Dein Text ändert sich nie.",
         "bible.close": "Schließen",
         "bible.search": "Eintrag suchen",
         "bible.empty": "Noch keine Einträge. Lege einen von Hand an oder wähle aus den Namen, die Story Insights in diesem Buch gefunden hat.",
@@ -21482,7 +21483,7 @@
         "bible.seedH": "Von Story Insights gefundene Namen",
         "bible.seedSub": "Die wiederkehrenden großgeschriebenen Namen, die Story Insights in diesem Buch gefunden hat, mit ihrer Häufigkeit. Wähle eine Art für jeden, den du willst — nichts wird hinzugefügt, bevor du Hinzufügen drückst.",
         "bible.seedSkip": "Nicht hinzufügen",
-        "bible.seedIn": "In der Bibel",
+        "bible.seedIn": "Im Pakt",
         "bible.seedAdd": "{n} Eintrag hinzufügen", "bible.seedAddPlural": "{n} Einträge hinzufügen",
         "bible.seedNone": "Story Insights hat in diesem Buch noch keine wiederkehrenden Namen gefunden.",
         "bible.seedCaseless": "Story Insights kann in der Schrift dieses Buchs keine Namen erkennen, daher gibt es hier nichts anzubieten. Lege die Einträge von Hand an.",
@@ -21495,23 +21496,23 @@
         "bible.importNone": "Nichts wurde hinzugefügt.",
         "bible.importSkipped": "{n} übersprungen, schon in diesem Buch: {list}.", "bible.importSkippedPlural": "{n} übersprungen, schon in diesem Buch: {list}.",
         "bible.importPics": "{n} Bild kam in die Bildbibliothek.", "bible.importPicsPlural": "{n} Bilder kamen in die Bildbibliothek.",
-        "bible.importBad": "Diese Datei ist kein Export einer Story-Bibel.",
-        "bible.cardOpen": "In der Story-Bibel öffnen",
+        "bible.importBad": "Diese Datei ist kein Export eines Pakts.",
+        "bible.cardOpen": "Im Pakt öffnen",
         "bible.cardAlso": "Auch genannt {list}",
-        "bible.cardAria": "Eintrag der Story-Bibel",
+        "bible.cardAria": "Eintrag im Pakt",
         "imglib.role.bible": "Bild eines Eintrags"
       });
       Object.assign(UI_STRINGS.it, {
-        "side.toolBible": "Bibbia",
-        "bible.open": "Bibbia della storia",
-        "bible.title": "Bibbia della storia",
+        "side.toolBible": "Patto",
+        "bible.open": "Patto",
+        "bible.title": "Patto",
         "bible.sub": "Le persone, i luoghi e le cose di questo libro, conservati con il libro. Le voci sono tue; Beuk trova solo dove compaiono i loro nomi nel tuo testo, su questo dispositivo. Niente di tutto ciò viene stampato o esportato.",
         "bible.new": "Nuova voce",
         "bible.seed": "Aggiungi da Story Insights",
         "bible.export": "Esporta",
         "bible.import": "Importa",
         "bible.marks": "Sottolinea le menzioni nello scrittoio",
-        "bible.marksDesc": "Una linea leggera sotto ogni nome che la Bibbia conosce. Puntane uno, toccalo o premi Alt+Invio su di esso per vederne la voce. Il tuo testo non cambia mai.",
+        "bible.marksDesc": "Una linea leggera sotto ogni nome che il Patto conosce. Puntane uno, toccalo o premi Alt+Invio su di esso per vederne la voce. Il tuo testo non cambia mai.",
         "bible.close": "Chiudi",
         "bible.search": "Cerca una voce",
         "bible.empty": "Ancora nessuna voce. Creane una a mano, o scegli tra i nomi che Story Insights ha trovato in questo libro.",
@@ -21566,7 +21567,7 @@
         "bible.seedH": "Nomi trovati da Story Insights",
         "bible.seedSub": "I nomi con la maiuscola che ritornano e che Story Insights ha trovato in questo libro, con quante volte compare ciascuno. Scegli un tipo per ognuno che vuoi — nulla viene aggiunto finché non premi Aggiungi.",
         "bible.seedSkip": "Non aggiungere",
-        "bible.seedIn": "Nella Bibbia",
+        "bible.seedIn": "Nel Patto",
         "bible.seedAdd": "Aggiungi {n} voce", "bible.seedAddPlural": "Aggiungi {n} voci",
         "bible.seedNone": "Story Insights non ha ancora trovato nomi ricorrenti in questo libro.",
         "bible.seedCaseless": "Story Insights non può individuare i nomi nella scrittura di questo libro, quindi qui non c'è nulla da proporre. Aggiungi le voci a mano.",
@@ -21579,23 +21580,23 @@
         "bible.importNone": "Non è stato aggiunto nulla.",
         "bible.importSkipped": "{n} saltata, già in questo libro: {list}.", "bible.importSkippedPlural": "{n} saltate, già in questo libro: {list}.",
         "bible.importPics": "{n} immagine è entrata nella biblioteca di immagini.", "bible.importPicsPlural": "{n} immagini sono entrate nella biblioteca di immagini.",
-        "bible.importBad": "Quel file non è un'esportazione della Bibbia della storia.",
-        "bible.cardOpen": "Apri nella Bibbia",
+        "bible.importBad": "Quel file non è un'esportazione del Patto.",
+        "bible.cardOpen": "Apri nel Patto",
         "bible.cardAlso": "Detto anche {list}",
-        "bible.cardAria": "Voce della Bibbia della storia",
+        "bible.cardAria": "Voce del Patto",
         "imglib.role.bible": "immagine di una voce"
       });
       Object.assign(UI_STRINGS.pt, {
-        "side.toolBible": "Bíblia",
-        "bible.open": "Bíblia da história",
-        "bible.title": "Bíblia da história",
+        "side.toolBible": "Pacto",
+        "bible.open": "Pacto",
+        "bible.title": "Pacto",
         "bible.sub": "As pessoas, os lugares e as coisas deste livro, guardados com o livro. As entradas são suas; o Beuk só encontra onde os nomes aparecem no seu texto, neste dispositivo. Nada aqui é impresso nem exportado.",
         "bible.new": "Nova entrada",
         "bible.seed": "Adicionar do Story Insights",
         "bible.export": "Exportar",
         "bible.import": "Importar",
         "bible.marks": "Sublinhar as menções na mesa de escrita",
-        "bible.marksDesc": "Uma linha discreta sob cada nome que a Bíblia conhece. Aponte para um, toque nele ou prima Alt+Enter sobre ele para ver a sua entrada. O seu texto nunca muda.",
+        "bible.marksDesc": "Uma linha discreta sob cada nome que o Pacto conhece. Aponte para um, toque nele ou prima Alt+Enter sobre ele para ver a sua entrada. O seu texto nunca muda.",
         "bible.close": "Fechar",
         "bible.search": "Procurar uma entrada",
         "bible.empty": "Ainda não há entradas. Crie uma à mão ou escolha entre os nomes que o Story Insights encontrou neste livro.",
@@ -21650,7 +21651,7 @@
         "bible.seedH": "Nomes que o Story Insights encontrou",
         "bible.seedSub": "Os nomes com maiúscula que se repetem e que o Story Insights encontrou neste livro, com quantas vezes cada um aparece. Escolha um tipo para cada um que quiser — nada é adicionado até premir Adicionar.",
         "bible.seedSkip": "Não adicionar",
-        "bible.seedIn": "Na Bíblia",
+        "bible.seedIn": "No Pacto",
         "bible.seedAdd": "Adicionar {n} entrada", "bible.seedAddPlural": "Adicionar {n} entradas",
         "bible.seedNone": "O Story Insights ainda não encontrou nomes repetidos neste livro.",
         "bible.seedCaseless": "O Story Insights não consegue distinguir nomes na escrita deste livro, por isso não há nada a oferecer aqui. Adicione as entradas à mão.",
@@ -21663,23 +21664,23 @@
         "bible.importNone": "Nada foi adicionado.",
         "bible.importSkipped": "{n} ignorada, já está neste livro: {list}.", "bible.importSkippedPlural": "{n} ignoradas, já estão neste livro: {list}.",
         "bible.importPics": "{n} imagem juntou-se à biblioteca de imagens.", "bible.importPicsPlural": "{n} imagens juntaram-se à biblioteca de imagens.",
-        "bible.importBad": "Esse ficheiro não é uma exportação da Bíblia da história.",
-        "bible.cardOpen": "Abrir na Bíblia",
+        "bible.importBad": "Esse ficheiro não é uma exportação do Pacto.",
+        "bible.cardOpen": "Abrir no Pacto",
         "bible.cardAlso": "Também chamado {list}",
-        "bible.cardAria": "Entrada da Bíblia da história",
+        "bible.cardAria": "Entrada do Pacto",
         "imglib.role.bible": "imagem de uma entrada"
       });
       Object.assign(UI_STRINGS.nl, {
-        "side.toolBible": "Bijbel",
-        "bible.open": "Verhaalbijbel",
-        "bible.title": "Verhaalbijbel",
+        "side.toolBible": "Verbond",
+        "bible.open": "Verbond",
+        "bible.title": "Verbond",
         "bible.sub": "De mensen, plaatsen en dingen van dit boek, bewaard bij het boek. De items zijn van jou; Beuk zoekt alleen op waar hun namen in je tekst voorkomen, op dit apparaat. Niets hiervan wordt gedrukt of geëxporteerd.",
         "bible.new": "Nieuw item",
         "bible.seed": "Toevoegen uit Story Insights",
         "bible.export": "Exporteren",
         "bible.import": "Importeren",
         "bible.marks": "Vermeldingen onderstrepen in de schrijftafel",
-        "bible.marksDesc": "Een vage lijn onder elke naam die de Bijbel kent. Wijs er een aan, tik erop of druk Alt+Enter erop om het item te zien. Je tekst verandert nooit.",
+        "bible.marksDesc": "Een vage lijn onder elke naam die het Verbond kent. Wijs er een aan, tik erop of druk Alt+Enter erop om het item te zien. Je tekst verandert nooit.",
         "bible.close": "Sluiten",
         "bible.search": "Een item zoeken",
         "bible.empty": "Nog geen items. Maak er een met de hand, of kies uit de namen die Story Insights in dit boek vond.",
@@ -21734,7 +21735,7 @@
         "bible.seedH": "Namen die Story Insights vond",
         "bible.seedSub": "De terugkerende namen met een hoofdletter die Story Insights in dit boek vond, met hoe vaak elk voorkomt. Kies een soort voor elke naam die je wilt — er wordt niets toegevoegd tot je op Toevoegen drukt.",
         "bible.seedSkip": "Niet toevoegen",
-        "bible.seedIn": "In de Bijbel",
+        "bible.seedIn": "In het Verbond",
         "bible.seedAdd": "{n} item toevoegen", "bible.seedAddPlural": "{n} items toevoegen",
         "bible.seedNone": "Story Insights vond nog geen terugkerende namen in dit boek.",
         "bible.seedCaseless": "Story Insights kan in het schrift van dit boek geen namen herkennen, dus er is hier niets aan te bieden. Voeg de items met de hand toe.",
@@ -21747,23 +21748,23 @@
         "bible.importNone": "Er is niets toegevoegd.",
         "bible.importSkipped": "{n} overgeslagen, al in dit boek: {list}.", "bible.importSkippedPlural": "{n} overgeslagen, al in dit boek: {list}.",
         "bible.importPics": "{n} afbeelding kwam in de afbeeldingenbibliotheek.", "bible.importPicsPlural": "{n} afbeeldingen kwamen in de afbeeldingenbibliotheek.",
-        "bible.importBad": "Dat bestand is geen export van een Verhaalbijbel.",
-        "bible.cardOpen": "Openen in de Verhaalbijbel",
+        "bible.importBad": "Dat bestand is geen export van een Verbond.",
+        "bible.cardOpen": "Openen in het Verbond",
         "bible.cardAlso": "Ook genoemd {list}",
-        "bible.cardAria": "Item van de Verhaalbijbel",
+        "bible.cardAria": "Item van het Verbond",
         "imglib.role.bible": "afbeelding van een item"
       });
       Object.assign(UI_STRINGS.pl, {
-        "side.toolBible": "Biblia",
-        "bible.open": "Biblia opowieści",
-        "bible.title": "Biblia opowieści",
+        "side.toolBible": "Przymierze",
+        "bible.open": "Przymierze",
+        "bible.title": "Przymierze",
         "bible.sub": "Ludzie, miejsca i rzeczy tej książki, przechowywane razem z nią. Wpisy należą do ciebie; Beuk tylko odnajduje, gdzie ich nazwy pojawiają się w twoim tekście, na tym urządzeniu. Nic z tego nie trafia do druku ani eksportu.",
         "bible.new": "Nowy wpis",
         "bible.seed": "Dodaj ze Story Insights",
         "bible.export": "Eksportuj",
         "bible.import": "Importuj",
         "bible.marks": "Podkreślaj wzmianki przy biurku",
-        "bible.marksDesc": "Delikatna linia pod każdą nazwą, którą zna Biblia. Wskaż ją, dotknij lub naciśnij na niej Alt+Enter, aby zobaczyć wpis. Twój tekst nigdy się nie zmienia.",
+        "bible.marksDesc": "Delikatna linia pod każdą nazwą, którą zna Przymierze. Wskaż ją, dotknij lub naciśnij na niej Alt+Enter, aby zobaczyć wpis. Twój tekst nigdy się nie zmienia.",
         "bible.close": "Zamknij",
         "bible.search": "Znajdź wpis",
         "bible.empty": "Nie ma jeszcze wpisów. Utwórz wpis ręcznie albo wybierz spośród imion, które Story Insights znalazło w tej książce.",
@@ -21818,7 +21819,7 @@
         "bible.seedH": "Imiona znalezione przez Story Insights",
         "bible.seedSub": "Powracające nazwy pisane wielką literą, które Story Insights znalazło w tej książce, wraz z liczbą wystąpień. Wybierz rodzaj dla każdej, którą chcesz — nic nie zostanie dodane, dopóki nie naciśniesz Dodaj.",
         "bible.seedSkip": "Nie dodawaj",
-        "bible.seedIn": "W Biblii",
+        "bible.seedIn": "W Przymierzu",
         "bible.seedAdd": "Dodaj {n} wpis", "bible.seedAddPlural": "Dodaj {n} wpisy",
         "bible.seedNone": "Story Insights nie znalazło jeszcze powracających imion w tej książce.",
         "bible.seedCaseless": "Story Insights nie potrafi wyróżnić imion w piśmie tej książki, więc nie ma tu nic do zaproponowania. Dodaj wpisy ręcznie.",
@@ -21831,23 +21832,23 @@
         "bible.importNone": "Nic nie dodano.",
         "bible.importSkipped": "Pominięto {n}, już w tej książce: {list}.", "bible.importSkippedPlural": "Pominięto {n}, już w tej książce: {list}.",
         "bible.importPics": "{n} obraz trafił do biblioteki obrazów.", "bible.importPicsPlural": "{n} obrazy trafiły do biblioteki obrazów.",
-        "bible.importBad": "Ten plik nie jest eksportem Biblii opowieści.",
-        "bible.cardOpen": "Otwórz w Biblii",
+        "bible.importBad": "Ten plik nie jest eksportem Przymierza.",
+        "bible.cardOpen": "Otwórz w Przymierzu",
         "bible.cardAlso": "Zwany też {list}",
-        "bible.cardAria": "Wpis Biblii opowieści",
+        "bible.cardAria": "Wpis Przymierza",
         "imglib.role.bible": "obraz wpisu"
       });
       Object.assign(UI_STRINGS.ru, {
-        "side.toolBible": "Библия",
-        "bible.open": "Библия истории",
-        "bible.title": "Библия истории",
+        "side.toolBible": "Завет",
+        "bible.open": "Завет",
+        "bible.title": "Завет",
         "bible.sub": "Люди, места и вещи этой книги, хранящиеся вместе с ней. Записи — ваши; Beuk лишь находит, где их имена встречаются в вашем тексте, на этом устройстве. Ничего отсюда не печатается и не экспортируется.",
         "bible.new": "Новая запись",
         "bible.seed": "Добавить из Story Insights",
         "bible.export": "Экспорт",
         "bible.import": "Импорт",
         "bible.marks": "Подчёркивать упоминания за рабочим столом",
-        "bible.marksDesc": "Тонкая линия под каждым именем, которое знает Библия. Наведите на него, коснитесь или нажмите на нём Alt+Enter, чтобы увидеть запись. Ваш текст никогда не меняется.",
+        "bible.marksDesc": "Тонкая линия под каждым именем, которое знает Завет. Наведите на него, коснитесь или нажмите на нём Alt+Enter, чтобы увидеть запись. Ваш текст никогда не меняется.",
         "bible.close": "Закрыть",
         "bible.search": "Найти запись",
         "bible.empty": "Записей пока нет. Создайте запись вручную или выберите из имён, которые Story Insights нашёл в этой книге.",
@@ -21902,7 +21903,7 @@
         "bible.seedH": "Имена, найденные Story Insights",
         "bible.seedSub": "Повторяющиеся имена с заглавной буквы, которые Story Insights нашёл в этой книге, и сколько раз встречается каждое. Выберите тип для каждого нужного — ничего не добавится, пока вы не нажмёте «Добавить».",
         "bible.seedSkip": "Не добавлять",
-        "bible.seedIn": "Уже в Библии",
+        "bible.seedIn": "Уже в Завете",
         "bible.seedAdd": "Добавить {n} запись", "bible.seedAddPlural": "Добавить {n} записей",
         "bible.seedNone": "Story Insights пока не нашёл повторяющихся имён в этой книге.",
         "bible.seedCaseless": "Story Insights не может выделить имена в письменности этой книги, поэтому здесь нечего предложить. Добавьте записи вручную.",
@@ -21915,23 +21916,23 @@
         "bible.importNone": "Ничего не добавлено.",
         "bible.importSkipped": "Пропущено {n}, уже есть в этой книге: {list}.", "bible.importSkippedPlural": "Пропущено {n}, уже есть в этой книге: {list}.",
         "bible.importPics": "{n} изображение добавлено в библиотеку изображений.", "bible.importPicsPlural": "{n} изображений добавлено в библиотеку изображений.",
-        "bible.importBad": "Этот файл не является экспортом Библии истории.",
-        "bible.cardOpen": "Открыть в Библии",
+        "bible.importBad": "Этот файл не является экспортом Завета.",
+        "bible.cardOpen": "Открыть в Завете",
         "bible.cardAlso": "Также зовётся {list}",
-        "bible.cardAria": "Запись Библии истории",
+        "bible.cardAria": "Запись Завета",
         "imglib.role.bible": "изображение записи"
       });
       Object.assign(UI_STRINGS.tr, {
-        "side.toolBible": "Rehber",
-        "bible.open": "Hikâye rehberi",
-        "bible.title": "Hikâye rehberi",
+        "side.toolBible": "Ahit",
+        "bible.open": "Ahit",
+        "bible.title": "Ahit",
         "bible.sub": "Bu kitabın insanları, yerleri ve nesneleri, kitapla birlikte saklanır. Kayıtlar sizindir; Beuk yalnızca adlarının metninizde nerede geçtiğini bu cihazda bulur. Buradaki hiçbir şey basılmaz ya da dışa aktarılmaz.",
         "bible.new": "Yeni kayıt",
         "bible.seed": "Story Insights'tan ekle",
         "bible.export": "Dışa aktar",
         "bible.import": "İçe aktar",
         "bible.marks": "Yazı masasında geçtiği yerlerin altını çiz",
-        "bible.marksDesc": "Hikâye rehberinin bildiği her adın altında silik bir çizgi. Kaydını görmek için birinin üzerine gelin, dokunun ya da üzerindeyken Alt+Enter'a basın. Metniniz asla değişmez.",
+        "bible.marksDesc": "Ahit'in bildiği her adın altında silik bir çizgi. Kaydını görmek için birinin üzerine gelin, dokunun ya da üzerindeyken Alt+Enter'a basın. Metniniz asla değişmez.",
         "bible.close": "Kapat",
         "bible.search": "Bir kayıt bul",
         "bible.empty": "Henüz kayıt yok. Elle bir tane başlatın ya da Story Insights'ın bu kitapta bulduğu adlardan seçin.",
@@ -21986,7 +21987,7 @@
         "bible.seedH": "Story Insights'ın bulduğu adlar",
         "bible.seedSub": "Story Insights'ın bu kitapta bulduğu, büyük harfle başlayan ve tekrar eden adlar ile her birinin kaç kez geçtiği. İstediğiniz her biri için bir tür seçin — Ekle'ye basana dek hiçbir şey eklenmez.",
         "bible.seedSkip": "Ekleme",
-        "bible.seedIn": "Hikâye rehberinde",
+        "bible.seedIn": "Ahit'te",
         "bible.seedAdd": "{n} kayıt ekle", "bible.seedAddPlural": "{n} kayıt ekle",
         "bible.seedNone": "Story Insights bu kitapta henüz tekrar eden bir ad bulmadı.",
         "bible.seedCaseless": "Story Insights bu kitabın yazısında adları ayırt edemiyor, bu yüzden burada sunacak bir şey yok. Kayıtları elle ekleyin.",
@@ -21999,23 +22000,23 @@
         "bible.importNone": "Hiçbir şey eklenmedi.",
         "bible.importSkipped": "{n} kayıt atlandı, bu kitapta zaten var: {list}.", "bible.importSkippedPlural": "{n} kayıt atlandı, bu kitapta zaten var: {list}.",
         "bible.importPics": "{n} görsel görsel kitaplığına katıldı.", "bible.importPicsPlural": "{n} görsel görsel kitaplığına katıldı.",
-        "bible.importBad": "Bu dosya bir Hikâye rehberi dışa aktarımı değil.",
-        "bible.cardOpen": "Hikâye rehberinde aç",
+        "bible.importBad": "Bu dosya bir Ahit dışa aktarımı değil.",
+        "bible.cardOpen": "Ahit'te aç",
         "bible.cardAlso": "Diğer adları: {list}",
-        "bible.cardAria": "Hikâye rehberi kaydı",
+        "bible.cardAria": "Ahit kaydı",
         "imglib.role.bible": "bir kaydın görseli"
       });
       Object.assign(UI_STRINGS.ar, {
-        "side.toolBible": "المرجع",
-        "bible.open": "مرجع القصة",
-        "bible.title": "مرجع القصة",
+        "side.toolBible": "الميثاق",
+        "bible.open": "الميثاق",
+        "bible.title": "الميثاق",
         "bible.sub": "أشخاص هذا الكتاب وأماكنه وأشياؤه، محفوظة مع الكتاب. المداخل لك؛ لا يفعل Beuk سوى أن يجد أين تظهر أسماؤها في نصك، على هذا الجهاز. لا شيء هنا يُطبع أو يُصدَّر.",
         "bible.new": "مدخل جديد",
         "bible.seed": "إضافة من Story Insights",
         "bible.export": "تصدير",
         "bible.import": "استيراد",
         "bible.marks": "سطر تحت الإشارات في مكتب الكتابة",
-        "bible.marksDesc": "خط خافت تحت كل اسم يعرفه المرجع. أشر إليه أو المسه أو اضغط Alt+Enter عليه لترى مدخله. نصك لا يتغير أبدًا.",
+        "bible.marksDesc": "خط خافت تحت كل اسم يعرفه الميثاق. أشر إليه أو المسه أو اضغط Alt+Enter عليه لترى مدخله. نصك لا يتغير أبدًا.",
         "bible.close": "إغلاق",
         "bible.search": "ابحث عن مدخل",
         "bible.empty": "لا مداخل بعد. ابدأ واحدًا بيدك، أو اختر من الأسماء التي وجدها Story Insights في هذا الكتاب.",
@@ -22070,7 +22071,7 @@
         "bible.seedH": "أسماء وجدها Story Insights",
         "bible.seedSub": "الأسماء المتكررة المكتوبة بحرف كبير التي وجدها Story Insights في هذا الكتاب، مع عدد مرات ظهور كل منها. اختر نوعًا لكل اسم تريده — لا يُضاف شيء حتى تضغط «إضافة».",
         "bible.seedSkip": "لا تُضف",
-        "bible.seedIn": "في المرجع",
+        "bible.seedIn": "في الميثاق",
         "bible.seedAdd": "إضافة مدخل واحد", "bible.seedAddPlural": "إضافة {n} مدخل",
         "bible.seedNone": "لم يجد Story Insights أسماء متكررة في هذا الكتاب بعد.",
         "bible.seedCaseless": "لا يستطيع Story Insights تمييز الأسماء في خط هذا الكتاب، فلا شيء يُعرض هنا. أضف المداخل بيدك.",
@@ -22083,23 +22084,23 @@
         "bible.importNone": "لم يُضف شيء.",
         "bible.importSkipped": "تُخطّي مدخل واحد موجود في هذا الكتاب: {list}.", "bible.importSkippedPlural": "تُخطّي {n} مدخل موجود في هذا الكتاب: {list}.",
         "bible.importPics": "انضمت صورة واحدة إلى مكتبة الصور.", "bible.importPicsPlural": "انضمت {n} صورة إلى مكتبة الصور.",
-        "bible.importBad": "هذا الملف ليس تصديرًا لمرجع القصة.",
-        "bible.cardOpen": "افتح في مرجع القصة",
+        "bible.importBad": "هذا الملف ليس تصديرًا للميثاق.",
+        "bible.cardOpen": "افتح في الميثاق",
         "bible.cardAlso": "يُدعى أيضًا {list}",
-        "bible.cardAria": "مدخل في مرجع القصة",
+        "bible.cardAria": "مدخل في الميثاق",
         "imglib.role.bible": "صورة مدخل"
       });
       Object.assign(UI_STRINGS.ja, {
-        "side.toolBible": "設定集",
-        "bible.open": "ストーリー設定集",
-        "bible.title": "ストーリー設定集",
+        "side.toolBible": "盟約",
+        "bible.open": "盟約",
+        "bible.title": "盟約",
         "bible.sub": "この本の人物・場所・物を、本と一緒に保管します。項目はあなたのものです。Beuk は、その名前が本文のどこに出てくるかをこの端末で探すだけです。ここにあるものは印刷にも書き出しにも含まれません。",
         "bible.new": "新しい項目",
         "bible.seed": "Story Insights から追加",
         "bible.export": "書き出す",
         "bible.import": "読み込む",
         "bible.marks": "執筆机で登場箇所に下線を引く",
-        "bible.marksDesc": "設定集が知っている名前の下に、薄い線を引きます。名前を指す、タップする、または名前の上で Alt+Enter を押すと項目が表示されます。本文は決して変わりません。",
+        "bible.marksDesc": "盟約が知っている名前の下に、薄い線を引きます。名前を指す、タップする、または名前の上で Alt+Enter を押すと項目が表示されます。本文は決して変わりません。",
         "bible.close": "閉じる",
         "bible.search": "項目を探す",
         "bible.empty": "まだ項目がありません。手で作るか、Story Insights がこの本で見つけた名前から選んでください。",
@@ -22154,7 +22155,7 @@
         "bible.seedH": "Story Insights が見つけた名前",
         "bible.seedSub": "Story Insights がこの本で見つけた、大文字で始まり繰り返し出てくる名前と、それぞれの登場回数です。追加したい名前ごとに種類を選んでください。「追加」を押すまで何も追加されません。",
         "bible.seedSkip": "追加しない",
-        "bible.seedIn": "設定集にあり",
+        "bible.seedIn": "盟約にあり",
         "bible.seedAdd": "{n} 件を追加", "bible.seedAddPlural": "{n} 件を追加",
         "bible.seedNone": "Story Insights はこの本でまだ繰り返し出てくる名前を見つけていません。",
         "bible.seedCaseless": "この本の文字では Story Insights が名前を見分けられないため、ここに提案できるものはありません。項目は手で追加してください。",
@@ -22167,23 +22168,23 @@
         "bible.importNone": "何も追加されませんでした。",
         "bible.importSkipped": "この本にすでにある {n} 件を飛ばしました：{list}。", "bible.importSkippedPlural": "この本にすでにある {n} 件を飛ばしました：{list}。",
         "bible.importPics": "{n} 枚の画像が画像ライブラリに加わりました。", "bible.importPicsPlural": "{n} 枚の画像が画像ライブラリに加わりました。",
-        "bible.importBad": "このファイルはストーリー設定集の書き出しではありません。",
-        "bible.cardOpen": "設定集で開く",
+        "bible.importBad": "このファイルは盟約の書き出しではありません。",
+        "bible.cardOpen": "盟約で開く",
         "bible.cardAlso": "別名：{list}",
-        "bible.cardAria": "ストーリー設定集の項目",
+        "bible.cardAria": "盟約の項目",
         "imglib.role.bible": "項目の画像"
       });
       Object.assign(UI_STRINGS["zh-Hans"], {
-        "side.toolBible": "设定集",
-        "bible.open": "故事设定集",
-        "bible.title": "故事设定集",
+        "side.toolBible": "盟约",
+        "bible.open": "盟约",
+        "bible.title": "盟约",
         "bible.sub": "这本书里的人物、地点和物件，随书一同保存。条目由你来写；Beuk 只在这台设备上找出它们的名字出现在正文的哪些地方。这里的内容不会被印刷或导出。",
         "bible.new": "新建条目",
         "bible.seed": "从 Story Insights 添加",
         "bible.export": "导出",
         "bible.import": "导入",
         "bible.marks": "在写作台标出提及之处",
-        "bible.marksDesc": "在设定集认识的每个名字下画一条淡淡的线。指向、轻点名字，或在名字上按 Alt+Enter，即可看到它的条目。正文绝不会改变。",
+        "bible.marksDesc": "在盟约认识的每个名字下画一条淡淡的线。指向、轻点名字，或在名字上按 Alt+Enter，即可看到它的条目。正文绝不会改变。",
         "bible.close": "关闭",
         "bible.search": "查找条目",
         "bible.empty": "还没有条目。可以手动新建，或从 Story Insights 在这本书中找到的名字里挑选。",
@@ -22238,7 +22239,7 @@
         "bible.seedH": "Story Insights 找到的名字",
         "bible.seedSub": "Story Insights 在这本书中找到的、反复出现的大写开头名字，以及每个名字出现的次数。为想要的每个名字选择一个类型——在你按“添加”之前，什么都不会添加。",
         "bible.seedSkip": "不添加",
-        "bible.seedIn": "已在设定集",
+        "bible.seedIn": "已在盟约",
         "bible.seedAdd": "添加 {n} 个条目", "bible.seedAddPlural": "添加 {n} 个条目",
         "bible.seedNone": "Story Insights 尚未在这本书中找到反复出现的名字。",
         "bible.seedCaseless": "Story Insights 无法在这本书的文字中辨认名字，所以这里没有可提供的内容。请手动添加条目。",
@@ -22251,10 +22252,10 @@
         "bible.importNone": "没有添加任何内容。",
         "bible.importSkipped": "已跳过 {n} 个本书中已有的条目：{list}。", "bible.importSkippedPlural": "已跳过 {n} 个本书中已有的条目：{list}。",
         "bible.importPics": "{n} 张图片已加入图片库。", "bible.importPicsPlural": "{n} 张图片已加入图片库。",
-        "bible.importBad": "这个文件不是故事设定集的导出文件。",
-        "bible.cardOpen": "在设定集中打开",
+        "bible.importBad": "这个文件不是盟约的导出文件。",
+        "bible.cardOpen": "在盟约中打开",
         "bible.cardAlso": "又称 {list}",
-        "bible.cardAria": "故事设定集条目",
+        "bible.cardAria": "盟约条目",
         "imglib.role.bible": "条目的图片"
       });
       UI_PLURAL_FORMS.pl = UI_PLURAL_FORMS.pl || {};
@@ -23027,7 +23028,7 @@
       }
       function bibleExportName() {
         const base = String(state.meta.title || "").trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "book";
-        return base + "-story-bible.json";
+        return base + "-covenant.json"; /* the format id stays "beuk-story-bible", so old and new exports import both ways */
       }
       function bibleExport() {
         if (!bibleHas()) { bibleStatus(t("bible.exportEmpty")); return; }
@@ -23248,7 +23249,7 @@
       }
       function bibleSelfChecks() {
         return [
-          { id: "bible.seed.frominsights", feature: "bible", name: "Story Bible: “Add from Story Insights” offers exactly the names Names on stage found, with their counts; opening it, or pressing Add with nothing chosen, creates nothing; a name it did not find cannot be slipped in; only the name the writer gave a type becomes an entry, of that type, with no invented aliases",
+          { id: "bible.seed.frominsights", feature: "bible", name: "Covenant: “Add from Story Insights” offers exactly the names Names on stage found, with their counts; opening it, or pressing Add with nothing chosen, creates nothing; a name it did not find cannot be slipped in; only the name the writer gave a type becomes an entry, of that type, with no invented aliases",
             run() {
               return bibleCheckGuard(() => {
                 applyBookDoc({ meta: { title: "A Test of Tides", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS() });
@@ -23279,10 +23280,10 @@
                 const taken = Array.prototype.slice.call(document.querySelectorAll("#bibSeedList .bib-seed-row")).filter((r) => r.querySelector(".bib-seed-in")).map((r) => r.querySelector(".bib-seed-name").textContent);
                 return scVerdict(found.length >= 2 && offeredOk && noneOnOpen && startDisabled && noneOnEmptyAdd && enabled && addedOk && taken.join("|") === "Mara",
                   "Insights found " + found.map((f) => f.name + " ×" + f.total).join(", ") + "; offered " + offered.join(", ") + " with counts " + countsShown.join("/") + " (" + offeredOk + "); entries after opening: " + (noneOnOpen ? 0 : "some") + ", Add disabled at first: " + startDisabled + ", entries after an empty Add: " + (noneOnEmptyAdd ? 0 : "some") +
-                  "; after choosing Character for Mara (+ a forged row): " + es.map((e) => e.name + " (" + e.type + ")").join(", ") + " (" + addedOk + "); marked as already in the Bible: " + (taken.join(", ") || "none"));
+                  "; after choosing Character for Mara (+ a forged row): " + es.map((e) => e.name + " (" + e.type + ")").join(", ") + " (" + addedOk + "); marked as already in the Covenant: " + (taken.join(", ") || "none"));
               });
             } },
-          { id: "bible.mentions.match", feature: "bible", name: "Story Bible mentions: names and aliases as whole words, case-insensitive; English possessive and plural ride with the name (Mara's, Mara’s, Maras) but Maraschino does not; an exclusion phrase masks a hit (Will you); exact case keeps “will” out; the longest name wins (Mara Quill, Captain Hale); a phrase two entries claim (Quill) is skipped as ambiguous; image tokens and link addresses are never mentions; no plural rule outside English; Arabic names match as whole words",
+          { id: "bible.mentions.match", feature: "bible", name: "Covenant mentions: names and aliases as whole words, case-insensitive; English possessive and plural ride with the name (Mara's, Mara’s, Maras) but Maraschino does not; an exclusion phrase masks a hit (Will you); exact case keeps “will” out; the longest name wins (Mara Quill, Captain Hale); a phrase two entries claim (Quill) is skipped as ambiguous; image tokens and link addresses are never mentions; no plural rule outside English; Arabic names match as whole words",
             run() {
               const E = (o) => bibleNormalizeEntry(o);
               const mara = E({ id: "bm1", type: "character", name: "Mara Quill", aliases: ["Mara", "Quill"] });
@@ -23310,7 +23311,7 @@
                 "English hits “" + words + "” (want “" + wantWords + "”): Mara Quill ×" + by("bm1") + ", Will ×" + by("bm2") + ", Captain Hale ×" + by("bm3") + ", Ned Quill ×" + by("bm4") + ", ambiguous " + r.ambiguous.map((a) => "“" + text.slice(a.s, a.e) + "”").join(", ") +
                 "; without exact case Will matches “" + looseWill + "”; French book (no plural rule): " + fr.hits.length + " hits; Arabic: مارا ×" + arBy("a1").length + " (مارالي and ومارا are other words), القبطان هيل as " + arBy("a2").join(" / ") + ", الفانوس ×" + arBy("a3").length);
             } },
-          { id: "bible.mentions.heatmap", feature: "bible", name: "Story Bible mentions view: on the book on the desk (the sample in the harness), with eight entries taken from the names Insights found, every section's count in the heatmap equals an independent brute-force count, the drawn cells carry those counts, and first/last appearances are the first and last hits",
+          { id: "bible.mentions.heatmap", feature: "bible", name: "Covenant mentions view: on the book on the desk (the sample in the harness), with eight entries taken from the names Insights found, every section's count in the heatmap equals an independent brute-force count, the drawn cells carry those counts, and first/last appearances are the first and last hits",
             run() {
               return bibleCheckGuard(() => {
                 if (!bibleColumns(state.sections).length) applyBookDoc({ meta: { title: "A Test of Tides", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS() });
@@ -23345,7 +23346,7 @@
                   "; " + entries[0].name + "'s cells " + cells.join(",") + " (" + cellsOk + "); first/last link to the first and last hits: " + flOk + "; passages listed: " + pass + "; ambiguous left out: " + r.ambiguous + "; pass took " + r.ms.toFixed(1) + " ms");
               });
             } },
-          { id: "bible.notexported", feature: "bible", name: "Story Bible is never exported: with entries (notes, tags, a picture from the library, exclusions) the EPUB files, the print document, the Word package and every word count are exactly what they are without them; the Bible rides the book file, and a book with no entries serializes with no bible key",
+          { id: "bible.notexported", feature: "bible", name: "Covenant is never exported: with entries (notes, tags, a picture from the library, exclusions) the EPUB files, the print document, the Word package and every word count are exactly what they are without them; the Covenant rides the book file, and a book with no entries serializes with no bible key",
             run() {
               return bibleCheckGuard(() => {
                 const norm = (v) => String(v).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, "<t>");
@@ -23373,7 +23374,7 @@
                   "no entries → no bible key: " + noKey + "; with 2 entries" + (pic ? " (one wearing library picture " + pic.id + ")" : "") + " the book file carries them: " + rides + "; entry text found in an export: " + leak + "; outputs that changed: " + (same.join(", ") || "none") + " (EPUB " + before.epub.length + " chars, print " + before.print.length + ", Word " + before.docx.length + ", words " + before.words.split("/")[0] + ")");
               });
             } },
-          { id: "bible.series.roundtrip", feature: "bible", name: "Story Bible for a series: export to a JSON file and import into another book — entries keep their type, aliases, notes, tags, exact case and exclusions; a picture travels and joins the library once; an entry whose name the book already has (any case) is skipped and reported; a second import adds nothing; a foreign file is refused; the Bible survives the book file and an old book arrives with none",
+          { id: "bible.series.roundtrip", feature: "bible", name: "Covenant for a series: export to a JSON file and import into another book — entries keep their type, aliases, notes, tags, exact case and exclusions; a picture travels and joins the library once; an entry whose name the book already has (any case) is skipped and reported; a second import adds nothing; a foreign file is refused; the Covenant survives the book file and an old book arrives with none",
             run() {
               return bibleCheckGuard(() => {
                 const img = { id: "bibimgA", name: "gullwick.png", mediaType: "image/png", ext: "png", data: BIBLE_TINY_PNG };
@@ -23411,7 +23412,7 @@
                   "; an old book arrives with none: " + emptyArrival + "; fields through file + book file: " + fieldsOk);
               });
             } },
-          { id: "bible.editor.perf", feature: "bible", name: "Story Bible underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
+          { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
             run() {
               return bibleCheckGuard(() => {
                 if (!bibleColumns(state.sections).length) return scVerdict(false, "no story on the desk to measure");
