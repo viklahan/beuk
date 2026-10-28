@@ -146,13 +146,27 @@ export interface Config {
    *  request; a step that overruns is stopped and the job fails. */
   jobTimeoutMs: number;
   /** M5 jobs: wall-clock timeout in ms for the pdfx job's Ghostscript
-   *  conversion step (PDFX_TIMEOUT_MS, default 15 minutes). Separate
+   *  conversion step (PDFX_TIMEOUT_MS, default 30 minutes; it covers
+   *  every Ghostscript run of a chunked conversion together). Separate
    *  because PDF/X-1a forbids transparency: Ghostscript flattens every
    *  page that has any by rendering it whole to an image, which took
    *  ~100 s of the bundled 81-page sample's run (the renderer: ~6 s).
-   *  15 minutes is an operational default sized for books several
-   *  times that, not a measured limit. */
+   *  30 minutes is an operational default: a 241,642-word, 873-page
+   *  novel's conversion (22 runs of 40 pages + the join) measured
+   *  648 s on a heavily loaded host (2026-10-27), 72 % of the old
+   *  15-minute default, so books of 1,000+ pages had no margin. */
   pdfxTimeoutMs: number;
+  /** M5 jobs: how many pages ONE Ghostscript run converts to PDF/X
+   *  (PDFX_CHUNK_PAGES, default 40). GPL Ghostscript 10.00.0's pdfwrite,
+   *  converting a PDF's colour to CMYK, keeps about 21 MB more memory for
+   *  every page it reads when the CMYK profile is the 2.7 MB SWOP press
+   *  profile (measured 2026-10-27: 50 pages 1.1 GB, 100 pages 2.2 GB,
+   *  200 pages 3.2 GB peak), so a 873-page novel needed far more memory
+   *  than the server had and the kernel killed it. A longer interior is
+   *  therefore converted in runs of this many pages, then joined in one
+   *  last pass that leaves the colour as it is (that pass measured 45 MB
+   *  for 200 pages). Smaller = less memory, a little more time. */
+  pdfxChunkPages: number;
   /** M5 jobs: maximum JVM heap for EPUBCheck (JAVA_MAX_HEAP, passed as
    *  -Xmx; default 512m). A hostile or huge EPUB then fails with an
    *  OutOfMemoryError in its result instead of starving the box. */
@@ -365,7 +379,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rendererUrl: env.RENDERER_URL || null,
     legacyHtmlPdfBin: env.HTML_PDF_BIN || null,
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),
-    pdfxTimeoutMs: positiveInt(env.PDFX_TIMEOUT_MS, 900_000),
+    pdfxTimeoutMs: positiveInt(env.PDFX_TIMEOUT_MS, 1_800_000),
+    pdfxChunkPages: positiveInt(env.PDFX_CHUNK_PAGES, 40),
     javaMaxHeap: /^[1-9][0-9]*[kKmMgG]?$/.test(env.JAVA_MAX_HEAP ?? '') ? env.JAVA_MAX_HEAP! : '512m',
     jobMaxActivePerUser: positiveInt(env.JOB_MAX_ACTIVE_PER_USER, 2),
     jobMaxQueued: positiveInt(env.JOB_MAX_QUEUED, 20),

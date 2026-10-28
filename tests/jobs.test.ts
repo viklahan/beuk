@@ -641,9 +641,12 @@ test('job limits config: JVM heap and admission caps default sanely and reject j
   assert.equal(defaults.jobMaxActivePerUser, 2);
   assert.equal(defaults.jobMaxQueued, 20);
   assert.equal(defaults.jobTimeoutMs, 120_000);
-  assert.equal(defaults.pdfxTimeoutMs, 900_000);
-  assert.equal(loadConfig({ PDFX_TIMEOUT_MS: '1800000' } as NodeJS.ProcessEnv).pdfxTimeoutMs, 1_800_000);
-  assert.equal(loadConfig({ PDFX_TIMEOUT_MS: 'soon' } as NodeJS.ProcessEnv).pdfxTimeoutMs, 900_000);
+  assert.equal(defaults.pdfxTimeoutMs, 1_800_000);
+  assert.equal(loadConfig({ PDFX_TIMEOUT_MS: '3600000' } as NodeJS.ProcessEnv).pdfxTimeoutMs, 3_600_000);
+  assert.equal(loadConfig({ PDFX_TIMEOUT_MS: 'soon' } as NodeJS.ProcessEnv).pdfxTimeoutMs, 1_800_000);
+  assert.equal(defaults.pdfxChunkPages, 40);
+  assert.equal(loadConfig({ PDFX_CHUNK_PAGES: '25' } as NodeJS.ProcessEnv).pdfxChunkPages, 25);
+  assert.equal(loadConfig({ PDFX_CHUNK_PAGES: 'many' } as NodeJS.ProcessEnv).pdfxChunkPages, 40);
   const set = loadConfig({
     JAVA_MAX_HEAP: '1g',
     JOB_MAX_ACTIVE_PER_USER: '3',
