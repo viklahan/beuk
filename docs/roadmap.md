@@ -7,30 +7,28 @@ Now / Next / Later shape the public page shows.
 
 ## Now
 
-- **M4 — Warmth Phase 0.** Done in the build, shipping with the SaaS
-  debut. Help reading room (task-shaped guides + an EPUB-error
-  decoder), a named human support email with a stated reply time —
-  email is the official support channel — a Ko-fi tip jar at the foot
-  of Help and on the post-export page only, framed as "support the
-  maker", never on pricing or checkout; a public changelog crediting
-  requesters; this roadmap; a public status line; the streak
-  forgiveness audit (repair freezes + planned pauses, no guilt
-  mechanics); and the private Founders' Shelf seed list.
-- **The testing-ready gate.** M1–M4 green: accounts + cloud
-  manuscripts (M1), the export archive + billing hooks (M2), the
-  Housekeeping admin surface (M3 — audit rows, one lock, scrubbed
-  outputs, the Self-checks registry executing server-side,
-  backup/restore rehearsal, gated promotion), and M4 above. On
-  reaching the gate, Vik is notified and promotes to production on
-  Hetzner himself.
+- **Shipped in the build (M1–M5).** Accounts and books on your shelf
+  (M1), the export archive and billing hooks (M2), the Housekeeping
+  admin surface (M3: audit rows, one lock, scrubbed outputs, the
+  Self-checks registry executing server-side, backup/restore
+  rehearsal, gated promotion), Warmth Phase 0 (M4: the Help reading
+  room and EPUB-error decoder, a named human support email, the
+  changelog, this roadmap, the status line, the streak forgiveness
+  audit), and M5: the full official EPUBCheck suite run server-side and
+  true PDF/X-1a conversion for print interiors, long books included.
+- **The studio wired to this API.** Books sync to your shelf, with
+  email confirmation, password reset and sign-in from more than one
+  device. The [changelog](/changelog) lists everything since, in the
+  order writers met it.
 
 ## Next
 
-- **M5 — Server EPUBCheck + PDF/X jobs.** The two capabilities the
-  client build honestly defers: the full official EPUBCheck suite run
-  server-side, and true PDF/X conversion for print interiors.
-- **The web client wired to this API**, with first-login import of
-  local manuscripts, and email verification / password reset.
+- **Billing and legal.** Pricing decided and checkout switched on
+  (until then the billing routes answer "billing not configured" and
+  nothing can be bought), and the legal pages finalised alongside it.
+- **Launch on beuk.studio.** The production server set up by the
+  launch checklist (server, firewall, DNS and mail records, first
+  backup and restore drill), then the smoke test after every deploy.
 
 ## Later — warmth on its triggers, not on a calendar
 

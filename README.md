@@ -1090,7 +1090,7 @@ plain messages. Responses are normalized to
 `per_page` defaults to 24 and clamps at 40. A light in-memory
 per-user throttle (30 searches/minute) protects the shared quota.
 
-**Enabling it later (Vik's step, the key is his):** create a free
+**Enabling it later (the operator's step, the key is theirs):** create a free
 Pexels API key, set `PEXELS_API_KEY` in the server's `.env` only, and
 restart the app. Until then the endpoint answers a clean **501 `stock
 photos not configured`** and the cover maker simply offers no stock
@@ -1141,7 +1141,7 @@ IP behind Caddy: the app sets Express `trust proxy` from
 `TRUST_PROXY_HOPS` (default 1 = Caddy; see Hardening).
 This also makes the Founders' Shelf per-IP throttle per real client.
 
-**Enabling email (Vik's step, the credentials are his):** set
+**Enabling email (the operator's step, the credentials are theirs):** set
 `SMTP_URL` and `MAIL_FROM` in `.env` (any SMTP provider; the From
 domain should be one the provider is allowed to send for), restart,
 then in Housekeeping run `POST /api/housekeeping/mail/test` (sends one
