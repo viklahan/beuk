@@ -4268,6 +4268,43 @@ or phase by phase: `node tools/sim/sim.mjs up | world | seed | personas | monste
   shares the sim Caddy's network namespace, so the studio runs on its real
   origin; Playwright itself is cached on the `beuk-pw-cache` volume.
 
+## Opening a book replaces the desk's book (BEUK:metaleak)
+
+The simulation (`meta.own-book`, `bug.meta-series-carries-over`) found a
+standalone book opened after a series book arriving with that series, and
+the next autosave writing it to the shelf (revision 2 `series: null` →
+revision 3 `"Salt Road"`). The cause: `applyBookDoc` built the arriving
+meta with `Object.assign({}, state.meta, doc.meta)`, so every meta key the
+arriving book did not carry (series, publisher, ISBN, year, description,
+rights — and the book id itself) kept the last book's value. Bulk-imported
+shelf books carry only a few meta keys, no History, goals or print rules,
+so they inherited the most.
+
+Every arrival now replaces the desk's book with exactly the arriving one:
+
+- `bookMetaDefaults()` / `bookPrintDefaults()` define what a book is when it
+  says nothing. `applyBookDoc` lays the arriving meta over the meta defaults
+  (a missing book id gets a fresh one), resets every print and export choice
+  (trim, recto, large print, export platform, margins, running heads, folio)
+  to its default before reading the book's own, and gives a book without a
+  theme or sections the default theme / bare scaffold.
+- History: a book that carries its own History brings it. One without
+  keeps the desk's History only when it is the same book (same `bookId`) or
+  when the arrival is a swap on this desk whose safety-net snapshot must
+  survive (`applyBookDoc(doc, { keepHistory: true })`: the sample, Remove, a
+  History restore, Undo import). Any other book arrives with none.
+- Box-set volumes added this session clear when a different book arrives.
+- An import over the sample replaces the sample's meta whole.
+- A backup file that names no book id is no longer treated as the linked
+  shelf book (it used to borrow the desk's id); it goes to the shelf as its
+  own book.
+
+Checked by `book.arrival.replaces-whole` (shelf/sync arrival, a legacy book
+with no print choices, sample, Remove, backup, History restore, import over
+the sample), the async `shelf.open.no-meta-carryover` (real `cloudOpenBook`
+then the autosave PUT against a stand-in shelf) and
+`tests/open-book-meta.test.ts`.
+
 ## What is deliberately NOT here yet
 
 - **Live billing** — everything is built (verified, deduplicated,
