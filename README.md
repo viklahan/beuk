@@ -3520,6 +3520,56 @@ add the book's shelf button and its `BOOKS` entry to `ramp.html`, and its
 slug to `tests/site-pages.test.ts`. `tests/site-pages.test.ts` checks every spread
 file against the size the reader states.
 
+## Readers: full screen (BEUK:fullscreen) and whole spreads on the Ramp (BEUK:rampload)
+
+Every place a book is read has a full-screen control:
+
+| Reader | Control | What fills the screen |
+|---|---|---|
+| Ramp book reader (`/ramp`) | **Full screen** in the reader's top bar | the lamp-lit room (a `<dialog>` cannot go full screen itself, so its `.room` does) |
+| Beta-reader share page (`/read/<token>`) | **Full screen** at the top right of the header (shown only when the nonce'd page script runs) | the whole page; it still scrolls |
+| Studio device preview (every e-reader and the Hardcover) | the maximize button beside Prev / Next (Hardcover: in its bar) | the preview stage; the e-reader keeps its own page geometry and is scaled up, so lines and page breaks are what the device shows |
+| Studio Print Interior View | **Full screen** beside Close | the dialog, re-fitted |
+| Studio print preview (Print Interior) | **Full screen** beside Close | the dialog; the paginated frame takes the height |
+| Landing page turning book (both) | **Full screen** under the book | the book, larger |
+
+All use the Fullscreen API with the `webkit`-prefixed one for Safari and iPad.
+Where neither exists (iPhone Safari) or the browser refuses, the reader fills
+the window instead and **the control says so**: the studio and the landing page
+say "Fill the window" / "Exit full window"; the Ramp room and the share page
+already fill the window, so there it offers "Just the pages" (Ramp: the title
+and the note step aside) and "Just the text" (share page: header details,
+comments and footer step aside). Nothing claims "Full screen" that is not.
+**F** toggles it (never while typing in a field; in the studio, F means the
+open reading dialog on top, else the preview when its pane is on screen; on
+the landing page, the book that has focus). **Escape** leaves it first, without
+closing the dialog or the book underneath; a dialog that closes ends its full
+window. The button carries `aria-pressed` and its words change with the
+state. The share page keeps its CSP: no new script, the code lives in the one
+nonce'd script and the button is hidden until it runs. Studio strings
+(`fs.enter`, `fs.exit`, `fs.fill`, `fs.fillExit`) are in all 13 languages;
+the site pages are English like the rest of the site. Checks: self-checks
+`fullscreen.controls`, `fullscreen.fill-window`, async
+`fullscreen.dialog-close`; `tests/fullscreen-readers.test.ts` for the site and
+share markup.
+
+**Ramp spreads arrive whole.** The reader used to paint a spread the moment a
+book opened and fire off every spread of the book at once. On a slow phone
+connection the first page showed half drawn (the top of the picture, white
+below, as the image streamed in) or, on a phone, the blank left side of a
+title spread as "Page 1" (which pages are blank is measured from the pictures,
+and those measurements came only after all four spreads had downloaded) —
+until the book was closed and opened again, when everything was cached. Now
+each spread is downloaded and decoded (`img.decode()`) before the reader shows
+it or turns to it, the rest of the book follows one spread at a time in
+reading order, a failed request is retried twice and then the reader says
+"This page did not arrive" with **try again**, and while a spread is on its
+way the book lies open on blank paper and the counter says "Opening the
+book…" / "Loading the next page…" (`aria-busy` on the book). On a phone the
+counter reads "Page 1" until every spread has been measured, then "Page 1 of 7".
+The design is unchanged. `/ramp` and `/site/` are network-only in the studio's
+service worker, so it plays no part.
+
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
 
 - **`/features`** (`client/site/features.html`) shows the studio feature by feature in nine real screenshots under `client/site/shots/` (WebP, 600–1280 px wide, all under 100 KB, each with alt text and its real size). They were taken in the studio with the bundled sample, *The Lantern Coast*, on 26 October 2026: the writing desk with the device preview, the Typography Studio, the Print Interior View, the cover maker and print wrap, the export dialog with its store presets, Story Insights, the Goals habit calendar and a History snapshot. Every line describes the studio as it is today. Beta-reader links need an account, so that section says there is no picture instead of showing a mock-up. The road-so-far chart isn't pictured because the browser had logged the sample's length on only one day.

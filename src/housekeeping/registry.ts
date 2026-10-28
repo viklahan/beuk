@@ -2440,6 +2440,25 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Both the spread and the Print Interior View paginate in the client browser; the server never lays out pages.',
   },
+  // BEUK:fullscreen — the readers' full-screen control in the studio.
+  {
+    id: 'fullscreen.controls',
+    title: 'Every studio reader (device preview, hardcover, Print Interior View, print preview) has a pressed-state full-screen control with the F shortcut, worded for what the browser can do, in 13 languages',
+    kind: 'client-only',
+    reason: 'The controls and the Fullscreen API exist only in the studio page in the browser.',
+  },
+  {
+    id: 'fullscreen.fill-window',
+    title: 'Without element full screen the reader fills the window instead (LTR and RTL); F toggles it except while typing; Escape leaves it and keeps the dialog',
+    kind: 'client-only',
+    reason: 'Measured on the rendered studio DOM in the browser; the server renders no reader chrome.',
+  },
+  {
+    id: 'fullscreen.dialog-close',
+    title: 'Closing the Print Interior View or the print preview in full window ends the full window and unlocks the page',
+    kind: 'client-only',
+    reason: 'Dialog state and the filled window live in the studio page in the browser.',
+  },
   {
     id: 'preview.hardcover.turn-jump',
     title: 'Hardcover device: Next / Prev / arrow keys step one spread and stop at the ends; it opens on, and follows, the chapter being edited',

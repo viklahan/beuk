@@ -1247,6 +1247,30 @@
       .hc-bar .hc-full[hidden] { display: none; }
       #previewStage:fullscreen { background: var(--bg); padding: 18px; }
       :root[data-theme="candlelight"] #previewStage:fullscreen { background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%); }
+      /* ==== BEUK:fullscreen ==== Every reader (the device preview, the
+         Print Interior View, the print preview) can fill the screen. Where
+         the browser has no element full screen (iPhone Safari) the same
+         element fills the window instead (.fs-immersive). The prefixed
+         pseudo-class sits in its own rules: an unknown selector would
+         drop the whole list. */
+      #previewStage:-webkit-full-screen { background: var(--bg); padding: 18px; }
+      #previewStage.fs-immersive { position: fixed; inset: 0; z-index: 2147483000; width: 100vw; height: 100vh; height: 100dvh; background: var(--bg); padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); }
+      :root[data-theme="candlelight"] #previewStage.fs-immersive { background: radial-gradient(120% 85% at 50% -10%, #2e2416 0%, var(--panel-3) 58%); }
+      #previewStage:fullscreen #previewDesk, #previewStage:fullscreen [data-i18n="preview.tip"] { display: none; }
+      #previewStage:-webkit-full-screen #previewDesk, #previewStage:-webkit-full-screen [data-i18n="preview.tip"] { display: none; }
+      #previewStage.fs-immersive #previewDesk, #previewStage.fs-immersive [data-i18n="preview.tip"] { display: none; }
+      #deviceFrame.fs-scaled { transition: none; }
+      .page-controls .pv-full { padding: 8px 10px; }
+      .fs-btn[hidden] { display: none; }
+      .fs-modal:fullscreen { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; border: 0; display: flex; flex-direction: column; }
+      .fs-modal:-webkit-full-screen { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; border: 0; display: flex; flex-direction: column; }
+      .fs-modal.fs-immersive { position: fixed; inset: 0; z-index: 2147483000; max-width: none; width: 100vw; height: 100vh; height: 100dvh; max-height: none; border-radius: 0; border: 0; display: flex; flex-direction: column; padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+      #printModalBox:fullscreen #printFrame { flex: 1 1 auto; height: auto; min-height: 0; }
+      #printModalBox:-webkit-full-screen #printFrame { flex: 1 1 auto; height: auto; min-height: 0; }
+      #printModalBox.fs-immersive #printFrame { flex: 1 1 auto; height: auto; min-height: 0; }
+      .piv-headbtns { display: flex; gap: 8px; flex: 0 0 auto; }
+      html.fs-lock, html.fs-lock body { overflow: hidden; }
+      /* ==== /BEUK:fullscreen ==== */
       .hc-meta { text-align: center; padding: 2px 12px 8px; max-width: 460px; }
       .hc-counter { font-family: var(--mono-font); font-size: 12.5px; color: var(--ink-2); }
       .hc-facts { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
@@ -2932,13 +2956,14 @@
               <button class="page-btn" id="btnPrevPage" data-i18n="preview.prev"><i data-lucide="chevron-left"></i>Prev</button>
               <span id="pageCounter">Page 1 of 1</span>
               <button class="page-btn" id="btnNextPage" data-i18n="preview.next">Next<i data-lucide="chevron-right"></i></button>
+              <button class="page-btn pv-full fs-btn" id="pvFull" type="button" aria-pressed="false" aria-keyshortcuts="F" title="Full screen" aria-label="Full screen"><i data-lucide="maximize-2"></i></button><!-- BEUK:fullscreen -->
             </div>
             <!-- ==== BEUK:hcpreview ==== -->
             <div class="hc-bar" id="hcBar" hidden>
               <button class="page-btn" id="hcPrev" type="button"><i data-lucide="chevron-left"></i><span data-i18n="hcp.prev">Prev</span></button>
               <button class="page-btn hc-toggle" id="hcToggle" type="button"><i data-lucide="book-open"></i><span id="hcToggleLabel" data-i18n="hcp.open">Open the book</span></button>
               <button class="page-btn" id="hcNext" type="button"><span data-i18n="hcp.next">Next</span><i data-lucide="chevron-right"></i></button>
-              <button class="page-btn hc-full" id="hcFull" type="button" title="Full screen" aria-label="Full screen" data-i18n-title="hcp.fullscreen" data-i18n-aria="hcp.fullscreen"><i data-lucide="maximize-2"></i></button>
+              <button class="page-btn hc-full fs-btn" id="hcFull" type="button" aria-pressed="false" aria-keyshortcuts="F" title="Full screen" aria-label="Full screen"><i data-lucide="maximize-2"></i></button>
             </div>
             <div class="hc-meta" id="hcMeta" hidden>
               <div class="hc-counter" id="hcCounter" aria-live="polite"></div>
@@ -3925,11 +3950,12 @@
 
     <!-- Print view modal (feature 6) -->
     <div class="modal-back" id="modalPrint" style="z-index:75;">
-      <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="printH">
+      <div class="modal wide fs-modal" id="printModalBox" role="dialog" aria-modal="true" aria-labelledby="printH">
         <h2 id="printH" data-i18n="print.title"><i data-lucide="printer"></i>Print Interior</h2>
         <p class="m-sub" id="printSub"></p>
         <iframe id="printFrame" title="Paginated print interior"></iframe>
         <div class="modal-actions">
+          <button class="tb-btn fs-btn" id="btnPrintFull" type="button" aria-pressed="false" aria-keyshortcuts="F"><i data-lucide="maximize-2"></i><span class="fs-lbl">Full screen</span></button><!-- BEUK:fullscreen -->
           <button class="tb-btn" id="btnClosePrint" data-i18n="print.close">Close</button>
           <button class="tb-btn primary" id="btnDoPrint" data-i18n="print.btn"><i data-lucide="printer"></i>Print / Save as PDF</button>
         </div>
@@ -3939,10 +3965,13 @@
     <!-- Print interior view: the book as facing-page spreads, laid out
          with the print export's own trim, margins and type. -->
     <div class="modal-back" id="modalPrintView" style="z-index:76;">
-      <div class="modal piv-modal" role="dialog" aria-modal="true" aria-labelledby="pivH">
+      <div class="modal piv-modal fs-modal" id="pivModalBox" role="dialog" aria-modal="true" aria-labelledby="pivH">
         <div class="piv-head">
           <h2 id="pivH" data-i18n="piv.title"><i data-lucide="book-open"></i>Print Interior View</h2>
-          <button class="tb-btn" id="btnClosePrintView" type="button" data-i18n="print.close">Close</button>
+          <div class="piv-headbtns"><!-- BEUK:fullscreen -->
+            <button class="tb-btn fs-btn" id="btnPivFull" type="button" aria-pressed="false" aria-keyshortcuts="F"><i data-lucide="maximize-2"></i><span class="fs-lbl">Full screen</span></button>
+            <button class="tb-btn" id="btnClosePrintView" type="button" data-i18n="print.close">Close</button>
+          </div>
         </div>
         <p class="m-sub" id="pivSub" style="margin-bottom:8px;"></p>
         <div class="piv-toolbar">
@@ -4468,6 +4497,7 @@
         if (typeof tourOnLangChange === "function") tourOnLangChange(); /* BEUK:tour */
         if (typeof localOnLangChange === "function") localOnLangChange(); /* BEUK:local */
         if (typeof dictOnLangChange === "function") dictOnLangChange();
+        if (typeof syncFsButtons === "function") syncFsButtons(); /* BEUK:fullscreen */
         if (typeof syncThemeButton === "function" && $("themeLabel")) syncThemeButton();
         if (typeof renderSidebar === "function" && $("structureList")) renderSidebar();
         if (typeof renderSideStatusSummary === "function") renderSideStatusSummary(); /* BEUK:sidebar */
@@ -8251,6 +8281,21 @@
       Object.assign(UI_STRINGS.ar, { "hcp.device": "غلاف مقوّى", "hcp.open": "افتح الكتاب", "hcp.close": "أغلق الكتاب", "hcp.prev": "السابق", "hcp.next": "التالي", "hcp.toChapter": "انتقل إلى الفصل الذي تحرّره", "hcp.notInPrint": "القسم الذي تحرّره ليس ضمن الصفحات المطبوعة", "hcp.hint": "انقر الكتاب لفتحه. قلّب الصفحات بالأزرار أو بمفتاحي ← → أو بالسحب.", "hcp.pages": "الصفحات {a}–{b} من {n}", "hcp.page": "الصفحة {a} من {n}", "hcp.closedCounter": "مغلق · {n} صفحة مطبوعة", "hcp.empty": "لا شيء للطباعة بعد — يمتلئ الكتاب كلما كتبت.", "hcp.facts": "مقاس {trim} · {binding} · صفحات من تخطيط الطباعة", "hcp.bindCase": "غلاف مقوّى · مغلّف لامع", "hcp.bindJacket": "غلاف مقوّى · غلاف واقٍ", "hcp.bindCloth": "غلاف قماشي — لا صورة غلاف بعد", "hcp.bindUnset": "معروض كغلاف مقوّى مغلّف — التجليد في صانع الغلاف مضبوط على غلاف ورقي", "hcp.ariaBook": "كتاب مغلق بغلاف مقوّى: {title} — افتحه", "hcp.endpaper": "ورقة الحراسة", "hcp.fullscreen": "ملء الشاشة", "hcp.fullscreenFail": "تعذّر على هذا المتصفح فتح وضع ملء الشاشة." });
       Object.assign(UI_STRINGS.ja, { "hcp.device": "ハードカバー", "hcp.open": "本を開く", "hcp.close": "本を閉じる", "hcp.prev": "前へ", "hcp.next": "次へ", "hcp.toChapter": "編集中の章へ移動", "hcp.notInPrint": "編集中のセクションは印刷本文に含まれていません", "hcp.hint": "本をタップすると開きます。ボタン、← → キー、スワイプでページをめくれます。", "hcp.pages": "{n}ページ中 {a}–{b}ページ", "hcp.page": "{n}ページ中 {a}ページ", "hcp.closedCounter": "閉じた状態 · 印刷 {n} ページ", "hcp.empty": "まだ印刷するものがありません。書き進めると本が埋まっていきます。", "hcp.facts": "判型 {trim} · {binding} · 印刷レイアウトのページ", "hcp.bindCase": "ハードカバー · ラミネート表紙", "hcp.bindJacket": "ハードカバー · ダストジャケット", "hcp.bindCloth": "クロス装 — 表紙画像はまだありません", "hcp.bindUnset": "ラミネート表紙として表示中 — 表紙メーカーの製本はペーパーバックです", "hcp.ariaBook": "閉じたハードカバー：{title} — 開く", "hcp.endpaper": "見返し", "hcp.fullscreen": "全画面表示", "hcp.fullscreenFail": "このブラウザでは全画面表示を開けませんでした。" });
       Object.assign(UI_STRINGS["zh-Hans"], { "hcp.device": "精装", "hcp.open": "打开书", "hcp.close": "合上书", "hcp.prev": "上一页", "hcp.next": "下一页", "hcp.toChapter": "转到正在编辑的章节", "hcp.notInPrint": "正在编辑的部分不在印刷内页中", "hcp.hint": "点按书本即可打开。用按钮、← → 键或滑动来翻页。", "hcp.pages": "第 {a}–{b} 页，共 {n} 页", "hcp.page": "第 {a} 页，共 {n} 页", "hcp.closedCounter": "已合上 · 印刷 {n} 页", "hcp.empty": "还没有可印刷的内容——书会随着你的写作而充实。", "hcp.facts": "开本 {trim} · {binding} · 页面来自印刷版式", "hcp.bindCase": "精装 · 覆膜封面", "hcp.bindJacket": "精装 · 护封", "hcp.bindCloth": "布面精装——尚无封面图", "hcp.bindUnset": "按覆膜精装显示——封面制作器中的装订设为平装", "hcp.ariaBook": "合上的精装书：{title}——打开", "hcp.endpaper": "环衬", "hcp.fullscreen": "全屏", "hcp.fullscreenFail": "此浏览器无法打开全屏。" });
+      /* ==== BEUK:fullscreen ==== the readers' full-screen control: "fill" is the honest name where the browser has no element full screen and the reader fills the window instead */
+      Object.assign(UI_STRINGS.en, { "fs.enter": "Full screen", "fs.exit": "Exit full screen", "fs.fill": "Fill the window", "fs.fillExit": "Exit full window" });
+      Object.assign(UI_STRINGS.es, { "fs.enter": "Pantalla completa", "fs.exit": "Salir de pantalla completa", "fs.fill": "Llenar la ventana", "fs.fillExit": "Salir de la ventana completa" });
+      Object.assign(UI_STRINGS.fr, { "fs.enter": "Plein écran", "fs.exit": "Quitter le plein écran", "fs.fill": "Remplir la fenêtre", "fs.fillExit": "Quitter la fenêtre entière" });
+      Object.assign(UI_STRINGS.de, { "fs.enter": "Vollbild", "fs.exit": "Vollbild beenden", "fs.fill": "Fenster füllen", "fs.fillExit": "Fensterfüllend beenden" });
+      Object.assign(UI_STRINGS.it, { "fs.enter": "Schermo intero", "fs.exit": "Esci da schermo intero", "fs.fill": "Riempi la finestra", "fs.fillExit": "Esci dalla finestra intera" });
+      Object.assign(UI_STRINGS.pt, { "fs.enter": "Ecrã inteiro", "fs.exit": "Sair do ecrã inteiro", "fs.fill": "Preencher a janela", "fs.fillExit": "Sair da janela inteira" });
+      Object.assign(UI_STRINGS.nl, { "fs.enter": "Volledig scherm", "fs.exit": "Volledig scherm sluiten", "fs.fill": "Venster vullen", "fs.fillExit": "Volledig venster sluiten" });
+      Object.assign(UI_STRINGS.pl, { "fs.enter": "Pełny ekran", "fs.exit": "Zamknij pełny ekran", "fs.fill": "Wypełnij okno", "fs.fillExit": "Zamknij widok na całe okno" });
+      Object.assign(UI_STRINGS.ru, { "fs.enter": "Во весь экран", "fs.exit": "Выйти из полноэкранного режима", "fs.fill": "Заполнить окно", "fs.fillExit": "Выйти из режима на всё окно" });
+      Object.assign(UI_STRINGS.tr, { "fs.enter": "Tam ekran", "fs.exit": "Tam ekrandan çık", "fs.fill": "Pencereyi doldur", "fs.fillExit": "Tam pencereden çık" });
+      Object.assign(UI_STRINGS.ar, { "fs.enter": "ملء الشاشة", "fs.exit": "الخروج من ملء الشاشة", "fs.fill": "ملء النافذة", "fs.fillExit": "الخروج من ملء النافذة" });
+      Object.assign(UI_STRINGS.ja, { "fs.enter": "全画面表示", "fs.exit": "全画面表示を終了", "fs.fill": "ウィンドウいっぱいに表示", "fs.fillExit": "ウィンドウいっぱいの表示を終了" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "fs.enter": "全屏", "fs.exit": "退出全屏", "fs.fill": "填满窗口", "fs.fillExit": "退出填满窗口" });
+      /* ==== /BEUK:fullscreen ==== */
       /* ==== /BEUK:hcpreview ==== */
 
       /* Structure upgrade: matter library, reordering, Parts — assigned per pack so completeness holds. */
@@ -30902,6 +30947,7 @@
         const byHeight = Math.max(0, zh - padY) * ratio + padX;
         const w = Math.max(120, Math.min(cap, zw, byHeight));
         frame.style.width = w.toFixed(1) + "px";
+        if (typeof fsScaleFrame === "function") fsScaleFrame(); /* BEUK:fullscreen */
       }
       /* BEUK:pagecount — the signature is the book's content (hashed, so
          a same-length edit still recounts), the profile and its FIXED
@@ -32071,23 +32117,177 @@
         else if ((e.key === "Enter" || e.key === " ") && document.activeElement === $("hcStage") && !hc.open) { e.preventDefault(); hcSetOpen(true); }
         else if (e.key === "Escape" && hc.open) { hcSetOpen(false); }
       }
+      /* ==== BEUK:fullscreen ====
+         One full-screen control for every reader in the studio: the
+         device preview (e-readers and the hardcover: the whole preview
+         stage), the Print Interior View and the print preview (their
+         dialog). The Fullscreen API, with the webkit-prefixed one for
+         Safari and iPad (https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen);
+         where neither exists (iPhone Safari) or the browser refuses, the
+         reader fills the window instead (.fs-immersive) and the button
+         says so ("Fill the window"), never "Full screen". F toggles it
+         (not while typing); Escape leaves it without closing the dialog
+         underneath. */
+      var fsState = { imm: null, fill: false }; /* var: applyUiLang may run before this line */
+      function fsNativeOk(el) {
+        if (!el) return false;
+        const fn = el.requestFullscreen || el.webkitRequestFullscreen;
+        const enabled = document.fullscreenEnabled != null ? document.fullscreenEnabled : !!document.webkitFullscreenEnabled;
+        return typeof fn === "function" && !!enabled;
+      }
+      function fsNow() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+      function fsIsOn(el) { return !!el && (fsNow() === el || fsState.imm === el); }
+      function fsActive() { return fsState.imm || fsNow(); }
+      function fsImmersive(el, on) {
+        if (on) {
+          if (fsState.imm && fsState.imm !== el) fsState.imm.classList.remove("fs-immersive");
+          fsState.imm = el; el.classList.add("fs-immersive");
+        } else {
+          el.classList.remove("fs-immersive");
+          if (fsState.imm === el) fsState.imm = null;
+        }
+        document.documentElement.classList.toggle("fs-lock", !!fsState.imm);
+        fsChanged();
+      }
+      function fsEnter(el) {
+        if (!el) return;
+        if (fsNativeOk(el) && !fsState.fill) {
+          try {
+            const r = el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen();
+            /* refused (no user gesture, a policy): fill the window instead, and say so */
+            if (r && typeof r.then === "function") r.catch(() => { fsState.fill = true; fsImmersive(el, true); });
+            return;
+          } catch (e) { fsState.fill = true; }
+        }
+        fsImmersive(el, true);
+      }
+      function fsExit() {
+        if (fsState.imm) { fsImmersive(fsState.imm, false); return; }
+        if (!fsNow()) return;
+        try {
+          const r = document.exitFullscreen ? document.exitFullscreen() : (document.webkitExitFullscreen ? document.webkitExitFullscreen() : null);
+          if (r && typeof r.catch === "function") r.catch(() => {});
+        } catch (e) {}
+      }
+      function fsToggle(el) {
+        if (!el) return;
+        if (fsIsOn(el)) { fsExit(); return; }
+        if (fsActive()) fsExit();
+        fsEnter(el);
+      }
+      /* Each control and the element it fills. */
+      var FS_TARGETS = [
+        { btn: "pvFull", el: "previewStage", label: false },
+        { btn: "hcFull", el: "previewStage", label: false },
+        { btn: "btnPivFull", el: "pivModalBox", label: true },
+        { btn: "btnPrintFull", el: "printModalBox", label: true },
+      ];
+      /* The words a control shows: "Full screen" only where the browser
+         really goes full screen; "Fill the window" where it cannot. */
+      function fsLabelFor(el) {
+        const on = fsIsOn(el);
+        const native = fsNativeOk(el) && !fsState.fill;
+        if (on) return t(fsState.imm === el ? "fs.fillExit" : "fs.exit");
+        return t(native ? "fs.enter" : "fs.fill");
+      }
+      function syncFsButtons() {
+        if (!fsState || !FS_TARGETS) return;
+        FS_TARGETS.forEach((x) => {
+          const b = $(x.btn), el = $(x.el);
+          if (!b || !el) return;
+          const on = fsIsOn(el), label = fsLabelFor(el);
+          b.setAttribute("aria-pressed", String(on));
+          b.setAttribute("title", label + " (F)");
+          if (x.label) { b.removeAttribute("aria-label"); const s = b.querySelector(".fs-lbl"); if (s) s.textContent = label; }
+          else b.setAttribute("aria-label", label);
+          const want = on ? "minimize-2" : "maximize-2";
+          const ic = b.querySelector("[data-lucide], svg");
+          if (!ic || (ic.getAttribute("data-lucide") || "") !== want) {
+            const i = document.createElement("i"); i.setAttribute("data-lucide", want);
+            if (ic) ic.replaceWith(i); else b.insertBefore(i, b.firstChild);
+            if (typeof icons === "function") icons();
+          }
+        });
+      }
+      function fsChanged() {
+        syncFsButtons();
+        /* the reader re-fits to its new box (a filled window fires no resize) */
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (state.device === "hardcover") { if (typeof hcSettle === "function") { hcSettle(); hcRender(); } }
+          else { fitDeviceFrame(); measurePages(); goToPage(state.page, true); }
+          if ($("modalPrintView").classList.contains("open") && typeof renderPrintView === "function") renderPrintView();
+        }));
+      }
+      /* Which reader F means right now: the open reading dialog on top,
+         else the device preview when its pane is on screen. */
+      function fsKeyTarget() {
+        const act = fsActive(); if (act) return act;
+        const open = document.querySelectorAll(".modal-back.open");
+        if (open.length) {
+          const top = open[open.length - 1];
+          if (top.id === "modalPrintView") return $("pivModalBox");
+          if (top.id === "modalPrint") return $("printModalBox");
+          return null;
+        }
+        if (document.body.classList.contains("zen")) return null;
+        const ps = $("previewStage");
+        return ps && ps.getClientRects().length && ps.offsetWidth > 0 ? ps : null;
+      }
+      function fsTyping(el) {
+        if (!el) return false;
+        const tag = el.tagName || "";
+        return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!el.isContentEditable;
+      }
+      /* The device frame keeps the device's own page geometry in full
+         screen (the same lines, the same page breaks) and is shown larger. */
+      function fsScaleFrame() {
+        const frame = $("deviceFrame"), zone = $("frameZone");
+        if (!frame || !zone) return;
+        if (!fsIsOn($("previewStage")) || state.device === "hardcover") { frame.style.transform = ""; frame.classList.remove("fs-scaled"); return; }
+        const fw = frame.offsetWidth, fh = frame.offsetHeight, zw = zone.clientWidth, zh = zone.clientHeight;
+        if (!fw || !fh || !zw || !zh) return;
+        const s = Math.min(zw / fw, zh / fh, 2.4);
+        frame.classList.add("fs-scaled");
+        frame.style.transform = s > 1.02 ? "scale(" + s.toFixed(3) + ")" : "";
+      }
+      function fsInit() {
+        FS_TARGETS.forEach((x) => {
+          const b = $(x.btn); if (!b) return;
+          b.hidden = false;
+          b.addEventListener("click", () => fsToggle($(x.el)));
+        });
+        document.addEventListener("fullscreenchange", fsChanged);
+        document.addEventListener("webkitfullscreenchange", fsChanged);
+        /* Capture phase: Escape leaves full screen first (the dialog under
+           it stays open); F is not a letter typed into a field. */
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && fsActive()) { e.preventDefault(); e.stopImmediatePropagation(); fsExit(); return; }
+          if (e.key !== "f" && e.key !== "F") return;
+          if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing) return;
+          if (fsTyping(e.target) || fsTyping(document.activeElement)) return;
+          const el = fsKeyTarget(); if (!el) return;
+          e.preventDefault(); e.stopImmediatePropagation();
+          fsToggle(el);
+        }, true);
+        /* A dialog that closes takes its full screen with it. */
+        ["modalPrintView", "modalPrint"].forEach((id) => {
+          const back = $(id); if (!back || typeof MutationObserver === "undefined") return;
+          new MutationObserver(() => {
+            if (back.classList.contains("open")) return;
+            const act = fsActive();
+            if (act && back.contains(act)) fsExit();
+          }).observe(back, { attributes: true, attributeFilter: ["class"] });
+        });
+        syncFsButtons();
+      }
+      /* ==== /BEUK:fullscreen ==== */
       function hcInit() {
         $("hcPrev").addEventListener("click", () => hcTurn(-1));
         $("hcNext").addEventListener("click", () => hcTurn(1));
         $("hcToggle").addEventListener("click", () => hcSetOpen(!hc.open));
-        /* Full screen: the whole preview stage (book + controls), so a
-           spread can be read at size; hidden where the browser offers
-           no element fullscreen (https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen). */
-        const ps = $("previewStage");
-        if (!ps.requestFullscreen || document.fullscreenEnabled === false) $("hcFull").hidden = true;
-        $("hcFull").addEventListener("click", () => {
-          if (document.fullscreenElement) { if (document.exitFullscreen) document.exitFullscreen().catch(() => {}); return; }
-          ps.requestFullscreen().catch(() => toast(t("hcp.fullscreenFail"), "alert-triangle"));
-        });
-        document.addEventListener("fullscreenchange", () => {
-          if (state.device !== "hardcover") return;
-          requestAnimationFrame(() => requestAnimationFrame(() => { hcSettle(); hcRender(); }));
-        });
+        /* Full screen (#hcFull) is wired by fsInit() — BEUK:fullscreen —
+           with the other readers' controls: the whole preview stage,
+           and a filled window where the browser has no element full screen. */
         $("hcToChapter").addEventListener("click", () => {
           const model = hcEnsureModel(false);
           const cs = hcChapterSpread(model); if (cs == null) return;
@@ -46488,6 +46688,62 @@
                 "front board shows the book's cover image (" + artOk + "); the spine reads the title (" + spineOk + "); the e-reader frame and desk stand down (" + modeOk + "); the book starts closed with its printed page count (" + closedOk + "); Kindle Paperwhite comes back at 348px (" + backOk + ")");
             } finally { setDevice(keepDevice || "kindle"); applyBookDoc(keepDoc); }
           } },
+        /* ==== BEUK:fullscreen ==== */
+        { id: "fullscreen.controls", feature: "preview", name: "Every studio reader has a full-screen control (device preview, hardcover, Print Interior View, print preview): a pressed-state button with the F shortcut whose words match what the browser can do, in all 13 languages",
+          run() {
+            const ids = ["pvFull", "hcFull", "btnPivFull", "btnPrintFull"];
+            const btns = ids.map((id) => $(id));
+            const present = btns.every((b) => !!b && b.tagName === "BUTTON" && b.getAttribute("aria-pressed") === "false" && b.getAttribute("aria-keyshortcuts") === "F" && !b.hidden);
+            const stage = $("previewStage"), native = fsNativeOk(stage) && !fsState.fill;
+            const want = t(native ? "fs.enter" : "fs.fill");
+            const words = btns.every((b) => b && (b.getAttribute("aria-label") === want || (b.querySelector(".fs-lbl") && b.querySelector(".fs-lbl").textContent === want)) && b.getAttribute("title") === want + " (F)");
+            const keys = ["fs.enter", "fs.exit", "fs.fill", "fs.fillExit"];
+            const langs = Object.keys(UI_STRINGS);
+            const missing = [];
+            langs.forEach((l) => keys.forEach((k) => { if (!UI_STRINGS[l][k] || !String(UI_STRINGS[l][k]).trim()) missing.push(l + ":" + k); }));
+            const translated = langs.filter((l) => l !== "en").every((l) => UI_STRINGS[l]["fs.exit"] !== UI_STRINGS.en["fs.exit"]);
+            return scVerdict(present && words && langs.length >= 13 && !missing.length && translated,
+              "four controls present with aria-pressed=false and F (" + present + "); words read \"" + want + "\" for a browser with" + (native ? "" : "out") + " element full screen (" + words + "); " + langs.length + " languages, missing " + (missing.join(",") || "none") + "; translated (" + translated + ")");
+          } },
+        { id: "fullscreen.fill-window", feature: "preview", name: "Where the browser cannot go full screen the reader fills the window instead: the device preview and the Print Interior View cover the viewport (left to right and right to left), the button says \"Exit full window\" and is pressed, F toggles it except while typing, and Escape leaves it without closing the dialog",
+          run() {
+            const keepFill = fsState.fill, keepDir = document.documentElement.getAttribute("dir");
+            const stage = $("previewStage"), back = $("modalPrintView"), box = $("pivModalBox");
+            const covers = (el) => { const r = el.getBoundingClientRect(); return Math.abs(r.left) < 1.5 && Math.abs(r.top) < 1.5 && Math.abs(r.width - window.innerWidth) < 1.5 && Math.abs(r.height - window.innerHeight) < 1.5; };
+            const key = (k, target) => { const e = new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true }); (target || document.body).dispatchEvent(e); return e.defaultPrevented; };
+            const wasOpen = back.classList.contains("open");
+            try {
+              if (fsActive()) fsExit();
+              fsState.fill = true; syncFsButtons();
+              const offerOk = $("pvFull").getAttribute("aria-label") === t("fs.fill");
+              fsToggle(stage);
+              const onOk = stage.classList.contains("fs-immersive") && getComputedStyle(stage).position === "fixed" && covers(stage) &&
+                $("pvFull").getAttribute("aria-pressed") === "true" && $("pvFull").getAttribute("aria-label") === t("fs.fillExit") &&
+                document.documentElement.classList.contains("fs-lock");
+              document.documentElement.setAttribute("dir", "rtl");
+              const rtlOk = covers(stage);
+              document.documentElement.setAttribute("dir", keepDir || "ltr");
+              key("Escape");
+              const escOk = !stage.classList.contains("fs-immersive") && $("pvFull").getAttribute("aria-pressed") === "false" && !document.documentElement.classList.contains("fs-lock");
+              /* the Print Interior View: F fills, F in a field does nothing, Escape leaves full window but keeps the dialog */
+              back.classList.add("open");
+              key("f");
+              const pivOn = box.classList.contains("fs-immersive") && covers(box) && $("btnPivFull").getAttribute("aria-pressed") === "true" &&
+                $("btnPivFull").querySelector(".fs-lbl").textContent === t("fs.fillExit");
+              key("f", $("pivJump"));
+              const typingOk = box.classList.contains("fs-immersive");
+              key("Escape");
+              const pivEsc = !box.classList.contains("fs-immersive") && back.classList.contains("open") && $("btnPivFull").getAttribute("aria-pressed") === "false";
+              return scVerdict(offerOk && onOk && rtlOk && escOk && pivOn && typingOk && pivEsc,
+                "offers \"" + t("fs.fill") + "\" (" + offerOk + "); preview fills the viewport, pressed, \"" + t("fs.fillExit") + "\" (" + onOk + "); right to left too (" + rtlOk + "); Escape leaves it (" + escOk + "); F fills the Print Interior View (" + pivOn + "); F in a field is typing (" + typingOk + "); Escape leaves full window, dialog stays (" + pivEsc + ")");
+            } finally {
+              if (fsActive()) fsExit();
+              if (wasOpen) back.classList.add("open"); else back.classList.remove("open");
+              document.documentElement.setAttribute("dir", keepDir || "ltr");
+              fsState.fill = keepFill; syncFsButtons();
+            }
+          } },
+        /* ==== /BEUK:fullscreen ==== */
         { id: "preview.hardcover.trim-proportions", feature: "preview", name: "Hardcover device proportions follow the print trim: the closed boards are the trim plus IngramSpark's 0.125 in square (head, tail, fore-edge), so 6 × 9 and 5 × 8 differ in shape, and a 5 × 8 sits smaller than a 6 × 9 on the same desk",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -56682,6 +56938,27 @@
           return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : notes.join("; "));
         } });
       /* ==== /BEUK:slim ==== */
+      /* ==== BEUK:fullscreen ==== */
+      SELF_CHECKS_ASYNC.push({ id: "fullscreen.dialog-close", feature: "preview", name: "Closing a reading dialog in full window ends the full window: the Print Interior View and the print preview never leave a filled window or a locked page behind",
+        async run() {
+          const keepFill = fsState.fill, rows = [];
+          const tick = () => new Promise((r) => setTimeout(r, 30));
+          try {
+            fsState.fill = true;
+            for (const [backId, boxId, closeId] of [["modalPrintView", "pivModalBox", "btnClosePrintView"], ["modalPrint", "printModalBox", "btnClosePrint"]]) {
+              const back = $(backId), box = $(boxId);
+              back.classList.add("open");
+              fsToggle(box);
+              const on = box.classList.contains("fs-immersive");
+              $(closeId).click();
+              back.classList.remove("open");
+              await tick();
+              rows.push([backId, on && !box.classList.contains("fs-immersive") && !fsActive() && !document.documentElement.classList.contains("fs-lock")]);
+            }
+          } finally { if (fsActive()) fsExit(); fsState.fill = keepFill; syncFsButtons(); }
+          return scVerdict(rows.every((r) => r[1]), rows.map((r) => r[0] + " " + (r[1] ? "ends the full window" : "left it on")).join("; "));
+        } });
+      /* ==== /BEUK:fullscreen ==== */
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS_ASYNC = SELF_CHECKS_ASYNC; window.runBeukAsyncSelfChecks = runAsyncSelfChecks; }
       /* ==== /BEUK:sound ==== */
 
@@ -59420,6 +59697,7 @@
         syncStudioControls();
         initPreview();
         hcInit(); /* BEUK:hcpreview */
+        fsInit(); /* BEUK:fullscreen */
         initImport();
         initImportReport();
         initSettings();
