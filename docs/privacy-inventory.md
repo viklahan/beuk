@@ -20,7 +20,8 @@ That is a fact about the code, not a policy decision.
 | Free trial | users.trial_ends_at (sign-up + TRIAL_DAYS, default 7; accounts made before migration 016 got created_at + 7 days), users.trial_reminder_sent_at (when the one trial-ending email was accepted by the mail server; null = not sent) | migrations/016_trial.sql; src/routes/auth.ts; src/access.ts; src/trial-mail.ts | With the account; included in Download all my data whether or not billing is switched on (account.json `plan.trialEndsAt`, `plan.trialReminderSentAt`) |
 | Admin flag | users.is_admin | migrations/006_housekeeping.sql:4 | With the account |
 | Sessions | user_id, **SHA-256 hash** of the session token, created_at, expires_at. No IP, no user agent. | migrations/001_users_sessions.sql:9-15; src/auth.ts:35-46 | SESSION_TTL_DAYS (default 30, src/config.ts `sessionTtlDays`); expired rows are purged at boot and every SESSION_PURGE_INTERVAL_MS (default 1 h): src/index.ts:78-88, src/auth.ts:73. Sign-out deletes the row (src/auth.ts:65); "sign out everywhere" deletes all of them (src/routes/account.ts:254). |
-| Manuscripts (the shelf) | the whole book as one JSON document (text, settings, pictures, snapshot history), title, revision, timestamps | migrations/002_manuscripts.sql:4-11, 009_manuscript_revision.sql:9 | Until the writer deletes it (src/routes/manuscripts.ts:176-179) or the account goes (on delete cascade) |
+| Manuscripts (the shelf) | the whole book as one JSON document (text, settings, snapshot history), title, revision, timestamps. Since migration 017 a book saved by the studio names each of its pictures ("beuk-pic:<sha256>") instead of carrying the bytes; an older doc, or one saved by an older studio, still carries them inline | migrations/002_manuscripts.sql:4-11, 009_manuscript_revision.sql:9 | Until the writer deletes it (src/routes/manuscripts.ts, DELETE) or the account goes (on delete cascade) |
+| Shelf pictures | each picture a shelf book holds (images, cover, uploaded fonts, and the copies its History keeps), stored once per account: the account id, the SHA-256 of the bytes, media type, decoded size, the bytes (base64), created and last-touched times. Plus which shelf books name which picture (manuscript id, account id, hash). Per account only: two accounts with the same picture each hold their own row; another account's hash is answered "not found" | migrations/017_pictures.sql; src/pictures.ts; src/routes/pictures.ts | A picture is deleted as soon as no shelf book of that account names it and it has not been uploaded or asked about for PICTURE_GC_GRACE_SECONDS (default 1 hour): checked after every shelf save and book deletion (src/pictures.ts collectUnusedPictures). Deleting the account deletes them all (src/account/data.ts deleteAccount). Limits: PICTURE_MAX_BYTES per picture (default 32 MiB), PICTURE_QUOTA_BYTES per account (default 2 GiB) |
 | Writing streak | the days the server saw activity, freeze ledger, freeze balance | migrations/003_streaks.sql:8-30; heartbeat every ≥10 min while signed in: client/index.html `cloudHeartbeat` (~27494) | No limit (with the account) |
 | Export archive | metadata row (format, preset, filename, size, sha256, manuscript id) + the export **bytes** on the exportdata volume at EXPORT_DIR/<user_id>/<export_id> | migrations/004_exports.sql:1-17; src/routes/exports.ts:107; client uploads on export/store-check: client/index.html `storeUpload` (~26911) | Until the writer deletes it (src/routes/exports.ts:191-193). Survives deleting the manuscript (manuscript_id set null). |
 | Server jobs (EPUBCheck, PDF/X) | kind, status, result JSON (tool output about the writer's own file), source/artifact export ids | migrations/008_jobs.sql:7-29 | No limit (with the account) |
@@ -98,7 +99,8 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
 
 - **Local:** every BACKUP_INTERVAL_HOURS (default 24) a backup under
   BACKUP_DIR: a logical dump of BACKUP_TABLES (users incl. password
-  hashes, manuscripts, streaks, exports, jobs, sessions,
+  hashes, manuscripts, shelf pictures and which books name them,
+  streaks, exports, jobs, sessions,
   founders_applications, shares, share_comments, share_readers, billing)
   and a copy of the export files (src/housekeeping/backup.ts:1-55,221).
   **Local backups are never deleted automatically** (.env.example
@@ -176,7 +178,8 @@ docs/email-setup.md.
 
 GET /api/account/export (signed in, rate-limited per user) streams one ZIP
 built on the fly and not stored: every shelf manuscript as a studio
-backup file (.beuk-backup.json) with manuscripts/index.json for each
+backup file (.beuk-backup.json, its stored pictures filled back in, so the
+file holds the whole book) with manuscripts/index.json for each
 book's id, revision and dates (a stored doc with no readable chapters is
 kept as plain .json and marked), every
 archived export's bytes with exports/index.json, each share's settings,

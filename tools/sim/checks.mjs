@@ -287,7 +287,10 @@ async function main() {
 
   /* load and size: what the saga volumes and the load-test book showed */
   const bigBook = Object.values(seed.books).filter((r) => r.stats && r.put).sort((a, b) => b.stats.docBytes - a.stats.docBytes)[0];
-  if (bigBook) gap('perf.autosave-sends-whole-book', 'Every autosave sends the whole book, pictures included: the largest illustrated volume re-uploads its full JSON on each save.', { book: bigBook.title, pictures: bigBook.stats.images, words: bigBook.stats.words, bytesPerSave: bigBook.put.bytes, putMs: Math.round(bigBook.put.ms), postMs: Math.round(bigBook.post.ms) });
+  // The bytes an autosave really sent (the studio's own shelfPics.stats; absent from a studio that predates stored pictures).
+  const putWire = bigBook && bigBook.put.wire;
+  if (bigBook && !(putWire && putWire.named > 0 && putWire.uploaded === 0)) gap('perf.autosave-sends-whole-book', 'Every autosave sends the whole book, pictures included: the largest illustrated volume re-uploads its full JSON on each save.', { book: bigBook.title, pictures: bigBook.stats.images, words: bigBook.stats.words, bytesPerSave: putWire ? putWire.bytes + putWire.uploadBytes : bigBook.put.bytes, putMs: Math.round(bigBook.put.ms), postMs: Math.round(bigBook.post.ms) });
+  else if (bigBook) add('perf.autosave-sends-book-only', 'An autosave of the largest illustrated volume sends the book with its pictures named, uploading none', true, { book: bigBook.title, pictures: bigBook.stats.images, docBytes: bigBook.stats.docBytes, bytesPerSave: putWire.bytes, picturesNamed: putWire.named, putMs: Math.round(bigBook.put.ms), postMs: Math.round(bigBook.post.ms), postUploadedPictures: bigBook.post.wire ? bigBook.post.wire.uploaded : null });
   if (monster) {
     const typing = monster.steps.filter((s) => s.ops.typing && s.ops.typing.ok).map((s) => ({ words: s.targetWords, msPerInput: Math.round(s.ops.typing.value.ms10 / 10) }));
     if (typing.length && typing[0].msPerInput > 50) gap('perf.typing-latency', 'Typing slows with the size of the whole book, not the chapter: each input event in the last chapter takes this long (the studio\'s own input handling, 10 events per step).', typing);

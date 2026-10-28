@@ -21,6 +21,7 @@ import { housekeepingRoutes } from './routes/housekeeping.js';
 import { BackupScheduler } from './housekeeping/offsite.js';
 import { jobRoutes } from './routes/jobs.js';
 import { manuscriptRoutes } from './routes/manuscripts.js';
+import { pictureRoutes } from './routes/pictures.js';
 import { publicConfigRoutes, statusRoutes } from './routes/public.js';
 import { resetPageRoutes } from './routes/reset-page.js';
 import { shareOwnerRoutes, shareReaderRoutes } from './routes/shares.js';
@@ -125,7 +126,8 @@ export function buildApp({
   app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }) }));
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
-  app.use('/api/manuscripts', manuscriptRoutes(db));
+  app.use('/api/manuscripts', manuscriptRoutes(db, config));
+  app.use('/api/pictures', pictureRoutes(db, config));
   app.use('/api/streak', streakRoutes(db, config, now));
   app.use('/api/exports', exportRoutes(db, config));
   app.use(

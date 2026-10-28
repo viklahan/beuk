@@ -37,6 +37,8 @@ import { scrubText } from './scrub.js';
 export const BACKUP_TABLES = [
   'users',
   'manuscripts',
+  'pictures',
+  'manuscript_pictures',
   'streak_state',
   'streak_days',
   'streak_freezes',

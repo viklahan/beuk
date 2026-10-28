@@ -2216,6 +2216,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The save queue, its in-flight promise and the shelf status line live in the browser; asserted by the async client self-check window.runBeukAsyncSelfChecks() against a stand-in shelf that keeps this server’s If-Match contract.',
   },
   {
+    id: 'shelf.pics.save-once',
+    title: 'Shelf pictures are stored once: a save names each picture by the SHA-256 of its bytes and uploads only what the shelf lacks; an inline book migrates on its next save; the save after sends no picture; a dropped picture is re-uploaded once; a 409 copy and an opened book arrive whole; the in-page SHA-256 matches FIPS 180-4',
+    kind: 'client-only',
+    reason: 'Hashing, packing and filling pictures back in happen in the browser; asserted by the async client self-check window.runBeukAsyncSelfChecks() against a stand-in shelf that keeps this server’s picture and If-Match contract. The server half runs in tests/pictures.test.ts.',
+  },
+  {
     id: 'shelf.save.identical-409-silent',
     title: 'A 409 or reconnect check whose shelf copy is the device’s own book settles quietly on the shelf revision; a stale timestamp with an agreeing revision is no conflict; another device’s different words still raise the notice',
     kind: 'client-only',

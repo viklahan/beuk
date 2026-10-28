@@ -4,6 +4,7 @@ import { readCookie, requireAuth } from '../auth.js';
 import type { Db } from '../db.js';
 import { HTTP_CODES } from '../help/codes.js';
 import { renderSnapshot, type Snapshot } from '../shares/render.js';
+import { hydrateDoc } from '../pictures.js';
 import {
   readerHeaders,
   renderGonePage,
@@ -232,7 +233,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
       const expiry = parseExpiry(body, now());
       if (expiry === 'bad')
         return res.status(400).json({ error: 'expiresAt must be a future date (or null for no expiry)' });
-      const { snapshot, images } = renderSnapshot(manuscript.doc, manuscript.title);
+      const { snapshot, images } = renderSnapshot(await hydrateDoc(db, req.user!.id, manuscript.doc), manuscript.title);
       const title =
         (typeof body.title === 'string' && body.title.trim().slice(0, 200)) || snapshot.title;
       const token = randomBytes(24).toString('base64url');
@@ -354,7 +355,7 @@ export function shareOwnerRoutes(db: Db, now: () => Date = () => new Date()): Ro
       );
       if (!m.rows[0])
         return res.status(409).json({ error: 'the manuscript this copy came from is no longer on your shelf' });
-      const { snapshot, images } = renderSnapshot(m.rows[0].doc, m.rows[0].title);
+      const { snapshot, images } = renderSnapshot(await hydrateDoc(db, req.user!.id, m.rows[0].doc), m.rows[0].title);
       const r = await db.query<ShareRow>(
         `update shares s set snapshot = $3, images = $4, published_at = now()
          where s.id = $1 and s.owner_id = $2 returning ${SHARE_COLS}`,

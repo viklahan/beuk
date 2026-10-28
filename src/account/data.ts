@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { getStreak, type StreakState } from '../streak.js';
+import { hydrateDoc } from '../pictures.js';
 import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
 
 /**
@@ -30,6 +31,7 @@ export const ACCOUNT_DELETED_TABLES = [
   'password_resets',
   'email_confirmations',
   'manuscripts',
+  'pictures',
   'exports',
   'jobs',
   'streak_days',
@@ -222,7 +224,11 @@ export async function archiveBytesOf(db: Db, userId: string): Promise<number> {
     'select coalesce(sum(octet_length(doc::text)), 0)::bigint as n from manuscripts where user_id = $1',
     [userId],
   );
-  return Number(r.rows[0]?.n ?? 0) + Number(books.rows[0]?.n ?? 0);
+  const pics = await db.query<{ n: string | null }>(
+    'select coalesce(sum(octet_length(data)), 0)::bigint as n from pictures where user_id = $1',
+    [userId],
+  );
+  return Number(r.rows[0]?.n ?? 0) + Number(books.rows[0]?.n ?? 0) + Number(pics.rows[0]?.n ?? 0);
 }
 
 /**
@@ -335,14 +341,17 @@ export async function writeAccountExport(
     const m = r.rows[0];
     if (!m) continue; // deleted meanwhile
     const base = `manuscripts/${safeName(m.title, 'Untitled')} (${m.id.slice(0, 8)})`;
-    const book = asStudioBackupBook(m.doc);
+    // Shelf pictures are stored once (src/pictures.ts): the backup file
+    // carries them whole, as the studio's own backup does.
+    const doc = await hydrateDoc(db, userId, m.doc);
+    const book = asStudioBackupBook(doc);
     const file = book
       ? await zip.add(
           `${base}.beuk-backup.json`,
           JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: now.toISOString(), book }),
           { compress: true, modified: new Date(m.updated_at) },
         )
-      : await zip.add(`${base}.json`, JSON.stringify(m.doc, null, 2), { compress: true, modified: new Date(m.updated_at) });
+      : await zip.add(`${base}.json`, JSON.stringify(doc, null, 2), { compress: true, modified: new Date(m.updated_at) });
     if (!book) counts.unopenable += 1;
     books.push({
       id: m.id,
@@ -534,6 +543,7 @@ export async function deleteAccount(
     await del('jobs', 'delete from jobs where user_id = $1', [userId]);
     await del('exports', 'delete from exports where user_id = $1', [userId]);
     await del('manuscripts', 'delete from manuscripts where user_id = $1', [userId]);
+    await del('pictures', 'delete from pictures where user_id = $1', [userId]);
     await del('streak_days', 'delete from streak_days where user_id = $1', [userId]);
     await del('streak_freezes', 'delete from streak_freezes where user_id = $1', [userId]);
     await del('streak_state', 'delete from streak_state where user_id = $1', [userId]);

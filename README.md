@@ -4005,6 +4005,96 @@ lines are ordered run by run (see above), not by the full bidi algorithm; a chap
 paragraph, not in the Subtitle field; footnote numbers stay inline as
 `[n]`; Box Set volume import and Bulk import do not take PDFs yet.
 
+## Shelf pictures stored once: an autosave sends the book, not its pictures
+
+Before, every shelf autosave PUT the whole book document, pictures
+included as base64, and the answer echoed it back: The Marvelous Land of
+Oz (137 pictures) sent 47.5 MB up and got 47.5 MB down on **every** save.
+Now:
+
+- **Pictures are stored once per account, content-addressed.** Any
+  object in the book with a `mediaType` and base64 `data` (image library,
+  cover, uploaded fonts, the copies History keeps) is uploaded once to
+  `PUT /api/pictures/<sha256>` (`{ mediaType, data }`; the server checks
+  that the name IS the SHA-256 of the decoded bytes and that the base64
+  is canonical, so a name always stands for exactly those bytes). The
+  saved doc carries `"beuk-pic:<sha256>"` where the data was. Before
+  uploading, the studio asks `POST /api/pictures/missing { hashes }`
+  which ones the shelf lacks; a picture it has already uploaded this
+  session is not asked about again.
+- **The doc PUT carries no image bytes** and asks for a small answer
+  (`Prefer: return=minimal`, RFC 7240: the answer leaves the doc out).
+  `Beuk-Pictures: ref` asks the server to return docs with the names
+  (GET, and the 409/428 copy); the studio fills them in from the
+  pictures it already holds and fetches only the rest
+  (`GET /api/pictures/<sha256>`). Any reader that does not send the
+  header — an older studio, the account export, beta-reader share
+  snapshots — gets the whole book with its pictures filled in, exactly as
+  before.
+- **Revision / 409 semantics are unchanged.** A PUT still lands only on
+  its `If-Match`; a stale one is 409 with the shelf copy. One new
+  refusal: a doc naming a picture the account does not hold is **422**
+  `{ missingPictures: [...] }` and nothing is written (the revision does
+  not move). The studio then uploads those pictures and saves again,
+  once.
+- **Ownership** is enforced like manuscripts: every query is scoped to
+  the session's account; another account's picture is the same 404 as a
+  hash nobody has, `missing` answers only for the caller's own store, and
+  a doc cannot name a picture its account does not hold. Deduplication is
+  per account (never across accounts, which would leak that someone else
+  has a picture). Picture reads are `Cache-Control: no-store`.
+- **Collection** (`src/pictures.ts collectUnusedPictures`): after every
+  doc write and book deletion, the account's pictures that no shelf book
+  names and that nobody uploaded or asked about for
+  `PICTURE_GC_GRACE_SECONDS` (default 3600 — a save uploads before it
+  names) are deleted. `manuscript_pictures` records which book names
+  which picture; its foreign key to `pictures` makes Postgres itself
+  refuse to delete a picture a book still names.
+- **Limits:** `PICTURE_MAX_BYTES` per picture (default 32 MiB decoded,
+  413), `PICTURE_QUOTA_BYTES` per account (default 2 GiB, 413 after
+  collecting unused ones). A refused picture simply rides inline in the
+  doc, as before.
+- **Old books** with inline pictures load unchanged; their next save
+  from the studio uploads the pictures and names them (lazy migration).
+  A shelf without the picture routes, or a picture upload that fails,
+  falls back to the inline doc.
+- Backups (`pictures`, `manuscript_pictures` in BACKUP_TABLES), the
+  account export (pictures filled in), share snapshots (rendered from the
+  filled-in doc) and account deletion all include the new tables.
+- In the browser: hashing uses `crypto.subtle` where it exists and an
+  in-page SHA-256 (FIPS 180-4, checked against its test vectors) on a
+  plain-http LAN address, where `crypto.subtle` does not exist. Hashes
+  and fetched pictures are kept in memory only, for the session.
+
+Measured (studio's own `cloudSaveNow` / `cloudOpenBook` in headless
+Chromium, server + Postgres 16 on this machine; bytes from the requests,
+times from the studio; the machine was heavily loaded, so times vary):
+
+| Book | Save | Before (main): up / down / time | After (this branch): up / down / time |
+|---|---|---|---|
+| The Marvelous Land of Oz — 41,768 words, 137 pictures, 49.8 MB file | first save (POST) | 47.5 MB / 47.5 MB / 19.2 s | 47.5 MB (137 pictures uploaded once + 0.29 MB doc) / 0.02 MB / 40.8 s |
+| | autosave (PUT) | 47.5 MB / 47.5 MB / 45.4 s, 123.8 s | **0.29 MB / 0 MB / 0.40 s, 0.33 s** |
+| | open from the shelf, new session | 47.5 MB down / 10.5 s | 47.5 MB down (doc + 137 pictures) / 5.0 s |
+| | first autosave after reopening | 47.5 MB / 47.5 MB / 28.9 s | **0.29 MB / 0 MB / 0.35 s** (no upload, no question) |
+| | next autosave | 47.5 MB / 47.5 MB / 30.5 s | **0.29 MB / 0 MB / 0.49 s** |
+| Twenty Years After — 241,642 words, no pictures, 1.46 MB file | first save (POST) | 1.44 MB / 1.44 MB / 1.2 s | 1.44 MB / 0 MB / 2.8–3.4 s |
+| | autosave (PUT) | 1.44 MB / 1.44 MB / 0.6–1.6 s | **1.44 MB / 0 MB** / 0.8–1.7 s |
+| | open from the shelf | 1.44 MB down / 1.0 s | 1.44 MB down / 0.9–1.2 s |
+
+**Decided against (for now): a section-level delta.** After the
+pictures are out, a save is the book's text: 1.4 MB for a 240,000-word
+volume. Sending only changed sections would cut that to a few KB, but the
+studio would have to know, byte for byte, the shelf's doc at the base
+revision, and there are paths where it holds a base revision without that
+doc (a reconcile while the shelf is unreachable, the conflict choices, the
+"same book" 409 agreement); a wrong guess there would compose a wrong book
+on the server without any error. It also would not let a text-only book
+over the 64 MiB `MANUSCRIPT_MAX_BYTES` (the 10,000,000-word load test is
+70.5 MB) make its first save. Both need their own change.
+
+Server tests: `tests/pictures.test.ts`. Studio self-check
+`shelf.pics.save-once` (async, client-only).
+
 ## Simulation (tools/sim): many writers, series, readers — find gaps, test correctness
 
 A deterministic simulation of Beuk in use: writer personas with shelves of

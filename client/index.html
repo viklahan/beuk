@@ -42934,6 +42934,211 @@
           return null;
         }
       }
+      /* ==== BEUK:pics ==== — shelf pictures are stored once.
+         A shelf save used to carry every picture as base64 inside the
+         doc, so each autosave re-sent all of them (The Marvelous Land
+         of Oz: 49.8 MB per save). Now each picture (an image, the
+         cover, an uploaded font, the copies History keeps — any object
+         with a mediaType and base64 data) is uploaded ONCE, addressed
+         by the SHA-256 of its bytes, and the saved doc names it with
+         "beuk-pic:<sha256>" where its data was. Reading a shelf copy
+         fills the names back in from the pictures this desk already
+         holds, fetching only the rest, so the book on the desk is
+         exactly the book it always was. This is the wire format only:
+         the desk's own copy (state, the device save, backups, exports)
+         always holds the bytes. A shelf that has no picture store, or a
+         picture it refuses, simply rides inline as before. */
+      const PIC_REF = "beuk-pic:";
+      const PIC_MIN = 1024; /* smaller strings stay inline: a request each would cost more than it saves */
+      const shelfPics = {
+        shaOf: new Map(),   /* base64 → sha256 hex ("" = not canonical base64: stays inline) */
+        dataOf: new Map(),  /* sha256 hex → base64, for every picture this desk has hashed or fetched */
+        held: new Set(),    /* "<userId>|<sha>" the shelf has said it holds */
+        stats: null         /* the last save's numbers (the self-check and the sim read them) */
+      };
+      const picIsRef = (s) => typeof s === "string" && s.length === 73 && s.indexOf(PIC_REF) === 0 && /^[0-9a-f]{64}$/.test(s.slice(9));
+      /* SHA-256 (FIPS 180-4, https://csrc.nist.gov/pubs/fips/180-4/upd1/final)
+         for a desk without crypto.subtle (it needs a secure context: a
+         studio opened over plain http on a LAN address has none).
+         Verified against the FIPS vectors in the pics self-check. */
+      const PIC_K = new Uint32Array([0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]);
+      function picSha256Sync(bytes) {
+        const ml = bytes.length, withPad = ((ml + 9 + 63) >> 6) << 6;
+        const m = new Uint8Array(withPad); m.set(bytes); m[ml] = 0x80;
+        const hi = Math.floor(ml / 536870912), lo = (ml * 8) >>> 0;
+        m[withPad - 8] = (hi >>> 24) & 255; m[withPad - 7] = (hi >>> 16) & 255; m[withPad - 6] = (hi >>> 8) & 255; m[withPad - 5] = hi & 255;
+        m[withPad - 4] = (lo >>> 24) & 255; m[withPad - 3] = (lo >>> 16) & 255; m[withPad - 2] = (lo >>> 8) & 255; m[withPad - 1] = lo & 255;
+        const h = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+        const w = new Uint32Array(64);
+        for (let off = 0; off < withPad; off += 64) {
+          for (let i = 0; i < 16; i++) w[i] = (m[off + i * 4] << 24) | (m[off + i * 4 + 1] << 16) | (m[off + i * 4 + 2] << 8) | m[off + i * 4 + 3];
+          for (let i = 16; i < 64; i++) {
+            const a = w[i - 15], b = w[i - 2];
+            const s0 = ((a >>> 7) | (a << 25)) ^ ((a >>> 18) | (a << 14)) ^ (a >>> 3);
+            const s1 = ((b >>> 17) | (b << 15)) ^ ((b >>> 19) | (b << 13)) ^ (b >>> 10);
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+          }
+          let a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], k = h[7];
+          for (let i = 0; i < 64; i++) {
+            const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+            const t1 = (k + S1 + ((e & f) ^ (~e & g)) + PIC_K[i] + w[i]) | 0;
+            const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+            const t2 = (S0 + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+            k = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+          }
+          h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += k;
+        }
+        return Array.from(h).map((x) => x.toString(16).padStart(8, "0")).join("");
+      }
+      async function picSha256(bytes) {
+        try {
+          if (window.crypto && crypto.subtle && typeof crypto.subtle.digest === "function")
+            return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))).map((x) => x.toString(16).padStart(2, "0")).join("");
+        } catch (e) { /* fall through to the in-page digest */ }
+        return picSha256Sync(bytes);
+      }
+      /* The sha256 of a picture's bytes, or "" when its base64 is not
+         canonical (it would not read back identical, so it stays inline). */
+      async function picShaOf(data) {
+        if (shelfPics.shaOf.has(data)) return shelfPics.shaOf.get(data);
+        let sha = "";
+        try {
+          const bin = atob(data);
+          if (btoa(bin) === data) {
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            sha = await picSha256(bytes);
+          }
+        } catch (e) { sha = ""; }
+        shelfPics.shaOf.set(data, sha);
+        if (sha) shelfPics.dataOf.set(sha, data);
+        return sha;
+      }
+      /* Every picture-shaped object in a doc: { mediaType, data } with base64 data. */
+      function picObjects(doc) {
+        const out = [];
+        const walk = (v) => {
+          if (Array.isArray(v)) { for (let i = 0; i < v.length; i++) if (v[i] && typeof v[i] === "object") walk(v[i]); return; }
+          if (!v || typeof v !== "object") return;
+          if (typeof v.mediaType === "string" && typeof v.data === "string" && v.data.length >= PIC_MIN && !picIsRef(v.data)) out.push(v);
+          for (const k of Object.keys(v)) { const x = v[k]; if (x && typeof x === "object") walk(x); }
+        };
+        walk(doc);
+        return out;
+      }
+      /* A copy of doc with each picture's data swapped by swap(data) — only
+         the objects on the way to a swapped value are copied; the rest is
+         shared, never touched (serializeBook hands out the desk's own
+         arrays). */
+      function picSwap(v, swap) {
+        if (Array.isArray(v)) {
+          let out = null;
+          for (let i = 0; i < v.length; i++) { const x = v[i], y = x && typeof x === "object" ? picSwap(x, swap) : x; if (y !== x) { if (!out) out = v.slice(); out[i] = y; } }
+          return out || v;
+        }
+        if (!v || typeof v !== "object") return v;
+        let out = null;
+        for (const k of Object.keys(v)) {
+          const x = v[k];
+          let y = x;
+          if (k === "data" && typeof x === "string" && typeof v.mediaType === "string") { const r = swap(x); if (typeof r === "string") y = r; }
+          else if (x && typeof x === "object") y = picSwap(x, swap);
+          if (y !== x) { if (!out) out = Object.assign({}, v); out[k] = y; }
+        }
+        return out || v;
+      }
+      function picRefsIn(doc) {
+        const seen = new Set();
+        const walk = (v) => {
+          if (typeof v === "string") { if (picIsRef(v)) seen.add(v.slice(PIC_REF.length)); return; }
+          if (Array.isArray(v)) { v.forEach(walk); return; }
+          if (v && typeof v === "object") for (const k of Object.keys(v)) walk(v[k]);
+        };
+        walk(doc);
+        return Array.from(seen);
+      }
+      /* The doc as the shelf will hold it: every picture uploaded once
+         (only those the shelf has not said it holds) and named in the
+         doc. Returns { doc, named, uploaded, uploadBytes } — doc is the
+         original, unchanged, when the shelf has no picture store or the
+         desk could not reach it (the save then carries the bytes, as it
+         always did). */
+      async function picPackForShelf(doc) {
+        const st = { named: 0, uploaded: 0, uploadBytes: 0, inline: 0 };
+        if (!cloud.user) return Object.assign({ doc }, st);
+        const objs = picObjects(doc);
+        if (!objs.length) return Object.assign({ doc }, st);
+        const uid = cloud.user.id;
+        const want = new Map(); /* sha → { data, mediaType } */
+        for (const o of objs) { const sha = await picShaOf(o.data); if (sha && !want.has(sha)) want.set(sha, { data: o.data, mediaType: o.mediaType }); }
+        const unknown = Array.from(want.keys()).filter((h) => !shelfPics.held.has(uid + "|" + h));
+        const ok = new Set(Array.from(want.keys()).filter((h) => shelfPics.held.has(uid + "|" + h)));
+        for (let i = 0; i < unknown.length; i += 5000) {
+          const r = await apiFetch("/api/pictures/missing", { method: "POST", body: JSON.stringify({ hashes: unknown.slice(i, i + 5000) }) });
+          if (!r || !Array.isArray(r.missing)) return Object.assign({ doc }, st); /* no picture store / out of reach: inline, as before */
+          const missing = new Set(r.missing);
+          for (const h of unknown.slice(i, i + 5000)) if (!missing.has(h)) { shelfPics.held.add(uid + "|" + h); ok.add(h); }
+          for (const h of r.missing) {
+            if (typeof h !== "string" || !want.has(h)) continue;
+            const p = want.get(h);
+            const up = await apiFetch("/api/pictures/" + h, { method: "PUT", body: JSON.stringify({ mediaType: p.mediaType, data: p.data }) });
+            if (up && up.picture && up.picture.sha256 === h) { shelfPics.held.add(uid + "|" + h); ok.add(h); st.uploaded++; st.uploadBytes += p.data.length; }
+            /* refused (too large, no room) or unreachable: this one rides inline */
+          }
+        }
+        if (cloud.user && cloud.user.id !== uid) return Object.assign({ doc }, st); /* the account changed under the save: the caller stands down */
+        const packed = picSwap(doc, (data) => {
+          const sha = shelfPics.shaOf.get(data);
+          if (sha && ok.has(sha)) { st.named++; return PIC_REF + sha; }
+          if (data.length >= PIC_MIN) st.inline++;
+          return null;
+        });
+        return Object.assign({ doc: packed }, st);
+      }
+      /* Hash the pictures the desk holds now, so a shelf copy naming them
+         fills in without fetching what is already here. */
+      async function picLearnDesk() {
+        try { for (const o of picObjects(serializeBook())) await picShaOf(o.data); } catch (e) {}
+      }
+      /* A shelf doc with its pictures filled back in, or null when one
+         could not be fetched (the caller treats that as out of reach). */
+      async function picHydrate(doc) {
+        const refs = picRefsIn(doc);
+        if (!refs.length) return doc;
+        if (refs.some((h) => !shelfPics.dataOf.has(h))) await picLearnDesk();
+        const need = refs.filter((h) => !shelfPics.dataOf.has(h));
+        let failed = false, next = 0;
+        const worker = async () => {
+          while (next < need.length && !failed) {
+            const h = need[next++];
+            const r = await apiFetch("/api/pictures/" + h, {});
+            const p = r && r.picture;
+            if (p && typeof p.data === "string" && p.sha256 === h) { shelfPics.dataOf.set(h, p.data); shelfPics.shaOf.set(p.data, h); if (cloud.user) shelfPics.held.add(cloud.user.id + "|" + h); }
+            else failed = true;
+          }
+        };
+        await Promise.all([worker(), worker(), worker(), worker()]);
+        if (failed) return null;
+        const fill = (v) => {
+          if (typeof v === "string") return picIsRef(v) ? shelfPics.dataOf.get(v.slice(PIC_REF.length)) : v;
+          if (Array.isArray(v)) return v.map(fill);
+          if (v && typeof v === "object") { const o = {}; for (const k of Object.keys(v)) o[k] = fill(v[k]); return o; }
+          return v;
+        };
+        return fill(doc);
+      }
+      /* GET a shelf book with its pictures named; whole = fill them in
+         (opening, comparing); otherwise the names stand (titles, word
+         counts, book ids — nothing that needs the bytes). */
+      async function shelfGetBook(id, whole) {
+        const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(id), { headers: { "Beuk-Pictures": "ref" } });
+        if (!whole || !r || !r.manuscript || !r.manuscript.doc) return r;
+        const d = await picHydrate(r.manuscript.doc);
+        if (!d) return null;
+        r.manuscript.doc = d;
+        return r;
+      }
+      /* ==== /BEUK:pics ==== */
       async function cloudProbe() {
         try {
           let signal;
@@ -43247,23 +43452,48 @@
            answer must not move this desk's revision or timestamps. */
         const sentFor = cloudSaveOwner();
         const doc = serializeBook();
-        const payload = JSON.stringify({ title: state.meta.title, doc });
+        const title = state.meta.title;
         const sentAt = Date.now(); /* BEUK:local — edits after this stay dirty */
+        /* ==== BEUK:pics ==== — the doc goes with its pictures named, each
+           uploaded once; the answer leaves the doc out (Prefer:
+           return=minimal) and a 409/428 copy comes named too, filled in
+           below from the pictures this desk holds. */
+        const picStart = Date.now();
+        let pack = await picPackForShelf(doc);
+        if (cloudSaveOwner() !== sentFor) { cloudSettleStatus(); if (cloudDirty && cloud.user) cloudAutosaveTick(); return; }
+        let payload = JSON.stringify({ title: title, doc: pack.doc });
+        const shelfHeaders = { "Beuk-Pictures": "ref", "Prefer": "return=minimal" };
         let res;
-        if (cloud.linkedId) {
-          /* BEUK:local — optimistic concurrency: name the shelf revision
-             this save was based on; a stale one comes back 409. */
-          const hasRev = typeof cloud.baseRevision === "number";
-          res = await apiFetch("/api/manuscripts/" + encodeURIComponent(cloud.linkedId), {
-            method: "PUT", headers: hasRev ? { "If-Match": '"' + cloud.baseRevision + '"' } : {},
-            body: payload
-          });
-        } else {
-          res = await apiFetch("/api/manuscripts", {
-            method: "POST", body: payload
-          });
-          if (res && res.manuscript && res.manuscript.id && cloudSaveOwner() === sentFor) { cloud.linkedId = res.manuscript.id; cloud.linkState = "linked"; }
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (cloud.linkedId) {
+            /* BEUK:local — optimistic concurrency: name the shelf revision
+               this save was based on; a stale one comes back 409. */
+            const hasRev = typeof cloud.baseRevision === "number";
+            res = await apiFetch("/api/manuscripts/" + encodeURIComponent(cloud.linkedId), {
+              method: "PUT", headers: Object.assign(hasRev ? { "If-Match": '"' + cloud.baseRevision + '"' } : {}, shelfHeaders),
+              body: payload
+            });
+          } else {
+            res = await apiFetch("/api/manuscripts", {
+              method: "POST", headers: shelfHeaders, body: payload
+            });
+            if (res && res.manuscript && res.manuscript.id && cloudSaveOwner() === sentFor) { cloud.linkedId = res.manuscript.id; cloud.linkState = "linked"; }
+          }
+          /* The shelf no longer holds a picture this desk thought it did
+             (collected after the book dropped it): upload it again, once. */
+          if (!(res && res.__status === 422 && res.__body && Array.isArray(res.__body.missingPictures)) || attempt > 0 || cloudSaveOwner() !== sentFor) break;
+          if (cloud.user) res.__body.missingPictures.forEach((h) => shelfPics.held.delete(cloud.user.id + "|" + h));
+          pack = await picPackForShelf(doc);
+          if (cloudSaveOwner() !== sentFor) break;
+          payload = JSON.stringify({ title: title, doc: pack.doc });
         }
+        shelfPics.stats = { bytes: payload.length, named: pack.named, uploaded: pack.uploaded, uploadBytes: pack.uploadBytes, inline: pack.inline, ms: Date.now() - picStart, status: res && res.__status ? res.__status : (res ? 200 : 0) };
+        if (res && (res.__status === 409 || res.__status === 428) && res.__body && res.__body.manuscript && res.__body.manuscript.doc) {
+          const whole = await picHydrate(res.__body.manuscript.doc);
+          if (whole) res.__body.manuscript.doc = whole;
+          else res = null; /* its pictures could not be fetched: out of reach, not a conflict */
+        }
+        /* ==== /BEUK:pics ==== */
         /* ==== BEUK:savesync ==== */
         if (cloudSaveOwner() !== sentFor && !(sentFor.endsWith("|") && res && res.manuscript && cloud.linkedId === res.manuscript.id)) {
           cloudSettleStatus();
@@ -43489,7 +43719,7 @@
           if (id === cloud.linkedId) { $("modalShelf").classList.remove("open"); return; }
         }
         /* ==== /BEUK:shelfguard ==== */
-        const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(id), {});
+        const r = await shelfGetBook(id, true); /* BEUK:pics — named pictures, filled in from this desk first */
         if (!r || !r.manuscript || !r.manuscript.doc) {
           toast(t("toast.bookOpenFail"), "alert-triangle");
           return;
@@ -43519,7 +43749,7 @@
         if (cloud.linkState === "linked" || !portalDeskHasWriting || !(cloud.editedBeforeSignIn || portalFresh)) { setSyncStatus(cloud.linkState === "linked" ? "saved" : "local"); return; }
         let match = null;
         for (const m of cloud.shelf.slice(0, 20)) {
-          const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(m.id), {});
+          const r = await shelfGetBook(m.id, false); /* BEUK:pics — the book id is all this needs: its pictures stay named */
           if (r && r.manuscript && r.manuscript.doc && r.manuscript.doc.meta && bookIdsMatch(r.manuscript.doc.meta, state.meta)) { match = m; break; } /* BEUK:bookid — legacy ids match too */
         }
         if (match) {
@@ -44126,7 +44356,7 @@
         if (!cloud.user || cloud.linkState === "declined") return;
         if (!cloudDirty && cloud.pendingSyncs === 0) { renderSyncLine(); return; }
         if (cloud.linkedId && cloud.baseUpdatedAt) {
-          const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(cloud.linkedId), {});
+          const r = await shelfGetBook(cloud.linkedId, true); /* BEUK:pics */
           if (r && r.manuscript) {
             cloud.shelfUpdatedAt = r.manuscript.updatedAt || null;
             /* ==== BEUK:savesync ==== — the revision is the shelf's own
@@ -44681,7 +44911,7 @@
         const next = () => {
           if (i >= list.length) { cb(fps); return; }
           const m = list[i]; i++;
-          Promise.resolve(apiFetch("/api/manuscripts/" + encodeURIComponent(m.id), {})).then((r) => {
+          Promise.resolve(shelfGetBook(m.id, false)).then((r) => { /* BEUK:pics — titles and words only: pictures stay named */
             if (r && r.manuscript && r.manuscript.doc) {
               const d = r.manuscript.doc;
               fps.add(bulkFingerprint((d.meta && d.meta.title) || m.title, bulkDocWords(d)));
@@ -56682,6 +56912,136 @@
           return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : notes.join("; "));
         } });
       /* ==== /BEUK:slim ==== */
+      /* ==== BEUK:pics ==== — shelf pictures stored once. The stand-in
+         shelf keeps the server's own contract (src/routes/pictures.ts and
+         src/routes/manuscripts.ts): a picture is stored only under the
+         sha256 of its bytes, a doc naming a picture the store lacks is
+         422 and nothing lands, a PUT lands only on its If-Match, and a
+         409 copy comes named when the studio asks for names. */
+      function scPicShelf(id, rev, doc) {
+        const sh = { id: id, rev: rev, doc: JSON.parse(JSON.stringify(doc)), updatedAt: "2026-03-01T00:00:00.000Z", calls: [], store: new Map(), puts: [] };
+        const res = (o, st) => ({ status: st || 200, ok: !st || st < 400, json: async () => o });
+        const refsOf = (d) => { const out = new Set(); const w = (v) => { if (typeof v === "string") { if (/^beuk-pic:[0-9a-f]{64}$/.test(v)) out.add(v.slice(9)); } else if (Array.isArray(v)) v.forEach(w); else if (v && typeof v === "object") Object.keys(v).forEach((k) => w(v[k])); }; w(d); return Array.from(out); };
+        const copy = () => ({ id: id, title: "x", doc: JSON.parse(JSON.stringify(sh.doc)), revision: sh.rev, updatedAt: sh.updatedAt });
+        sh.fetch = async (path, opts) => {
+          const m = (opts && opts.method) || "GET";
+          const hdr = (opts && opts.headers) || {};
+          sh.calls.push(m + " " + path);
+          if (m === "POST" && path === "/api/pictures/missing") return res({ missing: JSON.parse(opts.body).hashes.filter((h) => !sh.store.has(h)) });
+          const pm = /^\/api\/pictures\/([0-9a-f]{64})$/.exec(path);
+          if (pm && m === "PUT") {
+            const b = JSON.parse(opts.body), bin = atob(b.data), bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            if (typeof picSha256Sync !== "function" || picSha256Sync(bytes) !== pm[1]) return res({ error: "sha256 does not match the data" }, 400);
+            const fresh = !sh.store.has(pm[1]); sh.store.set(pm[1], b.data);
+            return res({ picture: { sha256: pm[1], bytes: bytes.length, stored: fresh } }, fresh ? 201 : 200);
+          }
+          if (pm && m === "GET") return sh.store.has(pm[1]) ? res({ picture: { sha256: pm[1], mediaType: "image/png", data: sh.store.get(pm[1]) } }) : res({ error: "picture not found" }, 404);
+          if (m === "GET" && path === "/api/manuscripts/" + id) return res({ manuscript: copy() });
+          if (m === "PUT" && path === "/api/manuscripts/" + id) {
+            const body = JSON.parse(opts.body);
+            sh.puts.push({ bytes: opts.body.length, body: opts.body, ifm: hdr["If-Match"] || null, refs: hdr["Beuk-Pictures"] === "ref", minimal: hdr["Prefer"] === "return=minimal" });
+            const lost = refsOf(body.doc).filter((h) => !sh.store.has(h));
+            if (lost.length) return res({ error: "the book names pictures this shelf does not hold", missingPictures: lost }, 422);
+            if (hdr["If-Match"] === '"' + sh.rev + '"') {
+              sh.rev++; sh.doc = body.doc; sh.updatedAt = new Date(Date.parse(sh.updatedAt) + 1000).toISOString();
+              const out = copy(); delete out.doc; return res({ manuscript: out });
+            }
+            return res({ error: "revision conflict", manuscript: copy() }, hdr["If-Match"] ? 409 : 428);
+          }
+          if (m === "GET" && path === "/api/manuscripts") return res({ manuscripts: [] });
+          return res({ error: "not in the fixture" }, 404);
+        };
+        return sh;
+      }
+      SELF_CHECKS_ASYNC.push(
+        { id: "shelf.pics.save-once", feature: "shelf", name: "Shelf pictures are stored once: a shelf save names each picture (image, cover) by the SHA-256 of its bytes and uploads only the ones the shelf lacks — a book saved with its pictures inline is migrated on its next save, the save after that sends no picture at all, a picture the shelf has since dropped is uploaded again and the save lands, a 409 shelf copy and an opened shelf book come back whole from the pictures this desk already holds, and the in-page SHA-256 matches the FIPS 180-4 vectors",
+          async run() {
+            const release = await scShelfHold();
+            const keep = scShelfKeep();
+            const keepHeld = typeof shelfPics === "object" ? new Set(shelfPics.held) : null;
+            const bad = [], notes = [];
+            local.suspended = true;
+            try {
+              /* 0. the digest */
+              const enc = (s) => new TextEncoder().encode(s);
+              if (typeof picSha256Sync !== "function") bad.push("no in-page SHA-256");
+              else {
+                const vec = [["", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"], ["abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"],
+                  ["abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"]];
+                vec.forEach(([s, h]) => { if (picSha256Sync(enc(s)) !== h) bad.push("SHA-256 of " + JSON.stringify(s) + " is " + picSha256Sync(enc(s))); });
+                if (window.crypto && crypto.subtle) {
+                  const big = new Uint8Array(200003); for (let i = 0; i < big.length; i++) big[i] = (i * 7919 + (i >> 5)) & 255;
+                  const sub = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", big))).map((x) => x.toString(16).padStart(2, "0")).join("");
+                  if (picSha256Sync(big) !== sub) bad.push("in-page SHA-256 disagrees with crypto.subtle on 200,003 bytes");
+                }
+              }
+              /* 1. a book with two pictures and a cover that repeats one of them, saved inline before */
+              const b64 = (seed, n) => { let s = ""; for (let i = 0; i < n; i++) s += String.fromCharCode((i * seed + (i >> 3)) & 255); return btoa(s); };
+              const picA = b64(31, 6000), picB = b64(57, 9000);
+              scShelfDesk("Words for the picture save");
+              state.images = [{ id: "scpA", name: "a.png", mediaType: "image/png", ext: "png", data: picA }, { id: "scpB", name: "b.png", mediaType: "image/png", ext: "png", data: picB }];
+              state.cover = { data: picA, mediaType: "image/png", ext: "png", name: "cover.png" };
+              const inlineDoc = serializeBook();
+              const inlineBytes = JSON.stringify({ title: state.meta.title, doc: inlineDoc }).length;
+              const sh = scPicShelf("sc-save", 3, inlineDoc); window.fetch = sh.fetch;
+              scEdit(" One.");
+              await cloudSaveNow();
+              const p1 = sh.puts[0];
+              if (!p1) bad.push("no shelf save");
+              else {
+                if (p1.body.indexOf(picA.slice(0, 400)) !== -1 || p1.body.indexOf(picB.slice(0, 400)) !== -1) bad.push("the shelf save carried picture bytes (" + p1.bytes + " bytes, the inline book is " + inlineBytes + ")");
+                if (!p1.refs || !p1.minimal) bad.push("the save did not ask for named pictures and a minimal answer");
+                const ups = sh.calls.filter((c) => c.indexOf("PUT /api/pictures/") === 0).length;
+                if (ups !== 2) bad.push("uploads on the first save: " + ups + " (want 2: the cover repeats picture A)");
+                notes.push("first save " + p1.bytes + " bytes vs " + inlineBytes + " inline, 2 uploads");
+              }
+              if (sh.rev !== 4 || cloudDirty) bad.push("the first save did not land (rev " + sh.rev + ")");
+              const named = sh.doc;
+              if (!named.images || named.images[0].data.indexOf("beuk-pic:") !== 0 || !named.cover || named.cover.data !== named.images[0].data) bad.push("the shelf doc does not name the pictures (or the cover is not the same name as picture A)");
+              /* 2. the next save sends no picture and asks nothing */
+              sh.calls.length = 0;
+              scEdit(" Two.");
+              await cloudSaveNow();
+              const p2 = sh.puts[1];
+              if (!p2 || sh.calls.some((c) => c.indexOf("/api/pictures") !== -1)) bad.push("the second save touched the picture store: " + sh.calls.join(", "));
+              /* the book without its three picture copies, plus three 73-character names and the edits */
+              if (p2 && p2.bytes > inlineBytes - (2 * picA.length + picB.length) + 3 * 73 + 200) bad.push("the second save sent " + p2.bytes + " bytes of a " + inlineBytes + "-byte book whose pictures are " + (2 * picA.length + picB.length) + " bytes");
+              if (p2) notes.push("second save " + p2.bytes + " bytes, 0 uploads");
+              /* 3. the shelf dropped picture B meanwhile: 422, upload once, the save lands */
+              const shaB = typeof picShaOf === "function" ? await picShaOf(picB) : "";
+              sh.store.delete(shaB); sh.calls.length = 0;
+              scEdit(" Three.");
+              await cloudSaveNow();
+              const reup = sh.calls.filter((c) => c === "PUT /api/pictures/" + shaB).length;
+              if (reup !== 1 || sh.rev !== 6 || cloudDirty) bad.push("a dropped picture was not uploaded again and saved (uploads " + reup + ", rev " + sh.rev + "): " + sh.calls.join(", "));
+              /* 4. another device moved the shelf: the 409 copy comes named and arrives whole */
+              sh.doc = JSON.parse(JSON.stringify(sh.doc)); sh.doc.meta.title = "Moved elsewhere"; sh.rev = 9;
+              scEdit(" Four.");
+              await cloudSaveNow();
+              const cd = cloud.conflict && cloud.conflict.doc;
+              if (!cd || cd.meta.title !== "Moved elsewhere") bad.push("the 409 did not raise the conflict notice");
+              else if (!cd.images || cd.images[0].data !== picA || cd.images[1].data !== picB || !cd.cover || cd.cover.data !== picA) bad.push("the conflict copy did not arrive with its pictures");
+              cloud.conflict = null; $("modalConflict").classList.remove("open");
+              /* 5. opening the shelf copy: pictures the desk holds are not fetched; the one it lacks is */
+              sh.calls.length = 0;
+              const deskImgs = state.images;
+              state.images = [deskImgs[0]]; state.cover = null;
+              if (typeof shelfPics === "object") { shelfPics.dataOf.delete(shaB); shelfPics.shaOf.delete(picB); }
+              const got = typeof shelfGetBook === "function" ? await shelfGetBook("sc-save", true) : null;
+              state.images = deskImgs;
+              const fetched = sh.calls.filter((c) => c.indexOf("GET /api/pictures/") === 0);
+              if (!got || !got.manuscript || got.manuscript.doc.images[1].data !== picB || got.manuscript.doc.images[0].data !== picA) bad.push("the opened shelf copy is not whole");
+              if (fetched.length !== 1 || fetched[0] !== "GET /api/pictures/" + shaB) bad.push("fetched for opening: " + (fetched.join(", ") || "nothing") + " (want only picture B)");
+            } finally {
+              scShelfPutBack(keep);
+              if (keepHeld) { shelfPics.held.clear(); keepHeld.forEach((h) => shelfPics.held.add(h)); }
+              release();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : notes.join("; ") + "; a dropped picture re-uploaded once; the 409 copy and the opened book arrive whole; SHA-256 matches FIPS 180-4");
+          } }
+      );
+      /* ==== /BEUK:pics ==== */
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS_ASYNC = SELF_CHECKS_ASYNC; window.runBeukAsyncSelfChecks = runAsyncSelfChecks; }
       /* ==== /BEUK:sound ==== */
 
@@ -57058,7 +57418,7 @@
         if (cloud.linkedId || cloud.linkState === "linked") return false;
         local.restoredLink = null;
         const shelfDirty = !!(link.shelfDirty || cloud.sessionEdited);
-        const r = await apiFetch("/api/manuscripts/" + encodeURIComponent(link.linkedId), {});
+        const r = await shelfGetBook(link.linkedId, true); /* BEUK:pics — filled in from this desk's own pictures: nothing re-downloaded */
         if (r && r.__status === 404) {
           /* The shelf copy is gone: this device's book is the only one —
              offer it a place on the shelf through the usual path. */

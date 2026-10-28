@@ -55,6 +55,10 @@ services:
       # Largest book the shelf accepts (src/config.ts default 64 MiB).
       # Passed through so the .env.example knob actually reaches the app.
       MANUSCRIPT_MAX_BYTES: ${MANUSCRIPT_MAX_BYTES:-67108864}
+      # Shelf pictures (src/config.ts defaults: 32 MiB each, 2 GiB per account, 1 h grace).
+      PICTURE_MAX_BYTES: ${PICTURE_MAX_BYTES:-33554432}
+      PICTURE_QUOTA_BYTES: ${PICTURE_QUOTA_BYTES:-2147483648}
+      PICTURE_GC_GRACE_SECONDS: ${PICTURE_GC_GRACE_SECONDS:-3600}
       # Billing: unset until V sets prices + Stripe keys; while unset the
       # billing endpoints answer 501 "not configured" (README, Billing).
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
