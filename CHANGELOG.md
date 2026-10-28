@@ -18,6 +18,7 @@ to make well.
 - **Submission manuscript** (Export → Submission Manuscript): a Word file in standard manuscript format for querying agents and publishers. A title page with your contact details and the word count, then the text in 12 pt Times New Roman (or Courier), double-spaced, one-inch margins, each chapter on a new page, # for scene breaks, END at the end, and a Surname / TITLE / page header. US Letter or A4; italics kept or underlined.
 - Your contact details are saved with the book and printed only on that title page; empty fields are left out. The dialog lists everything left out — front and back matter by name, pictures, the typesetting — so nothing disappears without your knowing. Notes go on a Notes page after END.
 - Importing a manuscript now reads a line with just # as a scene break.
+- **Typing in a long book is as quick as in a short one.** Each keystroke used to recount the words of the whole book and start measuring every chapter's pages again; in a 250,000-word novel that was about a seventh of a second a keystroke, and more the longer the book. Now only the chapter you are writing in is recounted, and the page count measures just that chapter, in your next pause. The totals and page counts you see once you stop typing are exactly what they were.
 
 **Goals that plan with you**
 - **Writing days.** Choose the days of the week you write, and whether the deadline day counts.

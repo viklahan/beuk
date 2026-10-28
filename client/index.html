@@ -4132,7 +4132,9 @@
         return r;
       }
       /* ==== /BEUK:bookid ==== */
-      const fmtNum = (n) => { try { return new Intl.NumberFormat(getUiLang(), { maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0)); } catch (e) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); } };
+      /* BEUK:typingperf — one formatter per UI language, made once: a count refresh formats a number for every section. */
+      const fmtNumCache = { lang: null, f: null };
+      const fmtNum = (n) => { try { const lang = getUiLang(); if (fmtNumCache.lang !== lang || !fmtNumCache.f) { fmtNumCache.f = new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }); fmtNumCache.lang = lang; } return fmtNumCache.f.format(Math.round(Number(n) || 0)); } catch (e) { return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); } };
       const icons = () => { if (window.lucide) lucide.createIcons(); };
 
       /* ================= UI language packs =================
@@ -19384,7 +19386,23 @@
       }
 
       /* ================= Text utilities ================= */
+      /* BEUK:typingperf — short strings (titles, credits) are counted on
+         every refresh, once per section: their counts are remembered.
+         The same text in the same language always counts the same. */
+      const countWordsShort = new Map();
+      let countWordsFresh = false; /* true: every count is taken from scratch (bookWordTotalFresh) */
       function countWords(text, langCode) {
+        const str = String(text || "");
+        if (countWordsFresh || str.length > 240) return countWordsRaw(str, langCode);
+        const k = (langCode || state.meta.language || "") + "\u0000" + str;
+        const hit = countWordsShort.get(k);
+        if (hit !== undefined) return hit;
+        const n = countWordsRaw(str, langCode);
+        if (countWordsShort.size > 20000) countWordsShort.clear();
+        countWordsShort.set(k, n);
+        return n;
+      }
+      function countWordsRaw(text, langCode) {
         const clean = String(text || "").replace(/\|\|(?=[^|\s])[^|\n]*?[^|\s]\|\|/g, " ") /* BEUK:documents — a redaction's words are never read: not words */
           .replace(/^[ \t]*:::[ \t]+insert(?:[ \t]+(\S[^\n]*?))?[ \t]*$/gim, (m0, title) => " " + (title || "") + " ") /* an insert's title is set on the page: words */
           .replace(/^[ \t]*:::(?:[ \t]+[A-Za-z][^\n]*)?[ \t]*$/gm, " ") /* container markers ("::: verse", ":::") are markup, not words */
@@ -19422,7 +19440,22 @@
         if (s.type === "copyright" && String(s.content || "").trim()) return countWords(s.content) + countWords(s.title);
         if (AUTO_TYPES.includes(s.type)) { const gen = countWords(state.meta.title) + countWords(state.meta.author); return gen ? gen + 24 : 0; }
         if (!String(s.content || "").trim()) return 0;
-        return countWords(s.content) + countWords(s.title) + countWords(s.subtitle);
+        return sectionProseWords(s);
+      }
+      /* BEUK:typingperf — a section's prose count is remembered against
+         exactly what it was counted from (its text, title, subtitle and
+         the book's language): a keystroke recounts only the section it
+         lands in, never the whole book. An unchanged section compares
+         its own string to itself — no recount — so the book's total is
+         a sum of remembered numbers, identical to a full recount. */
+      const sectionWordsMemo = new WeakMap();
+      function sectionProseWords(s) {
+        const lang = state.meta.language;
+        const m = countWordsFresh ? null : sectionWordsMemo.get(s);
+        if (m && m.c === s.content && m.t === s.title && m.st === s.subtitle && m.l === lang) return m.w;
+        const w = countWords(s.content) + countWords(s.title) + countWords(s.subtitle);
+        sectionWordsMemo.set(s, { c: s.content, t: s.title, st: s.subtitle, l: lang, w });
+        return w;
       }
       function sectionChars(s) {
         if (s.type === "copyright" && String(s.content || "").trim()) return String(s.content).length;
@@ -23656,9 +23689,18 @@
         } catch (e) { return null; }
       }
       function manuscriptText(limit) {
+        /* BEUK:typingperf — only as much of the book as the limit takes
+           is gathered (the same text as joining it all and cutting). */
+        const cap = limit || 60000;
         const parts = [];
-        state.sections.forEach((s) => { if (s.content) parts.push(s.content); });
-        return parts.join("\n\n").slice(0, limit || 60000);
+        let n = 0;
+        for (const s of state.sections) {
+          if (!s.content) continue;
+          n += (parts.length ? 2 : 0) + s.content.length;
+          parts.push(s.content);
+          if (n >= cap) break;
+        }
+        return parts.join("\n\n").slice(0, cap);
       }
       /* Set the book's language from a detection result. A manual
          choice is a wall: this returns false and changes nothing. */
@@ -26285,7 +26327,7 @@
         if (edSec) edSec.textContent = secTxt;
         if (edBook) edBook.textContent = bookTxt;
         if (zenCount) zenCount.textContent = secTxt + " · " + bookTxt;
-        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); el.textContent = fmtNum(w) + " " + t("side.wordUnit", { count: w }); } });
+        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); const txt = fmtNum(w) + " " + t("side.wordUnit", { count: w }); if (el.textContent !== txt) el.textContent = txt; } }); /* BEUK:typingperf — an unchanged row is left alone */
         $("projectTitleDisplay").textContent = imRealTitle() || t("misc.untitledBook"); /* BEUK:importmeta */
         $("projectAuthorDisplay").textContent = state.meta.author ? t("misc.byAuthor", { author: state.meta.author }) : "";
         renderProgress();
@@ -26568,6 +26610,13 @@
       /* ---- the math, kept pure so the self-checks can hold it ---- */
       function bookTotalWords() {
         return state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
+      }
+      /* BEUK:typingperf — the same total counted from scratch, every
+         section and title recounted, nothing remembered: what the
+         remembered counts must always equal. */
+      function bookWordTotalFresh() {
+        countWordsFresh = true;
+        try { return bookTotalWords(); } finally { countWordsFresh = false; }
       }
       /* ==== BEUK:goalspace ==== writing days, the daily target that
          follows the deadline, and the one honest pace line. All pure:
@@ -29298,6 +29347,7 @@
         let debounce = null;
         area.addEventListener("input", () => {
           const s = activeSection(); if (!s) return;
+          editorTypedAt = performance.now(); /* BEUK:typingperf */
           s.content = area.value;
           /* The bookkeeping a keystroke triggers — streak, sync,
              word counts, and the debounced re-render of preview,
@@ -30912,12 +30962,55 @@
         for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
         return (h >>> 0).toString(36);
       }
+      /* BEUK:typingperf — a section's hash is remembered against its own
+         text: the desk signature rehashes only the section that changed. */
+      const pcSecHashMemo = new WeakMap();
+      function pcSectionHash(s) {
+        const c = s.content || "";
+        const m = pcSecHashMemo.get(s);
+        if (m && m.c === c) return m.h;
+        const h = pcHash(c);
+        pcSecHashMemo.set(s, { c, h });
+        return h;
+      }
+      /* BEUK:typingperf — what every section's layout shares (profile,
+         reading area, fonts, theme, credits, the outline's order and
+         titles, pictures) and what is the section's own (its text and
+         every setting it carries). A section is laid out again only when
+         its own key or the shared part changed; every other section keeps
+         the page count it was measured at under the very same inputs. */
+      function deskSharedSignature() {
+        let themeJson = "";
+        try { themeJson = JSON.stringify(state.theme); } catch (e) { themeJson = ""; }
+        const area = deviceReadingArea();
+        return [state.device, area ? area.w + "x" + area.h + (area.twoUp ? "x2" : "") : "none", "f" + pcFontGen, state.sections.length,
+          state.sections.map((s) => s.id + ":" + (s.title || "") + ":" + (s.number || "") + ":" + (s.kind || "") + ":" + (s.type || "") + ":" + (s.included ? 1 : 0)).join("|"),
+          themeJson, JSON.stringify(state.meta || {}), state.cover ? "cov" : "", (state.images || []).map((im) => im.id + ":" + String(im.data || "").length).join(","),
+          /* the rest of what a section's page can take from the book: its colour, its own fonts, the preset and the notes setting */
+          (() => { try { return JSON.stringify(typeof bookColourSet === "function" && bookColourSet() ? bookColour() : null); } catch (e) { return "c?"; } })(),
+          (state.fonts || []).map((f) => (f && (f.id || f.name || f.family)) + ":" + String((f && f.data) || "").length).join(","),
+          state.activePreset || "", String(state.printNotes || "")
+        ].join("~");
+      }
+      function deskSectionKey(s) {
+        let own = "";
+        try { own = JSON.stringify(s, (k, v) => (k === "content" ? undefined : v)); } catch (e) { own = String(Math.random()); }
+        return pcSectionHash(s) + ":" + (s.content || "").length + ":" + own;
+      }
+      const deskSecMemo = { shared: "", byId: new Map() }; /* id -> { key, n } */
+      function deskSectionPagesMemo(flow, s, w, shared) {
+        if (deskSecMemo.shared !== shared) { deskSecMemo.shared = shared; deskSecMemo.byId = new Map(); }
+        const key = deskSectionKey(s);
+        const m = deskSecMemo.byId.get(s.id);
+        if (m && m.key === key) return { n: m.n, reused: true, key };
+        return { n: deskSectionPages(flow, s, w), reused: false, key };
+      }
       function deskSignature() {
         let themeJson = "";
         try { themeJson = JSON.stringify(state.theme); } catch (e) { themeJson = ""; }
         const area = deviceReadingArea();
         return [state.device, area ? area.w + "x" + area.h + (area.twoUp ? "x2" : "") : "none", "f" + pcFontGen, state.sections.length,
-          state.sections.map((s) => s.id + ":" + pcHash(s.content || "") + ":" + (s.content || "").length + ":" + (s.title || "") + ":" + (s.number || "") + ":" + (s.kind || "") + ":" + (s.type || "")).join("|"),
+          state.sections.map((s) => s.id + ":" + pcSectionHash(s) + ":" + (s.content || "").length + ":" + (s.title || "") + ":" + (s.number || "") + ":" + (s.kind || "") + ":" + (s.type || "")).join("|"),
           themeJson, state.meta.title || "", state.meta.author || "",
           state.cover ? "cov" : "", (state.images || []).length
         ].join("~");
@@ -31092,8 +31185,15 @@
         if (!provisional) pcCacheSet(deskSignature(), res);
         return res;
       }
-      const deskState = { counts: {}, total: 0, sig: "", words: 0 }; /* words: the book's word count the total was measured at */
+      const deskState = { counts: {}, total: 0, sig: "", words: 0, run: null }; /* words: the book's word count the total was measured at; run (BEUK:typingperf): the last measuring pass — sections laid out vs kept, and whether it finished */
       let deskTimer = null;
+      /* BEUK:typingperf — when the writer last typed in the editor. Laying
+         a chapter out for the desk's page count can take longer than a
+         frame, so a measuring pass yields while the writer is typing and
+         carries on in the next pause: the counts settle once the typing
+         does, at exactly the numbers a full pass gives. */
+      let editorTypedAt = 0;
+      const DESK_TYPING_QUIET_MS = 900;
       function scheduleDeskUpdate(delay) {
         clearTimeout(deskTimer);
         deskTimer = setTimeout(updateDesk, typeof delay === "number" ? delay : 450);
@@ -31115,13 +31215,22 @@
         const flow = deskPrepareFlow(w, h);
         const sections = state.sections.slice();
         const counts = {};
+        const shared = deskSharedSignature(); /* BEUK:typingperf */
+        const run = deskState.run = { measured: 0, kept: 0, done: false };
         let i = 0;
         (function step() {
           if (deskState.sig !== sig) return;
+          const quiet = performance.now() - editorTypedAt;
+          if (quiet < DESK_TYPING_QUIET_MS) { setTimeout(step, DESK_TYPING_QUIET_MS - quiet + 20); return; }
           const t0 = performance.now();
-          while (i < sections.length && performance.now() - t0 < 40) {
+          /* BEUK:typingperf — short slices (a frame's worth), and only
+             the sections whose own inputs changed are laid out again. */
+          while (i < sections.length && performance.now() - t0 < 8) {
             const s = sections[i++];
-            counts[s.id] = deskSectionPages(flow, s, w);
+            const r = deskSectionPagesMemo(flow, s, w, shared);
+            counts[s.id] = r.n;
+            if (r.reused) { run.kept++; continue; }
+            run.measured++;
             const pend = pcPendingImages(flow); /* BEUK:pagecount */
             if (pend.length) {
               const owner = flow.firstChild;
@@ -31131,13 +31240,16 @@
                    meanwhile: lay the section out again if so. */
                 if (flow.firstChild !== owner) deskSectionPages(flow, s, w);
                 counts[s.id] = pcRemeasure(flow, w);
+                if (deskSecMemo.shared === shared) deskSecMemo.byId.set(s.id, { key: r.key, n: counts[s.id] });
                 setTimeout(step, 0);
               });
               return;
             }
+            if (deskSecMemo.shared === shared) deskSecMemo.byId.set(s.id, { key: r.key, n: r.n });
           }
           if (i < sections.length) { setTimeout(step, 0); return; }
           flow.innerHTML = "";
+          run.done = true;
           deskState.counts = counts;
           deskState.total = sections.reduce((a, s) => a + (counts[s.id] || 0), 0);
           deskState.words = wordsNow;
@@ -32056,6 +32168,10 @@
       function hcRefreshNow() {
         if (state.device !== "hardcover") return;
         if (hc.anim) { hc.refreshTimer = setTimeout(hcRefreshNow, 200); return; }
+        /* BEUK:typingperf — the print model is the whole book: it is
+           rebuilt in the writer's pause, never between keystrokes. */
+        const quiet = performance.now() - editorTypedAt;
+        if (quiet < DESK_TYPING_QUIET_MS) { hc.refreshTimer = setTimeout(hcRefreshNow, DESK_TYPING_QUIET_MS - quiet + 20); return; }
         hcEnsureModel(false);
         if (hc.open && hc.lastActive !== state.activeId) {
           hc.lastActive = state.activeId;
@@ -56591,6 +56707,133 @@
         return out;
       }
       SELF_CHECKS_ASYNC.push(...msAsyncSelfChecks()); /* BEUK:manuscript */
+      /* ==== BEUK:typingperf ==== typing in a long book costs what typing
+         in a short one costs: the per-keystroke work follows the section
+         being written, never the whole book; every count the writer sees
+         is exact once the typing settles. */
+      SELF_CHECKS_ASYNC.push(/* BEUK:typingperf-check */{ id: "perf.typing.longbook", feature: "perf", name: "Typing in a long book: in a ~250,000-word book (the sample's chapters eleven times over) a keystroke in the last chapter is handled in a median of at most 40 ms (target 16, headroom for slow hosts) and a 95th percentile of at most 150 ms (target 50), no slower than the same keystroke in the 25,000-word sample (median within 2× + 4 ms; next frame within 2× + 16 ms); once the typing settles every count is exact: the book total equals a from-scratch recount and the sample's total plus exactly the words typed, the sidebar, the editor's counts and the sidebar row match it, and the desk's page total equals a full re-measure of every section",
+        async run() {
+          const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+          const keepSample = { loaded: sampleState.loaded, json: sampleState.loadedJson };
+          const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+          const keepSusp = local.suspended; local.suspended = true;
+          const keepStreak = { streak: streakState.streak, lastDay: streakState.lastDay };
+          const keepWlog = JSON.stringify(wlog);
+          const keepActive = state.activeId;
+          const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+          const nextFrame = () => new Promise((r) => requestAnimationFrame(() => { const mc = new MessageChannel(); mc.port1.onmessage = () => r(); mc.port2.postMessage(0); }));
+          const fresh = () => (typeof bookWordTotalFresh === "function" ? bookWordTotalFresh() : bookWordTotal());
+          const q = (arr, p) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[Math.min(a.length - 1, Math.floor(p * a.length))] : NaN; };
+          const r1 = (x) => Math.round(x * 10) / 10;
+          /* the desk has settled: its signature is current and its total was measured at the book's word count */
+          const deskSettled = async (limitMs) => {
+            const t0 = performance.now();
+            while (performance.now() - t0 < limitMs) {
+              clearTimeout(cloudSaveTimer);
+              if (!deviceReadingArea()) return true;
+              if (deskState.sig === deskSignature() && deskState.words === bookWordTotal() && (!deskState.run || deskState.run.done)) return true;
+              await sleep(100);
+            }
+            return false;
+          };
+          const book = (copies) => {
+            const d = buildSampleBook();
+            d.history = [];
+            const chapters = d.sections.filter((s) => s.type === "chapter");
+            const at = d.sections.indexOf(chapters[chapters.length - 1]) + 1;
+            const extra = [];
+            for (let k = 1; k < copies; k++) chapters.forEach((c, i) => extra.push(Object.assign(JSON.parse(JSON.stringify(c)), { id: "perf-" + k + "-" + i, number: String(chapters.length * k + i + 1) })));
+            d.sections.splice(at, 0, ...extra);
+            return d;
+          };
+          const TYPED = "\n\nThe quick brown fox jumps over the lazy dog and away"; /* a new paragraph: whatever the chapter ends on, these are words */
+          const typeInto = async () => {
+            const last = [...state.sections].reverse().find((s) => s.type === "chapter");
+            selectSection(last.id);
+            await sleep(400);
+            const area = $("editorArea");
+            area.focus();
+            const handler = [], frame = [];
+            for (let i = 0; i < TYPED.length; i++) {
+              const end = area.value.length;
+              area.setSelectionRange(end, end);
+              const t0 = performance.now();
+              area.setRangeText(TYPED[i], end, end, "end");
+              area.dispatchEvent(new Event("input", { bubbles: true }));
+              handler.push(performance.now() - t0);
+              await nextFrame();
+              frame.push(performance.now() - t0);
+              clearTimeout(cloudSaveTimer);
+              /* a typist's rhythm, with a breath every 12 keys that lets the debounced work run */
+              await sleep(i % 12 === 11 ? 450 : 60);
+            }
+            return { handler, frame, section: last };
+          };
+          try {
+            const bad = [], notes = [];
+            const runs = {};
+            for (const copies of [1, 11]) {
+              applyBookDoc(book(copies));
+              noteBookEdited();
+              renderPreview(); scheduleDeskUpdate(0);
+              const settledBefore = await deskSettled(120000);
+              if (!settledBefore) bad.push(copies + "×: the desk did not settle before typing");
+              const before = fresh();
+              const ty = await typeInto();
+              await sleep(1500);
+              const settled = await deskSettled(120000);
+              if (!settled) bad.push(copies + "×: the desk did not settle after typing");
+              const after = fresh();
+              const shown = bookWordTotal();
+              const typedWords = TYPED.split(/\s+/).filter(Boolean).length;
+              const runAfter = deskState.run ? Object.assign({}, deskState.run) : null;
+              runs[copies] = { words: before, hMed: q(ty.handler, 0.5), hP95: q(ty.handler, 0.95), fMed: q(ty.frame, 0.5), fP95: q(ty.frame, 0.95) };
+              if (shown !== after) bad.push(copies + "×: remembered total " + shown + " ≠ recount " + after);
+              if (after - before !== typedWords) bad.push(copies + "×: total moved by " + (after - before) + ", typed " + typedWords + " words");
+              if ($("statWords").textContent !== fmtNum(after)) bad.push(copies + "×: sidebar shows " + $("statWords").textContent + ", recount " + fmtNum(after));
+              const secW = sectionWords(ty.section);
+              if ($("edBookWords") && $("edBookWords").textContent !== t("editor.countBook", { n: fmtNum(after), count: after })) bad.push(copies + "×: editor book count “" + $("edBookWords").textContent + "”");
+              if ($("edSecWords") && $("edSecWords").textContent !== t("editor.countSection", { n: fmtNum(secW), count: secW })) bad.push(copies + "×: editor section count “" + $("edSecWords").textContent + "”");
+              const row = $("wc-" + ty.section.id);
+              if (row && row.textContent !== fmtNum(secW) + " " + t("side.wordUnit", { count: secW })) bad.push(copies + "×: sidebar row “" + row.textContent + "”");
+              let deskNote = "no desk on this profile";
+              if (deviceReadingArea()) {
+                /* the desk as typing left it, against a pass that forgets
+                   every count it had and lays every section out again
+                   (pictures decoded, as the desk always waits for them) */
+                const shownPages = deskState.total, shownCounts = JSON.stringify(deskState.counts);
+                pageCountCache.clear();
+                if (typeof deskSecMemo !== "undefined") { deskSecMemo.shared = ""; deskSecMemo.byId = new Map(); }
+                deskState.sig = "";
+                updateDesk();
+                if (!(await deskSettled(180000))) bad.push(copies + "×: the full re-measure did not finish");
+                const fullRun = deskState.run ? Object.assign({}, deskState.run) : null;
+                if (deskState.total !== shownPages || JSON.stringify(deskState.counts) !== shownCounts) bad.push(copies + "×: desk shows " + shownPages + " pages, a full re-measure " + deskState.total);
+                deskNote = shownPages + " pages = full re-measure " + deskState.total + (runAfter ? " (the pass after typing laid out " + runAfter.measured + " section(s), kept " + runAfter.kept + "; the full one laid out " + (fullRun ? fullRun.measured : "?") + ")" : "");
+              }
+              notes.push(copies + "× (" + fmtNum(before) + " words): handler median " + r1(runs[copies].hMed) + " ms, p95 " + r1(runs[copies].hP95) + " ms; next frame median " + r1(runs[copies].fMed) + " ms, p95 " + r1(runs[copies].fP95) + " ms; total " + fmtNum(after) + " (+" + (after - before) + "); " + deskNote);
+            }
+            const S = runs[1], L = runs[11];
+            if (!(L.words >= 240000)) bad.push("the long book has " + L.words + " words, not ~250,000");
+            if (!(L.hMed <= 40)) bad.push("long-book handler median " + r1(L.hMed) + " ms over 40 ms");
+            if (!(L.hP95 <= 150)) bad.push("long-book handler p95 " + r1(L.hP95) + " ms over 150 ms");
+            if (!(L.hMed <= 2 * S.hMed + 4)) bad.push("the long book's handler median " + r1(L.hMed) + " ms grows with the book (short book " + r1(S.hMed) + " ms)");
+            if (!(L.fMed <= 2 * S.fMed + 16)) bad.push("the long book's next-frame median " + r1(L.fMed) + " ms grows with the book (short book " + r1(S.fMed) + " ms)");
+            return scVerdict(bad.length === 0, (bad.length ? bad.join("; ") + " — " : "") + notes.join(" | "));
+          } finally {
+            applyBookDoc(keepDoc);
+            state.activeId = keepActive && state.sections.some((s) => s.id === keepActive) ? keepActive : state.activeId;
+            syncEditor(); renderSidebar(); renderPreview();
+            sampleState.loaded = keepSample.loaded; sampleState.loadedJson = keepSample.json; renderSampleButton();
+            streakState.streak = keepStreak.streak; streakState.lastDay = keepStreak.lastDay; saveStreak(); renderStreak();
+            wlog = JSON.parse(keepWlog); wlogRebase = true; wlogSave(); updateStats();
+            cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            clearTimeout(cloudSaveTimer);
+            local.suspended = keepSusp;
+            if (cloudDirty) cloudAutosaveTick();
+          }
+        } }/* /BEUK:typingperf-check */);
+      /* ==== /BEUK:typingperf ==== */
       /* ==== BEUK:slim ==== */
       SELF_CHECKS_ASYNC.push({ id: "shell.sample.external", feature: "sample",
         name: "Slim shell: the page carries no base64 picture over 50 KB; the sample's pictures resolve from assets/sample/ byte-identical to the manifest; loading the sample still lands its text synchronously while its pictures are on their way; the sample's EPUB, exported before they arrived, carries every picture",
@@ -57211,8 +57454,13 @@
         else if (local.persisted === "unsupported") s += " " + t("local.detailUnsupported");
         return s;
       }
+      const fmtLocalTimeCache = { lang: null, f: null }; /* BEUK:typingperf — the save pill redraws on every keystroke: one formatter per UI language */
       function fmtLocalTime(ms) {
-        try { return new Intl.DateTimeFormat(getUiLang(), { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(ms)); }
+        try {
+          const lang = getUiLang();
+          if (fmtLocalTimeCache.lang !== lang || !fmtLocalTimeCache.f) { fmtLocalTimeCache.f = new Intl.DateTimeFormat(lang, { hour: "numeric", minute: "2-digit", second: "2-digit" }); fmtLocalTimeCache.lang = lang; }
+          return fmtLocalTimeCache.f.format(new Date(ms));
+        }
         catch (e) { return new Date(ms).toLocaleTimeString(); }
       }
       function renderLocalPill() {
