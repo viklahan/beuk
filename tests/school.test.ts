@@ -203,3 +203,26 @@ test('the site links School: every site page nav and footer, the sitemap lists e
   assert.ok(caddy.indexOf('handle /school/media/*') >= 0 && caddy.indexOf('handle /school/media/*') < caddy.indexOf('handle /school* {'));
   assert.match(caddy, /root \* \/srv\/school-media/);
 });
+
+test('Housekeeping self-checks: School content parses clean, the progress table is sound, media is counted honestly', async () => {
+  const { SELF_CHECK_CASES, buildCheckContext, NotConfigured } = await import('../src/housekeeping/registry.js');
+  const { testConfig } = await import('./helpers.js');
+  const db = await createTestDb();
+  const config = testConfig();
+  const ctx = buildCheckContext(db, config);
+  const run = (id: string) => SELF_CHECK_CASES.find((c) => c.id === id)!.run!(ctx);
+  assert.match(await run('school.content.parses-clean'), /1 course\(s\), 12 lesson\(s\)/);
+  assert.match(await run('school.schema.progress-table'), /0 lesson\(s\) marked done/);
+  // No media on this server: reported as not configured, never as a pass.
+  await assert.rejects(run('school.media.manifests-whole'), (e: unknown) => e instanceof NotConfigured);
+  const dir = path.join(config.schoolMediaDir, 'en', 'maiden-voyage', 'make-a-cover');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(dir, 'video.mp4'), 'x');
+  writeFileSync(path.join(dir, 'step-1.jpg'), 'x');
+  writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ video: { file: 'video.mp4', seconds: 60 }, shots: ['step-1.jpg'] }));
+  assert.match(await run('school.media.manifests-whole'), /1 of 12 lessons have video, 0 have audio/);
+  // A manifest naming a screenshot that is not there fails the check.
+  writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ video: { file: 'video.mp4', seconds: 60 }, shots: ['step-1.jpg', 'step-2.jpg'] }));
+  await new Promise((r) => setTimeout(r, 20));
+  await assert.rejects(run('school.media.manifests-whole'), /screenshot named in the manifest is missing/);
+});

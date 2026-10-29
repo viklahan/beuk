@@ -35,6 +35,8 @@ import { renderSnapshot } from '../shares/render.js';
 import { sanitizeHtml } from '../shares/sanitize.js';
 import { ACCOUNT_DELETED_TABLES, ACCOUNT_DETACHED_TABLES } from '../account/data.js';
 import { CONFIRM_TOKEN_TTL_HOURS } from '../account/confirm.js';
+import { checkSchoolContent, loadSchoolContent } from '../school/content.js';
+import { readLessonMedia } from '../school/media.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -3182,6 +3184,69 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Rights controls are studio UI over the client book.',
   },
   /* ==== /BEUK:rights ==== */
+  /* ==== Beuk School (/school) ==== */
+  {
+    id: 'school.content.parses-clean',
+    title: 'School: every course and lesson file parses, lessons are numbered without gaps, and every guide they name is a Help guide',
+    kind: 'server',
+    run: async () => {
+      const c = loadSchoolContent('en');
+      const problems = checkSchoolContent(c);
+      assert(problems.length === 0, problems.join('; '));
+      assert(c.courses.length > 0, 'no courses under content/school/en');
+      const lessons = c.courses.reduce((n, course) => n + course.lessons.length, 0);
+      return `${c.courses.length} course(s), ${lessons} lesson(s), every step narrated`;
+    },
+  },
+  {
+    id: 'school.schema.progress-table',
+    title: 'School: the school_progress table exists and every row belongs to a user',
+    kind: 'server',
+    run: async ({ db }) => {
+      const t = await db.query<{ n: string | number }>(
+        "select count(*) as n from information_schema.tables where table_name = 'school_progress'",
+      );
+      assert(Number(t.rows[0].n) === 1, 'school_progress table is missing (migration 018)');
+      const orphans = await db.query<{ n: string | number }>(
+        'select count(*) as n from school_progress p left join users u on u.id = p.user_id where u.id is null',
+      );
+      assert(Number(orphans.rows[0].n) === 0, `${orphans.rows[0].n} progress row(s) belong to no user`);
+      const total = await db.query<{ n: string | number }>('select count(*) as n from school_progress');
+      return `${total.rows[0].n} lesson(s) marked done, all by signed-in writers`;
+    },
+  },
+  {
+    id: 'school.media.manifests-whole',
+    title: 'School: every lesson media manifest on this server names files that are there; lessons without media are counted, not hidden',
+    kind: 'server',
+    run: async ({ config }) => {
+      const c = loadSchoolContent('en');
+      let watch = 0;
+      let listen = 0;
+      let total = 0;
+      const broken: string[] = [];
+      for (const course of c.courses) {
+        for (const l of course.lessons) {
+          total += 1;
+          const m = readLessonMedia(config.schoolMediaDir, 'en', course.slug, l.slug);
+          if (!m) continue;
+          if (m.video) watch += 1;
+          if (m.audio) listen += 1;
+          if (!m.video && !m.audio) broken.push(`${course.slug}/${l.slug}: manifest names no playable file`);
+          if (m.shots.length && m.shots.some((s) => s === null)) broken.push(`${course.slug}/${l.slug}: a screenshot named in the manifest is missing`);
+        }
+      }
+      assert(broken.length === 0, broken.join('; '));
+      if (watch === 0 && listen === 0) throw new NotConfigured(`no lesson media under SCHOOL_MEDIA_DIR (${config.schoolMediaDir}); all ${total} lessons are Read-only`);
+      return `${watch} of ${total} lessons have video, ${listen} have audio; the rest are Read-only`;
+    },
+  },
+  {
+    id: 'school.media.recorded-against-live-studio',
+    title: "School: lesson recordings fail when a lesson's step names a control the live studio does not show",
+    kind: 'client-only',
+    reason: 'Checked by tools/school-media/record.ts (and its --dry walk) driving the studio in a browser; the server only reads the manifests that run writes.',
+  },
 ];
 
 /* ------------------------------------------------------------------ */
