@@ -86,6 +86,11 @@ p,li{line-height:1.65}
 .shot.narrow .shot-frame{max-width:460px;margin:0 auto}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:560px){.pair{grid-template-columns:1fr}}
+.shots{display:grid;gap:26px}
+.feat.top{align-items:start}
+.art{margin:26px 0 0}
+.art img{display:block;width:100%;height:auto;border-radius:12px}
+.art figcaption{font-family:var(--book);font-style:italic;font-size:14px;color:var(--muted);text-align:center;margin:12px 0 0}
 .noshot{border:1px dashed var(--line);border-radius:12px;background:var(--bg2);padding:26px;color:var(--muted);font-size:15px}
 .noshot b{color:var(--ink)}
 

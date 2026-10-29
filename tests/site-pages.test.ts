@@ -82,8 +82,10 @@ test('every picture and stylesheet the site pages reference is a file of this or
     assert.deepEqual(dims, [w, h], `${src} is ${dims.join('×')}`);
     assert.ok(buf.length < 200_000, `${src} stays small (${buf.length} bytes)`);
   }
-  // Beta-reader links need an account, so the page says there is no picture rather than faking one.
-  assert.match(features, /No picture here yet\./);
+  // Beta readers: two real screenshots (taken on a test account), and the one illustration says it is not a screenshot.
+  for (const f of ['readers-reader.webp', 'readers-studio.webp']) assert.ok(features.includes(`/site/shots/${f}`), `the readers section shows ${f}`);
+  assert.match(features, /readers-illustration\.webp[\s\S]*?<figcaption>An illustration, not a screenshot/);
+  assert.doesNotMatch(features, /No picture here yet/);
 });
 
 test('every comparison page has a sources list of links to the vendor, with the date they were checked, and every fact mark points into it', () => {
