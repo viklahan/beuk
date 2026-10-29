@@ -1,4 +1,4 @@
--- Covenant Codex: one shared Covenant (the story bible) per series, so
+-- Series Covenant: one shared Covenant (the story bible) per series, so
 -- every book of a series reads the same cast, places and rules.
 -- One row per (user, series_key); series_key is the series name
 -- lowercased with whitespace collapsed (seriesKey() in

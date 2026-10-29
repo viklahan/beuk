@@ -9,7 +9,7 @@ knows what, who is hurt, who serves whom, by book 5. Novelcrafter's Codex
 answers this for its users. Beuk's Covenant already does the half of it
 that needs no AI (entries, aliases, whole-word mention tracking, heatmap,
 underlines in the desk). This project adds the other half so the Covenant
-is a full Codex replacement — and so that the BYOK AI work that follows
+is a full replacement for it — and so that the BYOK AI work that follows
 (a separate project) has a source of truth to feed the model.
 
 The Covenant stays the writer's tool first: everything here is useful with

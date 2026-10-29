@@ -20,7 +20,7 @@ Now / Next / Later shape the public page shows.
   email confirmation, password reset and sign-in from more than one
   device. The [changelog](/changelog) lists everything since, in the
   order writers met it.
-- **The Covenant codex.** Changes pinned to the story and shown "right
+- **The Covenant, grown up.** Changes pinned to the story and shown "right
   now", links, quick facts and genre templates, marking a change from the
   desk, and one shared Covenant per series for signed-in writers.
 

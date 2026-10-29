@@ -21,7 +21,7 @@ const sampleDir = path.join(client, 'assets', 'sample');
    full screen, typing perf and more: code, no pictures): 5,923,387. The
    budget sits just above it, so a picture pasted back into the page fails
    here; the base64 check below catches one on its own. Re-measured
-   2026-10-28 while the Covenant grew into a codex (changes, the folded
+   2026-10-28 while the Covenant grew (changes, the folded
    card, marking from the desk): 6,001,409. Raised to 6.3 MB to leave room
    for the rest of that work; the real fix is moving the self-checks out of
    the page (about 1.15 MB), which waits on the owner. */

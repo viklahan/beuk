@@ -2012,7 +2012,7 @@ Self-checks (client-only in Housekeeping): `insights.cast.detects`,
 all 13 UI packs, with Polish, Russian and Arabic plural forms.
 ## Studio: Covenant (client-only)
 
-The **Covenant** (sidebar tool row → **Covenant**) keeps the people, places and things of a book with the book — Beuk's take on Novelcrafter's Codex. It is AI-free: the entries are written by the writer, and Beuk only finds where their names appear in the text, on the device.
+The **Covenant** (sidebar tool row → **Covenant**) keeps the people, places and things of a book with the book. It is AI-free: the entries are written by the writer, and Beuk only finds where their names appear in the text, on the device.
 
 **Name.** The feature was called *Story Bible* (sidebar button *Bible*) until 2026-10-27 and is now **Covenant** in every user-facing string. Only the name changed: the code identifiers (`bible*`, `#modalBible`, `#btnBible`), the i18n keys (`bible.*`, `side.toolBible`), the self-check ids (`bible.*`) and the book-file key `bible` stay as they were, so saved books open unchanged. The export file is now `<title>-covenant.json`, but its format id stays `"beuk-story-bible"`, now version 2 (it adds facts, links, changes, the AI setting, scope and the writer's fields), so an old `-story-bible.json` (version 1) export imports into this studio with those absent, and an older studio reading a `-covenant.json` export takes the version 1 fields and ignores the rest. Per-locale names: Covenant, Pacto (es), Pacte (fr), Pakt (de), Patto (it), Pacto (pt), Verbond (nl), Przymierze (pl), Завет (ru), Ahit (tr), الميثاق (ar), 盟約 (ja), 盟约 (zh).
 

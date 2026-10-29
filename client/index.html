@@ -1805,12 +1805,12 @@
       .bib-tag { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--ink-2); }
       .bib-card .tb-btn { margin-top: 10px; padding: 5px 11px; font-size: 12px; }
       /* the entry card: what is true now on top, the rest folded away */
-      .bib-codex { border: 1px solid var(--line-2); border-radius: 12px; background: var(--panel-2); padding: 14px 16px; margin: 0 0 18px; }
-      .bib-cx-top { display: flex; gap: 11px; align-items: center; }
-      .bib-cx-top img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); flex: 0 0 auto; }
-      .bib-cx-id { min-width: 0; flex: 1 1 auto; }
-      .bib-cx-name { font-family: "EB Garamond", Georgia, serif; font-size: 22px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
-      .bib-cx-sub { font-size: 12.5px; color: var(--muted); }
+      .bib-entrycard { border: 1px solid var(--line-2); border-radius: 12px; background: var(--panel-2); padding: 14px 16px; margin: 0 0 18px; }
+      .bib-ec-top { display: flex; gap: 11px; align-items: center; }
+      .bib-ec-top img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); flex: 0 0 auto; }
+      .bib-ec-id { min-width: 0; flex: 1 1 auto; }
+      .bib-ec-name { font-family: "EB Garamond", Georgia, serif; font-size: 22px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+      .bib-ec-sub { font-size: 12.5px; color: var(--muted); }
       .bib-asof { flex: 0 0 auto; margin-inline-start: auto; background: var(--accent-soft); color: var(--ink-2); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
       .bib-now { margin: 12px 0; padding: 10px 12px; border-inline-start: 3px solid var(--accent); background: var(--accent-soft); border-radius: 4px; color: var(--ink); line-height: 1.5; }
       .bib-facts, .bib-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
@@ -23165,8 +23165,8 @@
           tags: bibleList(e.tags, 30, 60),
           exactCase: e.exactCase === true,
           exclude: bibleList(e.exclude, 40, 120),
-          /* the codex keys below are written only when they hold something, so a book that uses none of them serializes exactly as it always has */
-          ...bibleCodexKeys(e)
+          /* the entry keys below are written only when they hold something, so a book that uses none of them serializes exactly as it always has */
+          ...bibleEntryExtraKeys(e)
         };
       }
       /* the Anchor: where in a section a change was marked. Quote and offset locate it; book is set for series entries; pos is the last resolved position, refreshed whenever that book is open. An anchor missing its section or offset can never be found again, so it is refused and the change goes with it. */
@@ -23257,7 +23257,7 @@
         const at = area && editorSyncedSectionId === state.activeId ? (area.selectionStart || 0) : 0;
         return biblePos(bibleBookOrder(), i, at);
       }
-      function bibleCodexKeys(e) {
+      function bibleEntryExtraKeys(e) {
         const out = {};
         const facts = {};
         if (e.facts && typeof e.facts === "object" && !Array.isArray(e.facts)) {
@@ -25016,7 +25016,7 @@
         return '<div' + (full ? ' class="full"' : "") + '><label class="field-lab" for="' + id + '">' + esc(label) + "</label>" + inner + "</div>";
       }
       /* the card on top of the form: Right now, facts, links, and the folded story and details. An entry with none of the new data gets nothing here, so it looks as it always did. */
-      function bibleCodexHtml(e) {
+      function bibleEntryCardHtml(e) {
         const chips = bibleLinkChips(e);
         /* a fact whose field was removed stays in the entry (adding the field back restores it) but is not shown */
         const defined = new Set(bibleFieldDefs(e.type).map((f) => f.id));
@@ -25025,9 +25025,9 @@
         const pos = bibleCursorPos();
         const st = bibleStateAt(e, pos, bibleResolveChange);
         const src = bibleImgSrc(e.imageId);
-        let html = '<section class="bib-codex" id="bibCodex">' +
-          '<div class="bib-cx-top">' + (src ? '<img src="' + src + '" alt="" />' : "") +
-          '<div class="bib-cx-id"><div class="bib-cx-name">' + esc(bibleName(e)) + '</div><div class="bib-cx-sub">' + esc(bibleTypeLabel(e.type)) + (e.aliases.length ? " · " + esc(t("bible.cardAlso", { list: e.aliases.join(", ") })) : "") + "</div></div>" +
+        let html = '<section class="bib-entrycard" id="bibEntryCard">' +
+          '<div class="bib-ec-top">' + (src ? '<img src="' + src + '" alt="" />' : "") +
+          '<div class="bib-ec-id"><div class="bib-ec-name">' + esc(bibleName(e)) + '</div><div class="bib-ec-sub">' + esc(bibleTypeLabel(e.type)) + (e.aliases.length ? " · " + esc(t("bible.cardAlso", { list: e.aliases.join(", ") })) : "") + "</div></div>" +
           '<span class="bib-asof">' + esc(t("bible.asOf", { where: bibleWhere(pos) })) + "</span></div>";
         if (st.now) html += '<div class="bib-now"><b>' + esc(t("bible.nowH")) + "</b> " + esc(bibleChangeText(e, st.now)) + "</div>";
         const keys = Object.keys(st.facts).filter((k) => st.facts[k] && defined.has(k));
@@ -25056,7 +25056,7 @@
       /* the card shows what the form below edits, so it is redrawn as the form changes (only the card; the form keeps its focus). Folds the writer opened stay open. */
       function bibleRefreshCard(e) {
         if (!e) return;
-        const c = $("bibCodex"), html = bibleCodexHtml(e);
+        const c = $("bibEntryCard"), html = bibleEntryCardHtml(e);
         /* nothing left to show: the card goes and the form is the plain one again; the first fact or link of a plain entry brings it in under the back button */
         if (!c) { const back = $("btnBibBack"); if (html && back && $("bibFName") && bibleUi.sel === e.id) back.insertAdjacentHTML("afterend", html); return; }
         if (!html) { c.remove(); return; }
@@ -25076,8 +25076,8 @@
             '<select class="txt-input" id="bibFPic" data-f="imageId"><option value="">' + esc(t("bible.f.pictureNone")) + "</option>" +
             imgs.map((im) => '<option value="' + esc(im.id) + '"' + (im.id === e.imageId ? " selected" : "") + ">" + esc(im.name || im.id) + "</option>").join("") + "</select></div>"
           : '<p class="bib-hint" style="margin:0">' + esc(t("bible.f.pictureNoLib")) + "</p>";
-        const codex = bibleCodexHtml(e);
-        host.innerHTML = back + codex +
+        const card = bibleEntryCardHtml(e);
+        host.innerHTML = back + card +
           '<div class="bib-form">' +
           bibleFieldHtml("bibFType", t("bible.f.type"), typeSel) +
           bibleFieldHtml("bibFName", t("bible.f.name"), '<input class="txt-input bib-name-input" id="bibFName" data-f="name" type="text" maxlength="120" value="' + esc(e.name) + '" />') +
@@ -25817,7 +25817,7 @@
                   "; an old book arrives with none: " + emptyArrival + "; fields through file + book file: " + fieldsOk);
               });
             } },
-          { id: "bible.model.compat", feature: "bible", name: "Covenant entry model: a book with none of the codex data serializes exactly as before; an entry with facts, links, changes, an AI setting, a scope and details round-trips normalize unchanged; the default AI setting and a bad one vanish; a link to a missing entry is dropped; a change with an unusable anchor is dropped; export then import keeps every new field, and a file from before this change imports with them absent",
+          { id: "bible.model.compat", feature: "bible", name: "Covenant entry model: a book with none of the new entry data serializes exactly as before; an entry with facts, links, changes, an AI setting, a scope and details round-trips normalize unchanged; the default AI setting and a bad one vanish; a link to a missing entry is dropped; a change with an unusable anchor is dropped; export then import keeps every new field, and a file from before this change imports with them absent",
             run() {
               return bibleCheckGuard(() => {
                 const NEW = /"(facts|links|changes|ai|scope|fields)"/;
@@ -25857,7 +25857,7 @@
                 const z = bibleEntries()[0];
                 const oldOk = ro.ok && !!z && z.name === "Zed" && !NEW.test(JSON.stringify(serializeBook().bible)) && !("fields" in state.bible);
                 return scVerdict(quiet && roundTrips && dropped && imported && oldOk,
-                  "no codex data → none of the new keys in the book file or the export: " + quiet + "; a full entry normalizes to itself and again: " + roundTrips + "; default/bad AI, bad scope, missing-entry and self links, bad anchors and blank quotes dropped, quote capped at 160: " + dropped +
+                  "no new entry data → none of the new keys in the book file or the export: " + quiet + "; a full entry normalizes to itself and again: " + roundTrips + "; default/bad AI, bad scope, missing-entry and self links, bad anchors and blank quotes dropped, quote capped at 160: " + dropped +
                   "; export → import keeps facts, links (re-pointed), changes, AI, scope, details and fields: " + imported + "; a version 1 file imports with the new keys absent: " + oldOk);
               });
             } },
@@ -25945,7 +25945,7 @@
                   const moreOne = moreEls.length === 1 && !$("bibMore").open; moreEls.forEach((m) => m.remove());
                   const hover = bibleCardHtml(plain);
                   const en = uiLangState === "en";
-                  const sameOld = moreOne && !/bib-codex|bib-now|bib-card-now|bibStory/.test(room + hover) && (!en || (hash(probe.innerHTML) === 273031979 && hash(room) === 3978177824 && hash(hover) === 1490152540));
+                  const sameOld = moreOne && !/bib-entrycard|bib-now|bib-card-now|bibStory/.test(room + hover) && (!en || (hash(probe.innerHTML) === 273031979 && hash(room) === 3978177824 && hash(hover) === 1490152540));
                   /* one change, one fact, one link; the cursor sits in chapter 2, after the change */
                   const other = bibleNormalizeEntry({ id: "cf-tomas", name: "Tomas", type: "character" });
                   const mara = bibleNormalizeEntry({ id: "cf-mara", name: "Mara", type: "character", notes: "**x** and <scr" + "ipt>alert(1)</scr" + "ipt>\n\n# Voice\nDry.",
@@ -25974,11 +25974,11 @@
                   const ta = $("bibFNotes"); ta.value = "now *italic*"; ta.dispatchEvent(new Event("input", { bubbles: true }));
                   const live = $("bibDView") && $("bibDView").innerHTML.indexOf("<em>italic</em>") !== -1;
                   ta.value = ""; ta.dispatchEvent(new Event("input", { bubbles: true }));
-                  const noFold = !$("bibDetailsFold") && !!$("bibCodex");
+                  const noFold = !$("bibDetailsFold") && !!$("bibEntryCard");
                   /* the card follows the form: the name typed in the form is the name on the card */
                   const nm = $("bibFName"); nm.value = "Mara Renamed"; nm.dispatchEvent(new Event("input", { bubbles: true }));
                   const al = $("bibFAliases"); al.value = "Lampwife"; al.dispatchEvent(new Event("input", { bubbles: true }));
-                  const heading = $("bibCodex").querySelector(".bib-cx-name"), sub = $("bibCodex").querySelector(".bib-cx-sub");
+                  const heading = $("bibEntryCard").querySelector(".bib-ec-name"), sub = $("bibEntryCard").querySelector(".bib-ec-sub");
                   const follows = !!heading && heading.textContent === "Mara Renamed" && !!sub && sub.textContent.indexOf("Lampwife") !== -1;
                   mara.notes = "**x** and <scr" + "ipt>alert(1)</scr" + "ipt>\n\n# Voice\nDry.";
                   /* the hover card shows Right now and nothing more of the new data */
@@ -25991,13 +25991,13 @@
                   state.activeId = "cf2"; mara.notes = ""; openBible("cf-mara");
                   const acts = () => document.querySelectorAll("#toasts .toast-action"), nT = acts().length;
                   const rmBtn = document.querySelector('#bibStory [data-bib-chg-del="k1"]'); if (rmBtn) rmBtn.click();
-                  const removed = !!rmBtn && mara.changes === undefined && acts().length === nT + 1 && !!$("bibCodex") && !$("bibCodex").querySelector(".bib-now") && !$("bibStory");
+                  const removed = !!rmBtn && mara.changes === undefined && acts().length === nT + 1 && !!$("bibEntryCard") && !$("bibEntryCard").querySelector(".bib-now") && !$("bibStory");
                   const ub = acts()[acts().length - 1]; if (ub && removed) ub.click();
-                  const undone = removed && Array.isArray(mara.changes) && mara.changes.length === 1 && mara.changes[0].id === "k1" && !!$("bibCodex") && !!$("bibCodex").querySelector(".bib-now") && !!document.querySelector('#bibStory [data-bib-chg-del="k1"]');
+                  const undone = removed && Array.isArray(mara.changes) && mara.changes.length === 1 && mara.changes[0].id === "k1" && !!$("bibEntryCard") && !!$("bibEntryCard").querySelector(".bib-now") && !!document.querySelector('#bibStory [data-bib-chg-del="k1"]');
                   document.querySelectorAll("#toasts .toast").forEach((x) => x.remove());
                   const orphanWords = !en || t("bible.orphan") === "its passage changed or was deleted — mark it again or remove it";
                   return scVerdict(sameOld && nowOk && factOk && chipOk && storyOk && asOfOk && back && aiOff && detailsOk && hoverOk && endOk && notesKept && live && noFold && follows && removed && undone && orphanWords,
-                    "plain entry renders as before: " + sameOld + "; Right now: " + nowOk + "; fact: " + factOk + "; link chip: " + chipOk + "; story count: " + storyOk + "; as-of chip: " + asOfOk + "; reverse link: " + back + "; no AI line: " + aiOff + "; Details bold and escaped: " + detailsOk + "; hover card Right now only: " + hoverOk + "; no cursor says end of book: " + endOk + "; Notes textarea in plain and codex entries, no Details editor: " + notesKept + "; Details preview follows Notes: " + live + "; no Details fold without notes: " + noFold + "; card follows name and aliases typed in the form: " + follows + "; Remove takes the change and Right now away with an Undo toast: " + removed + "; Undo puts it back: " + undone + "; orphan wording: " + orphanWords);
+                    "plain entry renders as before: " + sameOld + "; Right now: " + nowOk + "; fact: " + factOk + "; link chip: " + chipOk + "; story count: " + storyOk + "; as-of chip: " + asOfOk + "; reverse link: " + back + "; no AI line: " + aiOff + "; Details bold and escaped: " + detailsOk + "; hover card Right now only: " + hoverOk + "; no cursor says end of book: " + endOk + "; Notes textarea in plain and grown entries, no Details editor: " + notesKept + "; Details preview follows Notes: " + live + "; no Details fold without notes: " + noFold + "; card follows name and aliases typed in the form: " + follows + "; Remove takes the change and Right now away with an Undo toast: " + removed + "; Undo puts it back: " + undone + "; orphan wording: " + orphanWords);
                 } finally { state.sections = keepSecs; state.images = keepImgs; state.activeId = keepActive; state.bible = keepBible; }
               });
             } },
@@ -26091,17 +26091,17 @@
                   /* Bystander links to nobody and nothing links to it but Mara: drop that one link so it is a plain entry */
                   bibleRemoveLink("lf-mara", 1);
                   const plain = view("lf-bys");
-                  const plainNoCard = !$("bibCodex") && bys.links === undefined && bys.facts === undefined && !!$("bibMore") && !$("bibMore").open;
+                  const plainNoCard = !$("bibEntryCard") && bys.links === undefined && bys.facts === undefined && !!$("bibMore") && !$("bibMore").open;
                   /* a fact set in the form reaches the card; clearing it takes the card away and the form is the plain one again */
                   fire(document.querySelector('#bibDetail input[data-fact="age"]'), "  41 ");
-                  const factSet = !!bys.facts && bys.facts.age === "41" && !!$("bibCodex") && />Age<\/i> 41</.test($("bibCodex").innerHTML);
+                  const factSet = !!bys.facts && bys.facts.age === "41" && !!$("bibEntryCard") && />Age<\/i> 41</.test($("bibEntryCard").innerHTML);
                   fire(document.querySelector('#bibDetail input[data-fact="age"]'), "");
-                  const cardGone = !$("bibCodex") && bys.facts === undefined && $("bibDetail").innerHTML === plain;
+                  const cardGone = !$("bibEntryCard") && bys.facts === undefined && $("bibDetail").innerHTML === plain;
                   /* the last link goes the same way, through the remove button */
                   bibleAddLink("lf-bys", "lf-veyl", "owes");
-                  view("lf-bys"); const chipThere = !!$("bibCodex");
+                  view("lf-bys"); const chipThere = !!$("bibEntryCard");
                   const un = document.querySelector('#bibDetail [data-bib-unlink="0"]'); if (un) un.click();
-                  const linkGone = chipThere && !!un && !$("bibCodex") && $("bibDetail").innerHTML === plain && bys.links === undefined;
+                  const linkGone = chipThere && !!un && !$("bibEntryCard") && $("bibDetail").innerHTML === plain && bys.links === undefined;
                   /* deleting House Veyl removes the links to it and nothing else */
                   bibleAddLink("lf-bys", "lf-veyl", "owes"); bibleAddLink("lf-mara", "lf-veyl", "serves"); bibleAddLink("lf-mara", "lf-bys", "friend of");
                   bibleSetFact("lf-mara", "age", "34"); mara.notes = "kept";
@@ -26109,11 +26109,11 @@
                   const delOk = !bibleById("lf-veyl") && mara.links.length === 1 && mara.links[0].to === "lf-bys" && bys.links === undefined && mara.facts.age === "34" && mara.notes === "kept" && bibleEntries().length === 2;
                   /* a removed field hides its values; adding it back restores them; saving drops them for good */
                   view("lf-mara");
-                  const shown = />Age<\/i> 34</.test($("bibCodex").innerHTML) && !!document.querySelector('#bibDetail input[data-fact="age"]');
+                  const shown = />Age<\/i> 34</.test($("bibEntryCard").innerHTML) && !!document.querySelector('#bibDetail input[data-fact="age"]');
                   bibleRemoveField("character", "age"); view("lf-mara");
-                  const hidden = !/>34</.test($("bibCodex").innerHTML) && !document.querySelector('#bibDetail input[data-fact="age"]') && mara.facts.age === "34";
+                  const hidden = !/>34</.test($("bibEntryCard").innerHTML) && !document.querySelector('#bibDetail input[data-fact="age"]') && mara.facts.age === "34";
                   const readded = bibleAddField("character", "Age") === "age"; view("lf-mara");
-                  const restored = readded && />Age<\/i> 34</.test($("bibCodex").innerHTML);
+                  const restored = readded && />Age<\/i> 34</.test($("bibEntryCard").innerHTML);
                   bibleRemoveField("character", "age");
                   const normed = bibleNormalize(state.bible);
                   const dropped = normed.entries.find((e) => e.id === "lf-mara").facts === undefined && !("fields" in normed);
@@ -26122,10 +26122,10 @@
                   mara.facts = { age: "34" };
                   view("lf-mara");
                   $("bibFType").value = "place"; $("bibFType").dispatchEvent(new Event("change", { bubbles: true }));
-                  const typeHidden = !/>34</.test($("bibCodex").innerHTML) && !document.querySelector('#bibDetail input[data-fact="age"]') && !!document.querySelector('#bibDetail input[data-fact="region"]');
+                  const typeHidden = !/>34</.test($("bibEntryCard").innerHTML) && !document.querySelector('#bibDetail input[data-fact="age"]') && !!document.querySelector('#bibDetail input[data-fact="region"]');
                   const typeKept = bibleNormalize(state.bible).entries.find((e) => e.id === "lf-mara").facts.age === "34";
                   $("bibFType").value = "character"; $("bibFType").dispatchEvent(new Event("change", { bubbles: true }));
-                  const typeBack = />Age<\/i> 34</.test($("bibCodex").innerHTML) && !!document.querySelector('#bibDetail input[data-fact="age"]');
+                  const typeBack = />Age<\/i> 34</.test($("bibEntryCard").innerHTML) && !!document.querySelector('#bibDetail input[data-fact="age"]');
                   /* (b) removing a field with the x in the manager hides its values and offers Undo; Undo brings the field and the values back; without Undo, once no kind defines it, save drops them */
                   const gone = () => bibleNormalize(state.bible).entries.find((e) => e.id === "lf-mara").facts === undefined;
                   const toasts = () => Array.prototype.slice.call(document.querySelectorAll("#toasts .toast-action"));
@@ -26136,7 +26136,7 @@
                   const rmHidden = bibleFieldDefs("character").length === 0 && mara.facts.age === "34" && !$("bibFieldsMgr").querySelector('[data-fld-id="age"]') && gone();
                   const undo = toasts()[toasts().length - 1]; if (undo) undo.click();
                   const undone = offered && bibleFieldDefs("character").length === 1 && bibleFieldDefs("character")[0].id === "age" && !!$("bibFieldsMgr").querySelector('[data-fld-id="age"]') && !gone();
-                  view("lf-mara"); const undoShown = />Age<\/i> 34</.test($("bibCodex").innerHTML);
+                  view("lf-mara"); const undoShown = />Age<\/i> 34</.test($("bibEntryCard").innerHTML);
                   bibleUi.mode = "fields"; bibleRender();
                   $("bibFieldsMgr").querySelector('[data-fld-type="character"][data-fld-del="age"]').click();
                   const noUndoDropped = gone() && mara.facts.age === "34";
@@ -26270,7 +26270,7 @@
                   const ids = (l) => l.map((c) => c.id).join(",");
                   if (!st.now || st.now.id !== "c6" || ids(st.past) !== "c5,c6" || ids(st.later) !== "c7,c9" || ids(st.orphans) !== "cx,c7o") bad.push("Right now at Book 7 chapter 1: now " + (st.now && st.now.id) + ", past " + ids(st.past) + ", later " + ids(st.later) + ", orphans " + ids(st.orphans));
                   openBible("sx-mara");
-                  const nowEl = document.querySelector("#bibCodex .bib-now");
+                  const nowEl = document.querySelector("#bibEntryCard .bib-now");
                   if (!nowEl || nowEl.textContent.indexOf("walks with a cane") === -1) bad.push("the card's Right now does not show Book 6's change: " + (nowEl ? nowEl.textContent : "no line"));
                   const brute = insBodySections(state.sections).reduce((n, s) => n + (bibleBruteCount(s.content, [mara], true)[mara.id] || 0), 0);
                   const men = bibleMentions();
@@ -26290,7 +26290,7 @@
                   cloud.user = null;
                   Object.assign(bibleSeriesMem, { shelf: { "m-five": { rev: 1, title: "Book Five", key: "salt road", order: 5, ids: ["sx-book5"] }, "m-six": { rev: 1, title: "Book Six", key: "salt road", order: 6, ids: ["sx-book6"] } }, ids: null });
                   state.activeId = "bibc1"; openBible("sx-mara");
-                  const chip = document.querySelector("#bibCodex .bib-asof"), story = () => Array.prototype.map.call(document.querySelectorAll("#bibStory li"), (li) => li.textContent);
+                  const chip = document.querySelector("#bibEntryCard .bib-asof"), story = () => Array.prototype.map.call(document.querySelectorAll("#bibStory li"), (li) => li.textContent);
                   if (!chip || chip.textContent !== t("bible.asOf", { where: t("bible.bookAt", { n: fmtNum(7), where: castSecLabel(state.sections[0]) }) })) bad.push("the as-of chip reads " + (chip && chip.textContent));
                   if (!story().some((x) => x.indexOf("Book Six:") === 0 && x.indexOf("walks with a cane") !== -1) || !story().some((x) => x.indexOf(t("bible.otherBook") + ":") === 0 && x.indexOf("captain at last") !== -1)) bad.push("other-book rows not named by their book: " + story().join(" | "));
                   /* R23: the open book unnumbered: no other book's change is interleaved or counts toward Right now; each is listed from its book, order unknown, with the one line about numbering */
@@ -26299,7 +26299,7 @@
                   const ids2 = (l) => l.map((c) => c.id).join(",");
                   if (su.now || su.past.length || ids2(su.unordered) !== "c5,c6,c9" || ids2(su.orphans) !== "cx,c7o") bad.push("unnumbered open book: now " + (su.now && su.now.id) + ", past " + ids2(su.past) + ", unordered " + ids2(su.unordered) + ", orphans " + ids2(su.orphans));
                   openBible("sx-mara");
-                  if (document.querySelector("#bibCodex .bib-now") || !$("bibNumberHint") || !story().some((x) => x.indexOf(t("bible.orderUnknown", { book: "Book Five" }) + ":") === 0) || $("bibCodex").querySelector(".bib-asof").textContent !== t("bible.asOf", { where: castSecLabel(state.sections[0]) })) bad.push("unnumbered card: " + story().join(" | "));
+                  if (document.querySelector("#bibEntryCard .bib-now") || !$("bibNumberHint") || !story().some((x) => x.indexOf(t("bible.orderUnknown", { book: "Book Five" }) + ":") === 0) || $("bibEntryCard").querySelector(".bib-asof").textContent !== t("bible.asOf", { where: castSecLabel(state.sections[0]) })) bad.push("unnumbered card: " + story().join(" | "));
                   /* numbered here, but a change saved from an unnumbered book is unordered too */
                   state.meta.seriesNumber = 7; cid("c5").anchor.pos = [0, 3, 10];
                   su = bibleStateAt(mara, bibleCursorPos(), bibleResolveChange);

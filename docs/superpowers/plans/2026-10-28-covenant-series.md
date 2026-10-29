@@ -8,7 +8,7 @@
 
 **Tech Stack:** vanilla JS single-file studio (`client/index.html`), Express + TypeScript + Postgres (`src/`), `node:test` via tsx, in-browser `SELF_CHECKS` registered in `src/housekeeping/registry.ts`.
 
-**Spec:** `docs/superpowers/specs/2026-10-28-covenant-codex-design.md`
+**Spec:** `docs/superpowers/specs/2026-10-28-covenant-series-design.md`
 
 ## Global Constraints
 
@@ -171,4 +171,4 @@ Behaviour (spec): signed out → series area shows `bible.seriesSignIn` only. Si
 - [ ] **Step 1:** Full suite: `bash /c/Users/vikra/Projects/beuk-final/run-tests.sh /c/Users/vikra/Projects/beuk-final/beuk-saas` → `TSC_OK`, `# fail 0`.
 - [ ] **Step 2:** Studio: `runBeukSelfChecks().filter(r => !r.pass)` → `[]` on 8090 (rebuild the app image first: Task 8 changed `src/`).
 - [ ] **Step 3:** Changelog entry + roadmap line; scrub `bash C:/Users/vikra/.claude/scrub/scrub-check.sh /c/Users/vikra/Projects/beuk-final/beuk-saas` → only the accepted items.
-- [ ] **Step 4: Commit** `docs: Covenant codex-grade release notes`
+- [ ] **Step 4: Commit** `docs: Covenant release notes`
