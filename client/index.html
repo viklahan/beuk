@@ -1751,6 +1751,39 @@
       .bib-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
       .bib-tag { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line-2); color: var(--ink-2); }
       .bib-card .tb-btn { margin-top: 10px; padding: 5px 11px; font-size: 12px; }
+      /* the entry card: what is true now on top, the rest folded away */
+      .bib-codex { border: 1px solid var(--line-2); border-radius: 12px; background: var(--panel-2); padding: 14px 16px; margin: 0 0 18px; }
+      .bib-cx-top { display: flex; gap: 11px; align-items: center; }
+      .bib-cx-top img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); flex: 0 0 auto; }
+      .bib-cx-id { min-width: 0; flex: 1 1 auto; }
+      .bib-cx-name { font-family: "EB Garamond", Georgia, serif; font-size: 22px; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+      .bib-cx-sub { font-size: 12.5px; color: var(--muted); }
+      .bib-asof { flex: 0 0 auto; margin-inline-start: auto; background: var(--accent-soft); color: var(--ink-2); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+      .bib-now { margin: 12px 0; padding: 10px 12px; border-inline-start: 3px solid var(--accent); background: var(--accent-soft); border-radius: 4px; color: var(--ink); line-height: 1.5; }
+      .bib-facts, .bib-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+      .bib-fact { border: 1px solid var(--line-2); border-radius: 6px; padding: 3px 8px; font-size: 12.5px; background: var(--panel); color: var(--ink); }
+      .bib-fact i { font-style: normal; color: var(--muted); }
+      .bib-chip { border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 10px; background: var(--panel); color: var(--ink-2); font: inherit; font-size: 12.5px; cursor: pointer; }
+      .bib-chip:hover { border-color: var(--accent); color: var(--ink); }
+      .bib-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .bib-fold { border-top: 1px solid var(--line); padding: 8px 0 2px; margin-top: 8px; }
+      .bib-fold > summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--ink-2); }
+      .bib-tl { list-style: none; margin: 8px 0 0 6px; padding: 0 0 0 12px; border-inline-start: 2px solid var(--line-2); }
+      .bib-tl li { position: relative; margin: 6px 0; font-size: 13px; color: var(--ink-2); }
+      .bib-tl li::before { content: ""; position: absolute; inset-inline-start: -17px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
+      .bib-tl li.on { color: var(--ink); }
+      .bib-tl li.on::before { background: var(--accent); }
+      .bib-tl li.later { opacity: .55; }
+      .bib-tl li.orphan { color: var(--muted); font-style: italic; }
+      .bib-tl-note { color: var(--muted); }
+      .bib-dtools { display: flex; gap: 6px; margin: 8px 0 6px; }
+      .bib-dtools .tb-btn { padding: 3px 10px; font-size: 12.5px; }
+      .bib-codex textarea.txt-input { width: 100%; box-sizing: border-box; resize: vertical; font-family: inherit; line-height: 1.5; font-size: 13.5px; }
+      .bib-dview { margin-top: 8px; font-family: "EB Garamond", Georgia, serif; font-size: 16px; line-height: 1.55; color: var(--ink); }
+      .bib-dview:empty { display: none; }
+      .bib-dview p { margin: 6px 0; }
+      .bib-dh { font-weight: 700; font-size: 1.1em; }
+      .bib-card .bib-card-now { padding: 6px 9px; border-inline-start: 3px solid var(--accent); background: var(--accent-soft); border-radius: 4px; color: var(--ink); }
       @media (max-width: 760px) {
         .bib-main { grid-template-columns: minmax(0, 1fr); }
         .bib-main.is-detail .bib-side { display: none; }
@@ -21793,6 +21826,12 @@
         "bible.cardOpen": "Open in the Covenant",
         "bible.cardAlso": "Also called {list}",
         "bible.cardAria": "Covenant entry",
+        "bible.asOf": "as of {where}", "bible.asOfEnd": "the end of the book",
+        "bible.nowH": "Right now",
+        "bible.storyH": "Story so far · {n} change", "bible.storyHPlural": "Story so far · {n} changes",
+        "bible.later": "later, not yet true here", "bible.orphan": "its passage was deleted — re-pin or remove",
+        "bible.detailsH": "Details", "bible.detailsBold": "Bold", "bible.detailsItalic": "Italic",
+        "bible.linkFrom": "{label} (from {name})",
         "imglib.role.bible": "picture of an entry"
       });
       Object.assign(UI_STRINGS.es, {
@@ -21877,6 +21916,12 @@
         "bible.cardOpen": "Abrir en el Pacto",
         "bible.cardAlso": "También llamado {list}",
         "bible.cardAria": "Entrada del Pacto",
+        "bible.asOf": "a fecha de {where}", "bible.asOfEnd": "el final del libro",
+        "bible.nowH": "Ahora mismo",
+        "bible.storyH": "Historia hasta ahora · {n} cambio", "bible.storyHPlural": "Historia hasta ahora · {n} cambios",
+        "bible.later": "más adelante, aún no es cierto aquí", "bible.orphan": "su pasaje fue borrado — vuelve a fijarlo o quítalo",
+        "bible.detailsH": "Detalles", "bible.detailsBold": "Negrita", "bible.detailsItalic": "Cursiva",
+        "bible.linkFrom": "{label} (desde {name})",
         "imglib.role.bible": "imagen de una entrada"
       });
       Object.assign(UI_STRINGS.fr, {
@@ -21961,6 +22006,12 @@
         "bible.cardOpen": "Ouvrir dans le Pacte",
         "bible.cardAlso": "Aussi appelé {list}",
         "bible.cardAria": "Fiche du Pacte",
+        "bible.asOf": "à la date de {where}", "bible.asOfEnd": "la fin du livre",
+        "bible.nowH": "En ce moment",
+        "bible.storyH": "Histoire jusqu’ici · {n} changement", "bible.storyHPlural": "Histoire jusqu’ici · {n} changements",
+        "bible.later": "plus tard, pas encore vrai ici", "bible.orphan": "son passage a été supprimé — épinglez-le de nouveau ou retirez-le",
+        "bible.detailsH": "Détails", "bible.detailsBold": "Gras", "bible.detailsItalic": "Italique",
+        "bible.linkFrom": "{label} (de {name})",
         "imglib.role.bible": "image d'une fiche"
       });
       Object.assign(UI_STRINGS.de, {
@@ -22045,6 +22096,12 @@
         "bible.cardOpen": "Im Pakt öffnen",
         "bible.cardAlso": "Auch genannt {list}",
         "bible.cardAria": "Eintrag im Pakt",
+        "bible.asOf": "Stand: {where}", "bible.asOfEnd": "Ende des Buches",
+        "bible.nowH": "Jetzt",
+        "bible.storyH": "Bisherige Geschichte · {n} Änderung", "bible.storyHPlural": "Bisherige Geschichte · {n} Änderungen",
+        "bible.later": "später, hier noch nicht wahr", "bible.orphan": "die Textstelle wurde gelöscht — neu anheften oder entfernen",
+        "bible.detailsH": "Details", "bible.detailsBold": "Fett", "bible.detailsItalic": "Kursiv",
+        "bible.linkFrom": "{label} (von {name})",
         "imglib.role.bible": "Bild eines Eintrags"
       });
       Object.assign(UI_STRINGS.it, {
@@ -22129,6 +22186,12 @@
         "bible.cardOpen": "Apri nel Patto",
         "bible.cardAlso": "Detto anche {list}",
         "bible.cardAria": "Voce del Patto",
+        "bible.asOf": "fino a {where}", "bible.asOfEnd": "la fine del libro",
+        "bible.nowH": "Adesso",
+        "bible.storyH": "La storia finora · {n} cambiamento", "bible.storyHPlural": "La storia finora · {n} cambiamenti",
+        "bible.later": "più avanti, non ancora vero qui", "bible.orphan": "il suo passaggio è stato eliminato — fissalo di nuovo o rimuovilo",
+        "bible.detailsH": "Dettagli", "bible.detailsBold": "Grassetto", "bible.detailsItalic": "Corsivo",
+        "bible.linkFrom": "{label} (da {name})",
         "imglib.role.bible": "immagine di una voce"
       });
       Object.assign(UI_STRINGS.pt, {
@@ -22213,6 +22276,12 @@
         "bible.cardOpen": "Abrir no Pacto",
         "bible.cardAlso": "Também chamado {list}",
         "bible.cardAria": "Entrada do Pacto",
+        "bible.asOf": "até {where}", "bible.asOfEnd": "o fim do livro",
+        "bible.nowH": "Agora",
+        "bible.storyH": "História até aqui · {n} mudança", "bible.storyHPlural": "História até aqui · {n} mudanças",
+        "bible.later": "mais adiante, ainda não vale aqui", "bible.orphan": "a passagem foi apagada — fixe de novo ou remova",
+        "bible.detailsH": "Detalhes", "bible.detailsBold": "Negrito", "bible.detailsItalic": "Itálico",
+        "bible.linkFrom": "{label} (de {name})",
         "imglib.role.bible": "imagem de uma entrada"
       });
       Object.assign(UI_STRINGS.nl, {
@@ -22297,6 +22366,12 @@
         "bible.cardOpen": "Openen in het Verbond",
         "bible.cardAlso": "Ook genoemd {list}",
         "bible.cardAria": "Item van het Verbond",
+        "bible.asOf": "stand van {where}", "bible.asOfEnd": "het einde van het boek",
+        "bible.nowH": "Op dit moment",
+        "bible.storyH": "Verhaal tot nu toe · {n} verandering", "bible.storyHPlural": "Verhaal tot nu toe · {n} veranderingen",
+        "bible.later": "later, hier nog niet waar", "bible.orphan": "de passage is verwijderd — pin opnieuw vast of verwijder",
+        "bible.detailsH": "Details", "bible.detailsBold": "Vet", "bible.detailsItalic": "Cursief",
+        "bible.linkFrom": "{label} (van {name})",
         "imglib.role.bible": "afbeelding van een item"
       });
       Object.assign(UI_STRINGS.pl, {
@@ -22381,6 +22456,12 @@
         "bible.cardOpen": "Otwórz w Przymierzu",
         "bible.cardAlso": "Zwany też {list}",
         "bible.cardAria": "Wpis Przymierza",
+        "bible.asOf": "stan na {where}", "bible.asOfEnd": "koniec książki",
+        "bible.nowH": "Teraz",
+        "bible.storyH": "Dotychczasowa historia · {n} zmiana", "bible.storyHPlural": "Dotychczasowa historia · {n} zmiany",
+        "bible.later": "później, tu jeszcze nieprawdziwe", "bible.orphan": "jego fragment został usunięty — przypnij ponownie albo usuń",
+        "bible.detailsH": "Szczegóły", "bible.detailsBold": "Pogrubienie", "bible.detailsItalic": "Kursywa",
+        "bible.linkFrom": "{label} (od {name})",
         "imglib.role.bible": "obraz wpisu"
       });
       Object.assign(UI_STRINGS.ru, {
@@ -22465,6 +22546,12 @@
         "bible.cardOpen": "Открыть в Завете",
         "bible.cardAlso": "Также зовётся {list}",
         "bible.cardAria": "Запись Завета",
+        "bible.asOf": "на момент: {where}", "bible.asOfEnd": "конец книги",
+        "bible.nowH": "Сейчас",
+        "bible.storyH": "История к этому месту · {n} изменение", "bible.storyHPlural": "История к этому месту · {n} изменений",
+        "bible.later": "позже, здесь ещё не так", "bible.orphan": "его фрагмент удалён — закрепите заново или удалите",
+        "bible.detailsH": "Подробности", "bible.detailsBold": "Жирный", "bible.detailsItalic": "Курсив",
+        "bible.linkFrom": "{label} (от {name})",
         "imglib.role.bible": "изображение записи"
       });
       Object.assign(UI_STRINGS.tr, {
@@ -22549,6 +22636,12 @@
         "bible.cardOpen": "Ahit'te aç",
         "bible.cardAlso": "Diğer adları: {list}",
         "bible.cardAria": "Ahit kaydı",
+        "bible.asOf": "{where} itibarıyla", "bible.asOfEnd": "kitabın sonu",
+        "bible.nowH": "Şu anda",
+        "bible.storyH": "Şimdiye kadarki hikâye · {n} değişiklik", "bible.storyHPlural": "Şimdiye kadarki hikâye · {n} değişiklik",
+        "bible.later": "sonra, burada henüz doğru değil", "bible.orphan": "bölümü silindi — yeniden sabitleyin ya da kaldırın",
+        "bible.detailsH": "Ayrıntılar", "bible.detailsBold": "Kalın", "bible.detailsItalic": "İtalik",
+        "bible.linkFrom": "{label} ({name} kaydından)",
         "imglib.role.bible": "bir kaydın görseli"
       });
       Object.assign(UI_STRINGS.ar, {
@@ -22633,6 +22726,12 @@
         "bible.cardOpen": "افتح في الميثاق",
         "bible.cardAlso": "يُدعى أيضًا {list}",
         "bible.cardAria": "مدخل في الميثاق",
+        "bible.asOf": "حتى {where}", "bible.asOfEnd": "نهاية الكتاب",
+        "bible.nowH": "الآن",
+        "bible.storyH": "القصة حتى الآن · {n} تغيير", "bible.storyHPlural": "القصة حتى الآن · {n} تغييرات",
+        "bible.later": "لاحقا، ليس صحيحا هنا بعد", "bible.orphan": "حُذف مقطعه — ثبّته من جديد أو أزله",
+        "bible.detailsH": "التفاصيل", "bible.detailsBold": "غامق", "bible.detailsItalic": "مائل",
+        "bible.linkFrom": "{label} (من {name})",
         "imglib.role.bible": "صورة مدخل"
       });
       Object.assign(UI_STRINGS.ja, {
@@ -22717,6 +22816,12 @@
         "bible.cardOpen": "盟約で開く",
         "bible.cardAlso": "別名：{list}",
         "bible.cardAria": "盟約の項目",
+        "bible.asOf": "{where} 時点", "bible.asOfEnd": "本の終わり",
+        "bible.nowH": "現在",
+        "bible.storyH": "ここまでの物語 · {n} 件の変更", "bible.storyHPlural": "ここまでの物語 · {n} 件の変更",
+        "bible.later": "あと、ここではまだ当てはまりません", "bible.orphan": "その箇所は削除されました。固定し直すか、取り除いてください",
+        "bible.detailsH": "詳細", "bible.detailsBold": "太字", "bible.detailsItalic": "斜体",
+        "bible.linkFrom": "{label}（{name} から）",
         "imglib.role.bible": "項目の画像"
       });
       Object.assign(UI_STRINGS["zh-Hans"], {
@@ -22801,6 +22906,12 @@
         "bible.cardOpen": "在盟约中打开",
         "bible.cardAlso": "又称 {list}",
         "bible.cardAria": "盟约条目",
+        "bible.asOf": "截至 {where}", "bible.asOfEnd": "全书末尾",
+        "bible.nowH": "此刻",
+        "bible.storyH": "至此的故事 · {n} 处变化", "bible.storyHPlural": "至此的故事 · {n} 处变化",
+        "bible.later": "稍后，此处尚未成立", "bible.orphan": "其段落已被删除，请重新固定或移除",
+        "bible.detailsH": "详情", "bible.detailsBold": "粗体", "bible.detailsItalic": "斜体",
+        "bible.linkFrom": "{label}（来自 {name}）",
         "imglib.role.bible": "条目的图片"
       });
       UI_PLURAL_FORMS.pl = UI_PLURAL_FORMS.pl || {};
@@ -22938,6 +23049,7 @@
         for (let i = 0; i < n; i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d < 0 ? -1 : 1; }
         return 0;
       }
+      const BIBLE_END = [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
       /* where this book sits in its series; a lone book is 0 (Task 7 makes the field real) */
       function bibleBookOrder() { return Number(state.meta && state.meta.seriesNumber) || 0; }
       /* where a change stands in the open book. A change marked in another book is placed by the position saved with it, because that book is never opened here; an orphan (passage gone, or no saved position) gives null. */
@@ -22949,6 +23061,7 @@
       }
       /* what is true about an entry at a point in the story. Changes are walked in story order (a tie goes to the one marked later); each one at or before the point moves "now" forward and lays its fact over the entry's base facts. */
       function bibleStateAt(entry, pos, resolve) {
+        if (!pos) pos = BIBLE_END; /* no chapter open reads as the end of the book, so every change so far counts */
         const out = { now: null, facts: Object.assign({}, entry && entry.facts), past: [], later: [], orphans: [] };
         const placed = [];
         (entry && Array.isArray(entry.changes) ? entry.changes : []).forEach((c, i) => {
@@ -23417,6 +23530,47 @@
         }
         return el;
       }
+      /* The AI line (how the entry is sent to a model) belongs to the bring-your-own-key project; until a key exists there is nothing to choose, so the card shows nothing. */
+      function bibleAiAvailable() { return false; }
+      function bibleAiHtml() { return ""; }
+      /* the cursor as words: the chapter it is in, or the end of the book when nothing is open */
+      function bibleWhere(pos) {
+        const sec = pos && state.sections[pos[1]];
+        return sec ? castSecLabel(sec) : t("bible.asOfEnd");
+      }
+      /* where one change sits, in words ("" when its book is not the open one) */
+      function bibleChangeWhere(c) {
+        const a = c && c.anchor; if (!a || (a.book && a.book !== (state.meta && state.meta.bookId))) return "";
+        const sec = state.sections.find((x) => x.id === a.sec);
+        return sec ? castSecLabel(sec) : "";
+      }
+      /* a field's name as the writer set it for this kind of entry; an id nobody labelled shows as itself */
+      function bibleFieldLabel(type, id) {
+        const f = state.bible && state.bible.fields && state.bible.fields[type];
+        const hit = Array.isArray(f) && f.find((x) => x.id === id);
+        return hit ? hit.label : id;
+      }
+      /* what a change says: its own words, else the fact it sets */
+      function bibleChangeText(e, c) {
+        if (c.text) return c.text;
+        return c.fact ? bibleFieldLabel(e.type, c.fact.field) + ": " + c.fact.value : "";
+      }
+      /* links in both directions: the ones this entry makes, and the ones other entries make to it, said from this entry's side */
+      function bibleLinkChips(e) {
+        const out = [];
+        (e.links || []).forEach((l) => { const o = bibleById(l.to); if (o) out.push({ to: o.id, text: (l.label ? l.label + " " : "") + bibleName(o) }); });
+        bibleEntries().forEach((o) => {
+          if (o.id === e.id) return;
+          (o.links || []).forEach((l) => { if (l.to === e.id) out.push({ to: o.id, text: l.label ? t("bible.linkFrom", { label: l.label, name: bibleName(o) }) : bibleName(o) }); });
+        });
+        return out;
+      }
+      /* Details, as the desk writes: escaped first (inlineMd does that), then **bold** and *italic*; a line starting with # is a heading; a blank line starts a paragraph */
+      function bibleDetailsHtml(text) {
+        return String(text || "").replace(/\r\n?/g, "\n").split(/\n{2,}/).map((blk) => blk.trim()).filter(Boolean).map((blk) =>
+          blk.split("\n").map((ln) => { const m = /^(#{1,3})\s+(.+)$/.exec(ln); return m ? '<span class="bib-dh">' + inlineMd(m[2]) + "</span>" : inlineMd(ln); }).join("<br>")
+        ).map((x) => "<p>" + x + "</p>").join("");
+      }
       function bibleCardHtml(e) {
         const src = bibleImgSrc(e.imageId);
         let html = '<div class="bib-card-top">' + (src ? '<img src="' + src + '" alt="" />' : "") +
@@ -23424,6 +23578,8 @@
           '<div class="bib-card-name">' + esc(bibleName(e)) + "</div></div></div>";
         if (e.aliases.length) html += '<p class="bib-card-also">' + esc(t("bible.cardAlso", { list: e.aliases.join(", ") })) + "</p>";
         if (e.description) html += "<p>" + esc(e.description) + "</p>";
+        const st = bibleStateAt(e, bibleCursorPos(), bibleResolveChange);
+        if (st.now) html += '<p class="bib-card-now"><b>' + esc(t("bible.nowH")) + "</b> " + esc(bibleChangeText(e, st.now)) + "</p>";
         if (e.tags.length) html += '<div class="bib-tags">' + e.tags.map((g) => '<span class="bib-tag">' + esc(g) + "</span>").join("") + "</div>";
         html += '<button type="button" class="tb-btn" data-bib-open="' + esc(e.id) + '">' + bibleIconSvg("book-marked") + esc(t("bible.cardOpen")) + "</button>";
         return html;
@@ -23519,6 +23675,37 @@
       function bibleFieldHtml(id, label, inner, full) {
         return '<div' + (full ? ' class="full"' : "") + '><label class="field-lab" for="' + id + '">' + esc(label) + "</label>" + inner + "</div>";
       }
+      /* the card on top of the form: Right now, facts, links, and the folded story and details. An entry with none of the new data gets nothing here, so it looks as it always did. */
+      function bibleCodexHtml(e) {
+        const chips = bibleLinkChips(e);
+        const facts = e.facts || {};
+        if (!(e.changes && e.changes.length) && !Object.keys(facts).length && !chips.length) return "";
+        const pos = bibleCursorPos();
+        const st = bibleStateAt(e, pos, bibleResolveChange);
+        const src = bibleImgSrc(e.imageId);
+        let html = '<section class="bib-codex" id="bibCodex">' +
+          '<div class="bib-cx-top">' + (src ? '<img src="' + src + '" alt="" />' : "") +
+          '<div class="bib-cx-id"><div class="bib-cx-name">' + esc(bibleName(e)) + '</div><div class="bib-cx-sub">' + esc(bibleTypeLabel(e.type)) + (e.aliases.length ? " · " + esc(t("bible.cardAlso", { list: e.aliases.join(", ") })) : "") + "</div></div>" +
+          '<span class="bib-asof">' + esc(t("bible.asOf", { where: bibleWhere(pos) })) + "</span></div>";
+        if (st.now) html += '<div class="bib-now"><b>' + esc(t("bible.nowH")) + "</b> " + esc(bibleChangeText(e, st.now)) + "</div>";
+        const keys = Object.keys(st.facts).filter((k) => st.facts[k]);
+        const order = ((state.bible && state.bible.fields && state.bible.fields[e.type]) || []).map((f) => f.id);
+        keys.sort((a, b) => { const x = order.indexOf(a), y = order.indexOf(b); return (x < 0 ? 1e6 : x) - (y < 0 ? 1e6 : y); });
+        if (keys.length) html += '<div class="bib-facts">' + keys.map((k) => '<span class="bib-fact"><i>' + esc(bibleFieldLabel(e.type, k)) + "</i> " + esc(st.facts[k]) + "</span>").join("") + "</div>";
+        if (chips.length) html += '<div class="bib-chips">' + chips.map((c) => '<button type="button" class="bib-chip" data-bib-goto="' + esc(c.to) + '">' + esc(c.text) + "</button>").join("") + "</div>";
+        if (e.changes && e.changes.length) {
+          const row = (c, cls, note) => "<li" + (cls ? ' class="' + cls + '"' : "") + ">" + (bibleChangeWhere(c) ? "<b>" + esc(bibleChangeWhere(c)) + ":</b> " : "") + esc(bibleChangeText(e, c)) + (note ? ' <span class="bib-tl-note">(' + esc(note) + ")</span>" : "") + "</li>";
+          html += '<details class="bib-fold" id="bibStory"><summary>' + esc(t("bible.storyH", { count: e.changes.length, n: fmtNum(e.changes.length) })) + '</summary><ul class="bib-tl">' +
+            st.past.map((c) => row(c, c === st.now ? "on" : "", "")).join("") +
+            st.later.map((c) => row(c, "later", t("bible.later"))).join("") +
+            st.orphans.map((c) => row(c, "orphan", t("bible.orphan"))).join("") + "</ul></details>";
+        }
+        html += '<details class="bib-fold" id="bibDetailsFold"><summary>' + esc(t("bible.detailsH")) + "</summary>" +
+          '<div class="bib-dtools"><button type="button" class="tb-btn" data-bib-wrap="**" aria-label="' + esc(t("bible.detailsBold")) + '"><b>B</b></button><button type="button" class="tb-btn" data-bib-wrap="*" aria-label="' + esc(t("bible.detailsItalic")) + '"><i>I</i></button></div>' +
+          '<textarea class="txt-input" id="bibFDetails" data-f="notes" rows="5" placeholder="' + esc(t("bible.f.notesPh")) + '">' + esc(e.notes) + "</textarea>" +
+          '<div class="bib-dview" id="bibDView">' + bibleDetailsHtml(e.notes) + "</div></details>" + bibleAiHtml(e) + "</section>";
+        return html;
+      }
       function bibleRenderEntry() {
         const host = $("bibDetail"); if (!host) return;
         const e = bibleById(bibleUi.sel);
@@ -23531,13 +23718,14 @@
             '<select class="txt-input" id="bibFPic" data-f="imageId"><option value="">' + esc(t("bible.f.pictureNone")) + "</option>" +
             imgs.map((im) => '<option value="' + esc(im.id) + '"' + (im.id === e.imageId ? " selected" : "") + ">" + esc(im.name || im.id) + "</option>").join("") + "</select></div>"
           : '<p class="bib-hint" style="margin:0">' + esc(t("bible.f.pictureNoLib")) + "</p>";
-        host.innerHTML = back +
+        const codex = bibleCodexHtml(e);
+        host.innerHTML = back + codex +
           '<div class="bib-form">' +
           bibleFieldHtml("bibFType", t("bible.f.type"), typeSel) +
           bibleFieldHtml("bibFName", t("bible.f.name"), '<input class="txt-input bib-name-input" id="bibFName" data-f="name" type="text" maxlength="120" value="' + esc(e.name) + '" />') +
           bibleFieldHtml("bibFAliases", t("bible.f.aliases"), '<input class="txt-input" id="bibFAliases" data-f="aliases" type="text" value="' + esc(e.aliases.join(", ")) + '" placeholder="' + esc(t("bible.f.aliasesPh")) + '" />', true) +
           bibleFieldHtml("bibFDesc", t("bible.f.desc"), '<input class="txt-input" id="bibFDesc" data-f="description" type="text" maxlength="400" value="' + esc(e.description) + '" placeholder="' + esc(t("bible.f.descPh")) + '" />', true) +
-          bibleFieldHtml("bibFNotes", t("bible.f.notes"), '<textarea class="txt-input" id="bibFNotes" data-f="notes" rows="4" placeholder="' + esc(t("bible.f.notesPh")) + '">' + esc(e.notes) + "</textarea>", true) +
+          (codex ? "" : bibleFieldHtml("bibFNotes", t("bible.f.notes"), '<textarea class="txt-input" id="bibFNotes" data-f="notes" rows="4" placeholder="' + esc(t("bible.f.notesPh")) + '">' + esc(e.notes) + "</textarea>", true)) +
           bibleFieldHtml("bibFPic", t("bible.f.picture"), picSel) +
           bibleFieldHtml("bibFTags", t("bible.f.tags"), '<input class="txt-input" id="bibFTags" data-f="tags" type="text" value="' + esc(e.tags.join(", ")) + '" placeholder="' + esc(t("bible.f.tagsPh")) + '" />') +
           '<div class="full"><div class="switch-row"><div class="sw-txt"><b>' + esc(t("bible.f.exact")) + "</b><span>" + esc(t("bible.f.exactDesc")) + '</span></div><button type="button" class="switch" id="tglBibExact" aria-pressed="' + String(e.exactCase) + '" aria-label="' + esc(t("bible.f.exact")) + '"></button></div></div>' +
@@ -23677,7 +23865,7 @@
           bibleTouched(true);
         } else if (f === "aliases") { const nk = e.name.toLowerCase(); e.aliases = bibleList(v, 30, 120).filter((a) => a.toLowerCase() !== nk); bibleTouched(true); }
         else if (f === "description") { e.description = bibleLine(v, 400); bibleTouched(false); }
-        else if (f === "notes") { e.notes = bibleStr(v, 20000); bibleTouched(false); }
+        else if (f === "notes") { e.notes = bibleStr(v, 20000); bibleTouched(false); const dv = $("bibDView"); if (dv) dv.innerHTML = bibleDetailsHtml(e.notes); }
         else if (f === "tags") { e.tags = bibleList(v, 30, 60); bibleTouched(false); }
         else if (f === "exclude") { e.exclude = bibleList(v, 40, 120); bibleTouched(true); }
         else if (f === "type") { if (BIBLE_TYPES.indexOf(v) !== -1) e.type = v; bibleTouched(false); bibleRenderList(); }
@@ -23875,6 +24063,10 @@
             if (h) bibleJump(h.sec, h.s, h.e);
             return;
           }
+          const go = tg.closest("[data-bib-goto]");
+          if (go && bibleById(go.getAttribute("data-bib-goto"))) { bibleUi.sel = go.getAttribute("data-bib-goto"); bibleUi.mode = "entry"; bibleRender(); return; }
+          const wr = tg.closest("[data-bib-wrap]");
+          if (wr) { const ta = $("bibFDetails"); if (ta) wrapSelection(ta, wr.getAttribute("data-bib-wrap")); return; }
           if (tg.closest("#btnBibBack")) { bibleUi.detail = false; bibleUi.mode = "entry"; bibleRender(); return; }
           if (tg.closest("#btnBibDelete")) { bibleDelete(bibleUi.sel); return; }
           if (tg.closest("#tglBibExact")) {
@@ -24195,7 +24387,7 @@
                   "; one word inside the quote changed, orphan: " + orphan + "; an empty or blank selection, or an unknown section, gives no anchor: " + noBlank + "; 160-character cap keeps emoji whole: " + pairSafe);
               });
             } },
-          { id: "bible.change.now", feature: "bible", name: "Covenant right now: with changes at chapters 1, 3 and 5 and the cursor in chapter 4, the latest change is chapter 3's and chapter 5's is still ahead; a fact set at chapter 3 shows at chapter 4 and not at chapter 2; an orphaned change is listed only as an orphan",
+          { id: "bible.change.now", feature: "bible", name: "Covenant right now: with changes at chapters 1, 3 and 5 and the cursor in chapter 4, the latest change is chapter 3's and chapter 5's is still ahead; a fact set at chapter 3 shows at chapter 4 and not at chapter 2; an orphaned change is listed only as an orphan; with no chapter open it reads as the end of the book",
             run() {
               return bibleCheckGuard(() => {
                 const mk = (id, content) => ({ id: id, kind: "body", type: "chapter", number: "1", title: id, subtitle: "", content: content });
@@ -24218,9 +24410,63 @@
                   const tieOk = tie.now.id === "t2" && tie.facts.k === "b";
                   const far = { id: "f", anchor: { sec: "zz", quote: "q", at: 0, book: "other-book", pos: [1, 2, 3] } };
                   const farOk = biblePosCmp(bibleResolveChange(far), biblePos(0, 99, 99)) > 0 && bibleResolveChange({ id: "g", anchor: { sec: "zz", quote: "q", at: 0, book: "other-book" } }) === null;
-                  return scVerdict(nowOk && factsOk && orphanOk && tieOk && farOk,
-                    "cursor in chapter 4, latest change is chapter 3's with chapter 5's ahead: " + nowOk + "; chapter 3's fact shows at chapter 4 and not at chapter 2: " + factsOk + "; orphan only in orphans: " + orphanOk + "; tie goes to the later mark: " + tieOk + "; other-book change placed by its saved position, none saved is an orphan: " + farOk);
+                  /* no chapter open: the end of the book, so the last change that has a place counts and nothing is ahead */
+                  const atEnd = bibleStateAt(entry, null, bibleResolveChange);
+                  const endOk = !!atEnd.now && atEnd.now.id === "c5" && atEnd.later.length === 0 && atEnd.facts.status === "Recovered";
+                  return scVerdict(nowOk && factsOk && orphanOk && tieOk && farOk && endOk,
+                    "cursor in chapter 4, latest change is chapter 3's with chapter 5's ahead: " + nowOk + "; chapter 3's fact shows at chapter 4 and not at chapter 2: " + factsOk + "; orphan only in orphans: " + orphanOk + "; tie goes to the later mark: " + tieOk + "; other-book change placed by its saved position, none saved is an orphan: " + farOk + "; no cursor reads as the end of the book: " + endOk);
                 } finally { state.sections = keep; }
+              });
+            } },
+          { id: "bible.card.folded", feature: "bible", name: "Covenant entry card: an entry with none of the new data renders exactly the markup it did before (room and desk hover card); with one change, one fact and one link it shows Right now, the fact, the link chip and “Story so far · 1 change”; no AI line while AI is unavailable; Details turns **x** into bold and escapes a script tag",
+            run() {
+              return bibleCheckGuard(() => {
+                const hash = (x) => { let h = 5381; for (let i = 0; i < x.length; i++) h = ((h * 33) ^ x.charCodeAt(i)) >>> 0; return h; };
+                const mk = (id, content) => ({ id: id, kind: "body", type: "chapter", number: "1", title: id, subtitle: "", content: content });
+                const keepSecs = state.sections, keepImgs = state.images, keepActive = state.activeId, keepBible = state.bible;
+                try {
+                  state.sections = BIBLE_FIXTURE_SECS();
+                  state.images = [];
+                  /* today's markup, captured from the code before this card existed: the room's entry view and the desk hover card of a plain entry */
+                  const plain = bibleNormalizeEntry({ id: "gold1", name: "Mara", type: "character", aliases: ["the Archivist"], description: "Lamp-keeper", notes: "Quiet.", tags: ["crew"] });
+                  state.bible = { entries: [plain] }; bibleUi.sel = "gold1"; bibleUi.mode = "entry";
+                  bibleRenderEntry();
+                  const room = $("bibDetail").innerHTML;
+                  const hover = bibleCardHtml(plain);
+                  const en = uiLangState === "en";
+                  const sameOld = !/bib-codex|bib-now|bib-card-now|bibStory/.test(room + hover) && (!en || (hash(room) === 273031979 && hash(hover) === 1490152540));
+                  /* one change, one fact, one link; the cursor sits in chapter 2, after the change */
+                  const other = bibleNormalizeEntry({ id: "cf-tomas", name: "Tomas", type: "character" });
+                  const mara = bibleNormalizeEntry({ id: "cf-mara", name: "Mara", type: "character", notes: "**x** and <scr" + "ipt>alert(1)</scr" + "ipt>\n\n# Voice\nDry.",
+                    facts: { age: "34" }, links: [{ to: "cf-tomas", label: "sister of" }],
+                    changes: [{ id: "k1", anchor: { sec: "cf1", quote: "Mara fell on the stairs.", at: 0 }, text: "injured, left leg" }] });
+                  state.sections = [mk("cf1", "Mara fell on the stairs."), mk("cf2", "Quiet."), mk("cf3", "Later.")];
+                  state.bible = { entries: [mara, other], fields: { character: [{ id: "age", label: "Age" }] } };
+                  state.activeId = "cf2"; bibleUi.sel = "cf-mara";
+                  bibleRenderEntry();
+                  const card = $("bibDetail").innerHTML;
+                  const nowOk = card.indexOf(esc(t("bible.nowH"))) !== -1 && card.indexOf("injured, left leg") !== -1;
+                  const factOk = />Age<\/i> 34</.test(card);
+                  const chipOk = />sister of Tomas<\/button>/.test(card);
+                  const storyOk = card.indexOf(esc(t("bible.storyH", { count: 1, n: fmtNum(1) }))) !== -1;
+                  const asOfOk = card.indexOf(esc(t("bible.asOf", { where: castSecLabel(state.sections[1]) }))) !== -1;
+                  /* the link is seen from the other end too, in the reverse words */
+                  state.bible = { entries: [mara, other] }; bibleUi.sel = "cf-tomas";
+                  bibleRenderEntry();
+                  const back = $("bibDetail").innerHTML.indexOf(esc(t("bible.linkFrom", { label: "sister of", name: "Mara" }))) !== -1;
+                  const aiOff = !bibleAiAvailable() && !/bib-ai/.test(card);
+                  state.bible = { entries: [mara, other] }; bibleUi.sel = "cf-mara"; bibleRenderEntry();
+                  const dv = $("bibDView").innerHTML;
+                  const detailsOk = dv.indexOf("<strong>x</strong>") !== -1 && dv.indexOf("&lt;script&gt;") !== -1 && dv.indexOf("<script") === -1 && dv.indexOf("Voice") !== -1;
+                  /* the hover card shows Right now and nothing more of the new data */
+                  const hov = bibleCardHtml(mara);
+                  const hoverOk = hov.indexOf("injured, left leg") !== -1 && hov.indexOf(esc(t("bible.nowH"))) !== -1 && !/bib-facts|bib-chips|bibStory/.test(hov);
+                  /* nothing open: the end of the book */
+                  state.activeId = null; bibleRenderEntry();
+                  const endOk = $("bibDetail").innerHTML.indexOf(esc(t("bible.asOf", { where: t("bible.asOfEnd") }))) !== -1;
+                  return scVerdict(sameOld && nowOk && factOk && chipOk && storyOk && asOfOk && back && aiOff && detailsOk && hoverOk && endOk,
+                    "plain entry renders as before: " + sameOld + "; Right now: " + nowOk + "; fact: " + factOk + "; link chip: " + chipOk + "; story count: " + storyOk + "; as-of chip: " + asOfOk + "; reverse link: " + back + "; no AI line: " + aiOff + "; Details bold and escaped: " + detailsOk + "; hover card Right now only: " + hoverOk + "; no cursor says end of book: " + endOk);
+                } finally { state.sections = keepSecs; state.images = keepImgs; state.activeId = keepActive; state.bible = keepBible; }
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",

@@ -11,7 +11,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.change.now', 'bible.editor.perf'];
+const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.change.now', 'bible.card.folded', 'bible.editor.perf'];
 
 test('story bible: every self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -35,7 +35,7 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
   const keys = Array.from(block.slice(enStart, enEnd).matchAll(/"([\w.]+)": "/g)).map((m) => m[1]);
   assert.ok(keys.length > 60, `english keys: ${keys.length}`);
   const placeholders: Record<string, string[]> = { 'bible.noMatch': ['{q}'], 'bible.deleted': ['{name}'], 'bible.cellTip': ['{sec}'], 'bible.cellNone': ['{sec}'],
-    'bible.passagesMore': ['{n}', '{m}'], 'bible.exported': ['{file}'], 'bible.importSkipped': ['{list}'], 'bible.cardAlso': ['{list}'] };
+    'bible.passagesMore': ['{n}', '{m}'], 'bible.exported': ['{file}'], 'bible.importSkipped': ['{list}'], 'bible.cardAlso': ['{list}'], 'bible.asOf': ['{where}'], 'bible.storyH': ['{n}'], 'bible.storyHPlural': ['{n}'], 'bible.linkFrom': ['{label}', '{name}'] };
   for (const k of keys) {
     const vals = Array.from(block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]*)"`, 'g'))).map((m) => m[1]);
     assert.equal(vals.length, 13, `${k} appears in ${vals.length} locales`);

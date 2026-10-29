@@ -3120,6 +3120,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.card.folded',
+    title: 'Covenant entry card: a plain entry renders as before; one change, fact and link show Right now, the fact, the chip and the story count; no AI line while AI is unavailable; Details renders bold and escapes script',
+    kind: 'client-only',
+    reason: 'The Covenant lives in the client book document and is drawn in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',
