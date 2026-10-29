@@ -3087,8 +3087,11 @@
           <div class="full"><label class="field-lab" for="setSubtitle" data-i18n="set.subtitle">Subtitle (optional)</label><input class="txt-input" id="setSubtitle" type="text" placeholder="A novel of the eastern channel" /></div>
           <div><label class="field-lab" for="setAuthor" data-i18n="set.author">Author</label><input class="txt-input" id="setAuthor" type="text" /></div>
           <div><label class="field-lab" for="setPublisher" data-i18n="set.publisher">Publisher</label><input class="txt-input" id="setPublisher" type="text" /></div>
+          <div class="full" style="display:flex;gap:12px;align-items:flex-end;">
+            <div style="flex:1;min-width:0;"><label class="field-lab" for="setSeries" data-i18n="set.series">Series</label><input class="txt-input" id="setSeries" type="text" maxlength="120" data-i18n-ph="set.seriesPh" placeholder="Name of the series, if this book is part of one" /></div>
+            <div style="flex:0 0 10em;"><label class="field-lab" for="setSeriesNumber" data-i18n="set.seriesNumber">Number in series</label><input class="txt-input" id="setSeriesNumber" type="text" inputmode="numeric" maxlength="3" placeholder="1" /></div>
+          </div>
           <div><label class="field-lab" for="setIsbn" data-i18n="set.isbn">ISBN (optional)</label><input class="txt-input" id="setIsbn" type="text" placeholder="978-1-23456-789-0" /></div>
-          <div><label class="field-lab" for="setSeriesNumber" data-i18n="set.seriesNumber">Number in series</label><input class="txt-input" id="setSeriesNumber" type="text" inputmode="numeric" maxlength="3" placeholder="1" style="max-width:6em;" /></div>
           <div><label class="field-lab" for="setYear" data-i18n="set.year">Year</label><input class="txt-input" id="setYear" type="text" inputmode="numeric" placeholder="2026" /></div>
           <div class="full"><label class="field-lab" for="setRightsMode" data-i18n="rights.label">Rights</label><select class="txt-input" id="setRightsMode"><option value="reserved" data-i18n="rights.reserved">All rights reserved</option><option value="pd" data-i18n="rights.pd">Public domain</option><option value="cc" data-i18n="rights.cc">Creative Commons</option><option value="custom" data-i18n="rights.custom">Custom</option></select></div>
           <div class="full" id="rowRightsCustom" hidden><label class="field-lab" for="setRights" data-i18n="rights.customText">Rights line</label><input class="txt-input" id="setRights" type="text" data-i18n-ph="rights.customPh" placeholder="Your own rights statement" /></div>
@@ -21876,6 +21879,7 @@
         "bible.markFor": "Mark a change for {name}…", "bible.changeH": "{name}, from here on", "bible.changePh": "What changed, in your own words", "bible.factQ": "Update a quick fact too? (optional)", "bible.noFact": "No fact change", "bible.pinnedTo": "Pinned to: {where}", "bible.markSave": "Save", "bible.markTip": "Mark a change (Alt+M)", "bible.markFull": "{name} already has {n} changes.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (from {name})",
+        "set.series": "Series", "set.seriesPh": "Name of the series, if this book is part of one",
         "set.seriesNumber": "Number in series",
         "bible.more": "More…", "bible.factsH": "Quick facts", "bible.newFieldPh": "New fact name, like Age", "bible.add": "Add", "bible.linksH": "Links", "bible.linkToPh": "Link to…", "bible.linkLabelPh": "How, like serves or sister of", "bible.unlink": "Remove link to {name}", "bible.noFieldsHint": "No quick facts yet. Name one above to start.", "bible.noOthers": "Add another entry to link to it.", "bible.fieldsBtn": "Fact fields", "bible.fieldsH": "Fact fields", "bible.fieldsSub": "The quick facts each kind of entry keeps, like Age or Rank. Renaming a field keeps what you wrote under it.", "bible.tplH": "Start from a template", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science fiction", "bible.tplNonfiction": "Nonfiction", "bible.tplApplied": "Template applied. New fields: {n}.", "bible.fieldName": "Field name", "bible.fieldRemove": "Remove field {name}", "bible.fieldNone": "No fields yet.", "bible.fieldRemoved": "Field {name} removed.",
         "imglib.role.bible": "picture of an entry"
@@ -21969,6 +21973,7 @@
         "bible.markFor": "Marcar un cambio para {name}…", "bible.changeH": "{name}, a partir de aquí", "bible.changePh": "Qué cambió, con tus palabras", "bible.factQ": "¿Actualizar también un dato rápido? (opcional)", "bible.noFact": "Sin cambio de dato", "bible.pinnedTo": "Fijado en: {where}", "bible.markSave": "Guardar", "bible.markTip": "Marcar un cambio (Alt+M)", "bible.markFull": "{name} ya tiene {n} cambios.",
         "bible.detailsH": "Detalles",
         "bible.linkFrom": "{label} (desde {name})",
+        "set.series": "Serie", "set.seriesPh": "Nombre de la serie, si este libro forma parte de una",
         "set.seriesNumber": "Número en la serie",
         "bible.more": "Más…", "bible.factsH": "Datos rápidos", "bible.newFieldPh": "Nuevo dato, por ejemplo Edad", "bible.add": "Añadir", "bible.linksH": "Vínculos", "bible.linkToPh": "Vincular con…", "bible.linkLabelPh": "Cómo, por ejemplo sirve a o hermana de", "bible.unlink": "Quitar el vínculo con {name}", "bible.noFieldsHint": "Aún no hay datos rápidos. Nombra uno arriba para empezar.", "bible.noOthers": "Añade otra entrada para vincularla.", "bible.fieldsBtn": "Campos de datos", "bible.fieldsH": "Campos de datos", "bible.fieldsSub": "Los datos rápidos que guarda cada tipo de entrada, como Edad o Rango. Renombrar un campo conserva lo que escribiste.", "bible.tplH": "Empezar con una plantilla", "bible.tplFantasy": "Fantasía", "bible.tplScifi": "Ciencia ficción", "bible.tplNonfiction": "No ficción", "bible.tplApplied": "Plantilla aplicada. Campos nuevos: {n}.", "bible.fieldName": "Nombre del campo", "bible.fieldRemove": "Quitar el campo {name}", "bible.fieldNone": "Aún no hay campos.", "bible.fieldRemoved": "Campo {name} quitado.",
         "imglib.role.bible": "imagen de una entrada"
@@ -22062,6 +22067,7 @@
         "bible.markFor": "Marquer un changement pour {name}…", "bible.changeH": "{name}, à partir d'ici", "bible.changePh": "Ce qui a changé, avec vos mots", "bible.factQ": "Mettre aussi à jour un fait rapide ? (facultatif)", "bible.noFact": "Aucun changement de fait", "bible.pinnedTo": "Épinglé à : {where}", "bible.markSave": "Enregistrer", "bible.markTip": "Marquer un changement (Alt+M)", "bible.markFull": "{name} a déjà {n} changements.",
         "bible.detailsH": "Détails",
         "bible.linkFrom": "{label} (de {name})",
+        "set.series": "Série", "set.seriesPh": "Nom de la série, si ce livre en fait partie",
         "set.seriesNumber": "Numéro dans la série",
         "bible.more": "Plus…", "bible.factsH": "Infos rapides", "bible.newFieldPh": "Nouvelle info, par exemple Âge", "bible.add": "Ajouter", "bible.linksH": "Liens", "bible.linkToPh": "Lier à…", "bible.linkLabelPh": "Comment, par exemple sert ou sœur de", "bible.unlink": "Retirer le lien vers {name}", "bible.noFieldsHint": "Pas encore d’infos rapides. Nommez-en une ci-dessus pour commencer.", "bible.noOthers": "Ajoutez une autre fiche pour la lier.", "bible.fieldsBtn": "Champs d’infos", "bible.fieldsH": "Champs d’infos", "bible.fieldsSub": "Les infos rapides que garde chaque type de fiche, comme Âge ou Rang. Renommer un champ conserve ce que vous avez écrit.", "bible.tplH": "Partir d’un modèle", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science-fiction", "bible.tplNonfiction": "Non-fiction", "bible.tplApplied": "Modèle appliqué. Nouveaux champs : {n}.", "bible.fieldName": "Nom du champ", "bible.fieldRemove": "Retirer le champ {name}", "bible.fieldNone": "Pas encore de champs.", "bible.fieldRemoved": "Champ {name} retiré.",
         "imglib.role.bible": "image d'une fiche"
@@ -22155,6 +22161,7 @@
         "bible.markFor": "Änderung für {name} markieren…", "bible.changeH": "{name}, ab hier", "bible.changePh": "Was sich geändert hat, in deinen Worten", "bible.factQ": "Auch einen Kurzfakt aktualisieren? (optional)", "bible.noFact": "Keine Faktenänderung", "bible.pinnedTo": "Angeheftet an: {where}", "bible.markSave": "Speichern", "bible.markTip": "Änderung markieren (Alt+M)", "bible.markFull": "{name} hat schon {n} Änderungen.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (von {name})",
+        "set.series": "Reihe", "set.seriesPh": "Name der Reihe, falls dieses Buch zu einer gehört",
         "set.seriesNumber": "Nummer in der Reihe",
         "bible.more": "Mehr…", "bible.factsH": "Kurzangaben", "bible.newFieldPh": "Neue Angabe, zum Beispiel Alter", "bible.add": "Hinzufügen", "bible.linksH": "Verknüpfungen", "bible.linkToPh": "Verknüpfen mit…", "bible.linkLabelPh": "Wie, zum Beispiel dient oder Schwester von", "bible.unlink": "Verknüpfung mit {name} entfernen", "bible.noFieldsHint": "Noch keine Kurzangaben. Benenne oben eine, um zu beginnen.", "bible.noOthers": "Lege einen weiteren Eintrag an, um ihn zu verknüpfen.", "bible.fieldsBtn": "Angabenfelder", "bible.fieldsH": "Angabenfelder", "bible.fieldsSub": "Die Kurzangaben, die jede Art von Eintrag führt, etwa Alter oder Rang. Ein umbenanntes Feld behält, was du darunter geschrieben hast.", "bible.tplH": "Mit einer Vorlage beginnen", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science-Fiction", "bible.tplNonfiction": "Sachbuch", "bible.tplApplied": "Vorlage angewendet. Neue Felder: {n}.", "bible.fieldName": "Feldname", "bible.fieldRemove": "Feld {name} entfernen", "bible.fieldNone": "Noch keine Felder.", "bible.fieldRemoved": "Feld {name} entfernt.",
         "imglib.role.bible": "Bild eines Eintrags"
@@ -22248,6 +22255,7 @@
         "bible.markFor": "Segna un cambiamento per {name}…", "bible.changeH": "{name}, da qui in poi", "bible.changePh": "Che cosa è cambiato, con parole tue", "bible.factQ": "Aggiornare anche un dato rapido? (facoltativo)", "bible.noFact": "Nessun cambio di dato", "bible.pinnedTo": "Fissato a: {where}", "bible.markSave": "Salva", "bible.markTip": "Segna un cambiamento (Alt+M)", "bible.markFull": "{name} ha già {n} cambiamenti.",
         "bible.detailsH": "Dettagli",
         "bible.linkFrom": "{label} (da {name})",
+        "set.series": "Serie", "set.seriesPh": "Nome della serie, se questo libro ne fa parte",
         "set.seriesNumber": "Numero nella serie",
         "bible.more": "Altro…", "bible.factsH": "Dati rapidi", "bible.newFieldPh": "Nuovo dato, per esempio Età", "bible.add": "Aggiungi", "bible.linksH": "Collegamenti", "bible.linkToPh": "Collega a…", "bible.linkLabelPh": "Come, per esempio serve o sorella di", "bible.unlink": "Rimuovi il collegamento con {name}", "bible.noFieldsHint": "Ancora nessun dato rapido. Dai un nome a uno qui sopra per iniziare.", "bible.noOthers": "Aggiungi un’altra voce per collegarla.", "bible.fieldsBtn": "Campi dei dati", "bible.fieldsH": "Campi dei dati", "bible.fieldsSub": "I dati rapidi che ogni tipo di voce conserva, come Età o Grado. Rinominare un campo mantiene ciò che hai scritto.", "bible.tplH": "Parti da un modello", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Fantascienza", "bible.tplNonfiction": "Saggistica", "bible.tplApplied": "Modello applicato. Nuovi campi: {n}.", "bible.fieldName": "Nome del campo", "bible.fieldRemove": "Rimuovi il campo {name}", "bible.fieldNone": "Ancora nessun campo.", "bible.fieldRemoved": "Campo {name} rimosso.",
         "imglib.role.bible": "immagine di una voce"
@@ -22341,6 +22349,7 @@
         "bible.markFor": "Marcar uma mudança para {name}…", "bible.changeH": "{name}, a partir daqui", "bible.changePh": "O que mudou, com suas palavras", "bible.factQ": "Atualizar também um dado rápido? (opcional)", "bible.noFact": "Sem mudança de dado", "bible.pinnedTo": "Fixado em: {where}", "bible.markSave": "Salvar", "bible.markTip": "Marcar uma mudança (Alt+M)", "bible.markFull": "{name} já tem {n} mudanças.",
         "bible.detailsH": "Detalhes",
         "bible.linkFrom": "{label} (de {name})",
+        "set.series": "Série", "set.seriesPh": "Nome da série, se este livro faz parte de uma",
         "set.seriesNumber": "Número na série",
         "bible.more": "Mais…", "bible.factsH": "Dados rápidos", "bible.newFieldPh": "Novo dado, por exemplo Idade", "bible.add": "Adicionar", "bible.linksH": "Ligações", "bible.linkToPh": "Ligar a…", "bible.linkLabelPh": "Como, por exemplo serve ou irmã de", "bible.unlink": "Remover a ligação com {name}", "bible.noFieldsHint": "Ainda sem dados rápidos. Dê nome a um acima para começar.", "bible.noOthers": "Adicione outra entrada para a ligar.", "bible.fieldsBtn": "Campos de dados", "bible.fieldsH": "Campos de dados", "bible.fieldsSub": "Os dados rápidos que cada tipo de entrada guarda, como Idade ou Posto. Mudar o nome de um campo mantém o que escreveu.", "bible.tplH": "Começar por um modelo", "bible.tplFantasy": "Fantasia", "bible.tplScifi": "Ficção científica", "bible.tplNonfiction": "Não ficção", "bible.tplApplied": "Modelo aplicado. Campos novos: {n}.", "bible.fieldName": "Nome do campo", "bible.fieldRemove": "Remover o campo {name}", "bible.fieldNone": "Ainda sem campos.", "bible.fieldRemoved": "Campo {name} removido.",
         "imglib.role.bible": "imagem de uma entrada"
@@ -22434,6 +22443,7 @@
         "bible.markFor": "Wijziging markeren voor {name}…", "bible.changeH": "{name}, vanaf hier", "bible.changePh": "Wat er veranderde, in je eigen woorden", "bible.factQ": "Ook een snel feit bijwerken? (optioneel)", "bible.noFact": "Geen feitwijziging", "bible.pinnedTo": "Vastgepind op: {where}", "bible.markSave": "Opslaan", "bible.markTip": "Wijziging markeren (Alt+M)", "bible.markFull": "{name} heeft al {n} wijzigingen.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (van {name})",
+        "set.series": "Reeks", "set.seriesPh": "Naam van de reeks, als dit boek erbij hoort",
         "set.seriesNumber": "Nummer in de reeks",
         "bible.more": "Meer…", "bible.factsH": "Snelle feiten", "bible.newFieldPh": "Nieuw feit, bijvoorbeeld Leeftijd", "bible.add": "Toevoegen", "bible.linksH": "Koppelingen", "bible.linkToPh": "Koppel aan…", "bible.linkLabelPh": "Hoe, bijvoorbeeld dient of zus van", "bible.unlink": "Koppeling met {name} verwijderen", "bible.noFieldsHint": "Nog geen snelle feiten. Geef er hierboven een naam aan om te beginnen.", "bible.noOthers": "Voeg nog een item toe om eraan te koppelen.", "bible.fieldsBtn": "Feitvelden", "bible.fieldsH": "Feitvelden", "bible.fieldsSub": "De snelle feiten die elk soort item bewaart, zoals Leeftijd of Rang. Een veld hernoemen behoudt wat je erin schreef.", "bible.tplH": "Begin met een sjabloon", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Sciencefiction", "bible.tplNonfiction": "Non-fictie", "bible.tplApplied": "Sjabloon toegepast. Nieuwe velden: {n}.", "bible.fieldName": "Veldnaam", "bible.fieldRemove": "Veld {name} verwijderen", "bible.fieldNone": "Nog geen velden.", "bible.fieldRemoved": "Veld {name} verwijderd.",
         "imglib.role.bible": "afbeelding van een item"
@@ -22527,6 +22537,7 @@
         "bible.markFor": "Oznacz zmianę dla: {name}…", "bible.changeH": "{name}, od tego miejsca", "bible.changePh": "Co się zmieniło, własnymi słowami", "bible.factQ": "Zaktualizować też szybki fakt? (opcjonalnie)", "bible.noFact": "Bez zmiany faktu", "bible.pinnedTo": "Przypięto do: {where}", "bible.markSave": "Zapisz", "bible.markTip": "Oznacz zmianę (Alt+M)", "bible.markFull": "{name} ma już {n} zmian.",
         "bible.detailsH": "Szczegóły",
         "bible.linkFrom": "{label} (od {name})",
+        "set.series": "Seria", "set.seriesPh": "Nazwa serii, jeśli ta książka jest jej częścią",
         "set.seriesNumber": "Numer w serii",
         "bible.more": "Więcej…", "bible.factsH": "Szybkie fakty", "bible.newFieldPh": "Nowy fakt, na przykład Wiek", "bible.add": "Dodaj", "bible.linksH": "Powiązania", "bible.linkToPh": "Powiąż z…", "bible.linkLabelPh": "Jak, na przykład służy lub siostra", "bible.unlink": "Usuń powiązanie z {name}", "bible.noFieldsHint": "Nie ma jeszcze szybkich faktów. Nazwij jeden powyżej, aby zacząć.", "bible.noOthers": "Dodaj inny wpis, aby go powiązać.", "bible.fieldsBtn": "Pola faktów", "bible.fieldsH": "Pola faktów", "bible.fieldsSub": "Szybkie fakty, które przechowuje każdy rodzaj wpisu, na przykład Wiek lub Ranga. Zmiana nazwy pola zachowuje to, co w nim wpisano.", "bible.tplH": "Zacznij od szablonu", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science fiction", "bible.tplNonfiction": "Literatura faktu", "bible.tplApplied": "Szablon zastosowano. Nowe pola: {n}.", "bible.fieldName": "Nazwa pola", "bible.fieldRemove": "Usuń pole {name}", "bible.fieldNone": "Nie ma jeszcze pól.", "bible.fieldRemoved": "Usunięto pole {name}.",
         "imglib.role.bible": "obraz wpisu"
@@ -22620,6 +22631,7 @@
         "bible.markFor": "Отметить изменение для: {name}…", "bible.changeH": "{name}, с этого места", "bible.changePh": "Что изменилось, своими словами", "bible.factQ": "Обновить и быстрый факт? (по желанию)", "bible.noFact": "Без изменения факта", "bible.pinnedTo": "Закреплено за: {where}", "bible.markSave": "Сохранить", "bible.markTip": "Отметить изменение (Alt+M)", "bible.markFull": "У записи {name} уже {n} изменений.",
         "bible.detailsH": "Подробности",
         "bible.linkFrom": "{label} (от {name})",
+        "set.series": "Серия", "set.seriesPh": "Название серии, если книга входит в серию",
         "set.seriesNumber": "Номер в серии",
         "bible.more": "Ещё…", "bible.factsH": "Быстрые факты", "bible.newFieldPh": "Новый факт, например Возраст", "bible.add": "Добавить", "bible.linksH": "Связи", "bible.linkToPh": "Связать с…", "bible.linkLabelPh": "Как, например служит или сестра", "bible.unlink": "Удалить связь с {name}", "bible.noFieldsHint": "Пока нет быстрых фактов. Назовите один выше, чтобы начать.", "bible.noOthers": "Добавьте ещё одну запись, чтобы связать с ней.", "bible.fieldsBtn": "Поля фактов", "bible.fieldsH": "Поля фактов", "bible.fieldsSub": "Быстрые факты, которые хранит каждый вид записи, например Возраст или Звание. Переименование поля сохраняет то, что вы в нём записали.", "bible.tplH": "Начать с шаблона", "bible.tplFantasy": "Фэнтези", "bible.tplScifi": "Научная фантастика", "bible.tplNonfiction": "Нон-фикшн", "bible.tplApplied": "Шаблон применён. Новых полей: {n}.", "bible.fieldName": "Название поля", "bible.fieldRemove": "Удалить поле {name}", "bible.fieldNone": "Пока нет полей.", "bible.fieldRemoved": "Поле {name} удалено.",
         "imglib.role.bible": "изображение записи"
@@ -22713,6 +22725,7 @@
         "bible.markFor": "{name} için bir değişiklik işaretle…", "bible.changeH": "{name}, buradan itibaren", "bible.changePh": "Ne değişti, kendi sözlerinle", "bible.factQ": "Hızlı bir bilgi de güncellensin mi? (isteğe bağlı)", "bible.noFact": "Bilgi değişmiyor", "bible.pinnedTo": "Sabitlendiği yer: {where}", "bible.markSave": "Kaydet", "bible.markTip": "Değişiklik işaretle (Alt+M)", "bible.markFull": "{name} kaydında zaten {n} değişiklik var.",
         "bible.detailsH": "Ayrıntılar",
         "bible.linkFrom": "{label} ({name} kaydından)",
+        "set.series": "Seri", "set.seriesPh": "Kitap bir serinin parçasıysa serinin adı",
         "set.seriesNumber": "Serideki sıra",
         "bible.more": "Daha fazla…", "bible.factsH": "Hızlı bilgiler", "bible.newFieldPh": "Yeni bilgi adı, örneğin Yaş", "bible.add": "Ekle", "bible.linksH": "Bağlantılar", "bible.linkToPh": "Şuna bağla…", "bible.linkLabelPh": "Nasıl, örneğin hizmet eder ya da kız kardeşi", "bible.unlink": "{name} bağlantısını kaldır", "bible.noFieldsHint": "Henüz hızlı bilgi yok. Başlamak için yukarıda bir tane adlandır.", "bible.noOthers": "Bağlamak için bir kayıt daha ekle.", "bible.fieldsBtn": "Bilgi alanları", "bible.fieldsH": "Bilgi alanları", "bible.fieldsSub": "Her kayıt türünün tuttuğu hızlı bilgiler, örneğin Yaş ya da Rütbe. Bir alanı yeniden adlandırmak altına yazdıklarını korur.", "bible.tplH": "Şablonla başla", "bible.tplFantasy": "Fantezi", "bible.tplScifi": "Bilimkurgu", "bible.tplNonfiction": "Kurgusal olmayan", "bible.tplApplied": "Şablon uygulandı. Yeni alanlar: {n}.", "bible.fieldName": "Alan adı", "bible.fieldRemove": "{name} alanını kaldır", "bible.fieldNone": "Henüz alan yok.", "bible.fieldRemoved": "{name} alanı kaldırıldı.",
         "imglib.role.bible": "bir kaydın görseli"
@@ -22806,6 +22819,7 @@
         "bible.markFor": "وسم تغيير لـ {name}…", "bible.changeH": "{name}، من هنا فصاعدا", "bible.changePh": "ما الذي تغير، بكلماتك", "bible.factQ": "هل تحدّث معلومة سريعة أيضا؟ (اختياري)", "bible.noFact": "بلا تغيير في المعلومة", "bible.pinnedTo": "مثبّت عند: {where}", "bible.markSave": "حفظ", "bible.markTip": "وسم تغيير (Alt+M)", "bible.markFull": "لدى {name} بالفعل {n} تغييرا.",
         "bible.detailsH": "التفاصيل",
         "bible.linkFrom": "{label} (من {name})",
+        "set.series": "السلسلة", "set.seriesPh": "اسم السلسلة، إذا كان هذا الكتاب جزءًا منها",
         "set.seriesNumber": "رقم الكتاب في السلسلة",
         "bible.more": "المزيد…", "bible.factsH": "حقائق سريعة", "bible.newFieldPh": "حقيقة جديدة، مثل العمر", "bible.add": "إضافة", "bible.linksH": "الروابط", "bible.linkToPh": "ربط بـ…", "bible.linkLabelPh": "كيف، مثل يخدم أو أخت", "bible.unlink": "إزالة الرابط مع {name}", "bible.noFieldsHint": "لا حقائق سريعة بعد. سمِّ واحدة أعلاه للبدء.", "bible.noOthers": "أضف مدخلًا آخر لتربطه.", "bible.fieldsBtn": "حقول الحقائق", "bible.fieldsH": "حقول الحقائق", "bible.fieldsSub": "الحقائق السريعة التي يحتفظ بها كل نوع من المداخل، مثل العمر أو الرتبة. إعادة تسمية الحقل تُبقي ما كتبته فيه.", "bible.tplH": "ابدأ من قالب", "bible.tplFantasy": "خيال فانتازي", "bible.tplScifi": "خيال علمي", "bible.tplNonfiction": "غير روائي", "bible.tplApplied": "طُبّق القالب. حقول جديدة: {n}.", "bible.fieldName": "اسم الحقل", "bible.fieldRemove": "إزالة الحقل {name}", "bible.fieldNone": "لا حقول بعد.", "bible.fieldRemoved": "أُزيل الحقل {name}.",
         "imglib.role.bible": "صورة مدخل"
@@ -22899,6 +22913,7 @@
         "bible.markFor": "{name} の変更を記録…", "bible.changeH": "{name}、ここから先", "bible.changePh": "何が変わったか、自分の言葉で", "bible.factQ": "簡単な項目も更新しますか？（任意）", "bible.noFact": "項目の変更なし", "bible.pinnedTo": "固定先: {where}", "bible.markSave": "保存", "bible.markTip": "変更を記録 (Alt+M)", "bible.markFull": "{name} にはすでに {n} 件の変更があります。",
         "bible.detailsH": "詳細",
         "bible.linkFrom": "{label}（{name} から）",
+        "set.series": "シリーズ", "set.seriesPh": "シリーズ名（この本がシリーズの一部の場合）",
         "set.seriesNumber": "シリーズ内の番号",
         "bible.more": "その他…", "bible.factsH": "かんたん情報", "bible.newFieldPh": "新しい項目名（例：年齢）", "bible.add": "追加", "bible.linksH": "リンク", "bible.linkToPh": "リンク先…", "bible.linkLabelPh": "関係（例：仕える、姉妹）", "bible.unlink": "{name} へのリンクを外す", "bible.noFieldsHint": "かんたん情報はまだありません。上で項目名を付けて始めましょう。", "bible.noOthers": "リンクするには、もう一つエントリを追加してください。", "bible.fieldsBtn": "情報の項目", "bible.fieldsH": "情報の項目", "bible.fieldsSub": "エントリの種類ごとに持つかんたん情報（年齢や階級など）です。項目名を変えても、書いた内容は残ります。", "bible.tplH": "テンプレートから始める", "bible.tplFantasy": "ファンタジー", "bible.tplScifi": "SF", "bible.tplNonfiction": "ノンフィクション", "bible.tplApplied": "テンプレートを適用しました。新しい項目：{n}", "bible.fieldName": "項目名", "bible.fieldRemove": "{name} の項目を削除", "bible.fieldNone": "項目はまだありません。", "bible.fieldRemoved": "項目 {name} を削除しました。",
         "imglib.role.bible": "項目の画像"
@@ -22992,6 +23007,7 @@
         "bible.markFor": "为 {name} 标记一处变化…", "bible.changeH": "{name}，从这里起", "bible.changePh": "发生了什么变化，用你自己的话说", "bible.factQ": "要同时更新一项简要事实吗？（可选）", "bible.noFact": "不更改事实", "bible.pinnedTo": "固定于：{where}", "bible.markSave": "保存", "bible.markTip": "标记变化 (Alt+M)", "bible.markFull": "{name} 已有 {n} 处变化。",
         "bible.detailsH": "详情",
         "bible.linkFrom": "{label}（来自 {name}）",
+        "set.series": "系列", "set.seriesPh": "系列名称（如果本书属于某个系列）",
         "set.seriesNumber": "系列序号",
         "bible.more": "更多…", "bible.factsH": "快速信息", "bible.newFieldPh": "新信息名称，例如年龄", "bible.add": "添加", "bible.linksH": "链接", "bible.linkToPh": "链接到…", "bible.linkLabelPh": "关系，例如效力于、姐妹", "bible.unlink": "移除指向 {name} 的链接", "bible.noFieldsHint": "还没有快速信息。先在上方命名一个。", "bible.noOthers": "再添加一个条目才能建立链接。", "bible.fieldsBtn": "信息字段", "bible.fieldsH": "信息字段", "bible.fieldsSub": "每种条目保存的快速信息，例如年龄或军衔。重命名字段不会丢失已写的内容。", "bible.tplH": "从模板开始", "bible.tplFantasy": "奇幻", "bible.tplScifi": "科幻", "bible.tplNonfiction": "非虚构", "bible.tplApplied": "已应用模板。新字段：{n}。", "bible.fieldName": "字段名称", "bible.fieldRemove": "移除字段 {name}", "bible.fieldNone": "还没有字段。", "bible.fieldRemoved": "已移除字段 {name}。",
         "imglib.role.bible": "条目的图片"
@@ -25162,10 +25178,11 @@
                 } finally { state.activeId = keepActive; }
               });
             } },
-          { id: "bible.series.number", feature: "bible", name: "Number in series: the book details form keeps a whole number from 1 to 999 as meta.seriesNumber; blank, 0, text, a decimal or anything over 999 leaves the field absent so a book without one serializes as before; a book file carrying it keeps it and a bad one is dropped; the next book to arrive never inherits it; the Covenant reads it as the book's place in the series",
+          { id: "bible.series.number", feature: "bible", name: "Series and number in series: the book details form keeps a trimmed series name (at most 120 characters, absent when blank) and a whole number from 1 to 999 as meta.seriesNumber; blank, 0, text, a decimal or anything over 999 leaves the field absent so a book without one serializes as before; a book file carrying it keeps it and a bad one is dropped; the next book to arrive never inherits it; the Covenant reads it as the book's place in the series",
             run() {
               return bibleCheckGuard(() => {
                 const bad = [];
+                const saveS = (v) => { openSettings(); $("setSeries").value = v; $("btnSaveSettings").click(); return state.meta.series; };
                 const save = (v) => { openSettings(); $("setSeriesNumber").value = v; $("btnSaveSettings").click(); return state.meta.seriesNumber; };
                 applyBookDoc(buildEmptyBook());
                 if ("seriesNumber" in serializeBook().meta) bad.push("a new book serializes a seriesNumber key");
@@ -25178,6 +25195,12 @@
                   if (save(v) !== undefined || "seriesNumber" in serializeBook().meta) bad.push(JSON.stringify(v) + " left a seriesNumber of " + JSON.stringify(state.meta.seriesNumber));
                 });
                 openSettings(); if ($("setSeriesNumber").value !== "") bad.push("the form shows a number for a book without one");
+                if (saveS("  Salt Road  ") !== "Salt Road") bad.push("a padded series saved as " + JSON.stringify(state.meta.series));
+                if (saveS("x".repeat(200)).length !== 120) bad.push("a 200-character series kept " + state.meta.series.length);
+                if (saveS("   ") !== undefined || "series" in serializeBook().meta) bad.push("a blank series left a key");
+                saveS("Salt Road"); save("2"); applyBookDoc(buildEmptyBook());
+                if ("series" in state.meta || "seriesNumber" in state.meta) bad.push("a freshly arrived book holds series " + JSON.stringify(state.meta.series) + " / number " + JSON.stringify(state.meta.seriesNumber));
+                openSettings(); if ($("setSeries").value !== "" || $("setSeriesNumber").value !== "") bad.push("the form shows a series for a freshly arrived book");
                 const fileOf = (n) => { const d = buildEmptyBook(); d.meta.seriesNumber = n; applyBookDoc(JSON.parse(JSON.stringify(d))); return state.meta.seriesNumber; };
                 if (fileOf(4) !== 4) bad.push("a book file's 4 was not kept");
                 openSettings(); if ($("setSeriesNumber").value !== "4") bad.push("the form shows " + JSON.stringify($("setSeriesNumber").value) + " for a book numbered 4");
@@ -25186,7 +25209,7 @@
                 if ("seriesNumber" in state.meta || "seriesNumber" in serializeBook().meta) bad.push("the next book arrived carrying the last book's number");
                 fileOf(7); applySampleBookSync();
                 if ("seriesNumber" in state.meta) bad.push("the sample arrived carrying the last book's number");
-                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "1 to 999 kept as a number, blank/0/text/decimal/over 999 absent and not serialized, a book file keeps a good number and drops a bad one, the form shows it, and neither a book nor the sample inherits it" };
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "series trimmed to 120 and absent when blank, neither field on a freshly arrived book; 1 to 999 kept as a number, blank/0/text/decimal/over 999 absent and not serialized, a book file keeps a good number and drops a bad one, the form shows it, and neither a book nor the sample inherits it" };
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
@@ -37426,6 +37449,7 @@
         $("setTitle").value = imRealTitle(); $("setTitle").placeholder = t("misc.untitledBook"); $("setSubtitle").value = state.meta.subtitle; /* BEUK:importmeta */
         $("setAuthor").value = state.meta.author;
         $("setPublisher").value = state.meta.publisher; $("setIsbn").value = state.meta.isbn;
+        $("setSeries").value = state.meta.series || "";
         $("setSeriesNumber").value = state.meta.seriesNumber ? String(state.meta.seriesNumber) : "";
         $("setYear").value = state.meta.year; $("setRights").value = state.meta.rights;
         rightsFormFill(); /* BEUK:rights */
@@ -37507,6 +37531,8 @@
           IM_SRC_FIELDS.forEach((f) => { const v = imMetaValue(f); if (v !== imPrev[f]) imSetSource(f, v ? "writer" : ""); });
           state.meta.publisher = $("setPublisher").value.trim();
           state.meta.isbn = $("setIsbn").value.trim();
+          /* the series name is trimmed and held to 120 characters; blank means none, so the key goes (the cover maker then has no series line to fill) */
+          { const sn = $("setSeries").value.trim().slice(0, 120); if (sn) state.meta.series = sn; else delete state.meta.series; }
           bookSeriesNumberInto(state.meta, $("setSeriesNumber").value); /* BEUK:seriesnumber */
           state.meta.year = $("setYear").value.trim();
           rightsFormApply(state.meta); /* BEUK:rights — the choice, and the custom line only when Custom is chosen */
