@@ -53,6 +53,8 @@ body {
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0.25rem 1.1rem; }
 .site-nav a { color: var(--amber); text-decoration: none; font-size: 1rem; }
 .site-nav a:hover { text-decoration: underline; }
+.caife-link { display: inline-flex; align-items: center; gap: 0.3em; }
+.caife-cup { width: 1.05em; height: 1.05em; flex: none; }
 
 .page {
   max-width: 46rem;

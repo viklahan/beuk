@@ -96,6 +96,8 @@ code, .mono { font-family: var(--mono); font-size: 0.88em; }
 .hh-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13.5px; }
 .hh-nav a { color: var(--ink-2); text-decoration: none; }
 .hh-nav a:hover, .hh-nav a[aria-current="page"] { color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); }
+.caife-link { display: inline-flex; align-items: center; gap: 0.3em; }
+.caife-cup { width: 1.05em; height: 1.05em; flex: none; }
 .hh-right { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--panel-3); color: var(--ink-2); font-size: 12px; font-weight: 500; text-decoration: none; }
 .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }

@@ -16,7 +16,7 @@ import { escapeHtml, renderMarkdown } from './markdown.js';
  *   <!--BEUK_KOFI_JAR-->       the Ko-fi tip jar block — rendered ONLY
  *                              when KOFI_URL is configured; when it is
  *                              not, the slot becomes nothing at all.
- *   <!--BEUK_SUPPORT_NAV-->    the header's "Support" link to /support —
+ *   <!--BEUK_SUPPORT_NAV-->    the header's "Caife" link to /support —
  *                              likewise only when KOFI_URL is configured.
  *   {{KOFI_URL}}               the Ko-fi page itself (the /support page's
  *                              button; that page is only served when set).
@@ -69,10 +69,14 @@ export function kofiJarHtml(config: Config): string {
 </aside>`;
 }
 
-/** The header link to the support page — only when Ko-fi is configured,
- *  so the nav never points at a page that 404s. */
+/** The cup on the header's Caife link: Lucide's "coffee", the same icon
+ *  the studio's toolbar uses, inlined so the page loads no icon script. */
+const CAIFE_CUP = '<svg class="caife-cup" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></svg>';
+
+/** The header link to the support page, "Caife" with a cup — only when
+ *  Ko-fi is configured, so the nav never points at a page that 404s. */
 export function supportNavHtml(config: Config): string {
-  return config.kofiUrl ? '<a href="/support" data-kofi>Support</a>' : '';
+  return config.kofiUrl ? `<a class="caife-link" href="/support" data-kofi>${CAIFE_CUP}Caife</a>` : '';
 }
 
 /** The billing gate (see the slot list above) — only on a server with a
