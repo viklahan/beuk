@@ -11,7 +11,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.editor.perf'];
+const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.change.now', 'bible.editor.perf'];
 
 test('story bible: every self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();

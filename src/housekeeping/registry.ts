@@ -3114,6 +3114,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.change.now',
+    title: 'Covenant right now: the latest change at or before the cursor is the entry state, later ones stay ahead, a fact set earlier shows from there on and not before, and orphaned changes never count',
+    kind: 'client-only',
+    reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',
