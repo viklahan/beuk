@@ -2613,6 +2613,33 @@
       .ol-grid td.ol-g-note { padding: 3px; box-shadow: inset 2px 0 0 var(--ol-tc); vertical-align: top; }
       .ol-g-note textarea { display: block; width: 13em; min-height: 38px; resize: vertical; font: inherit; font-size: 12px; line-height: 1.35; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; }
       .ol-g-note textarea:focus { outline: none; border-color: var(--accent); }
+      /* custom fields: a quiet strip of labelled controls on a card or row, a column each in the Grid */
+      .ol-fields { display: flex; flex-direction: column; gap: 4px; }
+      .ol-fld { display: flex; align-items: center; gap: 8px; font-size: 12px; min-width: 0; }
+      .ol-fld-n { flex: 0 0 auto; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+      .ol-fld input[type="text"], .ol-fld input[type="date"], .ol-fld select, .ol-g-fld input[type="text"], .ol-g-fld input[type="date"], .ol-g-fld select {
+        flex: 1 1 auto; min-width: 0; font: inherit; font-size: 12px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px;
+      }
+      .ol-fld input:focus, .ol-fld select:focus, .ol-g-fld input:focus, .ol-g-fld select:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+      .ol-fld input[type="checkbox"], .ol-g-fld input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+      .ol-fld-check { justify-content: flex-start; }
+      .ol-row .ol-fields { margin-top: 8px; }
+      .ol-grid thead th.ol-g-fh { box-shadow: inset 0 3px 0 var(--line-2); min-width: 10.5em; text-align: start; }
+      .ol-grid thead th.ol-g-fh .ol-g-ent { max-width: 14em; }
+      .ol-grid td.ol-g-fld { padding: 3px 5px; vertical-align: middle; }
+      .ol-g-fld input[type="text"], .ol-g-fld input[type="date"], .ol-g-fld select { width: 10em; background: var(--panel); }
+      .ol-fieldrow .ol-fld-name { flex: 0 1 180px; min-width: 90px; font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 2px 5px; }
+      .ol-fieldrow .ol-fld-name:hover { border-color: var(--line-2); }
+      .ol-fieldrow .ol-fld-name:focus, .ol-fld-opts:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+      .ol-fld-kind { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+      .ol-fld-opts { flex: 1 1 200px; min-width: 120px; font: inherit; font-size: 12px; color: var(--ink); background: transparent; border: 1px dashed var(--line-2); border-radius: 5px; padding: 2px 6px; }
+      .ol-fieldrow .ol-uses { margin-inline-start: auto; }
+      .ol-fieldadd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+      .ol-fieldadd .txt-input { width: auto; flex: 0 1 260px; padding: 5px 10px; font-size: 12.5px; }
+      .ol-fieldadd .tb-btn { padding: 5px 12px; font-size: 12px; }
+      .ol-fieldadd .tb-btn svg { width: 14px; height: 14px; }
+      .ol-fld-type { font: inherit; font-size: 12.5px; color: var(--ink); background: var(--panel); border: 1px solid var(--line-2); border-radius: 6px; padding: 4px 8px; }
+      .ol-fld-none { margin: 6px 0 0; color: var(--muted); font-size: 12px; max-width: 60ch; }
       .ol-g-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; }
       .ol-g-empty p { margin: 0; max-width: 52ch; }
       body.zen #tabBtnOutline { display: none; }
@@ -8091,6 +8118,23 @@
         "zh-Hans": { "ol.viewGrid": "网格", "ol.gridSub": "每一行是故事的一个部分。情节线是你自己的列：记下每条情节线在每个部分里做了什么，写之前写之后都可以。盟约的列会自动填满：方格显示这个名字在该部分出现的次数，按正文当前的样子统计。选择一个方格，即可在书桌上打开该名字所在之处。", "ol.gridEmpty": "添加一条情节线，逐部分规划这本书；或在盟约中添加书里的人物、地点和事物，每一个都会在这里成为一列。", "ol.gridOpenCov": "打开盟约", "ol.gridNoSecs": "故事还没有任何部分。", "ol.gridSection": "部分", "ol.gridTotal": "全书", "ol.gridAria": "按部分逐一列出故事，对照情节线和盟约条目", "ol.threadAdd": "添加情节线", "ol.threadName": "新情节线的名称", "ol.threadNamePh": "起个名字，例如：账本", "ol.threadType": "情节线", "ol.threadRename": "情节线「{name}」的名称", "ol.threadDel": "删除情节线「{name}」及其笔记", "ol.threadDeleted": "已删除情节线：{name}", "ol.threadAdded": "已添加情节线：{name}", "ol.threadNoteFor": "{sec}中的{thread}", "ol.threadNotes": "笔记：{n}" }
       };
       Object.keys(OL_GRID_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_GRID_STRINGS[code]); });
+      /* BEUK:outline — custom fields, all 13 packs */
+      const OL_FIELD_STRINGS = {
+        "en": { "ol.fieldsManage": "Custom fields ({n})", "ol.fieldsNone": "No custom fields yet. Add one (a location, a timeline date, a box to tick) and every section gets a place for it, on its card, its row and in the Grid. Fields are notes for you: never exported, never counted as words.", "ol.fieldName": "Name of the new field", "ol.fieldNamePh": "New field: Location, Timeline, Needs research…", "ol.fieldKind": "Kind of field", "ol.fieldType.text": "Text", "ol.fieldType.check": "Checkbox", "ol.fieldType.list": "List", "ol.fieldType.date": "Date", "ol.fieldAdd": "Add field", "ol.fieldAdded": "Field added: {name}", "ol.fieldRename": "Rename the field {name}", "ol.fieldOptions": "Choices for {name}, separated by commas", "ol.fieldOptionsPh": "Choices, separated by commas", "ol.fieldDel": "Remove the field {name} from the whole book", "ol.fieldDeleted": "Field removed: {name}", "ol.fieldFor": "{field} for {name}", "ol.fieldUnset": "Not set", "ol.fieldFilled": "set: {n}" },
+        "es": { "ol.fieldsManage": "Campos propios ({n})", "ol.fieldsNone": "Aún no hay campos propios. Añade uno (un lugar, una fecha de la cronología, una casilla que marcar) y cada sección tendrá un sitio para él: en su tarjeta, en su fila y en la Cuadrícula. Los campos son notas para ti: nunca se exportan ni cuentan como palabras.", "ol.fieldName": "Nombre del campo nuevo", "ol.fieldNamePh": "Campo nuevo: Lugar, Cronología, Falta investigar…", "ol.fieldKind": "Tipo de campo", "ol.fieldType.text": "Texto", "ol.fieldType.check": "Casilla", "ol.fieldType.list": "Lista", "ol.fieldType.date": "Fecha", "ol.fieldAdd": "Añadir campo", "ol.fieldAdded": "Campo añadido: {name}", "ol.fieldRename": "Cambiar el nombre del campo {name}", "ol.fieldOptions": "Opciones de {name}, separadas por comas", "ol.fieldOptionsPh": "Opciones, separadas por comas", "ol.fieldDel": "Quitar el campo {name} de todo el libro", "ol.fieldDeleted": "Campo quitado: {name}", "ol.fieldFor": "{field} de {name}", "ol.fieldUnset": "Sin indicar", "ol.fieldFilled": "con valor: {n}" },
+        "fr": { "ol.fieldsManage": "Champs personnalisés ({n})", "ol.fieldsNone": "Pas encore de champ personnalisé. Ajoutez-en un (un lieu, une date de la chronologie, une case à cocher) et chaque section aura sa place pour lui : sur sa fiche, sur sa ligne et dans la Grille. Les champs sont des notes pour vous : jamais exportés, jamais comptés comme des mots.", "ol.fieldName": "Nom du nouveau champ", "ol.fieldNamePh": "Nouveau champ : Lieu, Chronologie, À vérifier…", "ol.fieldKind": "Type de champ", "ol.fieldType.text": "Texte", "ol.fieldType.check": "Case à cocher", "ol.fieldType.list": "Liste", "ol.fieldType.date": "Date", "ol.fieldAdd": "Ajouter le champ", "ol.fieldAdded": "Champ ajouté : {name}", "ol.fieldRename": "Renommer le champ {name}", "ol.fieldOptions": "Choix pour {name}, séparés par des virgules", "ol.fieldOptionsPh": "Choix, séparés par des virgules", "ol.fieldDel": "Retirer le champ {name} de tout le livre", "ol.fieldDeleted": "Champ retiré : {name}", "ol.fieldFor": "{field} de {name}", "ol.fieldUnset": "Non renseigné", "ol.fieldFilled": "renseignés : {n}" },
+        "de": { "ol.fieldsManage": "Eigene Felder ({n})", "ol.fieldsNone": "Noch keine eigenen Felder. Legen Sie eines an (einen Ort, ein Datum der Zeitleiste, ein Kästchen zum Abhaken), und jeder Abschnitt bekommt einen Platz dafür: auf seiner Karte, in seiner Zeile und im Raster. Felder sind Notizen für Sie: nie exportiert, nie als Wörter gezählt.", "ol.fieldName": "Name des neuen Felds", "ol.fieldNamePh": "Neues Feld: Ort, Zeitleiste, Noch recherchieren…", "ol.fieldKind": "Art des Felds", "ol.fieldType.text": "Text", "ol.fieldType.check": "Kästchen", "ol.fieldType.list": "Liste", "ol.fieldType.date": "Datum", "ol.fieldAdd": "Feld anlegen", "ol.fieldAdded": "Feld angelegt: {name}", "ol.fieldRename": "Feld {name} umbenennen", "ol.fieldOptions": "Auswahl für {name}, durch Kommas getrennt", "ol.fieldOptionsPh": "Auswahl, durch Kommas getrennt", "ol.fieldDel": "Feld {name} aus dem ganzen Buch entfernen", "ol.fieldDeleted": "Feld entfernt: {name}", "ol.fieldFor": "{field} für {name}", "ol.fieldUnset": "Nicht gesetzt", "ol.fieldFilled": "gesetzt: {n}" },
+        "it": { "ol.fieldsManage": "Campi personalizzati ({n})", "ol.fieldsNone": "Ancora nessun campo personalizzato. Aggiungine uno (un luogo, una data della cronologia, una casella da spuntare) e ogni sezione avrà un posto per esso: sulla sua scheda, nella sua riga e nella Griglia. I campi sono note per te: mai esportati, mai contati come parole.", "ol.fieldName": "Nome del nuovo campo", "ol.fieldNamePh": "Nuovo campo: Luogo, Cronologia, Da verificare…", "ol.fieldKind": "Tipo di campo", "ol.fieldType.text": "Testo", "ol.fieldType.check": "Casella", "ol.fieldType.list": "Elenco", "ol.fieldType.date": "Data", "ol.fieldAdd": "Aggiungi campo", "ol.fieldAdded": "Campo aggiunto: {name}", "ol.fieldRename": "Rinomina il campo {name}", "ol.fieldOptions": "Scelte per {name}, separate da virgole", "ol.fieldOptionsPh": "Scelte, separate da virgole", "ol.fieldDel": "Togli il campo {name} da tutto il libro", "ol.fieldDeleted": "Campo tolto: {name}", "ol.fieldFor": "{field} di {name}", "ol.fieldUnset": "Non impostato", "ol.fieldFilled": "impostati: {n}" },
+        "pt": { "ol.fieldsManage": "Campos próprios ({n})", "ol.fieldsNone": "Ainda não há campos próprios. Acrescente um (um lugar, uma data da cronologia, uma caixa para assinalar) e cada secção terá um lugar para ele: no seu cartão, na sua linha e na Grelha. Os campos são notas para si: nunca exportados, nunca contados como palavras.", "ol.fieldName": "Nome do novo campo", "ol.fieldNamePh": "Novo campo: Lugar, Cronologia, Falta pesquisar…", "ol.fieldKind": "Tipo de campo", "ol.fieldType.text": "Texto", "ol.fieldType.check": "Caixa de seleção", "ol.fieldType.list": "Lista", "ol.fieldType.date": "Data", "ol.fieldAdd": "Acrescentar campo", "ol.fieldAdded": "Campo acrescentado: {name}", "ol.fieldRename": "Mudar o nome do campo {name}", "ol.fieldOptions": "Opções de {name}, separadas por vírgulas", "ol.fieldOptionsPh": "Opções, separadas por vírgulas", "ol.fieldDel": "Retirar o campo {name} do livro inteiro", "ol.fieldDeleted": "Campo retirado: {name}", "ol.fieldFor": "{field} de {name}", "ol.fieldUnset": "Por definir", "ol.fieldFilled": "preenchidos: {n}" },
+        "nl": { "ol.fieldsManage": "Eigen velden ({n})", "ol.fieldsNone": "Nog geen eigen velden. Voeg er een toe (een plek, een datum op de tijdlijn, een vakje om aan te vinken) en elk deel krijgt er een plaats voor: op zijn kaart, in zijn rij en in het Raster. Velden zijn notities voor jou: nooit geëxporteerd, nooit als woorden geteld.", "ol.fieldName": "Naam van het nieuwe veld", "ol.fieldNamePh": "Nieuw veld: Plek, Tijdlijn, Nog uitzoeken…", "ol.fieldKind": "Soort veld", "ol.fieldType.text": "Tekst", "ol.fieldType.check": "Vinkje", "ol.fieldType.list": "Lijst", "ol.fieldType.date": "Datum", "ol.fieldAdd": "Veld toevoegen", "ol.fieldAdded": "Veld toegevoegd: {name}", "ol.fieldRename": "Het veld {name} hernoemen", "ol.fieldOptions": "Keuzes voor {name}, gescheiden door komma's", "ol.fieldOptionsPh": "Keuzes, gescheiden door komma's", "ol.fieldDel": "Het veld {name} uit het hele boek halen", "ol.fieldDeleted": "Veld weggehaald: {name}", "ol.fieldFor": "{field} voor {name}", "ol.fieldUnset": "Niet ingevuld", "ol.fieldFilled": "ingevuld: {n}" },
+        "pl": { "ol.fieldsManage": "Własne pola ({n})", "ol.fieldsNone": "Nie ma jeszcze własnych pól. Dodaj pole (miejsce, datę na osi czasu, pole do zaznaczenia), a każda sekcja dostanie na nie miejsce: na swojej karcie, w swoim wierszu i w Siatce. Pola to notatki dla ciebie: nigdy nie trafiają do eksportu i nie liczą się jako słowa.", "ol.fieldName": "Nazwa nowego pola", "ol.fieldNamePh": "Nowe pole: Miejsce, Oś czasu, Do sprawdzenia…", "ol.fieldKind": "Rodzaj pola", "ol.fieldType.text": "Tekst", "ol.fieldType.check": "Pole wyboru", "ol.fieldType.list": "Lista", "ol.fieldType.date": "Data", "ol.fieldAdd": "Dodaj pole", "ol.fieldAdded": "Dodano pole: {name}", "ol.fieldRename": "Zmień nazwę pola {name}", "ol.fieldOptions": "Opcje pola {name}, rozdzielone przecinkami", "ol.fieldOptionsPh": "Opcje, rozdzielone przecinkami", "ol.fieldDel": "Usuń pole {name} z całej książki", "ol.fieldDeleted": "Usunięto pole: {name}", "ol.fieldFor": "{field}: {name}", "ol.fieldUnset": "Nie ustawiono", "ol.fieldFilled": "ustawione: {n}" },
+        "ru": { "ol.fieldsManage": "Свои поля ({n})", "ol.fieldsNone": "Своих полей пока нет. Добавьте поле (место, дату на хронологии, флажок) — и у каждого раздела появится для него место: на карточке, в строке и в Сетке. Поля — это заметки для вас: они никогда не экспортируются и не считаются словами.", "ol.fieldName": "Название нового поля", "ol.fieldNamePh": "Новое поле: Место, Хронология, Проверить…", "ol.fieldKind": "Тип поля", "ol.fieldType.text": "Текст", "ol.fieldType.check": "Флажок", "ol.fieldType.list": "Список", "ol.fieldType.date": "Дата", "ol.fieldAdd": "Добавить поле", "ol.fieldAdded": "Поле добавлено: {name}", "ol.fieldRename": "Переименовать поле {name}", "ol.fieldOptions": "Варианты для {name} через запятую", "ol.fieldOptionsPh": "Варианты через запятую", "ol.fieldDel": "Убрать поле {name} из всей книги", "ol.fieldDeleted": "Поле убрано: {name}", "ol.fieldFor": "{field}: {name}", "ol.fieldUnset": "Не задано", "ol.fieldFilled": "заполнено: {n}" },
+        "tr": { "ol.fieldsManage": "Özel alanlar ({n})", "ol.fieldsNone": "Henüz özel alan yok. Bir alan ekleyin (bir yer, zaman çizelgesinde bir tarih, işaretlenecek bir kutu); her bölüm kartında, satırında ve Izgara'da ona bir yer bulur. Alanlar sizin için notlardır: asla dışa aktarılmaz, asla sözcük olarak sayılmaz.", "ol.fieldName": "Yeni alanın adı", "ol.fieldNamePh": "Yeni alan: Yer, Zaman çizelgesi, Araştırılacak…", "ol.fieldKind": "Alan türü", "ol.fieldType.text": "Metin", "ol.fieldType.check": "Onay kutusu", "ol.fieldType.list": "Liste", "ol.fieldType.date": "Tarih", "ol.fieldAdd": "Alan ekle", "ol.fieldAdded": "Alan eklendi: {name}", "ol.fieldRename": "{name} alanını yeniden adlandır", "ol.fieldOptions": "{name} için seçenekler, virgülle ayrılmış", "ol.fieldOptionsPh": "Seçenekler, virgülle ayrılmış", "ol.fieldDel": "{name} alanını tüm kitaptan kaldır", "ol.fieldDeleted": "Alan kaldırıldı: {name}", "ol.fieldFor": "{name} için {field}", "ol.fieldUnset": "Belirtilmedi", "ol.fieldFilled": "dolu: {n}" },
+        "ar": { "ol.fieldsManage": "حقول خاصة ({n})", "ol.fieldsNone": "لا حقول خاصة بعد. أضِف حقلًا (مكانًا، أو تاريخًا على الخط الزمني، أو مربعًا للتأشير) فيصير لكل قسم مكان له: على بطاقته وفي صفه وفي الشبكة. الحقول ملاحظات لك: لا تُصدَّر أبدًا ولا تُحسب كلمات.", "ol.fieldName": "اسم الحقل الجديد", "ol.fieldNamePh": "حقل جديد: المكان، الخط الزمني، يحتاج بحثًا…", "ol.fieldKind": "نوع الحقل", "ol.fieldType.text": "نص", "ol.fieldType.check": "مربع اختيار", "ol.fieldType.list": "قائمة", "ol.fieldType.date": "تاريخ", "ol.fieldAdd": "أضِف الحقل", "ol.fieldAdded": "أُضيف الحقل: {name}", "ol.fieldRename": "أعِد تسمية الحقل {name}", "ol.fieldOptions": "خيارات {name}، تفصل بينها فواصل", "ol.fieldOptionsPh": "خيارات، تفصل بينها فواصل", "ol.fieldDel": "أزِل الحقل {name} من الكتاب كله", "ol.fieldDeleted": "أُزيل الحقل: {name}", "ol.fieldFor": "{field} في {name}", "ol.fieldUnset": "غير محدد", "ol.fieldFilled": "محدَّد: {n}" },
+        "ja": { "ol.fieldsManage": "カスタムフィールド ({n})", "ol.fieldsNone": "カスタムフィールドはまだありません。場所、年表の日付、チェックする項目などを追加すると、各セクションのカード、行、グリッドに入力欄ができます。フィールドはあなた用のメモです。書き出されることはなく、語数にも数えられません。", "ol.fieldName": "新しいフィールドの名前", "ol.fieldNamePh": "新しいフィールド：場所、年表、要調査…", "ol.fieldKind": "フィールドの種類", "ol.fieldType.text": "テキスト", "ol.fieldType.check": "チェックボックス", "ol.fieldType.list": "リスト", "ol.fieldType.date": "日付", "ol.fieldAdd": "フィールドを追加", "ol.fieldAdded": "フィールドを追加しました: {name}", "ol.fieldRename": "フィールド「{name}」の名前を変更", "ol.fieldOptions": "{name} の選択肢（カンマ区切り）", "ol.fieldOptionsPh": "選択肢（カンマ区切り）", "ol.fieldDel": "フィールド「{name}」を本全体から削除", "ol.fieldDeleted": "フィールドを削除しました: {name}", "ol.fieldFor": "{name} の {field}", "ol.fieldUnset": "未設定", "ol.fieldFilled": "設定済み: {n}" },
+        "zh-Hans": { "ol.fieldsManage": "自定义字段（{n}）", "ol.fieldsNone": "还没有自定义字段。添加一个（地点、时间线日期、待勾选的复选框），每个部分的卡片、行和网格里都会有它的位置。字段是写给你自己的笔记：从不导出，也从不计入字数。", "ol.fieldName": "新字段的名称", "ol.fieldNamePh": "新字段：地点、时间线、待查证…", "ol.fieldKind": "字段类型", "ol.fieldType.text": "文本", "ol.fieldType.check": "复选框", "ol.fieldType.list": "列表", "ol.fieldType.date": "日期", "ol.fieldAdd": "添加字段", "ol.fieldAdded": "已添加字段：{name}", "ol.fieldRename": "重命名字段 {name}", "ol.fieldOptions": "{name} 的选项，用逗号分隔", "ol.fieldOptionsPh": "选项，用逗号分隔", "ol.fieldDel": "从整本书中移除字段 {name}", "ol.fieldDeleted": "已移除字段：{name}", "ol.fieldFor": "{name} 的{field}", "ol.fieldUnset": "未设置", "ol.fieldFilled": "已填写：{n}" }
+      };
+      Object.keys(OL_FIELD_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_FIELD_STRINGS[code]); });
       /* BEUK:compare — History's Compare, all 13 packs */
       const HIST_CMP_STRINGS = {
         "en": { "history.cmp": "Compare", "history.cmpHide": "Hide comparison", "history.cmpSum": "Words added: {a} · removed: {r}", "history.cmpView": "How much to show", "history.cmpOnly": "Changes only", "history.cmpAll": "Whole section", "history.cmpLegend": "Struck through: in the snapshot, not in the book now. Underlined: new since the snapshot.", "history.cmpTitle": "Title:", "history.cmpSame": "Unchanged paragraphs: {n}", "history.cmpDelSr": "Removed:", "history.cmpInsSr": "Added:" },
@@ -19785,6 +19829,30 @@
         noteFor("The Channel Runs East", { "sample-th-channel": "Five votes to four: the Board recognises the correction.", "sample-th-venn": "Venn's own casting hand is raised with the rest." });
         noteFor("What the Chart Cost", { "sample-th-channel": "Published in the Notices to Mariners: Chart 1147, Gullwick and Approaches." });
         noteFor("The Fair Sheet", { "sample-th-channel": "By spring, Gullwick is a port again." });
+        /* Custom fields: where a chapter opens, when, and a box to tick
+           for the chapters whose depths must agree (the Notebook's
+           "Keep the depths straight"). Each value is read from that
+           chapter's own opening; a chapter whose opening does not say
+           is left unset. */
+        const fields = [
+          { id: "sample-fl-opens", name: "Opens at", type: "list", options: ["On the ferry", "Gull Terrace", "The harbour wall", "The harbour office", "On the water", "Port Anselm"] },
+          { id: "sample-fl-when", name: "When", type: "text" },
+          { id: "sample-fl-depths", name: "Check the depths", type: "check" }
+        ];
+        const fieldsFor = (title, vals) => { const s = secs.find((x) => x.title === title); if (s) s.custom = Object.assign(s.custom || {}, vals); };
+        fieldsFor("The Ferry Crossing", { "sample-fl-opens": "On the ferry", "sample-fl-when": "First light" });
+        fieldsFor("The House at Gull Terrace", { "sample-fl-opens": "Gull Terrace" });
+        fieldsFor("The Wrong-Way Water", { "sample-fl-opens": "The harbour wall" });
+        fieldsFor("The Tide Table for Next Year", { "sample-fl-opens": "The harbour office", "sample-fl-depths": true });
+        fieldsFor("The Harbourmaster's Ledger", { "sample-fl-opens": "Gull Terrace", "sample-fl-when": "The next morning" });
+        fieldsFor("A Light East of the Beacon", { "sample-fl-opens": "On the water", "sample-fl-when": "Dusk" });
+        fieldsFor("The Keeper's Letter", { "sample-fl-opens": "Gull Terrace", "sample-fl-when": "The third evening" });
+        fieldsFor("Soundings at Low Water", { "sample-fl-when": "Nine days at low water", "sample-fl-depths": true });
+        fieldsFor("The Ferry That Did Not Run", { "sample-fl-when": "Five days before the equinox" });
+        fieldsFor("Nell", { "sample-fl-opens": "Gull Terrace", "sample-fl-when": "Seven the next morning" });
+        fieldsFor("The Council of Pilots", { "sample-fl-opens": "The harbour office" });
+        fieldsFor("What the Chart Cost", { "sample-fl-opens": "Port Anselm", "sample-fl-when": "The last Friday of the month", "sample-fl-depths": true });
+        fieldsFor("The Fair Sheet", { "sample-fl-when": "The following spring" });
         /* BEUK:notebook — the writer's notebook: three notes, each fact
            taken from the chapters they are pinned to. */
         const secOf = (title) => { const s = secs.find((x) => x.title === title); return s ? [s.id] : []; };
@@ -19825,7 +19893,7 @@
           activePreset: "classic",
           sections: secs,
           bible: sampleBible,
-          outline: { tags: [], filters: [], threads: threads },
+          outline: { tags: [], filters: [], threads: threads, fields: fields },
           notebook: sampleNotebook, /* BEUK:notebook */
           cover: sampleCoverDoc(), /* BEUK:slim */
           coverRecipe: recipe,
@@ -31950,6 +32018,17 @@
       const OL_PREFS_KEY = "beuk.outline.v1";
       const OL_THREADS_MAX = 30;
       const OL_THREAD_ID = /^[\w-]{1,64}$/;
+      /* custom fields (Scrivener's custom metadata): the writer's own, per book */
+      const OL_FIELDS_MAX = 20;
+      const OL_FIELD_TYPES = ["text", "check", "list", "date"];
+      const OL_FIELD_DATE = /^\d{4}-\d{2}-\d{2}$/;
+      /* a value fits its field: text and a list choice are words, a box is ticked or absent, a date is YYYY-MM-DD */
+      function olFieldValueOk(f, v) {
+        if (!f) return false;
+        if (f.type === "check") return v === true;
+        if (f.type === "date") return typeof v === "string" && OL_FIELD_DATE.test(v);
+        return typeof v === "string" && !!v.trim();
+      }
       const olCleanThread = (n) => String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
       const olTagKey = (n) => String(n || "").trim().toLowerCase();
       function olCleanTag(n) { return String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 40); }
@@ -31973,6 +32052,17 @@
             if (OL_THREAD_ID.test(id) && typeof v === "string" && v.trim()) th[id] = v.slice(0, 2000);
           });
           if (Object.keys(th).length) out.threads = th;
+        }
+        /* custom field values: { fieldId: value }, only the set ones */
+        if (s.custom && typeof s.custom === "object" && !Array.isArray(s.custom)) {
+          const cf = {};
+          Object.keys(s.custom).slice(0, OL_FIELDS_MAX).forEach((id) => {
+            const v = s.custom[id];
+            if (!OL_THREAD_ID.test(id)) return;
+            if (v === true) cf[id] = true;
+            else if (typeof v === "string" && v.trim()) cf[id] = v.slice(0, 500);
+          });
+          if (Object.keys(cf).length) out.custom = cf;
         }
         return out;
       }
@@ -32019,20 +32109,40 @@
           Object.keys(s.threads).forEach((id) => { if (!tids.has(id)) delete s.threads[id]; });
           if (!Object.keys(s.threads).length) delete s.threads;
         });
-        return { tags: tags, filters: filters.slice(0, 40), threads: threads };
+        /* custom fields: name and kind, and a list's choices */
+        const fields = [], fids = new Set();
+        (Array.isArray(src.fields) ? src.fields : []).forEach((x) => {
+          if (!x || typeof x !== "object" || fields.length >= OL_FIELDS_MAX) return;
+          const id = typeof x.id === "string" && OL_THREAD_ID.test(x.id) ? x.id : null, name = olCleanThread(x.name);
+          if (!id || !name || fids.has(id)) return;
+          const f = { id: id, name: name, type: OL_FIELD_TYPES.includes(x.type) ? x.type : "text" };
+          if (f.type === "list") {
+            const seen = new Set();
+            f.options = (Array.isArray(x.options) ? x.options : []).map(olCleanTag).filter((o) => o && !seen.has(o.toLowerCase()) && seen.add(o.toLowerCase())).slice(0, 30);
+          }
+          fids.add(id);
+          fields.push(f);
+        });
+        /* a value whose field the book does not have, or that does not fit it, is dropped */
+        (sections || []).forEach((s) => {
+          if (!s || !s.custom || typeof s.custom !== "object") return;
+          Object.keys(s.custom).forEach((id) => { if (!olFieldValueOk(fields.find((x) => x.id === id), s.custom[id])) delete s.custom[id]; });
+          if (!Object.keys(s.custom).length) delete s.custom;
+        });
+        return { tags: tags, filters: filters.slice(0, 40), threads: threads, fields: fields };
       }
       function olBook() {
-        if (!state.outline || !Array.isArray(state.outline.tags) || !Array.isArray(state.outline.filters) || !Array.isArray(state.outline.threads)) state.outline = olNormalize(state.outline, state.sections);
+        if (!state.outline || !Array.isArray(state.outline.tags) || !Array.isArray(state.outline.filters) || !Array.isArray(state.outline.threads) || !Array.isArray(state.outline.fields)) state.outline = olNormalize(state.outline, state.sections);
         return state.outline;
       }
-      const olBookSet = () => !!(state.outline && ((state.outline.tags || []).length || (state.outline.filters || []).length || (state.outline.threads || []).length)) ||
+      const olBookSet = () => !!(state.outline && ((state.outline.tags || []).length || (state.outline.filters || []).length || (state.outline.threads || []).length || (state.outline.fields || []).length)) ||
         state.sections.some((s) => Array.isArray(s.tags) && s.tags.length);
-      /* a book without threads keeps the shape it had before them */
-      const olBookPack = () => { const p = JSON.parse(JSON.stringify(olNormalize(state.outline, state.sections))); if (!p.threads.length) delete p.threads; return p; };
+      /* a book without threads or fields keeps the shape it had before them */
+      const olBookPack = () => { const p = JSON.parse(JSON.stringify(olNormalize(state.outline, state.sections))); if (!p.threads.length) delete p.threads; if (!p.fields.length) delete p.fields; return p; };
       const olTagOf = (name) => olBook().tags.find((x) => olTagKey(x.name) === olTagKey(name)) || null;
 
       /* ---- the view's own state: per device, never in the book ---- */
-      const olUi = { view: "cards", matter: false, status: [], tags: [], savedId: null, focus: null, tagsOpen: false, renderQueued: false };
+      const olUi = { view: "cards", matter: false, status: [], tags: [], savedId: null, focus: null, tagsOpen: false, fieldsOpen: false, renderQueued: false };
       try {
         const raw = window.localStorage && localStorage.getItem(OL_PREFS_KEY);
         const v = raw ? JSON.parse(raw) : null;
@@ -32095,6 +32205,24 @@
         }).join("") +
           '<input type="text" class="ol-tagin" data-olf="tagin" list="olTagList" maxlength="40" autocomplete="off" placeholder="' + esc(t("ol.tagAdd")) + '" aria-label="' + esc(t("ol.tagAddFor", { name: olName(s) })) + '"></div>';
       }
+      /* One control per custom field: a line of text, a box, a choice from the list, a date. */
+      function olFieldControl(s, f, label) {
+        const v = s.custom && s.custom[f.id] != null ? s.custom[f.id] : "";
+        const a = ' data-olf="custom" data-olcf="' + esc(f.id) + '" aria-label="' + esc(t("ol.fieldFor", { field: f.name, name: label })) + '"';
+        if (f.type === "check") return '<input type="checkbox"' + a + (v === true ? " checked" : "") + ">";
+        if (f.type === "date") return '<input type="date"' + a + ' value="' + esc(typeof v === "string" ? v : "") + '">';
+        if (f.type === "list") {
+          const opts = (f.options || []).slice();
+          if (typeof v === "string" && v && !opts.includes(v)) opts.push(v); /* a choice since taken off the list stays readable */
+          return '<select' + a + '><option value="">' + esc(t("ol.fieldUnset")) + "</option>" + opts.map((o) => '<option value="' + esc(o) + '"' + (o === v ? " selected" : "") + ">" + esc(o) + "</option>").join("") + "</select>";
+        }
+        return '<input type="text" dir="auto" maxlength="500"' + a + ' value="' + esc(typeof v === "string" ? v : "") + '">';
+      }
+      function olFieldsCell(s) {
+        const fs = olBook().fields;
+        if (!fs.length) return "";
+        return '<div class="ol-fields">' + fs.map((f) => '<label class="ol-fld' + (f.type === "check" ? " ol-fld-check" : "") + '"><span class="ol-fld-n" dir="auto">' + esc(f.name) + "</span>" + olFieldControl(s, f, olName(s)) + "</label>").join("") + "</div>";
+      }
       function olMetaText(s) {
         const w = sectionWords(s), sc = olScenes(s);
         return fmtNum(w) + " " + t("side.wordUnit", { count: w }) + (sc > 1 ? " · " + t("ol.scenes", { n: fmtNum(sc) }) : "");
@@ -32107,7 +32235,7 @@
           '<div class="ol-card-head"><div class="ol-tx">' + (head && s.title ? '<span class="ol-num">' + esc(head) + "</span>" : "") +
           '<button type="button" class="ol-open" title="' + esc(t("ol.openFor", { name: olName(s) })) + '">' + esc(ti) + "</button></div>" + olMoveButtons(s, false) + "</div>" +
           '<textarea class="ol-syn" dir="auto" data-olf="synopsis" rows="3" maxlength="4000" placeholder="' + esc(t("ol.synPh")) + '" aria-label="' + esc(t("ol.synFor", { name: olName(s) })) + '">' + esc(s.synopsis || "") + "</textarea>" +
-          olTagsCell(s) +
+          olTagsCell(s) + olFieldsCell(s) +
           '<div class="ol-card-foot">' + olStatusSelect(s) + '<span class="ol-meta">' + esc(olMetaText(s)) + "</span></div></article>";
       }
       function olPartBand(s, list) {
@@ -32127,7 +32255,7 @@
           '<div class="ol-c-mv">' + olMoveButtons(s, true) + "</div>" +
           '<div class="ol-c-ti">' + (head && s.title ? '<span class="ol-num">' + esc(head) + "</span>" : "") + '<button type="button" class="ol-open" title="' + esc(t("ol.openFor", { name: olName(s) })) + '">' + esc(ti) + "</button>" +
             '<div class="ol-c-pv"><i data-lucide="eye" aria-hidden="true"></i><input type="text" class="ol-pov" dir="auto" data-olf="pov" maxlength="80" value="' + esc(s.pov || "") + '" placeholder="' + esc(t("ol.povPh")) + '" aria-label="' + esc(t("ol.povFor", { name: olName(s) })) + '"></div></div>' +
-          '<div class="ol-c-sy"><textarea class="ol-syn" dir="auto" data-olf="synopsis" rows="2" maxlength="4000" placeholder="' + esc(t("ol.synPh")) + '" aria-label="' + esc(t("ol.synFor", { name: olName(s) })) + '">' + esc(s.synopsis || "") + "</textarea></div>" +
+          '<div class="ol-c-sy"><textarea class="ol-syn" dir="auto" data-olf="synopsis" rows="2" maxlength="4000" placeholder="' + esc(t("ol.synPh")) + '" aria-label="' + esc(t("ol.synFor", { name: olName(s) })) + '">' + esc(s.synopsis || "") + "</textarea>" + olFieldsCell(s) + "</div>" +
           '<div class="ol-c-st"><span class="ol-cl" aria-hidden="true">' + esc(t("ol.colStatus")) + "</span>" + olStatusSelect(s) + "</div>" +
           '<div class="ol-c-tg"><span class="ol-cl" aria-hidden="true">' + esc(t("ol.colTags")) + "</span>" + olTagsCell(s) + "</div>" +
           '<div class="ol-c-wd ol-meta">' + esc(fmtNum(sectionWords(s))) + (olScenes(s) > 1 ? '<span class="ol-sc">' + esc(t("ol.scenes", { n: fmtNum(olScenes(s)) })) + "</span>" : "") + "</div></div>";
@@ -32151,8 +32279,8 @@
           if (ae.id) olUi.focus = { domId: ae.id, a: ae.selectionStart, b: ae.selectionEnd };
           else if (host) {
             const f = ae.getAttribute("data-olf"), mv = ae.getAttribute("data-olmv");
-            const th = ae.getAttribute("data-olth");
-            olUi.focus = { id: host.getAttribute("data-ol"), sel: th ? '[data-olth="' + th + '"]' : f ? '[data-olf="' + f + '"]' : mv ? '[data-olmv="' + mv + '"]' : ae.classList.contains("ol-open") ? ".ol-open" : null, a: ae.selectionStart, b: ae.selectionEnd };
+            const th = ae.getAttribute("data-olth"), cf = ae.getAttribute("data-olcf");
+            olUi.focus = { id: host.getAttribute("data-ol"), sel: cf ? '[data-olcf="' + cf + '"]' : th ? '[data-olth="' + th + '"]' : f ? '[data-olf="' + f + '"]' : mv ? '[data-olmv="' + mv + '"]' : ae.classList.contains("ol-open") ? ".ol-open" : null, a: ae.selectionStart, b: ae.selectionEnd };
           } else if (ae.getAttribute("data-olkey")) olUi.focus = { key: ae.getAttribute("data-olkey"), a: ae.selectionStart, b: ae.selectionEnd };
         }
         const items = olItems();
@@ -32206,6 +32334,20 @@
           });
           h += "</details>";
         }
+        /* custom fields: always offered, so the first one can be made */
+        h += '<details class="ol-tagmgr ol-fieldmgr" id="olFieldMgr"' + (olUi.fieldsOpen ? " open" : "") + "><summary>" + esc(t("ol.fieldsManage", { n: fmtNum(ob.fields.length) })) + "</summary>";
+        if (!ob.fields.length) h += '<p class="ol-fld-none">' + esc(t("ol.fieldsNone")) + "</p>";
+        ob.fields.forEach((f) => {
+          const uses = state.sections.filter((s) => s.custom && s.custom[f.id] != null).length;
+          h += '<div class="ol-tagrow ol-fieldrow"><input type="text" class="ol-fld-name" dir="auto" maxlength="60" value="' + esc(f.name) + '" data-olfname="' + esc(f.id) + '" data-olkey="fn-' + esc(f.id) + '" aria-label="' + esc(t("ol.fieldRename", { name: f.name })) + '">' +
+            '<span class="ol-fld-kind">' + esc(t("ol.fieldType." + f.type)) + "</span>" +
+            (f.type === "list" ? '<input type="text" class="ol-fld-opts" dir="auto" maxlength="800" value="' + esc((f.options || []).join(", ")) + '" placeholder="' + esc(t("ol.fieldOptionsPh")) + '" data-olfopts="' + esc(f.id) + '" data-olkey="fo-' + esc(f.id) + '" aria-label="' + esc(t("ol.fieldOptions", { name: f.name })) + '">' : "") +
+            '<span class="ol-uses">' + esc(t("ol.tagUses", { n: fmtNum(uses) })) + "</span>" +
+            '<button type="button" class="ol-mini" data-olfdel="' + esc(f.id) + '" data-olkey="fd-' + esc(f.id) + '" aria-label="' + esc(t("ol.fieldDel", { name: f.name })) + '" title="' + esc(t("ol.fieldDel", { name: f.name })) + '"><i data-lucide="trash-2"></i></button></div>';
+        });
+        h += '<div class="ol-fieldadd"><input type="text" class="txt-input" id="olFieldName" maxlength="60" placeholder="' + esc(t("ol.fieldNamePh")) + '" aria-label="' + esc(t("ol.fieldName")) + '">' +
+          '<select id="olFieldType" class="ol-fld-type" aria-label="' + esc(t("ol.fieldKind")) + '">' + OL_FIELD_TYPES.map((ty) => '<option value="' + ty + '">' + esc(t("ol.fieldType." + ty)) + "</option>").join("") + "</select>" +
+          '<button type="button" class="tb-btn" id="olFieldAdd"' + (ob.fields.length >= OL_FIELDS_MAX ? " disabled" : "") + '><i data-lucide="plus"></i>' + esc(t("ol.fieldAdd")) + "</button></div></details>";
         /* the groups — or, in Grid, one table of the story */
         if (grid) h += olGridHtml();
         else [["front", t("side.groupFront")], ["body", t("side.groupBody")], ["back", t("side.groupBack")]].forEach(([kind, label]) => {
@@ -32265,11 +32407,11 @@
           BIBLE_TYPES.indexOf(a.type) - BIBLE_TYPES.indexOf(b.type) || first(a) - first(b) || bibleName(a).localeCompare(bibleName(b)));
       }
       function olGridHtml() {
-        const ents = bibleAllEntries(), threads = olBook().threads;
+        const ents = bibleAllEntries(), threads = olBook().threads, fields = olBook().fields;
         let h = '<div class="ol-gridbar"><input type="text" class="txt-input" id="olThreadName" maxlength="60" placeholder="' + esc(t("ol.threadNamePh")) + '" aria-label="' + esc(t("ol.threadName")) + '">' +
           '<button type="button" class="tb-btn" id="olThreadAdd"' + (threads.length >= OL_THREADS_MAX ? " disabled" : "") + '><i data-lucide="plus"></i>' + esc(t("ol.threadAdd")) + "</button>" +
           '<button type="button" class="ol-link" data-olcov="1" data-olkey="g-cov"><i data-lucide="book-marked" style="width:13px;height:13px;" aria-hidden="true"></i>' + esc(t("ol.gridOpenCov")) + "</button></div>";
-        if (!ents.length && !threads.length) return h + '<div class="ol-empty ol-g-empty"><p>' + esc(t("ol.gridEmpty")) + "</p></div>";
+        if (!ents.length && !threads.length && !fields.length) return h + '<div class="ol-empty ol-g-empty"><p>' + esc(t("ol.gridEmpty")) + "</p></div>";
         const secs = olGridSecs();
         if (!secs.length) return h + '<div class="ol-empty">' + esc(t("ol.gridNoSecs")) + "</div>";
         const rows = secs.filter(olMatches);
@@ -32281,6 +32423,7 @@
         const max = {};
         order.forEach((e) => { max[e.id] = Math.max(1, ...(men.per[e.id] || zero).counts); });
         h += '<div class="ol-gridwrap"><table class="ol-grid" id="olGrid" aria-label="' + esc(t("ol.gridAria")) + '"><thead><tr><th scope="col" class="ol-g-corner">' + esc(t("ol.gridSection")) + "</th>" +
+          fields.map((f) => '<th scope="col" class="ol-g-fh"><span class="ol-g-ty">' + esc(t("ol.fieldType." + f.type)) + '</span><span class="ol-g-ent" dir="auto">' + esc(f.name) + "</span></th>").join("") +
           threads.map((th) => '<th scope="col" class="ol-g-th" style="--ol-tc:var(--ol-c' + th.colour + ')"><span class="ol-g-ty">' + esc(t("ol.threadType")) + "</span>" +
             '<span class="ol-g-thname"><input type="text" dir="auto" maxlength="60" value="' + esc(th.name) + '" data-olthname="' + esc(th.id) + '" data-olkey="thn-' + esc(th.id) + '" aria-label="' + esc(t("ol.threadRename", { name: th.name })) + '">' +
             '<button type="button" class="ol-mini" data-olthdel="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadDel", { name: th.name })) + '" title="' + esc(t("ol.threadDel", { name: th.name })) + '"><i data-lucide="x"></i></button></span></th>').join("") +
@@ -32291,6 +32434,7 @@
         rows.forEach((s) => {
           const st = OL_STATUSES.includes(s.status) ? s.status : "", label = castSecLabel(s), i = ci[s.id];
           h += '<tr data-ol="' + esc(s.id) + '" data-olgrow="' + esc(s.id) + '"><th scope="row" title="' + esc(label) + '"><span class="ol-dot' + (st ? "" : " none") + '" style="--ol-st:' + olStatusVar(st) + '" aria-hidden="true"></span><span dir="auto">' + esc(label) + "</span></th>";
+          fields.forEach((f) => { h += '<td class="ol-g-fld">' + olFieldControl(s, f, label) + "</td>"; });
           threads.forEach((th) => {
             const v = s.threads && typeof s.threads[th.id] === "string" ? s.threads[th.id] : "";
             h += '<td class="ol-g-note" style="--ol-tc:var(--ol-c' + th.colour + ')"><textarea dir="auto" rows="' + Math.max(2, Math.min(5, Math.ceil(v.length / 26))) + '" maxlength="2000" data-olf="thread" data-olth="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadNoteFor", { thread: th.name, sec: label })) + '">' + esc(v) + "</textarea></td>";
@@ -32306,6 +32450,7 @@
           h += "</tr>";
         });
         h += '</tbody><tfoot><tr><th scope="row">' + esc(t("ol.gridTotal")) + "</th>" +
+          fields.map((f) => { const n = secs.filter((s) => s.custom && s.custom[f.id] != null).length; return '<td data-olgtotal="' + esc(f.id) + '">' + esc(t("ol.fieldFilled", { n: fmtNum(n) })) + "</td>"; }).join("") +
           threads.map((th) => { const n = secs.filter((s) => s.threads && s.threads[th.id]).length; return '<td data-olgtotal="' + esc(th.id) + '">' + esc(t("ol.threadNotes", { n: fmtNum(n) })) + "</td>"; }).join("") +
           order.map((e) => { const n = (men.per[e.id] || zero).total; return '<td data-olgtotal="' + esc(e.id) + '">' + esc(fmtNum(n)) + "</td>"; }).join("") + "</tr></tfoot></table></div>";
         return h;
@@ -32482,6 +32627,56 @@
           noteBookEdited(); olRender();
         } });
       }
+      /* ---- custom fields: the writer's own, on every section ---- */
+      function olAddField(raw, type) {
+        const n = olCleanThread(raw), ob = olBook();
+        if (!n || ob.fields.length >= OL_FIELDS_MAX) return null;
+        const f = { id: uid(), name: n, type: OL_FIELD_TYPES.includes(type) ? type : "text" };
+        if (f.type === "list") f.options = [];
+        ob.fields.push(f);
+        noteBookEdited();
+        return f;
+      }
+      function olRenameField(id, raw) {
+        const f = olBook().fields.find((x) => x.id === id), n = olCleanThread(raw);
+        if (!f || !n || n === f.name) return false;
+        f.name = n; noteBookEdited();
+        return true;
+      }
+      /* a list's choices, typed with commas between; a section keeps a choice taken off the list */
+      function olSetFieldOptions(id, raw) {
+        const f = olBook().fields.find((x) => x.id === id);
+        if (!f || f.type !== "list") return false;
+        const seen = new Set();
+        const next = String(raw == null ? "" : raw).split(/[,\u060c\u3001\uff0c]/).map(olCleanTag).filter((o) => o && !seen.has(o.toLowerCase()) && seen.add(o.toLowerCase())).slice(0, 30);
+        if (next.join("\u0001") === (f.options || []).join("\u0001")) return false;
+        f.options = next; noteBookEdited();
+        return true;
+      }
+      function olSetCustom(s, id, value) {
+        const f = olBook().fields.find((x) => x.id === id);
+        if (!s || !f) return;
+        const v = f.type === "check" ? value === true : String(value == null ? "" : value).slice(0, 500);
+        if (olFieldValueOk(f, v)) { if (!s.custom || typeof s.custom !== "object") s.custom = {}; s.custom[id] = v; }
+        else if (s.custom) { delete s.custom[id]; if (!Object.keys(s.custom).length) delete s.custom; }
+        noteBookEdited();
+      }
+      /* Removing a field takes its values from every section, with an Undo that puts all of it back. */
+      function olDeleteField(id) {
+        const ob = olBook(), f = ob.fields.find((x) => x.id === id);
+        if (!f) return;
+        const before = { list: JSON.parse(JSON.stringify(ob.fields)), vals: {} };
+        state.sections.forEach((s) => { if (s.custom && s.custom[id] != null) before.vals[s.id] = s.custom[id]; });
+        ob.fields = ob.fields.filter((x) => x.id !== id);
+        state.sections.forEach((s) => { if (s.custom) { delete s.custom[id]; if (!Object.keys(s.custom).length) delete s.custom; } });
+        noteBookEdited();
+        olRender();
+        toast(t("ol.fieldDeleted", { name: f.name }), "trash-2", { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => {
+          olBook().fields = before.list;
+          state.sections.forEach((s) => { if (before.vals[s.id] != null) { if (!s.custom) s.custom = {}; s.custom[id] = before.vals[s.id]; } });
+          noteBookEdited(); olRender();
+        } });
+      }
       function olApplySaved(id) {
         const f = olBook().filters.find((x) => x.id === id);
         if (!f) return false;
@@ -32510,6 +32705,14 @@
             return;
           }
           if (el.hasAttribute("data-olthdel")) { olDeleteThread(el.getAttribute("data-olthdel")); return; }
+          if (el.id === "olFieldAdd") {
+            const inp = $("olFieldName"), ty = $("olFieldType");
+            if (!inp || !olCleanThread(inp.value)) { if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } return; }
+            const f = olAddField(inp.value, ty ? ty.value : "text");
+            if (f) { olUi.fieldsOpen = true; olUi.focus = f.type === "list" ? { key: "fo-" + f.id } : { domId: "olFieldName" }; olRender(); olLive(t("ol.fieldAdded", { name: f.name })); }
+            return;
+          }
+          if (el.hasAttribute("data-olfdel")) { olDeleteField(el.getAttribute("data-olfdel")); return; }
           if (el.hasAttribute("data-olmatter")) { olUi.matter = !olUi.matter; olSavePrefs(); olRender(); return; }
           if (el.hasAttribute("data-olst")) {
             const st = el.getAttribute("data-olst");
@@ -32542,7 +32745,7 @@
             return;
           }
           if (el.hasAttribute("data-oltagdel")) { olDeleteTag(el.getAttribute("data-oltagdel")); return; }
-          if (el.tagName === "SUMMARY") { setTimeout(() => { const d = $("olTagMgr"); olUi.tagsOpen = !!(d && d.open); }, 0); return; }
+          if (el.tagName === "SUMMARY") { setTimeout(() => { const d = $("olTagMgr"), g = $("olFieldMgr"); olUi.tagsOpen = !!(d && d.open); olUi.fieldsOpen = !!(g && g.open); }, 0); return; }
           if (!s) return;
           if (el.classList.contains("ol-open")) { olOpen(s.id); return; }
           if (el.hasAttribute("data-olmv")) { olUi.focus = { id: s.id, sel: '[data-olmv="' + el.getAttribute("data-olmv") + '"]' }; if (!olMoveStep(s.id, Number(el.getAttribute("data-olmv")))) olUi.focus = null; return; }
@@ -32550,7 +32753,8 @@
         });
         root.addEventListener("input", (e) => {
           const el = e.target, f = el.getAttribute && el.getAttribute("data-olf");
-          if (el.id === "olSaveName" || el.id === "olThreadName") { el.removeAttribute("aria-invalid"); return; }
+          if (el.id === "olSaveName" || el.id === "olThreadName" || el.id === "olFieldName") { el.removeAttribute("aria-invalid"); return; }
+          if (f === "custom" && el.type === "text") { olSetCustom(olSec(el), el.getAttribute("data-olcf"), el.value); return; }
           if (f === "thread") { olSetThreadNote(olSec(el), el.getAttribute("data-olth"), el.value); return; }
           if (f === "synopsis" || f === "pov") { olSetField(olSec(el), f, el.value); return; }
           /* a suggestion picked from the list arrives whole */
@@ -32567,6 +32771,19 @@
             else { const th = olBook().threads.find((x) => x.id === id); if (th) el.value = th.name; }
             return;
           }
+          if (el.getAttribute && el.hasAttribute("data-olfname")) {
+            const id = el.getAttribute("data-olfname");
+            if (olRenameField(id, el.value)) olRender();
+            else { const f = olBook().fields.find((x) => x.id === id); if (f) el.value = f.name; }
+            return;
+          }
+          if (el.getAttribute && el.hasAttribute("data-olfopts")) { olSetFieldOptions(el.getAttribute("data-olfopts"), el.value); olRender(); return; }
+          if (el.getAttribute && el.getAttribute("data-olf") === "custom" && el.type !== "text") {
+            const s = olSec(el), id = el.getAttribute("data-olcf");
+            olSetCustom(s, id, el.type === "checkbox" ? el.checked : el.value);
+            if (olUi.view === "grid") { olUi.focus = { id: s.id, sel: '[data-olcf="' + id + '"]' }; olRender(); }
+            return;
+          }
           if (el.getAttribute && el.getAttribute("data-olf") === "status") {
             const s = olSec(el);
             olSetField(s, "status", el.value);
@@ -32578,6 +32795,8 @@
           if (el.id === "olSaveName" && e.key === "Enter") { e.preventDefault(); const b = $("olSaveDo"); if (b) b.click(); return; }
           if (el.id === "olThreadName" && e.key === "Enter") { e.preventDefault(); const b = $("olThreadAdd"); if (b) b.click(); return; }
           if (el.hasAttribute && el.hasAttribute("data-olthname") && e.key === "Enter") { e.preventDefault(); el.blur(); return; }
+          if (el.id === "olFieldName" && e.key === "Enter") { e.preventDefault(); const b = $("olFieldAdd"); if (b) b.click(); return; }
+          if (el.hasAttribute && (el.hasAttribute("data-olfname") || el.hasAttribute("data-olfopts")) && e.key === "Enter") { e.preventDefault(); el.blur(); return; }
           if (el.getAttribute && el.getAttribute("data-olf") === "tagin") {
             if ((e.key === "Enter" || e.key === ",") && el.value.trim()) {
               e.preventDefault();
@@ -60983,6 +61202,91 @@
               if (!goneOk || !backOk) bad.push("remove/Undo: removed " + goneOk + ", restored " + backOk);
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "two threads added through the Grid sit before the Covenant column; notes typed into squares landed on chapters 1, 2 and the wordless chapter 3; rename kept the notes; the book file round-trips byte for byte and drops a stray note; EPUB (" + b.epub.length + " chars), print (" + b.print.length + ") and Word (" + b.docx.length + ") unchanged with no marker; word counts unchanged; remove took the notes and Undo brought them back; a book without threads has no threads key");
             }));
+          } },
+        { id: "outline.fields", feature: "outline", name: "Custom fields: a text, list, checkbox and date field made in the Outline give every section a control on its card, its List row and a Grid column; values typed there land on the section, a date must be YYYY-MM-DD, a renamed field keeps its values and a list keeps a choice taken off it; fields and values ride serializeBook/applyBookDoc and a value with no field, or that does not fit its field, is dropped on load; they never reach the EPUB, the print interior or the Word manuscript and never change a word count; removing a field takes its values and Undo brings them back; a book without fields keeps no fields or custom key",
+          run() {
+            return olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              f.c3.content = "";
+              const noKey = serializeBook();
+              if ((noKey.outline && "fields" in noKey.outline) || noKey.sections.some((s) => "custom" in s)) bad.push("a book without fields carries a fields or custom key");
+              const stamp = (s) => String(s).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "T").replace(/urn:uuid:[0-9a-f-]+/gi, "U");
+              const grab = () => ({
+                epub: stamp(epubFiles("generic").map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                print: stamp(buildPrintHtml()),
+                docx: stamp(buildDocxFiles().map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                words: bookWordTotal() + "|" + state.sections.map((s) => sectionWords(s)).join(",")
+              });
+              const a = grab();
+              olCheckOpen("cards");
+              const make = (name, type) => { $("olFieldName").value = name; $("olFieldType").value = type; $("olFieldName").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); return olBook().fields.find((x) => x.name === name); };
+              const fl = make("Fieldmarkplace", "list"), ft = make("Fieldmarkwhen", "text"), fc = make("Fieldmarkcheck", "check"), fd = make("Fieldmarkdate", "date");
+              if (!fl || !ft || !fc || !fd || olBook().fields.map((x) => x.type).join(",") !== "list,text,check,date") { bad.push("fields made: " + olBook().fields.map((x) => x.name + ":" + x.type).join(",")); return scVerdict(false, bad.join("; ")); }
+              const opts = document.querySelector('#olRoot [data-olfopts="' + fl.id + '"]');
+              if (opts) { opts.value = "Fieldmarkquay, Fieldmarkhill, fieldmarkquay"; opts.dispatchEvent(new Event("change", { bubbles: true })); }
+              if ((olBook().fields[0].options || []).join(",") !== "Fieldmarkquay,Fieldmarkhill") bad.push("list choices " + (olBook().fields[0].options || []).join(","));
+              /* every card has one control per field; type into chapter 1's */
+              const ctl = (sec, fld) => document.querySelector('#olRoot [data-ol="' + sec.id + '"] [data-olcf="' + fld.id + '"]');
+              const cardCtls = document.querySelectorAll('#olRoot .ol-card [data-olf="custom"]').length, cards = document.querySelectorAll("#olRoot .ol-card").length;
+              if (!cards || cardCtls !== cards * 4) bad.push("cards " + cards + " with " + cardCtls + " field controls");
+              const sel = ctl(f.c1, fl); if (sel) { sel.value = "Fieldmarkquay"; sel.dispatchEvent(new Event("change", { bubbles: true })); }
+              const txt = ctl(f.c1, ft); if (txt) { txt.value = "Fieldmarkdusk"; txt.dispatchEvent(new Event("input", { bubbles: true })); }
+              const box = ctl(f.c1, fc); if (box) box.click();
+              const day = ctl(f.c1, fd); if (day) { day.value = "2026-03-20"; day.dispatchEvent(new Event("change", { bubbles: true })); }
+              const cv = f.c1.custom || {};
+              if (cv[fl.id] !== "Fieldmarkquay" || cv[ft.id] !== "Fieldmarkdusk" || cv[fc.id] !== true || cv[fd.id] !== "2026-03-20") bad.push("values on chapter 1: " + JSON.stringify(cv));
+              olSetCustom(f.c2, fd.id, "March the twentieth");
+              if (f.c2.custom && f.c2.custom[fd.id]) bad.push("a date that is not YYYY-MM-DD was kept");
+              /* the List row carries them */
+              olCheckOpen("list");
+              const ls = ctl(f.c1, fl), lb = ctl(f.c1, fc);
+              if (!ls || ls.value !== "Fieldmarkquay" || !lb || !lb.checked || !document.querySelector('#olRoot .ol-row[data-ol="' + f.c1.id + '"] .ol-fields')) bad.push("the List row does not show the values");
+              /* the Grid: a column per field, before the plot threads; a wordless section is a row */
+              olCheckOpen("grid");
+              const fh = Array.from(document.querySelectorAll("#olGrid thead th.ol-g-fh .ol-g-ent")).map((el) => el.textContent).join(",");
+              if (fh !== "Fieldmarkplace,Fieldmarkwhen,Fieldmarkcheck,Fieldmarkdate") bad.push("Grid field columns " + fh);
+              if (!document.querySelector('#olGrid tr[data-ol="' + f.c3.id + '"] [data-olcf="' + ft.id + '"]')) bad.push("the wordless chapter has no field square");
+              const gt = document.querySelector('#olGrid tr[data-ol="' + f.c1.id + '"] [data-olcf="' + ft.id + '"]');
+              if (!gt || gt.value !== "Fieldmarkdusk") bad.push("the Grid square does not show the text value");
+              const gb = document.querySelector('#olGrid tr[data-ol="' + f.c2.id + '"] [data-olcf="' + fc.id + '"]');
+              if (gb) gb.click();
+              if (!(f.c2.custom && f.c2.custom[fc.id] === true)) bad.push("a box ticked in the Grid did not land");
+              const tot = document.querySelector('#olGrid [data-olgtotal="' + fc.id + '"]');
+              if (!tot || tot.textContent !== t("ol.fieldFilled", { n: fmtNum(2) })) bad.push("field total " + (tot && tot.textContent));
+              /* rename keeps the values; a choice taken off the list stays on the section */
+              const nm = document.querySelector('#olRoot [data-olfname="' + fl.id + '"]');
+              if (nm) { nm.value = "Fieldmarkopens"; nm.dispatchEvent(new Event("change", { bubbles: true })); }
+              const op2 = document.querySelector('#olRoot [data-olfopts="' + fl.id + '"]');
+              if (op2) { op2.value = "Fieldmarkhill"; op2.dispatchEvent(new Event("change", { bubbles: true })); }
+              const kept = document.querySelector('#olGrid tr[data-ol="' + f.c1.id + '"] [data-olcf="' + fl.id + '"]');
+              if (olBook().fields[0].name !== "Fieldmarkopens" || f.c1.custom[fl.id] !== "Fieldmarkquay" || !kept || kept.value !== "Fieldmarkquay") bad.push("rename or a removed choice lost a value");
+              /* the book file carries them */
+              const doc = JSON.parse(JSON.stringify(serializeBook()));
+              applyBookDoc(doc);
+              const c1b = state.sections.find((s) => s.id === f.c1.id);
+              const tripOk = olBook().fields.length === 4 && c1b && c1b.custom && c1b.custom[fd.id] === "2026-03-20" && c1b.custom[fc.id] === true && JSON.stringify(serializeBook()) === JSON.stringify(doc);
+              if (!tripOk) bad.push("fields did not survive the book file");
+              const junk = JSON.parse(JSON.stringify(doc));
+              junk.sections.find((s) => s.id === f.c3.id).custom = { "no-such": "Strayx", [fc.id]: "yes", [fd.id]: "soon" };
+              applyBookDoc(junk);
+              if (state.sections.some((s) => s.id === f.c3.id && s.custom)) bad.push("a stray or misfitting value survived the load");
+              applyBookDoc(doc);
+              /* never book text */
+              const b = grab();
+              ["epub", "print", "docx"].forEach((k) => { if (a[k] !== b[k]) bad.push(k + " output changed"); });
+              if ((b.epub + b.print + b.docx).indexOf("Fieldmark") !== -1) bad.push("a field reached an export");
+              if (a.words !== b.words) bad.push("word counts moved");
+              /* remove, then Undo */
+              olCheckOpen("cards");
+              const del = document.querySelector('#olRoot [data-olfdel="' + fc.id + '"]');
+              if (del) del.click();
+              const goneOk = olBook().fields.length === 3 && !state.sections.some((s) => s.custom && s.custom[fc.id] != null);
+              const undoBtn = Array.from(document.querySelectorAll("#toasts .toast button")).pop();
+              if (undoBtn) undoBtn.click();
+              const backOk = olBook().fields.length === 4 && (state.sections.find((s) => s.id === f.c2.id).custom || {})[fc.id] === true;
+              if (!goneOk || !backOk) bad.push("remove/Undo: removed " + goneOk + ", restored " + backOk);
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "list, text, checkbox and date fields made in the Outline; each card had four controls; values typed on chapter 1's card landed, a non-date was refused; the List row and the Grid showed them, the Grid's columns came before the threads and a wordless chapter had a row; a box ticked in the Grid landed (total: 2); rename kept the values and a choice taken off the list stayed; the book file round-trips byte for byte and drops a stray or misfitting value; EPUB (" + b.epub.length + " chars), print (" + b.print.length + ") and Word (" + b.docx.length + ") unchanged with no marker; word counts unchanged; remove took the values and Undo brought them back; a book without fields has no fields or custom key");
+            });
           } }
       );
       /* ==== /BEUK:outline ==== */

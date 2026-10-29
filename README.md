@@ -2332,6 +2332,22 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   book without threads writes no `threads` key anywhere, so it serializes
   as before. Like synopses, notes are not book text: no export reads them
   and no word count counts them. Self-check: `outline.grid.threads`.
+- **Custom fields** (Scrivener's custom metadata), the writer's own:
+  text, list, checkbox or date (`OL_FIELD_TYPES`). Made, renamed and
+  removed (with Undo, values and all) in the "Custom fields" panel under
+  the filter bar, which shows in every view; a list's choices are typed
+  there with commas between. Every card and List row gets one control per
+  field, and the Grid gets a column per field before the plot threads,
+  with a footer count of the sections that have a value. Fields ride the
+  book as `outline.fields: [{ id, name, type, options? }]` (up to 20);
+  values ride their section as `custom: { fieldId: value }`, only the set
+  ones: text and a list choice up to 500 characters, a ticked box as
+  `true`, a date as `YYYY-MM-DD` (anything else is refused). A choice
+  taken off a list stays on the sections that have it and still shows. A
+  value whose field the book does not have, or that does not fit its
+  field, is dropped on load. A book without fields writes no `fields` or
+  `custom` key, so it serializes as before. Never exported, never
+  counted. Self-check: `outline.fields`.
 - **Covenant columns** follow the threads: the Covenant's entries, by
   type, then by first appearance, then by name. Each square is the Covenant's own count
   of that name in that section (`bibleMentions`, cached on the text, so
@@ -2349,8 +2365,11 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   (Mara, Elias Vane, Tomas, Nell, Agnes, Petra, Mr. Venn, Gullwick, Gull
   Terrace) and three plot threads (The east channel, Elias's chart,
   Harrow and Venn) with a note where each one moves, every note taken
-  from that chapter's own text (`buildSampleBook`). The sample's word
-  count stays 24,825.
+  from that chapter's own text, and three custom fields: "Opens at" (a
+  list), "When" (text) and "Check the depths" (a box, ticked on the three
+  chapters the Notebook's depths note is pinned to). Each value is read
+  from that chapter's own opening; a chapter whose opening does not say is
+  left unset (`buildSampleBook`). The sample's word count stays 24,825.
 - **Per device:** Cards, List or Grid and whether front and back matter show
   (`beuk.outline.v1` in localStorage, guarded). Not in the book.
 - Phone width: cards become one column and list rows stack (container

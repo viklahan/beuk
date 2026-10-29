@@ -2754,6 +2754,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Threads and their notes ride the client book document; the server stores it as opaque JSON.',
   },
+  {
+    id: 'outline.fields',
+    title: 'Custom fields: text, list, checkbox and date fields made in the Outline show on every card, List row and as Grid columns; values land on the section, a non-date is refused, rename and a removed list choice keep values; round-trip through the book file dropping stray values; never exported or counted; remove with Undo; a book without fields keeps no fields or custom key',
+    kind: 'client-only',
+    reason: 'Fields and their values ride the client book document; the server stores it as opaque JSON.',
+  },
   /* ==== /BEUK:outline ==== */
   /* ---- Word import report (client-side; BEUK:importreport) ---- */
   {
