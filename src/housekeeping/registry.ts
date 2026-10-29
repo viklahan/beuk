@@ -1666,6 +1666,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Desk state lives in the client editor; there is no server-side desk.',
   },
+  {
+    id: 'sample.empty-desk.no-figures',
+    title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
+    kind: 'client-only',
+    reason: 'The reading desk, progress bars and sidebar statistics are drawn in the studio page.',
+  },
+  {
+    id: 'sample.remove.leaves-nothing',
+    title: 'Remove leaves nothing of the sample: no prompt for an untouched sample; no trace in the book, either device copy or the writing log',
+    kind: 'client-only',
+    reason: 'The desk, the device save (IndexedDB) and the writing log (localStorage) live in the browser (window.runBeukAsyncSelfChecks()); tests/sample-remnants.test.ts guards the code paths on the server side.',
+  },
 
   /* ---- Editor toolbar (all client-side) ---- */
   {

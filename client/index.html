@@ -20086,7 +20086,11 @@
         }
         icons();
       }
-      const sampleComparableJson = () => { const d = JSON.parse(JSON.stringify(serializeBook())); delete d.activeId; samplePicsStrip(d); /* BEUK:slim */ return stableJson(d); };
+      const sampleComparableJson = () => { const d = JSON.parse(JSON.stringify(serializeBook())); delete d.activeId; samplePicsStrip(d); /* BEUK:slim */ delete d.history; delete d.historyPool; /* BEUK:remnants — snapshots are not writing: the sample's own draft snapshot names its pictures once they arrive, which is no edit */ return stableJson(d); };
+      /* BEUK:remnants — a fingerprint saved before snapshots left the comparison carries them: compare like with like. */
+      function sampleLoadedJsonNormal(s) {
+        try { const d = JSON.parse(s); if (!d || typeof d !== "object") return s; delete d.history; delete d.historyPool; return stableJson(d); } catch (e) { return s; }
+      }
       /* One synchronous swap: the whole novella is applied in a single
          state change — first chapter open, stats already at full count
          when the click handler returns. No delay, no spinner, no
@@ -20260,6 +20264,22 @@
         sampleState.loaded = false; sampleState.loadedJson = null;
         applyBookDoc(buildEmptyBook(), { keepHistory: true }); /* BEUK:metaleak — Remove keeps the History safety net */
         state.history = (state.history || []).filter((s) => s.id !== SAMPLE_DRAFT_SNAP_ID); /* BEUK:compare — but not the sample's own snapshot */
+        /* ==== BEUK:remnants ==== — nothing of the sample stays behind: a
+           snapshot taken of the sample itself goes with it (the writer's
+           own book, snapshotted before the sample arrived, stays); the
+           writing log forgets the sample's per-book figures; and the next
+           device save writes the empty desk over the last-good copy too,
+           so a failed read can never bring the sample back. */
+        const sampleSnap = (s) => { const d = s && (s.doc || s.chopDoc); const id = d && d.meta && d.meta.bookId; return !!id && (isSampleBookId(id) || id === LEGACY_SAMPLE_BOOK_ID); };
+        state.history = state.history.filter((s) => !sampleSnap(s));
+        let logged = false;
+        ["len", "ar"].forEach((k) => {
+          const per = wlog[k];
+          if (per && typeof per === "object") Object.keys(per).forEach((id) => { if (isSampleBookId(id) || id === LEGACY_SAMPLE_BOOK_ID) { delete per[id]; logged = true; } });
+        });
+        if (logged) wlogSaveSoon();
+        if (typeof local !== "undefined") local.dropPrev = true;
+        /* ==== /BEUK:remnants ==== */
         renderSampleButton();
       }
       function removeSampleStory() {
@@ -30409,23 +30429,28 @@
           ? t("stats.pagesNoteDesk", { device: DEVICE_NAMES[state.device] || state.device || "", b: fmtNum(READ_WPM) })
           : t("stats.pagesNote", { a: fmtNum(250), b: fmtNum(READ_WPM) });
       }
-      function statsPagesRefresh() {
-        const total = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
-        if ($("statPages")) $("statPages").textContent = fmtNum(statsPages(total));
-        statsPagesNote();
-        renderSideStatusSummary(total);
-      }
-      function updateStats() {
+      /* BEUK:remnants — the four statistics cells are written together,
+         from one count, wherever they are refreshed: the desk's
+         re-measure can never leave one book's pages beside another
+         book's words. */
+      function statsCells() {
         const included = state.sections.filter((s) => s.included);
         const total = included.reduce((n, s) => n + sectionWords(s), 0);
         const chars = included.reduce((n, s) => n + sectionChars(s), 0);
-        $("statWords").textContent = fmtNum(total);
-        $("statChars").textContent = fmtNum(chars);
-        $("statPages").textContent = fmtNum(statsPages(total));
+        if ($("statWords")) $("statWords").textContent = fmtNum(total);
+        if ($("statChars")) $("statChars").textContent = fmtNum(chars);
+        if ($("statPages")) $("statPages").textContent = fmtNum(statsPages(total));
         statsPagesNote();
         const mins = Math.round(total / READ_WPM);
-        $("statTime").textContent = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
+        if ($("statTime")) $("statTime").textContent = mins >= 60 ? t("stats.readingH", { h: Math.floor(mins / 60), m: mins % 60 }) : t("stats.readingM", { m: mins });
         renderSideStatusSummary(total); /* BEUK:sidebar */
+        return total;
+      }
+      function statsPagesRefresh() {
+        statsCells();
+      }
+      function updateStats() {
+        const total = statsCells();
         if (typeof renderSampleNoteLive === "function") renderSampleNoteLive(total); /* BEUK:bugs — the sample note's count is live */
         /* The Content page carries its own live counts — this section and
            the whole book — and the Zen pill reads the same numbers. */
@@ -30449,10 +30474,11 @@
       }
       function renderProgress() {
         const tiers = [["front", "progFront", "progFrontPct"], ["body", "progBody", "progBodyPct"], ["back", "progBack", "progBackPct"]];
+        const empty = isEmptyDesk(); /* BEUK:remnants — an empty desk has done nothing yet: the pages the studio generates are no progress */
         tiers.forEach(([kind, barId, pctId]) => {
           const secs = state.sections.filter((s) => s.kind === kind && s.type !== "cover");
           if (!secs.length) return;
-          const done = secs.filter(sectionComplete).length;
+          const done = empty ? 0 : secs.filter(sectionComplete).length;
           const pct = Math.round((done / secs.length) * 100);
           const bar = $(barId), lab = $(pctId);
           if (bar) bar.style.width = pct + "%";
@@ -35816,6 +35842,13 @@
         renderDeskFacts();
         if (typeof insGlancePagesRefresh === "function") insGlancePagesRefresh(); /* BEUK:insights — the glance's page count follows the desk */
         if (typeof statsPagesRefresh === "function") statsPagesRefresh(); /* the sidebar's page count is the desk's too */
+        /* BEUK:remnants — an empty desk has no pages to report: no total, no basis, no per-section list. */
+        if (isEmptyDesk()) {
+          $("deskTotal").textContent = "";
+          if ($("deskBasis")) $("deskBasis").textContent = "";
+          $("deskRail").innerHTML = "";
+          return;
+        }
         $("deskTotal").textContent = t("preview.desk.total", {
           title: state.meta.title || t("misc.untitledBook"),
           n: deskState.total, count: deskState.total, device: DEVICE_NAMES[state.device] || state.device
@@ -53170,6 +53203,32 @@
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
+        /* ==== BEUK:remnants ==== */
+        { id: "sample.empty-desk.no-figures", feature: "sample", name: "An empty desk reports nothing: no page count or per-section page list on the reading desk, every progress bar at 0%, and the sidebar's words, pages and reading time all agree at zero — even straight after the sample left",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+            try {
+              applyBookDoc(buildEmptyBook());
+              sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
+              loadSampleStory(); updateStats(); renderDesk(); /* the sample's figures are on screen */
+              clearDeskToEmpty(); renderDesk(); statsPagesRefresh();
+              const bad = [];
+              if (!isEmptyDesk()) bad.push("fixture: the desk is not empty");
+              if ($("deskTotal").textContent.trim()) bad.push("reading desk total says “" + $("deskTotal").textContent.trim() + "”");
+              if ($("deskRail").children.length) bad.push("reading desk lists " + $("deskRail").children.length + " sections with page counts");
+              ["progFrontPct", "progBodyPct", "progBackPct"].forEach((id) => { if ($(id) && $(id).textContent !== "0%") bad.push(id + " shows " + $(id).textContent); });
+              const cells = { statWords: "0", statPages: "0", statTime: t("stats.readingM", { m: 0 }) };
+              Object.keys(cells).forEach((id) => { if ($(id).textContent !== cells[id]) bad.push(id + " shows " + $(id).textContent); });
+              if (/[1-9]/.test($("sideStatusSummary").textContent)) bad.push("sidebar summary says “" + $("sideStatusSummary").textContent + "”");
+              return scVerdict(!bad.length, bad.length ? bad.join("; ") : "the empty desk shows no pages, no page list, 0% progress and zero stats");
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+              updateStats(); renderDesk();
+            }
+          } },
+        /* ==== /BEUK:remnants ==== */
         { id: "sample.load.instant-single-swap", feature: "sample", name: "Instant load: a single Load from the empty desk lands the full 24,825 words and the first chapter's full content synchronously — asserted in the same tick the load call returns, with the first chapter open and the stats already updated; no timers, no polling, no staged reveal",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -61797,6 +61856,61 @@
          answer synchronously: window.runBeukAsyncSelfChecks() runs them
          and resolves to the same result shape as runBeukSelfChecks(). */
       const SELF_CHECKS_ASYNC = [
+        /* ==== BEUK:remnants ==== */
+        { id: "sample.remove.leaves-nothing", feature: "sample", name: "Remove leaves nothing of the sample: an untouched sample (its pictures arrived) is removed without asking, and afterwards no sample title, name, id or picture is left in the book, in the device save (current copy or last-good copy) or in the writing log",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+            const keepWlog = JSON.stringify(wlog), keepDb = local.db, keepDrop = local.dropPrev;
+            const MARKS = ["Lantern Coast", "Gullwick", "Carooke", SAMPLE_BOOK_ID, LEGACY_SAMPLE_BOOK_ID, "sample-img-", "sample-th-", "sample-fl-", SAMPLE_DRAFT_SNAP_ID];
+            const marksIn = (s) => MARKS.filter((m) => String(s || "").indexOf(m) !== -1);
+            /* A stand-in for the device store, so the check never touches the writer's own saved copy. */
+            const mem = new Map();
+            const fakeDb = { transaction() {
+              const tx = {};
+              const store = { get(k) { const r = {}; setTimeout(() => { r.result = mem.get(k); if (r.onsuccess) r.onsuccess(); }, 0); return r; },
+                put(v, k) { mem.set(k, v); }, delete(k) { mem.delete(k); } };
+              tx.objectStore = () => store;
+              setTimeout(() => { if (tx.oncomplete) tx.oncomplete(); }, 20);
+              return tx;
+            } };
+            const bad = [];
+            try {
+              applyBookDoc(buildEmptyBook());
+              sampleState.loaded = false; sampleState.loadedJson = null; renderSampleButton();
+              if (!loadSampleStory()) return scVerdict(false, "fixture: load refused");
+              updateStats(); /* the writing log sees the sample, as it does on screen */
+              await samplePicsReady(true); /* the pictures arrive, as they do a moment after Load */
+              local.db = fakeDb;
+              await localWrite(localRecordJson(), null); /* the sample is saved on the device… */
+              await localWrite(localRecordJson(), null); /* …twice, so the last-good copy holds it too */
+              if (!deskIsUntouchedSample()) bad.push("the untouched sample counts as edited once its pictures arrive");
+              if (!removeSampleStory()) bad.push("remove refused");
+              if (sampleState.loaded) {
+                bad.push("remove asked for confirmation on an untouched sample");
+                const keep = [...document.querySelectorAll("button")].find((b) => b.offsetParent && b.textContent.trim() === t("sample.keepReading"));
+                if (keep) keep.click();
+                clearDeskToEmpty();
+              }
+              updateStats();
+              await localWrite(localRecordJson(), null); /* the first save after Remove */
+              const where = {
+                "the book": JSON.stringify(serializeBook()),
+                "the device save": mem.get("book") && mem.get("book").json,
+                "the device's last-good copy": mem.get("book-prev") && mem.get("book-prev").json,
+                "the writing log": JSON.stringify(wlog)
+              };
+              Object.keys(where).forEach((w) => { const hit = marksIn(where[w]); if (hit.length) bad.push(w + " still holds " + hit.join(", ")); });
+              return scVerdict(!bad.length, bad.length ? bad.join("; ") : "an untouched sample leaves without a question, and no title, name, id or picture of it remains in the book, either device copy or the writing log");
+            } finally {
+              local.db = keepDb; local.dropPrev = keepDrop;
+              wlog = JSON.parse(keepWlog);
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+              updateStats();
+            }
+          } },
+        /* ==== /BEUK:remnants ==== */
         /* ==== BEUK:tips ==== */
         { id: "ui.tooltips.touch", feature: "ui", name: "Tooltips on touch screens: a long press shows the tip beside the control without pressing it; a short tap presses it and shows nothing",
           async run() {
@@ -63832,6 +63946,7 @@
       const LOCAL_FORMAT = 1;
       const local = {
         db: null,
+        dropPrev: false,       // BEUK:remnants — true after Remove: the next save writes the empty desk over the last-good copy too
         ready: false,          // restore finished: saving may begin (never before — an empty desk must not overwrite a saved book)
         status: "checking",    // checking | saving | saved | blocked | quota | error
         errorName: "",
@@ -63916,14 +64031,16 @@
           const store = tx.objectStore(LOCAL_STORE);
           const rec = { format: LOCAL_FORMAT, savedAt: new Date().toISOString(), json: json };
           const get = store.get("book");
+          const dropPrev = !!local.dropPrev; /* BEUK:remnants — the desk was cleared of the sample: no copy of it is kept as last-good */
           get.onsuccess = () => {
             try {
-              if (get.result && typeof get.result.json === "string") store.put(get.result, "book-prev");
+              if (dropPrev) store.put(rec, "book-prev");
+              else if (get.result && typeof get.result.json === "string") store.put(get.result, "book-prev");
               store.put(rec, "book");
               store.put({ savedAt: rec.savedAt, link: link || null }, "link");
             } catch (e) { try { tx.abort(); } catch (e2) {} reject(e); }
           };
-          tx.oncomplete = () => resolve(rec);
+          tx.oncomplete = () => { if (dropPrev) local.dropPrev = false; resolve(rec); };
           tx.onabort = () => reject(tx.error || new Error("transaction aborted"));
           tx.onerror = () => {};
         });
@@ -64096,11 +64213,11 @@
             const bookIdSeqBefore = bookIdMigrationSeq; /* BEUK:bookid */
             applyBookDoc(found.book);
             sampleState.loaded = !!(found.sample && found.sample.loaded);
-            sampleState.loadedJson = sampleState.loaded ? (found.sample.loadedJson || sampleComparableJson()) : null;
+            sampleState.loadedJson = sampleState.loaded ? (found.sample.loadedJson ? sampleLoadedJsonNormal(found.sample.loadedJson) : sampleComparableJson()) : null; /* BEUK:remnants */
             /* BEUK:bookid — the id migrated on the way in: the stored "as loaded" sample fingerprint is migrated the same way, so an untouched sample stays untouched; the healed record is written back below. */
             localRestoreMigrated = bookIdMigrationSeq !== bookIdSeqBefore;
             if (localRestoreMigrated && sampleState.loaded && found.sample.loadedJson) {
-              try { const lj = JSON.parse(found.sample.loadedJson); if (lj && lj.meta) { bookIdMigrateMeta(lj.meta); sampleState.loadedJson = stableJson(lj); } } catch (e) {}
+              try { const lj = JSON.parse(found.sample.loadedJson); if (lj && lj.meta) { bookIdMigrateMeta(lj.meta); sampleState.loadedJson = sampleLoadedJsonNormal(stableJson(lj)); } } catch (e) {}
             }
             if (found.flags && found.flags.editedBeforeSignIn) cloud.editedBeforeSignIn = true;
             renderSampleButton();
