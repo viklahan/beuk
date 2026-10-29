@@ -27,17 +27,42 @@
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMapping = THREE.NoToneMapping;
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(42, 1, 0.05, 1200);
     var SUN = new THREE.Vector3(0.22, 0.075, -1).normalize();
-    var shared = { uTime: { value: 0 }, uSun: { value: SUN } };
+    // Every colour comes from the page's own palette (opts.palette: the
+    // warmth pages' CSS tokens), so the plate reads as part of Beuk's
+    // Paper page, not a photograph laid on it. With no tone mapping a
+    // token renders as exactly that token: the horizon IS --paper.
+    var P = opts.palette || {};
+    function tok(v, fallback) {
+      var c = new THREE.Color();
+      try { c.setStyle(String(v || fallback).trim()); } catch (e) { c.setStyle(fallback); }
+      return c.convertSRGBToLinear();
+    }
+    var COL = {
+      paper: tok(P.paper, '#f8f4e9'),
+      paperDeep: tok(P.paperDeep, '#eef0e2'),
+      sky: tok(P.sky, '#dcebee'),
+      accent: tok(P.accent, '#14607a'),
+      ink: tok(P.ink, '#22333a')
+    };
+    function vec(c) { return new THREE.Vector3(c.r, c.g, c.b); }
+    // The zenith is the accent-soft wash taken a step toward the accent;
+    // the deep sea is the accent taken a step toward the ink.
+    var zen = COL.sky.clone().lerp(COL.accent, 0.18);
+    var deep = COL.accent.clone().lerp(COL.ink, 0.3);
+    var shared = {
+      uTime: { value: 0 }, uSun: { value: SUN },
+      uHor: { value: vec(COL.paper) }, uMid: { value: vec(COL.paperDeep) }, uZen: { value: vec(zen) },
+      uDeep: { value: vec(deep) }, uSea: { value: vec(COL.accent) }
+    };
 
     // ---- sky: one function shared by the dome and the water's reflections ----
     var COMMON = [
-      'uniform float uTime; uniform vec3 uSun;',
+      'uniform float uTime; uniform vec3 uSun; uniform vec3 uHor, uMid, uZen, uDeep, uSea;',
       'vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }',
       'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
       'float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);',
@@ -45,18 +70,18 @@
       'float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a*vnoise(p); p = p*2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }',
       'vec3 skyCol(vec3 d){',
       '  float h = max(d.y, 0.0);',
-      '  vec3 c = mix(lin(vec3(0.99, 0.79, 0.63)), lin(vec3(0.96, 0.87, 0.81)), smoothstep(0.0, 0.10, h));',
-      '  c = mix(c, lin(vec3(0.52, 0.68, 0.86)), smoothstep(0.08, 0.55, h));',
+      '  vec3 c = mix(uHor, uMid, smoothstep(0.02, 0.16, h));',
+      '  c = mix(c, uZen, smoothstep(0.12, 0.7, h));',
       '  float s = max(dot(d, uSun), 0.0);',
-      '  c += lin(vec3(1.0, 0.70, 0.45)) * pow(s, 6.0) * 0.45;',
-      '  c += lin(vec3(1.0, 0.86, 0.66)) * pow(s, 64.0) * 0.6 + lin(vec3(1.0, 0.80, 0.55)) * pow(s, 900.0) * 1.5;',
+      '  vec3 glow = lin(vec3(0.98, 0.93, 0.80));',
+      '  c = mix(c, glow, pow(s, 10.0) * 0.55 + pow(s, 120.0) * 0.4);',
       '  if (d.y > 0.0) {',
       '    vec2 cp = d.xz / (d.y + 0.06);',
       '    float n = fbm(cp * vec2(0.35, 1.4) + vec2(uTime * 0.008, 0.0));',
       '    float cl = smoothstep(0.52, 0.80, n) * smoothstep(0.01, 0.07, d.y) * (1.0 - smoothstep(0.18, 0.42, d.y));',
-      '    c = mix(c, mix(lin(vec3(0.88, 0.76, 0.82)), lin(vec3(1.0, 0.83, 0.69)), pow(s, 4.0)), cl * 0.6);',
+      '    c = mix(c, mix(uMid, glow, pow(s, 4.0)), cl * 0.45);',
       '  }',
-      '  c += vec3(1.0, 0.92, 0.80) * smoothstep(0.99986, 0.99993, s) * 9.0;',
+      '  c = mix(c, lin(vec3(1.0, 0.98, 0.93)), smoothstep(0.99986, 0.99993, s));',
       '  return c;',
       '}'
     ].join('\n');
@@ -102,7 +127,7 @@
     var waterGeo = new THREE.PlaneGeometry(320, 320, 320, 320);
     waterGeo.rotateX(-Math.PI / 2);
     scene.add(new THREE.Mesh(waterGeo, new THREE.ShaderMaterial({
-      uniforms: { uTime: shared.uTime, uSun: shared.uSun, uRip: { value: ripples } },
+      uniforms: { uTime: shared.uTime, uSun: shared.uSun, uHor: shared.uHor, uMid: shared.uMid, uZen: shared.uZen, uDeep: shared.uDeep, uSea: shared.uSea, uRip: { value: ripples } },
       vertexShader: [
         'uniform float uTime; varying vec3 vW;',
         'float swell(vec2 p, float t){ float h = 0.0;', swellGLSL, 'return h; }',
@@ -133,23 +158,23 @@
         '  vec3 N = normalize(vec3(-g.x, 1.0, -g.y));',
         '  vec3 R = reflect(-V, N); R.y = abs(R.y);',
         '  float fres = 0.02 + 0.98 * pow(1.0 - max(dot(N, V), 0.0), 5.0);',
-        '  vec3 body = mix(lin(vec3(0.07, 0.22, 0.27)), lin(vec3(0.17, 0.38, 0.40)), clamp(0.35 + (g.x + g.y) * 0.8, 0.0, 1.0));',
+        '  vec3 body = mix(uDeep, uSea, clamp(0.35 + (g.x + g.y) * 0.8, 0.0, 1.0));',
         '  vec3 col = mix(body, skyCol(R), fres);',
         '  float sd = max(dot(R, uSun), 0.0);',
-        '  col += lin(vec3(1.0, 0.85, 0.62)) * (pow(sd, 800.0) * 8.0 + pow(sd, 90.0) * 0.6);',
+        '  col += lin(vec3(1.0, 0.97, 0.88)) * (pow(sd, 800.0) * 3.0 + pow(sd, 90.0) * 0.35);',
         '  col = mix(col, skyCol(normalize(vec3(-V.x, 0.0, -V.z))), smoothstep(25.0, 150.0, dist));',
         '  gl_FragColor = vec4(col, 1.0);' + OUT,
         '}'
       ].join('\n')
     })));
-    scene.fog = new THREE.Fog(new THREE.Color(0.99, 0.79, 0.63).convertSRGBToLinear(), 40, 170);
+    scene.fog = new THREE.Fog(COL.paper.clone(), 40, 170);
 
     // ---- light ----
-    scene.add(new THREE.HemisphereLight(0xe3ecf7, 0x3c5c62, 0.85));
-    var sunLight = new THREE.DirectionalLight(0xffd6ad, 2.0);
+    scene.add(new THREE.HemisphereLight(0xeef3ee, 0x4a6e72, 0.62));
+    var sunLight = new THREE.DirectionalLight(0xfff1dc, 0.8);
     sunLight.position.copy(SUN).multiplyScalar(20);
     scene.add(sunLight);
-    var fill = new THREE.DirectionalLight(0xfff3e6, 1.5);
+    var fill = new THREE.DirectionalLight(0xfffaf0, 0.75);
     fill.position.set(0.4, 0.8, 1.0);
     scene.add(fill);
 
@@ -158,7 +183,7 @@
       var c = document.createElement('canvas');
       c.width = 1024; c.height = 768;
       var g = c.getContext('2d');
-      g.fillStyle = '#fbf6ea'; g.fillRect(0, 0, 1024, 768);
+      g.fillStyle = P.paper || '#f8f4e9'; g.fillRect(0, 0, 1024, 768);
       var img = g.getImageData(0, 0, 1024, 768), d = img.data;
       for (var i = 0; i < d.length; i += 4) {
         var n = (Math.random() - 0.5) * 9;
@@ -169,11 +194,11 @@
       vg.addColorStop(0, 'rgba(120,90,50,0)'); vg.addColorStop(1, 'rgba(120,90,50,0.10)');
       g.fillStyle = vg; g.fillRect(0, 0, 1024, 768);
       g.textAlign = 'center';
-      g.fillStyle = 'rgba(20,38,58,0.75)';
-      g.font = '500 22px Newsreader, Literata, Georgia, serif';
+      g.fillStyle = P.accent || '#14607a';
+      g.font = '600 22px Literata, Georgia, serif';
       g.fillText('B  E  U  K', 512, 86);
       g.fillRect(452, 104, 120, 1.5);
-      g.fillStyle = '#10233a';
+      g.fillStyle = P.ink || '#22333a';
       g.textAlign = 'left';
       g.font = '84px "Patrick Hand", "Segoe Print", "Bradley Hand", cursive';
       g.fillText('For you,', 150, 252);
@@ -206,7 +231,7 @@
     sheetGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     sheetGeo.setIndex(idx);
 
-    var paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, emissive: 0x2a2014 });
+    var paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, emissive: 0x15140f });
     var boat = new THREE.Group();
     boat.rotation.order = 'YXZ';
     var sheet = new THREE.Mesh(sheetGeo, paperMat);
@@ -346,7 +371,7 @@
       camera.position.copy(camPos);
       camera.lookAt(camLook);
       sky.position.copy(camera.position);
-      fill.intensity = 1.5 - 0.8 * kA;
+      fill.intensity = 0.75 - 0.35 * kA;
 
       if (t > T.words && !wordsSent) {
         wordsSent = true;
@@ -416,7 +441,7 @@
     // asking now means they are ready long before anyone clicks.
     if (document.fonts && document.fonts.load) {
       document.fonts.load('84px "Patrick Hand"').catch(function () {});
-      document.fonts.load('500 22px Newsreader').catch(function () {});
+      document.fonts.load('600 22px Literata').catch(function () {});
     }
     var textured = false;
     function ensureTexture() {

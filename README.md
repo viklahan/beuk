@@ -2514,7 +2514,12 @@ Founders' Shelf application; none of it touches pricing or checkout.
   on screen and the tab is visible, and its clock stops while the tab
   is hidden, so a writer back from Ko-fi still sees the note fold.
   Reduced motion shows one still frame; without WebGL the plate keeps
-  a painted sea and the thank-you text.
+  a painted sea and the thank-you text. The scene has no colours of its
+  own: the page hands it the warmth tokens (`--paper` is the horizon,
+  `--paper-deep` and `--amber-soft` the sky, `--amber` the sea, `--ink`
+  the handwriting) and renders without tone mapping, so each token
+  shows as exactly that colour and the plate stays part of the Paper
+  page if the palette ever changes.
 - **Brand** — the sub-brand beside the wordmark and the footer of every
   warmth page is `beuk.studio`, the production domain
   (`BRAND_SUBLINE` / `BRAND_FOOTNOTE` in `src/warmth/pages.ts`; the
