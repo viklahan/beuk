@@ -11,3 +11,6 @@ docker-compose.override.yml
 
 # install.sh run summary (no secrets; per box)
 deploy/last-install.txt
+
+# Beuk School media (narrated video/audio/screenshots), produced by tools/school-media; served from the box
+/school-media/
