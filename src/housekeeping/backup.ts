@@ -42,6 +42,7 @@ export const BACKUP_TABLES = [
   'streak_state',
   'streak_days',
   'streak_freezes',
+  'school_progress',
   'exports',
   'jobs',
   'sessions',

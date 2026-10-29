@@ -115,6 +115,21 @@
 		reverse_proxy app:3000
 	}
 
+	# Beuk School media (lesson video, audio and screenshots) straight
+	# from disk, with range requests so video seeks work. Produced by
+	# tools/school-media and copied to ./school-media on the box. The more
+	# specific path sorts before /school* below.
+	handle /school/media/* {
+		uri strip_prefix /school/media
+		root * /srv/school-media
+		header Cache-Control "public, max-age=3600"
+		file_server
+	}
+	# Beuk School pages (src/routes/school.ts), server-rendered by the app.
+	handle /school* {
+		reverse_proxy app:3000
+	}
+
 	# M4 warmth pages → Node app (their support block and tip-jar slots
 	# depend on server config: SUPPORT_EMAIL / KOFI_URL). The app reads
 	# the page files from the same ./client tree mounted below.

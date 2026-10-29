@@ -102,6 +102,12 @@ export interface Config {
   /** M4 warmth: Ko-fi page URL (KOFI_URL). Null until set — while null
    *  the tip jar is rendered NOWHERE (no placeholder, no dead link). */
   kofiUrl: string | null;
+  /** Beuk School: the folder of produced lesson media (SCHOOL_MEDIA_DIR,
+   *  default ./school-media) — <lang>/<course>/<lesson>/manifest.json plus
+   *  the video, audio and screenshots it names. Caddy serves the files at
+   *  /school/media/; the app only reads each manifest. A lesson without a
+   *  manifest is shown in Read mode alone. */
+  schoolMediaDir: string;
   /** M5 jobs: path to the EPUBCheck jar (EPUBCHECK_JAR) and the java
    *  binary used to run it (JAVA_BIN, default "java"). A null/missing
    *  jar means EPUBCheck is NOT configured on this server: epubcheck
@@ -370,6 +376,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     supportName: env.SUPPORT_NAME?.trim() || null,
     supportReplyPromise: env.SUPPORT_REPLY_PROMISE?.trim() || null,
     kofiUrl: env.KOFI_URL || null,
+    schoolMediaDir: env.SCHOOL_MEDIA_DIR || path.resolve(process.cwd(), 'school-media'),
     epubcheckJar: env.EPUBCHECK_JAR || null,
     javaBin: env.JAVA_BIN || 'java',
     gsBin: env.GS_BIN || null,

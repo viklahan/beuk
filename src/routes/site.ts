@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Config } from '../config.js';
 import { getHelpContent } from '../help/content.js';
+import { getSchoolContent } from '../school/content.js';
 
 /** The comparison pages (client/site/compare/<slug>.html, served by Caddy at /compare/<slug>). */
 export const COMPARE_SLUGS = ['atticus', 'vellum', 'reedsy-studio', 'dabble', 'scrivener', 'novelcrafter'] as const;
@@ -14,7 +15,8 @@ export const COMPARE_SLUGS = ['atticus', 'vellum', 'reedsy-studio', 'dabble', 's
  *   GET /sitemap.xml   every public page: the landing page, Help (each
  *                      guide and each error entry), the legal pages,
  *                      the changelog and roadmap, /features, /compare
- *                      and each comparison, and /support while
+ *                      and each comparison, /school with every course
+ *                      and lesson, and /support while
  *                      KOFI_URL is set (it is a 404 otherwise)
  *
  * Kept out of search: the studio's app shell (/studio, /index.html), the
@@ -58,6 +60,8 @@ export function siteRoutes(config: Config): Router {
       '/terms',
       '/features',
       '/ramp',
+      '/school',
+      ...getSchoolContent().courses.flatMap((course) => [`/school/${course.slug}`, ...course.lessons.map((l) => `/school/${course.slug}/${l.slug}`)]),
       '/compare',
       ...COMPARE_SLUGS.map((s) => `/compare/${s}`),
       '/status',

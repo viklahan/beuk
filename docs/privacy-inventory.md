@@ -23,6 +23,7 @@ That is a fact about the code, not a policy decision.
 | Manuscripts (the shelf) | the whole book as one JSON document (text, settings, snapshot history), title, revision, timestamps. Since migration 017 a book saved by the studio names each of its pictures ("beuk-pic:<sha256>") instead of carrying the bytes; an older doc, or one saved by an older studio, still carries them inline | migrations/002_manuscripts.sql:4-11, 009_manuscript_revision.sql:9 | Until the writer deletes it (src/routes/manuscripts.ts, DELETE) or the account goes (on delete cascade) |
 | Shelf pictures | each picture a shelf book holds (images, cover, uploaded fonts, and the copies its History keeps), stored once per account: the account id, the SHA-256 of the bytes, media type, decoded size, the bytes (base64), created and last-touched times. Plus which shelf books name which picture (manuscript id, account id, hash). Per account only: two accounts with the same picture each hold their own row; another account's hash is answered "not found" | migrations/017_pictures.sql; src/pictures.ts; src/routes/pictures.ts | A picture is deleted as soon as no shelf book of that account names it and it has not been uploaded or asked about for PICTURE_GC_GRACE_SECONDS (default 1 hour): checked after every shelf save and book deletion (src/pictures.ts collectUnusedPictures). Deleting the account deletes them all (src/account/data.ts deleteAccount). Limits: PICTURE_MAX_BYTES per picture (default 32 MiB), PICTURE_QUOTA_BYTES per account (default 2 GiB) |
 | Writing streak | the days the server saw activity, freeze ledger, freeze balance | migrations/003_streaks.sql:8-30; heartbeat every ≥10 min while signed in: client/index.html `cloudHeartbeat` (~27494) | No limit (with the account) |
+| Beuk School progress | which School lessons the writer marked done (course slug, lesson slug, when). Signed-in writers only; nothing is stored for a visitor who is not signed in | migrations/018_school_progress.sql; src/routes/school.ts `POST /api/school/progress` | No limit (with the account); removed by "Delete my account", included in "Download all my data" as school.json |
 | Export archive | metadata row (format, preset, filename, size, sha256, manuscript id) + the export **bytes** on the exportdata volume at EXPORT_DIR/<user_id>/<export_id> | migrations/004_exports.sql:1-17; src/routes/exports.ts:107; client uploads on export/store-check: client/index.html `storeUpload` (~26911) | Until the writer deletes it (src/routes/exports.ts:191-193). Survives deleting the manuscript (manuscript_id set null). |
 | Server jobs (EPUBCheck, PDF/X) | kind, status, result JSON (tool output about the writer's own file), source/artifact export ids | migrations/008_jobs.sql:7-29 | No limit (with the account) |
 | Jobs processing | EPUBCheck runs on the server (java + jar, src/config.ts `epubcheckJar`); PDF/X rendering runs in an isolated renderer container with no network egress, every outgoing request aborted (deploy/renderer/server.mjs:8-30,141-159; deploy/docker-compose.tools.yml:14,74-76) | — | — |
@@ -100,7 +101,7 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
 - **Local:** every BACKUP_INTERVAL_HOURS (default 24) a backup under
   BACKUP_DIR: a logical dump of BACKUP_TABLES (users incl. password
   hashes, manuscripts, shelf pictures and which books name them,
-  streaks, exports, jobs, sessions,
+  streaks, School progress, exports, jobs, sessions,
   founders_applications, shares, share_comments, share_readers, billing)
   and a copy of the export files (src/housekeeping/backup.ts:1-55,221).
   **Local backups are never deleted automatically** (.env.example
@@ -184,7 +185,7 @@ book's id, revision and dates (a stored doc with no readable chapters is
 kept as plain .json and marked), every
 archived export's bytes with exports/index.json, each share's settings,
 frozen reading copy and comments (reader names and comment text, NOT the
-comment ip_hash), streak days and freezes, server jobs and their results,
+comment ip_hash), streak days and freezes, School lessons marked done, server jobs and their results,
 account.json and a README.txt. Password hash, sessions and link tokens
 are left out (src/account/data.ts `writeAccountExport`).
 

@@ -145,6 +145,8 @@ export function testConfig(overrides?: Partial<Config>): Config {
     supportName: 'The Test Shelf-Keeper',
     supportReplyPromise: 'a human replies within two working days',
     kofiUrl: null,
+    // School: an empty media folder (no lesson has video or audio yet).
+    schoolMediaDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-school-media-')),
     // M5 jobs: no tools configured by default (the unconfigured path
     // is the honest default); jobs tests point these at stub tools.
     epubcheckJar: null,

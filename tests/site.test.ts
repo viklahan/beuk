@@ -38,7 +38,8 @@ test('sitemap.xml lists the landing page, every Help guide and error entry, and 
       const want = ['/', '/help', '/help/errors', '/changelog', '/roadmap', '/privacy', '/terms', ...c.guides.map((g) => `/help/${g.slug}`), ...c.errors.map((e) => `/help/errors/${e.code}`)];
       for (const p of want) assert.ok(locs.includes(`https://beuk.studio${p}`), p);
       assert.equal(locs.includes('https://beuk.studio/support'), kofiUrl !== null);
-      assert.ok(!locs.some((l) => /\/(studio|read|api|reset)\b/.test(l)), 'no app shell, reading copy, API or reset page');
+      // Anchored at the site root: /school/maiden-voyage/read-it-back is a lesson, not a reading copy.
+      assert.ok(!locs.some((l) => /^https:\/\/beuk\.studio\/(studio|read|api|reset)(\/|$|\?)/.test(l)), 'no app shell, reading copy, API or reset page');
       assert.equal(new Set(locs).size, locs.length, 'no duplicates');
       assert.match(xml, /<loc>https:\/\/beuk\.studio\/help\/saving<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/);
     } finally {

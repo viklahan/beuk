@@ -174,9 +174,15 @@ services:
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
       ALERT_WEBHOOK_FORMAT: ${ALERT_WEBHOOK_FORMAT:-json}
       CLIENT_ERRORS_KEEP_DAYS: ${CLIENT_ERRORS_KEEP_DAYS:-30}
+      # Beuk School: the app reads each lesson's manifest.json from here;
+      # Caddy serves the media files themselves (same host folder below).
+      SCHOOL_MEDIA_DIR: /data/school-media
     volumes:
       - exportdata:/data/exports
       - backupdata:/data/backups
+      # Beuk School lesson media (video, audio, screenshots), produced by
+      # tools/school-media and copied onto the box. Read-only to the app.
+      - ./school-media:/data/school-media:ro
     depends_on:
       db:
         condition: service_healthy
@@ -213,6 +219,8 @@ services:
       # which reads them from its own image (COPY client + CHANGELOG.md
       # in the Dockerfile).
       - ./client:/srv/client:ro
+      # Beuk School lesson media, served at /school/media/ (see the Caddyfile).
+      - ./school-media:/srv/school-media:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

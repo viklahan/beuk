@@ -1,0 +1,9 @@
+{
+  "name": "beuk-school-media",
+  "private": true,
+  "description": "Records Beuk School lessons on the live studio (see record.ts). Not part of the app image.",
+  "type": "module",
+  "devDependencies": {
+    "playwright-core": "1.48.2"
+  }
+}

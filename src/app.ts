@@ -29,6 +29,7 @@ import { stockRoutes } from './routes/stock.js';
 import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
+import { schoolRoutes } from './routes/school.js';
 import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.js';
 import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
@@ -186,6 +187,10 @@ export function buildApp({
 
   app.use('/api/account', portal.api);
 
+  // Beuk School: free courses at /school; progress for signed-in writers only.
+  const school = schoolRoutes(db, config);
+  app.use('/api/school', school.api);
+
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
 
   // Beta-reader share links: the public read-only reader (no account).
@@ -195,6 +200,7 @@ export function buildApp({
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.
   app.use(help.pages);
+  app.use(school.pages);
   app.use(warmthRoutes(config));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).
   app.use(siteRoutes(config));

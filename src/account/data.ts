@@ -14,7 +14,7 @@ import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
  * to users): sessions, password_resets, email_confirmations,
  * manuscripts, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_comments,
- * share_readers), billing_subscriptions. billing_events keep their
+ * share_readers), school_progress, billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
  *
  * NOT linked to an account in the database, so not part of either:
@@ -37,6 +37,7 @@ export const ACCOUNT_DELETED_TABLES = [
   'streak_days',
   'streak_freezes',
   'streak_state',
+  'school_progress',
   'shares',
   'billing_subscriptions',
 ] as const;
@@ -295,6 +296,7 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
     `                        the days a freeze or a planned pause covered, and your`,
     `                        freeze balance.`,
     `jobs.json               Server checks you ran (EPUBCheck, PDF/X) and their results.`,
+    `school.json             The Beuk School lessons you marked done, and when.`,
     '',
     'What is not inside',
     '------------------',
@@ -502,6 +504,16 @@ export async function writeAccountExport(
     { compress: true },
   );
 
+  const school = await db.query<{ course: string; lesson: string; completed_at: string }>(
+    'select course, lesson, completed_at from school_progress where user_id = $1 order by completed_at',
+    [userId],
+  );
+  await zip.add(
+    'school.json',
+    JSON.stringify({ lessonsDone: school.rows.map((r) => ({ course: r.course, lesson: r.lesson, completedAt: iso(r.completed_at) })) }, null, 2),
+    { compress: true },
+  );
+
   await zip.add('account.json', JSON.stringify({ ...account, books, counts }, null, 2), { compress: true });
   return { counts, missingFiles };
 }
@@ -547,6 +559,7 @@ export async function deleteAccount(
     await del('streak_days', 'delete from streak_days where user_id = $1', [userId]);
     await del('streak_freezes', 'delete from streak_freezes where user_id = $1', [userId]);
     await del('streak_state', 'delete from streak_state where user_id = $1', [userId]);
+    await del('school_progress', 'delete from school_progress where user_id = $1', [userId]);
     await del('password_resets', 'delete from password_resets where user_id = $1', [userId]);
     await del('email_confirmations', 'delete from email_confirmations where user_id = $1', [userId]);
     const subs = await tx.query<{ stripe_subscription_id: string }>(
