@@ -206,11 +206,11 @@
       g.fillRect(452, 104, 120, 1.5);
       g.fillStyle = P.ink || '#22333a';
       g.textAlign = 'left';
-      g.font = '84px "Patrick Hand", "Segoe Print", "Bradley Hand", cursive';
+      g.font = 'italic 500 88px "Cormorant Garamond", "EB Garamond", Georgia, serif';
       g.fillText('For you,', 150, 252);
       g.fillText('for the caife.', 150, 360);
       g.fillText('Thank you, truly.', 150, 490);
-      g.font = '60px "Patrick Hand", "Segoe Print", "Bradley Hand", cursive';
+      g.font = 'italic 500 62px "Cormorant Garamond", "EB Garamond", Georgia, serif';
       g.fillText('— Beuk', 560, 640);
       var tex = new THREE.CanvasTexture(c);
       tex.encoding = THREE.sRGBEncoding;
@@ -505,7 +505,7 @@
     // The note is painted onto a canvas, so its faces must be loaded first;
     // asking now means they are ready long before anyone clicks.
     if (document.fonts && document.fonts.load) {
-      document.fonts.load('84px "Patrick Hand"').catch(function () {});
+      document.fonts.load('italic 500 88px "Cormorant Garamond"').catch(function () {});
       document.fonts.load('600 22px Literata').catch(function () {});
     }
     var textured = false;

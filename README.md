@@ -2502,7 +2502,7 @@ Founders' Shelf application; none of it touches pricing or checkout.
 - **Caife** (V, 2026-10-29) — the Ko-fi button reads "Buy a Caife"
   (caife is Irish for coffee) on `/support` and on the jar; payment
   stays on Ko-fi, in a new tab. Clicking it on `/support` plays the
-  thank-you on the page's plate: a handwritten note falls onto a dawn
+  thank-you on the page's plate: a note in Cormorant Garamond italic falls onto a dawn
   sea, folds into a paper boat and sails off, then "Go raibh maith
   agat". There is no payment check; the thank-you is said either way,
   and `localStorage` `beuk.support.lastCaife` keeps the boat out on
