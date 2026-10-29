@@ -535,3 +535,39 @@ test('admin CLI core: grant/revoke an existing account, audited; unknown email r
     await server.close();
   }
 });
+
+/* Beuk Weekly press checks (spec 2026-10-29). */
+
+test('weekly press checks: an orphan folder, a missing folder or a stuck approve fails no-orphans; without SMTP the mail check is NotConfigured', async () => {
+  const { SELF_CHECK_CASES, NotConfigured, buildCheckContext } = await import('../src/housekeeping/registry.js');
+  const db = await createTestDb();
+  const config = testConfig();
+  const ctx = buildCheckContext(db, config);
+  const run = (id: string) => SELF_CHECK_CASES.find((c) => c.id === id)!.run!(ctx);
+
+  assert.match(await run('weekly.drafts.no-orphans'), /0 open draft\(s\), 0 published/);
+  const { mkdirSync, writeFileSync } = await import('node:fs');
+  const pathMod = (await import('node:path')).default;
+  mkdirSync(pathMod.join(config.weeklyDir, 'drafts', '11111111-1111-1111-1111-111111111111'), { recursive: true });
+  await assert.rejects(run('weekly.drafts.no-orphans'), /drafts\/11111111-1111-1111-1111-111111111111 has no open draft/);
+
+  const fresh = testConfig();
+  const ctx2 = buildCheckContext(db, fresh);
+  const run2 = (id: string) => SELF_CHECK_CASES.find((c) => c.id === id)!.run!(ctx2);
+  const open = await db.query<{ id: string }>(`insert into weekly_drafts (status, source_commit) values ('drafted', 'abc') returning id`);
+  await assert.rejects(run2('weekly.drafts.no-orphans'), new RegExp(`draft ${open.rows[0].id} is drafted but drafts/${open.rows[0].id} is missing`));
+  mkdirSync(pathMod.join(fresh.weeklyDir, 'drafts', open.rows[0].id), { recursive: true });
+  writeFileSync(pathMod.join(fresh.weeklyDir, 'drafts', open.rows[0].id, 'issue.md'), '');
+  assert.match(await run2('weekly.drafts.no-orphans'), /1 open draft\(s\), 0 published/);
+  await db.query(`update weekly_drafts set status = 'approved' where id = $1`, [open.rows[0].id]);
+  await assert.rejects(run2('weekly.drafts.no-orphans'), /is stuck in approved/);
+  await db.query(`update weekly_drafts set status = 'published', issue_number = 2 where id = $1`, [open.rows[0].id]);
+  await assert.rejects(run2('weekly.drafts.no-orphans'), /issue 2 is published but published\/002 is missing/);
+
+  assert.match(await run('weekly.published.no-duplicate-numbers'), /1 issue\(s\)/);
+  await assert.rejects(run('weekly.mail.configured'), (e: unknown) => e instanceof NotConfigured);
+  const mailed = buildCheckContext(db, testConfig({ smtpUrl: 'smtp://u:p@127.0.0.1:9', mailFrom: 'Beuk <b@example.com>' }));
+  await assert.rejects(SELF_CHECK_CASES.find((c) => c.id === 'weekly.mail.configured')!.run!(mailed), (e: unknown) => e instanceof NotConfigured && /WEEKLY_EDITOR_EMAIL/.test(String(e)));
+  const ready = buildCheckContext(db, testConfig({ smtpUrl: 'smtp://u:p@127.0.0.1:9', mailFrom: 'Beuk <b@example.com>', weeklyEditorEmail: 'ed@example.com' }));
+  assert.match(await SELF_CHECK_CASES.find((c) => c.id === 'weekly.mail.configured')!.run!(ready), /draft emails go to the editor/);
+});

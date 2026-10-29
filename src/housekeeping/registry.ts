@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { existsSync, readdirSync } from 'node:fs';
 import { readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
@@ -3363,6 +3364,58 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       assert(problems.length === 0, problems.join('; '));
       if (!w.latest) throw new NotConfigured('no issue under content/weekly/en yet');
       return `${w.issues.length} issue(s); latest No. ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
+    },
+  },
+  {
+    id: 'weekly.drafts.no-orphans',
+    title: 'Beuk Weekly press: every open draft has its folder, every draft folder has an open draft, every published issue has its folder, and no publish is stuck half-way',
+    kind: 'server',
+    run: async ({ db, config }) => {
+      const rows = await db.query<{ id: string; status: string; issue_number: number | null }>('select id, status, issue_number from weekly_drafts');
+      const drafts = path.join(config.weeklyDir, 'drafts');
+      const problems: string[] = [];
+      const open = new Set<string>();
+      let published = 0;
+      for (const r of rows.rows) {
+        if (r.status === 'drafted' || r.status === 'sent_back') {
+          open.add(r.id);
+          if (!existsSync(path.join(drafts, r.id, 'issue.md'))) problems.push(`draft ${r.id} is ${r.status} but drafts/${r.id} is missing`);
+        } else if (r.status === 'approved') {
+          problems.push(`draft ${r.id} is stuck in approved: a publish stopped half-way (check published/ for its folder)`);
+        } else if (r.status === 'published') {
+          published++;
+          const nnn = String(r.issue_number).padStart(3, '0');
+          if (!existsSync(path.join(config.weeklyDir, 'published', nnn, 'issue.md'))) problems.push(`issue ${r.issue_number} is published but published/${nnn} is missing`);
+        }
+      }
+      for (const f of existsSync(drafts) ? readdirSync(drafts) : []) {
+        if (!open.has(f)) problems.push(`drafts/${f} has no open draft`);
+      }
+      assert(problems.length === 0, problems.join('; '));
+      return `${open.size} open draft(s), ${published} published issue(s), folders and rows agree`;
+    },
+  },
+  {
+    id: 'weekly.published.no-duplicate-numbers',
+    title: "Beuk Weekly press: no issue number is both in git (content/weekly/en) and in the press's published/ folder",
+    kind: 'server',
+    run: async ({ config }) => {
+      const w = loadWeeklyContent('en', [path.join(config.weeklyDir, 'published')]);
+      const problems = checkWeeklyContent(w);
+      assert(problems.length === 0, problems.join('; '));
+      return `${w.issues.length} issue(s) across git and published/, no number twice`;
+    },
+  },
+  {
+    id: 'weekly.mail.configured',
+    title: 'Beuk Weekly press: the draft-ready email can reach the editor (SMTP configured and WEEKLY_EDITOR_EMAIL or ALERT_EMAIL set)',
+    kind: 'server',
+    run: async ({ config, mailer }) => {
+      const m = mailer ?? createMailer(config, { log: () => {} });
+      const st = m.status();
+      if (!st.configured) throw new NotConfigured(`email is not configured (${st.detail}); draft-ready emails are only logged to the console`);
+      if (!config.weeklyEditorEmail) throw new NotConfigured('neither WEEKLY_EDITOR_EMAIL nor ALERT_EMAIL is set; nobody would get the draft-ready email');
+      return 'draft emails go to the editor address in WEEKLY_EDITOR_EMAIL / ALERT_EMAIL';
     },
   },
   {
