@@ -3709,6 +3709,52 @@ counter reads "Page 1" until every spread has been measured, then "Page 1 of 7".
 The design is unchanged. `/ramp` and `/site/` are network-only in the studio's
 service worker, so it plays no part.
 
+## Beuk School: `/school`
+
+Free courses on the studio (V, 2026-10-28: free, at beuk.studio/school,
+English first, media hosted on the box, AI narration, progress for
+signed-in writers only). Linked as **School** in every site page's nav
+and footer.
+
+- **Content** — `content/school/<lang>/<course>/course.md` and
+  `NN-<lesson>.md` (format in `src/school/content.ts`). Only `en/` exists;
+  other languages go beside it. Each step has the Read text, a `say:` line
+  (the narration) and `do:` commands (what the recorder does in the
+  studio). `checkSchoolContent` and `tests/school.test.ts` keep it honest.
+- **Pages** — `src/routes/school.ts` + `src/school/render.ts`, in the
+  site's own shell; styles and script `client/site/school.css|js`. Every
+  page works without JavaScript.
+- **Progress** — `school_progress` (migration 018), `GET/POST
+  /api/school/progress` behind sign-in. A visitor who is not signed in has
+  nothing stored anywhere (not even in the browser). Included in
+  "Download all my data" (`school.json`), removed by "Delete my account",
+  and in the backup tables.
+- **Media** — produced off the box, served from it. `./school-media/<lang>/
+  <course>/<lesson>/` holds `video.mp4`, `audio.mp3`, `step-N.jpg` and
+  `manifest.json`. Caddy serves the files at `/school/media/` (range
+  requests, so seeking works); the app only reads each manifest. A lesson
+  without a manifest is Read-only; a manifest naming a missing file drops
+  that view. Nothing about a recording is typed in by hand.
+
+### Making the lesson media
+
+```bash
+docker build -t beuk-school-voice tools/school-media     # Kokoro-82M (Apache-2.0) via kokoro-onnx (MIT), CPU
+(cd tools/school-media && npm ci)                         # playwright-core for the recorder
+npx tsx tools/school-media/record.ts --dry                # walk every step on the live studio, screenshots only
+npx tsx tools/school-media/record.ts maiden-voyage        # speak, record, mux → ./school-media
+```
+
+`STUDIO_URL` (default `http://localhost:8090/studio`) is the studio it
+records against; `CHROME` points at a Chromium if the Playwright cache has
+none; `VOICE` picks the Kokoro voice (default `af_heart`). A `do:` command
+whose control the studio does not show **fails that lesson** and writes
+nothing for it, so a lesson can never narrate a button that isn't there.
+Re-run after a studio change that moves a control. Then copy
+`./school-media` to the same folder beside `docker-compose.yml` on the box
+(e.g. `rsync -a school-media/ box:/opt/beuk/school-media/`); compose
+mounts it read-only into Caddy and the app.
+
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
 
 - **`/features`** (`client/site/features.html`) shows the studio feature by feature in nine real screenshots under `client/site/shots/` (WebP, 600–1280 px wide, all under 100 KB, each with alt text and its real size). They were taken in the studio with the bundled sample, *The Lantern Coast*, on 26 October 2026: the writing desk with the device preview, the Typography Studio, the Print Interior View, the cover maker and print wrap, the export dialog with its store presets, Story Insights, the Goals habit calendar and a History snapshot. Every line describes the studio as it is today. Beta-reader links need an account, so that section says there is no picture instead of showing a mock-up. The road-so-far chart isn't pictured because the browser had logged the sample's length on only one day.
