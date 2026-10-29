@@ -108,6 +108,16 @@ export interface Config {
    *  /school/media/; the app only reads each manifest. A lesson without a
    *  manifest is shown in Read mode alone. */
   schoolMediaDir: string;
+  /** Beuk Weekly press: the volume holding drafts/<id>/ and published/<NNN>/
+   *  (WEEKLY_DIR, default /data/weekly). */
+  weeklyDir: string;
+  /** WEEKLY_DRAFT_TOKEN: the bearer token the Legion drafter uploads with.
+   *  Under 32 characters counts as unset, and the press API then refuses
+   *  every upload. */
+  weeklyDraftToken: string | null;
+  /** WEEKLY_EDITOR_EMAIL: who gets the draft-ready email; falls back to
+   *  ALERT_EMAIL. Set in the server .env only, never in git. */
+  weeklyEditorEmail: string | null;
   /** M5 jobs: path to the EPUBCheck jar (EPUBCHECK_JAR) and the java
    *  binary used to run it (JAVA_BIN, default "java"). A null/missing
    *  jar means EPUBCheck is NOT configured on this server: epubcheck
@@ -377,6 +387,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     supportReplyPromise: env.SUPPORT_REPLY_PROMISE?.trim() || null,
     kofiUrl: env.KOFI_URL || null,
     schoolMediaDir: env.SCHOOL_MEDIA_DIR || path.resolve(process.cwd(), 'school-media'),
+    weeklyDir: env.WEEKLY_DIR || '/data/weekly',
+    weeklyDraftToken: (env.WEEKLY_DRAFT_TOKEN?.trim().length ?? 0) >= 32 ? env.WEEKLY_DRAFT_TOKEN!.trim() : null,
+    weeklyEditorEmail: env.WEEKLY_EDITOR_EMAIL?.trim() || env.ALERT_EMAIL?.trim() || null,
     epubcheckJar: env.EPUBCHECK_JAR || null,
     javaBin: env.JAVA_BIN || 'java',
     gsBin: env.GS_BIN || null,

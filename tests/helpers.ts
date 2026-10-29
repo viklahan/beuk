@@ -147,6 +147,9 @@ export function testConfig(overrides?: Partial<Config>): Config {
     kofiUrl: null,
     // School: an empty media folder (no lesson has video or audio yet).
     schoolMediaDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-school-media-')),
+    weeklyDir: mkdtempSync(path.join(os.tmpdir(), 'beuk-weekly-')),
+    weeklyDraftToken: null,
+    weeklyEditorEmail: null,
     // M5 jobs: no tools configured by default (the unconfigured path
     // is the honest default); jobs tests point these at stub tools.
     epubcheckJar: null,

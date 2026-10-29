@@ -177,9 +177,16 @@ services:
       # Beuk School: the app reads each lesson's manifest.json from here;
       # Caddy serves the media files themselves (same host folder below).
       SCHOOL_MEDIA_DIR: /data/school-media
+      # Beuk Weekly press: drafts and published issues live on their own
+      # volume. The token is what the Legion drafter uploads with (32+
+      # chars); the editor email belongs in .env only, never in git.
+      WEEKLY_DIR: /data/weekly
+      WEEKLY_DRAFT_TOKEN: ${WEEKLY_DRAFT_TOKEN:-}
+      WEEKLY_EDITOR_EMAIL: ${WEEKLY_EDITOR_EMAIL:-}
     volumes:
       - exportdata:/data/exports
       - backupdata:/data/backups
+      - weekly:/data/weekly
       # Beuk School lesson media (video, audio, screenshots), produced by
       # tools/school-media and copied onto the box. Read-only to the app.
       - ./school-media:/data/school-media:ro
@@ -241,5 +248,6 @@ volumes:
   pgdata:
   exportdata:
   backupdata:
+  weekly:
   caddy_data:
   caddy_config:

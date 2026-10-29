@@ -5,6 +5,8 @@ import { purgeExpiredSessions } from './auth.js';
 import { createShutdown } from './shutdown.js';
 import { loadConfig } from './config.js';
 import { checkHelpContent, getHelpContent } from './help/content.js';
+import { setWeeklyRoots } from './weekly/content.js';
+import path from 'node:path';
 import { rebuildHelpIndex } from './help/search.js';
 import { createPgDb, defaultMigrationsDir, runMigrations, type Db } from './db.js';
 import type { BootCheck } from './housekeeping/context.js';
@@ -26,6 +28,9 @@ if (process.env.ADMIN_EMAILS) {
     'ADMIN_EMAILS is set but no longer grants admin. Grant it with: node dist/admin-cli.js grant <email>',
   );
 }
+
+// Beuk Weekly: issues the press published live on the volume, beside git's.
+setWeeklyRoots([path.join(config.weeklyDir, 'published')]);
 
 const db = createPgDb(config.databaseUrl);
 const applied = await runMigrations(db, defaultMigrationsDir());

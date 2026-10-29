@@ -46,6 +46,7 @@ export const ACCOUNT_DELETED_TABLES = [
 export const ACCOUNT_DETACHED_TABLES: Readonly<Record<string, string>> = {
   billing_events: 'the Stripe webhook dedupe ledger (event id, type, outcome; no payload)',
   billing_subscriptions: 'only a live subscription this server could not cancel, left for the operator',
+  weekly_drafts: 'Beuk Weekly drafts an admin approved; the issue stays published and approved_by is set null',
 };
 
 export interface ShelfBook {

@@ -53,6 +53,7 @@ export const BACKUP_TABLES = [
   'share_readers',
   'billing_subscriptions',
   'billing_events',
+  'weekly_drafts',
 ] as const;
 
 /** Tables a backup deliberately leaves out, and why. Restore never
