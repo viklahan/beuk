@@ -1703,6 +1703,28 @@
       .nb-quiet { font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
       .nb-pick { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 15px; margin-top: 30px; text-align: center; }
       .nb-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px dashed var(--line); padding-top: 10px; }
+      /* BEUK:research */
+      .rs-url { display: flex; gap: 6px; align-items: center; }
+      .rs-url .txt-input { flex: 1 1 auto; min-width: 0; }
+      .rs-url .tb-btn { flex: 0 0 auto; text-decoration: none; white-space: nowrap; }
+      .rs-files { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+      .rs-file { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 3px 4px 3px 6px; background: var(--panel); }
+      .rs-file.is-open { border-color: var(--accent); }
+      .rs-name { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 2px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; text-align: start; }
+      .rs-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rs-name svg { width: 15px; height: 15px; flex: 0 0 auto; color: var(--muted); }
+      .rs-name:hover span, .rs-name:focus-visible span { text-decoration: underline; }
+      .rs-meta { flex: 0 0 auto; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+      .rs-add { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .rs-add .nb-quiet { margin: 0; }
+      .rs-view { margin-top: 10px; border: 1px solid var(--line-2); border-radius: 10px; padding: 8px; background: var(--paper, var(--panel)); }
+      .rs-img { display: block; max-width: 100%; max-height: 60vh; margin: 0 auto; }
+      .rs-pdf { display: block; width: 100%; height: 60vh; border: 0; background: #fff; }
+      .rs-audio { display: block; width: 100%; }
+      .rs-video { display: block; max-width: 100%; max-height: 60vh; margin: 0 auto; }
+      .rs-text { white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; margin: 0; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
+      .rs-tab { margin-top: 8px; }
+      #modalNotebook.rs-drop .nb-modal { outline: 2px dashed var(--accent); outline-offset: -6px; }
       .bib-none { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink-2); line-height: 1.6; margin: 6px 0; }
       .bib-detail { min-width: 0; }
       .bib-back { display: none; margin: 0 0 10px; }
@@ -4081,6 +4103,7 @@
           </div>
           <div class="bib-detail" id="nbDetail"></div>
         </div>
+        <input type="file" id="rsFileInput" multiple hidden /><!-- BEUK:research -->
         <div class="modal-actions">
           <button class="tb-btn" id="btnCloseNotebook" type="button" data-i18n="nb.close">Close</button>
         </div>
@@ -8169,6 +8192,23 @@
         "zh-Hans": { "nb.open": "笔记本", "nb.title": "笔记本", "nb.sub": "资料、想法和片段，与书一起保存。这些是写给你自己的笔记：不会被导出，也不计入字数。", "nb.new": "新建笔记", "nb.search": "在笔记中查找", "nb.close": "关闭", "side.toolNotebook": "笔记", "tips.notebook": "资料、想法和片段，与这本书一起保存。可以把笔记钉在某一章上；盟约认识的名字会在笔记中被找出。", "nb.untitled": "无标题笔记", "nb.empty": "还没有笔记。为资料、一个想法或一个还没准备好写的场景开始一则笔记吧。", "nb.noMatch": "没有笔记包含“{q}”。", "nb.pinnedHere": "钉在{sec}", "nb.noFolder": "无文件夹", "nb.pick": "选择一则笔记，或新建一则。", "nb.pickFirst": "开始一则笔记：资料、想法、一段对话的片段。", "nb.pins": "已钉：{n}", "nb.titleLab": "标题", "nb.folderLab": "文件夹", "nb.folderPh": "例如：资料", "nb.bodyLab": "笔记", "nb.namesLab": "盟约中的名字", "nb.namesNone": "这则笔记里没有盟约认识的名字。", "nb.namesNoCov": "在盟约中添加人物、地点和事物，它们的名字就会在你的笔记中被找出。", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "钉在", "nb.pinNone": "未钉住。把它钉在某一章上，打开那一章时它会排在最前面。", "nb.pinAdd": "钉到某个部分", "nb.pinDo": "钉住", "nb.go": "在书桌上打开{sec}", "nb.unpin": "从{sec}取下", "nb.edited": "编辑于 {when}", "nb.delete": "删除笔记", "nb.deleted": "已删除笔记：{name}" }
       };
       Object.keys(NB_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], NB_STRINGS[code]); });
+      /* BEUK:research — the research files' words, all 13 packs */
+      const RS_STRINGS = {
+        "en": { "rs.count": "files: {n}", "rs.urlLab": "Source link", "rs.urlOpen": "Open", "rs.urlBad": "That is not a web address. A source link starts with http:// or https://.", "rs.filesLab": "Research files", "rs.none": "No files yet. Add a picture, a PDF, a recording, a video clip or a text file, or drop one on the Notebook.", "rs.add": "Add files", "rs.hint": "Up to {mb} MB a file · {used} of {total} MB used", "rs.view": "Open {name} here", "rs.hide": "Close {name}", "rs.download": "Save a copy of {name}", "rs.remove": "Remove {name} from this note", "rs.removed": "File removed: {name}", "rs.added1": "File added: {name}", "rs.added": "{n} files added", "rs.badType": "{name}: Beuk keeps pictures, PDFs, recordings, video clips and text files.", "rs.tooBig": "{name} is larger than {mb} MB.", "rs.readFail": "{name} could not be read.", "rs.full": "{name} would take the book's research files past {mb} MB.", "rs.noteFull": "{name}: a note holds up to {n} files.", "rs.newTab": "Open in a new tab", "rs.notHere": "This file is still on its way from the shelf.", "rs.textCut": "The first {n} characters are shown. Save a copy to read the rest.", "rs.kind.image": "Picture", "rs.kind.pdf": "PDF", "rs.kind.audio": "Recording", "rs.kind.video": "Video", "rs.kind.text": "Text", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "es": { "rs.count": "archivos: {n}", "rs.urlLab": "Enlace de la fuente", "rs.urlOpen": "Abrir", "rs.urlBad": "Eso no es una dirección web. Un enlace de fuente empieza por http:// o https://.", "rs.filesLab": "Archivos de documentación", "rs.none": "Aún no hay archivos. Añade una imagen, un PDF, una grabación, un vídeo o un archivo de texto, o suéltalo sobre el Cuaderno.", "rs.add": "Añadir archivos", "rs.hint": "Hasta {mb} MB por archivo · {used} de {total} MB usados", "rs.view": "Abrir {name} aquí", "rs.hide": "Cerrar {name}", "rs.download": "Guardar una copia de {name}", "rs.remove": "Quitar {name} de esta nota", "rs.removed": "Archivo quitado: {name}", "rs.added1": "Archivo añadido: {name}", "rs.added": "{n} archivos añadidos", "rs.badType": "{name}: Beuk guarda imágenes, PDF, grabaciones, vídeos y archivos de texto.", "rs.tooBig": "{name} supera los {mb} MB.", "rs.readFail": "No se pudo leer {name}.", "rs.full": "{name} llevaría los archivos de documentación del libro por encima de {mb} MB.", "rs.noteFull": "{name}: una nota admite hasta {n} archivos.", "rs.newTab": "Abrir en una pestaña nueva", "rs.notHere": "Este archivo aún está llegando desde la estantería.", "rs.textCut": "Se muestran los primeros {n} caracteres. Guarda una copia para leer el resto.", "rs.kind.image": "Imagen", "rs.kind.pdf": "PDF", "rs.kind.audio": "Grabación", "rs.kind.video": "Vídeo", "rs.kind.text": "Texto", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "fr": { "rs.count": "fichiers : {n}", "rs.urlLab": "Lien de la source", "rs.urlOpen": "Ouvrir", "rs.urlBad": "Ce n'est pas une adresse web. Un lien de source commence par http:// ou https://.", "rs.filesLab": "Fichiers de recherche", "rs.none": "Pas encore de fichier. Ajoutez une image, un PDF, un enregistrement, une vidéo ou un fichier texte, ou déposez-le sur le Carnet.", "rs.add": "Ajouter des fichiers", "rs.hint": "Jusqu'à {mb} Mo par fichier · {used} sur {total} Mo utilisés", "rs.view": "Ouvrir {name} ici", "rs.hide": "Fermer {name}", "rs.download": "Enregistrer une copie de {name}", "rs.remove": "Retirer {name} de cette note", "rs.removed": "Fichier retiré : {name}", "rs.added1": "Fichier ajouté : {name}", "rs.added": "{n} fichiers ajoutés", "rs.badType": "{name} : Beuk garde les images, les PDF, les enregistrements, les vidéos et les fichiers texte.", "rs.tooBig": "{name} dépasse {mb} Mo.", "rs.readFail": "Impossible de lire {name}.", "rs.full": "{name} porterait les fichiers de recherche du livre au-delà de {mb} Mo.", "rs.noteFull": "{name} : une note contient au plus {n} fichiers.", "rs.newTab": "Ouvrir dans un nouvel onglet", "rs.notHere": "Ce fichier arrive encore de l'étagère.", "rs.textCut": "Les {n} premiers caractères sont affichés. Enregistrez une copie pour lire la suite.", "rs.kind.image": "Image", "rs.kind.pdf": "PDF", "rs.kind.audio": "Enregistrement", "rs.kind.video": "Vidéo", "rs.kind.text": "Texte", "rs.kb": "{n} Ko", "rs.mb": "{n} Mo" },
+        "de": { "rs.count": "Dateien: {n}", "rs.urlLab": "Quelle (Link)", "rs.urlOpen": "Öffnen", "rs.urlBad": "Das ist keine Webadresse. Ein Quellenlink beginnt mit http:// oder https://.", "rs.filesLab": "Recherchedateien", "rs.none": "Noch keine Dateien. Fügen Sie ein Bild, ein PDF, eine Aufnahme, ein Video oder eine Textdatei hinzu, oder ziehen Sie sie aufs Notizbuch.", "rs.add": "Dateien hinzufügen", "rs.hint": "Bis {mb} MB je Datei · {used} von {total} MB belegt", "rs.view": "{name} hier öffnen", "rs.hide": "{name} schließen", "rs.download": "Eine Kopie von {name} speichern", "rs.remove": "{name} aus dieser Notiz entfernen", "rs.removed": "Datei entfernt: {name}", "rs.added1": "Datei hinzugefügt: {name}", "rs.added": "{n} Dateien hinzugefügt", "rs.badType": "{name}: Beuk bewahrt Bilder, PDFs, Aufnahmen, Videos und Textdateien auf.", "rs.tooBig": "{name} ist größer als {mb} MB.", "rs.readFail": "{name} ließ sich nicht lesen.", "rs.full": "Mit {name} kämen die Recherchedateien des Buchs über {mb} MB.", "rs.noteFull": "{name}: Eine Notiz fasst bis zu {n} Dateien.", "rs.newTab": "In neuem Tab öffnen", "rs.notHere": "Diese Datei ist noch auf dem Weg aus dem Regal.", "rs.textCut": "Die ersten {n} Zeichen werden gezeigt. Speichern Sie eine Kopie, um den Rest zu lesen.", "rs.kind.image": "Bild", "rs.kind.pdf": "PDF", "rs.kind.audio": "Aufnahme", "rs.kind.video": "Video", "rs.kind.text": "Text", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "it": { "rs.count": "file: {n}", "rs.urlLab": "Link della fonte", "rs.urlOpen": "Apri", "rs.urlBad": "Questo non è un indirizzo web. Un link di fonte inizia con http:// o https://.", "rs.filesLab": "File di ricerca", "rs.none": "Ancora nessun file. Aggiungi un'immagine, un PDF, una registrazione, un video o un file di testo, oppure trascinalo sul Quaderno.", "rs.add": "Aggiungi file", "rs.hint": "Fino a {mb} MB per file · {used} di {total} MB usati", "rs.view": "Apri {name} qui", "rs.hide": "Chiudi {name}", "rs.download": "Salva una copia di {name}", "rs.remove": "Togli {name} da questa nota", "rs.removed": "File tolto: {name}", "rs.added1": "File aggiunto: {name}", "rs.added": "{n} file aggiunti", "rs.badType": "{name}: Beuk conserva immagini, PDF, registrazioni, video e file di testo.", "rs.tooBig": "{name} supera i {mb} MB.", "rs.readFail": "Impossibile leggere {name}.", "rs.full": "{name} porterebbe i file di ricerca del libro oltre {mb} MB.", "rs.noteFull": "{name}: una nota contiene al massimo {n} file.", "rs.newTab": "Apri in una nuova scheda", "rs.notHere": "Questo file sta ancora arrivando dallo scaffale.", "rs.textCut": "Sono mostrati i primi {n} caratteri. Salva una copia per leggere il resto.", "rs.kind.image": "Immagine", "rs.kind.pdf": "PDF", "rs.kind.audio": "Registrazione", "rs.kind.video": "Video", "rs.kind.text": "Testo", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "pt": { "rs.count": "ficheiros: {n}", "rs.urlLab": "Ligação da fonte", "rs.urlOpen": "Abrir", "rs.urlBad": "Isso não é um endereço web. Uma ligação de fonte começa por http:// ou https://.", "rs.filesLab": "Ficheiros de pesquisa", "rs.none": "Ainda não há ficheiros. Acrescente uma imagem, um PDF, uma gravação, um vídeo ou um ficheiro de texto, ou largue-o sobre o Caderno.", "rs.add": "Acrescentar ficheiros", "rs.hint": "Até {mb} MB por ficheiro · {used} de {total} MB usados", "rs.view": "Abrir {name} aqui", "rs.hide": "Fechar {name}", "rs.download": "Guardar uma cópia de {name}", "rs.remove": "Retirar {name} desta nota", "rs.removed": "Ficheiro retirado: {name}", "rs.added1": "Ficheiro acrescentado: {name}", "rs.added": "{n} ficheiros acrescentados", "rs.badType": "{name}: o Beuk guarda imagens, PDF, gravações, vídeos e ficheiros de texto.", "rs.tooBig": "{name} tem mais de {mb} MB.", "rs.readFail": "Não foi possível ler {name}.", "rs.full": "{name} levaria os ficheiros de pesquisa do livro além de {mb} MB.", "rs.noteFull": "{name}: uma nota guarda até {n} ficheiros.", "rs.newTab": "Abrir num novo separador", "rs.notHere": "Este ficheiro ainda está a chegar da estante.", "rs.textCut": "Mostram-se os primeiros {n} caracteres. Guarde uma cópia para ler o resto.", "rs.kind.image": "Imagem", "rs.kind.pdf": "PDF", "rs.kind.audio": "Gravação", "rs.kind.video": "Vídeo", "rs.kind.text": "Texto", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "nl": { "rs.count": "bestanden: {n}", "rs.urlLab": "Bronlink", "rs.urlOpen": "Openen", "rs.urlBad": "Dat is geen webadres. Een bronlink begint met http:// of https://.", "rs.filesLab": "Onderzoeksbestanden", "rs.none": "Nog geen bestanden. Voeg een afbeelding, een pdf, een opname, een video of een tekstbestand toe, of sleep het op het Notitieboek.", "rs.add": "Bestanden toevoegen", "rs.hint": "Tot {mb} MB per bestand · {used} van {total} MB gebruikt", "rs.view": "{name} hier openen", "rs.hide": "{name} sluiten", "rs.download": "Een kopie van {name} bewaren", "rs.remove": "{name} uit deze notitie halen", "rs.removed": "Bestand weggehaald: {name}", "rs.added1": "Bestand toegevoegd: {name}", "rs.added": "{n} bestanden toegevoegd", "rs.badType": "{name}: Beuk bewaart afbeeldingen, pdf's, opnamen, video's en tekstbestanden.", "rs.tooBig": "{name} is groter dan {mb} MB.", "rs.readFail": "{name} kon niet worden gelezen.", "rs.full": "Met {name} zouden de onderzoeksbestanden van het boek boven {mb} MB komen.", "rs.noteFull": "{name}: een notitie bevat maximaal {n} bestanden.", "rs.newTab": "Openen in een nieuw tabblad", "rs.notHere": "Dit bestand is nog onderweg van de boekenplank.", "rs.textCut": "De eerste {n} tekens worden getoond. Bewaar een kopie om de rest te lezen.", "rs.kind.image": "Afbeelding", "rs.kind.pdf": "Pdf", "rs.kind.audio": "Opname", "rs.kind.video": "Video", "rs.kind.text": "Tekst", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "pl": { "rs.count": "pliki: {n}", "rs.urlLab": "Link do źródła", "rs.urlOpen": "Otwórz", "rs.urlBad": "To nie jest adres internetowy. Link do źródła zaczyna się od http:// lub https://.", "rs.filesLab": "Pliki z researchu", "rs.none": "Nie ma jeszcze plików. Dodaj obraz, PDF, nagranie, film lub plik tekstowy albo upuść go na Notatnik.", "rs.add": "Dodaj pliki", "rs.hint": "Do {mb} MB na plik · zajęte {used} z {total} MB", "rs.view": "Otwórz tutaj {name}", "rs.hide": "Zamknij {name}", "rs.download": "Zapisz kopię pliku {name}", "rs.remove": "Usuń {name} z tej notatki", "rs.removed": "Usunięto plik: {name}", "rs.added1": "Dodano plik: {name}", "rs.added": "Dodane pliki: {n}", "rs.badType": "{name}: Beuk przechowuje obrazy, pliki PDF, nagrania, filmy i pliki tekstowe.", "rs.tooBig": "{name} ma więcej niż {mb} MB.", "rs.readFail": "Nie udało się odczytać {name}.", "rs.full": "{name} przekroczyłby limit {mb} MB na pliki z researchu tej książki.", "rs.noteFull": "{name}: notatka mieści do {n} plików.", "rs.newTab": "Otwórz w nowej karcie", "rs.notHere": "Ten plik jest jeszcze w drodze z półki.", "rs.textCut": "Pokazano pierwsze {n} znaków. Zapisz kopię, aby przeczytać resztę.", "rs.kind.image": "Obraz", "rs.kind.pdf": "PDF", "rs.kind.audio": "Nagranie", "rs.kind.video": "Film", "rs.kind.text": "Tekst", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "ru": { "rs.count": "файлов: {n}", "rs.urlLab": "Ссылка на источник", "rs.urlOpen": "Открыть", "rs.urlBad": "Это не веб-адрес. Ссылка на источник начинается с http:// или https://.", "rs.filesLab": "Материалы", "rs.none": "Файлов пока нет. Добавьте изображение, PDF, запись, видео или текстовый файл — или перетащите его на Блокнот.", "rs.add": "Добавить файлы", "rs.hint": "До {mb} МБ на файл · занято {used} из {total} МБ", "rs.view": "Открыть {name} здесь", "rs.hide": "Закрыть {name}", "rs.download": "Сохранить копию {name}", "rs.remove": "Убрать {name} из этой заметки", "rs.removed": "Файл убран: {name}", "rs.added1": "Файл добавлен: {name}", "rs.added": "Добавлено файлов: {n}", "rs.badType": "{name}: Beuk хранит изображения, PDF, записи, видео и текстовые файлы.", "rs.tooBig": "{name} больше {mb} МБ.", "rs.readFail": "Не удалось прочитать {name}.", "rs.full": "С {name} материалы книги превысят {mb} МБ.", "rs.noteFull": "{name}: в заметке может быть до {n} файлов.", "rs.newTab": "Открыть в новой вкладке", "rs.notHere": "Этот файл ещё загружается с полки.", "rs.textCut": "Показаны первые {n} символов. Сохраните копию, чтобы прочитать остальное.", "rs.kind.image": "Изображение", "rs.kind.pdf": "PDF", "rs.kind.audio": "Запись", "rs.kind.video": "Видео", "rs.kind.text": "Текст", "rs.kb": "{n} КБ", "rs.mb": "{n} МБ" },
+        "tr": { "rs.count": "dosya: {n}", "rs.urlLab": "Kaynak bağlantısı", "rs.urlOpen": "Aç", "rs.urlBad": "Bu bir web adresi değil. Kaynak bağlantısı http:// veya https:// ile başlar.", "rs.filesLab": "Araştırma dosyaları", "rs.none": "Henüz dosya yok. Bir resim, PDF, kayıt, video ya da metin dosyası ekleyin veya Defter'in üzerine bırakın.", "rs.add": "Dosya ekle", "rs.hint": "Dosya başına en çok {mb} MB · {total} MB'nin {used} kadarı kullanıldı", "rs.view": "{name} dosyasını burada aç", "rs.hide": "{name} dosyasını kapat", "rs.download": "{name} dosyasının bir kopyasını kaydet", "rs.remove": "{name} dosyasını bu nottan kaldır", "rs.removed": "Dosya kaldırıldı: {name}", "rs.added1": "Dosya eklendi: {name}", "rs.added": "{n} dosya eklendi", "rs.badType": "{name}: Beuk resimleri, PDF'leri, kayıtları, videoları ve metin dosyalarını saklar.", "rs.tooBig": "{name} {mb} MB'den büyük.", "rs.readFail": "{name} okunamadı.", "rs.full": "{name} kitabın araştırma dosyalarını {mb} MB'nin üzerine çıkarır.", "rs.noteFull": "{name}: bir not en çok {n} dosya alır.", "rs.newTab": "Yeni sekmede aç", "rs.notHere": "Bu dosya raftan hâlâ geliyor.", "rs.textCut": "İlk {n} karakter gösteriliyor. Gerisini okumak için bir kopya kaydedin.", "rs.kind.image": "Resim", "rs.kind.pdf": "PDF", "rs.kind.audio": "Kayıt", "rs.kind.video": "Video", "rs.kind.text": "Metin", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "ar": { "rs.count": "الملفات: {n}", "rs.urlLab": "رابط المصدر", "rs.urlOpen": "افتح", "rs.urlBad": "هذا ليس عنوان ويب. يبدأ رابط المصدر بـ http:// أو https://.", "rs.filesLab": "ملفات البحث", "rs.none": "لا ملفات بعد. أضِف صورة أو ملف PDF أو تسجيلًا أو مقطع فيديو أو ملفًا نصيًا، أو أفلته على الدفتر.", "rs.add": "أضِف ملفات", "rs.hint": "حتى {mb} ميغابايت للملف · مستخدَم {used} من {total} ميغابايت", "rs.view": "افتح {name} هنا", "rs.hide": "أغلق {name}", "rs.download": "احفظ نسخة من {name}", "rs.remove": "أزِل {name} من هذه الملاحظة", "rs.removed": "أُزيل الملف: {name}", "rs.added1": "أُضيف الملف: {name}", "rs.added": "أُضيفت ملفات: {n}", "rs.badType": "{name}: يحفظ Beuk الصور وملفات PDF والتسجيلات ومقاطع الفيديو والملفات النصية.", "rs.tooBig": "{name} أكبر من {mb} ميغابايت.", "rs.readFail": "تعذّرت قراءة {name}.", "rs.full": "سيتجاوز {name} بملفات بحث الكتاب {mb} ميغابايت.", "rs.noteFull": "{name}: تتسع الملاحظة لـ {n} ملفًا على الأكثر.", "rs.newTab": "افتح في علامة تبويب جديدة", "rs.notHere": "ما زال هذا الملف في طريقه من الرف.", "rs.textCut": "تُعرض أول {n} حرف. احفظ نسخة لقراءة الباقي.", "rs.kind.image": "صورة", "rs.kind.pdf": "PDF", "rs.kind.audio": "تسجيل", "rs.kind.video": "فيديو", "rs.kind.text": "نص", "rs.kb": "{n} كيلوبايت", "rs.mb": "{n} ميغابايت" },
+        "ja": { "rs.count": "ファイル: {n}", "rs.urlLab": "出典リンク", "rs.urlOpen": "開く", "rs.urlBad": "ウェブアドレスではありません。出典リンクは http:// または https:// で始まります。", "rs.filesLab": "資料ファイル", "rs.none": "ファイルはまだありません。画像、PDF、録音、動画、テキストファイルを追加するか、ノートブックにドロップしてください。", "rs.add": "ファイルを追加", "rs.hint": "1ファイル {mb} MB まで · {total} MB 中 {used} 使用", "rs.view": "{name} をここで開く", "rs.hide": "{name} を閉じる", "rs.download": "{name} のコピーを保存", "rs.remove": "{name} をこのノートから外す", "rs.removed": "ファイルを外しました: {name}", "rs.added1": "ファイルを追加しました: {name}", "rs.added": "{n} 件のファイルを追加しました", "rs.badType": "{name}: Beuk が保管できるのは画像、PDF、録音、動画、テキストファイルです。", "rs.tooBig": "{name} は {mb} MB を超えています。", "rs.readFail": "{name} を読み込めませんでした。", "rs.full": "{name} を加えると、この本の資料ファイルが {mb} MB を超えます。", "rs.noteFull": "{name}: 1つのノートに入るファイルは {n} 件までです。", "rs.newTab": "新しいタブで開く", "rs.notHere": "このファイルは本棚から読み込み中です。", "rs.textCut": "最初の {n} 文字を表示しています。続きはコピーを保存して読んでください。", "rs.kind.image": "画像", "rs.kind.pdf": "PDF", "rs.kind.audio": "録音", "rs.kind.video": "動画", "rs.kind.text": "テキスト", "rs.kb": "{n} KB", "rs.mb": "{n} MB" },
+        "zh-Hans": { "rs.count": "文件：{n}", "rs.urlLab": "来源链接", "rs.urlOpen": "打开", "rs.urlBad": "这不是网址。来源链接以 http:// 或 https:// 开头。", "rs.filesLab": "资料文件", "rs.none": "还没有文件。添加图片、PDF、录音、视频或文本文件，或把它拖到笔记本上。", "rs.add": "添加文件", "rs.hint": "每个文件最多 {mb} MB · 已用 {used}，共 {total} MB", "rs.view": "在这里打开 {name}", "rs.hide": "关闭 {name}", "rs.download": "保存 {name} 的副本", "rs.remove": "从这条笔记中移除 {name}", "rs.removed": "已移除文件：{name}", "rs.added1": "已添加文件：{name}", "rs.added": "已添加 {n} 个文件", "rs.badType": "{name}：Beuk 可以保存图片、PDF、录音、视频和文本文件。", "rs.tooBig": "{name} 超过 {mb} MB。", "rs.readFail": "无法读取 {name}。", "rs.full": "加上 {name} 后，本书的资料文件将超过 {mb} MB。", "rs.noteFull": "{name}：一条笔记最多存放 {n} 个文件。", "rs.newTab": "在新标签页中打开", "rs.notHere": "这个文件还在从书架上传来。", "rs.textCut": "只显示前 {n} 个字符。保存副本即可阅读其余部分。", "rs.kind.image": "图片", "rs.kind.pdf": "PDF", "rs.kind.audio": "录音", "rs.kind.video": "视频", "rs.kind.text": "文本", "rs.kb": "{n} KB", "rs.mb": "{n} MB" }
+      };
+      Object.keys(RS_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RS_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
@@ -19859,14 +19899,45 @@
         const sampleNotebook = { notes: [
           { id: "sample-nb-depths", folder: "Research", title: "Keep the depths straight",
             body: "Chapter Four, the harbour ledger: \"M. sounded the gut today, six fathoms, called every mark true.\"\n\nChapter Eight: nine days sounding the channel at low water, with Tomas and Nell.\n\nWhatever depths the chart prints in Chapter Fourteen must agree with both.",
-            secs: secOf("The Tide Table for Next Year").concat(secOf("Soundings at Low Water"), secOf("What the Chart Cost")) },
+            secs: secOf("The Tide Table for Next Year").concat(secOf("Soundings at Low Water"), secOf("What the Chart Cost")),
+            files: ["sample-rs-soundings", "sample-rs-sketch"] /* BEUK:research */ },
           { id: "sample-nb-notices", folder: "Research", title: "Notices to Mariners",
             body: "The correction is published in the Notices to Mariners on the last Friday of the month.\n\nThe entry begins: Chart 1147, Gullwick and Approaches — Insert deep-water channel, with depths as charted.",
-            secs: secOf("What the Chart Cost") },
+            secs: secOf("What the Chart Cost"),
+            url: "https://en.wikipedia.org/wiki/Notice_to_mariners" /* BEUK:research — what a notice to mariners is, for the writer */ },
           { id: "sample-nb-keepers", folder: "People", title: "Who keeps what",
             body: "Agnes keeps the harbour ledgers, including the sailcloth one she brings to Gull Terrace.\n\nPetra Howe is the archivist who wrote to Mara twice a year for eleven years.\n\nElias Vane's meridian chart is drawn in an ink that never quite dried.",
             secs: secOf("The Harbourmaster's Ledger") }
         ] };
+        /* BEUK:research — the depths note's two files: the soundings the
+           chapters give, each line quoted from its chapter, and a sketch
+           of the East Bank labelled only with what the Prologue and the
+           chapters say. */
+        const rsB64 = (txt) => { const b = new TextEncoder().encode(txt); let bin = ""; for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]); return btoa(bin); };
+        const sampleResearch = { files: [
+          { id: "sample-rs-soundings", name: "Soundings, as the chapters give them.txt", mediaType: "text/plain", data: rsB64(
+            "Soundings on the East Bank, as the chapters give them\n\n" +
+            "Prologue (the fair sheet): \u201ca bank of sand no deeper than a man\u2019s waist at low water\u201d.\n\n" +
+            "Chapter Four (the harbour ledger): \u201cM. sounded the gut today, six fathoms, called every mark true.\u201d\n\n" +
+            "Chapter Eleven (Mara): \u201cSix and a half fathoms over the bank at low water, by my father\u2019s figures and mine.\u201d\n\n" +
+            "Chapter Thirteen (Nell on the lead): \u201cSix fathoms. Six and a quarter. Six and a half, in the gut of the channel\u201d.\n") },
+          { id: "sample-rs-sketch", name: "East Bank sketch.svg", mediaType: "image/svg+xml", data: rsB64(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="Georgia, serif">' +
+            '<rect width="640" height="360" fill="#dfe8ec"/>' +
+            '<path d="M0 0H640V64C540 84 430 58 320 76S120 96 0 72Z" fill="#cbbf9d"/>' +
+            '<text x="24" y="40" font-size="17" fill="#4a4030">Gullwick</text>' +
+            '<circle cx="150" cy="150" r="9" fill="#c9a959" stroke="#4a4030" stroke-width="2"/>' +
+            '<text x="168" y="155" font-size="15" fill="#2e3b44">the beacon</text>' +
+            '<ellipse cx="410" cy="215" rx="190" ry="62" fill="#e9dcb4" stroke="#b9a676" stroke-width="2"/>' +
+            '<text x="410" y="200" font-size="17" text-anchor="middle" fill="#4a4030">East Bank</text>' +
+            '<text x="410" y="224" font-size="13" text-anchor="middle" fill="#6b5d40">the fair sheet: no deeper than a man\u2019s waist at low water</text>' +
+            '<path d="M200 262C300 250 420 258 560 246" fill="none" stroke="#1f5f7a" stroke-width="5" stroke-dasharray="14 8"/>' +
+            '<path d="M560 246l-16-10v20z" fill="#1f5f7a"/>' +
+            '<text x="380" y="292" font-size="14" text-anchor="middle" fill="#1f5f7a">sounded: six and a half fathoms, sliding east</text>' +
+            '<text x="620" y="344" font-size="11" text-anchor="end" fill="#6b7a84">a sketch, not to scale</text>' +
+            "</svg>") }
+        ] };
+        sampleResearch.files.forEach((f) => { f.bytes = Math.floor(f.data.length / 4 * 3) - (/==$/.test(f.data) ? 2 : /=$/.test(f.data) ? 1 : 0); });
         const firstChapter = secs.find((s) => s.type === "chapter");
         /* The finished cover: serene harbour artwork painted for the
            book, with the title and author typeset over it through the
@@ -19895,6 +19966,7 @@
           bible: sampleBible,
           outline: { tags: [], filters: [], threads: threads, fields: fields },
           notebook: sampleNotebook, /* BEUK:notebook */
+          research: sampleResearch, /* BEUK:research */
           cover: sampleCoverDoc(), /* BEUK:slim */
           coverRecipe: recipe,
           images: sampleImagesDoc(), /* BEUK:slim */
@@ -25836,7 +25908,7 @@
          word count counts them. */
       /* function declarations, not consts: a book is serialized and applied before this part of the script has run */
       function nbLine(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n); }
-      function nbNormalize(doc, sections) {
+      function nbNormalize(doc, sections, fileIds) {
         const ids = new Set((sections || []).map((s) => s.id)), notes = [], seen = new Set();
         (doc && Array.isArray(doc.notes) ? doc.notes : []).forEach((n) => {
           if (!n || typeof n !== "object" || notes.length >= 500) return;
@@ -25846,15 +25918,203 @@
           const folder = nbLine(n.folder, 60); if (folder) o.folder = folder;
           const secs = Array.from(new Set((Array.isArray(n.secs) ? n.secs : []).filter((x) => typeof x === "string" && ids.has(x)))).slice(0, 100);
           if (secs.length) o.secs = secs;
+          /* BEUK:research — the files a note names (only ones the book holds) and its source link */
+          const fl = Array.from(new Set((Array.isArray(n.files) ? n.files : []).filter((x) => typeof x === "string" && (fileIds ? fileIds.has(x) : /^[\w-]{1,64}$/.test(x))))).slice(0, rsLimits().perNote);
+          if (fl.length) o.files = fl;
+          const url = rsUrl(n.url); if (url) o.url = url;
           if (typeof n.at === "string" && !isNaN(Date.parse(n.at))) o.at = n.at;
           notes.push(o);
         });
         return { notes: notes };
       }
+      /* ==== BEUK:research ==== — research files (Scrivener's Research
+         folder), kept in the Notebook: a note carries the files it was
+         written about — a picture, a PDF, a recording, a clip, a text
+         file — and the link it came from, and each opens inside the
+         Notebook. Files ride the book once, as `research: { files: [{ id,
+         name, mediaType, data, bytes, at? }] }` (data: base64), and a note
+         names its own (`files: [id]`, `url`). A file no note names is not
+         written. A History snapshot names the book's files the way it
+         names its pictures (histPack), so a restore brings back exactly
+         the files it had; on the shelf each is stored like a picture,
+         uploaded once (BEUK:pics). Never exported, never counted. */
+      function rsKinds() {
+        return { "image/png": "image", "image/jpeg": "image", "image/gif": "image", "image/webp": "image", "image/svg+xml": "image",
+          "application/pdf": "pdf",
+          "audio/mpeg": "audio", "audio/mp4": "audio", "audio/wav": "audio", "audio/ogg": "audio", "audio/webm": "audio",
+          "video/mp4": "video", "video/webm": "video",
+          "text/plain": "text", "text/markdown": "text", "text/csv": "text" };
+      }
+      function rsLimits() { return { file: 10 * 1024 * 1024, total: 25 * 1024 * 1024, files: 60, perNote: 20, textShown: 200000 }; }
+      function rsAccept() { return ".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.mp3,.m4a,.wav,.ogg,.oga,.mp4,.webm,.txt,.md,.markdown,.csv," + Object.keys(rsKinds()).join(","); }
+      /* the type a file is kept as, or null: its own type first, its name only when the browser gave none */
+      function rsTypeOf(name, type) {
+        const raw = String(type || "").toLowerCase().split(";")[0].trim();
+        const alias = { "audio/x-m4a": "audio/mp4", "audio/m4a": "audio/mp4", "audio/x-wav": "audio/wav", "audio/wave": "audio/wav", "audio/vnd.wave": "audio/wav", "audio/mp3": "audio/mpeg", "text/x-markdown": "text/markdown", "image/jpg": "image/jpeg" };
+        const ty = alias[raw] || raw;
+        if (rsKinds()[ty]) return ty;
+        if (raw && raw !== "application/octet-stream") return null;
+        const ext = (String(name || "").toLowerCase().match(/\.([a-z0-9]{1,8})$/) || [])[1] || "";
+        const byExt = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", pdf: "application/pdf",
+          mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav", ogg: "audio/ogg", oga: "audio/ogg", mp4: "video/mp4", webm: "video/webm",
+          txt: "text/plain", md: "text/markdown", markdown: "text/markdown", csv: "text/csv" };
+        return byExt[ext] || null;
+      }
+      function rsIsRef(data) { return typeof data === "string" && /^beuk-pic:[0-9a-f]{64}$/.test(data); }
+      function rsBytesOf(data) { return typeof data === "string" && data.length && !rsIsRef(data) ? data.length / 4 * 3 - (/==$/.test(data) ? 2 : /=$/.test(data) ? 1 : 0) : 0; }
+      /* a source link: http or https only; one typed without a scheme is taken as https */
+      function rsUrl(v) {
+        let s = typeof v === "string" ? v.trim() : "";
+        if (!s || s.length > 2000 || /\s/.test(s)) return "";
+        if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = "https://" + s.replace(/^\/+/, "");
+        try { const u = new URL(s); return (u.protocol === "http:" || u.protocol === "https:") && u.hostname.indexOf(".") > 0 ? u.href : ""; } catch (e) { return ""; }
+      }
+      function rsNormalize(doc) {
+        const L = rsLimits(), kinds = rsKinds(), files = [], seen = new Set();
+        (doc && Array.isArray(doc.files) ? doc.files : []).forEach((f) => {
+          if (!f || typeof f !== "object" || files.length >= L.files) return;
+          if (typeof f.id !== "string" || !/^[\w-]{1,64}$/.test(f.id) || seen.has(f.id)) return;
+          if (typeof f.mediaType !== "string" || !kinds[f.mediaType] || typeof f.data !== "string") return;
+          const ref = rsIsRef(f.data); /* a shelf copy not yet filled in keeps its name */
+          if (!ref && (!f.data || f.data.length % 4 || f.data.length > Math.ceil(L.file / 3) * 4 || !/^[A-Za-z0-9+/]*={0,2}$/.test(f.data))) return;
+          const o = { id: f.id, name: nbLine(f.name, 160) || f.id, mediaType: f.mediaType, data: f.data, bytes: ref ? Math.max(0, Math.floor(Number(f.bytes) || 0)) : rsBytesOf(f.data) };
+          if (typeof f.at === "string" && !isNaN(Date.parse(f.at))) o.at = f.at;
+          seen.add(f.id); files.push(o);
+        });
+        return { files: files };
+      }
+      function rsBook() { if (!state.research || !Array.isArray(state.research.files)) state.research = { files: [] }; return state.research; }
+      function rsNamed() { const ids = new Set(); nbBook().notes.forEach((n) => (n.files || []).forEach((id) => ids.add(id))); return ids; }
+      function rsPackFiles() { const ids = rsNamed(); return rsBook().files.filter((f) => ids.has(f.id)).map((f) => Object.assign({}, f)); }
+      function rsHas() { const ids = rsNamed(); return rsBook().files.some((f) => ids.has(f.id)); }
+      function rsTotal() { const ids = rsNamed(); return rsBook().files.reduce((a, f) => a + (ids.has(f.id) ? f.bytes : 0), 0); }
+      function rsFile(id) { return rsBook().files.find((f) => f.id === id) || null; }
+      function rsKind(f) { return (f && rsKinds()[f.mediaType]) || "file"; }
+      function rsIcon(f) { return { image: "file-image", pdf: "file-text", audio: "file-audio", video: "file-video", text: "file-type" }[rsKind(f)] || "file"; }
+      function rsSize(b) { return b >= 1024 * 1024 ? t("rs.mb", { n: fmtNum(Math.round(b / 1024 / 1024 * 10) / 10) }) : t("rs.kb", { n: fmtNum(Math.max(1, Math.round(b / 1024))) }); }
+      function rsBytes(f) { const bin = atob(f.data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+      function rsText(f) { try { return new TextDecoder("utf-8").decode(rsBytes(f)); } catch (e) { return ""; } }
+      /* one object URL at a time: the file open in the viewer (rsUi lives in the notebook's UI state) */
+      function rsBlobUrl(f) {
+        if (nbUi.rsBlob && nbUi.rsBlobFor === f.id + ":" + f.data.length) return nbUi.rsBlob;
+        rsDropBlob();
+        nbUi.rsBlob = URL.createObjectURL(new Blob([rsBytes(f)], { type: f.mediaType }));
+        nbUi.rsBlobFor = f.id + ":" + f.data.length;
+        return nbUi.rsBlob;
+      }
+      /* the players and frame on show let go of their URL before they are replaced or it is revoked: no detached load is left reaching for it */
+      function rsReleaseView() {
+        const v = $("rsView"); if (!v) return;
+        v.querySelectorAll("audio,video").forEach((m) => { try { m.pause(); m.removeAttribute("src"); m.load(); } catch (e) {} });
+        v.querySelectorAll("iframe").forEach((f) => { try { f.src = "about:blank"; } catch (e) {} });
+      }
+      /* a new tab only for a PDF or a raster picture: an object URL has the studio's own origin, and an SVG
+         opened as a document would run whatever script a shared book file put in it (shown in the Notebook
+         it is an <img>, where no script runs) */
+      function rsTabOk(f) { return !!f && !rsIsRef(f.data) && (f.mediaType === "application/pdf" || (rsKind(f) === "image" && f.mediaType !== "image/svg+xml")); }
+      function rsDropBlob() {
+        rsReleaseView();
+        if (nbUi.rsBlob) { try { URL.revokeObjectURL(nbUi.rsBlob); } catch (e) {} }
+        nbUi.rsBlob = null; nbUi.rsBlobFor = null;
+      }
+      function rsViewHtml(f) {
+        const k = rsKind(f), name = esc(f.name);
+        if (rsIsRef(f.data)) return '<p class="nb-quiet">' + esc(t("rs.notHere")) + "</p>";
+        if (k === "image") return '<img class="rs-img" alt="' + name + '" src="data:' + esc(f.mediaType) + ";base64," + f.data + '">';
+        if (k === "text") {
+          const all = rsText(f), cap = rsLimits().textShown;
+          return '<pre class="rs-text" dir="auto">' + esc(all.slice(0, cap)) + "</pre>" + (all.length > cap ? '<p class="nb-quiet">' + esc(t("rs.textCut", { n: fmtNum(cap) })) + "</p>" : "");
+        }
+        const url = rsBlobUrl(f);
+        if (k === "pdf") return '<iframe class="rs-pdf" title="' + name + '" src="' + url + '"></iframe>';
+        if (k === "audio") return '<audio class="rs-audio" controls preload="metadata" src="' + url + '"></audio>';
+        if (k === "video") return '<video class="rs-video" controls preload="metadata" src="' + url + '"></video>';
+        return "";
+      }
+      function rsFilesHtml(n) {
+        const files = (n.files || []).map(rsFile).filter(Boolean);
+        let h = files.length ? '<ul class="rs-files">' + files.map((f) => {
+          const on = nbUi.rsOpen === f.id;
+          return '<li class="rs-file' + (on ? " is-open" : "") + '" data-rsfile="' + esc(f.id) + '">' +
+            '<button type="button" class="rs-name" data-rsview="' + esc(f.id) + '" aria-expanded="' + on + '" title="' + esc(t(on ? "rs.hide" : "rs.view", { name: f.name })) + '"><i data-lucide="' + rsIcon(f) + '" aria-hidden="true"></i><span dir="auto">' + esc(f.name) + "</span></button>" +
+            '<span class="rs-meta">' + esc(t("rs.kind." + rsKind(f))) + " · " + esc(rsSize(f.bytes)) + "</span>" +
+            '<button type="button" class="ol-mini" data-rsdl="' + esc(f.id) + '" aria-label="' + esc(t("rs.download", { name: f.name })) + '" title="' + esc(t("rs.download", { name: f.name })) + '"><i data-lucide="download"></i></button>' +
+            '<button type="button" class="ol-mini" data-rsdel="' + esc(f.id) + '" aria-label="' + esc(t("rs.remove", { name: f.name })) + '" title="' + esc(t("rs.remove", { name: f.name })) + '"><i data-lucide="x"></i></button></li>';
+        }).join("") + "</ul>" : '<p class="nb-quiet">' + esc(t("rs.none")) + "</p>";
+        h += '<div class="rs-add"><button type="button" class="tb-btn" id="rsAdd"><i data-lucide="paperclip"></i>' + esc(t("rs.add")) + '</button><span class="nb-quiet">' + esc(t("rs.hint", { mb: fmtNum(rsLimits().file / 1024 / 1024), used: rsSize(rsTotal()), total: fmtNum(rsLimits().total / 1024 / 1024) })) + "</span></div>";
+        const open = files.find((f) => f.id === nbUi.rsOpen);
+        if (open) h += '<div class="rs-view" id="rsView" data-rsopen="' + esc(open.id) + '">' + rsViewHtml(open) +
+          (rsTabOk(open) ? '<button type="button" class="tb-btn rs-tab" data-rstab="' + esc(open.id) + '"><i data-lucide="external-link"></i>' + esc(t("rs.newTab")) + "</button>" : "") + "</div>";
+        return h;
+      }
+      /* the files land on a note: checked, then kept (the read happens before, in rsAddFiles) */
+      function rsAddRead(noteId, items) {
+        const L = rsLimits(), added = [], refused = [];
+        let n = nbNote(noteId);
+        (items || []).forEach((it) => {
+          const name = nbLine(it && it.name, 160) || "file";
+          const type = rsTypeOf(it && it.name, it && it.type);
+          if (!type) { refused.push(t("rs.badType", { name: name })); return; }
+          if (it.size > L.file) { refused.push(t("rs.tooBig", { name: name, mb: fmtNum(L.file / 1024 / 1024) })); return; }
+          if (!(it.size > 0) || typeof it.data !== "string" || !it.data) { refused.push(t("rs.readFail", { name: name })); return; }
+          if (rsTotal() + it.size > L.total || rsNamed().size >= L.files) { refused.push(t("rs.full", { name: name, mb: fmtNum(L.total / 1024 / 1024) })); return; }
+          if (!n) n = nbNew();
+          if ((n.files || []).length >= L.perNote) { refused.push(t("rs.noteFull", { name: name, n: fmtNum(L.perNote) })); return; }
+          const f = { id: uid(), name: name, mediaType: type, data: it.data, bytes: rsBytesOf(it.data), at: new Date().toISOString() };
+          rsBook().files.push(f);
+          n.files = (n.files || []).concat([f.id]);
+          added.push(f);
+        });
+        if (added.length) {
+          if (!n.title) n.title = nbLine(added[0].name.replace(/\.[^.]+$/, ""), 120);
+          nbUi.rsOpen = added[added.length - 1].id; nbUi.sel = n.id;
+          nbTouch(n);
+          if (nbShown()) nbRender();
+          toast(added.length === 1 ? t("rs.added1", { name: added[0].name }) : t("rs.added", { n: fmtNum(added.length) }), "paperclip");
+        }
+        if (refused.length) toast(refused.join(" "), "alert-triangle");
+        return { added: added, refused: refused };
+      }
+      function rsReadOne(file) {
+        return new Promise((res) => {
+          if (!file || file.size > rsLimits().file || !rsTypeOf(file.name, file.type)) { res(""); return; } /* refused anyway: not read */
+          const r = new FileReader();
+          r.onload = () => { const u = String(r.result || ""), c = u.indexOf(","); res(c < 0 ? "" : u.slice(c + 1)); };
+          r.onerror = () => res("");
+          r.readAsDataURL(file);
+        });
+      }
+      async function rsAddFiles(noteId, list) {
+        const items = [];
+        for (const file of Array.from(list || [])) items.push({ name: file.name, type: file.type, size: file.size, data: await rsReadOne(file) });
+        return rsAddRead(noteId, items);
+      }
+      function rsRemove(noteId, fileId) {
+        const n = nbNote(noteId); if (!n || !n.files) return false;
+        const i = n.files.indexOf(fileId); if (i < 0) return false;
+        const f = rsFile(fileId);
+        n.files = n.files.filter((x) => x !== fileId); if (!n.files.length) delete n.files;
+        if (nbUi.rsOpen === fileId) { nbUi.rsOpen = null; rsDropBlob(); }
+        nbTouch(n); if (nbShown()) nbRender();
+        /* the file stays on the desk while the toast is up: Undo names it again */
+        toast(t("rs.removed", { name: f ? f.name : "" }), "trash-2", { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => {
+          const m = nbNote(noteId); if (!m || !rsFile(fileId) || (m.files || []).indexOf(fileId) !== -1) return;
+          const list = (m.files || []).slice(); list.splice(Math.min(i, list.length), 0, fileId); m.files = list;
+          noteBookEdited(); if (nbShown()) nbRender();
+        } });
+        return true;
+      }
+      function rsDownload(f) {
+        if (!f || rsIsRef(f.data)) return;
+        const url = URL.createObjectURL(new Blob([rsBytes(f)], { type: f.mediaType }));
+        const a = document.createElement("a"); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 30000);
+      }
+      /* ==== /BEUK:research ==== */
       function nbBook() { if (!state.notebook || !Array.isArray(state.notebook.notes)) state.notebook = { notes: [] }; return state.notebook; }
       function nbHas() { return nbBook().notes.length > 0; }
-      function nbPack() { return JSON.parse(JSON.stringify(nbNormalize(nbBook(), state.sections))); }
-      const nbUi = { sel: null, q: "", namesTimer: null };
+      function nbPack() { return JSON.parse(JSON.stringify(nbNormalize(nbBook(), state.sections, new Set(rsBook().files.map((f) => f.id))))); }
+      const nbUi = { sel: null, q: "", namesTimer: null, rsOpen: null, rsBlob: null, rsBlobFor: null }; /* rs*: BEUK:research — the file open in the viewer and its object URL */
       const nbNote = (id) => nbBook().notes.find((n) => n.id === id) || null;
       const nbSecName = (id) => { const s = state.sections.find((x) => x.id === id); return s ? snapshotSectionName(s) : null; };
       const nbName = (n) => n.title || t("nb.untitled");
@@ -25874,7 +26134,7 @@
         return '<div class="nb-chips">' + list.map((x) => '<button type="button" class="ol-chip" data-nbcov="' + esc(x.id) + '"><i data-lucide="book-marked" aria-hidden="true"></i>' + esc(t("nb.nameN", { name: x.name, n: fmtNum(x.n) })) + "</button>").join("") + "</div>";
       }
       function nbItem(n) {
-        const meta = [n.folder || "", n.secs && n.secs.length ? t("nb.pins", { n: fmtNum(n.secs.length) }) : ""].filter(Boolean).join(" · ");
+        const meta = [n.folder || "", n.secs && n.secs.length ? t("nb.pins", { n: fmtNum(n.secs.length) }) : "", n.files && n.files.length ? t("rs.count", { n: fmtNum(n.files.length) }) : ""].filter(Boolean).join(" · "); /* BEUK:research — and its files */
         return '<button type="button" class="bib-item nb-item' + (n.id === nbUi.sel ? " is-sel" : "") + '" data-nb="' + esc(n.id) + '" aria-pressed="' + (n.id === nbUi.sel) + '"><i data-lucide="sticky-note" aria-hidden="true"></i>' +
           '<span class="nb-item-txt"><span class="bib-item-name' + (n.title ? "" : " is-blank") + '" dir="auto">' + esc(nbName(n)) + "</span>" + (meta ? '<span class="nb-item-meta" dir="auto">' + esc(meta) + "</span>" : "") + "</span></button>";
       }
@@ -25882,7 +26142,7 @@
         const host = $("nbList"); if (!host) return;
         const notes = nbBook().notes, q = nbUi.q.trim().toLowerCase();
         if (!notes.length) { host.innerHTML = '<p class="nb-quiet">' + esc(t("nb.empty")) + "</p>"; return; }
-        const shown = notes.filter((n) => !q || (n.title + "\n" + n.body + "\n" + (n.folder || "")).toLowerCase().indexOf(q) !== -1);
+        const shown = notes.filter((n) => !q || (n.title + "\n" + n.body + "\n" + (n.folder || "") + "\n" + (n.url || "") + "\n" + (n.files || []).map((id) => (rsFile(id) || {}).name || "").join("\n")).toLowerCase().indexOf(q) !== -1); /* BEUK:research — a file's name and the source link are found too */
         if (!shown.length) { host.innerHTML = '<p class="nb-quiet">' + esc(t("nb.noMatch", { q: nbUi.q.trim() })) + "</p>"; return; }
         const here = state.activeId, hereName = nbSecName(here);
         const pinned = hereName ? shown.filter((n) => (n.secs || []).indexOf(here) !== -1) : [];
@@ -25898,6 +26158,7 @@
       }
       function nbRenderDetail() {
         const host = $("nbDetail"); if (!host) return;
+        rsReleaseView(); /* BEUK:research */
         const n = nbNote(nbUi.sel);
         if (!n) { host.innerHTML = '<p class="nb-quiet nb-pick">' + esc(t(nbBook().notes.length ? "nb.pick" : "nb.pickFirst")) + "</p>"; return; }
         const folders = Array.from(new Set(nbBook().notes.map((x) => x.folder).filter(Boolean))).sort();
@@ -25907,6 +26168,10 @@
           '<div class="nb-row"><label class="field-lab" for="nbFolder">' + esc(t("nb.folderLab")) + '</label><input class="txt-input" id="nbFolder" dir="auto" maxlength="60" list="nbFolders" value="' + esc(n.folder || "") + '" placeholder="' + esc(t("nb.folderPh")) + '">' +
           '<datalist id="nbFolders">' + folders.map((f) => '<option value="' + esc(f) + '"></option>').join("") + "</datalist></div>" +
           '<div class="nb-row"><label class="field-lab" for="nbBody">' + esc(t("nb.bodyLab")) + '</label><textarea class="txt-input nb-body" id="nbBody" dir="auto" rows="12" maxlength="50000">' + esc(n.body) + "</textarea></div>" +
+          /* BEUK:research — the note's source link and its files */
+          '<div class="nb-row"><label class="field-lab" for="nbUrl">' + esc(t("rs.urlLab")) + '</label><div class="rs-url"><input class="txt-input" id="nbUrl" type="url" dir="ltr" maxlength="2000" value="' + esc(n.url || "") + '" placeholder="https://">' +
+          (n.url ? '<a class="tb-btn" id="nbUrlGo" href="' + esc(n.url) + '" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link"></i>' + esc(t("rs.urlOpen")) + "</a>" : "") + "</div></div>" +
+          '<div class="nb-row" id="rsRow"><div class="field-lab">' + esc(t("rs.filesLab")) + "</div>" + rsFilesHtml(n) + "</div>" +
           '<div class="nb-row"><div class="field-lab">' + esc(t("nb.namesLab")) + '</div><div id="nbNames">' + nbNamesHtml(n) + "</div></div>" +
           '<div class="nb-row"><div class="field-lab">' + esc(t("nb.pinsLab")) + "</div>" +
           (pins.length ? '<div class="nb-chips">' + pins.map((id) => '<span class="nb-pin"><button type="button" class="ol-link" data-nbgo="' + esc(id) + '" title="' + esc(t("nb.go", { sec: nbSecName(id) })) + '">' + esc(nbSecName(id)) + '</button><button type="button" class="ol-mini" data-nbunpin="' + esc(id) + '" aria-label="' + esc(t("nb.unpin", { sec: nbSecName(id) })) + '"><i data-lucide="x"></i></button></span>').join("") + "</div>"
@@ -25916,7 +26181,11 @@
           '<div class="nb-foot"><span class="nb-quiet">' + (n.at ? esc(t("nb.edited", { when: fmtDateIntl(new Date(n.at)) })) : "") + '</span><button type="button" class="tb-btn" id="nbDelete"><i data-lucide="trash-2"></i>' + esc(t("nb.delete")) + "</button></div>";
         host.innerHTML = h;
       }
-      function nbRender() { nbRenderList(); nbRenderDetail(); icons(); }
+      function nbRender() {
+        const keep = nbUi.rsOpen && (nbNote(nbUi.sel) || {}).files && nbNote(nbUi.sel).files.indexOf(nbUi.rsOpen) !== -1 ? rsFile(nbUi.rsOpen) : null;
+        if (!keep || nbUi.rsBlobFor !== keep.id + ":" + keep.data.length) rsDropBlob(); /* BEUK:research — a file no longer in view lets go of its object URL */
+        nbRenderList(); nbRenderDetail(); icons();
+      }
       function nbShown() { const m = $("modalNotebook"); return !!(m && m.classList.contains("open")); }
       function openNotebook() {
         const m = $("modalNotebook"); if (!m) return;
@@ -25929,7 +26198,7 @@
         m.classList.add("open");
         nbRender();
       }
-      function closeNotebook() { const m = $("modalNotebook"); if (m) m.classList.remove("open"); }
+      function closeNotebook() { const m = $("modalNotebook"); if (m) m.classList.remove("open"); rsDropBlob(); /* BEUK:research — a recording stops with the Notebook */ }
       function nbNew() {
         const n = { id: uid(), title: "", body: "" };
         nbBook().notes.unshift(n);
@@ -25976,10 +26245,38 @@
           if (el.hasAttribute("data-nbunpin") && n) { nbUnpin(n.id, el.getAttribute("data-nbunpin")); nbRender(); return; }
           if (el.id === "nbPinDo" && n) { const sel = $("nbPin"); if (sel && sel.value && nbPin(n.id, sel.value)) nbRender(); return; }
           if (el.id === "nbDelete" && n) { nbDelete(n.id); return; }
+          /* BEUK:research */
+          if (el.id === "rsAdd") { const inp = $("rsFileInput"); if (inp) inp.click(); return; }
+          if (el.hasAttribute("data-rsview")) {
+            const id = el.getAttribute("data-rsview");
+            nbUi.rsOpen = nbUi.rsOpen === id ? null : id; nbRender();
+            const b = m.querySelector('[data-rsview="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'); if (b) b.focus();
+            return;
+          }
+          if (el.hasAttribute("data-rsdl")) { rsDownload(rsFile(el.getAttribute("data-rsdl"))); return; }
+          if (el.hasAttribute("data-rsdel") && n) { rsRemove(n.id, el.getAttribute("data-rsdel")); return; }
+          if (el.hasAttribute("data-rstab")) { const f = rsFile(el.getAttribute("data-rstab")); if (rsTabOk(f)) window.open(rsBlobUrl(f), "_blank", "noopener"); return; }
+        });
+        const rsInp = $("rsFileInput");
+        if (rsInp) {
+          rsInp.setAttribute("accept", rsAccept());
+          rsInp.addEventListener("change", () => { const list = Array.from(rsInp.files || []); rsInp.value = ""; if (list.length) rsAddFiles(nbUi.sel, list); });
+        }
+        /* files dropped on the open Notebook land on the note in hand (a new note when none is) */
+        const rsHasFiles = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).indexOf("Files") !== -1);
+        ["dragenter", "dragover"].forEach((ev) => m.addEventListener(ev, (e) => { if (!rsHasFiles(e)) return; e.preventDefault(); m.classList.add("rs-drop"); }));
+        m.addEventListener("dragleave", (e) => { if (e.target === m || !m.contains(e.relatedTarget)) m.classList.remove("rs-drop"); });
+        m.addEventListener("drop", (e) => {
+          m.classList.remove("rs-drop");
+          if (!rsHasFiles(e)) return;
+          e.preventDefault();
+          const list = Array.from(e.dataTransfer.files || []);
+          if (list.length) rsAddFiles(nbUi.sel, list);
         });
         m.addEventListener("input", (e) => {
           const el = e.target, n = nbNote(nbUi.sel);
           if (el.id === "nbSearch") { nbUi.q = el.value; nbRenderList(); icons(); return; }
+          if (el.id === "nbUrl") { el.removeAttribute("aria-invalid"); return; } /* BEUK:research — kept on change */
           if (!n) return;
           if (el.id === "nbTitle") {
             n.title = nbLine(el.value, 120); nbTouch(n);
@@ -25998,9 +26295,17 @@
             if (f) n.folder = f; else delete n.folder;
             nbTouch(n); nbRenderList(); icons();
           }
+          /* BEUK:research — the source link: http(s) only; anything else is not kept */
+          if (e.target.id === "nbUrl" && n) {
+            const raw = e.target.value.trim(), u = rsUrl(raw);
+            if (raw && !u) { e.target.setAttribute("aria-invalid", "true"); toast(t("rs.urlBad"), "alert-triangle"); return; }
+            if ((n.url || "") === u) { e.target.removeAttribute("aria-invalid"); return; }
+            if (u) n.url = u; else delete n.url;
+            nbTouch(n); nbRender();
+          }
         });
       }
-      if (typeof window !== "undefined") window.beukNotebook = { normalize: nbNormalize, names: nbNames };
+      if (typeof window !== "undefined") window.beukNotebook = { normalize: nbNormalize, names: nbNames, research: { normalize: rsNormalize, typeOf: rsTypeOf, url: rsUrl } };
       /* ==== /BEUK:notebook ==== */
       if (typeof window !== "undefined") {
         window.beukBible = { normalize: bibleNormalize, matcher: bibleBuildMatcher, scan: bibleScan, mentions: bibleMentions, compute: bibleMentionsCompute, seed: bibleSeedCandidates,
@@ -31204,9 +31509,11 @@
         const d = serializeBook();
         delete d.history; delete d.historyPool; delete d.importReport;
         const imgs = d.images || [], fonts = d.fonts || [], cover = d.cover;
-        d.images = []; d.fonts = []; d.cover = null;
+        const rsf = d.research ? d.research.files : null; /* BEUK:research — shared like the pictures */
+        d.images = []; d.fonts = []; d.cover = null; delete d.research;
         const c = JSON.parse(JSON.stringify(d));
         c.images = imgs.map(chopShareObj); c.fonts = fonts.map(chopShareObj); c.cover = cover ? chopShareObj(cover) : null;
+        if (rsf) c.research = { files: rsf.map(chopShareObj) };
         return c;
       }
       /* Every snapshot packs this way, whatever its kind (named,
@@ -31217,7 +31524,8 @@
          place there ({ref: id, pool: i}). */
       function histPack(list) {
         const liveFonts = (state.fonts || []).map(normalizeCustomFont).filter(Boolean);
-        const pool = { images: [], fonts: [], covers: [] };
+        const liveResearch = rsPackFiles(); /* BEUK:research — the files the saved book itself writes */
+        const pool = { images: [], fonts: [], covers: [], research: [] };
         const toPool = (bucket, o, refId) => {
           let i = bucket.findIndex((x) => chopSameObj(x, o));
           if (i < 0) { bucket.push(o); i = bucket.length - 1; }
@@ -31235,6 +31543,7 @@
             const v = e.doc[k];
             if (k === "images") p[k] = (v || []).map((o) => packOne(o, state.images || [], pool.images));
             else if (k === "fonts") p[k] = (v || []).map((o) => packOne(o, liveFonts, pool.fonts));
+            else if (k === "research" && v && Array.isArray(v.files)) p[k] = { files: v.files.map((o) => packOne(o, liveResearch, pool.research)) };
             else if (k === "cover" && v && typeof v === "object" && typeof v.data === "string" && v.data)
               p[k] = chopSameObj(v, state.cover) ? { ref: "cover" } : toPool(pool.covers, v, "cover");
             else p[k] = v;
@@ -31243,6 +31552,7 @@
           Object.keys(e).forEach((k) => { if (k === "doc") o.chopDoc = p; else o[k] = e[k]; });
           return o;
         });
+        if (!pool.research.length) delete pool.research; /* BEUK:research — a book without dropped files writes the pool it always did */
         return { history: entries, pool: pool };
       }
       function chopSnapUnpack(e, pool) {
@@ -31265,6 +31575,7 @@
           const v = p[k];
           if (k === "images") d[k] = back(v, state.images || [], pool.images);
           else if (k === "fonts") d[k] = back(v, state.fonts || [], pool.fonts);
+          else if (k === "research" && v && Array.isArray(v.files)) d[k] = { files: back(v.files, (state.research && state.research.files) || [], pool.research) };
           else if (k === "cover" && v && v.ref === "cover") {
             const hit = typeof v.pool === "number" ? (Array.isArray(pool.covers) ? pool.covers[v.pool] : null) : state.cover;
             if (!hit || typeof hit !== "object") whole = false;
@@ -48323,6 +48634,7 @@
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
           ...(bibleHas() || (state.bible && state.bible.fields && Object.keys(state.bible.fields).length) || bibleCountsHeld() ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
           ...(nbHas() ? { notebook: nbPack() } : {}), /* BEUK:notebook — written only when the book has a note */
+          ...(rsHas() ? { research: { files: rsPackFiles() } } : {}), /* BEUK:research — the files the notes name, each once; absent when there are none */
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
           /* BEUK:manuscript — the submission manuscript's contact block and page choices ride with the book */
@@ -48401,6 +48713,7 @@
         state.coverRecipe = doc.coverRecipe ? normalizeCoverRecipe(doc.coverRecipe) : null;
         state.outline = olNormalize(doc.outline, state.sections); /* BEUK:outline — a book without them has none */
         state.images = Array.isArray(doc.images) ? doc.images : [];
+        state.research = rsNormalize(doc.research); /* BEUK:research — a book's research files are its own; read before History, whose snapshots name them */
         state.fonts = Array.isArray(doc.fonts) ? doc.fonts.map(normalizeCustomFont).filter(Boolean) : [];
         state.customThemes = Array.isArray(doc.customThemes) ? doc.customThemes.map(normalizeCustomTheme).filter(Boolean) : [];
         /* The book's own faces register on arrival, so the studio
@@ -48464,7 +48777,7 @@
         /* BEUK:bible — a book's Story Bible is its own: one without it arrives with none */
         state.bible = bibleNormalize(doc.bible);
         bibleBookArrived();
-        state.notebook = nbNormalize(doc.notebook, state.sections); /* BEUK:notebook — a book's notes are its own: one without them arrives with none */
+        state.notebook = nbNormalize(doc.notebook, state.sections, new Set(state.research.files.map((f) => f.id))); /* BEUK:notebook — a book's notes are its own: one without them arrives with none */
         if (typeof nbShown === "function" && nbShown()) nbRender();
         /* BEUK:bookid — every arrival (local restore, shelf, backup file, conflict, snapshot) passes here: a pre-UUID id migrates now, once, after History has its snapshot. */
         bookIdMigrateDesk();
@@ -60338,6 +60651,188 @@
                 return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "a note started from the Notes tool took its title, folder and text; Mara ×2 and Gullwick ×1 found from the Covenant; pinned to chapter 2 it came first there; search found the loose note alone; the book file round-trips byte for byte, drops a pin to a missing section, and the next book arrives with none; EPUB (" + b.epub.length + " chars), print (" + b.print.length + ") and Word (" + b.docx.length + ") unchanged, word counts unchanged; delete and Undo; a book without notes has no notebook key; the sample's three notes sit on the chapters their facts come from");
               } finally { closeNotebook(); nbUi.sel = keepUi.sel; nbUi.q = keepUi.q; }
             }));
+          } }
+      );
+      /* BEUK:research — self-check */
+      SELF_CHECKS.push(
+        { id: "notebook.research", feature: "notebook", name: "Research files: a text file, a picture, a PDF, a recording and a clip attach to a note (a web page, a file over the size limit and an empty one are refused) and open inside the Notebook — the text as text, the picture as an image, the PDF in a frame, the recording and the clip in players; the source link keeps http(s) only; a note is found by its files' names; the book writes each file once (no research key when no note names one), round-trips byte for byte, and drops a file of the wrong kind or with bad bytes and a note's name for a file the book lacks; a History snapshot names the files instead of copying them, a file removed afterwards is written once in historyPool and comes back on restore; remove comes with Undo; another book arrives with none; on the shelf they travel as pictures do; never exported, never counted; the sample's depths note carries its soundings and its sketch, every line from its chapter",
+          run() {
+            const keepUi = { sel: nbUi.sel, q: nbUi.q, open: nbUi.rsOpen };
+            return bibleCheckGuard(() => chopCheckRun(() => {
+              const bad = [];
+              try {
+                applyBookDoc(buildEmptyBook()); state.history = [];
+                const c1 = mkSection("body", "chapter", "Harbour", { number: "1", content: "Mara walked to the harbour." });
+                state.sections = state.sections.filter((s) => s.kind === "front").concat([c1], state.sections.filter((s) => s.kind === "back"));
+                state.activeId = c1.id;
+                const stamp = (s) => String(s).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "T").replace(/urn:uuid:[0-9a-f-]+/gi, "U");
+                const grab = () => ({
+                  epub: stamp(epubFiles("generic").map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                  print: stamp(buildPrintHtml()),
+                  docx: stamp(buildDocxFiles().map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                  words: bookWordTotal() + "|" + state.sections.map((s) => sectionWords(s)).join(",")
+                });
+                const a = grab();
+                const b64 = (txt) => { const b = new TextEncoder().encode(txt); let bin = ""; for (let i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]); return btoa(bin); };
+                const count = (hay, needle) => hay.split(needle).length - 1;
+                const txtData = b64("Rsmark soundings: " + "six fathoms, called every mark true. ".repeat(40));
+                const items = [
+                  { name: "Rsmark soundings.txt", type: "text/plain", data: txtData },
+                  { name: "chart.png", type: "image/png", data: FAKE_PNG },
+                  { name: "ledger.pdf", type: "application/pdf", data: b64("%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n") },
+                  { name: "gulls.m4a", type: "audio/x-m4a", data: b64("rs-audio-bytes") },
+                  { name: "tide.webm", type: "video/webm", data: b64("rs-video-bytes") },
+                  { name: "page.html", type: "text/html", data: b64("<!doctype html><p>a web page</p>") },
+                  { name: "huge.pdf", type: "application/pdf", data: b64("x"), size: rsLimits().file + 1 },
+                  { name: "empty.txt", type: "text/plain", data: "", size: 0 }
+                ].map((it) => Object.assign({ size: it.data ? atob(it.data).length : 0 }, it));
+                const doc0 = serializeBook();
+                if ("research" in doc0) bad.push("a book without files carries a research key");
+                /* through the Notebook */
+                $("btnNotebook").click();
+                $("btnNbNew").click();
+                const loose = nbNote(nbUi.sel); if (loose) loose.title = "Loose idea";
+                $("btnNbNew").click();
+                const n = nbNote(nbUi.sel);
+                if (!($("rsFileInput") && /\.pdf/.test($("rsFileInput").getAttribute("accept") || ""))) bad.push("the file picker does not offer PDFs");
+                const res = rsAddRead(n.id, items);
+                if (res.added.length !== 5 || res.refused.length !== 3) bad.push("added " + res.added.length + ", refused " + res.refused.length + " (want 5, 3)");
+                const ids = (n.files || []).slice(), byName = (nm) => rsFile(ids.find((id) => (rsFile(id) || {}).name === nm));
+                if ((byName("gulls.m4a") || {}).mediaType !== "audio/mp4") bad.push("an .m4a was not kept as audio/mp4");
+                if (n.title !== "Rsmark soundings") bad.push("an untitled note did not take its first file's name: " + n.title);
+                nbUi.sel = n.id; nbRender();
+                if (document.querySelectorAll("#rsRow [data-rsfile]").length !== 5) bad.push("the note shows " + document.querySelectorAll("#rsRow [data-rsfile]").length + " files");
+                const view = (nm) => { const f = byName(nm); if (nbUi.rsOpen === (f && f.id)) return $("rsView"); const b = document.querySelector('[data-rsview="' + (f ? f.id : "") + '"]'); if (b) b.click(); return $("rsView"); };
+                let v = view("tide.webm");
+                if (!v || !v.querySelector('video.rs-video[src^="blob:"]')) bad.push("the clip did not open in a player");
+                const clipUrl = nbUi.rsBlob;
+                v = view("Rsmark soundings.txt");
+                if (!v || !v.querySelector("pre.rs-text") || v.querySelector("pre.rs-text").textContent.indexOf("Rsmark soundings: six fathoms") !== 0) bad.push("the text file did not open as text");
+                if (nbUi.rsBlob || !clipUrl) bad.push("the clip's object URL was kept after it closed");
+                v = view("chart.png");
+                if (!v || !v.querySelector('img.rs-img[src^="data:image/png;base64,"]')) bad.push("the picture did not open");
+                v = view("ledger.pdf");
+                if (!v || !v.querySelector('iframe.rs-pdf[src^="blob:"]') || !v.querySelector("[data-rstab]")) bad.push("the PDF did not open in a frame");
+                v = view("gulls.m4a");
+                if (!v || !v.querySelector('audio.rs-audio[src^="blob:"]')) bad.push("the recording did not open in a player");
+                /* the source link */
+                const typeIn = (id, val, ev) => { const el = $(id); el.value = val; el.dispatchEvent(new Event(ev || "input", { bubbles: true })); };
+                typeIn("nbUrl", "example.org/tides", "change");
+                if (n.url !== "https://example.org/tides" || !$("nbUrlGo") || $("nbUrlGo").getAttribute("href") !== "https://example.org/tides" || $("nbUrlGo").getAttribute("rel").indexOf("noopener") === -1) bad.push("the source link was not kept as https: " + n.url);
+                typeIn("nbUrl", "javascript:alert(1)", "change");
+                if (n.url !== "https://example.org/tides" || $("nbUrl").getAttribute("aria-invalid") !== "true") bad.push("a javascript: link was not refused");
+                nbRender();
+                /* found by a file's name */
+                typeIn("nbSearch", "ledger.pdf");
+                const found = Array.from(document.querySelectorAll("#nbList [data-nb]")).map((b) => b.getAttribute("data-nb"));
+                if (found.join() !== n.id) bad.push("search by file name showed " + found.length);
+                typeIn("nbSearch", "");
+                /* the book file */
+                const doc = JSON.parse(JSON.stringify(serializeBook()));
+                if (!doc.research || doc.research.files.length !== 5) bad.push("the book file holds " + (doc.research ? doc.research.files.length : 0) + " files");
+                if (count(JSON.stringify(doc), txtData) !== 1) bad.push("a file is written " + count(JSON.stringify(doc), txtData) + " times");
+                applyBookDoc(doc);
+                if (JSON.stringify(serializeBook()) !== JSON.stringify(doc)) bad.push("research files did not survive the book file byte for byte");
+                const junk = JSON.parse(JSON.stringify(doc));
+                junk.research.files.push({ id: "rs-junk-html", name: "x.html", mediaType: "text/html", data: b64("<b>x</b>") }, { id: "rs-junk-bytes", name: "x.txt", mediaType: "text/plain", data: "!!!!" });
+                const jn = junk.notebook.notes.find((x) => x.id === n.id); jn.files = jn.files.concat(["rs-junk-html", "rs-junk-bytes", "no-such-file"]);
+                applyBookDoc(junk);
+                if (rsFile("rs-junk-html") || rsFile("rs-junk-bytes") || (nbNote(n.id).files || []).some((x) => /^rs-junk|^no-such/.test(x))) bad.push("a junk file or a name for a missing file survived the load");
+                applyBookDoc(doc);
+                /* History names the files; a file dropped afterwards is written once and restores */
+                const snap = takeSnapshot("Rscheck", null);
+                const ser1 = serializeBook(), packed = ser1.history[0].chopDoc && ser1.history[0].chopDoc.research;
+                if (!packed || packed.files.length !== 5 || packed.files.some((o) => !o || typeof o.ref !== "string" || "data" in o || "pool" in o)) bad.push("the snapshot did not name the book's files");
+                if (count(JSON.stringify(ser1), txtData) !== 1 || "research" in (ser1.historyPool || {})) bad.push("with a snapshot the file is written " + count(JSON.stringify(ser1), txtData) + " times");
+                const txtId = ids.find((id) => (rsFile(id) || {}).name === "Rsmark soundings.txt");
+                nbUi.sel = n.id; nbRender();
+                document.querySelector('[data-rsdel="' + txtId + '"]').click();
+                const goneOk = (nbNote(n.id).files || []).indexOf(txtId) === -1;
+                const undo = Array.from(document.querySelectorAll("#toasts .toast button")).pop(); if (undo) undo.click();
+                if (!goneOk || (nbNote(n.id).files || []).indexOf(txtId) === -1) bad.push("remove/Undo: removed " + goneOk + ", back " + ((nbNote(n.id).files || []).indexOf(txtId) !== -1));
+                document.querySelector('[data-rsdel="' + txtId + '"]').click();
+                const ser2 = JSON.parse(JSON.stringify(serializeBook()));
+                if (ser2.research.files.length !== 4 || !ser2.historyPool.research || ser2.historyPool.research.length !== 1 || ser2.historyPool.research[0].data !== txtData || count(JSON.stringify(ser2), txtData) !== 1) bad.push("the removed file is not written exactly once, in historyPool");
+                applyBookDoc(ser2);
+                const again = (state.history || []).find((h) => h.id === snap.id);
+                if (!again) bad.push("the snapshot did not read back");
+                else {
+                  restoreSnapshot(snap.id);
+                  const back = rsFile(txtId);
+                  if (!back || back.data !== txtData || (nbNote(n.id).files || []).indexOf(txtId) === -1) bad.push("restore did not bring the file back");
+                }
+                /* an SVG never opens as a document: shown as an <img>, no new-tab button, and the handler refuses it */
+                const evil = rsAddRead(n.id, [{ name: "evil.svg", type: "image/svg+xml", data: b64('<svg xmlns="http://www.w3.org/2000/svg"><scr' + 'ipt>window.__rsEvil=1</scr' + 'ipt></svg>'), size: 80 }]).added[0];
+                if (!evil) bad.push("an SVG was refused");
+                else {
+                  nbUi.sel = n.id; nbUi.rsOpen = evil.id; nbRender();
+                  const keepOpen = window.open; let opened = 0; window.open = () => { opened++; return null; };
+                  try {
+                    if (!document.querySelector('#rsView img.rs-img[src^="data:image/svg+xml;base64,"]') || document.querySelector("#rsView [data-rstab]") || document.querySelector("#rsView iframe, #rsView object, #rsView embed")) bad.push("an SVG was offered as a document");
+                    const fake = document.createElement("button"); fake.setAttribute("data-rstab", evil.id); $("nbDetail").appendChild(fake); fake.click(); fake.remove();
+                    if (opened || window.__rsEvil) bad.push("an SVG opened in a new tab");
+                  } finally { window.open = keepOpen; }
+                  rsRemove(n.id, evil.id);
+                }
+                /* on the shelf they travel as pictures do */
+                if (!picObjects(serializeBook()).some((o) => o.data === txtData)) bad.push("the shelf would not store the file once, as a picture");
+                /* never book text */
+                const b = grab();
+                ["epub", "print", "docx"].forEach((kk) => { if (a[kk] !== b[kk]) bad.push(kk + " output changed"); });
+                if ((b.epub + b.print + b.docx).indexOf("Rsmark") !== -1 || (b.epub + b.print + b.docx).indexOf(txtData.slice(0, 40)) !== -1) bad.push("a research file reached an export");
+                if (a.words !== b.words) bad.push("word counts moved");
+                closeNotebook();
+                if (nbUi.rsBlob) bad.push("closing the Notebook kept an object URL");
+                applyBookDoc(buildEmptyBook());
+                if (rsBook().files.length || "research" in serializeBook()) bad.push("research files rode onto the next book");
+                /* the sample */
+                applyBookDoc(buildSampleBook());
+                const dn = nbNote("sample-nb-depths"), nn = nbNote("sample-nb-notices");
+                const names = dn ? (dn.files || []).map((id) => (rsFile(id) || {}).name).join(" | ") : "";
+                if (names !== "Soundings, as the chapters give them.txt | East Bank sketch.svg") bad.push("sample depths note files: " + names);
+                if (!nn || nn.url !== "https://en.wikipedia.org/wiki/Notice_to_mariners") bad.push("sample notices link " + (nn && nn.url));
+                const book = state.sections.map((s) => s.content || "").join("\n").replace(/[‘’]/g, "'");
+                const sound = rsFile("sample-rs-soundings");
+                const quotes = sound ? (rsText(sound).match(/“[^”]+”/g) || []).map((q) => q.slice(1, -1).replace(/[‘’]/g, "'")) : [];
+                if (quotes.length !== 4 || quotes.some((q) => book.indexOf(q) === -1)) bad.push("a sample soundings line is not in its chapter: " + quotes.filter((q) => book.indexOf(q) === -1).join(" / "));
+                const sketch = rsFile("sample-rs-sketch");
+                if (!sketch || rsText(sketch).indexOf("<svg") !== 0) bad.push("the sample sketch is not an SVG");
+                if (JSON.stringify(serializeBook().research) !== JSON.stringify(buildSampleBook().research)) bad.push("the sample's files do not round-trip as built");
+                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "5 files kept (m4a as audio/mp4), a web page, an oversized and an empty file refused; text, picture, PDF frame, recording and clip players all opened, object URL let go on switching and closing; the link kept as https, javascript: refused; found by file name; written once, byte for byte, junk dropped; a snapshot names all 5, the removed file sits once in historyPool and restores; remove + Undo; next book has none; the shelf packs it like a picture; EPUB, print and Word unchanged, word counts unchanged; the sample's soundings (4 lines, each in its chapter), sketch and link in place");
+              } finally { closeNotebook(); nbUi.sel = keepUi.sel; nbUi.q = keepUi.q; nbUi.rsOpen = keepUi.open; }
+            }));
+          } }
+      );
+      /* BEUK:research — the served policy lets the viewer work: a PDF frame and a player load from object URLs */
+      SELF_CHECKS.push(
+        { id: "notebook.research.csp", feature: "notebook", name: "Research files are not blocked by the page's own Content-Security-Policy: when the studio is served with one, it allows blob: for frames and media, and a PDF frame and an audio player made from object URLs load with no policy violation",
+          async run() {
+            const bad = [];
+            let policy = "";
+            try { const r = await fetch(location.href, { method: "HEAD", cache: "no-store" }); policy = r.headers.get("content-security-policy") || ""; } catch (e) {}
+            const dir = (name) => { const m = policy.split(";").map((x) => x.trim()).find((x) => x.indexOf(name + " ") === 0); return m || ""; };
+            if (policy) {
+              if (!/\bblob:/.test(dir("frame-src"))) bad.push("frame-src has no blob: (" + (dir("frame-src") || "unset") + ")");
+              if (!/\bblob:/.test(dir("media-src"))) bad.push("media-src has no blob: (" + (dir("media-src") || "unset, so default-src") + ")");
+            }
+            const seen = [];
+            const onViolation = (e) => { if (String(e.blockedURI || "").indexOf("blob") === 0) seen.push(e.violatedDirective + " " + e.blockedURI); };
+            document.addEventListener("securitypolicyviolation", onViolation);
+            const host = document.createElement("div");
+            host.style.cssText = "position:fixed;left:-9999px;top:0;width:200px;height:200px;overflow:hidden";
+            const pdf = URL.createObjectURL(new Blob(["%PDF-1.4\n%%EOF\n"], { type: "application/pdf" }));
+            const wav = URL.createObjectURL(new Blob([new Uint8Array([82, 73, 70, 70, 36, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 1, 0, 64, 31, 0, 0, 64, 31, 0, 0, 1, 0, 8, 0, 100, 97, 116, 97, 0, 0, 0, 0])], { type: "audio/wav" }));
+            try {
+              host.innerHTML = '<iframe title="csp check" src="' + pdf + '"></iframe><audio preload="auto" src="' + wav + '"></audio>';
+              document.body.appendChild(host);
+              await new Promise((r) => setTimeout(r, 600));
+            } finally {
+              document.removeEventListener("securitypolicyviolation", onViolation);
+              host.querySelectorAll("audio").forEach((m) => { m.removeAttribute("src"); m.load(); });
+              host.remove(); URL.revokeObjectURL(pdf); URL.revokeObjectURL(wav);
+            }
+            if (seen.length) bad.push("blocked: " + Array.from(new Set(seen)).join(", "));
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : (policy ? "served policy allows blob: in frame-src and media-src; a PDF frame and an audio player from object URLs loaded with no violation" : "no policy on this server; a PDF frame and an audio player from object URLs loaded with no violation"));
           } }
       );
       /* ==== /BEUK:notebook ==== */

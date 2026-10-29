@@ -101,6 +101,20 @@ test('uploads are verified: the name must be the sha256 of the bytes, base64 can
   assert.equal(await pictureRows('alice-pics@example.com'), 1, 'nothing stored by a refusal (only the first test\'s picture)');
 });
 
+test('research files ride the picture store: a PDF, a recording, a clip and plain text are kept; HTML and other text never', async () => {
+  for (const mediaType of ['application/pdf', 'audio/mpeg', 'audio/mp4', 'video/webm', 'text/plain', 'text/markdown', 'text/csv']) {
+    const p = picture(1500);
+    assert.equal((await bob.put(`/api/pictures/${p.sha}`, { mediaType, data: p.data })).status, 201, mediaType);
+    const back = await bob.get(`/api/pictures/${p.sha}`);
+    assert.equal(back.body.picture.mediaType, mediaType);
+    assert.equal(back.body.picture.data, p.data);
+  }
+  for (const mediaType of ['text/html', 'application/xhtml+xml', 'text/javascript', 'application/octet-stream', 'application/pdfx']) {
+    const p = picture(1500);
+    assert.equal((await bob.put(`/api/pictures/${p.sha}`, { mediaType, data: p.data })).status, 400, mediaType);
+  }
+});
+
 test('size and quota limits: one picture over PICTURE_MAX_BYTES, or an account over PICTURE_QUOTA_BYTES, is 413', async () => {
   const db2 = await createTestDb();
   const s = await startTestServer(db2, undefined, { pictureMaxBytes: 4000, pictureQuotaBytes: 7000, pictureGcGraceSeconds: 3600 });

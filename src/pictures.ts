@@ -19,8 +19,12 @@ export const PIC_REF_PREFIX = 'beuk-pic:';
 export const SHA256_RE = /^[0-9a-f]{64}$/;
 const REF_RE = /^beuk-pic:([0-9a-f]{64})$/;
 
-/** What a stored picture may be: images and the uploaded fonts a book carries. */
-export const PICTURE_MEDIA_RE = /^(?:image|font)\/[a-z0-9][a-z0-9.+-]{0,60}$/;
+/** What a stored picture may be: images and the uploaded fonts a book
+ *  carries, and the research files its Notebook keeps (BEUK:research —
+ *  PDFs, recordings, clips, plain/Markdown/CSV text). Never HTML: the
+ *  store hands bytes back as JSON, but nothing that renders as a page
+ *  is kept. */
+export const PICTURE_MEDIA_RE = /^(?:(?:image|font|audio|video)\/[a-z0-9][a-z0-9.+-]{0,60}|application\/pdf|text\/(?:plain|markdown|csv))$/;
 
 /** The sha256 a doc string names, or null. */
 export function picRefOf(value: unknown): string | null {

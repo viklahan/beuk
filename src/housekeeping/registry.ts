@@ -2223,6 +2223,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The notebook rides the client book document and is drawn in the studio; the server stores the book as opaque JSON.',
   },
   {
+    id: 'notebook.research',
+    title: "Research files: text, picture, PDF, recording and clip attach to a note and open in the Notebook (a web page, an oversized and an empty file refused); source link http(s) only; written once and round-trip byte for byte, junk dropped; History names them, a removed file is written once in historyPool and restores; remove with Undo; never leak to the next book, never exported or counted; the sample's depths note carries its soundings and sketch",
+    kind: 'client-only',
+    reason: 'Research files ride the client book document and are viewed in the studio; on the shelf they are stored by the picture store as opaque bytes (its media-type rule is proven by tests/pictures.test.ts).',
+  },
+  {
+    id: 'notebook.research.csp',
+    title: "Research files are not blocked by the served Content-Security-Policy: frame-src and media-src allow blob:, and a PDF frame and an audio player from object URLs load with no violation",
+    kind: 'client-only',
+    reason: 'Only a browser enforces the policy; the check reads the header the studio was served with and loads real object URLs (the Caddyfile text itself is covered by infra.deploy.security-headers).',
+  },
+  {
     id: 'history.compare.words',
     title: "Compare: a changed section opens word by word in a snapshot's detail (removed struck through, added underlined, unchanged paragraphs folded until Whole section, a cut paragraph shown whole, true counts); nothing in the book changes; the sample's earlier draft of Chapter One differs in three reworded paragraphs and one cut",
     kind: 'client-only',

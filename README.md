@@ -2098,6 +2098,66 @@ three things more.
   "Who keeps what"), each pinned to the chapters its facts come from.
 - All 13 interface languages. Self-check: `notebook.notes`.
 
+### Research files (`BEUK:research`)
+
+Scrivener's Research folder, kept in the Notebook: a note carries the
+files it was written about and the link it came from.
+
+- **What a note holds.** Pictures (PNG, JPEG, GIF, WebP, SVG), PDFs,
+  recordings (MP3, M4A, WAV, Ogg, WebM), video clips (MP4, WebM) and text
+  (plain, Markdown, CSV), added with **Add files** or dropped on the open
+  Notebook (on the note in hand, or a new one titled after the file).
+  The type is the browser's, or the file name's when the browser gives
+  none (`rsTypeOf`); anything else, a web page included, is refused, as
+  is an empty file. Limits (`rsLimits`): 10 MB a file, 20 files a note,
+  60 files and 25 MB a book.
+- **Opened in the Notebook.** One file at a time, under its note: a
+  picture as an image (`data:`), text as text (the first 200,000
+  characters), a PDF in the browser's own viewer in a frame, a
+  recording or a clip in a player (both from one object URL, let go when
+  the file closes, the note changes or the Notebook closes, which stops
+  playback). A PDF or a raster picture also opens in a new tab, never an
+  SVG: an object URL has the studio's origin, and an SVG opened as a
+  document would run any script a shared book file put in it (`rsTabOk`;
+  in the Notebook it is an `<img>`, where none runs). Every file can be
+  saved back out. Search finds a note by its files' names and its link.
+- **Source link.** One per note, `http(s)` only (`rsUrl`: one typed
+  without a scheme is taken as `https://`; `javascript:` and the like
+  are refused), opened in a new tab with `noopener`.
+- **The book file.** `research: { files: [{ id, name, mediaType, data,
+  bytes, at? }] }` (data: base64), each file once; a note names its own
+  as `files: [id]`, and its link as `url`. A file no note names is not
+  written, and a book whose notes name none writes no `research` key, so
+  it serializes as before. Read strictly (`rsNormalize`): a file of a
+  kind not on the list or with bad bytes is dropped, and so is a note's
+  name for a file the book does not hold; a book arriving without files
+  has none.
+- **History.** A snapshot names the book's files the way it names its
+  pictures (`chopSnapDoc` / `histPack`): a file the book still holds is
+  `{ ref: id }`, one removed since is written once in
+  `historyPool.research`, so a restore brings back exactly the files the
+  snapshot had and no snapshot copies a PDF. Removing a file from a note
+  comes with Undo.
+- **On the shelf.** Files travel as pictures do (`BEUK:pics`): uploaded
+  once by their SHA-256 and named in the saved book, so an autosave does
+  not resend a 10 MB PDF. The picture store accepts these types
+  (`PICTURE_MEDIA_RE` in `src/pictures.ts`), never HTML;
+  `tests/pictures.test.ts` holds both.
+- **Content-Security-Policy.** The Caddyfile allows `blob:` in
+  `frame-src` and `media-src` for the PDF frame and the players (see
+  **Security headers**). Self-check `notebook.research.csp` reads the
+  policy the studio was served with and loads a PDF frame and an audio
+  player from object URLs, failing on any violation.
+- **Not book text.** No export reads them and no word count counts them.
+- **In the sample.** The "Keep the depths straight" note carries
+  "Soundings, as the chapters give them.txt" (four lines, each quoted
+  from its chapter, checked against the text by the self-check) and
+  "East Bank sketch.svg" (labelled only with what the Prologue and the
+  chapters say, marked "a sketch, not to scale"); "Notices to
+  Mariners" links to Wikipedia's article on notices to mariners.
+- All 13 interface languages. Self-checks: `notebook.research`,
+  `notebook.research.csp`.
+
 ## Studio: the preview keeps the writer's place (client-only)
 
 Editing or formatting the section that is already in the preview no
@@ -2878,7 +2938,8 @@ style-src 'self' 'unsafe-inline';
 font-src 'self' data:;
 img-src 'self' data: https://images.pexels.com https://api.openverse.org;
 connect-src 'self' https://images.pexels.com https://api.openverse.org;
-worker-src 'self'; manifest-src 'self'; frame-src 'self';
+worker-src 'self'; manifest-src 'self';
+media-src 'self' blob:; frame-src 'self' blob:;
 form-action 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self';
 report-uri /api/csp-report; report-to csp
 ```
@@ -2892,6 +2953,11 @@ What is still allowed, and why — honestly:
   **not** stop an injected inline script — it stops scripts from any
   other origin, plugins, `<base>` hijacks, foreign form targets and
   framing. Moving the studio to nonces/hashes would be the next step.
+- **`blob:` for frames and media.** A research file opens in the
+  Notebook from an object URL made from the book's own bytes: a PDF in
+  a frame, a recording or a clip in a player. The studio types each
+  Blob from a fixed list (`rsKinds`), never HTML; research pictures
+  stay `data:` URIs.
 - **No third-party script host.** JSZip, mammoth, lucide and jsPDF are
   vendored under `client/assets/vendor/` (with SRI), so `script-src` names
   no CDN. `'unsafe-eval'` is **not** granted.

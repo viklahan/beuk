@@ -53,7 +53,7 @@ export function pictureRoutes(db: Db, config: Config): Router {
       const mediaType = req.body?.mediaType;
       const data = req.body?.data;
       if (typeof mediaType !== 'string' || !PICTURE_MEDIA_RE.test(mediaType))
-        return res.status(400).json({ error: 'mediaType must be an image/… or font/… media type' });
+        return res.status(400).json({ error: 'mediaType must be an image, font, audio or video type, application/pdf, or plain, Markdown or CSV text' });
       if (typeof data !== 'string' || !data) return res.status(400).json({ error: 'data must be base64' });
       if (data.length > Math.ceil(config.pictureMaxBytes / 3) * 4)
         return res.status(413).json({ error: 'picture is too large for the shelf', limitBytes: config.pictureMaxBytes });
