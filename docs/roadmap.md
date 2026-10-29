@@ -20,6 +20,9 @@ Now / Next / Later shape the public page shows.
   email confirmation, password reset and sign-in from more than one
   device. The [changelog](/changelog) lists everything since, in the
   order writers met it.
+- **The Covenant codex.** Changes pinned to the story and shown "right
+  now", links, quick facts and genre templates, marking a change from the
+  desk, and one shared Covenant per series for signed-in writers.
 
 ## Next
 
@@ -29,6 +32,11 @@ Now / Next / Later shape the public page shows.
 - **Launch on beuk.studio.** The production server set up by the
   launch checklist (server, firewall, DNS and mail records, first
   backup and restore drill), then the smoke test after every deploy.
+- **BYOK AI.** Connect your own AI key, built on the Covenant's per-entry
+  AI setting (stored today, hidden until then).
+- **Per-user Typography themes**, queued by V.
+- **Series tombstone.** A server-side record that a left or renamed series
+  is gone, so a second device's unsent edit can never recreate it.
 
 ## Later — warmth on its triggers, not on a calendar
 
