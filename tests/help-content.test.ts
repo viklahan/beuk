@@ -182,6 +182,10 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
     const slugs = readdirSync(dir).filter((f) => f.endsWith('.txt')).map((f) => f.slice(0, -4));
     assert.equal(slugs.length, 11);
     for (const slug of slugs) {
+      // 2026-10-28: these two were rewritten from the studio's own data (they had drifted: 6 presets
+      // listed vs 11 shipped, 6 trims vs 24, PDF/X as "a later phase" after M5 shipped it). They are
+      // held to the studio by the next test instead of to the pre-H1 copy.
+      if (REWRITTEN_2026_10_28.has(slug)) continue;
       let expected = readFileSync(path.join(dir, `${slug}.txt`), 'utf8').trim();
       if (slug === 'epub-error-decoder') {
         // Correction: EPUBCheck's "not declared in the OPF manifest" is RSC-008 (RSC-009 is a fragment rule).
@@ -215,6 +219,28 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
   } finally {
     await server.close();
   }
+});
+
+const REWRITTEN_2026_10_28 = new Set(['platform-presets', 'print-interiors']);
+
+test('the presets and trims guides name every preset and every trim group the studio ships', () => {
+  const studio = read('client', 'index.html');
+  const presets = studio.slice(studio.indexOf('const PLATFORM_PRESETS = ['), studio.indexOf('];', studio.indexOf('const PLATFORM_PRESETS = [')));
+  const names = [...presets.matchAll(/\{ id: "[a-z0-9]+", name: "([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(names.length, 11, 'the studio ships eleven presets');
+  const presetsGuide = read('content', 'help', 'guides', 'platform-presets.md');
+  for (const n of names) assert.ok(presetsGuide.includes(`**${n}**`), `platform-presets names ${n}`);
+
+  const trims = studio.slice(studio.indexOf('const TRIM_SIZES = ['), studio.indexOf('];', studio.indexOf('const TRIM_SIZES = [')));
+  const trimCount = [...trims.matchAll(/\{ id: "[0-9.x]+", label:/g)].length;
+  const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty', 'twenty-one', 'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five', 'twenty-six'];
+  const trimsGuide = read('content', 'help', 'guides', 'print-interiors.md');
+  assert.ok(trimsGuide.toLowerCase().includes(`${words[trimCount]} trim`), `print-interiors says ${words[trimCount]} trim sizes (the studio has ${trimCount})`);
+  for (const g of ['pocket', 'trade', 'large', 'square']) {
+    const label = new RegExp(`"print\.group\.${g}": "([^"]+)"`).exec(studio)?.[1];
+    assert.ok(label && trimsGuide.includes(`**${label.replace(/&/g, '&')}**`), `print-interiors names the ${label} group`);
+  }
+  assert.ok(!/later phase/i.test(trimsGuide), 'server PDF/X has shipped; the guide no longer calls it a later phase');
 });
 
 test('old URLs: /help/<guide>.html and /help/index.html answer 301 to the new pages; studio links still land', async () => {
