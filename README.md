@@ -22,8 +22,10 @@ on a Docker Compose stack shaped for self-hosting on Hetzner Cloud.
 **Windows one-liner:** `.\start-local.ps1` stops stray Beuk dev servers
 from any copy of the project, frees port 8090, builds and starts the
 stack (with the tools overlay when `tools-bin/epubcheck.jar` exists),
-and waits for `/api/health` → http://localhost:8090. `-Down` stops it,
-`-NoBuild` restarts without rebuilding.
+and waits for `/api/health` → http://localhost:8090. It also listens on
+this network (plain http; it prints the `http://<ip>:8090` addresses),
+so a tablet or another PC can open the studio; `-LocalOnly` keeps it to
+this machine. `-Down` stops it, `-NoBuild` restarts without rebuilding.
 
 Or by hand:
 
@@ -3110,7 +3112,7 @@ everything it does. What else it takes care of:
   the old one. The script restarts Caddy when the file it sees differs
   from the tree's, and otherwise runs `caddy reload`.
 - **Refuses a dev override.** `docker-compose.override.yml`
-  (start-local.ps1's dev file: Caddy on `127.0.0.1:8090` only) is loaded
+  (start-local.ps1's dev file: Caddy on port 8090) is loaded
   automatically by any bare `docker compose` command; the script stops
   when it is present on a real domain.
 - **Logs rotate.** Every service logs through `json-file` with

@@ -1,6 +1,7 @@
 # Beuk — local startup (Windows / Docker Desktop).
 #
-# One command to get a clean local stack on http://localhost:8090:
+# One command to get a clean local stack on http://localhost:8090,
+# also reachable from other devices on this network (a tablet, another PC):
 #   1. stops stray Beuk dev servers from ANY copy of the project
 #      (node processes whose command line points into Projects\beuk*),
 #   2. frees port 8090: stops any other Docker container publishing it,
@@ -12,16 +13,18 @@
 # Usage:  .\start-local.ps1            # start / restart
 #         .\start-local.ps1 -Down      # stop this stack
 #         .\start-local.ps1 -NoBuild   # restart without rebuilding images
-#         .\start-local.ps1 -Lan       # also reachable from other devices on
-#                                      # this network (a tablet, another PC)
+#         .\start-local.ps1 -LocalOnly # this machine only (127.0.0.1)
 #
-# -Lan is plain http on the local network: the studio works, but browsers
-# only allow its service worker (offline, install) on https or localhost.
-# Run again without -Lan to go back to localhost-only.
+# Network access is the default (V, 2026-10-29). It is plain http on the
+# local network: the studio works, but browsers only allow its service
+# worker (offline, install) on https or localhost. On an untrusted
+# network (café Wi-Fi) run with -LocalOnly. -Lan is still accepted and
+# changes nothing.
 
 param(
   [switch]$Down,
   [switch]$NoBuild,
+  [switch]$LocalOnly,
   [switch]$Lan,
   [int]$Port = 8090
 )
@@ -38,10 +41,11 @@ function Warn($msg) { Write-Host "[beuk] $msg" -ForegroundColor Yellow }
 
 # Compose files: base, tools overlay (only if the tools are on disk), and
 # the local port override (git-ignored, written fresh on every run so
-# -Lan and localhost-only switch cleanly). With -Lan the port listens on
+# network and -LocalOnly switch cleanly). On the network the port listens on
 # every interface and Caddy answers to any host name on that port (the
 # .env DOMAIN names localhost only, so a tablet asking for 192.168.x.x
 # would otherwise get nothing).
+$Lan = -not $LocalOnly
 $override = Join-Path $root 'docker-compose.override.yml'
 $bind = if ($Lan) { "0.0.0.0" } else { "127.0.0.1" }
 $caddyEnv = if ($Lan) { "`n    environment:`n      DOMAIN: `"http://:${Port}`"" } else { "" }
