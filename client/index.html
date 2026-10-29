@@ -1951,7 +1951,23 @@
       .hist-diff-h { font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 600; color: var(--ink); margin: 0; }
       .hist-diff-sub { font-size: 11.5px; color: var(--muted); margin: 1px 0 6px; line-height: 1.5; }
       .hist-diff-lab { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--muted); margin: 9px 0 2px; }
-      .hist-diff-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 78px; gap: 10px; align-items: center; padding: 3px 0; font-size: 13px; color: var(--ink); }
+      .hist-diff-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 78px auto; gap: 10px; align-items: center; padding: 3px 0; font-size: 13px; color: var(--ink); }
+      /* BEUK:compare — then and now, word by word: struck through is the snapshot's, underlined is new */
+      .hist-cmp-btn { padding: 3px 10px; font-size: 12px; }
+      .hist-cmp { border: 1px solid var(--line-2); background: var(--panel-2); border-radius: 8px; padding: 10px 13px; margin: 4px 0 10px; }
+      .hist-cmp-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+      .hist-cmp-sum { font-size: 12.5px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+      .hist-cmp-seg button { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
+      .hist-cmp-legend { font-size: 11.5px; color: var(--muted); margin: 6px 0 8px; }
+      .hist-cmp p { font-family: "EB Garamond", Georgia, serif; font-size: 15.5px; line-height: 1.6; margin: 0 0 10px; color: var(--ink); }
+      .hist-cmp p.hist-cmp-same { color: var(--ink-2); }
+      .hist-cmp p.hist-cmp-gap { font-family: inherit; font-size: 11.5px; font-style: italic; color: var(--muted); text-align: center; border-block: 1px dashed var(--line); padding: 3px 0; }
+      .hist-cmp p.hist-cmp-title { font-family: inherit; font-size: 13px; }
+      .hist-cmp ins { text-decoration: underline 2px var(--accent); text-underline-offset: 3px; background: var(--accent-soft); color: var(--ink); border-radius: 2px; }
+      .hist-cmp del { text-decoration: line-through 1.5px var(--ins-b); color: var(--muted); }
+      .hist-cmp p.hist-cmp-added, .hist-cmp p.hist-cmp-removed { border-inline-start: 3px solid var(--line-2); padding-inline-start: 9px; }
+      .hist-cmp p.hist-cmp-added { border-color: var(--accent); }
+      .hist-cmp p.hist-cmp-removed { border-color: var(--ins-b); }
       .hist-diff-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .hist-diff-n { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: end; max-width: 42vw; }
       .hist-diff-bar { display: flex; height: 6px; }
@@ -8031,6 +8047,23 @@
         "zh-Hans": { "ol.viewGrid": "网格", "ol.gridSub": "每一行是故事的一个部分。情节线是你自己的列：记下每条情节线在每个部分里做了什么，写之前写之后都可以。盟约的列会自动填满：方格显示这个名字在该部分出现的次数，按正文当前的样子统计。选择一个方格，即可在书桌上打开该名字所在之处。", "ol.gridEmpty": "添加一条情节线，逐部分规划这本书；或在盟约中添加书里的人物、地点和事物，每一个都会在这里成为一列。", "ol.gridOpenCov": "打开盟约", "ol.gridNoSecs": "故事还没有任何部分。", "ol.gridSection": "部分", "ol.gridTotal": "全书", "ol.gridAria": "按部分逐一列出故事，对照情节线和盟约条目", "ol.threadAdd": "添加情节线", "ol.threadName": "新情节线的名称", "ol.threadNamePh": "起个名字，例如：账本", "ol.threadType": "情节线", "ol.threadRename": "情节线「{name}」的名称", "ol.threadDel": "删除情节线「{name}」及其笔记", "ol.threadDeleted": "已删除情节线：{name}", "ol.threadAdded": "已添加情节线：{name}", "ol.threadNoteFor": "{sec}中的{thread}", "ol.threadNotes": "笔记：{n}" }
       };
       Object.keys(OL_GRID_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_GRID_STRINGS[code]); });
+      /* BEUK:compare — History's Compare, all 13 packs */
+      const HIST_CMP_STRINGS = {
+        "en": { "history.cmp": "Compare", "history.cmpHide": "Hide comparison", "history.cmpSum": "Words added: {a} · removed: {r}", "history.cmpView": "How much to show", "history.cmpOnly": "Changes only", "history.cmpAll": "Whole section", "history.cmpLegend": "Struck through: in the snapshot, not in the book now. Underlined: new since the snapshot.", "history.cmpTitle": "Title:", "history.cmpSame": "Unchanged paragraphs: {n}", "history.cmpDelSr": "Removed:", "history.cmpInsSr": "Added:" },
+        "es": { "history.cmp": "Comparar", "history.cmpHide": "Ocultar la comparación", "history.cmpSum": "Palabras añadidas: {a} · quitadas: {r}", "history.cmpView": "Cuánto mostrar", "history.cmpOnly": "Solo los cambios", "history.cmpAll": "Toda la sección", "history.cmpLegend": "Tachado: en la instantánea, no en el libro actual. Subrayado: nuevo desde la instantánea.", "history.cmpTitle": "Título:", "history.cmpSame": "Párrafos sin cambios: {n}", "history.cmpDelSr": "Quitado:", "history.cmpInsSr": "Añadido:" },
+        "fr": { "history.cmp": "Comparer", "history.cmpHide": "Masquer la comparaison", "history.cmpSum": "Mots ajoutés : {a} · retirés : {r}", "history.cmpView": "Que montrer", "history.cmpOnly": "Les changements seuls", "history.cmpAll": "Toute la section", "history.cmpLegend": "Barré : dans l'instantané, plus dans le livre aujourd'hui. Souligné : nouveau depuis l'instantané.", "history.cmpTitle": "Titre :", "history.cmpSame": "Paragraphes inchangés : {n}", "history.cmpDelSr": "Retiré :", "history.cmpInsSr": "Ajouté :" },
+        "de": { "history.cmp": "Vergleichen", "history.cmpHide": "Vergleich ausblenden", "history.cmpSum": "Wörter hinzugefügt: {a} · entfernt: {r}", "history.cmpView": "Wie viel zeigen", "history.cmpOnly": "Nur Änderungen", "history.cmpAll": "Ganzer Abschnitt", "history.cmpLegend": "Durchgestrichen: im Schnappschuss, nicht mehr im Buch. Unterstrichen: neu seit dem Schnappschuss.", "history.cmpTitle": "Titel:", "history.cmpSame": "Unveränderte Absätze: {n}", "history.cmpDelSr": "Entfernt:", "history.cmpInsSr": "Hinzugefügt:" },
+        "it": { "history.cmp": "Confronta", "history.cmpHide": "Nascondi il confronto", "history.cmpSum": "Parole aggiunte: {a} · tolte: {r}", "history.cmpView": "Quanto mostrare", "history.cmpOnly": "Solo le modifiche", "history.cmpAll": "Tutta la sezione", "history.cmpLegend": "Barrato: nell'istantanea, non nel libro di adesso. Sottolineato: nuovo dall'istantanea.", "history.cmpTitle": "Titolo:", "history.cmpSame": "Paragrafi invariati: {n}", "history.cmpDelSr": "Tolto:", "history.cmpInsSr": "Aggiunto:" },
+        "pt": { "history.cmp": "Comparar", "history.cmpHide": "Ocultar a comparação", "history.cmpSum": "Palavras acrescentadas: {a} · retiradas: {r}", "history.cmpView": "Quanto mostrar", "history.cmpOnly": "Só as alterações", "history.cmpAll": "A secção inteira", "history.cmpLegend": "Riscado: no instantâneo, não no livro de agora. Sublinhado: novo desde o instantâneo.", "history.cmpTitle": "Título:", "history.cmpSame": "Parágrafos sem alterações: {n}", "history.cmpDelSr": "Retirado:", "history.cmpInsSr": "Acrescentado:" },
+        "nl": { "history.cmp": "Vergelijken", "history.cmpHide": "Vergelijking verbergen", "history.cmpSum": "Woorden toegevoegd: {a} · weggehaald: {r}", "history.cmpView": "Hoeveel tonen", "history.cmpOnly": "Alleen wijzigingen", "history.cmpAll": "Het hele deel", "history.cmpLegend": "Doorgestreept: in de momentopname, niet meer in het boek. Onderstreept: nieuw sinds de momentopname.", "history.cmpTitle": "Titel:", "history.cmpSame": "Ongewijzigde alinea's: {n}", "history.cmpDelSr": "Weggehaald:", "history.cmpInsSr": "Toegevoegd:" },
+        "pl": { "history.cmp": "Porównaj", "history.cmpHide": "Ukryj porównanie", "history.cmpSum": "Słowa dodane: {a} · usunięte: {r}", "history.cmpView": "Ile pokazać", "history.cmpOnly": "Tylko zmiany", "history.cmpAll": "Cała sekcja", "history.cmpLegend": "Przekreślone: w migawce, już nie w książce. Podkreślone: nowe od migawki.", "history.cmpTitle": "Tytuł:", "history.cmpSame": "Akapity bez zmian: {n}", "history.cmpDelSr": "Usunięto:", "history.cmpInsSr": "Dodano:" },
+        "ru": { "history.cmp": "Сравнить", "history.cmpHide": "Скрыть сравнение", "history.cmpSum": "Слов добавлено: {a} · убрано: {r}", "history.cmpView": "Сколько показывать", "history.cmpOnly": "Только изменения", "history.cmpAll": "Весь раздел", "history.cmpLegend": "Зачёркнуто: есть в снимке, нет в книге сейчас. Подчёркнуто: новое после снимка.", "history.cmpTitle": "Заголовок:", "history.cmpSame": "Абзацев без изменений: {n}", "history.cmpDelSr": "Убрано:", "history.cmpInsSr": "Добавлено:" },
+        "tr": { "history.cmp": "Karşılaştır", "history.cmpHide": "Karşılaştırmayı gizle", "history.cmpSum": "Eklenen sözcük: {a} · çıkarılan: {r}", "history.cmpView": "Ne kadar gösterilsin", "history.cmpOnly": "Yalnızca değişiklikler", "history.cmpAll": "Bölümün tamamı", "history.cmpLegend": "Üstü çizili: anlık görüntüde var, kitabın şimdiki hâlinde yok. Altı çizili: anlık görüntüden sonra eklendi.", "history.cmpTitle": "Başlık:", "history.cmpSame": "Değişmeyen paragraf: {n}", "history.cmpDelSr": "Çıkarıldı:", "history.cmpInsSr": "Eklendi:" },
+        "ar": { "history.cmp": "قارِن", "history.cmpHide": "أخفِ المقارنة", "history.cmpSum": "كلمات أُضيفت: {a} · حُذفت: {r}", "history.cmpView": "كم يُعرض", "history.cmpOnly": "التغييرات فقط", "history.cmpAll": "القسم كله", "history.cmpLegend": "المشطوب: في اللقطة، وليس في الكتاب الآن. المسطَّر: جديد منذ اللقطة.", "history.cmpTitle": "العنوان:", "history.cmpSame": "فقرات بلا تغيير: {n}", "history.cmpDelSr": "حُذف:", "history.cmpInsSr": "أُضيف:" },
+        "ja": { "history.cmp": "比較", "history.cmpHide": "比較を閉じる", "history.cmpSum": "追加した語: {a} · 削除した語: {r}", "history.cmpView": "表示する範囲", "history.cmpOnly": "変更のみ", "history.cmpAll": "セクション全体", "history.cmpLegend": "取り消し線：スナップショットにあり、いまの本にはない部分。下線：スナップショット以降に加えた部分。", "history.cmpTitle": "タイトル：", "history.cmpSame": "変更のない段落: {n}", "history.cmpDelSr": "削除:", "history.cmpInsSr": "追加:" },
+        "zh-Hans": { "history.cmp": "比较", "history.cmpHide": "收起比较", "history.cmpSum": "新增词：{a} · 删除词：{r}", "history.cmpView": "显示范围", "history.cmpOnly": "仅显示更改", "history.cmpAll": "整个部分", "history.cmpLegend": "删除线：快照里有、现在的书里没有。下划线：快照之后新加的。", "history.cmpTitle": "标题：", "history.cmpSame": "未更改的段落：{n}", "history.cmpDelSr": "已删除：", "history.cmpInsSr": "已添加：" }
+      };
+      Object.keys(HIST_CMP_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], HIST_CMP_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
@@ -19843,11 +19876,46 @@
          when the click handler returns. No delay, no spinner, no
          staged or chunked reveal; the text is bundled, so there is
          nothing to wait for (its pictures follow from assets/sample/ and fill in place — BEUK:slim). */
+      /* ==== BEUK:compare ==== — the sample's one snapshot: Chapter One
+         as an earlier, plainer draft (three paragraphs reworded, one
+         paragraph the revision cut), so History's Compare has a real
+         then-and-now to show. Each edit names the paragraph it stands
+         for by its opening words; if the sample's text no longer has
+         one of them, no snapshot is made rather than a wrong one. The
+         snapshot goes when the sample is removed. */
+      const SAMPLE_DRAFT_SNAP_ID = "sample-snap-draft";
+      const SAMPLE_DRAFT_EDITS = [
+        { starts: "The ferry left the harbour at the first light", then: "The ferry left the harbour early, when the water was grey and the gulls were not yet awake. Mara stood at the rail with her father's chart case held against her chest, watching the town slowly disappear behind the headland — the salt pans, the chapel, the long white warehouse where she had spent three summers weighing other people's cargo." },
+        { starts: "She had not meant to come back.", then: "She had not meant to come back. That was the thing she kept turning over. \"You will go,\" her mother had said in the kitchen doorway eleven years before, with the rain coming down the valley and the telegram about her father still damp on the dresser. \"You always go.\" Mara had gone — to the chart depot at Port Anselm, to a desk, to a life measured in correction notices — and she had very nearly believed the going was a kind of answer." },
+        { starts: "By noon the wind had come round", then: "By noon the wind had come round to the southwest and the ferry was pushing through a rough sea. Mara went below for tea and found the saloon empty except for an old man asleep over a newspaper and a boy of perhaps nine travelling alone, a paper ticket pinned to his coat." },
+        { after: "\"First crossing?\" asked the steward", then: "The steward waited for an answer, and when none came he went back up on deck." }
+      ];
+      function sampleDraftSnapshot() {
+        const doc = chopSnapDoc();
+        const sec = doc.sections.find((s) => s.title === "The Ferry Crossing");
+        if (!sec) return null;
+        const paras = String(sec.content || "").split("\n\n");
+        for (const e of SAMPLE_DRAFT_EDITS) {
+          const i = paras.findIndex((p) => p.startsWith(e.starts || e.after));
+          if (i < 0) return null;
+          if (e.starts) paras[i] = e.then; else paras.splice(i + 1, 0, e.then);
+        }
+        sec.content = paras.join("\n\n");
+        return { id: SAMPLE_DRAFT_SNAP_ID, name: "Chapter One, an earlier draft", auto: null, at: new Date().toISOString(),
+          words: doc.sections.reduce((n, s) => n + histCounted(doc, s, false).w, 0), doc: doc };
+      }
+      function sampleAddDraftSnapshot() {
+        const hist = (state.history || []).filter((s) => s.id !== SAMPLE_DRAFT_SNAP_ID);
+        const snap = sampleDraftSnapshot();
+        state.history = snap ? [snap].concat(hist) : hist;
+      }
+      /* ==== /BEUK:compare ==== */
       function applySampleBookSync() {
         /* The writer's own writing is about to leave the desk:
            the History room takes its safety snapshot first. */
         autoSnapshot("sample");
         applyBookDoc(buildSampleBook(), { keepHistory: true }); /* BEUK:metaleak */
+        sampleAddDraftSnapshot(); /* BEUK:compare */
         sampleState.loaded = true;
         sampleState.loadedJson = sampleComparableJson();
         renderSampleButton();
@@ -19975,6 +20043,7 @@
       function clearDeskToEmpty() {
         sampleState.loaded = false; sampleState.loadedJson = null;
         applyBookDoc(buildEmptyBook(), { keepHistory: true }); /* BEUK:metaleak — Remove keeps the History safety net */
+        state.history = (state.history || []).filter((s) => s.id !== SAMPLE_DRAFT_SNAP_ID); /* BEUK:compare — but not the sample's own snapshot */
         renderSampleButton();
       }
       function removeSampleStory() {
@@ -31154,6 +31223,104 @@
         });
         return out;
       }
+      /* ==== BEUK:compare ==== — a changed section, word by word: the
+         snapshot's text against the text now. Paragraphs are matched
+         first (a longest common run over whole paragraphs), then the
+         words inside each changed pair, so a long chapter stays fast and
+         an edit stays inside its own paragraph. A pair too large to
+         compare word by word (more than HIST_CMP_CELLS cells) is shown
+         whole: removed, then added. Computed on this device from the
+         stored snapshot; nothing is stored. */
+      const HIST_CMP_CELLS = 4000000;
+      function histLcs(a, b, eq) {
+        const n = a.length, m = b.length, w = m + 1;
+        const L = new Uint32Array((n + 1) * w);
+        for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+          L[i * w + j] = eq(a[i], b[j]) ? L[(i + 1) * w + j + 1] + 1 : Math.max(L[(i + 1) * w + j], L[i * w + j + 1]);
+        const ops = [];
+        let i = 0, j = 0;
+        while (i < n && j < m) {
+          if (eq(a[i], b[j])) { ops.push(["=", i, j]); i++; j++; }
+          else if (L[(i + 1) * w + j] >= L[i * w + j + 1]) { ops.push(["-", i, -1]); i++; }
+          else { ops.push(["+", -1, j]); j++; }
+        }
+        while (i < n) ops.push(["-", i++, -1]);
+        while (j < m) ops.push(["+", -1, j++]);
+        return ops;
+      }
+      /* words with the space after them, so the text rebuilds exactly */
+      const histWords = (p) => String(p).match(/\S+\s*|\s+/g) || [];
+      function histWordDiff(a, b) {
+        const A = histWords(a), B = histWords(b), key = (x) => x.trim();
+        let pre = 0; while (pre < A.length && pre < B.length && key(A[pre]) === key(B[pre])) pre++;
+        let suf = 0; while (suf < A.length - pre && suf < B.length - pre && key(A[A.length - 1 - suf]) === key(B[B.length - 1 - suf])) suf++;
+        const a2 = A.slice(pre, A.length - suf), b2 = B.slice(pre, B.length - suf);
+        const out = [];
+        const push = (t, s) => { if (!s) return; const l = out[out.length - 1]; if (l && l.t === t) l.s += s; else out.push({ t: t, s: s }); };
+        B.slice(0, pre).forEach((x) => push("=", x));
+        if ((a2.length + 1) * (b2.length + 1) > HIST_CMP_CELLS) { a2.forEach((x) => push("-", x)); b2.forEach((x) => push("+", x)); }
+        else histLcs(a2, b2, (x, y) => key(x) === key(y)).forEach((o) => push(o[0], o[0] === "-" ? a2[o[1]] : b2[o[2]]));
+        B.slice(B.length - suf).forEach((x) => push("=", x));
+        return out;
+      }
+      const histParas = (txt) => String(txt || "").split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+      /* → [{ kind: "same"|"changed"|"removed"|"added", parts: [{ t, s }] }] and the words each side lost and gained */
+      function histTextDiff(before, after) {
+        const A = histParas(before), B = histParas(after), norm = (p) => p.replace(/\s+/g, " ");
+        const rows = [], st = { added: 0, removed: 0 };
+        const count = (s) => (String(s).match(/\S+/g) || []).length;
+        const ops = (A.length + 1) * (B.length + 1) > HIST_CMP_CELLS ? A.map((p, i) => ["-", i, -1]).concat(B.map((p, j) => ["+", -1, j])) : histLcs(A, B, (x, y) => norm(x) === norm(y));
+        let del = [], ins = [];
+        const flush = () => {
+          const k = Math.min(del.length, ins.length);
+          for (let x = 0; x < k; x++) {
+            const parts = histWordDiff(del[x], ins[x]);
+            parts.forEach((p) => { if (p.t === "-") st.removed += count(p.s); else if (p.t === "+") st.added += count(p.s); });
+            rows.push({ kind: "changed", parts: parts });
+          }
+          del.slice(k).forEach((p) => { st.removed += count(p); rows.push({ kind: "removed", parts: [{ t: "-", s: p }] }); });
+          ins.slice(k).forEach((p) => { st.added += count(p); rows.push({ kind: "added", parts: [{ t: "+", s: p }] }); });
+          del = []; ins = [];
+        };
+        ops.forEach((o) => {
+          if (o[0] === "=") { flush(); rows.push({ kind: "same", parts: [{ t: "=", s: B[o[2]] }] }); }
+          else if (o[0] === "-") del.push(A[o[1]]); else ins.push(B[o[2]]);
+        });
+        flush();
+        return { rows: rows, added: st.added, removed: st.removed };
+      }
+      let histCmpId = null, histCmpAll = false;
+      function histCmpPartHtml(p) {
+        const s = esc(p.s);
+        if (p.t === "-") return '<del><span class="sr-only">' + esc(t("history.cmpDelSr")) + " </span>" + s + "</del>";
+        if (p.t === "+") return '<ins><span class="sr-only">' + esc(t("history.cmpInsSr")) + " </span>" + s + "</ins>";
+        return s;
+      }
+      function histCmpHtml(snap, secId) {
+        const was = snap.doc.sections.find((s) => s.id === secId), now = state.sections.find((s) => s.id === secId);
+        if (!was || !now) return "";
+        const d = histTextDiff(was.content, now.content);
+        const head = (x) => [x.title, x.subtitle].map((v) => String(v || "").trim()).filter(Boolean).join(" — ");
+        let h = '<div class="hist-cmp" id="histCmp" data-hcmp-for="' + esc(secId) + '"><div class="hist-cmp-top"><span class="hist-cmp-sum">' +
+          esc(t("history.cmpSum", { a: fmtNum(d.added), r: fmtNum(d.removed) })) + "</span>" +
+          '<span class="seg hist-cmp-seg" role="group" aria-label="' + esc(t("history.cmpView")) + '">' +
+          '<button type="button" data-hcmpall="0" class="' + (histCmpAll ? "" : "active") + '" aria-pressed="' + !histCmpAll + '">' + esc(t("history.cmpOnly")) + "</button>" +
+          '<button type="button" data-hcmpall="1" class="' + (histCmpAll ? "active" : "") + '" aria-pressed="' + histCmpAll + '">' + esc(t("history.cmpAll")) + "</button></span></div>" +
+          '<p class="hist-cmp-legend">' + esc(t("history.cmpLegend")) + "</p>";
+        if (head(was) !== head(now)) h += '<p class="hist-cmp-title"><b>' + esc(t("history.cmpTitle")) + "</b> " + histWordDiff(head(was), head(now)).map(histCmpPartHtml).join("") + "</p>";
+        let quiet = 0;
+        const flushQuiet = () => { if (quiet) h += '<p class="hist-cmp-gap">' + esc(t("history.cmpSame", { n: fmtNum(quiet) })) + "</p>"; quiet = 0; };
+        d.rows.forEach((r) => {
+          if (r.kind === "same" && !histCmpAll) { quiet++; return; }
+          flushQuiet();
+          const orn = r.parts.length === 1 && /^\*\s*\*\s*\*$/.test(r.parts[0].s.trim());
+          h += orn ? '<p class="hist-orn hist-cmp-' + r.kind + '">❦</p>' : '<p class="hist-cmp-' + r.kind + '" dir="auto">' + r.parts.map(histCmpPartHtml).join("") + "</p>";
+        });
+        flushQuiet();
+        return h + "</div>";
+      }
+      if (typeof window !== "undefined") window.beukHistCompare = { text: histTextDiff, words: histWordDiff };
+      /* ==== /BEUK:compare ==== */
       function histDiffHtml(snap) {
         const diff = histSectionDiff(snap.doc, histLiveDoc());
         const all = diff.added.concat(diff.removed, diff.leftout, diff.broughtin, diff.changed);
@@ -31169,7 +31336,11 @@
           const bar = '<span class="hist-diff-bar" aria-hidden="true"><span>' + (r.delta < 0 ? '<i class="down" style="width:' + pct + '%"></i>' : "") +
             "</span><span>" + (r.delta > 0 ? '<i class="up" style="width:' + pct + '%"></i>' : "") + "</span></span>";
           const title = kind === "changed" && r.delta !== 0 ? ' title="' + esc(fmtNum(r.before) + " → " + fmtNum(r.after)) + '"' : "";
-          return '<div class="hist-diff-row" data-hdiff="' + kind + '" data-hdiff-id="' + esc(r.id) + '"><span class="hist-diff-name" dir="auto">' + esc(r.name) + '</span><span class="hist-diff-n"' + title + ">" + esc(n) + "</span>" + bar + "</div>";
+          /* BEUK:compare — a changed section opens word by word under its row */
+          const open = kind === "changed" && histCmpId === r.id;
+          const cmp = kind === "changed" ? '<button type="button" class="tb-btn hist-cmp-btn" data-hcmp="' + esc(r.id) + '" aria-expanded="' + open + '">' + esc(t(open ? "history.cmpHide" : "history.cmp")) + "</button>" : "";
+          return '<div class="hist-diff-row" data-hdiff="' + kind + '" data-hdiff-id="' + esc(r.id) + '"><span class="hist-diff-name" dir="auto">' + esc(r.name) + '</span><span class="hist-diff-n"' + title + ">" + esc(n) + "</span>" + bar + cmp + "</div>" +
+            (open ? histCmpHtml(snap, r.id) : "");
         };
         [["added", "history.diffAdded"], ["removed", "history.diffRemoved"], ["leftout", "history.diffLeftOut"], ["broughtin", "history.diffBroughtIn"], ["changed", "history.diffChanged"]].forEach(([kind, key]) => {
           if (!diff[kind].length) return;
@@ -31216,7 +31387,7 @@
         icons();
       }
       function openHistory() {
-        histViewId = null; histPeekId = null;
+        histViewId = null; histPeekId = null; histCmpId = null; /* BEUK:compare */
         renderHistory();
         const m = $("modalHistory");
         m.classList.add("open");
@@ -31247,10 +31418,18 @@
         const inp = $("histNameInput");
         if (inp) inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); doSave(); } });
         if (back) back.addEventListener("click", (e) => {
-          const el = e.target && e.target.closest ? e.target.closest("[data-hopen],[data-hdel],[data-hback],[data-hrestore],[data-hrsec],[data-hpeek]") : null;
+          const el = e.target && e.target.closest ? e.target.closest("[data-hopen],[data-hdel],[data-hback],[data-hrestore],[data-hrsec],[data-hpeek],[data-hcmp],[data-hcmpall]") : null;
           if (!el) return;
-          if (el.hasAttribute("data-hopen")) { histViewId = el.getAttribute("data-hopen"); histPeekId = null; renderHistory(); }
-          else if (el.hasAttribute("data-hback")) { histViewId = null; histPeekId = null; renderHistory(); }
+          if (el.hasAttribute("data-hopen")) { histViewId = el.getAttribute("data-hopen"); histPeekId = null; histCmpId = null; renderHistory(); }
+          else if (el.hasAttribute("data-hback")) { histViewId = null; histPeekId = null; histCmpId = null; renderHistory(); }
+          /* BEUK:compare */
+          else if (el.hasAttribute("data-hcmp")) {
+            const id = el.getAttribute("data-hcmp");
+            histCmpId = histCmpId === id ? null : id;
+            renderHistory();
+            const b = document.querySelector('#modalHistory [data-hcmp="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]'); if (b) b.focus();
+          }
+          else if (el.hasAttribute("data-hcmpall")) { histCmpAll = el.getAttribute("data-hcmpall") === "1"; renderHistory(); const b = document.querySelector('#modalHistory [data-hcmpall="' + (histCmpAll ? "1" : "0") + '"]'); if (b) b.focus(); }
           else if (el.hasAttribute("data-hpeek")) {
             const secId = el.getAttribute("data-hpeek");
             histPeekId = histPeekId === secId ? null : secId;
@@ -59535,6 +59714,65 @@
               histViewId = same.id; renderHistory();
               if (!$("histDiff") || $("histDiff").textContent.indexOf(t("history.diffNone")) === -1) bad.push("an identical snapshot does not say every section matches");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Epsilon added (+" + diff.added[0].delta + "), Beta no longer in the book (" + diff.removed[0].delta + "), left out / brought back / edited-while-left-out rows sum to the chip (" + eyeSum + "), Alpha +5, Delta edited at the same length, Gamma untouched and unlisted; deltas sum to the book's own change; an identical snapshot says every section matches");
+            } finally { ghRestore(k); }
+          } },
+        /* BEUK:compare */
+        { id: "history.compare.words", feature: "history", name: "Compare: a changed section opens word by word under its row in a snapshot's detail — the snapshot's words struck through, the new ones underlined, an unchanged paragraph folded away until Whole section, a cut paragraph shown whole, the counts of words added and removed true to an independent count; the word diff rebuilds the text now exactly; opening it changes nothing in the book; the sample's earlier draft of Chapter One differs from today's in exactly three reworded paragraphs and one paragraph cut",
+          run() {
+            const k = ghKeep();
+            const bad = [];
+            try {
+              local.suspended = true;
+              /* the engine on its own */
+              const wd = histWordDiff("the grey sea was calm", "the pewter sea was calm and wide");
+              const rebuilt = wd.filter((p) => p.t !== "-").map((p) => p.s).join("");
+              const gone = wd.filter((p) => p.t === "-").map((p) => p.s.trim()).join("|"), came = wd.filter((p) => p.t === "+").map((p) => p.s.trim()).join("|");
+              if (rebuilt !== "the pewter sea was calm and wide" || gone !== "grey" || came !== "pewter|and wide") bad.push("word diff " + JSON.stringify(wd));
+              const td = histTextDiff("One stays.\n\nTwo was here.\n\nThree is cut.\n\nFour stays.", "One stays.\n\nTwo is here now.\n\nFour stays.\n\nFive is new.");
+              const kinds = td.rows.map((r) => r.kind).join(",");
+              if (kinds !== "same,changed,removed,same,added" || td.removed !== 5 || td.added !== 6) bad.push("text diff " + kinds + " +" + td.added + " −" + td.removed);
+              /* through History's own detail */
+              applyBookDoc(buildEmptyBook()); state.history = [];
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              const A = mkSection("body", "chapter", "Alpha", { number: "1", content: "The tide ran east that night.\n\nNobody spoke on the quay.\n\nMara counted the lamps." });
+              const B = mkSection("body", "chapter", "Beta", { number: "2", content: "Untouched words here." });
+              state.sections = [A, B]; state.activeId = A.id;
+              const snap = takeSnapshot("Compare check", null);
+              A.content = "The tide ran east, the wrong way, that night.\n\nNobody spoke on the quay.";
+              const before = JSON.stringify(serializeBook());
+              openHistory();
+              histViewId = snap.id; renderHistory();
+              const btn = document.querySelector('#modalHistory [data-hcmp="' + A.id + '"]');
+              if (!btn) bad.push("no Compare button on the changed section");
+              if (document.querySelector('#modalHistory [data-hcmp="' + B.id + '"]')) bad.push("an unchanged section offers Compare");
+              if (btn) btn.click();
+              const box = $("histCmp");
+              if (!box) bad.push("Compare did not open");
+              else {
+                const ins = Array.from(box.querySelectorAll("ins")).map((x) => x.textContent.replace(t("history.cmpInsSr"), "").trim()).join("|");
+                const del = Array.from(box.querySelectorAll("del")).map((x) => x.textContent.replace(t("history.cmpDelSr"), "").trim()).join("|");
+                if (ins !== "east, the wrong way," || del !== "east|Mara counted the lamps.") bad.push("marks: added " + JSON.stringify(ins) + " removed " + JSON.stringify(del));
+                if (box.querySelector(".hist-cmp-sum").textContent !== t("history.cmpSum", { a: fmtNum(4), r: fmtNum(5) })) bad.push("summary " + box.querySelector(".hist-cmp-sum").textContent);
+                if (!box.querySelector(".hist-cmp-gap") || box.querySelector("p.hist-cmp-same")) bad.push("the unchanged paragraph was not folded");
+                const all = box.querySelector('[data-hcmpall="1"]'); if (all) all.click();
+                const box2 = $("histCmp");
+                if (!box2 || !box2.querySelector("p.hist-cmp-same") || box2.querySelector(".hist-cmp-gap")) bad.push("Whole section did not show the unchanged paragraph");
+              }
+              if (JSON.stringify(serializeBook()) !== before) bad.push("comparing changed the book");
+              histCmpAll = false; histCmpId = null; closeHistory();
+              /* the sample's earlier draft */
+              applyBookDoc(buildSampleBook()); state.history = [];
+              const draft = sampleDraftSnapshot();
+              const nowCh = state.sections.find((s) => s.title === "The Ferry Crossing");
+              if (!draft || !nowCh) bad.push("the sample's earlier draft was not made");
+              else {
+                const was = draft.doc.sections.find((s) => s.id === nowCh.id);
+                const sd = histTextDiff(was.content, nowCh.content);
+                const changed = sd.rows.filter((r) => r.kind === "changed").length, cut = sd.rows.filter((r) => r.kind === "removed").length, added = sd.rows.filter((r) => r.kind === "added").length;
+                const others = draft.doc.sections.filter((s) => s.id !== nowCh.id).every((s) => { const n = state.sections.find((x) => x.id === s.id); return n && n.content === s.content; });
+                if (changed !== 3 || cut !== 1 || added !== 0 || !others || draft.id !== SAMPLE_DRAFT_SNAP_ID) bad.push("sample draft: changed " + changed + ", cut " + cut + ", added " + added + ", other sections identical " + others);
+              }
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "word diff rebuilds the new text (grey → pewter, + and wide); text diff same/changed/removed/same/added with +6 −5; in History, Alpha's Compare struck \"east\" and the cut paragraph and underlined \"east, the wrong way,\", summary +4 −5, the unchanged paragraph folded until Whole section, Beta offered no Compare, the book unchanged; the sample's earlier draft differs in 3 reworded paragraphs and 1 cut, every other section identical");
             } finally { ghRestore(k); }
           } }
       );

@@ -1776,6 +1776,32 @@ snapshot labels are unchanged.
 Self-checks (client-only in Housekeeping): `goals.road.only-logged-days`,
 `goals.road.pace-line`, `history.delta.words`, `history.delta.sections`.
 
+**Compare, word by word (History, `BEUK:compare`).** Every *Changed* row
+in a snapshot's *Since this snapshot* list has a **Compare** button that
+opens that section's snapshot text against its text now, under the row.
+Paragraphs are matched first (`histLcs` over whole paragraphs, spacing
+ignored), then the words inside each changed pair (`histWordDiff`:
+common start and end trimmed, then a longest common run over words), so
+a long chapter stays fast and an edit stays inside its own paragraph. A
+pair too large to compare word by word (more than 4,000,000 cells) is
+shown whole, removed then added. What the snapshot had is struck
+through (`<del>`), what is new is underlined (`<ins>`), each with a
+screen-reader word; a paragraph cut since is shown whole and struck, a
+new one whole and underlined; a changed title or subtitle gets its own
+line. *Changes only* (the default) folds unchanged paragraphs into
+"Unchanged paragraphs: n"; *Whole section* shows them. The summary counts
+the words added and removed. Computed on this device from the stored
+snapshot; nothing is stored and the book does not change.
+
+The sample ships with one snapshot of its own, **"Chapter One, an
+earlier draft"** (`sampleDraftSnapshot`): the book as loaded, with three
+of Chapter One's paragraphs in a plainer earlier wording and one
+paragraph the revision cut, so Compare has a real then-and-now on first
+open. Each edit names its paragraph by its opening words; if the
+sample's text no longer has one, no snapshot is made. Removing the
+sample removes that snapshot and keeps the writer's own History.
+Self-check: `history.compare.words`.
+
 ## Studio: Goals — writing days, a plan from the deadline, pace, written vs kept (client-only)
 
 All of this lives in the existing **Goals** room and the sidebar's goal

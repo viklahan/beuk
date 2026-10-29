@@ -2217,6 +2217,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'History snapshots live in the in-browser book (state.history); the comparison is computed and rendered in the client.',
   },
   {
+    id: 'history.compare.words',
+    title: "Compare: a changed section opens word by word in a snapshot's detail (removed struck through, added underlined, unchanged paragraphs folded until Whole section, a cut paragraph shown whole, true counts); nothing in the book changes; the sample's earlier draft of Chapter One differs in three reworded paragraphs and one cut",
+    kind: 'client-only',
+    reason: 'The comparison is computed in the studio from the snapshot stored in the client book document.',
+  },
+  {
     id: 'history.delta.sections',
     title: "A snapshot's detail lists the sections added since, no longer in the book, and changed by word count (or reworded), matched by section id; the deltas sum to the book's change",
     kind: 'client-only',
