@@ -73,7 +73,7 @@ COPY --from=restic /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certific
 # its ownership from the image's mountpoint, so these must exist and be
 # owned by `node` — otherwise Docker creates them root-owned and every
 # export and backup fails with EACCES.
-RUN mkdir -p /data/exports /data/backups && chown -R node:node /data
+RUN mkdir -p /data/exports /data/backups /data/weekly && chown -R node:node /data
 USER node
 EXPOSE 3000
 CMD ["node", "dist/index.js"]

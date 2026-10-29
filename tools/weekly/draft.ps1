@@ -40,16 +40,32 @@ $Server = $Server.TrimEnd('/')
 
 function Say([string]$line) {
   $l = "$(Get-Date -Format 'HH:mm:ss') [$Step] $line"
-  Write-Output $l
+  Write-Host $l
   Add-Content -Path $Log -Value $l -Encoding UTF8
 }
 
-function Node-Tool([string]$name, [string[]]$toolArgs) {
-  $out = & node --import tsx (Join-Path $Repo "tools\weekly\$name") @toolArgs 2>&1 | Out-String
-  $code = $LASTEXITCODE
-  foreach ($l in ($out.TrimEnd() -split "`r?`n")) { if ($l) { Say "  $l" } }
-  return @{ Code = $code; Out = $out }
+# A native command's stderr must not end the run: Windows PowerShell 5.1
+# turns redirected stderr into error records, and 'Stop' makes those fatal
+# (git prints progress there). Native steps are judged by their exit code.
+function Native([scriptblock]$block) {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { $out = & $block 2>&1 | ForEach-Object { "$_" } | Out-String; return @{ Code = $LASTEXITCODE; Out = $out } }
+  finally { $ErrorActionPreference = $prev }
 }
+
+function Node-Tool([string]$name, [string[]]$toolArgs) {
+  # From the repo, so `--import tsx` resolves against its node_modules.
+  Push-Location $Repo
+  try { $r = Native { & node --import tsx (Join-Path $Repo "tools\weekly\$name") @toolArgs } }
+  finally { Pop-Location }
+  foreach ($l in ($r.Out.TrimEnd() -split "`r?`n")) { if ($l) { Say "  $l" } }
+  return $r
+}
+
+# Invoke-RestMethod hands a JSON [] to @() as one empty element in
+# PowerShell 5.1; keep only real rows.
+function Rows($value) { return @(@($value) | Where-Object { $_ -and $_.id }) }
 
 function Read-StoredToken {
   if ($env:BEUK_WEEKLY_TOKEN) { return $env:BEUK_WEEKLY_TOKEN }
@@ -101,7 +117,7 @@ try {
 
   # 4. A sent-back draft first; otherwise a new issue on Thursdays.
   $Step = 'queue'
-  $back = @(Api '/api/weekly/drafts?status=sent_back')
+  $back = Rows (Api '/api/weekly/drafts?status=sent_back')
   $replaces = $null; $notes = $null
   if ($back.Count -gt 0) {
     $replaces = $back[0].id; $notes = $back[0].notes
@@ -116,12 +132,12 @@ try {
   # Where "what shipped" starts: the last published issue's commit, else
   # the commit that last touched the newest issue in git.
   $Step = 'range'
-  $published = @(Api '/api/weekly/drafts?status=published')
+  $published = Rows (Api '/api/weekly/drafts?status=published')
   $from = $null
   if ($published.Count -gt 0) { $from = $published[0].sourceCommit }
   else {
     $latest = Get-ChildItem (Join-Path $Repo 'content\weekly\en') -Directory | Where-Object Name -match '^\d{3}$' | Sort-Object Name | Select-Object -Last 1
-    if ($latest) { $from = (& git -C $Repo log -1 --format=%H -- "content/weekly/en/$($latest.Name)").Trim() }
+    if ($latest) { $from = (Native { & git -C $Repo log -1 --format=%H -- "content/weekly/en/$($latest.Name)" }).Out.Trim() }
   }
   $range = if ($buildIsCommit -and $from) { "$from..$build" } else { $null }
   Say "shipped range: $(if ($range) { $range } else { 'unavailable' })"
@@ -129,13 +145,12 @@ try {
   # 5. A clean worktree at what is live (or local main when the build is not a commit).
   $Step = 'worktree'
   $at = if ($buildIsCommit) { $build } else { 'main' }
-  & git -C $Repo cat-file -e "$at^{commit}" 2>$null
-  if ($LASTEXITCODE -ne 0) { throw "commit $at is not in $Repo; pull main first" }
+  if ((Native { & git -C $Repo cat-file -e "$at^{commit}" }).Code -ne 0) { throw "commit $at is not in $Repo; pull main first" }
   New-Item -ItemType Directory -Force (Split-Path $Work) | Out-Null
-  & git -C $Repo worktree add --detach $Work $at 2>&1 | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw "git worktree add failed for $at" }
+  $wt = Native { & git -C $Repo worktree add --detach $Work $at }
+  if ($wt.Code -ne 0) { throw "git worktree add failed for $at`: $($wt.Out.Trim())" }
   $worktreeMade = $true
-  $sourceCommit = (& git -C $Work rev-parse HEAD).Trim()
+  $sourceCommit = (Native { & git -C $Work rev-parse HEAD }).Out.Trim()
   $Out = Join-Path $Work 'weekly-draft'
   New-Item -ItemType Directory -Force $Out | Out-Null
 
@@ -159,8 +174,8 @@ try {
     $prompt = (Get-Content (Join-Path $Repo 'tools\weekly\SKILL.md') -Raw) + $run
     Push-Location $Work
     try {
-      $json = $prompt | & claude -p --output-format json --permission-mode acceptEdits `
-        --allowedTools 'Read' 'Glob' 'Grep' 'Write' 'Edit' 'WebSearch' 'WebFetch' 'Bash(git log:*)' 'Bash(git show:*)' 'Bash(git diff:*)' 2>&1 | Out-String
+      $json = (Native { $prompt | & claude -p --output-format json --permission-mode acceptEdits `
+        --allowedTools 'Read' 'Glob' 'Grep' 'Write' 'Edit' 'WebSearch' 'WebFetch' 'Bash(git log:*)' 'Bash(git show:*)' 'Bash(git diff:*)' }).Out
     } finally { Pop-Location }
     Add-Content -Path $Log -Value $json -Encoding UTF8
     $result = $null
@@ -206,6 +221,6 @@ try {
   exit 1
 } finally {
   if ($worktreeMade) {
-    & git -C $Repo worktree remove --force $Work 2>&1 | Out-Null
+    Native { & git -C $Repo worktree remove --force $Work } | Out-Null
   }
 }

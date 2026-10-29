@@ -430,3 +430,15 @@ test('press API: published lists issue numbers and their source commits, newest 
     await s.close();
   }
 });
+
+test('deploy: every named volume the app mounts under /data is made, owned by node, in the image', () => {
+  const root = path.resolve(import.meta.dirname, '..');
+  const compose = readFileSync(path.join(root, 'docker-compose.yml'), 'utf8');
+  const docker = readFileSync(path.join(root, 'Dockerfile'), 'utf8');
+  const app = compose.slice(compose.indexOf('\n  app:'), compose.indexOf('\n  caddy:'));
+  const mounts = [...app.matchAll(/^\s+- ([a-z]+):(\/data\/[a-z-]+)\s*$/gm)].map((m) => m[2]);
+  assert.ok(mounts.includes('/data/weekly'), mounts.join(', '));
+  const made = /RUN mkdir -p ([^&]+)&& chown -R node:node \/data/.exec(docker)?.[1].trim().split(/\s+/) ?? [];
+  // A fresh named volume takes its owner from the image's folder; a folder the image lacks is root's, and the app (USER node) cannot write it.
+  for (const m of mounts) assert.ok(made.includes(m), `Dockerfile makes ${m}`);
+});
