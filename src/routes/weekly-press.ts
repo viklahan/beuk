@@ -36,6 +36,10 @@ import { renderIssue, renderStory } from '../weekly/render.js';
  *   POST /api/weekly/drafts/failed   "no draft this week, here's why"
  *   GET  /api/weekly/drafts?status=sent_back
  *                                    drafts the editor sent back, with notes
+ *   GET  /api/weekly/drafts?status=published
+ *                                    published issues and the commit each was
+ *                                    written from (newest first): where the
+ *                                    next run's "what shipped" starts
  *
  * With no token configured (unset or under 32 characters) every call is
  * refused. Nothing here publishes: only an admin's Approve on the preview
@@ -128,9 +132,14 @@ export function weeklyPressApi(db: Db, config: Config, mailer: Mailer): Router {
   });
 
   router.get('/drafts', async (req, res, next) => {
-    if (req.query.status !== 'sent_back') return res.status(400).json({ error: 'only status=sent_back is listed' });
+    const status = req.query.status;
+    if (status !== 'sent_back' && status !== 'published') return res.status(400).json({ error: 'status is sent_back or published' });
     try {
-      const rows = await listDrafts(db, 'sent_back');
+      const rows = await listDrafts(db, status);
+      if (status === 'published') {
+        rows.sort((a, b) => (b.issueNumber ?? 0) - (a.issueNumber ?? 0));
+        return res.json(rows.map((r) => ({ id: r.id, issueNumber: r.issueNumber, sourceCommit: r.sourceCommit })));
+      }
       return res.json(rows.map((r) => ({ id: r.id, notes: r.notes, sourceCommit: r.sourceCommit })));
     } catch (err) {
       return next(err);

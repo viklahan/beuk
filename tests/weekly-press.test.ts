@@ -416,3 +416,17 @@ test('press preview: send back records the notes; withdraw discards the draft', 
     await s.close();
   }
 });
+
+test('press API: published lists issue numbers and their source commits, newest first, for the next run to start from', async () => {
+  const { db, s, call } = await pressServer();
+  try {
+    assert.deepEqual(await (await call('GET', '/api/weekly/drafts?status=published')).json(), []);
+    const { id } = (await (await call('POST', '/api/weekly/drafts', sourcedUpload())).json()) as { id: string };
+    const user = (await db.query<{ id: string }>(`insert into users (email, password_hash) values ('ed2@example.com', 'x') returning id`)).rows[0].id;
+    await approveAndPublish(db, s.config.weeklyDir, id, user, new Date('2026-11-05T12:00:00Z'));
+    assert.deepEqual(await (await call('GET', '/api/weekly/drafts?status=published')).json(), [{ id, issueNumber: 2, sourceCommit: 'a'.repeat(40) }]);
+    assert.equal((await call('GET', '/api/weekly/drafts?status=drafted')).status, 400);
+  } finally {
+    await s.close();
+  }
+});
