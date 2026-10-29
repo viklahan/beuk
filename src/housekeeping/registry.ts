@@ -3144,6 +3144,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The number is a field of the client book document set in the settings form; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.series.crossbook',
+    title: 'Series Covenant across books: in Book 7 a change pinned in Book 5 or 6 counts in Right now from its saved place, a change from a later book is later and an unplaced one an orphan; the series changes of this book are re-placed on opening; series and book entries are matched and listed together and an edit lands where the entry lives',
+    kind: 'client-only',
+    reason: 'Right now, matching and the card are computed in the studio over the open book and the series doc in memory; the server stores the series doc whole and never reads it.',
+  },
+  {
+    id: 'bible.series.conflict',
+    title: 'Series Covenant sync: edits kept on the device and saved on their base revision; a 409 raises the conflict notice for the series (Keep mine / Use the shelf copy) with the edit kept; a same-doc 409 agrees quietly; offline saves wait and go on reconnect',
+    kind: 'client-only',
+    reason: 'The save queue, the device copy and the conflict notice live in the studio; the check answers with a mocked shelf so it never reaches the network. The server side (409 with the current copy) is covered by tests/series-covenants.test.ts.',
+  },
+  {
+    id: 'bible.series.signin',
+    title: 'Series Covenant signed out: a series book shows one line saying the series Covenant needs a free account and fetches nothing, its own Covenant works; signing out drops a loaded series; no series name or no shelf row shows nothing',
+    kind: 'client-only',
+    reason: 'What the Covenant room shows and whether the studio asks the shelf at all are decided in the browser; a signed-out studio makes no request for the server to answer.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',

@@ -194,7 +194,15 @@ are left out (src/account/data.ts `writeAccountExport`).
 - **IndexedDB "beuk-local"** (store "kv"): the open book ("book",
   "book-prev") and the shelf link. Stays on the device; reaches the
   server only when the writer is signed in and the book syncs to the
-  shelf (client/index.html ~35134-35170).
+  shelf (client/index.html ~35134-35170). For a signed-in writer whose
+  book names a series with a shared Covenant on the shelf, also a copy
+  of that series Covenant ("series:<account id>:<series key>": the
+  series name, its Covenant document, its revision, whether it has
+  unsaved edits, and — after the writer picks "Use the shelf copy" in a
+  conflict — the device copy it replaced), so it opens offline and
+  offline edits wait there. Stays on the device; reaches the server only
+  as the series Covenant save (client/index.html, BEUK:bible
+  `bibleSeriesCachePut`).
 - **localStorage** (all prefixed `beuk.`): theme.v1, uiLang.v1,
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
   zenSound.v1, errors.v1 ("on" when the writer turns error reports on
