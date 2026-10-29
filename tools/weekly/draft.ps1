@@ -64,7 +64,8 @@ function Node-Tool([string]$name, [string[]]$toolArgs) {
 }
 
 # Invoke-RestMethod hands a JSON [] to @() as one empty element in
-# PowerShell 5.1; keep only real rows.
+# PowerShell 5.1; keep only real rows. Call it inside @(...): a function's one-row
+# array unrolls to a bare object, which has no .Count in 5.1.
 function Rows($value) { return @(@($value) | Where-Object { $_ -and $_.id }) }
 
 function Read-StoredToken {
@@ -117,7 +118,7 @@ try {
 
   # 4. A sent-back draft first; otherwise a new issue on Thursdays.
   $Step = 'queue'
-  $back = Rows (Api '/api/weekly/drafts?status=sent_back')
+  $back = @(Rows (Api '/api/weekly/drafts?status=sent_back'))
   $replaces = $null; $notes = $null
   if ($back.Count -gt 0) {
     $replaces = $back[0].id; $notes = $back[0].notes
@@ -132,7 +133,7 @@ try {
   # Where "what shipped" starts: the last published issue's commit, else
   # the commit that last touched the newest issue in git.
   $Step = 'range'
-  $published = Rows (Api '/api/weekly/drafts?status=published')
+  $published = @(Rows (Api '/api/weekly/drafts?status=published'))
   $from = $null
   if ($published.Count -gt 0) { $from = $published[0].sourceCommit }
   else {
