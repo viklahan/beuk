@@ -9,7 +9,11 @@
    unavailable (the page keeps its painted fallback), otherwise
      play()    the whole moment, from the note falling to the boat leaving
      sailed()  the boat already out on the water (a return visit)
-   and calls opts.onWords() when the thank-you should appear in the page. */
+   and calls opts.onWords() when the thank-you should appear in the page.
+
+   The scene is drawn to an offscreen buffer and then printed onto the
+   page: a touch of sharpening, and the paper's tooth showing through the
+   ink, so the plate reads as part of the page rather than a video on it. */
 (function () {
   'use strict';
 
@@ -21,7 +25,9 @@
 
     var renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      // No antialiasing on the canvas itself: the scene is drawn into the
+      // multisampled print buffer below, which smooths its edges.
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
     } catch (e) {
       return null;
     }
@@ -379,10 +385,66 @@
       }
     }
 
+    // ---- the print: the scene goes to a buffer (kept in sRGB, so the
+    // shader below works on the colours as the page shows them), then one
+    // full-screen pass sharpens it a little and lays the paper's tooth over
+    // it. The tooth is fixed to the page, in CSS pixels, so it stays put
+    // while the sea moves behind it, the way a printed plate would. ----
+    var printBuf = renderer.capabilities.isWebGL2
+      ? new THREE.WebGLMultisampleRenderTarget(1, 1)
+      : new THREE.WebGLRenderTarget(1, 1);
+    printBuf.texture.encoding = THREE.sRGBEncoding;
+    var paperOnPage = new THREE.Color();
+    try { paperOnPage.setStyle(String(P.paper || '#f8f4e9').trim()); } catch (e) { paperOnPage.setStyle('#f8f4e9'); }
+    var printMat = new THREE.ShaderMaterial({
+      uniforms: {
+        tScene: { value: printBuf.texture },
+        uTexel: { value: new THREE.Vector2(1, 1) },
+        uDpr: { value: 1 },
+        uPaper: { value: new THREE.Vector3(paperOnPage.r, paperOnPage.g, paperOnPage.b) },
+        uSharp: { value: 0.7 }, uGrain: { value: 0.06 }, uSkip: { value: 0.22 }
+      },
+      depthTest: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader: [
+        'uniform sampler2D tScene; uniform vec2 uTexel; uniform float uDpr, uSharp, uGrain, uSkip; uniform vec3 uPaper; varying vec2 vUv;',
+        'float h21(vec2 p){ p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }',
+        'float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);',
+        '  return mix(mix(h21(i), h21(i+vec2(1.0,0.0)), f.x), mix(h21(i+vec2(0.0,1.0)), h21(i+vec2(1.0,1.0)), f.x), f.y); }',
+        'void main(){',
+        '  vec3 c = texture2D(tScene, vUv).rgb;',
+        // unsharp mask over the four neighbours
+        '  vec3 nb = texture2D(tScene, vUv + vec2(uTexel.x, 0.0)).rgb + texture2D(tScene, vUv - vec2(uTexel.x, 0.0)).rgb',
+        '         + texture2D(tScene, vUv + vec2(0.0, uTexel.y)).rgb + texture2D(tScene, vUv - vec2(0.0, uTexel.y)).rgb;',
+        '  c = clamp(c + (c - nb * 0.25) * uSharp, 0.0, 1.0);',
+        // the paper: fine tooth, a few long fibres, a faint mottle
+        '  vec2 q = gl_FragCoord.xy / uDpr;',
+        '  float tooth = mix(h21(floor(q)), vn(q * 0.7), 0.5);',
+        '  float fibre = vn(q * vec2(0.06, 0.8) + vec2(0.0, vn(q * 0.02) * 6.0));',
+        '  float mottle = vn(q * 0.012);',
+        '  float grain = tooth * 0.6 + fibre * 0.25 + mottle * 0.15 - 0.5;',
+        '  float lum = dot(c, vec3(0.299, 0.587, 0.114));',
+        // ink takes the tooth most in its darker tones ...
+        '  c += grain * (uGrain + uGrain * 1.6 * (1.0 - lum));',
+        // ... and on the deepest, a little paper shows through
+        '  c = mix(c, uPaper, smoothstep(0.62, 0.92, tooth) * (1.0 - lum) * uSkip);',
+        '  gl_FragColor = vec4(c, 1.0);',
+        '}'
+      ].join('\n')
+    });
+    var printScene = new THREE.Scene();
+    var printCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    printScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), printMat));
+    var drawSize = new THREE.Vector2();
+
     // ---- sizing: the canvas fills its frame, whatever the frame's shape ----
     function resize() {
       var w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
       renderer.setSize(w, h, false);
+      renderer.getDrawingBufferSize(drawSize);
+      printBuf.setSize(drawSize.x, drawSize.y);
+      printMat.uniforms.uTexel.value.set(1 / drawSize.x, 1 / drawSize.y);
+      printMat.uniforms.uDpr.value = renderer.getPixelRatio();
       camera.aspect = w / h;
       var halfV = 21 * Math.PI / 180;
       camera.fov = camera.aspect < 1.25 ? Math.min(78, 2 * Math.atan(Math.tan(halfV) * 1.25 / camera.aspect) * 180 / Math.PI) : 42;
@@ -404,7 +466,10 @@
       var g = reduce ? 6 : clock;
       var t = mode === 'sailed' ? SAILED_AT + (g - startAt) : g - startAt;
       update(reduce && mode !== 'idle' ? (mode === 'sailed' ? SAILED_AT : 15) : t, g);
+      renderer.setRenderTarget(printBuf);
       renderer.render(scene, camera);
+      renderer.setRenderTarget(null);
+      renderer.render(printScene, printCam);
     }
     function loop(ts) {
       if (!inView || document.hidden || reduce) { running = false; return; }
