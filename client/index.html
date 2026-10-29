@@ -2565,6 +2565,18 @@
       .ol-g-cell:hover:not(.zero) { border-color: var(--ink-2); }
       .ol-g-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 1; }
       .ol-grid tfoot th, .ol-grid tfoot td { border-bottom: 0; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; background: var(--panel-3); }
+      .ol-gridbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+      .ol-gridbar .txt-input { flex: 1 1 220px; max-width: 320px; }
+      .ol-gridbar .ol-link { display: inline-flex; align-items: center; gap: 6px; margin-inline-start: auto; }
+      /* a plot thread: its colour runs down the column, its name is edited where it stands */
+      .ol-grid thead th.ol-g-th { box-shadow: inset 0 3px 0 var(--ol-tc); text-align: start; min-width: 13em; }
+      .ol-g-thname { display: flex; align-items: center; gap: 2px; }
+      .ol-g-thname input { flex: 1; min-width: 0; font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 5px; padding: 2px 5px; }
+      .ol-g-thname input:hover { border-color: var(--line-2); }
+      .ol-g-thname input:focus { outline: none; border-color: var(--accent); background: var(--panel); }
+      .ol-grid td.ol-g-note { padding: 3px; box-shadow: inset 2px 0 0 var(--ol-tc); vertical-align: top; }
+      .ol-g-note textarea { display: block; width: 13em; min-height: 38px; resize: vertical; font: inherit; font-size: 12px; line-height: 1.35; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; }
+      .ol-g-note textarea:focus { outline: none; border-color: var(--accent); }
       .ol-g-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; }
       .ol-g-empty p { margin: 0; max-width: 52ch; }
       body.zen #tabBtnOutline { display: none; }
@@ -8004,45 +8016,19 @@
       Object.keys(OL_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_STRINGS[code]); });
       /* the Grid's words, all 13 packs (each pack names the Covenant as its own bible.title does) */
       const OL_GRID_STRINGS = {
-        "en": { "ol.viewGrid": "Grid", "ol.gridSub": "Each row is a section of your story, each column an entry in your Covenant. A square counts how often that name appears in that section, found in the text as it stands, so there is nothing to fill in. Choose a square to open the desk at that name.",
-          "ol.gridEmpty": "The grid fills itself from your Covenant. Add the people, places and things of your book there, and each one becomes a column here.", "ol.gridOpenCov": "Open the Covenant",
-          "ol.gridNoText": "No section of the story has words yet.", "ol.gridSection": "Section", "ol.gridTotal": "Whole book", "ol.gridAria": "Where each Covenant entry appears, section by section" },
-        "es": { "ol.viewGrid": "Cuadrícula", "ol.gridSub": "Cada fila es una sección de tu historia y cada columna, una entrada de tu Pacto. Un cuadro cuenta cuántas veces aparece ese nombre en esa sección, buscado en el texto tal como está, así que no hay nada que rellenar. Elige un cuadro para abrir el escritorio en ese nombre.",
-          "ol.gridEmpty": "La cuadrícula se llena sola a partir de tu Pacto. Añade allí las personas, los lugares y las cosas de tu libro, y cada una será aquí una columna.", "ol.gridOpenCov": "Abrir el Pacto",
-          "ol.gridNoText": "Ninguna sección de la historia tiene palabras todavía.", "ol.gridSection": "Sección", "ol.gridTotal": "Todo el libro", "ol.gridAria": "Dónde aparece cada entrada del Pacto, sección por sección" },
-        "fr": { "ol.viewGrid": "Grille", "ol.gridSub": "Chaque ligne est une section de votre histoire, chaque colonne une entrée de votre Pacte. Une case compte combien de fois ce nom apparaît dans cette section, cherché dans le texte tel qu'il est : il n'y a rien à remplir. Choisissez une case pour ouvrir le bureau sur ce nom.",
-          "ol.gridEmpty": "La grille se remplit toute seule à partir de votre Pacte. Ajoutez-y les personnes, les lieux et les choses de votre livre : chacun devient ici une colonne.", "ol.gridOpenCov": "Ouvrir le Pacte",
-          "ol.gridNoText": "Aucune section de l'histoire n'a encore de mots.", "ol.gridSection": "Section", "ol.gridTotal": "Tout le livre", "ol.gridAria": "Où apparaît chaque entrée du Pacte, section par section" },
-        "de": { "ol.viewGrid": "Raster", "ol.gridSub": "Jede Zeile ist ein Abschnitt Ihrer Geschichte, jede Spalte ein Eintrag in Ihrem Pakt. Ein Feld zählt, wie oft dieser Name in diesem Abschnitt vorkommt, gefunden im Text, wie er gerade steht – es gibt nichts auszufüllen. Wählen Sie ein Feld, um den Schreibtisch bei diesem Namen zu öffnen.",
-          "ol.gridEmpty": "Das Raster füllt sich aus Ihrem Pakt. Legen Sie dort die Personen, Orte und Dinge Ihres Buches an, und jeder Eintrag wird hier zu einer Spalte.", "ol.gridOpenCov": "Pakt öffnen",
-          "ol.gridNoText": "Noch hat kein Abschnitt der Geschichte Wörter.", "ol.gridSection": "Abschnitt", "ol.gridTotal": "Ganzes Buch", "ol.gridAria": "Wo jeder Eintrag des Pakts vorkommt, Abschnitt für Abschnitt" },
-        "it": { "ol.viewGrid": "Griglia", "ol.gridSub": "Ogni riga è una sezione della tua storia, ogni colonna una voce del tuo Patto. Un riquadro conta quante volte quel nome compare in quella sezione, cercato nel testo così com'è: non c'è niente da compilare. Scegli un riquadro per aprire la scrivania su quel nome.",
-          "ol.gridEmpty": "La griglia si riempie da sola a partire dal tuo Patto. Aggiungi lì le persone, i luoghi e le cose del tuo libro, e ognuno diventa qui una colonna.", "ol.gridOpenCov": "Apri il Patto",
-          "ol.gridNoText": "Nessuna sezione della storia ha ancora parole.", "ol.gridSection": "Sezione", "ol.gridTotal": "Tutto il libro", "ol.gridAria": "Dove compare ogni voce del Patto, sezione per sezione" },
-        "pt": { "ol.viewGrid": "Grelha", "ol.gridSub": "Cada linha é uma secção da sua história, cada coluna uma entrada do seu Pacto. Um quadrado conta quantas vezes esse nome aparece nessa secção, procurado no texto tal como está, por isso não há nada para preencher. Escolha um quadrado para abrir a secretária nesse nome.",
-          "ol.gridEmpty": "A grelha preenche-se sozinha a partir do seu Pacto. Acrescente lá as pessoas, os lugares e as coisas do seu livro, e cada um passa a ser aqui uma coluna.", "ol.gridOpenCov": "Abrir o Pacto",
-          "ol.gridNoText": "Nenhuma secção da história tem palavras ainda.", "ol.gridSection": "Secção", "ol.gridTotal": "Livro inteiro", "ol.gridAria": "Onde aparece cada entrada do Pacto, secção a secção" },
-        "nl": { "ol.viewGrid": "Raster", "ol.gridSub": "Elke rij is een deel van je verhaal, elke kolom een vermelding in je Verbond. Een vakje telt hoe vaak die naam in dat deel voorkomt, gezocht in de tekst zoals die nu is, dus er valt niets in te vullen. Kies een vakje om het bureau bij die naam te openen.",
-          "ol.gridEmpty": "Het raster vult zichzelf vanuit je Verbond. Zet daar de mensen, plaatsen en dingen van je boek in, en elk ervan wordt hier een kolom.", "ol.gridOpenCov": "Verbond openen",
-          "ol.gridNoText": "Nog geen enkel deel van het verhaal heeft woorden.", "ol.gridSection": "Deel", "ol.gridTotal": "Hele boek", "ol.gridAria": "Waar elke vermelding uit het Verbond voorkomt, deel voor deel" },
-        "pl": { "ol.viewGrid": "Siatka", "ol.gridSub": "Każdy wiersz to sekcja twojej historii, każda kolumna to wpis w twoim Przymierzu. Pole liczy, ile razy to imię lub nazwa pojawia się w tej sekcji, wyszukane w tekście takim, jaki jest teraz, więc nie ma tu nic do wypełniania. Wybierz pole, by otworzyć biurko w tym miejscu.",
-          "ol.gridEmpty": "Siatka wypełnia się sama na podstawie twojego Przymierza. Dodaj tam ludzi, miejsca i rzeczy ze swojej książki, a każdy wpis stanie się tu kolumną.", "ol.gridOpenCov": "Otwórz Przymierze",
-          "ol.gridNoText": "Żadna sekcja historii nie ma jeszcze słów.", "ol.gridSection": "Sekcja", "ol.gridTotal": "Cała książka", "ol.gridAria": "Gdzie pojawia się każdy wpis Przymierza, sekcja po sekcji" },
-        "ru": { "ol.viewGrid": "Сетка", "ol.gridSub": "Каждая строка — раздел вашей истории, каждый столбец — запись вашего Завета. Клетка показывает, сколько раз это имя встречается в разделе, — по тексту в его нынешнем виде, так что заполнять ничего не нужно. Выберите клетку, чтобы открыть рабочий стол на этом имени.",
-          "ol.gridEmpty": "Сетка заполняется сама по вашему Завету. Добавьте туда людей, места и вещи вашей книги, и каждая запись станет здесь столбцом.", "ol.gridOpenCov": "Открыть Завет",
-          "ol.gridNoText": "Ни в одном разделе истории пока нет слов.", "ol.gridSection": "Раздел", "ol.gridTotal": "Вся книга", "ol.gridAria": "Где встречается каждая запись Завета, раздел за разделом" },
-        "tr": { "ol.viewGrid": "Izgara", "ol.gridSub": "Her satır öykünüzün bir bölümü, her sütun Ahit'inizdeki bir kayıttır. Bir kare, o adın o bölümde kaç kez geçtiğini metnin şu anki hâlinden sayar; doldurulacak bir şey yoktur. O ada masada gitmek için bir kare seçin.",
-          "ol.gridEmpty": "Izgara kendini Ahit'inizden doldurur. Kitabınızın kişilerini, yerlerini ve nesnelerini oraya ekleyin; her biri burada bir sütun olur.", "ol.gridOpenCov": "Ahit'i aç",
-          "ol.gridNoText": "Öykünün hiçbir bölümünde henüz sözcük yok.", "ol.gridSection": "Bölüm", "ol.gridTotal": "Tüm kitap", "ol.gridAria": "Ahit'teki her kaydın geçtiği yerler, bölüm bölüm" },
-        "ar": { "ol.viewGrid": "الشبكة", "ol.gridSub": "كل صف قسم من قصتك، وكل عمود مدخل في ميثاقك. يعدّ كل مربع كم مرة يرد ذلك الاسم في ذلك القسم، بحسب النص كما هو الآن، فلا شيء عليك ملؤه. اختر مربعًا لتفتح المكتب عند ذلك الاسم.",
-          "ol.gridEmpty": "تمتلئ الشبكة وحدها من ميثاقك. أضف هناك أشخاص كتابك وأماكنه وأشياءه، فيصير كل منها عمودًا هنا.", "ol.gridOpenCov": "افتح الميثاق",
-          "ol.gridNoText": "لا يحوي أي قسم من القصة كلمات بعد.", "ol.gridSection": "القسم", "ol.gridTotal": "الكتاب كله", "ol.gridAria": "أين يرد كل مدخل من الميثاق، قسمًا قسمًا" },
-        "ja": { "ol.viewGrid": "グリッド", "ol.gridSub": "各行は物語のセクション、各列は盟約の項目です。マスには、その名前がそのセクションに何回出てくるかを、いまの本文から数えて表示します。入力することは何もありません。マスを選ぶと、その名前の箇所でデスクが開きます。",
-          "ol.gridEmpty": "グリッドは盟約から自動で埋まります。盟約に本の人物・場所・ものを追加すると、それぞれがここで列になります。", "ol.gridOpenCov": "盟約を開く",
-          "ol.gridNoText": "物語のセクションにはまだ言葉がありません。", "ol.gridSection": "セクション", "ol.gridTotal": "本全体", "ol.gridAria": "盟約の各項目がどこに出てくるか（セクションごと）" },
-        "zh": { "ol.viewGrid": "网格", "ol.gridSub": "每一行是故事的一个部分，每一列是盟约中的一个条目。方格显示这个名字在该部分出现的次数，按正文当前的样子统计，无需填写任何内容。选择一个方格，即可在书桌上打开该名字所在之处。",
-          "ol.gridEmpty": "网格会根据盟约自动填满。在盟约中添加书里的人物、地点和事物，每一个都会在这里成为一列。", "ol.gridOpenCov": "打开盟约",
-          "ol.gridNoText": "故事的各部分还没有文字。", "ol.gridSection": "部分", "ol.gridTotal": "全书", "ol.gridAria": "盟约中每个条目出现的位置，逐部分列出" }
+        "en": { "ol.viewGrid": "Grid", "ol.gridSub": "Each row is a section of your story. Plot threads are your own columns: note what each thread does in each section, before or after you write it. Covenant columns fill themselves: a square counts how often that name appears in that section, found in the text as it stands. Choose a square to open the desk at that name.", "ol.gridEmpty": "Add a plot thread to plan the book section by section, or add the people, places and things of your book to the Covenant: each one becomes a column here.", "ol.gridOpenCov": "Open the Covenant", "ol.gridNoSecs": "The story has no sections yet.", "ol.gridSection": "Section", "ol.gridTotal": "Whole book", "ol.gridAria": "The story section by section, against plot threads and Covenant entries", "ol.threadAdd": "Add a plot thread", "ol.threadName": "Name of the new plot thread", "ol.threadNamePh": "Name a thread, e.g. The ledger", "ol.threadType": "Plot thread", "ol.threadRename": "Name of the plot thread {name}", "ol.threadDel": "Remove the plot thread {name} and its notes", "ol.threadDeleted": "Plot thread removed: {name}", "ol.threadAdded": "Plot thread added: {name}", "ol.threadNoteFor": "{thread} in {sec}", "ol.threadNotes": "notes: {n}" },
+        "es": { "ol.viewGrid": "Cuadrícula", "ol.gridSub": "Cada fila es una sección de tu historia. Las tramas son tus propias columnas: anota qué hace cada trama en cada sección, antes o después de escribirla. Las columnas del Pacto se llenan solas: un cuadro cuenta cuántas veces aparece ese nombre en esa sección, buscado en el texto tal como está. Elige un cuadro para abrir el escritorio en ese nombre.", "ol.gridEmpty": "Añade una trama para planear el libro sección por sección, o añade al Pacto las personas, los lugares y las cosas de tu libro: cada una será aquí una columna.", "ol.gridOpenCov": "Abrir el Pacto", "ol.gridNoSecs": "La historia aún no tiene secciones.", "ol.gridSection": "Sección", "ol.gridTotal": "Todo el libro", "ol.gridAria": "La historia sección por sección, frente a las tramas y las entradas del Pacto", "ol.threadAdd": "Añadir una trama", "ol.threadName": "Nombre de la nueva trama", "ol.threadNamePh": "Ponle nombre, p. ej. El libro de cuentas", "ol.threadType": "Trama", "ol.threadRename": "Nombre de la trama {name}", "ol.threadDel": "Quitar la trama {name} y sus notas", "ol.threadDeleted": "Trama quitada: {name}", "ol.threadAdded": "Trama añadida: {name}", "ol.threadNoteFor": "{thread} en {sec}", "ol.threadNotes": "notas: {n}" },
+        "fr": { "ol.viewGrid": "Grille", "ol.gridSub": "Chaque ligne est une section de votre histoire. Les intrigues sont vos propres colonnes : notez ce que fait chaque intrigue dans chaque section, avant ou après l'avoir écrite. Les colonnes du Pacte se remplissent seules : une case compte combien de fois ce nom apparaît dans cette section, cherché dans le texte tel qu'il est. Choisissez une case pour ouvrir le bureau sur ce nom.", "ol.gridEmpty": "Ajoutez une intrigue pour planifier le livre section par section, ou ajoutez au Pacte les personnes, les lieux et les choses de votre livre : chacun devient ici une colonne.", "ol.gridOpenCov": "Ouvrir le Pacte", "ol.gridNoSecs": "L'histoire n'a pas encore de sections.", "ol.gridSection": "Section", "ol.gridTotal": "Tout le livre", "ol.gridAria": "L'histoire section par section, face aux intrigues et aux entrées du Pacte", "ol.threadAdd": "Ajouter une intrigue", "ol.threadName": "Nom de la nouvelle intrigue", "ol.threadNamePh": "Nommez-la, p. ex. Le registre", "ol.threadType": "Intrigue", "ol.threadRename": "Nom de l'intrigue {name}", "ol.threadDel": "Retirer l'intrigue {name} et ses notes", "ol.threadDeleted": "Intrigue retirée : {name}", "ol.threadAdded": "Intrigue ajoutée : {name}", "ol.threadNoteFor": "{thread} dans {sec}", "ol.threadNotes": "notes : {n}" },
+        "de": { "ol.viewGrid": "Raster", "ol.gridSub": "Jede Zeile ist ein Abschnitt Ihrer Geschichte. Handlungsstränge sind Ihre eigenen Spalten: Notieren Sie, was jeder Strang in jedem Abschnitt tut, bevor oder nachdem Sie ihn schreiben. Die Spalten des Pakts füllen sich selbst: Ein Feld zählt, wie oft dieser Name in diesem Abschnitt vorkommt, gefunden im Text, wie er gerade steht. Wählen Sie ein Feld, um den Schreibtisch bei diesem Namen zu öffnen.", "ol.gridEmpty": "Legen Sie einen Handlungsstrang an, um das Buch Abschnitt für Abschnitt zu planen, oder tragen Sie die Personen, Orte und Dinge Ihres Buches in den Pakt ein: Jeder Eintrag wird hier zu einer Spalte.", "ol.gridOpenCov": "Pakt öffnen", "ol.gridNoSecs": "Die Geschichte hat noch keine Abschnitte.", "ol.gridSection": "Abschnitt", "ol.gridTotal": "Ganzes Buch", "ol.gridAria": "Die Geschichte Abschnitt für Abschnitt, mit Handlungssträngen und Einträgen des Pakts", "ol.threadAdd": "Handlungsstrang anlegen", "ol.threadName": "Name des neuen Handlungsstrangs", "ol.threadNamePh": "Benennen, z. B. Das Kassenbuch", "ol.threadType": "Handlungsstrang", "ol.threadRename": "Name des Handlungsstrangs {name}", "ol.threadDel": "Handlungsstrang {name} samt Notizen entfernen", "ol.threadDeleted": "Handlungsstrang entfernt: {name}", "ol.threadAdded": "Handlungsstrang angelegt: {name}", "ol.threadNoteFor": "{thread} in {sec}", "ol.threadNotes": "Notizen: {n}" },
+        "it": { "ol.viewGrid": "Griglia", "ol.gridSub": "Ogni riga è una sezione della tua storia. Le trame sono colonne tue: annota cosa fa ogni trama in ogni sezione, prima o dopo averla scritta. Le colonne del Patto si riempiono da sole: un riquadro conta quante volte quel nome compare in quella sezione, cercato nel testo così com'è. Scegli un riquadro per aprire la scrivania su quel nome.", "ol.gridEmpty": "Aggiungi una trama per pianificare il libro sezione per sezione, oppure aggiungi al Patto le persone, i luoghi e le cose del tuo libro: ognuno diventa qui una colonna.", "ol.gridOpenCov": "Apri il Patto", "ol.gridNoSecs": "La storia non ha ancora sezioni.", "ol.gridSection": "Sezione", "ol.gridTotal": "Tutto il libro", "ol.gridAria": "La storia sezione per sezione, accanto alle trame e alle voci del Patto", "ol.threadAdd": "Aggiungi una trama", "ol.threadName": "Nome della nuova trama", "ol.threadNamePh": "Dalle un nome, es. Il registro", "ol.threadType": "Trama", "ol.threadRename": "Nome della trama {name}", "ol.threadDel": "Rimuovi la trama {name} e le sue note", "ol.threadDeleted": "Trama rimossa: {name}", "ol.threadAdded": "Trama aggiunta: {name}", "ol.threadNoteFor": "{thread} in {sec}", "ol.threadNotes": "note: {n}" },
+        "pt": { "ol.viewGrid": "Grelha", "ol.gridSub": "Cada linha é uma secção da sua história. Os enredos são colunas suas: anote o que cada enredo faz em cada secção, antes ou depois de a escrever. As colunas do Pacto preenchem-se sozinhas: um quadrado conta quantas vezes esse nome aparece nessa secção, procurado no texto tal como está. Escolha um quadrado para abrir a secretária nesse nome.", "ol.gridEmpty": "Acrescente um enredo para planear o livro secção a secção, ou acrescente ao Pacto as pessoas, os lugares e as coisas do seu livro: cada um passa a ser aqui uma coluna.", "ol.gridOpenCov": "Abrir o Pacto", "ol.gridNoSecs": "A história ainda não tem secções.", "ol.gridSection": "Secção", "ol.gridTotal": "Livro inteiro", "ol.gridAria": "A história secção a secção, face aos enredos e às entradas do Pacto", "ol.threadAdd": "Acrescentar um enredo", "ol.threadName": "Nome do novo enredo", "ol.threadNamePh": "Dê-lhe um nome, p. ex. O livro-razão", "ol.threadType": "Enredo", "ol.threadRename": "Nome do enredo {name}", "ol.threadDel": "Remover o enredo {name} e as suas notas", "ol.threadDeleted": "Enredo removido: {name}", "ol.threadAdded": "Enredo acrescentado: {name}", "ol.threadNoteFor": "{thread} em {sec}", "ol.threadNotes": "notas: {n}" },
+        "nl": { "ol.viewGrid": "Raster", "ol.gridSub": "Elke rij is een deel van je verhaal. Verhaallijnen zijn je eigen kolommen: noteer wat elke lijn in elk deel doet, voor of nadat je het schrijft. De kolommen van het Verbond vullen zichzelf: een vakje telt hoe vaak die naam in dat deel voorkomt, gezocht in de tekst zoals die nu is. Kies een vakje om het bureau bij die naam te openen.", "ol.gridEmpty": "Voeg een verhaallijn toe om het boek deel voor deel te plannen, of zet de mensen, plaatsen en dingen van je boek in het Verbond: elk ervan wordt hier een kolom.", "ol.gridOpenCov": "Verbond openen", "ol.gridNoSecs": "Het verhaal heeft nog geen delen.", "ol.gridSection": "Deel", "ol.gridTotal": "Hele boek", "ol.gridAria": "Het verhaal deel voor deel, tegenover verhaallijnen en vermeldingen uit het Verbond", "ol.threadAdd": "Verhaallijn toevoegen", "ol.threadName": "Naam van de nieuwe verhaallijn", "ol.threadNamePh": "Geef een naam, bijv. Het grootboek", "ol.threadType": "Verhaallijn", "ol.threadRename": "Naam van de verhaallijn {name}", "ol.threadDel": "Verhaallijn {name} en de notities verwijderen", "ol.threadDeleted": "Verhaallijn verwijderd: {name}", "ol.threadAdded": "Verhaallijn toegevoegd: {name}", "ol.threadNoteFor": "{thread} in {sec}", "ol.threadNotes": "notities: {n}" },
+        "pl": { "ol.viewGrid": "Siatka", "ol.gridSub": "Każdy wiersz to sekcja twojej historii. Wątki to twoje własne kolumny: zapisz, co każdy wątek robi w każdej sekcji, zanim ją napiszesz albo potem. Kolumny Przymierza wypełniają się same: pole liczy, ile razy to imię lub nazwa pojawia się w tej sekcji, wyszukane w tekście takim, jaki jest teraz. Wybierz pole, by otworzyć biurko w tym miejscu.", "ol.gridEmpty": "Dodaj wątek, by planować książkę sekcja po sekcji, albo dodaj do Przymierza ludzi, miejsca i rzeczy ze swojej książki: każdy wpis stanie się tu kolumną.", "ol.gridOpenCov": "Otwórz Przymierze", "ol.gridNoSecs": "Historia nie ma jeszcze sekcji.", "ol.gridSection": "Sekcja", "ol.gridTotal": "Cała książka", "ol.gridAria": "Historia sekcja po sekcji, zestawiona z wątkami i wpisami Przymierza", "ol.threadAdd": "Dodaj wątek", "ol.threadName": "Nazwa nowego wątku", "ol.threadNamePh": "Nazwij go, np. Księga rachunkowa", "ol.threadType": "Wątek", "ol.threadRename": "Nazwa wątku {name}", "ol.threadDel": "Usuń wątek {name} razem z notatkami", "ol.threadDeleted": "Usunięto wątek: {name}", "ol.threadAdded": "Dodano wątek: {name}", "ol.threadNoteFor": "{thread} w: {sec}", "ol.threadNotes": "notatki: {n}" },
+        "ru": { "ol.viewGrid": "Сетка", "ol.gridSub": "Каждая строка — раздел вашей истории. Сюжетные линии — ваши собственные столбцы: отмечайте, что делает каждая линия в каждом разделе, до или после того, как вы его напишете. Столбцы Завета заполняются сами: клетка показывает, сколько раз это имя встречается в разделе, — по тексту в его нынешнем виде. Выберите клетку, чтобы открыть рабочий стол на этом имени.", "ol.gridEmpty": "Добавьте сюжетную линию, чтобы планировать книгу раздел за разделом, или внесите в Завет людей, места и вещи вашей книги: каждая запись станет здесь столбцом.", "ol.gridOpenCov": "Открыть Завет", "ol.gridNoSecs": "В истории пока нет разделов.", "ol.gridSection": "Раздел", "ol.gridTotal": "Вся книга", "ol.gridAria": "История раздел за разделом, рядом с сюжетными линиями и записями Завета", "ol.threadAdd": "Добавить сюжетную линию", "ol.threadName": "Название новой сюжетной линии", "ol.threadNamePh": "Назовите её, например: Счётная книга", "ol.threadType": "Сюжетная линия", "ol.threadRename": "Название сюжетной линии {name}", "ol.threadDel": "Удалить сюжетную линию {name} вместе с заметками", "ol.threadDeleted": "Сюжетная линия удалена: {name}", "ol.threadAdded": "Сюжетная линия добавлена: {name}", "ol.threadNoteFor": "{thread} — {sec}", "ol.threadNotes": "заметки: {n}" },
+        "tr": { "ol.viewGrid": "Izgara", "ol.gridSub": "Her satır öykünüzün bir bölümüdür. Olay örgüleri sizin sütunlarınızdır: her örgünün her bölümde ne yaptığını, bölümü yazmadan önce ya da sonra not edin. Ahit sütunları kendiliğinden dolar: bir kare, o adın o bölümde kaç kez geçtiğini metnin şu anki hâlinden sayar. O ada masada gitmek için bir kare seçin.", "ol.gridEmpty": "Kitabı bölüm bölüm planlamak için bir olay örgüsü ekleyin ya da kitabınızın kişilerini, yerlerini ve nesnelerini Ahit'e ekleyin: her biri burada bir sütun olur.", "ol.gridOpenCov": "Ahit'i aç", "ol.gridNoSecs": "Öykünün henüz bölümü yok.", "ol.gridSection": "Bölüm", "ol.gridTotal": "Tüm kitap", "ol.gridAria": "Öykü bölüm bölüm, olay örgüleri ve Ahit kayıtlarıyla birlikte", "ol.threadAdd": "Olay örgüsü ekle", "ol.threadName": "Yeni olay örgüsünün adı", "ol.threadNamePh": "Bir ad verin, ör. Defter", "ol.threadType": "Olay örgüsü", "ol.threadRename": "{name} olay örgüsünün adı", "ol.threadDel": "{name} olay örgüsünü notlarıyla birlikte kaldır", "ol.threadDeleted": "Olay örgüsü kaldırıldı: {name}", "ol.threadAdded": "Olay örgüsü eklendi: {name}", "ol.threadNoteFor": "{thread} · {sec}", "ol.threadNotes": "not: {n}" },
+        "ar": { "ol.viewGrid": "الشبكة", "ol.gridSub": "كل صف قسم من قصتك. الخيوط الحبكية أعمدتك الخاصة: دوّن ما يفعله كل خيط في كل قسم، قبل كتابته أو بعدها. أما أعمدة الميثاق فتمتلئ وحدها: يعدّ كل مربع كم مرة يرد ذلك الاسم في ذلك القسم، بحسب النص كما هو الآن. اختر مربعًا لتفتح المكتب عند ذلك الاسم.", "ol.gridEmpty": "أضف خيطًا حبكيًا لتخطط الكتاب قسمًا قسمًا، أو أضف إلى الميثاق أشخاص كتابك وأماكنه وأشياءه: يصير كل منها عمودًا هنا.", "ol.gridOpenCov": "افتح الميثاق", "ol.gridNoSecs": "لا أقسام في القصة بعد.", "ol.gridSection": "القسم", "ol.gridTotal": "الكتاب كله", "ol.gridAria": "القصة قسمًا قسمًا، أمام الخيوط الحبكية ومداخل الميثاق", "ol.threadAdd": "أضف خيطًا حبكيًا", "ol.threadName": "اسم الخيط الحبكي الجديد", "ol.threadNamePh": "سمِّه، مثل: دفتر الحسابات", "ol.threadType": "خيط حبكي", "ol.threadRename": "اسم الخيط الحبكي {name}", "ol.threadDel": "أزل الخيط الحبكي {name} وملاحظاته", "ol.threadDeleted": "أُزيل الخيط الحبكي: {name}", "ol.threadAdded": "أُضيف الخيط الحبكي: {name}", "ol.threadNoteFor": "{thread} في {sec}", "ol.threadNotes": "الملاحظات: {n}" },
+        "ja": { "ol.viewGrid": "グリッド", "ol.gridSub": "各行は物語のセクションです。プロットの筋はあなた自身の列です。各セクションでその筋が何をするかを、書く前でも後でもメモできます。盟約の列は自動で埋まります。マスには、その名前がそのセクションに何回出てくるかを、いまの本文から数えて表示します。マスを選ぶと、その名前の箇所でデスクが開きます。", "ol.gridEmpty": "プロットの筋を追加すると、セクションごとに本を計画できます。また、盟約に本の人物・場所・ものを追加すると、それぞれがここで列になります。", "ol.gridOpenCov": "盟約を開く", "ol.gridNoSecs": "物語にはまだセクションがありません。", "ol.gridSection": "セクション", "ol.gridTotal": "本全体", "ol.gridAria": "物語をセクションごとに、プロットの筋と盟約の項目に照らして表示", "ol.threadAdd": "プロットの筋を追加", "ol.threadName": "新しいプロットの筋の名前", "ol.threadNamePh": "名前を付ける（例：帳簿）", "ol.threadType": "プロットの筋", "ol.threadRename": "プロットの筋「{name}」の名前", "ol.threadDel": "プロットの筋「{name}」とメモを削除", "ol.threadDeleted": "プロットの筋を削除しました：{name}", "ol.threadAdded": "プロットの筋を追加しました：{name}", "ol.threadNoteFor": "{sec} の {thread}", "ol.threadNotes": "メモ: {n}" },
+        "zh-Hans": { "ol.viewGrid": "网格", "ol.gridSub": "每一行是故事的一个部分。情节线是你自己的列：记下每条情节线在每个部分里做了什么，写之前写之后都可以。盟约的列会自动填满：方格显示这个名字在该部分出现的次数，按正文当前的样子统计。选择一个方格，即可在书桌上打开该名字所在之处。", "ol.gridEmpty": "添加一条情节线，逐部分规划这本书；或在盟约中添加书里的人物、地点和事物，每一个都会在这里成为一列。", "ol.gridOpenCov": "打开盟约", "ol.gridNoSecs": "故事还没有任何部分。", "ol.gridSection": "部分", "ol.gridTotal": "全书", "ol.gridAria": "按部分逐一列出故事，对照情节线和盟约条目", "ol.threadAdd": "添加情节线", "ol.threadName": "新情节线的名称", "ol.threadNamePh": "起个名字，例如：账本", "ol.threadType": "情节线", "ol.threadRename": "情节线「{name}」的名称", "ol.threadDel": "删除情节线「{name}」及其笔记", "ol.threadDeleted": "已删除情节线：{name}", "ol.threadAdded": "已添加情节线：{name}", "ol.threadNoteFor": "{sec}中的{thread}", "ol.threadNotes": "笔记：{n}" }
       };
       Object.keys(OL_GRID_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_GRID_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
@@ -19669,6 +19655,42 @@
         sceneFor("The Ferry Crossing", 0, "sample-img-chart", "The Crossing",
           "The meridian chart — the harbour, the channel and the beacon, drawn in an ink that never quite dried",
           "The meridian chart, drawn in the chart room at Gull Terrace.");
+        /* The planning layer, so the Outline's Grid has something true to
+           show on first open: the Covenant's people and places (their
+           columns fill themselves from the text), and three plot threads
+           with a note where each one moves, every note taken from that
+           chapter's own pages. None of it is book text: the counts stay
+           at 24,825 words and no export reads it. */
+        const sampleBible = { entries: [
+          { id: "sample-cov-mara", type: "character", name: "Mara", aliases: ["Miss Vane"], description: "Chart corrector, home to Gullwick after eleven years." },
+          { id: "sample-cov-elias", type: "character", name: "Elias Vane", description: "Master pilot; Mara's father." },
+          { id: "sample-cov-tomas", type: "character", name: "Tomas", aliases: ["Tomas Rill"], description: "Fisherman; his boat is the Wren." },
+          { id: "sample-cov-nell", type: "character", name: "Nell", aliases: ["Nell Rill"], description: "Tomas's granddaughter." },
+          { id: "sample-cov-agnes", type: "character", name: "Agnes", aliases: ["Agnes Crowe"], description: "Gullwick's harbourmaster, keeper of the ledgers." },
+          { id: "sample-cov-petra", type: "character", name: "Petra", aliases: ["Petra Howe"], description: "Archivist; wrote to Mara twice a year for eleven years." },
+          { id: "sample-cov-venn", type: "character", name: "Mr. Venn", description: "Of Harrow and Venn." },
+          { id: "sample-cov-gullwick", type: "place", name: "Gullwick", description: "The harbour town." },
+          { id: "sample-cov-terrace", type: "place", name: "Gull Terrace", description: "The Vane house above the harbour, shut for eleven years." }
+        ].map(bibleNormalizeEntry) };
+        const threads = [
+          { id: "sample-th-channel", name: "The east channel", colour: 3 },
+          { id: "sample-th-keeper", name: "Elias's chart", colour: 0 },
+          { id: "sample-th-venn", name: "Harrow and Venn", colour: 5 }
+        ];
+        const noteFor = (title, notes) => { const s = secs.find((x) => x.title === title); if (s) s.threads = Object.assign(s.threads || {}, notes); };
+        noteFor("The Ferry Crossing", { "sample-th-keeper": "Mara crosses home holding her father's chart case." });
+        noteFor("The Wrong-Way Water", { "sample-th-channel": "Tomas shows her the tide running the wrong way past the piles. The town has kept a true ledger." });
+        noteFor("The Tide Table for Next Year", { "sample-th-channel": "In the harbour ledger: \"M. sounded the gut today, six fathoms.\"" });
+        noteFor("The Harbourmaster's Ledger", { "sample-th-keeper": "Agnes brings the sailcloth ledger: \"You were never not the Keeper, Miss Vane.\"" });
+        noteFor("A Light East of the Beacon", { "sample-th-channel": "Out on the Wren, east of the beacon.", "sample-th-keeper": "The beacon went dark the night Elias Vane died." });
+        noteFor("The Keeper's Letter", { "sample-th-keeper": "Mara opens her father's letter on the third evening." });
+        noteFor("Soundings at Low Water", { "sample-th-channel": "Nine days sounding the channel at low water with Tomas and Nell.", "sample-th-venn": "\"Now we find out what Venn calls it.\"" });
+        noteFor("Harrow and Venn", { "sample-th-venn": "Mr. Venn comes to talk, and leaves less like an adversary." });
+        noteFor("The Ferry That Did Not Run", { "sample-th-channel": "The storm cancels the Kestrel; strangers use the chart in the dark.", "sample-th-keeper": "The chart outlives its maker by being useful." });
+        noteFor("The Council of Pilots", { "sample-th-channel": "The Board finds the oldest law and the newest chart are the same document." });
+        noteFor("The Channel Runs East", { "sample-th-channel": "Five votes to four: the Board recognises the correction.", "sample-th-venn": "Venn's own casting hand is raised with the rest." });
+        noteFor("What the Chart Cost", { "sample-th-channel": "Published in the Notices to Mariners: Chart 1147, Gullwick and Approaches." });
+        noteFor("The Fair Sheet", { "sample-th-channel": "By spring, Gullwick is a port again." });
         const firstChapter = secs.find((s) => s.type === "chapter");
         /* The finished cover: serene harbour artwork painted for the
            book, with the title and author typeset over it through the
@@ -19694,6 +19716,8 @@
           theme: Object.assign({}, PRESETS[0].theme),
           activePreset: "classic",
           sections: secs,
+          bible: sampleBible,
+          outline: { tags: [], filters: [], threads: threads },
           cover: sampleCoverDoc(), /* BEUK:slim */
           coverRecipe: recipe,
           images: sampleImagesDoc(), /* BEUK:slim */
@@ -31490,6 +31514,9 @@
       const OL_STATUSES = ["todo", "draft", "revised", "final"];
       const OL_TAG_COLOURS = 8;
       const OL_PREFS_KEY = "beuk.outline.v1";
+      const OL_THREADS_MAX = 30;
+      const OL_THREAD_ID = /^[\w-]{1,64}$/;
+      const olCleanThread = (n) => String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 60);
       const olTagKey = (n) => String(n || "").trim().toLowerCase();
       function olCleanTag(n) { return String(n == null ? "" : n).replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim().slice(0, 40); }
       /* The section's own planning fields, read strictly; only the ones it has. */
@@ -31504,6 +31531,15 @@
           if (tags.length) out.tags = tags.slice(0, 30);
         }
         if (typeof s.pov === "string" && s.pov.trim()) out.pov = s.pov.slice(0, 80);
+        /* plot-thread notes: { threadId: note }, only the non-empty ones */
+        if (s.threads && typeof s.threads === "object" && !Array.isArray(s.threads)) {
+          const th = {};
+          Object.keys(s.threads).slice(0, OL_THREADS_MAX).forEach((id) => {
+            const v = s.threads[id];
+            if (OL_THREAD_ID.test(id) && typeof v === "string" && v.trim()) th[id] = v.slice(0, 2000);
+          });
+          if (Object.keys(th).length) out.threads = th;
+        }
         return out;
       }
       /* The book's tag registry (name + colour) and saved filters. A tag a
@@ -31533,15 +31569,32 @@
           const tg = (Array.isArray(f.tags) ? f.tags : []).map(olCleanTag).filter((n) => n && seen.has(olTagKey(n)));
           filters.push({ id: typeof f.id === "string" && f.id ? f.id.slice(0, 64) : uid(), name: name, status: Array.from(new Set(st)), tags: Array.from(new Set(tg)) });
         });
-        return { tags: tags, filters: filters.slice(0, 40) };
+        /* plot threads: the Grid's own columns, each section holding its note */
+        const threads = [], tids = new Set();
+        (Array.isArray(src.threads) ? src.threads : []).forEach((x) => {
+          if (!x || typeof x !== "object" || threads.length >= OL_THREADS_MAX) return;
+          const id = typeof x.id === "string" && OL_THREAD_ID.test(x.id) ? x.id : null, name = olCleanThread(x.name);
+          if (!id || !name || tids.has(id)) return;
+          const c = Math.floor(Number(x.colour));
+          tids.add(id);
+          threads.push({ id: id, name: name, colour: isFinite(c) && c >= 0 && c < OL_TAG_COLOURS ? c : threads.length % OL_TAG_COLOURS });
+        });
+        /* a note whose thread the book does not have is dropped */
+        (sections || []).forEach((s) => {
+          if (!s || !s.threads || typeof s.threads !== "object") return;
+          Object.keys(s.threads).forEach((id) => { if (!tids.has(id)) delete s.threads[id]; });
+          if (!Object.keys(s.threads).length) delete s.threads;
+        });
+        return { tags: tags, filters: filters.slice(0, 40), threads: threads };
       }
       function olBook() {
-        if (!state.outline || !Array.isArray(state.outline.tags) || !Array.isArray(state.outline.filters)) state.outline = olNormalize(state.outline, state.sections);
+        if (!state.outline || !Array.isArray(state.outline.tags) || !Array.isArray(state.outline.filters) || !Array.isArray(state.outline.threads)) state.outline = olNormalize(state.outline, state.sections);
         return state.outline;
       }
-      const olBookSet = () => !!(state.outline && ((state.outline.tags || []).length || (state.outline.filters || []).length)) ||
+      const olBookSet = () => !!(state.outline && ((state.outline.tags || []).length || (state.outline.filters || []).length || (state.outline.threads || []).length)) ||
         state.sections.some((s) => Array.isArray(s.tags) && s.tags.length);
-      const olBookPack = () => JSON.parse(JSON.stringify(olNormalize(state.outline, state.sections)));
+      /* a book without threads keeps the shape it had before them */
+      const olBookPack = () => { const p = JSON.parse(JSON.stringify(olNormalize(state.outline, state.sections))); if (!p.threads.length) delete p.threads; return p; };
       const olTagOf = (name) => olBook().tags.find((x) => olTagKey(x.name) === olTagKey(name)) || null;
 
       /* ---- the view's own state: per device, never in the book ---- */
@@ -31664,12 +31717,13 @@
           if (ae.id) olUi.focus = { domId: ae.id, a: ae.selectionStart, b: ae.selectionEnd };
           else if (host) {
             const f = ae.getAttribute("data-olf"), mv = ae.getAttribute("data-olmv");
-            olUi.focus = { id: host.getAttribute("data-ol"), sel: f ? '[data-olf="' + f + '"]' : mv ? '[data-olmv="' + mv + '"]' : ae.classList.contains("ol-open") ? ".ol-open" : null, a: ae.selectionStart, b: ae.selectionEnd };
-          } else if (ae.getAttribute("data-olkey")) olUi.focus = { key: ae.getAttribute("data-olkey") };
+            const th = ae.getAttribute("data-olth");
+            olUi.focus = { id: host.getAttribute("data-ol"), sel: th ? '[data-olth="' + th + '"]' : f ? '[data-olf="' + f + '"]' : mv ? '[data-olmv="' + mv + '"]' : ae.classList.contains("ol-open") ? ".ol-open" : null, a: ae.selectionStart, b: ae.selectionEnd };
+          } else if (ae.getAttribute("data-olkey")) olUi.focus = { key: ae.getAttribute("data-olkey"), a: ae.selectionStart, b: ae.selectionEnd };
         }
         const items = olItems();
         const list = olUi.view === "list", grid = olUi.view === "grid";
-        const countable = grid ? bibleColumns(state.sections).map((c) => c.sec) : items.filter((s) => s.type !== "part");
+        const countable = grid ? olGridSecs() : items.filter((s) => s.type !== "part");
         const shown = countable.filter(olMatches).length, hidden = countable.length - shown;
         const vb = (v, icon, label) => '<button type="button" data-olview="' + v + '" data-olkey="v-' + v + '" class="' + (olUi.view === v ? "active" : "") + '" aria-pressed="' + (olUi.view === v) + '"><i data-lucide="' + icon + '"></i>' + esc(t(label)) + "</button>";
         let h = '<div class="ol-head"><div><h2 id="olTitle">' + esc(t("ol.title")) + "</h2><p>" + esc(t(grid ? "ol.gridSub" : "ol.sub")) + "</p></div>" +
@@ -31755,53 +31809,70 @@
           }
         }
       }
-      /* ---- Grid: where each Covenant entry appears, section by section ----
-         Rows are the story's sections that hold words (the same columns
-         the Covenant's heatmap and Names on stage draw), narrowed by the
-         status and tag filter like the cards; columns are the Covenant's
-         entries, by type, then by first appearance. Every number is
-         counted from the text as it stands by the Covenant's own matcher
-         (bibleMentions, cached on the text), so there is nothing to fill
-         in and nothing is stored: opening the grid leaves the book file
-         byte-identical. A square opens the desk at that section's first
-         mention of the name. */
+      /* ---- Grid: the story section by section, against plot threads and the Covenant ----
+         Rows are the story's own sections (body matter, Parts aside), in
+         book order, narrowed by the status and tag filter like the cards;
+         a section with no words yet is a row too, so a book can be
+         planned before it is written. Two kinds of column:
+         - plot threads, the writer's own (Dabble's Plot Grid): each
+           square is a note on what that thread does in that section,
+           kept on the section as `threads: { id: note }` and named in
+           the book's `outline.threads`. Notes, like synopses, are not
+           book text: never exported, never counted as words.
+         - the Covenant's entries, by type, then first appearance: each
+           square is the Covenant's own count of that name in that
+           section (bibleMentions, cached on the text), so those columns
+           fill themselves and store nothing. A square opens the desk at
+           that section's first mention of the name. */
+      const olGridSecs = () => insBodySections(state.sections).filter((s) => s.type !== "part");
       function olGridEntries(per) {
         const first = (e) => { const p = per[e.id], i = p ? p.counts.findIndex((n) => n > 0) : -1; return i < 0 ? Infinity : i; };
         return bibleAllEntries().slice().sort((a, b) =>
           BIBLE_TYPES.indexOf(a.type) - BIBLE_TYPES.indexOf(b.type) || first(a) - first(b) || bibleName(a).localeCompare(bibleName(b)));
       }
       function olGridHtml() {
-        const ents = bibleAllEntries();
-        if (!ents.length) {
-          return '<div class="ol-empty ol-g-empty"><p>' + esc(t("ol.gridEmpty")) + '</p><button type="button" class="tb-btn" data-olcov="1" data-olkey="g-cov"><i data-lucide="book-marked"></i>' + esc(t("ol.gridOpenCov")) + "</button></div>";
-        }
-        const men = bibleMentions();
-        if (!men.cols.length) return '<div class="ol-empty">' + esc(t("ol.gridNoText")) + "</div>";
-        const order = olGridEntries(men.per);
+        const ents = bibleAllEntries(), threads = olBook().threads;
+        let h = '<div class="ol-gridbar"><input type="text" class="txt-input" id="olThreadName" maxlength="60" placeholder="' + esc(t("ol.threadNamePh")) + '" aria-label="' + esc(t("ol.threadName")) + '">' +
+          '<button type="button" class="tb-btn" id="olThreadAdd"' + (threads.length >= OL_THREADS_MAX ? " disabled" : "") + '><i data-lucide="plus"></i>' + esc(t("ol.threadAdd")) + "</button>" +
+          '<button type="button" class="ol-link" data-olcov="1" data-olkey="g-cov"><i data-lucide="book-marked" style="width:13px;height:13px;" aria-hidden="true"></i>' + esc(t("ol.gridOpenCov")) + "</button></div>";
+        if (!ents.length && !threads.length) return h + '<div class="ol-empty ol-g-empty"><p>' + esc(t("ol.gridEmpty")) + "</p></div>";
+        const secs = olGridSecs();
+        if (!secs.length) return h + '<div class="ol-empty">' + esc(t("ol.gridNoSecs")) + "</div>";
+        const rows = secs.filter(olMatches);
+        if (!rows.length) return h + '<div class="ol-empty">' + esc(t("ol.empty")) + "</div>";
+        const men = ents.length ? bibleMentions() : { cols: [], per: {} };
+        const ci = {}; men.cols.forEach((c, i) => { ci[c.id] = i; });
+        const order = ents.length ? olGridEntries(men.per) : [];
         const zero = { total: 0, counts: [], hits: [] };
-        const rows = men.cols.map((c, ci) => ({ c: c, ci: ci, sec: state.sections.find((s) => s.id === c.id) })).filter((r) => r.sec && olMatches(r.sec));
-        if (!rows.length) return '<div class="ol-empty">' + esc(t("ol.empty")) + "</div>";
         const max = {};
         order.forEach((e) => { max[e.id] = Math.max(1, ...(men.per[e.id] || zero).counts); });
-        let h = '<div class="ol-gridwrap"><table class="ol-grid" id="olGrid" aria-label="' + esc(t("ol.gridAria")) + '"><thead><tr><th scope="col" class="ol-g-corner">' + esc(t("ol.gridSection")) + "</th>" +
+        h += '<div class="ol-gridwrap"><table class="ol-grid" id="olGrid" aria-label="' + esc(t("ol.gridAria")) + '"><thead><tr><th scope="col" class="ol-g-corner">' + esc(t("ol.gridSection")) + "</th>" +
+          threads.map((th) => '<th scope="col" class="ol-g-th" style="--ol-tc:var(--ol-c' + th.colour + ')"><span class="ol-g-ty">' + esc(t("ol.threadType")) + "</span>" +
+            '<span class="ol-g-thname"><input type="text" dir="auto" maxlength="60" value="' + esc(th.name) + '" data-olthname="' + esc(th.id) + '" data-olkey="thn-' + esc(th.id) + '" aria-label="' + esc(t("ol.threadRename", { name: th.name })) + '">' +
+            '<button type="button" class="ol-mini" data-olthdel="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadDel", { name: th.name })) + '" title="' + esc(t("ol.threadDel", { name: th.name })) + '"><i data-lucide="x"></i></button></span></th>').join("") +
           order.map((e) => {
             const p = men.per[e.id] || zero;
             return '<th scope="col" class="' + (p.total ? "" : "ol-g-dim") + '" title="' + esc(bibleName(e)) + '"><span class="ol-g-ty">' + esc(bibleTypeLabel(e.type)) + '</span><span class="ol-g-ent" dir="auto">' + esc(bibleName(e)) + "</span></th>";
           }).join("") + "</tr></thead><tbody>";
-        rows.forEach((r) => {
-          const st = OL_STATUSES.includes(r.sec.status) ? r.sec.status : "";
-          h += '<tr data-olgrow="' + esc(r.c.id) + '"><th scope="row" title="' + esc(r.c.label) + '"><span class="ol-dot' + (st ? "" : " none") + '" style="--ol-st:' + olStatusVar(st) + '" aria-hidden="true"></span><span dir="auto">' + esc(r.c.label) + "</span></th>";
+        rows.forEach((s) => {
+          const st = OL_STATUSES.includes(s.status) ? s.status : "", label = castSecLabel(s), i = ci[s.id];
+          h += '<tr data-ol="' + esc(s.id) + '" data-olgrow="' + esc(s.id) + '"><th scope="row" title="' + esc(label) + '"><span class="ol-dot' + (st ? "" : " none") + '" style="--ol-st:' + olStatusVar(st) + '" aria-hidden="true"></span><span dir="auto">' + esc(label) + "</span></th>";
+          threads.forEach((th) => {
+            const v = s.threads && typeof s.threads[th.id] === "string" ? s.threads[th.id] : "";
+            h += '<td class="ol-g-note" style="--ol-tc:var(--ol-c' + th.colour + ')"><textarea dir="auto" rows="' + Math.max(2, Math.min(5, Math.ceil(v.length / 26))) + '" maxlength="2000" data-olf="thread" data-olth="' + esc(th.id) + '" aria-label="' + esc(t("ol.threadNoteFor", { thread: th.name, sec: label })) + '">' + esc(v) + "</textarea></td>";
+          });
           order.forEach((e) => {
-            const n = (men.per[e.id] || zero).counts[r.ci] || 0;
-            const tip = bibleName(e) + " — " + (n ? t("bible.cellTip", { count: n, n: fmtNum(n), sec: r.c.label }) : t("bible.cellNone", { sec: r.c.label }));
+            const n = i == null ? 0 : (men.per[e.id] || zero).counts[i] || 0;
+            const tip = bibleName(e) + " — " + (n ? t("bible.cellTip", { count: n, n: fmtNum(n), sec: label }) : t("bible.cellNone", { sec: label }));
             if (!n) { h += '<td><span class="ol-g-cell zero" data-n="0" title="' + esc(tip) + '" aria-label="' + esc(tip) + '" role="img"></span></td>'; return; }
             const lv = CAST_STEPS[Math.min(CAST_STEPS.length - 1, Math.floor((n / max[e.id]) * (CAST_STEPS.length - 1e-9)))];
-            h += '<td><button type="button" class="ol-g-cell' + (lv >= 0.58 ? " deep" : "") + '" data-n="' + n + '" data-olg="' + esc(e.id) + '" data-olgsec="' + esc(r.c.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+            h += '<td><button type="button" class="ol-g-cell' + (lv >= 0.58 ? " deep" : "") + '" data-n="' + n + '" data-olg="' + esc(e.id) + '" data-olgsec="' + esc(s.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
               '<span style="opacity:' + lv + '"></span><b>' + esc(fmtNum(n)) + "</b></button></td>";
           });
           h += "</tr>";
         });
         h += '</tbody><tfoot><tr><th scope="row">' + esc(t("ol.gridTotal")) + "</th>" +
+          threads.map((th) => { const n = secs.filter((s) => s.threads && s.threads[th.id]).length; return '<td data-olgtotal="' + esc(th.id) + '">' + esc(t("ol.threadNotes", { n: fmtNum(n) })) + "</td>"; }).join("") +
           order.map((e) => { const n = (men.per[e.id] || zero).total; return '<td data-olgtotal="' + esc(e.id) + '">' + esc(fmtNum(n)) + "</td>"; }).join("") + "</tr></tfoot></table></div>";
         return h;
       }
@@ -31937,6 +32008,46 @@
         toast(t("ol.savedToast", { name: n }), "bookmark-plus");
         return f;
       }
+      /* ---- plot threads: the writer's own Grid columns ---- */
+      function olAddThread(raw) {
+        const n = olCleanThread(raw), ob = olBook();
+        if (!n || ob.threads.length >= OL_THREADS_MAX) return null;
+        const used = new Set(ob.threads.map((x) => x.colour));
+        let c = 0; while (c < OL_TAG_COLOURS - 1 && used.has(c)) c++;
+        const th = { id: uid(), name: n, colour: c };
+        ob.threads.push(th);
+        noteBookEdited();
+        return th;
+      }
+      function olRenameThread(id, raw) {
+        const th = olBook().threads.find((x) => x.id === id), n = olCleanThread(raw);
+        if (!th || !n || n === th.name) return false;
+        th.name = n; noteBookEdited();
+        return true;
+      }
+      function olSetThreadNote(s, id, value) {
+        if (!s || !olBook().threads.some((x) => x.id === id)) return;
+        const v = String(value == null ? "" : value).slice(0, 2000);
+        if (v.trim()) { if (!s.threads || typeof s.threads !== "object") s.threads = {}; s.threads[id] = v; }
+        else if (s.threads) { delete s.threads[id]; if (!Object.keys(s.threads).length) delete s.threads; }
+        noteBookEdited();
+      }
+      /* Removing a thread takes its notes from every section, with an Undo that puts all of it back. */
+      function olDeleteThread(id) {
+        const ob = olBook(), th = ob.threads.find((x) => x.id === id);
+        if (!th) return;
+        const before = { list: JSON.parse(JSON.stringify(ob.threads)), notes: {} };
+        state.sections.forEach((s) => { if (s.threads && s.threads[id] != null) before.notes[s.id] = s.threads[id]; });
+        ob.threads = ob.threads.filter((x) => x.id !== id);
+        state.sections.forEach((s) => { if (s.threads) { delete s.threads[id]; if (!Object.keys(s.threads).length) delete s.threads; } });
+        noteBookEdited();
+        olRender();
+        toast(t("ol.threadDeleted", { name: th.name }), "trash-2", { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => {
+          olBook().threads = before.list;
+          state.sections.forEach((s) => { if (before.notes[s.id] != null) { if (!s.threads) s.threads = {}; s.threads[id] = before.notes[s.id]; } });
+          noteBookEdited(); olRender();
+        } });
+      }
       function olApplySaved(id) {
         const f = olBook().filters.find((x) => x.id === id);
         if (!f) return false;
@@ -31957,6 +32068,14 @@
           if (el.hasAttribute("data-olview")) { const v = el.getAttribute("data-olview"); olUi.view = v === "list" || v === "grid" ? v : "cards"; olSavePrefs(); olRender(); return; }
           if (el.hasAttribute("data-olg")) { olGridOpen(el.getAttribute("data-olg"), el.getAttribute("data-olgsec")); return; }
           if (el.hasAttribute("data-olcov")) { openBible(); return; }
+          if (el.id === "olThreadAdd") {
+            const inp = $("olThreadName");
+            if (!inp || !olCleanThread(inp.value)) { if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); } return; }
+            const th = olAddThread(inp.value);
+            if (th) { olUi.focus = { domId: "olThreadName" }; olRender(); olLive(t("ol.threadAdded", { name: th.name })); }
+            return;
+          }
+          if (el.hasAttribute("data-olthdel")) { olDeleteThread(el.getAttribute("data-olthdel")); return; }
           if (el.hasAttribute("data-olmatter")) { olUi.matter = !olUi.matter; olSavePrefs(); olRender(); return; }
           if (el.hasAttribute("data-olst")) {
             const st = el.getAttribute("data-olst");
@@ -31997,7 +32116,8 @@
         });
         root.addEventListener("input", (e) => {
           const el = e.target, f = el.getAttribute && el.getAttribute("data-olf");
-          if (el.id === "olSaveName") { el.removeAttribute("aria-invalid"); return; }
+          if (el.id === "olSaveName" || el.id === "olThreadName") { el.removeAttribute("aria-invalid"); return; }
+          if (f === "thread") { olSetThreadNote(olSec(el), el.getAttribute("data-olth"), el.value); return; }
           if (f === "synopsis" || f === "pov") { olSetField(olSec(el), f, el.value); return; }
           /* a suggestion picked from the list arrives whole */
           if (f === "tagin" && (!e.inputType || e.inputType === "insertReplacementText") && el.value.trim()) {
@@ -32007,6 +32127,12 @@
         });
         root.addEventListener("change", (e) => {
           const el = e.target;
+          if (el.getAttribute && el.hasAttribute("data-olthname")) {
+            const id = el.getAttribute("data-olthname");
+            if (olRenameThread(id, el.value)) olRender();
+            else { const th = olBook().threads.find((x) => x.id === id); if (th) el.value = th.name; }
+            return;
+          }
           if (el.getAttribute && el.getAttribute("data-olf") === "status") {
             const s = olSec(el);
             olSetField(s, "status", el.value);
@@ -32016,6 +32142,8 @@
         root.addEventListener("keydown", (e) => {
           const el = e.target;
           if (el.id === "olSaveName" && e.key === "Enter") { e.preventDefault(); const b = $("olSaveDo"); if (b) b.click(); return; }
+          if (el.id === "olThreadName" && e.key === "Enter") { e.preventDefault(); const b = $("olThreadAdd"); if (b) b.click(); return; }
+          if (el.hasAttribute && el.hasAttribute("data-olthname") && e.key === "Enter") { e.preventDefault(); el.blur(); return; }
           if (el.getAttribute && el.getAttribute("data-olf") === "tagin") {
             if ((e.key === "Enter" || e.key === ",") && el.value.trim()) {
               e.preventDefault();
@@ -32039,7 +32167,7 @@
         let dragId = null;
         root.addEventListener("pointerdown", (e) => {
           const host = e.target.closest && e.target.closest("[data-ol]");
-          if (host) host.draggable = !e.target.closest("textarea, input, select");
+          if (host && host.tagName !== "TR") host.draggable = !e.target.closest("textarea, input, select"); /* a Grid row is not dragged */
         });
         const clearDrop = () => root.querySelectorAll(".drop-before, .drop-after").forEach((x) => x.classList.remove("drop-before", "drop-after"));
         const dropSide = (host, ev) => {
@@ -60203,6 +60331,74 @@
               const openOk = state.activeId === f.c2.id && currentCenterTab === "content" && !!area && area.value.slice(area.selectionStart, area.selectionEnd) === "Tomas";
               if (!openOk) bad.push("the square did not open the desk at Tomas");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "columns Mara, Tomas, Agnes, Gullwick; squares equal the Covenant's counts (Mara 2·0·2·0, Tomas 1·1·1·0, Agnes none, Gullwick 1·0·0·0) with totals; Draft → chapter 2 only; Tomas in chapter 2 opened the desk on \"Tomas\"; book file unchanged");
+            }));
+          } },
+        { id: "outline.grid.threads", feature: "outline", name: "Grid plot threads: a thread added and named in the Grid becomes a column before the Covenant's; a note typed in a square lands on that section (a section with no words yet is a row too); a renamed thread keeps its notes; threads and notes ride serializeBook/applyBookDoc; they never reach the EPUB, the print interior or the Word manuscript and never change a word count; removing a thread takes its notes and Undo brings them back; a book without threads keeps no threads key",
+          run() {
+            return bibleCheckGuard(() => olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              f.c1.content = "Mara found the ledger.";
+              f.c3.content = "";
+              state.bible = { entries: [bibleNormalizeEntry({ id: "ot-m", type: "character", name: "Mara" })] };
+              bibleBookArrived();
+              const noKey = serializeBook(), noOk = !(noKey.outline && "threads" in noKey.outline) && noKey.sections.every((s) => !("threads" in s));
+              if (!noOk) bad.push("a book without threads carries a threads key");
+              const stamp = (s) => String(s).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "T").replace(/urn:uuid:[0-9a-f-]+/gi, "U");
+              const grab = () => ({
+                epub: stamp(epubFiles("generic").map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                print: stamp(buildPrintHtml()),
+                docx: stamp(buildDocxFiles().map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                words: bookWordTotal() + "|" + state.sections.map((s) => sectionWords(s)).join(",")
+              });
+              const a = grab();
+              olCheckOpen("grid");
+              const add = (name) => { const inp = $("olThreadName"); inp.value = name; inp.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); };
+              add("Threadmarkledger"); add("Threadmarksecret");
+              const ths = olBook().threads;
+              if (ths.map((x) => x.name).join(",") !== "Threadmarkledger,Threadmarksecret") bad.push("threads added: " + ths.map((x) => x.name).join(","));
+              const heads = Array.from(document.querySelectorAll("#olGrid thead th")).map((el) => el.classList.contains("ol-g-th") ? "T" : el.classList.contains("ol-g-corner") ? "S" : "C").join("");
+              if (heads !== "STTC") bad.push("column order " + heads);
+              const rowIds = Array.from(document.querySelectorAll("#olGrid tbody tr")).map((el) => el.getAttribute("data-olgrow"));
+              if (rowIds.indexOf(f.c3.id) === -1) bad.push("a section with no words has no row");
+              const note = (sec, th, v) => { const ta = document.querySelector('#olGrid tr[data-ol="' + sec.id + '"] textarea[data-olth="' + th.id + '"]'); if (!ta) { bad.push("no square for a note"); return; } ta.value = v; ta.dispatchEvent(new Event("input", { bubbles: true })); };
+              note(f.c1, ths[0], "Notemarkalpha Mara hides the ledger");
+              note(f.c3, ths[0], "Notemarkbeta the ledger burns");
+              note(f.c2, ths[1], "Notemarkgamma");
+              if (f.c1.threads[ths[0].id] !== "Notemarkalpha Mara hides the ledger" || f.c3.threads[ths[0].id] !== "Notemarkbeta the ledger burns") bad.push("notes did not land on their sections");
+              /* rename through the header field */
+              olRender();
+              const nm = document.querySelector('#olGrid [data-olthname="' + ths[0].id + '"]');
+              if (nm) { nm.value = "Threadmarkbook"; nm.dispatchEvent(new Event("change", { bubbles: true })); }
+              if (olBook().threads[0].name !== "Threadmarkbook" || f.c1.threads[ths[0].id] !== "Notemarkalpha Mara hides the ledger") bad.push("rename lost the name or the notes");
+              const tot = document.querySelector('#olGrid [data-olgtotal="' + ths[0].id + '"]');
+              if (!tot || tot.textContent !== t("ol.threadNotes", { n: fmtNum(2) })) bad.push("thread total " + (tot && tot.textContent));
+              /* the book file carries them */
+              const doc = JSON.parse(JSON.stringify(serializeBook()));
+              applyBookDoc(doc);
+              const back = state.sections.find((s) => s.id === f.c3.id), tid = ths[0].id;
+              const tripOk = olBook().threads.length === 2 && olBook().threads[0].name === "Threadmarkbook" && back && back.threads && back.threads[tid] === "Notemarkbeta the ledger burns" && JSON.stringify(serializeBook()) === JSON.stringify(doc);
+              if (!tripOk) bad.push("threads did not survive the book file");
+              /* a stray note for a thread the book does not have is dropped on load */
+              const junk = JSON.parse(JSON.stringify(doc)); junk.sections.find((s) => s.id === f.c2.id).threads = { "no-such": "Strayx" };
+              applyBookDoc(junk);
+              if (state.sections.some((s) => s.threads && s.threads["no-such"])) bad.push("a stray note survived the load");
+              applyBookDoc(doc);
+              /* never book text */
+              const b = grab();
+              ["epub", "print", "docx"].forEach((k) => { if (a[k] !== b[k]) bad.push(k + " output changed"); });
+              const all = b.epub + b.print + b.docx;
+              ["Threadmark", "Notemark"].forEach((m) => { if (all.indexOf(m) !== -1) bad.push(m + " found in an export"); });
+              if (a.words !== b.words) bad.push("word counts moved");
+              /* remove, then Undo */
+              olCheckOpen("grid");
+              const del = document.querySelector('#olGrid [data-olthdel="' + tid + '"]');
+              if (del) del.click();
+              const goneOk = olBook().threads.length === 1 && !state.sections.some((s) => s.threads && s.threads[tid]);
+              const undoBtn = Array.from(document.querySelectorAll("#toasts .toast button")).pop();
+              if (undoBtn) undoBtn.click();
+              const backOk = olBook().threads.length === 2 && (state.sections.find((s) => s.id === f.c1.id).threads || {})[tid] === "Notemarkalpha Mara hides the ledger";
+              if (!goneOk || !backOk) bad.push("remove/Undo: removed " + goneOk + ", restored " + backOk);
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "two threads added through the Grid sit before the Covenant column; notes typed into squares landed on chapters 1, 2 and the wordless chapter 3; rename kept the notes; the book file round-trips byte for byte and drops a stray note; EPUB (" + b.epub.length + " chars), print (" + b.print.length + ") and Word (" + b.docx.length + ") unchanged with no marker; word counts unchanged; remove took the notes and Undo brought them back; a book without threads has no threads key");
             }));
           } }
       );

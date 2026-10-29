@@ -2254,11 +2254,23 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   bar says how many are shown and how many the filter hides. A filter can
   be saved under a name ("Needs work") and reopened in one click; saved
   filters ride the book.
-- **Grid** (the third view, `olGridHtml`). Rows are the story's sections
-  that hold words (`bibleColumns`, the same columns as the Covenant's
-  heatmap and Names on stage), in book order and narrowed by the status
-  and tag filter; columns are the Covenant's entries, by type, then by
-  first appearance, then by name. Each square is the Covenant's own count
+- **Grid** (the third view, `olGridHtml`). Rows are the story's own
+  sections (body matter, Parts aside; `olGridSecs`), in book order and
+  narrowed by the status and tag filter. A section with no words yet is a
+  row too, so a book can be planned before it is written.
+- **Plot threads** are the Grid's first columns, the writer's own
+  (Dabble's Plot Grid). A thread is added from the bar above the grid,
+  renamed in its header, and removed there with Undo (its notes go with
+  it and come back with it). Each square is a note of up to 2,000
+  characters on what that thread does in that section. Threads ride the
+  book as `outline.threads: [{ id, name, colour }]` (up to 30); notes ride
+  their section as `threads: { threadId: note }`, only the non-empty
+  ones. A note whose thread the book does not have is dropped on load. A
+  book without threads writes no `threads` key anywhere, so it serializes
+  as before. Like synopses, notes are not book text: no export reads them
+  and no word count counts them. Self-check: `outline.grid.threads`.
+- **Covenant columns** follow the threads: the Covenant's entries, by
+  type, then by first appearance, then by name. Each square is the Covenant's own count
   of that name in that section (`bibleMentions`, cached on the text, so
   the matching rule is the Covenant's: aliases, exact case, "Not a
   mention", longest wins), shaded against that entry's busiest section;
@@ -2267,9 +2279,15 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   A square opens the desk with that section's first mention selected
   (`bibleJump`). An entry never named shows only empty squares, which is
   the point: a character who drops out of the middle of the book shows
-  as a gap. With no Covenant entries the view says how it fills and
-  offers the Covenant. Closing the Covenant redraws the grid. Self-check:
-  `outline.grid.fills-from-text`.
+  as a gap. With neither threads nor Covenant entries the view says how
+  it fills and offers both. Closing the Covenant redraws the grid.
+  Self-check: `outline.grid.fills-from-text`.
+- **In the sample.** *The Lantern Coast* ships with nine Covenant entries
+  (Mara, Elias Vane, Tomas, Nell, Agnes, Petra, Mr. Venn, Gullwick, Gull
+  Terrace) and three plot threads (The east channel, Elias's chart,
+  Harrow and Venn) with a note where each one moves, every note taken
+  from that chapter's own text (`buildSampleBook`). The sample's word
+  count stays 24,825.
 - **Per device:** Cards, List or Grid and whether front and back matter show
   (`beuk.outline.v1` in localStorage, guarded). Not in the book.
 - Phone width: cards become one column and list rows stack (container

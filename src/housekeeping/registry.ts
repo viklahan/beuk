@@ -2736,6 +2736,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The grid is drawn in the studio from the client book text and the Covenant matcher; nothing reaches the server.',
   },
+  {
+    id: 'outline.grid.threads',
+    title: 'Grid plot threads: added, named and noted in the Grid (wordless sections are rows too); renamed with notes kept; round-trip through the book file; never exported or counted; remove with Undo; a book without threads keeps no threads key',
+    kind: 'client-only',
+    reason: 'Threads and their notes ride the client book document; the server stores it as opaque JSON.',
+  },
   /* ==== /BEUK:outline ==== */
   /* ---- Word import report (client-side; BEUK:importreport) ---- */
   {
