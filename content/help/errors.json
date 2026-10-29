@@ -403,6 +403,23 @@
       "sources": ["src/routes/manuscripts.ts PUT 409", "client/index.html offline.conflictTitle / offline.conflictBothNote (en)"]
     },
     {
+      "code": "BEUK-C802",
+      "category": "saving",
+      "title": "Two devices saved different series Covenants",
+      "severity": "warning",
+      "says": [
+        { "from": "server", "code": "HTTP 409", "text": "revision conflict: the shelf copy has changed" }
+      ],
+      "cause": "You edited the shared Covenant of a series in two places. Beuk never overwrites silently, so the second save was refused and the shelf copy came back with the answer.",
+      "steps": [
+        "Open the series Covenant again to load the shelf copy.",
+        "Re-apply your change on top of it, then save."
+      ],
+      "guide": "saving",
+      "maps": { "epubcheck": [], "validator": [], "http": [{ "status": 409, "route": "PUT /api/series-covenants/:key" }], "store": [] },
+      "sources": ["src/routes/series-covenants.ts PUT 409"]
+    },
+    {
       "code": "BEUK-L901",
       "category": "saving",
       "title": "This browser is blocking storage",

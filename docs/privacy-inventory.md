@@ -13,7 +13,7 @@ That is a fact about the code, not a policy decision.
 
 | Data | What is stored | Evidence | How long |
 |---|---|---|---|
-| Account | email (trimmed, lower-cased), password **hash**, created_at, email_confirmed_at (when the writer opened a confirmation link; null = not confirmed) | migrations/001_users_sessions.sql:2-7, 014_account_portal.sql; src/routes/auth.ts | Until the writer deletes the account on /account ("Delete my account": current password + typed phrase; src/routes/account-portal.ts `POST /delete`, src/account/data.ts `deleteAccount`), which removes in one transaction every row the account owns (sessions, reset and confirmation links, manuscripts, exports and their files on disk, jobs, streak, shares with their comments and reader counts, billing subscriptions) and the user row. Not removed: Founders' Shelf entries (no user id), admin Housekeeping records, billing_events (user id set null; event id kept as the webhook dedupe ledger), and a live Stripe subscription the server could not cancel (kept with user id null for the operator). When a Stripe key is configured, deletion first cancels the account's live subscriptions at Stripe immediately (src/account/plan.ts `cancelBillingForDeletedAccount`; BILLING_CANCEL_PRORATE decides whether Stripe credits unused time); without a key, or when Stripe refuses, they are left for the operator. Copies remain in backups (§6). |
+| Account | email (trimmed, lower-cased), password **hash**, created_at, email_confirmed_at (when the writer opened a confirmation link; null = not confirmed) | migrations/001_users_sessions.sql:2-7, 014_account_portal.sql; src/routes/auth.ts | Until the writer deletes the account on /account ("Delete my account": current password + typed phrase; src/routes/account-portal.ts `POST /delete`, src/account/data.ts `deleteAccount`), which removes in one transaction every row the account owns (sessions, reset and confirmation links, manuscripts, series Covenants, exports and their files on disk, jobs, streak, shares with their comments and reader counts, billing subscriptions) and the user row. Not removed: Founders' Shelf entries (no user id), admin Housekeeping records, billing_events (user id set null; event id kept as the webhook dedupe ledger), and a live Stripe subscription the server could not cancel (kept with user id null for the operator). When a Stripe key is configured, deletion first cancels the account's live subscriptions at Stripe immediately (src/account/plan.ts `cancelBillingForDeletedAccount`; BILLING_CANCEL_PRORATE decides whether Stripe credits unused time); without a key, or when Stripe refuses, they are left for the operator. Copies remain in backups (§6). |
 | Email confirmations | user_id, purpose ('signup' or 'change'), the address the link went to (for a change: the NEW address, before it is confirmed), **SHA-256 hash** of the token, expires_at (48 h), used_at | migrations/014_account_portal.sql; src/account/confirm.ts | Rows older than expiry + 7 days are deleted when the next link is made (src/account/confirm.ts `issueConfirmation`). Deleted with the account. Excluded from backups (src/housekeeping/backup.ts EXCLUDED_TABLES) |
 | Password hash | argon2id, the library's default parameters. The password itself is never stored. | src/password.ts:4-7 | Replaced when the password changes (src/routes/account.ts:214) |
 | Plan / billing link | users.plan (display label, default 'free'), plan_updated_at, stripe_customer_id | migrations/005_user_billing.sql:5-8 | With the account |
@@ -22,6 +22,7 @@ That is a fact about the code, not a policy decision.
 | Sessions | user_id, **SHA-256 hash** of the session token, created_at, expires_at. No IP, no user agent. | migrations/001_users_sessions.sql:9-15; src/auth.ts:35-46 | SESSION_TTL_DAYS (default 30, src/config.ts `sessionTtlDays`); expired rows are purged at boot and every SESSION_PURGE_INTERVAL_MS (default 1 h): src/index.ts:78-88, src/auth.ts:73. Sign-out deletes the row (src/auth.ts:65); "sign out everywhere" deletes all of them (src/routes/account.ts:254). |
 | Manuscripts (the shelf) | the whole book as one JSON document (text, settings, snapshot history), title, revision, timestamps. Since migration 017 a book saved by the studio names each of its pictures ("beuk-pic:<sha256>") instead of carrying the bytes; an older doc, or one saved by an older studio, still carries them inline | migrations/002_manuscripts.sql:4-11, 009_manuscript_revision.sql:9 | Until the writer deletes it (src/routes/manuscripts.ts, DELETE) or the account goes (on delete cascade) |
 | Shelf pictures | each picture a shelf book holds (images, cover, uploaded fonts, and the copies its History keeps), stored once per account: the account id, the SHA-256 of the bytes, media type, decoded size, the bytes (base64), created and last-touched times. Plus which shelf books name which picture (manuscript id, account id, hash). Per account only: two accounts with the same picture each hold their own row; another account's hash is answered "not found" | migrations/017_pictures.sql; src/pictures.ts; src/routes/pictures.ts | A picture is deleted as soon as no shelf book of that account names it and it has not been uploaded or asked about for PICTURE_GC_GRACE_SECONDS (default 1 hour): checked after every shelf save and book deletion (src/pictures.ts collectUnusedPictures). Deleting the account deletes them all (src/account/data.ts deleteAccount). Limits: PICTURE_MAX_BYTES per picture (default 32 MiB), PICTURE_QUOTA_BYTES per account (default 2 GiB) |
+| Series Covenants | the shared Covenant (story bible) of a series as one JSON document, the series name as the writer typed it, a key derived from it (lower-cased, spaces collapsed), revision, timestamps. One row per account and series | migrations/019_series_covenants.sql; src/routes/series-covenants.ts | Until the writer deletes it (DELETE /api/series-covenants/:key) or deletes the account (src/account/data.ts `deleteAccount`). Included in "Download all my data" as series-covenants.json |
 | Writing streak | the days the server saw activity, freeze ledger, freeze balance | migrations/003_streaks.sql:8-30; heartbeat every ≥10 min while signed in: client/index.html `cloudHeartbeat` (~27494) | No limit (with the account) |
 | Beuk School progress | which School lessons the writer marked done (course slug, lesson slug, when). Signed-in writers only; nothing is stored for a visitor who is not signed in | migrations/018_school_progress.sql; src/routes/school.ts `POST /api/school/progress` | No limit (with the account); removed by "Delete my account", included in "Download all my data" as school.json |
 | Export archive | metadata row (format, preset, filename, size, sha256, manuscript id) + the export **bytes** on the exportdata volume at EXPORT_DIR/<user_id>/<export_id> | migrations/004_exports.sql:1-17; src/routes/exports.ts:107; client uploads on export/store-check: client/index.html `storeUpload` (~26911) | Until the writer deletes it (src/routes/exports.ts:191-193). Survives deleting the manuscript (manuscript_id set null). |
@@ -100,7 +101,7 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
 
 - **Local:** every BACKUP_INTERVAL_HOURS (default 24) a backup under
   BACKUP_DIR: a logical dump of BACKUP_TABLES (users incl. password
-  hashes, manuscripts, shelf pictures and which books name them,
+  hashes, manuscripts, series Covenants, shelf pictures and which books name them,
   streaks, School progress, exports, jobs, sessions,
   founders_applications, shares, share_comments, share_readers, billing)
   and a copy of the export files (src/housekeeping/backup.ts:1-55,221).
@@ -194,7 +195,19 @@ are left out (src/account/data.ts `writeAccountExport`).
 - **IndexedDB "beuk-local"** (store "kv"): the open book ("book",
   "book-prev") and the shelf link. Stays on the device; reaches the
   server only when the writer is signed in and the book syncs to the
-  shelf (client/index.html ~35134-35170).
+  shelf (client/index.html ~35134-35170). For a signed-in writer whose
+  book names a series with a shared Covenant on the shelf, also a copy
+  of that series Covenant ("series:<account id>:<series key>": the
+  series name, its Covenant document, its revision, whether it has
+  unsaved edits, and — once the writer has picked "Use the shelf copy"
+  in a series conflict — the device copy that choice replaced, with the
+  time, carried on every later write of that record until a later "Use
+  the shelf copy" replaces it with the copy that one set aside; it is
+  not shown in the studio), so it opens offline and offline edits wait
+  there. The record stays until the browser's site data is cleared.
+  Stays on the device; only the series Covenant document itself reaches
+  the server, as the series Covenant save (client/index.html,
+  BEUK:bible `bibleSeriesCachePut`).
 - **localStorage** (all prefixed `beuk.`): theme.v1, uiLang.v1,
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
   zenSound.v1, errors.v1 ("on" when the writer turns error reports on
@@ -204,6 +217,17 @@ are left out (src/account/data.ts `writeAccountExport`).
   page at / sends them straight back to the studio; no content, no id),
   and tour.v1 ("done" or "skipped" once the first-run quick tour has
   ended, so it is not shown again; never sent to the server).
+  For a signed-in writer whose book names a series, also
+  `beuk.bible.series.<account id>`: the series keys this device left or
+  renamed on purpose (so a late save never makes them again), the series
+  whose "Share one Covenant?" offer the writer dismissed, and, per shelf
+  book read for the series, its id, revision, title, series name and
+  key, number in series, book ids, last-saved time and per-entry
+  mention totals (no text, no pictures), so each book is read only once
+  per revision. Never sent to the server (client/index.html, BEUK:bible
+  `bibleSeriesNet.pref`). A series book's own document also carries
+  `bible.counts` (per-section mention counts per entry), saved with the
+  book like the rest of its Covenant.
 - **Service worker caches**: beuk-shell-v18 (the app shell), beuk-sound-v2
   (ambient sound files), and the self-hosted font files under assets/fonts/ (client/sw.js).
   The shell cache also holds the sample story's 37 pictures (client/assets/sample/*.jpg,

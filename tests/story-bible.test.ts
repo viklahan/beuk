@@ -11,7 +11,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.editor.perf'];
+const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.change.now', 'bible.card.folded', 'bible.change.mark', 'bible.links.facts', 'bible.series.number', 'bible.series.crossbook', 'bible.series.conflict', 'bible.series.signin', 'bible.series.join', 'bible.series.merge', 'bible.series.leave', 'bible.editor.perf'];
 
 test('story bible: every self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -35,7 +35,12 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
   const keys = Array.from(block.slice(enStart, enEnd).matchAll(/"([\w.]+)": "/g)).map((m) => m[1]);
   assert.ok(keys.length > 60, `english keys: ${keys.length}`);
   const placeholders: Record<string, string[]> = { 'bible.noMatch': ['{q}'], 'bible.deleted': ['{name}'], 'bible.cellTip': ['{sec}'], 'bible.cellNone': ['{sec}'],
-    'bible.passagesMore': ['{n}', '{m}'], 'bible.exported': ['{file}'], 'bible.importSkipped': ['{list}'], 'bible.cardAlso': ['{list}'] };
+    'bible.passagesMore': ['{n}', '{m}'], 'bible.exported': ['{file}'], 'bible.importSkipped': ['{list}'], 'bible.cardAlso': ['{list}'], 'bible.asOf': ['{where}'], 'bible.storyH': ['{n}'], 'bible.storyHPlural': ['{n}'], 'bible.linkFrom': ['{label}', '{name}'],
+    'bible.unlink': ['{name}'], 'bible.fieldRemove': ['{name}'], 'bible.fieldRemoved': ['{name}'], 'bible.tplApplied': ['{n}'],
+    'bible.seriesSignIn': ['{name}'], 'bible.seriesConflictBody': ['{name}'],
+    'bible.joinOffer': ['{n}', '{name}'], 'bible.mergeKeep': ['{field}', '{keep}', '{book}', '{drop}', '{from}'], 'bible.mergeDone': ['{name}'], 'bible.mergeLeft': ['{title}'],
+    'bible.leaveBody': ['{name}'], 'bible.leaveDone': ['{n}'], 'bible.renameTitle': ['{n}'], 'bible.renameBody': ['{from}', '{to}'], 'bible.renameDone': ['{name}'], 'bible.seriesAcross': ['{n}'], 'bible.seriesKept': ['{name}'], 'bible.renameTaken': ['{name}'],
+    'bible.changeRemoved': ['{name}'], 'bible.orderUnknown': ['{book}'], 'bible.bookAt': ['{n}', '{where}'] };
   for (const k of keys) {
     const vals = Array.from(block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]*)"`, 'g'))).map((m) => m[1]);
     assert.equal(vals.length, 13, `${k} appears in ${vals.length} locales`);
@@ -46,7 +51,7 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
 
 test('story bible: rides the book only when it holds an entry, and never reaches an export builder', async () => {
   const html = await clientHtml();
-  assert.match(html, /\.\.\.\(bibleHas\(\) \? \{ bible: bibleNormalize\(state\.bible\) \} : \{\}\)/);
+  assert.match(html, /\.\.\.\(bibleHas\(\) \|\| \(state\.bible && state\.bible\.fields && Object\.keys\(state\.bible\.fields\)\.length\)(?: \|\| bibleCountsHeld\(\))? \? \{ bible: bibleNormalize\(state\.bible\) \} : \{\}\)/);
   assert.match(html, /state\.bible = bibleNormalize\(doc\.bible\);/);
   for (const fn of ['function epubFiles(', 'function buildPrintHtml(', 'function buildDocxFiles(', 'function countWords(']) {
     const i = html.indexOf(fn);
@@ -59,7 +64,7 @@ test('story bible: rides the book only when it holds an entry, and never reaches
 test('story bible: the export file format is named and versioned', async () => {
   const html = await clientHtml();
   assert.match(html, /const BIBLE_FORMAT = "beuk-story-bible";/);
-  assert.match(html, /format: BIBLE_FORMAT, version: 1,/);
+  assert.match(html, /format: BIBLE_FORMAT, version: 2,/);
 });
 
 test('covenant rename: the export is named -covenant.json while the format id stays beuk-story-bible, and no locale still says Bible', async () => {
@@ -71,4 +76,10 @@ test('covenant rename: the export is named -covenant.json while the format id st
   const block = html.slice(html.indexOf('Object.assign(UI_STRINGS.en', start), end);
   assert.doesNotMatch(block, /": "[^"]*(?:Bible|Biblia|Bibel|Bibbia|Bíblia|Bijbel|Biblii|Библи[яию]|[Rr]ehber|مرجع|設定集|设定集)/, "a translated value still names the old feature");
   assert.match(block, /"side\.toolBible": "Covenant"/);
+});
+
+test('covenant boot: the series record is forgotten only on a plain signed-out answer from /api/auth/me', async () => {
+  const html = await clientHtml();
+  assert.match(html, /function bibleAuthSignedOut\(me\) \{ return !!me && \(me\.__status === 401 \|\| \(!me\.__status && !me\.__error && !me\.user\)\); \}/);
+  assert.match(html, /\{ if \(bibleAuthSignedOut\(me\)\) bibleSeriesForget\("\*"\); bibleSeriesRefresh\(true\); \}/);
 });
