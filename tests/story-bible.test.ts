@@ -39,7 +39,7 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
     'bible.unlink': ['{name}'], 'bible.fieldRemove': ['{name}'], 'bible.fieldRemoved': ['{name}'], 'bible.tplApplied': ['{n}'],
     'bible.seriesSignIn': ['{name}'], 'bible.seriesConflictBody': ['{name}'],
     'bible.joinOffer': ['{n}', '{name}'], 'bible.mergeKeep': ['{field}', '{keep}', '{book}', '{drop}', '{from}'], 'bible.mergeDone': ['{name}'], 'bible.mergeLeft': ['{title}'],
-    'bible.leaveBody': ['{name}'], 'bible.leaveDone': ['{n}'], 'bible.renameTitle': ['{n}'], 'bible.renameBody': ['{from}', '{to}'], 'bible.renameDone': ['{name}'], 'bible.seriesAcross': ['{n}'] };
+    'bible.leaveBody': ['{name}'], 'bible.leaveDone': ['{n}'], 'bible.renameTitle': ['{n}'], 'bible.renameBody': ['{from}', '{to}'], 'bible.renameDone': ['{name}'], 'bible.seriesAcross': ['{n}'], 'bible.seriesKept': ['{name}'], 'bible.renameTaken': ['{name}'] };
   for (const k of keys) {
     const vals = Array.from(block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]*)"`, 'g'))).map((m) => m[1]);
     assert.equal(vals.length, 13, `${k} appears in ${vals.length} locales`);
