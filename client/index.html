@@ -1787,6 +1787,7 @@
       .bib-mpop { width: 300px; max-width: calc(100vw - 24px); padding: 12px 14px; }
       .bib-mp-h { font-weight: 600; margin-bottom: 6px; }
       .bib-mp-m { color: var(--muted); font-size: 12px; margin-top: 8px; overflow-wrap: anywhere; }
+      .bib-mp-err { color: var(--ink); font-weight: 600; }
       .bib-mpop .txt-input { width: 100%; box-sizing: border-box; margin-top: 4px; }
       .bib-mpop .txt-input[hidden] { display: none; }
       .bib-mp-btns { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
@@ -1828,6 +1829,8 @@
       .bib-tl li.later { opacity: .55; }
       .bib-tl li.orphan { color: var(--muted); font-style: italic; }
       .bib-tl-note { color: var(--muted); }
+      .bib-tl li.unordered { color: var(--muted); }
+      .bib-tl-x { font-size: 15px; padding: 0 6px; vertical-align: baseline; }
       .bib-dview { margin-top: 8px; font-family: "EB Garamond", Georgia, serif; font-size: 16px; line-height: 1.55; color: var(--ink); }
       .bib-dview:empty { display: none; }
       .bib-dview p { margin: 6px 0; }
@@ -21896,7 +21899,7 @@
         "bible.asOf": "as of {where}", "bible.asOfEnd": "the end of the book",
         "bible.nowH": "Right now",
         "bible.storyH": "Story so far · {n} change", "bible.storyHPlural": "Story so far · {n} changes",
-        "bible.later": "later, not yet true here", "bible.orphan": "its passage was deleted — re-pin or remove",
+        "bible.later": "later, not yet true here", "bible.orphan": "its passage changed or was deleted — mark it again or remove it", "bible.changeRemove": "Remove this change", "bible.changeRemoved": "Removed a change from {name}", "bible.orderUnknown": "from {book}, order unknown", "bible.numberBooks": "Changes from another book can’t be placed in the story until the books have a Number in series. Set it in Project Settings.", "bible.bookAt": "Book {n} · {where}", "bible.otherBook": "another book", "bible.seriesHeld": "The series can’t be read right now (signed out or offline), so it was not changed. The name you typed is still in the field.", "bible.seriesRefused": "The shelf refused the series Covenant save, so it was kept on this device. It will try again after your next edit.",
         "bible.markFor": "Mark a change for {name}…", "bible.changeH": "{name}, from here on", "bible.changePh": "What changed, in your own words", "bible.factQ": "Update a quick fact too? (optional)", "bible.noFact": "No fact change", "bible.pinnedTo": "Pinned to: {where}", "bible.markSave": "Save", "bible.markTip": "Mark a change (Alt+M)", "bible.markFull": "{name} already has {n} changes.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (from {name})",
@@ -21993,7 +21996,7 @@
         "bible.asOf": "a fecha de {where}", "bible.asOfEnd": "el final del libro",
         "bible.nowH": "Ahora mismo",
         "bible.storyH": "Historia hasta ahora · {n} cambio", "bible.storyHPlural": "Historia hasta ahora · {n} cambios",
-        "bible.later": "más adelante, aún no es cierto aquí", "bible.orphan": "su pasaje fue borrado — vuelve a fijarlo o quítalo",
+        "bible.later": "más adelante, aún no es cierto aquí", "bible.orphan": "su pasaje cambió o fue borrado — márcalo de nuevo o quítalo", "bible.changeRemove": "Quitar este cambio", "bible.changeRemoved": "Se quitó un cambio de {name}", "bible.orderUnknown": "de {book}, orden desconocido", "bible.numberBooks": "Los cambios de otro libro no se pueden situar en la historia hasta que los libros tengan un Número en la serie. Ponlo en Ajustes del proyecto.", "bible.bookAt": "Libro {n} · {where}", "bible.otherBook": "otro libro", "bible.seriesHeld": "Ahora no se puede leer la serie (sesión cerrada o sin conexión), así que no se cambió. El nombre que escribiste sigue en el campo.", "bible.seriesRefused": "La estantería rechazó guardar el Covenant de la serie, así que se guardó en este dispositivo. Se volverá a intentar tras tu próxima edición.",
         "bible.markFor": "Marcar un cambio para {name}…", "bible.changeH": "{name}, a partir de aquí", "bible.changePh": "Qué cambió, con tus palabras", "bible.factQ": "¿Actualizar también un dato rápido? (opcional)", "bible.noFact": "Sin cambio de dato", "bible.pinnedTo": "Fijado en: {where}", "bible.markSave": "Guardar", "bible.markTip": "Marcar un cambio (Alt+M)", "bible.markFull": "{name} ya tiene {n} cambios.",
         "bible.detailsH": "Detalles",
         "bible.linkFrom": "{label} (desde {name})",
@@ -22090,7 +22093,7 @@
         "bible.asOf": "à la date de {where}", "bible.asOfEnd": "la fin du livre",
         "bible.nowH": "En ce moment",
         "bible.storyH": "Histoire jusqu’ici · {n} changement", "bible.storyHPlural": "Histoire jusqu’ici · {n} changements",
-        "bible.later": "plus tard, pas encore vrai ici", "bible.orphan": "son passage a été supprimé — épinglez-le de nouveau ou retirez-le",
+        "bible.later": "plus tard, pas encore vrai ici", "bible.orphan": "son passage a changé ou a été supprimé — marquez-le de nouveau ou retirez-le", "bible.changeRemove": "Retirer ce changement", "bible.changeRemoved": "Changement retiré de {name}", "bible.orderUnknown": "de {book}, ordre inconnu", "bible.numberBooks": "Les changements d’un autre livre ne peuvent pas être placés dans l’histoire tant que les livres n’ont pas de Numéro dans la série. Indiquez-le dans Réglages du projet.", "bible.bookAt": "Livre {n} · {where}", "bible.otherBook": "un autre livre", "bible.seriesHeld": "La série ne peut pas être lue pour l’instant (déconnecté ou hors ligne) ; elle n’a donc pas été modifiée. Le nom que vous avez saisi est toujours dans le champ.", "bible.seriesRefused": "L’étagère a refusé l’enregistrement du Covenant de la série ; il est gardé sur cet appareil. Un nouvel essai aura lieu après votre prochaine modification.",
         "bible.markFor": "Marquer un changement pour {name}…", "bible.changeH": "{name}, à partir d'ici", "bible.changePh": "Ce qui a changé, avec vos mots", "bible.factQ": "Mettre aussi à jour un fait rapide ? (facultatif)", "bible.noFact": "Aucun changement de fait", "bible.pinnedTo": "Épinglé à : {where}", "bible.markSave": "Enregistrer", "bible.markTip": "Marquer un changement (Alt+M)", "bible.markFull": "{name} a déjà {n} changements.",
         "bible.detailsH": "Détails",
         "bible.linkFrom": "{label} (de {name})",
@@ -22187,7 +22190,7 @@
         "bible.asOf": "Stand: {where}", "bible.asOfEnd": "Ende des Buches",
         "bible.nowH": "Jetzt",
         "bible.storyH": "Bisherige Geschichte · {n} Änderung", "bible.storyHPlural": "Bisherige Geschichte · {n} Änderungen",
-        "bible.later": "später, hier noch nicht wahr", "bible.orphan": "die Textstelle wurde gelöscht — neu anheften oder entfernen",
+        "bible.later": "später, hier noch nicht wahr", "bible.orphan": "die Textstelle wurde geändert oder gelöscht — erneut markieren oder entfernen", "bible.changeRemove": "Diese Änderung entfernen", "bible.changeRemoved": "Änderung bei {name} entfernt", "bible.orderUnknown": "aus {book}, Reihenfolge unbekannt", "bible.numberBooks": "Änderungen aus einem anderen Buch lassen sich erst in die Geschichte einordnen, wenn die Bücher eine Nummer in der Reihe haben. Sie lässt sich in den Projekteinstellungen setzen.", "bible.bookAt": "Buch {n} · {where}", "bible.otherBook": "ein anderes Buch", "bible.seriesHeld": "Die Reihe kann gerade nicht gelesen werden (abgemeldet oder offline), daher wurde sie nicht geändert. Der eingegebene Name steht noch im Feld.", "bible.seriesRefused": "Das Regal hat das Speichern des Reihen-Covenants abgelehnt, daher bleibt er auf diesem Gerät. Nach der nächsten Bearbeitung wird es erneut versucht.",
         "bible.markFor": "Änderung für {name} markieren…", "bible.changeH": "{name}, ab hier", "bible.changePh": "Was sich geändert hat, in deinen Worten", "bible.factQ": "Auch einen Kurzfakt aktualisieren? (optional)", "bible.noFact": "Keine Faktenänderung", "bible.pinnedTo": "Angeheftet an: {where}", "bible.markSave": "Speichern", "bible.markTip": "Änderung markieren (Alt+M)", "bible.markFull": "{name} hat schon {n} Änderungen.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (von {name})",
@@ -22284,7 +22287,7 @@
         "bible.asOf": "fino a {where}", "bible.asOfEnd": "la fine del libro",
         "bible.nowH": "Adesso",
         "bible.storyH": "La storia finora · {n} cambiamento", "bible.storyHPlural": "La storia finora · {n} cambiamenti",
-        "bible.later": "più avanti, non ancora vero qui", "bible.orphan": "il suo passaggio è stato eliminato — fissalo di nuovo o rimuovilo",
+        "bible.later": "più avanti, non ancora vero qui", "bible.orphan": "il suo passaggio è cambiato o è stato eliminato — segnalo di nuovo o rimuovilo", "bible.changeRemove": "Rimuovi questo cambiamento", "bible.changeRemoved": "Cambiamento rimosso da {name}", "bible.orderUnknown": "da {book}, ordine sconosciuto", "bible.numberBooks": "I cambiamenti di un altro libro non si possono collocare nella storia finché i libri non hanno un Numero nella serie. Impostalo in Impostazioni del progetto.", "bible.bookAt": "Libro {n} · {where}", "bible.otherBook": "un altro libro", "bible.seriesHeld": "Ora la serie non si può leggere (disconnesso o offline), quindi non è stata cambiata. Il nome che hai scritto è ancora nel campo.", "bible.seriesRefused": "Lo scaffale ha rifiutato il salvataggio del Covenant della serie, quindi è rimasto su questo dispositivo. Si riproverà dopo la tua prossima modifica.",
         "bible.markFor": "Segna un cambiamento per {name}…", "bible.changeH": "{name}, da qui in poi", "bible.changePh": "Che cosa è cambiato, con parole tue", "bible.factQ": "Aggiornare anche un dato rapido? (facoltativo)", "bible.noFact": "Nessun cambio di dato", "bible.pinnedTo": "Fissato a: {where}", "bible.markSave": "Salva", "bible.markTip": "Segna un cambiamento (Alt+M)", "bible.markFull": "{name} ha già {n} cambiamenti.",
         "bible.detailsH": "Dettagli",
         "bible.linkFrom": "{label} (da {name})",
@@ -22381,7 +22384,7 @@
         "bible.asOf": "até {where}", "bible.asOfEnd": "o fim do livro",
         "bible.nowH": "Agora",
         "bible.storyH": "História até aqui · {n} mudança", "bible.storyHPlural": "História até aqui · {n} mudanças",
-        "bible.later": "mais adiante, ainda não vale aqui", "bible.orphan": "a passagem foi apagada — fixe de novo ou remova",
+        "bible.later": "mais adiante, ainda não vale aqui", "bible.orphan": "a passagem mudou ou foi apagada — marque de novo ou remova", "bible.changeRemove": "Remover esta mudança", "bible.changeRemoved": "Mudança removida de {name}", "bible.orderUnknown": "de {book}, ordem desconhecida", "bible.numberBooks": "As mudanças de outro livro só podem ser situadas na história quando os livros tiverem um Número na série. Defina-o em Definições do projeto.", "bible.bookAt": "Livro {n} · {where}", "bible.otherBook": "outro livro", "bible.seriesHeld": "Agora não é possível ler a série (sessão terminada ou sem ligação), por isso não foi alterada. O nome que escreveu continua no campo.", "bible.seriesRefused": "A estante recusou guardar o Covenant da série, por isso ficou neste dispositivo. Tentará de novo após a sua próxima edição.",
         "bible.markFor": "Marcar uma mudança para {name}…", "bible.changeH": "{name}, a partir daqui", "bible.changePh": "O que mudou, com suas palavras", "bible.factQ": "Atualizar também um dado rápido? (opcional)", "bible.noFact": "Sem mudança de dado", "bible.pinnedTo": "Fixado em: {where}", "bible.markSave": "Salvar", "bible.markTip": "Marcar uma mudança (Alt+M)", "bible.markFull": "{name} já tem {n} mudanças.",
         "bible.detailsH": "Detalhes",
         "bible.linkFrom": "{label} (de {name})",
@@ -22478,7 +22481,7 @@
         "bible.asOf": "stand van {where}", "bible.asOfEnd": "het einde van het boek",
         "bible.nowH": "Op dit moment",
         "bible.storyH": "Verhaal tot nu toe · {n} verandering", "bible.storyHPlural": "Verhaal tot nu toe · {n} veranderingen",
-        "bible.later": "later, hier nog niet waar", "bible.orphan": "de passage is verwijderd — pin opnieuw vast of verwijder",
+        "bible.later": "later, hier nog niet waar", "bible.orphan": "de passage is gewijzigd of verwijderd — markeer opnieuw of verwijder", "bible.changeRemove": "Deze wijziging verwijderen", "bible.changeRemoved": "Wijziging bij {name} verwijderd", "bible.orderUnknown": "uit {book}, volgorde onbekend", "bible.numberBooks": "Wijzigingen uit een ander boek krijgen pas een plek in het verhaal als de boeken een Nummer in de reeks hebben. Stel het in bij Projectinstellingen.", "bible.bookAt": "Boek {n} · {where}", "bible.otherBook": "een ander boek", "bible.seriesHeld": "De reeks kan nu niet worden gelezen (afgemeld of offline), dus is ze niet gewijzigd. De naam die u typte staat nog in het veld.", "bible.seriesRefused": "De plank weigerde het opslaan van de reeks-Covenant, dus die blijft op dit apparaat. Na uw volgende bewerking wordt het opnieuw geprobeerd.",
         "bible.markFor": "Wijziging markeren voor {name}…", "bible.changeH": "{name}, vanaf hier", "bible.changePh": "Wat er veranderde, in je eigen woorden", "bible.factQ": "Ook een snel feit bijwerken? (optioneel)", "bible.noFact": "Geen feitwijziging", "bible.pinnedTo": "Vastgepind op: {where}", "bible.markSave": "Opslaan", "bible.markTip": "Wijziging markeren (Alt+M)", "bible.markFull": "{name} heeft al {n} wijzigingen.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (van {name})",
@@ -22575,7 +22578,7 @@
         "bible.asOf": "stan na {where}", "bible.asOfEnd": "koniec książki",
         "bible.nowH": "Teraz",
         "bible.storyH": "Dotychczasowa historia · {n} zmiana", "bible.storyHPlural": "Dotychczasowa historia · {n} zmiany",
-        "bible.later": "później, tu jeszcze nieprawdziwe", "bible.orphan": "jego fragment został usunięty — przypnij ponownie albo usuń",
+        "bible.later": "później, tu jeszcze nieprawdziwe", "bible.orphan": "jego fragment się zmienił albo został usunięty — oznacz go ponownie albo usuń", "bible.changeRemove": "Usuń tę zmianę", "bible.changeRemoved": "Usunięto zmianę: {name}", "bible.orderUnknown": "z: {book}, kolejność nieznana", "bible.numberBooks": "Zmian z innej książki nie da się umieścić w historii, dopóki książki nie mają Numeru w serii. Ustaw go w Ustawieniach projektu.", "bible.bookAt": "Książka {n} · {where}", "bible.otherBook": "inna książka", "bible.seriesHeld": "Serii nie można teraz odczytać (wylogowano lub brak sieci), więc jej nie zmieniono. Wpisana nazwa została w polu.", "bible.seriesRefused": "Półka odrzuciła zapis Covenantu serii, więc został na tym urządzeniu. Kolejna próba nastąpi po Twojej następnej zmianie.",
         "bible.markFor": "Oznacz zmianę dla: {name}…", "bible.changeH": "{name}, od tego miejsca", "bible.changePh": "Co się zmieniło, własnymi słowami", "bible.factQ": "Zaktualizować też szybki fakt? (opcjonalnie)", "bible.noFact": "Bez zmiany faktu", "bible.pinnedTo": "Przypięto do: {where}", "bible.markSave": "Zapisz", "bible.markTip": "Oznacz zmianę (Alt+M)", "bible.markFull": "{name} ma już {n} zmian.",
         "bible.detailsH": "Szczegóły",
         "bible.linkFrom": "{label} (od {name})",
@@ -22672,7 +22675,7 @@
         "bible.asOf": "на момент: {where}", "bible.asOfEnd": "конец книги",
         "bible.nowH": "Сейчас",
         "bible.storyH": "История к этому месту · {n} изменение", "bible.storyHPlural": "История к этому месту · {n} изменений",
-        "bible.later": "позже, здесь ещё не так", "bible.orphan": "его фрагмент удалён — закрепите заново или удалите",
+        "bible.later": "позже, здесь ещё не так", "bible.orphan": "его фрагмент изменён или удалён — отметьте заново или удалите", "bible.changeRemove": "Удалить это изменение", "bible.changeRemoved": "Изменение удалено: {name}", "bible.orderUnknown": "из книги «{book}», порядок неизвестен", "bible.numberBooks": "Изменения из другой книги нельзя расставить по сюжету, пока у книг нет номера в серии. Укажите его в настройках проекта.", "bible.bookAt": "Книга {n} · {where}", "bible.otherBook": "другая книга", "bible.seriesHeld": "Серию сейчас нельзя прочитать (вы вышли или нет сети), поэтому она не изменена. Введённое название осталось в поле.", "bible.seriesRefused": "Полка отклонила сохранение Covenant серии, поэтому он остался на этом устройстве. Новая попытка будет после вашей следующей правки.",
         "bible.markFor": "Отметить изменение для: {name}…", "bible.changeH": "{name}, с этого места", "bible.changePh": "Что изменилось, своими словами", "bible.factQ": "Обновить и быстрый факт? (по желанию)", "bible.noFact": "Без изменения факта", "bible.pinnedTo": "Закреплено за: {where}", "bible.markSave": "Сохранить", "bible.markTip": "Отметить изменение (Alt+M)", "bible.markFull": "У записи {name} уже {n} изменений.",
         "bible.detailsH": "Подробности",
         "bible.linkFrom": "{label} (от {name})",
@@ -22769,7 +22772,7 @@
         "bible.asOf": "{where} itibarıyla", "bible.asOfEnd": "kitabın sonu",
         "bible.nowH": "Şu anda",
         "bible.storyH": "Şimdiye kadarki hikâye · {n} değişiklik", "bible.storyHPlural": "Şimdiye kadarki hikâye · {n} değişiklik",
-        "bible.later": "sonra, burada henüz doğru değil", "bible.orphan": "bölümü silindi — yeniden sabitleyin ya da kaldırın",
+        "bible.later": "sonra, burada henüz doğru değil", "bible.orphan": "bölümü değişti ya da silindi — yeniden işaretleyin ya da kaldırın", "bible.changeRemove": "Bu değişikliği kaldır", "bible.changeRemoved": "{name} kaydından bir değişiklik kaldırıldı", "bible.orderUnknown": "{book} kitabından, sırası bilinmiyor", "bible.numberBooks": "Kitaplara serideki sıra verilmeden başka bir kitaptaki değişiklikler hikâyeye yerleştirilemez. Bunu Proje ayarlarından girin.", "bible.bookAt": "Kitap {n} · {where}", "bible.otherBook": "başka bir kitap", "bible.seriesHeld": "Seri şu anda okunamıyor (oturum kapalı ya da çevrim dışı), bu yüzden değiştirilmedi. Yazdığınız ad hâlâ alanda.", "bible.seriesRefused": "Raf, seri Covenant kaydını reddetti, bu yüzden bu cihazda tutuldu. Bir sonraki düzenlemenizden sonra yeniden denenecek.",
         "bible.markFor": "{name} için bir değişiklik işaretle…", "bible.changeH": "{name}, buradan itibaren", "bible.changePh": "Ne değişti, kendi sözlerinle", "bible.factQ": "Hızlı bir bilgi de güncellensin mi? (isteğe bağlı)", "bible.noFact": "Bilgi değişmiyor", "bible.pinnedTo": "Sabitlendiği yer: {where}", "bible.markSave": "Kaydet", "bible.markTip": "Değişiklik işaretle (Alt+M)", "bible.markFull": "{name} kaydında zaten {n} değişiklik var.",
         "bible.detailsH": "Ayrıntılar",
         "bible.linkFrom": "{label} ({name} kaydından)",
@@ -22866,7 +22869,7 @@
         "bible.asOf": "حتى {where}", "bible.asOfEnd": "نهاية الكتاب",
         "bible.nowH": "الآن",
         "bible.storyH": "القصة حتى الآن · {n} تغيير", "bible.storyHPlural": "القصة حتى الآن · {n} تغييرات",
-        "bible.later": "لاحقا، ليس صحيحا هنا بعد", "bible.orphan": "حُذف مقطعه — ثبّته من جديد أو أزله",
+        "bible.later": "لاحقا، ليس صحيحا هنا بعد", "bible.orphan": "تغيّر مقطعه أو حُذف — أعد وسمه أو أزله", "bible.changeRemove": "إزالة هذا التغيير", "bible.changeRemoved": "أُزيل تغيير من {name}", "bible.orderUnknown": "من {book}، الترتيب غير معروف", "bible.numberBooks": "لا يمكن وضع تغييرات كتاب آخر في مكانها من القصة حتى يكون للكتب رقم في السلسلة. اضبطه في إعدادات المشروع.", "bible.bookAt": "الكتاب {n} · {where}", "bible.otherBook": "كتاب آخر", "bible.seriesHeld": "تتعذّر قراءة السلسلة الآن (لم تسجّل الدخول أو بلا اتصال)، فلم تتغير. الاسم الذي كتبته ما زال في الحقل.", "bible.seriesRefused": "رفض الرف حفظ Covenant السلسلة، فبقي على هذا الجهاز. ستُعاد المحاولة بعد تعديلك التالي.",
         "bible.markFor": "وسم تغيير لـ {name}…", "bible.changeH": "{name}، من هنا فصاعدا", "bible.changePh": "ما الذي تغير، بكلماتك", "bible.factQ": "هل تحدّث معلومة سريعة أيضا؟ (اختياري)", "bible.noFact": "بلا تغيير في المعلومة", "bible.pinnedTo": "مثبّت عند: {where}", "bible.markSave": "حفظ", "bible.markTip": "وسم تغيير (Alt+M)", "bible.markFull": "لدى {name} بالفعل {n} تغييرا.",
         "bible.detailsH": "التفاصيل",
         "bible.linkFrom": "{label} (من {name})",
@@ -22963,7 +22966,7 @@
         "bible.asOf": "{where} 時点", "bible.asOfEnd": "本の終わり",
         "bible.nowH": "現在",
         "bible.storyH": "ここまでの物語 · {n} 件の変更", "bible.storyHPlural": "ここまでの物語 · {n} 件の変更",
-        "bible.later": "あと、ここではまだ当てはまりません", "bible.orphan": "その箇所は削除されました。固定し直すか、取り除いてください",
+        "bible.later": "あと、ここではまだ当てはまりません", "bible.orphan": "その箇所は変更または削除されました。記録し直すか、取り除いてください", "bible.changeRemove": "この変更を取り除く", "bible.changeRemoved": "{name} の変更を取り除きました", "bible.orderUnknown": "{book} より、順番は不明", "bible.numberBooks": "本にシリーズ内の番号がないと、ほかの本の変更を物語の中に並べられません。プロジェクト設定で番号を入れてください。", "bible.bookAt": "{n} 巻 · {where}", "bible.otherBook": "別の本", "bible.seriesHeld": "いまはシリーズを読み込めない（ログアウト中かオフライン）ため、変更していません。入力した名前は欄に残っています。", "bible.seriesRefused": "本棚がシリーズの Covenant の保存を受け付けなかったため、この端末に残しています。次に編集したあとでもう一度試します。",
         "bible.markFor": "{name} の変更を記録…", "bible.changeH": "{name}、ここから先", "bible.changePh": "何が変わったか、自分の言葉で", "bible.factQ": "簡単な項目も更新しますか？（任意）", "bible.noFact": "項目の変更なし", "bible.pinnedTo": "固定先: {where}", "bible.markSave": "保存", "bible.markTip": "変更を記録 (Alt+M)", "bible.markFull": "{name} にはすでに {n} 件の変更があります。",
         "bible.detailsH": "詳細",
         "bible.linkFrom": "{label}（{name} から）",
@@ -23060,7 +23063,7 @@
         "bible.asOf": "截至 {where}", "bible.asOfEnd": "全书末尾",
         "bible.nowH": "此刻",
         "bible.storyH": "至此的故事 · {n} 处变化", "bible.storyHPlural": "至此的故事 · {n} 处变化",
-        "bible.later": "稍后，此处尚未成立", "bible.orphan": "其段落已被删除，请重新固定或移除",
+        "bible.later": "稍后，此处尚未成立", "bible.orphan": "其段落已更改或被删除，请重新标记或移除", "bible.changeRemove": "移除此变化", "bible.changeRemoved": "已从 {name} 移除一处变化", "bible.orderUnknown": "来自 {book}，顺序未知", "bible.numberBooks": "书没有系列序号时，其他书中的变化无法排入故事。请在项目设置中填写。", "bible.bookAt": "第 {n} 本 · {where}", "bible.otherBook": "另一本书", "bible.seriesHeld": "现在无法读取系列（未登录或离线），所以没有更改。你输入的名字还在输入框里。", "bible.seriesRefused": "书架拒绝保存系列 Covenant，所以它保留在此设备上。你下次编辑后会再试一次。",
         "bible.markFor": "为 {name} 标记一处变化…", "bible.changeH": "{name}，从这里起", "bible.changePh": "发生了什么变化，用你自己的话说", "bible.factQ": "要同时更新一项简要事实吗？（可选）", "bible.noFact": "不更改事实", "bible.pinnedTo": "固定于：{where}", "bible.markSave": "保存", "bible.markTip": "标记变化 (Alt+M)", "bible.markFull": "{name} 已有 {n} 处变化。",
         "bible.detailsH": "详情",
         "bible.linkFrom": "{label}（来自 {name}）",
@@ -23217,21 +23220,26 @@
       const BIBLE_END = [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
       /* where this book sits in its series; a lone book is 0 (meta.seriesNumber, 1 to 999, set in Project Settings) */
       function bibleBookOrder() { return Number(state.meta && state.meta.seriesNumber) || 0; }
-      /* where a change stands in the open book. A change marked in another book is placed by the position saved with it, because that book is never opened here; an orphan (passage gone, or no saved position) gives null. */
+      /* R23: a change from another book whose place among the books is unknown (this book or that one has no Number in series) */
+      const BIBLE_UNORDERED = Object.freeze(["unordered"]);
+      /* where a change stands in the open book. A change marked in another book is placed by the position saved with it, because that book is never opened here; an orphan (passage gone, or no saved position) gives null. When either book has no number, the other book's change cannot be interleaved by chapter, so it is BIBLE_UNORDERED and never counts toward Right now. */
       function bibleResolveChange(change) {
         const a = change && change.anchor; if (!a) return null;
-        if (a.book && a.book !== (state.meta && state.meta.bookId)) return Array.isArray(a.pos) && a.pos.length && !bibleBookGone(a.book) ? a.pos : null; /* a book gone from the shelf leaves its changes as orphans */
+        if (a.book && a.book !== (state.meta && state.meta.bookId)) {
+          if (!(Array.isArray(a.pos) && a.pos.length) || bibleBookGone(a.book)) return null; /* a book gone from the shelf leaves its changes as orphans */
+          return bibleBookOrder() > 0 && a.pos[0] > 0 ? a.pos : BIBLE_UNORDERED;
+        }
         const hit = bibleAnchorFind(a, state.sections); if (!hit) return null;
         return biblePos(bibleBookOrder(), state.sections.findIndex((s) => s.id === hit.sec), hit.at);
       }
       /* what is true about an entry at a point in the story. Changes are walked in story order (a tie goes to the one marked later); each one at or before the point moves "now" forward and lays its fact over the entry's base facts. */
       function bibleStateAt(entry, pos, resolve) {
         if (!pos) pos = BIBLE_END; /* no chapter open reads as the end of the book, so every change so far counts */
-        const out = { now: null, facts: Object.assign({}, entry && entry.facts), past: [], later: [], orphans: [] };
+        const out = { now: null, facts: Object.assign({}, entry && entry.facts), past: [], later: [], unordered: [], orphans: [] };
         const placed = [];
         (entry && Array.isArray(entry.changes) ? entry.changes : []).forEach((c, i) => {
           const p = resolve(c);
-          if (!p) out.orphans.push(c); else placed.push({ c: c, p: p, i: i });
+          if (!p) out.orphans.push(c); else if (p === BIBLE_UNORDERED) out.unordered.push(c); else placed.push({ c: c, p: p, i: i });
         });
         placed.sort((x, y) => biblePosCmp(x.p, y.p) || x.i - y.i);
         placed.forEach((x) => {
@@ -23346,7 +23354,7 @@
       function bibleInSeries() { return !!bibleSeriesKey(state.meta && state.meta.series); }
       /* { key, name, doc: { entries, fields }, revision } while the open book's series has a Covenant on the shelf; null otherwise */
       let bibleSeries = null;
-      const bibleSeriesSync = { userId: null, kept: null, dirty: false, editAt: 0, pending: 0, conflict: null, syncedJson: null, running: false, again: false, timer: null, stepTimer: null, seq: 0, last: null };
+      const bibleSeriesSync = { userId: null, kept: null, dirty: false, editAt: 0, pending: 0, conflict: null, syncedJson: null, running: false, again: false, timer: null, stepTimer: null, seq: 0, last: null, refused: 0 };
       /* the network and the device store, swappable so a self-check answers without either; an answer that is not a promise is taken at once */
       const bibleSeriesNet = { fetch: (path, opts) => apiFetch(path, opts), store: (rec) => bibleSeriesCachePut(rec), load: (userId, key) => bibleSeriesCacheGet(userId, key),
         /* this account's small series record on this device (read with no value, written with one), and the calm confirm dialog */
@@ -23436,7 +23444,7 @@
         }
         bibleSeries = s || null;
         if (s) bibleSeriesMem.absent = null;
-        sy.userId = s ? userId || null : null; sy.conflict = null; sy.pending = 0;
+        sy.userId = s ? userId || null : null; sy.conflict = null; sy.pending = 0; sy.refused = 0;
         sy.kept = s && kept && kept.kept ? { kept: kept.kept, keptAt: kept.keptAt || null } : null;
         sy.dirty = !!(s && dirty); sy.syncedJson = s && !dirty ? JSON.stringify(s.doc) : null;
         bibleAllVer++; bibleMk.key = null; bibleMenCache.key = null;
@@ -23506,6 +23514,7 @@
       /* an edit somewhere in the Covenant: once the writer pauses, the series doc is compared with what the shelf last agreed to, kept on this device, and saved like a book save */
       function bibleSeriesTouched() {
         const sy = bibleSeriesSync; if (!bibleSeries) return;
+        sy.refused = 0; /* a refused save is tried again only after the next edit */
         clearTimeout(sy.stepTimer);
         sy.stepTimer = setTimeout(bibleSeriesStep, 300);
       }
@@ -23525,14 +23534,14 @@
       /* the shelf is back (or the writer signed in): a waiting save goes now, and a series that could not be read is read */
       function bibleSeriesFlush() {
         if (!cloud.user) return;
-        if (bibleSeries && (bibleSeriesSync.dirty || bibleSeriesSync.pending)) bibleSeriesSaveNow();
+        if (bibleSeries && !bibleSeriesSync.refused && (bibleSeriesSync.dirty || bibleSeriesSync.pending)) bibleSeriesSaveNow();
         else if (bibleInSeries() && !bibleSeries) bibleSeriesRefresh(true);
       }
       function bibleSeriesSaveNow() {
         const sy = bibleSeriesSync, s = bibleSeries;
         clearTimeout(sy.timer); sy.timer = null;
         if (sy.stepTimer) { clearTimeout(sy.stepTimer); bibleSeriesStep(); clearTimeout(sy.timer); sy.timer = null; }
-        if (!s) return;
+        if (!s || sy.refused) return;
         if (sy.conflict) { bibleSeriesRaise(); return; }
         if (sy.running) { sy.again = true; return; }
         bibleSeriesRefreshPos();
@@ -23582,6 +23591,12 @@
           const mem = bibleSeriesMemFor();
           if (mem && mem.gone.indexOf(s.key) !== -1) { bibleSeriesSet(null); return; }
           s.revision = null; bibleSeriesSaveNow();
+        } else if (res && (res.__status === 400 || res.__status === 401 || res.__status === 413)) {
+          /* the shelf refused this save (malformed, signed out, too large): sending it again would only be refused again, so it waits on this device, unsaved, until the next edit, and the writer is told once */
+          sy.refused = res.__status; sy.pending = 0;
+          bibleSeriesCacheNow();
+          bibleStatus(t("bible.seriesRefused"));
+          toast(t("bible.seriesRefused"), "cloud-off");
         } else {
           sy.pending++; bibleSeriesCacheNow();
         }
@@ -23664,6 +23679,8 @@
         const rec = { gone: m.gone.slice(-50), dismissed: m.dismissed.slice(-50) };
         if (bibleSeriesNet.pref(m.user, Object.assign({ shelf: m.shelf }, rec)) === false) bibleSeriesNet.pref(m.user, rec);
       }
+      /* N5: only a plain "no session" from /api/auth/me (401, or an answer with no user) means signed out; a 5xx or a network failure (null) says nothing about the session */
+      function bibleAuthSignedOut(me) { return !!me && (me.__status === 401 || (!me.__status && !me.__error && !me.user)); }
       /* signing out (or a session that is gone when the studio opens: signed out elsewhere, or the account deleted) leaves nothing of the account's series record on this device */
       function bibleSeriesForget(uid) {
         if (uid === "*") { try { Object.keys(localStorage).forEach((k) => { if (k.indexOf("beuk.bible.series.") === 0) localStorage.removeItem(k); }); } catch (e) {} }
@@ -23919,11 +23936,20 @@
       }
       /* Project Settings is about to change the series name of a book that reads a shared Covenant: ask first. True = the question took over, and the name changes only once the writer answers. */
       function bibleSeriesChangeAsk(next) {
-        const s = bibleSeries, nk = bibleSeriesKey(next);
-        if (!s || !cloud.user || nk === s.key) return false;
+        const s = bibleSeries, nk = bibleSeriesKey(next), cur = bibleSeriesKey(state.meta && state.meta.series);
+        if (!cur || nk === cur) return false;
+        /* R24: the series cannot be read (signed out, offline, or not loaded yet), so nothing can be asked: the change is held, said beside the field, and the typed name kept. A book the shelf says has no series row, or one holding nothing that leans on a series Covenant, changes as it always did. */
+        if (!s || !cloud.user || !cloud.available || !net.online) {
+          if (s || !bibleSeriesFree(cur)) {
+            bibleSeriesSettingsNote(t("bible.seriesHeld"), next);
+            return true;
+          }
+          return false;
+        }
         const kept = () => bibleSeriesSettingsNote(t("bible.seriesKept", { name: s.name }), next);
         bibleThen(bibleShelfScan(), () => {
-          if (bibleSeries !== s) return;
+          /* N1: the series object may be replaced while the shelf is read (a refresh); the same series goes on, another one keeps the typed name */
+          if (!bibleSeries || bibleSeries.key !== s.key) return kept();
           if (!nk) return bibleThen(bibleSeriesNet.ask({ title: t("bible.leaveTitle"), body: t("bible.leaveBody", { name: s.name }), yes: t("bible.leaveYes"), no: t("imglib.cancel"), defaultNo: true }), (ok) => { if (ok === true) bibleSeriesLeave(""); else kept(); });
           /* renaming reaches every book of the series, so it needs every shelf book known: one that could not be read could still name the old series */
           if (!bibleSeriesMem.ids || bibleSeriesMem.scanning) return bibleSeriesSettingsNote(t("bible.renameUnknown"), next);
@@ -23936,12 +23962,24 @@
         });
         return true;
       }
+      /* R24: may this book's series name change while the series cannot be read? Yes when the shelf said there is no series row, or when the book holds nothing that leans on a series Covenant (no saved series counts, and normalizing it strictly loses no link or fact): then nothing can be lost. */
+      function bibleSeriesFree(key) {
+        if (cloud.user && bibleSeriesMem.absent === key) return true;
+        const b = state.bible; if (!b || !Array.isArray(b.entries)) return true;
+        if (b.counts && Object.keys(b.counts).length) return false;
+        const loose = bibleNormalize(b, true); delete loose.counts;
+        return JSON.stringify(bibleNormalize(b, false)) === JSON.stringify(loose);
+      }
       /* R19: the Series field shows why its name did not change, and keeps the name the writer typed (Project Settings opens again on it) */
       function bibleSeriesSettingsNote(msg, typed) {
         const f = $("setSeries"), note = $("setSeriesNote"), m = $("modalSettings");
         if (f) f.value = String(typed || "");
         if (note) { note.textContent = msg || ""; note.hidden = !msg; }
-        if (m && msg) m.classList.add("open");
+        if (m && msg) {
+          m.classList.add("open");
+          /* said while Project Settings is saving (a held change): its Save closes the dialog right after, so it opens again on the note */
+          setTimeout(() => { const n = $("setSeriesNote"); if (n && !n.hidden && n.textContent === msg) m.classList.add("open"); }, 0);
+        }
         bibleStatus(msg || "");
       }
       /* this book stops reading the series: the series entries it mentions (and the fields they use) are copied into it first; its own entries stay, and the other books keep the series as it is */
@@ -24228,6 +24266,7 @@
         if (bibleDesk.raf) { cancelAnimationFrame(bibleDesk.raf); bibleDesk.raf = 0; }
         const area = $("editorArea");
         const d = bibleDesk;
+        if (area && bibleAllEntries().length) bibleMarkBind(); /* Alt+M works with the underlines off too (R25) */
         if (!bibleDeskLive(area)) {
           if (d.box && !d.box.hidden) { d.box.hidden = true; d.inner.textContent = ""; }
           d.val = null; d.hits = []; d.rects = null;
@@ -24416,11 +24455,21 @@
       /* the cursor as words: the chapter it is in, or the end of the book when nothing is open */
       function bibleWhere(pos) {
         const sec = pos && state.sections[pos[1]];
-        return sec ? castSecLabel(sec) : t("bible.asOfEnd");
+        const where = sec ? castSecLabel(sec) : t("bible.asOfEnd");
+        /* a numbered book says which book too, since a series' changes are read across books */
+        return bibleBookOrder() > 0 ? t("bible.bookAt", { n: fmtNum(bibleBookOrder()), where: where }) : where;
       }
-      /* where one change sits, in words ("" when its book is not the open one) */
+      /* the title of a book of the series, by any id it has carried: the open book's own, else what the shelf notes say; never a guess */
+      function bibleBookTitle(book) {
+        if (bookIdsOf(state.meta).indexOf(book) !== -1) return String(state.meta.title || "") || t("misc.untitledBook");
+        const m = bibleSeriesMemFor() || bibleSeriesMem, shelf = (m && m.shelf) || {};
+        for (const id of Object.keys(shelf)) { const n = shelf[id]; if (n && Array.isArray(n.ids) && n.ids.indexOf(book) !== -1) return n.title || t("misc.untitledBook"); }
+        return t("bible.otherBook");
+      }
+      /* where one change sits, in words: its chapter in the open book, else the book it was marked in */
       function bibleChangeWhere(c) {
-        const a = c && c.anchor; if (!a || (a.book && a.book !== (state.meta && state.meta.bookId))) return "";
+        const a = c && c.anchor; if (!a) return "";
+        if (a.book && a.book !== (state.meta && state.meta.bookId)) return bibleBookTitle(a.book);
         const sec = state.sections.find((x) => x.id === a.sec);
         return sec ? castSecLabel(sec) : "";
       }
@@ -24476,13 +24525,23 @@
         a.links.splice(at, 1); if (!a.links.length) delete a.links;
         bibleTouched(false); return true;
       }
+      /* a field's id from its label, the same every time for the same label: Latin letters (accents dropped, Âge → age) make a readable slug; a label with letters outside a-z (Возраст, العمر, 年齢) or none at all gets f- and a short hash of the label, so two such labels never share an id. Ids made before this (f, f-2) stay valid as they are. */
+      function bibleFieldIdBase(lab) {
+        const low = String(lab).normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase();
+        const slug = low.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+        if (slug && slug !== "f" && !/[\p{L}\p{N}]/u.test(low.replace(/[a-z0-9]/g, ""))) return slug;
+        const key = String(lab).normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+        let h = 2166136261; /* FNV-1a, 32 bits */
+        for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+        return "f-" + h.toString(36);
+      }
       /* a new field takes an id from its label (so adding back a field that was removed finds the facts still waiting under that id) */
       function bibleAddField(type, label) {
         if (BIBLE_TYPES.indexOf(type) === -1) return null;
         const lab = bibleLine(label, 40); if (!lab) return null;
         const list = bibleBookFieldDefs(type);
         if (list.length >= 50 || bibleFieldDefs(type).some((f) => f.label.toLowerCase() === lab.toLowerCase())) return null;
-        const base = lab.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "f";
+        const base = bibleFieldIdBase(lab);
         let id = base, n = 2;
         while (bibleFieldDefs(type).some((f) => f.id === id)) id = base + "-" + (n++);
         const home = bibleHomeDoc();
@@ -24648,6 +24707,26 @@
         bibleTouched(false);
         return c;
       }
+      /* the writer removes a change from Story so far; the toast's Undo puts it back where it was. Its margin dot and Right now follow, because both are read from the changes. */
+      function bibleRemoveChange(entryId, cid) {
+        const e = bibleById(entryId), list = e && e.changes, at = list ? list.findIndex((c) => c.id === cid) : -1;
+        if (at < 0) return false;
+        const gone = list.splice(at, 1)[0], bookId = state.meta.bookId || null;
+        if (!list.length) delete e.changes;
+        const redraw = () => {
+          bibleTouched(false); bibleDeskRender(true);
+          const m = $("modalBible"); if (m && m.classList.contains("open") && bibleUi.sel === entryId) bibleRefreshCard(e);
+        };
+        redraw();
+        toast(t("bible.changeRemoved", { name: bibleName(e) }), "trash-2", { label: t("bible.undo"), ms: 10000, onClick: () => {
+          const now = bibleById(entryId);
+          if ((state.meta.bookId || null) !== bookId || now !== e || (e.changes || []).some((c) => c.id === gone.id) || (e.changes || []).length >= BIBLE_CHANGE_MAX) return;
+          if (!e.changes) e.changes = [];
+          e.changes.splice(Math.min(at, e.changes.length), 0, gone);
+          redraw();
+        } });
+        return true;
+      }
       /* margin dots: one per change landing in the chapter on the desk (read from the desk, so dots follow typing), placed as bibleAnchorFind would. Other chapters' answers are remembered per change so typing never searches the book. */
       const bibleDotMemo = new WeakMap();
       function bibleDotsCompute(val) {
@@ -24701,7 +24780,7 @@
         }
         d.inner.insertAdjacentHTML("beforeend", html);
       }
-      const bibleMark = { sec: null, start: 0, end: 0, id: null, names: [], pt: null };
+      const bibleMark = { sec: null, start: 0, end: 0, id: null, names: [], pt: null, top: 0, scroll: 0 };
             function bibleMarkNames(area) {
         if (!area || !bibleAllEntries().length || editorSyncedSectionId !== state.activeId || area.selectionStart === area.selectionEnd) return [];
         const hits = bibleDesk.val === area.value ? bibleDesk.hits : bibleScan(area.value, bibleMatcherNow()).hits;
@@ -24763,7 +24842,7 @@
           document.body.appendChild(el);
           el.addEventListener("keydown", (e) => {
             if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); bibleMarkClose(true); }
-            else if (e.key === "Enter" && e.target && e.target.id === "bibMarkText" && !e.isComposing) { e.preventDefault(); bibleMarkSave(); }
+            else if (e.key === "Enter" && e.target && e.target.id === "bibMarkText" && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); bibleMarkSave(); }
           });
           el.addEventListener("change", (e) => { if (e.target && e.target.id === "bibMarkFact") { const v = $("bibMarkVal"), o = e.target.selectedOptions[0]; v.hidden = !e.target.value; v.placeholder = v.title = o ? o.textContent : ""; if (e.target.value) v.focus(); } });
           el.addEventListener("click", (e) => {
@@ -24799,13 +24878,28 @@
           '<div class="bib-mp-btns"><button type="button" class="tb-btn" data-mark-act="cancel">' + esc(t("imglib.cancel")) + '</button><button type="button" class="tb-btn primary" data-mark-act="save" title="' + esc(t("bible.markTip")) + '">' + esc(t("bible.markSave")) + "</button></div>";
         el.hidden = false;
         bibleMarkPlace(el, pt);
+        bibleMark.top = parseFloat(el.style.top) || 0; bibleMark.scroll = area.scrollTop;
         $("bibMarkText").focus();
+      }
+      /* the desk scrolled under an open popover: it moves with its passage (kept on screen) and keeps what the writer typed */
+      function bibleMarkFollow() {
+        const el = $("bibleMarkPop"), area = $("editorArea"); if (!el || el.hidden || !area) return;
+        const top = bibleMark.top - (area.scrollTop - bibleMark.scroll);
+        el.style.top = Math.round(Math.max(8, Math.min(window.innerHeight - el.offsetHeight - 8, top))) + "px";
       }
       function bibleMarkSave() {
         const e = bibleById(bibleMark.id); if (!e) { bibleMarkClose(true); return; }
         const text = $("bibMarkText").value, fs = $("bibMarkFact"), fv = $("bibMarkVal");
         const fact = fs && fs.value && fv && fv.value.trim() ? { field: fs.value, value: fv.value } : null;
         if (!bibleLine(text, 400) && !fact) { $("bibMarkText").focus(); return; }
+        /* an entry at the cap: said here in the popover, where the writer is, and what they typed stays */
+        if ((e.changes || []).length >= BIBLE_CHANGE_MAX) {
+          const pop = $("bibleMarkPop"); let msg = $("bibMarkMsg");
+          if (!msg && pop) { msg = document.createElement("div"); msg.id = "bibMarkMsg"; msg.className = "bib-mp-m bib-mp-err"; msg.setAttribute("role", "alert"); const btns = pop.querySelector(".bib-mp-btns"); if (btns) pop.insertBefore(msg, btns); else pop.appendChild(msg); }
+          if (msg) msg.textContent = t("bible.markFull", { name: bibleName(e), n: fmtNum(BIBLE_CHANGE_MAX) });
+          bibleStatus(t("bible.markFull", { name: bibleName(e), n: fmtNum(BIBLE_CHANGE_MAX) }));
+          $("bibMarkText").focus(); return;
+        }
         const c = bibleMarkChange(e.id, bibleMark.sec, bibleMark.start, bibleMark.end, text, fact);
         bibleMarkClose(true);
         if (!c) { bibleStatus(t("bible.markFull", { name: bibleName(e), n: fmtNum(BIBLE_CHANGE_MAX) })); return; }
@@ -24818,11 +24912,12 @@
         const area = $("editorArea"); if (!area || bibleMarkBound) return;
         bibleMarkBound = true;
         const hide = () => bibleMarkHideMenu();
-        area.addEventListener("mouseup", (e) => { const pt = { x: e.clientX + 6, y: e.clientY + 18 }; setTimeout(() => { if (area.selectionStart !== area.selectionEnd) bibleMarkShowMenu(pt, false); else hide(); }, 0); });
-        area.addEventListener("keyup", (e) => { if (e.shiftKey && area.selectionStart !== area.selectionEnd && /^(Arrow|Home$|End$|Page)/.test(e.key)) bibleMarkShowMenu(null, false); });
+        /* R25: the selection menu comes up only while "Underline mentions" is on; Alt+M (below) always works */
+        area.addEventListener("mouseup", (e) => { const pt = { x: e.clientX + 6, y: e.clientY + 18 }; setTimeout(() => { if (area.selectionStart !== area.selectionEnd && bibleMarksOn()) bibleMarkShowMenu(pt, false); else hide(); }, 0); });
+        area.addEventListener("keyup", (e) => { if (e.shiftKey && area.selectionStart !== area.selectionEnd && /^(Arrow|Home$|End$|Page)/.test(e.key) && bibleMarksOn()) bibleMarkShowMenu(null, false); });
         area.addEventListener("mousedown", hide);
         area.addEventListener("input", hide);
-        area.addEventListener("scroll", () => { hide(); bibleMarkClose(false); }, { passive: true });
+        area.addEventListener("scroll", () => { hide(); bibleMarkFollow(); }, { passive: true });
         area.addEventListener("keydown", (e) => {
           if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code === "KeyM") {
             const names = bibleMarkNames(area);
@@ -24941,11 +25036,18 @@
         if (keys.length) html += '<div class="bib-facts">' + keys.map((k) => '<span class="bib-fact"><i>' + esc(bibleFieldLabel(e.type, k)) + "</i> " + esc(st.facts[k]) + "</span>").join("") + "</div>";
         if (chips.length) html += '<div class="bib-chips">' + chips.map((c) => '<button type="button" class="bib-chip" data-bib-goto="' + esc(c.to) + '">' + esc(c.text) + "</button>").join("") + "</div>";
         if (e.changes && e.changes.length) {
-          const row = (c, cls, note) => "<li" + (cls ? ' class="' + cls + '"' : "") + ">" + (bibleChangeWhere(c) ? "<b>" + esc(bibleChangeWhere(c)) + ":</b> " : "") + esc(bibleChangeText(e, c)) + (note ? ' <span class="bib-tl-note">(' + esc(note) + ")</span>" : "") + "</li>";
+          /* every row can be removed (with Undo); a change from a book whose place is unknown says so instead of a chapter */
+          const row = (c, cls, note, where) => {
+            const w = where || bibleChangeWhere(c);
+            return "<li" + (cls ? ' class="' + cls + '"' : "") + ">" + (w ? "<b>" + esc(w) + ":</b> " : "") + esc(bibleChangeText(e, c)) + (note ? ' <span class="bib-tl-note">(' + esc(note) + ")</span>" : "") +
+              ' <button type="button" class="bib-x bib-tl-x" data-bib-chg-del="' + esc(c.id) + '" aria-label="' + esc(t("bible.changeRemove")) + '" title="' + esc(t("bible.changeRemove")) + '">&times;</button></li>';
+          };
           html += '<details class="bib-fold" id="bibStory"><summary>' + esc(t("bible.storyH", { count: e.changes.length, n: fmtNum(e.changes.length) })) + '</summary><ul class="bib-tl">' +
             st.past.map((c) => row(c, c === st.now ? "on" : "", "")).join("") +
             st.later.map((c) => row(c, "later", t("bible.later"))).join("") +
+            st.unordered.map((c) => row(c, "unordered", "", t("bible.orderUnknown", { book: bibleBookTitle(c.anchor.book) }))).join("") +
             st.orphans.map((c) => row(c, "orphan", t("bible.orphan"))).join("") + "</ul></details>";
+          if (st.unordered.length) html += '<p class="bib-hint" id="bibNumberHint">' + esc(t("bible.numberBooks")) + "</p>";
         }
         if (e.notes && e.notes.trim()) html += '<details class="bib-fold" id="bibDetailsFold"><summary>' + esc(t("bible.detailsH")) + '</summary><div class="bib-dview" id="bibDView">' + bibleDetailsHtml(e.notes) + "</div></details>";
         html += bibleAiHtml(e) + "</section>";
@@ -25282,16 +25384,26 @@
         reader.readAsText(file);
       }
       /* ---- the image library: a picture an entry wears is a use ---- */
+      /* every entry in scope, the series Covenant's too, so the unused-picture cleanup never takes a picture a series entry wears */
       function bibleImgUses(add) {
-        bibleEntries().forEach((e) => { if (e.imageId) add(e.imageId, { role: "bible", where: t("bible.title") + " · " + bibleName(e) }); });
+        bibleAllEntries().forEach((e) => { if (e.imageId) add(e.imageId, { role: "bible", where: t("bible.title") + " · " + bibleName(e) }); });
+      }
+      /* a series entry that loses (or gets back) its picture is a series edit, saved to the series' row */
+      function bibleImgSeriesTouched(ids) {
+        bibleAllVer++;
+        const ser = bibleSeries && bibleSeries.doc && bibleSeries.doc.entries;
+        if (ser && ser.some((e) => ids.indexOf(e.id) !== -1)) bibleSeriesTouched();
       }
       function bibleImgRemove(idSet) {
         const out = [];
-        bibleEntries().forEach((e) => { if (e.imageId && idSet.has(e.imageId)) { out.push({ id: e.id, imageId: e.imageId }); e.imageId = null; } });
+        bibleAllEntries().forEach((e) => { if (e.imageId && idSet.has(e.imageId)) { out.push({ id: e.id, imageId: e.imageId }); e.imageId = null; } });
+        if (out.length) bibleImgSeriesTouched(out.map((x) => x.id));
         return out;
       }
       function bibleImgUndo(list) {
-        (list || []).forEach((x) => { const e = bibleById(x.id); if (e && !e.imageId && imageById(x.imageId)) e.imageId = x.imageId; });
+        const back = [];
+        (list || []).forEach((x) => { const e = bibleById(x.id); if (e && !e.imageId && imageById(x.imageId)) { e.imageId = x.imageId; back.push(x.id); } });
+        if (back.length) bibleImgSeriesTouched(back);
       }
       /* a whole book arrived (load, sample, restore): its Bible is its own */
       function bibleBookArrived() {
@@ -25341,7 +25453,8 @@
         });
         /* Enter in a small add row presses its Add button */
         det.addEventListener("keydown", (e) => {
-          if (e.key !== "Enter" || !e.target || !e.target.getAttribute) return;
+          /* Enter that ends an IME composition (Japanese, Chinese...) picks the word, it does not press Add */
+          if (e.key !== "Enter" || e.isComposing || e.keyCode === 229 || !e.target || !e.target.getAttribute) return;
           const el = e.target, btn = el.id === "bibNewField" ? $("btnBibAddField") : el.id === "bibLinkLabel" ? $("btnBibAddLink") : el.hasAttribute("data-fld-new") ? det.querySelector('[data-fld-add="' + el.getAttribute("data-fld-new") + '"]') : null;
           if (btn) { e.preventDefault(); btn.click(); }
         });
@@ -25367,6 +25480,8 @@
           if (go && bibleById(go.getAttribute("data-bib-goto"))) { bibleUi.sel = go.getAttribute("data-bib-goto"); bibleUi.mode = "entry"; bibleRender(); return; }
           if (tg.closest("#btnBibBack")) { bibleUi.detail = false; bibleUi.mode = "entry"; bibleRender(); return; }
           if (tg.closest("#btnBibDelete")) { bibleDelete(bibleUi.sel); return; }
+          const cdel = tg.closest("[data-bib-chg-del]");
+          if (cdel) { if (bibleRemoveChange(bibleUi.sel, cdel.getAttribute("data-bib-chg-del"))) { const s = document.querySelector("#bibStory summary") || $("btnBibBack"); if (s) s.focus(); } return; }
           const mg = tg.closest("[data-mg-v]");
           if (mg && bibleUi.merge) { const a = bibleUi.merge.asks[Number(mg.getAttribute("data-mg-i"))], v = mg.getAttribute("data-mg-v"); if (a && !(a.onlyDiff && v === "same")) { a.answer = v; bibleRenderMerge(); icons(); } return; }
           if (tg.closest("#btnBibMergeSave")) { bibleMergeSave(); return; }
@@ -25798,12 +25913,16 @@
                   const tie = bibleStateAt({ facts: {}, changes: [ { id: "t1", fact: { field: "k", value: "a" } }, { id: "t2", fact: { field: "k", value: "b" } } ] }, biblePos(0, 0, 5), () => biblePos(0, 0, 5));
                   const tieOk = tie.now.id === "t2" && tie.facts.k === "b";
                   const far = { id: "f", anchor: { sec: "zz", quote: "q", at: 0, book: "other-book", pos: [1, 2, 3] } };
+                  /* R23: placed only while the open book has a number too; without one it is unordered, never in Right now */
+                  state.meta.seriesNumber = 1;
                   const farOk = biblePosCmp(bibleResolveChange(far), biblePos(0, 99, 99)) > 0 && bibleResolveChange({ id: "g", anchor: { sec: "zz", quote: "q", at: 0, book: "other-book" } }) === null;
+                  delete state.meta.seriesNumber;
+                  const unOrd = bibleResolveChange(far) === BIBLE_UNORDERED && bibleStateAt({ changes: [far] }, null, bibleResolveChange).unordered.length === 1;
                   /* no chapter open: the end of the book, so the last change that has a place counts and nothing is ahead */
                   const atEnd = bibleStateAt(entry, null, bibleResolveChange);
                   const endOk = !!atEnd.now && atEnd.now.id === "c5" && atEnd.later.length === 0 && atEnd.facts.status === "Recovered";
-                  return scVerdict(nowOk && factsOk && orphanOk && tieOk && farOk && endOk,
-                    "cursor in chapter 4, latest change is chapter 3's with chapter 5's ahead: " + nowOk + "; chapter 3's fact shows at chapter 4 and not at chapter 2: " + factsOk + "; orphan only in orphans: " + orphanOk + "; tie goes to the later mark: " + tieOk + "; other-book change placed by its saved position, none saved is an orphan: " + farOk + "; no cursor reads as the end of the book: " + endOk);
+                  return scVerdict(nowOk && factsOk && orphanOk && tieOk && farOk && unOrd && endOk,
+                    "cursor in chapter 4, latest change is chapter 3's with chapter 5's ahead: " + nowOk + "; chapter 3's fact shows at chapter 4 and not at chapter 2: " + factsOk + "; orphan only in orphans: " + orphanOk + "; tie goes to the later mark: " + tieOk + "; other-book change placed by its saved position, none saved is an orphan: " + farOk + "; unnumbered open book leaves it unordered: " + unOrd + "; no cursor reads as the end of the book: " + endOk);
                 } finally { state.sections = keep; }
               });
             } },
@@ -25868,8 +25987,17 @@
                   /* nothing open: the end of the book */
                   state.activeId = null; bibleRenderEntry();
                   const endOk = $("bibDetail").innerHTML.indexOf(esc(t("bible.asOf", { where: t("bible.asOfEnd") }))) !== -1;
-                  return scVerdict(sameOld && nowOk && factOk && chipOk && storyOk && asOfOk && back && aiOff && detailsOk && hoverOk && endOk && notesKept && live && noFold && follows,
-                    "plain entry renders as before: " + sameOld + "; Right now: " + nowOk + "; fact: " + factOk + "; link chip: " + chipOk + "; story count: " + storyOk + "; as-of chip: " + asOfOk + "; reverse link: " + back + "; no AI line: " + aiOff + "; Details bold and escaped: " + detailsOk + "; hover card Right now only: " + hoverOk + "; no cursor says end of book: " + endOk + "; Notes textarea in plain and codex entries, no Details editor: " + notesKept + "; Details preview follows Notes: " + live + "; no Details fold without notes: " + noFold + "; card follows name and aliases typed in the form: " + follows);
+                  /* a change removed from Story so far goes, and Right now with it; the toast's Undo puts it back where it was */
+                  state.activeId = "cf2"; mara.notes = ""; openBible("cf-mara");
+                  const acts = () => document.querySelectorAll("#toasts .toast-action"), nT = acts().length;
+                  const rmBtn = document.querySelector('#bibStory [data-bib-chg-del="k1"]'); if (rmBtn) rmBtn.click();
+                  const removed = !!rmBtn && mara.changes === undefined && acts().length === nT + 1 && !!$("bibCodex") && !$("bibCodex").querySelector(".bib-now") && !$("bibStory");
+                  const ub = acts()[acts().length - 1]; if (ub && removed) ub.click();
+                  const undone = removed && Array.isArray(mara.changes) && mara.changes.length === 1 && mara.changes[0].id === "k1" && !!$("bibCodex") && !!$("bibCodex").querySelector(".bib-now") && !!document.querySelector('#bibStory [data-bib-chg-del="k1"]');
+                  document.querySelectorAll("#toasts .toast").forEach((x) => x.remove());
+                  const orphanWords = !en || t("bible.orphan") === "its passage changed or was deleted — mark it again or remove it";
+                  return scVerdict(sameOld && nowOk && factOk && chipOk && storyOk && asOfOk && back && aiOff && detailsOk && hoverOk && endOk && notesKept && live && noFold && follows && removed && undone && orphanWords,
+                    "plain entry renders as before: " + sameOld + "; Right now: " + nowOk + "; fact: " + factOk + "; link chip: " + chipOk + "; story count: " + storyOk + "; as-of chip: " + asOfOk + "; reverse link: " + back + "; no AI line: " + aiOff + "; Details bold and escaped: " + detailsOk + "; hover card Right now only: " + hoverOk + "; no cursor says end of book: " + endOk + "; Notes textarea in plain and codex entries, no Details editor: " + notesKept + "; Details preview follows Notes: " + live + "; no Details fold without notes: " + noFold + "; card follows name and aliases typed in the form: " + follows + "; Remove takes the change and Right now away with an Undo toast: " + removed + "; Undo puts it back: " + undone + "; orphan wording: " + orphanWords);
                 } finally { state.sections = keepSecs; state.images = keepImgs; state.activeId = keepActive; state.bible = keepBible; }
               });
             } },
@@ -25918,8 +26046,32 @@
                 const p1 = probe();
                 area.style.maxWidth = keepW;
                 const follows = p1.mid > p0.mid + 20 && Math.abs(p1.top + 4 - p1.mid) <= 1 && Math.abs(p0.top + 4 - p0.mid) <= 1;
-                return scVerdict(offeredOk && stored && found && stamped && saved && textSame && exportSame && refused && capped && follows,
-                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; empty, blank, unknown-section and unknown-entry marks refused: " + refused + "; 501st refused: " + capped + "; dot follows a re-wrap: " + follows);
+                /* R25: with "Underline mentions" off a selection brings no menu, but Alt+M still does; with it on the menu comes */
+                const menu = () => $("bibleMarkMenu"), pop = () => $("bibleMarkPop");
+                const key = (el, type, init) => el.dispatchEvent(new KeyboardEvent(type, Object.assign({ bubbles: true, cancelable: true }, init)));
+                bibleMarksPref = false; bibleDeskRender(true); bibleMarkHideMenu();
+                area.setSelectionRange(10, 20); key(area, "keyup", { key: "ArrowRight", shiftKey: true });
+                const offNoMenu = !menu() || menu().hidden;
+                key(area, "keydown", { key: "m", code: "KeyM", altKey: true });
+                const altWorks = !!menu() && !menu().hidden && menu().querySelectorAll("[data-mark-for]").length === 2;
+                bibleMarkHideMenu(); bibleMarksPref = true; bibleDeskRender(true);
+                area.setSelectionRange(10, 20); key(area, "keyup", { key: "ArrowRight", shiftKey: true });
+                const onMenu = !!menu() && !menu().hidden;
+                bibleMarkHideMenu();
+                const r25 = offNoMenu && altWorks && onMenu;
+                /* the popover: scrolling the desk keeps it and its draft; Enter inside an IME composition does not save; a full entry is said in the popover and the draft stays */
+                bibleMark.sec = "mk1"; bibleMark.start = tomasAt; bibleMark.end = tomasAt + 5;
+                bibleMarkOpen("mk-tomas", { x: 120, y: 120 });
+                const tx = $("bibMarkText"); if (tx) tx.value = "draft words";
+                area.dispatchEvent(new Event("scroll"));
+                const scrollKept = !!pop() && !pop().hidden && !!$("bibMarkText") && $("bibMarkText").value === "draft words";
+                if (tx) key(tx, "keydown", { key: "Enter", isComposing: true });
+                const imeOk = !!pop() && !pop().hidden && !$("bibMarkMsg") && tale.changes.length === 500;
+                if (tx) key(tx, "keydown", { key: "Enter" });
+                const capHere = !!pop() && !pop().hidden && !!$("bibMarkMsg") && $("bibMarkMsg").textContent === t("bible.markFull", { name: "Tomas", n: fmtNum(BIBLE_CHANGE_MAX) }) && !!$("bibMarkText") && $("bibMarkText").value === "draft words" && tale.changes.length === 500;
+                bibleMarkClose(false);
+                return scVerdict(offeredOk && stored && found && stamped && saved && textSame && exportSame && refused && capped && follows && r25 && scrollKept && imeOk && capHere,
+                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; empty, blank, unknown-section and unknown-entry marks refused: " + refused + "; 501st refused: " + capped + "; dot follows a re-wrap: " + follows + "; menu only with underlines on (off: none " + offNoMenu + ", Alt+M " + altWorks + "; on: " + onMenu + "); popover kept with its draft on scroll: " + scrollKept + "; IME Enter does not save: " + imeOk + "; a full entry said in the popover, draft kept: " + capHere);
               });
             } },
           { id: "bible.links.facts", feature: "bible", name: "Covenant links, quick facts and templates: a link shows on both entries' cards; a fact set in the form shows on the card, and clearing the last fact or link takes the card away and returns the plain form; deleting an entry removes the links to it and nothing else; a removed field hides its values until save drops them, and adding it back restores them; a template adds each field once and never removes or renames; the fields manager renames, removes and adds",
@@ -26027,9 +26179,30 @@
                   /* normalize keeps a fact whose field is defined */
                   state.bible.fields = { character: [{ id: "age", label: "Age" }] };
                   const keeps = bibleNormalize(state.bible).entries.find((e) => e.id === "lf-mara").facts.age === "34";
-                  return scVerdict(linked && both && refused && plainNoCard && factSet && cardGone && linkGone && delOk && shown && hidden && restored && dropped && typeHidden && typeKept && typeBack && offered && rmHidden && undone && undoShown && noUndoDropped && shownTxt && hiddenTxt && chDropped && otherKind && tplOnce && threeTpl && unknownOk && renamed && added && removed && tplClick && keeps,
+                  /* field ids: an accented Latin label slugs without its accents; Cyrillic, Arabic and Japanese labels (and ones sharing only a digit) get distinct f-<hash> ids, the same each time, so adding one back finds its values */
+                  state.bible.fields = {};
+                  const labs = ["Возраст", "العمر", "年齢", "Âge", "Возраст 2", "Имя 2"], fids = labs.map((l) => bibleAddField("character", l));
+                  const idsOk = fids[3] === "age" && fids.every((x) => typeof x === "string" && /^[\w-]{1,40}$/.test(x)) && new Set(fids).size === labs.length &&
+                    [0, 1, 2, 4, 5].every((i) => /^f-[0-9a-z]+$/.test(fids[i]) && bibleFieldIdBase(labs[i]) === fids[i]);
+                  mara.facts = { [fids[0]]: "41", [fids[2]]: "七" };
+                  bibleRemoveField("character", fids[0]); bibleRemoveField("character", fids[2]);
+                  const backIds = bibleAddField("character", "Возраст") === fids[0] && bibleAddField("character", "年齢") === fids[2];
+                  const refound = backIds && bibleNormalize(state.bible).entries.find((e) => e.id === "lf-mara").facts[fids[0]] === "41" && view("lf-mara").indexOf("</i> 41<") !== -1 && view("lf-mara").indexOf("</i> 七<") !== -1;
+                  /* Enter that ends an IME composition picks the word and adds nothing; a plain Enter presses Add (More row and the fields manager) */
+                  const enter = (el, comp) => el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", isComposing: !!comp, bubbles: true, cancelable: true }));
+                  view("lf-mara"); const nf = $("bibNewField"), nBefore = bibleFieldDefs("character").length;
+                  nf.value = "Eyes"; enter(nf, true);
+                  const imeMore = bibleFieldDefs("character").length === nBefore;
+                  enter(nf, false);
+                  const plainMore = bibleFieldDefs("character").length === nBefore + 1;
+                  bibleUi.mode = "fields"; bibleRender();
+                  const mi = $("bibFieldsMgr").querySelector('input[data-fld-new="lore"]'); mi.value = "Era";
+                  enter(mi, true); const imeMgr = !bibleFieldDefs("lore").length;
+                  enter($("bibFieldsMgr").querySelector('input[data-fld-new="lore"]'), false); const plainMgr = bibleFieldDefs("lore").length === 1;
+                  const imeOk = imeMore && plainMore && imeMgr && plainMgr;
+                  return scVerdict(idsOk && refound && imeOk && linked && both && refused && plainNoCard && factSet && cardGone && linkGone && delOk && shown && hidden && restored && dropped && typeHidden && typeKept && typeBack && offered && rmHidden && undone && undoShown && noUndoDropped && shownTxt && hiddenTxt && chDropped && otherKind && tplOnce && threeTpl && unknownOk && renamed && added && removed && tplClick && keeps,
                     "link shows on both cards: " + both + "; self, missing and repeat links refused: " + refused + "; a plain entry has no card and one closed More row: " + plainNoCard + "; a fact in the form shows on the card: " + factSet + "; clearing it removes the card and restores the plain form: " + cardGone + "; removing the last link does the same: " + linkGone + "; deleting an entry removes only the links to it: " + delOk +
-                    "; field shown: " + shown + "; field removed hides the value: " + hidden + "; added back restores it: " + restored + "; save drops it once no kind defines the field: " + dropped + "; type change hides it: " + typeHidden + ", save keeps it: " + typeKept + ", back shows it: " + typeBack + "; field x offers Undo: " + offered + ", hides values: " + rmHidden + ", Undo restores field and values: " + undone + "/" + undoShown + ", no Undo then save drops: " + noUndoDropped + "; change fact shows as Label: value: " + shownTxt + ", hidden without a raw id: " + hiddenTxt + ", dropped by save: " + chDropped + ", kept while another kind defines it: " + otherKind + "; template twice adds once, keeps and never renames: " + tplOnce + "; three templates cover five types: " + threeTpl + "; unknown template does nothing: " + unknownOk + "; manager rename keeps id and values: " + renamed + "; add: " + added + "; remove: " + removed + "; template button: " + tplClick + "; normalize keeps a defined field's fact: " + keeps);
+                    "; field shown: " + shown + "; field removed hides the value: " + hidden + "; added back restores it: " + restored + "; save drops it once no kind defines the field: " + dropped + "; type change hides it: " + typeHidden + ", save keeps it: " + typeKept + ", back shows it: " + typeBack + "; field x offers Undo: " + offered + ", hides values: " + rmHidden + ", Undo restores field and values: " + undone + "/" + undoShown + ", no Undo then save drops: " + noUndoDropped + "; change fact shows as Label: value: " + shownTxt + ", hidden without a raw id: " + hiddenTxt + ", dropped by save: " + chDropped + ", kept while another kind defines it: " + otherKind + "; template twice adds once, keeps and never renames: " + tplOnce + "; three templates cover five types: " + threeTpl + "; unknown template does nothing: " + unknownOk + "; manager rename keeps id and values: " + renamed + "; add: " + added + "; remove: " + removed + "; template button: " + tplClick + "; normalize keeps a defined field's fact: " + keeps + "; non-Latin and accented field ids distinct and stable (" + fids.join(" ") + "): " + idsOk + "; adding one back finds its values: " + refound + "; IME Enter adds nothing, plain Enter adds (More " + imeMore + "/" + plainMore + ", manager " + imeMgr + "/" + plainMgr + ")");
                 } finally { state.activeId = keepActive; }
               });
             } },
@@ -26108,10 +26281,33 @@
                   const saved = serializeBook();
                   if (bibleSeries.doc.entries[0].description !== "Keeper of the light") bad.push("an edit to a series entry did not land in the series doc");
                   if (!saved.bible || saved.bible.entries.some((e) => e.id === "sx-mara") || saved.bible.entries.length !== 1) bad.push("the series entry was written into the book");
+                  /* a picture a series entry wears is in use, so the unused-picture cleanup never takes it */
+                  const keepImgs = state.images; state.images = (state.images || []).concat([{ id: "sx-pic", name: "pic", mediaType: "image/png", ext: "png", data: BIBLE_TINY_PNG }]);
+                  mara.imageId = "sx-pic";
+                  if (!imageUsage("sx-pic").some((u) => u.role === "bible")) bad.push("a picture on a series entry is not counted as used");
+                  delete mara.imageId; state.images = keepImgs;
+                  /* the chip says which book; another book's row is named by its title from the shelf notes */
+                  cloud.user = null;
+                  Object.assign(bibleSeriesMem, { shelf: { "m-five": { rev: 1, title: "Book Five", key: "salt road", order: 5, ids: ["sx-book5"] }, "m-six": { rev: 1, title: "Book Six", key: "salt road", order: 6, ids: ["sx-book6"] } }, ids: null });
+                  state.activeId = "bibc1"; openBible("sx-mara");
+                  const chip = document.querySelector("#bibCodex .bib-asof"), story = () => Array.prototype.map.call(document.querySelectorAll("#bibStory li"), (li) => li.textContent);
+                  if (!chip || chip.textContent !== t("bible.asOf", { where: t("bible.bookAt", { n: fmtNum(7), where: castSecLabel(state.sections[0]) }) })) bad.push("the as-of chip reads " + (chip && chip.textContent));
+                  if (!story().some((x) => x.indexOf("Book Six:") === 0 && x.indexOf("walks with a cane") !== -1) || !story().some((x) => x.indexOf(t("bible.otherBook") + ":") === 0 && x.indexOf("captain at last") !== -1)) bad.push("other-book rows not named by their book: " + story().join(" | "));
+                  /* R23: the open book unnumbered: no other book's change is interleaved or counts toward Right now; each is listed from its book, order unknown, with the one line about numbering */
+                  delete state.meta.seriesNumber; bibleAllVer++;
+                  let su = bibleStateAt(mara, bibleCursorPos(), bibleResolveChange);
+                  const ids2 = (l) => l.map((c) => c.id).join(",");
+                  if (su.now || su.past.length || ids2(su.unordered) !== "c5,c6,c9" || ids2(su.orphans) !== "cx,c7o") bad.push("unnumbered open book: now " + (su.now && su.now.id) + ", past " + ids2(su.past) + ", unordered " + ids2(su.unordered) + ", orphans " + ids2(su.orphans));
+                  openBible("sx-mara");
+                  if (document.querySelector("#bibCodex .bib-now") || !$("bibNumberHint") || !story().some((x) => x.indexOf(t("bible.orderUnknown", { book: "Book Five" }) + ":") === 0) || $("bibCodex").querySelector(".bib-asof").textContent !== t("bible.asOf", { where: castSecLabel(state.sections[0]) })) bad.push("unnumbered card: " + story().join(" | "));
+                  /* numbered here, but a change saved from an unnumbered book is unordered too */
+                  state.meta.seriesNumber = 7; cid("c5").anchor.pos = [0, 3, 10];
+                  su = bibleStateAt(mara, bibleCursorPos(), bibleResolveChange);
+                  if (ids2(su.unordered) !== "c5" || !su.now || su.now.id !== "c6") bad.push("a change from an unnumbered book: unordered " + ids2(su.unordered) + ", now " + (su.now && su.now.id));
                 }
                 bibleSeriesSet(null);
                 if (bibleAllEntries() !== bibleEntries() || bibleById("sx-mara")) bad.push("after the series went the series entry is still in scope");
-                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "Book 7 at chapter 1: Right now = Book 6's change (Book 5's in the past), Book 9's later, the unplaced and the gone ones orphans; this book's own change re-placed at 7,1," + watched + " and the gone one lost its place; series and book entries matched, listed and carded together; an edit landed in the series doc, never in the book; no series = the book's own list" };
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "Book 7 at chapter 1: Right now = Book 6's change (Book 5's in the past), Book 9's later, the unplaced and the gone ones orphans; this book's own change re-placed at 7,1," + watched + " and the gone one lost its place; series and book entries matched, listed and carded together; an edit landed in the series doc, never in the book; no series = the book's own list; a series entry's picture counted as used; chip “Book 7 · …”, other-book rows named by book; unnumbered: Book 5, 6 and 9 changes unordered (from their book, order unknown), none in Right now, one line about numbering; a change from an unnumbered book unordered in a numbered one" };
               });
             } },
           { id: "bible.series.conflict", feature: "bible", name: "Series Covenant sync: an edit is kept on this device and saved with the revision it was based on; a 409 raises the conflict notice in the series' words (Keep both not offered) with this device's edit kept and nothing re-sent while it waits; Keep mine saves on the shelf's revision; Use the shelf copy takes the shelf's and keeps this device's copy in the device store; a 409 carrying this very Covenant agrees quietly; offline the save waits counted and goes on reconnect; nothing reaches the network",
@@ -26176,6 +26372,19 @@
                   cloud.available = true; answer = ok(10);
                   bibleSeriesFlush();
                   if (calls[calls.length - 1] !== 'PUT /api/series-covenants/salt%20road "9"' || bibleSeries.revision !== 10 || bibleSeriesSync.dirty || bibleSeriesSync.pending) bad.push("on reconnect: " + calls[calls.length - 1] + ", rev " + bibleSeries.revision);
+                  /* 4b. a save the shelf refuses (413): said once, kept unsaved, not sent again until the next edit */
+                  const acts = () => document.querySelectorAll("#toasts .toast").length, t0 = acts();
+                  bibleById("sc-mara").description = "Far too long"; bibleTouched(false);
+                  answer = (m) => (m === "PUT" ? { __status: 413, __error: "too large", __body: { error: "too large" } } : null);
+                  const r0 = calls.length;
+                  bibleSeriesSaveNow();
+                  if (calls.length !== r0 + 1 || bibleSeriesSync.refused !== 413 || !bibleSeriesSync.dirty || acts() !== t0 + 1) bad.push("a 413: calls " + (calls.length - r0) + ", refused " + bibleSeriesSync.refused + ", toasts " + (acts() - t0));
+                  bibleSeriesFlush(); bibleSeriesSaveNow();
+                  if (calls.length !== r0 + 1) bad.push("a refused save was sent again before any edit");
+                  bibleById("sc-mara").description = "Shorter words"; bibleTouched(false); answer = ok(10);
+                  bibleSeriesSaveNow();
+                  if (calls.length !== r0 + 2 || bibleSeriesSync.refused || bibleSeriesSync.dirty) bad.push("after the next edit the refused save did not go: calls " + (calls.length - r0));
+                  document.querySelectorAll("#toasts .toast").forEach((x, i) => { if (i >= t0) x.remove(); });
                   /* the copy Use the shelf copy replaced rides every later device write */
                   if (!last().kept || last().kept.entries[0].description !== "Second edit") bad.push("the kept device copy was dropped by a later device write");
                   /* 5. an edit, then at once another book and straight back: still unsaved, and sent even though the shelf moved on */
@@ -26201,7 +26410,7 @@
                   if (mc.getAttribute("data-bib-series") === "1") bibleSeriesModalReset();
                   mc.classList.toggle("open", !!cloud.conflict);
                 }
-                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "edit kept on the device as unsaved; PUT on revision 4 → 409 → series notice (no Keep both), edit kept, nothing re-sent; Keep mine → PUT on 5 → rev 6; Use the shelf copy → shelf words at rev 7, device copy kept in the store; same-Covenant 409 → agreed on 9 quietly; offline → 1 pending, no call; reconnect → PUT on 9 → rev 10; the kept copy rides later writes; edit + book swap and back → still unsaved, sent on 10 → rev 12; edit + sign out → device copy unsaved; " + calls.length + " mocked calls, 0 real" };
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "edit kept on the device as unsaved; PUT on revision 4 → 409 → series notice (no Keep both), edit kept, nothing re-sent; Keep mine → PUT on 5 → rev 6; Use the shelf copy → shelf words at rev 7, device copy kept in the store; same-Covenant 409 → agreed on 9 quietly; offline → 1 pending, no call; reconnect → PUT on 9 → rev 10; the kept copy rides later writes; edit + book swap and back → still unsaved, sent on 10 → rev 12; edit + sign out → device copy unsaved; a 413 said once, not re-sent until the next edit; " + calls.length + " mocked calls, 0 real" };
               });
             } },
           { id: "bible.series.signin", feature: "bible", name: "Series Covenant signed out: a book that names a series shows one line in the Covenant room saying the series Covenant needs a free account, fetches nothing and reads nothing from the device store, and its own entries work as before; signing out drops a loaded series Covenant and brings the line back; no series name, no line; signed in with no series row (404) nothing is loaded and no line shows",
@@ -26240,9 +26449,12 @@
                   answer = () => ({ __status: 404, __error: "series not found", __body: { error: "series not found" } });
                   bibleSeriesRefresh(true); bibleRender();
                   if (bibleSeries || !line().hidden) bad.push("signed in with no row: series " + !!bibleSeries + ", line " + (line().hidden ? "hidden" : "shown"));
+                  /* N5: the studio forgets the series record on opening only for a plain no-session answer, never for a server error or no answer */
+                  const so = [[{ __status: 401, __error: "x" }, true], [{ user: null }, true], [{ __status: 500, __error: "x" }, false], [{ __status: 503, __error: "x" }, false], [null, false], [{ user: { id: "u" } }, false]];
+                  so.forEach((x) => { if (bibleAuthSignedOut(x[0]) !== x[1]) bad.push("/api/auth/me " + JSON.stringify(x[0]) + " read as signed out: " + !x[1]); });
                   if (realCalls) bad.push("the network was reached " + realCalls + " times");
                 } finally { window.fetch = realFetch; local.signedOut = keepSignedOut; }
-                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "signed out: one line (“" + t("bible.seriesSignIn", { name: "Salt Road" }) + "”), 0 requests, 0 device reads, the book's own entries matched and listed; signed in: row read, line gone; signed out again: series dropped, line back; no series: no line; 404: nothing loaded, no line" };
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "signed out: one line (“" + t("bible.seriesSignIn", { name: "Salt Road" }) + "”), 0 requests, 0 device reads, the book's own entries matched and listed; signed in: row read, line gone; signed out again: series dropped, line back; no series: no line; 404: nothing loaded, no line; only 401 or no user (not 5xx, not no answer) reads as signed out" };
               });
             } },
           { id: "bible.series.join", feature: "bible", name: "Series Covenant join offer: signed in, with two or more shelf books whose series name matches (any case or spacing) and no series row on the shelf, the Covenant room offers once to share one Covenant; signed out, with one matching book, with a row already there, or after Not now (remembered for that series) it does not; the open book's own shelf copy is never read or counted; nothing is sent or changed before Yes, and Yes opens the merge screen with nothing chosen and Save disabled",
@@ -26428,8 +26640,9 @@
                 const realFetch = window.fetch; let realCalls = 0, reply = false;
                 window.fetch = function () { realCalls++; return Promise.reject(new Error("a self-check never reaches the network")); };
                 try {
-                  let mode = "ok";
+                  let mode = "ok", swapTo = null;
                   bibleSeriesNet.fetch = BIBLE_SX.net(calls, (m, p, o, body) => {
+                    if (m === "GET" && p === "/api/manuscripts/m-one" && swapTo) { const sw = swapTo; swapTo = null; bibleSeriesSet(sw, BIBLE_SX.user.id, false); }
                     if (m === "GET" && p === "/api/manuscripts/m-other" && mode === "hang") return new Promise(() => {});
                     if (m === "GET" && p === "/api/manuscripts/m-other" && mode === "fail") return null;
                     if (m === "PUT" && p === "/api/series-covenants/tide%20road" && mode === "taken") return { __status: 428, __body: { series: { key: "tide road", name: "Tide Road", doc: { entries: [] }, revision: 3 } } };
@@ -26499,9 +26712,34 @@
                   calls.length = 0;
                   bibleSeriesSaveNow();
                   if (calls.join(" | ") !== 'PUT /api/series-covenants/salt%20road "7"' || bibleSeries) bad.push("a 404 on the removed series: " + calls.join(" | ") + ", series " + (bibleSeries && bibleSeries.key));
+                  /* N1: the series object replaced while the shelf is read: the same series goes on to the question; another series keeps the typed name, said beside the field */
+                  const note = () => $("setSeriesNote");
+                  join(); bibleSeriesMem.shelf = {}; bibleSeriesMem.ids = null; calls.length = 0; asked.length = 0; reply = false;
+                  swapTo = { key: "salt road", name: "Salt Road", doc: shared(), revision: 6 };
+                  bibleSeriesChangeAsk("Tide  Road");
+                  if (asked.length !== 1 || asked[0].title !== t("bible.renameTitle", { n: fmtNum(2) })) bad.push("the same series replaced during the shelf read dropped the question (asked " + asked.length + ")");
+                  join(); bibleSeriesMem.shelf = {}; bibleSeriesMem.ids = null; calls.length = 0; asked.length = 0; $("setSeries").value = ""; note().hidden = true;
+                  swapTo = { key: "glass kings", name: "Glass Kings", doc: { entries: [] }, revision: 2 };
+                  bibleSeriesChangeAsk("Tide  Road");
+                  if (asked.length || calls.some((c) => !/^GET /.test(c)) || $("setSeries").value !== "Tide  Road" || note().hidden || note().textContent !== t("bible.seriesKept", { name: "Salt Road" })) bad.push("another series during the shelf read: asked " + asked.length + ", field " + JSON.stringify($("setSeries").value) + ", note " + JSON.stringify(note().textContent));
+                  /* R24: signed out, offline, or the series not loaded: the change is held, said beside the field, the typed name kept, nothing asked or sent */
+                  const heldNow = (v, why) => {
+                    calls.length = 0; asked.length = 0; $("setSeries").value = ""; note().hidden = true;
+                    const took = bibleSeriesChangeAsk(v);
+                    if (!took || asked.length || calls.length || state.meta.series !== "Salt Road" || $("setSeries").value !== v || note().hidden || note().textContent !== t("bible.seriesHeld")) bad.push(why + ": took " + took + ", asked " + asked.length + ", calls " + calls.length + ", series " + JSON.stringify(state.meta.series) + ", field " + JSON.stringify($("setSeries").value));
+                  };
+                  join(); cloud.user = null; heldNow("Tide Road", "signed out, renaming"); heldNow("", "signed out, clearing");
+                  cloud.user = BIBLE_SX.user; net.online = false; heldNow("Tide Road", "offline"); net.online = true;
+                  bibleSeriesSet(null); state.bible.counts = { "t-gull": [1] }; heldNow("Tide Road", "not loaded, the book holding series counts");
+                  delete state.bible.counts; state.bible.entries[0].facts = { age: "30" }; heldNow("Tide Road", "not loaded, a fact on a series field");
+                  /* nothing in the book leans on a series Covenant, or the shelf said it has no row: the name changes as it always did */
+                  bibleSeriesMem.absent = "salt road";
+                  if (bibleSeriesChangeAsk("Tide Road") !== false) bad.push("a series with no shelf row held the change");
+                  bibleSeriesMem.absent = null; delete state.bible.entries[0].facts;
+                  if (bibleSeriesChangeAsk("Tide Road") !== false) bad.push("a book leaning on no series Covenant held the change");
                   if (realCalls) bad.push("the network was reached " + realCalls + " times");
                 } finally { window.fetch = realFetch; }
-                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "Book Three gone: its change an orphan, still kept; clearing asked first, Cancel changed nothing; leaving copied Mara and Captain Hale (not Wren) with changes, facts and field, kept Gullwick, stopped reading the series, wrote nothing to the shelf; both Charles (mentioned only ambiguously) copied too; Cancel said so beside the Series field; a shelf read under way held the rename back, an unread shelf book stopped it (said in Settings, typed name kept), a name already taken (428) renamed nothing (said, kept); rename asked about 2 books, created tide road, renamed Book One on 3, removed salt road; a late save on salt road got 404 and was not made again" };
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "N1: the same series replaced during the shelf read still asked, another series kept the typed name with a note; R24: signed out (rename and clear), offline, and not loaded with series counts or a series-field fact held the change (note, typed name kept, nothing asked or sent), while no shelf row or nothing leaning let it through; Book Three gone: its change an orphan, still kept; clearing asked first, Cancel changed nothing; leaving copied Mara and Captain Hale (not Wren) with changes, facts and field, kept Gullwick, stopped reading the series, wrote nothing to the shelf; both Charles (mentioned only ambiguously) copied too; Cancel said so beside the Series field; a shelf read under way held the rename back, an unread shelf book stopped it (said in Settings, typed name kept), a name already taken (428) renamed nothing (said, kept); rename asked about 2 books, created tide road, renamed Book One on 3, removed salt road; a late save on salt road got 404 and was not made again" };
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
@@ -47737,7 +47975,7 @@
           cloud.user = me.user;
           renderCloudChrome();
           portalSignInWork = cloudAfterSignIn(); /* BEUK:portal */
-        } else if (typeof bibleSeriesRefresh === "function") { bibleSeriesForget("*"); bibleSeriesRefresh(true); } /* BEUK:bible — signed out (here or elsewhere, or the account deleted): a copy kept from an earlier session no longer stands, and the series record goes */
+        } else if (typeof bibleSeriesRefresh === "function") { if (bibleAuthSignedOut(me)) bibleSeriesForget("*"); bibleSeriesRefresh(true); } /* BEUK:bible — signed out (here or elsewhere, or the account deleted): a copy kept from an earlier session no longer stands, and the series record goes; a server error or no answer says nothing about the session, so nothing is forgotten */
         studioDoorFromUrl();
       }
       /* The landing page's doors: /studio?signin and /studio?signup open

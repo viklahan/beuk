@@ -39,7 +39,8 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
     'bible.unlink': ['{name}'], 'bible.fieldRemove': ['{name}'], 'bible.fieldRemoved': ['{name}'], 'bible.tplApplied': ['{n}'],
     'bible.seriesSignIn': ['{name}'], 'bible.seriesConflictBody': ['{name}'],
     'bible.joinOffer': ['{n}', '{name}'], 'bible.mergeKeep': ['{field}', '{keep}', '{book}', '{drop}', '{from}'], 'bible.mergeDone': ['{name}'], 'bible.mergeLeft': ['{title}'],
-    'bible.leaveBody': ['{name}'], 'bible.leaveDone': ['{n}'], 'bible.renameTitle': ['{n}'], 'bible.renameBody': ['{from}', '{to}'], 'bible.renameDone': ['{name}'], 'bible.seriesAcross': ['{n}'], 'bible.seriesKept': ['{name}'], 'bible.renameTaken': ['{name}'] };
+    'bible.leaveBody': ['{name}'], 'bible.leaveDone': ['{n}'], 'bible.renameTitle': ['{n}'], 'bible.renameBody': ['{from}', '{to}'], 'bible.renameDone': ['{name}'], 'bible.seriesAcross': ['{n}'], 'bible.seriesKept': ['{name}'], 'bible.renameTaken': ['{name}'],
+    'bible.changeRemoved': ['{name}'], 'bible.orderUnknown': ['{book}'], 'bible.bookAt': ['{n}', '{where}'] };
   for (const k of keys) {
     const vals = Array.from(block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]*)"`, 'g'))).map((m) => m[1]);
     assert.equal(vals.length, 13, `${k} appears in ${vals.length} locales`);
@@ -75,4 +76,10 @@ test('covenant rename: the export is named -covenant.json while the format id st
   const block = html.slice(html.indexOf('Object.assign(UI_STRINGS.en', start), end);
   assert.doesNotMatch(block, /": "[^"]*(?:Bible|Biblia|Bibel|Bibbia|Bíblia|Bijbel|Biblii|Библи[яию]|[Rr]ehber|مرجع|設定集|设定集)/, "a translated value still names the old feature");
   assert.match(block, /"side\.toolBible": "Covenant"/);
+});
+
+test('covenant boot: the series record is forgotten only on a plain signed-out answer from /api/auth/me', async () => {
+  const html = await clientHtml();
+  assert.match(html, /function bibleAuthSignedOut\(me\) \{ return !!me && \(me\.__status === 401 \|\| \(!me\.__status && !me\.__error && !me\.user\)\); \}/);
+  assert.match(html, /\{ if \(bibleAuthSignedOut\(me\)\) bibleSeriesForget\("\*"\); bibleSeriesRefresh\(true\); \}/);
 });
