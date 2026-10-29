@@ -2217,7 +2217,7 @@
         #btnUiLang { padding: 8px 10px; }
       }
       @media (max-width: 560px) {
-        #btnHelp, #btnSupport { display: none; }
+        #btnHomeport, #btnHelp, #btnSupport { display: none; }
       }
 
       /* ---------- Cover maker ---------- */
@@ -2703,6 +2703,7 @@
         </div>
         <button class="tb-btn" id="btnAccount" data-tip="tips.account" data-tip-place="bottom" aria-label="Account and your shelf" data-i18n-aria="top.accountAria" style="display:none;"><i data-lucide="cloud"></i><span class="tb-label">Sign in</span></button>
         <button class="tb-btn" id="btnTheme" data-tip="tips.theme" data-tip-place="bottom" aria-label="Toggle Paper / Candlelight theme" data-i18n-aria="top.themeAria"><span id="themeIcon" style="display:inline-flex;"><i data-lucide="flame"></i></span><span class="tb-label" id="themeLabel">Candlelight</span></button>
+        <button class="tb-btn" id="btnHomeport" data-tip="tips.homeport" data-tip-place="bottom" aria-label="Homeport — Beuk’s home page (new tab)" data-i18n-aria="top.homeportAria"><i data-lucide="anchor"></i><span class="tb-label lbl-collapse" data-i18n="top.homeport">Homeport</span></button>
         <button class="tb-btn" id="btnHelp" data-tip="tips.help" data-tip-place="bottom" aria-label="Open the help reading room" data-i18n-aria="top.helpAria"><i data-lucide="life-buoy"></i><span class="tb-label lbl-collapse" data-i18n="top.help">Help</span></button>
         <button class="tb-btn" id="btnSupport" data-tip="tips.support" data-tip-place="bottom" aria-label="Support — write to a human" data-i18n-aria="top.supportAria"><i data-lucide="coffee"></i><span class="tb-label lbl-collapse" data-i18n="top.support">Support</span></button>
         <button class="tb-btn primary" id="btnExport" data-tip="tips.export" data-tip-place="bottom" aria-label="Export book"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><span class="tb-label" data-i18n="top.export">Export</span></button>
@@ -4579,7 +4580,7 @@
         "toast.copiedFile": "Copied {path}", "toast.binaryNoCopy": "This image file is binary — nothing to copy",
         "toast.jszipLoading": "JSZip is still loading — try again in a moment",
         "bulk.title": "Bulk import",
-        /* BEUK:tips */ "tips.uiLang": "The language of the studio’s menus and buttons. Your book keeps its own language.", "tips.theme": "Switch between Paper (light) and Candlelight (dark)", "tips.help": "Open the help reading room in a new tab", "tips.support": "Write to a human about Beuk, in a new tab", "tips.export": "Export the book: EPUB, print PDF, Word, Markdown or HTML, built in your browser", "tips.account": "Your account and your shelf of books", "tips.insights": "Chapter rhythm, your most-used words and the cast, read from the manuscript on this device", "tips.goals": "The targets you set yourself, with a tally of your writing days", "tips.history": "Snapshots of the manuscript to look back at, read and restore", "tips.bible": "The people, places and things of this book, and where their names appear", "tips.comments": "What your beta readers wrote", "tips.readAloud": "Read this section aloud in one of your browser’s voices", "tips.zen": "Only the page and your words. Esc leaves", "tips.device": "Preview on this screen: {size}, {res} pixels, {ppi} ppi", "tips.deviceHardcover": "Preview the printed book as a hardcover you can open and page through",
+        /* BEUK:tips */ "tips.uiLang": "The language of the studio’s menus and buttons. Your book keeps its own language.", "tips.theme": "Switch between Paper (light) and Candlelight (dark)", "tips.help": "Open the help reading room in a new tab", "tips.support": "Write to a human about Beuk, in a new tab", "tips.homeport": "Open Beuk’s home page in a new tab", "tips.export": "Export the book: EPUB, print PDF, Word, Markdown or HTML, built in your browser", "tips.account": "Your account and your shelf of books", "tips.insights": "Chapter rhythm, your most-used words and the cast, read from the manuscript on this device", "tips.goals": "The targets you set yourself, with a tally of your writing days", "tips.history": "Snapshots of the manuscript to look back at, read and restore", "tips.bible": "The people, places and things of this book, and where their names appear", "tips.comments": "What your beta readers wrote", "tips.readAloud": "Read this section aloud in one of your browser’s voices", "tips.zen": "Only the page and your words. Esc leaves", "tips.device": "Preview on this screen: {size}, {res} pixels, {ppi} ppi", "tips.deviceHardcover": "Preview the printed book as a hardcover you can open and page through",
         "bulk.sub": "Bring many manuscripts at once — each becomes its own book on your shelf, its language detected as it arrives. An Obsidian vault dropped as a folder keeps its frontmatter, links and images.",
         "bulk.filesBtn": "Choose files",
         "bulk.folderBtn": "Choose a folder",
@@ -4607,7 +4608,7 @@
         "bulk.emptyBatch": "No manuscripts in that selection — bulk import reads .docx, .md, .txt and .rtf files.",
         "top.readAloud": "Read Aloud", "top.readAloudAria": "Read this section aloud",
         "top.help": "Help", "top.helpAria": "Open the help reading room (new tab)",
-        "top.support": "Support", "top.supportAria": "Support — write to a human (new tab)",
+        "top.support": "Support", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk’s home page (new tab)", "top.supportAria": "Support — write to a human (new tab)",
         "ra.play": "Play", "ra.pause": "Pause", "ra.resume": "Resume", "ra.stop": "Stop",
         "ra.voice": "Voice", "ra.groupSuggested": "Suggested", "ra.groupDevice": "All voices on this device",
         "ra.female": "Female", "ra.male": "Male", "ra.noneOnDevice": "none on this device",
@@ -5334,7 +5335,7 @@
         "toast.copiedFile": "{path} copiado", "toast.binaryNoCopy": "Este archivo de imagen es binario — no hay nada que copiar",
         "toast.jszipLoading": "JSZip aún se está cargando — inténtalo de nuevo en un momento",
         "bulk.title": "Importación en lote",
-        /* BEUK:tips */ "tips.uiLang": "El idioma de los menús y botones del estudio. Tu libro conserva su propio idioma.", "tips.theme": "Cambiar entre Papel (claro) y Luz de vela (oscuro)", "tips.help": "Abrir la sala de lectura de ayuda en una pestaña nueva", "tips.support": "Escribir a una persona sobre Beuk, en una pestaña nueva", "tips.export": "Exportar el libro: EPUB, PDF de imprenta, Word, Markdown o HTML, creados en tu navegador", "tips.account": "Tu cuenta y tu estantería de libros", "tips.insights": "El ritmo de los capítulos, tus palabras más usadas y el reparto, leídos del manuscrito en este dispositivo", "tips.goals": "Las metas que te pones, con el recuento de tus días de escritura", "tips.history": "Instantáneas del manuscrito para revisar, leer y restaurar", "tips.bible": "Las personas, lugares y cosas de este libro, y dónde aparecen sus nombres", "tips.comments": "Lo que escribieron tus lectores beta", "tips.readAloud": "Leer esta sección en voz alta con una de las voces de tu navegador", "tips.zen": "Solo la página y tus palabras. Esc para salir", "tips.device": "Vista previa en esta pantalla: {size}, {res} píxeles, {ppi} ppp", "tips.deviceHardcover": "Ver el libro impreso como una tapa dura que puedes abrir y hojear",
+        /* BEUK:tips */ "tips.uiLang": "El idioma de los menús y botones del estudio. Tu libro conserva su propio idioma.", "tips.theme": "Cambiar entre Papel (claro) y Luz de vela (oscuro)", "tips.help": "Abrir la sala de lectura de ayuda en una pestaña nueva", "tips.support": "Escribir a una persona sobre Beuk, en una pestaña nueva", "tips.homeport": "Abrir la página de inicio de Beuk en una pestaña nueva", "tips.export": "Exportar el libro: EPUB, PDF de imprenta, Word, Markdown o HTML, creados en tu navegador", "tips.account": "Tu cuenta y tu estantería de libros", "tips.insights": "El ritmo de los capítulos, tus palabras más usadas y el reparto, leídos del manuscrito en este dispositivo", "tips.goals": "Las metas que te pones, con el recuento de tus días de escritura", "tips.history": "Instantáneas del manuscrito para revisar, leer y restaurar", "tips.bible": "Las personas, lugares y cosas de este libro, y dónde aparecen sus nombres", "tips.comments": "Lo que escribieron tus lectores beta", "tips.readAloud": "Leer esta sección en voz alta con una de las voces de tu navegador", "tips.zen": "Solo la página y tus palabras. Esc para salir", "tips.device": "Vista previa en esta pantalla: {size}, {res} píxeles, {ppi} ppp", "tips.deviceHardcover": "Ver el libro impreso como una tapa dura que puedes abrir y hojear",
         "bulk.sub": "Trae muchos manuscritos a la vez — cada uno se convierte en un libro en tu estantería, con su idioma detectado al llegar. Una bóveda de Obsidian soltada como carpeta conserva sus metadatos, enlaces e imágenes.",
         "bulk.filesBtn": "Elegir archivos",
         "bulk.folderBtn": "Elegir una carpeta",
@@ -5362,7 +5363,7 @@
         "bulk.emptyBatch": "No hay manuscritos en esa selección — la importación en lote lee archivos .docx, .md, .txt y .rtf.",
         "top.readAloud": "Leer en voz alta", "top.readAloudAria": "Leer esta sección en voz alta",
         "top.help": "Ayuda", "top.helpAria": "Abrir la sala de lectura de ayuda (pestaña nueva)",
-        "top.support": "Soporte", "top.supportAria": "Soporte — escribe a una persona (pestaña nueva)",
+        "top.support": "Soporte", "top.homeport": "Homeport", "top.homeportAria": "Homeport — la página de inicio de Beuk (pestaña nueva)", "top.supportAria": "Soporte — escribe a una persona (pestaña nueva)",
         "ra.play": "Reproducir", "ra.pause": "Pausar", "ra.resume": "Continuar", "ra.stop": "Detener",
         "ra.voice": "Voz", "ra.groupSuggested": "Sugeridas", "ra.groupDevice": "Todas las voces de este dispositivo",
         "ra.female": "Femenina", "ra.male": "Masculina", "ra.noneOnDevice": "ninguna en este dispositivo",
@@ -5554,7 +5555,7 @@
         "toast.copiedFile": "{path} copié", "toast.binaryNoCopy": "Ce fichier image est binaire — rien à copier",
         "toast.jszipLoading": "JSZip est encore en chargement — réessayez dans un instant",
         "bulk.title": "Import en lot",
-        /* BEUK:tips */ "tips.uiLang": "La langue des menus et des boutons du studio. Votre livre garde sa propre langue.", "tips.theme": "Basculer entre Papier (clair) et Chandelle (sombre)", "tips.help": "Ouvrir la salle de lecture de l’aide dans un nouvel onglet", "tips.support": "Écrire à une personne au sujet de Beuk, dans un nouvel onglet", "tips.export": "Exporter le livre : EPUB, PDF d’impression, Word, Markdown ou HTML, construits dans votre navigateur", "tips.account": "Votre compte et votre étagère de livres", "tips.insights": "Le rythme des chapitres, vos mots les plus employés et les personnages, lus dans le manuscrit sur cet appareil", "tips.goals": "Les cibles que vous vous fixez, avec le décompte de vos jours d’écriture", "tips.history": "Des instantanés du manuscrit à revoir, lire et restaurer", "tips.bible": "Les personnes, lieux et objets de ce livre, et où leurs noms apparaissent", "tips.comments": "Ce qu’ont écrit vos bêta-lecteurs", "tips.readAloud": "Lire cette section à voix haute avec l’une des voix de votre navigateur", "tips.zen": "Seulement la page et vos mots. Échap pour sortir", "tips.device": "Aperçu sur cet écran : {size}, {res} pixels, {ppi} ppp", "tips.deviceHardcover": "Voir le livre imprimé en couverture rigide, à ouvrir et feuilleter",
+        /* BEUK:tips */ "tips.uiLang": "La langue des menus et des boutons du studio. Votre livre garde sa propre langue.", "tips.theme": "Basculer entre Papier (clair) et Chandelle (sombre)", "tips.help": "Ouvrir la salle de lecture de l’aide dans un nouvel onglet", "tips.support": "Écrire à une personne au sujet de Beuk, dans un nouvel onglet", "tips.homeport": "Ouvrir la page d’accueil de Beuk dans un nouvel onglet", "tips.export": "Exporter le livre : EPUB, PDF d’impression, Word, Markdown ou HTML, construits dans votre navigateur", "tips.account": "Votre compte et votre étagère de livres", "tips.insights": "Le rythme des chapitres, vos mots les plus employés et les personnages, lus dans le manuscrit sur cet appareil", "tips.goals": "Les cibles que vous vous fixez, avec le décompte de vos jours d’écriture", "tips.history": "Des instantanés du manuscrit à revoir, lire et restaurer", "tips.bible": "Les personnes, lieux et objets de ce livre, et où leurs noms apparaissent", "tips.comments": "Ce qu’ont écrit vos bêta-lecteurs", "tips.readAloud": "Lire cette section à voix haute avec l’une des voix de votre navigateur", "tips.zen": "Seulement la page et vos mots. Échap pour sortir", "tips.device": "Aperçu sur cet écran : {size}, {res} pixels, {ppi} ppp", "tips.deviceHardcover": "Voir le livre imprimé en couverture rigide, à ouvrir et feuilleter",
         "bulk.sub": "Apportez plusieurs manuscrits à la fois — chacun devient un livre sur votre étagère, sa langue détectée à l’arrivée. Un coffre Obsidian déposé comme dossier conserve ses métadonnées, liens et images.",
         "bulk.filesBtn": "Choisir des fichiers",
         "bulk.folderBtn": "Choisir un dossier",
@@ -5582,7 +5583,7 @@
         "bulk.emptyBatch": "Aucun manuscrit dans cette sélection — l’import en lot lit les fichiers .docx, .md, .txt et .rtf.",
         "top.readAloud": "Lecture à voix haute", "top.readAloudAria": "Lire cette section à voix haute",
         "top.help": "Aide", "top.helpAria": "Ouvrir la salle de lecture d’aide (nouvel onglet)",
-        "top.support": "Assistance", "top.supportAria": "Assistance — écrire à un humain (nouvel onglet)",
+        "top.support": "Assistance", "top.homeport": "Homeport", "top.homeportAria": "Homeport — la page d’accueil de Beuk (nouvel onglet)", "top.supportAria": "Assistance — écrire à un humain (nouvel onglet)",
         "ra.play": "Lire", "ra.pause": "Pause", "ra.resume": "Reprendre", "ra.stop": "Arrêter",
         "ra.voice": "Voix", "ra.groupSuggested": "Suggérées", "ra.groupDevice": "Toutes les voix de cet appareil",
         "ra.female": "Femme", "ra.male": "Homme", "ra.noneOnDevice": "aucune sur cet appareil",
@@ -5774,7 +5775,7 @@
         "toast.copiedFile": "{path} kopiert", "toast.binaryNoCopy": "Diese Bilddatei ist binär — nichts zu kopieren",
         "toast.jszipLoading": "JSZip lädt noch — versuchen Sie es in einem Moment noch einmal",
         "bulk.title": "Stapelimport",
-        /* BEUK:tips */ "tips.uiLang": "Die Sprache der Menüs und Schaltflächen im Studio. Ihr Buch behält seine eigene Sprache.", "tips.theme": "Zwischen Papier (hell) und Kerzenlicht (dunkel) wechseln", "tips.help": "Den Hilfe-Lesesaal in einem neuen Tab öffnen", "tips.support": "Einem Menschen über Beuk schreiben, in einem neuen Tab", "tips.export": "Das Buch exportieren: EPUB, Druck-PDF, Word, Markdown oder HTML, erstellt in Ihrem Browser", "tips.account": "Ihr Konto und Ihr Bücherregal", "tips.insights": "Kapitelrhythmus, Ihre häufigsten Wörter und die Figuren, gelesen aus dem Manuskript auf diesem Gerät", "tips.goals": "Die Vorgaben, die Sie sich selbst setzen, mit einer Zählung Ihrer Schreibtage", "tips.history": "Schnappschüsse des Manuskripts zum Zurückblicken, Lesen und Wiederherstellen", "tips.bible": "Die Menschen, Orte und Dinge dieses Buchs, und wo ihre Namen vorkommen", "tips.comments": "Was Ihre Testleser geschrieben haben", "tips.readAloud": "Diesen Abschnitt mit einer Stimme Ihres Browsers vorlesen", "tips.zen": "Nur die Seite und Ihre Worte. Esc beendet den Zen-Modus", "tips.device": "Vorschau auf diesem Bildschirm: {size}, {res} Pixel, {ppi} ppi", "tips.deviceHardcover": "Das gedruckte Buch als Hardcover ansehen, zum Aufschlagen und Blättern",
+        /* BEUK:tips */ "tips.uiLang": "Die Sprache der Menüs und Schaltflächen im Studio. Ihr Buch behält seine eigene Sprache.", "tips.theme": "Zwischen Papier (hell) und Kerzenlicht (dunkel) wechseln", "tips.help": "Den Hilfe-Lesesaal in einem neuen Tab öffnen", "tips.support": "Einem Menschen über Beuk schreiben, in einem neuen Tab", "tips.homeport": "Die Startseite von Beuk in einem neuen Tab öffnen", "tips.export": "Das Buch exportieren: EPUB, Druck-PDF, Word, Markdown oder HTML, erstellt in Ihrem Browser", "tips.account": "Ihr Konto und Ihr Bücherregal", "tips.insights": "Kapitelrhythmus, Ihre häufigsten Wörter und die Figuren, gelesen aus dem Manuskript auf diesem Gerät", "tips.goals": "Die Vorgaben, die Sie sich selbst setzen, mit einer Zählung Ihrer Schreibtage", "tips.history": "Schnappschüsse des Manuskripts zum Zurückblicken, Lesen und Wiederherstellen", "tips.bible": "Die Menschen, Orte und Dinge dieses Buchs, und wo ihre Namen vorkommen", "tips.comments": "Was Ihre Testleser geschrieben haben", "tips.readAloud": "Diesen Abschnitt mit einer Stimme Ihres Browsers vorlesen", "tips.zen": "Nur die Seite und Ihre Worte. Esc beendet den Zen-Modus", "tips.device": "Vorschau auf diesem Bildschirm: {size}, {res} Pixel, {ppi} ppi", "tips.deviceHardcover": "Das gedruckte Buch als Hardcover ansehen, zum Aufschlagen und Blättern",
         "bulk.sub": "Bringen Sie viele Manuskripte auf einmal — jedes wird ein eigenes Buch in Ihrem Regal, seine Sprache beim Eintreffen erkannt. Ein als Ordner abgelegter Obsidian-Vault behält Frontmatter, Links und Bilder.",
         "bulk.filesBtn": "Dateien wählen",
         "bulk.folderBtn": "Ordner wählen",
@@ -5802,7 +5803,7 @@
         "bulk.emptyBatch": "Keine Manuskripte in dieser Auswahl — der Stapelimport liest .docx-, .md-, .txt- und .rtf-Dateien.",
         "top.readAloud": "Vorlesen", "top.readAloudAria": "Diesen Abschnitt vorlesen",
         "top.help": "Hilfe", "top.helpAria": "Den Hilfe-Leseraum öffnen (neuer Tab)",
-        "top.support": "Support", "top.supportAria": "Support — einem Menschen schreiben (neuer Tab)",
+        "top.support": "Support", "top.homeport": "Homeport", "top.homeportAria": "Homeport — die Startseite von Beuk (neuer Tab)", "top.supportAria": "Support — einem Menschen schreiben (neuer Tab)",
         "ra.play": "Abspielen", "ra.pause": "Pause", "ra.resume": "Weiter", "ra.stop": "Stopp",
         "ra.voice": "Stimme", "ra.groupSuggested": "Vorgeschlagen", "ra.groupDevice": "Alle Stimmen auf diesem Gerät",
         "ra.female": "Weiblich", "ra.male": "Männlich", "ra.noneOnDevice": "keine auf diesem Gerät",
@@ -5994,7 +5995,7 @@
         "toast.copiedFile": "{path} copiato", "toast.binaryNoCopy": "Questo file immagine è binario — niente da copiare",
         "toast.jszipLoading": "JSZip si sta ancora caricando — riprova tra un attimo",
         "bulk.title": "Importazione multipla",
-        /* BEUK:tips */ "tips.uiLang": "La lingua dei menu e dei pulsanti dello studio. Il tuo libro mantiene la sua lingua.", "tips.theme": "Passa da Carta (chiaro) a Lume di candela (scuro)", "tips.help": "Apri la sala di lettura dell’aiuto in una nuova scheda", "tips.support": "Scrivi a una persona a proposito di Beuk, in una nuova scheda", "tips.export": "Esporta il libro: EPUB, PDF per la stampa, Word, Markdown o HTML, creati nel tuo browser", "tips.account": "Il tuo account e il tuo scaffale di libri", "tips.insights": "Il ritmo dei capitoli, le parole che usi di più e i personaggi, letti dal manoscritto su questo dispositivo", "tips.goals": "I traguardi che ti dai, con il conteggio dei tuoi giorni di scrittura", "tips.history": "Istantanee del manoscritto da rivedere, leggere e ripristinare", "tips.bible": "Le persone, i luoghi e le cose di questo libro, e dove compaiono i loro nomi", "tips.comments": "Ciò che hanno scritto i tuoi lettori beta", "tips.readAloud": "Leggi questa sezione ad alta voce con una delle voci del browser", "tips.zen": "Solo la pagina e le tue parole. Esc per uscire", "tips.device": "Anteprima su questo schermo: {size}, {res} pixel, {ppi} ppi", "tips.deviceHardcover": "Guarda il libro stampato come un volume rilegato da aprire e sfogliare",
+        /* BEUK:tips */ "tips.uiLang": "La lingua dei menu e dei pulsanti dello studio. Il tuo libro mantiene la sua lingua.", "tips.theme": "Passa da Carta (chiaro) a Lume di candela (scuro)", "tips.help": "Apri la sala di lettura dell’aiuto in una nuova scheda", "tips.support": "Scrivi a una persona a proposito di Beuk, in una nuova scheda", "tips.homeport": "Apri la home page di Beuk in una nuova scheda", "tips.export": "Esporta il libro: EPUB, PDF per la stampa, Word, Markdown o HTML, creati nel tuo browser", "tips.account": "Il tuo account e il tuo scaffale di libri", "tips.insights": "Il ritmo dei capitoli, le parole che usi di più e i personaggi, letti dal manoscritto su questo dispositivo", "tips.goals": "I traguardi che ti dai, con il conteggio dei tuoi giorni di scrittura", "tips.history": "Istantanee del manoscritto da rivedere, leggere e ripristinare", "tips.bible": "Le persone, i luoghi e le cose di questo libro, e dove compaiono i loro nomi", "tips.comments": "Ciò che hanno scritto i tuoi lettori beta", "tips.readAloud": "Leggi questa sezione ad alta voce con una delle voci del browser", "tips.zen": "Solo la pagina e le tue parole. Esc per uscire", "tips.device": "Anteprima su questo schermo: {size}, {res} pixel, {ppi} ppi", "tips.deviceHardcover": "Guarda il libro stampato come un volume rilegato da aprire e sfogliare",
         "bulk.sub": "Porta molti manoscritti insieme — ciascuno diventa un libro sul tuo scaffale, con la lingua rilevata all’arrivo. Un vault Obsidian trascinato come cartella conserva metadati, collegamenti e immagini.",
         "bulk.filesBtn": "Scegli file",
         "bulk.folderBtn": "Scegli una cartella",
@@ -6022,7 +6023,7 @@
         "bulk.emptyBatch": "Nessun manoscritto in questa selezione — l’importazione multipla legge file .docx, .md, .txt e .rtf.",
         "top.readAloud": "Leggi ad alta voce", "top.readAloudAria": "Leggi questa sezione ad alta voce",
         "top.help": "Aiuto", "top.helpAria": "Apri la sala di lettura di aiuto (nuova scheda)",
-        "top.support": "Assistenza", "top.supportAria": "Assistenza — scrivi a una persona (nuova scheda)",
+        "top.support": "Assistenza", "top.homeport": "Homeport", "top.homeportAria": "Homeport — la home page di Beuk (nuova scheda)", "top.supportAria": "Assistenza — scrivi a una persona (nuova scheda)",
         "ra.play": "Riproduci", "ra.pause": "Pausa", "ra.resume": "Riprendi", "ra.stop": "Ferma",
         "ra.voice": "Voce", "ra.groupSuggested": "Consigliate", "ra.groupDevice": "Tutte le voci su questo dispositivo",
         "ra.female": "Femminile", "ra.male": "Maschile", "ra.noneOnDevice": "nessuna su questo dispositivo",
@@ -6214,7 +6215,7 @@
         "toast.copiedFile": "{path} copiado", "toast.binaryNoCopy": "Este ficheiro de imagem é binário — não há nada para copiar",
         "toast.jszipLoading": "O JSZip ainda está a carregar — tente outra vez daqui a um momento",
         "bulk.title": "Importação em lote",
-        /* BEUK:tips */ "tips.uiLang": "O idioma dos menus e botões do estúdio. O seu livro mantém o próprio idioma.", "tips.theme": "Alternar entre Papel (claro) e Luz de vela (escuro)", "tips.help": "Abrir a sala de leitura da ajuda num novo separador", "tips.support": "Escrever a uma pessoa sobre o Beuk, num novo separador", "tips.export": "Exportar o livro: EPUB, PDF de impressão, Word, Markdown ou HTML, criados no seu navegador", "tips.account": "A sua conta e a sua estante de livros", "tips.insights": "O ritmo dos capítulos, as palavras que mais usa e as personagens, lidos do manuscrito neste dispositivo", "tips.goals": "Os objetivos que define para si, com a contagem dos seus dias de escrita", "tips.history": "Instantâneos do manuscrito para rever, ler e restaurar", "tips.bible": "As pessoas, os lugares e as coisas deste livro, e onde os seus nomes aparecem", "tips.comments": "O que escreveram os seus leitores beta", "tips.readAloud": "Ler esta secção em voz alta com uma das vozes do navegador", "tips.zen": "Só a página e as suas palavras. Esc para sair", "tips.device": "Pré-visualizar neste ecrã: {size}, {res} píxeis, {ppi} ppp", "tips.deviceHardcover": "Ver o livro impresso como capa dura, para abrir e folhear",
+        /* BEUK:tips */ "tips.uiLang": "O idioma dos menus e botões do estúdio. O seu livro mantém o próprio idioma.", "tips.theme": "Alternar entre Papel (claro) e Luz de vela (escuro)", "tips.help": "Abrir a sala de leitura da ajuda num novo separador", "tips.support": "Escrever a uma pessoa sobre o Beuk, num novo separador", "tips.homeport": "Abrir a página inicial do Beuk num novo separador", "tips.export": "Exportar o livro: EPUB, PDF de impressão, Word, Markdown ou HTML, criados no seu navegador", "tips.account": "A sua conta e a sua estante de livros", "tips.insights": "O ritmo dos capítulos, as palavras que mais usa e as personagens, lidos do manuscrito neste dispositivo", "tips.goals": "Os objetivos que define para si, com a contagem dos seus dias de escrita", "tips.history": "Instantâneos do manuscrito para rever, ler e restaurar", "tips.bible": "As pessoas, os lugares e as coisas deste livro, e onde os seus nomes aparecem", "tips.comments": "O que escreveram os seus leitores beta", "tips.readAloud": "Ler esta secção em voz alta com uma das vozes do navegador", "tips.zen": "Só a página e as suas palavras. Esc para sair", "tips.device": "Pré-visualizar neste ecrã: {size}, {res} píxeis, {ppi} ppp", "tips.deviceHardcover": "Ver o livro impresso como capa dura, para abrir e folhear",
         "bulk.sub": "Traga muitos manuscritos de uma vez — cada um torna-se um livro na sua estante, com o idioma detetado à chegada. Um cofre Obsidian largado como pasta mantém os metadados, ligações e imagens.",
         "bulk.filesBtn": "Escolher ficheiros",
         "bulk.folderBtn": "Escolher uma pasta",
@@ -6242,7 +6243,7 @@
         "bulk.emptyBatch": "Nenhum manuscrito nessa seleção — a importação em lote lê ficheiros .docx, .md, .txt e .rtf.",
         "top.readAloud": "Ler em voz alta", "top.readAloudAria": "Ler esta secção em voz alta",
         "top.help": "Ajuda", "top.helpAria": "Abrir a sala de leitura de ajuda (novo separador)",
-        "top.support": "Apoio", "top.supportAria": "Apoio — escreva a uma pessoa (novo separador)",
+        "top.support": "Apoio", "top.homeport": "Homeport", "top.homeportAria": "Homeport — a página inicial do Beuk (novo separador)", "top.supportAria": "Apoio — escreva a uma pessoa (novo separador)",
         "ra.play": "Ouvir", "ra.pause": "Pausar", "ra.resume": "Continuar", "ra.stop": "Parar",
         "ra.voice": "Voz", "ra.groupSuggested": "Sugeridas", "ra.groupDevice": "Todas as vozes neste dispositivo",
         "ra.female": "Feminina", "ra.male": "Masculina", "ra.noneOnDevice": "nenhuma neste dispositivo",
@@ -6434,7 +6435,7 @@
         "toast.copiedFile": "{path} gekopieerd", "toast.binaryNoCopy": "Dit afbeeldingsbestand is binair — niets te kopiëren",
         "toast.jszipLoading": "JSZip laadt nog — probeer het zo meteen opnieuw",
         "bulk.title": "Bulkimport",
-        /* BEUK:tips */ "tips.uiLang": "De taal van de menu’s en knoppen van de studio. Je boek houdt zijn eigen taal.", "tips.theme": "Wisselen tussen Papier (licht) en Kaarslicht (donker)", "tips.help": "De leeszaal van de hulp openen in een nieuw tabblad", "tips.support": "Een mens schrijven over Beuk, in een nieuw tabblad", "tips.export": "Het boek exporteren: EPUB, drukklare pdf, Word, Markdown of HTML, gebouwd in je browser", "tips.account": "Je account en je boekenplank", "tips.insights": "Het ritme van de hoofdstukken, je meest gebruikte woorden en de personages, gelezen uit het manuscript op dit apparaat", "tips.goals": "De doelen die je jezelf stelt, met een telling van je schrijfdagen", "tips.history": "Momentopnamen van het manuscript om terug te kijken, te lezen en te herstellen", "tips.bible": "De mensen, plaatsen en dingen van dit boek, en waar hun namen voorkomen", "tips.comments": "Wat je proeflezers schreven", "tips.readAloud": "Deze sectie voorlezen met een van de stemmen van je browser", "tips.zen": "Alleen de pagina en je woorden. Esc om te stoppen", "tips.device": "Voorbeeld op dit scherm: {size}, {res} pixels, {ppi} ppi", "tips.deviceHardcover": "Het gedrukte boek bekijken als gebonden boek om open te slaan en door te bladeren",
+        /* BEUK:tips */ "tips.uiLang": "De taal van de menu’s en knoppen van de studio. Je boek houdt zijn eigen taal.", "tips.theme": "Wisselen tussen Papier (licht) en Kaarslicht (donker)", "tips.help": "De leeszaal van de hulp openen in een nieuw tabblad", "tips.support": "Een mens schrijven over Beuk, in een nieuw tabblad", "tips.homeport": "De startpagina van Beuk openen in een nieuw tabblad", "tips.export": "Het boek exporteren: EPUB, drukklare pdf, Word, Markdown of HTML, gebouwd in je browser", "tips.account": "Je account en je boekenplank", "tips.insights": "Het ritme van de hoofdstukken, je meest gebruikte woorden en de personages, gelezen uit het manuscript op dit apparaat", "tips.goals": "De doelen die je jezelf stelt, met een telling van je schrijfdagen", "tips.history": "Momentopnamen van het manuscript om terug te kijken, te lezen en te herstellen", "tips.bible": "De mensen, plaatsen en dingen van dit boek, en waar hun namen voorkomen", "tips.comments": "Wat je proeflezers schreven", "tips.readAloud": "Deze sectie voorlezen met een van de stemmen van je browser", "tips.zen": "Alleen de pagina en je woorden. Esc om te stoppen", "tips.device": "Voorbeeld op dit scherm: {size}, {res} pixels, {ppi} ppi", "tips.deviceHardcover": "Het gedrukte boek bekijken als gebonden boek om open te slaan en door te bladeren",
         "bulk.sub": "Breng veel manuscripten tegelijk — elk wordt een eigen boek op uw plank, met de taal herkend bij aankomst. Een Obsidian-vault die als map wordt neergezet, behoudt frontmatter, links en afbeeldingen.",
         "bulk.filesBtn": "Bestanden kiezen",
         "bulk.folderBtn": "Een map kiezen",
@@ -6462,7 +6463,7 @@
         "bulk.emptyBatch": "Geen manuscripten in die selectie — bulkimport leest .docx-, .md-, .txt- en .rtf-bestanden.",
         "top.readAloud": "Voorlezen", "top.readAloudAria": "Lees deze sectie voor",
         "top.help": "Help", "top.helpAria": "Open de helpleeszaal (nieuw tabblad)",
-        "top.support": "Ondersteuning", "top.supportAria": "Ondersteuning — schrijf een mens (nieuw tabblad)",
+        "top.support": "Ondersteuning", "top.homeport": "Homeport", "top.homeportAria": "Homeport — de startpagina van Beuk (nieuw tabblad)", "top.supportAria": "Ondersteuning — schrijf een mens (nieuw tabblad)",
         "ra.play": "Afspelen", "ra.pause": "Pauzeer", "ra.resume": "Hervat", "ra.stop": "Stop",
         "ra.voice": "Stem", "ra.groupSuggested": "Voorgesteld", "ra.groupDevice": "Alle stemmen op dit apparaat",
         "ra.female": "Vrouw", "ra.male": "Man", "ra.noneOnDevice": "geen op dit apparaat",
@@ -6654,7 +6655,7 @@
         "toast.copiedFile": "Skopiowano {path}", "toast.binaryNoCopy": "Ten plik obrazu jest binarny — nie ma czego kopiować",
         "toast.jszipLoading": "JSZip wciąż się ładuje — spróbuj ponownie za chwilę",
         "bulk.title": "Import zbiorczy",
-        /* BEUK:tips */ "tips.uiLang": "Język menu i przycisków studia. Twoja książka zachowuje własny język.", "tips.theme": "Przełącz między motywem Papier (jasny) a Blask świec (ciemny)", "tips.help": "Otwórz czytelnię pomocy w nowej karcie", "tips.support": "Napisz do człowieka w sprawie Beuk, w nowej karcie", "tips.export": "Eksportuj książkę: EPUB, PDF do druku, Word, Markdown lub HTML, tworzone w przeglądarce", "tips.account": "Twoje konto i twoja półka z książkami", "tips.insights": "Rytm rozdziałów, twoje najczęstsze słowa i postacie, odczytane z rękopisu na tym urządzeniu", "tips.goals": "Cele, które sam sobie wyznaczasz, z licznikiem dni pisania", "tips.history": "Migawki rękopisu do przejrzenia, przeczytania i przywrócenia", "tips.bible": "Ludzie, miejsca i rzeczy tej książki oraz miejsca, w których pojawiają się ich imiona", "tips.comments": "To, co napisali twoi beta-czytelnicy", "tips.readAloud": "Przeczytaj tę sekcję na głos jednym z głosów przeglądarki", "tips.zen": "Tylko strona i twoje słowa. Esc, aby wyjść", "tips.device": "Podgląd na tym ekranie: {size}, {res} pikseli, {ppi} ppi", "tips.deviceHardcover": "Zobacz wydrukowaną książkę w twardej oprawie, którą można otworzyć i kartkować",
+        /* BEUK:tips */ "tips.uiLang": "Język menu i przycisków studia. Twoja książka zachowuje własny język.", "tips.theme": "Przełącz między motywem Papier (jasny) a Blask świec (ciemny)", "tips.help": "Otwórz czytelnię pomocy w nowej karcie", "tips.support": "Napisz do człowieka w sprawie Beuk, w nowej karcie", "tips.homeport": "Otwórz stronę główną Beuk w nowej karcie", "tips.export": "Eksportuj książkę: EPUB, PDF do druku, Word, Markdown lub HTML, tworzone w przeglądarce", "tips.account": "Twoje konto i twoja półka z książkami", "tips.insights": "Rytm rozdziałów, twoje najczęstsze słowa i postacie, odczytane z rękopisu na tym urządzeniu", "tips.goals": "Cele, które sam sobie wyznaczasz, z licznikiem dni pisania", "tips.history": "Migawki rękopisu do przejrzenia, przeczytania i przywrócenia", "tips.bible": "Ludzie, miejsca i rzeczy tej książki oraz miejsca, w których pojawiają się ich imiona", "tips.comments": "To, co napisali twoi beta-czytelnicy", "tips.readAloud": "Przeczytaj tę sekcję na głos jednym z głosów przeglądarki", "tips.zen": "Tylko strona i twoje słowa. Esc, aby wyjść", "tips.device": "Podgląd na tym ekranie: {size}, {res} pikseli, {ppi} ppi", "tips.deviceHardcover": "Zobacz wydrukowaną książkę w twardej oprawie, którą można otworzyć i kartkować",
         "bulk.sub": "Przynieś wiele manuskryptów naraz — każdy staje się osobną książką na Twojej półce, z językiem wykrytym przy odbiorze. Skarbiec Obsidian upuszczony jako folder zachowuje metadane, linki i obrazy.",
         "bulk.filesBtn": "Wybierz pliki",
         "bulk.folderBtn": "Wybierz folder",
@@ -6682,7 +6683,7 @@
         "bulk.emptyBatch": "Brak manuskryptów w tym wyborze — import zbiorczy czyta pliki .docx, .md, .txt i .rtf.",
         "top.readAloud": "Czytaj na głos", "top.readAloudAria": "Przeczytaj tę sekcję na głos",
         "top.help": "Pomoc", "top.helpAria": "Otwórz czytelnię pomocy (nowa karta)",
-        "top.support": "Wsparcie", "top.supportAria": "Wsparcie — napisz do człowieka (nowa karta)",
+        "top.support": "Wsparcie", "top.homeport": "Homeport", "top.homeportAria": "Homeport — strona główna Beuk (nowa karta)", "top.supportAria": "Wsparcie — napisz do człowieka (nowa karta)",
         "ra.play": "Odtwórz", "ra.pause": "Wstrzymaj", "ra.resume": "Wznów", "ra.stop": "Zatrzymaj",
         "ra.voice": "Głos", "ra.groupSuggested": "Proponowane", "ra.groupDevice": "Wszystkie głosy na tym urządzeniu",
         "ra.female": "Żeński", "ra.male": "Męski", "ra.noneOnDevice": "brak na tym urządzeniu",
@@ -6874,7 +6875,7 @@
         "toast.copiedFile": "Скопировано: {path}", "toast.binaryNoCopy": "Этот файл изображения бинарный — копировать нечего",
         "toast.jszipLoading": "JSZip ещё загружается — попробуйте снова через мгновение",
         "bulk.title": "Пакетный импорт",
-        /* BEUK:tips */ "tips.uiLang": "Язык меню и кнопок студии. У книги остаётся свой язык.", "tips.theme": "Переключить тему: «Бумага» (светлая) или «При свечах» (тёмная)", "tips.help": "Открыть читальный зал справки в новой вкладке", "tips.support": "Написать живому человеку о Beuk, в новой вкладке", "tips.export": "Экспорт книги: EPUB, PDF для печати, Word, Markdown или HTML, собираются в вашем браузере", "tips.account": "Ваша учётная запись и книжная полка", "tips.insights": "Ритм глав, самые частые слова и персонажи — по рукописи на этом устройстве", "tips.goals": "Задачи, которые вы ставите себе сами, и счёт дней письма", "tips.history": "Снимки рукописи, чтобы оглянуться назад, прочитать и восстановить", "tips.bible": "Люди, места и вещи этой книги и где встречаются их имена", "tips.comments": "Что написали ваши бета-читатели", "tips.readAloud": "Прочитать этот раздел вслух одним из голосов браузера", "tips.zen": "Только страница и ваши слова. Esc — выход", "tips.device": "Просмотр на этом экране: {size}, {res} пикселей, {ppi} ppi", "tips.deviceHardcover": "Посмотреть печатную книгу в твёрдой обложке: открыть и листать",
+        /* BEUK:tips */ "tips.uiLang": "Язык меню и кнопок студии. У книги остаётся свой язык.", "tips.theme": "Переключить тему: «Бумага» (светлая) или «При свечах» (тёмная)", "tips.help": "Открыть читальный зал справки в новой вкладке", "tips.support": "Написать живому человеку о Beuk, в новой вкладке", "tips.homeport": "Открыть главную страницу Beuk в новой вкладке", "tips.export": "Экспорт книги: EPUB, PDF для печати, Word, Markdown или HTML, собираются в вашем браузере", "tips.account": "Ваша учётная запись и книжная полка", "tips.insights": "Ритм глав, самые частые слова и персонажи — по рукописи на этом устройстве", "tips.goals": "Задачи, которые вы ставите себе сами, и счёт дней письма", "tips.history": "Снимки рукописи, чтобы оглянуться назад, прочитать и восстановить", "tips.bible": "Люди, места и вещи этой книги и где встречаются их имена", "tips.comments": "Что написали ваши бета-читатели", "tips.readAloud": "Прочитать этот раздел вслух одним из голосов браузера", "tips.zen": "Только страница и ваши слова. Esc — выход", "tips.device": "Просмотр на этом экране: {size}, {res} пикселей, {ppi} ppi", "tips.deviceHardcover": "Посмотреть печатную книгу в твёрдой обложке: открыть и листать",
         "bulk.sub": "Принесите много рукописей сразу — каждая станет отдельной книгой на вашей полке, а её язык определится при поступлении. Хранилище Obsidian, перетащенное как папка, сохраняет метаданные, ссылки и изображения.",
         "bulk.filesBtn": "Выбрать файлы",
         "bulk.folderBtn": "Выбрать папку",
@@ -6902,7 +6903,7 @@
         "bulk.emptyBatch": "В этом выборе нет рукописей — пакетный импорт читает файлы .docx, .md, .txt и .rtf.",
         "top.readAloud": "Читать вслух", "top.readAloudAria": "Прочитать этот раздел вслух",
         "top.help": "Справка", "top.helpAria": "Открыть читальный зал справки (новая вкладка)",
-        "top.support": "Поддержка", "top.supportAria": "Поддержка — написать человеку (новая вкладка)",
+        "top.support": "Поддержка", "top.homeport": "Homeport", "top.homeportAria": "Homeport — главная страница Beuk (новая вкладка)", "top.supportAria": "Поддержка — написать человеку (новая вкладка)",
         "ra.play": "Слушать", "ra.pause": "Пауза", "ra.resume": "Продолжить", "ra.stop": "Стоп",
         "ra.voice": "Голос", "ra.groupSuggested": "Предложенные", "ra.groupDevice": "Все голоса на этом устройстве",
         "ra.female": "Женский", "ra.male": "Мужской", "ra.noneOnDevice": "нет на этом устройстве",
@@ -7094,7 +7095,7 @@
         "toast.copiedFile": "{path} kopyalandı", "toast.binaryNoCopy": "Bu resim dosyası ikili — kopyalanacak bir şey yok",
         "toast.jszipLoading": "JSZip hâlâ yükleniyor — birazdan yeniden deneyin",
         "bulk.title": "Toplu içe aktarma",
-        /* BEUK:tips */ "tips.uiLang": "Stüdyonun menü ve düğmelerinin dili. Kitabınız kendi dilini korur.", "tips.theme": "Kâğıt (açık) ile Mum ışığı (koyu) arasında geçiş yap", "tips.help": "Yardım okuma odasını yeni sekmede aç", "tips.support": "Beuk hakkında bir insana yaz, yeni sekmede", "tips.export": "Kitabı dışa aktar: EPUB, baskı PDF’i, Word, Markdown veya HTML, tarayıcınızda hazırlanır", "tips.account": "Hesabınız ve kitap rafınız", "tips.insights": "Bölüm ritmi, en çok kullandığınız sözcükler ve karakterler, bu cihazdaki taslaktan okunur", "tips.goals": "Kendinize koyduğunuz hedefler ve yazdığınız günlerin sayımı", "tips.history": "Geriye bakmak, okumak ve geri yüklemek için taslağın anlık görüntüleri", "tips.bible": "Bu kitabın kişileri, yerleri ve nesneleri, adlarının geçtiği yerlerle", "tips.comments": "Beta okurlarınızın yazdıkları", "tips.readAloud": "Bu bölümü tarayıcınızın seslerinden biriyle sesli oku", "tips.zen": "Yalnızca sayfa ve sözcükleriniz. Çıkmak için Esc", "tips.device": "Bu ekranda önizle: {size}, {res} piksel, {ppi} ppi", "tips.deviceHardcover": "Basılı kitabı açıp sayfalarını çevirebileceğiniz ciltli bir kitap olarak önizle",
+        /* BEUK:tips */ "tips.uiLang": "Stüdyonun menü ve düğmelerinin dili. Kitabınız kendi dilini korur.", "tips.theme": "Kâğıt (açık) ile Mum ışığı (koyu) arasında geçiş yap", "tips.help": "Yardım okuma odasını yeni sekmede aç", "tips.support": "Beuk hakkında bir insana yaz, yeni sekmede", "tips.homeport": "Beuk’un ana sayfasını yeni sekmede aç", "tips.export": "Kitabı dışa aktar: EPUB, baskı PDF’i, Word, Markdown veya HTML, tarayıcınızda hazırlanır", "tips.account": "Hesabınız ve kitap rafınız", "tips.insights": "Bölüm ritmi, en çok kullandığınız sözcükler ve karakterler, bu cihazdaki taslaktan okunur", "tips.goals": "Kendinize koyduğunuz hedefler ve yazdığınız günlerin sayımı", "tips.history": "Geriye bakmak, okumak ve geri yüklemek için taslağın anlık görüntüleri", "tips.bible": "Bu kitabın kişileri, yerleri ve nesneleri, adlarının geçtiği yerlerle", "tips.comments": "Beta okurlarınızın yazdıkları", "tips.readAloud": "Bu bölümü tarayıcınızın seslerinden biriyle sesli oku", "tips.zen": "Yalnızca sayfa ve sözcükleriniz. Çıkmak için Esc", "tips.device": "Bu ekranda önizle: {size}, {res} piksel, {ppi} ppi", "tips.deviceHardcover": "Basılı kitabı açıp sayfalarını çevirebileceğiniz ciltli bir kitap olarak önizle",
         "bulk.sub": "Birçok el yazmasını tek seferde getirin — her biri rafınızda kendi kitabı olur, dili varışta algılanır. Klasör olarak bırakılan bir Obsidian kasası ön bilgisini, bağlantılarını ve görsellerini korur.",
         "bulk.filesBtn": "Dosya seç",
         "bulk.folderBtn": "Klasör seç",
@@ -7122,7 +7123,7 @@
         "bulk.emptyBatch": "Bu seçimde el yazması yok — toplu içe aktarma .docx, .md, .txt ve .rtf dosyalarını okur.",
         "top.readAloud": "Sesli Oku", "top.readAloudAria": "Bu bölümü sesli oku",
         "top.help": "Yardım", "top.helpAria": "Yardım okuma odasını aç (yeni sekme)",
-        "top.support": "Destek", "top.supportAria": "Destek — bir insana yazın (yeni sekme)",
+        "top.support": "Destek", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk’un ana sayfası (yeni sekme)", "top.supportAria": "Destek — bir insana yazın (yeni sekme)",
         "ra.play": "Oynat", "ra.pause": "Duraklat", "ra.resume": "Sürdür", "ra.stop": "Durdur",
         "ra.voice": "Ses", "ra.groupSuggested": "Önerilen", "ra.groupDevice": "Bu cihazdaki tüm sesler",
         "ra.female": "Kadın", "ra.male": "Erkek", "ra.noneOnDevice": "bu cihazda yok",
@@ -7314,7 +7315,7 @@
         "toast.copiedFile": "نُسخ {path}", "toast.binaryNoCopy": "ملف الصورة هذا ثنائي — لا شيء لنسخه",
         "toast.jszipLoading": "JSZip ما زال يُحمَّل — حاول مجددًا بعد لحظة",
         "bulk.title": "استيراد جماعي",
-        /* BEUK:tips */ "tips.uiLang": "لغة قوائم الاستوديو وأزراره. يحتفظ كتابك بلغته الخاصة.", "tips.theme": "التبديل بين الورق (فاتح) وضوء الشموع (داكن)", "tips.help": "فتح قاعة قراءة المساعدة في علامة تبويب جديدة", "tips.support": "الكتابة إلى إنسان بشأن Beuk، في علامة تبويب جديدة", "tips.export": "تصدير الكتاب: EPUB أو PDF للطباعة أو Word أو Markdown أو HTML، تُبنى في متصفحك", "tips.account": "حسابك ورف كتبك", "tips.insights": "إيقاع الفصول والكلمات الأكثر استخدامًا والشخصيات، مقروءة من المخطوطة على هذا الجهاز", "tips.goals": "الأهداف التي تضعها لنفسك، مع عدّ أيام كتابتك", "tips.history": "لقطات من المخطوطة للرجوع إليها وقراءتها واستعادتها", "tips.bible": "أشخاص هذا الكتاب وأماكنه وأشياؤه، وأين تظهر أسماؤهم", "tips.comments": "ما كتبه قرّاؤك التجريبيون", "tips.readAloud": "قراءة هذا القسم بصوت عالٍ بأحد أصوات متصفحك", "tips.zen": "الصفحة وكلماتك فقط. Esc للخروج", "tips.device": "معاينة على هذه الشاشة: {size}، {res} بكسل، {ppi} ppi", "tips.deviceHardcover": "معاينة الكتاب المطبوع بغلاف مقوّى يمكنك فتحه وتقليب صفحاته",
+        /* BEUK:tips */ "tips.uiLang": "لغة قوائم الاستوديو وأزراره. يحتفظ كتابك بلغته الخاصة.", "tips.theme": "التبديل بين الورق (فاتح) وضوء الشموع (داكن)", "tips.help": "فتح قاعة قراءة المساعدة في علامة تبويب جديدة", "tips.support": "الكتابة إلى إنسان بشأن Beuk، في علامة تبويب جديدة", "tips.homeport": "افتح الصفحة الرئيسية لـ Beuk في علامة تبويب جديدة", "tips.export": "تصدير الكتاب: EPUB أو PDF للطباعة أو Word أو Markdown أو HTML، تُبنى في متصفحك", "tips.account": "حسابك ورف كتبك", "tips.insights": "إيقاع الفصول والكلمات الأكثر استخدامًا والشخصيات، مقروءة من المخطوطة على هذا الجهاز", "tips.goals": "الأهداف التي تضعها لنفسك، مع عدّ أيام كتابتك", "tips.history": "لقطات من المخطوطة للرجوع إليها وقراءتها واستعادتها", "tips.bible": "أشخاص هذا الكتاب وأماكنه وأشياؤه، وأين تظهر أسماؤهم", "tips.comments": "ما كتبه قرّاؤك التجريبيون", "tips.readAloud": "قراءة هذا القسم بصوت عالٍ بأحد أصوات متصفحك", "tips.zen": "الصفحة وكلماتك فقط. Esc للخروج", "tips.device": "معاينة على هذه الشاشة: {size}، {res} بكسل، {ppi} ppi", "tips.deviceHardcover": "معاينة الكتاب المطبوع بغلاف مقوّى يمكنك فتحه وتقليب صفحاته",
         "bulk.sub": "أحضر مخطوطات كثيرة دفعة واحدة — كل واحدة تصبح كتابًا على رفك، وتُكتشف لغتها عند وصولها. خزنة Obsidian تُسقط كمجلد تحتفظ ببياناتها الوصفية وروابطها وصورها.",
         "bulk.filesBtn": "اختيار ملفات",
         "bulk.folderBtn": "اختيار مجلد",
@@ -7342,7 +7343,7 @@
         "bulk.emptyBatch": "لا مخطوطات في هذا الاختيار — الاستيراد الجماعي يقرأ ملفات .docx و.md و.txt و.rtf.",
         "top.readAloud": "القراءة بصوت عالٍ", "top.readAloudAria": "اقرأ هذا القسم بصوت عالٍ",
         "top.help": "المساعدة", "top.helpAria": "افتح غرفة قراءة المساعدة (علامة تبويب جديدة)",
-        "top.support": "الدعم", "top.supportAria": "الدعم — راسل إنسانًا (علامة تبويب جديدة)",
+        "top.support": "الدعم", "top.homeport": "Homeport", "top.homeportAria": "Homeport — الصفحة الرئيسية لـ Beuk (علامة تبويب جديدة)", "top.supportAria": "الدعم — راسل إنسانًا (علامة تبويب جديدة)",
         "ra.play": "تشغيل", "ra.pause": "إيقاف مؤقت", "ra.resume": "استئناف", "ra.stop": "إيقاف",
         "ra.voice": "الصوت", "ra.groupSuggested": "المقترحة", "ra.groupDevice": "كل الأصوات على هذا الجهاز",
         "ra.female": "أنثى", "ra.male": "ذكر", "ra.noneOnDevice": "لا يوجد على هذا الجهاز",
@@ -7534,7 +7535,7 @@
         "toast.copiedFile": "{path}をコピーしました", "toast.binaryNoCopy": "この画像ファイルはバイナリです — コピーするものはありません",
         "toast.jszipLoading": "JSZipはまだ読み込み中です — 少し待ってからお試しください",
         "bulk.title": "一括インポート",
-        /* BEUK:tips */ "tips.uiLang": "スタジオのメニューとボタンの言語です。本は独自の言語のままです。", "tips.theme": "ペーパー（ライト）とキャンドルライト（ダーク）を切り替え", "tips.help": "ヘルプの閲覧室を新しいタブで開く", "tips.support": "Beuk について人に問い合わせる（新しいタブ）", "tips.export": "本を書き出す：EPUB、印刷用 PDF、Word、Markdown、HTML をブラウザ内で作成", "tips.account": "アカウントと本棚", "tips.insights": "章のリズム、よく使う語、登場人物を、この端末の原稿から読み取ります", "tips.goals": "自分で決めた目標と、書いた日の記録", "tips.history": "原稿のスナップショットを振り返り、読み、復元できます", "tips.bible": "この本の人物・場所・物と、その名前が出てくる箇所", "tips.comments": "ベータ読者が書いたこと", "tips.readAloud": "このセクションをブラウザの音声で読み上げる", "tips.zen": "ページとあなたの言葉だけ。Esc で終了", "tips.device": "この画面でプレビュー：{size}、{res} ピクセル、{ppi} ppi", "tips.deviceHardcover": "印刷した本を、開いてめくれるハードカバーとしてプレビュー",
+        /* BEUK:tips */ "tips.uiLang": "スタジオのメニューとボタンの言語です。本は独自の言語のままです。", "tips.theme": "ペーパー（ライト）とキャンドルライト（ダーク）を切り替え", "tips.help": "ヘルプの閲覧室を新しいタブで開く", "tips.support": "Beuk について人に問い合わせる（新しいタブ）", "tips.homeport": "Beuk のホームページを新しいタブで開く", "tips.export": "本を書き出す：EPUB、印刷用 PDF、Word、Markdown、HTML をブラウザ内で作成", "tips.account": "アカウントと本棚", "tips.insights": "章のリズム、よく使う語、登場人物を、この端末の原稿から読み取ります", "tips.goals": "自分で決めた目標と、書いた日の記録", "tips.history": "原稿のスナップショットを振り返り、読み、復元できます", "tips.bible": "この本の人物・場所・物と、その名前が出てくる箇所", "tips.comments": "ベータ読者が書いたこと", "tips.readAloud": "このセクションをブラウザの音声で読み上げる", "tips.zen": "ページとあなたの言葉だけ。Esc で終了", "tips.device": "この画面でプレビュー：{size}、{res} ピクセル、{ppi} ppi", "tips.deviceHardcover": "印刷した本を、開いてめくれるハードカバーとしてプレビュー",
         "bulk.sub": "原稿をまとめて持ち込めます — それぞれが本棚の独立した本になり、言語は到着時に検出されます。フォルダとしてドロップした Obsidian 保管庫は、フロントマター・リンク・画像を保持します。",
         "bulk.filesBtn": "ファイルを選ぶ",
         "bulk.folderBtn": "フォルダを選ぶ",
@@ -7562,7 +7563,7 @@
         "bulk.emptyBatch": "その選択に原稿はありません — 一括インポートは .docx、.md、.txt、.rtf ファイルを読みます。",
         "top.readAloud": "読み上げ", "top.readAloudAria": "このセクションを読み上げる",
         "top.help": "ヘルプ", "top.helpAria": "ヘルプの閲覧室を開く（新しいタブ）",
-        "top.support": "サポート", "top.supportAria": "サポート — 人間に書く（新しいタブ）",
+        "top.support": "サポート", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk のホームページ（新しいタブ）", "top.supportAria": "サポート — 人間に書く（新しいタブ）",
         "ra.play": "再生", "ra.pause": "一時停止", "ra.resume": "再開", "ra.stop": "停止",
         "ra.voice": "音声", "ra.groupSuggested": "おすすめ", "ra.groupDevice": "このデバイスのすべての音声",
         "ra.female": "女性", "ra.male": "男性", "ra.noneOnDevice": "このデバイスにはありません",
@@ -7754,7 +7755,7 @@
         "toast.copiedFile": "已复制 {path}", "toast.binaryNoCopy": "此图片文件是二进制的 — 没有可复制的内容",
         "toast.jszipLoading": "JSZip 仍在加载 — 请稍后再试",
         "bulk.title": "批量导入",
-        /* BEUK:tips */ "tips.uiLang": "工作室菜单和按钮的语言。你的书保留自己的语言。", "tips.theme": "在纸面（浅色）和烛光（深色）之间切换", "tips.help": "在新标签页中打开帮助阅览室", "tips.support": "就 Beuk 写信给真人，在新标签页中打开", "tips.export": "导出本书：EPUB、印刷 PDF、Word、Markdown 或 HTML，在浏览器中生成", "tips.account": "你的账户和书架", "tips.insights": "章节节奏、最常用的词和人物，从本设备上的书稿读取", "tips.goals": "你为自己设定的目标，以及写作天数的记录", "tips.history": "书稿的快照，可回顾、阅读和恢复", "tips.bible": "本书的人物、地点和事物，以及它们的名字出现在哪里", "tips.comments": "你的试读读者写下的内容", "tips.readAloud": "用浏览器的一种声音朗读本节", "tips.zen": "只有页面和你的文字。按 Esc 退出", "tips.device": "在此屏幕上预览：{size}，{res} 像素，{ppi} ppi", "tips.deviceHardcover": "以可打开翻阅的精装书预览印刷版",
+        /* BEUK:tips */ "tips.uiLang": "工作室菜单和按钮的语言。你的书保留自己的语言。", "tips.theme": "在纸面（浅色）和烛光（深色）之间切换", "tips.help": "在新标签页中打开帮助阅览室", "tips.support": "就 Beuk 写信给真人，在新标签页中打开", "tips.homeport": "在新标签页中打开 Beuk 主页", "tips.export": "导出本书：EPUB、印刷 PDF、Word、Markdown 或 HTML，在浏览器中生成", "tips.account": "你的账户和书架", "tips.insights": "章节节奏、最常用的词和人物，从本设备上的书稿读取", "tips.goals": "你为自己设定的目标，以及写作天数的记录", "tips.history": "书稿的快照，可回顾、阅读和恢复", "tips.bible": "本书的人物、地点和事物，以及它们的名字出现在哪里", "tips.comments": "你的试读读者写下的内容", "tips.readAloud": "用浏览器的一种声音朗读本节", "tips.zen": "只有页面和你的文字。按 Esc 退出", "tips.device": "在此屏幕上预览：{size}，{res} 像素，{ppi} ppi", "tips.deviceHardcover": "以可打开翻阅的精装书预览印刷版",
         "bulk.sub": "一次带来许多稿件 — 每部都成为书架上独立的一本书，语言在到达时自动检测。以文件夹形式放下的 Obsidian 仓库会保留其元数据、链接和图片。",
         "bulk.filesBtn": "选择文件",
         "bulk.folderBtn": "选择文件夹",
@@ -7782,7 +7783,7 @@
         "bulk.emptyBatch": "该选择中没有稿件 — 批量导入读取 .docx、.md、.txt 和 .rtf 文件。",
         "top.readAloud": "朗读", "top.readAloudAria": "朗读本节",
         "top.help": "帮助", "top.helpAria": "打开帮助阅览室（新标签页）",
-        "top.support": "支持", "top.supportAria": "支持 — 给真人写信（新标签页）",
+        "top.support": "支持", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk 主页（新标签页）", "top.supportAria": "支持 — 给真人写信（新标签页）",
         "ra.play": "播放", "ra.pause": "暂停", "ra.resume": "继续", "ra.stop": "停止",
         "ra.voice": "语音", "ra.groupSuggested": "推荐", "ra.groupDevice": "此设备上的全部语音",
         "ra.female": "女声", "ra.male": "男声", "ra.noneOnDevice": "此设备上没有",
@@ -65648,6 +65649,10 @@
         const stop = $("raStop"); if (stop) stop.addEventListener("click", raStop);
         const voiceSel = $("raVoice");
         if (voiceSel) voiceSel.addEventListener("change", () => { ra.voiceSel = voiceSel.value; });
+        /* BEUK:homeport — the landing page, in a new tab. ?home stops it
+           sending a returning writer straight back to the studio. */
+        const homeport = $("btnHomeport");
+        if (homeport) homeport.addEventListener("click", () => { try { window.open("/?home", "_blank", "noopener"); } catch (e) {} });
         const help = $("btnHelp");
         if (help) help.addEventListener("click", () => { try { window.open("/help/", "_blank", "noopener"); } catch (e) {} });
         const support = $("btnSupport");
