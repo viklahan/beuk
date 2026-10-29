@@ -1738,6 +1738,21 @@
       .bible-ov-text .bm { text-decoration-line: underline; text-decoration-style: solid; text-decoration-thickness: 1.5px; text-underline-offset: 3px;
         text-decoration-color: color-mix(in srgb, var(--accent) 48%, transparent); text-decoration-skip-ink: none; }
       .bible-ov-text .bm.is-hot { text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+      .bible-ov-text { position: relative; }
+      .bm-dotmark { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); pointer-events: auto; cursor: pointer; }
+      .bm-dotmark:hover { box-shadow: 0 0 0 3px var(--accent-soft); }
+      body.zen .bible-ov-text .bm-dotmark { opacity: .55; }
+      .bib-mmenu, .bib-mpop { position: fixed; z-index: 81; box-sizing: border-box; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: var(--shadow); font-size: 13px; line-height: 1.4; }
+      .bib-mmenu[hidden], .bib-mpop[hidden] { display: none; }
+      .bib-mmenu { padding: 4px; min-width: 190px; max-width: calc(100vw - 24px); }
+      .bib-mmenu button { display: block; width: 100%; text-align: start; font: inherit; color: var(--ink); background: none; border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer; }
+      .bib-mmenu button:hover, .bib-mmenu button:focus-visible { background: var(--accent-soft); outline: none; }
+      .bib-mpop { width: 300px; max-width: calc(100vw - 24px); padding: 12px 14px; }
+      .bib-mp-h { font-weight: 600; margin-bottom: 6px; }
+      .bib-mp-m { color: var(--muted); font-size: 12px; margin-top: 8px; overflow-wrap: anywhere; }
+      .bib-mpop .txt-input { width: 100%; box-sizing: border-box; margin-top: 4px; }
+      .bib-mpop .txt-input[hidden] { display: none; }
+      .bib-mp-btns { display: flex; gap: 6px; justify-content: flex-end; margin-top: 10px; }
       body.zen .bible-ov-text .bm { text-decoration-color: color-mix(in srgb, var(--accent) 38%, transparent); }
       .bib-card { position: fixed; z-index: 80; width: 300px; max-width: calc(100vw - 24px); box-sizing: border-box; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: var(--shadow); padding: 12px 14px; font-size: 13px; line-height: 1.5; }
       .bib-card[hidden] { display: none; }
@@ -21827,6 +21842,7 @@
         "bible.nowH": "Right now",
         "bible.storyH": "Story so far · {n} change", "bible.storyHPlural": "Story so far · {n} changes",
         "bible.later": "later, not yet true here", "bible.orphan": "its passage was deleted — re-pin or remove",
+        "bible.markFor": "Mark a change for {name}…", "bible.changeH": "{name}, from here on", "bible.changePh": "What changed, in your own words", "bible.factQ": "Update a quick fact too? (optional)", "bible.noFact": "No fact change", "bible.pinnedTo": "Pinned to: {where}", "bible.markSave": "Save", "bible.markTip": "Mark a change (Alt+M)", "bible.markFull": "{name} already has {n} changes.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (from {name})",
         "imglib.role.bible": "picture of an entry"
@@ -21917,6 +21933,7 @@
         "bible.nowH": "Ahora mismo",
         "bible.storyH": "Historia hasta ahora · {n} cambio", "bible.storyHPlural": "Historia hasta ahora · {n} cambios",
         "bible.later": "más adelante, aún no es cierto aquí", "bible.orphan": "su pasaje fue borrado — vuelve a fijarlo o quítalo",
+        "bible.markFor": "Marcar un cambio para {name}…", "bible.changeH": "{name}, a partir de aquí", "bible.changePh": "Qué cambió, con tus palabras", "bible.factQ": "¿Actualizar también un dato rápido? (opcional)", "bible.noFact": "Sin cambio de dato", "bible.pinnedTo": "Fijado en: {where}", "bible.markSave": "Guardar", "bible.markTip": "Marcar un cambio (Alt+M)", "bible.markFull": "{name} ya tiene {n} cambios.",
         "bible.detailsH": "Detalles",
         "bible.linkFrom": "{label} (desde {name})",
         "imglib.role.bible": "imagen de una entrada"
@@ -22007,6 +22024,7 @@
         "bible.nowH": "En ce moment",
         "bible.storyH": "Histoire jusqu’ici · {n} changement", "bible.storyHPlural": "Histoire jusqu’ici · {n} changements",
         "bible.later": "plus tard, pas encore vrai ici", "bible.orphan": "son passage a été supprimé — épinglez-le de nouveau ou retirez-le",
+        "bible.markFor": "Marquer un changement pour {name}…", "bible.changeH": "{name}, à partir d'ici", "bible.changePh": "Ce qui a changé, avec vos mots", "bible.factQ": "Mettre aussi à jour un fait rapide ? (facultatif)", "bible.noFact": "Aucun changement de fait", "bible.pinnedTo": "Épinglé à : {where}", "bible.markSave": "Enregistrer", "bible.markTip": "Marquer un changement (Alt+M)", "bible.markFull": "{name} a déjà {n} changements.",
         "bible.detailsH": "Détails",
         "bible.linkFrom": "{label} (de {name})",
         "imglib.role.bible": "image d'une fiche"
@@ -22097,6 +22115,7 @@
         "bible.nowH": "Jetzt",
         "bible.storyH": "Bisherige Geschichte · {n} Änderung", "bible.storyHPlural": "Bisherige Geschichte · {n} Änderungen",
         "bible.later": "später, hier noch nicht wahr", "bible.orphan": "die Textstelle wurde gelöscht — neu anheften oder entfernen",
+        "bible.markFor": "Änderung für {name} markieren…", "bible.changeH": "{name}, ab hier", "bible.changePh": "Was sich geändert hat, in deinen Worten", "bible.factQ": "Auch einen Kurzfakt aktualisieren? (optional)", "bible.noFact": "Keine Faktenänderung", "bible.pinnedTo": "Angeheftet an: {where}", "bible.markSave": "Speichern", "bible.markTip": "Änderung markieren (Alt+M)", "bible.markFull": "{name} hat schon {n} Änderungen.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (von {name})",
         "imglib.role.bible": "Bild eines Eintrags"
@@ -22187,6 +22206,7 @@
         "bible.nowH": "Adesso",
         "bible.storyH": "La storia finora · {n} cambiamento", "bible.storyHPlural": "La storia finora · {n} cambiamenti",
         "bible.later": "più avanti, non ancora vero qui", "bible.orphan": "il suo passaggio è stato eliminato — fissalo di nuovo o rimuovilo",
+        "bible.markFor": "Segna un cambiamento per {name}…", "bible.changeH": "{name}, da qui in poi", "bible.changePh": "Che cosa è cambiato, con parole tue", "bible.factQ": "Aggiornare anche un dato rapido? (facoltativo)", "bible.noFact": "Nessun cambio di dato", "bible.pinnedTo": "Fissato a: {where}", "bible.markSave": "Salva", "bible.markTip": "Segna un cambiamento (Alt+M)", "bible.markFull": "{name} ha già {n} cambiamenti.",
         "bible.detailsH": "Dettagli",
         "bible.linkFrom": "{label} (da {name})",
         "imglib.role.bible": "immagine di una voce"
@@ -22277,6 +22297,7 @@
         "bible.nowH": "Agora",
         "bible.storyH": "História até aqui · {n} mudança", "bible.storyHPlural": "História até aqui · {n} mudanças",
         "bible.later": "mais adiante, ainda não vale aqui", "bible.orphan": "a passagem foi apagada — fixe de novo ou remova",
+        "bible.markFor": "Marcar uma mudança para {name}…", "bible.changeH": "{name}, a partir daqui", "bible.changePh": "O que mudou, com suas palavras", "bible.factQ": "Atualizar também um dado rápido? (opcional)", "bible.noFact": "Sem mudança de dado", "bible.pinnedTo": "Fixado em: {where}", "bible.markSave": "Salvar", "bible.markTip": "Marcar uma mudança (Alt+M)", "bible.markFull": "{name} já tem {n} mudanças.",
         "bible.detailsH": "Detalhes",
         "bible.linkFrom": "{label} (de {name})",
         "imglib.role.bible": "imagem de uma entrada"
@@ -22367,6 +22388,7 @@
         "bible.nowH": "Op dit moment",
         "bible.storyH": "Verhaal tot nu toe · {n} verandering", "bible.storyHPlural": "Verhaal tot nu toe · {n} veranderingen",
         "bible.later": "later, hier nog niet waar", "bible.orphan": "de passage is verwijderd — pin opnieuw vast of verwijder",
+        "bible.markFor": "Wijziging markeren voor {name}…", "bible.changeH": "{name}, vanaf hier", "bible.changePh": "Wat er veranderde, in je eigen woorden", "bible.factQ": "Ook een snel feit bijwerken? (optioneel)", "bible.noFact": "Geen feitwijziging", "bible.pinnedTo": "Vastgepind op: {where}", "bible.markSave": "Opslaan", "bible.markTip": "Wijziging markeren (Alt+M)", "bible.markFull": "{name} heeft al {n} wijzigingen.",
         "bible.detailsH": "Details",
         "bible.linkFrom": "{label} (van {name})",
         "imglib.role.bible": "afbeelding van een item"
@@ -22457,6 +22479,7 @@
         "bible.nowH": "Teraz",
         "bible.storyH": "Dotychczasowa historia · {n} zmiana", "bible.storyHPlural": "Dotychczasowa historia · {n} zmiany",
         "bible.later": "później, tu jeszcze nieprawdziwe", "bible.orphan": "jego fragment został usunięty — przypnij ponownie albo usuń",
+        "bible.markFor": "Oznacz zmianę dla: {name}…", "bible.changeH": "{name}, od tego miejsca", "bible.changePh": "Co się zmieniło, własnymi słowami", "bible.factQ": "Zaktualizować też szybki fakt? (opcjonalnie)", "bible.noFact": "Bez zmiany faktu", "bible.pinnedTo": "Przypięto do: {where}", "bible.markSave": "Zapisz", "bible.markTip": "Oznacz zmianę (Alt+M)", "bible.markFull": "{name} ma już {n} zmian.",
         "bible.detailsH": "Szczegóły",
         "bible.linkFrom": "{label} (od {name})",
         "imglib.role.bible": "obraz wpisu"
@@ -22547,6 +22570,7 @@
         "bible.nowH": "Сейчас",
         "bible.storyH": "История к этому месту · {n} изменение", "bible.storyHPlural": "История к этому месту · {n} изменений",
         "bible.later": "позже, здесь ещё не так", "bible.orphan": "его фрагмент удалён — закрепите заново или удалите",
+        "bible.markFor": "Отметить изменение для: {name}…", "bible.changeH": "{name}, с этого места", "bible.changePh": "Что изменилось, своими словами", "bible.factQ": "Обновить и быстрый факт? (по желанию)", "bible.noFact": "Без изменения факта", "bible.pinnedTo": "Закреплено за: {where}", "bible.markSave": "Сохранить", "bible.markTip": "Отметить изменение (Alt+M)", "bible.markFull": "У записи {name} уже {n} изменений.",
         "bible.detailsH": "Подробности",
         "bible.linkFrom": "{label} (от {name})",
         "imglib.role.bible": "изображение записи"
@@ -22637,6 +22661,7 @@
         "bible.nowH": "Şu anda",
         "bible.storyH": "Şimdiye kadarki hikâye · {n} değişiklik", "bible.storyHPlural": "Şimdiye kadarki hikâye · {n} değişiklik",
         "bible.later": "sonra, burada henüz doğru değil", "bible.orphan": "bölümü silindi — yeniden sabitleyin ya da kaldırın",
+        "bible.markFor": "{name} için bir değişiklik işaretle…", "bible.changeH": "{name}, buradan itibaren", "bible.changePh": "Ne değişti, kendi sözlerinle", "bible.factQ": "Hızlı bir bilgi de güncellensin mi? (isteğe bağlı)", "bible.noFact": "Bilgi değişmiyor", "bible.pinnedTo": "Sabitlendiği yer: {where}", "bible.markSave": "Kaydet", "bible.markTip": "Değişiklik işaretle (Alt+M)", "bible.markFull": "{name} kaydında zaten {n} değişiklik var.",
         "bible.detailsH": "Ayrıntılar",
         "bible.linkFrom": "{label} ({name} kaydından)",
         "imglib.role.bible": "bir kaydın görseli"
@@ -22727,6 +22752,7 @@
         "bible.nowH": "الآن",
         "bible.storyH": "القصة حتى الآن · {n} تغيير", "bible.storyHPlural": "القصة حتى الآن · {n} تغييرات",
         "bible.later": "لاحقا، ليس صحيحا هنا بعد", "bible.orphan": "حُذف مقطعه — ثبّته من جديد أو أزله",
+        "bible.markFor": "وسم تغيير لـ {name}…", "bible.changeH": "{name}، من هنا فصاعدا", "bible.changePh": "ما الذي تغير، بكلماتك", "bible.factQ": "هل تحدّث معلومة سريعة أيضا؟ (اختياري)", "bible.noFact": "بلا تغيير في المعلومة", "bible.pinnedTo": "مثبّت عند: {where}", "bible.markSave": "حفظ", "bible.markTip": "وسم تغيير (Alt+M)", "bible.markFull": "لدى {name} بالفعل {n} تغييرا.",
         "bible.detailsH": "التفاصيل",
         "bible.linkFrom": "{label} (من {name})",
         "imglib.role.bible": "صورة مدخل"
@@ -22817,6 +22843,7 @@
         "bible.nowH": "現在",
         "bible.storyH": "ここまでの物語 · {n} 件の変更", "bible.storyHPlural": "ここまでの物語 · {n} 件の変更",
         "bible.later": "あと、ここではまだ当てはまりません", "bible.orphan": "その箇所は削除されました。固定し直すか、取り除いてください",
+        "bible.markFor": "{name} の変更を記録…", "bible.changeH": "{name}、ここから先", "bible.changePh": "何が変わったか、自分の言葉で", "bible.factQ": "簡単な項目も更新しますか？（任意）", "bible.noFact": "項目の変更なし", "bible.pinnedTo": "固定先: {where}", "bible.markSave": "保存", "bible.markTip": "変更を記録 (Alt+M)", "bible.markFull": "{name} にはすでに {n} 件の変更があります。",
         "bible.detailsH": "詳細",
         "bible.linkFrom": "{label}（{name} から）",
         "imglib.role.bible": "項目の画像"
@@ -22907,6 +22934,7 @@
         "bible.nowH": "此刻",
         "bible.storyH": "至此的故事 · {n} 处变化", "bible.storyHPlural": "至此的故事 · {n} 处变化",
         "bible.later": "稍后，此处尚未成立", "bible.orphan": "其段落已被删除，请重新固定或移除",
+        "bible.markFor": "为 {name} 标记一处变化…", "bible.changeH": "{name}，从这里起", "bible.changePh": "发生了什么变化，用你自己的话说", "bible.factQ": "要同时更新一项简要事实吗？（可选）", "bible.noFact": "不更改事实", "bible.pinnedTo": "固定于：{where}", "bible.markSave": "保存", "bible.markTip": "标记变化 (Alt+M)", "bible.markFull": "{name} 已有 {n} 处变化。",
         "bible.detailsH": "详情",
         "bible.linkFrom": "{label}（来自 {name}）",
         "imglib.role.bible": "条目的图片"
@@ -23046,6 +23074,7 @@
         for (let i = 0; i < n; i++) { const d = (a[i] || 0) - (b[i] || 0); if (d) return d < 0 ? -1 : 1; }
         return 0;
       }
+      const BIBLE_NEAR = 200, BIBLE_CHANGE_MAX = 500; /* how far from a selection a name is still offered; the most changes one entry holds */
       const BIBLE_END = [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
       /* where this book sits in its series; a lone book is 0 (Task 7 makes the field real) */
       function bibleBookOrder() { return Number(state.meta && state.meta.seriesNumber) || 0; }
@@ -23100,7 +23129,7 @@
         if (links.length) out.links = links;
         const changes = [], cids = new Set();
         (Array.isArray(e.changes) ? e.changes : []).forEach((c) => {
-          if (!c || typeof c !== "object" || changes.length >= 500) return;
+          if (!c || typeof c !== "object" || changes.length >= BIBLE_CHANGE_MAX) return;
           const anchor = bibleNormalizeAnchor(c.anchor); if (!anchor) return;
           let id = typeof c.id === "string" && /^[\w-]{1,40}$/.test(c.id) ? c.id : bibleNewId();
           while (cids.has(id)) id = bibleNewId();
@@ -23306,7 +23335,7 @@
         const sw = $("tglBibMarks"); if (sw) sw.setAttribute("aria-pressed", String(!!on));
         bibleDeskRender(true);
       }
-      const bibleDesk = { host: null, box: null, inner: null, val: null, mk: null, hits: [], rects: null, raf: 0, times: [], hot: -1, ro: null, bound: false };
+      const bibleDesk = { host: null, box: null, inner: null, val: null, mk: null, hits: [], rects: null, raf: 0, times: [], dk: "", hot: -1, ro: null, bound: false };
       const BIBLE_COPY = ["fontFamily", "fontSize", "fontWeight", "fontStyle", "fontStretch", "fontVariant", "fontFeatureSettings", "fontKerning", "fontVariationSettings", "fontOpticalSizing", "lineHeight", "letterSpacing", "wordSpacing", "textIndent", "textTransform", "textAlign", "tabSize", "whiteSpace", "overflowWrap", "wordBreak", "hyphens", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "direction", "unicodeBidi", "textRendering"];
       function bibleDeskEnsure() {
         const area = $("editorArea"); if (!area) return null;
@@ -23339,15 +23368,22 @@
         if (!area || !d.inner || d.box.hidden) return;
         d.inner.style.transform = "translate3d(0," + (-area.scrollTop) + "px,0)";
       }
-      function bibleDeskHtml(val, hits) {
-        let html = "", p = 0;
+      function bibleDeskHtml(val, hits, dots) {
+        let html = "", p = 0, k = 0;
+        dots = dots || [];
+        /* text a to b, with an empty marker where a dot belongs */
+        const seg = (a, b, last) => {
+          let out = "";
+          while (k < dots.length && (dots[k].at < b || (last && dots[k].at <= b))) { const at = Math.max(a, dots[k].at); out += esc(val.slice(a, at)) + '<span class="bm-dot" data-d="' + k + '"></span>'; a = at; k++; }
+          return out + esc(val.slice(a, b));
+        };
         for (let i = 0; i < hits.length; i++) {
           const h = hits[i];
-          html += esc(val.slice(p, h.s)) + '<span class="bm" data-i="' + i + '">' + esc(val.slice(h.s, h.e)) + "</span>";
+          html += seg(p, h.s) + '<span class="bm" data-i="' + i + '">' + seg(h.s, h.e) + "</span>";
           p = h.e;
         }
         /* a zero-width end keeps a trailing empty line in the mirror's height */
-        return html + esc(val.slice(p)) + "​";
+        return html + seg(p, val.length, true) + "\u200b";
       }
       function bibleDeskRender(force) {
         if (bibleDesk.raf) { cancelAnimationFrame(bibleDesk.raf); bibleDesk.raf = 0; }
@@ -23361,16 +23397,20 @@
         }
         bibleDeskEnsure();
         bibleDeskBind();
+        bibleMarkBind();
         const t0 = performance.now();
         const val = area.value;
         const mk = bibleMatcherNow();
         bibleDeskLayout(area);
-        if (force || val !== d.val || mk !== d.mk) {
-          const r = bibleScan(val, mk);
-          d.inner.innerHTML = bibleDeskHtml(val, r.hits);
-          d.hits = r.hits; d.val = val; d.mk = mk; d.rects = null; d.hot = -1;
-        }
+        const dots = bibleDotsCompute(val);
+        const dk = dots.map((x) => x.at + ":" + x.cid + ":" + x.title).join("|");
         d.box.hidden = false;
+        if (force || val !== d.val || mk !== d.mk || dk !== d.dk) {
+          const r = bibleScan(val, mk);
+          d.inner.innerHTML = bibleDeskHtml(val, r.hits, dots);
+          d.hits = r.hits; d.val = val; d.mk = mk; d.dk = dk; d.rects = null; d.hot = -1;
+          bibleDeskPlaceDots(dots);
+        }
         bibleDeskScroll();
         d.times.push(performance.now() - t0);
         if (d.times.length > 60) d.times.shift();
@@ -23606,6 +23646,231 @@
         const el = $("bibleCard");
         if (el && !el.hidden) { el.hidden = true; el.innerHTML = ""; }
         if (bibleDesk.inner) bibleDeskSetHot(-1);
+      }
+
+      /* ---- marking a change from the desk ---- */
+      /* names a selection can mark a change for: underlined entries overlapping it or within 200 characters, once each, in order of appearance */
+      function bibleMarkOffered(hits, start, end) {
+        const out = [], seen = new Set();
+        for (let i = 0; i < hits.length; i++) {
+          const h = hits[i];
+          if (h.e < start - BIBLE_NEAR) continue;
+          if (h.s > end + BIBLE_NEAR) break;
+          if (seen.has(h.id)) continue;
+          const e = bibleById(h.id); if (!e) continue;
+          seen.add(h.id); out.push(e);
+        }
+        return out;
+      }
+      /* pin a change to the selected passage; the book and resolved place are stamped on the anchor so another book of the series can place it. Null for a blank selection, an unknown entry or chapter, or an entry already at the cap. Saves like every other Covenant edit; the chapter's text is never touched. */
+      function bibleMarkChange(entryId, secId, start, end, text, fact) {
+        const e = bibleById(entryId); if (!e) return null;
+        if ((e.changes || []).length >= BIBLE_CHANGE_MAX) return null;
+        const anchor = bibleAnchorMake(secId, start, end); if (!anchor) return null;
+        if (typeof (state.meta && state.meta.bookId) === "string" && state.meta.bookId) anchor.book = state.meta.bookId;
+        const c = { id: bibleNewId(), anchor: anchor, text: bibleLine(text, 400) };
+        const f = fact && typeof fact === "object" ? { field: String(fact.field || ""), value: bibleLine(fact.value, 400) } : null;
+        if (f && /^[\w-]{1,40}$/.test(f.field) && f.value) c.fact = f;
+        const pos = bibleResolveChange(c); if (pos) anchor.pos = pos;
+        if (!e.changes) e.changes = [];
+        e.changes.push(c);
+        bibleTouched(false);
+        return c;
+      }
+      /* margin dots: one per change landing in the chapter on the desk (read from the desk, so dots follow typing), placed as bibleAnchorFind would. Other chapters' answers are remembered per change so typing never searches the book. */
+      const bibleDotMemo = new WeakMap();
+      function bibleDotsCompute(val) {
+        const secs = state.sections, act = state.activeId;
+        const idx = secs.findIndex((s) => s.id === act);
+        if (idx < 0 || editorSyncedSectionId !== act || secs[idx].kind !== "body") return [];
+        const bookId = state.meta && state.meta.bookId;
+        const byId = new Map(secs.map((s) => [s.id, s]));
+        const out = [];
+        bibleEntries().forEach((e) => (e.changes || []).forEach((c) => {
+          const a = c.anchor; if (!a || !a.quote || (a.book && a.book !== bookId)) return;
+          if (a.sec !== act) {
+            const home = byId.get(a.sec);
+            let m = bibleDotMemo.get(c);
+            if (!m || m.q !== a.quote) { m = { q: a.quote, home: null, hit: false, rest: null }; bibleDotMemo.set(c, m); }
+            if (home && typeof home.content === "string") {
+              if (m.home !== home.content) { m.home = home.content; m.hit = home.content.indexOf(a.quote) !== -1; }
+              if (m.hit) return;
+            }
+            /* moved: the first body chapter holding it wins */
+            const stale = !m.rest || m.rest.t.length !== secs.length || m.rest.t.some((x, i) => i !== idx && x !== secs[i].content);
+            if (stale) {
+              let first = -1;
+              for (let k = 0; k < secs.length; k++) { if (k === idx || secs[k].kind !== "body" || secs[k] === home) continue; if (typeof secs[k].content === "string" && secs[k].content.indexOf(a.quote) !== -1) { first = k; break; } }
+              m.rest = { t: secs.map((s) => s.content), first: first };
+            }
+            if (m.rest.first !== -1 && m.rest.first < idx) return;
+          }
+          /* nearest to the old place, as bibleAnchorFind */
+          let best = -1, i = val.indexOf(a.quote);
+          while (i !== -1) { if (best === -1 || Math.abs(i - a.at) < Math.abs(best - a.at)) best = i; i = val.indexOf(a.quote, i + 1); }
+          if (best !== -1) out.push({ at: best, eid: e.id, cid: c.id, title: bibleChangeText(e, c) });
+        }));
+        out.sort((x, y) => x.at - y.at);
+        return out;
+      }
+      /* each dot is put level with the empty marker the text carries at its passage, in the margin (the right one for right-to-left) */
+      function bibleDeskPlaceDots(dots) {
+        const d = bibleDesk;
+        if (!dots.length) return;
+        const base = d.inner.getBoundingClientRect();
+        const spans = d.inner.querySelectorAll(".bm-dot");
+        const rtl = d.inner.style.direction === "rtl";
+        const pad = parseFloat(rtl ? d.inner.style.paddingRight : d.inner.style.paddingLeft) || 22;
+        const tops = [];
+        for (let k = 0; k < spans.length; k++) { const r = spans[k].getBoundingClientRect(); tops.push(r.top - base.top + r.height / 2); }
+        let html = "";
+        for (let k = 0; k < spans.length; k++) {
+          const x = dots[Number(spans[k].getAttribute("data-d"))];
+          html += '<span class="bm-dotmark" data-bib-entry="' + esc(x.eid) + '" style="top:' + Math.round(tops[k] - 4) + "px;" + (rtl ? "right:" : "left:") + Math.max(2, Math.round(pad / 2 - 4)) + 'px" title="' + esc(x.title) + '"></span>';
+        }
+        d.inner.insertAdjacentHTML("beforeend", html);
+      }
+      const bibleMark = { sec: null, start: 0, end: 0, id: null, names: [], pt: null };
+            function bibleMarkNames(area) {
+        if (!area || !bibleHas() || editorSyncedSectionId !== state.activeId || area.selectionStart === area.selectionEnd) return [];
+        const hits = bibleDesk.val === area.value ? bibleDesk.hits : bibleScan(area.value, bibleMatcherNow()).hits;
+        return bibleMarkOffered(hits, area.selectionStart, area.selectionEnd);
+      }
+      function bibleMarkMenuEl() {
+        let el = $("bibleMarkMenu");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "bibleMarkMenu"; el.className = "bib-mmenu"; el.hidden = true; el.setAttribute("role", "menu");
+          document.body.appendChild(el);
+          /* keep the selection */
+          el.addEventListener("mousedown", (e) => e.preventDefault());
+          el.addEventListener("click", (e) => { const b = e.target.closest ? e.target.closest("[data-mark-for]") : null; if (b) bibleMarkOpen(b.getAttribute("data-mark-for"), bibleMark.pt); });
+          el.addEventListener("keydown", (e) => {
+            const items = Array.prototype.slice.call(el.querySelectorAll("button")), i = items.indexOf(document.activeElement);
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[(i + (e.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus(); }
+            else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); bibleMarkHideMenu(); const a = $("editorArea"); if (a) a.focus(); }
+          });
+        }
+        return el;
+      }
+      function bibleMarkHideMenu() { const el = $("bibleMarkMenu"); if (el && !el.hidden) { el.hidden = true; el.innerHTML = ""; } }
+      /* a small panel by the selection: below, or above at the screen's end */
+      function bibleMarkPlace(el, pt) {
+        const area = $("editorArea");
+        let x = pt && pt.x, y = pt && pt.y;
+        if (x == null) {
+          const r = area.getBoundingClientRect(), by = bibleOffsetY(area, area.selectionEnd);
+          x = r.left + 24; y = r.top + by - area.scrollTop + 34;
+          bibleDeskRender(true);
+        }
+        const w = el.offsetWidth, h = el.offsetHeight;
+        const rtl = document.documentElement.getAttribute("dir") === "rtl";
+        let left = rtl ? x - w : x;
+        left = Math.max(12, Math.min(window.innerWidth - w - 12, left));
+        let top = y;
+        if (top + h > window.innerHeight - 8) top = Math.max(8, y - h - 28);
+        el.style.left = Math.round(left) + "px"; el.style.top = Math.round(top) + "px";
+      }
+      /* one "Mark a change for {name}…" per name near the selection; nothing when there is none */
+      function bibleMarkShowMenu(pt, focus) {
+        const area = $("editorArea"), names = bibleMarkNames(area);
+        if (!names.length) { bibleMarkHideMenu(); return false; }
+        bibleMark.sec = state.activeId; bibleMark.start = area.selectionStart; bibleMark.end = area.selectionEnd; bibleMark.names = names.map((e) => e.id); bibleMark.pt = pt || null;
+        const el = bibleMarkMenuEl();
+        el.setAttribute("aria-label", t("bible.markTip"));
+        el.innerHTML = names.map((e) => '<button type="button" role="menuitem" data-mark-for="' + esc(e.id) + '">' + esc(t("bible.markFor", { name: bibleName(e) })) + "</button>").join("");
+        el.hidden = false;
+        bibleMarkPlace(el, pt);
+        if (focus) { const b = el.querySelector("button"); if (b) b.focus(); }
+        return true;
+      }
+      function bibleMarkPopEl() {
+        let el = $("bibleMarkPop");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "bibleMarkPop"; el.className = "bib-mpop"; el.hidden = true; el.setAttribute("role", "dialog");
+          document.body.appendChild(el);
+          el.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); bibleMarkClose(true); }
+            else if (e.key === "Enter" && e.target && e.target.id === "bibMarkText" && !e.isComposing) { e.preventDefault(); bibleMarkSave(); }
+          });
+          el.addEventListener("change", (e) => { if (e.target && e.target.id === "bibMarkFact") { const v = $("bibMarkVal"), o = e.target.selectedOptions[0]; v.hidden = !e.target.value; v.placeholder = v.title = o ? o.textContent : ""; if (e.target.value) v.focus(); } });
+          el.addEventListener("click", (e) => {
+            const b = e.target.closest ? e.target.closest("[data-mark-act]") : null; if (!b) return;
+            if (b.getAttribute("data-mark-act") === "save") bibleMarkSave(); else bibleMarkClose(true);
+          });
+        }
+        return el;
+      }
+      function bibleMarkClose(refocus) {
+        const el = $("bibleMarkPop"); if (el && !el.hidden) { el.hidden = true; el.innerHTML = ""; }
+        bibleMark.id = null;
+        if (refocus) { const a = $("editorArea"); if (a) a.focus(); }
+      }
+      /* the popover: what changed, an optional fact from this kind's own fields, where it is pinned */
+      function bibleMarkOpen(entryId, pt) {
+        const e = bibleById(entryId), area = $("editorArea"); if (!e || !area) return;
+        const sec = state.sections.find((s) => s.id === bibleMark.sec);
+        const anchor = sec && sec.content === area.value ? bibleAnchorMake(sec.id, bibleMark.start, bibleMark.end) : null;
+        if (!anchor) return;
+        bibleMarkHideMenu(); bibleCardHide();
+        bibleMark.id = entryId;
+        const qc = Array.from(anchor.quote);
+        const where = castSecLabel(sec) + " · “" + qc.slice(0, 40).join("") + (qc.length > 40 ? "…" : "") + "”";
+        const fields = (state.bible && state.bible.fields && state.bible.fields[e.type]) || [];
+        const el = bibleMarkPopEl();
+        el.setAttribute("aria-label", t("bible.changeH", { name: bibleName(e) }));
+        el.innerHTML = '<div class="bib-mp-h">' + esc(t("bible.changeH", { name: bibleName(e) })) + "</div>" +
+          '<input class="txt-input" id="bibMarkText" type="text" maxlength="400" placeholder="' + esc(t("bible.changePh")) + '" aria-label="' + esc(t("bible.changePh")) + '" />' +
+          (fields.length ? '<div class="bib-mp-m">' + esc(t("bible.factQ")) + '</div><select class="txt-input" id="bibMarkFact"><option value="">' + esc(t("bible.noFact")) + "</option>" +
+            fields.map((f) => '<option value="' + esc(f.id) + '">' + esc(f.label) + "</option>").join("") + '</select><input class="txt-input" id="bibMarkVal" type="text" maxlength="400" hidden />' : "") +
+          '<div class="bib-mp-m">' + esc(t("bible.pinnedTo", { where: where })) + "</div>" +
+          '<div class="bib-mp-btns"><button type="button" class="tb-btn" data-mark-act="cancel">' + esc(t("imglib.cancel")) + '</button><button type="button" class="tb-btn primary" data-mark-act="save" title="' + esc(t("bible.markTip")) + '">' + esc(t("bible.markSave")) + "</button></div>";
+        el.hidden = false;
+        bibleMarkPlace(el, pt);
+        $("bibMarkText").focus();
+      }
+      function bibleMarkSave() {
+        const e = bibleById(bibleMark.id); if (!e) { bibleMarkClose(true); return; }
+        const text = $("bibMarkText").value, fs = $("bibMarkFact"), fv = $("bibMarkVal");
+        const fact = fs && fs.value && fv && fv.value.trim() ? { field: fs.value, value: fv.value } : null;
+        if (!bibleLine(text, 400) && !fact) { $("bibMarkText").focus(); return; }
+        const c = bibleMarkChange(e.id, bibleMark.sec, bibleMark.start, bibleMark.end, text, fact);
+        bibleMarkClose(true);
+        if (!c) { bibleStatus(t("bible.markFull", { name: bibleName(e), n: fmtNum(BIBLE_CHANGE_MAX) })); return; }
+        bibleDeskRender(true);
+        const m = $("modalBible");
+        if (m && m.classList.contains("open") && bibleUi.sel === e.id) bibleRefreshCard(e);
+      }
+      let bibleMarkBound = false;
+      function bibleMarkBind() {
+        const area = $("editorArea"); if (!area || bibleMarkBound) return;
+        bibleMarkBound = true;
+        const hide = () => bibleMarkHideMenu();
+        area.addEventListener("mouseup", (e) => { const pt = { x: e.clientX + 6, y: e.clientY + 18 }; setTimeout(() => { if (area.selectionStart !== area.selectionEnd) bibleMarkShowMenu(pt, false); else hide(); }, 0); });
+        area.addEventListener("keyup", (e) => { if (e.shiftKey && area.selectionStart !== area.selectionEnd && /^(Arrow|Home$|End$|Page)/.test(e.key)) bibleMarkShowMenu(null, false); });
+        area.addEventListener("mousedown", hide);
+        area.addEventListener("input", hide);
+        area.addEventListener("scroll", () => { hide(); bibleMarkClose(false); }, { passive: true });
+        area.addEventListener("keydown", (e) => {
+          if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code === "KeyM") {
+            const names = bibleMarkNames(area);
+            if (!names.length) return;
+            e.preventDefault();
+            bibleMark.sec = state.activeId; bibleMark.start = area.selectionStart; bibleMark.end = area.selectionEnd; bibleMark.pt = null;
+            if (names.length === 1) bibleMarkOpen(names[0].id, null); else bibleMarkShowMenu(null, true);
+            return;
+          }
+          if (e.key === "Escape") { const m = $("bibleMarkMenu"); if (m && !m.hidden) { e.preventDefault(); e.stopPropagation(); hide(); return; } }
+          if (e.key !== "Shift" && e.key !== "Alt" && e.key !== "Control" && e.key !== "Meta" && !(e.shiftKey && /^Arrow/.test(e.key))) hide();
+        });
+        document.addEventListener("mousedown", (e) => {
+          const pop = $("bibleMarkPop"), menu = $("bibleMarkMenu");
+          if (pop && !pop.hidden && !pop.contains(e.target)) bibleMarkClose(false);
+          if (menu && !menu.hidden && !menu.contains(e.target) && e.target !== area) hide();
+        }, true);
+        /* a dot opens its entry */
+        document.addEventListener("click", (e) => { const d = e.target.closest ? e.target.closest(".bm-dotmark") : null; if (d) openBible(d.getAttribute("data-bib-entry")); });
       }
 
       /* ---- the room ---- */
@@ -24482,6 +24747,45 @@
                 } finally { state.sections = keepSecs; state.images = keepImgs; state.activeId = keepActive; state.bible = keepBible; }
               });
             } },
+          { id: "bible.change.mark", feature: "bible", name: "Covenant mark a change: a selection offers the names near it (each once, in order, none 200+ characters away); marking stores a findable anchor with book, position and fact through the normal save path; text and exports are unchanged; a blank selection or a 501st change is refused",
+            run() {
+              return bibleCheckGuard(() => {
+                const pad = (n) => " ".repeat(n);
+                /* Mara at 0, Tomas at 149, Mara at 179, Hale at 700: the 200-character reach */
+                const text = "Mara " + "walked in." + pad(134) + "Tomas" + pad(25) + "Mara" + pad(517) + "Hale" + pad(60) + "the end.";
+                const at = (w, from) => text.indexOf(w, from || 0);
+                const tomasAt = at("Tomas"), haleAt = at("Hale");
+                applyBookDoc({ meta: { title: "A Test of Tides", author: "Fixture", language: "en", langSource: "manual" },
+                  sections: [{ id: "mk1", kind: "body", type: "chapter", number: "1", title: "Marks", subtitle: "", content: text }].concat(BIBLE_FIXTURE_SECS()),
+                  bible: { entries: [
+                    { id: "mk-mara", type: "character", name: "Mara" }, { id: "mk-tomas", type: "character", name: "Tomas" }, { id: "mk-hale", type: "character", name: "Hale" } ],
+                    fields: { character: [{ id: "status", label: "Status" }] } } });
+                const hits = bibleScan(text, bibleMatcherNow()).hits;
+                const names = (s, e) => bibleMarkOffered(hits, s, e).map((x) => x.name).join(",");
+                const between = names(10, 20), nearHale = names(haleAt + 1, haleAt + 3), nobody = names(450, 460);
+                const offeredOk = between === "Mara,Tomas" && nearHale === "Hale" && nobody === "";
+                const norm = (v) => String(v).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g, "<t>");
+                const snap = () => epubFiles().map((f) => f.path + "\u0001" + (f.binary ? String(f.content).length + ":" + castHash(String(f.content), 7) : norm(f.content))).join("\u0002") + "|" + norm(buildPrintHtml()) + "|" + buildDocxFiles().map((f) => f.path + "\u0001" + norm(f.content)).join("\u0002") + "|" + bookWordTotal();
+                const before = snap(), bytes = JSON.stringify(state.sections.map((s) => s.content));
+                bibleUi.saveTimer = null;
+                const mara = bibleById("mk-mara");
+                const ch = bibleMarkChange("mk-mara", "mk1", 10, 20, "  Injured,   left leg ", { field: "status", value: "Injured" });
+                const stored = !!ch && mara.changes.length === 1 && mara.changes[0] === ch && ch.text === "Injured, left leg" && !!ch.fact && ch.fact.field === "status" && ch.fact.value === "Injured";
+                const found = !!ch && (() => { const f = bibleAnchorFind(ch.anchor, state.sections); return !!f && f.sec === "mk1" && f.at === 10; })();
+                const stamped = !!ch && ch.anchor.book === state.meta.bookId && Array.isArray(ch.anchor.pos) && biblePosCmp(ch.anchor.pos, bibleResolveChange(ch)) === 0 && ch.anchor.pos[2] === 10;
+                const saved = !!bibleUi.saveTimer && bibleNormalize(state.bible).entries[0].changes.length === 1;
+                const textSame = JSON.stringify(state.sections.map((s) => s.content)) === bytes;
+                const exportSame = snap() === before && !/Injured, left leg/.test(snap());
+                const refused = bibleMarkChange("mk-mara", "mk1", 30, 30, "x") === null && bibleMarkChange("mk-mara", "mk1", 30, 35, "x") === null && bibleMarkChange("nobody", "mk1", 10, 20, "x") === null && mara.changes.length === 1;
+                /* the 501st change is refused */
+                const tale = bibleById("mk-tomas");
+                tale.changes = [];
+                for (let i = 0; i < 500; i++) tale.changes.push({ id: "f" + i, anchor: { sec: "mk1", quote: "Tomas", at: tomasAt }, text: "c" + i });
+                const capped = bibleMarkChange("mk-tomas", "mk1", tomasAt, tomasAt + 5, "one too many") === null && tale.changes.length === 500;
+                return scVerdict(offeredOk && stored && found && stamped && saved && textSame && exportSame && refused && capped,
+                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; refused: " + refused + "; 501st refused: " + capped);
+              });
+            } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
             run() {
               return bibleCheckGuard(() => {
@@ -24489,6 +24793,18 @@
                 const names = castData().names.slice(0, 8);
                 const entries = names.map((n, i) => bibleNormalizeEntry({ id: "bp" + i, type: "character", name: n.name, aliases: i === 0 && /\s/.test(n.name) ? [n.name.split(/\s+/).pop()] : [] }));
                 if (!entries.length) return scVerdict(false, "Insights found no names to measure with");
+                /* 500 changes over the sample: dots, lookups and redraw measured at the cap */
+                const bodies = state.sections.filter((x) => x.kind === "body" && String(x.content).length > 80);
+                let made = 0;
+                for (let i = 0; i < BIBLE_CHANGE_MAX && bodies.length; i++) {
+                  const sec = bodies[i % bodies.length], txt = String(sec.content);
+                  let j = Math.floor((((i * 7919) % 1000) / 1000) * (txt.length - 40));
+                  while (j > 0 && /\S/.test(txt[j - 1])) j--;
+                  const quote = txt.slice(j, j + 30).trim(); if (!quote) continue;
+                  const en = entries[i % entries.length];
+                  (en.changes = en.changes || []).push({ id: "pc" + i, anchor: { sec: sec.id, quote: quote, at: j }, text: "change " + i });
+                  made++;
+                }
                 state.bible = { entries: entries };
                 bibleBookArrived();
                 bibleMarksPref = true;
@@ -24508,6 +24824,11 @@
                 const cold = performance.now() - t0;
                 const heightGap = Math.abs(bibleDesk.inner.offsetHeight - area.scrollHeight);
                 const deskHits = bibleDesk.hits.length;
+                /* every change landing here has its dot (counted via the anchor finder); mirror only */
+                let wantDots = 0;
+                entries.forEach((en) => (en.changes || []).forEach((c) => { const f = bibleAnchorFind(c.anchor, state.sections); if (f && f.sec === big.id) wantDots++; }));
+                const gotDots = bibleDesk.inner.querySelectorAll(".bm-dotmark").length;
+                const dotsOk = wantDots > 0 && gotDots === wantDots && !state.sections.some((x) => /bm-dot/.test(String(x.content)));
                 const ci = bibleColumns(state.sections).findIndex((c) => c.id === big.id);
                 const r = bibleMentionsCompute(state.sections, entries, lang);
                 const want = entries.reduce((n, e) => n + r.per[e.id].counts[ci], 0);
@@ -24527,8 +24848,8 @@
                 const BUDGET = { book: 150, cold: 60, keyMed: 10, keyMax: 24 };
                 const bookMs = med(book), keyMed = med(keys), keyMax = Math.max.apply(null, keys);
                 const within = bookMs <= BUDGET.book && cold <= BUDGET.cold && keyMed <= BUDGET.keyMed && keyMax <= BUDGET.keyMax;
-                return scVerdict(within && heightGap <= 2 && deskHits === want && want > 0,
-                  words + " story words, " + entries.length + " entries: whole-book pass median " + bookMs.toFixed(1) + " ms (budget " + BUDGET.book + "); longest section “" + castSecLabel(big) + "” (" + orig.length + " chars) first draw " + cold.toFixed(1) + " ms (budget " + BUDGET.cold + ") with " + deskHits + " underlines (" + want + " in the mentions pass); 24 keystrokes: median " + keyMed.toFixed(2) + " ms, max " + keyMax.toFixed(2) + " ms (budgets " + BUDGET.keyMed + "/" + BUDGET.keyMax + "); mirror height vs textarea scrollHeight: " + bibleDesk.inner.offsetHeight + "/" + area.scrollHeight);
+                return scVerdict(within && heightGap <= 2 && deskHits === want && want > 0 && made === BIBLE_CHANGE_MAX && dotsOk,
+                  words + " story words, " + entries.length + " entries with " + made + " changes (" + gotDots + " margin dots on this chapter, " + wantDots + " expected: " + dotsOk + "): whole-book pass median " + bookMs.toFixed(1) + " ms (budget " + BUDGET.book + "); longest section “" + castSecLabel(big) + "” (" + orig.length + " chars) first draw " + cold.toFixed(1) + " ms (budget " + BUDGET.cold + ") with " + deskHits + " underlines (" + want + " in the mentions pass); 24 keystrokes: median " + keyMed.toFixed(2) + " ms, max " + keyMax.toFixed(2) + " ms (budgets " + BUDGET.keyMed + "/" + BUDGET.keyMax + "); mirror height vs textarea scrollHeight: " + bibleDesk.inner.offsetHeight + "/" + area.scrollHeight);
               });
             } }
         ];

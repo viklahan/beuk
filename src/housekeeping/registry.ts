@@ -3126,6 +3126,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Covenant lives in the client book document and is drawn in the studio on the device; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.change.mark',
+    title: 'Covenant mark a change: the selection offers the names near it, marking stores a findable anchor with book and position through the normal save path, text and exports stay unchanged, and a blank selection or a 501st change is refused',
+    kind: 'client-only',
+    reason: 'Marking happens on the studio desk and the change rides the client book document; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',
