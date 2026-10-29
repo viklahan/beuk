@@ -2740,6 +2740,13 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The import pipeline, the report and its undos all run in the studio against the book in the browser.',
   },
   {
+    id: 'import.report.rtf-honest',
+    title:
+      'Import report (RTF): heading-1 chapters, a linked footnote, italic and a web link as Beuk marks, the table reported as left out, the comment, tracked deletion and page header listed as from the RTF file, the \\info byline read, and Undo the whole import restores the prior book',
+    kind: 'client-only',
+    reason: 'The RTF reader (BEUK:rtfimport) and the report run in the studio; the server never sees the .rtf.',
+  },
+  {
     id: 'import.report.docx-honest',
     title:
       'Import report (Word): tables are reported as left out (words back on undo), footnotes link as notes, images land in the library with alt text, demoted headings, comments, tracked changes, headers, lists and converter warnings are all listed',

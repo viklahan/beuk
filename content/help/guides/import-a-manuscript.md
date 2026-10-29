@@ -1,7 +1,7 @@
 ---
 slug: import-a-manuscript
 title: Import a manuscript
-blurb: Bring a book in from Word, Markdown, or plain text — and see what Beuk tidies on the way in.
+blurb: Bring a book in from Word, Markdown, plain text, RTF, or PDF — and see what Beuk tidies on the way in.
 group: write
 audience: [new]
 updated: 2026-10-26
@@ -9,7 +9,7 @@ readMinutes: 3
 related: [typeset-a-chapter, add-a-cover]
 ---
 
-What you're doing: bringing a finished (or nearly finished) book into Beuk so it can be typeset. Beuk accepts Word documents (`.docx`), Markdown (`.md`), and plain text (`.txt`).
+What you're doing: bringing a finished (or nearly finished) book into Beuk so it can be typeset. Beuk accepts Word documents (`.docx`), Markdown (`.md`), plain text (`.txt`), Rich Text (`.rtf`, which Scrivener, TextEdit and LibreOffice also write), and PDF (`.pdf`).
 
 New to the studio? [Show the quick tour](/studio#tour): four short steps that point out Import, the page and its preview, Typography Studio, and Export. You can skip it at any step. In the studio it is also under the sample story, as **Show the quick tour**.
 
