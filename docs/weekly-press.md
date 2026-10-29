@@ -49,8 +49,11 @@ git (below), and git is then its backup.
    says "pull main first".
 4. Register the schedule:
    `powershell -File tools\weekly\register-task.ps1 -Server https://beuk.studio`.
-   This creates `BeukWeeklyDrafter`: Thursday 07:00, and daily 07:30. A
-   missed start runs at the next wake.
+   This creates two tasks. `BeukWeeklyDrafter` runs Thursday at 07:00
+   with `-Weekly` and drafts the issue. `BeukWeeklyDrafterDaily` runs daily
+   at 07:30 and only rewrites a draft you sent back. A missed start runs at
+   the next wake, so a Thursday with the laptop off drafts on the next day
+   it's on.
 5. Pictures: see `tools/weekly/README.md`. The local image model is not
    chosen yet. Until it is, a story gets a picture only when V drops one
    into `content/weekly/inbox/<story-slug>.jpg`.
@@ -61,8 +64,8 @@ git (below), and git is then its backup.
 powershell -File tools\weekly\draft.ps1 -Server https://beuk.studio -DryRun -Force
 ```
 
-`-DryRun` drafts and checks but uploads nothing. `-Force` drafts even when
-it isn't Thursday. `-DraftFrom <folder>` skips the writing step and uses a
+`-DryRun` drafts and checks but uploads nothing. `-Force` drafts a new
+issue now, as the weekly run would. `-DraftFrom <folder>` skips the writing step and uses a
 folder you already have, which is useful for testing everything else.
 Logs go to `%LOCALAPPDATA%\beuk-weekly\logs\<stamp>.log`.
 
@@ -72,7 +75,7 @@ Logs go to `%LOCALAPPDATA%\beuk-weekly\logs\<stamp>.log`.
 |---|---|---|
 | Beuk Weekly draft ready: <banner> | A draft is waiting. The email lists the headlines, every outside source, what was dropped and why, the outlets read, stories without a picture, and the commit it was written from | Open the preview (sign in as an admin). Approve and publish, or Send back with notes |
 | Beuk Weekly: no draft this week | The run failed. The email gives the step and the reason (claude not logged in, server down, the checks failed, …) | Fix it, then run `draft.ps1 -Force` by hand, or wait for the next daily run |
-| …: last week's draft is still waiting: <link> | Thursday came while a draft was still open, so no new one was made | Approve, send back or withdraw the waiting one |
+| …: last week's draft is still waiting: <link> | The weekly run came while a draft was still open. The run stopped before writing anything, so no new draft was made | Approve, send back or withdraw the waiting one |
 
 ## On the preview page
 
@@ -90,15 +93,18 @@ Every action is recorded in the Housekeeping audit (`weekly.approve`,
 
 ## Pulling a published issue into git
 
-```
-docker compose cp app:/data/weekly/published/002 content/weekly/en/002
-```
+1. Copy it out of the volume and commit it, as with any content change:
+   `docker compose cp app:/data/weekly/published/002 content/weekly/en/002`.
+2. Deploy. While the number is in both places, git's copy is the one the
+   site shows, the paper stays up, and
+   `weekly.published.no-duplicate-numbers` is red, naming the issue.
+3. Remove the volume copy:
+   `docker compose exec app rm -r /data/weekly/published/002`. The check
+   goes green. The issue's `published` row is satisfied by git's copy from
+   then on.
 
-Then delete it from the volume
-(`docker compose exec app rm -r /data/weekly/published/002`) **before** the
-next deploy. One number in both places is refused, and the Housekeeping
-check `weekly.published.no-duplicate-numbers` goes red. Commit the folder
-as with any content change.
+Don't remove the volume copy before the deploy. Until git's copy is live,
+the issue would vanish from the site.
 
 ## When something is red
 
@@ -106,7 +112,8 @@ as with any content change.
   without a row, a published row without `published/NNN`, or a row stuck
   in `approved`. A stuck `approved` row means a publish stopped half-way:
   check whether `published/NNN` exists, then set the row by hand.
-- `weekly.published.no-duplicate-numbers`: see "Pulling a published issue
-  into git".
+- `weekly.published.no-duplicate-numbers`: an issue is in git and on the
+  volume. Once git's copy is deployed, remove the volume copy (see
+  "Pulling a published issue into git").
 - `weekly.mail.configured`: NotConfigured until SMTP and an editor address
   are set.

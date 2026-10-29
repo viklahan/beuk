@@ -36,6 +36,9 @@ import { renderIssue, renderStory } from '../weekly/render.js';
  *   POST /api/weekly/drafts/failed   "no draft this week, here's why"
  *   GET  /api/weekly/drafts?status=sent_back
  *                                    drafts the editor sent back, with notes
+ *   GET  /api/weekly/drafts?status=drafted
+ *                                    a draft waiting for the editor, with its
+ *                                    preview link: a run stops before writing
  *   GET  /api/weekly/drafts?status=published
  *                                    published issues and the commit each was
  *                                    written from (newest first): where the
@@ -133,9 +136,10 @@ export function weeklyPressApi(db: Db, config: Config, mailer: Mailer): Router {
 
   router.get('/drafts', async (req, res, next) => {
     const status = req.query.status;
-    if (status !== 'sent_back' && status !== 'published') return res.status(400).json({ error: 'status is sent_back or published' });
+    if (status !== 'sent_back' && status !== 'published' && status !== 'drafted') return res.status(400).json({ error: 'status is sent_back, drafted or published' });
     try {
       const rows = await listDrafts(db, status);
+      if (status === 'drafted') return res.json(rows.map((r) => ({ id: r.id, previewUrl: previewUrl(config, r.id) })));
       if (status === 'published') {
         rows.sort((a, b) => (b.issueNumber ?? 0) - (a.issueNumber ?? 0));
         return res.json(rows.map((r) => ({ id: r.id, issueNumber: r.issueNumber, sourceCommit: r.sourceCommit })));

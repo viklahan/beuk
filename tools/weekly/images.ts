@@ -141,7 +141,13 @@ export async function makePictures(issueDir: string, pictures: { story: string; 
     let made: { provider: ImageProvider; pic: MadePicture; prompt: string } | null = null;
     for (const provider of ready) {
       for (const { prompt } of pictures.filter((p) => p.story === story)) {
-        const pic = await provider.make(story, prompt, issueDir);
+        let pic: MadePicture | null;
+        try {
+          pic = await provider.make(story, prompt, issueDir);
+        } catch (err) {
+          result.skipped.push({ provider: provider.name, reason: `${story}: ${(err as Error).message}` });
+          continue;
+        }
         if (pic) {
           made = { provider, pic, prompt };
           break;

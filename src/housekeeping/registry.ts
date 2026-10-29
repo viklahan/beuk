@@ -38,7 +38,7 @@ import { ACCOUNT_DELETED_TABLES, ACCOUNT_DETACHED_TABLES } from '../account/data
 import { CONFIRM_TOKEN_TTL_HOURS } from '../account/confirm.js';
 import { checkSchoolContent, loadSchoolContent } from '../school/content.js';
 import { readLessonMedia } from '../school/media.js';
-import { checkWeeklyContent, loadWeeklyContent } from '../weekly/content.js';
+import { checkWeeklyContent, loadWeeklyContent, weeklyDir } from '../weekly/content.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -3385,7 +3385,9 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
         } else if (r.status === 'published') {
           published++;
           const nnn = String(r.issue_number).padStart(3, '0');
-          if (!existsSync(path.join(config.weeklyDir, 'published', nnn, 'issue.md'))) problems.push(`issue ${r.issue_number} is published but published/${nnn} is missing`);
+          // Pulled into git (docs/weekly-press.md): git's copy satisfies the row.
+          const inGit = existsSync(path.join(weeklyDir('en'), nnn, 'issue.md'));
+          if (!inGit && !existsSync(path.join(config.weeklyDir, 'published', nnn, 'issue.md'))) problems.push(`issue ${r.issue_number} is published but published/${nnn} is missing (and it is not in git)`);
         }
       }
       for (const f of existsSync(drafts) ? readdirSync(drafts) : []) {
@@ -3401,7 +3403,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'server',
     run: async ({ config }) => {
       const w = loadWeeklyContent('en', [path.join(config.weeklyDir, 'published')]);
-      const problems = checkWeeklyContent(w);
+      const problems = [...w.duplicates.map((d) => `${d} (remove the volume copy now that git has it)`), ...checkWeeklyContent(w)];
       assert(problems.length === 0, problems.join('; '));
       return `${w.issues.length} issue(s) across git and published/, no number twice`;
     },

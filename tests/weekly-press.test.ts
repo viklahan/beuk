@@ -47,13 +47,17 @@ const ISSUE1 = path.join(path.resolve(import.meta.dirname, '..'), 'content', 'we
 /** A draft upload built from issue No. 1's folder, optionally edited. */
 export function issueUpload(edit?: (files: Record<string, string>) => void): DraftUpload {
   const files: Record<string, string> = {};
-  for (const f of readdirSync(ISSUE1)) files[f] = readFileSync(path.join(ISSUE1, f)).toString('base64');
+  for (const f of readdirSync(ISSUE1)) {
+    const buf = readFileSync(path.join(ISSUE1, f));
+    // A drafted story says what it is (kind: beuk | outside | ours); issue 1's are all about Beuk.
+    files[f] = f.endsWith('.md') && f !== 'issue.md' ? Buffer.from(buf.toString('utf8').replace(/^---\n/, '---\nkind: beuk\n')).toString('base64') : buf.toString('base64');
+  }
   files['sources.json'] = Buffer.from('[]').toString('base64');
   edit?.(files);
   return { sourceCommit: 'a'.repeat(40), files, dropped: [{ title: 'A rumour', why: 'could not confirm' }], outlets: ['example.org'] };
 }
 const b64 = (s: string) => Buffer.from(s).toString('base64');
-const OUTSIDE = '---\ntitle: KDP Changes A Rule\nsection: Stores\nplace: brief\nsources: [https://kdp.example/news]\n---\nA paragraph.\n';
+const OUTSIDE = '---\ntitle: KDP Changes A Rule\nsection: Stores\nkind: outside\nplace: brief\nsources: [https://kdp.example/news]\n---\nA paragraph.\n';
 
 async function pressSetup() {
   const db = await createTestDb();
@@ -425,7 +429,7 @@ test('press API: published lists issue numbers and their source commits, newest 
     const user = (await db.query<{ id: string }>(`insert into users (email, password_hash) values ('ed2@example.com', 'x') returning id`)).rows[0].id;
     await approveAndPublish(db, s.config.weeklyDir, id, user, new Date('2026-11-05T12:00:00Z'));
     assert.deepEqual(await (await call('GET', '/api/weekly/drafts?status=published')).json(), [{ id, issueNumber: 2, sourceCommit: 'a'.repeat(40) }]);
-    assert.equal((await call('GET', '/api/weekly/drafts?status=drafted')).status, 400);
+    assert.equal((await call('GET', '/api/weekly/drafts?status=withdrawn')).status, 400);
   } finally {
     await s.close();
   }
@@ -441,4 +445,37 @@ test('deploy: every named volume the app mounts under /data is made, owned by no
   const made = /RUN mkdir -p ([^&]+)&& chown -R node:node \/data/.exec(docker)?.[1].trim().split(/\s+/) ?? [];
   // A fresh named volume takes its owner from the image's folder; a folder the image lacks is root's, and the app (USER node) cannot write it.
   for (const m of mounts) assert.ok(made.includes(m), `Dockerfile makes ${m}`);
+});
+
+test('press store: every drafted story says what it is, and an outside story without sources is refused', () => {
+  const unmarked = validateUpload(issueUpload((f) => (f['kdp-rule.md'] = b64(OUTSIDE.replace('kind: outside\n', '')))));
+  assert.ok(unmarked.some((p) => p.includes('kdp-rule') && p.includes('kind')), unmarked.join('; '));
+  const unsourced = validateUpload(issueUpload((f) => (f['kdp-rule.md'] = b64(OUTSIDE.replace('sources: [https://kdp.example/news]\n', '')))));
+  assert.ok(unsourced.some((p) => p.includes('kdp-rule') && p.includes('an outside story needs sources')), unsourced.join('; '));
+  const odd = validateUpload(issueUpload((f) => (f['kdp-rule.md'] = b64(OUTSIDE.replace('kind: outside', 'kind: rumour')))));
+  assert.ok(odd.some((p) => p.includes('kdp-rule') && p.includes('kind')), odd.join('; '));
+  const js = validateUpload(
+    issueUpload((f) => {
+      f['kdp-rule.md'] = b64(OUTSIDE.replace('https://kdp.example/news', 'javascript:alert(1)'));
+      f['sources.json'] = b64(JSON.stringify([{ url: 'javascript:alert(1)', fetchedAt: 'x', quote: 'q', story: 'kdp-rule' }]));
+    }),
+  );
+  assert.ok(js.some((p) => p.includes('https')), js.join('; '));
+});
+
+test('press API: drafted lists the waiting draft with its preview link, so a run can stop before writing', async () => {
+  const { s, call } = await pressServer();
+  try {
+    assert.deepEqual(await (await call('GET', '/api/weekly/drafts?status=drafted')).json(), []);
+    const { id, previewUrl } = (await (await call('POST', '/api/weekly/drafts', sourcedUpload())).json()) as { id: string; previewUrl: string };
+    assert.deepEqual(await (await call('GET', '/api/weekly/drafts?status=drafted')).json(), [{ id, previewUrl }]);
+  } finally {
+    await s.close();
+  }
+});
+
+test('drafter scripts: SKILL.md and the notes reach claude as UTF-8 (Windows PowerShell 5.1 defaults to ANSI / ASCII)', () => {
+  const ps = readFileSync(path.join(path.resolve(import.meta.dirname, '..'), 'tools', 'weekly', 'draft.ps1'), 'utf8');
+  assert.match(ps, /Get-Content \(Join-Path \$Repo 'tools\\weekly\\SKILL\.md'\) -Raw -Encoding UTF8/);
+  assert.match(ps, /\$OutputEncoding = \[System\.Text\.UTF8Encoding\]::new\(\$false\)/);
 });

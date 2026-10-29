@@ -1,14 +1,22 @@
 <#
   Beuk Weekly drafter: one run (spec 2026-10-29; runbook docs/weekly-press.md).
 
-  Registered by register-task.ps1 to run on Thursdays at 07:00 and daily at
-  07:30 (StartWhenAvailable, so a missed Thursday runs at next wake). A
-  daily run only does work when the editor has sent a draft back.
+  Registered by register-task.ps1 as two tasks: BeukWeeklyDrafter, Thursdays
+  at 07:00 with -Weekly, and BeukWeeklyDrafterDaily, daily at 07:30. Both
+  use StartWhenAvailable, so a missed Thursday drafts at the next wake,
+  whatever day that is. What a run does is decided before any writing,
+  so none of the subscription is spent on a run that cannot upload
+  (plan-run.ts):
+    a sent-back draft          rewrite it with the editor's notes
+    -Weekly, nothing waiting   draft the new issue
+    -Weekly, a draft waiting   no new draft; tell the editor it is waiting
+    otherwise                  nothing to do
 
-    powershell -File tools\weekly\draft.ps1 [-Server https://beuk.studio] [-DryRun] [-Force] [-DraftFrom <folder>]
+    powershell -File tools\weekly\draft.ps1 [-Server https://beuk.studio] [-Weekly] [-DryRun] [-Force] [-DraftFrom <folder>]
 
+  -Weekly     this is the weekly run (the Thursday trigger passes it)
   -DryRun     draft and check, print what would be uploaded, upload nothing
-  -Force      draft a new issue even when it is not Thursday
+  -Force      draft a new issue now, as a weekly run would
   -DraftFrom  skip the writing step and use an already-drafted folder (for
               testing the rest of the run without calling claude)
 
@@ -23,11 +31,15 @@
 #>
 param(
   [string]$Server = 'https://beuk.studio',
+  [switch]$Weekly,
   [switch]$DryRun,
   [switch]$Force,
   [string]$DraftFrom = ''
 )
 $ErrorActionPreference = 'Stop'
+# Text piped into claude is UTF-8: Windows PowerShell 5.1 would send US-ASCII,
+# turning the brief's dashes and the editor's dictated quotes into '?'.
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $Home_ = Join-Path $env:LOCALAPPDATA 'beuk-weekly'
 $Stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -116,18 +128,26 @@ try {
   $buildIsCommit = $build -match '^[0-9a-f]{40}$'
   Say "server build: $build$(if (-not $buildIsCommit) { ' (not a commit: no shipped stories this run)' })"
 
-  # 4. A sent-back draft first; otherwise a new issue on Thursdays.
+  # 4. What this run does, decided before anything is written.
   $Step = 'queue'
-  $back = @(Rows (Api '/api/weekly/drafts?status=sent_back'))
+  $planArgs = @('--server', $Server)
+  if ($Weekly) { $planArgs += '--weekly' }
+  if ($Force) { $planArgs += '--force' }
+  $planned = Node-Tool 'plan-run.ts' $planArgs
+  if ($planned.Code -ne 0) { throw "could not plan the run: $($planned.Out.Trim())" }
+  $plan = ($planned.Out.Trim() -split "`r?`n")[-1] | ConvertFrom-Json
   $replaces = $null; $notes = $null
-  if ($back.Count -gt 0) {
-    $replaces = $back[0].id; $notes = $back[0].notes
-    Say "rewriting sent-back draft $replaces"
-  } elseif ((Get-Date).DayOfWeek -eq 'Thursday' -or $Force -or $DraftFrom) {
-    Say 'drafting a new issue'
-  } else {
-    Say 'nothing to do today (not Thursday, nothing sent back)'
-    exit 0
+  switch ($plan.action) {
+    'rewrite' { $replaces = $plan.replaces; $notes = $plan.notes; Say "rewriting sent-back draft $replaces" }
+    'new' { Say 'drafting a new issue' }
+    'waiting' {
+      $reason = "last week's draft is still waiting: $($plan.previewUrl)"
+      Say "$reason (no new draft this week)"
+      if (-not $DryRun) { Node-Tool 'upload.ts' @('--failed', $reason, '--server', $Server) | Out-Null }
+      $Step = 'done'
+      exit 0
+    }
+    default { Say "nothing to do: $($plan.why)"; $Step = 'done'; exit 0 }
   }
 
   # Where "what shipped" starts: the last published issue's commit, else
@@ -172,7 +192,7 @@ try {
 - Notices supplied by the editor: none
 - Editor's notes on the draft you are rewriting: $(if ($notes) { $notes } else { 'none (this is a new issue)' })
 "@
-    $prompt = (Get-Content (Join-Path $Repo 'tools\weekly\SKILL.md') -Raw) + $run
+    $prompt = (Get-Content (Join-Path $Repo 'tools\weekly\SKILL.md') -Raw -Encoding UTF8) + $run
     Push-Location $Work
     try {
       $json = (Native { $prompt | & claude -p --output-format json --permission-mode acceptEdits `
@@ -188,7 +208,10 @@ try {
 
   # 7. Pictures: V's inbox, then the local model; Gemini and Muse are placeholders.
   $Step = 'pictures'
-  Node-Tool 'pictures.ts' @($Out, '--inbox', (Join-Path $Repo 'content\weekly\inbox')) | Out-Null
+  $pics = Node-Tool 'pictures.ts' @($Out, '--inbox', (Join-Path $Repo 'content\weekly\inbox'))
+  # A broken pictures step does not stop the issue: every story it left
+  # without a picture is in no-pictures.json, and the email says so.
+  if ($pics.Code -ne 0) { Say 'the pictures step failed; the draft goes without generated pictures and the email lists them' }
 
   # 8. The server's own checks, before anything is sent.
   $Step = 'check'

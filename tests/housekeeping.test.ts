@@ -565,6 +565,17 @@ test('weekly press checks: an orphan folder, a missing folder or a stuck approve
   await assert.rejects(run2('weekly.drafts.no-orphans'), /issue 2 is published but published\/002 is missing/);
 
   assert.match(await run('weekly.published.no-duplicate-numbers'), /1 issue\(s\)/);
+  // An issue pulled into git: its published row is satisfied by git's copy, and
+  // a copy left on the volume as well turns the duplicate check red.
+  const pulled = testConfig();
+  const ctx3 = buildCheckContext(db, pulled);
+  const run3 = (id: string) => SELF_CHECK_CASES.find((c) => c.id === id)!.run!(ctx3);
+  await db.query(`update weekly_drafts set issue_number = 1 where id = $1`, [open.rows[0].id]);
+  assert.match(await run3('weekly.drafts.no-orphans'), /0 open draft\(s\), 1 published/);
+  mkdirSync(pathMod.join(pulled.weeklyDir, 'published', '001'), { recursive: true });
+  const { cpSync } = await import('node:fs');
+  cpSync(pathMod.join(pathMod.resolve(import.meta.dirname, '..'), 'content', 'weekly', 'en', '001'), pathMod.join(pulled.weeklyDir, 'published', '001'), { recursive: true });
+  await assert.rejects(run3('weekly.published.no-duplicate-numbers'), /issue 001 is in both/);
   await assert.rejects(run('weekly.mail.configured'), (e: unknown) => e instanceof NotConfigured);
   const mailed = buildCheckContext(db, testConfig({ smtpUrl: 'smtp://u:p@127.0.0.1:9', mailFrom: 'Beuk <b@example.com>' }));
   await assert.rejects(SELF_CHECK_CASES.find((c) => c.id === 'weekly.mail.configured')!.run!(mailed), (e: unknown) => e instanceof NotConfigured && /WEEKLY_EDITOR_EMAIL/.test(String(e)));

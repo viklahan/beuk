@@ -27,7 +27,8 @@ import { repoRoot } from '../warmth/pages.js';
  * frontHead (the lead's headline on the front page, under the banner),
  * image + caption, order, illustration (`yes` when the picture was
  * generated, not photographed; its caption then says so) and sources
- * ([url, url]: the pages an outside story is written from).
+ * ([url, url]: the pages an outside story is written from), and kind
+ * (a press draft's story says what it is: beuk, outside or ours).
  *
  * Story body: paragraphs, `## Subhead`, and `> ` pull quotes, with the same
  * inline Markdown as Help. Raw HTML is always escaped.
@@ -57,6 +58,10 @@ export interface Story {
   illustration: boolean;
   /** Where an outside story comes from (front matter `sources: [url, url]`). */
   sources: string[];
+  /** What the story is (front matter `kind`): beuk (checked against the
+   *  code), outside (needs sources) or ours (opinion). Press drafts must
+   *  say; issues already in git may not. */
+  kind: string | null;
   blocks: StoryBlock[];
   words: number;
   readMinutes: number;
@@ -84,6 +89,8 @@ export interface Issue {
 
 export interface WeeklyContent {
   issues: Issue[];
+  /** Numbers found in git AND in an extra root; git's copy is the one shown. */
+  duplicates: string[];
   issueByNumber: Map<number, Issue>;
   latest: Issue | null;
   stamp: string;
@@ -155,6 +162,7 @@ export function parseStory(source: string, file: string, issue: number): Story {
     link: opt(meta, 'link'),
     illustration: opt(meta, 'illustration') === 'yes',
     sources: Array.isArray(meta.sources) ? (meta.sources as string[]) : [],
+    kind: opt(meta, 'kind'),
     blocks,
     words,
     readMinutes: Math.max(1, Math.ceil(words / 200)),
@@ -206,24 +214,31 @@ export function loadIssueFolder(idir: string, number: number, stamp: string[] = 
 /**
  * Every issue: the git copy (content/weekly/<lang>/) first, then each extra
  * root (the press's published/ folder on the server volume). One number in
- * two places is refused, never silently shadowed.
+ * two places happens while a published issue is being pulled into git:
+ * the first copy (git's) is shown, the paper stays up, and the duplicate is
+ * named in `duplicates`, which turns the Housekeeping check
+ * weekly.published.no-duplicate-numbers red until the volume copy goes.
  */
 export function loadWeeklyContent(lang: (typeof WEEKLY_LANGS)[number] = 'en', extraRoots: string[] = []): WeeklyContent {
   const issues: Issue[] = [];
   const stamp: string[] = [];
+  const duplicates: string[] = [];
   const seen = new Map<number, string>();
   for (const dir of [weeklyDir(lang), ...extraRoots]) {
     const folders = existsSync(dir) ? readdirSync(dir).filter((d) => /^\d{3}$/.test(d)).sort() : [];
     for (const folder of folders) {
       const number = Number(folder);
       const prior = seen.get(number);
-      if (prior) throw new Error(`issue ${folder} is in both ${prior} and ${dir}`);
+      if (prior) {
+        duplicates.push(`issue ${folder} is in both ${prior} and ${dir}`);
+        continue;
+      }
       seen.set(number, dir);
       issues.push(loadIssueFolder(path.join(dir, folder), number, stamp));
     }
   }
   issues.sort((a, b) => a.number - b.number);
-  return { issues, issueByNumber: new Map(issues.map((i) => [i.number, i])), latest: issues[issues.length - 1] ?? null, stamp: stamp.join('|') };
+  return { issues, duplicates, issueByNumber: new Map(issues.map((i) => [i.number, i])), latest: issues[issues.length - 1] ?? null, stamp: stamp.join('|') };
 }
 
 /** Problems an edit can introduce; the tests and the Housekeeping check require none. */

@@ -20,7 +20,16 @@ if (!dir) {
 }
 const file = path.join(dir, 'pictures.json');
 const wanted = existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as { story: string; prompt: string }[]) : [];
-const r = await makePictures(dir, wanted, [inboxProvider(inbox), localProvider(), geminiProvider, museProvider]);
+let r: Awaited<ReturnType<typeof makePictures>>;
+try {
+  r = await makePictures(dir, wanted, [inboxProvider(inbox), localProvider(), geminiProvider, museProvider]);
+} catch (err) {
+  // The pictures step itself broke: every story that wanted one is listed, with why.
+  const why = `the pictures step failed: ${(err as Error).message}`;
+  writeFileSync(path.join(dir, 'no-pictures.json'), JSON.stringify([...new Set(wanted.map((w) => w.story))].map((s) => `${s}: ${why}`), null, 2));
+  console.log(why);
+  process.exit(1);
+}
 const why = r.skipped.length ? r.skipped.map((s) => `${s.provider}: ${s.reason}`).join('; ') : 'no provider made one';
 writeFileSync(path.join(dir, 'no-pictures.json'), JSON.stringify(r.noPictures.map((s) => `${s}: ${why}`), null, 2));
 for (const [story, files] of Object.entries(r.made)) console.log(`picture: ${story} → ${files.join(', ')}`);

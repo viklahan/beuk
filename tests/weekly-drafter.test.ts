@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { geminiProvider, inboxProvider, makePictures, museProvider, type ImageProvider } from '../tools/weekly/images.js';
+import { decideRun } from '../tools/weekly/plan-run.js';
 
 /* The Beuk Weekly drafter's tools (tools/weekly/, spec 2026-10-29). */
 
@@ -13,7 +14,10 @@ const ISSUE1 = path.join(root, 'content', 'weekly', 'en', '001');
 /** A copy of issue No. 1 to draft into, with one story that has no picture yet. */
 function draftFolder(): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'drafter-'));
-  for (const f of readdirSync(ISSUE1)) copyFileSync(path.join(ISSUE1, f), path.join(dir, f));
+  for (const f of readdirSync(ISSUE1)) {
+    if (f.endsWith('.md') && f !== 'issue.md') writeFileSync(path.join(dir, f), readFileSync(path.join(ISSUE1, f), 'utf8').replace(/^---\n/, '---\nkind: beuk\n'));
+    else copyFileSync(path.join(ISSUE1, f), path.join(dir, f));
+  }
   writeFileSync(path.join(dir, 'sources.json'), '[]');
   return dir;
 }
@@ -111,7 +115,7 @@ function tool(name: string, args: string[], env: Record<string, string> = {}) {
 }
 
 const SHA = 'b'.repeat(40);
-const OUTSIDE_STORY = '---\ntitle: KDP Changes A Rule\nsection: Stores\nplace: brief\nsources: [https://kdp.example/news]\n---\nA paragraph.\n';
+const OUTSIDE_STORY = '---\ntitle: KDP Changes A Rule\nsection: Stores\nkind: outside\nplace: brief\nsources: [https://kdp.example/news]\n---\nA paragraph.\n';
 
 test('check-draft: an unsourced outside story → exit 1, naming the story; a clean folder → exit 0', async () => {
   const dir = draftFolder();
@@ -161,4 +165,42 @@ test('upload: a clean folder uploads (201) without its drafter-only files; a sec
   assert.match(down.out, /could not reach the server/);
   const downFail = await tool('upload.ts', ['--failed', 'claude: not logged in', '--server', 'http://127.0.0.1:9'], { BEUK_WEEKLY_TOKEN: 'k'.repeat(40) });
   assert.equal(downFail.code, 2, downFail.out);
+});
+
+test('pictures: a provider that fails on one story is reported, the story is listed, the others keep theirs and their records', async () => {
+  const dir = draftFolder();
+  const flaky: ImageProvider = {
+    name: 'local',
+    configured: async () => null,
+    make: async (story, _prompt, outDir) => {
+      if (story === 'first-line') throw new Error('illustrate.py failed: CUDA out of memory');
+      writeFileSync(path.join(outDir, `${story}.jpg`), 'jpeg');
+      return { file: `${story}.jpg`, model: 'fake-model', seed: 3 };
+    },
+  };
+  const r = await makePictures(dir, [{ story: 'first-line', prompt: 'a quill' }, { story: 'guides-corrected', prompt: 'a red pencil' }], [flaky]);
+  assert.deepEqual(r.noPictures, ['first-line']);
+  assert.deepEqual(r.made, { 'guides-corrected': ['guides-corrected.jpg'] });
+  assert.ok(r.skipped.some((x) => x.provider === 'local' && /first-line: illustrate\.py failed: CUDA out of memory/.test(x.reason)), JSON.stringify(r.skipped));
+  const sources = JSON.parse(readFileSync(path.join(dir, 'sources.json'), 'utf8'));
+  assert.equal(sources.length, 1);
+});
+
+test('run plan: a sent-back draft is rewritten; a waiting draft stops a weekly run before writing; only the weekly trigger drafts', () => {
+  const back = [{ id: 'b1', notes: 'Shorter.', sourceCommit: 'c' }];
+  const waiting = [{ id: 'd1', previewUrl: 'https://beuk.studio/school/weekly/draft/d1' }];
+  assert.deepEqual(decideRun({ sentBack: back, drafted: [], weekly: false, force: false }), { action: 'rewrite', replaces: 'b1', notes: 'Shorter.' });
+  assert.deepEqual(decideRun({ sentBack: [], drafted: waiting, weekly: true, force: false }), { action: 'waiting', previewUrl: waiting[0].previewUrl });
+  assert.deepEqual(decideRun({ sentBack: [], drafted: waiting, weekly: false, force: false }), { action: 'idle', why: 'a draft is waiting for the editor' });
+  assert.deepEqual(decideRun({ sentBack: [], drafted: [], weekly: true, force: false }), { action: 'new' });
+  assert.deepEqual(decideRun({ sentBack: [], drafted: [], weekly: false, force: true }), { action: 'new' });
+  assert.deepEqual(decideRun({ sentBack: [], drafted: [], weekly: false, force: false }), { action: 'idle', why: 'not the weekly run, and nothing sent back' });
+});
+
+test('schedule: the weekly trigger drafts (-Weekly, so a missed Thursday drafts at next wake); the daily one only rewrites', () => {
+  const reg = readFileSync(TOOL('register-task.ps1'), 'utf8');
+  assert.match(reg, /'BeukWeeklyDrafter'[\s\S]*-Weekly/);
+  assert.match(reg, /'BeukWeeklyDrafterDaily'/);
+  const ps = readFileSync(TOOL('draft.ps1'), 'utf8');
+  assert.doesNotMatch(ps, /DayOfWeek -eq 'Thursday'/, 'the day of the week no longer decides; the trigger does');
 });

@@ -123,11 +123,12 @@ One `<slug>.md` per story, the slug in lower-case-with-hyphens:
 title: Headline In Title Case
 section: The small kicker (Studio, Print, The School, Stores, From the desk, In brief…)
 byline: The Beuk Desk
+kind: beuk              # REQUIRED: beuk (about Beuk, checked against the code) | outside (news; needs sources) | ours (opinion)
 place: front            # lead | front | brief | fold | notice
 order: 1
 deck: One sentence under the headline (front, fold and lead stories)
 summary: The front-page text (REQUIRED for front and fold stories)
-sources: [https://…, https://…]   # REQUIRED for every outside story
+sources: [https://…, https://…]   # REQUIRED for every outside story (https:// only)
 link: https://…          # notices only
 ---
 Paragraphs separated by blank lines. `## Subhead`. `> A pull quote.`

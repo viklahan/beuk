@@ -135,9 +135,16 @@ test('weekly content: an extra root adds issues, a duplicate number is refused',
   assert.deepEqual(checkWeeklyContent(w), []);
   assert.equal(loadIssueFolder(path.join(extra, '002'), 7).number, 7);
 
+  // Pulling a published issue into git puts one number in both places for a
+  // while: git's copy wins, the paper stays up, and the duplicate is named
+  // (the Housekeeping check turns red on it).
   const clash = mkdtempSync(path.join(tmpdir(), 'weekly-root-'));
-  copyIssue(path.join(clash, '001'));
-  assert.throws(() => loadWeeklyContent('en', [clash]), /issue 001 is in both/);
+  copyIssue(path.join(clash, '001'), (f, t) => (f === 'issue.md' ? t.replace(/^banner: .*$/m, 'banner: The Volume Copy') : t));
+  const both = loadWeeklyContent('en', [clash]);
+  assert.equal(both.issues.length, 1);
+  assert.equal(both.issueByNumber.get(1)!.banner, 'Beuk School Opens Its Doors', "git's copy wins");
+  assert.deepEqual(both.duplicates, [`issue 001 is in both ${path.join(root, 'content', 'weekly', 'en')} and ${clash}`]);
+  assert.deepEqual(loadWeeklyContent('en').duplicates, []);
 });
 
 test('weekly content: a story records sources and whether its picture is an illustration', () => {

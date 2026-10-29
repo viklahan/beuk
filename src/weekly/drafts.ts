@@ -75,6 +75,7 @@ const FILE_NAME = /^[a-z0-9][a-z0-9._-]*\.(md|jpg|jpeg|png|webp|json)$/;
 const MAX_BYTES = 25 * 1024 * 1024;
 const COMMIT = /^[0-9a-f]{7,40}$/;
 const OPEN = ['drafted', 'sent_back'];
+const KINDS = ['beuk', 'outside', 'ours'];
 
 interface SourceEntry {
   url?: unknown;
@@ -126,10 +127,18 @@ export function validateUpload(u: DraftUpload): string[] {
   try {
     for (const [name, buf] of decoded) writeFileSync(path.join(tmp, name), buf);
     const issue = loadIssueFolder(tmp, 1);
-    const own = { issues: [issue], issueByNumber: new Map([[1, issue]]), latest: issue, stamp: '' };
+    const own = { issues: [issue], duplicates: [], issueByNumber: new Map([[1, issue]]), latest: issue, stamp: '' };
     for (const p of checkWeeklyContent(own)) problems.push(p.split(tmp + path.sep).join(''));
     for (const s of issue.storyBySlug.values()) {
+      // Rule 1 cannot rest on the drafter remembering to list sources: every
+      // story says what it is, and an outside one without sources is refused.
+      if (!s.kind || !KINDS.includes(s.kind)) problems.push(`${s.slug}: kind must be beuk, outside or ours (what the story is)`);
+      else if (s.kind === 'outside' && !s.sources.length) problems.push(`${s.slug}: an outside story needs sources: [url, …]`);
       for (const url of s.sources) {
+        if (!/^https:\/\//.test(url)) {
+          problems.push(`${s.slug}: source ${url} must be an https:// address`);
+          continue;
+        }
         const entry = sources.find((e) => e?.url === url);
         if (!entry) problems.push(`${s.slug}: source ${url} is not in sources.json (every outside source is fetched and quoted)`);
         else if (typeof entry.quote !== 'string' || !entry.quote.trim()) problems.push(`${s.slug}: source ${url} has no fetched quote in sources.json`);
