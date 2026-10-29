@@ -22,10 +22,13 @@ on a Docker Compose stack shaped for self-hosting on Hetzner Cloud.
 **Windows one-liner:** `.\start-local.ps1` stops stray Beuk dev servers
 from any copy of the project, frees port 8090, builds and starts the
 stack (with the tools overlay when `tools-bin/epubcheck.jar` exists),
-and waits for `/api/health` → http://localhost:8090. It also listens on
-this network (plain http; it prints the `http://<ip>:8090` addresses),
-so a tablet or another PC can open the studio; `-LocalOnly` keeps it to
-this machine. `-Down` stops it, `-NoBuild` restarts without rebuilding.
+and waits for `/api/health` → http://localhost:8090. It listens on
+every address the machine has, whatever the network (plain http; it
+prints each `http://<ip>:<port>`), so a tablet or another PC can open the
+studio. If 8090 is already taken by something else it leaves that
+running and takes the next free port (8091, 8092, …). `-LocalOnly` keeps
+it to this machine, `-Port` picks where the search starts, `-Down` stops
+it, `-NoBuild` restarts without rebuilding.
 
 Or by hand:
 
