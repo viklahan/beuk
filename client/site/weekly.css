@@ -100,3 +100,22 @@
 .paper .earlier{padding:10px 0 0}
 /* school.css gives School pull quotes an amber rule on the left; the paper's are ruled above and below. */
 .paper .pull{border-left:0;padding-left:0}
+/* Beuk Weekly press: the bar above a draft preview (src/weekly/preview.ts). Not part of the paper; it reads as an editor's slip clipped on top. */
+.press-bar{max-width:1100px;margin:0 auto 18px;padding:14px 18px;border:2px dashed #111;background:#fffbe6;color:#111;font:500 14px/1.5 var(--gothic)}
+.press-bar .kick{margin:0 0 8px;letter-spacing:.08em;text-transform:uppercase}
+.press-bar h2{font:500 24px/1.2 var(--mast);margin:0 0 12px}
+.press-facts{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0 0 8px}
+.press-facts b,.press-dropped b,.press-notes b{font-weight:600;margin-right:4px}
+.press-facts code{font-size:12px;word-break:break-all}
+.press-dropped,.press-notes,.press-done{margin:0 0 8px;font-family:var(--text)}
+.press-actions{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-top:10px}
+.press-bar button{font:500 14px/1 var(--gothic);padding:9px 14px;border:1px solid #111;background:#fff;color:#111;cursor:pointer}
+.press-bar button.press-approve{background:#111;color:#fff}
+.press-bar button:disabled{opacity:.5;cursor:default}
+.press-send summary{cursor:pointer;padding:9px 14px;border:1px solid #111;background:#fff}
+.press-send[open]{flex-basis:100%}
+.press-send label,.press-login label{display:block;margin:10px 0 4px}
+.press-send textarea,.press-login input{display:block;width:100%;max-width:560px;box-sizing:border-box;padding:8px;border:1px solid #111;font:16px/1.4 var(--text)}
+.press-send textarea + button,.press-login button{margin-top:10px}
+.press-confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+.press-msg{margin:8px 0 0;min-height:1.2em}

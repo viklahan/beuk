@@ -43,6 +43,9 @@ export interface RenderOpts {
   base?: string;
   /** HTML set above the paper (the press bar on a draft preview). */
   preview?: string;
+  /** Passed to the page shell (a draft preview is noindex and loads its script). */
+  robots?: string;
+  scripts?: string[];
 }
 const baseOf = (s: Story, o: RenderOpts) => o.base ?? issueUrl(s.issue);
 export const storyUrl = (s: Story, o: RenderOpts = {}) => `${baseOf(s, o)}/${s.slug}`;
@@ -162,11 +165,13 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue,
   return schoolPage(config, {
     title: `Beuk Weekly, No. ${issue.number} — ${issue.banner}`,
     description: `${issue.banner}. ${issue.bannerDeck}. Beuk Weekly, ${weekLabel(issue.week)}.`,
-    path: issueUrl(issue.number),
+    path: o.base ?? issueUrl(issue.number),
     body,
     tab: 'weekly',
     css: CSS,
     bodyClass: 'weekly',
+    robots: o.robots,
+    scripts: o.scripts,
   });
 }
 
@@ -200,11 +205,13 @@ export function renderStory(config: Config, issue: Issue, s: Story, o: RenderOpt
   return schoolPage(config, {
     title: `${s.title} — Beuk Weekly`,
     description: s.deck ?? s.summary ?? s.title,
-    path: storyUrl(s),
+    path: storyUrl(s, o),
     body,
     tab: 'weekly',
     css: CSS,
     bodyClass: 'weekly',
+    robots: o.robots,
+    scripts: o.scripts,
   });
 }
 

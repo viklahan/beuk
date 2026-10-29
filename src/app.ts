@@ -1,3 +1,4 @@
+import path from 'node:path';
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import { accessGate, ACCESS_RULES } from './access.js';
 import { StripeBillingProvider, type BillingProvider } from './billing.js';
@@ -32,7 +33,8 @@ import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
 import { weeklyRoutes } from './routes/weekly.js';
-import { weeklyPressApi } from './routes/weekly-press.js';
+import { weeklyPressApi, weeklyPressPages } from './routes/weekly-press.js';
+import { setWeeklyRoots } from './weekly/content.js';
 import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.js';
 import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
@@ -208,6 +210,10 @@ export function buildApp({
   // Everything else at the site root is Caddy's static client mount.
   app.use(help.pages);
   // Beuk Weekly before the School's pages: /school/weekly is never a course slug.
+  // Beuk Weekly: issues the press published live on the volume beside
+  // git's; the draft preview mounts first so "draft" is never an issue number.
+  setWeeklyRoots([path.join(config.weeklyDir, 'published')]);
+  app.use(weeklyPressPages(db, config));
   app.use(weeklyRoutes(config));
   app.use(school.pages);
   app.use(warmthRoutes(config));

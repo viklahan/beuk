@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { loadConfig } from '../src/config.js';
+import { setAdmin } from '../src/housekeeping/admin.js';
 import { BACKUP_TABLES, classifyTables } from '../src/housekeeping/backup.js';
 import { approveAndPublish, createDraft, DraftConflict, DraftInvalid, DraftStateError, listDrafts, mondayOf, replaceDraft, sendBack, validateUpload, withdraw, type DraftUpload } from '../src/weekly/drafts.js';
 import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
@@ -284,6 +285,133 @@ test('press API: failed mails the reason; sent_back lists notes; replaces resubm
     assert.equal(((await re.json()) as { id: string }).id, id);
     assert.equal(mailer.sent.length, before + 1, 'a fresh preview email for the rewrite');
     assert.equal((await listDrafts(db, 'drafted'))[0].id, id);
+  } finally {
+    await s.close();
+  }
+});
+
+/* Task 5: the preview page — approve, send back, withdraw. */
+
+/** Register an account and return its session cookie ("name=value"). */
+async function signIn(base: string, email: string): Promise<string> {
+  const res = await fetch(`${base}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email, password: 'correct horse battery' }),
+  });
+  assert.ok(res.status < 300, `register ${email}: ${res.status}`);
+  return res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+}
+
+async function previewSetup() {
+  const p = await pressServer();
+  const { id } = (await (await p.call('POST', '/api/weekly/drafts', sourcedUpload())).json()) as { id: string };
+  const admin = await signIn(p.s.base, 'admin@example.com');
+  assert.equal(await setAdmin(p.db, 'admin@example.com', true), 'granted');
+  const writer = await signIn(p.s.base, 'writer@example.com');
+  const page = (url: string, cookie?: string) => fetch(`${p.s.base}${url}`, { headers: cookie ? { cookie } : {}, redirect: 'manual' });
+  const act = (action: string, cookie: string, body: unknown = {}, origin = p.s.config.appBaseUrl) =>
+    fetch(`${p.s.base}/school/weekly/draft/${id}/${action}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie, origin },
+      body: JSON.stringify(body),
+    });
+  return { ...p, id, admin, writer, page, act };
+}
+
+test('press preview: signed out sees only a sign-in box; a writer or an unknown id gets 404; every answer is noindex and no-store', async () => {
+  const { s, id, writer, admin, page } = await previewSetup();
+  try {
+    const out = await page(`/school/weekly/draft/${id}`);
+    assert.equal(out.status, 200);
+    const html = await out.text();
+    assert.match(html, /Sign in/);
+    assert.ok(!html.includes('Beuk School Opens Its Doors'), 'no draft content for a signed-out visitor');
+    assert.match(html, /<meta name="robots" content="noindex/);
+    assert.match(out.headers.get('x-robots-tag') ?? '', /noindex/);
+    assert.equal(out.headers.get('cache-control'), 'no-store');
+
+    const w = await page(`/school/weekly/draft/${id}`, writer);
+    assert.equal(w.status, 404);
+    assert.match(w.headers.get('x-robots-tag') ?? '', /noindex/);
+    assert.equal((await page(`/school/weekly/draft/${id}/img/desk.jpg`, writer)).status, 404);
+    assert.equal((await page(`/school/weekly/draft/${id}/img/desk.jpg`)).status, 404);
+    assert.equal((await page('/school/weekly/draft/00000000-0000-0000-0000-000000000000', admin)).status, 404);
+    assert.equal((await page('/school/weekly/draft/not-a-uuid', admin)).status, 404);
+  } finally {
+    await s.close();
+  }
+});
+
+test('press preview: an admin sees the issue with the press bar; stories and pictures are under the draft', async () => {
+  const { s, id, admin, page } = await previewSetup();
+  try {
+    const res = await page(`/school/weekly/draft/${id}`, admin);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    for (const t of ['Beuk School Opens Its Doors', 'Approve and publish', 'Send back', 'Withdraw', 'a'.repeat(40), 'example.org', 'A rumour']) assert.ok(html.includes(t), t);
+    assert.match(html, /<meta name="robots" content="noindex/);
+    assert.ok(html.includes(`href="/school/weekly/draft/${id}/school-opens"`));
+    assert.ok(!/href="\/school\/weekly\/1\//.test(html), 'no link into the live issue');
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+
+    const story = await page(`/school/weekly/draft/${id}/twenty-four-trims`, admin);
+    assert.equal(story.status, 200);
+    assert.match(await story.text(), /Twenty-Four Trims, Measured to the Hundredth/);
+    const img = await page(`/school/weekly/draft/${id}/img/trims.jpg`, admin);
+    assert.equal(img.status, 200);
+    assert.equal(img.headers.get('content-type'), 'image/jpeg');
+    assert.equal((await page(`/school/weekly/draft/${id}/img/..%2Fissue.md`, admin)).status, 404);
+    assert.equal((await page(`/school/weekly/draft/${id}/brief-your-words`, admin)).status, 404, 'briefs have no page');
+  } finally {
+    await s.close();
+  }
+});
+
+test('press preview: approve needs our Origin, publishes exactly once, and the issue is live', async () => {
+  const { s, db, id, admin, writer, act, page } = await previewSetup();
+  try {
+    assert.equal((await act('approve', admin, {}, 'https://evil.example')).status, 403);
+    assert.equal((await act('approve', writer)).status, 404);
+    assert.equal((await listDrafts(db, 'drafted')).length, 1, 'nothing changed');
+
+    const ok = await act('approve', admin);
+    assert.equal(ok.status, 200);
+    assert.deepEqual(await ok.json(), { url: '/school/weekly/2' });
+    assert.equal((await act('approve', admin)).status, 409, 'a second approve publishes nothing');
+    const live = await page('/school/weekly/2');
+    assert.equal(live.status, 200);
+    assert.match(await live.text(), /Beuk School Opens Its Doors/);
+    assert.ok(!existsSync(path.join(s.config.weeklyDir, 'drafts', id)));
+    // The old preview link still answers, and says where the issue went.
+    const after = await (await page(`/school/weekly/draft/${id}`, admin)).text();
+    assert.match(after, /Published as No\. 2/);
+    assert.ok(!after.includes('Approve and publish'));
+
+    const xml = await (await fetch(`${s.base}/sitemap.xml`)).text();
+    assert.ok(!xml.includes('/draft/'), 'drafts are never in the sitemap');
+    const audit = await db.query<{ action: string }>(`select action from housekeeping_audit where action like 'weekly.%'`);
+    assert.deepEqual(audit.rows.map((r) => r.action), ['weekly.approve']);
+  } finally {
+    await s.close();
+  }
+});
+
+test('press preview: send back records the notes; withdraw discards the draft', async () => {
+  const { s, db, id, admin, act, page, call } = await previewSetup();
+  try {
+    assert.equal((await act('send-back', admin, { notes: '' })).status, 400);
+    assert.equal((await act('send-back', admin, { notes: 'Shorter lead.' }, 'https://evil.example')).status, 403);
+    assert.equal((await act('send-back', admin, { notes: 'Shorter lead.' })).status, 200);
+    assert.equal((await listDrafts(db, 'sent_back'))[0].notes, 'Shorter lead.');
+    const html = await (await page(`/school/weekly/draft/${id}`, admin)).text();
+    assert.match(html, /Shorter lead\./);
+    assert.ok(!html.includes('Approve and publish'), 'a sent-back draft waits for the rewrite');
+
+    assert.equal((await act('withdraw', admin)).status, 200);
+    assert.equal((await listDrafts(db, 'withdrawn')).length, 1);
+    assert.equal((await act('withdraw', admin)).status, 409);
+    assert.equal((await call('POST', '/api/weekly/drafts', sourcedUpload())).status, 201, 'the slot is free again');
   } finally {
     await s.close();
   }

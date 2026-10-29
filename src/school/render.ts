@@ -69,6 +69,10 @@ export interface SchoolPageOpts {
   /** Extra stylesheets after school.css (the Weekly's fonts and paper). */
   css?: string[];
   bodyClass?: string;
+  /** A robots meta value (the Weekly press's draft preview: noindex). */
+  robots?: string;
+  /** Extra scripts after school.js. */
+  scripts?: string[];
 }
 
 /** The School's page shell: the public site's top bar and footer, School
@@ -85,6 +89,7 @@ export function schoolPage(config: Config, opts: SchoolPageOpts): string {
     <title>${esc(opts.title)}</title>
     <meta name="description" content="${esc(opts.description)}" />
     <link rel="canonical" href="${esc(canonical)}" />
+    ${opts.robots ? `<meta name="robots" content="${esc(opts.robots)}" />` : ''}
     <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png" />
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
     <meta property="og:type" content="website" />
@@ -162,6 +167,7 @@ ${opts.body}
       </div>
     </footer>
     <script src="/site/school.js" defer></script>
+    ${(opts.scripts ?? []).map((src) => `<script src="${esc(src)}" defer></script>`).join('')}
   </body>
 </html>
 `;

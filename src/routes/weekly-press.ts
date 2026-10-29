@@ -1,12 +1,30 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { weeklyDraftEmail, weeklyDraftFailedEmail } from '../email/weekly-draft.js';
+import { readCookie, SESSION_COOKIE } from '../auth.js';
+import { writeAudit } from '../housekeeping/context.js';
 import type { Mailer, MailResult } from '../mailer.js';
-import { loadIssueFolder } from '../weekly/content.js';
-import { createDraft, DraftConflict, DraftInvalid, DraftStateError, listDrafts, replaceDraft, type DraftUpload } from '../weekly/drafts.js';
+import { getWeeklyContent, loadIssueFolder } from '../weekly/content.js';
+import {
+  approveAndPublish,
+  createDraft,
+  DraftConflict,
+  DraftInvalid,
+  DraftStateError,
+  getDraft,
+  listDrafts,
+  replaceDraft,
+  sendBack,
+  withdraw,
+  type DraftRow,
+  type DraftUpload,
+} from '../weekly/drafts.js';
+import { pressBar, PRESS_ROBOTS, PRESS_SCRIPTS, renderPressSignIn, renderPressStatus } from '../weekly/preview.js';
+import { renderIssue, renderStory } from '../weekly/render.js';
 
 /**
  * The Beuk Weekly press's drafter API (spec 2026-10-29), used only by the
@@ -117,6 +135,171 @@ export function weeklyPressApi(db: Db, config: Config, mailer: Mailer): Router {
     } catch (err) {
       return next(err);
     }
+  });
+
+  return router;
+}
+
+/* ------------------------- the preview page ------------------------- */
+
+const IMAGE_TYPES: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+
+type Viewer = { kind: 'anonymous' } | { kind: 'user' } | { kind: 'admin'; id: string; email: string };
+
+/** Who is asking: read live from the session on every request, like requireAdmin. */
+async function viewer(db: Db, req: Request): Promise<Viewer> {
+  const token = readCookie(req, SESSION_COOKIE);
+  if (!token) return { kind: 'anonymous' };
+  const r = await db.query<{ id: string; email: string; is_admin: boolean }>(
+    `select u.id, u.email, u.is_admin from sessions s join users u on u.id = s.user_id
+     where s.token_hash = $1 and s.expires_at > now()`,
+    [createHash('sha256').update(token).digest('hex')],
+  );
+  const u = r.rows[0];
+  if (!u) return { kind: 'anonymous' };
+  return u.is_admin ? { kind: 'admin', id: u.id, email: u.email } : { kind: 'user' };
+}
+
+/**
+ *   GET  /school/weekly/draft/:id              the preview (admin), a sign-in box (signed out), else 404
+ *   GET  /school/weekly/draft/:id/:story       one story of the draft (admin)
+ *   GET  /school/weekly/draft/:id/img/:file    a picture of the draft (admin)
+ *   POST /school/weekly/draft/:id/approve      publish (admin, our Origin)
+ *   POST /school/weekly/draft/:id/send-back    { notes } (admin, our Origin)
+ *   POST /school/weekly/draft/:id/withdraw     discard (admin, our Origin)
+ * Every answer is noindex and no-store. Mounted before the Weekly's own
+ * pages, so "draft" is never read as an issue number.
+ */
+export function weeklyPressPages(db: Db, config: Config): Router {
+  const router = Router();
+  router.use('/school/weekly/draft', (_req, res, next) => {
+    res.set('X-Robots-Tag', 'noindex, nofollow').set('Cache-Control', 'no-store');
+    next();
+  });
+  const notFound = (res: Response) => res.status(404).type('text').send('not found');
+  const html = (res: Response, body: string) => res.status(200).type('html').send(body);
+  const base = (id: string) => `/school/weekly/draft/${id}`;
+
+  /** The draft and the admin, or a response already sent. */
+  const load = async (req: Request, res: Response, signInPage: boolean): Promise<{ d: DraftRow; admin: { id: string; email: string } } | null> => {
+    const v = await viewer(db, req);
+    if (v.kind === 'anonymous' && signInPage && /^[0-9a-f-]{36}$/i.test(String(req.params.id))) {
+      html(res, renderPressSignIn(config, String(req.params.id)));
+      return null;
+    }
+    if (v.kind !== 'admin') {
+      notFound(res);
+      return null;
+    }
+    const d = await getDraft(db, String(req.params.id));
+    if (!d) {
+      notFound(res);
+      return null;
+    }
+    return { d, admin: { id: v.id, email: v.email } };
+  };
+  const folder = (d: DraftRow) => path.join(config.weeklyDir, 'drafts', d.id);
+  const open = (d: DraftRow) => (d.status === 'drafted' || d.status === 'sent_back') && existsSync(path.join(folder(d), 'issue.md'));
+
+  router.get('/school/weekly/draft/:id', async (req, res, next) => {
+    try {
+      const got = await load(req, res, true);
+      if (!got) return;
+      const { d } = got;
+      if (!open(d)) return html(res, renderPressStatus(config, d));
+      const issue = loadIssueFolder(folder(d), 0);
+      const page = renderIssue(config, getWeeklyContent(), issue, {
+        base: base(d.id),
+        preview: pressBar(d),
+        robots: PRESS_ROBOTS,
+        scripts: PRESS_SCRIPTS,
+      });
+      return html(res, page);
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  router.get('/school/weekly/draft/:id/img/:file', async (req, res, next) => {
+    try {
+      const got = await load(req, res, false);
+      if (!got) return;
+      const file = req.params.file;
+      const type = IMAGE_TYPES[path.extname(file).toLowerCase()];
+      if (!open(got.d) || !type || !/^[a-z0-9][a-z0-9._-]*$/i.test(file)) return notFound(res);
+      const full = path.join(folder(got.d), file);
+      if (!existsSync(full)) return notFound(res);
+      res.type(type);
+      return res.sendFile(full);
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  router.get('/school/weekly/draft/:id/:story', async (req, res, next) => {
+    try {
+      const got = await load(req, res, false);
+      if (!got) return;
+      if (!open(got.d)) return notFound(res);
+      const issue = loadIssueFolder(folder(got.d), 0);
+      const story = issue.storyBySlug.get(req.params.story);
+      if (!story || !story.hasPage) return notFound(res);
+      return html(res, renderStory(config, issue, story, { base: base(got.d.id), preview: pressBar(got.d), robots: PRESS_ROBOTS, scripts: PRESS_SCRIPTS }));
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  /** Admin + our own Origin, or a response already sent. */
+  const guard = async (req: Request, res: Response) => {
+    const v = await viewer(db, req);
+    if (v.kind !== 'admin') {
+      res.status(404).json({ error: 'not found' });
+      return null;
+    }
+    if (req.get('origin') !== config.appBaseUrl) {
+      res.status(403).json({ error: 'this action must come from the preview page' });
+      return null;
+    }
+    return v;
+  };
+  const audit = (admin: { id: string; email: string }, action: string, id: string, result: string, params: Record<string, unknown> = {}) =>
+    writeAudit(db, { actorId: admin.id, actorEmail: admin.email, action, params: { draft: id, ...params }, result });
+
+  const act = (name: string, run: (id: string, admin: { id: string; email: string }, body: Record<string, unknown>) => Promise<unknown>) =>
+    router.post(`/school/weekly/draft/:id/${name}`, async (req, res, next) => {
+      try {
+        const admin = await guard(req, res);
+        if (!admin) return;
+        const id = String(req.params.id);
+        if (!(await getDraft(db, id))) return res.status(404).json({ error: 'not found' });
+        try {
+          const out = await run(id, admin, (req.body ?? {}) as Record<string, unknown>);
+          return res.json(out ?? { ok: true });
+        } catch (err) {
+          if (err instanceof DraftStateError) {
+            const bad = name === 'send-back' && /notes are/.test(err.message);
+            return res.status(bad ? 400 : 409).json({ error: err.message });
+          }
+          throw err;
+        }
+      } catch (err) {
+        return next(err);
+      }
+    });
+
+  act('approve', async (id, admin) => {
+    const r = await approveAndPublish(db, config.weeklyDir, id, admin.id, new Date());
+    await audit(admin, 'weekly.approve', id, 'published', { number: r.number, week: r.week });
+    return { url: `/school/weekly/${r.number}` };
+  });
+  act('send-back', async (id, admin, body) => {
+    await sendBack(db, id, typeof body.notes === 'string' ? body.notes : '');
+    await audit(admin, 'weekly.send-back', id, 'sent_back');
+  });
+  act('withdraw', async (id, admin) => {
+    await withdraw(db, config.weeklyDir, id);
+    await audit(admin, 'weekly.withdraw', id, 'withdrawn');
   });
 
   return router;
