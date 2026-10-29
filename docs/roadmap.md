@@ -34,7 +34,7 @@ Now / Next / Later shape the public page shows.
   backup and restore drill), then the smoke test after every deploy.
 - **BYOK AI.** Connect your own AI key, built on the Covenant's per-entry
   AI setting (stored today, hidden until then).
-- **Per-user Typography themes**, queued by V.
+- **Per-user Typography themes.**
 - **Series tombstone.** A server-side record that a left or renamed series
   is gone, so a second device's unsent edit can never recreate it.
 
