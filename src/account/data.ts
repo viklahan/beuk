@@ -12,7 +12,7 @@ import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
  *
  * Owned by an account (every table with a user_id/owner_id foreign key
  * to users): sessions, password_resets, email_confirmations,
- * manuscripts, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
+ * manuscripts, series_covenants, exports (+ their bytes at EXPORT_DIR/<user_id>/), jobs,
  * streak_days, streak_freezes, streak_state, shares (+ share_comments,
  * share_readers), billing_subscriptions. billing_events keep their
  * Stripe event id (the webhook dedupe ledger) with user_id set null.
@@ -31,6 +31,7 @@ export const ACCOUNT_DELETED_TABLES = [
   'password_resets',
   'email_confirmations',
   'manuscripts',
+  'series_covenants',
   'pictures',
   'exports',
   'jobs',
@@ -284,6 +285,8 @@ export function exportReadme(opts: { email: string; exportedAt: string; appBaseU
           `                        index.json marks them ("studioCanOpen": false).`,
         ]
       : []),
+    `series-covenants.json  The shared Covenant (story bible) of each of your series (${c.series_covenants}),`,
+    `                        whole, with its revision and dates.`,
     `exports/                Every file in your export archive (${c.exports}), byte for byte,`,
     `                        and exports/index.json with each one's format, preset,`,
     `                        size, SHA-256 and date.`,
@@ -328,7 +331,7 @@ export async function writeAccountExport(
   zip: ZipWriter,
   account: Record<string, unknown>,
 ): Promise<{ counts: Record<string, number>; missingFiles: number }> {
-  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, exports: 0, shares: 0, comments: 0 };
+  const counts: Record<string, number> = { manuscripts: 0, unopenable: 0, series_covenants: 0, exports: 0, shares: 0, comments: 0 };
 
   // Manuscripts, one at a time (a book can be large).
   const ids = await db.query<{ id: string }>('select id from manuscripts where user_id = $1 order by created_at', [userId]);
@@ -365,6 +368,31 @@ export async function writeAccountExport(
     counts.manuscripts += 1;
   }
   await zip.add('manuscripts/index.json', JSON.stringify({ manuscripts: books }, null, 2), { compress: true });
+
+  // Series Covenants (the shared story bible of each series), whole.
+  const series = await db.query<{ series_key: string; name: string; doc: unknown; revision: number; created_at: string; updated_at: string }>(
+    'select series_key, name, doc, revision, created_at, updated_at from series_covenants where user_id = $1 order by created_at',
+    [userId],
+  );
+  await zip.add(
+    'series-covenants.json',
+    JSON.stringify(
+      {
+        series: series.rows.map((r) => ({
+          key: r.series_key,
+          name: r.name,
+          revision: r.revision,
+          createdAt: iso(r.created_at),
+          updatedAt: iso(r.updated_at),
+          doc: r.doc,
+        })),
+      },
+      null,
+      2,
+    ),
+    { compress: true },
+  );
+  counts.series_covenants = series.rows.length;
 
   // Exports: the bytes, then an index with each file's metadata.
   const archive = await listArchive(db, userId);
@@ -543,6 +571,7 @@ export async function deleteAccount(
     await del('jobs', 'delete from jobs where user_id = $1', [userId]);
     await del('exports', 'delete from exports where user_id = $1', [userId]);
     await del('manuscripts', 'delete from manuscripts where user_id = $1', [userId]);
+    await del('series_covenants', 'delete from series_covenants where user_id = $1', [userId]);
     await del('pictures', 'delete from pictures where user_id = $1', [userId]);
     await del('streak_days', 'delete from streak_days where user_id = $1', [userId]);
     await del('streak_freezes', 'delete from streak_freezes where user_id = $1', [userId]);

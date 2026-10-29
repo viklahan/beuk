@@ -28,6 +28,7 @@ export function beukCodeForValidator(checkId: string, content: HelpContent = get
  *  `{ error, code }` — every existing field stays as it was). */
 export const HTTP_CODES = {
   manuscriptConflict: 'BEUK-C801',
+  seriesConflict: 'BEUK-C802',
   readingCopyClosed: 'BEUK-H410',
   jobsBusy: 'BEUK-J702',
 } as const;
