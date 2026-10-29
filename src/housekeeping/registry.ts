@@ -3108,6 +3108,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.change.anchor',
+    title: 'Covenant anchors: a change pinned to a passage is found again after an edit before it, follows the passage to another chapter, picks the nearest identical quote, and is an orphan when the quote no longer matches exactly; empty selection makes none',
+    kind: 'client-only',
+    reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',

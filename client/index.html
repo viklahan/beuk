@@ -22894,10 +22894,42 @@
       /* the Anchor: where in a section a change was marked. Quote and offset locate it; book is set for series entries; pos is the last resolved position, refreshed whenever that book is open. An anchor missing its section or offset can never be found again, so it is refused and the change goes with it. */
       function bibleNormalizeAnchor(a) {
         if (!a || typeof a !== "object" || typeof a.sec !== "string" || !a.sec || typeof a.quote !== "string" || typeof a.at !== "number" || !isFinite(a.at) || a.at < 0) return null;
-        const out = { sec: a.sec.slice(0, 80), quote: a.quote.replace(/\r\n?/g, "\n").slice(0, 160), at: Math.floor(a.at) };
+        /* a quote that is only whitespace pins nothing: every blank stretch in the book would match it */
+        if (!a.quote.trim()) return null;
+        const out = { sec: a.sec.slice(0, 80), quote: bibleQuoteCap(a.quote.replace(/\r\n?/g, "\n")), at: Math.floor(a.at) };
         if (typeof a.book === "string" && a.book) out.book = a.book.slice(0, 80);
         if (Array.isArray(a.pos)) { const pos = a.pos.filter((n) => typeof n === "number" && isFinite(n)).slice(0, 16); if (pos.length) out.pos = pos; }
         return out;
+      }
+      /* 160 characters of quote, counted in whole characters so an emoji's two halves are never parted */
+      function bibleQuoteCap(q) { return Array.from(q).slice(0, 160).join(""); }
+      /* pin a change to the passage the writer selected: the words themselves plus where they stood. Nothing selected, or only blanks, pins nothing. */
+      function bibleAnchorMake(secId, start, end) {
+        const sec = state.sections.find((s) => s.id === secId);
+        if (!sec || typeof sec.content !== "string" || !(end > start) || start < 0) return null;
+        const quote = bibleQuoteCap(sec.content.slice(start, end).trim().replace(/\r\n?/g, "\n"));
+        return quote ? { sec: secId, quote: quote, at: Math.floor(start) } : null;
+      }
+      /* find the passage again: its own section first, then every body section in case it was moved. Exact words only, a reworded passage is an orphan (null) rather than a guess. Among identical quotes the one nearest where it used to be wins. */
+      function bibleAnchorFind(anchor, sections) {
+        if (!anchor || !anchor.quote) return null;
+        const nearest = (sec) => {
+          const text = typeof sec.content === "string" ? sec.content : "";
+          let best = -1, i = text.indexOf(anchor.quote);
+          while (i !== -1) {
+            if (best === -1 || Math.abs(i - anchor.at) < Math.abs(best - anchor.at)) best = i;
+            i = text.indexOf(anchor.quote, i + 1);
+          }
+          return best === -1 ? null : { sec: sec.id, at: best };
+        };
+        const home = sections.find((s) => s.id === anchor.sec);
+        const here = home && nearest(home);
+        if (here) return here;
+        for (const s of sections) {
+          if (s === home || s.kind !== "body") continue;
+          const hit = nearest(s); if (hit) return hit;
+        }
+        return null;
       }
       function bibleCodexKeys(e) {
         const out = {};
@@ -24071,7 +24103,7 @@
                 const odd = bibleNormalize({ entries: [
                   { id: "o1", type: "lore", name: "A", ai: "scene" }, { id: "o2", type: "lore", name: "B", ai: "loud", scope: "series" },
                   { id: "o3", type: "lore", name: "C", links: [{ to: "o1", label: "ok" }, { to: "gone", label: "dead" }, { to: "o3", label: "self" }],
-                    changes: [{ id: "k1", anchor: { sec: "s1", quote: "x", at: -1 }, text: "neg" }, { id: "k2", anchor: { quote: "x", at: 1 }, text: "nosec" }, { id: "k3", anchor: { sec: "s1", quote: "y".repeat(300), at: 5 }, text: "ok" }] }
+                    changes: [{ id: "k1", anchor: { sec: "s1", quote: "x", at: -1 }, text: "neg" }, { id: "k2", anchor: { quote: "x", at: 1 }, text: "nosec" }, { id: "k3", anchor: { sec: "s1", quote: "y".repeat(300), at: 5 }, text: "ok" }, { id: "k4", anchor: { sec: "s1", quote: " \n\t ", at: 2 }, text: "blank" }] }
                 ] });
                 const [o1, o2, o3] = odd.entries;
                 const dropped = !("ai" in o1) && !("ai" in o2) && !("scope" in o2) && o3.links.length === 1 && o3.links[0].to === "o1" && o3.changes.length === 1 && o3.changes[0].id === "k3" && o3.changes[0].anchor.quote.length === 160;
@@ -24089,8 +24121,38 @@
                 const z = bibleEntries()[0];
                 const oldOk = ro.ok && !!z && z.name === "Zed" && !NEW.test(JSON.stringify(serializeBook().bible)) && !("fields" in state.bible);
                 return scVerdict(quiet && roundTrips && dropped && imported && oldOk,
-                  "no codex data → none of the new keys in the book file or the export: " + quiet + "; a full entry normalizes to itself and again: " + roundTrips + "; default/bad AI, bad scope, missing-entry and self links, bad anchors dropped, quote capped at 160: " + dropped +
+                  "no codex data → none of the new keys in the book file or the export: " + quiet + "; a full entry normalizes to itself and again: " + roundTrips + "; default/bad AI, bad scope, missing-entry and self links, bad anchors and blank quotes dropped, quote capped at 160: " + dropped +
                   "; export → import keeps facts, links (re-pointed), changes, AI, scope, details and fields: " + imported + "; a version 1 file imports with the new keys absent: " + oldOk);
+              });
+            } },
+          { id: "bible.change.anchor", feature: "bible", name: "Covenant anchors: a change pinned to a passage is found again after text is added before it, follows the passage to another chapter, picks the nearest of two identical quotes, and is an orphan (null) once a word inside it changes; an empty selection makes no anchor",
+            run() {
+              return bibleCheckGuard(() => {
+                const mk = (id, content) => ({ id: id, kind: "body", type: "chapter", number: "1", title: id, subtitle: "", content: content });
+                const quote = "the lamp was lit at dusk";
+                const base = "x".repeat(40) + quote + " and the ferry slept.";
+                const other = mk("an2", "A different chapter, nothing here.");
+                state.sections = [mk("an1", base), other];
+                const a = bibleAnchorMake("an1", 40, 40 + quote.length);
+                const made = !!a && a.sec === "an1" && a.quote === quote && a.at === 40;
+                const f1 = bibleAnchorFind(a, [mk("an1", "y".repeat(50) + base), other]);
+                const survives = made && !!f1 && f1.sec === "an1" && f1.at === 90;
+                const f2 = bibleAnchorFind(a, [mk("an1", "x".repeat(40) + " and the ferry slept."), mk("an2", "Later. " + quote + ".")]);
+                const follows = !!f2 && f2.sec === "an2" && f2.at === 7;
+                const dup = "a".repeat(10) + quote + "b".repeat(900 - 10 - quote.length) + quote + "c".repeat(30);
+                const f3 = bibleAnchorFind({ sec: "an1", quote: quote, at: 880 }, [mk("an1", dup)]);
+                const nearest = !!f3 && f3.at === 900 && dup.indexOf(quote) === 10;
+                const orphan = bibleAnchorFind(a, [mk("an1", base.replace("lamp was", "lamp is")), other]) === null;
+                state.sections = [mk("an1", "   \n  hello"), other];
+                const noBlank = bibleAnchorMake("an1", 0, 0) === null && bibleAnchorMake("an1", 0, 5) === null && bibleAnchorMake("zzz", 0, 5) === null;
+                /* a long selection is cut at 160 characters without splitting an emoji pair */
+                const emo = "\u{1F600}".repeat(200);
+                state.sections = [mk("an1", "ab" + emo)];
+                const cut = bibleAnchorMake("an1", 2, 2 + emo.length);
+                const pairSafe = !!cut && Array.from(cut.quote).length === 160 && cut.quote.length === 320;
+                return scVerdict(made && survives && follows && nearest && orphan && noBlank && pairSafe,
+                  "anchor made from a selection: " + made + "; after 50 characters are added before it, found and shifted by 50: " + survives + "; cut to another chapter, found there: " + follows + "; quote at 10 and 900 with the saved offset at 880, picks 900: " + nearest +
+                  "; one word inside the quote changed, orphan: " + orphan + "; an empty or blank selection, or an unknown section, gives no anchor: " + noBlank + "; 160-character cap keeps emoji whole: " + pairSafe);
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
