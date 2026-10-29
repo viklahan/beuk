@@ -44,7 +44,7 @@ test('the Caddyfile CSP: style-src and font-src are own-origin only, no Google h
   assert.doesNotMatch(m[1], /google/i);
 });
 
-test('fonts.css + fonts-help.css + fonts-scripts.css + fonts-display.css reference only files that exist, and every shipped font file is referenced', () => {
+test('fonts.css + fonts-help.css + fonts-scripts.css + fonts-display.css + fonts-weekly.css reference only files that exist, and every shipped font file is referenced', () => {
   const studioCss = readFileSync(path.join(FONTS, 'fonts.css'), 'utf8');
   const helpCss = readFileSync(path.join(FONTS, 'fonts-help.css'), 'utf8');
   // fonts-help.css holds exactly Literata 700 + italic 500 (help/warmth asked
@@ -54,7 +54,8 @@ test('fonts.css + fonts-help.css + fonts-scripts.css + fonts-display.css referen
   assert.ok(!faceKeys(studioCss).includes('Literata normal 700') && !faceKeys(studioCss).includes('Literata italic 500'));
   // fonts-scripts.css: the book's script faces (Amiri, Noto Serif Devanagari), studio only
   // fonts-display.css: the heading-only display faces (Pinyon Script, Patrick Hand, Abril Fatface), studio only
-  const css = studioCss + helpCss + readFileSync(path.join(FONTS, 'fonts-scripts.css'), 'utf8') + readFileSync(path.join(FONTS, 'fonts-display.css'), 'utf8');
+  // fonts-weekly.css: Beuk Weekly's newspaper faces (Old Standard TT, plus the Oswald and Playfair Display blocks fonts.css already declares), Weekly pages only
+  const css = studioCss + helpCss + readFileSync(path.join(FONTS, 'fonts-scripts.css'), 'utf8') + readFileSync(path.join(FONTS, 'fonts-display.css'), 'utf8') + readFileSync(path.join(FONTS, 'fonts-weekly.css'), 'utf8');
   const urls = [...css.matchAll(/url\(([^)]+)\)/g)].map((x) => x[1]);
   assert.ok(urls.length > 0);
   for (const u of urls) {
@@ -73,7 +74,7 @@ test('fonts.css + fonts-help.css + fonts-scripts.css + fonts-display.css referen
 
 test('every font family directory carries its SIL OFL 1.1 licence', () => {
   const dirs = readdirSync(FONTS).filter((d) => statSync(path.join(FONTS, d)).isDirectory());
-  assert.equal(dirs.length, 27); // 22 Latin/Greek/Cyrillic families + 2 script faces + 3 display faces
+  assert.equal(dirs.length, 28); // 22 Latin/Greek/Cyrillic families + 2 script faces + 3 display faces + Old Standard TT (Beuk Weekly)
   for (const d of dirs) {
     const lic = path.join(FONTS, d, 'OFL.txt');
     assert.ok(existsSync(lic), `${d}/OFL.txt`);

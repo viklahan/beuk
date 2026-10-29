@@ -5,7 +5,7 @@ served from this directory, from Beuk's own origin. No page asks
 fonts.googleapis.com or fonts.gstatic.com for anything, and the
 Content-Security-Policy (Caddyfile) no longer allows either host.
 
-- **What:** 27 families, 236 WOFF2 files, 6677392 bytes (6520.9 KiB) in total;
+- **What:** 28 families, 251 WOFF2 files, 6960596 bytes (6797.5 KiB) in total;
   `fonts.css` (147312 bytes) is linked by every page; `fonts-help.css`
   (4882 bytes) adds Literata 700 and italic 500, which only the help and
   warmth pages ever asked for — the studio keeps exactly its old Literata faces
@@ -111,6 +111,7 @@ its body face is read back with the default body face.
 | Montserrat | `montserrat/` | v31 | 5 | 171768 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/montserrat/OFL.txt) (sha256 `8b7141c03fa4f8d44e6345d5d4931709290f0f67875e452e95ac1fd3a027802e`) |
 | Newsreader | `newsreader/` | v26 | 6 | 516172 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/newsreader/OFL.txt) (sha256 `fdfad38143ec470553cae82a1e45320bdd1b9ec70415d37bd0171051d8a4ded8`) |
 | Noto Serif Devanagari | `notoserifdevanagari/` | v34 | 1 | 126864 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/notoserifdevanagari/OFL.txt) (sha256 `a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331`) |
+| Old Standard TT | `oldstandardtt/` | v22 | 15 | 283204 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/oldstandardtt/OFL.txt) (sha256 `4faa2d9e2ce0a4b5b37e62ee6fafe474a539b31578f7214ed97cc3503aeb8ebd`) |
 | Oswald | `oswald/` | v57 | 5 | 72492 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/oswald/OFL.txt) (sha256 `0fd731a904b729a4e02eaf5e8ebd06783edd9abe400e8882760160230675b652`) |
 | PT Serif | `ptserif/` | v19 | 12 | 322644 | OFL 1.1 | Reserved Font Names "PT Sans", "PT Serif" and "ParaType". | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/ptserif/OFL.txt) (sha256 `ddf311c28ddf5a5ad9747649837346b67bed9d356789c3072bb27dbce49e514d`) |
 | Patrick Hand | `patrickhand/` | v25 | 3 | 55628 | OFL 1.1 | none | [OFL.txt](https://raw.githubusercontent.com/google/fonts/e7db6ca603fd4862010383ff17ffd6cc4ffac1c0/ofl/patrickhand/OFL.txt) (sha256 `377f4f9c19e935228552478eb68cc2ed82910988a60ba60e2ac73b09f32d02d1`) |
@@ -360,6 +361,21 @@ its body face is read back with the default body face.
 | `patrickhand/patrickhand-latin-normal-400.woff2` | 23944 | `ac5bc9033b2572bf84d39f7150c1634e37ed16e8dbee632d6d0bceac0bbf0199` | https://fonts.gstatic.com/s/patrickhand/v25/LDI1apSQOAYtSuYWp8ZhfYe8XsLL.woff2 |
 | `abrilfatface/abrilfatface-latin-ext-normal-400.woff2` | 7716 | `c7cc6ab22643e87e9693f54ad411dde5012b5d4f96f53408f52c541144be9b6a` | https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchq-lmjdLh.woff2 |
 | `abrilfatface/abrilfatface-latin-normal-400.woff2` | 13156 | `edf7a1f3bc22e815ea426b102fa0493d20af482b242066e689a1263ebb2eeb68` | https://fonts.gstatic.com/s/abrilfatface/v25/zOL64pLDlL1D99S8g8PtiKchq-dmjQ.woff2 |
+| `oldstandardtt/oldstandardtt-cyrillic-ext-italic-400.woff2` | 20192 | `ea38c94b9388e96945ef2eb01444870e1bf30d80c0f8a96fcc9ebd859bfe15ad` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQsbh3o1vLImiwAVvYawgcf2eVer2q3bHNiZg.woff2 |
+| `oldstandardtt/oldstandardtt-cyrillic-italic-400.woff2` | 16348 | `035b7c25a72ff663c5feaab8602dfe18689803bbe73103f2fbc09c77e2f6840f` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQsbh3o1vLImiwAVvYawgcf2eVer2q-bHNiZg.woff2 |
+| `oldstandardtt/oldstandardtt-vietnamese-italic-400.woff2` | 8572 | `54d2af95c704a80937994c3b0694cb596d181fa6e1ee7bfa28335ffb7759d39c` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQsbh3o1vLImiwAVvYawgcf2eVer2q1bHNiZg.woff2 |
+| `oldstandardtt/oldstandardtt-latin-ext-italic-400.woff2` | 28428 | `0ba729e1e6c176b6cba73951442f98dbf68fadcaec2fc389b3030e87b213ffc8` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQsbh3o1vLImiwAVvYawgcf2eVer2q0bHNiZg.woff2 |
+| `oldstandardtt/oldstandardtt-latin-italic-400.woff2` | 25560 | `189ea179284724aff1d453cb7c85eb0058627200f67ef7c44dd4e2abc644c9d2` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQsbh3o1vLImiwAVvYawgcf2eVer2q6bHM.woff2 |
+| `oldstandardtt/oldstandardtt-cyrillic-ext-normal-400.woff2` | 18388 | `254ff8df80de73bc1f0c55ea15203a8366b0a65791acca3f720a62d8b0d1a37d` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVep1q4dHc.woff2 |
+| `oldstandardtt/oldstandardtt-cyrillic-normal-400.woff2` | 14532 | `49d5afd6386bf3f22660a6a7633c70505c5011dc8a1ab7ff5da1515604028a36` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVerlq4dHc.woff2 |
+| `oldstandardtt/oldstandardtt-vietnamese-normal-400.woff2` | 8288 | `9689c7c20757ec39bfa7d6cf006519cca0efbcc62e1304a3ec1346c170a14947` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVepVq4dHc.woff2 |
+| `oldstandardtt/oldstandardtt-latin-ext-normal-400.woff2` | 26708 | `baf819590710f3bc2d0e8549156fbff063e487c28fc7d573ba2ebedbe21b629e` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVepFq4dHc.woff2 |
+| `oldstandardtt/oldstandardtt-latin-normal-400.woff2` | 23676 | `52d24e5960257c67b198c2e9098fc9663dbced0e0e2fc3f305987cdfa350caaf` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQubh3o1vLImiwAVvYawgcf2eVeqlq4.woff2 |
+| `oldstandardtt/oldstandardtt-cyrillic-ext-normal-700.woff2` | 18192 | `817278dc63f62df73a4d8f7b289f099f9fd40bc0145307c675f4eaf7ad4f6fa6` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQrbh3o1vLImiwAVvYawgcf2eVWEX-tRlZfX80.woff2 |
+| `oldstandardtt/oldstandardtt-cyrillic-normal-700.woff2` | 14404 | `46b2eddd9d4344e4c3221fe26f766595c02734362a4915a2c1bf3fbd9f4a5e22` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQrbh3o1vLImiwAVvYawgcf2eVWEX-tT1ZfX80.woff2 |
+| `oldstandardtt/oldstandardtt-vietnamese-normal-700.woff2` | 8260 | `8bb280d21aaa0a88f890383b5f0fdd2ab16e3814d547375cad682f974f9c63ea` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQrbh3o1vLImiwAVvYawgcf2eVWEX-tRFZfX80.woff2 |
+| `oldstandardtt/oldstandardtt-latin-ext-normal-700.woff2` | 27640 | `2e656fbdfdcc80419f08d4563a445f1e5fdb7504a5d061930c7538c6a800bc7a` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQrbh3o1vLImiwAVvYawgcf2eVWEX-tRVZfX80.woff2 |
+| `oldstandardtt/oldstandardtt-latin-normal-700.woff2` | 24016 | `c2f2e80290b457a7e8039303255528d17e0ef58760f986070cd832b55b00b946` | https://fonts.gstatic.com/s/oldstandardtt/v22/MwQrbh3o1vLImiwAVvYawgcf2eVWEX-tS1Zf.woff2 |
 | `amiri/Amiri-normal-400.ttf` | 385840 | `7f19c4a5dc77b0ef435b430d750759170def15d6e3801006e0704dadc7f220e3` | https://fonts.gstatic.com/s/amiri/v30/J7aRnpd8CGxBHqUp.ttf |
 | `amiri/Amiri-normal-700.ttf` | 368616 | `65e3e6fe6af66bb6d24959bd537a89ea35de14083f5a2e2290c246136c2b047b` | https://fonts.gstatic.com/s/amiri/v30/J7acnpd8CGxBHp2VkZY4.ttf |
 | `notoserifdevanagari/Noto_Serif_Devanagari-normal-400.ttf` | 232404 | `39ff220273661f9b01893e61d16756a612f6f3e358c1d2546b5fc24b6b7fecbb` | https://fonts.gstatic.com/s/notoserifdevanagari/v34/x3dYcl3IZKmUqiMk48ZHXJ5jwU-DZGRSaQ4Hh2dGyFzPLcQPVbnRNeFsw0xRWb6uxTA-ow-H.ttf |
