@@ -2546,6 +2546,27 @@
         .ol-count { margin-inline-start: 0; width: 100%; }
       }
       .ol-hint { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
+      /* Grid: sections down, Covenant entries across; the first column stays put while it scrolls */
+      .ol-gridwrap { margin-top: 16px; overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+      .ol-grid { border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+      .ol-grid th, .ol-grid td { padding: 4px 5px; border-bottom: 1px solid var(--line); text-align: center; }
+      .ol-grid thead th { position: sticky; top: 0; z-index: 1; background: var(--panel-3); font-weight: 600; vertical-align: bottom; white-space: nowrap; }
+      .ol-g-ty { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+      .ol-g-ent { display: block; max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+      .ol-grid thead th.ol-g-dim .ol-g-ent { color: var(--muted); font-weight: 500; }
+      .ol-grid th[scope="row"] { position: sticky; inset-inline-start: 0; z-index: 1; background: var(--panel-2); text-align: start; font-weight: 500; white-space: nowrap; max-width: 18em; overflow: hidden; text-overflow: ellipsis; padding-inline: 10px 12px; }
+      .ol-grid th[scope="row"] .ol-dot { display: inline-block; margin-inline-end: 7px; vertical-align: middle; }
+      .ol-grid thead th.ol-g-corner { inset-inline-start: 0; z-index: 2; text-align: start; padding-inline: 10px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+      .ol-g-cell { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); position: relative; overflow: hidden; font: inherit; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink); cursor: pointer; vertical-align: middle; }
+      .ol-g-cell > span { position: absolute; inset: 0; background: var(--ins-a); }
+      .ol-g-cell > b { position: relative; font-weight: 600; }
+      .ol-g-cell.deep { color: var(--accent-ink); }
+      .ol-g-cell.zero { cursor: default; background: linear-gradient(var(--line-2), var(--line-2)) center / 6px 1px no-repeat, var(--panel); }
+      .ol-g-cell:hover:not(.zero) { border-color: var(--ink-2); }
+      .ol-g-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; z-index: 1; }
+      .ol-grid tfoot th, .ol-grid tfoot td { border-bottom: 0; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; background: var(--panel-3); }
+      .ol-g-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 16px; }
+      .ol-g-empty p { margin: 0; max-width: 52ch; }
       body.zen #tabBtnOutline { display: none; }
       @media (prefers-reduced-motion: reduce) { .ol-card, .ol-moves { transition: none; } }
       /* ==== /BEUK:outline ==== */
@@ -7981,6 +8002,49 @@
           "ol.kbdHint": "键盘：Alt + 方向键移动当前卡片或行；Enter 在书桌上打开。", "ol.empty": "此组中没有符合筛选的内容。", "history.auto.chopMove": "移动 {name} 之前" }
       };
       Object.keys(OL_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_STRINGS[code]); });
+      /* the Grid's words, all 13 packs (each pack names the Covenant as its own bible.title does) */
+      const OL_GRID_STRINGS = {
+        "en": { "ol.viewGrid": "Grid", "ol.gridSub": "Each row is a section of your story, each column an entry in your Covenant. A square counts how often that name appears in that section, found in the text as it stands, so there is nothing to fill in. Choose a square to open the desk at that name.",
+          "ol.gridEmpty": "The grid fills itself from your Covenant. Add the people, places and things of your book there, and each one becomes a column here.", "ol.gridOpenCov": "Open the Covenant",
+          "ol.gridNoText": "No section of the story has words yet.", "ol.gridSection": "Section", "ol.gridTotal": "Whole book", "ol.gridAria": "Where each Covenant entry appears, section by section" },
+        "es": { "ol.viewGrid": "Cuadrícula", "ol.gridSub": "Cada fila es una sección de tu historia y cada columna, una entrada de tu Pacto. Un cuadro cuenta cuántas veces aparece ese nombre en esa sección, buscado en el texto tal como está, así que no hay nada que rellenar. Elige un cuadro para abrir el escritorio en ese nombre.",
+          "ol.gridEmpty": "La cuadrícula se llena sola a partir de tu Pacto. Añade allí las personas, los lugares y las cosas de tu libro, y cada una será aquí una columna.", "ol.gridOpenCov": "Abrir el Pacto",
+          "ol.gridNoText": "Ninguna sección de la historia tiene palabras todavía.", "ol.gridSection": "Sección", "ol.gridTotal": "Todo el libro", "ol.gridAria": "Dónde aparece cada entrada del Pacto, sección por sección" },
+        "fr": { "ol.viewGrid": "Grille", "ol.gridSub": "Chaque ligne est une section de votre histoire, chaque colonne une entrée de votre Pacte. Une case compte combien de fois ce nom apparaît dans cette section, cherché dans le texte tel qu'il est : il n'y a rien à remplir. Choisissez une case pour ouvrir le bureau sur ce nom.",
+          "ol.gridEmpty": "La grille se remplit toute seule à partir de votre Pacte. Ajoutez-y les personnes, les lieux et les choses de votre livre : chacun devient ici une colonne.", "ol.gridOpenCov": "Ouvrir le Pacte",
+          "ol.gridNoText": "Aucune section de l'histoire n'a encore de mots.", "ol.gridSection": "Section", "ol.gridTotal": "Tout le livre", "ol.gridAria": "Où apparaît chaque entrée du Pacte, section par section" },
+        "de": { "ol.viewGrid": "Raster", "ol.gridSub": "Jede Zeile ist ein Abschnitt Ihrer Geschichte, jede Spalte ein Eintrag in Ihrem Pakt. Ein Feld zählt, wie oft dieser Name in diesem Abschnitt vorkommt, gefunden im Text, wie er gerade steht – es gibt nichts auszufüllen. Wählen Sie ein Feld, um den Schreibtisch bei diesem Namen zu öffnen.",
+          "ol.gridEmpty": "Das Raster füllt sich aus Ihrem Pakt. Legen Sie dort die Personen, Orte und Dinge Ihres Buches an, und jeder Eintrag wird hier zu einer Spalte.", "ol.gridOpenCov": "Pakt öffnen",
+          "ol.gridNoText": "Noch hat kein Abschnitt der Geschichte Wörter.", "ol.gridSection": "Abschnitt", "ol.gridTotal": "Ganzes Buch", "ol.gridAria": "Wo jeder Eintrag des Pakts vorkommt, Abschnitt für Abschnitt" },
+        "it": { "ol.viewGrid": "Griglia", "ol.gridSub": "Ogni riga è una sezione della tua storia, ogni colonna una voce del tuo Patto. Un riquadro conta quante volte quel nome compare in quella sezione, cercato nel testo così com'è: non c'è niente da compilare. Scegli un riquadro per aprire la scrivania su quel nome.",
+          "ol.gridEmpty": "La griglia si riempie da sola a partire dal tuo Patto. Aggiungi lì le persone, i luoghi e le cose del tuo libro, e ognuno diventa qui una colonna.", "ol.gridOpenCov": "Apri il Patto",
+          "ol.gridNoText": "Nessuna sezione della storia ha ancora parole.", "ol.gridSection": "Sezione", "ol.gridTotal": "Tutto il libro", "ol.gridAria": "Dove compare ogni voce del Patto, sezione per sezione" },
+        "pt": { "ol.viewGrid": "Grelha", "ol.gridSub": "Cada linha é uma secção da sua história, cada coluna uma entrada do seu Pacto. Um quadrado conta quantas vezes esse nome aparece nessa secção, procurado no texto tal como está, por isso não há nada para preencher. Escolha um quadrado para abrir a secretária nesse nome.",
+          "ol.gridEmpty": "A grelha preenche-se sozinha a partir do seu Pacto. Acrescente lá as pessoas, os lugares e as coisas do seu livro, e cada um passa a ser aqui uma coluna.", "ol.gridOpenCov": "Abrir o Pacto",
+          "ol.gridNoText": "Nenhuma secção da história tem palavras ainda.", "ol.gridSection": "Secção", "ol.gridTotal": "Livro inteiro", "ol.gridAria": "Onde aparece cada entrada do Pacto, secção a secção" },
+        "nl": { "ol.viewGrid": "Raster", "ol.gridSub": "Elke rij is een deel van je verhaal, elke kolom een vermelding in je Verbond. Een vakje telt hoe vaak die naam in dat deel voorkomt, gezocht in de tekst zoals die nu is, dus er valt niets in te vullen. Kies een vakje om het bureau bij die naam te openen.",
+          "ol.gridEmpty": "Het raster vult zichzelf vanuit je Verbond. Zet daar de mensen, plaatsen en dingen van je boek in, en elk ervan wordt hier een kolom.", "ol.gridOpenCov": "Verbond openen",
+          "ol.gridNoText": "Nog geen enkel deel van het verhaal heeft woorden.", "ol.gridSection": "Deel", "ol.gridTotal": "Hele boek", "ol.gridAria": "Waar elke vermelding uit het Verbond voorkomt, deel voor deel" },
+        "pl": { "ol.viewGrid": "Siatka", "ol.gridSub": "Każdy wiersz to sekcja twojej historii, każda kolumna to wpis w twoim Przymierzu. Pole liczy, ile razy to imię lub nazwa pojawia się w tej sekcji, wyszukane w tekście takim, jaki jest teraz, więc nie ma tu nic do wypełniania. Wybierz pole, by otworzyć biurko w tym miejscu.",
+          "ol.gridEmpty": "Siatka wypełnia się sama na podstawie twojego Przymierza. Dodaj tam ludzi, miejsca i rzeczy ze swojej książki, a każdy wpis stanie się tu kolumną.", "ol.gridOpenCov": "Otwórz Przymierze",
+          "ol.gridNoText": "Żadna sekcja historii nie ma jeszcze słów.", "ol.gridSection": "Sekcja", "ol.gridTotal": "Cała książka", "ol.gridAria": "Gdzie pojawia się każdy wpis Przymierza, sekcja po sekcji" },
+        "ru": { "ol.viewGrid": "Сетка", "ol.gridSub": "Каждая строка — раздел вашей истории, каждый столбец — запись вашего Завета. Клетка показывает, сколько раз это имя встречается в разделе, — по тексту в его нынешнем виде, так что заполнять ничего не нужно. Выберите клетку, чтобы открыть рабочий стол на этом имени.",
+          "ol.gridEmpty": "Сетка заполняется сама по вашему Завету. Добавьте туда людей, места и вещи вашей книги, и каждая запись станет здесь столбцом.", "ol.gridOpenCov": "Открыть Завет",
+          "ol.gridNoText": "Ни в одном разделе истории пока нет слов.", "ol.gridSection": "Раздел", "ol.gridTotal": "Вся книга", "ol.gridAria": "Где встречается каждая запись Завета, раздел за разделом" },
+        "tr": { "ol.viewGrid": "Izgara", "ol.gridSub": "Her satır öykünüzün bir bölümü, her sütun Ahit'inizdeki bir kayıttır. Bir kare, o adın o bölümde kaç kez geçtiğini metnin şu anki hâlinden sayar; doldurulacak bir şey yoktur. O ada masada gitmek için bir kare seçin.",
+          "ol.gridEmpty": "Izgara kendini Ahit'inizden doldurur. Kitabınızın kişilerini, yerlerini ve nesnelerini oraya ekleyin; her biri burada bir sütun olur.", "ol.gridOpenCov": "Ahit'i aç",
+          "ol.gridNoText": "Öykünün hiçbir bölümünde henüz sözcük yok.", "ol.gridSection": "Bölüm", "ol.gridTotal": "Tüm kitap", "ol.gridAria": "Ahit'teki her kaydın geçtiği yerler, bölüm bölüm" },
+        "ar": { "ol.viewGrid": "الشبكة", "ol.gridSub": "كل صف قسم من قصتك، وكل عمود مدخل في ميثاقك. يعدّ كل مربع كم مرة يرد ذلك الاسم في ذلك القسم، بحسب النص كما هو الآن، فلا شيء عليك ملؤه. اختر مربعًا لتفتح المكتب عند ذلك الاسم.",
+          "ol.gridEmpty": "تمتلئ الشبكة وحدها من ميثاقك. أضف هناك أشخاص كتابك وأماكنه وأشياءه، فيصير كل منها عمودًا هنا.", "ol.gridOpenCov": "افتح الميثاق",
+          "ol.gridNoText": "لا يحوي أي قسم من القصة كلمات بعد.", "ol.gridSection": "القسم", "ol.gridTotal": "الكتاب كله", "ol.gridAria": "أين يرد كل مدخل من الميثاق، قسمًا قسمًا" },
+        "ja": { "ol.viewGrid": "グリッド", "ol.gridSub": "各行は物語のセクション、各列は盟約の項目です。マスには、その名前がそのセクションに何回出てくるかを、いまの本文から数えて表示します。入力することは何もありません。マスを選ぶと、その名前の箇所でデスクが開きます。",
+          "ol.gridEmpty": "グリッドは盟約から自動で埋まります。盟約に本の人物・場所・ものを追加すると、それぞれがここで列になります。", "ol.gridOpenCov": "盟約を開く",
+          "ol.gridNoText": "物語のセクションにはまだ言葉がありません。", "ol.gridSection": "セクション", "ol.gridTotal": "本全体", "ol.gridAria": "盟約の各項目がどこに出てくるか（セクションごと）" },
+        "zh": { "ol.viewGrid": "网格", "ol.gridSub": "每一行是故事的一个部分，每一列是盟约中的一个条目。方格显示这个名字在该部分出现的次数，按正文当前的样子统计，无需填写任何内容。选择一个方格，即可在书桌上打开该名字所在之处。",
+          "ol.gridEmpty": "网格会根据盟约自动填满。在盟约中添加书里的人物、地点和事物，每一个都会在这里成为一列。", "ol.gridOpenCov": "打开盟约",
+          "ol.gridNoText": "故事的各部分还没有文字。", "ol.gridSection": "部分", "ol.gridTotal": "全书", "ol.gridAria": "盟约中每个条目出现的位置，逐部分列出" }
+      };
+      Object.keys(OL_GRID_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], OL_GRID_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
@@ -24964,7 +25028,10 @@
         bibleRender();
         const box = m.querySelector(".modal"); if (box) box.scrollTop = 0;
       }
-      function bibleClose() { $("modalBible").classList.remove("open"); }
+      function bibleClose() {
+        $("modalBible").classList.remove("open");
+        if (typeof olOnStructure === "function") olOnStructure(); /* BEUK:outline — the Grid's columns are the Covenant's entries */
+      }
       function bibleStatus(msg) {
         const el = $("bibStatus"); if (!el) return;
         el.textContent = msg || ""; el.hidden = !msg;
@@ -31482,7 +31549,7 @@
       try {
         const raw = window.localStorage && localStorage.getItem(OL_PREFS_KEY);
         const v = raw ? JSON.parse(raw) : null;
-        if (v && v.view === "list") olUi.view = "list";
+        if (v && (v.view === "list" || v.view === "grid")) olUi.view = v.view;
         if (v && v.matter === true) olUi.matter = true;
       } catch (e) {}
       function olSavePrefs() { try { if (window.localStorage) localStorage.setItem(OL_PREFS_KEY, JSON.stringify({ view: olUi.view, matter: olUi.matter })); } catch (e) {} }
@@ -31601,15 +31668,16 @@
           } else if (ae.getAttribute("data-olkey")) olUi.focus = { key: ae.getAttribute("data-olkey") };
         }
         const items = olItems();
-        const countable = items.filter((s) => s.type !== "part");
+        const list = olUi.view === "list", grid = olUi.view === "grid";
+        const countable = grid ? bibleColumns(state.sections).map((c) => c.sec) : items.filter((s) => s.type !== "part");
         const shown = countable.filter(olMatches).length, hidden = countable.length - shown;
-        const list = olUi.view === "list";
-        let h = '<div class="ol-head"><div><h2 id="olTitle">' + esc(t("ol.title")) + "</h2><p>" + esc(t("ol.sub")) + "</p></div>" +
+        const vb = (v, icon, label) => '<button type="button" data-olview="' + v + '" data-olkey="v-' + v + '" class="' + (olUi.view === v ? "active" : "") + '" aria-pressed="' + (olUi.view === v) + '"><i data-lucide="' + icon + '"></i>' + esc(t(label)) + "</button>";
+        let h = '<div class="ol-head"><div><h2 id="olTitle">' + esc(t("ol.title")) + "</h2><p>" + esc(t(grid ? "ol.gridSub" : "ol.sub")) + "</p></div>" +
           '<div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">' +
           '<div class="seg" role="group" aria-label="' + esc(t("ol.viewAria")) + '">' +
-          '<button type="button" data-olview="cards" data-olkey="v-cards" class="' + (list ? "" : "active") + '" aria-pressed="' + !list + '"><i data-lucide="layout-grid"></i>' + esc(t("ol.viewCards")) + "</button>" +
-          '<button type="button" data-olview="list" data-olkey="v-list" class="' + (list ? "active" : "") + '" aria-pressed="' + list + '"><i data-lucide="list"></i>' + esc(t("ol.viewList")) + "</button></div>" +
-          '<button type="button" class="ol-chip" data-olmatter="1" data-olkey="matter" aria-pressed="' + olUi.matter + '">' + esc(t("ol.matter")) + "</button></div></div>";
+          vb("cards", "layout-grid", "ol.viewCards") + vb("list", "list", "ol.viewList") + vb("grid", "table-2", "ol.viewGrid") + "</div>" +
+          /* the grid's rows are the story's own sections: front and back matter never hold its people */
+          (grid ? "" : '<button type="button" class="ol-chip" data-olmatter="1" data-olkey="matter" aria-pressed="' + olUi.matter + '">' + esc(t("ol.matter")) + "</button>") + "</div></div>";
         /* filter bar */
         h += '<div class="ol-bar" role="group" aria-label="' + esc(t("ol.filter")) + '"><span class="ol-bar-lab">' + esc(t("ol.filter")) + "</span>";
         ["none"].concat(OL_STATUSES).forEach((st) => {
@@ -31650,8 +31718,9 @@
           });
           h += "</details>";
         }
-        /* the groups */
-        [["front", t("side.groupFront")], ["body", t("side.groupBody")], ["back", t("side.groupBack")]].forEach(([kind, label]) => {
+        /* the groups — or, in Grid, one table of the story */
+        if (grid) h += olGridHtml();
+        else [["front", t("side.groupFront")], ["body", t("side.groupBody")], ["back", t("side.groupBack")]].forEach(([kind, label]) => {
           const gi = items.filter((s) => s.kind === kind);
           if (!gi.length) return;
           const vis = gi.filter(olMatches);
@@ -31666,7 +31735,7 @@
           }
           h += "</section>";
         });
-        h += '<p class="ol-hint" id="olKbdHint">' + esc(t("ol.kbdHint")) + "</p>";
+        if (!grid) h += '<p class="ol-hint" id="olKbdHint">' + esc(t("ol.kbdHint")) + "</p>";
         h += '<datalist id="olTagList">' + ob.tags.map((tg) => '<option value="' + esc(tg.name) + '"></option>').join("") + "</datalist>";
         root.innerHTML = h;
         icons();
@@ -31685,6 +31754,62 @@
             if (typeof f.a === "number" && typeof el.setSelectionRange === "function") { try { el.setSelectionRange(f.a, f.b); } catch (e) {} }
           }
         }
+      }
+      /* ---- Grid: where each Covenant entry appears, section by section ----
+         Rows are the story's sections that hold words (the same columns
+         the Covenant's heatmap and Names on stage draw), narrowed by the
+         status and tag filter like the cards; columns are the Covenant's
+         entries, by type, then by first appearance. Every number is
+         counted from the text as it stands by the Covenant's own matcher
+         (bibleMentions, cached on the text), so there is nothing to fill
+         in and nothing is stored: opening the grid leaves the book file
+         byte-identical. A square opens the desk at that section's first
+         mention of the name. */
+      function olGridEntries(per) {
+        const first = (e) => { const p = per[e.id], i = p ? p.counts.findIndex((n) => n > 0) : -1; return i < 0 ? Infinity : i; };
+        return bibleAllEntries().slice().sort((a, b) =>
+          BIBLE_TYPES.indexOf(a.type) - BIBLE_TYPES.indexOf(b.type) || first(a) - first(b) || bibleName(a).localeCompare(bibleName(b)));
+      }
+      function olGridHtml() {
+        const ents = bibleAllEntries();
+        if (!ents.length) {
+          return '<div class="ol-empty ol-g-empty"><p>' + esc(t("ol.gridEmpty")) + '</p><button type="button" class="tb-btn" data-olcov="1" data-olkey="g-cov"><i data-lucide="book-marked"></i>' + esc(t("ol.gridOpenCov")) + "</button></div>";
+        }
+        const men = bibleMentions();
+        if (!men.cols.length) return '<div class="ol-empty">' + esc(t("ol.gridNoText")) + "</div>";
+        const order = olGridEntries(men.per);
+        const zero = { total: 0, counts: [], hits: [] };
+        const rows = men.cols.map((c, ci) => ({ c: c, ci: ci, sec: state.sections.find((s) => s.id === c.id) })).filter((r) => r.sec && olMatches(r.sec));
+        if (!rows.length) return '<div class="ol-empty">' + esc(t("ol.empty")) + "</div>";
+        const max = {};
+        order.forEach((e) => { max[e.id] = Math.max(1, ...(men.per[e.id] || zero).counts); });
+        let h = '<div class="ol-gridwrap"><table class="ol-grid" id="olGrid" aria-label="' + esc(t("ol.gridAria")) + '"><thead><tr><th scope="col" class="ol-g-corner">' + esc(t("ol.gridSection")) + "</th>" +
+          order.map((e) => {
+            const p = men.per[e.id] || zero;
+            return '<th scope="col" class="' + (p.total ? "" : "ol-g-dim") + '" title="' + esc(bibleName(e)) + '"><span class="ol-g-ty">' + esc(bibleTypeLabel(e.type)) + '</span><span class="ol-g-ent" dir="auto">' + esc(bibleName(e)) + "</span></th>";
+          }).join("") + "</tr></thead><tbody>";
+        rows.forEach((r) => {
+          const st = OL_STATUSES.includes(r.sec.status) ? r.sec.status : "";
+          h += '<tr data-olgrow="' + esc(r.c.id) + '"><th scope="row" title="' + esc(r.c.label) + '"><span class="ol-dot' + (st ? "" : " none") + '" style="--ol-st:' + olStatusVar(st) + '" aria-hidden="true"></span><span dir="auto">' + esc(r.c.label) + "</span></th>";
+          order.forEach((e) => {
+            const n = (men.per[e.id] || zero).counts[r.ci] || 0;
+            const tip = bibleName(e) + " — " + (n ? t("bible.cellTip", { count: n, n: fmtNum(n), sec: r.c.label }) : t("bible.cellNone", { sec: r.c.label }));
+            if (!n) { h += '<td><span class="ol-g-cell zero" data-n="0" title="' + esc(tip) + '" aria-label="' + esc(tip) + '" role="img"></span></td>'; return; }
+            const lv = CAST_STEPS[Math.min(CAST_STEPS.length - 1, Math.floor((n / max[e.id]) * (CAST_STEPS.length - 1e-9)))];
+            h += '<td><button type="button" class="ol-g-cell' + (lv >= 0.58 ? " deep" : "") + '" data-n="' + n + '" data-olg="' + esc(e.id) + '" data-olgsec="' + esc(r.c.id) + '" title="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+              '<span style="opacity:' + lv + '"></span><b>' + esc(fmtNum(n)) + "</b></button></td>";
+          });
+          h += "</tr>";
+        });
+        h += '</tbody><tfoot><tr><th scope="row">' + esc(t("ol.gridTotal")) + "</th>" +
+          order.map((e) => { const n = (men.per[e.id] || zero).total; return '<td data-olgtotal="' + esc(e.id) + '">' + esc(fmtNum(n)) + "</td>"; }).join("") + "</tr></tfoot></table></div>";
+        return h;
+      }
+      /* the first mention of the entry in that section, selected on the desk */
+      function olGridOpen(entryId, secId) {
+        const p = bibleMentions().per[entryId];
+        const hit = p && p.hits.find((x) => x.sec === secId);
+        if (hit) bibleJump(secId, hit.s, hit.e);
       }
       /* Anything that redraws the binder redraws the view while it is open
          — once per frame, however many times the binder redraws. */
@@ -31829,7 +31954,9 @@
           const el = e.target.closest("button, summary");
           if (!el || !root.contains(el) || el.disabled) return;
           const s = olSec(el);
-          if (el.hasAttribute("data-olview")) { olUi.view = el.getAttribute("data-olview") === "list" ? "list" : "cards"; olSavePrefs(); olRender(); return; }
+          if (el.hasAttribute("data-olview")) { const v = el.getAttribute("data-olview"); olUi.view = v === "list" || v === "grid" ? v : "cards"; olSavePrefs(); olRender(); return; }
+          if (el.hasAttribute("data-olg")) { olGridOpen(el.getAttribute("data-olg"), el.getAttribute("data-olgsec")); return; }
+          if (el.hasAttribute("data-olcov")) { openBible(); return; }
           if (el.hasAttribute("data-olmatter")) { olUi.matter = !olUi.matter; olSavePrefs(); olRender(); return; }
           if (el.hasAttribute("data-olst")) {
             const st = el.getAttribute("data-olst");
@@ -48436,6 +48563,7 @@
           if (top.id === "modalConfirm") { cloudConfirmDone(false); return; }
           top.classList.remove("open");
           if (top.id === "modalAuth" || top.id === "modalShelf") focusEditor();
+          if (top.id === "modalBible" && typeof olOnStructure === "function") olOnStructure(); /* BEUK:outline — the Grid follows the Covenant */
         });
         const up = await cloudProbe();
         if (!up) { cloudGoLocal(); studioDoorFromUrl(); return; }
@@ -60025,6 +60153,57 @@
               if (!listOk) bad.push("List view showed other rows");
               return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "Draft → 2 cards; Draft + Mara + Sea → 1 card (AND), count \"" + countTxt.trim() + "\"; No status → the unmarked chapter; saved as \"Needs work\", survived the book file, reopened to the same card, pressed; List agrees");
             });
+          } },
+        { id: "outline.grid.fills-from-text", feature: "outline", name: "Grid: rows are the story's sections with words, columns the Covenant's entries (by type, then first appearance); each square equals the Covenant's own count for that name in that section, an entry never named shows only empty squares, the totals row sums the column, the status filter narrows the rows, a square opens the desk with that section's first mention selected, an empty Covenant shows the way to it, and opening the grid leaves the book file byte-identical",
+          run() {
+            return bibleCheckGuard(() => olCheckRun(() => {
+              const f = olCheckFixture(), bad = [];
+              f.c1.content = "Mara walked to the harbour. Mara saw Tomas.\n\n***\n\nThe Gullwick bell rang.";
+              f.c2.content = "Tomas waited. Nobody came.";
+              f.c3.content = "Mara and Tomas and Mara again.";
+              f.c4.content = "Rain on the quay.";
+              f.c2.status = "draft";
+              state.bible = { entries: [] };
+              bibleBookArrived();
+              olCheckOpen("grid");
+              const emptyOk = !!document.querySelector('#olRoot [data-olcov]') && !document.querySelector("#olGrid");
+              if (!emptyOk) bad.push("an empty Covenant did not offer the way to it");
+              state.bible = { entries: [
+                bibleNormalizeEntry({ id: "og-g", type: "place", name: "Gullwick" }),
+                bibleNormalizeEntry({ id: "og-a", type: "character", name: "Agnes" }),
+                bibleNormalizeEntry({ id: "og-t", type: "character", name: "Tomas" }),
+                bibleNormalizeEntry({ id: "og-m", type: "character", name: "Mara" })
+              ] };
+              bibleBookArrived();
+              const before = JSON.stringify(serializeBook());
+              olCheckOpen("grid");
+              const cols = Array.from(document.querySelectorAll("#olGrid thead .ol-g-ent")).map((el) => el.textContent).join(",");
+              if (cols !== "Mara,Tomas,Agnes,Gullwick") bad.push("columns " + cols);
+              const rows = Array.from(document.querySelectorAll("#olGrid tbody tr")).map((el) => el.getAttribute("data-olgrow")).join(",");
+              if (rows !== [f.c1.id, f.c2.id, f.c3.id, f.c4.id].join(",")) bad.push("rows out of book order");
+              const want = { "og-m": [2, 0, 2, 0], "og-t": [1, 1, 1, 0], "og-a": [0, 0, 0, 0], "og-g": [1, 0, 0, 0] };
+              const ref = bibleMentionsCompute(state.sections, bibleAllEntries(), bookLang());
+              const rowEls = Array.from(document.querySelectorAll("#olGrid tbody tr"));
+              ["og-m", "og-t", "og-a", "og-g"].forEach((id, ci) => {
+                const got = rowEls.map((tr) => Number(tr.querySelectorAll(".ol-g-cell")[ci].getAttribute("data-n")));
+                if (got.join(",") !== want[id].join(",") || ref.per[id].counts.join(",") !== want[id].join(",")) bad.push(id + " squares " + got.join(","));
+                const tot = document.querySelector('#olGrid [data-olgtotal="' + id + '"]');
+                if (!tot || tot.textContent !== fmtNum(want[id].reduce((a, b) => a + b, 0))) bad.push(id + " total " + (tot && tot.textContent));
+              });
+              if (document.querySelectorAll('#olGrid button[data-olg="og-a"]').length) bad.push("a name never in the text has a square to open");
+              if (JSON.stringify(serializeBook()) !== before) bad.push("opening the grid changed the book file");
+              /* the status filter narrows the rows */
+              const st = document.querySelector('#olRoot [data-olst="draft"]'); if (st) st.click();
+              const filtered = Array.from(document.querySelectorAll("#olGrid tbody tr")).map((el) => el.getAttribute("data-olgrow")).join(",");
+              if (filtered !== f.c2.id) bad.push("Draft filter left rows " + filtered);
+              /* a square opens the desk at that section's first mention */
+              const sq = document.querySelector('#olGrid button[data-olg="og-t"][data-olgsec="' + f.c2.id + '"]');
+              if (sq) sq.click(); else bad.push("no square for Tomas in chapter 2");
+              const area = $("editorArea");
+              const openOk = state.activeId === f.c2.id && currentCenterTab === "content" && !!area && area.value.slice(area.selectionStart, area.selectionEnd) === "Tomas";
+              if (!openOk) bad.push("the square did not open the desk at Tomas");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "columns Mara, Tomas, Agnes, Gullwick; squares equal the Covenant's counts (Mara 2·0·2·0, Tomas 1·1·1·0, Agnes none, Gullwick 1·0·0·0) with totals; Draft → chapter 2 only; Tomas in chapter 2 opened the desk on \"Tomas\"; book file unchanged");
+            }));
           } }
       );
       /* ==== /BEUK:outline ==== */

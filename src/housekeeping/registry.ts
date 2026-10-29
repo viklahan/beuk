@@ -2730,6 +2730,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'Filtering and the saved filters are studio UI over the client book.',
   },
+  {
+    id: 'outline.grid.fills-from-text',
+    title: "Grid: sections against Covenant entries, each square the Covenant's own count of that name in that section; never-named entries show empty squares; totals, the status filter and opening the desk at the first mention work; the book file is unchanged",
+    kind: 'client-only',
+    reason: 'The grid is drawn in the studio from the client book text and the Covenant matcher; nothing reaches the server.',
+  },
   /* ==== /BEUK:outline ==== */
   /* ---- Word import report (client-side; BEUK:importreport) ---- */
   {

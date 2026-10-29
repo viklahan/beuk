@@ -2254,7 +2254,23 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   bar says how many are shown and how many the filter hides. A filter can
   be saved under a name ("Needs work") and reopened in one click; saved
   filters ride the book.
-- **Per device:** Cards or List and whether front and back matter show
+- **Grid** (the third view, `olGridHtml`). Rows are the story's sections
+  that hold words (`bibleColumns`, the same columns as the Covenant's
+  heatmap and Names on stage), in book order and narrowed by the status
+  and tag filter; columns are the Covenant's entries, by type, then by
+  first appearance, then by name. Each square is the Covenant's own count
+  of that name in that section (`bibleMentions`, cached on the text, so
+  the matching rule is the Covenant's: aliases, exact case, "Not a
+  mention", longest wins), shaded against that entry's busiest section;
+  a footer row gives each entry's total. Nothing is typed into the grid
+  and nothing is stored: opening it leaves the book file byte-identical.
+  A square opens the desk with that section's first mention selected
+  (`bibleJump`). An entry never named shows only empty squares, which is
+  the point: a character who drops out of the middle of the book shows
+  as a gap. With no Covenant entries the view says how it fills and
+  offers the Covenant. Closing the Covenant redraws the grid. Self-check:
+  `outline.grid.fills-from-text`.
+- **Per device:** Cards, List or Grid and whether front and back matter show
   (`beuk.outline.v1` in localStorage, guarded). Not in the book.
 - Phone width: cards become one column and list rows stack (container
   queries on the view). Arabic mirrors; planning text fields are
