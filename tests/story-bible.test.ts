@@ -11,7 +11,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.change.now', 'bible.card.folded', 'bible.change.mark', 'bible.links.facts', 'bible.series.number', 'bible.series.crossbook', 'bible.series.conflict', 'bible.series.signin', 'bible.editor.perf'];
+const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.change.anchor', 'bible.change.now', 'bible.card.folded', 'bible.change.mark', 'bible.links.facts', 'bible.series.number', 'bible.series.crossbook', 'bible.series.conflict', 'bible.series.signin', 'bible.series.join', 'bible.series.merge', 'bible.series.leave', 'bible.editor.perf'];
 
 test('story bible: every self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -37,7 +37,9 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
   const placeholders: Record<string, string[]> = { 'bible.noMatch': ['{q}'], 'bible.deleted': ['{name}'], 'bible.cellTip': ['{sec}'], 'bible.cellNone': ['{sec}'],
     'bible.passagesMore': ['{n}', '{m}'], 'bible.exported': ['{file}'], 'bible.importSkipped': ['{list}'], 'bible.cardAlso': ['{list}'], 'bible.asOf': ['{where}'], 'bible.storyH': ['{n}'], 'bible.storyHPlural': ['{n}'], 'bible.linkFrom': ['{label}', '{name}'],
     'bible.unlink': ['{name}'], 'bible.fieldRemove': ['{name}'], 'bible.fieldRemoved': ['{name}'], 'bible.tplApplied': ['{n}'],
-    'bible.seriesSignIn': ['{name}'], 'bible.seriesConflictBody': ['{name}'] };
+    'bible.seriesSignIn': ['{name}'], 'bible.seriesConflictBody': ['{name}'],
+    'bible.joinOffer': ['{n}', '{name}'], 'bible.mergeKeep': ['{field}', '{keep}', '{book}', '{drop}', '{from}'], 'bible.mergeDone': ['{name}'], 'bible.mergeLeft': ['{title}'],
+    'bible.leaveBody': ['{name}'], 'bible.leaveDone': ['{n}'], 'bible.renameTitle': ['{n}'], 'bible.renameBody': ['{from}', '{to}'], 'bible.renameDone': ['{name}'], 'bible.seriesAcross': ['{n}'] };
   for (const k of keys) {
     const vals = Array.from(block.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "([^"]*)"`, 'g'))).map((m) => m[1]);
     assert.equal(vals.length, 13, `${k} appears in ${vals.length} locales`);
@@ -48,7 +50,7 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
 
 test('story bible: rides the book only when it holds an entry, and never reaches an export builder', async () => {
   const html = await clientHtml();
-  assert.match(html, /\.\.\.\(bibleHas\(\) \|\| \(state\.bible && state\.bible\.fields && Object\.keys\(state\.bible\.fields\)\.length\) \? \{ bible: bibleNormalize\(state\.bible\) \} : \{\}\)/);
+  assert.match(html, /\.\.\.\(bibleHas\(\) \|\| \(state\.bible && state\.bible\.fields && Object\.keys\(state\.bible\.fields\)\.length\)(?: \|\| bibleCountsHeld\(\))? \? \{ bible: bibleNormalize\(state\.bible\) \} : \{\}\)/);
   assert.match(html, /state\.bible = bibleNormalize\(doc\.bible\);/);
   for (const fn of ['function epubFiles(', 'function buildPrintHtml(', 'function buildDocxFiles(', 'function countWords(']) {
     const i = html.indexOf(fn);

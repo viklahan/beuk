@@ -216,6 +216,17 @@ are left out (src/account/data.ts `writeAccountExport`).
   page at / sends them straight back to the studio; no content, no id),
   and tour.v1 ("done" or "skipped" once the first-run quick tour has
   ended, so it is not shown again; never sent to the server).
+  For a signed-in writer whose book names a series, also
+  `beuk.bible.series.<account id>`: the series keys this device left or
+  renamed on purpose (so a late save never makes them again), the series
+  whose "Share one Covenant?" offer the writer dismissed, and, per shelf
+  book read for the series, its id, revision, title, series name and
+  key, number in series, book ids, last-saved time and per-entry
+  mention totals (no text, no pictures), so each book is read only once
+  per revision. Never sent to the server (client/index.html, BEUK:bible
+  `bibleSeriesNet.pref`). A series book's own document also carries
+  `bible.counts` (per-section mention counts per entry), saved with the
+  book like the rest of its Covenant.
 - **Service worker caches**: beuk-shell-v18 (the app shell), beuk-sound-v2
   (ambient sound files), and the self-hosted font files under assets/fonts/ (client/sw.js).
   The shell cache also holds the sample story's 37 pictures (client/assets/sample/*.jpg,

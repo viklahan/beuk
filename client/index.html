@@ -1745,6 +1745,25 @@
       .bib-seed-row select { padding: 5px 9px; font-size: 12.5px; }
       .bib-seed-in { font-size: 12px; color: var(--muted); text-align: end; }
       .bib-seed-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 12px; }
+      .bib-join { margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 9px; background: var(--accent-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+      .bib-join[hidden] { display: none; }
+      .bib-join p { margin: 0; flex: 1 1 260px; font-size: 13px; color: var(--ink); line-height: 1.5; }
+      .bib-join-btns, .bib-mg-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+      .bib-join .tb-btn, .bib-mg .tb-btn, .bib-fbtn { padding: 6px 12px; font-size: 12.5px; }
+      .bib-mg { padding: 10px 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+      .bib-mg-name { display: flex; flex-direction: column; min-width: 0; }
+      .bib-mg-name b { font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 500; }
+      .bib-mg-name .bib-hint { margin: 0; }
+      .bib-mg .tb-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+      .bib-mg-keep { flex: 1 1 100%; margin: 0; padding-inline-start: 18px; font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+      .bib-filter { display: flex; gap: 6px; margin: 0 0 8px; flex-wrap: wrap; }
+      .bib-fbtn { border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink-2); font: inherit; cursor: pointer; }
+      .bib-fbtn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+      .bib-books { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+      .bib-bk { font-size: 12px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); }
+      .bib-bk.is-here { border-color: var(--accent); color: var(--ink); }
+      .bib-bk b { font-weight: 600; }
+      .bib-only { padding: 0 0 8px; }
       .bib-seed-actions .tb-btn:disabled { opacity: .45; cursor: default; filter: none; }
       /* The desk layer: a mirror of the textarea's text, laid out with
          the textarea's own font, padding and wrapping, transparent
@@ -3931,6 +3950,7 @@
           <button class="switch" id="tglBibMarks" type="button" aria-pressed="true" aria-label="Underline mentions in the writing desk" data-i18n-aria="bible.marks"></button>
         </div>
         <p class="bib-hint" id="bibSeriesLine" hidden></p>
+        <div class="bib-join" id="bibJoin" hidden></div>
         <p class="bib-status" id="bibStatus" role="status" aria-live="polite" hidden></p>
         <div class="bib-main" id="bibMain">
           <div class="bib-side">
@@ -21884,6 +21904,7 @@
         "set.seriesNumber": "Number in series",
         "bible.more": "More…", "bible.factsH": "Quick facts", "bible.newFieldPh": "New fact name, like Age", "bible.add": "Add", "bible.linksH": "Links", "bible.linkToPh": "Link to…", "bible.linkLabelPh": "How, like serves or sister of", "bible.unlink": "Remove link to {name}", "bible.noFieldsHint": "No quick facts yet. Name one above to start.", "bible.noOthers": "Add another entry to link to it.", "bible.fieldsBtn": "Fact fields", "bible.fieldsH": "Fact fields", "bible.fieldsSub": "The quick facts each kind of entry keeps, like Age or Rank. Renaming a field keeps what you wrote under it.", "bible.tplH": "Start from a template", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science fiction", "bible.tplNonfiction": "Nonfiction", "bible.tplApplied": "Template applied. New fields: {n}.", "bible.fieldName": "Field name", "bible.fieldRemove": "Remove field {name}", "bible.fieldNone": "No fields yet.", "bible.fieldRemoved": "Field {name} removed.",
         "bible.seriesSignIn": "The shared Covenant of the series “{name}” needs a free account. Sign in to use it; this book’s own Covenant works as always.", "bible.seriesConflictTitle": "The series Covenant changed in two places", "bible.seriesConflictBody": "The Covenant of the series “{name}” has been changed in two places: on this device, and on your shelf from another book or device. Nothing has been overwritten, and nothing will be until you choose:", "bible.seriesConflictNote": "Keep mine replaces the shelf copy with this device’s. Use the shelf copy replaces this device’s copy with the shelf’s. A series has one Covenant, so there is no Keep both here.", "bible.seriesResolvedMine": "This device’s series Covenant stands — it is on its way to your shelf", "bible.seriesResolvedShelf": "The shelf copy of the series Covenant stands",
+        "bible.joinOffer": "{n} books share “{name}”. Share one Covenant?", "bible.joinYes": "Yes, share", "bible.joinNo": "Not now", "bible.mergeH": "Names in more than one book", "bible.mergeSub": "For each name, say whether it is the same in both books or a different one. Entries found in only one book join as they are. Nothing changes until you save.", "bible.mergeSame": "Same in both", "bible.mergeDiff": "Different", "bible.mergeNone": "No name is in more than one book. Every entry joins as it is.", "bible.mergeKeep": "{field}: “{keep}” ({book}) is kept as the newer; “{drop}” ({from}) is not", "bible.mergeSave": "Share one Covenant", "bible.mergeDone": "The books of “{name}” now share one Covenant.", "bible.mergeLeft": "{title} could not be changed on the shelf, so it keeps its own entries as they are.", "bible.shelfFail": "The shelf could not be reached. Nothing was changed.", "bible.onlyBook": "Only this book", "bible.onlyBookDesc": "Kept in this book and not shared with the other books of the series.", "bible.leaveTitle": "Leave the shared Covenant?", "bible.leaveBody": "The entries of “{name}” that this book mentions are copied into it first. The other books keep the shared Covenant as it is.", "bible.leaveYes": "Leave", "bible.leaveDone": "This book has its own Covenant again. Entries copied in: {n}.", "bible.renameTitle": "Rename the series in all {n} books?", "bible.renameBody": "“{from}” becomes “{to}” in every book of the series and in its shared Covenant. Only this book leaves the shared Covenant instead, with a copy of the entries it mentions.", "bible.renameAll": "Rename in all", "bible.renameDone": "The series is now “{name}”.", "bible.filterAll": "All", "bible.filterBook": "Book", "bible.filterSeries": "Series", "bible.seriesAcross": "Across the series: {n}",
         "imglib.role.bible": "picture of an entry"
       });
       Object.assign(UI_STRINGS.es, {
@@ -21979,6 +22000,7 @@
         "set.seriesNumber": "Número en la serie",
         "bible.more": "Más…", "bible.factsH": "Datos rápidos", "bible.newFieldPh": "Nuevo dato, por ejemplo Edad", "bible.add": "Añadir", "bible.linksH": "Vínculos", "bible.linkToPh": "Vincular con…", "bible.linkLabelPh": "Cómo, por ejemplo sirve a o hermana de", "bible.unlink": "Quitar el vínculo con {name}", "bible.noFieldsHint": "Aún no hay datos rápidos. Nombra uno arriba para empezar.", "bible.noOthers": "Añade otra entrada para vincularla.", "bible.fieldsBtn": "Campos de datos", "bible.fieldsH": "Campos de datos", "bible.fieldsSub": "Los datos rápidos que guarda cada tipo de entrada, como Edad o Rango. Renombrar un campo conserva lo que escribiste.", "bible.tplH": "Empezar con una plantilla", "bible.tplFantasy": "Fantasía", "bible.tplScifi": "Ciencia ficción", "bible.tplNonfiction": "No ficción", "bible.tplApplied": "Plantilla aplicada. Campos nuevos: {n}.", "bible.fieldName": "Nombre del campo", "bible.fieldRemove": "Quitar el campo {name}", "bible.fieldNone": "Aún no hay campos.", "bible.fieldRemoved": "Campo {name} quitado.",
         "bible.seriesSignIn": "El Pacto compartido de la serie «{name}» necesita una cuenta gratuita. Inicia sesión para usarlo; el Pacto propio de este libro funciona como siempre.", "bible.seriesConflictTitle": "El Pacto de la serie cambió en dos lugares", "bible.seriesConflictBody": "El Pacto de la serie «{name}» ha cambiado en dos sitios: en este dispositivo y en tu estantería desde otro libro o dispositivo. Nada se ha sobrescrito, y nada se sobrescribirá hasta que elijas:", "bible.seriesConflictNote": "Quedarme con el mío sustituye la copia de la estantería por la de este dispositivo. Usar la copia de la estantería sustituye la de este dispositivo por la de la estantería. Una serie tiene un solo Pacto, así que aquí no hay Conservar ambos.", "bible.seriesResolvedMine": "El Pacto de la serie de este dispositivo se mantiene: va camino de tu estantería", "bible.seriesResolvedShelf": "Se mantiene la copia de la estantería del Pacto de la serie",
+        "bible.joinOffer": "{n} libros comparten «{name}». ¿Compartir un solo Pacto?", "bible.joinYes": "Sí, compartir", "bible.joinNo": "Ahora no", "bible.mergeH": "Nombres en más de un libro", "bible.mergeSub": "Para cada nombre, indica si es el mismo en ambos libros o uno distinto. Las entradas que solo están en un libro se suman tal cual. Nada cambia hasta que guardes.", "bible.mergeSame": "Igual en ambos", "bible.mergeDiff": "Distinto", "bible.mergeNone": "Ningún nombre está en más de un libro. Todas las entradas se suman tal cual.", "bible.mergeKeep": "{field}: se conserva «{keep}» ({book}) por ser el más reciente; «{drop}» ({from}) no", "bible.mergeSave": "Compartir un solo Pacto", "bible.mergeDone": "Los libros de «{name}» comparten ahora un solo Pacto.", "bible.mergeLeft": "{title} no se pudo cambiar en la estantería, así que conserva sus propias entradas tal cual.", "bible.shelfFail": "No se pudo llegar a la estantería. No se cambió nada.", "bible.onlyBook": "Solo este libro", "bible.onlyBookDesc": "Se guarda en este libro y no se comparte con los demás libros de la serie.", "bible.leaveTitle": "¿Dejar el Pacto compartido?", "bible.leaveBody": "Primero se copian en este libro las entradas de «{name}» que menciona. Los demás libros conservan el Pacto compartido tal cual.", "bible.leaveYes": "Dejar", "bible.leaveDone": "Este libro vuelve a tener su propio Pacto. Entradas copiadas: {n}.", "bible.renameTitle": "¿Renombrar la serie en sus {n} libros?", "bible.renameBody": "«{from}» pasa a ser «{to}» en todos los libros de la serie y en su Pacto compartido. Con Solo este libro, en cambio, solo este libro deja el Pacto compartido, con una copia de las entradas que menciona.", "bible.renameAll": "Renombrar en todos", "bible.renameDone": "La serie se llama ahora «{name}».", "bible.filterAll": "Todo", "bible.filterBook": "Libro", "bible.filterSeries": "Serie", "bible.seriesAcross": "En toda la serie: {n}",
         "imglib.role.bible": "imagen de una entrada"
       });
       Object.assign(UI_STRINGS.fr, {
@@ -22074,6 +22096,7 @@
         "set.seriesNumber": "Numéro dans la série",
         "bible.more": "Plus…", "bible.factsH": "Infos rapides", "bible.newFieldPh": "Nouvelle info, par exemple Âge", "bible.add": "Ajouter", "bible.linksH": "Liens", "bible.linkToPh": "Lier à…", "bible.linkLabelPh": "Comment, par exemple sert ou sœur de", "bible.unlink": "Retirer le lien vers {name}", "bible.noFieldsHint": "Pas encore d’infos rapides. Nommez-en une ci-dessus pour commencer.", "bible.noOthers": "Ajoutez une autre fiche pour la lier.", "bible.fieldsBtn": "Champs d’infos", "bible.fieldsH": "Champs d’infos", "bible.fieldsSub": "Les infos rapides que garde chaque type de fiche, comme Âge ou Rang. Renommer un champ conserve ce que vous avez écrit.", "bible.tplH": "Partir d’un modèle", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science-fiction", "bible.tplNonfiction": "Non-fiction", "bible.tplApplied": "Modèle appliqué. Nouveaux champs : {n}.", "bible.fieldName": "Nom du champ", "bible.fieldRemove": "Retirer le champ {name}", "bible.fieldNone": "Pas encore de champs.", "bible.fieldRemoved": "Champ {name} retiré.",
         "bible.seriesSignIn": "Le Pacte partagé de la série « {name} » nécessite un compte gratuit. Connectez-vous pour l’utiliser ; le Pacte propre à ce livre fonctionne comme toujours.", "bible.seriesConflictTitle": "Le Pacte de la série a changé à deux endroits", "bible.seriesConflictBody": "Le Pacte de la série « {name} » a changé à deux endroits : sur cet appareil, et sur votre étagère depuis un autre livre ou appareil. Rien n’a été écrasé, et rien ne le sera avant votre choix :", "bible.seriesConflictNote": "Garder le mien remplace la copie de l’étagère par celle de cet appareil. Utiliser la copie de l’étagère remplace celle de cet appareil par celle de l’étagère. Une série n’a qu’un Pacte : il n’y a donc pas de Garder les deux ici.", "bible.seriesResolvedMine": "Le Pacte de la série de cet appareil est conservé — il part vers votre étagère", "bible.seriesResolvedShelf": "La copie de l’étagère du Pacte de la série est conservée",
+        "bible.joinOffer": "{n} livres partagent « {name} ». Partager un seul Pacte ?", "bible.joinYes": "Oui, partager", "bible.joinNo": "Pas maintenant", "bible.mergeH": "Des noms dans plus d’un livre", "bible.mergeSub": "Pour chaque nom, dites s’il est le même dans les deux livres ou s’il est différent. Les entrées présentes dans un seul livre rejoignent telles quelles. Rien ne change avant l’enregistrement.", "bible.mergeSame": "Le même dans les deux", "bible.mergeDiff": "Différent", "bible.mergeNone": "Aucun nom ne figure dans plus d’un livre. Chaque entrée rejoint telle quelle.", "bible.mergeKeep": "{field} : « {keep} » ({book}) est gardé comme le plus récent ; « {drop} » ({from}) ne l’est pas", "bible.mergeSave": "Partager un seul Pacte", "bible.mergeDone": "Les livres de « {name} » partagent désormais un seul Pacte.", "bible.mergeLeft": "{title} n’a pas pu être modifié sur l’étagère ; il garde donc ses propres entrées telles quelles.", "bible.shelfFail": "L’étagère est injoignable. Rien n’a été modifié.", "bible.onlyBook": "Ce livre seulement", "bible.onlyBookDesc": "Gardé dans ce livre et non partagé avec les autres livres de la série.", "bible.leaveTitle": "Quitter le Pacte partagé ?", "bible.leaveBody": "Les entrées de « {name} » que ce livre mentionne y sont d’abord copiées. Les autres livres gardent le Pacte partagé tel quel.", "bible.leaveYes": "Quitter", "bible.leaveDone": "Ce livre a de nouveau son propre Pacte. Entrées copiées : {n}.", "bible.renameTitle": "Renommer la série dans ses {n} livres ?", "bible.renameBody": "« {from} » devient « {to} » dans chaque livre de la série et dans son Pacte partagé. Avec Ce livre seulement, seul ce livre quitte le Pacte partagé, avec une copie des entrées qu’il mentionne.", "bible.renameAll": "Renommer partout", "bible.renameDone": "La série s’appelle désormais « {name} ».", "bible.filterAll": "Tout", "bible.filterBook": "Livre", "bible.filterSeries": "Série", "bible.seriesAcross": "Dans toute la série : {n}",
         "imglib.role.bible": "image d'une fiche"
       });
       Object.assign(UI_STRINGS.de, {
@@ -22169,6 +22192,7 @@
         "set.seriesNumber": "Nummer in der Reihe",
         "bible.more": "Mehr…", "bible.factsH": "Kurzangaben", "bible.newFieldPh": "Neue Angabe, zum Beispiel Alter", "bible.add": "Hinzufügen", "bible.linksH": "Verknüpfungen", "bible.linkToPh": "Verknüpfen mit…", "bible.linkLabelPh": "Wie, zum Beispiel dient oder Schwester von", "bible.unlink": "Verknüpfung mit {name} entfernen", "bible.noFieldsHint": "Noch keine Kurzangaben. Benenne oben eine, um zu beginnen.", "bible.noOthers": "Lege einen weiteren Eintrag an, um ihn zu verknüpfen.", "bible.fieldsBtn": "Angabenfelder", "bible.fieldsH": "Angabenfelder", "bible.fieldsSub": "Die Kurzangaben, die jede Art von Eintrag führt, etwa Alter oder Rang. Ein umbenanntes Feld behält, was du darunter geschrieben hast.", "bible.tplH": "Mit einer Vorlage beginnen", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science-Fiction", "bible.tplNonfiction": "Sachbuch", "bible.tplApplied": "Vorlage angewendet. Neue Felder: {n}.", "bible.fieldName": "Feldname", "bible.fieldRemove": "Feld {name} entfernen", "bible.fieldNone": "Noch keine Felder.", "bible.fieldRemoved": "Feld {name} entfernt.",
         "bible.seriesSignIn": "Der gemeinsame Pakt der Reihe „{name}“ braucht ein kostenloses Konto. Melden Sie sich an, um ihn zu nutzen; der eigene Pakt dieses Buches funktioniert wie immer.", "bible.seriesConflictTitle": "Der Pakt der Reihe hat sich an zwei Orten verändert", "bible.seriesConflictBody": "Der Pakt der Reihe „{name}“ wurde an zwei Stellen geändert: auf diesem Gerät und in Ihrem Regal von einem anderen Buch oder Gerät aus. Nichts wurde überschrieben, und nichts wird es, bis Sie wählen:", "bible.seriesConflictNote": "Meine behalten ersetzt die Regal-Kopie durch die dieses Geräts. Die Regal-Kopie verwenden ersetzt die Kopie dieses Geräts durch die aus dem Regal. Eine Reihe hat einen einzigen Pakt, daher gibt es hier kein Beide behalten.", "bible.seriesResolvedMine": "Der Pakt der Reihe auf diesem Gerät bleibt — er ist auf dem Weg in Ihr Regal", "bible.seriesResolvedShelf": "Die Regal-Kopie des Pakts der Reihe bleibt",
+        "bible.joinOffer": "{n} Bücher teilen „{name}“. Einen gemeinsamen Pakt nutzen?", "bible.joinYes": "Ja, teilen", "bible.joinNo": "Nicht jetzt", "bible.mergeH": "Namen in mehr als einem Buch", "bible.mergeSub": "Geben Sie für jeden Namen an, ob er in beiden Büchern derselbe ist oder ein anderer. Einträge aus nur einem Buch kommen unverändert dazu. Nichts ändert sich, bevor Sie speichern.", "bible.mergeSame": "In beiden derselbe", "bible.mergeDiff": "Ein anderer", "bible.mergeNone": "Kein Name steht in mehr als einem Buch. Jeder Eintrag kommt unverändert dazu.", "bible.mergeKeep": "{field}: „{keep}“ ({book}) bleibt als der neuere; „{drop}“ ({from}) nicht", "bible.mergeSave": "Einen Pakt teilen", "bible.mergeDone": "Die Bücher von „{name}“ teilen jetzt einen Pakt.", "bible.mergeLeft": "{title} konnte im Regal nicht geändert werden und behält seine eigenen Einträge, wie sie sind.", "bible.shelfFail": "Das Regal war nicht erreichbar. Nichts wurde geändert.", "bible.onlyBook": "Nur dieses Buch", "bible.onlyBookDesc": "Bleibt in diesem Buch und wird nicht mit den anderen Büchern der Reihe geteilt.", "bible.leaveTitle": "Den gemeinsamen Pakt verlassen?", "bible.leaveBody": "Die Einträge von „{name}“, die dieses Buch erwähnt, werden zuerst in das Buch kopiert. Die anderen Bücher behalten den gemeinsamen Pakt, wie er ist.", "bible.leaveYes": "Verlassen", "bible.leaveDone": "Dieses Buch hat wieder seinen eigenen Pakt. Kopierte Einträge: {n}.", "bible.renameTitle": "Die Reihe in allen Büchern ({n}) umbenennen?", "bible.renameBody": "„{from}“ wird in jedem Buch der Reihe und in ihrem gemeinsamen Pakt zu „{to}“. Mit Nur dieses Buch verlässt stattdessen nur dieses Buch den gemeinsamen Pakt, mit einer Kopie der Einträge, die es erwähnt.", "bible.renameAll": "Überall umbenennen", "bible.renameDone": "Die Reihe heißt jetzt „{name}“.", "bible.filterAll": "Alle", "bible.filterBook": "Buch", "bible.filterSeries": "Reihe", "bible.seriesAcross": "In der ganzen Reihe: {n}",
         "imglib.role.bible": "Bild eines Eintrags"
       });
       Object.assign(UI_STRINGS.it, {
@@ -22264,6 +22288,7 @@
         "set.seriesNumber": "Numero nella serie",
         "bible.more": "Altro…", "bible.factsH": "Dati rapidi", "bible.newFieldPh": "Nuovo dato, per esempio Età", "bible.add": "Aggiungi", "bible.linksH": "Collegamenti", "bible.linkToPh": "Collega a…", "bible.linkLabelPh": "Come, per esempio serve o sorella di", "bible.unlink": "Rimuovi il collegamento con {name}", "bible.noFieldsHint": "Ancora nessun dato rapido. Dai un nome a uno qui sopra per iniziare.", "bible.noOthers": "Aggiungi un’altra voce per collegarla.", "bible.fieldsBtn": "Campi dei dati", "bible.fieldsH": "Campi dei dati", "bible.fieldsSub": "I dati rapidi che ogni tipo di voce conserva, come Età o Grado. Rinominare un campo mantiene ciò che hai scritto.", "bible.tplH": "Parti da un modello", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Fantascienza", "bible.tplNonfiction": "Saggistica", "bible.tplApplied": "Modello applicato. Nuovi campi: {n}.", "bible.fieldName": "Nome del campo", "bible.fieldRemove": "Rimuovi il campo {name}", "bible.fieldNone": "Ancora nessun campo.", "bible.fieldRemoved": "Campo {name} rimosso.",
         "bible.seriesSignIn": "Il Patto condiviso della serie «{name}» richiede un account gratuito. Accedi per usarlo; il Patto proprio di questo libro funziona come sempre.", "bible.seriesConflictTitle": "Il Patto della serie è cambiato in due luoghi", "bible.seriesConflictBody": "Il Patto della serie «{name}» è cambiato in due posti: su questo dispositivo e sul tuo scaffale da un altro libro o dispositivo. Niente è stato sovrascritto, e niente lo sarà finché non scegli:", "bible.seriesConflictNote": "Tieni il mio sostituisce la copia dello scaffale con quella di questo dispositivo. Usa la copia dello scaffale sostituisce quella di questo dispositivo con quella dello scaffale. Una serie ha un solo Patto, quindi qui non c’è Tieni entrambi.", "bible.seriesResolvedMine": "Il Patto della serie di questo dispositivo resta: sta andando sul tuo scaffale", "bible.seriesResolvedShelf": "Resta la copia dello scaffale del Patto della serie",
+        "bible.joinOffer": "{n} libri condividono «{name}». Condividere un solo Patto?", "bible.joinYes": "Sì, condividi", "bible.joinNo": "Non ora", "bible.mergeH": "Nomi in più di un libro", "bible.mergeSub": "Per ogni nome, indica se è lo stesso in entrambi i libri o uno diverso. Le voci presenti in un solo libro entrano così come sono. Nulla cambia finché non salvi.", "bible.mergeSame": "Lo stesso in entrambi", "bible.mergeDiff": "Diverso", "bible.mergeNone": "Nessun nome è in più di un libro. Ogni voce entra così com’è.", "bible.mergeKeep": "{field}: si tiene «{keep}» ({book}) perché più recente; «{drop}» ({from}) no", "bible.mergeSave": "Condividi un solo Patto", "bible.mergeDone": "I libri di «{name}» ora condividono un solo Patto.", "bible.mergeLeft": "{title} non è stato modificato sullo scaffale, quindi tiene le sue voci così come sono.", "bible.shelfFail": "Lo scaffale non è raggiungibile. Non è cambiato nulla.", "bible.onlyBook": "Solo questo libro", "bible.onlyBookDesc": "Resta in questo libro e non è condiviso con gli altri libri della serie.", "bible.leaveTitle": "Lasciare il Patto condiviso?", "bible.leaveBody": "Le voci di «{name}» che questo libro menziona vengono prima copiate nel libro. Gli altri libri tengono il Patto condiviso così com’è.", "bible.leaveYes": "Lascia", "bible.leaveDone": "Questo libro ha di nuovo il suo Patto. Voci copiate: {n}.", "bible.renameTitle": "Rinominare la serie in tutti i suoi libri ({n})?", "bible.renameBody": "«{from}» diventa «{to}» in ogni libro della serie e nel suo Patto condiviso. Con Solo questo libro, invece, lascia il Patto condiviso solo questo libro, con una copia delle voci che menziona.", "bible.renameAll": "Rinomina in tutti", "bible.renameDone": "Ora la serie si chiama «{name}».", "bible.filterAll": "Tutte", "bible.filterBook": "Libro", "bible.filterSeries": "Serie", "bible.seriesAcross": "In tutta la serie: {n}",
         "imglib.role.bible": "immagine di una voce"
       });
       Object.assign(UI_STRINGS.pt, {
@@ -22359,6 +22384,7 @@
         "set.seriesNumber": "Número na série",
         "bible.more": "Mais…", "bible.factsH": "Dados rápidos", "bible.newFieldPh": "Novo dado, por exemplo Idade", "bible.add": "Adicionar", "bible.linksH": "Ligações", "bible.linkToPh": "Ligar a…", "bible.linkLabelPh": "Como, por exemplo serve ou irmã de", "bible.unlink": "Remover a ligação com {name}", "bible.noFieldsHint": "Ainda sem dados rápidos. Dê nome a um acima para começar.", "bible.noOthers": "Adicione outra entrada para a ligar.", "bible.fieldsBtn": "Campos de dados", "bible.fieldsH": "Campos de dados", "bible.fieldsSub": "Os dados rápidos que cada tipo de entrada guarda, como Idade ou Posto. Mudar o nome de um campo mantém o que escreveu.", "bible.tplH": "Começar por um modelo", "bible.tplFantasy": "Fantasia", "bible.tplScifi": "Ficção científica", "bible.tplNonfiction": "Não ficção", "bible.tplApplied": "Modelo aplicado. Campos novos: {n}.", "bible.fieldName": "Nome do campo", "bible.fieldRemove": "Remover o campo {name}", "bible.fieldNone": "Ainda sem campos.", "bible.fieldRemoved": "Campo {name} removido.",
         "bible.seriesSignIn": "O Pacto partilhado da série «{name}» precisa de uma conta gratuita. Inicie sessão para o usar; o Pacto próprio deste livro funciona como sempre.", "bible.seriesConflictTitle": "O Pacto da série mudou em dois lugares", "bible.seriesConflictBody": "O Pacto da série «{name}» mudou em dois sítios: neste dispositivo e na sua estante, a partir de outro livro ou dispositivo. Nada foi substituído, e nada será até escolher:", "bible.seriesConflictNote": "Manter o meu substitui a cópia da estante pela deste dispositivo. Usar a cópia da estante substitui a deste dispositivo pela da estante. Uma série tem um só Pacto, por isso aqui não há Manter ambos.", "bible.seriesResolvedMine": "O Pacto da série deste dispositivo mantém-se — está a caminho da sua estante", "bible.seriesResolvedShelf": "Mantém-se a cópia da estante do Pacto da série",
+        "bible.joinOffer": "{n} livros partilham «{name}». Partilhar um só Pacto?", "bible.joinYes": "Sim, partilhar", "bible.joinNo": "Agora não", "bible.mergeH": "Nomes em mais de um livro", "bible.mergeSub": "Para cada nome, diga se é o mesmo nos dois livros ou outro diferente. As entradas que só estão num livro entram tal como estão. Nada muda até guardar.", "bible.mergeSame": "O mesmo nos dois", "bible.mergeDiff": "Diferente", "bible.mergeNone": "Nenhum nome está em mais de um livro. Todas as entradas entram tal como estão.", "bible.mergeKeep": "{field}: fica «{keep}» ({book}) por ser o mais recente; «{drop}» ({from}) não", "bible.mergeSave": "Partilhar um só Pacto", "bible.mergeDone": "Os livros de «{name}» partilham agora um só Pacto.", "bible.mergeLeft": "{title} não pôde ser alterado na estante, por isso mantém as suas entradas tal como estão.", "bible.shelfFail": "Não foi possível chegar à estante. Nada foi alterado.", "bible.onlyBook": "Só este livro", "bible.onlyBookDesc": "Fica neste livro e não é partilhado com os outros livros da série.", "bible.leaveTitle": "Sair do Pacto partilhado?", "bible.leaveBody": "As entradas de «{name}» que este livro menciona são primeiro copiadas para ele. Os outros livros mantêm o Pacto partilhado tal como está.", "bible.leaveYes": "Sair", "bible.leaveDone": "Este livro volta a ter o seu próprio Pacto. Entradas copiadas: {n}.", "bible.renameTitle": "Mudar o nome da série em todos os livros ({n})?", "bible.renameBody": "«{from}» passa a «{to}» em todos os livros da série e no seu Pacto partilhado. Com Só este livro, só este livro sai do Pacto partilhado, com uma cópia das entradas que menciona.", "bible.renameAll": "Mudar em todos", "bible.renameDone": "A série chama-se agora «{name}».", "bible.filterAll": "Tudo", "bible.filterBook": "Livro", "bible.filterSeries": "Série", "bible.seriesAcross": "Em toda a série: {n}",
         "imglib.role.bible": "imagem de uma entrada"
       });
       Object.assign(UI_STRINGS.nl, {
@@ -22454,6 +22480,7 @@
         "set.seriesNumber": "Nummer in de reeks",
         "bible.more": "Meer…", "bible.factsH": "Snelle feiten", "bible.newFieldPh": "Nieuw feit, bijvoorbeeld Leeftijd", "bible.add": "Toevoegen", "bible.linksH": "Koppelingen", "bible.linkToPh": "Koppel aan…", "bible.linkLabelPh": "Hoe, bijvoorbeeld dient of zus van", "bible.unlink": "Koppeling met {name} verwijderen", "bible.noFieldsHint": "Nog geen snelle feiten. Geef er hierboven een naam aan om te beginnen.", "bible.noOthers": "Voeg nog een item toe om eraan te koppelen.", "bible.fieldsBtn": "Feitvelden", "bible.fieldsH": "Feitvelden", "bible.fieldsSub": "De snelle feiten die elk soort item bewaart, zoals Leeftijd of Rang. Een veld hernoemen behoudt wat je erin schreef.", "bible.tplH": "Begin met een sjabloon", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Sciencefiction", "bible.tplNonfiction": "Non-fictie", "bible.tplApplied": "Sjabloon toegepast. Nieuwe velden: {n}.", "bible.fieldName": "Veldnaam", "bible.fieldRemove": "Veld {name} verwijderen", "bible.fieldNone": "Nog geen velden.", "bible.fieldRemoved": "Veld {name} verwijderd.",
         "bible.seriesSignIn": "Het gedeelde Verbond van de reeks ‘{name}’ heeft een gratis account nodig. Meld u aan om het te gebruiken; het eigen Verbond van dit boek werkt zoals altijd.", "bible.seriesConflictTitle": "Het Verbond van de reeks is op twee plaatsen veranderd", "bible.seriesConflictBody": "Het Verbond van de reeks ‘{name}’ is op twee plekken veranderd: op dit apparaat, en op uw plank vanuit een ander boek of apparaat. Er is niets overschreven, en dat gebeurt ook niet tot u kiest:", "bible.seriesConflictNote": "De mijne houden vervangt de plankkopie door die van dit apparaat. De plankkopie gebruiken vervangt de kopie van dit apparaat door die van de plank. Een reeks heeft één Verbond, dus Beide houden is er hier niet.", "bible.seriesResolvedMine": "Het Verbond van de reeks op dit apparaat blijft staan — het is onderweg naar uw plank", "bible.seriesResolvedShelf": "De plankkopie van het Verbond van de reeks blijft staan",
+        "bible.joinOffer": "{n} boeken delen ‘{name}’. Eén Verbond delen?", "bible.joinYes": "Ja, delen", "bible.joinNo": "Nu niet", "bible.mergeH": "Namen in meer dan één boek", "bible.mergeSub": "Geef bij elke naam aan of het in beide boeken dezelfde is of een andere. Items die maar in één boek staan, komen erbij zoals ze zijn. Er verandert niets tot u opslaat.", "bible.mergeSame": "In beide dezelfde", "bible.mergeDiff": "Een andere", "bible.mergeNone": "Geen naam staat in meer dan één boek. Elk item komt erbij zoals het is.", "bible.mergeKeep": "{field}: ‘{keep}’ ({book}) blijft als de nieuwere; ‘{drop}’ ({from}) niet", "bible.mergeSave": "Eén Verbond delen", "bible.mergeDone": "De boeken van ‘{name}’ delen nu één Verbond.", "bible.mergeLeft": "{title} kon op de plank niet worden gewijzigd en houdt zijn eigen items zoals ze zijn.", "bible.shelfFail": "De plank was niet bereikbaar. Er is niets veranderd.", "bible.onlyBook": "Alleen dit boek", "bible.onlyBookDesc": "Blijft in dit boek en wordt niet gedeeld met de andere boeken van de reeks.", "bible.leaveTitle": "Het gedeelde Verbond verlaten?", "bible.leaveBody": "De items van ‘{name}’ die dit boek noemt, worden eerst naar dit boek gekopieerd. De andere boeken houden het gedeelde Verbond zoals het is.", "bible.leaveYes": "Verlaten", "bible.leaveDone": "Dit boek heeft weer een eigen Verbond. Gekopieerde items: {n}.", "bible.renameTitle": "De reeks in alle boeken ({n}) hernoemen?", "bible.renameBody": "‘{from}’ wordt ‘{to}’ in elk boek van de reeks en in het gedeelde Verbond. Met Alleen dit boek verlaat alleen dit boek het gedeelde Verbond, met een kopie van de items die het noemt.", "bible.renameAll": "Overal hernoemen", "bible.renameDone": "De reeks heet nu ‘{name}’.", "bible.filterAll": "Alle", "bible.filterBook": "Boek", "bible.filterSeries": "Reeks", "bible.seriesAcross": "In de hele reeks: {n}",
         "imglib.role.bible": "afbeelding van een item"
       });
       Object.assign(UI_STRINGS.pl, {
@@ -22549,6 +22576,7 @@
         "set.seriesNumber": "Numer w serii",
         "bible.more": "Więcej…", "bible.factsH": "Szybkie fakty", "bible.newFieldPh": "Nowy fakt, na przykład Wiek", "bible.add": "Dodaj", "bible.linksH": "Powiązania", "bible.linkToPh": "Powiąż z…", "bible.linkLabelPh": "Jak, na przykład służy lub siostra", "bible.unlink": "Usuń powiązanie z {name}", "bible.noFieldsHint": "Nie ma jeszcze szybkich faktów. Nazwij jeden powyżej, aby zacząć.", "bible.noOthers": "Dodaj inny wpis, aby go powiązać.", "bible.fieldsBtn": "Pola faktów", "bible.fieldsH": "Pola faktów", "bible.fieldsSub": "Szybkie fakty, które przechowuje każdy rodzaj wpisu, na przykład Wiek lub Ranga. Zmiana nazwy pola zachowuje to, co w nim wpisano.", "bible.tplH": "Zacznij od szablonu", "bible.tplFantasy": "Fantasy", "bible.tplScifi": "Science fiction", "bible.tplNonfiction": "Literatura faktu", "bible.tplApplied": "Szablon zastosowano. Nowe pola: {n}.", "bible.fieldName": "Nazwa pola", "bible.fieldRemove": "Usuń pole {name}", "bible.fieldNone": "Nie ma jeszcze pól.", "bible.fieldRemoved": "Usunięto pole {name}.",
         "bible.seriesSignIn": "Wspólne Przymierze serii «{name}» wymaga darmowego konta. Zaloguj się, aby z niego korzystać; własne Przymierze tej książki działa jak zawsze.", "bible.seriesConflictTitle": "Przymierze serii zmieniło się w dwóch miejscach", "bible.seriesConflictBody": "Przymierze serii «{name}» zmieniło się w dwóch miejscach: na tym urządzeniu i na Twojej półce — z innej książki lub urządzenia. Nic nie zostało nadpisane i nic nie zostanie, dopóki nie wybierzesz:", "bible.seriesConflictNote": "Zachowaj moją zastępuje kopię z półki kopią z tego urządzenia. Użyj kopii z półki zastępuje kopię z tego urządzenia kopią z półki. Seria ma jedno Przymierze, więc nie ma tu opcji Zachowaj obie.", "bible.seriesResolvedMine": "Przymierze serii z tego urządzenia zostaje — jest w drodze na Twoją półkę", "bible.seriesResolvedShelf": "Zostaje kopia Przymierza serii z półki",
+        "bible.joinOffer": "Książki z serią «{name}»: {n}. Wspólne Przymierze?", "bible.joinYes": "Tak, wspólne", "bible.joinNo": "Nie teraz", "bible.mergeH": "Nazwy w więcej niż jednej książce", "bible.mergeSub": "Przy każdej nazwie wskaż, czy w obu książkach chodzi o to samo, czy o coś innego. Wpisy tylko z jednej książki dołączają bez zmian. Nic się nie zmieni, dopóki nie zapiszesz.", "bible.mergeSame": "To samo w obu", "bible.mergeDiff": "Inne", "bible.mergeNone": "Żadna nazwa nie występuje w więcej niż jednej książce. Każdy wpis dołącza bez zmian.", "bible.mergeKeep": "{field}: zostaje «{keep}» ({book}) jako nowsze; «{drop}» ({from}) nie", "bible.mergeSave": "Wspólne Przymierze", "bible.mergeDone": "Książki serii «{name}» mają teraz wspólne Przymierze.", "bible.mergeLeft": "Nie udało się zmienić książki {title} na półce, więc zachowuje swoje wpisy bez zmian.", "bible.shelfFail": "Nie udało się połączyć z półką. Nic nie zostało zmienione.", "bible.onlyBook": "Tylko ta książka", "bible.onlyBookDesc": "Zostaje w tej książce i nie jest dzielone z innymi książkami serii.", "bible.leaveTitle": "Opuścić wspólne Przymierze?", "bible.leaveBody": "Wpisy z «{name}», o których wspomina ta książka, zostaną najpierw do niej skopiowane. Pozostałe książki zachowują wspólne Przymierze bez zmian.", "bible.leaveYes": "Opuść", "bible.leaveDone": "Ta książka znów ma własne Przymierze. Skopiowane wpisy: {n}.", "bible.renameTitle": "Zmienić nazwę serii we wszystkich książkach ({n})?", "bible.renameBody": "«{from}» staje się «{to}» w każdej książce serii i w jej wspólnym Przymierzu. Z opcją Tylko ta książka wspólne Przymierze opuszcza tylko ta książka, z kopią wpisów, o których wspomina.", "bible.renameAll": "Zmień wszędzie", "bible.renameDone": "Seria nazywa się teraz «{name}».", "bible.filterAll": "Wszystkie", "bible.filterBook": "Książka", "bible.filterSeries": "Seria", "bible.seriesAcross": "W całej serii: {n}",
         "imglib.role.bible": "obraz wpisu"
       });
       Object.assign(UI_STRINGS.ru, {
@@ -22644,6 +22672,7 @@
         "set.seriesNumber": "Номер в серии",
         "bible.more": "Ещё…", "bible.factsH": "Быстрые факты", "bible.newFieldPh": "Новый факт, например Возраст", "bible.add": "Добавить", "bible.linksH": "Связи", "bible.linkToPh": "Связать с…", "bible.linkLabelPh": "Как, например служит или сестра", "bible.unlink": "Удалить связь с {name}", "bible.noFieldsHint": "Пока нет быстрых фактов. Назовите один выше, чтобы начать.", "bible.noOthers": "Добавьте ещё одну запись, чтобы связать с ней.", "bible.fieldsBtn": "Поля фактов", "bible.fieldsH": "Поля фактов", "bible.fieldsSub": "Быстрые факты, которые хранит каждый вид записи, например Возраст или Звание. Переименование поля сохраняет то, что вы в нём записали.", "bible.tplH": "Начать с шаблона", "bible.tplFantasy": "Фэнтези", "bible.tplScifi": "Научная фантастика", "bible.tplNonfiction": "Нон-фикшн", "bible.tplApplied": "Шаблон применён. Новых полей: {n}.", "bible.fieldName": "Название поля", "bible.fieldRemove": "Удалить поле {name}", "bible.fieldNone": "Пока нет полей.", "bible.fieldRemoved": "Поле {name} удалено.",
         "bible.seriesSignIn": "Общему Завету серии «{name}» нужна бесплатная учётная запись. Войдите, чтобы пользоваться им; собственный Завет этой книги работает как всегда.", "bible.seriesConflictTitle": "Завет серии изменился в двух местах", "bible.seriesConflictBody": "Завет серии «{name}» изменился в двух местах: на этом устройстве и на вашей полке — из другой книги или с другого устройства. Ничего не перезаписано и не будет, пока вы не выберете:", "bible.seriesConflictNote": "Оставить мою заменяет копию на полке копией с этого устройства. Взять копию с полки заменяет копию на этом устройстве копией с полки. У серии один Завет, поэтому варианта Оставить обе здесь нет.", "bible.seriesResolvedMine": "Завет серии с этого устройства остаётся — он отправляется на вашу полку", "bible.seriesResolvedShelf": "Остаётся копия Завета серии с полки",
+        "bible.joinOffer": "Книги серии «{name}»: {n}. Общий Завет?", "bible.joinYes": "Да, общий", "bible.joinNo": "Не сейчас", "bible.mergeH": "Имена в нескольких книгах", "bible.mergeSub": "Для каждого имени укажите, одно и то же оно в обеих книгах или разное. Записи только из одной книги войдут как есть. Ничего не изменится, пока вы не сохраните.", "bible.mergeSame": "Одно и то же", "bible.mergeDiff": "Разное", "bible.mergeNone": "Ни одно имя не встречается в нескольких книгах. Все записи войдут как есть.", "bible.mergeKeep": "{field}: остаётся «{keep}» ({book}) как более новое; «{drop}» ({from}) — нет", "bible.mergeSave": "Общий Завет", "bible.mergeDone": "У книг серии «{name}» теперь общий Завет.", "bible.mergeLeft": "Книгу {title} не удалось изменить на полке, поэтому её собственные записи остались как есть.", "bible.shelfFail": "Полка недоступна. Ничего не изменено.", "bible.onlyBook": "Только эта книга", "bible.onlyBookDesc": "Хранится в этой книге и не делится с другими книгами серии.", "bible.leaveTitle": "Выйти из общего Завета?", "bible.leaveBody": "Записи из «{name}», которые упоминает эта книга, сначала копируются в неё. Другие книги сохраняют общий Завет как есть.", "bible.leaveYes": "Выйти", "bible.leaveDone": "У этой книги снова собственный Завет. Скопировано записей: {n}.", "bible.renameTitle": "Переименовать серию во всех книгах ({n})?", "bible.renameBody": "«{from}» станет «{to}» во всех книгах серии и в её общем Завете. С вариантом Только эта книга из общего Завета выйдет только эта книга, с копией упомянутых в ней записей.", "bible.renameAll": "Переименовать везде", "bible.renameDone": "Теперь серия называется «{name}».", "bible.filterAll": "Все", "bible.filterBook": "Книга", "bible.filterSeries": "Серия", "bible.seriesAcross": "Во всей серии: {n}",
         "imglib.role.bible": "изображение записи"
       });
       Object.assign(UI_STRINGS.tr, {
@@ -22739,6 +22768,7 @@
         "set.seriesNumber": "Serideki sıra",
         "bible.more": "Daha fazla…", "bible.factsH": "Hızlı bilgiler", "bible.newFieldPh": "Yeni bilgi adı, örneğin Yaş", "bible.add": "Ekle", "bible.linksH": "Bağlantılar", "bible.linkToPh": "Şuna bağla…", "bible.linkLabelPh": "Nasıl, örneğin hizmet eder ya da kız kardeşi", "bible.unlink": "{name} bağlantısını kaldır", "bible.noFieldsHint": "Henüz hızlı bilgi yok. Başlamak için yukarıda bir tane adlandır.", "bible.noOthers": "Bağlamak için bir kayıt daha ekle.", "bible.fieldsBtn": "Bilgi alanları", "bible.fieldsH": "Bilgi alanları", "bible.fieldsSub": "Her kayıt türünün tuttuğu hızlı bilgiler, örneğin Yaş ya da Rütbe. Bir alanı yeniden adlandırmak altına yazdıklarını korur.", "bible.tplH": "Şablonla başla", "bible.tplFantasy": "Fantezi", "bible.tplScifi": "Bilimkurgu", "bible.tplNonfiction": "Kurgusal olmayan", "bible.tplApplied": "Şablon uygulandı. Yeni alanlar: {n}.", "bible.fieldName": "Alan adı", "bible.fieldRemove": "{name} alanını kaldır", "bible.fieldNone": "Henüz alan yok.", "bible.fieldRemoved": "{name} alanı kaldırıldı.",
         "bible.seriesSignIn": "“{name}” serisinin ortak Ahit’i ücretsiz bir hesap gerektirir. Kullanmak için oturum açın; bu kitabın kendi Ahit’i her zamanki gibi çalışır.", "bible.seriesConflictTitle": "Serinin Ahit’i iki yerde değişti", "bible.seriesConflictBody": "“{name}” serisinin Ahit’i iki yerde değişti: bu cihazda ve başka bir kitaptan ya da cihazdan rafınızda. Hiçbir şeyin üzerine yazılmadı ve siz seçene kadar yazılmayacak:", "bible.seriesConflictNote": "Benimkini tut, raftaki kopyayı bu cihazdakiyle değiştirir. Raftaki kopyayı kullan, bu cihazdaki kopyayı raftakiyle değiştirir. Bir serinin tek bir Ahit’i vardır; bu yüzden burada İkisini de tut seçeneği yok.", "bible.seriesResolvedMine": "Bu cihazdaki seri Ahit’i geçerli — rafınıza gidiyor", "bible.seriesResolvedShelf": "Seri Ahit’inin raftaki kopyası geçerli",
+        "bible.joinOffer": "“{name}” serisini paylaşan kitap: {n}. Tek bir Ahit paylaşılsın mı?", "bible.joinYes": "Evet, paylaş", "bible.joinNo": "Şimdi değil", "bible.mergeH": "Birden fazla kitapta geçen adlar", "bible.mergeSub": "Her ad için iki kitapta da aynı mı yoksa farklı mı olduğunu seçin. Yalnızca bir kitapta olan kayıtlar olduğu gibi katılır. Kaydedene kadar hiçbir şey değişmez.", "bible.mergeSame": "İkisinde de aynı", "bible.mergeDiff": "Farklı", "bible.mergeNone": "Hiçbir ad birden fazla kitapta geçmiyor. Her kayıt olduğu gibi katılır.", "bible.mergeKeep": "{field}: daha yeni olan “{keep}” ({book}) kalır; “{drop}” ({from}) kalmaz", "bible.mergeSave": "Tek bir Ahit paylaş", "bible.mergeDone": "“{name}” kitapları artık tek bir Ahit paylaşıyor.", "bible.mergeLeft": "{title} rafta değiştirilemedi; bu yüzden kendi kayıtlarını olduğu gibi tutuyor.", "bible.shelfFail": "Rafa ulaşılamadı. Hiçbir şey değişmedi.", "bible.onlyBook": "Yalnızca bu kitap", "bible.onlyBookDesc": "Bu kitapta tutulur ve serinin diğer kitaplarıyla paylaşılmaz.", "bible.leaveTitle": "Ortak Ahit’ten ayrılınsın mı?", "bible.leaveBody": "Bu kitabın andığı “{name}” kayıtları önce kitaba kopyalanır. Diğer kitaplar ortak Ahit’i olduğu gibi tutar.", "bible.leaveYes": "Ayrıl", "bible.leaveDone": "Bu kitabın yeniden kendi Ahit’i var. Kopyalanan kayıt: {n}.", "bible.renameTitle": "Seri tüm kitaplarda ({n}) yeniden adlandırılsın mı?", "bible.renameBody": "“{from}”, serinin her kitabında ve ortak Ahit’inde “{to}” olur. Yalnızca bu kitap seçilirse ortak Ahit’ten yalnızca bu kitap, andığı kayıtların bir kopyasıyla ayrılır.", "bible.renameAll": "Hepsinde yeniden adlandır", "bible.renameDone": "Serinin adı artık “{name}”.", "bible.filterAll": "Tümü", "bible.filterBook": "Kitap", "bible.filterSeries": "Seri", "bible.seriesAcross": "Tüm seride: {n}",
         "imglib.role.bible": "bir kaydın görseli"
       });
       Object.assign(UI_STRINGS.ar, {
@@ -22834,6 +22864,7 @@
         "set.seriesNumber": "رقم الكتاب في السلسلة",
         "bible.more": "المزيد…", "bible.factsH": "حقائق سريعة", "bible.newFieldPh": "حقيقة جديدة، مثل العمر", "bible.add": "إضافة", "bible.linksH": "الروابط", "bible.linkToPh": "ربط بـ…", "bible.linkLabelPh": "كيف، مثل يخدم أو أخت", "bible.unlink": "إزالة الرابط مع {name}", "bible.noFieldsHint": "لا حقائق سريعة بعد. سمِّ واحدة أعلاه للبدء.", "bible.noOthers": "أضف مدخلًا آخر لتربطه.", "bible.fieldsBtn": "حقول الحقائق", "bible.fieldsH": "حقول الحقائق", "bible.fieldsSub": "الحقائق السريعة التي يحتفظ بها كل نوع من المداخل، مثل العمر أو الرتبة. إعادة تسمية الحقل تُبقي ما كتبته فيه.", "bible.tplH": "ابدأ من قالب", "bible.tplFantasy": "خيال فانتازي", "bible.tplScifi": "خيال علمي", "bible.tplNonfiction": "غير روائي", "bible.tplApplied": "طُبّق القالب. حقول جديدة: {n}.", "bible.fieldName": "اسم الحقل", "bible.fieldRemove": "إزالة الحقل {name}", "bible.fieldNone": "لا حقول بعد.", "bible.fieldRemoved": "أُزيل الحقل {name}.",
         "bible.seriesSignIn": "يحتاج الميثاق المشترك للسلسلة «{name}» إلى حساب مجاني. سجّل الدخول لاستخدامه؛ أما ميثاق هذا الكتاب نفسه فيعمل كما هو دائمًا.", "bible.seriesConflictTitle": "تغيّر ميثاق السلسلة في مكانين", "bible.seriesConflictBody": "تغيّر ميثاق السلسلة «{name}» في مكانين: على هذا الجهاز، وعلى رفّك من كتاب آخر أو جهاز آخر. لم يُستبدل شيء، ولن يُستبدل شيء حتى تختار:", "bible.seriesConflictNote": "«الاحتفاظ بنسختي» يستبدل نسخة الرف بنسخة هذا الجهاز. «استخدام نسخة الرف» يستبدل نسخة هذا الجهاز بنسخة الرف. للسلسلة ميثاق واحد، فلا يوجد هنا خيار «الاحتفاظ بالاثنتين».", "bible.seriesResolvedMine": "يبقى ميثاق السلسلة الذي على هذا الجهاز، وهو في طريقه إلى رفّك", "bible.seriesResolvedShelf": "تبقى نسخة الرف من ميثاق السلسلة",
+        "bible.joinOffer": "كتب السلسلة «{name}»: {n}. هل تشترك في ميثاق واحد؟", "bible.joinYes": "نعم، شارك", "bible.joinNo": "ليس الآن", "bible.mergeH": "أسماء في أكثر من كتاب", "bible.mergeSub": "حدّد لكل اسم هل هو نفسه في الكتابين أم مختلف. المداخل الموجودة في كتاب واحد فقط تنضم كما هي. لا يتغير شيء حتى تحفظ.", "bible.mergeSame": "نفسه في الكتابين", "bible.mergeDiff": "مختلف", "bible.mergeNone": "لا يوجد اسم في أكثر من كتاب. كل مدخل ينضم كما هو.", "bible.mergeKeep": "{field}: تبقى «{keep}» ({book}) لأنها الأحدث؛ ولا تبقى «{drop}» ({from})", "bible.mergeSave": "شارك ميثاقًا واحدًا", "bible.mergeDone": "كتب «{name}» تشترك الآن في ميثاق واحد.", "bible.mergeLeft": "تعذّر تغيير {title} على الرف، فبقيت مداخله كما هي.", "bible.shelfFail": "تعذّر الوصول إلى الرف. لم يتغير شيء.", "bible.onlyBook": "هذا الكتاب فقط", "bible.onlyBookDesc": "يبقى في هذا الكتاب ولا يُشارك مع كتب السلسلة الأخرى.", "bible.leaveTitle": "هل تغادر الميثاق المشترك؟", "bible.leaveBody": "تُنسخ أولًا إلى هذا الكتاب مداخل «{name}» التي يذكرها. وتبقى الكتب الأخرى على الميثاق المشترك كما هو.", "bible.leaveYes": "غادر", "bible.leaveDone": "لهذا الكتاب ميثاقه الخاص من جديد. المداخل المنسوخة: {n}.", "bible.renameTitle": "هل تعيد تسمية السلسلة في كل كتبها ({n})؟", "bible.renameBody": "تصبح «{from}» «{to}» في كل كتب السلسلة وفي ميثاقها المشترك. أما مع «هذا الكتاب فقط» فيغادر هذا الكتاب وحده الميثاق المشترك، ومعه نسخة من المداخل التي يذكرها.", "bible.renameAll": "أعد التسمية في الكل", "bible.renameDone": "أصبح اسم السلسلة «{name}».", "bible.filterAll": "الكل", "bible.filterBook": "الكتاب", "bible.filterSeries": "السلسلة", "bible.seriesAcross": "في السلسلة كلها: {n}",
         "imglib.role.bible": "صورة مدخل"
       });
       Object.assign(UI_STRINGS.ja, {
@@ -22929,6 +22960,7 @@
         "set.seriesNumber": "シリーズ内の番号",
         "bible.more": "その他…", "bible.factsH": "かんたん情報", "bible.newFieldPh": "新しい項目名（例：年齢）", "bible.add": "追加", "bible.linksH": "リンク", "bible.linkToPh": "リンク先…", "bible.linkLabelPh": "関係（例：仕える、姉妹）", "bible.unlink": "{name} へのリンクを外す", "bible.noFieldsHint": "かんたん情報はまだありません。上で項目名を付けて始めましょう。", "bible.noOthers": "リンクするには、もう一つエントリを追加してください。", "bible.fieldsBtn": "情報の項目", "bible.fieldsH": "情報の項目", "bible.fieldsSub": "エントリの種類ごとに持つかんたん情報（年齢や階級など）です。項目名を変えても、書いた内容は残ります。", "bible.tplH": "テンプレートから始める", "bible.tplFantasy": "ファンタジー", "bible.tplScifi": "SF", "bible.tplNonfiction": "ノンフィクション", "bible.tplApplied": "テンプレートを適用しました。新しい項目：{n}", "bible.fieldName": "項目名", "bible.fieldRemove": "{name} の項目を削除", "bible.fieldNone": "項目はまだありません。", "bible.fieldRemoved": "項目 {name} を削除しました。",
         "bible.seriesSignIn": "シリーズ「{name}」の共有盟約には無料アカウントが必要です。使うにはサインインしてください。この本自身の盟約はいつもどおり使えます。", "bible.seriesConflictTitle": "シリーズの盟約が二か所で変更されました", "bible.seriesConflictBody": "シリーズ「{name}」の盟約が二か所で変更されました。このデバイスと、別の本またはデバイスからの本棚です。何も上書きされておらず、選ぶまで上書きされません。", "bible.seriesConflictNote": "「自分のものを残す」は本棚のコピーをこのデバイスのものに置き換えます。「本棚のコピーを使う」はこのデバイスのコピーを本棚のものに置き換えます。シリーズの盟約は一つなので、ここに「両方残す」はありません。", "bible.seriesResolvedMine": "このデバイスのシリーズ盟約を残しました。本棚へ送っています", "bible.seriesResolvedShelf": "シリーズ盟約の本棚のコピーを残しました",
+        "bible.joinOffer": "「{name}」の本が{n}冊あります。盟約を一つにまとめますか。", "bible.joinYes": "まとめる", "bible.joinNo": "今はしない", "bible.mergeH": "複数の本にある名前", "bible.mergeSub": "名前ごとに、どちらの本でも同じものか、別のものかを選んでください。一冊にだけある項目はそのまま加わります。保存するまで何も変わりません。", "bible.mergeSame": "どちらも同じ", "bible.mergeDiff": "別のもの", "bible.mergeNone": "複数の本にある名前はありません。どの項目もそのまま加わります。", "bible.mergeKeep": "{field}: 新しい「{keep}」({book})を残し、「{drop}」({from})は残しません", "bible.mergeSave": "盟約を一つにする", "bible.mergeDone": "「{name}」の本は一つの盟約を共有するようになりました。", "bible.mergeLeft": "{title}は本棚で変更できなかったため、自分の項目をそのまま残しています。", "bible.shelfFail": "本棚に接続できませんでした。何も変更していません。", "bible.onlyBook": "この本だけ", "bible.onlyBookDesc": "この本に残し、シリーズのほかの本とは共有しません。", "bible.leaveTitle": "共有の盟約から外れますか。", "bible.leaveBody": "この本が触れている「{name}」の項目を、先にこの本へコピーします。ほかの本は共有の盟約をそのまま使います。", "bible.leaveYes": "外れる", "bible.leaveDone": "この本は再び自分の盟約を持ちました。コピーした項目: {n}", "bible.renameTitle": "シリーズの名前をすべての本({n}冊)で変えますか。", "bible.renameBody": "シリーズのすべての本と共有の盟約で「{from}」が「{to}」になります。「この本だけ」を選ぶと、この本だけが触れている項目のコピーを持って共有の盟約から外れます。", "bible.renameAll": "すべてで変える", "bible.renameDone": "シリーズの名前は「{name}」になりました。", "bible.filterAll": "すべて", "bible.filterBook": "本", "bible.filterSeries": "シリーズ", "bible.seriesAcross": "シリーズ全体: {n}",
         "imglib.role.bible": "項目の画像"
       });
       Object.assign(UI_STRINGS["zh-Hans"], {
@@ -23024,6 +23056,7 @@
         "set.seriesNumber": "系列序号",
         "bible.more": "更多…", "bible.factsH": "快速信息", "bible.newFieldPh": "新信息名称，例如年龄", "bible.add": "添加", "bible.linksH": "链接", "bible.linkToPh": "链接到…", "bible.linkLabelPh": "关系，例如效力于、姐妹", "bible.unlink": "移除指向 {name} 的链接", "bible.noFieldsHint": "还没有快速信息。先在上方命名一个。", "bible.noOthers": "再添加一个条目才能建立链接。", "bible.fieldsBtn": "信息字段", "bible.fieldsH": "信息字段", "bible.fieldsSub": "每种条目保存的快速信息，例如年龄或军衔。重命名字段不会丢失已写的内容。", "bible.tplH": "从模板开始", "bible.tplFantasy": "奇幻", "bible.tplScifi": "科幻", "bible.tplNonfiction": "非虚构", "bible.tplApplied": "已应用模板。新字段：{n}。", "bible.fieldName": "字段名称", "bible.fieldRemove": "移除字段 {name}", "bible.fieldNone": "还没有字段。", "bible.fieldRemoved": "已移除字段 {name}。",
         "bible.seriesSignIn": "系列“{name}”的共享盟约需要一个免费账户。登录后即可使用；本书自己的盟约照常可用。", "bible.seriesConflictTitle": "系列盟约在两处被修改", "bible.seriesConflictBody": "系列“{name}”的盟约在两处被修改：在这台设备上，以及从另一本书或另一台设备在你的书架上。没有任何内容被覆盖，在你选择之前也不会被覆盖：", "bible.seriesConflictNote": "“保留我的”会用这台设备上的副本替换书架上的副本。“使用书架副本”会用书架上的副本替换这台设备上的副本。一个系列只有一份盟约，所以这里没有“两者都保留”。", "bible.seriesResolvedMine": "保留了这台设备上的系列盟约，正在送往你的书架", "bible.seriesResolvedShelf": "保留了书架上的系列盟约副本",
+        "bible.joinOffer": "“{name}”系列有 {n} 本书。要共用一份盟约吗？", "bible.joinYes": "好，共用", "bible.joinNo": "暂不", "bible.mergeH": "出现在多本书中的名字", "bible.mergeSub": "请为每个名字选择：两本书里是同一个，还是不同的。只在一本书里的条目会原样加入。保存之前不会有任何改动。", "bible.mergeSame": "两本相同", "bible.mergeDiff": "不同", "bible.mergeNone": "没有名字出现在多本书中。所有条目都会原样加入。", "bible.mergeKeep": "{field}：保留较新的“{keep}”（{book}），不保留“{drop}”（{from}）", "bible.mergeSave": "共用一份盟约", "bible.mergeDone": "“{name}”的各本书现在共用一份盟约。", "bible.mergeLeft": "未能在书架上修改{title}，它的条目原样保留。", "bible.shelfFail": "无法连接书架。没有做任何改动。", "bible.onlyBook": "仅此书", "bible.onlyBookDesc": "保留在这本书中，不与系列中的其他书共用。", "bible.leaveTitle": "要离开共用的盟约吗？", "bible.leaveBody": "会先把这本书提到的“{name}”条目复制到书中。其他书继续原样使用共用的盟约。", "bible.leaveYes": "离开", "bible.leaveDone": "这本书又有了自己的盟约。已复制的条目：{n}。", "bible.renameTitle": "要在全部 {n} 本书中重命名该系列吗？", "bible.renameBody": "系列中的每本书及其共用盟约里，“{from}”都会改为“{to}”。若选“仅此书”，则只有这本书离开共用盟约，并带走它提到的条目的副本。", "bible.renameAll": "全部重命名", "bible.renameDone": "系列现在叫“{name}”。", "bible.filterAll": "全部", "bible.filterBook": "本书", "bible.filterSeries": "系列", "bible.seriesAcross": "整个系列：{n}",
         "imglib.role.bible": "条目的图片"
       });
       UI_PLURAL_FORMS.pl = UI_PLURAL_FORMS.pl || {};
@@ -23174,7 +23207,7 @@
       /* where a change stands in the open book. A change marked in another book is placed by the position saved with it, because that book is never opened here; an orphan (passage gone, or no saved position) gives null. */
       function bibleResolveChange(change) {
         const a = change && change.anchor; if (!a) return null;
-        if (a.book && a.book !== (state.meta && state.meta.bookId)) return Array.isArray(a.pos) && a.pos.length ? a.pos : null;
+        if (a.book && a.book !== (state.meta && state.meta.bookId)) return Array.isArray(a.pos) && a.pos.length && !bibleBookGone(a.book) ? a.pos : null; /* a book gone from the shelf leaves its changes as orphans */
         const hit = bibleAnchorFind(a, state.sections); if (!hit) return null;
         return biblePos(bibleBookOrder(), state.sections.findIndex((s) => s.id === hit.sec), hit.at);
       }
@@ -23272,6 +23305,12 @@
         });
         const fields = bibleNormalizeFields(b && b.fields);
         if (Object.keys(fields).length) out.fields = fields;
+        /* a series book's saved mention counts ({ entryId: per-section numbers }), so the other books can show series-wide totals; a book outside a series never carries them */
+        if (loose && b && b.counts && typeof b.counts === "object" && !Array.isArray(b.counts)) {
+          const c = {};
+          Object.keys(b.counts).slice(0, BIBLE_MAX * 2).forEach((id) => { const v = b.counts[id]; if (/^[\w-]{1,40}$/.test(id) && Array.isArray(v)) c[id] = v.slice(0, 2000).map((n) => Math.max(0, Math.floor(Number(n) || 0))); });
+          if (Object.keys(c).length) out.counts = c;
+        }
         /* a fact (and a change's fact) is kept while its field id is defined for any kind of entry, so changing an entry's type and back never loses one; it is dropped, when the book is saved or exported, only once no kind defines that field at all */
         const known = new Set();
         Object.keys(fields).forEach((ty) => fields[ty].forEach((f) => known.add(f.id)));
@@ -23296,7 +23335,10 @@
       let bibleSeries = null;
       const bibleSeriesSync = { userId: null, kept: null, dirty: false, editAt: 0, pending: 0, conflict: null, syncedJson: null, running: false, again: false, timer: null, stepTimer: null, seq: 0, last: null };
       /* the network and the device store, swappable so a self-check answers without either; an answer that is not a promise is taken at once */
-      const bibleSeriesNet = { fetch: (path, opts) => apiFetch(path, opts), store: (rec) => bibleSeriesCachePut(rec), load: (userId, key) => bibleSeriesCacheGet(userId, key) };
+      const bibleSeriesNet = { fetch: (path, opts) => apiFetch(path, opts), store: (rec) => bibleSeriesCachePut(rec), load: (userId, key) => bibleSeriesCacheGet(userId, key),
+        /* this account's small series record on this device (read with no value, written with one), and the calm confirm dialog */
+        pref: (uid, v) => { try { const k = "beuk.bible.series." + uid; if (v === undefined) return JSON.parse(localStorage.getItem(k) || "null"); localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} return null; },
+        ask: (spec) => cloudConfirm(spec) };
       const bibleThen = (v, fn) => (v && typeof v.then === "function" ? v.then(fn) : fn(v));
       /* every entry in scope: the series' entries, then the book's own (an entry marked "only this book", or one the series does not hold). Without a series this is the book's own list, the very same array. */
       const bibleAllMemo = { key: null, val: null };
@@ -23380,6 +23422,7 @@
           s.revision = typeof s.revision === "number" ? s.revision : null;
         }
         bibleSeries = s || null;
+        if (s) bibleSeriesMem.absent = null;
         sy.userId = s ? userId || null : null; sy.conflict = null; sy.pending = 0;
         sy.kept = s && kept && kept.kept ? { kept: kept.kept, keptAt: kept.keptAt || null } : null;
         sy.dirty = !!(s && dirty); sy.syncedJson = s && !dirty ? JSON.stringify(s.doc) : null;
@@ -23425,7 +23468,12 @@
               else { bibleSeriesSet({ key: key, name: res.series.name, doc: res.series.doc, revision: res.series.revision }, userId, false, rec); bibleSeriesCacheNow(); }
             });
           }
-          if (res && res.__status === 404) { if (!sy.dirty) bibleSeriesSet(null); return; }
+          if (res && res.__status === 404) {
+            bibleSeriesMem.absent = key; /* no row: the join offer may ask */
+            if (!sy.dirty) bibleSeriesSet(null); else bibleRenderSeriesLine();
+            const mb = $("modalBible"); if (mb && mb.classList.contains("open")) { bibleShelfScan(); bibleRender(); }
+            return;
+          }
           if (!res && !(bibleSeries && bibleSeries.key === key)) return fromCache(userId);
         });
       }
@@ -23516,7 +23564,9 @@
           bibleSeriesCacheNow();
           bibleSeriesRaise();
         } else if (res && res.__status === 404 && typeof s.revision === "number") {
-          /* the shelf row went (removed from another device): this device's copy makes it again, so nothing is lost */
+          /* the shelf row went (removed from another device): this device's copy makes it again, so nothing is lost; but a series this device left or renamed on purpose is never made again (its copy stays in the device store) */
+          const mem = bibleSeriesMemFor();
+          if (mem && mem.gone.indexOf(s.key) !== -1) { bibleSeriesSet(null); return; }
           s.revision = null; bibleSeriesSaveNow();
         } else {
           sy.pending++; bibleSeriesCacheNow();
@@ -23576,6 +23626,342 @@
         const show = bibleInSeries() && !cloud.user && !bibleSeries;
         el.hidden = !show;
         el.textContent = show ? t("bible.seriesSignIn", { name: String(state.meta.series).trim() }) : "";
+        const jo = $("bibJoin"); if (!jo) return;
+        const n = bibleJoinOffered();
+        jo.hidden = !n;
+        jo.innerHTML = n ? "<p>" + esc(t("bible.joinOffer", { n: fmtNum(n), name: String(state.meta.series).trim() })) + '</p><div class="bib-join-btns"><button type="button" class="tb-btn primary" id="btnBibJoin">' + esc(t("bible.joinYes")) + '</button><button type="button" class="tb-btn" id="btnBibJoinNo">' + esc(t("bible.joinNo")) + "</button></div>" : "";
+      }
+      /* ---- joining, merging, leaving and renaming a series Covenant. Nothing merges, moves or goes without the writer choosing it. ---- */
+      /* what this device keeps per account (one small localStorage record): the series it left or removed on purpose (a late save never makes them again), the join offers dismissed, and what each shelf book says about its series, read once per revision. absent = the series key the shelf said it has no row for. */
+      const bibleSeriesMem = { user: null, gone: [], dismissed: [], shelf: {}, ids: null, scanning: false, absent: null };
+      function bibleSeriesMemFor() {
+        const uid = cloud.user && cloud.user.id, m = bibleSeriesMem; if (!uid) return null;
+        if (m.user !== uid) {
+          const rec = bibleSeriesNet.pref(uid) || {};
+          m.user = uid; m.ids = null;
+          m.gone = Array.isArray(rec.gone) ? rec.gone : []; m.dismissed = Array.isArray(rec.dismissed) ? rec.dismissed : [];
+          m.shelf = rec.shelf && typeof rec.shelf === "object" ? rec.shelf : {};
+        }
+        return m;
+      }
+      function bibleSeriesMemSave() { const m = bibleSeriesMem; if (m.user) bibleSeriesNet.pref(m.user, { gone: m.gone.slice(-50), dismissed: m.dismissed.slice(-50), shelf: m.shelf }); }
+      /* one shelf book as the series sees it: series key, place, ids and the mention totals it saved (never its text or pictures) */
+      function bibleShelfNote(x, doc) {
+        const meta = (doc && doc.meta) || {}, totals = {}, c = doc && doc.bible && doc.bible.counts;
+        if (c && typeof c === "object") Object.keys(c).forEach((id) => { if (Array.isArray(c[id])) { const n = c[id].reduce((a, v) => a + (Number(v) || 0), 0); if (n > 0) totals[id] = n; } });
+        return { rev: x.revision, title: String(x.title || meta.title || ""), key: bibleSeriesKey(meta.series), name: String(meta.series || "").trim(), order: Number(meta.seriesNumber) || 0, ids: bookIdsOf(meta), at: x.updatedAt || "", totals: totals };
+      }
+      /* the other books on the shelf are read (pictures named, so no bytes) only when their revision moved since this device last looked; the open book's own shelf copy is never read */
+      function bibleShelfScan() {
+        const m = bibleSeriesMemFor();
+        if (!m || m.scanning || !cloud.available || !net.online || !bibleInSeries()) return null;
+        const list = (cloud.shelf || []).filter((x) => x && x.id && x.id !== cloud.linkedId);
+        const need = list.filter((x) => !m.shelf[x.id] || m.shelf[x.id].rev !== x.revision);
+        let whole = true;
+        m.scanning = true;
+        const step = (i) => {
+          if (i < need.length) {
+            const x = need[i];
+            return bibleThen(bibleSeriesNet.fetch("/api/manuscripts/" + encodeURIComponent(x.id), { headers: { "Beuk-Pictures": "ref" } }), (res) => {
+              if (res && res.manuscript && res.manuscript.doc) m.shelf[x.id] = bibleShelfNote(x, res.manuscript.doc); else whole = false;
+              return step(i + 1);
+            });
+          }
+          m.scanning = false;
+          const keep = {}; list.forEach((x) => { if (m.shelf[x.id]) keep[x.id] = m.shelf[x.id]; });
+          m.shelf = keep;
+          /* every book id on the shelf, once all were read: a change pinned in a book no longer there is an orphan (it stays in the series) */
+          if (whole) { const ids = new Set(); Object.keys(keep).forEach((id) => keep[id].ids.forEach((b) => ids.add(b))); m.ids = ids; } else m.ids = null;
+          bibleAllVer++;
+          if (need.length) { bibleSeriesMemSave(); const mb = $("modalBible"); if (mb && mb.classList.contains("open")) bibleRender(); }
+          return true;
+        };
+        return step(0);
+      }
+      function bibleBookGone(book) {
+        const ids = bibleSeriesMem.ids;
+        return !!(bibleSeries && ids && !ids.has(book) && bookIdsOf(state.meta).indexOf(book) === -1);
+      }
+      /* the books of the open book's series: this one first (the desk is its newest word unless it is saved and unchanged), then the shelf's */
+      function bibleJoinMembers() {
+        const m = bibleSeriesMemFor(), key = bibleSeriesKey(state.meta && state.meta.series);
+        if (!m || !key) return [];
+        const mine = bookIdsOf(state.meta);
+        const out = [{ id: null, title: String(state.meta.title || ""), order: bibleBookOrder(), at: !cloudDirty && cloud.linkedId && cloud.baseUpdatedAt ? cloud.baseUpdatedAt : new Date().toISOString(), totals: {} }];
+        (cloud.shelf || []).forEach((x) => {
+          const n = x && m.shelf[x.id];
+          if (n && x.id !== cloud.linkedId && n.key === key && !n.ids.some((b) => mine.indexOf(b) !== -1)) out.push(Object.assign({}, n, { id: x.id }));
+        });
+        return out;
+      }
+      /* how many books the offer speaks of; 0 = no offer (signed out, a row exists or was never asked for, dismissed, fewer than two books) */
+      function bibleJoinOffered() {
+        const m = bibleSeriesMemFor(), key = bibleSeriesKey(state.meta && state.meta.series);
+        if (!m || !key || bibleSeries || m.absent !== key || m.dismissed.indexOf(key) !== -1 || bibleUi.mode === "merge") return 0;
+        const n = bibleJoinMembers().length;
+        return n >= 2 ? n : 0;
+      }
+      function bibleJoinDismiss() {
+        const m = bibleSeriesMemFor(), key = bibleSeriesKey(state.meta && state.meta.series); if (!m || !key) return;
+        if (m.dismissed.indexOf(key) === -1) m.dismissed.push(key);
+        bibleSeriesMemSave(); bibleRenderSeriesLine();
+      }
+      /* Yes: the books are read as they are now; the merge screen asks, nothing is written yet */
+      function bibleJoinStart() {
+        const members = bibleJoinMembers(); if (members.length < 2) return null;
+        const books = [];
+        bibleStatus("");
+        const step = (i) => {
+          if (i >= members.length) { bibleUi.merge = bibleMergePlan(books); bibleUi.mode = "merge"; bibleUi.detail = true; bibleRender(); return true; }
+          const b = members[i];
+          if (!b.id) { books.push({ id: null, title: b.title, at: b.at, order: b.order, bookId: state.meta.bookId, entries: bibleEntries(), fields: (state.bible && state.bible.fields) || {}, sections: state.sections }); return step(i + 1); }
+          return bibleThen(bibleSeriesNet.fetch("/api/manuscripts/" + encodeURIComponent(b.id), { headers: { "Beuk-Pictures": "ref" } }), (res) => {
+            const ms = res && res.manuscript;
+            if (!ms || !ms.doc) { bibleStatus(t("bible.shelfFail")); return false; }
+            const bib = bibleNormalize(ms.doc.bible, true), meta = ms.doc.meta || {};
+            books.push({ id: b.id, title: b.title, at: ms.updatedAt || b.at, order: Number(meta.seriesNumber) || 0, bookId: typeof meta.bookId === "string" ? meta.bookId : "", entries: bib.entries, fields: bib.fields || {}, sections: Array.isArray(ms.doc.sections) ? ms.doc.sections : [] });
+            return step(i + 1);
+          });
+        };
+        return step(0);
+      }
+      /* the questions: entries of different books sharing a name or an also-called are one question; an entry kept "only this book" is never asked about and never moves */
+      function bibleMergePlan(books) {
+        const items = [];
+        books.forEach((b, bi) => b.entries.forEach((e) => { if (e.scope !== "book") items.push({ bi: bi, e: e, keys: [e.name].concat(e.aliases).map(bibleKey).filter(Boolean) }); }));
+        const up = items.map((x, i) => i);
+        const find = (i) => (up[i] === i ? i : (up[i] = find(up[i])));
+        const byKey = new Map();
+        items.forEach((x, i) => x.keys.forEach((k) => { const l = byKey.get(k); if (l) l.push(i); else byKey.set(k, [i]); }));
+        byKey.forEach((l) => { if (new Set(l.map((i) => items[i].bi)).size > 1) l.forEach((i) => { up[find(i)] = find(l[0]); }); });
+        const groups = new Map();
+        items.forEach((x, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(x); });
+        const asks = [];
+        groups.forEach((l) => { if (new Set(l.map((x) => x.bi)).size > 1) asks.push({ items: l, answer: null }); });
+        return { books: books, items: items, asks: asks };
+      }
+      /* a book's change carries its book and its place in the story, so every book of the series can place it */
+      function bibleMergeStamp(e, b) {
+        (e.changes || []).forEach((c) => {
+          const a = c.anchor; if (!a) return;
+          if (!a.book && b.bookId) a.book = b.bookId;
+          if (!a.pos && a.book === b.bookId) { const hit = bibleAnchorFind(a, b.sections); if (hit) a.pos = biblePos(b.order, b.sections.findIndex((s) => s.id === hit.sec), hit.at); }
+        });
+        return e;
+      }
+      /* Same in both: the newest book's entry leads; also-called, tags, exclusions, links and changes are unioned once each, notes are joined, and each fact keeps the newer book's value. What the older book said is listed (keeps) for the writer to see before Save. */
+      function bibleMergeSame(ask, plan) {
+        const books = plan.books, at = (bi) => Date.parse(books[bi].at) || 0;
+        const l = ask.items.slice().sort((x, y) => at(y.bi) - at(x.bi));
+        const out = bibleMergeStamp(JSON.parse(JSON.stringify(l[0].e)), books[l[0].bi]), keeps = [];
+        const title = (bi) => books[bi].title || t("misc.untitledBook");
+        const label = (k) => { for (const b of books) { const f = ((b.fields || {})[out.type] || []).find((x) => x.id === k); if (f) return f.label; } return k; };
+        const nk = bibleKey(out.name);
+        l.slice(1).forEach((x) => {
+          const e = bibleMergeStamp(JSON.parse(JSON.stringify(x.e)), books[x.bi]);
+          out.aliases = bibleList(out.aliases.concat([e.name], e.aliases), 30, 120).filter((a) => bibleKey(a) !== nk);
+          out.tags = bibleList(out.tags.concat(e.tags), 30, 60);
+          out.exclude = bibleList(out.exclude.concat(e.exclude), 40, 120);
+          if (!out.description) out.description = e.description;
+          else if (e.description && e.description !== out.description) keeps.push({ field: t("bible.f.desc"), keep: out.description, book: title(l[0].bi), drop: e.description, from: title(x.bi) });
+          if (e.notes && out.notes.indexOf(e.notes) === -1) out.notes = bibleStr(out.notes ? out.notes + "\n\n" + e.notes : e.notes, 20000);
+          if (!out.imageId && e.imageId) out.imageId = e.imageId;
+          Object.keys(e.facts || {}).forEach((k) => {
+            if (!out.facts) out.facts = {};
+            if (!out.facts[k]) out.facts[k] = e.facts[k];
+            else if (out.facts[k] !== e.facts[k]) keeps.push({ field: label(k), keep: out.facts[k], book: title(l[0].bi), drop: e.facts[k], from: title(x.bi) });
+          });
+          if (e.links) out.links = (out.links || []).concat(e.links);
+          (e.changes || []).forEach((c) => { if (!(out.changes || []).some((y) => y.id === c.id)) (out.changes = out.changes || []).push(c); });
+        });
+        return { e: out, keeps: keeps };
+      }
+      /* the series doc the answers make: shared names merged or kept apart as answered, every other shared entry as it is; ids stay unless two books used the same one; links follow the ids. moved[bi] = the ids each book gives to the series. */
+      function bibleMergeBuild(plan) {
+        const used = new Set(), fin = {}, moved = plan.books.map(() => []);
+        const k = (x) => x.bi + "\u0001" + x.e.id;
+        const take = (id) => { let v = id; while (used.has(v)) v = bibleNewId(); used.add(v); return v; };
+        const same = plan.asks.filter((a) => a.answer === "same").map((a) => ({ a: a, m: bibleMergeSame(a, plan) }));
+        same.forEach((s) => { const id = take(s.m.e.id); s.m.e.id = id; s.a.items.forEach((x) => { fin[k(x)] = id; }); });
+        plan.items.forEach((x) => { if (!(k(x) in fin)) fin[k(x)] = take(x.e.id); moved[x.bi].push(x.e.id); });
+        const relink = (e, bi) => { if (e.links) e.links = e.links.map((l) => ({ to: fin[bi + "\u0001" + l.to] || l.to, label: l.label })); return e; };
+        const entries = [], done = new Set();
+        plan.items.forEach((x) => {
+          const id = fin[k(x)]; if (done.has(id)) return; done.add(id);
+          const s = same.find((y) => y.a.items.indexOf(x) !== -1);
+          const e = s ? s.m.e : bibleMergeStamp(JSON.parse(JSON.stringify(x.e)), plan.books[x.bi]);
+          if (s) s.a.items.forEach((y) => relink(e, y.bi)); else { relink(e, x.bi); e.id = id; }
+          entries.push(e);
+        });
+        const fields = {};
+        plan.books.forEach((b) => Object.keys(b.fields || {}).forEach((ty) => (b.fields[ty] || []).forEach((f) => { const l = fields[ty] || (fields[ty] = []); if (!l.some((y) => y.id === f.id)) l.push({ id: f.id, label: f.label }); })));
+        return { doc: bibleNormalize({ entries: entries, fields: fields }, true), moved: moved };
+      }
+      function bibleRenderMerge() {
+        const host = $("bibDetail"), plan = bibleUi.merge; if (!host) return;
+        if (!plan) { bibleUi.mode = "entry"; bibleRenderEntry(); return; }
+        let html = '<button type="button" class="tb-btn bib-back" id="btnBibBack"><i data-lucide="arrow-left"></i>' + esc(t("bible.back")) + "</button>" +
+          '<h3 class="ins-h">' + esc(t("bible.mergeH")) + '</h3><p class="ins-sub">' + esc(t("bible.mergeSub")) + "</p>";
+        if (!plan.asks.length) html += '<p class="bib-none">' + esc(t("bible.mergeNone")) + "</p>";
+        else html += '<div class="bib-merge" id="bibMerge">' + plan.asks.map((a, i) => {
+          const names = Array.from(new Set(a.items.map((x) => bibleName(x.e)))).join(" · ");
+          const books = Array.from(new Set(a.items.map((x) => plan.books[x.bi].title || t("misc.untitledBook")))).join(" · ");
+          const keeps = a.answer === "same" ? bibleMergeSame(a, plan).keeps : [];
+          return '<div class="bib-mg"><div class="bib-mg-name"><b>' + esc(names) + '</b><span class="bib-hint">' + esc(books) + '</span></div><div class="bib-mg-btns" role="group" aria-label="' + esc(names) + '">' +
+            ["same", "diff"].map((v) => '<button type="button" class="tb-btn" data-mg-i="' + i + '" data-mg-v="' + v + '" aria-pressed="' + String(a.answer === v) + '">' + esc(t(v === "same" ? "bible.mergeSame" : "bible.mergeDiff")) + "</button>").join("") + "</div>" +
+            (keeps.length ? '<ul class="bib-mg-keep">' + keeps.map((x) => "<li>" + esc(t("bible.mergeKeep", x)) + "</li>").join("") + "</ul>" : "") + "</div>";
+        }).join("") + "</div>";
+        html += '<div class="bib-seed-actions"><button type="button" class="tb-btn" id="btnBibMergeCancel">' + esc(t("imglib.cancel")) + '</button><button type="button" class="tb-btn primary" id="btnBibMergeSave"' + (plan.asks.every((a) => a.answer) ? "" : " disabled") + ">" + esc(t("bible.mergeSave")) + "</button></div>";
+        host.innerHTML = html;
+      }
+      /* change another book on the shelf: read it (pictures named), change it, write it on the revision it was read at. A 409 (it moved on meanwhile) takes the shelf's newer copy and makes the same change on that, once, so nothing written elsewhere is lost; false = not written, and the book is left exactly as it was. */
+      function bibleShelfEdit(id, fn) {
+        const path = "/api/manuscripts/" + encodeURIComponent(id), hd = { "Beuk-Pictures": "ref" };
+        const put = (ms, tries) => {
+          if (!ms || !ms.doc || typeof ms.revision !== "number") return false;
+          const doc = JSON.parse(JSON.stringify(ms.doc)); fn(doc);
+          return bibleThen(bibleSeriesNet.fetch(path, { method: "PUT", headers: Object.assign({ "If-Match": '"' + ms.revision + '"', "Prefer": "return=minimal" }, hd), body: JSON.stringify({ doc: doc }) }), (res) => {
+            if (res && res.manuscript) return true;
+            const theirs = res && res.__status === 409 && res.__body && res.__body.manuscript;
+            return theirs && tries < 1 ? put(theirs, tries + 1) : false;
+          });
+        };
+        return bibleThen(bibleSeriesNet.fetch(path, { headers: hd }), (res) => put(res && res.manuscript, 0));
+      }
+      /* Save: the row is created (never on a revision, so a row made meanwhile elsewhere is read instead of overwritten); then the open book drops the entries it gave (saved with its next save) and each other book drops only those, through the shelf */
+      function bibleMergeSave() {
+        const plan = bibleUi.merge, uid = cloud.user && cloud.user.id;
+        if (!plan || !uid || plan.asks.some((a) => !a.answer)) return null;
+        const built = bibleMergeBuild(plan), key = bibleSeriesKey(state.meta.series), name = String(state.meta.series).trim();
+        return bibleThen(bibleSeriesNet.fetch("/api/series-covenants/" + encodeURIComponent(key), { method: "PUT", headers: {}, body: JSON.stringify({ name: name, doc: built.doc }) }), (res) => {
+          if (!res || !res.series) {
+            bibleStatus(t("bible.shelfFail"));
+            if (res && res.__status === 428) { bibleUi.merge = null; bibleUi.mode = "entry"; bibleUi.detail = false; bibleSeriesRefresh(true); bibleRender(); }
+            return false;
+          }
+          const m = bibleSeriesMemFor(); if (m) { m.gone = m.gone.filter((x) => x !== key); bibleSeriesMemSave(); }
+          plan.books.forEach((b, bi) => {
+            if (b.id) return;
+            const gave = new Set(built.moved[bi]);
+            if (state.bible) state.bible.entries = bibleEntries().filter((e) => !gave.has(e.id));
+          });
+          bibleUi.merge = null; bibleUi.mode = "entry"; bibleUi.detail = false; bibleUi.sel = null;
+          bibleSeriesSet({ key: key, name: res.series.name || name, doc: res.series.doc || built.doc, revision: res.series.revision }, uid, false);
+          bibleSeriesCacheNow();
+          bibleTouched(true);
+          bibleRender();
+          const left = [], others = plan.books.map((b, bi) => ({ b: b, gave: new Set(built.moved[bi]) })).filter((x) => x.b.id);
+          const step = (i) => {
+            if (i >= others.length) { bibleStatus([t("bible.mergeDone", { name: name })].concat(left.map((x) => t("bible.mergeLeft", { title: x }))).join(" ")); return true; }
+            const o = others[i];
+            return bibleThen(bibleShelfEdit(o.b.id, (doc) => { if (doc.bible && Array.isArray(doc.bible.entries)) doc.bible.entries = doc.bible.entries.filter((e) => !(e && o.gave.has(e.id) && e.scope !== "book")); }), (ok) => { if (!ok) left.push(o.b.title || t("misc.untitledBook")); return step(i + 1); });
+          };
+          return step(0);
+        });
+      }
+      /* Only this book: the entry moves from the series Covenant into this book (scope "book"), and back when switched off */
+      function bibleSetOnlyBook(id, on) {
+        if (!bibleSeries) return false;
+        if (!state.bible) state.bible = { entries: [] };
+        const from = bibleListOf(id), to = on ? bibleEntries() : bibleSeries.doc.entries;
+        if (from === to) return false;
+        const at = from.findIndex((e) => e.id === id); if (at < 0) return false;
+        const e = from.splice(at, 1)[0];
+        if (on) e.scope = "book";
+        else { delete e.scope; (e.changes || []).forEach((c) => { if (c.anchor && !c.anchor.book && state.meta.bookId) c.anchor.book = state.meta.bookId; }); }
+        to.push(e);
+        bibleTouched(true); bibleRender();
+        return true;
+      }
+      /* Project Settings is about to change the series name of a book that reads a shared Covenant: ask first. True = the question took over, and the name changes only once the writer answers. */
+      function bibleSeriesChangeAsk(next) {
+        const s = bibleSeries, nk = bibleSeriesKey(next);
+        if (!s || !cloud.user || nk === s.key) return false;
+        bibleThen(bibleShelfScan(), () => {
+          const n = bibleJoinMembers().length;
+          if (!nk) return bibleThen(bibleSeriesNet.ask({ title: t("bible.leaveTitle"), body: t("bible.leaveBody", { name: s.name }), yes: t("bible.leaveYes"), no: t("imglib.cancel"), defaultNo: true }), (ok) => { if (ok === true) bibleSeriesLeave(""); });
+          /* a series only this book reads is simply renamed */
+          if (n < 2) return bibleSeriesRename(next);
+          return bibleThen(bibleSeriesNet.ask({ title: t("bible.renameTitle", { n: fmtNum(n) }), body: t("bible.renameBody", { from: s.name, to: String(next).trim() }), yes: t("bible.renameAll"), alt: t("bible.onlyBook"), no: t("imglib.cancel"), defaultNo: true }), (ok) => {
+            if (ok === true) bibleSeriesRename(next); else if (ok === "alt") bibleSeriesLeave(next);
+          });
+        });
+        return true;
+      }
+      /* this book stops reading the series: the series entries it mentions (and the fields they use) are copied into it first; its own entries stay, and the other books keep the series as it is */
+      function bibleSeriesLeave(next) {
+        const s = bibleSeries; if (!s) return;
+        if (!state.bible) state.bible = { entries: [] };
+        bibleSeriesTakePending();
+        if (bibleSeriesSync.dirty && !bibleSeriesSync.conflict) bibleSeriesSaveNow(); /* the series' own unsent edit still goes */
+        const men = bibleMentions(), have = new Set(bibleEntries().map((e) => e.id)), copied = [];
+        s.doc.entries.forEach((e) => {
+          if (have.has(e.id) || !(men.per[e.id] && men.per[e.id].total) || bibleEntries().length + copied.length >= BIBLE_MAX) return;
+          const c = JSON.parse(JSON.stringify(e)); delete c.scope; copied.push(c);
+        });
+        state.bible.entries = bibleEntries().concat(copied);
+        const sf = s.doc.fields || {};
+        Object.keys(sf).forEach((ty) => {
+          const mine = (state.bible.fields && state.bible.fields[ty]) || [], add = sf[ty].filter((f) => !mine.some((x) => x.id === f.id));
+          if (add.length) { if (!state.bible.fields) state.bible.fields = {}; state.bible.fields[ty] = mine.concat(add.map((f) => ({ id: f.id, label: f.label }))); }
+        });
+        if (next) state.meta.series = String(next).trim(); else delete state.meta.series;
+        delete state.bible.counts;
+        bibleSeriesSet(null);
+        bibleSeriesRefresh(false);
+        bibleTouched(true);
+        bibleStatus(t("bible.leaveDone", { n: fmtNum(copied.length) }));
+      }
+      /* rename for all: the new row first (if that name is already a series, nothing changes), then every other book of the series on the shelf, then the old row goes; if a book could not be renamed the old row stays, so that book never loses its Covenant */
+      function bibleSeriesRename(next) {
+        const s = bibleSeries, uid = cloud.user && cloud.user.id; if (!s || !uid) return null;
+        bibleSeriesTakePending();
+        const name = String(next).trim(), nk = bibleSeriesKey(name), old = s.key, doc = bibleSeriesDocOut(s);
+        const others = bibleJoinMembers().filter((b) => b.id);
+        return bibleThen(bibleSeriesNet.fetch("/api/series-covenants/" + encodeURIComponent(nk), { method: "PUT", headers: {}, body: JSON.stringify({ name: name, doc: doc }) }), (res) => {
+          if (!res || !res.series) { bibleStatus(t("bible.shelfFail")); return false; }
+          const left = [];
+          const finish = () => {
+            const m = bibleSeriesMemFor();
+            if (m) { if (!left.length && m.gone.indexOf(old) === -1) m.gone.push(old); m.gone = m.gone.filter((x) => x !== nk); bibleSeriesMemSave(); }
+            state.meta.series = name;
+            bibleSeriesSync.last = null;
+            bibleSeriesSet({ key: nk, name: res.series.name || name, doc: res.series.doc || doc, revision: res.series.revision }, uid, false);
+            bibleSeriesCacheNow();
+            bibleTouched(false);
+            bibleStatus([t("bible.renameDone", { name: name })].concat(left.map((x) => t("bible.mergeLeft", { title: x }))).join(" "));
+            return true;
+          };
+          const step = (i) => {
+            if (i >= others.length) return left.length ? finish() : bibleThen(bibleSeriesNet.fetch("/api/series-covenants/" + encodeURIComponent(old), { method: "DELETE" }), finish);
+            return bibleThen(bibleShelfEdit(others[i].id, (d) => { d.meta = d.meta || {}; d.meta.series = name; }), (ok) => { if (!ok) left.push(others[i].title || t("misc.untitledBook")); return step(i + 1); });
+          };
+          return step(0);
+        });
+      }
+      /* the doc new entries, imports and the fields manager write to: the series Covenant while the book reads one, else the book's own */
+      function bibleHomeDoc() {
+        if (bibleSeries) return bibleSeries.doc;
+        if (!state.bible) state.bible = { entries: [] };
+        return state.bible;
+      }
+      /* per-section mention counts of every entry in scope, kept with a series book so the other books can show series-wide totals without opening it; written only while the series is loaded, so a count never misses the entries it counts */
+      function bibleCountsNow() {
+        if (!bibleSeries || !bibleInSeries() || !state.bible) return;
+        const per = bibleMentions().per, out = {};
+        Object.keys(per).forEach((id) => { if (per[id].total) out[id] = per[id].counts.slice(); });
+        if (Object.keys(out).length) state.bible.counts = out; else delete state.bible.counts;
+      }
+      function bibleCountsHeld() { return bibleInSeries() && !!(state.bible && state.bible.counts && Object.keys(state.bible.counts).length); }
+      /* Where it appears, for a series entry: the total across the books (the others from the counts they saved) and one figure per book */
+      function bibleSeriesStrip(e, here) {
+        if (!bibleSeries || bibleSeries.doc.entries.indexOf(e) === -1) return "";
+        const rows = bibleJoinMembers().map((b) => ({ title: b.title || t("misc.untitledBook"), order: b.order, n: b.id ? b.totals[e.id] || 0 : here, me: !b.id }));
+        if (rows.length < 2) return "";
+        rows.sort((a, b) => a.order - b.order);
+        const total = rows.reduce((a, r) => a + r.n, 0);
+        return '<p class="ins-caption" id="bibSeriesSum">' + esc(t("bible.seriesAcross", { n: fmtNum(total) })) + '</p><div class="bib-books" id="bibBooks">' +
+          rows.map((r) => '<span class="bib-bk' + (r.me ? " is-here" : "") + '"><b>' + esc(r.title) + "</b> " + esc(fmtNum(r.n)) + "</span>").join("") + "</div>";
       }
       function bibleTypeLabel(type, plural) { return t((plural ? "bible.typePl." : "bible.type.") + type); }
       function bibleName(e) { return e && e.name ? e.name : t("bible.untitled"); }
@@ -24002,10 +24388,12 @@
         return out;
       }
       /* ---- editing: facts, links, fields, templates ---- */
-      function bibleBookFieldDefs(type) { return (state.bible && state.bible.fields && Array.isArray(state.bible.fields[type]) && state.bible.fields[type]) || []; }
+      function bibleOwnFieldDefs(type) { return (state.bible && state.bible.fields && Array.isArray(state.bible.fields[type]) && state.bible.fields[type]) || []; }
+      /* the fields the manager lists and edits: the series Covenant's while the book reads one, else the book's own */
+      function bibleBookFieldDefs(type) { const h = bibleSeries ? bibleSeries.doc : state.bible; return (h && h.fields && Array.isArray(h.fields[type]) && h.fields[type]) || []; }
       /* the fields an entry can show: the series Covenant's, then the book's own that the series lacks (the same objects, so a rename lands where the field is kept). Without a series, the book's own list. */
       function bibleFieldDefs(type) {
-        const own = bibleBookFieldDefs(type);
+        const own = bibleOwnFieldDefs(type);
         const sf = bibleSeries && bibleSeries.doc && bibleSeries.doc.fields && Array.isArray(bibleSeries.doc.fields[type]) ? bibleSeries.doc.fields[type] : null;
         return sf && sf.length ? sf.concat(own.filter((f) => !sf.some((x) => x.id === f.id))) : own;
       }
@@ -24039,9 +24427,9 @@
         const base = lab.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "f";
         let id = base, n = 2;
         while (bibleFieldDefs(type).some((f) => f.id === id)) id = base + "-" + (n++);
-        if (!state.bible) state.bible = { entries: [] };
-        if (!state.bible.fields) state.bible.fields = {};
-        state.bible.fields[type] = list.concat([{ id: id, label: lab }]);
+        const home = bibleHomeDoc();
+        if (!home.fields) home.fields = {};
+        home.fields[type] = list.concat([{ id: id, label: lab }]);
         bibleTouched(false); return id;
       }
       function bibleRenameField(type, id, label) {
@@ -24051,9 +24439,9 @@
       }
       function bibleRemoveField(type, id) {
         const list = bibleBookFieldDefs(type); if (!list.some((f) => f.id === id)) return false;
-        const rest = list.filter((f) => f.id !== id);
-        if (rest.length) state.bible.fields[type] = rest; else delete state.bible.fields[type];
-        if (!Object.keys(state.bible.fields).length) delete state.bible.fields;
+        const rest = list.filter((f) => f.id !== id), home = bibleHomeDoc();
+        if (rest.length) home.fields[type] = rest; else delete home.fields[type];
+        if (!Object.keys(home.fields).length) delete home.fields;
         bibleTouched(false); return true;
       }
       /* removing a field from the manager can be taken back: the toast's Undo puts the definition back where it was, and the values were never touched */
@@ -24066,8 +24454,9 @@
           const cur = bibleBookFieldDefs(type);
           if (cur.some((x) => x.id === f.id || x.label.toLowerCase() === f.label.toLowerCase())) return;
           const next = cur.slice(); next.splice(Math.min(at, next.length), 0, f);
-          if (!state.bible.fields) state.bible.fields = {};
-          state.bible.fields[type] = next;
+          const home = bibleHomeDoc();
+          if (!home.fields) home.fields = {};
+          home.fields[type] = next;
           bibleTouched(false);
           if ($("bibFieldsMgr")) { bibleRenderFields(); icons(); } else bibleRefreshMore(bibleById(bibleUi.sel));
         } });
@@ -24085,7 +24474,9 @@
       function bibleMoreHtml(e) {
         const defs = bibleFieldDefs(e.type), facts = e.facts || {};
         const others = bibleAllEntries().filter((o) => o.id !== e.id);
-        let h = '<details class="full bib-more" id="bibMore"><summary>' + esc(t("bible.more")) + '</summary><div class="bib-more-body"><div class="bib-sub">' + esc(t("bible.factsH")) + "</div>";
+        let h = '<details class="full bib-more" id="bibMore"><summary>' + esc(t("bible.more")) + '</summary><div class="bib-more-body">';
+        if (bibleSeries) h += '<div class="switch-row bib-only"><div class="sw-txt"><b>' + esc(t("bible.onlyBook")) + "</b><span>" + esc(t("bible.onlyBookDesc")) + '</span></div><button type="button" class="switch" id="tglBibOnly" aria-pressed="' + String(bibleListOf(e.id) === bibleEntries()) + '" aria-label="' + esc(t("bible.onlyBook")) + '"></button></div>';
+        h += '<div class="bib-sub">' + esc(t("bible.factsH")) + "</div>";
         if (defs.length) h += '<div class="bib-fact-grid">' + defs.map((f) => '<label class="bib-fact-in"><span>' + esc(f.label) + '</span><input class="txt-input" type="text" maxlength="400" data-fact="' + esc(f.id) + '" value="' + esc(facts[f.id] || "") + '" /></label>').join("") + "</div>";
         else h += '<p class="bib-hint">' + esc(t("bible.noFieldsHint")) + "</p>";
         h += '<div class="bib-addrow"><input class="txt-input" id="bibNewField" type="text" maxlength="40" placeholder="' + esc(t("bible.newFieldPh")) + '" aria-label="' + esc(t("bible.newFieldPh")) + '" /><button type="button" class="tb-btn" id="btnBibAddField">' + esc(t("bible.add")) + "</button></div>";
@@ -24396,7 +24787,7 @@
       }
 
       /* ---- the room ---- */
-      const bibleUi = { sel: null, mode: "entry", query: "", detail: false, menTimer: null, saveTimer: null };
+      const bibleUi = { sel: null, mode: "entry", query: "", detail: false, menTimer: null, saveTimer: null, filter: "all", merge: null };
       function bibleTouched(matching) {
         bibleAllVer++;
         if (bibleSeries) bibleSeriesTouched(); /* an edit to a series entry is saved to the series' row */
@@ -24415,6 +24806,7 @@
         else if (!bibleById(bibleUi.sel)) { bibleUi.sel = bibleAllEntries().length ? bibleAllEntries()[0].id : null; bibleUi.detail = false; }
         m.classList.add("open");
         bibleStatus("");
+        bibleShelfScan(); /* the other books of the series: the join offer and the series-wide counts */
         const sw = $("tglBibMarks"); if (sw) sw.setAttribute("aria-pressed", String(bibleMarksOn()));
         bibleRender();
         const box = m.querySelector(".modal"); if (box) box.scrollTop = 0;
@@ -24426,16 +24818,24 @@
       }
       function bibleRender() {
         const main = $("bibMain"); if (!main) return;
-        main.classList.toggle("is-detail", !!bibleUi.detail && (bibleUi.mode === "seed" || bibleUi.mode === "fields" || !!bibleById(bibleUi.sel)));
+        main.classList.toggle("is-detail", !!bibleUi.detail && (bibleUi.mode === "seed" || bibleUi.mode === "fields" || bibleUi.mode === "merge" || !!bibleById(bibleUi.sel)));
         bibleRenderSeriesLine();
         bibleRenderList();
-        if (bibleUi.mode === "seed") bibleRenderSeed(); else if (bibleUi.mode === "fields") bibleRenderFields(); else bibleRenderEntry();
+        if (bibleUi.mode === "seed") bibleRenderSeed(); else if (bibleUi.mode === "fields") bibleRenderFields(); else if (bibleUi.mode === "merge") bibleRenderMerge(); else bibleRenderEntry();
         icons();
       }
       function bibleRenderList() {
         const host = $("bibList"); if (!host) return;
-        const entries = bibleAllEntries();
+        let entries = bibleAllEntries();
         if (!entries.length) { host.innerHTML = '<p class="bib-none">' + esc(t("bible.empty")) + "</p>"; return; }
+        /* R5: in a series book, All / Book / Series with their counts */
+        let bar = "";
+        if (bibleSeries) {
+          const ser = new Set(bibleSeries.doc.entries), nS = entries.filter((e) => ser.has(e)).length, f = bibleUi.filter || "all";
+          bar = '<div class="bib-filter" role="group">' + [["all", "All", entries.length], ["book", "Book", entries.length - nS], ["series", "Series", nS]].map((x) =>
+            '<button type="button" class="bib-fbtn" data-bib-filter="' + x[0] + '" aria-pressed="' + String(f === x[0]) + '">' + esc(t("bible.filter" + x[1])) + ' <span class="ins-num">' + esc(fmtNum(x[2])) + "</span></button>").join("") + "</div>";
+          if (f === "book") entries = entries.filter((e) => !ser.has(e)); else if (f === "series") entries = entries.filter((e) => ser.has(e));
+        }
         const men = bibleMentions();
         const q = bibleKey(bibleUi.query);
         const fits = (e) => !q || bibleKey(e.name).indexOf(q) !== -1 || e.aliases.some((a) => bibleKey(a).indexOf(q) !== -1) || e.tags.some((g) => bibleKey(g).indexOf(q) !== -1);
@@ -24455,8 +24855,8 @@
           });
           html += "</ul>";
         });
-        if (!shown) html = '<p class="bib-none">' + esc(t("bible.noMatch", { q: bibleUi.query.trim() })) + "</p>";
-        host.innerHTML = html;
+        if (!shown) html = q ? '<p class="bib-none">' + esc(t("bible.noMatch", { q: bibleUi.query.trim() })) + "</p>" : "";
+        host.innerHTML = bar + html;
         icons();
       }
       function bibleFieldHtml(id, label, inner, full) {
@@ -24543,6 +24943,7 @@
         if (!men.cols.length) { host.innerHTML = html + '<p class="bib-none">' + esc(t("bible.mentionsNoStory")) + "</p>"; return; }
         const secs = p.counts.filter((c) => c > 0).length;
         html += '<p class="ins-caption" id="bibMenSum">' + (p.total ? esc(t("bible.nMentions", { count: p.total, n: fmtNum(p.total) }) + " · " + t("bible.nSections", { count: secs, n: fmtNum(secs) })) : esc(t("bible.mentionsNone"))) + "</p>";
+        html += bibleSeriesStrip(e, p.total);
         const max = Math.max(1, ...p.counts);
         html += '<div class="bib-heat" id="bibHeat" style="--bib-n:' + men.cols.length + '" role="group" aria-label="' + esc(t("bible.heatAria")) + '">' +
           men.cols.map((c, i) => {
@@ -24613,9 +25014,10 @@
         const offered = new Set(bibleSeedCandidates().list.filter((x) => !x.taken).map((x) => x.name));
         const added = [];
         picked.forEach((p) => {
-          if (!offered.has(p.name) || bibleEntries().length >= BIBLE_MAX) return; /* only a name Insights found */
+          const home = bibleHomeDoc(); /* a series book's new entries go to the series */
+          if (!offered.has(p.name) || home.entries.length >= BIBLE_MAX) return; /* only a name Insights found */
           const e = bibleNormalizeEntry({ name: p.name, type: p.type });
-          state.bible.entries.push(e); added.push(e);
+          home.entries.push(e); added.push(e);
         });
         if (!added.length) return added;
         bibleUi.mode = "entry"; bibleUi.sel = added[0].id; bibleUi.detail = false;
@@ -24626,10 +25028,10 @@
       }
       /* ---- entries ---- */
       function bibleNewEntry() {
-        if (bibleEntries().length >= BIBLE_MAX) return null;
-        if (!state.bible) state.bible = { entries: [] };
+        const home = bibleHomeDoc(); /* a series book's new entries go to the series ("Only this book" keeps one here) */
+        if (home.entries.length >= BIBLE_MAX) return null;
         const e = bibleNormalizeEntry({ name: "", type: "character" });
-        state.bible.entries.push(e);
+        home.entries.push(e);
         bibleUi.sel = e.id; bibleUi.mode = "entry"; bibleUi.detail = true;
         bibleTouched(false);
         bibleRender();
@@ -24708,7 +25110,10 @@
       }
       /* ---- series: export and import ---- */
       function bibleExportDoc() {
-        const b = bibleNormalize(state.bible);
+        /* a series book exports everything it reads: the series Covenant's entries and fields with its own */
+        const src = bibleSeries ? { entries: bibleAllEntries(), fields: BIBLE_TYPES.reduce((o, ty) => { const l = bibleFieldDefs(ty); if (l.length) o[ty] = l; return o; }, {}) } : state.bible;
+        const b = bibleNormalize(src);
+        delete b.counts;
         const ids = new Set(b.entries.map((e) => e.imageId).filter(Boolean));
         const images = (state.images || []).filter((im) => im && ids.has(im.id) && typeof im.data === "string")
           .map((im) => ({ id: im.id, name: im.name || "", mediaType: im.mediaType, ext: im.ext, data: im.data }));
@@ -24721,17 +25126,19 @@
         return base + "-covenant.json"; /* the format id stays "beuk-story-bible", so old and new exports import both ways */
       }
       function bibleExport() {
-        if (!bibleHas()) { bibleStatus(t("bible.exportEmpty")); return; }
+        const n = bibleAllEntries().length;
+        if (!n) { bibleStatus(t("bible.exportEmpty")); return; }
         const blob = new Blob([JSON.stringify(bibleExportDoc(), null, 2)], { type: "application/json" });
         downloadBlob(blob, bibleExportName());
-        bibleStatus(t("bible.exported", { count: bibleEntries().length, n: fmtNum(bibleEntries().length), file: bibleExportName() }));
+        bibleStatus(t("bible.exported", { count: n, n: fmtNum(n), file: bibleExportName() }));
       }
       const BIBLE_IMG_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
       function bibleImportDoc(doc) {
         if (!doc || typeof doc !== "object" || doc.format !== BIBLE_FORMAT || !Array.isArray(doc.entries)) return { ok: false, added: [], skipped: [], pics: 0 };
         if (!state.bible) state.bible = { entries: [] };
+        const home = bibleHomeDoc(); /* a series book imports into the series Covenant; a name it already reads is skipped */
         const have = new Set();
-        bibleEntries().forEach((e) => { const k = bibleKey(e.name); if (k) have.add(k); });
+        bibleAllEntries().forEach((e) => { const k = bibleKey(e.name); if (k) have.add(k); });
         const srcImgs = Array.isArray(doc.images) ? doc.images : [];
         const imgMap = {};
         const added = [], skipped = [];
@@ -24743,11 +25150,11 @@
           const k = bibleKey(e.name);
           if (k && have.has(k)) {
             skipped.push(e.name);
-            const twin = bibleEntries().find((x) => bibleKey(x.name) === k) || added.find((x) => bibleKey(x.name) === k);
+            const twin = bibleAllEntries().find((x) => bibleKey(x.name) === k) || added.find((x) => bibleKey(x.name) === k);
             if (twin && raw && typeof raw.id === "string") idMap[raw.id] = twin.id;
             return;
           }
-          if (bibleEntries().length + added.length >= BIBLE_MAX) { skipped.push(bibleName(e)); return; }
+          if (home.entries.length + added.length >= BIBLE_MAX) { skipped.push(bibleName(e)); return; }
           if (k) have.add(k);
           const oldId = e.id;
           e.id = bibleNewId();
@@ -24775,19 +25182,19 @@
           added.push(e);
         });
         added.forEach((e) => { if (e.links) e.links = e.links.map((l) => ({ to: idMap[l.to] || "", label: l.label })); });
-        added.forEach((e) => state.bible.entries.push(e));
+        added.forEach((e) => home.entries.push(e));
         /* the file's fields join the book's: a fact in the file is only readable if its field exists here, and a field the book already has keeps its own label */
         const fin = bibleNormalizeFields(doc.fields);
         if (Object.keys(fin).length) {
-          const cur = bibleNormalizeFields(state.bible.fields);
+          const cur = bibleNormalizeFields(home.fields);
           Object.keys(fin).forEach((type) => {
             const mine = cur[type] || (cur[type] = []);
             fin[type].forEach((f) => { if (!mine.some((x) => x.id === f.id) && mine.length < 50) mine.push(f); });
           });
-          state.bible.fields = cur;
+          home.fields = cur;
         }
         /* one pass over the merged Covenant drops any link the remap could not place */
-        state.bible = bibleNormalize(state.bible);
+        if (bibleSeries) { bibleSeries.doc = bibleNormalize(bibleSeries.doc, true); bibleAllVer++; } else state.bible = bibleNormalize(state.bible);
         return { ok: true, added: added, skipped: skipped, pics: pics };
       }
       function bibleImportReport(r) {
@@ -24857,7 +25264,11 @@
         $("bibFile").addEventListener("change", () => { const f = $("bibFile").files && $("bibFile").files[0]; $("bibFile").value = ""; bibleImportFile(f); });
         $("tglBibMarks").addEventListener("click", () => bibleSetMarks(!bibleMarksOn()));
         $("bibSearch").addEventListener("input", (e) => { bibleUi.query = e.target.value || ""; bibleRenderList(); });
+        const jo = $("bibJoin");
+        if (jo) jo.addEventListener("click", (e) => { const b = e.target && e.target.closest ? e.target.closest("button") : null; if (!b) return; if (b.id === "btnBibJoin") bibleJoinStart(); else if (b.id === "btnBibJoinNo") bibleJoinDismiss(); });
         $("bibList").addEventListener("click", (e) => {
+          const fb = e.target && e.target.closest ? e.target.closest("[data-bib-filter]") : null;
+          if (fb) { bibleUi.filter = fb.getAttribute("data-bib-filter"); bibleRenderList(); return; }
           const b = e.target && e.target.closest ? e.target.closest("[data-bib-id]") : null; if (!b) return;
           bibleUi.sel = b.getAttribute("data-bib-id"); bibleUi.mode = "entry"; bibleUi.detail = true;
           bibleRender();
@@ -24898,6 +25309,11 @@
           if (go && bibleById(go.getAttribute("data-bib-goto"))) { bibleUi.sel = go.getAttribute("data-bib-goto"); bibleUi.mode = "entry"; bibleRender(); return; }
           if (tg.closest("#btnBibBack")) { bibleUi.detail = false; bibleUi.mode = "entry"; bibleRender(); return; }
           if (tg.closest("#btnBibDelete")) { bibleDelete(bibleUi.sel); return; }
+          const mg = tg.closest("[data-mg-v]");
+          if (mg && bibleUi.merge) { const a = bibleUi.merge.asks[Number(mg.getAttribute("data-mg-i"))]; if (a) { a.answer = mg.getAttribute("data-mg-v"); bibleRenderMerge(); icons(); } return; }
+          if (tg.closest("#btnBibMergeSave")) { bibleMergeSave(); return; }
+          if (tg.closest("#btnBibMergeCancel")) { bibleUi.merge = null; bibleUi.mode = "entry"; bibleUi.detail = false; bibleRender(); return; }
+          if (tg.closest("#tglBibOnly") && bibleById(bibleUi.sel)) { bibleSetOnlyBook(bibleUi.sel, bibleListOf(bibleUi.sel) !== bibleEntries()); return; }
           const ent = bibleById(bibleUi.sel);
           if (tg.closest("#btnBibAddField") && ent) {
             const inp = $("bibNewField"), id = bibleAddField(ent.type, inp.value);
@@ -24948,8 +25364,10 @@
         const keepUi = Object.assign({}, bibleUi), keepMarks = bibleMarksPref;
         /* the series Covenant in hand is set aside: a check sees only its own fixture, and nothing it does reaches the shelf or this device's store */
         const keepSeries = bibleSeries, keepSync = Object.assign({}, bibleSeriesSync), keepNet = Object.assign({}, bibleSeriesNet);
-        const keepCloud = { user: cloud.user, available: cloud.available }, keepOnline = net.online;
-        bibleSeriesNet.fetch = () => null; bibleSeriesNet.store = () => null; bibleSeriesNet.load = () => null;
+        const keepCloud = { user: cloud.user, available: cloud.available, shelf: cloud.shelf, linkedId: cloud.linkedId, baseUpdatedAt: cloud.baseUpdatedAt }, keepOnline = net.online;
+        const keepMem = Object.assign({}, bibleSeriesMem);
+        Object.assign(bibleSeriesMem, { user: null, gone: [], dismissed: [], shelf: {}, ids: null, scanning: false, absent: null });
+        bibleSeriesNet.fetch = () => null; bibleSeriesNet.store = () => null; bibleSeriesNet.load = () => null; bibleSeriesNet.pref = () => null; bibleSeriesNet.ask = () => false;
         clearTimeout(bibleSeriesSync.timer); clearTimeout(bibleSeriesSync.stepTimer);
         bibleSeries = null; bibleSeriesSync.last = null; bibleSeriesSync.conflict = null; bibleAllVer++;
         try { return fn(); }
@@ -24957,7 +25375,8 @@
           clearTimeout(bibleUi.saveTimer); clearTimeout(bibleUi.menTimer);
           clearTimeout(bibleSeriesSync.timer); clearTimeout(bibleSeriesSync.stepTimer); clearTimeout(bibleSeriesArriveTimer); bibleSeriesArriveTimer = null;
           if ($("modalConflict") && $("modalConflict").getAttribute("data-bib-series") === "1") { bibleSeriesModalReset(); $("modalConflict").classList.toggle("open", !!cloud.conflict); }
-          cloud.user = keepCloud.user; cloud.available = keepCloud.available; net.online = keepOnline;
+          Object.assign(cloud, keepCloud); net.online = keepOnline;
+          Object.assign(bibleSeriesMem, keepMem);
           bibleSeries = keepSeries; Object.assign(bibleSeriesSync, keepSync, { timer: null, stepTimer: null }); bibleAllVer++;
           if (keepSync.timer) bibleSeriesSchedule();
           if (keepSync.stepTimer) bibleSeriesTouched();
@@ -25013,6 +25432,44 @@
         }
         return counts;
       }
+      /* the shelf of the join, merge and leave checks: Book Two of “Salt Road” is on the desk; Book One of it and a book of another series are on a mocked shelf */
+      const BIBLE_SX = {
+        user: { id: "sx-user", email: "check@beuk.invalid" },
+        shelf: () => [{ id: "m-one", title: "Book One", revision: 3, updatedAt: "2026-05-01T00:00:00.000Z" }, { id: "m-two", title: "Book Two", revision: 8, updatedAt: "2026-01-01T00:00:00.000Z" }, { id: "m-other", title: "Glass Kings", revision: 2, updatedAt: "2026-02-01T00:00:00.000Z" }],
+        one: () => ({ meta: { title: "Book One", author: "Fixture", language: "en", series: "salt  ROAD", seriesNumber: 1, bookId: "sx-one" },
+          sections: [{ id: "s1c1", kind: "body", type: "chapter", number: "1", title: "Harbour", subtitle: "", content: "Mara climbed the mast while Charles watched. Old Wren mended the nets." }],
+          bible: { entries: [
+            { id: "o-mara", type: "character", name: "Mara", aliases: ["Mara Q", "Quill"], tags: ["crew"], facts: { age: "19" }, changes: [{ id: "oc1", anchor: { sec: "s1c1", quote: "Mara climbed the mast", at: 0 }, text: "learns the ropes" }] },
+            { id: "o-charles", type: "character", name: "Charles", description: "the harbour master" },
+            { id: "o-wren", type: "character", name: "Wren" }],
+            fields: { character: [{ id: "age", label: "Age" }] }, counts: { "o-mara": [1], "o-charles": [1] } } }),
+        other: () => ({ meta: { title: "Glass Kings", series: "Glass Kings", seriesNumber: 1, bookId: "sx-glass" }, sections: [], bible: { entries: [{ id: "g-mara", type: "character", name: "Mara" }] } }),
+        two: (bible) => ({ meta: { title: "Book Two", author: "Fixture", language: "en", langSource: "manual", series: "Salt Road", seriesNumber: 2, bookId: "sx-two" },
+          sections: BIBLE_FIXTURE_SECS().concat([{ id: "bibc3", kind: "body", type: "chapter", number: "3", title: "Oars", subtitle: "", content: "Charles rowed out to meet Mara. Charles said the tide was turning." }]),
+          bible: bible || { entries: [
+            { id: "t-mara", type: "character", name: "Mara", aliases: ["Mara Q"], tags: ["captain-to-be"], facts: { age: "17" }, changes: [{ id: "tc1", anchor: { sec: "bibc2", quote: "Mara watched the gulls", at: 0 }, text: "watches the gulls" }] },
+            { id: "t-charles", type: "character", name: "Charles", description: "the ferryman" },
+            { id: "t-hale", type: "character", name: "Captain Hale", aliases: ["Hale"] },
+            { id: "t-gull", type: "place", name: "Gullwick", scope: "book" },
+            { id: "t-pip", type: "thing", name: "Pip lantern" }],
+            fields: { character: [{ id: "age", label: "Age" }] } } }),
+        /* a mocked shelf: answer(method, path, opts, body) may answer first; otherwise the series row is absent and the books are as above */
+        net: (calls, answer) => (path, opts) => {
+          const m = (opts && opts.method) || "GET", im = opts && opts.headers && opts.headers["If-Match"], body = opts && opts.body ? JSON.parse(opts.body) : null;
+          calls.push(m + " " + path + (im ? " " + im : ""));
+          const own = answer && answer(m, path, opts, body); if (own !== undefined) return own;
+          if (m === "GET" && path === "/api/manuscripts/m-one") return { manuscript: { id: "m-one", title: "Book One", doc: BIBLE_SX.one(), revision: 3, updatedAt: "2026-05-01T00:00:00.000Z" } };
+          if (m === "GET" && path === "/api/manuscripts/m-other") return { manuscript: { id: "m-other", title: "Glass Kings", doc: BIBLE_SX.other(), revision: 2, updatedAt: "2026-02-01T00:00:00.000Z" } };
+          if (m === "GET" && path.indexOf("/api/series-covenants/") === 0) return { __status: 404, __error: "series not found", __body: { error: "series not found" } };
+          return null;
+        },
+        /* signed in on Book Two, linked to its shelf copy and saved, with the series row absent */
+        desk: (bible) => {
+          applyBookDoc(BIBLE_SX.two(bible));
+          cloud.user = BIBLE_SX.user; cloud.available = true; net.online = true;
+          cloud.shelf = BIBLE_SX.shelf(); cloud.linkedId = "m-two"; cloud.baseUpdatedAt = "2026-01-01T00:00:00.000Z"; cloudDirty = false;
+        }
+      };
       function bibleSelfChecks() {
         return [
           { id: "bible.seed.frominsights", feature: "bible", name: "Covenant: “Add from Story Insights” offers exactly the names Names on stage found, with their counts; opening it, or pressing Add with nothing chosen, creates nothing; a name it did not find cannot be slipped in; only the name the writer gave a type becomes an entry, of that type, with no invented aliases",
@@ -25719,6 +26176,224 @@
                   if (realCalls) bad.push("the network was reached " + realCalls + " times");
                 } finally { window.fetch = realFetch; local.signedOut = keepSignedOut; }
                 return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "signed out: one line (“" + t("bible.seriesSignIn", { name: "Salt Road" }) + "”), 0 requests, 0 device reads, the book's own entries matched and listed; signed in: row read, line gone; signed out again: series dropped, line back; no series: no line; 404: nothing loaded, no line" };
+              });
+            } },
+          { id: "bible.series.join", feature: "bible", name: "Series Covenant join offer: signed in, with two or more shelf books whose series name matches (any case or spacing) and no series row on the shelf, the Covenant room offers once to share one Covenant; signed out, with one matching book, with a row already there, or after Not now (remembered for that series) it does not; the open book's own shelf copy is never read or counted; nothing is sent or changed before Yes, and Yes opens the merge screen with nothing chosen and Save disabled",
+            run() {
+              return bibleCheckGuard(() => {
+                const bad = [], calls = [], prefs = [];
+                const realFetch = window.fetch; let realCalls = 0, stores = 0;
+                window.fetch = function () { realCalls++; return Promise.reject(new Error("a self-check never reaches the network")); };
+                try {
+                  let row = false;
+                  bibleSeriesNet.fetch = BIBLE_SX.net(calls, (m, p) => (row && m === "GET" && p === "/api/series-covenants/salt%20road" ? { series: { key: "salt road", name: "Salt Road", doc: { entries: [] }, revision: 2 } } : undefined));
+                  bibleSeriesNet.store = () => { stores++; return null; };
+                  bibleSeriesNet.pref = (uid, v) => { if (v !== undefined) prefs.push(JSON.parse(JSON.stringify(v))); return null; };
+                  const offer = () => $("bibJoin");
+                  const shown = () => !!offer() && !offer().hidden;
+                  BIBLE_SX.desk();
+                  const book = () => { const d = serializeBook(); if (d.bible) delete d.bible.counts; return JSON.stringify(d); };
+                  const before = book();
+                  /* signed out: no offer, no request */
+                  cloud.user = null;
+                  bibleSeriesRefresh(true); openBible();
+                  if (shown() || calls.length) bad.push("signed out: offer " + shown() + ", " + calls.length + " requests");
+                  /* signed in, two books of the series, no row */
+                  cloud.user = BIBLE_SX.user;
+                  bibleSeriesRefresh(true); openBible();
+                  const want = t("bible.joinOffer", { n: fmtNum(2), name: "Salt Road" });
+                  if (!shown() || offer().querySelector("p").textContent !== want) bad.push("signed in with two books: offer " + (shown() ? JSON.stringify(offer().querySelector("p").textContent) : "not shown"));
+                  if (calls.indexOf("GET /api/manuscripts/m-two") !== -1) bad.push("the open book's own shelf copy was read");
+                  if (calls.indexOf("GET /api/manuscripts/m-one") === -1 || calls.indexOf("GET /api/manuscripts/m-other") === -1) bad.push("the shelf books were not read: " + calls.join(", "));
+                  const n = calls.length; openBible();
+                  if (calls.length !== n) bad.push("a second look read the shelf again at the same revisions");
+                  /* one matching book only */
+                  cloud.shelf = BIBLE_SX.shelf().filter((x) => x.id !== "m-one"); bibleRender();
+                  if (shown()) bad.push("offered with one book of the series");
+                  cloud.shelf = BIBLE_SX.shelf(); bibleRender();
+                  /* a row already on the shelf: it is read, not offered */
+                  row = true; bibleSeriesRefresh(true); bibleRender();
+                  if (shown() || !bibleSeries) bad.push("offered although the series row exists");
+                  row = false; bibleSeriesRefresh(true); bibleRender();
+                  if (!shown()) bad.push("the offer did not come back once the row was gone");
+                  stores = 0; /* reading the row kept a device copy of it, as it should */
+                  /* Not now: gone, and remembered for that series */
+                  offer().querySelector("#btnBibJoinNo").click(); bibleRender();
+                  if (shown() || !prefs.length || (prefs[prefs.length - 1].dismissed || []).indexOf("salt road") === -1) bad.push("Not now did not hide the offer or was not remembered");
+                  /* nothing sent or changed before Yes */
+                  bibleSeriesMem.dismissed = []; bibleRender();
+                  if (calls.some((c) => !/^GET /.test(c)) || stores || book() !== before) bad.push("something was written before Yes: " + calls.filter((c) => !/^GET /.test(c)).join(", ") + ", " + stores + " device writes");
+                  offer().querySelector("#btnBibJoin").click();
+                  const save = $("btnBibMergeSave"), btns = document.querySelectorAll("#bibMerge [data-mg-v]");
+                  if (!$("bibMerge") || !save || !save.disabled || !btns.length || Array.prototype.some.call(btns, (b) => b.getAttribute("aria-pressed") === "true")) bad.push("Yes did not open the merge screen with nothing chosen and Save disabled");
+                  if (calls.some((c) => !/^GET /.test(c)) || book() !== before || bibleSeries) bad.push("Yes alone wrote something");
+                  if (realCalls) bad.push("the network was reached " + realCalls + " times");
+                } finally { window.fetch = realFetch; }
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "signed out: nothing; signed in with Book One and Book Two of “Salt Road” and no row: “" + t("bible.joinOffer", { n: fmtNum(2), name: "Salt Road" }) + "”; the open book's shelf copy never read, the shelf read once per revision; one book: none; row there: none; Not now: gone and remembered; nothing sent before Yes; Yes: merge screen, nothing chosen, Save disabled; " + calls.length + " mocked calls, 0 real" };
+              });
+            } },
+          { id: "bible.series.merge", feature: "bible", name: "Series Covenant merge: Save stays disabled until every shared name is answered; Same in both makes one series entry with also-called, tags and changes unioned without duplicates, each change pinned to its own book and place, and the fact kept from the newer book shown before Save; Different keeps two entries, so a name both claim (two “Charles”) is counted for neither and reported as ambiguous; the row is created without a revision; the open book keeps only its own entries (Only this book) and the other book loses only the entries that went to the series, a 409 there taking the shelf's newer copy so its newer entry is kept; then new entries go to the series, Only this book moves an entry and back, the All/Book/Series filter counts, and a series entry shows its count across the books",
+            run() {
+              return bibleCheckGuard(() => {
+                const bad = [], calls = [], puts = [];
+                const realFetch = window.fetch; let realCalls = 0, oneRev = 3;
+                window.fetch = function () { realCalls++; return Promise.reject(new Error("a self-check never reaches the network")); };
+                try {
+                  bibleSeriesNet.fetch = BIBLE_SX.net(calls, (m, p, o, body) => {
+                    if (m === "PUT" && p === "/api/series-covenants/salt%20road") { puts.push(body); return { series: { key: "salt road", name: body.name, doc: body.doc, revision: 1 } }; }
+                    if (m === "PUT" && p === "/api/manuscripts/m-one") {
+                      puts.push(body);
+                      if (oneRev === 3) { oneRev = 4; const newer = BIBLE_SX.one(); newer.bible.entries.push({ id: "o-gale", type: "character", name: "Gale" }); return { __status: 409, __body: { manuscript: { id: "m-one", doc: newer, revision: 4 } } }; }
+                      return { manuscript: { id: "m-one", revision: 5 } };
+                    }
+                    return undefined;
+                  });
+                  BIBLE_SX.desk();
+                  bibleSeriesRefresh(true); openBible();
+                  $("bibJoin").querySelector("#btnBibJoin").click();
+                  const pick = (name, v) => { const g = Array.prototype.find.call(document.querySelectorAll("#bibMerge .bib-mg"), (x) => x.querySelector("b").textContent.split(" · ").indexOf(name) !== -1); const b = g && g.querySelector('[data-mg-v="' + v + '"]'); if (b) b.click(); return !!b; };
+                  const asks = document.querySelectorAll("#bibMerge .bib-mg").length;
+                  if (asks !== 2) bad.push("the merge screen asks " + asks + " questions (want Mara and Charles)");
+                  if (!pick("Mara", "same") || !$("btnBibMergeSave").disabled) bad.push("Save was enabled with Charles unanswered");
+                  const keepLine = t("bible.mergeKeep", { field: "Age", keep: "19", book: "Book One", drop: "17", from: "Book Two" });
+                  const keeps = Array.prototype.map.call(document.querySelectorAll("#bibMerge .bib-mg-keep li"), (x) => x.textContent);
+                  if (keeps.indexOf(keepLine) === -1) bad.push("the newer fact was not shown before Save: " + JSON.stringify(keeps));
+                  if (calls.some((c) => !/^GET /.test(c))) bad.push("an answer wrote something before Save");
+                  if (!pick("Charles", "diff") || $("btnBibMergeSave").disabled) bad.push("Save stayed disabled with every name answered");
+                  $("btnBibMergeSave").click();
+                  const create = calls.find((c) => c.indexOf("PUT /api/series-covenants/") === 0);
+                  if (create !== "PUT /api/series-covenants/salt%20road") bad.push("the row was not created without a revision: " + create);
+                  const me = state.meta.bookId;
+                  const sdoc = bibleSeries && bibleSeries.doc;
+                  if (!sdoc) bad.push("no series Covenant after Save");
+                  else {
+                    const by = (name) => sdoc.entries.filter((e) => e.name === name);
+                    const mara = by("Mara")[0];
+                    if (by("Mara").length !== 1 || !mara) bad.push("Same in both left " + by("Mara").length + " Maras");
+                    else {
+                      if (mara.aliases.join("|") !== "Mara Q|Quill" || mara.tags.join("|") !== "crew|captain-to-be") bad.push("Mara's also-called/tags were not unioned once each: " + mara.aliases.join("|") + " / " + mara.tags.join("|"));
+                      const cs = (mara.changes || []).map((c) => c.id + "@" + c.anchor.book + ":" + (c.anchor.pos || []).join(","));
+                      const watched = state.sections[1].content.indexOf("Mara watched the gulls");
+                      if (cs.join(" ") !== "oc1@sx-one:1,0,0 tc1@" + me + ":2,1," + watched) bad.push("Mara's changes: " + cs.join(" "));
+                      if (!mara.facts || mara.facts.age !== "19") bad.push("the fact kept is " + JSON.stringify(mara.facts) + " (want the newer book's 19)");
+                    }
+                    if (by("Charles").length !== 2 || by("Charles")[0].id === by("Charles")[1].id) bad.push("Different did not keep two Charles");
+                    if (by("Captain Hale").length !== 1 || by("Wren").length !== 1 || by("Pip lantern").length !== 1 || by("Gullwick").length) bad.push("an entry of one book did not join as it is (or Only this book joined): " + sdoc.entries.map((e) => e.name).join(", "));
+                    if (!sdoc.fields || !sdoc.fields.character || !sdoc.fields.character.some((f) => f.id === "age")) bad.push("the books' fields did not join the series");
+                  }
+                  const own = serializeBook().bible;
+                  if (!own || own.entries.map((e) => e.id).join(",") !== "t-gull") bad.push("the open book keeps " + (own ? own.entries.map((e) => e.id).join(",") : "nothing") + " (want only its Only this book entry)");
+                  const onePut = puts.filter((b) => b.doc && b.doc.meta && b.doc.meta.bookId === "sx-one");
+                  const oneCalls = calls.filter((c) => c.indexOf("/api/manuscripts/m-one") !== -1 && c.indexOf("PUT") === 0);
+                  if (oneCalls.join(" | ") !== 'PUT /api/manuscripts/m-one "3" | PUT /api/manuscripts/m-one "4"') bad.push("Book One was written as " + oneCalls.join(" | "));
+                  const last = onePut[onePut.length - 1];
+                  if (!last || last.doc.bible.entries.map((e) => e.id).join(",") !== "o-gale" || last.doc.sections[0].content.indexOf("Mara climbed") !== 0) bad.push("Book One lost more (or less) than the entries that went to the series: " + (last ? last.doc.bible.entries.map((e) => e.id).join(",") : "no write"));
+                  /* two Charles in scope: counted for neither, reported */
+                  const men = bibleMentions(), ch = sdoc ? sdoc.entries.filter((e) => e.name === "Charles").map((e) => e.id) : [];
+                  if (ch.length !== 2 || ch.some((id) => !men.per[id] || men.per[id].total || !men.per[id].ambiguous) || !men.ambiguous) bad.push("two Charles: " + ch.map((id) => men.per[id] && men.per[id].total + "/" + men.per[id].ambiguous).join(", ") + ", ambiguous " + men.ambiguous);
+                  if (ch[0]) { openBible(ch[0]); const amb = t("bible.ambiguous", { count: men.per[ch[0]].ambiguous, n: fmtNum(men.per[ch[0]].ambiguous) }); if ($("bibMentions").textContent.indexOf(amb) === -1) bad.push("the room does not report the ambiguous Charles"); }
+                  /* counts kept with the book, and the series-wide total */
+                  const mid = sdoc && (sdoc.entries.find((e) => e.name === "Mara") || {}).id;
+                  const counts = serializeBook().bible.counts || {};
+                  const here = men.per[mid] ? men.per[mid].total : -1;
+                  if (!Array.isArray(counts[mid]) || counts[mid].reduce((a, x) => a + x, 0) !== here || counts[mid].length !== men.cols.length) bad.push("the book's saved counts for Mara: " + JSON.stringify(counts[mid]) + " (live " + here + ")");
+                  openBible(mid);
+                  const across = $("bibSeriesSum"), strip = $("bibBooks");
+                  if (!across || across.textContent !== t("bible.seriesAcross", { n: fmtNum(here + 1) }) || !strip || strip.querySelectorAll(".bib-bk").length !== 2) bad.push("series-wide count: " + (across ? across.textContent : "none") + " (want " + (here + 1) + " over 2 books)");
+                  /* new entries go to the series */
+                  const nb = bibleEntries().length, ns = sdoc ? sdoc.entries.length : 0;
+                  $("btnBibNew").click();
+                  if (bibleEntries().length !== nb || !sdoc || sdoc.entries.length !== ns + 1) bad.push("a new entry did not go to the series");
+                  /* Only this book, and back */
+                  const hale = sdoc && sdoc.entries.find((e) => e.name === "Captain Hale");
+                  if (hale) {
+                    openBible(hale.id);
+                    const tg = () => $("tglBibOnly");
+                    if (!tg()) bad.push("no Only this book switch");
+                    else {
+                      tg().click();
+                      if (sdoc.entries.indexOf(hale) !== -1 || bibleEntries().indexOf(hale) === -1 || hale.scope !== "book" || tg().getAttribute("aria-pressed") !== "true") bad.push("Only this book did not move Captain Hale to the book");
+                      tg().click();
+                      if (sdoc.entries.indexOf(hale) === -1 || bibleEntries().indexOf(hale) !== -1 || hale.scope) bad.push("switching Only this book off did not move it back");
+                    }
+                  }
+                  /* the filter */
+                  const all = bibleAllEntries().length, fb = (k) => $("bibList").querySelector('[data-bib-filter="' + k + '"]');
+                  if (!fb("all") || fb("all").textContent.indexOf(fmtNum(all)) === -1 || fb("book").textContent.indexOf(fmtNum(1)) === -1) bad.push("the filter does not count All " + all + " / Book 1");
+                  else {
+                    fb("book").click();
+                    const listed = Array.prototype.map.call($("bibList").querySelectorAll("[data-bib-id]"), (x) => x.getAttribute("data-bib-id"));
+                    if (listed.join(",") !== "t-gull") bad.push("Book lists " + listed.join(","));
+                    fb("series").click();
+                    if ($("bibList").querySelector('[data-bib-id="t-gull"]') || $("bibList").querySelectorAll("[data-bib-id]").length !== all - 1) bad.push("Series lists the wrong entries");
+                    fb("all").click();
+                  }
+                  if (realCalls) bad.push("the network was reached " + realCalls + " times");
+                } finally { window.fetch = realFetch; }
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "Save disabled until Mara and Charles were answered; the newer fact shown before Save (" + t("bible.mergeKeep", { field: "Age", keep: "19", book: "Book One", drop: "17", from: "Book Two" }) + "); one Mara with also-called, tags and changes unioned once each and pinned to their books; two Charles counted for neither and reported ambiguous; row created without a revision; the open book keeps only Gullwick; Book One: 409 on 3, written on 4 keeping its newer entry; counts saved and summed across the books; new entry to the series; Only this book and back; filter All/Book/Series; " + calls.length + " mocked calls, 0 real" };
+              });
+            } },
+          { id: "bible.series.leave", feature: "bible", name: "Series Covenant leave and rename: clearing the Series asks first (Cancel changes nothing); leaving copies the series entries this book mentions into it with the fields they use, keeps the book's own entries, and the book stops reading the series; changing the name asks whether to rename it for all the books, and yes creates the new row, renames the other book on the shelf and removes the old row, which a late save from this device never makes again; a book gone from the shelf leaves its changes as orphans, never removed",
+            run() {
+              return bibleCheckGuard(() => {
+                const bad = [], calls = [], asked = [];
+                const realFetch = window.fetch; let realCalls = 0, reply = false;
+                window.fetch = function () { realCalls++; return Promise.reject(new Error("a self-check never reaches the network")); };
+                try {
+                  bibleSeriesNet.fetch = BIBLE_SX.net(calls, (m, p, o, body) => {
+                    if (m === "PUT" && p === "/api/series-covenants/tide%20road") return { series: { key: "tide road", name: body.name, doc: body.doc, revision: 1 } };
+                    if (m === "PUT" && p === "/api/manuscripts/m-one") return { manuscript: { id: "m-one", revision: 4 }, __sent: body };
+                    if (m === "PUT" && p === "/api/series-covenants/salt%20road") return { __status: 404, __body: { error: "series not found" } };
+                    if (m === "DELETE") return {};
+                    return undefined;
+                  });
+                  bibleSeriesNet.ask = (spec) => { asked.push(spec); return reply; };
+                  const shared = () => ({ entries: [
+                    { id: "s-mara", type: "character", name: "Mara", facts: { age: "19" }, changes: [{ id: "x1", anchor: { sec: "s1c1", quote: "Mara climbed the mast", at: 0, book: "sx-one", pos: [1, 0, 0] }, text: "learns the ropes" }, { id: "x3", anchor: { sec: "b3", quote: "Mara sailed", at: 5, book: "sx-three", pos: [3, 0, 5] }, text: "sails" }] },
+                    { id: "s-hale", type: "character", name: "Captain Hale", aliases: ["Hale"] },
+                    { id: "s-wren", type: "character", name: "Wren" }], fields: { character: [{ id: "age", label: "Age" }] } });
+                  const join = () => { BIBLE_SX.desk({ entries: [{ id: "t-gull", type: "place", name: "Gullwick", scope: "book" }] }); bibleSeriesSet({ key: "salt road", name: "Salt Road", doc: shared(), revision: 5 }, BIBLE_SX.user.id, false); };
+                  /* a book gone from the shelf: its changes are orphans, never removed */
+                  join();
+                  bibleSeriesMem.shelf = { "m-one": { rev: 3, title: "Book One", key: "salt road", name: "Salt Road", order: 1, ids: ["sx-one"], at: "", totals: {} }, "m-three": { rev: 1, title: "Book Three", key: "salt road", name: "Salt Road", order: 3, ids: ["sx-three"], at: "", totals: {} } };
+                  bibleSeriesMem.user = BIBLE_SX.user.id;
+                  cloud.shelf = BIBLE_SX.shelf().concat([{ id: "m-three", title: "Book Three", revision: 1 }]); bibleShelfScan();
+                  const mara = () => bibleSeries.doc.entries.find((e) => e.id === "s-mara");
+                  let st = bibleStateAt(mara(), null, bibleResolveChange);
+                  if (st.orphans.length || st.past.length !== 2) bad.push("with Book Three on the shelf its change was not placed");
+                  cloud.shelf = BIBLE_SX.shelf(); bibleShelfScan();
+                  st = bibleStateAt(mara(), null, bibleResolveChange);
+                  if (st.orphans.map((c) => c.id).join(",") !== "x3" || st.past.map((c) => c.id).join(",") !== "x1" || mara().changes.length !== 2 || !mara().changes[1].anchor.pos) bad.push("Book Three gone: orphans " + st.orphans.map((c) => c.id).join(",") + ", changes kept " + mara().changes.length);
+                  /* clearing the Series: asked first; Cancel changes nothing */
+                  const before = JSON.stringify(serializeBook());
+                  reply = false;
+                  if (!bibleSeriesChangeAsk("") || asked.length !== 1 || asked[0].title !== t("bible.leaveTitle")) bad.push("clearing the series did not ask first");
+                  if (!bibleSeries || state.meta.series !== "Salt Road" || JSON.stringify(serializeBook()) !== before) bad.push("Cancel changed something");
+                  /* Leave */
+                  reply = true;
+                  bibleSeriesChangeAsk("");
+                  const ids = bibleEntries().map((e) => e.id).join(",");
+                  if (ids !== "t-gull,s-mara,s-hale") bad.push("after leaving the book holds " + ids + " (want its own entry, then the mentioned Mara and Captain Hale, not Wren)");
+                  const m2 = bibleById("s-mara");
+                  if (!m2 || (m2.changes || []).length !== 2 || !m2.facts || m2.facts.age !== "19" || !bibleBookFieldDefs("character").some((f) => f.id === "age")) bad.push("a copied entry lost its changes, facts or field");
+                  if (bibleSeries || state.meta.series || bibleInSeries()) bad.push("the book still reads the series");
+                  if (calls.some((c) => !/^GET /.test(c))) bad.push("leaving wrote to the shelf: " + calls.filter((c) => !/^GET /.test(c)).join(", "));
+                  /* Rename for all */
+                  join(); bibleShelfScan();
+                  asked.length = 0; calls.length = 0;
+                  if (!bibleSeriesChangeAsk("Tide  Road") || asked.length !== 1 || asked[0].title !== t("bible.renameTitle", { n: fmtNum(2) })) bad.push("renaming did not ask about all 2 books: " + (asked[0] && asked[0].title));
+                  const writes = calls.filter((c) => !/^GET /.test(c));
+                  if (writes.join(" | ") !== 'PUT /api/series-covenants/tide%20road | PUT /api/manuscripts/m-one "3" | DELETE /api/series-covenants/salt%20road') bad.push("rename wrote " + writes.join(" | "));
+                  if (state.meta.series !== "Tide  Road" || !bibleSeries || bibleSeries.key !== "tide road" || !bibleById("s-wren")) bad.push("after renaming the book reads " + (bibleSeries && bibleSeries.key) + " as " + state.meta.series);
+                  if (bibleSeriesMem.gone.indexOf("salt road") === -1) bad.push("the old series was not remembered as removed");
+                  /* a late save on the old row is never made again */
+                  bibleSeriesSet({ key: "salt road", name: "Salt Road", doc: shared(), revision: 7 }, BIBLE_SX.user.id, true);
+                  calls.length = 0;
+                  bibleSeriesSaveNow();
+                  if (calls.join(" | ") !== 'PUT /api/series-covenants/salt%20road "7"' || bibleSeries) bad.push("a 404 on the removed series: " + calls.join(" | ") + ", series " + (bibleSeries && bibleSeries.key));
+                  if (realCalls) bad.push("the network was reached " + realCalls + " times");
+                } finally { window.fetch = realFetch; }
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "Book Three gone: its change an orphan, still kept; clearing asked first, Cancel changed nothing; leaving copied Mara and Captain Hale (not Wren) with changes, facts and field, kept Gullwick, stopped reading the series, wrote nothing to the shelf; rename asked about 2 books, created tide road, renamed Book One on 3, removed salt road; a late save on salt road got 404 and was not made again" };
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
@@ -38041,7 +38716,7 @@
           state.meta.publisher = $("setPublisher").value.trim();
           state.meta.isbn = $("setIsbn").value.trim();
           /* the series name is trimmed and held to 120 characters; blank means none, so the key goes (the cover maker then has no series line to fill) */
-          { const sn = $("setSeries").value.trim().slice(0, 120); if (sn) state.meta.series = sn; else delete state.meta.series; }
+          { const sn = $("setSeries").value.trim().slice(0, 120); if (!(typeof bibleSeriesChangeAsk === "function" && bibleSeriesChangeAsk(sn))) { if (sn) state.meta.series = sn; else delete state.meta.series; } } /* BEUK:bible — a book reading a shared Covenant asks first (leave or rename) */
           bookSeriesNumberInto(state.meta, $("setSeriesNumber").value); /* BEUK:seriesnumber */
           if (typeof bibleSeriesRefresh === "function") bibleSeriesRefresh(false); /* BEUK:bible — another series (or none) is read; the same one refreshes its places */
           state.meta.year = $("setYear").value.trim();
@@ -45880,6 +46555,7 @@
         return out.sort((a, b) => a.at - b.at);
       }
       function serializeBook() {
+        if (typeof bibleCountsNow === "function") bibleCountsNow(); /* BEUK:bible — a series book's mention counts ride it */
         const themeCopy = Object.assign({}, state.theme);
         /* The header design is the one nested value on the theme:
            copy it truly, and only when a design exists — a book
@@ -45919,7 +46595,7 @@
           history: hist.history,
           historyPool: hist.pool,
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
-          ...(bibleHas() || (state.bible && state.bible.fields && Object.keys(state.bible.fields).length) ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
+          ...(bibleHas() || (state.bible && state.bible.fields && Object.keys(state.bible.fields).length) || bibleCountsHeld() ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
           /* BEUK:manuscript — the submission manuscript's contact block and page choices ride with the book */

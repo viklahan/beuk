@@ -3162,6 +3162,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'What the Covenant room shows and whether the studio asks the shelf at all are decided in the browser; a signed-out studio makes no request for the server to answer.',
   },
   {
+    id: 'bible.series.join',
+    title: 'Series Covenant join offer: signed in with two or more shelf books of one series and no series row, the Covenant room offers once to share one Covenant; signed out, one book, a row already there or Not now (remembered) shows nothing; nothing is sent or changed before Yes',
+    kind: 'client-only',
+    reason: 'The offer is decided in the studio from the shelf list and the books it reads; the check answers with a mocked shelf so it never reaches the network.',
+  },
+  {
+    id: 'bible.series.merge',
+    title: 'Series Covenant merge: Same in both / Different per shared name, Save disabled until all are answered; Same unions without duplicates and keeps the newer fact (shown first); Different leaves an ambiguous name counted for neither; the row is created without a revision and the books keep only what did not move, a 409 on another book redone on its newer copy',
+    kind: 'client-only',
+    reason: 'The merge screen, the merged Covenant and the edits to the books are built in the studio; the check answers with a mocked shelf. The routes themselves are covered by tests/series-covenants.test.ts and the manuscripts tests.',
+  },
+  {
+    id: 'bible.series.leave',
+    title: 'Series Covenant leave and rename: clearing the series asks first and copies the mentioned entries into the book; renaming for all creates the new row, renames the other books and removes the old row, which a late save never makes again; a book gone from the shelf leaves its changes as orphans',
+    kind: 'client-only',
+    reason: 'The question, the copy and the rename sequence run in the studio against a mocked shelf; the server only stores what it is sent.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',
