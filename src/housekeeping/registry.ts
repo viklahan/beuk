@@ -3132,6 +3132,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Marking happens on the studio desk and the change rides the client book document; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.links.facts',
+    title: 'Covenant links, quick facts and templates: a link shows on both entries, a fact set in the form shows on the card and clearing the last fact or link returns the plain form, deleting an entry removes only the links to it, a removed field hides its values until save drops them, and a template adds each field once',
+    kind: 'client-only',
+    reason: 'Links, facts and templates are edited in the studio room and ride the client book document; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',
