@@ -3757,6 +3757,30 @@ Re-run after a studio change that moves a control. Then copy
 (e.g. `rsync -a school-media/ box:/opt/beuk/school-media/`); compose
 mounts it read-only into Caddy and the app.
 
+### Beuk Weekly: `/school/weekly`
+
+The School's newspaper (V, 2026-10-28): black ink on white, after the
+1920s broadsheets — Old Standard TT masthead and text, Oswald headlines,
+Playfair Display decks, all self-hosted (`fonts-weekly.css`, linked by the
+Weekly pages and the School home only; `tools/fonts/vendor-weekly-fonts.mjs`).
+The School's pages carry two tabs, **Courses** and **Beuk Weekly**, and the
+School home shows the latest issue as a band.
+
+- **An issue** is a folder, `content/weekly/en/NNN/`: `issue.md` (volume,
+  week, banner + bannerDeck, the lead story's slug, the two ears) and one
+  Markdown file per story with its `place` — `lead`, `front`, `brief`,
+  `fold` or `notice`. Pictures sit in the same folder and are served at
+  `/school/weekly/<n>/img/<file>`. Format: `src/weekly/content.ts`.
+- **Pages:** `/school/weekly` (latest), `/school/weekly/<n>`,
+  `/school/weekly/<n>/<story>`. Briefs and notices have no page of their own.
+- **Printed edition:** the dateline links "This issue as a printed PDF"
+  only when `<SCHOOL_MEDIA_DIR>/weekly/en/issue-NNN.pdf` is on the box.
+  Producing that PDF with Beuk's own renderer is not built yet.
+- **Notices** (freebies, prizes, packs) print only when they are real; a
+  notice's `link` points at the thing itself.
+- `checkWeeklyContent`, `tests/weekly.test.ts` and the Housekeeping case
+  `weekly.content.parses-clean` keep it honest.
+
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
 
 - **`/features`** (`client/site/features.html`) shows the studio feature by feature in nine real screenshots under `client/site/shots/` (WebP, 600–1280 px wide, all under 100 KB, each with alt text and its real size). They were taken in the studio with the bundled sample, *The Lantern Coast*, on 26 October 2026: the writing desk with the device preview, the Typography Studio, the Print Interior View, the cover maker and print wrap, the export dialog with its store presets, Story Insights, the Goals habit calendar and a History snapshot. Every line describes the studio as it is today. Beta-reader links need an account, so that section says there is no picture instead of showing a mock-up. The road-so-far chart isn't pictured because the browser had logged the sample's length on only one day.

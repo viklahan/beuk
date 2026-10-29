@@ -3,6 +3,7 @@ import { getHelpContent } from '../help/content.js';
 import { escapeHtml as esc } from '../warmth/markdown.js';
 import { STAGE_NAMES, type Course, type Lesson, type SchoolContent, type Stage } from './content.js';
 import { mediaUrl, readLessonMedia, type LessonMedia } from './media.js';
+import { getWeeklyContent } from '../weekly/content.js';
 
 /**
  * Beuk School pages (/school, /school/<course>, /school/<course>/<lesson>),
@@ -57,8 +58,23 @@ function firstShot(ctx: SchoolCtx, l: Lesson): string | null {
   return shot ? mediaUrl(LANG, l.course, l.slug, shot) : null;
 }
 
-function page(ctx: SchoolCtx, opts: { title: string; description: string; path: string; body: string; data?: string }): string {
-  const { config } = ctx;
+export interface SchoolPageOpts {
+  title: string;
+  description: string;
+  path: string;
+  body: string;
+  data?: string;
+  /** Which School tab is current: the courses or Beuk Weekly. */
+  tab?: 'courses' | 'weekly';
+  /** Extra stylesheets after school.css (the Weekly's fonts and paper). */
+  css?: string[];
+  bodyClass?: string;
+}
+
+/** The School's page shell: the public site's top bar and footer, School
+ *  current, and the School's own Courses · Beuk Weekly tabs. */
+export function schoolPage(config: Config, opts: SchoolPageOpts): string {
+  const tab = opts.tab ?? 'courses';
   const canonical = `${config.appBaseUrl}${opts.path}`;
   return `<!doctype html>
 <html lang="en">
@@ -83,8 +99,9 @@ function page(ctx: SchoolCtx, opts: { title: string; description: string; path: 
     <link rel="stylesheet" href="/assets/fonts/fonts-site.css" />
     <link rel="stylesheet" href="/site/site.css" />
     <link rel="stylesheet" href="/site/school.css" />
+    ${(opts.css ?? []).map((h) => `<link rel="stylesheet" href="${esc(h)}" />`).join('')}
   </head>
-  <body class="school"${opts.data ?? ''}>
+  <body class="school${opts.bodyClass ? ' ' + esc(opts.bodyClass) : ''}"${opts.data ?? ''}>
     <a class="skip" href="#top">Skip to the lessons</a>
     <header class="topbar">
       <div class="topbar-in">
@@ -104,6 +121,12 @@ function page(ctx: SchoolCtx, opts: { title: string; description: string; path: 
         </nav>
       </div>
     </header>
+    <nav class="s-tabs" aria-label="School">
+      <div class="s-tabs-in">
+        <a href="/school"${tab === 'courses' ? ' aria-current="page"' : ''}>Courses</a>
+        <a href="/school/weekly"${tab === 'weekly' ? ' aria-current="page"' : ''}>Beuk Weekly</a>
+      </div>
+    </nav>
 
     <main id="top">
       <div class="wrap">
@@ -162,6 +185,18 @@ function courseCard(ctx: SchoolCtx, c: Course): string {
         </a>`;
 }
 
+/** The School home's pointer to this week's paper (nothing while there is no issue). */
+function weeklyBand(): string {
+  const issue = getWeeklyContent().latest;
+  if (!issue) return '';
+  return `<a class="weekly-band" href="/school/weekly">
+          <span class="wb-mast">Beuk Weekly</span>
+          <span class="wb-no">No. ${issue.number} · out now</span>
+          <span class="wb-head">${esc(issue.banner)}</span>
+          <span class="wb-deck">${esc(issue.bannerDeck)}</span>
+        </a>`;
+}
+
 export function renderSchoolHome(ctx: SchoolCtx): string {
   const { courses } = ctx.content;
   const chips = (Object.keys(STAGE_NAMES) as Stage[])
@@ -179,6 +214,8 @@ export function renderSchoolHome(ctx: SchoolCtx): string {
           <p class="say" data-stage-say>Pick one and the courses that fit stay lit.</p>
         </section>
 
+        ${weeklyBand()}
+
         <section class="shelf" aria-labelledby="courses-h">
           <h2 id="courses-h">Courses</h2>
           <div class="grid">
@@ -193,11 +230,12 @@ export function renderSchoolHome(ctx: SchoolCtx): string {
           <div><span class="fmt r">Read</span><h3>Read</h3><p>The steps in writing, with a screenshot of each one.</p></div>
           <div><span class="fmt">Free</span><h3>Keep your place</h3><p>Everything here is free. <a href="/studio?signin">Sign in</a> and the lessons you finish are remembered; without an account nothing is kept.</p></div>
         </section>`;
-  return page(ctx, {
+  return schoolPage(ctx.config, {
     title: 'School — Beuk',
     description: 'Beuk School: free courses on the Beuk studio, each lesson recorded on the live studio, to watch, listen to or read.',
     path: '/school',
     body,
+    css: getWeeklyContent().latest ? ['/assets/fonts/fonts-weekly.css'] : [],
   });
 }
 
@@ -239,7 +277,7 @@ export function renderCourse(ctx: SchoolCtx, c: Course): string {
             <p class="small muted" data-signin-note>Follow along on your own book, or on the sample story the studio loads in one click. <a href="/studio?signin">Sign in</a> to have Beuk remember the lessons you finish.</p>
           </aside>
         </div>`;
-  return page(ctx, {
+  return schoolPage(ctx.config, {
     title: `${c.title} — Beuk School`,
     description: c.blurb,
     path: `/school/${c.slug}`,
@@ -347,7 +385,7 @@ export function renderLesson(ctx: SchoolCtx, c: Course, l: Lesson): string {
           ${prev ? `<a href="/school/${esc(c.slug)}/${esc(prev.slug)}">← ${prev.n} · ${esc(prev.title)}</a>` : `<a href="/school/${esc(c.slug)}">← ${esc(c.title)}</a>`}
           ${next ? `<a href="/school/${esc(c.slug)}/${esc(next.slug)}">${next.n} · ${esc(next.title)} →</a>` : `<a href="/school/${esc(c.slug)}">Back to the course →</a>`}
         </nav>`;
-  return page(ctx, {
+  return schoolPage(ctx.config, {
     title: `${l.title} — ${c.title} — Beuk School`,
     description: l.blurb,
     path: `/school/${c.slug}/${l.slug}`,
@@ -357,7 +395,7 @@ export function renderLesson(ctx: SchoolCtx, c: Course, l: Lesson): string {
 }
 
 export function renderSchoolNotFound(ctx: SchoolCtx, message: string): string {
-  return page(ctx, {
+  return schoolPage(ctx.config, {
     title: 'Not found — Beuk School',
     description: message,
     path: '/school',

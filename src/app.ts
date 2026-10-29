@@ -31,6 +31,7 @@ import { streakRoutes } from './routes/streak.js';
 import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
+import { weeklyRoutes } from './routes/weekly.js';
 import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.js';
 import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
@@ -202,6 +203,8 @@ export function buildApp({
   // M4 warmth pages (help reading room, thanks, changelog, roadmap).
   // Everything else at the site root is Caddy's static client mount.
   app.use(help.pages);
+  // Beuk Weekly before the School's pages: /school/weekly is never a course slug.
+  app.use(weeklyRoutes(config));
   app.use(school.pages);
   app.use(warmthRoutes(config));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).

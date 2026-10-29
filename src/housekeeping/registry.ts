@@ -37,6 +37,7 @@ import { ACCOUNT_DELETED_TABLES, ACCOUNT_DETACHED_TABLES } from '../account/data
 import { CONFIRM_TOKEN_TTL_HOURS } from '../account/confirm.js';
 import { checkSchoolContent, loadSchoolContent } from '../school/content.js';
 import { readLessonMedia } from '../school/media.js';
+import { checkWeeklyContent, loadWeeklyContent } from '../weekly/content.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -3317,6 +3318,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       assert(broken.length === 0, broken.join('; '));
       if (watch === 0 && listen === 0) throw new NotConfigured(`no lesson media under SCHOOL_MEDIA_DIR (${config.schoolMediaDir}); all ${total} lessons are Read-only`);
       return `${watch} of ${total} lessons have video, ${listen} have audio; the rest are Read-only`;
+    },
+  },
+  {
+    id: 'weekly.content.parses-clean',
+    title: 'Beuk Weekly: every issue and story parses, issues are numbered without gaps, every picture a story names is in its folder',
+    kind: 'server',
+    run: async () => {
+      const w = loadWeeklyContent('en');
+      const problems = checkWeeklyContent(w);
+      assert(problems.length === 0, problems.join('; '));
+      if (!w.latest) throw new NotConfigured('no issue under content/weekly/en yet');
+      return `${w.issues.length} issue(s); latest No. ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
     },
   },
   {
