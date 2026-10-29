@@ -2496,9 +2496,25 @@ Founders' Shelf application; none of it touches pricing or checkout.
   only until paid plans are live** (V, 2026-10-25). Pages that carry it
   load `/help/billing-gate.js`, which asks `GET /api/billing/status`
   and hides every `data-kofi` element (the jar, the header "Support"
-  link, the coffee section of `/support`) only when the answer is an
+  link, the caife section of `/support`) only when the answer is an
   explicit `{ "live": true }`. A 404/501, any other answer, a network
   error or no answer within 1.5 s keeps the jar showing.
+- **Caife** (V, 2026-10-29) — the Ko-fi button reads "Buy a Caife"
+  (caife is Irish for coffee) on `/support` and on the jar; payment
+  stays on Ko-fi, in a new tab. Clicking it on `/support` plays the
+  thank-you on the page's plate: a handwritten note falls onto a dawn
+  sea, folds into a paper boat and sails off, then "Go raibh maith
+  agat". There is no payment check; the thank-you is said either way,
+  and `localStorage` `beuk.support.lastCaife` keeps the boat out on
+  the water for seven days on that device. The scene is
+  `client/assets/caife/boat.js` on three.js r128, vendored as
+  `client/assets/vendor/three.r128.min.js` (MIT; byte-identical to
+  cdnjs, SRI-pinned on the page and re-hashed by
+  `infra.deploy.vendored-libraries`); it draws only while the plate is
+  on screen and the tab is visible, and its clock stops while the tab
+  is hidden, so a writer back from Ko-fi still sees the note fold.
+  Reduced motion shows one still frame; without WebGL the plate keeps
+  a painted sea and the thank-you text.
 - **Brand** — the sub-brand beside the wordmark and the footer of every
   warmth page is `beuk.studio`, the production domain
   (`BRAND_SUBLINE` / `BRAND_FOOTNOTE` in `src/warmth/pages.ts`; the

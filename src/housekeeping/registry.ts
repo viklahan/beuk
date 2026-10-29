@@ -228,6 +228,8 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
         ['mammoth.browser.min.js', 'sha512-sG5Q7boJL+ft/weuz6Mmi9XBD+bEzE9AI2FMP4YMFxp3FpTFUQSQQm5K5cSgJCyed6bWs3W8f8h0lp36lHXhQA=='],
         ['lucide.min.js', 'sha512-ibnpmCRt4ihCELC17N3qavYe+koJxpcJQA2FxbbyCJkqYs1WetGvNWeecRmT5g3IJf7CmAsW+rLMJFC0qdkAiA=='],
         ['jspdf.umd.min.js', 'sha512-B/+2C2xTio+mD98bsO0SAh007OKBp96sQyJECBAFzA0pwWQhyC/yxgMU6aWjldvtZkALDUeOl+7eiLZL7P7+FA=='],
+        // three.js r128 (MIT) for the Caife sea on /support only; same hash as its integrity="" there.
+        ['three.r128.min.js', 'sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=='],
       ];
       const problems: string[] = [];
       for (const [file, sri] of pinned) {

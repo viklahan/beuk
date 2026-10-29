@@ -86,7 +86,7 @@ Backups are a safety net, not a promise. Keep your own exports too.
 [[end]]
 - **Openverse (cover photos, when the studio can't reach its server).** If the studio can't reach Beuk's server, its photo search goes from your browser straight to Openverse (api.openverse.org), which then sees your search words and IP address.
 [[if kofi]]
-- **Ko-fi.** The "Leave a tip" button is only a link. Nothing goes to Ko-fi unless you follow it, and what you give Ko-fi after that is between you and Ko-fi.
+- **Ko-fi.** The "Buy a Caife" button (caife is Irish for coffee) is only a link. Nothing goes to Ko-fi unless you follow it, and what you give Ko-fi after that is between you and Ko-fi.
 [[end]]
 [[if billing]]
 - **Stripe** handles paid plans, as described above.

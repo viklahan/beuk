@@ -4,6 +4,10 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-29 — Buy the maker a caife
+
+- **The support page says thank you properly.** "Buy me a coffee on Ko-fi" is now **Buy a Caife** (caife is Irish for coffee), on the support page and on the tip jar in Help and after an export. Ko-fi still opens in a new tab. Back on the support page, a handwritten note drifts down over a morning sea, folds itself into a paper boat and sails off toward the sun, and the page says "Go raibh maith agat", Irish for thank you. The note waits for you: if you are still on Ko-fi, it folds when you come back. It is drawn live in your browser, from Beuk's own server, with no images and nothing fetched from elsewhere. With reduced motion on, you see the boat already on the water. For a week afterwards, on that device, the boat is still out there when you visit.
+
 ## 2026-10-28 — The Covenant grows up
 
 - **A change pinned to the story.** Mark something that changed about a character, place or thing — Mara is hurt, the keep falls — and it is pinned to the passage where it happens. The entry's "Right now" shows the latest change at or before where your cursor is, and "Story so far" lists them all in order; changes still ahead of you show greyed, as not yet true here. A pinned change moves with its passage through chapter moves and text added around it. If the words it is pinned to are edited, or the passage is deleted, the change says so and waits for you to mark it again or remove it; it is never dropped on its own. Any change can be removed from Story so far, with Undo.

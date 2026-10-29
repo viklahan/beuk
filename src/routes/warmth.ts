@@ -21,7 +21,7 @@ import { renderLegalPage } from '../legal/render.js';
  *   GET /help/warmth.css         the shared Paper stylesheet (static)
  *   GET /help/billing-gate.js    hides the Ko-fi jar once billing is live
  *   GET /thanks                  the post-export landing (client/thanks/)
- *   GET /support                 the "buy the maker a coffee" page
+ *   GET /support                 the "buy the maker a caife" page
  *                                (client/support/) — served ONLY when
  *                                KOFI_URL is configured; 404 otherwise
  *   GET /changelog               rendered from CHANGELOG.md (repo root)
