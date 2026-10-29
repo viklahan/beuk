@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { getSchoolContent } from '../src/school/content.js';
-import { checkWeeklyContent, loadWeeklyContent, parseStory } from '../src/weekly/content.js';
-import { createTestDb, startTestServer } from './helpers.js';
+import { checkWeeklyContent, loadIssueFolder, loadWeeklyContent, parseStory } from '../src/weekly/content.js';
+import { renderIssue, renderStory } from '../src/weekly/render.js';
+import { createTestDb, startTestServer, testConfig } from './helpers.js';
 
 /* Beuk Weekly (V, 2026-10-28): the School's newspaper, black on white. */
 
@@ -109,4 +111,62 @@ test('Housekeeping self-check: Beuk Weekly content parses clean', async () => {
   const ctx = buildCheckContext(await createTestDb(), testConfig());
   const detail = await SELF_CHECK_CASES.find((c) => c.id === 'weekly.content.parses-clean')!.run!(ctx);
   assert.match(detail, /1 issue\(s\); latest No\. 1, 2026-11-02: Beuk School Opens Its Doors/);
+});
+
+/* Weekly press (2026-10-29): issues from more than one folder, and generated illustrations say so. */
+
+function copyIssue(to: string, edit?: (name: string, text: string) => string) {
+  const from = path.join(root, 'content', 'weekly', 'en', '001');
+  mkdirSync(to, { recursive: true });
+  for (const f of readdirSync(from)) {
+    const src = path.join(from, f);
+    if (f.endsWith('.md')) writeFileSync(path.join(to, f), edit ? edit(f, readFileSync(src, 'utf8')) : readFileSync(src, 'utf8'));
+    else copyFileSync(src, path.join(to, f));
+  }
+}
+
+test('weekly content: an extra root adds issues, a duplicate number is refused', () => {
+  const extra = mkdtempSync(path.join(tmpdir(), 'weekly-root-'));
+  copyIssue(path.join(extra, '002'), (f, t) => (f === 'issue.md' ? t.replace('week: 2026-11-02', 'week: 2026-11-09') : t));
+  const w = loadWeeklyContent('en', [extra]);
+  assert.equal(w.issues.length, 2);
+  assert.equal(w.latest!.number, 2);
+  assert.equal(w.latest!.week, '2026-11-09');
+  assert.deepEqual(checkWeeklyContent(w), []);
+  assert.equal(loadIssueFolder(path.join(extra, '002'), 7).number, 7);
+
+  const clash = mkdtempSync(path.join(tmpdir(), 'weekly-root-'));
+  copyIssue(path.join(clash, '001'));
+  assert.throws(() => loadWeeklyContent('en', [clash]), /issue 001 is in both/);
+});
+
+test('weekly content: a story records sources and whether its picture is an illustration', () => {
+  const s = parseStory('---\ntitle: T\nsection: S\nimage: a.jpg\ncaption: A desk\nillustration: yes\nsources: [https://a.example/x, https://b.example/y]\n---\nOne.\n', '/x/a.md', 1);
+  assert.equal(s.illustration, true);
+  assert.deepEqual(s.sources, ['https://a.example/x', 'https://b.example/y']);
+  const plain = parseStory('---\ntitle: T\nsection: S\n---\nOne.\n', '/x/b.md', 1);
+  assert.equal(plain.illustration, false);
+  assert.deepEqual(plain.sources, []);
+});
+
+test('weekly render: an illustration caption ends with the generated line; a base moves links and pictures', () => {
+  const extra = mkdtempSync(path.join(tmpdir(), 'weekly-root-'));
+  copyIssue(path.join(extra, '002'), (f, t) =>
+    f === 'school-opens.md' ? t.replace(/^caption: .*$/m, 'caption: A desk').replace(/^---\n/, '---\nillustration: yes\n') : t,
+  );
+  const w = loadWeeklyContent('en', [extra]);
+  const two = w.issueByNumber.get(2)!;
+  assert.ok(two.lead.image, 'the lead of issue 1 carries a picture');
+  const html = renderIssue(testConfig(), w, two);
+  assert.ok(html.includes('A desk Illustration, generated for Beuk Weekly.'));
+  const one = renderIssue(testConfig(), w, w.issueByNumber.get(1)!);
+  assert.ok(!one.includes('generated for Beuk Weekly'));
+  const story = renderStory(testConfig(), two, two.lead);
+  assert.ok(story.includes('A desk Illustration, generated for Beuk Weekly.'));
+
+  const moved = renderIssue(testConfig(), w, two, { base: '/school/weekly/draft/abc', preview: '<div id="bar">BAR</div>' });
+  assert.ok(moved.includes(`src="/school/weekly/draft/abc/img/${two.lead.image}"`));
+  assert.ok(moved.includes(`href="/school/weekly/draft/abc/${two.lead.slug}"`));
+  assert.ok(!moved.includes('href="/school/weekly/2/'), 'no link into the live issue from a preview');
+  assert.ok(moved.indexOf('id="bar"') < moved.indexOf('class="paper"'));
 });

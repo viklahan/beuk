@@ -16,6 +16,12 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
  *   /school/weekly/<n>/<story>        one story
  *   /school/weekly/<n>/img/<file>     a picture from the issue's folder
  *
+ * A draft's preview (src/weekly/preview.ts) renders the same pages under
+ * another base, /school/weekly/draft/<id>, so a preview never links into
+ * the live paper. A generated illustration's caption ends with
+ * ILLUSTRATION_LINE, so no reader takes one for a photograph or a
+ * screenshot.
+ *
  * The printed edition link appears only when that issue's PDF is on the
  * server (<SCHOOL_MEDIA_DIR>/weekly/en/issue-NNN.pdf). Nothing is shown for
  * a file that is not there.
@@ -30,17 +36,32 @@ export function weekLabel(week: string): string {
 }
 const pad = (n: number) => String(n).padStart(3, '0');
 export const issueUrl = (n: number) => `/school/weekly/${n}`;
-export const storyUrl = (s: Story) => `/school/weekly/${s.issue}/${s.slug}`;
-const imageUrl = (s: Story) => `/school/weekly/${s.issue}/img/${s.image}`;
+export const ILLUSTRATION_LINE = 'Illustration, generated for Beuk Weekly.';
+
+export interface RenderOpts {
+  /** Where the issue lives: stories are <base>/<slug>, pictures <base>/img/<file>. Default /school/weekly/<n>. */
+  base?: string;
+  /** HTML set above the paper (the press bar on a draft preview). */
+  preview?: string;
+}
+const baseOf = (s: Story, o: RenderOpts) => o.base ?? issueUrl(s.issue);
+export const storyUrl = (s: Story, o: RenderOpts = {}) => `${baseOf(s, o)}/${s.slug}`;
+const imageUrl = (s: Story, o: RenderOpts) => `${baseOf(s, o)}/img/${s.image}`;
+
+export function captionText(s: Story): string | null {
+  if (!s.illustration) return s.caption;
+  return s.caption ? `${s.caption} ${ILLUSTRATION_LINE}` : ILLUSTRATION_LINE;
+}
 
 export function printedEdition(config: Config, issue: Issue): string | null {
   const file = `issue-${pad(issue.number)}.pdf`;
   return existsSync(path.join(config.schoolMediaDir, 'weekly', 'en', file)) ? `/school/media/weekly/en/${file}` : null;
 }
 
-function figure(s: Story, alt: string): string {
+function figure(s: Story, alt: string, o: RenderOpts): string {
   if (!s.image) return '';
-  return `<figure><img src="${esc(imageUrl(s))}" alt="${esc(alt)}" loading="lazy" />${s.caption ? `<figcaption>${esc(s.caption)}</figcaption>` : ''}</figure>`;
+  const caption = captionText(s);
+  return `<figure><img src="${esc(imageUrl(s, o))}" alt="${esc(alt)}" loading="lazy" />${caption ? `<figcaption>${esc(caption)}</figcaption>` : ''}</figure>`;
 }
 
 function blocksHtml(blocks: StoryBlock[], dropFirst: boolean): string {
@@ -74,16 +95,16 @@ function masthead(config: Config, issue: Issue): string {
         </div>`;
 }
 
-function frontStory(s: Story): string {
+function frontStory(s: Story, o: RenderOpts): string {
   return `<article class="story">
               <p class="kick">${esc(s.section)}</p>
-              <h3><a href="${esc(storyUrl(s))}">${esc(s.title)}</a></h3>
+              <h3><a href="${esc(storyUrl(s, o))}">${esc(s.title)}</a></h3>
               <p class="by">${esc(s.byline)}</p>
               <p>${esc(s.summary ?? '')}</p>
             </article>`;
 }
 
-export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue): string {
+export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue, o: RenderOpts = {}): string {
   const lead = issue.lead;
   const leadParas = lead.blocks.filter((b) => b.kind === 'p').slice(0, 3);
   const briefs = issue.briefs.length
@@ -100,31 +121,31 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
             </div>`,
     )
     .join('');
-  const earlier = weekly.issues.filter((i) => i.number !== issue.number).reverse();
-  const body = `        <div class="paper">
+  const earlier = o.base ? [] : weekly.issues.filter((i) => i.number !== issue.number).reverse();
+  const body = `${o.preview ?? ''}        <div class="paper">
         ${masthead(config, issue)}
-        <a class="banner" href="${esc(storyUrl(lead))}">${esc(issue.banner)}</a>
+        <a class="banner" href="${esc(storyUrl(lead, o))}">${esc(issue.banner)}</a>
         <p class="banner-deck">${esc(issue.bannerDeck)}</p>
         <div class="front">
           <article class="lead">
             <p class="kick">${esc(lead.section)}</p>
-            <h2><a href="${esc(storyUrl(lead))}">${esc(lead.frontHead ?? lead.title)}</a></h2>
+            <h2><a href="${esc(storyUrl(lead, o))}">${esc(lead.frontHead ?? lead.title)}</a></h2>
             <p class="by">By ${esc(lead.byline)}</p>
-            ${figure(lead, lead.caption ?? lead.title)}
+            ${figure(lead, lead.caption ?? lead.title, o)}
             <div class="cols">
           ${blocksHtml(leadParas, true)}
             </div>
-            <a class="more" href="${esc(storyUrl(lead))}">Continue reading →</a>
+            <a class="more" href="${esc(storyUrl(lead, o))}">Continue reading →</a>
           </article>
           <div class="col2">
-            ${issue.front.map(frontStory).join('\n            ')}
+            ${issue.front.map((s) => frontStory(s, o)).join('\n            ')}
           </div>
           <aside class="col3 brief">
             ${briefs}
             ${notices}
           </aside>
         </div>
-        ${issue.fold.length ? `<section class="fold" aria-label="Below the fold">${issue.fold.map(frontStory).join('')}</section>` : ''}
+        ${issue.fold.length ? `<section class="fold" aria-label="Below the fold">${issue.fold.map((s) => frontStory(s, o)).join('')}</section>` : ''}
         ${
           earlier.length
             ? `<section class="earlier" aria-label="Earlier issues"><p class="kick">Earlier issues</p><ul>${earlier
@@ -149,16 +170,17 @@ export function renderIssue(config: Config, weekly: WeeklyContent, issue: Issue)
   });
 }
 
-export function renderStory(config: Config, issue: Issue, s: Story): string {
+export function renderStory(config: Config, issue: Issue, s: Story, o: RenderOpts = {}): string {
   const stories = [issue.lead, ...issue.front, ...issue.fold];
   const next = stories[stories.indexOf(s) + 1];
   const blocks = s.blocks;
   // The picture sits after the first subhead (or the second paragraph), the way a column carries it.
   const at = Math.max(blocks.findIndex((b) => b.kind === 'sub'), Math.min(2, blocks.length));
-  const html = blocksHtml(blocks.slice(0, at), true) + figure(s, s.caption ?? s.title) + blocksHtml(blocks.slice(at), false);
-  const body = `        <div class="paper">
+  const html = blocksHtml(blocks.slice(0, at), true) + figure(s, s.caption ?? s.title, o) + blocksHtml(blocks.slice(at), false);
+  const front = o.base ?? issueUrl(issue.number);
+  const body = `${o.preview ?? ''}        <div class="paper">
         <header class="art-mast">
-          <a class="m" href="${issueUrl(issue.number)}">Beuk Weekly</a>
+          <a class="m" href="${esc(front)}">Beuk Weekly</a>
           <span>Vol. ${esc(issue.volume)} · No. ${issue.number} · ${esc(weekLabel(issue.week))}</span>
         </header>
         <article class="article">
@@ -171,8 +193,8 @@ export function renderStory(config: Config, issue: Issue, s: Story): string {
           </div>
         </article>
         <nav class="art-foot" aria-label="This issue">
-          <a href="${issueUrl(issue.number)}">← Front page</a>
-          ${next ? `<a href="${esc(storyUrl(next))}">Next: ${esc(next.title)} →</a>` : ''}
+          <a href="${esc(front)}">← Front page</a>
+          ${next ? `<a href="${esc(storyUrl(next, o))}">Next: ${esc(next.title)} →</a>` : ''}
         </nav>
         </div>`;
   return schoolPage(config, {

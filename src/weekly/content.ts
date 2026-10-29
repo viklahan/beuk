@@ -25,7 +25,9 @@ import { repoRoot } from '../warmth/pages.js';
  *           `link` (where to get it); no page of its own
  * plus optional deck, summary (the front-page text for front/fold stories),
  * frontHead (the lead's headline on the front page, under the banner),
- * image + caption, order.
+ * image + caption, order, illustration (`yes` when the picture was
+ * generated, not photographed; its caption then says so) and sources
+ * ([url, url]: the pages an outside story is written from).
  *
  * Story body: paragraphs, `## Subhead`, and `> ` pull quotes, with the same
  * inline Markdown as Help. Raw HTML is always escaped.
@@ -51,6 +53,10 @@ export interface Story {
   image: string | null;
   caption: string | null;
   link: string | null;
+  /** The picture is a generated illustration (front matter `illustration: yes`). */
+  illustration: boolean;
+  /** Where an outside story comes from (front matter `sources: [url, url]`). */
+  sources: string[];
   blocks: StoryBlock[];
   words: number;
   readMinutes: number;
@@ -147,6 +153,8 @@ export function parseStory(source: string, file: string, issue: number): Story {
     image,
     caption: opt(meta, 'caption'),
     link: opt(meta, 'link'),
+    illustration: opt(meta, 'illustration') === 'yes',
+    sources: Array.isArray(meta.sources) ? (meta.sources as string[]) : [],
     blocks,
     words,
     readMinutes: Math.max(1, Math.ceil(words / 200)),
@@ -155,50 +163,64 @@ export function parseStory(source: string, file: string, issue: number): Story {
   };
 }
 
-export function loadWeeklyContent(lang: (typeof WEEKLY_LANGS)[number] = 'en'): WeeklyContent {
-  const dir = weeklyDir(lang);
+/** One issue folder (issue.md plus its stories), read as issue `number`. */
+export function loadIssueFolder(idir: string, number: number, stamp: string[] = []): Issue {
+  const ifile = path.join(idir, 'issue.md');
+  const { meta } = frontMatter(readFileSync(ifile, 'utf8'), ifile);
+  stamp.push(`${ifile}:${statSync(ifile).mtimeMs}`);
+  const week = need(meta, 'week', ifile);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new Error(`${ifile}: week is YYYY-MM-DD`);
+  const stories = readdirSync(idir)
+    .filter((f) => f.endsWith('.md') && f !== 'issue.md')
+    .sort()
+    .map((f) => {
+      const sf = path.join(idir, f);
+      stamp.push(`${sf}:${statSync(sf).mtimeMs}`);
+      return parseStory(readFileSync(sf, 'utf8'), sf, number);
+    });
+  const storyBySlug = new Map(stories.map((s) => [s.slug, s]));
+  const leadSlug = need(meta, 'lead', ifile);
+  const lead = storyBySlug.get(leadSlug);
+  if (!lead) throw new Error(`${ifile}: lead "${leadSlug}" is not a story in this issue`);
+  lead.place = 'lead';
+  lead.hasPage = true;
+  const by = (p: WeeklyPlace) => stories.filter((s) => s !== lead && s.place === p).sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
+  return {
+    number,
+    volume: need(meta, 'volume', ifile),
+    week,
+    banner: need(meta, 'banner', ifile),
+    bannerDeck: need(meta, 'bannerDeck', ifile),
+    forecast: need(meta, 'forecast', ifile),
+    late: Array.isArray(meta.late) ? (meta.late as string[]) : [],
+    lead,
+    front: by('front'),
+    briefs: by('brief'),
+    fold: by('fold'),
+    notices: by('notice'),
+    storyBySlug,
+    dir: idir,
+  };
+}
+
+/**
+ * Every issue: the git copy (content/weekly/<lang>/) first, then each extra
+ * root (the press's published/ folder on the server volume). One number in
+ * two places is refused, never silently shadowed.
+ */
+export function loadWeeklyContent(lang: (typeof WEEKLY_LANGS)[number] = 'en', extraRoots: string[] = []): WeeklyContent {
   const issues: Issue[] = [];
   const stamp: string[] = [];
-  const folders = existsSync(dir) ? readdirSync(dir).filter((d) => /^\d{3}$/.test(d)).sort() : [];
-  for (const folder of folders) {
-    const idir = path.join(dir, folder);
-    const number = Number(folder);
-    const ifile = path.join(idir, 'issue.md');
-    const { meta } = frontMatter(readFileSync(ifile, 'utf8'), ifile);
-    stamp.push(`${ifile}:${statSync(ifile).mtimeMs}`);
-    const week = need(meta, 'week', ifile);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new Error(`${ifile}: week is YYYY-MM-DD`);
-    const stories = readdirSync(idir)
-      .filter((f) => f.endsWith('.md') && f !== 'issue.md')
-      .sort()
-      .map((f) => {
-        const sf = path.join(idir, f);
-        stamp.push(`${sf}:${statSync(sf).mtimeMs}`);
-        return parseStory(readFileSync(sf, 'utf8'), sf, number);
-      });
-    const storyBySlug = new Map(stories.map((s) => [s.slug, s]));
-    const leadSlug = need(meta, 'lead', ifile);
-    const lead = storyBySlug.get(leadSlug);
-    if (!lead) throw new Error(`${ifile}: lead "${leadSlug}" is not a story in this issue`);
-    lead.place = 'lead';
-    lead.hasPage = true;
-    const by = (p: WeeklyPlace) => stories.filter((s) => s !== lead && s.place === p).sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
-    issues.push({
-      number,
-      volume: need(meta, 'volume', ifile),
-      week,
-      banner: need(meta, 'banner', ifile),
-      bannerDeck: need(meta, 'bannerDeck', ifile),
-      forecast: need(meta, 'forecast', ifile),
-      late: Array.isArray(meta.late) ? (meta.late as string[]) : [],
-      lead,
-      front: by('front'),
-      briefs: by('brief'),
-      fold: by('fold'),
-      notices: by('notice'),
-      storyBySlug,
-      dir: idir,
-    });
+  const seen = new Map<number, string>();
+  for (const dir of [weeklyDir(lang), ...extraRoots]) {
+    const folders = existsSync(dir) ? readdirSync(dir).filter((d) => /^\d{3}$/.test(d)).sort() : [];
+    for (const folder of folders) {
+      const number = Number(folder);
+      const prior = seen.get(number);
+      if (prior) throw new Error(`issue ${folder} is in both ${prior} and ${dir}`);
+      seen.set(number, dir);
+      issues.push(loadIssueFolder(path.join(dir, folder), number, stamp));
+    }
   }
   issues.sort((a, b) => a.number - b.number);
   return { issues, issueByNumber: new Map(issues.map((i) => [i.number, i])), latest: issues[issues.length - 1] ?? null, stamp: stamp.join('|') };
@@ -219,10 +241,22 @@ export function checkWeeklyContent(c: WeeklyContent): string[] {
 }
 
 let cache: { content: WeeklyContent; checkedAt: number } | null = null;
+let extraRoots: string[] = [];
+
+/** Where published press issues live besides git (set once at boot). */
+export function setWeeklyRoots(roots: string[]): void {
+  extraRoots = roots;
+  cache = null;
+}
+
+/** Forget the cached issues so a publish shows at once (production otherwise caches forever). */
+export function clearWeeklyCache(): void {
+  cache = null;
+}
 
 export function getWeeklyContent(): WeeklyContent {
   if (cache && (process.env.NODE_ENV === 'production' || Date.now() - cache.checkedAt < 2000)) return cache.content;
-  const fresh = loadWeeklyContent();
+  const fresh = loadWeeklyContent('en', extraRoots);
   if (!cache || cache.content.stamp !== fresh.stamp) cache = { content: fresh, checkedAt: Date.now() };
   else cache.checkedAt = Date.now();
   return cache.content;
