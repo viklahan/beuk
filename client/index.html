@@ -23410,6 +23410,10 @@
           d.inner.innerHTML = bibleDeskHtml(val, r.hits, dots);
           d.hits = r.hits; d.val = val; d.mk = mk; d.dk = dk; d.rects = null; d.hot = -1;
           bibleDeskPlaceDots(dots);
+        } else if (!d.rects && dots.length) {
+          /* a resize or font swap re-wrapped the text (those handlers clear rects) without changing it: the dots follow their lines */
+          d.inner.querySelectorAll(".bm-dotmark").forEach((x) => x.remove());
+          bibleDeskPlaceDots(dots);
         }
         bibleDeskScroll();
         d.times.push(performance.now() - t0);
@@ -24750,7 +24754,7 @@
           { id: "bible.change.mark", feature: "bible", name: "Covenant mark a change: a selection offers the names near it (each once, in order, none 200+ characters away); marking stores a findable anchor with book, position and fact through the normal save path; text and exports are unchanged; a blank selection or a 501st change is refused",
             run() {
               return bibleCheckGuard(() => {
-                const pad = (n) => " ".repeat(n);
+                const pad = (n) => " o".repeat(n).slice(0, n - 1) + " ";
                 /* Mara at 0, Tomas at 149, Mara at 179, Hale at 700: the 200-character reach */
                 const text = "Mara " + "walked in." + pad(134) + "Tomas" + pad(25) + "Mara" + pad(517) + "Hale" + pad(60) + "the end.";
                 const at = (w, from) => text.indexOf(w, from || 0);
@@ -24776,14 +24780,24 @@
                 const saved = !!bibleUi.saveTimer && bibleNormalize(state.bible).entries[0].changes.length === 1;
                 const textSame = JSON.stringify(state.sections.map((s) => s.content)) === bytes;
                 const exportSame = snap() === before && !/Injured, left leg/.test(snap());
-                const refused = bibleMarkChange("mk-mara", "mk1", 30, 30, "x") === null && bibleMarkChange("mk-mara", "mk1", 30, 35, "x") === null && bibleMarkChange("nobody", "mk1", 10, 20, "x") === null && mara.changes.length === 1;
+                const refused = bibleMarkChange("mk-mara", "mk1", 30, 30, "x") === null && bibleMarkChange("mk-mara", "nope", 30, 35, "x") === null && bibleMarkChange("nobody", "mk1", 10, 20, "x") === null && mara.changes.length === 1;
                 /* the 501st change is refused */
                 const tale = bibleById("mk-tomas");
                 tale.changes = [];
                 for (let i = 0; i < 500; i++) tale.changes.push({ id: "f" + i, anchor: { sec: "mk1", quote: "Tomas", at: tomasAt }, text: "c" + i });
                 const capped = bibleMarkChange("mk-tomas", "mk1", tomasAt, tomasAt + 5, "one too many") === null && tale.changes.length === 500;
-                return scVerdict(offeredOk && stored && found && stamped && saved && textSame && exportSame && refused && capped,
-                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; refused: " + refused + "; 501st refused: " + capped);
+                /* a re-wrap with no text change (the resize path) moves a dot with its line */
+                bibleMarkChange("mk-hale", "mk1", text.indexOf("the end."), text.length, "end");
+                selectSection("mk1"); if (typeof setCenterTab === "function") { currentCenterTab = "content"; setCenterTab("content"); }
+                bibleMarksPref = true; bibleDeskRender(true);
+                const area = $("editorArea"), probe = () => { const i = bibleDesk.inner, b = i.getBoundingClientRect(), ms = i.querySelectorAll(".bm-dot"), ds = i.querySelectorAll(".bm-dotmark"); const m = ms[ms.length - 1].getBoundingClientRect(); return { mid: m.top - b.top + m.height / 2, top: parseFloat(ds[ds.length - 1].style.top) }; };
+                const p0 = probe(), keepW = area.style.maxWidth;
+                area.style.maxWidth = "260px"; window.dispatchEvent(new Event("resize")); bibleDeskRender(false);
+                const p1 = probe();
+                area.style.maxWidth = keepW;
+                const follows = p1.mid > p0.mid + 20 && Math.abs(p1.top + 4 - p1.mid) <= 1 && Math.abs(p0.top + 4 - p0.mid) <= 1;
+                return scVerdict(offeredOk && stored && found && stamped && saved && textSame && exportSame && refused && capped && follows,
+                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; refused: " + refused + "; 501st refused: " + capped + "; dot follows a re-wrap: " + follows);
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
