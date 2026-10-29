@@ -11,7 +11,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const clientHtml = () => readFile(path.join(here, '..', 'client', 'index.html'), 'utf8');
-const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.editor.perf'];
+const IDS = ['bible.seed.frominsights', 'bible.mentions.match', 'bible.mentions.heatmap', 'bible.notexported', 'bible.series.roundtrip', 'bible.model.compat', 'bible.editor.perf'];
 
 test('story bible: every self-check exists in the client and is registered client-only with a reason', async () => {
   const html = await clientHtml();
@@ -46,7 +46,7 @@ test('story bible: every string ships in all 13 locales with its placeholders', 
 
 test('story bible: rides the book only when it holds an entry, and never reaches an export builder', async () => {
   const html = await clientHtml();
-  assert.match(html, /\.\.\.\(bibleHas\(\) \? \{ bible: bibleNormalize\(state\.bible\) \} : \{\}\)/);
+  assert.match(html, /\.\.\.\(bibleHas\(\) \|\| \(state\.bible && state\.bible\.fields && Object\.keys\(state\.bible\.fields\)\.length\) \? \{ bible: bibleNormalize\(state\.bible\) \} : \{\}\)/);
   assert.match(html, /state\.bible = bibleNormalize\(doc\.bible\);/);
   for (const fn of ['function epubFiles(', 'function buildPrintHtml(', 'function buildDocxFiles(', 'function countWords(']) {
     const i = html.indexOf(fn);
@@ -59,7 +59,7 @@ test('story bible: rides the book only when it holds an entry, and never reaches
 test('story bible: the export file format is named and versioned', async () => {
   const html = await clientHtml();
   assert.match(html, /const BIBLE_FORMAT = "beuk-story-bible";/);
-  assert.match(html, /format: BIBLE_FORMAT, version: 1,/);
+  assert.match(html, /format: BIBLE_FORMAT, version: 2,/);
 });
 
 test('covenant rename: the export is named -covenant.json while the format id stays beuk-story-bible, and no locale still says Bible', async () => {

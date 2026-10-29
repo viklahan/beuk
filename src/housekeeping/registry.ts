@@ -3102,6 +3102,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.model.compat',
+    title: 'Covenant entry model: facts, links, changes, AI setting, scope and details normalize and round-trip through the book file and the series export; a book with none of them serializes as before; old files import with them absent',
+    kind: 'client-only',
+    reason: 'The Covenant lives in the client book document and is matched in the studio on the device; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',

@@ -22886,8 +22886,69 @@
           imageId: typeof e.imageId === "string" && e.imageId ? e.imageId.slice(0, 80) : null,
           tags: bibleList(e.tags, 30, 60),
           exactCase: e.exactCase === true,
-          exclude: bibleList(e.exclude, 40, 120)
+          exclude: bibleList(e.exclude, 40, 120),
+          /* the codex keys below are written only when they hold something, so a book that uses none of them serializes exactly as it always has */
+          ...bibleCodexKeys(e)
         };
+      }
+      /* the Anchor: where in a section a change was marked. Quote and offset locate it; book is set for series entries; pos is the last resolved position, refreshed whenever that book is open. An anchor missing its section or offset can never be found again, so it is refused and the change goes with it. */
+      function bibleNormalizeAnchor(a) {
+        if (!a || typeof a !== "object" || typeof a.sec !== "string" || !a.sec || typeof a.quote !== "string" || typeof a.at !== "number" || !isFinite(a.at) || a.at < 0) return null;
+        const out = { sec: a.sec.slice(0, 80), quote: a.quote.replace(/\r\n?/g, "\n").slice(0, 160), at: Math.floor(a.at) };
+        if (typeof a.book === "string" && a.book) out.book = a.book.slice(0, 80);
+        if (Array.isArray(a.pos)) { const pos = a.pos.filter((n) => typeof n === "number" && isFinite(n)).slice(0, 16); if (pos.length) out.pos = pos; }
+        return out;
+      }
+      function bibleCodexKeys(e) {
+        const out = {};
+        const facts = {};
+        if (e.facts && typeof e.facts === "object" && !Array.isArray(e.facts)) {
+          Object.keys(e.facts).forEach((k) => {
+            const v = bibleLine(e.facts[k], 400);
+            if (/^[\w-]{1,40}$/.test(k) && v && Object.keys(facts).length < 200) facts[k] = v;
+          });
+        }
+        if (Object.keys(facts).length) out.facts = facts;
+        const links = [], lseen = new Set();
+        (Array.isArray(e.links) ? e.links : []).forEach((l) => {
+          if (!l || typeof l !== "object" || typeof l.to !== "string" || !l.to || links.length >= 100) return;
+          const label = bibleLine(l.label, 60), k = l.to + "\u0001" + label.toLowerCase();
+          if (!lseen.has(k)) { lseen.add(k); links.push({ to: l.to.slice(0, 40), label: label }); }
+        });
+        if (links.length) out.links = links;
+        const changes = [], cids = new Set();
+        (Array.isArray(e.changes) ? e.changes : []).forEach((c) => {
+          if (!c || typeof c !== "object" || changes.length >= 500) return;
+          const anchor = bibleNormalizeAnchor(c.anchor); if (!anchor) return;
+          let id = typeof c.id === "string" && /^[\w-]{1,40}$/.test(c.id) ? c.id : bibleNewId();
+          while (cids.has(id)) id = bibleNewId();
+          cids.add(id);
+          const ch = { id: id, anchor: anchor, text: bibleLine(c.text, 400) };
+          if (c.fact && typeof c.fact === "object") {
+            const field = typeof c.fact.field === "string" && /^[\w-]{1,40}$/.test(c.fact.field) ? c.fact.field : "", value = bibleLine(c.fact.value, 400);
+            if (field && value) ch.fact = { field: field, value: value };
+          }
+          changes.push(ch);
+        });
+        if (changes.length) out.changes = changes;
+        if (e.ai === "always" || e.ai === "never") out.ai = e.ai; /* "scene" is the default and is never written */
+        if (e.scope === "book") out.scope = "book";
+        return out;
+      }
+      /* the writer's own fields for each kind of entry (Age, Eyes, Rank...): ids stay stable so facts and changes can point at them, labels are what the writer sees */
+      function bibleNormalizeFields(f) {
+        const out = {};
+        if (!f || typeof f !== "object") return out;
+        BIBLE_TYPES.forEach((type) => {
+          const list = [], seen = new Set();
+          (Array.isArray(f[type]) ? f[type] : []).forEach((x) => {
+            if (!x || typeof x !== "object" || typeof x.id !== "string" || !/^[\w-]{1,40}$/.test(x.id) || seen.has(x.id) || list.length >= 50) return;
+            const label = bibleLine(x.label, 40); if (!label) return;
+            seen.add(x.id); list.push({ id: x.id, label: label });
+          });
+          if (list.length) out[type] = list;
+        });
+        return out;
       }
       function bibleNormalize(b) {
         const out = { entries: [] }, ids = new Set();
@@ -22897,6 +22958,14 @@
           while (ids.has(e.id)) e.id = bibleNewId();
           ids.add(e.id); out.entries.push(e);
         }
+        /* a link to an entry that is not in the book (deleted, or never imported) points at nothing, so it goes */
+        out.entries.forEach((e) => {
+          if (!e.links) return;
+          const keep = e.links.filter((l) => ids.has(l.to) && l.to !== e.id);
+          if (keep.length) e.links = keep; else delete e.links;
+        });
+        const fields = bibleNormalizeFields(b && b.fields);
+        if (Object.keys(fields).length) out.fields = fields;
         return out;
       }
       function bibleEntries() { return state.bible && Array.isArray(state.bible.entries) ? state.bible.entries : []; }
@@ -23569,7 +23638,8 @@
         const images = (state.images || []).filter((im) => im && ids.has(im.id) && typeof im.data === "string")
           .map((im) => ({ id: im.id, name: im.name || "", mediaType: im.mediaType, ext: im.ext, data: im.data }));
         b.entries.forEach((e) => { if (e.imageId && !images.some((im) => im.id === e.imageId)) e.imageId = null; });
-        return { format: BIBLE_FORMAT, version: 1, book: String(state.meta.title || ""), exportedAt: new Date().toISOString(), entries: b.entries, images: images };
+        /* version 2 carries facts, links, changes, the AI setting, scope and the writer's fields; a version 1 reader never looks at those keys, and a version 1 file imports here with them absent */
+        return { format: BIBLE_FORMAT, version: 2, book: String(state.meta.title || ""), exportedAt: new Date().toISOString(), entries: b.entries, ...(b.fields ? { fields: b.fields } : {}), images: images };
       }
       function bibleExportName() {
         const base = String(state.meta.title || "").trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "book";
@@ -23591,12 +23661,20 @@
         const imgMap = {};
         const added = [], skipped = [];
         let pics = 0;
+        /* old id -> id in this book, so a link inside the file still points at the same entry after the ids are reissued; an entry skipped as a duplicate stands for the one the book already has */
+        const idMap = {};
         doc.entries.forEach((raw) => {
           const e = bibleNormalizeEntry(raw); if (!e) return;
           const k = bibleKey(e.name);
-          if (k && have.has(k)) { skipped.push(e.name); return; }
+          if (k && have.has(k)) {
+            skipped.push(e.name);
+            const twin = bibleEntries().find((x) => bibleKey(x.name) === k) || added.find((x) => bibleKey(x.name) === k);
+            if (twin && raw && typeof raw.id === "string") idMap[raw.id] = twin.id;
+            return;
+          }
           if (bibleEntries().length + added.length >= BIBLE_MAX) { skipped.push(bibleName(e)); return; }
           if (k) have.add(k);
+          const oldId = e.id;
           e.id = bibleNewId();
           while (bibleById(e.id) || added.some((x) => x.id === e.id)) e.id = bibleNewId();
           if (e.imageId) {
@@ -23618,9 +23696,23 @@
             }
             e.imageId = imgMap[src];
           }
+          idMap[oldId] = e.id;
           added.push(e);
         });
+        added.forEach((e) => { if (e.links) e.links = e.links.map((l) => ({ to: idMap[l.to] || "", label: l.label })); });
         added.forEach((e) => state.bible.entries.push(e));
+        /* the file's fields join the book's: a fact in the file is only readable if its field exists here, and a field the book already has keeps its own label */
+        const fin = bibleNormalizeFields(doc.fields);
+        if (Object.keys(fin).length) {
+          const cur = bibleNormalizeFields(state.bible.fields);
+          Object.keys(fin).forEach((type) => {
+            const mine = cur[type] || (cur[type] = []);
+            fin[type].forEach((f) => { if (!mine.some((x) => x.id === f.id) && mine.length < 50) mine.push(f); });
+          });
+          state.bible.fields = cur;
+        }
+        /* one pass over the merged Covenant drops any link the remap could not place */
+        state.bible = bibleNormalize(state.bible);
         return { ok: true, added: added, skipped: skipped, pics: pics };
       }
       function bibleImportReport(r) {
@@ -23930,7 +24022,7 @@
                 ] } });
                 const fileText = JSON.stringify(bibleExportDoc(), null, 2);
                 const doc = JSON.parse(fileText);
-                const formatOk = doc.format === "beuk-story-bible" && doc.version === 1 && doc.entries.length === 3 && doc.images.length === 1 && doc.images[0].data === BIBLE_TINY_PNG;
+                const formatOk = doc.format === "beuk-story-bible" && doc.version === 2 && doc.entries.length === 3 && doc.images.length === 1 && doc.images[0].data === BIBLE_TINY_PNG;
                 applyBookDoc({ meta: { title: "Book B", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [], bible: { entries: [{ id: "y1", type: "character", name: "mara quill" }] } });
                 const r = bibleImportDoc(doc);
                 const es = bibleEntries();
@@ -23955,6 +24047,50 @@
                 return scVerdict(formatOk && addedOk && reported && againOk && refused && emptyArrival && fieldsOk,
                   "export file: " + fileText.length + " chars, format ok " + formatOk + "; import into a book that has “mara quill”: added " + r.added.map((e) => e.name).join(", ") + ", skipped " + r.skipped.join(", ") + ", pictures " + r.pics + " (" + addedOk + "); report: “" + report + "”; second import added " + r2.added.length + ", skipped " + r2.skipped.length + ", pictures " + r2.pics + " (" + againOk + "); foreign file refused: " + refused +
                   "; an old book arrives with none: " + emptyArrival + "; fields through file + book file: " + fieldsOk);
+              });
+            } },
+          { id: "bible.model.compat", feature: "bible", name: "Covenant entry model: a book with none of the codex data serializes exactly as before; an entry with facts, links, changes, an AI setting, a scope and details round-trips normalize unchanged; the default AI setting and a bad one vanish; a link to a missing entry is dropped; a change with an unusable anchor is dropped; export then import keeps every new field, and a file from before this change imports with them absent",
+            run() {
+              return bibleCheckGuard(() => {
+                const NEW = /"(facts|links|changes|ai|scope|fields)"/;
+                applyBookDoc({ meta: { title: "Compat", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [], bible: { entries: [
+                  { id: "c1", type: "character", name: "Mara Quill", aliases: ["Mara"], notes: "Line one", tags: ["crew"] },
+                  { id: "c2", type: "place", name: "Gullwick" }
+                ] } });
+                const plainJson = JSON.stringify(serializeBook().bible);
+                const quiet = !NEW.test(plainJson) && !NEW.test(JSON.stringify(bibleExportDoc()));
+                const anchor = { sec: "s1", quote: "the lamp was lit", at: 12, book: "m1", pos: [3, 12] };
+                const full = { entries: [
+                  { id: "f1", type: "character", name: "Mara Quill", notes: "## Past\n**Keeper** of the *light*", facts: { age: "41", eyes: "grey" },
+                    links: [{ to: "f2", label: "lives in" }], changes: [{ id: "ch1", anchor: anchor, text: "Loses her post", fact: { field: "age", value: "42" } }, { id: "ch2", anchor: { sec: "s2", quote: "q", at: 0 }, text: "Plain" }], ai: "always", scope: "book" },
+                  { id: "f2", type: "place", name: "Gullwick", ai: "never" }
+                ], fields: { character: [{ id: "age", label: "Age" }, { id: "eyes", label: "Eyes" }], place: [{ id: "pop", label: "Population" }] } };
+                const once = bibleNormalize(full), twice = bibleNormalize(once);
+                const keep = (e) => JSON.stringify([e.notes || "", e.facts, e.links, e.changes, e.ai, e.scope]);
+                const roundTrips = JSON.stringify(twice) === JSON.stringify(once) && once.entries.length === 2 && once.entries.every((e, i) => keep(e) === keep(full.entries[i])) && JSON.stringify(once.fields) === JSON.stringify(full.fields);
+                const odd = bibleNormalize({ entries: [
+                  { id: "o1", type: "lore", name: "A", ai: "scene" }, { id: "o2", type: "lore", name: "B", ai: "loud", scope: "series" },
+                  { id: "o3", type: "lore", name: "C", links: [{ to: "o1", label: "ok" }, { to: "gone", label: "dead" }, { to: "o3", label: "self" }],
+                    changes: [{ id: "k1", anchor: { sec: "s1", quote: "x", at: -1 }, text: "neg" }, { id: "k2", anchor: { quote: "x", at: 1 }, text: "nosec" }, { id: "k3", anchor: { sec: "s1", quote: "y".repeat(300), at: 5 }, text: "ok" }] }
+                ] });
+                const [o1, o2, o3] = odd.entries;
+                const dropped = !("ai" in o1) && !("ai" in o2) && !("scope" in o2) && o3.links.length === 1 && o3.links[0].to === "o1" && o3.changes.length === 1 && o3.changes[0].id === "k3" && o3.changes[0].anchor.quote.length === 160;
+                applyBookDoc({ meta: { title: "Full", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [], bible: full });
+                const file = JSON.parse(JSON.stringify(bibleExportDoc()));
+                applyBookDoc({ meta: { title: "Other", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [] });
+                const r = bibleImportDoc(file);
+                const m = bibleEntries().find((e) => e.name === "Mara Quill"), g = bibleEntries().find((e) => e.name === "Gullwick");
+                const imported = r.ok && !!m && !!g && m.links.length === 1 && m.links[0].to === g.id && m.links[0].label === "lives in" &&
+                  JSON.stringify(m.facts) === JSON.stringify(full.entries[0].facts) && JSON.stringify(m.changes) === JSON.stringify(full.entries[0].changes) &&
+                  m.ai === "always" && m.scope === "book" && m.notes === full.entries[0].notes && g.ai === "never" && JSON.stringify(state.bible.fields) === JSON.stringify(full.fields);
+                const old = { format: "beuk-story-bible", version: 1, book: "Old", entries: [{ id: "z1", type: "character", name: "Zed", notes: "n", tags: ["t"] }], images: [] };
+                applyBookDoc({ meta: { title: "Fresh", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS(), images: [] });
+                const ro = bibleImportDoc(old);
+                const z = bibleEntries()[0];
+                const oldOk = ro.ok && !!z && z.name === "Zed" && !NEW.test(JSON.stringify(serializeBook().bible)) && !("fields" in state.bible);
+                return scVerdict(quiet && roundTrips && dropped && imported && oldOk,
+                  "no codex data → none of the new keys in the book file or the export: " + quiet + "; a full entry normalizes to itself and again: " + roundTrips + "; default/bad AI, bad scope, missing-entry and self links, bad anchors dropped, quote capped at 160: " + dropped +
+                  "; export → import keeps facts, links (re-pointed), changes, AI, scope, details and fields: " + imported + "; a version 1 file imports with the new keys absent: " + oldOk);
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
@@ -44131,7 +44267,7 @@
           history: hist.history,
           historyPool: hist.pool,
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
-          ...(bibleHas() ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
+          ...(bibleHas() || (state.bible && state.bible.fields && Object.keys(state.bible.fields).length) ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
           /* BEUK:manuscript — the submission manuscript's contact block and page choices ride with the book */
