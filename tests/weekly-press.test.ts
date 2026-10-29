@@ -6,7 +6,8 @@ import { test } from 'node:test';
 import { loadConfig } from '../src/config.js';
 import { BACKUP_TABLES, classifyTables } from '../src/housekeeping/backup.js';
 import { approveAndPublish, createDraft, DraftConflict, DraftInvalid, DraftStateError, listDrafts, mondayOf, replaceDraft, sendBack, validateUpload, withdraw, type DraftUpload } from '../src/weekly/drafts.js';
-import { createTestDb } from './helpers.js';
+import type { MailMessage, Mailer, MailerStatus, MailResult } from '../src/mailer.js';
+import { createTestDb, startTestServer } from './helpers.js';
 
 /* The Beuk Weekly press (spec 2026-10-29): a drafter on the Legion uploads
  * a draft, the server emails the editor a preview, and only an admin's
@@ -164,4 +165,126 @@ test('press store: withdraw frees the slot', async () => {
   await assert.rejects(withdraw(db, dir, id), DraftStateError);
   const again = await createDraft(db, dir, issueUpload());
   assert.notEqual(again.id, id);
+});
+
+/* Task 4: the drafter API and the editor's email. */
+
+/** A configured mailer that records instead of sending. */
+class RecordingMailer implements Mailer {
+  sent: MailMessage[] = [];
+  status(): MailerStatus {
+    return { configured: true, transport: 'smtp', from: 'Beuk <hello@example.com>', detail: 'recording mailer (test)' };
+  }
+  async send(message: MailMessage): Promise<MailResult> {
+    this.sent.push(message);
+    return { delivered: true, messageId: `<test-${this.sent.length}@example.com>` };
+  }
+  async verify() {
+    return { ok: true, detail: 'recording mailer (test)' };
+  }
+}
+
+const TOKEN = 't'.repeat(40);
+const EDITOR = 'editor@example.com';
+
+async function pressServer(overrides: Record<string, unknown> = {}) {
+  const db = await createTestDb();
+  const mailer = new RecordingMailer();
+  const s = await startTestServer(db, undefined, { weeklyDraftToken: TOKEN, weeklyEditorEmail: EDITOR, ...overrides }, undefined, { mailer });
+  const call = (method: string, p: string, body?: unknown, token: string | null = TOKEN) =>
+    fetch(`${s.base}${p}`, {
+      method,
+      headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  return { db, s, mailer, call };
+}
+
+function sourcedUpload(): DraftUpload {
+  return issueUpload((f) => {
+    f['kdp-rule.md'] = b64(OUTSIDE);
+    f['sources.json'] = b64(JSON.stringify([{ url: 'https://kdp.example/news', fetchedAt: '2026-11-05T07:00:00Z', quote: 'The rule changes on 1 December.', story: 'kdp-rule' }]));
+  });
+}
+
+test('press API: no token, a wrong token, or a server with no token configured → 401', async () => {
+  const { s, call } = await pressServer();
+  try {
+    assert.equal((await call('POST', '/api/weekly/drafts', sourcedUpload(), null)).status, 401);
+    assert.equal((await call('POST', '/api/weekly/drafts', sourcedUpload(), 'x'.repeat(40))).status, 401);
+    assert.equal((await call('GET', '/api/weekly/drafts?status=sent_back', undefined, null)).status, 401);
+    assert.equal((await call('POST', '/api/weekly/drafts/failed', { reason: 'x' }, null)).status, 401);
+  } finally {
+    await s.close();
+  }
+  const off = await pressServer({ weeklyDraftToken: null });
+  try {
+    assert.equal((await off.call('POST', '/api/weekly/drafts', sourcedUpload(), TOKEN)).status, 401);
+  } finally {
+    await off.s.close();
+  }
+});
+
+test('press API: a valid upload is stored and the editor is emailed the preview, every source and every dropped story', async () => {
+  const { s, mailer, call } = await pressServer();
+  try {
+    const bad = await call('POST', '/api/weekly/drafts', issueUpload((f) => (f['../x.md'] = b64('x'))));
+    assert.equal(bad.status, 400);
+    assert.ok(((await bad.json()) as { problems: string[] }).problems.some((p) => p.includes('../x.md')));
+    assert.equal(mailer.sent.length, 0, 'a refused upload mails nobody');
+
+    const res = await call('POST', '/api/weekly/drafts', { ...sourcedUpload(), noPictures: ['Beuk School Opens Its Doors: local image model not installed'] });
+    assert.equal(res.status, 201);
+    const body = (await res.json()) as { id: string; previewUrl: string; email: string };
+    assert.equal(body.previewUrl, `${s.config.appBaseUrl}/school/weekly/draft/${body.id}`);
+    assert.equal(body.email, 'sent');
+    assert.equal(mailer.sent.length, 1);
+    const m = mailer.sent[0];
+    assert.equal(m.to, EDITOR);
+    assert.equal(m.subject, 'Beuk Weekly draft ready: Beuk School Opens Its Doors');
+    for (const part of [m.text, m.html!]) {
+      assert.ok(part.includes(body.previewUrl), 'the preview link');
+      assert.ok(part.includes('https://kdp.example/news'), 'every source URL');
+      assert.ok(part.includes('A rumour') && part.includes('could not confirm'), 'every dropped story and why');
+      assert.ok(part.includes('example.org'), 'every outlet, so the editor can veto one');
+      assert.ok(part.includes('local image model not installed'), 'stories without a picture');
+      assert.ok(part.includes('a'.repeat(40)), 'the commit it was written from');
+    }
+    assert.ok(m.text.includes('Nothing goes live until you press Approve and publish'));
+
+    const again = await call('POST', '/api/weekly/drafts', sourcedUpload());
+    assert.equal(again.status, 409);
+    const conflict = (await again.json()) as { error: string; id: string; previewUrl: string };
+    assert.equal(conflict.error, 'a draft is already waiting');
+    assert.equal(conflict.id, body.id);
+    assert.equal(conflict.previewUrl, body.previewUrl);
+  } finally {
+    await s.close();
+  }
+});
+
+test('press API: failed mails the reason; sent_back lists notes; replaces resubmits a sent-back draft', async () => {
+  const { db, s, mailer, call } = await pressServer();
+  try {
+    const f = await call('POST', '/api/weekly/drafts/failed', { reason: 'claude: not logged in' });
+    assert.equal(f.status, 202);
+    assert.equal(mailer.sent.at(-1)!.subject, 'Beuk Weekly: no draft this week');
+    assert.ok(mailer.sent.at(-1)!.text.includes('claude: not logged in'));
+    assert.equal((await call('POST', '/api/weekly/drafts/failed', { reason: 'x'.repeat(2001) })).status, 400);
+
+    const { id } = (await (await call('POST', '/api/weekly/drafts', sourcedUpload())).json()) as { id: string };
+    assert.deepEqual(await (await call('GET', '/api/weekly/drafts?status=sent_back')).json(), []);
+    await sendBack(db, id, 'Shorter lead, please.');
+    const back = (await (await call('GET', '/api/weekly/drafts?status=sent_back')).json()) as { id: string; notes: string; sourceCommit: string }[];
+    assert.deepEqual(back, [{ id, notes: 'Shorter lead, please.', sourceCommit: 'a'.repeat(40) }]);
+
+    const before = mailer.sent.length;
+    const re = await call('POST', '/api/weekly/drafts', { replaces: id, ...sourcedUpload() });
+    assert.equal(re.status, 201);
+    assert.equal(((await re.json()) as { id: string }).id, id);
+    assert.equal(mailer.sent.length, before + 1, 'a fresh preview email for the rewrite');
+    assert.equal((await listDrafts(db, 'drafted'))[0].id, id);
+  } finally {
+    await s.close();
+  }
 });

@@ -32,6 +32,7 @@ import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
 import { weeklyRoutes } from './routes/weekly.js';
+import { weeklyPressApi } from './routes/weekly-press.js';
 import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.js';
 import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
@@ -193,6 +194,9 @@ export function buildApp({
   // Beuk School: free courses at /school; progress for signed-in writers only.
   const school = schoolRoutes(db, config);
   app.use('/api/school', school.api);
+
+  // Beuk Weekly press: the Legion drafter's upload API (bearer token).
+  app.use('/api/weekly', weeklyPressApi(db, config, mail));
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
 
