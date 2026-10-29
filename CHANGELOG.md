@@ -7,6 +7,7 @@ to make well.
 ## 2026-10-29 — Buy the maker a caife
 
 - **The support page says thank you properly.** "Buy me a coffee on Ko-fi" is now **Buy a Caife** (caife is Irish for coffee), on the support page and on the tip jar in Help and after an export. Ko-fi still opens in a new tab. Back on the support page, a handwritten note drifts down over a morning sea, folds itself into a paper boat and sails off toward the sun, and the page says "Go raibh maith agat", Irish for thank you. The note waits for you: if you are still on Ko-fi, it folds when you come back. It is drawn live in your browser, from Beuk's own server, with no images and nothing fetched from elsewhere. With reduced motion on, you see the boat already on the water. For a week afterwards, on that device, the boat is still out there when you visit.
+- **The header link is Caife too.** On Help and the warmth pages, the link to the support page now reads **Caife**, with a small coffee cup beside it.
 
 ## 2026-10-28 — The Covenant grows up
 

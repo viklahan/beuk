@@ -143,7 +143,7 @@ test('ko-fi gate: pages with a jar load the gate and mark every jar element data
       assert.equal(status, 200, p);
       assert.match(html, /<script src="\/help\/billing-gate\.js"><\/script>/, `${p} loads the gate`);
       assert.doesNotMatch(html, /BEUK_BILLING_GATE/, `${p} must not leak the slot marker`);
-      assert.match(html, /<a href="\/support" data-kofi>Support<\/a>/, `${p} nav link is gated`);
+      assert.match(html, /<a class="caife-link" href="\/support" data-kofi><svg class="caife-cup"[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/svg>Caife<\/a>/, `${p} nav link is gated`);
       assert.match(html, /<span class="subbrand">beuk\.studio<\/span>/, `${p} sub-brand`);
       assert.doesNotMatch(html, /quietshelf|from Quiet Shelf/i, `${p} old brand`);
       if (p !== '/support') assert.match(html, /<aside class="kofi-jar" data-kofi>/, `${p} jar is gated`);
