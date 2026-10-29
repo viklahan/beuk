@@ -24780,7 +24780,7 @@
                 const saved = !!bibleUi.saveTimer && bibleNormalize(state.bible).entries[0].changes.length === 1;
                 const textSame = JSON.stringify(state.sections.map((s) => s.content)) === bytes;
                 const exportSame = snap() === before && !/Injured, left leg/.test(snap());
-                const refused = bibleMarkChange("mk-mara", "mk1", 30, 30, "x") === null && bibleMarkChange("mk-mara", "nope", 30, 35, "x") === null && bibleMarkChange("nobody", "mk1", 10, 20, "x") === null && mara.changes.length === 1;
+                const refused = bibleMarkChange("mk-mara", "mk1", 30, 30, "x") === null && bibleMarkChange("mk-mara", "mk1", 4, 5, "x") === null && bibleMarkChange("mk-mara", "nope", 30, 35, "x") === null && bibleMarkChange("nobody", "mk1", 10, 20, "x") === null && mara.changes.length === 1;
                 /* the 501st change is refused */
                 const tale = bibleById("mk-tomas");
                 tale.changes = [];
@@ -24797,7 +24797,7 @@
                 area.style.maxWidth = keepW;
                 const follows = p1.mid > p0.mid + 20 && Math.abs(p1.top + 4 - p1.mid) <= 1 && Math.abs(p0.top + 4 - p0.mid) <= 1;
                 return scVerdict(offeredOk && stored && found && stamped && saved && textSame && exportSame && refused && capped && follows,
-                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; refused: " + refused + "; 501st refused: " + capped + "; dot follows a re-wrap: " + follows);
+                  "offered between Mara and Tomas: “" + between + "”, near Hale: “" + nearHale + "”, near nobody: “" + nobody + "”: " + offeredOk + "; stored: " + stored + "; found: " + found + "; stamped: " + stamped + "; saved: " + saved + "; text unchanged: " + textSame + "; exports unchanged: " + exportSame + "; empty, blank, unknown-section and unknown-entry marks refused: " + refused + "; 501st refused: " + capped + "; dot follows a re-wrap: " + follows);
               });
             } },
           { id: "bible.editor.perf", feature: "bible", name: "Covenant underlines: with eight entries on the full book on the desk (the sample in the harness), the whole-book mention pass, the mirror's first draw of the longest section and the per-keystroke redraw stay within a measured budget, and the mirror lays the text out to the textarea's own height (same wrapping)",
