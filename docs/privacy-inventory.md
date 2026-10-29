@@ -198,11 +198,15 @@ are left out (src/account/data.ts `writeAccountExport`).
   book names a series with a shared Covenant on the shelf, also a copy
   of that series Covenant ("series:<account id>:<series key>": the
   series name, its Covenant document, its revision, whether it has
-  unsaved edits, and — after the writer picks "Use the shelf copy" in a
-  conflict — the device copy it replaced), so it opens offline and
-  offline edits wait there. Stays on the device; reaches the server only
-  as the series Covenant save (client/index.html, BEUK:bible
-  `bibleSeriesCachePut`).
+  unsaved edits, and — once the writer has picked "Use the shelf copy"
+  in a series conflict — the device copy that choice replaced, with the
+  time, carried on every later write of that record until a later "Use
+  the shelf copy" replaces it with the copy that one set aside; it is
+  not shown in the studio), so it opens offline and offline edits wait
+  there. The record stays until the browser's site data is cleared.
+  Stays on the device; only the series Covenant document itself reaches
+  the server, as the series Covenant save (client/index.html,
+  BEUK:bible `bibleSeriesCachePut`).
 - **localStorage** (all prefixed `beuk.`): theme.v1, uiLang.v1,
   sidebar.v1, streak.v1, writelog.v1, dictSeen.v1, zenScene.v1,
   zenSound.v1, errors.v1 ("on" when the writer turns error reports on

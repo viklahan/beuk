@@ -23294,7 +23294,7 @@
       function bibleInSeries() { return !!bibleSeriesKey(state.meta && state.meta.series); }
       /* { key, name, doc: { entries, fields }, revision } while the open book's series has a Covenant on the shelf; null otherwise */
       let bibleSeries = null;
-      const bibleSeriesSync = { userId: null, dirty: false, editAt: 0, pending: 0, conflict: null, syncedJson: null, running: false, again: false, timer: null, stepTimer: null, seq: 0, last: null };
+      const bibleSeriesSync = { userId: null, kept: null, dirty: false, editAt: 0, pending: 0, conflict: null, syncedJson: null, running: false, again: false, timer: null, stepTimer: null, seq: 0, last: null };
       /* the network and the device store, swappable so a self-check answers without either; an answer that is not a promise is taken at once */
       const bibleSeriesNet = { fetch: (path, opts) => apiFetch(path, opts), store: (rec) => bibleSeriesCachePut(rec), load: (userId, key) => bibleSeriesCacheGet(userId, key) };
       const bibleThen = (v, fn) => (v && typeof v.then === "function" ? v.then(fn) : fn(v));
@@ -23355,21 +23355,33 @@
           catch (e) { resolve(null); }
         });
       }
-      function bibleSeriesCacheNow(extra) {
+      /* every device write carries the copy "Use the shelf copy" replaced (kept, keptAt), so it is never lost to the next write; a later "Use the shelf copy" replaces it with the copy that one set aside */
+      function bibleSeriesCacheNow() {
         const s = bibleSeries, sy = bibleSeriesSync; if (!s || !sy.userId) return;
-        bibleSeriesNet.store(Object.assign({ userId: sy.userId, key: s.key, name: s.name, doc: bibleSeriesDocOut(s), revision: typeof s.revision === "number" ? s.revision : null, dirty: !!(sy.dirty || sy.pending), savedAt: new Date().toISOString() }, extra || {}));
+        bibleSeriesNet.store(Object.assign({ userId: sy.userId, key: s.key, name: s.name, doc: bibleSeriesDocOut(s), revision: typeof s.revision === "number" ? s.revision : null, dirty: !!(sy.dirty || sy.pending), savedAt: new Date().toISOString() }, sy.kept || {}));
+      }
+      /* an edit still waiting on its 300 ms pause is taken now (the series is about to go, the account is leaving, or the page is): it is marked unsaved and written to the device, so it is sent later instead of lost */
+      function bibleSeriesTakePending() {
+        const sy = bibleSeriesSync;
+        if (sy.stepTimer) { clearTimeout(sy.stepTimer); bibleSeriesStep(); }
+      }
+      function bibleSeriesFlushOnHide() {
+        bibleSeriesTakePending();
+        if (bibleSeries && (bibleSeriesSync.dirty || bibleSeriesSync.pending)) bibleSeriesCacheNow();
       }
       /* the series Covenant arrived (or went): the matcher, the room and the desk follow it */
-      function bibleSeriesSet(s, userId, dirty) {
+      function bibleSeriesSet(s, userId, dirty, kept) {
         const sy = bibleSeriesSync;
+        if (bibleSeries !== s) bibleSeriesTakePending();
         clearTimeout(sy.timer); clearTimeout(sy.stepTimer); sy.timer = sy.stepTimer = null;
-        if (bibleSeries && bibleSeries !== s) sy.last = { s: bibleSeries, userId: sy.userId, dirty: sy.dirty, pending: sy.pending, syncedJson: sy.syncedJson };
+        if (bibleSeries && bibleSeries !== s) sy.last = { s: bibleSeries, userId: sy.userId, dirty: sy.dirty, pending: sy.pending, syncedJson: sy.syncedJson, kept: sy.kept };
         if (s) {
           s.doc = bibleNormalize(s.doc, true);
           s.revision = typeof s.revision === "number" ? s.revision : null;
         }
         bibleSeries = s || null;
         sy.userId = s ? userId || null : null; sy.conflict = null; sy.pending = 0;
+        sy.kept = s && kept && kept.kept ? { kept: kept.kept, keptAt: kept.keptAt || null } : null;
         sy.dirty = !!(s && dirty); sy.syncedJson = s && !dirty ? JSON.stringify(s.doc) : null;
         bibleAllVer++; bibleMk.key = null; bibleMenCache.key = null;
         if (s) bibleSeriesRefreshPos();
@@ -23386,7 +23398,7 @@
         const seq = ++sy.seq, stale = () => seq !== sy.seq || bibleSeriesKey(state.meta && state.meta.series) !== key;
         const fromCache = (userId) => bibleThen(userId ? bibleSeriesNet.load(userId, key) : null, (rec) => {
           if (stale()) return;
-          if (rec && rec.doc && rec.key === key) bibleSeriesSet({ key: key, name: rec.name || state.meta.series, doc: rec.doc, revision: rec.revision }, userId, !!rec.dirty);
+          if (rec && rec.doc && rec.key === key) bibleSeriesSet({ key: key, name: rec.name || state.meta.series, doc: rec.doc, revision: rec.revision }, userId, !!rec.dirty, rec);
           else bibleSeriesSet(null);
         });
         if (!cloud.user) {
@@ -23397,8 +23409,8 @@
         /* the same series came back (another book of it was open a moment ago): the copy in hand stands, and the shelf is asked only whether it moved on */
         const last = sy.last;
         if (!force && last && last.s.key === key && last.userId === userId) {
-          bibleSeriesSet(last.s, userId, last.dirty || last.pending);
-          if (!sy.dirty) sy.syncedJson = last.syncedJson;
+          bibleSeriesSet(last.s, userId, last.dirty || last.pending, last.kept);
+          sy.syncedJson = last.syncedJson; /* a dirty copy still differs from it, so it is sent */
         }
         if (!cloud.available || !net.online) return bibleSeries && bibleSeries.key === key ? null : fromCache(userId);
         return bibleThen(bibleSeriesNet.fetch("/api/series-covenants/" + encodeURIComponent(key), {}), (res) => {
@@ -23409,8 +23421,8 @@
             return bibleThen(bibleSeriesNet.load(userId, key), (rec) => {
               if (stale()) return;
               /* edits this device made offline are laid over the shelf's copy and saved on the revision they were made from: a moved shelf raises the conflict notice */
-              if (rec && rec.dirty && rec.doc) bibleSeriesSet({ key: key, name: rec.name || res.series.name, doc: rec.doc, revision: rec.revision }, userId, true);
-              else { bibleSeriesSet({ key: key, name: res.series.name, doc: res.series.doc, revision: res.series.revision }, userId, false); bibleSeriesCacheNow(); }
+              if (rec && rec.dirty && rec.doc) bibleSeriesSet({ key: key, name: rec.name || res.series.name, doc: rec.doc, revision: rec.revision }, userId, true, rec);
+              else { bibleSeriesSet({ key: key, name: res.series.name, doc: res.series.doc, revision: res.series.revision }, userId, false, rec); bibleSeriesCacheNow(); }
             });
           }
           if (res && res.__status === 404) { if (!sy.dirty) bibleSeriesSet(null); return; }
@@ -23422,6 +23434,7 @@
       function bibleSeriesArrived() { clearTimeout(bibleSeriesArriveTimer); bibleSeriesArriveTimer = setTimeout(() => { bibleSeriesArriveTimer = null; bibleSeriesRefresh(false); }, 0); }
       function bibleSeriesSignOut() {
         const sy = bibleSeriesSync;
+        bibleSeriesTakePending();
         if (bibleSeries) bibleSeriesCacheNow();
         sy.last = null; sy.seq++;
         bibleSeriesSet(null);
@@ -23543,7 +23556,8 @@
           const mine = bibleSeriesDocOut(s);
           s.doc = bibleNormalize(c.doc, true); s.revision = c.revision;
           sy.dirty = false; sy.pending = 0; sy.syncedJson = JSON.stringify(s.doc);
-          bibleSeriesCacheNow({ kept: mine, keptAt: new Date().toISOString() });
+          sy.kept = { kept: mine, keptAt: new Date().toISOString() };
+          bibleSeriesCacheNow();
           bibleAllVer++; bibleMk.key = null; bibleMenCache.key = null;
           bibleSeriesRefreshPos();
           const mb = $("modalBible"); if (mb && mb.classList.contains("open")) bibleRender();
@@ -25584,7 +25598,8 @@
                 window.fetch = function () { realCalls++; return Promise.reject(new Error("a self-check never reaches the network")); };
                 const mc = $("modalConflict");
                 try {
-                  applyBookDoc({ meta: { title: "Book Two", author: "Fixture", language: "en", langSource: "manual", series: "Salt Road", seriesNumber: 2, bookId: "sc-book2" }, sections: BIBLE_FIXTURE_SECS() });
+                  const bookTwo = () => applyBookDoc({ meta: { title: "Book Two", author: "Fixture", language: "en", langSource: "manual", series: "Salt Road", seriesNumber: 2, bookId: "sc-book2" }, sections: BIBLE_FIXTURE_SECS() });
+                  bookTwo();
                   cloud.user = { id: "sc-user", email: "check@beuk.invalid" }; cloud.available = true; net.online = true;
                   let answer = () => null;
                   bibleSeriesNet.fetch = (path, opts) => { const m = (opts && opts.method) || "GET", im = opts && opts.headers && opts.headers["If-Match"]; calls.push(m + " " + path + (im ? " " + im : "")); return answer(m, path, opts); };
@@ -25637,6 +25652,24 @@
                   cloud.available = true; answer = ok(10);
                   bibleSeriesFlush();
                   if (calls[calls.length - 1] !== 'PUT /api/series-covenants/salt%20road "9"' || bibleSeries.revision !== 10 || bibleSeriesSync.dirty || bibleSeriesSync.pending) bad.push("on reconnect: " + calls[calls.length - 1] + ", rev " + bibleSeries.revision);
+                  /* the copy Use the shelf copy replaced rides every later device write */
+                  if (!last().kept || last().kept.entries[0].description !== "Second edit") bad.push("the kept device copy was dropped by a later device write");
+                  /* 5. an edit, then at once another book and straight back: still unsaved, and sent even though the shelf moved on */
+                  bibleById("sc-mara").description = "Swap words"; bibleTouched(false);
+                  applyBookDoc({ meta: { title: "Lone Book", author: "Fixture", language: "en", langSource: "manual" }, sections: BIBLE_FIXTURE_SECS() });
+                  bibleSeriesRefresh(false);
+                  if (bibleSeries || !bibleSeriesSync.last || !bibleSeriesSync.last.dirty || !last().dirty || last().doc.entries[0].description !== "Swap words") bad.push("an edit made just before the book changed was not kept as unsaved");
+                  answer = (m, p, o) => (m === "GET" ? { series: { key: "salt road", name: "Salt Road", doc: ent("Moved elsewhere"), revision: 11 } } : ok(12)(m, p, o));
+                  bookTwo(); bibleSeriesRefresh(false);
+                  if (!bibleSeries || desc() !== "Swap words" || !bibleSeriesSync.dirty) bad.push("back on the series book the unsent edit was lost or marked saved (" + desc() + ")");
+                  bibleSeriesSaveNow();
+                  const swapPut = calls[calls.length - 1];
+                  if (swapPut !== 'PUT /api/series-covenants/salt%20road "10"' || bibleSeries.revision !== 12 || bibleSeriesSync.dirty) bad.push("the unsent edit was not sent after the swap: " + swapPut + ", rev " + bibleSeries.revision);
+                  /* 6. an edit, then at once signing out: the device copy says unsaved */
+                  bibleById("sc-mara").description = "Leaving words"; bibleTouched(false);
+                  cloud.user = null;
+                  bibleSeriesSignOut();
+                  if (bibleSeries || !last().dirty || last().doc.entries[0].description !== "Leaving words" || !last().kept) bad.push("signing out right after an edit left the device copy " + (last().dirty ? "dirty" : "marked saved") + " with " + (last().doc && last().doc.entries[0].description));
                   if (cloud.conflict) bad.push("the book's own conflict was touched");
                   if (realCalls) bad.push("the network was reached " + realCalls + " times");
                 } finally {
@@ -25644,7 +25677,7 @@
                   if (mc.getAttribute("data-bib-series") === "1") bibleSeriesModalReset();
                   mc.classList.toggle("open", !!cloud.conflict);
                 }
-                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "edit kept on the device as unsaved; PUT on revision 4 → 409 → series notice (no Keep both), edit kept, nothing re-sent; Keep mine → PUT on 5 → rev 6; Use the shelf copy → shelf words at rev 7, device copy kept in the store; same-Covenant 409 → agreed on 9 quietly; offline → 1 pending, no call; reconnect → PUT on 9 → rev 10; " + calls.length + " mocked calls, 0 real" };
+                return { pass: bad.length === 0, detail: bad.length ? bad.join("; ") : "edit kept on the device as unsaved; PUT on revision 4 → 409 → series notice (no Keep both), edit kept, nothing re-sent; Keep mine → PUT on 5 → rev 6; Use the shelf copy → shelf words at rev 7, device copy kept in the store; same-Covenant 409 → agreed on 9 quietly; offline → 1 pending, no call; reconnect → PUT on 9 → rev 10; the kept copy rides later writes; edit + book swap and back → still unsaved, sent on 10 → rev 12; edit + sign out → device copy unsaved; " + calls.length + " mocked calls, 0 real" };
               });
             } },
           { id: "bible.series.signin", feature: "bible", name: "Series Covenant signed out: a book that names a series shows one line in the Covenant room saying the series Covenant needs a free account, fetches nothing and reads nothing from the device store, and its own entries work as before; signing out drops a loaded series Covenant and brings the line back; no series name, no line; signed in with no series row (404) nothing is loaded and no line shows",
@@ -60741,6 +60774,7 @@
         if (local.guardOn && !localHasUnsaved()) { window.removeEventListener("beforeunload", localBeforeUnload); local.guardOn = false; }
       }
       function localFlushOnHide() {
+        if (typeof bibleSeriesFlushOnHide === "function") bibleSeriesFlushOnHide(); /* BEUK:bible — a series edit still waiting goes to the device with the book */
         if (local.ready && (local.dirty || local.timer)) { clearTimeout(localLinkTimer); localLinkTimer = null; localSaveNow(); }
         else if (localLinkTimer) localWriteLinkNow(); /* BEUK:bugs — a link change still waiting on its debounce is written as the page goes */
       }
