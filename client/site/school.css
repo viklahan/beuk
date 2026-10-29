@@ -1,6 +1,8 @@
 /* Beuk School (/school …): page styles over site.css's tokens, top bar and
    footer. Server-rendered by src/school/render.ts; script: school.js. */
 .school main{padding-bottom:40px}
+/* Components below set display; hidden must still win (signed-in-only boxes, unused views). */
+.school [hidden]{display:none!important}
 .s-hero{padding:56px 0 10px;display:grid;gap:14px;max-width:760px}
 .s-hero.tight{padding-top:18px}
 .s-hero h1{font-size:clamp(34px,5vw,54px);text-wrap:balance}
@@ -110,5 +112,7 @@
 .pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:30px;padding:18px 0 10px;font-weight:700}
 .pager a{text-decoration:none}
 
+/* site.css pads every <section> for the landing page's bands; a lesson view is not a band. */
+.school .mode{padding:0}
 /* With script on, one view at a time; without it, all three stack. */
 .js .mode[hidden]{display:none}
