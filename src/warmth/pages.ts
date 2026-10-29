@@ -60,11 +60,12 @@ export function kofiJarHtml(config: Config): string {
   <h2>Support the maker</h2>
   <p>Beuk is made and kept by an independent maker, not a company with a
   sales team. If Beuk helped your book onto the shelf and you'd like to
-  help keep it there, you can leave a tip — it goes toward the servers,
+  help keep it there, you can buy the maker a caife — it goes toward the servers,
   the tools, and the next round of features writers ask for.</p>
-  <p><a class="kofi-button" href="${url}" target="_blank" rel="noopener noreferrer">Leave a tip on Ko-fi</a></p>
-  <p class="kofi-note">Entirely optional, always. The studio is the point;
-  the tip jar is just a thank-you tin by the door.</p>
+  <p><a class="kofi-button" href="${url}" target="_blank" rel="noopener noreferrer">Buy a Caife</a></p>
+  <p class="kofi-note">Caife is Irish for coffee. Entirely optional, always.
+  The studio is the point; the tip jar is just a thank-you tin by the door.
+  Payment is on Ko-fi, which opens in a new tab.</p>
 </aside>`;
 }
 
