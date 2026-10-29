@@ -3138,6 +3138,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Links, facts and templates are edited in the studio room and ride the client book document; the server stores the document whole and never reads it.',
   },
   {
+    id: 'bible.series.number',
+    title: 'Number in series: Project Settings keeps a whole number 1 to 999 as the place of the book in its series; blank, 0, text, a decimal or over 999 leaves it absent and unserialized; a book file keeps a good number and drops a bad one; the next book to arrive never inherits it',
+    kind: 'client-only',
+    reason: 'The number is a field of the client book document set in the settings form; the server stores the document whole and never reads it.',
+  },
+  {
     id: 'bible.editor.perf',
     title: 'Covenant underlines: whole-book pass, first draw and per-keystroke mirror redraw on the sample within a measured budget; mirror height equals the textarea height',
     kind: 'client-only',
