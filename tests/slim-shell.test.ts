@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +8,7 @@ import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
 
 /* BEUK:slim — the sample story's pictures are files under
    client/assets/sample/, not base64 inside client/index.html. These
-   guards keep the page under its size budget, every listed file on
+   guards keep pictures out of the page, every listed file on
    disk with its exact bytes, and the page, the manifest and both
    service workers naming the same files. */
 
@@ -16,26 +16,15 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const client = path.join(here, '..', 'client');
 const sampleDir = path.join(client, 'assets', 'sample');
 
-/* Measured after the move: 5,746,092 bytes (was 16,430,441). Re-measured
-   2026-10-27 after twelve features landed together (tooltips, rights,
-   full screen, typing perf and more: code, no pictures): 5,923,387. The
-   budget sits just above it, so a picture pasted back into the page fails
-   here; the base64 check below catches one on its own. Re-measured
-   2026-10-28 while the Covenant grew (changes, the folded
-   card, marking from the desk): 6,001,409. Raised to 6.3 MB to leave room
-   for the rest of that work; the real fix is moving the self-checks out of
-   the page (about 1.15 MB), which waits on the owner. Re-measured
-   2026-10-29 at 6,295,825 before the Outline's Grid (code, 13 string
-   packs and its self-check; no pictures) and 6,319,394 after it. Raised
-   to 6.35 MB; the base64 check below is unchanged. */
-const INDEX_BUDGET_BYTES = 6_350_000;
+/* No byte budget (removed 2026-10-29 by the owner): the page grows with
+   the studio's features, its string packs and its self-checks, which stay
+   in the page. A picture pasted back into it is still caught: the base64
+   run check and the sample-constant check below hold on their own. */
 
 type Pic = { id?: string; name: string; mediaType: string; ext: string; file: string; bytes: number; sha256: string };
 const manifest = async () => JSON.parse(await readFile(path.join(sampleDir, 'manifest.json'), 'utf8')) as { format: string; version: number; images: Pic[]; cover: Pic };
 
-test('slim: client/index.html stays under its size budget and carries no base64 run of 50,000+ characters', async () => {
-  const size = (await stat(path.join(client, 'index.html'))).size;
-  assert.ok(size <= INDEX_BUDGET_BYTES, `index.html is ${size} bytes, budget ${INDEX_BUDGET_BYTES}`);
+test('slim: client/index.html carries no base64 run of 50,000+ characters and no embedded sample pictures', async () => {
   const html = await readFile(path.join(client, 'index.html'), 'utf8');
   const run = /[A-Za-z0-9+/=]{50000,}/.exec(html);
   assert.equal(run, null, run ? `a ${run[0].length}-character base64 run at offset ${run.index}` : '');
