@@ -2061,6 +2061,38 @@ The **Covenant** (sidebar tool row → **Covenant**) keeps the people, places an
 - Strings ship in all 13 interface languages; the room mirrors in Arabic and stacks list → entry at phone width.
 - Self-checks (client-only, registered in `src/housekeeping/registry.ts`): `bible.seed.frominsights`, `bible.mentions.match`, `bible.mentions.heatmap` (every section count equals an independent brute-force count on the sample), `bible.notexported`, `bible.series.roundtrip`, `bible.model.compat`, `bible.change.anchor`, `bible.change.now`, `bible.card.folded`, `bible.change.mark`, `bible.links.facts`, `bible.series.number`, `bible.series.crossbook`, `bible.series.conflict`, `bible.series.signin`, `bible.series.join`, `bible.series.merge`, `bible.series.leave`, `bible.editor.perf`.
 
+## Studio: Notebook (client-only)
+
+The **Notebook** (sidebar tool row → **Notes**, `BEUK:notebook`) keeps
+research, ideas and scraps with the book: Dabble's story notebook, with
+three things more.
+
+- **Notes** have a title, an optional folder (free text, offered from the
+  book's other folders) and a body of up to 50,000 characters. The list
+  groups them by folder ("No folder" last); **search** matches title,
+  body and folder.
+- **Pinned to chapters.** A note can be pinned to any sections. When the
+  notebook opens, the notes pinned to the section on the desk come first
+  under "Pinned to <section>", and that note is the one selected. A pin
+  opens its section on the desk.
+- **The Covenant's names, found.** Every name and alias the Covenant
+  knows is found in the note's title and text with the Covenant's own
+  matcher (`bibleScan`), shown as chips with their counts, most mentioned
+  first; a chip opens that entry in the Covenant.
+- **The book file.** `notebook: { notes: [{ id, title, body, folder?,
+  secs?, at? }] }`, up to 500 notes, written only when the book has a
+  note (`nbHas`), so a book without one serializes as before. Read
+  strictly on arrival (`nbNormalize`): a pin to a section the book does
+  not have is dropped, and a book arriving without notes has none, so one
+  book's notes never ride onto the next. History snapshots carry the
+  notebook with the rest of the book.
+- **Not book text.** No export reads the notebook and no word count
+  counts it. Delete comes with Undo.
+- **In the sample.** *The Lantern Coast* ships with three notes
+  (Research: "Keep the depths straight", "Notices to Mariners"; People:
+  "Who keeps what"), each pinned to the chapters its facts come from.
+- All 13 interface languages. Self-check: `notebook.notes`.
+
 ## Studio: the preview keeps the writer's place (client-only)
 
 Editing or formatting the section that is already in the preview no

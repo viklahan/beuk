@@ -2217,6 +2217,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'History snapshots live in the in-browser book (state.history); the comparison is computed and rendered in the client.',
   },
   {
+    id: 'notebook.notes',
+    title: "Notebook: notes take title, folder and text, find the Covenant's names, pin to chapters and come first there, search; round-trip through the book file, never leak to the next book, never exported or counted; delete with Undo; the sample's notes sit on the chapters their facts come from",
+    kind: 'client-only',
+    reason: 'The notebook rides the client book document and is drawn in the studio; the server stores the book as opaque JSON.',
+  },
+  {
     id: 'history.compare.words',
     title: "Compare: a changed section opens word by word in a snapshot's detail (removed struck through, added underlined, unchanged paragraphs folded until Whole section, a cut paragraph shown whole, true counts); nothing in the book changes; the sample's earlier draft of Chapter One differs in three reworded paragraphs and one cut",
     kind: 'client-only',

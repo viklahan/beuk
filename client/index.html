@@ -1683,6 +1683,26 @@
       .bib-item-name { flex: 1 1 auto; min-width: 0; font-family: "EB Garamond", Georgia, serif; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .bib-item-name.is-blank { color: var(--muted); font-style: italic; }
       .bib-item-n { flex: 0 0 auto; font-size: 14px; color: var(--muted); }
+      /* BEUK:notebook */
+      .nb-side-bar { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+      .nb-side-bar .bib-search { flex: 1 1 auto; min-width: 0; margin: 0; }
+      .nb-side-bar .tb-btn { flex: 0 0 auto; white-space: nowrap; }
+      .nb-group { margin-bottom: 10px; }
+      .nb-group-h { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 6px 4px 3px; }
+      .nb-group-h svg { width: 13px; height: 13px; }
+      .nb-group[data-nbgroup="here"] .nb-group-h { color: var(--accent); }
+      .nb-item-txt { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+      .nb-item-meta { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .nb-row { margin-bottom: 12px; }
+      .nb-row .field-lab { display: block; margin-bottom: 4px; }
+      .nb-body { width: 100%; min-height: 220px; resize: vertical; font-family: "EB Garamond", Georgia, serif; font-size: 16px; line-height: 1.55; }
+      .nb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+      .nb-chips .ol-chip svg { width: 12px; height: 12px; }
+      .nb-pin { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 4px 1px 10px; background: var(--panel); font-size: 12.5px; }
+      .nb-pinsel { width: auto; max-width: 100%; margin-inline-end: 6px; }
+      .nb-quiet { font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
+      .nb-pick { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 15px; margin-top: 30px; text-align: center; }
+      .nb-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px dashed var(--line); padding-top: 10px; }
       .bib-none { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink-2); line-height: 1.6; margin: 6px 0; }
       .bib-detail { min-width: 0; }
       .bib-back { display: none; margin: 0 0 10px; }
@@ -2735,6 +2755,7 @@
             <button class="side-tool" id="btnGoals" data-tip="tips.goals" type="button" title="Goals" aria-label="Goals" data-i18n-title="goals.open" data-i18n-aria="goals.open"><i data-lucide="target"></i><span class="side-tool-lab" data-i18n="side.toolGoals">Goals</span></button>
             <button class="side-tool" id="btnHistory" data-tip="tips.history" type="button" title="History" aria-label="History" data-i18n-title="history.open" data-i18n-aria="history.open"><i data-lucide="history"></i><span class="side-tool-lab" data-i18n="side.toolHistory">History</span></button>
             <button class="side-tool" id="btnBible" data-tip="tips.bible" type="button" title="Covenant" aria-label="Covenant" data-i18n-title="bible.open" data-i18n-aria="bible.open"><i data-lucide="book-marked"></i><span class="side-tool-lab" data-i18n="side.toolBible">Covenant</span></button><!-- BEUK:bible -->
+            <button class="side-tool" id="btnNotebook" data-tip="tips.notebook" type="button" title="Notebook" aria-label="Notebook" data-i18n-title="nb.open" data-i18n-aria="nb.open"><i data-lucide="notebook-pen"></i><span class="side-tool-lab" data-i18n="side.toolNotebook">Notes</span></button><!-- BEUK:notebook -->
             </div>
               <div class="sync-row" id="syncRow" style="display:none;"><i data-lucide="cloud"></i><span id="syncText">On your shelf ✓</span></div>
             <div class="side-status" id="sideStatus">
@@ -4017,6 +4038,27 @@
       </div>
     </div>
     <!-- ==== /BEUK:bible ==== -->
+    <!-- ==== BEUK:notebook ==== — research, ideas and scraps, kept with the book -->
+    <div class="modal-back" id="modalNotebook" style="z-index:69;">
+      <div class="modal wide nb-modal" role="dialog" aria-modal="true" aria-labelledby="nbH">
+        <h2 id="nbH"><i data-lucide="notebook-pen"></i><span data-i18n="nb.title">Notebook</span></h2>
+        <p class="m-sub" data-i18n="nb.sub">Research, ideas and scraps, kept with the book. They are notes for you: never exported, never counted as words.</p>
+        <div class="bib-main nb-main">
+          <div class="bib-side">
+            <div class="nb-side-bar">
+              <input class="txt-input bib-search" id="nbSearch" type="search" placeholder="Find in notes" aria-label="Find in notes" data-i18n-ph="nb.search" data-i18n-aria="nb.search" />
+              <button class="tb-btn" id="btnNbNew" type="button"><i data-lucide="plus"></i><span data-i18n="nb.new">New note</span></button>
+            </div>
+            <div id="nbList"></div>
+          </div>
+          <div class="bib-detail" id="nbDetail"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="tb-btn" id="btnCloseNotebook" type="button" data-i18n="nb.close">Close</button>
+        </div>
+      </div>
+    </div>
+    <!-- ==== /BEUK:notebook ==== -->
 
     <!-- Account / sign-in modal (SaaS wiring) -->
     <div class="modal-back" id="modalAuth" style="z-index:66;">
@@ -4665,6 +4707,7 @@
         if (typeof tbLayoutOnLangChange === "function") tbLayoutOnLangChange(); /* BEUK:toolbar */
         if (typeof insOnLangChange === "function") insOnLangChange();
         if (typeof bibleOnLangChange === "function") bibleOnLangChange(); /* BEUK:bible */
+        if (typeof nbOnLangChange === "function") nbOnLangChange(); /* BEUK:notebook */
         if (typeof betaOnLangChange === "function") betaOnLangChange(); /* BEUK:beta */
         if (typeof goalsOnLangChange === "function") goalsOnLangChange();
         if (typeof historyOnLangChange === "function") historyOnLangChange();
@@ -8064,6 +8107,23 @@
         "zh-Hans": { "history.cmp": "比较", "history.cmpHide": "收起比较", "history.cmpSum": "新增词：{a} · 删除词：{r}", "history.cmpView": "显示范围", "history.cmpOnly": "仅显示更改", "history.cmpAll": "整个部分", "history.cmpLegend": "删除线：快照里有、现在的书里没有。下划线：快照之后新加的。", "history.cmpTitle": "标题：", "history.cmpSame": "未更改的段落：{n}", "history.cmpDelSr": "已删除：", "history.cmpInsSr": "已添加：" }
       };
       Object.keys(HIST_CMP_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], HIST_CMP_STRINGS[code]); });
+      /* BEUK:notebook — the Notebook's words, all 13 packs */
+      const NB_STRINGS = {
+        "en": { "nb.open": "Notebook", "nb.title": "Notebook", "nb.sub": "Research, ideas and scraps, kept with the book. They are notes for you: never exported, never counted as words.", "nb.new": "New note", "nb.search": "Find in notes", "nb.close": "Close", "side.toolNotebook": "Notes", "tips.notebook": "Research, ideas and scraps, kept with this book. Pin a note to a chapter; names the Covenant knows are found in it.", "nb.untitled": "Untitled note", "nb.empty": "No notes yet. Start one for research, an idea, or a scene you are not ready to write.", "nb.noMatch": "No note matches “{q}”.", "nb.pinnedHere": "Pinned to {sec}", "nb.noFolder": "No folder", "nb.pick": "Choose a note, or start a new one.", "nb.pickFirst": "Start a note: research, an idea, a scrap of dialogue.", "nb.pins": "pinned: {n}", "nb.titleLab": "Title", "nb.folderLab": "Folder", "nb.folderPh": "e.g. Research", "nb.bodyLab": "Note", "nb.namesLab": "Names from the Covenant", "nb.namesNone": "No name the Covenant knows appears in this note.", "nb.namesNoCov": "Add people, places and things to the Covenant, and their names are found in your notes.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Pinned to", "nb.pinNone": "Not pinned. Pin it to a chapter and it comes first whenever that chapter is open.", "nb.pinAdd": "Pin to a section", "nb.pinDo": "Pin", "nb.go": "Open {sec} on the desk", "nb.unpin": "Unpin from {sec}", "nb.edited": "Edited {when}", "nb.delete": "Delete note", "nb.deleted": "Note deleted: {name}" },
+        "es": { "nb.open": "Cuaderno", "nb.title": "Cuaderno", "nb.sub": "Documentación, ideas y retazos, guardados con el libro. Son notas para ti: nunca se exportan ni cuentan como palabras.", "nb.new": "Nueva nota", "nb.search": "Buscar en las notas", "nb.close": "Cerrar", "side.toolNotebook": "Notas", "tips.notebook": "Documentación, ideas y retazos, guardados con este libro. Fija una nota a un capítulo; en ella se encuentran los nombres que conoce el Pacto.", "nb.untitled": "Nota sin título", "nb.empty": "Aún no hay notas. Empieza una para documentarte, para una idea o para una escena que aún no quieres escribir.", "nb.noMatch": "Ninguna nota contiene «{q}».", "nb.pinnedHere": "Fijadas a {sec}", "nb.noFolder": "Sin carpeta", "nb.pick": "Elige una nota o empieza una nueva.", "nb.pickFirst": "Empieza una nota: documentación, una idea, un retazo de diálogo.", "nb.pins": "fijada: {n}", "nb.titleLab": "Título", "nb.folderLab": "Carpeta", "nb.folderPh": "p. ej. Documentación", "nb.bodyLab": "Nota", "nb.namesLab": "Nombres del Pacto", "nb.namesNone": "En esta nota no aparece ningún nombre que conozca el Pacto.", "nb.namesNoCov": "Añade al Pacto personas, lugares y cosas, y sus nombres aparecerán en tus notas.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Fijada a", "nb.pinNone": "Sin fijar. Fíjala a un capítulo y aparecerá primero cada vez que ese capítulo esté abierto.", "nb.pinAdd": "Fijar a una sección", "nb.pinDo": "Fijar", "nb.go": "Abrir {sec} en el escritorio", "nb.unpin": "Desfijar de {sec}", "nb.edited": "Editada {when}", "nb.delete": "Borrar la nota", "nb.deleted": "Nota borrada: {name}" },
+        "fr": { "nb.open": "Carnet", "nb.title": "Carnet", "nb.sub": "Recherches, idées et bribes, gardées avec le livre. Ce sont des notes pour vous : jamais exportées, jamais comptées comme mots.", "nb.new": "Nouvelle note", "nb.search": "Chercher dans les notes", "nb.close": "Fermer", "side.toolNotebook": "Notes", "tips.notebook": "Recherches, idées et bribes, gardées avec ce livre. Épinglez une note à un chapitre ; les noms que connaît le Pacte y sont repérés.", "nb.untitled": "Note sans titre", "nb.empty": "Pas encore de note. Commencez-en une pour une recherche, une idée ou une scène que vous n'êtes pas prêt à écrire.", "nb.noMatch": "Aucune note ne contient « {q} ».", "nb.pinnedHere": "Épinglées à {sec}", "nb.noFolder": "Sans dossier", "nb.pick": "Choisissez une note, ou commencez-en une.", "nb.pickFirst": "Commencez une note : une recherche, une idée, une bribe de dialogue.", "nb.pins": "épinglée : {n}", "nb.titleLab": "Titre", "nb.folderLab": "Dossier", "nb.folderPh": "p. ex. Recherches", "nb.bodyLab": "Note", "nb.namesLab": "Noms du Pacte", "nb.namesNone": "Aucun nom connu du Pacte n'apparaît dans cette note.", "nb.namesNoCov": "Ajoutez au Pacte des personnes, des lieux et des choses : leurs noms seront repérés dans vos notes.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Épinglée à", "nb.pinNone": "Non épinglée. Épinglez-la à un chapitre et elle vient en premier dès que ce chapitre est ouvert.", "nb.pinAdd": "Épingler à une section", "nb.pinDo": "Épingler", "nb.go": "Ouvrir {sec} sur le bureau", "nb.unpin": "Désépingler de {sec}", "nb.edited": "Modifiée {when}", "nb.delete": "Supprimer la note", "nb.deleted": "Note supprimée : {name}" },
+        "de": { "nb.open": "Notizbuch", "nb.title": "Notizbuch", "nb.sub": "Recherche, Ideen und Schnipsel, beim Buch aufbewahrt. Es sind Notizen für Sie: nie exportiert, nie als Wörter gezählt.", "nb.new": "Neue Notiz", "nb.search": "In Notizen suchen", "nb.close": "Schließen", "side.toolNotebook": "Notizen", "tips.notebook": "Recherche, Ideen und Schnipsel, bei diesem Buch aufbewahrt. Heften Sie eine Notiz an ein Kapitel; Namen, die der Pakt kennt, werden darin gefunden.", "nb.untitled": "Notiz ohne Titel", "nb.empty": "Noch keine Notizen. Beginnen Sie eine für Recherche, eine Idee oder eine Szene, die noch nicht geschrieben werden will.", "nb.noMatch": "Keine Notiz enthält „{q}“.", "nb.pinnedHere": "An {sec} geheftet", "nb.noFolder": "Ohne Ordner", "nb.pick": "Wählen Sie eine Notiz oder beginnen Sie eine neue.", "nb.pickFirst": "Beginnen Sie eine Notiz: Recherche, eine Idee, ein Stück Dialog.", "nb.pins": "angeheftet: {n}", "nb.titleLab": "Titel", "nb.folderLab": "Ordner", "nb.folderPh": "z. B. Recherche", "nb.bodyLab": "Notiz", "nb.namesLab": "Namen aus dem Pakt", "nb.namesNone": "In dieser Notiz kommt kein Name vor, den der Pakt kennt.", "nb.namesNoCov": "Tragen Sie Personen, Orte und Dinge in den Pakt ein, dann werden ihre Namen in Ihren Notizen gefunden.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Angeheftet an", "nb.pinNone": "Nicht angeheftet. Heften Sie sie an ein Kapitel, dann steht sie oben, sobald das Kapitel offen ist.", "nb.pinAdd": "An einen Abschnitt heften", "nb.pinDo": "Anheften", "nb.go": "{sec} am Schreibtisch öffnen", "nb.unpin": "Von {sec} lösen", "nb.edited": "Bearbeitet {when}", "nb.delete": "Notiz löschen", "nb.deleted": "Notiz gelöscht: {name}" },
+        "it": { "nb.open": "Taccuino", "nb.title": "Taccuino", "nb.sub": "Ricerche, idee e frammenti, tenuti con il libro. Sono note per te: mai esportate, mai contate come parole.", "nb.new": "Nuova nota", "nb.search": "Cerca nelle note", "nb.close": "Chiudi", "side.toolNotebook": "Note", "tips.notebook": "Ricerche, idee e frammenti, tenuti con questo libro. Fissa una nota a un capitolo; i nomi che il Patto conosce vengono trovati al suo interno.", "nb.untitled": "Nota senza titolo", "nb.empty": "Ancora nessuna nota. Iniziane una per una ricerca, un'idea o una scena che non sei pronto a scrivere.", "nb.noMatch": "Nessuna nota contiene «{q}».", "nb.pinnedHere": "Fissate a {sec}", "nb.noFolder": "Senza cartella", "nb.pick": "Scegli una nota, o iniziane una nuova.", "nb.pickFirst": "Inizia una nota: una ricerca, un'idea, un frammento di dialogo.", "nb.pins": "fissata: {n}", "nb.titleLab": "Titolo", "nb.folderLab": "Cartella", "nb.folderPh": "es. Ricerche", "nb.bodyLab": "Nota", "nb.namesLab": "Nomi dal Patto", "nb.namesNone": "In questa nota non compare nessun nome che il Patto conosce.", "nb.namesNoCov": "Aggiungi al Patto persone, luoghi e cose, e i loro nomi verranno trovati nelle tue note.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Fissata a", "nb.pinNone": "Non fissata. Fissala a un capitolo e verrà per prima ogni volta che quel capitolo è aperto.", "nb.pinAdd": "Fissa a una sezione", "nb.pinDo": "Fissa", "nb.go": "Apri {sec} sulla scrivania", "nb.unpin": "Togli da {sec}", "nb.edited": "Modificata {when}", "nb.delete": "Elimina la nota", "nb.deleted": "Nota eliminata: {name}" },
+        "pt": { "nb.open": "Caderno", "nb.title": "Caderno", "nb.sub": "Pesquisa, ideias e fragmentos, guardados com o livro. São notas para si: nunca exportadas, nunca contadas como palavras.", "nb.new": "Nova nota", "nb.search": "Procurar nas notas", "nb.close": "Fechar", "side.toolNotebook": "Notas", "tips.notebook": "Pesquisa, ideias e fragmentos, guardados com este livro. Fixe uma nota a um capítulo; os nomes que o Pacto conhece são encontrados nela.", "nb.untitled": "Nota sem título", "nb.empty": "Ainda não há notas. Comece uma para pesquisa, uma ideia ou uma cena que ainda não quer escrever.", "nb.noMatch": "Nenhuma nota contém «{q}».", "nb.pinnedHere": "Fixadas a {sec}", "nb.noFolder": "Sem pasta", "nb.pick": "Escolha uma nota, ou comece uma nova.", "nb.pickFirst": "Comece uma nota: pesquisa, uma ideia, um fragmento de diálogo.", "nb.pins": "fixada: {n}", "nb.titleLab": "Título", "nb.folderLab": "Pasta", "nb.folderPh": "p. ex. Pesquisa", "nb.bodyLab": "Nota", "nb.namesLab": "Nomes do Pacto", "nb.namesNone": "Nenhum nome que o Pacto conhece aparece nesta nota.", "nb.namesNoCov": "Acrescente ao Pacto pessoas, lugares e coisas, e os nomes deles serão encontrados nas suas notas.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Fixada a", "nb.pinNone": "Não fixada. Fixe-a a um capítulo e ela aparece primeiro sempre que esse capítulo estiver aberto.", "nb.pinAdd": "Fixar a uma secção", "nb.pinDo": "Fixar", "nb.go": "Abrir {sec} na secretária", "nb.unpin": "Desafixar de {sec}", "nb.edited": "Editada {when}", "nb.delete": "Apagar a nota", "nb.deleted": "Nota apagada: {name}" },
+        "nl": { "nb.open": "Notitieboek", "nb.title": "Notitieboek", "nb.sub": "Onderzoek, ideeën en snippers, bewaard bij het boek. Het zijn notities voor jou: nooit geëxporteerd, nooit als woorden geteld.", "nb.new": "Nieuwe notitie", "nb.search": "Zoeken in notities", "nb.close": "Sluiten", "side.toolNotebook": "Notities", "tips.notebook": "Onderzoek, ideeën en snippers, bewaard bij dit boek. Speld een notitie aan een hoofdstuk; namen die het Verbond kent worden erin gevonden.", "nb.untitled": "Notitie zonder titel", "nb.empty": "Nog geen notities. Begin er een voor onderzoek, een idee of een scène die je nog niet wilt schrijven.", "nb.noMatch": "Geen notitie bevat ‘{q}’.", "nb.pinnedHere": "Vastgespeld aan {sec}", "nb.noFolder": "Geen map", "nb.pick": "Kies een notitie, of begin een nieuwe.", "nb.pickFirst": "Begin een notitie: onderzoek, een idee, een flard dialoog.", "nb.pins": "vastgespeld: {n}", "nb.titleLab": "Titel", "nb.folderLab": "Map", "nb.folderPh": "bijv. Onderzoek", "nb.bodyLab": "Notitie", "nb.namesLab": "Namen uit het Verbond", "nb.namesNone": "In deze notitie komt geen naam voor die het Verbond kent.", "nb.namesNoCov": "Zet mensen, plaatsen en dingen in het Verbond, dan worden hun namen in je notities gevonden.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Vastgespeld aan", "nb.pinNone": "Niet vastgespeld. Speld haar aan een hoofdstuk en ze staat bovenaan zodra dat hoofdstuk open is.", "nb.pinAdd": "Vastspelden aan een deel", "nb.pinDo": "Vastspelden", "nb.go": "{sec} op het bureau openen", "nb.unpin": "Losmaken van {sec}", "nb.edited": "Bewerkt {when}", "nb.delete": "Notitie verwijderen", "nb.deleted": "Notitie verwijderd: {name}" },
+        "pl": { "nb.open": "Notatnik", "nb.title": "Notatnik", "nb.sub": "Materiały, pomysły i skrawki, przechowywane razem z książką. To notatki dla ciebie: nigdy nie trafiają do eksportu ani do liczby słów.", "nb.new": "Nowa notatka", "nb.search": "Szukaj w notatkach", "nb.close": "Zamknij", "side.toolNotebook": "Notatki", "tips.notebook": "Materiały, pomysły i skrawki, przechowywane razem z tą książką. Przypnij notatkę do rozdziału; imiona i nazwy znane Przymierzu zostaną w niej odnalezione.", "nb.untitled": "Notatka bez tytułu", "nb.empty": "Nie ma jeszcze notatek. Zacznij jedną: materiały, pomysł albo scenę, której jeszcze nie chcesz pisać.", "nb.noMatch": "Żadna notatka nie zawiera „{q}”.", "nb.pinnedHere": "Przypięte do: {sec}", "nb.noFolder": "Bez folderu", "nb.pick": "Wybierz notatkę albo zacznij nową.", "nb.pickFirst": "Zacznij notatkę: materiały, pomysł, skrawek dialogu.", "nb.pins": "przypięta: {n}", "nb.titleLab": "Tytuł", "nb.folderLab": "Folder", "nb.folderPh": "np. Materiały", "nb.bodyLab": "Notatka", "nb.namesLab": "Imiona i nazwy z Przymierza", "nb.namesNone": "W tej notatce nie ma żadnego imienia ani nazwy znanych Przymierzu.", "nb.namesNoCov": "Dodaj do Przymierza ludzi, miejsca i rzeczy, a ich imiona i nazwy zostaną odnalezione w twoich notatkach.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Przypięta do", "nb.pinNone": "Nieprzypięta. Przypnij ją do rozdziału, a będzie pierwsza, ilekroć ten rozdział jest otwarty.", "nb.pinAdd": "Przypnij do sekcji", "nb.pinDo": "Przypnij", "nb.go": "Otwórz na biurku: {sec}", "nb.unpin": "Odepnij od: {sec}", "nb.edited": "Edytowano {when}", "nb.delete": "Usuń notatkę", "nb.deleted": "Usunięto notatkę: {name}" },
+        "ru": { "nb.open": "Записная книжка", "nb.title": "Записная книжка", "nb.sub": "Материалы, идеи и обрывки, хранящиеся вместе с книгой. Это заметки для вас: они не попадают в экспорт и в подсчёт слов.", "nb.new": "Новая заметка", "nb.search": "Искать в заметках", "nb.close": "Закрыть", "side.toolNotebook": "Заметки", "tips.notebook": "Материалы, идеи и обрывки, хранящиеся вместе с этой книгой. Прикрепите заметку к главе; имена, известные Завету, находятся в ней сами.", "nb.untitled": "Заметка без названия", "nb.empty": "Заметок пока нет. Начните одну: материалы, идея или сцена, которую вы ещё не готовы писать.", "nb.noMatch": "Ни одна заметка не содержит «{q}».", "nb.pinnedHere": "Прикреплено к: {sec}", "nb.noFolder": "Без папки", "nb.pick": "Выберите заметку или начните новую.", "nb.pickFirst": "Начните заметку: материалы, идея, обрывок диалога.", "nb.pins": "прикреплена: {n}", "nb.titleLab": "Название", "nb.folderLab": "Папка", "nb.folderPh": "например, Материалы", "nb.bodyLab": "Заметка", "nb.namesLab": "Имена из Завета", "nb.namesNone": "В этой заметке нет имён, известных Завету.", "nb.namesNoCov": "Внесите в Завет людей, места и вещи, и их имена будут найдены в ваших заметках.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "Прикреплена к", "nb.pinNone": "Не прикреплена. Прикрепите её к главе, и она будет первой, когда эта глава открыта.", "nb.pinAdd": "Прикрепить к разделу", "nb.pinDo": "Прикрепить", "nb.go": "Открыть на рабочем столе: {sec}", "nb.unpin": "Открепить от: {sec}", "nb.edited": "Изменена {when}", "nb.delete": "Удалить заметку", "nb.deleted": "Заметка удалена: {name}" },
+        "tr": { "nb.open": "Defter", "nb.title": "Defter", "nb.sub": "Araştırma, fikirler ve kırıntılar, kitapla birlikte saklanır. Bunlar sizin için notlardır: asla dışa aktarılmaz, sözcük olarak sayılmaz.", "nb.new": "Yeni not", "nb.search": "Notlarda ara", "nb.close": "Kapat", "side.toolNotebook": "Notlar", "tips.notebook": "Araştırma, fikirler ve kırıntılar, bu kitapla birlikte saklanır. Bir notu bir bölüme iliştirin; Ahit'in bildiği adlar notta bulunur.", "nb.untitled": "Başlıksız not", "nb.empty": "Henüz not yok. Araştırma, bir fikir ya da henüz yazmaya hazır olmadığınız bir sahne için bir not başlatın.", "nb.noMatch": "“{q}” içeren not yok.", "nb.pinnedHere": "{sec} bölümüne iliştirilmiş", "nb.noFolder": "Klasörsüz", "nb.pick": "Bir not seçin ya da yeni bir not başlatın.", "nb.pickFirst": "Bir not başlatın: araştırma, bir fikir, bir diyalog kırıntısı.", "nb.pins": "iliştirilmiş: {n}", "nb.titleLab": "Başlık", "nb.folderLab": "Klasör", "nb.folderPh": "ör. Araştırma", "nb.bodyLab": "Not", "nb.namesLab": "Ahit'teki adlar", "nb.namesNone": "Bu notta Ahit'in bildiği bir ad geçmiyor.", "nb.namesNoCov": "Ahit'e kişileri, yerleri ve nesneleri ekleyin; adları notlarınızda bulunur.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "İliştirildiği yer", "nb.pinNone": "İliştirilmemiş. Bir bölüme iliştirin; o bölüm açıkken en başta durur.", "nb.pinAdd": "Bir bölüme iliştir", "nb.pinDo": "İliştir", "nb.go": "{sec} bölümünü masada aç", "nb.unpin": "{sec} bölümünden ayır", "nb.edited": "Düzenlendi: {when}", "nb.delete": "Notu sil", "nb.deleted": "Not silindi: {name}" },
+        "ar": { "nb.open": "الدفتر", "nb.title": "الدفتر", "nb.sub": "بحوث وأفكار وقصاصات، محفوظة مع الكتاب. إنها ملاحظات لك: لا تُصدَّر أبدًا ولا تُعدّ كلماتٍ.", "nb.new": "ملاحظة جديدة", "nb.search": "ابحث في الملاحظات", "nb.close": "إغلاق", "side.toolNotebook": "ملاحظات", "tips.notebook": "بحوث وأفكار وقصاصات، محفوظة مع هذا الكتاب. ثبّت ملاحظة على فصل؛ والأسماء التي يعرفها الميثاق تُكتشف فيها.", "nb.untitled": "ملاحظة بلا عنوان", "nb.empty": "لا ملاحظات بعد. ابدأ واحدة لبحث أو فكرة أو مشهد لست مستعدًا لكتابته بعد.", "nb.noMatch": "لا ملاحظة تحوي «{q}».", "nb.pinnedHere": "مثبّتة على {sec}", "nb.noFolder": "بلا مجلد", "nb.pick": "اختر ملاحظة، أو ابدأ ملاحظة جديدة.", "nb.pickFirst": "ابدأ ملاحظة: بحث، فكرة، قصاصة حوار.", "nb.pins": "مثبّتة: {n}", "nb.titleLab": "العنوان", "nb.folderLab": "المجلد", "nb.folderPh": "مثل: بحوث", "nb.bodyLab": "الملاحظة", "nb.namesLab": "أسماء من الميثاق", "nb.namesNone": "لا يرد في هذه الملاحظة اسم يعرفه الميثاق.", "nb.namesNoCov": "أضف إلى الميثاق أشخاصًا وأماكن وأشياء، فتُكتشف أسماؤهم في ملاحظاتك.", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "مثبّتة على", "nb.pinNone": "غير مثبّتة. ثبّتها على فصل فتأتي أولًا كلما فُتح ذلك الفصل.", "nb.pinAdd": "ثبّت على قسم", "nb.pinDo": "ثبّت", "nb.go": "افتح {sec} على المكتب", "nb.unpin": "ألغِ التثبيت من {sec}", "nb.edited": "عُدّلت {when}", "nb.delete": "احذف الملاحظة", "nb.deleted": "حُذفت الملاحظة: {name}" },
+        "ja": { "nb.open": "ノート", "nb.title": "ノート", "nb.sub": "資料、アイデア、断片を本と一緒に保管します。あなたのためのメモなので、書き出されることも語数に数えられることもありません。", "nb.new": "新しいメモ", "nb.search": "メモを検索", "nb.close": "閉じる", "side.toolNotebook": "ノート", "tips.notebook": "資料、アイデア、断片をこの本と一緒に保管します。メモを章にピン留めでき、盟約が知っている名前はメモの中から見つかります。", "nb.untitled": "無題のメモ", "nb.empty": "まだメモはありません。資料、アイデア、まだ書く準備のできていない場面などのメモを始めましょう。", "nb.noMatch": "「{q}」を含むメモはありません。", "nb.pinnedHere": "{sec} にピン留め", "nb.noFolder": "フォルダなし", "nb.pick": "メモを選ぶか、新しく始めてください。", "nb.pickFirst": "メモを始めましょう：資料、アイデア、台詞の断片。", "nb.pins": "ピン留め: {n}", "nb.titleLab": "タイトル", "nb.folderLab": "フォルダ", "nb.folderPh": "例：資料", "nb.bodyLab": "メモ", "nb.namesLab": "盟約の名前", "nb.namesNone": "このメモには盟約が知っている名前がありません。", "nb.namesNoCov": "盟約に人物・場所・ものを追加すると、その名前がメモの中から見つかります。", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "ピン留め先", "nb.pinNone": "ピン留めされていません。章にピン留めすると、その章を開いているときに一番上に表示されます。", "nb.pinAdd": "セクションにピン留め", "nb.pinDo": "ピン留め", "nb.go": "{sec} をデスクで開く", "nb.unpin": "{sec} からピン留めを外す", "nb.edited": "{when} に編集", "nb.delete": "メモを削除", "nb.deleted": "メモを削除しました：{name}" },
+        "zh-Hans": { "nb.open": "笔记本", "nb.title": "笔记本", "nb.sub": "资料、想法和片段，与书一起保存。这些是写给你自己的笔记：不会被导出，也不计入字数。", "nb.new": "新建笔记", "nb.search": "在笔记中查找", "nb.close": "关闭", "side.toolNotebook": "笔记", "tips.notebook": "资料、想法和片段，与这本书一起保存。可以把笔记钉在某一章上；盟约认识的名字会在笔记中被找出。", "nb.untitled": "无标题笔记", "nb.empty": "还没有笔记。为资料、一个想法或一个还没准备好写的场景开始一则笔记吧。", "nb.noMatch": "没有笔记包含“{q}”。", "nb.pinnedHere": "钉在{sec}", "nb.noFolder": "无文件夹", "nb.pick": "选择一则笔记，或新建一则。", "nb.pickFirst": "开始一则笔记：资料、想法、一段对话的片段。", "nb.pins": "已钉：{n}", "nb.titleLab": "标题", "nb.folderLab": "文件夹", "nb.folderPh": "例如：资料", "nb.bodyLab": "笔记", "nb.namesLab": "盟约中的名字", "nb.namesNone": "这则笔记里没有盟约认识的名字。", "nb.namesNoCov": "在盟约中添加人物、地点和事物，它们的名字就会在你的笔记中被找出。", "nb.nameN": "{name} ×{n}", "nb.pinsLab": "钉在", "nb.pinNone": "未钉住。把它钉在某一章上，打开那一章时它会排在最前面。", "nb.pinAdd": "钉到某个部分", "nb.pinDo": "钉住", "nb.go": "在书桌上打开{sec}", "nb.unpin": "从{sec}取下", "nb.edited": "编辑于 {when}", "nb.delete": "删除笔记", "nb.deleted": "已删除笔记：{name}" }
+      };
+      Object.keys(NB_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], NB_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
@@ -19724,6 +19784,20 @@
         noteFor("The Channel Runs East", { "sample-th-channel": "Five votes to four: the Board recognises the correction.", "sample-th-venn": "Venn's own casting hand is raised with the rest." });
         noteFor("What the Chart Cost", { "sample-th-channel": "Published in the Notices to Mariners: Chart 1147, Gullwick and Approaches." });
         noteFor("The Fair Sheet", { "sample-th-channel": "By spring, Gullwick is a port again." });
+        /* BEUK:notebook — the writer's notebook: three notes, each fact
+           taken from the chapters they are pinned to. */
+        const secOf = (title) => { const s = secs.find((x) => x.title === title); return s ? [s.id] : []; };
+        const sampleNotebook = { notes: [
+          { id: "sample-nb-depths", folder: "Research", title: "Keep the depths straight",
+            body: "Chapter Four, the harbour ledger: \"M. sounded the gut today, six fathoms, called every mark true.\"\n\nChapter Eight: nine days sounding the channel at low water, with Tomas and Nell.\n\nWhatever depths the chart prints in Chapter Fourteen must agree with both.",
+            secs: secOf("The Tide Table for Next Year").concat(secOf("Soundings at Low Water"), secOf("What the Chart Cost")) },
+          { id: "sample-nb-notices", folder: "Research", title: "Notices to Mariners",
+            body: "The correction is published in the Notices to Mariners on the last Friday of the month.\n\nThe entry begins: Chart 1147, Gullwick and Approaches — Insert deep-water channel, with depths as charted.",
+            secs: secOf("What the Chart Cost") },
+          { id: "sample-nb-keepers", folder: "People", title: "Who keeps what",
+            body: "Agnes keeps the harbour ledgers, including the sailcloth one she brings to Gull Terrace.\n\nPetra Howe is the archivist who wrote to Mara twice a year for eleven years.\n\nElias Vane's meridian chart is drawn in an ink that never quite dried.",
+            secs: secOf("The Harbourmaster's Ledger") }
+        ] };
         const firstChapter = secs.find((s) => s.type === "chapter");
         /* The finished cover: serene harbour artwork painted for the
            book, with the title and author typeset over it through the
@@ -19751,6 +19825,7 @@
           sections: secs,
           bible: sampleBible,
           outline: { tags: [], filters: [], threads: threads },
+          notebook: sampleNotebook, /* BEUK:notebook */
           cover: sampleCoverDoc(), /* BEUK:slim */
           coverRecipe: recipe,
           images: sampleImagesDoc(), /* BEUK:slim */
@@ -25679,6 +25754,185 @@
         if (window.MutationObserver) new MutationObserver(() => { if (!m.classList.contains("open")) bibleDeskSchedule(); }).observe(m, { attributes: true, attributeFilter: ["class"] });
         bibleDeskSchedule();
       }
+      /* ==== BEUK:notebook ==== — the book's notebook: research, ideas and
+         scraps kept with the book (Dabble's story notebook), with three
+         things more. A note can be pinned to sections, and the notes
+         pinned to the section on the desk come first when the notebook
+         opens. Every name the Covenant knows is found in a note (the
+         Covenant's own matcher), and one click opens that entry. And the
+         notebook is searched as a whole. Notes ride the book as
+         `notebook: { notes: [{ id, title, body, folder?, secs?, at? }] }`,
+         written only when there is a note; a book arriving without one
+         has none. They are not book text: no export reads them and no
+         word count counts them. */
+      /* function declarations, not consts: a book is serialized and applied before this part of the script has run */
+      function nbLine(v, n) { return String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, n); }
+      function nbNormalize(doc, sections) {
+        const ids = new Set((sections || []).map((s) => s.id)), notes = [], seen = new Set();
+        (doc && Array.isArray(doc.notes) ? doc.notes : []).forEach((n) => {
+          if (!n || typeof n !== "object" || notes.length >= 500) return;
+          const id = typeof n.id === "string" && /^[\w-]{1,64}$/.test(n.id) && !seen.has(n.id) ? n.id : uid();
+          seen.add(id);
+          const o = { id: id, title: nbLine(n.title, 120), body: typeof n.body === "string" ? n.body.slice(0, 50000) : "" };
+          const folder = nbLine(n.folder, 60); if (folder) o.folder = folder;
+          const secs = Array.from(new Set((Array.isArray(n.secs) ? n.secs : []).filter((x) => typeof x === "string" && ids.has(x)))).slice(0, 100);
+          if (secs.length) o.secs = secs;
+          if (typeof n.at === "string" && !isNaN(Date.parse(n.at))) o.at = n.at;
+          notes.push(o);
+        });
+        return { notes: notes };
+      }
+      function nbBook() { if (!state.notebook || !Array.isArray(state.notebook.notes)) state.notebook = { notes: [] }; return state.notebook; }
+      function nbHas() { return nbBook().notes.length > 0; }
+      function nbPack() { return JSON.parse(JSON.stringify(nbNormalize(nbBook(), state.sections))); }
+      const nbUi = { sel: null, q: "", namesTimer: null };
+      const nbNote = (id) => nbBook().notes.find((n) => n.id === id) || null;
+      const nbSecName = (id) => { const s = state.sections.find((x) => x.id === id); return s ? snapshotSectionName(s) : null; };
+      const nbName = (n) => n.title || t("nb.untitled");
+      function nbTouch(n) { n.at = new Date().toISOString(); noteBookEdited(); }
+      /* the Covenant's names in a note, most mentioned first */
+      function nbNames(text) {
+        const ents = bibleAllEntries();
+        if (!ents.length || !String(text || "").trim()) return [];
+        const per = {};
+        bibleScan(String(text), bibleMatcherNow()).hits.forEach((h) => { per[h.id] = (per[h.id] || 0) + 1; });
+        return ents.filter((e) => per[e.id]).map((e) => ({ id: e.id, name: bibleName(e), n: per[e.id] })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+      }
+      function nbNamesHtml(n) {
+        if (!bibleAllEntries().length) return '<p class="nb-quiet">' + esc(t("nb.namesNoCov")) + "</p>";
+        const list = nbNames(n.title + "\n" + n.body);
+        if (!list.length) return '<p class="nb-quiet">' + esc(t("nb.namesNone")) + "</p>";
+        return '<div class="nb-chips">' + list.map((x) => '<button type="button" class="ol-chip" data-nbcov="' + esc(x.id) + '"><i data-lucide="book-marked" aria-hidden="true"></i>' + esc(t("nb.nameN", { name: x.name, n: fmtNum(x.n) })) + "</button>").join("") + "</div>";
+      }
+      function nbItem(n) {
+        const meta = [n.folder || "", n.secs && n.secs.length ? t("nb.pins", { n: fmtNum(n.secs.length) }) : ""].filter(Boolean).join(" · ");
+        return '<button type="button" class="bib-item nb-item' + (n.id === nbUi.sel ? " is-sel" : "") + '" data-nb="' + esc(n.id) + '" aria-pressed="' + (n.id === nbUi.sel) + '"><i data-lucide="sticky-note" aria-hidden="true"></i>' +
+          '<span class="nb-item-txt"><span class="bib-item-name' + (n.title ? "" : " is-blank") + '" dir="auto">' + esc(nbName(n)) + "</span>" + (meta ? '<span class="nb-item-meta" dir="auto">' + esc(meta) + "</span>" : "") + "</span></button>";
+      }
+      function nbRenderList() {
+        const host = $("nbList"); if (!host) return;
+        const notes = nbBook().notes, q = nbUi.q.trim().toLowerCase();
+        if (!notes.length) { host.innerHTML = '<p class="nb-quiet">' + esc(t("nb.empty")) + "</p>"; return; }
+        const shown = notes.filter((n) => !q || (n.title + "\n" + n.body + "\n" + (n.folder || "")).toLowerCase().indexOf(q) !== -1);
+        if (!shown.length) { host.innerHTML = '<p class="nb-quiet">' + esc(t("nb.noMatch", { q: nbUi.q.trim() })) + "</p>"; return; }
+        const here = state.activeId, hereName = nbSecName(here);
+        const pinned = hereName ? shown.filter((n) => (n.secs || []).indexOf(here) !== -1) : [];
+        const rest = shown.filter((n) => pinned.indexOf(n) === -1);
+        let h = "";
+        if (pinned.length) h += '<div class="nb-group" data-nbgroup="here"><div class="nb-group-h"><i data-lucide="pin" aria-hidden="true"></i>' + esc(t("nb.pinnedHere", { sec: hereName })) + "</div>" + pinned.map(nbItem).join("") + "</div>";
+        const folders = Array.from(new Set(rest.map((n) => n.folder || ""))).sort((a, b) => (a === "") - (b === "") || a.localeCompare(b));
+        folders.forEach((f) => {
+          h += '<div class="nb-group" data-nbgroup="' + esc(f) + '"><div class="nb-group-h"><i data-lucide="' + (f ? "folder" : "file") + '" aria-hidden="true"></i><span dir="auto">' + esc(f || t("nb.noFolder")) + "</span></div>" +
+            rest.filter((n) => (n.folder || "") === f).map(nbItem).join("") + "</div>";
+        });
+        host.innerHTML = h;
+      }
+      function nbRenderDetail() {
+        const host = $("nbDetail"); if (!host) return;
+        const n = nbNote(nbUi.sel);
+        if (!n) { host.innerHTML = '<p class="nb-quiet nb-pick">' + esc(t(nbBook().notes.length ? "nb.pick" : "nb.pickFirst")) + "</p>"; return; }
+        const folders = Array.from(new Set(nbBook().notes.map((x) => x.folder).filter(Boolean))).sort();
+        const pins = (n.secs || []).filter((id) => nbSecName(id));
+        const opts = state.sections.filter((s) => pins.indexOf(s.id) === -1 && s.type !== "cover");
+        let h = '<div class="nb-row"><label class="field-lab" for="nbTitle">' + esc(t("nb.titleLab")) + '</label><input class="txt-input" id="nbTitle" dir="auto" maxlength="120" value="' + esc(n.title) + '" placeholder="' + esc(t("nb.untitled")) + '"></div>' +
+          '<div class="nb-row"><label class="field-lab" for="nbFolder">' + esc(t("nb.folderLab")) + '</label><input class="txt-input" id="nbFolder" dir="auto" maxlength="60" list="nbFolders" value="' + esc(n.folder || "") + '" placeholder="' + esc(t("nb.folderPh")) + '">' +
+          '<datalist id="nbFolders">' + folders.map((f) => '<option value="' + esc(f) + '"></option>').join("") + "</datalist></div>" +
+          '<div class="nb-row"><label class="field-lab" for="nbBody">' + esc(t("nb.bodyLab")) + '</label><textarea class="txt-input nb-body" id="nbBody" dir="auto" rows="12" maxlength="50000">' + esc(n.body) + "</textarea></div>" +
+          '<div class="nb-row"><div class="field-lab">' + esc(t("nb.namesLab")) + '</div><div id="nbNames">' + nbNamesHtml(n) + "</div></div>" +
+          '<div class="nb-row"><div class="field-lab">' + esc(t("nb.pinsLab")) + "</div>" +
+          (pins.length ? '<div class="nb-chips">' + pins.map((id) => '<span class="nb-pin"><button type="button" class="ol-link" data-nbgo="' + esc(id) + '" title="' + esc(t("nb.go", { sec: nbSecName(id) })) + '">' + esc(nbSecName(id)) + '</button><button type="button" class="ol-mini" data-nbunpin="' + esc(id) + '" aria-label="' + esc(t("nb.unpin", { sec: nbSecName(id) })) + '"><i data-lucide="x"></i></button></span>').join("") + "</div>"
+            : '<p class="nb-quiet">' + esc(t("nb.pinNone")) + "</p>") +
+          '<select class="txt-input nb-pinsel" id="nbPin" aria-label="' + esc(t("nb.pinAdd")) + '"><option value="">' + esc(t("nb.pinAdd")) + "</option>" + opts.map((s) => '<option value="' + esc(s.id) + '"' + (s.id === state.activeId ? " selected" : "") + ">" + esc(snapshotSectionName(s)) + "</option>").join("") + "</select>" +
+          '<button type="button" class="tb-btn" id="nbPinDo"><i data-lucide="pin"></i>' + esc(t("nb.pinDo")) + "</button></div>" +
+          '<div class="nb-foot"><span class="nb-quiet">' + (n.at ? esc(t("nb.edited", { when: fmtDateIntl(new Date(n.at)) })) : "") + '</span><button type="button" class="tb-btn" id="nbDelete"><i data-lucide="trash-2"></i>' + esc(t("nb.delete")) + "</button></div>";
+        host.innerHTML = h;
+      }
+      function nbRender() { nbRenderList(); nbRenderDetail(); icons(); }
+      function nbShown() { const m = $("modalNotebook"); return !!(m && m.classList.contains("open")); }
+      function openNotebook() {
+        const m = $("modalNotebook"); if (!m) return;
+        const notes = nbBook().notes;
+        if (!nbNote(nbUi.sel)) {
+          const here = notes.find((n) => (n.secs || []).indexOf(state.activeId) !== -1);
+          nbUi.sel = here ? here.id : notes.length ? notes[0].id : null;
+        }
+        nbUi.q = ""; const q = $("nbSearch"); if (q) q.value = "";
+        m.classList.add("open");
+        nbRender();
+      }
+      function closeNotebook() { const m = $("modalNotebook"); if (m) m.classList.remove("open"); }
+      function nbNew() {
+        const n = { id: uid(), title: "", body: "" };
+        nbBook().notes.unshift(n);
+        nbUi.sel = n.id; nbUi.q = ""; const q = $("nbSearch"); if (q) q.value = "";
+        nbTouch(n); nbRender();
+        const ti = $("nbTitle"); if (ti) ti.focus();
+        return n;
+      }
+      function nbDelete(id) {
+        const notes = nbBook().notes, i = notes.findIndex((n) => n.id === id);
+        if (i < 0) return;
+        const gone = notes.splice(i, 1)[0];
+        if (nbUi.sel === id) nbUi.sel = notes.length ? notes[Math.min(i, notes.length - 1)].id : null;
+        noteBookEdited(); nbRender();
+        toast(t("nb.deleted", { name: nbName(gone) }), "trash-2", { label: t("chop.undo"), ms: CHOP_TOAST_MS, onClick: () => {
+          const list = nbBook().notes; if (list.some((n) => n.id === gone.id)) return;
+          list.splice(Math.min(i, list.length), 0, gone); nbUi.sel = gone.id; noteBookEdited(); if (nbShown()) nbRender();
+        } });
+      }
+      function nbPin(id, secId) {
+        const n = nbNote(id); if (!n || !state.sections.some((s) => s.id === secId)) return false;
+        const secs = n.secs || []; if (secs.indexOf(secId) !== -1) return false;
+        n.secs = secs.concat([secId]); nbTouch(n); return true;
+      }
+      function nbUnpin(id, secId) {
+        const n = nbNote(id); if (!n || !n.secs) return false;
+        n.secs = n.secs.filter((x) => x !== secId); if (!n.secs.length) delete n.secs;
+        nbTouch(n); return true;
+      }
+      function nbOnLangChange() { if (nbShown()) nbRender(); }
+      function initNotebook() {
+        nbBook();
+        const btn = $("btnNotebook"); if (btn) btn.addEventListener("click", openNotebook);
+        const m = $("modalNotebook"); if (!m) return;
+        $("btnCloseNotebook").addEventListener("click", closeNotebook);
+        $("btnNbNew").addEventListener("click", nbNew);
+        m.addEventListener("click", (e) => {
+          if (e.target === m) { closeNotebook(); return; }
+          const el = e.target.closest && e.target.closest("button"); if (!el) return;
+          const n = nbNote(nbUi.sel);
+          if (el.hasAttribute("data-nb")) { nbUi.sel = el.getAttribute("data-nb"); nbRender(); const b = m.querySelector('[data-nb="' + (window.CSS && CSS.escape ? CSS.escape(nbUi.sel) : nbUi.sel) + '"]'); if (b) b.focus(); return; }
+          if (el.hasAttribute("data-nbcov")) { openBible(el.getAttribute("data-nbcov")); return; }
+          if (el.hasAttribute("data-nbgo")) { const id = el.getAttribute("data-nbgo"); closeNotebook(); selectSection(id); return; }
+          if (el.hasAttribute("data-nbunpin") && n) { nbUnpin(n.id, el.getAttribute("data-nbunpin")); nbRender(); return; }
+          if (el.id === "nbPinDo" && n) { const sel = $("nbPin"); if (sel && sel.value && nbPin(n.id, sel.value)) nbRender(); return; }
+          if (el.id === "nbDelete" && n) { nbDelete(n.id); return; }
+        });
+        m.addEventListener("input", (e) => {
+          const el = e.target, n = nbNote(nbUi.sel);
+          if (el.id === "nbSearch") { nbUi.q = el.value; nbRenderList(); icons(); return; }
+          if (!n) return;
+          if (el.id === "nbTitle") {
+            n.title = nbLine(el.value, 120); nbTouch(n);
+            const b = m.querySelector('[data-nb="' + (window.CSS && CSS.escape ? CSS.escape(n.id) : n.id) + '"] .bib-item-name');
+            if (b) { b.textContent = nbName(n); b.classList.toggle("is-blank", !n.title); }
+          } else if (el.id === "nbBody") {
+            n.body = el.value.slice(0, 50000); nbTouch(n);
+          } else return;
+          clearTimeout(nbUi.namesTimer);
+          nbUi.namesTimer = setTimeout(() => { const h = $("nbNames"), cur = nbNote(nbUi.sel); if (h && cur) { h.innerHTML = nbNamesHtml(cur); icons(); } }, 250);
+        });
+        m.addEventListener("change", (e) => {
+          const n = nbNote(nbUi.sel);
+          if (e.target.id === "nbFolder" && n) {
+            const f = nbLine(e.target.value, 60);
+            if (f) n.folder = f; else delete n.folder;
+            nbTouch(n); nbRenderList(); icons();
+          }
+        });
+      }
+      if (typeof window !== "undefined") window.beukNotebook = { normalize: nbNormalize, names: nbNames };
+      /* ==== /BEUK:notebook ==== */
       if (typeof window !== "undefined") {
         window.beukBible = { normalize: bibleNormalize, matcher: bibleBuildMatcher, scan: bibleScan, mentions: bibleMentions, compute: bibleMentionsCompute, seed: bibleSeedCandidates,
           exportDoc: bibleExportDoc, importDoc: bibleImportDoc, open: openBible, desk: bibleDesk, render: bibleDeskRender, offsetY: bibleOffsetY, card: bibleCardShowHit, setMarks: bibleSetMarks };
@@ -47848,6 +48102,7 @@
           historyPool: hist.pool,
           importReport: state.importReport ? JSON.parse(JSON.stringify(state.importReport)) : null,
           ...(bibleHas() || (state.bible && state.bible.fields && Object.keys(state.bible.fields).length) || bibleCountsHeld() ? { bible: bibleNormalize(state.bible) } : {}), /* BEUK:bible — absent when the book has no entries, so an old book serializes as it always has */
+          ...(nbHas() ? { notebook: nbPack() } : {}), /* BEUK:notebook — written only when the book has a note */
           /* BEUK:acx — the audio script plan (narrator, pronunciation guide) rides with the book */
           audio: acxNormalize(state.audio),
           /* BEUK:manuscript — the submission manuscript's contact block and page choices ride with the book */
@@ -47989,6 +48244,8 @@
         /* BEUK:bible — a book's Story Bible is its own: one without it arrives with none */
         state.bible = bibleNormalize(doc.bible);
         bibleBookArrived();
+        state.notebook = nbNormalize(doc.notebook, state.sections); /* BEUK:notebook — a book's notes are its own: one without them arrives with none */
+        if (typeof nbShown === "function" && nbShown()) nbRender();
         /* BEUK:bookid — every arrival (local restore, shelf, backup file, conflict, snapshot) passes here: a pre-UUID id migrates now, once, after History has its snapshot. */
         bookIdMigrateDesk();
         if (typeof chopBookArrived === "function") chopBookArrived(); /* BEUK:chapterops — a pending Undo belongs to the book it was offered on */
@@ -59777,6 +60034,93 @@
           } }
       );
       /* ==== /BEUK:goalshist ==== */
+      /* ==== BEUK:notebook ==== — self-check */
+      SELF_CHECKS.push(
+        { id: "notebook.notes", feature: "notebook", name: "Notebook: a note started from the Notes tool takes its title, folder and text, finds the names the Covenant knows in it, pins to a chapter and comes first while that chapter is on the desk; search narrows the list; notes ride serializeBook/applyBookDoc byte for byte, a pin to a missing section is dropped on load, and a book arriving without notes has none; they never reach the EPUB, the print interior or the Word manuscript and never change a word count; delete comes with Undo; a book without notes writes no notebook key; the sample's three notes are pinned where their facts come from",
+          run() {
+            const keepUi = { sel: nbUi.sel, q: nbUi.q };
+            return bibleCheckGuard(() => chopCheckRun(() => {
+              const bad = [];
+              try {
+                applyBookDoc(buildEmptyBook()); state.history = [];
+                const c1 = mkSection("body", "chapter", "Harbour", { number: "1", content: "Mara walked to the harbour." });
+                const c2 = mkSection("body", "chapter", "Lantern", { number: "2", content: "The lamp was lit." });
+                state.sections = state.sections.filter((s) => s.kind === "front").concat([c1, c2], state.sections.filter((s) => s.kind === "back"));
+                state.activeId = c1.id;
+                state.bible = { entries: [bibleNormalizeEntry({ id: "nbk-m", type: "character", name: "Mara" }), bibleNormalizeEntry({ id: "nbk-g", type: "place", name: "Gullwick" })] };
+                bibleBookArrived();
+                const doc0 = serializeBook();
+                if ("notebook" in doc0) bad.push("a book without notes carries a notebook key");
+                const stamp = (s) => String(s).replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z/g, "T").replace(/urn:uuid:[0-9a-f-]+/gi, "U");
+                const grab = () => ({
+                  epub: stamp(epubFiles("generic").map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                  print: stamp(buildPrintHtml()),
+                  docx: stamp(buildDocxFiles().map((x) => x.path + "\n" + (typeof x.content === "string" ? x.content : "")).join("\n")),
+                  words: bookWordTotal() + "|" + state.sections.map((s) => sectionWords(s)).join(",")
+                });
+                const a = grab();
+                /* through the real controls */
+                $("btnNotebook").click();
+                if (!nbShown()) bad.push("the Notes tool did not open the notebook");
+                $("btnNbNew").click();
+                const n = nbNote(nbUi.sel);
+                const typeIn = (id, v, ev) => { const el = $(id); el.value = v; el.dispatchEvent(new Event(ev || "input", { bubbles: true })); };
+                typeIn("nbTitle", "Nbmarktitle tides");
+                typeIn("nbBody", "Nbmarkbody: Mara sounds the gut at Gullwick. Mara again.");
+                typeIn("nbFolder", "Research", "change");
+                if (!n || n.title !== "Nbmarktitle tides" || n.folder !== "Research" || n.body.indexOf("Mara sounds") === -1) bad.push("the note did not take its fields");
+                const names = nbNames(n.title + "\n" + n.body).map((x) => x.name + "×" + x.n).join(",");
+                if (names !== "Mara×2,Gullwick×1") bad.push("names " + names);
+                nbRenderDetail();
+                if (!document.querySelector('#nbNames [data-nbcov="nbk-m"]')) bad.push("no Covenant chip for Mara");
+                const sel = $("nbPin"); sel.value = c2.id; $("nbPinDo").click();
+                if ((nbNote(n.id).secs || []).join() !== c2.id) bad.push("pin did not land");
+                /* a second, unpinned note; with chapter 2 on the desk the pinned one comes first */
+                $("btnNbNew").click(); typeIn("nbTitle", "Loose idea");
+                state.activeId = c2.id; nbRender();
+                const firstGroup = document.querySelector("#nbList .nb-group");
+                if (!firstGroup || firstGroup.getAttribute("data-nbgroup") !== "here" || !firstGroup.querySelector('[data-nb="' + n.id + '"]')) bad.push("the pinned note did not come first");
+                typeIn("nbSearch", "loose");
+                const found = Array.from(document.querySelectorAll("#nbList [data-nb]")).map((b) => b.getAttribute("data-nb"));
+                if (found.length !== 1 || found[0] === n.id) bad.push("search showed " + found.length);
+                typeIn("nbSearch", "");
+                /* the book file */
+                const doc = JSON.parse(JSON.stringify(serializeBook()));
+                applyBookDoc(doc);
+                const back = nbBook().notes.find((x) => x.id === n.id);
+                if (!back || back.title !== "Nbmarktitle tides" || (back.secs || []).join() !== c2.id || nbBook().notes.length !== 2 || JSON.stringify(serializeBook()) !== JSON.stringify(doc)) bad.push("notes did not survive the book file");
+                const junk = JSON.parse(JSON.stringify(doc)); junk.notebook.notes[0].secs = ["no-such-section"].concat(junk.notebook.notes[0].secs || []);
+                applyBookDoc(junk);
+                if (nbBook().notes.some((x) => (x.secs || []).indexOf("no-such-section") !== -1)) bad.push("a pin to a missing section survived");
+                applyBookDoc(buildEmptyBook());
+                if (nbBook().notes.length) bad.push("notes rode onto the next book");
+                applyBookDoc(doc);
+                /* never book text */
+                const b = grab();
+                ["epub", "print", "docx"].forEach((kk) => { if (a[kk] !== b[kk]) bad.push(kk + " output changed"); });
+                if ((b.epub + b.print + b.docx).indexOf("Nbmark") !== -1) bad.push("a note reached an export");
+                if (a.words !== b.words) bad.push("word counts moved");
+                /* delete, then Undo */
+                nbUi.sel = n.id; nbRender();
+                $("nbDelete").click();
+                const goneOk = !nbNote(n.id);
+                const undo = Array.from(document.querySelectorAll("#toasts .toast button")).pop(); if (undo) undo.click();
+                if (!goneOk || !nbNote(n.id)) bad.push("delete/Undo: deleted " + goneOk + ", back " + !!nbNote(n.id));
+                closeNotebook();
+                /* the sample's notes */
+                applyBookDoc(buildSampleBook());
+                const sn = nbBook().notes, title = (id) => (state.sections.find((s) => s.id === id) || {}).title;
+                const pins = sn.map((x) => x.id + ":" + (x.secs || []).map(title).join("+")).join(" | ");
+                const want = "sample-nb-depths:The Tide Table for Next Year+Soundings at Low Water+What the Chart Cost | sample-nb-notices:What the Chart Cost | sample-nb-keepers:The Harbourmaster's Ledger";
+                if (pins !== want) bad.push("sample notes " + pins);
+                const ferry = state.sections.find((s) => s.title === "What the Chart Cost"), ledger = state.sections.find((s) => s.title === "The Tide Table for Next Year");
+                if (!ferry || ferry.content.indexOf("Notices to Mariners") === -1 || !ledger || ledger.content.indexOf("six fathoms") === -1) bad.push("a sample note's fact is not in its chapter");
+                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "a note started from the Notes tool took its title, folder and text; Mara ×2 and Gullwick ×1 found from the Covenant; pinned to chapter 2 it came first there; search found the loose note alone; the book file round-trips byte for byte, drops a pin to a missing section, and the next book arrives with none; EPUB (" + b.epub.length + " chars), print (" + b.print.length + ") and Word (" + b.docx.length + ") unchanged, word counts unchanged; delete and Undo; a book without notes has no notebook key; the sample's three notes sit on the chapters their facts come from");
+              } finally { closeNotebook(); nbUi.sel = keepUi.sel; nbUi.q = keepUi.q; }
+            }));
+          } }
+      );
+      /* ==== /BEUK:notebook ==== */
       /* ==== BEUK:reader ==== */
       /* The preview keeps the writer's place; the Zen corner cluster
          stands clear of the tabs. Measured in this window, on the
@@ -65402,6 +65746,7 @@
         initInsights();
         initGoals();
         initBible(); /* BEUK:bible */
+        initNotebook(); /* BEUK:notebook */
         initHistory();
         sideInit(); /* BEUK:sidebar */
         initExport();
