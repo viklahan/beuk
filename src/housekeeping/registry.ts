@@ -1993,10 +1993,10 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   /* ---- Zen day cycle: the harbour's light follows time spent in Zen (BEUK:daycycle) ---- */
   {
-    id: 'zen.day.no-reader',
-    title: 'Zen harbour sketch carries no reader figure; horizon, harbour, water and reeds remain',
+    id: 'zen.calm.manuscript-only',
+    title: 'Zen is the manuscript: settings and pictures fold away, a chosen ink painting behind the page',
     kind: 'client-only',
-    reason: 'The sketch is SVG built by the studio only while Zen is open; asserted in the browser by window.runBeukSelfChecks().',
+    reason: 'Zen is drawn in the studio page; the server never renders it.',
   },
   {
     id: 'zen.day.advances',

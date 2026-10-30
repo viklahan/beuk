@@ -691,7 +691,36 @@
       body.zen #panes #pane-structure, body.zen #panes #pane-preview { display: none; }
       body.zen #panes #pane-center { display: flex; }
       body.zen #panes { grid-template-columns: 0px minmax(0, 1fr) 0px; }
-      body.zen #editorArea { min-height: 62vh; }
+      /* ==== BEUK:zencalm ==== In Zen it is the manuscript and nothing else:
+         the chapter's settings (section type to backdrop) and its pictures
+         each fold behind one closed line that opens on a click, the word
+         count waits for a hover on the bottom bar, Typography Studio stays
+         at the desk, and the text box fills the screen. Behind the page, an
+         ink painting the writer chooses in the scene changer. */
+      /* the text box takes the screen down to the bottom controls, never under them, wherever the page above it ends */
+      body.zen #panelContent { display: flex; flex-direction: column; height: calc(100vh - 128px); }
+      body.zen #panelContent > * { flex: 0 0 auto; }
+      body.zen #panelContent > #editorArea { flex: 1 1 auto; min-height: 260px; height: auto; }
+      .zen-fold { display: none; }
+      body.zen .zen-fold {
+        display: flex; align-items: center; gap: 8px; width: 100%; margin: 0 0 10px; padding: 8px 12px;
+        border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--panel) 70%, transparent);
+        color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; text-align: start;
+      }
+      body.zen .zen-fold[hidden] { display: none; }
+      body.zen .zen-fold:hover, body.zen .zen-fold:focus-visible { color: var(--ink); background: var(--panel); }
+      body.zen .zen-fold .zf-sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      body.zen .zen-fold svg { width: 14px; height: 14px; flex: 0 0 auto; transition: transform .15s ease; }
+      body.zen .zen-fold[aria-expanded="true"] svg { transform: rotate(180deg); }
+      body.zen:not(.zen-details-open) #secSettings, body.zen:not(.zen-details-open) #editorMeta { display: none; }
+      body.zen:not(.zen-pics-open) #panelContent:not(.zen-led) #zenStage { display: none !important; }
+      body.zen #editorWordBar { display: none !important; }
+      body.zen .center-tabs { display: none; }
+      body.zen #zenPill .zp-counts { opacity: 0; max-width: 0; transition: opacity .25s ease, max-width .3s ease; }
+      body.zen #zenPill:hover .zp-counts, body.zen #zenPill:focus-within .zp-counts { opacity: 1; max-width: 70ch; }
+      #zenArt .zen-paint { position: absolute; inset: 0; background-position: center; background-size: cover; background-repeat: no-repeat; }
+      :root[data-theme="candlelight"] #zenArt .zen-paint { filter: invert(1) hue-rotate(180deg) sepia(.18) brightness(.82); opacity: .5; }
+      /* ==== /BEUK:zencalm ==== */
       body.zen #zenPill {
         display: flex; align-items: center; gap: 14px;
         position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
@@ -2863,6 +2892,7 @@
           <div class="center-body">
             <!-- Tab: content -->
             <div id="panelContent" class="center-inner">
+              <button type="button" class="zen-fold" id="zenDetailsToggle" aria-expanded="false" aria-controls="secSettings editorMeta"><span class="zf-sum" id="zenDetailsSum"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><!-- BEUK:zencalm -->
               <div id="secSettings">
                 <div class="switch-row">
                   <div class="sw-txt"><b data-i18n="editor.sectionType">Section type</b><span data-i18n="editor.sectionTypeDesc">What this piece of the book is — the contents list follows its type.</span></div>
@@ -9565,6 +9595,19 @@
       Object.assign(UI_STRINGS.ar, { "zen.scene.rain": "مطر خفيف", "zen.scene.waves": "أمواج هادئة على الشاطئ", "zen.scene.wind": "رياح خفيفة", "zen.scene.pick": "اختر مشهدًا", "zen.sound.loading": "جارٍ تحميل الصوت…", "zen.sound.failed": "تعذّر تحميل هذا الصوت. يحتاج إلى اتصال في أول تشغيل، وبعد ذلك يعمل دون اتصال.", "zen.sound.unsupported": "لا يستطيع هذا المتصفح تشغيل هذا الصوت.", "zen.sound.blocked": "المتصفح يحجب الصوت. انقر على «صوت محيطي» مرة أخرى ليبدأ التشغيل." });
       Object.assign(UI_STRINGS.ja, { "zen.scene.rain": "静かな雨", "zen.scene.waves": "岸辺の穏やかな波", "zen.scene.wind": "そよ風", "zen.scene.pick": "シーンを選ぶ", "zen.sound.loading": "音を読み込んでいます…", "zen.sound.failed": "この音を読み込めませんでした。初回の再生には接続が必要です。その後はオフラインでも再生できます。", "zen.sound.unsupported": "このブラウザではこの音を再生できません。", "zen.sound.blocked": "ブラウザが音の再生を止めています。もう一度「環境音」をクリックすると再生されます。" });
       Object.assign(UI_STRINGS["zh-Hans"], { "zen.scene.rain": "轻柔的雨", "zen.scene.waves": "岸边轻柔的海浪", "zen.scene.wind": "微风", "zen.scene.pick": "选择场景", "zen.sound.loading": "正在加载声音…", "zen.sound.failed": "无法加载此声音。首次播放需要联网，之后可离线播放。", "zen.sound.unsupported": "此浏览器无法播放此声音。", "zen.sound.blocked": "浏览器暂时阻止了声音。再次点击“环境音”即可播放。" });
+      Object.assign(UI_STRINGS.en, { "zen.details": "Details", "zen.pictures": "Pictures ({n})", "zen.paint.pick": "Picture" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.es, { "zen.details": "Detalles", "zen.pictures": "Imágenes ({n})", "zen.paint.pick": "Imagen" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.fr, { "zen.details": "Détails", "zen.pictures": "Images ({n})", "zen.paint.pick": "Image" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.de, { "zen.details": "Details", "zen.pictures": "Bilder ({n})", "zen.paint.pick": "Bild" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.it, { "zen.details": "Dettagli", "zen.pictures": "Immagini ({n})", "zen.paint.pick": "Immagine" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.pt, { "zen.details": "Detalhes", "zen.pictures": "Imagens ({n})", "zen.paint.pick": "Imagem" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.nl, { "zen.details": "Details", "zen.pictures": "Afbeeldingen ({n})", "zen.paint.pick": "Afbeelding" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.pl, { "zen.details": "Szczegóły", "zen.pictures": "Obrazy ({n})", "zen.paint.pick": "Obraz" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.ru, { "zen.details": "Подробности", "zen.pictures": "Изображения ({n})", "zen.paint.pick": "Картина" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.tr, { "zen.details": "Ayrıntılar", "zen.pictures": "Görseller ({n})", "zen.paint.pick": "Resim" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.ar, { "zen.details": "التفاصيل", "zen.pictures": "الصور ({n})", "zen.paint.pick": "اللوحة" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS.ja, { "zen.details": "詳細", "zen.pictures": "画像（{n}）", "zen.paint.pick": "絵" }); /* BEUK:zencalm */
+      Object.assign(UI_STRINGS["zh-Hans"], { "zen.details": "详情", "zen.pictures": "图片（{n}）", "zen.paint.pick": "画面" }); /* BEUK:zencalm */
       Object.assign(UI_STRINGS.en, { "zen.nav.prev": "Previous section", "zen.nav.next": "Next section", "zen.nav.browse": "Browse all sections", "zen.nav.sections": "Sections", "zen.continueTo": "Continue to {name}" });
       Object.assign(UI_STRINGS.es, { "zen.nav.prev": "Sección anterior", "zen.nav.next": "Sección siguiente", "zen.nav.browse": "Ver todas las secciones", "zen.nav.sections": "Secciones", "zen.continueTo": "Continuar con {name}" });
       Object.assign(UI_STRINGS.fr, { "zen.nav.prev": "Section précédente", "zen.nav.next": "Section suivante", "zen.nav.browse": "Toutes les sections", "zen.nav.sections": "Sections", "zen.continueTo": "Continuer vers {name}" });
@@ -50057,7 +50100,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v18"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v19"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -50826,6 +50869,61 @@
       const scImgKey = (img) => { const d = String((img && img.data) || ""); const at = Math.max(0, Math.floor(d.length / 2) - 32); return d.slice(at, at + 64); };
       /* ==== /BEUK:selfchecks ==== */
       const SELF_CHECKS = [
+        /* ---- BEUK:zencalm: in Zen it is the manuscript and nothing else ---- */
+        { id: "zen.calm.manuscript-only", feature: "zen", name: "Zen is the manuscript: the chapter's settings (section type to backdrop) and its pictures each fold behind one closed line that opens on a click, the word count is not on show, Typography Studio is not in Zen, the text box fills the screen, and an ink painting chosen in the scene changer (Bliss, Calm, Mind, Sakura) stands behind the page in place of the old sketch, remembered from visit to visit",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson, keepTab = currentCenterTab;
+            let keepPaint = null; try { keepPaint = localStorage.getItem("beuk.zen.painting.v1"); } catch (e) {}
+            const vis = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.display !== "none" && st.visibility !== "hidden"; };
+            const NL2 = String.fromCharCode(10, 10);
+            try {
+              const doc = buildEmptyBook();
+              doc.images = [{ id: "zcpic1", name: "harbour.png", mediaType: "image/png", ext: "png", data: FAKE_PNG }];
+              const ch = doc.sections.find((x) => x.type === "chapter");
+              ch.title = "The Ferry"; ch.content = "Mara crossed the water at first light." + NL2 + "![The harbour](img:zcpic1)" + NL2 + "The town folded away behind the headland.";
+              applyBookDoc(doc);
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              state.activeId = ch.id; syncEditor();
+              setCenterTab("type");
+              setZenMode(true);
+              const onContent = currentCenterTab === "content";
+              const tabsGone = !vis($("tabBtnType")) && !vis($("tabBtnContent"));
+              const det = $("zenDetailsToggle"), pics = $("zenPicsToggle");
+              const foldedDetails = !!det && vis(det) && !vis($("secSettings")) && !vis($("editorMeta")) && det.getAttribute("aria-expanded") === "false";
+              if (det) det.click();
+              const openDetails = vis($("secSettings")) && vis($("editorMeta")) && det.getAttribute("aria-expanded") === "true";
+              if (det) det.click();
+              const foldedPics = !!pics && vis(pics) && /1/.test(pics.textContent || "") && !vis($("zenStage"));
+              if (pics) pics.click();
+              const openPics = getComputedStyle($("zenStage")).display !== "none" && pics.getAttribute("aria-expanded") === "true"; /* shown; its picture may still be decoding */
+              if (pics) pics.click();
+              const noCount = !vis($("editorWordBar")) && getComputedStyle($("zenCount")).opacity === "0";
+              /* the box takes the screen down to the bottom controls, and its last line is never under them */
+              const er = $("editorArea").getBoundingClientRect(), pill = $("zenPill").getBoundingClientRect(), nav = $("zenNav") ? $("zenNav").getBoundingClientRect() : pill;
+              const tall = er.height >= window.innerHeight * 0.55 && er.bottom <= Math.min(pill.top, nav.top) + 1;
+              const snug = pill.width < 260; /* the bottom bar is the Exit button alone until a hover asks for the count */
+              const paint = $("zenPaint");
+              const bg1 = paint ? getComputedStyle(paint).backgroundImage : "";
+              const painted = /assets\/zen\/(bliss|calm|mind|sakura)\.webp/.test(bg1) && !$("zenArtSvg");
+              const listed = ["bliss", "calm", "mind", "sakura"].every((k) => !!document.querySelector('#zenScenePop .zs-opt[data-paint="' + k + '"]'));
+              const sak = document.querySelector('#zenScenePop .zs-opt[data-paint="sakura"]');
+              if (sak) sak.click();
+              const chosen = !!sak && /sakura\.webp/.test(getComputedStyle($("zenPaint")).backgroundImage) && sak.getAttribute("aria-checked") === "true";
+              setZenMode(false);
+              setZenMode(true);
+              const bg2 = $("zenPaint") ? getComputedStyle($("zenPaint")).backgroundImage : "";
+              const rotates = listed && chosen && /sakura\.webp/.test(bg2); /* the chosen painting is remembered */
+              const ok = onContent && tabsGone && foldedDetails && openDetails && foldedPics && openPics && noCount && snug && tall && painted && rotates;
+              return scVerdict(ok, "Typography left for the manuscript (" + onContent + "), tabs gone (" + tabsGone + "), settings folded (" + foldedDetails + ") and open on a click (" + openDetails + "), pictures folded with their count (" + foldedPics + ") and open on a click (" + openPics + "), no word count on show (" + noCount + ", bar " + Math.round(pill.width) + "px), the text box fills the screen and ends above the bottom controls (" + tall + ": " + Math.round(er.top) + "–" + Math.round(er.bottom) + " vs " + Math.round(Math.min(pill.top, nav.top)) + "), an ink painting behind the page (" + painted + ": " + bg1.slice(0, 60) + "), the four paintings in the scene changer, Sakura chosen and remembered next visit (" + rotates + ")");
+            } finally {
+              setZenMode(false);
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+              if (keepTab && keepTab !== currentCenterTab) setCenterTab(keepTab);
+              try { if (keepPaint === null) localStorage.removeItem("beuk.zen.painting.v1"); else localStorage.setItem("beuk.zen.painting.v1", keepPaint); } catch (e) {}
+            }
+          } },
         /* ---- BEUK:onereader: a short piece with no chapter heading is its own text ---- */
         { id: "import.short-note.is-the-text", feature: "import", name: "A short note whose only heading is its title (a few lines and a picture) is a book with that text as its chapter — never a dedication and a frontispiece with no chapter at all",
           run() {
@@ -57471,12 +57569,10 @@
           run() {
             try {
               setZenMode(true); window.beukZen.settle();
-              const art = $("zenArt"), svg = $("zenArtSvg"), ed = $("editorArea");
-              const present = !!art && !!svg;
-              let op = -1;
-              if (svg) { svg.style.transition = "none"; op = parseFloat(getComputedStyle(svg).opacity); svg.style.transition = ""; }
-              const subtle = op > 0 && op <= 0.08;
-              const variants = !!svg && !!svg.querySelector(".zen-day") && !!svg.querySelector(".zen-night");
+              /* BEUK:zencalm — the old sketch is gone: an ink painting stands behind the page */
+              const art = $("zenArt"), paint = $("zenPaint"), ed = $("editorArea");
+              const bg = paint ? getComputedStyle(paint).backgroundImage : "";
+              const present = !!art && !!paint && /assets\/zen\/(bliss|calm|mind|sakura)\.webp/.test(bg) && !$("zenArtSvg");
               const noEvents = !!art && getComputedStyle(art).pointerEvents === "none";
               const behind = !!art && parseInt(getComputedStyle(art).zIndex, 10) < 0;
               const edBg = ed ? getComputedStyle(ed).backgroundColor : "";
@@ -57485,8 +57581,8 @@
               const opaque = parts.length === 3 || (parts.length === 4 && parts[3] >= 0.99);
               setZenMode(false); window.beukZen.settle();
               const absent = !$("zenArt") && !$("zenArtSvg");
-              return scVerdict(present && subtle && variants && noEvents && behind && opaque && absent,
-                "sketch present in zen at computed opacity " + op + " (threshold 0.08), day + night variants in the SVG, pointer-events none, z-index behind the app, editor surface opaque (" + edBg + ") so the text column is never written over; after exit the art is " + (absent ? "absent from the DOM" : "STILL PRESENT"));
+              return scVerdict(present && noEvents && behind && opaque && absent,
+                "painting present in zen (" + bg.slice(0, 60) + "), pointer-events none, z-index behind the app, editor surface opaque (" + edBg + ") so the text column is never written over; after exit the art is " + (absent ? "absent from the DOM" : "STILL PRESENT"));
             } finally { setZenMode(false); window.beukZen.settle(); }
           } },
         { id: "zen.transition.presence", feature: "zen", name: "Zen transition and presence: entering zen engages the transition sequence — the warm wash crosses the whole viewport and the title moment rises — and settles with a persistent presence (the breathing corner dot, the sketch, the warm tone and the vignette) in place; exiting releases the wash and vignette and removes every zen layer",
@@ -57536,20 +57632,6 @@
             } finally { window.beukZen.overrideReducedMotion(null); setZenMode(false); window.beukZen.settle(); }
           } },
         /* ==== BEUK:daycycle ==== the day turns as you write */
-        { id: "zen.day.no-reader", feature: "zen", name: "Zen day: the harbour sketch carries no reader figure — the horizon, harbour, still-water lines and reeds remain, and the only filled shapes are the moon and the stars of the night group",
-          run() {
-            try {
-              setZenMode(true); window.beukZen.settle();
-              const svg = $("zenArtSvg");
-              const filled = svg ? Array.from(svg.querySelectorAll("[fill]")).filter((el) => el.getAttribute("fill") !== "none") : [];
-              const strays = filled.filter((el) => !el.closest(".zen-night"));
-              const noFigure = !!svg && strays.length === 0 && !svg.querySelector("circle[r='11']") && ZEN_ART_SVG.indexOf("M226,752") < 0 && ZEN_ART_SVG.indexOf("M192,770") < 0;
-              const kept = !!svg && svg.querySelectorAll(".zdraw").length === 3 && !!svg.querySelector(".zen-day .zd-sun") && !!svg.querySelector(".zen-night .zd-moon") && svg.querySelectorAll(".zd-star").length >= 5;
-              setZenMode(false); window.beukZen.settle();
-              return scVerdict(noFigure && kept,
-                "filled shapes outside the night group: " + strays.length + " (the reader's head, body and book are gone); horizon / shore / water lines " + (svg ? svg.querySelectorAll(".zdraw").length : 0) + ", sun, moon and " + (svg ? svg.querySelectorAll(".zd-star").length : 0) + " stars present");
-            } finally { setZenMode(false); window.beukZen.settle(); }
-          } },
         { id: "zen.day.advances", feature: "zen", name: "Zen day: the phase advances only with time spent in Zen — it pauses while the tab is hidden and while Zen is closed (no timer then), and re-entering Zen in the same visit continues the day rather than restarting it",
           run() {
             const Z = window.beukZen;
@@ -57560,17 +57642,16 @@
               Z.overrideReducedMotion(false); Z.dayClock(() => t); Z.dayHidden(false);
               setZenMode(true); Z.settle();
               Z.setDayPhase(0);
-              const bodySel = () => (document.documentElement.getAttribute("data-theme") === "candlelight" ? ".zen-night" : ".zen-day") + " .zd-body";
-              const sun0 = (($("zenArtSvg") || document).querySelector(bodySel()) || {}).style;
-              const tf0 = sun0 ? sun0.transform : "";
+              /* BEUK:zencalm — no sun any more: the day is the room's light */
+              const light = () => { const a = $("zenArt"); return a ? ["--zd-tint", "--zd-glow", "--zd-vig"].map((k) => a.style.getPropertyValue(k)).join("|") : ""; };
+              const tf0 = light();
               t += 540; const p1 = Z.dayPhase();
               Z.dayHidden(true); const timerHidden = Z.dayTimerActive();
               t += 900; const p2 = Z.dayPhase();
               Z.dayHidden(false); const timerBack = Z.dayTimerActive();
               t += 540; const p3 = Z.dayPhase();
               Z.dayTick();
-              const sun1 = (($("zenArtSvg") || document).querySelector(bodySel()) || {}).style;
-              const moved = !!sun1 && sun1.transform !== tf0;
+              const moved = !!tf0 && light() !== tf0;
               setZenMode(false); Z.settle();
               const timerClosed = Z.dayTimerActive();
               t += 900; const p4 = Z.dayPhase();
@@ -57623,7 +57704,7 @@
               Z.setDayPhase(0.1);
               const art = $("zenArt"), svg = $("zenArtSvg");
               const still = !!art && art.classList.contains("zen-still");
-              const movers = svg ? Array.from(svg.querySelectorAll(".zd-body, .zd-glint")) : [];
+              const movers = []; /* BEUK:zencalm — no sun or moon any more */
               const animatesTransform = movers.some((el) => {
                 const cs = getComputedStyle(el);
                 const props = cs.transitionProperty.split(",").map((x) => x.trim());
@@ -57655,11 +57736,11 @@
               const g0 = glowState();
               const tf0 = sun ? sun.style.transform : "";
               t += 60; Z.dayTick();
-              const smallWaits = !!sun && sun.style.transform === tf0 && sun.style.opacity !== "0" && glowState().onB === g0.onB;
+              const smallWaits = glowState().onB === g0.onB; /* BEUK:zencalm — the light, not the sun, waits */
               const visBefore = visLayerPos();
               const g1 = glowState();
               t += 600; Z.dayTick();
-              const fading = !!sun && sun.style.transform === tf0 && sun.style.opacity === "0";
+              const fading = true; /* BEUK:zencalm — no sun to fade */
               const g2 = glowState();
               /* the layer that was showing kept its position; the new position is on the layer fading in */
               const oldLayerKept = (() => {
@@ -57668,7 +57749,7 @@
               })();
               const crossfaded = g2.onB !== g1.onB && g2.vis !== g1.vis && oldLayerKept && visBefore === g1.vis;
               setZenMode(false); Z.settle();
-              const ok = still && movers.length >= 2 && !animatesTransform && posAnimated === "none" && smallWaits && fading && crossfaded;
+              const ok = still && !animatesTransform && posAnimated === "none" && smallWaits && fading && crossfaded;
               return scVerdict(ok,
                 "reduced motion: art " + (still ? "marked still" : "NOT marked still") + "; " + movers.length + " moving groups, transform transition " + (animatesTransform ? "PRESENT" : "absent") + "; light-position transition " + (posAnimated === "none" ? "absent" : "PRESENT (" + posAnimated + ")") + "; a 1-minute step " + (smallWaits ? "waited" : "DID NOT WAIT") + "; a 10-minute step " + (fading ? "faded the sun out before moving it" : "MOVED IT IN VIEW") + " and " + (crossfaded ? "crossfaded the light from " + g1.vis + " to " + g2.vis + " on the other layer" : "DID NOT CROSSFADE THE LIGHT (" + g1.vis + " → " + g2.vis + ", layer kept " + oldLayerKept + ")"));
             } finally { Z.overrideReducedMotion(null); setZenMode(false); Z.settle(); Z.dayClock(null); Z.dayHidden(null); Z.setDayPhase(keep); }
@@ -57740,7 +57821,7 @@
               const caret = $("btnZenScenes");
               if (caret) caret.click();
               const pop = $("zenScenePop");
-              const rows = pop ? Array.prototype.slice.call(pop.querySelectorAll(".zs-opt")) : [];
+              const rows = pop ? Array.prototype.slice.call(pop.querySelectorAll(".zs-opt[data-scene]") /* BEUK:zencalm — the sound rows; the paintings have their own */) : [];
               const popOk = !!pop && pop.classList.contains("open") && rows.length === 3 &&
                 rows.map((r) => r.getAttribute("data-scene")).join(",") === "rain,waves,wind" &&
                 rows.every((r) => { const lab = r.querySelector("[data-i18n]"); return !!lab && lab.getAttribute("data-i18n") === "zen.scene." + r.getAttribute("data-scene") && lab.textContent === t("zen.scene." + r.getAttribute("data-scene")); });
@@ -61551,8 +61632,8 @@
                 setUiLang(L, { persist: false });
                 const vis = (el) => el && el.getClientRects().length && getComputedStyle(el).display !== "none";
                 const ctrls = ["zenMark", "btnZenSound", "btnZenScenes", "btnZenDictate"].map((id) => $(id)).filter(vis);
-                const tabs = Array.from(document.querySelectorAll(".center-tabs .ctab")).filter(vis);
-                if (!ctrls.length || !tabs.length) { bad.push(L + ": controls or tabs not shown"); return; }
+                const tabs = [$("zenDetailsToggle")].filter(vis); /* BEUK:zencalm — no tabs in Zen: the page's first line is what must stay clear */
+                if (!ctrls.length || !tabs.length) { bad.push(L + ": controls or the page's first line not shown"); return; }
                 ctrls.forEach((c) => {
                   const a = c.getBoundingClientRect();
                   if (a.left < -0.5 || a.right > vw + 0.5) bad.push(L + ": " + c.id + " outside the window");
@@ -65231,36 +65312,6 @@
          glade and the stars) on Candlelight. Both are placed by the day
          cycle below. Everything lives at the edges of the frame; the
          centre stays empty. */
-      const ZEN_ART_SVG =
-        '<svg id="zenArtSvg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">' +
-        '<g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M28,330 q7,-7 14,0 q7,-7 14,0" opacity=".65"/><path d="M64,304 q5,-5 11,0 q6,-5 11,0" opacity=".5"/>' +
-        '<path class="zdraw" pathLength="1" d="M0,598 H1440" opacity=".5"/><path class="zdraw" pathLength="1" d="M0,607 H600 M846,607 H1440" opacity=".28"/>' +
-        '<path class="zdraw" pathLength="1" d="M0,812 q180,-14 360,-8 t360,4 t360,-2 t360,-4" opacity=".45"/>' +
-        '<path d="M1036,598 v-24 h20 v24 M1064,598 v-34 h26 v34 M1098,598 v-22 h18 v22"/>' +
-        '<path d="M1034,574 l12,-9 12,9 M1062,564 l15,-10 15,10"/>' +
-        '<path d="M1322,598 l5,-58 h15 l5,58 M1326,540 h17 M1330,540 v-13 h9 v13"/>' +
-        '<path d="M1172,598 v-54 M1172,544 l19,40 h-19 M1206,598 v-40 M1206,558 l14,28 h-14"/>' +
-        '<path d="M1150,598 h92 l-10,11 h-72 Z"/>' +
-        '<g opacity=".45"><path d="M96,626 h72 M210,650 h40 M150,700 h54 M1150,630 h88 M1266,654 h48 M1058,678 h56 M1310,700 h64 M1210,724 h40"/></g>' +
-        '<g opacity=".8"><path d="M44,900 C38,826 42,756 30,690 M30,690 l-5,-17 M30,690 l6,-16"/><path d="M74,900 C70,834 76,772 66,716 M66,716 l-4,-13 M66,716 l5,-12"/><path d="M108,900 C106,842 110,786 100,736"/><path d="M142,900 C140,852 146,806 138,764"/><path d="M20,900 C24,862 20,830 12,800"/><path d="M168,900 C164,864 170,832 180,806"/></g>' +
-        '<g opacity=".8"><path d="M1396,900 C1390,830 1396,762 1386,700 M1386,700 l-5,-16 M1386,700 l6,-15"/><path d="M1362,900 C1358,844 1364,790 1354,742"/><path d="M1424,900 C1422,856 1428,818 1420,782"/><path d="M1330,900 C1334,866 1330,838 1322,812"/></g>' +
-        '<g class="zen-day"><g class="zd-glint" style="opacity:0"><path d="M-24,618 h48 M-15,631 h30 M-8,644 h16"/></g>' +
-        '<g class="zd-body zd-sun"><circle r="32"/><circle r="46" opacity=".4"/></g></g>' +
-        '<g class="zen-night"><g class="zd-glint" style="opacity:0"><path d="M-20,618 h40 M-12,631 h24 M-6,644 h12"/></g>' +
-        '<g class="zd-body zd-moon"><path d="M16,-34 a42,42 0 1,0 20,72 a34,34 0 1,1 -20,-72 Z" fill="currentColor" stroke="none"/></g>' +
-        '<path class="zd-star" data-at="0.04" data-o="0.8" style="opacity:0" transform="translate(180,110)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.13" data-o="0.7" style="opacity:0" transform="translate(1352,238) scale(0.75)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.23" data-o="0.6" style="opacity:0" transform="translate(96,252) scale(0.6)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.33" data-o="0.65" style="opacity:0" transform="translate(1290,96) scale(0.65)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.43" data-o="0.7" style="opacity:0" transform="translate(240,52) scale(0.7)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.53" data-o="0.55" style="opacity:0" transform="translate(1410,150) scale(0.55)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.63" data-o="0.5" style="opacity:0" transform="translate(56,128) scale(0.5)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.73" data-o="0.5" style="opacity:0" transform="translate(1262,330) scale(0.5)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '<path class="zd-star" data-at="0.83" data-o="0.45" style="opacity:0" transform="translate(150,350) scale(0.45)" d="M0,-7 L1.8,-1.8 L7,0 L1.8,1.8 L0,7 L-1.8,1.8 L-7,0 L-1.8,-1.8 Z" fill="currentColor" stroke="none"/>' +
-        '</g>' +
-        '</g>' +
-        '</svg>';
       /* ==== BEUK:daycycle ==== The day turns as you write.
          The harbour's light follows the time spent in Zen during this
          visit — never the wall clock, and nothing on screen counts it.
@@ -65461,7 +65512,7 @@
         if (!$("zenArt")) {
           const art = document.createElement("div");
           art.id = "zenArt"; art.setAttribute("aria-hidden", "true");
-          art.innerHTML = '<div class="zen-wash"></div><div class="zen-vig"></div>' + ZEN_ART_SVG;
+          art.innerHTML = '<div class="zen-paint" id="zenPaint"></div><div class="zen-wash"></div><div class="zen-vig"></div>'; /* BEUK:zencalm — a painting, not the old sketch */
           document.body.insertBefore(art, $("app"));
         }
         if (!$("zenTitle")) {
@@ -65525,8 +65576,16 @@
           pop.innerHTML = '<div class="zs-head" data-i18n="zen.sound">' + esc(t("zen.sound")) + '</div>' +
             '<div class="zs-status" role="status" aria-live="polite" style="display:none"></div>' +
             ZEN_SCENES.map((s) => '<button type="button" class="zs-opt" role="menuitemradio" aria-checked="false" data-scene="' + s + '"><span class="zs-dot" aria-hidden="true"></span><span data-i18n="' + zenSceneKey(s) + '">' + esc(t(zenSceneKey(s))) + '</span></button>').join("");
+          /* BEUK:zencalm — the paintings, by the names their artist gave them */
+          pop.insertAdjacentHTML("beforeend", '<div class="zs-head" data-i18n="zen.paint.pick">' + esc(t("zen.paint.pick")) + '</div>' +
+            ZEN_PAINTINGS.map((p) => '<button type="button" class="zs-opt" role="menuitemradio" aria-checked="false" data-paint="' + p.id + '"><span class="zs-dot" aria-hidden="true"></span><span>' + esc(p.name) + "</span></button>").join(""));
           document.body.appendChild(pop);
-          pop.querySelectorAll(".zs-opt").forEach((b) => b.addEventListener("click", () => {
+          pop.querySelectorAll(".zs-opt[data-paint]").forEach((b) => b.addEventListener("click", () => {
+            zenPaintApply(b.getAttribute("data-paint"));
+            pop.classList.remove("open");
+            const c = $("btnZenScenes"); if (c) c.setAttribute("aria-expanded", "false");
+          }));
+          pop.querySelectorAll(".zs-opt[data-scene]").forEach((b) => b.addEventListener("click", () => {
             zenSoundSetScene(b.getAttribute("data-scene"));
             pop.classList.remove("open");
             const c = $("btnZenScenes"); if (c) c.setAttribute("aria-expanded", "false");
@@ -65538,6 +65597,13 @@
           stage.id = "zenStage"; stage.style.display = "none";
           const panel = $("panelContent"), area = $("editorArea");
           if (panel && area) panel.insertBefore(stage, area);
+          /* BEUK:zencalm — the chapter's pictures wait behind one closed line */
+          const fold = document.createElement("button");
+          fold.type = "button"; fold.className = "zen-fold"; fold.id = "zenPicsToggle"; fold.hidden = true;
+          fold.setAttribute("aria-expanded", "false"); fold.setAttribute("aria-controls", "zenStage");
+          fold.innerHTML = '<span class="zf-sum" id="zenPicsSum"></span>' + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+          fold.addEventListener("click", () => { document.body.classList.toggle("zen-pics-open"); zenFoldSync(activeSection()); });
+          if (panel) panel.insertBefore(fold, stage);
           if (!$("zenBookStyle")) {
             const st = document.createElement("style");
             st.id = "zenBookStyle";
@@ -65602,7 +65668,7 @@
       function zenDestroyLayer() {
         const pillBack = $("zenPill");
         if (pillBack && pillBack.parentNode && pillBack.parentNode.id === "zenDock") document.body.appendChild(pillBack);
-        ["zenArt", "zenTitle", "zenCluster", "zenFlash", "zenScenePop", "zenStage", "zenContinue", "zenNav", "zenIndex", "zenBookStyle", "zenDock"].forEach((id) => { const el = $(id); if (el && el.parentNode) el.parentNode.removeChild(el); });
+        ["zenArt", "zenTitle", "zenCluster", "zenFlash", "zenScenePop", "zenStage", "zenPicsToggle", "zenContinue", "zenNav", "zenIndex", "zenBookStyle", "zenDock"].forEach((id) => { const el = $(id); if (el && el.parentNode) el.parentNode.removeChild(el); });
         zenStageSig = "";
         const panel = $("panelContent");
         if (panel) panel.classList.remove("zen-led", "zen-swap-out");
@@ -65704,6 +65770,37 @@
         });
         return out.join("");
       }
+      /* BEUK:zencalm — the two closed lines say what they hold: the chapter
+         they set, and how many pictures wait behind them (a cover or a
+         frontispiece is all picture: its stage stays open, no line). */
+      function zenFoldSync(s) {
+        const sum = $("zenDetailsSum"), det = $("zenDetailsToggle");
+        if (sum) sum.textContent = t("zen.details") + (s ? " · " + (sectionLabel(s) || s.title || "") : "");
+        if (det) det.setAttribute("aria-expanded", document.body.classList.contains("zen-details-open") ? "true" : "false");
+        const pics = $("zenPicsToggle"), stage = $("zenStage"), psum = $("zenPicsSum");
+        if (!pics) return;
+        const n = stage && stage.style.display !== "none" ? stage.querySelectorAll("img").length + stage.querySelectorAll(".bd-layer").length : 0;
+        pics.hidden = zenIsImageLed(s) || !n;
+        if (psum) psum.textContent = t("zen.pictures", { n });
+        pics.setAttribute("aria-expanded", document.body.classList.contains("zen-pics-open") ? "true" : "false");
+      }
+      /* BEUK:zencalm — the paintings behind the page, chosen in the scene
+         changer; this device remembers the choice. */
+      const ZEN_PAINTINGS = [{ id: "bliss", name: "Bliss" }, { id: "calm", name: "Calm" }, { id: "mind", name: "Mind" }, { id: "sakura", name: "Sakura" }];
+      const ZEN_PAINT_KEY = "beuk.zen.painting.v1";
+      function zenPaintPref() {
+        let v = null; try { v = localStorage.getItem(ZEN_PAINT_KEY); } catch (e) { v = null; }
+        return ZEN_PAINTINGS.some((p) => p.id === v) ? v : ZEN_PAINTINGS[0].id;
+      }
+      function zenPaintApply(id) {
+        if (id) { try { localStorage.setItem(ZEN_PAINT_KEY, id); } catch (e) { /* this visit only */ } }
+        const cur = id || zenPaintPref();
+        const el = $("zenPaint"); if (el) el.style.backgroundImage = 'url("assets/zen/' + cur + '.webp")';
+        document.querySelectorAll("#zenScenePop .zs-opt[data-paint]").forEach((b) => {
+          const on = b.getAttribute("data-paint") === cur;
+          b.classList.toggle("active", on); b.setAttribute("aria-checked", on ? "true" : "false");
+        });
+      }
       function zenRenderSurface() {
         const stage = $("zenStage");
         if (!stage || !document.body.classList.contains("zen")) return;
@@ -65721,6 +65818,7 @@
         }
         const panel = $("panelContent");
         if (panel) panel.classList.toggle("zen-led", zenIsImageLed(s));
+        zenFoldSync(s); /* BEUK:zencalm */
         const cont = $("zenContinue");
         if (cont && s) {
           const next = state.sections[zenIndexOf(s.id) + 1];
@@ -65791,7 +65889,13 @@
         zenClearTimers();
         if (on) {
           if (currentCenterTab === "outline") { currentCenterTab = "content"; setCenterTab("content"); } /* BEUK:outline — Zen is the desk */
+          currentCenterTab = "content"; setCenterTab("content"); /* BEUK:zencalm — Zen is always the manuscript: typography is desk work, not writing */
           zenBuildLayer();
+          /* BEUK:zencalm — every visit opens on the manuscript alone, the chosen painting behind it */
+          document.body.classList.remove("zen-details-open", "zen-pics-open");
+          zenPaintApply();
+          const dt = $("zenDetailsToggle");
+          if (dt && !dt.dataset.wired) { dt.dataset.wired = "1"; dt.addEventListener("click", () => { document.body.classList.toggle("zen-details-open"); zenFoldSync(activeSection()); }); }
           document.body.classList.remove("zen-returning");
           document.body.classList.add("zen");
           zdEnter(); /* BEUK:daycycle */
@@ -65840,6 +65944,7 @@
           const wasZen = document.body.classList.contains("zen");
           zenSoundStop();
           zdExit(); /* BEUK:daycycle */
+          document.body.classList.remove("zen-details-open", "zen-pics-open"); /* BEUK:zencalm */
           if (typeof dictPopClose === "function") dictPopClose();
           const pop0 = $("zenScenePop"); if (pop0) pop0.classList.remove("open");
           zenIndexClose();
@@ -66071,7 +66176,7 @@
         const pop = $("zenScenePop");
         if (!pop) return;
         const cur = zenScenePref();
-        pop.querySelectorAll(".zs-opt").forEach((b) => {
+        pop.querySelectorAll(".zs-opt[data-scene]").forEach((b) => {
           const on = b.getAttribute("data-scene") === cur;
           b.classList.toggle("active", on);
           b.setAttribute("aria-checked", on ? "true" : "false");
