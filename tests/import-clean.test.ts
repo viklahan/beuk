@@ -61,3 +61,10 @@ test('import replace: the self-check is registered, the desk is cleared whole, a
   const door = html.slice(html.indexOf('async function handleImportFile('), html.indexOf('function initImport('));
   assert.match(door, /askFirst\(\)/);
 });
+
+test('import replace: the look (typography) is the writer\'s and stays through an import', async () => {
+  const html = await clientHtml();
+  const repl = html.slice(html.indexOf('function replaceBodyChapters('), html.indexOf('async function readDocxCoreIdentity('));
+  assert.match(repl, /const keepLook = \{ theme: Object\.assign\(\{\}, state\.theme\), activePreset: state\.activePreset \}/);
+  assert.match(repl, /state\.theme = keepLook\.theme; state\.activePreset = keepLook\.activePreset;/);
+});

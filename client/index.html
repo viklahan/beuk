@@ -37673,7 +37673,9 @@
            pictures, notes, Covenant) steps aside whole, so nothing of it is
            left behind beside the new book. The snapshot just taken is the
            way back; the writer was warned before the file was read. */
+        const keepLook = { theme: Object.assign({}, state.theme), activePreset: state.activePreset }; /* the look is the writer's choice, not the old book's words */
         applyBookDoc(buildEmptyBook(), { keepHistory: true });
+        state.theme = keepLook.theme; state.activePreset = keepLook.activePreset;
         sampleState.loaded = false; sampleState.loadedJson = null;
         const pieces = chapters || [];
         const frontPieces = pieces.filter((p) => p.kind === "front");
@@ -56068,7 +56070,7 @@
           } },
         /* BEUK:importmeta — round 7 changed the rule this check guards: a credit that itself came from an import may be replaced by the
            next import; only a credit the writer typed (meta.titleSource / authorSource "writer", or one of unknown provenance) is never overwritten. */
-        { id: "import.credits-document-fills-blanks-only", feature: "import", name: "Import credit on the writer's own desk: a document's declared title and author fill a blank byline on an empty desk, and a later import replaces the chapters but never overwrites a title or author the writer typed — the credit they chose stands",
+        { id: "import.credits-document-fills-blanks-only", feature: "import", name: "Import credit (BEUK:importreplace): a document's declared title and author fill the byline on an empty desk, and a later import clears the old book whole and takes its own document's credit: nothing of the old byline stays",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
@@ -56080,10 +56082,10 @@
               /* The writer makes the credit their own in Settings. */
               openSettings(); $("setTitle").value = "First Book, Revised"; $("setAuthor").value = "Ada Writer"; $("btnSaveSettings").click();
               replaceBodyChapters(splitIntoChapters("Chapter 1\nA revised opening, same book.", "Second"), "second.docx", { title: "Working Title", author: "Someone Else" });
-              const kept = state.meta.title === "First Book, Revised" && state.meta.author === "Ada Writer" &&
-                state.sections.filter((s) => s.type === "chapter").length === 1;
-              return scVerdict(filled && kept,
-                "the blank desk adopted the document's own credit (" + filled + "); the title and author the writer typed survived the next import untouched (" + kept + ")");
+              const took = state.meta.title === "Working Title" && state.meta.author === "Someone Else" &&
+                state.sections.filter((s) => s.type === "chapter").length === 1 && !/First Book|Ada Writer|First words/.test(JSON.stringify([state.meta, state.sections]));
+              return scVerdict(filled && took,
+                "the blank desk adopted the document's own credit (" + filled + "); the next import cleared the old book, its typed credit too, and took its own document's (" + took + ")");
             } finally {
               applyBookDoc(keepDoc);
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
@@ -59894,7 +59896,7 @@
                 "file names cleaned " + clean.map((c) => "“" + c[0] + "” → “" + c[1] + "”" + (c[2] ? " (left out: " + c[2] + ")" : "") + (c[3] ? "" : " ✗")).join(", ") + "; import used it and reported the words left out (" + imported + ")");
             });
           } },
-        { id: "import.title.keeps-writers", feature: "import", name: "A title the writer typed is never overwritten by an import: the report says \"Kept your title …. The document calls itself ….\" with a one-click Use, which applies the document's title; a title that came from an import is replaced by the next import (undoing that report line puts it back), and an earlier import's author does not linger under a different book's title",
+        { id: "import.title.keeps-writers", feature: "import", name: "Import credit through repeated imports (BEUK:importreplace): the first import fills, the next replaces the imported title and its undo restores it, a different book clears the earlier author (undo brings it back), and a title the writer typed in Settings is cleared with the rest of the old book: the next import's document credit takes the desk",
           run() {
             return imCheckRun(() => {
               importPlainManuscript("first.md", "---\ntitle: First Import\nauthor: A. Writer\n---\n# Chapter 1\n\nFirst words of a first book.");
@@ -59907,31 +59909,21 @@
               const undoOk = u2.ok && state.meta.title === "First Import" && state.meta.titleSource === "import";
               /* A different book with no by-line: the earlier import's author does not stay under the new title. */
               const rep3a = importPlainManuscript("salt-and-iron.txt", "Chapter 1\n\nThe forge had been cold for a week.");
-              const cl = rep3a && rep3a.items.find((i) => i.kind === "meta" && i.data.field === "author" && i.data.cleared);
-              const clearedOk = state.meta.title === "salt and iron" && state.meta.author === "" && !state.meta.authorSource && !!cl &&
-                irItemLabel(cl) === t("ir.k.metaCleared", { field: t("ir.f.author"), value: "A. Writer" });
-              const uc = cl ? irUndoItem(cl.id) : { ok: false };
-              const clearUndo = uc.ok && state.meta.author === "A. Writer" && state.meta.authorSource === "import";
+              /* BEUK:importreplace — the old book went whole, its author with it; History holds the old book, not a per-field undo */
+              const clearedOk = !!rep3a && state.meta.title === "salt and iron" && state.meta.author === "" && !state.meta.authorSource;
+              const clearUndo = JSON.stringify(state.history || []).indexOf("A. Writer") !== -1;
               /* The writer types their own title in Settings. */
               imWriterSaves({ setTitle: "My Chosen Title", setAuthor: "Ada Writer" });
               const typed = state.meta.title === "My Chosen Title" && state.meta.titleSource === "writer" && state.meta.authorSource === "writer";
               const rep3 = importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
-              const kept = state.meta.title === "My Chosen Title" && state.meta.author === "Ada Writer" && state.meta.titleSource === "writer";
-              const k = rep3 && rep3.items.find((i) => i.kind === "metaKept" && i.data.field === "title");
-              const ka = rep3 && rep3.items.find((i) => i.kind === "metaKept" && i.data.field === "author");
-              const said = !!k && !!ka && irItemLabel(k) === t("ir.k.metaKept.title", { kept: "My Chosen Title", offered: "THE LONG WAY HOME" });
-              irOpenReport();
-              const btn = k ? document.querySelector('#irBody [data-irundo="' + k.id + '"]') : null;
-              const btnOk = !!btn && btn.textContent === t("ir.useValue", { value: "THE LONG WAY HOME" });
-              if (btn) btn.click();
-              const used = state.meta.title === "THE LONG WAY HOME" && state.meta.titleSource === "writer" && state.meta.author === "Ada Writer" &&
-                $("projectTitleDisplay").textContent === "THE LONG WAY HOME" &&
-                (document.querySelector('#irBody [data-irid="' + (k && k.id) + '"] .ir-done') || {}).textContent === t("ir.usedValue", { value: "THE LONG WAY HOME" });
-              return scVerdict(first && replaced && undoOk && clearedOk && clearUndo && typed && kept && said && btnOk && used,
-                "first import filled (" + first + "), the next import replaced the imported title (" + replaced + ") and its undo restored it (" + undoOk + "), a different book cleared the earlier import's author (" + clearedOk + ") and undo brought it back (" + clearUndo + "), Settings marked the typed credit as the writer's (" + typed + "), the import kept it (" + kept + ") and said so for title and author (" + said + "), Use button (" + btnOk + ") applied the document's title (" + used + ")");
+              const tookDoc = state.meta.title === "THE LONG WAY HOME" && state.meta.author === "Jane Doe" && state.meta.titleSource === "import" &&
+                $("projectTitleDisplay").textContent === "THE LONG WAY HOME";
+              const noKept = !!rep3 && !rep3.items.some((i) => i.kind === "metaKept");
+              return scVerdict(first && replaced && undoOk && clearedOk && clearUndo && typed && tookDoc && noKept,
+                "first import filled (" + first + "), the next import replaced the imported title (" + replaced + ") and its undo restored it (" + undoOk + "), a different book cleared the earlier import's author (" + clearedOk + "), typed in Settings (" + typed + "), the next import took its document's credit (" + tookDoc + ") with no 'kept your title' offer (" + noKept + "), and History holds the old book with its author (" + clearUndo + ")");
             });
           } },
-        { id: "import.title.keeps-section-editor", feature: "import", name: "A credit the writer types on the Title Page or Copyright section editor is theirs too: the next import keeps it and offers the document's own (emptying the field there opens it to imports again)",
+        { id: "import.title.keeps-section-editor", feature: "import", name: "A credit typed on the Title Page or Copyright section editor marks it as the writer's (BEUK:importreplace): the next import clears it with the rest of the old book and takes the document's own title, subtitle and author",
           run() {
             return imCheckRun(() => {
               importDocxConverted("long-way.docx", IM_FIXTURE_DOCX_HTML, [], null, { title: "", author: "" }, null);
@@ -59945,14 +59937,12 @@
               const typedCp = !!cp && type("genCpAuthor", "Typed Author");
               const marked = typedTp && typedCp && state.meta.titleSource === "writer" && state.meta.authorSource === "writer" && !state.meta.subtitleSource;
               const rep = importPlainManuscript("salt.txt", "Salt and Iron\nA Forge Story\nby R. K. Nolan\n\nChapter 1\n\nThe forge had been cold for a week.");
-              const kept = state.meta.title === "Typed On Title Page" && state.meta.author === "Typed Author" && state.meta.titleSource === "writer";
-              const k = rep && rep.items.find((i) => i.kind === "metaKept" && i.data.field === "title");
-              const ka = rep && rep.items.find((i) => i.kind === "metaKept" && i.data.field === "author");
-              const offered = !!k && !!ka && irItemLabel(k) === t("ir.k.metaKept.title", { kept: "Typed On Title Page", offered: "Salt and Iron" });
+              const kept = state.meta.title === "Salt and Iron" && state.meta.author === "R. K. Nolan" && !/Typed On Title Page|Typed Author/.test(JSON.stringify([state.meta, state.sections]));
+              const offered = !!rep && !rep.items.some((i) => i.kind === "metaKept");
               /* The subtitle was emptied on the section editor, so it is open to the import. */
               const subFilled = state.meta.subtitle === "A Forge Story" && state.meta.subtitleSource === "import";
               return scVerdict(imported && marked && kept && offered && subFilled,
-                "imported (" + imported + "), typing on the section editors marked the title/author as the writer's and the emptied subtitle as open (" + marked + "), the next import kept them (" + kept + ") and offered the document's own (" + offered + "), the emptied subtitle was filled (" + subFilled + ")");
+                "imported (" + imported + "), typing on the section editors marked the title/author as the writer's and the emptied subtitle as open (" + marked + "), the next import cleared them and took the document's own (" + kept + ") with no 'kept' offer (" + offered + "), the emptied subtitle was filled (" + subFilled + ")");
             });
           } },
         { id: "settings.title.placeholder-not-stored", feature: "import", name: "\"Untitled Book\" is display-only: Settings Save with a blank title stores \"\" (the header still shows the placeholder, the desk still counts as empty), and a book whose stored title is the placeholder in any of the 13 languages is treated as untitled — the next import fills it",
@@ -59994,7 +59984,7 @@
                 "maker opened with “" + shown + "” — title/subtitle/author/series from the book, tagline blank, photo query seeded (" + ok + "); a stored placeholder title leaves the cover title blank (" + noPlaceholder + ")");
             });
           } },
-        { id: "covermaker.prefill.follows-book", feature: "cover", name: "Cover maker follows the book: a saved recipe's blank text fields, and fields still equal to what the book said when the recipe was saved, take the book's current values (a new import's title, the photo search with it); text the writer typed in the maker is kept; the snapshot survives serialize → load",
+        { id: "covermaker.prefill.follows-book", feature: "cover", name: "Cover maker and a new import (BEUK:importreplace): a saved recipe remembers the book's words and survives a round-trip; importing a manuscript clears the old cover recipe with the rest of the old book, so the maker opens on the new book's title, subtitle and author with nothing typed for the old one (tagline blank), and the photo search follows the new title",
           run() {
             return imCheckRun(() => {
               state.meta.title = "Old Title"; state.meta.author = "Jane Doe"; state.meta.subtitle = "";
@@ -60016,10 +60006,11 @@
               openCoverMaker();
               const f = (id) => $(id).value;
               const followed = f("cmTitle") === "THE LONG WAY HOME" && f("cmSubtitle") === "A Novel of the Northern Roads";
-              const keptTyped = f("cmAuthor") === "J. DOE" && f("cmTagline") === "A journey north";
+              const keptTyped = !state.coverRecipe || state.coverRecipe.tagline !== "A journey north"; /* the old cover's typed words left with the old book */
+              const freshMaker = f("cmAuthor") === "Jane Doe" && f("cmTagline") === "";
               const pqOk = !$("cmPhotoQuery") || ($("cmPhotoQuery").value === cmTitleKeywords("THE LONG WAY HOME") && pqBefore === cmTitleKeywords("Old Title"));
-              return scVerdict(snapOk && survives && followed && keptTyped && pqOk,
-                "recipe saved the book's words (" + snapOk + ") and kept them through a round-trip (" + survives + "); after the import the maker shows “" + f("cmTitle") + "” and the subtitle (" + followed + "), the typed author and tagline stayed (" + keptTyped + "), photo search followed the title (" + pqOk + ": “" + pqBefore + "” → “" + ($("cmPhotoQuery") ? $("cmPhotoQuery").value : "") + "”)");
+              return scVerdict(snapOk && survives && followed && keptTyped && freshMaker && pqOk,
+                "recipe saved the book's words (" + snapOk + ") and kept them through a round-trip (" + survives + "); after the import the maker shows “" + f("cmTitle") + "” and the subtitle (" + followed + "), the old cover's typed author and tagline left with the old book (" + (keptTyped && freshMaker) + "), photo search follows the new title (" + pqOk + ")");
             });
           } }
       );
@@ -62077,16 +62068,18 @@
               await handleImportFile(file("new.txt", "# Chapter 1" + NL2 + "New words only."));
               const keptOnNo = asked === 1 && desk() === before;
               answer = true;
+              state.theme.importLookProbe = "kept"; const presetBefore = state.activePreset;
               await handleImportFile(file("new.txt", "# Chapter 1" + NL2 + "New words only."));
               const now = desk();
               const cleared = asked === 2 && now.indexOf("New words only.") !== -1 && !/Old preface|Old chapter|For the old book|Old Book|Old Author/.test(now);
+              const lookKept = state.theme.importLookProbe === "kept" && state.activePreset === presetBefore; /* the look is the writer's, not the old book's */
               const history = JSON.stringify(state.history || []);
               const inHistory = history.indexOf("Old chapter words.") !== -1;
               applyBookDoc(buildEmptyBook()); asked = 0;
               await handleImportFile(file("first.txt", "# Chapter 1" + NL2 + "First words."));
               const noAskOnEmpty = asked === 0 && desk().indexOf("First words.") !== -1;
-              return scVerdict(keptOnNo && cleared && inHistory && noAskOnEmpty,
-                "Keep leaves the book (" + keptOnNo + "), Clear removes everything old (" + cleared + "), History keeps the old book (" + inHistory + "), empty desk not asked (" + noAskOnEmpty + ")");
+              return scVerdict(keptOnNo && cleared && inHistory && noAskOnEmpty && lookKept,
+                "Keep leaves the book (" + keptOnNo + "), Clear removes everything old (" + cleared + "), History keeps the old book (" + inHistory + "), empty desk not asked (" + noAskOnEmpty + "), the look (typography) stays (" + lookKept + ")");
             } finally {
               window.cloudConfirm = origConfirm; window.toast = origToast;
               applyBookDoc(keepDoc);
