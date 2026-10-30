@@ -3,6 +3,7 @@ import type { Config } from '../config.js';
 import { getHelpContent } from '../help/content.js';
 import { getSchoolContent } from '../school/content.js';
 import { getWeeklyContent } from '../weekly/content.js';
+import { getBowmarketContent } from '../bowmarket/content.js';
 
 /** The comparison pages (client/site/compare/<slug>.html, served by Caddy at /compare/<slug>). */
 export const COMPARE_SLUGS = ['atticus', 'vellum', 'reedsy-studio', 'dabble', 'scrivener', 'novelcrafter'] as const;
@@ -65,6 +66,8 @@ export function siteRoutes(config: Config): Router {
       ...getSchoolContent().courses.flatMap((course) => [`/school/${course.slug}`, ...course.lessons.map((l) => `/school/${course.slug}/${l.slug}`)]),
       '/school/weekly',
       ...getWeeklyContent().issues.flatMap((i) => [`/school/weekly/${i.number}`, ...[...i.storyBySlug.values()].filter((s) => s.hasPage).map((s) => `/school/weekly/${i.number}/${s.slug}`)]),
+      '/school/bowmarket',
+      ...getBowmarketContent().items.map((i) => `/school/bowmarket/${i.slug}`),
       '/compare',
       ...COMPARE_SLUGS.map((s) => `/compare/${s}`),
       '/status',

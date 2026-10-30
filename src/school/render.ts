@@ -64,15 +64,17 @@ export interface SchoolPageOpts {
   path: string;
   body: string;
   data?: string;
-  /** Which School tab is current: the courses or Beuk Weekly. */
-  tab?: 'courses' | 'weekly';
+  /** Which School tab is current: the courses, Beuk Weekly or Bowmarket. */
+  tab?: 'courses' | 'weekly' | 'bowmarket';
   /** Extra stylesheets after school.css (the Weekly's fonts and paper). */
   css?: string[];
+  /** Extra scripts after school.js (deferred, same origin). */
+  scripts?: string[];
   bodyClass?: string;
 }
 
 /** The School's page shell: the public site's top bar and footer, School
- *  current, and the School's own Courses · Beuk Weekly tabs. */
+ *  current, and the School's own Courses · Beuk Weekly · Bowmarket tabs. */
 export function schoolPage(config: Config, opts: SchoolPageOpts): string {
   const tab = opts.tab ?? 'courses';
   const canonical = `${config.appBaseUrl}${opts.path}`;
@@ -125,6 +127,7 @@ export function schoolPage(config: Config, opts: SchoolPageOpts): string {
       <div class="s-tabs-in">
         <a href="/school"${tab === 'courses' ? ' aria-current="page"' : ''}>Courses</a>
         <a href="/school/weekly"${tab === 'weekly' ? ' aria-current="page"' : ''}>Beuk Weekly</a>
+        <a href="/school/bowmarket"${tab === 'bowmarket' ? ' aria-current="page"' : ''}>Bowmarket</a>
       </div>
     </nav>
 
@@ -162,6 +165,7 @@ ${opts.body}
       </div>
     </footer>
     <script src="/site/school.js" defer></script>
+    ${(opts.scripts ?? []).map((h) => `<script src="${esc(h)}" defer></script>`).join('')}
   </body>
 </html>
 `;

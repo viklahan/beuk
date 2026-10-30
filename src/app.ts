@@ -32,6 +32,7 @@ import { warmthRoutes } from './routes/warmth.js';
 import { siteRoutes } from './routes/site.js';
 import { schoolRoutes } from './routes/school.js';
 import { weeklyRoutes } from './routes/weekly.js';
+import { bowmarketRoutes } from './routes/bowmarket.js';
 import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.js';
 import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
@@ -205,6 +206,8 @@ export function buildApp({
   app.use(help.pages);
   // Beuk Weekly before the School's pages: /school/weekly is never a course slug.
   app.use(weeklyRoutes(config));
+  // Bowmarket too: /school/bowmarket is never a course slug.
+  app.use(bowmarketRoutes(config));
   app.use(school.pages);
   app.use(warmthRoutes(config));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).

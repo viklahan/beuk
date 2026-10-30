@@ -38,6 +38,7 @@ import { CONFIRM_TOKEN_TTL_HOURS } from '../account/confirm.js';
 import { checkSchoolContent, loadSchoolContent } from '../school/content.js';
 import { readLessonMedia } from '../school/media.js';
 import { checkWeeklyContent, loadWeeklyContent } from '../weekly/content.js';
+import { checkBowmarketContent, forSale, loadBowmarketContent } from '../bowmarket/content.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -3483,6 +3484,19 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       assert(problems.length === 0, problems.join('; '));
       if (!w.latest) throw new NotConfigured('no issue under content/weekly/en yet');
       return `${w.issues.length} issue(s); latest No. ${w.latest.number}, ${w.latest.week}: ${w.latest.banner}`;
+    },
+  },
+  {
+    id: 'bowmarket.content.parses-clean',
+    title: 'Bowmarket: every item parses, every picture it names is in its folder, a set names only books here, and nothing has a price without a Stripe link (or a link without a price)',
+    kind: 'server',
+    run: async () => {
+      const c = loadBowmarketContent('en');
+      const problems = checkBowmarketContent(c);
+      assert(problems.length === 0, problems.join('; '));
+      if (!c.items.length) throw new NotConfigured('no item under content/bowmarket/en yet');
+      const selling = c.items.filter(forSale).length;
+      return `${c.items.length} item(s), ${c.items.filter((i) => i.kind === 'set').length} box set(s); ${selling} on sale, ${c.items.length - selling} coming soon`;
     },
   },
   {
