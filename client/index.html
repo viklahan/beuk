@@ -39825,6 +39825,32 @@
         if (/[ﭐ-﷿ﹰ-ﻼ]/.test(s)) s = s.replace(/[ﭐ-﷿ﹰ-ﻼ]+/g, (m) => m.normalize("NFKC"));
         return { s, bad };
       }
+      /* BEUK:pdfmarks — the file's own bookmarks: each one's title, its
+         depth and the page it opens (1-based), in reading order. A
+         bookmark reaches its page directly or through a named
+         destination; one that reaches no page is left out. */
+      async function pdfOutline(doc) {
+        const tree = await doc.getOutline();
+        const out = [];
+        const pageOf = async (dest) => {
+          try {
+            const d = typeof dest === "string" ? await doc.getDestination(dest) : dest;
+            if (!Array.isArray(d) || d[0] == null) return 0;
+            return typeof d[0] === "number" ? d[0] + 1 : (await doc.getPageIndex(d[0])) + 1;
+          } catch (e) { return 0; }
+        };
+        const walk = async (items, level) => {
+          for (const o of items || []) {
+            if (out.length >= 2000) return;
+            const title = pdfCleanText(o.title || "").s.replace(/\s+/g, " ").trim();
+            const page = o.dest ? await pageOf(o.dest) : 0;
+            if (title && page) out.push({ title, page, level });
+            await walk(o.items, level + 1);
+          }
+        };
+        await walk(tree, 1);
+        return out;
+      }
       async function pdfExtract(lib, data, opts) {
         opts = opts || {};
         const task = lib.getDocument({ data, verbosity: 0, fontExtraProperties: true, disableFontFace: true, useSystemFonts: false, stopAtErrors: false, isOffscreenCanvasSupported: typeof OffscreenCanvas !== "undefined" });
@@ -39833,6 +39859,7 @@
         try {
           const meta = await pdfWait(doc.getMetadata().catch(() => null), 4000);
           if (meta && meta.info) { out.title = pdfCleanText(meta.info.Title || "").s.trim(); out.author = pdfCleanText(meta.info.Author || "").s.trim(); }
+          out.outline = await pdfWait(pdfOutline(doc).catch(() => []), 8000) || [];
           const OPS = lib.OPS;
           const seenImg = new Map();
           for (let pn = 1; pn <= doc.numPages; pn++) {
@@ -40244,6 +40271,46 @@
           else if (l.text.length <= 40 && labelRe.test(l.text.trim()) && gapAbove >= lead * 1.4) l.head = "label";
           else if (numRe.test(l.text.trim()) && l.size >= body * 0.98 && next && next.size >= body * 1.22 && gapBelow <= lead * 4) l.head = "label";
         })));
+        /* BEUK:pdfmarks — the file's own bookmarks name its headings. A
+           line on a bookmark's page (or the page after) that spells the
+           bookmark's title, or the title after its label ("Part ONE:
+           MOSCOW" → "MOSCOW"), set apart from its neighbours and at least
+           the text's size, is a heading even when its size alone would not
+           say so (a diary's dates set 14.5 against 12.5); a label line
+           right above it that spells the label ("PART ONE") goes with it.
+           A bookmarked word inside a paragraph stays text. Bookmarks only
+           ever add headings: the layout's own stand. */
+        const markKey = (s) => String(s).toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "");
+        const markPages = new Set(), markFull = new Map();
+        (ext.outline || []).forEach((o) => {
+          if (!o || !o.title || !(o.page > 0)) return;
+          const full = markKey(o.title);
+          const cut = String(o.title).split(/\s*:\s+|\s+[—–]\s+/);
+          const tail = cut.length > 1 ? markKey(cut.slice(1).join(" ")) : "", label = cut.length > 1 ? markKey(cut[0]) : "";
+          if (!full) return;
+          for (const n of [o.page, o.page + 1]) {
+            const p = pages[n - 1];
+            if (!p) continue;
+            let found = false;
+            p.cols.forEach((c) => c.forEach((l, q) => {
+              if (found || l.drop) return;
+              const k = markKey(l.text);
+              if (!k || (k !== full && k !== tail)) return;
+              found = true;
+              if (!markFull.has(n)) markFull.set(n, new Set());
+              markFull.get(n).add(full);
+              const contents = normHeading(o.title) === "contents" || normHeading(o.title) === "table of contents";
+              if (!contents) markPages.add(n);
+              if (l.head || l.dropCap) return;
+              const prev = c.slice(0, q).reverse().find((x) => !x.drop), next = c.slice(q + 1).find((x) => !x.drop);
+              const gapAbove = prev ? l.y - prev.y : 1e9, gapBelow = next ? next.y - l.y : 1e9;
+              if (l.size < body * 0.98 || l.text.length > 140 || gapAbove < lead * 1.2 || gapBelow < lead * 1.2) return;
+              l.head = "big";
+              if (label && prev && !prev.head && markKey(prev.text) === label) prev.head = "label";
+            }));
+            if (found) break;
+          }
+        });
         /* 5. A contents page: everything on it is left out. */
         const headKeys = new Set(allLines.filter((l) => l.head).map((l) => headKey(l.text)));
         const tocLike = (l) => /(?:\.{3,}|…)\s*\S*\d+$/.test(l.text) || /\s\d{1,4}$/.test(l.text) || labelRe.test(l.text.split(/\s[—–·:-]\s/)[0].trim()) ||
@@ -40254,8 +40321,13 @@
           const hasHead = ls.some((l) => /^(?:table of )?contents$|^contents$/i.test(l.text.trim()) || normHeading(l.text) === "contents" || normHeading(l.text) === "table of contents");
           const rest = ls.filter((l) => !(normHeading(l.text) === "contents" || normHeading(l.text) === "table of contents"));
           const share = rest.length ? rest.filter(tocLike).length / rest.length : 0;
+          /* BEUK:pdfmarks — the contents end at a page a bookmark opens, or
+             at one holding a display heading and no entry with a page
+             number (a part page straight after the contents: "PART ONE /
+             MOSCOW / April 1983" reads like entries, and is not). */
+          const display = rest.some((l) => l.head === "big") && !rest.some((l) => /(?:\.{2,}|…)\s*\S*\d+$/.test(l.text));
           if (hasHead && share >= 0.6) inToc = true;
-          else if (inToc && !(rest.length && share >= 0.7)) inToc = false;
+          else if (inToc && (!(rest.length && share >= 0.7) || markPages.has(p.n) || display)) inToc = false;
           if (inToc) { st.toc.push(p.n); ls.forEach((l) => { l.drop = "toc"; }); }
         });
         /* 6. The text flow: headings, paragraphs, breaks, pictures, tables. */
@@ -40452,9 +40524,18 @@
                 if (label) text = (numRe.test(label) ? "Chapter " + label.replace(/\.$/, "") : label) + (text ? ": " + text : "");
                 flush();
                 const hb = { kind: "h", text, page: p.n };
+                const lastB = blocks[blocks.length - 1];
+                /* BEUK:pdfmarks — two headings on one page that together
+                   spell one bookmark ("PART ONE" + "SEPTEMBER" = "Part ONE:
+                   September") are that one heading. */
+                if (lastB && lastB.kind === "h" && lastB.page === p.n && markFull.has(p.n) && markFull.get(p.n).has(markKey(lastB.text + " " + text))) {
+                  lastB.text += ": " + text;
+                  sinceHead = 0;
+                  prevLine = null;
+                  continue;
+                }
                 /* The same title on two pages running is a half-title
                    page before the title page: keep the later one. */
-                const lastB = blocks[blocks.length - 1];
                 if (lastB && lastB.kind === "h" && headKey(lastB.text) === headKey(text) && lastB.page < p.n) { st.halfTitle = lastB.text; blocks.pop(); }
                 blocks.push(hb);
                 sinceHead = 0;
@@ -50999,6 +51080,37 @@
             const quizOk = quizHeads.length === 2 && /^Stare at the black dot/.test(quizHeads[0]);
             const ok = titleOk && quizOk && heads.length === 2 && !diaryHeads.length && !diaryText.length;
             return scVerdict(ok, "quiz questions kept as headings (" + quizHeads.join(" | ") + "); " + heads.length + " headings (" + heads.join(" | ") + "); diary lines taken for headings: " + (diaryHeads.join(" | ") || "none") + "; diary lines missing from the text: " + (diaryText.join(" | ") || "none"));
+          } },
+        /* ---- BEUK:pdfmarks: the PDF's own bookmarks name its headings ---- */
+        { id: "pdf.bookmarks.name-the-headings", feature: "import", name: "A PDF whose bookmarks name its parts and its dated diary entries: a part page straight after the contents stays a part (with or without bookmarks), each bookmarked date set only a little larger than the text becomes its entry's heading, a part label and its title on separate lines become one heading as the bookmark names it, and a bookmarked word that sits inside a paragraph stays text",
+          run() {
+            const it = (s, x, y, w, size, b) => ({ s, x, y, w, size: size || 12.5, b: !!b, i: false, rtl: 0 });
+            const vocab = "the bus was late again and the cafeteria smelled of glue while the class lined up by the door and waited for the bell".split(" ");
+            let seq = 0;
+            const prose = (y0, n) => { const out = []; for (let k = 0; k < n; k++) { const ws = []; for (let q = 0; q < 9; q++) ws.push(vocab[(seq * 5 + q * 3) % vocab.length]); seq++; out.push(it(ws.join(" ") + (k % 5 === 4 ? "." : ""), k % 5 === 0 ? 68 : 50, y0 + k * 16, k % 5 === 4 ? 240 : 320)); } return out; };
+            const W = 432, H = 648;
+            const book = (withMarks) => {
+              seq = 0;
+              const pages = [];
+              const page = (items) => pages.push({ n: pages.length + 1, w: W, h: H, items: [it(String(pages.length + 1), 208, 608, 15, 9)].concat(items), images: [], masks: 0, rotated: 0 });
+              page([it("Contents", 160, 60, 110, 26), it("PART ONE — MOSCOW ........ 2", 60, 120, 300, 12), it("PART TWO — SEPTEMBER ........ 3", 60, 140, 300, 12),
+                it("Tuesday, September 8, 2026 ........ 3", 70, 160, 290, 11), it("Thursday, September 10, 2026 ........ 3", 70, 180, 290, 11)]);
+              page([it("PART ONE", 180, 214, 70, 11), it("MOSCOW", 150, 245, 130, 30), it("April 1983", 180, 288, 70, 12)]);
+              page([it("PART TWO", 170, 60, 90, 20), it("SEPTEMBER", 110, 92, 220, 46), it("———", 200, 167, 30, 14), it("Tuesday, September 8, 2026", 60, 191, 210, 14.5, true)].concat(
+                prose(214, 10), [it("Thursday, September 10, 2026", 60, 398, 220, 14.5, true)], prose(421, 10)));
+              page(prose(60, 12).concat([it("Evening", 50, 252, 50)], prose(268, 20)));
+              page(prose(60, 34));
+              const ext = { pages, numPages: pages.length, textChars: 30000, title: "", author: "" };
+              if (withMarks) ext.outline = [{ title: "Contents", page: 1, level: 1 }, { title: "Part ONE: MOSCOW", page: 2, level: 1 }, { title: "Part TWO: September", page: 3, level: 1 },
+                { title: "Tuesday, September 8, 2026", page: 3, level: 2 }, { title: "Thursday, September 10, 2026", page: 3, level: 2 }, { title: "Evening", page: 4, level: 2 }];
+              return pdfLayout(ext);
+            };
+            const heads = (lay) => lay.blocks.filter((b) => b.kind === "h").map((b) => b.text);
+            const marked = heads(book(true)), plain = heads(book(false));
+            const want = ["Part One: MOSCOW", "Part Two: SEPTEMBER", "Tuesday, September 8, 2026", "Thursday, September 10, 2026"];
+            const missing = want.filter((h) => marked.indexOf(h) === -1);
+            const ok = !missing.length && marked.length === want.length && marked.indexOf("Evening") === -1 && plain.indexOf("Part One: MOSCOW") !== -1;
+            return scVerdict(ok, "with bookmarks: " + marked.join(" | ") + (missing.length ? " (missing: " + missing.join(" | ") + ")" : "") + "; without: " + plain.join(" | "));
           } },
         /* ---- BEUK:pdffront: a PDF set with letter-spaced titles, a drop cap and no metadata ---- */
         { id: "pdf.front.letterspaced-dropcap", feature: "import", name: "A PDF whose title page, author line and headings are letter-spaced (T H E  F R O S T  L I N E), whose chapters open on a drop cap, whose metadata says (anonymous), and whose later chapters carry their number on a spaced label line: the words close up, the drop cap rejoins its word, the title and author come from the book itself, the author's note is front matter, and every chapter keeps its number",
@@ -63915,6 +64027,41 @@
         for (let k = 0; k < out.length; k++) bytes[k] = out.charCodeAt(k) & 255;
         return bytes;
       }
+      /* BEUK:pdfmarks — a two-page PDF whose bookmarks reach their pages
+         both ways a PDF can: an explicit destination and a named one. */
+      function pdfMarksFixtureBytes() {
+        const objs = [];
+        objs[1] = "<< /Type /Catalog /Pages 2 0 R /Outlines 7 0 R /Names << /Dests << /Names [(entry-one) [5 0 R /Fit]] >> >> >>";
+        objs[2] = "<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>";
+        objs[3] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << /Font << /F1 10 0 R >> >> /Contents 4 0 R >>";
+        objs[5] = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << /Font << /F1 10 0 R >> >> /Contents 6 0 R >>";
+        const txt = (s) => { const c = "BT /F1 12 Tf 40 300 Td (" + s + ") Tj ET\n"; return "<< /Length " + c.length + " >>\nstream\n" + c + "endstream"; };
+        objs[4] = txt("Part One");
+        objs[6] = txt("Monday, March 2");
+        objs[7] = "<< /Type /Outlines /First 8 0 R /Last 8 0 R /Count 2 >>";
+        objs[8] = "<< /Title (Part One) /Parent 7 0 R /Dest [3 0 R /XYZ null null null] /First 9 0 R /Last 9 0 R /Count 1 >>";
+        objs[9] = "<< /Title (Monday, March 2) /Parent 8 0 R /Dest (entry-one) >>";
+        objs[10] = "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>";
+        let out = "%PDF-1.4\n";
+        const offs = [];
+        for (let k = 1; k < objs.length; k++) { offs[k] = out.length; out += k + " 0 obj\n" + objs[k] + "\nendobj\n"; }
+        const xref = out.length;
+        out += "xref\n0 " + objs.length + "\n0000000000 65535 f \n";
+        for (let k = 1; k < objs.length; k++) out += String(offs[k]).padStart(10, "0") + " 00000 n \n";
+        out += "trailer\n<< /Size " + objs.length + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n";
+        const bytes = new Uint8Array(out.length);
+        for (let k = 0; k < out.length; k++) bytes[k] = out.charCodeAt(k) & 255;
+        return bytes;
+      }
+      SELF_CHECKS_ASYNC.push(
+        { id: "pdf.bookmarks.read-with-their-pages", feature: "import", name: "PDF import reads the file's bookmarks through PDF.js: each one's title, its depth, and the page it opens, whether the bookmark names its page directly or through a named destination",
+          async run() {
+            const lib = await pdfLoadLib();
+            const ext = await pdfExtract(lib, pdfMarksFixtureBytes(), {});
+            const got = (ext.outline || []).map((o) => o.level + ":" + o.title + "@" + o.page).join(" | ");
+            return scVerdict(got === "1:Part One@1 | 2:Monday, March 2@2", "bookmarks read: " + (got || "none"));
+          } }
+      );
       SELF_CHECKS_ASYNC.push(
         { id: "import.pdf", feature: "import", name: "PDF import: a PDF written in the check (three pages, Times fonts) imports through the vendored PDF.js under SRI as two chapters — the letter-spaced \"CHAPTER ONE\" and its larger bold title read as one heading — with running heads and page numbers left out and reported, the line-end hyphen joined, italic and bold carried as *…* and **…**, a paragraph running on over the page break, the scene-break gap as ***, the table taken out and reported, the picture in the image library; a text-less scan is refused with no text invented; undoing the import restores the prior book",
           async run() {
