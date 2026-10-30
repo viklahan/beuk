@@ -37129,6 +37129,7 @@
          copyright page, a quotation with attribution is the
          epigraph, and what short prose remains is the dedication.
          Longer prose is handed back untouched as prose. */
+      const IR_PIC_RE = new RegExp("^" + String.fromCharCode(0xe000) + "IMG\\d+" + String.fromCharCode(0xe000) + "$"); /* BEUK:pdffront — a picture's import placeholder */
       function frontZonePieces(blocks, identity, fallbackTitle) {
         const pieces = [];
         const rest = [];
@@ -37137,17 +37138,39 @@
         addKey(identity && identity.title); addKey(identity && identity.author);
         if (identity && identity.author) addKey("by " + identity.author);
         addKey(fallbackTitle);
-        let copyright = null;
-        blocks.forEach((block, bi) => {
-          const key = block.trim().toLowerCase().replace(/\s+/g, " ");
-          if (titleKeys.has(key) && wordCountOf(block) <= 12) { irNote({ kind: "lifted", reason: "title", text: block }); return; }
+        let copyright = null, crLast = -1, crBlocks = [];
+        /* BEUK:pdffront — the title, the series and a "Volume One of …"
+           line are the title page's furniture, line by line, italics aside. */
+        const titleLoose = irLoose(identity && identity.title) + " " + irLoose(fallbackTitle);
+        const furnitureLine = (l) => { const t = l.replace(/^[*_]+|[*_]+$/g, "").trim(); if (!t) return true; const tl = irLoose(t);
+          return (tl.length >= 3 && titleLoose.includes(tl)) || (wordCountOf(t) <= 20 && !/[.?…]$/.test(t) && /\b(?:volume|book|part)\s+[\p{L}\d]+\s+(?:of|in)\s+the\b/iu.test(t)); };
+        let frontispiece = null;
+        blocks.forEach((whole, bi) => {
+          const key = whole.trim().toLowerCase().replace(/\s+/g, " ");
+          if (titleKeys.has(key) && wordCountOf(whole) <= 12) { irNote({ kind: "lifted", reason: "title", text: whole }); return; }
+          /* BEUK:pdffront — the furniture lines go first (a series logo and the
+             series name may share one block); a picture among them is judged
+             on its own. */
+          const isPic = (l) => /!\[[^\]]*\]\(img:/.test(l) || IR_PIC_RE.test(l.trim()); /* markdown, or the import's own picture placeholder */
+          const keptLines = whole.split("\n").filter((l) => isPic(l) || !furnitureLine(l));
+          if (!keptLines.length) { irNote({ kind: "lifted", reason: "furniture", text: whole }); return; }
+          const block = keptLines.join("\n");
+          /* BEUK:pdffront — a picture standing alone before the book begins is its frontispiece. */
+          const picsOnly = block.split("\n").filter((l) => l.trim()).every(isPic);
+          if (picsOnly && !frontispiece) { frontispiece = { kind: "front", type: "frontispiece", title: "Frontispiece", bodyText: block.trim(), ord: bi }; pieces.push(frontispiece); return; }
           if (isCopyrightBlock(block)) {
             if (!copyright) { copyright = { kind: "front", type: "copyright", title: "Copyright", bodyText: "", ord: bi }; pieces.push(copyright); }
-            copyright.bodyText = copyright.bodyText ? copyright.bodyText + "\n\n" + block : block;
+            crBlocks.push({ block, ord: bi }); crLast = bi;
             return;
           }
           rest.push({ block, ord: bi });
         });
+        /* BEUK:pdffront — what stands between the copyright page's first
+           and last lines (a note on the setting, a credit) is on that page. */
+        if (copyright) {
+          for (let i = rest.length - 1; i >= 0; i--) if (rest[i].ord > copyright.ord && rest[i].ord < crLast) crBlocks.push(rest.splice(i, 1)[0]);
+          copyright.bodyText = crBlocks.sort((a, b) => a.ord - b.ord).map((r) => r.block).join("\n\n");
+        }
         /* Short, unpunctuated lines standing before the copyright
            page — "A novel", a series name, a genre line — are the
            title page's furniture, not a dedication. A line that
@@ -37157,7 +37180,7 @@
             const b = rest[i].block.trim();
             /* BEUK:importzones — so are the title itself ("Crash!") and a
                series line ("Volume One of the Crashlanders Trilogy…"). */
-            const furniture = (l) => (wordCountOf(l) <= 6 && !/[.!?…]/.test(l) && !/^for\s/i.test(l)) ||
+            const furniture = (l) => (wordCountOf(l) <= 6 && !/[.!?…]/.test(l) && !/^for\s/i.test(l)) || furnitureLine(l) ||
               (irLoose(l).length >= 3 && irLoose(identity && identity.title).includes(irLoose(l))) ||
               (wordCountOf(l) <= 20 && !/[.?…]$/.test(l) && /\b(?:volume|book|part)\s+[\p{L}\d]+\s+(?:of|in)\s+the\b/iu.test(l)); /* a series line, alone or run on after the title */
             if (rest[i].ord < copyright.ord && b.split("\n").map((l) => l.trim()).filter(Boolean).every(furniture)) { irNote({ kind: "lifted", reason: "furniture", text: rest[i].block }); rest.splice(i, 1); }
@@ -37254,6 +37277,23 @@
           }
           return { bodyText, cls: "lead" };
         });
+        /* BEUK:pdffront — "CHAPTER TWENTY-ONE" on a line of its own, then
+           the chapter's title as its heading: one chapter, numbered. A number
+           set in capitals takes the book's other numbers' case. */
+        items.forEach((it, ii) => {
+          const next = items[ii + 1];
+          if (it.cls !== "chapter" || !it.head.number || it.bodyText || it.head.title !== "Chapter " + it.head.number) return;
+          if (!next || next.cls !== "chapter" || next.head.number || !/^#{1,2}\s/.test(String(next.raw || "").trim())) return;
+          const n = it.head.number;
+          next.head.number = /\p{Lu}{2}/u.test(n) && !/^[IVXLC]+$/.test(n) ? n.toLowerCase().replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : n;
+          it.cls = "skip";
+        });
+        /* BEUK:pdffront — when the file names no author, the book's own
+           copyright line does ("Copyright © 2026 by Gisèle Torres"). */
+        if (!String(identity.author || "").trim()) {
+          const byM = text.match(/copyright\s*(?:©\s*)?\d{4}(?:\s*[-–]\s*\d{4})?\s*,?\s*by\s+([^\n.;]{2,60})/i);
+          if (byM && byM[1].trim().split(/\s+/).length <= 6) identity.author = byM[1].trim();
+        }
         /* BEUK:importzones — a book that numbers its chapters ("Chapter 1")
            says what a chapter is. An unnumbered heading before its first
            numbered chapter is front matter: a piece of the book's title is
@@ -37266,7 +37306,14 @@
         const zoneNumbered = items.filter((it) => it.cls === "chapter" && it.head.number && it.bodyText); /* a contents line ("Chapter 1 … 15") has no text under it: not an anchor */
         if (zoneNumbered.length >= 2) {
           const firstN = items.indexOf(zoneNumbered[0]), lastN = items.lastIndexOf(zoneNumbered[zoneNumbered.length - 1]);
-          const titleL = irLoose(identity.title);
+          /* BEUK:pdffront — the title-page furniture is judged against the
+             book's title, its file name when the file names no title, and
+             its author; a file with no title takes its title page's own
+             (the longest such heading that is not the series). */
+          const titleL = irLoose(identity.title) + " " + irLoose(fallbackTitle), authorL = irLoose(identity.author);
+          const seriesM = text.match(/\bvolume\s+[\p{L}\d]+\s+of\s+(?:the\s+)?([^\n]{2,60})/iu);
+          const seriesL = seriesM ? irLoose(seriesM[1]) : "";
+          let ownTitle = "";
           const headOf = (it) => String(it.raw || "").replace(/^#{1,2}\s+/, "").trim();
           const zoneable = (it) => it && it.cls === "chapter" && !it.head.number && !/^(part|book|volume|act|interlude)\b/i.test(headOf(it));
           items.forEach((it, ii) => {
@@ -37274,8 +37321,10 @@
             const head = headOf(it);
             if (ii < firstN) {
               const lead = irLoose(head.split(":")[0]);
-              if (lead.length >= 3 && titleL.includes(lead)) {
+              if ((lead.length >= 3 && titleL.includes(lead)) || (authorL && irLoose(head) === authorL)) {
                 irNote({ kind: "lifted", reason: "title-heading", text: it.raw });
+                const hl = irLoose(head);
+                if (!String(identity.title || "").trim() && hl !== authorL && hl !== seriesL && hl.length >= 4 && irLoose(fallbackTitle).includes(hl) && head.length > ownTitle.length) ownTitle = head;
                 it.cls = "lead";
               } else if (!it.bodyText && /^(for|to|in memory)\b/i.test(head) && head.split(/\s+/).length >= 3) {
                 it.cls = "matter"; it.matter = { kind: "front", type: "dedication", title: "Dedication" }; it.bodyText = head;
@@ -37289,8 +37338,15 @@
               it.bodyText = headOf(next) + "\n\n" + next.bodyText; next.cls = "skip";
             }
             const teaser = /^(sneak peek|coming soon|excerpt|preview|a preview|first look|read on|bonus)\b/i.test(head);
-            it.cls = "matter"; it.matter = { kind: "back", type: teaser ? "cta" : "appendix", title: head };
+            let backTitle = head;
+            /* BEUK:pdffront — "APPENDIX A" with its name on the next line: one title. */
+            if (/^appendix(?:\s+[\p{L}\d]{1,4})?$/iu.test(head) && it.bodyText) {
+              const lines = it.bodyText.split("\n"), first = (lines[0] || "").replace(/^[*_]+|[*_]+$/g, "").trim();
+              if (first && wordCountOf(first) <= 8 && !/[.!?:;,]$/.test(first)) { backTitle = head + ": " + first; it.bodyText = lines.slice(1).join("\n").trim(); }
+            }
+            it.cls = "matter"; it.matter = { kind: "back", type: teaser ? "cta" : "appendix", title: backTitle };
           });
+          if (ownTitle) identity.title = ownTitle;
         }
         const isBodyItem = (it) => it.cls === "chapter" || it.cls === "part" || (it.cls === "matter" && it.matter.kind === "body");
         /* BEUK:importmeta — the manuscript's own title page is the
@@ -37342,7 +37398,11 @@
           }
         });
         if (proseChunks.length) {
-          const fb = { kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } };
+          /* BEUK:pdffront — a book that numbers its chapters has said where they
+             begin: what stands before Chapter One is a front page, not chapter 1. */
+          const fb = zoneNumbered.length >= 2
+            ? { kind: "front", type: "preface", title: "Preface", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } }
+            : { kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } };
           const at = pieces.findIndex((p) => p.kind === "body");
           if (at < 0) pieces.push(fb); else pieces.splice(at, 0, fb);
         }
@@ -39784,6 +39844,26 @@
           return best.x;
         };
         const buildLines = (items) => {
+          /* BEUK:pdffront — a drop cap stands beside the first lines of its
+             paragraph with its baseline two or three lines down: it belongs
+             at the start of the first of them, closed up to its word ("T" +
+             "he Red Arrow"), and its height must not pull the lines below
+             into one. Its own wide space goes with it. */
+          const capW = new Map();
+          items.forEach((it) => { const n = it.s.trim().length; if (n) { const k = Math.round(it.size * 2) / 2; capW.set(k, (capW.get(k) || 0) + n); } });
+          let bodySz = 0, capBest = -1; capW.forEach((v, k) => { if (v > capBest) { capBest = v; bodySz = k; } });
+          const capsHere = bodySz ? items.filter((it) => /^\p{L}{1,2}$/u.test(it.s.trim()) && it.size >= bodySz * 1.8) : [];
+          if (capsHere.length) {
+            const moved = [];
+            capsHere.forEach((cap) => {
+              const right = cap.x + cap.w;
+              const beside = items.filter((it) => it !== cap && it.s.trim() && Math.abs(it.size - bodySz) <= bodySz * 0.25 && it.x >= right - 1 && it.x <= right + bodySz * 3 && it.y <= cap.y + 1 && it.y >= cap.y - cap.size * 1.3);
+              if (!beside.length) return;
+              moved.push(cap);
+              cap.y = Math.min.apply(null, beside.map((it) => it.y)); cap.capSize = cap.size; cap.size = bodySz; cap.cap = true;
+            });
+            if (moved.length) items = items.filter((it) => it.s.trim() || it.size < bodySz * 1.8);
+          }
           const sorted = items.slice().sort((a, b) => a.y - b.y || a.x - b.x);
           const lines = [];
           sorted.forEach((it) => {
@@ -39816,9 +39896,13 @@
             for (let q = 1; q < solid.length; q++) gaps.push(gapOf(solid[q - 1], solid[q]));
             const base = spaced ? median(gaps) : 0;
             const runs = [], cells = [[]];
-            let prevEnd = null, prevText = "";
+            let prevEnd = null, prevText = "", prevCap = false;
             (spaced ? solid : its).forEach((it) => {
               let s = clean(it.s);
+              /* BEUK:pdffront — a run whose own letters are spaced out by the
+                 type ("N O T E", "T W E N T Y - O N E") is one word: the word
+                 breaks are the separate space runs between such runs. */
+              if (!spaced && /^\s*(?:\S ){2,}\S\s*$/u.test(s)) s = s.replace(/(\S) (?=\S)/gu, "$1");
               if (spaced) s = s.trim();
               if (prevEnd !== null) {
                 const gap = rtl ? prevEnd - (it.x + it.w) : it.x - prevEnd;
@@ -39828,14 +39912,14 @@
                 if (gap > 2.2 * small && s.trim() && prevText.trim()) cells.push([]);
                 else if (!s.trim() && it.w > 2.2 * small && cells[cells.length - 1].length) cells.push([]);
                 const needSpace = spaced ? gap > base + 0.18 * small : gap > 0.15 * small;
-                if (needSpace && !/\s$/.test(prevText) && !/^\s/.test(s)) s = " " + s;
+                if (needSpace && !prevCap && !/\s$/.test(prevText) && !/^\s/.test(s)) s = " " + s;
                 /* Overprinted copies (a "fake bold") are one glyph run. */
                 if (gap < -0.5 * small && runs.length && runs[runs.length - 1].t.trim() === s.trim()) return;
               }
               runs.push({ t: s, b: it.b, i: it.i, size: it.size });
               if (s.trim()) cells[cells.length - 1].push(s.trim());
               prevEnd = rtl ? Math.min(prevEnd === null ? 1e9 : prevEnd, it.x) : Math.max(prevEnd === null ? -1e9 : prevEnd, it.x + it.w);
-              prevText = s;
+              prevText = s; prevCap = !!it.cap;
             });
             let text = runs.map((r) => r.t).join("").replace(/\s+/g, " ").trim();
             /* "C H A P T E R  O N E": glyphs spaced out by the type, which
@@ -39852,8 +39936,8 @@
             const x0 = Math.min.apply(null, edge.map((it) => it.x));
             const x1 = Math.max.apply(null, edge.map((it) => it.x + it.w));
             const first = solid[0];
-            const dropCap = !!first && first.s.trim().length <= 2 && first.size >= size * 1.8 && solid.length > 1;
-            return { y, size, x0, x1, rtl, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? first.size : 0 };
+            const dropCap = !!first && first.s.trim().length <= 2 && (first.capSize || first.size) >= size * 1.8 && solid.length > 1;
+            return { y, size, x0, x1, rtl, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? (first.capSize || first.size) : 0 };
           }).filter((l) => l.text);
         };
         const pages = ext.pages.map((pg) => {
@@ -40286,7 +40370,7 @@
          heading reads "The Lantern Coast". */
       function pdfIdentity(ext, blocks) {
         let title = String(ext.title || "").replace(/^microsoft word\s*-\s*/i, "").trim();
-        if (/\.(docx?|pdf|odt|rtf|pages|indd|txt|md)$/i.test(title) || /^untitled\b/i.test(title)) title = "";
+        if (/\.(docx?|pdf|odt|rtf|pages|indd|txt|md)$/i.test(title) || /^untitled\b/i.test(title) || /^[([]?\s*(anonymous|unknown|untitled|none|null)\s*[)\]]?$/i.test(title)) title = ""; /* BEUK:pdffront */
         const first = blocks.find((b) => b.kind === "h");
         if (title && first) {
           const ft = first.text.trim();
@@ -40296,7 +40380,7 @@
         }
         /* Tool defaults ("anonymous", "Administrator") are nobody's byline. */
         let author = String(ext.author || "").trim();
-        if (/^(anonymous|unknown|author|user|admin|administrator|owner)$/i.test(author)) author = "";
+        if (/^[([]?\s*(anonymous|unknown|author|user|admin|administrator|owner|none|null)\s*[)\]]?$/i.test(author)) author = ""; /* BEUK:pdffront — "(anonymous)" too */
         return { title, author, subtitle: "", via: "meta" };
       }
       /* The synchronous half: blocks → manuscript text → the shared
@@ -50684,6 +50768,68 @@
       const scImgKey = (img) => { const d = String((img && img.data) || ""); const at = Math.max(0, Math.floor(d.length / 2) - 32); return d.slice(at, at + 64); };
       /* ==== /BEUK:selfchecks ==== */
       const SELF_CHECKS = [
+        /* ---- BEUK:pdffront: a PDF set with letter-spaced titles, a drop cap and no metadata ---- */
+        { id: "pdf.front.letterspaced-dropcap", feature: "import", name: "A PDF whose title page, author line and headings are letter-spaced (T H E  F R O S T  L I N E), whose chapters open on a drop cap, whose metadata says (anonymous), and whose later chapters carry their number on a spaced label line: the words close up, the drop cap rejoins its word, the title and author come from the book itself, the author's note is front matter, and every chapter keeps its number",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson, keepHistory = state.history;
+            const origToast = window.toast;
+            try {
+              window.toast = () => {};
+              applyBookDoc(buildEmptyBook());
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              const E = String.fromCharCode(0xc8);
+              const it = (s, x, y, w, size, i) => ({ s, x, y, w, size: size || 11, b: false, i: !!i, rtl: 0 });
+              const spaced = (words, x, y, size) => { const out = []; let cx = x; words.forEach((w, k) => { if (k) { out.push(it(" ", cx, y, size * 0.7, size)); cx += size * 0.7; } const ww = w.length * size * 0.75; out.push(it(w.split("").join(" "), cx, y, ww, size)); cx += ww; }); return out; };
+              const vocab = "the wire ran north past the frozen yards and the trains came slow through the snow while the guards stamped their feet and watched the clocks tick down the night".split(" ");
+              let seq = 0;
+              const prose = (x0, y0, n, widthW) => { const out = []; for (let k = 0; k < n; k++) { const ws = []; for (let q = 0; q < 9; q++) ws.push(vocab[(seq * 7 + q * 3) % vocab.length]); seq++; out.push(it(ws.join(" ") + (k % 5 === 4 ? "." : ""), k % 5 === 0 ? x0 + 12 : x0, y0 + k * 14, widthW || 300)); } return out; };
+              const chrome = (n) => [it(String(n), 213, 608, 5, 9)];
+              const W = 432, H = 648, pages = [];
+              const page = (items) => pages.push({ n: pages.length + 1, w: W, h: H, items: chrome(pages.length + 1).concat(items), images: [], masks: 0, rotated: 0 });
+              page(spaced(["THE", "FROST", "LINE"], 130, 200, 16).concat([it("THE MOSCOW DEAD DROP", 110, 250, 220, 26), it("Volume One of The Frost Line", 140, 290, 151, 11)], spaced(["GIS" + E + "LE", "TORRES"], 134, 350, 15)));
+              page([it("Copyright " + String.fromCharCode(169) + " 2026 by Gis" + E.toLowerCase() + "le Torres", 60, 200, 200, 10), it("This is a work of fiction. Names and places are invented.", 60, 230, 300, 10)].concat(
+                ["Set in 1983. Real events supply the historical spine of this book, from the", "destruction of a passenger flight in September to an exercise in November that", "one capital came close to reading as the real thing; the fiction lives in the", "gaps between what the capitals believed and what was happening on the ground,", "in the offices and the stations and the trains that ran north through the snow."].map((l, k) => it(l, 60, 250 + k * 12, 300, 10)),
+                [it("First edition", 60, 330, 70, 10), it("10 9 8 7 6 5 4 3 2 1", 60, 350, 90, 10)]));
+              page([it("Volume One of The Frost Line", 140, 200, 151, 11, true)]);
+              page([it("For the quiet professionals.", 130, 200, 170, 11, true)]);
+              page(spaced(["A", "NOTE", "FROM", "THE", "AUTHOR"], 60, 70, 14).concat(prose(40, 120, 20)));
+              page([it("Chapter One: THE RED ARROW", 90, 90, 260, 21), it("T", 40, 158, 22, 34), it(" ", 62, 158, 10, 34),
+                it("he Red Arrow left the station at midnight, as it", 66, 130, 274), it("did every night, and the platform emptied behind", 66, 144, 274), it("it while she watched the red lamp go small.", 66, 158, 240)].concat(prose(40, 172, 22)));
+              page(prose(40, 60, 30));
+              page(spaced(["CHAPTER", "TWENTY-ONE"], 150, 80, 11).concat([it("THE BOOKSELLER", 120, 110, 190, 21)], prose(40, 150, 24)));
+              page(prose(40, 60, 30));
+              page(spaced(["APPENDIX", "A"], 150, 70, 14).concat([it("Tradecraft Glossary", 130, 100, 170, 18)], prose(40, 140, 12)));
+              const ext = { pages, numPages: pages.length, textChars: 20000, title: "(anonymous)", author: "(anonymous)" };
+              const origParse = parseManuscript;
+              importPdfExtracted("the-frost-line-vol1-the-moscow-dead-drop.pdf", ext);
+              /* the same front, as the real book hands it over: the series logo and the series name in one block */
+              const logoPieces = parseManuscript(irSent("IMG", 7) + String.fromCharCode(10) + "THE FROST LINE" + String.fromCharCode(10, 10) + "# Chapter One: A" + String.fromCharCode(10, 10) + "Words." + String.fromCharCode(10, 10) + "# Chapter Two: B" + String.fromCharCode(10, 10) + "More words.", "the-frost-line-vol1-the-moscow-dead-drop", {});
+              const logoOk = logoPieces.some((x) => x.type === "frontispiece" && x.body.join(" ").indexOf(irSent("IMG", 7)) !== -1) && !logoPieces.some((x) => x.type === "dedication");
+              const secs = state.sections;
+              const body = secs.filter((x) => x.kind === "body");
+              const shape = body.map((x) => (x.type === "part" ? "P:" : x.number + ":") + x.title).join(" | ");
+              const one = body.find((x) => /RED ARROW/.test(x.title || ""));
+              const capOk = !!one && /^The Red Arrow left the station/.test(String(one.content || "").trim()) && !/(^|\n)T (?=[a-z])/.test(String(one.content || ""));
+              const spacedLeft = secs.filter((x) => /(?:\p{L} ){3,}\p{L}/u.test(String(x.title || "") + " " + String(x.content || ""))).map((x) => x.title || x.type);
+              const note = secs.find((x) => x.kind === "front" && /NOTE FROM THE AUTHOR/i.test(x.title || ""));
+              const cr = secs.find((x) => x.type === "copyright");
+              const noFurniturePages = !secs.some((x) => x.kind !== "back" && /^(THE MOSCOW DEAD DROP|THE FROST LINE|GIS.LE TORRES)$/i.test(x.title || "")) &&
+                secs.filter((x) => x.type === "dedication" && String(x.content || "").trim()).length === 1 && !secs.some((x) => /Volume One of/.test(String(x.content || "")) && x.type !== "copyright");
+              const setOnCopyright = !!cr && /Set in 1983/.test(cr.content || "") && !body.some((x) => /Set in 1983/.test(String(x.content || "")));
+              const appx = secs.find((x) => x.type === "appendix");
+              const appxOk = !!appx && appx.title === "APPENDIX A: Tradecraft Glossary";
+              const ok = shape === "One:THE RED ARROW | Twenty-One:THE BOOKSELLER" && capOk && !spacedLeft.length && !!note && /\bwire\b/.test(note.content || "") &&
+                !!cr && /2026/.test(cr.content || "") && /10 9 8 7/.test(cr.content || "") && noFurniturePages &&
+                state.meta.title === "THE MOSCOW DEAD DROP" && state.meta.author === "Gis" + E.toLowerCase() + "le Torres" && setOnCopyright && appxOk && logoOk;
+              return scVerdict(ok, "chapters [" + shape + "], drop cap rejoined (" + capOk + "), letter-spaced text left in [" + spacedLeft.join(", ") + "], author's note is front matter (" + !!note + "), copyright page whole (" + !!(cr && /10 9 8 7/.test(cr.content || "")) + "), no title-page furniture pages and one dedication (" + noFurniturePages + "), setting note on the copyright page (" + setOnCopyright + "), series logo is the frontispiece (" + logoOk + "), appendix “" + (appx ? appx.title : "") + "”, title “" + state.meta.title + "”, author “" + state.meta.author + "”");
+            } finally {
+              window.toast = origToast;
+              applyBookDoc(keepDoc);
+              state.history = keepHistory;
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+            }
+          } },
         /* ---- BEUK:leftcol: the chapter list stays reachable with the stats panel open ---- */
         { id: "leftcol.stats-open.chapters-reachable", feature: "panes", name: "With the stats panel open, the chapter list in the left column keeps room to scroll and nothing spills out of the column",
           run() {

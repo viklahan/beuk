@@ -1709,6 +1709,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The desk, the confirm dialog and History all live in the studio page.',
   },
   {
+    id: 'pdf.front.letterspaced-dropcap',
+    title: 'Letter-spaced titles close up, drop caps rejoin, and the title page never becomes chapter 1',
+    kind: 'client-only',
+    reason: 'The PDF layout and the manuscript parser run in the studio page; the server never sees the file.',
+  },
+  {
     id: 'sample.empty-desk.no-figures',
     title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
     kind: 'client-only',
