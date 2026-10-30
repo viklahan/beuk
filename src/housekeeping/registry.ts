@@ -1715,6 +1715,36 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The PDF layout and the manuscript parser run in the studio page; the server never sees the file.',
   },
   {
+    id: 'import.onereader.bulk-parity',
+    title: 'A bulk import splits a manuscript exactly as the Import button does',
+    kind: 'client-only',
+    reason: 'Import, bulk import and box sets read files in the studio page; the server only receives the finished book.',
+  },
+  {
+    id: 'import.zip.mixed-bulk',
+    title: 'A zip of mixed manuscripts unpacks for bulk import, clutter skipped, unsupported named',
+    kind: 'client-only',
+    reason: 'Import, bulk import and box sets read files in the studio page; the server only receives the finished book.',
+  },
+  {
+    id: 'boxset.zip-and-pdf',
+    title: 'A box set takes a zip of books and a PDF as volumes',
+    kind: 'client-only',
+    reason: 'Import, bulk import and box sets read files in the studio page; the server only receives the finished book.',
+  },
+  {
+    id: 'import.zip.single',
+    title: 'The Import button takes a one-manuscript zip and refuses a zip of several plainly',
+    kind: 'client-only',
+    reason: 'Import, bulk import and box sets read files in the studio page; the server only receives the finished book.',
+  },
+  {
+    id: 'import.short-note.is-the-text',
+    title: 'A short piece with no chapter heading keeps its text as its chapter',
+    kind: 'client-only',
+    reason: 'Import, bulk import and box sets read files in the studio page; the server only receives the finished book.',
+  },
+  {
     id: 'sample.empty-desk.no-figures',
     title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
     kind: 'client-only',

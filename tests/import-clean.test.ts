@@ -38,7 +38,7 @@ test('import clean: every format is cleaned at the parser door, and the joiners 
 
 test('import clean: an empty or binary text file and a broken Word file are refused in plain words', async () => {
   const html = await clientHtml();
-  const door = html.slice(html.indexOf('async function handleImportFile('), html.indexOf('function initImport('));
+  const door = html.slice(html.indexOf('const IMPORT_DOCX_BROKEN'), html.indexOf('function initImport(')); /* BEUK:onereader — the refusals live in the one reader now */
   assert.match(door, /That file is empty/);
   assert.match(door, /does not look like text/);
   assert.match(door, /could not be read as a Word document/);
@@ -58,7 +58,7 @@ test('import replace: the self-check is registered, the desk is cleared whole, a
   for (const k of ['import.replaceTitle', 'import.replaceBody', 'import.replaceYes', 'import.replaceNo']) {
     assert.equal((html.match(new RegExp(`"${k.replace('.', '\.')}": "`, 'g')) || []).length, 13, k);
   }
-  const door = html.slice(html.indexOf('async function handleImportFile('), html.indexOf('function initImport('));
+  const door = html.slice(html.indexOf('async function readImportFile('), html.indexOf('function initImport(')); /* BEUK:onereader — the refusals live in the one reader now */
   assert.match(door, /askFirst\(\)/);
 });
 

@@ -3535,7 +3535,7 @@
             <button class="tb-btn" id="btnBoxSetAdd" type="button" data-i18n="exp.addBook"><i data-lucide="book-plus"></i>Add a Book…</button>
             <button class="tb-btn primary" id="btnBuildBoxSet" type="button" data-i18n="exp.buildBoxSet"><i data-lucide="download"></i>Build Box Set .epub</button>
           </div>
-          <input type="file" id="boxSetFileInput" accept=".json,.docx,.md,.markdown,.txt,.rtf" multiple style="display:none;" />
+          <input type="file" id="boxSetFileInput" accept=".json,.docx,.md,.markdown,.txt,.rtf,.pdf,.zip,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
         </div>
 
         <div class="fmt-sec" id="archiveSec" style="display:none;">
@@ -4290,8 +4290,8 @@
     <div class="piv-measure" id="pivMeasure" aria-hidden="true"></div>
 
     <div id="toasts" aria-live="polite"></div>
-    <input type="file" id="fileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,application/pdf,application/rtf,text/rtf" style="display:none;" />
-    <input type="file" id="bulkFileInput" accept=".docx,.md,.markdown,.txt,.rtf,.png,.jpg,.jpeg" multiple style="display:none;" />
+    <input type="file" id="fileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.zip,application/pdf,application/rtf,text/rtf,application/zip,application/x-zip-compressed" style="display:none;" />
+    <input type="file" id="bulkFileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.zip,.png,.jpg,.jpeg,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
     <input type="file" id="bulkFolderInput" webkitdirectory style="display:none;" />
 
     <script>
@@ -37130,7 +37130,7 @@
          epigraph, and what short prose remains is the dedication.
          Longer prose is handed back untouched as prose. */
       const IR_PIC_RE = new RegExp("^" + String.fromCharCode(0xe000) + "IMG\\d+" + String.fromCharCode(0xe000) + "$"); /* BEUK:pdffront — a picture's import placeholder */
-      function frontZonePieces(blocks, identity, fallbackTitle) {
+      function frontZonePieces(blocks, identity, fallbackTitle, bodyless) {
         const pieces = [];
         const rest = [];
         const titleKeys = new Set();
@@ -37157,7 +37157,7 @@
           const block = keptLines.join("\n");
           /* BEUK:pdffront — a picture standing alone before the book begins is its frontispiece. */
           const picsOnly = block.split("\n").filter((l) => l.trim()).every(isPic);
-          if (picsOnly && !frontispiece) { frontispiece = { kind: "front", type: "frontispiece", title: "Frontispiece", bodyText: block.trim(), ord: bi }; pieces.push(frontispiece); return; }
+          if (picsOnly && !frontispiece && !bodyless) { frontispiece = { kind: "front", type: "frontispiece", title: "Frontispiece", bodyText: block.trim(), ord: bi }; pieces.push(frontispiece); return; }
           if (isCopyrightBlock(block)) {
             if (!copyright) { copyright = { kind: "front", type: "copyright", title: "Copyright", bodyText: "", ord: bi }; pieces.push(copyright); }
             crBlocks.push({ block, ord: bi }); crLast = bi;
@@ -37200,7 +37200,7 @@
         const restText = rest.map((r) => r.block).join("\n\n").trim();
         let prose = "";
         if (restText) {
-          if (wordCountOf(restText) <= 60) pieces.push({ kind: "front", type: "dedication", title: "Dedication", bodyText: restText, ord: rest.length ? rest[0].ord : 0 });
+          if (wordCountOf(restText) <= 60 && !bodyless) pieces.push({ kind: "front", type: "dedication", title: "Dedication", bodyText: restText, ord: rest.length ? rest[0].ord : 0 });
           else prose = restText;
         }
         pieces.sort((a, b) => a.ord - b.ord);
@@ -37386,7 +37386,7 @@
              body piece, exactly as the plain splitter treated it. */
           if (firstBody === -1 || ii < firstBody) {
             const blocks = it.bodyText.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
-            const zone = frontZonePieces(blocks, identity, fallbackTitle);
+            const zone = frontZonePieces(blocks, identity, fallbackTitle, firstBody === -1); /* BEUK:onereader — with no body heading at all, the text is the book */
             zone.pieces.forEach((p) => pieces.push({ kind: p.kind, type: p.type, title: p.title, number: "", body: p.bodyText.split("\n"), _ir: { via: "shape" } }));
             if (zone.prose) proseChunks.push(zone.prose);
           } else if (ii > lastBody && pieces.length) {
@@ -37402,7 +37402,7 @@
              begin: what stands before Chapter One is a front page, not chapter 1. */
           const fb = zoneNumbered.length >= 2
             ? { kind: "front", type: "preface", title: "Preface", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } }
-            : { kind: "body", type: "chapter", title: fallbackTitle || "Untitled Chapter", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } };
+            : { kind: "body", type: "chapter", title: (firstBody === -1 && String(identity.title || "").trim()) || fallbackTitle || "Untitled Chapter", number: "", body: proseChunks.join("\n\n").split("\n"), _ir: { via: "fallback" } };
           const at = pieces.findIndex((p) => p.kind === "body");
           if (at < 0) pieces.push(fb); else pieces.splice(at, 0, fb);
         }
@@ -38290,46 +38290,153 @@
           yes: t("import.replaceYes"), no: t("import.replaceNo")
         });
       }
-      async function handleImportFile(file, opts) {
-        const name = file.name;
-        const lower = name.toLowerCase();
-        const askFirst = () => (opts && opts.replaceOk) ? Promise.resolve(true) : importConfirmReplace(name);
-        try {
-          const isText = !/\.(pdf|rtf|docx)$/.test(lower);
-          if (!isText && !(await askFirst())) return;
-          if (lower.endsWith(".pdf")) { await handleImportPdf(file); return; } /* BEUK:pdfimport */
-          if (lower.endsWith(".rtf")) { importRtfRead(name, rtfRead(rtfBytesToString(await file.arrayBuffer()))); return; } /* BEUK:rtfimport */
-          if (lower.endsWith(".docx")) {
-            if (!window.mammoth) { toast("Mammoth.js is still loading — try again in a moment", "loader"); return; }
+      /* ==== BEUK:onereader ==== every way a manuscript arrives (the Import
+         button, a box set's volumes, a bulk import, a zip) reads it here: the
+         file is opened and checked, never the desk, and what comes back is the
+         synchronous step that turns it into a book. A file that cannot be a
+         book throws, its message written for the writer. */
+      const importRefusal = (msg) => Object.assign(new Error(msg), { userMessage: msg });
+      const IMPORT_DOCX_BROKEN = "That file could not be read as a Word document (.docx) — it may be damaged, or another kind of file renamed to .docx.";
+      async function readImportFile(file) {
+        const name = file.name, lower = name.toLowerCase();
+        if (lower.endsWith(".pdf")) { /* BEUK:pdfimport */
+          let lib;
+          try { lib = await pdfLoadLib(); } catch (e) { throw importRefusal(t("pdf.loadFailed")); }
+          let ext;
+          try { ext = await pdfExtract(lib, new Uint8Array(await file.arrayBuffer()), { image: pdfImageToData }); }
+          catch (e) { throw importRefusal(e && e.name === "PasswordException" ? t("pdf.password") : t("pdf.broken")); }
+          if (pdfIsScanned(ext)) throw importRefusal(t("pdf.scanned", { n: ext.numPages }));
+          return () => importPdfExtracted(name, ext);
+        }
+        if (lower.endsWith(".rtf")) { /* BEUK:rtfimport */
+          let rd;
+          try { rd = rtfRead(rtfBytesToString(await file.arrayBuffer())); } catch (e) { throw importRefusal("Could not import that file: " + (e && e.message ? e.message : "this is not an RTF file")); }
+          return () => importRtfRead(name, rd);
+        }
+        if (lower.endsWith(".docx")) {
+          if (!window.mammoth) throw importRefusal("Mammoth.js is still loading — try again in a moment");
+          let docxDet, identity, scan, result;
+          try {
             const buf = await file.arrayBuffer();
             /* The file declares its own language in w:lang — a strong
                signal read before conversion; the prose itself is the
                fallback witness. */
-            const docxDet = await detectDocxLanguage(buf);
-            const identity = await readDocxCoreIdentity(buf);
-            const scan = await irScanDocxXml(buf);
-            const result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
-            /* From here the import is synchronous and recorded for the
-               import report (BEUK:importreport). */
-            importDocxConverted(name, result.value, result.messages, scan, identity, docxDet);
-          } else {
-            const raw = await file.text();
-            /* BEUK:importclean — nothing to import, or not text at all: say so and leave the desk alone. */
-            const words = raw.replace(IR_CONTROLS, "").replace(/\s+/g, "");
-            if (!words) { toast("That file is empty — there is nothing in it to import.", "alert-triangle"); return; }
-            const junk = (raw.match(IR_CONTROLS) || []).length + raw.split(IR_CP(0xfffd)).length - 1;
-            if (junk > Math.max(16, raw.length * 0.05)) { toast("That file does not look like text — it may be another kind of file renamed to " + (lower.match(/\.[a-z0-9]+$/) || [".txt"])[0] + ".", "alert-triangle"); return; }
-            if (!(await askFirst())) return;
-            /* A markdown or text manuscript may declare its own
-               credit in YAML frontmatter; that block is metadata, not
-               prose, so it is read for the byline and lifted out of
-               the text before the chapters are split. */
-            importPlainManuscript(name, raw);
+            docxDet = await detectDocxLanguage(buf);
+            identity = await readDocxCoreIdentity(buf);
+            scan = await irScanDocxXml(buf);
+            result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
+          } catch (e) { throw importRefusal(IMPORT_DOCX_BROKEN); } /* BEUK:importclean — never a zip library's words */
+          /* From here the import is synchronous and recorded for the
+             import report (BEUK:importreport). */
+          return () => importDocxConverted(name, result.value, result.messages, scan, identity, docxDet);
+        }
+        const raw = await file.text();
+        /* BEUK:importclean — nothing to import, or not text at all: say so and leave the desk alone. */
+        const words = raw.replace(IR_CONTROLS, "").replace(/\s+/g, "");
+        if (!words) throw importRefusal("That file is empty — there is nothing in it to import.");
+        const junk = (raw.match(IR_CONTROLS) || []).length + raw.split(IR_CP(0xfffd)).length - 1;
+        if (junk > Math.max(16, raw.length * 0.05)) throw importRefusal("That file does not look like text — it may be another kind of file renamed to " + (lower.match(/\.[a-z0-9]+$/) || [".txt"])[0] + ".");
+        /* A markdown or text manuscript may declare its own credit in YAML
+           frontmatter; importPlainManuscript lifts it before the split. */
+        const run = () => importPlainManuscript(name, raw);
+        run.raw = raw;
+        return run;
+      }
+      /* A zip is a folder: its manuscripts and pictures come out as files of
+         their own (a zip inside it too, one level deep), Mac and system
+         clutter stays in it, and what Beuk cannot read is named. Limits keep
+         a hostile archive from filling the memory. */
+      const ZIP_MAX_FILES = 500, ZIP_MAX_BYTES = 400 * 1024 * 1024;
+      const zipClutter = (p) => /(^|\/)(__MACOSX|\.git)\//.test(p) || /(^|\/)\.[^/]*$/.test(p) || /(^|\/)(Thumbs\.db|desktop\.ini)$/i.test(p);
+      async function importExpandZips(entries, opts, depth) {
+        const accept = (opts && opts.accept) || ((nm) => bulkIsManuscript(nm) || bulkIsImage(nm));
+        const out = [], skipped = [];
+        for (const e of entries || []) {
+          const nm = String((e.file && e.file.name) || "");
+          if (!/\.zip$/i.test(nm)) { out.push(e); continue; }
+          let zip = null;
+          try { zip = window.JSZip ? await JSZip.loadAsync(await e.file.arrayBuffer()) : null; } catch (err) { zip = null; }
+          if (!zip) { skipped.push({ name: nm, why: "unreadable" }); continue; }
+          const members = [];
+          zip.forEach((p, zf) => { if (!zf.dir && !zipClutter(p)) members.push([p, zf]); });
+          if (members.length > ZIP_MAX_FILES) { skipped.push({ name: nm, why: "too-many" }); continue; }
+          let bytes = 0, tooLarge = false;
+          for (const [p, zf] of members) {
+            const base = p.split("/").pop();
+            const declared = (zf._data && zf._data.uncompressedSize) || 0; /* a zip bomb names its size before it is opened */
+            if (bytes + declared > ZIP_MAX_BYTES) { tooLarge = true; break; }
+            const isZip = /\.zip$/i.test(base);
+            if (!isZip && !accept(base)) { skipped.push({ name: base, why: "unsupported" }); continue; }
+            const blob = await zf.async("blob");
+            bytes += blob.size;
+            if (bytes > ZIP_MAX_BYTES) { tooLarge = true; break; }
+            const inner = { file: new File([blob], base), path: (e.path || nm) + "/" + p };
+            if (isZip) {
+              if ((depth || 0) >= 1) { skipped.push({ name: base, why: "nested" }); continue; }
+              const sub = await importExpandZips([inner], opts, (depth || 0) + 1);
+              out.push(...sub.entries); skipped.push(...sub.skipped);
+              continue;
+            }
+            out.push(inner);
           }
+          if (tooLarge) skipped.push({ name: nm, why: "too-large" });
+        }
+        return { entries: out, skipped };
+      }
+      /* A bulk import or a box set reads each manuscript exactly as the
+         Import button does, on a desk of its own: the open book steps aside
+         for one uninterrupted moment, the import runs on an empty desk, the
+         result is taken away as a book, and the open book comes back — its
+         History, streak and save state untouched. Nothing in between is
+         saved, shown or counted as writing: no timer can run inside it. */
+      function importSandboxed(run) {
+        const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+        const keepHistory = state.history, keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+        const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn, keepEditAt = cloud.lastEditAt;
+        const keepRebase = wlogRebase;
+        const quiet = ["toast", "noteBookEdited", "markWritingActivity", "autoSnapshot", "offerDetectedLanguage", "renderImportSummary"];
+        const hooks = quiet.map((h) => window[h]);
+        quiet.forEach((h) => { window[h] = () => {}; });
+        try {
+          applyBookDoc(buildEmptyBook(), { keepHistory: true });
+          state.history = [];
+          sampleState.loaded = false; sampleState.loadedJson = null;
+          run();
+          return JSON.parse(JSON.stringify(serializeBook()));
+        } finally {
+          quiet.forEach((h, i) => { window[h] = hooks[i]; });
+          irAbort();
+          applyBookDoc(keepDoc, { keepHistory: true });
+          state.history = keepHistory;
+          sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson;
+          cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore; cloud.lastEditAt = keepEditAt;
+          wlogRebase = keepRebase;
+          renderSampleButton();
+        }
+      }
+      async function manuscriptFileToBookDoc(file) { return importSandboxed(await readImportFile(file)); }
+      /* ==== /BEUK:onereader ==== */
+      async function handleImportFile(file, opts) {
+        let name = file.name;
+        const askFirst = () => (opts && opts.replaceOk) ? Promise.resolve(true) : importConfirmReplace(name);
+        try {
+          let target = file;
+          /* BEUK:onereader — a zip holding one manuscript is that manuscript;
+             a zip of several is a library, for Bulk import or a box set. */
+          if (/\.zip$/i.test(name)) {
+            const ex = await importExpandZips([{ file, path: name }], { accept: bulkIsManuscript });
+            const books = ex.entries.filter((e) => bulkIsManuscript(e.file.name));
+            if (!books.length) throw importRefusal("That zip holds no manuscript Beuk can read (.docx, .pdf, .rtf, .md or .txt).");
+            if (books.length > 1) throw importRefusal("That zip holds " + books.length + " manuscripts — the Import button brings in one book. Use Bulk import on your shelf to bring them all, or Add a Book in a box set.");
+            target = books[0].file; name = target.name;
+          }
+          if (/\.pdf$/i.test(name)) toast(t("pdf.reading", { name }), "loader");
+          const run = await readImportFile(target);
+          if (!(await askFirst())) return;
+          run();
         } catch (err) {
           irAbort();
-          if (lower.endsWith(".docx")) toast("That file could not be read as a Word document (.docx) — it may be damaged, or another kind of file renamed to .docx.", "alert-triangle"); /* BEUK:importclean — never a zip library's words */
-          else toast("Could not import that file: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
+          toast(err && err.userMessage ? err.userMessage : "Could not import that file: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
         }
       }
       function initImport() {
@@ -40498,12 +40605,6 @@
         if (pdfIsScanned(ext)) return { ok: false, why: "scanned", message: t("pdf.scanned", { n: ext.numPages }) };
         const rep = importPdfExtracted(name, ext);
         return { ok: !!rep, rep, ext };
-      }
-      async function handleImportPdf(file) {
-        toast(t("pdf.reading", { name: file.name }), "loader");
-        const buf = await file.arrayBuffer();
-        const res = await importPdfData(file.name, new Uint8Array(buf));
-        if (!res.ok) toast(res.message || t("pdf.broken"), "alert-triangle");
       }
       if (typeof window !== "undefined") window.beukPdfImport = { load: pdfLoadLib, extract: pdfExtract, layout: pdfLayout, importData: importPdfData, importExtracted: importPdfExtracted, fontStyle: pdfFontStyle, scanned: pdfIsScanned };
       /* PDF import strings, all thirteen packs. */
@@ -45038,6 +45139,13 @@
         const cover = c && typeof c === "object" && typeof c.data === "string" && c.data && /^image\//.test(String(c.mediaType || "")) && c.ext ? c : null;
         return { id: volId, meta, sections, cover, images };
       }
+      /* BEUK:onereader — a box set's pick: a zip opens into the books it holds
+         (Beuk backups and manuscripts); anything else in it is named. */
+      async function boxSetExpandPick(files) {
+        const accept = (nm) => /\.json$/i.test(nm) || bulkIsManuscript(nm);
+        const ex = await importExpandZips((files || []).map((fl) => ({ file: fl, path: fl.name })), { accept });
+        return { files: ex.entries.map((e) => e.file).filter((fl) => accept(fl.name)), skipped: ex.skipped };
+      }
       async function manuscriptFileToVolume(file) {
         const name = file.name;
         const lower = name.toLowerCase();
@@ -45046,36 +45154,17 @@
           if (!book) throw new Error("this is not a Beuk backup file");
           return bookDocToVolume(book, name);
         }
-        let text = "";
-        const own = {};
-        if (lower.endsWith(".docx")) {
-          if (!window.mammoth) throw new Error("Mammoth.js is still loading — try again in a moment");
-          const buf = await file.arrayBuffer();
-          const id = await readDocxCoreIdentity(buf);
-          if (id.title) own.title = id.title;
-          if (id.author) own.author = id.author;
-          const result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
-          text = sanitizeHtmlToText(result.value);
-        } else if (lower.endsWith(".rtf")) { /* BEUK:rtfimport */
-          const rd = rtfRead(rtfBytesToString(await file.arrayBuffer()));
-          if (rd.info.title) own.title = rd.info.title;
-          if (rd.info.author) own.author = rd.info.author;
-          text = rtfToManuscriptText(rd);
-        } else {
-          /* A Markdown file's frontmatter names the book (the studio's
-             own Markdown export writes it); it is metadata, not text. */
-          const fm = bulkParseFrontmatter(await file.text());
-          ["title", "subtitle", "author", "language"].forEach((k) => { if (fm.meta[k]) own[k] = fm.meta[k]; });
-          text = beautifyText(fm.body);
+        /* BEUK:onereader — a manuscript volume is read exactly as the Import button reads it */
+        if (bulkIsManuscript(name)) {
+          let doc;
+          try { doc = await manuscriptFileToBookDoc(file); } catch (e) { throw new Error((e && e.userMessage) || (e && e.message) || "unreadable"); }
+          const vol = bookDocToVolume(doc, name);
+          if (!String(vol.meta.author || "").trim()) vol.meta.author = state.meta.author || "";
+          /* A Markdown volume's frontmatter may name its language; that choice stands. */
+          if (/\.(md|markdown|txt)$/i.test(name)) { const fm = bulkParseFrontmatter(await file.text()); if (fm.meta.language && LANG_PACKS[fm.meta.language]) vol.meta.language = fm.meta.language; }
+          return vol;
         }
-        const title = String(own.title || "").trim() || boxSetNameTitle(name);
-        const chapters = splitIntoChapters(text, title);
-        const sections = [mkSection("front", "titlepage", "Title Page")].concat(
-          chapters.map((c, i) => mkSection("body", "chapter", c.title || ("Chapter " + (i + 1)), { number: c.number || String(i + 1), content: beautifyText(c.body.join("\n")) }))
-        );
-        const meta = boxSetVolumeMeta(Object.assign({}, own, { title }));
-        if (!LANG_PACKS[meta.language]) meta.language = state.meta.language || "en";
-        return { id: uid(), meta, sections, cover: null, images: [] };
+        throw new Error("Beuk reads .docx, .pdf, .rtf, .md, .txt and Beuk backups (.json)");
       }
       /* ==== /BEUK:boxsetvols ==== */
       function renderBoxSetList() {
@@ -48457,8 +48546,11 @@
         $("btnBoxSetAdd").addEventListener("click", () => $("boxSetFileInput").click());
         $("boxSetFileInput").addEventListener("change", async () => {
           const input = $("boxSetFileInput");
-          const files = Array.prototype.slice.call(input.files || []);
+          const picked = Array.prototype.slice.call(input.files || []);
           input.value = "";
+          const pick = await boxSetExpandPick(picked); /* BEUK:onereader — a zip of books adds them all */
+          pick.skipped.forEach((sk) => toast("Not added: " + sk.name + (sk.why === "unsupported" ? " — Beuk reads .docx, .pdf, .rtf, .md, .txt and Beuk backups" : " — it could not be read"), "alert-triangle"));
+          const files = pick.files;
           for (const f of files) {
             try {
               const vol = await manuscriptFileToVolume(f);
@@ -50300,7 +50392,7 @@
          (![[…]] and ![](…)) resolve against the batch's image files
          and land in the book's image library with their placements.
          The subfolder a note lived in is offered as its series. */
-      const BULK_MANUSCRIPT_EXT = [".docx", ".md", ".markdown", ".txt", ".rtf"];
+      const BULK_MANUSCRIPT_EXT = [".docx", ".md", ".markdown", ".txt", ".rtf", ".pdf"]; /* BEUK:onereader — PDFs too */
       const BULK_IMAGE_EXT = [".png", ".jpg", ".jpeg"];
       const bulkExtOf = (name) => { const n = String(name || "").toLowerCase(); const i = n.lastIndexOf("."); return i >= 0 ? n.slice(i) : ""; };
       const bulkIsManuscript = (name) => BULK_MANUSCRIPT_EXT.includes(bulkExtOf(name));
@@ -50424,56 +50516,48 @@
       function bulkBuildBook(item, ctx) {
         let text = String(item.text || "");
         let fm = {};
-        if (/\.(md|markdown|txt)$/i.test(item.name)) { const p = bulkParseFrontmatter(text); fm = p.meta; text = p.body; }
+        const isText = /\.(md|markdown|txt)$/i.test(item.name);
+        if (isText) fm = bulkParseFrontmatter(text).meta;
         const images = [];
         let linkStats = { resolved: 0, degraded: 0 };
-        if (ctx.vault || text.indexOf("[[") !== -1 || text.indexOf("![[") !== -1) {
+        if (isText && (ctx.vault || text.indexOf("[[") !== -1 || text.indexOf("![[") !== -1)) {
           const r = bulkResolveVaultText(text, ctx, images);
           text = r.text; linkStats = { resolved: r.resolved, degraded: r.degraded };
         }
+        /* BEUK:onereader — the book itself is made exactly as the Import
+           button makes it (its parser, its front and back matter, its
+           cleaning), on a desk of its own; the open book is never touched. */
+        const run = (item.run && !(isText && text !== item.text)) ? item.run : () => importPlainManuscript(item.name, text);
+        const made = importSandboxed(run);
+        if (!isText) text = made.sections.map((x) => String(x.content || "")).join("\n\n");
+        const bodyText = isText ? bulkParseFrontmatter(text).body : text;
         /* BEUK:importmeta — the manuscript's own title page is the
            book's credit (same shape rules as single-file import) and
            is lifted out of the text rather than left in chapter one. */
-        const imSegs = splitSegments(text);
-        const imLead = imSegs[0].lines.length;
-        const tp = imTitlePageFrom(imSegs[0].lines.join("\n"), imSegs.length > 1);
-        if (tp) text = [tp.rest].concat(String(text).split("\n").slice(imLead)).join("\n");
         let language = "en", langSource = "auto", langGuess = "", detectedCode = "";
-        const det = item.docxLang ? { code: item.docxLang, strong: true, via: "docx" } : detectLanguageInText(text);
+        const det = item.docxLang ? { code: item.docxLang, strong: true, via: "docx" } : detectLanguageInText(bodyText);
         if (fm.language) { language = fm.language; langSource = "manual"; }
         else if (det && det.strong && LANG_PACKS[det.code]) { language = det.code; detectedCode = det.code; }
         else if (det && LANG_PACKS[det.code]) langGuess = det.code;
-        const keepLang = state.meta.language;
-        let chapters;
-        try {
-          state.meta.language = language; /* Auto-Format speaks this book's language while it is built */
-          chapters = splitIntoChapters(beautifyText(text), String(item.name).replace(/\.(docx|md|markdown|txt|rtf)$/i, "").replace(/[-_]+/g, " ").trim() || "Untitled Book");
-        } finally { state.meta.language = keepLang; }
-        const headingM = String(text).match(/^#{1,2}\s+(.+)$/m);
-        /* BEUK:importmeta — front matter, the Word title, the title
-           page, a leading heading, then the cleaned file name; never
-           the stored placeholder. */
-        const storedTitle = fm.title || item.docTitle || (tp ? tp.title : "") || (headingM ? headingM[1].replace(/^chapter\s+[\divxlc0-9]+[.:]?\s*/i, "").trim() : "") ||
-          imCleanFileName(item.name).value || (chapters.length && chapters[0].title) || "";
+        /* BEUK:importmeta — the import's own credit (front matter, the Word
+           title, the title page), then the cleaned file name; never the
+           stored placeholder. */
+        const doc = made;
+        const firstChapter = doc.sections.find((x) => x.type === "chapter");
+        const fileTitle = imCleanFileName(item.name).value, docTitle = String(doc.meta.title || "").trim();
+        const chs = doc.sections.filter((x) => x.type === "chapter");
+        const ownHeading = chs.length === 1 && chs[0].title && !/^chapter\b/i.test(chs[0].title) ? chs[0].title : "";
+        const storedTitle = (docTitle && docTitle !== fileTitle ? docTitle : "") || ownHeading || docTitle || fileTitle || (firstChapter && firstChapter.title) || "";
         const title = storedTitle || "Untitled Book";
         const series = fm.series || (ctx.vault ? bulkFolderOf(item) : "");
-        const doc = buildEmptyBook();
         doc.meta.title = storedTitle;
-        doc.meta.author = fm.author || (tp ? tp.author : "");
-        doc.meta.subtitle = fm.subtitle || (tp ? tp.subtitle : "");
-        ["title", "subtitle", "author"].forEach((f) => { if (doc.meta[f]) doc.meta[f + "Source"] = "import"; });
         doc.meta.language = language;
         doc.meta.langSource = langSource;
         doc.meta.langGuess = langGuess;
         if (series) doc.meta.series = series;
-        const front = doc.sections.filter((s) => s.kind === "front");
-        const back = doc.sections.filter((s) => s.kind === "back");
-        const body = chapters.map((c, i) => mkSection("body", "chapter", c.title || ("Chapter " + (i + 1)), { number: c.number || String(i + 1), content: c.content != null ? c.content : beautifyText(c.body.join("\n")) }));
-        doc.sections = front.concat(body, back);
-        doc.activeId = body.length ? body[0].id : doc.sections[0].id;
-        doc.images = images;
+        doc.images = (Array.isArray(doc.images) ? doc.images : []).concat(images);
         const words = bulkDocWords(doc);
-        return { doc, title, words, language, detectedCode, series, images, linkStats, hash: bulkHashText(text), fingerprint: bulkFingerprint(title, words) };
+        return { doc, title, words, language, detectedCode, series, images: doc.images, linkStats, hash: bulkHashText(bodyText), fingerprint: bulkFingerprint(title, words) };
       }
       /* The queue itself: sequential, calm, failure-isolating.
          deps.createBook(doc, title, cb) is the only shelf touch;
@@ -50521,25 +50605,6 @@
         reader.onerror = () => cb(new Error("unreadable"));
         reader.readAsDataURL(file);
       }
-      async function bulkReadDocx(file) {
-        if (!window.mammoth) throw new Error("loading");
-        const buf = await file.arrayBuffer();
-        const det = await detectDocxLanguage(buf);
-        let docTitle = "";
-        if (window.JSZip) {
-          try {
-            const zip = await JSZip.loadAsync(buf.slice(0));
-            const core = zip.file("docProps/core.xml");
-            if (core) {
-              const xml = await core.async("string");
-              const m = xml.match(/<dc:title>([^<]*)<\/dc:title>/);
-              if (m) docTitle = m[1].replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim();
-            }
-          } catch (e) { /* metadata is a bonus, never a blocker */ }
-        }
-        const result = await mammoth.convertToHtml({ arrayBuffer: buf }, IR_MAMMOTH_OPTS);
-        return { text: sanitizeHtmlToText(result.value), docxLang: det && det.strong ? det.code : null, docTitle };
-      }
       /* Read every dropped/picked entry once, in order: manuscripts
          become queue items (read failures become failed items, never
          a stopped queue), images become the batch's embed resources. */
@@ -50558,17 +50623,8 @@
             return;
           }
           if (!bulkIsManuscript(name)) { items.push({ name, path: entry.path, error: "unsupported" }); step(); return; }
-          if (/\.docx$/i.test(name)) {
-            bulkReadDocx(file).then((r) => { items.push({ name, path: entry.path, text: r.text, docxLang: r.docxLang, docTitle: r.docTitle }); step(); })
-              .catch(() => { items.push({ name, path: entry.path, error: "unreadable" }); step(); });
-            return;
-          }
-          if (/\.rtf$/i.test(name)) { /* BEUK:rtfimport */
-            file.arrayBuffer().then((buf) => { const rd = rtfRead(rtfBytesToString(buf)); items.push({ name, path: entry.path, text: rtfToManuscriptText(rd), docTitle: rd.info.title }); step(); })
-              .catch(() => { items.push({ name, path: entry.path, error: "unreadable" }); step(); });
-            return;
-          }
-          file.text().then((text) => { items.push({ name, path: entry.path, text }); step(); })
+          /* BEUK:onereader — read as the Import button reads it; a text file keeps its words for an Obsidian vault's links */
+          readImportFile(file).then((run) => { items.push({ name, path: entry.path, run, text: run.raw }); step(); })
             .catch(() => { items.push({ name, path: entry.path, error: "unreadable" }); step(); });
         };
         step();
@@ -50640,8 +50696,10 @@
         const sum = $("bulkSummary");
         if (sum) sum.style.display = "none";
         const setProg = (txt) => { if (prog) { prog.style.display = ""; prog.textContent = txt; } };
-        bulkPrepareEntries(usable, (idx, total, name) => setProg(t("bulk.reading", { current: idx + 1, total, name })),
+        /* BEUK:onereader — a zip opens into its files first; what it holds that Beuk cannot read is named in the summary */
+        importExpandZips(usable).then((ex) => bulkPrepareEntries(ex.entries, (idx, total, name) => setProg(t("bulk.reading", { current: idx + 1, total, name })),
           (prep) => {
+            ex.skipped.forEach((sk) => prep.items.push({ name: sk.name, path: sk.name, error: sk.why === "unsupported" ? "unsupported" : "unreadable" }));
             bulkShelfFingerprints((fps) => {
               const ctx = bulkBatchContext(prep.items, { vault: prep.vault || undefined, images: prep.imageMap });
               bulkRunQueue(prep.items, { ctx, shelfFingerprints: fps, createBook: bulkCreateShelfBook },
@@ -50653,7 +50711,7 @@
                   cloudLoadShelf();
                 });
             });
-          });
+          }));
       }
       /* Drag-and-drop: files and whole folders, walked via the
          entries API so a dropped vault keeps its folder structure
@@ -50768,6 +50826,19 @@
       const scImgKey = (img) => { const d = String((img && img.data) || ""); const at = Math.max(0, Math.floor(d.length / 2) - 32); return d.slice(at, at + 64); };
       /* ==== /BEUK:selfchecks ==== */
       const SELF_CHECKS = [
+        /* ---- BEUK:onereader: a short piece with no chapter heading is its own text ---- */
+        { id: "import.short-note.is-the-text", feature: "import", name: "A short note whose only heading is its title (a few lines and a picture) is a book with that text as its chapter — never a dedication and a frontispiece with no chapter at all",
+          run() {
+            const NL = String.fromCharCode(10), P2 = NL + NL;
+            const pieces = parseManuscript("# The Harbour Log" + P2 + "The harbourmaster climbed the steps and looked out." + P2 + "![chart](img:chart1)" + P2 + "Then he went down again.", "The Harbour Log", { title: "The Harbour Log" });
+            const body = pieces.filter((p) => p.kind === "body");
+            const all = body.map((p) => p.body.join(" ")).join(" ");
+            const poem = parseManuscript("# A Small Poem" + P2 + "The wind went over the hill.", "poem", { title: "A Small Poem" }).filter((p) => p.kind === "body");
+            const poemOk = poem.length === 1 && poem[0].title === "A Small Poem";
+            const ok = poemOk && body.length === 1 && all.indexOf("climbed the steps") !== -1 && all.indexOf("img:chart1") !== -1 && all.indexOf("went down again") !== -1 &&
+              !pieces.some((p) => p.type === "dedication" || p.type === "frontispiece");
+            return scVerdict(ok, pieces.map((p) => p.kind + ":" + p.type + ":" + p.title).join(" | ") + "; a one-piece poem titled by its own heading (" + (poem[0] ? poem[0].title : "none") + ")");
+          } },
         /* ---- BEUK:pdffront: a PDF set with letter-spaced titles, a drop cap and no metadata ---- */
         { id: "pdf.front.letterspaced-dropcap", feature: "import", name: "A PDF whose title page, author line and headings are letter-spaced (T H E  F R O S T  L I N E), whose chapters open on a drop cap, whose metadata says (anonymous), and whose later chapters carry their number on a spaced label line: the words close up, the drop cap rejoins its word, the title and author come from the book itself, the author's note is front matter, and every chapter keeps its number",
           run() {
@@ -59908,8 +59979,10 @@
             const chs = splitIntoChapters(text, "Vol");
             const split = chs.length === 2;
             const src = (f) => (typeof f === "function" ? String(f) : "");
-            const opts = /convertToHtml\(\{ arrayBuffer: buf \}, IR_MAMMOTH_OPTS\)/.test(src(typeof manuscriptFileToVolume === "function" ? manuscriptFileToVolume : null)) &&
-              /convertToHtml\(\{ arrayBuffer: buf \}, IR_MAMMOTH_OPTS\)/.test(src(typeof bulkReadDocx === "function" ? bulkReadDocx : null));
+            /* BEUK:onereader — both paths now read Word through the Import button's own reader */
+            const opts = /convertToHtml\(\{ arrayBuffer: buf \}, IR_MAMMOTH_OPTS\)/.test(src(typeof readImportFile === "function" ? readImportFile : null)) &&
+              /manuscriptFileToBookDoc\(file\)/.test(src(typeof manuscriptFileToVolume === "function" ? manuscriptFileToVolume : null)) &&
+              /readImportFile\(file\)/.test(src(typeof bulkPrepareEntries === "function" ? bulkPrepareEntries : null));
             return scVerdict(marks && split && opts,
               "marks kept (" + marks + (marks ? "" : ": " + JSON.stringify(text.slice(0, 300))) + "), chapter line still splits (" + split + ", " + chs.length + "), both readers use the import's Mammoth options (" + opts + ")");
           } },
@@ -62190,6 +62263,93 @@
          answer synchronously: window.runBeukAsyncSelfChecks() runs them
          and resolves to the same result shape as runBeukSelfChecks(). */
       const SELF_CHECKS_ASYNC = [
+        /* ---- BEUK:onereader: every way in (one file, a box set, a bulk import, a zip) reads a manuscript the same way ---- */
+        { id: "import.onereader.bulk-parity", feature: "import", name: "A bulk import splits a manuscript exactly as the single import does: a numbered book's author's note is front matter and its appendix back matter, never chapters, and the open book is untouched",
+          async run() {
+            const NL = String.fromCharCode(10), P2 = NL + NL;
+            const text = ["# A Note from the Author", "Dear reader.", "# Chapter 1: The Fall", "Zib fell.", "# Chapter 2: The Rise", "Zib rose.", "# Appendix: Glossary", "Squeak: hello."].join(P2);
+            const before = JSON.stringify(serializeBook().sections);
+            const ctx = bulkBatchContext([{ name: "parity.txt", text }], {});
+            const built = bulkBuildBook({ name: "parity.txt", path: "parity.txt", text }, ctx);
+            const shape = built.doc.sections.filter((x) => x.kind === "body" || String(x.content || "").trim()).map((x) => x.kind[0] + ":" + x.type + ":" + (x.number || "") + ":" + x.title).join(" | ");
+            const kept = JSON.stringify(serializeBook().sections) === before;
+            return scVerdict(shape === "f:preface::A Note from the Author | b:chapter:1:The Fall | b:chapter:2:The Rise | b:appendix::Appendix: Glossary" && kept, "[" + shape + "], open book untouched (" + kept + ")");
+          } },
+        { id: "import.zip.mixed-bulk", feature: "import", name: "A zip of mixed manuscripts (.txt, .md with frontmatter, .rtf, .docx, .pdf, one in a folder) unpacks for a bulk import: every manuscript becomes a book with chapters, a picture stays a picture, Mac and system clutter is skipped silently, an unsupported file is named, and the open book is untouched",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip not loaded");
+            const NL = String.fromCharCode(10), P2 = NL + NL;
+            const ch = (a, b) => "# Chapter 1" + P2 + a + P2 + "# Chapter 2" + P2 + b;
+            const z = new JSZip();
+            z.file("one.txt", ch("Plain text one.", "Plain text two."));
+            z.file("two.md", "---" + NL + "title: The Marked Book" + NL + "author: M. Down" + NL + "---" + NL + ch("Marked one.", "Marked two."));
+            z.file("three.rtf", "{" + "\\rtf1\\ansi\\deff0 \\par Chapter 1\\par Rich one.\\par Chapter 2\\par Rich two.}");
+            const dz = new JSZip();
+            dz.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+            dz.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+            dz.file("word/document.xml", '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+              [["Heading1", "Chapter 1"], ["", "Word one."], ["Heading1", "Chapter 2"], ["", "Word two."]].map(([st, tx]) => "<w:p>" + (st ? '<w:pPr><w:pStyle w:val="' + st + '"/></w:pPr>' : "") + "<w:r><w:t>" + tx + "</w:t></w:r></w:p>").join("") + "</w:body></w:document>");
+            z.file("four.docx", await dz.generateAsync({ type: "uint8array" }));
+            z.file("five.pdf", pdfFixtureBytes(false));
+            z.file("folder/six.txt", ch("Folder one.", "Folder two."));
+            z.file("folder/cover.png", Uint8Array.from(atob(FAKE_PNG), (c) => c.charCodeAt(0)));
+            z.file("__MACOSX/._one.txt", "mac");
+            z.file(".DS_Store", "ds");
+            z.file("folder/Thumbs.db", "th");
+            z.file("tool.exe", "MZ");
+            const zipFile = new File([await z.generateAsync({ type: "uint8array" })], "library.zip");
+            const before = JSON.stringify(serializeBook().sections);
+            const ex = await importExpandZips([{ file: zipFile, path: "library.zip" }]);
+            const names = ex.entries.map((e) => e.file.name).sort().join(",");
+            const prep = await new Promise((res) => bulkPrepareEntries(ex.entries, null, res));
+            const ctx = bulkBatchContext(prep.items, { images: prep.imageMap });
+            const books = prep.items.filter((it) => !it.error).map((it) => { const b = bulkBuildBook(it, ctx); return it.name + "=" + b.doc.sections.filter((x) => x.type === "chapter").length + (b.doc.meta.title === "The Marked Book" ? "*" : ""); }).sort().join(",");
+            const unsupported = ex.skipped.concat(prep.items.filter((it) => it.error)).map((x) => x.name + ":" + (x.why || x.error)).join(",");
+            const kept = JSON.stringify(serializeBook().sections) === before;
+            const ok = names === "cover.png,five.pdf,four.docx,one.txt,six.txt,three.rtf,two.md" && /five\.pdf=[1-9]/.test(books) &&
+              ["four.docx=2", "one.txt=2", "six.txt=2", "three.rtf=2", "two.md=2*"].every((b) => books.split(",").includes(b)) && unsupported === "tool.exe:unsupported" && kept && prep.imageMap.has("cover.png");
+            return scVerdict(ok, "unpacked [" + names + "], books [" + books + "], named as unsupported [" + unsupported + "], open book untouched (" + kept + ")");
+          } },
+        { id: "boxset.zip-and-pdf", feature: "boxset-docx", name: "A box set takes a zip of books and a PDF as volumes, each read as a single import reads it (a numbered book's author's note stays out of its chapters)",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip not loaded");
+            const NL = String.fromCharCode(10), P2 = NL + NL;
+            const z = new JSZip();
+            z.file("vol-a.txt", ["# A Note from the Author", "Hello.", "# Chapter 1", "Alpha one.", "# Chapter 2", "Alpha two."].join(P2));
+            z.file("vol-b.md", ["# Chapter 1", "Beta one.", "# Chapter 2", "Beta two."].join(P2));
+            const files = await boxSetExpandPick([new File([await z.generateAsync({ type: "uint8array" })], "volumes.zip"), new File([pdfFixtureBytes(false)], "vol-c.pdf")]);
+            const vols = [];
+            for (const fl of files.files) vols.push(await manuscriptFileToVolume(fl));
+            const shape = vols.map((v) => v.meta.title + ":" + v.sections.filter((x) => x.type === "chapter").length + ":" + (v.sections.some((x) => x.type === "preface") ? "note" : "")).join(" | ");
+            const ok = vols.length === 3 && vols[0].sections.filter((x) => x.type === "chapter").length === 2 && vols[0].sections.some((x) => x.type === "preface" && /Hello/.test(x.content || "")) &&
+              vols[1].sections.filter((x) => x.type === "chapter").length === 2 && vols[2].sections.some((x) => x.type === "chapter" && String(x.content || "").trim());
+            return scVerdict(ok, "[" + shape + "]");
+          } },
+        { id: "import.zip.single", feature: "import", name: "The Import button takes a zip holding one manuscript as that manuscript, and refuses a zip of several plainly, pointing to Bulk import or a box set, the desk left as it was",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip not loaded");
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson, keepHistory = state.history;
+            const origToast = window.toast; const toasts = [];
+            const NL = String.fromCharCode(10), P2 = NL + NL;
+            try {
+              window.toast = (m) => { toasts.push(String(m)); };
+              applyBookDoc(buildEmptyBook()); sampleState.loaded = false; sampleState.loadedJson = null;
+              const one = new JSZip(); one.file("only/the-one.txt", "# Chapter 1" + P2 + "Only words." + P2 + "# Chapter 2" + P2 + "More words."); one.file("__MACOSX/._x", "m");
+              await handleImportFile(new File([await one.generateAsync({ type: "uint8array" })], "one.zip"), { replaceOk: true });
+              const took = state.sections.filter((x) => x.type === "chapter").length === 2 && JSON.stringify(state.sections).indexOf("Only words.") !== -1;
+              const desk = JSON.stringify(state.sections);
+              toasts.length = 0;
+              const many = new JSZip(); many.file("a.txt", "# Chapter 1" + P2 + "A."); many.file("b.txt", "# Chapter 1" + P2 + "B.");
+              await handleImportFile(new File([await many.generateAsync({ type: "uint8array" })], "many.zip"), { replaceOk: true });
+              const refused = JSON.stringify(state.sections) === desk && /2 manuscripts/.test(toasts.join(" ")) && /Bulk import/i.test(toasts.join(" "));
+              return scVerdict(took && refused, "one-manuscript zip imported (" + took + "), several refused with a pointer (" + refused + ": " + toasts.join(" / ").slice(0, 120) + ")");
+            } finally {
+              window.toast = origToast;
+              applyBookDoc(keepDoc); state.history = keepHistory;
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+            }
+          } },
         /* ---- BEUK:importreplace: an import clears everything old, and asks first ---- */
         { id: "import.replace.warns-and-clears", feature: "import", name: "Importing over a book asks first: Keep leaves the book exactly as it was; Clear removes everything old (chapters, front and back matter, title, author) and History keeps the old book; an empty desk is not asked",
           async run() {
