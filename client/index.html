@@ -4320,7 +4320,7 @@
     <div class="piv-measure" id="pivMeasure" aria-hidden="true"></div>
 
     <div id="toasts" aria-live="polite"></div>
-    <input type="file" id="fileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.zip,application/pdf,application/rtf,text/rtf,application/zip,application/x-zip-compressed" style="display:none;" />
+    <input type="file" id="fileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.epub,.zip,application/epub+zip,application/pdf,application/rtf,text/rtf,application/zip,application/x-zip-compressed" style="display:none;" />
     <input type="file" id="bulkFileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.zip,.png,.jpg,.jpeg,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
     <input type="file" id="bulkFolderInput" webkitdirectory style="display:none;" />
 
@@ -38804,6 +38804,13 @@
           if (pdfIsScanned(ext)) throw importRefusal(t("pdf.scanned", { n: ext.numPages }));
           return () => importPdfExtracted(name, ext);
         }
+        if (lower.endsWith(".epub")) { /* BEUK:epubimport */
+          if (!window.JSZip) throw importRefusal("The EPUB reader is still loading — try again in a moment");
+          let rd;
+          try { rd = await epubRead(await file.arrayBuffer()); }
+          catch (e) { throw e && e.userMessage ? e : importRefusal("That EPUB could not be read — it may be damaged (" + (e && e.message ? e.message : "unknown error") + ")"); }
+          return () => importEpubRead(name, rd);
+        }
         if (lower.endsWith(".rtf")) { /* BEUK:rtfimport */
           let rd;
           try { rd = rtfRead(rtfBytesToString(await file.arrayBuffer())); } catch (e) { throw importRefusal("Could not import that file: " + (e && e.message ? e.message : "this is not an RTF file")); }
@@ -39078,6 +39085,319 @@
           return irFinish(ir, pieces, det);
         } finally { irAbort(); }
       }
+      /* ==== BEUK:epubimport ==== — an EPUB, read back into a book.
+         The package (META-INF/container.xml → the OPF) gives the title,
+         the author and the reading order (the spine); each spine page is
+         read as XHTML. A page that says what it is (epub:type: chapter,
+         part, prologue, dedication…) becomes that section; Beuk's own
+         markup is read exactly (the chapter opening's number, title and
+         subtitle; a Part's kicker, title and subtitle; sub-headings;
+         letters, texts, verse, logs, transcripts, inserts, margin notes,
+         sideways and upside-down blocks, hanging and column lists,
+         centred and right-set lines; note marks and the notes at a
+         chapter's end). A page that says nothing is read by its
+         headings, as a Word book is. Pages Beuk builds for itself (the
+         cover, the title pages, the contents) are left out, and so are
+         the full-page plates (counted for the report). A book under DRM
+         is refused: its pages cannot be read. */
+      const EPUBIN_SKIP = new Set(["cover", "halftitle", "halftitlepage", "titlepage", "toc", "landmarks", "loi", "lot", "index", "page-list"]);
+      const EPUBIN_TYPES = {
+        chapter: { kind: "body", type: "chapter" }, part: { kind: "body", type: "part" }, prologue: { kind: "body", type: "prologue" }, epilogue: { kind: "body", type: "epilogue" },
+        foreword: { kind: "front", type: "foreword", title: "Foreword" }, preface: { kind: "front", type: "preface", title: "Preface" }, introduction: { kind: "front", type: "preface", title: "Introduction" },
+        dedication: { kind: "front", type: "dedication", title: "Dedication" }, epigraph: { kind: "front", type: "epigraph", title: "Epigraph" },
+        acknowledgments: { kind: "back", type: "acknowledgments", title: "Acknowledgments" }, colophon: { kind: "back", type: "colophon", title: "Colophon" },
+        appendix: { kind: "back", type: "appendix", title: "Appendix" }, afterword: { kind: "back", type: "appendix", title: "Afterword" },
+        glossary: { kind: "back", type: "appendix", title: "Glossary" }, bibliography: { kind: "back", type: "appendix", title: "Bibliography" }
+      };
+      const epubInAttr = (el, name) => (el && el.getAttribute ? el.getAttribute(name) || "" : "");
+      const epubTypes = (el) => epubInAttr(el, "epub:type").toLowerCase().split(/\s+/).filter(Boolean);
+      const epubClasses = (el) => epubInAttr(el, "class").split(/\s+/).filter(Boolean);
+      const epubTag = (el) => String(el.localName || el.tagName || "").toLowerCase();
+      function epubResolve(base, href) {
+        const parts = (base ? base.split("/").slice(0, -1) : []).concat(String(href || "").split("#")[0].split("/"));
+        const out = [];
+        parts.forEach((p) => { if (p === "..") out.pop(); else if (p && p !== ".") out.push(p); });
+        try { return decodeURIComponent(out.join("/")); } catch (e) { return out.join("/"); }
+      }
+      async function epubRead(buf) {
+        const zip = await JSZip.loadAsync(buf);
+        const text = async (p) => { const f = zip.file(p); return f ? f.async("string") : null; };
+        const enc = await text("META-INF/encryption.xml");
+        if (enc && /<(?:\w+:)?EncryptedData[\s\S]*?CipherReference[^>]*URI="[^"]*\.(?:x?html?|xhtml)"/i.test(enc)) throw importRefusal("That EPUB is protected by DRM — its pages cannot be read. Import the manuscript it was made from instead.");
+        const container = await text("META-INF/container.xml");
+        if (!container) throw importRefusal("That file is not an EPUB — it has no META-INF/container.xml.");
+        const rootM = /full-path="([^"]+)"/.exec(container);
+        if (!rootM) throw importRefusal("That EPUB names no package file.");
+        const opfPath = rootM[1];
+        const opfText = await text(opfPath);
+        if (!opfText) throw importRefusal("That EPUB's package file is missing.");
+        const opf = new DOMParser().parseFromString(opfText, "application/xml");
+        const byTag = (tag) => Array.prototype.slice.call(opf.getElementsByTagName("*")).filter((e) => (e.localName || "").toLowerCase() === tag);
+        const first = (tag) => { const e = byTag(tag)[0]; return e ? e.textContent.replace(/\s+/g, " ").trim() : ""; };
+        const meta = { title: first("title"), author: first("creator"), language: first("language"),
+          beuk: byTag("meta").some((m) => /beuk/i.test(epubInAttr(m, "content")) && /generator/i.test(epubInAttr(m, "name"))) };
+        const manifest = new Map();
+        byTag("item").forEach((it) => manifest.set(epubInAttr(it, "id"), { path: epubResolve(opfPath, epubInAttr(it, "href")), type: epubInAttr(it, "media-type"), props: epubInAttr(it, "properties") }));
+        const docs = [];
+        for (const ref of byTag("itemref")) {
+          const it = manifest.get(epubInAttr(ref, "idref"));
+          if (!it || !/x?html/i.test(it.type)) continue;
+          const html = await text(it.path);
+          if (html != null) docs.push({ path: it.path, html, nav: /\bnav\b/.test(it.props), linear: epubInAttr(ref, "linear") !== "no" });
+        }
+        if (!docs.length) throw importRefusal("That EPUB has no pages to read.");
+        /* the pictures the pages show, read once */
+        const images = new Map();
+        for (const d of docs) {
+          for (const m of d.html.matchAll(/<img\b[^>]*?\bsrc="([^"]+)"/gi)) {
+            const p = epubResolve(d.path, m[1]);
+            if (images.has(p) || !zip.file(p)) continue;
+            const ext = (p.match(/\.([a-z0-9]+)$/i) || ["", ""])[1].toLowerCase();
+            const mediaType = ext === "png" ? "image/png" : (ext === "jpg" || ext === "jpeg") ? "image/jpeg" : "";
+            images.set(p, mediaType ? { mediaType, ext: ext === "png" ? "png" : "jpg", data: await zip.file(p).async("base64") } : { mediaType: "", ext, data: "" });
+          }
+        }
+        return { meta, docs, images };
+      }
+      /* One page's blocks → Beuk's text: paragraphs, its own marks and
+         containers, pictures (into the import's records), notes. */
+      function epubBlocks(root, ctx) {
+        const ir = ctx.ir, out = [];
+        const md = (el) => { const r = irRunsToMd(irInlineRuns(el, ir), ir, false); ir.carried.em += r.em; ir.carried.strong += r.strong; return r.md; };
+        const lines = (el) => {
+          const segs = [[]];
+          el.childNodes.forEach((c) => { if (c.nodeType === 1 && epubTag(c) === "br") segs.push([]); else segs[segs.length - 1].push(c); });
+          return segs.map((cs) => { const w = el.ownerDocument.createElement("span"); cs.forEach((c) => w.appendChild(c.cloneNode(true))); return md(w); }).filter((l) => l !== "");
+        };
+        const paras = (el) => Array.prototype.filter.call(el.children, (c) => /^(p|div|li|h\d)$/.test(epubTag(c))).map(md).filter(Boolean);
+        const fence = (kind, body) => out.push("::: " + kind + "\n" + body + "\n:::");
+        const image = (img, caption) => {
+          const p = epubResolve(ctx.path, epubInAttr(img, "src"));
+          const got = ctx.images.get(p);
+          ir.imgTotal = (ir.imgTotal || 0) + 1;
+          const idx = ir.images.length;
+          const rec = { idx, alt: epubInAttr(img, "alt").replace(/[\[\]\r\n]+/g, " ").replace(/\s+/g, " ").trim(), mediaType: got && got.mediaType ? got.mediaType : "unknown", imported: false, secId: null, imgId: null, caption: caption || "" };
+          if (got && got.data) { rec.image = { id: uid(), name: "epub-image-" + (idx + 1) + "." + got.ext, mediaType: got.mediaType, ext: got.ext, data: got.data }; rec.imgId = rec.image.id; rec.imported = true; }
+          ir.images.push(rec);
+          out.push(irSent("IMG", idx));
+        };
+        const walk = (el) => {
+          Array.prototype.forEach.call(el.children, (c) => {
+            const tag = epubTag(c), cls = epubClasses(c), types = epubTypes(c);
+            const has = (k) => cls.indexOf(k) !== -1;
+            if (/^(script|style|svg|nav|head|title)$/.test(tag)) return;
+            if (has("chapter-rule") || has("part-rule") || has("bd-layer") || has("endnotes-h") || has("note-back") || has("chapter-opening") || has("part-divider")) return;
+            if (types.some((t) => /^(footnote|endnote|rearnote|footnotes|endnotes|rearnotes)$/.test(t)) || has("endnotes") || has("endnote")) {
+              /* the notes: each definition by the id its mark points to */
+              const defs = has("endnote") || /^(footnote|endnote|rearnote)$/.test(types[0] || "") ? [c] : Array.prototype.slice.call(c.querySelectorAll("*")).filter((e) => e.id && (epubClasses(e).indexOf("endnote") !== -1 || epubTypes(e).some((t) => /^(footnote|endnote|rearnote)$/.test(t)) || epubTag(e) === "li"));
+              defs.forEach((d) => {
+                const n = ctx.noteIds.get(d.id) || (/^\s*\[?(\d{1,3})\]?/.exec(d.textContent) || [])[1];
+                if (!n) return;
+                Array.prototype.slice.call(d.querySelectorAll("a")).forEach((a) => { if (epubClasses(a).indexOf("note-back") !== -1 || /^#/.test(epubInAttr(a, "href")) && /^\s*(\[?\d{1,3}\]?|↩|↑)\s*$/.test(a.textContent)) a.remove(); });
+                const txt = md(d).replace(/^\[?\d{1,3}\]?\s*/, "").trim();
+                if (txt) out.push("[^" + n + "]: " + txt);
+              });
+              return;
+            }
+            if (tag === "hr" || has("scene-break")) { out.push("***"); return; }
+            if (tag === "img") { image(c, ""); return; }
+            if (tag === "figure" || has("plate-full")) {
+              const cap = c.querySelector("figcaption, .plate-caption");
+              c.querySelectorAll("img").forEach((img) => image(img, cap ? cap.textContent.replace(/\s+/g, " ").trim() : ""));
+              return;
+            }
+            if (/^h[1-6]$/.test(tag)) { const t = c.textContent.replace(/\s+/g, " ").trim(); if (t) out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + t); return; }
+            if (tag === "blockquote") {
+              /* its own lines first, then each paragraph in it (the "— Name" attribution among them) as lines of the one quote */
+              const ps = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "p");
+              ps.forEach((k) => k.remove());
+              const ql = lines(c).map((l) => "> " + l);
+              ps.forEach((k) => lines(k).forEach((l) => ql.push("> " + l)));
+              if (ql.length) out.push(ql.join("\n"));
+              return;
+            }
+            if (tag === "ul" || tag === "ol") {
+              const start = tag === "ol" ? Math.max(1, parseInt(epubInAttr(c, "start") || "1", 10) || 1) : 1;
+              const items = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "li").map(md).filter(Boolean);
+              if (items.length) out.push(items.map((t, k) => (tag === "ol" ? (start + k) + ". " : "- ") + t).join("\n"));
+              return;
+            }
+            if (tag === "table") {
+              const rows = Array.prototype.map.call(c.querySelectorAll("tr"), (tr) => Array.prototype.map.call(tr.children, (td) => td.textContent.replace(/\s+/g, " ").trim())).filter((r) => r.some(Boolean));
+              const idx = ir.tables.length;
+              ir.tables.push({ idx, rows, images: c.querySelectorAll("img").length, secId: null, prev: null });
+              out.push(irSent("TBL", idx));
+              return;
+            }
+            if (tag === "pre") { fence("log", c.textContent.replace(/\s+$/, "")); return; }
+            /* Beuk's own blocks */
+            if (has("letter")) {
+              const ps = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "p").map((k) => lines(k).join("\n")).filter(Boolean);
+              fence("letter", ps.join("\n\n"));
+              return;
+            }
+            if (has("texts")) {
+              const msgs = Array.prototype.filter.call(c.children, (k) => epubClasses(k).indexOf("tx") !== -1);
+              let me = "";
+              const body = [];
+              msgs.forEach((m) => {
+                const who = m.querySelector(".tx-who"), b = m.querySelector(".tx-b");
+                const name = who ? who.textContent.trim() : "";
+                if (!me && epubClasses(m).indexOf("tx-sent") !== -1) me = name;
+                if (b) body.push((name ? name + ": " : "") + md(b));
+                else body.push(md(m));
+              });
+              fence("texts" + (me ? " " + me : ""), body.join("\n"));
+              return;
+            }
+            if (has("verse")) {
+              const st = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "p").map((k) => {
+                const vl = k.querySelectorAll(".vl");
+                return vl.length ? Array.prototype.map.call(vl, (v) => v.textContent.replace(/\s+$/, "")).join("\n") : lines(k).join("\n");
+              });
+              fence("verse", st.join("\n\n"));
+              return;
+            }
+            if (has("log")) { fence("log" + (has("log-dark") || has("dark") ? " dark" : ""), Array.prototype.map.call(c.children, (k) => k.textContent.replace(/\s+$/, "")).join("\n")); return; }
+            if (has("transcript")) {
+              const ls = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "p").map((k) => {
+                if (epubClasses(k).indexOf("tr-dir") !== -1) { const t = k.textContent.replace(/\s+/g, " ").trim(); return /^\[.*\]$/.test(t) ? t : "[" + t + "]"; }
+                const w = k.querySelector(".tr-who");
+                const who = w ? w.textContent.replace(/\s+/g, " ").trim().replace(/[:：]$/, "") : "";
+                if (w) w.remove();
+                return (who ? who + ": " : "") + md(k).replace(/^[:：]\s*/, "");
+              });
+              fence("transcript", ls.join("\n"));
+              return;
+            }
+            if (has("insert")) {
+              const t = c.querySelector(".ins-title");
+              const title = t ? t.textContent.replace(/\s+/g, " ").trim() : "";
+              if (t) t.remove();
+              fence("insert" + (title ? " " + title : ""), paras(c).join("\n\n"));
+              return;
+            }
+            if (has("mnote") || tag === "aside" && types.indexOf("marginalia") !== -1) {
+              const w = c.querySelector(".mn-who");
+              const who = w ? w.textContent.replace(/\s+/g, " ").trim() : "";
+              if (w) w.remove();
+              fence("margin" + (who ? " " + who : ""), (paras(c).join("\n") || md(c)));
+              return;
+            }
+            if (has("sideways") || has("upside-down")) {
+              const inner = c.querySelector(".sw-in, .ud-in") || c;
+              fence(has("sideways") ? "sideways" : "upside-down", paras(inner).join("\n\n") || md(inner));
+              return;
+            }
+            if (has("hanging") || has("columns")) {
+              const items = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "p").map(md).filter(Boolean);
+              const hang = has("hanging") || has("cols-hanging");
+              fence(has("columns") ? (hang ? "columns hanging" : "columns") : "hanging", items.join(hang ? "\n" : "\n\n"));
+              return;
+            }
+            if (has("align-center") || has("align-right")) { fence(has("align-center") ? "center" : "right", paras(c).join("\n\n")); return; }
+            if (tag === "p") {
+              if (c.querySelector(".redact")) c.querySelectorAll(".redact").forEach((r) => r.replaceWith(c.ownerDocument.createTextNode("||█████||")));
+              const t = md(c);
+              if (t) out.push(t);
+              return;
+            }
+            if (c.children.length) { walk(c); return; }
+            const t = md(c);
+            if (t) out.push(t);
+          });
+        };
+        walk(root);
+        return out;
+      }
+      function epubPieces(rd, ir) {
+        const pieces = [];
+        const plain = [];
+        let bodySeen = false;
+        const plates = [];
+        const withPlates = (lines) => { if (!plates.length) return lines; const pre = plates.splice(0).join("\n\n").split("\n"); return pre.concat([""], lines); };
+        ir.subs = ir.subs || []; ir.subtitles = ir.subtitles || [];
+        ir.carried = ir.carried || { em: 0, strong: 0, links: 0 };
+        ir.epubPlates = 0; ir.epubSkipped = 0;
+        rd.docs.forEach((d) => {
+          if (d.nav) { ir.epubSkipped++; return; }
+          let doc = new DOMParser().parseFromString(d.html, "application/xhtml+xml");
+          if (doc.getElementsByTagName("parsererror").length) doc = new DOMParser().parseFromString(d.html, "text/html");
+          const body = doc.body || doc.getElementsByTagName("body")[0];
+          if (!body) return;
+          const types = epubTypes(body).concat(Array.prototype.slice.call(body.children).filter((c) => /^(section|article|div)$/.test(epubTag(c))).slice(0, 1).reduce((a, c) => a.concat(epubTypes(c)), []));
+          if (types.some((t) => EPUBIN_SKIP.has(t)) || (types.indexOf("copyright-page") !== -1 && (rd.meta.beuk || body.querySelector(".copyright")))) { ir.epubSkipped++; return; }
+          /* note marks: [^n] where they stand, their targets remembered */
+          const noteIds = new Map();
+          Array.prototype.slice.call(body.getElementsByTagName("*")).filter((a) => epubTag(a) === "a" && (epubTypes(a).indexOf("noteref") !== -1 || epubClasses(a).indexOf("noteref") !== -1)).forEach((a, k) => {
+            const n = (/(\d{1,3})/.exec(a.textContent) || [])[1] || String(k + 1);
+            const id = epubInAttr(a, "href").replace(/^.*#/, "");
+            if (id) noteIds.set(id, n);
+            const host = a.parentNode && epubTag(a.parentNode) === "sup" && a.parentNode.childNodes.length === 1 ? a.parentNode : a;
+            host.parentNode.replaceChild(doc.createTextNode("[^" + n + "]"), host);
+          });
+          /* a page that is only a picture: a plate (or the frontispiece) */
+          const text = body.textContent.replace(/\s+/g, "");
+          const plateDiv = body.querySelector(".plate-full");
+          const isFront = /frontispiece/i.test(d.path) || (plateDiv && epubClasses(plateDiv).indexOf("has-caption") !== -1 && !bodySeen);
+          /* a full-page plate faces the section after it: its picture opens that section, as a PDF's plate does */
+          if (plateDiv && !body.querySelector("p:not(.plate-caption), h1, h2") && !isFront) { ir.epubPlates++; plates.push(...epubBlocks(body, { ir, path: d.path, images: rd.images, noteIds: new Map() })); return; }
+          const head = body.querySelector(".chapter-opening");
+          const pdiv = body.querySelector(".part-divider");
+          const q = (el, s) => { const e = el ? el.querySelector(s) : null; return e ? e.textContent.replace(/\s+/g, " ").trim() : ""; };
+          let title = "", number = "", subtitle = "";
+          if (pdiv) { title = q(pdiv, ".part-title"); subtitle = q(pdiv, ".part-subtitle"); number = (/^part\s+(.+)$/i.exec(q(pdiv, ".part-kicker")) || [])[1] || ""; }
+          else if (head) { title = q(head, ".chapter-title") || q(head, "h1, h2"); subtitle = q(head, ".chapter-subtitle"); const num = q(head, ".chapter-number"); if (num) number = parseChapterHeading(num).number || ""; }
+          let kindType = null;
+          types.forEach((t) => { if (!kindType && EPUBIN_TYPES[t]) kindType = EPUBIN_TYPES[t]; });
+          if (types.indexOf("copyright-page") !== -1) kindType = { kind: "front", type: "copyright", title: "Copyright" };
+          if (isFront) kindType = { kind: "front", type: "frontispiece", title: "Frontispiece" };
+          if (!kindType && title) { const m = MATTER_HEADINGS[normHeading(title)] || (normHeading(title).indexOf("also by") === 0 ? { kind: "back", type: "alsoby", title: "Also by the Author" } : null); if (m) kindType = m; }
+          if (!kindType && (head || pdiv)) kindType = pdiv ? EPUBIN_TYPES.part : EPUBIN_TYPES.chapter;
+          const ctx = { ir, path: d.path, images: rd.images, noteIds };
+          if (kindType) {
+            const blocks = epubBlocks(body, ctx);
+            /* a matter page's own heading line names it: not text */
+            if (!head && !pdiv && blocks.length && /^# /.test(blocks[0])) { if (!title) title = blocks[0].slice(2).trim(); blocks.shift(); }
+            if (subtitle) { ir.subtitles.push(subtitle); blocks.unshift(irSent("SUBT", ir.subtitles.length - 1)); }
+            let kind = kindType.kind;
+            if (kindType.type === "epigraph" && bodySeen) kind = "body";
+            if (kind === "body") bodySeen = true;
+            const ttl = kindType.kind === "body" ? (title || (kindType.type === "chapter" ? "" : kindType.type.charAt(0).toUpperCase() + kindType.type.slice(1))) : (title || kindType.title);
+            pieces.push({ kind, type: kindType.type, title: ttl, number, body: withPlates(blocks.join("\n\n").split("\n")), _ir: { via: "heading", heading: "# " + (title || ttl) } });
+            return;
+          }
+          /* a page that says nothing about itself: read by its headings */
+          const blocks = epubBlocks(body, ctx);
+          const heads = blocks.filter((b) => /^# /.test(b)).length;
+          if (!heads && pieces.length) { pieces[pieces.length - 1].body = pieces[pieces.length - 1].body.concat([""], blocks.join("\n\n").split("\n")); return; }
+          let seenHead = false;
+          const txt = blocks.map((b) => {
+            if (!/^# /.test(b)) return b;
+            if (!seenHead) { seenHead = true; return b; }
+            ir.subs.push(b.slice(2).trim());
+            return irSent("SUB", ir.subs.length - 1);
+          }).join("\n\n");
+          plain.push(txt);
+          /* each page on its own, with no title to lift: a first chapter named like the book stays a chapter */
+          parseManuscript(txt, "", { via: "epub" }).forEach((p, k) => { if (p.kind === "body") bodySeen = true; if (k === 0) p.body = withPlates(p.body || []); pieces.push(p); });
+        });
+        /* a plate after the last section stays with it */
+        if (plates.length && pieces.length) pieces[pieces.length - 1].body = pieces[pieces.length - 1].body.concat([""], plates.splice(0).join("\n\n").split("\n"));
+        return pieces;
+      }
+      function importEpubRead(name, rd) {
+        const ir = irBegin(name, "epub");
+        try {
+          const pieces = epubPieces(rd, ir);
+          const identity = { title: rd.meta.title, author: rd.meta.author, subtitle: "", via: "epub" };
+          replaceBodyChapters(pieces, name, identity);
+          const det = detectLanguageInText(pieces.map((p) => (p.body || []).join("\n")).join("\n"));
+          offerDetectedLanguage(det);
+          return irFinish(ir, pieces, det);
+        } finally { irAbort(); }
+      }
+      /* ==== /BEUK:epubimport ==== */
       function importPlainManuscript(name, raw) {
         /* A markdown or text manuscript may declare its own credit in
            YAML frontmatter; that block is metadata, not prose, so it is
@@ -39759,7 +40079,7 @@
             let from = "text";
             if (via === "fallback") from = "fallback";
             else if (/^#{1,2}\s+/.test(heading)) {
-              if (ir.format === "docx" || ir.format === "rtf") from = headingLevelOf(heading) === 2 ? "h2" : "h1";
+              if (ir.format === "docx" || ir.format === "rtf" || ir.format === "epub") from = headingLevelOf(heading) === 2 ? "h2" : "h1"; /* BEUK:epubimport — an EPUB page's heading */
               else from = /^##\s/.test(heading) ? "md2" : "md1";
             }
             const idx = state.sections.indexOf(sec);
@@ -64920,14 +65240,14 @@
       /* BEUK:roundtrip — the sample, exported and imported back, must come
          back as itself: every body section (prologue, Parts, chapters,
          epilogue) in order, with its type, title, subtitle and footnotes,
-         its words within 2%, and nothing more. The Word round trip runs
+         its words (as Beuk counts them) within 2%, and nothing more. The Word round trip runs
          here; the print round trip (Chromium's PDF of the print interior)
          runs in tools/roundtrip, through the same comparison. */
       function sampleRtShape(sections) {
         const normT = (s) => String(s || "").replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim().toLowerCase()
           .replace(/^(?:part|chapter)\s+[\w-]+\s*[:.—–-]\s*/, "");
         return sections.filter((s) => s.kind === "body").map((s) => ({
-          type: s.type, title: normT(s.title), subtitle: normT(s.subtitle), words: (String(s.content || "").match(/\S+/g) || []).length,
+          type: s.type, title: normT(s.title), subtitle: normT(s.subtitle), words: countWords(String(s.content || "")), /* words as Beuk counts them: a picture's alt text, a fence line, a note mark and a redaction are not words */
           notes: (String(s.content || "").match(/^\[\^?\d{1,3}\]:/gm) || []).length }));
       }
       function sampleRtDiff(want, got) {
@@ -64975,6 +65295,69 @@
               const got = sampleRtShape(state.sections);
               const bad = sampleRtDiff(want, got);
               return scVerdict(bad.length === 0, (bad.length ? bad.length + " difference(s): " + bad.join("; ") : "all " + want.length + " body sections came back whole") + " — sent " + want.length + ", got " + got.length);
+            });
+          } }
+      );
+      /* BEUK:epubimport — the sample out to EPUB and back, and an EPUB
+         nobody styled for Beuk (plain h1 chapters, standard footnotes, a
+         contents page and a cover) read as the book it is. */
+      SELF_CHECKS_ASYNC.push(
+        { id: "sample.roundtrip.epub", feature: "sample", name: "The sample, out to EPUB and back: Beuk's own EPUB of The Lantern Coast, read by Beuk's EPUB import, comes back with every Part, chapter, prologue and epilogue in order, each with its type, title, subtitle and footnotes and within 2% of its words, and nothing more",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip is not loaded");
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+            const keepDirty = cloudDirty, keepEdited = cloud.sessionEdited, keepBefore = cloud.editedBeforeSignIn;
+            let want = [], rd = null;
+            try {
+              applyBookDoc(buildSampleBook());
+              want = sampleRtShape(state.sections);
+              rd = await epubRead(await (await buildEpubBlob()).arrayBuffer());
+            } finally {
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson;
+              cloudDirty = keepDirty; cloud.sessionEdited = keepEdited; cloud.editedBeforeSignIn = keepBefore;
+            }
+            return irCheckRun(() => {
+              importEpubRead("the-lantern-coast.epub", rd);
+              const got = sampleRtShape(state.sections);
+              const bad = sampleRtDiff(want, got);
+              const sideways = state.sections.some((s) => /^::: sideways$/m.test(String(s.content || "")));
+              const letter = state.sections.some((s) => /^::: letter$/m.test(String(s.content || "")));
+              if (!sideways || !letter) bad.push("containers not kept (sideways " + sideways + ", letter " + letter + ")");
+              return scVerdict(bad.length === 0, (bad.length ? bad.length + " difference(s): " + bad.join("; ") : "all " + want.length + " body sections came back whole") + " — sent " + want.length + ", got " + got.length);
+            });
+          } },
+        { id: "import.epub.reads-any-epub", feature: "import", name: "EPUB import reads an EPUB nobody styled for Beuk: its title and author from the package, its spine in order, each file's h1 a chapter with its text, footnotes linked by epub:type noteref and aside back as [^n] marks and notes, a picture into the library, and its cover and contents pages left out",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip is not loaded");
+            const zip = new JSZip();
+            const x = (body) => '<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>t</title></head><body>' + body + "</body></html>";
+            zip.file("mimetype", "application/epub+zip");
+            zip.file("META-INF/container.xml", '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="book/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
+            zip.file("book/content.opf", '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>The Salt Road</dc:title><dc:creator>Ines Morrow</dc:creator><dc:language>en</dc:language></metadata>' +
+              '<manifest><item id="c" href="cover.xhtml" media-type="application/xhtml+xml"/><item id="n" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="a" href="text/one.xhtml" media-type="application/xhtml+xml"/><item id="b" href="text/two.xhtml" media-type="application/xhtml+xml"/><item id="i" href="img/gull.png" media-type="image/png"/></manifest>' +
+              '<spine><itemref idref="c"/><itemref idref="n"/><itemref idref="a"/><itemref idref="b"/></spine></package>');
+            const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+            zip.file("book/img/gull.png", png, { base64: true });
+            zip.file("book/cover.xhtml", x('<section epub:type="cover"><img src="img/gull.png" alt="cover"/></section>'));
+            zip.file("book/nav.xhtml", x('<nav epub:type="toc"><h1>Contents</h1><ol><li><a href="text/one.xhtml">One</a></li><li><a href="text/two.xhtml">Two</a></li></ol></nav>'));
+            zip.file("book/text/one.xhtml", x('<h1>The Salt Road</h1><p>The caravan left at <em>dawn</em> for the coast.<a epub:type="noteref" href="#n1">1</a></p><p>Nobody spoke for the first mile.</p><figure><img src="../img/gull.png" alt="A gull over the salt pans"/></figure><aside epub:type="footnote" id="n1"><p>The coast road, not the hill road.</p></aside>'));
+            zip.file("book/text/two.xhtml", x('<h1>The Pans</h1><p>The pans lay white under the sun.</p><hr/><p>By evening the wind had turned.</p>'));
+            const rd = await epubRead(await zip.generateAsync({ type: "arraybuffer" }));
+            return irCheckRun(() => {
+              importEpubRead("the-salt-road.epub", rd);
+              const body = state.sections.filter((s) => s.kind === "body");
+              const shape = body.map((s) => s.type + ":" + s.title).join(" | ");
+              const one = body[0] ? String(body[0].content || "") : "", two = body[1] ? String(body[1].content || "") : "";
+              const bad = [];
+              if (shape !== "chapter:The Salt Road | chapter:The Pans") bad.push("body came back as " + shape);
+              if (state.meta.title !== "The Salt Road" || state.meta.author !== "Ines Morrow") bad.push("credit " + JSON.stringify([state.meta.title, state.meta.author]));
+              if (!/at \*dawn\* for the coast\.\[\^1\]/.test(one) || !/^\[\^1\]: The coast road, not the hill road\.$/m.test(one)) bad.push("note not linked: " + JSON.stringify(one.slice(0, 200)));
+              if (!/img:/.test(one) || !state.images.some((im) => /png/.test(im.mediaType))) bad.push("the picture is not in the library and the chapter");
+              if (!/\*\*\*/.test(two)) bad.push("the <hr/> is not a scene break");
+              if (state.sections.some((s) => /Contents|cover/i.test(s.title) && s.kind === "body")) bad.push("the contents or cover came in");
+              return scVerdict(bad.length === 0, (bad.length ? bad.join("; ") + " — " : "") + shape);
             });
           } }
       );
