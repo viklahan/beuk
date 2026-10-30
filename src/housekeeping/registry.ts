@@ -1667,6 +1667,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Desk state lives in the client editor; there is no server-side desk.',
   },
   {
+    id: 'import.zones.numbered-book',
+    title: 'A book with numbered chapters keeps its front and back matter out of the chapters',
+    kind: 'client-only',
+    reason: 'The manuscript parser runs in the studio page; the server never sees an import.',
+  },
+  {
+    id: 'import.zones.back-order',
+    title: 'Imported back matter keeps the order of the book',
+    kind: 'client-only',
+    reason: 'The manuscript parser runs in the studio page; the server never sees an import.',
+  },
+  {
+    id: 'import.zones.unnumbered-book-unchanged',
+    title: 'A book without chapter numbers parses as before',
+    kind: 'client-only',
+    reason: 'The manuscript parser runs in the studio page; the server never sees an import.',
+  },
+  {
     id: 'sample.empty-desk.no-figures',
     title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
     kind: 'client-only',
