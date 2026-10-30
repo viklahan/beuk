@@ -1740,6 +1740,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The Word export and import both run in the studio page. The print round trip runs in tools/roundtrip.',
   },
   {
+    id: 'import.docx.beuk-structure-back',
+    title: 'Word import keeps sub-headings in their chapter, drops the contents list, and puts Parts, the frontispiece and each endnote back',
+    kind: 'client-only',
+    reason: 'The Word import runs in the studio page; the server never sees the file.',
+  },
+  {
     id: 'import.onereader.bulk-parity',
     title: 'A bulk import splits a manuscript exactly as the Import button does',
     kind: 'client-only',

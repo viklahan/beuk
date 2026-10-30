@@ -37107,7 +37107,8 @@
         "also by": { kind: "back", type: "alsoby", title: "Also by the Author" },
         "colophon": { kind: "back", type: "colophon", title: "Colophon" },
         "appendix": { kind: "back", type: "appendix", title: "Appendix" },
-        "copyright": { kind: "front", type: "copyright", title: "Copyright" }
+        "copyright": { kind: "front", type: "copyright", title: "Copyright" },
+        "frontispiece": { kind: "front", type: "frontispiece", title: "Frontispiece" } /* BEUK:wordback — Beuk's own Word export names it so */
       };
       const normHeading = (s) => String(s || "").replace(/^#{1,2}\s+/, "").trim().toLowerCase().replace(/[.:;—–-]+$/, "").replace(/\s+/g, " ").trim();
       /* Chapter numbers arrive as digits, roman numerals, or words —
@@ -37416,7 +37417,12 @@
         const pieces = [];
         const proseChunks = [];
         items.forEach((it, ii) => {
-          if (it.cls === "part") { pieces.push({ kind: "body", type: "part", title: it.title, number: "", body: it.bodyText ? it.bodyText.split("\n") : [], _ir: { via: "heading", heading: it.raw } }); return; }
+          if (it.cls === "part") {
+            /* BEUK:wordback — "Part One: Ebb" (as Beuk writes a Part) is Part One, titled Ebb; a bare "Part One" keeps its words as its title */
+            const pm = String(it.title).match(/^part\s+([\p{L}\d-]+)\s*(?:[:.·—–]|\s-)\s*(.+)$/iu);
+            pieces.push({ kind: "body", type: "part", title: pm ? pm[2].trim() : it.title, number: pm ? pm[1] : "", body: it.bodyText ? it.bodyText.split("\n") : [], _ir: { via: "heading", heading: it.raw } });
+            return;
+          }
           if (it.cls === "skip" || !it.bodyText) return;
           if (it.cls === "matter") {
             let kind = it.matter.kind;
@@ -37793,7 +37799,7 @@
           const isChapter = type === "chapter";
           if (isChapter) chapN++;
           const sec = mkSection("body", type, p.title || (isChapter ? "Chapter " + chapN : type), {
-            number: isChapter ? (p.number || String(chapN)) : "", content: beautifyText((p.body || []).join("\n"))
+            number: isChapter ? (p.number || String(chapN)) : (type === "part" ? (p.number || "") : ""), /* BEUK:wordback — a Part keeps its number */ content: beautifyText((p.body || []).join("\n"))
           });
           p._placed = { id: sec.id, mode: "created", content: sec.content };
           return sec;
@@ -38776,6 +38782,8 @@
         /* Notes first: lift every footnote/endnote out of the trailing list. */
         const notesById = {};
         ir.carried = { em: 0, strong: 0, links: 0 };
+        ir.subs = [];
+        ir.subtitles = [];
         const carry = (r) => { ir.carried.em += r.em; ir.carried.strong += r.strong; return r.md; };
         doc.querySelectorAll('li[id^="footnote-"], li[id^="endnote-"]').forEach((li) => {
           li.querySelectorAll('a[href^="#footnote-ref-"], a[href^="#endnote-ref-"]').forEach((a) => a.remove());
@@ -38909,6 +38917,23 @@
           else ir.aligned = (ir.aligned || 0) + alignRun.paras.length;
           alignRun = null;
         };
+        /* BEUK:wordback — a Word book's structure, the way Beuk's own Word
+           export writes it (and most manuscripts do):
+           - the lines under a Contents heading are the contents list, up
+             to the next heading: left out whole (one of them standing
+             alone, "Chapter Five · …", would otherwise open a chapter);
+           - in a book whose sections are Heading 1 (more of them than
+             Heading 2), a Heading 2 that names no chapter, part or
+             matter is a sub-heading inside its section, kept as "# …";
+             a book of Heading 1 Parts and Heading 2 chapters keeps its
+             chapters;
+           - Beuk's Endnotes ("[n] (Chapter One · Title) note") go back
+             into the section each one names, as "[^n]: note", and that
+             section's "[n]" mark becomes "[^n]". */
+        const h1n = doc.body.querySelectorAll("h1").length, h2n = doc.body.querySelectorAll("h2").length;
+        let inContents = false, inEndnotes = false, seenH1 = false, justHead = -1;
+        const endnotes = [];
+        const headAt = [];
         doc.body.childNodes.forEach((node) => {
           if (node.nodeType === 3) { flushAlign(); push(node.textContent); return; }
           if (node.nodeType !== 1) return;
@@ -38919,6 +38944,11 @@
             if (capRec) { capRec.caption = cleanCaption(v); ir.captions = (ir.captions || 0) + 1; return; }
             if (v && !IR_BREAK_RE.test(v)) {
               const al = alignOf(v);
+              /* BEUK:wordback — a short, centred, wholly italic line straight under a heading is that section's subtitle (Beuk's Word export sets one so) */
+              if (al === "center" && !alignBack && justHead === parts.length && wordCountOf(v) <= 15) {
+                const solid = irInlineRuns(node, ir).filter((r) => /\S/.test(r.t));
+                if (solid.length && solid.every((r) => r.i)) { ir.subtitles.push(v); parts.push(irSent("SUBT", ir.subtitles.length - 1)); justHead = -1; return; }
+              }
               /* A paragraph in one of Beuk's back-matter styles goes back
                  into its container, a run of one style sharing one. */
               if (alignBack) {
@@ -38941,8 +38971,32 @@
             }
           }
           flushAlign();
-          if (tag === "h1" || tag === "h2") seenHead = true;
+          const isH = tag === "h1" || tag === "h2";
+          if (isH) { inContents = false; inEndnotes = false; }
+          if (inContents) { ir.tocLines = (ir.tocLines || 0) + 1; return; }
+          if (inEndnotes) {
+            const line = node.textContent.replace(/\s+/g, " ").trim();
+            const nm = /^\[(\d{1,3})\]\s*\(([^)]*)\)\s*([\s\S]*)$/.exec(line);
+            if (nm) {
+              /* the note's own words keep their italic, bold and links: its runs, less the "[n] (label)" lead */
+              const md = carry(irRunsToMd(irInlineRuns(node, ir), ir, false));
+              const lead = /^\**\s*\[\d{1,3}\]\s*\**\s*\**\s*\([^)]*\)\s*\**\s*/.exec(md);
+              endnotes.push({ n: nm[1], label: nm[2], text: (lead ? md.slice(lead[0].length) : nm[3]).trim() });
+              return;
+            }
+          }
+          if (isH) seenHead = true;
           const txt = node.textContent.replace(/ /g, " ");
+          const htxt = txt.replace(/\s+/g, " ").trim();
+          if (isH && normHeading(htxt) === "endnotes") { inEndnotes = true; return; }
+          if (tag === "h2" && seenH1 && h1n > h2n && htxt && !isHeadLine(htxt) && !PART_HEAD_RE.test(htxt)) {
+            ir.subs.push(htxt);
+            parts.push(irSent("SUB", ir.subs.length - 1));
+            return;
+          }
+          if (tag === "h1") seenH1 = true;
+          if (isH && (normHeading(htxt) === "contents" || normHeading(htxt) === "table of contents")) inContents = true;
+          if (isH) headAt.push({ at: parts.length, key: irLoose(htxt.replace(/[:·]/g, " ")) });
           if (tag === "h1" || tag === "h2") {
             /* A chapter title is set in the book's heading style: its
                words come across plain, and any italic/bold or link in
@@ -38951,6 +39005,7 @@
             if (irRunsToMd(irInlineRuns(node, ir, false, true), ir, true).hadEm) ir.drops.fmtHeading = (ir.drops.fmtHeading || 0) + 1;
             if (firstBoundary < 0) firstBoundary = parts.length;
             push("# " + txt.trim());
+            justHead = parts.length;
             pushImages(node);
           } else if (/^h[3-6]$/.test(tag)) {
             const v = txt.replace(/\s+/g, " ").trim();
@@ -39015,6 +39070,20 @@
           }
         });
         flushAlign();
+        /* BEUK:wordback — each of Beuk's endnotes into the section it names */
+        if (endnotes.length) {
+          const bounds = headAt.map((h, k) => ({ key: h.key, from: h.at, to: k + 1 < headAt.length ? headAt[k + 1].at : parts.length }));
+          const adds = new Map();
+          endnotes.forEach((nt) => {
+            const b = bounds.find((x) => x.key === irLoose(nt.label.replace(/[:·]/g, " ")));
+            if (!b) { push("[" + nt.n + "] " + nt.text); return; }
+            const re = new RegExp("\\[" + nt.n + "\\](?!\\()");
+            for (let q = b.from + 1; q < b.to; q++) if (re.test(parts[q])) { parts[q] = parts[q].replace(re, "[^" + nt.n + "]"); break; }
+            if (!adds.has(b.to)) adds.set(b.to, []);
+            adds.get(b.to).push("[^" + nt.n + "]: " + nt.text);
+          });
+          Array.from(adds.keys()).sort((x, y) => y - x).forEach((at) => parts.splice(at, 0, adds.get(at).join("\n")));
+        }
         /* The title page and front matter are read by their words (a
            title line, "by …", "For Megan"): a short bold or italic
            line standing before the first chapter is written plain so
@@ -39159,6 +39228,8 @@
             if (!m) { out.push(b.replace(/[A-Z]+\d+/g, "")); return; }
             const n = Number(m[2]);
             if (m[1] === "SB" && ir.breaks[n]) { ir.breaks[n].secId = s.id; marks.push({ rec: ir.breaks[n], at: out.length }); out.push("***"); }
+            else if (m[1] === "SUB" && ir.subs && ir.subs[n] != null) out.push("# " + ir.subs[n]); /* BEUK:wordback */
+            else if (m[1] === "SUBT" && ir.subtitles && ir.subtitles[n] != null) { if (!s.subtitle) s.subtitle = ir.subtitles[n]; }
             else if (m[1] === "IMG" && ir.images[n]) {
               const rec = ir.images[n];
               rec.secId = s.id;
@@ -39168,7 +39239,7 @@
           marks.forEach((mk) => { mk.rec.prev = (out[mk.at - 1] || "").trim(); mk.rec.next = (out[mk.at + 1] || "").trim(); });
           s.content = out.filter((b, i) => b.trim() || i === 0).join("\n\n").replace(/\n{3,}/g, "\n\n").trim();
         });
-        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/\n?[A-Z]+\d+\n?/g, "");
+        const resolveText = (str) => String(str || "").replace(/SB\d+/g, "***").replace(/SUB(\d+)/g, (m, n) => (ir.subs && ir.subs[n] != null ? "# " + ir.subs[n] : "")).replace(/\n?[A-Z]+\d+\n?/g, "");
         (pieces || []).forEach((p) => { if (p._placed) p._placed.content = resolveText(p._placed.content); });
         const importIds = new Set();
         (pieces || []).forEach((p) => { if (p._placed) importIds.add(p._placed.id); });
@@ -45555,7 +45626,9 @@
               .forEach((x) => parts.push(docxPara(sectionLabel(x), "Normal")));
             return;
           }
-          const heading = s.type === "chapter" ? ((s.number ? "Chapter " + s.number + ": " : "") + (s.title || "Untitled Chapter")) : (s.title || "");
+          /* BEUK:wordback — a numbered Part is written "Part One: Ebb", as its chapters are, so the Word import reads it back as a Part */
+          const heading = s.type === "chapter" ? ((s.number ? "Chapter " + s.number + ": " : "") + (s.title || "Untitled Chapter"))
+            : s.type === "part" && s.number ? "Part " + s.number + (s.title ? ": " + s.title : "") : (s.title || "");
           parts.push(docxPara(heading, "Heading1"));
           if (s.subtitle) parts.push(docxPara(s.subtitle, "Normal", { align: "center", rawRuns: docxRun(s.subtitle, { i: true }) }));
           docxContentParas(s.content).forEach((p) => parts.push(p));
@@ -60094,6 +60167,43 @@
                 "footnote linked as [^1] (" + noteOk + "), image in library with alt (" + imgOk + "), table reported left out (" + tableOk + "), demoted heading + comments/tracked/headers/warning/copyright/typography listed, the Word list kept as a list (" + listedOk + "), table words back on undo (" + tableBack + "), image undo (" + imgGone + "), subheading restored (" + demBack + "), unrevertable items say so (" + naOk + ")");
             });
           } },
+        /* ---- BEUK:wordback: a Word book Beuk wrote comes back as the book it was ---- */
+        { id: "import.docx.beuk-structure-back", feature: "import", name: "Word import reads a Word book's structure the way Beuk writes it: a Heading 2 inside Heading 1 chapters stays a sub-heading in its chapter (a book of Heading 1 Parts and Heading 2 chapters still gets its chapters), a Contents list never becomes chapters, \"Part One: Ebb\" is Part One titled Ebb, a Frontispiece heading is the frontispiece, and each note under Endnotes goes back into its own chapter with its mark",
+          run() {
+            const chapterDoc = '<p>The Tide Book</p>' +
+              '<h1>Contents</h1><p>Prologue</p><p>Part One · Ebb</p><p>Chapter One · The Quay</p><p>Chapter Two · The Bank</p><p>Part Two · Flood</p><p>Chapter Three · The Gate</p>' +
+              '<h1>Frontispiece</h1><p>The chart of the bank.</p>' +
+              '<h1>Prologue</h1><p>The tide came in before anyone was awake to see it, and went out again unremarked.</p>' +
+              '<h1>Part One: Ebb</h1>' +
+              '<h1>Chapter One: The Quay</h1><p>She walked the quay at dawn.<sup>[1]</sup> The boats were in and the gulls were loud over the nets.</p>' +
+              '<h2>The notice it replaced</h2><p>The old notice was pinned beside the new one, the names inked out.</p>' +
+              '<h1>Chapter Two: The Bank</h1><p>The bank lay dry at low water, ribbed and shining.</p>' +
+              '<h1>Part Two: Flood</h1>' +
+              '<h1>Chapter Three: The Gate</h1><p>He said it at the gate, where the hill drops to the harbour.<sup>[1]</sup></p>' +
+              '<h1>Endnotes</h1><p><strong>[1] </strong><em>(Chapter One · The Quay) </em>A quay is a stone landing place.</p>' +
+              '<p><strong>[1] </strong><em>(Chapter Three · The Gate) </em>The gate above the town.</p>';
+            const partDoc = '<h1>Part One</h1><h2>Chapter 1</h2><p>The first chapter of the first part, long enough to be one.</p>' +
+              '<h2>Chapter 2</h2><p>The second chapter of the first part, long enough to be one.</p>' +
+              '<h1>Part Two</h1><h2>Chapter 3</h2><p>The third chapter, in the second part, long enough to be one.</p>';
+            const read = (html) => irCheckRun(() => {
+              importDocxConverted("tide-book.docx", html, [], null, {}, null);
+              return state.sections.map((s) => ({ kind: s.kind, type: s.type, number: s.number || "", title: s.title, content: String(s.content || "") }));
+            });
+            const a = read(chapterDoc), b = read(partDoc);
+            const body = a.filter((s) => s.kind === "body");
+            const shape = body.map((s) => s.type + ":" + (s.number ? s.number + ":" : "") + s.title).join(" | ");
+            const bad = [];
+            if (shape !== "prologue:Prologue | part:One:Ebb | chapter:One:The Quay | chapter:Two:The Bank | part:Two:Flood | chapter:Three:The Gate") bad.push("body came back as " + shape);
+            const quay = body.find((s) => s.title === "The Quay"), gate = body.find((s) => s.title === "The Gate");
+            if (!quay || !/^# The notice it replaced$/m.test(quay.content)) bad.push("the Heading 2 is not a sub-heading in its chapter");
+            if (!quay || !/\[\^1\]/.test(quay.content) || !/^\[\^1\]: A quay is a stone landing place\.$/m.test(quay.content)) bad.push("chapter one's note did not come back: " + JSON.stringify(quay && quay.content.slice(-120)));
+            if (!gate || !/^\[\^1\]: The gate above the town\.$/m.test(gate.content)) bad.push("chapter three's note did not come back");
+            if (a.some((s) => /endnotes/i.test(s.title))) bad.push("an Endnotes section came in");
+            if (!a.some((s) => s.kind === "front" && s.type === "frontispiece")) bad.push("no frontispiece");
+            const bshape = b.filter((s) => s.kind === "body").map((s) => s.type + ":" + (s.number ? s.number + ":" : "") + s.title).join(" | ");
+            if (!/^part:.*\| chapter:1:.* \| chapter:2:.* \| part:.* \| chapter:3:/.test(bshape)) bad.push("Heading 1 Parts with Heading 2 chapters came back as " + bshape);
+            return scVerdict(bad.length === 0, (bad.length ? bad.join("; ") + " — " : "") + "chapters book: " + shape + "; parts book: " + bshape);
+          } },
         { id: "import.docx.inline-formatting", feature: "import", name: "Word import keeps formatting: italic, bold and bold-italic come across as *, ** and *** marks (also inside headings, quotes, list items and footnotes), web and mail links as [words](address) with the address untouched by the typography pass, and the report lists only what has no Beuk mark (underline, strike-through, sub/superscript, a link to a bookmark, bold chapter-title lines) — italic and bold are no longer reported as dropped; 400 generated run patterns render back with the same italic/bold on every character",
           run() {
             /* 1. The walk alone, against generated run patterns: every
@@ -64033,7 +64143,7 @@
       }
       /* BEUK:roundtrip — the sample, exported and imported back, must come
          back as itself: every body section (prologue, Parts, chapters,
-         epilogue) in order, with its type, its title and its footnotes,
+         epilogue) in order, with its type, title, subtitle and footnotes,
          its words within 2%, and nothing more. The Word round trip runs
          here; the print round trip (Chromium's PDF of the print interior)
          runs in tools/roundtrip, through the same comparison. */
@@ -64041,7 +64151,7 @@
         const normT = (s) => String(s || "").replace(/[’‘]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim().toLowerCase()
           .replace(/^(?:part|chapter)\s+[\w-]+\s*[:.—–-]\s*/, "");
         return sections.filter((s) => s.kind === "body").map((s) => ({
-          type: s.type, title: normT(s.title), words: (String(s.content || "").match(/\S+/g) || []).length,
+          type: s.type, title: normT(s.title), subtitle: normT(s.subtitle), words: (String(s.content || "").match(/\S+/g) || []).length,
           notes: (String(s.content || "").match(/^\[\^?\d{1,3}\]:/gm) || []).length }));
       }
       function sampleRtDiff(want, got) {
@@ -64056,6 +64166,7 @@
           used.add(k); from = k + 1;
           const g = got[k];
           if (g.type !== w.type) bad.push("“" + w.title + "” came back as a " + g.type + ", not a " + w.type);
+          if (g.subtitle !== w.subtitle) bad.push("“" + w.title + "”: subtitle " + (g.subtitle ? "“" + g.subtitle + "”" : "missing") + ", not " + (w.subtitle ? "“" + w.subtitle + "”" : "none"));
           if (g.notes !== w.notes) bad.push("“" + w.title + "”: " + g.notes + " of " + w.notes + " footnotes");
           if (Math.abs(g.words - w.words) > Math.max(5, w.words * 0.02)) bad.push("“" + w.title + "”: " + g.words + " words, not " + w.words);
         });
