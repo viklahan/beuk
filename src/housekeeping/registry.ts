@@ -1691,6 +1691,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Column layout is measured in the browser; the server never renders the studio.',
   },
   {
+    id: 'import.malformed.refused-desk-kept',
+    title: 'Empty, binary or broken files are refused plainly and the desk is kept',
+    kind: 'client-only',
+    reason: 'Import runs in the studio page on the file the writer picks; the server never sees it.',
+  },
+  {
+    id: 'import.weird-chars.clean',
+    title: 'Control and invisible characters never reach the book; volumes become parts',
+    kind: 'client-only',
+    reason: 'Import runs in the studio page on the file the writer picks; the server never sees it.',
+  },
+  {
     id: 'sample.empty-desk.no-figures',
     title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
     kind: 'client-only',

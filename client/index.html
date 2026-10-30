@@ -37190,8 +37190,33 @@
         segments.push(current);
         return segments;
       }
+      /* BEUK:importclean — what no book holds is left at the door, for
+         every format: control characters (a terminal's colour codes
+         whole), stray byte-order marks, non-characters, bidi overrides.
+         Page, line and paragraph separators become line breaks. In a
+         heading line the invisible characters go too — a zero-width
+         space, a word joiner, a soft hyphen, a joiner at either end — so
+         "Chap(zero-width)ter 1" is still Chapter 1. In the prose the
+         joiners stay: emoji and many scripts are spelled with them. */
+      const IR_CP = (...cps) => String.fromCharCode(...cps);
+      const IR_ANSI = new RegExp("\x1b\\[[0-9;?]*[ -/]*[@-~]", "g");
+      const IR_BREAKS = new RegExp("[\x0b\x0c\x85" + IR_CP(0x2028, 0x2029) + "]", "g");
+      const IR_CONTROLS = new RegExp("[\x00-\x08\x0e-\x1f\x7f-\x84\x86-\x9f" + IR_CP(0xfeff, 0xfffe, 0xffff, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e) + "]", "g");
+      const IR_HEAD_INVISIBLE = new RegExp("[" + IR_CP(0x200b, 0x2060, 0xad) + "]", "g");
+      const IR_EDGE_JOINERS = new RegExp("^[\\s" + IR_CP(0x200c, 0x200d) + "]+|[\\s" + IR_CP(0x200c, 0x200d) + "]+$", "g");
+      function irCleanText(text) {
+        return String(text == null ? "" : text).replace(IR_ANSI, "").replace(/\r\n?/g, "\n").replace(IR_BREAKS, "\n").replace(IR_CONTROLS, "")
+          .split("\n").map((line) => {
+            const bare = line.replace(IR_HEAD_INVISIBLE, "").replace(IR_EDGE_JOINERS, "");
+            if (bare === line.trim()) return line;
+            return (/^#{1,6}\s/.test(bare) || isSegmentBoundary(bare)) ? bare : line;
+          }).join("\n");
+      }
+      /* Volume One, Book Two, Part III: a divider between chapters, not a chapter. */
+      const PART_HEAD_RE = new RegExp("^(?:#{1,2}\\s+)?(?:part|book|volume)\\s+(?:" + CHAPTER_NUM_TOKEN + ")(?![a-z])", "i");
       function parseManuscript(text, fallbackTitle, identity) {
         identity = identity || {};
+        text = irCleanText(text);
         const segments = splitSegments(text);
         const titleKey = normHeading(identity.title || "");
         const fallbackKey = normHeading(fallbackTitle || "");
@@ -37204,6 +37229,7 @@
              heading itself; the type is the same. */
           const matter = MATTER_HEADINGS[n] || (n.indexOf("also by") === 0 ? { kind: "back", type: "alsoby", title: "Also by the Author" } : null);
           if (matter) return { bodyText, cls: "matter", matter, raw: seg.heading };
+          if (PART_HEAD_RE.test(seg.heading.trim())) return { bodyText, cls: "part", raw: seg.heading, title: seg.heading.trim().replace(/^#{1,2}\s+/, "") };
           if (CHAPTER_HEAD_RE.test(seg.heading.trim())) {
             /* A markdown heading that merely repeats the book's own
                title opens the front matter; it is not a chapter. */
@@ -37253,7 +37279,7 @@
             it.cls = "matter"; it.matter = { kind: "back", type: teaser ? "cta" : "appendix", title: head };
           });
         }
-        const isBodyItem = (it) => it.cls === "chapter" || (it.cls === "matter" && it.matter.kind === "body");
+        const isBodyItem = (it) => it.cls === "chapter" || it.cls === "part" || (it.cls === "matter" && it.matter.kind === "body");
         /* BEUK:importmeta — the manuscript's own title page is the
            book's credit: read it, lift it out of the text, and record
            the lift for the import report (undo puts it back). */
@@ -37274,6 +37300,7 @@
         const pieces = [];
         const proseChunks = [];
         items.forEach((it, ii) => {
+          if (it.cls === "part") { pieces.push({ kind: "body", type: "part", title: it.title, number: "", body: it.bodyText ? it.bodyText.split("\n") : [], _ir: { via: "heading", heading: it.raw } }); return; }
           if (it.cls === "skip" || !it.bodyText) return;
           if (it.cls === "matter") {
             let kind = it.matter.kind;
@@ -38217,6 +38244,11 @@
             importDocxConverted(name, result.value, result.messages, scan, identity, docxDet);
           } else {
             const raw = await file.text();
+            /* BEUK:importclean — nothing to import, or not text at all: say so and leave the desk alone. */
+            const words = raw.replace(IR_CONTROLS, "").replace(/\s+/g, "");
+            if (!words) { toast("That file is empty — there is nothing in it to import.", "alert-triangle"); return; }
+            const junk = (raw.match(IR_CONTROLS) || []).length + raw.split(IR_CP(0xfffd)).length - 1;
+            if (junk > Math.max(16, raw.length * 0.05)) { toast("That file does not look like text — it may be another kind of file renamed to " + (lower.match(/\.[a-z0-9]+$/) || [".txt"])[0] + ".", "alert-triangle"); return; }
             /* A markdown or text manuscript may declare its own
                credit in YAML frontmatter; that block is metadata, not
                prose, so it is read for the byline and lifted out of
@@ -38225,7 +38257,8 @@
           }
         } catch (err) {
           irAbort();
-          toast("Could not import that file: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
+          if (lower.endsWith(".docx")) toast("That file could not be read as a Word document (.docx) — it may be damaged, or another kind of file renamed to .docx.", "alert-triangle"); /* BEUK:importclean — never a zip library's words */
+          else toast("Could not import that file: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
         }
       }
       function initImport() {
@@ -62011,6 +62044,92 @@
          answer synchronously: window.runBeukAsyncSelfChecks() runs them
          and resolves to the same result shape as runBeukSelfChecks(). */
       const SELF_CHECKS_ASYNC = [
+        /* ---- BEUK:importclean: bad files are refused and leave the desk; weird characters never reach the book ---- */
+        { id: "import.malformed.refused-desk-kept", feature: "import", name: "An empty or binary text file, a broken Word file, a broken RTF and a broken PDF are each refused with a plain message, and the book on the desk is left exactly as it was",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+            const origToast = window.toast; const toasts = [];
+            try {
+              applyBookDoc(buildEmptyBook());
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              replaceBodyChapters(parseManuscript("# Chapter 1" + String.fromCharCode(10, 10) + "Keep me safe on the desk.", "keep", {}), "keep.txt", {});
+              const desk = () => JSON.stringify(state.sections.map((x) => [x.type, x.title, x.content]));
+              window.toast = (m, i) => { toasts.push(String(m)); };
+              const junk = (n, seed) => { const a = new Uint8Array(n); let x = seed; for (let i = 0; i < n; i++) { x = (x * 1103515245 + 12345) >>> 0; a[i] = x >>> 24; } return a; };
+              const cases = [["empty.txt", new Uint8Array(0)], ["blank.txt", new TextEncoder().encode("   " + String.fromCharCode(10, 13, 10, 0xfeff) + " ")], ["binary.txt", junk(4096, 7)],
+                ["empty.docx", new Uint8Array(0)], ["garbage.docx", junk(8192, 3)], ["garbage.rtf", junk(4096, 11)], ["garbage.pdf", junk(8192, 5)]];
+              const res = [];
+              for (const [name, bytes] of cases) {
+                toasts.length = 0;
+                const before = desk();
+                await handleImportFile(new File([bytes], name));
+                await new Promise((r) => setTimeout(r, 50));
+                const said = toasts.join(" / ");
+                res.push({ name, kept: desk() === before, said: !!said && !/central directory|zip file|xmldom|asked index|Corrupted/i.test(said), text: said.slice(0, 60) });
+              }
+              const bad = res.filter((r) => !r.kept || !r.said);
+              return scVerdict(!bad.length, bad.length ? "not refused cleanly: " + bad.map((r) => r.name + (r.kept ? "" : " (desk changed)") + (r.said ? "" : " (message: " + (r.text || "none") + ")")).join("; ") : res.map((r) => r.name + ": " + r.text).join(" | "));
+            } finally {
+              window.toast = origToast;
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+            }
+          } },
+        { id: "import.weird-chars.clean", feature: "import", name: "Control characters, stray byte-order marks, bidi overrides and invisible joiners never reach a title or the text, a chapter heading with an invisible character is still a chapter, and Volume / Book headings become Part dividers",
+          async run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson;
+            const origToast = window.toast;
+            const C = (...n) => String.fromCharCode(...n);
+            const NL = C(10), P2 = C(10, 10);
+            const BAD = new RegExp("[" + C(0) + "-" + C(8) + C(11, 12) + C(14) + "-" + C(31) + C(127, 133, 0x200b, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2028, 0x2029, 0xfeff, 0xfffe, 0xffff, 0xad) + "]");
+            const story = (n) => "Zib looked at the sky for the " + n + " time and the sky looked back. ".repeat(4);
+            const ch = (n, t) => "# Chapter " + n + P2 + t + P2;
+            const runs = [];
+            const look = (label) => {
+              const body = state.sections.filter((x) => x.kind === "body");
+              const dirty = state.sections.filter((x) => BAD.test(String(x.title || "") + C(32) + String(x.content || "")) || String(x.title || "").indexOf(C(0x200d)) !== -1).map((x) => { const all = String(x.title || "") + C(32) + String(x.content || ""); const m = all.match(BAD); return (x.title || x.type).replace(BAD, "?").slice(0, 18) + (m ? " U+" + m[0].charCodeAt(0).toString(16) : " joiner in title"); });
+              runs.push({ label, shape: body.map((x) => (x.type === "part" ? "P:" : x.number + ":") + x.title).join(" | "), dirty });
+            };
+            const docx = async (paras) => {
+              const z = new JSZip();
+              z.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+              z.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+              z.file("word/document.xml", '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+                paras.map(([st, tx]) => "<w:p>" + (st ? '<w:pPr><w:pStyle w:val="' + st + '"/></w:pPr>' : "") + '<w:r><w:t xml:space="preserve">' + tx + "</w:t></w:r></w:p>").join("") + "</w:body></w:document>");
+              return new Uint8Array(await z.generateAsync({ type: "uint8array" }));
+            };
+            const imp = async (name, data) => { await handleImportFile(new File([typeof data === "string" ? new TextEncoder().encode(data) : data], name)); await new Promise((r) => setTimeout(r, 50)); look(name); };
+            try {
+              window.toast = () => {};
+              applyBookDoc(buildEmptyBook());
+              sampleState.loaded = false; sampleState.loadedJson = null;
+              await imp("controls.txt", ch(1, story(1)) + C(0, 7, 27) + "[31m" + C(12, 11, 8) + NL + ch(2, story(2)) + C(127, 133, 0x2028, 0x2029) + ch(3, "Bell" + C(7) + " rang. " + story(3)));
+              await imp("heading-controls.md", "# Chapter 1" + C(0) + ": The " + C(7) + "Bell" + P2 + story(1) + P2 + "# Chapter 2" + C(31) + ": Night" + C(8) + P2 + story(2));
+              await imp("invisible.txt", "# Chap" + C(0x200b) + "ter 1" + P2 + story(1) + P2 + "# " + C(0xfeff) + "Chapter 2" + P2 + story(2) + P2 + "# Chapter 3" + C(0x200d) + P2 + story(3) + P2 + "# Chapter 4" + P2 + "He said " + C(0x202e) + "eman ym" + C(0x202c) + ". A rocket " + C(0xd83d, 0xde80) + " and an astronaut " + C(0xd83d, 0xdc69, 0x200d, 0xd83d, 0xde80) + ".");
+              const astronaut = state.sections.some((x) => String(x.content || "").indexOf(C(0xd83d, 0xdc69, 0x200d, 0xd83d, 0xde80)) !== -1);
+              await imp("volumes.txt", "# Volume One" + P2 + ch(1, story(1)) + ch(2, story(2)) + "# Volume Two" + P2 + ch(3, story(3)) + "# Book Three: The Return" + P2 + ch(4, story(4)));
+              if (window.JSZip) {
+                await imp("weird.docx", await docx([["Heading1", "Volume One"], ["Heading1", "Chap" + C(0x200b) + "ter 1: Fall" + C(0xad)], ["", "Bell" + C(7) + " and esc" + C(27) + " here. " + story(1)], ["Heading1", C(0x202e) + "Chapter 2: Up"], ["", story(2)]]));
+              }
+              await imp("weird.rtf", "{" + "\\rtf1\\ansi\\deff0 \\uc1 \\par Chapter 1\\par \\u0? \\u-10? \\u65535? " + story(1) + "\\par Chapter 2\\par " + story(2) + "}");
+              const want = {
+                "controls.txt": "1:Chapter 1 | 2:Chapter 2 | 3:Chapter 3",
+                "heading-controls.md": "1:The Bell | 2:Night",
+                "invisible.txt": "1:Chapter 1 | 2:Chapter 2 | 3:Chapter 3 | 4:Chapter 4",
+                "volumes.txt": "P:Volume One | 1:Chapter 1 | 2:Chapter 2 | P:Volume Two | 3:Chapter 3 | P:Book Three: The Return | 4:Chapter 4",
+                "weird.docx": "P:Volume One | 1:Fall | 2:Up",
+                "weird.rtf": "1:Chapter 1 | 2:Chapter 2",
+              };
+              const wrong = runs.filter((r) => r.dirty.length || (want[r.label] && r.shape !== want[r.label]));
+              return scVerdict(runs.length >= 5 && !wrong.length && astronaut, !astronaut ? "the astronaut emoji lost its joiner" : wrong.length ? wrong.map((r) => r.label + " -> [" + r.shape + "]" + (r.dirty.length ? " dirty: " + r.dirty.join(", ") : "")).join(" ;; ") : runs.map((r) => r.label + " ok").join(", "));
+            } finally {
+              window.toast = origToast;
+              applyBookDoc(keepDoc);
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
+            }
+          } },
         /* ==== BEUK:remnants ==== */
         { id: "sample.remove.leaves-nothing", feature: "sample", name: "Remove leaves nothing of the sample: an untouched sample (its pictures arrived) is removed without asking, and afterwards no sample title, name, id or picture is left in the book, in the device save (current copy or last-good copy) or in the writing log",
           async run() {
