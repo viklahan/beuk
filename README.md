@@ -2429,7 +2429,7 @@ words). The sidebar stays the binder; both views redraw whenever it does.
   list), "When" (text) and "Check the depths" (a box, ticked on the three
   chapters the Notebook's depths note is pinned to). Each value is read
   from that chapter's own opening; a chapter whose opening does not say is
-  left unset (`buildSampleBook`). The sample's word count stays 24,825.
+  left unset (`buildSampleBook`). The sample's word count stays exactly SAMPLE_WORDS (25,933 since the showcase pass).
 - **Per device:** Cards, List or Grid and whether front and back matter show
   (`beuk.outline.v1` in localStorage, guarded). Not in the book.
 - Phone width: cards become one column and list rows stack (container

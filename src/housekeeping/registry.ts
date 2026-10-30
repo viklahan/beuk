@@ -1734,6 +1734,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Bookmarks are read by PDF.js in the studio page; the server never sees the file.',
   },
   {
+    id: 'sample.roundtrip.word',
+    title: 'The sample exported to Word and imported back comes back whole: every Part, chapter and footnote, nothing extra',
+    kind: 'client-only',
+    reason: 'The Word export and import both run in the studio page. The print round trip runs in tools/roundtrip.',
+  },
+  {
     id: 'import.onereader.bulk-parity',
     title: 'A bulk import splits a manuscript exactly as the Import button does',
     kind: 'client-only',
