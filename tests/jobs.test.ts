@@ -454,6 +454,7 @@ test('the Ghostscript step has its own timeout (PDFX_TIMEOUT_MS), stated when it
     const job = await waitForJob(gail, (created.body.job as JobView).id);
     assert.equal(job.status, 'failed');
     assert.match(String(job.result!.error), /Ghostscript did not finish within 400 ms \(PDFX_TIMEOUT_MS\)/);
+    assert.equal(job.result!.cause, 'timeout', 'a timeout is tagged so the Store-ready report can offer its remedy');
   } finally {
     rmSync(marker, { force: true });
     await slow.close();
@@ -508,6 +509,7 @@ test('a job whose tool overruns the per-job timeout fails with the timeout state
     const job = await waitForJob(dave, (created.body.job as JobView).id);
     assert.equal(job.status, 'failed');
     assert.match(String(job.result!.error), /did not finish within 300 ms/);
+    assert.equal(job.result!.cause, 'timeout');
   } finally {
     await slow.close();
   }
@@ -618,6 +620,7 @@ test('renderer failures are honest: an HTTP error, a non-PDF reply, an unreachab
     );
     assert.equal(job.status, 'failed');
     assert.equal(job.result!.tool, 'html-to-pdf');
+    assert.equal(job.result!.cause, 'setup', 'an unreachable renderer is a server setup gap, not a finding about the book');
     assert.match(String(job.result!.error), /could not be reached \(RENDERER_URL="http:\/\/127\.0\.0\.1:9\/render"/);
   } finally {
     await unreachable.close();
@@ -679,4 +682,24 @@ test('Ghostscript runs under -dSAFER, permitted to read only the ICC profile the
   const bare = ghostscriptPdfxArgs(testConfig({ pdfxDefPath: def }), '/w/in.pdf', '/w/out.pdf');
   assert.equal(bare[0], '-dSAFER');
   assert.ok(!bare.some((a) => a.startsWith('--permit-file-read')));
+});
+
+test('failureCause: every way this server fails a job maps to one cause the Store-ready report has a remedy for', async () => {
+  const { failureCause } = await import('../src/jobs/runner.js');
+  const { pdfxProblem } = await import('../src/jobs/tools.js');
+  const { testConfig } = await import('./helpers.js');
+  // Messages exactly as tools.ts and runner.ts write them.
+  assert.equal(failureCause({ configured: false, error: pdfxProblem({ ...testConfig(), gsBin: '' })! }), 'setup');
+  assert.equal(failureCause({ error: 'The HTML-to-PDF renderer could not be reached (RENDERER_URL="x": refused). This is a server setup gap, not a finding about your book.' }), 'setup');
+  assert.equal(failureCause({ error: 'Ghostscript did not finish within 900000 ms (PDFX_TIMEOUT_MS) and was stopped (before pages 1–40).' }), 'timeout');
+  assert.equal(failureCause({ error: 'The HTML-to-PDF renderer did not finish within 600000 ms and was stopped.' }), 'timeout');
+  assert.equal(failureCause({ error: 'The server restarted while this job was running, so it never finished. Nothing was checked or converted — please run it again.' }), 'interrupted');
+  assert.equal(failureCause({ error: 'The server was shutting down and this job did not finish in time, so it was stopped. Nothing was checked or converted — please run it again.' }), 'interrupted');
+  assert.equal(failureCause({ error: 'The source export for this job no longer exists, so there was nothing to run on.' }), 'missing');
+  assert.equal(failureCause({ error: "The source export's file is missing from storage, so the job could not run." }), 'missing');
+  assert.equal(failureCause({ error: 'The HTML-to-PDF renderer answered HTTP 500 and produced no PDF.' }), 'renderer');
+  assert.equal(failureCause({ error: 'Ghostscript reported success but left no output file, so no converted file exists.' }), 'tool');
+  assert.equal(failureCause({ error: 'EPUBCheck ran (exit code 2) but produced no readable report, so no validation result exists.' }), 'tool');
+  assert.equal(failureCause({ error: 'something new' }), 'unknown');
+  assert.equal(failureCause({}), 'unknown');
 });

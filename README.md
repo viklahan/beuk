@@ -985,6 +985,38 @@ chapter, the print settings or the cover maker).
   the source URLs.
 - Hardcover covers (case laminate / dust jacket) are "not checked":
   Beuk's wrap is a paperback wrap.
+- **Every line that isn't a pass says what to do.** Fail, warning and
+  "not checked" alike carry a fix, a one-click action, or both;
+  the self-check `store.fix.every-problem-has-a-way-out` walks both
+  stores, both bindings, every paper, five trims, with and without a
+  wrap, and every server state, on the report data and on screen. New
+  one-click actions: run the server check (or sign in first, when the
+  session has expired), check again, print the accent in black ink
+  (which also marks the old server measurement out of date: the
+  accent's print ink is part of the book's server signature), validate
+  the EPUB. Remedies with nothing Beuk can click are honest about whose
+  move it is: grey text tints have no switch yet, so the advice is a
+  printed proof; an RGB cover gets the proof plus Acrobat's Convert
+  Colors; an odd page count needs nothing (the store adds the blank).
+- **A failed server job names its cause, and the report has a remedy
+  for each.** `failureCause` in `src/jobs/runner.ts` tags every failed
+  job's result with one cause, classified from the server's own
+  messages: `setup` (a tool isn't installed or reachable: "a gap in the
+  Beuk server, not your book", pointing to KDP's Print Previewer and
+  IngramSpark's e-proof meanwhile, and no pointless re-run button),
+  `timeout` (run again; pictures no bigger than they print),
+  `interrupted` (server restarted: run again), `missing` (run again; a
+  fresh copy is archived first), `renderer` / `tool` / `unknown` (run
+  again; twice the same way → send the report to whoever runs the
+  server). The studio adds `client` for a job it could not even start
+  (connection). Checked by `jobs.failure.cause-classified` (server) and
+  `store.server.cause-remedies` (studio); jobs from before this change
+  carry no cause and fall back to the run-again remedy (or the setup
+  remedy, when their result says the tool wasn't configured).
+- A remedy shared by several lines (one failed job leaves five lines
+  unchecked) is written out once on screen; later lines keep their
+  button, or say "Same fix as above." when they have none. The
+  downloaded report keeps every remedy in full.
 
 ## Billing
 
@@ -2709,7 +2741,8 @@ Founders' Shelf application; none of it touches pricing or checkout.
 - **Changelog & roadmap** — `/changelog` renders `CHANGELOG.md` (repo
   root; entries credit the writers who asked), `/roadmap` renders
   `docs/roadmap.md` — the same file Housekeeping's Reference pillar
-  serves — in the Now/Next/Later shape. Edit the Markdown, the pages
+  serves — by status: In progress, Planned (in build order), Exploring,
+  Shipped (newest first, dated). Edit the Markdown, the pages
   follow; there are no other copies to keep in sync.
 - **Status line** — `GET /api/status` returns a scrubbed public
   summary (app, version, build stamp, db up/down, latest Self-checks
@@ -3983,6 +4016,44 @@ School home shows the latest issue as a band.
   notice's `link` points at the thing itself.
 - `checkWeeklyContent`, `tests/weekly.test.ts` and the Housekeeping case
   `weekly.content.parses-clean` keep it honest.
+
+### Bowmarket: `/school/bowmarket`
+
+The School's bookshop, the third School tab beside Courses and Beuk Weekly
+(V, 2026-10-29): box sets and single books, sold as files through Stripe
+Payment Links.
+
+- **Content:** `content/bowmarket/en/<slug>.md`, one file per item, with
+  its pictures beside it (served at `/school/bowmarket/img/<file>`). An
+  item is a `book` or a `set`; a set lists its books in `contents`, and
+  its page count is theirs added up. Format: `src/bowmarket/content.ts`.
+- **On sale only with both a price and a link.** `price` (USD, e.g.
+  `2.99`) and `buy` (a `https://buy.stripe.com/…` Payment Link, nothing
+  else accepted) go together; until both are set the button reads
+  "Coming soon", the shop says nothing can be bought yet, and no Stripe
+  link is on the page. Delivering the files after payment is not built.
+- **Books in 3D.** Every book stands on the page as a 3D book (CSS
+  only): front, back with its deck, spine in the item's `spine`/`spineInk`
+  colours, page edge, head and foot, shaped by its trim (`shape: wide` lies
+  landscape) and thickened by its page count. A set stands as its books
+  side by side. On an item's page the stage turns all the way round: drag
+  it, or focus it and use the arrow keys (Home resets); it makes one slow
+  turn on arrival unless reduced motion is on (`client/site/bowmarket.js`).
+  Without the script the books still stand, angled.
+- **The fronts are pages from inside the books**, never passed off as
+  covers (the PDFs have no cover art): an illustration with the title set
+  over it, or a landscape book's own first page. The pages say so.
+- **The manuscripts** (`source`, the PDFs in `marketbooks/` outside the
+  repo) are never served; only the pictures in the content folder are.
+- **Stocked today:** the Crashlanders trilogy box set (*CRASH!*, *The Howl
+  Chase*, *Into the Maw*, by Max Fable; 101 + 119 + 121 pages, 6 × 9 in)
+  and *What You See?* (a 20-page picture quiz book, A4 landscape); and
+  the Frost Line trilogy box set (*The Moscow Dead Drop*, *The House of
+  Mirrors*, *Zero Hour*, by Gisèle Torres; 312 + 302 + 293 pages, 6 × 9 in),
+  whose blurbs stop short of the endings the books' own cast lists give
+  away. Every description is quoted or drawn from the books' own pages.
+- `checkBowmarketContent`, `tests/bowmarket.test.ts` and the Housekeeping
+  case `bowmarket.content.parses-clean` keep it honest.
 
 ## Features and comparison pages: `/features`, `/compare`, `/compare/<name>`
 

@@ -166,9 +166,7 @@ test('changelog and roadmap pages render their seeded sources', async () => {
 
     const roadmap = await getPage(server.base, '/roadmap');
     assert.equal(roadmap.status, 200);
-    assert.match(roadmap.html, /Now/);
-    assert.match(roadmap.html, /Next/);
-    assert.match(roadmap.html, /Later/);
+    for (const status of ['In progress', 'Planned', 'Exploring', 'Shipped']) assert.match(roadmap.html, new RegExp(`<h2[^>]*>${status}</h2>`));
     assert.match(roadmap.html, /M5/);
   } finally {
     await server.close();

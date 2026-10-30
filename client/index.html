@@ -16596,6 +16596,449 @@
         "store.c.ecover.fail": "电子书封面为 {w} × {h} px；{store} 要求长边至少 {long} px、短边至少 {short} px。",
         "store.nc.ecover": "这本书还没有封面图片。"
       });
+      /* Store-ready remedies: what to do about every line that isn't a pass, in every locale. */
+      Object.assign(UI_STRINGS.en, {
+        "store.fixSame": "Same fix as above.",
+        "store.act.runServer": "Run the server check",
+        "store.act.signin": "Sign in",
+        "store.act.printBlack": "Print the accent in black ink",
+        "store.act.validate": "Validate this book",
+        "store.fix.local": "Beuk needs its server for this line. Until it can reach one, let the store check the file: KDP's Print Previewer shows problems before you publish, and IngramSpark makes an e-proof of the files you upload for you to approve.",
+        "store.fix.cause.setup": "This is a gap in the Beuk server, not a problem with your book. On beuk.studio, write to the address on the Help page; on a Beuk server of your own, the message above names the tool to install. Meanwhile the store checks the file itself: KDP's Print Previewer shows problems before you publish, and IngramSpark makes an e-proof of the files you upload for you to approve.",
+        "store.fix.cause.timeout": "Run the server check again. Long, picture-heavy books take longest; if it runs out of time again, use pictures no bigger than they print — 300 DPI at their printed size is enough, and larger ones only add work.",
+        "store.fix.cause.interrupted": "The server restarted while it worked; nothing is wrong with your book. Run the server check again.",
+        "store.fix.cause.missing": "Run the server check again — it saves a fresh copy of the book first.",
+        "store.fix.cause.client": "Check your internet connection, then run the server check again.",
+        "store.fix.cause.retry": "Run the server check again. If it fails the same way twice, download this report and send it to whoever runs your Beuk server (on beuk.studio, the address is on the Help page): the message above shows where it stopped.",
+        "store.c.faces.fix": "This is the server missing those typefaces, not your book. Before uploading, open the PDF you'll send and check that its font list (in Acrobat: File → Properties → Fonts) includes {wanted}.",
+        "store.c.even.fix": "Nothing you must do: {store} adds the blank page at the end. To choose what fills it instead, add a short closing page and check again.",
+        "store.c.textK.fixAccent": "Turn on “Print the accent in black ink” (Typography Studio → Colour), then run the server check again. Text you set in a colour on purpose keeps it.",
+        "store.c.textK.fix": "Set that text in black, or choose a colour ink & paper above if the colour is meant to print.",
+        "store.c.textK.tintsFix": "There is no switch for solid black on those lines yet. Grey text prints as a fine dot screen, which can look slightly soft at small sizes: order a printed proof from {store} and judge it on paper.",
+        "store.c.ecover.fixNone": "Make or add a cover image in the cover maker.",
+        "store.c.cdpi.fixRead": "Add the image again as a JPEG or PNG, so its size can be read.",
+        "store.c.ecover.fix": "Use a cover image at least {long} px on the long side and {short} px on the short side.",
+        "store.c.trim.fixStandard": "Or choose one of {store}'s standard sizes in the print settings.",
+        "store.c.trim.fixAny": "Choose a trim {store} prints in the print settings, then check again.",
+        "store.c.pages.fixTrim": "Fix the trim first: the page range follows from it.",
+        "store.c.pages.fixInk": "Choose another ink & paper above, or another trim.",
+        "store.c.wrap.fixHardcover": "Download {store}'s cover template for this book and line the wrap up against it before you upload.",
+        "store.c.spine.fixFactor": "Download {store}'s cover template for this book, then set the wrap's custom paper factor to the template's spine width ÷ the page count.",
+        "store.c.spinetext.fixPages": "Let the wrap follow the interior's page count: under 0.5 in, the wrap leaves the spine plain, which every store accepts.",
+        "store.c.spinetext.fixClear": "Open the cover maker and let the wrap follow the book's page count and paper; the spine type is sized from the spine's width.",
+        "store.c.barcode.fixDraw": "Open the cover maker once so the wrap can be drawn, then check again.",
+        "store.c.cbleed.fail": "The wrap carries {have} in bleed; {store} asks for {bleed} in.",
+        "store.c.cbleed.fix": "Rebuild the wrap in the cover maker.",
+        "store.c.ccolor.fix": "Order a printed proof from {store} and check the cover's colours on paper before you release the book. To control the conversion yourself, convert the wrap PDF to CMYK first (Acrobat Pro → Print Production → Convert Colors)."
+      });
+      Object.assign(UI_STRINGS.es, {
+        "store.fixSame": "La misma solución de arriba.",
+        "store.act.runServer": "Ejecutar la comprobación en el servidor",
+        "store.act.signin": "Iniciar sesión",
+        "store.act.printBlack": "Imprimir el acento en tinta negra",
+        "store.act.validate": "Validar este libro",
+        "store.fix.local": "Beuk necesita su servidor para esta línea. Mientras no pueda llegar a uno, deja que la tienda compruebe el archivo: el Print Previewer de KDP muestra los problemas antes de publicar, e IngramSpark prepara una prueba electrónica de los archivos que subes para que la apruebes.",
+        "store.fix.cause.setup": "Es una carencia del servidor de Beuk, no un problema de tu libro. En beuk.studio, escribe a la dirección de la página de Ayuda; en un servidor de Beuk propio, el mensaje de arriba indica qué herramienta instalar. Mientras tanto, la tienda comprueba el archivo: el Print Previewer de KDP muestra los problemas antes de publicar, e IngramSpark prepara una prueba electrónica de los archivos que subes para que la apruebes.",
+        "store.fix.cause.timeout": "Vuelve a ejecutar la comprobación en el servidor. Los libros largos y con muchas imágenes son los que más tardan; si vuelve a agotarse el tiempo, usa imágenes no más grandes de lo que se imprimen: 300 DPI a su tamaño impreso bastan, y más solo añade trabajo.",
+        "store.fix.cause.interrupted": "El servidor se reinició mientras trabajaba; a tu libro no le pasa nada. Vuelve a ejecutar la comprobación en el servidor.",
+        "store.fix.cause.missing": "Vuelve a ejecutar la comprobación en el servidor: antes guarda una copia nueva del libro.",
+        "store.fix.cause.client": "Comprueba tu conexión a internet y vuelve a ejecutar la comprobación en el servidor.",
+        "store.fix.cause.retry": "Vuelve a ejecutar la comprobación en el servidor. Si falla dos veces del mismo modo, descarga este informe y envíalo a quien gestione tu servidor de Beuk (en beuk.studio, la dirección está en la página de Ayuda): el mensaje de arriba muestra dónde se detuvo.",
+        "store.c.faces.fix": "Es el servidor el que no tiene esas tipografías, no tu libro. Antes de subirlo, abre el PDF que vas a enviar y comprueba que su lista de fuentes (en Acrobat: Archivo → Propiedades → Fuentes) incluye {wanted}.",
+        "store.c.even.fix": "No tienes que hacer nada: {store} añade la página en blanco al final. Si prefieres elegir qué va ahí, añade una página breve de cierre y vuelve a comprobar.",
+        "store.c.textK.fixAccent": "Activa «Imprimir el acento en tinta negra» (Estudio de tipografía → Color) y vuelve a ejecutar la comprobación en el servidor. El texto que pusiste en color a propósito lo conserva.",
+        "store.c.textK.fix": "Pon ese texto en negro, o elige arriba una tinta y papel en color si el color debe imprimirse.",
+        "store.c.textK.tintsFix": "Aún no hay un ajuste para poner esas líneas en negro sólido. El texto gris se imprime con una trama de puntos fina que puede verse algo suave en cuerpos pequeños: pide una prueba impresa a {store} y júzgalo en papel.",
+        "store.c.ecover.fixNone": "Crea o añade una imagen de cubierta en el creador de cubiertas.",
+        "store.c.cdpi.fixRead": "Vuelve a añadir la imagen como JPEG o PNG para que pueda leerse su tamaño.",
+        "store.c.ecover.fix": "Usa una imagen de cubierta de al menos {long} px en el lado largo y {short} px en el corto.",
+        "store.c.trim.fixStandard": "O elige uno de los tamaños estándar de {store} en los ajustes de impresión.",
+        "store.c.trim.fixAny": "Elige en los ajustes de impresión un corte que {store} imprima y vuelve a comprobar.",
+        "store.c.pages.fixTrim": "Corrige primero el corte: el rango de páginas depende de él.",
+        "store.c.pages.fixInk": "Elige arriba otra tinta y papel, u otro corte.",
+        "store.c.wrap.fixHardcover": "Descarga la plantilla de cubierta de {store} para este libro y ajusta la cubierta a ella antes de subirla.",
+        "store.c.spine.fixFactor": "Descarga la plantilla de cubierta de {store} para este libro y fija el factor de papel personalizado de la cubierta en el ancho del lomo de la plantilla ÷ el número de páginas.",
+        "store.c.spinetext.fixPages": "Deja que la cubierta siga el número de páginas del interior: por debajo de 0,5 pulg. deja el lomo liso, algo que todas las tiendas aceptan.",
+        "store.c.spinetext.fixClear": "Abre el creador de cubiertas y deja que la cubierta siga el número de páginas y el papel del libro; el texto del lomo se dimensiona según su ancho.",
+        "store.c.barcode.fixDraw": "Abre una vez el creador de cubiertas para que pueda dibujarse la cubierta y vuelve a comprobar.",
+        "store.c.cbleed.fail": "La cubierta lleva {have} pulg. de sangrado; {store} pide {bleed} pulg.",
+        "store.c.cbleed.fix": "Rehaz la cubierta en el creador de cubiertas.",
+        "store.c.ccolor.fix": "Pide una prueba impresa a {store} y revisa los colores de la cubierta en papel antes de publicar el libro. Para controlar tú la conversión, pasa antes el PDF de la cubierta a CMYK (Acrobat Pro → Producción de impresión → Convertir colores)."
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "store.fixSame": "Même correction que ci-dessus.",
+        "store.act.runServer": "Lancer la vérification sur le serveur",
+        "store.act.signin": "Se connecter",
+        "store.act.printBlack": "Imprimer l’accent en encre noire",
+        "store.act.validate": "Valider ce livre",
+        "store.fix.local": "Beuk a besoin de son serveur pour cette ligne. Tant qu’il n’en joint aucun, laissez la boutique vérifier le fichier : le Print Previewer de KDP signale les problèmes avant la publication, et IngramSpark produit une épreuve électronique des fichiers envoyés, à approuver.",
+        "store.fix.cause.setup": "C’est une lacune du serveur Beuk, pas un problème de votre livre. Sur beuk.studio, écrivez à l’adresse indiquée sur la page d’aide ; sur votre propre serveur Beuk, le message ci-dessus nomme l’outil à installer. En attendant, la boutique vérifie le fichier elle-même : le Print Previewer de KDP signale les problèmes avant la publication, et IngramSpark produit une épreuve électronique des fichiers envoyés, à approuver.",
+        "store.fix.cause.timeout": "Relancez la vérification sur le serveur. Les livres longs et riches en images sont les plus lents ; si le délai est de nouveau dépassé, utilisez des images pas plus grandes qu’à l’impression — 300 DPI à leur taille imprimée suffisent, au-delà on ajoute du travail sans détail.",
+        "store.fix.cause.interrupted": "Le serveur a redémarré pendant le travail ; votre livre n’y est pour rien. Relancez la vérification sur le serveur.",
+        "store.fix.cause.missing": "Relancez la vérification sur le serveur — elle enregistre d’abord une nouvelle copie du livre.",
+        "store.fix.cause.client": "Vérifiez votre connexion internet, puis relancez la vérification sur le serveur.",
+        "store.fix.cause.retry": "Relancez la vérification sur le serveur. Si elle échoue deux fois de la même façon, téléchargez ce rapport et envoyez-le à qui gère votre serveur Beuk (sur beuk.studio, l’adresse figure sur la page d’aide) : le message ci-dessus montre où elle s’est arrêtée.",
+        "store.c.faces.fix": "C’est le serveur à qui manquent ces polices, pas votre livre. Avant l’envoi, ouvrez le PDF que vous enverrez et vérifiez que sa liste de polices (dans Acrobat : Fichier → Propriétés → Polices) contient {wanted}.",
+        "store.c.even.fix": "Rien à faire : {store} ajoute la page blanche à la fin. Pour choisir ce qui l’occupe, ajoutez une courte page de fin et vérifiez à nouveau.",
+        "store.c.textK.fixAccent": "Activez « Imprimer l’accent en encre noire » (Studio de typographie → Couleur), puis relancez la vérification sur le serveur. Le texte mis en couleur volontairement la garde.",
+        "store.c.textK.fix": "Mettez ce texte en noir, ou choisissez ci-dessus une encre et un papier couleur si la couleur doit être imprimée.",
+        "store.c.textK.tintsFix": "Il n’existe pas encore de réglage pour passer ces lignes en noir plein. Le texte gris s’imprime en trame fine, qui peut paraître un peu douce en petits corps : commandez une épreuve imprimée chez {store} et jugez sur papier.",
+        "store.c.ecover.fixNone": "Créez ou ajoutez une image de couverture dans l’atelier de couverture.",
+        "store.c.cdpi.fixRead": "Ajoutez de nouveau l’image en JPEG ou PNG pour que sa taille puisse être lue.",
+        "store.c.ecover.fix": "Utilisez une image de couverture d’au moins {long} px sur le grand côté et {short} px sur le petit.",
+        "store.c.trim.fixStandard": "Ou choisissez l’un des formats standard de {store} dans les réglages d’impression.",
+        "store.c.trim.fixAny": "Choisissez dans les réglages d’impression un format que {store} imprime, puis vérifiez à nouveau.",
+        "store.c.pages.fixTrim": "Corrigez d’abord le format : la plage de pages en découle.",
+        "store.c.pages.fixInk": "Choisissez ci-dessus une autre encre et un autre papier, ou un autre format.",
+        "store.c.wrap.fixHardcover": "Téléchargez le gabarit de couverture de {store} pour ce livre et alignez-y la couverture avant l’envoi.",
+        "store.c.spine.fixFactor": "Téléchargez le gabarit de couverture de {store} pour ce livre, puis réglez le facteur de papier personnalisé sur la largeur de dos du gabarit ÷ le nombre de pages.",
+        "store.c.spinetext.fixPages": "Laissez la couverture suivre le nombre de pages de l’intérieur : sous 0,5 po, elle laisse le dos nu, ce que toutes les boutiques acceptent.",
+        "store.c.spinetext.fixClear": "Ouvrez l’atelier de couverture et laissez la couverture suivre le nombre de pages et le papier du livre ; le texte du dos est dimensionné d’après sa largeur.",
+        "store.c.barcode.fixDraw": "Ouvrez une fois l’atelier de couverture pour que la couverture puisse être dessinée, puis vérifiez à nouveau.",
+        "store.c.cbleed.fail": "La couverture a {have} po de fond perdu ; {store} demande {bleed} po.",
+        "store.c.cbleed.fix": "Refaites la couverture dans l’atelier de couverture.",
+        "store.c.ccolor.fix": "Commandez une épreuve imprimée chez {store} et vérifiez les couleurs de la couverture sur papier avant de publier. Pour maîtriser la conversion vous-même, convertissez d’abord le PDF de couverture en CMJN (Acrobat Pro → Production d’impression → Convertir les couleurs)."
+      });
+      Object.assign(UI_STRINGS.de, {
+        "store.fixSame": "Dieselbe Lösung wie oben.",
+        "store.act.runServer": "Serverprüfung starten",
+        "store.act.signin": "Anmelden",
+        "store.act.printBlack": "Akzent in Schwarz drucken",
+        "store.act.validate": "Dieses Buch prüfen",
+        "store.fix.local": "Für diese Zeile braucht Beuk seinen Server. Solange keiner erreichbar ist, lassen Sie den Shop die Datei prüfen: Der Print Previewer von KDP zeigt Probleme vor der Veröffentlichung, und IngramSpark erstellt aus den hochgeladenen Dateien einen E-Proof zur Freigabe.",
+        "store.fix.cause.setup": "Das ist eine Lücke im Beuk-Server, kein Problem Ihres Buchs. Auf beuk.studio schreiben Sie an die Adresse auf der Hilfeseite; auf einem eigenen Beuk-Server nennt die Meldung oben das zu installierende Werkzeug. Bis dahin prüft der Shop die Datei selbst: Der Print Previewer von KDP zeigt Probleme vor der Veröffentlichung, und IngramSpark erstellt aus den hochgeladenen Dateien einen E-Proof zur Freigabe.",
+        "store.fix.cause.timeout": "Starten Sie die Serverprüfung erneut. Lange, bildreiche Bücher dauern am längsten; läuft die Zeit wieder ab, verwenden Sie Bilder nicht größer, als sie gedruckt werden — 300 DPI in Druckgröße genügen, größere machen nur Arbeit.",
+        "store.fix.cause.interrupted": "Der Server wurde während der Arbeit neu gestartet; mit Ihrem Buch ist alles in Ordnung. Starten Sie die Serverprüfung erneut.",
+        "store.fix.cause.missing": "Starten Sie die Serverprüfung erneut — sie speichert zuerst eine frische Kopie des Buchs.",
+        "store.fix.cause.client": "Prüfen Sie Ihre Internetverbindung und starten Sie die Serverprüfung erneut.",
+        "store.fix.cause.retry": "Starten Sie die Serverprüfung erneut. Scheitert sie zweimal auf dieselbe Weise, laden Sie diesen Bericht herunter und schicken Sie ihn an den Betreiber Ihres Beuk-Servers (auf beuk.studio steht die Adresse auf der Hilfeseite): Die Meldung oben zeigt, wo sie stehen blieb.",
+        "store.c.faces.fix": "Dem Server fehlen diese Schriften, nicht Ihrem Buch. Öffnen Sie vor dem Hochladen das PDF, das Sie senden, und prüfen Sie, dass seine Schriftenliste (in Acrobat: Datei → Eigenschaften → Schriften) {wanted} enthält.",
+        "store.c.even.fix": "Sie müssen nichts tun: {store} fügt die leere Seite am Ende an. Wenn Sie selbst bestimmen möchten, was dort steht, fügen Sie eine kurze Schlussseite hinzu und prüfen Sie erneut.",
+        "store.c.textK.fixAccent": "Schalten Sie „Akzent in Schwarz drucken“ ein (Typografie-Studio → Farbe) und starten Sie die Serverprüfung erneut. Text, den Sie bewusst farbig gesetzt haben, behält seine Farbe.",
+        "store.c.textK.fix": "Setzen Sie diesen Text schwarz, oder wählen Sie oben eine Farbtinte und ein Papier, wenn die Farbe gedruckt werden soll.",
+        "store.c.textK.tintsFix": "Für diese Zeilen gibt es noch keinen Schalter auf reines Schwarz. Grauer Text wird als feines Punkteraster gedruckt, das in kleinen Graden etwas weich wirken kann: Bestellen Sie bei {store} einen gedruckten Probedruck und beurteilen Sie es auf Papier.",
+        "store.c.ecover.fixNone": "Erstellen oder ergänzen Sie ein Titelbild im Umschlag-Studio.",
+        "store.c.cdpi.fixRead": "Fügen Sie das Bild erneut als JPEG oder PNG hinzu, damit seine Größe gelesen werden kann.",
+        "store.c.ecover.fix": "Verwenden Sie ein Titelbild mit mindestens {long} px an der langen und {short} px an der kurzen Seite.",
+        "store.c.trim.fixStandard": "Oder wählen Sie in den Druckeinstellungen eines der Standardformate von {store}.",
+        "store.c.trim.fixAny": "Wählen Sie in den Druckeinstellungen ein Format, das {store} druckt, und prüfen Sie erneut.",
+        "store.c.pages.fixTrim": "Korrigieren Sie zuerst das Format: Der Seitenbereich ergibt sich daraus.",
+        "store.c.pages.fixInk": "Wählen Sie oben eine andere Tinte und ein anderes Papier oder ein anderes Format.",
+        "store.c.wrap.fixHardcover": "Laden Sie die Umschlagvorlage von {store} für dieses Buch herunter und richten Sie den Umschlag vor dem Hochladen daran aus.",
+        "store.c.spine.fixFactor": "Laden Sie die Umschlagvorlage von {store} für dieses Buch herunter und setzen Sie den eigenen Papierfaktor des Umschlags auf die Rückenbreite der Vorlage ÷ Seitenzahl.",
+        "store.c.spinetext.fixPages": "Lassen Sie den Umschlag der Seitenzahl des Innenteils folgen: Unter 0,5 in bleibt der Rücken ohne Text, was jeder Shop akzeptiert.",
+        "store.c.spinetext.fixClear": "Öffnen Sie das Umschlag-Studio und lassen Sie den Umschlag der Seitenzahl und dem Papier des Buchs folgen; die Rückenschrift richtet sich nach der Rückenbreite.",
+        "store.c.barcode.fixDraw": "Öffnen Sie einmal das Umschlag-Studio, damit der Umschlag gezeichnet werden kann, und prüfen Sie erneut.",
+        "store.c.cbleed.fail": "Der Umschlag hat {have} in Beschnitt; {store} verlangt {bleed} in.",
+        "store.c.cbleed.fix": "Erstellen Sie den Umschlag im Umschlag-Studio neu.",
+        "store.c.ccolor.fix": "Bestellen Sie bei {store} einen gedruckten Probedruck und prüfen Sie die Umschlagfarben auf Papier, bevor Sie das Buch freigeben. Wenn Sie die Umwandlung selbst steuern möchten, wandeln Sie das Umschlag-PDF vorher in CMYK um (Acrobat Pro → Druckproduktion → Farben konvertieren)."
+      });
+      Object.assign(UI_STRINGS.it, {
+        "store.fixSame": "Stessa soluzione di sopra.",
+        "store.act.runServer": "Esegui il controllo sul server",
+        "store.act.signin": "Accedi",
+        "store.act.printBlack": "Stampa l’accento in inchiostro nero",
+        "store.act.validate": "Valida questo libro",
+        "store.fix.local": "Per questa riga Beuk ha bisogno del suo server. Finché non ne raggiunge uno, lascia che sia il negozio a controllare il file: il Print Previewer di KDP mostra i problemi prima della pubblicazione, e IngramSpark crea una bozza elettronica dei file caricati da approvare.",
+        "store.fix.cause.setup": "È una lacuna del server di Beuk, non un problema del tuo libro. Su beuk.studio, scrivi all’indirizzo nella pagina di Aiuto; su un tuo server Beuk, il messaggio qui sopra indica lo strumento da installare. Nel frattempo il negozio controlla il file da sé: il Print Previewer di KDP mostra i problemi prima della pubblicazione, e IngramSpark crea una bozza elettronica dei file caricati da approvare.",
+        "store.fix.cause.timeout": "Esegui di nuovo il controllo sul server. I libri lunghi e ricchi di immagini sono i più lenti; se il tempo scade di nuovo, usa immagini non più grandi di come vengono stampate — 300 DPI alla dimensione di stampa bastano, di più aggiunge solo lavoro.",
+        "store.fix.cause.interrupted": "Il server si è riavviato mentre lavorava; il tuo libro non ha nulla che non va. Esegui di nuovo il controllo sul server.",
+        "store.fix.cause.missing": "Esegui di nuovo il controllo sul server: prima salva una copia aggiornata del libro.",
+        "store.fix.cause.client": "Controlla la connessione a internet, poi esegui di nuovo il controllo sul server.",
+        "store.fix.cause.retry": "Esegui di nuovo il controllo sul server. Se fallisce due volte allo stesso modo, scarica questo rapporto e invialo a chi gestisce il tuo server Beuk (su beuk.studio l’indirizzo è nella pagina di Aiuto): il messaggio qui sopra mostra dove si è fermato.",
+        "store.c.faces.fix": "È il server a non avere quei caratteri, non il tuo libro. Prima di caricarlo, apri il PDF che invierai e controlla che l’elenco dei font (in Acrobat: File → Proprietà → Font) includa {wanted}.",
+        "store.c.even.fix": "Non devi fare nulla: {store} aggiunge la pagina bianca alla fine. Se preferisci scegliere cosa metterci, aggiungi una breve pagina di chiusura e controlla di nuovo.",
+        "store.c.textK.fixAccent": "Attiva «Stampa l’accento in inchiostro nero» (Studio di tipografia → Colore), poi esegui di nuovo il controllo sul server. Il testo messo a colori di proposito lo mantiene.",
+        "store.c.textK.fix": "Metti quel testo in nero, oppure scegli qui sopra un inchiostro e una carta a colori se il colore va stampato.",
+        "store.c.textK.tintsFix": "Per ora non c’è un’opzione per portare quelle righe a nero pieno. Il testo grigio si stampa con un retino fine, che nei corpi piccoli può sembrare un po’ morbido: ordina una copia di prova stampata a {store} e giudica sulla carta.",
+        "store.c.ecover.fixNone": "Crea o aggiungi un’immagine di copertina nel creatore di copertine.",
+        "store.c.cdpi.fixRead": "Aggiungi di nuovo l’immagine come JPEG o PNG, così se ne può leggere la dimensione.",
+        "store.c.ecover.fix": "Usa un’immagine di copertina di almeno {long} px sul lato lungo e {short} px sul lato corto.",
+        "store.c.trim.fixStandard": "Oppure scegli uno dei formati standard di {store} nelle impostazioni di stampa.",
+        "store.c.trim.fixAny": "Scegli nelle impostazioni di stampa un formato che {store} stampa, poi controlla di nuovo.",
+        "store.c.pages.fixTrim": "Correggi prima il formato: l’intervallo di pagine dipende da quello.",
+        "store.c.pages.fixInk": "Scegli qui sopra un altro inchiostro e carta, oppure un altro formato.",
+        "store.c.wrap.fixHardcover": "Scarica il modello di copertina di {store} per questo libro e allinea la copertina prima di caricarla.",
+        "store.c.spine.fixFactor": "Scarica il modello di copertina di {store} per questo libro, poi imposta il fattore carta personalizzato della copertina sulla larghezza del dorso del modello ÷ il numero di pagine.",
+        "store.c.spinetext.fixPages": "Lascia che la copertina segua il numero di pagine dell’interno: sotto 0,5 in il dorso resta senza testo, cosa che ogni negozio accetta.",
+        "store.c.spinetext.fixClear": "Apri il creatore di copertine e lascia che la copertina segua il numero di pagine e la carta del libro; il testo del dorso si dimensiona sulla sua larghezza.",
+        "store.c.barcode.fixDraw": "Apri una volta il creatore di copertine perché la copertina possa essere disegnata, poi controlla di nuovo.",
+        "store.c.cbleed.fail": "La copertina ha {have} in di abbondanza; {store} chiede {bleed} in.",
+        "store.c.cbleed.fix": "Rifai la copertina nel creatore di copertine.",
+        "store.c.ccolor.fix": "Ordina una copia di prova stampata a {store} e controlla i colori della copertina su carta prima di pubblicare. Per gestire tu la conversione, converti prima il PDF di copertina in CMYK (Acrobat Pro → Produzione di stampa → Converti colori)."
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "store.fixSame": "A mesma solução de cima.",
+        "store.act.runServer": "Executar a verificação no servidor",
+        "store.act.signin": "Iniciar sessão",
+        "store.act.printBlack": "Imprimir o destaque a tinta preta",
+        "store.act.validate": "Validar este livro",
+        "store.fix.local": "O Beuk precisa do seu servidor para esta linha. Enquanto não chegar a nenhum, deixe a loja verificar o ficheiro: o Print Previewer da KDP mostra os problemas antes de publicar, e a IngramSpark cria uma prova eletrónica dos ficheiros enviados para aprovar.",
+        "store.fix.cause.setup": "É uma falha do servidor do Beuk, não um problema do seu livro. Em beuk.studio, escreva para o endereço na página de Ajuda; num servidor Beuk próprio, a mensagem acima indica a ferramenta a instalar. Entretanto, a loja verifica o ficheiro: o Print Previewer da KDP mostra os problemas antes de publicar, e a IngramSpark cria uma prova eletrónica dos ficheiros enviados para aprovar.",
+        "store.fix.cause.timeout": "Execute de novo a verificação no servidor. Os livros longos e com muitas imagens são os mais demorados; se o tempo voltar a esgotar-se, use imagens não maiores do que são impressas — 300 DPI no tamanho impresso chegam, e mais só acrescenta trabalho.",
+        "store.fix.cause.interrupted": "O servidor reiniciou enquanto trabalhava; o seu livro não tem nada de errado. Execute de novo a verificação no servidor.",
+        "store.fix.cause.missing": "Execute de novo a verificação no servidor — primeiro guarda uma cópia nova do livro.",
+        "store.fix.cause.client": "Verifique a ligação à internet e execute de novo a verificação no servidor.",
+        "store.fix.cause.retry": "Execute de novo a verificação no servidor. Se falhar duas vezes da mesma forma, descarregue este relatório e envie-o a quem gere o seu servidor Beuk (em beuk.studio, o endereço está na página de Ajuda): a mensagem acima mostra onde parou.",
+        "store.c.faces.fix": "É o servidor que não tem esses tipos de letra, não o seu livro. Antes de enviar, abra o PDF que vai enviar e confirme que a lista de tipos de letra (no Acrobat: Ficheiro → Propriedades → Tipos de letra) inclui {wanted}.",
+        "store.c.even.fix": "Não precisa de fazer nada: a {store} acrescenta a página em branco no fim. Se preferir escolher o que lá fica, acrescente uma curta página de fecho e verifique de novo.",
+        "store.c.textK.fixAccent": "Ative «Imprimir o destaque a tinta preta» (Estúdio de tipografia → Cor) e execute de novo a verificação no servidor. O texto que pôs a cor de propósito mantém-na.",
+        "store.c.textK.fix": "Ponha esse texto a preto, ou escolha acima uma tinta e papel a cores se a cor for para imprimir.",
+        "store.c.textK.tintsFix": "Ainda não há uma opção para pôr essas linhas a preto sólido. O texto cinzento imprime-se como uma retícula fina, que pode parecer um pouco suave em corpos pequenos: encomende uma prova impressa à {store} e avalie no papel.",
+        "store.c.ecover.fixNone": "Crie ou acrescente uma imagem de capa no criador de capas.",
+        "store.c.cdpi.fixRead": "Acrescente de novo a imagem como JPEG ou PNG, para que o tamanho possa ser lido.",
+        "store.c.ecover.fix": "Use uma imagem de capa com pelo menos {long} px no lado maior e {short} px no menor.",
+        "store.c.trim.fixStandard": "Ou escolha um dos formatos padrão da {store} nas definições de impressão.",
+        "store.c.trim.fixAny": "Escolha nas definições de impressão um formato que a {store} imprima e verifique de novo.",
+        "store.c.pages.fixTrim": "Corrija primeiro o formato: o intervalo de páginas depende dele.",
+        "store.c.pages.fixInk": "Escolha acima outra tinta e papel, ou outro formato.",
+        "store.c.wrap.fixHardcover": "Descarregue o modelo de capa da {store} para este livro e alinhe a capa por ele antes de enviar.",
+        "store.c.spine.fixFactor": "Descarregue o modelo de capa da {store} para este livro e defina o fator de papel personalizado da capa como a largura da lombada do modelo ÷ o número de páginas.",
+        "store.c.spinetext.fixPages": "Deixe a capa seguir o número de páginas do miolo: abaixo de 0,5 pol., a lombada fica sem texto, o que todas as lojas aceitam.",
+        "store.c.spinetext.fixClear": "Abra o criador de capas e deixe a capa seguir o número de páginas e o papel do livro; o texto da lombada é dimensionado pela sua largura.",
+        "store.c.barcode.fixDraw": "Abra uma vez o criador de capas para que a capa possa ser desenhada e verifique de novo.",
+        "store.c.cbleed.fail": "A capa tem {have} pol. de sangria; a {store} pede {bleed} pol.",
+        "store.c.cbleed.fix": "Refaça a capa no criador de capas.",
+        "store.c.ccolor.fix": "Encomende uma prova impressa à {store} e confira as cores da capa no papel antes de lançar o livro. Para controlar a conversão, converta antes o PDF da capa para CMYK (Acrobat Pro → Produção de impressão → Converter cores)."
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "store.fixSame": "Dezelfde oplossing als hierboven.",
+        "store.act.runServer": "Servercontrole uitvoeren",
+        "store.act.signin": "Inloggen",
+        "store.act.printBlack": "Accent in zwarte inkt drukken",
+        "store.act.validate": "Valideer dit boek",
+        "store.fix.local": "Voor deze regel heeft Beuk zijn server nodig. Zolang die niet bereikbaar is, laat u de winkel het bestand controleren: de Print Previewer van KDP toont problemen vóór publicatie, en IngramSpark maakt van de geüploade bestanden een e-proef om goed te keuren.",
+        "store.fix.cause.setup": "Dit is een gat in de Beuk-server, geen probleem met uw boek. Op beuk.studio schrijft u naar het adres op de Help-pagina; op een eigen Beuk-server noemt de melding hierboven het programma dat geïnstalleerd moet worden. Intussen controleert de winkel het bestand zelf: de Print Previewer van KDP toont problemen vóór publicatie, en IngramSpark maakt van de geüploade bestanden een e-proef om goed te keuren.",
+        "store.fix.cause.timeout": "Voer de servercontrole opnieuw uit. Lange, beeldrijke boeken duren het langst; raakt de tijd weer op, gebruik dan afbeeldingen die niet groter zijn dan ze gedrukt worden — 300 DPI op drukformaat is genoeg, groter geeft alleen meer werk.",
+        "store.fix.cause.interrupted": "De server is tijdens het werk herstart; er is niets mis met uw boek. Voer de servercontrole opnieuw uit.",
+        "store.fix.cause.missing": "Voer de servercontrole opnieuw uit — die bewaart eerst een nieuwe kopie van het boek.",
+        "store.fix.cause.client": "Controleer uw internetverbinding en voer de servercontrole opnieuw uit.",
+        "store.fix.cause.retry": "Voer de servercontrole opnieuw uit. Mislukt die twee keer op dezelfde manier, download dan dit rapport en stuur het naar wie uw Beuk-server beheert (op beuk.studio staat het adres op de Help-pagina): de melding hierboven laat zien waar het stopte.",
+        "store.c.faces.fix": "Het is de server die deze lettertypen mist, niet uw boek. Open vóór het uploaden de pdf die u verstuurt en controleer of de lettertypelijst (in Acrobat: Bestand → Eigenschappen → Lettertypen) {wanted} bevat.",
+        "store.c.even.fix": "U hoeft niets te doen: {store} voegt de lege pagina aan het eind toe. Wilt u zelf kiezen wat daar komt, voeg dan een korte slotpagina toe en controleer opnieuw.",
+        "store.c.textK.fixAccent": "Zet ‘Accent in zwarte inkt drukken’ aan (Typografiestudio → Kleur) en voer de servercontrole opnieuw uit. Tekst die u bewust in kleur zette, houdt die kleur.",
+        "store.c.textK.fix": "Zet die tekst in zwart, of kies hierboven een kleureninkt en -papier als de kleur gedrukt moet worden.",
+        "store.c.textK.tintsFix": "Er is nog geen schakelaar om die regels in volzwart te zetten. Grijze tekst wordt als een fijn raster gedrukt, dat in kleine korpsen wat zacht kan ogen: bestel een gedrukte proef bij {store} en beoordeel het op papier.",
+        "store.c.ecover.fixNone": "Maak of voeg een omslagafbeelding toe in de omslagmaker.",
+        "store.c.cdpi.fixRead": "Voeg de afbeelding opnieuw toe als JPEG of PNG, zodat de afmeting gelezen kan worden.",
+        "store.c.ecover.fix": "Gebruik een omslagafbeelding van minstens {long} px aan de lange en {short} px aan de korte zijde.",
+        "store.c.trim.fixStandard": "Of kies in de drukinstellingen een van de standaardformaten van {store}.",
+        "store.c.trim.fixAny": "Kies in de drukinstellingen een formaat dat {store} drukt en controleer opnieuw.",
+        "store.c.pages.fixTrim": "Los eerst het formaat op: het paginabereik volgt daaruit.",
+        "store.c.pages.fixInk": "Kies hierboven een andere inkt en ander papier, of een ander formaat.",
+        "store.c.wrap.fixHardcover": "Download de omslagsjabloon van {store} voor dit boek en leg het omslag ertegen voordat u uploadt.",
+        "store.c.spine.fixFactor": "Download de omslagsjabloon van {store} voor dit boek en zet de eigen papierfactor van het omslag op de rugbreedte uit de sjabloon ÷ het aantal pagina’s.",
+        "store.c.spinetext.fixPages": "Laat het omslag het paginatal van het binnenwerk volgen: onder 0,5 in blijft de rug zonder tekst, wat elke winkel accepteert.",
+        "store.c.spinetext.fixClear": "Open de omslagmaker en laat het omslag het paginatal en papier van het boek volgen; de rugtekst wordt op de rugbreedte afgestemd.",
+        "store.c.barcode.fixDraw": "Open de omslagmaker één keer zodat het omslag getekend kan worden, en controleer opnieuw.",
+        "store.c.cbleed.fail": "Het omslag heeft {have} in afloop; {store} vraagt {bleed} in.",
+        "store.c.cbleed.fix": "Maak het omslag opnieuw in de omslagmaker.",
+        "store.c.ccolor.fix": "Bestel een gedrukte proef bij {store} en controleer de omslagkleuren op papier voordat u het boek uitbrengt. Wilt u de omzetting zelf sturen, zet de omslag-pdf dan eerst om naar CMYK (Acrobat Pro → Afdrukproductie → Kleuren omzetten)."
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "store.fixSame": "To samo rozwiązanie co wyżej.",
+        "store.act.runServer": "Uruchom sprawdzenie na serwerze",
+        "store.act.signin": "Zaloguj się",
+        "store.act.printBlack": "Drukuj akcent czarną farbą",
+        "store.act.validate": "Waliduj tę książkę",
+        "store.fix.local": "Do tego wiersza Beuk potrzebuje swojego serwera. Dopóki żadnego nie osiągnie, pozwól sklepowi sprawdzić plik: Print Previewer w KDP pokazuje problemy przed publikacją, a IngramSpark przygotowuje z przesłanych plików e-proof do zatwierdzenia.",
+        "store.fix.cause.setup": "To brak po stronie serwera Beuk, nie problem z twoją książką. Na beuk.studio napisz na adres podany na stronie Pomocy; na własnym serwerze Beuk komunikat powyżej podaje narzędzie do zainstalowania. Do tego czasu sklep sam sprawdza plik: Print Previewer w KDP pokazuje problemy przed publikacją, a IngramSpark przygotowuje z przesłanych plików e-proof do zatwierdzenia.",
+        "store.fix.cause.timeout": "Uruchom ponownie sprawdzenie na serwerze. Najdłużej trwają długie, bogato ilustrowane książki; jeśli czas znów się skończy, użyj obrazów nie większych niż w druku — 300 DPI w rozmiarze druku wystarczy, większe dodają tylko pracy.",
+        "store.fix.cause.interrupted": "Serwer uruchomił się ponownie w trakcie pracy; z książką wszystko w porządku. Uruchom ponownie sprawdzenie na serwerze.",
+        "store.fix.cause.missing": "Uruchom ponownie sprawdzenie na serwerze — najpierw zapisze świeżą kopię książki.",
+        "store.fix.cause.client": "Sprawdź połączenie z internetem i uruchom ponownie sprawdzenie na serwerze.",
+        "store.fix.cause.retry": "Uruchom ponownie sprawdzenie na serwerze. Jeśli dwa razy zawiedzie tak samo, pobierz ten raport i wyślij go osobie, która prowadzi twój serwer Beuk (na beuk.studio adres jest na stronie Pomocy): komunikat powyżej pokazuje, gdzie się zatrzymało.",
+        "store.c.faces.fix": "To serwerowi brakuje tych krojów, nie twojej książce. Przed wysłaniem otwórz PDF, który wyślesz, i sprawdź, czy lista czcionek (w Acrobacie: Plik → Właściwości → Czcionki) zawiera {wanted}.",
+        "store.c.even.fix": "Nie musisz nic robić: {store} dodaje pustą stronę na końcu. Jeśli wolisz wybrać, co tam będzie, dodaj krótką stronę zamykającą i sprawdź ponownie.",
+        "store.c.textK.fixAccent": "Włącz „Drukuj akcent czarną farbą” (Studio typografii → Kolor), a potem uruchom ponownie sprawdzenie na serwerze. Tekst celowo ustawiony w kolorze go zachowa.",
+        "store.c.textK.fix": "Ustaw ten tekst na czarno albo wybierz powyżej kolorowy druk i papier, jeśli kolor ma być drukowany.",
+        "store.c.textK.tintsFix": "Nie ma jeszcze przełącznika na pełną czerń dla tych wierszy. Szary tekst drukuje się drobnym rastrem, który w małych stopniach może wyglądać nieco miękko: zamów w {store} drukowany egzemplarz próbny i oceń go na papierze.",
+        "store.c.ecover.fixNone": "Utwórz lub dodaj obraz okładki w kreatorze okładek.",
+        "store.c.cdpi.fixRead": "Dodaj obraz ponownie jako JPEG lub PNG, aby dało się odczytać jego rozmiar.",
+        "store.c.ecover.fix": "Użyj obrazu okładki o co najmniej {long} px na dłuższym i {short} px na krótszym boku.",
+        "store.c.trim.fixStandard": "Albo wybierz w ustawieniach druku jeden ze standardowych formatów {store}.",
+        "store.c.trim.fixAny": "Wybierz w ustawieniach druku format, który {store} drukuje, i sprawdź ponownie.",
+        "store.c.pages.fixTrim": "Najpierw popraw format: zakres stron z niego wynika.",
+        "store.c.pages.fixInk": "Wybierz powyżej inny druk i papier albo inny format.",
+        "store.c.wrap.fixHardcover": "Pobierz szablon okładki {store} dla tej książki i dopasuj do niego okładkę przed wysłaniem.",
+        "store.c.spine.fixFactor": "Pobierz szablon okładki {store} dla tej książki, a potem ustaw własny współczynnik papieru okładki na szerokość grzbietu z szablonu ÷ liczbę stron.",
+        "store.c.spinetext.fixPages": "Niech okładka podąża za liczbą stron środka: poniżej 0,5 in grzbiet zostaje bez tekstu, co akceptuje każdy sklep.",
+        "store.c.spinetext.fixClear": "Otwórz kreator okładek i niech okładka podąża za liczbą stron i papierem książki; tekst grzbietu dopasowuje się do jego szerokości.",
+        "store.c.barcode.fixDraw": "Otwórz raz kreator okładek, aby dało się narysować okładkę, i sprawdź ponownie.",
+        "store.c.cbleed.fail": "Okładka ma {have} in spadu; {store} wymaga {bleed} in.",
+        "store.c.cbleed.fix": "Utwórz okładkę ponownie w kreatorze okładek.",
+        "store.c.ccolor.fix": "Zamów w {store} drukowany egzemplarz próbny i sprawdź kolory okładki na papierze, zanim wydasz książkę. Aby samodzielnie kontrolować konwersję, najpierw przekonwertuj PDF okładki do CMYK (Acrobat Pro → Produkcja drukowana → Konwertuj kolory)."
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "store.fixSame": "То же решение, что выше.",
+        "store.act.runServer": "Запустить проверку на сервере",
+        "store.act.signin": "Войти",
+        "store.act.printBlack": "Печатать акцент чёрной краской",
+        "store.act.validate": "Проверить эту книгу",
+        "store.fix.local": "Для этой строки Beuk нужен его сервер. Пока сервер недоступен, пусть файл проверит магазин: Print Previewer в KDP показывает проблемы до публикации, а IngramSpark делает из загруженных файлов электронную корректуру для утверждения.",
+        "store.fix.cause.setup": "Это пробел на сервере Beuk, а не проблема вашей книги. На beuk.studio напишите по адресу со страницы «Помощь»; на собственном сервере Beuk сообщение выше называет инструмент, который нужно установить. Пока что файл проверит сам магазин: Print Previewer в KDP показывает проблемы до публикации, а IngramSpark делает из загруженных файлов электронную корректуру для утверждения.",
+        "store.fix.cause.timeout": "Запустите проверку на сервере ещё раз. Дольше всего идут длинные, богато иллюстрированные книги; если время снова выйдет, используйте изображения не крупнее, чем в печати, — 300 DPI в печатном размере достаточно, больше лишь добавляет работы.",
+        "store.fix.cause.interrupted": "Сервер перезапустился во время работы; с вашей книгой всё в порядке. Запустите проверку на сервере ещё раз.",
+        "store.fix.cause.missing": "Запустите проверку на сервере ещё раз — сначала она сохранит свежую копию книги.",
+        "store.fix.cause.client": "Проверьте подключение к интернету и запустите проверку на сервере ещё раз.",
+        "store.fix.cause.retry": "Запустите проверку на сервере ещё раз. Если она дважды сорвётся одинаково, скачайте этот отчёт и отправьте тому, кто ведёт ваш сервер Beuk (на beuk.studio адрес есть на странице «Помощь»): сообщение выше показывает, где она остановилась.",
+        "store.c.faces.fix": "Этих шрифтов нет на сервере, а не в вашей книге. Перед загрузкой откройте PDF, который отправите, и убедитесь, что в списке шрифтов (в Acrobat: Файл → Свойства → Шрифты) есть {wanted}.",
+        "store.c.even.fix": "Делать ничего не нужно: {store} добавит пустую страницу в конце. Если хотите сами решить, что там будет, добавьте короткую заключительную страницу и проверьте снова.",
+        "store.c.textK.fixAccent": "Включите «Печатать акцент чёрной краской» (Студия типографики → Цвет), затем снова запустите проверку на сервере. Текст, который вы намеренно сделали цветным, цвет сохранит.",
+        "store.c.textK.fix": "Сделайте этот текст чёрным или выберите выше цветную печать и бумагу, если цвет должен печататься.",
+        "store.c.textK.tintsFix": "Переключателя, делающего эти строки сплошными чёрными, пока нет. Серый текст печатается мелким растром, который в малых кеглях может выглядеть чуть мягче: закажите в {store} печатный пробный экземпляр и оцените на бумаге.",
+        "store.c.ecover.fixNone": "Создайте или добавьте изображение обложки в конструкторе обложек.",
+        "store.c.cdpi.fixRead": "Добавьте изображение заново в формате JPEG или PNG, чтобы можно было прочитать его размер.",
+        "store.c.ecover.fix": "Используйте изображение обложки не меньше {long} px по длинной стороне и {short} px по короткой.",
+        "store.c.trim.fixStandard": "Или выберите в настройках печати один из стандартных форматов {store}.",
+        "store.c.trim.fixAny": "Выберите в настройках печати формат, который печатает {store}, и проверьте снова.",
+        "store.c.pages.fixTrim": "Сначала исправьте формат: диапазон страниц зависит от него.",
+        "store.c.pages.fixInk": "Выберите выше другую печать и бумагу или другой формат.",
+        "store.c.wrap.fixHardcover": "Скачайте шаблон обложки {store} для этой книги и выровняйте по нему обложку перед загрузкой.",
+        "store.c.spine.fixFactor": "Скачайте шаблон обложки {store} для этой книги и задайте собственный коэффициент бумаги обложки: ширина корешка из шаблона ÷ число страниц.",
+        "store.c.spinetext.fixPages": "Пусть обложка следует числу страниц блока: при корешке меньше 0,5 in он остаётся без текста, и это принимает любой магазин.",
+        "store.c.spinetext.fixClear": "Откройте конструктор обложек и пусть обложка следует числу страниц и бумаге книги; текст на корешке подбирается по его ширине.",
+        "store.c.barcode.fixDraw": "Откройте конструктор обложек один раз, чтобы обложку можно было отрисовать, и проверьте снова.",
+        "store.c.cbleed.fail": "У обложки {have} in вылетов; {store} требует {bleed} in.",
+        "store.c.cbleed.fix": "Пересоздайте обложку в конструкторе обложек.",
+        "store.c.ccolor.fix": "Закажите в {store} печатный пробный экземпляр и проверьте цвета обложки на бумаге до выпуска книги. Чтобы самому управлять преобразованием, сначала переведите PDF обложки в CMYK (Acrobat Pro → Допечатная подготовка → Преобразовать цвета)."
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "store.fixSame": "Yukarıdakiyle aynı çözüm.",
+        "store.act.runServer": "Sunucu denetimini çalıştır",
+        "store.act.signin": "Oturum aç",
+        "store.act.printBlack": "Vurguyu siyah mürekkeple bas",
+        "store.act.validate": "Bu kitabı doğrula",
+        "store.fix.local": "Beuk bu satır için sunucusuna ihtiyaç duyar. Bir sunucuya ulaşamadığı sürece dosyayı mağazaya denetletin: KDP’nin Print Previewer’ı sorunları yayımlamadan önce gösterir, IngramSpark da yüklediğiniz dosyalardan onaylamanız için bir e-prova hazırlar.",
+        "store.fix.cause.setup": "Bu, kitabınızla ilgili bir sorun değil, Beuk sunucusundaki bir eksik. beuk.studio’da Yardım sayfasındaki adrese yazın; kendi Beuk sunucunuzda yukarıdaki ileti kurulması gereken aracı söyler. Bu arada dosyayı mağaza kendisi denetler: KDP’nin Print Previewer’ı sorunları yayımlamadan önce gösterir, IngramSpark da yüklediğiniz dosyalardan onaylamanız için bir e-prova hazırlar.",
+        "store.fix.cause.timeout": "Sunucu denetimini yeniden çalıştırın. En uzun süren, uzun ve bol resimli kitaplardır; süre yine dolarsa resimleri basıldıkları boyuttan büyük kullanmayın — basılı boyutta 300 DPI yeterlidir, fazlası yalnızca iş ekler.",
+        "store.fix.cause.interrupted": "Sunucu çalışırken yeniden başladı; kitabınızda bir sorun yok. Sunucu denetimini yeniden çalıştırın.",
+        "store.fix.cause.missing": "Sunucu denetimini yeniden çalıştırın — önce kitabın yeni bir kopyasını kaydeder.",
+        "store.fix.cause.client": "İnternet bağlantınızı denetleyin, ardından sunucu denetimini yeniden çalıştırın.",
+        "store.fix.cause.retry": "Sunucu denetimini yeniden çalıştırın. Aynı biçimde iki kez başarısız olursa bu raporu indirip Beuk sunucunuzu yöneten kişiye gönderin (beuk.studio’da adres Yardım sayfasındadır): yukarıdaki ileti nerede durduğunu gösterir.",
+        "store.c.faces.fix": "Bu yazı tipleri kitabınızda değil, sunucuda eksik. Yüklemeden önce göndereceğiniz PDF’i açın ve yazı tipi listesinde (Acrobat’ta: Dosya → Özellikler → Yazı Tipleri) {wanted} olduğunu denetleyin.",
+        "store.c.even.fix": "Yapmanız gereken bir şey yok: {store} sona boş sayfayı ekler. Oraya ne geleceğini siz seçmek isterseniz kısa bir kapanış sayfası ekleyip yeniden denetleyin.",
+        "store.c.textK.fixAccent": "“Vurguyu siyah mürekkeple bas”ı açın (Tipografi stüdyosu → Renk), ardından sunucu denetimini yeniden çalıştırın. Bilerek renkli yaptığınız metin rengini korur.",
+        "store.c.textK.fix": "O metni siyah yapın ya da renk basılacaksa yukarıdan renkli bir mürekkep ve kâğıt seçin.",
+        "store.c.textK.tintsFix": "O satırları düz siyaha çeviren bir ayar henüz yok. Gri metin ince bir tram olarak basılır ve küçük puntolarda biraz yumuşak görünebilir: {store}’dan basılı bir prova isteyip kâğıt üzerinde değerlendirin.",
+        "store.c.ecover.fixNone": "Kapak oluşturucuda bir kapak görseli oluşturun ya da ekleyin.",
+        "store.c.cdpi.fixRead": "Boyutunun okunabilmesi için görseli JPEG ya da PNG olarak yeniden ekleyin.",
+        "store.c.ecover.fix": "Uzun kenarı en az {long} px, kısa kenarı en az {short} px olan bir kapak görseli kullanın.",
+        "store.c.trim.fixStandard": "Ya da baskı ayarlarında {store}’ın standart boyutlarından birini seçin.",
+        "store.c.trim.fixAny": "Baskı ayarlarında {store}’ın bastığı bir boyut seçin ve yeniden denetleyin.",
+        "store.c.pages.fixTrim": "Önce kesim boyutunu düzeltin: sayfa aralığı ona bağlıdır.",
+        "store.c.pages.fixInk": "Yukarıdan başka bir mürekkep ve kâğıt ya da başka bir boyut seçin.",
+        "store.c.wrap.fixHardcover": "Bu kitap için {store}’ın kapak şablonunu indirin ve yüklemeden önce kapağı ona göre hizalayın.",
+        "store.c.spine.fixFactor": "Bu kitap için {store}’ın kapak şablonunu indirin, ardından kapağın özel kâğıt katsayısını şablondaki sırt genişliği ÷ sayfa sayısı olarak ayarlayın.",
+        "store.c.spinetext.fixPages": "Kapağın iç sayfa sayısını izlemesine izin verin: 0,5 in’in altında sırt yazısız kalır, bunu her mağaza kabul eder.",
+        "store.c.spinetext.fixClear": "Kapak oluşturucuyu açın ve kapağın kitabın sayfa sayısını ve kâğıdını izlemesine izin verin; sırt yazısı sırt genişliğine göre boyutlanır.",
+        "store.c.barcode.fixDraw": "Kapağın çizilebilmesi için kapak oluşturucuyu bir kez açın, sonra yeniden denetleyin.",
+        "store.c.cbleed.fail": "Kapakta {have} in taşma payı var; {store} {bleed} in istiyor.",
+        "store.c.cbleed.fix": "Kapağı kapak oluşturucuda yeniden yapın.",
+        "store.c.ccolor.fix": "Kitabı yayımlamadan önce {store}’dan basılı bir prova isteyip kapak renklerini kâğıt üzerinde denetleyin. Dönüşümü kendiniz yönetmek isterseniz önce kapak PDF’ini CMYK’ye çevirin (Acrobat Pro → Baskı Üretimi → Renkleri Dönüştür)."
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "store.fixSame": "الحل نفسه كما في الأعلى.",
+        "store.act.runServer": "شغّل الفحص على الخادم",
+        "store.act.signin": "تسجيل الدخول",
+        "store.act.printBlack": "اطبع لون الإبراز بالحبر الأسود",
+        "store.act.validate": "التحقق من هذا الكتاب",
+        "store.fix.local": "يحتاج Beuk إلى خادمه لهذا السطر. وإلى أن يصل إلى خادم، دع المتجر يفحص الملف: يعرض Print Previewer في KDP المشكلات قبل النشر، ويصنع IngramSpark من الملفات المرفوعة بروفة إلكترونية لتوافق عليها.",
+        "store.fix.cause.setup": "هذه ثغرة في خادم Beuk، لا مشكلة في كتابك. على beuk.studio، اكتب إلى العنوان الموجود في صفحة المساعدة؛ وعلى خادم Beuk خاص بك، تذكر الرسالة أعلاه الأداة التي يجب تثبيتها. وفي الأثناء يفحص المتجر الملف بنفسه: يعرض Print Previewer في KDP المشكلات قبل النشر، ويصنع IngramSpark من الملفات المرفوعة بروفة إلكترونية لتوافق عليها.",
+        "store.fix.cause.timeout": "شغّل الفحص على الخادم مجددًا. الكتب الطويلة الكثيرة الصور هي الأبطأ؛ وإن نفد الوقت ثانية، فاستعمل صورًا لا تزيد على حجم طباعتها — تكفي 300 DPI بحجمها المطبوع، وما زاد يضيف عملًا فقط.",
+        "store.fix.cause.interrupted": "أُعيد تشغيل الخادم أثناء العمل؛ لا عيب في كتابك. شغّل الفحص على الخادم مجددًا.",
+        "store.fix.cause.missing": "شغّل الفحص على الخادم مجددًا — فهو يحفظ نسخة جديدة من الكتاب أولًا.",
+        "store.fix.cause.client": "تحقّق من اتصالك بالإنترنت، ثم شغّل الفحص على الخادم مجددًا.",
+        "store.fix.cause.retry": "شغّل الفحص على الخادم مجددًا. وإن فشل مرتين بالطريقة نفسها، فنزّل هذا التقرير وأرسله إلى من يدير خادم Beuk لديك (على beuk.studio العنوان في صفحة المساعدة): تبيّن الرسالة أعلاه أين توقف.",
+        "store.c.faces.fix": "الخادم هو الذي تنقصه هذه الخطوط، لا كتابك. قبل الرفع، افتح ملف PDF الذي سترسله وتأكد أن قائمة خطوطه (في Acrobat: ملف ← خصائص ← الخطوط) تتضمن {wanted}.",
+        "store.c.even.fix": "لا شيء عليك فعله: يضيف {store} الصفحة الفارغة في النهاية. وإن أردت أن تختار ما يملؤها، فأضف صفحة ختامية قصيرة وافحص مجددًا.",
+        "store.c.textK.fixAccent": "فعّل «اطبع لون الإبراز بالحبر الأسود» (استوديو التنضيد ← اللون)، ثم شغّل الفحص على الخادم مجددًا. النص الذي لوّنته عمدًا يحتفظ بلونه.",
+        "store.c.textK.fix": "اجعل ذلك النص أسود، أو اختر أعلاه حبرًا وورقًا ملوّنين إن كان اللون مقصودًا في الطباعة.",
+        "store.c.textK.tintsFix": "لا يوجد بعدُ مفتاح يجعل تلك الأسطر سوداء مصمتة. يُطبع النص الرمادي بشبكة نقاط دقيقة قد تبدو ليّنة قليلًا في الأحجام الصغيرة: اطلب بروفة مطبوعة من {store} واحكم عليها على الورق.",
+        "store.c.ecover.fixNone": "أنشئ صورة غلاف أو أضفها في صانع الأغلفة.",
+        "store.c.cdpi.fixRead": "أضف الصورة مجددًا بصيغة JPEG أو PNG ليمكن قراءة حجمها.",
+        "store.c.ecover.fix": "استعمل صورة غلاف لا يقل ضلعها الطويل عن {long} px والقصير عن {short} px.",
+        "store.c.trim.fixStandard": "أو اختر أحد المقاسات القياسية لدى {store} في إعدادات الطباعة.",
+        "store.c.trim.fixAny": "اختر في إعدادات الطباعة مقاسًا يطبعه {store}، ثم افحص مجددًا.",
+        "store.c.pages.fixTrim": "أصلح المقاس أولًا: نطاق الصفحات يتبعه.",
+        "store.c.pages.fixInk": "اختر أعلاه حبرًا وورقًا آخرين، أو مقاسًا آخر.",
+        "store.c.wrap.fixHardcover": "نزّل قالب الغلاف لدى {store} لهذا الكتاب وطابق الغلاف عليه قبل الرفع.",
+        "store.c.spine.fixFactor": "نزّل قالب الغلاف لدى {store} لهذا الكتاب، ثم اضبط معامل الورق المخصص للغلاف على عرض الكعب في القالب ÷ عدد الصفحات.",
+        "store.c.spinetext.fixPages": "دع الغلاف يتبع عدد صفحات المتن: تحت 0.5 in يترك الغلاف الكعب بلا نص، وهذا ما تقبله كل المتاجر.",
+        "store.c.spinetext.fixClear": "افتح صانع الأغلفة ودع الغلاف يتبع عدد صفحات الكتاب وورقه؛ يُحدَّد حجم نص الكعب من عرضه.",
+        "store.c.barcode.fixDraw": "افتح صانع الأغلفة مرة واحدة ليمكن رسم الغلاف، ثم افحص مجددًا.",
+        "store.c.cbleed.fail": "في الغلاف نزف قدره {have} in؛ ويطلب {store} {bleed} in.",
+        "store.c.cbleed.fix": "أعد بناء الغلاف في صانع الأغلفة.",
+        "store.c.ccolor.fix": "اطلب بروفة مطبوعة من {store} وراجع ألوان الغلاف على الورق قبل إصدار الكتاب. وإن أردت التحكم في التحويل بنفسك، فحوّل ملف PDF للغلاف إلى CMYK أولًا (Acrobat Pro ← إنتاج الطباعة ← تحويل الألوان)."
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "store.fixSame": "上と同じ対処です。",
+        "store.act.runServer": "サーバーでチェックを実行",
+        "store.act.signin": "サインイン",
+        "store.act.printBlack": "アクセントをブラックインクで印刷する",
+        "store.act.validate": "この本を検証",
+        "store.fix.local": "この行の確認には Beuk のサーバーが必要です。サーバーにつながるまでは、ストア側でファイルを確認してください。KDP の Print Previewer は出版前に問題を表示し、IngramSpark はアップロードしたファイルから承認用の電子校正（e-proof）を作ります。",
+        "store.fix.cause.setup": "これは本の問題ではなく、Beuk サーバー側の不備です。beuk.studio ではヘルプページのアドレスへご連絡ください。ご自身の Beuk サーバーでは、上のメッセージにインストールすべきツールが示されています。その間はストアがファイルを確認します。KDP の Print Previewer は出版前に問題を表示し、IngramSpark はアップロードしたファイルから承認用の電子校正（e-proof）を作ります。",
+        "store.fix.cause.timeout": "サーバーでのチェックをもう一度実行してください。長く画像の多い本ほど時間がかかります。再び時間切れになる場合は、画像を印刷サイズ以上に大きくしないでください。印刷サイズで 300 DPI あれば十分で、それ以上は処理が増えるだけです。",
+        "store.fix.cause.interrupted": "処理中にサーバーが再起動しました。本に問題はありません。サーバーでのチェックをもう一度実行してください。",
+        "store.fix.cause.missing": "サーバーでのチェックをもう一度実行してください。最初に本の新しいコピーを保存します。",
+        "store.fix.cause.client": "インターネット接続を確認してから、サーバーでのチェックをもう一度実行してください。",
+        "store.fix.cause.retry": "サーバーでのチェックをもう一度実行してください。同じ失敗が2回続く場合は、このレポートをダウンロードして Beuk サーバーの管理者に送ってください（beuk.studio ではヘルプページにアドレスがあります）。上のメッセージで、どこで止まったかがわかります。",
+        "store.c.faces.fix": "その書体がないのは本ではなくサーバーです。アップロード前に送る PDF を開き、フォント一覧（Acrobat：ファイル → プロパティ → フォント）に {wanted} があるか確認してください。",
+        "store.c.even.fix": "対応は不要です。{store} が最後に白ページを加えます。そこに入れるものを自分で決めたい場合は、短い締めのページを加えてもう一度確認してください。",
+        "store.c.textK.fixAccent": "「アクセントをブラックインクで印刷する」をオンにして（タイポグラフィ・スタジオ → 色）、サーバーでのチェックをもう一度実行してください。意図して色を付けた文字はその色のままです。",
+        "store.c.textK.fix": "その文字を黒にするか、色を印刷したい場合は上でカラーのインクと用紙を選んでください。",
+        "store.c.textK.tintsFix": "これらの行をベタの黒にする設定はまだありません。グレーの文字は細かい網点で印刷され、小さなサイズではやや柔らかく見えることがあります。{store} に印刷見本を注文し、紙で判断してください。",
+        "store.c.ecover.fixNone": "カバーメーカーで表紙画像を作るか追加してください。",
+        "store.c.cdpi.fixRead": "サイズを読み取れるよう、画像を JPEG か PNG で追加し直してください。",
+        "store.c.ecover.fix": "長辺 {long} px 以上、短辺 {short} px 以上の表紙画像を使ってください。",
+        "store.c.trim.fixStandard": "または、印刷設定で {store} の標準判型を選んでください。",
+        "store.c.trim.fixAny": "印刷設定で {store} が印刷する判型を選び、もう一度確認してください。",
+        "store.c.pages.fixTrim": "まず判型を直してください。ページ数の範囲は判型で決まります。",
+        "store.c.pages.fixInk": "上で別のインクと用紙、または別の判型を選んでください。",
+        "store.c.wrap.fixHardcover": "この本用の {store} のカバーテンプレートをダウンロードし、アップロード前にカバーを合わせてください。",
+        "store.c.spine.fixFactor": "この本用の {store} のカバーテンプレートをダウンロードし、カバーのカスタム用紙係数を「テンプレートの背幅 ÷ ページ数」に設定してください。",
+        "store.c.spinetext.fixPages": "カバーを本文のページ数に合わせてください。背幅が 0.5 in 未満なら背は無地になり、どのストアでも受け付けられます。",
+        "store.c.spinetext.fixClear": "カバーメーカーを開き、カバーを本のページ数と用紙に合わせてください。背文字の大きさは背幅から決まります。",
+        "store.c.barcode.fixDraw": "カバーを描画できるよう一度カバーメーカーを開き、もう一度確認してください。",
+        "store.c.cbleed.fail": "カバーの裁ち落としは {have} in です。{store} は {bleed} in を求めています。",
+        "store.c.cbleed.fix": "カバーメーカーでカバーを作り直してください。",
+        "store.c.ccolor.fix": "本を公開する前に {store} に印刷見本を注文し、カバーの色を紙で確認してください。変換を自分で管理したい場合は、先にカバーの PDF を CMYK に変換してください（Acrobat Pro → 印刷工程 → 色を変換）。"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "store.fixSame": "处理方法同上。",
+        "store.act.runServer": "在服务器上运行检查",
+        "store.act.signin": "登录",
+        "store.act.printBlack": "用黑色油墨印刷强调色",
+        "store.act.validate": "验证本书",
+        "store.fix.local": "这一项需要 Beuk 的服务器。在连上服务器之前，请让商店检查文件：KDP 的 Print Previewer 会在出版前显示问题，IngramSpark 会用你上传的文件生成电子校样供你批准。",
+        "store.fix.cause.setup": "这是 Beuk 服务器的缺口，不是你的书有问题。在 beuk.studio 上，请写信到“帮助”页面上的地址；在你自己的 Beuk 服务器上，上面的消息写明了要安装的工具。在此期间由商店自己检查文件：KDP 的 Print Previewer 会在出版前显示问题，IngramSpark 会用你上传的文件生成电子校样供你批准。",
+        "store.fix.cause.timeout": "请在服务器上重新运行检查。篇幅长、图片多的书最慢；如果再次超时，请让图片不大于印刷尺寸——按印刷尺寸 300 DPI 就够了，更大只会增加工作量。",
+        "store.fix.cause.interrupted": "服务器在处理时重启了；你的书没有问题。请在服务器上重新运行检查。",
+        "store.fix.cause.missing": "请在服务器上重新运行检查——它会先保存这本书的新副本。",
+        "store.fix.cause.client": "请检查网络连接，然后在服务器上重新运行检查。",
+        "store.fix.cause.retry": "请在服务器上重新运行检查。如果以同样的方式失败两次，请下载这份报告并发给管理你的 Beuk 服务器的人（在 beuk.studio 上，地址在“帮助”页面）：上面的消息说明了它停在哪里。",
+        "store.c.faces.fix": "缺这些字体的是服务器，不是你的书。上传前请打开要发送的 PDF，确认其字体列表（Acrobat：文件 → 属性 → 字体）包含 {wanted}。",
+        "store.c.even.fix": "无需处理：{store} 会在书末加一张空白页。如果想自己决定那里放什么，请加一页简短的结尾页，然后重新检查。",
+        "store.c.textK.fixAccent": "打开“用黑色油墨印刷强调色”（排版工作室 → 颜色），然后在服务器上重新运行检查。你有意设成彩色的文字会保留颜色。",
+        "store.c.textK.fix": "把这些文字设为黑色；如果颜色本就要印出来，请在上方选择彩色油墨与纸张。",
+        "store.c.textK.tintsFix": "目前还没有把这些行改成实黑的开关。灰色文字以细网点印刷，小字号时可能略显发虚：请向 {store} 订购印刷样书，在纸上判断。",
+        "store.c.ecover.fixNone": "请在封面工坊中制作或添加封面图片。",
+        "store.c.cdpi.fixRead": "请以 JPEG 或 PNG 重新添加该图片，以便读取其尺寸。",
+        "store.c.ecover.fix": "请使用长边至少 {long} px、短边至少 {short} px 的封面图片。",
+        "store.c.trim.fixStandard": "或在印刷设置中选择 {store} 的标准开本之一。",
+        "store.c.trim.fixAny": "请在印刷设置中选择 {store} 印刷的开本，然后重新检查。",
+        "store.c.pages.fixTrim": "请先修正开本：页数范围由它决定。",
+        "store.c.pages.fixInk": "请在上方选择其他油墨与纸张，或其他开本。",
+        "store.c.wrap.fixHardcover": "请下载 {store} 为这本书提供的封面模板，上传前把封面与模板对齐。",
+        "store.c.spine.fixFactor": "请下载 {store} 为这本书提供的封面模板，然后把封面的自定义纸张系数设为模板书脊宽度 ÷ 页数。",
+        "store.c.spinetext.fixPages": "让封面跟随内文页数：书脊不足 0.5 in 时不印文字，所有商店都接受。",
+        "store.c.spinetext.fixClear": "打开封面工坊，让封面跟随这本书的页数和纸张；书脊文字的大小按书脊宽度确定。",
+        "store.c.barcode.fixDraw": "请打开一次封面工坊，以便绘制封面，然后重新检查。",
+        "store.c.cbleed.fail": "封面出血为 {have} in；{store} 要求 {bleed} in。",
+        "store.c.cbleed.fix": "请在封面工坊中重新制作封面。",
+        "store.c.ccolor.fix": "发布前请向 {store} 订购印刷样书，在纸上检查封面颜色。若想自己控制转换，请先把封面 PDF 转为 CMYK（Acrobat Pro → 印刷制作 → 转换颜色）。"
+      });
       /* ==== /BEUK:store ==== */
 
       /* ==== BEUK:acx ==== */
@@ -48319,7 +48762,9 @@
          trim, the edition and the words. Anything else is stale. */
       function storeBookSig() {
         const words = state.sections.filter((s) => s.included).reduce((n, s) => n + sectionWords(s), 0);
-        return [state.printTrim, state.printLargePrint ? 1 : printPictureBookOn() ? 2 : 0, state.printMarginMode, words, state.sections.length].join("|") + (printBleedOn() ? "|bleed" : ""); /* BEUK:bleed */
+        const bc = bookColour();
+        return [state.printTrim, state.printLargePrint ? 1 : printPictureBookOn() ? 2 : 0, state.printMarginMode, words, state.sections.length].join("|") + (printBleedOn() ? "|bleed" : "") /* BEUK:bleed */ +
+          (bc.accent ? "|" + bc.accent + (bc.printBlack ? "k" : "") : "");
       }
       function storeServerFresh() {
         const s = storeUi.server;
@@ -48342,6 +48787,31 @@
         if (typeof cloud === "undefined" || !cloud.available) return t("store.nc.local");
         if (!cloud.user) return t("store.nc.signin");
         return t("store.nc.notRun");
+      }
+      /* What to do about a server row that couldn't run, so a "not checked"
+         line never leaves the writer stuck. Where the reason already reads
+         as an instruction (signed out, not run, still running, out of date)
+         the remedy is just its button; a failed job gets advice for its own
+         cause (classified on the server, src/jobs/runner.ts failureCause).
+         A setup gap is Beuk's side, not the book's, so its remedy points to
+         the store's own check meanwhile and offers no pointless re-run. */
+      const STORE_CAUSE_FIX = { setup: "setup", timeout: "timeout", interrupted: "interrupted", missing: "missing", client: "client" };
+      function storeServerFix(kind) {
+        const s = storeUi.server;
+        const run = { kind: "runServer", label: t("store.act.runServer") };
+        if (s && s.sig !== storeBookSig()) return { fix: "", action: run };
+        const job = s ? s[kind] : null;
+        if (job && job.status !== "done" && job.status !== "failed") return { fix: "", action: { kind: "recheck", label: t("store.recheck") } };
+        if (job && job.status === "failed") {
+          const r = job.result || {};
+          const key = r.configured === false ? "setup" : STORE_CAUSE_FIX[r.cause] || "retry";
+          return { fix: t("store.fix.cause." + key), action: key === "setup" ? null : run };
+        }
+        if (job && job.status === "done") return { fix: t("store.fix.cause.retry"), action: run };
+        if (s && s.error) return { fix: t("store.fix.cause.client"), action: run };
+        if (typeof cloud === "undefined" || !cloud.available) return { fix: t("store.fix.local"), action: null };
+        if (!cloud.user) return { fix: "", action: { kind: "signin", label: t("store.act.signin") } };
+        return { fix: "", action: run };
       }
       /* BEUK:footnotes — the chapters whose notes the renderer kept at their
          end, in the writer's words: the print section ps-k is the k-th
@@ -48397,14 +48867,14 @@
           const inCustom = cr && tr.w >= cr.w[0] && tr.w <= cr.w[1] && tr.h >= cr.h[0] && tr.h <= cr.h[1];
           if (listed && inCustom) {
             /* Listed, blank under this paper: the matrix only says such sizes "may be available through Custom Trim". */
-            row("interior", "trim", true, "nc", t("store.c.trim.name"), t("store.nc.trimMaybeCustom", Object.assign({ range: nearRange(cr) }, P)));
+            row("interior", "trim", true, "nc", t("store.c.trim.name"), t("store.nc.trimMaybeCustom", Object.assign({ range: nearRange(cr) }, P)), t("store.c.trim.fixStandard", P), { kind: "print", label: t("preflight.fixPrint") });
           } else if (inCustom) {
             trimOk = true;
             row("interior", "trim", true, "pass", t("store.c.trim.name"), t("store.c.trim.okCustom", Object.assign({ range: nearRange(cr) }, P)));
           } else if (B.custom && !cr) {
             /* A colour paper and a size that isn't standard on it: the custom-trim page names no range for colour papers,
                so this can be neither passed nor failed. */
-            row("interior", "trim", true, "nc", t("store.c.trim.name"), t("store.nc.trimCustomPaper", P));
+            row("interior", "trim", true, "nc", t("store.c.trim.name"), t("store.nc.trimCustomPaper", P), t("store.c.trim.fixStandard", P), { kind: "print", label: t("preflight.fixPrint") });
           } else {
             const near = nearestOnPaper();
             const papers = listed && listed.avail ? R.inks.filter((i) => listed.avail[i.id]) : [];
@@ -48412,9 +48882,9 @@
             const evidence = listed ? t(papers.length ? "store.c.trim.failPaper" : "store.c.trim.failNoPaper", PF) : t("store.c.trim.fail", P);
             const fix = listed && papers.length
               ? (near ? t("store.c.trim.fixPaper", PF) : t("store.c.trim.fixPaperOnly", PF))
-              : (near ? t("store.c.trim.fix", PF) : "");
+              : (near ? t("store.c.trim.fix", PF) : t("store.c.trim.fixAny", PF));
             const action = near ? { kind: "trim", trim: near.id, label: t("store.c.trim.act", { nearest: near.label }) }
-              : papers.length ? { kind: "ink", ink: papers[0].id, label: t("store.c.trim.actInk", { ink: t("store.ink." + papers[0].id) }) } : null;
+              : papers.length ? { kind: "ink", ink: papers[0].id, label: t("store.c.trim.actInk", { ink: t("store.ink." + papers[0].id) }) } : { kind: "print", label: t("preflight.fixPrint") };
             row("interior", "trim", true, "fail", t("store.c.trim.name"), evidence, fix, action);
           }
         }
@@ -48423,19 +48893,19 @@
         const PP = Object.assign({ src: pagesSrc }, P);
         if (sc.store === "kdp") {
           const range = hit ? hit.pages[inkId] : undefined;
-          if (!hit) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesTrim", P));
-          else if (range === null) row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.na", P), t("store.c.pages.fix"));
-          else if (range === undefined) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesInk", P));
-          else if (pages < range[0] || pages > range[1]) row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(range[0]), max: fmtNum(range[1]) }, PP)), t("store.c.pages.fix"));
+          if (!hit) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesTrim", P), t("store.c.pages.fixTrim"), { kind: "print", label: t("preflight.fixPrint") });
+          else if (range === null) row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.na", P), t("store.c.pages.fix"), { kind: "print", label: t("preflight.fixPrint") });
+          else if (range === undefined) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesInk", P), t("store.c.pages.fixInk"));
+          else if (pages < range[0] || pages > range[1]) row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(range[0]), max: fmtNum(range[1]) }, PP)), t("store.c.pages.fix"), { kind: "print", label: t("preflight.fixPrint") });
           else row("interior", "pages", true, "pass", t("store.c.pages.name"), t("store.c.pages.ok", Object.assign({ min: fmtNum(range[0]), max: fmtNum(range[1]) }, PP)));
         } else {
           /* The matrix header's range for this paper column, capped by the trim's own "Max 400 pages" where it has one. */
           const range = B.pages[inkId];
-          if (!range) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesInk", P));
+          if (!range) row("interior", "pages", true, "nc", t("store.c.pages.name"), t("store.nc.pagesInk", P), t("store.c.pages.fixInk"));
           else {
             const max = hit && hit.maxPages ? Math.min(hit.maxPages, range[1]) : range[1];
             if (pages < range[0] || pages > max)
-              row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(range[0]), max: fmtNum(max) }, PP)), t("store.c.pages.fix"));
+              row("interior", "pages", true, "fail", t("store.c.pages.name"), t("store.c.pages.fail", Object.assign({ min: fmtNum(range[0]), max: fmtNum(max) }, PP)), t("store.c.pages.fix"), { kind: "print", label: t("preflight.fixPrint") });
             else row("interior", "pages", true, "pass", t("store.c.pages.name"), t("store.c.pages.ok", Object.assign({ min: fmtNum(range[0]), max: fmtNum(max) }, PP)));
           }
         }
@@ -48496,10 +48966,12 @@
         /* Server-read facts about the converted file. */
         const insp = F.insp;
         const why = insp ? "" : storeServerReason("pdfx");
-        if (!insp) row("interior", "fonts", true, "nc", t("store.c.fonts.name"), why);
-        else if (insp.fontsAllEmbedded === null) row("interior", "fonts", true, "nc", t("store.c.fonts.name"), t("store.c.fonts.none"));
+        const wf = insp ? { fix: "", action: null } : storeServerFix("pdfx");
+        const retry = { kind: "runServer", label: t("store.act.runServer") };
+        if (!insp) row("interior", "fonts", true, "nc", t("store.c.fonts.name"), why, wf.fix, wf.action);
+        else if (insp.fontsAllEmbedded === null) row("interior", "fonts", true, "nc", t("store.c.fonts.name"), t("store.c.fonts.none"), t("store.fix.cause.retry"), retry);
         else if (insp.fontsAllEmbedded) row("interior", "fonts", true, "pass", t("store.c.fonts.name"), t("store.c.fonts.ok", { n: insp.fonts.length, list: storeFontNames(insp.fonts).join(", ") }));
-        else row("interior", "fonts", true, "fail", t("store.c.fonts.name"), t("store.c.fonts.fail", Object.assign({ list: insp.fonts.filter((f) => !f.embedded).map((f) => f.name).join(", ") }, P)), t("store.c.fonts.fix"));
+        else row("interior", "fonts", true, "fail", t("store.c.fonts.name"), t("store.c.fonts.fail", Object.assign({ list: insp.fonts.filter((f) => !f.embedded).map((f) => f.name).join(", ") }, P)), t("store.c.fonts.fix"), retry);
         /* The server renders with its own installed fonts: if the book's faces aren't among them, the PDF it read is set in
            something else — say so (advisory: the writer uploads their own PDF, not the server's). */
         if (insp && insp.fonts.length) {
@@ -48508,10 +48980,10 @@
           const wanted = [state.theme.bodyFont, state.theme.headFont].filter((f, i, arr) => f && arr.indexOf(f) === i);
           const missing = wanted.filter((w) => !found.some((f) => squash(f).indexOf(squash(w)) === 0));
           if (!missing.length) row("interior", "faces", false, "pass", t("store.c.faces.name"), t("store.c.faces.ok", { fonts: found.join(", ") }));
-          else row("interior", "faces", false, "warn", t("store.c.faces.name"), t("store.c.faces.warn", { found: found.join(", "), wanted: missing.join(", ") }));
+          else row("interior", "faces", false, "warn", t("store.c.faces.name"), t("store.c.faces.warn", { found: found.join(", "), wanted: missing.join(", ") }), t("store.c.faces.fix", { wanted: missing.join(", ") }));
         }
         const pdfxRequired = R.interiorPdfx === "required";
-        if (!insp) row("interior", "pdfx", pdfxRequired, "nc", t("store.c.pdfx.name"), why);
+        if (!insp) row("interior", "pdfx", pdfxRequired, "nc", t("store.c.pdfx.name"), why, wf.fix, wf.action);
         else {
           const decl = insp.pdfx.conformance || insp.pdfx.version || "";
           const accepted = R.pdfxAccepted || ["PDF/X-1a:2001", "PDF/X-3:2002"];
@@ -48521,16 +48993,16 @@
             row("interior", "pdfx", pdfxRequired, "pass", t("store.c.pdfx.name"), t("store.c.pdfx.ok", { decl: decl, cond: insp.pdfx.outputCondition || "—" }));
           else row("interior", "pdfx", pdfxRequired, pdfxRequired ? "fail" : "warn", t("store.c.pdfx.name"),
             t("store.c.pdfx.fail", Object.assign({ decl: decl || t("store.c.pdfx.none"), accepted: accepted.join(" / "), intent: insp.pdfx.outputIntent ? "✓" : "✗", n: rgb }, P)),
-            t("store.c.pdfx.fix"));
+            t("store.c.pdfx.fix"), retry);
           const mb = insp.firstPage.trimBox || insp.firstPage.mediaBox;
-          if (!mb) row("interior", "size", true, "nc", t("store.c.size.name"), t("store.c.size.unknown"));
+          if (!mb) row("interior", "size", true, "nc", t("store.c.size.name"), t("store.c.size.unknown"), t("store.fix.cause.retry"), retry);
           else if (Math.abs(mb.w - tr.w) <= 0.01 && Math.abs(mb.h - tr.h) <= 0.01) row("interior", "size", true, "pass", t("store.c.size.name"), t("store.c.size.ok", { w: storeIn(mb.w), h: storeIn(mb.h), trim: tr.label }));
-          else row("interior", "size", true, "fail", t("store.c.size.name"), t("store.c.size.fail", { w: storeIn(mb.w), h: storeIn(mb.h), trim: tr.label }), t("store.c.size.fix"));
+          else row("interior", "size", true, "fail", t("store.c.size.name"), t("store.c.size.fail", { w: storeIn(mb.w), h: storeIn(mb.h), trim: tr.label }), t("store.c.size.fix"), { kind: "print", label: t("preflight.fixPrint") });
         }
-        if (!insp) row("interior", "size", true, "nc", t("store.c.size.name"), why);
+        if (!insp) row("interior", "size", true, "nc", t("store.c.size.name"), why, wf.fix, wf.action);
         /* Even page count: both stores pad an odd count themselves — advisory. */
         row("interior", "even", false, pages % 2 === 0 ? "pass" : "warn", t("store.c.even.name"),
-          t(pages % 2 === 0 ? "store.c.even.ok" : "store.c.even.warn", PP));
+          t(pages % 2 === 0 ? "store.c.even.ok" : "store.c.even.warn", PP), pages % 2 === 0 ? "" : t("store.c.even.fix", P));
         /* BEUK:footnotes — notes at the foot of the page: what the renderer
            did with them in the PDF it made (advisory). A chapter that kept
            its notes at its end is named, with the renderer's reason. */
@@ -48547,23 +49019,27 @@
         const press = insp && F.srv && F.srv.pdfx && F.srv.pdfx.result ? F.srv.pdfx.result.press || null : null;
         if (R.textK) {
           const tx = press && press.text && typeof press.text.textShows === "number" ? press.text : null;
-          if (!insp) row("interior", "textK", false, "nc", t("store.c.textK.name"), why);
-          else if (!tx) row("interior", "textK", false, "nc", t("store.c.textK.name"), t("store.nc.textK", { error: (press && press.text && press.text.error) || t("store.nc.pending") }));
-          else if (!tx.textShows) row("interior", "textK", false, "nc", t("store.c.textK.name"), t("store.c.textK.none"));
+          if (!insp) row("interior", "textK", false, "nc", t("store.c.textK.name"), why, wf.fix, wf.action);
+          else if (!tx) row("interior", "textK", false, "nc", t("store.c.textK.name"), t("store.nc.textK", { error: (press && press.text && press.text.error) || t("store.nc.pending") }), t("store.fix.cause.retry"), retry);
+          else if (!tx.textShows) row("interior", "textK", false, "nc", t("store.c.textK.name"), t("store.c.textK.none"), t("store.fix.cause.retry"), retry);
           else if (tx.kOnly < tx.textShows) {
             const cols = Object.keys(tx.otherColours || {}).sort((a, b) => tx.otherColours[b] - tx.otherColours[a]).slice(0, 3).join("; ");
-            row("interior", "textK", false, "warn", t("store.c.textK.name"), t("store.c.textK.fail", Object.assign({ bad: fmtNum(tx.textShows - tx.kOnly), n: fmtNum(tx.textShows), colours: cols }, P)));
+            /* A coloured accent is the usual cause, and the studio has a switch for it: offer it in one click. */
+            const bc = bookColour();
+            const canBlack = !!bc.accent && !bc.printBlack;
+            row("interior", "textK", false, "warn", t("store.c.textK.name"), t("store.c.textK.fail", Object.assign({ bad: fmtNum(tx.textShows - tx.kOnly), n: fmtNum(tx.textShows), colours: cols }, P)),
+              t(canBlack ? "store.c.textK.fixAccent" : "store.c.textK.fix"), canBlack ? { kind: "printBlack", label: t("store.act.printBlack") } : null);
           } else {
             const full = (tx.kValues && tx.kValues["100"]) || 0;
             const tintVals = Object.keys(tx.kValues || {}).filter((k) => k !== "100").map(Number).sort((a, b) => b - a);
             if (full === tx.textShows) row("interior", "textK", false, "pass", t("store.c.textK.name"), t("store.c.textK.ok", { n: fmtNum(tx.textShows) }));
-            else row("interior", "textK", false, "warn", t("store.c.textK.name"), t("store.c.textK.tints", Object.assign({ n: fmtNum(tx.textShows), tints: fmtNum(tx.textShows - full), values: tintVals.join(", ") }, P)));
+            else row("interior", "textK", false, "warn", t("store.c.textK.name"), t("store.c.textK.tints", Object.assign({ n: fmtNum(tx.textShows), tints: fmtNum(tx.textShows - full), values: tintVals.join(", ") }, P)), t("store.c.textK.tintsFix", P));
           }
         }
         if (R.tac) {
           const ink = press && press.ink && typeof press.ink.maxTacPct === "number" ? press.ink : null;
-          if (!insp) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tac", Object.assign({ tac: R.tac }, P)));
-          else if (!ink) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tacFail", { error: (press && press.ink && press.ink.error) || t("store.nc.pending") }));
+          if (!insp) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tac", Object.assign({ tac: R.tac }, P)), wf.fix, wf.action);
+          else if (!ink) row("interior", "tac", false, "nc", t("store.c.tac.name"), t("store.nc.tacFail", { error: (press && press.ink && press.ink.error) || t("store.nc.pending") }), t("store.fix.cause.retry"), retry);
           else {
             const over = (ink.perPagePct || []).filter((v) => v > R.tac).length;
             if (ink.maxTacPct <= R.tac) row("interior", "tac", false, "pass", t("store.c.tac.name"), t("store.c.tac.ok", Object.assign({ max: String(Math.round(ink.maxTacPct * 10) / 10), dpi: ink.dpi, tac: R.tac }, P)));
@@ -48577,7 +49053,7 @@
         if (!recipe) {
           row("cover", "wrap", true, "nc", t("store.c.wrap.name"), t("store.nc.noWrap"), "", { kind: "cover", label: t("store.act.cover") });
         } else if (sc.binding === "hardcover") {
-          row("cover", "wrap", true, "nc", t("store.c.wrap.name"), t("store.nc.hardcover", P));
+          row("cover", "wrap", true, "nc", t("store.c.wrap.name"), t("store.nc.hardcover", P), t("store.c.wrap.fixHardcover", P), { kind: "cover", label: t("store.act.cover") });
         } else {
           const w = normalizeWrap(recipe.wrap);
           /* The wrap is checked against THIS interior: same trim, same page count. */
@@ -48594,7 +49070,7 @@
           const have = wrapDims(recipe).spine; /* the spine the wrap actually draws */
           const SP = Object.assign({ have: storeIn(have), wpages: fmtNum(wrapPages), wfactor: String(wf) }, P);
           if (sc.store === "kdp") {
-            if (ink.spine == null) row("cover", "spine", true, "nc", t("store.c.spine.name"), t("store.nc.spineFactor", P));
+            if (ink.spine == null) row("cover", "spine", true, "nc", t("store.c.spine.name"), t("store.nc.spineFactor", P), t("store.c.spine.fixFactor", P), { kind: "cover", label: t("store.act.cover") });
             else {
               const need = pages * ink.spine;
               if (Math.abs(have - need) <= STORE_SPINE_TOL) row("cover", "spine", true, "pass", t("store.c.spine.name"), t("store.c.spine.ok", Object.assign({ factor: String(ink.spine) }, SP)));
@@ -48619,8 +49095,9 @@
             const size = Math.min(spineIn * 0.6, 0.32);
             const clear = (spineIn - size) / 2;
             const needClear = R.spineNarrowBelow && spineIn < R.spineNarrowBelow ? R.spineTextClearNarrow : R.spineTextClear;
-            if (pages < R.spineTextMinPages) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t("store.c.spinetext.failPages", Object.assign({ min: R.spineTextMinPages }, P)), t("store.c.wpages.fix"));
-            else if (clear < needClear) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t("store.c.spinetext.failClear", Object.assign({ clear: storeIn(clear), need: storeIn(needClear) }, P)));
+            if (pages < R.spineTextMinPages) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t("store.c.spinetext.failPages", Object.assign({ min: R.spineTextMinPages }, P)), t("store.c.spinetext.fixPages"),
+              { kind: "wrapPages", pages: F.measured ? pages : 0, label: t("store.act.wrapPages") });
+            else if (clear < needClear) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t("store.c.spinetext.failClear", Object.assign({ clear: storeIn(clear), need: storeIn(needClear) }, P)), t("store.c.spinetext.fixClear"), { kind: "cover", label: t("store.act.cover") });
             else row("cover", "spinetext", true, "pass", t("store.c.spinetext.name"), t("store.c.spinetext.ok", Object.assign({ clear: storeIn(clear), need: storeIn(needClear), min: R.spineTextMinPages }, P)));
           }
           /* Barcode reserve: drawn at the wrap's own geometry — read it back and test it against the store's rule. */
@@ -48631,7 +49108,7 @@
             c.width = 600; c.height = Math.max(2, Math.round(600 * d.totalH / d.totalW));
             items = drawWrapTo(c, recipe, {});
           } catch (e) { items = null; }
-          if (!items || !items.barcode) row("cover", "barcode", true, "nc", t("store.c.barcode.name"), t("store.nc.barcode"));
+          if (!items || !items.barcode) row("cover", "barcode", true, "nc", t("store.c.barcode.name"), t("store.nc.barcode"), t("store.c.barcode.fixDraw"), { kind: "cover", label: t("store.act.cover") });
           else {
             const d = items.dims, bc = items.barcode;
             const fold = (d.bleed + d.trim.w) - (bc.x + bc.w);
@@ -48651,7 +49128,7 @@
           const art = recipe.bgImageId && ["image", "photo", "duotone"].indexOf(recipe.bgType) !== -1 ? imageById(recipe.bgImageId) : null;
           const artPx = art ? imagePixelSize(art) : null;
           if (!art) row("cover", "cdpi", true, "pass", t("store.c.cdpi.name"), t("store.c.cdpi.drawn"));
-          else if (!artPx) row("cover", "cdpi", true, "nc", t("store.c.cdpi.name"), t("store.nc.cdpi", { image: art.name || "image" }));
+          else if (!artPx) row("cover", "cdpi", true, "nc", t("store.c.cdpi.name"), t("store.nc.cdpi", { image: art.name || "image" }), t("store.c.cdpi.fixRead"), { kind: "cover", label: t("store.act.cover") });
           else {
             const dpi = Math.min(artPx.w / d.totalW, artPx.h / d.totalH);
             const CP = Object.assign({ image: art.name || "image", dpi: fmtNum(Math.floor(dpi)), px: fmtNum(artPx.w) + " × " + fmtNum(artPx.h), w: storeIn(Math.round(d.totalW * 100) / 100), h: storeIn(Math.round(d.totalH * 100) / 100), need: R.minDpi }, P);
@@ -48659,8 +49136,9 @@
             else row("cover", "cdpi", true, "fail", t("store.c.cdpi.name"), t("store.c.cdpi.fail", CP),
               t("store.c.cdpi.fix", { needW: fmtNum(Math.ceil(d.totalW * R.minDpi)), needH: fmtNum(Math.ceil(d.totalH * R.minDpi)) }), { kind: "cover", label: t("store.act.cover") });
           }
-          row("cover", "cbleed", true, WRAP_BLEED >= R.bleed ? "pass" : "fail", t("store.c.cbleed.name"), t("store.c.cbleed.ok", Object.assign({ bleed: storeIn(WRAP_BLEED) }, P)));
-          row("cover", "ccolor", false, "warn", t("store.c.ccolor.name"), t("store.c.ccolor.warn." + R.coverColor, P));
+          if (WRAP_BLEED >= R.bleed) row("cover", "cbleed", true, "pass", t("store.c.cbleed.name"), t("store.c.cbleed.ok", Object.assign({ bleed: storeIn(WRAP_BLEED) }, P)));
+          else row("cover", "cbleed", true, "fail", t("store.c.cbleed.name"), t("store.c.cbleed.fail", Object.assign({ have: storeIn(WRAP_BLEED), bleed: storeIn(R.bleed) }, P)), t("store.c.cbleed.fix"), { kind: "cover", label: t("store.act.cover") });
+          row("cover", "ccolor", false, "warn", t("store.c.ccolor.name"), t("store.c.ccolor.warn." + R.coverColor, P), t("store.c.ccolor.fix", P));
           if (R.coverPdfx) row("cover", "cpdfx", true, "fail", t("store.c.cpdfx.name"), t("store.c.cpdfx.fail", Object.assign({ accepted: R.pdfxAccepted.join(" / ") }, P)), t("store.c.cpdfx.fix"));
         }
 
@@ -48670,8 +49148,8 @@
         if (ej && ej.status === "done" && ej.result) {
           const c = ej.result.counts || {};
           if (ej.result.passed) row("ebook", "epubcheck", false, "pass", t("store.c.epub.name"), t("store.c.epub.ok", { ver: ej.result.toolVersion || "", w: c.warnings || 0 }));
-          else row("ebook", "epubcheck", false, "fail", t("store.c.epub.name"), t("store.c.epub.fail", { f: c.fatal || 0, e: c.errors || 0 }), t("store.c.epub.fix"));
-        } else row("ebook", "epubcheck", false, "nc", t("store.c.epub.name"), storeServerReason("epubcheck"));
+          else row("ebook", "epubcheck", false, "fail", t("store.c.epub.name"), t("store.c.epub.fail", { f: c.fatal || 0, e: c.errors || 0 }), t("store.c.epub.fix"), { kind: "validate", label: t("store.act.validate") });
+        } else { const ef = storeServerFix("epubcheck"); row("ebook", "epubcheck", false, "nc", t("store.c.epub.name"), storeServerReason("epubcheck"), ef.fix, ef.action); }
         if (R.ebookLimits) {
           const L = R.ebookLimits;
           const big = state.images.map((im) => ({ im: im, px: imagePixelSize(im) })).filter((x) => x.px && x.px.w * x.px.h > L.maxImagePx);
@@ -48679,13 +49157,15 @@
             t("store.c.eimg.fail", Object.assign({ image: x.im.name || "image", mp: (Math.round(x.px.w * x.px.h / 1e5) / 10).toFixed(1) }, P)), t("store.c.eimg.fix")));
           else row("ebook", "eimg", false, "pass", t("store.c.eimg.name"), t("store.c.eimg.ok", { n: state.images.length }));
           const cpx = state.cover && state.cover.data ? imagePixelSize(state.cover) : null;
-          if (!state.cover) row("ebook", "ecover", false, "nc", t("store.c.ecover.name"), t("store.nc.ecover"));
-          else if (!cpx) row("ebook", "ecover", false, "nc", t("store.c.ecover.name"), t("store.nc.cdpi", { image: "cover" }));
+          const toCover = { kind: "cover", label: t("store.act.cover") };
+          if (!state.cover) row("ebook", "ecover", false, "nc", t("store.c.ecover.name"), t("store.nc.ecover"), t("store.c.ecover.fixNone"), toCover);
+          else if (!cpx) row("ebook", "ecover", false, "nc", t("store.c.ecover.name"), t("store.nc.cdpi", { image: "cover" }), t("store.c.cdpi.fixRead"), toCover);
           else {
             const long = Math.max(cpx.w, cpx.h), short = Math.min(cpx.w, cpx.h);
             const EP = Object.assign({ w: fmtNum(cpx.w), h: fmtNum(cpx.h), long: fmtNum(L.coverLong), short: fmtNum(L.coverShort) }, P);
-            row("ebook", "ecover", false, long >= L.coverLong && short >= L.coverShort ? "pass" : "fail", t("store.c.ecover.name"),
-              t(long >= L.coverLong && short >= L.coverShort ? "store.c.ecover.ok" : "store.c.ecover.fail", EP));
+            const coverOk = long >= L.coverLong && short >= L.coverShort;
+            row("ebook", "ecover", false, coverOk ? "pass" : "fail", t("store.c.ecover.name"),
+              t(coverOk ? "store.c.ecover.ok" : "store.c.ecover.fail", EP), coverOk ? "" : t("store.c.ecover.fix", EP), coverOk ? null : toCover);
           }
         }
 
@@ -48714,16 +49194,26 @@
           pages: fmtNum(a.facts.pages), src: a.facts.measured ? t("store.pagesSrc.measured") : t("store.pagesSrc.est"), date: fmtDateIntl(a.at)
         });
       }
-      function storeRowsHtml(rows, withActions) {
-        return rows.map((r, i) =>
-          '<li class="st-row st-' + r.status + '" data-st-id="' + esc(r.id) + '" data-st-status="' + r.status + '"><i data-lucide="' + STORE_ICON[r.status] + '"></i><div class="st-body">' +
+      /* A remedy shared by several lines (one server failure leaves five
+         lines unchecked) is written out once, on the first of them; the
+         later lines keep their button, or say "same fix as above" when they
+         have none. `seen` spans the whole report. */
+      function storeRowsHtml(rows, withActions, seen) {
+        seen = seen || new Set();
+        return rows.map((r, i) => {
+          const fixShown = r.fix && !seen.has(r.fix);
+          if (r.fix) seen.add(r.fix);
+          /* a line with no button of its own still says where its remedy is */
+          const fixHtml = fixShown ? '<div class="st-fix"><b>' + esc(t("store.fixLabel")) + "</b> " + esc(r.fix) + "</div>"
+            : r.fix && !(withActions && r.action) ? '<div class="st-fix"><b>' + esc(t("store.fixLabel")) + "</b> " + esc(t("store.fixSame")) + "</div>" : "";
+          return '<li class="st-row st-' + r.status + '" data-st-id="' + esc(r.id) + '" data-st-status="' + r.status + '"><i data-lucide="' + STORE_ICON[r.status] + '"></i><div class="st-body">' +
           '<div class="st-head"><b>' + esc(r.name) + '</b><span class="st-chip">' + esc(t("store.st." + r.status)) + "</span>" +
           '<span class="st-req">' + esc(t(r.required ? "store.req" : "store.adv")) + "</span></div>" +
           '<div class="st-ev">' + esc(r.evidence) + "</div>" +
-          (r.fix ? '<div class="st-fix"><b>' + esc(t("store.fixLabel")) + "</b> " + esc(r.fix) + "</div>" : "") +
+          fixHtml +
           (withActions && r.action ? '<button type="button" class="a11y-jump" data-st-act="' + esc(r.id) + '"><i data-lucide="' + (r.action.kind === "attest" ? "check-square" : "wand-2") + '"></i>' + esc(r.action.label) + "</button>" : "") +
-          "</div></li>"
-        ).join("");
+          "</div></li>";
+        }).join("");
       }
       function renderStoreReport() {
         const box = $("storeReport"); if (!box) return;
@@ -48740,7 +49230,8 @@
         }
         const a = storeAudit(sc);
         storeUi.last = a;
-        const g = (id) => a.groups[id].length ? '<h4 class="st-gh">' + esc(t("store.g." + id)) + '</h4><ul class="st-list">' + storeRowsHtml(a.groups[id], true) + "</ul>" : "";
+        const seen = new Set();
+        const g = (id) => a.groups[id].length ? '<h4 class="st-gh">' + esc(t("store.g." + id)) + '</h4><ul class="st-list">' + storeRowsHtml(a.groups[id], true, seen) + "</ul>" : "";
         box.innerHTML =
           '<div class="st-verdict st-v-' + a.verdict + '" id="storeVerdict" data-verdict="' + a.verdict + '"><i data-lucide="' + (a.verdict === "ready" ? "badge-check" : a.verdict === "notReady" ? "octagon-x" : "help-circle") + '"></i><div><b>' +
           esc(storeVerdictText(a)) + "</b><span>" + esc(t("store.verdict." + a.verdict + "Sub")) + "</span><span class=\"st-facts\">" + esc(storeFactsLine(a)) + "</span></div></div>" +
@@ -48765,6 +49256,15 @@
         if (act.kind === "cover") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openCoverMaker(); return; }
         if (act.kind === "attest") { state.storeCheck.attestSpine = true; noteBookEdited(); renderStoreReport(); return; }
         if (act.kind === "ink") { state.storeCheck.ink = act.ink; noteBookEdited(); renderStoreReport(); return; }
+        if (act.kind === "runServer") {
+          /* storeRunServer stays silent when signed out; a button must never do nothing, so it asks for sign-in */
+          if (typeof cloud !== "undefined" && cloud.available && !cloud.user) { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openAuth(); return; }
+          storeRunServer(); return;
+        }
+        if (act.kind === "recheck") { storeRecheck(); return; }
+        if (act.kind === "signin") { $("modalStore").classList.remove("open"); $("modalExport").classList.remove("open"); openAuth(); return; }
+        if (act.kind === "printBlack") { setBookPrintBlack(true); renderStoreReport(); return; }
+        if (act.kind === "validate") { $("modalStore").classList.remove("open"); runValidation(); return; }
         if (!state.coverRecipe) return;
         const w = normalizeWrap(state.coverRecipe.wrap);
         if (act.kind === "wrapTrim") w.trim = "";
@@ -48787,9 +49287,9 @@
         return r && r.export ? r.export.id : null;
       }
       async function storeCreateJob(kind, exportId) {
-        if (!exportId) return { status: "failed", result: { error: t("store.serverUnreachable") } };
+        if (!exportId) return { status: "failed", result: { error: t("store.serverUnreachable"), cause: "client" } };
         const created = await apiFetch("/api/jobs/" + kind, { method: "POST", body: JSON.stringify({ exportId: exportId }) });
-        if (!created || !created.job) return { status: "failed", result: { error: (created && created.__error) || t("store.serverUnreachable") } };
+        if (!created || !created.job) return { status: "failed", result: { error: (created && created.__error) || t("store.serverUnreachable"), cause: "client" } };
         return created.job;
       }
       /* Re-read every job that hasn't finished. Jobs drain one at a time
@@ -60206,8 +60706,120 @@
                 a.rules.sources.every((u) => html.indexOf(u) !== -1);
               return scVerdict(ok, all.length + " rows, " + a.rules.sources.length + " sources, " + html.length + " bytes");
             });
+          } },
+        { id: "store.fix.every-problem-has-a-way-out", feature: "print", name: "Store-ready: every line that isn't a pass says what to do — a fix, a one-click action, or both — for both stores, every binding and paper, five trims, with and without a cover wrap, and every server state: not run, still running, stale, each failure cause, and a finished file that fails",
+          run() {
+            return storeOnSample(() => {
+              let n = 0, audits = 0;
+              const stuck = [];
+              const look = (a, where) => {
+                audits++;
+                storeRows(a).forEach((r) => {
+                  if (r.status === "pass") return;
+                  n++;
+                  if (!(r.fix && r.fix.trim()) && !r.action) stuck.push(where + " " + r.id + " (" + r.status + ")");
+                });
+              };
+              const wrap = state.coverRecipe;
+              for (const trim of ["6x9", "5x8", "8x8", "8.5x11", "11x8.5"]) {
+                state.printTrim = trim;
+                for (const withWrap of [true, false]) {
+                  state.coverRecipe = withWrap ? wrap : null;
+                  for (const store of ["kdp", "ingramspark"]) for (const binding of ["paperback", "hardcover"]) STORE_RULES[store].inks.forEach((ink) => {
+                    storeUi.server = null;
+                    look(storeAudit({ store: store, binding: binding, ink: ink.id }), store + "/" + binding + "/" + ink.id + "/" + trim + (withWrap ? "" : "/no-wrap"));
+                  });
+                }
+              }
+              state.printTrim = "6x9"; state.coverRecipe = wrap;
+              /* …and on screen, where a remedy shared by several lines is written once: every drawn line that
+                 isn't a pass still shows a fix, "same fix as above", or a button. */
+              let drawn = 0;
+              for (const k of storeFixtureStates()) {
+                storeUi.server = storeFixtureServer(k);
+                for (const store of ["kdp", "ingramspark"]) {
+                  const a = storeAudit({ store: store, binding: "paperback", ink: "bw_white" });
+                  look(a, store + "/server:" + k);
+                  const seen = new Set(), box = document.createElement("ul");
+                  box.innerHTML = ["interior", "cover", "ebook"].map((g) => storeRowsHtml(a.groups[g], true, seen)).join("");
+                  box.querySelectorAll(".st-row").forEach((li) => {
+                    if (li.dataset.stStatus === "pass") return;
+                    drawn++;
+                    if (!li.querySelector(".st-fix") && !li.querySelector("[data-st-act]")) stuck.push(store + "/server:" + k + " drawn " + li.dataset.stId);
+                  });
+                }
+              }
+              return scVerdict(!stuck.length && n > 100 && drawn > 0, audits + " reports, " + n + " lines that aren't a pass (" + drawn + " drawn on screen)" + (stuck.length ? "; no way out: " + stuck.slice(0, 6).join("; ") : ", each with a fix or an action"));
+            });
+          } },
+        { id: "store.server.cause-remedies", feature: "print", name: "Store-ready: a failed server job gets the remedy for its own cause (classified on the server) — a setup gap points to the store's own check and offers no pointless re-run; every other cause, a stale result and a never-run check offer “Run the server check”; a running job offers “Check again”",
+          run() {
+            return storeOnSample(() => {
+              const want = { setup: "setup", timeout: "timeout", interrupted: "interrupted", missing: "missing", client: "client", renderer: "retry", tool: "retry", unknown: "retry" };
+              const bad = [];
+              Object.keys(want).forEach((k) => {
+                storeUi.server = storeFixtureServer(k);
+                const rows = storeRows(storeAudit({ store: "ingramspark", binding: "paperback", ink: "bw_white" }));
+                ["fonts", "pdfx", "size", "textK", "tac", "epubcheck"].forEach((id) => {
+                  const r = rows.find((x) => x.id === id);
+                  const okFix = r && r.status === "nc" && r.fix === t("store.fix.cause." + want[k]);
+                  const okAct = k === "setup" ? !r.action : r.action && r.action.kind === "runServer";
+                  if (!okFix || !okAct) bad.push(k + ":" + id);
+                });
+              });
+              storeUi.server = storeFixtureServer("pending");
+              const pend = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" }).groups.interior.find((r) => r.id === "fonts");
+              storeUi.server = storeFixtureServer("stale");
+              const stale = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" }).groups.interior.find((r) => r.id === "fonts");
+              const setupMentionsStore = /Print Previewer/.test(t("store.fix.cause.setup")) && /IngramSpark/.test(t("store.fix.cause.setup"));
+              /* each cause's remedy is its own advice, not one line copied six times */
+              const distinct = new Set(["setup", "timeout", "interrupted", "missing", "client", "retry"].map((k) => t("store.fix.cause." + k))).size === 6;
+              if (!distinct) bad.push("two causes share one remedy");
+              const ok = !bad.length && pend.action && pend.action.kind === "recheck" && stale.action && stale.action.kind === "runServer" && setupMentionsStore;
+              return scVerdict(ok, Object.keys(want).length + " causes × 6 rows" + (bad.length ? "; wrong remedy: " + bad.join(", ") : " each with its own remedy") +
+                "; running → " + (pend.action ? pend.action.kind : "none") + ", stale → " + (stale.action ? stale.action.kind : "none"));
+            });
+          } },
+        { id: "store.fix.accent-black-one-click", feature: "print", name: "Store-ready: text the server found in a coloured accent gets a one-click “Print the accent in black ink”; pressing it turns the setting on and marks the server's measurement out of date, so the line asks for a fresh check instead of keeping the old verdict",
+          run() {
+            return storeOnSample(() => {
+              const keepColour = state.bookColour;
+              try {
+                state.bookColour = bookColourNormalize({ accent: "#7a1f2b" });
+                storeUi.server = storeFixtureServer("doneBad");
+                const sc = { store: "ingramspark", binding: "paperback", ink: "bw_white" };
+                const before = storeAudit(sc).groups.interior.find((r) => r.id === "textK");
+                if (before && before.action) storeAct(before.action);
+                const after = storeAudit(sc).groups.interior.find((r) => r.id === "textK");
+                const ok = before && before.status === "warn" && before.action && before.action.kind === "printBlack" &&
+                  bookColour().printBlack === true && after && after.status === "nc" && after.action && after.action.kind === "runServer";
+                return scVerdict(ok, "before: " + (before && before.status) + " → " + (before && before.action ? before.action.kind : "no action") +
+                  "; printBlack " + bookColour().printBlack + "; after: " + (after && after.status) + " → " + (after && after.action ? after.action.kind : "no action"));
+              } finally { state.bookColour = keepColour; }
+            });
           } }
       );
+      /* Server states the Store-ready self-checks fold in: never run (null),
+         still running, stale, each failure cause the server classifies
+         (src/jobs/runner.ts failureCause) plus the studio's own "client",
+         and a finished conversion whose file fails everything it can. */
+      function storeFixtureStates() {
+        return [null, "pending", "stale", "client", "setup", "timeout", "interrupted", "missing", "renderer", "tool", "unknown", "doneBad"];
+      }
+      function storeFixtureServer(k) {
+        if (!k) return null;
+        if (k === "stale") return { sig: "an earlier book", at: new Date(), pdfx: null, epubcheck: null, error: "" };
+        if (k === "pending") return { sig: storeBookSig(), at: new Date(), pdfx: { id: "", status: "running" }, epubcheck: { id: "", status: "queued" }, error: "" };
+        if (k === "doneBad") return { sig: storeBookSig(), at: new Date(), error: "",
+          pdfx: { status: "done", result: {
+            inspection: { pageCount: 0, fontsAllEmbedded: false, fonts: [{ name: "SelfCheck-Regular", embedded: false }],
+              pdfx: { conformance: "", version: "", outputIntent: false, outputCondition: "" }, rgb: { colourSpaceRefs: 3, rgbOperators: 0 },
+              firstPage: { mediaBox: { w: 1, h: 1 }, trimBox: null } },
+            press: { text: { textShows: 10, kOnly: 4, otherColours: { "0.2 0.9 0.8 0.1": 6 }, kValues: { "100": 4 } }, ink: { maxTacPct: 320, dpi: 72, perPagePct: [320] } } } },
+          epubcheck: { status: "done", result: { passed: false, counts: { fatal: 1, errors: 2, warnings: 0 } } } };
+        const job = { status: "failed", result: Object.assign({ error: "self-check: " + k, cause: k }, k === "setup" ? { configured: false } : {}) };
+        return { sig: storeBookSig(), at: new Date(), pdfx: job, epubcheck: job, error: "" };
+      }
       /* ==== /BEUK:store ==== */
       /* ==== BEUK:importreport ==== */
       /* Import report self-checks: each import runs through the real

@@ -19,6 +19,33 @@ import { epubcheckProblem, measureTac, pdfRenderProblem, pdfxProblem, renderPrin
  * error, timeout — and never pretends to be a pass).
  */
 
+/**
+ * Why a failed job failed, as one code the studio's Store-ready report
+ * turns into a remedy (client/index.html, storeServerFix). Classified
+ * here, from this server's own messages, so the browser never has to
+ * guess from English prose:
+ *  - setup:       a tool isn't installed or reachable (configured: false,
+ *                 or a message that says "server setup gap")
+ *  - timeout:     a tool ran out of time
+ *  - interrupted: the server shut down or restarted mid-job
+ *  - missing:     the archived export (or its file) is gone
+ *  - renderer:    the HTML-to-PDF renderer answered without a PDF
+ *  - tool:        Ghostscript or EPUBCheck ran but left no usable output
+ *  - unknown:     anything else
+ */
+export type JobFailureCause = 'setup' | 'timeout' | 'interrupted' | 'missing' | 'renderer' | 'tool' | 'unknown';
+
+export function failureCause(result: Record<string, unknown>): JobFailureCause {
+  const error = typeof result.error === 'string' ? result.error : '';
+  if (result.configured === false || /server setup gap/i.test(error)) return 'setup';
+  if (/did not finish within/i.test(error)) return 'timeout';
+  if (/shutting down|server restarted/i.test(error)) return 'interrupted';
+  if (/no longer exists|missing from storage/i.test(error)) return 'missing';
+  if (/HTML-to-PDF renderer/i.test(error)) return 'renderer';
+  if (/Ghostscript|EPUBCheck|converted PDF/i.test(error)) return 'tool';
+  return 'unknown';
+}
+
 export type JobKind = 'epubcheck' | 'pdfx';
 export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
 
@@ -86,6 +113,7 @@ export class JobRunner {
           error:
             'The server was shutting down and this job did not finish in time, so it was stopped. ' +
             'Nothing was checked or converted — please run it again.',
+          cause: 'interrupted',
         }),
       ],
     );
@@ -104,6 +132,7 @@ export class JobRunner {
           error:
             'The server restarted while this job was running, so it never finished. ' +
             'Nothing was checked or converted — please run it again.',
+          cause: 'interrupted',
         }),
       ],
     );
@@ -145,7 +174,7 @@ export class JobRunner {
       `update jobs set status = $2, result = $3::jsonb, artifact_export_id = $4,
               finished_at = now()
        where id = $1 and status = 'running'`,
-      [jobId, status, JSON.stringify(result), artifactExportId],
+      [jobId, status, JSON.stringify(status === 'failed' ? { ...result, cause: failureCause(result) } : result), artifactExportId],
     );
   }
 

@@ -10,6 +10,7 @@ import { TokenBucketLimiter } from '../ratelimit.js';
 import { ghostscriptPdfxArgs, pdfRenderProblem, pdfxIccDirArgs, pdfxIccPath } from '../jobs/tools.js';
 import { neutralRgbToGray, textInkFacts } from '../jobs/pdfpress.js';
 import { inspectPdf } from '../jobs/pdfinspect.js';
+import { failureCause } from '../jobs/runner.js';
 import { checkPdfxProfile, PDFX_PROFILE } from '../jobs/iccprofile.js';
 import {
   parseOpf,
@@ -1619,6 +1620,44 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'Store-ready: the downloaded report carries title, store, trim, pages, date, verdict, every check’s evidence and the sources',
     kind: 'client-only',
     reason: 'The report file is generated in the browser.',
+  },
+  {
+    id: 'store.fix.every-problem-has-a-way-out',
+    title: 'Store-ready: every line that isn’t a pass says what to do (a fix, a one-click action, or both) across both stores, every binding, paper and server state',
+    kind: 'client-only',
+    reason: 'The report, its remedies and its actions are built in the studio.',
+  },
+  {
+    id: 'store.server.cause-remedies',
+    title: 'Store-ready: a failed server job gets the remedy for its own cause; a setup gap points to the store’s own check',
+    kind: 'client-only',
+    reason: 'The server classifies the cause (jobs.failure.cause-classified); the remedy is studio copy.',
+  },
+  {
+    id: 'store.fix.accent-black-one-click',
+    title: 'Store-ready: coloured accent text gets a one-click “print the accent in black”, which marks the old server measurement out of date',
+    kind: 'client-only',
+    reason: 'The accent setting and the report live in the studio.',
+  },
+  {
+    id: 'jobs.failure.cause-classified',
+    title: 'A failed job is tagged with one cause (setup, timeout, interrupted, missing, renderer, tool) so the Store-ready report can offer its remedy',
+    kind: 'server',
+    run: async () => {
+      const cases: Array<[Record<string, unknown>, string]> = [
+        [{ configured: false, error: 'PDF/X conversion is not configured on this server (GS_BIN is not set).' }, 'setup'],
+        [{ error: 'The HTML-to-PDF renderer could not be reached (RENDERER_URL="x": refused). This is a server setup gap, not a finding about your book.' }, 'setup'],
+        [{ error: 'Ghostscript did not finish within 900000 ms (PDFX_TIMEOUT_MS) and was stopped.' }, 'timeout'],
+        [{ error: 'The server restarted while this job was running, so it never finished.' }, 'interrupted'],
+        [{ error: 'The source export for this job no longer exists, so there was nothing to run on.' }, 'missing'],
+        [{ error: 'The HTML-to-PDF renderer answered HTTP 500 and produced no PDF.' }, 'renderer'],
+        [{ error: 'Ghostscript reported success but left no output file, so no converted file exists.' }, 'tool'],
+        [{ error: 'anything else' }, 'unknown'],
+      ];
+      const wrong = cases.filter(([r, want]) => failureCause(r) !== want).map(([r, want]) => `${want}: got ${failureCause(r)}`);
+      assert(wrong.length === 0, wrong.join('; '));
+      return `${cases.length} failure messages, each tagged with its own cause`;
+    },
   },
   /* ==== /BEUK:store ==== */
 
