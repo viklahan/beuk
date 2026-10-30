@@ -40208,13 +40208,38 @@
         const labelRe = /^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+[\p{L}\p{N}]+\.?$/iu;
         const numRe = /^(?:\d{1,3}|[ivxlcdm]{1,7})\.?$/i;
         const titleCase = (s) => s === s.toUpperCase() && /\p{Lu}/u.test(s) ? s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : s;
+        /* BEUK:pdfdiary — a size alone never makes a heading of running
+           text: a diary or a letter set larger than the story (13.5 against
+           11) is the story's text. In a book of prose, a big line is
+           running text when it is part of a block of its size that reads
+           as prose (two or more lines, a hundred characters or more or a
+           whole sentence among them: "…it wasn't the water. / H. took the
+           vest."), when it opens in lower case with nothing of its size
+           above (a sentence carried over a page break), or when it is a
+           whole sentence of eight words or more. A book with hardly any
+           text of its own (a picture quiz) keeps its large questions as
+           its headings. */
+        const proseBook = allLines.reduce((a, o) => a + (!o.drop && Math.abs(o.size - body) < 0.6 ? o.text.length : 0), 0) >= 5000;
+        const runningText = (l, q, c) => {
+          if (!proseBook || l.size < body * 1.22) return false;
+          const same = (o) => o && !o.drop && Math.abs(o.size - l.size) < 0.6;
+          const near = l.size * 2.2;
+          let lo = q, hi = q;
+          while (lo > 0 && same(c[lo - 1]) && c[lo].y - c[lo - 1].y <= near) lo--;
+          while (hi + 1 < c.length && same(c[hi + 1]) && c[hi + 1].y - c[hi].y <= near) hi++;
+          const block = c.slice(lo, hi + 1);
+          const sentence = (o) => o.text.split(/\s+/).length >= 8 && /[.!?]["'”’)]*$/u.test(o.text);
+          if (block.length >= 2 && (block.reduce((a, o) => a + o.text.length, 0) >= 100 || block.some(sentence))) return true;
+          if (/^\p{Ll}/u.test(l.text) && lo === q) return true;
+          return sentence(l);
+        };
         pages.forEach((p) => p.cols.forEach((c) => c.forEach((l, q) => {
           if (l.drop) return;
           const solidRuns = l.runs.filter((r) => r.t.trim());
           const allBold = solidRuns.length && solidRuns.every((r) => r.b);
           const prev = c.slice(0, q).reverse().find((x) => !x.drop), next = c.slice(q + 1).find((x) => !x.drop);
           const gapAbove = prev ? l.y - prev.y : 1e9, gapBelow = next ? next.y - l.y : 1e9;
-          if (!l.dropCap && l.size >= body * 1.22 && l.text.length <= 140 && /\p{L}{2}/u.test(l.text)) l.head = "big";
+          if (!l.dropCap && !runningText(l, q, c) && l.size >= body * 1.22 && l.text.length <= 140 && /\p{L}{2}/u.test(l.text)) l.head = "big";
           else if (allBold && !l.dropCap && l.size >= body * 0.98 && l.text.length <= 80 && !/[.,;:]$/.test(l.text) && gapAbove >= lead * 1.6 && gapBelow >= lead * 1.35) l.head = "bold";
           else if (l.text.length <= 40 && labelRe.test(l.text.trim()) && gapAbove >= lead * 1.4) l.head = "label";
           else if (numRe.test(l.text.trim()) && l.size >= body * 0.98 && next && next.size >= body * 1.22 && gapBelow <= lead * 4) l.head = "label";
@@ -50936,6 +50961,44 @@
             const ok = poemOk && body.length === 1 && all.indexOf("climbed the steps") !== -1 && all.indexOf("img:chart1") !== -1 && all.indexOf("went down again") !== -1 &&
               !pieces.some((p) => p.type === "dedication" || p.type === "frontispiece");
             return scVerdict(ok, pieces.map((p) => p.kind + ":" + p.type + ":" + p.title).join(" | ") + "; a one-piece poem titled by its own heading (" + (poem[0] ? poem[0].title : "none") + ")");
+          } },
+        /* ---- BEUK:pdfdiary: a diary set larger than the text is the text, not headings ---- */
+        { id: "pdf.diary.larger-text-is-prose", feature: "import", name: "A PDF chapter that quotes a diary in a larger size than its text (13.5 against 11), with an entry running across a page break and a one-line entry, keeps every diary line as text inside its chapter; a real two-line chapter title whose second line starts in lower case stays one heading, and in a picture quiz with hardly any text a large question stays its page's heading",
+          run() {
+            const it = (s, x, y, w, size) => ({ s, x, y, w, size: size || 11, b: false, i: false, rtl: 0 });
+            const vocab = "the lake lay grey under the ridge and the boats were hauled up on the stones while the men mended nets and talked of the weather".split(" ");
+            let seq = 0;
+            const prose = (y0, n) => { const out = []; for (let k = 0; k < n; k++) { const ws = []; for (let q = 0; q < 10; q++) ws.push(vocab[(seq * 7 + q * 3) % vocab.length]); seq++; out.push(it(ws.join(" ") + (k % 5 === 4 ? "." : ""), k % 5 === 0 ? 68 : 50, y0 + k * 16, k % 5 === 4 ? 240 : 331)); } return out; };
+            const W = 432, H = 648, pages = [];
+            const page = (items) => pages.push({ n: pages.length + 1, w: W, h: H, items: [it(String(pages.length + 1), 208, 608, 15, 9)].concat(items), images: [], masks: 0, rotated: 0 });
+            page([it("Chapter One", 170, 60, 90, 13), it("The Long Night of", 120, 100, 190, 21), it("the Hollow Men", 135, 126, 160, 21)].concat(prose(170, 26)));
+            page(prose(60, 30));
+            page([it("Chapter Two", 170, 60, 90, 13), it("The Diary", 160, 100, 104, 21)].concat(prose(140, 16), [
+              it("March 12. Started the peas in the cold frame. Harlan says", 75, 420, 275, 13.5),
+              it("it is too early. The lake was flat as a plate this morning and", 75, 440, 280, 13.5),
+              it("I swam out to the point and back before breakfast and my", 75, 460, 262, 13.5)]));
+            page([it("arms are still singing.", 75, 67, 98, 13.5)].concat(prose(92, 8), [
+              it("August, years back. Took them both out in the canoe at", 75, 240, 266, 13.5),
+              it("dusk and we did not talk, just paddled the shoreline while", 75, 260, 272, 13.5),
+              it("the light went.", 75, 280, 70, 13.5)], prose(305, 4), [
+              it("March. The vest is gone from its peg in the mudroom.", 75, 380, 242, 13.5)], prose(405, 10)));
+            page([it("If anything happens to me on that lake, it was not the water.", 75, 60, 270, 13.5), it("H. took the vest.", 75, 80, 80, 13.5)].concat(prose(110, 28)));
+            const lay = pdfLayout({ pages, numPages: pages.length, textChars: 30000, title: "", author: "" });
+            /* a picture quiz: each page's question is set large over almost no text, and is that page's heading */
+            const quiz = [];
+            ["Stare at the black dot for thirty seconds, then look at a wall.", "How many animals are hiding in this forest? Count them all."].forEach((q, k) => {
+              quiz.push({ n: k + 1, w: W, h: H, images: [], masks: 0, rotated: 0, items: [it(String(k + 1), 208, 608, 15, 9), it(q, 60, 60, 300, 13.5), it("Look closely before you answer, and trust nothing you see.", 60, 520, 290), it("Score one point for each right answer you write down here.", 60, 540, 290), it("Turn the page for the answer, and no peeking at the back.", 60, 560, 290)] });
+            });
+            const quizHeads = pdfLayout({ pages: quiz, numPages: quiz.length, textChars: 200, title: "", author: "" }).blocks.filter((b) => b.kind === "h").map((b) => b.text);
+            const heads = lay.blocks.filter((b) => b.kind === "h").map((b) => b.text);
+            const paras = lay.blocks.filter((b) => b.kind === "p").map((b) => b.md.replace(/\s+/g, " "));
+            const inPara = (s) => paras.some((p) => p.indexOf(s) !== -1);
+            const titleOk = heads.some((h) => /Long Night of the Hollow Men/.test(h));
+            const diaryHeads = heads.filter((h) => /March|August|arms are|canoe|light went|vest|anything happens/.test(h));
+            const diaryText = ["March 12. Started the peas", "arms are still singing.", "August, years back.", "the light went.", "March. The vest is gone from its peg in the mudroom.", "H. took the vest."].filter((s) => !inPara(s));
+            const quizOk = quizHeads.length === 2 && /^Stare at the black dot/.test(quizHeads[0]);
+            const ok = titleOk && quizOk && heads.length === 2 && !diaryHeads.length && !diaryText.length;
+            return scVerdict(ok, "quiz questions kept as headings (" + quizHeads.join(" | ") + "); " + heads.length + " headings (" + heads.join(" | ") + "); diary lines taken for headings: " + (diaryHeads.join(" | ") || "none") + "; diary lines missing from the text: " + (diaryText.join(" | ") || "none"));
           } },
         /* ---- BEUK:pdffront: a PDF set with letter-spaced titles, a drop cap and no metadata ---- */
         { id: "pdf.front.letterspaced-dropcap", feature: "import", name: "A PDF whose title page, author line and headings are letter-spaced (T H E  F R O S T  L I N E), whose chapters open on a drop cap, whose metadata says (anonymous), and whose later chapters carry their number on a spaced label line: the words close up, the drop cap rejoins its word, the title and author come from the book itself, the author's note is front matter, and every chapter keeps its number",

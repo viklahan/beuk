@@ -1715,6 +1715,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The PDF layout and the manuscript parser run in the studio page; the server never sees the file.',
   },
   {
+    id: 'pdf.diary.larger-text-is-prose',
+    title: 'A diary or letter set larger than the text stays text inside its chapter, never a run of chapters',
+    kind: 'client-only',
+    reason: 'The PDF layout runs in the studio page; the server never sees the file.',
+  },
+  {
     id: 'import.onereader.bulk-parity',
     title: 'A bulk import splits a manuscript exactly as the Import button does',
     kind: 'client-only',
