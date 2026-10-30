@@ -1779,6 +1779,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The PDF layout runs in the studio page; the server never sees the file.',
   },
   {
+    id: 'sample.roundtrip.epub',
+    title: 'The sample exported to EPUB and imported back comes back whole: every Part, chapter, subtitle and footnote, nothing extra',
+    kind: 'client-only',
+    reason: 'The EPUB export and import both run in the studio page.',
+  },
+  {
+    id: 'import.epub.reads-any-epub',
+    title: 'EPUB import reads an EPUB nobody styled for Beuk: its chapters, notes, pictures and credit; its cover and contents left out',
+    kind: 'client-only',
+    reason: 'The EPUB import runs in the studio page; the server never sees the file.',
+  },
+  {
     id: 'sample.roundtrip.word',
     title: 'The sample exported to Word and imported back comes back whole: every Part, chapter and footnote, nothing extra',
     kind: 'client-only',
