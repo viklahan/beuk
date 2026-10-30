@@ -39962,12 +39962,24 @@
               const size = Math.hypot(m[2], m[3]);
               if (!(size > 0.5)) return;
               /* Sideways or upside-down text (a spine line, a stamp): not prose. */
-              if (Math.abs(m[1]) > 0.05 * size || Math.abs(m[2]) > 0.05 * size || m[0] < 0) { if (str.trim()) pg.rotated++; return; }
+              /* Sideways or upside-down text: set aside with its reading
+                 direction (u, along a line) and its line direction (d, from
+                 one line to the next), so a page of it can be read back as
+                 a sideways or upside-down block; a stray spine line or stamp
+                 stays out (BEUK:pdfback). */
+              if (Math.abs(m[1]) > 0.05 * size || Math.abs(m[2]) > 0.05 * size || m[0] < 0) {
+                if (str.trim()) {
+                  pg.rotated++;
+                  const ul = Math.hypot(m[0], m[1]) || 1;
+                  (pg.turned = pg.turned || []).push({ s: str, x: m[4], y: m[5], size, u: [m[0] / ul, m[1] / ul], d: [-m[2] / size, -m[3] / size] });
+                }
+                return;
+              }
               const st = styleOf(it.fontName);
               /* Right-to-left runs: PDF.js gives each one in reading order;
                  the line puts them in order right to left. */
               const rtl = (str.match(PDF_RTL_RE) || []).length;
-              pg.items.push({ s: str, x: m[4], y: m[5], w: it.width * (vp.scale || 1), size, b: st.b, i: st.i, rtl });
+              pg.items.push({ s: str, x: m[4], y: m[5], w: it.width * (vp.scale || 1), size, b: st.b, i: st.i, rtl, mono: /mono|courier|consol|menlo|typewriter/i.test(st.name || "") });
               out.textChars += str.replace(/\s+/g, "").length;
               out.rtlChars += rtl;
             });
@@ -40168,7 +40180,7 @@
                 /* Overprinted copies (a "fake bold") are one glyph run. */
                 if (gap < -0.5 * small && runs.length && runs[runs.length - 1].t.trim() === s.trim()) return;
               }
-              runs.push({ t: s, b: it.b, i: it.i, size: it.size });
+              runs.push({ t: s, b: it.b, i: it.i, size: it.size, mono: !!it.mono });
               if (s.trim()) cells[cells.length - 1].push(s.trim());
               prevEnd = rtl ? Math.min(prevEnd === null ? 1e9 : prevEnd, it.x) : Math.max(prevEnd === null ? -1e9 : prevEnd, it.x + it.w);
               prevText = s; prevCap = !!it.cap;
@@ -40189,7 +40201,8 @@
             const x1 = Math.max.apply(null, edge.map((it) => it.x + it.w));
             const first = solid[0];
             const dropCap = !!first && first.s.trim().length <= 2 && (first.capSize || first.size) >= size * 1.8 && solid.length > 1;
-            return { y, size, x0, x1, rtl, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? (first.capSize || first.size) : 0 };
+            return { y, size, x0, x1, rtl, runs, text, cells: cells.filter((c) => c.length).map((c) => c.join(" ")), dropCap, capSize: dropCap ? (first.capSize || first.size) : 0,
+              mono: runs.some((r) => r.t.trim()) && runs.every((r) => !r.t.trim() || r.mono) };
           }).filter((l) => l.text);
         };
         const pages = ext.pages.map((pg) => {
@@ -40216,7 +40229,7 @@
               .filter((c) => c.some((it) => it.s.trim()));
           } else cols = [pg.items];
           const colLines = cols.map((c, ci) => buildLines(c).map((l) => Object.assign(l, { page: pg.n, col: ci })));
-          return { n: pg.n, w: pg.w, h: pg.h, cols: colLines, images: pg.images || [] };
+          return { n: pg.n, w: pg.w, h: pg.h, cols: colLines, images: pg.images || [], turned: pg.turned || [] };
         });
         const allLines = [];
         pages.forEach((p) => p.cols.forEach((c) => c.forEach((l) => allLines.push(l))));
@@ -40444,14 +40457,23 @@
         const blocks = [];
         let para = null, prevLine = null, pendingPlate = null, capUntil = -1, capPage = 0;
         let sinceHead = 99;
-        const flush = () => { if (para && para.runs.length) { blocks.push({ kind: "p", runs: para.runs }); sinceHead++; } para = null; };
+        const flush = () => {
+          if (para && para.runs.length) { blocks.push(Object.assign({ kind: "p", runs: para.runs, page: para.lastLine ? para.lastLine.page : 0 }, para.note ? { note: para.note } : {})); sinceHead++; }
+          para = null;
+          if (pendingTurned.length) { pendingTurned.forEach((b) => blocks.push(b)); pendingTurned.length = 0; }
+        };
+        /* BEUK:pdfback — the notes a chapter prints under NOTES at its end are being read */
+        let noteMode = false;
+        /* BEUK:pdfback — turned text waits for the paragraph in hand to end, so it never splits one or comes before its page's heading */
+        const pendingTurned = [];
         /* Where a full page's text ends: the usual lowest line. */
         const lowest = pages.map((p) => { let m = 0, n = 0; p.cols.forEach((c) => c.forEach((l) => { if (!l.drop) { n++; if (l.y > m) m = l.y; } })); return { m, n }; });
         const fullPages = lowest.filter((x) => x.n >= 10).map((x) => x.m);
         const bottomY = fullPages.length ? median(fullPages) : -1e9; /* no full page: no rule */
         const joinRuns = (line) => {
           /* Bold set smaller than its line is small capitals, not emphasis. */
-          const runs = line.runs.map((r) => ({ t: r.t, b: r.b && r.size >= line.size * 0.9, i: r.i && markItalic }));
+          const runs = line.runs.map((r) => ({ t: (!line.mono && !noteMode && /^\s*\d{1,3}\s*$/.test(r.t) && r.size <= line.size * 0.8 && line.runs.some((o) => o !== r && o.t.trim())) ? r.t.replace(/\d{1,3}/, (d) => "" + d + "") : r.t,
+            b: r.b && r.size >= line.size * 0.9, i: r.i && markItalic })); /* BEUK:pdfback — a raised number in a line of text is a note mark */
           /* A drop cap is ornament, not emphasis. */
           if (line.dropCap && runs.length) { runs[0].b = false; runs[0].i = false; }
           /* The small capitals that open a chapter or follow a drop cap. */
@@ -40514,6 +40536,30 @@
           return { kind: "img", img: im.img, full: area >= pageArea * 0.85, page: pg.n };
         };
         pages.forEach((p) => {
+          /* BEUK:pdfback — a page's sideways or upside-down text, read
+             line by line in its own direction: kept as a block of its
+             kind when it reads as text (two lines, or four words or
+             more); a lone stamp stays out. */
+          const turnedHere = [];
+          if (p.turned.length) {
+            const groups = new Map();
+            p.turned.forEach((t) => {
+              const kind = t.u[0] < -0.5 ? "upside-down" : "sideways";
+              if (!groups.has(kind)) groups.set(kind, []);
+              groups.get(kind).push(t);
+            });
+            groups.forEach((its, kind) => {
+              const ls = [];
+              its.map((t) => ({ t, across: t.x * t.d[0] + t.y * t.d[1], along: t.x * t.u[0] + t.y * t.u[1] }))
+                .sort((a, b) => a.across - b.across || a.along - b.along)
+                .forEach((o) => { const cur = ls[ls.length - 1]; if (cur && Math.abs(o.across - cur.across) <= o.t.size * 0.5) cur.items.push(o); else ls.push({ across: o.across, items: [o] }); });
+              const lines = ls.map((ln) => ln.items.sort((a, b) => a.along - b.along).map((o) => o.t.s).join("").replace(/\s+/g, " ").trim()).filter(Boolean);
+              const words = lines.join(" ").split(/\s+/).filter(Boolean).length;
+              if (lines.length < 2 && words < 4) return;
+              turnedHere.push({ kind: "raw", md: "::: " + kind + "\n" + lines.join("\n") + "\n:::", page: p.n });
+              st.rotated -= its.length;
+            });
+          }
           const pageText = [];
           p.cols.forEach((c) => c.forEach((l) => { if (!l.drop) pageText.push(l); }));
           /* Pictures on this page: a full-page one with no text over it is
@@ -40571,7 +40617,7 @@
             /* Tables: three or more consecutive lines of two or more cells. */
             for (let q = 0; q < ls.length; q++) {
               let r = q;
-              while (r < ls.length && ls[r].cells.length >= 2 && !ls[r].head) r++;
+              while (r < ls.length && ls[r].cells.length >= 2 && !ls[r].head && !ls[r].mono) r++;
               /* Cells of running prose are columns read wrong, not a table. */
               const cellsOf = ls.slice(q, r).reduce((a, l) => a.concat(l.cells), []);
               const meanLen = cellsOf.length ? cellsOf.reduce((a, c) => a + c.length, 0) / cellsOf.length : 0;
@@ -40584,6 +40630,36 @@
               while (imgs.length && imgs[0].y < l.y - l.size) takeImg();
               if (l.inTable) continue;
               if (l.table) { flush(); blocks.push({ kind: "table", rows: l.table }); st.tables++; prevLine = null; continue; }
+              /* BEUK:pdfback — the notes a chapter prints at its end: a small
+                 NOTES label, then numbered notes set smaller than the text.
+                 Each comes back as "[^n]: note"; a heading or a line in
+                 the text's own size ends them. */
+              if (!l.head && l.size < body * 0.95 && /^notes$/i.test(l.text.replace(/\s+/g, ""))) { flush(); noteMode = true; prevLine = null; continue; }
+              if (noteMode && (l.head || l.size >= body * 0.95 || l.mono)) { flush(); noteMode = false; }
+              if (noteMode) {
+                const nm = /^(\d{1,3})\s+\S/.exec(l.text);
+                const rs = l.runs.map((r) => ({ t: r.t, b: r.b && r.size >= l.size * 0.9, i: r.i && markItalic }));
+                if (nm) {
+                  flush();
+                  let cut = nm[1].length;
+                  while (rs.length && cut > 0) { const t0 = rs[0].t.replace(/^\s+/, ""); if (t0.length <= cut) { cut -= t0.length; rs.shift(); } else { rs[0].t = t0.slice(cut); cut = 0; } }
+                  para = { runs: [{ t: "[^" + nm[1] + "]: ", b: false, i: false }].concat(rs), note: nm[1], lines: 1 };
+                } else if (para && para.note) { para.runs.push({ t: " ", b: false, i: false }); rs.forEach((r) => para.runs.push(r)); }
+                else continue;
+                para.lastLine = { x0: l.x0, x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight, rtl: colRtl };
+                prevLine = l;
+                continue;
+              }
+              /* BEUK:pdfback — lines set in a monospace face, one after
+                 another: a log, as typed. */
+              if (l.mono && !l.head) {
+                flush();
+                const run = [l];
+                while (q + 1 < ls.length && ls[q + 1].mono && !ls[q + 1].head && !ls[q + 1].inTable) run.push(ls[++q]);
+                blocks.push({ kind: "raw", md: "::: log\n" + run.map((x) => x.runs.map((r) => r.t).join("").replace(/ /g, " ").replace(/\s+$/, "")).join("\n") + "\n:::", page: p.n });
+                prevLine = null;
+                continue;
+              }
               if (l.head) {
                 /* One heading from its run of heading lines on this page. */
                 const group = [l];
@@ -40598,7 +40674,7 @@
                 let text = parts.join(": ");
                 if (label) text = (numRe.test(label) ? "Chapter " + label.replace(/\.$/, "") : label) + (text ? ": " + text : "");
                 flush();
-                const hb = { kind: "h", text, page: p.n };
+                const hb = { kind: "h", text, page: p.n, size: Math.max.apply(null, group.map((g) => g.size)) };
                 const lastB = blocks[blocks.length - 1];
                 /* BEUK:pdfmarks — two headings on one page that together
                    spell one bookmark ("PART ONE" + "SEPTEMBER" = "Part ONE:
@@ -40616,6 +40692,16 @@
                 sinceHead = 0;
                 if (pendingPlate) { blocks.push(pendingPlate); pendingPlate = null; }
                 prevLine = null;
+                /* BEUK:pdfback — a short, wholly italic line straight under the
+                   heading and centred on it (not on the column: a chapter with
+                   margin notes sets its text off-centre), about the text's
+                   size, is its subtitle. */
+                const nx = ls[q + 1], lastG = group[group.length - 1];
+                if (nx && !nx.head && !nx.mono && nx.size < body * 1.2 && nx.size > body * 0.85 && nx.y - lastG.y <= lead * 3.5 && nx.text.split(/\s+/).length <= 15 &&
+                    nx.runs.every((r) => !r.t.trim() || r.i) && Math.abs((nx.x0 + nx.x1) / 2 - (lastG.x0 + lastG.x1) / 2) <= body * 1.5) {
+                  blocks.push({ kind: "subtitle", text: nx.text.replace(/\s+/g, " ").trim(), page: p.n });
+                  q++;
+                }
                 continue;
               }
               if (pendingPlate) { flush(); blocks.push(pendingPlate); pendingPlate = null; }
@@ -40667,10 +40753,35 @@
             }
             while (imgs.length) takeImg();
           });
+          turnedHere.forEach((b) => pendingTurned.push(b));
           prevLine = null;
         });
         flush();
         if (pendingPlate) blocks.push(pendingPlate);
+        /* BEUK:pdfback — in a book whose chapters share one heading size
+           (three or more of them), a smaller heading with a chapter's text
+           above it on its own page is a sub-heading inside that chapter,
+           never a chapter of its own. Only inside a chapter ("Chapter …"
+           opened it); a heading the book's bookmarks name stays a heading. */
+        {
+          const hs = blocks.filter((b) => b.kind === "h" && b.size);
+          const tally = new Map();
+          hs.forEach((b) => { const k = Math.round(b.size * 2) / 2; tally.set(k, (tally.get(k) || 0) + 1); });
+          let chapSize = 0, most = 0;
+          tally.forEach((v, k) => { if (v > most || (v === most && k > chapSize)) { most = v; chapSize = k; } });
+          if (most >= 3) blocks.forEach((b, k) => {
+            if (b.kind !== "h" || !b.size || b.size >= chapSize * 0.9) return;
+            const prev = blocks[k - 1];
+            if (!prev || prev.kind !== "p" || prev.note || prev.page !== b.page) return;
+            if (markFull.has(b.page) && markFull.get(b.page).has(markKey(b.text))) return;
+            /* only inside a chapter: a glossary or guide that starts mid-page after a preface or appendix is a section of its own */
+            let owner = null;
+            for (let j = k - 1; j >= 0 && !owner; j--) if (blocks[j].kind === "h") owner = blocks[j];
+            /* the chapter's label may stand as a heading of its own just above its title ("CHAPTER FOURTEEN", then the title) */
+            if (!owner || !blocks.some((o) => o.kind === "h" && o.page === owner.page && /^chapter\b/i.test(o.text))) return;
+            b.kind = "sub";
+          });
+        }
         /* 7. Runs → Beuk's inline marks: *italic*, **bold**, ***both***;
            spaces stay outside the marks. */
         blocks.forEach((b) => {
@@ -40690,6 +40801,19 @@
             return m[1] + mk + m[2] + mk + m[3];
           }).join("").replace(/\s+/g, " ").trim();
         });
+        /* BEUK:pdfback — a note mark becomes "[^n]" where its chapter
+           has note n; any other raised number is the number it was. */
+        {
+          let defs = new Set(), from = 0;
+          const settle = (to) => {
+            for (let k = from; k < to; k++) if (blocks[k].kind === "p" && blocks[k].md) blocks[k].md = blocks[k].md.replace(/(\d{1,3})/g, (m, d) => (defs.has(d) ? "[^" + d + "]" : d));
+          };
+          blocks.forEach((b, k) => {
+            if (b.kind === "h") { settle(k); defs = new Set(); from = k; }
+            else if (b.kind === "p" && b.note) defs.add(b.note);
+          });
+          settle(blocks.length);
+        }
         st.headPages = st.headPages.size;
         st.body = body; st.lead = lead;
         return { blocks: blocks.filter((b) => b.kind !== "p" || b.md), st };
@@ -40721,8 +40845,13 @@
         const ir = irBegin(name, "pdf");
         try {
           const parts = [];
+          ir.subs = []; ir.subtitles = [];
           lay.blocks.forEach((b) => {
             if (b.kind === "h") parts.push("# " + b.text.replace(/\s+/g, " ").trim());
+            /* BEUK:pdfback */
+            else if (b.kind === "sub") { ir.subs.push(b.text.replace(/\s+/g, " ").trim()); parts.push(irSent("SUB", ir.subs.length - 1)); }
+            else if (b.kind === "subtitle") { ir.subtitles.push(b.text); parts.push(irSent("SUBT", ir.subtitles.length - 1)); }
+            else if (b.kind === "raw") parts.push(b.md);
             else if (b.kind === "p") parts.push(b.md);
             else if (b.kind === "break") parts.push("***");
             else if (b.kind === "img") {
@@ -51188,6 +51317,41 @@
             const missing = want.filter((h) => marked.indexOf(h) === -1);
             const ok = !missing.length && marked.length === want.length && marked.indexOf("Evening") === -1 && plain.indexOf("Part One: MOSCOW") !== -1;
             return scVerdict(ok, "with bookmarks: " + marked.join(" | ") + (missing.length ? " (missing: " + missing.join(" | ") + ")" : "") + "; without: " + plain.join(" | "));
+          } },
+        /* ---- BEUK:pdfback: a PDF Beuk printed comes back as the book it was ---- */
+        { id: "pdf.beuk-print-back", feature: "import", name: "A PDF set the way Beuk prints: a chapter's italic subtitle under its title is its subtitle, a smaller heading in the middle of a chapter stays a sub-heading in that chapter, the notes printed under NOTES at a chapter's end come back as its footnotes with their raised marks, a monospace log is a log (never a table left out), and text turned sideways or upside down is kept in a container of its kind",
+          run() {
+            const it = (s, x, y, w, size, o) => Object.assign({ s, x, y, w, size: size || 10, b: false, i: false, rtl: 0 }, o || {});
+            const vocab = "the tide ran east past the beacon and the boats came in over the bar while the gulls quarrelled on the posts".split(" ");
+            let seq = 0;
+            const prose = (y0, n) => { const out = []; for (let k = 0; k < n; k++) { const ws = []; for (let q = 0; q < 10; q++) ws.push(vocab[(seq * 7 + q * 3) % vocab.length]); seq++; out.push(it(ws.join(" ") + (k % 5 === 4 ? "." : ""), k % 5 === 0 ? 62 : 50, y0 + k * 15, k % 5 === 4 ? 240 : 330)); } return out; };
+            const W = 432, H = 648, pages = [];
+            const page = (items, more) => pages.push(Object.assign({ n: pages.length + 1, w: W, h: H, items: [it(String(pages.length + 1), 210, 616, 10, 9.5)].concat(items), images: [], masks: 0, rotated: 0 }, more || {}));
+            const opening = (label, title, sub) => [it(label, 170, 66, 92, 7.8), it(title, 130, 85, 172, 18.5, { b: true })].concat(sub ? [it(sub, 150, 114, 132, 10.2, { i: true })] : []);
+            page(opening("CHAPTER ONE", "The Quay", "In which Mara returns").concat(prose(166, 6), [it("She sounded the bar at dawn", 50, 256, 160), it("1", 211, 253, 4, 7.2), it(" and wrote it down in the ledger before breakfast.", 216, 256, 160)], prose(271, 12), [
+              it("NOTES", 190, 470, 40, 6.8), it("1 A bar is a bank of sand across", 50, 482, 200, 8.5), it("a harbour mouth.", 50, 495, 90, 8.5)]));
+            page(opening("CHAPTER TWO", "The Bank", "").concat(prose(140, 8), [it("The notice it replaced", 120, 270, 190, 15, { b: true })], prose(300, 6), [
+              it("DAY 1  LW 12:31  2nd mark  lead 6 fm", 60, 400, 220, 7.8, { mono: true }), it("DAY 2  LW 13:10  3rd mark  lead 5 fm", 60, 412, 220, 7.8, { mono: true }), it("DAY 9  LW 07:38  2nd mark  lead 6 fm", 60, 424, 220, 7.8, { mono: true })], prose(450, 6)));
+            page(opening("CHAPTER THREE", "The Gate", "").concat(prose(140, 12)), { turned: [
+              { s: "Equinox spring, high water 06:12, sixteen feet", x: 205, y: 50, size: 10, u: [0, 1], d: [-1, 0] },
+              { s: "Neap, high water 09:40, twelve feet", x: 190, y: 50, size: 10, u: [0, 1], d: [-1, 0] }] });
+            page(opening("CHAPTER FOUR", "The Fair Sheet", "").concat(prose(140, 20)));
+            const lay = pdfLayout({ pages, numPages: pages.length, textChars: 30000, title: "", author: "" });
+            const B = lay.blocks;
+            const kinds = B.filter((b) => b.kind !== "p").map((b) => b.kind + ":" + String(b.text || b.md || "").slice(0, 40)).join(" | ");
+            const allMd = B.map((b) => b.md || "").join("\n");
+            const bad = [];
+            if (!B.some((b) => b.kind === "subtitle" && b.text === "In which Mara returns")) bad.push("no subtitle");
+            if (!B.some((b) => b.kind === "sub" && b.text === "The notice it replaced")) bad.push("the mid-chapter heading is not a sub-heading");
+            if (B.filter((b) => b.kind === "h").length !== 4) bad.push(B.filter((b) => b.kind === "h").length + " chapter headings, not 4");
+            if (!/before breakfast|wrote it down/.test(allMd) || !/down\[\^1\]|dawn\[\^1\]/.test(allMd.replace(/\s+/g, " "))) bad.push("the raised mark is not a note reference");
+            if (!/^\[\^1\]: A bar is a bank of sand across a harbour mouth\.$/m.test(allMd)) bad.push("the note did not come back as a definition");
+            if (/NOTES/.test(allMd)) bad.push("the NOTES label stayed as text");
+            if (!/::: log\nDAY 1 +LW 12:31/.test(allMd) || lay.st.tables) bad.push("the log is not a log (tables: " + lay.st.tables + ")");
+            if (!/::: sideways\nEquinox spring, high water 06:12, sixteen feet\nNeap, high water 09:40, twelve feet\n:::/.test(allMd)) bad.push("the sideways text was not kept");
+            const sideAt = B.findIndex((b) => /^::: sideways/.test(b.md || "")), ch3At = B.findIndex((b) => b.kind === "h" && /The Gate/.test(b.text));
+            if (sideAt !== -1 && sideAt < ch3At) bad.push("the sideways text came before its page's chapter heading");
+            return scVerdict(bad.length === 0, (bad.length ? bad.join("; ") + " — " : "") + "blocks: " + kinds);
           } },
         /* ---- BEUK:pdffront: a PDF set with letter-spaced titles, a drop cap and no metadata ---- */
         { id: "pdf.front.letterspaced-dropcap", feature: "import", name: "A PDF whose title page, author line and headings are letter-spaced (T H E  F R O S T  L I N E), whose chapters open on a drop cap, whose metadata says (anonymous), and whose later chapters carry their number on a spaced label line: the words close up, the drop cap rejoins its word, the title and author come from the book itself, the author's note is front matter, and every chapter keeps its number",

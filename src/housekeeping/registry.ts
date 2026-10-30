@@ -1734,6 +1734,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Bookmarks are read by PDF.js in the studio page; the server never sees the file.',
   },
   {
+    id: 'pdf.beuk-print-back',
+    title: "A PDF Beuk printed comes back as the book: subtitles, sub-headings, end-of-chapter notes, logs and sideways text",
+    kind: 'client-only',
+    reason: 'The PDF layout runs in the studio page; the server never sees the file.',
+  },
+  {
     id: 'sample.roundtrip.word',
     title: 'The sample exported to Word and imported back comes back whole: every Part, chapter and footnote, nothing extra',
     kind: 'client-only',
