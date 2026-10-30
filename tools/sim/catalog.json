@@ -416,7 +416,7 @@
      "paras": 1,
      "title": "Frontispiece",
      "type": "frontispiece",
-     "words": 19
+     "words": 28
     },
     {
      "i": 8,
@@ -429,13 +429,21 @@
     {
      "i": 9,
      "kind": "body",
+     "paras": 0,
+     "title": "Ebb",
+     "type": "part",
+     "words": 0
+    },
+    {
+     "i": 10,
+     "kind": "body",
      "paras": 20,
      "title": "The Ferry Crossing",
      "type": "chapter",
      "words": 1600
     },
     {
-     "i": 10,
+     "i": 11,
      "kind": "body",
      "paras": 16,
      "title": "The House at Gull Terrace",
@@ -443,7 +451,7 @@
      "words": 1455
     },
     {
-     "i": 11,
+     "i": 12,
      "kind": "body",
      "paras": 21,
      "title": "The Wrong-Way Water",
@@ -451,23 +459,31 @@
      "words": 1449
     },
     {
-     "i": 12,
-     "kind": "body",
-     "paras": 20,
-     "title": "The Tide Table for Next Year",
-     "type": "chapter",
-     "words": 1662
-    },
-    {
      "i": 13,
      "kind": "body",
-     "paras": 12,
-     "title": "The Harbourmaster's Ledger",
+     "paras": 24,
+     "title": "The Tide Table for Next Year",
      "type": "chapter",
-     "words": 1344
+     "words": 1826
     },
     {
      "i": 14,
+     "kind": "body",
+     "paras": 16,
+     "title": "The Harbourmaster's Ledger",
+     "type": "chapter",
+     "words": 1474
+    },
+    {
+     "i": 15,
+     "kind": "body",
+     "paras": 0,
+     "title": "Slack Water",
+     "type": "part",
+     "words": 0
+    },
+    {
+     "i": 16,
      "kind": "body",
      "paras": 17,
      "title": "A Light East of the Beacon",
@@ -475,55 +491,63 @@
      "words": 1582
     },
     {
-     "i": 15,
-     "kind": "body",
-     "paras": 13,
-     "title": "The Keeper's Letter",
-     "type": "chapter",
-     "words": 1539
-    },
-    {
-     "i": 16,
-     "kind": "body",
-     "paras": 16,
-     "title": "Soundings at Low Water",
-     "type": "chapter",
-     "words": 1803
-    },
-    {
      "i": 17,
      "kind": "body",
-     "paras": 17,
-     "title": "Harrow and Venn",
+     "paras": 19,
+     "title": "The Keeper's Letter",
      "type": "chapter",
-     "words": 1353
+     "words": 1676
     },
     {
      "i": 18,
      "kind": "body",
-     "paras": 14,
-     "title": "The Ferry That Did Not Run",
+     "paras": 20,
+     "title": "Soundings at Low Water",
      "type": "chapter",
-     "words": 1582
+     "words": 1944
     },
     {
      "i": 19,
      "kind": "body",
-     "paras": 13,
-     "title": "Nell",
+     "paras": 19,
+     "title": "Harrow and Venn",
      "type": "chapter",
-     "words": 1478
+     "words": 1389
     },
     {
      "i": 20,
      "kind": "body",
-     "paras": 10,
-     "title": "The Council of Pilots",
+     "paras": 20,
+     "title": "The Ferry That Did Not Run",
      "type": "chapter",
-     "words": 1574
+     "words": 1681
     },
     {
      "i": 21,
+     "kind": "body",
+     "paras": 0,
+     "title": "Flood",
+     "type": "part",
+     "words": 0
+    },
+    {
+     "i": 22,
+     "kind": "body",
+     "paras": 23,
+     "title": "Nell",
+     "type": "chapter",
+     "words": 1653
+    },
+    {
+     "i": 23,
+     "kind": "body",
+     "paras": 13,
+     "title": "The Council of Pilots",
+     "type": "chapter",
+     "words": 1640
+    },
+    {
+     "i": 24,
      "kind": "body",
      "paras": 15,
      "title": "The Channel Runs East",
@@ -531,23 +555,23 @@
      "words": 1425
     },
     {
-     "i": 22,
+     "i": 25,
      "kind": "body",
-     "paras": 10,
+     "paras": 14,
      "title": "What the Chart Cost",
      "type": "chapter",
-     "words": 1568
+     "words": 1679
     },
     {
-     "i": 23,
+     "i": 26,
      "kind": "body",
-     "paras": 16,
+     "paras": 18,
      "title": "The Fair Sheet",
      "type": "chapter",
-     "words": 1455
+     "words": 1483
     },
     {
-     "i": 24,
+     "i": 27,
      "kind": "body",
      "paras": 8,
      "title": "Epilogue",
@@ -555,15 +579,15 @@
      "words": 651
     },
     {
-     "i": 25,
+     "i": 28,
      "kind": "back",
-     "paras": 3,
+     "paras": 5,
      "title": "Acknowledgments",
      "type": "acknowledgments",
-     "words": 130
+     "words": 196
     },
     {
-     "i": 26,
+     "i": 29,
      "kind": "back",
      "paras": 2,
      "title": "About the Author",
@@ -571,7 +595,7 @@
      "words": 66
     },
     {
-     "i": 27,
+     "i": 30,
      "kind": "back",
      "paras": 1,
      "title": "Also by the Author",
@@ -579,15 +603,15 @@
      "words": 14
     },
     {
-     "i": 28,
+     "i": 31,
      "kind": "back",
-     "paras": 2,
+     "paras": 3,
      "title": "Colophon",
      "type": "colophon",
-     "words": 69
+     "words": 77
     }
    ],
-   "sha256": "ffda8eb22850365973b03c269c73e76a8d5d2bd5cdec846ca2bd35e4491e1192",
+   "sha256": "9bdb3eaa9536257af3e292e9325f97d1a84a3a438dfe6e5b6df202594cc4dac8",
    "title": "The Lantern Coast"
   },
   {
