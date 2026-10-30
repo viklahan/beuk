@@ -43,3 +43,21 @@ test('import clean: an empty or binary text file and a broken Word file are refu
   assert.match(door, /does not look like text/);
   assert.match(door, /could not be read as a Word document/);
 });
+
+/* BEUK:importreplace — an import clears everything old, and asks first. */
+test('import replace: the self-check is registered, the desk is cleared whole, and the warning reads in all thirteen packs', async () => {
+  const html = await clientHtml();
+  const id = 'import.replace.warns-and-clears';
+  assert.ok(html.includes(`{ id: "${id}"`));
+  const c = SELF_CHECK_CASES.find((x) => x.id === id);
+  assert.ok(c);
+  assert.equal(c!.kind, 'client-only');
+  const repl = html.slice(html.indexOf('function replaceBodyChapters('), html.indexOf('async function readDocxCoreIdentity('));
+  assert.match(repl, /autoSnapshot\("import"\);[\s\S]{0,700}applyBookDoc\(buildEmptyBook\(\), \{ keepHistory: true \}\);/);
+  assert.doesNotMatch(repl, /displacingSample/, 'no path merges an import into an old desk');
+  for (const k of ['import.replaceTitle', 'import.replaceBody', 'import.replaceYes', 'import.replaceNo']) {
+    assert.equal((html.match(new RegExp(`"${k.replace('.', '\.')}": "`, 'g')) || []).length, 13, k);
+  }
+  const door = html.slice(html.indexOf('async function handleImportFile('), html.indexOf('function initImport('));
+  assert.match(door, /askFirst\(\)/);
+});

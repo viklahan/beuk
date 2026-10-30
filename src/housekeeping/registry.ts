@@ -1703,6 +1703,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Import runs in the studio page on the file the writer picks; the server never sees it.',
   },
   {
+    id: 'import.replace.warns-and-clears',
+    title: 'Importing over a book asks first, then clears everything old; History keeps it',
+    kind: 'client-only',
+    reason: 'The desk, the confirm dialog and History all live in the studio page.',
+  },
+  {
     id: 'sample.empty-desk.no-figures',
     title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
     kind: 'client-only',
