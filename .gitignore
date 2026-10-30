@@ -14,3 +14,7 @@ deploy/last-install.txt
 
 # Beuk School media (narrated video/audio/screenshots), produced by tools/school-media; served from the box
 /school-media/
+
+# Working notes and agent config; never committed
+docs/superpowers/
+.claude/
