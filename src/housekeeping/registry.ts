@@ -1678,6 +1678,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The desk, the device save (IndexedDB) and the writing log (localStorage) live in the browser (window.runBeukAsyncSelfChecks()); tests/sample-remnants.test.ts guards the code paths on the server side.',
   },
+  {
+    id: 'panes.collapse.both-sides',
+    title: 'Either side column folds away from its seam tab and comes back from it',
+    kind: 'client-only',
+    reason: 'Column layout and the remembered fold choice live in the browser; the server never sees the desk layout.',
+  },
 
   /* ---- Editor toolbar (all client-side) ---- */
   {

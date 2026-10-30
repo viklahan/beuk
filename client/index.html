@@ -263,11 +263,26 @@
 
       #mobileTabs { display: none; }
 
-      #panes { display: grid; grid-template-columns: 292px minmax(0, 1fr) 452px; flex: 1 1 auto; min-height: 0; }
+      #panes { --pane-l: 292px; --pane-r: 452px; display: grid; grid-template-columns: var(--pane-l) minmax(0, 1fr) var(--pane-r); flex: 1 1 auto; min-height: 0; position: relative; }
       .pane { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
       #pane-structure { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; }
       #pane-center { background: var(--panel-2); display: flex; flex-direction: column; overflow: hidden; }
       #pane-preview { background: var(--panel-3); border-left: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; }
+      /* BEUK:panes — either side column folds away from a tab on its seam; the editor takes the room */
+      #panes.fold-left { --pane-l: 0px; }
+      #panes.fold-right { --pane-r: 0px; }
+      @media (min-width: 1024px) {
+        #pane-structure { grid-column: 1; } #pane-center { grid-column: 2; } #pane-preview { grid-column: 3; }
+        #panes.fold-left #pane-structure, #panes.fold-right #pane-preview { display: none; }
+      }
+      .pane-fold { position: absolute; top: 8px; z-index: 6; width: 16px; height: 32px; padding: 0; /* level with the editor tab row, clear of its scrollbar */ display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; opacity: .75; }
+      .pane-fold:hover, .pane-fold:focus-visible { opacity: 1; color: var(--ink); background: var(--panel-2); }
+      .pane-fold svg { width: 13px; height: 13px; transition: transform .15s ease; }
+      #foldLeft { left: var(--pane-l); border-left: 0; border-radius: 0 7px 7px 0; }
+      #foldRight { right: var(--pane-r); border-right: 0; border-radius: 7px 0 0 7px; }
+      #panes.fold-left #foldLeft svg, #panes.fold-right #foldRight svg { transform: rotate(180deg); }
+      body.zen .pane-fold { display: none; }
+      @media (max-width: 1023px) { .pane-fold { display: none; } }
 
       /* ---------- Sidebar ---------- */
       .side-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 14px 10px; }
@@ -671,7 +686,7 @@
       body.zen #topbar, body.zen #mobileTabs { display: none; }
       body.zen #panes #pane-structure, body.zen #panes #pane-preview { display: none; }
       body.zen #panes #pane-center { display: flex; }
-      body.zen #panes { grid-template-columns: minmax(0, 1fr); }
+      body.zen #panes { grid-template-columns: 0px minmax(0, 1fr) 0px; }
       body.zen #editorArea { min-height: 62vh; }
       body.zen #zenPill {
         display: flex; align-items: center; gap: 14px;
@@ -795,10 +810,11 @@
       /* Entering: for the first beat the chrome is still laid out but
          fading and settling away; then body.zen's own rules take over. */
       body.zen.zen-fading #topbar { display: flex; opacity: 0; transform: translateY(-5px); transition: opacity .3s ease, transform .3s ease; pointer-events: none; }
-      body.zen.zen-fading #panes { grid-template-columns: 292px minmax(0, 1fr) 452px; }
+      body.zen.zen-fading #panes { grid-template-columns: var(--pane-l) minmax(0, 1fr) var(--pane-r); }
       body.zen.zen-fading #panes #pane-structure { display: flex; opacity: 0; transform: translateX(-8px); transition: opacity .3s ease, transform .3s ease; }
       body.zen.zen-fading #panes #pane-preview { display: flex; opacity: 0; transform: translateX(8px); transition: opacity .3s ease, transform .3s ease; }
-      @media (max-width: 1180px) { body.zen.zen-fading #panes { grid-template-columns: 262px minmax(0, 1fr) 400px; } }
+      /* a folded column stays folded while zen fades out */
+      body.zen.zen-fading #panes.fold-left #pane-structure, body.zen.zen-fading #panes.fold-right #pane-preview { display: none; }
       @media (max-width: 1023px) {
         body.zen.zen-fading #panes { grid-template-columns: minmax(0, 1fr); }
         body.zen.zen-fading #panes #pane-structure, body.zen.zen-fading #panes #pane-preview { display: none; }
@@ -2370,7 +2386,7 @@
       .sample-note { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 7px 2px 0; }
 
       /* ---------- Responsive panes ---------- */
-      @media (max-width: 1180px) { #panes { grid-template-columns: 262px minmax(0,1fr) 400px; } }
+      @media (max-width: 1180px) { #panes { --pane-l: 262px; --pane-r: 400px; } }
       @media (max-width: 1023px) {
         #mobileTabs {
           display: flex; gap: 4px; padding: 8px 12px; background: var(--panel);
@@ -2772,6 +2788,8 @@
       </nav>
 
       <main id="panes" data-mobile="structure">
+        <button type="button" class="pane-fold" id="foldLeft" aria-controls="pane-structure" aria-expanded="true" title="Hide the left column" aria-label="Hide the left column"><i data-lucide="chevron-left"></i></button>
+        <button type="button" class="pane-fold" id="foldRight" aria-controls="pane-preview" aria-expanded="true" title="Hide the reader" aria-label="Hide the reader"><i data-lucide="chevron-right"></i></button>
         <!-- ============ PANE 1 : STRUCTURE ============ -->
         <aside id="pane-structure" class="pane">
           <div class="side-actions">
@@ -50564,6 +50582,30 @@
       const scImgKey = (img) => { const d = String((img && img.data) || ""); const at = Math.max(0, Math.floor(d.length / 2) - 32); return d.slice(at, at + 64); };
       /* ==== /BEUK:selfchecks ==== */
       const SELF_CHECKS = [
+        /* ---- BEUK:panes: fold either side column and bring it back ---- */
+        { id: "panes.collapse.both-sides", feature: "panes", name: "Each side column folds away from its seam tab, the editor takes the room, and the same tab brings it back",
+          run() {
+            const p = document.getElementById("panes"), sL = document.getElementById("pane-structure"), sR = document.getElementById("pane-preview"), c = document.getElementById("pane-center");
+            if (!p || !sL || !sR || !c || window.innerWidth < 1024 || document.body.classList.contains("zen")) return scVerdict(true, "skipped: needs the three-column desk (wide window, not zen)");
+            const was = panesFold.get(); let stored = null; try { stored = localStorage.getItem(PANES_KEY); } catch (e) {}
+            try {
+              panesFold.set("left", false, false); panesFold.set("right", false, false);
+              const w0 = c.getBoundingClientRect().width;
+              document.getElementById("foldLeft").click();
+              const leftGone = getComputedStyle(sL).display === "none", w1 = c.getBoundingClientRect().width;
+              document.getElementById("foldRight").click();
+              const rightGone = getComputedStyle(sR).display === "none", w2 = c.getBoundingClientRect().width;
+              let kept = null; try { kept = JSON.parse(localStorage.getItem(PANES_KEY) || "null"); } catch (e) {}
+              document.getElementById("foldLeft").click(); document.getElementById("foldRight").click();
+              const back = getComputedStyle(sL).display !== "none" && getComputedStyle(sR).display !== "none" && Math.abs(c.getBoundingClientRect().width - w0) < 1;
+              return scVerdict(leftGone && rightGone && w1 > w0 && w2 > w1 && !!kept && kept.left && kept.right && back,
+                "fold left: editor " + Math.round(w0) + " -> " + Math.round(w1) + "px; fold right: -> " + Math.round(w2) + "px; remembered: " + JSON.stringify(kept) + "; both back: " + back);
+            } finally {
+              panesFold.set("left", was.left, false); panesFold.set("right", was.right, false);
+              try { if (stored == null) localStorage.removeItem(PANES_KEY); else localStorage.setItem(PANES_KEY, stored); } catch (e) {}
+              window.dispatchEvent(new Event("resize"));
+            }
+          } },
         /* ---- Feature 1: cover upload + cover landmark ---- */
         { id: "cover.absent.no-cover-artifacts", feature: "cover", name: "No cover uploaded: package has no cover file, cover-image manifest entry, meta, or nav landmark",
           run() {
@@ -64571,6 +64613,28 @@
       const ZEN_SOUND_KEY = "beuk.zenSound.v1";
       let zenTimers = [];
       let zenTransitioning = false;
+      /* ==== BEUK:panes ==== */
+      /* the left column and the reader fold away from the tab on their seam and come back from it; this device remembers which are folded */
+      const PANES_KEY = "beuk.panes.v1";
+      const panesFold = {
+        get() { const p = document.getElementById("panes"); return { left: !!(p && p.classList.contains("fold-left")), right: !!(p && p.classList.contains("fold-right")) }; },
+        set(side, folded, keep) {
+          const p = document.getElementById("panes"); if (!p) return;
+          const left = side === "left", btn = document.getElementById(left ? "foldLeft" : "foldRight");
+          p.classList.toggle(left ? "fold-left" : "fold-right", !!folded);
+          if (btn) { const label = (folded ? "Show " : "Hide ") + (left ? "the left column" : "the reader"); btn.title = label; btn.setAttribute("aria-label", label); btn.setAttribute("aria-expanded", folded ? "false" : "true"); }
+          if (keep === false) return;
+          try { if (window.localStorage) localStorage.setItem(PANES_KEY, JSON.stringify(panesFold.get())); } catch (e) {}
+          window.dispatchEvent(new Event("resize")); /* the reader and the editor re-measure for their new width */
+        },
+      };
+      (() => {
+        let saved = null; try { saved = JSON.parse((window.localStorage && localStorage.getItem(PANES_KEY)) || "null"); } catch (e) {}
+        if (saved && saved.left) panesFold.set("left", true, false);
+        if (saved && saved.right) panesFold.set("right", true, false);
+        ["left", "right"].forEach((side) => { const b = document.getElementById(side === "left" ? "foldLeft" : "foldRight"); if (b) b.addEventListener("click", () => panesFold.set(side, !panesFold.get()[side])); });
+      })();
+      /* ==== /BEUK:panes ==== */
       function zenLater(fn, ms) { zenTimers.push(setTimeout(fn, ms)); }
       function zenClearTimers() { zenTimers.forEach((id) => clearTimeout(id)); zenTimers = []; }
       let zenReducedOverride = null;
