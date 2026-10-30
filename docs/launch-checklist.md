@@ -17,11 +17,11 @@ it found are fixed on this branch; the evidence is kept outside the
 repository (`launch-rehearsal.md`, round 6).
 
 Legend: **[measured]** = seen in the rehearsal; **[estimate]** = a
-judgement, not a measurement; **[V]** = only you can do it.
+judgement, not a measurement; **[owner]** = only you can do it.
 
 ---
 
-## 1. Rent the server [V]
+## 1. Rent the server [owner]
 
 | | Recommendation | Why |
 |---|---|---|
@@ -38,7 +38,7 @@ fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /
 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 ```
 
-## 2. Firewall: SSH, 80 and 443 only [V]
+## 2. Firewall: SSH, 80 and 443 only [owner]
 
 Caddy needs **80** (HTTP→HTTPS redirect and the Let's Encrypt HTTP
 challenge) and **443** open to the internet
@@ -62,7 +62,7 @@ before the firewall rules can be applied"
 Here that only concerns 80/443, which are meant to be public. Never add
 a `ports:` line to `db`, `app` or `renderer`.
 
-## 3. DNS [V]
+## 3. DNS [owner]
 
 At your registrar, for `beuk.studio`:
 
@@ -102,7 +102,7 @@ allows 5 failed authorizations per hostname per account per hour, and
 5 certificates for the same names per 7 days:
 https://letsencrypt.org/docs/rate-limits/).
 
-## 4. Prepare the box [V]
+## 4. Prepare the box [owner]
 
 ```sh
 ssh root@<server-ip>
@@ -232,7 +232,7 @@ Expect [measured on the rehearsal domain, same Caddyfile]: `HTTP/2
 instead of "certificate obtained", re-check DNS (step 3) and the
 firewall (step 2).
 
-## 8. First admin account [V]
+## 8. First admin account [owner]
 
 1. Open https://beuk.studio, sign up with your own email.
 2. On the box, in `/opt/beuk`:

@@ -8,7 +8,7 @@ import type { Issue, Story, StoryBlock, WeeklyContent } from './content.js';
 /**
  * Beuk Weekly pages, in the School's shell (Beuk's own top bar and footer,
  * the Beuk Weekly tab current) with the paper inside: black ink on white,
- * after the 1920s broadsheets V chose (2026-10-28). Styles:
+ * after the 1920s broadsheets chosen on 2026-10-28. Styles:
  * client/site/weekly.css; faces: /assets/fonts/fonts-weekly.css.
  *
  *   /school/weekly                    the latest issue's front page

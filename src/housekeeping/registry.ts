@@ -1945,7 +1945,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: 'Brand names beuk.studio; no tagline in any locale claims “free” or “open source”',
     kind: 'client-only',
     reason:
-      'The header lockup, the page title and the 13-locale brand.tagline string table are client chrome. V decided on 2026-10-25: the sub-brand is the production domain beuk.studio, and the “free & open-source” claim is removed because the repo carries no licence. The case fails if either word returns in any locale.',
+      'The header lockup, the page title and the 13-locale brand.tagline string table are client chrome. Decided on 2026-10-25: the sub-brand is the production domain beuk.studio, and the “free & open-source” claim is removed because the repo carries no licence. The case fails if either word returns in any locale.',
   },
   {
     id: 'ui.theme.palette',
