@@ -1685,6 +1685,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The manuscript parser runs in the studio page; the server never sees an import.',
   },
   {
+    id: 'leftcol.stats-open.chapters-reachable',
+    title: 'With the stats panel open the chapter list keeps room to scroll',
+    kind: 'client-only',
+    reason: 'Column layout is measured in the browser; the server never renders the studio.',
+  },
+  {
     id: 'sample.empty-desk.no-figures',
     title: 'An empty desk reports nothing: no page count or page list on the reading desk, 0% progress, zero stats that agree',
     kind: 'client-only',
