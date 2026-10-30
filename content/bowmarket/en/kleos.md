@@ -7,7 +7,7 @@ deck: Achilles, from the wedding feast on Pelion to the golden urn at Sigeum. A 
 source: The KLEOS.pdf
 pages: 301
 trim: 6 × 9 in
-image: kleos-1.webp
+image: kleos.webp
 gallery: [kleos-1.webp, kleos-2.webp, kleos-3.webp, kleos-4.webp, kleos-5.webp]
 spine: #1b1410
 spineInk: #d9894a
