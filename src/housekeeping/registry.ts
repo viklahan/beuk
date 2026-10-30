@@ -1722,6 +1722,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The PDF layout runs in the studio page; the server never sees the file.',
   },
   {
+    id: 'pdf.bookmarks.name-the-headings',
+    title: "A PDF's bookmarks name its headings: dated diary entries become chapters, a part page after the contents stays a part",
+    kind: 'client-only',
+    reason: 'The PDF layout runs in the studio page; the server never sees the file.',
+  },
+  {
+    id: 'pdf.bookmarks.read-with-their-pages',
+    title: "PDF import reads the file's bookmarks with their depth and the page each one opens",
+    kind: 'client-only',
+    reason: 'Bookmarks are read by PDF.js in the studio page; the server never sees the file.',
+  },
+  {
     id: 'import.onereader.bulk-parity',
     title: 'A bulk import splits a manuscript exactly as the Import button does',
     kind: 'client-only',
