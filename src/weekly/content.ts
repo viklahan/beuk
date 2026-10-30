@@ -87,7 +87,7 @@ export function weeklyDir(lang: (typeof WEEKLY_LANGS)[number] = 'en'): string {
   return path.join(repoRoot(), 'content', 'weekly', lang);
 }
 
-function frontMatter(source: string, file: string): { meta: Record<string, unknown>; body: string } {
+export function frontMatter(source: string, file: string): { meta: Record<string, unknown>; body: string } {
   const text = source.replace(/\r\n/g, '\n');
   const fm = /^---\n([\s\S]*?)\n---\n?/.exec(text);
   if (!fm) throw new Error(`${file}: missing front matter`);
