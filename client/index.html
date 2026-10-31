@@ -43010,7 +43010,7 @@
       /* Spine layout constants (inches). The clearance is the store's
          spine-text clearance; icons below the minimum are hidden, not
          shrunk to nothing; the margin keeps them off the trim edge. */
-      const SPINE_CLEAR_IN = 0.0625, SPINE_MARGIN_IN = 0.375, SPINE_ICON_MIN_IN = 0.12, SPINE_ICON_GAP_IN = 0.12, SPINE_TEXT_ROOM_IN = 1.0;
+      const SPINE_CLEAR_IN = 0.0625, SPINE_MARGIN_IN = 0.375, SPINE_ICON_MIN_IN = 0.12, SPINE_ICON_GAP_IN = 0.12, SPINE_TEXT_ROOM_IN = 1.0, SPINE_IMPRINT_FLOOR_IN = 5 / 72; /* 5 pt */
       /* A Lucide icon as canvas strokes (no DOM SVG): the icon's node
          list on its 24-unit grid, scaled to sizePx and centred on
          (cx, cy), in the given colour at Lucide's 2-unit stroke.
@@ -43953,10 +43953,21 @@
             if (sp.show === "both" || (sp.show === "title" && title)) runs.push({ part: "title", raw: title, disp: title, scale: 1, wt: "700", fam: titleFam });
             if ((sp.show === "both" || sp.show === "author") && author) runs.push({ part: "author", raw: author, disp: sp.caps ? author.toUpperCase() : author, scale: sp.show === "both" ? 0.82 : 1, wt: "600", fam: authorFam });
           }
-          const impText = (w.imprint || state.meta.publisher || "").trim();
-          const impFont = "600 " + Math.min(spineW * 0.34, 0.11 * px) + "px " + fontStack(sp.font || recipe.elements.author.font);
-          ctx.font = impFont;
-          const impLenIn = impText ? ctx.measureText(impText).width / px : 0;
+          /* The imprint owns the foot of the spine: it reads the same way as the text, ends on the
+             foot margin, shrinks to fit (never clipped), and is dropped below a legible size. The
+             text and the bottom icon are laid out above it. */
+          let impText = (w.imprint || state.meta.publisher || "").trim();
+          const impFam = fontStack(sp.font || recipe.elements.author.font);
+          let impSize = Math.min(spineW * 0.34, 0.11 * px), impLenIn = 0;
+          if (impText) {
+            ctx.font = "600 " + impSize + "px " + impFam;
+            impLenIn = ctx.measureText(impText).width / px;
+            const impMax = Math.max(0, (L.panelH - 2 * SPINE_MARGIN_IN) * 0.5);
+            if (impLenIn > impMax) { impSize *= impMax / impLenIn; }
+            if (impSize < SPINE_IMPRINT_FLOOR_IN * px) { impText = ""; impLenIn = 0; items.spineNotes.push("imprint-dropped"); }
+            else { ctx.font = "600 " + impSize + "px " + impFam; impLenIn = ctx.measureText(impText).width / px; }
+          }
+          const impTopIn = L.panelH - SPINE_MARGIN_IN - impLenIn; /* inches from the head */
           /* Icons: one size for both, from the clear width of the spine. */
           const clearW = Math.max(0, d.spine - 2 * SPINE_CLEAR_IN);
           const iconS = Math.min(clearW, 0.45);
@@ -43964,9 +43975,9 @@
           let hasTop = wantIcon(sp.iconTop), hasBot = wantIcon(sp.iconBottom);
           if ((hasTop || hasBot) && iconS < SPINE_ICON_MIN_IN) { hasTop = hasBot = false; items.spineNotes.push("icons-narrow"); }
           const iconTopY = SPINE_MARGIN_IN; /* inches from the panel's head */
-          const botEdge = impText ? L.panelH - 0.21 - impLenIn / 2 - 0.08 : L.panelH - SPINE_MARGIN_IN;
+          const botEdge = impText ? impTopIn - SPINE_ICON_GAP_IN : L.panelH - SPINE_MARGIN_IN;
           const iconBotY = botEdge - iconS;
-          const zone = () => ({ top: hasTop ? iconTopY + iconS + SPINE_ICON_GAP_IN : 0.3, bottom: hasBot ? iconBotY - SPINE_ICON_GAP_IN : L.panelH - 0.42 });
+          const zone = () => ({ top: hasTop ? iconTopY + iconS + SPINE_ICON_GAP_IN : 0.3, bottom: hasBot ? iconBotY - SPINE_ICON_GAP_IN : impText ? impTopIn - SPINE_ICON_GAP_IN : L.panelH - 0.42 });
           let zn = zone();
           if (hasBot && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasBot = false; items.spineNotes.push("bottom-icon-dropped"); zn = zone(); }
           if (hasTop && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasTop = false; items.spineNotes.push("top-icon-dropped"); zn = zone(); }
@@ -43990,16 +44001,17 @@
           const along = (o, len) => (ttb ? (startY + o) / px : (startY - o - len) / px);
           runs.forEach((r) => { if (r.raw) items.spineBoxes.push({ kind: "text", part: r.part, x: (cx - size * r.scale / 2) / px, y: along(r.off, r.w), w: size * r.scale / px, h: r.w / px }); });
           ctx.save();
-          ctx.translate(cx, topY + th - 0.21 * px);
+          ctx.translate(cx, topY + (ttb ? impTopIn : L.panelH - SPINE_MARGIN_IN) * px);
           ctx.rotate(ttb ? Math.PI / 2 : -Math.PI / 2);
-          ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = spInk;
+          ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = spInk;
           if (impText) {
-            ctx.font = impFont;
+            ctx.font = "600 " + impSize + "px " + impFam;
             ctx.fillText(impText, 0, 0);
-            const ih = Math.min(spineW * 0.34, 0.11 * px);
-            items.spineBoxes.push({ kind: "text", part: "imprint", x: (cx - ih / 2) / px, y: (topY + th - 0.21 * px) / px - impLenIn / 2, w: ih / px, h: impLenIn });
+            items.spineBoxes.push({ kind: "imprint", part: "imprint", x: (cx - impSize / 2) / px, y: topY / px + impTopIn, w: impSize / px, h: impLenIn });
           } else if (!hasBot) {
-            const r = Math.min(spineW * 0.18, 0.05 * px);
+            const r = Math.min(spineW * 0.18, 0.05 * px); /* the foot mark, where it has always been */
+            ctx.restore(); ctx.save(); ctx.fillStyle = spInk;
+            ctx.translate(cx, topY + th - 0.21 * px);
             ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath(); ctx.fill();
           }
           ctx.restore();
@@ -54052,13 +54064,13 @@
               let threw = "", bad = null;
               try { const c = document.createElement("canvas"); c.width = 50; c.height = 50; bad = drawLucideIcon(c.getContext("2d"), "NoSuchIconAnywhere", 25, 25, 30, "#fff"); } catch (e) { threw = String(e && e.message); }
               const unknownR = render(mk(300, { iconTop: icon("NoSuchIconAnywhere") })), unknownOk = !threw && bad === false && unknownR.it.spineBoxes.filter((b) => b.kind === "icon").length === 0;
-              const longImp = render(mk(300, { iconTop: icon("Feather"), iconBottom: icon("Star") }, { imprint: "A Very Long Imprint Name ".repeat(16) }));
-              const dropOk = !longImp.it.spineBoxes.some((b) => b.kind === "icon" && b.pos === "bottom") && (longImp.it.spineNotes || []).some((n) => /bottom/.test(n));
+              const longImp = render(mk(300, { iconTop: icon("Feather"), iconBottom: icon("Star") }, { imprint: "Western Isles Harbour Press and Editions" }));
+              const lb = longImp.it.spineBoxes, dropOk = lb.some((b) => b.kind === "icon" && b.pos === "bottom") && lb.some((b) => b.kind === "imprint") && lb.every((x, i) => lb.every((y, j) => i >= j || !(x.x < y.x + y.w && x.x + x.w > y.x && x.y < y.y + y.h && x.y + x.h > y.y)));
               const jk = render(mk(300, { iconTop: icon("Feather"), iconBottom: icon("Star") }, { binding: "jacket", hcSpine: 0.9 }));
               const jkOk = jk.it.spineBoxes.filter((b) => b.kind === "icon").length === 2 && jk.it.spineBoxes.every((b) => inside(jk, b));
               return scVerdict(checks.every((c) => c.ok) && narrowOk && unknownOk && dropOk && jkOk,
                 "300 pp cream 6×9, Feather above and Star below: " + checks.map((c) => c.lang + (c.imp ? "+imprint" : "") + " " + (c.ok ? "ok" : "BAD") + " (" + c.ink + " ink px)").join(", ") +
-                "; 0.30 in and 0.20 in spines draw no text or icons " + narrowOk + "; unknown icon draws nothing, no throw " + unknownOk + (threw ? " threw " + threw : "") + "; bottom icon dropped with a note when a long imprint leaves no room " + dropOk + "; jacket spine panel holds both icons " + jkOk);
+                "; 0.30 in and 0.20 in spines draw no text or icons " + narrowOk + "; unknown icon draws nothing, no throw " + unknownOk + (threw ? " threw " + threw : "") + "; a long imprint and the bottom icon both fit without overlapping " + dropOk + "; jacket spine panel holds both icons " + jkOk);
             } finally { state.meta.language = keepLang; }
           } },
         { id: "cover.wrap.spine-ui", feature: "cover", name: "Spine and Back cover controls: the two sections start collapsed in the wrap panel, every control writes its value into the recipe and the redraw reports it, the icon picker's curated list and search work, and closing and reopening the maker shows the saved values",
@@ -54115,6 +54127,38 @@
               $("modalCoverMaker").classList.remove("open");
               state.coverRecipe = keepRecipe; state.meta.language = keepLang; state.images = keepImages;
             }
+          } },
+        { id: "cover.wrap.spine-imprint", feature: "cover", name: "Spine imprint: a long imprint gets its own foot zone, fits inside the trim minus the 0.375 in margins (shrinking its font, never clipped), and the title, author and bottom icon never overlap it; one too long for a legible size is dropped with a note",
+          run() {
+            const keepLang = state.meta.language;
+            try {
+              const mk = (binding, imprint, icons) => {
+                const r = defaultCoverRecipe(); r.title = "Salt Harbour"; r.author = "A. Checker"; r.bgType = "solid"; r.bgColor = "#20303c";
+                r.wrap = { trim: "6x9", pages: 300, paper: "cream", customFactor: 0.0025, blurb: "", quote: "", imprint, binding, hcSpine: binding === "paperback" ? 0 : 0.9,
+                  spine: icons ? { iconTop: { kind: "lucide", name: "Feather" }, iconBottom: { kind: "lucide", name: "Star" } } : {} };
+                return r;
+              };
+              const render = (r) => { const d = wrapDims(r); const c = document.createElement("canvas"); c.width = 1300; c.height = Math.round(1300 * d.totalH / d.totalW); return { it: drawWrapTo(c, r), d }; };
+              const overlap = (a, b) => a.x < b.x + b.w - 1e-9 && a.x + a.w > b.x + 1e-9 && a.y < b.y + b.h - 1e-9 && a.y + a.h > b.y + 1e-9;
+              const LONG = "Western Isles Harbour Press and Editions";
+              const out = []; let ok = true;
+              [["en", "paperback", false], ["fr", "paperback", false], ["fr", "paperback", true], ["en", "paperback", true], ["fr", "jacket", true], ["en", "case", false]].forEach(([lang, binding, icons]) => {
+                state.meta.language = lang;
+                const R = render(mk(binding, LONG, icons)), L = R.d.layout, b = R.it.spineBoxes, imp = b.find((x) => x.kind === "imprint");
+                const inside = !!imp && imp.y >= L.topY + 0.375 - 1e-9 && imp.y + imp.h <= L.topY + L.panelH - 0.375 + 1e-9 && imp.x >= L.spineX + 0.0625 - 1e-9 && imp.x + imp.w <= L.spineX + L.spineW - 0.0625 + 1e-9;
+                const clean = !!imp && b.every((x, i) => b.every((y, j) => i >= j || !overlap(x, y)));
+                const hasText = b.some((x) => x.part === "title") && b.some((x) => x.part === "author");
+                const good = inside && clean && hasText && R.it.spineDir === (lang === "en" ? "ttb" : "btt");
+                if (!good) ok = false;
+                out.push(lang + " " + binding + (icons ? "+icons" : "") + (good ? " ok" : " BAD (inside " + inside + ", no overlap " + clean + ")"));
+              });
+              state.meta.language = "fr";
+              const absurd = render(mk("paperback", "An Imprint Name That Goes On And Forever ".repeat(12), false));
+              const dropOk = !absurd.it.spineBoxes.some((x) => x.kind === "imprint") && (absurd.it.spineNotes || []).indexOf("imprint-dropped") !== -1;
+              const shortR = render(mk("paperback", "QSS", false)), shortImp = shortR.it.spineBoxes.find((x) => x.kind === "imprint");
+              const shortOk = !!shortImp && shortImp.y + shortImp.h <= shortR.d.layout.topY + shortR.d.layout.panelH - 0.375 + 1e-9;
+              return scVerdict(ok && dropOk && shortOk, "“" + LONG + "” on 300 pp 6×9: " + out.join(", ") + "; an imprint too long to shrink to a legible size is dropped with a note " + dropOk + "; a short imprint sits inside the foot margin " + shortOk);
+            } finally { state.meta.language = keepLang; }
           } },
         { id: "cover.wrap3d.faces-from-wrap", feature: "cover", name: "3D wrap viewer: front, spine and back face textures are sliced from the current wrap render and refresh when wrap inputs change",
           run() {
