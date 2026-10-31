@@ -7,3 +7,6 @@ tests
 !CHANGELOG.md
 # H1: the help guides are Markdown and must reach the image.
 !content/**/*.md
+# Beuk 2.0 studio: the image builds its own (studio stage)
+studio/node_modules
+client/next

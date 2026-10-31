@@ -18,3 +18,8 @@ deploy/last-install.txt
 # Working notes and agent config; never committed
 docs/superpowers/
 .claude/
+
+# Beuk 2.0 studio (studio/): its own node_modules, the extracted strings/tokens, and its build output
+studio/node_modules/
+studio/src/generated/
+client/next/
