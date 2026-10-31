@@ -44497,22 +44497,55 @@
         sbSync(); /* BEUK:spineback */
         updateWrapDims();
       }
-      function downloadWrap(kind) {
+      /* BEUK:wrap-server — the wrap PDF and JPG are painted on the server
+         (POST /api/wrap) by the studio's own wrap painter (src/book/wrap),
+         from the book on this desk with the cover maker's recipe as it
+         stands. The server is the judge of the plan: after the trial
+         unpaid it answers 402 and nothing is painted. With no connection
+         the studio says so; it never paints the download locally. The
+         preview, the guides and the 3D book stay local; renderWrapCanvas
+         and buildWrapPdfDoc stay for them and for the self-checks. */
+      function wrapFileName(headers, fallback) {
+        const cd = (headers && headers.get && headers.get("Content-Disposition")) || "";
+        const star = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(cd);
+        if (star) { try { const n = decodeURIComponent(star[1].trim()); if (n) return n; } catch (e) { /* fall through to filename= */ } }
+        const plain = /filename\s*=\s*"([^"]+)"/i.exec(cd) || /filename\s*=\s*([^;]+)/i.exec(cd);
+        return plain && plain[1].trim() ? plain[1].trim() : fallback;
+      }
+      async function downloadWrap(kind) {
         if (samplePicsHold(() => downloadWrap(kind))) return; /* BEUK:slim — never without the sample's pictures */
         if (!cmRecipe) return;
-        Promise.all([ensureCoverBgImage(cmRecipe), hcEnsureFlapPhoto(cmRecipe), ensureWrapIcons(cmRecipe)]).then(() => {
+        if (typeof cloud === "undefined" || !cloud.available || !net.online) { toast(t("wrap.offline"), "cloud-off"); return; }
+        /* The sign-in dialog sits beneath the cover maker, and closing the maker would drop the writer's unapplied recipe, so this says where to sign in and leaves the maker open. */
+        if (!cloud.user) { toast(t("wrap.signin", { use: t("covermk.use"), signIn: t("top.signIn") }), "cloud"); return; }
+        const btns = [$("btnCmWrapPdf"), $("btnCmWrapJpg")].filter(Boolean);
+        const btn = kind === "jpg" ? $("btnCmWrapJpg") : $("btnCmWrapPdf");
+        const keepHtml = btn ? btn.innerHTML : "";
+        btns.forEach((b) => { b.disabled = true; });
+        if (btn) { btn.innerHTML = '<i data-lucide="loader-2"></i><span>' + esc(t("wrap.building")) + "</span>"; icons(); }
+        try {
+          /* The desk's book, pictures inline, with the maker's recipe as it stands (the same recipe the preview draws); History, notes and research files stay home. */
+          const book = serializeBook();
+          ["history", "historyPool", "notebook", "research", "audio", "importReport"].forEach((k) => { delete book[k]; });
+          book.coverRecipe = normalizeCoverRecipe(JSON.parse(JSON.stringify(cmRecipe)));
           const bnd = cmRecipe.wrap && cmRecipe.wrap.binding;
-          const name = slug(state.meta.title || "cover") + (bnd === "case" ? "-case-laminate-wrap" : bnd === "jacket" ? "-dust-jacket" : "-cover-wrap");
-          if (kind === "jpg") {
-            const c = renderWrapCanvas(cmRecipe, {});
-            if (c.toBlob) c.toBlob((b) => { if (b) downloadBlob(b, name + ".jpg"); }, "image/jpeg", 0.92);
+          const fallback = slug(state.meta.title || "cover") + (bnd === "case" ? "-case-laminate-wrap" : bnd === "jacket" ? "-dust-jacket" : "-cover-wrap") + "." + (kind === "jpg" ? "jpg" : "pdf");
+          const r = await apiFetch("/api/wrap", { method: "POST", body: JSON.stringify({ book: book, kind: kind === "jpg" ? "jpg" : "pdf", lang: getUiLang() }), blob: true, quiet402: true });
+          if (!r) { toast(t("wrap.offline"), "cloud-off"); return; }
+          if (r.__error) {
+            if (r.__status === 402) toast(t("plan.pausedToast"), "alert-triangle");
+            else if (r.__status === 413 && !(r.__body && r.__body.reason === "memory")) toast(t("wrap.tooLarge"), "alert-triangle");
+            else if (r.__status === 422 && r.__body && r.__body.error) toast(String(r.__body.error), "alert-triangle"); /* the server's own plain words: which pictures, and what to do */
+            else toast(t("wrap.failed", { error: r.__error }), "alert-triangle");
             return;
           }
-          const c = renderWrapCanvas(cmRecipe, {});
-          const doc = buildWrapPdfDoc(cmRecipe, c.toDataURL("image/jpeg", 0.92));
-          if (!doc) { toast(t("covermk.wrap.pdfFail"), "alert-triangle"); return; }
-          downloadBlob(doc.output("blob"), name + ".pdf");
-        });
+          downloadBlob(r.__blob, wrapFileName(r.__headers, fallback));
+        } catch (err) {
+          toast(t("wrap.failed", { error: err && err.message ? err.message : String(err) }), "alert-triangle");
+        } finally {
+          btns.forEach((b) => { b.disabled = false; });
+          if (btn) { btn.innerHTML = keepHtml; icons(); }
+        }
       }
       /* ---- The book on the stand: a rotatable 3D model of the
          wrap, built with CSS 3D transforms only — no library.
@@ -52477,6 +52510,20 @@
       Object.assign(UI_STRINGS.ar, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
       Object.assign(UI_STRINGS.ja, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
       Object.assign(UI_STRINGS["zh-Hans"], { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      /* BEUK:wrap-server — English in every pack until V signs off the translations (docs/superpowers/plans/step3-part4-translations-for-signoff.md) */
+      Object.assign(UI_STRINGS.en, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.es, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.fr, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.de, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.it, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.pt, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.nl, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.pl, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.ru, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.tr, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.ar, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS.ja, { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "wrap.offline": "The cover wrap is painted on the Beuk server, so it needs a connection. Your cover stays safe on this device. Try again when you are back online.", "wrap.signin": "Sign in to download the cover wrap. The Beuk server paints it from the cover on your desk. To keep this design, choose “{use}” first, then “{signIn}” at the top of the studio.", "wrap.building": "Painting on the server…", "wrap.tooLarge": "This book is too large to send to the server for a cover wrap.", "wrap.failed": "The cover wrap could not be made: {error}" });
       var billingPausedSaid = false;
       function billingDate(iso) {
         try { return new Date(iso).toLocaleDateString(uiLangState || "en", { day: "numeric", month: "long", year: "numeric" }); }
@@ -68299,6 +68346,88 @@
           } }
       );
       /* ==== /BEUK:epub-server-check ==== */
+      /* ==== BEUK:wrap-server-check ==== the cover maker's two wrap
+         downloads ask the server (POST /api/wrap) and never paint the
+         download on the device: signed out → the sign-in line; offline →
+         the connection line; 402 → the paused copy once and no file; 200 →
+         the server's bytes under the server's file name, for the PDF and
+         the JPG; a 422 → the server's own words once and no file. The
+         network is stubbed beneath the real apiFetch (as export.epub-server
+         does). */
+      SELF_CHECKS_ASYNC.push(
+        { id: "export.wrap-server", feature: "export", name: "Export: the cover maker’s “Download wrap PDF” and “Download wrap JPG” ask the server for the wrap — sign-in when signed out, the connection line when offline, the paused copy once and no file on a 402, the server’s bytes under the server’s file name on success, the server’s own words once and no file on a 422; never a wrap painted on the device for download",
+          async run() {
+            const keep = { available: cloud.available, user: cloud.user, online: net.online, toast: toast, download: downloadBlob, render: renderWrapCanvas, pdf: buildWrapPdfDoc, hold: samplePicsHold, recipe: cmRecipe };
+            const realFetch = window.fetch;
+            const bad = [], calls = [], said = [], files = [], bodies = [];
+            let mode = "ok", localPaints = 0;
+            const PAUSED = "Your free trial has ended, so cover wraps is paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.";
+            const MISSING = "This book names 1 picture your shelf does not hold, so its cover wrap cannot be built here. Open the book in the studio on the device that has the pictures and save it to the shelf again.";
+            const UNSUPPORTED = "The cover wrap cannot paint these pictures: sc-svg. A picture must be a JPEG, PNG, WebP, GIF or a plain SVG (an SVG that loads files or other pictures from elsewhere, or carries scripts or entity declarations, is refused). Choose another picture in the cover maker.";
+            const NAMES = { pdf: "Łódź — Second-cover-wrap.pdf", jpg: "Łódź — Second-cover-wrap.jpg" };
+            const blobs = { pdf: new Blob(["%PDF-sc"], { type: "application/pdf" }), jpg: new Blob(["\xff\xd8sc"], { type: "image/jpeg" }) };
+            const reply = (status, body, headers, b) => Promise.resolve({ status: status, ok: status >= 200 && status < 300,
+              json: () => Promise.resolve(body), blob: () => Promise.resolve(b), headers: { get: (k) => (headers || {})[String(k).toLowerCase()] || null } });
+            window.fetch = function (url, init) {
+              const m = (init && init.method) || "GET", u = String(url);
+              calls.push(m + " " + u);
+              if (m === "POST" && u === "/api/wrap") {
+                let body = null; try { body = JSON.parse(init.body); } catch (e) { body = null; }
+                bodies.push(body);
+                if (mode === "paused") return reply(402, { error: PAUSED, paused: true, feature: "export.wrap", exportOpen: false, ownWordsOpen: true });
+                if (mode === "missing") return reply(422, { error: MISSING, reason: "missing-pictures", missingPictures: ["0".repeat(64)] });
+                if (mode === "unsupported") return reply(422, { error: UNSUPPORTED, reason: "picture-unsupported", pictures: ["sc-svg"] });
+                const k = body && body.kind === "jpg" ? "jpg" : "pdf";
+                return reply(200, null, { "content-disposition": 'attachment; filename="' + NAMES[k].replace(/[^A-Za-z0-9._-]/g, "_") + '"; filename*=UTF-8\'\'' + encodeURIComponent(NAMES[k]) }, blobs[k]);
+              }
+              return reply(404, { error: "not found" });
+            };
+            toast = function (msg) { said.push(String(msg)); };
+            downloadBlob = function (b, name) { files.push({ b: b, name: name }); };
+            renderWrapCanvas = function () { localPaints++; throw new Error("painted on the device"); };
+            buildWrapPdfDoc = function () { localPaints++; return null; };
+            samplePicsHold = function () { return false; };
+            const reset = () => { calls.length = 0; said.length = 0; files.length = 0; bodies.length = 0; };
+            const btnsOk = () => ["btnCmWrapPdf", "btnCmWrapJpg"].every((id) => { const b = $(id); return !b || (!b.disabled && b.textContent.indexOf(t("wrap.building")) < 0); });
+            try {
+              cmRecipe = defaultCoverRecipe(); cmRecipe.title = "SC wrap marker"; cmRecipe.wrap = Object.assign({}, cmRecipe.wrap, { binding: "paperback" });
+              /* (a) signed out */
+              cloud.available = true; cloud.user = null; net.online = true; reset();
+              await downloadWrap("pdf");
+              if (calls.length || files.length || said.length !== 1 || said[0] !== t("wrap.signin", { use: t("covermk.use"), signIn: t("top.signIn") })) bad.push("(a) signed out: " + calls.length + " calls, " + files.length + " files, said " + JSON.stringify(said));
+              /* offline */
+              cloud.user = { id: "sc-user", email: "sc@beuk.test" }; net.online = false; reset();
+              await downloadWrap("jpg");
+              if (calls.length || files.length || said.length !== 1 || said[0] !== t("wrap.offline")) bad.push("offline: " + calls.length + " calls, " + files.length + " files, said " + JSON.stringify(said));
+              /* (b) paused */
+              net.online = true; mode = "paused"; reset();
+              await downloadWrap("pdf");
+              if (calls.length !== 1 || files.length || said.length !== 1 || said[0] !== t("plan.pausedToast")) bad.push("(b) paused: " + calls.join(", ") + "; " + files.length + " files; said " + JSON.stringify(said));
+              /* (c) the server's bytes under the server's name, for both kinds */
+              mode = "ok";
+              for (const k of ["pdf", "jpg"]) {
+                reset();
+                await downloadWrap(k);
+                const b = bodies[0];
+                if (calls.join() !== "POST /api/wrap" || files.length !== 1 || files[0].b !== blobs[k] || files[0].name !== NAMES[k] || said.length) bad.push("(c) " + k + ": " + calls.join(", ") + "; files " + JSON.stringify(files.map((f) => f.name)) + "; said " + JSON.stringify(said));
+                if (!b || b.kind !== k || b.lang !== getUiLang() || !b.book || "history" in b.book || !Array.isArray(b.book.sections) || !b.book.coverRecipe || b.book.coverRecipe.title !== "SC wrap marker") bad.push("(c) " + k + ": the request did not carry the kind, the language and the desk's book with the maker's recipe, without History");
+              }
+              /* (d) a 422, both shapes: the server's words, once, no file */
+              for (const [m, words] of [["missing", MISSING], ["unsupported", UNSUPPORTED]]) {
+                mode = m; reset();
+                await downloadWrap("jpg");
+                if (calls.length !== 1 || files.length || said.length !== 1 || said[0] !== words) bad.push("(d) 422 " + m + ": " + files.length + " files; said " + JSON.stringify(said));
+              }
+              if (localPaints) bad.push(localPaints + " wrap paint(s) on the device");
+              if (!btnsOk()) bad.push("a wrap button stayed disabled or still says it is building");
+            } finally {
+              window.fetch = realFetch; toast = keep.toast; downloadBlob = keep.download; renderWrapCanvas = keep.render; buildWrapPdfDoc = keep.pdf; samplePicsHold = keep.hold; cmRecipe = keep.recipe;
+              cloud.available = keep.available; cloud.user = keep.user; net.online = keep.online;
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in, 0 calls; offline → connection line, 0 calls; 402 → the paused copy once, 1 call, no file; 200 → the server's PDF and JPG as " + NAMES.pdf + " / " + NAMES.jpg + "; 422 (missing pictures, unsupported picture) → the server's words once, no file; 0 device paints");
+          } }
+      );
+      /* ==== /BEUK:wrap-server-check ==== */
       /* ==== BEUK:login ==== the sign-in dialog drives the real
          cloudAuthSubmit against answers the server and its proxy really
          give: only a 401 may say the email and password do not match. */

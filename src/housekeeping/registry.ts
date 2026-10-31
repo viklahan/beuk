@@ -3735,6 +3735,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The button lives in the studio; the check drives the real buildEpub over stubbed server answers in a browser. The route, its 402 gate and the build are asserted server-side in tests/epub-route.test.ts and the export.epub-server.build case.',
   },
   {
+    id: 'export.wrap-server',
+    title: 'Export: the cover maker’s “Download wrap PDF” and “Download wrap JPG” ask the server for the wrap — sign-in when signed out, the connection line when offline, the paused copy once and no file on a 402, the server’s bytes under the server’s file name on success, the server’s own words once and no file on a 422; never a wrap painted on the device for download',
+    kind: 'client-only',
+    reason: 'The buttons live in the studio’s cover maker; the check drives the real downloadWrap over stubbed server answers in a browser. The route, its 402 gate and the paint are asserted server-side in tests/wrap-route.test.ts and the export.wrap-server.build case.',
+  },
+  {
     id: 'export.print-ready',
     title: 'Export: “Download print-ready PDF” — sign-in when signed out, one paused message with no job, never a download before the job is done, the server’s own error on failure',
     kind: 'client-only',
