@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { LocaleProvider } from './i18n/LocaleProvider';
 import { initialUiLang, loadPack } from './i18n/strings';
+import { registerServiceWorker } from './sw-register';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('index.html has no #root');
@@ -22,3 +23,5 @@ loadPack(lang)
       </StrictMode>,
     );
   });
+
+registerServiceWorker();
