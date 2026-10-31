@@ -2722,12 +2722,15 @@ Founders' Shelf application; none of it touches pricing or checkout.
   on screen and the tab is visible, and its clock stops while the tab
   is hidden, so a writer back from Ko-fi still sees the note fold.
   Reduced motion shows one still frame; without WebGL the plate keeps
-  a painted sea and the thank-you text. The scene has no colours of its
-  own: the page hands it the warmth tokens (`--paper` is the horizon,
-  `--paper-deep` and `--amber-soft` the sky, `--amber` the sea, `--ink`
-  the handwriting) and renders without tone mapping, so each token
-  shows as exactly that colour and the plate stays part of the Paper
-  page if the palette ever changes.
+  a painted sea and the thank-you text. Since V's pick on 2026-10-31
+  the plate is realistic: a real dawn (the last stars, cloud lit from
+  below, the sun's glitter path on the water), a headland with a
+  lighthouse, a ship in the haze and a few gulls, lit in linear HDR
+  and tone-mapped once as it is printed onto the page. The paper is
+  still the page's: the note is `--paper` with the BEUK mark in
+  `--amber` and the words in `--ink`, and the printed grain (on by
+  default) lets `--paper` show through the ink so the plate reads as
+  part of the page rather than a video on it.
 - **Brand** — the sub-brand beside the wordmark and the footer of every
   warmth page is `beuk.studio`, the production domain
   (`BRAND_SUBLINE` / `BRAND_FOOTNOTE` in `src/warmth/pages.ts`; the
