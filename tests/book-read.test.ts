@@ -102,6 +102,33 @@ test('read: a scaffold carries a bookId, and the catch path preserves the input 
   assert.match(String(f.book.meta.bookId), /^urn:uuid:/);
 });
 
+test('read: a falsy theme with activePreset null reads "classic" (1.0: doc.activePreset || (doc.theme ? null : "classic")), stable on re-read', () => {
+  for (const theme of [null, '', false]) {
+    const a = readBook({ theme, activePreset: null });
+    assert.equal(a.book.activePreset, 'classic', JSON.stringify(theme));
+    const b = readBook(a.book);
+    assert.deepStrictEqual(b.book, a.book);
+    assert.deepEqual(b.upgrades.filter((u) => !recordOnly.has(u)), []);
+  }
+});
+
+test('read: a hostile thrown value (null-prototype object, revoked Proxy, Error with a throwing message) still returns status failed', () => {
+  const { proxy, revoke } = Proxy.revocable({}, {});
+  revoke();
+  const badErr = new Error('x');
+  Object.defineProperty(badErr, 'message', { get() { throw new Error('nested'); } });
+  for (const [name, thrown] of [['null-proto', Object.create(null)], ['revoked proxy', proxy], ['bad message', badErr]] as [string, unknown][]) {
+    const input = {} as Record<string, unknown>;
+    Object.defineProperty(input, 'meta', { enumerable: true, get() { throw thrown; } });
+    let r: ReturnType<typeof readBook> | undefined;
+    assert.doesNotThrow(() => { r = readBook(input); }, name);
+    assert.equal(r!.status, 'failed', name);
+    assert.ok(r!.warnings.some((w) => w.code === 'read-failed'), name);
+    assert.ok(r!.preserved.some((x) => x.path === ''), name);
+    assert.ok(Array.isArray(r!.book.sections), name);
+  }
+});
+
 test('read: an unknown-key warning path is the bare top-level key name (observe privacySafe relies on it)', () => {
   const r = readBook({ zzFutureThing: { a: { b: 1 } }, 'weird.key[0]': 1 });
   const paths = r.warnings.filter((w) => w.code === 'unknown-key').map((w) => w.path).sort();

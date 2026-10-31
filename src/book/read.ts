@@ -391,6 +391,20 @@ function readInner(input: unknown, out: Out): ReadResult {
   return result(book);
 }
 
+const deepFreeze = <T>(v: T): T => {
+  if (v && typeof v === 'object' && !Object.isFrozen(v)) { Object.freeze(v); for (const x of Object.values(v as object)) deepFreeze(x); }
+  return v;
+};
+/** The book handed out if even the failure path fails. Built once at load; a bookId is minted only if that works. */
+const FALLBACK: Rec = (() => {
+  try {
+    const o: Out = { warnings: [], preserved: [], warn: () => {} };
+    return deepFreeze(scaffoldBook(o));
+  } catch {
+    return deepFreeze({ sections: scaffoldSections() } as Rec);
+  }
+})();
+
 /** Open a book. Never throws, never changes `input`. */
 export function readBook(input: unknown): ReadResult {
   const warnings: Warning[] = [];
@@ -399,14 +413,25 @@ export function readBook(input: unknown): ReadResult {
   try {
     return readInner(input, out);
   } catch (e) {
-    // Only reachable for input structuredClone refuses (a function inside the doc) or a bug here. A reader that throws loses the book.
-    const w: Warning[] = [{ code: 'read-failed', path: '', detail: `could not read this book: ${e instanceof Error ? e.message : String(e)}. Read as an empty book.` }];
-    const p: Preserved[] = [];
-    const o: Out = { warnings: w, preserved: p, warn: (code, path, detail) => { w.push({ code, path, detail }); } };
-    let raw: unknown = input;
-    try { raw = structuredClone(input); } catch { /* not cloneable: keep the reference */ }
-    const book = scaffoldBook(o);
-    p.push({ path: '', raw, used: clone(book) });
-    return { status: 'failed', book: book as unknown as BookV1, upgrades: ['scaffold'], warnings: w, preserved: p };
+    // Only reachable for input structuredClone refuses (a function inside the doc, a throwing getter) or a bug here. A reader that throws loses the book.
+    try {
+      let why = 'unknown error';
+      try { why = e instanceof Error ? e.message : String(e); if (typeof why !== 'string') why = 'unknown error'; } catch { why = 'unknown error'; }
+      const w: Warning[] = [{ code: 'read-failed', path: '', detail: `could not read this book: ${why}. Read as an empty book.` }];
+      const p: Preserved[] = [];
+      const o: Out = { warnings: w, preserved: p, warn: (code, path, detail) => { w.push({ code, path, detail }); } };
+      let raw: unknown = input;
+      try { raw = structuredClone(input); } catch { /* not cloneable: keep the reference */ }
+      const book = scaffoldBook(o);
+      p.push({ path: '', raw, used: clone(book) });
+      return { status: 'failed', book: book as unknown as BookV1, upgrades: ['scaffold'], warnings: w, preserved: p };
+    } catch {
+      const book = structuredClone(FALLBACK);
+      return {
+        status: 'failed', book: book as unknown as BookV1, upgrades: ['scaffold'],
+        warnings: [{ code: 'read-failed', path: '', detail: 'could not read this book: unknown error. Read as an empty book.' }],
+        preserved: [{ path: '', raw: input, used: structuredClone(book) }],
+      };
+    }
   }
 }

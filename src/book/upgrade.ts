@@ -241,7 +241,7 @@ export const STEPS: UpgradeStep[] = [
           ctx.preserve({ path: 'activePreset', raw: ap, used: fallback });
           ctx.warn({ code: 'bad-type', path: 'activePreset', detail: 'expected a non-empty preset name or null; read as 1.0 reads it' });
           fired = true;
-        } else if (ap === null && !hasTheme) {
+        } else if (ap === null && !truthyTheme) {
           setOwn(b, 'activePreset', ACTIVE_PRESET_DEFAULT); // 1.0: null || "classic"
           fired = true;
         }
