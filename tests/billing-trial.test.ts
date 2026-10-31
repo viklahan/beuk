@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { after, before, test } from 'node:test';
 import { buildApp } from '../src/app.js';
-import { ACCESS_RULES, decideAccess, NEVER_PAUSED, trialFor } from '../src/access.js';
+import { ACCESS_RULES, decideAccess, NEVER_PAUSED, PAUSABLE_FEATURES, pausedBody, trialFor } from '../src/access.js';
 import { cancelBillingForDeletedAccount } from '../src/account/plan.js';
 import { StripeBillingProvider, type BillingProvider } from '../src/billing.js';
 import type { Config } from '../src/config.js';
@@ -259,6 +259,17 @@ test('the day-21 / day-22 boundary: one millisecond before created_at + 21d is t
   assert.equal(decideAccess(true, at, decideEntitlements([], { prices: {} }, 21, T)), 'paused');
 });
 
+test('pausedBody names the store-ready features it can pause and never promises them', () => {
+  for (const f of ['export.epub', 'export.print', 'export.wrap'] as const) {
+    const b = pausedBody(f);
+    assert.equal(b.feature, f);
+    assert.equal(b.exportOpen, false);
+    assert.equal(b.ownWordsOpen, true);
+    assert.match(String(b.error), new RegExp(PAUSABLE_FEATURES[f]));
+    assert.doesNotMatch(String(b.error), /every export|export(s)? (still|always)/i);
+  }
+});
+
 test('a config built from an empty env has a 21-day trial', () => {
   assert.equal(loadConfig({}).trialDays, 21);
   assert.equal(loadConfig({ TRIAL_DAYS: '10' }).trialDays, 10);
@@ -301,7 +312,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: four features, six gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: seven features (three have no route yet), six gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -313,6 +324,12 @@ test('the rules are data: four features, six gated POST routes, and the never-pa
       'POST /api/exports',
     ],
   );
+  assert.deepEqual(Object.keys(PAUSABLE_FEATURES).sort(), [
+    'archive.upload', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add',
+  ]);
+  // The three store-ready export features are declared now; their routes (POST /api/print,
+  // /api/epub, /api/wrap) arrive in parts 2-4 of Step 3, and these two lines change then.
+  assert.equal(ACCESS_RULES.filter((r) => r.feature.startsWith('export.')).length, 0);
   const gated = new Set(ACCESS_RULES.map((r) => `${r.method} ${r.path}`));
   for (const r of NEVER_PAUSED) assert.ok(!gated.has(`${r.method} ${r.path}`), `${r.method} ${r.path} is both`);
   assert.ok(NEVER_PAUSED.some((r) => r.method === 'PUT' && r.path === '/api/manuscripts/:id'), 'saving a shelf book is never paused');
@@ -383,7 +400,7 @@ test('gating matrix: trial active, subscribed, past_due inside grace → open; e
   }
 });
 
-test('a paused answer is plain, says export stays open, and changes nothing', async () => {
+test('a paused answer is plain, names what stays open (own words), and changes nothing', async () => {
   const w = await writer(on.base, 'paused');
   const work = await makeWork(w.c);
   await setTrialEnd(w.id, new Date(clock.getTime() - DAY));
@@ -391,9 +408,13 @@ test('a paused answer is plain, says export stays open, and changes nothing', as
   const r = await w.c.post('/api/manuscripts', { doc: DOC });
   assert.equal(r.status, 402);
   assert.equal(r.body.paused, true);
-  assert.equal(r.body.exportOpen, true);
+  assert.equal(r.body.exportOpen, false);
+  assert.equal(r.body.ownWordsOpen, true);
   assert.equal(r.body.feature, 'shelf.add');
-  assert.match(String(r.body.error), /every export still work/);
+  assert.match(String(r.body.error), /backup/);
+  assert.match(String(r.body.error), /Word/);
+  assert.match(String(r.body.error), /Markdown/);
+  assert.doesNotMatch(String(r.body.error), /every export|export(s)? (still|always)/i);
   assert.equal((await db.query('select 1 from manuscripts where user_id = $1', [w.id])).rows.length, before);
   const up = await w.c.upload(`/api/exports?manuscriptId=${work.mid}&format=epub&filename=x.epub`, Buffer.from('PK x'));
   assert.equal(up.status, 402);
