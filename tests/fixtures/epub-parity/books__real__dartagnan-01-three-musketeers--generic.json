@@ -35,19 +35,9 @@
    "sha256": "651ff606ee58e7c16382966838aa5dd768551d9c5c674be55b78d1fb4e68369c"
   },
   {
-   "path": "OEBPS/Text/epigraph.xhtml",
-   "binary": false,
-   "sha256": "6018458f8508bdf552689dbf96bf4ec926938e9561c10d5e6c953e7204e86ec9"
-  },
-  {
-   "path": "OEBPS/Text/dedication.xhtml",
-   "binary": false,
-   "sha256": "a4847424a5d78ce4bab2ab45418d537c0831e07c263e86b7320f338ff57bf720"
-  },
-  {
    "path": "OEBPS/Text/toc.xhtml",
    "binary": false,
-   "sha256": "cf0bb6af2d0a30948da2771e7fb9cf0d5764f9188400df3cd52fb94da5676f1c"
+   "sha256": "3ce491ed195c5e9f7019acbcfba6a5fcc1a276dd9dc79025c22906e0087607be"
   },
   {
    "path": "OEBPS/Text/chapter_01.xhtml",
@@ -390,39 +380,24 @@
    "sha256": "3c6a61470fe4f9eb80ea1eefa048844d139270e7c8248f3cc1c6a6b1ed1deede"
   },
   {
-   "path": "OEBPS/Text/acknowledgments.xhtml",
-   "binary": false,
-   "sha256": "39eb7d5752495042b85af9aaad05cdbed0757bb10d38ba2892405859fbf119e3"
-  },
-  {
-   "path": "OEBPS/Text/aboutauthor.xhtml",
-   "binary": false,
-   "sha256": "08ae9524fd96cb11e732314f4b6852bf33157d94ce8d22a1490cd67b99553f46"
-  },
-  {
    "path": "OEBPS/Text/alsoby.xhtml",
    "binary": false,
    "sha256": "c3f3ef581f823d8968ef1f2803d068167db810db6f0f0a9db20cf7b5957cdcde"
   },
   {
-   "path": "OEBPS/Text/colophon.xhtml",
-   "binary": false,
-   "sha256": "48a02839d8d82f0152d300b1430036f84f6f7516e513d78b1bfdd0431484c92c"
-  },
-  {
    "path": "OEBPS/package.opf",
    "binary": false,
-   "sha256": "ec6d7730518dfd17b6274a98a985499b2f9d6cc69795305aa4d1fad854a82e4f"
+   "sha256": "47b9b697766df7c0ca4fc06151d5bf931631c8512346fee00675cfb62334ad07"
   },
   {
    "path": "OEBPS/nav.xhtml",
    "binary": false,
-   "sha256": "90da9a709f4f4decd86d69dd309429cae0d619462a6174cbe798bb30b553ef16"
+   "sha256": "c84733fcfa3db270559cb5ec3d72890a6796067c5af8ab123154e057c49c5abc"
   },
   {
    "path": "OEBPS/toc.ncx",
    "binary": false,
-   "sha256": "b554b3298ce3c8e1b96d02771f6d68037c8842e3c4bbf2bfaa6d22f3c8336276"
+   "sha256": "5a6e2b73ab4484a162f7b05e6ba6a6c8599d4d6135dd8dd8556955528634c3c1"
   }
  ]
 }

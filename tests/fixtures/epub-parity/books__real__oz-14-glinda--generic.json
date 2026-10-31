@@ -35,19 +35,9 @@
    "sha256": "b1814f23bcbf70474e6babd274a7a3d867d1b22e0138d8873cd8f8ef1ca7e2f7"
   },
   {
-   "path": "OEBPS/Text/epigraph.xhtml",
-   "binary": false,
-   "sha256": "6018458f8508bdf552689dbf96bf4ec926938e9561c10d5e6c953e7204e86ec9"
-  },
-  {
-   "path": "OEBPS/Text/dedication.xhtml",
-   "binary": false,
-   "sha256": "a4847424a5d78ce4bab2ab45418d537c0831e07c263e86b7320f338ff57bf720"
-  },
-  {
    "path": "OEBPS/Text/toc.xhtml",
    "binary": false,
-   "sha256": "acd740d56857843b59ab05884223e450baf9a6ca6df260fb1c03ed285e75951f"
+   "sha256": "f8784a87a43cb3263fbea5151d64038ae3e22666f5e69c9c98c446d4c25317a9"
   },
   {
    "path": "OEBPS/Text/chapter_01.xhtml",
@@ -175,24 +165,9 @@
    "sha256": "d075b28f2970f2d80f2bc4b888475d54e7f79c5d5e225c743ceb7604a3f03403"
   },
   {
-   "path": "OEBPS/Text/acknowledgments.xhtml",
-   "binary": false,
-   "sha256": "39eb7d5752495042b85af9aaad05cdbed0757bb10d38ba2892405859fbf119e3"
-  },
-  {
-   "path": "OEBPS/Text/aboutauthor.xhtml",
-   "binary": false,
-   "sha256": "08ae9524fd96cb11e732314f4b6852bf33157d94ce8d22a1490cd67b99553f46"
-  },
-  {
    "path": "OEBPS/Text/alsoby.xhtml",
    "binary": false,
    "sha256": "5881628671ea2162cd54eab94af040437a218bc44532bb74f7b5b368769b2c84"
-  },
-  {
-   "path": "OEBPS/Text/colophon.xhtml",
-   "binary": false,
-   "sha256": "48a02839d8d82f0152d300b1430036f84f6f7516e513d78b1bfdd0431484c92c"
   },
   {
    "path": "OEBPS/Images/cover-pg39868xcover.jpg",
@@ -712,17 +687,17 @@
   {
    "path": "OEBPS/package.opf",
    "binary": false,
-   "sha256": "503fe78e95a2e4ae1895f182af6100e40cb9f2a5b5bb387d4e0f92ac9421efd4"
+   "sha256": "3298a3210c25832afcc660ff393f3e62e8622dea7d6915582a6c9c5843bd7c84"
   },
   {
    "path": "OEBPS/nav.xhtml",
    "binary": false,
-   "sha256": "183f9e0ba97487cb5ab5efcc1b1add84f05d1786a451cde20ca3cb0276c3e668"
+   "sha256": "8d327be6adb20d98c7ce99ef5c21419b2c4bdc9420fc7e8a0fbb21a4cbd1aaec"
   },
   {
    "path": "OEBPS/toc.ncx",
    "binary": false,
-   "sha256": "a4ed030d4d2aa259e7dbd2314648f7c202d59170dccabaa92b00e94e9b3cce6c"
+   "sha256": "d5152c328d5030e8c4cf636f075e34b1391fc1761d4baa69b90812f00f142017"
   }
  ]
 }

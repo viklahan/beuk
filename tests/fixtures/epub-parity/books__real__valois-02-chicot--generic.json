@@ -35,19 +35,9 @@
    "sha256": "651ff606ee58e7c16382966838aa5dd768551d9c5c674be55b78d1fb4e68369c"
   },
   {
-   "path": "OEBPS/Text/epigraph.xhtml",
-   "binary": false,
-   "sha256": "6018458f8508bdf552689dbf96bf4ec926938e9561c10d5e6c953e7204e86ec9"
-  },
-  {
-   "path": "OEBPS/Text/dedication.xhtml",
-   "binary": false,
-   "sha256": "a4847424a5d78ce4bab2ab45418d537c0831e07c263e86b7320f338ff57bf720"
-  },
-  {
    "path": "OEBPS/Text/toc.xhtml",
    "binary": false,
-   "sha256": "d3a6cf432b1c9c4b98ee408b3004caa066ba8c89e54c5cf953b590d3873b8735"
+   "sha256": "bdf9d6628d2b730d72b698adbd4264debcfc9e3664f6dc8d06fc7bc33a85215c"
   },
   {
    "path": "OEBPS/Text/chapter_01.xhtml",
@@ -535,39 +525,24 @@
    "sha256": "868c10c01ee9f9852f13627d89fb60bf0c391ab5c872f2affdeea6bc62fd1155"
   },
   {
-   "path": "OEBPS/Text/acknowledgments.xhtml",
-   "binary": false,
-   "sha256": "39eb7d5752495042b85af9aaad05cdbed0757bb10d38ba2892405859fbf119e3"
-  },
-  {
-   "path": "OEBPS/Text/aboutauthor.xhtml",
-   "binary": false,
-   "sha256": "08ae9524fd96cb11e732314f4b6852bf33157d94ce8d22a1490cd67b99553f46"
-  },
-  {
    "path": "OEBPS/Text/alsoby.xhtml",
    "binary": false,
    "sha256": "a2f3afcbbd6012b1d0731e5b577142a263cf5104ba45440408e492d1660a79d2"
   },
   {
-   "path": "OEBPS/Text/colophon.xhtml",
-   "binary": false,
-   "sha256": "48a02839d8d82f0152d300b1430036f84f6f7516e513d78b1bfdd0431484c92c"
-  },
-  {
    "path": "OEBPS/package.opf",
    "binary": false,
-   "sha256": "c3cfb10d0b8d3390ffaddf62c172a38b4ef29303b1fe8472b00402703b7db279"
+   "sha256": "c790b5fd2f7ea356a61178ca99fe7d7e2df359525adf40d4179d7efc30127c12"
   },
   {
    "path": "OEBPS/nav.xhtml",
    "binary": false,
-   "sha256": "0d3acdcf69fcc3cad976796652daf666841cf5428984de325f1a6a43efe3f58c"
+   "sha256": "59a0026c7b99742d5cfcf7cb3c0910e4c8586f6bea44e70035e0be476cce733c"
   },
   {
    "path": "OEBPS/toc.ncx",
    "binary": false,
-   "sha256": "c4f26633ff95926710fd984eda81b04388285f6fc3f8b67640450eb3aa67c470"
+   "sha256": "68d18fceac210c1d1c967c36b389efe4160465b77d3f4a6dadfcd44637937ecd"
   }
  ]
 }
