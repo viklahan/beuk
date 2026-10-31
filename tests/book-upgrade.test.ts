@@ -95,6 +95,9 @@ test('upgrade: sections-missing — no sections → the buildEmptyBook scaffold 
   const chapter = r.book.sections.find((s) => s.type === 'chapter')!;
   assert.equal(r.book.activeId, chapter.id, 'activeId is the scaffold\'s chapter, not the lost book\'s id');
   assert.ok(readBook({ sections: [] }).upgrades.includes('sections-missing'), 'an empty array is the same case');
+  const old = load('sections-missing').activeId;
+  assert.ok(old && old !== r.book.activeId);
+  assert.ok(r.preserved.some((p) => p.path === 'activeId' && p.raw === old && p.used === r.book.activeId), 'the lost activeId is preserved');
 });
 
 test('upgrade: bookid-missing — no meta.bookId → a new UUID (client/index.html:50215)', () => {
@@ -142,19 +145,27 @@ test('upgrade: bookid-legacy — byte-identical to 1.0 (1.0\'s own functions, ru
   assert.equal(readBook(reads).upgrades.includes('bookid-legacy'), false);
 });
 
-test('upgrade: bookid-sample — the sample\'s pre-UUID ids → SAMPLE_BOOK_ID (client/index.html:4356-4377, :4432)', () => {
-  assert.equal(SAMPLE_BOOK_ID, studioBookId().SAMPLE_BOOK_ID);
-  for (const old of ['urn:uuid:beuk-sample-lantern-coast', 'urn:uuid:beuk-sample-salt-meridian']) {
-    const book = structuredClone(load('bookid-sample'));
-    (book.meta as Rec).bookId = old;
-    const r = readBook(book);
-    assert.ok(r.upgrades.includes('bookid-sample'), old);
-    assert.equal(meta(r).bookId, SAMPLE_BOOK_ID);
-    assert.deepEqual(meta(r).legacyBookIds, [old]);
-    assert.equal(r.upgrades.includes('bookid-legacy'), false, 'the sample ids are not UUIDv5-migrated');
-  }
-  // 1.0 itself maps the lantern-coast id to the sample id
-  assert.equal(studioBookId().bookIdMigrated('urn:uuid:beuk-sample-lantern-coast'), SAMPLE_BOOK_ID);
+test('upgrade: bookid-sample — only the lantern-coast id → SAMPLE_BOOK_ID; salt-meridian takes the UUIDv5 path (client/index.html:4356-4377, :4430-4433)', () => {
+  const studio = studioBookId();
+  assert.equal(SAMPLE_BOOK_ID, studio.SAMPLE_BOOK_ID);
+  const lantern = 'urn:uuid:beuk-sample-lantern-coast';
+  const r = readBook(load('bookid-sample'));
+  assert.ok(r.upgrades.includes('bookid-sample'));
+  assert.equal(meta(r).bookId, SAMPLE_BOOK_ID);
+  assert.equal(meta(r).bookId, studio.bookIdMigrated(lantern), '1.0 maps it to the sample id');
+  assert.deepEqual(meta(r).legacyBookIds, [lantern]);
+  assert.equal(r.upgrades.includes('bookid-legacy'), false);
+
+  // the pre-rename id: 1.0 migrates it like any legacy id (isSampleBookId is UI-only)
+  const salt = 'urn:uuid:beuk-sample-salt-meridian';
+  const book = structuredClone(load('bookid-sample'));
+  (book.meta as Rec).bookId = salt;
+  const rs = readBook(book);
+  assert.ok(rs.upgrades.includes('bookid-legacy'));
+  assert.equal(rs.upgrades.includes('bookid-sample'), false);
+  assert.equal(meta(rs).bookId, studio.bookIdMigrated(salt));
+  assert.notEqual(meta(rs).bookId, SAMPLE_BOOK_ID);
+  assert.deepEqual(meta(rs).legacyBookIds, [salt]);
 });
 
 test('upgrade: lang-unknown — a code not in LANG_PACKS → en, the old value preserved (client/index.html:50230)', () => {
@@ -165,6 +176,13 @@ test('upgrade: lang-unknown — a code not in LANG_PACKS → en, the old value p
   assert.ok(r.preserved.some((p) => p.path === 'meta.language' && p.raw === 'tlh' && p.used === 'en'));
   assert.ok(r.warnings.some((w) => w.path === 'meta.language'));
   assert.equal(readBook(reads).upgrades.includes('lang-unknown'), false);
+  // 1.0 keeps an inherited key such as "constructor" (!LANG_PACKS[x]); this reader deliberately does not
+  const inh = structuredClone(load('lang-unknown'));
+  (inh.meta as Rec).language = 'constructor';
+  const ri = readBook(inh);
+  assert.ok(ri.upgrades.includes('lang-unknown'));
+  assert.equal(meta(ri).language, 'en');
+  assert.ok(ri.preserved.some((p) => p.path === 'meta.language' && p.raw === 'constructor'));
 });
 
 test('upgrade: lang-source — no langSource → manual if the language is not English, else auto; langGuess "" (client/index.html:50231-50233)', () => {

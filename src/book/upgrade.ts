@@ -49,8 +49,8 @@ const metaOf = (b: Rec): Rec | null => { const m = get(b, 'meta'); return isRec(
 export const BOOKID_NAMESPACE = '8bf1c6b6-5f75-4773-a701-cdd420357f52';
 /** SAMPLE_BOOK_ID, CI:4356. */
 export const SAMPLE_BOOK_ID = 'urn:uuid:fb544908-ebbc-4bb6-87cc-445335432f3e';
-/** The sample's two pre-UUID ids: LEGACY_SAMPLE_BOOK_ID (CI:4377) and the pre-rename one (isSampleBookId, CI:4357-4358). */
-const SAMPLE_LEGACY_IDS: readonly string[] = ['urn:uuid:beuk-sample-lantern-coast', 'urn:uuid:beuk-sample-salt-meridian'];
+/** LEGACY_SAMPLE_BOOK_ID, CI:4377: the only id bookIdMigrated maps to the sample (CI:4430-4433). The pre-rename salt-meridian id is recognised as the sample by the UI only (isSampleBookId, CI:4357); it migrates like any legacy id (bookid-legacy). */
+const LEGACY_SAMPLE_BOOK_ID = 'urn:uuid:beuk-sample-lantern-coast';
 /** BOOKID_UUID_RE, CI:4379: a well-formed RFC 9562 UUID (versions 1-8, variant 10xx) behind urn:uuid:. */
 const BOOKID_UUID_RE = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -131,7 +131,10 @@ export const STEPS: UpgradeStep[] = [
       setOwn(b, 'sections', secs);
       // buildEmptyBook: activeId is its chapter
       const chapter = secs.find((x) => x.type === 'chapter');
-      setOwn(b, 'activeId', (chapter ?? secs[0]!).id);
+      const active = (chapter ?? secs[0]!).id;
+      const old = get(b, 'activeId');
+      if (old !== undefined && old !== active) ctx.preserve({ path: 'activeId', raw: old, used: active });
+      setOwn(b, 'activeId', active);
       return true;
     },
   },
@@ -153,7 +156,7 @@ export const STEPS: UpgradeStep[] = [
     apply(b, ctx) {
       const m = metaOf(b);
       const id = m && get(m, 'bookId');
-      if (!m || !bookIdIsLegacy(id) || SAMPLE_LEGACY_IDS.includes(id)) return false;
+      if (!m || !bookIdIsLegacy(id) || id === LEGACY_SAMPLE_BOOK_ID) return false;
       setOwn(m, 'legacyBookIds', legacyList(m, id, ctx));
       setOwn(m, 'bookId', `urn:uuid:${uuidV5(BOOKID_NAMESPACE, id)}`);
       return true;
@@ -161,11 +164,11 @@ export const STEPS: UpgradeStep[] = [
   },
   {
     name: 'bookid-sample',
-    cite: 'client/index.html:4356-4377, :4432',
+    cite: 'client/index.html:4356-4377, :4430-4433',
     apply(b, ctx) {
       const m = metaOf(b);
       const id = m && get(m, 'bookId');
-      if (!m || typeof id !== 'string' || !SAMPLE_LEGACY_IDS.includes(id)) return false;
+      if (!m || id !== LEGACY_SAMPLE_BOOK_ID) return false;
       setOwn(m, 'legacyBookIds', legacyList(m, id, ctx));
       setOwn(m, 'bookId', SAMPLE_BOOK_ID);
       return true;
@@ -178,6 +181,7 @@ export const STEPS: UpgradeStep[] = [
       const m = metaOf(b);
       if (!m || !has(m, 'language')) return false;
       const raw = m.language;
+      // Deliberately differs from 1.0 (!LANG_PACKS[x], which keeps an inherited key such as "constructor"): only a real pack code is kept, and the raw value is preserved.
       if (typeof raw === 'string' && LANG_CODES.includes(raw)) return false;
       setOwn(m, 'language', 'en');
       ctx.preserve({ path: 'meta.language', raw, used: 'en' });
