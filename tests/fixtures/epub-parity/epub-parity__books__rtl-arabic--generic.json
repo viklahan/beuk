@@ -1,0 +1,98 @@
+{
+ "book": "epub-parity/books/rtl-arabic.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "01ff266907222fcd53dc3488ac2280014b26e303e7f7579675a4d2201d0c3c0f"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "71b4a059e3f3abbb4fc1a1c8d4cc8ba88812158cf0b1d5b33ad4ac2c3e023bc8"
+  },
+  {
+   "path": "OEBPS/Text/preface.xhtml",
+   "binary": false,
+   "sha256": "d79ded00795bf5de1f82d27b45e043c1089789d5e9571ab5abc305cf612e01f4"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "cac625052c638d46996670374c6b022bce4db670a388e75784c0a032a40b7d0e"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "5b099fcab99f52356b0c2ef3b8f1668f1abc42af984f5cd49be9938a53c86d9a"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "63f560fc0c6091d95e20629978f6afd64c81b5b93a974b3a88252b0c1240f483"
+  },
+  {
+   "path": "OEBPS/Text/chapter_04.xhtml",
+   "binary": false,
+   "sha256": "bbc2692d95502505b6804bc9f3781eeb8f9e17b7686c4aa491cab04180fd5367"
+  },
+  {
+   "path": "OEBPS/Text/chapter_05.xhtml",
+   "binary": false,
+   "sha256": "9eb6c15a93b2f02c1025002b39499d6a42bd45f1069d7cd3d893f0fc6f1f97f6"
+  },
+  {
+   "path": "OEBPS/Text/chapter_06.xhtml",
+   "binary": false,
+   "sha256": "e5f561662696519ad5be01313f737a69fcc287c5900d2c51480780cf10882114"
+  },
+  {
+   "path": "OEBPS/Text/chapter_07.xhtml",
+   "binary": false,
+   "sha256": "b8f4ffb2b12c5de0f676c4ba30438b011ccb78cd14f79b873566c0216a0199a6"
+  },
+  {
+   "path": "OEBPS/Text/chapter_08.xhtml",
+   "binary": false,
+   "sha256": "463ec9d96677db633649b05dfe8edf58e290317d29b7ff5f4d781a4016142e12"
+  },
+  {
+   "path": "OEBPS/Fonts/Amiri-normal-400.ttf",
+   "binary": true,
+   "sha256": "1c56db69eb6d4ea8e6b7045ba2df1fb02aad6a4fe6d4dd2d1f29a36fd0440770"
+  },
+  {
+   "path": "OEBPS/Fonts/Amiri-normal-700.ttf",
+   "binary": true,
+   "sha256": "0d1bb108cc4496f7ea4ead095543e35e5d60b320f8850dfc23217d3000b3d4b1"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "2b75791cd428029a3675f5f223335c93efaab95aeaa9b79d80f69fe8f130dff3"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "564e0ed3fd1bd0db74d59788233455ae16a78f8415c6d8d3c0b4d6ca1374cdd0"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "b10ccde2d7dcf8991bd80f1d24492ec7072a7ccbfce9b22cea0ba9b8663a72dd"
+  }
+ ]
+}

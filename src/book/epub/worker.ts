@@ -23,6 +23,7 @@ type Api = {
   ensureScriptFonts(sections: unknown, lang: unknown, meta: unknown): Promise<{ failed: string[]; displayFailed?: string[] }>;
   platformFilename(id?: string): string;
   setUiLang(lang: string): void;
+  arrive(state: unknown): unknown;
 };
 
 async function run(job: WorkerJob): Promise<unknown> {
@@ -36,6 +37,7 @@ async function run(job: WorkerJob): Promise<unknown> {
   vm.runInContext('globalThis.state = JSON.parse(globalThis.__beukStateJson); delete globalThis.__beukStateJson;', ctx);
   const api = ctx.__beukEpub as Api;
   api.setUiLang(job.lang);
+  api.arrive(ctx.state);
   const state = ctx.state as { sections: unknown; meta: { language: unknown }; exportPlatform: string };
   state.exportPlatform = job.platform;
   if (job.mode === 'files') {

@@ -23,21 +23,26 @@ import type { WorkerJob } from './worker.js';
    `samplePicsRequire` (the demo book's pictures; never on the server) and
    `JSZip` (the vendored client/assets/vendor/jszip.min.js). */
 
-export const EPUB_ROOTS: readonly string[] = ['buildEpubBlob', 'platformFilename'];
+/* buildEpubBlob is the studio's EPUB download; platformFilename names it;
+   the three normalizers are what applyBookDoc runs on an arriving book's
+   sections, fonts and cover recipe (ARRIVE below). */
+export const EPUB_ROOTS: readonly string[] = ['buildEpubBlob', 'platformFilename', 'normalizeSection', 'normalizeCustomFont', 'normalizeCoverRecipe'];
 export const EPUB_SUPPLIED: readonly string[] = ['state', 'toast', 'samplePicsRequire', 'JSZip'];
 
 export const EPUB_CLOSURE: readonly string[] = [
-  '$', 'A11Y_CONFORMS_VALUE', 'APPLE_DISPLAY_OPTIONS', 'AUTO_TYPES', 'BACKDROP_STRENGTHS',
+  '$', 'A11Y_CONFORMS_VALUE', 'APPLE_DISPLAY_OPTIONS', 'AUTO_TYPES', 'BACKDROP_STRENGTHS', 'BODY_FONTS',
   'BOOK_ACCENT_TARGETS', 'CC_LICENCES', 'CM_ELEMENTS', 'COLOUR_DARK_SURFACES', 'COLOUR_MIN_LARGE',
   'COLOUR_MIN_TEXT', 'COLOUR_PAGE', 'COLOUR_TEXT', 'CONTAINER_BREAK_RE', 'CONTAINER_CLOSE_RE',
-  'CONTAINER_KINDS', 'CONTAINER_NOTEDEF_RE', 'CONTAINER_OPEN_RE', 'CP_FICTION', 'CP_NO_PART',
-  'DISPLAY_FONTS', 'EPUB_DETECTED_PROPS', 'EPUB_NS', 'EPUB_TYPES', 'FLOURISH_PREFIX', 'FONT_FORMAT',
-  'FONT_MEDIA', 'HD_KEYS', 'IMAGE_LINE_RE', 'INSERT_CARD_LOOK', 'INSERT_LONG_ROWS', 'INSERT_ROW_CHARS',
-  'LANG_PACKS', 'LIST_BULLET', 'LIST_NUMBER', 'LOG_RTL_CH', 'MARGIN_INKS', 'MARGIN_OPEN_RE', 'MN_GAP',
-  'MN_NOTE', 'MN_NO_INDENT_AFTER_RE', 'ORNAMENTS', 'PIV_PX', 'PLATFORM_PRESETS', 'PRESETS', 'PRINT_BLEED_IN',
-  'PRINT_INK', 'PRINT_PAGE', 'PRINT_PICTURE_BOOK_PT', 'QUOTE_ATTR_RE', 'QUOTE_DASH_LINE_RE', 'REDACT_RE',
-  'SANS_FONTS', 'SANS_STACK', 'SCRIPT_FONTS', 'SCRIPT_MIN_CHARS', 'SCRIPT_STACK', 'SERIF_STACK',
-  'SW_MIN_ZOOM', 'TEXTS_LINE_RE', 'TRANSCRIPT_DIR_RE', 'TRANSCRIPT_LINE_RE', 'TRIM_SIZES', 'UI_PLURAL_FORMS',
+  'CONTAINER_KINDS', 'CONTAINER_NOTEDEF_RE', 'CONTAINER_OPEN_RE', 'COVER_BG_TYPES', 'COVER_FONTS',
+  'COVER_LAYOUTS', 'COVER_TEXTURES', 'CP_FICTION', 'CP_NO_PART', 'DISPLAY_FONTS', 'EPUB_DETECTED_PROPS',
+  'EPUB_NS', 'EPUB_TYPES', 'FLOURISH_PREFIX', 'FONT_FORMAT', 'FONT_MEDIA', 'HC_BINDINGS', 'HD_KEYS',
+  'HEAD_FONTS', 'IMAGE_LINE_RE', 'INSERT_CARD_LOOK', 'INSERT_LONG_ROWS', 'INSERT_ROW_CHARS', 'LANG_PACKS',
+  'LIST_BULLET', 'LIST_NUMBER', 'LOG_RTL_CH', 'MARGIN_INKS', 'MARGIN_OPEN_RE', 'MN_GAP', 'MN_NOTE',
+  'MN_NO_INDENT_AFTER_RE', 'OL_FIELDS_MAX', 'OL_STATUSES', 'OL_THREADS_MAX', 'OL_THREAD_ID', 'ORNAMENTS',
+  'PIV_PX', 'PLATFORM_PRESETS', 'PRESETS', 'PRINT_BLEED_IN', 'PRINT_INK', 'PRINT_PAGE',
+  'PRINT_PICTURE_BOOK_PT', 'QUOTE_ATTR_RE', 'QUOTE_DASH_LINE_RE', 'REDACT_RE', 'SANS_FONTS', 'SANS_STACK',
+  'SCRIPT_FONTS', 'SCRIPT_MIN_CHARS', 'SCRIPT_STACK', 'SERIF_STACK', 'SW_MIN_ZOOM', 'TEXTS_LINE_RE',
+  'TEXT_HEAD_FONTS', 'TRANSCRIPT_DIR_RE', 'TRANSCRIPT_LINE_RE', 'TRIM_SIZES', 'UI_PLURAL_FORMS',
   'UI_STRINGS', 'a11yFacts', 'a11yMetaBlock', 'a11yStampConformance', 'a11ySummaryDefault',
   'a11ySummaryText', 'altSaid', 'applyLeadIn', 'auditAccessibility', 'backdropImage', 'backdropLayerHtml',
   'beautifyText', 'bodyFaceOf', 'bookColour', 'bookColourNormalize', 'bookColourRules', 'bookDirAttr',
@@ -45,33 +50,36 @@ export const EPUB_CLOSURE: readonly string[] = [
   'clampNum', 'colourContrast', 'colourForDark', 'colourHex', 'colourLum', 'columnsHanging',
   'containerIndent', 'containerKind', 'containerPassThrough', 'containerStanzas', 'contentBlocksToHtml',
   'copyrightPageParas', 'copyrightRightsParas', 'countWords', 'countWordsFresh', 'countWordsRaw',
-  'countWordsShort', 'curlify', 'defaultHeaderDesign', 'displayFaceRules', 'displayFontData',
-  'displayFontOf', 'displayFontOfl', 'displayFontsFor', 'docxRedactRun', 'docxRedactedPlainRuns', 'docxRun',
-  'ensureDisplayFonts', 'ensureScriptFonts', 'epubApplyManifestProperties', 'epubAttr', 'epubCssHasRemote',
-  'epubDetectProps', 'epubFiles', 'epubFonts', 'epubIsRemoteRef', 'epubManifestPropertyReport',
-  'epubOpfPathOf', 'epubPlan', 'epubTocTarget', 'esc', 'escRedacted', 'flourishOf', 'flourishSrc',
-  'fontFaceCss', 'fontFileName', 'fontStack', 'frontBackHtml', 'frontispieceCaption',
-  'frontispiecePlateHtml', 'halfTitleLine1', 'halfTitleLine2', 'hangingDocx', 'hangingHtml', 'hangingParts',
-  'headerDesignRules', 'headingFlourishHtml', 'heartPath', 'holdContainerIndents', 'holdRawContainers',
+  'countWordsShort', 'curlify', 'defaultCoverRecipe', 'defaultHeaderDesign', 'displayFaceRules',
+  'displayFontData', 'displayFontOf', 'displayFontOfl', 'displayFontsFor', 'docxRedactRun',
+  'docxRedactedPlainRuns', 'docxRun', 'ensureDisplayFonts', 'ensureScriptFonts',
+  'epubApplyManifestProperties', 'epubAttr', 'epubCssHasRemote', 'epubDetectProps', 'epubFiles', 'epubFonts',
+  'epubIsRemoteRef', 'epubManifestPropertyReport', 'epubOpfPathOf', 'epubPlan', 'epubTocTarget', 'esc',
+  'escRedacted', 'flourishOf', 'flourishSrc', 'fontFaceCss', 'fontFileName', 'fontStack', 'frontBackHtml',
+  'frontispieceCaption', 'frontispiecePlateHtml', 'halfTitleLine1', 'halfTitleLine2', 'hangingDocx',
+  'hangingHtml', 'hangingParts', 'headerDesignRules', 'headingFlourishHtml', 'heartPath',
+  'holdContainerIndents', 'holdRawContainers', 'imIsPlaceholderTitle', 'imMetaValue', 'imRealTitle',
   'imageById', 'imageFigure', 'imageFileName', 'imageTokensIn', 'inCss', 'inlineMd', 'insertIsLong',
   'isContainerMarkLine', 'isRtlLang', 'labelFaceOf', 'langPack', 'layoutStyled', 'letterRoles',
   'listItemsOf', 'logIsDark', 'logLineDir', 'logLineHtml', 'logLines', 'marginColumnRules', 'marginInkCache',
   'marginInkOf', 'marginNamesCache', 'marginNamesOf', 'marginNoteHtml', 'marginNoteParas', 'mdLinkRe',
-  'normalizeHeaderDesign', 'normalizeHeaderElement', 'ornamentHtml', 'ornamentSvg', 'packagedContentImages',
-  'packagedImages', 'packagedImagesImpl', 'parseContainers', 'parseImageLine', 'parseXmlDoc',
-  'partDividerHtml', 'pivEnsureStyle', 'pivFootnoteCutCss', 'pivGeometry', 'plateHtml', 'plateImage',
-  'platformFilename', 'platformPreset', 'printAccent', 'printBaseFontPt', 'printBigLead', 'printBigType',
-  'printBleedOn', 'printBlendHex', 'printColourCss', 'printFootnoteCss', 'printHexRgb', 'printInkFor',
-  'printLayoutCss', 'printLayoutNow', 'printMargins', 'printMarginsAuto', 'printNoteFontPt',
-  'printNoteLinePt', 'printNotesAtFootNow', 'printPageEstimate', 'printPictureBookOn', 'printSolidTintCss',
-  'printTextArea', 'printTypeCss', 'quoteAttribution', 'redactBarHtml', 'redactBlocks', 'redactCharEm',
-  'resolvePkgPath', 'rightsLine', 'rightsModeOf', 'rightsYear', 'sceneEntryAt', 'sceneFigureHtml',
-  'sceneImageAt', 'scriptFontData', 'scriptFontOfl', 'scriptFontsFor', 'sectionHtml', 'sectionLabel',
-  'sectionProseWords', 'sectionWords', 'sectionWordsMemo', 'sidewaysGroups', 'sidewaysPrintPages', 'slug',
-  'splitRedactions', 'starPath', 'stripContainerMarks', 'swPageHtml', 'swPrintCache', 't', 'tCountForm',
-  'textsItems', 'themeFlourishImages', 'tocHeadingOf', 'tocTree', 'transcriptItems', 'trimSize',
-  'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache', 'unredactForReading', 'uploadedFontByFamily',
-  'uploadedFonts', 'usedDisplayFonts', 'usedUploadedFonts', 'verseParts', 'xhtmlDoc',
+  'normalizeCoverRecipe', 'normalizeCustomFont', 'normalizeHeaderDesign', 'normalizeHeaderElement',
+  'normalizeScenes', 'normalizeSection', 'normalizeWrap', 'olCleanTag', 'olSectionFields', 'olTagKey',
+  'ornamentHtml', 'ornamentSvg', 'packagedContentImages', 'packagedImages', 'packagedImagesImpl',
+  'parseContainers', 'parseImageLine', 'parseXmlDoc', 'partDividerHtml', 'pivEnsureStyle',
+  'pivFootnoteCutCss', 'pivGeometry', 'plateHtml', 'plateImage', 'platformFilename', 'platformPreset',
+  'printAccent', 'printBaseFontPt', 'printBigLead', 'printBigType', 'printBleedOn', 'printBlendHex',
+  'printColourCss', 'printFootnoteCss', 'printHexRgb', 'printInkFor', 'printLayoutCss', 'printLayoutNow',
+  'printMargins', 'printMarginsAuto', 'printNoteFontPt', 'printNoteLinePt', 'printNotesAtFootNow',
+  'printPageEstimate', 'printPictureBookOn', 'printSolidTintCss', 'printTextArea', 'printTypeCss',
+  'quoteAttribution', 'redactBarHtml', 'redactBlocks', 'redactCharEm', 'resolvePkgPath', 'rightsLine',
+  'rightsModeOf', 'rightsYear', 'sceneEntryAt', 'sceneFigureHtml', 'sceneImageAt', 'scriptFontData',
+  'scriptFontOfl', 'scriptFontsFor', 'sectionHtml', 'sectionLabel', 'sectionProseWords', 'sectionWords',
+  'sectionWordsMemo', 'sidewaysGroups', 'sidewaysPrintPages', 'slug', 'splitRedactions', 'starPath',
+  'stripContainerMarks', 'swPageHtml', 'swPrintCache', 't', 'tCountForm', 'textsItems',
+  'themeFlourishImages', 'tocHeadingOf', 'tocTree', 'transcriptItems', 'trimSize', 'uiLangState',
+  'uiPluralCategory', 'uiPluralRulesCache', 'uid', 'unredactForReading', 'uploadedFontByFamily',
+  'uploadedFonts', 'usedDisplayFonts', 'usedUploadedFonts', 'verseParts', 'wrapDefaults', 'xhtmlDoc',
 ];
 
 /** The interface-string tables t() reads: their declarations and every
@@ -145,6 +153,30 @@ function indexStudio(studioHtml: string): { sf: ts.SourceFile; byName: Map<strin
   return { sf, byName };
 }
 
+/** The book's arrival, run inside the context on the book readBook opened:
+ *  the lines of the studio's applyBookDoc (client/index.html) that touch
+ *  the keys the EPUB code reads, calling the studio's own normalizers.
+ *  readBook already gives meta, print choices and missing keys 1.0's
+ *  defaults; these are the per-item normalizations it leaves as stored
+ *  (a section without `included`, say). Held to the studio by the parity
+ *  test. `colour` arrives as state.bookColour (epubState). */
+const ARRIVE = `(s) => {
+  s.theme = Object.assign({}, PRESETS[0].theme, s.theme);
+  s.theme.header = s.theme.header ? normalizeHeaderDesign(s.theme.header, s.theme) : null;
+  if (!s.theme.header) delete s.theme.header;
+  s.theme.bodyFont = bodyFaceOf(s.theme.bodyFont);
+  s.bookColour = bookColourNormalize(s.bookColour);
+  if (!s.bookColour.accent && !s.bookColour.tint) s.bookColour = undefined;
+  s.sections = (Array.isArray(s.sections) ? s.sections : []).map(normalizeSection);
+  s.cover = s.cover || null;
+  s.coverRecipe = s.coverRecipe ? normalizeCoverRecipe(s.coverRecipe) : null;
+  s.images = Array.isArray(s.images) ? s.images : [];
+  s.fonts = Array.isArray(s.fonts) ? s.fonts.map(normalizeCustomFont).filter(Boolean) : [];
+  s.printPictureBook = s.printPictureBook === true && !s.printLargePrint;
+  s.printBleed = s.printBleed === true;
+  return s;
+}`;
+
 /** Lift EPUB_CLOSURE (plus the string tables) out of the studio, in
  *  studio order. Throws naming every declaration that is missing. */
 export function extractEpubSource(studioHtml: string, names: readonly string[] = EPUB_CLOSURE): ClosureSource {
@@ -162,7 +194,7 @@ export function extractEpubSource(studioHtml: string, names: readonly string[] =
     lines += text.split('\n').length;
     return text;
   });
-  const api = '\n;globalThis.__beukEpub = { buildEpubBlob, epubFiles, ensureScriptFonts, platformFilename, t, setUiLang: (l) => { uiLangState = UI_STRINGS[l] ? l : "en"; } };\n';
+  const api = `\n;globalThis.__beukEpub = { buildEpubBlob, epubFiles, ensureScriptFonts, platformFilename, t, setUiLang: (l) => { uiLangState = UI_STRINGS[l] ? l : "en"; }, arrive: ${ARRIVE} };\n`;
   return {
     code: parts.join('\n') + api,
     names: [...new Set(lifted.flatMap(declNames))],

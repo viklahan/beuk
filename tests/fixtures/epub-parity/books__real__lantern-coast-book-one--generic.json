@@ -1,0 +1,203 @@
+{
+ "book": "books/real/lantern-coast-book-one.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "fc99dda5b559b7409a4a2ee5ea970479c077bb72ec7f4090c91215c9dc11bc46"
+  },
+  {
+   "path": "OEBPS/Text/cover.xhtml",
+   "binary": false,
+   "sha256": "3d80289b1eb1a2bacdb36ee37a63937a56e7f0271ffe9115f0bbbc4a2ea9e264"
+  },
+  {
+   "path": "OEBPS/Text/halftitle.xhtml",
+   "binary": false,
+   "sha256": "e2a2cb21e0f1262257ee3889ae509e1864da64447c778566e0571cbd0eed39e7"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "9b04424ef873d43f1d8ed96b0a348f1dce590bafff412aa26b2b347f49d4d872"
+  },
+  {
+   "path": "OEBPS/Text/copyright.xhtml",
+   "binary": false,
+   "sha256": "6c9c1d76f38193dde1327be8287172e014b3b7b68ca5270827808276d5b2b197"
+  },
+  {
+   "path": "OEBPS/Text/epigraph.xhtml",
+   "binary": false,
+   "sha256": "adac370207884f54d454dff315c5d82a764bb4aea5e0f07b5766ee073fe66322"
+  },
+  {
+   "path": "OEBPS/Text/plate_01.xhtml",
+   "binary": false,
+   "sha256": "f568d56556a670cf96f0a9f5a5ec01639a5eb2e6c28e469ec5695e317c03a002"
+  },
+  {
+   "path": "OEBPS/Text/dedication.xhtml",
+   "binary": false,
+   "sha256": "c125c927ddb1f5618d7d4620b6766c2cc26351bbd7a5375c994d022bf462d38e"
+  },
+  {
+   "path": "OEBPS/Text/toc.xhtml",
+   "binary": false,
+   "sha256": "19b81029965c58116f535a3e885c57d9467365eaa4b5d33fa5f7f1e1ea33c006"
+  },
+  {
+   "path": "OEBPS/Text/frontispiece.xhtml",
+   "binary": false,
+   "sha256": "316051917ac124bb9748c999c893cc1030475388c8ea2112d86b8721c7748cd8"
+  },
+  {
+   "path": "OEBPS/Text/plate_02.xhtml",
+   "binary": false,
+   "sha256": "d7dcbb91b9375a1c8e9478a90a94c123650d1c06134fd3c99146e2dba4ced1c8"
+  },
+  {
+   "path": "OEBPS/Text/prologue.xhtml",
+   "binary": false,
+   "sha256": "3930a6dd16c7499865e91c80872c987c759112537e1a23543bf4a459c770a4b6"
+  },
+  {
+   "path": "OEBPS/Text/plate_03.xhtml",
+   "binary": false,
+   "sha256": "b3ec3e12ce9a6ab6db71b59b4443f4d6d30bdb41e187c7597ecd2cd6b223bbb5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "69edd45c99f3751a5db4ae02d8271f1919fdecdeae1a9d92a08607cf880b84f3"
+  },
+  {
+   "path": "OEBPS/Text/plate_04.xhtml",
+   "binary": false,
+   "sha256": "ccf02324148c6e59c46de6a4c340f586a6905168caaf48386fa0bcced0553fc6"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "1df0426ac02f07c12f150d837165f5531a6c6f34e45142484ec450c3856da1cd"
+  },
+  {
+   "path": "OEBPS/Text/plate_05.xhtml",
+   "binary": false,
+   "sha256": "227ad95ef4df5ff14fe41f26a7c2ca1acc4f17ee1fe92a543e5437e14e637dfc"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "bfda8778ee8bd6ca821ab880a8a952984cef129adc7f53f9e3987d6860baf009"
+  },
+  {
+   "path": "OEBPS/Text/plate_06.xhtml",
+   "binary": false,
+   "sha256": "c0555e6edf768797925e983e21aebeaff9783a1ab3cb01516aa491e4df4b2738"
+  },
+  {
+   "path": "OEBPS/Text/chapter_04.xhtml",
+   "binary": false,
+   "sha256": "0b78f24a811291d22e2f6bae3a99e2b8cab7fd89b1bbb08249fbbc3a857df72d"
+  },
+  {
+   "path": "OEBPS/Text/alsoby.xhtml",
+   "binary": false,
+   "sha256": "fa0fedad20447e2bfac886eea5d2733cd5bf4495267a7cb3d9b3cf3e26423244"
+  },
+  {
+   "path": "OEBPS/Images/cover.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/for-the-keepers-of-unlisted-channels-ded-sample-img-dedication.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-harbour-chart-frontispiece-sample-img-chart.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-beacon-at-first-light-left-page-sample-img-prologue-left.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-beacon-at-first-light-right-page-sample-img-prologue-right.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-ferry-spread-left-page-sample-img-ferry-left.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-ferry-spread-right-page-sample-img-ferry-right.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-house-at-gull-terrace-left-page-sample-img-gull-terrace-left.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-house-at-gull-terrace-right-page-sample-img-gull-terrace-right.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-wrong-way-water-left-page-sample-img-wrong-way-left.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-wrong-way-water-right-page-sample-img-wrong-way-right.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-tide-table-left-page-sample-img-tide-table-left.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-tide-table-right-page-sample-img-tide-table-right.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "d5df4f2b1047fb27361feb6f2718d2bbe27bceff5e30b0ed8249b0ba90c70464"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "dbdb836f24627920523d7de70b07ed0f987693d2ec3bbdd64d7f9a9ca23637b6"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "083a5dfc0990f17ea848a15d1dc1180ed555ff2b97aba9825f57dce979d6e229"
+  }
+ ]
+}
