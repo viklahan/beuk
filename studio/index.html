@@ -7,20 +7,20 @@
     <meta name="robots" content="noindex" />
     <title>Beuk — beuk.studio</title>
     <script>
-      /* Pre-paint, before any CSS: the same keys and rules as 1.0's head
-         script (client/index.html), so both studios agree. Theme: Paper
-         unless beuk.theme.v1 says candlelight. Interface language:
-         beuk.uiLang.v1 when it names a pack; its direction is set by the
-         app once the packs load, but Arabic is mirrored here already so
-         the chrome never flips after first paint. */
+      /* Pre-paint, before any CSS: 1.0's own rules and keys (client/index.html
+         head script and applyUiLang). Theme: Paper unless the saved choice
+         says candlelight. Interface language: the saved choice's lang and
+         direction, so the chrome never flips after first paint. The keys and
+         the RTL list are filled in from 1.0 at build time (vite.config.ts,
+         beukHtml) — no second copy. */
       try {
-        if (window.localStorage && localStorage.getItem("beuk.theme.v1") === "candlelight") {
+        if (window.localStorage && localStorage.getItem(__BEUK_THEME_KEY__) === "candlelight") {
           document.documentElement.setAttribute("data-theme", "candlelight");
         }
-        var savedLang = window.localStorage && localStorage.getItem("beuk.uiLang.v1");
-        if (savedLang) {
+        var savedLang = window.localStorage && localStorage.getItem(__BEUK_LANG_KEY__);
+        if (savedLang && __BEUK_LANGS__.indexOf(savedLang) !== -1) {
           document.documentElement.setAttribute("lang", savedLang);
-          if (savedLang === "ar") document.documentElement.setAttribute("dir", "rtl");
+          document.documentElement.setAttribute("dir", __BEUK_RTL__.indexOf(savedLang) !== -1 ? "rtl" : "ltr");
         }
       } catch (e) {}
     </script>

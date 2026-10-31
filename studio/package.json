@@ -8,8 +8,9 @@
     "node": ">=22.22.2"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json",
-    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "extract": "node scripts/extract-studio.mjs",
+    "typecheck": "node scripts/extract-studio.mjs && tsc --noEmit -p tsconfig.json",
+    "build": "node scripts/extract-studio.mjs && tsc --noEmit -p tsconfig.json && vite build",
     "test": "vitest run",
     "e2e": "node e2e/shell.mjs"
   },

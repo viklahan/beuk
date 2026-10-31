@@ -14,7 +14,8 @@
     "types": ["node", "vite/client"],
     "paths": {
       "@book/*": ["../src/book/*"],
-      "zod": ["./node_modules/zod"]
+      "zod": ["./node_modules/zod"],
+      "typescript": ["./node_modules/typescript"]
     }
   },
   "include": ["src", "test", "vite.config.ts"]
