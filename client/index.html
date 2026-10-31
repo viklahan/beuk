@@ -9089,6 +9089,7 @@
         "covermk.spine.noteIconsNarrow": "The spine is too narrow for an icon, so none is drawn.",
         "covermk.spine.noteTopDropped": "The top icon was left off: there is no room for it above the text.",
         "covermk.spine.noteBottomDropped": "The bottom icon was left off: it and the imprint do not both fit under the text.",
+        "covermk.spine.noteImprintDropped": "The imprint was left off the spine: it is too long to fit at a readable size.",
         "covermk.spine.bg": "Background",
         "covermk.spine.bgFront": "Follow the front",
         "covermk.spine.bgSolid": "Solid colour",
@@ -43010,7 +43011,7 @@
       /* Spine layout constants (inches). The clearance is the store's
          spine-text clearance; icons below the minimum are hidden, not
          shrunk to nothing; the margin keeps them off the trim edge. */
-      const SPINE_CLEAR_IN = 0.0625, SPINE_MARGIN_IN = 0.375, SPINE_ICON_MIN_IN = 0.12, SPINE_ICON_GAP_IN = 0.12, SPINE_TEXT_ROOM_IN = 1.0, SPINE_IMPRINT_FLOOR_IN = 5 / 72; /* 5 pt */
+      const SPINE_CLEAR_IN = 0.0625, SPINE_MARGIN_IN = 0.375, SPINE_ICON_MIN_IN = 0.12, SPINE_ICON_GAP_IN = 0.12, SPINE_TEXT_ROOM_IN = 1.0, SPINE_ICON_INSET_IN = 0.08 /* icons keep the clearance plus a small buffer */, SPINE_IMPRINT_FLOOR_IN = 5 / 72; /* 5 pt */
       /* A Lucide icon as canvas strokes (no DOM SVG): the icon's node
          list on its 24-unit grid, scaled to sizePx and centred on
          (cx, cy), in the given colour at Lucide's 2-unit stroke.
@@ -43701,7 +43702,7 @@
         if (off && items) off.style.display = items.dims && !items.dims.spineText ? "" : "none";
         const n = $("cmSpineNotes");
         if (!n) return;
-        const map = { "icons-narrow": "covermk.spine.noteIconsNarrow", "top-icon-dropped": "covermk.spine.noteTopDropped", "bottom-icon-dropped": "covermk.spine.noteBottomDropped" };
+        const map = { "icons-narrow": "covermk.spine.noteIconsNarrow", "top-icon-dropped": "covermk.spine.noteTopDropped", "bottom-icon-dropped": "covermk.spine.noteBottomDropped", "imprint-dropped": "covermk.spine.noteImprintDropped" };
         const lines = ((items && items.spineNotes) || []).map((c) => map[c] ? t(map[c]) : "").filter(Boolean);
         n.textContent = lines.join(" "); n.style.display = lines.length ? "" : "none";
       }
@@ -43924,7 +43925,7 @@
           const vb = { t: topY, b: Math.max(0, H - topY - th) };
           paintPanelBackground(ctx, { x: spineLeft, y: topY, w: hingeSpan, h: th }, w.spine.bg, vb);
           paintPanelBackground(ctx, { x: backX, y: topY, w: tw, h: th }, w.back.bg,
-            { l: d.binding === "jacket" ? 0 : backX, t: vb.t, b: vb.b });
+            { l: d.binding === "jacket" ? (L.flapFold || 0) * px : backX, t: vb.t, b: vb.b }); /* jacket: across the back fold, not onto the flap */
         }
         /* ==== /BEUK:spineback ==== */
         /* Front: the existing composition, inside the front rectangle. */
@@ -43969,7 +43970,7 @@
           }
           const impTopIn = L.panelH - SPINE_MARGIN_IN - impLenIn; /* inches from the head */
           /* Icons: one size for both, from the clear width of the spine. */
-          const clearW = Math.max(0, d.spine - 2 * SPINE_CLEAR_IN);
+          const clearW = Math.max(0, d.spine - 2 * SPINE_ICON_INSET_IN);
           const iconS = Math.min(clearW, 0.45);
           const wantIcon = (ic) => ic.kind === "lucide" || (ic.kind === "upload" && !!coverImgCache[ic.picId]);
           let hasTop = wantIcon(sp.iconTop), hasBot = wantIcon(sp.iconBottom);
@@ -44306,7 +44307,8 @@
         const src = wrap3dSource();
         const sig = (src.sample ? "sample|" : "own|") + JSON.stringify(src.recipe) + "|" + printPageEstimate() + "|" + (state.meta.description || "") +
           "|" + (src.recipe.bgImageId ? (coverBgSource(src.recipe) ? "img" : "noimg") : "-") +
-          "|" + (document.fonts && document.fonts.status === "loaded" ? "F" : "f");
+          "|" + (document.fonts && document.fonts.status === "loaded" ? "F" : "f") +
+          "|" + (() => { const sp = normalizeWrap(src.recipe.wrap).spine; return [sp.iconTop, sp.iconBottom].map((i) => (i.kind === "upload" ? (coverImgCache[i.picId] ? "U" : "u") : "-")).join(""); })(); /* uploaded spine icons: loaded or not */
         if (sig !== w3.sig) {
           w3.sig = sig;
           w3.sample = src.sample;
@@ -50375,13 +50377,16 @@
           else {
             const lay = items && items.dims.layout;
             const real = items && items.spineBoxes && items.spineBoxes.length && lay ? storeSpineClearance(items.spineBoxes, lay.spineX, lay.spineW) : null;
-            const hasIcons = !!(items && items.spineBoxes && items.spineBoxes.some((x) => x.kind === "icon"));
+            const rsp = normalizeWrap(recipe.wrap).spine; /* icons the wrap will print, from the recipe: an uploaded one still decoding counts, as it does in the PDF */
+            ensureWrapIcons(recipe);
+            const hasIcons = !!(items && items.spineBoxes && items.spineBoxes.some((x) => x.kind === "icon")) ||
+              [rsp.iconTop, rsp.iconBottom].some((i) => i.kind === "lucide" || (i.kind === "upload" && (state.images || []).some((m) => m.id === i.picId)));
             const size = Math.min(spineIn * 0.6, 0.32);
             const clear = real ? real.clear : (spineIn - size) / 2;
             const needClear = R.spineNarrowBelow && spineIn < R.spineNarrowBelow ? R.spineTextClearNarrow : R.spineTextClear;
             if (pages < R.spineTextMinPages) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t(hasIcons ? "store.c.spinetext.failPagesIcons" : "store.c.spinetext.failPages", Object.assign({ min: R.spineTextMinPages }, P)), t("store.c.spinetext.fixPages"),
               { kind: "wrapPages", pages: F.measured ? pages : 0, label: t("store.act.wrapPages") });
-            else if (clear < needClear) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t(real && real.kind === "icon" ? "store.c.spinetext.failClearIcon" : "store.c.spinetext.failClear", Object.assign({ clear: storeIn(clear), need: storeIn(needClear) }, P)), t("store.c.spinetext.fixClear"), { kind: "cover", label: t("store.act.cover") });
+            else if (clear < needClear - 1e-9) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t(real && real.kind === "icon" ? "store.c.spinetext.failClearIcon" : "store.c.spinetext.failClear", Object.assign({ clear: storeIn(clear), need: storeIn(needClear) }, P)), t("store.c.spinetext.fixClear"), { kind: "cover", label: t("store.act.cover") });
             else row("cover", "spinetext", true, "pass", t("store.c.spinetext.name"), t(hasIcons ? "store.c.spinetext.okIcons" : "store.c.spinetext.ok", Object.assign({ clear: storeIn(clear), need: storeIn(needClear), min: R.spineTextMinPages }, P)));
           }
           /* Barcode reserve: drawn at the wrap's own geometry — read it back and test it against the store's rule. */
@@ -54022,8 +54027,9 @@
                 const H = render(mk(b, solid("#c0392b"), solid("#1d6f42")));
                 const hsx = H.L.spineX + H.L.spineW / 2, hmid = H.L.topY + H.L.panelH / 2;
                 const ok = near(px1(H, hsx, 0.03), hex("#c0392b")) && near(px1(H, H.L.backX + 0.2, hmid), hex("#1d6f42")) && near(px1(H, H.L.backX + 0.2, 0.03), hex("#1d6f42")) &&
-                  (b !== "case" || near(px1(H, 0.03, hmid), hex("#1d6f42"))) && !near(px1(H, H.L.frontX + 0.5, hmid), hex("#1d6f42"), 4);
-                out.push(b + ": spine/back painted " + ok); if (!ok) hcOk = false;
+                  (b !== "case" || near(px1(H, 0.03, hmid), hex("#1d6f42"))) && !near(px1(H, H.L.frontX + 0.5, hmid), hex("#1d6f42"), 4) &&
+                  (b !== "jacket" || (near(px1(H, H.L.backX - 0.125, hmid), hex("#1d6f42")) && near(px1(H, H.L.backX - 0.02, 0.03), hex("#1d6f42")) && !near(px1(H, H.L.backX - 0.25 - 0.3, H.c.height / H.px - 0.5), hex("#1d6f42"), 4)));
+                out.push(b + ": spine/back painted" + (b === "jacket" ? " (back colour reaches across the back fold, not onto the flap)" : "") + " " + ok); if (!ok) hcOk = false;
               });
               /* follow-the-front is exactly today's wrap */
               const F1 = render(mk("paperback")), F2 = render(mk("paperback", normalizeWrapSpine(null), normalizeWrapBack(null)));
@@ -54159,6 +54165,33 @@
               const shortOk = !!shortImp && shortImp.y + shortImp.h <= shortR.d.layout.topY + shortR.d.layout.panelH - 0.375 + 1e-9;
               return scVerdict(ok && dropOk && shortOk, "“" + LONG + "” on 300 pp 6×9: " + out.join(", ") + "; an imprint too long to shrink to a legible size is dropped with a note " + dropOk + "; a short imprint sits inside the foot margin " + shortOk);
             } finally { state.meta.language = keepLang; }
+          } },
+        { id: "cover.store.spine-icon-limit", feature: "cover", name: "Store-ready, icons at the limit: on a ~0.53 in spine (cream, 195 pp) the icons keep a margin over the store's clearance and the store check passes; an uploaded icon that has not loaded yet still makes the audit speak of icons, as the PDF will",
+          run() {
+            return storeOnSample(() => {
+              const keepLang = state.meta.language;
+              try {
+                state.meta.language = "fr";
+                state.coverRecipe.wrap = normalizeWrap({ trim: "6x9", pages: 195, paper: "cream", spine: { iconTop: { kind: "lucide", name: "Feather" }, iconBottom: { kind: "lucide", name: "Star" } } });
+                const rec = normalizeCoverRecipe(state.coverRecipe), d = wrapDims(rec);
+                const c = document.createElement("canvas"); c.width = 900; c.height = Math.round(900 * d.totalH / d.totalW);
+                const it = drawWrapTo(c, rec), icons = it.spineBoxes.filter((b) => b.kind === "icon"), L = d.layout;
+                const margins = icons.map((b) => Math.min(b.x - L.spineX, L.spineX + L.spineW - b.x - b.w));
+                const row = (store, ink) => storeAudit({ store, binding: "paperback", ink }).groups.cover.find((r) => r.id === "spinetext");
+                const kdp = row("kdp", "bw_cream"), ing = row("ingram", "bw_cream");
+                const roomy = icons.length === 2 && margins.every((m) => m >= 0.0799);
+                /* an uploaded icon not decoded yet: the audit still speaks of icons */
+                const keepSecs = state.sections; state.sections = keepSecs.slice(0, 2);
+                state.images.push({ id: "sc-icon-pending", name: "i.png", mediaType: "image/png", ext: "png", data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" });
+                state.coverRecipe.wrap = normalizeWrap({ trim: "6x9", pages: 195, paper: "cream", spine: { iconTop: { kind: "upload", picId: "sc-icon-pending" } } });
+                delete coverImgCache["sc-icon-pending"];
+                const pend = row("kdp", "bw_cream");
+                state.sections = keepSecs;
+                const pendOk = !!pend && pend.status === "fail" && pend.evidence === t("store.c.spinetext.failPagesIcons", { store: "Amazon KDP", min: 79, pages: "1" });
+                return scVerdict(d.spine > 0.5 && d.spine < 0.575 && roomy && kdp && kdp.status === "pass" && ing && ing.status === "pass" && pendOk,
+                  "spine " + d.spine.toFixed(3) + " in: " + icons.length + " icons keep at least " + (margins.length ? Math.min.apply(null, margins).toFixed(3) : "?") + " in each side (store needs 0.0625); KDP " + (kdp && kdp.status) + ", IngramSpark " + (ing && ing.status) + "; unloaded uploaded icon, under the page minimum: " + (pend ? pend.status : "no row") + " — " + (pend ? pend.evidence.slice(0, 40) : "") + "…");
+              } finally { state.meta.language = keepLang; delete coverImgCache["sc-icon-pending"]; }
+            });
           } },
         { id: "cover.wrap3d.faces-from-wrap", feature: "cover", name: "3D wrap viewer: front, spine and back face textures are sliced from the current wrap render and refresh when wrap inputs change",
           run() {
