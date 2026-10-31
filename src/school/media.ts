@@ -36,7 +36,8 @@ interface RawManifest {
 
 const SAFE_FILE = /^[a-z0-9][a-z0-9._-]*\.(mp4|webm|mp3|m4a|jpg|jpeg|png|webp)$/i;
 
-const cache = new Map<string, { mtimeMs: number; media: LessonMedia | null }>();
+/* Keyed on mtime and size: two writes inside one timestamp tick keep the mtime, rarely the size. */
+const cache = new Map<string, { stamp: string; media: LessonMedia | null }>();
 
 /** Public URL of a media file (Caddy serves SCHOOL_MEDIA_DIR at /school/media/). */
 export function mediaUrl(lang: string, course: string, lesson: string, file: string): string {
@@ -46,14 +47,15 @@ export function mediaUrl(lang: string, course: string, lesson: string, file: str
 export function readLessonMedia(mediaDir: string, lang: string, course: string, lesson: string): LessonMedia | null {
   const dir = path.join(mediaDir, lang, course, lesson);
   const file = path.join(dir, 'manifest.json');
-  let mtimeMs: number;
+  let stamp: string;
   try {
-    mtimeMs = statSync(file).mtimeMs;
+    const st = statSync(file);
+    stamp = `${st.mtimeMs}:${st.size}`;
   } catch {
     return null;
   }
   const hit = cache.get(file);
-  if (hit && hit.mtimeMs === mtimeMs) return hit.media;
+  if (hit && hit.stamp === stamp) return hit.media;
   let media: LessonMedia | null = null;
   try {
     const raw = JSON.parse(readFileSync(file, 'utf8')) as RawManifest;
@@ -82,6 +84,6 @@ export function readLessonMedia(mediaDir: string, lang: string, course: string, 
   } catch {
     media = null;
   }
-  cache.set(file, { mtimeMs, media });
+  cache.set(file, { stamp, media });
   return media;
 }
