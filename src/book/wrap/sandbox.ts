@@ -38,17 +38,25 @@ import vm from 'node:vm';
       vietnamese…) subset per glyph from the @font-face rules; Skia takes
       the first face registered under a family and falls back to the NEXT
       family in the list, never to the same family's other files. So the
-      worker registers those subsets under alias families
-      ("Libre Baskerville beuk-latin-ext") and the shim writes each alias
-      right after its family in the stack. Glyph fallback then reaches the
-      family's own subset before Georgia or serif.
+      worker registers those subsets under names of their own and the
+      shim writes them right after the family's main face in the stack.
+
+   Every face a build registers carries the build's own nonce
+   ("Lora beuk-3f9c…"): GlobalFonts is one registry for the whole process,
+   and a worker stopped at the time or heap cap never reaches its
+   clean-up, so its faces stay. With the nonce, a face left behind can
+   never be matched by another build. The plan maps each family the
+   studio names to this build's faces for it, in order: the writer's
+   uploaded face of that name first (the writer chose it), then the
+   studio's own face, then its subsets. A family with no entry (Georgia,
+   serif) stays as written.
 
    save()/restore() bring the font back natively; the shim re-applies the
    variation for the restored font after each restore(). */
 
 export type FontPlan = {
-  /** family → its subset aliases registered for this build, in the order they follow it. */
-  aliases: Record<string, string[]>;
+  /** family as the studio names it → this build's registered faces for it, in the order they stand in for it. */
+  map: Record<string, string[]>;
 };
 
 const AXIS = { wght: 0x77676874, ital: 0x6974616c, slnt: 0x736c6e74 } as const;
@@ -91,15 +99,14 @@ export function parseCssFont(value: string): ParsedFont | null {
   return { lead, size: tokens[at]!, families: splitFamilies(tokens.slice(at + 1).join(' ')), weight, italic };
 }
 
-/** The family list with each family's aliases right after it (idempotent: aliases already in the list move to their family). */
+/** The family list with each family replaced by this build's faces for
+ *  it. Idempotent: the faces themselves have no entry, so they stay. */
 export function expandFamilies(families: string[], plan: FontPlan): string[] {
-  const isAlias = new Set(Object.values(plan.aliases).flat());
   const out: string[] = [];
   for (const f of families) {
-    const name = familyName(f);
-    if (isAlias.has(name)) continue;
-    out.push(f);
-    for (const a of plan.aliases[name] ?? []) out.push(`"${a}"`);
+    const faces = Object.prototype.hasOwnProperty.call(plan.map, familyName(f)) ? plan.map[familyName(f)]! : null;
+    if (faces && faces.length) for (const a of faces) out.push(`"${a}"`);
+    else out.push(f);
   }
   return out;
 }
@@ -150,7 +157,7 @@ export function shimContext<T extends object>(ctx: T, plan: FontPlan): T {
     if (!p) { font.set!.call(c, value); return; }
     const families = expand ? expandFamilies(p.families, plan) : p.families;
     font.set!.call(c, [...p.lead, p.size, families.join(', ')].join(' '));
-    c.fontVariationSettings = variationFor(p, cache);
+    c.fontVariationSettings = variationFor({ ...p, families }, cache);
   };
   Object.defineProperty(c, 'font', {
     configurable: true,
@@ -171,33 +178,29 @@ export function shimContext<T extends object>(ctx: T, plan: FontPlan): T {
   return ctx;
 }
 
-class NoImage {
-  constructor() {
-    throw new Error('Image is not available on the server: the wrap build decodes pictures before it paints');
-  }
-}
-
 /** A fresh context with the shims and nothing else. `plan` is read when
- *  type is set, so the worker can fill it after registering the faces. */
-export function makeWrapSandbox(plan: FontPlan = { aliases: {} }): vm.Context {
-  const g: Record<string, unknown> = {
-    document: {
-      createElement: (tag: unknown) => {
-        if (String(tag).toLowerCase() !== 'canvas') throw new Error(`document.createElement: only a canvas can be made on the server (asked for ${String(tag)})`);
-        const canvas = createCanvas(1, 1);
-        const getContext = canvas.getContext.bind(canvas);
-        Object.defineProperty(canvas, 'getContext', {
-          configurable: true,
-          writable: true,
-          value: (type: '2d', attrs?: Parameters<typeof canvas.getContext>[1]) => shimContext(getContext(type, attrs), plan),
-        });
-        return canvas;
-      },
-    },
-    Image: NoImage,
-    Path2D,
+ *  type is set, so the worker can fill it after registering the faces.
+ *  document and Image are made inside the context (their prototypes are
+ *  the context's own); the canvas maker they close over is not reachable
+ *  from the studio code. */
+export function makeWrapSandbox(plan: FontPlan = { map: {} }): vm.Context {
+  const makeCanvas = (tag: string) => {
+    if (tag.toLowerCase() !== 'canvas') throw new Error(`document.createElement: only a canvas can be made on the server (asked for ${tag})`);
+    const canvas = createCanvas(1, 1);
+    const getContext = canvas.getContext.bind(canvas);
+    Object.defineProperty(canvas, 'getContext', {
+      configurable: true,
+      writable: true,
+      value: (type: '2d', attrs?: Parameters<typeof canvas.getContext>[1]) => shimContext(getContext(type, attrs), plan),
+    });
+    return canvas;
   };
-  return vm.createContext(g, { name: 'beuk-wrap', codeGeneration: { strings: false, wasm: false } });
+  const ctx = vm.createContext({ Path2D, __beukMakeCanvas: makeCanvas }, { name: 'beuk-wrap', codeGeneration: { strings: false, wasm: false } });
+  vm.runInContext(`(function (make) {
+    globalThis.document = Object.freeze({ createElement: function (tag) { return make(String(tag)); } });
+    globalThis.Image = class Image { constructor() { throw new Error("Image is not available on the server: the wrap build decodes pictures before it paints"); } };
+  })(globalThis.__beukMakeCanvas); delete globalThis.__beukMakeCanvas;`, ctx);
+  return ctx;
 }
 
 /** Evaluate the vendored Lucide bundle in the context and leave a

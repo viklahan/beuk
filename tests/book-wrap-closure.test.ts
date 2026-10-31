@@ -4,10 +4,11 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { GlobalFonts, createCanvas } from '@napi-rs/canvas';
+import { GlobalFonts, createCanvas, loadImage } from '@napi-rs/canvas';
 import { PDFDocument } from 'pdf-lib';
 import { reachableFrom } from '../src/book/studio/closure.js';
-import { WRAP_CLOSURE, WRAP_ROOTS, WRAP_SUPPLIED, extractWrapSource, loadWrapClosure, manifestFonts, wrapState } from '../src/book/wrap/closure.js';
+import { imageSize } from '../src/book/wrap/limits.js';
+import { WRAP_CLOSURE, WRAP_ROOTS, WRAP_SUPPLIED, WrapBuildError, WrapInputError, extractWrapSource, loadWrapClosure, manifestFonts, wrapState } from '../src/book/wrap/closure.js';
 import { type FontPlan, expandFamilies, makeWrapSandbox, parseCssFont, shimContext } from '../src/book/wrap/sandbox.js';
 import { readBook } from '../src/book/read.js';
 import { fixturePath } from './book-fixtures.js';
@@ -82,8 +83,8 @@ test('wrap closure: Lantern Coast print renders a 300-DPI JPEG of the wrap size,
     assert.ok(jpg.fonts.includes(fam), `the recipe's face ${fam} registered from the studio's own files (${jpg.fonts.join(', ')})`);
   }
   assert.ok(jpg.aliases.includes('Libre Baskerville beuk-latin-ext'), `the latin-ext subset rides as an alias (${jpg.aliases.join(', ')})`);
-  assert.equal(GlobalFonts.has('Libre Baskerville'), false, 'the build takes its faces with it');
-  assert.equal(GlobalFonts.has('Libre Baskerville beuk-latin-ext'), false, 'and its aliases');
+  assert.match(jpg.buildId, /^[0-9a-f]{16}$/);
+  assert.ok(GlobalFonts.families.every((f) => !f.family.includes(jpg.buildId)), 'the build takes its faces, subsets included, with it');
 
   const pdf = await sb.render(state, 'pdf', { lang: 'en' });
   assert.equal(pdf.bytes.subarray(0, 5).toString('latin1'), '%PDF-');
@@ -149,16 +150,16 @@ test('font shim: parses the shorthand the studio writes', () => {
   assert.equal(parseCssFont("40px 'Lora'")!.weight, 400);
   assert.equal(parseCssFont('500 3.0000000000000004px "A B", serif')!.families[0], '"A B"');
   assert.equal(parseCssFont('not a font'), null);
-  const plan = { aliases: { 'A B': ['A B beuk-latin-ext'] } };
-  const once = expandFamilies(["'A B'", 'serif'], plan);
-  assert.deepEqual(once, ["'A B'", '"A B beuk-latin-ext"', 'serif']);
+  const plan = { map: { 'A B': ['A B beuk-1', 'A B beuk-latin-ext beuk-1'] } };
+  const once = expandFamilies(["'A B'", 'Georgia', 'serif'], plan);
+  assert.deepEqual(once, ['"A B beuk-1"', '"A B beuk-latin-ext beuk-1"', 'Georgia', 'serif']);
   assert.deepEqual(expandFamilies(once, plan), once, 'idempotent');
 });
 
 test('font shim: a variable face sets bold at wght 700, as Chrome does (Skia alone sets the 400 instance)', () => {
   const T = 'The Lantern Coast';
   withFaces([['librebaskerville/librebaskerville-latin-normal-400_700.woff2', 'Probe LB']], () => {
-    const plain = ctx2d(), shim = ctx2d({ aliases: {} });
+    const plain = ctx2d(), shim = ctx2d({ map: {} });
     const p400 = widthOf(plain, "400 40px 'Probe LB'", T), p700 = widthOf(plain, "700 40px 'Probe LB'", T);
     const s400 = widthOf(shim, "400 40px 'Probe LB'", T), s700 = widthOf(shim, "700 40px 'Probe LB'", T);
     assert.ok(Math.abs(s400 - p400) < 1e-6, `400 untouched (${s400} vs ${p400})`);
@@ -179,7 +180,7 @@ test('font shim: the variable face at wght 700 matches the static 700 instance o
     ['notoserifdevanagari/notoserifdevanagari-devanagari-normal-400_500_600_700.woff2', 'Probe NSD var'],
     ['notoserifdevanagari/Noto_Serif_Devanagari-normal-700.ttf', 'Probe NSD 700'],
   ], () => {
-    const shim = ctx2d({ aliases: {} });
+    const shim = ctx2d({ map: {} });
     const v700 = widthOf(shim, "700 40px 'Probe NSD var'", T);
     const s700 = widthOf(ctx2d(), "700 40px 'Probe NSD 700'", T);
     assert.ok(Math.abs(v700 / s700 - 1) < 0.01, `variable at wght 700 ${v700} vs static 700 ${s700}`);
@@ -188,7 +189,7 @@ test('font shim: the variable face at wght 700 matches the static 700 instance o
 
 test('font shim: a static face gets no variation', () => {
   withFaces([['notoserifdevanagari/Noto_Serif_Devanagari-normal-400.ttf', 'Probe NSD 400']], () => {
-    const shim = ctx2d({ aliases: {} }) as unknown as { font: string; fontVariationSettings: string };
+    const shim = ctx2d({ map: {} }) as unknown as { font: string; fontVariationSettings: string };
     shim.font = "700 40px 'Probe NSD 400', serif";
     assert.equal(shim.fontVariationSettings, 'normal');
   });
@@ -199,7 +200,7 @@ test('font shim: latin-ext and vietnamese letters come from the family\'s own su
     ['librebaskerville/librebaskerville-latin-normal-400_700.woff2', 'Probe LB2'],
     ['librebaskerville/librebaskerville-latin-ext-normal-400_700.woff2', 'Probe LB2 beuk-latin-ext'],
   ], () => {
-    const plan = { aliases: { 'Probe LB2': ['Probe LB2 beuk-latin-ext'] } };
+    const plan = { map: { 'Probe LB2': ['Probe LB2', 'Probe LB2 beuk-latin-ext'] } };
     const EXT = 'ŁŻĐŚ';
     const viaAlias = widthOf(ctx2d(plan), "400 40px 'Probe LB2', serif", EXT);
     const subsetAlone = widthOf(ctx2d(), "400 40px 'Probe LB2 beuk-latin-ext'", EXT);
@@ -223,6 +224,98 @@ test('wrap fonts: subsets other than plain Latin register under "<family> beuk-<
     ['librebaskerville-latin-ext-italic-400.woff2', 'Libre Baskerville beuk-latin-ext'],
   ]);
   assert.ok(manifestFonts(CLIENT).filter((f) => f.family === 'Amiri' && /\.ttf$/.test(f.file)).every((f) => f.alias === 'Amiri'));
+});
+
+/* ---- fix round 2: the fences ---- */
+
+type Book = { coverRecipe: { bgImageId: string | null; elements: Record<string, { font: string }>; wrap: Record<string, unknown> }; images: { id: string; mediaType: string; data: string }[]; fonts?: unknown[] };
+const lantern = () => wrapState(bookOf('real/lantern-coast-print.json')) as unknown as Book;
+const refusal = (reason: string, missing: string[] = []) => (e: unknown) => {
+  assert.ok(e instanceof WrapInputError, String(e));
+  assert.equal(e.reason, reason);
+  assert.deepEqual(e.missing, missing);
+  return true;
+};
+/** A PNG that is only a signature and a header declaring w × h. */
+function pngHeader(w: number, h: number): Buffer {
+  const ihdr = Buffer.alloc(25);
+  ihdr.writeUInt32BE(13, 0); ihdr.write('IHDR', 4, 'latin1'); ihdr.writeUInt32BE(w, 8); ihdr.writeUInt32BE(h, 12);
+  ihdr[16] = 8; ihdr[17] = 6;
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ihdr, Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])]);
+}
+
+test('wrap limits: picture sizes come from the header (PNG, JPEG, GIF, WebP); anything else is unknown', async () => {
+  assert.deepEqual(imageSize(pngHeader(30000, 30000)), { w: 30000, h: 30000 });
+  const jpeg = Buffer.from(lantern().images.find((i) => i.id === 'sample-img-cover-art')!.data, 'base64');
+  const decoded = await loadImage(jpeg);
+  assert.deepEqual(imageSize(jpeg), { w: decoded.width, h: decoded.height }, "the fixture JPEG's header agrees with the decoder");
+  assert.deepEqual(imageSize(Buffer.from([0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 16, 0, 32, 0])), { w: 16, h: 32 });
+  const vp8x = Buffer.alloc(30); vp8x.write('RIFF', 0, 'latin1'); vp8x.write('WEBPVP8X', 8, 'latin1'); vp8x.writeUIntLE(639, 24, 3); vp8x.writeUIntLE(479, 27, 3);
+  assert.deepEqual(imageSize(vp8x), { w: 640, h: 480 });
+  assert.equal(imageSize(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>')), null);
+  assert.equal(imageSize(Buffer.from([0xff, 0xd8, 0xff])), null);
+});
+
+test('wrap fence: a wrap over 40 MP at 300 DPI is refused before the canvas exists', async () => {
+  const b = lantern();
+  b.coverRecipe.wrap = { ...b.coverRecipe.wrap, paper: 'custom', customFactor: 0.02, pages: 5000 };
+  await assert.rejects(loadWrapClosure(html, CLIENT).render(b as never, 'jpg', { lang: 'en' }), refusal('too-large'));
+});
+
+test('wrap fence: a picture whose header declares 30000x30000 is refused by id before it is decoded', async () => {
+  const b = lantern();
+  const art = b.images.find((i) => i.id === 'sample-img-cover-art')!;
+  art.mediaType = 'image/png';
+  art.data = pngHeader(30000, 30000).toString('base64');
+  await assert.rejects(loadWrapClosure(html, CLIENT).render(b as never, 'jpg', { lang: 'en' }), refusal('picture-too-large', ['sample-img-cover-art']));
+});
+
+test('wrap fence: a picture id that is not a plain id (__proto__) is refused', async () => {
+  const b = lantern();
+  const art = b.images.find((i) => i.id === 'sample-img-cover-art')!;
+  b.images.push({ ...art, id: '__proto__' });
+  b.coverRecipe.bgImageId = '__proto__';
+  await assert.rejects(loadWrapClosure(html, CLIENT).render(b as never, 'jpg', { lang: 'en' }), refusal('bad-picture-id', ['__proto__']));
+});
+
+test('wrap fence: renders take turns even when two are started together', async () => {
+  const sb = loadWrapClosure(html, CLIENT);
+  const [a, b] = await Promise.all([sb.render(lantern() as never, 'jpg', { lang: 'en' }), sb.render(lantern() as never, 'jpg', { lang: 'en' })]);
+  assert.ok(a.timing.finished <= b.timing.started, `no overlap: first ${a.timing.started}-${a.timing.finished}, second ${b.timing.started}-${b.timing.finished}`);
+  assert.notEqual(a.buildId, b.buildId);
+});
+
+/** Lantern Coast with its title and author set in Lora. */
+const inLora = () => {
+  const b = lantern();
+  b.coverRecipe.elements.title!.font = 'Lora';
+  b.coverRecipe.elements.author!.font = 'Lora';
+  return b;
+};
+
+test('wrap fonts: a face left behind (a stopped build, a bare family name) never reaches the next build', async () => {
+  const sb = loadWrapClosure(html, CLIENT);
+  const clean = await sb.render(inLora() as never, 'jpg', { lang: 'en' });
+  await assert.rejects(sb.render(inLora() as never, 'jpg', { lang: 'en', timeoutMs: 1 }), (e: unknown) => e instanceof WrapBuildError && e.reason === 'timeout');
+  /* what a build without the nonce would have left: another face under the bare family name */
+  const leak = GlobalFonts.registerFromPath(path.join(FONTS, 'abrilfatface', 'Abril_Fatface-normal-400.ttf'), 'Lora');
+  assert.ok(leak);
+  try {
+    const after = await sb.render(inLora() as never, 'jpg', { lang: 'en' });
+    assert.deepEqual(after.items, clean.items, 'the same layout as before the leak');
+  } finally {
+    GlobalFonts.remove(leak!);
+  }
+});
+
+test('wrap fonts: the writer\'s uploaded "Lora" wins over the studio\'s Lora', async () => {
+  const sb = loadWrapClosure(html, CLIENT);
+  const builtIn = await sb.render(inLora() as never, 'jpg', { lang: 'en' });
+  const b = inLora();
+  b.fonts = [{ id: 'up-lora', family: 'Lora', ext: 'ttf', name: 'MyLora.ttf', data: readFileSync(path.join(FONTS, 'abrilfatface', 'Abril_Fatface-normal-400.ttf')).toString('base64') }];
+  const up = await sb.render(b as never, 'jpg', { lang: 'en' });
+  assert.deepEqual(up.uploaded, ['Lora']);
+  assert.notDeepEqual(up.items.backBoxes, builtIn.items.backBoxes, 'the back-panel type set in the uploaded bytes measures differently');
 });
 
 test('wrap closure: loading is cached per studio file', () => {

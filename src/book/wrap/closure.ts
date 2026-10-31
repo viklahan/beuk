@@ -3,8 +3,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import type { BookV1 } from '../schema.js';
+import { MAX_WRAP_PIXELS } from './limits.js';
 import { type BuildFailure, type ClosureSource, extractStudioSource, runStudioWorker, siblingWorkerUrl } from '../studio/closure.js';
-import type { FontFile, WrapWorkerJob, WrapWorkerOut } from './worker.js';
+import type { FontFile, WrapRefusal, WrapWorkerJob, WrapWorkerOut } from './worker.js';
 
 /* BEUK:wrap-server — the cover wrap (paperback wrap, case laminate, dust
    jacket) is painted on the server by the studio's OWN painter:
@@ -81,9 +82,12 @@ const WRAP_ARRIVE = `(s) => {
  *    dust jacket, uploaded spine icons.
  *  - fontStacks: the CSS stacks the painter sets type in (every ctx.font
  *    in the wrap is fontStack of a recipe element's, the spine's or the
- *    back's font). */
+ *    back's font).
+ *  coverImgCache loses its prototype first, so no picture id can reach
+ *  Object.prototype through it (ids are also held to PICTURE_ID_RE). */
 const WRAP_API = `
-;globalThis.__beukWrap = {
+;Object.setPrototypeOf(coverImgCache, null); /* picture ids are keys: never Object.prototype's */
+globalThis.__beukWrap = {
   render: (recipe) => {
     const draw = drawWrapTo;
     let items = null;
@@ -182,7 +186,13 @@ export type WrapKind = 'pdf' | 'jpg';
 export type WrapOptions = { lang: string; timeoutMs?: number; heapMb?: number };
 export type WrapItems = Record<string, unknown> & { barcode?: { x: number; y: number; w: number; h: number } | null; spineDir?: string };
 export type WrapDims = Record<string, unknown> & { totalW: number; totalH: number };
-export type WrapResult = { bytes: Buffer; items: WrapItems; dims: WrapDims; fonts: string[]; aliases: string[] };
+export type WrapResult = {
+  bytes: Buffer; items: WrapItems; dims: WrapDims;
+  /** families set in the studio's faces; families the book's uploads stood in for; subset faces; this build's font nonce */
+  fonts: string[]; uploaded: string[]; aliases: string[]; buildId: string;
+  /** when the render left the line and when it finished (performance.now(), ms) */
+  timing: { started: number; finished: number };
+};
 export type WrapSandbox = {
   source: ClosureSource;
   /** The wrap as the studio downloads it: the 300-DPI JPEG, or that JPEG on a PDF page of exactly the wrap's size. */
@@ -197,10 +207,15 @@ export class WrapBuildError extends Error {
 }
 
 /** A book the wrap cannot be painted from as it stands: no cover recipe,
- *  or pictures the recipe paints that the book does not hold. */
+ *  a wrap too big to paint, pictures the recipe paints that the book does
+ *  not hold, that are too big to decode or whose ids are not plain ids.
+ *  `missing` names the pictures (for every picture reason). */
 export class WrapInputError extends Error {
-  constructor(readonly reason: 'no-cover' | 'missing-pictures', readonly missing: string[] = []) {
+  constructor(readonly reason: WrapRefusal, readonly missing: string[] = []) {
     super(reason === 'no-cover' ? 'this book has no made cover to build a wrap from'
+      : reason === 'too-large' ? `this cover wrap is larger than the server paints (over ${MAX_WRAP_PIXELS.toLocaleString('en')} pixels at 300 DPI)`
+      : reason === 'picture-too-large' ? `pictures too large for the cover wrap: ${missing.join(', ')}`
+      : reason === 'bad-picture-id' ? `the cover wrap names pictures by ids it cannot use: ${missing.join(', ')}`
       : `the cover wrap uses pictures this book no longer has: ${missing.join(', ')}`);
   }
 }
@@ -222,8 +237,19 @@ export async function wrapPdf(jpeg: Uint8Array, dims: { totalW: number; totalH: 
 
 const cache = new Map<string, WrapSandbox>();
 
+/* One render at a time in this process, whoever calls: renders share the
+   process-wide font registry and Skia's native memory, so the one-at-a-time
+   rule lives here and does not depend on callers going through a queue. */
+let line: Promise<unknown> = Promise.resolve();
+function inLine<T>(fn: () => Promise<T>): Promise<T> {
+  const run = line.then(fn);
+  line = run.catch(() => undefined);
+  return run;
+}
+
 /** The studio's wrap painter, lifted from `studioHtml` once (cached by
- *  the file's sha256) and run per render in a fresh worker and vm context. */
+ *  the file's sha256) and run per render in a fresh worker and vm context,
+ *  one render at a time. */
 export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSandbox {
   const key = createHash('sha256').update(studioHtml).update('\0' + clientDir).digest('hex');
   const hit = cache.get(key);
@@ -233,19 +259,27 @@ export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSand
   const fonts = manifestFonts(clientDir);
   const sb: WrapSandbox = {
     source,
-    render: async (state, kind, opts) => {
-      const job: WrapWorkerJob = { code: source.code, lucide, fonts, stateJson: JSON.stringify(state), lang: opts.lang };
-      const out = (await runStudioWorker(siblingWorkerUrl(import.meta.url), job, {
-        timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-        heapMb: opts.heapMb ?? DEFAULT_WRAP_WORKER_HEAP_MB,
-        noun: 'cover wrap',
-        error: (message, reason) => new WrapBuildError(message, reason),
-      })) as WrapWorkerOut;
-      if ('refused' in out) throw new WrapInputError(out.refused, out.refused === 'missing-pictures' ? out.missing : []);
-      const jpeg = Buffer.from(out.jpeg.buffer, out.jpeg.byteOffset, out.jpeg.byteLength);
-      const dims = out.dims as WrapDims;
-      const bytes = kind === 'pdf' ? await wrapPdf(jpeg, dims) : jpeg;
-      return { bytes, items: out.items as WrapItems, dims, fonts: out.fonts, aliases: out.aliases };
+    render: (state, kind, opts) => {
+      const stateJson = JSON.stringify(state);
+      return inLine(async () => {
+        const started = performance.now();
+        const job: WrapWorkerJob = { code: source.code, lucide, fonts, stateJson, lang: opts.lang };
+        const out = (await runStudioWorker(siblingWorkerUrl(import.meta.url), job, {
+          timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+          heapMb: opts.heapMb ?? DEFAULT_WRAP_WORKER_HEAP_MB,
+          noun: 'cover wrap',
+          error: (message, reason) => new WrapBuildError(message, reason),
+        })) as WrapWorkerOut;
+        if ('refused' in out) throw new WrapInputError(out.refused, out.ids);
+        const jpeg = Buffer.from(out.jpeg.buffer, out.jpeg.byteOffset, out.jpeg.byteLength);
+        const dims = out.dims as WrapDims;
+        const bytes = kind === 'pdf' ? await wrapPdf(jpeg, dims) : jpeg;
+        return {
+          bytes, items: out.items as WrapItems, dims,
+          fonts: out.fonts, uploaded: out.uploaded, aliases: out.aliases, buildId: out.buildId,
+          timing: { started, finished: performance.now() },
+        };
+      });
     },
   };
   cache.set(key, sb);

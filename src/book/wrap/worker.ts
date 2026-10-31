@@ -1,6 +1,8 @@
 import { GlobalFonts, loadImage, type Canvas } from '@napi-rs/canvas';
+import { randomBytes } from 'node:crypto';
 import vm from 'node:vm';
 import { parentPort, workerData } from 'node:worker_threads';
+import { MAX_WRAP_PIXELS, PICTURE_ID_RE, imageSize, pictureFits } from './limits.js';
 import { type FontPlan, installLucide, makeWrapSandbox } from './sandbox.js';
 
 /* BEUK:wrap-server — one cover-wrap render, in its own worker thread and
@@ -11,9 +13,13 @@ import { type FontPlan, installLucide, makeWrapSandbox } from './sandbox.js';
    (GlobalFonts), shared by every worker. So a build registers only the
    faces its own recipe names (the families in the studio's font stacks
    for the recipe's fonts, from client/assets/fonts/MANIFEST.tsv, plus
-   the book's uploaded faces of those names) and removes every one of
-   them when it ends: one writer's uploaded face never reaches another
-   writer's build, and the collection does not grow build by build. */
+   the book's uploaded faces of those names), each under a name carrying
+   this build's nonce, and removes them when it ends. A worker stopped at
+   the time or heap cap never gets to remove them; the nonce means no
+   other build can ever match what it left (src/book/wrap/sandbox.ts).
+
+   Sizes: the wrap's pixel count and every picture's header are checked
+   before anything big is allocated (src/book/wrap/limits.ts). */
 
 /** A face file, its family, and the family name it registers under (the family, or a subset alias). */
 export type FontFile = { family: string; file: string; alias: string };
@@ -27,10 +33,15 @@ export type WrapWorkerJob = {
   lang: string;
 };
 
+export type WrapRefusal = 'no-cover' | 'too-large' | 'missing-pictures' | 'picture-too-large' | 'bad-picture-id';
+
 export type WrapWorkerOut =
-  | { refused: 'no-cover' }
-  | { refused: 'missing-pictures'; missing: string[] }
-  | { jpeg: Uint8Array; items: Record<string, unknown>; dims: Record<string, unknown>; fonts: string[]; aliases: string[] };
+  | { refused: WrapRefusal; ids: string[] }
+  | {
+    jpeg: Uint8Array; items: Record<string, unknown>; dims: Record<string, unknown>;
+    /** families with a studio face this build, the families the book's own uploads stood in for, the subset names, the build's nonce */
+    fonts: string[]; uploaded: string[]; aliases: string[]; buildId: string;
+  };
 
 type Recipe = Record<string, unknown>;
 type Api = {
@@ -58,7 +69,7 @@ export function stackFamilies(stacks: string[]): Set<string> {
 const JPEG_QUALITY = 92;
 
 async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
-  const plan: FontPlan = { aliases: {} };
+  const plan: FontPlan = { map: {} };
   const ctx = makeWrapSandbox(plan);
   installLucide(ctx, job.lucide);
   new vm.Script(job.code, { filename: 'client/index.html (wrap closure)' }).runInContext(ctx);
@@ -71,52 +82,75 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
   api.arrive(ctx.state);
   const state = ctx.state as { coverRecipe: Recipe | null; images: { id: string; mediaType?: string; data?: string }[] };
   const recipe = state.coverRecipe;
-  if (!recipe) return { refused: 'no-cover' };
+  if (!recipe) return { refused: 'no-cover', ids: [] };
+
+  /* The canvas the studio is about to ask for, before it asks. */
+  const d = api.wrapDims(recipe) as { totalW: number; totalH: number };
+  const px = Math.round(d.totalW * 300) * Math.round(d.totalH * 300);
+  if (!(px > 0 && px <= MAX_WRAP_PIXELS)) return { refused: 'too-large', ids: [] };
 
   /* The pictures the wrap paints, decoded the way the studio's
      ensureCoverBgImage / hcEnsureFlapPhoto / ensureWrapIcons do, into
      the studio's own cache. One the book no longer has, or that does not
-     decode, is refused by name: never a blank panel. */
-  const missing: string[] = [];
-  for (const id of api.pictures(recipe)) {
+     decode, is refused by name: never a blank panel. Each is sized from
+     its header first; one too big, or whose header cannot be read, is
+     refused before it is decoded. */
+  const ids = api.pictures(recipe);
+  const badIds = ids.filter((id) => typeof id !== 'string' || !PICTURE_ID_RE.test(id));
+  if (badIds.length) return { refused: 'bad-picture-id', ids: badIds.map(String) };
+  const missing: string[] = [], tooBig: string[] = [];
+  const bytes = new Map<string, Buffer>();
+  for (const id of ids) {
     const im = state.images.find((x) => x && x.id === id);
+    if (!im || typeof im.data !== 'string' || !im.data) { missing.push(id); continue; }
+    const buf = Buffer.from(im.data, 'base64');
+    if (!pictureFits(imageSize(buf))) tooBig.push(id);
+    else bytes.set(id, buf);
+  }
+  if (tooBig.length) return { refused: 'picture-too-large', ids: tooBig };
+  for (const [id, buf] of bytes) {
     try {
-      if (!im || typeof im.data !== 'string' || !im.data) throw new Error('absent');
-      api.cache[id] = await loadImage(Buffer.from(im.data, 'base64'));
+      api.cache[id] = await loadImage(buf);
     } catch {
       missing.push(id);
     }
   }
-  if (missing.length) return { refused: 'missing-pictures', missing };
+  if (missing.length) return { refused: 'missing-pictures', ids: missing };
 
   const families = stackFamilies(api.fontStacks(recipe));
+  const buildId = randomBytes(8).toString('hex');
   const keys: NonNullable<ReturnType<typeof GlobalFonts.register>>[] = [];
-  const registered: string[] = [];
+  const fonts: string[] = [], uploaded: string[] = [], aliases: string[] = [];
+  const add = (family: string, face: string) => {
+    const list = (plan.map[family] ??= []);
+    if (!list.includes(face)) list.push(face);
+  };
   try {
-    for (const f of job.fonts) {
-      if (!families.has(f.family)) continue;
-      const k = GlobalFonts.registerFromPath(f.file, f.alias);
-      if (!k) continue;
-      keys.push(k);
-      if (f.alias === f.family) {
-        if (!registered.includes(f.family)) registered.push(f.family);
-      } else {
-        const list = (plan.aliases[f.family] ??= []);
-        if (!list.includes(f.alias)) list.push(f.alias);
-      }
-    }
+    /* the writer's own face of a name first: they chose it */
     for (const fam of families) {
       const up = api.uploadedFontByFamily(fam);
       if (!up) continue;
-      const k = GlobalFonts.register(Buffer.from(up.data, 'base64'), up.family);
+      const face = `${up.family} beuk-up-${buildId}`;
+      const k = GlobalFonts.register(Buffer.from(up.data, 'base64'), face);
       if (!k) continue;
       keys.push(k);
-      if (!registered.includes(up.family)) registered.push(up.family);
+      add(up.family, face);
+      if (!uploaded.includes(up.family)) uploaded.push(up.family);
+    }
+    for (const f of job.fonts) {
+      if (!families.has(f.family)) continue;
+      const face = `${f.alias} beuk-${buildId}`;
+      const k = GlobalFonts.registerFromPath(f.file, face);
+      if (!k) continue;
+      keys.push(k);
+      add(f.family, face);
+      if (f.alias === f.family) { if (!fonts.includes(f.family)) fonts.push(f.family); }
+      else if (!aliases.includes(f.alias)) aliases.push(f.alias);
     }
     const { canvas, items } = api.render(recipe);
     const jpeg = new Uint8Array(await canvas.encode('jpeg', JPEG_QUALITY));
     /* items and dims are plain numbers, strings and arrays: they cross back by structured clone as they are */
-    return { jpeg, items, dims: api.wrapDims(recipe), fonts: registered, aliases: Object.values(plan.aliases).flat() };
+    return { jpeg, items, dims: api.wrapDims(recipe), fonts, uploaded, aliases, buildId };
   } finally {
     if (keys.length) GlobalFonts.removeBatch(keys);
   }
