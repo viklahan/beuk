@@ -2676,6 +2676,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The store check reads the wrap the client cover maker drew.',
   },
   {
+    id: 'cover.wrap.spine-ui',
+    title: 'Spine and Back cover controls write the recipe, redraw the wrap and reopen with the saved values',
+    kind: 'client-only',
+    reason: 'The controls live in the client cover maker.',
+  },
+  {
     id: 'cover.wrap3d.faces-from-wrap',
     title: '3D wrap viewer: front, spine and back faces are sliced from the current wrap render',
     kind: 'client-only',

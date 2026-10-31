@@ -2322,6 +2322,26 @@
       .cm-wrap-dims { font-size: 13px; font-weight: 600; color: var(--ink); margin: 0; }
       .cm-wrap-note { font-size: 12px; color: var(--muted); line-height: 1.55; margin: 10px 0 0; max-width: 78ch; }
       .cm-wrap-note.warn { color: var(--accent); font-weight: 600; }
+      /* ==== BEUK:spineback ==== */
+      .cm-sb { margin-top: 12px; border: 1px solid var(--line-2); border-radius: 8px; }
+      .cm-sb > summary { display: flex; align-items: center; gap: 9px; cursor: pointer; padding: 10px 14px; font-size: 14px; font-weight: 600; color: var(--ink); list-style: none; }
+      .cm-sb > summary::-webkit-details-marker { display: none; }
+      .cm-sb > summary svg { width: 17px; height: 17px; color: var(--accent); }
+      .cm-sb > summary::after { content: "\25B8"; margin-left: auto; color: var(--muted); transition: transform .15s; }
+      .cm-sb[open] > summary::after { transform: rotate(90deg); }
+      .cm-sb-body { padding: 4px 14px 14px; }
+      .cm-sb-body .form-grid { margin-top: 8px; }
+      .cm-sb-colors { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .cm-sb-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); }
+      .cm-sb-icon-cur { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 8px; }
+      .cm-sb-icon-prev { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border: 1px solid var(--line-2); border-radius: 6px; }
+      .cm-sb-icon-prev svg, .cm-sb-ic svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+      .cm-sb-icon-prev img { max-width: 24px; max-height: 24px; }
+      .cm-sb-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 6px; max-height: 172px; overflow: auto; margin-top: 8px; }
+      .cm-sb-ic { height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line-2); background: transparent; color: var(--ink); border-radius: 6px; cursor: pointer; }
+      .cm-sb-ic:hover { border-color: var(--accent); }
+      .cm-sb-ic[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+      /* ==== /BEUK:spineback ==== */
       .cm-wrap-actions { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 16px; }
       /* ==== BEUK:hardcover ==== */
       .cm-hc-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
@@ -3909,6 +3929,16 @@
             </div>
             <!-- ==== /BEUK:hardcover ==== -->
           </div>
+          <!-- ==== BEUK:spineback ==== -->
+          <details class="cm-sb" id="cmSpineSec">
+            <summary><i data-lucide="panel-left"></i><span data-i18n="covermk.spine.title">Spine</span></summary>
+            <div class="cm-sb-body" id="cmSpineBody"></div>
+          </details>
+          <details class="cm-sb" id="cmBackSec">
+            <summary><i data-lucide="book-open"></i><span data-i18n="covermk.back.title">Back cover</span></summary>
+            <div class="cm-sb-body" id="cmBackBody"></div>
+          </details>
+          <!-- ==== /BEUK:spineback ==== -->
           <p class="cm-wrap-note" data-i18n="covermk.wrap.pdfNote">A standard PDF at the exact trim-plus-bleed size — the file KDP Print, IngramSpark, Barnes &amp; Noble Press, Lulu and BookVault ask for. IngramSpark prefers PDF/X: once your shelf is live, Beuk's server PDF/X conversion (Export archive jobs) can be applied to this file — this download itself is not PDF/X.</p>
           <!-- ==== BEUK:hardcover ==== -->
           <p class="cm-wrap-note cm-hc-only" style="display:none;" data-i18n="covermk.hc.specNote">Hardcover sizes follow the formula IngramSpark publishes in its File Creation Guide (rev. 8.24.26): case laminate = 0.625 in wrap + board + 0.5 in hinge + spine + 0.5 in hinge + board + 0.625 in wrap; dust jacket = 0.125 in bleed + 3.25 in flap + 0.25 in fold + panel + spine + panel + 0.25 in fold + 3.25 in flap + 0.125 in bleed. IngramSpark states the formula for custom trims; its cover template generator, emailed for your ISBN and page count, is the final word — compare the two before you upload.</p>
@@ -9052,7 +9082,65 @@
       const SPINEBACK_STRINGS = {
         "store.c.spinetext.failPagesIcons": "The wrap prints spine text and icons, but {store} allows spine text only from {min} pages; this book has {pages}.",
         "store.c.spinetext.failClearIcon": "A spine icon leaves only {clear} in clear on each side; {store} asks for {need} in.",
-        "store.c.spinetext.okIcons": "Spine text and icons leave about {clear} in clear on each side ({need} in needed), and {pages} pages is enough for spine text ({store} allows it from {min})."
+        "store.c.spinetext.okIcons": "Spine text and icons leave about {clear} in clear on each side ({need} in needed), and {pages} pages is enough for spine text ({store} allows it from {min}).",
+        "covermk.spine.title": "Spine",
+        "covermk.spine.sub": "Give the spine its own background, type and icons. Anything you leave alone follows the front.",
+        "covermk.spine.narrowOff": "This spine is under 0.5 in, so text and icons stay off it; the background still paints.",
+        "covermk.spine.noteIconsNarrow": "The spine is too narrow for an icon, so none is drawn.",
+        "covermk.spine.noteTopDropped": "The top icon was left off: there is no room for it above the text.",
+        "covermk.spine.noteBottomDropped": "The bottom icon was left off: it and the imprint do not both fit under the text.",
+        "covermk.spine.bg": "Background",
+        "covermk.spine.bgFront": "Follow the front",
+        "covermk.spine.bgSolid": "Solid colour",
+        "covermk.spine.bgGradient": "Gradient",
+        "covermk.spine.bgPattern": "Pattern",
+        "covermk.spine.color1": "Colour",
+        "covermk.spine.color2": "Second colour",
+        "covermk.spine.gradDir": "Gradient direction",
+        "covermk.spine.dirDown": "Down",
+        "covermk.spine.dirAcross": "Across",
+        "covermk.spine.dirDiagDown": "Diagonal \u2198",
+        "covermk.spine.dirDiagUp": "Diagonal \u2197",
+        "covermk.spine.pattern": "Pattern",
+        "covermk.spine.patLinen": "Linen",
+        "covermk.spine.patSpeckle": "Speckle",
+        "covermk.spine.patVignette": "Vignette",
+        "covermk.spine.patDots": "Dots",
+        "covermk.spine.patStripes": "Stripes",
+        "covermk.spine.patGrid": "Grid",
+        "covermk.spine.patDiamonds": "Diamonds",
+        "covermk.spine.show": "Spine words",
+        "covermk.spine.showBoth": "Title and author",
+        "covermk.spine.showTitle": "Title only",
+        "covermk.spine.showAuthor": "Author only",
+        "covermk.spine.showCustom": "Your own text",
+        "covermk.spine.text": "Your spine text",
+        "covermk.spine.textPh": "e.g. BOOK II",
+        "covermk.spine.font": "Spine font",
+        "covermk.spine.fontFollow": "Follow the front",
+        "covermk.spine.textColor": "Spine text colour",
+        "covermk.spine.colorFollows": "Follows the front",
+        "covermk.spine.colorReset": "Follow the front",
+        "covermk.spine.caps": "Author name in capitals",
+        "covermk.spine.dir": "Reading direction",
+        "covermk.spine.dirAuto": "Auto ({dir} for {lang})",
+        "covermk.spine.dirTtbShort": "top-to-bottom",
+        "covermk.spine.dirBttShort": "bottom-to-top",
+        "covermk.spine.dirTtb": "Top to bottom",
+        "covermk.spine.dirBtt": "Bottom to top",
+        "covermk.spine.iconTop": "Icon at the top",
+        "covermk.spine.iconBottom": "Icon at the bottom",
+        "covermk.spine.iconNone": "No icon",
+        "covermk.spine.iconUploaded": "Your picture",
+        "covermk.spine.iconUpload": "Upload a picture",
+        "covermk.spine.iconSearch": "Search icons",
+        "covermk.spine.iconNoMatch": "No icon matches that.",
+        "covermk.spine.iconHint": "Icons take the spine text colour; an uploaded picture keeps its own colours.",
+        "covermk.back.title": "Back cover",
+        "covermk.back.sub": "Give the back cover its own background and type. Anything you leave alone follows the front.",
+        "covermk.back.font": "Back-cover font",
+        "covermk.back.textColor": "Back-cover text colour",
+        "covermk.back.note": "The font and colour apply to the praise line, the blurb, the author line and the imprint."
       };
       Object.assign(UI_STRINGS.en, SPINEBACK_STRINGS);
       Object.keys(UI_STRINGS).forEach((lang) => { if (lang !== "en") Object.keys(SPINEBACK_STRINGS).forEach((k) => { if (UI_STRINGS[lang][k] == null) UI_STRINGS[lang][k] = SPINEBACK_STRINGS[k]; }); });
@@ -43463,6 +43551,216 @@
       }
       /* ==== /BEUK:hardcover ==== */
       /* ==== BEUK:spineback ==== */
+      /* The Spine and Back cover sections of the wrap panel. Every control carries a data-sb path
+         ("spine.bg.mode", "back.font" ...) into cmRecipe.wrap; a change writes the value, then the
+         wrap redraws through updateWrapDims, the way the hardcover controls do. */
+      const SB_CURATED_ICONS = ["Feather", "Star", "Moon", "Sun", "Leaf", "Book", "BookOpen", "BookMarked", "Anchor", "Crown", "Key", "Flame", "Heart", "Skull", "Sword", "Swords", "Shield", "Castle",
+        "Mountain", "Waves", "Compass", "Map", "Rocket", "Telescope", "Ghost", "Gem", "Flower", "Trees", "Bird", "Cat", "Dog", "Fish", "Hourglass", "Scroll", "Sparkles", "Cloud", "Snowflake",
+        "Coffee", "Music", "Pen", "Quote", "Lightbulb", "Eye", "Lock", "Bell", "Lamp", "Footprints", "Wand"];
+      const sbLib = () => (typeof window !== "undefined" && window.lucide && window.lucide.icons) || {};
+      function sbIconSvg(name) {
+        const node = sbLib()[name];
+        if (!node || !Array.isArray(node[2])) return "";
+        return '<svg viewBox="0 0 24 24" aria-hidden="true">' + node[2].map((el) => "<" + el[0] + Object.keys(el[1] || {}).map((k) => " " + k + '="' + esc(String(el[1][k])) + '"').join("") + "/>").join("") + "</svg>";
+      }
+      function sbBgHtml(p) {
+        const opt = (v, key, en) => '<option value="' + v + '" data-i18n="' + key + '">' + esc(t(key)) + "</option>";
+        return '<div class="full"><label class="field-lab" for="' + p + 'BgMode" data-i18n="covermk.spine.bg">' + esc(t("covermk.spine.bg")) + '</label>' +
+          '<select class="txt-input" id="' + p + 'BgMode" data-sb="BG.mode">' + opt("front", "covermk.spine.bgFront") + opt("solid", "covermk.spine.bgSolid") + opt("gradient", "covermk.spine.bgGradient") + opt("pattern", "covermk.spine.bgPattern") + "</select></div>" +
+          '<div class="full cm-sb-colors" id="' + p + 'BgColors">' +
+          '<div><label class="field-lab" for="' + p + 'BgColor" data-i18n="covermk.spine.color1">' + esc(t("covermk.spine.color1")) + '</label><input type="color" class="cm-color" id="' + p + 'BgColor" data-sb="BG.color" value="#232a33" /></div>' +
+          '<div id="' + p + 'BgColor2Row"><label class="field-lab" for="' + p + 'BgColor2" data-i18n="covermk.spine.color2">' + esc(t("covermk.spine.color2")) + '</label><input type="color" class="cm-color" id="' + p + 'BgColor2" data-sb="BG.color2" value="#c9a959" /></div></div>' +
+          '<div id="' + p + 'BgDirRow"><label class="field-lab" for="' + p + 'BgDir" data-i18n="covermk.spine.gradDir">' + esc(t("covermk.spine.gradDir")) + '</label>' +
+          '<select class="txt-input" id="' + p + 'BgDir" data-sb="BG.dir">' + opt("down", "covermk.spine.dirDown") + opt("across", "covermk.spine.dirAcross") + opt("diag-down", "covermk.spine.dirDiagDown") + opt("diag-up", "covermk.spine.dirDiagUp") + "</select></div>" +
+          '<div id="' + p + 'BgPatRow"><label class="field-lab" for="' + p + 'BgPattern" data-i18n="covermk.spine.pattern">' + esc(t("covermk.spine.pattern")) + '</label>' +
+          '<select class="txt-input" id="' + p + 'BgPattern" data-sb="BG.pattern">' + opt("linen", "covermk.spine.patLinen") + opt("speckle", "covermk.spine.patSpeckle") + opt("vignette", "covermk.spine.patVignette") +
+          opt("dots", "covermk.spine.patDots") + opt("stripes", "covermk.spine.patStripes") + opt("grid", "covermk.spine.patGrid") + opt("diamonds", "covermk.spine.patDiamonds") + "</select></div>";
+      }
+      function sbColorHtml(id, path, labelKey) {
+        return '<div><label class="field-lab" for="' + id + '" data-i18n="' + labelKey + '">' + esc(t(labelKey)) + '</label><div class="cm-sb-colors">' +
+          '<input type="color" class="cm-color" id="' + id + '" data-sb="' + path + '" value="#000000" /><span class="cm-wrap-note" id="' + id + 'Val" style="margin:0;"></span>' +
+          '<button class="tb-btn" type="button" id="' + id + 'Reset" data-sb-reset="' + path + '" data-i18n="covermk.spine.colorReset">' + esc(t("covermk.spine.colorReset")) + "</button></div></div>";
+      }
+      function sbIconSlotHtml(slot, labelKey) {
+        return '<div class="full cm-sb-icon" data-sb-slot="' + slot + '"><label class="field-lab" data-i18n="' + labelKey + '">' + esc(t(labelKey)) + '</label>' +
+          '<div class="cm-sb-icon-cur"><span class="cm-sb-icon-prev" data-sb-prev></span><span class="cm-wrap-note" data-sb-cur style="margin:0;"></span>' +
+          '<button class="tb-btn" type="button" data-sb-none data-i18n="covermk.spine.iconNone">' + esc(t("covermk.spine.iconNone")) + '</button>' +
+          '<button class="tb-btn" type="button" data-sb-upload><i data-lucide="image-plus"></i><span data-i18n="covermk.spine.iconUpload">' + esc(t("covermk.spine.iconUpload")) + '</span></button>' +
+          '<input type="file" data-sb-file accept="image/jpeg,image/png,.jpg,.jpeg,.png" style="display:none;" /></div>' +
+          '<input class="txt-input" type="search" data-sb-q data-i18n-ph="covermk.spine.iconSearch" placeholder="' + esc(t("covermk.spine.iconSearch")) + '" />' +
+          '<div class="cm-sb-icons" data-sb-grid></div></div>';
+      }
+      function sbBuildControls() {
+        const sp = $("cmSpineBody"), bk = $("cmBackBody");
+        if (!sp || !bk || sp.getAttribute("data-built")) return;
+        const font = (id, path, key) => '<div><label class="field-lab" for="' + id + '" data-i18n="' + key + '">' + esc(t(key)) + '</label><select class="txt-input" id="' + id + '" data-sb="' + path + '"></select></div>';
+        sp.innerHTML = '<p class="cm-wrap-note" style="margin:6px 0 0;" data-i18n="covermk.spine.sub">' + esc(t("covermk.spine.sub")) + '</p>' +
+          '<p class="cm-wrap-note warn" id="cmSpineOffNote" style="display:none;" data-i18n="covermk.spine.narrowOff">' + esc(t("covermk.spine.narrowOff")) + '</p>' +
+          '<p class="cm-wrap-note warn" id="cmSpineNotes" style="display:none;"></p>' +
+          '<div class="form-grid">' + sbBgHtml("cmSp").replace(/data-sb="BG\./g, 'data-sb="spine.bg.') +
+          '<div><label class="field-lab" for="cmSpShow" data-i18n="covermk.spine.show">' + esc(t("covermk.spine.show")) + '</label><select class="txt-input" id="cmSpShow" data-sb="spine.show">' +
+          ["both", "title", "author", "custom"].map((v) => '<option value="' + v + '" data-i18n="covermk.spine.show' + v.charAt(0).toUpperCase() + v.slice(1) + '">' + esc(t("covermk.spine.show" + v.charAt(0).toUpperCase() + v.slice(1))) + "</option>").join("") + "</select></div>" +
+          '<div id="cmSpTextRow"><label class="field-lab" for="cmSpText" data-i18n="covermk.spine.text">' + esc(t("covermk.spine.text")) + '</label><input class="txt-input" id="cmSpText" type="text" maxlength="80" data-sb="spine.text" data-i18n-ph="covermk.spine.textPh" placeholder="' + esc(t("covermk.spine.textPh")) + '" /></div>' +
+          font("cmSpFont", "spine.font", "covermk.spine.font") + sbColorHtml("cmSpColor", "spine.color", "covermk.spine.textColor") +
+          '<div class="full"><label class="cm-sb-check"><input type="checkbox" id="cmSpCaps" data-sb="spine.caps" /><span data-i18n="covermk.spine.caps">' + esc(t("covermk.spine.caps")) + '</span></label></div>' +
+          '<div class="full"><label class="field-lab" for="cmSpDir" data-i18n="covermk.spine.dir">' + esc(t("covermk.spine.dir")) + '</label><select class="txt-input" id="cmSpDir" data-sb="spine.dir"></select></div>' +
+          sbIconSlotHtml("iconTop", "covermk.spine.iconTop") + sbIconSlotHtml("iconBottom", "covermk.spine.iconBottom") +
+          '<div class="full"><p class="cm-wrap-note" style="margin:0;" data-i18n="covermk.spine.iconHint">' + esc(t("covermk.spine.iconHint")) + "</p></div></div>";
+        bk.innerHTML = '<p class="cm-wrap-note" style="margin:6px 0 0;" data-i18n="covermk.back.sub">' + esc(t("covermk.back.sub")) + '</p>' +
+          '<div class="form-grid">' + sbBgHtml("cmBk").replace(/data-sb="BG\./g, 'data-sb="back.bg.') +
+          font("cmBkFont", "back.font", "covermk.back.font") + sbColorHtml("cmBkColor", "back.color", "covermk.back.textColor") +
+          '<div class="full"><p class="cm-wrap-note" style="margin:0;" data-i18n="covermk.back.note">' + esc(t("covermk.back.note")) + "</p></div></div>";
+        [["cmSpFont", "covermk.spine.fontFollow"], ["cmBkFont", "covermk.spine.fontFollow"]].forEach(([id, key]) => {
+          $(id).innerHTML = '<option value="" data-i18n="' + key + '">' + esc(t(key)) + "</option>" + fontOptionsHtml(COVER_FONTS);
+        });
+        sp.setAttribute("data-built", "1");
+        sbRenderGrid("iconTop"); sbRenderGrid("iconBottom");
+      }
+      function sbGet(path) { let o = cmRecipe && cmRecipe.wrap; path.split(".").forEach((k) => { o = o == null ? o : o[k]; }); return o; }
+      function sbSet(path, v) {
+        const ks = path.split("."), last = ks.pop();
+        let o = cmRecipe.wrap;
+        ks.forEach((k) => { o = o[k]; });
+        o[last] = v;
+      }
+      /* After any change: re-normalize the two groups (so an out-of-range value can never stand), show the
+         right rows, and redraw the wrap. */
+      function sbChanged() {
+        if (!cmRecipe) return;
+        cmRecipe.wrap.spine = normalizeWrapSpine(cmRecipe.wrap.spine);
+        cmRecipe.wrap.back = normalizeWrapBack(cmRecipe.wrap.back);
+        sbSync();
+        updateWrapDims();
+      }
+      function sbRenderGrid(slot, query) {
+        const holder = document.querySelector('#cmSpineBody [data-sb-slot="' + slot + '"] [data-sb-grid]');
+        if (!holder) return;
+        const lib = sbLib(), q = String(query || "").trim().toLowerCase().replace(/[\s-]+/g, "");
+        let names;
+        if (q) names = Object.keys(lib).filter((k) => k.toLowerCase().indexOf(q) !== -1).slice(0, 60);
+        else names = SB_CURATED_ICONS.filter((k) => lib[k]);
+        const cur = sbGet("spine." + slot);
+        holder.innerHTML = names.length ? names.map((k) => '<button type="button" class="cm-sb-ic" data-sb-icon="' + esc(k) + '" title="' + esc(k) + '" aria-label="' + esc(k) + '" aria-pressed="' + (cur && cur.kind === "lucide" && cur.name === k ? "true" : "false") + '">' + sbIconSvg(k) + "</button>").join("")
+          : '<span class="cm-wrap-note" style="margin:0;">' + esc(t("covermk.spine.iconNoMatch")) + "</span>";
+      }
+      function sbSetIcon(slot, icon) {
+        if (!cmRecipe) return;
+        cmRecipe.wrap.spine[slot] = icon;
+        if (icon.kind === "upload") ensureWrapIcons(cmRecipe).then(() => updateWrapDims());
+        sbChanged();
+      }
+      function sbSync() {
+        if (!cmRecipe || !$("cmSpineBody") || !$("cmSpineBody").getAttribute("data-built")) return;
+        const w = cmRecipe.wrap;
+        document.querySelectorAll("#cmSpineBody [data-sb], #cmBackBody [data-sb]").forEach((el) => {
+          if (el.type === "color" && /\.(font|color)$/.test(el.getAttribute("data-sb")) && !/bg\./.test(el.getAttribute("data-sb"))) return; /* text colours: below */
+          const v = sbGet(el.getAttribute("data-sb"));
+          if (el.type === "checkbox") el.checked = !!v;
+          else if (v != null && el.value !== String(v)) el.value = String(v);
+        });
+        const follows = { spine: w.spine.color, back: w.back.color };
+        [["cmSpColor", "spine"], ["cmBkColor", "back"]].forEach(([id, key]) => {
+          const el = $(id), val = $(id + "Val"), reset = $(id + "Reset");
+          const eff = follows[key] || cmRecipe.elements[key === "spine" ? "author" : "title"].color;
+          if (el && /^#[0-9a-fA-F]{6}$/.test(eff)) el.value = eff.toLowerCase();
+          if (val) val.textContent = follows[key] ? follows[key] : t("covermk.spine.colorFollows");
+          if (reset) reset.style.display = follows[key] ? "" : "none";
+        });
+        const bgRows = (p, bg) => {
+          const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? "" : "none"; };
+          show(p + "BgColors", bg.mode !== "front"); show(p + "BgColor2Row", bg.mode === "gradient");
+          show(p + "BgDirRow", bg.mode === "gradient"); show(p + "BgPatRow", bg.mode === "pattern");
+        };
+        bgRows("cmSp", w.spine.bg); bgRows("cmBk", w.back.bg);
+        const tr = $("cmSpTextRow"); if (tr) tr.style.display = w.spine.show === "custom" ? "" : "none";
+        const caps = $("cmSpCaps"); if (caps && caps.parentElement.parentElement) caps.parentElement.parentElement.style.display = w.spine.show === "custom" || w.spine.show === "title" ? "none" : "";
+        /* The direction list names what Auto would pick for this book's language. */
+        const dsel = $("cmSpDir");
+        if (dsel) {
+          const auto = spineDirection(state.meta.language, "auto");
+          const lang = langPack(state.meta.language).name;
+          const html = '<option value="auto">' + esc(t("covermk.spine.dirAuto", { dir: t(auto === "ttb" ? "covermk.spine.dirTtbShort" : "covermk.spine.dirBttShort"), lang })) + '</option>' +
+            '<option value="ttb">' + esc(t("covermk.spine.dirTtb")) + '</option><option value="btt">' + esc(t("covermk.spine.dirBtt")) + "</option>";
+          if (dsel.getAttribute("data-key") !== html) { dsel.innerHTML = html; dsel.setAttribute("data-key", html); }
+          dsel.value = w.spine.dir;
+        }
+        ["iconTop", "iconBottom"].forEach((slot) => {
+          const box = document.querySelector('#cmSpineBody [data-sb-slot="' + slot + '"]');
+          if (!box) return;
+          const ic = w.spine[slot];
+          box.querySelector("[data-sb-prev]").innerHTML = ic.kind === "lucide" ? sbIconSvg(ic.name) : ic.kind === "upload" ? '<i data-lucide="image"></i>' : "";
+          box.querySelector("[data-sb-cur]").textContent = ic.kind === "lucide" ? ic.name : ic.kind === "upload" ? t("covermk.spine.iconUploaded") : t("covermk.spine.iconNone");
+          box.querySelector("[data-sb-none]").style.display = ic.kind === "none" ? "none" : "";
+          box.querySelectorAll("[data-sb-icon]").forEach((b) => b.setAttribute("aria-pressed", String(ic.kind === "lucide" && ic.name === b.getAttribute("data-sb-icon"))));
+        });
+        icons();
+      }
+      /* The wrap says what it could not draw (a spine too narrow for text, an icon with no room); say so here. */
+      function sbShowNotes(items) {
+        const off = $("cmSpineOffNote");
+        if (off && items) off.style.display = items.dims && !items.dims.spineText ? "" : "none";
+        const n = $("cmSpineNotes");
+        if (!n) return;
+        const map = { "icons-narrow": "covermk.spine.noteIconsNarrow", "top-icon-dropped": "covermk.spine.noteTopDropped", "bottom-icon-dropped": "covermk.spine.noteBottomDropped" };
+        const lines = ((items && items.spineNotes) || []).map((c) => map[c] ? t(map[c]) : "").filter(Boolean);
+        n.textContent = lines.join(" "); n.style.display = lines.length ? "" : "none";
+      }
+      function sbWire() {
+        const spB = $("cmSpineBody"), bkB = $("cmBackBody");
+        if (!spB || !bkB) return;
+        const onField = (e) => {
+          const el = e.target.closest ? e.target.closest("[data-sb]") : null;
+          if (!el || !cmRecipe) return;
+          const path = el.getAttribute("data-sb");
+          sbSet(path, el.type === "checkbox" ? el.checked : el.value);
+          sbChanged();
+        };
+        [spB, bkB].forEach((b) => {
+          b.addEventListener("input", onField); b.addEventListener("change", onField);
+          b.addEventListener("click", (e) => {
+            const reset = e.target.closest("[data-sb-reset]");
+            if (reset && cmRecipe) { sbSet(reset.getAttribute("data-sb-reset"), ""); sbChanged(); }
+          });
+        });
+        spB.addEventListener("click", (e) => {
+          const slotEl = e.target.closest("[data-sb-slot]");
+          if (!slotEl || !cmRecipe) return;
+          const slot = slotEl.getAttribute("data-sb-slot");
+          const pick = e.target.closest("[data-sb-icon]");
+          if (pick) { sbSetIcon(slot, { kind: "lucide", name: pick.getAttribute("data-sb-icon"), picId: null }); return; }
+          if (e.target.closest("[data-sb-none]")) { sbSetIcon(slot, { kind: "none", name: "", picId: null }); return; }
+          if (e.target.closest("[data-sb-upload]")) { const f = slotEl.querySelector("[data-sb-file]"); if (f) f.click(); }
+        });
+        spB.addEventListener("input", (e) => {
+          const q = e.target.closest ? e.target.closest("[data-sb-q]") : null;
+          if (!q) return;
+          const slot = q.closest("[data-sb-slot]").getAttribute("data-sb-slot");
+          sbRenderGrid(slot, q.value);
+        });
+        spB.addEventListener("change", (e) => {
+          const fi = e.target.closest ? e.target.closest("[data-sb-file]") : null;
+          if (!fi || !cmRecipe) return;
+          const slot = fi.closest("[data-sb-slot]").getAttribute("data-sb-slot");
+          const file = fi.files && fi.files[0];
+          fi.value = "";
+          if (!file) return;
+          if (!/^image\/(jpeg|png)$/.test(file.type)) { toast(t("toast.coverType"), "alert-triangle"); return; }
+          const reader = new FileReader();
+          reader.onload = () => {
+            const url = String(reader.result || ""), comma = url.indexOf(",");
+            if (comma < 0) { toast(t("toast.coverReadFail"), "alert-triangle"); return; }
+            const im = { id: uid(), name: file.name, mediaType: file.type, ext: file.type === "image/png" ? "png" : "jpg", data: url.slice(comma + 1) };
+            state.images.push(im);
+            noteBookEdited();
+            refreshImagePickers();
+            sbSetIcon(slot, { kind: "upload", name: "", picId: im.id });
+          };
+          reader.onerror = () => toast(t("toast.coverReadFail"), "alert-triangle");
+          reader.readAsDataURL(file);
+        });
+      }
+      /* ==== /BEUK:spineback ==== */
+      /* ==== BEUK:spineback ==== */
       /* The spine and the back cover get their own look: a background
          (follow the front, or solid / gradient / pattern), a font and
          a colour, and — on the spine — which words, which reading
@@ -43664,14 +43962,14 @@
           const iconS = Math.min(clearW, 0.45);
           const wantIcon = (ic) => ic.kind === "lucide" || (ic.kind === "upload" && !!coverImgCache[ic.picId]);
           let hasTop = wantIcon(sp.iconTop), hasBot = wantIcon(sp.iconBottom);
-          if ((hasTop || hasBot) && iconS < SPINE_ICON_MIN_IN) { hasTop = hasBot = false; items.spineNotes.push("icons hidden: the spine is too narrow for an icon of at least " + SPINE_ICON_MIN_IN + " in"); }
+          if ((hasTop || hasBot) && iconS < SPINE_ICON_MIN_IN) { hasTop = hasBot = false; items.spineNotes.push("icons-narrow"); }
           const iconTopY = SPINE_MARGIN_IN; /* inches from the panel's head */
           const botEdge = impText ? L.panelH - 0.21 - impLenIn / 2 - 0.08 : L.panelH - SPINE_MARGIN_IN;
           const iconBotY = botEdge - iconS;
           const zone = () => ({ top: hasTop ? iconTopY + iconS + SPINE_ICON_GAP_IN : 0.3, bottom: hasBot ? iconBotY - SPINE_ICON_GAP_IN : L.panelH - 0.42 });
           let zn = zone();
-          if (hasBot && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasBot = false; items.spineNotes.push("bottom icon dropped: it and the imprint do not both fit under the text"); zn = zone(); }
-          if (hasTop && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasTop = false; items.spineNotes.push("top icon dropped: no room above the text"); zn = zone(); }
+          if (hasBot && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasBot = false; items.spineNotes.push("bottom-icon-dropped"); zn = zone(); }
+          if (hasTop && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasTop = false; items.spineNotes.push("top-icon-dropped"); zn = zone(); }
           const avail = (zn.bottom - zn.top) * px;
           let size = Math.min(spineW * 0.6, 0.32 * px);
           const gap = runs.length > 1 ? 0.3 * px : 0;
@@ -43836,7 +44134,7 @@
         const d = wrapDims(cmRecipe);
         const W = 1240;
         c.width = W; c.height = Math.round(W * d.totalH / d.totalW);
-        drawWrapTo(c, cmRecipe, { guides: cmWrapGuides, preview: true });
+        sbShowNotes(drawWrapTo(c, cmRecipe, { guides: cmWrapGuides, preview: true })); /* BEUK:spineback */
         /* ==== BEUK:hardcover ==== */
         const fid = cmRecipe.wrap && cmRecipe.wrap.flapPhotoId;
         if (fid && !coverImgCache[fid] && d.binding === "jacket") hcEnsureFlapPhoto(cmRecipe).then((img) => { if (img) drawWrapPreview(); });
@@ -43887,6 +44185,7 @@
         if ($("cmHcFlapFront")) { $("cmHcFlapFront").value = w.flapFront; $("cmHcFlapFront").placeholder = state.meta.description || ""; }
         if ($("cmHcFlapBack")) { $("cmHcFlapBack").value = w.flapBack; $("cmHcFlapBack").placeholder = hcAboutAuthorText(); }
         /* ==== /BEUK:hardcover ==== */
+        sbSync(); /* BEUK:spineback */
         updateWrapDims();
       }
       function downloadWrap(kind) {
@@ -44599,6 +44898,7 @@
           drawWrapPreview();
         });
         hcWireControls(); /* BEUK:hardcover */
+        sbBuildControls(); sbWire(); /* BEUK:spineback */
         /* The stand: drag to turn the book (free sideways, a gentle
            clamp on the tilt), arrow keys while it is focused. The
            first grab — pointer or key — stops the slow auto-turn
@@ -53760,6 +54060,61 @@
                 "300 pp cream 6×9, Feather above and Star below: " + checks.map((c) => c.lang + (c.imp ? "+imprint" : "") + " " + (c.ok ? "ok" : "BAD") + " (" + c.ink + " ink px)").join(", ") +
                 "; 0.30 in and 0.20 in spines draw no text or icons " + narrowOk + "; unknown icon draws nothing, no throw " + unknownOk + (threw ? " threw " + threw : "") + "; bottom icon dropped with a note when a long imprint leaves no room " + dropOk + "; jacket spine panel holds both icons " + jkOk);
             } finally { state.meta.language = keepLang; }
+          } },
+        { id: "cover.wrap.spine-ui", feature: "cover", name: "Spine and Back cover controls: the two sections start collapsed in the wrap panel, every control writes its value into the recipe and the redraw reports it, the icon picker's curated list and search work, and closing and reopening the maker shows the saved values",
+          run() {
+            const keepRecipe = state.coverRecipe, keepLang = state.meta.language, keepImages = state.images.slice();
+            try {
+              state.meta.language = "en";
+              const r0 = defaultCoverRecipe(); r0.title = "Interface Bay"; r0.author = "A. Checker";
+              r0.wrap = { trim: "6x9", pages: 300, paper: "cream", customFactor: 0.0025, blurb: "", quote: "", imprint: "" };
+              state.coverRecipe = r0;
+              openCoverMaker();
+              const collapsed = !!$("cmSpineSec") && !!$("cmBackSec") && !$("cmSpineSec").open && !$("cmBackSec").open;
+              const set = (id, v, ev) => { const el = $(id); if (el.type === "checkbox") el.checked = v; else el.value = v; el.dispatchEvent(new Event(ev || "input", { bubbles: true })); };
+              const click = (sel) => { const el = document.querySelector(sel); if (el) el.click(); return !!el; };
+              const autoText = $("cmSpDir").options[0].textContent;
+              set("cmSpBgMode", "gradient", "change"); set("cmSpBgColor", "#112233"); set("cmSpBgColor2", "#ccddee"); set("cmSpBgDir", "diag-up", "change");
+              set("cmSpShow", "custom", "change"); set("cmSpText", "BOOK II"); set("cmSpFont", COVER_FONTS[1], "change"); set("cmSpColor", "#ffeedd"); set("cmSpDir", "btt", "change");
+              const pickedTop = click('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-icon="Feather"]'), pickedBot = click('#cmSpineBody [data-sb-slot="iconBottom"] [data-sb-icon="Star"]');
+              set("cmBkBgMode", "pattern", "change"); set("cmBkBgPattern", "grid", "change"); set("cmBkBgColor", "#304050"); set("cmBkFont", COVER_FONTS[2], "change"); set("cmBkColor", "#e8e0d0");
+              const w = cmRecipe.wrap, sp = w.spine, bk = w.back;
+              const recipeOk = sp.bg.mode === "gradient" && sp.bg.color === "#112233" && sp.bg.color2 === "#ccddee" && sp.bg.dir === "diag-up" && sp.show === "custom" && sp.text === "BOOK II" &&
+                sp.font === COVER_FONTS[1] && sp.color === "#ffeedd" && sp.dir === "btt" && sp.iconTop.name === "Feather" && sp.iconBottom.name === "Star" &&
+                bk.bg.mode === "pattern" && bk.bg.pattern === "grid" && bk.bg.color === "#304050" && bk.font === COVER_FONTS[2] && bk.color === "#e8e0d0";
+              const c = document.createElement("canvas"); const d = wrapDims(cmRecipe); c.width = 900; c.height = Math.round(900 * d.totalH / d.totalW);
+              const it = drawWrapTo(c, cmRecipe);
+              const drawnOk = it.spineDir === "btt" && it.spineText === "BOOK II" && it.spineBoxes.filter((b) => b.kind === "icon").length === 2 && it.spineBoxes.some((b) => b.part === "custom");
+              /* the picker: curated list, search, upload-free reset */
+              const curated = document.querySelectorAll('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-icon]').length;
+              const set2 = (sel, v) => { const el = document.querySelector(sel); el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); };
+              set2('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-q]', "feath");
+              const found = [...document.querySelectorAll('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-icon]')].some((b) => b.getAttribute("data-sb-icon") === "Feather");
+              set2('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-q]', "zzzzqq");
+              const none = document.querySelectorAll('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-icon]').length === 0;
+              set2('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-q]', "");
+              const pickerOk = curated >= 40 && curated <= 60 && found && none && pickedTop && pickedBot;
+              /* save, close, reopen: the controls show what was saved */
+              adoptCoverRecipe(cmRecipe, document.createElement("canvas"));
+              $("modalCoverMaker").classList.remove("open");
+              openCoverMaker();
+              const val = (id) => $(id).value;
+              const pressed = document.querySelector('#cmSpineBody [data-sb-slot="iconTop"] [data-sb-icon="Feather"]').getAttribute("aria-pressed") === "true";
+              const reopenOk = val("cmSpBgMode") === "gradient" && val("cmSpBgColor").toLowerCase() === "#112233" && val("cmSpBgDir") === "diag-up" && val("cmSpShow") === "custom" && val("cmSpText") === "BOOK II" &&
+                val("cmSpFont") === COVER_FONTS[1] && val("cmSpColor").toLowerCase() === "#ffeedd" && val("cmSpDir") === "btt" && pressed &&
+                val("cmBkBgMode") === "pattern" && val("cmBkBgPattern") === "grid" && val("cmBkFont") === COVER_FONTS[2] && val("cmBkColor").toLowerCase() === "#e8e0d0";
+              /* "follow the front" is a real way back */
+              click("#cmSpColorReset"); click("#cmBkColorReset"); set("cmSpBgMode", "front", "change");
+              const resetOk = cmRecipe.wrap.spine.color === "" && cmRecipe.wrap.back.color === "" && cmRecipe.wrap.spine.bg.mode === "front" && $("cmSpColorVal").textContent === t("covermk.spine.colorFollows");
+              const autoOk = /top-to-bottom/.test(autoText) && /English/.test(autoText);
+              return scVerdict(collapsed && recipeOk && drawnOk && pickerOk && reopenOk && resetOk && autoOk,
+                "both sections start collapsed " + collapsed + "; every control lands in the recipe " + recipeOk + "; the redraw reports " + it.spineDir + " / “" + it.spineText + "” / " + it.spineBoxes.filter((b) => b.kind === "icon").length + " icons " + drawnOk +
+                "; picker shows " + curated + " curated icons, search finds Feather " + found + " and says so when nothing matches " + none + "; after save, close and reopen the controls show the saved values " + reopenOk +
+                "; the reset buttons return to following the front " + resetOk + "; Auto reads “" + autoText + "”");
+            } finally {
+              $("modalCoverMaker").classList.remove("open");
+              state.coverRecipe = keepRecipe; state.meta.language = keepLang; state.images = keepImages;
+            }
           } },
         { id: "cover.wrap3d.faces-from-wrap", feature: "cover", name: "3D wrap viewer: front, spine and back face textures are sliced from the current wrap render and refresh when wrap inputs change",
           run() {
