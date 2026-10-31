@@ -18,7 +18,7 @@ async function getPage(base: string, p: string, redirect: RequestRedirect = 'fol
 test('bowmarket content: the Crashlanders and Frost Line sets and What You See? parse clean; a set counts its books\' pages; nothing is on sale without a price and a link', () => {
   const c = loadBowmarketContent('en');
   assert.deepEqual(checkBowmarketContent(c), []);
-  assert.deepEqual(c.items.map((i) => i.slug), ['kleos', 'the-cheese-bandit-diaries', 'the-raven-from-darkness', 'the-frost-line', 'the-moscow-dead-drop', 'the-house-of-mirrors', 'zero-hour', 'what-you-see', 'crashlanders', 'crash', 'the-howl-chase', 'into-the-maw'], "latest first; a set's books follow it in volume order");
+  assert.deepEqual(c.items.map((i) => i.slug), ['the-ninth-finger', 'the-devils-ledger', 'kleos', 'the-cheese-bandit-diaries', 'the-raven-from-darkness', 'the-frost-line', 'the-moscow-dead-drop', 'the-house-of-mirrors', 'zero-hour', 'what-you-see', 'crashlanders', 'crash', 'the-howl-chase', 'into-the-maw'], "latest first; a set's books follow it in volume order");
   const set = c.itemBySlug.get('crashlanders')!;
   assert.equal(set.kind, 'set');
   assert.deepEqual(set.contents, ['crash', 'the-howl-chase', 'into-the-maw']);
@@ -116,5 +116,5 @@ test('Housekeeping self-check: Bowmarket content parses clean and reports what i
   const c = loadBowmarketContent('en');
   const selling = c.items.filter(forSale).length;
   assert.equal(detail, `${c.items.length} item(s), 2 box set(s); ${selling} on sale, ${c.items.length - selling} coming soon`);
-  assert.equal(c.items.length, 12);
+  assert.equal(c.items.length, 14);
 });
