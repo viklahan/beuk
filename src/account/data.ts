@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { getStreak, type StreakState } from '../streak.js';
 import { hydrateDoc } from '../pictures.js';
+import { clientDir } from '../warmth/pages.js';
 import { ZIP_LIMIT_BYTES, ZipWriter } from './zip.js';
 
 /**
@@ -107,9 +109,11 @@ const SECTIONS_SQL = `case jsonb_typeof(m.doc->'sections')
  *  counted, less spaces and punctuation; covers, part dividers, plates and
  *  the contents page count nothing. It counts section text only (not
  *  titles or the generated pages), so it can differ a little from the
- *  studio's own number — the page says "about". */
+ *  studio's own number — the page says "about". Which languages count by
+ *  characters is the studio's LANG_PACKS (count: "characters"), passed in
+ *  as $2 — see characterCountedLangs. */
 const ROUGH_WORDS_SQL = String.raw`(select coalesce(sum(
-      case when m.doc->'meta'->>'language' in ('ja', 'zh-Hans', 'zh-Hant', 'th')
+      case when m.doc->'meta'->>'language' = any($2::text[])
         then char_length(regexp_replace(t.clean, '[[:space:][:punct:]、。，．！？「」『』（）・]', '', 'g'))
         else coalesce(array_length(regexp_split_to_array(nullif(btrim(t.clean), ''), '\s+'), 1), 0)
       end), 0)::int
@@ -120,6 +124,26 @@ const ROUGH_WORDS_SQL = String.raw`(select coalesce(sum(
         '\[\^?[0-9]{1,3}\]:?', ' ', 'g'),
         '[][#>*_^]', ' ', 'g') as clean) t
     where coalesce(s->>'type', '') not in ('cover', 'part', 'frontispiece', 'toc'))`;
+
+/** BEUK:l10n — the book languages the studio counts by characters, read
+ *  from its own LANG_PACKS table in client/index.html, so the server
+ *  never keeps a second copy. Throws (never guesses) when the table
+ *  can't be read. */
+export function characterCountedLangs(studioHtml: string): string[] {
+  const start = studioHtml.indexOf('const LANG_PACKS = {');
+  const end = start < 0 ? -1 : studioHtml.indexOf('\n      };', start);
+  if (start < 0 || end < 0) throw new Error('client/index.html: LANG_PACKS not found');
+  const block = studioHtml.slice(start, end);
+  const all = [...block.matchAll(/^\s*"([^"]+)":\s*\{[^\n]*\bcount:\s*"(words|characters)"/gm)];
+  const rows = block.split('\n').filter((l) => /^\s*"[^"]+":\s*\{/.test(l)).length;
+  if (all.length === 0 || all.length !== rows) throw new Error(`client/index.html: read ${all.length} of ${rows} LANG_PACKS count rules`);
+  return all.filter((m) => m[2] === 'characters').map((m) => m[1]);
+}
+let charLangsCache: string[] | null = null;
+function charLangs(): string[] {
+  charLangsCache ??= characterCountedLangs(readFileSync(path.join(clientDir(), 'index.html'), 'utf8'));
+  return charLangsCache;
+}
 
 export async function accountOverview(db: Db, config: Config, userId: string, now: Date): Promise<AccountOverview | null> {
   const found = await db.query<{ id: string; email: string; created_at: string; email_confirmed_at: string | null }>(
@@ -132,7 +156,7 @@ export async function accountOverview(db: Db, config: Config, userId: string, no
     db.query<{ id: string; title: string; words: number; revision: number; created_at: string; updated_at: string }>(
       `select m.id, m.title, m.revision, m.created_at, m.updated_at, ${ROUGH_WORDS_SQL} as words
        from manuscripts m where m.user_id = $1 order by m.updated_at desc`,
-      [userId],
+      [userId, charLangs()],
     ),
     listArchive(db, userId),
     db.query<{ total: number; active: number; comments: number; open_comments: number }>(

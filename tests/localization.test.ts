@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { characterCountedLangs } from '../src/account/data.js';
 
 /* BEUK:l10n — the localization guard (V, 2026-10-30). Two kinds of
    language, both read straight out of the real code on every run:
@@ -214,7 +215,11 @@ test('l10n ui: the chrome turns right-to-left for exactly the RTL interface lang
   assert.ok(dirCall, 'applyUiLang sets the document direction');
   const expr = dirCall.arguments[1].getText(sf);
   const want = UI_ORDER.filter((c) => LANG_PACKS[c]?.rtl).sort();
-  if (/\bisRtlLang\(/.test(expr)) return; // driven by LANG_PACKS: right by construction
+  if (/^isRtlLang\(code\) \? "rtl" : "ltr"$/.test(expr)) {
+    // Driven by LANG_PACKS — right by construction, provided isRtlLang reads the rtl flag.
+    assert.match(MAIN.js, /const isRtlLang = \(code\) => !!langPack\(code\)\.rtl;/, 'isRtlLang reads LANG_PACKS rtl');
+    return;
+  }
   const named = stringLiterals(dirCall.arguments[1]).filter((s) => s in LANG_PACKS).sort();
   assert.deepEqual(named, want, `applyUiLang's direction rule (${expr}) must name every RTL interface language`);
 });
@@ -240,12 +245,15 @@ test('l10n book: dictation knows exactly the book languages', () => {
 });
 
 test('l10n book: the server counts by characters for exactly the languages the studio does', () => {
-  const src = readFileSync(path.join(ROOT, 'src', 'account', 'data.ts'), 'utf8');
-  const m = /m\.doc->'meta'->>'language' in \(([^)]*)\)/.exec(src);
-  assert.ok(m, "src/account/data.ts still names its character-counted languages in ROUGH_WORDS_SQL");
-  const server = [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
+  // The server reads LANG_PACKS itself (characterCountedLangs); its reading
+  // must match the table as the studio evaluates it.
+  const server = characterCountedLangs(html).sort();
   const studio = BOOK_CODES.filter((c) => LANG_PACKS[c].count === 'characters').sort();
-  assert.deepEqual(server, studio, 'ROUGH_WORDS_SQL and LANG_PACKS disagree on which books are counted by characters');
+  assert.deepEqual(server, studio, 'characterCountedLangs and LANG_PACKS disagree on which books are counted by characters');
+  // …and nobody slips a second, hardcoded copy back into the SQL.
+  const src = readFileSync(path.join(ROOT, 'src', 'account', 'data.ts'), 'utf8');
+  assert.doesNotMatch(src, /->>'language' in \(/, "src/account/data.ts hardcodes a language list again — use characterCountedLangs");
+  assert.throws(() => characterCountedLangs('<html></html>'), /LANG_PACKS not found/, 'an unreadable table throws, never guesses');
 });
 
 test('l10n book: the detector, its function words and the script faces name only real book languages', () => {
