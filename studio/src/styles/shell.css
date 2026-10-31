@@ -236,3 +236,46 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
   .brand-sub { display: none; }
   .brand-name { font-size: 19px; }
 }
+
+/* ---------- The chapter editor ---------- */
+/* 1.0's format toolbar (#insertToolbar .tool-group .tool-btn), above the page. */
+.toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin: 0 0 14px; padding: 5px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px;
+}
+#insertToolbar > .tool-group { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1 1 auto; flex-wrap: wrap; }
+.tool-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px;
+  border: 1px solid transparent; background: transparent; color: var(--ink-2);
+  border-radius: 7px; padding: 0 11px; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+}
+.tool-btn:hover { background: var(--panel-3); border-color: var(--line); color: var(--ink); }
+.tool-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.tool-btn svg { width: 14px; height: 14px; flex: 0 0 auto; }
+@media (max-width: 1180px) { .tool-btn { padding: 0 9px; } }
+/* The editing surface: the page's look (Part A's .ms-page) with 1.0's
+   editor type; line breaks are "\n" characters, so whitespace is kept. */
+.ms-page.ms-editing { padding: 0; }
+.ms-editor {
+  min-height: 52vh; padding: 48px 56px; outline: none; border-radius: 10px;
+  white-space: pre-wrap; white-space: break-spaces; word-wrap: break-word;
+  font-variant-ligatures: none; font-feature-settings: "liga" 0;
+}
+.ms-page.ms-editing:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ms-editor p { margin: 0 0 .9em; }
+.ms-editor .ms-fndef::before { content: "[" attr(data-caret) attr(data-n) "]: "; color: var(--muted); }
+.ms-editor .ms-fnref { color: var(--accent); }
+.ms-editor .ms-scene { text-align: center; color: var(--muted); margin: 0 0 .9em; letter-spacing: .3em; }
+.ms-editor .ms-image { margin: 0 0 .9em; padding: 10px 12px; border: 1px dashed var(--line-2); border-radius: 8px; color: var(--muted); font-size: .8em; }
+.ms-editor .ms-image figcaption { font-style: italic; }
+.ms-editor .ms-container { margin: 0 0 .9em; padding-inline-start: 12px; border-inline-start: 2px solid var(--line); }
+.ms-editor .ms-container[data-open*="center"] { text-align: center; }
+.ms-editor .ms-container[data-open*="right"] { text-align: end; }
+.ms-editor .ms-raw {
+  margin: 0 0 .9em; padding: 8px 10px; background: var(--panel-3); border-radius: 6px;
+  font-family: var(--mono-font); font-size: .72em; line-height: 1.5; white-space: pre-wrap;
+}
+.ms-editor .ms-rawinline { font-family: var(--mono-font); font-size: .85em; }
+.ms-editor a { color: var(--accent); }
+@media (max-width: 560px) { .ms-editor { padding: 28px 22px; } }

@@ -1,4 +1,7 @@
 import { useRef, useState, type DragEvent } from 'react';
+import * as Y from 'yjs';
+import { BODY, SECTIONS } from '@book/editor/index.js';
+import { ChapterEditor } from '../editor/ChapterEditor';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import { useBook } from './BookProvider';
@@ -6,7 +9,8 @@ import { useBook } from './BookProvider';
 /* The writing desk (the centre pane's page).
    - Empty desk: 1.0's "Open a backup…" button, and the page takes a
      dropped .beuk-backup.json.
-   - Open book: the chosen chapter (Task 2 mounts its editor here), and a
+   - Open book: the chosen chapter's editor (one TipTap instance, keyed by
+     book and section, so choosing another section unmounts it), and a
      quiet note for anything the import had to change (textWarnings), naming
      the chapter.
    The manuscript page keeps the BOOK's direction and language, never the
@@ -63,6 +67,11 @@ export function Desk() {
     );
   }
 
+  const sec = bk.active === null ? undefined : bk.book!.ydoc.getArray<unknown>(SECTIONS).get(bk.active);
+  const body = sec instanceof Y.Map ? sec.get(BODY) : undefined;
+  const fragment = body instanceof Y.XmlFragment ? body : null;
+  const row = bk.rows.find((r) => r.index === bk.active);
+
   return (
     <div className={'desk' + (dropping ? ' drop-on' : '')} {...dragProps}>
       {bk.notes.map(({ warning, chapter }, i) => (
@@ -71,7 +80,18 @@ export function Desk() {
           <span>{t('next.textWarning', { n: warning.count, chapter })}</span>
         </p>
       ))}
-      <div className="ms-page" id="manuscript" dir={bk.bookDir} lang={bk.bookLang} data-section={bk.active ?? undefined} />
+      {fragment && bk.active !== null ? (
+        <ChapterEditor
+          key={bk.book!.id + ':' + bk.active}
+          fragment={fragment}
+          dir={bk.bookDir}
+          lang={bk.bookLang}
+          label={row?.name || t('side.untitled')}
+          section={bk.active}
+        />
+      ) : (
+        <div className="ms-page" id="manuscript" dir={bk.bookDir} lang={bk.bookLang} />
+      )}
     </div>
   );
 }
