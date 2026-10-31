@@ -40,3 +40,19 @@ test('epub import: the round-trip comparison counts words as Beuk does', async (
   const html = await clientHtml();
   assert.match(html, /words: countWords\(String\(s\.content \|\| ""\)\)/);
 });
+
+/* BEUK:epubbulk — an EPUB is a manuscript everywhere a manuscript is taken:
+   Bulk import (a zip holding one included) and a box set's Add a Book. */
+test('epub import: bulk import and box sets take an EPUB too', async () => {
+  const html = await clientHtml();
+  assert.ok(html.includes('{ id: "import.epub.bulk-and-boxset"'));
+  const c = SELF_CHECK_CASES.find((x) => x.id === 'import.epub.bulk-and-boxset');
+  assert.ok(c && c.kind === 'client-only');
+  assert.match(html, /const BULK_MANUSCRIPT_EXT = \[[^\]]*"\.epub"/, 'bulk import counts .epub as a manuscript');
+  assert.match(html, /id="bulkFileInput" accept="[^"]*\.epub/, 'the bulk picker offers .epub');
+  assert.match(html, /id="boxSetFileInput" accept="[^"]*\.epub/, "the box set's Add a Book offers .epub");
+  /* every language's "what bulk import reads" names EPUB */
+  const reads = html.match(/"bulk\.emptyBatch": "[^"]*"/g) ?? [];
+  assert.equal(reads.length, 13);
+  for (const r of reads) assert.match(r, /\.epub/, r);
+});

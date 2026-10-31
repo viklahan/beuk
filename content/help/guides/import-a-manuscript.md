@@ -9,7 +9,7 @@ readMinutes: 3
 related: [typeset-a-chapter, add-a-cover]
 ---
 
-What you're doing: bringing a finished (or nearly finished) book into Beuk so it can be typeset. Beuk accepts Word documents (`.docx`), Markdown (`.md`), plain text (`.txt`), Rich Text (`.rtf`, which Scrivener, TextEdit and LibreOffice also write), and PDF (`.pdf`).
+What you're doing: bringing a finished (or nearly finished) book into Beuk so it can be typeset. Beuk accepts Word documents (`.docx`), Markdown (`.md`), plain text (`.txt`), Rich Text (`.rtf`, which Scrivener, TextEdit and LibreOffice also write), PDF (`.pdf`), and EPUB (`.epub`), so a book you only have as an ebook can come back in too (an EPUB under DRM cannot be read).
 
 New to the studio? [Show the quick tour](/studio#tour): four short steps that point out Import, the page and its preview, Typography Studio, and Export. You can skip it at any step. In the studio it is also under the sample story, as **Show the quick tour**.
 

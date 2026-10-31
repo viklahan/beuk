@@ -1791,6 +1791,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The EPUB import runs in the studio page; the server never sees the file.',
   },
   {
+    id: 'import.epub.bulk-and-boxset',
+    title: 'An EPUB is a manuscript for Bulk import and for a box set: a zip holding one becomes its own book, Add a Book takes one as a volume',
+    kind: 'client-only',
+    reason: 'Bulk import and box sets read their files in the studio page.',
+  },
+  {
     id: 'sample.roundtrip.word',
     title: 'The sample exported to Word and imported back comes back whole: every Part, chapter and footnote, nothing extra',
     kind: 'client-only',

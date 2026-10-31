@@ -3565,7 +3565,7 @@
             <button class="tb-btn" id="btnBoxSetAdd" type="button" data-i18n="exp.addBook"><i data-lucide="book-plus"></i>Add a Book…</button>
             <button class="tb-btn primary" id="btnBuildBoxSet" type="button" data-i18n="exp.buildBoxSet"><i data-lucide="download"></i>Build Box Set .epub</button>
           </div>
-          <input type="file" id="boxSetFileInput" accept=".json,.docx,.md,.markdown,.txt,.rtf,.pdf,.zip,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
+          <input type="file" id="boxSetFileInput" accept=".json,.docx,.md,.markdown,.txt,.rtf,.pdf,.epub,.zip,application/epub+zip,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
         </div>
 
         <div class="fmt-sec" id="archiveSec" style="display:none;">
@@ -4321,7 +4321,7 @@
 
     <div id="toasts" aria-live="polite"></div>
     <input type="file" id="fileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.epub,.zip,application/epub+zip,application/pdf,application/rtf,text/rtf,application/zip,application/x-zip-compressed" style="display:none;" />
-    <input type="file" id="bulkFileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.zip,.png,.jpg,.jpeg,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
+    <input type="file" id="bulkFileInput" accept=".docx,.md,.markdown,.txt,.rtf,.pdf,.epub,.zip,application/epub+zip,.png,.jpg,.jpeg,application/pdf,application/zip,application/x-zip-compressed" multiple style="display:none;" />
     <input type="file" id="bulkFolderInput" webkitdirectory style="display:none;" />
 
     <script>
@@ -4700,14 +4700,14 @@
         "bulk.failedPlural": "Couldn’t import {n} files",
         "bulk.reasonDuplicate": "the same manuscript appeared twice in this batch",
         "bulk.reasonShelved": "looks already shelved — skipped",
-        "bulk.reasonUnsupported": "not a .docx, .md, .txt or .rtf manuscript",
+        "bulk.reasonUnsupported": "not a .docx, .md, .txt, .rtf, .pdf or .epub manuscript",
         "bulk.reasonUnreadable": "couldn’t be read",
         "bulk.reasonEmpty": "no readable text found",
         "bulk.reasonShelf": "the shelf didn’t answer — nothing was added for this one",
         "bulk.detectedNote": "detected as {lang}",
         "bulk.vaultNote": "Obsidian vault recognised — frontmatter, links and images were honoured.",
         "bulk.seriesNote": "Series: {series}",
-        "bulk.emptyBatch": "No manuscripts in that selection — bulk import reads .docx, .md, .txt and .rtf files.",
+        "bulk.emptyBatch": "No manuscripts in that selection — bulk import reads .docx, .md, .txt, .rtf, .pdf and .epub files.",
         "top.readAloud": "Read Aloud", "top.readAloudAria": "Read this section aloud",
         "top.help": "Help", "top.helpAria": "Open the help reading room (new tab)",
         "top.support": "Support", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk’s home page (new tab)", "top.supportAria": "Support — write to a human (new tab)",
@@ -5455,14 +5455,14 @@
         "bulk.failedPlural": "No se pudieron importar {n} archivos",
         "bulk.reasonDuplicate": "el mismo manuscrito apareció dos veces en este lote",
         "bulk.reasonShelved": "parece que ya está en tu estantería — omitido",
-        "bulk.reasonUnsupported": "no es un manuscrito .docx, .md, .txt o .rtf",
+        "bulk.reasonUnsupported": "no es un manuscrito .docx, .md, .txt, .rtf, .pdf o .epub",
         "bulk.reasonUnreadable": "no se pudo leer",
         "bulk.reasonEmpty": "no se encontró texto legible",
         "bulk.reasonShelf": "la estantería no respondió — no se añadió nada de este",
         "bulk.detectedNote": "detectado como {lang}",
         "bulk.vaultNote": "Bóveda de Obsidian reconocida — se respetaron metadatos, enlaces e imágenes.",
         "bulk.seriesNote": "Serie: {series}",
-        "bulk.emptyBatch": "No hay manuscritos en esa selección — la importación en lote lee archivos .docx, .md, .txt y .rtf.",
+        "bulk.emptyBatch": "No hay manuscritos en esa selección — la importación en lote lee archivos .docx, .md, .txt, .rtf, .pdf y .epub.",
         "top.readAloud": "Leer en voz alta", "top.readAloudAria": "Leer esta sección en voz alta",
         "top.help": "Ayuda", "top.helpAria": "Abrir la sala de lectura de ayuda (pestaña nueva)",
         "top.support": "Soporte", "top.homeport": "Homeport", "top.homeportAria": "Homeport — la página de inicio de Beuk (pestaña nueva)", "top.supportAria": "Soporte — escribe a una persona (pestaña nueva)",
@@ -5675,14 +5675,14 @@
         "bulk.failedPlural": "Impossible d’importer {n} fichiers",
         "bulk.reasonDuplicate": "le même manuscrit est apparu deux fois dans ce lot",
         "bulk.reasonShelved": "semble déjà sur votre étagère — ignoré",
-        "bulk.reasonUnsupported": "pas un manuscrit .docx, .md, .txt ou .rtf",
+        "bulk.reasonUnsupported": "pas un manuscrit .docx, .md, .txt, .rtf, .pdf ou .epub",
         "bulk.reasonUnreadable": "illisible",
         "bulk.reasonEmpty": "aucun texte lisible trouvé",
         "bulk.reasonShelf": "l’étagère n’a pas répondu — rien n’a été ajouté pour celui-ci",
         "bulk.detectedNote": "détecté comme {lang}",
         "bulk.vaultNote": "Coffre Obsidian reconnu — métadonnées, liens et images ont été respectés.",
         "bulk.seriesNote": "Série : {series}",
-        "bulk.emptyBatch": "Aucun manuscrit dans cette sélection — l’import en lot lit les fichiers .docx, .md, .txt et .rtf.",
+        "bulk.emptyBatch": "Aucun manuscrit dans cette sélection — l’import en lot lit les fichiers .docx, .md, .txt, .rtf, .pdf et .epub.",
         "top.readAloud": "Lecture à voix haute", "top.readAloudAria": "Lire cette section à voix haute",
         "top.help": "Aide", "top.helpAria": "Ouvrir la salle de lecture d’aide (nouvel onglet)",
         "top.support": "Assistance", "top.homeport": "Homeport", "top.homeportAria": "Homeport — la page d’accueil de Beuk (nouvel onglet)", "top.supportAria": "Assistance — écrire à un humain (nouvel onglet)",
@@ -5895,14 +5895,14 @@
         "bulk.failedPlural": "{n} Dateien konnten nicht importiert werden",
         "bulk.reasonDuplicate": "dasselbe Manuskript kam zweimal in diesem Stapel vor",
         "bulk.reasonShelved": "sieht bereits im Regal aus — übersprungen",
-        "bulk.reasonUnsupported": "kein .docx-, .md-, .txt- oder .rtf-Manuskript",
+        "bulk.reasonUnsupported": "kein .docx-, .md-, .txt-, .rtf-, .pdf- oder .epub-Manuskript",
         "bulk.reasonUnreadable": "konnte nicht gelesen werden",
         "bulk.reasonEmpty": "kein lesbarer Text gefunden",
         "bulk.reasonShelf": "das Regal antwortete nicht — für dieses wurde nichts hinzugefügt",
         "bulk.detectedNote": "erkannt als {lang}",
         "bulk.vaultNote": "Obsidian-Vault erkannt — Frontmatter, Links und Bilder wurden übernommen.",
         "bulk.seriesNote": "Reihe: {series}",
-        "bulk.emptyBatch": "Keine Manuskripte in dieser Auswahl — der Stapelimport liest .docx-, .md-, .txt- und .rtf-Dateien.",
+        "bulk.emptyBatch": "Keine Manuskripte in dieser Auswahl — der Stapelimport liest .docx-, .md-, .txt-, .rtf-, .pdf- und .epub-Dateien.",
         "top.readAloud": "Vorlesen", "top.readAloudAria": "Diesen Abschnitt vorlesen",
         "top.help": "Hilfe", "top.helpAria": "Den Hilfe-Leseraum öffnen (neuer Tab)",
         "top.support": "Support", "top.homeport": "Homeport", "top.homeportAria": "Homeport — die Startseite von Beuk (neuer Tab)", "top.supportAria": "Support — einem Menschen schreiben (neuer Tab)",
@@ -6115,14 +6115,14 @@
         "bulk.failedPlural": "Impossibile importare {n} file",
         "bulk.reasonDuplicate": "lo stesso manoscritto è apparso due volte in questo gruppo",
         "bulk.reasonShelved": "sembra già sullo scaffale — saltato",
-        "bulk.reasonUnsupported": "non è un manoscritto .docx, .md, .txt o .rtf",
+        "bulk.reasonUnsupported": "non è un manoscritto .docx, .md, .txt, .rtf, .pdf o .epub",
         "bulk.reasonUnreadable": "non è stato possibile leggerlo",
         "bulk.reasonEmpty": "nessun testo leggibile trovato",
         "bulk.reasonShelf": "lo scaffale non ha risposto — per questo non è stato aggiunto nulla",
         "bulk.detectedNote": "rilevato come {lang}",
         "bulk.vaultNote": "Vault Obsidian riconosciuto — metadati, collegamenti e immagini sono stati rispettati.",
         "bulk.seriesNote": "Serie: {series}",
-        "bulk.emptyBatch": "Nessun manoscritto in questa selezione — l’importazione multipla legge file .docx, .md, .txt e .rtf.",
+        "bulk.emptyBatch": "Nessun manoscritto in questa selezione — l’importazione multipla legge file .docx, .md, .txt, .rtf, .pdf e .epub.",
         "top.readAloud": "Leggi ad alta voce", "top.readAloudAria": "Leggi questa sezione ad alta voce",
         "top.help": "Aiuto", "top.helpAria": "Apri la sala di lettura di aiuto (nuova scheda)",
         "top.support": "Assistenza", "top.homeport": "Homeport", "top.homeportAria": "Homeport — la home page di Beuk (nuova scheda)", "top.supportAria": "Assistenza — scrivi a una persona (nuova scheda)",
@@ -6335,14 +6335,14 @@
         "bulk.failedPlural": "Não foi possível importar {n} ficheiros",
         "bulk.reasonDuplicate": "o mesmo manuscrito apareceu duas vezes neste lote",
         "bulk.reasonShelved": "parece já estar na estante — ignorado",
-        "bulk.reasonUnsupported": "não é um manuscrito .docx, .md, .txt ou .rtf",
+        "bulk.reasonUnsupported": "não é um manuscrito .docx, .md, .txt, .rtf, .pdf ou .epub",
         "bulk.reasonUnreadable": "não foi possível lê-lo",
         "bulk.reasonEmpty": "nenhum texto legível encontrado",
         "bulk.reasonShelf": "a estante não respondeu — nada foi adicionado deste",
         "bulk.detectedNote": "detetado como {lang}",
         "bulk.vaultNote": "Cofre Obsidian reconhecido — metadados, ligações e imagens foram respeitados.",
         "bulk.seriesNote": "Série: {series}",
-        "bulk.emptyBatch": "Nenhum manuscrito nessa seleção — a importação em lote lê ficheiros .docx, .md, .txt e .rtf.",
+        "bulk.emptyBatch": "Nenhum manuscrito nessa seleção — a importação em lote lê ficheiros .docx, .md, .txt, .rtf, .pdf e .epub.",
         "top.readAloud": "Ler em voz alta", "top.readAloudAria": "Ler esta secção em voz alta",
         "top.help": "Ajuda", "top.helpAria": "Abrir a sala de leitura de ajuda (novo separador)",
         "top.support": "Apoio", "top.homeport": "Homeport", "top.homeportAria": "Homeport — a página inicial do Beuk (novo separador)", "top.supportAria": "Apoio — escreva a uma pessoa (novo separador)",
@@ -6555,14 +6555,14 @@
         "bulk.failedPlural": "{n} bestanden konden niet worden geïmporteerd",
         "bulk.reasonDuplicate": "hetzelfde manuscript kwam tweemaal voor in deze batch",
         "bulk.reasonShelved": "lijkt al op de plank te staan — overgeslagen",
-        "bulk.reasonUnsupported": "geen .docx-, .md-, .txt- of .rtf-manuscript",
+        "bulk.reasonUnsupported": "geen .docx-, .md-, .txt-, .rtf-, .pdf- of .epub-manuscript",
         "bulk.reasonUnreadable": "kon niet worden gelezen",
         "bulk.reasonEmpty": "geen leesbare tekst gevonden",
         "bulk.reasonShelf": "de plank antwoordde niet — hiervoor is niets toegevoegd",
         "bulk.detectedNote": "herkend als {lang}",
         "bulk.vaultNote": "Obsidian-vault herkend — frontmatter, links en afbeeldingen zijn overgenomen.",
         "bulk.seriesNote": "Reeks: {series}",
-        "bulk.emptyBatch": "Geen manuscripten in die selectie — bulkimport leest .docx-, .md-, .txt- en .rtf-bestanden.",
+        "bulk.emptyBatch": "Geen manuscripten in die selectie — bulkimport leest .docx-, .md-, .txt-, .rtf-, .pdf- en .epub-bestanden.",
         "top.readAloud": "Voorlezen", "top.readAloudAria": "Lees deze sectie voor",
         "top.help": "Help", "top.helpAria": "Open de helpleeszaal (nieuw tabblad)",
         "top.support": "Ondersteuning", "top.homeport": "Homeport", "top.homeportAria": "Homeport — de startpagina van Beuk (nieuw tabblad)", "top.supportAria": "Ondersteuning — schrijf een mens (nieuw tabblad)",
@@ -6775,14 +6775,14 @@
         "bulk.failedPlural": "Nie udało się zaimportować {n} plików",
         "bulk.reasonDuplicate": "ten sam manuskrypt pojawił się dwa razy w tej partii",
         "bulk.reasonShelved": "wygląda na już obecny na półce — pominięto",
-        "bulk.reasonUnsupported": "to nie jest manuskrypt .docx, .md, .txt ani .rtf",
+        "bulk.reasonUnsupported": "to nie jest manuskrypt .docx, .md, .txt, .rtf, .pdf ani .epub",
         "bulk.reasonUnreadable": "nie udało się odczytać",
         "bulk.reasonEmpty": "nie znaleziono czytelnego tekstu",
         "bulk.reasonShelf": "półka nie odpowiedziała — dla tego nic nie dodano",
         "bulk.detectedNote": "wykryto jako {lang}",
         "bulk.vaultNote": "Rozpoznano skarbiec Obsidian — metadane, linki i obrazy zostały zachowane.",
         "bulk.seriesNote": "Seria: {series}",
-        "bulk.emptyBatch": "Brak manuskryptów w tym wyborze — import zbiorczy czyta pliki .docx, .md, .txt i .rtf.",
+        "bulk.emptyBatch": "Brak manuskryptów w tym wyborze — import zbiorczy czyta pliki .docx, .md, .txt, .rtf, .pdf i .epub.",
         "top.readAloud": "Czytaj na głos", "top.readAloudAria": "Przeczytaj tę sekcję na głos",
         "top.help": "Pomoc", "top.helpAria": "Otwórz czytelnię pomocy (nowa karta)",
         "top.support": "Wsparcie", "top.homeport": "Homeport", "top.homeportAria": "Homeport — strona główna Beuk (nowa karta)", "top.supportAria": "Wsparcie — napisz do człowieka (nowa karta)",
@@ -6995,14 +6995,14 @@
         "bulk.failedPlural": "Не удалось импортировать файлов: {n}",
         "bulk.reasonDuplicate": "та же рукопись встретилась дважды в этой партии",
         "bulk.reasonShelved": "похоже, уже на полке — пропущено",
-        "bulk.reasonUnsupported": "не рукопись .docx, .md, .txt или .rtf",
+        "bulk.reasonUnsupported": "не рукопись .docx, .md, .txt, .rtf, .pdf или .epub",
         "bulk.reasonUnreadable": "не удалось прочитать",
         "bulk.reasonEmpty": "читаемый текст не найден",
         "bulk.reasonShelf": "полка не ответила — для этой ничего не добавлено",
         "bulk.detectedNote": "определён как {lang}",
         "bulk.vaultNote": "Хранилище Obsidian распознано — метаданные, ссылки и изображения учтены.",
         "bulk.seriesNote": "Серия: {series}",
-        "bulk.emptyBatch": "В этом выборе нет рукописей — пакетный импорт читает файлы .docx, .md, .txt и .rtf.",
+        "bulk.emptyBatch": "В этом выборе нет рукописей — пакетный импорт читает файлы .docx, .md, .txt, .rtf, .pdf и .epub.",
         "top.readAloud": "Читать вслух", "top.readAloudAria": "Прочитать этот раздел вслух",
         "top.help": "Справка", "top.helpAria": "Открыть читальный зал справки (новая вкладка)",
         "top.support": "Поддержка", "top.homeport": "Homeport", "top.homeportAria": "Homeport — главная страница Beuk (новая вкладка)", "top.supportAria": "Поддержка — написать человеку (новая вкладка)",
@@ -7215,14 +7215,14 @@
         "bulk.failedPlural": "{n} dosya içe aktarılamadı",
         "bulk.reasonDuplicate": "aynı el yazması bu partide iki kez göründü",
         "bulk.reasonShelved": "zaten rafta görünüyor — atlandı",
-        "bulk.reasonUnsupported": ".docx, .md, .txt veya .rtf el yazması değil",
+        "bulk.reasonUnsupported": ".docx, .md, .txt, .rtf, .pdf veya .epub el yazması değil",
         "bulk.reasonUnreadable": "okunamadı",
         "bulk.reasonEmpty": "okunabilir metin bulunamadı",
         "bulk.reasonShelf": "raf yanıt vermedi — bunun için hiçbir şey eklenmedi",
         "bulk.detectedNote": "{lang} olarak algılandı",
         "bulk.vaultNote": "Obsidian kasası tanındı — ön bilgi, bağlantılar ve görseller korundu.",
         "bulk.seriesNote": "Seri: {series}",
-        "bulk.emptyBatch": "Bu seçimde el yazması yok — toplu içe aktarma .docx, .md, .txt ve .rtf dosyalarını okur.",
+        "bulk.emptyBatch": "Bu seçimde el yazması yok — toplu içe aktarma .docx, .md, .txt, .rtf, .pdf ve .epub dosyalarını okur.",
         "top.readAloud": "Sesli Oku", "top.readAloudAria": "Bu bölümü sesli oku",
         "top.help": "Yardım", "top.helpAria": "Yardım okuma odasını aç (yeni sekme)",
         "top.support": "Destek", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk’un ana sayfası (yeni sekme)", "top.supportAria": "Destek — bir insana yazın (yeni sekme)",
@@ -7435,14 +7435,14 @@
         "bulk.failedPlural": "تعذّر استيراد {n} ملف",
         "bulk.reasonDuplicate": "ظهرت المخطوطة نفسها مرتين في هذه الدفعة",
         "bulk.reasonShelved": "يبدو أنها على الرف بالفعل — تُخطّيت",
-        "bulk.reasonUnsupported": "ليست مخطوطة .docx أو .md أو .txt أو .rtf",
+        "bulk.reasonUnsupported": "ليست مخطوطة .docx أو .md أو .txt أو .rtf أو .pdf أو .epub",
         "bulk.reasonUnreadable": "تعذّرت قراءتها",
         "bulk.reasonEmpty": "لم يُعثر على نص قابل للقراءة",
         "bulk.reasonShelf": "لم يُجب الرف — لم يُضف شيء لهذه",
         "bulk.detectedNote": "اكتُشفت كلغة {lang}",
         "bulk.vaultNote": "عُرِفَت خزنة Obsidian — حُفظت البيانات الوصفية والروابط والصور.",
         "bulk.seriesNote": "السلسلة: {series}",
-        "bulk.emptyBatch": "لا مخطوطات في هذا الاختيار — الاستيراد الجماعي يقرأ ملفات .docx و.md و.txt و.rtf.",
+        "bulk.emptyBatch": "لا مخطوطات في هذا الاختيار — الاستيراد الجماعي يقرأ ملفات .docx و.md و.txt و.rtf و.pdf و.epub.",
         "top.readAloud": "القراءة بصوت عالٍ", "top.readAloudAria": "اقرأ هذا القسم بصوت عالٍ",
         "top.help": "المساعدة", "top.helpAria": "افتح غرفة قراءة المساعدة (علامة تبويب جديدة)",
         "top.support": "الدعم", "top.homeport": "Homeport", "top.homeportAria": "Homeport — الصفحة الرئيسية لـ Beuk (علامة تبويب جديدة)", "top.supportAria": "الدعم — راسل إنسانًا (علامة تبويب جديدة)",
@@ -7655,14 +7655,14 @@
         "bulk.failedPlural": "{n} 件をインポートできませんでした",
         "bulk.reasonDuplicate": "同じ原稿がこのバッチに2回現れました",
         "bulk.reasonShelved": "すでに本棚にあるようです — スキップしました",
-        "bulk.reasonUnsupported": ".docx、.md、.txt、.rtf の原稿ではありません",
+        "bulk.reasonUnsupported": ".docx、.md、.txt、.rtf、.pdf、.epub の原稿ではありません",
         "bulk.reasonUnreadable": "読み取れませんでした",
         "bulk.reasonEmpty": "読めるテキストが見つかりませんでした",
         "bulk.reasonShelf": "本棚が応答しませんでした — この分は何も追加されていません",
         "bulk.detectedNote": "{lang} として検出",
         "bulk.vaultNote": "Obsidian 保管庫を認識しました — フロントマター・リンク・画像が保持されました。",
         "bulk.seriesNote": "シリーズ: {series}",
-        "bulk.emptyBatch": "その選択に原稿はありません — 一括インポートは .docx、.md、.txt、.rtf ファイルを読みます。",
+        "bulk.emptyBatch": "その選択に原稿はありません — 一括インポートは .docx、.md、.txt、.rtf、.pdf、.epub ファイルを読みます。",
         "top.readAloud": "読み上げ", "top.readAloudAria": "このセクションを読み上げる",
         "top.help": "ヘルプ", "top.helpAria": "ヘルプの閲覧室を開く（新しいタブ）",
         "top.support": "サポート", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk のホームページ（新しいタブ）", "top.supportAria": "サポート — 人間に書く（新しいタブ）",
@@ -7875,14 +7875,14 @@
         "bulk.failedPlural": "无法导入 {n} 个文件",
         "bulk.reasonDuplicate": "同一部稿件在这批中出现了两次",
         "bulk.reasonShelved": "似乎已在书架上 — 已跳过",
-        "bulk.reasonUnsupported": "不是 .docx、.md、.txt 或 .rtf 稿件",
+        "bulk.reasonUnsupported": "不是 .docx、.md、.txt、.rtf、.pdf 或 .epub 稿件",
         "bulk.reasonUnreadable": "无法读取",
         "bulk.reasonEmpty": "未找到可读文本",
         "bulk.reasonShelf": "书架没有响应 — 此部未添加任何内容",
         "bulk.detectedNote": "检测为 {lang}",
         "bulk.vaultNote": "已识别 Obsidian 仓库 — 元数据、链接和图片均已保留。",
         "bulk.seriesNote": "系列：{series}",
-        "bulk.emptyBatch": "该选择中没有稿件 — 批量导入读取 .docx、.md、.txt 和 .rtf 文件。",
+        "bulk.emptyBatch": "该选择中没有稿件 — 批量导入读取 .docx、.md、.txt、.rtf、.pdf 和 .epub 文件。",
         "top.readAloud": "朗读", "top.readAloudAria": "朗读本节",
         "top.help": "帮助", "top.helpAria": "打开帮助阅览室（新标签页）",
         "top.support": "支持", "top.homeport": "Homeport", "top.homeportAria": "Homeport — Beuk 主页（新标签页）", "top.supportAria": "支持 — 给真人写信（新标签页）",
@@ -38929,7 +38929,7 @@
           if (/\.zip$/i.test(name)) {
             const ex = await importExpandZips([{ file, path: name }], { accept: bulkIsManuscript });
             const books = ex.entries.filter((e) => bulkIsManuscript(e.file.name));
-            if (!books.length) throw importRefusal("That zip holds no manuscript Beuk can read (.docx, .pdf, .rtf, .md or .txt).");
+            if (!books.length) throw importRefusal("That zip holds no manuscript Beuk can read (.docx, .pdf, .epub, .rtf, .md or .txt).");
             if (books.length > 1) throw importRefusal("That zip holds " + books.length + " manuscripts — the Import button brings in one book. Use Bulk import on your shelf to bring them all, or Add a Book in a box set.");
             target = books[0].file; name = target.name;
           }
@@ -46280,7 +46280,7 @@
           if (/\.(md|markdown|txt)$/i.test(name)) { const fm = bulkParseFrontmatter(await file.text()); if (fm.meta.language && LANG_PACKS[fm.meta.language]) vol.meta.language = fm.meta.language; }
           return vol;
         }
-        throw new Error("Beuk reads .docx, .pdf, .rtf, .md, .txt and Beuk backups (.json)");
+        throw new Error("Beuk reads .docx, .pdf, .epub, .rtf, .md, .txt and Beuk backups (.json)");
       }
       /* ==== /BEUK:boxsetvols ==== */
       function renderBoxSetList() {
@@ -49724,7 +49724,7 @@
           const picked = Array.prototype.slice.call(input.files || []);
           input.value = "";
           const pick = await boxSetExpandPick(picked); /* BEUK:onereader — a zip of books adds them all */
-          pick.skipped.forEach((sk) => toast("Not added: " + sk.name + (sk.why === "unsupported" ? " — Beuk reads .docx, .pdf, .rtf, .md, .txt and Beuk backups" : " — it could not be read"), "alert-triangle"));
+          pick.skipped.forEach((sk) => toast("Not added: " + sk.name + (sk.why === "unsupported" ? " — Beuk reads .docx, .pdf, .epub, .rtf, .md, .txt and Beuk backups" : " — it could not be read"), "alert-triangle"));
           const files = pick.files;
           for (const f of files) {
             try {
@@ -51567,7 +51567,7 @@
          (![[…]] and ![](…)) resolve against the batch's image files
          and land in the book's image library with their placements.
          The subfolder a note lived in is offered as its series. */
-      const BULK_MANUSCRIPT_EXT = [".docx", ".md", ".markdown", ".txt", ".rtf", ".pdf"]; /* BEUK:onereader — PDFs too */
+      const BULK_MANUSCRIPT_EXT = [".docx", ".md", ".markdown", ".txt", ".rtf", ".pdf", ".epub"]; /* BEUK:onereader — PDFs too; BEUK:epubbulk — and EPUBs */
       const BULK_IMAGE_EXT = [".png", ".jpg", ".jpeg"];
       const bulkExtOf = (name) => { const n = String(name || "").toLowerCase(); const i = n.lastIndexOf("."); return i >= 0 ? n.slice(i) : ""; };
       const bulkIsManuscript = (name) => BULK_MANUSCRIPT_EXT.includes(bulkExtOf(name));
@@ -63790,6 +63790,49 @@
             const ok = vols.length === 3 && vols[0].sections.filter((x) => x.type === "chapter").length === 2 && vols[0].sections.some((x) => x.type === "preface" && /Hello/.test(x.content || "")) &&
               vols[1].sections.filter((x) => x.type === "chapter").length === 2 && vols[2].sections.some((x) => x.type === "chapter" && String(x.content || "").trim());
             return scVerdict(ok, "[" + shape + "]");
+          } },
+        /* BEUK:epubbulk — an EPUB is a manuscript everywhere a manuscript is taken */
+        { id: "import.epub.bulk-and-boxset", feature: "import", name: "An EPUB is a manuscript for Bulk import and for a box set as it is for the Import button: a zip holding an EPUB unpacks for a bulk import and the EPUB becomes its own book (title, author, chapters), Add a Book takes an EPUB as the next volume, and both file pickers offer .epub",
+          async run() {
+            if (!window.JSZip) return scVerdict(false, "JSZip not loaded");
+            const e = new JSZip();
+            const x = (body) => '<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>t</title></head><body>' + body + "</body></html>";
+            e.file("mimetype", "application/epub+zip");
+            e.file("META-INF/container.xml", '<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
+            e.file("OEBPS/content.opf", '<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>The Salt Road</dc:title><dc:creator>Ines Morrow</dc:creator><dc:language>en</dc:language></metadata>' +
+              '<manifest><item id="a" href="one.xhtml" media-type="application/xhtml+xml"/><item id="b" href="two.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="a"/><itemref idref="b"/></spine></package>');
+            e.file("OEBPS/one.xhtml", x('<section epub:type="chapter"><h1>The Caravan</h1><p>The caravan left at dawn for the coast.</p></section>'));
+            e.file("OEBPS/two.xhtml", x('<section epub:type="chapter"><h1>The Pans</h1><p>The pans lay white under the sun.</p></section>'));
+            const epubBytes = await e.generateAsync({ type: "uint8array" });
+            const bad = [];
+            /* Bulk import: a zip holding the EPUB and a text book */
+            const z = new JSZip();
+            z.file("salt-road.epub", epubBytes);
+            const P2 = String.fromCharCode(10) + String.fromCharCode(10);
+            z.file("other.txt", ["# Chapter 1", "One.", "# Chapter 2", "Two."].join(P2));
+            const before = JSON.stringify(serializeBook().sections);
+            const ex = await importExpandZips([{ file: new File([await z.generateAsync({ type: "uint8array" })], "library.zip"), path: "library.zip" }]);
+            const prep = await new Promise((res) => bulkPrepareEntries(ex.entries, null, res));
+            const ctx = bulkBatchContext(prep.items, { images: prep.imageMap });
+            const it = prep.items.find((i) => i.name === "salt-road.epub");
+            if (!it || it.error) bad.push("bulk did not read the EPUB (" + (it ? it.error : "not unpacked: " + ex.skipped.map((s) => s.name + ":" + s.why).join(",")) + ")");
+            else {
+              const b = bulkBuildBook(it, ctx);
+              const chs = b.doc.sections.filter((s) => s.type === "chapter").map((s) => s.title).join(" | ");
+              if (chs !== "The Caravan | The Pans" || b.doc.meta.title !== "The Salt Road" || b.doc.meta.author !== "Ines Morrow") bad.push("bulk book: " + JSON.stringify([b.doc.meta.title, b.doc.meta.author, chs]));
+            }
+            if (JSON.stringify(serializeBook().sections) !== before) bad.push("the open book changed");
+            /* Box set: Add a Book takes the EPUB as a volume */
+            const pick = await boxSetExpandPick([new File([epubBytes], "salt-road.epub")]);
+            if (pick.files.length !== 1) bad.push("Add a Book skipped the EPUB (" + pick.skipped.map((s) => s.name + ":" + s.why).join(",") + ")");
+            else {
+              const vol = await manuscriptFileToVolume(pick.files[0]);
+              const chs = vol.sections.filter((s) => s.type === "chapter").length;
+              if (vol.meta.title !== "The Salt Road" || chs !== 2) bad.push("volume: " + JSON.stringify([vol.meta.title, chs]));
+            }
+            const acc = (id) => String(($(id) || {}).accept || "");
+            if (!/\.epub/.test(acc("bulkFileInput")) || !/\.epub/.test(acc("boxSetFileInput"))) bad.push("a file picker does not offer .epub");
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "bulk: The Salt Road by Ines Morrow, 2 chapters; box set: the EPUB as the next volume; both pickers offer .epub");
           } },
         { id: "import.zip.single", feature: "import", name: "The Import button takes a zip holding one manuscript as that manuscript, and refuses a zip of several plainly, pointing to Bulk import or a box set, the desk left as it was",
           async run() {
