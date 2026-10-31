@@ -2,12 +2,30 @@
 # DOMAIN comes from .env: "localhost" for local dev (internal CA, https://localhost),
 # "beuk.studio" in production (automatic Let's Encrypt TLS).
 
+# ==== BEUK:lanhttps ==== start-local.ps1 also serves https on this
+# machine's network addresses (https://192.168.x.x:8443), with
+# certificates from Caddy's own local CA (Caddy issues IP addresses from
+# its internal issuer: https://caddyserver.com/docs/automatic-https).
+# A browser opening an IP sends no SNI (RFC 6066 §3: Literal IPv4 and
+# IPv6 addresses are not permitted in "HostName"), and inside Docker the
+# connection's own address is the container's, not the LAN one, so
+# DEFAULT_SNI names the certificate to answer with. Unset (production)
+# it names a host with no certificate, which changes nothing.
+{
+	default_sni {$DEFAULT_SNI:beuk.invalid}
+}
+
 # WWW_DOMAIN (optional, e.g. www.beuk.studio): served on the same site
 # and permanently redirected to DOMAIN, so the studio, its cookies and
 # its local saves live on ONE origin. Unset/empty → expands to nothing
 # and only DOMAIN is served ("{$VAR}" is substituted before parsing and
 # may expand to nothing: https://caddyserver.com/docs/caddyfile/concepts).
-{$DOMAIN} {$WWW_DOMAIN} {
+#
+# LAN_SITES (local only, BEUK:lanhttps): start-local.ps1's extra https
+# addresses (https://localhost:8443 https://192.168.x.x:8443 …). Its own
+# variable, not part of DOMAIN: the redir below names {$DOMAIN} as ONE
+# token. Unset → expands to nothing, as WWW_DOMAIN does.
+{$DOMAIN} {$WWW_DOMAIN} {$LAN_SITES} {
 	encode gzip
 
 	# "www.invalid" keeps the matcher non-empty when WWW_DOMAIN is empty
@@ -117,6 +135,23 @@
 		not host localhost 127.0.0.1
 	}
 	header @hsts Strict-Transport-Security "max-age=31536000"
+
+	# ==== BEUK:lanhttps ==== The local CA's root certificate, so a phone
+	# or tablet can trust the https://<ip> addresses once (it is the
+	# public half only; the key never leaves caddy_data). Served only
+	# when start-local.ps1 sets BEUK_LOCAL_CA=1 — production never has it.
+	@localca {
+		path /beuk-local-ca.crt
+		expression `{env.BEUK_LOCAL_CA} == "1"`
+	}
+	handle @localca {
+		root * /data/caddy/pki/authorities/local
+		rewrite * /root.crt
+		header Content-Type "application/x-x509-ca-cert"
+		header Content-Disposition "attachment; filename=\"beuk-local-ca.crt\""
+		header Cache-Control "no-store"
+		file_server
+	}
 
 	# API → Node app
 	handle /api/* {

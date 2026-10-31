@@ -30,6 +30,36 @@ running and takes the next free port (8091, 8092, …). `-LocalOnly` keeps
 it to this machine, `-Port` picks where the search starts, `-Down` stops
 it, `-NoBuild` restarts without rebuilding.
 
+**https on the network, for phones and tablets (BEUK:lanhttps).** Plain
+http on an IP loads the studio, but the browser withholds the service
+worker (offline mode, app install) and `crypto.subtle`: both need https
+or localhost. So start-local also serves every IPv4 address on
+**https, port 8443 up** (`-HttpsPort` moves the search), with
+certificates from Caddy's own local CA. Once per device:
+
+1. Open `http://<laptop-ip>:8090/beuk-local-ca.crt` and download it
+   (start-local prints the exact link). It is the CA's public root
+   only; the key stays in the `caddy_data` volume.
+2. Install it as a CA certificate. On Android: Settings → Security →
+   Encryption & credentials → Install a certificate → CA certificate
+   (names vary by maker).
+3. Use `https://<laptop-ip>:8443/studio`.
+
+How it is wired: the extra sites travel in `LAN_SITES` (not `DOMAIN`,
+which the www redirect uses as one word), `DEFAULT_SNI` names the
+laptop's default-route address because a browser opening an IP sends no
+SNI, and `/beuk-local-ca.crt` exists only when start-local sets
+`BEUK_LOCAL_CA=1` (production falls through to the studio). Checked
+live 2026-10-31: in Chromium trusting only that CA,
+`https://192.168.50.198:8443/studio` is a secure context, the service
+worker registers and controls the page after a reload, and without the
+CA it is `ERR_CERT_AUTHORITY_INVALID`; `tests/lan-https.test.ts` holds
+the wiring (8 mutants, all caught). If the laptop's address changes,
+run start-local again (the CA, and so the phone's trust, stays unless
+the `caddy_data` volume is deleted). A phone that times out on Wi-Fi
+while a cabled device connects is the router's AP / client isolation,
+not Beuk: turn it off or cable the laptop.
+
 Or by hand:
 
 ```bash
