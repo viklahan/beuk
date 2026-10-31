@@ -10,11 +10,14 @@ export type { AccountTrial } from '../access.js';
  * The account page's "Plan" section and the account-deletion billing
  * step.
  *
- * V's decision (2026-10-26): a 7-day free trial that starts at account
- * sign-up, then ONE price for complete access. The price amount is a
- * setting (BILLING_PRICE_LABEL, with STRIPE_PRICE_ID); while it is
- * unset, nothing anywhere shows or implies a price. Export always stays
- * open, whatever the account state ("never hold a book hostage").
+ * V's decision (2026-10-26, rules re-decided 2026-10-30): a 21-day free
+ * trial that starts at account sign-up, then ONE price for complete
+ * access. The price amount is a setting (BILLING_PRICE_LABEL, with
+ * STRIPE_PRICE_ID); while it is unset, nothing anywhere shows or implies
+ * a price. After the trial without a plan the store-ready files and the
+ * account features lock, and the writer's own words (the backup file,
+ * Word, Markdown, Download all my data) stay open ("never hold a book
+ * hostage").
  *
  * Access is decided in src/access.ts (trial clock + the subscription
  * decision of src/entitlements.ts); this file only gathers what the page

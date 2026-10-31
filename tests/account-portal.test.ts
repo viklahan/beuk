@@ -163,7 +163,7 @@ test('signed out, /account is a calm page with Sign in and Create an account doo
     const html = await res.text();
     assert.match(html, /href="\/studio\?signin"/);
     assert.match(html, /href="\/studio\?signup"/);
-    assert.match(html, /Writing never needs an account/);
+    assert.match(html, /An account gives you a shelf that follows you to any device/);
     assert.ok(!html.replace(/<!doctype html>/i, '').includes('!'), 'no exclamation marks in the copy');
     // The page's own assets are served.
     assert.equal((await fetch(`${s.base}/account/account.css`)).status, 200);
@@ -207,7 +207,7 @@ test('signed in, /account is the typesetting portal: email, shelf with words + s
     // Plan: billing is not configured in tests — said plainly, no price anywhere.
     assert.match(html, /data-plan-status="none"/);
     assert.match(html, /Plans are not switched on on this server yet/);
-    assert.match(html, /export is always open/);
+    assert.match(html, /the backup file, Word and Markdown are always open/);
     assert.ok(!/[$€£]\s?\d|per month|\/month|per year/i.test(html), 'no price shown or implied');
     // Unconfirmed, with mail configured: the resend button.
     assert.match(html, /data-unconfirmed/);

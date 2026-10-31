@@ -29,6 +29,8 @@ const TEST_KEY = 'sk_test_placeholder_not_a_real_key';
 const PRICE = 'price_fixture_one';
 const DAY = 86_400_000;
 const PASSWORD = 'correct horse battery';
+/** Old promises the copy must never make again (V, 2026-10-30). */
+const COPY_BANNED = /every export|export(s)? (always|still) (stay|work)|export is always open|no account|7-day|free week/i;
 
 /* ---------------- fake Stripe API ---------------- */
 
@@ -372,22 +374,22 @@ test('a new account gets its trial stamped at sign-up (TRIAL_DAYS)', async () =>
   const w = await writer(on.base, 'stamp', true);
   const row = (await db.query<{ created_at: Date; trial_ends_at: Date }>('select created_at, trial_ends_at from users where id = $1', [w.id])).rows[0];
   const days = (new Date(row.trial_ends_at).getTime() - new Date(row.created_at).getTime()) / DAY;
-  assert.ok(Math.abs(days - 7) < 0.01, `trial is 7 days (got ${days})`);
+  assert.ok(Math.abs(days - 21) < 0.01, `trial is 21 days (got ${days})`);
 });
 
 /* ---------------- the gating matrix ---------------- */
 
 test('gating matrix: trial active, subscribed, past_due inside grace → open; expired, past grace, canceled, unpaid → paused', async () => {
-  const cases: Array<{ name: string; trialDays: number; sub?: { status: string; sinceDaysAgo: number }; paused: boolean }> = [
-    { name: 'trial active', trialDays: 3, paused: false },
-    { name: 'trial expired, no subscription', trialDays: -1, paused: true },
-    { name: 'subscribed (active)', trialDays: -10, sub: { status: 'active', sinceDaysAgo: 9 }, paused: false },
-    { name: 'subscribed (trialing at Stripe)', trialDays: -1, sub: { status: 'trialing', sinceDaysAgo: 2 }, paused: false },
-    { name: 'past_due inside grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 2 }, paused: false },
-    { name: 'past_due after grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 8 }, paused: true },
-    { name: 'canceled', trialDays: -20, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: true },
-    { name: 'unpaid', trialDays: -20, sub: { status: 'unpaid', sinceDaysAgo: 1 }, paused: true },
-    { name: 'canceled, but still inside the trial', trialDays: 2, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: false },
+  const cases: Array<{ name: string; trialDays: number; sub?: { status: string; sinceDaysAgo: number }; paused: boolean; state: string }> = [
+    { name: 'trial active', trialDays: 3, paused: false, state: 'trial' },
+    { name: 'trial expired, no subscription', trialDays: -1, paused: true, state: 'paused' },
+    { name: 'subscribed (active)', trialDays: -10, sub: { status: 'active', sinceDaysAgo: 9 }, paused: false, state: 'subscribed' },
+    { name: 'subscribed (trialing at Stripe)', trialDays: -1, sub: { status: 'trialing', sinceDaysAgo: 2 }, paused: false, state: 'subscribed' },
+    { name: 'past_due inside grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 2 }, paused: false, state: 'grace' },
+    { name: 'past_due after grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 8 }, paused: true, state: 'paused' },
+    { name: 'canceled', trialDays: -20, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: true, state: 'paused' },
+    { name: 'unpaid', trialDays: -20, sub: { status: 'unpaid', sinceDaysAgo: 1 }, paused: true, state: 'paused' },
+    { name: 'canceled, but still inside the trial', trialDays: 2, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: false, state: 'trial' },
   ];
   for (const k of cases) {
     const w = await writer(on.base, 'matrix');
@@ -616,7 +618,8 @@ test('trial-ending email: once per account, 3 days before, only with email + bil
   assert.equal(msgs.length, 1);
   assert.match(msgs[0].subject, /Your Beuk trial ends on/);
   assert.match(msgs[0].text, /\/account/);
-  assert.match(msgs[0].text, /every export/);
+  assert.match(msgs[0].text, /the backup file, Word and Markdown/);
+  assert.doesNotMatch(msgs[0].text, COPY_BANNED);
   assert.ok(!/[$€£]\s?\d|per month/i.test(msgs[0].text), 'no price while no label is set');
   assert.ok(!/!/.test(msgs[0].text), 'no exclamation marks');
   assert.ok((await db.query<{ t: Date | null }>('select trial_reminder_sent_at as t from users where id = $1', [soon.id])).rows[0].t);
@@ -705,7 +708,11 @@ test('Plan section copy: trial (days left, what pauses, first charge waits), pri
   assert.match(html, /the first payment waits until your trial ends/);
   assert.match(html, /data-action="upgrade"/);
   assert.ok(!html.includes('data-action="manage"'), 'no billing account yet');
-  assert.match(html, /export is always open/);
+  assert.match(html, /the backup file, Word and Markdown are always open/);
+  const planHtml = html.slice(html.indexOf('id="plan"'), html.indexOf('id="security"'));
+  assert.match(planHtml, /4 days left/);
+  for (const locked of [/EPUB/, /print PDF/, /cover wrap/, /shelf/, /beta-reader links/, /checks/]) assert.match(planHtml, locked);
+  assert.doesNotMatch(planHtml, COPY_BANNED);
   assert.match(html, /This server takes test payments only/);
   assert.ok(!html.includes('One plan,'), 'no price line without BILLING_PRICE_LABEL');
   const sum = (await t.c.get('/api/account/summary')).body.plan as Record<string, unknown>;
@@ -728,7 +735,10 @@ test('Plan section copy: trial (days left, what pauses, first charge waits), pri
   assert.match(html, /data-plan-notice="paused"/);
   assert.match(html, /Your free trial ended on 9 Nov 2026/);
   assert.match(html, /are paused/);
-  assert.match(html, /every export/);
+  assert.match(html, /the backup file, Word and Markdown/);
+  const pausedHtml = html.slice(html.indexOf('id="plan"'), html.indexOf('id="security"'));
+  for (const locked of [/EPUB/, /print PDF/, /cover wrap/, /shelf/, /beta-reader links/, /checks/]) assert.match(pausedHtml, locked);
+  assert.doesNotMatch(pausedHtml, COPY_BANNED);
   assert.match(html, /data-action="upgrade"/);
 
   // past_due inside grace: calm notice, Manage billing, no second checkout.

@@ -127,7 +127,7 @@ export function testConfig(overrides?: Partial<Config>): Config {
     stripeApiBase: 'http://127.0.0.1:9',
     billingGraceDays: 7,
     entitlementsFile: null,
-    trialDays: 7,
+    trialDays: 21,
     billingPriceLabel: null,
     billingAutomaticTax: false,
     billingCancelProrate: false,
