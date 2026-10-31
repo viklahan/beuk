@@ -2646,6 +2646,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The cover recipe is part of the client book model (synced as opaque JSON).',
   },
   {
+    id: 'cover.wrap.spine-back-normalize',
+    title: 'Spine and back settings: junk values fall back to follow-the-front, valid ones are kept',
+    kind: 'client-only',
+    reason: 'The spine and back settings are normalized by the client cover maker.',
+  },
+  {
     id: 'cover.wrap3d.faces-from-wrap',
     title: '3D wrap viewer: front, spine and back faces are sliced from the current wrap render',
     kind: 'client-only',

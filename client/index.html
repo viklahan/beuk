@@ -43321,9 +43321,68 @@
         });
       }
       /* ==== /BEUK:hardcover ==== */
+      /* ==== BEUK:spineback ==== */
+      /* The spine and the back cover get their own look: a background
+         (follow the front, or solid / gradient / pattern), a font and
+         a colour, and — on the spine — which words, which reading
+         direction and an icon at the head and the foot. Every field
+         is validated here; anything unknown falls back to "follow the
+         front" / no icon, so a recipe with junk values never throws. */
+      const WRAP_BG_MODES = ["front", "solid", "gradient", "pattern"];
+      const WRAP_BG_DIRS = ["down", "across", "diag-down", "diag-up"];
+      const WRAP_PATTERNS = ["linen", "speckle", "vignette", "dots", "stripes", "grid", "diamonds"];
+      const WRAP_SPINE_SHOW = ["both", "title", "author", "custom"];
+      const WRAP_SPINE_DIRS = ["auto", "ttb", "btt"];
+      const WRAP_PANEL_COLOR = "#232a33", WRAP_PANEL_COLOR2 = "#c9a959";
+      const WRAP_HEX = /^#[0-9a-fA-F]{6}$/;
+      /* Lucide names its icons in PascalCase ("Feather"); a kebab name
+         ("book-open") is accepted and stored as the PascalCase key. */
+      function lucideKey(name) {
+        const s = String(name || "").trim();
+        if (!/^[A-Za-z][A-Za-z0-9-]{0,59}$/.test(s)) return "";
+        const key = /-/.test(s) || s === s.toLowerCase() ? s.split("-").map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join("") : s;
+        const lib = typeof window !== "undefined" && window.lucide && window.lucide.icons;
+        return lib ? (Object.prototype.hasOwnProperty.call(lib, key) ? key : "") : key;
+      }
+      function normalizeWrapBg(b) {
+        b = b && typeof b === "object" ? b : {};
+        return {
+          mode: WRAP_BG_MODES.indexOf(b.mode) !== -1 ? b.mode : "front",
+          color: typeof b.color === "string" && WRAP_HEX.test(b.color) ? b.color : WRAP_PANEL_COLOR,
+          color2: typeof b.color2 === "string" && WRAP_HEX.test(b.color2) ? b.color2 : WRAP_PANEL_COLOR2,
+          dir: WRAP_BG_DIRS.indexOf(b.dir) !== -1 ? b.dir : "down",
+          pattern: WRAP_PATTERNS.indexOf(b.pattern) !== -1 ? b.pattern : "linen"
+        };
+      }
+      function normalizeWrapIcon(i) {
+        i = i && typeof i === "object" ? i : {};
+        const none = { kind: "none", name: "", picId: null };
+        if (i.kind === "lucide") { const key = lucideKey(i.name); return key ? { kind: "lucide", name: key, picId: null } : none; }
+        if (i.kind === "upload") return typeof i.picId === "string" && i.picId ? { kind: "upload", name: "", picId: i.picId } : none;
+        return none;
+      }
+      function normalizeWrapFont(f) { return typeof f === "string" && (COVER_FONTS.includes(f) || uploadedFontByFamily(f)) ? f : ""; }
+      function normalizeWrapColor(c) { return typeof c === "string" && WRAP_HEX.test(c) ? c : ""; }
+      function normalizeWrapSpine(s) {
+        s = s && typeof s === "object" ? s : {};
+        return {
+          bg: normalizeWrapBg(s.bg), font: normalizeWrapFont(s.font), color: normalizeWrapColor(s.color),
+          show: WRAP_SPINE_SHOW.indexOf(s.show) !== -1 ? s.show : "both",
+          text: typeof s.text === "string" ? s.text.slice(0, 80) : "",
+          caps: typeof s.caps === "boolean" ? s.caps : true,
+          dir: WRAP_SPINE_DIRS.indexOf(s.dir) !== -1 ? s.dir : "auto",
+          iconTop: normalizeWrapIcon(s.iconTop), iconBottom: normalizeWrapIcon(s.iconBottom)
+        };
+      }
+      function normalizeWrapBack(b) {
+        b = b && typeof b === "object" ? b : {};
+        return { bg: normalizeWrapBg(b.bg), font: normalizeWrapFont(b.font), color: normalizeWrapColor(b.color) };
+      }
+      /* ==== /BEUK:spineback ==== */
       function wrapDefaults() {
         return { trim: "", pages: 0, paper: "white", customFactor: 0.0025, blurb: "", quote: "", imprint: "",
-          binding: "paperback", hcSpine: 0, hcSpineAllow: 0, flapFront: "", flapBack: "", flapPhotoId: null };
+          binding: "paperback", hcSpine: 0, hcSpineAllow: 0, flapFront: "", flapBack: "", flapPhotoId: null,
+          spine: normalizeWrapSpine(null), back: normalizeWrapBack(null) };
       }
       function normalizeWrap(w) {
         if (!w || typeof w !== "object") return wrapDefaults();
@@ -43340,7 +43399,8 @@
           hcSpine: isFinite(Number(w.hcSpine)) && Number(w.hcSpine) > 0 && Number(w.hcSpine) <= 4 ? Number(w.hcSpine) : 0,
           hcSpineAllow: isFinite(Number(w.hcSpineAllow)) && Number(w.hcSpineAllow) > 0 && Number(w.hcSpineAllow) <= 1 ? Number(w.hcSpineAllow) : 0,
           flapFront: str(w.flapFront), flapBack: str(w.flapBack),
-          flapPhotoId: typeof w.flapPhotoId === "string" && w.flapPhotoId ? w.flapPhotoId : null
+          flapPhotoId: typeof w.flapPhotoId === "string" && w.flapPhotoId ? w.flapPhotoId : null,
+          spine: normalizeWrapSpine(w.spine), back: normalizeWrapBack(w.back)
         };
       }
       function wrapFactor(w) { return w.paper === "custom" ? w.customFactor : (WRAP_PAPERS[w.paper] || 0.0025); }
@@ -53307,7 +53367,9 @@
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
             try {
               const r = defaultCoverRecipe();
-              r.wrap = { trim: "5.5x8.5", pages: 342, paper: "custom", customFactor: 0.0031, blurb: "Salt, storms and a stubborn harbourmaster.", quote: "“A triumph.”", imprint: "Quiet Shelf Studio" };
+              r.wrap = { trim: "5.5x8.5", pages: 342, paper: "custom", customFactor: 0.0031, blurb: "Salt, storms and a stubborn harbourmaster.", quote: "“A triumph.”", imprint: "Quiet Shelf Studio",
+                spine: { bg: { mode: "solid", color: "#203040", color2: "#c9a959", dir: "across", pattern: "stripes" }, show: "custom", text: "BOOK II", caps: false, dir: "ttb", iconTop: { kind: "lucide", name: "Feather", picId: null }, color: "#f0e6d2" },
+                back: { bg: { mode: "pattern", color: "#304050", color2: "#c9a959", dir: "down", pattern: "grid" }, color: "#e8e0d0" } };
               state.coverRecipe = normalizeCoverRecipe(r);
               const before = stableJson(serializeBook().coverRecipe.wrap);
               applyBookDoc(JSON.parse(JSON.stringify(serializeBook())));
@@ -53316,9 +53378,37 @@
               return scVerdict(
                 before === after && w.trim === "5.5x8.5" && w.pages === 342 && w.paper === "custom" &&
                 Math.abs(w.customFactor - 0.0031) < 1e-12 && w.blurb.indexOf("harbourmaster") !== -1 &&
-                w.quote.indexOf("triumph") !== -1 && w.imprint === "Quiet Shelf Studio",
+                w.quote.indexOf("triumph") !== -1 && w.imprint === "Quiet Shelf Studio" &&
+                w.spine.bg.mode === "solid" && w.spine.bg.color === "#203040" && w.spine.show === "custom" && w.spine.text === "BOOK II" && w.spine.caps === false && w.spine.dir === "ttb" &&
+                w.spine.iconTop.name === "Feather" && w.spine.color === "#f0e6d2" && w.back.bg.mode === "pattern" && w.back.bg.pattern === "grid" && w.back.color === "#e8e0d0",
                 "wrap in = wrap out: " + after);
             } finally { applyBookDoc(keepDoc); }
+          } },
+        { id: "cover.wrap.spine-back-normalize", feature: "cover", name: "Spine and back settings: an absent or empty wrap normalizes to follow-the-front defaults, junk values (a photo background, an unknown icon, a colour with a semicolon) fall back to follow / no icon / default colour without throwing, and a full valid object is kept exactly",
+          run() {
+            const emptyW = normalizeWrap({}), nullW = normalizeWrap(null);
+            const dflt = (w) => w.spine.bg.mode === "front" && w.back.bg.mode === "front" && w.spine.show === "both" && w.spine.caps === true &&
+              w.spine.dir === "auto" && w.spine.iconTop.kind === "none" && w.spine.iconBottom.kind === "none" && w.spine.font === "" && w.spine.color === "" &&
+              w.spine.text === "" && w.back.font === "" && w.back.color === "";
+            let threw = "";
+            let junk = null;
+            try {
+              junk = normalizeWrap({ spine: { bg: { mode: "photo", color: "red; x", dir: "sideways", pattern: "plaid" }, font: "Comic Nope", color: "red; x", show: "all", dir: "up",
+                caps: "yes", text: 42, iconTop: { kind: "lucide", name: "NoSuchIconAnywhere" }, iconBottom: { kind: "upload", picId: 7 } },
+                back: { bg: { mode: "gradient", color: "#12", color2: null }, font: {}, color: "javascript:1" } });
+              normalizeWrap({ spine: "x", back: [] }); normalizeWrap({ spine: { bg: 5, iconTop: "star" } });
+            } catch (e) { threw = String(e && e.message); }
+            const junkOk = !threw && junk && junk.spine.bg.mode === "front" && junk.spine.bg.color === "#232a33" && junk.spine.bg.dir === "down" && junk.spine.bg.pattern === "linen" &&
+              junk.spine.font === "" && junk.spine.color === "" && junk.spine.show === "both" && junk.spine.dir === "auto" && junk.spine.caps === true && junk.spine.text === "" &&
+              junk.spine.iconTop.kind === "none" && junk.spine.iconBottom.kind === "none" && junk.back.bg.mode === "gradient" && junk.back.bg.color === "#232a33" && junk.back.bg.color2 === "#c9a959" &&
+              junk.back.font === "" && junk.back.color === "";
+            const full = { spine: { bg: { mode: "gradient", color: "#112233", color2: "#ccddee", dir: "diag-up", pattern: "dots" }, font: COVER_FONTS[0], color: "#ffeedd", show: "custom", text: "BOOK II", caps: false, dir: "btt",
+                iconTop: { kind: "lucide", name: "Feather", picId: null }, iconBottom: { kind: "upload", name: "", picId: "pic-1" } },
+              back: { bg: { mode: "pattern", color: "#334455", color2: "#c9a959", dir: "down", pattern: "diamonds" }, font: COVER_FONTS[1], color: "#101010" } };
+            const n1 = normalizeWrap(full), keep = stableJson(n1.spine) === stableJson(full.spine) && stableJson(n1.back) === stableJson(full.back);
+            const kebab = normalizeWrap({ spine: { iconTop: { kind: "lucide", name: "book-open" } } }).spine.iconTop.name;
+            return scVerdict(dflt(emptyW) && dflt(nullW) && junkOk && keep && kebab === "BookOpen",
+              "{} and null give the follow-the-front defaults (mode front, show both, caps on, dir auto, icons none); junk (photo mode, “red; x”, unknown icon " + (junk ? junk.spine.iconTop.kind : "?") + ", bad upload) → follow / default colour / no icon" + (threw ? " — THREW " + threw : ", nothing thrown") + "; a full valid object survives unchanged (" + keep + "); “book-open” is stored as " + kebab);
           } },
         { id: "cover.wrap3d.faces-from-wrap", feature: "cover", name: "3D wrap viewer: front, spine and back face textures are sliced from the current wrap render and refresh when wrap inputs change",
           run() {

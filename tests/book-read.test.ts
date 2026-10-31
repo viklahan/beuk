@@ -34,6 +34,31 @@ test('read: every real fixture reads with status ok and no schema-failure warnin
   }
 });
 
+test('read: the cover recipe keeps wrap.spine and wrap.back exactly, with no warning (BEUK:spineback)', () => {
+  const spine = {
+    bg: { mode: 'gradient', color: '#112233', color2: '#c9a959', dir: 'diag-up', pattern: 'dots' },
+    font: 'Libre Baskerville', color: '#f0e6d2', show: 'custom', text: 'BOOK II', caps: false, dir: 'ttb',
+    iconTop: { kind: 'lucide', name: 'Feather', picId: null }, iconBottom: { kind: 'upload', name: '', picId: 'abc' },
+  };
+  const back = { bg: { mode: 'pattern', color: '#304050', color2: '#c9a959', dir: 'down', pattern: 'diamonds' }, font: '', color: '#e8e0d0' };
+  const book = real();
+  const wrap = { trim: '6x9', pages: 300, paper: 'cream', customFactor: 0.0025, blurb: '', quote: '', imprint: '', binding: 'paperback', hcSpine: 0, hcSpineAllow: 0, flapFront: '', flapBack: '', flapPhotoId: null, spine, back };
+  book.coverRecipe = {
+    layout: 'classic', bgType: 'solid', bgColor: '#222222', bgColor2: '#c9a959', texture: 'linen', bgImageId: null,
+    title: 'T', subtitle: '', author: 'A', tagline: '', series: '', wrap,
+    elements: Object.fromEntries(['series', 'title', 'subtitle', 'tagline', 'author'].map((k) => [k, { font: 'Libre Baskerville', size: 40, color: '#ffffff' }])),
+  };
+  const r = readBook(book);
+  assert.equal(r.status, 'ok');
+  assert.deepEqual(r.warnings.filter((w) => w.code === 'schema' || /spine|back/.test(JSON.stringify(w))), []);
+  const out = (r.book as Json).coverRecipe.wrap;
+  assert.equal(JSON.stringify(out.spine), JSON.stringify(spine));
+  assert.equal(JSON.stringify(out.back), JSON.stringify(back));
+  const again = readBook(r.book);
+  assert.equal(JSON.stringify((again.book as Json).coverRecipe.wrap), JSON.stringify(out));
+  assert.deepEqual(again.preserved, []);
+});
+
 const legacyDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'books', 'legacy');
 const hostile: [string, unknown][] = [
   ['null', null], ['[]', []], ['"x"', 'x'], ['7', 7],

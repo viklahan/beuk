@@ -209,6 +209,9 @@ const Wrap = obj({
   blurb: str, quote: str, imprint: str,
   binding: z.enum(['paperback', 'case', 'jacket']), hcSpine: num, hcSpineAllow: num,
   flapFront: str, flapBack: str, flapPhotoId: strOrNull,
+  // BEUK:spineback — the spine's and back cover's own look. Optional (older books have none) and kept as written;
+  // the studio's normalizeWrap owns every value inside.
+  spine: obj({}).optional(), back: obj({}).optional(),
 });
 
 const CoverRecipe = obj({

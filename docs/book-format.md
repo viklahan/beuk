@@ -98,7 +98,7 @@ Every object is open: a key the schema does not know survives a read. Strings in
 | scene | `at`, `imageId`, `name`, `caption`, `alt` | CI:50122 |
 | image | `id`, `name`, `mediaType`, `data`. Optional: `ext`, `credit {name, url}`. | CI:34535, CI:35061 |
 | `cover` | `data`, `mediaType`, `ext`, `name` | CI:42195, CI:43563 |
-| `coverRecipe` | `layout`, `bgType`, `bgColor`, `bgColor2`, `texture`, `bgImageId`, `title`, `subtitle`, `author`, `tagline`, `series`, `wrap`, `elements`, optional `bookText`. `wrap` has `trim`, `pages`, `paper`, `customFactor`, `blurb`, `quote`, `imprint`, `binding`, `hcSpine`, `hcSpineAllow`, `flapFront`, `flapBack`, `flapPhotoId`. | CI:42286, CI:43006 |
+| `coverRecipe` | `layout`, `bgType`, `bgColor`, `bgColor2`, `texture`, `bgImageId`, `title`, `subtitle`, `author`, `tagline`, `series`, `wrap`, `elements`, optional `bookText`. `wrap` has `trim`, `pages`, `paper`, `customFactor`, `blurb`, `quote`, `imprint`, `binding`, `hcSpine`, `hcSpineAllow`, `flapFront`, `flapBack`, `flapPhotoId`. Optional: `spine` and `back`, the spine's and back cover's own look (see below). | CI:42286, CI:43006 |
 | font | `id`, `name`, `family`, `ext` (`ttf` or `otf`), `mediaType`, `data` | CI:19660 |
 | custom theme | `id`, `name`, `theme` | CI:19650 |
 | `outline` | `tags [{name, colour}]`, `filters [{id, name, status, tags}]`, optional `threads`, `fields` | CI:32974 |
@@ -112,6 +112,17 @@ Every object is open: a key the schema does not know survives a read. Strings in
 | `dictation` | `lang`, `recent` | CI:68706 |
 | `importReport` | `v`, `items` | CI:40252 |
 | history entry | `id`, `name`, `at`, `words`, optional `auto`, `chop`, and either `doc` (older form) or `chopDoc` (packed form). In a packed doc, an image, font, research file or cover is a full object, `{ref}`, or `{ref, pool}`. | CI:32117 to CI:32202 |
+
+`coverRecipe.wrap.spine` and `coverRecipe.wrap.back` (spine and back cover customization; both optional, and a cover with neither follows the front):
+
+| Key | Fields |
+|---|---|
+| `wrap.spine` | `bg`, `font` (`""` follows the front title font), `color` (`""` follows), `show` (`both`, `title`, `author` or `custom`), `text` (used when `show` is `custom`), `caps` (author in capitals, default true), `dir` (`auto`, `ttb` or `btt`), `iconTop`, `iconBottom` |
+| `wrap.back` | `bg`, `font`, `color` (both `""` follow the front) |
+| `bg` | `mode` (`front`, `solid`, `gradient` or `pattern`), `color`, `color2`, `dir` (`down`, `across`, `diag-down` or `diag-up`), `pattern` (`linen`, `speckle`, `vignette`, `dots`, `stripes`, `grid` or `diamonds`). Colours are `#rrggbb`. |
+| icon | `kind` (`none`, `lucide` or `upload`), `name` (a Lucide icon key, PascalCase, for `lucide`), `picId` (a stored picture id, for `upload`) |
+
+The studio replaces any value outside these lists with the follow-the-front default (no icon, default colour).
 
 Binary fields (`images[].data`, `cover.data`, `fonts[].data`, `research.files[].data`, and the same inside history and `historyPool`) hold canonical base64 or a stored-picture ref, `beuk-pic:` plus a SHA-256 in hex. Base64 that is not canonical stays inline in 1.0 and is accepted. A dehydrated book from the server is therefore valid.
 
