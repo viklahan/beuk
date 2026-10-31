@@ -219,17 +219,18 @@ async function gatedStatuses(c: Client, work: { mid: string; exportId: string; s
   out['POST /api/jobs/epubcheck'] = (await c.post('/api/jobs/epubcheck', { exportId: work.exportId })).status;
   out['POST /api/jobs/pdfx'] = (await c.post('/api/jobs/pdfx', { exportId: work.exportId })).status;
   out['POST /api/epub'] = (await epubStatus(c, { book: DOC, platform: 'generic' }));
+  out['POST /api/wrap'] = (await epubStatus(c, { book: DOC, kind: 'pdf' }, '/api/wrap'));
   out['POST /api/exports'] = (
     await c.upload(`/api/exports?manuscriptId=${work.mid}&format=epub&filename=again.epub`, Buffer.from('PK again'))
   ).status;
   return out;
 }
 
-/** POST /api/epub answers bytes, not JSON: only the status is read. */
-async function epubStatus(c: Client, body: unknown): Promise<number> {
+/** POST /api/epub (and /api/wrap) answers bytes, not JSON: only the status is read. */
+async function epubStatus(c: Client, body: unknown, route = '/api/epub'): Promise<number> {
   const base = (c as unknown as { base: string }).base;
   const cookie = (c as unknown as { cookieHeader(): Record<string, string> }).cookieHeader();
-  const r = await fetch(base + '/api/epub', { method: 'POST', headers: { 'content-type': 'application/json', ...cookie }, body: JSON.stringify(body) });
+  const r = await fetch(base + route, { method: 'POST', headers: { 'content-type': 'application/json', ...cookie }, body: JSON.stringify(body) });
   await r.arrayBuffer();
   return r.status;
 }
@@ -330,7 +331,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: seven features (one has no route yet), seven gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: seven features, eight gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -340,17 +341,18 @@ test('the rules are data: seven features (one has no route yet), seven gated POS
       'POST /api/jobs/epubcheck',
       'POST /api/jobs/pdfx',
       'POST /api/epub',
+      'POST /api/wrap',
       'POST /api/exports',
     ],
   );
   assert.deepEqual(Object.keys(PAUSABLE_FEATURES).sort(), [
     'archive.upload', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add',
   ]);
-  // Of the three store-ready export features, export.print (the pdfx job, Step 3 part 2) and
-  // export.epub (POST /api/epub, part 3) have routes; wrap arrives in part 4 and this line changes then.
+  // The three store-ready export features each have their route: export.print (the pdfx job,
+  // Step 3 part 2), export.epub (POST /api/epub, part 3) and export.wrap (POST /api/wrap, part 4).
   assert.deepEqual(
     ACCESS_RULES.filter((r) => r.feature.startsWith('export.')).map((r) => `${r.method} ${r.path} ${r.feature}`),
-    ['POST /api/jobs/pdfx export.print', 'POST /api/epub export.epub'],
+    ['POST /api/jobs/pdfx export.print', 'POST /api/epub export.epub', 'POST /api/wrap export.wrap'],
   );
   const gated = new Set(ACCESS_RULES.map((r) => `${r.method} ${r.path}`));
   for (const r of NEVER_PAUSED) assert.ok(!gated.has(`${r.method} ${r.path}`), `${r.method} ${r.path} is both`);

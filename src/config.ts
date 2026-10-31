@@ -164,6 +164,17 @@ export interface Config {
    *  start-up, so the first export does not wait for it (EPUB_WARM_AT_START,
    *  default on; "0" turns it off; tests run with it off). */
   epubWarmAtStart: boolean;
+  /** Server-built cover wrap (POST /api/wrap, src/book/wrap): renders at
+   *  once (WRAP_MAX_CONCURRENT, default 1), renders waiting their turn
+   *  (WRAP_MAX_QUEUED, default 4; beyond that 503 with Retry-After), and the
+   *  heap cap of each render's worker thread in MB (WRAP_WORKER_HEAP_MB,
+   *  default 512). A 300-DPI jacket is about 80 MB of pixels in Skia's
+   *  native memory, outside the heap cap, so one at a time. One writer has
+   *  at most one wrap rendering or waiting (429). Each render is also
+   *  stopped at jobTimeoutMs. */
+  wrapMaxConcurrent: number;
+  wrapMaxQueued: number;
+  wrapWorkerHeapMb: number;
   /** M5 jobs: wall-clock timeout in ms for the pdfx job's Ghostscript
    *  conversion step (PDFX_TIMEOUT_MS, default 30 minutes; it covers
    *  every Ghostscript run of a chunked conversion together). Separate
@@ -403,6 +414,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     epubMaxQueued: positiveInt(env.EPUB_MAX_QUEUED, 4),
     epubWorkerHeapMb: positiveInt(env.EPUB_WORKER_HEAP_MB, 512),
     epubWarmAtStart: env.EPUB_WARM_AT_START !== '0',
+    wrapMaxConcurrent: positiveInt(env.WRAP_MAX_CONCURRENT, 1),
+    wrapMaxQueued: positiveInt(env.WRAP_MAX_QUEUED, 4),
+    wrapWorkerHeapMb: positiveInt(env.WRAP_WORKER_HEAP_MB, 512),
     pdfxTimeoutMs: positiveInt(env.PDFX_TIMEOUT_MS, 1_800_000),
     pdfxChunkPages: positiveInt(env.PDFX_CHUNK_PAGES, 40),
     javaMaxHeap: /^[1-9][0-9]*[kKmMgG]?$/.test(env.JAVA_MAX_HEAP ?? '') ? env.JAVA_MAX_HEAP! : '512m',

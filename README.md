@@ -418,6 +418,30 @@ are filled in (413). Settings:
 The runtime image carries `typescript` for that lift (a build-time
 extraction is a noted follow-up).
 
+## Cover wrap on the server (Step 3 part 4)
+
+`POST /api/wrap` paints the cover wrap (paperback wrap, case laminate or
+dust jacket) with the studio's own wrap painter, lifted from
+`client/index.html` (`src/book/wrap/closure.ts`, list `WRAP_CLOSURE`) and
+run in a `node:vm` context inside a worker thread against an
+`@napi-rs/canvas` canvas. Body: `{ manuscriptId, kind }` or
+`{ book, kind }`, `kind` being `pdf` or `jpg`, plus optional `lang`. It
+answers the 300-DPI JPEG, or that JPEG on a PDF page of exactly the
+wrap's size, named the way the studio names its download. Signed in
+only; paused after the trial (`export.wrap`, 402). The book is held to
+`MANUSCRIPT_MAX_BYTES` with its pictures counted back in (413). A wrap
+that cannot be painted as the book stands (no made cover, over 40 MP,
+a picture it uses that is missing, too large, not a JPEG/PNG/WebP/GIF,
+or badly named) is a 422 naming the problem and the pictures. Settings:
+
+- `WRAP_MAX_CONCURRENT` (default 1): renders at once.
+- `WRAP_MAX_QUEUED` (default 4): renders waiting; beyond that 503 with
+  `Retry-After`. One writer has one wrap rendering or waiting at most (429).
+- `WRAP_WORKER_HEAP_MB` (default 512): heap cap of each render's worker
+  (over it: 413). The canvas itself lives in native memory, outside this
+  cap, which is why renders go one at a time.
+- `JOB_TIMEOUT_MS` (default 2 minutes) also stops a render (503).
+
 ## Jobs (M5) — server EPUBCheck + PDF/X
 
 The two capabilities the browser build honestly defers — real

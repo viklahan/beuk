@@ -42,6 +42,9 @@ import { checkWeeklyContent, loadWeeklyContent } from '../weekly/content.js';
 import { checkBowmarketContent, forSale, loadBowmarketContent } from '../bowmarket/content.js';
 import { studioEpub } from '../book/epub/build.js';
 import { epubState } from '../book/epub/state.js';
+import { studioWrap } from '../book/wrap/build.js';
+import { wrapState } from '../book/wrap/closure.js';
+import { PDFDocument } from 'pdf-lib';
 import { readBook } from '../book/read.js';
 
 /**
@@ -3703,6 +3706,26 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       const fonts = entries.filter((e) => e.name.startsWith('OEBPS/Fonts/') && !e.name.endsWith('/'));
       assert(fonts.length > 0, 'no script face embedded');
       return `${entries.length} zip entries, ${fonts.length} font file(s); closure ${sb.source.names.length} declarations, ${sb.source.lines} lines`;
+    },
+  },
+  {
+    id: 'export.wrap-server.build',
+    title: 'Cover wrap on the server (POST /api/wrap): the studio’s own wrap painter, lifted from client/index.html, paints a small paperback wrap at 300 DPI on a server canvas, and the PDF page is exactly the wrap’s size',
+    kind: 'server',
+    run: async ({ config }) => {
+      const book = readBook({
+        meta: { title: 'Self Check', author: 'Beuk', language: 'en', bookId: 'urn:uuid:00000000-0000-4000-8000-0000000000e2' },
+        sections: [{ id: 'c1', kind: 'body', type: 'chapter', title: 'One', content: 'The tide came in at noon.' }],
+        coverRecipe: { title: 'Self Check', author: 'Beuk', wrap: { binding: 'paperback', trim: '5x8', pages: 100, paper: 'white' } },
+      }).book;
+      const sb = studioWrap();
+      const out = await sb.render(wrapState(book), 'pdf', { lang: 'en', timeoutMs: config.jobTimeoutMs, heapMb: config.wrapWorkerHeapMb });
+      assert(out.bytes.subarray(0, 5).toString('latin1') === '%PDF-', 'not a PDF');
+      const page = (await PDFDocument.load(out.bytes)).getPage(0).getSize();
+      const w = out.dims.totalW * 72, h = out.dims.totalH * 72;
+      assert(Math.abs(page.width - w) < 0.01 && Math.abs(page.height - h) < 0.01, `page ${page.width} x ${page.height} pt, wrap ${w} x ${h} pt`);
+      assert(out.name === 'self-check-cover-wrap', `file name ${out.name}`);
+      return `${out.dims.totalW} x ${out.dims.totalH} in wrap, ${out.bytes.length} bytes of PDF, ${out.fonts.length} face famil${out.fonts.length === 1 ? 'y' : 'ies'}; closure ${sb.source.names.length} declarations, ${sb.source.lines} lines`;
     },
   },
   {

@@ -40,6 +40,8 @@ import { opsHousekeepingRoutes } from './routes/ops-housekeeping.js';
 import { epubRoutes } from './routes/epub.js';
 import { studioEpub } from './book/epub/build.js';
 import { EpubQueue } from './book/epub/queue.js';
+import { wrapRoutes } from './routes/wrap.js';
+import { BuildQueue } from './book/studio/queue.js';
 import { statusPageRoutes } from './routes/status-page.js';
 
 export interface AppDeps {
@@ -141,6 +143,10 @@ export function buildApp({
   const epubQueue = new EpubQueue(config.epubMaxConcurrent, config.epubMaxQueued);
   app.locals.epubQueue = epubQueue;
   app.use('/api/epub', epubRoutes(db, config, epubQueue));
+  /* The cover wrap (Step 3 part 4): its own queue, one render at a time by default. */
+  const wrapQueue = new BuildQueue(config.wrapMaxConcurrent, config.wrapMaxQueued);
+  app.locals.wrapQueue = wrapQueue;
+  app.use('/api/wrap', wrapRoutes(db, config, wrapQueue));
   /* Lift the studio's EPUB code now, in the background, so the first export does not wait for it. */
   if (config.epubWarmAtStart) {
     setImmediate(() => {

@@ -35,7 +35,7 @@ export type WrapWorkerJob = {
   probes: { font: string; text: string }[];
 };
 
-export type WrapRefusal = 'no-cover' | 'too-large' | 'missing-pictures' | 'picture-too-large' | 'bad-picture-id';
+export type WrapRefusal = 'no-cover' | 'too-large' | 'missing-pictures' | 'picture-too-large' | 'picture-unsupported' | 'bad-picture-id';
 
 export type WrapWorkerOut =
   | { refused: WrapRefusal; ids: string[] }
@@ -43,6 +43,8 @@ export type WrapWorkerOut =
     jpeg: Uint8Array; items: Record<string, unknown>; dims: Record<string, unknown>;
     /** families with a studio face this build, the families the book's own uploads stood in for, the subset names, the build's nonce */
     fonts: string[]; uploaded: string[]; aliases: string[]; buildId: string;
+    /** downloadWrap's file name, without the extension */
+    name: string;
     probes: number[];
   };
 
@@ -53,6 +55,7 @@ type Api = {
   pictures(recipe: Recipe): string[];
   fontStacks(recipe: Recipe): string[];
   uploadedFontByFamily(family: string): { family: string; data: string } | null;
+  fileName(state: unknown, recipe: Recipe): string;
   cache: Record<string, unknown>;
   setUiLang(lang: string): void;
   arrive(state: unknown): unknown;
@@ -96,21 +99,25 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
      ensureCoverBgImage / hcEnsureFlapPhoto / ensureWrapIcons do, into
      the studio's own cache. One the book no longer has, or that does not
      decode, is refused by name: never a blank panel. Each is sized from
-     its header first; one too big, or whose header cannot be read, is
-     refused before it is decoded. */
+     its header first, before it is decoded: one too big is refused as
+     too large; one whose header cannot be read (not a JPEG, PNG, WebP or
+     GIF: an SVG flourish chosen as cover art, say) as unsupported. */
   const ids = api.pictures(recipe);
   const badIds = ids.filter((id) => typeof id !== 'string' || !PICTURE_ID_RE.test(id));
   if (badIds.length) return { refused: 'bad-picture-id', ids: badIds.map(String) };
-  const missing: string[] = [], tooBig: string[] = [];
+  const missing: string[] = [], tooBig: string[] = [], unsupported: string[] = [];
   const bytes = new Map<string, Buffer>();
   for (const id of ids) {
     const im = state.images.find((x) => x && x.id === id);
     if (!im || typeof im.data !== 'string' || !im.data) { missing.push(id); continue; }
     const buf = Buffer.from(im.data, 'base64');
-    if (!pictureFits(imageSize(buf))) tooBig.push(id);
+    const size = imageSize(buf);
+    if (!size) unsupported.push(id);
+    else if (!pictureFits(size)) tooBig.push(id);
     else bytes.set(id, buf);
   }
   if (tooBig.length) return { refused: 'picture-too-large', ids: tooBig };
+  if (unsupported.length) return { refused: 'picture-unsupported', ids: unsupported };
   for (const [id, buf] of bytes) {
     try {
       api.cache[id] = await loadImage(buf);
@@ -159,7 +166,7 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
     const { canvas, items } = api.render(recipe);
     const jpeg = new Uint8Array(await canvas.encode('jpeg', JPEG_QUALITY));
     /* items and dims are plain numbers, strings and arrays: they cross back by structured clone as they are */
-    return { jpeg, items, dims: api.wrapDims(recipe), fonts, uploaded, aliases, buildId, probes };
+    return { jpeg, items, dims: api.wrapDims(recipe), fonts, uploaded, aliases, buildId, name: String(api.fileName(ctx.state, recipe)), probes };
   } finally {
     if (keys.length) GlobalFonts.removeBatch(keys);
   }

@@ -30,8 +30,9 @@ import type { FontFile, WrapRefusal, WrapWorkerJob, WrapWorkerOut } from './work
    book's cover recipe, fonts and sections (WRAP_ARRIVE below):
    printPageEstimate, which sizes the spine when the recipe leaves the
    page count to the book, reads the sections' `included` and `kind`,
-   which normalizeSection fills. */
-export const WRAP_ROOTS: readonly string[] = ['renderWrapCanvas', 'wrapDims', 'normalizeCoverRecipe', 'normalizeCustomFont', 'normalizeSection'];
+   which normalizeSection fills. slug names the file the way downloadWrap
+   does (POST /api/wrap's Content-Disposition). */
+export const WRAP_ROOTS: readonly string[] = ['renderWrapCanvas', 'wrapDims', 'normalizeCoverRecipe', 'normalizeCustomFont', 'normalizeSection', 'slug'];
 export const WRAP_SUPPLIED: readonly string[] = ['state', 'document', 'Image', 'window'];
 
 export const WRAP_CLOSURE: readonly string[] = [
@@ -54,7 +55,7 @@ export const WRAP_CLOSURE: readonly string[] = [
   'olCleanTag', 'olSectionFields', 'olTagKey', 'paintCoverBackground', 'paintCoverScene',
   'paintCoverTexture', 'paintPanelBackground', 'parseImageLine', 'printBaseFontPt', 'printMargins',
   'printMarginsAuto', 'printPageEstimate', 'printPictureBookOn', 'printTextArea', 'renderCoverCanvas',
-  'renderWrapCanvas', 'sectionProseWords', 'sectionWords', 'sectionWordsMemo', 'spineDirection', 't',
+  'renderWrapCanvas', 'sectionProseWords', 'sectionWords', 'sectionWordsMemo', 'slug', 'spineDirection', 't',
   'tCountForm', 'trimSize', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache', 'uid',
   'uploadedFontByFamily', 'uploadedFonts', 'wrapDefaults', 'wrapDims', 'wrapFactor', 'wrapLines',
 ];
@@ -107,6 +108,11 @@ globalThis.__beukWrap = {
     return CM_ELEMENTS.map((k) => r.elements[k].font).concat([w.spine.font, w.back.font]).filter(Boolean).map(fontStack);
   },
   uploadedFontByFamily,
+  /* downloadWrap's file name, without the extension: its own expression on the arrived book */
+  fileName: (s, r) => {
+    const bnd = r.wrap && r.wrap.binding;
+    return slug((s.meta && s.meta.title) || "cover") + (bnd === "case" ? "-case-laminate-wrap" : bnd === "jacket" ? "-dust-jacket" : "-cover-wrap");
+  },
   cache: coverImgCache,
   setUiLang: (l) => { uiLangState = UI_STRINGS[l] ? l : "en"; },
   arrive: ${WRAP_ARRIVE}
@@ -241,6 +247,8 @@ export type WrapResult = {
   bytes: Buffer; items: WrapItems; dims: WrapDims;
   /** families set in the studio's faces; families the book's uploads stood in for; subset faces; this build's font nonce */
   fonts: string[]; uploaded: string[]; aliases: string[]; buildId: string;
+  /** the studio's download name for this wrap, without the extension (slug(title || "cover") + "-cover-wrap" | "-case-laminate-wrap" | "-dust-jacket") */
+  name: string;
   /** measureText widths of opts.probes, in order */
   probes: number[];
   /** when the render left the line and when it finished (performance.now(), ms) */
@@ -268,6 +276,7 @@ export class WrapInputError extends Error {
     super(reason === 'no-cover' ? 'this book has no made cover to build a wrap from'
       : reason === 'too-large' ? `this cover wrap is larger than the server paints (over ${MAX_WRAP_PIXELS.toLocaleString('en')} pixels at 300 DPI)`
       : reason === 'picture-too-large' ? `pictures too large for the cover wrap: ${missing.join(', ')}`
+      : reason === 'picture-unsupported' ? `pictures the cover wrap cannot paint (not a JPEG, PNG, WebP or GIF): ${missing.join(', ')}`
       : reason === 'bad-picture-id' ? `the cover wrap names pictures by ids it cannot use: ${missing.join(', ')}`
       : `the cover wrap uses pictures this book no longer has: ${missing.join(', ')}`);
   }
@@ -329,7 +338,7 @@ export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSand
         const bytes = kind === 'pdf' ? await wrapPdf(jpeg, dims) : jpeg;
         return {
           bytes, items: out.items as WrapItems, dims,
-          fonts: out.fonts, uploaded: out.uploaded, aliases: out.aliases, buildId: out.buildId, probes: out.probes,
+          fonts: out.fonts, uploaded: out.uploaded, aliases: out.aliases, buildId: out.buildId, name: out.name, probes: out.probes,
           timing: { started, finished: performance.now() },
         };
       });
