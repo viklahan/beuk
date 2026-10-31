@@ -4483,6 +4483,57 @@ heading.
 Self-check: `import.chapfix.pdf-ledger-lines` (fails when any one of its
 seven parts is reverted).
 
+### Back matter starters, and empty pages left out (BEUK:starters)
+
+Most books arrive without back matter, and the pages a book usually carries
+there say much the same thing from book to book. An empty **About the
+Author**, **Acknowledgments**, **Also by the Author**, **Call to Action** or
+**Colophon** page now shows a strip above the editor: *Start from a
+template*, with two starting points each (one for the colophon):
+
+| Page | Starters |
+| --- | --- |
+| About the Author | Short bio, third person · Short bio, first person |
+| Acknowledgments | Short thank-you · Fuller thanks |
+| Also by the Author | Your series, in order (only when Project Settings names a series) · A list of your books |
+| Call to Action | Ask for a review · Newsletter sign-up |
+| Colophon | Your book's typefaces |
+
+- **Nothing is written for the writer.** Picking a starter shows it; only
+  **Use** puts it on the page. The strip is gone once the page has words.
+- **What the book knows is filled in** — the author, the title, the series
+  and this book's place in it (book 2 of 3 is listed at 2), and the body and
+  heading typefaces (as they stand when Use is pressed; a later font change
+  does not rewrite the colophon). **What only the writer knows is a marked
+  blank**, `[[your town or region]]`. Use selects the first blank to type
+  over; the strip counts the rest and *Go to the next blank* steps through
+  them.
+- **A blank never ships unseen.** Any `[[blank]]` left on a page in the
+  book is an error in the EPUB check and a finding in the print preflight,
+  naming the page and the blanks, with a jump to the page.
+- **The book's language.** The starter text is written in the book's
+  language for the 13 interface languages, and in English for any other;
+  the strip itself follows the interface language.
+
+**An empty page is left out of the book.** A page with no words of its own —
+any back-matter page, or a written front page such as an epigraph or a
+dedication — is in no export (EPUB, Markdown, web page, Word, print PDF,
+box sets, audiobook plan) and no contents list until it has some. The sidebar
+dims it and reads *Empty* (the tooltip says it is left out); its first words
+bring it back. Generated pages (cover, half title, title page, copyright,
+contents) and every body piece are untouched, and a page the writer switched
+off stays off. One rule, `inBook(s)` in `client/index.html`, is read by every
+exporter. A submission manuscript, which carries only the chapters, no longer
+lists empty pages among those it leaves out.
+
+Also fixed on the way: opening a page now shows that page's own word count
+above the editor; it used to keep the previous page's number until the
+first keystroke.
+
+Self-checks: `starters.picker`, `starters.empty-left-out`,
+`starters.blanks-flagged` (between them they fail when any one of ten parts
+is reverted).
+
 ## Web and store links
 
 `[words](https://…)`, `[words](http://…)` and `[words](mailto:…)` in the
