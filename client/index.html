@@ -38501,6 +38501,13 @@
         applyBookDoc(buildEmptyBook(), { keepHistory: true });
         state.theme = keepLook.theme; state.activePreset = keepLook.activePreset;
         sampleState.loaded = false; sampleState.loadedJson = null;
+        /* BEUK:importshelf — the imported manuscript is a new book, as Start
+           a new book makes one: a book on the writer's shelf stays there as
+           it is. The desk is unlinked from it, so the next save adds the
+           import as its own shelf book instead of writing over that one
+           (the shelf and local saves are debounced: none ran between the
+           empty book above and this line). */
+        if (cloud.linkedId) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; }
         const pieces = chapters || [];
         const frontPieces = pieces.filter((p) => p.kind === "front");
         const backPieces = pieces.filter((p) => p.kind === "back");
@@ -39050,7 +39057,7 @@
         if (isEmptyDesk() || (sampleState.loaded && deskIsUntouchedSample())) return Promise.resolve(true);
         return cloudConfirm({
           title: t("import.replaceTitle"),
-          body: t("import.replaceBody", { name, history: t("history.open") }),
+          body: t(cloud.linkedId ? "import.replaceBodyShelf" : "import.replaceBody", { name, history: t("history.open") }), /* BEUK:importshelf */
           yes: t("import.replaceYes"), no: t("import.replaceNo")
         });
       }
@@ -66892,6 +66899,69 @@
       }
       const scTick = (ms) => new Promise((r) => setTimeout(r, ms || 0));
       const scEdit = (more) => { state.sections.find((x) => x.type === "chapter").content += more; noteBookEdited(); clearTimeout(cloudSaveTimer); cloudSaveTimer = null; };
+      /* ==== BEUK:importshelf ==== — a manuscript imported over a book that
+         is on the shelf becomes a new book of its own: the desk is
+         unlinked (as Start a new book does), so the next save adds a new
+         shelf book and never writes over the one that was on the desk. */
+      SELF_CHECKS_ASYNC.push(
+        { id: "import.replace.unlinks-shelf", feature: "import", name: "Importing a manuscript over a book on the shelf never overwrites it: the dialog says the book stays on the shelf, the desk is unlinked, the next save adds the import as a new shelf book (POST) and the old shelf copy is untouched; with nothing linked the dialog keeps its wording",
+          async run() {
+            const release = await scShelfHold();
+            const keep = scShelfKeep();
+            const keepHistory = state.history;
+            const origConfirm = window.cloudConfirm, origToast = window.toast;
+            const NL2 = String.fromCharCode(10, 10);
+            const bad = [];
+            local.suspended = true;
+            try {
+              window.toast = () => {};
+              scShelfDesk("The shelf book's own words");
+              const shelfDoc = JSON.parse(JSON.stringify(serializeBook()));
+              const sh = scStandInShelf("sc-save", 3, shelfDoc);
+              const posts = [];
+              window.fetch = async (path, opts) => {
+                const m = (opts && opts.method) || "GET";
+                if (m === "POST" && path === "/api/manuscripts") {
+                  posts.push(JSON.parse(opts.body));
+                  return { status: 201, ok: true, json: async () => ({ manuscript: { id: "sc-imported", title: "x", revision: 1, updatedAt: "2026-03-02T00:00:00.000Z" } }) };
+                }
+                return sh.fetch(path, opts);
+              };
+              let body = "";
+              window.cloudConfirm = (o) => { body = o.body; return Promise.resolve(true); };
+              await handleImportFile(new File([new TextEncoder().encode("# Chapter 1" + NL2 + "Imported words, a book of their own.")], "imported.txt"));
+              clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
+              const wantShelf = t("import.replaceBodyShelf", { name: "imported.txt", history: t("history.open") });
+              if (body !== wantShelf) bad.push("the dialog read \"" + body + "\"");
+              if (JSON.stringify(state.sections).indexOf("Imported words") === -1) bad.push("the import did not reach the desk");
+              if (cloud.linkedId !== null || cloud.linkState !== "unlinked" || cloud.baseRevision !== null || cloud.baseUpdatedAt !== null) bad.push("the desk is still linked (" + cloud.linkedId + ", " + cloud.linkState + ", rev " + cloud.baseRevision + ")");
+              cloudDirty = true;
+              await cloudSaveNow(); await scTick(5);
+              const puts = sh.calls.filter((c) => c.indexOf("PUT") === 0);
+              if (puts.length) bad.push("the next save wrote over the shelf book (" + sh.calls.join(", ") + ")");
+              if (posts.length !== 1 || JSON.stringify(posts[0] || {}).indexOf("Imported words") === -1) bad.push(posts.length + " new-book saves carrying the import");
+              if (JSON.stringify(sh.doc) !== JSON.stringify(shelfDoc)) bad.push("the shelf copy of the old book changed");
+              if (cloud.linkedId !== "sc-imported") bad.push("the import is not linked to its own shelf book (" + cloud.linkedId + ")");
+              /* Nothing linked: the dialog keeps its wording. */
+              scShelfDesk("A desk book that is on no shelf");
+              cloud.user = null; cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null;
+              body = "";
+              await handleImportFile(new File([new TextEncoder().encode("# Chapter 1" + NL2 + "Second import.")], "second.txt"));
+              clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
+              const wantPlain = t("import.replaceBody", { name: "second.txt", history: t("history.open") });
+              if (body !== wantPlain) bad.push("unlinked, the dialog read \"" + body + "\"");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "over a linked shelf book the dialog says it stays on the shelf; the desk unlinked; the next save POSTed the import as a new shelf book (linked to it) and never PUT over the old one, whose copy is unchanged; with nothing linked the dialog keeps its wording");
+            } finally {
+              window.cloudConfirm = origConfirm; window.toast = origToast;
+              if ($("modalConfirm").classList.contains("open")) cloudConfirmDone(false);
+              await scTick(0);
+              scShelfPutBack(keep);
+              state.history = keepHistory;
+              release();
+            }
+          } }
+      );
+      /* ==== /BEUK:importshelf ==== */
       /* ==== BEUK:metaleak ==== — the simulation's finding, end to end:
          open a rich linked book, then open a bulk-imported shelf book
          through the real shelf path; edit; the autosave PUT must carry
@@ -72271,6 +72341,21 @@
       Object.assign(UI_STRINGS.ja, {"newbook.btn": "新しい本を始める", "newbook.title": "新しい本のために机を空にします。この本は履歴に残り、本棚にあればそのまま残ります。", "newbook.confirmTitle": "新しい本を始めますか？", "newbook.confirmBody": "机が空になります。この本はまず履歴に保存されるので、そこから戻せます。", "newbook.confirmBodyShelf": "机が空になります。この本は本棚にそのまま残り、コピーが履歴に保存されます。", "newbook.yes": "新しい本を始める", "newbook.no": "この本を残す", "newbook.done": "新しい本を始めました — 前の本は履歴にあります", "newbook.already": "机はもう空です — 書き始めましょう", "newbook.snap": "新しい本を始める前"});
       Object.assign(UI_STRINGS["zh-Hans"], {"newbook.btn": "开始一本新书", "newbook.title": "为新书清空书桌。这本书会保存在历史记录中，如果在书架上也会原样保留。", "newbook.confirmTitle": "开始一本新书？", "newbook.confirmBody": "书桌将被清空。这本书会先保存到历史记录，你可以从那里恢复。", "newbook.confirmBodyShelf": "书桌将被清空。这本书在你的书架上保持原样，并在历史记录中保留一份副本。", "newbook.yes": "开始一本新书", "newbook.no": "保留这本书", "newbook.done": "已开始新书 — 上一本在历史记录中", "newbook.already": "书桌已经是空的 — 开始写作吧", "newbook.snap": "开始新书之前"});
       /* ==== /BEUK:newbook strings ==== */
+      /* ==== BEUK:importshelf strings ==== — English placeholders in every pack until V signs the translations off */
+      Object.assign(UI_STRINGS.en, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.es, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.fr, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.de, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.it, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.pt, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.nl, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.pl, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.ru, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.tr, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.ar, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS.ja, {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      Object.assign(UI_STRINGS["zh-Hans"], {"import.replaceBodyShelf": "Open {name} as a new book? The desk is cleared for it, and the book on the desk now stays on your shelf as it is, with a copy in {history}."});
+      /* ==== /BEUK:importshelf strings ==== */
       /* ==== BEUK:devicetruth strings ==== — English placeholders in every pack until V signs the translations off */
       Object.assign(UI_STRINGS.en, {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});
       Object.assign(UI_STRINGS.es, {"preview.display.mono": "This {device} shows colours as shades of grey. They show in colour in the {brand} app, on colour e-readers and on tablets.", "preview.display.colour": "Colours look softer and darker on this {device}’s colour e-ink screen than on a tablet or phone."});

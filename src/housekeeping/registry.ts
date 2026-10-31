@@ -1808,6 +1808,14 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     kind: 'client-only',
     reason: 'The desk, the confirm dialog and History all live in the studio page.',
   },
+  // BEUK:importshelf — an import over a shelf book becomes a new shelf book.
+  {
+    id: 'import.replace.unlinks-shelf',
+    title: 'Importing over a book on the shelf unlinks the desk: the import saves as a new shelf book, the old one is untouched',
+    kind: 'client-only',
+    reason:
+      'The desk-to-shelf link and the import live in the studio page; the self-check stands in for the shelf API, so the real server is never written.',
+  },
   {
     id: 'pdf.front.letterspaced-dropcap',
     title: 'Letter-spaced titles close up, drop caps rejoin, and the title page never becomes chapter 1',
