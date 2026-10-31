@@ -51,7 +51,7 @@ export interface Config {
   /** P1: JSON file mapping Stripe price ids to entitlements
    *  (ENTITLEMENTS_FILE). Null = no file: nothing is granted or gated. */
   entitlementsFile: string | null;
-  /** Trial + one price (V, 2026-10-26). TRIAL_DAYS (default 7): the free
+  /** Trial + one price (V, 2026-10-26). TRIAL_DAYS (default 21, V's 2026-10 decision): the free
    *  trial a new account gets from sign-up (stamped on users.trial_ends_at
    *  at sign-up, so changing it later never moves an existing trial). */
   trialDays: number;
@@ -356,7 +356,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     stripeApiBase: (env.STRIPE_API_BASE || 'https://api.stripe.com').replace(/\/$/, ''),
     billingGraceDays: nonNegativeInt(env.BILLING_GRACE_DAYS, 7),
     entitlementsFile: env.ENTITLEMENTS_FILE || null,
-    trialDays: nonNegativeInt(env.TRIAL_DAYS, 7),
+    trialDays: nonNegativeInt(env.TRIAL_DAYS, 21),
     billingPriceLabel: env.BILLING_PRICE_LABEL?.trim() || null,
     billingAutomaticTax: (env.BILLING_AUTOMATIC_TAX ?? '').toLowerCase() === 'true',
     billingCancelProrate: (env.BILLING_CANCEL_PRORATE ?? '').toLowerCase() === 'true',

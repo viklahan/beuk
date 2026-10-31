@@ -11,6 +11,9 @@ import { decideEntitlements, type EntitlementState } from '../src/entitlements.j
 import type { MailMessage, MailResult, Mailer, MailerStatus } from '../src/mailer.js';
 import { readZip } from '../src/housekeeping/packages.js';
 import { TrialReminders } from '../src/trial-mail.js';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { loadConfig } from '../src/config.js';
 import { Client, createTestDb, registerUser, testConfig } from './helpers.js';
 
 /*
@@ -228,19 +231,57 @@ function assertAllPaused(statuses: Record<string, number>, why: string): void {
 
 /* ---------------- pure pieces ---------------- */
 
-test('trial math: 7 days from sign-up, days left rounded up, ended at the end instant; a stored end wins', () => {
+test('trial math: 21 days from sign-up, days left rounded up, ended at the end instant; a stored end wins', () => {
   const created = '2026-11-01T09:00:00.000Z';
-  const t0 = trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-01T09:00:00Z'));
-  assert.deepEqual(t0, { startedAt: created, endsAt: '2026-11-08T09:00:00.000Z', active: true, daysLeft: 7 });
-  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-07T09:00:01Z')).daysLeft, 1);
-  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-05T08:00:00Z')).daysLeft, 4);
-  const ended = trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-08T09:00:00Z'));
+  const t0 = trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-01T09:00:00Z'));
+  assert.deepEqual(t0, { startedAt: created, endsAt: '2026-11-22T09:00:00.000Z', active: true, daysLeft: 21 });
+  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-21T09:00:01Z')).daysLeft, 1);
+  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-19T09:00:00Z')).daysLeft, 3);
+  const ended = trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-22T09:00:00Z'));
   assert.equal(ended.active, false);
   assert.equal(ended.daysLeft, 0);
   // The sign-up stamp is used as stored (TRIAL_DAYS changing later moves nothing).
   const stamped = trialFor({ createdAt: created, trialEndsAt: '2026-11-20T00:00:00Z' }, 3, new Date('2026-11-10T00:00:00Z'));
   assert.equal(stamped.endsAt, '2026-11-20T00:00:00.000Z');
   assert.equal(stamped.active, true);
+});
+
+test('the day-21 / day-22 boundary: one millisecond before created_at + 21d is trial, at it is paused', () => {
+  const T = new Date('2026-11-01T09:00:00.000Z');
+  const user = { createdAt: T, trialEndsAt: null };
+  const before = trialFor(user, 21, new Date(T.getTime() + 21 * DAY - 1));
+  assert.equal(before.active, true);
+  assert.equal(before.daysLeft, 1);
+  const at = trialFor(user, 21, new Date(T.getTime() + 21 * DAY));
+  assert.equal(at.active, false);
+  assert.equal(at.daysLeft, 0);
+  assert.equal(decideAccess(true, before, decideEntitlements([], { prices: {} }, 21, T)), 'trial');
+  assert.equal(decideAccess(true, at, decideEntitlements([], { prices: {} }, 21, T)), 'paused');
+});
+
+test('a config built from an empty env has a 21-day trial', () => {
+  assert.equal(loadConfig({}).trialDays, 21);
+  assert.equal(loadConfig({ TRIAL_DAYS: '10' }).trialDays, 10);
+});
+
+test('migration 021: pre-launch trials get 21 days from sign-up, never shortened, nulls untouched', async () => {
+  const mdb = await createTestDb();
+  const sql = readFileSync(path.resolve(import.meta.dirname, '..', 'migrations', '021_trial_21_days.sql'), 'utf8');
+  const made = async (email: string, endsExpr: string) =>
+    (await mdb.query<{ id: string }>(
+      `insert into users (email, password_hash, created_at, trial_ends_at)
+       values ($1, 'x', '2026-10-01T00:00:00Z', ${endsExpr}) returning id`,
+      [email],
+    )).rows[0].id;
+  const a = await made('a@example.com', `'2026-10-01T00:00:00Z'::timestamptz + interval '7 days'`);
+  const b = await made('b@example.com', `'2026-10-01T00:00:00Z'::timestamptz + interval '30 days'`);
+  const c = await made('c@example.com', 'null');
+  await mdb.query(sql);
+  const get = async (id: string) =>
+    (await mdb.query<{ trial_ends_at: Date | null }>('select trial_ends_at from users where id = $1', [id])).rows[0].trial_ends_at;
+  assert.equal(new Date((await get(a))!).toISOString(), '2026-10-22T00:00:00.000Z', 'a: created_at + 21d');
+  assert.equal(new Date((await get(b))!).toISOString(), '2026-10-31T00:00:00.000Z', 'b: an extension is not shortened');
+  assert.equal(await get(c), null, 'c: still null');
 });
 
 test('decideAccess: open while billing is off; subscription, grace, trial, paused when on', () => {
