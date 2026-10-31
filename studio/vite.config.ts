@@ -110,18 +110,42 @@ export const FONT_FILES = [
   '/assets/fonts/fonts.css',
 ];
 
+/** A package's ESM entry in the studio's node_modules (exports["."].import, else module, else main). */
+function esmEntry(name: string): string {
+  const dir = here(`./node_modules/${name}/`);
+  const pkg = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')) as {
+    exports?: Record<string, unknown>; module?: string; main?: string;
+  };
+  const dot = (pkg.exports && ('.' in pkg.exports ? pkg.exports['.'] : pkg.exports)) as Record<string, unknown> | string | undefined;
+  const imp = typeof dot === 'string' ? dot : dot && (dot.import as string | { default?: string } | undefined);
+  const file = (typeof imp === 'string' ? imp : imp?.default) ?? pkg.module ?? pkg.main;
+  if (!file) throw new Error(`${name}: no ESM entry in its package.json`);
+  return path.join(dir, file);
+}
+
+/** The bare packages src/book/editor imports (besides zod). */
+export const BOOK_DEPS = ['yjs', 'y-prosemirror', 'prosemirror-model', 'prosemirror-state', 'prosemirror-view', 'prosemirror-transform'];
+
 export default defineConfig({
   base: '/next/',
   plugins: [react(), ...beukHtml(), precacheList()],
   resolve: {
-    alias: {
+    alias: [
       /* The book-format code is imported straight from the server's
          src/book (one source), never copied. */
-      '@book': here('../src/book'),
+      { find: '@book', replacement: here('../src/book') },
       /* src/book imports zod; files outside studio/ would otherwise look
          for it in the repo root's node_modules. Same pinned version. */
-      zod: here('./node_modules/zod'),
-    },
+      { find: 'zod', replacement: here('./node_modules/zod') },
+      /* src/book/editor imports Yjs and ProseMirror the same way: each bare
+         name points at the studio copy's ESM entry, the very file Node and
+         Vite pick for every other importer (y-indexeddb, y-tiptap, TipTap).
+         So the bundle, and the tests, hold ONE yjs and one of each
+         prosemirror package (two copies break instanceof and Yjs's "already
+         imported" check; test/dedupe.test.ts asserts it). */
+      ...BOOK_DEPS.map((d) => ({ find: new RegExp(`^${d}$`), replacement: esmEntry(d) })),
+    ],
+    dedupe: [...BOOK_DEPS, 'lib0', 'y-protocols'],
   },
   build: {
     outDir: here('../client/next'),

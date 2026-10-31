@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useBook } from '../book/BookProvider';
+import { Desk } from '../book/Desk';
+import { Outline } from '../book/Outline';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
@@ -7,10 +10,12 @@ import { ThemeButton } from './ThemeButton';
 /* The studio's frame, with 1.0's structure and ids (client/index.html
    <div id="app">): the top bar, the phone tab row, and the three panes —
    the outline (left), the writing page (centre) and the reader (right).
-   Part A: no book yet, so the outline is empty, the page is a
-   placeholder and the reader is bare. Import, Project Settings and Export
-   keep their place and look but are not wired (aria-disabled) until
-   part C / step 5. Every label is an existing 1.0 string key. */
+   Part C: the outline lists the open book's sections, the centre is the
+   desk (an empty desk opens a backup; an open book edits the chosen
+   chapter), and Export downloads the book as a 1.0 backup file. The reader
+   stays bare. Import and Project Settings keep their place and look but are
+   not wired (aria-disabled) until step 5. Every label is an existing 1.0
+   string key. */
 type MobilePane = 'structure' | 'center' | 'preview';
 
 const openTab = (url: string) => {
@@ -22,7 +27,9 @@ const openTab = (url: string) => {
 };
 
 export function Shell() {
-  const { t, dir, lang } = useLocale();
+  const { t, dir } = useLocale();
+  const bk = useBook();
+  const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
   const [mstyle, setMstyle] = useState(false);
   const tab = (pane: MobilePane, style: boolean) => () => {
@@ -53,9 +60,11 @@ export function Shell() {
         <div className="brand-div" aria-hidden="true" />
         <div className="book-id">
           <div className="book-title" id="projectTitleDisplay">
-            {t('misc.untitledBook')}
+            {bk.title.trim() || t('misc.untitledBook')}
           </div>
-          <div className="book-author" id="projectAuthorDisplay" />
+          <div className="book-author" id="projectAuthorDisplay">
+            {bk.author.trim()}
+          </div>
         </div>
         <LangMenu />
         <ThemeButton />
@@ -67,7 +76,15 @@ export function Shell() {
           <Icon name="LifeBuoy" />
           <span className="tb-label lbl-collapse">{t('top.help')}</span>
         </button>
-        <button type="button" className="tb-btn primary" id="btnExport" aria-label={t('top.export')} aria-disabled="true">
+        <button
+          type="button"
+          className="tb-btn primary"
+          id="btnExport"
+          aria-label={t('top.export')}
+          aria-disabled={canExport ? undefined : 'true'}
+          title={canExport ? t('local.backup') : undefined}
+          onClick={canExport ? bk.exportBackup : undefined}
+        >
           <Icon name="Download" />
           <span className="tb-label">{t('top.export')}</span>
         </button>
@@ -105,8 +122,7 @@ export function Shell() {
             </button>
           </div>
           <div id="structureScroll">
-            {/* The outline: the book's sections (part C fills it). */}
-            <ul id="structureList" aria-label={t('tabs.structure')} />
+            <Outline />
           </div>
         </aside>
 
@@ -119,13 +135,7 @@ export function Shell() {
           </div>
           <div className="center-body" role="tabpanel">
             <div className="center-inner">
-              {/* The manuscript keeps the BOOK's direction and language, not
-                  the interface's (an Arabic chrome around an English book). */}
-              <div className="ms-page" id="manuscript" dir="ltr" lang="en">
-                <p className="ms-placeholder" lang={lang}>
-                  {t('editor.placeholder')}
-                </p>
-              </div>
+              <Desk />
             </div>
           </div>
         </section>

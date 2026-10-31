@@ -136,6 +136,22 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
 .side-btn svg { width: 15px; height: 15px; }
 #structureScroll { flex: 1 1 0; overflow-y: auto; padding: 2px 10px 12px; min-height: min(200px, 30vh); }
 #structureList { list-style: none; margin: 0; padding: 0; }
+/* The outline rows: 1.0's .sec-item (client/index.html), logical sides. The
+   active row's 1.0 shadow is a literal colour, so it is left out here. */
+.sec-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; box-sizing: border-box; text-align: start;
+  border: 1px solid transparent; background: transparent; border-radius: 8px;
+  padding: 7px 8px; color: var(--ink-2); font-size: 13px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.sec-item:hover { background: var(--panel-2); }
+.sec-item.active { background: var(--panel-2); border-color: var(--line); color: var(--ink); }
+.sec-item[aria-disabled="true"] { cursor: default; opacity: .7; }
+.sec-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sec-item .sec-name { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.sec-item .drag { color: var(--muted); flex: 0 0 auto; display: inline-flex; }
+.sec-item .drag svg { width: 13px; height: 13px; }
+.sec-item.part-item { margin-block-start: 10px; background: var(--panel-2); border-color: var(--line); font-weight: 600; }
+.sec-item.part-item .sec-name { font-weight: 700; letter-spacing: .01em; }
 
 /* ---------- Centre: the tab row and the writing page ---------- */
 .center-tabs { display: flex; gap: 4px; padding: 12px 18px 0; flex: 0 0 auto; }
@@ -157,6 +173,16 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
   font-family: "EB Garamond", Georgia, serif; font-size: 19px; line-height: 1.6; color: var(--ink);
 }
 .ms-page .ms-placeholder { color: var(--muted); font-style: italic; margin: 0; }
+/* The empty desk: 1.0's "Open a backup…" button; the page takes a dropped backup file. */
+.desk-actions { margin-block-start: 22px; font-family: var(--ui-font, inherit); }
+.desk-actions .tb-btn { font-family: inherit; }
+.ms-page.drop-on, .desk.drop-on .ms-page { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* A quiet note above the page (what the import had to change). */
+.ms-note {
+  display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; padding: 9px 12px;
+  border: 1px solid var(--line); border-radius: 9px; background: var(--panel-2); color: var(--muted); font-size: 12.5px; line-height: 1.45;
+}
+.ms-note svg { width: 14px; height: 14px; flex: 0 0 auto; margin-block-start: 2px; }
 @media (max-width: 560px) { .ms-page { padding: 28px 22px; } .center-inner { padding: 16px 12px 32px; } }
 
 /* ---------- Right column (the reader) ---------- */

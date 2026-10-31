@@ -1,14 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { EN, UI_LANG_NAMES, UI_LANG_ORDER, UI_PLURAL_FORMS, hasLang, isRtl, loadPack, packIfLoaded, storeUiLang, type UiKey } from './strings';
 import { translate, type Params, type Tables } from './translate';
+import { NEXT_STRINGS, type NextKey } from './next-strings';
 
 export type Locale = {
   /** The interface language (a UI_LANG_ORDER code). */
   lang: string;
   /** The chrome's direction. The manuscript keeps the BOOK's direction. */
   dir: 'ltr' | 'rtl';
-  /** 1.0's t(). Keys are typed against 1.0's English pack (UiKey). */
-  t: (key: UiKey, params?: Params) => string;
+  /** 1.0's t(). Keys are typed against 1.0's English pack (UiKey), plus the few 2.0-only keys (NextKey, i18n/next-strings.ts). */
+  t: (key: UiKey | NextKey, params?: Params) => string;
   /** Switch language (loads its pack first), saved under 1.0's key unless persist is false.
    *  Rejects when the pack cannot be loaded; the language stays as it was. */
   setLang: (code: string, opts?: { persist?: boolean }) => Promise<string>;
@@ -47,7 +48,11 @@ export function LocaleProvider({ initial, children }: { initial: string; childre
   }, []);
 
   const value = useMemo<Locale>(() => {
-    const tables: Tables = { packs: { en: EN, [lang]: packIfLoaded(lang) }, pluralForms: UI_PLURAL_FORMS };
+    const cur = packIfLoaded(lang);
+    const tables: Tables = {
+      packs: { en: { ...EN, ...NEXT_STRINGS.en }, [lang]: cur && { ...cur, ...NEXT_STRINGS[lang] } },
+      pluralForms: UI_PLURAL_FORMS,
+    };
     return {
       lang,
       dir: isRtl(lang) ? 'rtl' : 'ltr',

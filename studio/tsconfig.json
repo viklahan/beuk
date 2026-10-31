@@ -15,6 +15,12 @@
     "paths": {
       "@book/*": ["../src/book/*"],
       "zod": ["./node_modules/zod"],
+      "yjs": ["./node_modules/yjs"],
+      "y-prosemirror": ["./node_modules/y-prosemirror"],
+      "prosemirror-model": ["./node_modules/prosemirror-model"],
+      "prosemirror-state": ["./node_modules/prosemirror-state"],
+      "prosemirror-view": ["./node_modules/prosemirror-view"],
+      "prosemirror-transform": ["./node_modules/prosemirror-transform"],
       "typescript": ["./node_modules/typescript"]
     }
   },

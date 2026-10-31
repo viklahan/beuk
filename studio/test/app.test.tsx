@@ -17,7 +17,7 @@ describe('the app', () => {
       expect(container.querySelector('#' + id), id).not.toBeNull();
     }
     expect(document.getElementById('toasts')).not.toBeNull();
-    // The outline is empty in part A.
+    // No book on this device (no IndexedDB in this test): the outline is empty, the desk offers a backup.
     expect(container.querySelector('#structureList')!.children.length).toBe(0);
   });
 });

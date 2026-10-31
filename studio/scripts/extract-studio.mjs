@@ -37,7 +37,9 @@ export const REQUIRED_TOKENS = ['--bg', '--panel', '--panel-2', '--panel-3', '--
 export const REQUIRED_PAPER_ONLY = ['--ui-font'];
 
 /** Lucide icons the shell draws (PascalCase, lucide.icons keys). */
-export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Flame', 'Sun', 'Anchor', 'LifeBuoy', 'Coffee', 'FileUp', 'SlidersHorizontal', 'ListTree', 'PenLine', 'Type', 'TabletSmartphone', 'Check', 'Download'];
+export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Flame', 'Sun', 'Anchor', 'LifeBuoy', 'Coffee', 'FileUp', 'SlidersHorizontal', 'ListTree', 'PenLine', 'Type', 'TabletSmartphone', 'Check', 'Download',
+  // part C: the outline rows, the backup and device toasts, the format buttons, the text note
+  'GripVertical', 'Bookmark', 'FileText', 'Image', 'ListOrdered', 'HardDrive', 'FolderOpen', 'Bold', 'Italic', 'Info'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);
@@ -81,6 +83,9 @@ export async function extractStrings(html) {
   }
   const out = JSON.parse(ctx.__beukOut);
   checkStrings(out);
+  /* bookRtl: every BOOK language 1.0 writes right to left (LANG_PACKS[code].rtl, 1.0's isRtlLang),
+     for the manuscript's dir; rtl: the interface languages among them, for the chrome. */
+  out.bookRtl = out.rtl.slice();
   out.rtl = out.rtl.filter((c) => out.order.includes(c));
   return out;
 }
