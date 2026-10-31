@@ -403,7 +403,7 @@
 
   /* ---------------- buoys ---------------- */
   var buoys = [];
-  var SPOTS = [[-12, 5], [-6.5, 10.5], [1.5, 13], [8.5, 9.5], [13, 3.5], [-15, -2.5]];
+  var SPOTS = [[-12, 5], [-6.5, 10.5], [1.5, 13], [8.5, 9.5], [13, 3.5], [-21, -4]];
   var bprof = [[0, -0.5], [0.42, -0.45], [0.58, -0.1], [0.6, 0.15], [0.5, 0.35], [0.22, 0.5], [0.12, 0.62], [0, 0.64]].map(function (q) { return new T.Vector2(q[0], q[1]); });
   PARTS.forEach(function (p, i) {
     var g = new T.Group();
@@ -430,6 +430,39 @@
     el.innerHTML = '<i></i><span></span><small></small>'; host.appendChild(el); b.userData.tag = el;
   });
 
+  /* Tags give way: each is placed over its buoy, then nudged up until it
+     clears every tag nearer the front, easing there so a bobbing buoy
+     never makes its name jump. */
+  var tv = new T.Vector3();
+  function placeTags() {
+    var W = host.clientWidth, H = host.clientHeight, list = [];
+    buoys.forEach(function (b) {
+      var tag = b.userData.tag;
+      tv.set(0, 2.35, 0); b.localToWorld(tv); tv.project(camera);
+      if (tv.z > 1) { tag.style.display = 'none'; return; }
+      tag.style.display = '';
+      if (!b.userData.tw) { b.userData.tw = tag.offsetWidth; b.userData.th = tag.offsetHeight; }
+      var tw = b.userData.tw, tx = Math.min(Math.max((tv.x + 1) / 2 * W, tw / 2 + 6), W - tw / 2 - 6); // never cut off at the frame's edge
+      list.push({ b: b, x: tx, y: (1 - tv.y) / 2 * H, w: tw, h: b.userData.th });
+    });
+    list.sort(function (a, c) { return c.y - a.y; }); // front (lowest on screen) first
+    var placed = [];
+    list.forEach(function (t) {
+      var y = t.y, moved = true;
+      while (moved) {
+        moved = false;
+        for (var i = 0; i < placed.length; i++) {
+          var o = placed[i];
+          if (Math.abs(t.x - o.x) < (t.w + o.w) / 2 + 6 && y > o.y - o.h - 4 && y - t.h < o.y + 4) { y = o.y - o.h - 4; moved = true; }
+        }
+      }
+      placed.push({ x: t.x, y: y, w: t.w, h: t.h });
+      var ud = t.b.userData, want = y - t.y;
+      ud.lift = ud.lift === undefined ? want : ud.lift + (want - ud.lift) * 0.2;
+      ud.tag.style.transform = 'translate(' + t.x + 'px,' + (t.y + ud.lift) + 'px) translate(-50%, -100%)';
+    });
+  }
+
   /* ---------------- state ---------------- */
   var lineEl = document.getElementById('status-line'), sinceEl = document.getElementById('lh-since');
   function applyMode() {
@@ -441,6 +474,7 @@
       dot.style.background = dot.style.color = '#' + c.getHexString();
       tag.querySelector('span').textContent = b.userData.part.name;
       tag.querySelector('small').textContent = s === 'ok' ? '' : ' · ' + (s === 'off' ? 'not set up' : WORD[s]);
+      b.userData.tw = 0;
     });
     if (lineEl) lineEl.textContent = mode === 'down'
       ? "The light is out. The server isn't answering. Anything already open in the studio keeps working on your device."
@@ -573,13 +607,7 @@
         skyU.uMA.value = Math.sin(Math.PI * Math.min(1, k * 1.15)) * 1.1;
       }
     }
-    buoys.forEach(function (b) {
-      v.set(0, 2.35, 0); b.localToWorld(v); v.project(camera);
-      var tag = b.userData.tag;
-      if (v.z > 1) { tag.style.display = 'none'; return; }
-      tag.style.display = '';
-      tag.style.transform = 'translate(' + ((v.x + 1) / 2 * host.clientWidth) + 'px,' + ((1 - v.y) / 2 * host.clientHeight) + 'px) translate(-50%, -100%)';
-    });
+    placeTags();
     if (hovered) {
       v.set(0, 2.2, 0); hovered.localToWorld(v); v.project(camera);
       tip.style.left = ((v.x + 1) / 2 * host.clientWidth) + 'px'; tip.style.top = ((1 - v.y) / 2 * host.clientHeight) + 'px';

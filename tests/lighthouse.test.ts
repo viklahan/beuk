@@ -52,4 +52,6 @@ test('lighthouse: the scene reads the live status, maps it to three colours, and
   assert.match(src, /IntersectionObserver/, 'no drawing while the scene is scrolled away');
   assert.match(src, /if \(!window\.THREE\)/, 'without three.js the plain reading stands');
   assert.doesNotMatch(src, /https?:\/\//, 'nothing loads from another origin');
+  assert.match(src, /function placeTags\(\)/, 'buoy names give way to each other instead of overlapping');
+  assert.match(src, /never cut off at the frame's edge/, 'a name near the edge stays inside the scene');
 });
