@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/assets/fonts/fonts-help.css" />
     <link rel="stylesheet" href="/help/warmth.css" />
     <style>
-      /* The support page: one plate — a dawn sea, drawn live in WebGL
+      /* The support page: one plate — a realistic dawn sea, drawn live in WebGL
          (client/assets/caife/boat.js on the vendored three.js) — set on
          Beuk's Paper page like a frontispiece. Buying a caife sends a
          thank-you note down onto the water, where it folds itself into
@@ -38,10 +38,11 @@
       .plate {
         position: relative; overflow: hidden; border-radius: 3px;
         aspect-ratio: 16 / 10; min-height: 300px; max-width: 100%;
-        /* the painted sea: what shows before WebGL draws, or without it */
+        /* the painted dawn: what shows before WebGL draws, or without it */
         background:
-          radial-gradient(ellipse 30% 9% at 66% 50%, rgba(250, 238, 210, 0.8), transparent 70%),
-          linear-gradient(180deg, var(--amber-soft) 0%, var(--paper-deep) 32%, var(--paper) 49.5%, var(--paper-deep) 50.5%, #4f8794 64%, var(--amber) 100%);
+          /* sampled from the WebGL plate, so nothing jumps when it draws */
+          radial-gradient(circle at 68% 27%, #fffdf6 0 3.2%, rgba(255, 240, 214, 0.55) 3.4%, transparent 22%),
+          linear-gradient(180deg, #b5949c 0%, #c5a2a5 15%, #e9c8ad 31%, #f2dcc0 38%, #e3c3a8 39.2%, #d2ae98 50%, #82666d 65%, #4a4652 80%, #514c54 100%);
       }
       .plate canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
       /* The plate is printed on the page, not pasted on it: a soft inner
