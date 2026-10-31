@@ -229,7 +229,9 @@
 	# the image, not committed, so this static ./client mount never has
 	# it: the app serves it (src/routes/next-studio.ts), with the same
 	# headers as everything else here (the CSP above included).
-	handle /next* {
+	# Exactly /next and /next/… (a bare /next* would also take /nextbook…).
+	@next path /next /next/*
+	handle @next {
 		reverse_proxy app:3000
 	}
 	# The landing page is the site's front door; the studio lives at /studio

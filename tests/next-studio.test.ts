@@ -70,9 +70,10 @@ test('/next without a build on disk falls through (404), it never throws', async
 test('the app mounts it, Caddy proxies /next* to the app, and the image builds it', () => {
   assert.match(read('src/app.ts'), /app\.use\(nextStudioRoutes\(\)\);/);
   const caddy = read('Caddyfile');
-  assert.ok(caddy.includes('handle /next* {\n\t\treverse_proxy app:3000\n\t}'), 'Caddyfile: handle /next* → app');
+  assert.ok(caddy.includes('\t@next path /next /next/*\n\thandle @next {\n\t\treverse_proxy app:3000\n\t}'), 'Caddyfile: @next (/next, /next/*) → app');
+  assert.ok(!caddy.includes('handle /next*'), 'no bare /next* prefix (it would take /nextbook too)');
   // Before the studio's catch-all, so /next is never answered with 1.0's index.html.
-  assert.ok(caddy.indexOf('handle /next* {') < caddy.indexOf('try_files {path} /index.html'));
+  assert.ok(caddy.indexOf('handle @next {') < caddy.indexOf('try_files {path} /index.html'));
   const docker = read('Dockerfile');
   assert.match(docker, /FROM node:24-slim AS studio/);
   assert.match(docker, /RUN cd studio && npm ci/);
@@ -83,4 +84,24 @@ test('the app mounts it, Caddy proxies /next* to the app, and the image builds i
   for (const p of ['studio/node_modules/', 'studio/src/generated/', 'client/next/']) assert.ok(ignore.includes(p), p);
   const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
   assert.equal(pkg.scripts['test:studio'], 'cd studio && npm ci && npx vitest run');
+});
+
+test("1.0's service workers leave /next alone: never cached or served, and its beuk-next-* caches survive 1.0's activate", () => {
+  for (const p of ['client/sw.js', 'client/assets/sw.js']) {
+    const sw = read(p);
+    // The server-pages passthrough: if (url.origin === self.location.origin && /^\/(help|…|next)(\/|$)/.test(url.pathname)) return;
+    const head = 'if (url.origin === self.location.origin && /';
+    const at = sw.indexOf(head);
+    assert.ok(at !== -1, `${p}: the server-pages passthrough`);
+    const end = sw.indexOf('/.test(url.pathname)) return;', at);
+    assert.ok(end !== -1, `${p}: the passthrough's test`);
+    const rx = new RegExp(sw.slice(at + head.length, end));
+    for (const u of ['/next', '/next/', '/next/assets/index-1.js', '/next/sw.js']) assert.ok(rx.test(u), `${p}: ${u} passes through`);
+    for (const u of ['/nextbook', '/studio', '/']) assert.ok(!rx.test(u), `${p}: not ${u}`);
+    assert.ok(sw.includes('keys.filter((k) => k !== BEUK_CACHE && k !== BEUK_SOUND_CACHE && k.indexOf("beuk-next-") !== 0)'), `${p}: activate keeps beuk-next-*`);
+    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v20";/, `${p}: shell cache bumped for the change`);
+  }
+  assert.match(read('client/index.html'), /const BEUK_CACHE_NAME = "beuk-shell-v20";/);
+  // The 2.0 worker's own cache prefix is the one 1.0 keeps.
+  assert.ok(read('studio/public/sw.js').includes("const PREFIX = 'beuk-next-';"));
 });
