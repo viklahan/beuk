@@ -180,6 +180,11 @@ const ADDED_2026_10_29: [string, string, string][] = [
   ["import-a-manuscript", "Beuk accepts Word documents ( .docx ), Markdown ( .md ), and plain text ( .txt ).", "Beuk accepts Word documents ( .docx ), Markdown ( .md ), plain text ( .txt ), Rich Text ( .rtf , which Scrivener, TextEdit and LibreOffice also write), and PDF ( .pdf )."],
   ["box-sets", "as manuscripts ( .docx , .md , or .txt )", "as manuscripts ( .docx , .md , .txt , or .rtf )"],
 ];
+/* 2026-10-30: EPUB import (BEUK:epubimport, BEUK:epubbulk), applied after the additions above. */
+const ADDED_2026_10_30: [string, string, string][] = [
+  ["import-a-manuscript", "and PDF ( .pdf ).", "PDF ( .pdf ), and EPUB ( .epub ), so a book you only have as an ebook can come back in too (an EPUB under DRM cannot be read)."],
+  ["box-sets", "as manuscripts ( .docx , .md , .txt , or .rtf )", "as manuscripts ( .docx , .pdf , .epub , .md , .txt , or .rtf )"],
+];
 
 test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 pages), with the two edits the spec asks for and the 2026-10-26 additions', async () => {
   const db = await createTestDb();
@@ -215,7 +220,7 @@ test('migrated guides keep their copy verbatim (rendered text vs the pre-H1 page
       }
       // 2026-10-26: the features added since H1 (removing a picture, the preview keeping its place,
       // the title read from the manuscript, Split at cursor, the Cover Maker), each added in place.
-      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29]) if (s === slug) {
+      for (const [s, from, to] of [...ADDED_2026_10_26, ...ADDED_2026_10_29, ...ADDED_2026_10_30]) if (s === slug) {
         assert.ok(expected.includes(from), `${slug}: the addition's anchor is in the fixture`);
         expected = expected.replace(from, to);
       }
