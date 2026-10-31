@@ -34,7 +34,7 @@ What you're doing: turning the same manuscript into a paginated paperback interi
 
 ### What can go wrong — and one honest limit
 
-**The honest limit:** what the browser saves is a *print-ready interior PDF*, not PDF/X. True **PDF/X-1a** conversion — the flavour some printers, IngramSpark among them, prefer — runs on Beuk's server: sign in, and the **Store-ready?** check (or a PDF/X job on a print export in your archive) converts the interior and reads the result back. Beuk never labels a file PDF/X unless the converted file itself declares it.
+**The honest limit:** what the browser saves is a *print preview PDF* that you print yourself, not PDF/X. The print-ready PDF is the file Beuk's server makes (**Download print-ready PDF**). True **PDF/X-1a** conversion — the flavour some printers, IngramSpark among them, prefer — runs on Beuk's server: sign in, and the **Store-ready?** check (or a PDF/X job on a print export in your archive) converts the interior and reads the result back. Beuk never labels a file PDF/X unless the converted file itself declares it.
 
 **Blank pages appeared.** With recto chapter starts on, a chapter that would open on a left page gets a deliberate blank before it. That's correct book behaviour — printers expect it.
 
