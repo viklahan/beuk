@@ -46,6 +46,7 @@ import path from 'node:path';
 import puppeteer from 'puppeteer-core';
 import { planSections, needsFinishing, withPageMap, startPages, blanksFor, stampable, finalHtml, stampCss, stampSpreads } from './spreads.mjs';
 import { bleedConfig, applyBleed } from './bleed.mjs';
+import { headsConfig, withHeadsCss, pageHeads, headTexts, headsDocument, stampHeads, pageCountOf } from './heads.mjs';
 import { footnoteConfig, settleFootnotes, placedHtml, misplaced, withRefMap, readDests, placementsIn, stampFootnotes, footnoteHeader, FALLBACK } from './footnotes.mjs';
 
 // The share of the job's time the page-bottom notes may take to settle;
@@ -141,6 +142,9 @@ async function render(body) {
   // Bleed (bleed.mjs): asked for by the document, added to the finished
   // PDF last, once every page's side is final.
   const bleed = bleedConfig(html);
+  // Running heads (heads.mjs): asked for by the document, stamped onto
+  // the finished pages before bleed is added.
+  const heads = headsConfig(html);
   const profile = await mkdtemp(path.join(os.tmpdir(), 'beuk-render-'));
   let browser = null;
   let timer = null;
@@ -236,10 +240,28 @@ async function render(body) {
       // pass put a settled section's references on other pages than
       // its own pass did (then the book is finished again with every
       // note at its section's end — a note is never drawn astray).
+      // The running heads, drawn over the finished pages: each page's
+      // head from where the sections start, typeset by Chromium in the
+      // book's own type (see heads.mjs). `strip`: measuring names to take
+      // out of the file on the way.
+      const drawHeads = async (out, plan, starts, before, strip = []) => {
+        const pageCount = await pageCountOf(out);
+        const { texts, index } = headTexts(pageHeads({ plan, starts, before, pageCount, cfg: heads }));
+        if (!texts.length && !strip.length) return out;
+        const headsPdf = texts.length ? await printDoc(headsDocument(html, texts, heads)) : null;
+        const r = await stampHeads(out, headsPdf, index, strip);
+        console.log('heads: ' + r.drawn + ' drawn (' + texts.length + ' distinct)');
+        return r.pdf;
+      };
       const finish = async (fnNow) => {
         let source = fnNow ? placedHtml(html, fnNow.results) : html;
         let plan = planSections(source);
-        if (!needsFinishing(plan) && !fnNow) return printDoc(source);
+        if (!needsFinishing(plan) && !fnNow) {
+          if (!heads) return printDoc(source);
+          // one plain pass that also maps where every section starts
+          const out = await printDoc(withPageMap(withHeadsCss(source, heads), plan));
+          return drawHeads(out, plan, await startPages(out), new Set(), plan.map((s) => s.id));
+        }
         // With notes placed, a check that every section set in the book
         // breaks where it broke on its own; one that does not keeps its
         // notes at its end instead.
@@ -262,7 +284,7 @@ async function render(body) {
           stamped = await stampable(plan);
         }
         const { before, finalStart } = blanksFor(plan, starts);
-        const finalDoc = finalHtml(source, before, stamped);
+        const finalDoc = heads ? withHeadsCss(finalHtml(source, before, stamped), heads) : finalHtml(source, before, stamped);
         // The final pass names its references too: the notes are drawn
         // by where the shipped pages put them, not by where they were
         // expected.
@@ -274,6 +296,7 @@ async function render(body) {
         }
         if (stamped.size) out = await stampSpreads(out, plan, finalStart, stamped, bleed);
         if (fnNow) out = (await stampFootnotes(out, fnNow.notesPdf, sections, fnNow.cfg, fnNow.refIds)).pdf;
+        if (heads) out = await drawHeads(out, plan, finalStart, before);
         return out;
       };
       let out = await finish(fn);
