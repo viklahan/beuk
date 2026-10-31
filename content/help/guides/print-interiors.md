@@ -14,10 +14,10 @@ What you're doing: turning the same manuscript into a paginated paperback interi
 
 ## Steps
 
-1. Open the **Export** dialog and find **Print Interior — PDF via Print**.
+1. Open the **Export** dialog and find **Print Interior — Print Preview and Print-Ready PDF**.
 2. Choose a trim size. There are twenty-four, grouped the way the printers group them: **Pocket & mass-market** (4.25 × 7 to 5.06 × 7.81 in), **Trade paperback** (5.25 × 8 to 6.69 × 9.61 in, including 6 × 9 and A5), **Large & illustrated** (7 × 10 to US Letter and A4) and **Square & landscape** (8 × 8 to 11 × 8.5 in). Each says what it usually suits, and the ones only IngramSpark prints say so.
 3. Decide on chapter openings: **Chapters open on a recto page** starts every chapter on a right-hand page, the trade hardback convention. Off, chapters simply start on the next page.
-4. Open the **Print View** and check a few pages. Then **Print → Save as PDF**. (If printing is unavailable where you are, **Download Print HTML** gives you the identical paginated document as a file that prints from any browser.)
+4. Open the **Print View** and check a few pages. Then **Print → Save as PDF** if you want to print it yourself. This is a preview: the file to send to a store is the print-ready PDF the server makes (**Download print-ready PDF**). (If printing is unavailable where you are, **Download Print HTML** gives you the identical paginated document as a file that prints from any browser.)
 5. Before you upload, **Run Print Preflight**: margins and gutter against the printer minimums for this page count and trim, every picture's resolution at the size it will print, the page count against KDP's limits for the trim, and the fonts in use.
 
 ## Explanation
