@@ -4471,8 +4471,10 @@
         if (!bookIdIsLegacy(state.meta.bookId)) return null;
         const from = state.meta.bookId;
         if (!isEmptyDesk() && !isSampleBookId(from) && typeof takeSnapshot === "function") {
-          const now = JSON.stringify(snapshotBookDoc());
-          const already = (state.history || []).some((h) => h && h.doc && h.doc.meta && h.doc.meta.bookId === from && JSON.stringify(h.doc) === now);
+          /* BEUK:bookformat — formatVersion is a label: a snapshot taken before it existed still counts as holding this state (docs/book-format.md) */
+          const noFv = (d) => { const c = Object.assign({}, d); delete c.formatVersion; return JSON.stringify(c); };
+          const now = noFv(snapshotBookDoc());
+          const already = (state.history || []).some((h) => h && h.doc && h.doc.meta && h.doc.meta.bookId === from && noFv(h.doc) === now);
           if (!already) takeSnapshot("", "bookid");
         }
         const r = bookIdMigrateMeta(state.meta);
@@ -20614,10 +20616,10 @@
         renderNewBookButton(); /* BEUK:newbook */
         icons();
       }
-      const sampleComparableJson = () => { const d = JSON.parse(JSON.stringify(serializeBook())); delete d.activeId; samplePicsStrip(d); /* BEUK:slim */ delete d.history; delete d.historyPool; /* BEUK:remnants — snapshots are not writing: the sample's own draft snapshot names its pictures once they arrive, which is no edit */ return stableJson(d); };
+      const sampleComparableJson = () => { const d = JSON.parse(JSON.stringify(serializeBook())); delete d.activeId; samplePicsStrip(d); /* BEUK:slim */ delete d.history; delete d.historyPool; delete d.formatVersion; /* BEUK:bookformat — a label, not content: a fingerprint stored before it existed must still match (docs/book-format.md) */ /* BEUK:remnants — snapshots are not writing: the sample's own draft snapshot names its pictures once they arrive, which is no edit */ return stableJson(d); };
       /* BEUK:remnants — a fingerprint saved before snapshots left the comparison carries them: compare like with like. */
       function sampleLoadedJsonNormal(s) {
-        try { const d = JSON.parse(s); if (!d || typeof d !== "object") return s; delete d.history; delete d.historyPool; return stableJson(d); } catch (e) { return s; }
+        try { const d = JSON.parse(s); if (!d || typeof d !== "object") return s; delete d.history; delete d.historyPool; delete d.formatVersion; /* BEUK:bookformat — see sampleComparableJson */ return stableJson(d); } catch (e) { return s; }
       }
       /* One synchronous swap: the whole novella is applied in a single
          state change — first chapter open, stats already at full count
@@ -50466,6 +50468,7 @@
         else delete themeCopy.header;
         const hist = histPack(state.history); /* snapshots name the book's pictures; the ones it no longer holds are written once, in historyPool */
         return {
+          formatVersion: 1, /* BEUK:bookformat — names the book format this studio writes (docs/book-format.md); bookDocsSame ignores it so a shelf copy saved without it is not a false conflict */
           meta: Object.assign({}, state.meta),
           theme: themeCopy,
           activePreset: state.activePreset,
@@ -67117,7 +67120,10 @@
       function bookDocsSame(a, b) {
         try {
           if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
-          return stableJson(JSON.parse(JSON.stringify(a))) === stableJson(JSON.parse(JSON.stringify(b)));
+          /* BEUK:bookformat — formatVersion is a label, not content (docs/book-format.md): a shelf copy saved before it existed must still equal the desk's copy. Compared on the JSON copies, so neither argument is touched. */
+          const ja = JSON.parse(JSON.stringify(a)), jb = JSON.parse(JSON.stringify(b));
+          delete ja.formatVersion; delete jb.formatVersion;
+          return stableJson(ja) === stableJson(jb);
         } catch (e) { return false; }
       }
       /* ==== /BEUK:bugs ==== */

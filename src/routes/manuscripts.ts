@@ -1,7 +1,9 @@
 import { Router, type Request } from 'express';
+import type { BackgroundTasks } from './account.js';
 import type { Config } from '../config.js';
 import type { Db } from '../db.js';
 import { requireAuth } from '../auth.js';
+import { observeBook } from '../book/observe.js';
 import { uuidParam } from '../ids.js';
 import { HTTP_CODES } from '../help/codes.js';
 import { collectPicRefs, collectUnusedPictures, hydrateDoc, isMissingPictureError, missingPictures, writePictureRefs } from '../pictures.js';
@@ -76,7 +78,7 @@ const missingBody = (missing: string[]) => ({
   missingPictures: missing,
 });
 
-export function manuscriptRoutes(db: Db, config: Config): Router {
+export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks): Router {
   const router = Router();
   router.use(requireAuth(db));
   router.param('id', uuidParam('manuscript not found'));
@@ -95,6 +97,14 @@ export function manuscriptRoutes(db: Db, config: Config): Router {
     } catch (err) {
       console.error('pictures: collecting unused pictures failed', err);
     }
+  };
+
+  /** Book format observe mode: runs after the answer, never changes it. */
+  const observe = (id: string, doc: unknown): void => {
+    // setImmediate first: readBook is synchronous CPU work, so it waits
+    // until the answer has been handed to the socket.
+    const job = () => new Promise<void>((r) => setImmediate(r)).then(() => observeBook(db, id, doc, new Date()));
+    tasks.run(job);
   };
 
   router.get('/', async (req, res, next) => {
@@ -137,6 +147,7 @@ export function manuscriptRoutes(db: Db, config: Config): Router {
         throw err;
       }
       res.set('ETag', etagOf(row.revision));
+      observe(row.id, doc);
       if (wantsMinimal(req)) return res.status(201).json({ manuscript: metadata(row) });
       return res.status(201).json({ manuscript: await withDoc(req, row) });
     } catch (err) {
@@ -213,6 +224,7 @@ export function manuscriptRoutes(db: Db, config: Config): Router {
         if (row) {
           if (doc !== undefined) await collect(req.user!.id);
           res.set('ETag', etagOf(row.revision));
+          if (doc !== undefined) observe(row.id, doc);
           if (wantsMinimal(req)) return res.json({ manuscript: metadata(row) });
           return res.json({ manuscript: await withDoc(req, row) });
         }
