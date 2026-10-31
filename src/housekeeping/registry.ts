@@ -3640,6 +3640,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     },
   },
   {
+    id: 'export.epub-server',
+    title: 'Export: “Download .epub” asks the server for the store-ready EPUB — sign-in when signed out, the connection line when offline, the paused copy and no file on a 402, the server’s file and notes on success, the server’s own words on an error; never a file built on the device',
+    kind: 'client-only',
+    reason: 'The button lives in the studio; the check drives the real buildEpub over stubbed server answers in a browser. The route, its 402 gate and the build are asserted server-side in tests/epub-route.test.ts and the export.epub-server.build case.',
+  },
+  {
     id: 'export.print-ready',
     title: 'Export: “Download print-ready PDF” — sign-in when signed out, one paused message with no job, never a download before the job is done, the server’s own error on failure',
     kind: 'client-only',

@@ -44623,17 +44623,38 @@
         });
         return zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
       }
+      /* BEUK:epub-server — the store-ready EPUB is built on the server
+         (POST /api/epub), from the book on this desk, by the studio's own
+         EPUB code (src/book/epub). The server is the judge of the plan:
+         after the trial unpaid it answers 402 and nothing is built. With
+         no connection the studio says so; it never builds the store-ready
+         file locally. buildEpubBlob stays for the self-checks and the
+         server check job's upload (gated there by archive.upload/jobs.run). */
       async function buildEpub() {
-        if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; }
         const btn = $("btnBuildEpub");
-        btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>Building…'; icons();
+        if (typeof cloud === "undefined" || !cloud.available || !net.online) { toast(t("epub.offline"), "cloud-off"); return; }
+        if (!cloud.user) { toast(t("epub.signin"), "cloud"); if (!buildEpub.noOpen) { $("modalExport").classList.remove("open"); openAuth(); } return; }
+        btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>' + esc(t("epub.building")); icons();
         try {
-          const blob = await buildEpubBlob();
-          downloadBlob(blob, platformFilename());
+          /* The desk's book, pictures inline (the shelf copy may be behind the desk); History, notes and research files do not go into an EPUB, so they stay home. */
+          const book = serializeBook();
+          ["history", "historyPool", "notebook", "research", "audio", "importReport"].forEach((k) => { delete book[k]; });
+          const r = await apiFetch("/api/epub", { method: "POST", body: JSON.stringify({ book: book, platform: state.exportPlatform, lang: getUiLang() }), blob: true, quiet402: true });
+          if (!r) { toast(t("epub.offline"), "cloud-off"); return; }
+          if (r.__error) {
+            if (r.__status === 402) toast(t("plan.pausedToast"), "alert-triangle");
+            else if (r.__status === 413) toast(t("epub.tooLarge"), "alert-triangle");
+            else toast(t("epub.failed", { error: r.__error }), "alert-triangle");
+            return;
+          }
+          let notes = [];
+          try { notes = JSON.parse(decodeURIComponent((r.__headers && r.__headers.get("X-Beuk-Notes")) || "%5B%5D")); } catch (e) { notes = []; }
+          (Array.isArray(notes) ? notes : []).forEach((n) => toast(String(n), "alert-triangle"));
+          downloadBlob(r.__blob, platformFilename());
           $("modalExport").classList.remove("open");
-          toast(platformPreset().name + " EPUB exported — " + epubPlan().length + " sections, " + Math.round(blob.size / 1024) + " KB", "package-check");
+          toast(platformPreset().name + " EPUB exported — " + epubPlan().length + " sections, " + Math.round(r.__blob.size / 1024) + " KB", "package-check");
         } catch (err) {
-          toast("Export failed: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
+          toast(t("epub.failed", { error: err && err.message ? err.message : String(err) }), "alert-triangle");
         } finally {
           btn.disabled = false; renderPlatformPresets(); icons();
         }
@@ -50246,6 +50267,7 @@
             body: opts.body === undefined ? undefined : opts.body
           });
           if (res.status === 204) return {};
+          if (opts.blob && res.ok) return { __blob: await res.blob(), __headers: res.headers }; /* BEUK:epub-server — a file, not JSON */
           const data = await res.json().catch(() => null);
           if (res.status === 402 && data && data.paused && !opts.quiet402 && typeof billingNotePaused === "function") billingNotePaused(); /* BEUK:billing */
           if (!res.ok) return { __error: (data && data.error) || ("HTTP " + res.status), __status: res.status, __body: data };
@@ -51542,6 +51564,20 @@
       Object.assign(UI_STRINGS.ar, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
       Object.assign(UI_STRINGS.ja, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
       Object.assign(UI_STRINGS["zh-Hans"], { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      /* BEUK:epub-server — English in every pack until V signs off the translations (docs/superpowers/plans/step3-part3-translations-for-signoff.md) */
+      Object.assign(UI_STRINGS.en, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.es, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.fr, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.de, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.it, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.pt, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.nl, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.pl, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.ru, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.tr, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.ar, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.ja, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
       var billingPausedSaid = false;
       function billingDate(iso) {
         try { return new Date(iso).toLocaleDateString(uiLangState || "en", { day: "numeric", month: "long", year: "numeric" }); }
@@ -66885,6 +66921,73 @@
           } }
       );
       /* ==== /BEUK:printready-check ==== */
+      /* ==== BEUK:epub-server-check ==== the EPUB download asks the
+         server (POST /api/epub) and never builds the store-ready file on
+         the device: signed out → sign-in; offline → the connection line;
+         402 → the paused copy and no file; 200 → the server's file and its
+         notes; a server error → its own words. The network is stubbed
+         beneath the real apiFetch (as export.print-ready does). */
+      SELF_CHECKS_ASYNC.push(
+        { id: "export.epub-server", feature: "export", name: "Export: “Download .epub” asks the server for the store-ready EPUB — sign-in when signed out, the connection line when offline, the paused copy and no file on a 402, the server’s file and notes on success, the server’s own words on an error; never a file built on the device",
+          async run() {
+            const keep = { available: cloud.available, user: cloud.user, online: net.online, toast: toast, download: downloadBlob, build: buildEpubBlob, platform: state.exportPlatform };
+            const realFetch = window.fetch;
+            const bad = [], calls = [], said = [], files = [];
+            let mode = "ok", localBuilds = 0, lastBody = null;
+            const NOTE = "The Amiri book face could not be loaded, so this EPUB does not embed it.";
+            const PAUSED = "Your free trial has ended, so store-ready EPUB files is paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.";
+            const blob = new Blob(["PK-sc"], { type: "application/epub+zip" });
+            const reply = (status, body, headers) => Promise.resolve({ status: status, ok: status >= 200 && status < 300,
+              json: () => Promise.resolve(body), blob: () => Promise.resolve(blob), headers: { get: (k) => (headers || {})[String(k).toLowerCase()] || null } });
+            window.fetch = function (url, init) {
+              const m = (init && init.method) || "GET", u = String(url);
+              calls.push(m + " " + u);
+              if (m === "POST" && u === "/api/epub") {
+                try { lastBody = JSON.parse(init.body); } catch (e) { lastBody = null; }
+                if (mode === "paused") return reply(402, { error: PAUSED, paused: true, feature: "export.epub", exportOpen: false, ownWordsOpen: true });
+                if (mode === "error") return reply(500, { error: "The EPUB could not be built. Please try again; if it keeps happening, tell us.", reason: "failed" });
+                return reply(200, null, { "x-beuk-notes": encodeURIComponent(JSON.stringify([NOTE])) });
+              }
+              return reply(404, { error: "not found" });
+            };
+            toast = function (msg) { said.push(String(msg)); };
+            downloadBlob = function (b, name) { files.push({ b: b, name: name }); };
+            buildEpubBlob = function () { localBuilds++; return Promise.reject(new Error("built on the device")); };
+            buildEpub.noOpen = true;
+            const reset = () => { calls.length = 0; said.length = 0; files.length = 0; lastBody = null; };
+            try {
+              /* (a) signed out */
+              cloud.available = true; cloud.user = null; net.online = true; reset();
+              await buildEpub();
+              if (calls.length || files.length || said[0] !== t("epub.signin")) bad.push("(a) signed out: " + calls.length + " calls, " + files.length + " files, said " + JSON.stringify(said));
+              /* (b) offline */
+              cloud.user = { id: "sc-user", email: "sc@beuk.test" }; net.online = false; reset();
+              await buildEpub();
+              if (calls.length || files.length || said[0] !== t("epub.offline")) bad.push("(b) offline: " + calls.length + " calls, " + files.length + " files, said " + JSON.stringify(said));
+              /* (c) paused */
+              net.online = true; mode = "paused"; reset();
+              await buildEpub();
+              if (calls.length !== 1 || files.length || said.length !== 1 || said[0] !== t("plan.pausedToast")) bad.push("(c) paused: " + calls.join(", ") + "; " + files.length + " files; said " + JSON.stringify(said));
+              /* (d) the server's file */
+              mode = "ok"; state.exportPlatform = "kdp"; reset();
+              await buildEpub();
+              if (calls.join() !== "POST /api/epub" || files.length !== 1 || files[0].b !== blob || files[0].name !== platformFilename()) bad.push("(d) ok: " + calls.join(", ") + "; files " + JSON.stringify(files.map((f) => f.name)));
+              if (!lastBody || !lastBody.book || lastBody.platform !== "kdp" || lastBody.lang !== getUiLang() || "history" in lastBody.book || !Array.isArray(lastBody.book.sections)) bad.push("(d) the request did not carry the desk's book, the platform and the language without History");
+              if (said.indexOf(NOTE) < 0) bad.push("(d) the server's note was not shown: " + JSON.stringify(said));
+              /* (e) a server error */
+              mode = "error"; reset();
+              await buildEpub();
+              if (files.length || !said.some((x) => x.indexOf("The EPUB could not be built") >= 0)) bad.push("(e) error: files " + files.length + ", said " + JSON.stringify(said));
+              if (localBuilds) bad.push(localBuilds + " build(s) on the device");
+              if ($("btnBuildEpub").disabled) bad.push("the button stayed disabled");
+            } finally {
+              window.fetch = realFetch; toast = keep.toast; downloadBlob = keep.download; buildEpubBlob = keep.build; buildEpub.noOpen = false;
+              cloud.available = keep.available; cloud.user = keep.user; net.online = keep.online; state.exportPlatform = keep.platform; renderPlatformPresets();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in, 0 calls; offline → connection line, 0 calls; 402 → the paused copy, 1 call, no file; 200 → the server's file as " + platformFilename("kdp") + " with its note; 500 → the server's words; 0 device builds");
+          } }
+      );
+      /* ==== /BEUK:epub-server-check ==== */
       /* ==== BEUK:login ==== the sign-in dialog drives the real
          cloudAuthSubmit against answers the server and its proxy really
          give: only a 401 may say the email and password do not match. */
