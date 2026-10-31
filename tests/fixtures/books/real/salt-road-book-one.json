@@ -1,0 +1,249 @@
+{
+  "format": "beuk-backup",
+  "version": 1,
+  "exportedAt": "2026-10-28T00:32:25.544Z",
+  "book": {
+    "meta": {
+      "title": "Salt Road — Book One",
+      "subtitle": "A Memoir of Returning",
+      "author": "Jabooki Tanaka",
+      "publisher": "",
+      "isbn": "",
+      "language": "en",
+      "langSource": "manual",
+      "langGuess": "",
+      "year": "2026",
+      "rights": "",
+      "description": "Letters, a diary and an interview: a family history told as a story, with the facts left where you can check them.",
+      "a11ySummary": "",
+      "bookId": "urn:uuid:48c749d4-a5b9-4acb-b17f-4eed8f99975c",
+      "series": "Salt Road"
+    },
+    "theme": {
+      "bodyFont": "Alegreya",
+      "headFont": "Lora",
+      "fontSize": 17,
+      "lineHeight": 1.65,
+      "paraMode": "indent",
+      "indentDepth": "1.5em",
+      "headerStyle": "editorial_left",
+      "dropDepth": 2,
+      "smallCapsWords": 2,
+      "ornament": "sprig",
+      "justify": true,
+      "hyphens": true
+    },
+    "activePreset": "memoir",
+    "colour": {
+      "accent": "#3f5a6b",
+      "tint": ""
+    },
+    "sections": [
+      {
+        "id": "syqcfbfv",
+        "kind": "front",
+        "type": "titlepage",
+        "title": "Title Page",
+        "subtitle": "",
+        "number": "",
+        "content": "",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": "sr-house",
+        "plateAlt": "A weathered wooden house with one lit window at the end of a snowy coastal road, a figure walking toward it",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      },
+      {
+        "id": "s3ux8h3a",
+        "kind": "front",
+        "type": "preface",
+        "title": "A Note on the Text",
+        "subtitle": "",
+        "number": "",
+        "content": "This book follows the hybrid-narrative archetype: it reads like a story, but it does not ask you to take the story on trust. Dates, places and sources are signposted in the text, and every interruption is set apart so you can see where the narrator stops and a document begins.\n\nLetters and diary entries are set as quotations, each with its source beneath it. Interviews are set as transcripts, the speaker named at the start of every turn. Notes stand at the foot of the page they belong to. Figure 1 is captioned where it falls, and the running text cross-refers to the Photo Plates that follow Part III.",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": null,
+        "plateAlt": "",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      },
+      {
+        "id": "strysz0w",
+        "kind": "body",
+        "type": "chapter",
+        "title": "1962 — Salt Road",
+        "subtitle": "Salt Road, the harbour town",
+        "number": "I",
+        "content": "My grandmother Hana did not write about the sea. She wrote about the road that led to it, because the road was the thing you could walk back along. The house at the end of Salt Road had one lit window in winter, and from that window you could see the tide come in and decide, twice a day, whether the town was an island or not.[^1]\n\nI did not grow up in that house. I grew up with its letters. They arrived in bundles, tied with string, and my mother kept them in a drawer she never quite locked. When I finally opened them, forty years after the first one was written, I understood why she had kept the drawer unlocked: a locked drawer is a secret. An unlocked drawer is an invitation you are afraid to accept.\n\n> “Dearest, — The tide was high at noon and the boats sat up on the sand like patient animals. Do not worry about the house. The house worries about itself, and it has more practice than either of us. Come home when the road is dry, not before.”\n> — Hana Tanaka, letter to her daughter, 14 March 1962\n\nThat sentence — *come home when the road is dry* — became the rule of this book. I have tried to follow it. A memoir that hurries is a memoir that invents. A memoir that waits for the road to dry can at least say, honestly, what it found when it got there.[^2]\n\nThe desk was still there when I returned, and so were the bundles. Three of them, on the left of the desk, with the diary open between them as if someone had just stepped out of the room. I did not tidy it. Tidying is another way of editing, and I had already decided that this book would show its working.\n\n![Hana's writing desk by a window: bundles of letters tied with string, an open diary and a pair of glasses](img:sr-desk \"Figure 1. The desk at Salt Road, with Hana’s letters in bundles and the diary open. The bundles are shown in the order in which they were found, not the order in which they were written — that difference matters, and it is discussed in Part IV. Illustrative plate, not an archival photograph.\")\n\nReading the letters in found order, rather than in date order, changes the story. In date order, Hana is steady, then tired, then steady again. In found order, she is tired first, and the steadiness that follows reads as a decision, not a temperament. I have kept both orders in the Chronology, so you can test that claim yourself.[^3]\n\n[^1]: Hana Tanaka, letter, 14 Mar. 1962. Family papers, Salt Road drawer, Bundle 1.\n\n[^2]: On waiting and invention in memoir, see the Note on the Text.\n\n[^3]: Found order against date order: see the Chronology.",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": null,
+        "plateAlt": "",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      },
+      {
+        "id": "sis37ioo",
+        "kind": "body",
+        "type": "chapter",
+        "title": "1987 — The Leaving",
+        "subtitle": "Salt Road to the city",
+        "number": "II",
+        "content": "My mother, Yuki, left Salt Road at nineteen, with one suitcase and a coat that was too thin for the road she was taking. She did not leave in anger. She left in the way people leave a house they love when the house has become too small for the life they can imagine. The town remembers the leaving differently from the way she does. That, too, is part of the record.[^4]\n\n> “14 September 1987. I walked to the top of the road and looked back once. Only once. If I had looked back twice I would have stayed, and staying would have been a different kind of leaving.”\n> — Yuki Tanaka, diary, 14 September 1987\n\nWhen I interviewed the harbourman who watched her go, he did not mention the suitcase. He mentioned the coat.\n\n::: transcript\nINTERVIEWER: What do you remember about that morning?\nHARBOURMAN: She was cold. She would not say so. She kept her hands in her pockets so no one would see them shake. That is how I knew she was not coming back that winter.\n:::\n\n::: right\n*— Interview with the harbourman, Salt Road, 2024*[^5]\n:::\n\n[^4]: Yuki Tanaka, diary, 14 Sept. 1987. Family papers, Bundle 2.\n\n[^5]: Interview with the harbourman, Salt Road, Mar. 2024. Transcript, sample file.",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": null,
+        "plateAlt": "",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      },
+      {
+        "id": "sihegxar",
+        "kind": "back",
+        "type": "alsoby",
+        "title": "Also by the Author",
+        "subtitle": "",
+        "number": "",
+        "content": "[Salt Road — Book Two](https://sim.beuk.test/books/salt-road-2)\n[Salt Road — Book Three](https://sim.beuk.test/books/salt-road-3)",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": null,
+        "plateAlt": "",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      }
+    ],
+    "cover": null,
+    "coverRecipe": null,
+    "images": [
+      {
+        "id": "sr-house",
+        "name": "The house at the end of Salt Road",
+        "mediaType": "image/jpeg",
+        "ext": "jpg",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iiigD//2Q=="
+      },
+      {
+        "id": "sr-desk",
+        "name": "The desk at Salt Road",
+        "mediaType": "image/jpeg",
+        "ext": "jpg",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iiigD//2Q=="
+      }
+    ],
+    "fonts": [],
+    "customThemes": [],
+    "activeId": "strysz0w",
+    "exportPlatform": "generic",
+    "printTrim": "6x9",
+    "printRecto": true,
+    "printLargePrint": false,
+    "printPictureBook": false,
+    "printBleed": false,
+    "printMarginMode": "auto",
+    "printCustomMargins": {
+      "inside": 0.625,
+      "outside": 0.5,
+      "top": 0.6,
+      "bottom": 0.75
+    },
+    "printHeadContent": "titleauthor",
+    "printHeadPlace": "top",
+    "printOmitChapterHead": false,
+    "printOmitBlankHead": true,
+    "printFolio": "centre",
+    "printNotes": "page",
+    "storeCheck": {
+      "store": "kdp",
+      "binding": "paperback",
+      "ink": "",
+      "attestSpine": false
+    },
+    "goals": {
+      "daily": 0,
+      "project": 0,
+      "deadline": ""
+    },
+    "history": [],
+    "historyPool": {
+      "images": [],
+      "fonts": [],
+      "covers": []
+    },
+    "importReport": null,
+    "bible": {
+      "entries": [
+        {
+          "id": "b9bz8iepy",
+          "type": "character",
+          "name": "Tanaka",
+          "aliases": [],
+          "description": "",
+          "notes": "",
+          "imageId": null,
+          "tags": [],
+          "exactCase": false,
+          "exclude": []
+        }
+      ]
+    },
+    "audio": {
+      "narrator": "",
+      "format": "both",
+      "rightsInClosing": false,
+      "include": {},
+      "pron": [],
+      "dismissed": []
+    },
+    "manuscript": {
+      "legalName": "",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "byline": "",
+      "surname": "",
+      "paper": "letter",
+      "font": "times",
+      "italics": "italic"
+    },
+    "dictation": {
+      "lang": "",
+      "recent": []
+    }
+  },
+  "_fixture": {
+    "source": "10-ramp-gallery/sagas/world/sim04/b030-salt-road-book-one.beuk-backup.json",
+    "slimmed": [
+      "images[0].data",
+      "images[1].data"
+    ],
+    "why": "Series book with bible and colour together"
+  }
+}

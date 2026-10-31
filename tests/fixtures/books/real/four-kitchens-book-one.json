@@ -1,0 +1,185 @@
+{
+  "format": "beuk-backup",
+  "version": 1,
+  "exportedAt": "2026-10-28T00:38:20.508Z",
+  "book": {
+    "meta": {
+      "title": "Four Kitchens — Book One",
+      "subtitle": "Recipes from four tables",
+      "author": "Mina Ortega",
+      "publisher": "",
+      "isbn": "",
+      "language": "en",
+      "langSource": "manual",
+      "langGuess": "",
+      "year": "2026",
+      "rights": "",
+      "description": "Four dishes from four kitchens: Hyderabad, Naples, Tokyo and Mexico City.",
+      "a11ySummary": "",
+      "bookId": "urn:uuid:251a9f7f-7a72-46d5-8976-5bc74d0e17c8",
+      "series": "Four Kitchens"
+    },
+    "theme": {
+      "bodyFont": "Source Sans 3",
+      "headFont": "Abril Fatface",
+      "fontSize": 14,
+      "lineHeight": 1.45,
+      "paraMode": "block",
+      "indentDepth": "1.5em",
+      "headerStyle": "modern_stacked",
+      "dropDepth": 2,
+      "smallCapsWords": 2,
+      "ornament": "hairline",
+      "justify": false,
+      "hyphens": false
+    },
+    "activePreset": "practical",
+    "colour": {
+      "accent": "#a33a1c",
+      "tint": ""
+    },
+    "sections": [
+      {
+        "id": "snxza899",
+        "kind": "front",
+        "type": "titlepage",
+        "title": "Title Page",
+        "subtitle": "",
+        "number": "",
+        "content": "",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": null,
+        "plateAlt": "",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      },
+      {
+        "id": "sqgzswh3",
+        "kind": "body",
+        "type": "chapter",
+        "title": "Hyderabadi Chicken Biryani",
+        "subtitle": "India · serves 6 · 2 hours",
+        "number": "",
+        "content": "Biryani is a dish of patience: rice and chicken cooked apart, then sealed in one pot to finish in each other's steam. Open the lid at the table.\n\n**For the chicken**\n\n- 1 kg chicken thighs on the bone\n- 250 g thick yoghurt\n- 2 tbsp ginger-garlic paste\n- 1 tsp each chilli powder and garam masala\n- a handful each of mint and coriander, and the juice of 1 lemon\n\n**For the rice**\n\n- 500 g aged basmati\n- whole spices: 4 green cardamom, 4 cloves, 1 bay leaf, a stick of cinnamon\n- 3 onions, sliced and fried crisp\n- a pinch of saffron in 4 tbsp warm milk, and 3 tbsp ghee\n\n1. Mix the chicken with everything in its list and leave it for at least an hour.\n2. Boil the rice with the whole spices and plenty of salt until it is two-thirds cooked. Drain.\n3. Spread the chicken in a heavy pot. Cover with the rice, then the fried onions, the saffron milk and the ghee.\n4. Seal the lid with a strip of dough or foil. Cook on a high flame for 5 minutes, then on the lowest flame for 40.\n5. Rest for 10 minutes. Serve with raita, lemon and the crisp onions from the top.",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": "four-kitchens-1",
+        "plateAlt": "Chicken biryani in a wide copper pot, topped with fried onions and mint, surrounded by bowls of raita and spices, naan, lemon wedges and whole cardamom, cinnamon and chillies",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      },
+      {
+        "id": "s4fhifgp",
+        "kind": "back",
+        "type": "alsoby",
+        "title": "Also by the Author",
+        "subtitle": "",
+        "number": "",
+        "content": "[Four Kitchens — Book Two](https://sim.beuk.test/books/four-kitchens-2)\n[Four Kitchens — Book Three](https://sim.beuk.test/books/four-kitchens-3)\n[Four Kitchens — Book Four](https://sim.beuk.test/books/four-kitchens-4)",
+        "dropCap": true,
+        "smallCaps": true,
+        "included": true,
+        "plateId": null,
+        "plateAlt": "",
+        "backdropId": null,
+        "backdropStrength": "whisper",
+        "htLine1": null,
+        "htLine2": "",
+        "tocHeading": null,
+        "scenes": []
+      }
+    ],
+    "cover": null,
+    "coverRecipe": null,
+    "images": [
+      {
+        "id": "four-kitchens-1",
+        "name": "Hyderabadi Chicken Biryani",
+        "mediaType": "image/jpeg",
+        "ext": "jpg",
+        "data": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iiigD//2Q=="
+      }
+    ],
+    "fonts": [],
+    "customThemes": [],
+    "activeId": "sqgzswh3",
+    "exportPlatform": "generic",
+    "printTrim": "8.5x8.5",
+    "printRecto": true,
+    "printLargePrint": false,
+    "printPictureBook": false,
+    "printBleed": false,
+    "printMarginMode": "auto",
+    "printCustomMargins": {
+      "inside": 0.625,
+      "outside": 0.5,
+      "top": 0.6,
+      "bottom": 0.75
+    },
+    "printHeadContent": "titleauthor",
+    "printHeadPlace": "top",
+    "printOmitChapterHead": false,
+    "printOmitBlankHead": true,
+    "printFolio": "centre",
+    "printNotes": "end",
+    "storeCheck": {
+      "store": "kdp",
+      "binding": "paperback",
+      "ink": "",
+      "attestSpine": false
+    },
+    "goals": {
+      "daily": 0,
+      "project": 0,
+      "deadline": ""
+    },
+    "history": [],
+    "historyPool": {
+      "images": [],
+      "fonts": [],
+      "covers": []
+    },
+    "importReport": null,
+    "audio": {
+      "narrator": "",
+      "format": "both",
+      "rightsInClosing": false,
+      "include": {},
+      "pron": [],
+      "dismissed": []
+    },
+    "manuscript": {
+      "legalName": "",
+      "address": "",
+      "phone": "",
+      "email": "",
+      "byline": "",
+      "surname": "",
+      "paper": "letter",
+      "font": "times",
+      "italics": "italic"
+    },
+    "dictation": {
+      "lang": "",
+      "recent": []
+    }
+  },
+  "_fixture": {
+    "source": "10-ramp-gallery/sagas/world/sim07/b046-four-kitchens-book-one.beuk-backup.json",
+    "slimmed": [
+      "images[0].data"
+    ],
+    "why": "Series book with colour, no bible"
+  }
+}
