@@ -2664,6 +2664,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The panel backgrounds are painted by the client canvas.',
   },
   {
+    id: 'cover.wrap.spine-icons',
+    title: 'Spine type and icons: icons and text sit inside the clearances, a narrow spine draws none, an unknown icon draws nothing',
+    kind: 'client-only',
+    reason: 'The spine and its icons are painted by the client canvas.',
+  },
+  {
     id: 'cover.wrap3d.faces-from-wrap',
     title: '3D wrap viewer: front, spine and back faces are sliced from the current wrap render',
     kind: 'client-only',

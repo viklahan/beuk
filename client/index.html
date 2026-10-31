@@ -42906,6 +42906,68 @@
         }
         ctx.restore();
       }
+      /* Spine layout constants (inches). The clearance is the store's
+         spine-text clearance; icons below the minimum are hidden, not
+         shrunk to nothing; the margin keeps them off the trim edge. */
+      const SPINE_CLEAR_IN = 0.0625, SPINE_MARGIN_IN = 0.375, SPINE_ICON_MIN_IN = 0.12, SPINE_ICON_GAP_IN = 0.12, SPINE_TEXT_ROOM_IN = 1.0;
+      /* A Lucide icon as canvas strokes (no DOM SVG): the icon's node
+         list on its 24-unit grid, scaled to sizePx and centred on
+         (cx, cy), in the given colour at Lucide's 2-unit stroke.
+         Returns false (drawing nothing) for a name Lucide lacks. */
+      function drawLucideIcon(ctx, name, cx, cy, sizePx, color) {
+        const lib = typeof window !== "undefined" && window.lucide && window.lucide.icons;
+        const node = lib && Object.prototype.hasOwnProperty.call(lib, name) ? lib[name] : null;
+        const els = node && Array.isArray(node[2]) ? node[2] : null;
+        if (!els) return false;
+        const n = (v, d) => { const x = Number(v); return isFinite(x) ? x : (d || 0); };
+        const pts = (v) => String(v || "").trim().split(/[\s,]+/).map(Number).filter((x) => isFinite(x));
+        ctx.save();
+        ctx.translate(cx, cy); ctx.scale(sizePx / 24, sizePx / 24); ctx.translate(-12, -12);
+        ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+        els.forEach((el) => {
+          const t = el[0], a = el[1] || {};
+          if (t === "path") { try { ctx.stroke(new Path2D(String(a.d || ""))); } catch (e) { /* a path the browser cannot parse is skipped */ } }
+          else if (t === "line") { ctx.beginPath(); ctx.moveTo(n(a.x1), n(a.y1)); ctx.lineTo(n(a.x2), n(a.y2)); ctx.stroke(); }
+          else if (t === "circle") { ctx.beginPath(); ctx.arc(n(a.cx), n(a.cy), n(a.r), 0, Math.PI * 2); ctx.stroke(); }
+          else if (t === "ellipse") { ctx.beginPath(); ctx.ellipse(n(a.cx), n(a.cy), n(a.rx), n(a.ry), 0, 0, Math.PI * 2); ctx.stroke(); }
+          else if (t === "rect") {
+            ctx.beginPath();
+            const rx = n(a.rx);
+            if (rx > 0 && ctx.roundRect) ctx.roundRect(n(a.x), n(a.y), n(a.width), n(a.height), rx); else ctx.rect(n(a.x), n(a.y), n(a.width), n(a.height));
+            ctx.stroke();
+          } else if (t === "polyline" || t === "polygon") {
+            const p = pts(a.points);
+            if (p.length >= 4) { ctx.beginPath(); ctx.moveTo(p[0], p[1]); for (let i = 2; i + 1 < p.length; i += 2) ctx.lineTo(p[i], p[i + 1]); if (t === "polygon") ctx.closePath(); ctx.stroke(); }
+          }
+        });
+        ctx.restore();
+        return true;
+      }
+      /* A writer's own small picture, fitted inside the icon square and
+         centred; it keeps its own colours. */
+      function drawUploadedIcon(ctx, img, cx, cy, sizePx) {
+        const iw = img && (img.naturalWidth || img.width), ih = img && (img.naturalHeight || img.height);
+        if (!iw || !ih) return false;
+        const k = sizePx / Math.max(iw, ih);
+        ctx.drawImage(img, cx - iw * k / 2, cy - ih * k / 2, iw * k, ih * k);
+        return true;
+      }
+      /* Uploaded spine icons come from the pictures store and need a
+         decoded image before drawing, the way the cover's own pictures
+         do. Resolves when every one is ready (or known missing). */
+      function ensureWrapIcons(recipe) {
+        const sp = normalizeWrap(recipe && recipe.wrap).spine;
+        const ids = [sp.iconTop, sp.iconBottom].filter((i) => i.kind === "upload" && i.picId).map((i) => i.picId);
+        return Promise.all(ids.map((id) => new Promise((resolve) => {
+          if (coverImgCache[id]) { resolve(coverImgCache[id]); return; }
+          const im = (state.images || []).find((x) => x.id === id);
+          if (!im) { resolve(null); return; }
+          const img = new Image();
+          img.onload = () => { coverImgCache[id] = img; resolve(img); };
+          img.onerror = () => resolve(null);
+          img.src = "data:" + im.mediaType + ";base64," + im.data;
+        })));
+      }
       /* ==== /BEUK:spineback ==== */
       function coverLines(ctx, recipe, key, text, maxW, u, transform) {
         const el = recipe.elements[key];
@@ -43565,53 +43627,82 @@
            languages top-to-bottom, the other European languages
            bottom-to-top (spineDirection); the writer can override. ---- */
         const spDir = spineDirection(state.meta.language, w.spine.dir);
-        items.spineDir = spDir; items.spineBoxes = [];
+        items.spineDir = spDir; items.spineBoxes = []; items.spineNotes = [];
         if (d.spineText) {
+          const sp = w.spine;
           const title = String(recipe.title || "").trim(), author = String(recipe.author || "").trim();
-          const cx = spineX + spineW / 2, footIn = 0.42, headIn = 0.3;
-          const avail = (L.panelH - footIn - 0.3) * px;
+          const cx = spineX + spineW / 2, ttb = spDir === "ttb";
+          const spInk = sp.color || inkAuthor;
+          const titleFam = fontStack(sp.font || recipe.elements.title.font), authorFam = fontStack(sp.font || recipe.elements.author.font);
+          /* The words: title and author, one of them, or the writer's own text. */
+          const runs = [];
+          if (sp.show === "custom") {
+            if (sp.text.trim()) runs.push({ part: "custom", raw: sp.text.trim(), disp: sp.text.trim(), scale: 1, wt: "700", fam: titleFam });
+          } else {
+            if (sp.show === "both" || (sp.show === "title" && title)) runs.push({ part: "title", raw: title, disp: title, scale: 1, wt: "700", fam: titleFam });
+            if ((sp.show === "both" || sp.show === "author") && author) runs.push({ part: "author", raw: author, disp: sp.caps ? author.toUpperCase() : author, scale: sp.show === "both" ? 0.82 : 1, wt: "600", fam: authorFam });
+          }
+          const impText = (w.imprint || state.meta.publisher || "").trim();
+          const impFont = "600 " + Math.min(spineW * 0.34, 0.11 * px) + "px " + fontStack(sp.font || recipe.elements.author.font);
+          ctx.font = impFont;
+          const impLenIn = impText ? ctx.measureText(impText).width / px : 0;
+          /* Icons: one size for both, from the clear width of the spine. */
+          const clearW = Math.max(0, d.spine - 2 * SPINE_CLEAR_IN);
+          const iconS = Math.min(clearW, 0.45);
+          const wantIcon = (ic) => ic.kind === "lucide" || (ic.kind === "upload" && !!coverImgCache[ic.picId]);
+          let hasTop = wantIcon(sp.iconTop), hasBot = wantIcon(sp.iconBottom);
+          if ((hasTop || hasBot) && iconS < SPINE_ICON_MIN_IN) { hasTop = hasBot = false; items.spineNotes.push("icons hidden: the spine is too narrow for an icon of at least " + SPINE_ICON_MIN_IN + " in"); }
+          const iconTopY = SPINE_MARGIN_IN; /* inches from the panel's head */
+          const botEdge = impText ? L.panelH - 0.21 - impLenIn / 2 - 0.08 : L.panelH - SPINE_MARGIN_IN;
+          const iconBotY = botEdge - iconS;
+          const zone = () => ({ top: hasTop ? iconTopY + iconS + SPINE_ICON_GAP_IN : 0.3, bottom: hasBot ? iconBotY - SPINE_ICON_GAP_IN : L.panelH - 0.42 });
+          let zn = zone();
+          if (hasBot && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasBot = false; items.spineNotes.push("bottom icon dropped: it and the imprint do not both fit under the text"); zn = zone(); }
+          if (hasTop && zn.bottom - zn.top < SPINE_TEXT_ROOM_IN) { hasTop = false; items.spineNotes.push("top icon dropped: no room above the text"); zn = zone(); }
+          const avail = (zn.bottom - zn.top) * px;
           let size = Math.min(spineW * 0.6, 0.32 * px);
-          const gap = author ? 0.3 * px : 0;
-          const ttb = spDir === "ttb";
-          const startY = ttb ? topY + headIn * px : topY + th - footIn * px; /* where the first letter begins */
+          const gap = runs.length > 1 ? 0.3 * px : 0;
+          const startY = ttb ? topY + zn.top * px : topY + zn.bottom * px; /* where the first letter begins */
           ctx.save();
           ctx.translate(cx, startY);
           ctx.rotate(ttb ? Math.PI / 2 : -Math.PI / 2);
-          ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.fillStyle = inkAuthor;
-          const titleFont = (s) => "700 " + s + "px " + fontStack(recipe.elements.title.font);
-          const authorFont = (s) => "600 " + s + "px " + fontStack(recipe.elements.author.font);
-          ctx.font = titleFont(size);
-          let titleW = ctx.measureText(title).width;
-          ctx.font = authorFont(size * 0.82);
-          let authorW = author ? ctx.measureText(author.toUpperCase()).width : 0;
-          const total = titleW + gap + authorW;
-          if (total > avail && total > 0) {
-            size *= avail / total;
-            ctx.font = titleFont(size); titleW = ctx.measureText(title).width;
-            ctx.font = authorFont(size * 0.82); authorW = author ? ctx.measureText(author.toUpperCase()).width : 0;
-          }
-          ctx.font = titleFont(size); ctx.fillText(title, 0, 0);
-          if (author) { ctx.font = authorFont(size * 0.82); ctx.fillText(author.toUpperCase(), titleW + gap, 0); }
-          items.spineText = (title + (author ? " " + author : "")).trim();
+          ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.fillStyle = spInk;
+          const measure = () => { runs.forEach((r) => { ctx.font = r.wt + " " + size * r.scale + "px " + r.fam; r.w = ctx.measureText(r.disp).width; }); return runs.reduce((a, r) => a + r.w, 0) + gap * Math.max(0, runs.length - 1); };
+          const total = measure();
+          if (total > avail && total > 0) { size *= avail / total; measure(); }
+          let off = 0;
+          runs.forEach((r) => { ctx.font = r.wt + " " + size * r.scale + "px " + r.fam; ctx.fillText(r.disp, off, 0); r.off = off; off += r.w + gap; });
+          items.spineText = runs.filter((r) => r.raw).map((r) => r.raw).join(" ").trim();
           ctx.restore();
           /* Where it landed, in inches from the wrap's top-left: along the spine
              from the first letter, across it one em wide. */
-          const along = (off, len) => (ttb ? (startY + off) / px : (startY - off - len) / px);
-          if (title) items.spineBoxes.push({ kind: "text", part: "title", x: (cx - size / 2) / px, y: along(0, titleW), w: size / px, h: titleW / px });
-          if (author) items.spineBoxes.push({ kind: "text", part: "author", x: (cx - size * 0.41) / px, y: along(titleW + gap, authorW), w: size * 0.82 / px, h: authorW / px });
-          const imp = (w.imprint || state.meta.publisher || "").trim();
+          const along = (o, len) => (ttb ? (startY + o) / px : (startY - o - len) / px);
+          runs.forEach((r) => { if (r.raw) items.spineBoxes.push({ kind: "text", part: r.part, x: (cx - size * r.scale / 2) / px, y: along(r.off, r.w), w: size * r.scale / px, h: r.w / px }); });
           ctx.save();
           ctx.translate(cx, topY + th - 0.21 * px);
           ctx.rotate(ttb ? Math.PI / 2 : -Math.PI / 2);
-          ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = inkAuthor;
-          if (imp) {
-            ctx.font = "600 " + Math.min(spineW * 0.34, 0.11 * px) + "px " + fontStack(recipe.elements.author.font);
-            ctx.fillText(imp, 0, 0);
-          } else {
+          ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = spInk;
+          if (impText) {
+            ctx.font = impFont;
+            ctx.fillText(impText, 0, 0);
+            const ih = Math.min(spineW * 0.34, 0.11 * px);
+            items.spineBoxes.push({ kind: "text", part: "imprint", x: (cx - ih / 2) / px, y: (topY + th - 0.21 * px) / px - impLenIn / 2, w: ih / px, h: impLenIn });
+          } else if (!hasBot) {
             const r = Math.min(spineW * 0.18, 0.05 * px);
             ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(r, 0); ctx.lineTo(0, r); ctx.lineTo(-r, 0); ctx.closePath(); ctx.fill();
           }
           ctx.restore();
+          /* The icons, turned to read the same way as the text. */
+          const putIcon = (ic, pos, yIn) => {
+            const cyPx = topY + (yIn + iconS / 2) * px, sz = iconS * px;
+            ctx.save();
+            ctx.translate(cx, cyPx); ctx.rotate(ttb ? Math.PI / 2 : -Math.PI / 2);
+            const ok = ic.kind === "lucide" ? drawLucideIcon(ctx, ic.name, 0, 0, sz, spInk) : drawUploadedIcon(ctx, coverImgCache[ic.picId], 0, 0, sz);
+            ctx.restore();
+            if (ok) items.spineBoxes.push({ kind: "icon", pos, x: (cx - sz / 2) / px, y: topY / px + yIn, w: iconS, h: iconS });
+          };
+          if (hasTop) putIcon(sp.iconTop, "top", iconTopY);
+          if (hasBot) putIcon(sp.iconBottom, "bottom", iconBotY);
         }
         /* ---- Back panel: quote, blurb, author, imprint — inside
            the safe margins, clear of the hinge zone by the spine,
@@ -43734,6 +43825,7 @@
         /* ==== BEUK:hardcover ==== */
         const fid = cmRecipe.wrap && cmRecipe.wrap.flapPhotoId;
         if (fid && !coverImgCache[fid] && d.binding === "jacket") hcEnsureFlapPhoto(cmRecipe).then((img) => { if (img) drawWrapPreview(); });
+        { const sp = normalizeWrap(cmRecipe.wrap).spine; const ups = [sp.iconTop, sp.iconBottom].filter((i) => i.kind === "upload" && i.picId && !coverImgCache[i.picId]); if (ups.length) ensureWrapIcons(cmRecipe).then(() => { if (ups.some((i) => coverImgCache[i.picId])) drawWrapPreview(); }); }
         /* ==== /BEUK:hardcover ==== */
         refreshWrap3d();
       }
@@ -43785,7 +43877,7 @@
       function downloadWrap(kind) {
         if (samplePicsHold(() => downloadWrap(kind))) return; /* BEUK:slim — never without the sample's pictures */
         if (!cmRecipe) return;
-        Promise.all([ensureCoverBgImage(cmRecipe), hcEnsureFlapPhoto(cmRecipe)]).then(() => {
+        Promise.all([ensureCoverBgImage(cmRecipe), hcEnsureFlapPhoto(cmRecipe), ensureWrapIcons(cmRecipe)]).then(() => {
           const bnd = cmRecipe.wrap && cmRecipe.wrap.binding;
           const name = slug(state.meta.title || "cover") + (bnd === "case" ? "-case-laminate-wrap" : bnd === "jacket" ? "-dust-jacket" : "-cover-wrap");
           if (kind === "jpg") {
@@ -53589,6 +53681,48 @@
               const F1 = render(mk("paperback")), F2 = render(mk("paperback", normalizeWrapSpine(null), normalizeWrapBack(null)));
               const same = F1.c.toDataURL() === F2.c.toDataURL();
               return scVerdict(pbOk && frontSame && patOk && hcOk && same, out.join("; ") + "; front panel unchanged " + frontSame + "; explicit follow-the-front equals no settings, pixel for pixel: " + same);
+            } finally { state.meta.language = keepLang; }
+          } },
+        { id: "cover.wrap.spine-icons", feature: "cover", name: "Spine type and icons: a top and a bottom icon sit inside the spine width minus 0.0625 in a side and inside a 0.375 in head and foot margin, the text sits between them without overlap, a spine under 0.5 in draws neither text nor icons, and an unknown icon draws nothing and never throws",
+          run() {
+            const keepLang = state.meta.language;
+            try {
+              state.meta.language = "fr";
+              const icon = (n) => ({ kind: "lucide", name: n, picId: null });
+              const mk = (pages, spine, extra) => {
+                const r = defaultCoverRecipe(); r.title = "Salt Harbour"; r.author = "A. Checker"; r.bgType = "solid"; r.bgColor = "#20303c";
+                r.wrap = Object.assign({ trim: "6x9", pages, paper: "cream", customFactor: 0.0025, blurb: "", quote: "", imprint: "" }, extra || {}, { spine });
+                return r;
+              };
+              const render = (r) => { const d = wrapDims(r); const c = document.createElement("canvas"); c.width = 1300; c.height = Math.round(1300 * d.totalH / d.totalW); return { c, it: drawWrapTo(c, r), d, px: c.width / d.totalW }; };
+              const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+              const inside = (R, b) => { const L = R.d.layout, c = 0.0625, m = 0.375; return b.x >= L.spineX + c - 1e-9 && b.x + b.w <= L.spineX + L.spineW - c + 1e-9 && b.y >= L.topY + m - 1e-9 && b.y + b.h <= L.topY + L.panelH - m + 1e-9; };
+              const checks = [];
+              ["fr", "en"].forEach((lang) => [{ imprint: "" }, { imprint: "Quiet Shelf Studio" }].forEach((extra) => {
+                state.meta.language = lang;
+                const R = render(mk(300, { iconTop: icon("Feather"), iconBottom: icon("Star") }, extra));
+                const ic = R.it.spineBoxes.filter((b) => b.kind === "icon"), tx = R.it.spineBoxes.filter((b) => b.kind === "text" && b.part !== "imprint");
+                const top = ic.find((b) => b.pos === "top"), bot = ic.find((b) => b.pos === "bottom");
+                const ok = ic.length === 2 && ic.every((b) => inside(R, b)) && tx.length === 2 && tx.every((t) => !ic.some((b) => overlap(t, b))) && !!top && !!bot && top.y < bot.y &&
+                  tx.every((t) => t.y > top.y + top.h - 1e-9 && t.y + t.h < bot.y + 1e-9);
+                /* the icon is really painted: pixels in its box differ from the spine colour */
+                const cx = R.c.getContext("2d"), d = cx.getImageData(Math.round(top.x * R.px), Math.round(top.y * R.px), Math.round(top.w * R.px), Math.round(top.h * R.px)).data;
+                let ink = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - 0x20) + Math.abs(d[i + 1] - 0x30) + Math.abs(d[i + 2] - 0x3c) > 60) ink++;
+                checks.push({ lang, imp: !!extra.imprint, ok: ok && ink > 30, ink });
+              }));
+              state.meta.language = "fr";
+              const narrow = render(mk(120, { iconTop: icon("Feather"), iconBottom: icon("Star") })), narrow2 = render(mk(80, { iconTop: icon("Feather") }));
+              const narrowOk = narrow.it.spineBoxes.length === 0 && narrow.it.spineText === "" && narrow2.it.spineBoxes.length === 0;
+              let threw = "", bad = null;
+              try { const c = document.createElement("canvas"); c.width = 50; c.height = 50; bad = drawLucideIcon(c.getContext("2d"), "NoSuchIconAnywhere", 25, 25, 30, "#fff"); } catch (e) { threw = String(e && e.message); }
+              const unknownR = render(mk(300, { iconTop: icon("NoSuchIconAnywhere") })), unknownOk = !threw && bad === false && unknownR.it.spineBoxes.filter((b) => b.kind === "icon").length === 0;
+              const longImp = render(mk(300, { iconTop: icon("Feather"), iconBottom: icon("Star") }, { imprint: "A Very Long Imprint Name ".repeat(16) }));
+              const dropOk = !longImp.it.spineBoxes.some((b) => b.kind === "icon" && b.pos === "bottom") && (longImp.it.spineNotes || []).some((n) => /bottom/.test(n));
+              const jk = render(mk(300, { iconTop: icon("Feather"), iconBottom: icon("Star") }, { binding: "jacket", hcSpine: 0.9 }));
+              const jkOk = jk.it.spineBoxes.filter((b) => b.kind === "icon").length === 2 && jk.it.spineBoxes.every((b) => inside(jk, b));
+              return scVerdict(checks.every((c) => c.ok) && narrowOk && unknownOk && dropOk && jkOk,
+                "300 pp cream 6×9, Feather above and Star below: " + checks.map((c) => c.lang + (c.imp ? "+imprint" : "") + " " + (c.ok ? "ok" : "BAD") + " (" + c.ink + " ink px)").join(", ") +
+                "; 0.30 in and 0.20 in spines draw no text or icons " + narrowOk + "; unknown icon draws nothing, no throw " + unknownOk + (threw ? " threw " + threw : "") + "; bottom icon dropped with a note when a long imprint leaves no room " + dropOk + "; jacket spine panel holds both icons " + jkOk);
             } finally { state.meta.language = keepLang; }
           } },
         { id: "cover.wrap3d.faces-from-wrap", feature: "cover", name: "3D wrap viewer: front, spine and back face textures are sliced from the current wrap render and refresh when wrap inputs change",
