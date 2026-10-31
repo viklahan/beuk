@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { realFixtures } from './book-fixtures.js';
 import { readBook } from '../src/book/read.js';
@@ -33,15 +34,78 @@ test('read: every real fixture reads with status ok and no schema-failure warnin
   }
 });
 
-test('read: idempotent, readBook(readBook(x).book) deep-equals the first book and fires no upgrades', () => {
-  for (const { name, book } of realFixtures()) {
+const legacyDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'books', 'legacy');
+const hostile: [string, unknown][] = [
+  ['null', null], ['[]', []], ['"x"', 'x'], ['7', 7],
+  ['theme []', { theme: [] }], ['theme ""', { theme: '' }], ['theme false', { theme: false }], ['activePreset ""', { activePreset: '' }],
+];
+
+test('read: idempotent over real fixtures, legacy fixtures and hostile inputs: second read deep-equals and fires only record-only steps', () => {
+  const inputs: [string, unknown][] = [
+    ...realFixtures().map((f) => [f.name, f.book] as [string, unknown]),
+    ...readdirSync(legacyDir).filter((n) => n.endsWith('.json')).sort()
+      .map((n) => [`legacy/${n}`, (JSON.parse(readFileSync(path.join(legacyDir, n), 'utf8')) as { book: unknown }).book] as [string, unknown]),
+    ...hostile.map(([n, v]) => [`hostile ${n}`, v] as [string, unknown]),
+  ];
+  assert.ok(inputs.length >= 8 + 13);
+  for (const [name, book] of inputs) {
     const a = readBook(book);
     const b = readBook(a.book);
     assert.deepStrictEqual(b.book, a.book, name);
-    // record-only steps describe the shape and change nothing, so they may fire again; every other step must not
     assert.deepEqual(b.upgrades.filter((u) => !recordOnly.has(u)), [], name);
     assert.deepEqual(b.preserved, [], name);
+    assert.deepEqual(b.warnings.filter((w) => w.code !== 'unknown-key' && w.code !== 'duplicate-id' && w.code !== 'over-limit' && w.code !== 'schema'), [], name);
   }
+});
+
+test('read: never throws: a throwing getter, a 10k-deep object, a function value', () => {
+  const getter = {} as Record<string, unknown>;
+  Object.defineProperty(getter, 'meta', { enumerable: true, get() { throw new Error('boom'); } });
+  let deep: Record<string, unknown> = {};
+  const root = deep;
+  for (let i = 0; i < 10_000; i++) { const n = {}; deep.n = n; deep = n; }
+  for (const [name, input] of [['getter', getter], ['deep', root], ['function value', { sections: () => 1 }], ['function', () => 1]] as [string, unknown][]) {
+    let r: ReturnType<typeof readBook> | undefined;
+    assert.doesNotThrow(() => { r = readBook(input); }, name);
+    assert.ok(r && ['ok', 'failed'].includes(r.status), name);
+    assert.ok(Array.isArray(r!.book.sections), name);
+  }
+});
+
+test('read: a wrong-typed theme is refilled with the classic theme, raw preserved, warned; activePreset follows 1.0', () => {
+  for (const [theme, preset] of [[[], null], ['', 'classic'], [false, 'classic']] as [unknown, string | null][]) {
+    const r = readBook({ theme });
+    assert.ok(r.book.theme && !Array.isArray(r.book.theme) && typeof r.book.theme === 'object', JSON.stringify(theme));
+    assert.equal(r.book.theme.bodyFont, 'EB Garamond');
+    const p = r.preserved.find((x) => x.path === 'theme');
+    assert.ok(p, JSON.stringify(theme));
+    assert.deepStrictEqual(p!.raw, theme);
+    assert.ok(r.warnings.some((w) => w.path === 'theme' && w.code === 'bad-type'), JSON.stringify(theme));
+    assert.equal(r.book.activePreset, preset, JSON.stringify(theme));
+  }
+  const r = readBook({ activePreset: '' });
+  assert.ok(r.preserved.some((x) => x.path === 'activePreset' && x.raw === ''));
+  assert.ok(r.warnings.some((w) => w.path === 'activePreset'));
+});
+
+test('read: a scaffold carries a bookId, and the catch path preserves the input and reports status failed', () => {
+  const r = readBook(null);
+  assert.match(String(r.book.meta.bookId), /^urn:uuid:/);
+  const getter = {} as Record<string, unknown>;
+  Object.defineProperty(getter, 'x', { enumerable: true, get() { throw new Error('boom'); } });
+  const f = readBook(getter);
+  assert.equal(f.status, 'failed');
+  assert.ok(f.warnings.some((w) => w.code === 'read-failed'));
+  const p = f.preserved.find((x) => x.path === '');
+  assert.ok(p, 'the input is preserved');
+  assert.equal(p!.raw, getter);
+  assert.match(String(f.book.meta.bookId), /^urn:uuid:/);
+});
+
+test('read: an unknown-key warning path is the bare top-level key name (observe privacySafe relies on it)', () => {
+  const r = readBook({ zzFutureThing: { a: { b: 1 } }, 'weird.key[0]': 1 });
+  const paths = r.warnings.filter((w) => w.code === 'unknown-key').map((w) => w.path).sort();
+  assert.deepEqual(paths, ['weird.key[0]', 'zzFutureThing']);
 });
 
 test('read: the four backfilled keys are always present on the result', () => {
@@ -166,7 +230,8 @@ test('read: non-object input (null, [], "x", 7) → scaffold book, warning not-a
 });
 
 test('read: the scaffold is deterministic (a pure reader)', () => {
-  assert.deepStrictEqual(readBook(null).book, readBook(null).book);
+  const strip = (b: ReturnType<typeof readBook>['book']) => { const c = structuredClone(b) as Json; delete c.meta.bookId; return c; };
+  assert.deepStrictEqual(strip(readBook(null).book), strip(readBook(null).book)); // the one random part is meta.bookId (bookid-missing)
 });
 
 test('read: a book with "__proto__" and "constructor" keys does not pollute Object.prototype and keeps the keys as data', () => {

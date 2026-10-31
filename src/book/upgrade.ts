@@ -217,11 +217,38 @@ export const STEPS: UpgradeStep[] = [
   {
     name: 'theme-missing',
     cite: 'client/index.html:50234, :50244',
-    apply(b) {
-      if (get(b, 'theme')) return false;
-      setOwn(b, 'theme', clone(THEME_DEFAULT));
-      if (!get(b, 'activePreset')) setOwn(b, 'activePreset', ACTIVE_PRESET_DEFAULT);
-      return true;
+    /* 1.0: `!doc.theme` -> a copy of the classic theme, else classic laid under doc.theme; activePreset is `doc.activePreset || (doc.theme ? null : "classic")`.
+       A theme that is not an object (or an activePreset that is not a non-empty string) is writer data 1.0 would swallow: the 1.0 value is used, the raw value is preserved and warned. */
+    apply(b, ctx) {
+      let fired = false;
+      const hasTheme = has(b, 'theme');
+      const t = get(b, 'theme');
+      const truthyTheme = hasTheme && !!t; // 1.0's truthiness: an empty array is a theme, "" and false are not
+      if (!(hasTheme && isRec(t))) {
+        const used = clone(THEME_DEFAULT);
+        if (hasTheme) {
+          ctx.preserve({ path: 'theme', raw: t, used });
+          ctx.warn({ code: 'bad-type', path: 'theme', detail: 'expected object, got a value of another type; read as the classic theme' });
+        }
+        setOwn(b, 'theme', used);
+        fired = true;
+      }
+      const fallback = truthyTheme ? null : ACTIVE_PRESET_DEFAULT;
+      if (has(b, 'activePreset')) {
+        const ap = get(b, 'activePreset');
+        if (typeof ap === 'string' ? ap === '' : ap !== null) {
+          setOwn(b, 'activePreset', fallback);
+          ctx.preserve({ path: 'activePreset', raw: ap, used: fallback });
+          ctx.warn({ code: 'bad-type', path: 'activePreset', detail: 'expected a non-empty preset name or null; read as 1.0 reads it' });
+          fired = true;
+        } else if (ap === null && !hasTheme) {
+          setOwn(b, 'activePreset', ACTIVE_PRESET_DEFAULT); // 1.0: null || "classic"
+          fired = true;
+        }
+      } else if (!(hasTheme && isRec(t))) {
+        setOwn(b, 'activePreset', fallback);
+      }
+      return fired;
     },
   },
   {

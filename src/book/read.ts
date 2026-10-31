@@ -9,10 +9,11 @@ import { STEPS } from './upgrade.js';
 /* BEUK:book-read — readBook, the reader Beuk 2.0's studio and the server
    use to open any book 1.0 wrote.
 
-   - PURE. A function of the doc alone: no clock, no randomness, no desk. It
+   - PURE, with one exception: the bookid-missing step mints a random id
+     (randomUUID). Otherwise a function of the doc alone: no clock, no desk. It
      works on its own deep copy and never touches the input.
    - NEVER THROWS. Anything that is not a book becomes the scaffold, with a
-     warning.
+     warning. If reading itself fails the result has status 'failed'.
    - LOSSLESS. A value beyond 1.0's limits (LIMITS) stays, with a warning.
      A value 1.0 would replace (the wrong type, or outside an enum 1.0
      enforces on load) is replaced with 1.0's value, the original goes to
@@ -25,7 +26,8 @@ import { STEPS } from './upgrade.js';
 export type Warning = { code: string; path: string; detail: string };
 export type Preserved = { path: string; raw: unknown; used: unknown };
 export type ReadResult = {
-  status: 'ok' | 'newer';
+  /** 'newer': `book` is the input passed through, not a validated BookV1. 'failed': `book` is the empty scaffold and the input is in preserved[]. A studio MUST check `status` before using `book` and MUST NOT save a book read with 'newer' or 'failed'. */
+  status: 'ok' | 'newer' | 'failed';
   book: BookV1;
   upgrades: string[];
   warnings: Warning[];
@@ -325,6 +327,9 @@ function fillAndCoerce(b: Rec, out: Out): string[] {
 /** A bare book: the scaffold sections, and everything else defaulted. */
 function scaffoldBook(out: Out): Rec {
   const b: Rec = { sections: scaffoldSections() };
+  // the same steps a read runs, so the scaffold carries a bookId and reading it again fires nothing new
+  const ctx = { warn: (w: Warning) => { out.warnings.push(w); }, preserve: (p: Preserved) => { out.preserved.push(p); } };
+  for (const step of STEPS) step.apply(b, ctx);
   fillAndCoerce(b, out);
   return b;
 }
@@ -398,7 +403,10 @@ export function readBook(input: unknown): ReadResult {
     const w: Warning[] = [{ code: 'read-failed', path: '', detail: `could not read this book: ${e instanceof Error ? e.message : String(e)}. Read as an empty book.` }];
     const p: Preserved[] = [];
     const o: Out = { warnings: w, preserved: p, warn: (code, path, detail) => { w.push({ code, path, detail }); } };
+    let raw: unknown = input;
+    try { raw = structuredClone(input); } catch { /* not cloneable: keep the reference */ }
     const book = scaffoldBook(o);
-    return { status: 'ok', book: book as unknown as BookV1, upgrades: ['scaffold'], warnings: w, preserved: p };
+    p.push({ path: '', raw, used: clone(book) });
+    return { status: 'failed', book: book as unknown as BookV1, upgrades: ['scaffold'], warnings: w, preserved: p };
   }
 }

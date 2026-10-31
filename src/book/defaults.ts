@@ -1,8 +1,11 @@
 /* BEUK:book-defaults — what 1.0 puts in a book field that is missing on
    read. One constant per default, each copied from client/index.html and
    cited. "CI:n" is a line of client/index.html as committed at 03c1928
-   and still at HEAD of feat/book-format, the same numbering the inventory
+   (main before this branch), the same numbering the inventory
    (docs/superpowers/specs/2026-10-30-beuk-book-format-inventory.md) uses.
+   Every CI citation in src/book, docs and tests is @03c1928. This branch
+   shifts index.html lines (+2 after ~4474, +1 after ~50150, +3 after
+   ~66650), so do not look these numbers up at HEAD.
 
    Nothing here is invented. Where 1.0's default is not a pure function of
    the book (the current year, a new random id), the reader cannot copy it:

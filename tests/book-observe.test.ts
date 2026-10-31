@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { bookFormatSummary, observeBook } from '../src/book/observe.js';
 import { readBook } from '../src/book/index.js';
+import { STEPS } from '../src/book/upgrade.js';
 import type { ReadResult } from '../src/book/index.js';
 import type { Db } from '../src/db.js';
 import { setAdmin } from '../src/housekeeping/admin.js';
@@ -118,10 +119,19 @@ test('observe: bookFormatSummary counts by warning code and upgrade name', async
     assert.equal(s.books, 2);
     assert.equal(s.withWarnings, 2);
     assert.equal(s.byCode['unknown-key'], 2, 'counted per book, not per key');
-    const expected: Record<string, number> = {};
-    for (const doc of [docA, docB]) for (const u of readBook(doc).upgrades) expected[u] = (expected[u] ?? 0) + 1;
-    assert.deepEqual(s.byUpgrade, expected);
+    const record = new Set(STEPS.filter((x) => x.recordOnly).map((x) => x.name));
+    const expected = { byUpgrade: {} as Record<string, number>, byDefault: {} as Record<string, number>, byRecord: {} as Record<string, number> };
+    for (const doc of [docA, docB])
+      for (const u of readBook(doc).upgrades) {
+        const bucket = u.startsWith('defaults:') ? expected.byDefault : record.has(u) ? expected.byRecord : expected.byUpgrade;
+        bucket[u] = (bucket[u] ?? 0) + 1;
+      }
+    assert.deepEqual(s.byUpgrade, expected.byUpgrade);
+    assert.deepEqual(s.byDefault, expected.byDefault);
+    assert.deepEqual(s.byRecord, expected.byRecord);
     assert.ok(Object.keys(s.byUpgrade).length > 0, 'a bare doc is upgraded: upgrade names are counted');
+    assert.ok(Object.keys(s.byDefault).length > 0 || Object.keys(s.byRecord).length > 0, 'defaults and record-only steps are reported apart');
+    assert.ok(!Object.keys(s.byUpgrade).some((u) => u.startsWith('defaults:') || record.has(u)), 'byUpgrade holds only steps that changed a book');
     assert.ok(s.slowestMs >= 0);
   } finally {
     await server.close();
@@ -138,7 +148,7 @@ test('observe: the Housekeeping ops summary includes bookFormat', async () => {
     const ops = await admin.get('/api/housekeeping/ops');
     assert.equal(ops.status, 200);
     const bf = (ops.body as { bookFormat: Record<string, unknown> }).bookFormat;
-    assert.deepEqual(bf, { books: 0, withWarnings: 0, byCode: {}, byUpgrade: {}, slowestMs: 0 });
+    assert.deepEqual(bf, { books: 0, withWarnings: 0, byCode: {}, byUpgrade: {}, byDefault: {}, byRecord: {}, slowestMs: 0 });
   } finally {
     await server.close();
   }

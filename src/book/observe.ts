@@ -1,5 +1,6 @@
 import type { Db } from '../db.js';
 import { readBook, type ReadResult } from './index.js';
+import { STEPS } from './upgrade.js';
 
 /* BEUK:book-observe — observe mode for the book format. After a
    manuscript save the server reads the saved doc with readBook and keeps
@@ -12,8 +13,8 @@ import { readBook, type ReadResult } from './index.js';
    Paths and unknown key names are writer-chosen, so they are cut short,
    and both lists are capped. When the warnings list is capped, one
    synthetic {code: 'truncated', path: '<N more>'} warning records how
-   many were dropped; for unknown_keys the dropped count is the 'truncated'
-   warning's twin entry '<N more>' as the last element. */
+   many were dropped; for unknown_keys the dropped count is the last
+   element, '<N more>', the same marker the 'truncated' warning's path uses. */
 export const MAX_PATH = 120;
 export const MAX_UNKNOWN_KEY = 80;
 export const MAX_WARNINGS = 200;
@@ -58,9 +59,16 @@ export interface BookFormatSummary {
   books: number;
   withWarnings: number;
   byCode: Record<string, number>;
+  /** Steps that changed a book. */
   byUpgrade: Record<string, number>;
+  /** `defaults:<key>` entries: a key the reader filled. */
+  byDefault: Record<string, number>;
+  /** Record-only steps: they describe a shape and change nothing. */
+  byRecord: Record<string, number>;
   slowestMs: number;
 }
+
+const RECORD_ONLY = new Set(STEPS.filter((s) => s.recordOnly).map((s) => s.name));
 
 const list = (v: string[] | string | null): string[] =>
   Array.isArray(v) ? v : String(v ?? '').replace(/^\{|\}$/g, '').split(',').filter(Boolean).map((s) => s.replace(/^"|"$/g, ''));
@@ -71,13 +79,16 @@ export async function bookFormatSummary(db: Db, limit = 10_000): Promise<BookFor
     'select upgrades, warnings, read_ms from book_format_observations order by observed_at desc limit $1',
     [limit],
   );
-  const out: BookFormatSummary = { books: r.rows.length, withWarnings: 0, byCode: {}, byUpgrade: {}, slowestMs: 0 };
+  const out: BookFormatSummary = { books: r.rows.length, withWarnings: 0, byCode: {}, byUpgrade: {}, byDefault: {}, byRecord: {}, slowestMs: 0 };
   for (const row of r.rows) {
     const warnings = typeof row.warnings === 'string' ? (JSON.parse(row.warnings) as { code: string }[]) : row.warnings;
     const codes = new Set(warnings.map((w) => w.code));
     if (codes.size) out.withWarnings++;
     for (const c of codes) out.byCode[c] = (out.byCode[c] ?? 0) + 1;
-    for (const u of new Set(list(row.upgrades))) out.byUpgrade[u] = (out.byUpgrade[u] ?? 0) + 1;
+    for (const u of new Set(list(row.upgrades))) {
+      const bucket = u.startsWith('defaults:') ? out.byDefault : RECORD_ONLY.has(u) ? out.byRecord : out.byUpgrade;
+      bucket[u] = (bucket[u] ?? 0) + 1;
+    }
     out.slowestMs = Math.max(out.slowestMs, Number(row.read_ms));
   }
   return out;

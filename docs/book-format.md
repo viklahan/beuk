@@ -25,7 +25,10 @@ The book carries `formatVersion`. 1.0 did not write it, so older books lack it.
 | an integer above 1 | `status: "newer"`. The book is passed through untouched: no upgrades, no defaults. Warning `format-newer`. |
 | anything else | Warning `format-invalid`, the raw value goes to `preserved`, and the book is read as if it had none. |
 
-`readBook` returns `{ status, book, upgrades, warnings, preserved }`.
+`readBook` returns `{ status, book, upgrades, warnings, preserved }`. `status` is `"ok"`, `"newer"` or `"failed"`.
+
+- **Check `status` before using `book`.** With `"newer"`, `book` is the input passed through, not a validated BookV1. With `"failed"` (reading itself threw), `book` is the empty scaffold and the input is in `preserved` at path `""`, with a `read-failed` warning.
+- A studio MUST NOT save a book read with status `"newer"` or `"failed"`.
 
 - `upgrades` names the steps that fired, in order, plus one `defaults:<key>` entry for each top-level key it had to fill.
 - `warnings` are `{ code, path, detail }`.
@@ -168,7 +171,7 @@ Detects no `meta.bookId`. Mints `urn:uuid:` plus a random UUID. This is the one 
 
 ### `bookid-legacy`
 
-Detects a `bookId` that is not a `urn:uuid:` UUID. Sets the id to `urn:uuid:` plus the UUIDv5 of the old id under the Beuk namespace, and adds the old id to `meta.legacyBookIds` (at most 16). Mirrors CI:4428-4482 and CI:50328.
+Detects a `bookId` that is not a `urn:uuid:` UUID. Sets the id to `urn:uuid:` plus the UUIDv5 of the old id under the Beuk namespace, and adds the old id to `meta.legacyBookIds` (all of them: the reader is lossless, so it keeps ids past 1.0's limit of 16 and warns `over-limit`). Mirrors CI:4428-4482 and CI:50328.
 
 ### `bookid-sample`
 

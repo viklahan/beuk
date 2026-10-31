@@ -83,15 +83,15 @@ test('studio: applyBookDoc ignores formatVersion (it reads keys by name; no whol
   assert.ok(!/formatVersion/.test(body), 'applyBookDoc never mentions formatVersion');
   assert.ok(!/Object\.assign\(\s*state\s*,/.test(body), 'no Object.assign(state, ...)');
   assert.ok(!/Object\.(keys|entries)\(\s*doc\s*\)|\bin\s+doc\b|\.\.\.\s*doc\b/.test(body), 'no iteration or spread over doc');
-  /* the lines that show it reads top-level keys by name (client/index.html at this commit):
-     the function is applyBookDoc(doc, opts) { ... } at 50199-50339; inside it
+  /* the lines that show it reads top-level keys by name (client/index.html @03c1928; this branch shifts the numbers at HEAD):
+     the function is applyBookDoc(doc, opts) { ... } at 50199-50339 @03c1928; inside it
      50285 `state.printMarginMode = doc.printMarginMode`, 50300 `state.printNotes = doc.printNotes ...`,
      50301 `state.goals = normalizeGoals(doc.goals)`, 50310 `normalizeHistory(doc.history, doc.historyPool)`,
      50317 `acxNormalize(doc.audio)`, 50319 `msNormalize(doc.manuscript)`, 50323 `bibleNormalize(doc.bible)`.
      An unknown top-level key such as formatVersion is therefore never read. */
-  assert.match(body, /state\.printNotes = doc\.printNotes/, 'client/index.html:50300 assigns state.printNotes from doc.printNotes by name');
-  assert.match(body, /state\.goals = normalizeGoals\(doc\.goals\)/, 'client/index.html:50301 reads doc.goals by name');
-  assert.match(body, /state\.audio = acxNormalize\(doc\.audio\)/, 'client/index.html:50317 reads doc.audio by name');
+  assert.match(body, /state\.printNotes = doc\.printNotes/, 'client/index.html:50300 @03c1928 assigns state.printNotes from doc.printNotes by name');
+  assert.match(body, /state\.goals = normalizeGoals\(doc\.goals\)/, 'client/index.html:50301 @03c1928 reads doc.goals by name');
+  assert.match(body, /state\.audio = acxNormalize\(doc\.audio\)/, 'client/index.html:50317 @03c1928 reads doc.audio by name');
 });
 
 test('studio: a sample fingerprint stored before formatVersion equals the new one (sampleLoadedJsonNormal / sampleComparableJson)', () => {
