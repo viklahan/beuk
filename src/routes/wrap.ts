@@ -37,7 +37,7 @@ export function wrapRefusalText(e: WrapInputError): string {
     case 'no-cover': return 'This book has no made cover yet. Make one in the cover maker, then download the wrap.';
     case 'too-large': return `This cover wrap is larger than the server paints (over ${MAX_WRAP_PIXELS.toLocaleString('en')} pixels at 300 DPI). Check the trim size, page count and paper in the cover maker.`;
     case 'picture-too-large': return `These pictures are too large to paint on the cover wrap (over ${MAX_PICTURE_SIDE.toLocaleString('en')} pixels on a side, or over ${(MAX_WRAP_PIXELS / 1e6).toLocaleString('en')} megapixels): ${ids(e.missing)}. Choose a smaller picture in the cover maker.`;
-    case 'picture-unsupported': return `These pictures are not JPEG, PNG, WebP or GIF files, so the cover wrap cannot paint them (an SVG flourish cannot be cover art for a wrap): ${ids(e.missing)}. Choose a JPEG or PNG picture in the cover maker.`;
+    case 'picture-unsupported': return `The cover wrap cannot paint these pictures: ${ids(e.missing)}. A picture must be a JPEG, PNG, WebP, GIF or a plain SVG (an SVG that loads files or other pictures from elsewhere, or carries scripts or entity declarations, is refused). Choose another picture in the cover maker.`;
     case 'bad-picture-id': return `The cover wrap names pictures by ids it cannot use: ${ids(e.missing)}. Choose the pictures again in the cover maker.`;
     case 'missing-pictures': return `The cover wrap uses pictures this book no longer has, or that cannot be read: ${ids(e.missing)}. Choose them again in the cover maker.`;
   }

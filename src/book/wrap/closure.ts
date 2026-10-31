@@ -276,7 +276,7 @@ export class WrapInputError extends Error {
     super(reason === 'no-cover' ? 'this book has no made cover to build a wrap from'
       : reason === 'too-large' ? `this cover wrap is larger than the server paints (over ${MAX_WRAP_PIXELS.toLocaleString('en')} pixels at 300 DPI)`
       : reason === 'picture-too-large' ? `pictures too large for the cover wrap: ${missing.join(', ')}`
-      : reason === 'picture-unsupported' ? `pictures the cover wrap cannot paint (not a JPEG, PNG, WebP or GIF): ${missing.join(', ')}`
+      : reason === 'picture-unsupported' ? `pictures the cover wrap cannot paint (not a JPEG, PNG, WebP, GIF or a plain SVG): ${missing.join(', ')}`
       : reason === 'bad-picture-id' ? `the cover wrap names pictures by ids it cannot use: ${missing.join(', ')}`
       : `the cover wrap uses pictures this book no longer has: ${missing.join(', ')}`);
   }

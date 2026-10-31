@@ -431,8 +431,8 @@ wrap's size, named the way the studio names its download. Signed in
 only; paused after the trial (`export.wrap`, 402). The book is held to
 `MANUSCRIPT_MAX_BYTES` with its pictures counted back in (413). A wrap
 that cannot be painted as the book stands (no made cover, over 40 MP,
-a picture it uses that is missing, too large, not a JPEG/PNG/WebP/GIF,
-or badly named) is a 422 naming the problem and the pictures. Settings:
+a picture it uses that is missing, too large, not a JPEG/PNG/WebP/GIF
+or plain SVG, or badly named) is a 422 naming the problem and the pictures. Settings:
 
 - `WRAP_MAX_CONCURRENT` (default 1): renders at once.
 - `WRAP_MAX_QUEUED` (default 4): renders waiting; beyond that 503 with

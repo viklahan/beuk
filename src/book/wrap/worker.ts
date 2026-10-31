@@ -2,7 +2,7 @@ import { GlobalFonts, loadImage, type Canvas } from '@napi-rs/canvas';
 import { randomBytes } from 'node:crypto';
 import vm from 'node:vm';
 import { parentPort, workerData } from 'node:worker_threads';
-import { MAX_WRAP_PIXELS, PICTURE_ID_RE, imageSize, pictureFits } from './limits.js';
+import { MAX_WRAP_PIXELS, PICTURE_ID_RE, checkSvg, imageSize, looksLikeSvg, pictureFits } from './limits.js';
 import { type FontPlan, type PlanFace, installLucide, makeWrapSandbox } from './sandbox.js';
 
 /* BEUK:wrap-server — one cover-wrap render, in its own worker thread and
@@ -100,8 +100,10 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
      the studio's own cache. One the book no longer has, or that does not
      decode, is refused by name: never a blank panel. Each is sized from
      its header first, before it is decoded: one too big is refused as
-     too large; one whose header cannot be read (not a JPEG, PNG, WebP or
-     GIF: an SVG flourish chosen as cover art, say) as unsupported. */
+     too large. An SVG (a flourish chosen as cover art) is checked as
+     text (limits.ts checkSvg: nothing fetched or expanded, its declared
+     size fenced) and decoded at a bounded raster size; a risky SVG, or a
+     picture that is none of JPEG, PNG, WebP, GIF or SVG, is unsupported. */
   const ids = api.pictures(recipe);
   const badIds = ids.filter((id) => typeof id !== 'string' || !PICTURE_ID_RE.test(id));
   if (badIds.length) return { refused: 'bad-picture-id', ids: badIds.map(String) };
@@ -112,8 +114,12 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
     if (!im || typeof im.data !== 'string' || !im.data) { missing.push(id); continue; }
     const buf = Buffer.from(im.data, 'base64');
     const size = imageSize(buf);
-    if (!size) unsupported.push(id);
-    else if (!pictureFits(size)) tooBig.push(id);
+    if (!size) {
+      const svg = looksLikeSvg(buf) ? checkSvg(buf) : null;
+      if (svg && svg.ok) bytes.set(id, svg.bytes);
+      else if (svg && svg.reason === 'too-large') tooBig.push(id);
+      else unsupported.push(id);
+    } else if (!pictureFits(size)) tooBig.push(id);
     else bytes.set(id, buf);
   }
   if (tooBig.length) return { refused: 'picture-too-large', ids: tooBig };

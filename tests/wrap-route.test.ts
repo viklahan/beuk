@@ -13,7 +13,7 @@ import { buildApp } from '../src/app.js';
 import { EpubBusyError, EpubQueue } from '../src/book/epub/queue.js';
 import { BuildBusyError, BuildQueue } from '../src/book/studio/queue.js';
 import { buildWrap } from '../src/book/wrap/build.js';
-import { MAX_WRAP_PIXELS, imageSize } from '../src/book/wrap/limits.js';
+import { MAX_WRAP_PIXELS, checkSvg, imageSize, looksLikeSvg } from '../src/book/wrap/limits.js';
 import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db.js';
 import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
@@ -227,16 +227,87 @@ test('a ref the shelf does not hold: 422 naming it, before anything is built', a
   assert.match(String(r.json().error), /picture/);
 });
 
-test('an SVG chosen as cover art: 422 naming it as a picture the wrap cannot paint', async () => {
-  const w = await writer(on.base);
+/* ---- SVG pictures (fix round 1): painted, on the server's terms ---- */
+
+/** The studio's own flourish self-check device (client/index.html, the
+ *  "Uploaded Star" in the flourish check), with a fill so it can be told
+ *  from the black that transparency becomes in a JPEG. */
+const STAR = (fill: string | null) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24"><path${fill ? ` fill="${fill}"` : ''} d="M60 2 L66 12 L60 22 L54 12 Z"/></svg>`;
+const b64 = (t: string) => Buffer.from(t, 'utf8').toString('base64');
+/** Lantern Coast with an SVG flourish as its cover background. */
+function svgCover(svg: string): Book {
   const b = lantern();
-  b.images.push({ id: 'svg-flourish', name: 'star.svg', mediaType: 'image/svg+xml', ext: 'svg', data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10"/></svg>').toString('base64') });
+  b.images.push({ id: 'svg-flourish', name: 'star.svg', mediaType: 'image/svg+xml', ext: 'svg', data: b64(svg) });
+  b.coverRecipe!.bgType = 'image';
   b.coverRecipe!.bgImageId = 'svg-flourish';
-  const r = await postWrap(on.base, w.c, { book: b, kind: 'jpg' });
-  assert.equal(r.status, 422, r.bytes.toString('utf8').slice(0, 300));
-  assert.deepEqual(reasonOf(r), { reason: 'picture-unsupported', pictures: ['svg-flourish'] });
-  assert.match(String(r.json().error), /svg-flourish/);
-  assert.match(String(r.json().error), /JPEG/);
+  return b;
+}
+
+test('an SVG flourish chosen as the cover background is painted (the flourish colour is there; without its fill it is not)', async (t) => {
+  const w = await writer(on.base);
+  const r = await postWrap(on.base, w.c, { book: svgCover(STAR('#ff00ff')), kind: 'jpg' });
+  assert.equal(r.status, 200, r.bytes.toString('utf8').slice(0, 300));
+  const scrimmed: [number, number, number] = [206, 2, 206]; /* #ff00ff under the studio's art scrim, rgba(12,10,8,0.2) */
+  const [withFill] = await colourCounts(r.bytes, [scrimmed]);
+  const plain = await postWrap(on.base, w.c, { book: svgCover(STAR(null)), kind: 'jpg' });
+  assert.equal(plain.status, 200);
+  const [without] = await colourCounts(plain.bytes, [scrimmed]);
+  t.diagnostic(`svg flourish: ${withFill} px near the flourish colour at quarter scale; ${without} without its fill`);
+  assert.ok(withFill! > 5000, `the flourish is painted (${withFill})`);
+  assert.ok(without! < 20, `and only by the flourish (${without})`);
+});
+
+test('an SVG with a DOCTYPE or an ENTITY, or a script, is refused as picture-unsupported', async () => {
+  const w = await writer(on.base);
+  for (const svg of [
+    '<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY a "aaaa">]><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><text>&a;</text></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><!entity x "y"/><rect width="10" height="10"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><script>1</script></svg>',
+  ]) {
+    const r = await postWrap(on.base, w.c, { book: svgCover(svg), kind: 'jpg' });
+    assert.equal(r.status, 422, svg);
+    assert.deepEqual(reasonOf(r), { reason: 'picture-unsupported', pictures: ['svg-flourish'] });
+    assert.match(String(r.json().error), /svg-flourish/);
+  }
+});
+
+test('an SVG with an external reference is refused as picture-unsupported (the server never fetches)', async () => {
+  const w = await writer(on.base);
+  for (const svg of [
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10"><image xlink:href="http://127.0.0.1:9/x.png" width="10" height="10"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><image href="file:///etc/passwd" width="10" height="10"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect style="fill:url(https://example.com/p.svg#g)" width="10" height="10"/></svg>',
+  ]) {
+    const r = await postWrap(on.base, w.c, { book: svgCover(svg), kind: 'jpg' });
+    assert.equal(r.status, 422, svg);
+    assert.deepEqual(reasonOf(r), { reason: 'picture-unsupported', pictures: ['svg-flourish'] });
+  }
+});
+
+test('an SVG declaring width=30000 height=30000 is refused as picture-too-large', async () => {
+  const w = await writer(on.base);
+  const r = await postWrap(on.base, w.c, { book: svgCover('<svg xmlns="http://www.w3.org/2000/svg" width="30000" height="30000"><rect width="10" height="10"/></svg>'), kind: 'jpg' });
+  assert.equal(r.status, 422);
+  assert.deepEqual(reasonOf(r), { reason: 'picture-too-large', pictures: ['svg-flourish'] });
+});
+
+test('checkSvg: sizes from width/height (px or unitless), else the viewBox, else a square; inline pictures and #refs are fine', () => {
+  const size = (svg: string) => { const v = checkSvg(Buffer.from(svg)); return v.ok ? [v.w, v.h] : v.reason; };
+  assert.deepEqual(size('<svg width="400px" height="100"/>'), [2000, 500], 'px and unitless, scaled up to the raster side');
+  assert.deepEqual(size('<svg width="4000" height="3000"/>'), [4000, 3000], 'large enough already: its own size');
+  assert.deepEqual(size('<svg width="10cm" height="2cm" viewBox="0 0 120 24"/>'), [2000, 400], 'other units: the viewBox');
+  assert.deepEqual(size('<svg width="600" viewBox="0 0 120 24"/>'), [2000, 400], 'one side and the viewBox aspect');
+  assert.deepEqual(size('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'), [2000, 2000], 'no size at all');
+  assert.equal(size('<svg width="20001" height="10"/>'), 'too-large');
+  assert.equal(size('<svg viewBox="0 0 8000 8000"/>'), 'too-large', 'over 40 MP by its viewBox');
+  const png = solidPng([1, 2, 3], 4);
+  assert.deepEqual(size(`<svg width="10" height="10"><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/><use href="#g"/><image href="data:image/png;base64,${png}"/></svg>`), [2000, 2000]);
+  assert.equal(size('<svg width="10" height="10"><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>'), 'unsupported', 'a nested SVG is not an allowed inline picture');
+  assert.equal(size('<svg width="10" height="10"><style>@import "x.css";</style></svg>'), 'unsupported');
+  const v = checkSvg(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="5" class="a"><rect width="10" height="5"/></svg>'));
+  assert.ok(v.ok && v.bytes.toString().startsWith('<svg width="2000" height="1000" viewBox="0 0 10 5" xmlns='), v.ok ? v.bytes.toString() : v.reason);
+  assert.ok(looksLikeSvg(Buffer.from('\uFEFF<?xml version="1.0"?>\n<!-- c --><svg/>')), 'a BOM, an XML declaration and a comment before a self-closing root');
+  assert.ok(!looksLikeSvg(Buffer.from('GIF89a')), 'a GIF is not an SVG');
 });
 
 test('a book with no made cover: 422 no-cover', async () => {

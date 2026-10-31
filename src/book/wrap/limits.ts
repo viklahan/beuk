@@ -60,3 +60,81 @@ export function imageSize(b: Buffer): { w: number; h: number } | null {
 export function pictureFits(size: { w: number; h: number } | null): boolean {
   return !!size && size.w > 0 && size.h > 0 && size.w <= MAX_PICTURE_SIDE && size.h <= MAX_PICTURE_SIDE && size.w * size.h <= MAX_WRAP_PIXELS;
 }
+
+/* ---- SVG pictures (fix round 1) ----
+   The studio lets a writer choose an SVG flourish as cover art (the art
+   grid offers every picture in the book), so the wrap paints SVGs too, on
+   the server's terms:
+   - the server never fetches or expands anything: a DOCTYPE or ENTITY,
+     a script, an xml-stylesheet, an @import, or any href / url() whose
+     target is not "#…" or an inline PNG/JPEG/WebP/GIF data URI is refused;
+   - inline pictures inside the SVG are held to the same size fence;
+   - the SVG's own size (root width/height in px or unitless, else the
+     viewBox) is held to the same fence before anything is decoded. */
+
+/** What the wrap makes of an SVG picture. */
+export type SvgVerdict =
+  | { ok: true; w: number; h: number; bytes: Buffer }
+  | { ok: false; reason: 'unsupported' | 'too-large' };
+
+/** The longest side an SVG is rasterised at when it is smaller (or has no size): it is vector, so a bigger raster loses nothing. */
+export const SVG_RASTER_SIDE = 2000;
+
+const SAFE_TARGET = /^\s*(#|data:image\/(png|jpeg|webp|gif)[;,])/i;
+
+/** A length in px (or unitless), else null. */
+function svgPx(v: string | undefined): number | null {
+  if (v === undefined) return null;
+  const m = /^\s*([0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?)\s*(px)?\s*$/i.exec(v);
+  const n = m ? Number(m[1]) : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Is this an SVG document (by its text, not its media type)? */
+export function looksLikeSvg(b: Buffer): boolean {
+  const head = b.subarray(0, 4096).toString('utf8').replace(/^\uFEFF/, '').replace(/<!--[\s\S]*?-->/g, '').trimStart();
+  return head.startsWith('<') && /<svg[\s>/]/i.test(head);
+}
+
+/** Check an SVG picture and give back the bytes to decode: the same
+ *  document with its root width/height set to the size it is rasterised
+ *  at (its own size, scaled up to SVG_RASTER_SIDE on the longest side
+ *  when smaller, the viewBox's aspect kept). */
+export function checkSvg(b: Buffer): SvgVerdict {
+  const text = b.toString('utf8').replace(/^\uFEFF/, '');
+  if (/<!DOCTYPE|<!ENTITY|<script|<\?xml-stylesheet|@import/i.test(text)) return { ok: false, reason: 'unsupported' };
+  for (const m of text.matchAll(/(?:^|[\s"'])(?:xlink:)?href\s*=\s*(["'])([\s\S]*?)\1/gi)) {
+    if (!SAFE_TARGET.test(m[2]!)) return { ok: false, reason: 'unsupported' };
+  }
+  if (/(?:^|[\s"'])(?:xlink:)?href\s*=\s*[^\s"']/i.test(text)) return { ok: false, reason: 'unsupported' }; /* unquoted */
+  for (const m of text.matchAll(/url\(\s*(["']?)([\s\S]*?)\1\s*\)/gi)) {
+    if (!SAFE_TARGET.test(m[2]!)) return { ok: false, reason: 'unsupported' };
+  }
+  /* inline pictures: the same fence as any picture */
+  for (const m of text.matchAll(/data:image\/(?:png|jpeg|webp|gif)[^,"')]*;base64,([A-Za-z0-9+/=\s]+)/gi)) {
+    if (!pictureFits(imageSize(Buffer.from(m[1]!.replace(/\s/g, ''), 'base64')))) return { ok: false, reason: 'too-large' };
+  }
+  const body = text.replace(/<!--[\s\S]*?-->/g, '');
+  const root = /<svg\b([^>]*)>/i.exec(body);
+  if (!root) return { ok: false, reason: 'unsupported' };
+  const attrs: Record<string, string> = {};
+  for (const a of root[1]!.matchAll(/([A-Za-z_:][-A-Za-z0-9_:.]*)\s*=\s*(["'])([\s\S]*?)\2/g)) attrs[a[1]!.toLowerCase()] = a[3]!;
+  const vb = (attrs.viewbox ?? '').trim().split(/[\s,]+/).map(Number);
+  const vbOk = vb.length === 4 && vb.every(Number.isFinite) && vb[2]! > 0 && vb[3]! > 0;
+  let w = svgPx(attrs.width), h = svgPx(attrs.height);
+  if (w && !h && vbOk) h = (w * vb[3]!) / vb[2]!;
+  else if (h && !w && vbOk) w = (h * vb[2]!) / vb[3]!;
+  else if (!w || !h) { w = vbOk ? vb[2]! : null; h = vbOk ? vb[3]! : null; }
+  if (w && h) {
+    if (!pictureFits({ w: Math.ceil(w), h: Math.ceil(h) })) return { ok: false, reason: 'too-large' };
+  } else {
+    w = SVG_RASTER_SIDE; h = SVG_RASTER_SIDE; /* no size at all: a square at the raster side */
+  }
+  const k = Math.max(1, SVG_RASTER_SIDE / Math.max(w, h));
+  const rw = Math.max(1, Math.round(w * k)), rh = Math.max(1, Math.round(h * k));
+  /* the viewBox keeps the drawing's aspect when the root had none of its own */
+  const keep = root[0]!.replace(/\s(width|height)\s*=\s*(["'])[\s\S]*?\2/gi, '');
+  const sized = keep.replace(/^<svg\b/i, `<svg width="${rw}" height="${rh}"` + (vbOk || !(svgPx(attrs.width) && svgPx(attrs.height)) ? '' : ` viewBox="0 0 ${svgPx(attrs.width)} ${svgPx(attrs.height)}"`));
+  const out = body.slice(0, root.index) + sized + body.slice(root.index + root[0]!.length);
+  return { ok: true, w: rw, h: rh, bytes: Buffer.from(out, 'utf8') };
+}
