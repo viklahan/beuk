@@ -320,7 +320,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: seven features (three have no route yet), six gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: seven features (two have no route yet), six gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -335,9 +335,12 @@ test('the rules are data: seven features (three have no route yet), six gated PO
   assert.deepEqual(Object.keys(PAUSABLE_FEATURES).sort(), [
     'archive.upload', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add',
   ]);
-  // The three store-ready export features are declared now; their routes (POST /api/print,
-  // /api/epub, /api/wrap) arrive in parts 2-4 of Step 3, and these two lines change then.
-  assert.equal(ACCESS_RULES.filter((r) => r.feature.startsWith('export.')).length, 0);
+  // Of the three store-ready export features only export.print has a route so far (the pdfx job,
+  // Step 3 part 2); epub and wrap arrive in parts 3-4 and this line changes then.
+  assert.deepEqual(
+    ACCESS_RULES.filter((r) => r.feature.startsWith('export.')).map((r) => `${r.method} ${r.path} ${r.feature}`),
+    ['POST /api/jobs/pdfx export.print'],
+  );
   const gated = new Set(ACCESS_RULES.map((r) => `${r.method} ${r.path}`));
   for (const r of NEVER_PAUSED) assert.ok(!gated.has(`${r.method} ${r.path}`), `${r.method} ${r.path} is both`);
   assert.ok(NEVER_PAUSED.some((r) => r.method === 'PUT' && r.path === '/api/manuscripts/:id'), 'saving a shelf book is never paused');
@@ -445,6 +448,22 @@ test('a paused answer is plain, names what stays open (own words), and changes n
   assert.equal(up.body.feature, 'archive.upload');
   // Signed out, a gated route still answers 401 (the gate never decides that).
   assert.equal((await new Client(on.base).post('/api/manuscripts', { doc: DOC })).status, 401);
+});
+
+test('the pdfx job is the print-ready PDF feature; epubcheck stays jobs.run', async () => {
+  const w = await writer(on.base, 'printgate');
+  const work = await makeWork(w.c);
+  const trial = await w.c.post('/api/jobs/pdfx', { exportId: work.exportId });
+  assert.notEqual(trial.status, 402, 'in trial the print job is not paused');
+  await setTrialEnd(w.id, new Date(clock.getTime() - DAY));
+  const p = await w.c.post('/api/jobs/pdfx', { exportId: work.exportId });
+  assert.equal(p.status, 402);
+  assert.equal(p.body.feature, 'export.print');
+  assert.equal(p.body.paused, true);
+  assert.match(String(p.body.error), /print-ready PDFs/);
+  const e = await w.c.post('/api/jobs/epubcheck', { exportId: work.exportId });
+  assert.equal(e.status, 402);
+  assert.equal(e.body.feature, 'jobs.run');
 });
 
 test('never paused: a paused writer reads, saves, downloads, keeps links, downloads all data, and can delete', async () => {

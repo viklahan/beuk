@@ -29,10 +29,10 @@ import { entitlementsFor, loadEntitlements, type EntitlementsLoad, type Entitlem
  *
  * Locked after day 21 unpaid (PAUSABLE_FEATURES): the store-ready EPUB,
  * the print PDF, the cover wrap, adding new books to the shelf, new beta
- * links (and refreshing an existing link's copy), server EPUBCheck / PDF/X
- * checks, and saving new files to the archive. The three export.* features
- * are declared here; their routes arrive with the server-built exports
- * (Step 3, parts 2-4).
+ * links (and refreshing an existing link's copy), server EPUBCheck checks,
+ * the server-made print-ready PDF (the pdfx job, export.print), and saving
+ * new files to the archive. export.epub and export.wrap are declared here;
+ * their routes arrive with the server-built exports (Step 3, parts 3-4).
  */
 
 export type AccessState =
@@ -71,7 +71,7 @@ export interface AccountAccess {
 export const PAUSABLE_FEATURES = {
   'shelf.add': 'adding new books to your shelf',
   'shares.create': 'new beta-reader links',
-  'jobs.run': 'server EPUBCheck and PDF/X checks',
+  'jobs.run': 'server EPUBCheck checks',
   'archive.upload': 'saving new files to your export archive',
   'export.epub': 'store-ready EPUB files',
   'export.print': 'print-ready PDFs',
@@ -85,7 +85,7 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/shares', feature: 'shares.create' },
   { method: 'POST', path: '/api/shares/:id/republish', feature: 'shares.create' },
   { method: 'POST', path: '/api/jobs/epubcheck', feature: 'jobs.run' },
-  { method: 'POST', path: '/api/jobs/pdfx', feature: 'jobs.run' },
+  { method: 'POST', path: '/api/jobs/pdfx', feature: 'export.print' },
   { method: 'POST', path: '/api/exports', feature: 'archive.upload' },
 ];
 
