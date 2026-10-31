@@ -101,7 +101,7 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
      decode, is refused by name: never a blank panel. Each is sized from
      its header first, before it is decoded: one too big is refused as
      too large. An SVG (a flourish chosen as cover art) is checked as
-     text (limits.ts checkSvg: nothing fetched or expanded, its declared
+     a parsed document (limits.ts checkSvg: nothing fetched or expanded, its declared
      size fenced) and decoded at a bounded raster size; a risky SVG, or a
      picture that is none of JPEG, PNG, WebP, GIF or SVG, is unsupported. */
   const ids = api.pictures(recipe);

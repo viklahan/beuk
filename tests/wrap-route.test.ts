@@ -227,7 +227,7 @@ test('a ref the shelf does not hold: 422 naming it, before anything is built', a
   assert.match(String(r.json().error), /picture/);
 });
 
-/* ---- SVG pictures (fix round 1): painted, on the server's terms ---- */
+/* ---- SVG pictures (fix rounds 1 and 2): painted, on the server's terms ---- */
 
 /** The studio's own flourish self-check device (client/index.html, the
  *  "Uploaded Star" in the flourish check), with a fill so it can be told
@@ -292,22 +292,108 @@ test('an SVG declaring width=30000 height=30000 is refused as picture-too-large'
 });
 
 test('checkSvg: sizes from width/height (px or unitless), else the viewBox, else a square; inline pictures and #refs are fine', () => {
+  const X = 'xmlns="http://www.w3.org/2000/svg"';
   const size = (svg: string) => { const v = checkSvg(Buffer.from(svg)); return v.ok ? [v.w, v.h] : v.reason; };
-  assert.deepEqual(size('<svg width="400px" height="100"/>'), [2000, 500], 'px and unitless, scaled up to the raster side');
-  assert.deepEqual(size('<svg width="4000" height="3000"/>'), [4000, 3000], 'large enough already: its own size');
-  assert.deepEqual(size('<svg width="10cm" height="2cm" viewBox="0 0 120 24"/>'), [2000, 400], 'other units: the viewBox');
-  assert.deepEqual(size('<svg width="600" viewBox="0 0 120 24"/>'), [2000, 400], 'one side and the viewBox aspect');
-  assert.deepEqual(size('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'), [2000, 2000], 'no size at all');
-  assert.equal(size('<svg width="20001" height="10"/>'), 'too-large');
-  assert.equal(size('<svg viewBox="0 0 8000 8000"/>'), 'too-large', 'over 40 MP by its viewBox');
+  assert.deepEqual(size(`<svg ${X} width="400px" height="100"/>`), [2000, 500], 'px and unitless, scaled up to the raster side');
+  assert.deepEqual(size(`<svg ${X} width="4000" height="3000"/>`), [4000, 3000], 'large enough already: its own size');
+  assert.deepEqual(size(`<svg ${X} width="10cm" height="2cm" viewBox="0 0 120 24"/>`), [2000, 400], 'other units: the viewBox');
+  assert.deepEqual(size(`<svg ${X} width="600" viewBox="0 0 120 24"/>`), [2000, 400], 'one side and the viewBox aspect');
+  assert.deepEqual(size(`<svg ${X}><rect/></svg>`), [2000, 2000], 'no size at all');
+  assert.equal(size(`<svg ${X} width="20001" height="10"/>`), 'too-large');
+  assert.equal(size(`<svg ${X} viewBox="0 0 8000 8000"/>`), 'too-large', 'over 40 MP by its viewBox');
   const png = solidPng([1, 2, 3], 4);
-  assert.deepEqual(size(`<svg width="10" height="10"><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/><use href="#g"/><image href="data:image/png;base64,${png}"/></svg>`), [2000, 2000]);
-  assert.equal(size('<svg width="10" height="10"><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>'), 'unsupported', 'a nested SVG is not an allowed inline picture');
-  assert.equal(size('<svg width="10" height="10"><style>@import "x.css";</style></svg>'), 'unsupported');
-  const v = checkSvg(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="10" height="5" class="a"><rect width="10" height="5"/></svg>'));
-  assert.ok(v.ok && v.bytes.toString().startsWith('<svg width="2000" height="1000" viewBox="0 0 10 5" xmlns='), v.ok ? v.bytes.toString() : v.reason);
-  assert.ok(looksLikeSvg(Buffer.from('\uFEFF<?xml version="1.0"?>\n<!-- c --><svg/>')), 'a BOM, an XML declaration and a comment before a self-closing root');
+  assert.deepEqual(size(`<svg ${X} width="10" height="10"><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/><use href="#g"/><image href="data:image/png;base64,${png}"/></svg>`), [2000, 2000]);
+  assert.equal(size(`<svg ${X} width="10" height="10"><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>`), 'unsupported', 'a nested SVG is not an allowed inline picture');
+  assert.equal(size(`<svg ${X} width="10" height="10"><style>@import "x.css";</style></svg>`), 'unsupported');
+  assert.deepEqual(size('<svg width="10" height="10"/>'), [2000, 2000], 'no xmlns: the parser puts an image/svg+xml root in the SVG namespace');
+  assert.equal(size('<svg xmlns="urn:not-svg" width="10" height="10"/>'), 'unsupported', 'an <svg> in another namespace');
+  assert.equal(size(`<html ${X}/>`), 'unsupported', 'not an <svg> root');
+  assert.equal(size(`<svg ${X}><rect></svg>`), 'unsupported', 'does not parse');
+  assert.equal(size(`<svg ${X}><text>&ent;</text></svg>`), 'unsupported', 'an undeclared entity');
+  assert.equal(size(`<?xml-stylesheet href="http://x/y.css"?><svg ${X}/>`), 'unsupported', 'xml-stylesheet');
+  assert.equal(size(`<svg ${X}><foreignObject/></svg>`), 'unsupported');
+  assert.equal(size(`<svg ${X} xml:base="http://x/"><rect/></svg>`), 'unsupported', 'xml:base');
+  assert.equal(size(`<svg ${X}><rect style="fill:u\\72l(http://x/y)"/></svg>`), 'unsupported', 'a CSS escape spelling url(');
+  const v = checkSvg(Buffer.from(`<svg ${X} width="10" height="5" class="a"><rect width="10" height="5"/></svg>`));
+  assert.ok(v.ok, 'parses');
+  const out = v.bytes.toString();
+  for (const want of ['width="2000"', 'height="1000"', 'viewBox="0 0 10 5"', 'class="a"', '<rect width="10" height="5"/>']) assert.ok(out.includes(want), `${want} in ${out}`);
+  assert.ok(looksLikeSvg(Buffer.from('﻿<?xml version="1.0"?>\n<!-- c --><svg/>')), 'a BOM, an XML declaration and a comment before a self-closing root');
   assert.ok(!looksLikeSvg(Buffer.from('GIF89a')), 'a GIF is not an SVG');
+});
+
+test('checkSvg (fix round 2): what reaches the decoder is the serialised parse, never the writer\'s text', () => {
+  const X = 'xmlns="http://www.w3.org/2000/svg"';
+  /* a comment splitting an attribute name: a parser never reads it as href */
+  const split = checkSvg(Buffer.from(`<svg ${X} width="10" height="10"><image hr<!-- -->ef="file:///etc/passwd" width="10" height="10"/></svg>`));
+  if (split.ok) {
+    const out = split.bytes.toString();
+    assert.ok(!out.includes('file:') && !/href/i.test(out), `no external reference survives: ${out}`);
+  } else assert.equal(split.reason, 'unsupported');
+  /* a comment inside the root carries nothing through */
+  const c = checkSvg(Buffer.from(`<svg ${X} width="10" height="10"><!-- <image href="file:///etc/passwd"/> --><rect width="10" height="10"/></svg>`));
+  assert.ok(c.ok);
+  assert.ok(!c.bytes.toString().includes('file:'), c.bytes.toString());
+});
+
+test('SVG (fix round 2): a comment-split href, a custom-prefix xlink href, url(http) in a style, and onload are refused or carry nothing', async () => {
+  const w = await writer(on.base);
+  const X = 'xmlns="http://www.w3.org/2000/svg"';
+  const refused = async (svg: string, why: string) => {
+    const r = await postWrap(on.base, w.c, { book: svgCover(svg), kind: 'jpg' });
+    assert.equal(r.status, 422, `${why}: ${r.bytes.toString('utf8').slice(0, 200)}`);
+    assert.deepEqual(reasonOf(r), { reason: 'picture-unsupported', pictures: ['svg-flourish'] }, why);
+  };
+  await refused(`<svg ${X} xmlns:a="http://www.w3.org/1999/xlink" width="10" height="10"><image a:href="file:///etc/passwd" width="10" height="10"/></svg>`, 'a custom prefix bound to xlink');
+  await refused(`<svg ${X} xmlns:q="urn:anything" width="10" height="10"><image q:href="http://127.0.0.1:9/x.png" width="10" height="10"/></svg>`, 'an href in any namespace');
+  await refused(`<svg ${X} width="10" height="10"><rect style="fill:url(http://x/y)" width="10" height="10"/></svg>`, 'url(http) in a style');
+  await refused(`<svg ${X} width="10" height="10" onload="x()"><rect width="10" height="10"/></svg>`, 'onload');
+  await refused(`<svg ${X} width="10" height="10"><style>rect { fill: url("https://x/y.svg#p") }</style><rect width="10" height="10"/></svg>`, 'url() in <style>');
+  /* the comment-split href: never a live href (refused, or painted with nothing external) */
+  const r = await postWrap(on.base, w.c, { book: svgCover(`<svg ${X} width="10" height="10"><image hr<!-- -->ef="file:///etc/passwd" width="10" height="10"/></svg>`), kind: 'jpg' });
+  assert.ok(r.status === 200 || (r.status === 422 && r.json().reason === 'picture-unsupported'), `status ${r.status}`);
+});
+
+test('@napi-rs/canvas itself: an SVG handed straight to loadImage fetches no file: and no http: resource (defence in depth; checkSvg refuses both anyway)', async (t) => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const os = await import('node:os');
+  const http = await import('node:http');
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'beuk-svg-'));
+  const red = path.join(dir, 'red.png');
+  writeFileSync(red, Buffer.from(solidPng([255, 0, 0], 16), 'base64'));
+  let hits = 0;
+  const srv = http.createServer((_req, res) => { hits++; res.setHeader('content-type', 'image/png'); res.end(Buffer.from(solidPng([255, 0, 0], 16), 'base64')); });
+  await new Promise<void>((r) => srv.listen(0, '127.0.0.1', () => r()));
+  const port = (srv.address() as { port: number }).port;
+  try {
+    let white = 0; /* the SVG's own white rect: proof each probe was painted at all */
+    const redCount = async (href: string) => {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16"><rect width="16" height="16" fill="#ffffff"/><image xlink:href="${href}" href="${href}" width="16" height="16"/></svg>`;
+      let img: Awaited<ReturnType<typeof loadImage>>;
+      try { img = await loadImage(Buffer.from(svg)); } catch { return -1; }
+      const c = createCanvas(16, 16);
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, 16, 16);
+      const d = ctx.getImageData(0, 0, 16, 16).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i]! > 200 && d[i + 1]! < 60 && d[i + 2]! < 60) n++;
+        else if (d[i]! > 240 && d[i + 1]! > 240 && d[i + 2]! > 240) white++;
+      }
+      return n;
+    };
+    const fileRed = await redCount('file://' + red.split(path.sep).join('/'));
+    const pathRed = await redCount(red.split(path.sep).join('/'));
+    const httpRed = await redCount(`http://127.0.0.1:${port}/red.png`);
+    await new Promise((r) => setTimeout(r, 200));
+    const inline = await redCount(`data:image/png;base64,${solidPng([255, 0, 0], 16)}`);
+    t.diagnostic(`loadImage on SVG: red px from file: ${fileRed}, bare path ${pathRed}, http ${httpRed} (server hits ${hits}); inline data URI ${inline}; white px painted ${white}`);
+    assert.ok(white >= 4 * 200, `each probe painted the SVG itself (${white} white px)`);
+    assert.equal(hits, 0, 'no http request');
+    assert.ok(fileRed === 0 && pathRed === 0 && httpRed === 0, 'no external picture painted');
+  } finally {
+    await new Promise<void>((r) => srv.close(() => r()));
+  }
 });
 
 test('a book with no made cover: 422 no-cover', async () => {
