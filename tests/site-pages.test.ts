@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { COMPARE_SLUGS } from '../src/routes/site.js';
@@ -20,8 +20,8 @@ const PAGES: { file: string[]; url: string }[] = [
 const FALSE_CLAIMS = [
   /quietshelf/i, /open[- ]source/i, /zero-warning/i, /googleapis|gstatic/, /href="#"/, /data-cta/, /no features held back/i, /fare is free/i,
   /ten (stores|ports|export|presets|platform)/i, /six trim/i,
-  // No price is decided: nothing may show or imply one for Beuk.
-  /beuk[^.<]{0,60}(\$|€|£)\s?\d/i, /\/\s?month/i,
+  // V's rules (2026-10-30): an account from day one, 21 days free, $20 a month; none of the old promises.
+  /7-day|free week|No account needed|export always/i,
   /\bthe best\b/i, /\bbest-in-class\b/i, /!(?![-=\[])/,
 ];
 
@@ -46,10 +46,11 @@ test('the site pages exist, make no false claims, carry link previews and a cano
     // The doors are the landing page's.
     assert.ok(html.includes('href="/studio"'), `${p.url} opens the studio`);
     for (const d of ['/features', '/compare', '/help', '/privacy', '/terms']) assert.ok(html.includes(`href="${d}"`), `${p.url} links ${d}`);
-    // Beuk's price is the decided wording, never a number.
-    if (p.url !== '/features') assert.ok(html.includes('7-day free trial, then one price — announced before launch'), `${p.url} states the price wording`);
+    // Beuk's price is V's decided wording.
+    if (p.url !== '/features' && p.url !== '/ramp') assert.ok(html.includes('21 days free, then $20 a month — everything included'), `${p.url} states the price wording`);
   }
-  assert.ok(read('client', 'site', 'features.html').includes('a 7-day free trial, then one price — announced before launch'));
+  assert.ok(read('client', 'site', 'features.html').includes('Price: 21 days free, then $20 a month — everything included.'));
+  assert.ok(read('client', 'site', 'ramp.html').includes('21 days free, then $20 a month — everything included'));
 });
 
 test('every picture and stylesheet the site pages reference is a file of this origin; every studio picture has alt text and its real size', () => {
@@ -236,14 +237,14 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
   }
   assert.match(features, /with an account, Beuk's server converts the print interior to PDF\/X-1a/);
   assert.match(features, /<li><b>PDF\/X-1a print conversion<\/b> on Beuk's server/);
-  assert.match(features, /Everything above works on your device with no account at all, except the parts marked “with an account”\./);
+  assert.match(features, /Everything above is yours for 21 days\. Your book is saved on your device as you write, and an account adds:/);
   const vellum = read('client', 'site', 'compare', 'vellum.html');
   const stronger = /Where Vellum is stronger<\/h2>([\s\S]*?)<\/ul>/.exec(vellum)?.[1] ?? '';
   assert.doesNotMatch(stronger, /PDF\/X/, 'PDF/X is not a Vellum-only strength');
   assert.match(vellum, /Checks on Beuk's server<\/b>, with an account: the print interior converted to PDF\/X-1a, and your EPUB run through the official EPUBCheck\./);
   for (const slug of ['atticus', 'reedsy-studio']) {
     assert.match(read('client', 'site', 'compare', `${slug}.html`), /With an account, Beuk's server converts the print interior to PDF\/X-1a\./, slug);
-    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Writing and exporting on your device need no Beuk account/, slug);
+    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk needs an account from day one: 21 days free, then \$20 a month — everything included\./, slug);
   }
 });
 
@@ -279,4 +280,15 @@ test('Ramp: every book opens on four spreads printed by Beuk, each a real WebP o
   // Every site page beside it links Ramp.
   for (const f of [['client', 'site', 'index.html'], ['client', 'site', 'features.html'], ['client', 'site', 'compare', 'index.html']])
     assert.ok(read(...f).includes('href="/ramp"'), `${f.join('/')} links /ramp`);
+});
+
+test('no site page keeps an old promise: 7-day trial, free week, no account needed, export always open', () => {
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((n) => {
+      const f = path.join(dir, n);
+      return statSync(f).isDirectory() ? walk(f) : f.endsWith('.html') ? [f] : [];
+    });
+  const files = walk(path.join(root, 'client', 'site'));
+  assert.ok(files.length >= 9, 'landing, features, ramp and the compare pages');
+  for (const f of files) assert.doesNotMatch(readFileSync(f, 'utf8'), /7-day|free week|No account needed|export always/i, path.relative(root, f));
 });
