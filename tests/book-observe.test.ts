@@ -144,6 +144,57 @@ test('observe: the Housekeeping ops summary includes bookFormat', async () => {
   }
 });
 
+test('observe: no detail, no long strings stored (long key names, long writer string in a wrong-typed field)', async () => {
+  const db = await createTestDb();
+  const server = await startTestServer(db);
+  try {
+    const c = new Client(server.base);
+    await registerUser(c, 'observe6@example.com');
+    const SECRET = 'PRIVATE-WRITER-TEXT-' + 'x'.repeat(300);
+    const doc = fixture();
+    doc['k'.repeat(400)] = 1;
+    doc.meta = { ...doc.meta, series: 5, language: SECRET, title: { not: SECRET } };
+    doc.sections[0].title = { nope: SECRET };
+    const created = await c.post('/api/manuscripts', { doc });
+    assert.equal(created.status, 201);
+    await server.settle();
+    const r = await rows(db);
+    assert.equal(r.length, 1);
+    const stored = JSON.stringify(r[0]);
+    assert.ok(!stored.includes('PRIVATE-WRITER-TEXT'), 'no writer text stored');
+    for (const w of r[0].warnings) {
+      assert.deepEqual(Object.keys(w).sort(), ['code', 'path']);
+      assert.ok(w.path.length <= 120);
+    }
+    assert.ok(r[0].warnings.length > 0);
+    assert.equal(r[0].unknown_keys.length, 1);
+    assert.equal(r[0].unknown_keys[0].length, 80);
+  } finally {
+    await server.close();
+  }
+});
+
+test('observe: 300 unknown keys: caps applied and the truncation recorded', async () => {
+  const db = await createTestDb();
+  const server = await startTestServer(db);
+  try {
+    const c = new Client(server.base);
+    await registerUser(c, 'observe7@example.com');
+    const doc = fixture();
+    for (let i = 0; i < 300; i++) doc[`extra${i}`] = i;
+    const created = await c.post('/api/manuscripts', { doc });
+    assert.equal(created.status, 201);
+    await server.settle();
+    const [row] = await rows(db);
+    assert.equal(row.warnings.length, 201, '200 kept + one truncated entry');
+    assert.deepEqual(row.warnings[200], { code: 'truncated', path: '100 more' });
+    assert.equal(row.unknown_keys.length, 51, '50 kept + a count entry');
+    assert.equal(row.unknown_keys[50], '250 more');
+  } finally {
+    await server.close();
+  }
+});
+
 /* Review Focus 5 — readBook on the largest gallery-sized book. */
 function bigBook(): Record<string, unknown> {
   const text = realFixtures()
@@ -173,7 +224,8 @@ test('observe: readBook on the largest gallery-sized book (~250k words, 60 secti
   const ms = runs[2];
   if (process.env.BEUK_PERF_PRINT) console.log('readBook runs (ms):', runs.map((r) => r.toFixed(1)).join(', '));
   // MEASURED on the Legion (2026-10-30): per-process medians of 5 runs over 7 processes were
-  // 2.5, 2.6, 3.7, 4.2, 4.4, 4.5, 5.4 ms; the median of those is 4.2 ms. Budget = 3x = 12.6 ms.
+  // 2.5, 2.6, 3.7, 4.2, 4.4, 4.5, 5.4 ms; the median of those is 4.2 ms. CONTROLLER RULING: budget = 10x = 42 ms.
+  // 3x (12.6 ms) flaked (single runs up to 18.5 ms); 10x still catches algorithmic regressions.
   assert.ok(ms < BUDGET_MS, `readBook median ${ms.toFixed(1)} ms; budget ${BUDGET_MS} ms`);
 });
-const BUDGET_MS = 12.6;
+const BUDGET_MS = 42;

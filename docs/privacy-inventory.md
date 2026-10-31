@@ -40,6 +40,7 @@ That is a fact about the code, not a policy decision.
 | Self-check runs / sign-offs | build stamp, counts, results; sign-off user id + email + note (admins only) | migrations/006_housekeeping.sql:27-50 | No limit |
 | help_docs | derived from content/help/ — no personal data | migrations/013_help_search.sql:21-33 | Rebuilt each boot |
 | Studio error reports | client_errors: the error **message** and **stack** (scrubbed: URL queries/fragments cut, `/read/<token>` → `/read/:token`, emails → [email], UUIDs → [id], 24+ char letter-and-digit runs → [token], a quoted book/picture file name of any length → "[file]", other quoted text over 24 chars → "[…]", book/picture file names → [file] together with up to five capitalised or numbered words before them; message ≤300 chars, stack ≤15 lines/2000 chars), the studio shell build (e.g. beuk-shell-v18), the server build stamp, UI language, device class (phone/tablet/desktop), kind, day, last hour seen, a count. **No user id, no IP, no user agent, no cookies** (sent with `credentials: 'omit'`) | migrations/015_ops.sql; src/ops/client-errors.ts; client/index.html `BEUK:errors` | Rows older than CLIENT_ERRORS_KEEP_DAYS (default **30**) are deleted (hourly on new reports, every scheduler tick, and on the Housekeeping read). Excluded from backups |
+| Book format observation | book_format_observations: one row per book, the latest save's readBook finding: status (ok/newer), upgrade step names, warnings as **code + field path only** (never the warning detail, which can quote writer text), the names of top-level keys the format does not know, when it was observed, how long reading took. Paths are cut to 120 characters, unknown key names to 80; at most 200 warnings and 50 key names are kept, with a final "N more" entry when capped. **No book text, no values, no user id** (the row is tied to the book) | migrations/020_book_format_observations.sql; src/book/observe.ts | One row per book, overwritten on every save and deleted with the book (on delete cascade, so also with the account). Shown only in aggregate to admins in Housekeeping (GET /api/housekeeping/ops, `bookFormat`). Excluded from backups |
 | Usage counts | usage_daily: day, counter name, a number, a final flag — **nothing else** (see §11) | migrations/015_ops.sql; src/ops/usage.ts | **No limit** (one row per day per counter). Excluded from backups |
 | Backup alert state | ops_alerts: whether a backup incident is open, which self-check ids are red and their scrubbed detail, when the last alert went out and what each channel answered, whether the opening alert was delivered and how many attempts it took. ALERT_EMAIL (the operator's own address) is configuration, not stored here | migrations/015_ops.sql; src/ops/alerts.ts | One row, overwritten on each change. Excluded from backups |
 
@@ -117,8 +118,9 @@ script sample (src/routes/csp-report.ts:26-34,56-90).
   keepMonthly`), i.e. a deleted item can survive in off-site snapshots
   for about a year. The bucket region is whatever endpoint the operator
   configures (OFFSITE_B2_ENDPOINT).
-- Excluded from backups: password_resets, housekeeping_*, help_docs,
-  search_log, schema_migrations, client_errors, usage_daily, ops_alerts
+- Excluded from backups: password_resets, email_confirmations,
+  housekeeping_*, help_docs, search_log, schema_migrations, client_errors,
+  book_format_observations, usage_daily, ops_alerts
   (src/housekeeping/backup.ts EXCLUDED_TABLES).
 - **Local retention (optional):** BACKUP_KEEP_DAYS / BACKUP_KEEP_COUNT.
   **Unset (today) = keep everything**, as above. When set, older local

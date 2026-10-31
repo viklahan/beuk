@@ -7,6 +7,27 @@ import { readBook, type ReadResult } from './index.js';
    020). It only watches: it never rejects, delays or changes a save, and
    it never throws — a failure is logged and swallowed. */
 
+/* PRIVACY: a stored observation must hold no book text. A warning's
+   `detail` quotes writer strings, so it is never stored: only {code, path}.
+   Paths and unknown key names are writer-chosen, so they are cut short,
+   and both lists are capped. When the warnings list is capped, one
+   synthetic {code: 'truncated', path: '<N more>'} warning records how
+   many were dropped; for unknown_keys the dropped count is the 'truncated'
+   warning's twin entry '<N more>' as the last element. */
+export const MAX_PATH = 120;
+export const MAX_UNKNOWN_KEY = 80;
+export const MAX_WARNINGS = 200;
+export const MAX_UNKNOWN_KEYS = 50;
+
+export function privacySafe(all: { code: string; path: string }[]): { warnings: { code: string; path: string }[]; unknownKeys: string[] } {
+  const warnings = all.slice(0, MAX_WARNINGS).map((w) => ({ code: w.code, path: w.path.slice(0, MAX_PATH) }));
+  if (all.length > MAX_WARNINGS) warnings.push({ code: 'truncated', path: `${all.length - MAX_WARNINGS} more` });
+  const keys = all.filter((w) => w.code === 'unknown-key').map((w) => w.path);
+  const unknownKeys = keys.slice(0, MAX_UNKNOWN_KEYS).map((k) => k.slice(0, MAX_UNKNOWN_KEY));
+  if (keys.length > MAX_UNKNOWN_KEYS) unknownKeys.push(`${keys.length - MAX_UNKNOWN_KEYS} more`);
+  return { warnings, unknownKeys };
+}
+
 /** Read the doc and upsert the book's observation. Never throws. `read` is a seam for tests. */
 export async function observeBook(
   db: Db,
@@ -19,14 +40,14 @@ export async function observeBook(
     const t0 = performance.now();
     const result = read(doc);
     const readMs = performance.now() - t0;
-    const unknownKeys = result.warnings.filter((w) => w.code === 'unknown-key').map((w) => w.path);
+    const { warnings, unknownKeys } = privacySafe(result.warnings);
     await db.query(
       `insert into book_format_observations (manuscript_id, observed_at, status, upgrades, warnings, unknown_keys, read_ms)
        values ($1, $2, $3, $4::text[], $5::jsonb, $6::text[], $7)
        on conflict (manuscript_id) do update set
          observed_at = excluded.observed_at, status = excluded.status, upgrades = excluded.upgrades,
          warnings = excluded.warnings, unknown_keys = excluded.unknown_keys, read_ms = excluded.read_ms`,
-      [manuscriptId, now.toISOString(), result.status, result.upgrades, JSON.stringify(result.warnings), unknownKeys, readMs],
+      [manuscriptId, now.toISOString(), result.status, result.upgrades, JSON.stringify(warnings), unknownKeys, readMs],
     );
   } catch (err) {
     console.error('book format: observing a saved book failed', err);

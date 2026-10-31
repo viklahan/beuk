@@ -78,7 +78,7 @@ const missingBody = (missing: string[]) => ({
   missingPictures: missing,
 });
 
-export function manuscriptRoutes(db: Db, config: Config, tasks?: BackgroundTasks): Router {
+export function manuscriptRoutes(db: Db, config: Config, tasks: BackgroundTasks): Router {
   const router = Router();
   router.use(requireAuth(db));
   router.param('id', uuidParam('manuscript not found'));
@@ -104,8 +104,7 @@ export function manuscriptRoutes(db: Db, config: Config, tasks?: BackgroundTasks
     // setImmediate first: readBook is synchronous CPU work, so it waits
     // until the answer has been handed to the socket.
     const job = () => new Promise<void>((r) => setImmediate(r)).then(() => observeBook(db, id, doc, new Date()));
-    if (tasks) tasks.run(job);
-    else void job();
+    tasks.run(job);
   };
 
   router.get('/', async (req, res, next) => {
