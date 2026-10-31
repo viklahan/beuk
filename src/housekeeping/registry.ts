@@ -1725,6 +1725,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The import report is built in the studio page; the server never sees an import.',
   },
   {
+    id: 'import.chapfix.pdf-ledger-lines',
+    title: 'A PDF novel comes in with exactly its chapters: hyphenated labels kept, ledger lines in a larger hand stay text',
+    kind: 'client-only',
+    reason: 'PDF layout reading runs in the studio page on PDF.js output; the server never sees an import.',
+  },
+  {
     id: 'import.zones.numbered-book',
     title: 'A book with numbered chapters keeps its front and back matter out of the chapters',
     kind: 'client-only',

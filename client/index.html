@@ -41409,9 +41409,10 @@
            of the story taken for a running head shows. */
         st.headSample = Array.from(headTexts.values()).sort((a, b) => b.n - a.n).map((e) => e.text + " ×" + e.n).join(" · ");
         /* 4. Headings. */
-        const labelRe = /^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+[\p{L}\p{N}]+\.?$/iu;
+        /* BEUK:chapfix — a number in words may be hyphenated ("CHAPTER TWENTY-ONE") */
+        const labelRe = /^(?:chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)\s+[\p{L}\p{N}]+(?:[-‐–][\p{L}\p{N}]+)*\.?$/iu;
         const numRe = /^(?:\d{1,3}|[ivxlcdm]{1,7})\.?$/i;
-        const titleCase = (s) => s === s.toUpperCase() && /\p{Lu}/u.test(s) ? s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : s;
+        const titleCase = (s) => s === s.toUpperCase() && /\p{Lu}/u.test(s) ? s.toLowerCase().replace(/(^|[\s\-‐–])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : s;
         /* BEUK:pdfdiary — a size alone never makes a heading of running
            text: a diary or a letter set larger than the story (13.5 against
            11) is the story's text. In a book of prose, a big line is
@@ -41435,6 +41436,16 @@
           const sentence = (o) => o.text.split(/\s+/).length >= 8 && /[.!?]["'”’)]*$/u.test(o.text);
           if (block.length >= 2 && (block.reduce((a, o) => a + o.text.length, 0) >= 100 || block.some(sentence))) return true;
           if (/^\p{Ll}/u.test(l.text) && lo === q) return true;
+          /* BEUK:chapfix — a ledger entry or a note in a hand set larger than
+             the story ("Nathaniel Rook — captain — sold seventy men for a /
+             commission — UNPAID."): a sentence wrapped over its lines is read
+             whole; a line that opens or ends on a dash is cut from its
+             sentence; two sentences ("God help us all. M.F.") are text. A
+             heading is none of these. */
+          const whole = { text: block.map((o) => o.text.trim()).join(" ") };
+          if (sentence(whole)) return true;
+          if (block.some((o) => /^["“'‘]?[—–]|[—–]["”'’]?$/u.test(o.text.trim()))) return true;
+          if (/^(?:\S+\s+){2,}\S*?[.!?]["'”’)]*\s+\S.*[.!?]["'”’)]*$/u.test(whole.text)) return true;
           return sentence(l);
         };
         pages.forEach((p) => p.cols.forEach((c) => c.forEach((l, q) => {
@@ -41819,8 +41830,16 @@
                   const inL = l.x0 - colLeft, inR = colRight - l.x1;
                   const centred = Math.abs(mid(l) - mid(prevLine)) <= Math.max(1.1, body * 0.1) && inL > body * 0.3 && inR > body * 0.3 &&
                     Math.abs(inL - inR) <= Math.max(body * 1.5, (colRight - colLeft) * 0.15);
+                  /* BEUK:chapfix — a block set in from the margin (a ledger entry,
+                     a note in a hand) keeps its inset on every line: a line
+                     at the inset of a full line above it that left its
+                     sentence open runs on; it is not an indent. Only text set
+                     apart in a size of its own; never a list's next item. */
+                  const inset = Math.abs(l.size - body) >= 0.6 && Math.abs(l.size - prevLine.size) < 0.3 && !/^\s*(?:[•·▪◦*]|\d{1,3}[.)])\s/u.test(l.text) &&
+                    indentOf(prevLine) > body * 0.6 && Math.abs(indentOf(l) - indentOf(prevLine)) <= body * 0.3 &&
+                    !shortOf(prevLine, colLeft, colRight, colRtl) && !/[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text);
                   if (centred && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
-                  else if (centred) { /* runs on */ }
+                  else if (centred || inset) { /* runs on */ }
                   else if (!inCap && indentOf(l) > body * 0.6) fresh = true;
                   else if (shortOf(prevLine, colLeft, colRight, colRtl) && /[.!?:;"”’»)\]…؟。！？]$/.test(prevLine.text)) fresh = true;
                 }
@@ -41828,14 +41847,21 @@
                 /* A new page or column: the paragraph runs on unless this
                    line is indented, or the last one ended short. */
                 const last = para && para.lastLine;
-                if (indentOf(l) > body * 0.6) fresh = true;
+                /* BEUK:chapfix — a block set apart keeps its inset over the page turn */
+                const lastIn = last ? (last.rtl ? last.colRight - last.x1 : last.x0 - last.colLeft) : 0;
+                const insetOn = !!last && last.size && Math.abs(l.size - body) >= 0.6 && Math.abs(l.size - last.size) < 0.3 && !/^\s*(?:[•·▪◦*]|\d{1,3}[.)])\s/u.test(l.text) &&
+                  lastIn > body * 0.6 && Math.abs(indentOf(l) - lastIn) <= body * 0.3 &&
+                  !shortOf(last, last.colLeft, last.colRight, last.rtl) && !/[.!?:;"”’»)\]…؟。！？]$/.test(last.text) &&
+                  !(last.page !== l.page && last.y < bottomY - lead * 1.5);
+                if (insetOn) { /* runs on */ }
+                else if (indentOf(l) > body * 0.6) fresh = true;
                 /* The last page stopped well short of the foot: its text ended there. */
                 else if (last && last.page !== l.page && last.y < bottomY - lead * 1.5) fresh = true;
                 else if (last && shortOf(last, last.colLeft, last.colRight, last.rtl) && /[.!?:;"”’»)\]…؟。！？]$/.test(last.text)) fresh = true;
               }
               if (fresh) flush();
               joinRuns(l);
-              para.lastLine = { x0: l.x0, x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight, rtl: colRtl };
+              para.lastLine = { x0: l.x0, x1: l.x1, y: l.y, page: l.page, text: l.text, colLeft, colRight, rtl: colRtl, size: l.size };
               para.lines = (para.lines || 0) + 1;
               if (l.dropCap) { capPage = l.page; capUntil = l.y + l.capSize * 1.05; }
               prevLine = l;
@@ -52657,6 +52683,68 @@
                 const fixed = u1.ok && u2.ok && /^THE DEVIL[’']S LEDGER$/.test(state.meta.title) && state.meta.titleSource === "writer" && !!ch && ch.title === "The Good Intent";
                 return scVerdict(!!tItem && !!cItem && !front && labelled && fixed, "flagged [" + items.map((i) => "“" + i.data.kept + "” → “" + i.data.offered + "”").join(", ") + "]; Frontispiece or Seashore flagged (" + front + "); labels in the pack's words (" + labelled +
                   "); one click put them right → title “" + state.meta.title + "”, chapter One “" + (ch ? ch.title : "?") + "”");
+              } finally { window.toast = origToast; }
+            });
+          } },
+        /* ---- BEUK:chapfix: a PDF's chapters are its chapters, and nothing else ---- */
+        { id: "import.chapfix.pdf-ledger-lines", feature: "import", name: "A PDF novel whose chapters open CHAPTER TWENTY-ONE over a 22pt title, with ledger entries set in a hand 13.5pt against 10.5pt text inside them, comes in with exactly its chapters: Twenty-One keeps its hyphenated number (no bare No Quarter), and no ledger line becomes a chapter or a heading — not a sentence wrapped over two lines (sold seventy men for a⏎commission — UNPAID.), not one that opens or ends on a dash, not two short sentences (God help us all. M.F.) — each entry reads as one paragraph, over a page turn too; a short heading-like line in that size stays a heading, and an interrupted line of dialogue (I’ve ever —) never runs into the paragraph after it",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                const W = 432, H = 648, LEAD = 15.5, pages = [];
+                const it = (s, x, y, w, size, i) => ({ s, x, y, w, size: size || 10.5, b: false, i: !!i, rtl: 0 });
+                const vocab = ("the ledger lay open on the captain's table and every name in it was a debt that nobody aboard the brig would say aloud " +
+                  "while the crew stood at the rail and watched the grey light crawl across the water toward the anchored ship").split(" ");
+                let seq = 0;
+                /* body text from y0 for n lines: paragraphs of five lines, indented first, short last */
+                const prose = (y0, n) => {
+                  const out = [];
+                  for (let k = 0; k < n; k++) {
+                    const ws = []; for (let q = 0; q < 10; q++) ws.push(vocab[(seq * 7 + q * 3) % vocab.length]); seq++;
+                    const first = k % 5 === 0, last = k % 5 === 4;
+                    out.push(it(ws.join(" ") + (last ? "." : ""), first ? 68 : 50, y0 + k * LEAD, last ? 200 : first ? 314 : 332));
+                  }
+                  return out;
+                };
+                const hand = (s, y, w) => it(s, 86, y, w, 13.5);
+                const page = (items) => pages.push({ n: pages.length + 1, w: W, h: H, items: [it(String(pages.length + 1), 213, 608, 5, 9)].concat(items), images: [], masks: 0, rotated: 0 });
+                const chapter = (num, title) => [it("C H A P T E R", 140, 67.6, 74.5, 12), it(num, 224, 67.6, 12 * num.length * 0.55, 12), it(title, 150, 100.2, 130, 22)];
+                page([it("THE DEVIL'S LEDGER", 60, 200, 312, 30), it("ZOEY SUZUKI", 150, 260, 130, 15)]);
+                /* chapter one: an entry wrapped over two lines below the text, then a heading-like line in the hand's size */
+                page(chapter("O N E", "The Muster").concat(prose(138.7, 18), [hand("Nathaniel Rook — captain — sold seventy men for a", 451, 235), hand("commission — UNPAID.", 468, 108)], prose(500, 4)));
+                page(prose(60, 10).concat([it("The Ship’s Articles", 150, 230, 130, 13.5)], prose(262, 19)));
+                /* an entry opening a page, a closing note of two short sentences, an entry ending on its dash */
+                page([hand("Nathaniel Rook — captain — sold seventy men for a", 65.5, 235), hand("commission — UNPAID.", 82.5, 108)].concat(prose(115, 10),
+                  [hand("God help us all. M.F.", 300, 140)], prose(332, 6), [hand("Elias Crowe — pilot — stood witness at the sale —", 440, 240)], prose(475, 6)));
+                page(chapter("T W E N T Y - O N E", "No Quarter").concat(prose(138.7, 9),
+                  [it("She said nothing at all, and the light went on, and I’ve ever —", 68, 138.7 + 9 * LEAD, 314), it("“Zib!” the captain called from the rail, and every head turned.", 68, 138.7 + 10 * LEAD, 314)],
+                  prose(138.7 + 11 * LEAD, 13), [hand("Saul Tacker — boatswain — took a bayonet meant for the boy", 509, 270), hand("on the night the company voted, and voted again, and the", 526, 265), hand("ledger stayed open while the lantern burned down to its", 543, 255)]));
+                page([hand("socket and the men went below without a word.", 65.5, 230)].concat(prose(98, 6), [hand("— PAID. 11 August 1718.", 210, 130)], prose(242, 20)));
+                page(chapter("T W E N T Y - T W O", "The Creek").concat(prose(138.7, 27)));
+                page(prose(60, 32));
+                const ext = { pages, numPages: pages.length, textChars: 30000, title: "The Devil's Ledger", author: "Zoey Suzuki" };
+                const layHeads = pdfLayout(JSON.parse(JSON.stringify(ext))).blocks.filter((b) => b.kind === "h" || b.kind === "sub").map((b) => b.text);
+                importPdfExtracted("the-devils-ledger.pdf", ext);
+                const chs = state.sections.filter((x) => x.kind === "body");
+                const list = chs.map((x) => (x.number || "?") + ":" + (x.title || ""));
+                const want = ["One:The Muster", "Twenty-One:No Quarter", "Twenty-Two:The Creek"];
+                const exact = list.join(" | ") === want.join(" | ");
+                const all = chs.map((x) => x.content || "").join("\n\n");
+                const paras = all.split(/\n{2,}/).map((p) => p.trim());
+                const one = (s) => paras.some((p) => p.indexOf(s) !== -1);
+                const entries = one("sold seventy men for a commission — UNPAID.") && paras.filter((p) => /sold seventy men for a commission — UNPAID\./.test(p)).length === 2 &&
+                  one("God help us all. M.F.") && one("stood witness at the sale —") && one("— PAID. 11 August 1718.") &&
+                  one("the lantern burned down to its socket and the men went below without a word.");
+                const noHand = !layHeads.some((h) => /Nathaniel|God help|PAID|Elias|Saul|socket/.test(h));
+                const kept = layHeads.some((h) => /The Ship’s Articles/.test(h));
+                /* the label is read where it stands, not left for the parser to find in a paragraph */
+                const labels = layHeads.indexOf("Chapter Twenty-One: No Quarter") !== -1 && layHeads.indexOf("Chapter Twenty-Two: The Creek") !== -1;
+                const dialogue = !one("I’ve ever — “Zib!”") && one("“Zib!” the captain called");
+                const ok = exact && labels && entries && noHand && kept && dialogue;
+                return scVerdict(ok, "chapters [" + list.join(" | ") + "] (want " + want.join(" | ") + "); headings found [" + layHeads.join(" | ") + "], hyphenated labels on their titles (" + labels + "); ledger entries whole, one paragraph each, over the page turn too (" + entries +
+                  "); no hand-set line a heading (" + noHand + "); The Ship’s Articles still a heading (" + kept + "); interrupted dialogue kept apart (" + dialogue + ")");
               } finally { window.toast = origToast; }
             });
           } },

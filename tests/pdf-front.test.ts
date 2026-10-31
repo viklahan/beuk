@@ -52,6 +52,17 @@ test('pdf front: names never come in with their words run together (BEUK:gluefix
   }
 });
 
+test('pdf front: a PDF novel comes in with exactly its chapters (BEUK:chapfix)', async () => {
+  const html = await clientHtml();
+  const lay = html.slice(html.indexOf('function pdfLayout(ext)'), html.indexOf('function pdfIdentity('));
+  assert.ok(lay.includes(String.raw`\s+[\p{L}\p{N}]+(?:[-‐–][\p{L}\p{N}]+)*\.?$/iu;`), 'a chapter label takes a hyphenated number');
+  assert.match(lay, /if \(sentence\(whole\)\) return true;/, 'a sentence wrapped over its lines is read whole');
+  assert.match(lay, /else if \(centred \|\| inset\)/, 'a set-in block keeps its lines together');
+  assert.match(lay, /if \(insetOn\) \{/, '... over a page turn too');
+  const c = SELF_CHECK_CASES.find((x) => x.id === 'import.chapfix.pdf-ledger-lines');
+  assert.ok(c && c.kind === 'client-only' && c.reason && html.includes('{ id: "import.chapfix.pdf-ledger-lines"'));
+});
+
 test('pdf front: "(anonymous)" is nobody, and a numbered book never makes its front text chapter 1', async () => {
   const html = await clientHtml();
   const id = html.slice(html.indexOf('function pdfIdentity('), html.indexOf('function importPdfExtracted('));
