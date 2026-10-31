@@ -1743,6 +1743,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The meta is built from the studio\'s book state and checked against the Print Interior View in the page; the renderer side (deploy/renderer/heads.mjs) is covered by tests/print-heads.test.ts.',
   },
   {
+    id: 'print.headfit',
+    title: 'A running head holds to one line: the section\'s short running head when it has one, else its title cut at a word with an ellipsis',
+    kind: 'client-only',
+    reason: 'The fit is measured with a canvas and the head\'s own face in the studio page and checked against a laid-out line of the same type there; the renderer draws the fitted words it is handed.',
+  },
+  {
     id: 'starters.picker',
     title: 'An empty back page offers starters that reach the page only on Use, with the book filled in and blanks marked',
     kind: 'client-only',
