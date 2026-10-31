@@ -37858,6 +37858,10 @@
                 const hl = irLoose(head);
                 if (!String(identity.title || "").trim() && hl !== authorL && hl !== seriesL && hl.length >= 4 && irLoose(fallbackTitle).includes(hl) && head.length > ownTitle.length) ownTitle = head;
                 it.cls = "lead";
+              } else if (ii === 1 && !items[0].bodyText && (imTitlePageFromHeading(it.raw, it.bodyText) || {}).author) {
+                /* BEUK:gluefix — a heading with its byline under it ("THE DEVIL'S
+                   LEDGER / by Zoey Suzuki") is the title page: left for the
+                   title-page reader below, never filed as a preface. */
               } else if (!it.bodyText && /^(for|to|in memory)\b/i.test(head) && head.split(/\s+/).length >= 3) {
                 it.cls = "matter"; it.matter = { kind: "front", type: "dedication", title: "Dedication" }; it.bodyText = head;
               } else {
@@ -38092,7 +38096,7 @@
          out only when a word with letters remains before them. */
       const IM_FILE_TOKEN_RE = /^(?:final\d*|draft\d*|v\d+(?:[.\-]\d+)*|ver\d+|rev\d*|revised|wip)$/i;
       function imCleanFileName(name) {
-        let s = String(name || "").split(/[\\/]/).pop().replace(/\.(docx|md|markdown|txt)$/i, "");
+        let s = String(name || "").split(/[\\/]/).pop().replace(/\.(docx|md|markdown|txt|rtf|pdf|epub)$/i, ""); /* BEUK:gluefix — "book.rtf" is "book" */
         s = s.replace(/^copy of\s+/i, "");
         let prev;
         do { prev = s; s = s.replace(/\s*\(\d+\)\s*$/, "").replace(/[\s_-]+copy\s*$/i, "").trim(); } while (s !== prev);
@@ -39051,6 +39055,209 @@
         (pieces || []).forEach((p) => { if (p._placed && p._placed.id === fromId) p._placed = { id: toId, mode: "filled", content: p._placed.content }; });
       }
       const irLoose = (s) => String(s || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+      /* ==== BEUK:gluefix ==== — words run together on their way in
+         ("THEDEVIL'SLEDGER" from a title page set in spaced capitals, or a
+         heading's line break read as nothing). The book's own words say
+         where they part: a run is split only when it is not itself a word of
+         the book and the book's words cover it whole — fewest words first,
+         the commoner ones on a tie. Anything else is left as it stands. */
+      const irWordKey = (w) => String(w || "").toLowerCase().replace(/[’ʼ]/g, "'");
+      function irVocab(texts) {
+        const v = new Map();
+        texts.forEach((x) => (String(x || "").match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)*/gu) || []).forEach((w) => { const k = irWordKey(w); v.set(k, (v.get(k) || 0) + 1); }));
+        return v;
+      }
+      function irSplitGlued(word, vocab) {
+        const w = String(word || ""), key = irWordKey(w);
+        if (!key || key.length !== w.length || vocab.has(key)) return null;
+        const n = key.length, best = new Array(n + 1).fill(null);
+        best[0] = { w: 0, f: 0, prev: -1 };
+        for (let i = 0; i < n; i++) {
+          if (!best[i]) continue;
+          for (let j = i + 1; j <= Math.min(n, i + 30); j++) {
+            const piece = key.slice(i, j), c = vocab.get(piece);
+            if (!c || piece[0] === "'" || (piece.length === 1 && piece !== "a" && piece !== "i")) continue;
+            const cand = { w: best[i].w + 1, f: best[i].f + Math.log(c + 1), prev: i };
+            if (!best[j] || cand.w < best[j].w || (cand.w === best[j].w && cand.f > best[j].f)) best[j] = cand;
+          }
+        }
+        if (!best[n] || best[n].w < 2) return null;
+        const cuts = [];
+        for (let j = n; j > 0; j = best[j].prev) cuts.unshift(j);
+        const out = [];
+        let a = 0;
+        cuts.forEach((b) => { out.push(w.slice(a, b)); a = b; });
+        return out;
+      }
+      /* Neighbouring words of the book, "the devil's" — the evidence that
+         a split is the book's own phrase and not a chance one. */
+      function irBigrams(texts) {
+        const b = new Set();
+        texts.forEach((x) => {
+          const ws = (String(x || "").match(/[\p{L}\p{N}]+(?:['’][\p{L}]+)*/gu) || []).map(irWordKey);
+          for (let i = 1; i < ws.length; i++) b.add(ws[i - 1] + " " + ws[i]);
+        });
+        return b;
+      }
+      /* The glued words in a name the import gave (a title, a byline, a
+         chapter's title), each with the words it was glued from. Only runs
+         of eight letters or more are judged; nothing says spacing was lost
+         here, so the split must be the book's own phrase: every word three
+         letters or more, two of them neighbours somewhere in the book
+         ("Frontispiece" is never "Front is piece"). */
+      function irGluedIn(text, vocab, bigrams) {
+        const found = [];
+        let fixed = String(text || "");
+        (fixed.match(/\p{L}+(?:['’]\p{L}+)*/gu) || []).forEach((w) => {
+          if (w.replace(/['’]/g, "").length < 8) return;
+          const parts = irSplitGlued(w, vocab);
+          if (!parts || parts.some((x) => x.replace(/['’]/g, "").length < 3)) return;
+          if (bigrams && !parts.some((x, i) => i > 0 && bigrams.has(irWordKey(parts[i - 1]) + " " + irWordKey(x)))) return;
+          found.push({ word: w, parts });
+          fixed = fixed.replace(w, parts.join(" "));
+        });
+        return found.length ? { found, fixed } : null;
+      }
+      /* A heading's text with its line breaks read as spaces ("THE<br>DEVIL'S
+         LEDGER", "Chapter One<br>The Muster"), as the RTF reader reads \line. */
+      const irTextBr = (el) => {
+        if (!el || !el.querySelector || !el.querySelector("br")) return el ? el.textContent : "";
+        const c = el.cloneNode(true);
+        Array.prototype.slice.call(c.querySelectorAll("br")).forEach((b) => b.parentNode.replaceChild(b.ownerDocument.createTextNode(" "), b));
+        return c.textContent;
+      };
+      /* BEUK:gluefix — the import report's words for run-together names, all thirteen packs. */
+      Object.assign(UI_STRINGS.en, {
+        "ir.k.pdfSpaced": "{n} line set in spaced capitals was read back as words, parted where the book's own words part",
+        "ir.k.pdfSpacedPlural": "{n} lines set in spaced capitals were read back as words, parted where the book's own words part",
+        "ir.k.pdfSpacedUnsure": "{n} word set in spaced capitals could not be parted with certainty and was kept as one — check it",
+        "ir.k.pdfSpacedUnsurePlural": "{n} words set in spaced capitals could not be parted with certainty and were kept as one — check them",
+        "ir.k.glued.title": "The title “{kept}” has words run together. The book's own words read it as “{offered}”.",
+        "ir.k.glued.subtitle": "The subtitle “{kept}” has words run together. The book's own words read it as “{offered}”.",
+        "ir.k.glued.author": "The author “{kept}” has words run together. The book's own words read it as “{offered}”.",
+        "ir.k.gluedChapter": "The chapter title “{kept}” has words run together. The book's own words read it as “{offered}”."
+      });
+      Object.assign(UI_STRINGS.es, {
+        "ir.k.pdfSpaced": "{n} línea en mayúsculas espaciadas se leyó como palabras, separadas donde las separan las palabras del propio libro",
+        "ir.k.pdfSpacedPlural": "{n} líneas en mayúsculas espaciadas se leyeron como palabras, separadas donde las separan las palabras del propio libro",
+        "ir.k.pdfSpacedUnsure": "{n} palabra en mayúsculas espaciadas no pudo separarse con certeza y se dejó entera — revísala",
+        "ir.k.pdfSpacedUnsurePlural": "{n} palabras en mayúsculas espaciadas no pudieron separarse con certeza y se dejaron enteras — revísalas",
+        "ir.k.glued.title": "El título «{kept}» tiene palabras pegadas. Las palabras del propio libro lo leen como «{offered}».",
+        "ir.k.glued.subtitle": "El subtítulo «{kept}» tiene palabras pegadas. Las palabras del propio libro lo leen como «{offered}».",
+        "ir.k.glued.author": "El autor «{kept}» tiene palabras pegadas. Las palabras del propio libro lo leen como «{offered}».",
+        "ir.k.gluedChapter": "El título del capítulo «{kept}» tiene palabras pegadas. Las palabras del propio libro lo leen como «{offered}»."
+      });
+      Object.assign(UI_STRINGS.fr, {
+        "ir.k.pdfSpaced": "{n} ligne en capitales espacées a été relue en mots, séparés là où les mots du livre lui-même se séparent",
+        "ir.k.pdfSpacedPlural": "{n} lignes en capitales espacées ont été relues en mots, séparés là où les mots du livre lui-même se séparent",
+        "ir.k.pdfSpacedUnsure": "{n} mot en capitales espacées n’a pas pu être séparé avec certitude et a été gardé d’un seul tenant — vérifiez-le",
+        "ir.k.pdfSpacedUnsurePlural": "{n} mots en capitales espacées n’ont pas pu être séparés avec certitude et ont été gardés d’un seul tenant — vérifiez-les",
+        "ir.k.glued.title": "Le titre « {kept} » a des mots collés. Les mots du livre le lisent « {offered} ».",
+        "ir.k.glued.subtitle": "Le sous-titre « {kept} » a des mots collés. Les mots du livre le lisent « {offered} ».",
+        "ir.k.glued.author": "L’auteur « {kept} » a des mots collés. Les mots du livre le lisent « {offered} ».",
+        "ir.k.gluedChapter": "Le titre de chapitre « {kept} » a des mots collés. Les mots du livre le lisent « {offered} »."
+      });
+      Object.assign(UI_STRINGS.de, {
+        "ir.k.pdfSpaced": "{n} Zeile in gesperrten Großbuchstaben wurde als Wörter gelesen, getrennt, wo die Wörter des Buchs selbst sich trennen",
+        "ir.k.pdfSpacedPlural": "{n} Zeilen in gesperrten Großbuchstaben wurden als Wörter gelesen, getrennt, wo die Wörter des Buchs selbst sich trennen",
+        "ir.k.pdfSpacedUnsure": "{n} Wort in gesperrten Großbuchstaben ließ sich nicht sicher trennen und blieb ein Wort — bitte prüfen",
+        "ir.k.pdfSpacedUnsurePlural": "{n} Wörter in gesperrten Großbuchstaben ließen sich nicht sicher trennen und blieben je ein Wort — bitte prüfen",
+        "ir.k.glued.title": "Im Titel „{kept}“ sind Wörter zusammengeschrieben. Die Wörter des Buchs lesen ihn als „{offered}“.",
+        "ir.k.glued.subtitle": "Im Untertitel „{kept}“ sind Wörter zusammengeschrieben. Die Wörter des Buchs lesen ihn als „{offered}“.",
+        "ir.k.glued.author": "Im Autorennamen „{kept}“ sind Wörter zusammengeschrieben. Die Wörter des Buchs lesen ihn als „{offered}“.",
+        "ir.k.gluedChapter": "Im Kapiteltitel „{kept}“ sind Wörter zusammengeschrieben. Die Wörter des Buchs lesen ihn als „{offered}“."
+      });
+      Object.assign(UI_STRINGS.it, {
+        "ir.k.pdfSpaced": "{n} riga in maiuscole spaziate è stata riletta come parole, separate dove si separano le parole del libro stesso",
+        "ir.k.pdfSpacedPlural": "{n} righe in maiuscole spaziate sono state rilette come parole, separate dove si separano le parole del libro stesso",
+        "ir.k.pdfSpacedUnsure": "{n} parola in maiuscole spaziate non è stata separata con certezza ed è rimasta intera — controllala",
+        "ir.k.pdfSpacedUnsurePlural": "{n} parole in maiuscole spaziate non sono state separate con certezza e sono rimaste intere — controllale",
+        "ir.k.glued.title": "Il titolo «{kept}» ha parole attaccate. Le parole del libro lo leggono come «{offered}».",
+        "ir.k.glued.subtitle": "Il sottotitolo «{kept}» ha parole attaccate. Le parole del libro lo leggono come «{offered}».",
+        "ir.k.glued.author": "L’autore «{kept}» ha parole attaccate. Le parole del libro lo leggono come «{offered}».",
+        "ir.k.gluedChapter": "Il titolo del capitolo «{kept}» ha parole attaccate. Le parole del libro lo leggono come «{offered}»."
+      });
+      Object.assign(UI_STRINGS.pt, {
+        "ir.k.pdfSpaced": "{n} linha em maiúsculas espaçadas foi relida como palavras, separadas onde as palavras do próprio livro se separam",
+        "ir.k.pdfSpacedPlural": "{n} linhas em maiúsculas espaçadas foram relidas como palavras, separadas onde as palavras do próprio livro se separam",
+        "ir.k.pdfSpacedUnsure": "{n} palavra em maiúsculas espaçadas não pôde ser separada com certeza e ficou inteira — verifique-a",
+        "ir.k.pdfSpacedUnsurePlural": "{n} palavras em maiúsculas espaçadas não puderam ser separadas com certeza e ficaram inteiras — verifique-as",
+        "ir.k.glued.title": "O título «{kept}» tem palavras coladas. As palavras do próprio livro leem-no como «{offered}».",
+        "ir.k.glued.subtitle": "O subtítulo «{kept}» tem palavras coladas. As palavras do próprio livro leem-no como «{offered}».",
+        "ir.k.glued.author": "O autor «{kept}» tem palavras coladas. As palavras do próprio livro leem-no como «{offered}».",
+        "ir.k.gluedChapter": "O título do capítulo «{kept}» tem palavras coladas. As palavras do próprio livro leem-no como «{offered}»."
+      });
+      Object.assign(UI_STRINGS.nl, {
+        "ir.k.pdfSpaced": "{n} regel in gespatieerde hoofdletters is als woorden teruggelezen, gescheiden waar de woorden van het boek zelf scheiden",
+        "ir.k.pdfSpacedPlural": "{n} regels in gespatieerde hoofdletters zijn als woorden teruggelezen, gescheiden waar de woorden van het boek zelf scheiden",
+        "ir.k.pdfSpacedUnsure": "{n} woord in gespatieerde hoofdletters kon niet met zekerheid worden gescheiden en bleef één woord — controleer het",
+        "ir.k.pdfSpacedUnsurePlural": "{n} woorden in gespatieerde hoofdletters konden niet met zekerheid worden gescheiden en bleven één woord — controleer ze",
+        "ir.k.glued.title": "In de titel ‘{kept}’ staan woorden aan elkaar. De woorden van het boek lezen hem als ‘{offered}’.",
+        "ir.k.glued.subtitle": "In de ondertitel ‘{kept}’ staan woorden aan elkaar. De woorden van het boek lezen hem als ‘{offered}’.",
+        "ir.k.glued.author": "In de auteursnaam ‘{kept}’ staan woorden aan elkaar. De woorden van het boek lezen hem als ‘{offered}’.",
+        "ir.k.gluedChapter": "In de hoofdstuktitel ‘{kept}’ staan woorden aan elkaar. De woorden van het boek lezen hem als ‘{offered}’."
+      });
+      Object.assign(UI_STRINGS.pl, {
+        "ir.k.pdfSpaced": "Wiersze złożone rozstrzelonymi wersalikami odczytane jako słowa, rozdzielone tam, gdzie rozdzielają się słowa samej książki: {n}",
+        "ir.k.pdfSpacedPlural": "Wiersze złożone rozstrzelonymi wersalikami odczytane jako słowa, rozdzielone tam, gdzie rozdzielają się słowa samej książki: {n}",
+        "ir.k.pdfSpacedUnsure": "Słowa w rozstrzelonych wersalikach, których nie dało się pewnie rozdzielić i zostały w całości — sprawdź je: {n}",
+        "ir.k.pdfSpacedUnsurePlural": "Słowa w rozstrzelonych wersalikach, których nie dało się pewnie rozdzielić i zostały w całości — sprawdź je: {n}",
+        "ir.k.glued.title": "W tytule „{kept}” słowa są zlepione. Słowa samej książki czytają go jako „{offered}”.",
+        "ir.k.glued.subtitle": "W podtytule „{kept}” słowa są zlepione. Słowa samej książki czytają go jako „{offered}”.",
+        "ir.k.glued.author": "W nazwisku autora „{kept}” słowa są zlepione. Słowa samej książki czytają je jako „{offered}”.",
+        "ir.k.gluedChapter": "W tytule rozdziału „{kept}” słowa są zlepione. Słowa samej książki czytają go jako „{offered}”."
+      });
+      Object.assign(UI_STRINGS.ru, {
+        "ir.k.pdfSpaced": "Строки, набранные заглавными в разрядку, прочитаны как слова — разделены там, где их разделяют слова самой книги: {n}",
+        "ir.k.pdfSpacedPlural": "Строки, набранные заглавными в разрядку, прочитаны как слова — разделены там, где их разделяют слова самой книги: {n}",
+        "ir.k.pdfSpacedUnsure": "Слова заглавными в разрядку, которые не удалось уверенно разделить, оставлены целыми — проверьте их: {n}",
+        "ir.k.pdfSpacedUnsurePlural": "Слова заглавными в разрядку, которые не удалось уверенно разделить, оставлены целыми — проверьте их: {n}",
+        "ir.k.glued.title": "В названии «{kept}» слова слиплись. Слова самой книги читают его как «{offered}».",
+        "ir.k.glued.subtitle": "В подзаголовке «{kept}» слова слиплись. Слова самой книги читают его как «{offered}».",
+        "ir.k.glued.author": "В имени автора «{kept}» слова слиплись. Слова самой книги читают его как «{offered}».",
+        "ir.k.gluedChapter": "В названии главы «{kept}» слова слиплись. Слова самой книги читают его как «{offered}»."
+      });
+      Object.assign(UI_STRINGS.tr, {
+        "ir.k.pdfSpaced": "Aralıklı büyük harflerle dizilmiş {n} satır, kitabın kendi sözcüklerinin ayrıldığı yerlerden ayrılarak sözcük olarak okundu",
+        "ir.k.pdfSpacedPlural": "Aralıklı büyük harflerle dizilmiş {n} satır, kitabın kendi sözcüklerinin ayrıldığı yerlerden ayrılarak sözcük olarak okundu",
+        "ir.k.pdfSpacedUnsure": "Aralıklı büyük harflerle dizilmiş {n} sözcük kesin olarak ayrılamadı ve tek parça bırakıldı — kontrol edin",
+        "ir.k.pdfSpacedUnsurePlural": "Aralıklı büyük harflerle dizilmiş {n} sözcük kesin olarak ayrılamadı ve tek parça bırakıldı — kontrol edin",
+        "ir.k.glued.title": "“{kept}” başlığında sözcükler bitişik. Kitabın kendi sözcükleri onu “{offered}” olarak okuyor.",
+        "ir.k.glued.subtitle": "“{kept}” alt başlığında sözcükler bitişik. Kitabın kendi sözcükleri onu “{offered}” olarak okuyor.",
+        "ir.k.glued.author": "“{kept}” yazar adında sözcükler bitişik. Kitabın kendi sözcükleri onu “{offered}” olarak okuyor.",
+        "ir.k.gluedChapter": "“{kept}” bölüm başlığında sözcükler bitişik. Kitabın kendi sözcükleri onu “{offered}” olarak okuyor."
+      });
+      Object.assign(UI_STRINGS.ar, {
+        "ir.k.pdfSpaced": "قُرئ {n} سطر مجموع بحروف كبيرة متباعدة كلماتٍ، فُصلت حيث تنفصل كلمات الكتاب نفسه",
+        "ir.k.pdfSpacedPlural": "قُرئت {n} أسطر مجموعة بحروف كبيرة متباعدة كلماتٍ، فُصلت حيث تنفصل كلمات الكتاب نفسه",
+        "ir.k.pdfSpacedUnsure": "تعذّر فصل {n} كلمة بحروف كبيرة متباعدة بيقين فأُبقيت كلمة واحدة — راجعها",
+        "ir.k.pdfSpacedUnsurePlural": "تعذّر فصل {n} كلمات بحروف كبيرة متباعدة بيقين فأُبقيت كل منها كلمة واحدة — راجعها",
+        "ir.k.glued.title": "في العنوان «{kept}» كلمات ملتصقة. كلمات الكتاب نفسه تقرؤه «{offered}».",
+        "ir.k.glued.subtitle": "في العنوان الفرعي «{kept}» كلمات ملتصقة. كلمات الكتاب نفسه تقرؤه «{offered}».",
+        "ir.k.glued.author": "في اسم المؤلف «{kept}» كلمات ملتصقة. كلمات الكتاب نفسه تقرؤه «{offered}».",
+        "ir.k.gluedChapter": "في عنوان الفصل «{kept}» كلمات ملتصقة. كلمات الكتاب نفسه تقرؤه «{offered}»."
+      });
+      Object.assign(UI_STRINGS.ja, {
+        "ir.k.pdfSpaced": "字間を空けた大文字の行 {n} 行を、本文の語の区切りに合わせて単語として読み直しました",
+        "ir.k.pdfSpacedPlural": "字間を空けた大文字の行 {n} 行を、本文の語の区切りに合わせて単語として読み直しました",
+        "ir.k.pdfSpacedUnsure": "字間を空けた大文字の語 {n} 語は確実に区切れず、ひと続きのまま残しました — 確認してください",
+        "ir.k.pdfSpacedUnsurePlural": "字間を空けた大文字の語 {n} 語は確実に区切れず、ひと続きのまま残しました — 確認してください",
+        "ir.k.glued.title": "タイトル「{kept}」は単語がつながっています。本文の語では「{offered}」と読めます。",
+        "ir.k.glued.subtitle": "サブタイトル「{kept}」は単語がつながっています。本文の語では「{offered}」と読めます。",
+        "ir.k.glued.author": "著者名「{kept}」は単語がつながっています。本文の語では「{offered}」と読めます。",
+        "ir.k.gluedChapter": "章タイトル「{kept}」は単語がつながっています。本文の語では「{offered}」と読めます。"
+      });
+      Object.assign(UI_STRINGS["zh-Hans"], {
+        "ir.k.pdfSpaced": "{n} 行字距拉开的大写字母已按书中本身的词语分隔读回为单词",
+        "ir.k.pdfSpacedPlural": "{n} 行字距拉开的大写字母已按书中本身的词语分隔读回为单词",
+        "ir.k.pdfSpacedUnsure": "{n} 个字距拉开的大写单词无法确定如何分隔，已保持为一个词——请检查",
+        "ir.k.pdfSpacedUnsurePlural": "{n} 个字距拉开的大写单词无法确定如何分隔，已保持为一个词——请检查",
+        "ir.k.glued.title": "书名“{kept}”中的单词连在了一起。按书中本身的词语应读作“{offered}”。",
+        "ir.k.glued.subtitle": "副标题“{kept}”中的单词连在了一起。按书中本身的词语应读作“{offered}”。",
+        "ir.k.glued.author": "作者名“{kept}”中的单词连在了一起。按书中本身的词语应读作“{offered}”。",
+        "ir.k.gluedChapter": "章节标题“{kept}”中的单词连在了一起。按书中本身的词语应读作“{offered}”。"
+      });
+      /* ==== /BEUK:gluefix ==== */
       const irClip = (s, n) => { const v = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return v.length > (n || 140) ? v.slice(0, (n || 140) - 1) + "…" : v; };
       const irBlocks = (content) => String(content || "").split(/\n\s*\n/);
       /* beautifyText reads the book's language for its quote marks; a
@@ -39247,7 +39454,7 @@
               c.querySelectorAll("img").forEach((img) => image(img, cap ? cap.textContent.replace(/\s+/g, " ").trim() : ""));
               return;
             }
-            if (/^h[1-6]$/.test(tag)) { const t = c.textContent.replace(/\s+/g, " ").trim(); if (t) out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + t); return; }
+            if (/^h[1-6]$/.test(tag)) { const t = irTextBr(c).replace(/\s+/g, " ").trim(); if (t) out.push((tag === "h1" || tag === "h2" ? "# " : "## ") + t); return; } /* BEUK:gluefix */
             if (tag === "blockquote") {
               /* its own lines first, then each paragraph in it (the "— Name" attribution among them) as lines of the one quote */
               const ps = Array.prototype.filter.call(c.children, (k) => epubTag(k) === "p");
@@ -39385,7 +39592,7 @@
           if (plateDiv && !body.querySelector("p:not(.plate-caption), h1, h2") && !isFront) { ir.epubPlates++; plates.push(...epubBlocks(body, { ir, path: d.path, images: rd.images, noteIds: new Map() })); return; }
           const head = body.querySelector(".chapter-opening");
           const pdiv = body.querySelector(".part-divider");
-          const q = (el, s) => { const e = el ? el.querySelector(s) : null; return e ? e.textContent.replace(/\s+/g, " ").trim() : ""; };
+          const q = (el, s) => { const e = el ? el.querySelector(s) : null; return e ? irTextBr(e).replace(/\s+/g, " ").trim() : ""; }; /* BEUK:gluefix */
           let title = "", number = "", subtitle = "";
           if (pdiv) { title = q(pdiv, ".part-title"); subtitle = q(pdiv, ".part-subtitle"); number = (/^part\s+(.+)$/i.exec(q(pdiv, ".part-kicker")) || [])[1] || ""; }
           else if (head) { title = q(head, ".chapter-title") || q(head, "h1, h2"); subtitle = q(head, ".chapter-subtitle"); const num = q(head, ".chapter-number"); if (num) number = parseChapterHeading(num).number || ""; }
@@ -39399,7 +39606,14 @@
           if (kindType) {
             const blocks = epubBlocks(body, ctx);
             /* a matter page's own heading line names it: not text */
-            if (!head && !pdiv && blocks.length && /^# /.test(blocks[0])) { if (!title) title = blocks[0].slice(2).trim(); blocks.shift(); }
+            if (!head && !pdiv && blocks.length && /^# /.test(blocks[0])) {
+              if (!title) {
+                title = blocks[0].slice(2).trim();
+                /* BEUK:gluefix — "Chapter One The Muster": number One, titled The Muster */
+                if (kindType.type === "chapter" && /^(chapter|ch\.)\s/i.test(title)) { const ph = parseChapterHeading(title); if (ph.number) { number = ph.number; title = ph.title || ""; } }
+              }
+              blocks.shift();
+            }
             if (subtitle) { ir.subtitles.push(subtitle); blocks.unshift(irSent("SUBT", ir.subtitles.length - 1)); }
             let kind = kindType.kind;
             if (kindType.type === "epigraph" && bodySeen) kind = "body";
@@ -39790,7 +40004,7 @@
             }
           }
           if (isH) seenHead = true;
-          const txt = node.textContent.replace(/ /g, " ");
+          const txt = (isH ? irTextBr(node) : node.textContent).replace(/ /g, " "); /* BEUK:gluefix — a heading's line break is a space */
           const htxt = txt.replace(/\s+/g, " ").trim();
           if (isH && normHeading(htxt) === "endnotes") { inEndnotes = true; return; }
           if (tag === "h2" && seenH1 && h1n > h2n && htxt && !isHeadLine(htxt) && !PART_HEAD_RE.test(htxt)) {
@@ -40017,6 +40231,22 @@
       }
 
       /* ---- After the desk is set: resolve, map, and write the report ---- */
+      /* BEUK:gluefix — the names the import gave, checked against the
+         book's own words: { field | secId, kept, offered, words }. */
+      function irGluedNames() {
+        const texts = state.sections.map((x) => x.content);
+        const vocab = irVocab(texts), bigrams = irBigrams(texts);
+        const out = [];
+        ["title", "subtitle", "author"].forEach((f) => {
+          const g = irGluedIn(state.meta[f], vocab, bigrams);
+          if (g) out.push({ field: f, secId: null, kept: String(state.meta[f]), offered: g.fixed, words: g.found.map((x) => x.word) });
+        });
+        state.sections.forEach((x) => {
+          const g = irGluedIn(x.title, vocab, bigrams);
+          if (g) out.push({ field: "", secId: x.id, kept: String(x.title), offered: g.fixed, words: g.found.map((y) => y.word) });
+        });
+        return out;
+      }
       function irFinish(ir, pieces, det) {
         IR_REC = null;
         const secById = (id) => state.sections.find((s) => s.id === id) || null;
@@ -40246,6 +40476,10 @@
         });
         /* BEUK:importmeta — the writer's own credit was kept; the document's version is one click away. */
         (ir.metaKept || []).forEach((k) => add({ kind: "metaKept", group: "book", where: { secId: null, label: "" }, before: "", after: "", reversible: true, data: k }));
+        /* BEUK:gluefix — whatever the format and whatever the cause, a title,
+           byline or chapter title whose words ran together is not let through
+           unnoticed: the book's own text says where they part. */
+        irGluedNames().forEach((g) => add({ kind: "glued", group: "book", where: { secId: g.secId, label: g.secId ? secName(secById(g.secId)) : "" }, before: g.kept, after: "", reversible: true, data: g }));
         /* 5. How the whole import can be undone. */
         const head = state.history && state.history[0];
         const snapId = head && head.auto === "import" && head.id !== ir.pre.headSnap ? head.id : null;
@@ -40414,6 +40648,18 @@
           state.meta[it.data.field] = it.data.offered;
           imSetSource(it.data.field, "writer");
           return { ok: true };
+        },
+        glued(it) { /* BEUK:gluefix */
+          if (it.data.secId) {
+            const sec = state.sections.find((x) => x.id === it.data.secId);
+            if (!sec || sec.title !== it.data.kept) return { ok: false, why: "gone" };
+            sec.title = it.data.offered;
+            return { ok: true };
+          }
+          if (imMetaValue(it.data.field) !== it.data.kept) return { ok: false, why: "gone" };
+          state.meta[it.data.field] = it.data.offered;
+          imSetSource(it.data.field, "writer");
+          return { ok: true };
         }
       };
       function irUndoItem(id) {
@@ -40483,6 +40729,7 @@
             : t("ir.k.matterShape", { type: t("import.type." + d.type) });
           case "lifted": return t("ir.k.lifted." + (d.reason === "title-heading" ? "titleHeading" : d.reason));
           case "metaKept": return t("ir.k.metaKept." + d.field, { kept: d.kept, offered: d.offered }); /* BEUK:importmeta */
+          case "glued": return t(d.secId ? "ir.k.gluedChapter" : "ir.k.glued." + d.field, { kept: d.kept, offered: d.offered }); /* BEUK:gluefix */
           case "toc": return t("ir.k.toc");
           case "emptyHeading": return t("ir.k.emptyHeading");
           case "break": return t("ir.k.break", { marker: d.marker });
@@ -40551,9 +40798,9 @@
               html += "</div>";
             }
             html += '<div class="ir-act">';
-            if (it.state === "undone") html += '<span class="ir-done">' + esc(it.kind === "metaKept" ? t("ir.usedValue", { value: irClip(it.data.offered, 60) }) : t("ir.undone")) + (it.partial ? " — " + esc(t("ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
+            if (it.state === "undone") html += '<span class="ir-done">' + esc((it.kind === "metaKept" || it.kind === "glued") ? t("ir.usedValue", { value: irClip(it.data.offered, 60) }) : t("ir.undone")) + (it.partial ? " — " + esc(t("ir.partly", { done: it.partial.done, total: it.partial.total })) : "") + "</span>";
             else if (it.reversible) {
-              html += '<button type="button" class="tb-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc(it.kind === "metaKept" ? t("ir.useValue", { value: irClip(it.data.offered, 40) }) : t("ir.undoThis")) + "</button>";
+              html += '<button type="button" class="tb-btn ir-undo" data-irundo="' + esc(it.id) + '">' + esc((it.kind === "metaKept" || it.kind === "glued") ? t("ir.useValue", { value: irClip(it.data.offered, 40) }) : t("ir.undoThis")) + "</button>";
               if (IR_HINT[it.kind]) html += '<span class="ir-hint">' + esc(t("ir.hint." + IR_HINT[it.kind])) + "</span>";
               if (it.lastFail) html += '<span class="ir-fail">' + esc(t("ir.failed", { reason: t("ir.why." + it.lastFail) })) + "</span>";
             } else html += '<span class="ir-na">' + esc(t("ir.noUndo", { reason: t("ir.why." + (it.why || "source")) })) + "</span>";
@@ -40878,11 +41125,48 @@
       /* Pass 2 — the layout, read back into a manuscript. Pure: takes
          what pdfExtract returned, gives blocks and the facts the report
          needs. */
+      /* BEUK:gluefix — the words a title page's labels are made of, known
+         to the closing-up of spaced capitals even when the prose never uses them. */
+      const PDF_LABEL_WORDS = "chapter part book volume act contents prologue epilogue interlude preface foreword introduction afterword appendix acknowledgments acknowledgements dedication epigraph note notes from the author by a an of and " +
+        "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred first second third last";
       function pdfLayout(ext) {
         const st = { pages: ext.pages.length, heads: 0, headPages: new Set(), headSample: "", columns: [], toc: [], tables: 0,
           joined: 0, kept: 0, smallCaps: 0, em: 0, strong: 0, rotated: 0, masks: 0, tiny: 0, backdrops: 0, imgLost: 0, dupImages: 0, halfTitle: "" };
         const median = (a) => { if (!a.length) return 0; const s = a.slice().sort((p, q) => p - q); return s[s.length >> 1]; };
         const clean = (s) => String(s).replace(/\u00a0/g, " ").replace(/[\u200b\ufeff]/g, "");
+        /* BEUK:gluefix — letter-spaced type ("T H E D E V I L ' S L E D G E R"):
+           PDF.js may hand over a whole line of it as one run with the word
+           breaks no wider than the letter spacing, so closing it up runs the
+           words together. The book's own words (its text, its declared title
+           and author, the words a chapter label is made of) part them again;
+           a dash takes the spacing the book's prose gives it. What cannot be
+           parted is named in the import report. */
+        const SPACED_RE = /^\s*(?:\S ){2,}\S\s*$/u;
+        const vocab = irVocab([ext.title, ext.author, PDF_LABEL_WORDS].concat([].concat.apply([], ext.pages.map((p) => p.items.filter((it) => !SPACED_RE.test(it.s)).map((it) => it.s)))));
+        let dashOpen = 0, dashShut = 0;
+        ext.pages.forEach((p) => p.items.forEach((it) => { dashOpen += (it.s.match(/\s[—–]\s/g) || []).length; dashShut += (it.s.match(/\p{L}[—–]\p{L}/gu) || []).length; }));
+        st.spacedSplit = []; st.spacedUnsure = [];
+        /* strict: null unless every word in it is the book's (a whole line of
+           spaced glyphs, closed up only where that is certain). */
+        const closeSpaced = (str, strict) => {
+          const solid = String(str).trim().split(" ").join("");
+          if (!/\p{L}/u.test(solid)) return strict ? null : solid;
+          let sure = true;
+          const unsure = [];
+          const out = solid.split(/([—–])/).map((part) => {
+            if (/^[—–]$/.test(part)) return dashOpen > dashShut ? " " + part + " " : part;
+            return part.replace(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)*/gu, (core) => {
+              const parts = irSplitGlued(core, vocab);
+              if (parts) return parts.join(" ");
+              if (!vocab.has(irWordKey(core))) { sure = false; if (core.replace(/['’]/g, "").length >= 8) unsure.push(core); }
+              return core;
+            });
+          }).join("").replace(/(\p{L})([(\[])/gu, "$1 $2").replace(/([)\]])(\p{L})/gu, "$1 $2").replace(/\s+/g, " ").trim(); /* "STATION (CONTINUED)" */
+          if (strict && !sure) return null;
+          unsure.forEach((u) => st.spacedUnsure.push(u));
+          if (out !== solid) st.spacedSplit.push(out);
+          return out;
+        };
         /* 1. Lines, per page and column. */
         const splitCols = (items, W) => {
           const solid = items.filter((it) => it.s.trim());
@@ -40970,7 +41254,7 @@
               /* BEUK:pdffront — a run whose own letters are spaced out by the
                  type ("N O T E", "T W E N T Y - O N E") is one word: the word
                  breaks are the separate space runs between such runs. */
-              if (!spaced && /^\s*(?:\S ){2,}\S\s*$/u.test(s)) s = s.replace(/(\S) (?=\S)/gu, "$1");
+              if (!spaced && SPACED_RE.test(s)) s = s.match(/^\s*/)[0] + closeSpaced(s) + s.match(/\s*$/)[0]; /* BEUK:gluefix */
               if (spaced) s = s.trim();
               if (prevEnd !== null) {
                 const gap = rtl ? prevEnd - (it.x + it.w) : it.x - prevEnd;
@@ -40998,7 +41282,8 @@
               const solidT = text.replace(/ /g, "");
               const lab = solidT.match(/^(chapter|part|book|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)(\S+)$/iu);
               const one = /^(chapter|part|book|prologue|epilogue|contents|epigraph|dedication|chapitre|capítulo|capitolo|kapitel|hoofdstuk|rozdział|глава|bölüm|partie|teil)$/iu.test(solidT);
-              if (lab || one) { text = lab ? lab[1] + " " + lab[2] : solidT; runs.splice(0, runs.length, { t: text, b: runs[0].b, i: runs[0].i, size: runs[0].size }); }
+              const words = lab || one ? null : closeSpaced(text, true); /* BEUK:gluefix — any other line, where the book's words are certain */
+              if (lab || one || words) { text = lab ? lab[1] + " " + lab[2] : one ? solidT : words; runs.splice(0, runs.length, { t: text, b: runs[0].b, i: runs[0].i, size: runs[0].size }); }
             }
             const edge = solid.length ? solid : its;
             const x0 = Math.min.apply(null, edge.map((it) => it.x));
@@ -41627,6 +41912,7 @@
          draft.docx" is not, and "The Lantern Coast — Print Interior
          (6 × 9 in)" is the book's title plus a label when the first
          heading reads "The Lantern Coast". */
+      const pdfWordsKey = (s) => String(s || "").split(/\s+/).map(irLoose).filter(Boolean).join(" ");
       function pdfIdentity(ext, blocks) {
         let title = String(ext.title || "").replace(/^microsoft word\s*-\s*/i, "").trim();
         if (/\.(docx?|pdf|odt|rtf|pages|indd|txt|md)$/i.test(title) || /^untitled\b/i.test(title) || /^[([]?\s*(anonymous|unknown|untitled|none|null)\s*[)\]]?$/i.test(title)) title = ""; /* BEUK:pdffront */
@@ -41634,8 +41920,10 @@
         if (title && first) {
           const ft = first.text.trim();
           if (title !== ft && title.indexOf(ft) === 0 && /^\s*[—–\-:|(]/.test(title.slice(ft.length))) title = ft;
-          /* The same words in the page's own typography (’ for '). */
-          else if (irLoose(title) === irLoose(ft)) title = ft;
+          /* The same words in the page's own typography (’ for '): word for
+             word, never a run-together copy of them (BEUK:gluefix), and never
+             capitals set by the title page over the title's own case. */
+          else if (pdfWordsKey(title) === pdfWordsKey(ft) && !(ft === ft.toUpperCase() && title !== title.toUpperCase())) title = ft;
         }
         /* Tool defaults ("anonymous", "Administrator") are nobody's byline. */
         let author = String(ext.author || "").trim();
@@ -41690,6 +41978,10 @@
         add({ kind: "pdfLimits", group: "structure", data: {} });
         add({ kind: "pdfStyles", group: "structure", data: { em: st.em, strong: st.strong } });
         if (st.smallCaps) add({ kind: "pdfSmallCaps", group: "structure", data: { n: st.smallCaps } });
+        /* BEUK:gluefix */
+        const spacedSplit = Array.from(new Set(st.spacedSplit || [])), spacedUnsure = Array.from(new Set(st.spacedUnsure || []));
+        if (spacedSplit.length) add({ kind: "pdfSpaced", group: "structure", before: irClip(spacedSplit.join(" · "), 320), data: { n: spacedSplit.length } });
+        if (spacedUnsure.length) add({ kind: "pdfSpacedUnsure", group: "structure", before: irClip(spacedUnsure.join(" · "), 320), data: { n: spacedUnsure.length } });
         if (st.joined || st.kept) add({ kind: "pdfHyphens", group: "structure", data: { n: st.joined, kept: st.kept } });
         if (st.columns.length) add({ kind: "pdfColumns", group: "structure", before: pdfPageList(st.columns), data: { n: st.columns.length } });
         if (st.rtlPages.length) add({ kind: "pdfRtl", group: "structure", before: pdfPageList(st.rtlPages), data: { n: st.rtlPages.length } });
@@ -41722,6 +42014,8 @@
           case "pdfLimits": return t("ir.k.pdfLimits");
           case "pdfStyles": return d.em || d.strong ? t("ir.k.pdfStyles", { em: d.em, strong: d.strong }) : t("ir.k.pdfNoStyles");
           case "pdfSmallCaps": return t("ir.k.pdfSmallCaps", { n: d.n });
+          case "pdfSpaced": return t("ir.k.pdfSpaced", { n: d.n });
+          case "pdfSpacedUnsure": return t("ir.k.pdfSpacedUnsure", { n: d.n });
           case "pdfHyphens": return t("ir.k.pdfHyphens", { n: d.n, kept: d.kept });
           case "pdfColumns": return t("ir.k.pdfColumns", { n: d.n });
           case "pdfHeads": return t("ir.k.pdfHeads", { n: d.n });
@@ -52275,6 +52569,96 @@
               state.history = keepHistory;
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
+          } },
+        /* ---- BEUK:gluefix: names never come in with their words run together ---- */
+        { id: "import.gluefix.pdf-spaced-words", feature: "import", name: "A PDF whose title page sets the title in spaced capitals that PDF.js hands over as one run (T H E D E V I L ' S L E D G E R, the word breaks no wider than the letters): the title is The Devil's Ledger and never THEDEVIL'SLEDGER, a spaced exhibit heading inside a chapter keeps its words (STATE MEDICAL EXAMINER — PRELIMINARY), a spaced word the book uses whole stays whole (NOWHERE, never NOW HERE), and a spaced word the book's words cannot part is kept and named in the import report",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                const it = (s, x, y, w, size) => ({ s, x, y, w, size: size || 11, b: false, i: false, rtl: 0 });
+                const vocab = ("the devil's ledger lay open on the table and the state medical examiner wrote a preliminary note nowhere near the harbour " +
+                  "now and here the crew stood — every one of them — while the ledger named each debt and the captain counted").split(" ");
+                let seq = 0;
+                const prose = (y0, n) => { const out = []; for (let k = 0; k < n; k++) { const ws = []; for (let q = 0; q < 9; q++) ws.push(vocab[(seq * 7 + q * 5) % vocab.length]); seq++; out.push(it(ws.join(" ") + (k % 5 === 4 ? "." : ""), 40, y0 + k * 14, 340)); } return out; };
+                const W = 432, H = 648, pages = [];
+                const page = (items) => pages.push({ n: pages.length + 1, w: W, h: H, items: [it(String(pages.length + 1), 213, 608, 5, 9)].concat(items), images: [], masks: 0, rotated: 0 });
+                page([it("T H E D E V I L ' S L E D G E R", 20, 200, 391, 30), it("Z O E Y", 142, 260, 54, 15), it(" ", 196, 260, 14, 15), it("S U Z U K I", 210, 260, 79, 15)]);
+                page([it("Chapter One: The Muster", 90, 90, 260, 21)].concat(prose(130, 30)));
+                page(prose(60, 30));
+                page([it("Chapter Two: The Strongbox", 90, 90, 260, 21)].concat(prose(130, 8), [it("S T A T E M E D I C A L E X A M I N E R — P R E L I M I N A R Y", 40, 260, 340, 11)], prose(290, 6),
+                  [it("N O W H E R E", 40, 390, 120, 11)], prose(410, 4), [it("Q U I X O T R O N I C S", 40, 480, 160, 11)], prose(500, 4)));
+                page(prose(60, 30));
+                const ext = { pages, numPages: pages.length, textChars: 20000, title: "The Devil's Ledger", author: "Zoey Suzuki" };
+                const rep = importPdfExtracted("the-devils-ledger-FINAL-rev3.pdf", ext);
+                const all = state.sections.map((x) => (x.title || "") + "\n" + (x.content || "")).join("\n");
+                const glued = (all.match(/THEDEVIL|DEVIL'SLEDGER|STATEMEDICAL|MEDICALEXAMINER|EXAMINER—|—PRELIMINARY/g) || []);
+                const exhibit = /STATE MEDICAL EXAMINER — PRELIMINARY/.test(all);
+                const whole = /\bNOWHERE\b/.test(all) && !/\bNOW HERE\b/.test(all);
+                const items = rep ? rep.items : [];
+                const split = items.find((i) => i.kind === "pdfSpaced");
+                const unsure = items.find((i) => i.kind === "pdfSpacedUnsure");
+                const reported = !!split && split.before.indexOf("THE DEVIL'S LEDGER") !== -1 && irItemLabel(split) === t("ir.k.pdfSpaced", { n: split.data.n }) &&
+                  !!unsure && unsure.before.indexOf("QUIXOTRONICS") !== -1 && /QUIXOTRONICS/.test(all);
+                /* the declared title is kept over a run-together copy of it, and over the title page's capitals; the page's own ’ is taken */
+                const idGlued = pdfIdentity({ title: "The Devil's Ledger", author: "" }, [{ kind: "h", text: "THEDEVIL'SLEDGER" }]).title;
+                const idCaps = pdfIdentity({ title: "Kleos", author: "" }, [{ kind: "h", text: "KLEOS" }]).title;
+                const idCurly = pdfIdentity({ title: "The Devil's Ledger", author: "" }, [{ kind: "h", text: "The Devil’s Ledger" }]).title;
+                const ident = idGlued === "The Devil's Ledger" && idCaps === "Kleos" && idCurly === "The Devil’s Ledger";
+                const ok = state.meta.title === "The Devil's Ledger" && state.meta.author === "Zoey Suzuki" && !glued.length && exhibit && whole && reported && ident;
+                return scVerdict(ok, "title “" + state.meta.title + "”, author “" + state.meta.author + "”; run-together words left: [" + glued.join(", ") + "]; exhibit heading parted (" + exhibit + "); NOWHERE kept whole (" + whole +
+                  "); report names the parted line and the unparted word (" + reported + "); declared title kept over THEDEVIL'SLEDGER → “" + idGlued + "”, over KLEOS → “" + idCaps + "”, page’s ’ taken → “" + idCurly + "”");
+              } finally { window.toast = origToast; }
+            });
+          } },
+        { id: "import.gluefix.heading-line-breaks", feature: "import", name: "A heading broken over two lines reads as words, in every format: a Word heading THE⏎DEVIL'S LEDGER (with its byline under it) is the title, not THEDEVIL'S LEDGER and not a preface; Chapter One⏎The Muster is Chapter One titled The Muster in Word and in an EPUB; an EPUB heading Twenty⏎Guns is Twenty Guns; and a file named book.rtf, book.pdf or book.epub is titled book",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                const P = "<p>The ledger lay open on the captain's table, and every name in it was a debt. Nobody aboard would say aloud who had written the last line.</p>";
+                const shape = () => state.sections.filter((x) => x.kind === "body").map((x) => x.number + ":" + x.title).join(" | ");
+                importDocxConverted("ledger.docx", "<h1>THE<br />DEVIL'S LEDGER</h1><p>by Zoey Suzuki</p><h1>Chapter One<br />The Muster</h1>" + P + P + "<h1>Chapter Two<br />The Good<br />Intent</h1>" + P + P, [], null, { title: "", author: "" }, null);
+                const wordTitle = state.meta.title, wordAuthor = state.meta.author, wordShape = shape();
+                const wordOk = irLoose(wordTitle) === "thedevilsledger" && /^THE DEVIL[’']S LEDGER$/.test(wordTitle) && wordAuthor === "Zoey Suzuki" && wordShape === "One:The Muster | Two:The Good Intent" &&
+                  !state.sections.some((x) => x.type === "preface");
+                const page = (inner) => '<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>x</title></head><body>' + inner + "</body></html>";
+                const rd = { meta: { title: "The Devil's Ledger", author: "Zoey Suzuki", language: "en", beuk: false }, images: new Map(), docs: [
+                  { path: "OEBPS/c1.xhtml", nav: false, linear: true, html: page('<section epub:type="chapter"><h1>Chapter One<br/>The Muster</h1>' + P + P + "</section>") },
+                  { path: "OEBPS/c2.xhtml", nav: false, linear: true, html: page('<section epub:type="chapter"><h1>THE<br/>GOOD INTENT</h1>' + P + P + "</section>") },
+                  { path: "OEBPS/c3.xhtml", nav: false, linear: true, html: page('<section epub:type="chapter"><h1><span>Twenty</span><br/><span>Guns</span></h1>' + P + P + "</section>") }] };
+                importEpubRead("ledger.epub", rd);
+                const epubShape = shape();
+                const epubOk = epubShape === "One:The Muster | 2:THE GOOD INTENT | 3:Twenty Guns";
+                const names = ["book.rtf", "book.pdf", "book.epub"].map((n) => imCleanFileName(n).value);
+                const namesOk = names.every((v) => v === "book");
+                return scVerdict(wordOk && epubOk && namesOk, "Word: title “" + wordTitle + "”, author “" + wordAuthor + "”, chapters [" + wordShape + "]; EPUB chapters [" + epubShape + "]; file names → " + names.map((v) => "“" + v + "”").join(", "));
+              } finally { window.toast = origToast; }
+            });
+          } },
+        { id: "import.gluefix.names-flagged", feature: "import", name: "Whatever the format and the cause, a title, byline or chapter title that came in with its words run together is named in the import report with the book's own words for it, one click puts them right, and a real long word is never flagged: Frontispiece is not Front is piece (a two-letter piece) even where the book says “front is”, and Seashore is not Sea shore where the book never sets those words side by side",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                /* the book has "front is" side by side and "sea", "shore" apart, never the long words themselves */
+                const prose = "Everyone aboard knew the Devil's Ledger by now. They signed it in good intent, and the good intent was the trap. The front is where the guns stood, a piece of iron each. The sea rose; the shore was far.";
+                const rep = importPlainManuscript("ledger.md", "# THEDEVIL'SLEDGER\n\nby Zoey Suzuki\n\n# Chapter One: TheGoodIntent\n\n" + prose + "\n\n" + prose + "\n\n# Chapter Two: Frontispiece\n\n" + prose + "\n\n" + prose + "\n\n# Chapter Three: Seashore\n\n" + prose + "\n\n" + prose);
+                const items = rep ? rep.items.filter((i) => i.kind === "glued") : [];
+                const tItem = items.find((i) => i.data.field === "title"), cItem = items.find((i) => i.data.secId && i.data.kept === "TheGoodIntent");
+                const front = items.some((i) => /Frontispiece|Seashore/i.test(i.data.kept));
+                const labelled = !!tItem && irItemLabel(tItem) === t("ir.k.glued.title", { kept: tItem.data.kept, offered: tItem.data.offered }) && /THE DEVIL[’']S LEDGER/.test(tItem.data.offered) &&
+                  !!cItem && irItemLabel(cItem) === t("ir.k.gluedChapter", { kept: cItem.data.kept, offered: cItem.data.offered }) && cItem.data.offered === "The Good Intent";
+                const u1 = tItem ? irUndoItem(tItem.id) : { ok: false }, u2 = cItem ? irUndoItem(cItem.id) : { ok: false };
+                const ch = state.sections.find((x) => x.kind === "body" && x.number === "One");
+                const fixed = u1.ok && u2.ok && /^THE DEVIL[’']S LEDGER$/.test(state.meta.title) && state.meta.titleSource === "writer" && !!ch && ch.title === "The Good Intent";
+                return scVerdict(!!tItem && !!cItem && !front && labelled && fixed, "flagged [" + items.map((i) => "“" + i.data.kept + "” → “" + i.data.offered + "”").join(", ") + "]; Frontispiece or Seashore flagged (" + front + "); labels in the pack's words (" + labelled +
+                  "); one click put them right → title “" + state.meta.title + "”, chapter One “" + (ch ? ch.title : "?") + "”");
+              } finally { window.toast = origToast; }
+            });
           } },
         /* ---- BEUK:leftcol: the chapter list stays reachable with the stats panel open ---- */
         { id: "leftcol.stats-open.chapters-reachable", feature: "panes", name: "With the stats panel open, the chapter list in the left column keeps room to scroll and nothing spills out of the column",

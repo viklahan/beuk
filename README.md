@@ -4401,6 +4401,50 @@ Bulk import uses the same title-page reading (the page is lifted from the
 text, without a report) and falls back to the cleaned file name instead of
 storing "Untitled Book".
 
+### Names never come in with their words run together (BEUK:gluefix)
+
+A title, byline or chapter title must arrive with its spaces. The import used
+to lose them in three places; each is closed, and a last check catches any
+other cause:
+
+- **PDF title pages in spaced capitals.** PDF.js can hand over a whole
+  letter-spaced line as one run (`T H E D E V I L ' S L E D G E R`) with the
+  word breaks no wider than the letter spacing, so closing it up glued the
+  words (`THEDEVIL'SLEDGER`). The letters are now parted by the book's own
+  words: the vocabulary of the PDF's text, its declared title and author, and
+  the words chapter labels are made of. A run is split only when it is not
+  itself a word of the book and the book's words cover it whole — fewest
+  words first, the commoner ones on a tie — so `NOWHERE` stays whole and
+  `KLEOS` is never cut. A dash takes the spacing the book's prose gives it,
+  and a bracket gets its space back (`STATION (CONTINUED)`). The report
+  names the lines read this way, and names every spaced word of eight
+  letters or more it could not part (`ANCHORAGEPD`) instead of passing it.
+- **The PDF's declared title is kept over the page's copy of it.** The title
+  page's spelling replaces the metadata title only when it is the same words,
+  word for word (a curly `’` for `'`): never a run-together copy, and never
+  the title page's capitals over the title's own case (`Kleos`, not `KLEOS`).
+- **A line break inside a heading.** Word (`<br>` from Mammoth) and EPUB
+  headings now read a line break as a space, as the RTF reader already read
+  `\line`: `THE⏎DEVIL'S LEDGER` is the title, and `Chapter One⏎The Muster` is
+  Chapter One titled The Muster in both formats (an EPUB chapter page's own
+  heading now gives the chapter its number). A heading with its by-line under
+  it, before numbered chapters, is the title page, not a preface.
+- **The file name.** `book.rtf`, `book.pdf` and `book.epub` clean to `book`
+  like `.docx`, `.md` and `.txt` always did.
+- **The last check, every format.** After any import, the title, subtitle,
+  author and every section title are checked against the book's own text.
+  A word of eight letters or more that splits into the book's words — every
+  piece three letters or more, two of them neighbours somewhere in the book —
+  is named in the report (`The title “THEDEVIL'SLEDGER” has words run
+  together. The book's own words read it as “THE DEVIL'S LEDGER”.`) with a
+  one-click **Use** button; nothing is changed without that click. A real long
+  word is left alone: `Frontispiece` is not "Front is piece", and `Seashore`
+  is not "Sea shore" in a book that never sets those words side by side.
+
+Self-checks: `import.gluefix.pdf-spaced-words`,
+`import.gluefix.heading-line-breaks`, `import.gluefix.names-flagged` (each
+fails when its fix is reverted).
+
 ## Web and store links
 
 `[words](https://…)`, `[words](http://…)` and `[words](mailto:…)` in the

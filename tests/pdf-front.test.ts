@@ -29,8 +29,27 @@ test('pdf front: letter-spaced runs close up and a drop cap moves to its first l
   const html = await clientHtml();
   const lay = html.slice(html.indexOf('function pdfLayout(ext)'), html.indexOf('function pdfIdentity('));
   assert.match(lay, /cap\.capSize = cap\.size; cap\.size = bodySz; cap\.cap = true;/);
-  assert.ok(lay.includes(String.raw`if (!spaced && /^\s*(?:\S ){2,}\S\s*$/u.test(s))`), 'a run of spaced letters closes up');
+  assert.ok(lay.includes(String.raw`const SPACED_RE = /^\s*(?:\S ){2,}\S\s*$/u;`), 'a run of spaced letters is recognised');
+  /* BEUK:gluefix — closed up by the book's own words, never blindly (THEDEVIL'SLEDGER) */
+  assert.ok(lay.includes(String.raw`if (!spaced && SPACED_RE.test(s)) s = s.match(/^\s*/)[0] + closeSpaced(s) + s.match(/\s*$/)[0];`), 'a run of spaced letters closes up into words');
+  assert.ok(!lay.includes(String.raw`s = s.replace(/(\S) (?=\S)/gu, "$1")`), 'no blind close-up is left');
+  assert.match(lay, /const parts = irSplitGlued\(core, vocab\);/);
   assert.match(lay, /needSpace && !prevCap/);
+});
+
+test('pdf front: names never come in with their words run together (BEUK:gluefix)', async () => {
+  const html = await clientHtml();
+  const id = html.slice(html.indexOf('function pdfIdentity('), html.indexOf('function importPdfExtracted('));
+  assert.match(id, /pdfWordsKey\(title\) === pdfWordsKey\(ft\)/, 'the page copy of the title replaces the declared one only word for word');
+  assert.doesNotMatch(id, /else if \(irLoose\(title\) === irLoose\(ft\)\) title = ft;/);
+  assert.match(html, /const txt = \(isH \? irTextBr\(node\) : node\.textContent\)/, 'a Word heading reads a line break as a space');
+  assert.match(html, /const t = irTextBr\(c\)\.replace/, 'an EPUB heading reads a line break as a space');
+  assert.match(html, /\.replace\(\/\\\.\(docx\|md\|markdown\|txt\|rtf\|pdf\|epub\)\$\/i, ""\)/, 'every manuscript extension leaves the file-name title');
+  assert.match(html, /irGluedNames\(\)\.forEach\(\(g\) => add\(\{ kind: "glued"/, 'every import checks its names');
+  for (const k of ['ir.k.pdfSpaced', 'ir.k.pdfSpacedUnsure', 'ir.k.glued.title', 'ir.k.glued.subtitle', 'ir.k.glued.author', 'ir.k.gluedChapter']) {
+    const n = [...html.matchAll(new RegExp(`"${k.replace(/\./g, '\\.')}": "`, 'g'))].length;
+    assert.equal(n, 13, `${k} in 13 locales`);
+  }
 });
 
 test('pdf front: "(anonymous)" is nobody, and a numbered book never makes its front text chapter 1', async () => {
