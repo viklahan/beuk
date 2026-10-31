@@ -2872,6 +2872,15 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason:
       'E-reader pagination is laid out by the studio browser (CSS multicol in the client page); the server never lays out pages.',
   },
+  // BEUK:devicetruth — every device preview draws the page as its own screen does.
+  {
+    id: 'preview.devices.display-truth',
+    title:
+      'Each device preview declares a sourced display type and draws it truthfully: mono e-ink in grey, colour e-ink muted, LCD and OLED in full colour, with a one-line note for e-ink',
+    kind: 'client-only',
+    reason:
+      'The device frames, their CSS filters and the note under the frame are drawn by the studio browser; the server never renders the preview.',
+  },
   // BEUK:reader — the preview keeps the writer's place; Zen controls clear the tabs.
   {
     id: 'preview.keeps-page-on-edit',

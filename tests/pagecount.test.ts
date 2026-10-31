@@ -30,7 +30,7 @@ test('pagecount: the geometry table has a sourced row for every e-reader profile
   const bar = /<div class="device-bar" id="deviceBar">([\s\S]*?)<\/div>/.exec(html);
   assert.ok(bar, 'device bar present');
   const ids = [...bar[1].matchAll(/data-device="([a-z]+)"/g)].map((m) => m[1]).filter((d) => d !== 'hardcover');
-  assert.equal(ids.length, 9);
+  assert.equal(ids.length, 10);
   const table = /const PAGE_GEOMETRY = \{([\s\S]*?)\n {6}\};/.exec(html);
   assert.ok(table, 'PAGE_GEOMETRY table present');
   for (const d of ids) {
