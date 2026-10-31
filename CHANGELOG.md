@@ -4,6 +4,26 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-31 — 21 days free, store-ready files from the server, and the spine and back cover
+
+**21 days free, then one plan** (once billing is switched on; until then everything stays open and no price is shown)
+- A new account gets 21 days with everything included. Accounts made earlier get 21 days from the day they signed up.
+- After the trial, without a plan, these pause: the store-ready EPUB, the print-ready PDF, the cover wrap, adding new books to your shelf, new beta-reader links, server checks, and saving to your archive.
+- Writing, typesetting and preview stay open, and so do your own words: the backup file, Word, Markdown, and Download all my data.
+
+**Store-ready files are made by the server**
+- Download print-ready PDF in the Export panel makes the file for the store on the server. Open Print View and Download Print HTML are now a preview, for checking the pages and printing them yourself.
+- The store-ready EPUB and the cover wrap (PDF and JPG) are built on the server from your book, with the same code the studio uses, so they come out the same. They need a connection.
+
+**The spine and the back cover**
+- The cover maker has Spine and Back cover sections: their own background (a colour, a gradient or a pattern), their own font and colour, the words on the spine, and an icon at the head and the foot of the spine.
+- English, Dutch and Nordic spines now read top to bottom, the way those shops shelve them. Other books keep bottom to top, and you can choose either.
+- A long imprint at the foot of the spine now shrinks to fit instead of being cut off.
+
+**Fixes**
+- An uploaded font now shows on the cover, in the preview and in the downloaded wrap. Before, covers fell back to Georgia.
+- The new controls and messages are translated into all 13 interface languages.
+
 ## 2026-10-29 — Buy the maker a caife
 
 - **The support page says thank you properly.** "Buy me a coffee on Ko-fi" is now **Buy a Caife** (caife is Irish for coffee), on the support page and on the tip jar in Help and after an export. Ko-fi still opens in a new tab. Back on the support page, a thank-you note drifts down over a morning sea, folds itself into a paper boat and sails off toward the sun, and the page says "Go raibh maith agat", Irish for thank you. The note waits for you: if you are still on Ko-fi, it folds when you come back. It is drawn live in your browser, from Beuk's own server, with no images and nothing fetched from elsewhere. With reduced motion on, you see the boat already on the water. For a week afterwards, on that device, the boat is still out there when you visit.
@@ -74,6 +94,8 @@ to make well.
 - The studio offers this update ("A new Beuk is ready").
 
 ## 2026-10-26 — Your free week, a quick tour, and colour
+
+_The trial is now 21 days, and the store-ready files pause after it: see 31 October._
 
 **Your free week, and after it** (once billing is switched on; until then everything stays open and no price is shown)
 - A new account starts a 7-day free trial when it signs up. Your account page shows when it ends and how many days are left.
