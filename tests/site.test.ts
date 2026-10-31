@@ -57,10 +57,10 @@ test('the landing page: beuk.studio, no false claims, no font host, real doors, 
   assert.match(html, /<link rel="canonical" href="https:\/\/beuk\.studio\/" \/>/);
   for (const prop of ['og:title', 'og:description', 'og:image', 'og:url']) assert.match(html, new RegExp(`<meta property="${prop}" content="[^"]+"`), prop);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image" \/>/);
-  // Doors: start writing, sign in, start the free week — all into the studio.
+  // Doors: start writing, sign in, start the free trial — all into the studio.
   assert.match(html, /<a class="btn" href="\/studio">Start writing/);
   assert.match(html, /href="\/studio\?signin"/);
-  assert.match(html, /href="\/studio\?signup">Start your free week<\/a>/);
+  assert.match(html, /href="\/studio\?signup">Start your 21-day free trial<\/a>/);
   for (const p of ['/help', '/changelog', '/roadmap', '/privacy', '/terms']) assert.ok(html.includes(`href="${p}"`), `footer links ${p}`);
   // The scroll reveal only hides what its script will show.
   assert.match(html, /\.js \.reveal\{opacity:0/);
@@ -70,6 +70,14 @@ test('the landing page: beuk.studio, no false claims, no font host, real doors, 
   assert.match(html, /localStorage\.getItem\("beuk\.desk"\) === "1"\) location\.replace\("\/studio"\)/);
   // Its pictures and fonts are files of this origin.
   for (const m of html.matchAll(/(?:src|href)="(\/(?:site|assets)\/[^"]+)"/g)) assert.ok(existsSync(path.join(root, 'client', m[1])), m[1]);
+});
+
+test('the landing page says what V decided: 21 days free, $20 a month, an account from day one', () => {
+  const html = read('client', 'site', 'index.html');
+  assert.match(html, /21 days/);
+  assert.match(html, /21 DAYS/);
+  assert.match(html, /\$20/);
+  assert.doesNotMatch(html, /7 days|7 DAYS|free week|first week|No account needed|no account at all/i);
 });
 
 test("the landing page's numbers are the studio's", () => {
