@@ -4,11 +4,11 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { GlobalFonts } from '@napi-rs/canvas';
+import { GlobalFonts, createCanvas } from '@napi-rs/canvas';
 import { PDFDocument } from 'pdf-lib';
 import { reachableFrom } from '../src/book/studio/closure.js';
 import { WRAP_CLOSURE, WRAP_ROOTS, WRAP_SUPPLIED, extractWrapSource, loadWrapClosure, manifestFonts, wrapState } from '../src/book/wrap/closure.js';
-import { makeWrapSandbox } from '../src/book/wrap/sandbox.js';
+import { type FontPlan, expandFamilies, makeWrapSandbox, parseCssFont, shimContext } from '../src/book/wrap/sandbox.js';
 import { readBook } from '../src/book/read.js';
 import { fixturePath } from './book-fixtures.js';
 
@@ -81,7 +81,9 @@ test('wrap closure: Lantern Coast print renders a 300-DPI JPEG of the wrap size,
   for (const fam of ['Libre Baskerville', 'EB Garamond', 'Amiri', 'Noto Serif Devanagari']) {
     assert.ok(jpg.fonts.includes(fam), `the recipe's face ${fam} registered from the studio's own files (${jpg.fonts.join(', ')})`);
   }
+  assert.ok(jpg.aliases.includes('Libre Baskerville beuk-latin-ext'), `the latin-ext subset rides as an alias (${jpg.aliases.join(', ')})`);
   assert.equal(GlobalFonts.has('Libre Baskerville'), false, 'the build takes its faces with it');
+  assert.equal(GlobalFonts.has('Libre Baskerville beuk-latin-ext'), false, 'and its aliases');
 
   const pdf = await sb.render(state, 'pdf', { lang: 'en' });
   assert.equal(pdf.bytes.subarray(0, 5).toString('latin1'), '%PDF-');
@@ -113,6 +115,114 @@ test('wrap fonts: faces only, each family led by its whole font, else its plain-
   assert.match(first.get('EB Garamond')!, /-latin-normal-/);
   assert.match(first.get('Amiri')!, /\.ttf$/);
   for (const [fam, file] of first) assert.ok(/\.(ttf|otf)$/i.test(file) || /-latin-normal-/.test(file) || !fonts.some((f) => f.family === fam && /-latin-normal-/.test(f.file)), `${fam} leads with ${file}`);
+});
+
+/* ---- the font shim (src/book/wrap/sandbox.ts) ---- */
+
+const FONTS = path.join(CLIENT, 'assets', 'fonts');
+/** Register probe faces for one test and take them away after. */
+function withFaces<T>(faces: [string, string][], fn: () => T): T {
+  const keys = faces.map(([file, name]) => {
+    const k = GlobalFonts.registerFromPath(path.join(FONTS, file), name);
+    assert.ok(k, `registered ${file}`);
+    return k!;
+  });
+  try {
+    return fn();
+  } finally {
+    GlobalFonts.removeBatch(keys);
+  }
+}
+const ctx2d = (plan?: FontPlan) => {
+  const c = createCanvas(10, 10).getContext('2d');
+  return plan ? shimContext(c, plan) : c;
+};
+const widthOf = (ctx: { font: string; measureText(t: string): { width: number } }, font: string, text: string) => {
+  ctx.font = font;
+  return ctx.measureText(text).width;
+};
+
+test('font shim: parses the shorthand the studio writes', () => {
+  assert.deepEqual(parseCssFont("italic 600 12.5px 'EB Garamond', 'Amiri', serif"),
+    { lead: ['italic', '600'], size: '12.5px', families: ["'EB Garamond'", "'Amiri'", 'serif'], weight: 600, italic: true });
+  assert.equal(parseCssFont("bold 40px 'Lora'")!.weight, 700);
+  assert.equal(parseCssFont("40px 'Lora'")!.weight, 400);
+  assert.equal(parseCssFont('500 3.0000000000000004px "A B", serif')!.families[0], '"A B"');
+  assert.equal(parseCssFont('not a font'), null);
+  const plan = { aliases: { 'A B': ['A B beuk-latin-ext'] } };
+  const once = expandFamilies(["'A B'", 'serif'], plan);
+  assert.deepEqual(once, ["'A B'", '"A B beuk-latin-ext"', 'serif']);
+  assert.deepEqual(expandFamilies(once, plan), once, 'idempotent');
+});
+
+test('font shim: a variable face sets bold at wght 700, as Chrome does (Skia alone sets the 400 instance)', () => {
+  const T = 'The Lantern Coast';
+  withFaces([['librebaskerville/librebaskerville-latin-normal-400_700.woff2', 'Probe LB']], () => {
+    const plain = ctx2d(), shim = ctx2d({ aliases: {} });
+    const p400 = widthOf(plain, "400 40px 'Probe LB'", T), p700 = widthOf(plain, "700 40px 'Probe LB'", T);
+    const s400 = widthOf(shim, "400 40px 'Probe LB'", T), s700 = widthOf(shim, "700 40px 'Probe LB'", T);
+    assert.ok(Math.abs(s400 - p400) < 1e-6, `400 untouched (${s400} vs ${p400})`);
+    assert.ok(s700 / s400 > 1.015, `bold is wider: ${s700} vs ${s400} (without the shim: ${p700})`);
+    assert.equal((shim as unknown as { fontVariationSettings: string }).fontVariationSettings, "'wght' 700");
+    /* restore() brings back the earlier font, and its weight with it */
+    shim.font = "400 40px 'Probe LB'";
+    shim.save();
+    shim.font = "700 40px 'Probe LB'";
+    shim.restore();
+    assert.ok(Math.abs(shim.measureText(T).width - s400) < 1e-6, 'after restore() the 400 width again');
+  });
+});
+
+test('font shim: the variable face at wght 700 matches the static 700 instance of the same font', () => {
+  const T = 'नमस्ते दुनिया';
+  withFaces([
+    ['notoserifdevanagari/notoserifdevanagari-devanagari-normal-400_500_600_700.woff2', 'Probe NSD var'],
+    ['notoserifdevanagari/Noto_Serif_Devanagari-normal-700.ttf', 'Probe NSD 700'],
+  ], () => {
+    const shim = ctx2d({ aliases: {} });
+    const v700 = widthOf(shim, "700 40px 'Probe NSD var'", T);
+    const s700 = widthOf(ctx2d(), "700 40px 'Probe NSD 700'", T);
+    assert.ok(Math.abs(v700 / s700 - 1) < 0.01, `variable at wght 700 ${v700} vs static 700 ${s700}`);
+  });
+});
+
+test('font shim: a static face gets no variation', () => {
+  withFaces([['notoserifdevanagari/Noto_Serif_Devanagari-normal-400.ttf', 'Probe NSD 400']], () => {
+    const shim = ctx2d({ aliases: {} }) as unknown as { font: string; fontVariationSettings: string };
+    shim.font = "700 40px 'Probe NSD 400', serif";
+    assert.equal(shim.fontVariationSettings, 'normal');
+  });
+});
+
+test('font shim: latin-ext and vietnamese letters come from the family\'s own subsets, not the fallback', () => {
+  withFaces([
+    ['librebaskerville/librebaskerville-latin-normal-400_700.woff2', 'Probe LB2'],
+    ['librebaskerville/librebaskerville-latin-ext-normal-400_700.woff2', 'Probe LB2 beuk-latin-ext'],
+  ], () => {
+    const plan = { aliases: { 'Probe LB2': ['Probe LB2 beuk-latin-ext'] } };
+    const EXT = 'ŁŻĐŚ';
+    const viaAlias = widthOf(ctx2d(plan), "400 40px 'Probe LB2', serif", EXT);
+    const subsetAlone = widthOf(ctx2d(), "400 40px 'Probe LB2 beuk-latin-ext'", EXT);
+    const fallback = widthOf(ctx2d(), "400 40px 'Probe LB2', serif", EXT);
+    assert.ok(Math.abs(viaAlias - subsetAlone) < 1e-6, `the subset sets the letters (${viaAlias} vs ${subsetAlone})`);
+    assert.ok(Math.abs(viaAlias - fallback) > 0.5, `not the generic fallback (${viaAlias} vs ${fallback})`);
+    const title = 'Łódź Żółć Đặng';
+    assert.notEqual(widthOf(ctx2d(plan), "400 40px 'Probe LB2', serif", title), widthOf(ctx2d(), "400 40px 'Probe LB2', serif", title));
+    const shim = ctx2d(plan);
+    shim.font = "400 40px 'Probe LB2', serif";
+    assert.equal((shim.font.match(/Probe LB2 beuk-latin-ext/g) ?? []).length, 1, `one alias in ${shim.font}`);
+  });
+});
+
+test('wrap fonts: subsets other than plain Latin register under "<family> beuk-<subset>"', () => {
+  const lb = manifestFonts(CLIENT).filter((f) => f.family === 'Libre Baskerville');
+  assert.deepEqual(lb.map((f) => [path.basename(f.file), f.alias]), [
+    ['librebaskerville-latin-normal-400_700.woff2', 'Libre Baskerville'],
+    ['librebaskerville-latin-italic-400.woff2', 'Libre Baskerville'],
+    ['librebaskerville-latin-ext-normal-400_700.woff2', 'Libre Baskerville beuk-latin-ext'],
+    ['librebaskerville-latin-ext-italic-400.woff2', 'Libre Baskerville beuk-latin-ext'],
+  ]);
+  assert.ok(manifestFonts(CLIENT).filter((f) => f.family === 'Amiri' && /\.ttf$/.test(f.file)).every((f) => f.alias === 'Amiri'));
 });
 
 test('wrap closure: loading is cached per studio file', () => {

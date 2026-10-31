@@ -1,7 +1,7 @@
 import { GlobalFonts, loadImage, type Canvas } from '@napi-rs/canvas';
 import vm from 'node:vm';
 import { parentPort, workerData } from 'node:worker_threads';
-import { installLucide, makeWrapSandbox } from './sandbox.js';
+import { type FontPlan, installLucide, makeWrapSandbox } from './sandbox.js';
 
 /* BEUK:wrap-server — one cover-wrap render, in its own worker thread and
    its own vm context. The parent terminates the worker at the time cap
@@ -15,7 +15,8 @@ import { installLucide, makeWrapSandbox } from './sandbox.js';
    them when it ends: one writer's uploaded face never reaches another
    writer's build, and the collection does not grow build by build. */
 
-export type FontFile = { family: string; file: string };
+/** A face file, its family, and the family name it registers under (the family, or a subset alias). */
+export type FontFile = { family: string; file: string; alias: string };
 
 export type WrapWorkerJob = {
   code: string;
@@ -29,7 +30,7 @@ export type WrapWorkerJob = {
 export type WrapWorkerOut =
   | { refused: 'no-cover' }
   | { refused: 'missing-pictures'; missing: string[] }
-  | { jpeg: Uint8Array; items: Record<string, unknown>; dims: Record<string, unknown>; fonts: string[] };
+  | { jpeg: Uint8Array; items: Record<string, unknown>; dims: Record<string, unknown>; fonts: string[]; aliases: string[] };
 
 type Recipe = Record<string, unknown>;
 type Api = {
@@ -57,7 +58,8 @@ export function stackFamilies(stacks: string[]): Set<string> {
 const JPEG_QUALITY = 92;
 
 async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
-  const ctx = makeWrapSandbox();
+  const plan: FontPlan = { aliases: {} };
+  const ctx = makeWrapSandbox(plan);
   installLucide(ctx, job.lucide);
   new vm.Script(job.code, { filename: 'client/index.html (wrap closure)' }).runInContext(ctx);
   /* The book enters as JSON parsed inside the context, so its arrays and
@@ -93,10 +95,15 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
   try {
     for (const f of job.fonts) {
       if (!families.has(f.family)) continue;
-      const k = GlobalFonts.registerFromPath(f.file, f.family);
+      const k = GlobalFonts.registerFromPath(f.file, f.alias);
       if (!k) continue;
       keys.push(k);
-      if (!registered.includes(f.family)) registered.push(f.family);
+      if (f.alias === f.family) {
+        if (!registered.includes(f.family)) registered.push(f.family);
+      } else {
+        const list = (plan.aliases[f.family] ??= []);
+        if (!list.includes(f.alias)) list.push(f.alias);
+      }
     }
     for (const fam of families) {
       const up = api.uploadedFontByFamily(fam);
@@ -109,7 +116,7 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
     const { canvas, items } = api.render(recipe);
     const jpeg = new Uint8Array(await canvas.encode('jpeg', JPEG_QUALITY));
     /* items and dims are plain numbers, strings and arrays: they cross back by structured clone as they are */
-    return { jpeg, items, dims: api.wrapDims(recipe), fonts: registered };
+    return { jpeg, items, dims: api.wrapDims(recipe), fonts: registered, aliases: Object.values(plan.aliases).flat() };
   } finally {
     if (keys.length) GlobalFonts.removeBatch(keys);
   }

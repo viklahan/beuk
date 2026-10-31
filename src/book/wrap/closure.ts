@@ -138,8 +138,19 @@ function faceRank(file: string): number {
   return 3 + italic;
 }
 
+/** The subset a woff2 file holds, from its name (alegreya-latin-ext-italic-400.woff2 → latin-ext); "" for a whole font. */
+export function faceSubset(file: string): string {
+  const m = /^[a-z0-9]+-(.+)-(?:normal|italic)-[0-9_]+\.woff2?$/.exec(path.basename(file).toLowerCase());
+  return m ? m[1]! : '';
+}
+
 /** Every face file in client/assets/fonts/MANIFEST.tsv (not the licence
- *  texts): family and absolute file, each family's files in faceRank order. */
+ *  texts): family, absolute file, and the name it registers under. Each
+ *  family's files come in faceRank order. The primary faces (whole fonts
+ *  and the plain Latin subset) register under the family itself; every
+ *  other subset under "<family> beuk-<subset>", which the sandbox's font
+ *  shim writes right after the family in each stack (src/book/wrap/sandbox.ts),
+ *  standing in for Chrome's unicode-range. */
 export function manifestFonts(clientDir: string): FontFile[] {
   const dir = path.resolve(clientDir, 'assets', 'fonts');
   const rows = readFileSync(path.join(dir, 'MANIFEST.tsv'), 'utf8').split(/\r?\n/).slice(1);
@@ -155,7 +166,14 @@ export function manifestFonts(clientDir: string): FontFile[] {
   const out: FontFile[] = [];
   for (const [family, files] of byFamily) {
     /* Array.prototype.sort is stable: equal ranks keep manifest order */
-    for (const file of [...files].sort((x, y) => faceRank(x) - faceRank(y))) out.push({ family, file });
+    const sorted = [...files].sort((x, y) => faceRank(x) - faceRank(y));
+    const isPrimary = (f: string) => faceSubset(f) === '' || faceSubset(f) === 'latin';
+    /* a family with neither a whole font nor a Latin subset leads with its first subset */
+    const lead = sorted.some(isPrimary) ? null : faceSubset(sorted[0]!);
+    for (const file of sorted) {
+      const sub = faceSubset(file);
+      out.push({ family, file, alias: isPrimary(file) || sub === lead ? family : `${family} beuk-${sub}` });
+    }
   }
   return out;
 }
@@ -164,7 +182,7 @@ export type WrapKind = 'pdf' | 'jpg';
 export type WrapOptions = { lang: string; timeoutMs?: number; heapMb?: number };
 export type WrapItems = Record<string, unknown> & { barcode?: { x: number; y: number; w: number; h: number } | null; spineDir?: string };
 export type WrapDims = Record<string, unknown> & { totalW: number; totalH: number };
-export type WrapResult = { bytes: Buffer; items: WrapItems; dims: WrapDims; fonts: string[] };
+export type WrapResult = { bytes: Buffer; items: WrapItems; dims: WrapDims; fonts: string[]; aliases: string[] };
 export type WrapSandbox = {
   source: ClosureSource;
   /** The wrap as the studio downloads it: the 300-DPI JPEG, or that JPEG on a PDF page of exactly the wrap's size. */
@@ -227,7 +245,7 @@ export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSand
       const jpeg = Buffer.from(out.jpeg.buffer, out.jpeg.byteOffset, out.jpeg.byteLength);
       const dims = out.dims as WrapDims;
       const bytes = kind === 'pdf' ? await wrapPdf(jpeg, dims) : jpeg;
-      return { bytes, items: out.items as WrapItems, dims, fonts: out.fonts };
+      return { bytes, items: out.items as WrapItems, dims, fonts: out.fonts, aliases: out.aliases };
     },
   };
   cache.set(key, sb);
