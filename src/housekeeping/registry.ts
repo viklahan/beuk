@@ -1797,6 +1797,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Bulk import and box sets read their files in the studio page.',
   },
   {
+    id: 'book.new.keeps-the-old-in-history',
+    title: 'Start a new book: the old book goes into History, the desk is empty, a shelf book is left alone',
+    kind: 'client-only',
+    reason: 'The desk, its History and the shelf link live in the studio page.',
+  },
+  {
     id: 'sample.roundtrip.word',
     title: 'The sample exported to Word and imported back comes back whole: every Part, chapter and footnote, nothing extra',
     kind: 'client-only',

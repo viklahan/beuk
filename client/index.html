@@ -2843,6 +2843,7 @@
           <div class="sample-bar">
             <button class="side-btn sample-btn" id="btnSampleStory"><i data-lucide="book-open"></i>Load the sample story</button><!-- BEUK:bugs — the real count is filled in by renderSampleButton -->
             <p class="sample-note" id="sampleNote">A complete novella, The Lantern Coast, at real book scale. Load puts it on the desk in a snap; Remove clears the desk completely, back to empty.</p>
+            <button type="button" class="tour-again" id="btnNewBook" data-i18n="newbook.btn" data-i18n-title="newbook.title" title="Clear the desk for a new book. This one is kept in History, and stays on your shelf if it is there." style="display:none;">Start a new book</button><!-- BEUK:newbook -->
             <button type="button" class="tour-again" id="btnTourAgain" data-i18n="tour.show">Show the quick tour</button><!-- BEUK:tour -->
           </div>
           <div id="matterLib"></div>
@@ -20609,6 +20610,7 @@
           btn.innerHTML = '<i data-lucide="book-open"></i>' + t("side.sampleLoad", { n: fmtNum(sw), count: sw });
           if (note) note.textContent = t("side.sampleNoteLoad");
         }
+        renderNewBookButton(); /* BEUK:newbook */
         icons();
       }
       const sampleComparableJson = () => { const d = JSON.parse(JSON.stringify(serializeBook())); delete d.activeId; samplePicsStrip(d); /* BEUK:slim */ delete d.history; delete d.historyPool; /* BEUK:remnants — snapshots are not writing: the sample's own draft snapshot names its pictures once they arrive, which is no edit */ return stableJson(d); };
@@ -20826,9 +20828,46 @@
         });
         return true;
       }
+      /* ==== BEUK:newbook ==== — Start a new book. The desk is cleared for
+         a new book: the book on it goes into History first (a snapshot,
+         as an import takes one), and a book on the writer's shelf stays
+         there as it is: the desk is unlinked from it, so the empty book
+         never saves over it, and it becomes a book of its own on the
+         shelf once it has words. The button shows only when there is a
+         book of one's own to clear: the sample keeps its own Remove, and
+         an empty desk has nothing to clear. */
+      function renderNewBookButton() {
+        const b = $("btnNewBook"); if (!b) return;
+        b.style.display = sampleState.loaded || isEmptyDesk() ? "none" : "";
+      }
+      function startNewBookNow() {
+        const snap = takeSnapshot(t("newbook.snap"));
+        if (cloud.linkedId) { cloud.linkedId = null; cloud.linkState = "unlinked"; cloud.baseRevision = null; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; }
+        cloudDirty = false;
+        sampleState.loaded = false; sampleState.loadedJson = null;
+        applyBookDoc(buildEmptyBook(), { keepHistory: true });
+        renderSampleButton();
+        return snap;
+      }
+      function startNewBook() {
+        if (sampleState.loaded) return removeSampleStory();
+        if (isEmptyDesk()) { toast(t("newbook.already"), "file"); return false; }
+        cloudConfirm({
+          title: t("newbook.confirmTitle"),
+          body: t(cloud.linkedId ? "newbook.confirmBodyShelf" : "newbook.confirmBody"),
+          yes: t("newbook.yes"), no: t("newbook.no")
+        }).then((ok) => {
+          if (!ok) return;
+          startNewBookNow();
+          toast(t("newbook.done"), "file-plus");
+        });
+        return true;
+      }
+      /* ==== /BEUK:newbook ==== */
       function initSample() {
         const btn = $("btnSampleStory"); if (!btn) return;
         btn.addEventListener("click", () => { if (sampleState.loaded) removeSampleStory(); else loadSampleStory(); });
+        const nb = $("btnNewBook"); if (nb) nb.addEventListener("click", startNewBook); /* BEUK:newbook */
         renderSampleButton();
         samplePicsWarm(); /* BEUK:slim */
       }
@@ -30996,6 +31035,7 @@
            twice and none can slip past. */
         wlogObserve(total);
         renderGoalLines();
+        if (typeof renderNewBookButton === "function") renderNewBookButton(); /* BEUK:newbook — a desk that gains its first words gains the button */
       }
       function renderProgress() {
         const tiers = [["front", "progFront", "progFrontPct"], ["body", "progBody", "progBodyPct"], ["back", "progBack", "progBackPct"]];
@@ -54929,6 +54969,44 @@
               sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson; renderSampleButton();
             }
           } },
+        /* ---- BEUK:newbook: Start a new book ---- */
+        { id: "book.new.keeps-the-old-in-history", feature: "book", name: "Start a new book: a book of your own on the desk goes into History first (named for the step, with every word), the desk is then empty, a book on your shelf is left there (the desk is unlinked from it, so the empty book never saves over it), and the button shows only when there is a book of your own to clear (never for the sample, which has Remove, nor on an empty desk)",
+          run() {
+            const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
+            const keepLoaded = sampleState.loaded, keepJson = sampleState.loadedJson, keepHistory = state.history;
+            const keepCloud = { linkedId: cloud.linkedId, linkState: cloud.linkState, baseRevision: cloud.baseRevision, baseUpdatedAt: cloud.baseUpdatedAt, shelfUpdatedAt: cloud.shelfUpdatedAt };
+            const keepDirty = cloudDirty;
+            const btn = $("btnNewBook");
+            const shown = () => !!btn && btn.style.display !== "none";
+            try {
+              const bad = [];
+              applyBookDoc(buildEmptyBook()); sampleState.loaded = false; sampleState.loadedJson = null; state.history = [];
+              renderSampleButton();
+              if (!btn) return scVerdict(false, "no Start a new book button");
+              if (shown()) bad.push("shown on an empty desk");
+              const ch = state.sections.find((s) => s.type === "chapter");
+              ch.title = "The Harbour"; ch.content = "The tide came in over the bar at dawn.";
+              state.meta.title = "My Own Book";
+              cloud.linkedId = "shelf-book-1"; cloud.linkState = "linked";
+              updateStats();
+              if (!shown()) bad.push("hidden with a book of your own on the desk");
+              const before = bookWordTotal();
+              const snap = startNewBookNow();
+              const kept = state.history[0];
+              if (!kept || kept !== snap || kept.name !== t("newbook.snap") || kept.words !== before || JSON.stringify(kept.doc).indexOf("The tide came in over the bar at dawn.") === -1) bad.push("the old book is not in History whole");
+              if (!isEmptyDesk()) bad.push("the desk is not empty");
+              if (cloud.linkedId !== null || cloud.linkState !== "unlinked" || cloudDirty) bad.push("the desk is still tied to the shelf book (" + cloud.linkedId + ", " + cloud.linkState + ", dirty " + cloudDirty + ")");
+              if (shown()) bad.push("still shown on the empty desk");
+              applyBookDoc(buildSampleBook()); sampleState.loaded = true; renderSampleButton();
+              if (shown()) bad.push("shown for the sample");
+              return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "History kept the old book (" + before + " words), the desk is empty, the shelf book was left alone, the button shows only for a book of your own");
+            } finally {
+              applyBookDoc(keepDoc); state.history = keepHistory;
+              sampleState.loaded = keepLoaded; sampleState.loadedJson = keepJson;
+              Object.assign(cloud, keepCloud); cloudDirty = keepDirty;
+              renderSampleButton();
+            }
+          } },
         { id: "sample.toggle.empty-to-sample-to-empty", feature: "sample", name: "Sample toggle 0 ↔ 25K: from the empty desk Load lands the whole sample, every word, Remove returns exactly 0 words and the genuine empty state (blank title/author, no content in any section, stats 0 words / 0 pages), and Load again lands the same count — a stable toggle; nothing is ever restored",
           run() {
             const keepDoc = JSON.parse(JSON.stringify(serializeBook()));
@@ -69527,6 +69605,21 @@
           } }
       );
       /* ==== /BEUK:tour ==== */
+      /* ==== BEUK:newbook strings ==== — Start a new book, all thirteen packs */
+      Object.assign(UI_STRINGS.en, {"newbook.btn": "Start a new book", "newbook.title": "Clear the desk for a new book. This one is kept in History, and stays on your shelf if it is there.", "newbook.confirmTitle": "Start a new book?", "newbook.confirmBody": "The desk will be empty. This book is kept in History first, so you can bring it back from there.", "newbook.confirmBodyShelf": "The desk will be empty. This book stays on your shelf as it is, and a copy is kept in History.", "newbook.yes": "Start a new book", "newbook.no": "Keep this book", "newbook.done": "New book started — the last one is in History", "newbook.already": "The desk is already empty — start writing", "newbook.snap": "Before starting a new book"});
+      Object.assign(UI_STRINGS.es, {"newbook.btn": "Empezar un libro nuevo", "newbook.title": "Vacía el escritorio para un libro nuevo. Este se guarda en el Historial y sigue en tu estantería si está allí.", "newbook.confirmTitle": "¿Empezar un libro nuevo?", "newbook.confirmBody": "El escritorio quedará vacío. Este libro se guarda antes en el Historial, para que puedas recuperarlo desde allí.", "newbook.confirmBodyShelf": "El escritorio quedará vacío. Este libro sigue en tu estantería tal como está, y se guarda una copia en el Historial.", "newbook.yes": "Empezar un libro nuevo", "newbook.no": "Conservar este libro", "newbook.done": "Libro nuevo empezado — el anterior está en el Historial", "newbook.already": "El escritorio ya está vacío — empieza a escribir", "newbook.snap": "Antes de empezar un libro nuevo"});
+      Object.assign(UI_STRINGS.fr, {"newbook.btn": "Commencer un nouveau livre", "newbook.title": "Vide le bureau pour un nouveau livre. Celui-ci est gardé dans l’Historique, et reste sur votre étagère s’il y est.", "newbook.confirmTitle": "Commencer un nouveau livre ?", "newbook.confirmBody": "Le bureau sera vide. Ce livre est d’abord gardé dans l’Historique, pour que vous puissiez le retrouver.", "newbook.confirmBodyShelf": "Le bureau sera vide. Ce livre reste sur votre étagère tel quel, et une copie est gardée dans l’Historique.", "newbook.yes": "Commencer un nouveau livre", "newbook.no": "Garder ce livre", "newbook.done": "Nouveau livre commencé — le précédent est dans l’Historique", "newbook.already": "Le bureau est déjà vide — commencez à écrire", "newbook.snap": "Avant de commencer un nouveau livre"});
+      Object.assign(UI_STRINGS.de, {"newbook.btn": "Neues Buch beginnen", "newbook.title": "Leert den Schreibtisch für ein neues Buch. Dieses bleibt im Verlauf und in Ihrem Regal, falls es dort liegt.", "newbook.confirmTitle": "Neues Buch beginnen?", "newbook.confirmBody": "Der Schreibtisch wird leer. Dieses Buch wird zuerst im Verlauf gesichert, damit Sie es von dort zurückholen können.", "newbook.confirmBodyShelf": "Der Schreibtisch wird leer. Dieses Buch bleibt unverändert in Ihrem Regal, und eine Kopie bleibt im Verlauf.", "newbook.yes": "Neues Buch beginnen", "newbook.no": "Dieses Buch behalten", "newbook.done": "Neues Buch begonnen — das letzte ist im Verlauf", "newbook.already": "Der Schreibtisch ist schon leer — fangen Sie an zu schreiben", "newbook.snap": "Vor dem Beginn eines neuen Buchs"});
+      Object.assign(UI_STRINGS.it, {"newbook.btn": "Inizia un nuovo libro", "newbook.title": "Svuota la scrivania per un nuovo libro. Questo resta nella Cronologia e nella tua libreria, se è lì.", "newbook.confirmTitle": "Iniziare un nuovo libro?", "newbook.confirmBody": "La scrivania sarà vuota. Questo libro viene prima salvato nella Cronologia, così puoi riprenderlo da lì.", "newbook.confirmBodyShelf": "La scrivania sarà vuota. Questo libro resta nella tua libreria così com’è, e una copia resta nella Cronologia.", "newbook.yes": "Inizia un nuovo libro", "newbook.no": "Tieni questo libro", "newbook.done": "Nuovo libro iniziato — il precedente è nella Cronologia", "newbook.already": "La scrivania è già vuota — inizia a scrivere", "newbook.snap": "Prima di iniziare un nuovo libro"});
+      Object.assign(UI_STRINGS.pt, {"newbook.btn": "Começar um livro novo", "newbook.title": "Esvazia a mesa para um livro novo. Este fica no Histórico, e na sua estante se lá estiver.", "newbook.confirmTitle": "Começar um livro novo?", "newbook.confirmBody": "A mesa ficará vazia. Este livro é guardado primeiro no Histórico, para o poder recuperar a partir daí.", "newbook.confirmBodyShelf": "A mesa ficará vazia. Este livro fica na sua estante tal como está, e uma cópia fica no Histórico.", "newbook.yes": "Começar um livro novo", "newbook.no": "Manter este livro", "newbook.done": "Livro novo começado — o anterior está no Histórico", "newbook.already": "A mesa já está vazia — comece a escrever", "newbook.snap": "Antes de começar um livro novo"});
+      Object.assign(UI_STRINGS.nl, {"newbook.btn": "Een nieuw boek beginnen", "newbook.title": "Maakt het bureau leeg voor een nieuw boek. Dit boek blijft in de Geschiedenis, en op uw boekenplank als het daar staat.", "newbook.confirmTitle": "Een nieuw boek beginnen?", "newbook.confirmBody": "Het bureau wordt leeg. Dit boek wordt eerst in de Geschiedenis bewaard, zodat u het daar kunt terughalen.", "newbook.confirmBodyShelf": "Het bureau wordt leeg. Dit boek blijft ongewijzigd op uw boekenplank, en een kopie blijft in de Geschiedenis.", "newbook.yes": "Een nieuw boek beginnen", "newbook.no": "Dit boek houden", "newbook.done": "Nieuw boek begonnen — het vorige staat in de Geschiedenis", "newbook.already": "Het bureau is al leeg — begin met schrijven", "newbook.snap": "Voor het beginnen van een nieuw boek"});
+      Object.assign(UI_STRINGS.pl, {"newbook.btn": "Zacznij nową książkę", "newbook.title": "Opróżnia biurko dla nowej książki. Ta zostaje w Historii i na Twojej półce, jeśli tam jest.", "newbook.confirmTitle": "Zacząć nową książkę?", "newbook.confirmBody": "Biurko będzie puste. Ta książka zostanie najpierw zapisana w Historii, aby można ją było stamtąd przywrócić.", "newbook.confirmBodyShelf": "Biurko będzie puste. Ta książka zostaje na Twojej półce bez zmian, a jej kopia trafia do Historii.", "newbook.yes": "Zacznij nową książkę", "newbook.no": "Zachowaj tę książkę", "newbook.done": "Rozpoczęto nową książkę — poprzednia jest w Historii", "newbook.already": "Biurko jest już puste — zacznij pisać", "newbook.snap": "Przed rozpoczęciem nowej książki"});
+      Object.assign(UI_STRINGS.ru, {"newbook.btn": "Начать новую книгу", "newbook.title": "Очищает стол для новой книги. Эта остаётся в Истории и на вашей полке, если она там есть.", "newbook.confirmTitle": "Начать новую книгу?", "newbook.confirmBody": "Стол станет пустым. Эта книга сначала сохранится в Истории, чтобы её можно было оттуда вернуть.", "newbook.confirmBodyShelf": "Стол станет пустым. Эта книга останется на вашей полке как есть, а её копия — в Истории.", "newbook.yes": "Начать новую книгу", "newbook.no": "Оставить эту книгу", "newbook.done": "Начата новая книга — прежняя в Истории", "newbook.already": "Стол уже пуст — начните писать", "newbook.snap": "Перед началом новой книги"});
+      Object.assign(UI_STRINGS.tr, {"newbook.btn": "Yeni bir kitap başlat", "newbook.title": "Yeni bir kitap için masayı boşaltır. Bu kitap Geçmiş’te ve oradaysa rafınızda kalır.", "newbook.confirmTitle": "Yeni bir kitap başlatılsın mı?", "newbook.confirmBody": "Masa boşalacak. Bu kitap önce Geçmiş’e kaydedilir, böylece oradan geri getirebilirsiniz.", "newbook.confirmBodyShelf": "Masa boşalacak. Bu kitap rafınızda olduğu gibi kalır ve bir kopyası Geçmiş’te tutulur.", "newbook.yes": "Yeni bir kitap başlat", "newbook.no": "Bu kitabı tut", "newbook.done": "Yeni kitap başlatıldı — öncekisi Geçmiş’te", "newbook.already": "Masa zaten boş — yazmaya başlayın", "newbook.snap": "Yeni bir kitap başlatmadan önce"});
+      Object.assign(UI_STRINGS.ar, {"newbook.btn": "ابدأ كتابًا جديدًا", "newbook.title": "يفرغ المكتب لكتاب جديد. يبقى هذا الكتاب في السجلّ، وعلى رفّك إن كان هناك.", "newbook.confirmTitle": "أتبدأ كتابًا جديدًا؟", "newbook.confirmBody": "سيصبح المكتب فارغًا. يُحفظ هذا الكتاب أولًا في السجلّ لتستعيده من هناك.", "newbook.confirmBodyShelf": "سيصبح المكتب فارغًا. يبقى هذا الكتاب على رفّك كما هو، وتُحفظ نسخة منه في السجلّ.", "newbook.yes": "ابدأ كتابًا جديدًا", "newbook.no": "احتفظ بهذا الكتاب", "newbook.done": "بدأ كتاب جديد — السابق في السجلّ", "newbook.already": "المكتب فارغ بالفعل — ابدأ الكتابة", "newbook.snap": "قبل بدء كتاب جديد"});
+      Object.assign(UI_STRINGS.ja, {"newbook.btn": "新しい本を始める", "newbook.title": "新しい本のために机を空にします。この本は履歴に残り、本棚にあればそのまま残ります。", "newbook.confirmTitle": "新しい本を始めますか？", "newbook.confirmBody": "机が空になります。この本はまず履歴に保存されるので、そこから戻せます。", "newbook.confirmBodyShelf": "机が空になります。この本は本棚にそのまま残り、コピーが履歴に保存されます。", "newbook.yes": "新しい本を始める", "newbook.no": "この本を残す", "newbook.done": "新しい本を始めました — 前の本は履歴にあります", "newbook.already": "机はもう空です — 書き始めましょう", "newbook.snap": "新しい本を始める前"});
+      Object.assign(UI_STRINGS["zh-Hans"], {"newbook.btn": "开始一本新书", "newbook.title": "为新书清空书桌。这本书会保存在历史记录中，如果在书架上也会原样保留。", "newbook.confirmTitle": "开始一本新书？", "newbook.confirmBody": "书桌将被清空。这本书会先保存到历史记录，你可以从那里恢复。", "newbook.confirmBodyShelf": "书桌将被清空。这本书在你的书架上保持原样，并在历史记录中保留一份副本。", "newbook.yes": "开始一本新书", "newbook.no": "保留这本书", "newbook.done": "已开始新书 — 上一本在历史记录中", "newbook.already": "书桌已经是空的 — 开始写作吧", "newbook.snap": "开始新书之前"});
+      /* ==== /BEUK:newbook strings ==== */
       document.addEventListener("DOMContentLoaded", init);
       /* ==== BEUK:beta ==== */
       /* Beta-reader share links (studio side).
