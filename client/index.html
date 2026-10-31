@@ -3555,7 +3555,9 @@
             <button class="tb-btn primary" id="btnOpenPrintView" type="button" data-i18n="exp.openPrint"><i data-lucide="printer"></i>Open Print View</button>
             <button class="tb-btn" id="btnOpenSpreads" type="button" data-i18n="piv.open"><i data-lucide="book-open"></i>Print Interior View</button>
             <button class="tb-btn" id="btnDownloadPrintHtml" type="button" data-i18n="exp.downloadPrintHtml"><i data-lucide="download"></i>Download Print HTML</button>
+            <button class="tb-btn primary" id="btnPrintReadyPdf" type="button" data-i18n="pr.btn"><i data-lucide="file-down"></i>Download print-ready PDF</button>
           </div>
+          <p class="print-note" id="printReadyNote" aria-live="polite" hidden></p>
         </div>
 
         <div class="fmt-sec">
@@ -45902,6 +45904,7 @@
       }
       function initPrint() {
         $("btnOpenPrintView").addEventListener("click", openPrintView);
+        $("btnPrintReadyPdf").addEventListener("click", printReadyPdf);
         $("btnDownloadPrintHtml").addEventListener("click", async () => {
           if (!(await samplePicsReady())) return; /* BEUK:slim */
           try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
@@ -49963,15 +49966,18 @@
         $("modalStore").classList.add("open");
       }
       /* ---- server tie-in: archive the print interior + EPUB, run the existing jobs, fold results in ---- */
-      async function storeUpload(format, blob, filename, preset) {
+      async function storeUpload(format, blob, filename, preset, o) {
         const q = "?manuscriptId=" + encodeURIComponent(cloud.linkedId) + "&format=" + encodeURIComponent(format) +
           "&filename=" + encodeURIComponent(filename) + (preset ? "&preset=" + encodeURIComponent(preset) : "");
-        const r = await apiFetch("/api/exports" + q, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" } });
+        const r = await apiFetch("/api/exports" + q, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, quiet402: !!(o && o.quiet) });
+        /* a caller that passes `o` is told why there is no export (the server's own words, and the status) */
+        if (o && r && r.__error) o.fail = { error: r.__error, status: r.__status || 0 };
         return r && r.export ? r.export.id : null;
       }
-      async function storeCreateJob(kind, exportId) {
+      async function storeCreateJob(kind, exportId, o) {
         if (!exportId) return { status: "failed", result: { error: t("store.serverUnreachable"), cause: "client" } };
-        const created = await apiFetch("/api/jobs/" + kind, { method: "POST", body: JSON.stringify({ exportId: exportId }) });
+        const created = await apiFetch("/api/jobs/" + kind, { method: "POST", body: JSON.stringify({ exportId: exportId }), quiet402: !!(o && o.quiet) });
+        if (created && created.__error && o) o.fail = { error: created.__error, status: created.__status || 0 };
         if (!created || !created.job) return { status: "failed", result: { error: (created && created.__error) || t("store.serverUnreachable"), cause: "client" } };
         return created.job;
       }
@@ -49988,6 +49994,19 @@
         }
         return ["pdfx", "epubcheck"].every((k) => !out[k] || out[k].status === "done" || out[k].status === "failed");
       }
+      /* The print half, shared by the store check and "Download print-ready PDF": link the book to the shelf,
+         archive its print interior, queue the pdfx job. With `o` ({ quiet: true }) a refusal is not toasted
+         and comes back as `fail` ({ error, status }) with no job asked for. */
+      async function storeMakePrintJob(o) {
+        if (!(await cloudEnsureLinked())) return { needShelf: true };
+        await samplePicsRequire(); /* BEUK:slim — the print file never goes without the sample's pictures */
+        try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
+        const printId = await storeUpload("print-html", new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename(), null, o);
+        if (o && o.fail) return { fail: o.fail };
+        const job = await storeCreateJob("pdfx", printId, o);
+        if (o && o.fail) return { fail: o.fail };
+        return { job: job };
+      }
       async function storeRunServer() {
         if (storeUi.running || typeof cloud === "undefined" || !cloud.available || !cloud.user) return;
         storeUi.running = true;
@@ -49996,12 +50015,10 @@
         renderStoreReport();
         const out = { sig: storeBookSig(), at: new Date(), pdfx: null, epubcheck: null, error: "" };
         try {
-          if (!(await cloudEnsureLinked())) { out.error = t("store.serverNeedShelf"); }
+          const made = await storeMakePrintJob();
+          if (made.needShelf) { out.error = t("store.serverNeedShelf"); }
           else {
-            await samplePicsRequire(); /* BEUK:slim — the print file never goes without the sample's pictures */
-            try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
-            const printId = await storeUpload("print-html", new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename(), null);
-            out.pdfx = await storeCreateJob("pdfx", printId);
+            out.pdfx = made.job;
             if (window.JSZip) {
               const epubId = await storeUpload("epub", await buildEpubBlob(), platformFilename(), state.exportPlatform);
               out.epubcheck = await storeCreateJob("epubcheck", epubId);
@@ -50021,6 +50038,64 @@
         if (storeUi.server && !storeUi.running && typeof cloud !== "undefined" && cloud.available && cloud.user) await storeRefreshJobs(storeUi.server);
         renderStoreReport();
       }
+      /* ==== BEUK:printready ==== "Download print-ready PDF": the server renders the print interior and
+         converts it to PDF/X-1a (the pdfx job); this panel starts that job, says "still running" until it
+         is done, and offers the stored PDF. The in-browser print view stays as preview. */
+      const printReadyUi = { running: false, state: "idle", msg: "", exportId: "", paused: false, pending: null, sig: "", pollMs: 2000, noOpen: false };
+      function printReadyRender() {
+        const el = $("printReadyNote"), btn = $("btnPrintReadyPdf");
+        if (btn) btn.disabled = printReadyUi.running;
+        if (!el) return;
+        const ui = printReadyUi;
+        el.textContent = ui.msg;
+        if (ui.exportId) {
+          const a = document.createElement("a");
+          a.href = "/api/exports/" + encodeURIComponent(ui.exportId) + "/download";
+          a.textContent = t("pr.btn"); a.setAttribute("data-pr-download", "1");
+          el.appendChild(document.createTextNode(" ")); el.appendChild(a);
+        } else if (ui.paused) {
+          const a = document.createElement("a");
+          a.href = "/account"; a.target = "_blank"; a.rel = "noopener"; a.textContent = t("portal.page"); a.setAttribute("data-pr-plan", "1");
+          el.appendChild(document.createTextNode(" ")); el.appendChild(a);
+        }
+        el.hidden = !ui.msg;
+      }
+      function printReadySet(state, msg, extra) {
+        Object.assign(printReadyUi, { state: state, msg: msg, exportId: "", paused: false }, extra || {});
+        printReadyRender();
+      }
+      async function printReadyPdf() {
+        const ui = printReadyUi;
+        if (ui.running) return;
+        if (typeof cloud === "undefined" || !cloud.available) { printReadySet("local", t("store.nc.local")); return; }
+        if (!cloud.user) {
+          /* a button must never do nothing: say so, then the sign-in the other server actions use */
+          printReadySet("signin", t("pr.signin"));
+          if (!ui.noOpen) { $("modalExport").classList.remove("open"); openAuth(); }
+          return;
+        }
+        ui.running = true;
+        printReadySet("running", t("pr.running"));
+        try {
+          let job = ui.pending && ui.pending.id && ui.sig === storeBookSig() ? ui.pending : null;
+          if (!job) {
+            const made = await storeMakePrintJob({ quiet: true });
+            if (made.needShelf) { printReadySet("failed", t("store.serverNeedShelf")); return; }
+            if (made.fail) { const paused = made.fail.status === 402; printReadySet(paused ? "paused" : "failed", made.fail.error || t("store.serverUnreachable"), { paused: paused }); return; }
+            job = made.job; ui.sig = storeBookSig();
+          }
+          /* Jobs drain one at a time and a long book takes minutes: poll like the store check (15 minutes at most). */
+          const out = { pdfx: job };
+          for (let i = 0; i < 450 && !(await storeRefreshJobs(out)); i++) await new Promise((res) => setTimeout(res, ui.pollMs));
+          job = out.pdfx;
+          if (job.status === "done" && job.artifactExportId) { ui.pending = null; printReadySet("done", t("pr.ready"), { exportId: job.artifactExportId }); if (typeof cloudLoadArchive === "function") cloudLoadArchive(); }
+          else if (job.status === "done") { ui.pending = null; printReadySet("failed", t("pr.noFile")); }
+          else if (job.status === "failed") { ui.pending = null; printReadySet("failed", t("pr.failed", { error: (job.result && job.result.error) || t("store.serverUnreachable") })); }
+          else { ui.pending = job; printReadySet("running", t("pr.stillRunning")); }
+        } catch (e) { printReadySet("failed", t("pr.failed", { error: e && e.message ? e.message : String(e) })); }
+        finally { ui.running = false; printReadyRender(); }
+      }
+      /* ==== /BEUK:printready ==== */
       /* ---- the downloadable report: one self-contained HTML page ---- */
       function buildStoreReportHtml(a) {
         a = a || storeAudit();
@@ -50165,7 +50240,7 @@
           });
           if (res.status === 204) return {};
           const data = await res.json().catch(() => null);
-          if (res.status === 402 && data && data.paused && typeof billingNotePaused === "function") billingNotePaused(); /* BEUK:billing */
+          if (res.status === 402 && data && data.paused && !opts.quiet402 && typeof billingNotePaused === "function") billingNotePaused(); /* BEUK:billing */
           if (!res.ok) return { __error: (data && data.error) || ("HTTP " + res.status), __status: res.status, __body: data };
           return data || {};
         } catch (e) {
@@ -51445,6 +51520,20 @@
       Object.assign(UI_STRINGS.ar, { "plan.trial": "الفترة التجريبية المجانية حتى {date}.", "plan.price": "خطة واحدة، {price}، تفتح كل شيء.", "plan.subscribed": "خطتك مفعّلة.", "plan.grace": "لم تنجح الدفعة الأخيرة. يبقى كل شيء متاحًا حتى {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "اختر خطة", "plan.manage": "إدارة الفوترة", "plan.test": "مدفوعات تجريبية فقط", "plan.unreachable": "تعذّر الوصول إلى Stripe الآن. لم يتغير شيء؛ حاول مرة أخرى بعد قليل.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
       Object.assign(UI_STRINGS.ja, { "plan.trial": "無料トライアルは{date}までです。", "plan.price": "ひとつのプラン（{price}）ですべてが使えます。", "plan.subscribed": "プランは有効です。", "plan.grace": "前回のお支払いが完了しませんでした。{date}まではすべてそのまま使えます。", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "プランを選ぶ", "plan.manage": "お支払いの管理", "plan.test": "テスト決済のみ", "plan.unreachable": "今は Stripe に接続できません。何も変更されていません。少ししてからもう一度お試しください。", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
       Object.assign(UI_STRINGS["zh-Hans"], { "plan.trial": "免费试用至 {date}。", "plan.price": "一个方案（{price}）即可使用全部功能。", "plan.subscribed": "你的方案已生效。", "plan.grace": "上一次付款未成功。在 {date} 之前，一切照常可用。", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "选择方案", "plan.manage": "管理账单", "plan.test": "仅限测试付款", "plan.unreachable": "暂时无法连接 Stripe。没有任何改动，请稍后再试。", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      /* BEUK:printready: English in every pack until V signs off the translations */
+      Object.assign(UI_STRINGS.en, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.es, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.fr, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.de, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.it, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.pt, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.nl, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.pl, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.ru, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.tr, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.ar, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.ja, { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS["zh-Hans"], { "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
       var billingPausedSaid = false;
       function billingDate(iso) {
         try { return new Date(iso).toLocaleDateString(uiLangState || "en", { day: "numeric", month: "long", year: "numeric" }); }
@@ -66709,6 +66798,74 @@
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS_ASYNC = SELF_CHECKS_ASYNC; window.runBeukAsyncSelfChecks = runAsyncSelfChecks; }
       /* ==== /BEUK:sound ==== */
 
+      /* ==== BEUK:printready-check ==== the real printReadyPdf over the real apiFetch, against answers the server really gives */
+      SELF_CHECKS_ASYNC.push(
+        { id: "export.print-ready", feature: "export", name: "Export: “Download print-ready PDF” asks the sign-in when signed out; a paused account gets the server’s one message and no job is asked for; a running job never shows a download until it is done, then offers the stored PDF; a failed job shows the server’s own error and no download",
+          async run() {
+            const ui = printReadyUi;
+            const keep = { available: cloud.available, user: cloud.user, linked: cloud.linkedId, archive: cloud.archive, said: billingPausedSaid, poll: ui.pollMs };
+            const realFetch = window.fetch;
+            const bad = [], calls = [];
+            const PAUSED = "Your free trial has ended. Print-ready PDFs are paused until you choose a plan.";
+            const FAILED = "Ghostscript exited with code 1";
+            let mode = "done", polls = 0, mid = null;
+            const reply = (status, body) => Promise.resolve({ status: status, ok: status >= 200 && status < 300, json: () => Promise.resolve(body) });
+            window.fetch = function (url, init) {
+              const m = (init && init.method) || "GET", u = String(url);
+              calls.push(m + " " + u.split("?")[0]);
+              if (m === "POST" && u.indexOf("/api/exports") === 0) return mode === "upload402" ? reply(402, { error: PAUSED, paused: true, feature: "archive.upload", exportOpen: false, ownWordsOpen: true }) : reply(201, { export: { id: "sc-print" } });
+              if (m === "POST" && u === "/api/jobs/pdfx") return reply(201, { job: { id: "sc-job", status: "queued" } });
+              if (m === "GET" && u === "/api/jobs/sc-job") {
+                polls++;
+                if (polls === 2) mid = { state: ui.state, exportId: ui.exportId };
+                if (polls < 3) return reply(200, { job: { id: "sc-job", status: "running" } });
+                return mode === "failed" ? reply(200, { job: { id: "sc-job", status: "failed", result: { error: FAILED, cause: "tool" } } })
+                  : reply(200, { job: { id: "sc-job", status: "done", result: { pageCount: 1 }, artifactExportId: "sc-pdf" } });
+              }
+              return reply(200, { exports: [] });
+            };
+            const reset = () => Object.assign(ui, { running: false, state: "idle", msg: "", exportId: "", paused: false, pending: null, sig: "" });
+            const note = () => $("printReadyNote");
+            const toasts = () => document.querySelectorAll("#toasts .toast").length;
+            const jobCalls = () => calls.filter((c) => c.indexOf("/api/jobs") > -1).length;
+            try {
+              ui.pollMs = 0; ui.noOpen = true;
+              const btn = $("btnPrintReadyPdf");
+              if (!btn || btn.textContent.trim() !== t("pr.btn") || UI_STRINGS.en["pr.btn"] !== "Download print-ready PDF") bad.push("the button does not read “Download print-ready PDF” (" + (btn ? btn.textContent.trim() : "missing") + ")");
+              /* (a) signed out */
+              cloud.available = true; cloud.user = null; reset();
+              await printReadyPdf();
+              if (ui.state !== "signin" || ui.msg !== t("pr.signin") || note().hidden || calls.length) bad.push("(a) signed out: state " + ui.state + ", " + calls.length + " calls, note " + (note().hidden ? "hidden" : "shown"));
+              /* (b) paused: the upload is refused */
+              cloud.user = { id: "sc-user", email: "sc@beuk.test" }; cloud.linkedId = "sc-ms"; billingPausedSaid = false; reset();
+              mode = "upload402"; calls.length = 0; const t0 = toasts();
+              await printReadyPdf();
+              const posts = calls.filter((c) => c.indexOf("POST /api/exports") === 0).length;
+              if (ui.state !== "paused" || ui.msg !== PAUSED || note().textContent.indexOf(PAUSED) !== 0) bad.push("(b) paused: state " + ui.state + ", message " + JSON.stringify(ui.msg));
+              if (jobCalls() || posts !== 1) bad.push("(b) paused: " + posts + " upload(s), " + jobCalls() + " job call(s) (want 1 and 0)");
+              if (toasts() !== t0) bad.push("(b) paused: a second message appeared as a toast");
+              if (!note().querySelector("[data-pr-plan]") || note().querySelector("[data-pr-download]") || ui.exportId) bad.push("(b) paused: no plan link, or a download was offered");
+              /* (c) running, then done */
+              mode = "done"; polls = 0; mid = null; calls.length = 0; reset();
+              await printReadyPdf();
+              const dl = note().querySelector("[data-pr-download]");
+              if (ui.state !== "done" || ui.exportId !== "sc-pdf" || !dl || !/\/api\/exports\/sc-pdf\/download$/.test(dl.getAttribute("href"))) bad.push("(c) done: state " + ui.state + ", export " + ui.exportId + ", link " + (dl ? dl.getAttribute("href") : "none"));
+              if (!mid || mid.state !== "running" || mid.exportId) bad.push("(c) while running the panel showed " + JSON.stringify(mid));
+              if (calls.filter((c) => c === "POST /api/jobs/pdfx").length !== 1 || calls.some((c) => c.indexOf("epubcheck") > -1) || polls !== 3) bad.push("(c) calls: " + calls.join(", "));
+              /* (d) failed */
+              mode = "failed"; polls = 0; calls.length = 0; reset();
+              await printReadyPdf();
+              if (ui.state !== "failed" || note().textContent.indexOf(FAILED) < 0 || note().querySelector("[data-pr-download]") || ui.exportId) bad.push("(d) failed: state " + ui.state + ", message " + JSON.stringify(ui.msg) + ", link " + !!note().querySelector("[data-pr-download]"));
+              if (btn && btn.disabled) bad.push("the button stayed disabled after a finished job");
+            } finally {
+              window.fetch = realFetch;
+              cloud.available = keep.available; cloud.user = keep.user; cloud.linkedId = keep.linked; cloud.archive = keep.archive; billingPausedSaid = keep.said;
+              ui.pollMs = keep.poll; ui.noOpen = false; reset(); printReadyRender();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in line and no calls; paused → the server’s one message, 1 upload, 0 job calls, no toast, plan link; running ×2 showed no download, then done → link to sc-pdf; failed → the server’s error, no link");
+          } }
+      );
+      /* ==== /BEUK:printready-check ==== */
       /* ==== BEUK:login ==== the sign-in dialog drives the real
          cloudAuthSubmit against answers the server and its proxy really
          give: only a 401 may say the email and password do not match. */

@@ -3617,6 +3617,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     },
   },
   {
+    id: 'export.print-ready',
+    title: 'Export: “Download print-ready PDF” — sign-in when signed out, one paused message with no job, never a download before the job is done, the server’s own error on failure',
+    kind: 'client-only',
+    reason: 'The button and its panel live in the studio; the check drives the real printReadyPdf over stubbed server answers in a browser. The 402 gate itself is asserted server-side in tests/billing-trial.test.ts.',
+  },
+  {
     id: 'school.media.recorded-against-live-studio',
     title: "School: lesson recordings fail when a lesson's step names a control the live studio does not show",
     kind: 'client-only',
