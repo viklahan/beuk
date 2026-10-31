@@ -8,7 +8,7 @@ import { clientDir } from '../warmth/pages.js';
  * help.js, theme.js), served at content-hashed paths:
  *
  *   /help/static/help.<hash>.css   /help/static/help.<hash>.js
- *   /help/static/theme.<hash>.js
+ *   /help/static/theme.<hash>.js   /help/static/lighthouse.<hash>.js
  *
  * Why hashed paths and not ?v=: the studio's service worker (scope /)
  * answers same-origin static GETs cache-first with ignoreSearch, so a
@@ -20,6 +20,7 @@ const FILES = {
   'help.css': 'text/css; charset=utf-8',
   'help.js': 'application/javascript; charset=utf-8',
   'theme.js': 'application/javascript; charset=utf-8',
+  'lighthouse.js': 'application/javascript; charset=utf-8', // BEUK:lighthouse — the home page's harbour
 } as const;
 export type HelpAssetName = keyof typeof FILES;
 
@@ -51,7 +52,7 @@ export function helpAssetUrl(name: HelpAssetName): string {
 
 /** Resolve /help/static/<file> → the asset, or null (unknown, or a stale hash). */
 export function helpAssetFor(file: string): { body: string; type: string; current: boolean } | null {
-  const m = /^(help|theme)\.([0-9a-f]{12})\.(css|js)$/.exec(file);
+  const m = /^(help|theme|lighthouse)\.([0-9a-f]{12})\.(css|js)$/.exec(file);
   if (!m) return null;
   const name = `${m[1]}.${m[3]}` as HelpAssetName;
   if (!(name in FILES)) return null;

@@ -211,6 +211,25 @@ p.says { margin: 0 0 10px; }
 .status-rows .v.bad { color: var(--bad); }
 .status-rows .note { grid-column: 2; color: var(--muted); font-size: 10.5px; }
 .h-status .small { margin: 0; }
+/* BEUK:lighthouse — the night harbour over the Help home's status */
+.h-lighthouse { margin-top: 28px; padding: 18px 18px 16px; }
+.lh-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lh-meteor { border: 1px solid var(--line-2); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 6px 13px; font: inherit; font-size: 13px; cursor: pointer; }
+.lh-meteor:hover { border-color: var(--accent); }
+.lh-scene { position: relative; height: 420px; border-radius: 10px; overflow: hidden; background: #06121a; }
+.lh-scene[hidden] { display: none; }
+.lh-scene canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: pan-y; }
+.lh-scene .tag { position: absolute; left: 0; top: 0; pointer-events: none; display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px; border-radius: 999px; background: rgba(6, 16, 20, .72); border: 1px solid rgba(255, 255, 255, .12); color: #e9f1ee; font: 600 11px/1.2 var(--ui); white-space: nowrap; will-change: transform; }
+.lh-scene .tag i { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+.lh-scene .tag small { font-weight: 500; color: #a9bab5; }
+.lh-scene .tip { position: absolute; pointer-events: none; max-width: 250px; background: rgba(255, 253, 244, .97); color: #22333a; border-radius: 8px; padding: 9px 11px; font-size: 12.5px; line-height: 1.4; box-shadow: 0 8px 22px rgba(0, 0, 0, .45); opacity: 0; transform: translate(-50%, calc(-100% - 44px)); transition: opacity .15s; z-index: 2; }
+.lh-scene .tip b { display: block; margin-bottom: 2px; }
+.lh-scene .tip.show { opacity: 1; }
+.lh-since { margin: -4px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.lh-since:empty { display: none; }
+.lh-reading summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.lh-reading[open] summary { margin-bottom: 8px; }
+@media (max-width: 640px) { .lh-scene { height: 300px; } }
 .h-founders { margin-top: 64px; max-width: 52rem; }
 .h-founders > p { color: var(--ink-2); }
 .founders-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 16px; align-items: end; }

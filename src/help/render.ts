@@ -102,7 +102,7 @@ function statusHeadline(s: ShelfStatus): string {
 }
 
 function statusPill(s: ShelfStatus): string {
-  return `<a class="pill status-pill is-${s.headline}" href="/help/#status" title="Live shelf status, read when this page was made"><span class="dot" aria-hidden="true"></span>${esc(statusHeadline(s))}</a>`;
+  return `<a class="pill status-pill is-${s.headline}" href="/help/#status" title="Lighthouse: the live status, read when this page was made"><span class="dot" aria-hidden="true"></span>${esc(statusHeadline(s))}</a>`;
 }
 
 function statusRows(s: ShelfStatus): string {
@@ -144,11 +144,21 @@ function statusBlock(s: ShelfStatus): string {
         ? ` The last shelf-check passed on ${humanDate(s.selfChecks.at)}.`
         : ` The last shelf-check, on ${humanDate(s.selfChecks.at)}, found something to tidy.`;
   }
-  return `<section class="h-status" id="status" aria-labelledby="status-h">
-      <p class="kicker" id="status-h">Shelf status</p>
+  /* BEUK:lighthouse — the harbour (client/help/lighthouse.js) reads
+     /api/status/public itself; the server's own reading stays below it,
+     opened by the script on a machine that cannot draw the scene. */
+  return `<section class="h-status h-lighthouse" id="status" aria-labelledby="status-h">
+      <div class="lh-head"><p class="kicker" id="status-h">Lighthouse</p><button type="button" class="lh-meteor" id="lh-meteor" hidden>Send a shooting star</button></div>
+      <div class="lh-scene" id="lighthouse" data-status-url="/api/status/public" aria-hidden="true"><div class="tip" id="tip"></div></div>
       <p class="status-line" id="status-line">${esc(line)}</p>
-      <ul class="status-rows">${statusRows(s)}</ul>
-      <p class="muted small">Read live by the server at ${esc(humanDateTimeUtc(s.checkedAt))}. Reload for a fresh reading.</p>
+      <p class="lh-since" id="lh-since"></p>
+      <details class="lh-reading">
+        <summary>The server's own reading</summary>
+        <ul class="status-rows">${statusRows(s)}</ul>
+        <p class="muted small">Read live by the server at ${esc(humanDateTimeUtc(s.checkedAt))}. Reload for a fresh reading.</p>
+      </details>
+      <script src="/assets/vendor/three.r128.min.js" integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ==" crossorigin="anonymous" defer></script>
+      <script src="${helpAssetUrl('lighthouse.js')}" defer></script>
     </section>`;
 }
 
@@ -391,6 +401,7 @@ export function renderHome(ctx: PageCtx): string {
       ${suggestionChips(ctx)}
       ${searchOut(ctx.config)}
     </section>
+    ${statusBlock(ctx.status)}
     <section class="h-sec">
       <h2>Start from where you are</h2>
       <p class="sub">Four ways in. Pick the one that sounds like you.</p>
@@ -406,7 +417,6 @@ export function renderHome(ctx: PageCtx): string {
     </section>
     <section class="h-sec duo">
       ${supportBlock(ctx.config)}
-      ${statusBlock(ctx.status)}
     </section>
     ${FOUNDERS}
   </div>`;
