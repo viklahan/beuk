@@ -115,3 +115,24 @@ test('schema: the optional structures (outline, bible, notebook, research) parse
   const r = BookV1.safeParse(b);
   assert.ok(r.success, r.success ? '' : JSON.stringify(r.error.issues.slice(0, 3)));
 });
+
+test('schema: non-canonical base64 (unpadded, with a newline) is accepted, since 1.0 keeps it inline', () => {
+  for (const data of ['aGk', 'aGk=\n', 'aGVs\nbG8=', 'aGk-_']) {
+    assert.ok(binaryString.safeParse(data).success, JSON.stringify(data));
+  }
+  assert.ok(!binaryString.safeParse('not base64!').success);
+  const b = real();
+  b.images[0].data = 'aGVs\nbG8';
+  const r = BookV1.safeParse(b);
+  assert.ok(r.success, r.success ? '' : JSON.stringify(r.error.issues.slice(0, 3)));
+});
+
+test('schema: a 6 MB payload parses without throwing (no stack overflow)', () => {
+  const big = 'QUJD'.repeat(Math.ceil((6 * 1024 * 1024) / 4));
+  assert.ok(big.length >= 6 * 1024 * 1024);
+  const b = real();
+  b.research = { files: [{ id: 'r1', name: 'big.pdf', mediaType: 'application/pdf', data: big, bytes: big.length }] };
+  let r: ReturnType<typeof BookV1.safeParse> | undefined;
+  assert.doesNotThrow(() => { r = BookV1.safeParse(b); });
+  assert.ok(r?.success);
+});

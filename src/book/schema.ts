@@ -30,14 +30,28 @@ const obj = z.looseObject;
 
 /* ---- binary data: canonical base64, or a stored-picture ref ---- */
 
-/** Canonical (padded, no whitespace) base64, which is what the client's picture upload accepts (CI:49855-49976). */
-const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 /** What the client swaps in for bytes on a shelf save: `beuk-pic:` plus a SHA-256 in hex (CI:49855, src/pictures.ts). */
 const PIC_REF = /^beuk-pic:[0-9a-f]{64}$/;
 
+/** Base64 that is not canonical stays inline in 1.0 (inventory section 4; CI:49855-49976), so this accepts any run of
+ *  base64-alphabet characters, URL-safe `-` and `_`, `=` and whitespace. It is a plain char loop on purpose: a
+ *  backtracking regex such as (?:[A-Za-z0-9+/]{4})* overflows the stack on a multi-megabyte payload (research files
+ *  run to 10 MB). Linear time, no recursion. */
+function isBase64ish(s: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    const ok =
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || // A-Z a-z 0-9
+      c === 43 || c === 47 || c === 61 || c === 45 || c === 95 || // + / = - _
+      c === 32 || c === 10 || c === 13 || c === 9; // space, LF, CR, tab
+    if (!ok) return false;
+  }
+  return true;
+}
+
 export const binaryString = z
   .string()
-  .refine((s) => PIC_REF.test(s) || BASE64.test(s), 'expected canonical base64 or a beuk-pic:<sha256> ref');
+  .refine((s) => PIC_REF.test(s) || isBase64ish(s), "expected base64 data or a beuk-pic:<sha256> ref");
 
 /* ---- warn-only value lists, read from 1.0's code ---- */
 
@@ -64,6 +78,9 @@ export const KNOWN = {
   rightsModes: ['pd', 'cc'],
   ccLicences: ['by', 'by-sa', 'by-nc', 'by-nc-sa', 'by-nd', 'cc0'],
   langSources: ['auto', 'manual'],
+  /** theme.paraMode and theme.headingFlourishPos are merged in on load without a check (CI:50236, CI:35173). */
+  paraModes: ['indent', 'block'],
+  flourishPositions: ['above', 'below'],
 } as const;
 
 /** 1.0's caps. The reader (not this schema) turns a value past one into a warning and keeps the value. */
@@ -124,13 +141,14 @@ const HeaderElement = obj({
 
 const Theme = obj({
   bodyFont: str, headFont: str, fontSize: num, lineHeight: num,
-  paraMode: z.enum(['indent', 'block']), indentDepth: str,
+  paraMode: str, // "indent" | "block" (KNOWN.paraModes); applyBookDoc merges the theme over the defaults without checking it (CI:50236)
+  indentDepth: str,
   headerStyle: str, // KNOWN.headerStyles (CI:3089-3092); 1.0 does not validate it on load
   dropDepth: num, smallCapsWords: num,
   ornament: str, // one of 13 built-in ids (CI:19133-19147) or the id of an uploaded flourish image (CI:3198), so it is open
   justify: bool, hyphens: bool,
   headingFlourish: str.optional(), // an images[].id (CI:19187)
-  headingFlourishPos: z.enum(['above', 'below']).optional(),
+  headingFlourishPos: str.optional(), // "above" | "below" (KNOWN.flourishPositions); not checked on load, readers just compare to "below" (CI:35173)
   header: obj({ number: HeaderElement, title: HeaderElement, subtitle: HeaderElement }).optional(),
 });
 
@@ -140,7 +158,8 @@ const Colour = obj({ accent: str, tint: str, printBlack: bool.optional() }); // 
 
 const Scene = obj({ at: num, imageId: str, name: str, caption: str, alt: str });
 
-const OUTLINE_STATUSES = ['todo', 'draft', 'revised', 'final'] as const; // OL_STATUSES, CI:32939
+// enforced on load: normalizeSection -> olSectionFields keeps status only if OL_STATUSES.includes it (CI:50249, CI:32919, CI:32943)
+const OUTLINE_STATUSES = ['todo', 'draft', 'revised', 'final'] as const;
 
 const Section = obj({
   id: str, kind: str, type: str, // KNOWN.sectionKinds / sectionTypes; 1.0 does not validate them (CI:50102)
@@ -148,7 +167,8 @@ const Section = obj({
   dropCap: bool, smallCaps: bool, included: bool,
   plateId: strOrNull, plateAlt: str,
   backdropId: strOrNull,
-  backdropStrength: z.enum(['whisper', 'soft', 'strong', 'spread']), // BACKDROP_STRENGTHS, CI:29412
+  // enforced on load: normalizeSection (CI:50249) replaces anything outside BACKDROP_STRENGTHS (CI:29412) with "whisper" (CI:50108)
+  backdropStrength: z.enum(['whisper', 'soft', 'strong', 'spread']),
   htLine1: strOrNull, htLine2: str, tocHeading: strOrNull,
   scenes: z.array(Scene),
   // outline fields: present only when set (CI:32939)
@@ -256,6 +276,8 @@ const Notebook = obj({
 /* ---- print and store ---- */
 
 const StoreCheck = obj({
+  // all of storeCheck is enforced on load: applyBookDoc -> normalizeStoreCheck (CI:50279, CI:49079-49086) replaces an
+  // unknown store, binding or ink with the default
   store: z.enum(['kdp', 'ingramspark']),
   binding: z.enum(['paperback', 'hardcover']),
   // Ink ids are the union of STORE_RULES.kdp.inks (CI:48970-48973) and STORE_RULES.ingramspark.inks (CI:49008-49010).
@@ -281,6 +303,7 @@ const Audio = obj({
   dismissed: z.array(str),
 });
 
+// enforced on load: applyBookDoc -> msNormalize (CI:50319, CI:46710-46724) replaces any other paper, font or italics value
 const Manuscript = obj({
   legalName: str, address: str, phone: str, email: str, byline: str, surname: str,
   paper: z.enum(['letter', 'a4']), font: z.enum(['times', 'courier']), italics: z.enum(['italic', 'underline']),
@@ -307,6 +330,7 @@ const HistoryDoc = obj({
 
 const HistoryEntry = obj({
   id: str, name: str, at: str, words: num,
+  // enforced on load: applyBookDoc -> normalizeHistory (CI:50310, CI:32192) maps any value outside this list to null
   auto: z.enum(['import', 'sample', 'restore', 'conflict', 'bookid', 'backup', 'sampleupdate', 'chapterop', 'imgremove']).nullable().optional(),
   chop: obj({ op: z.enum(['delete', 'duplicate', 'split', 'merge']), a: str, b: str }).optional(),
   doc: HistoryDoc.optional(), // older form
