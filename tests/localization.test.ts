@@ -163,6 +163,17 @@ test('l10n ui: no translation introduces a {placeholder} English does not have',
   assert.deepEqual(bad, []);
 });
 
+test('l10n ui (report only): strings left identical to English, and dropped placeholders', (t) => {
+  // Never fails: "EPUB" or "Beuk" is right untranslated, and an Arabic
+  // singular drops {n} on purpose. Listed for a human to judge.
+  for (const loc of UI_ORDER.filter((l) => l !== 'en')) {
+    const pack = UI[loc] ?? {};
+    const same = Object.keys(UI.en).filter((k) => pack[k] === UI.en[k] && /[A-Za-z]{4,}/.test(UI.en[k]));
+    const dropped = Object.keys(UI.en).filter((k) => typeof pack[k] === 'string' && [...placeholders(UI.en[k])].some((p) => !placeholders(pack[k]).has(p)));
+    t.diagnostic(`${loc}: ${same.length} identical to English${same.length ? ` (${same.slice(0, 8).join(', ')}${same.length > 8 ? ', …' : ''})` : ''}; ${dropped.length} drop a placeholder${dropped.length ? ` (${dropped.slice(0, 8).join(', ')}${dropped.length > 8 ? ', …' : ''})` : ''}`);
+  }
+});
+
 test('l10n ui: every key the studio names literally exists in the English pack', () => {
   const used = new Map<string, string>();
   const keyShape = /^[A-Za-z][\w-]*(\.[\w-]+)+$/;
