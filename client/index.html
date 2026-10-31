@@ -9044,6 +9044,19 @@
       Object.assign(UI_STRINGS["zh-Hans"], { "fs.enter": "全屏", "fs.exit": "退出全屏", "fs.fill": "填满窗口", "fs.fillExit": "退出填满窗口" });
       /* ==== /BEUK:fullscreen ==== */
       /* ==== /BEUK:hcpreview ==== */
+      /* ==== BEUK:spineback ==== */
+      /* Spine and back cover customization. English only for now: V signs off every interface
+         translation, so the other packs carry this English text until then (the drafts wait in
+         docs/superpowers/plans/spine-back-translations-for-signoff.md). Each key is copied into a
+         pack only where that pack has none of its own. */
+      const SPINEBACK_STRINGS = {
+        "store.c.spinetext.failPagesIcons": "The wrap prints spine text and icons, but {store} allows spine text only from {min} pages; this book has {pages}.",
+        "store.c.spinetext.failClearIcon": "A spine icon leaves only {clear} in clear on each side; {store} asks for {need} in.",
+        "store.c.spinetext.okIcons": "Spine text and icons leave about {clear} in clear on each side ({need} in needed), and {pages} pages is enough for spine text ({store} allows it from {min})."
+      };
+      Object.assign(UI_STRINGS.en, SPINEBACK_STRINGS);
+      Object.keys(UI_STRINGS).forEach((lang) => { if (lang !== "en") Object.keys(SPINEBACK_STRINGS).forEach((k) => { if (UI_STRINGS[lang][k] == null) UI_STRINGS[lang][k] = SPINEBACK_STRINGS[k]; }); });
+      /* ==== /BEUK:spineback ==== */
 
       /* Structure upgrade: matter library, reordering, Parts — assigned per pack so completeness holds. */
       Object.assign(UI_STRINGS.en, { "import.type.foreword": "Foreword", "import.type.preface": "Preface", "import.type.appendix": "Appendix", "import.type.cta": "Call to Action", "import.type.part": "Part", "side.addPage": "Add a page", "side.addPart": "Add Part", "toast.pageAdded": "{name} added", "toast.pageExists": "{name} is already in your book — here it is", "toast.moveTier": "Pages stay within their own part of the book — change its type to move it there.", "toast.partAdded": "Part added" });
@@ -43713,14 +43726,16 @@
         const bcX = backX + tw - hinge - bcW, bcY = topY + th - safe - bcH;
         items.barcode = { x: bcX / px, y: bcY / px, w: 2, h: 1.2 };
         const clearW = Math.max(0, bcX - 0.2 * px - tx); /* width that stays left of the barcode */
+        /* The back's own font and colour, when set, replace the front's for the quote, blurb, author line and imprint. */
+        const bkFont = (key) => w.back.font || recipe.elements[key].font, bkInk = (def) => w.back.color || def;
         let y = topY + 0.32 * px;
         const blurbLimitY = bcY - 0.18 * px;
         ctx.textBaseline = "top";
         const quote = String(w.quote || "").trim();
         if (quote) {
           const qs = 0.2 * px, qlh = qs * 1.3;
-          ctx.font = "italic 600 " + qs + "px " + fontStack(recipe.elements.subtitle.font);
-          ctx.fillStyle = inkTitle; ctx.textAlign = "left";
+          ctx.font = "italic 600 " + qs + "px " + fontStack(bkFont("subtitle"));
+          ctx.fillStyle = bkInk(inkTitle); ctx.textAlign = "left";
           wrapLines(ctx, quote, textW).forEach((ln) => {
             if (!ln) { y += qlh * 0.5; return; }
             const lw = ctx.measureText(ln).width;
@@ -43733,8 +43748,8 @@
         const blurb = (w.blurb || state.meta.description || "").trim();
         if (blurb) {
           const bs = 0.15 * px, blh = bs * 1.5;
-          ctx.font = "500 " + bs + "px " + fontStack(recipe.elements.subtitle.font);
-          ctx.fillStyle = inkBody; ctx.textAlign = "left";
+          ctx.font = "500 " + bs + "px " + fontStack(bkFont("subtitle"));
+          ctx.fillStyle = bkInk(inkBody); ctx.textAlign = "left";
           wrapLines(ctx, blurb, textW).forEach((ln) => {
             if (!ln) { y += blh * 0.5; return; }
             if (y + blh > blurbLimitY) return;
@@ -43747,8 +43762,8 @@
         const author = String(recipe.author || "").trim();
         if (author && y < topY + th - safe - 0.3 * px) {
           const as = 0.17 * px;
-          ctx.font = "700 " + as + "px " + fontStack(recipe.elements.author.font);
-          ctx.fillStyle = inkAuthor; ctx.textAlign = "left";
+          ctx.font = "700 " + as + "px " + fontStack(bkFont("author"));
+          ctx.fillStyle = bkInk(inkAuthor); ctx.textAlign = "left";
           ctx.fillText(author.toUpperCase(), tx, y);
           items.backBoxes.push({ x: tx / px, y: y / px, w: Math.min(ctx.measureText(author.toUpperCase()).width, clearW) / px, h: as * 1.3 / px });
         }
@@ -43756,8 +43771,8 @@
         if (imp) {
           const is = 0.115 * px, ih = is * 1.3;
           const iy = topY + th - safe - ih;
-          ctx.font = "600 " + is + "px " + fontStack(recipe.elements.author.font);
-          ctx.fillStyle = inkBody; ctx.textAlign = "left";
+          ctx.font = "600 " + is + "px " + fontStack(bkFont("author"));
+          ctx.fillStyle = bkInk(inkBody); ctx.textAlign = "left";
           ctx.fillText(imp, tx, iy);
           items.backBoxes.push({ x: tx / px, y: iy / px, w: Math.min(ctx.measureText(imp).width, clearW) / px, h: ih / px });
         }
@@ -49685,6 +49700,16 @@
       const storeIn = (n) => String(Math.round(n * 1000) / 1000);
       const storeTrimLabel = (w, h) => storeIn(w) + " × " + storeIn(h) + " in";
       /* Book-side facts the checks read, measured once. */
+      /* The tightest clearance, in inches, between the spine's folds and any item the wrap drew on it (text or
+         icon), and which kind it was. null when nothing was drawn. */
+      function storeSpineClearance(boxes, spineX, spineW) {
+        let best = null;
+        (boxes || []).forEach((b) => {
+          const c = Math.min(b.x - spineX, spineX + spineW - (b.x + b.w));
+          if (!best || c < best.clear) best = { clear: c, kind: b.kind };
+        });
+        return best;
+      }
       function storeFacts() {
         const tr = trimSize();
         const est = printPageEstimate();
@@ -50023,20 +50048,7 @@
             else if (sc.attestSpine) row("cover", "spine", true, "pass", t("store.c.spine.name"), t("store.c.spine.attested", EP));
             else row("cover", "spine", true, "nc", t("store.c.spine.name"), t("store.nc.spineTemplate", EP), "", { kind: "attest", label: t("store.attest", P) });
           }
-          /* Spine text: drawn by the wrap only at 0.5 in and up (WRAP_SPINE_MIN); its type is at most 60% of the spine,
-             capped at 0.32 in (drawWrapTo), which leaves the clearance computed here. */
-          const spineIn = wrapDims(recipe).spine;
-          if (spineIn < WRAP_SPINE_MIN) row("cover", "spinetext", true, "pass", t("store.c.spinetext.name"), t("store.c.spinetext.none"));
-          else {
-            const size = Math.min(spineIn * 0.6, 0.32);
-            const clear = (spineIn - size) / 2;
-            const needClear = R.spineNarrowBelow && spineIn < R.spineNarrowBelow ? R.spineTextClearNarrow : R.spineTextClear;
-            if (pages < R.spineTextMinPages) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t("store.c.spinetext.failPages", Object.assign({ min: R.spineTextMinPages }, P)), t("store.c.spinetext.fixPages"),
-              { kind: "wrapPages", pages: F.measured ? pages : 0, label: t("store.act.wrapPages") });
-            else if (clear < needClear) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t("store.c.spinetext.failClear", Object.assign({ clear: storeIn(clear), need: storeIn(needClear) }, P)), t("store.c.spinetext.fixClear"), { kind: "cover", label: t("store.act.cover") });
-            else row("cover", "spinetext", true, "pass", t("store.c.spinetext.name"), t("store.c.spinetext.ok", Object.assign({ clear: storeIn(clear), need: storeIn(needClear), min: R.spineTextMinPages }, P)));
-          }
-          /* Barcode reserve: drawn at the wrap's own geometry — read it back and test it against the store's rule. */
+          /* What the wrap really drew, read back once: the spine items' boxes and the barcode reserve. */
           let items = null;
           try {
             const c = document.createElement("canvas");
@@ -50044,6 +50056,23 @@
             c.width = 600; c.height = Math.max(2, Math.round(600 * d.totalH / d.totalW));
             items = drawWrapTo(c, recipe, {});
           } catch (e) { items = null; }
+          /* Spine items: drawn by the wrap only at 0.5 in and up (WRAP_SPINE_MIN). The clearance is measured from the boxes
+             the wrap drew — the text and any icons — not from an assumed type size. */
+          const spineIn = wrapDims(recipe).spine;
+          if (spineIn < WRAP_SPINE_MIN) row("cover", "spinetext", true, "pass", t("store.c.spinetext.name"), t("store.c.spinetext.none"));
+          else {
+            const lay = items && items.dims.layout;
+            const real = items && items.spineBoxes && items.spineBoxes.length && lay ? storeSpineClearance(items.spineBoxes, lay.spineX, lay.spineW) : null;
+            const hasIcons = !!(items && items.spineBoxes && items.spineBoxes.some((x) => x.kind === "icon"));
+            const size = Math.min(spineIn * 0.6, 0.32);
+            const clear = real ? real.clear : (spineIn - size) / 2;
+            const needClear = R.spineNarrowBelow && spineIn < R.spineNarrowBelow ? R.spineTextClearNarrow : R.spineTextClear;
+            if (pages < R.spineTextMinPages) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t(hasIcons ? "store.c.spinetext.failPagesIcons" : "store.c.spinetext.failPages", Object.assign({ min: R.spineTextMinPages }, P)), t("store.c.spinetext.fixPages"),
+              { kind: "wrapPages", pages: F.measured ? pages : 0, label: t("store.act.wrapPages") });
+            else if (clear < needClear) row("cover", "spinetext", true, "fail", t("store.c.spinetext.name"), t(real && real.kind === "icon" ? "store.c.spinetext.failClearIcon" : "store.c.spinetext.failClear", Object.assign({ clear: storeIn(clear), need: storeIn(needClear) }, P)), t("store.c.spinetext.fixClear"), { kind: "cover", label: t("store.act.cover") });
+            else row("cover", "spinetext", true, "pass", t("store.c.spinetext.name"), t(hasIcons ? "store.c.spinetext.okIcons" : "store.c.spinetext.ok", Object.assign({ clear: storeIn(clear), need: storeIn(needClear), min: R.spineTextMinPages }, P)));
+          }
+          /* Barcode reserve: drawn at the wrap's own geometry — read it back and test it against the store's rule. */
           if (!items || !items.barcode) row("cover", "barcode", true, "nc", t("store.c.barcode.name"), t("store.nc.barcode"), t("store.c.barcode.fixDraw"), { kind: "cover", label: t("store.act.cover") });
           else {
             const d = items.dims, bc = items.barcode;
@@ -53539,8 +53568,15 @@
             const inside = !!bc && close(bc.w, 2) && close(bc.h, 1.2) &&
               close(bc.x + bc.w, 0.125 + 6 - 0.375) && close(bc.y + bc.h, 0.125 + 9 - 0.25) && bc.x >= 0.125;
             const overlap = res.backBoxes.some((b) => b.x < bc.x + bc.w && b.x + b.w > bc.x && b.y < bc.y + bc.h && b.y + b.h > bc.y);
-            return scVerdict(inside && !overlap && res.backBoxes.length >= 3,
-              "barcode reserve is 2 × 1.2 in, its right edge 0.375 in clear of the spine fold (hinge) and its foot 0.25 in inside the trim; " + res.backBoxes.length + " back-text lines drawn around it, none intruding — even with a blurb long enough to overflow");
+            /* the back's own font and colour change nothing about where the text may go */
+            const r2 = JSON.parse(JSON.stringify(r));
+            r2.wrap.back = { font: COVER_FONTS.find((f) => f !== r.elements.subtitle.font) || COVER_FONTS[0], color: "#ffd166" };
+            const c2 = document.createElement("canvas"); c2.width = 1306; c2.height = 925;
+            const res2 = drawWrapTo(c2, r2), bc2 = res2.barcode;
+            const overlap2 = res2.backBoxes.some((b) => b.x < bc2.x + bc2.w && b.x + b.w > bc2.x && b.y < bc2.y + bc2.h && b.y + b.h > bc2.y);
+            const styled = c2.toDataURL() !== c.toDataURL();
+            return scVerdict(inside && !overlap && res.backBoxes.length >= 3 && !overlap2 && res2.backBoxes.length >= 3 && styled,
+              "barcode reserve is 2 × 1.2 in, its right edge 0.375 in clear of the spine fold (hinge) and its foot 0.25 in inside the trim; " + res.backBoxes.length + " back-text lines drawn around it, none intruding — even with a blurb long enough to overflow; with the back set to " + r2.wrap.back.font + " in " + r2.wrap.back.color + " the " + res2.backBoxes.length + " lines still stay clear (" + (styled ? "and the back is visibly restyled" : "but the back did not change") + ")");
           } },
         { id: "cover.wrap.pdf-size", feature: "cover", name: "Print wrap: the generated PDF's page dimensions equal the computed wrap size in inches",
           run() {
@@ -61972,6 +62008,38 @@
               const after = storeAudit({ store: "kdp", binding: "paperback", ink: "bw_white" }).groups.cover.find((r) => r.id === "spine");
               const ok = before.status === "fail" && before.action && before.action.kind === "wrapFactor" && after.status === "pass";
               return scVerdict(ok, "Beuk's white wrap factor vs KDP white: " + before.status + " → after fix " + after.status);
+            });
+          } },
+        { id: "cover.store.spine-items", feature: "cover", name: "Store-ready, spine items: a KDP book under 79 pages fails the spine-text rule when the wrap draws icons (not only text), and the clearance is measured from the boxes the wrap really drew — an item inside the clearance fails with its kind named",
+          run() {
+            return storeOnSample(() => {
+              const keepLang = state.meta.language;
+              try {
+                state.meta.language = "fr";
+                const setSpine = (sp, pages) => { state.coverRecipe.wrap = normalizeWrap({ trim: "6x9", pages: pages || 300, paper: "cream", spine: sp }); };
+                const keepSecs = state.sections;
+                state.sections = keepSecs.slice(0, 2);
+                const small = printPageEstimate();
+                const row = (store, ink) => storeAudit({ store, binding: "paperback", ink }).groups.cover.find((r) => r.id === "spinetext");
+                setSpine({ iconTop: { kind: "lucide", name: "Feather" } });
+                const kdpIcon = row("kdp", "bw_cream");
+                setSpine({});
+                const kdpText = row("kdp", "bw_cream");
+                state.sections = keepSecs;
+                const big = printPageEstimate();
+                setSpine({ iconTop: { kind: "lucide", name: "Feather" }, iconBottom: { kind: "lucide", name: "Star" } });
+                const kdpOk = row("kdp", "bw_cream");
+                /* the clearance comes from the drawn boxes */
+                const wide = { x: 5.0, w: 0.8 };
+                const tight = storeSpineClearance([{ kind: "text", part: "title", x: 5.1, w: 0.6 }, { kind: "icon", pos: "top", x: 5.03, w: 0.74 }], wide.x, wide.w);
+                const roomy = storeSpineClearance([{ kind: "text", part: "title", x: 5.1, w: 0.6 }], wide.x, wide.w);
+                const none = storeSpineClearance([], wide.x, wide.w);
+                const tightMsg = t("store.c.spinetext.failClearIcon", { clear: "0.03", need: "0.06", store: "KDP" });
+                const ok = small < 79 && big >= 79 && kdpIcon && kdpIcon.status === "fail" && /icon/i.test(kdpIcon.evidence) && kdpText && kdpText.status === "fail" && kdpOk && kdpOk.status === "pass" &&
+                  tight.kind === "icon" && Math.abs(tight.clear - 0.03) < 1e-9 && roomy.kind === "text" && Math.abs(roomy.clear - 0.1) < 1e-9 && none === null && /icon/i.test(tightMsg);
+                return scVerdict(ok, "a " + small + " page book with Feather on the spine: " + (kdpIcon ? kdpIcon.status + " — " + kdpIcon.evidence : "no row") + "; without icons: " + (kdpText ? kdpText.status : "no row") + "; at " + big + " pages with two icons: " + (kdpOk ? kdpOk.status : "no row") +
+                  "; the clearance helper names the " + (tight && tight.kind) + " at " + (tight && tight.clear) + " in, the " + (roomy && roomy.kind) + " at " + (roomy && roomy.clear) + " in, and nothing for an empty spine");
+              } finally { state.meta.language = keepLang; }
             });
           } },
         { id: "store.report.download-carries-evidence", feature: "print", name: "Store-ready: the downloadable report carries the title, store, trim, page count, date, verdict, every check with its evidence, and the source URLs",

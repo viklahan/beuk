@@ -2670,6 +2670,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The spine and its icons are painted by the client canvas.',
   },
   {
+    id: 'cover.store.spine-items',
+    title: 'Store-ready, spine items: icons count against the page minimum and the clearance is read from the drawn boxes',
+    kind: 'client-only',
+    reason: 'The store check reads the wrap the client cover maker drew.',
+  },
+  {
     id: 'cover.wrap3d.faces-from-wrap',
     title: '3D wrap viewer: front, spine and back faces are sliced from the current wrap render',
     kind: 'client-only',
