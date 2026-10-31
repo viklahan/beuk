@@ -37,6 +37,7 @@ import { clientErrorRoutes, type ClientErrorOptions } from './ops/client-errors.
 import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
 import { opsHousekeepingRoutes } from './routes/ops-housekeeping.js';
+import { epubRoutes } from './routes/epub.js';
 import { statusPageRoutes } from './routes/status-page.js';
 
 export interface AppDeps {
@@ -135,6 +136,7 @@ export function buildApp({
   app.use('/api/pictures', pictureRoutes(db, config));
   app.use('/api/streak', streakRoutes(db, config, now));
   app.use('/api/exports', exportRoutes(db, config));
+  app.use('/api/epub', epubRoutes(db, config));
   app.use(
     '/api/billing',
     billingRoutes(db, config, billingProvider, now),

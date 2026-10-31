@@ -31,8 +31,9 @@ import { entitlementsFor, loadEntitlements, type EntitlementsLoad, type Entitlem
  * the print PDF, the cover wrap, adding new books to the shelf, new beta
  * links (and refreshing an existing link's copy), server EPUBCheck checks,
  * the server-made print-ready PDF (the pdfx job, export.print), and saving
- * new files to the archive. export.epub and export.wrap are declared here;
- * their routes arrive with the server-built exports (Step 3, parts 3-4).
+ * new files to the archive. export.epub is the server-built store-ready
+ * EPUB (POST /api/epub, Step 3 part 3); export.wrap is declared here and its
+ * route arrives with the server-built cover wrap (part 4).
  */
 
 export type AccessState =
@@ -86,6 +87,7 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/shares/:id/republish', feature: 'shares.create' },
   { method: 'POST', path: '/api/jobs/epubcheck', feature: 'jobs.run' },
   { method: 'POST', path: '/api/jobs/pdfx', feature: 'export.print' },
+  { method: 'POST', path: '/api/epub', feature: 'export.epub' },
   { method: 'POST', path: '/api/exports', feature: 'archive.upload' },
 ];
 

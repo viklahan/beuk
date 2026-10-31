@@ -29,7 +29,7 @@ import vm from 'node:vm';
 export const STUDIO_BASE = 'https://studio.beuk.invalid/';
 
 /** A browser-strict DOMParser over xmldom. */
-class StrictDomParser {
+export class StrictDomParser {
   parseFromString(src: string, mime: string): unknown {
     const parser = new XmlDomParser({
       onError: (level: string, msg: string) => {

@@ -40,6 +40,9 @@ import { checkSchoolContent, loadSchoolContent } from '../school/content.js';
 import { readLessonMedia } from '../school/media.js';
 import { checkWeeklyContent, loadWeeklyContent } from '../weekly/content.js';
 import { checkBowmarketContent, forSale, loadBowmarketContent } from '../bowmarket/content.js';
+import { studioEpub } from '../book/epub/build.js';
+import { epubState } from '../book/epub/state.js';
+import { readBook } from '../book/read.js';
 
 /**
  * The Housekeeping Self-checks registry, ported from
@@ -3614,6 +3617,26 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
       if (!c.items.length) throw new NotConfigured('no item under content/bowmarket/en yet');
       const selling = c.items.filter(forSale).length;
       return `${c.items.length} item(s), ${c.items.filter((i) => i.kind === 'set').length} box set(s); ${selling} on sale, ${c.items.length - selling} coming soon`;
+    },
+  },
+  {
+    id: 'export.epub-server.build',
+    title: 'Store-ready EPUB on the server (POST /api/epub): the studio’s own EPUB code, lifted from client/index.html, builds a right-to-left book with its script face embedded, and the package passes the package checks',
+    kind: 'server',
+    run: async ({ config }) => {
+      const book = readBook({
+        meta: { title: 'فحص', author: 'Beuk', language: 'ar', bookId: 'urn:uuid:00000000-0000-4000-8000-0000000000e1' },
+        sections: [{ id: 'c1', kind: 'body', type: 'chapter', title: 'واحد', content: 'كان البحر هادئًا في ذلك الصباح.' }],
+      }).book;
+      const sb = studioEpub();
+      const out = await sb.build(epubState(book, 'generic'), { lang: 'en', timeoutMs: config.jobTimeoutMs });
+      const entries = readZip(out.bytes);
+      const bad = validateEpub(entries).filter((c) => c.status !== 'pass');
+      assert(bad.length === 0, bad.map((c) => `${c.id}: ${c.detail}`).join('; '));
+      assert(out.notes.length === 0, `the studio would have said: ${out.notes.join(' | ')}`);
+      const fonts = entries.filter((e) => e.name.startsWith('OEBPS/Fonts/') && !e.name.endsWith('/'));
+      assert(fonts.length > 0, 'no script face embedded');
+      return `${entries.length} zip entries, ${fonts.length} font file(s); closure ${sb.source.names.length} declarations, ${sb.source.lines} lines`;
     },
   },
   {

@@ -305,6 +305,9 @@ export function validateEpub(entries: ZipEntry[]): PackageCheck[] {
   for (const entry of entries) {
     if (entry.name === 'mimetype' || entry.name.startsWith('META-INF/')) continue;
     if (entry.name === opfPath) continue;
+    // A folder entry ("OEBPS/") names no file: JSZip's folder(), which the
+    // studio's own EPUB builder uses, writes one per folder.
+    if (entry.name.endsWith('/') && entry.data.length === 0) continue;
     if (!manifestPaths.has(entry.name)) problems.push(`file ${entry.name} is not in the manifest`);
   }
   push(
