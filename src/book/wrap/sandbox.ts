@@ -18,10 +18,17 @@ import vm from 'node:vm';
      client/assets/vendor/lucide.min.js, evaluated in the context by the
      worker (installLucide below).
 
-   The context has no require, no process, no module, no fetch and no
-   eval or new Function (codeGeneration off). vm is not a boundary
-   against hostile CODE (Node's own docs say so); the code here is the
-   studio's own source, and the writer's book reaches it only as data. */
+   The context's own globals hold no require, no process, no module and
+   no fetch, and its own eval and Function refuse strings (codeGeneration
+   off). That is NOT a fence around the host: Path2D, every canvas, its
+   2D context and every decoded picture are host-realm objects, and their
+   .constructor chain reaches the host's Function, which compiles strings
+   and can reach process. vm is not a boundary against hostile CODE
+   (Node's own docs say so). The real assumption is narrower: the code
+   here is the studio's own source, and the writer's book reaches it only
+   as data — nothing in the wrap path turns book data into code or into a
+   call by name. The worker thread (no secrets in its environment, a heap
+   cap, a time cap) is the containment, not this context. */
 
 /* ---- the font shim: what Chrome does with ctx.font that Skia does not ----
 
@@ -321,10 +328,12 @@ export function shimContext<T extends object>(ctx: T, plan: FontPlan): T {
 }
 
 /** A fresh context with the shims and nothing else. `plan` is read when
- *  type is set, so the worker can fill it after registering the faces.
+ *  type is set, so the worker can fill it once the faces are registered.
  *  document and Image are made inside the context (their prototypes are
  *  the context's own); the canvas maker they close over is not reachable
- *  from the studio code. */
+ *  by name from the studio code. Path2D and what createElement returns
+ *  are host objects (see the header: host Function is reachable through
+ *  them). */
 export function makeWrapSandbox(plan: FontPlan = { map: {} }): vm.Context {
   const makeCanvas = (tag: string) => {
     if (tag.toLowerCase() !== 'canvas') throw new Error(`document.createElement: only a canvas can be made on the server (asked for ${tag})`);

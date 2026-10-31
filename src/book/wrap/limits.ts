@@ -59,6 +59,17 @@ export function imageSize(b: Buffer): { w: number; h: number } | null {
   return null;
 }
 
+/** Most decoded pixels one render may hold in native memory: every
+ *  picture it paints (a raster at its header size, an SVG at the size it
+ *  is rasterised at) plus the wrap canvas. Over it the render is refused
+ *  as too large before anything is decoded. */
+export const MAX_RENDER_PIXELS = 100_000_000;
+
+/** Most <use> elements an SVG picture may have. */
+export const MAX_SVG_USES = 50;
+/** Most elements an SVG picture may have. */
+export const MAX_SVG_ELEMENTS = 5000;
+
 /** Is this picture small enough to decode? */
 export function pictureFits(size: { w: number; h: number } | null): boolean {
   return !!size && size.w > 0 && size.h > 0 && size.w <= MAX_PICTURE_SIDE && size.h <= MAX_PICTURE_SIDE && size.w * size.h <= MAX_WRAP_PIXELS;
@@ -77,13 +88,20 @@ export function pictureFits(size: { w: number; h: number } | null): boolean {
      XML declaration; a root that is not <svg> in the SVG namespace;
      script, foreignObject, iframe, object, embed, audio, video, link,
      meta, handler and listener elements; on* attributes; xml:base; any
-     href or src (any prefix, any namespace) that is not "#id" or an
-     inline PNG/JPEG/WebP/GIF data URI; url() reaching anything else in
-     any attribute or <style>; image-set(); @import; a backslash in an
-     attribute value or <style> (a CSS escape could spell url( another way).
-   - Inline pictures and the SVG's own size (root width/height in px or
-     unitless, else the viewBox) are held to the same fence as any
-     picture (too-large). */
+     href or src (any prefix, any namespace) that is not "#id"; url()
+     reaching anything but "#id" in any attribute or <style>;
+     image-set(); @import; a backslash in an attribute value or <style>
+     (a CSS escape could spell url( another way).
+   - Refused (unsupported), final review: an inline raster picture (a
+     data:image/* URI) anywhere — a flourish is vector, and hundreds of
+     inline pictures would each be decoded in native memory; <filter>,
+     every filter primitive (fe*) and <pattern>, whose render-time work
+     Skia does not bound; more than MAX_SVG_USES <use> elements, or a
+     <use> whose target is another <use>, holds a <use>, or holds the
+     <use> itself (a chain or a loop multiplies the drawing); more than
+     MAX_SVG_ELEMENTS elements in all.
+   - The SVG's own size (root width/height in px or unitless, else the
+     viewBox) is held to the same fence as any picture (too-large). */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -96,7 +114,6 @@ export type SvgVerdict =
 export const SVG_RASTER_SIDE = 2000;
 
 const FORBIDDEN_ELEMENTS = new Set(['script', 'foreignobject', 'iframe', 'object', 'embed', 'audio', 'video', 'link', 'meta', 'handler', 'listener']);
-const DATA_IMAGE = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=\s]*)$/i;
 const ID_REF = /^#[^\s#]*$/;
 const URL_FN = /url\s*\(\s*(["']?)([^"')]*)\1\s*\)/gi;
 
@@ -116,13 +133,14 @@ export function looksLikeSvg(b: Buffer): boolean {
 
 type Refusal = { reason: 'unsupported' | 'too-large'; why: string };
 
-/** A reference target the server allows: "#id", or an inline picture within the fence. */
+/** A reference target the server allows: "#id" only. An inline raster
+ *  picture is refused too: a flourish is vector, and each inline picture
+ *  would be decoded in native memory with no count or total on it. */
 function target(raw: string): Refusal | null {
   const v = raw.trim();
   if (ID_REF.test(v)) return null;
-  const m = DATA_IMAGE.exec(v);
-  if (!m) return { reason: 'unsupported', why: `a reference to ${JSON.stringify(v.slice(0, 40))}` };
-  return pictureFits(imageSize(Buffer.from(m[2]!.replace(/\s/g, ''), 'base64'))) ? null : { reason: 'too-large', why: 'an inline picture over the size fence' };
+  if (/^data:image\//i.test(v)) return { reason: 'unsupported', why: 'an inline raster picture' };
+  return { reason: 'unsupported', why: `a reference to ${JSON.stringify(v.slice(0, 40))}` };
 }
 
 /** CSS (an attribute value or <style> text): every url() must reach an allowed target. */
@@ -144,24 +162,41 @@ type XAttr = { localName?: string | null; name: string; value: string };
 type XNode = {
   nodeType: number; nodeName: string; localName?: string | null; namespaceURI?: string | null;
   childNodes?: ArrayLike<XNode>; attributes?: ArrayLike<XAttr>; textContent?: string | null;
+  parentNode?: XNode | null;
 };
 type XElement = XNode & { getAttribute(n: string): string | null; setAttribute(n: string, v: string): void };
 
+/** What the walk gathers on the way: the element count, the <use>
+ *  elements and every element by its id. */
+type WalkState = { elements: number; uses: XNode[]; ids: Map<string, XNode[]> };
+
+const elName = (n: XNode): string => String(n.localName ?? n.nodeName).toLowerCase();
+/** An attribute's local name, whatever the prefix or namespace (a:href bound to xlink is an href). */
+const attrLocal = (a: XAttr): string => String(a.localName ?? a.name.replace(/^.*:/, '')).toLowerCase();
+
 /** Walk the parsed SVG: the first reason to refuse it, or null. */
-function walk(node: XNode): Refusal | null {
+function walk(node: XNode, st: WalkState): Refusal | null {
   if (node.nodeType === 10) return { reason: 'unsupported', why: 'a doctype' };
   if (node.nodeType === 7 && node.nodeName.toLowerCase() !== 'xml') return { reason: 'unsupported', why: `a processing instruction (${node.nodeName})` };
   if (node.nodeType === 5 || node.nodeType === 6) return { reason: 'unsupported', why: 'an entity' };
   if (node.nodeType === 1) {
-    const name = String(node.localName ?? node.nodeName).toLowerCase();
+    if (++st.elements > MAX_SVG_ELEMENTS) return { reason: 'unsupported', why: `more than ${MAX_SVG_ELEMENTS} elements` };
+    const name = elName(node);
     if (FORBIDDEN_ELEMENTS.has(name)) return { reason: 'unsupported', why: `a <${name}> element` };
+    /* render-time work Skia does not bound: filters (and every primitive) and patterns */
+    if (name === 'filter' || name.startsWith('fe') || name === 'pattern') return { reason: 'unsupported', why: `a <${node.localName ?? node.nodeName}> element` };
+    if (name === 'use') st.uses.push(node);
     const attrs = node.attributes ?? [];
     for (let i = 0; i < attrs.length; i++) {
       const a = attrs[i]!;
-      /* by local name, whatever the prefix or namespace (a:href bound to xlink is an href) */
-      const local = String(a.localName ?? a.name.replace(/^.*:/, '')).toLowerCase();
+      const local = attrLocal(a);
       if (local.startsWith('on')) return { reason: 'unsupported', why: `an event attribute (${a.name})` };
       if (local === 'base' && a.name.includes(':')) return { reason: 'unsupported', why: `${a.name}` };
+      if (local === 'id') {
+        const list = st.ids.get(a.value) ?? [];
+        list.push(node);
+        st.ids.set(a.value, list);
+      }
       if (local === 'href' || local === 'src') {
         const bad = target(a.value);
         if (bad) return bad;
@@ -176,8 +211,42 @@ function walk(node: XNode): Refusal | null {
   }
   const kids = node.childNodes ?? [];
   for (let i = 0; i < kids.length; i++) {
-    const bad = walk(kids[i]!);
+    const bad = walk(kids[i]!, st);
     if (bad) return bad;
+  }
+  return null;
+}
+
+/** Does `node` hold a <use> anywhere beneath it? */
+function holdsUse(node: XNode): boolean {
+  const kids = node.childNodes ?? [];
+  for (let i = 0; i < kids.length; i++) {
+    const k = kids[i]!;
+    if (k.nodeType === 1 && (elName(k) === 'use' || holdsUse(k))) return true;
+  }
+  return false;
+}
+
+/** The <use> elements: at most MAX_SVG_USES, and none whose target (any
+ *  element carrying the id it names) is a <use>, holds a <use>, or is
+ *  the <use> itself or one of its ancestors. So a <use> copies plain
+ *  drawing once: no chain, no loop. */
+function checkUses(st: WalkState): Refusal | null {
+  if (st.uses.length > MAX_SVG_USES) return { reason: 'unsupported', why: `more than ${MAX_SVG_USES} <use> elements` };
+  for (const u of st.uses) {
+    const attrs = u.attributes ?? [];
+    for (let i = 0; i < attrs.length; i++) {
+      const a = attrs[i]!;
+      if (attrLocal(a) !== 'href') continue;
+      /* target() let only "#id" through */
+      for (const t of st.ids.get(a.value.trim().slice(1)) ?? []) {
+        if (elName(t) === 'use') return { reason: 'unsupported', why: 'a <use> of a <use>' };
+        for (let p: XNode | null | undefined = u; p; p = p.parentNode) {
+          if (p === t) return { reason: 'unsupported', why: 'a <use> of its own ancestor' };
+        }
+        if (holdsUse(t)) return { reason: 'unsupported', why: 'a <use> of something holding a <use>' };
+      }
+    }
   }
   return null;
 }
@@ -196,7 +265,8 @@ export function checkSvg(b: Buffer): SvgVerdict {
   }
   const root = doc.documentElement;
   if (!root || root.localName !== 'svg' || root.namespaceURI !== SVG_NS) return { ok: false, reason: 'unsupported', why: 'the root is not <svg> in the SVG namespace' };
-  const bad = walk(doc);
+  const st: WalkState = { elements: 0, uses: [], ids: new Map() };
+  const bad = walk(doc, st) ?? checkUses(st);
   if (bad) return { ok: false, ...bad };
 
   const vb = (root.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number);

@@ -13,7 +13,7 @@ import { buildApp } from '../src/app.js';
 import { EpubBusyError, EpubQueue } from '../src/book/epub/queue.js';
 import { BuildBusyError, BuildQueue } from '../src/book/studio/queue.js';
 import { buildWrap } from '../src/book/wrap/build.js';
-import { MAX_WRAP_PIXELS, checkSvg, imageSize, looksLikeSvg } from '../src/book/wrap/limits.js';
+import { MAX_SVG_ELEMENTS, MAX_SVG_USES, MAX_WRAP_PIXELS, checkSvg, imageSize, looksLikeSvg } from '../src/book/wrap/limits.js';
 import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db.js';
 import { SELF_CHECK_CASES } from '../src/housekeeping/registry.js';
@@ -291,7 +291,7 @@ test('an SVG declaring width=30000 height=30000 is refused as picture-too-large'
   assert.deepEqual(reasonOf(r), { reason: 'picture-too-large', pictures: ['svg-flourish'] });
 });
 
-test('checkSvg: sizes from width/height (px or unitless), else the viewBox, else a square; inline pictures and #refs are fine', () => {
+test('checkSvg: sizes from width/height (px or unitless), else the viewBox, else a square; #refs are fine', () => {
   const X = 'xmlns="http://www.w3.org/2000/svg"';
   const size = (svg: string) => { const v = checkSvg(Buffer.from(svg)); return v.ok ? [v.w, v.h] : v.reason; };
   assert.deepEqual(size(`<svg ${X} width="400px" height="100"/>`), [2000, 500], 'px and unitless, scaled up to the raster side');
@@ -302,7 +302,8 @@ test('checkSvg: sizes from width/height (px or unitless), else the viewBox, else
   assert.equal(size(`<svg ${X} width="20001" height="10"/>`), 'too-large');
   assert.equal(size(`<svg ${X} viewBox="0 0 8000 8000"/>`), 'too-large', 'over 40 MP by its viewBox');
   const png = solidPng([1, 2, 3], 4);
-  assert.deepEqual(size(`<svg ${X} width="10" height="10"><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/><use href="#g"/><image href="data:image/png;base64,${png}"/></svg>`), [2000, 2000]);
+  assert.deepEqual(size(`<svg ${X} width="10" height="10"><defs><linearGradient id="g"/></defs><rect fill="url(#g)"/><use href="#g"/></svg>`), [2000, 2000]);
+  assert.equal(size(`<svg ${X} width="10" height="10"><image href="data:image/png;base64,${png}"/></svg>`), 'unsupported', 'an inline raster picture (final review: a flourish is vector)');
   assert.equal(size(`<svg ${X} width="10" height="10"><image href="data:image/svg+xml;base64,PHN2Zy8+"/></svg>`), 'unsupported', 'a nested SVG is not an allowed inline picture');
   assert.equal(size(`<svg ${X} width="10" height="10"><style>@import "x.css";</style></svg>`), 'unsupported');
   assert.deepEqual(size('<svg width="10" height="10"/>'), [2000, 2000], 'no xmlns: the parser puts an image/svg+xml root in the SVG namespace');
@@ -320,6 +321,57 @@ test('checkSvg: sizes from width/height (px or unitless), else the viewBox, else
   for (const want of ['width="2000"', 'height="1000"', 'viewBox="0 0 10 5"', 'class="a"', '<rect width="10" height="5"/>']) assert.ok(out.includes(want), `${want} in ${out}`);
   assert.ok(looksLikeSvg(Buffer.from('﻿<?xml version="1.0"?>\n<!-- c --><svg/>')), 'a BOM, an XML declaration and a comment before a self-closing root');
   assert.ok(!looksLikeSvg(Buffer.from('GIF89a')), 'a GIF is not an SVG');
+});
+
+test('checkSvg (final review): inline raster pictures, filters, patterns, <use> chains and loops, and too many elements are refused; plain drawing passes', () => {
+  const X = 'xmlns="http://www.w3.org/2000/svg"';
+  const verdict = (svg: string) => { const v = checkSvg(Buffer.from(svg)); return v.ok ? 'ok' : `${v.reason}: ${v.why}`; };
+  const png = solidPng([1, 2, 3], 4);
+  const refused = (svg: string, why: string) => assert.match(verdict(svg), /^unsupported: /, why);
+  /* inline rasters, in an href and in a CSS url() */
+  refused(`<svg ${X} width="10" height="10"><image href="data:image/png;base64,${png}" width="10" height="10"/></svg>`, 'an inline PNG in <image href>');
+  refused(`<svg ${X} xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10"><image xlink:href="data:image/jpeg;base64,${png}"/></svg>`, 'an inline picture in xlink:href');
+  refused(`<svg ${X} width="10" height="10"><rect style="fill:url(data:image/png;base64,${png})" width="10" height="10"/></svg>`, 'an inline picture in a CSS url()');
+  /* render-time work Skia does not bound */
+  refused(`<svg ${X} width="10" height="10"><filter id="f"><feGaussianBlur stdDeviation="500"/></filter><rect filter="url(#f)" width="10" height="10"/></svg>`, 'a filter with feGaussianBlur');
+  refused(`<svg ${X} width="10" height="10"><feGaussianBlur stdDeviation="5"/></svg>`, 'a filter primitive on its own');
+  refused(`<svg ${X} width="10" height="10"><filter id="f"/></svg>`, 'an empty <filter>');
+  refused(`<svg ${X} width="10" height="10"><pattern id="p" width="1" height="1"><rect width="1" height="1"/></pattern><rect fill="url(#p)" width="10" height="10"/></svg>`, 'a pattern');
+  /* <use>: the 9 x 10 chain (a billion laughs in drawing) */
+  let chain = '<g id="l0"><path d="M0 0h1v1z"/></g>';
+  for (let i = 1; i <= 9; i++) chain += `<g id="l${i}">${Array.from({ length: 10 }, () => `<use href="#l${i - 1}"/>`).join('')}</g>`;
+  refused(`<svg ${X} width="10" height="10"><defs>${chain}</defs><use href="#l9"/></svg>`, 'a 9 x 10 <use> chain');
+  /* a short chain is refused for its shape, not only its count */
+  refused(`<svg ${X} width="10" height="10"><defs><g id="a"><path d="M0 0h1v1z"/></g><g id="b"><use href="#a"/><use href="#a"/></g></defs><use href="#b"/></svg>`, 'a <use> of a group holding <use>');
+  refused(`<svg ${X} width="10" height="10"><defs><path id="a" d="M0 0h1v1z"/><use id="u" href="#a"/></defs><use href="#u"/></svg>`, 'a <use> of a <use>');
+  refused(`<svg ${X} width="10" height="10"><g id="a"><path d="M0 0h1v1z"/><use href="#a"/></g></svg>`, 'a <use> inside the group it uses');
+  refused(`<svg ${X} width="10" height="10"><use id="s" href="#s"/></svg>`, 'a <use> of itself');
+  refused(`<svg ${X} xmlns:xlink="http://www.w3.org/1999/xlink" id="root" width="10" height="10"><use xlink:href="#root"/></svg>`, 'a <use> of the root (an ancestor)');
+  const uses = (n: number) => `<svg ${X} width="10" height="10"><defs><path id="a" d="M0 0h1v1z"/></defs>${'<use href="#a"/>'.repeat(n)}</svg>`;
+  assert.equal(verdict(uses(MAX_SVG_USES)), 'ok', `${MAX_SVG_USES} plain <use> pass`);
+  refused(uses(MAX_SVG_USES + 1), `${MAX_SVG_USES + 1} <use>`);
+  /* elements in all: the root counts */
+  const els = (n: number) => `<svg ${X} width="10" height="10">${'<rect width="1" height="1"/>'.repeat(n - 1)}</svg>`;
+  assert.equal(verdict(els(MAX_SVG_ELEMENTS)), 'ok', `${MAX_SVG_ELEMENTS} elements pass`);
+  refused(els(MAX_SVG_ELEMENTS + 1), `${MAX_SVG_ELEMENTS + 1} elements`);
+  /* the studio's own flourish shape still passes (its painting: the flourish route test above) */
+  assert.equal(verdict(STAR('#ff00ff')), 'ok');
+});
+
+test('an SVG with an inline picture, a filter or a <use> chain is refused by the route as picture-unsupported (final review)', async () => {
+  const w = await writer(on.base);
+  const X = 'xmlns="http://www.w3.org/2000/svg"';
+  let chain = '<g id="l0"><path d="M0 0h1v1z"/></g>';
+  for (let i = 1; i <= 9; i++) chain += `<g id="l${i}">${Array.from({ length: 10 }, () => `<use href="#l${i - 1}"/>`).join('')}</g>`;
+  for (const svg of [
+    `<svg ${X} width="10" height="10"><image href="data:image/png;base64,${solidPng([1, 2, 3], 4)}" width="10" height="10"/></svg>`,
+    `<svg ${X} width="10" height="10"><filter id="f"><feGaussianBlur stdDeviation="500"/></filter><rect filter="url(#f)" width="10" height="10"/></svg>`,
+    `<svg ${X} width="10" height="10"><defs>${chain}</defs><use href="#l9"/></svg>`,
+  ]) {
+    const r = await postWrap(on.base, w.c, { book: svgCover(svg), kind: 'jpg' });
+    assert.equal(r.status, 422, svg.slice(0, 120));
+    assert.deepEqual(reasonOf(r), { reason: 'picture-unsupported', pictures: ['svg-flourish'] });
+  }
 });
 
 test('checkSvg (fix round 2): what reaches the decoder is the serialised parse, never the writer\'s text', () => {

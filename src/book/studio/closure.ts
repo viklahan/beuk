@@ -183,14 +183,28 @@ export type RunOptions = {
   noun: string;
   /** The error the caller's route recognises. */
   error: (message: string, reason: BuildFailure) => Error;
+  /** A message from the worker that is not its answer (no `ok`): a
+   *  question, answered with what this returns. A throw fails the build. */
+  onRequest?: (m: unknown) => unknown;
+  /** The worker thread's life, once it starts: `exited` settles when the
+   *  thread has exited, `stopped` when it was told to terminate (on any
+   *  ending: answer, error, time cap). Either may come first. */
+  onLife?: (life: { exited: Promise<void>; stopped: Promise<void> }) => void;
 };
 
 /** Run one build in a fresh worker. It answers with { ok, out } or
  *  { ok: false, error }; the parent stops it at the time cap, and an
- *  out-of-heap worker is a 'memory' failure. */
+ *  out-of-heap worker is a 'memory' failure. The caller hears of a
+ *  timeout at once, whether or not the thread has exited yet (onLife
+ *  says when it has). */
 export function runStudioWorker(url: URL, workerData: unknown, opts: RunOptions): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const w = new Worker(url, studioWorkerOptions(workerData, opts.heapMb));
+    let markExited!: () => void, markStopped!: () => void;
+    const exited = new Promise<void>((r) => { markExited = r; });
+    const stopped = new Promise<void>((r) => { markStopped = r; });
+    w.on('exit', () => markExited());
+    opts.onLife?.({ exited, stopped });
     let settled = false;
     const done = (fn: () => void) => {
       if (settled) return;
@@ -198,10 +212,24 @@ export function runStudioWorker(url: URL, workerData: unknown, opts: RunOptions)
       clearTimeout(timer);
       fn();
       void w.terminate();
+      markStopped();
     };
     const timer = setTimeout(() => done(() => reject(opts.error(`the ${opts.noun} build did not finish within ${opts.timeoutMs} ms and was stopped`, 'timeout'))), opts.timeoutMs);
-    w.once('message', (m: { ok: boolean; out?: unknown; error?: string }) =>
-      done(() => (m.ok ? resolve(m.out) : reject(opts.error(`the ${opts.noun} build failed: ${m.error}`, 'failed')))));
+    w.on('message', (m: { ok?: boolean; out?: unknown; error?: string }) => {
+      if (settled) return;
+      if (opts.onRequest && !(m && typeof m === 'object' && 'ok' in m)) {
+        let answer: unknown;
+        try {
+          answer = opts.onRequest(m);
+        } catch (e) {
+          done(() => reject(opts.error(`the ${opts.noun} build failed: ${e instanceof Error ? e.message : String(e)}`, 'failed')));
+          return;
+        }
+        w.postMessage(answer);
+        return;
+      }
+      done(() => (m.ok ? resolve(m.out) : reject(opts.error(`the ${opts.noun} build failed: ${m.error}`, 'failed'))));
+    });
     w.once('error', (err: Error & { code?: string }) =>
       done(() => reject(err.code === 'ERR_WORKER_OUT_OF_MEMORY'
         ? opts.error(`the ${opts.noun} build ran out of memory and was stopped`, 'memory')

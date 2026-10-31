@@ -7,8 +7,8 @@ import vm from 'node:vm';
 import { GlobalFonts, createCanvas, loadImage } from '@napi-rs/canvas';
 import { PDFDocument } from 'pdf-lib';
 import { reachableFrom } from '../src/book/studio/closure.js';
-import { imageSize } from '../src/book/wrap/limits.js';
-import { WRAP_CLOSURE, WRAP_ROOTS, WRAP_SUPPLIED, WrapBuildError, WrapInputError, extractWrapSource, loadWrapClosure, manifestFonts, wrapState } from '../src/book/wrap/closure.js';
+import { MAX_RENDER_PIXELS, imageSize } from '../src/book/wrap/limits.js';
+import { WRAP_CLOSURE, WRAP_ROOTS, WRAP_SUPPLIED, WrapBuildError, WrapInputError, type WrapTrace, extractWrapSource, loadWrapClosure, manifestFonts, wrapState } from '../src/book/wrap/closure.js';
 import { type FontPlan, chromeSize, chromeWords, expandFamilies, makeWrapSandbox, parseCssFont, shimContext } from '../src/book/wrap/sandbox.js';
 import { readBook } from '../src/book/read.js';
 import { fixturePath } from './book-fixtures.js';
@@ -56,7 +56,7 @@ test('wrap closure: a studio rename fails loudly, naming the missing declaration
   assert.throws(() => extractWrapSource(renamed), /no longer declares: hcDrawFlaps\b/);
 });
 
-test('wrap sandbox: no require, no process, no module, no eval; createElement makes canvases only', () => {
+test("wrap sandbox: the context's own globals hold no require, process, module or fetch, its own eval and Function refuse strings, createElement makes canvases only; host objects still reach the host Function (not a fence: sandbox.ts)", () => {
   const ctx = makeWrapSandbox();
   assert.equal(vm.runInContext('typeof require', ctx), 'undefined');
   assert.equal(vm.runInContext('typeof process', ctx), 'undefined');
@@ -67,6 +67,10 @@ test('wrap sandbox: no require, no process, no module, no eval; createElement ma
   assert.equal(vm.runInContext('const c = document.createElement("canvas"); c.width = 7; c.height = 5; c.getContext("2d") ? c.width * c.height : 0', ctx), 35);
   assert.throws(() => vm.runInContext('document.createElement("div")', ctx), /only a canvas/);
   assert.throws(() => vm.runInContext('new Image()', ctx), /Image/);
+  /* what this test does NOT prove: Path2D (like a canvas, its context and a decoded picture) is a host object,
+     and its constructor chain is the host's Function, which compiles strings. The wrap rests on no book data
+     ever becoming code or a call (sandbox.ts header), not on this context. */
+  assert.equal(vm.runInContext('Path2D.constructor.constructor("return typeof process")()', ctx), 'object');
 });
 
 test('wrap closure: Lantern Coast print renders a 300-DPI JPEG of the wrap size, and a PDF page of exactly the wrap size', async () => {
@@ -285,6 +289,19 @@ test('wrap fence: renders take turns even when two are started together', async 
   assert.notEqual(a.buildId, b.buildId);
 });
 
+test('wrap fence (final review): the pictures and the canvas together over MAX_RENDER_PIXELS are refused as too large before any is decoded', async () => {
+  /* three pictures each inside the per-picture fence (6300 x 6300 = 39.7 MP), 119 MP together */
+  const b = lantern();
+  const art = b.images.find((i) => i.id === 'sample-img-cover-art')!;
+  art.mediaType = 'image/png';
+  art.data = pngHeader(6300, 6300).toString('base64');
+  for (const id of ['big-top', 'big-bottom']) b.images.push({ id, mediaType: 'image/png', data: art.data });
+  const spine = (b.coverRecipe.wrap.spine ?? {}) as Record<string, unknown>;
+  b.coverRecipe.wrap = { ...b.coverRecipe.wrap, spine: { ...spine, iconTop: { kind: 'upload', picId: 'big-top' }, iconBottom: { kind: 'upload', picId: 'big-bottom' } } };
+  assert.ok(3 * 6300 * 6300 > MAX_RENDER_PIXELS);
+  await assert.rejects(loadWrapClosure(html, CLIENT).render(b as never, 'jpg', { lang: 'en' }), refusal('too-large'));
+});
+
 /** Lantern Coast with its title and author set in Lora. */
 const inLora = () => {
   const b = lantern();
@@ -306,6 +323,31 @@ test('wrap fonts: a face left behind (a stopped build, a bare family name) never
   } finally {
     GlobalFonts.remove(leak!);
   }
+});
+
+test('wrap line and fonts (final review): a render stopped at the time cap after its faces were registered leaves none behind, and the next starts only once that worker has exited', async () => {
+  const sb = loadWrapClosure(html, CLIENT);
+  const events: WrapTrace[] = [];
+  let liveAtRegistration: boolean | null = null;
+  const trace = (t: WrapTrace) => {
+    events.push(t);
+    if (t.kind === 'registered') liveAtRegistration = t.faces.length > 0 && t.faces.every((f) => GlobalFonts.has(f));
+  };
+  /* the worker spins once the parent has registered its faces: the time cap stops it there, mid-render */
+  const stopped = sb.render(inLora() as never, 'jpg', { lang: 'en', timeoutMs: 15_000, holdAfterFonts: true, trace });
+  const next = sb.render(inLora() as never, 'jpg', { lang: 'en' });
+  await assert.rejects(stopped, (e: unknown) => e instanceof WrapBuildError && e.reason === 'timeout');
+  const after = await next;
+  const reg = events.find((e) => e.kind === 'registered') as Extract<WrapTrace, { kind: 'registered' }> | undefined;
+  const exit = events.find((e) => e.kind === 'exited') as Extract<WrapTrace, { kind: 'exited' }> | undefined;
+  assert.ok(reg && reg.faces.length > 0, 'the stopped render had registered its faces');
+  assert.equal(liveAtRegistration, true, 'and they were live in GlobalFonts while its worker ran');
+  assert.ok(exit, 'its worker exited');
+  assert.ok(after.timing.started >= exit.at, `the next render started at ${after.timing.started}, after the stopped worker exited at ${exit.at}`);
+  assert.ok(events.some((e) => e.kind === 'removed'), 'its faces were removed');
+  for (const f of reg.faces) assert.ok(!GlobalFonts.has(f), `${f} is gone`);
+  const nonce = reg.faces[0]!.replace(/^.* beuk-(up-)?/, '');
+  assert.ok(!GlobalFonts.families.some((f) => f.family.includes(nonce)), `nothing under its nonce ${nonce} remains`);
 });
 
 test('wrap fonts: the writer\'s uploaded "Lora" stands in where Chrome puts it: at normal 400, not where a built-in face matches better', async () => {

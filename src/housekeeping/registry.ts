@@ -3741,6 +3741,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The buttons live in the studio’s cover maker; the check drives the real downloadWrap over stubbed server answers in a browser. The route, its 402 gate and the paint are asserted server-side in tests/wrap-route.test.ts and the export.wrap-server.build case.',
   },
   {
+    id: 'fonts.upload.family-names',
+    title: 'Custom font uploads: a family name that is not a CSS identifier (“Garamond 3”, “1942 Report”, “Font.v2”) registers under exactly that name and sets canvas type in the uploaded face itself, not a fallback',
+    kind: 'client-only',
+    reason: 'FontFace and document.fonts exist only in a browser; the check registers the faces through the studio’s registerUploadedFont and measures canvas type against the same bytes loaded under a plain name.',
+  },
+  {
     id: 'export.print-ready',
     title: 'Export: “Download print-ready PDF” — sign-in when signed out, one paused message with no job, never a download before the job is done, the server’s own error on failure',
     kind: 'client-only',

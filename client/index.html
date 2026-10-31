@@ -19955,8 +19955,12 @@
         try {
           /* The family goes in as the bare name: Chrome reads FontFace's family as the name itself, not as CSS, so a
              quoted one registered a face called "Writer Hand" WITH its quotes, which no font-family and no canvas
-             ctx.font ever matched (the type fell back to Georgia; tools/book-corpus/wrap-parity.mjs measured it). */
-          const face = new FontFace(f.family.replace(/"/g, ""), 'url(data:' + f.mediaType + ";base64," + f.data + ")");
+             ctx.font ever matched (the type fell back to Georgia; tools/book-corpus/wrap-parity.mjs measured it).
+             Firefox and Safari parse the family as a CSS family list instead and throw on a bare name that is not
+             one ("Garamond 3", "1942 Report", "Font.v2"): there the quoted form is the name, so it is the retry. */
+          const fam = f.family.replace(/"/g, ""), src = 'url(data:' + f.mediaType + ";base64," + f.data + ")";
+          let face;
+          try { face = new FontFace(fam, src); } catch (e) { face = new FontFace('"' + fam + '"', src); }
           /* Into the document's font set at once: the face matches
              its family name from this moment and the load completes
              behind it — the studio's pickers and pages never wait. */
@@ -44512,6 +44516,17 @@
         const plain = /filename\s*=\s*"([^"]+)"/i.exec(cd) || /filename\s*=\s*([^;]+)/i.exec(cd);
         return plain && plain[1].trim() ? plain[1].trim() : fallback;
       }
+      /* The picture ids a wrap paints (the ids ensureCoverBgImage, hcEnsureFlapPhoto and ensureWrapIcons wait for): the
+         background when the recipe paints a picture, the flap photo on a dust jacket, uploaded spine icons. The server's
+         wrap lifts this very function to decide which pictures to decode (src/book/wrap/closure.ts WRAP_API). */
+      function wrapPictureIds(r) {
+        if (!r) return [];
+        const w = normalizeWrap(r.wrap), out = [];
+        if (r.bgImageId && (r.bgType === "image" || r.bgType === "photo" || r.bgType === "duotone")) out.push(r.bgImageId);
+        if (w.binding === "jacket" && w.flapPhotoId) out.push(w.flapPhotoId);
+        [w.spine.iconTop, w.spine.iconBottom].forEach((i) => { if (i.kind === "upload" && i.picId) out.push(i.picId); });
+        return out.filter((x, i) => out.indexOf(x) === i);
+      }
       async function downloadWrap(kind) {
         if (samplePicsHold(() => downloadWrap(kind))) return; /* BEUK:slim — never without the sample's pictures */
         if (!cmRecipe) return;
@@ -44524,10 +44539,15 @@
         btns.forEach((b) => { b.disabled = true; });
         if (btn) { btn.innerHTML = '<i data-lucide="loader-2"></i><span>' + esc(t("wrap.building")) + "</span>"; icons(); }
         try {
-          /* The desk's book, pictures inline, with the maker's recipe as it stands (the same recipe the preview draws); History, notes and research files stay home. */
+          /* The desk's book with the maker's recipe as it stands (the same recipe the preview draws); History, notes and research files stay home. */
           const book = serializeBook();
           ["history", "historyPool", "notebook", "research", "audio", "importReport"].forEach((k) => { delete book[k]; });
           book.coverRecipe = normalizeCoverRecipe(JSON.parse(JSON.stringify(cmRecipe)));
+          /* Only the pictures the wrap paints go along, inline: wrapPictureIds names them, as it does for the server. Nothing
+             else the wrap reads looks at state.images (the spine width comes from the page count: printPageEstimate reads
+             the sections' words), so the wrap is the same and the request is a fraction of the book. */
+          const want = wrapPictureIds(book.coverRecipe);
+          book.images = (Array.isArray(book.images) ? book.images : []).filter((im) => im && want.indexOf(im.id) !== -1);
           const bnd = cmRecipe.wrap && cmRecipe.wrap.binding;
           const fallback = slug(state.meta.title || "cover") + (bnd === "case" ? "-case-laminate-wrap" : bnd === "jacket" ? "-dust-jacket" : "-cover-wrap") + "." + (kind === "jpg" ? "jpg" : "pdf");
           const r = await apiFetch("/api/wrap", { method: "POST", body: JSON.stringify({ book: book, kind: kind === "jpg" ? "jpg" : "pdf", lang: getUiLang() }), blob: true, quiet402: true });
@@ -68355,9 +68375,11 @@
          network is stubbed beneath the real apiFetch (as export.epub-server
          does). */
       SELF_CHECKS_ASYNC.push(
-        { id: "export.wrap-server", feature: "export", name: "Export: the cover maker’s “Download wrap PDF” and “Download wrap JPG” ask the server for the wrap — sign-in when signed out, the connection line when offline, the paused copy once and no file on a 402, the server’s bytes under the server’s file name on success, the server’s own words once and no file on a 422; never a wrap painted on the device for download",
+        { id: "export.wrap-server", feature: "export", name: "Export: the cover maker’s “Download wrap PDF” and “Download wrap JPG” ask the server for the wrap — sign-in when signed out, the connection line when offline, the paused copy once and no file on a 402, the server’s bytes under the server’s file name on success (the request carrying only the pictures the wrap paints), the server’s own words once and no file on a 422; never a wrap painted on the device for download",
           async run() {
-            const keep = { available: cloud.available, user: cloud.user, online: net.online, toast: toast, download: downloadBlob, render: renderWrapCanvas, pdf: buildWrapPdfDoc, hold: samplePicsHold, recipe: cmRecipe };
+            const keep = { available: cloud.available, user: cloud.user, online: net.online, toast: toast, download: downloadBlob, render: renderWrapCanvas, pdf: buildWrapPdfDoc, hold: samplePicsHold, recipe: cmRecipe, images: state.images };
+            /* the pictures the wrap paints (background, jacket flap photo, an uploaded spine icon) and one it does not */
+            const PICS = ["sc-wrap-bg", "sc-wrap-flap", "sc-wrap-icon", "sc-wrap-unused"];
             const realFetch = window.fetch;
             const bad = [], calls = [], said = [], files = [], bodies = [];
             let mode = "ok", localPaints = 0;
@@ -68390,7 +68412,11 @@
             const reset = () => { calls.length = 0; said.length = 0; files.length = 0; bodies.length = 0; };
             const btnsOk = () => ["btnCmWrapPdf", "btnCmWrapJpg"].every((id) => { const b = $(id); return !b || (!b.disabled && b.textContent.indexOf(t("wrap.building")) < 0); });
             try {
-              cmRecipe = defaultCoverRecipe(); cmRecipe.title = "SC wrap marker"; cmRecipe.wrap = Object.assign({}, cmRecipe.wrap, { binding: "paperback" });
+              cmRecipe = defaultCoverRecipe(); cmRecipe.title = "SC wrap marker";
+              cmRecipe.bgType = "image"; cmRecipe.bgImageId = "sc-wrap-bg";
+              cmRecipe.wrap = Object.assign({}, cmRecipe.wrap, { binding: "jacket", flapPhotoId: "sc-wrap-flap",
+                spine: Object.assign({}, (cmRecipe.wrap && cmRecipe.wrap.spine) || {}, { iconTop: { kind: "upload", picId: "sc-wrap-icon" } }) });
+              state.images = (keep.images || []).concat(PICS.map((id) => ({ id: id, name: id + ".png", mediaType: "image/png", ext: "png", data: FAKE_PNG })));
               /* (a) signed out */
               cloud.available = true; cloud.user = null; net.online = true; reset();
               await downloadWrap("pdf");
@@ -68411,6 +68437,8 @@
                 const b = bodies[0];
                 if (calls.join() !== "POST /api/wrap" || files.length !== 1 || files[0].b !== blobs[k] || files[0].name !== NAMES[k] || said.length) bad.push("(c) " + k + ": " + calls.join(", ") + "; files " + JSON.stringify(files.map((f) => f.name)) + "; said " + JSON.stringify(said));
                 if (!b || b.kind !== k || b.lang !== getUiLang() || !b.book || "history" in b.book || !Array.isArray(b.book.sections) || !b.book.coverRecipe || b.book.coverRecipe.title !== "SC wrap marker") bad.push("(c) " + k + ": the request did not carry the kind, the language and the desk's book with the maker's recipe, without History");
+                const sent = b && b.book && Array.isArray(b.book.images) ? b.book.images.map((im) => im.id).sort() : null;
+                if (!sent || sent.join() !== "sc-wrap-bg,sc-wrap-flap,sc-wrap-icon" || b.book.images.some((im) => im.data !== FAKE_PNG)) bad.push("(c) " + k + ": the request should carry only the wrap's pictures, inline (sc-wrap-bg, sc-wrap-flap, sc-wrap-icon), carried " + JSON.stringify(sent));
               }
               /* (d) a 422, both shapes: the server's words, once, no file */
               for (const [m, words] of [["missing", MISSING], ["unsupported", UNSUPPORTED]]) {
@@ -68422,12 +68450,57 @@
               if (!btnsOk()) bad.push("a wrap button stayed disabled or still says it is building");
             } finally {
               window.fetch = realFetch; toast = keep.toast; downloadBlob = keep.download; renderWrapCanvas = keep.render; buildWrapPdfDoc = keep.pdf; samplePicsHold = keep.hold; cmRecipe = keep.recipe;
-              cloud.available = keep.available; cloud.user = keep.user; net.online = keep.online;
+              cloud.available = keep.available; cloud.user = keep.user; net.online = keep.online; state.images = keep.images;
             }
-            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in, 0 calls; offline → connection line, 0 calls; 402 → the paused copy once, 1 call, no file; 200 → the server's PDF and JPG as " + NAMES.pdf + " / " + NAMES.jpg + "; 422 (missing pictures, unsupported picture) → the server's words once, no file; 0 device paints");
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in, 0 calls; offline → connection line, 0 calls; 402 → the paused copy once, 1 call, no file; 200 → the server's PDF and JPG as " + NAMES.pdf + " / " + NAMES.jpg + ", the request carrying the 3 pictures the wrap paints and not the 4th; 422 (missing pictures, unsupported picture) → the server's words once, no file; 0 device paints");
           } }
       );
       /* ==== /BEUK:wrap-server-check ==== */
+      /* ==== BEUK:fontface-names ==== a writer's face whose family is
+         not a CSS identifier: registerUploadedFont gives FontFace the bare
+         name (Chrome takes it as the name) and retries with the quoted
+         form where the browser parses it as CSS and throws (Firefox,
+         Safari). The fonts.upload check is synchronous and cannot wait for
+         a face to load, so this one carries the tricky names and measures
+         the type they set. */
+      SELF_CHECKS_ASYNC.push(
+        { id: "fonts.upload.family-names", feature: "fonts", name: "Custom font uploads: a family name that is not a CSS identifier (“Garamond 3”, “1942 Report”, “Font.v2”) registers under exactly that name and sets canvas type in the uploaded face itself, not a fallback",
+          async run() {
+            const NAMES = ["Garamond 3", "1942 Report", "Font.v2"];
+            const TEXT = "Beuk Check Serif";
+            const bad = [], seen = [];
+            const ref = new FontFace("Beuk SC Reference Face", Uint8Array.from(atob(FAKE_TTF), (ch) => ch.charCodeAt(0)).buffer);
+            const c = document.createElement("canvas").getContext("2d");
+            const width = (font) => { c.font = font; return c.measureText(TEXT).width; };
+            try {
+              await ref.load();
+              document.fonts.add(ref);
+              const fallback = width("40px monospace"), own = width('40px "Beuk SC Reference Face", monospace');
+              if (Math.abs(own - fallback) < 0.5) bad.push("the reference face sets no type of its own (" + own + " vs " + fallback + ")");
+              for (let i = 0; i < NAMES.length; i++) {
+                const name = NAMES[i], id = "sc-fontname-" + i;
+                let face = null;
+                try {
+                  const loaded = await registerUploadedFont({ id: id, family: name, mediaType: "font/ttf", data: FAKE_TTF });
+                  document.fonts.forEach((f) => { if (!face && String(f.family).replace(/^"(.*)"$/, "$1") === name) face = f; });
+                  const got = width('40px "' + name + '", monospace');
+                  seen.push(name + " as " + (face ? JSON.stringify(face.family) + " " + face.status : "no face") + ", " + got.toFixed(2) + " px");
+                  if (!loaded || !face || face.status !== "loaded") bad.push(name + ": not registered and loaded under its own name (" + (face ? face.family + " " + face.status : "no face") + ")");
+                  else if (Math.abs(got - own) > 0.01) bad.push(name + ": type set at " + got + " px, its own face sets " + own);
+                } finally {
+                  if (face) document.fonts.delete(face);
+                  delete registeredFontIds[id];
+                }
+              }
+            } catch (e) {
+              bad.push("threw: " + (e && e.message ? e.message : String(e)));
+            } finally {
+              document.fonts.delete(ref);
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : seen.join("; ") + "; each the width of its own face (" + TEXT + ")");
+          } }
+      );
+      /* ==== /BEUK:fontface-names ==== */
       /* ==== BEUK:login ==== the sign-in dialog drives the real
          cloudAuthSubmit against answers the server and its proxy really
          give: only a 401 may say the email and password do not match. */

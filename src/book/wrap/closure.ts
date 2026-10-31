@@ -1,11 +1,12 @@
-import { createHash } from 'node:crypto';
+import { GlobalFonts } from '@napi-rs/canvas';
+import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { PDFDocument } from 'pdf-lib';
 import type { BookV1 } from '../schema.js';
 import { MAX_WRAP_PIXELS } from './limits.js';
 import { type BuildFailure, type ClosureSource, extractStudioSource, runStudioWorker, siblingWorkerUrl } from '../studio/closure.js';
-import type { FontFile, WrapRefusal, WrapWorkerJob, WrapWorkerOut } from './worker.js';
+import type { FontFile, FontsGiven, FontsWanted, GivenFace, WrapRefusal, WrapWorkerJob, WrapWorkerOut } from './worker.js';
 
 /* BEUK:wrap-server — the cover wrap (paperback wrap, case laminate, dust
    jacket) is painted on the server by the studio's OWN painter:
@@ -31,8 +32,10 @@ import type { FontFile, WrapRefusal, WrapWorkerJob, WrapWorkerOut } from './work
    printPageEstimate, which sizes the spine when the recipe leaves the
    page count to the book, reads the sections' `included` and `kind`,
    which normalizeSection fills. slug names the file the way downloadWrap
-   does (POST /api/wrap's Content-Disposition). */
-export const WRAP_ROOTS: readonly string[] = ['renderWrapCanvas', 'wrapDims', 'normalizeCoverRecipe', 'normalizeCustomFont', 'normalizeSection', 'slug'];
+   does (POST /api/wrap's Content-Disposition). wrapPictureIds names the
+   pictures the wrap paints, for the server and for downloadWrap (which
+   sends only those). */
+export const WRAP_ROOTS: readonly string[] = ['renderWrapCanvas', 'wrapDims', 'normalizeCoverRecipe', 'normalizeCustomFont', 'normalizeSection', 'slug', 'wrapPictureIds'];
 export const WRAP_SUPPLIED: readonly string[] = ['state', 'document', 'Image', 'window'];
 
 export const WRAP_CLOSURE: readonly string[] = [
@@ -57,7 +60,7 @@ export const WRAP_CLOSURE: readonly string[] = [
   'printMarginsAuto', 'printPageEstimate', 'printPictureBookOn', 'printTextArea', 'renderCoverCanvas',
   'renderWrapCanvas', 'sectionProseWords', 'sectionWords', 'sectionWordsMemo', 'slug', 'spineDirection', 't',
   'tCountForm', 'trimSize', 'uiLangState', 'uiPluralCategory', 'uiPluralRulesCache', 'uid',
-  'uploadedFontByFamily', 'uploadedFonts', 'wrapDefaults', 'wrapDims', 'wrapFactor', 'wrapLines',
+  'uploadedFontByFamily', 'uploadedFonts', 'wrapDefaults', 'wrapDims', 'wrapFactor', 'wrapLines', 'wrapPictureIds',
 ];
 
 /** The book's arrival: the lines of the studio's applyBookDoc
@@ -77,10 +80,11 @@ const WRAP_ARRIVE = `(s) => {
  *  - render: the studio's renderWrapCanvas (its canvas size, its options),
  *    keeping what its drawWrapTo call returns: drawWrapTo is wrapped for
  *    the one call and put back, so the layout read back is the one painted.
- *  - pictures: the ids downloadWrap waits for (ensureCoverBgImage,
- *    hcEnsureFlapPhoto, ensureWrapIcons) that the painter will draw: the
- *    background when the recipe paints a picture, the flap photo on a
- *    dust jacket, uploaded spine icons.
+ *  - pictures: the studio's wrapPictureIds, the ids the painter will draw
+ *    (what ensureCoverBgImage, hcEnsureFlapPhoto and ensureWrapIcons wait
+ *    for): the background when the recipe paints a picture, the flap
+ *    photo on a dust jacket, uploaded spine icons. downloadWrap sends
+ *    only these pictures, by the same function.
  *  - fontStacks: the CSS stacks the painter sets type in (every ctx.font
  *    in the wrap is fontStack of a recipe element's, the spine's or the
  *    back's font).
@@ -96,13 +100,7 @@ globalThis.__beukWrap = {
     try { const canvas = renderWrapCanvas(recipe, {}); return { canvas, items }; } finally { drawWrapTo = draw; }
   },
   wrapDims,
-  pictures: (r) => {
-    const w = normalizeWrap(r.wrap), out = [];
-    if (r.bgImageId && (r.bgType === "image" || r.bgType === "photo" || r.bgType === "duotone")) out.push(r.bgImageId);
-    if (w.binding === "jacket" && w.flapPhotoId) out.push(w.flapPhotoId);
-    [w.spine.iconTop, w.spine.iconBottom].forEach((i) => { if (i.kind === "upload" && i.picId) out.push(i.picId); });
-    return out.filter((x, i) => out.indexOf(x) === i);
-  },
+  pictures: wrapPictureIds,
   fontStacks: (r) => {
     const w = normalizeWrap(r.wrap);
     return CM_ELEMENTS.map((k) => r.elements[k].font).concat([w.spine.font, w.back.font]).filter(Boolean).map(fontStack);
@@ -236,10 +234,19 @@ export function manifestFonts(clientDir: string): FontFile[] {
 export type WrapKind = 'pdf' | 'jpg';
 /** A glyph-width probe: measureText of `text` in `font` (a CSS shorthand), on a canvas made inside the sandbox, so the font shim applies. */
 export type WrapProbe = { font: string; text: string };
+/** What a render reports as it goes (tests): the faces it registered, when its worker thread exited, the faces it removed. */
+export type WrapTrace =
+  | { kind: 'registered'; faces: string[] }
+  | { kind: 'exited'; at: number }
+  | { kind: 'removed'; faces: string[] };
 export type WrapOptions = {
   lang: string; timeoutMs?: number; heapMb?: number;
   /** measured with this build's faces registered (tests/book-wrap-parity.test.ts holds them to Chrome's); only families the recipe sets type in are registered */
   probes?: WrapProbe[];
+  /** tests only: told what the render does (WrapTrace) */
+  trace?: (t: WrapTrace) => void;
+  /** tests only: the worker spins once its faces are registered, so the time cap stops it there */
+  holdAfterFonts?: boolean;
 };
 export type WrapItems = Record<string, unknown> & { barcode?: { x: number; y: number; w: number; h: number } | null; spineDir?: string };
 export type WrapDims = Record<string, unknown> & { totalW: number; totalH: number };
@@ -301,12 +308,52 @@ const cache = new Map<string, WrapSandbox>();
 
 /* One render at a time in this process, whoever calls: renders share the
    process-wide font registry and Skia's native memory, so the one-at-a-time
-   rule lives here and does not depend on callers going through a queue. */
+   rule lives here and does not depend on callers going through a queue.
+   The line is free again when the render's worker THREAD has exited, not
+   when its caller has an answer: a worker stopped at the time cap may
+   still be in native code for a while, and the next render must not
+   start beside it. A thread that never exits holds the line for at most
+   WRAP_EXIT_CEILING_MS after it was told to stop, so a wedged thread
+   cannot freeze wraps for good. */
+export const WRAP_EXIT_CEILING_MS = 30_000;
 let line: Promise<unknown> = Promise.resolve();
-function inLine<T>(fn: () => Promise<T>): Promise<T> {
-  const run = line.then(fn);
-  line = run.catch(() => undefined);
+function inLine<T>(fn: (holdUntil: (p: Promise<void>) => void) => Promise<T>): Promise<T> {
+  let held: Promise<void> = Promise.resolve();
+  const run = line.then(() => fn((p) => { held = p; }));
+  line = run.then(() => held, () => held).catch(() => undefined);
   return run;
+}
+
+/** The faces one build sets type in, registered in THIS (the parent's)
+ *  process-wide GlobalFonts under names carrying the build's nonce: the
+ *  book's uploaded faces of the recipe's families first (the writer chose
+ *  them), then the studio's faces of those families. The worker asked for
+ *  them; what it sent is held to plain strings. */
+function registerFaces(m: FontsWanted, manifest: FontFile[], keys: NonNullable<ReturnType<typeof GlobalFonts.register>>[]): FontsGiven {
+  const want = m && typeof m === 'object' && m.fontsWanted && typeof m.fontsWanted === 'object' ? m.fontsWanted : null;
+  if (!want || !Array.isArray(want.families) || !Array.isArray(want.uploads)) throw new Error('the worker asked for faces in a shape the server does not know');
+  const families = new Set(want.families.map(String));
+  const buildId = randomBytes(8).toString('hex');
+  const faces: GivenFace[] = [], fonts: string[] = [], uploaded: string[] = [], aliases: string[] = [];
+  for (const up of want.uploads) {
+    const family = String(up && up.family), face = `${family} beuk-up-${buildId}`;
+    const k = GlobalFonts.register(Buffer.from(String(up.data), 'base64'), face);
+    if (!k) continue;
+    keys.push(k);
+    faces.push({ family, face, italic: false, weights: [400] }); /* registerUploadedFont: new FontFace(family, url), descriptors left at normal 400 */
+    if (!uploaded.includes(family)) uploaded.push(family);
+  }
+  for (const f of manifest) {
+    if (!families.has(f.family)) continue;
+    const face = `${f.alias} beuk-${buildId}`;
+    const k = GlobalFonts.registerFromPath(f.file, face);
+    if (!k) continue;
+    keys.push(k);
+    faces.push({ family: f.family, face, italic: f.italic, weights: f.weights });
+    if (f.alias === f.family) { if (!fonts.includes(f.family)) fonts.push(f.family); }
+    else if (!aliases.includes(f.alias)) aliases.push(f.alias);
+  }
+  return { faces, fonts, uploaded, aliases, buildId };
 }
 
 /** The studio's wrap painter, lifted from `studioHtml` once (cached by
@@ -323,15 +370,37 @@ export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSand
     source,
     render: (state, kind, opts) => {
       const stateJson = JSON.stringify(state);
-      return inLine(async () => {
+      return inLine(async (holdUntil) => {
         const started = performance.now();
-        const job: WrapWorkerJob = { code: source.code, lucide, fonts, stateJson, lang: opts.lang, probes: opts.probes ?? [] };
+        const job: WrapWorkerJob = { code: source.code, lucide, stateJson, lang: opts.lang, probes: opts.probes ?? [], holdAfterFonts: opts.holdAfterFonts === true };
+        const keys: NonNullable<ReturnType<typeof GlobalFonts.register>>[] = [];
+        const names: string[] = [];
+        let gone: Promise<void> = Promise.resolve();
         const out = (await runStudioWorker(siblingWorkerUrl(import.meta.url), job, {
           timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
           heapMb: opts.heapMb ?? DEFAULT_WRAP_WORKER_HEAP_MB,
           noun: 'cover wrap',
           error: (message, reason) => new WrapBuildError(message, reason),
+          onRequest: (m) => {
+            const given = registerFaces(m as FontsWanted, fonts, keys);
+            names.push(...given.faces.map((f) => f.face));
+            opts.trace?.({ kind: 'registered', faces: [...names] });
+            return given;
+          },
+          onLife: ({ exited, stopped }) => {
+            /* the faces go once the thread is gone (never while it may still paint with them), whatever ended it */
+            const cleaned = exited.then(() => {
+              opts.trace?.({ kind: 'exited', at: performance.now() });
+              if (keys.length) GlobalFonts.removeBatch(keys);
+              opts.trace?.({ kind: 'removed', faces: names });
+            });
+            const ceiling = stopped.then(() => new Promise<void>((r) => { setTimeout(r, WRAP_EXIT_CEILING_MS).unref(); }));
+            gone = Promise.race([cleaned, ceiling]);
+            holdUntil(gone);
+          },
         })) as WrapWorkerOut;
+        /* an answer is handed over once the thread is gone and its faces with it (a failure is told at once, above) */
+        await gone;
         if ('refused' in out) throw new WrapInputError(out.refused, out.ids);
         const jpeg = Buffer.from(out.jpeg.buffer, out.jpeg.byteOffset, out.jpeg.byteLength);
         const dims = out.dims as WrapDims;
