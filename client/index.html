@@ -50146,6 +50146,7 @@
         else delete themeCopy.header;
         const hist = histPack(state.history); /* snapshots name the book's pictures; the ones it no longer holds are written once, in historyPool */
         return {
+          formatVersion: 1, /* BEUK:bookformat — names the book format this studio writes (docs/book-format.md); bookDocsSame ignores it so a shelf copy saved without it is not a false conflict */
           meta: Object.assign({}, state.meta),
           theme: themeCopy,
           activePreset: state.activePreset,
@@ -66645,7 +66646,10 @@
       function bookDocsSame(a, b) {
         try {
           if (!a || !b || typeof a !== "object" || typeof b !== "object") return false;
-          return stableJson(JSON.parse(JSON.stringify(a))) === stableJson(JSON.parse(JSON.stringify(b)));
+          /* BEUK:bookformat — formatVersion is a label, not content (docs/book-format.md): a shelf copy saved before it existed must still equal the desk's copy. Compared on the JSON copies, so neither argument is touched. */
+          const ja = JSON.parse(JSON.stringify(a)), jb = JSON.parse(JSON.stringify(b));
+          delete ja.formatVersion; delete jb.formatVersion;
+          return stableJson(ja) === stableJson(jb);
         } catch (e) { return false; }
       }
       /* ==== /BEUK:bugs ==== */

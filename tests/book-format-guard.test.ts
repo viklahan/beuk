@@ -12,9 +12,8 @@ import { STEPS } from '../src/book/upgrade.js';
    (the technique of tests/localization.test.ts); its returned object
    literal gives the keys it writes, spreads included. docs/book-format.md
    must then name every key and every upgrade step.
-   formatVersion lands in serializeBook in a later task; until then the
-   guards accept it present or absent in serializeBook (FV_IN_SERIALIZE
-   below is the one line that tightens). */
+   formatVersion is written unconditionally as serializeBook's first key
+   (Task 6), so it must be among the keys always written. */
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const html = readFileSync(path.join(ROOT, 'client', 'index.html'), 'utf8');
@@ -71,19 +70,18 @@ function serializeKeys(): { always: string[]; conditional: string[] } {
 const FV = 'formatVersion';
 const sorted = (a: readonly string[]) => [...a].sort();
 
-test('guard: serializeBook\'s keys equal TOP_LEVEL_KEYS (formatVersion present or absent until it lands)', () => {
+test('guard: serializeBook\'s keys equal TOP_LEVEL_KEYS (formatVersion included, always written)', () => {
   const { always, conditional } = serializeKeys();
   const keys = [...always, ...conditional];
   assert.equal(new Set(keys).size, keys.length, 'serializeBook writes no key twice');
-  const expected = TOP_LEVEL_KEYS.filter((k) => k !== FV);
-  const got = keys.filter((k) => k !== FV);
-  assert.deepEqual(sorted(got), sorted(expected),
+  assert.ok(always.includes(FV), 'serializeBook writes formatVersion unconditionally');
+  assert.deepEqual(sorted(keys), sorted(TOP_LEVEL_KEYS),
     'serializeBook and TOP_LEVEL_KEYS disagree: a key was added or removed in client/index.html, so update src/book/schema.ts and docs/book-format.md');
 });
 
 test('guard: keys serializeBook writes conditionally are exactly OPTIONAL_TOP_LEVEL minus formatVersion', () => {
   const { conditional } = serializeKeys();
-  assert.deepEqual(sorted(conditional.filter((k) => k !== FV)), sorted(OPTIONAL_TOP_LEVEL.filter((k) => k !== FV)));
+  assert.deepEqual(sorted(conditional), sorted(OPTIONAL_TOP_LEVEL.filter((k) => k !== FV)));
 });
 
 test('guard: docs/book-format.md has one table row per TOP_LEVEL_KEYS entry and one section per STEPS name', () => {
