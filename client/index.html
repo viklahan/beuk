@@ -43379,6 +43379,17 @@
         return { bg: normalizeWrapBg(b.bg), font: normalizeWrapFont(b.font), color: normalizeWrapColor(b.color) };
       }
       /* ==== /BEUK:spineback ==== */
+      /* Which way the spine text reads. English (every en-*), Dutch and
+         the Nordic languages run top-to-bottom, so the letters face up
+         when the book lies face-up; the other Latin, Greek and Cyrillic
+         languages run bottom-to-top. Spanish is mixed in practice and
+         sits with the second group — the writer can override it. */
+      const SPINE_TTB_LANGS = ["en", "nl", "sv", "da", "nb", "nn", "no", "is", "fi"];
+      function spineDirection(lang, override) {
+        if (override === "ttb" || override === "btt") return override;
+        const base = String(lang || "").toLowerCase().split(/[-_]/)[0];
+        return SPINE_TTB_LANGS.indexOf(base) !== -1 ? "ttb" : "btt";
+      }
       function wrapDefaults() {
         return { trim: "", pages: 0, paper: "white", customFactor: 0.0025, blurb: "", quote: "", imprint: "",
           binding: "paperback", hcSpine: 0, hcSpineAllow: 0, flapFront: "", flapBack: "", flapPhotoId: null,
@@ -43469,18 +43480,24 @@
         ctx.drawImage(front, frontX, topY, tw, th);
         const items = { dims: d, spineText: "", backBoxes: [], barcode: null };
         const inkTitle = recipe.elements.title.color, inkBody = recipe.elements.subtitle.color, inkAuthor = recipe.elements.author.color;
-        /* ---- Spine: title + author read bottom-to-top (US
-           convention), imprint mark at the foot — only when the
-           spine is at least 0.5 in wide. ---- */
+        /* ---- Spine: title + author, imprint mark at the foot — only
+           when the spine is at least 0.5 in wide. Which way it reads
+           follows the book's language: English, Dutch and the Nordic
+           languages top-to-bottom, the other European languages
+           bottom-to-top (spineDirection); the writer can override. ---- */
+        const spDir = spineDirection(state.meta.language, w.spine.dir);
+        items.spineDir = spDir; items.spineBoxes = [];
         if (d.spineText) {
           const title = String(recipe.title || "").trim(), author = String(recipe.author || "").trim();
-          const cx = spineX + spineW / 2, footIn = 0.42;
+          const cx = spineX + spineW / 2, footIn = 0.42, headIn = 0.3;
           const avail = (L.panelH - footIn - 0.3) * px;
           let size = Math.min(spineW * 0.6, 0.32 * px);
           const gap = author ? 0.3 * px : 0;
+          const ttb = spDir === "ttb";
+          const startY = ttb ? topY + headIn * px : topY + th - footIn * px; /* where the first letter begins */
           ctx.save();
-          ctx.translate(cx, topY + th - footIn * px);
-          ctx.rotate(-Math.PI / 2);
+          ctx.translate(cx, startY);
+          ctx.rotate(ttb ? Math.PI / 2 : -Math.PI / 2);
           ctx.textBaseline = "middle"; ctx.textAlign = "left"; ctx.fillStyle = inkAuthor;
           const titleFont = (s) => "700 " + s + "px " + fontStack(recipe.elements.title.font);
           const authorFont = (s) => "600 " + s + "px " + fontStack(recipe.elements.author.font);
@@ -43498,10 +43515,15 @@
           if (author) { ctx.font = authorFont(size * 0.82); ctx.fillText(author.toUpperCase(), titleW + gap, 0); }
           items.spineText = (title + (author ? " " + author : "")).trim();
           ctx.restore();
+          /* Where it landed, in inches from the wrap's top-left: along the spine
+             from the first letter, across it one em wide. */
+          const along = (off, len) => (ttb ? (startY + off) / px : (startY - off - len) / px);
+          if (title) items.spineBoxes.push({ kind: "text", part: "title", x: (cx - size / 2) / px, y: along(0, titleW), w: size / px, h: titleW / px });
+          if (author) items.spineBoxes.push({ kind: "text", part: "author", x: (cx - size * 0.41) / px, y: along(titleW + gap, authorW), w: size * 0.82 / px, h: authorW / px });
           const imp = (w.imprint || state.meta.publisher || "").trim();
           ctx.save();
           ctx.translate(cx, topY + th - 0.21 * px);
-          ctx.rotate(-Math.PI / 2);
+          ctx.rotate(ttb ? Math.PI / 2 : -Math.PI / 2);
           ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = inkAuthor;
           if (imp) {
             ctx.font = "600 " + Math.min(spineW * 0.34, 0.11 * px) + "px " + fontStack(recipe.elements.author.font);
@@ -53409,6 +53431,34 @@
             const kebab = normalizeWrap({ spine: { iconTop: { kind: "lucide", name: "book-open" } } }).spine.iconTop.name;
             return scVerdict(dflt(emptyW) && dflt(nullW) && junkOk && keep && kebab === "BookOpen",
               "{} and null give the follow-the-front defaults (mode front, show both, caps on, dir auto, icons none); junk (photo mode, “red; x”, unknown icon " + (junk ? junk.spine.iconTop.kind : "?") + ", bad upload) → follow / default colour / no icon" + (threw ? " — THREW " + threw : ", nothing thrown") + "; a full valid object survives unchanged (" + keep + "); “book-open” is stored as " + kebab);
+          } },
+        { id: "cover.wrap.spine-direction", feature: "cover", name: "Spine direction: English, Dutch and the Nordic languages read top-to-bottom, continental languages bottom-to-top, the writer's choice wins, and the drawn title sits at the head (top-to-bottom) or the foot (bottom-to-top)",
+          run() {
+            const keepLang = state.meta.language;
+            try {
+              const dirs = (list, o) => list.map((l) => spineDirection(l, o || "auto"));
+              const ttbLangs = ["en", "en-US", "en-GB", "en-AU", "nl", "sv", "da", "nb", "nn", "no", "is", "fi"], bttLangs = ["fr", "de", "es", "ru", "it", "pt", "pl", "el", "xx", ""];
+              const tableOk = dirs(ttbLangs).every((d) => d === "ttb") && dirs(bttLangs).every((d) => d === "btt") &&
+                spineDirection("en", "btt") === "btt" && spineDirection("fr", "ttb") === "ttb";
+              const draw = (lang, dir) => {
+                state.meta.language = lang;
+                const r = defaultCoverRecipe(); r.title = "Salt Harbour"; r.author = "A. Checker";
+                r.wrap = { trim: "6x9", pages: 300, paper: "cream", customFactor: 0.0025, blurb: "", quote: "", imprint: "", spine: { dir: dir || "auto" } };
+                const d = wrapDims(r);
+                const c = document.createElement("canvas"); c.width = 900; c.height = Math.round(900 * d.totalH / d.totalW);
+                return drawWrapTo(c, r);
+              };
+              const mid = (it) => it.dims.layout.topY + it.dims.layout.panelH / 2;
+              const place = (it) => {
+                const t = it.spineBoxes.find((b) => b.kind === "text" && b.part === "title"), a = it.spineBoxes.find((b) => b.kind === "text" && b.part === "author");
+                return { t, a, titleAtHead: !!t && t.y + t.h / 2 < mid(it), authorAfterTitle: !!t && !!a && (it.spineDir === "ttb" ? a.y > t.y : a.y < t.y) };
+              };
+              const en = draw("en"), fr = draw("fr"), over = draw("en", "btt"), over2 = draw("fr", "ttb");
+              const pe = place(en), pf = place(fr), po = place(over), po2 = place(over2);
+              return scVerdict(tableOk && en.spineDir === "ttb" && pe.titleAtHead && pe.authorAfterTitle && fr.spineDir === "btt" && !pf.titleAtHead && pf.authorAfterTitle &&
+                over.spineDir === "btt" && !po.titleAtHead && over2.spineDir === "ttb" && po2.titleAtHead,
+                "language table right (en-*, nl, sv, da, nb, nn, no, is, fi top-to-bottom; fr, de, es, ru, it, pt, pl, el, unknown bottom-to-top; override wins); English draws " + en.spineDir + " with the title " + (pe.titleAtHead ? "at the head" : "at the foot") + ", French draws " + fr.spineDir + " with the title " + (pf.titleAtHead ? "at the head" : "at the foot") + "; an English book set to bottom-to-top draws " + over.spineDir + ", a French one set to top-to-bottom draws " + over2.spineDir);
+            } finally { state.meta.language = keepLang; }
           } },
         { id: "cover.wrap3d.faces-from-wrap", feature: "cover", name: "3D wrap viewer: front, spine and back face textures are sliced from the current wrap render and refresh when wrap inputs change",
           run() {

@@ -2652,6 +2652,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'The spine and back settings are normalized by the client cover maker.',
   },
   {
+    id: 'cover.wrap.spine-direction',
+    title: 'Spine direction: top-to-bottom for English, Dutch and the Nordic languages, bottom-to-top for the rest',
+    kind: 'client-only',
+    reason: 'The spine is painted by the client canvas.',
+  },
+  {
     id: 'cover.wrap3d.faces-from-wrap',
     title: '3D wrap viewer: front, spine and back faces are sliced from the current wrap render',
     kind: 'client-only',
