@@ -5,13 +5,13 @@
    (docs/superpowers/specs/2026-10-30-beuk-book-format-inventory.md) uses.
 
    Nothing here is invented. Where 1.0's default is not a pure function of
-   the book (the current year, a new random id), there is no constant: the
-   reader leaves the field alone and the schema check reports it. */
+   the book (the current year, a new random id), the reader cannot copy it:
+   the year is "" (below) and the id comes from the bookid-missing step. */
 
-/** bookMetaDefaults, CI:20519-20521, without `year` (String(new Date().getFullYear()): the clock) and `bookId` (newBookId(): random). */
+/** bookMetaDefaults, CI:20519-20521, without `bookId` (newBookId(): random; the bookid-missing step). `year` is "" where 1.0 uses String(new Date().getFullYear()): the reader is pure and has no clock. That is a deliberate difference from 1.0. */
 export const META_DEFAULTS = Object.freeze({
   title: '', subtitle: '', author: '', publisher: '', isbn: '',
-  language: 'en', langSource: 'auto', langGuess: '',
+  language: 'en', langSource: 'auto', langGuess: '', year: '',
   rights: '', description: '', a11ySummary: '',
 });
 

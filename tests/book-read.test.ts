@@ -11,6 +11,7 @@ import { STEPS } from '../src/book/upgrade.js';
    preserved[]. The corpus proves it on real books. */
 
 type Json = Record<string, any>;
+const recordOnly = new Set(STEPS.filter((s) => s.recordOnly).map((s) => s.name));
 const real = (): Json => structuredClone(realFixtures()[0]!.book) as Json;
 
 function deepFreeze<T>(v: T): T {
@@ -20,10 +21,6 @@ function deepFreeze<T>(v: T): T {
   }
   return v;
 }
-
-test('read: STEPS is empty until the legacy steps land', () => {
-  assert.deepEqual(STEPS, []);
-});
 
 test('read: every real fixture reads with status ok and no schema-failure warnings', () => {
   for (const { name, book } of realFixtures()) {
@@ -39,7 +36,8 @@ test('read: idempotent, readBook(readBook(x).book) deep-equals the first book an
     const a = readBook(book);
     const b = readBook(a.book);
     assert.deepStrictEqual(b.book, a.book, name);
-    assert.deepEqual(b.upgrades, [], name);
+    // record-only steps describe the shape and change nothing, so they may fire again; every other step must not
+    assert.deepEqual(b.upgrades.filter((u) => !recordOnly.has(u)), [], name);
     assert.deepEqual(b.preserved, [], name);
   }
 });
@@ -55,7 +53,7 @@ test('read: the four backfilled keys are always present on the result', () => {
     legalName: '', address: '', phone: '', email: '', byline: '', surname: '',
     paper: 'letter', font: 'times', italics: 'italic',
   });
-  assert.ok(r.upgrades.includes('defaults:printNotes'));
+  assert.ok(r.upgrades.includes('notes-end'));
   assert.deepEqual(r.warnings.filter((w) => w.code === 'schema'), []);
 });
 

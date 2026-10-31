@@ -25,3 +25,14 @@ export function realFixtures(): { name: string; book: unknown }[] {
       book: (JSON.parse(readFileSync(path.join(dir, name), 'utf8')) as { book: unknown }).book,
     }));
 }
+
+type Legacy = { step: string; inverse: string; line: string };
+
+/** A legacy fixture: a real book with one upgrade step's inverse applied (tests/fixtures/books/legacy/<step>.json). */
+export function legacyFixture(step: string): { book: Record<string, unknown>; legacy: Legacy } {
+  const env = JSON.parse(readFileSync(path.join(ROOT, 'legacy', `${step}.json`), 'utf8')) as {
+    book: Record<string, unknown>;
+    _fixture: { legacy: Legacy };
+  };
+  return { book: env.book, legacy: env._fixture.legacy };
+}

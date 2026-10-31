@@ -1,0 +1,105 @@
+{
+ "format": "beuk-backup",
+ "version": 1,
+ "exportedAt": "2026-10-27T17:12:35.521Z",
+ "book": {
+  "meta": {
+   "title": "The Book That Reads You",
+   "subtitle": "An ergodic novel",
+   "author": "Xavier Phillipe",
+   "publisher": "",
+   "isbn": "",
+   "language": "en",
+   "langSource": "manual",
+   "langGuess": "",
+   "year": "2026",
+   "rights": "",
+   "description": "You are not reading this book. It is reading you — in the margins.",
+   "a11ySummary": "",
+   "bookId": "urn:uuid:890c09dc-3b9e-4693-9efc-8010943f64b8"
+  },
+  "theme": {
+   "bodyFont": "Crimson Pro",
+   "headFont": "Playfair Display",
+   "fontSize": 17,
+   "lineHeight": 1.55,
+   "paraMode": "indent",
+   "indentDepth": "1.5em",
+   "headerStyle": "classic_centered",
+   "dropDepth": 3,
+   "smallCapsWords": 3,
+   "ornament": "doublerule",
+   "justify": true,
+   "hyphens": true
+  },
+  "activePreset": "gothic",
+  "colour": {
+   "accent": "#a3241c",
+   "tint": ""
+  },
+  "cover": null,
+  "coverRecipe": null,
+  "images": [],
+  "fonts": [],
+  "customThemes": [],
+  "activeId": "s5hl80ab",
+  "exportPlatform": "generic",
+  "printTrim": "6x9",
+  "printRecto": false,
+  "printLargePrint": false,
+  "printPictureBook": false,
+  "printMarginMode": "auto",
+  "printCustomMargins": {
+   "inside": 0.625,
+   "outside": 0.5,
+   "top": 0.6,
+   "bottom": 0.75
+  },
+  "printHeadContent": "titleauthor",
+  "printHeadPlace": "top",
+  "printOmitChapterHead": false,
+  "printOmitBlankHead": true,
+  "printFolio": "centre",
+  "printNotes": "page",
+  "storeCheck": {
+   "store": "kdp",
+   "binding": "paperback",
+   "ink": "",
+   "attestSpine": false
+  },
+  "goals": {
+   "daily": 0,
+   "project": 0,
+   "deadline": ""
+  },
+  "history": [],
+  "historyPool": {
+   "images": [],
+   "fonts": [],
+   "covers": []
+  },
+  "importReport": null,
+  "audio": {
+   "narrator": "",
+   "format": "both",
+   "rightsInClosing": false,
+   "include": {},
+   "pron": [],
+   "dismissed": []
+  },
+  "dictation": {
+   "lang": "",
+   "recent": []
+  }
+ },
+ "_fixture": {
+  "source": "tests/fixtures/books/real/reads-you.json",
+  "slimmed": [],
+  "why": "Smallest book; colour set, no printBleed key, no manuscript, no images",
+  "legacy": {
+   "step": "sections-missing",
+   "inverse": "sections key deleted",
+   "line": "client/index.html:50253-50256"
+  }
+ }
+}
