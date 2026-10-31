@@ -130,7 +130,7 @@ export function buildApp({
   app.use('/api/auth', authRoutes(db, config, { afterRegister: signupConfirmationHook({ db, config, mailer: mail, tasks: accountTasks, billing: billingProvider, now }) }));
   // P0 #5: forgot/reset password, change password, sign out everywhere.
   app.use('/api/auth', accountRoutes(db, config, mail, accountTasks, accountLimits));
-  app.use('/api/manuscripts', manuscriptRoutes(db, config));
+  app.use('/api/manuscripts', manuscriptRoutes(db, config, accountTasks));
   app.use('/api/series-covenants', seriesCovenantRoutes(db));
   app.use('/api/pictures', pictureRoutes(db, config));
   app.use('/api/streak', streakRoutes(db, config, now));

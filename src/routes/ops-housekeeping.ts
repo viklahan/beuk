@@ -6,6 +6,7 @@ import { writeAudit, type HousekeepingContext } from '../housekeeping/context.js
 import { scrubText, scrubValue } from '../housekeeping/scrub.js';
 import type { Mailer } from '../mailer.js';
 import { alertChannels, summarise } from '../ops/alerts.js';
+import { bookFormatSummary } from '../book/observe.js';
 import { clientErrorSummary, purgeClientErrors } from '../ops/client-errors.js';
 import { readRetentionStatus, retentionPolicy } from '../ops/retention.js';
 import type { OpsService } from '../ops/service.js';
@@ -65,6 +66,7 @@ export function opsHousekeepingRoutes(db: Db, config: Config, hk: HousekeepingCo
           last: await readRetentionStatus(config),
         },
         clientErrors: { keepDays: opsSettings(config).clientErrorsKeepDays },
+        bookFormat: await bookFormatSummary(db),
       });
     } catch (err) {
       return next(err);
