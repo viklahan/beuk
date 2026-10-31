@@ -319,6 +319,24 @@
       "sources": ["client/index.html validateEpubPackage check 13"]
     },
     {
+      "code": "BEUK-M505",
+      "category": "content",
+      "title": "A template blank was left in the book",
+      "severity": "error",
+      "says": [
+        { "from": "studio", "code": "check.blanks.name", "text": "Template blanks left to fill" }
+      ],
+      "cause": "A back-matter starter marks what only you know as a blank in double brackets, such as [[your town or region]]. One is still on a page that is in the book, so readers would see the brackets. The line names the page and every blank on it.",
+      "steps": [
+        "Open the page the line names; the strip above the editor lists its blanks.",
+        "Press Go to the next blank and type over each one, or delete the sentence it sits in.",
+        "Export and validate again."
+      ],
+      "guide": "check-your-book",
+      "maps": { "epubcheck": [], "validator": ["template.blanks"], "http": [], "store": [] },
+      "sources": ["client/index.html validateEpubPackage template.blanks (BEUK:starters); the line is the studio string check.blanks.name"]
+    },
+    {
       "code": "BEUK-S501",
       "category": "store",
       "title": "Kindle says the cover is too small",

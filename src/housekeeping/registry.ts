@@ -1734,6 +1734,24 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'PDF layout reading runs in the studio page on PDF.js output; the server never sees an import.',
   },
   {
+    id: 'starters.picker',
+    title: 'An empty back page offers starters that reach the page only on Use, with the book filled in and blanks marked',
+    kind: 'client-only',
+    reason: 'The section editor and its starter strip are studio UI; the server never sees the desk.',
+  },
+  {
+    id: 'starters.empty-left-out',
+    title: 'A page with no words of its own is in no export and no contents list until it has some',
+    kind: 'client-only',
+    reason: 'Every export (EPUB, Markdown, web page, Word, print, manuscript) is built in the studio page.',
+  },
+  {
+    id: 'starters.blanks-flagged',
+    title: 'A template blank left in the book is named in the EPUB check and the print preflight',
+    kind: 'client-only',
+    reason: 'The EPUB check and the print preflight run in the studio page on its own package.',
+  },
+  {
     id: 'import.zones.numbered-book',
     title: 'A book with numbered chapters keeps its front and back matter out of the chapters',
     kind: 'client-only',

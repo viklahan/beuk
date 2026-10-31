@@ -683,6 +683,16 @@
         font: inherit; font-size: 12.5px; color: var(--muted); text-decoration: underline;
       }
       .gen-quiet:hover { color: var(--ink); }
+      /* BEUK:starters */
+      .starter-bar { display: flex; flex-direction: column; gap: 10px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); font-size: 13px; color: var(--ink-2); }
+      .starter-bar p { margin: 0; display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+      .starter-bar p > i, .starter-bar p > svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 1px; color: var(--muted); }
+      .starter-head b { color: var(--ink); }
+      .starter-head span { color: var(--muted); }
+      .starter-bar [aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); background: var(--panel); }
+      .starter-preview { padding: 10px 12px; border-radius: 8px; background: var(--panel); border: 1px dashed var(--line-2); color: var(--ink); line-height: 1.55; overflow-wrap: anywhere; }
+      .starter-preview mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 2px; }
+      .starter-bar p > span { flex: 1 1 0; min-width: 12em; }
       .gen-toc-list { margin: 6px 0 0; padding-left: 1.3em; font-size: 13.5px; line-height: 1.75; color: var(--ink-2); }
 
       /* ---------- Zen mode: the room falls away, only the page remains ---------- */
@@ -3040,6 +3050,7 @@
               </div>
               <div id="langBar" role="status" aria-live="polite"></div>
               <div id="editorWordBar" aria-live="polite"><span id="edSecWords"></span><span aria-hidden="true">·</span><span id="edBookWords"></span></div>
+              <div id="starterBar" class="starter-bar" style="display:none;" aria-live="polite"></div>
               <div id="genEditor" style="display:none;"></div>
               <textarea id="editorArea" spellcheck="true" aria-label="Chapter content" placeholder="Start writing…" data-i18n-ph="editor.placeholder"></textarea>
               <div id="sectionImages" style="display:none;"></div>
@@ -29446,7 +29457,7 @@
       function packagedImages() { return packagedImagesImpl(true); }
       function packagedImagesImpl(withTheme) {
         const seen = new Set(); const out = [];
-        state.sections.filter((s) => s.included).forEach((s) => {
+        state.sections.filter(inBook).forEach((s) => {
           imageTokensIn(s.content).forEach((t) => {
             const img = imageById(t.id);
             if (img && !seen.has(img.id)) { seen.add(img.id); out.push(img); }
@@ -30503,10 +30514,10 @@
             const name = isPart
               ? (s.number ? t("import.type.part") + " " + s.number + " — " : "") + (s.title || t("side.untitled"))
               : s.kind === "body" ? (s.number ? t("side.chapterAbbr") + " " + s.number + " — " : "") + (s.title || t("side.untitled")) : s.title;
-            html += '<div class="sec-item' + (isActive ? " active" : "") + (gCollapsed && !isActive ? " og-hidden" : "") + (s.included ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + s.id + '" role="button" tabindex="0" draggable="true">' +
+            html += '<div class="sec-item' + (isActive ? " active" : "") + (gCollapsed && !isActive ? " og-hidden" : "") + (inBook(s) ? "" : " excluded") + (isPart ? " part-item" : "") + (g === "Body" && inPart && !isPart ? " in-part" : "") + '" data-sec="' + s.id + '" role="button" tabindex="0" draggable="true">' +
               '<span class="drag"><i data-lucide="' + (isPart ? "bookmark" : s.kind === "body" ? "grip-vertical" : s.type === "toc" ? "list-ordered" : s.type === "cover" ? "image" : "file-text") + '"></i></span>' +
               '<span class="sec-name">' + esc(name) + '</span>' +
-              '<span class="sec-wc" id="wc-' + s.id + '">' + fmtNum(sectionWords(s)) + " " + t("side.wordUnit", { count: sectionWords(s) }) + "</span>" +
+              '<span class="sec-wc" id="wc-' + s.id + '"' + (s.included && emptyOut(s) ? ' title="' + esc(t("side.emptyOut")) + '"' : "") + '>' + (s.included && emptyOut(s) ? esc(t("side.emptyOutShort")) : fmtNum(sectionWords(s)) + " " + t("side.wordUnit", { count: sectionWords(s) })) + "</span>" +
               '<span class="sec-tools">' +
               '<button type="button" class="mini" data-act="up" title="' + t("side.moveUp") + '" aria-label="' + t("side.moveUp") + '"><i data-lucide="chevron-up"></i></button><button type="button" class="mini" data-act="down" title="' + t("side.moveDown") + '" aria-label="' + t("side.moveDown") + '"><i data-lucide="chevron-down"></i></button>' +
               '<button type="button" class="mini" data-act="eye" title="' + t("side.includeInExport") + '" aria-label="' + t("side.includeInExport") + '"><i data-lucide="' + (s.included ? "eye" : "eye-off") + '"></i></button>' +
@@ -31133,7 +31144,7 @@
         if (edSec) edSec.textContent = secTxt;
         if (edBook) edBook.textContent = bookTxt;
         if (zenCount) zenCount.textContent = secTxt + " · " + bookTxt;
-        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); const txt = fmtNum(w) + " " + t("side.wordUnit", { count: w }); if (el.textContent !== txt) el.textContent = txt; } }); /* BEUK:typingperf — an unchanged row is left alone */
+        state.sections.forEach((s) => { const el = $("wc-" + s.id); if (el) { const w = sectionWords(s); const out = s.included && emptyOut(s); const txt = out ? t("side.emptyOutShort") : fmtNum(w) + " " + t("side.wordUnit", { count: w }); if (el.textContent !== txt) el.textContent = txt; if (out) el.title = t("side.emptyOut"); else el.removeAttribute("title"); const row = el.parentElement; if (row && row.classList.contains("excluded") !== !inBook(s)) row.classList.toggle("excluded", !inBook(s)); } }); /* BEUK:starters */ /* BEUK:typingperf — an unchanged row is left alone */
         $("projectTitleDisplay").textContent = imRealTitle() || t("misc.untitledBook"); /* BEUK:importmeta */
         $("projectAuthorDisplay").textContent = state.meta.author ? t("misc.byAuthor", { author: state.meta.author }) : "";
         renderProgress();
@@ -32822,6 +32833,7 @@
         if (id !== state.activeId && typeof dictDiscard === "function") dictDiscard();
         state.activeId = id;
         renderSidebar(); syncEditor(); renderPreview();
+        updateStats(); /* BEUK:starters — the page just opened shows its own word count, not the last page's */
         if (typeof langBarRefresh === "function") langBarRefresh(); /* BEUK:dictlang */
         if (window.innerWidth < 1024) setMobilePane("center");
       }
@@ -33907,7 +33919,7 @@
          body chapters nested under their Part. Flat when the book
          has no Parts. */
       function tocTree() {
-        const items = state.sections.filter((s) => s.included && s.type !== "toc" && s.type !== "halftitle" && s.type !== "cover" && s.type !== "frontispiece");
+        const items = state.sections.filter((s) => inBook(s) && s.type !== "toc" && s.type !== "halftitle" && s.type !== "cover" && s.type !== "frontispiece");
         const out = [];
         let curPart = null;
         items.forEach((s) => {
@@ -34004,6 +34016,7 @@
         const staleNote = $("autoNote");
         if (staleNote) staleNote.remove();
         renderGenEditor(s);
+        renderStarterBar(s); /* BEUK:starters */
         renderSectionImages();
         updateSceneBar();
         zenRenderSurface();
@@ -34106,7 +34119,7 @@
           bindGenMeta("genCpAuthor", "author"); bindGenMeta("genCpPublisher", "publisher");
           bindGenMeta("genCpIsbn", "isbn"); bindGenMeta("genCpYear", "year"); bindGenMeta("genCpRights", "rights");
         } else if (s.type === "toc") {
-          const items = state.sections.filter((x) => x.included && x.type !== "toc" && x.type !== "halftitle" && x.type !== "cover" && x.type !== "frontispiece");
+          const items = state.sections.filter((x) => inBook(x) && x.type !== "toc" && x.type !== "halftitle" && x.type !== "cover" && x.type !== "frontispiece");
           host.innerHTML = '<div class="gen-panel"><div class="meta-grid">' +
             genFieldHtml("genTocHeading", t("gen.tocHeading"), tocHeadingOf(s), true) +
             '</div><div><span class="field-lab">' + esc(t("gen.tocEntries")) + '</span><ol class="gen-toc-list">' +
@@ -34598,6 +34611,7 @@
             markWritingActivity();
             noteBookEdited();
             updateStats();
+            renderStarterBar(s); /* BEUK:starters — a page that gains its first words joins the book; a filled blank leaves the list */
           }, true);
           clearTimeout(debounce); debounce = setTimeout(() => { withEditorView(() => { renderPreview(); renderSectionImages(); zenRenderSurface(); }, true); }, 220);
         });
@@ -39365,6 +39379,282 @@
         "ir.k.gluedChapter": "章节标题“{kept}”中的单词连在了一起。按书中本身的词语应读作“{offered}”。"
       });
       /* ==== /BEUK:gluefix ==== */
+      /* ==== BEUK:starters ==== — back matter starters, and empty pages left out of the book.
+         An empty back page offers a few common starting points: a short
+         bio, thanks, the series in order, a review request, the book's own
+         typefaces. Nothing reaches the page until the writer presses Use.
+         What the book knows (author, title, series, fonts) is filled in;
+         what only the writer knows stays a marked blank, [[like this]],
+         named on the page, in the EPUB check and in the print preflight
+         until it is filled. The text is in the book's language.
+         A page with no words of its own — back matter, or a written front
+         page such as an epigraph or dedication — is left out of every
+         export until it has some (inBook). A generated page (cover, title
+         page, copyright, contents) and a body piece never are. */
+      const STARTER_BLANK_RE = /\[\[([^\[\]\n]{1,120})\]\]/g;
+      function emptyOut(s) {
+        return !!s && s.kind !== "body" && !AUTO_TYPES.includes(s.type) && s.type !== "toc" &&
+          !String(s.content || "").trim() && !s.plateId && !s.backdropId;
+      }
+      function inBook(s) { return !!s && !!s.included && !emptyOut(s); }
+      function starterBlanks(text) {
+        const out = [];
+        const re = new RegExp(STARTER_BLANK_RE.source, "g");
+        let m;
+        while ((m = re.exec(String(text || "")))) out.push(m[0]);
+        return out;
+      }
+      const STARTERS_FOR = { aboutauthor: ["about.third", "about.first"], acknowledgments: ["ack.short", "ack.full"], alsoby: ["also.series", "also.list"], cta: ["cta.review", "cta.news"], colophon: ["colo.fonts"] };
+      const STARTER_TEXT = {
+        en: {
+          "_author": "your name", "_title": "your book's title", "_book": "Title of book {n}",
+          "about.third": "{author} writes [[the kind of books you write]] and lives in [[your town or region]]. [[One line about your life beyond writing.]]\n\n{title} is [[your first book, or where it sits among your books]]. News of the next book is at [[your website]].",
+          "about.first": "I write [[the kind of books you write]] from [[your town or region]]. [[One line about what brought you to this story.]]\n\nIf {title} stayed with you, I would love to hear from you at [[your website or email]].",
+          "ack.short": "My thanks to [[the people who helped most]], without whom {title} would not exist.\n\nAnd to you, for reading.",
+          "ack.full": "This book had more help than its cover admits.\n\nThank you to [[your editor]] for [[what they did for the book]], and to my early readers, [[their names]], for their honesty.\n\nThank you to [[family or friends]] for [[the time, the patience, the coffee]].\n\nAny mistakes that remain are mine.",
+          "also.list": "[[Title of another book]]\n[[Title of another book]]\n\nThe full list is at [[your website]].",
+          "cta.review": "Thank you for reading {title}.\n\nIf it stayed with you, a short review at [[the store where you bought it]] helps other readers find it. A sentence or two is plenty.",
+          "cta.news": "Want to know when the next book is out?\n\nJoin [[your newsletter's name]] at [[your sign-up link]] and get [[what subscribers receive, such as an early chapter]].",
+          "_coloTwo": "This book is set in {body}, with headings in {head}.", "_coloOne": "This book is set in {body}.", "_coloBy": "Designed and typeset by [[your name or studio]]."
+        },
+        es: {
+          "_author": "tu nombre", "_title": "el título de tu libro", "_book": "Título del libro {n}",
+          "about.third": "{author} escribe [[el tipo de libros que escribes]] y vive en [[tu ciudad o región]]. [[Una línea sobre tu vida más allá de la escritura.]]\n\n{title} es [[tu primer libro, o su lugar entre tus libros]]. Las novedades sobre el próximo libro están en [[tu web]].",
+          "about.first": "Escribo [[el tipo de libros que escribes]] desde [[tu ciudad o región]]. [[Una línea sobre qué te trajo a esta historia.]]\n\nSi {title} se quedó contigo, me encantaría saberlo en [[tu web o correo]].",
+          "ack.short": "Gracias a [[las personas que más ayudaron]], sin quienes {title} no existiría.\n\nY a ti, por leer.",
+          "ack.full": "Este libro tuvo más ayuda de la que admite su cubierta.\n\nGracias a [[tu editor o editora]] por [[lo que hizo por el libro]], y a mis primeros lectores, [[sus nombres]], por su sinceridad.\n\nGracias a [[familia o amistades]] por [[el tiempo, la paciencia, el café]].\n\nLos errores que queden son solo míos.",
+          "also.list": "[[Título de otro libro]]\n[[Título de otro libro]]\n\nLa lista completa está en [[tu web]].",
+          "cta.review": "Gracias por leer {title}.\n\nSi te ha dejado huella, una reseña breve en [[la tienda donde lo compraste]] ayuda a otros lectores a encontrarlo. Basta con una o dos frases.",
+          "cta.news": "¿Quieres saber cuándo sale el próximo libro?\n\nSuscríbete a [[el nombre de tu boletín]] en [[tu enlace de suscripción]] y recibe [[lo que reciben los suscriptores, como un capítulo anticipado]].",
+          "_coloTwo": "Este libro está compuesto en {body}, con títulos en {head}.", "_coloOne": "Este libro está compuesto en {body}.", "_coloBy": "Diseño y maquetación: [[tu nombre o estudio]]."
+        },
+        fr: {
+          "_author": "votre nom", "_title": "le titre de votre livre", "_book": "Titre du livre {n}",
+          "about.third": "{author} écrit [[le genre de livres que vous écrivez]] et vit à [[votre ville ou région]]. [[Une ligne sur votre vie en dehors de l’écriture.]]\n\n{title} est [[votre premier livre, ou sa place parmi vos livres]]. Les nouvelles du prochain livre sont sur [[votre site]].",
+          "about.first": "J’écris [[le genre de livres que vous écrivez]] depuis [[votre ville ou région]]. [[Une ligne sur ce qui vous a mené à cette histoire.]]\n\nSi {title} vous a marqué, j’aimerais beaucoup vous lire sur [[votre site ou e-mail]].",
+          "ack.short": "Merci à [[les personnes qui ont le plus aidé]], sans qui {title} n’existerait pas.\n\nEt à vous, de m’avoir lu.",
+          "ack.full": "Ce livre a reçu plus d’aide que sa couverture ne l’avoue.\n\nMerci à [[votre éditeur ou éditrice]] pour [[ce qu’il ou elle a fait pour le livre]], et à mes premiers lecteurs, [[leurs noms]], pour leur franchise.\n\nMerci à [[famille ou amis]] pour [[le temps, la patience, le café]].\n\nLes erreurs qui subsistent sont les miennes.",
+          "also.list": "[[Titre d’un autre livre]]\n[[Titre d’un autre livre]]\n\nLa liste complète est sur [[votre site]].",
+          "cta.review": "Merci d’avoir lu {title}.\n\nS’il vous a marqué, un court avis sur [[la boutique où vous l’avez acheté]] aide d’autres lecteurs à le trouver. Une phrase ou deux suffisent.",
+          "cta.news": "Envie de savoir quand sortira le prochain livre ?\n\nInscrivez-vous à [[le nom de votre lettre d’information]] sur [[votre lien d’inscription]] et recevez [[ce que reçoivent les abonnés, par exemple un chapitre en avant-première]].",
+          "_coloTwo": "Ce livre est composé en {body}, les titres en {head}.", "_coloOne": "Ce livre est composé en {body}.", "_coloBy": "Conception et mise en page : [[votre nom ou studio]]."
+        },
+        de: {
+          "_author": "Ihr Name", "_title": "der Titel Ihres Buches", "_book": "Titel von Band {n}",
+          "about.third": "{author} schreibt [[die Art Bücher, die Sie schreiben]] und lebt in [[Ihrer Stadt oder Region]]. [[Ein Satz über Ihr Leben jenseits des Schreibens.]]\n\n{title} ist [[Ihr erstes Buch oder sein Platz unter Ihren Büchern]]. Neuigkeiten zum nächsten Buch gibt es auf [[Ihrer Website]].",
+          "about.first": "Ich schreibe [[die Art Bücher, die Sie schreiben]] in [[Ihrer Stadt oder Region]]. [[Ein Satz darüber, was Sie zu dieser Geschichte gebracht hat.]]\n\nWenn {title} Sie bewegt hat, freue ich mich über eine Nachricht an [[Ihre Website oder E-Mail]].",
+          "ack.short": "Mein Dank gilt [[den Menschen, die am meisten geholfen haben]], ohne die es {title} nicht gäbe.\n\nUnd Ihnen, fürs Lesen.",
+          "ack.full": "Dieses Buch hatte mehr Hilfe, als sein Umschlag verrät.\n\nDanke an [[Ihr Lektorat]] für [[das, was es für das Buch getan hat]], und an meine ersten Leserinnen und Leser, [[ihre Namen]], für ihre Ehrlichkeit.\n\nDanke an [[Familie oder Freunde]] für [[die Zeit, die Geduld, den Kaffee]].\n\nAlle verbliebenen Fehler sind meine.",
+          "also.list": "[[Titel eines anderen Buches]]\n[[Titel eines anderen Buches]]\n\nDie vollständige Liste finden Sie auf [[Ihrer Website]].",
+          "cta.review": "Danke, dass Sie {title} gelesen haben.\n\nWenn es Sie bewegt hat, hilft eine kurze Rezension bei [[dem Shop, in dem Sie es gekauft haben]] anderen Lesern, es zu finden. Ein, zwei Sätze genügen.",
+          "cta.news": "Möchten Sie wissen, wann das nächste Buch erscheint?\n\nAbonnieren Sie [[den Namen Ihres Newsletters]] unter [[Ihrem Anmeldelink]] und erhalten Sie [[was Abonnenten bekommen, etwa ein Kapitel vorab]].",
+          "_coloTwo": "Gesetzt aus der {body}, die Überschriften aus der {head}.", "_coloOne": "Gesetzt aus der {body}.", "_coloBy": "Gestaltung und Satz: [[Ihr Name oder Studio]]."
+        },
+        it: {
+          "_author": "il tuo nome", "_title": "il titolo del tuo libro", "_book": "Titolo del libro {n}",
+          "about.third": "{author} scrive [[il genere di libri che scrivi]] e vive a [[la tua città o regione]]. [[Una riga sulla tua vita oltre la scrittura.]]\n\n{title} è [[il tuo primo libro, o il suo posto tra i tuoi libri]]. Le novità sul prossimo libro sono su [[il tuo sito]].",
+          "about.first": "Scrivo [[il genere di libri che scrivi]] da [[la tua città o regione]]. [[Una riga su cosa ti ha portato a questa storia.]]\n\nSe {title} ti è rimasto dentro, mi farebbe piacere sentirti su [[il tuo sito o la tua e-mail]].",
+          "ack.short": "Grazie a [[le persone che hanno aiutato di più]], senza le quali {title} non esisterebbe.\n\nE a te, per aver letto.",
+          "ack.full": "Questo libro ha avuto più aiuto di quanto ammetta la copertina.\n\nGrazie a [[chi ha curato l’editing]] per [[ciò che ha fatto per il libro]], e ai miei primi lettori, [[i loro nomi]], per la loro sincerità.\n\nGrazie a [[famiglia o amici]] per [[il tempo, la pazienza, il caffè]].\n\nGli errori rimasti sono soltanto miei.",
+          "also.list": "[[Titolo di un altro libro]]\n[[Titolo di un altro libro]]\n\nL’elenco completo è su [[il tuo sito]].",
+          "cta.review": "Grazie per aver letto {title}.\n\nSe ti è rimasto dentro, una breve recensione su [[il negozio dove l’hai comprato]] aiuta altri lettori a trovarlo. Bastano una o due frasi.",
+          "cta.news": "Vuoi sapere quando esce il prossimo libro?\n\nIscriviti a [[il nome della tua newsletter]] su [[il tuo link di iscrizione]] e ricevi [[ciò che ricevono gli iscritti, come un capitolo in anteprima]].",
+          "_coloTwo": "Questo libro è composto in {body}, con i titoli in {head}.", "_coloOne": "Questo libro è composto in {body}.", "_coloBy": "Progetto grafico e impaginazione: [[il tuo nome o studio]]."
+        },
+        pt: {
+          "_author": "o seu nome", "_title": "o título do seu livro", "_book": "Título do livro {n}",
+          "about.third": "{author} escreve [[o tipo de livros que escreve]] e vive em [[a sua cidade ou região]]. [[Uma linha sobre a sua vida para além da escrita.]]\n\n{title} é [[o seu primeiro livro, ou o lugar dele entre os seus livros]]. As novidades sobre o próximo livro estão em [[o seu site]].",
+          "about.first": "Escrevo [[o tipo de livros que escreve]] a partir de [[a sua cidade ou região]]. [[Uma linha sobre o que o trouxe a esta história.]]\n\nSe {title} ficou consigo, adoraria saber em [[o seu site ou e-mail]].",
+          "ack.short": "Obrigado a [[as pessoas que mais ajudaram]], sem as quais {title} não existiria.\n\nE a si, por ler.",
+          "ack.full": "Este livro teve mais ajuda do que a capa admite.\n\nObrigado a [[quem editou o livro]] por [[o que fez pelo livro]], e aos meus primeiros leitores, [[os nomes deles]], pela sinceridade.\n\nObrigado a [[família ou amigos]] por [[o tempo, a paciência, o café]].\n\nOs erros que restam são só meus.",
+          "also.list": "[[Título de outro livro]]\n[[Título de outro livro]]\n\nA lista completa está em [[o seu site]].",
+          "cta.review": "Obrigado por ler {title}.\n\nSe o livro ficou consigo, uma avaliação breve em [[a loja onde o comprou]] ajuda outros leitores a encontrá-lo. Uma ou duas frases chegam.",
+          "cta.news": "Quer saber quando sai o próximo livro?\n\nInscreva-se em [[o nome da sua newsletter]] através de [[o seu link de inscrição]] e receba [[o que os subscritores recebem, como um capítulo em primeira mão]].",
+          "_coloTwo": "Este livro foi composto em {body}, com títulos em {head}.", "_coloOne": "Este livro foi composto em {body}.", "_coloBy": "Design e paginação: [[o seu nome ou estúdio]]."
+        },
+        nl: {
+          "_author": "je naam", "_title": "de titel van je boek", "_book": "Titel van boek {n}",
+          "about.third": "{author} schrijft [[het soort boeken dat je schrijft]] en woont in [[je stad of streek]]. [[Eén regel over je leven buiten het schrijven.]]\n\n{title} is [[je eerste boek, of de plek tussen je andere boeken]]. Nieuws over het volgende boek staat op [[je website]].",
+          "about.first": "Ik schrijf [[het soort boeken dat je schrijft]] vanuit [[je stad of streek]]. [[Eén regel over wat je naar dit verhaal bracht.]]\n\nAls {title} je is bijgebleven, hoor ik het graag via [[je website of e-mail]].",
+          "ack.short": "Dank aan [[de mensen die het meest hebben geholpen]], zonder wie {title} er niet zou zijn.\n\nEn aan jou, voor het lezen.",
+          "ack.full": "Dit boek kreeg meer hulp dan het omslag laat zien.\n\nDank aan [[je redacteur]] voor [[wat die voor het boek deed]], en aan mijn eerste lezers, [[hun namen]], voor hun eerlijkheid.\n\nDank aan [[familie of vrienden]] voor [[de tijd, het geduld, de koffie]].\n\nDe fouten die overblijven zijn de mijne.",
+          "also.list": "[[Titel van een ander boek]]\n[[Titel van een ander boek]]\n\nDe volledige lijst staat op [[je website]].",
+          "cta.review": "Bedankt voor het lezen van {title}.\n\nAls het je is bijgebleven, helpt een korte recensie bij [[de winkel waar je het kocht]] andere lezers het te vinden. Een zin of twee is genoeg.",
+          "cta.news": "Wil je weten wanneer het volgende boek uitkomt?\n\nMeld je aan voor [[de naam van je nieuwsbrief]] via [[je aanmeldlink]] en ontvang [[wat abonnees krijgen, zoals een hoofdstuk vooraf]].",
+          "_coloTwo": "Dit boek is gezet in de {body}, de koppen in de {head}.", "_coloOne": "Dit boek is gezet in de {body}.", "_coloBy": "Ontwerp en opmaak: [[je naam of studio]]."
+        },
+        pl: {
+          "_author": "twoje imię i nazwisko", "_title": "tytuł twojej książki", "_book": "Tytuł książki {n}",
+          "about.third": "{author} pisze [[rodzaj książek, które piszesz]] i mieszka w [[twoje miasto lub region]]. [[Jedno zdanie o twoim życiu poza pisaniem.]]\n\n{title} to [[twoja pierwsza książka albo jej miejsce wśród twoich książek]]. Wieści o kolejnej książce są na [[twoja strona]].",
+          "about.first": "Piszę [[rodzaj książek, które piszesz]] z [[twoje miasto lub region]]. [[Jedno zdanie o tym, co przywiodło cię do tej historii.]]\n\nJeśli {title} zostanie z tobą na dłużej, chętnie o tym usłyszę: [[twoja strona lub e-mail]].",
+          "ack.short": "Dziękuję [[osoby, które pomogły najbardziej]] — bez nich nie byłoby {title}.\n\nI tobie, za lekturę.",
+          "ack.full": "Ta książka miała więcej pomocy, niż przyznaje okładka.\n\nDziękuję [[twój redaktor lub redaktorka]] za [[to, co zrobił lub zrobiła dla książki]] oraz moim pierwszym czytelnikom, [[ich imiona]], za szczerość.\n\nDziękuję [[rodzina lub przyjaciele]] za [[czas, cierpliwość, kawę]].\n\nWszystkie pozostałe błędy są moje.",
+          "also.list": "[[Tytuł innej książki]]\n[[Tytuł innej książki]]\n\nPełna lista jest na [[twoja strona]].",
+          "cta.review": "Dziękuję za przeczytanie {title}.\n\nJeśli ta książka została z tobą, krótka recenzja w [[sklep, w którym ją kupiono]] pomoże innym czytelnikom ją znaleźć. Wystarczy zdanie lub dwa.",
+          "cta.news": "Chcesz wiedzieć, kiedy ukaże się kolejna książka?\n\nZapisz się na [[nazwa twojego newslettera]] pod adresem [[twój link do zapisu]] i otrzymuj [[to, co dostają subskrybenci, np. rozdział przedpremierowo]].",
+          "_coloTwo": "Książkę złożono krojem {body}, tytuły krojem {head}.", "_coloOne": "Książkę złożono krojem {body}.", "_coloBy": "Projekt i skład: [[twoje imię i nazwisko lub studio]]."
+        },
+        ru: {
+          "_author": "ваше имя", "_title": "название вашей книги", "_book": "Название книги {n}",
+          "about.third": "{author} пишет [[книги, которые вы пишете]] и живёт в [[ваш город или регион]]. [[Одна строка о вашей жизни вне писательства.]]\n\n{title} — [[ваша первая книга или её место среди ваших книг]]. Новости о следующей книге — на [[ваш сайт]].",
+          "about.first": "Я пишу [[книги, которые вы пишете]] из [[ваш город или регион]]. [[Одна строка о том, что привело вас к этой истории.]]\n\nЕсли {title} не отпускает, напишите мне: [[ваш сайт или e-mail]].",
+          "ack.short": "Спасибо [[люди, которые помогли больше всех]] — без них {title} не было бы.\n\nИ вам — за то, что прочли.",
+          "ack.full": "У этой книги было больше помощников, чем признаёт обложка.\n\nСпасибо [[ваш редактор]] за [[то, что он сделал для книги]] и моим первым читателям, [[их имена]], за честность.\n\nСпасибо [[семья или друзья]] за [[время, терпение, кофе]].\n\nВсе оставшиеся ошибки — мои.",
+          "also.list": "[[Название другой книги]]\n[[Название другой книги]]\n\nПолный список — на [[ваш сайт]].",
+          "cta.review": "Спасибо, что прочли {title}.\n\nЕсли книга вам запомнилась, короткий отзыв в [[магазин, где вы её купили]] поможет другим читателям её найти. Хватит пары предложений.",
+          "cta.news": "Хотите узнать, когда выйдет следующая книга?\n\nПодпишитесь на [[название вашей рассылки]] по ссылке [[ваша ссылка для подписки]] и получите [[что получают подписчики, например главу заранее]].",
+          "_coloTwo": "Книга набрана шрифтом {body}, заголовки — шрифтом {head}.", "_coloOne": "Книга набрана шрифтом {body}.", "_coloBy": "Оформление и вёрстка: [[ваше имя или студия]]."
+        },
+        tr: {
+          "_author": "adınız", "_title": "kitabınızın adı", "_book": "{n}. kitabın adı",
+          "about.third": "{author}, [[yazdığınız türden kitaplar]] yazıyor ve [[şehriniz ya da bölgeniz]] yaşıyor. [[Yazı dışındaki hayatınıza dair bir satır.]]\n\n{title}, [[ilk kitabınız ya da kitaplarınız arasındaki yeri]]. Bir sonraki kitapla ilgili haberler [[web siteniz]] adresinde.",
+          "about.first": "[[Şehriniz ya da bölgeniz]] bölgesinden [[yazdığınız türden kitaplar]] yazıyorum. [[Sizi bu hikâyeye neyin getirdiğine dair bir satır.]]\n\n{title} aklınızda kaldıysa, [[web siteniz ya da e-postanız]] üzerinden haber vermenizi çok isterim.",
+          "ack.short": "[[En çok yardım eden kişiler]], onlar olmasa {title} var olmazdı; teşekkürler.\n\nVe okuduğunuz için size.",
+          "ack.full": "Bu kitap, kapağının itiraf ettiğinden daha fazla yardım aldı.\n\n[[Editörünüz]], [[kitap için yaptıkları]] için; ilk okurlarım [[isimleri]], dürüstlükleri için teşekkürler.\n\n[[Aileniz ya da arkadaşlarınız]], [[zaman, sabır, kahve]] için teşekkürler.\n\nKalan tüm hatalar bana ait.",
+          "also.list": "[[Başka bir kitabın adı]]\n[[Başka bir kitabın adı]]\n\nTam liste [[web siteniz]] adresinde.",
+          "cta.review": "{title} kitabını okuduğunuz için teşekkürler.\n\nAklınızda kaldıysa, [[kitabı satın aldığınız mağaza]] üzerinde kısa bir değerlendirme diğer okurların onu bulmasına yardım eder. Bir iki cümle yeterli.",
+          "cta.news": "Bir sonraki kitabın ne zaman çıkacağını öğrenmek ister misiniz?\n\n[[Bülteninizin adı]] listesine [[kayıt bağlantınız]] üzerinden katılın ve [[abonelerin aldıkları, örneğin önceden bir bölüm]] kazanın.",
+          "_coloTwo": "Bu kitap {body} ile dizildi, başlıklar {head} ile.", "_coloOne": "Bu kitap {body} ile dizildi.", "_coloBy": "Tasarım ve dizgi: [[adınız ya da stüdyonuz]]."
+        },
+        ar: {
+          "_author": "اسمك", "_title": "عنوان كتابك", "_book": "عنوان الكتاب {n}",
+          "about.third": "يكتب {author} [[نوع الكتب التي تكتبها]] ويعيش في [[مدينتك أو منطقتك]]. [[سطر واحد عن حياتك بعيدًا عن الكتابة.]]\n\n{title} هو [[كتابك الأول، أو مكانه بين كتبك]]. أخبار الكتاب القادم على [[موقعك]].",
+          "about.first": "أكتب [[نوع الكتب التي تكتبها]] من [[مدينتك أو منطقتك]]. [[سطر واحد عمّا قادك إلى هذه القصة.]]\n\nإن بقي {title} معك، يسعدني أن أسمع منك عبر [[موقعك أو بريدك]].",
+          "ack.short": "شكري إلى [[الأشخاص الذين ساعدوا أكثر من غيرهم]]، فلولاهم ما كان {title}.\n\nوإليك، لأنك قرأت.",
+          "ack.full": "حظي هذا الكتاب بعون أكثر مما يعترف به غلافه.\n\nشكرًا إلى [[محررك]] على [[ما قدّمه للكتاب]]، وإلى قرّائي الأوائل، [[أسماؤهم]]، على صراحتهم.\n\nشكرًا إلى [[العائلة أو الأصدقاء]] على [[الوقت والصبر والقهوة]].\n\nوما بقي من أخطاء فهو مني.",
+          "also.list": "[[عنوان كتاب آخر]]\n[[عنوان كتاب آخر]]\n\nالقائمة الكاملة على [[موقعك]].",
+          "cta.review": "شكرًا لقراءتك {title}.\n\nإن بقي معك، فإن مراجعة قصيرة على [[المتجر الذي اشتريته منه]] تساعد قرّاء آخرين على إيجاده. تكفي جملة أو جملتان.",
+          "cta.news": "أتودّ أن تعرف متى يصدر الكتاب القادم؟\n\nاشترك في [[اسم نشرتك البريدية]] عبر [[رابط الاشتراك]] واحصل على [[ما يحصل عليه المشتركون، مثل فصل مبكر]].",
+          "_coloTwo": "جُمع هذا الكتاب بخط {body}، والعناوين بخط {head}.", "_coloOne": "جُمع هذا الكتاب بخط {body}.", "_coloBy": "التصميم والإخراج: [[اسمك أو اسم الاستوديو]]."
+        },
+        ja: {
+          "_author": "あなたの名前", "_title": "本のタイトル", "_book": "{n}巻目のタイトル",
+          "about.third": "{author}は[[あなたが書く本のジャンル]]を書き、[[住んでいる町や地域]]に暮らしている。[[執筆以外の暮らしについて一行。]]\n\n『{title}』は[[最初の本、または著作の中での位置づけ]]。次の本の情報は[[あなたのウェブサイト]]で。",
+          "about.first": "[[住んでいる町や地域]]で[[あなたが書く本のジャンル]]を書いています。[[この物語を書くきっかけについて一行。]]\n\n『{title}』が心に残ったら、[[あなたのウェブサイトやメール]]からぜひお便りください。",
+          "ack.short": "[[一番助けてくれた人たち]]に感謝します。その人たちがいなければ『{title}』は生まれませんでした。\n\nそして、読んでくださったあなたに。",
+          "ack.full": "この本は、表紙が語る以上に多くの人に支えられています。\n\n[[編集者]]には[[本のためにしてくれたこと]]に、最初の読者である[[その人たちの名前]]には率直な感想に、感謝します。\n\n[[家族や友人]]には[[時間と忍耐とコーヒー]]に感謝します。\n\n残る誤りはすべて私の責任です。",
+          "also.list": "[[ほかの本のタイトル]]\n[[ほかの本のタイトル]]\n\n全著作リストは[[あなたのウェブサイト]]で。",
+          "cta.review": "『{title}』を読んでいただき、ありがとうございます。\n\n心に残ったなら、[[購入したストア]]に短いレビューを書いていただけると、ほかの読者がこの本を見つける助けになります。一、二文で十分です。",
+          "cta.news": "次の本がいつ出るか知りたいですか？\n\n[[登録用リンク]]から[[ニュースレターの名前]]に登録すると、[[購読者が受け取れるもの、たとえば先行公開の一章]]が届きます。",
+          "_coloTwo": "本文は{body}、見出しは{head}で組版しています。", "_coloOne": "本文は{body}で組版しています。", "_coloBy": "デザイン・組版：[[あなたの名前またはスタジオ]]"
+        },
+        "zh-Hans": {
+          "_author": "你的名字", "_title": "书名", "_book": "第{n}本书的书名",
+          "about.third": "{author}写[[你写的书的类型]]，住在[[你所在的城市或地区]]。[[一句关于你写作之外生活的话。]]\n\n《{title}》是[[你的第一本书，或它在你作品中的位置]]。下一本书的消息请见[[你的网站]]。",
+          "about.first": "我在[[你所在的城市或地区]]写[[你写的书的类型]]。[[一句话说说是什么让你写下这个故事。]]\n\n如果《{title}》打动了你，欢迎通过[[你的网站或邮箱]]告诉我。",
+          "ack.short": "感谢[[帮助最多的人]]，没有他们就没有《{title}》。\n\n也感谢你的阅读。",
+          "ack.full": "这本书得到的帮助，比封面上能看出的更多。\n\n感谢[[你的编辑]][[为这本书所做的一切]]，感谢我最早的读者[[他们的名字]]坦诚的意见。\n\n感谢[[家人或朋友]]给予的[[时间、耐心和咖啡]]。\n\n书中尚存的错误，都由我负责。",
+          "also.list": "[[另一本书的书名]]\n[[另一本书的书名]]\n\n完整书目请见[[你的网站]]。",
+          "cta.review": "感谢你读完《{title}》。\n\n如果它打动了你，在[[你购买这本书的书店]]留下一段简短的评论，能帮助其他读者找到它。一两句话就够了。",
+          "cta.news": "想知道下一本书什么时候出版吗？\n\n通过[[你的订阅链接]]订阅[[你的通讯名称]]，即可获得[[订阅者的福利，例如抢先阅读一章]]。",
+          "_coloTwo": "本书正文采用{body}字体，标题采用{head}字体。", "_coloOne": "本书正文采用{body}字体。", "_coloBy": "设计与排版：[[你的名字或工作室]]"
+        }
+      };
+      /* The series list is offered only when the book names its series. */
+      function starterIds(s) {
+        return ((s && STARTERS_FOR[s.type]) || []).filter((id) => id !== "also.series" || String(state.meta.series || "").trim());
+      }
+      function starterText(id, lang) {
+        const L = STARTER_TEXT[lang] || STARTER_TEXT.en;
+        const pick = (k) => (L[k] != null ? L[k] : STARTER_TEXT.en[k]);
+        const m = state.meta, th = state.theme || {};
+        const val = (v, blankKey) => String(v || "").trim() || "[[" + pick(blankKey) + "]]";
+        const fill = (s) => s.replace(/\{(author|title|series|body|head)\}/g, (x, k) =>
+          k === "author" ? val(m.author, "_author") : k === "title" ? val(m.title, "_title") : k === "series" ? String(m.series || "").trim() : k === "body" ? (th.bodyFont || "") : (th.headFont || ""));
+        if (id === "also.series") {
+          const here = parseInt(m.seriesNumber, 10) || 0;
+          const lines = [];
+          for (let k = 1; k <= Math.max(3, here); k++) lines.push(k + ". " + (k === here ? val(m.title, "_title") : "[[" + pick("_book").replace("{n}", k) + "]]"));
+          return fill("{series}") + "\n\n" + lines.join("\n");
+        }
+        if (id === "colo.fonts") return fill(pick(!th.headFont || th.headFont === th.bodyFont ? "_coloOne" : "_coloTwo")) + "\n\n" + pick("_coloBy");
+        return fill(pick(id));
+      }
+      let starterPending = null; /* { secId, id }: the starter being looked at */
+      let starterShown = "";
+      function renderStarterBar(s) {
+        const host = $("starterBar"); if (!host) return;
+        const hide = () => { host.style.display = "none"; host.innerHTML = ""; starterShown = ""; };
+        if (!s || s.kind === "body") { starterPending = null; hide(); return; }
+        const empty = emptyOut(s);
+        const blanks = empty ? [] : starterBlanks(s.content);
+        const ids = empty ? starterIds(s) : [];
+        if (!empty && !blanks.length) { starterPending = null; hide(); return; }
+        if (starterPending && (starterPending.secId !== s.id || ids.indexOf(starterPending.id) === -1)) starterPending = null;
+        const key = [s.id, empty, blanks.join(""), starterPending ? starterPending.id : "", uiLangState, ids.join()].join("|");
+        if (key === starterShown && host.innerHTML) return;
+        starterShown = key;
+        host.style.display = "";
+        let html = "";
+        if (empty) {
+          html += '<p class="starter-out"><i data-lucide="eye-off"></i><span>' + esc(t("starter.emptyOut")) + "</span></p>";
+          if (ids.length) {
+            html += '<div class="starter-head"><b>' + esc(t("starter.heading")) + "</b> <span>" + esc(t("starter.hint")) + "</span></div>" +
+              '<div class="gen-actions" role="group" aria-label="' + esc(t("starter.heading")) + '">' + ids.map((id) =>
+                '<button type="button" class="tb-btn" data-starter="' + id + '" aria-pressed="' + (starterPending && starterPending.id === id ? "true" : "false") + '">' + esc(t("starter.k." + id)) + "</button>").join("") + "</div>";
+            if (starterPending) {
+              const lang = bookLang();
+              html += '<div class="starter-preview" id="starterPreview" lang="' + esc(lang) + '" dir="' + (isRtlLang(lang) ? "rtl" : "ltr") + '">' +
+                esc(starterText(starterPending.id, lang)).replace(/\[\[([^\[\]\n]{1,120})\]\]/g, "<mark>[[$1]]</mark>").replace(/\n/g, "<br/>") + "</div>" +
+                '<div class="gen-actions"><button type="button" class="tb-btn" id="starterUse"><i data-lucide="check"></i>' + esc(t("starter.use")) + "</button>" +
+                '<button type="button" class="gen-quiet" id="starterCancel">' + esc(t("starter.cancel")) + "</button></div>";
+            }
+          }
+        } else {
+          html += '<p class="starter-blanks"><i data-lucide="pencil-line"></i><span>' + esc(t("starter.blanks", { n: blanks.length, list: blanks.join(", ") })) + "</span> " +
+            '<button type="button" class="gen-quiet" id="starterNext">' + esc(t("starter.next")) + "</button></p>";
+        }
+        host.innerHTML = html;
+        host.querySelectorAll("[data-starter]").forEach((b) => b.addEventListener("click", () => {
+          const id = b.getAttribute("data-starter");
+          starterPending = starterPending && starterPending.id === id ? null : { secId: s.id, id };
+          renderStarterBar(activeSection());
+        }));
+        const use = $("starterUse"); if (use) use.addEventListener("click", () => starterUse());
+        const cancel = $("starterCancel"); if (cancel) cancel.addEventListener("click", () => { starterPending = null; renderStarterBar(activeSection()); });
+        const next = $("starterNext"); if (next) next.addEventListener("click", () => starterSelectBlank());
+        icons();
+      }
+      /* Use: the starter becomes the page's words, and the first blank is selected to type over. */
+      function starterUse() {
+        const s = activeSection();
+        if (!s || !starterPending || starterPending.secId !== s.id || !emptyOut(s)) return false;
+        s.content = starterText(starterPending.id, bookLang());
+        starterPending = null;
+        $("editorArea").value = s.content;
+        noteBookEdited(); updateStats(); renderSidebar(); renderPreview(); refreshExportTree();
+        renderStarterBar(s);
+        starterSelectBlank();
+        return true;
+      }
+      function starterSelectBlank() {
+        const area = $("editorArea"); if (!area) return;
+        const re = new RegExp(STARTER_BLANK_RE.source, "g");
+        const from = area.selectionEnd || 0;
+        let m, first = null, after = null;
+        while ((m = re.exec(area.value))) { if (!first) first = m; if (!after && m.index >= from) after = m; }
+        const hit = after || first; if (!hit) return;
+        area.focus();
+        area.setSelectionRange(hit.index, hit.index + hit[0].length);
+      }
+      /* The EPUB check and the print preflight name every blank left in the book. */
+      function starterBlanksInBook() {
+        return state.sections.filter(inBook).map((s) => ({ s, blanks: starterBlanks(s.content) })).filter((x) => x.blanks.length);
+      }
+      Object.assign(UI_STRINGS.en, { "side.emptyOutShort": "Empty", "starter.heading": "Start from a template", "starter.hint": "Pick one to see it first. Nothing goes on the page until you press Use.", "starter.use": "Use", "starter.cancel": "Cancel", "starter.emptyOut": "This page is empty, so it is left out of the book until you write it.", "starter.blanks": "{n} blank left to fill: {list}", "starter.blanksPlural": "{n} blanks left to fill: {list}", "starter.next": "Go to the next blank", "starter.k.about.third": "Short bio, third person", "starter.k.about.first": "Short bio, first person", "starter.k.ack.short": "Short thank-you", "starter.k.ack.full": "Fuller thanks", "starter.k.also.series": "Your series, in order", "starter.k.also.list": "A list of your books", "starter.k.cta.review": "Ask for a review", "starter.k.cta.news": "Newsletter sign-up", "starter.k.colo.fonts": "Your book's typefaces", "side.emptyOut": "Empty — left out of the book", "check.blanks.name": "Template blanks left to fill", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.es, { "side.emptyOutShort": "Vacía", "starter.heading": "Empezar con una plantilla", "starter.hint": "Elige una para verla antes. Nada pasa a la página hasta que pulses Usar.", "starter.use": "Usar", "starter.cancel": "Cancelar", "starter.emptyOut": "Esta página está vacía, así que queda fuera del libro hasta que la escribas.", "starter.blanks": "Queda {n} hueco por rellenar: {list}", "starter.blanksPlural": "Quedan {n} huecos por rellenar: {list}", "starter.next": "Ir al siguiente hueco", "starter.k.about.third": "Biografía breve, en tercera persona", "starter.k.about.first": "Biografía breve, en primera persona", "starter.k.ack.short": "Agradecimiento breve", "starter.k.ack.full": "Agradecimientos completos", "starter.k.also.series": "Tu serie, en orden", "starter.k.also.list": "Una lista de tus libros", "starter.k.cta.review": "Pedir una reseña", "starter.k.cta.news": "Suscripción al boletín", "starter.k.colo.fonts": "Las tipografías de tu libro", "side.emptyOut": "Vacía: fuera del libro", "check.blanks.name": "Huecos de plantilla sin rellenar", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.fr, { "side.emptyOutShort": "Vide", "starter.heading": "Partir d’un modèle", "starter.hint": "Choisissez-en un pour le voir d’abord. Rien n’arrive sur la page avant que vous appuyiez sur Utiliser.", "starter.use": "Utiliser", "starter.cancel": "Annuler", "starter.emptyOut": "Cette page est vide : elle reste hors du livre jusqu’à ce que vous l’écriviez.", "starter.blanks": "Il reste {n} blanc à remplir : {list}", "starter.blanksPlural": "Il reste {n} blancs à remplir : {list}", "starter.next": "Aller au blanc suivant", "starter.k.about.third": "Courte bio, à la troisième personne", "starter.k.about.first": "Courte bio, à la première personne", "starter.k.ack.short": "Bref remerciement", "starter.k.ack.full": "Remerciements complets", "starter.k.also.series": "Votre série, dans l’ordre", "starter.k.also.list": "Une liste de vos livres", "starter.k.cta.review": "Demander un avis", "starter.k.cta.news": "Inscription à la lettre d’information", "starter.k.colo.fonts": "Les polices de votre livre", "side.emptyOut": "Vide — hors du livre", "check.blanks.name": "Blancs de modèle à remplir", "check.blanks.detail": "{section} : {list}" });
+      Object.assign(UI_STRINGS.de, { "side.emptyOutShort": "Leer", "starter.heading": "Mit einer Vorlage beginnen", "starter.hint": "Wählen Sie eine aus, um sie zuerst zu sehen. Erst mit Übernehmen kommt sie auf die Seite.", "starter.use": "Übernehmen", "starter.cancel": "Abbrechen", "starter.emptyOut": "Diese Seite ist leer und bleibt deshalb außerhalb des Buches, bis Sie sie schreiben.", "starter.blanks": "Noch {n} Lücke auszufüllen: {list}", "starter.blanksPlural": "Noch {n} Lücken auszufüllen: {list}", "starter.next": "Zur nächsten Lücke", "starter.k.about.third": "Kurzbiografie, dritte Person", "starter.k.about.first": "Kurzbiografie, erste Person", "starter.k.ack.short": "Kurzer Dank", "starter.k.ack.full": "Ausführliche Danksagung", "starter.k.also.series": "Ihre Reihe in Reihenfolge", "starter.k.also.list": "Eine Liste Ihrer Bücher", "starter.k.cta.review": "Um eine Rezension bitten", "starter.k.cta.news": "Newsletter-Anmeldung", "starter.k.colo.fonts": "Die Schriften Ihres Buches", "side.emptyOut": "Leer – nicht im Buch", "check.blanks.name": "Unausgefüllte Vorlagenlücken", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.it, { "side.emptyOutShort": "Vuota", "starter.heading": "Parti da un modello", "starter.hint": "Scegline uno per vederlo prima. Nulla finisce sulla pagina finché non premi Usa.", "starter.use": "Usa", "starter.cancel": "Annulla", "starter.emptyOut": "Questa pagina è vuota, quindi resta fuori dal libro finché non la scrivi.", "starter.blanks": "Resta {n} spazio da compilare: {list}", "starter.blanksPlural": "Restano {n} spazi da compilare: {list}", "starter.next": "Vai allo spazio successivo", "starter.k.about.third": "Biografia breve, in terza persona", "starter.k.about.first": "Biografia breve, in prima persona", "starter.k.ack.short": "Ringraziamento breve", "starter.k.ack.full": "Ringraziamenti completi", "starter.k.also.series": "La tua serie, in ordine", "starter.k.also.list": "Un elenco dei tuoi libri", "starter.k.cta.review": "Chiedi una recensione", "starter.k.cta.news": "Iscrizione alla newsletter", "starter.k.colo.fonts": "I caratteri del tuo libro", "side.emptyOut": "Vuota — fuori dal libro", "check.blanks.name": "Spazi del modello da compilare", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.pt, { "side.emptyOutShort": "Vazia", "starter.heading": "Começar com um modelo", "starter.hint": "Escolha um para o ver primeiro. Nada vai para a página até carregar em Usar.", "starter.use": "Usar", "starter.cancel": "Cancelar", "starter.emptyOut": "Esta página está vazia, por isso fica fora do livro até a escrever.", "starter.blanks": "Falta preencher {n} espaço: {list}", "starter.blanksPlural": "Faltam preencher {n} espaços: {list}", "starter.next": "Ir para o espaço seguinte", "starter.k.about.third": "Biografia curta, na terceira pessoa", "starter.k.about.first": "Biografia curta, na primeira pessoa", "starter.k.ack.short": "Agradecimento curto", "starter.k.ack.full": "Agradecimentos completos", "starter.k.also.series": "A sua série, por ordem", "starter.k.also.list": "Uma lista dos seus livros", "starter.k.cta.review": "Pedir uma avaliação", "starter.k.cta.news": "Inscrição na newsletter", "starter.k.colo.fonts": "Os tipos de letra do seu livro", "side.emptyOut": "Vazia — fora do livro", "check.blanks.name": "Espaços do modelo por preencher", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.nl, { "side.emptyOutShort": "Leeg", "starter.heading": "Beginnen met een sjabloon", "starter.hint": "Kies er een om hem eerst te zien. Pas als je op Gebruiken drukt, komt hij op de pagina.", "starter.use": "Gebruiken", "starter.cancel": "Annuleren", "starter.emptyOut": "Deze pagina is leeg en blijft daarom buiten het boek tot je hem schrijft.", "starter.blanks": "Nog {n} open plek in te vullen: {list}", "starter.blanksPlural": "Nog {n} open plekken in te vullen: {list}", "starter.next": "Naar de volgende open plek", "starter.k.about.third": "Korte bio, derde persoon", "starter.k.about.first": "Korte bio, eerste persoon", "starter.k.ack.short": "Kort dankwoord", "starter.k.ack.full": "Uitgebreid dankwoord", "starter.k.also.series": "Je reeks, op volgorde", "starter.k.also.list": "Een lijst van je boeken", "starter.k.cta.review": "Om een recensie vragen", "starter.k.cta.news": "Aanmelden voor de nieuwsbrief", "starter.k.colo.fonts": "De lettertypen van je boek", "side.emptyOut": "Leeg — buiten het boek", "check.blanks.name": "Open plekken uit een sjabloon", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.pl, { "side.emptyOutShort": "Pusta", "starter.heading": "Zacznij od szablonu", "starter.hint": "Wybierz jeden, aby najpierw go zobaczyć. Nic nie trafi na stronę, dopóki nie klikniesz Użyj.", "starter.use": "Użyj", "starter.cancel": "Anuluj", "starter.emptyOut": "Ta strona jest pusta, więc pozostaje poza książką, dopóki jej nie napiszesz.", "starter.blanks": "Puste miejsca do uzupełnienia ({n}): {list}", "starter.blanksPlural": "Puste miejsca do uzupełnienia ({n}): {list}", "starter.next": "Przejdź do następnego pustego miejsca", "starter.k.about.third": "Krótka biografia w trzeciej osobie", "starter.k.about.first": "Krótka biografia w pierwszej osobie", "starter.k.ack.short": "Krótkie podziękowanie", "starter.k.ack.full": "Pełne podziękowania", "starter.k.also.series": "Twoja seria, po kolei", "starter.k.also.list": "Lista twoich książek", "starter.k.cta.review": "Poproś o recenzję", "starter.k.cta.news": "Zapis do newslettera", "starter.k.colo.fonts": "Kroje pisma twojej książki", "side.emptyOut": "Pusta — poza książką", "check.blanks.name": "Nieuzupełnione miejsca z szablonu", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.ru, { "side.emptyOutShort": "Пусто", "starter.heading": "Начать с шаблона", "starter.hint": "Выберите шаблон, чтобы сначала его увидеть. На страницу ничего не попадёт, пока вы не нажмёте «Использовать».", "starter.use": "Использовать", "starter.cancel": "Отмена", "starter.emptyOut": "Эта страница пуста, поэтому не входит в книгу, пока вы её не напишете.", "starter.blanks": "Незаполненные пропуски ({n}): {list}", "starter.blanksPlural": "Незаполненные пропуски ({n}): {list}", "starter.next": "К следующему пропуску", "starter.k.about.third": "Короткая биография от третьего лица", "starter.k.about.first": "Короткая биография от первого лица", "starter.k.ack.short": "Короткая благодарность", "starter.k.ack.full": "Подробные благодарности", "starter.k.also.series": "Ваша серия по порядку", "starter.k.also.list": "Список ваших книг", "starter.k.cta.review": "Попросить отзыв", "starter.k.cta.news": "Подписка на рассылку", "starter.k.colo.fonts": "Шрифты вашей книги", "side.emptyOut": "Пусто — не входит в книгу", "check.blanks.name": "Незаполненные пропуски шаблона", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.tr, { "side.emptyOutShort": "Boş", "starter.heading": "Bir şablonla başla", "starter.hint": "Önce görmek için birini seçin. Kullan'a basana kadar sayfaya hiçbir şey eklenmez.", "starter.use": "Kullan", "starter.cancel": "İptal", "starter.emptyOut": "Bu sayfa boş, bu yüzden siz yazana kadar kitabın dışında kalır.", "starter.blanks": "Doldurulacak {n} boşluk kaldı: {list}", "starter.blanksPlural": "Doldurulacak {n} boşluk kaldı: {list}", "starter.next": "Sonraki boşluğa git", "starter.k.about.third": "Kısa biyografi, üçüncü tekil şahıs", "starter.k.about.first": "Kısa biyografi, birinci tekil şahıs", "starter.k.ack.short": "Kısa teşekkür", "starter.k.ack.full": "Ayrıntılı teşekkür", "starter.k.also.series": "Seriniz, sırasıyla", "starter.k.also.list": "Kitaplarınızın listesi", "starter.k.cta.review": "Değerlendirme iste", "starter.k.cta.news": "Bülten kaydı", "starter.k.colo.fonts": "Kitabınızın yazı tipleri", "side.emptyOut": "Boş — kitabın dışında", "check.blanks.name": "Doldurulmamış şablon boşlukları", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.ar, { "side.emptyOutShort": "فارغة", "starter.heading": "ابدأ من قالب", "starter.hint": "اختر قالبًا لتراه أولًا. لن يُضاف شيء إلى الصفحة حتى تضغط «استخدام».", "starter.use": "استخدام", "starter.cancel": "إلغاء", "starter.emptyOut": "هذه الصفحة فارغة، لذا تبقى خارج الكتاب حتى تكتبها.", "starter.blanks": "فراغات متبقية للملء ({n}): {list}", "starter.blanksPlural": "فراغات متبقية للملء ({n}): {list}", "starter.next": "انتقل إلى الفراغ التالي", "starter.k.about.third": "نبذة قصيرة بضمير الغائب", "starter.k.about.first": "نبذة قصيرة بضمير المتكلم", "starter.k.ack.short": "شكر موجز", "starter.k.ack.full": "شكر وافٍ", "starter.k.also.series": "سلسلتك بالترتيب", "starter.k.also.list": "قائمة بكتبك", "starter.k.cta.review": "اطلب مراجعة", "starter.k.cta.news": "الاشتراك في النشرة البريدية", "starter.k.colo.fonts": "خطوط كتابك", "side.emptyOut": "فارغة — خارج الكتاب", "check.blanks.name": "فراغات قالب لم تُملأ", "check.blanks.detail": "{section}: {list}" });
+      Object.assign(UI_STRINGS.ja, { "side.emptyOutShort": "空", "starter.heading": "テンプレートから始める", "starter.hint": "選ぶとまず内容を確認できます。「使う」を押すまでページには何も入りません。", "starter.use": "使う", "starter.cancel": "キャンセル", "starter.emptyOut": "このページは空なので、書くまで本には含まれません。", "starter.blanks": "埋めていない空欄が{n}か所あります：{list}", "starter.blanksPlural": "埋めていない空欄が{n}か所あります：{list}", "starter.next": "次の空欄へ", "starter.k.about.third": "短い著者紹介（三人称）", "starter.k.about.first": "短い著者紹介（一人称）", "starter.k.ack.short": "短い謝辞", "starter.k.ack.full": "詳しい謝辞", "starter.k.also.series": "シリーズ一覧（順番どおり）", "starter.k.also.list": "著作リスト", "starter.k.cta.review": "レビューをお願いする", "starter.k.cta.news": "ニュースレターの登録案内", "starter.k.colo.fonts": "この本の書体", "side.emptyOut": "空 — 本に含まれません", "check.blanks.name": "埋めていないテンプレートの空欄", "check.blanks.detail": "{section}：{list}" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "side.emptyOutShort": "空白", "starter.heading": "从模板开始", "starter.hint": "先选一个看看效果。按下“使用”之前，页面上不会有任何改动。", "starter.use": "使用", "starter.cancel": "取消", "starter.emptyOut": "这一页是空的，在你写下内容之前不会放进书里。", "starter.blanks": "还有 {n} 处空白待填写：{list}", "starter.blanksPlural": "还有 {n} 处空白待填写：{list}", "starter.next": "转到下一处空白", "starter.k.about.third": "简短作者介绍（第三人称）", "starter.k.about.first": "简短作者介绍（第一人称）", "starter.k.ack.short": "简短致谢", "starter.k.ack.full": "完整致谢", "starter.k.also.series": "你的系列，按顺序", "starter.k.also.list": "你的作品列表", "starter.k.cta.review": "请读者写书评", "starter.k.cta.news": "订阅通讯", "starter.k.colo.fonts": "本书的字体", "side.emptyOut": "空白——不放进书里", "check.blanks.name": "未填写的模板空白", "check.blanks.detail": "{section}：{list}" });
+      /* ==== /BEUK:starters ==== */
       const irClip = (s, n) => { const v = String(s == null ? "" : s).replace(/\s+/g, " ").trim(); return v.length > (n || 140) ? v.slice(0, (n || 140) - 1) + "…" : v; };
       const irBlocks = (content) => String(content || "").split(/\n\s*\n/);
       /* beautifyText reads the book's language for its quote marks; a
@@ -44973,7 +45263,7 @@
       /* ================= EPUB 3.2 packaging ================= */
       function slug(s) { return String(s || "section").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "section"; }
       function epubPlan() {
-        const included = state.sections.filter((s) => s.included && (s.type !== "cover" || state.cover));
+        const included = state.sections.filter((s) => inBook(s) && (s.type !== "cover" || state.cover)); /* BEUK:starters — an empty page is not in the book */
         let chN = 0, plateN = 0;
         const usedFiles = {};
         const plan = [];
@@ -45314,7 +45604,7 @@
           "rights: " + yamlQ(rightsLine()),
           "description: " + yamlQ(m.description),
           "---", ""];
-        const parts = state.sections.filter((s) => s.included && s.type !== "cover").map(sectionToMarkdown);
+        const parts = state.sections.filter((s) => inBook(s) && s.type !== "cover").map(sectionToMarkdown);
         return head.join("\n") + parts.join("\n\n") + "\n";
       }
 
@@ -45327,7 +45617,7 @@
           "section.book-section + section.book-section { page-break-before: always; margin-top: 3em; }\n" +
           "figure.book-img.full-bleed { margin-left: -1.4em; margin-right: -1.4em; }\n" +
           "@media print { body { padding: 0; } }";
-        const secs = state.sections.filter((s) => s.included)
+        const secs = state.sections.filter(inBook)
           .map((s) => '<section class="book-section">\n' + sectionHtml(s, true, true) + "\n</section>").join("\n");
         return '<!DOCTYPE html>\n<html lang="' + esc(m.language || "en") + '"' + bookDirAttr(m.language) + '>\n<head>\n<meta charset="utf-8"/>\n<meta name="viewport" content="width=device-width, initial-scale=1"/>\n<title>' +
           esc(m.title) + (m.author ? " — " + esc(m.author) : "") + "</title>\n<style>\n" + css + "\n</style>\n</head>\n<body>\n" + secs + "\n</body>\n</html>";
@@ -46132,7 +46422,7 @@
         printNotesAtFootNow = atFoot;
         printLayoutNow = true; /* BEUK:layout */
         try {
-          pairs = state.sections.filter((s) => s.included && s.type !== "cover")
+          pairs = state.sections.filter((s) => inBook(s) && s.type !== "cover")
             .map((s, k) => ({ s: s, html: '<section class="print-sec' + (s.kind === "body" ? " chapter-sec" : "") + (printIsDisplaySec(s) ? " display-sec" : "") + (isPairedSpread(s) ? " spread-sec" : "") + '" id="ps-' + k + '"' + printStartAttr(s) + '>\n' + printPressHtml(printPagedLayer(s, printUnlink(sectionHtml(s, true, true)))) + "\n</section>" }));
         } finally { printNotesAtFootNow = false; printLayoutNow = false; }
         /* A Large Print edition says so in the book itself, in the
@@ -46621,7 +46911,7 @@
         let next = 1;
         let curChapter = null;
         const fnByPage = new Map(); /* BEUK:footnotes */
-        const secs = state.sections.filter((s) => s.included && s.type !== "cover");
+        const secs = state.sections.filter((s) => inBook(s) && s.type !== "cover");
         secs.forEach((s) => {
           /* A paired spread opens on a verso (its plate) so the opening
              faces it; every other chapter keeps the recto rule. */
@@ -47016,7 +47306,7 @@
           if (vol.cover) plan.push({ volIdx: vi, volume: vol, kind: "cover", file: "Text/" + vp + "-cover.xhtml", id: "sec-" + vp + "-cover", label: "Cover" });
           plan.push({ volIdx: vi, volume: vol, kind: "titlepage", file: "Text/" + vp + "-titlepage.xhtml", id: "sec-" + vp + "-titlepage", label: "Title Page" });
           let chN = 0;
-          (vol.sections || []).filter((s) => s.included).forEach((s) => {
+          (vol.sections || []).filter(inBook).forEach((s) => {
             if (["cover", "titlepage", "toc", "halftitle"].includes(s.type)) return;
             const file = s.type === "chapter" ? "Text/" + vp + "-chapter_" + String(++chN).padStart(2, "0") + ".xhtml" : "Text/" + vp + "-" + s.type + ".xhtml";
             plan.push({ volIdx: vi, volume: vol, kind: "section", section: s, file, id: "sec-" + file.replace("Text/", "").replace(/\.xhtml$/, ""), label: sectionLabel(s) });
@@ -47471,7 +47761,7 @@
         if (m.publisher) parts.push(docxPara(m.publisher, "Normal", { align: "center" }));
         const notes = [];
         let firstSection = true;
-        state.sections.filter((s) => s.included).forEach((s) => {
+        state.sections.filter(inBook).forEach((s) => {
           if (s.type === "cover" || s.type === "titlepage") return;
           collectDocxNotesFrom(s.content).forEach((nt) => notes.push({ label: sectionLabel(s), n: nt.n, text: nt.text }));
           if (!firstSection) parts.push(docxPageBreak());
@@ -47484,7 +47774,7 @@
           }
           if (s.type === "toc") {
             parts.push(docxPara(tocHeadingOf(s), "Heading1"));
-            state.sections.filter((x) => x.included && x.type !== "toc" && x.type !== "halftitle" && x.type !== "cover")
+            state.sections.filter((x) => inBook(x) && x.type !== "toc" && x.type !== "halftitle" && x.type !== "cover")
               .forEach((x) => parts.push(docxPara(sectionLabel(x), "Normal")));
             return;
           }
@@ -47675,7 +47965,7 @@
       }
       const msUnit = () => (langPack(bookLang()).count === "characters" ? "characters" : "words");
       function msPlan() {
-        const included = state.sections.filter((s) => s.included);
+        const included = state.sections.filter(inBook);
         const body = included.filter((s) => s.kind === "body");
         const left = included.filter((s) => s.kind !== "body").map((s) => ({ id: s.id, name: s.title || s.type, kind: s.kind === "back" ? "back" : "front" }));
         let pictures = 0, notes = 0, words = 0;
@@ -48310,7 +48600,7 @@
         ] });
         let pendingPart = [];
         const narrated = [];
-        state.sections.filter((s) => s.included).forEach((s) => {
+        state.sections.filter(inBook).forEach((s) => {
           const why = acxSectionSkipReason(s);
           if (why === "part") {
             pendingPart = [{ k: "head", text: (s.number ? "Part " + s.number + (s.title ? ": " + s.title : "") : (s.title || "Part")) }];
@@ -49087,6 +49377,8 @@
       function validateEpubPackage(files) {
         const results = [];
         const add = (id, level, name, detail) => results.push({ id: id, level: level, name: name, detail: detail });
+        /* BEUK:starters — a template blank left in the book ships as [[words]] */
+        starterBlanksInBook().forEach((x) => add("template.blanks", "error", t("check.blanks.name"), t("check.blanks.detail", { section: sectionLabel(x.s) || x.s.title || "", list: x.blanks.join(", ") })));
         const byPath = {};
         files.forEach((f) => { byPath[f.path] = f; });
         const text = (p) => (byPath[p] && !byPath[p].binary ? String(byPath[p].content) : "");
@@ -49369,7 +49661,7 @@
          content/help/errors.json maps.validator; tests/help-content.test.ts
          fails if the two ever disagree. EPUBCheck job messages carry a
          server-side "beuk" field, linked the same way. */
-      const BEUK_VALIDATOR_CODES = {"mimetype.first-stored": "BEUK-P101", "container.points-to-opf": "BEUK-P102", "xml.well-formed": "BEUK-X201", "manifest.matches-files": "BEUK-R302", "spine.resolves": "BEUK-R303", "links.anchors-resolve": "BEUK-R304", "links.in-spine": "BEUK-R305", "manifest.properties": "BEUK-P103", "nav.landmarks": "BEUK-N404", "ncx.present-targets": "BEUK-N404", "images.alt-text": "BEUK-A601", "metadata.required": "BEUK-M501", "metadata.isbn": "BEUK-M502", "metadata.description": "BEUK-M503", "cover.declared": "BEUK-M504"};
+      const BEUK_VALIDATOR_CODES = {"mimetype.first-stored": "BEUK-P101", "container.points-to-opf": "BEUK-P102", "xml.well-formed": "BEUK-X201", "manifest.matches-files": "BEUK-R302", "spine.resolves": "BEUK-R303", "links.anchors-resolve": "BEUK-R304", "links.in-spine": "BEUK-R305", "manifest.properties": "BEUK-P103", "nav.landmarks": "BEUK-N404", "ncx.present-targets": "BEUK-N404", "images.alt-text": "BEUK-A601", "metadata.required": "BEUK-M501", "metadata.isbn": "BEUK-M502", "metadata.description": "BEUK-M503", "cover.declared": "BEUK-M504", "template.blanks": "BEUK-M505"};
       function beukCodeLinkHtml(code) {
         if (!code || !/^BEUK-[A-Z]\d{3}$/.test(code)) return "";
         return ' <a class="v-code" href="/help/errors/' + code + '" target="_blank" rel="noopener" title="' + esc(t("help.codeLink", { code: code })) + '">' + code + "</a>";
@@ -49747,7 +50039,7 @@
           const dpi = placedH ? Math.min(px.w / placedW, px.h / placedH) : px.w / placedW;
           out.push({ img: img, section: section, px: px, placedW: placedW, placedH: placedH || 0, dpi: dpi });
         };
-        state.sections.filter((s) => s.included && s.type !== "cover").forEach((s) => {
+        state.sections.filter((s) => inBook(s) && s.type !== "cover").forEach((s) => {
           if (s.kind === "body") {
             const plate = plateImage(s);
             if (plate) push(plate.img, s, tr.w, tr.h);
@@ -49811,6 +50103,8 @@
           try { h = sectionHtml(s, true, true); } finally { printLayoutNow = false; }
           if (h.indexOf(" sw-clip") !== -1) add("layout.sideways", t("sw.clipName"), t("sw.clipDetail", { section: sectionLabel(s) || s.title || "" }), { kind: "section", sectionId: s.id });
         });
+        /* BEUK:starters */
+        starterBlanksInBook().forEach((x) => add("template.blanks", t("check.blanks.name"), t("check.blanks.detail", { section: sectionLabel(x.s) || x.s.title || "", list: x.blanks.join(", ") }), { kind: "section", sectionId: x.s.id }));
         if (tr.kdp && (pages < tr.kdp.min || pages > tr.kdp.max)) {
           add("pages.range", t("preflight.f.pages.name"),
             t("preflight.f.pages.detail", { pages: fmtNum(pages), min: fmtNum(tr.kdp.min), max: fmtNum(tr.kdp.max), trim: tr.label }), J_PRINT);
@@ -50118,7 +50412,7 @@
          section the print interior carries (buildPrintHtml), each named
          with the renderer's reason. */
       function storeFootnoteFallbacks(list) {
-        const secs = state.sections.filter((s) => s.included && s.type !== "cover");
+        const secs = state.sections.filter((s) => inBook(s) && s.type !== "cover");
         const known = ["time", "full", "long", "book", "final", "note"];
         return (list || []).map((f) => {
           const m = /^ps-(\d+)$/.exec(String(f.section || ""));
@@ -53480,6 +53774,112 @@
                 const ok = exact && labels && entries && noHand && kept && dialogue;
                 return scVerdict(ok, "chapters [" + list.join(" | ") + "] (want " + want.join(" | ") + "); headings found [" + layHeads.join(" | ") + "], hyphenated labels on their titles (" + labels + "); ledger entries whole, one paragraph each, over the page turn too (" + entries +
                   "); no hand-set line a heading (" + noHand + "); The Ship’s Articles still a heading (" + kept + "); interrupted dialogue kept apart (" + dialogue + ")");
+              } finally { window.toast = origToast; }
+            });
+          } },
+        /* ---- BEUK:starters: back matter starters, empty pages left out, blanks named ---- */
+        { id: "starters.picker", feature: "editor", name: "An empty back page offers starters that never touch the page until Use: picking one shows it with the book's own author, title, series place and typefaces filled in (in the book's language), Use puts it on the page with the first [[blank]] selected to type over, the strip counts the blanks left and goes to the next, and it is gone once they are filled; a written page and a chapter show no strip; every language pack carries every starter",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                importPlainManuscript("ledger.md", "# Chapter One: The Muster\n\n" + "The ledger lay open on the captain's table, and every name in it was a debt. ".repeat(20));
+                Object.assign(state.meta, { author: "Zoey Suzuki", title: "The Devil's Ledger", series: "The Carrion", seriesNumber: "2", language: "en" });
+                const about = state.sections.find((x) => x.type === "aboutauthor");
+                state.activeId = about.id; syncEditor();
+                const bar = $("starterBar");
+                const offered = Array.from(bar.querySelectorAll("[data-starter]")).map((b) => b.getAttribute("data-starter"));
+                const shown = bar.style.display !== "none" && offered.join() === "about.third,about.first";
+                const click = (el) => { if (el) el.click(); return !!el; };
+                click(bar.querySelector('[data-starter="about.third"]'));
+                const pv = $("starterPreview");
+                const untouched = about.content === "" && !!pv && /Zoey Suzuki/.test(pv.textContent) && /The Devil's Ledger/.test(pv.textContent);
+                const usable = click($("starterUse"));
+                const area = $("editorArea");
+                const blanks = starterBlanks(about.content);
+                const used = usable && about.content === starterText("about.third", "en") && blanks.length === 5 && area.value.slice(area.selectionStart, area.selectionEnd) === blanks[0] &&
+                  bar.textContent.indexOf(t("starter.blanks", { n: 5, list: blanks.join(", ") })) !== -1;
+                if (blanks.length) area.setSelectionRange(blanks[0].length + about.content.indexOf(blanks[0]), blanks[0].length + about.content.indexOf(blanks[0]));
+                const next = blanks.length > 1 && click($("starterNext")) && area.value.slice(area.selectionStart, area.selectionEnd) === blanks[1];
+                about.content = about.content.replace(STARTER_BLANK_RE, "filled"); renderStarterBar(about);
+                const gone = bar.style.display === "none";
+                const ch = state.sections.find((x) => x.kind === "body"); selectSection(ch.id);
+                const noChapter = bar.style.display === "none";
+                const ack = state.sections.find((x) => x.type === "acknowledgments"); ack.content = ""; selectSection(ack.id);
+                const ownCount = $("edSecWords").textContent === t("editor.countSection", { n: fmtNum(0), count: 0 }); /* not the chapter's */
+                const also = state.sections.find((x) => x.type === "alsoby");
+                const series = starterIds(also).join() === "also.series,also.list" && /^The Carrion\n\n1\. \[\[[^\]]+\]\]\n2\. The Devil's Ledger\n3\. \[\[/.test(starterText("also.series", "en"));
+                state.meta.series = "";
+                const noSeries = starterIds(also).join() === "also.list";
+                const colo = starterText("colo.fonts", "en").indexOf(state.theme.bodyFont) !== -1;
+                const fr = /écrit/.test(starterText("about.third", "fr")) && /Zoey Suzuki/.test(starterText("about.third", "fr"));
+                state.meta.author = ""; const blankName = starterText("about.third", "en").indexOf("[[" + STARTER_TEXT.en._author + "]]") === 0;
+                const keys = Object.keys(STARTER_TEXT.en);
+                const packs = Object.keys(UI_STRINGS).filter((l) => !STARTER_TEXT[l] || keys.some((k) => !STARTER_TEXT[l][k])); /* the 13 packs; any other book language reads the English starters */
+                const ok = shown && untouched && used && next && gone && noChapter && ownCount && series && noSeries && colo && fr && blankName && !packs.length;
+                return scVerdict(ok, "offered [" + offered.join(", ") + "] (" + shown + "); picking leaves the page empty and previews the book's names (" + untouched + "); Use fills it and selects the first of 5 blanks (" + used +
+                  "); next blank (" + next + "); strip gone once filled (" + gone + "), none on a chapter (" + noChapter + "); an opened page shows its own word count (" + ownCount + "); series list with this book at 2 (" + series + "), not offered without a series (" + noSeries +
+                  "); colophon names " + state.theme.bodyFont + " (" + colo + "); French text (" + fr + "); a missing author is a blank (" + blankName + "); packs missing starters: [" + packs.join(", ") + "]");
+              } finally { window.toast = origToast; }
+            });
+          } },
+        { id: "starters.empty-left-out", feature: "export", name: "A page with no words of its own — an empty epigraph, About the Author or Also by — is in no export and no contents list (EPUB, Markdown, web page, Word, print, manuscript); a written dedication and acknowledgments are; generated pages and a chapter are untouched; a page switched off stays off; the sidebar says Empty and dims it, and its first words bring it back",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                importPlainManuscript("ledger.md", "# Chapter One: The Muster\n\n" + "The ledger lay open on the captain's table, and every name in it was a debt. ".repeat(20));
+                const by = (ty) => state.sections.find((x) => x.type === ty);
+                by("epigraph").title = "Zqempty Alpha"; by("epigraph").content = "  \n ";
+                by("alsoby").title = "Zqempty Beta"; by("alsoby").content = "";
+                by("aboutauthor").title = "Zqempty Gamma";
+                by("dedication").content = "For Marrow Quell.";
+                by("acknowledgments").content = "Thanks to Quillon Vane."; by("acknowledgments").included = false;
+                const cp = by("copyright"); cp.content = "";
+                const outs = {};
+                const grab = (name, fn) => { try { outs[name] = String(typeof fn === "function" ? fn() : fn); } catch (e) { outs[name] = "THREW " + e.message; } };
+                grab("epub", () => epubPlan().map((p) => p.section.title + "|" + p.section.type + "|" + p.section.content).join("\n"));
+                grab("toc", () => tocTree().map((n) => n.s.title).join("\n"));
+                grab("markdown", buildMarkdown);
+                grab("html", buildStandaloneHtml);
+                grab("docx", buildDocxDocumentXml);
+                grab("print", () => JSON.stringify(buildPrintViewModel()));
+                grab("manuscript", () => JSON.stringify(msPlan().left)); /* a submission manuscript carries the chapters and names the pages it leaves out */
+                const bad = Object.keys(outs).filter((k) => /THREW|Zqempty/.test(outs[k]) || (k !== "toc" && k !== "manuscript" && outs[k].indexOf("Marrow Quell") === -1) || (k === "manuscript" && outs[k].indexOf(by("dedication").title) === -1) || outs[k].indexOf("Quillon Vane") !== -1);
+                const epubTypes = epubPlan().map((p) => p.section.type);
+                const kept = ["titlepage", "copyright", "toc", "dedication", "chapter"].every((ty) => epubTypes.indexOf(ty) !== -1);
+                renderSidebar(); updateStats(); /* both the drawn row and the one typing refreshes */
+                const wc = $("wc-" + by("alsoby").id), row = wc && wc.parentElement;
+                const side = !!wc && wc.textContent === t("side.emptyOutShort") && wc.title === t("side.emptyOut") && row.classList.contains("excluded");
+                by("alsoby").content = "The Winter Soundings"; updateStats();
+                const back = inBook(by("alsoby")) && epubPlan().some((p) => p.section.type === "alsoby") && !row.classList.contains("excluded") && wc.textContent !== t("side.emptyOutShort");
+                const ok = !bad.length && kept && side && back;
+                return scVerdict(ok, "exports carrying an empty page, missing the written one or ignoring a page switched off: [" + bad.map((k) => k + (/THREW/.test(outs[k]) ? " " + outs[k].slice(0, 60) : "")).join(", ") +
+                  "]; generated pages, dedication and chapter kept (" + kept + "); sidebar reads " + (wc ? "“" + wc.textContent + "”" : "?") + " and dims the row (" + side + "); first words bring it back (" + back + ")");
+              } finally { window.toast = origToast; }
+            });
+          } },
+        { id: "starters.blanks-flagged", feature: "export", name: "A [[blank]] left in the book is named, with its page, as an error in the EPUB check and as a finding in the print preflight that jumps to the page; one on a page switched off is not; filled, the finding is gone",
+          run() {
+            return imCheckRun(() => {
+              const origToast = window.toast;
+              try {
+                window.toast = () => {};
+                importPlainManuscript("ledger.md", "# Chapter One: The Muster\n\n" + "The ledger lay open on the captain's table, and every name in it was a debt. ".repeat(20));
+                const about = state.sections.find((x) => x.type === "aboutauthor"), ack = state.sections.find((x) => x.type === "acknowledgments");
+                about.content = "Zoey Suzuki lives in [[your town]] and writes at [[your website]].";
+                ack.content = "Thanks to [[your editor]]."; ack.included = false;
+                const epubHit = () => validateEpubPackage(epubFiles()).results.filter((r) => r.id === "template.blanks");
+                const pfHit = () => auditPrintInterior().findings.filter((f) => f.id === "template.blanks");
+                const e1 = epubHit(), p1 = pfHit();
+                const named = e1.length === 1 && e1[0].level === "error" && e1[0].detail.indexOf("[[your town]], [[your website]]") !== -1 && e1[0].detail.indexOf("[[your editor]]") === -1 &&
+                  p1.length === 1 && p1[0].jump && p1[0].jump.sectionId === about.id && p1[0].name === t("check.blanks.name");
+                about.content = about.content.replace("[[your town]]", "Bristol").replace("[[your website]]", "zoeysuzuki.com");
+                const cleared = !epubHit().length && !pfHit().length;
+                return scVerdict(named && cleared, "EPUB check: " + e1.map((r) => r.level + " “" + r.detail + "”").join("; ") + "; preflight: " + p1.map((f) => "“" + f.detail + "” → " + (f.jump ? f.jump.sectionId === about.id : "no jump")).join("; ") +
+                  "; the switched-off page's blank left out (" + (e1.length === 1 && e1[0].detail.indexOf("your editor") === -1) + "); filled, gone (" + cleared + ")");
               } finally { window.toast = origToast; }
             });
           } },

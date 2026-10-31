@@ -187,7 +187,8 @@ test('rtf: the import report names the RTF file, not a Word file, in all 13 loca
       if (k !== 'ir.why.sourceRtf') assert.ok(v.includes('{n}'), `${k} keeps {n}`);
     }
   }
-  assert.match(html, /if \(ir\.format === "docx" \|\| ir\.format === "rtf"\) from = headingLevelOf\(heading\)/);
+  // Later formats (EPUB) join the same condition; RTF must stay in it.
+  assert.match(html, /if \(ir\.format === "docx" \|\| ir\.format === "rtf"(?: \|\| ir\.format === "\w+")*\) from = headingLevelOf\(heading\)/);
 });
 
 test('rtf: every studio file picker and the bulk reader take .rtf', async () => {
@@ -196,5 +197,7 @@ test('rtf: every studio file picker and the bulk reader take .rtf', async () => 
   assert.match(html, /id="bulkFileInput" accept="[^"]*\.rtf/);
   assert.match(html, /id="boxSetFileInput" accept="[^"]*\.rtf/);
   assert.match(html, /const BULK_MANUSCRIPT_EXT = \[[^\]]*"\.rtf"/);
-  assert.match(html, /if \(lower\.endsWith\("\.rtf"\)\) \{ importRtfRead\(name, rtfRead\(rtfBytesToString\(await file\.arrayBuffer\(\)\)\)\); return; \}/);
+  // The one import reader parses first (a bad file is refused before the
+  // desk is touched), then hands back the step that loads the book.
+  assert.match(html, /if \(lower\.endsWith\("\.rtf"\)\) \{[^\n]*\n\s*let rd;\n\s*try \{ rd = rtfRead\(rtfBytesToString\(await file\.arrayBuffer\(\)\)\); \} catch \(e\) \{ throw importRefusal\([^\n]*\n\s*return \(\) => importRtfRead\(name, rd\);/);
 });
