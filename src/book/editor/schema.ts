@@ -13,11 +13,15 @@ import { Schema, type NodeSpec, type MarkSpec } from 'prosemirror-model';
    Lossless rules every node keeps (convert.ts):
    - every block carries `pre` (the exact text between the previous block
      and this one: blank lines, a block's trimmed leading whitespace) and
-     `post` (text after it; set on the last block only). `pre: null` is the
+     `post` (text after it; written for the last child only, since an editor
+     split copies attrs). `pre: null` is the
      canonical separator: "" before the first block, "\n\n" before others;
    - a line break inside a block is a "\n" (or "\r\n") character in the
      text, never a node, so marks run across it and Yjs keeps it (marks on
      inline element nodes do not survive y-prosemirror);
+   - paragraph and footnoteDef declare whitespace "pre", so prosemirror-view
+     keeps a "
+" on DOM read-back instead of folding it into a space;
    - footnote references are TEXT ("[^1]") under the footnoteRef mark, for
      the same reason: an emphasis that runs over a reference must survive
      the Yjs round trip. */
@@ -31,11 +35,11 @@ const nodes: Record<string, NodeSpec> = {
   doc: { content: 'block+' },
 
   /** Running text: 1.0's paragraph (lines joined by "\n" in the text). */
-  paragraph: { group: 'block', content: 'text*', marks: '_', attrs: { ...blockAttrs } },
+  paragraph: { group: 'block', content: 'text*', marks: '_', whitespace: 'pre', attrs: { ...blockAttrs } },
 
   /** A note definition, "[^n]: text" or "[n]: text". `n` is the digits as written, `gap` the whitespace after the colon. */
   footnoteDef: {
-    group: 'block', content: 'text*', marks: '_',
+    group: 'block', content: 'text*', marks: '_', whitespace: 'pre',
     attrs: { ...blockAttrs, n: { default: '1' }, caret: { default: true }, gap: { default: ' ' } },
   },
 
@@ -52,10 +56,12 @@ const nodes: Record<string, NodeSpec> = {
   sceneBreak: { group: 'block', atom: true, attrs: { ...blockAttrs, raw: { default: '***' } } },
 
   /** A ":::" container whose content is ordinary blocks (v1: center and right). `open` is the opener line as written,
-   *  `openEol` its line ending, `close` the closing line as written, or null when the container runs to the end. */
+   *  `openEol` its line ending, `close` the closing line as written, or null when the container runs to the end.
+   *  Every attr whose meaningful value can be null DEFAULTS to null: y-prosemirror never stores a null attr, so a
+   *  non-null default would come back in its place (a new container sets close ":::" explicitly). */
   container: {
     group: 'block', content: 'block+',
-    attrs: { ...blockAttrs, open: { default: '::: center' }, openEol: { default: '\n' }, close: { default: ':::' as string | null } },
+    attrs: { ...blockAttrs, open: { default: '::: center' }, openEol: { default: '\n' }, close: { default: null as string | null } },
   },
 
   /** Source text the converter does not model, verbatim. Edits as plain text. */

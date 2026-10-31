@@ -25,7 +25,15 @@ import { bookSchema } from './schema.js';
    refuses a book readBook did not read as 'ok' ('newer' or 'failed' must
    never be saved). exportBook writes book-format v1 back: each fragment is
    read with y-prosemirror's own reader (the editor's path) and written as
-   text with toText. Pure TypeScript: no DOM, runs in Node and the browser. */
+   text with toText. Pure TypeScript: no DOM, runs in Node and the browser.
+
+   The one normalisation: Yjs stores strings as UTF-8 (lib0), so a lone
+   UTF-16 surrogate (half of an emoji, cut by some old tool) cannot survive
+   it and would silently become U+FFFD. importBook does that replacement
+   itself, before anything reaches the Y.Doc, in every string and key of the
+   book (section content, meta, everything), and reports each one in
+   `textWarnings` (path, section id, field, count) so the studio can tell
+   the writer. Nothing else is ever changed. */
 
 export const META = 'meta';
 export const SECTIONS = 'sections';
@@ -42,7 +50,56 @@ const escKey = (k: string): string => (k === BODY || k.startsWith('~') ? '~' + k
 const unescKey = (k: string): string => (k.startsWith('~') ? k.slice(1) : k);
 const plain = (v: unknown): unknown => (v instanceof Y.AbstractType ? v.toJSON() : v === undefined ? v : structuredClone(v));
 
-export type ImportResult = Omit<ReadResult, 'book'> & { ydoc: Y.Doc };
+/** A string (or key) importBook had to change: lone surrogates replaced with U+FFFD. `sectionId` names the section when the
+ *  string is inside one; `field` is the key holding it (for a renamed key, the key itself). */
+export type TextWarning = { code: 'lone-surrogate'; path: string; sectionId: string | null; field: string; count: number };
+export type ImportResult = Omit<ReadResult, 'book'> & { ydoc: Y.Doc; textWarnings: TextWarning[] };
+
+const SURROGATE = /[\uD800-\uDFFF]/;
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
+/** `v` with every lone surrogate in its strings and keys replaced by U+FFFD; each change is reported. */
+function wellFormed(v: unknown, path: string, sectionId: string | null, field: string, out: TextWarning[]): unknown {
+  if (typeof v === 'string') {
+    if (!SURROGATE.test(v)) return v;
+    let count = 0;
+    const w = v.replace(LONE_SURROGATE, () => { count++; return '\uFFFD'; });
+    if (count) out.push({ code: 'lone-surrogate', path, sectionId, field, count });
+    return w;
+  }
+  if (Array.isArray(v)) {
+    let changed = false;
+    const a = v.map((x, i) => { const y = wellFormed(x, `${path}[${i}]`, sectionId, field, out); if (y !== x) changed = true; return y; });
+    return changed ? a : v;
+  }
+  if (isRec(v)) {
+    let changed = false;
+    const o: Rec = {};
+    for (const [k, x] of Object.entries(v)) {
+      const nk = wellFormed(k, path ? `${path}.${k}` : k, sectionId, k, out) as string;
+      const y = wellFormed(x, path ? `${path}.${nk}` : nk, sectionId, nk, out);
+      if (nk !== k || y !== x) changed = true;
+      setOwn(o, nk, y);
+    }
+    return changed ? o : v;
+  }
+  return v;
+}
+
+/** The read book made safe for Yjs (lone surrogates only), with the list of what changed. */
+function forYjs(book: Rec): { book: Rec; textWarnings: TextWarning[] } {
+  const textWarnings: TextWarning[] = [];
+  const out: Rec = {};
+  for (const [k, v] of Object.entries(book)) {
+    if (k === 'sections' && Array.isArray(v)) {
+      setOwn(out, k, v.map((sec, i) => wellFormed(sec, `sections[${i}]`, isRec(sec) && typeof sec.id === 'string' ? sec.id : null, 'sections', textWarnings)));
+    } else {
+      const nk = wellFormed(k, k, null, k, textWarnings) as string;
+      setOwn(out, nk, wellFormed(v, nk, null, nk, textWarnings));
+    }
+  }
+  return { book: out, textWarnings };
+}
 
 export class BookImportError extends Error {
   readonly read: ReadResult;
@@ -69,7 +126,7 @@ export function unwrapBackup(doc: unknown): unknown {
 export function importBook(doc: unknown, ydoc: Y.Doc = new Y.Doc()): ImportResult {
   const read = readBook(unwrapBackup(doc));
   if (read.status !== 'ok') throw new BookImportError(read);
-  const book = read.book as unknown as Rec;
+  const { book, textWarnings } = forYjs(read.book as unknown as Rec);
   const meta = ydoc.getMap<unknown>(META);
   const sections = ydoc.getArray<unknown>(SECTIONS);
   const layout = ydoc.getMap<unknown>(LAYOUT);
@@ -89,7 +146,7 @@ export function importBook(doc: unknown, ydoc: Y.Doc = new Y.Doc()): ImportResul
     }
   });
   const { book: _book, ...rest } = read;
-  return { ...rest, ydoc };
+  return { ...rest, ydoc, textWarnings };
 }
 
 const HASHED_MARK = /(.*)(--[a-zA-Z0-9+/=]{8})$/; // y-prosemirror's hashed name for a mark that may overlap itself

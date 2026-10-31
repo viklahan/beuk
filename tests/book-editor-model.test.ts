@@ -45,7 +45,7 @@ function editSection(ydoc: Y.Doc, i: number, text: string): void {
   prosemirrorToYXmlFragment(toDoc(text), m.get(BODY) as Y.XmlFragment);
 }
 
-test('model: every fixture book round-trips through the Y.Doc (readBook(exportAny(importBook(doc))).book equals readBook(doc).book)', (t) => {
+test('model: every fixture book round-trips through the Y.Doc (readBook(exportBook(importBook(doc))).book equals readBook(doc).book)', (t) => {
   let books = 0;
   for (const { name, env } of fixtureEnvelopes()) {
     const a = readBook(env.book);
@@ -191,4 +191,49 @@ test('model: full corpus round-trips through the Y.Doc (BEUK_BOOK_CORPUS)', { sk
   }
   assert.ok(books > 0, 'no *.beuk-backup.json found under BEUK_BOOK_CORPUS');
   t.diagnostic(`books ${books}`);
+});
+
+/* ---- fix round 1 ---- */
+
+test('model: an unclosed ::: center / ::: right exports exactly, directly and through a Yjs update', () => {
+  const env = JSON.parse(readFileSync(fixturePath('real', 'reads-you.json'), 'utf8')) as Rec;
+  const book = structuredClone(env.book) as Rec;
+  const idx = contentIndexes(book).slice(0, 4);
+  const texts = ['::: center\nHello', '::: right\nA\n\nB *em*', 'Intro.\n\n::: center\nTo the end\n\n', '::: center\nA\n::: right\nB'];
+  idx.forEach((i, k) => { book.sections[i].content = texts[k]; });
+  const { ydoc } = importBook(book);
+  const fresh = new Y.Doc();
+  Y.applyUpdate(fresh, Y.encodeStateAsUpdate(ydoc));
+  for (const d of [ydoc, fresh]) {
+    const out = exportAny(d);
+    idx.forEach((i, k) => { assert.equal(out.sections[i].content, texts[k]); });
+  }
+});
+
+test('model: lone surrogates are the one normalisation: replaced with U+FFFD at import and reported', () => {
+  const env = JSON.parse(readFileSync(fixturePath('real', 'reads-you.json'), 'utf8')) as Rec;
+  const book = structuredClone(env.book) as Rec;
+  const hi = String.fromCharCode(0xd800), lo = String.fromCharCode(0xdc00), fffd = String.fromCharCode(0xfffd);
+  const pair = String.fromCodePoint(0x1f600); // a whole pair is fine
+  const i = contentIndexes(book)[0]!;
+  book.sections[i].content = 'cut ' + hi + ' here and ' + lo + ' there, ' + pair + ' kept';
+  book.meta.title = 'Title ' + hi;
+  book.sections[i].zz = { ['k' + lo]: 'v' };
+  const { ydoc, textWarnings } = importBook(book);
+  const id = String(book.sections[i].id);
+  assert.deepEqual(textWarnings.map((w) => [w.code, w.path, w.sectionId, w.field, w.count]), [
+    ['lone-surrogate', 'meta.title', null, 'title', 1],
+    ['lone-surrogate', `sections[${i}].content`, id, 'content', 2],
+    ['lone-surrogate', `sections[${i}].zz.k${lo}`, id, 'k' + lo, 1],
+  ]);
+  const fresh = new Y.Doc();
+  Y.applyUpdate(fresh, Y.encodeStateAsUpdate(ydoc));
+  for (const d of [ydoc, fresh]) {
+    const out = exportAny(d);
+    assert.equal(out.sections[i].content, 'cut ' + fffd + ' here and ' + fffd + ' there, ' + pair + ' kept');
+    assert.equal(out.meta.title, 'Title ' + fffd);
+    assert.deepEqual(out.sections[i].zz, { ['k' + fffd]: 'v' });
+  }
+  // a well-formed book reports nothing
+  assert.deepEqual(importBook(env.book).textWarnings, []);
 });

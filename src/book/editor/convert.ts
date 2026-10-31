@@ -93,21 +93,34 @@ function maskRanges(s: string, ranges: [number, number][]): string {
   return out + s.slice(at);
 }
 
+/** A span 1.0 reads as markup but a mark cannot write back: kept as source under rawInline. Two spans of the same mark
+ *  that touch ("*a**b*", "**a****b**", "[a](u)[b](u)") would merge into one mark, so the second is kept this way. */
+function rawSpan(flags: Uint8Array, s0: number, e0: number): void {
+  for (let i = s0; i < e0; i++) flags[i]! |= F_RAW;
+}
+
 /** **strong** then *em* over str[a, b), as inlineMd's emph: strong first, then em on the text with the strong delimiters gone. */
-function emph(str: string, a: number, b: number, joinLines: boolean, flags: Uint8Array): void {
+function emph(str: string, a: number, b: number, joinLines: boolean, flags: Uint8Array, links: Set<string> | null = null): void {
   const sub = str.slice(a, b);
   if (sub.indexOf('*') === -1) return;
   const held: [number, number][] = [];
+  let prevEnd = -1;
   for (const m of sub.matchAll(STRONG_RE)) {
     const s0 = a + m.index, e0 = s0 + m[0].length;
+    // touching the previous strong, or wrapping exactly one link (marks cannot tell **[x](u)** from [**x**](u))
+    if (s0 === prevEnd || links?.has((s0 + 2) + ':' + (e0 - 2))) { rawSpan(flags, s0, e0); held.push([m.index, m.index + m[0].length]); continue; }
+    prevEnd = e0;
     flags[s0] = flags[s0 + 1] = flags[e0 - 2] = flags[e0 - 1] = F_SKIP;
     for (let i = s0 + 2; i < e0 - 2; i++) flags[i]! |= F_STRONG;
     held.push([m.index, m.index + 2], [m.index + m[0].length - 2, m.index + m[0].length]);
   }
   let emStr = maskRanges(sub, held);
   if (joinLines) emStr = emStr.replace(/\n/g, ' '); // a paragraph's lines are joined with a space before inlineMd
+  prevEnd = -1;
   for (const m of emStr.matchAll(EM_RE)) {
     const s0 = a + m.index, e0 = s0 + m[0].length;
+    if (s0 === prevEnd || links?.has((s0 + 1) + ':' + (e0 - 1))) { rawSpan(flags, s0, e0); continue; }
+    prevEnd = e0;
     flags[s0] = flags[e0 - 1] = F_SKIP;
     for (let i = s0 + 1; i < e0 - 1; i++) flags[i]! |= F_EM;
   }
@@ -154,20 +167,24 @@ function inlineNodes(s: string, joinLines: boolean): Node[] {
 
   // 2. links, each set aside whole; the label takes its own emphasis
   const links: [number, number][] = [];
+  let prevLink = -1, prevHref = '';
   if (masked.indexOf('](') !== -1) for (const m of masked.matchAll(LINK_RE)) {
     const start = m.index, labelStart = start + 1, labelEnd = labelStart + m[1]!.length, end = start + m[0].length;
+    const href = s.slice(labelEnd + 2, end - 1);
+    links.push([start, end]);
+    if (start === prevLink && href === prevHref) { rawSpan(flags, start, end); continue; }
+    prevLink = end; prevHref = href;
     linkOf ??= new Int32Array(n).fill(-1);
     flags[start] = F_SKIP;
     for (let i = labelEnd; i < end; i++) flags[i] = F_SKIP;
     for (let i = labelStart; i < labelEnd; i++) { flags[i]! |= F_LINK; linkOf[i] = hrefs.length; }
-    hrefs.push(s.slice(labelEnd + 2, end - 1));
+    hrefs.push(href);
     emph(masked, labelStart, labelEnd, false, flags);
-    links.push([start, end]);
   }
   const outer = maskRanges(masked, links);
 
   // 3. emphasis, 4. footnote refs, 5. note links (left raw)
-  emph(outer, 0, n, joinLines, flags);
+  emph(outer, 0, n, joinLines, flags, links.length ? new Set(links.map(([x, y]) => x + ':' + y)) : null);
   if (outer.indexOf('[') !== -1) {
     for (const m of outer.matchAll(REF_RE)) for (let i = m.index; i < m.index + m[0].length; i++) flags[i]! |= F_REF;
     if (outer.indexOf('](note:') !== -1) for (const m of outer.matchAll(NOTE_LINK_RE)) for (let i = m.index; i < m.index + m[0].length; i++) flags[i]! |= F_RAW;
@@ -238,11 +255,21 @@ export function blockText(node: Node): string {
 /** The source of a run of blocks (a doc's or a container's children). */
 export function blocksText(parent: Node): string {
   let out = '';
-  parent.forEach((b, _off, i) => {
-    const pre = b.attrs.pre;
-    out += (pre === null || pre === undefined ? (i === 0 ? '' : '\n\n') : String(pre)) + blockText(b) + String(b.attrs.post ?? '');
-  });
+  for (let i = 0; i < parent.childCount; i++) out += childText(parent, i);
   return out;
+}
+
+/** The text in front of child i: its pre, or the canonical separator ("" first, "\n\n" after) when pre is null. */
+function preOf(b: Node, i: number): string {
+  const pre = b.attrs.pre;
+  return pre === null || pre === undefined ? (i === 0 ? '' : '\n\n') : String(pre);
+}
+
+/** Child i's source with its pre, and its post only when it is the last child: an editor split copies attrs, so a post
+ *  left on a block that is no longer last must not land in the middle of the text. */
+function childText(parent: Node, i: number): string {
+  const b = parent.child(i);
+  return preOf(b, i) + blockText(b) + (i === parent.childCount - 1 ? String(b.attrs.post ?? '') : '');
 }
 
 /** A document's source text: 1.0's section `content`. */
@@ -286,7 +313,7 @@ function buildBlock(B: string, stats?: ConvertStats): Node {
 }
 
 function withEdges(node: Node, pre: string | null, post: string): Node {
-  if (pre === null && post === '') return node;
+  if (node.attrs.pre === pre && node.attrs.post === post) return node;
   return node.type.create({ ...node.attrs, pre, post }, node.content, node.marks);
 }
 
@@ -391,4 +418,118 @@ export function blockCoverage(doc: Node): { blocks: number; raw: number } {
     return false;
   });
   return { blocks, raw: rawN };
+}
+
+/* ---- keeping an edited document writable (step 4 review, fix round 1) ----
+
+   The lossless guarantee is text -> doc -> text. An EDITED document can hold
+   things the text cannot say back the same way: a typed "2*3 and 4*5"
+   reopens in italics, bold over text that contains "*" reopens differently,
+   a "\n\n" typed inside a paragraph reopens as two paragraphs. The editor
+   (part C) keeps the document in its normal form, the form toDoc gives:
+
+   - normalizeBlock(parent, index) re-reads child `index` with the same
+     block and inline rules and says which children to replace. The window
+     reaches the neighbours because a block's normal form depends on them:
+     the canonical separator is by position, a trimmed block's trailing
+     whitespace belongs to the next block's pre, an emptied block merges into
+     its neighbours' separators, and a ":::" line restructures everything
+     after it. Inside a container a ":::" line is always loose (it would end
+     the container), so the answer is 'up': normalize the container itself
+     in its own parent.
+   - canApplyMark / canSetLink say, before a mark is applied, whether the
+     result would be read back exactly as applied.
+
+   For a document every block of which normalizeBlock leaves alone,
+   toDoc(toText(doc)) equals doc (tests/book-editor-convert.test.ts). */
+
+const looseMarker = (text: string): boolean =>
+  text.indexOf(':::') !== -1 && text.split('\n').some((l) => {
+    const c = l.endsWith('\r') ? l.slice(0, -1) : l;
+    return CONTAINER_OPEN_RE.test(c) || CONTAINER_CLOSE_RE.test(c);
+  });
+
+export type BlockFix = { from: number; to: number; blocks: Node[] };
+
+/** Child `index` of `parent` (a doc or a container) in normal form: null when the children are already normal around it,
+ *  'up' when the parent (a container) must itself be normalized in its own parent, or the children [from, to) to
+ *  replace with `blocks`. */
+export function normalizeBlock(parent: Node, index: number): BlockFix | 'up' | null {
+  const n = parent.childCount;
+  const inContainer = parent.type.name === 'container';
+  let from = Math.max(0, index - 1), to = Math.min(n, index + 2);
+  for (;;) {
+    let text = '';
+    for (let i = from; i < to; i++) text += childText(parent, i);
+    if (looseMarker(text)) {
+      if (inContainer) return 'up';
+      if (to < n) { to = n; continue; } // a container line reaches to the end of the run
+    }
+    const blocks = parseBlocks(text);
+    const empty = blocks.length === 1 && blocks[0]!.type.name === 'paragraph' && blocks[0]!.childCount === 0 && text.trim() === '';
+    if (empty && !(from === 0 && to === n)) { // only whitespace left: it belongs to a neighbour's separator
+      if (to < n) to++; else from--;
+      continue;
+    }
+    const last = blocks[blocks.length - 1]!;
+    if (!empty && to < n && last.attrs.post !== '') { to++; continue; } // trailing whitespace belongs to the next block's pre
+    if (from > 0 && !empty) { // parseBlocks writes the first pre for position 0; re-canonicalise it for position `from`
+      const first = blocks[0]!;
+      const actual = preOf(first, 0);
+      blocks[0] = withEdges(first, actual === '\n\n' ? null : actual, first.attrs.post as string);
+    }
+    if (to - from === blocks.length && blocks.every((b, k) => b.eq(parent.child(from + k)))) return null;
+    return { from, to, blocks };
+  }
+}
+
+/** The whole document in normal form, block by block: what part C reaches by running normalizeBlock as it edits. At the
+ *  document level a window that holds a container re-reads it whole, so this also normalizes container contents. */
+export function normalizeDoc(doc: Node): Node {
+  let d = doc;
+  for (let i = 0, guard = 0; i < d.childCount && guard < 100_000; guard++) {
+    const f = normalizeBlock(d, i);
+    if (f === null || f === 'up') { i++; continue; }
+    d = applyFix(d, f);
+    i = Math.max(0, f.from - 1);
+  }
+  return d;
+}
+
+function spliceChildren(parent: Node, f: BlockFix): import('prosemirror-model').Fragment {
+  const kids: Node[] = [];
+  parent.forEach((k) => { kids.push(k); });
+  kids.splice(f.from, f.to - f.from, ...f.blocks);
+  return S.node(parent.type.name, parent.attrs, kids).content;
+}
+function applyFix(parent: Node, f: BlockFix | null): Node {
+  return f ? parent.copy(spliceChildren(parent, f)) : parent;
+}
+
+/** A link address 1.0 reads as a link (mdLinkRe's address part). */
+const HREF_RE = /^(?:https?:\/\/|mailto:)[^\s()<>]+(?:\([^\s()<>]*\)[^\s()<>]*)*$/i;
+
+/** True when `mark` over [from, to) of `block`'s content (offsets inside the block) reads back exactly as applied:
+ *  the block re-read from its text has the same content. False for em/strong over a "*", a span touching the same
+ *  mark, a link label with "]" or a line break, an href 1.0 does not read as a link, and any mark on a rawBlock or atom. */
+export function canApplyMark(block: Node, from: number, to: number, mark: Mark): boolean {
+  if (!block.isTextblock || !block.type.allowsMarkType(mark.type) || from >= to || from < 0 || to > block.content.size) return false;
+  if (mark.type.name === 'link' && !HREF_RE.test(String(mark.attrs.href))) return false;
+  const kids: Node[] = [];
+  block.forEach((k, off) => {
+    const t = k.text ?? '', a = off, b = off + t.length;
+    const cut = (x: number, y: number, add: boolean): void => {
+      if (y > x) kids.push(S.text(t.slice(x - a, y - a), add ? mark.addToSet(k.marks) : k.marks));
+    };
+    const s0 = Math.max(a, Math.min(b, from)), s1 = Math.max(a, Math.min(b, to));
+    cut(a, s0, false); cut(s0, s1, true); cut(s1, b, false);
+  });
+  const candidate = block.type.create({ ...block.attrs, pre: null, post: '' }, kids);
+  const back = parseBlocks(blockText(candidate));
+  return back.length === 1 && back[0]!.eq(candidate);
+}
+
+/** canApplyMark for a link to `href`. */
+export function canSetLink(block: Node, from: number, to: number, href: string): boolean {
+  return HREF_RE.test(href) && canApplyMark(block, from, to, S.marks.link!.create({ href }));
 }

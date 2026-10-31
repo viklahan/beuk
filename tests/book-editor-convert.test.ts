@@ -4,8 +4,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { performance } from 'node:perf_hooks';
 import type { Node } from 'prosemirror-model';
+import * as Y from 'yjs';
+import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
 import { fixturePath } from './book-fixtures.js';
-import { blockCoverage, toDoc, toText, type ConvertStats } from '../src/book/editor/convert.js';
+import {
+  blockCoverage, blocksText, canApplyMark, canSetLink, normalizeBlock, normalizeDoc, toDoc, toText, type ConvertStats,
+} from '../src/book/editor/convert.js';
+import { bookSchema as S } from '../src/book/editor/schema.js';
 
 /* BEUK:editor-convert — the text <-> ProseMirror converter is lossless for
    every string: toText(toDoc(t)) === t byte for byte. Proven over every
@@ -33,9 +38,28 @@ function fixtureBooks(): { name: string; book: unknown }[] {
   return out;
 }
 
+/** A document through Yjs the way the studio keeps it: into a fragment, encoded, applied to a fresh doc, read back. */
+function throughYjs(doc: Node): Node {
+  const a = new Y.Doc();
+  prosemirrorToYXmlFragment(doc, a.getXmlFragment('body'));
+  const b = new Y.Doc();
+  Y.applyUpdate(b, Y.encodeStateAsUpdate(a));
+  return yXmlFragmentToProseMirrorRootNode(b.getXmlFragment('body'), S);
+}
+/** No lone surrogate (Yjs stores UTF-8, so one cannot pass it; importBook replaces it first, see the model test). */
+const isWellFormed = (t: string): boolean => t === Buffer.from(t, 'utf8').toString('utf8');
+
+/** Lossless directly AND through Yjs, and no block fell back to raw because a check failed (raw only by design). */
 const roundTrips = (t: string): void => {
-  const back = toText(toDoc(t));
+  const st: ConvertStats = { blocks: 0, raw: 0, rawWhy: {} };
+  const doc = toDoc(t, st);
+  const back = toText(doc);
   if (back !== t) assert.fail(`not lossless: ${JSON.stringify(t).slice(0, 200)} -> ${JSON.stringify(back).slice(0, 200)}`);
+  if (st.rawWhy.mismatch || st.rawWhy['doc-mismatch']) assert.fail(`check fallback fired: ${JSON.stringify(t).slice(0, 200)} ${JSON.stringify(st.rawWhy)}`);
+  if (isWellFormed(t)) {
+    const y = toText(throughYjs(doc));
+    if (y !== t) assert.fail(`not lossless through Yjs: ${JSON.stringify(t).slice(0, 200)} -> ${JSON.stringify(y).slice(0, 200)}`);
+  }
 };
 
 /** The text nodes of a document's blocks, as [text, mark names] pairs, for structure assertions. */
@@ -64,13 +88,14 @@ const COVERAGE_FLOOR: Record<string, { blocks: number; raw: number }> = {
 };
 const share = (c: { blocks: number; raw: number }): number => (c.blocks ? (c.blocks - c.raw) / c.blocks : 1);
 
-test('convert: every section of every fixture book round-trips byte for byte', (t) => {
+test('convert: every section of every fixture book round-trips byte for byte, directly and through Yjs', (t) => {
   let sections = 0, chars = 0;
   for (const { name, book } of fixtureBooks()) {
     for (const s of sectionsOf(book)) {
       if (typeof s.content !== 'string') continue;
-      const back = toText(toDoc(s.content));
-      assert.equal(back === s.content, true, `${name} section ${String(s.id)}: not lossless`);
+      const doc = toDoc(s.content);
+      assert.equal(toText(doc) === s.content, true, `${name} section ${String(s.id)}: not lossless`);
+      assert.equal(toText(throughYjs(doc)) === s.content, true, `${name} section ${String(s.id)}: not lossless through Yjs`);
       sections++; chars += s.content.length;
     }
   }
@@ -185,9 +210,9 @@ test('convert: Unicode survives exactly (RTL, Devanagari, ZWJ emoji, combining m
 
 /* ---- every string, not just the ones written down ---- */
 
-test('convert: random markup soup round-trips (5000 strings)', () => {
+test('convert: random markup soup round-trips (5000 strings), directly and through Yjs, with no check fallback', () => {
   const alphabet = ['*', '**', '_', '[', ']', '(', ')', '^', '1', '12', ':', '::: center', '::: verse', ':::', '!', '|', '||', '>', '- ', '1. ', '#', '## ',
-    '\n', '\n\n', '\r\n', ' ', '\t', 'a', 'word', 'https://x.y', 'mailto:a@b', 'img:', 'note:s', '“', '”', '"', '❦', '***', ' ', 'é', '👨‍👩‍👧'];
+    '\n', '\n\n', '\r\n', ' ', '\t', 'a', 'word', '::: right', '::: Center x', 'https://x.y', 'mailto:a@b', 'img:', 'note:s', '“', '”', '"', '❦', '***', ' ', 'é', '👨‍👩‍👧'];
   let seed = 20261031;
   const rnd = (n: number): number => { seed = (seed * 1103515245 + 12345) >>> 0; return seed % n; };
   for (let i = 0; i < 5000; i++) {
@@ -246,4 +271,128 @@ test('convert: full corpus round-trips (BEUK_BOOK_CORPUS)', { skip: corpusDir ? 
   }
   assert.ok(books > 0, 'no *.beuk-backup.json found under BEUK_BOOK_CORPUS');
   t.diagnostic(`books ${books}, sections ${sections}, blocks ${st.blocks}, raw ${st.raw} (${(share(st) * 100).toFixed(2)}% parsed) ${JSON.stringify(st.rawWhy)}`);
+});
+
+/* ---- fix round 1: Yjs attrs, schema, editing ---- */
+
+test('convert: an unclosed container keeps close null through Yjs (y-prosemirror never stores a null attr)', () => {
+  assert.equal(S.nodes.container!.spec.attrs!.close!.default, null);
+  for (const t of ['::: center\nHello', '::: right\nA\n\nB', '::: center\n', '::: center', 'x\n\n::: center\nHello\n\n', '::: center\nA\n::: right\nB']) {
+    roundTrips(t);
+    assert.equal(toText(throughYjs(toDoc(t))), t);
+  }
+  assert.equal(throughYjs(toDoc('::: center\nHello\n:::')).firstChild!.attrs.close, ':::');
+});
+
+test('convert: every attr whose meaningful value can be null defaults to null', () => {
+  const nullable: string[] = [];
+  for (const [name, type] of Object.entries(S.nodes))
+    for (const [attr, spec] of Object.entries(type.spec.attrs ?? {}))
+      if (spec.default === null) nullable.push(`${name}.${attr}`);
+  assert.deepEqual(nullable.sort(), ['container.close', 'container.pre', 'footnoteDef.pre', 'image.caption', 'image.pre', 'paragraph.pre', 'rawBlock.pre', 'sceneBreak.pre']);
+});
+
+test('convert: paragraph and footnoteDef declare whitespace "pre" (prosemirror-view keeps their line breaks)', () => {
+  assert.equal(S.nodes.paragraph!.spec.whitespace, 'pre');
+  assert.equal(S.nodes.footnoteDef!.spec.whitespace, 'pre');
+});
+
+test('convert: post is written for the last child only (a split copies attrs)', () => {
+  const p = (text: string, post: string) => S.node('paragraph', { pre: null, post }, [S.text(text)]);
+  const doc = S.node('doc', null, [p('one', '\n\n\n'), p('two', '  '), p('three', '\n')]);
+  assert.equal(toText(doc), 'one\n\ntwo\n\nthree\n');
+  assert.equal(blocksText(S.node('container', { close: ':::' }, [p('a', 'X'), p('b', '\n')])), 'a\n\nb\n');
+});
+
+/* Random edited documents: random blocks, attrs, text and marks, including what 1.0's text cannot say back. */
+function randomDocs(count: number, seed0: number): Node[] {
+  let seed = seed0;
+  const rnd = (n: number): number => { seed = (seed * 1103515245 + 12345) >>> 0; return seed % n; };
+  const pick = <T>(a: T[]): T => a[rnd(a.length)]!;
+  const ALPHA = ['*', '**', 'a', 'word', ' ', '\n', '\n\n', '[', ']', '(', ')', '^1', '||', '::: center', ':::', '- ', '# ', '>', 'é', '\t', '  ', 'https://x.y', '!', 'img:', '1. ', '2*3', '❦'];
+  const str = (max: number): string => { let s = ''; const k = rnd(max); for (let i = 0; i < k; i++) s += pick(ALPHA); return s; };
+  const marks = () => {
+    const m = [];
+    if (rnd(3) === 0) m.push(S.marks.em!.create());
+    if (rnd(4) === 0) m.push(S.marks.strong!.create());
+    if (rnd(6) === 0) m.push(S.marks.link!.create({ href: pick(['https://u', 'mailto:a@b', 'ftp://x', 'https://a b']) }));
+    if (rnd(8) === 0) m.push(S.marks.footnoteRef!.create());
+    if (rnd(8) === 0) m.push(S.marks.rawInline!.create());
+    return m;
+  };
+  const inline = (): Node[] => { const out: Node[] = []; const k = rnd(5); for (let i = 0; i < k; i++) { const t = str(6); if (t) out.push(S.text(t, marks())); } return out; };
+  const edges = () => ({ pre: pick([null, null, null, '', '\n', '\n\n\n', ' \n\n', '\n  ']), post: pick(['', '', '\n', ' ']) });
+  const block = (depth: number): Node => {
+    switch (rnd(depth ? 7 : 6)) {
+      case 0: case 1: return S.node('paragraph', edges(), inline());
+      case 2: { const t = str(6); return S.node('rawBlock', edges(), t ? [S.text(t)] : []); }
+      case 3: return S.node('sceneBreak', { ...edges(), raw: pick(['***', '❦', 'x', '---']) });
+      case 4: return S.node('image', { ...edges(), alt: pick(['a', 'a]b', '']), id: pick(['x', '', 'a b']), full: rnd(2) === 0, caption: pick([null, 'cap', 'c"d']) });
+      case 5: return S.node('footnoteDef', { ...edges(), n: pick(['1', '22']), caret: rnd(2) === 0, gap: pick([' ', '', '\n']) }, inline());
+      default: {
+        const kids: Node[] = [];
+        const k = 1 + rnd(3);
+        for (let i = 0; i < k; i++) kids.push(block(0));
+        return S.node('container', { ...edges(), open: pick(['::: center', '::: right', '::: verse', 'x']), openEol: pick(['\n', '']), close: pick([null, ':::', 'zz']) }, kids);
+      }
+    }
+  };
+  const out: Node[] = [];
+  for (let it = 0; it < count; it++) {
+    const kids: Node[] = [];
+    const k = 1 + rnd(5);
+    for (let i = 0; i < k; i++) kids.push(block(1));
+    out.push(S.node('doc', null, kids));
+  }
+  return out;
+}
+
+test('convert: normalizeBlock is idempotent, and a normalised document reads back as itself (5000 random edited docs)', () => {
+  for (const d0 of randomDocs(5000, 20261101)) {
+    const d = normalizeDoc(d0);
+    for (let i = 0; i < d.childCount; i++) {
+      assert.equal(normalizeBlock(d, i), null, `not idempotent at ${i}: ${JSON.stringify(toText(d0))}`);
+      const c = d.child(i);
+      if (c.type.name === 'container') for (let j = 0; j < c.childCount; j++) assert.equal(normalizeBlock(c, j), null, `container child ${j}: ${JSON.stringify(toText(d0))}`);
+    }
+    assert.ok(toDoc(toText(d)).eq(d), `toDoc(toText(d)) differs from d: ${JSON.stringify(toText(d0))}`);
+    assert.ok(throughYjs(d).eq(d), 'a normalised document changes through Yjs');
+  }
+});
+
+test('convert: normalizeBlock re-reads what the writer typed the way the next open would', () => {
+  const para = (text: string) => S.node('doc', null, [S.node('paragraph', null, [S.text(text)])]);
+  // typed "2*3 and 4*5" reopens in italics: normalize shows it now
+  const f = normalizeBlock(para('2*3 and 4*5'), 0);
+  assert.ok(f && f !== 'up');
+  assert.deepEqual(f.blocks[0]!.toJSON().content, [{ type: 'text', text: '2' }, { type: 'text', marks: [{ type: 'em' }], text: '3 and 4' }, { type: 'text', text: '5' }]);
+  // a blank line typed inside a paragraph makes two paragraphs
+  const g = normalizeBlock(para('one\n\ntwo'), 0);
+  assert.ok(g && g !== 'up');
+  assert.deepEqual(g.blocks.map((b) => b.textContent), ['one', 'two']);
+  // a ":::" line typed inside a container restructures its parent: normalize the container in its own parent
+  const cont = toDoc('::: center\nA\n\nB\n:::').firstChild!;
+  const typed = cont.copy(cont.content.replaceChild(0, S.node('paragraph', null, [S.text('A\n:::')])));
+  assert.equal(normalizeBlock(typed, 0), 'up');
+  // already normal: nothing to do
+  assert.equal(normalizeBlock(toDoc('plain *em* text\n\nmore'), 1), null);
+});
+
+test('convert: canApplyMark / canSetLink refuse a mark the text cannot write back', () => {
+  const em = S.marks.em!.create(), strong = S.marks.strong!.create();
+  const star = S.node('paragraph', null, [S.text('2*3 and more')]);
+  assert.equal(canApplyMark(star, 0, 3, em), false); // over a "*"
+  assert.equal(canApplyMark(star, 0, 3, strong), false);
+  assert.equal(canApplyMark(star, 4, 7, em), false); // "*and*" would pair with the lone "*" before it
+  const p = S.node('paragraph', null, [S.text('2x3 and plain [x] words')]);
+  assert.equal(canApplyMark(p, 4, 7, em), true); // "and"
+  assert.equal(canApplyMark(p, 8, 13, strong), true); // "plain"
+  assert.equal(canSetLink(p, 8, 13, 'https://example.com/a'), true);
+  assert.equal(canSetLink(p, 8, 13, 'ftp://example.com'), false); // 1.0 reads no other scheme
+  assert.equal(canSetLink(p, 8, 13, 'https://a b'), false);
+  assert.equal(canSetLink(p, 14, 17, 'https://example.com'), false); // a label with "]"
+  assert.equal(canSetLink(S.node('paragraph', null, [S.text('one\ntwo')]), 0, 7, 'https://example.com'), false); // a label with a line break
+  const touching = S.node('paragraph', null, [S.text('ab', [em]), S.text('cd')]);
+  assert.equal(canApplyMark(touching, 2, 4, em), true); // extends the same em
+  assert.equal(canApplyMark(S.node('rawBlock', null, [S.text('x')]), 0, 1, em), false);
 });
