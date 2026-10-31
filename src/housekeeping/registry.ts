@@ -3629,7 +3629,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
         sections: [{ id: 'c1', kind: 'body', type: 'chapter', title: 'واحد', content: 'كان البحر هادئًا في ذلك الصباح.' }],
       }).book;
       const sb = studioEpub();
-      const out = await sb.build(epubState(book, 'generic'), { lang: 'en', timeoutMs: config.jobTimeoutMs });
+      const out = await sb.build(epubState(book, 'generic'), { lang: 'en', timeoutMs: config.jobTimeoutMs, heapMb: config.epubWorkerHeapMb });
       const entries = readZip(out.bytes);
       const bad = validateEpub(entries).filter((c) => c.status !== 'pass');
       assert(bad.length === 0, bad.map((c) => `${c.id}: ${c.detail}`).join('; '));

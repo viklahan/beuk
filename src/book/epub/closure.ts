@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { Worker } from 'node:worker_threads';
+import { Worker, type WorkerOptions } from 'node:worker_threads';
 import ts from 'typescript';
 import type { WorkerJob } from './worker.js';
 
@@ -242,7 +242,7 @@ export function reachableDeclarations(studioHtml: string, roots: readonly string
 /* ---- the loader: lift once per studio file, build each book in a worker ---- */
 
 export type EpubFile = { path: string; content: string; binary: boolean };
-export type BuildOptions = { lang: string; timeoutMs?: number };
+export type BuildOptions = { lang: string; timeoutMs?: number; heapMb?: number };
 export type EpubSandbox = {
   source: ClosureSource;
   /** epubFiles() for this state, after the studio fetched its script and display faces. */
@@ -259,23 +259,8 @@ export class EpubBuildError extends Error {
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000;
-/** Heap cap of one build's worker (MB). */
-export const EPUB_WORKER_HEAP_MB = 1024;
-/** Builds at once; the rest wait their turn. */
-export const EPUB_MAX_CONCURRENT = 2;
-
-let running = 0;
-const waiting: (() => void)[] = [];
-async function slot<T>(fn: () => Promise<T>): Promise<T> {
-  if (running >= EPUB_MAX_CONCURRENT) await new Promise<void>((r) => waiting.push(r));
-  running++;
-  try {
-    return await fn();
-  } finally {
-    running--;
-    waiting.shift()?.();
-  }
-}
+/** Heap cap of one build's worker, MB (EPUB_WORKER_HEAP_MB overrides it via config). */
+export const DEFAULT_EPUB_WORKER_HEAP_MB = 512;
 
 const HERE_URL = import.meta.url;
 function workerUrl(): URL {
@@ -283,9 +268,23 @@ function workerUrl(): URL {
   return new URL(HERE_URL.endsWith('.ts') ? './worker.ts' : './worker.js', HERE_URL);
 }
 
-function runWorker(job: WorkerJob, timeoutMs: number): Promise<unknown> {
+/** The only variables a build worker sees: where the temp directory is
+ *  (with none at all, Node on Windows resolves os.tmpdir() to
+ *  "undefined/temp" in the working directory). Never DATABASE_URL, Stripe
+ *  keys or any other secret. */
+export const EPUB_WORKER_ENV_KEYS: readonly string[] = ['TMPDIR', 'TMP', 'TEMP'];
+
+/** The build worker's options: its own environment (EPUB_WORKER_ENV_KEYS
+ *  only) and a heap cap. */
+export function workerOptions(job: WorkerJob, heapMb: number): WorkerOptions {
+  const env: Record<string, string> = {};
+  for (const k of EPUB_WORKER_ENV_KEYS) if (process.env[k]) env[k] = process.env[k]!;
+  return { workerData: job, env, resourceLimits: { maxOldGenerationSizeMb: heapMb } };
+}
+
+function runWorker(job: WorkerJob, timeoutMs: number, heapMb: number): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const w = new Worker(workerUrl(), { workerData: job, resourceLimits: { maxOldGenerationSizeMb: EPUB_WORKER_HEAP_MB } });
+    const w = new Worker(workerUrl(), workerOptions(job, heapMb));
     let settled = false;
     const done = (fn: () => void) => {
       if (settled) return;
@@ -326,9 +325,9 @@ export function loadEpubClosure(studioHtml: string, clientDir: string): EpubSand
   });
   const sb: EpubSandbox = {
     source,
-    files: (state, opts) => slot(() => runWorker(job('files', state, opts), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS)) as Promise<{ files: EpubFile[]; notes: string[] }>,
+    files: (state, opts) => runWorker(job('files', state, opts), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, opts.heapMb ?? DEFAULT_EPUB_WORKER_HEAP_MB) as Promise<{ files: EpubFile[]; notes: string[] }>,
     build: async (state, opts) => {
-      const out = (await slot(() => runWorker(job('build', state, opts), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS))) as { bytes: Uint8Array; filename: string; notes: string[] };
+      const out = (await runWorker(job('build', state, opts), opts.timeoutMs ?? DEFAULT_TIMEOUT_MS, opts.heapMb ?? DEFAULT_EPUB_WORKER_HEAP_MB)) as { bytes: Uint8Array; filename: string; notes: string[] };
       return { bytes: Buffer.from(out.bytes.buffer, out.bytes.byteOffset, out.bytes.byteLength), filename: out.filename, notes: out.notes };
     },
   };

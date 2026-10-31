@@ -38,6 +38,8 @@ import { OpsService } from './ops/service.js';
 import { usageCounter } from './ops/usage.js';
 import { opsHousekeepingRoutes } from './routes/ops-housekeeping.js';
 import { epubRoutes } from './routes/epub.js';
+import { studioEpub } from './book/epub/build.js';
+import { EpubQueue } from './book/epub/queue.js';
 import { statusPageRoutes } from './routes/status-page.js';
 
 export interface AppDeps {
@@ -136,7 +138,19 @@ export function buildApp({
   app.use('/api/pictures', pictureRoutes(db, config));
   app.use('/api/streak', streakRoutes(db, config, now));
   app.use('/api/exports', exportRoutes(db, config));
-  app.use('/api/epub', epubRoutes(db, config));
+  const epubQueue = new EpubQueue(config.epubMaxConcurrent, config.epubMaxQueued);
+  app.locals.epubQueue = epubQueue;
+  app.use('/api/epub', epubRoutes(db, config, epubQueue));
+  /* Lift the studio's EPUB code now, in the background, so the first export does not wait for it. */
+  if (config.epubWarmAtStart) {
+    setImmediate(() => {
+      try {
+        studioEpub();
+      } catch (err) {
+        console.error('epub.warm_failed', err instanceof Error ? err.message : err);
+      }
+    });
+  }
   app.use(
     '/api/billing',
     billingRoutes(db, config, billingProvider, now),

@@ -151,6 +151,19 @@ export interface Config {
    *  minutes) for EPUBCheck and for the pdfx job's HTML-to-PDF renderer
    *  request; a step that overruns is stopped and the job fails. */
   jobTimeoutMs: number;
+  /** Server-built store-ready EPUB (POST /api/epub, src/book/epub): builds
+   *  at once (EPUB_MAX_CONCURRENT, default 1), builds waiting their turn
+   *  (EPUB_MAX_QUEUED, default 4; beyond that 503 with Retry-After), and the
+   *  heap cap of each build's worker thread in MB (EPUB_WORKER_HEAP_MB,
+   *  default 512). One writer has at most one build running or waiting
+   *  (429). Each build is also stopped at jobTimeoutMs. */
+  epubMaxConcurrent: number;
+  epubMaxQueued: number;
+  epubWorkerHeapMb: number;
+  /** Lift the studio's EPUB code from client/index.html in the background at
+   *  start-up, so the first export does not wait for it (EPUB_WARM_AT_START,
+   *  default on; "0" turns it off; tests run with it off). */
+  epubWarmAtStart: boolean;
   /** M5 jobs: wall-clock timeout in ms for the pdfx job's Ghostscript
    *  conversion step (PDFX_TIMEOUT_MS, default 30 minutes; it covers
    *  every Ghostscript run of a chunked conversion together). Separate
@@ -386,6 +399,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     rendererUrl: env.RENDERER_URL || null,
     legacyHtmlPdfBin: env.HTML_PDF_BIN || null,
     jobTimeoutMs: Number(env.JOB_TIMEOUT_MS ?? 120_000),
+    epubMaxConcurrent: positiveInt(env.EPUB_MAX_CONCURRENT, 1),
+    epubMaxQueued: positiveInt(env.EPUB_MAX_QUEUED, 4),
+    epubWorkerHeapMb: positiveInt(env.EPUB_WORKER_HEAP_MB, 512),
+    epubWarmAtStart: env.EPUB_WARM_AT_START !== '0',
     pdfxTimeoutMs: positiveInt(env.PDFX_TIMEOUT_MS, 1_800_000),
     pdfxChunkPages: positiveInt(env.PDFX_CHUNK_PAGES, 40),
     javaMaxHeap: /^[1-9][0-9]*[kKmMgG]?$/.test(env.JAVA_MAX_HEAP ?? '') ? env.JAVA_MAX_HEAP! : '512m',

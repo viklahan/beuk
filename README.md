@@ -365,6 +365,29 @@ Deleting an export removes both the row and the file. Deleting a
 manuscript keeps its exports (the link is set null) — the archive is the
 user's permanent copy, the manuscript is the working document.
 
+## Store-ready EPUB on the server (Step 3 part 3)
+
+`POST /api/epub` builds the store-ready EPUB with the studio's own EPUB
+code, lifted from `client/index.html` (`src/book/epub/closure.ts`, list
+`EPUB_CLOSURE`) and run in a `node:vm` context inside a worker thread
+that sees no environment variables but the temp-directory ones (no secrets). Body: `{ manuscriptId }` or
+`{ book }`, plus optional `platform` and `lang`. Signed in only; paused
+after the trial (`export.epub`, 402). The book is held to
+`MANUSCRIPT_MAX_BYTES` counted with its pictures back in, before they
+are filled in (413). Settings:
+
+- `EPUB_MAX_CONCURRENT` (default 1): builds at once.
+- `EPUB_MAX_QUEUED` (default 4): builds waiting; beyond that 503 with
+  `Retry-After`. One writer has one build running or waiting at most (429).
+- `EPUB_WORKER_HEAP_MB` (default 512): heap cap of each build's worker
+  (over it: 413).
+- `JOB_TIMEOUT_MS` (default 2 minutes) also stops a build (503).
+- `EPUB_WARM_AT_START` (default on, `0` = off): lift the studio's code in
+  the background at start-up so the first export does not wait for it.
+
+The runtime image carries `typescript` for that lift (a build-time
+extraction is a noted follow-up).
+
 ## Jobs (M5) — server EPUBCheck + PDF/X
 
 The two capabilities the browser build honestly defers — real
