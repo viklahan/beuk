@@ -177,6 +177,9 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
 }
 .toast.fading { opacity: 0; }
 .toast svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.toast-action { flex: 0 0 auto; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 9px; cursor: pointer; opacity: 0.9; pointer-events: auto; }
+.toast-action:hover { opacity: 1; }
+.toast-action:focus-visible { outline: 2px solid var(--panel); outline-offset: 2px; }
 
 /* ---------- Responsive panes ---------- */
 @media (max-width: 1180px) {

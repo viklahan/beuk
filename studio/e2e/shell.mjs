@@ -10,9 +10,12 @@
    (a) CSP: a click-through (language menu, Arabic, German, theme switch,
        phone tabs, service worker) reports ZERO securitypolicyviolation
        events under the Caddyfile's Content-Security-Policy.
-   (b) Offline: after one online visit, the server is stopped and the
-       browser set offline; a reload renders the shell from the service
-       worker, and a language switch still works (packs are precached).
+   (b) Offline: after one online visit, the browser is set offline (the
+       server stays up and counts what reaches it: nothing may); a reload
+       renders the shell from the service worker, and a language switch
+       still works (packs are precached). Then, back online, the server
+       answers the page with a 502 (the app down during a deploy): the
+       worker serves the cached shell instead.
    (c) Look: the shell next to 1.0's same regions (/studio) at 1280×800
        and 390×844, in Paper and Candlelight, region by region:
        - geometry of every frame region equal within GEOMETRY_PX;
@@ -117,9 +120,8 @@ async function cspAndOffline() {
     check(violations.length <= MAX_CSP_VIOLATIONS, `(a) ${violations.length} securitypolicyviolation events (max ${MAX_CSP_VIOLATIONS})`);
     check(errors.length === 0, `(a) no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
 
-    // (b) Offline: the network is gone — the server stopped AND the browser offline.
+    // (b) Offline: the browser is offline; the server stays up and counts requests.
     const served = srv.state.requests.length;
-    await srv.stop();
     await ctx.setOffline(true);
     await page.reload();
     await page.waitForSelector('#topbar', { timeout: 10_000 });
@@ -137,6 +139,25 @@ async function cspAndOffline() {
     check(srv.state.requests.length === served, '(b) nothing reached the server while offline');
     const offViolations = await page.evaluate(() => window.__csp);
     check(offViolations.length === 0, `(a) ${offViolations.length} violations offline`);
+
+    // (b) A deploy: online again, but the page answers 502. The cached shell renders.
+    await ctx.setOffline(false);
+    srv.state.navStatus = 502;
+    const before502 = srv.state.requests.length;
+    await page.reload();
+    const shell502 = await page
+      .waitForSelector('#topbar', { timeout: 10_000 })
+      .then(() => page.evaluate(() => !!document.getElementById('pane-center') && getComputedStyle(document.getElementById('topbar')).display === 'flex'))
+      .catch(() => false);
+    const asked = srv.state.requests.slice(before502).filter((p) => p === '/next/').length;
+    check(shell502 && asked > 0, `(b) a 502 for the page (the app down during a deploy) still opens the cached shell (${asked} page request(s) answered 502)`);
+    srv.state.navStatus = 0;
+    const swr = await page.evaluate(async () => {
+      const keys = await caches.keys();
+      const c = await caches.open(keys.find((k) => k.startsWith('beuk-next-')));
+      return !!(await c.match('/assets/fonts/fonts.css'));
+    });
+    check(swr, '(b) 1.0\'s fonts.css is in the precache (served stale-while-revalidate)');
   } finally {
     await ctx.close();
     await srv.stop().catch(() => undefined);
@@ -234,7 +255,7 @@ async function compare(diffPage, { width, height, theme, lang }) {
     const styleBad = [];
     for (const s of FRAME) {
       const a = m1[s], b = m2[s];
-      if (!a || !b) { if (!!a !== !!b) geomBad.push(`${s}: ${a ? 'missing in 2.0' : 'missing in 1.0'}`); continue; }
+      if (!a || !b) { geomBad.push(`${s}: ${!a && !b ? 'missing in BOTH 1.0 and 2.0' : a ? 'missing in 2.0' : 'missing in 1.0'}`); continue; }
       if (a.box.some((v, i) => Math.abs(v - b.box[i]) > GEOMETRY_PX)) geomBad.push(`${s}: 1.0 ${a.box} vs 2.0 ${b.box}`);
       if (a.style.display === 'none' && b.style.display === 'none') continue;
       for (const p of STYLE_PROPS) if (a.style[p] !== b.style[p]) styleBad.push(`${s} ${p}: 1.0 "${a.style[p]}" vs 2.0 "${b.style[p]}"`);

@@ -49,6 +49,29 @@ describe("t() — 1.0's semantics", () => {
     });
   }
 
+  it("synthetic gap: a key deleted from a pack falls back to English exactly as 1.0's t() does", () => {
+    const gap = oneT();
+    const cases: [string, string, Record<string, unknown> | undefined][] = [
+      ['de', 'top.export', undefined],
+      ['de', 'side.sampleLoad', { n: 18000 }],
+      ['pl', 'side.statsWords', { n: 5 }],
+      ['ru', 'stats.readingH', { h: 1, m: 2 }],
+      ['ar', 'editor.countBook', { count: 3, n: 3 }],
+    ];
+    for (const [lang, key, params] of cases) {
+      const tb = tables(lang);
+      const own = { ...tb.packs[lang]! } as Record<string, string>;
+      delete own[key];
+      delete own[key + 'Plural'];
+      gap.drop(lang, key);
+      gap.drop(lang, key + 'Plural');
+      const holed: Tables = { packs: { en: tb.packs.en, [lang]: own }, pluralForms: tb.pluralForms };
+      const ours = translate(holed, lang, key, params);
+      expect(ours, `${lang} ${key} ${JSON.stringify(params)}`).toBe(gap.t(lang, key, params));
+      if (typeof params?.count !== 'number') expect(ours, `${lang} ${key}: the gap was real`).not.toBe(translate(tb, lang, key, params));
+    }
+  }, 60_000);
+
   it('placeholders: named, missing ones stay as written', () => {
     const tb = tables('en');
     expect(translate(tb, 'en', 'stats.readingH', { h: 2, m: 5 })).toBe('2h 5m');

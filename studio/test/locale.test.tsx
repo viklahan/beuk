@@ -4,7 +4,7 @@ import de from '../src/generated/packs/de.json';
 import ar from '../src/generated/packs/ar.json';
 import en from '../src/generated/packs/en.json';
 import { LocaleProvider, useLocale } from '../src/i18n/LocaleProvider';
-import { UI_LANG_KEY, detectDefaultUiLang, initialUiLang } from '../src/i18n/strings';
+import { UI_LANG_KEY, detectDefaultUiLang, initialUiLang, loadPack } from '../src/i18n/strings';
 
 function Probe() {
   const { t, setLang, lang, dir } = useLocale();
@@ -57,6 +57,28 @@ describe('LocaleProvider', () => {
     });
     await screen.findByText(de['top.export']);
     expect(document.documentElement.getAttribute('dir')).toBe('ltr');
+  });
+
+  it('a fast double switch: the LAST choice wins, applied and saved, even when the first pack loads slower', async () => {
+    await loadPack('nl'); // the second choice is instant; the first (it) still has to load
+    let api: ReturnType<typeof useLocale> | null = null;
+    function Grab() {
+      api = useLocale();
+      return <span data-testid="lang">{api.lang}</span>;
+    }
+    render(
+      <LocaleProvider initial="en">
+        <Grab />
+      </LocaleProvider>,
+    );
+    await act(async () => {
+      const first = api!.setLang('it');
+      const second = api!.setLang('nl');
+      await Promise.all([first, second]);
+    });
+    expect(screen.getByTestId('lang').textContent).toBe('nl');
+    expect(localStorage.getItem(UI_LANG_KEY)).toBe('nl');
+    expect(document.documentElement.getAttribute('lang')).toBe('nl');
   });
 
   it("opens in the saved language, else the browser's (1.0's detectDefaultUiLang)", () => {

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { EN, UI_LANG_NAMES, UI_LANG_ORDER, UI_PLURAL_FORMS, hasLang, isRtl, loadPack, packIfLoaded, storeUiLang } from './strings';
+import { EN, UI_LANG_NAMES, UI_LANG_ORDER, UI_PLURAL_FORMS, hasLang, isRtl, loadPack, packIfLoaded, storeUiLang, type UiKey } from './strings';
 import { translate, type Params, type Tables } from './translate';
 
 export type Locale = {
@@ -7,8 +7,10 @@ export type Locale = {
   lang: string;
   /** The chrome's direction. The manuscript keeps the BOOK's direction. */
   dir: 'ltr' | 'rtl';
-  t: (key: string, params?: Params) => string;
-  /** Switch language (loads its pack first), saved under 1.0's key unless persist is false. */
+  /** 1.0's t(). Keys are typed against 1.0's English pack (UiKey). */
+  t: (key: UiKey, params?: Params) => string;
+  /** Switch language (loads its pack first), saved under 1.0's key unless persist is false.
+   *  Rejects when the pack cannot be loaded; the language stays as it was. */
   setLang: (code: string, opts?: { persist?: boolean }) => Promise<string>;
   order: readonly string[];
   names: Readonly<Record<string, string>>;
@@ -35,8 +37,12 @@ export function LocaleProvider({ initial, children }: { initial: string; childre
     const target = hasLang(code) ? code : 'en';
     const ticket = ++latest.current;
     await loadPack(target);
+    /* A later switch started while this pack loaded: it wins, and this
+       one neither applies nor saves (a slow pack must not overwrite the
+       writer's last choice). */
+    if (ticket !== latest.current) return target;
     if (opts?.persist !== false) storeUiLang(target);
-    if (ticket === latest.current) setLangState(target);
+    setLangState(target);
     return target;
   }, []);
 

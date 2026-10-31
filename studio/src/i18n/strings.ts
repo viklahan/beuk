@@ -12,6 +12,9 @@ export const UI_LANG_NAMES: Readonly<Record<string, string>> = meta.names;
 export const UI_RTL: readonly string[] = meta.rtl;
 export const UI_PLURAL_FORMS: PluralForms = meta.pluralForms as PluralForms;
 export const EN: Pack = en as Pack;
+/** Every interface key 1.0's English pack has. t() takes only these, so a
+ *  key 2.0 uses that 1.0 renames or removes fails `tsc` (and the build). */
+export type UiKey = keyof typeof en;
 
 const loaders = import.meta.glob<Pack>(['../generated/packs/*.json', '!../generated/packs/en.json'], { import: 'default' });
 

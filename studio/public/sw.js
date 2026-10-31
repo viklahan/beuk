@@ -9,17 +9,21 @@
    - /api/ and anything cross-origin: untouched (straight to the network;
      a cached manuscript is a stale manuscript, as in 1.0's sw.js).
    - Navigations under /next/: network first, the precached shell when
-     the network fails — so the studio opens offline.
-   - The build's own files and the precached fonts: cache first.
+     the network fails or answers a server error (5xx: the app down
+     during a deploy) — so the studio opens offline and through a deploy.
+   - The build's own (hashed) files: cache first.
+   - 1.0's fonts and icon (same name when they change): stale-while-revalidate.
    - Everything else: untouched.
 
-   Updates: a new worker takes over at once (skipWaiting + claim). The
-   2.0 shell has no lazy code that an old page could still ask for
-   except the language packs, and those are in every build's cache.
+   Updates: a new worker takes over at once (skipWaiting + claim) and
+   deletes the old build's cache. A page still running the OLD build can
+   then fail to load a language pack it had not loaded yet (its old
+   hashed chunk is gone); the page catches that and offers a reload
+   (src/shell/LangMenu.tsx).
 
    1.0's own worker (/sw.js, scope /) never sees /next/ pages once this
-   one is installed: the browser picks the registration with the longest
-   matching scope. */
+   one is installed (the longest matching scope wins), and since shell
+   v20 it passes /next through and keeps beuk-next-* caches anyway. */
 importScripts('./sw-precache.js');
 
 const NEXT = self.BEUK_NEXT;
@@ -57,6 +61,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+const shellFromCache = () => caches.open(CACHE).then((cache) => cache.match(NEXT.shell));
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -69,22 +75,45 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req).then(
         (res) => {
-          /* Online: make sure the precache is still whole. 1.0's worker
-             deletes every cache but its own when IT updates; refill ours
-             the next time the network answers. */
+          /* A server error (the app container down during a deploy:
+             Caddy answers 502) is no studio: the cached shell is. */
+          if (res.status >= 500) return shellFromCache().then((hit) => hit || res);
+          /* Online: make sure the precache is still whole (it may have
+             been cleared by the browser, or by an older 1.0 worker that
+             deleted every cache but its own); refill it if not. */
           event.waitUntil(ensurePrecache());
           return res;
         },
-        () => caches.open(CACHE).then((cache) => cache.match(NEXT.shell)).then((hit) => hit || Response.error()),
+        () => shellFromCache().then((hit) => hit || Response.error()),
       ),
     );
     return;
   }
 
   const path = url.pathname;
-  if (NEXT.assets.includes(path) || NEXT.optional.includes(path)) {
+  /* The build's hashed files never change under their name: cache first. */
+  if (NEXT.assets.includes(path)) {
+    event.respondWith(caches.open(CACHE).then((cache) => cache.match(path).then((hit) => hit || fetch(req))));
+    return;
+  }
+  /* 1.0's fonts and icon keep their names when they change: answer from
+     the cache at once, and refresh the copy from the network behind it
+     (stale-while-revalidate). */
+  if (NEXT.optional.includes(path)) {
     event.respondWith(
-      caches.open(CACHE).then((cache) => cache.match(path).then((hit) => hit || fetch(req))),
+      caches.open(CACHE).then((cache) =>
+        cache.match(path).then((hit) => {
+          const fresh = fetch(req).then((res) => {
+            if (res && res.status === 200 && res.type === 'basic') return cache.put(path, res.clone()).then(() => res);
+            return res;
+          });
+          if (hit) {
+            event.waitUntil(fresh.catch(() => null));
+            return hit;
+          }
+          return fresh;
+        }),
+      ),
     );
   }
 });

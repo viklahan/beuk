@@ -67,7 +67,8 @@ function beukHtml(): Plugin[] {
 
 /* The service worker's precache list (public/sw.js reads it with
    importScripts). Every file of the build, from Vite's own manifest
-   (build.manifest), plus the shell page; the fonts are optional. The
+   (build.manifest), plus the shell page; 1.0's fonts and icon are optional
+   (the worker serves those stale-while-revalidate: same name on change). The
    cache name carries a hash of the list and the page, so each build
    gets its own cache and the old one is retired on activate. */
 function precacheList(): Plugin {

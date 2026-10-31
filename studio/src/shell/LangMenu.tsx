@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from './Icon';
+import { useToast } from './Toasts';
 
 /* 1.0's header language dropdown (buildUiLangMenu / syncUiLangMenu /
    toggleUiLangMenu): a pill with the current language's own name, opening
@@ -8,6 +9,7 @@ import { Icon } from './Icon';
    the book's. Closes on a choice, Escape or a click outside. */
 export function LangMenu() {
   const { lang, setLang, order, names, t } = useLocale();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -61,8 +63,15 @@ export function LangMenu() {
             aria-selected={code === lang}
             lang={code}
             onClick={() => {
-              void setLang(code);
               setOpen(false);
+              setLang(code).catch(() => {
+                /* The pack's chunk would not load. Almost always a newer
+                   build replaced this one (the worker took over and its
+                   old chunks are gone), else offline before it was ever
+                   cached. The language stays; 1.0's update notice and
+                   Reload button offer the fix. */
+                toast(t('pwa.updateReady'), 'Download', { label: t('pwa.reload'), onClick: () => window.location.reload() });
+              });
             }}
           >
             <span>{names[code]}</span>

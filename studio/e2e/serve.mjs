@@ -3,7 +3,8 @@
    - /studio            → client/index.html (1.0, as Caddy rewrites it)
    - /next              → 308 /next/
    - /next/<file>       → client/next/<file> (the 2.0 build)
-   - /next/<route>      → client/next/index.html (the app's own routes)
+   - /next/<route>      → client/next/index.html (the app's own routes),
+                          or state.navStatus when set (a 502 during a deploy)
    - /api/*             → 404 JSON (no shelf in these runs)
    - anything else      → client/<path>, else 404
    Every response carries the Content-Security-Policy (and the other
@@ -40,7 +41,9 @@ export function startServer({ repo, port = 0 }) {
   const client = path.join(repo, 'client');
   const next = path.join(client, 'next');
   const headers = caddyHeaders(readFileSync(path.join(repo, 'Caddyfile'), 'utf8'));
-  const state = { requests: [], down: false };
+  /* navStatus: when set (e.g. 502), every /next/ page route answers it —
+     the app container down behind Caddy during a deploy. */
+  const state = { requests: [], navStatus: 0 };
   const server = createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     const p = decodeURIComponent(url.pathname);
@@ -81,6 +84,11 @@ export function startServer({ repo, port = 0 }) {
       return res.end();
     }
     if (p.startsWith('/next/')) {
+      if (state.navStatus && !/\.[a-z0-9]+$/i.test(p)) {
+        res.statusCode = state.navStatus;
+        res.setHeader('Content-Type', 'text/plain');
+        return res.end('Bad Gateway');
+      }
       const rel = p.slice('/next'.length);
       const f = inside(next, rel);
       if (f && send(f)) return;
