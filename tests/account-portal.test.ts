@@ -122,6 +122,26 @@ async function makeBook(c: Client, title = 'The Salt Road'): Promise<string> {
   return (r.body.manuscript as { id: string }).id;
 }
 
+/* BEUK:l10n — the shelf's rough count takes the studio's LANG_PACKS count
+   rule: a Japanese book counts characters, less spaces and punctuation. */
+test('/account counts a Japanese book by characters, an English one by words', async () => {
+  const db = await createTestDb();
+  const s = await start(db);
+  try {
+    const c = new Client(s.base);
+    await registerUser(c, 'kanji@example.com');
+    const doc = (language: string, content: string) => ({ ...BOOK, meta: { ...BOOK.meta, language }, sections: [{ id: 'k1', kind: 'body', type: 'chapter', title: 'One', content }] });
+    assert.equal((await c.post('/api/manuscripts', { title: 'Yuki', doc: doc('ja', '雪の夜、 私は本を読んだ。') })).status, 201);
+    assert.equal((await c.post('/api/manuscripts', { title: 'Snow', doc: doc('en', 'On a snowy night I read a book.') })).status, 201);
+    const { text: html } = await page(c, s.base, '/account');
+    // 雪の夜私は本を読んだ = 10 characters once 、 。 and the space are dropped.
+    assert.match(html, /Yuki[\s\S]*?about 10 words/);
+    assert.match(html, /Snow[\s\S]*?about 8 words/);
+  } finally {
+    await s.close();
+  }
+});
+
 async function userId(db: Db, email: string): Promise<string> {
   const r = await db.query<{ id: string }>('select id from users where email = $1', [email]);
   assert.ok(r.rows[0], `no user ${email}`);
