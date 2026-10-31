@@ -1084,7 +1084,7 @@ export const isRightPage = (i, rtl) => (i % 2 === 0) !== !!rtl;
 
 /** Remove the measuring names (`ids`) from a finished PDF: their named
  *  destinations, and any link annotation the hidden links left. */
-function stripNames(doc, ids) {
+export function stripNames(doc, ids) {
   if (!ids.length) return;
   const names = new Set(ids);
   const dests = doc.catalog.lookupMaybe(PDFName.of('Dests'), PDFDict);

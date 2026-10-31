@@ -1737,6 +1737,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'PDF layout reading runs in the studio page on PDF.js output; the server never sees an import.',
   },
   {
+    id: 'print.runheads.meta',
+    title: 'The print file names each section\'s running head for the renderer exactly as the Print Interior View draws it; every opening page prints bare when openings are clean',
+    kind: 'client-only',
+    reason: 'The meta is built from the studio\'s book state and checked against the Print Interior View in the page; the renderer side (deploy/renderer/heads.mjs) is covered by tests/print-heads.test.ts.',
+  },
+  {
     id: 'starters.picker',
     title: 'An empty back page offers starters that reach the page only on Use, with the book filled in and blanks marked',
     kind: 'client-only',
