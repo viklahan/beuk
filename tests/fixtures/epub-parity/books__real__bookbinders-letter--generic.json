@@ -1,0 +1,88 @@
+{
+ "book": "books/real/bookbinders-letter.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "a3bba2e7c1962ed093718de09d48f7e3bffc242b05f87fe03afd32baa464b812"
+  },
+  {
+   "path": "OEBPS/Text/plate_01.xhtml",
+   "binary": false,
+   "sha256": "c68cf5e0922c6179dd2f3f4a0c068f76a4ca2bef4bfa6740543d83c67ce3bb2f"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "0f525b17f2106da4c4835ba50413fe24c73c6c36cd05033ec3c39c2c082e27c9"
+  },
+  {
+   "path": "OEBPS/Text/dedication.xhtml",
+   "binary": false,
+   "sha256": "dd464ea3e26f1150beb404b40a92c6bdeb0d64e0c3ed279e9f42cf2f00fa0c4c"
+  },
+  {
+   "path": "OEBPS/Text/preface.xhtml",
+   "binary": false,
+   "sha256": "3b078a16ec5df11a7925c36ef8d04e7716aa564f0178f1bbb567e24b3f61f1c1"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "6852943ba9331a804e4d6211731349b75fd98a35047e495dece55033a70c3b3e"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "e8e57ac2cda01d70afb1a26e7119f510c9002c087295fc177e441f934ff0da31"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "4aaab3c7592c2145bae150e78e0e836ac83d13ea8befb396af9980d4d227ae5f"
+  },
+  {
+   "path": "OEBPS/Text/colophon.xhtml",
+   "binary": false,
+   "sha256": "07ff5982bd35de5ab5b9f1b7d731596be8ea31c86b9943bc45275aac16ebdc55"
+  },
+  {
+   "path": "OEBPS/Images/a-bookbinder-s-bench-in-florence-at-dusk-bb-bench.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Fonts/Pinyon_Script-normal-400.ttf",
+   "binary": true,
+   "sha256": "796317e589676cc0e821587ee385b3b4998f6bf05c25a364e9ef9da090e1f441"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "22551e70db3ae5671dc384e34fef096284a9e4dbba14c510dda58e4aec710756"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "cd33d5ae0bc0969169a58404c56d91e73572e7f82df757b074281101d3b8b506"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "b9303d2988c6ec39e495827a364fd43a4f8b71861fb72053fc70b1442f627530"
+  }
+ ]
+}

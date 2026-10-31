@@ -57,7 +57,7 @@ export function trialEndingMessage(
   const price = config.billingPriceLabel ? ` One plan, ${config.billingPriceLabel}, opens everything.` : '';
   const paused = Object.values(PAUSABLE_FEATURES).join(', ').replace(/, ([^,]*)$/, ' and $1');
   const open =
-    'Writing in the studio, the books already on your shelf (they keep saving), every export, your archive downloads and the reading links you already have all stay open.';
+    'Writing, typesetting and preview, the books already on your shelf (they keep saving), the backup file, Word and Markdown, your archive downloads and the reading links you already have all stay open.';
   const text = [
     'Hello,',
     '',

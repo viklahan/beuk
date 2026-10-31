@@ -21,11 +21,11 @@ import { html, link, para, renderEmail, type RenderedEmail } from './layout.js';
  * can still finish the flow, and the register response says
  * emailDelivery: "not-configured".
  *
- * Price: V has decided a 7-day free trial from sign-up, then one price
+ * Price: V has decided a 21-day free trial from sign-up, then one price
  * for complete access. The amount is not decided. The email names a
  * price only when BILLING_PRICE_LABEL is set (the billing work's
  * setting) and then says exactly that label; otherwise it says "one
- * price, announced before launch". It never invents an amount.
+ * price for complete access". It never invents an amount.
  *
  * Plan state comes from the SAME place as the account page's Plan
  * section: accountPlan() in src/account/plan.ts. `billingOn` is its
@@ -54,23 +54,23 @@ export function priceLabel(config: Config, _env: NodeJS.ProcessEnv = process.env
 }
 
 /** The plan in plain words, for the welcome email. */
-export function trialWords(opts: WelcomeOptions): string {
+export function trialWords(opts: WelcomeOptions, trialDays: number): string {
   const after = opts.priceLabel
     ? `then ${opts.priceLabel} for complete access`
-    : 'then one price for complete access, announced before launch';
-  const exportOpen = 'Exporting your book stays open whatever happens with a plan.';
+    : 'then one price for complete access';
+  const ownWords = 'Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.';
   if (opts.billingOn && opts.trial?.active) {
-    // The trial's own length (TRIAL_DAYS when it started), not a fixed 7.
+    // The trial's own length (TRIAL_DAYS when it started), never a literal.
     const days = Math.max(1, Math.round((Date.parse(opts.trial.endsAt) - Date.parse(opts.trial.startedAt)) / 86_400_000));
-    return `Your ${days}-day free trial started with this account and runs until ${humanDate(opts.trial.endsAt)}, ${after}. ${exportOpen}`;
+    return `Your ${days}-day free trial started with this account and runs until ${humanDate(opts.trial.endsAt)}, ${after}. ${ownWords}`;
   }
   if (opts.billingOn) {
     // Plans are on but this server does not track a trial: say nothing
     // about one. The account page then says "no subscription" too.
     const price = opts.priceLabel ? `${opts.priceLabel} for complete access` : 'one price for complete access';
-    return `Beuk is ${price}. Your account page shows your plan. ${exportOpen}`;
+    return `Beuk is ${price}. Your account page shows your plan. ${ownWords}`;
   }
-  return `Plans aren't switched on on this server yet, so everything in the studio is open to you. When they are, Beuk is a 7-day free trial, ${after}. Exporting your book stays open whatever happens with a plan.`;
+  return `Plans aren't switched on on this server yet, so everything in the studio is open to you. When they are, Beuk is a ${trialDays}-day free trial, ${after}. ${ownWords}`;
 }
 
 export function welcomeEmail(config: Config, confirmUrl: string, opts: WelcomeOptions): RenderedEmail {
@@ -82,7 +82,7 @@ export function welcomeEmail(config: Config, confirmUrl: string, opts: WelcomeOp
     'links for beta readers, who read and comment without an account',
     "the server's checks: EPUBCheck for an EPUB, and a PDF/X file for print",
   ];
-  const trial = trialWords(opts);
+  const trial = trialWords(opts, config.trialDays);
   return renderEmail(config, {
     subject: 'Confirm your email address, and welcome to Beuk',
     text: [
@@ -97,8 +97,8 @@ export function welcomeEmail(config: Config, confirmUrl: string, opts: WelcomeOp
       'What the account adds:',
       ...adds.map((a) => `- ${a}`),
       '',
-      'Writing never needs an account. The studio keeps your book on your',
-      'device first, and it works without signing in.',
+      'The studio keeps your book on your device first, and your shelf',
+      'follows you to any device you sign in on.',
       '',
       trial,
       '',
@@ -111,7 +111,7 @@ export function welcomeEmail(config: Config, confirmUrl: string, opts: WelcomeOp
 ${para(html`To confirm that this is your address, ${link(confirmUrl, 'open this link')} — it works once, for ${CONFIRM_TOKEN_TTL_HOURS} hours. Your shelf works whether or not you confirm. Confirming means a password-reset email can reach you if you ever need one.`)}
 ${para('What the account adds:')}
 <ul style="margin:0 0 14px;padding-left:22px;">${adds.map((a) => html`<li>${a}</li>`)}</ul>
-${para('Writing never needs an account. The studio keeps your book on your device first, and it works without signing in.')}
+${para('The studio keeps your book on your device first, and your shelf follows you to any device you sign in on.')}
 ${para(trial)}
 ${para(html`${link(help, 'Help')} has a guide for each part of the studio, and ${link(account, 'your account page')} shows your shelf, archive and reading links in one place.`)}
 ${para("If you didn't create a Beuk account, ignore this email.")}`,

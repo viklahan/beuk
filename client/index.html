@@ -3491,8 +3491,8 @@
         <!-- ==== /BEUK:acx ==== -->
 
         <div class="fmt-sec">
-          <h3 data-i18n="exp.printH"><i data-lucide="printer"></i>Print Interior — PDF via Print</h3>
-          <p>A paginated print interior at a real trim size: mirrored gutter margins for binding that follow KDP / IngramSpark interior guidance for this book's page count — or your own custom margins — a running head and page numbers placed by the rules you set below, and every chapter opening on a fresh page. Open the print view and use your browser's <b>Print → Save as PDF</b> (paper size set to the trim, margins “None”, background graphics on) to produce the PDF.</p>
+          <h3 data-i18n="exp.printH"><i data-lucide="printer"></i>Print Interior — Print Preview and Print-Ready PDF</h3>
+          <p>A paginated print interior at a real trim size: mirrored gutter margins for binding that follow KDP / IngramSpark interior guidance for this book's page count — or your own custom margins — a running head and page numbers placed by the rules you set below, and every chapter opening on a fresh page. The print view is a preview. To print it yourself, open it and use your browser's <b>Print → Save as PDF</b> (paper size set to the trim, margins “None”, background graphics on). The PDF to send to a store is made on the server: use <b>Download print-ready PDF</b> below.</p>
           <div class="trim-grid" id="trimGrid" role="radiogroup" aria-label="Trim size"></div>
           <div class="switch-row" style="border:none; padding:2px 0 10px;">
             <div class="sw-txt"><b data-i18n="exp.rectoTitle">Chapters open on a recto page</b><span data-i18n="exp.rectoDesc">Odd (right-hand) page starts, the trade hardback convention — a blank verso is inserted when a chapter would land on one.</span></div>
@@ -3571,11 +3571,14 @@
             <p class="pm-hint" data-i18n="print.notesHint">Beuk's print PDF sets each note at the foot of the page its reference falls on. Printed from the browser, the notes stay at the end of each chapter. The e-book keeps its notes at the end of each chapter, linked both ways. If a chapter's notes cannot be set at the page foot, they stay at its end and the store check says which.</p>
           </div>
           <p class="print-note" id="printNote"></p>
+          <p class="pm-hint" data-i18n="pr.note">Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.</p>
           <div class="fmt-actions">
             <button class="tb-btn primary" id="btnOpenPrintView" type="button" data-i18n="exp.openPrint"><i data-lucide="printer"></i>Open Print View</button>
             <button class="tb-btn" id="btnOpenSpreads" type="button" data-i18n="piv.open"><i data-lucide="book-open"></i>Print Interior View</button>
             <button class="tb-btn" id="btnDownloadPrintHtml" type="button" data-i18n="exp.downloadPrintHtml"><i data-lucide="download"></i>Download Print HTML</button>
+            <button class="tb-btn primary" id="btnPrintReadyPdf" type="button" data-i18n="pr.btn"><i data-lucide="file-down"></i>Download print-ready PDF</button>
           </div>
+          <p class="print-note" id="printReadyNote" aria-live="polite" hidden></p>
         </div>
 
         <div class="fmt-sec">
@@ -4670,7 +4673,7 @@
         "exp.markdownH": "Markdown Manuscript", "exp.downloadMd": "Download .md", "exp.copyMd": "Copy Markdown",
         "exp.htmlH": "Standalone HTML", "exp.downloadHtml": "Download .html",
         "exp.docxH": "Word Document (.docx)", "exp.downloadDocx": "Download .docx",
-        "exp.printH": "Print Interior — PDF via Print", "exp.rectoTitle": "Chapters open on a recto page",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Chapters open on a recto page",
         "exp.rectoDesc": "Odd (right-hand) page starts, the trade hardback convention — a blank verso is inserted when a chapter would land on one.",
         "exp.openPrint": "Open Print View", "exp.downloadPrintHtml": "Download Print HTML",
         "exp.boxsetH": "Box Set — Combined EPUB", "exp.addBook": "Add a Book…", "exp.buildBoxSet": "Build Box Set .epub",
@@ -4687,8 +4690,8 @@
         "insp.title": "Archive Package Inspector", "insp.sub": "The exact files the EPUB builder writes — same generator, same bytes. Select a file to read it.",
         "insp.copy": "Copy", "insp.close": "Close",
         "auth.titleLogin": "Welcome back", "auth.titleRegister": "Create your shelf",
-        "auth.subLogin": "Sign in to your shelf — your books, your streak and your export archive, on any device. The studio works fully without an account, always.",
-        "auth.subRegister": "A shelf of your own: your books, your streak and your export archive, on any device. The studio works fully without an account, always.",
+        "auth.subLogin": "Sign in to your shelf — your books, your streak and your export archive, on any device.",
+        "auth.subRegister": "A shelf of your own: your books, your streak and your export archive, on any device.",
         "auth.email": "Email", "auth.password": "Password", "auth.passwordPh": "At least 8 characters",
         "auth.notNow": "Not now", "auth.signIn": "Sign in", "auth.createAccount": "Create account",
         "auth.toggleCreate": "New here? Create your shelf", "auth.toggleSignIn": "Already have a shelf? Sign in",
@@ -5426,7 +5429,7 @@
         "exp.markdownH": "Manuscrito Markdown", "exp.downloadMd": "Descargar .md", "exp.copyMd": "Copiar Markdown",
         "exp.htmlH": "HTML independiente", "exp.downloadHtml": "Descargar .html",
         "exp.docxH": "Documento de Word (.docx)", "exp.downloadDocx": "Descargar .docx",
-        "exp.printH": "Interior de imprenta — PDF vía impresión", "exp.rectoTitle": "Los capítulos empiezan en página impar (recto)",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Los capítulos empiezan en página impar (recto)",
         "exp.rectoDesc": "Comienzos en página derecha, la convención de la tapa dura — se inserta un verso en blanco cuando un capítulo caería en una.",
         "exp.openPrint": "Abrir vista de impresión", "exp.downloadPrintHtml": "Descargar HTML de impresión",
         "exp.boxsetH": "Estuche — EPUB combinado", "exp.addBook": "Añadir un libro…", "exp.buildBoxSet": "Crear estuche .epub",
@@ -5443,8 +5446,8 @@
         "insp.title": "Inspector del paquete", "insp.sub": "Los archivos exactos que escribe el generador de EPUB — mismo generador, mismos bytes. Elige un archivo para leerlo.",
         "insp.copy": "Copiar", "insp.close": "Cerrar",
         "auth.titleLogin": "Bienvenido de nuevo", "auth.titleRegister": "Crea tu estantería",
-        "auth.subLogin": "Inicia sesión en tu estantería — tus libros, tu racha y tu archivo de exportaciones, en cualquier dispositivo. El estudio funciona por completo sin cuenta, siempre.",
-        "auth.subRegister": "Una estantería propia: tus libros, tu racha y tu archivo de exportaciones, en cualquier dispositivo. El estudio funciona por completo sin cuenta, siempre.",
+        "auth.subLogin": "Inicia sesión en tu estantería — tus libros, tu racha y tu archivo de exportaciones, en cualquier dispositivo.",
+        "auth.subRegister": "Una estantería propia: tus libros, tu racha y tu archivo de exportaciones, en cualquier dispositivo.",
         "auth.email": "Correo electrónico", "auth.password": "Contraseña", "auth.passwordPh": "Al menos 8 caracteres",
         "auth.notNow": "Ahora no", "auth.signIn": "Iniciar sesión", "auth.createAccount": "Crear cuenta",
         "auth.toggleCreate": "¿Nuevo aquí? Crea tu estantería", "auth.toggleSignIn": "¿Ya tienes estantería? Inicia sesión",
@@ -5646,7 +5649,7 @@
         "exp.markdownH": "Manuscrit Markdown", "exp.downloadMd": "Télécharger .md", "exp.copyMd": "Copier le Markdown",
         "exp.htmlH": "HTML autonome", "exp.downloadHtml": "Télécharger .html",
         "exp.docxH": "Document Word (.docx)", "exp.downloadDocx": "Télécharger .docx",
-        "exp.printH": "Intérieur d'impression — PDF via impression", "exp.rectoTitle": "Les chapitres commencent en page recto",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Les chapitres commencent en page recto",
         "exp.rectoDesc": "Départs en page de droite, la convention du livre relié — un verso blanc est inséré quand un chapitre tomberait dessus.",
         "exp.openPrint": "Ouvrir la vue d'impression", "exp.downloadPrintHtml": "Télécharger le HTML d'impression",
         "exp.boxsetH": "Coffret — EPUB combiné", "exp.addBook": "Ajouter un livre…", "exp.buildBoxSet": "Construire le coffret .epub",
@@ -5663,8 +5666,8 @@
         "insp.title": "Inspecteur du paquet", "insp.sub": "Les fichiers exacts qu'écrit le générateur d'EPUB — même générateur, mêmes octets. Choisissez un fichier pour le lire.",
         "insp.copy": "Copier", "insp.close": "Fermer",
         "auth.titleLogin": "Bon retour", "auth.titleRegister": "Créez votre étagère",
-        "auth.subLogin": "Connectez-vous à votre étagère — vos livres, votre série et votre archive d'exports, sur tout appareil. Le studio fonctionne entièrement sans compte, toujours.",
-        "auth.subRegister": "Une étagère à vous : vos livres, votre série et votre archive d'exports, sur tout appareil. Le studio fonctionne entièrement sans compte, toujours.",
+        "auth.subLogin": "Connectez-vous à votre étagère — vos livres, votre série et votre archive d'exports, sur tout appareil.",
+        "auth.subRegister": "Une étagère à vous : vos livres, votre série et votre archive d'exports, sur tout appareil.",
         "auth.email": "Adresse e-mail", "auth.password": "Mot de passe", "auth.passwordPh": "8 caractères minimum",
         "auth.notNow": "Pas maintenant", "auth.signIn": "Se connecter", "auth.createAccount": "Créer un compte",
         "auth.toggleCreate": "Nouveau ici ? Créez votre étagère", "auth.toggleSignIn": "Déjà une étagère ? Connectez-vous",
@@ -5866,7 +5869,7 @@
         "exp.markdownH": "Markdown-Manuskript", "exp.downloadMd": ".md herunterladen", "exp.copyMd": "Markdown kopieren",
         "exp.htmlH": "Eigenständiges HTML", "exp.downloadHtml": ".html herunterladen",
         "exp.docxH": "Word-Dokument (.docx)", "exp.downloadDocx": ".docx herunterladen",
-        "exp.printH": "Druckinnenleben — PDF über Drucken", "exp.rectoTitle": "Kapitel beginnen auf einer Recto-Seite",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Kapitel beginnen auf einer Recto-Seite",
         "exp.rectoDesc": "Anfänge auf der rechten (ungeraden) Seite, die Konvention des gebundenen Buches — eine leere Verso-Seite wird eingefügt, wenn ein Kapitel darauf landen würde.",
         "exp.openPrint": "Druckansicht öffnen", "exp.downloadPrintHtml": "Druck-HTML herunterladen",
         "exp.boxsetH": "Box-Set — Kombiniertes EPUB", "exp.addBook": "Ein Buch hinzufügen…", "exp.buildBoxSet": "Box-Set-.epub erstellen",
@@ -5883,8 +5886,8 @@
         "insp.title": "Archiv-Paketinspektor", "insp.sub": "Die genauen Dateien, die der EPUB-Ersteller schreibt — derselbe Generator, dieselben Bytes. Wählen Sie eine Datei, um sie zu lesen.",
         "insp.copy": "Kopieren", "insp.close": "Schließen",
         "auth.titleLogin": "Willkommen zurück", "auth.titleRegister": "Ihr Regal erstellen",
-        "auth.subLogin": "Melden Sie sich bei Ihrem Regal an — Ihre Bücher, Ihre Serie und Ihr Exportarchiv, auf jedem Gerät. Das Studio funktioniert immer vollständig ohne Konto.",
-        "auth.subRegister": "Ein eigenes Regal: Ihre Bücher, Ihre Serie und Ihr Exportarchiv, auf jedem Gerät. Das Studio funktioniert immer vollständig ohne Konto.",
+        "auth.subLogin": "Melden Sie sich bei Ihrem Regal an — Ihre Bücher, Ihre Serie und Ihr Exportarchiv, auf jedem Gerät.",
+        "auth.subRegister": "Ein eigenes Regal: Ihre Bücher, Ihre Serie und Ihr Exportarchiv, auf jedem Gerät.",
         "auth.email": "E-Mail", "auth.password": "Passwort", "auth.passwordPh": "Mindestens 8 Zeichen",
         "auth.notNow": "Nicht jetzt", "auth.signIn": "Anmelden", "auth.createAccount": "Konto erstellen",
         "auth.toggleCreate": "Neu hier? Erstellen Sie Ihr Regal", "auth.toggleSignIn": "Haben Sie schon ein Regal? Melden Sie sich an",
@@ -6086,7 +6089,7 @@
         "exp.markdownH": "Manoscritto Markdown", "exp.downloadMd": "Scarica .md", "exp.copyMd": "Copia Markdown",
         "exp.htmlH": "HTML autonomo", "exp.downloadHtml": "Scarica .html",
         "exp.docxH": "Documento Word (.docx)", "exp.downloadDocx": "Scarica .docx",
-        "exp.printH": "Interno di stampa — PDF tramite stampa", "exp.rectoTitle": "I capitoli iniziano su una pagina recto",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "I capitoli iniziano su una pagina recto",
         "exp.rectoDesc": "Inizi sulla pagina destra, la convenzione dell'edizione rilegata — viene inserito un verso vuoto quando un capitolo vi cadrebbe sopra.",
         "exp.openPrint": "Apri vista di stampa", "exp.downloadPrintHtml": "Scarica HTML di stampa",
         "exp.boxsetH": "Cofanetto — EPUB combinato", "exp.addBook": "Aggiungi un libro…", "exp.buildBoxSet": "Crea il cofanetto .epub",
@@ -6103,8 +6106,8 @@
         "insp.title": "Ispettore del pacchetto", "insp.sub": "I file esatti che scrive il generatore di EPUB — stesso generatore, stessi byte. Scegli un file per leggerlo.",
         "insp.copy": "Copia", "insp.close": "Chiudi",
         "auth.titleLogin": "Bentornato", "auth.titleRegister": "Crea la tua libreria",
-        "auth.subLogin": "Accedi alla tua libreria — i tuoi libri, la tua serie e il tuo archivio di esportazioni, su qualsiasi dispositivo. Lo studio funziona del tutto senza account, sempre.",
-        "auth.subRegister": "Una libreria tutta tua: i tuoi libri, la tua serie e il tuo archivio di esportazioni, su qualsiasi dispositivo. Lo studio funziona del tutto senza account, sempre.",
+        "auth.subLogin": "Accedi alla tua libreria — i tuoi libri, la tua serie e il tuo archivio di esportazioni, su qualsiasi dispositivo.",
+        "auth.subRegister": "Una libreria tutta tua: i tuoi libri, la tua serie e il tuo archivio di esportazioni, su qualsiasi dispositivo.",
         "auth.email": "E-mail", "auth.password": "Password", "auth.passwordPh": "Almeno 8 caratteri",
         "auth.notNow": "Non ora", "auth.signIn": "Accedi", "auth.createAccount": "Crea account",
         "auth.toggleCreate": "Nuovo qui? Crea la tua libreria", "auth.toggleSignIn": "Hai già una libreria? Accedi",
@@ -6306,7 +6309,7 @@
         "exp.markdownH": "Manuscrito Markdown", "exp.downloadMd": "Transferir .md", "exp.copyMd": "Copiar Markdown",
         "exp.htmlH": "HTML autónomo", "exp.downloadHtml": "Transferir .html",
         "exp.docxH": "Documento Word (.docx)", "exp.downloadDocx": "Transferir .docx",
-        "exp.printH": "Interior de impressão — PDF via impressão", "exp.rectoTitle": "Os capítulos começam numa página ímpar (recto)",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Os capítulos começam numa página ímpar (recto)",
         "exp.rectoDesc": "Inícios na página direita, a convenção da capa dura — é inserido um verso em branco quando um capítulo cairia nele.",
         "exp.openPrint": "Abrir vista de impressão", "exp.downloadPrintHtml": "Transferir HTML de impressão",
         "exp.boxsetH": "Conjunto — EPUB combinado", "exp.addBook": "Adicionar um livro…", "exp.buildBoxSet": "Criar o conjunto .epub",
@@ -6323,8 +6326,8 @@
         "insp.title": "Inspetor do pacote", "insp.sub": "Os ficheiros exatos que o gerador de EPUB escreve — o mesmo gerador, os mesmos bytes. Escolha um ficheiro para o ler.",
         "insp.copy": "Copiar", "insp.close": "Fechar",
         "auth.titleLogin": "Bem-vindo de volta", "auth.titleRegister": "Crie a sua estante",
-        "auth.subLogin": "Entre na sua estante — os seus livros, a sua sequência e o seu arquivo de exportações, em qualquer dispositivo. O estúdio funciona por completo sem conta, sempre.",
-        "auth.subRegister": "Uma estante só sua: os seus livros, a sua sequência e o seu arquivo de exportações, em qualquer dispositivo. O estúdio funciona por completo sem conta, sempre.",
+        "auth.subLogin": "Entre na sua estante — os seus livros, a sua sequência e o seu arquivo de exportações, em qualquer dispositivo.",
+        "auth.subRegister": "Uma estante só sua: os seus livros, a sua sequência e o seu arquivo de exportações, em qualquer dispositivo.",
         "auth.email": "E-mail", "auth.password": "Palavra-passe", "auth.passwordPh": "Pelo menos 8 caracteres",
         "auth.notNow": "Agora não", "auth.signIn": "Entrar", "auth.createAccount": "Criar conta",
         "auth.toggleCreate": "Novo aqui? Crie a sua estante", "auth.toggleSignIn": "Já tem uma estante? Entre",
@@ -6526,7 +6529,7 @@
         "exp.markdownH": "Markdown-manuscript", "exp.downloadMd": ".md downloaden", "exp.copyMd": "Markdown kopiëren",
         "exp.htmlH": "Zelfstandige HTML", "exp.downloadHtml": ".html downloaden",
         "exp.docxH": "Word-document (.docx)", "exp.downloadDocx": ".docx downloaden",
-        "exp.printH": "Drukbinnenwerk — PDF via afdrukken", "exp.rectoTitle": "Hoofdstukken beginnen op een rectopagina",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Hoofdstukken beginnen op een rectopagina",
         "exp.rectoDesc": "Aanvangen op de rechterpagina, de conventie van het gebonden boek — er wordt een blanco verso ingevoegd als een hoofdstuk daarop zou vallen.",
         "exp.openPrint": "Drukweergave openen", "exp.downloadPrintHtml": "Druk-HTML downloaden",
         "exp.boxsetH": "Boxset — Gecombineerde EPUB", "exp.addBook": "Een boek toevoegen…", "exp.buildBoxSet": "Boxset-.epub bouwen",
@@ -6543,8 +6546,8 @@
         "insp.title": "Archief-pakketinspecteur", "insp.sub": "De exacte bestanden die de EPUB-bouwer schrijft — dezelfde generator, dezelfde bytes. Kies een bestand om het te lezen.",
         "insp.copy": "Kopiëren", "insp.close": "Sluiten",
         "auth.titleLogin": "Welkom terug", "auth.titleRegister": "Maak uw boekenplank",
-        "auth.subLogin": "Log in op uw boekenplank — uw boeken, uw reeks en uw exportarchief, op elk apparaat. De studio werkt altijd volledig zonder account.",
-        "auth.subRegister": "Een plank van uzelf: uw boeken, uw reeks en uw exportarchief, op elk apparaat. De studio werkt altijd volledig zonder account.",
+        "auth.subLogin": "Log in op uw boekenplank — uw boeken, uw reeks en uw exportarchief, op elk apparaat.",
+        "auth.subRegister": "Een plank van uzelf: uw boeken, uw reeks en uw exportarchief, op elk apparaat.",
         "auth.email": "E-mail", "auth.password": "Wachtwoord", "auth.passwordPh": "Minstens 8 tekens",
         "auth.notNow": "Niet nu", "auth.signIn": "Inloggen", "auth.createAccount": "Account aanmaken",
         "auth.toggleCreate": "Nieuw hier? Maak uw boekenplank", "auth.toggleSignIn": "Heeft u al een plank? Log in",
@@ -6746,7 +6749,7 @@
         "exp.markdownH": "Rękopis Markdown", "exp.downloadMd": "Pobierz .md", "exp.copyMd": "Kopiuj Markdown",
         "exp.htmlH": "Samodzielny HTML", "exp.downloadHtml": "Pobierz .html",
         "exp.docxH": "Dokument Word (.docx)", "exp.downloadDocx": "Pobierz .docx",
-        "exp.printH": "Wnętrze do druku — PDF przez drukowanie", "exp.rectoTitle": "Rozdziały zaczynają się na stronie recto",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Rozdziały zaczynają się na stronie recto",
         "exp.rectoDesc": "Początki na prawej (nieparzystej) stronie, konwencja wydania w twardej oprawie — pusta strona verso jest wstawiana, gdy rozdział miałby na niej wylądować.",
         "exp.openPrint": "Otwórz widok druku", "exp.downloadPrintHtml": "Pobierz HTML do druku",
         "exp.boxsetH": "Zestaw — połączony EPUB", "exp.addBook": "Dodaj książkę…", "exp.buildBoxSet": "Zbuduj zestaw .epub",
@@ -6763,8 +6766,8 @@
         "insp.title": "Inspektor pakietu archiwum", "insp.sub": "Dokładne pliki, które zapisuje generator EPUB — ten sam generator, te same bajty. Wybierz plik, aby go przeczytać.",
         "insp.copy": "Kopiuj", "insp.close": "Zamknij",
         "auth.titleLogin": "Witaj ponownie", "auth.titleRegister": "Utwórz swoją półkę",
-        "auth.subLogin": "Zaloguj się do swojej półki — twoje książki, twoja seria i twoje archiwum eksportów, na każdym urządzeniu. Studio działa w pełni bez konta, zawsze.",
-        "auth.subRegister": "Własna półka: twoje książki, twoja seria i twoje archiwum eksportów, na każdym urządzeniu. Studio działa w pełni bez konta, zawsze.",
+        "auth.subLogin": "Zaloguj się do swojej półki — twoje książki, twoja seria i twoje archiwum eksportów, na każdym urządzeniu.",
+        "auth.subRegister": "Własna półka: twoje książki, twoja seria i twoje archiwum eksportów, na każdym urządzeniu.",
         "auth.email": "E-mail", "auth.password": "Hasło", "auth.passwordPh": "Co najmniej 8 znaków",
         "auth.notNow": "Nie teraz", "auth.signIn": "Zaloguj się", "auth.createAccount": "Utwórz konto",
         "auth.toggleCreate": "Nowy tutaj? Utwórz swoją półkę", "auth.toggleSignIn": "Masz już półkę? Zaloguj się",
@@ -6966,7 +6969,7 @@
         "exp.markdownH": "Рукопись Markdown", "exp.downloadMd": "Скачать .md", "exp.copyMd": "Копировать Markdown",
         "exp.htmlH": "Автономный HTML", "exp.downloadHtml": "Скачать .html",
         "exp.docxH": "Документ Word (.docx)", "exp.downloadDocx": "Скачать .docx",
-        "exp.printH": "Печатный блок — PDF через печать", "exp.rectoTitle": "Главы начинаются с правой страницы (recto)",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Главы начинаются с правой страницы (recto)",
         "exp.rectoDesc": "Начала на правой (нечётной) странице, конвенция издания в твёрдом переплёте — пустая оборотная страница вставляется, когда глава попала бы на неё.",
         "exp.openPrint": "Открыть вид для печати", "exp.downloadPrintHtml": "Скачать HTML для печати",
         "exp.boxsetH": "Бокс-сет — объединённый EPUB", "exp.addBook": "Добавить книгу…", "exp.buildBoxSet": "Собрать бокс-сет .epub",
@@ -6983,8 +6986,8 @@
         "insp.title": "Инспектор пакета архива", "insp.sub": "Точные файлы, которые пишет генератор EPUB, — тот же генератор, те же байты. Выберите файл, чтобы прочитать его.",
         "insp.copy": "Копировать", "insp.close": "Закрыть",
         "auth.titleLogin": "С возвращением", "auth.titleRegister": "Создайте свою полку",
-        "auth.subLogin": "Войдите на свою полку — ваши книги, ваша серия и ваш архив экспортов, на любом устройстве. Студия всегда полностью работает без аккаунта.",
-        "auth.subRegister": "Собственная полка: ваши книги, ваша серия и ваш архив экспортов, на любом устройстве. Студия всегда полностью работает без аккаунта.",
+        "auth.subLogin": "Войдите на свою полку — ваши книги, ваша серия и ваш архив экспортов, на любом устройстве.",
+        "auth.subRegister": "Собственная полка: ваши книги, ваша серия и ваш архив экспортов, на любом устройстве.",
         "auth.email": "Эл. почта", "auth.password": "Пароль", "auth.passwordPh": "Не менее 8 символов",
         "auth.notNow": "Не сейчас", "auth.signIn": "Войти", "auth.createAccount": "Создать аккаунт",
         "auth.toggleCreate": "Впервые здесь? Создайте свою полку", "auth.toggleSignIn": "Полка уже есть? Войдите",
@@ -7186,7 +7189,7 @@
         "exp.markdownH": "Markdown el yazması", "exp.downloadMd": ".md indir", "exp.copyMd": "Markdown'ı kopyala",
         "exp.htmlH": "Bağımsız HTML", "exp.downloadHtml": ".html indir",
         "exp.docxH": "Word belgesi (.docx)", "exp.downloadDocx": ".docx indir",
-        "exp.printH": "Baskı içi — Yazdırma yoluyla PDF", "exp.rectoTitle": "Bölümler bir recto sayfada başlar",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "Bölümler bir recto sayfada başlar",
         "exp.rectoDesc": "Ciltli kitap geleneği olan sağ (tek) sayfa başlangıçları — bir bölüm oraya düşecek olursa boş bir verso eklenir.",
         "exp.openPrint": "Baskı görünümünü aç", "exp.downloadPrintHtml": "Baskı HTML'ini indir",
         "exp.boxsetH": "Kutu seti — Birleşik EPUB", "exp.addBook": "Bir kitap ekle…", "exp.buildBoxSet": "Kutu seti .epub oluştur",
@@ -7203,8 +7206,8 @@
         "insp.title": "Arşiv Paketi Denetçisi", "insp.sub": "EPUB oluşturucunun yazdığı dosyaların aynısı — aynı oluşturucu, aynı baytlar. Okumak için bir dosya seçin.",
         "insp.copy": "Kopyala", "insp.close": "Kapat",
         "auth.titleLogin": "Tekrar hoş geldiniz", "auth.titleRegister": "Rafınızı oluşturun",
-        "auth.subLogin": "Rafınıza giriş yapın — kitaplarınız, seriniz ve dışa aktarma arşiviniz, her cihazda. Stüdyo her zaman hesapsız da tamamen çalışır.",
-        "auth.subRegister": "Size ait bir raf: kitaplarınız, seriniz ve dışa aktarma arşiviniz, her cihazda. Stüdyo her zaman hesapsız da tamamen çalışır.",
+        "auth.subLogin": "Rafınıza giriş yapın — kitaplarınız, seriniz ve dışa aktarma arşiviniz, her cihazda.",
+        "auth.subRegister": "Size ait bir raf: kitaplarınız, seriniz ve dışa aktarma arşiviniz, her cihazda.",
         "auth.email": "E-posta", "auth.password": "Parola", "auth.passwordPh": "En az 8 karakter",
         "auth.notNow": "Şimdi değil", "auth.signIn": "Giriş yap", "auth.createAccount": "Hesap oluştur",
         "auth.toggleCreate": "Burada yeni misiniz? Rafınızı oluşturun", "auth.toggleSignIn": "Zaten bir rafınız var mı? Giriş yapın",
@@ -7406,7 +7409,7 @@
         "exp.markdownH": "مخطوط Markdown", "exp.downloadMd": "تنزيل .md", "exp.copyMd": "نسخ Markdown",
         "exp.htmlH": "HTML مستقل", "exp.downloadHtml": "تنزيل .html",
         "exp.docxH": "مستند Word (.docx)", "exp.downloadDocx": "تنزيل .docx",
-        "exp.printH": "داخلية الطباعة — PDF عبر الطباعة", "exp.rectoTitle": "تبدأ الفصول في صفحة يمنى (recto)",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "تبدأ الفصول في صفحة يمنى (recto)",
         "exp.rectoDesc": "بدايات في الصفحة اليمنى (الفردية)، تقليد الطبعات المجلدة — تُدرج صفحة ظهر فارغة حين يقع فصل عليها.",
         "exp.openPrint": "فتح عرض الطباعة", "exp.downloadPrintHtml": "تنزيل HTML الطباعة",
         "exp.boxsetH": "مجموعة صندوقية — EPUB مدمج", "exp.addBook": "إضافة كتاب…", "exp.buildBoxSet": "بناء المجموعة .epub",
@@ -7423,8 +7426,8 @@
         "insp.title": "مفتش حزمة الأرشيف", "insp.sub": "الملفات نفسها التي يكتبها مولّد EPUB — المولّد نفسه والبايتات نفسها. اختر ملفًا لقراءته.",
         "insp.copy": "نسخ", "insp.close": "إغلاق",
         "auth.titleLogin": "مرحبًا بعودتك", "auth.titleRegister": "أنشئ رفّك",
-        "auth.subLogin": "سجّل الدخول إلى رفّك — كتبك وسلسلتك وأرشيف صادراتك، على أي جهاز. الاستوديو يعمل بالكامل دون حساب، دائمًا.",
-        "auth.subRegister": "رفّ خاص بك: كتبك وسلسلتك وأرشيف صادراتك، على أي جهاز. الاستوديو يعمل بالكامل دون حساب، دائمًا.",
+        "auth.subLogin": "سجّل الدخول إلى رفّك — كتبك وسلسلتك وأرشيف صادراتك، على أي جهاز.",
+        "auth.subRegister": "رفّ خاص بك: كتبك وسلسلتك وأرشيف صادراتك، على أي جهاز.",
         "auth.email": "البريد الإلكتروني", "auth.password": "كلمة المرور", "auth.passwordPh": "8 أحرف على الأقل",
         "auth.notNow": "ليس الآن", "auth.signIn": "تسجيل الدخول", "auth.createAccount": "إنشاء حساب",
         "auth.toggleCreate": "جديد هنا؟ أنشئ رفّك", "auth.toggleSignIn": "لديك رفّ بالفعل؟ سجّل الدخول",
@@ -7626,7 +7629,7 @@
         "exp.markdownH": "Markdown原稿", "exp.downloadMd": ".mdをダウンロード", "exp.copyMd": "Markdownをコピー",
         "exp.htmlH": "単独HTML", "exp.downloadHtml": ".htmlをダウンロード",
         "exp.docxH": "Word文書（.docx）", "exp.downloadDocx": ".docxをダウンロード",
-        "exp.printH": "印刷用内面 — 印刷経由のPDF", "exp.rectoTitle": "章は右ページ（recto）から始める",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "章は右ページ（recto）から始める",
         "exp.rectoDesc": "ハードカバーの慣習である右（奇数）ページ始まり — 章が左ページに来る場合は空白の裏ページが挿入されます。",
         "exp.openPrint": "印刷ビューを開く", "exp.downloadPrintHtml": "印刷用HTMLをダウンロード",
         "exp.boxsetH": "ボックスセット — 統合EPUB", "exp.addBook": "本を追加…", "exp.buildBoxSet": "ボックスセット.epubを作成",
@@ -7643,8 +7646,8 @@
         "insp.title": "アーカイブ・パッケージ検査", "insp.sub": "EPUBビルダーが書き出すファイルそのもの — 同じ生成器、同じバイト。ファイルを選んで読めます。",
         "insp.copy": "コピー", "insp.close": "閉じる",
         "auth.titleLogin": "おかえりなさい", "auth.titleRegister": "本棚を作る",
-        "auth.subLogin": "本棚にサインイン — あなたの本、ストリーク、書き出し保管庫が、どのデバイスでも。スタジオはアカウントなしでも常時完全に使えます。",
-        "auth.subRegister": "あなただけの本棚：あなたの本、ストリーク、書き出し保管庫が、どのデバイスでも。スタジオはアカウントなしでも常時完全に使えます。",
+        "auth.subLogin": "本棚にサインイン — あなたの本、ストリーク、書き出し保管庫が、どのデバイスでも。",
+        "auth.subRegister": "あなただけの本棚：あなたの本、ストリーク、書き出し保管庫が、どのデバイスでも。",
         "auth.email": "メールアドレス", "auth.password": "パスワード", "auth.passwordPh": "8文字以上",
         "auth.notNow": "今はしない", "auth.signIn": "サインイン", "auth.createAccount": "アカウントを作成",
         "auth.toggleCreate": "初めてですか？本棚を作りましょう", "auth.toggleSignIn": "本棚はもうありますか？サインイン",
@@ -7846,7 +7849,7 @@
         "exp.markdownH": "Markdown 手稿", "exp.downloadMd": "下载 .md", "exp.copyMd": "复制 Markdown",
         "exp.htmlH": "独立 HTML", "exp.downloadHtml": "下载 .html",
         "exp.docxH": "Word 文档 (.docx)", "exp.downloadDocx": "下载 .docx",
-        "exp.printH": "印刷内页 — 通过打印生成 PDF", "exp.rectoTitle": "章节从右页（recto）开始",
+        "exp.printH": "Print Interior — Print Preview and Print-Ready PDF", "exp.rectoTitle": "章节从右页（recto）开始",
         "exp.rectoDesc": "精装书的惯例：在右（奇数）页开始 — 当章节会落在左页时，会插入一个空白的左页。",
         "exp.openPrint": "打开打印视图", "exp.downloadPrintHtml": "下载打印 HTML",
         "exp.boxsetH": "套装 — 合并 EPUB", "exp.addBook": "添加一本书…", "exp.buildBoxSet": "构建套装 .epub",
@@ -7863,8 +7866,8 @@
         "insp.title": "存档包检查器", "insp.sub": "EPUB 构建器写出的确切文件 — 同一个生成器，同样的字节。选择一个文件来阅读它。",
         "insp.copy": "复制", "insp.close": "关闭",
         "auth.titleLogin": "欢迎回来", "auth.titleRegister": "创建你的书架",
-        "auth.subLogin": "登录到你的书架 — 你的书、你的连续记录和你的导出存档，在任何设备上。工作室在没有账户时也能完全使用，一如既往。",
-        "auth.subRegister": "一个属于你自己的书架：你的书、你的连续记录和你的导出存档，在任何设备上。工作室在没有账户时也能完全使用，一如既往。",
+        "auth.subLogin": "登录到你的书架 — 你的书、你的连续记录和你的导出存档，在任何设备上。",
+        "auth.subRegister": "一个属于你自己的书架：你的书、你的连续记录和你的导出存档，在任何设备上。",
         "auth.email": "电子邮箱", "auth.password": "密码", "auth.passwordPh": "至少 8 个字符",
         "auth.notNow": "暂不", "auth.signIn": "登录", "auth.createAccount": "创建账户",
         "auth.toggleCreate": "第一次来？创建你的书架", "auth.toggleSignIn": "已有书架？登录",
@@ -45202,17 +45205,38 @@
         });
         return zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
       }
+      /* BEUK:epub-server — the store-ready EPUB is built on the server
+         (POST /api/epub), from the book on this desk, by the studio's own
+         EPUB code (src/book/epub). The server is the judge of the plan:
+         after the trial unpaid it answers 402 and nothing is built. With
+         no connection the studio says so; it never builds the store-ready
+         file locally. buildEpubBlob stays for the self-checks and the
+         server check job's upload (gated there by archive.upload/jobs.run). */
       async function buildEpub() {
-        if (!window.JSZip) { toast(t("toast.jszipLoading"), "loader"); return; }
         const btn = $("btnBuildEpub");
-        btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>Building…'; icons();
+        if (typeof cloud === "undefined" || !cloud.available || !net.online) { toast(t("epub.offline"), "cloud-off"); return; }
+        if (!cloud.user) { toast(t("epub.signin"), "cloud"); if (!buildEpub.noOpen) { $("modalExport").classList.remove("open"); openAuth(); } return; }
+        btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i>' + esc(t("epub.building")); icons();
         try {
-          const blob = await buildEpubBlob();
-          downloadBlob(blob, platformFilename());
+          /* The desk's book, pictures inline (the shelf copy may be behind the desk); History, notes and research files do not go into an EPUB, so they stay home. */
+          const book = serializeBook();
+          ["history", "historyPool", "notebook", "research", "audio", "importReport"].forEach((k) => { delete book[k]; });
+          const r = await apiFetch("/api/epub", { method: "POST", body: JSON.stringify({ book: book, platform: state.exportPlatform, lang: getUiLang() }), blob: true, quiet402: true });
+          if (!r) { toast(t("epub.offline"), "cloud-off"); return; }
+          if (r.__error) {
+            if (r.__status === 402) toast(t("plan.pausedToast"), "alert-triangle");
+            else if (r.__status === 413) toast(t("epub.tooLarge"), "alert-triangle");
+            else toast(t("epub.failed", { error: r.__error }), "alert-triangle");
+            return;
+          }
+          let notes = [];
+          try { notes = JSON.parse(decodeURIComponent((r.__headers && r.__headers.get("X-Beuk-Notes")) || "%5B%5D")); } catch (e) { notes = []; }
+          (Array.isArray(notes) ? notes : []).forEach((n) => toast(String(n), "alert-triangle"));
+          downloadBlob(r.__blob, platformFilename());
           $("modalExport").classList.remove("open");
-          toast(platformPreset().name + " EPUB exported — " + epubPlan().length + " sections, " + Math.round(blob.size / 1024) + " KB", "package-check");
+          toast(platformPreset().name + " EPUB exported — " + epubPlan().length + " sections, " + Math.round(r.__blob.size / 1024) + " KB", "package-check");
         } catch (err) {
-          toast("Export failed: " + (err && err.message ? err.message : "unknown error"), "alert-triangle");
+          toast(t("epub.failed", { error: err && err.message ? err.message : String(err) }), "alert-triangle");
         } finally {
           btn.disabled = false; renderPlatformPresets(); icons();
         }
@@ -46484,11 +46508,12 @@
       }
       function initPrint() {
         $("btnOpenPrintView").addEventListener("click", openPrintView);
+        $("btnPrintReadyPdf").addEventListener("click", printReadyPdf);
         $("btnDownloadPrintHtml").addEventListener("click", async () => {
           if (!(await samplePicsReady())) return; /* BEUK:slim */
           try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
           downloadBlob(new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename());
-          toast("Print interior downloaded — open it and Print → Save as PDF at the " + trimSize().label + " trim", "printer");
+          toast("Print preview downloaded — open it and Print → Save as PDF at the " + trimSize().label + " trim to print it yourself. The file for a store is Download print-ready PDF", "printer");
         });
         $("tglRecto").addEventListener("click", () => { state.printRecto = !state.printRecto; renderPrintControls(); });
         $("tglLargePrint").addEventListener("click", () => { state.printLargePrint = !state.printLargePrint; if (state.printLargePrint) state.printPictureBook = false; renderPrintControls(); });
@@ -50562,15 +50587,18 @@
         $("modalStore").classList.add("open");
       }
       /* ---- server tie-in: archive the print interior + EPUB, run the existing jobs, fold results in ---- */
-      async function storeUpload(format, blob, filename, preset) {
+      async function storeUpload(format, blob, filename, preset, o) {
         const q = "?manuscriptId=" + encodeURIComponent(cloud.linkedId) + "&format=" + encodeURIComponent(format) +
           "&filename=" + encodeURIComponent(filename) + (preset ? "&preset=" + encodeURIComponent(preset) : "");
-        const r = await apiFetch("/api/exports" + q, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" } });
+        const r = await apiFetch("/api/exports" + q, { method: "POST", body: blob, headers: { "Content-Type": "application/octet-stream" }, quiet402: !!(o && o.quiet) });
+        /* a caller that passes `o` is told why there is no export (the server's own words, and the status) */
+        if (o && r && r.__error) o.fail = { error: r.__error, status: r.__status || 0 };
         return r && r.export ? r.export.id : null;
       }
-      async function storeCreateJob(kind, exportId) {
+      async function storeCreateJob(kind, exportId, o) {
         if (!exportId) return { status: "failed", result: { error: t("store.serverUnreachable"), cause: "client" } };
-        const created = await apiFetch("/api/jobs/" + kind, { method: "POST", body: JSON.stringify({ exportId: exportId }) });
+        const created = await apiFetch("/api/jobs/" + kind, { method: "POST", body: JSON.stringify({ exportId: exportId }), quiet402: !!(o && o.quiet) });
+        if (created && created.__error && o) o.fail = { error: created.__error, status: created.__status || 0 };
         if (!created || !created.job) return { status: "failed", result: { error: (created && created.__error) || t("store.serverUnreachable"), cause: "client" } };
         return created.job;
       }
@@ -50584,8 +50612,22 @@
           if (!j || !j.id || j.status === "done" || j.status === "failed") continue;
           const got = await apiFetch("/api/jobs/" + encodeURIComponent(j.id), {});
           if (got && got.job) out[kind] = got.job;
+          else if (got && got.__status === 404) out[kind] = { id: j.id, status: "failed", result: { error: t("pr.jobGone"), cause: "missing" } }; /* the server no longer has it: that is an answer, not "still running" */
         }
         return ["pdfx", "epubcheck"].every((k) => !out[k] || out[k].status === "done" || out[k].status === "failed");
+      }
+      /* The print half, shared by the store check and "Download print-ready PDF": link the book to the shelf,
+         archive its print interior, queue the pdfx job. With `o` ({ quiet: true }) a refusal is not toasted
+         and comes back as `fail` ({ error, status }) with no job asked for. */
+      async function storeMakePrintJob(o) {
+        if (!(await cloudEnsureLinked())) return { needShelf: true };
+        await samplePicsRequire(); /* BEUK:slim — the print file never goes without the sample's pictures */
+        try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
+        const printId = await storeUpload("print-html", new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename(), null, o);
+        if (o && o.fail) return { fail: o.fail };
+        const job = await storeCreateJob("pdfx", printId, o);
+        if (o && o.fail) return { fail: o.fail };
+        return { job: job };
       }
       async function storeRunServer() {
         if (storeUi.running || typeof cloud === "undefined" || !cloud.available || !cloud.user) return;
@@ -50595,12 +50637,10 @@
         renderStoreReport();
         const out = { sig: storeBookSig(), at: new Date(), pdfx: null, epubcheck: null, error: "" };
         try {
-          if (!(await cloudEnsureLinked())) { out.error = t("store.serverNeedShelf"); }
+          const made = await storeMakePrintJob();
+          if (made.needShelf) { out.error = t("store.serverNeedShelf"); }
           else {
-            await samplePicsRequire(); /* BEUK:slim — the print file never goes without the sample's pictures */
-            try { await preparePrintPress(); } catch (e) { /* unbaked pictures print as before */ }
-            const printId = await storeUpload("print-html", new Blob([buildPrintHtml()], { type: "text/html;charset=utf-8" }), printFilename(), null);
-            out.pdfx = await storeCreateJob("pdfx", printId);
+            out.pdfx = made.job;
             if (window.JSZip) {
               const epubId = await storeUpload("epub", await buildEpubBlob(), platformFilename(), state.exportPlatform);
               out.epubcheck = await storeCreateJob("epubcheck", epubId);
@@ -50620,6 +50660,69 @@
         if (storeUi.server && !storeUi.running && typeof cloud !== "undefined" && cloud.available && cloud.user) await storeRefreshJobs(storeUi.server);
         renderStoreReport();
       }
+      /* ==== BEUK:printready ==== "Download print-ready PDF": the server renders the print interior and
+         converts it to PDF/X-1a (the pdfx job); this panel starts that job, says "still running" until it
+         is done, and offers the stored PDF. The in-browser print view stays as preview. */
+      const printReadyUi = { running: false, state: "idle", msg: "", exportId: "", paused: false, pending: null, sig: "", pollMs: 2000, noOpen: false };
+      function printReadyRender() {
+        const el = $("printReadyNote"), btn = $("btnPrintReadyPdf");
+        if (btn) btn.disabled = printReadyUi.running;
+        if (!el) return;
+        const ui = printReadyUi;
+        el.textContent = ui.msg;
+        if (ui.exportId) {
+          const a = document.createElement("a");
+          a.href = "/api/exports/" + encodeURIComponent(ui.exportId) + "/download";
+          a.textContent = t("pr.btn"); a.setAttribute("data-pr-download", "1");
+          el.appendChild(document.createTextNode(" ")); el.appendChild(a);
+        } else if (ui.paused) {
+          const a = document.createElement("a");
+          a.href = "/account"; a.target = "_blank"; a.rel = "noopener"; a.textContent = t("portal.page"); a.setAttribute("data-pr-plan", "1");
+          el.appendChild(document.createTextNode(" ")); el.appendChild(a);
+        }
+        el.hidden = !ui.msg;
+      }
+      function printReadySet(state, msg, extra) {
+        Object.assign(printReadyUi, { state: state, msg: msg, exportId: "", paused: false }, extra || {});
+        printReadyRender();
+      }
+      async function printReadyPdf() {
+        const ui = printReadyUi;
+        if (ui.running) return;
+        if (typeof cloud === "undefined" || !cloud.available) { printReadySet("local", t("store.nc.local")); return; }
+        if (!cloud.user) {
+          /* a button must never do nothing: say so, then the sign-in the other server actions use */
+          printReadySet("signin", t("pr.signin"));
+          if (!ui.noOpen) { $("modalExport").classList.remove("open"); openAuth(); }
+          return;
+        }
+        ui.running = true;
+        printReadySet("running", t("pr.running"));
+        try {
+          let job = ui.pending && ui.pending.id && ui.sig === storeBookSig() ? ui.pending : null;
+          if (!job) {
+            const made = await storeMakePrintJob({ quiet: true });
+            if (made.needShelf) { printReadySet("failed", t("store.serverNeedShelf")); return; }
+            if (made.fail) {
+              /* The server decided (402) and its words name the step that refused (the archive upload); the panel names the file the writer asked for. */
+              const paused = made.fail.status === 402;
+              printReadySet(paused ? "paused" : "failed", paused ? t("pr.paused") : (made.fail.error || t("store.serverUnreachable")), { paused: paused });
+              return;
+            }
+            job = made.job; ui.sig = storeBookSig();
+          }
+          /* Jobs drain one at a time and a long book takes minutes: poll like the store check (15 minutes at most). */
+          const out = { pdfx: job };
+          for (let i = 0; i < 450 && !(await storeRefreshJobs(out)); i++) await new Promise((res) => setTimeout(res, ui.pollMs));
+          job = out.pdfx;
+          if (job.status === "done" && job.artifactExportId) { ui.pending = null; printReadySet("done", t("pr.ready"), { exportId: job.artifactExportId }); if (typeof cloudLoadArchive === "function") cloudLoadArchive(); }
+          else if (job.status === "done") { ui.pending = null; printReadySet("failed", t("pr.noFile")); }
+          else if (job.status === "failed") { ui.pending = null; printReadySet("failed", t("pr.failed", { error: (job.result && job.result.error) || t("store.serverUnreachable") })); }
+          else { ui.pending = job; printReadySet("running", t("pr.stillRunning")); }
+        } catch (e) { printReadySet("failed", t("pr.failed", { error: e && e.message ? e.message : String(e) })); }
+        finally { ui.running = false; printReadyRender(); }
+      }
+      /* ==== /BEUK:printready ==== */
       /* ---- the downloadable report: one self-contained HTML page ---- */
       function buildStoreReportHtml(a) {
         a = a || storeAudit();
@@ -50763,8 +50866,9 @@
             body: opts.body === undefined ? undefined : opts.body
           });
           if (res.status === 204) return {};
+          if (opts.blob && res.ok) return { __blob: await res.blob(), __headers: res.headers }; /* BEUK:epub-server — a file, not JSON */
           const data = await res.json().catch(() => null);
-          if (res.status === 402 && data && data.paused && typeof billingNotePaused === "function") billingNotePaused(); /* BEUK:billing */
+          if (res.status === 402 && data && data.paused && !opts.quiet402 && typeof billingNotePaused === "function") billingNotePaused(); /* BEUK:billing */
           if (!res.ok) return { __error: (data && data.error) || ("HTTP " + res.status), __status: res.status, __body: data };
           return data || {};
         } catch (e) {
@@ -51760,6 +51864,7 @@
       async function cloudSignOut() {
         await apiFetch("/api/auth/logout", { method: "POST", body: "{}" });
         cloud.user = null; cloud.serverStreak = null;
+        if (typeof printReadyUi !== "undefined") { printReadyUi.pending = null; printReadyUi.sig = ""; } /* BEUK:printready — a job belongs to the account that made it */
         cloud.linkedId = null; cloud.linkState = "unlinked";
         cloud.shelf = []; cloud.archive = []; cloudDirty = false;
         cloud.pendingSyncs = 0; cloud.baseUpdatedAt = null; cloud.shelfUpdatedAt = null; cloud.conflict = null;
@@ -52030,20 +52135,48 @@
          stays hidden while plans are off on the server ({billingOn:false});
          it shows a price only when the server sends V’s label. When an
          account feature is paused (HTTP 402 {paused:true}) it is said once
-         per session. Writing and every export never ask the server. */
-      Object.assign(UI_STRINGS.en, { "plan.trial": "Free trial until {date}.", "plan.price": "One plan, {price}, opens everything.", "plan.subscribed": "Your plan is active.", "plan.grace": "The last payment didn’t go through. Everything stays open until {date}.", "plan.paused": "Your free trial has ended. Adding new books to your shelf, new reader links, server checks and saving to your archive are paused. Writing and every export still work.", "plan.upgrade": "Choose a plan", "plan.manage": "Manage billing", "plan.test": "test payments only", "plan.unreachable": "Stripe can’t be reached just now. Nothing has changed; try again in a moment.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. Writing and every export still work." });
-      Object.assign(UI_STRINGS.es, { "plan.trial": "Prueba gratuita hasta el {date}.", "plan.price": "Un solo plan, {price}, lo abre todo.", "plan.subscribed": "Tu plan está activo.", "plan.grace": "El último pago no se pudo cobrar. Todo sigue abierto hasta el {date}.", "plan.paused": "Tu prueba gratuita ha terminado. Añadir libros nuevos a tu estantería, los enlaces nuevos para lectores, las comprobaciones del servidor y guardar en tu archivo están en pausa. Escribir y todas las exportaciones siguen funcionando.", "plan.upgrade": "Elegir un plan", "plan.manage": "Gestionar la facturación", "plan.test": "solo pagos de prueba", "plan.unreachable": "Ahora mismo no se puede contactar con Stripe. No ha cambiado nada; inténtalo de nuevo en un momento.", "plan.pausedToast": "Tu prueba gratuita ha terminado, así que esto queda en pausa hasta que elijas un plan. Escribir y todas las exportaciones siguen funcionando." });
-      Object.assign(UI_STRINGS.fr, { "plan.trial": "Essai gratuit jusqu’au {date}.", "plan.price": "Une seule formule, {price}, ouvre tout.", "plan.subscribed": "Votre formule est active.", "plan.grace": "Le dernier paiement n’a pas abouti. Tout reste ouvert jusqu’au {date}.", "plan.paused": "Votre essai gratuit est terminé. L’ajout de nouveaux livres à votre étagère, les nouveaux liens de lecture, les vérifications sur le serveur et l’enregistrement dans votre archive sont en pause. L’écriture et tous les exports fonctionnent toujours.", "plan.upgrade": "Choisir une formule", "plan.manage": "Gérer la facturation", "plan.test": "paiements de test uniquement", "plan.unreachable": "Stripe est injoignable pour l’instant. Rien n’a changé ; réessayez dans un moment.", "plan.pausedToast": "Votre essai gratuit est terminé : ceci est en pause jusqu’à ce que vous choisissiez une formule. L’écriture et tous les exports fonctionnent toujours." });
-      Object.assign(UI_STRINGS.de, { "plan.trial": "Kostenlose Testphase bis {date}.", "plan.price": "Ein Tarif, {price}, öffnet alles.", "plan.subscribed": "Ihr Tarif ist aktiv.", "plan.grace": "Die letzte Zahlung ist nicht durchgegangen. Alles bleibt bis {date} offen.", "plan.paused": "Ihre kostenlose Testphase ist abgelaufen. Neue Bücher ins Regal stellen, neue Leselinks, Server-Prüfungen und das Speichern im Archiv sind pausiert. Schreiben und jeder Export funktionieren weiter.", "plan.upgrade": "Tarif wählen", "plan.manage": "Abrechnung verwalten", "plan.test": "nur Testzahlungen", "plan.unreachable": "Stripe ist gerade nicht erreichbar. Nichts hat sich geändert; versuchen Sie es gleich noch einmal.", "plan.pausedToast": "Ihre kostenlose Testphase ist abgelaufen, daher ist dies pausiert, bis Sie einen Tarif wählen. Schreiben und jeder Export funktionieren weiter." });
-      Object.assign(UI_STRINGS.it, { "plan.trial": "Prova gratuita fino al {date}.", "plan.price": "Un solo piano, {price}, apre tutto.", "plan.subscribed": "Il tuo piano è attivo.", "plan.grace": "L’ultimo pagamento non è andato a buon fine. Tutto resta aperto fino al {date}.", "plan.paused": "La tua prova gratuita è terminata. Aggiungere nuovi libri allo scaffale, i nuovi link per i lettori, i controlli sul server e il salvataggio nell’archivio sono in pausa. Scrivere e tutte le esportazioni funzionano ancora.", "plan.upgrade": "Scegli un piano", "plan.manage": "Gestisci la fatturazione", "plan.test": "solo pagamenti di prova", "plan.unreachable": "Stripe non è raggiungibile in questo momento. Non è cambiato nulla; riprova tra poco.", "plan.pausedToast": "La tua prova gratuita è terminata, quindi questo è in pausa finché non scegli un piano. Scrivere e tutte le esportazioni funzionano ancora." });
-      Object.assign(UI_STRINGS.pt, { "plan.trial": "Avaliação gratuita até {date}.", "plan.price": "Um só plano, {price}, abre tudo.", "plan.subscribed": "O seu plano está ativo.", "plan.grace": "O último pagamento não foi aceite. Tudo continua aberto até {date}.", "plan.paused": "A sua avaliação gratuita terminou. Adicionar livros novos à estante, novos links para leitores, verificações no servidor e guardar no arquivo estão em pausa. Escrever e todas as exportações continuam a funcionar.", "plan.upgrade": "Escolher um plano", "plan.manage": "Gerir a faturação", "plan.test": "apenas pagamentos de teste", "plan.unreachable": "Não é possível contactar o Stripe agora. Nada mudou; tente novamente daqui a pouco.", "plan.pausedToast": "A sua avaliação gratuita terminou, por isso isto está em pausa até escolher um plano. Escrever e todas as exportações continuam a funcionar." });
-      Object.assign(UI_STRINGS.nl, { "plan.trial": "Gratis proefperiode tot {date}.", "plan.price": "Eén abonnement, {price}, opent alles.", "plan.subscribed": "Uw abonnement is actief.", "plan.grace": "De laatste betaling is niet gelukt. Alles blijft open tot {date}.", "plan.paused": "Uw gratis proefperiode is voorbij. Nieuwe boeken op uw plank zetten, nieuwe leeslinks, servercontroles en opslaan in uw archief zijn gepauzeerd. Schrijven en elke export blijven werken.", "plan.upgrade": "Kies een abonnement", "plan.manage": "Facturering beheren", "plan.test": "alleen testbetalingen", "plan.unreachable": "Stripe is nu niet bereikbaar. Er is niets veranderd; probeer het zo opnieuw.", "plan.pausedToast": "Uw gratis proefperiode is voorbij, dus dit is gepauzeerd tot u een abonnement kiest. Schrijven en elke export blijven werken." });
-      Object.assign(UI_STRINGS.pl, { "plan.trial": "Bezpłatny okres próbny do {date}.", "plan.price": "Jeden plan, {price}, otwiera wszystko.", "plan.subscribed": "Twój plan jest aktywny.", "plan.grace": "Ostatnia płatność nie przeszła. Wszystko pozostaje otwarte do {date}.", "plan.paused": "Twój bezpłatny okres próbny się skończył. Dodawanie nowych książek na półkę, nowe linki dla czytelników, sprawdzanie na serwerze i zapisywanie w archiwum są wstrzymane. Pisanie i każdy eksport nadal działają.", "plan.upgrade": "Wybierz plan", "plan.manage": "Zarządzaj płatnościami", "plan.test": "tylko płatności testowe", "plan.unreachable": "Nie można teraz połączyć się ze Stripe. Nic się nie zmieniło; spróbuj ponownie za chwilę.", "plan.pausedToast": "Twój bezpłatny okres próbny się skończył, więc to jest wstrzymane, dopóki nie wybierzesz planu. Pisanie i każdy eksport nadal działają." });
-      Object.assign(UI_STRINGS.ru, { "plan.trial": "Бесплатный пробный период до {date}.", "plan.price": "Один тариф, {price}, открывает всё.", "plan.subscribed": "Ваш тариф активен.", "plan.grace": "Последний платёж не прошёл. Всё остаётся открытым до {date}.", "plan.paused": "Ваш бесплатный пробный период закончился. Добавление новых книг на полку, новые ссылки для читателей, проверки на сервере и сохранение в архив приостановлены. Писать и экспортировать по-прежнему можно.", "plan.upgrade": "Выбрать тариф", "plan.manage": "Управление оплатой", "plan.test": "только тестовые платежи", "plan.unreachable": "Сейчас не удаётся связаться со Stripe. Ничего не изменилось; попробуйте чуть позже.", "plan.pausedToast": "Ваш бесплатный пробный период закончился, поэтому это приостановлено, пока вы не выберете тариф. Писать и экспортировать по-прежнему можно." });
-      Object.assign(UI_STRINGS.tr, { "plan.trial": "Ücretsiz deneme {date} tarihine kadar.", "plan.price": "Tek plan, {price}, her şeyi açar.", "plan.subscribed": "Planınız etkin.", "plan.grace": "Son ödeme gerçekleşmedi. Her şey {date} tarihine kadar açık kalıyor.", "plan.paused": "Ücretsiz denemeniz sona erdi. Rafınıza yeni kitap eklemek, yeni okuyucu bağlantıları, sunucu denetimleri ve arşive kaydetmek duraklatıldı. Yazmak ve tüm dışa aktarmalar çalışmaya devam ediyor.", "plan.upgrade": "Bir plan seçin", "plan.manage": "Faturalandırmayı yönetin", "plan.test": "yalnızca test ödemeleri", "plan.unreachable": "Stripe’a şu anda ulaşılamıyor. Hiçbir şey değişmedi; birazdan yeniden deneyin.", "plan.pausedToast": "Ücretsiz denemeniz sona erdi, bu yüzden bir plan seçene kadar bu duraklatıldı. Yazmak ve tüm dışa aktarmalar çalışmaya devam ediyor." });
-      Object.assign(UI_STRINGS.ar, { "plan.trial": "الفترة التجريبية المجانية حتى {date}.", "plan.price": "خطة واحدة، {price}، تفتح كل شيء.", "plan.subscribed": "خطتك مفعّلة.", "plan.grace": "لم تنجح الدفعة الأخيرة. يبقى كل شيء متاحًا حتى {date}.", "plan.paused": "انتهت فترتك التجريبية المجانية. إضافة كتب جديدة إلى رفّك، وروابط القرّاء الجديدة، وفحوص الخادم، والحفظ في أرشيفك متوقفة مؤقتًا. الكتابة وكل عمليات التصدير ما زالت تعمل.", "plan.upgrade": "اختر خطة", "plan.manage": "إدارة الفوترة", "plan.test": "مدفوعات تجريبية فقط", "plan.unreachable": "تعذّر الوصول إلى Stripe الآن. لم يتغير شيء؛ حاول مرة أخرى بعد قليل.", "plan.pausedToast": "انتهت فترتك التجريبية المجانية، لذا هذا متوقف مؤقتًا حتى تختار خطة. الكتابة وكل عمليات التصدير ما زالت تعمل." });
-      Object.assign(UI_STRINGS.ja, { "plan.trial": "無料トライアルは{date}までです。", "plan.price": "ひとつのプラン（{price}）ですべてが使えます。", "plan.subscribed": "プランは有効です。", "plan.grace": "前回のお支払いが完了しませんでした。{date}まではすべてそのまま使えます。", "plan.paused": "無料トライアルは終了しました。本棚への新しい本の追加、新しい読者リンク、サーバーでのチェック、アーカイブへの保存は一時停止中です。執筆とすべての書き出しは引き続き使えます。", "plan.upgrade": "プランを選ぶ", "plan.manage": "お支払いの管理", "plan.test": "テスト決済のみ", "plan.unreachable": "今は Stripe に接続できません。何も変更されていません。少ししてからもう一度お試しください。", "plan.pausedToast": "無料トライアルが終了したため、プランを選ぶまでこの操作は一時停止中です。執筆とすべての書き出しは引き続き使えます。" });
-      Object.assign(UI_STRINGS["zh-Hans"], { "plan.trial": "免费试用至 {date}。", "plan.price": "一个方案（{price}）即可使用全部功能。", "plan.subscribed": "你的方案已生效。", "plan.grace": "上一次付款未成功。在 {date} 之前，一切照常可用。", "plan.paused": "你的免费试用已结束。向书架添加新书、新的读者链接、服务器检查以及保存到存档已暂停。写作和所有导出仍可使用。", "plan.upgrade": "选择方案", "plan.manage": "管理账单", "plan.test": "仅限测试付款", "plan.unreachable": "暂时无法连接 Stripe。没有任何改动，请稍后再试。", "plan.pausedToast": "你的免费试用已结束，因此在你选择方案之前，此操作已暂停。写作和所有导出仍可使用。" });
+         per session. Own-words exports (backup, Word, Markdown) never ask the server. */
+      Object.assign(UI_STRINGS.en, { "plan.trial": "Free trial until {date}.", "plan.price": "One plan, {price}, opens everything.", "plan.subscribed": "Your plan is active.", "plan.grace": "The last payment didn’t go through. Everything stays open until {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Choose a plan", "plan.manage": "Manage billing", "plan.test": "test payments only", "plan.unreachable": "Stripe can’t be reached just now. Nothing has changed; try again in a moment.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.es, { "plan.trial": "Prueba gratuita hasta el {date}.", "plan.price": "Un solo plan, {price}, lo abre todo.", "plan.subscribed": "Tu plan está activo.", "plan.grace": "El último pago no se pudo cobrar. Todo sigue abierto hasta el {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Elegir un plan", "plan.manage": "Gestionar la facturación", "plan.test": "solo pagos de prueba", "plan.unreachable": "Ahora mismo no se puede contactar con Stripe. No ha cambiado nada; inténtalo de nuevo en un momento.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.fr, { "plan.trial": "Essai gratuit jusqu’au {date}.", "plan.price": "Une seule formule, {price}, ouvre tout.", "plan.subscribed": "Votre formule est active.", "plan.grace": "Le dernier paiement n’a pas abouti. Tout reste ouvert jusqu’au {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Choisir une formule", "plan.manage": "Gérer la facturation", "plan.test": "paiements de test uniquement", "plan.unreachable": "Stripe est injoignable pour l’instant. Rien n’a changé ; réessayez dans un moment.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.de, { "plan.trial": "Kostenlose Testphase bis {date}.", "plan.price": "Ein Tarif, {price}, öffnet alles.", "plan.subscribed": "Ihr Tarif ist aktiv.", "plan.grace": "Die letzte Zahlung ist nicht durchgegangen. Alles bleibt bis {date} offen.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Tarif wählen", "plan.manage": "Abrechnung verwalten", "plan.test": "nur Testzahlungen", "plan.unreachable": "Stripe ist gerade nicht erreichbar. Nichts hat sich geändert; versuchen Sie es gleich noch einmal.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.it, { "plan.trial": "Prova gratuita fino al {date}.", "plan.price": "Un solo piano, {price}, apre tutto.", "plan.subscribed": "Il tuo piano è attivo.", "plan.grace": "L’ultimo pagamento non è andato a buon fine. Tutto resta aperto fino al {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Scegli un piano", "plan.manage": "Gestisci la fatturazione", "plan.test": "solo pagamenti di prova", "plan.unreachable": "Stripe non è raggiungibile in questo momento. Non è cambiato nulla; riprova tra poco.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.pt, { "plan.trial": "Avaliação gratuita até {date}.", "plan.price": "Um só plano, {price}, abre tudo.", "plan.subscribed": "O seu plano está ativo.", "plan.grace": "O último pagamento não foi aceite. Tudo continua aberto até {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Escolher um plano", "plan.manage": "Gerir a faturação", "plan.test": "apenas pagamentos de teste", "plan.unreachable": "Não é possível contactar o Stripe agora. Nada mudou; tente novamente daqui a pouco.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.nl, { "plan.trial": "Gratis proefperiode tot {date}.", "plan.price": "Eén abonnement, {price}, opent alles.", "plan.subscribed": "Uw abonnement is actief.", "plan.grace": "De laatste betaling is niet gelukt. Alles blijft open tot {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Kies een abonnement", "plan.manage": "Facturering beheren", "plan.test": "alleen testbetalingen", "plan.unreachable": "Stripe is nu niet bereikbaar. Er is niets veranderd; probeer het zo opnieuw.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.pl, { "plan.trial": "Bezpłatny okres próbny do {date}.", "plan.price": "Jeden plan, {price}, otwiera wszystko.", "plan.subscribed": "Twój plan jest aktywny.", "plan.grace": "Ostatnia płatność nie przeszła. Wszystko pozostaje otwarte do {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Wybierz plan", "plan.manage": "Zarządzaj płatnościami", "plan.test": "tylko płatności testowe", "plan.unreachable": "Nie można teraz połączyć się ze Stripe. Nic się nie zmieniło; spróbuj ponownie za chwilę.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.ru, { "plan.trial": "Бесплатный пробный период до {date}.", "plan.price": "Один тариф, {price}, открывает всё.", "plan.subscribed": "Ваш тариф активен.", "plan.grace": "Последний платёж не прошёл. Всё остаётся открытым до {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Выбрать тариф", "plan.manage": "Управление оплатой", "plan.test": "только тестовые платежи", "plan.unreachable": "Сейчас не удаётся связаться со Stripe. Ничего не изменилось; попробуйте чуть позже.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.tr, { "plan.trial": "Ücretsiz deneme {date} tarihine kadar.", "plan.price": "Tek plan, {price}, her şeyi açar.", "plan.subscribed": "Planınız etkin.", "plan.grace": "Son ödeme gerçekleşmedi. Her şey {date} tarihine kadar açık kalıyor.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "Bir plan seçin", "plan.manage": "Faturalandırmayı yönetin", "plan.test": "yalnızca test ödemeleri", "plan.unreachable": "Stripe’a şu anda ulaşılamıyor. Hiçbir şey değişmedi; birazdan yeniden deneyin.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.ar, { "plan.trial": "الفترة التجريبية المجانية حتى {date}.", "plan.price": "خطة واحدة، {price}، تفتح كل شيء.", "plan.subscribed": "خطتك مفعّلة.", "plan.grace": "لم تنجح الدفعة الأخيرة. يبقى كل شيء متاحًا حتى {date}.", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "اختر خطة", "plan.manage": "إدارة الفوترة", "plan.test": "مدفوعات تجريبية فقط", "plan.unreachable": "تعذّر الوصول إلى Stripe الآن. لم يتغير شيء؛ حاول مرة أخرى بعد قليل.", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS.ja, { "plan.trial": "無料トライアルは{date}までです。", "plan.price": "ひとつのプラン（{price}）ですべてが使えます。", "plan.subscribed": "プランは有効です。", "plan.grace": "前回のお支払いが完了しませんでした。{date}まではすべてそのまま使えます。", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "プランを選ぶ", "plan.manage": "お支払いの管理", "plan.test": "テスト決済のみ", "plan.unreachable": "今は Stripe に接続できません。何も変更されていません。少ししてからもう一度お試しください。", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      Object.assign(UI_STRINGS["zh-Hans"], { "plan.trial": "免费试用至 {date}。", "plan.price": "一个方案（{price}）即可使用全部功能。", "plan.subscribed": "你的方案已生效。", "plan.grace": "上一次付款未成功。在 {date} 之前，一切照常可用。", "plan.paused": "Your free trial has ended. The store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new reader links, server checks and saving to your archive are paused. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data.", "plan.upgrade": "选择方案", "plan.manage": "管理账单", "plan.test": "仅限测试付款", "plan.unreachable": "暂时无法连接 Stripe。没有任何改动，请稍后再试。", "plan.pausedToast": "Your free trial has ended, so this is paused until you choose a plan. You can still write, typeset and preview, and download your own words: the backup file, Word and Markdown, and Download all my data." });
+      /* BEUK:printready: English in every pack until V signs off the translations */
+      Object.assign(UI_STRINGS.en, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.es, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.fr, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.de, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.it, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.pt, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.nl, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.pl, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.ru, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.tr, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.ar, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS.ja, { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      Object.assign(UI_STRINGS["zh-Hans"], { "pr.paused": "Your free trial has ended, so print-ready PDFs are paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.", "pr.jobGone": "The server no longer has this job. Press the button again to make the PDF.", "pr.note": "Open Print View and Download Print HTML are a print preview: use them to check the pages and to print them yourself. The file to send to a store is the print-ready PDF the server makes. Download print-ready PDF starts it.", "pr.btn": "Download print-ready PDF", "pr.signin": "Sign in to make the print-ready PDF. The server makes it from the copy on your shelf.", "pr.running": "Making the print-ready PDF on the server. A long book can take several minutes. This line says when it is ready.", "pr.stillRunning": "Still running on the server. It keeps going if you close this window. Press the button again to check on it.", "pr.failed": "The print-ready PDF could not be made: {error}", "pr.noFile": "The server finished, but there is no PDF to download. Try again.", "pr.ready": "Your print-ready PDF is ready." });
+      /* BEUK:epub-server — English in every pack until V signs off the translations (docs/superpowers/plans/step3-part3-translations-for-signoff.md) */
+      Object.assign(UI_STRINGS.en, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.es, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.fr, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.de, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.it, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.pt, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.nl, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.pl, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.ru, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.tr, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.ar, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS.ja, { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
+      Object.assign(UI_STRINGS["zh-Hans"], { "epub.offline": "The store-ready EPUB is built on the Beuk server, so it needs a connection. Your book stays safe on this device. Try again when you are back online.", "epub.signin": "Sign in to download the store-ready EPUB. The Beuk server builds it from the book on your desk.", "epub.building": "Building on the server…", "epub.tooLarge": "This book is too large to send to the server for a store-ready EPUB.", "epub.failed": "The EPUB could not be built: {error}" });
       var billingPausedSaid = false;
       function billingDate(iso) {
         try { return new Date(iso).toLocaleDateString(uiLangState || "en", { day: "numeric", month: "long", year: "numeric" }); }
@@ -67614,6 +67747,152 @@
       if (typeof window !== "undefined") { window.BEUK_SELF_CHECKS_ASYNC = SELF_CHECKS_ASYNC; window.runBeukAsyncSelfChecks = runAsyncSelfChecks; }
       /* ==== /BEUK:sound ==== */
 
+      /* ==== BEUK:printready-check ==== the real printReadyPdf over the real apiFetch, against answers the server really gives */
+      SELF_CHECKS_ASYNC.push(
+        { id: "export.print-ready", feature: "export", name: "Export: “Download print-ready PDF” asks the sign-in when signed out; a paused account gets the server’s one message and no job is asked for; a running job never shows a download until it is done, then offers the stored PDF; a failed job shows the server’s own error and no download",
+          async run() {
+            const ui = printReadyUi;
+            const keep = { available: cloud.available, user: cloud.user, linked: cloud.linkedId, archive: cloud.archive, said: billingPausedSaid, poll: ui.pollMs, pending: ui.pending, sig: ui.sig, state: ui.state, msg: ui.msg, exportId: ui.exportId, paused: ui.paused };
+            const realFetch = window.fetch;
+            const bad = [], calls = [];
+            /* the exact words the server's pausedBody('archive.upload') gives: the upload refuses first, and names the archive, not the PDF */
+            const PAUSED = "Your free trial has ended, so saving new files to your export archive is paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.";
+            const FAILED = "Ghostscript exited with code 1";
+            let mode = "done", polls = 0, mid = null;
+            const reply = (status, body) => Promise.resolve({ status: status, ok: status >= 200 && status < 300, json: () => Promise.resolve(body) });
+            window.fetch = function (url, init) {
+              const m = (init && init.method) || "GET", u = String(url);
+              calls.push(m + " " + u.split("?")[0]);
+              if (m === "POST" && u.indexOf("/api/exports") === 0) return mode === "upload402" ? reply(402, { error: PAUSED, paused: true, feature: "archive.upload", exportOpen: false, ownWordsOpen: true }) : reply(201, { export: { id: "sc-print" } });
+              if (m === "POST" && u === "/api/jobs/pdfx") return reply(201, { job: { id: "sc-job", status: "queued" } });
+              if (m === "GET" && u === "/api/jobs/sc-job") {
+                polls++;
+                if (polls === 2) mid = { state: ui.state, exportId: ui.exportId };
+                if (polls < 3) return reply(200, { job: { id: "sc-job", status: "running" } });
+                return mode === "failed" ? reply(200, { job: { id: "sc-job", status: "failed", result: { error: FAILED, cause: "tool" } } })
+                  : reply(200, { job: { id: "sc-job", status: "done", result: { pageCount: 1 }, artifactExportId: "sc-pdf" } });
+              }
+              return reply(200, { exports: [] });
+            };
+            const reset = () => Object.assign(ui, { running: false, state: "idle", msg: "", exportId: "", paused: false, pending: null, sig: "" });
+            const note = () => $("printReadyNote");
+            const toasts = () => document.querySelectorAll("#toasts .toast").length;
+            const jobCalls = () => calls.filter((c) => c.indexOf("/api/jobs") > -1).length;
+            try {
+              ui.pollMs = 0; ui.noOpen = true;
+              const btn = $("btnPrintReadyPdf");
+              if (!btn || btn.textContent.trim() !== t("pr.btn") || UI_STRINGS.en["pr.btn"] !== "Download print-ready PDF") bad.push("the button does not read “Download print-ready PDF” (" + (btn ? btn.textContent.trim() : "missing") + ")");
+              const pnote = document.querySelector('[data-i18n="pr.note"]');
+              if (!pnote || !/print preview/i.test(UI_STRINGS.en["pr.note"]) || !/print-ready PDF/.test(UI_STRINGS.en["pr.note"]) || !/Preview/.test(UI_STRINGS.en["exp.printH"]) || /PDF via Print/.test(UI_STRINGS.en["exp.printH"])) bad.push("the print section does not say preview / print-ready PDF");
+              /* (a) signed out */
+              cloud.available = true; cloud.user = null; reset();
+              await printReadyPdf();
+              if (ui.state !== "signin" || ui.msg !== t("pr.signin") || note().hidden || calls.length) bad.push("(a) signed out: state " + ui.state + ", " + calls.length + " calls, note " + (note().hidden ? "hidden" : "shown"));
+              /* (b) paused: the upload is refused */
+              cloud.user = { id: "sc-user", email: "sc@beuk.test" }; cloud.linkedId = "sc-ms"; billingPausedSaid = false; reset();
+              mode = "upload402"; calls.length = 0; const t0 = toasts();
+              await printReadyPdf();
+              const posts = calls.filter((c) => c.indexOf("POST /api/exports") === 0).length;
+              if (ui.state !== "paused" || ui.msg !== t("pr.paused") || note().textContent.indexOf(t("pr.paused")) !== 0 || !/print-ready PDFs/.test(ui.msg) || /export archive/.test(note().textContent)) bad.push("(b) paused: state " + ui.state + ", message " + JSON.stringify(ui.msg));
+              if (jobCalls() || posts !== 1) bad.push("(b) paused: " + posts + " upload(s), " + jobCalls() + " job call(s) (want 1 and 0)");
+              if (toasts() !== t0) bad.push("(b) paused: a second message appeared as a toast");
+              if (!note().querySelector("[data-pr-plan]") || note().querySelector("[data-pr-download]") || ui.exportId) bad.push("(b) paused: no plan link, or a download was offered");
+              /* (c) running, then done */
+              mode = "done"; polls = 0; mid = null; calls.length = 0; reset();
+              await printReadyPdf();
+              const dl = note().querySelector("[data-pr-download]");
+              if (ui.state !== "done" || ui.exportId !== "sc-pdf" || !dl || !/\/api\/exports\/sc-pdf\/download$/.test(dl.getAttribute("href"))) bad.push("(c) done: state " + ui.state + ", export " + ui.exportId + ", link " + (dl ? dl.getAttribute("href") : "none"));
+              if (!mid || mid.state !== "running" || mid.exportId) bad.push("(c) while running the panel showed " + JSON.stringify(mid));
+              if (calls.filter((c) => c === "POST /api/jobs/pdfx").length !== 1 || calls.some((c) => c.indexOf("epubcheck") > -1) || polls !== 3) bad.push("(c) calls: " + calls.join(", "));
+              /* (d) failed */
+              mode = "failed"; polls = 0; calls.length = 0; reset();
+              await printReadyPdf();
+              if (ui.state !== "failed" || note().textContent.indexOf(FAILED) < 0 || note().querySelector("[data-pr-download]") || ui.exportId) bad.push("(d) failed: state " + ui.state + ", message " + JSON.stringify(ui.msg) + ", link " + !!note().querySelector("[data-pr-download]"));
+              if (btn && btn.disabled) bad.push("the button stayed disabled after a finished job");
+              /* (e) the server no longer has the job: failed with a plain message, not "still running" */
+              mode = "gone"; calls.length = 0; reset();
+              const goneFetch = window.fetch;
+              window.fetch = function (url, init) { const m = (init && init.method) || "GET", u = String(url); if (m === "GET" && u === "/api/jobs/sc-job") return reply(404, { error: "job not found" }); return goneFetch(url, init); };
+              try { await printReadyPdf(); } finally { window.fetch = goneFetch; }
+              if (ui.state !== "failed" || ui.msg.indexOf(t("pr.jobGone")) < 0 || ui.pending) bad.push("(e) a 404 job: state " + ui.state + ", message " + JSON.stringify(ui.msg));
+            } finally {
+              window.fetch = realFetch;
+              cloud.available = keep.available; cloud.user = keep.user; cloud.linkedId = keep.linked; cloud.archive = keep.archive; billingPausedSaid = keep.said;
+              if (typeof renderArchiveList === "function") renderArchiveList();
+              ui.pollMs = keep.poll; ui.noOpen = false;
+              Object.assign(ui, { running: false, state: keep.state, msg: keep.msg, exportId: keep.exportId, paused: keep.paused, pending: keep.pending, sig: keep.sig }); printReadyRender();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in line and no calls; paused → the server’s one message, 1 upload, 0 job calls, no toast, plan link; running ×2 showed no download, then done → link to sc-pdf; failed → the server’s error, no link");
+          } }
+      );
+      /* ==== /BEUK:printready-check ==== */
+      /* ==== BEUK:epub-server-check ==== the EPUB download asks the
+         server (POST /api/epub) and never builds the store-ready file on
+         the device: signed out → sign-in; offline → the connection line;
+         402 → the paused copy and no file; 200 → the server's file and its
+         notes; a server error → its own words. The network is stubbed
+         beneath the real apiFetch (as export.print-ready does). */
+      SELF_CHECKS_ASYNC.push(
+        { id: "export.epub-server", feature: "export", name: "Export: “Download .epub” asks the server for the store-ready EPUB — sign-in when signed out, the connection line when offline, the paused copy and no file on a 402, the server’s file and notes on success, the server’s own words on an error; never a file built on the device",
+          async run() {
+            const keep = { available: cloud.available, user: cloud.user, online: net.online, toast: toast, download: downloadBlob, build: buildEpubBlob, platform: state.exportPlatform };
+            const realFetch = window.fetch;
+            const bad = [], calls = [], said = [], files = [];
+            let mode = "ok", localBuilds = 0, lastBody = null;
+            const NOTE = "The Amiri book face could not be loaded, so this EPUB does not embed it.";
+            const PAUSED = "Your free trial has ended, so store-ready EPUB files is paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.";
+            const blob = new Blob(["PK-sc"], { type: "application/epub+zip" });
+            const reply = (status, body, headers) => Promise.resolve({ status: status, ok: status >= 200 && status < 300,
+              json: () => Promise.resolve(body), blob: () => Promise.resolve(blob), headers: { get: (k) => (headers || {})[String(k).toLowerCase()] || null } });
+            window.fetch = function (url, init) {
+              const m = (init && init.method) || "GET", u = String(url);
+              calls.push(m + " " + u);
+              if (m === "POST" && u === "/api/epub") {
+                try { lastBody = JSON.parse(init.body); } catch (e) { lastBody = null; }
+                if (mode === "paused") return reply(402, { error: PAUSED, paused: true, feature: "export.epub", exportOpen: false, ownWordsOpen: true });
+                if (mode === "error") return reply(500, { error: "The EPUB could not be built. Please try again; if it keeps happening, tell us.", reason: "failed" });
+                return reply(200, null, { "x-beuk-notes": encodeURIComponent(JSON.stringify([NOTE])) });
+              }
+              return reply(404, { error: "not found" });
+            };
+            toast = function (msg) { said.push(String(msg)); };
+            downloadBlob = function (b, name) { files.push({ b: b, name: name }); };
+            buildEpubBlob = function () { localBuilds++; return Promise.reject(new Error("built on the device")); };
+            buildEpub.noOpen = true;
+            const reset = () => { calls.length = 0; said.length = 0; files.length = 0; lastBody = null; };
+            try {
+              /* (a) signed out */
+              cloud.available = true; cloud.user = null; net.online = true; reset();
+              await buildEpub();
+              if (calls.length || files.length || said[0] !== t("epub.signin")) bad.push("(a) signed out: " + calls.length + " calls, " + files.length + " files, said " + JSON.stringify(said));
+              /* (b) offline */
+              cloud.user = { id: "sc-user", email: "sc@beuk.test" }; net.online = false; reset();
+              await buildEpub();
+              if (calls.length || files.length || said[0] !== t("epub.offline")) bad.push("(b) offline: " + calls.length + " calls, " + files.length + " files, said " + JSON.stringify(said));
+              /* (c) paused */
+              net.online = true; mode = "paused"; reset();
+              await buildEpub();
+              if (calls.length !== 1 || files.length || said.length !== 1 || said[0] !== t("plan.pausedToast")) bad.push("(c) paused: " + calls.join(", ") + "; " + files.length + " files; said " + JSON.stringify(said));
+              /* (d) the server's file */
+              mode = "ok"; state.exportPlatform = "kdp"; reset();
+              await buildEpub();
+              if (calls.join() !== "POST /api/epub" || files.length !== 1 || files[0].b !== blob || files[0].name !== platformFilename()) bad.push("(d) ok: " + calls.join(", ") + "; files " + JSON.stringify(files.map((f) => f.name)));
+              if (!lastBody || !lastBody.book || lastBody.platform !== "kdp" || lastBody.lang !== getUiLang() || "history" in lastBody.book || !Array.isArray(lastBody.book.sections)) bad.push("(d) the request did not carry the desk's book, the platform and the language without History");
+              if (said.indexOf(NOTE) < 0) bad.push("(d) the server's note was not shown: " + JSON.stringify(said));
+              /* (e) a server error */
+              mode = "error"; reset();
+              await buildEpub();
+              if (files.length || !said.some((x) => x.indexOf("The EPUB could not be built") >= 0)) bad.push("(e) error: files " + files.length + ", said " + JSON.stringify(said));
+              if (localBuilds) bad.push(localBuilds + " build(s) on the device");
+              if ($("btnBuildEpub").disabled) bad.push("the button stayed disabled");
+            } finally {
+              window.fetch = realFetch; toast = keep.toast; downloadBlob = keep.download; buildEpubBlob = keep.build; buildEpub.noOpen = false;
+              cloud.available = keep.available; cloud.user = keep.user; net.online = keep.online; state.exportPlatform = keep.platform; renderPlatformPresets();
+            }
+            return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "signed out → sign-in, 0 calls; offline → connection line, 0 calls; 402 → the paused copy, 1 call, no file; 200 → the server's file as " + platformFilename("kdp") + " with its note; 500 → the server's words; 0 device builds");
+          } }
+      );
+      /* ==== /BEUK:epub-server-check ==== */
       /* ==== BEUK:login ==== the sign-in dialog drives the real
          cloudAuthSubmit against answers the server and its proxy really
          give: only a 401 may say the email and password do not match. */
@@ -70510,19 +70789,19 @@
          - "Show the quick tour" under the sample story, or /studio#tour
            (linked from the Help guide "Import a manuscript"), shows it
            again on purpose. */
-      Object.assign(UI_STRINGS.en, {"tour.label": "Quick tour", "tour.count": "Step {step} of {total}", "tour.next": "Next", "tour.back": "Back", "tour.skip": "Skip the tour", "tour.show": "Show the quick tour", "tour.s1t": "Bring your book in", "tour.s1b": "Bring in a Word, Markdown or plain-text manuscript with “{import}”, or simply start typing on the empty page. To look around first, open the sample story. Your book saves on this device; no account is needed.", "tour.s2t": "Write here, see the book there", "tour.s2b": "You write on the page. The preview shows the book as a reader will see it, on the e-reader, tablet or phone you choose.", "tour.s3t": "Give it a look", "tour.s3b": "“{studio}” sets the type for the whole book. Pick a theme in one click, then change the faces, sizes and spacing if you like.", "tour.s4t": "Export when the book is ready", "tour.s4b": "“{export}” makes the EPUB, with presets for Amazon KDP, Apple Books, Kobo, Google Play and other stores, and a print edition in paperback or hardback. Export always stays open, with or without an account.", "tour.s4q": "Where would you like to begin?", "tour.actImport": "Import a manuscript", "tour.actSample": "Open the sample story", "tour.actWrite": "Start writing", "tour.skipped": "The tour is closed. “Show the quick tour”, under the sample story, brings it back.", "tour.live": "Step {step} of {total}: {title}"});
-      Object.assign(UI_STRINGS.es, {"tour.label": "Visita rápida", "tour.count": "Paso {step} de {total}", "tour.next": "Siguiente", "tour.back": "Atrás", "tour.skip": "Saltar la visita", "tour.show": "Ver la visita rápida", "tour.s1t": "Trae tu libro", "tour.s1b": "Trae un manuscrito de Word, Markdown o texto sin formato con «{import}», o empieza a escribir sin más en la página vacía. Si prefieres echar un vistazo antes, abre la historia de muestra. Tu libro se guarda en este dispositivo; no necesitas cuenta.", "tour.s2t": "Escribe aquí, mira el libro allí", "tour.s2b": "Escribes en la página. La vista previa muestra el libro tal como lo verá un lector, en el lector electrónico, la tableta o el teléfono que elijas.", "tour.s3t": "Dale un aspecto", "tour.s3b": "«{studio}» compone el texto de todo el libro. Elige un tema con un clic y, si quieres, cambia después las fuentes, los tamaños y los espaciados.", "tour.s4t": "Exporta cuando el libro esté listo", "tour.s4b": "«{export}» crea el EPUB, con ajustes para Amazon KDP, Apple Books, Kobo, Google Play y otras tiendas, y una edición impresa en tapa blanda o tapa dura. La exportación siempre está disponible, con cuenta o sin ella.", "tour.s4q": "¿Por dónde quieres empezar?", "tour.actImport": "Importar un manuscrito", "tour.actSample": "Abrir la historia de muestra", "tour.actWrite": "Empezar a escribir", "tour.skipped": "La visita se ha cerrado. «Ver la visita rápida», bajo la historia de muestra, la vuelve a abrir.", "tour.live": "Paso {step} de {total}: {title}"});
-      Object.assign(UI_STRINGS.fr, {"tour.label": "Visite rapide", "tour.count": "Étape {step} sur {total}", "tour.next": "Suivant", "tour.back": "Retour", "tour.skip": "Passer la visite", "tour.show": "Revoir la visite rapide", "tour.s1t": "Apportez votre livre", "tour.s1b": "Importez un manuscrit Word, Markdown ou texte brut avec « {import} », ou commencez simplement à écrire sur la page vide. Pour découvrir d’abord, ouvrez l’histoire d’exemple. Votre livre est enregistré sur cet appareil ; aucun compte n’est nécessaire.", "tour.s2t": "Écrivez ici, voyez le livre là", "tour.s2b": "Vous écrivez sur la page. L’aperçu montre le livre tel qu’un lecteur le verra, sur la liseuse, la tablette ou le téléphone de votre choix.", "tour.s3t": "Donnez-lui son allure", "tour.s3b": "« {studio} » compose tout le livre. Choisissez un thème en un clic, puis modifiez les polices, les tailles et les espacements si vous le souhaitez.", "tour.s4t": "Exportez quand le livre est prêt", "tour.s4b": "« {export} » crée l’EPUB, avec des préréglages pour Amazon KDP, Apple Books, Kobo, Google Play et d’autres librairies, ainsi qu’une édition imprimée, brochée ou reliée. L’export reste toujours ouvert, avec ou sans compte.", "tour.s4q": "Par où voulez-vous commencer ?", "tour.actImport": "Importer un manuscrit", "tour.actSample": "Ouvrir l’histoire d’exemple", "tour.actWrite": "Commencer à écrire", "tour.skipped": "La visite est fermée. « Revoir la visite rapide », sous l’histoire d’exemple, la rouvre.", "tour.live": "Étape {step} sur {total} : {title}"});
-      Object.assign(UI_STRINGS.de, {"tour.label": "Kurzer Rundgang", "tour.count": "Schritt {step} von {total}", "tour.next": "Weiter", "tour.back": "Zurück", "tour.skip": "Rundgang überspringen", "tour.show": "Kurzen Rundgang zeigen", "tour.s1t": "Bringen Sie Ihr Buch mit", "tour.s1b": "Holen Sie ein Manuskript als Word-, Markdown- oder Textdatei mit „{import}“ herein, oder beginnen Sie einfach auf der leeren Seite zu schreiben. Wer sich erst umsehen möchte, öffnet die Beispielgeschichte. Ihr Buch wird auf diesem Gerät gespeichert; ein Konto ist nicht nötig.", "tour.s2t": "Hier schreiben, dort das Buch sehen", "tour.s2b": "Sie schreiben auf der Seite. Die Vorschau zeigt das Buch so, wie Leserinnen und Leser es sehen werden, auf dem E-Reader, Tablet oder Telefon Ihrer Wahl.", "tour.s3t": "Geben Sie ihm ein Gesicht", "tour.s3b": "Im „{studio}“ setzen Sie das ganze Buch. Wählen Sie mit einem Klick ein Thema und ändern Sie danach nach Wunsch Schriften, Größen und Abstände.", "tour.s4t": "Exportieren, wenn das Buch fertig ist", "tour.s4b": "Unter „{export}“ entsteht das EPUB, mit Voreinstellungen für Amazon KDP, Apple Books, Kobo, Google Play und weitere Shops, dazu eine Druckausgabe als Taschenbuch oder Hardcover. Der Export steht immer offen, mit oder ohne Konto.", "tour.s4q": "Womit möchten Sie anfangen?", "tour.actImport": "Manuskript importieren", "tour.actSample": "Beispielgeschichte öffnen", "tour.actWrite": "Losschreiben", "tour.skipped": "Der Rundgang ist geschlossen. „Kurzen Rundgang zeigen“ unter der Beispielgeschichte öffnet ihn wieder.", "tour.live": "Schritt {step} von {total}: {title}"});
-      Object.assign(UI_STRINGS.it, {"tour.label": "Breve visita", "tour.count": "Passo {step} di {total}", "tour.next": "Avanti", "tour.back": "Indietro", "tour.skip": "Salta la visita", "tour.show": "Mostra la breve visita", "tour.s1t": "Porta il tuo libro", "tour.s1b": "Porta un manoscritto Word, Markdown o di testo semplice con «{import}», oppure inizia a scrivere sulla pagina vuota. Per guardarti intorno prima, apri la storia d’esempio. Il libro si salva su questo dispositivo; non serve un account.", "tour.s2t": "Scrivi qui, guarda il libro lì", "tour.s2b": "Scrivi sulla pagina. L’anteprima mostra il libro come lo vedrà un lettore, sull’e-reader, sul tablet o sul telefono che scegli.", "tour.s3t": "Dagli un aspetto", "tour.s3b": "«{studio}» compone il testo di tutto il libro. Scegli un tema con un clic, poi cambia caratteri, dimensioni e spaziature se vuoi.", "tour.s4t": "Esporta quando il libro è pronto", "tour.s4b": "«{export}» crea l’EPUB, con impostazioni per Amazon KDP, Apple Books, Kobo, Google Play e altri negozi, e un’edizione a stampa in brossura o rilegata. L’esportazione resta sempre aperta, con o senza account.", "tour.s4q": "Da dove vuoi cominciare?", "tour.actImport": "Importa un manoscritto", "tour.actSample": "Apri la storia d’esempio", "tour.actWrite": "Inizia a scrivere", "tour.skipped": "La visita è chiusa. «Mostra la breve visita», sotto la storia d’esempio, la riapre.", "tour.live": "Passo {step} di {total}: {title}"});
-      Object.assign(UI_STRINGS.pt, {"tour.label": "Visita rápida", "tour.count": "Passo {step} de {total}", "tour.next": "Seguinte", "tour.back": "Anterior", "tour.skip": "Saltar a visita", "tour.show": "Ver a visita rápida", "tour.s1t": "Traga o seu livro", "tour.s1b": "Importe um manuscrito em Word, Markdown ou texto simples com «{import}», ou comece simplesmente a escrever na página vazia. Para explorar primeiro, abra a história de exemplo. O seu livro fica guardado neste dispositivo; não precisa de conta.", "tour.s2t": "Escreva aqui, veja o livro ali", "tour.s2b": "Escreve na página. A pré-visualização mostra o livro como um leitor o verá, no leitor de livros eletrónicos, tablet ou telemóvel que escolher.", "tour.s3t": "Dê-lhe um aspeto", "tour.s3b": "«{studio}» compõe o livro inteiro. Escolha um tema com um clique e depois, se quiser, altere os tipos de letra, os tamanhos e os espaçamentos.", "tour.s4t": "Exporte quando o livro estiver pronto", "tour.s4b": "«{export}» cria o EPUB, com predefinições para Amazon KDP, Apple Books, Kobo, Google Play e outras lojas, e uma edição impressa de capa mole ou capa dura. A exportação está sempre disponível, com ou sem conta.", "tour.s4q": "Por onde quer começar?", "tour.actImport": "Importar um manuscrito", "tour.actSample": "Abrir a história de exemplo", "tour.actWrite": "Começar a escrever", "tour.skipped": "A visita foi fechada. «Ver a visita rápida», por baixo da história de exemplo, abre-a de novo.", "tour.live": "Passo {step} de {total}: {title}"});
-      Object.assign(UI_STRINGS.nl, {"tour.label": "Korte rondleiding", "tour.count": "Stap {step} van {total}", "tour.next": "Volgende", "tour.back": "Terug", "tour.skip": "Rondleiding overslaan", "tour.show": "Toon de korte rondleiding", "tour.s1t": "Breng je boek mee", "tour.s1b": "Haal een manuscript in Word, Markdown of platte tekst binnen met ‘{import}’, of begin gewoon te typen op de lege pagina. Wil je eerst rondkijken, open dan het voorbeeldverhaal. Je boek wordt op dit apparaat bewaard; een account is niet nodig.", "tour.s2t": "Hier schrijven, daar het boek zien", "tour.s2b": "Je schrijft op de pagina. Het voorbeeld toont het boek zoals een lezer het zal zien, op de e-reader, tablet of telefoon die je kiest.", "tour.s3t": "Geef het een gezicht", "tour.s3b": "In ‘{studio}’ zet je het hele boek. Kies met één klik een thema en pas daarna naar wens lettertypen, groottes en witruimte aan.", "tour.s4t": "Exporteer als het boek klaar is", "tour.s4b": "‘{export}’ maakt de EPUB, met voorinstellingen voor Amazon KDP, Apple Books, Kobo, Google Play en andere winkels, en een gedrukte editie als paperback of hardcover. Exporteren blijft altijd open, met of zonder account.", "tour.s4q": "Waar wil je beginnen?", "tour.actImport": "Een manuscript importeren", "tour.actSample": "Het voorbeeldverhaal openen", "tour.actWrite": "Beginnen met schrijven", "tour.skipped": "De rondleiding is gesloten. ‘Toon de korte rondleiding’, onder het voorbeeldverhaal, opent hem weer.", "tour.live": "Stap {step} van {total}: {title}"});
-      Object.assign(UI_STRINGS.pl, {"tour.label": "Krótki przewodnik", "tour.count": "Krok {step} z {total}", "tour.next": "Dalej", "tour.back": "Wstecz", "tour.skip": "Pomiń przewodnik", "tour.show": "Pokaż krótki przewodnik", "tour.s1t": "Przynieś swoją książkę", "tour.s1b": "Wczytaj maszynopis z pliku Word, Markdown lub zwykłego tekstu przyciskiem „{import}” albo po prostu zacznij pisać na pustej stronie. Jeśli wolisz się najpierw rozejrzeć, otwórz opowieść przykładową. Książka zapisuje się na tym urządzeniu; konto nie jest potrzebne.", "tour.s2t": "Tu piszesz, tam widzisz książkę", "tour.s2b": "Piszesz na stronie. Podgląd pokazuje książkę tak, jak zobaczy ją czytelnik, na wybranym czytniku, tablecie lub telefonie.", "tour.s3t": "Nadaj jej wygląd", "tour.s3b": "„{studio}” składa całą książkę. Wybierz motyw jednym kliknięciem, a potem, jeśli chcesz, zmień kroje pisma, rozmiary i odstępy.", "tour.s4t": "Eksportuj, gdy książka będzie gotowa", "tour.s4b": "„{export}” tworzy plik EPUB z ustawieniami dla Amazon KDP, Apple Books, Kobo, Google Play i innych księgarni oraz wydanie drukowane w miękkiej lub twardej oprawie. Eksport jest zawsze dostępny, z kontem lub bez.", "tour.s4q": "Od czego chcesz zacząć?", "tour.actImport": "Importuj maszynopis", "tour.actSample": "Otwórz opowieść przykładową", "tour.actWrite": "Zacznij pisać", "tour.skipped": "Przewodnik jest zamknięty. „Pokaż krótki przewodnik” pod opowieścią przykładową otworzy go ponownie.", "tour.live": "Krok {step} z {total}: {title}"});
-      Object.assign(UI_STRINGS.ru, {"tour.label": "Краткий обзор", "tour.count": "Шаг {step} из {total}", "tour.next": "Далее", "tour.back": "Назад", "tour.skip": "Пропустить обзор", "tour.show": "Показать краткий обзор", "tour.s1t": "Принесите свою книгу", "tour.s1b": "Загрузите рукопись в формате Word, Markdown или простого текста кнопкой «{import}» или просто начните печатать на пустой странице. Чтобы сначала осмотреться, откройте пример истории. Книга сохраняется на этом устройстве; учётная запись не нужна.", "tour.s2t": "Пишите здесь, смотрите книгу там", "tour.s2b": "Вы пишете на странице. Предпросмотр показывает книгу такой, какой её увидит читатель, на выбранной вами электронной книге, планшете или телефоне.", "tour.s3t": "Придайте ей облик", "tour.s3b": "«{studio}» набирает всю книгу. Выберите тему одним щелчком, а затем при желании измените шрифты, размеры и интервалы.", "tour.s4t": "Экспортируйте, когда книга готова", "tour.s4b": "«{export}» создаёт EPUB с предустановками для Amazon KDP, Apple Books, Kobo, Google Play и других магазинов, а также печатное издание в мягкой или твёрдой обложке. Экспорт всегда открыт, с учётной записью или без неё.", "tour.s4q": "С чего вы хотите начать?", "tour.actImport": "Импортировать рукопись", "tour.actSample": "Открыть пример истории", "tour.actWrite": "Начать писать", "tour.skipped": "Обзор закрыт. «Показать краткий обзор» под примером истории откроет его снова.", "tour.live": "Шаг {step} из {total}: {title}"});
-      Object.assign(UI_STRINGS.tr, {"tour.label": "Kısa tur", "tour.count": "Adım {step} / {total}", "tour.next": "İleri", "tour.back": "Geri", "tour.skip": "Turu atla", "tour.show": "Kısa turu göster", "tour.s1t": "Kitabınızı getirin", "tour.s1b": "Word, Markdown ya da düz metin bir taslağı “{import}” ile içeri alın veya boş sayfada hemen yazmaya başlayın. Önce etrafa bakmak isterseniz örnek hikâyeyi açın. Kitabınız bu cihazda kaydedilir; hesap gerekmez.", "tour.s2t": "Burada yazın, kitabı orada görün", "tour.s2b": "Sayfaya yazarsınız. Önizleme, kitabı bir okurun göreceği gibi, seçtiğiniz e-okuyucuda, tablette ya da telefonda gösterir.", "tour.s3t": "Ona bir görünüm verin", "tour.s3b": "“{studio}” tüm kitabın dizgisini yapar. Tek tıkla bir tema seçin, sonra isterseniz yazı tiplerini, boyutları ve aralıkları değiştirin.", "tour.s4t": "Kitap hazır olunca dışa aktarın", "tour.s4b": "“{export}”, Amazon KDP, Apple Books, Kobo, Google Play ve diğer mağazalar için hazır ayarlarla EPUB'u ve karton ya da sert kapaklı bir baskı sürümünü hazırlar. Dışa aktarma, hesapla ya da hesapsız, her zaman açıktır.", "tour.s4q": "Nereden başlamak istersiniz?", "tour.actImport": "Taslak içe aktar", "tour.actSample": "Örnek hikâyeyi aç", "tour.actWrite": "Yazmaya başla", "tour.skipped": "Tur kapandı. Örnek hikâyenin altındaki “Kısa turu göster” onu yeniden açar.", "tour.live": "Adım {step} / {total}: {title}"});
-      Object.assign(UI_STRINGS.ar, {"tour.label": "جولة سريعة", "tour.count": "الخطوة {step} من {total}", "tour.next": "التالي", "tour.back": "السابق", "tour.skip": "تخطَّ الجولة", "tour.show": "اعرض الجولة السريعة", "tour.s1t": "أحضِر كتابك", "tour.s1b": "استورد مخطوطة بصيغة Word أو Markdown أو نص عادي عبر «{import}»، أو ابدأ الكتابة مباشرة على الصفحة الفارغة. وإن أردت أن تتجوّل أولًا فافتح القصة النموذجية. يُحفظ كتابك على هذا الجهاز، ولا حاجة إلى حساب.", "tour.s2t": "اكتب هنا، وشاهد الكتاب هناك", "tour.s2b": "تكتب على الصفحة، وتعرض المعاينة الكتاب كما سيراه القارئ، على القارئ الإلكتروني أو الجهاز اللوحي أو الهاتف الذي تختاره.", "tour.s3t": "امنحه مظهره", "tour.s3b": "«{studio}» ينضّد الكتاب كله. اختر سمة بنقرة واحدة، ثم غيّر الخطوط والأحجام والمسافات إن شئت.", "tour.s4t": "صدِّر حين يصبح الكتاب جاهزًا", "tour.s4b": "«{export}» يُنشئ ملف EPUB بإعدادات جاهزة لـ Amazon KDP وApple Books وKobo وGoogle Play ومتاجر أخرى، ونسخة مطبوعة بغلاف ورقي أو مقوّى. التصدير متاح دائمًا، بحساب أو من دونه.", "tour.s4q": "من أين تحب أن تبدأ؟", "tour.actImport": "استورد مخطوطة", "tour.actSample": "افتح القصة النموذجية", "tour.actWrite": "ابدأ الكتابة", "tour.skipped": "أُغلقت الجولة. يعيد فتحها زر «اعرض الجولة السريعة» تحت القصة النموذجية.", "tour.live": "الخطوة {step} من {total}: {title}"});
-      Object.assign(UI_STRINGS.ja, {"tour.label": "クイックツアー", "tour.count": "ステップ {step} / {total}", "tour.next": "次へ", "tour.back": "戻る", "tour.skip": "ツアーをスキップ", "tour.show": "クイックツアーをもう一度見る", "tour.s1t": "原稿を持ち込む", "tour.s1b": "Word、Markdown、テキストの原稿は「{import}」で取り込めます。空のページにそのまま書き始めてもかまいません。まず様子を見たいときは、サンプル物語を開いてください。本はこの端末に保存され、アカウントは要りません。", "tour.s2t": "ここで書き、そこで本を見る", "tour.s2b": "ページに書くと、プレビューが読者の目に映るとおりの本を、選んだ電子書籍リーダー、タブレット、スマートフォンで表示します。", "tour.s3t": "本の見た目を整える", "tour.s3b": "「{studio}」で本全体を組版します。テーマをワンクリックで選び、必要なら書体、サイズ、間隔を調整してください。", "tour.s4t": "準備ができたら書き出す", "tour.s4b": "「{export}」では、Amazon KDP、Apple Books、Kobo、Google Play などのストア向けプリセット付きの EPUB と、ペーパーバックまたはハードカバーの印刷版を作れます。書き出しはアカウントの有無にかかわらず、いつでも使えます。", "tour.s4q": "どこから始めますか？", "tour.actImport": "原稿を取り込む", "tour.actSample": "サンプル物語を開く", "tour.actWrite": "書き始める", "tour.skipped": "ツアーを閉じました。サンプル物語の下にある「クイックツアーをもう一度見る」で再び開けます。", "tour.live": "ステップ {step} / {total}：{title}"});
-      Object.assign(UI_STRINGS["zh-Hans"], {"tour.label": "快速导览", "tour.count": "第 {step} 步，共 {total} 步", "tour.next": "下一步", "tour.back": "上一步", "tour.skip": "跳过导览", "tour.show": "再看一遍快速导览", "tour.s1t": "把你的书带进来", "tour.s1b": "用“{import}”导入 Word、Markdown 或纯文本稿件，也可以直接在空白页上开始写。想先四处看看，就打开示例故事。书保存在这台设备上，无需账户。", "tour.s2t": "在这里写，在那里看书", "tour.s2b": "你在页面上写作，预览会按读者看到的样子显示这本书，设备可选电子阅读器、平板或手机。", "tour.s3t": "给书定个样子", "tour.s3b": "“{studio}”为整本书排版。一键选一个主题，然后按需调整字体、字号和间距。", "tour.s4t": "准备好了就导出", "tour.s4b": "“{export}”可生成 EPUB，带有 Amazon KDP、Apple Books、Kobo、Google Play 等书店的预设，还能生成平装或精装的印刷版。无论有没有账户，导出始终开放。", "tour.s4q": "你想从哪里开始？", "tour.actImport": "导入稿件", "tour.actSample": "打开示例故事", "tour.actWrite": "开始写作", "tour.skipped": "导览已关闭。示例故事下方的“再看一遍快速导览”可以再次打开它。", "tour.live": "第 {step} 步，共 {total} 步：{title}"});
+      Object.assign(UI_STRINGS.en, {"tour.label": "Quick tour", "tour.count": "Step {step} of {total}", "tour.next": "Next", "tour.back": "Back", "tour.skip": "Skip the tour", "tour.show": "Show the quick tour", "tour.s1t": "Bring your book in", "tour.s1b": "Bring in a Word, Markdown or plain-text manuscript with “{import}”, or simply start typing on the empty page. To look around first, open the sample story. Your book saves on this device; no account is needed.", "tour.s2t": "Write here, see the book there", "tour.s2b": "You write on the page. The preview shows the book as a reader will see it, on the e-reader, tablet or phone you choose.", "tour.s3t": "Give it a look", "tour.s3b": "“{studio}” sets the type for the whole book. Pick a theme in one click, then change the faces, sizes and spacing if you like.", "tour.s4t": "Export when the book is ready", "tour.s4b": "“{export}” makes the EPUB, with presets for Amazon KDP, Apple Books, Kobo, Google Play and other stores, and a print edition in paperback or hardback. After the free trial, the store-ready EPUB and the print PDF need a plan; your own words stay downloadable as the backup file, Word and Markdown.", "tour.s4q": "Where would you like to begin?", "tour.actImport": "Import a manuscript", "tour.actSample": "Open the sample story", "tour.actWrite": "Start writing", "tour.skipped": "The tour is closed. “Show the quick tour”, under the sample story, brings it back.", "tour.live": "Step {step} of {total}: {title}"});
+      Object.assign(UI_STRINGS.es, {"tour.label": "Visita rápida", "tour.count": "Paso {step} de {total}", "tour.next": "Siguiente", "tour.back": "Atrás", "tour.skip": "Saltar la visita", "tour.show": "Ver la visita rápida", "tour.s1t": "Trae tu libro", "tour.s1b": "Trae un manuscrito de Word, Markdown o texto sin formato con «{import}», o empieza a escribir sin más en la página vacía. Si prefieres echar un vistazo antes, abre la historia de muestra. Tu libro se guarda en este dispositivo; no necesitas cuenta.", "tour.s2t": "Escribe aquí, mira el libro allí", "tour.s2b": "Escribes en la página. La vista previa muestra el libro tal como lo verá un lector, en el lector electrónico, la tableta o el teléfono que elijas.", "tour.s3t": "Dale un aspecto", "tour.s3b": "«{studio}» compone el texto de todo el libro. Elige un tema con un clic y, si quieres, cambia después las fuentes, los tamaños y los espaciados.", "tour.s4t": "Exporta cuando el libro esté listo", "tour.s4b": "«{export}» crea el EPUB, con ajustes para Amazon KDP, Apple Books, Kobo, Google Play y otras tiendas, y una edición impresa en tapa blanda o tapa dura.", "tour.s4q": "¿Por dónde quieres empezar?", "tour.actImport": "Importar un manuscrito", "tour.actSample": "Abrir la historia de muestra", "tour.actWrite": "Empezar a escribir", "tour.skipped": "La visita se ha cerrado. «Ver la visita rápida», bajo la historia de muestra, la vuelve a abrir.", "tour.live": "Paso {step} de {total}: {title}"});
+      Object.assign(UI_STRINGS.fr, {"tour.label": "Visite rapide", "tour.count": "Étape {step} sur {total}", "tour.next": "Suivant", "tour.back": "Retour", "tour.skip": "Passer la visite", "tour.show": "Revoir la visite rapide", "tour.s1t": "Apportez votre livre", "tour.s1b": "Importez un manuscrit Word, Markdown ou texte brut avec « {import} », ou commencez simplement à écrire sur la page vide. Pour découvrir d’abord, ouvrez l’histoire d’exemple. Votre livre est enregistré sur cet appareil ; aucun compte n’est nécessaire.", "tour.s2t": "Écrivez ici, voyez le livre là", "tour.s2b": "Vous écrivez sur la page. L’aperçu montre le livre tel qu’un lecteur le verra, sur la liseuse, la tablette ou le téléphone de votre choix.", "tour.s3t": "Donnez-lui son allure", "tour.s3b": "« {studio} » compose tout le livre. Choisissez un thème en un clic, puis modifiez les polices, les tailles et les espacements si vous le souhaitez.", "tour.s4t": "Exportez quand le livre est prêt", "tour.s4b": "« {export} » crée l’EPUB, avec des préréglages pour Amazon KDP, Apple Books, Kobo, Google Play et d’autres librairies, ainsi qu’une édition imprimée, brochée ou reliée.", "tour.s4q": "Par où voulez-vous commencer ?", "tour.actImport": "Importer un manuscrit", "tour.actSample": "Ouvrir l’histoire d’exemple", "tour.actWrite": "Commencer à écrire", "tour.skipped": "La visite est fermée. « Revoir la visite rapide », sous l’histoire d’exemple, la rouvre.", "tour.live": "Étape {step} sur {total} : {title}"});
+      Object.assign(UI_STRINGS.de, {"tour.label": "Kurzer Rundgang", "tour.count": "Schritt {step} von {total}", "tour.next": "Weiter", "tour.back": "Zurück", "tour.skip": "Rundgang überspringen", "tour.show": "Kurzen Rundgang zeigen", "tour.s1t": "Bringen Sie Ihr Buch mit", "tour.s1b": "Holen Sie ein Manuskript als Word-, Markdown- oder Textdatei mit „{import}“ herein, oder beginnen Sie einfach auf der leeren Seite zu schreiben. Wer sich erst umsehen möchte, öffnet die Beispielgeschichte. Ihr Buch wird auf diesem Gerät gespeichert; ein Konto ist nicht nötig.", "tour.s2t": "Hier schreiben, dort das Buch sehen", "tour.s2b": "Sie schreiben auf der Seite. Die Vorschau zeigt das Buch so, wie Leserinnen und Leser es sehen werden, auf dem E-Reader, Tablet oder Telefon Ihrer Wahl.", "tour.s3t": "Geben Sie ihm ein Gesicht", "tour.s3b": "Im „{studio}“ setzen Sie das ganze Buch. Wählen Sie mit einem Klick ein Thema und ändern Sie danach nach Wunsch Schriften, Größen und Abstände.", "tour.s4t": "Exportieren, wenn das Buch fertig ist", "tour.s4b": "Unter „{export}“ entsteht das EPUB, mit Voreinstellungen für Amazon KDP, Apple Books, Kobo, Google Play und weitere Shops, dazu eine Druckausgabe als Taschenbuch oder Hardcover.", "tour.s4q": "Womit möchten Sie anfangen?", "tour.actImport": "Manuskript importieren", "tour.actSample": "Beispielgeschichte öffnen", "tour.actWrite": "Losschreiben", "tour.skipped": "Der Rundgang ist geschlossen. „Kurzen Rundgang zeigen“ unter der Beispielgeschichte öffnet ihn wieder.", "tour.live": "Schritt {step} von {total}: {title}"});
+      Object.assign(UI_STRINGS.it, {"tour.label": "Breve visita", "tour.count": "Passo {step} di {total}", "tour.next": "Avanti", "tour.back": "Indietro", "tour.skip": "Salta la visita", "tour.show": "Mostra la breve visita", "tour.s1t": "Porta il tuo libro", "tour.s1b": "Porta un manoscritto Word, Markdown o di testo semplice con «{import}», oppure inizia a scrivere sulla pagina vuota. Per guardarti intorno prima, apri la storia d’esempio. Il libro si salva su questo dispositivo; non serve un account.", "tour.s2t": "Scrivi qui, guarda il libro lì", "tour.s2b": "Scrivi sulla pagina. L’anteprima mostra il libro come lo vedrà un lettore, sull’e-reader, sul tablet o sul telefono che scegli.", "tour.s3t": "Dagli un aspetto", "tour.s3b": "«{studio}» compone il testo di tutto il libro. Scegli un tema con un clic, poi cambia caratteri, dimensioni e spaziature se vuoi.", "tour.s4t": "Esporta quando il libro è pronto", "tour.s4b": "«{export}» crea l’EPUB, con impostazioni per Amazon KDP, Apple Books, Kobo, Google Play e altri negozi, e un’edizione a stampa in brossura o rilegata.", "tour.s4q": "Da dove vuoi cominciare?", "tour.actImport": "Importa un manoscritto", "tour.actSample": "Apri la storia d’esempio", "tour.actWrite": "Inizia a scrivere", "tour.skipped": "La visita è chiusa. «Mostra la breve visita», sotto la storia d’esempio, la riapre.", "tour.live": "Passo {step} di {total}: {title}"});
+      Object.assign(UI_STRINGS.pt, {"tour.label": "Visita rápida", "tour.count": "Passo {step} de {total}", "tour.next": "Seguinte", "tour.back": "Anterior", "tour.skip": "Saltar a visita", "tour.show": "Ver a visita rápida", "tour.s1t": "Traga o seu livro", "tour.s1b": "Importe um manuscrito em Word, Markdown ou texto simples com «{import}», ou comece simplesmente a escrever na página vazia. Para explorar primeiro, abra a história de exemplo. O seu livro fica guardado neste dispositivo; não precisa de conta.", "tour.s2t": "Escreva aqui, veja o livro ali", "tour.s2b": "Escreve na página. A pré-visualização mostra o livro como um leitor o verá, no leitor de livros eletrónicos, tablet ou telemóvel que escolher.", "tour.s3t": "Dê-lhe um aspeto", "tour.s3b": "«{studio}» compõe o livro inteiro. Escolha um tema com um clique e depois, se quiser, altere os tipos de letra, os tamanhos e os espaçamentos.", "tour.s4t": "Exporte quando o livro estiver pronto", "tour.s4b": "«{export}» cria o EPUB, com predefinições para Amazon KDP, Apple Books, Kobo, Google Play e outras lojas, e uma edição impressa de capa mole ou capa dura.", "tour.s4q": "Por onde quer começar?", "tour.actImport": "Importar um manuscrito", "tour.actSample": "Abrir a história de exemplo", "tour.actWrite": "Começar a escrever", "tour.skipped": "A visita foi fechada. «Ver a visita rápida», por baixo da história de exemplo, abre-a de novo.", "tour.live": "Passo {step} de {total}: {title}"});
+      Object.assign(UI_STRINGS.nl, {"tour.label": "Korte rondleiding", "tour.count": "Stap {step} van {total}", "tour.next": "Volgende", "tour.back": "Terug", "tour.skip": "Rondleiding overslaan", "tour.show": "Toon de korte rondleiding", "tour.s1t": "Breng je boek mee", "tour.s1b": "Haal een manuscript in Word, Markdown of platte tekst binnen met ‘{import}’, of begin gewoon te typen op de lege pagina. Wil je eerst rondkijken, open dan het voorbeeldverhaal. Je boek wordt op dit apparaat bewaard; een account is niet nodig.", "tour.s2t": "Hier schrijven, daar het boek zien", "tour.s2b": "Je schrijft op de pagina. Het voorbeeld toont het boek zoals een lezer het zal zien, op de e-reader, tablet of telefoon die je kiest.", "tour.s3t": "Geef het een gezicht", "tour.s3b": "In ‘{studio}’ zet je het hele boek. Kies met één klik een thema en pas daarna naar wens lettertypen, groottes en witruimte aan.", "tour.s4t": "Exporteer als het boek klaar is", "tour.s4b": "‘{export}’ maakt de EPUB, met voorinstellingen voor Amazon KDP, Apple Books, Kobo, Google Play en andere winkels, en een gedrukte editie als paperback of hardcover.", "tour.s4q": "Waar wil je beginnen?", "tour.actImport": "Een manuscript importeren", "tour.actSample": "Het voorbeeldverhaal openen", "tour.actWrite": "Beginnen met schrijven", "tour.skipped": "De rondleiding is gesloten. ‘Toon de korte rondleiding’, onder het voorbeeldverhaal, opent hem weer.", "tour.live": "Stap {step} van {total}: {title}"});
+      Object.assign(UI_STRINGS.pl, {"tour.label": "Krótki przewodnik", "tour.count": "Krok {step} z {total}", "tour.next": "Dalej", "tour.back": "Wstecz", "tour.skip": "Pomiń przewodnik", "tour.show": "Pokaż krótki przewodnik", "tour.s1t": "Przynieś swoją książkę", "tour.s1b": "Wczytaj maszynopis z pliku Word, Markdown lub zwykłego tekstu przyciskiem „{import}” albo po prostu zacznij pisać na pustej stronie. Jeśli wolisz się najpierw rozejrzeć, otwórz opowieść przykładową. Książka zapisuje się na tym urządzeniu; konto nie jest potrzebne.", "tour.s2t": "Tu piszesz, tam widzisz książkę", "tour.s2b": "Piszesz na stronie. Podgląd pokazuje książkę tak, jak zobaczy ją czytelnik, na wybranym czytniku, tablecie lub telefonie.", "tour.s3t": "Nadaj jej wygląd", "tour.s3b": "„{studio}” składa całą książkę. Wybierz motyw jednym kliknięciem, a potem, jeśli chcesz, zmień kroje pisma, rozmiary i odstępy.", "tour.s4t": "Eksportuj, gdy książka będzie gotowa", "tour.s4b": "„{export}” tworzy plik EPUB z ustawieniami dla Amazon KDP, Apple Books, Kobo, Google Play i innych księgarni oraz wydanie drukowane w miękkiej lub twardej oprawie.", "tour.s4q": "Od czego chcesz zacząć?", "tour.actImport": "Importuj maszynopis", "tour.actSample": "Otwórz opowieść przykładową", "tour.actWrite": "Zacznij pisać", "tour.skipped": "Przewodnik jest zamknięty. „Pokaż krótki przewodnik” pod opowieścią przykładową otworzy go ponownie.", "tour.live": "Krok {step} z {total}: {title}"});
+      Object.assign(UI_STRINGS.ru, {"tour.label": "Краткий обзор", "tour.count": "Шаг {step} из {total}", "tour.next": "Далее", "tour.back": "Назад", "tour.skip": "Пропустить обзор", "tour.show": "Показать краткий обзор", "tour.s1t": "Принесите свою книгу", "tour.s1b": "Загрузите рукопись в формате Word, Markdown или простого текста кнопкой «{import}» или просто начните печатать на пустой странице. Чтобы сначала осмотреться, откройте пример истории. Книга сохраняется на этом устройстве; учётная запись не нужна.", "tour.s2t": "Пишите здесь, смотрите книгу там", "tour.s2b": "Вы пишете на странице. Предпросмотр показывает книгу такой, какой её увидит читатель, на выбранной вами электронной книге, планшете или телефоне.", "tour.s3t": "Придайте ей облик", "tour.s3b": "«{studio}» набирает всю книгу. Выберите тему одним щелчком, а затем при желании измените шрифты, размеры и интервалы.", "tour.s4t": "Экспортируйте, когда книга готова", "tour.s4b": "«{export}» создаёт EPUB с предустановками для Amazon KDP, Apple Books, Kobo, Google Play и других магазинов, а также печатное издание в мягкой или твёрдой обложке.", "tour.s4q": "С чего вы хотите начать?", "tour.actImport": "Импортировать рукопись", "tour.actSample": "Открыть пример истории", "tour.actWrite": "Начать писать", "tour.skipped": "Обзор закрыт. «Показать краткий обзор» под примером истории откроет его снова.", "tour.live": "Шаг {step} из {total}: {title}"});
+      Object.assign(UI_STRINGS.tr, {"tour.label": "Kısa tur", "tour.count": "Adım {step} / {total}", "tour.next": "İleri", "tour.back": "Geri", "tour.skip": "Turu atla", "tour.show": "Kısa turu göster", "tour.s1t": "Kitabınızı getirin", "tour.s1b": "Word, Markdown ya da düz metin bir taslağı “{import}” ile içeri alın veya boş sayfada hemen yazmaya başlayın. Önce etrafa bakmak isterseniz örnek hikâyeyi açın. Kitabınız bu cihazda kaydedilir; hesap gerekmez.", "tour.s2t": "Burada yazın, kitabı orada görün", "tour.s2b": "Sayfaya yazarsınız. Önizleme, kitabı bir okurun göreceği gibi, seçtiğiniz e-okuyucuda, tablette ya da telefonda gösterir.", "tour.s3t": "Ona bir görünüm verin", "tour.s3b": "“{studio}” tüm kitabın dizgisini yapar. Tek tıkla bir tema seçin, sonra isterseniz yazı tiplerini, boyutları ve aralıkları değiştirin.", "tour.s4t": "Kitap hazır olunca dışa aktarın", "tour.s4b": "“{export}”, Amazon KDP, Apple Books, Kobo, Google Play ve diğer mağazalar için hazır ayarlarla EPUB'u ve karton ya da sert kapaklı bir baskı sürümünü hazırlar.", "tour.s4q": "Nereden başlamak istersiniz?", "tour.actImport": "Taslak içe aktar", "tour.actSample": "Örnek hikâyeyi aç", "tour.actWrite": "Yazmaya başla", "tour.skipped": "Tur kapandı. Örnek hikâyenin altındaki “Kısa turu göster” onu yeniden açar.", "tour.live": "Adım {step} / {total}: {title}"});
+      Object.assign(UI_STRINGS.ar, {"tour.label": "جولة سريعة", "tour.count": "الخطوة {step} من {total}", "tour.next": "التالي", "tour.back": "السابق", "tour.skip": "تخطَّ الجولة", "tour.show": "اعرض الجولة السريعة", "tour.s1t": "أحضِر كتابك", "tour.s1b": "استورد مخطوطة بصيغة Word أو Markdown أو نص عادي عبر «{import}»، أو ابدأ الكتابة مباشرة على الصفحة الفارغة. وإن أردت أن تتجوّل أولًا فافتح القصة النموذجية. يُحفظ كتابك على هذا الجهاز، ولا حاجة إلى حساب.", "tour.s2t": "اكتب هنا، وشاهد الكتاب هناك", "tour.s2b": "تكتب على الصفحة، وتعرض المعاينة الكتاب كما سيراه القارئ، على القارئ الإلكتروني أو الجهاز اللوحي أو الهاتف الذي تختاره.", "tour.s3t": "امنحه مظهره", "tour.s3b": "«{studio}» ينضّد الكتاب كله. اختر سمة بنقرة واحدة، ثم غيّر الخطوط والأحجام والمسافات إن شئت.", "tour.s4t": "صدِّر حين يصبح الكتاب جاهزًا", "tour.s4b": "«{export}» يُنشئ ملف EPUB بإعدادات جاهزة لـ Amazon KDP وApple Books وKobo وGoogle Play ومتاجر أخرى، ونسخة مطبوعة بغلاف ورقي أو مقوّى.", "tour.s4q": "من أين تحب أن تبدأ؟", "tour.actImport": "استورد مخطوطة", "tour.actSample": "افتح القصة النموذجية", "tour.actWrite": "ابدأ الكتابة", "tour.skipped": "أُغلقت الجولة. يعيد فتحها زر «اعرض الجولة السريعة» تحت القصة النموذجية.", "tour.live": "الخطوة {step} من {total}: {title}"});
+      Object.assign(UI_STRINGS.ja, {"tour.label": "クイックツアー", "tour.count": "ステップ {step} / {total}", "tour.next": "次へ", "tour.back": "戻る", "tour.skip": "ツアーをスキップ", "tour.show": "クイックツアーをもう一度見る", "tour.s1t": "原稿を持ち込む", "tour.s1b": "Word、Markdown、テキストの原稿は「{import}」で取り込めます。空のページにそのまま書き始めてもかまいません。まず様子を見たいときは、サンプル物語を開いてください。本はこの端末に保存され、アカウントは要りません。", "tour.s2t": "ここで書き、そこで本を見る", "tour.s2b": "ページに書くと、プレビューが読者の目に映るとおりの本を、選んだ電子書籍リーダー、タブレット、スマートフォンで表示します。", "tour.s3t": "本の見た目を整える", "tour.s3b": "「{studio}」で本全体を組版します。テーマをワンクリックで選び、必要なら書体、サイズ、間隔を調整してください。", "tour.s4t": "準備ができたら書き出す", "tour.s4b": "「{export}」では、Amazon KDP、Apple Books、Kobo、Google Play などのストア向けプリセット付きの EPUB と、ペーパーバックまたはハードカバーの印刷版を作れます。", "tour.s4q": "どこから始めますか？", "tour.actImport": "原稿を取り込む", "tour.actSample": "サンプル物語を開く", "tour.actWrite": "書き始める", "tour.skipped": "ツアーを閉じました。サンプル物語の下にある「クイックツアーをもう一度見る」で再び開けます。", "tour.live": "ステップ {step} / {total}：{title}"});
+      Object.assign(UI_STRINGS["zh-Hans"], {"tour.label": "快速导览", "tour.count": "第 {step} 步，共 {total} 步", "tour.next": "下一步", "tour.back": "上一步", "tour.skip": "跳过导览", "tour.show": "再看一遍快速导览", "tour.s1t": "把你的书带进来", "tour.s1b": "用“{import}”导入 Word、Markdown 或纯文本稿件，也可以直接在空白页上开始写。想先四处看看，就打开示例故事。书保存在这台设备上，无需账户。", "tour.s2t": "在这里写，在那里看书", "tour.s2b": "你在页面上写作，预览会按读者看到的样子显示这本书，设备可选电子阅读器、平板或手机。", "tour.s3t": "给书定个样子", "tour.s3b": "“{studio}”为整本书排版。一键选一个主题，然后按需调整字体、字号和间距。", "tour.s4t": "准备好了就导出", "tour.s4b": "“{export}”可生成 EPUB，带有 Amazon KDP、Apple Books、Kobo、Google Play 等书店的预设，还能生成平装或精装的印刷版。", "tour.s4q": "你想从哪里开始？", "tour.actImport": "导入稿件", "tour.actSample": "打开示例故事", "tour.actWrite": "开始写作", "tour.skipped": "导览已关闭。示例故事下方的“再看一遍快速导览”可以再次打开它。", "tour.live": "第 {step} 步，共 {total} 步：{title}"});
       const TOUR_KEY = "beuk.tour.v1";
       const TOUR_DESK_KEY = "beuk.desk";
       /* Each step: groups of selectors; in each group the first visible

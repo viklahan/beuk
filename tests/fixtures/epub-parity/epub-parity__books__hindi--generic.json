@@ -1,0 +1,98 @@
+{
+ "book": "epub-parity/books/hindi.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "26877bc2d0df85bd52cc4473454adc57dcca011cc4744f32ce6d3ba6df17b694"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "97778067f7022c2cf67dd8baa19053ac83a667920800c5d02bf46a2874dacef5"
+  },
+  {
+   "path": "OEBPS/Text/preface.xhtml",
+   "binary": false,
+   "sha256": "78fa1f704a8c607e991c86e8dfffff4b2f06cce58047283e3e0075880b18c3a7"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "0d3b0066cf7f5651145dfb2c42365d1861dc010a630beb8b6f6b6af1a2a71ca5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "d00a2fafadf4fdd634a546aa048e6f0ca9b6e5f42e1bc8f53069eb192c7f1c28"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "a4222aed50ea70242f9c6f06688a52f35f9db2634be7568b2146e18f2df6051b"
+  },
+  {
+   "path": "OEBPS/Text/chapter_04.xhtml",
+   "binary": false,
+   "sha256": "752e75522de0547b6e591285b4ae91bd6c6ed1390454ba1693da95e0b0ee319b"
+  },
+  {
+   "path": "OEBPS/Text/chapter_05.xhtml",
+   "binary": false,
+   "sha256": "53bee9e35360beda8fe46fd439fc040b67c42a2b358ba61c47dc2b5646610df8"
+  },
+  {
+   "path": "OEBPS/Text/chapter_06.xhtml",
+   "binary": false,
+   "sha256": "d0a798cd053ab31fad185c49854f2bab37e83d3f87e2b86977173d9b3bc1dbc6"
+  },
+  {
+   "path": "OEBPS/Text/chapter_07.xhtml",
+   "binary": false,
+   "sha256": "bc3f70c041db35772ea3010c1bc22289aa567398e482a9b4f060536063d7df36"
+  },
+  {
+   "path": "OEBPS/Text/chapter_08.xhtml",
+   "binary": false,
+   "sha256": "c970b904878a644bd7d0fa056e2f35e64a5917a6554c6d835304ed7e6fd7e422"
+  },
+  {
+   "path": "OEBPS/Fonts/Noto_Serif_Devanagari-normal-400.ttf",
+   "binary": true,
+   "sha256": "2b7a4714c52c14d23551166164fde183b907ccba8434bd494dc9ce1182ee365c"
+  },
+  {
+   "path": "OEBPS/Fonts/Noto_Serif_Devanagari-normal-700.ttf",
+   "binary": true,
+   "sha256": "ae3c9eaf3f2481e000381947873d1cbdaabc8d07f064542dcb581e92a6a96b84"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "779f60618b7dca8d317c32c4a267d951ffe90e4d0f8da7b1cc065e747cfc788c"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "a72ac422cefecf9046db9d4517a5ddd984a3e89c919ddef95bc5d7ef5d5a1099"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "13a512ed0b56e197cbbe4e87f1122371d8949603a1503325578dd3f03a34ddff"
+  }
+ ]
+}

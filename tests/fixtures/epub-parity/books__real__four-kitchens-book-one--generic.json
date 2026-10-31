@@ -1,0 +1,68 @@
+{
+ "book": "books/real/four-kitchens-book-one.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "be8d3f9caa753e4077f379e6c7abc97dcf7d2d8503b8cd87209b0b039d8bd7b0"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "a74c04d57fd981f0f4f14e70b1cd9cd8592b757c5d95b43baaf44151c5c7a99f"
+  },
+  {
+   "path": "OEBPS/Text/plate_01.xhtml",
+   "binary": false,
+   "sha256": "c0f745fe826bc776631c03a4036590aea29bbf46e81681c342900848e39f0635"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "b68fdd7620e856610b74070ac6ee01a9d2ee92080aa64257813b91c50f5df14d"
+  },
+  {
+   "path": "OEBPS/Text/alsoby.xhtml",
+   "binary": false,
+   "sha256": "b66ff10935767d27c49e0443829e88be7e3cf65461462ae2a7013a457b80cafa"
+  },
+  {
+   "path": "OEBPS/Images/hyderabadi-chicken-biryani-four-kitchens-1.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Fonts/Abril_Fatface-normal-400.ttf",
+   "binary": true,
+   "sha256": "35cd8ca5df1e0a07612bec416c0722dd31237a35fb81401b9ae2cbab8749c49b"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "8046b515f357b86284819eb2217fdb3c6bcdd6825910415a5167bd630e6c29bd"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "f8e5d15dee464ec028047d75064b8e5eb537d1bf4deaf5ff58f975e8f88117ef"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "ef7ad328c4dc69675d1d21d5337e050e7112ecc1e9f02d3f704687a8ad75bc13"
+  }
+ ]
+}

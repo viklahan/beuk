@@ -61,7 +61,7 @@ stored server-side as a SHA-256 hash.
 | `POST /api/auth/register` | `{email, password}` (password ≥ 8 chars) → creates the account, starts a session; 409 for an existing email (also when two sign-ups race); 429 + `Retry-After` past the per-IP rate limit |
 | `POST /api/auth/login` | → new session cookie; 401 for wrong password or unknown email (same message, same argon2 work); 429 + `Retry-After` past the per-IP rate limit |
 | `POST /api/auth/logout` | destroys the session, clears the cookie |
-| `GET /api/auth/me` | current user, or 401 |
+| `GET /api/auth/me` | `{user, access}` or 401. `access` is `{state, daysLeft, locked}`: `state` is `open` (billing off), `trial`, `subscribed`, `grace` or `paused`; `daysLeft` is the free-trial days left while `trial`, else 0; `locked` lists every pausable feature while `paused`, else `[]`. If the lookup fails the answer is still `{user}` with no `access` key (logged) |
 | `POST /api/auth/forgot` | `{email}` → **always the same 200** `{ok, message, emailDelivery}` for any well-formed address, account or not (no enumeration); per-IP 429, silent per-address limit (see Account basics) |
 | `POST /api/auth/reset` | `{token, password}` → consumes a single-use, 60-minute token; new argon2id hash; **every session of that user is revoked**; 400 for an invalid/used/expired token |
 | `POST /api/auth/password` | signed in; `{currentPassword, newPassword}` → 403 for a wrong current password; on success the user's **other** sessions are revoked (this one stays) |
@@ -364,6 +364,29 @@ EXPORT_DIR/            (Compose: the `exportdata` volume at /data/exports)
 Deleting an export removes both the row and the file. Deleting a
 manuscript keeps its exports (the link is set null) — the archive is the
 user's permanent copy, the manuscript is the working document.
+
+## Store-ready EPUB on the server (Step 3 part 3)
+
+`POST /api/epub` builds the store-ready EPUB with the studio's own EPUB
+code, lifted from `client/index.html` (`src/book/epub/closure.ts`, list
+`EPUB_CLOSURE`) and run in a `node:vm` context inside a worker thread
+that sees no environment variables but the temp-directory ones (no secrets). Body: `{ manuscriptId }` or
+`{ book }`, plus optional `platform` and `lang`. Signed in only; paused
+after the trial (`export.epub`, 402). The book is held to
+`MANUSCRIPT_MAX_BYTES` counted with its pictures back in, before they
+are filled in (413). Settings:
+
+- `EPUB_MAX_CONCURRENT` (default 1): builds at once.
+- `EPUB_MAX_QUEUED` (default 4): builds waiting; beyond that 503 with
+  `Retry-After`. One writer has one build running or waiting at most (429).
+- `EPUB_WORKER_HEAP_MB` (default 512): heap cap of each build's worker
+  (over it: 413).
+- `JOB_TIMEOUT_MS` (default 2 minutes) also stops a build (503).
+- `EPUB_WARM_AT_START` (default on, `0` = off): lift the studio's code in
+  the background at start-up so the first export does not wait for it.
+
+The runtime image carries `typescript` for that lift (a build-time
+extraction is a noted follow-up).
 
 ## Jobs (M5) — server EPUBCheck + PDF/X
 
@@ -2722,12 +2745,15 @@ Founders' Shelf application; none of it touches pricing or checkout.
   on screen and the tab is visible, and its clock stops while the tab
   is hidden, so a writer back from Ko-fi still sees the note fold.
   Reduced motion shows one still frame; without WebGL the plate keeps
-  a painted sea and the thank-you text. The scene has no colours of its
-  own: the page hands it the warmth tokens (`--paper` is the horizon,
-  `--paper-deep` and `--amber-soft` the sky, `--amber` the sea, `--ink`
-  the handwriting) and renders without tone mapping, so each token
-  shows as exactly that colour and the plate stays part of the Paper
-  page if the palette ever changes.
+  a painted sea and the thank-you text. Since V's pick on 2026-10-31
+  the plate is realistic: a real dawn (the last stars, cloud lit from
+  below, the sun's glitter path on the water), a headland with a
+  lighthouse, a ship in the haze and a few gulls, lit in linear HDR
+  and tone-mapped once as it is printed onto the page. The paper is
+  still the page's: the note is `--paper` with the BEUK mark in
+  `--amber` and the words in `--ink`, and the printed grain (on by
+  default) lets `--paper` show through the ink so the plate reads as
+  part of the page rather than a video on it.
 - **Brand** — the sub-brand beside the wordmark and the footer of every
   warmth page is `beuk.studio`, the production domain
   (`BRAND_SUBLINE` / `BRAND_FOOTNOTE` in `src/warmth/pages.ts`; the
@@ -4143,12 +4169,12 @@ New tables (migration 015) are excluded from backups, with reasons: `client_erro
 
 ## Trial and one price
 
-V's decision (2026-10-26): a free trial that starts at account sign-up (TRIAL_DAYS, default 7), then **one price for complete access**. Writing on a device never needs an account, and **export always stays open**. Nothing on this page applies until billing is switched on (STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET + STRIPE_PRICE_ID, and a valid ENTITLEMENTS_FILE when one is set). Until then everything is open, no page mentions a trial or a price, and checkout and the portal answer **501** with a plain reason.
+V's decision (2026-10-26): re-decided 2026-10-30: an account from day one, a free trial that starts at sign-up (TRIAL_DAYS, default **21**), then **one price for complete access**. After the trial without a plan the store-ready files and the account features lock, and **the writer's own words stay downloadable** (the backup file, Word, Markdown and Download all my data). Nothing on this page applies until billing is switched on (STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET + STRIPE_PRICE_ID, and a valid ENTITLEMENTS_FILE when one is set). Until then everything is open, no page mentions a trial or a price, and checkout and the portal answer **501** with a plain reason.
 
-- **The trial clock** (migration 016): `users.trial_ends_at` is stamped at sign-up (now + TRIAL_DAYS). Changing TRIAL_DAYS later never moves a trial that has already started. Accounts made before 016 got `created_at + 7 days`, so an account older than a week has used its trial. To give every existing account a fresh week on the day billing is switched on, run once: `update users set trial_ends_at = now() + interval '7 days' where trial_ends_at < now() + interval '7 days';`
+- **The trial clock** (migration 016): `users.trial_ends_at` is stamped at sign-up (now + TRIAL_DAYS). Changing TRIAL_DAYS later never moves a trial that has already started. Accounts made before 016 got `created_at + 7 days`; migration 021 (21-day trial) re-dated them to `created_at + 21 days` (it only lengthens) and cleared `trial_reminder_sent_at` on the rows it moved, so they get a reminder for the new end. To give every existing account a fresh week on the day billing is switched on, run once: `update users set trial_ends_at = now() + interval '7 days' where trial_ends_at < now() + interval '7 days';`
 - **Access** (`src/access.ts`, the only place it is decided): `open` (billing off), `trial`, `subscribed` (Stripe active or trialing), `grace` (past_due within BILLING_GRACE_DAYS: everything stays open, with a calm notice), `paused` (trial over and no granting subscription).
-- **What pauses** (ACCESS_RULES, answered with 402 `{paused:true, exportOpen:true}`): adding new books to the shelf (`POST /api/manuscripts`), new beta-reader links and refreshing a link's copy (`POST /api/shares`, `/api/shares/:id/republish`), server EPUBCheck and PDF/X (`POST /api/jobs/epubcheck|pdfx`), and saving to the export archive (`POST /api/exports`).
-- **What never pauses** (NEVER_PAUSED, each one tested): writing and every export in the studio (they never ask the server); opening, listing, **saving** and deleting books already on the shelf (on some browsers the device copy can be cleared, so the shelf copy keeps following the writing); archive downloads; job results; managing and closing reading links; readers reading and commenting on existing links; Download all my data; Delete my account.
+- **What pauses** (ACCESS_RULES, answered with 402 `{error, paused:true, feature, exportOpen:false, ownWordsOpen:true}`; `error` is plain words naming what stays open): adding new books to the shelf (`POST /api/manuscripts`), new beta-reader links and refreshing a link's copy (`POST /api/shares`, `/api/shares/:id/republish`), server EPUBCheck (`POST /api/jobs/epubcheck`, `jobs.run`), the server-made print-ready PDF (`POST /api/jobs/pdfx`, `export.print`), and saving to the export archive (`POST /api/exports`). Two more features are declared in `PAUSABLE_FEATURES` and have no route yet (they arrive when the server builds these files): `export.epub` (store-ready EPUB) and `export.wrap` (cover wrap).
+- **What never pauses** (NEVER_PAUSED, each one tested): writing, typesetting and preview, and the own-words exports in the studio (the backup file, Word and Markdown; they never ask the server); opening, listing, **saving** and deleting books already on the shelf (on some browsers the device copy can be cleared, so the shelf copy keeps following the writing); archive downloads; job results; managing and closing reading links; readers reading and commenting on existing links; Download all my data; Delete my account.
 - **Checkout** (`POST /api/billing/checkout`, the one price in STRIPE_PRICE_ID): inside the trial it passes `subscription_data[trial_end]` = Beuk's trial end, so the first charge waits for the end of the trial the writer already has. There is no second trial on top. Stripe requires that date at least 48 hours away, so with under 49 hours left the plan starts now. `BILLING_AUTOMATIC_TAX=true` adds `automatic_tax[enabled]=true`, and for a customer Stripe already has, `customer_update[address]=auto`. Success and cancel return to `/account?billing=success|cancelled`; the page waits for verified webhooks and never assumes the payment went through.
 - **Manage billing** (`POST /api/billing/portal`): a Stripe Customer Portal session for the customer this server linked from a verified webhook (never an id from the client), returning to `/account`. Answers 409 when there is no billing account yet.
 - **Deleting an account** cancels its live subscriptions at Stripe immediately (`DELETE /v1/subscriptions/:id`). With `BILLING_CANCEL_PRORATE=true` Stripe credits the unused time to the customer balance (not a refund); the default is Stripe's own (no credit). Without a Stripe key, or if Stripe refuses, the subscription is left unattributed for the operator, as before.

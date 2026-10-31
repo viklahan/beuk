@@ -142,7 +142,7 @@ test('welcome: sent once at sign-up when mail is configured, with the confirmati
     assert.equal(w.to, 'writer@example.com');
     assert.equal(w.subject, 'Confirm your email address, and welcome to Beuk');
     assert.match(w.text, /\/account\/confirm\?token=[A-Za-z0-9_-]+/);
-    for (const words of ['a shelf', 'an archive', 'beta readers', 'EPUBCheck', 'Writing never needs an account', '7-day free trial', 'announced before launch', '/help/', '/account']) {
+    for (const words of ['a shelf', 'an archive', 'beta readers', 'EPUBCheck', 'follows you to any device', '21-day free trial', '/help/', '/account']) {
       assert.ok(w.text.includes(words), `welcome says: ${words}`);
     }
     assert.ok(w.html && w.html.includes('<li>a shelf, so your books follow you'), 'html list');
@@ -179,25 +179,35 @@ test('welcome: sent once at sign-up when mail is configured, with the confirmati
 });
 
 test('welcome: the plan in plain words; a trial only when the server tracks one; a price only as BILLING_PRICE_LABEL', () => {
-  const trial = { startedAt: '2026-10-26T10:00:00.000Z', endsAt: '2026-11-02T10:00:00.000Z', active: true };
+  const trial = { startedAt: '2026-10-26T10:00:00.000Z', endsAt: '2026-11-16T10:00:00.000Z', active: true };
+  const BANNED = /every export|export(s)? (always|still) (stay|work)|no account|7-day|free week/i;
   // Plans on, trial tracked: when it ends.
   assert.equal(
-    trialWords({ billingOn: true, trial, priceLabel: null }),
-    'Your 7-day free trial started with this account and runs until 2 Nov 2026, then one price for complete access, announced before launch. Exporting your book stays open whatever happens with a plan.',
+    trialWords({ billingOn: true, trial, priceLabel: null }, 21),
+    'Your 21-day free trial started with this account and runs until 16 Nov 2026, then one price for complete access. Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.',
   );
-  assert.ok(trialWords({ billingOn: true, trial, priceLabel: 'LABEL-AS-SET' }).includes('then LABEL-AS-SET for complete access.'));
+  assert.ok(trialWords({ billingOn: true, trial, priceLabel: 'LABEL-AS-SET' }, 21).includes('then LABEL-AS-SET for complete access.'));
   // Plans on, no trial tracked (today's code): no trial claimed at all.
   assert.equal(
-    trialWords({ billingOn: true, trial: null, priceLabel: null }),
-    'Beuk is one price for complete access. Your account page shows your plan. Exporting your book stays open whatever happens with a plan.',
+    trialWords({ billingOn: true, trial: null, priceLabel: null }, 21),
+    'Beuk is one price for complete access. Your account page shows your plan. Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.',
   );
   assert.equal(
-    trialWords({ billingOn: true, trial: null, priceLabel: 'LABEL-AS-SET' }),
-    'Beuk is LABEL-AS-SET for complete access. Your account page shows your plan. Exporting your book stays open whatever happens with a plan.',
+    trialWords({ billingOn: true, trial: null, priceLabel: 'LABEL-AS-SET' }, 21),
+    'Beuk is LABEL-AS-SET for complete access. Your account page shows your plan. Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.',
   );
-  assert.doesNotMatch(trialWords({ billingOn: true, trial: { ...trial, active: false }, priceLabel: null }), /trial/);
+  assert.doesNotMatch(trialWords({ billingOn: true, trial: { ...trial, active: false }, priceLabel: null }, 21), /trial/);
   // Plans off.
-  assert.ok(trialWords({ billingOn: false, trial: null, priceLabel: null }).startsWith("Plans aren't switched on on this server yet"));
+  const off = trialWords({ billingOn: false, trial: null, priceLabel: null }, 21);
+  assert.ok(off.startsWith("Plans aren't switched on on this server yet"));
+  // The length comes from the setting, never a literal.
+  assert.match(off, /a 21-day free trial/);
+  assert.match(trialWords({ billingOn: false, trial: null, priceLabel: null }, 10), /a 10-day free trial/);
+  const tenDay = { startedAt: '2026-10-26T10:00:00.000Z', endsAt: '2026-11-05T10:00:00.000Z', active: true };
+  assert.match(trialWords({ billingOn: true, trial: tenDay, priceLabel: null }, 10), /^Your 10-day free trial/);
+  for (const w of [off, trialWords({ billingOn: true, trial, priceLabel: null }, 21), trialWords({ billingOn: true, trial: null, priceLabel: null }, 21)]) {
+    assert.doesNotMatch(w, BANNED);
+  }
 
   const config = testConfig({ appBaseUrl: 'https://beuk.example' });
   // The label is Config's (BILLING_PRICE_LABEL, read once in src/config.ts); blank counts as unset.
@@ -209,6 +219,9 @@ test('welcome: the plan in plain words; a trial only when the server tracks one;
   const m = welcomeEmail(config, 'https://beuk.example/account/confirm?token=t', { billingOn: true, trial, priceLabel: '<b>LABEL</b>' });
   assert.ok(m.text.includes('then <b>LABEL</b> for complete access'));
   assert.ok(m.html.includes('then &lt;b&gt;LABEL&lt;/b&gt; for complete access'), 'the label is escaped in HTML');
+  assert.match(m.text, /21-day free trial/);
+  assert.doesNotMatch(m.text, BANNED);
+  assert.doesNotMatch(m.html, BANNED);
 });
 
 /** A billing provider that says checkout is configured; nothing else is called. */
@@ -249,7 +262,7 @@ test('welcome: plans on or off is decided as the account page decides it, and ne
       const page = (await pageWithCookie(c, `${s.base}/account`)).text;
       if (k.on) {
         // The email and the account page tell the same trial, to the same day.
-        const m = /Your 7-day free trial started with this account and runs until ([^,]+), then one price for complete access, announced before launch\./.exec(text);
+        const m = /Your 21-day free trial started with this account and runs until ([^,]+), then one price for complete access./.exec(text);
         assert.ok(m, `${k.name}: ${text}`);
         assert.ok(page.includes(`Your free trial runs until ${m[1]}`), `${k.name}: the account page agrees on ${m[1]}`);
       } else {

@@ -1,0 +1,113 @@
+{
+ "book": "books/real/salt-road-standalone.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "879d6d81af1bb99f0cdc92f1eebcf93df561e4502cecbef8f183ee4d5767f752"
+  },
+  {
+   "path": "OEBPS/Text/plate_01.xhtml",
+   "binary": false,
+   "sha256": "2272097be33d72a91dae6a9990bdd7030a4a8f32e4eeae5c6484182d735c563e"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "f3aaa83ae824e5fcbadaea352694f53c780addea4d2e9aece6e9cbb1368bc854"
+  },
+  {
+   "path": "OEBPS/Text/preface.xhtml",
+   "binary": false,
+   "sha256": "d9a66af535fb36e07a45c180f6d4de187d9f30e3a7e348749b88db44de026923"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "4c53d7252bb9c0e410412e4641bafe0ec6bc36afbc46959569e9466f6d6c03e2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "b2beb7db5c543461af5facf005037d98b048320afe067a4911ad8fecc809f6dc"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "7c07624def6f49056fc63ec6f997786e1d3fc95fcd2836784d6b811068ca05c3"
+  },
+  {
+   "path": "OEBPS/Text/chapter_04.xhtml",
+   "binary": false,
+   "sha256": "7283b5cc9f030d817c82f91e24ee1b32e4039a8de12908375aada995f6d5feb8"
+  },
+  {
+   "path": "OEBPS/Text/chapter_05.xhtml",
+   "binary": false,
+   "sha256": "57d5e465279b242479241f02478e99c270fd2fb6431b7e138d6c6284283f3e93"
+  },
+  {
+   "path": "OEBPS/Text/chapter_06.xhtml",
+   "binary": false,
+   "sha256": "c72297f9831d0ed3cb69df4604b02daed2d898b14782bf8cd72025f3943063ae"
+  },
+  {
+   "path": "OEBPS/Text/chapter_07.xhtml",
+   "binary": false,
+   "sha256": "bbd3d507bf70951825603067f528a7d02fbb7d9f4c48cd254f4941a5f4256e94"
+  },
+  {
+   "path": "OEBPS/Text/chapter_08.xhtml",
+   "binary": false,
+   "sha256": "404d865dd355cabe4cf896ac54aa5929c1659bca37d5f590b29f29496d65621c"
+  },
+  {
+   "path": "OEBPS/Images/the-house-at-the-end-of-salt-road-sr-house.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-desk-at-salt-road-sr-desk.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-harbour-at-low-tide-sr-harbour.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-road-out-of-salt-road-sr-road.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "24f36ff384a8c55b53d64a21a04129c716f086c2d098d6400e9bfd2a559834dc"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "d65c24b2a9419fd1a8fda0871034c57e5bf8b7ea95a0ed9744eea42add3a5260"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "5025f05b30d3f90ad869d7491f8befbf9df1fb2609d0ff672df1dcc98bc1ce09"
+  }
+ ]
+}

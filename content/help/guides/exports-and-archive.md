@@ -15,7 +15,7 @@ What you're doing: taking finished books out of Beuk in the shape each destinati
 
 ### The export shelf
 
-- **EPUB** — the book itself, per [store preset](/help/platform-presets). Byte-0 mimetype stored uncompressed, EPUB 3 navigation plus an NCX fallback, exactly per the standard.
+- **EPUB** — the book itself, per [store preset](/help/platform-presets). Byte-0 mimetype stored uncompressed, EPUB 3 navigation plus an NCX fallback, exactly per the standard. The Beuk server builds it from the book on your desk, so you need to be signed in and online to download it.
 - **Markdown (.md)** — a clean archive of the manuscript with YAML front matter (title, author, ISBN, language, rights…). Made for Obsidian, Scrivener, Ulysses, or a Git repository — the copy that outlives every app, including this one. Download it or copy it straight from the dialog.
 - **Standalone HTML** — the whole typeset book as one self-contained page, styles embedded. Good for sharing a reading copy or archiving exactly what readers saw.
 - **Word (.docx)** — for editors and collaborators who live in Word: real heading styles, body text, scene breaks, and your endnotes gathered at the end.

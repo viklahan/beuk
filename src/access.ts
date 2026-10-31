@@ -6,30 +6,34 @@ import type { Db } from './db.js';
 import { entitlementsFor, loadEntitlements, type EntitlementsLoad, type EntitlementState } from './entitlements.js';
 
 /**
- * Trial + one price (V, 2026-10-26): a free trial that starts at account
- * sign-up (TRIAL_DAYS, default 7), then ONE price for complete access.
- * Writing on a device never needs an account, and export always stays
- * open ("never hold a book hostage").
+ * Trial + one price (V, 2026-10-26, rules re-decided 2026-10-30): an account
+ * from day one, 21 days of everything (TRIAL_DAYS, default 21), then ONE
+ * price for everything. After day 21 unpaid, the store-ready files and the
+ * account features lock, and the writer's own words stay theirs.
  *
  * This file is the ONLY place the account's access is decided. It sits
  * on top of src/entitlements.ts (the subscription decision over verified
- * webhook rows) and adds the trial clock.
+ * webhook rows) and adds the trial clock. The server is the judge; the
+ * studio only shows copy.
  *
  * The rules are data (ACCESS_RULES below): which account features pause
  * after the trial when there is no subscription, and which routes they
  * cover. Everything not listed is never paused; NEVER_PAUSED names the
  * important ones so the tests can prove it.
  *
- * Why these four, and why not the shelf copy of a book already there:
- * the writer's text must never be lost. The device copy always saves (it
- * never talks to the server). A book ALREADY on the shelf keeps saving
- * there too (PUT /api/manuscripts/:id is never paused): on some browsers
- * the device copy can be cleared, and the shelf copy is then the only
- * one, so pausing it could cost a writer their latest pages. What pauses
- * is adding NEW books to the shelf, new beta-reader links (and refreshing
- * an existing link's copy), server EPUBCheck / PDF/X checks, and saving
- * new files into the export archive. Every export from the studio is
- * made on the device and never asks the server.
+ * Open after day 21 unpaid: writing, typesetting, preview, the backup
+ * file, Word (.docx), Markdown, books already on the shelf (they keep
+ * saving: on some browsers the device copy can be cleared, and the shelf
+ * copy is then the only one), archive downloads, existing beta links, and
+ * Download all my data.
+ *
+ * Locked after day 21 unpaid (PAUSABLE_FEATURES): the store-ready EPUB,
+ * the print PDF, the cover wrap, adding new books to the shelf, new beta
+ * links (and refreshing an existing link's copy), server EPUBCheck checks,
+ * the server-made print-ready PDF (the pdfx job, export.print), and saving
+ * new files to the archive. export.epub is the server-built store-ready
+ * EPUB (POST /api/epub, Step 3 part 3); export.wrap is declared here and its
+ * route arrives with the server-built cover wrap (part 4).
  */
 
 export type AccessState =
@@ -68,8 +72,11 @@ export interface AccountAccess {
 export const PAUSABLE_FEATURES = {
   'shelf.add': 'adding new books to your shelf',
   'shares.create': 'new beta-reader links',
-  'jobs.run': 'server EPUBCheck and PDF/X checks',
+  'jobs.run': 'server EPUBCheck checks',
   'archive.upload': 'saving new files to your export archive',
+  'export.epub': 'store-ready EPUB files',
+  'export.print': 'print-ready PDFs',
+  'export.wrap': 'cover wraps',
 } as const;
 export type PausableFeature = keyof typeof PAUSABLE_FEATURES;
 
@@ -79,7 +86,8 @@ export const ACCESS_RULES: ReadonlyArray<{ method: 'POST'; path: string; feature
   { method: 'POST', path: '/api/shares', feature: 'shares.create' },
   { method: 'POST', path: '/api/shares/:id/republish', feature: 'shares.create' },
   { method: 'POST', path: '/api/jobs/epubcheck', feature: 'jobs.run' },
-  { method: 'POST', path: '/api/jobs/pdfx', feature: 'jobs.run' },
+  { method: 'POST', path: '/api/jobs/pdfx', feature: 'export.print' },
+  { method: 'POST', path: '/api/epub', feature: 'export.epub' },
   { method: 'POST', path: '/api/exports', feature: 'archive.upload' },
 ];
 
@@ -193,14 +201,34 @@ export async function accountAccess(deps: AccessDeps, userId: string): Promise<A
   };
 }
 
+/** What the studio is told about an account's access (GET /api/auth/me).
+ *  The server stays the judge; the studio only shows copy from this.
+ *  `daysLeft` is the free-trial days left while the state is 'trial', else 0.
+ *  `locked` is every pausable feature while 'paused', else empty. */
+export interface AccessSummary {
+  state: AccessState;
+  daysLeft: number;
+  locked: PausableFeature[];
+}
+
+export function accessSummary(access: AccountAccess): AccessSummary {
+  return {
+    state: access.state,
+    daysLeft: access.state === 'trial' ? access.trial.daysLeft : 0,
+    locked: access.state === 'paused' ? (Object.keys(PAUSABLE_FEATURES) as PausableFeature[]) : [],
+  };
+}
+
 /** The 402 a paused feature answers. Plain words: some studio paths show
  *  the server's `error` text as it is. */
 export function pausedBody(feature: PausableFeature): Record<string, unknown> {
   return {
-    error: `Your free trial has ended, so ${PAUSABLE_FEATURES[feature]} is paused until you choose a plan. Writing, the books on your shelf and every export still work.`,
+    error: `Your free trial has ended, so ${PAUSABLE_FEATURES[feature]} is paused until you choose a plan. You can still write, typeset and preview, and download your own words any time: the backup file, Word and Markdown, and Download all my data.`,
     paused: true,
     feature,
-    exportOpen: true,
+    // Store-ready exports lock; the writer's own words never do.
+    exportOpen: false,
+    ownWordsOpen: true,
   };
 }
 

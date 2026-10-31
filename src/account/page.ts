@@ -98,13 +98,13 @@ export function signedOutPage(config: Config): string {
         <a class="portal-button" href="/studio?signin">Sign in</a>
         <a class="portal-button quiet" href="/studio?signup">Create an account</a>
       </p>
-      <p class="muted">Writing never needs an account: the studio keeps your book on this device. An account adds a shelf that follows you to any device, an archive for your finished files, and links for beta readers.</p>`;
+      <p class="muted">An account gives you a shelf that follows you to any device, an archive for your finished files, and links for beta readers.</p>`;
   return portalChrome(config, 'Your account', body, { signedIn: false });
 }
 
 /** What pauses after the trial, and what never does (src/access.ts). */
-const PAUSED_LIST = 'adding new books to your shelf, new beta-reader links, server EPUBCheck and PDF/X checks, and saving new files to your archive';
-const ALWAYS_OPEN = 'Writing in the studio, the books already on your shelf (they keep saving), every export, your archive downloads, the reading links you already have, Download all my data, and deleting your account';
+const PAUSED_LIST = 'the store-ready EPUB, the print PDF, the cover wrap, adding new books to your shelf, new beta-reader links, server EPUBCheck and PDF/X checks, and saving new files to your archive';
+const ALWAYS_OPEN = 'Writing, typesetting and preview, the books already on your shelf (they keep saving), the backup file, Word and Markdown, your archive downloads, the reading links you already have, Download all my data, and deleting your account';
 
 function planSection(plan: AccountPlan, billingReturn: 'success' | 'cancelled' | null): string {
   const s = plan.subscription;
@@ -168,7 +168,7 @@ function planSection(plan: AccountPlan, billingReturn: 'success' | 'cancelled' |
     if (plan.mode === 'test') lines.push('<p class="muted">This server takes test payments only (Stripe test mode).</p>');
   }
   if (buttons.length) lines.push(`<p class="portal-actions">${buttons.join(' ')}</p>`);
-  lines.push('<p class="muted">Whatever happens with a plan, your books stay yours: export is always open, and so is everything on this page.</p>');
+  lines.push('<p class="muted">Whatever happens with a plan, your words stay yours: the backup file, Word and Markdown are always open, and so is everything on this page.</p>');
   return `<section class="portal-card" id="plan" aria-labelledby="plan-h" data-plan-status="${esc(s.status)}" data-plan-access="${esc(plan.access)}">
         <h2 id="plan-h">Plan</h2>
         ${lines.join('\n        ')}

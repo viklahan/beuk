@@ -1,0 +1,78 @@
+{
+ "book": "books/real/salt-road-book-one.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "879d6d81af1bb99f0cdc92f1eebcf93df561e4502cecbef8f183ee4d5767f752"
+  },
+  {
+   "path": "OEBPS/Text/plate_01.xhtml",
+   "binary": false,
+   "sha256": "2272097be33d72a91dae6a9990bdd7030a4a8f32e4eeae5c6484182d735c563e"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "f995db21abf0fd37ae890d8237e05dcd4044c628ade1470daee3337cbbfef332"
+  },
+  {
+   "path": "OEBPS/Text/preface.xhtml",
+   "binary": false,
+   "sha256": "d9a66af535fb36e07a45c180f6d4de187d9f30e3a7e348749b88db44de026923"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "4c53d7252bb9c0e410412e4641bafe0ec6bc36afbc46959569e9466f6d6c03e2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "b2beb7db5c543461af5facf005037d98b048320afe067a4911ad8fecc809f6dc"
+  },
+  {
+   "path": "OEBPS/Text/alsoby.xhtml",
+   "binary": false,
+   "sha256": "1da804b84450bc67d8617cc561bbf4e0c5834096ef4561809d3a15d193962fbe"
+  },
+  {
+   "path": "OEBPS/Images/the-house-at-the-end-of-salt-road-sr-house.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/the-desk-at-salt-road-sr-desk.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "ed466d3c8742398aba355e93950944b821d5042678cf2592d188fb38952eab66"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "1e851e89c51708ac86750a8484c442270e10abd5fe139b75521e56ff61b85b39"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "933b71b584ca0d7e8957a1caf5bf409a138239fe9184423d1bd551e3e0fa9372"
+  }
+ ]
+}

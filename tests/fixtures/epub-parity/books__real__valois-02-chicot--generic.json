@@ -1,0 +1,573 @@
+{
+ "book": "books/real/valois-02-chicot.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "fc99dda5b559b7409a4a2ee5ea970479c077bb72ec7f4090c91215c9dc11bc46"
+  },
+  {
+   "path": "OEBPS/Text/halftitle.xhtml",
+   "binary": false,
+   "sha256": "55a48082c3e27c9e78d7b2eb5afa999baa383c9acd636d49d0df37eb94734ff8"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "5d1f7423b41e8d22279d976e3cfc0953d7af9aeae08811794a3b9b0115b602d3"
+  },
+  {
+   "path": "OEBPS/Text/copyright.xhtml",
+   "binary": false,
+   "sha256": "651ff606ee58e7c16382966838aa5dd768551d9c5c674be55b78d1fb4e68369c"
+  },
+  {
+   "path": "OEBPS/Text/epigraph.xhtml",
+   "binary": false,
+   "sha256": "6018458f8508bdf552689dbf96bf4ec926938e9561c10d5e6c953e7204e86ec9"
+  },
+  {
+   "path": "OEBPS/Text/dedication.xhtml",
+   "binary": false,
+   "sha256": "a4847424a5d78ce4bab2ab45418d537c0831e07c263e86b7320f338ff57bf720"
+  },
+  {
+   "path": "OEBPS/Text/toc.xhtml",
+   "binary": false,
+   "sha256": "d3a6cf432b1c9c4b98ee408b3004caa066ba8c89e54c5cf953b590d3873b8735"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "c5c698576eaba6b5b368358343d54091c6f5b8a5c3a4f503f85e0088c30d796a"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "59a6a2451cef093ff1ce1405ba3accbd321b82d572e62f8b7dfc0093572a27df"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "e29884c0de8501da891b1515a7c3d34b61e15a503557a1d61748a22b1eb365f2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_04.xhtml",
+   "binary": false,
+   "sha256": "4880e27ca47568bb9615adc886feb2969b1c295295fd547432d808ec64ce5791"
+  },
+  {
+   "path": "OEBPS/Text/chapter_05.xhtml",
+   "binary": false,
+   "sha256": "da58abed790d0c7f81a5b69665269a96760a4c4e819f2cfb79482923e8e6bf73"
+  },
+  {
+   "path": "OEBPS/Text/chapter_06.xhtml",
+   "binary": false,
+   "sha256": "9d21cc43199ae49f93fd02624f2f301919fbb269186dcc34c3fad03a8d44fd7b"
+  },
+  {
+   "path": "OEBPS/Text/chapter_07.xhtml",
+   "binary": false,
+   "sha256": "017a057fd670977e1f573a9c62520fc77fc9c142fdc2166a955a0bcf10ccbd9e"
+  },
+  {
+   "path": "OEBPS/Text/chapter_08.xhtml",
+   "binary": false,
+   "sha256": "afb7d75529efab83345eb0d647a669cb7737851df94663e3a47580f940c740cc"
+  },
+  {
+   "path": "OEBPS/Text/chapter_09.xhtml",
+   "binary": false,
+   "sha256": "344eeb898cfd0e7c863ceade579ac751ce418ea18bf7da02407fe4f19ff995af"
+  },
+  {
+   "path": "OEBPS/Text/chapter_10.xhtml",
+   "binary": false,
+   "sha256": "1dcd406002f2ea8fe35ce7a44e10d299abe68bcd3f837b24c80b80e9b0d126b6"
+  },
+  {
+   "path": "OEBPS/Text/chapter_11.xhtml",
+   "binary": false,
+   "sha256": "d09b934e216a5425ab4fb204a03c534f718fd50d2f72771fee2f4c38184eff19"
+  },
+  {
+   "path": "OEBPS/Text/chapter_12.xhtml",
+   "binary": false,
+   "sha256": "8435c70a1752de4040513bc762c30c56a0ff1ad0b46606e8ac2aa0ca6f1556a6"
+  },
+  {
+   "path": "OEBPS/Text/chapter_13.xhtml",
+   "binary": false,
+   "sha256": "fccff89941025a7f1d57ba444ce908c021fd517c42d0847e5ebdf269f41682da"
+  },
+  {
+   "path": "OEBPS/Text/chapter_14.xhtml",
+   "binary": false,
+   "sha256": "d9d0f417e9c1fc90c805bbf0ae41416e81fc9a0e825963b7d69631dc91beedbf"
+  },
+  {
+   "path": "OEBPS/Text/chapter_15.xhtml",
+   "binary": false,
+   "sha256": "5bfc3571070fdf32be15827fffe2215116ebae087a801608bd6f8ba47948ff32"
+  },
+  {
+   "path": "OEBPS/Text/chapter_16.xhtml",
+   "binary": false,
+   "sha256": "faad8e066ef6cf143a0141967602de7a62d5268c7e17306f78ff6bc4b27c086f"
+  },
+  {
+   "path": "OEBPS/Text/chapter_17.xhtml",
+   "binary": false,
+   "sha256": "c577210e84ac22debd050b9871c3cc1a338be1bd362e1d69f9ab4da302a94909"
+  },
+  {
+   "path": "OEBPS/Text/chapter_18.xhtml",
+   "binary": false,
+   "sha256": "1d4cf4b6e4d381ca6508eba3daac23ad1bb17a581ae54211db9858edbd4ddd50"
+  },
+  {
+   "path": "OEBPS/Text/chapter_19.xhtml",
+   "binary": false,
+   "sha256": "b8348a62a38361021ccfb301e7903234a7ef84dec445524c6fff56c1954b44d5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_20.xhtml",
+   "binary": false,
+   "sha256": "f50d110f516c3ee2d6d3c6da49ed3aac12362ab6e10aa6c7aeeb4311f97a6916"
+  },
+  {
+   "path": "OEBPS/Text/chapter_21.xhtml",
+   "binary": false,
+   "sha256": "7a2f6b621162bfb637bca90a4a4d67d60c9e83fe614d910c8da6f01e9de1a65f"
+  },
+  {
+   "path": "OEBPS/Text/chapter_22.xhtml",
+   "binary": false,
+   "sha256": "fe05da91b6b83f4ce7303482e6a0da7343aa37a31091dd13a1774bb6857e803b"
+  },
+  {
+   "path": "OEBPS/Text/chapter_23.xhtml",
+   "binary": false,
+   "sha256": "cfc8283ce5f6e5fff188498f651de55224a3a0561c17d77d3186b70e031e2789"
+  },
+  {
+   "path": "OEBPS/Text/chapter_24.xhtml",
+   "binary": false,
+   "sha256": "a39e434c9f4d3a1bc0873b24309298df995b6b269962452356e63a0e81aeb217"
+  },
+  {
+   "path": "OEBPS/Text/chapter_25.xhtml",
+   "binary": false,
+   "sha256": "15f5820911a91ea51671fb72aa34ae5389c9eb597bacab48c0f0a3073576e2fe"
+  },
+  {
+   "path": "OEBPS/Text/chapter_26.xhtml",
+   "binary": false,
+   "sha256": "515c381ccfbeeadeca26d2a1b18713562252df581bceda0634a51c0537cbdc53"
+  },
+  {
+   "path": "OEBPS/Text/chapter_27.xhtml",
+   "binary": false,
+   "sha256": "b5101423d94ad24aee2af6c6c7536636aea8b4a937680e8e013a64c9317b8fab"
+  },
+  {
+   "path": "OEBPS/Text/chapter_28.xhtml",
+   "binary": false,
+   "sha256": "008faff0800f31dc5826918fcdb3b643c635a18b85138c9d68980820d8ae0c71"
+  },
+  {
+   "path": "OEBPS/Text/chapter_29.xhtml",
+   "binary": false,
+   "sha256": "efe9898706706bcc736ee683ac40a75da4a9c6ad787bb448bf88730dcf626a61"
+  },
+  {
+   "path": "OEBPS/Text/chapter_30.xhtml",
+   "binary": false,
+   "sha256": "03f061154f9897da8d6fbf8b65f509a74f5335809dd23dacd9bcc43f7020c9e1"
+  },
+  {
+   "path": "OEBPS/Text/chapter_31.xhtml",
+   "binary": false,
+   "sha256": "045df05941a1adafddee97a83644e59d99e3c8e968e0fd2239ee3a61a48435cd"
+  },
+  {
+   "path": "OEBPS/Text/chapter_32.xhtml",
+   "binary": false,
+   "sha256": "6dedf456095044bed86fa84ce0739f4cacffc26dfbf95847f9fee03f9dd5cb20"
+  },
+  {
+   "path": "OEBPS/Text/chapter_33.xhtml",
+   "binary": false,
+   "sha256": "644e9ee74ed7de60d9e92c1115fd38ec5d0f9bc759d2bbc42a7b7c4fdfd8c9c0"
+  },
+  {
+   "path": "OEBPS/Text/chapter_34.xhtml",
+   "binary": false,
+   "sha256": "fefad977e5cb2e7312145cd6594b426e550033592e35ea4cb6b2ad3ea666accc"
+  },
+  {
+   "path": "OEBPS/Text/chapter_35.xhtml",
+   "binary": false,
+   "sha256": "bc326f7af973a537e03143879e28d21a17b0d0b155a5ac5ed98beb96a1a09b3e"
+  },
+  {
+   "path": "OEBPS/Text/chapter_36.xhtml",
+   "binary": false,
+   "sha256": "4fc693422432ceee4062d05475d5e0547c5d190e8a4e8029b20904878470e15c"
+  },
+  {
+   "path": "OEBPS/Text/chapter_37.xhtml",
+   "binary": false,
+   "sha256": "ecb46380b5ae2b19175af018431febdfbe948972714b844b8611d4a44e4bcd0b"
+  },
+  {
+   "path": "OEBPS/Text/chapter_38.xhtml",
+   "binary": false,
+   "sha256": "9b9db8e85f2d6b9c5ce7163117a453118ac5ad2af8f7b90bbba8ac7f04847ef5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_39.xhtml",
+   "binary": false,
+   "sha256": "40543e5804784eaadcba9c15026a17f5fb6f81c3f98145ba37ee9d8fc82eb610"
+  },
+  {
+   "path": "OEBPS/Text/chapter_40.xhtml",
+   "binary": false,
+   "sha256": "13013439da4b65f32b8b542aba78c798d9b7741efd0182abaf66687ba3ef8f21"
+  },
+  {
+   "path": "OEBPS/Text/chapter_41.xhtml",
+   "binary": false,
+   "sha256": "3a28c2b0d6b96fff9ce6f44e6d9c7c9d3019f7139091aed371423b3f13373d56"
+  },
+  {
+   "path": "OEBPS/Text/chapter_42.xhtml",
+   "binary": false,
+   "sha256": "48d71520c67d9caf4d628d34e7e086e5e73bd9164d5922f727f8f9b199ec0146"
+  },
+  {
+   "path": "OEBPS/Text/chapter_43.xhtml",
+   "binary": false,
+   "sha256": "266736e63eebefeaa5431b9c1f8b6497513a1e14aed50fdf69c0c0fc25788a89"
+  },
+  {
+   "path": "OEBPS/Text/chapter_44.xhtml",
+   "binary": false,
+   "sha256": "a4cab7882bb9f1137cd0db603930036c2a2ad55b27267540086d99c838d684a1"
+  },
+  {
+   "path": "OEBPS/Text/chapter_45.xhtml",
+   "binary": false,
+   "sha256": "93ce4bb27d6fea3cb335c55ca515748df1fd0c725d614e680022928d760890c7"
+  },
+  {
+   "path": "OEBPS/Text/chapter_46.xhtml",
+   "binary": false,
+   "sha256": "4f0e4722114f08dd8b0dc1b2b9b47b77e55a3b504c18b9b39e27b8417abf1d62"
+  },
+  {
+   "path": "OEBPS/Text/chapter_47.xhtml",
+   "binary": false,
+   "sha256": "84c6aa665765a4d95428ed4c92d5bf3c1c40fbde6ddded59fad1693b7de9ec50"
+  },
+  {
+   "path": "OEBPS/Text/chapter_48.xhtml",
+   "binary": false,
+   "sha256": "7e308fdf9cdaa2cf1630d5cd14ff654b24b5650e85e7ed3aab7ce22df42f419d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_49.xhtml",
+   "binary": false,
+   "sha256": "1ab658fc6fa131213cec3fd335b0a4e4c294181c66a86fa71596b08c27635abf"
+  },
+  {
+   "path": "OEBPS/Text/chapter_50.xhtml",
+   "binary": false,
+   "sha256": "140f9eb8aff051d6c8a2bf60168078cf7512a1c0bdfa2e778f187705d1d13c9d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_51.xhtml",
+   "binary": false,
+   "sha256": "ac8c511beedd538683fc4690fc0499f874357c4247a649e8c0dc14a2dd785989"
+  },
+  {
+   "path": "OEBPS/Text/chapter_52.xhtml",
+   "binary": false,
+   "sha256": "f7844dc7b8414bc6607e26e8129ac8df238576f4cc9b58828872d72d3f755950"
+  },
+  {
+   "path": "OEBPS/Text/chapter_53.xhtml",
+   "binary": false,
+   "sha256": "37c64e59ca28129dee28be03dc537f544708c695fb4201413d43b08eb8572677"
+  },
+  {
+   "path": "OEBPS/Text/chapter_54.xhtml",
+   "binary": false,
+   "sha256": "732af1665583fe9fb2e801e83e278274e4ba758685d1d8d3f8e174542c7a434d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_55.xhtml",
+   "binary": false,
+   "sha256": "797e377df60e4b2818ce66c3eef41ceb7bee0a4efd40f0d9c46be9f32f19c887"
+  },
+  {
+   "path": "OEBPS/Text/chapter_56.xhtml",
+   "binary": false,
+   "sha256": "059214bb456de83f68ac00ec6009a1b542fe67e930323668d37ecff9fa1b2eb9"
+  },
+  {
+   "path": "OEBPS/Text/chapter_57.xhtml",
+   "binary": false,
+   "sha256": "b31db3870a9b2f97807ac53c10de7fd5c9dd44f44c351fb65b5d2cfe2e3896d4"
+  },
+  {
+   "path": "OEBPS/Text/chapter_58.xhtml",
+   "binary": false,
+   "sha256": "3591d2c98a922fed22d1d940db6f9ef2cc5824e04641ef5e0348e9c63f6065d2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_59.xhtml",
+   "binary": false,
+   "sha256": "dd590a45c6ba316822a81ab7dcb962f91976f599250dec4db284dced16bce0b2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_60.xhtml",
+   "binary": false,
+   "sha256": "c6ca243f07b5132b5ee9703ec16378b08cf987fa31c51fb05df915ad4407e8d7"
+  },
+  {
+   "path": "OEBPS/Text/chapter_61.xhtml",
+   "binary": false,
+   "sha256": "e3fb6d6cde4b0e163561b89cb3b638ecb547b34c9518ea4162a0093028902e1a"
+  },
+  {
+   "path": "OEBPS/Text/chapter_62.xhtml",
+   "binary": false,
+   "sha256": "50b4b962e5a9c5fa44cf919155dbb9ae91e57d57e57bebbe714492b7e3521cd7"
+  },
+  {
+   "path": "OEBPS/Text/chapter_63.xhtml",
+   "binary": false,
+   "sha256": "9c105f3ef2dfd97e51946353937e054e09c4d2cca1d9158582831d41628c6e43"
+  },
+  {
+   "path": "OEBPS/Text/chapter_64.xhtml",
+   "binary": false,
+   "sha256": "8d558808bb70a3d7f59781232f8e42560921b04ea287d77c4bd6b2a83d97b991"
+  },
+  {
+   "path": "OEBPS/Text/chapter_65.xhtml",
+   "binary": false,
+   "sha256": "df90d877561fcf966ded2e254fe6e896cac4e227e19cb8e3e0ea9ef063e61d4d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_66.xhtml",
+   "binary": false,
+   "sha256": "e971c9b8f7c6d6760a3ac0a422914a86c18031f3b89ae9dcfe8eccecd8d35b32"
+  },
+  {
+   "path": "OEBPS/Text/chapter_67.xhtml",
+   "binary": false,
+   "sha256": "0d062ef9b22656e3f665bff1f3867cc8e8abf8ac79101b322fefd0d2b5ae11f2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_68.xhtml",
+   "binary": false,
+   "sha256": "ae69293a31d64f80e79612de08639f7915ff48fe59492431c08114aedafb378f"
+  },
+  {
+   "path": "OEBPS/Text/chapter_69.xhtml",
+   "binary": false,
+   "sha256": "b867f92d03899dd586481128c45b6c90734cbf2d06ae95893931b3187d18dba3"
+  },
+  {
+   "path": "OEBPS/Text/chapter_70.xhtml",
+   "binary": false,
+   "sha256": "315f13c02302c256ef245c3b596437f9ced3e72e59bf8bf6e3b820ffebd8d62a"
+  },
+  {
+   "path": "OEBPS/Text/chapter_71.xhtml",
+   "binary": false,
+   "sha256": "e3dce36b94c2286f500d3dd881b9fd642b7bd9cbea6f3eac563e7d051f88f303"
+  },
+  {
+   "path": "OEBPS/Text/chapter_72.xhtml",
+   "binary": false,
+   "sha256": "2ee7c52cfd9cb473a4126c3684af842a8bb3735aa5534ab8fe21f6e90f442790"
+  },
+  {
+   "path": "OEBPS/Text/chapter_73.xhtml",
+   "binary": false,
+   "sha256": "5a72cf92d295ec29788b46ecdb845cf18098caf61787f1b5988341f569ecc7a5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_74.xhtml",
+   "binary": false,
+   "sha256": "c63cf0205b08654795605c8dcdb76d830fc9cb3e934dc36bc10918993fbee4ea"
+  },
+  {
+   "path": "OEBPS/Text/chapter_75.xhtml",
+   "binary": false,
+   "sha256": "0d4ddc190191e2e02ad9e05d4cbe7a2974ea24531f0630e99392477853985a38"
+  },
+  {
+   "path": "OEBPS/Text/chapter_76.xhtml",
+   "binary": false,
+   "sha256": "22054ec4c5909071fec3ba62b9595c97a6dd85ce6a2903c4bf7d7bc80e5d6e1a"
+  },
+  {
+   "path": "OEBPS/Text/chapter_77.xhtml",
+   "binary": false,
+   "sha256": "f768674eb9cdaf69ee274b7d561ef1460a04c47766035ae8b1b843ed48769a42"
+  },
+  {
+   "path": "OEBPS/Text/chapter_78.xhtml",
+   "binary": false,
+   "sha256": "35680c68160fbbb4047b5bd3bece1c89ca01cd6d5b8c7e0504b8e2d745cbc48e"
+  },
+  {
+   "path": "OEBPS/Text/chapter_79.xhtml",
+   "binary": false,
+   "sha256": "5ef89d18f391d33e7d76a964292e44ab690d5847d6893605743f9c746c451b3d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_80.xhtml",
+   "binary": false,
+   "sha256": "0a65835dcfc748120ea41029f6f7fedefd1bbdd54ec3893ceed0301f9810aa33"
+  },
+  {
+   "path": "OEBPS/Text/chapter_81.xhtml",
+   "binary": false,
+   "sha256": "fe6fa6140400478230d268fc5afac9555cc005a1ff29d6d04b3a5c98909def71"
+  },
+  {
+   "path": "OEBPS/Text/chapter_82.xhtml",
+   "binary": false,
+   "sha256": "3f0f1926b454031dd616a57c05ec01513b973fc00ffc760dce3889c85d119d20"
+  },
+  {
+   "path": "OEBPS/Text/chapter_83.xhtml",
+   "binary": false,
+   "sha256": "2287cc86d622ea65dd7197c4bbafd6ee09b51915495e0a125e182cd7036b106d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_84.xhtml",
+   "binary": false,
+   "sha256": "caef1e35f3eb01535e35465282e45439cec4069f0109526b57a18c5d2cffcd0d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_85.xhtml",
+   "binary": false,
+   "sha256": "04807cdc86c24c533e49b512f3ab1e713b031970ab8cb6fc0f611c6aab29510a"
+  },
+  {
+   "path": "OEBPS/Text/chapter_86.xhtml",
+   "binary": false,
+   "sha256": "4978ad6c07b1e975068787ba17bcf9909559ad93e86347d0bee976e9ccca2a80"
+  },
+  {
+   "path": "OEBPS/Text/chapter_87.xhtml",
+   "binary": false,
+   "sha256": "82e999574234e4d232707d067190b0c18744bf02d4a5bc2215c149937e0945ec"
+  },
+  {
+   "path": "OEBPS/Text/chapter_88.xhtml",
+   "binary": false,
+   "sha256": "e217e705917e3b6fa6d4effca3b4efc280e75161acfd27e648a61679d017096d"
+  },
+  {
+   "path": "OEBPS/Text/chapter_89.xhtml",
+   "binary": false,
+   "sha256": "8edfb2241d02b3a7db9a3e6a75bdebf751c4504d211ffc0b3a55909af3443e52"
+  },
+  {
+   "path": "OEBPS/Text/chapter_90.xhtml",
+   "binary": false,
+   "sha256": "cc449aab7be36500be59af57fd574a1df361e1b205c6cd15df8a34c2d5a35870"
+  },
+  {
+   "path": "OEBPS/Text/chapter_91.xhtml",
+   "binary": false,
+   "sha256": "d70fcc23dca852e409fb5dd1cab8e3ee09418e424f94793622a9fa9f423a25a5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_92.xhtml",
+   "binary": false,
+   "sha256": "38a335ac7ec350bfb9da8413083a2c661198bf9474a7f216e3b77e025ea665e2"
+  },
+  {
+   "path": "OEBPS/Text/chapter_93.xhtml",
+   "binary": false,
+   "sha256": "76572e7816a744c63a890ac62655d77eea3330f48c37acf1700024ad3ea16934"
+  },
+  {
+   "path": "OEBPS/Text/chapter_94.xhtml",
+   "binary": false,
+   "sha256": "5ba77fa6c61d5344109b4b524a2e4bda6f196b6721247183441632e8981a9ef0"
+  },
+  {
+   "path": "OEBPS/Text/chapter_95.xhtml",
+   "binary": false,
+   "sha256": "b8b3a3e10d870193338eb5167131a6ef29c7607e9523414880b2170b1909e6fd"
+  },
+  {
+   "path": "OEBPS/Text/chapter_96.xhtml",
+   "binary": false,
+   "sha256": "08a11a8e902e3425e0fb0a16718e0359b6210e6613ea32a3f9a6ca8f98be2121"
+  },
+  {
+   "path": "OEBPS/Text/chapter_97.xhtml",
+   "binary": false,
+   "sha256": "868c10c01ee9f9852f13627d89fb60bf0c391ab5c872f2affdeea6bc62fd1155"
+  },
+  {
+   "path": "OEBPS/Text/acknowledgments.xhtml",
+   "binary": false,
+   "sha256": "39eb7d5752495042b85af9aaad05cdbed0757bb10d38ba2892405859fbf119e3"
+  },
+  {
+   "path": "OEBPS/Text/aboutauthor.xhtml",
+   "binary": false,
+   "sha256": "08ae9524fd96cb11e732314f4b6852bf33157d94ce8d22a1490cd67b99553f46"
+  },
+  {
+   "path": "OEBPS/Text/alsoby.xhtml",
+   "binary": false,
+   "sha256": "a2f3afcbbd6012b1d0731e5b577142a263cf5104ba45440408e492d1660a79d2"
+  },
+  {
+   "path": "OEBPS/Text/colophon.xhtml",
+   "binary": false,
+   "sha256": "48a02839d8d82f0152d300b1430036f84f6f7516e513d78b1bfdd0431484c92c"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "c3cfb10d0b8d3390ffaddf62c172a38b4ef29303b1fe8472b00402703b7db279"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "0d3acdcf69fcc3cad976796652daf666841cf5428984de325f1a6a43efe3f58c"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "c4f26633ff95926710fd984eda81b04388285f6fc3f8b67640450eb3aa67c470"
+  }
+ ]
+}

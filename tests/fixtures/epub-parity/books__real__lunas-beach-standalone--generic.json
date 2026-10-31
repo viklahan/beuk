@@ -1,0 +1,193 @@
+{
+ "book": "books/real/lunas-beach-standalone.json",
+ "platform": "generic",
+ "lang": "en",
+ "mintedBookId": false,
+ "files": [
+  {
+   "path": "mimetype",
+   "binary": false,
+   "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b"
+  },
+  {
+   "path": "META-INF/container.xml",
+   "binary": false,
+   "sha256": "2c0c65eaae082f46dcc83791bf329851d930f01dc9b7e074986328ddd5c29931"
+  },
+  {
+   "path": "OEBPS/Styles/blitz.css",
+   "binary": false,
+   "sha256": "e162758b7001acf8b3564ab76280910a4a577b57a0bee1e54bcdb556e4784cc3"
+  },
+  {
+   "path": "OEBPS/Text/plate_01.xhtml",
+   "binary": false,
+   "sha256": "b2cb0cc02a3b1f3e44bf985b65049d407b36db0430360d3967f97e00cffc0ce2"
+  },
+  {
+   "path": "OEBPS/Text/titlepage.xhtml",
+   "binary": false,
+   "sha256": "0496c5f87edfcdda0eef6c97656cb4646943981693725272368a70a241cd4fd3"
+  },
+  {
+   "path": "OEBPS/Text/plate_02.xhtml",
+   "binary": false,
+   "sha256": "592945eb4590fedc493e48f6a47ac427a60a6762952814492ca1d01d94103d62"
+  },
+  {
+   "path": "OEBPS/Text/chapter_01.xhtml",
+   "binary": false,
+   "sha256": "5ded00dc8ae2eee63409da5d057e3ef2f7b5abd8a072f0b64cd8c8139ca3d7ff"
+  },
+  {
+   "path": "OEBPS/Text/plate_03.xhtml",
+   "binary": false,
+   "sha256": "79b0ffe19ed420f6671de7f1e37a59cb41bf2202cea2187d50c01686b700cc9e"
+  },
+  {
+   "path": "OEBPS/Text/chapter_02.xhtml",
+   "binary": false,
+   "sha256": "5af1e7de7e9d9dba99b677c7b113740bf8b360e0c6b835ac8c7c30ca14201e70"
+  },
+  {
+   "path": "OEBPS/Text/plate_04.xhtml",
+   "binary": false,
+   "sha256": "2842ce9aab671ee962f727374e8cc470b80812daa78969c22d66f68f760151e1"
+  },
+  {
+   "path": "OEBPS/Text/chapter_03.xhtml",
+   "binary": false,
+   "sha256": "823d88447bebdb1ea298a02ebaf473cfa407c353ccc252f16d05498252ea7e2c"
+  },
+  {
+   "path": "OEBPS/Text/plate_05.xhtml",
+   "binary": false,
+   "sha256": "e88fad63de7be7d10bed969202039db968616ce2c512255bdadf207ee6aba5e9"
+  },
+  {
+   "path": "OEBPS/Text/chapter_04.xhtml",
+   "binary": false,
+   "sha256": "486c9424a805e0637990fca66a9fabd3a12df85aa2bf7164d4af4817b7646ea3"
+  },
+  {
+   "path": "OEBPS/Text/plate_06.xhtml",
+   "binary": false,
+   "sha256": "3b3ba116211ed43ff2a79a44a227a4c3fc662ef5da3ecb044de93e8f2cdf418c"
+  },
+  {
+   "path": "OEBPS/Text/chapter_05.xhtml",
+   "binary": false,
+   "sha256": "374c916e5d0653e93634fe99c2238e0ebf6a0c60e360534986ca4e8d5a8bad79"
+  },
+  {
+   "path": "OEBPS/Text/plate_07.xhtml",
+   "binary": false,
+   "sha256": "446c027f5ffd4b3e78f096666deec0583b96f5eb48e2ad27ed812831a76420f5"
+  },
+  {
+   "path": "OEBPS/Text/chapter_06.xhtml",
+   "binary": false,
+   "sha256": "1e763318f24e924181999cf14a9f101866ae281b9f0980d975049b1a37a2fbb3"
+  },
+  {
+   "path": "OEBPS/Text/plate_08.xhtml",
+   "binary": false,
+   "sha256": "a6263c12854a0a8668bc939e8c23072e1136495799e2f0636418272684639444"
+  },
+  {
+   "path": "OEBPS/Text/chapter_07.xhtml",
+   "binary": false,
+   "sha256": "88967cf40455d858bcefc6c3303e06447faa51b438e41f978966e073e730abf9"
+  },
+  {
+   "path": "OEBPS/Text/plate_09.xhtml",
+   "binary": false,
+   "sha256": "e784cedd645b5f25b5cbd801c1c76948ebfb8dba181fd69bcbfc83e51e41133f"
+  },
+  {
+   "path": "OEBPS/Text/chapter_08.xhtml",
+   "binary": false,
+   "sha256": "007e92d308e4f5e47de946bc39623ec6a36d0a52ca2aabf5fa02c2a1b6bcf7e4"
+  },
+  {
+   "path": "OEBPS/Text/plate_10.xhtml",
+   "binary": false,
+   "sha256": "9b411cba0fcc318fdb0ac0e7c234ba6e0aa8cea6f07ed34a88fb45f107f302e8"
+  },
+  {
+   "path": "OEBPS/Text/chapter_09.xhtml",
+   "binary": false,
+   "sha256": "152783825de037e7bbe04e65fdb71d4b6c029504bb65e200e1c3e79ec31efa3e"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-1-luna-01.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-2-luna-02.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-3-luna-03.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-4-luna-04.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-5-luna-05.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-6-luna-06.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-7-luna-07.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-8-luna-08.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-9-luna-09.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Images/luna-page-10-luna-10.jpg",
+   "binary": true,
+   "sha256": "9ca382bb51d04064b5474dc30e547eac097f74326c7aafb9ae82a8c0d6b0b267"
+  },
+  {
+   "path": "OEBPS/Fonts/Patrick_Hand-normal-400.ttf",
+   "binary": true,
+   "sha256": "59cef5cea48443cb957bf6586b8d7d819a5dec48adb11e691b48b7021f014099"
+  },
+  {
+   "path": "OEBPS/package.opf",
+   "binary": false,
+   "sha256": "51701098e23c82662cc311a9b8d1e2343e5c08c86f94e38547dab416f1e452b8"
+  },
+  {
+   "path": "OEBPS/nav.xhtml",
+   "binary": false,
+   "sha256": "d865f8346e77494eb9067a81793fe4f0205b642e8b5b746433309b3f8bd55414"
+  },
+  {
+   "path": "OEBPS/toc.ncx",
+   "binary": false,
+   "sha256": "5a7d337460a02610857d4d9c3287155d66e8a53e2c7d07138f246fd379160c15"
+  }
+ ]
+}

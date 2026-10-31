@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { after, before, test } from 'node:test';
 import { buildApp } from '../src/app.js';
-import { ACCESS_RULES, decideAccess, NEVER_PAUSED, trialFor } from '../src/access.js';
+import { ACCESS_RULES, decideAccess, NEVER_PAUSED, PAUSABLE_FEATURES, pausedBody, trialFor } from '../src/access.js';
 import { cancelBillingForDeletedAccount } from '../src/account/plan.js';
 import { StripeBillingProvider, type BillingProvider } from '../src/billing.js';
 import type { Config } from '../src/config.js';
@@ -11,6 +11,9 @@ import { decideEntitlements, type EntitlementState } from '../src/entitlements.j
 import type { MailMessage, MailResult, Mailer, MailerStatus } from '../src/mailer.js';
 import { readZip } from '../src/housekeeping/packages.js';
 import { TrialReminders } from '../src/trial-mail.js';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { loadConfig } from '../src/config.js';
 import { Client, createTestDb, registerUser, testConfig } from './helpers.js';
 
 /*
@@ -26,6 +29,8 @@ const TEST_KEY = 'sk_test_placeholder_not_a_real_key';
 const PRICE = 'price_fixture_one';
 const DAY = 86_400_000;
 const PASSWORD = 'correct horse battery';
+/** Old promises the copy must never make again (V, 2026-10-30). */
+const COPY_BANNED = /every export|export(s)? (always|still) (stay|work)|export is always open|no account|7-day|free week/i;
 
 /* ---------------- fake Stripe API ---------------- */
 
@@ -213,10 +218,20 @@ async function gatedStatuses(c: Client, work: { mid: string; exportId: string; s
   out['POST /api/shares/:id/republish'] = (await c.post(`/api/shares/${work.shareId}/republish`)).status;
   out['POST /api/jobs/epubcheck'] = (await c.post('/api/jobs/epubcheck', { exportId: work.exportId })).status;
   out['POST /api/jobs/pdfx'] = (await c.post('/api/jobs/pdfx', { exportId: work.exportId })).status;
+  out['POST /api/epub'] = (await epubStatus(c, { book: DOC, platform: 'generic' }));
   out['POST /api/exports'] = (
     await c.upload(`/api/exports?manuscriptId=${work.mid}&format=epub&filename=again.epub`, Buffer.from('PK again'))
   ).status;
   return out;
+}
+
+/** POST /api/epub answers bytes, not JSON: only the status is read. */
+async function epubStatus(c: Client, body: unknown): Promise<number> {
+  const base = (c as unknown as { base: string }).base;
+  const cookie = (c as unknown as { cookieHeader(): Record<string, string> }).cookieHeader();
+  const r = await fetch(base + '/api/epub', { method: 'POST', headers: { 'content-type': 'application/json', ...cookie }, body: JSON.stringify(body) });
+  await r.arrayBuffer();
+  return r.status;
 }
 
 function assertAllOpen(statuses: Record<string, number>, why: string): void {
@@ -228,19 +243,74 @@ function assertAllPaused(statuses: Record<string, number>, why: string): void {
 
 /* ---------------- pure pieces ---------------- */
 
-test('trial math: 7 days from sign-up, days left rounded up, ended at the end instant; a stored end wins', () => {
+test('trial math: 21 days from sign-up, days left rounded up, ended at the end instant; a stored end wins', () => {
   const created = '2026-11-01T09:00:00.000Z';
-  const t0 = trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-01T09:00:00Z'));
-  assert.deepEqual(t0, { startedAt: created, endsAt: '2026-11-08T09:00:00.000Z', active: true, daysLeft: 7 });
-  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-07T09:00:01Z')).daysLeft, 1);
-  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-05T08:00:00Z')).daysLeft, 4);
-  const ended = trialFor({ createdAt: created, trialEndsAt: null }, 7, new Date('2026-11-08T09:00:00Z'));
+  const t0 = trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-01T09:00:00Z'));
+  assert.deepEqual(t0, { startedAt: created, endsAt: '2026-11-22T09:00:00.000Z', active: true, daysLeft: 21 });
+  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-21T09:00:01Z')).daysLeft, 1);
+  assert.equal(trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-19T09:00:00Z')).daysLeft, 3);
+  const ended = trialFor({ createdAt: created, trialEndsAt: null }, 21, new Date('2026-11-22T09:00:00Z'));
   assert.equal(ended.active, false);
   assert.equal(ended.daysLeft, 0);
   // The sign-up stamp is used as stored (TRIAL_DAYS changing later moves nothing).
   const stamped = trialFor({ createdAt: created, trialEndsAt: '2026-11-20T00:00:00Z' }, 3, new Date('2026-11-10T00:00:00Z'));
   assert.equal(stamped.endsAt, '2026-11-20T00:00:00.000Z');
   assert.equal(stamped.active, true);
+});
+
+test('the day-21 / day-22 boundary: one millisecond before created_at + 21d is trial, at it is paused', () => {
+  const T = new Date('2026-11-01T09:00:00.000Z');
+  const user = { createdAt: T, trialEndsAt: null };
+  const before = trialFor(user, 21, new Date(T.getTime() + 21 * DAY - 1));
+  assert.equal(before.active, true);
+  assert.equal(before.daysLeft, 1);
+  const at = trialFor(user, 21, new Date(T.getTime() + 21 * DAY));
+  assert.equal(at.active, false);
+  assert.equal(at.daysLeft, 0);
+  assert.equal(decideAccess(true, before, decideEntitlements([], { prices: {} }, 21, T)), 'trial');
+  assert.equal(decideAccess(true, at, decideEntitlements([], { prices: {} }, 21, T)), 'paused');
+});
+
+test('pausedBody names the store-ready features it can pause and never promises them', () => {
+  for (const f of ['export.epub', 'export.print', 'export.wrap'] as const) {
+    const b = pausedBody(f);
+    assert.equal(b.feature, f);
+    assert.equal(b.exportOpen, false);
+    assert.equal(b.ownWordsOpen, true);
+    assert.match(String(b.error), new RegExp(PAUSABLE_FEATURES[f]));
+    assert.doesNotMatch(String(b.error), /every export|export(s)? (still|always)/i);
+  }
+});
+
+test('a config built from an empty env has a 21-day trial', () => {
+  assert.equal(loadConfig({}).trialDays, 21);
+  assert.equal(loadConfig({ TRIAL_DAYS: '10' }).trialDays, 10);
+});
+
+test('migration 021: pre-launch trials get 21 days from sign-up, never shortened, nulls untouched', async () => {
+  const mdb = await createTestDb();
+  const sql = readFileSync(path.resolve(import.meta.dirname, '..', 'migrations', '021_trial_21_days.sql'), 'utf8');
+  const made = async (email: string, endsExpr: string) =>
+    (await mdb.query<{ id: string }>(
+      `insert into users (email, password_hash, created_at, trial_ends_at, trial_reminder_sent_at)
+       values ($1, 'x', '2026-10-01T00:00:00Z', ${endsExpr}, '2026-10-05T00:00:00Z') returning id`,
+      [email],
+    )).rows[0].id;
+  const a = await made('a@example.com', `'2026-10-01T00:00:00Z'::timestamptz + interval '7 days'`);
+  const b = await made('b@example.com', `'2026-10-01T00:00:00Z'::timestamptz + interval '30 days'`);
+  const c = await made('c@example.com', 'null');
+  await mdb.query(sql);
+  const get = async (id: string) =>
+    (await mdb.query<{ trial_ends_at: Date | null }>('select trial_ends_at from users where id = $1', [id])).rows[0].trial_ends_at;
+  assert.equal(new Date((await get(a))!).toISOString(), '2026-10-22T00:00:00.000Z', 'a: created_at + 21d');
+  assert.equal(new Date((await get(b))!).toISOString(), '2026-10-31T00:00:00.000Z', 'b: an extension is not shortened');
+  assert.equal(await get(c), null, 'c: still null');
+  // The re-dated row forgets the reminder it got for the old day-7 end; rows it did not move keep theirs.
+  const sent = async (id: string) =>
+    (await mdb.query<{ trial_reminder_sent_at: Date | null }>('select trial_reminder_sent_at from users where id = $1', [id])).rows[0].trial_reminder_sent_at;
+  assert.equal(await sent(a), null, 'a: reminder cleared so the new end gets one');
+  assert.ok(await sent(b), 'b: not re-dated, reminder kept');
+  assert.ok(await sent(c), 'c: not re-dated, reminder kept');
 });
 
 test('decideAccess: open while billing is off; subscription, grace, trial, paused when on', () => {
@@ -260,7 +330,7 @@ test('decideAccess: open while billing is off; subscription, grace, trial, pause
   assert.equal(decideAccess(true, gone, grace), 'grace');
 });
 
-test('the rules are data: four features, six gated POST routes, and the never-paused list does not overlap', () => {
+test('the rules are data: seven features (one has no route yet), seven gated POST routes, and the never-paused list does not overlap', () => {
   assert.deepEqual(
     ACCESS_RULES.map((r) => `${r.method} ${r.path}`),
     [
@@ -269,8 +339,18 @@ test('the rules are data: four features, six gated POST routes, and the never-pa
       'POST /api/shares/:id/republish',
       'POST /api/jobs/epubcheck',
       'POST /api/jobs/pdfx',
+      'POST /api/epub',
       'POST /api/exports',
     ],
+  );
+  assert.deepEqual(Object.keys(PAUSABLE_FEATURES).sort(), [
+    'archive.upload', 'export.epub', 'export.print', 'export.wrap', 'jobs.run', 'shares.create', 'shelf.add',
+  ]);
+  // Of the three store-ready export features, export.print (the pdfx job, Step 3 part 2) and
+  // export.epub (POST /api/epub, part 3) have routes; wrap arrives in part 4 and this line changes then.
+  assert.deepEqual(
+    ACCESS_RULES.filter((r) => r.feature.startsWith('export.')).map((r) => `${r.method} ${r.path} ${r.feature}`),
+    ['POST /api/jobs/pdfx export.print', 'POST /api/epub export.epub'],
   );
   const gated = new Set(ACCESS_RULES.map((r) => `${r.method} ${r.path}`));
   for (const r of NEVER_PAUSED) assert.ok(!gated.has(`${r.method} ${r.path}`), `${r.method} ${r.path} is both`);
@@ -314,22 +394,22 @@ test('a new account gets its trial stamped at sign-up (TRIAL_DAYS)', async () =>
   const w = await writer(on.base, 'stamp', true);
   const row = (await db.query<{ created_at: Date; trial_ends_at: Date }>('select created_at, trial_ends_at from users where id = $1', [w.id])).rows[0];
   const days = (new Date(row.trial_ends_at).getTime() - new Date(row.created_at).getTime()) / DAY;
-  assert.ok(Math.abs(days - 7) < 0.01, `trial is 7 days (got ${days})`);
+  assert.ok(Math.abs(days - 21) < 0.01, `trial is 21 days (got ${days})`);
 });
 
 /* ---------------- the gating matrix ---------------- */
 
 test('gating matrix: trial active, subscribed, past_due inside grace → open; expired, past grace, canceled, unpaid → paused', async () => {
-  const cases: Array<{ name: string; trialDays: number; sub?: { status: string; sinceDaysAgo: number }; paused: boolean }> = [
-    { name: 'trial active', trialDays: 3, paused: false },
-    { name: 'trial expired, no subscription', trialDays: -1, paused: true },
-    { name: 'subscribed (active)', trialDays: -10, sub: { status: 'active', sinceDaysAgo: 9 }, paused: false },
-    { name: 'subscribed (trialing at Stripe)', trialDays: -1, sub: { status: 'trialing', sinceDaysAgo: 2 }, paused: false },
-    { name: 'past_due inside grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 2 }, paused: false },
-    { name: 'past_due after grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 8 }, paused: true },
-    { name: 'canceled', trialDays: -20, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: true },
-    { name: 'unpaid', trialDays: -20, sub: { status: 'unpaid', sinceDaysAgo: 1 }, paused: true },
-    { name: 'canceled, but still inside the trial', trialDays: 2, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: false },
+  const cases: Array<{ name: string; trialDays: number; sub?: { status: string; sinceDaysAgo: number }; paused: boolean; state: string }> = [
+    { name: 'trial active', trialDays: 3, paused: false, state: 'trial' },
+    { name: 'trial expired, no subscription', trialDays: -1, paused: true, state: 'paused' },
+    { name: 'subscribed (active)', trialDays: -10, sub: { status: 'active', sinceDaysAgo: 9 }, paused: false, state: 'subscribed' },
+    { name: 'subscribed (trialing at Stripe)', trialDays: -1, sub: { status: 'trialing', sinceDaysAgo: 2 }, paused: false, state: 'subscribed' },
+    { name: 'past_due inside grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 2 }, paused: false, state: 'grace' },
+    { name: 'past_due after grace', trialDays: -20, sub: { status: 'past_due', sinceDaysAgo: 8 }, paused: true, state: 'paused' },
+    { name: 'canceled', trialDays: -20, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: true, state: 'paused' },
+    { name: 'unpaid', trialDays: -20, sub: { status: 'unpaid', sinceDaysAgo: 1 }, paused: true, state: 'paused' },
+    { name: 'canceled, but still inside the trial', trialDays: 2, sub: { status: 'canceled', sinceDaysAgo: 1 }, paused: false, state: 'trial' },
   ];
   for (const k of cases) {
     const w = await writer(on.base, 'matrix');
@@ -339,10 +419,26 @@ test('gating matrix: trial active, subscribed, past_due inside grace → open; e
     const statuses = await gatedStatuses(w.c, work);
     if (k.paused) assertAllPaused(statuses, k.name);
     else assertAllOpen(statuses, k.name);
+    // The studio reads the same decision: state, trial days left, and the locked list.
+    const me = await w.c.get('/api/auth/me');
+    const access = me.body.access as { state: string; daysLeft: number; locked: string[] };
+    assert.equal(access.state, k.state, `${k.name}: state`);
+    assert.deepEqual(access.locked.slice().sort(), k.paused ? Object.keys(PAUSABLE_FEATURES).sort() : [], `${k.name}: locked`);
+    assert.equal(access.daysLeft, k.state === 'trial' ? Math.max(1, k.trialDays) : 0, `${k.name}: daysLeft`);
+    assert.equal((me.body.user as { id: string }).id, w.id);
+    // Download all my data is open in every state, paused included.
+    assert.equal((await w.c.download('/api/account/export')).status, 200, `${k.name}: Download all my data`);
   }
+  assert.equal(Object.keys(PAUSABLE_FEATURES).length, 7, 'paused locks all seven');
 });
 
-test('a paused answer is plain, says export stays open, and changes nothing', async () => {
+test('billing off: /api/auth/me reports an open state, no trial days and nothing locked', async () => {
+  const w = await writer(off.base, 'meoff');
+  await setTrialEnd(w.id, new Date(clock.getTime() - 30 * DAY));
+  assert.deepEqual((await w.c.get('/api/auth/me')).body.access, { state: 'open', daysLeft: 0, locked: [] });
+});
+
+test('a paused answer is plain, names what stays open (own words), and changes nothing', async () => {
   const w = await writer(on.base, 'paused');
   const work = await makeWork(w.c);
   await setTrialEnd(w.id, new Date(clock.getTime() - DAY));
@@ -350,15 +446,35 @@ test('a paused answer is plain, says export stays open, and changes nothing', as
   const r = await w.c.post('/api/manuscripts', { doc: DOC });
   assert.equal(r.status, 402);
   assert.equal(r.body.paused, true);
-  assert.equal(r.body.exportOpen, true);
+  assert.equal(r.body.exportOpen, false);
+  assert.equal(r.body.ownWordsOpen, true);
   assert.equal(r.body.feature, 'shelf.add');
-  assert.match(String(r.body.error), /every export still work/);
+  assert.match(String(r.body.error), /backup/);
+  assert.match(String(r.body.error), /Word/);
+  assert.match(String(r.body.error), /Markdown/);
+  assert.doesNotMatch(String(r.body.error), /every export|export(s)? (still|always)/i);
   assert.equal((await db.query('select 1 from manuscripts where user_id = $1', [w.id])).rows.length, before);
   const up = await w.c.upload(`/api/exports?manuscriptId=${work.mid}&format=epub&filename=x.epub`, Buffer.from('PK x'));
   assert.equal(up.status, 402);
   assert.equal(up.body.feature, 'archive.upload');
   // Signed out, a gated route still answers 401 (the gate never decides that).
   assert.equal((await new Client(on.base).post('/api/manuscripts', { doc: DOC })).status, 401);
+});
+
+test('the pdfx job is the print-ready PDF feature; epubcheck stays jobs.run', async () => {
+  const w = await writer(on.base, 'printgate');
+  const work = await makeWork(w.c);
+  const trial = await w.c.post('/api/jobs/pdfx', { exportId: work.exportId });
+  assert.notEqual(trial.status, 402, 'in trial the print job is not paused');
+  await setTrialEnd(w.id, new Date(clock.getTime() - DAY));
+  const p = await w.c.post('/api/jobs/pdfx', { exportId: work.exportId });
+  assert.equal(p.status, 402);
+  assert.equal(p.body.feature, 'export.print');
+  assert.equal(p.body.paused, true);
+  assert.match(String(p.body.error), /print-ready PDFs/);
+  const e = await w.c.post('/api/jobs/epubcheck', { exportId: work.exportId });
+  assert.equal(e.status, 402);
+  assert.equal(e.body.feature, 'jobs.run');
 });
 
 test('never paused: a paused writer reads, saves, downloads, keeps links, downloads all data, and can delete', async () => {
@@ -554,7 +670,8 @@ test('trial-ending email: once per account, 3 days before, only with email + bil
   assert.equal(msgs.length, 1);
   assert.match(msgs[0].subject, /Your Beuk trial ends on/);
   assert.match(msgs[0].text, /\/account/);
-  assert.match(msgs[0].text, /every export/);
+  assert.match(msgs[0].text, /the backup file, Word and Markdown/);
+  assert.doesNotMatch(msgs[0].text, COPY_BANNED);
   assert.ok(!/[$€£]\s?\d|per month/i.test(msgs[0].text), 'no price while no label is set');
   assert.ok(!/!/.test(msgs[0].text), 'no exclamation marks');
   assert.ok((await db.query<{ t: Date | null }>('select trial_reminder_sent_at as t from users where id = $1', [soon.id])).rows[0].t);
@@ -643,7 +760,11 @@ test('Plan section copy: trial (days left, what pauses, first charge waits), pri
   assert.match(html, /the first payment waits until your trial ends/);
   assert.match(html, /data-action="upgrade"/);
   assert.ok(!html.includes('data-action="manage"'), 'no billing account yet');
-  assert.match(html, /export is always open/);
+  assert.match(html, /the backup file, Word and Markdown are always open/);
+  const planHtml = html.slice(html.indexOf('id="plan"'), html.indexOf('id="security"'));
+  assert.match(planHtml, /4 days left/);
+  for (const locked of [/EPUB/, /print PDF/, /cover wrap/, /shelf/, /beta-reader links/, /checks/]) assert.match(planHtml, locked);
+  assert.doesNotMatch(planHtml, COPY_BANNED);
   assert.match(html, /This server takes test payments only/);
   assert.ok(!html.includes('One plan,'), 'no price line without BILLING_PRICE_LABEL');
   const sum = (await t.c.get('/api/account/summary')).body.plan as Record<string, unknown>;
@@ -666,7 +787,10 @@ test('Plan section copy: trial (days left, what pauses, first charge waits), pri
   assert.match(html, /data-plan-notice="paused"/);
   assert.match(html, /Your free trial ended on 9 Nov 2026/);
   assert.match(html, /are paused/);
-  assert.match(html, /every export/);
+  assert.match(html, /the backup file, Word and Markdown/);
+  const pausedHtml = html.slice(html.indexOf('id="plan"'), html.indexOf('id="security"'));
+  for (const locked of [/EPUB/, /print PDF/, /cover wrap/, /shelf/, /beta-reader links/, /checks/]) assert.match(pausedHtml, locked);
+  assert.doesNotMatch(pausedHtml, COPY_BANNED);
   assert.match(html, /data-action="upgrade"/);
 
   // past_due inside grace: calm notice, Manage billing, no second checkout.
@@ -693,4 +817,70 @@ test('Plan section copy: trial (days left, what pauses, first charge waits), pri
   html = await page(a.c, on.base, '/account?billing=success');
   assert.match(html, /data-billing-return="success"/);
   assert.ok(!/!/.test(html.slice(html.indexOf('id="plan"'), html.indexOf('id="security"'))), 'no exclamation marks in the Plan section');
+});
+
+test('GET /api/auth/me still answers {user} when the access lookup throws (logged, no access key)', async () => {
+  let broken = false;
+  const real = new StripeBillingProvider({ ...on.config });
+  const stub = new Proxy(real, {
+    get(t, k) {
+      if (k === 'mode' && broken) throw new Error('stub: stripe mode unavailable');
+      const v = Reflect.get(t, k, t);
+      return typeof v === 'function' ? v.bind(t) : v;
+    },
+  }) as BillingProvider;
+  const s = await start({ ...ON, stripeApiBase: fakeBase }, stub);
+  const logged: string[] = [];
+  const orig = console.log;
+  try {
+    const w = await writer(s.base, 'mebroken');
+    const ok = await w.c.get('/api/auth/me');
+    assert.equal(ok.status, 200);
+    assert.ok((ok.body.access as { state: string }).state, 'access present while healthy');
+    broken = true;
+    console.log = (m?: unknown) => { logged.push(String(m)); };
+    const me = await w.c.get('/api/auth/me');
+    console.log = orig;
+    assert.equal(me.status, 200);
+    assert.equal((me.body.user as { id: string }).id, w.id);
+    assert.ok(!('access' in me.body), 'no access key on failure');
+    assert.ok(logged.some((l) => l.includes('auth.me.access_failed') && l.includes('stripe mode unavailable')), 'failure is logged');
+  } finally {
+    console.log = orig;
+    await s.close();
+  }
+});
+
+/** Every value of one string key in the studio page, one per language pack. */
+function packValues(html: string, key: string): string[] {
+  const out: string[] = [];
+  const marker = '"' + key + '": "';
+  let i = html.indexOf(marker);
+  while (i >= 0) {
+    let j = i + marker.length;
+    let v = '';
+    while (j < html.length && html[j] !== '"') {
+      if (html[j] === String.fromCharCode(92)) { v += html[j] + html[j + 1]; j += 2; } else { v += html[j]; j += 1; }
+    }
+    out.push(v);
+    i = html.indexOf(marker, j);
+  }
+  return out;
+}
+
+test('studio: the paused strings in all 13 packs say what is locked and what stays downloadable, never "every export"', () => {
+  const html = readFileSync(path.resolve(import.meta.dirname, '..', 'client', 'index.html'), 'utf8');
+  for (const key of ['plan.paused', 'plan.pausedToast', 'tour.s4b']) {
+    const values = packValues(html, key);
+    assert.equal(values.length, 13, `${key} in 13 packs`);
+    for (const v of values) assert.doesNotMatch(v, /every export|export.*(still|always)/i, `${key}: ${v.slice(0, 60)}`);
+  }
+  for (const v of packValues(html, 'plan.paused')) {
+    for (const w of ['EPUB', 'print PDF', 'cover wrap', 'backup file', 'Word', 'Markdown', 'Download all my data']) assert.ok(v.includes(w), `plan.paused mentions ${w}`);
+  }
+  for (const key of ['auth.subLogin', 'auth.subRegister']) {
+    const values = packValues(html, key);
+    assert.equal(values.length, 13, key);
+    assert.doesNotMatch(values[0], /without an account/i, `${key}: no promise that the studio works without an account`);
+  }
 });
