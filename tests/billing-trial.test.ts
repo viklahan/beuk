@@ -282,8 +282,8 @@ test('migration 021: pre-launch trials get 21 days from sign-up, never shortened
   const sql = readFileSync(path.resolve(import.meta.dirname, '..', 'migrations', '021_trial_21_days.sql'), 'utf8');
   const made = async (email: string, endsExpr: string) =>
     (await mdb.query<{ id: string }>(
-      `insert into users (email, password_hash, created_at, trial_ends_at)
-       values ($1, 'x', '2026-10-01T00:00:00Z', ${endsExpr}) returning id`,
+      `insert into users (email, password_hash, created_at, trial_ends_at, trial_reminder_sent_at)
+       values ($1, 'x', '2026-10-01T00:00:00Z', ${endsExpr}, '2026-10-05T00:00:00Z') returning id`,
       [email],
     )).rows[0].id;
   const a = await made('a@example.com', `'2026-10-01T00:00:00Z'::timestamptz + interval '7 days'`);
@@ -295,6 +295,12 @@ test('migration 021: pre-launch trials get 21 days from sign-up, never shortened
   assert.equal(new Date((await get(a))!).toISOString(), '2026-10-22T00:00:00.000Z', 'a: created_at + 21d');
   assert.equal(new Date((await get(b))!).toISOString(), '2026-10-31T00:00:00.000Z', 'b: an extension is not shortened');
   assert.equal(await get(c), null, 'c: still null');
+  // The re-dated row forgets the reminder it got for the old day-7 end; rows it did not move keep theirs.
+  const sent = async (id: string) =>
+    (await mdb.query<{ trial_reminder_sent_at: Date | null }>('select trial_reminder_sent_at from users where id = $1', [id])).rows[0].trial_reminder_sent_at;
+  assert.equal(await sent(a), null, 'a: reminder cleared so the new end gets one');
+  assert.ok(await sent(b), 'b: not re-dated, reminder kept');
+  assert.ok(await sent(c), 'c: not re-dated, reminder kept');
 });
 
 test('decideAccess: open while billing is off; subscription, grace, trial, paused when on', () => {
@@ -781,4 +787,70 @@ test('Plan section copy: trial (days left, what pauses, first charge waits), pri
   html = await page(a.c, on.base, '/account?billing=success');
   assert.match(html, /data-billing-return="success"/);
   assert.ok(!/!/.test(html.slice(html.indexOf('id="plan"'), html.indexOf('id="security"'))), 'no exclamation marks in the Plan section');
+});
+
+test('GET /api/auth/me still answers {user} when the access lookup throws (logged, no access key)', async () => {
+  let broken = false;
+  const real = new StripeBillingProvider({ ...on.config });
+  const stub = new Proxy(real, {
+    get(t, k) {
+      if (k === 'mode' && broken) throw new Error('stub: stripe mode unavailable');
+      const v = Reflect.get(t, k, t);
+      return typeof v === 'function' ? v.bind(t) : v;
+    },
+  }) as BillingProvider;
+  const s = await start({ ...ON, stripeApiBase: fakeBase }, stub);
+  const logged: string[] = [];
+  const orig = console.log;
+  try {
+    const w = await writer(s.base, 'mebroken');
+    const ok = await w.c.get('/api/auth/me');
+    assert.equal(ok.status, 200);
+    assert.ok((ok.body.access as { state: string }).state, 'access present while healthy');
+    broken = true;
+    console.log = (m?: unknown) => { logged.push(String(m)); };
+    const me = await w.c.get('/api/auth/me');
+    console.log = orig;
+    assert.equal(me.status, 200);
+    assert.equal((me.body.user as { id: string }).id, w.id);
+    assert.ok(!('access' in me.body), 'no access key on failure');
+    assert.ok(logged.some((l) => l.includes('auth.me.access_failed') && l.includes('stripe mode unavailable')), 'failure is logged');
+  } finally {
+    console.log = orig;
+    await s.close();
+  }
+});
+
+/** Every value of one string key in the studio page, one per language pack. */
+function packValues(html: string, key: string): string[] {
+  const out: string[] = [];
+  const marker = '"' + key + '": "';
+  let i = html.indexOf(marker);
+  while (i >= 0) {
+    let j = i + marker.length;
+    let v = '';
+    while (j < html.length && html[j] !== '"') {
+      if (html[j] === String.fromCharCode(92)) { v += html[j] + html[j + 1]; j += 2; } else { v += html[j]; j += 1; }
+    }
+    out.push(v);
+    i = html.indexOf(marker, j);
+  }
+  return out;
+}
+
+test('studio: the paused strings in all 13 packs say what is locked and what stays downloadable, never "every export"', () => {
+  const html = readFileSync(path.resolve(import.meta.dirname, '..', 'client', 'index.html'), 'utf8');
+  for (const key of ['plan.paused', 'plan.pausedToast', 'tour.s4b']) {
+    const values = packValues(html, key);
+    assert.equal(values.length, 13, `${key} in 13 packs`);
+    for (const v of values) assert.doesNotMatch(v, /every export|export.*(still|always)/i, `${key}: ${v.slice(0, 60)}`);
+  }
+  for (const v of packValues(html, 'plan.paused')) {
+    for (const w of ['EPUB', 'print PDF', 'cover wrap', 'backup file', 'Word', 'Markdown', 'Download all my data']) assert.ok(v.includes(w), `plan.paused mentions ${w}`);
+  }
+  for (const key of ['auth.subLogin', 'auth.subRegister']) {
+    const values = packValues(html, key);
+    assert.equal(values.length, 13, key);
+    assert.doesNotMatch(values[0], /without an account/i, `${key}: no promise that the studio works without an account`);
+  }
 });

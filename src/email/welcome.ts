@@ -25,7 +25,7 @@ import { html, link, para, renderEmail, type RenderedEmail } from './layout.js';
  * for complete access. The amount is not decided. The email names a
  * price only when BILLING_PRICE_LABEL is set (the billing work's
  * setting) and then says exactly that label; otherwise it says "one
- * price, announced before launch". It never invents an amount.
+ * price for complete access". It never invents an amount.
  *
  * Plan state comes from the SAME place as the account page's Plan
  * section: accountPlan() in src/account/plan.ts. `billingOn` is its
@@ -57,7 +57,7 @@ export function priceLabel(config: Config, _env: NodeJS.ProcessEnv = process.env
 export function trialWords(opts: WelcomeOptions, trialDays: number): string {
   const after = opts.priceLabel
     ? `then ${opts.priceLabel} for complete access`
-    : 'then one price for complete access, announced before launch';
+    : 'then one price for complete access';
   const ownWords = 'Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.';
   if (opts.billingOn && opts.trial?.active) {
     // The trial's own length (TRIAL_DAYS when it started), never a literal.

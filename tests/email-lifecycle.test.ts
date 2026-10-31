@@ -142,7 +142,7 @@ test('welcome: sent once at sign-up when mail is configured, with the confirmati
     assert.equal(w.to, 'writer@example.com');
     assert.equal(w.subject, 'Confirm your email address, and welcome to Beuk');
     assert.match(w.text, /\/account\/confirm\?token=[A-Za-z0-9_-]+/);
-    for (const words of ['a shelf', 'an archive', 'beta readers', 'EPUBCheck', 'follows you to any device', '21-day free trial', 'announced before launch', '/help/', '/account']) {
+    for (const words of ['a shelf', 'an archive', 'beta readers', 'EPUBCheck', 'follows you to any device', '21-day free trial', '/help/', '/account']) {
       assert.ok(w.text.includes(words), `welcome says: ${words}`);
     }
     assert.ok(w.html && w.html.includes('<li>a shelf, so your books follow you'), 'html list');
@@ -184,7 +184,7 @@ test('welcome: the plan in plain words; a trial only when the server tracks one;
   // Plans on, trial tracked: when it ends.
   assert.equal(
     trialWords({ billingOn: true, trial, priceLabel: null }, 21),
-    'Your 21-day free trial started with this account and runs until 16 Nov 2026, then one price for complete access, announced before launch. Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.',
+    'Your 21-day free trial started with this account and runs until 16 Nov 2026, then one price for complete access. Whatever happens with a plan, your own words stay yours: the backup file, Word and Markdown stay open.',
   );
   assert.ok(trialWords({ billingOn: true, trial, priceLabel: 'LABEL-AS-SET' }, 21).includes('then LABEL-AS-SET for complete access.'));
   // Plans on, no trial tracked (today's code): no trial claimed at all.
@@ -262,7 +262,7 @@ test('welcome: plans on or off is decided as the account page decides it, and ne
       const page = (await pageWithCookie(c, `${s.base}/account`)).text;
       if (k.on) {
         // The email and the account page tell the same trial, to the same day.
-        const m = /Your 21-day free trial started with this account and runs until ([^,]+), then one price for complete access, announced before launch\./.exec(text);
+        const m = /Your 21-day free trial started with this account and runs until ([^,]+), then one price for complete access./.exec(text);
         assert.ok(m, `${k.name}: ${text}`);
         assert.ok(page.includes(`Your free trial runs until ${m[1]}`), `${k.name}: the account page agrees on ${m[1]}`);
       } else {

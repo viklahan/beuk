@@ -21,7 +21,7 @@ const FALSE_CLAIMS = [
   /quietshelf/i, /open[- ]source/i, /zero-warning/i, /googleapis|gstatic/, /href="#"/, /data-cta/, /no features held back/i, /fare is free/i,
   /ten (stores|ports|export|presets|platform)/i, /six trim/i,
   // V's rules (2026-10-30): an account from day one, 21 days free, $20 a month; none of the old promises.
-  /7-day|free week|No account needed|export always/i,
+  /7-day|free week|No account needed|export always|Without an account/i,
   /\bthe best\b/i, /\bbest-in-class\b/i, /!(?![-=\[])/,
 ];
 
@@ -235,7 +235,7 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
     assert.doesNotMatch(text, /no free tier after/i, p.url);
     assert.doesNotMatch(text, /one price after a free week|a free week, then one price\./i, p.url);
   }
-  assert.match(features, /with an account, Beuk's server converts the print interior to PDF\/X-1a/);
+  assert.match(features, /Beuk's server converts the print interior to PDF\/X-1a; in the browser, the PDF comes from Print → Save as PDF/);
   assert.match(features, /<li><b>PDF\/X-1a print conversion<\/b> on Beuk's server/);
   assert.match(features, /Everything above is yours for 21 days\. Your book is saved on your device as you write, and an account adds:/);
   const vellum = read('client', 'site', 'compare', 'vellum.html');
@@ -243,7 +243,7 @@ test('the pages say what is free and what makes a PDF/X file the way the studio 
   assert.doesNotMatch(stronger, /PDF\/X/, 'PDF/X is not a Vellum-only strength');
   assert.match(vellum, /Checks on Beuk's server<\/b>, with an account: the print interior converted to PDF\/X-1a, and your EPUB run through the official EPUBCheck\./);
   for (const slug of ['atticus', 'reedsy-studio']) {
-    assert.match(read('client', 'site', 'compare', `${slug}.html`), /With an account, Beuk's server converts the print interior to PDF\/X-1a\./, slug);
+    assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk's server converts the print interior to PDF\/X-1a; in the browser, the PDF comes from Print → Save as PDF\./, slug);
     assert.match(read('client', 'site', 'compare', `${slug}.html`), /Beuk needs an account from day one: 21 days free, then \$20 a month — everything included\./, slug);
   }
 });
@@ -290,5 +290,5 @@ test('no site page keeps an old promise: 7-day trial, free week, no account need
     });
   const files = walk(path.join(root, 'client', 'site'));
   assert.ok(files.length >= 9, 'landing, features, ramp and the compare pages');
-  for (const f of files) assert.doesNotMatch(readFileSync(f, 'utf8'), /7-day|free week|No account needed|export always/i, path.relative(root, f));
+  for (const f of files) assert.doesNotMatch(readFileSync(f, 'utf8'), /7-day|free week|No account needed|export always|Without an account/i, path.relative(root, f));
 });
