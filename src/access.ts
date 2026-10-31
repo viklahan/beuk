@@ -199,6 +199,24 @@ export async function accountAccess(deps: AccessDeps, userId: string): Promise<A
   };
 }
 
+/** What the studio is told about an account's access (GET /api/auth/me).
+ *  The server stays the judge; the studio only shows copy from this.
+ *  `daysLeft` is the free-trial days left while the state is 'trial', else 0.
+ *  `locked` is every pausable feature while 'paused', else empty. */
+export interface AccessSummary {
+  state: AccessState;
+  daysLeft: number;
+  locked: PausableFeature[];
+}
+
+export function accessSummary(access: AccountAccess): AccessSummary {
+  return {
+    state: access.state,
+    daysLeft: access.state === 'trial' ? access.trial.daysLeft : 0,
+    locked: access.state === 'paused' ? (Object.keys(PAUSABLE_FEATURES) as PausableFeature[]) : [],
+  };
+}
+
 /** The 402 a paused feature answers. Plain words: some studio paths show
  *  the server's `error` text as it is. */
 export function pausedBody(feature: PausableFeature): Record<string, unknown> {

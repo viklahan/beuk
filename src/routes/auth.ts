@@ -11,6 +11,7 @@ import {
   setSessionCookie,
 } from '../auth.js';
 import { initStreakState } from '../streak.js';
+import { accessSummary, accountAccess, type AccessDeps } from '../access.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,7 +38,7 @@ export function logLoginRefusal(fields: {
   console.log(JSON.stringify({ event: 'auth.login.refused', at: new Date().toISOString(), ...fields }));
 }
 
-export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}): Router {
+export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}, access?: Pick<AccessDeps, 'billing' | 'now'>): Router {
   const router = Router();
   // Warm the dummy hash so the first unknown-email login isn't the one
   // request that also pays for computing it.
@@ -133,8 +134,17 @@ export function authRoutes(db: Db, config: Config, hooks: AuthHooks = {}): Route
     }
   });
 
-  router.get('/me', requireAuth(db), (req, res) => {
-    return res.json({ user: req.user });
+  // Who is signed in, and (when the server can decide it) what their access
+  // is: { state, daysLeft, locked }. The studio shows copy from this; the
+  // routes themselves are gated by src/access.ts, not by the client.
+  router.get('/me', requireAuth(db), async (req, res, next) => {
+    try {
+      if (!access || !req.user) return res.json({ user: req.user });
+      const found = await accountAccess({ db, config, billing: access.billing, now: access.now }, req.user.id);
+      return res.json({ user: req.user, access: found ? accessSummary(found) : undefined });
+    } catch (err) {
+      return next(err);
+    }
   });
 
   return router;

@@ -399,7 +399,23 @@ test('gating matrix: trial active, subscribed, past_due inside grace → open; e
     const statuses = await gatedStatuses(w.c, work);
     if (k.paused) assertAllPaused(statuses, k.name);
     else assertAllOpen(statuses, k.name);
+    // The studio reads the same decision: state, trial days left, and the locked list.
+    const me = await w.c.get('/api/auth/me');
+    const access = me.body.access as { state: string; daysLeft: number; locked: string[] };
+    assert.equal(access.state, k.state, `${k.name}: state`);
+    assert.deepEqual(access.locked.slice().sort(), k.paused ? Object.keys(PAUSABLE_FEATURES).sort() : [], `${k.name}: locked`);
+    assert.equal(access.daysLeft, k.state === 'trial' ? Math.max(1, k.trialDays) : 0, `${k.name}: daysLeft`);
+    assert.equal((me.body.user as { id: string }).id, w.id);
+    // Download all my data is open in every state, paused included.
+    assert.equal((await w.c.download('/api/account/export')).status, 200, `${k.name}: Download all my data`);
   }
+  assert.equal(Object.keys(PAUSABLE_FEATURES).length, 7, 'paused locks all seven');
+});
+
+test('billing off: /api/auth/me reports an open state, no trial days and nothing locked', async () => {
+  const w = await writer(off.base, 'meoff');
+  await setTrialEnd(w.id, new Date(clock.getTime() - 30 * DAY));
+  assert.deepEqual((await w.c.get('/api/auth/me')).body.access, { state: 'open', daysLeft: 0, locked: [] });
 });
 
 test('a paused answer is plain, names what stays open (own words), and changes nothing', async () => {
