@@ -1,5 +1,6 @@
 /* The Caife moment on /support: a thank-you note drifts down over a
-   dawn sea, folds itself into a paper boat and sails off toward the sun.
+   dawn sea, folds itself into a paper boat and sails off toward the sun,
+   past a headland lighthouse, a ship in the haze and a few gulls.
 
    Real-time WebGL on the vendored three.js r128 (client/assets/vendor/,
    SRI-pinned). Nothing here loads from another origin: the sky, the
@@ -31,63 +32,57 @@
     } catch (e) {
       return null;
     }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min((window.devicePixelRatio || 1) * 1.5, 2.5));
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.NoToneMapping;
 
     var scene = new THREE.Scene();
     var camera = new THREE.PerspectiveCamera(42, 1, 0.05, 1200);
     var SUN = new THREE.Vector3(0.22, 0.075, -1).normalize();
-    // Every colour comes from the page's own palette (opts.palette: the
-    // warmth pages' CSS tokens), so the plate reads as part of Beuk's
-    // Paper page, not a photograph laid on it. With no tone mapping a
-    // token renders as exactly that token: the horizon IS --paper.
+    // The dawn has its own light, in linear HDR, tone-mapped once in the
+    // print pass. The page's palette (opts.palette: the warmth pages' CSS
+    // tokens) is the paper: the note is --paper with the BEUK mark in
+    // --amber and the words in --ink, and the paper's grain showing
+    // through the print is --paper too.
     var P = opts.palette || {};
-    function tok(v, fallback) {
-      var c = new THREE.Color();
-      try { c.setStyle(String(v || fallback).trim()); } catch (e) { c.setStyle(fallback); }
-      return c.convertSRGBToLinear();
-    }
-    var COL = {
-      paper: tok(P.paper, '#f8f4e9'),
-      paperDeep: tok(P.paperDeep, '#eef0e2'),
-      sky: tok(P.sky, '#dcebee'),
-      accent: tok(P.accent, '#14607a'),
-      ink: tok(P.ink, '#22333a')
-    };
-    function vec(c) { return new THREE.Vector3(c.r, c.g, c.b); }
-    // The zenith is the accent-soft wash taken a step toward the accent;
-    // the deep sea is the accent taken a step toward the ink.
-    var zen = COL.sky.clone().lerp(COL.accent, 0.18);
-    var deep = COL.accent.clone().lerp(COL.ink, 0.3);
     var shared = {
       uTime: { value: 0 }, uSun: { value: SUN },
-      uHor: { value: vec(COL.paper) }, uMid: { value: vec(COL.paperDeep) }, uZen: { value: vec(zen) },
-      uDeep: { value: vec(deep) }, uSea: { value: vec(COL.accent) }
+      uHor: { value: new THREE.Vector3(1.25, 0.46, 0.17) },   // the warm band under the sun
+      uMid: { value: new THREE.Vector3(0.13, 0.10, 0.22) },   // violet above it
+      uZen: { value: new THREE.Vector3(0.018, 0.04, 0.11) }, // night's last blue overhead
+      uDeep: { value: new THREE.Vector3(0.006, 0.026, 0.042) },
+      uSea: { value: new THREE.Vector3(0.02, 0.055, 0.08) }
     };
 
     // ---- sky: one function shared by the dome and the water's reflections ----
     var COMMON = [
       'uniform float uTime; uniform vec3 uSun; uniform vec3 uHor, uMid, uZen, uDeep, uSea;',
-      'vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }',
       'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+      'float hash3(vec3 p){ p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }',
       'float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);',
       '  return mix(mix(hash(i), hash(i+vec2(1.0,0.0)), f.x), mix(hash(i+vec2(0.0,1.0)), hash(i+vec2(1.0,1.0)), f.x), f.y); }',
       'float fbm(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ s += a*vnoise(p); p = p*2.03 + vec2(1.7, 9.2); a *= 0.5; } return s; }',
       'vec3 skyCol(vec3 d){',
-      '  float h = max(d.y, 0.0);',
-      '  vec3 c = mix(uHor, uMid, smoothstep(0.02, 0.16, h));',
-      '  c = mix(c, uZen, smoothstep(0.12, 0.7, h));',
+      '  float h = clamp(d.y, -0.05, 1.0);',
       '  float s = max(dot(d, uSun), 0.0);',
-      '  vec3 glow = lin(vec3(0.98, 0.93, 0.80));',
-      '  c = mix(c, glow, pow(s, 10.0) * 0.55 + pow(s, 120.0) * 0.4);',
+      '  vec2 dh = normalize(d.xz + 1e-5), sh = normalize(uSun.xz);',
+      '  float az = pow(max(dot(dh, sh), 0.0), 2.0);',
+      '  vec3 hor = mix(uMid * 2.2, uHor, 0.15 + 0.85 * az);',
+      '  vec3 c = mix(hor, uMid, smoothstep(0.0, 0.12, h));',
+      '  c = mix(c, uZen, smoothstep(0.06, 0.5, h));',
+      '  c += vec3(1.9, 0.8, 0.28) * (pow(s, 8.0) * 0.5 + pow(s, 60.0) * 1.4);',
+      '  c += vec3(16.0, 8.5, 3.2) * smoothstep(0.99962, 0.99980, s);',
       '  if (d.y > 0.0) {',
-      '    vec2 cp = d.xz / (d.y + 0.06);',
-      '    float n = fbm(cp * vec2(0.35, 1.4) + vec2(uTime * 0.008, 0.0));',
-      '    float cl = smoothstep(0.52, 0.80, n) * smoothstep(0.01, 0.07, d.y) * (1.0 - smoothstep(0.18, 0.42, d.y));',
-      '    c = mix(c, mix(uMid, glow, pow(s, 4.0)), cl * 0.45);',
+      '    vec3 sp = d * 220.0; vec3 cell = floor(sp); float hh = hash3(cell);',
+      '    if (hh > 0.994) { float dd = length(sp - cell - 0.5); c += vec3(0.75, 0.8, 0.95) * smoothstep(0.32, 0.0, dd) * smoothstep(0.32, 0.8, d.y) * (0.55 + 0.45 * sin(uTime * 3.0 + hh * 80.0)); }',
+      '    vec2 cp = d.xz / (d.y + 0.08);',
+      '    float ci = smoothstep(0.55, 0.86, fbm(cp * vec2(0.22, 2.0) + vec2(uTime * 0.004, 0.0))) * smoothstep(0.03, 0.18, d.y) * (1.0 - smoothstep(0.42, 0.78, d.y));',
+      '    vec3 lit = mix(vec3(0.42, 0.30, 0.40), vec3(1.9, 1.05, 0.55), clamp(pow(s, 3.0) * 0.9 + az * 0.45, 0.0, 1.0));',
+      '    c = mix(c, lit, ci * 0.62);',
+      '    float lo = smoothstep(0.5, 0.74, fbm(cp * vec2(0.55, 1.5) + vec2(uTime * 0.006, 3.0))) * (1.0 - smoothstep(0.015, 0.085, d.y));',
+      '    vec3 loc = mix(vec3(0.13, 0.09, 0.14), vec3(1.5, 0.82, 0.42), clamp(pow(s, 5.0) * 1.6, 0.0, 1.0));',
+      '    c = mix(c, loc, lo * 0.8);',
       '  }',
-      '  c = mix(c, lin(vec3(1.0, 0.98, 0.93)), smoothstep(0.99986, 0.99993, s));',
       '  return c;',
       '}'
     ].join('\n');
@@ -148,12 +143,17 @@
         '  vec2 p = vW.xz; vec2 g = vec2(0.0);',
         swellNormGLSL,
         '  float fine = exp(-dist * 0.035);',
-        '  wv(g, p, vec2(0.953, 0.301), 4.7, 0.010*fine + 0.003, 2.4);',
-        '  wv(g, p, vec2(-0.707, 0.707), 6.3, 0.007*fine + 0.002, 2.9);',
-        '  wv(g, p, vec2(0.301, 0.953), 9.1, 0.005*fine, 3.6);',
+        '  wv(g, p, vec2(0.953, 0.301), 4.7, 0.006*fine + 0.002, 2.4);',
+        '  wv(g, p, vec2(-0.707, 0.707), 6.3, 0.0045*fine + 0.0015, 2.9);',
+        '  wv(g, p, vec2(0.301, 0.953), 9.1, 0.0035*fine, 3.6);',
         '  wv(g, p, vec2(-0.914, -0.406), 12.7, 0.0035*fine, 4.1);',
         '  wv(g, p, vec2(0.6, -0.8), 17.3, 0.0025*fine, 5.0);',
         '  wv(g, p, vec2(-0.2, -0.98), 23.9, 0.0018*fine, 6.1);',
+        '  float e = 0.05 + dist * 0.003, na = 0.035 * fine + 0.004;',
+        '  vec2 q = p * 1.7 + vec2(uTime * 0.21, uTime * 0.13);',
+        '  g += vec2(fbm(q + vec2(e, 0.0)) - fbm(q - vec2(e, 0.0)), fbm(q + vec2(0.0, e)) - fbm(q - vec2(0.0, e))) / (2.0 * e) * na;',
+        '  vec2 q2 = p * 4.3 - vec2(uTime * 0.37, -uTime * 0.29);',
+        '  g += vec2(vnoise(q2 + vec2(e, 0.0)) - vnoise(q2 - vec2(e, 0.0)), vnoise(q2 + vec2(0.0, e)) - vnoise(q2 - vec2(0.0, e))) / (2.0 * e) * na * 0.45;',
         '  for (int i = 0; i < ' + RIPS + '; i++) {',
         '    vec4 r = uRip[i]; float age = uTime - r.z;',
         '    if (age < 0.0 || age > 7.0) continue;',
@@ -167,20 +167,21 @@
         '  vec3 body = mix(uDeep, uSea, clamp(0.35 + (g.x + g.y) * 0.8, 0.0, 1.0));',
         '  vec3 col = mix(body, skyCol(R), fres);',
         '  float sd = max(dot(R, uSun), 0.0);',
-        '  col += lin(vec3(1.0, 0.97, 0.88)) * (pow(sd, 800.0) * 3.0 + pow(sd, 90.0) * 0.35);',
+        '  col += vec3(9.0, 6.6, 4.2) * pow(sd, 1100.0) + vec3(1.3, 0.8, 0.45) * pow(sd, 110.0) * 0.7 + vec3(0.5, 0.3, 0.16) * pow(sd, 14.0) * 0.25;',
         '  col = mix(col, skyCol(normalize(vec3(-V.x, 0.0, -V.z))), smoothstep(25.0, 150.0, dist));',
         '  gl_FragColor = vec4(col, 1.0);' + OUT,
         '}'
       ].join('\n')
     })));
-    scene.fog = new THREE.Fog(COL.paper.clone(), 40, 170);
+    scene.fog = new THREE.Fog(new THREE.Color(0.42, 0.22, 0.16), 40, 170);
 
     // ---- light ----
-    scene.add(new THREE.HemisphereLight(0xeef3ee, 0x4a6e72, 0.62));
-    var sunLight = new THREE.DirectionalLight(0xfff1dc, 0.8);
+    var hemi = new THREE.HemisphereLight(0xe8c8b8, 0x2a3a44, 0.9);
+    scene.add(hemi);
+    var sunLight = new THREE.DirectionalLight(0xffb070, 2.6);
     sunLight.position.copy(SUN).multiplyScalar(20);
     scene.add(sunLight);
-    var fill = new THREE.DirectionalLight(0xfffaf0, 0.75);
+    var fill = new THREE.DirectionalLight(0xffe2c4, 1.25);
     fill.position.set(0.4, 0.8, 1.0);
     scene.add(fill);
 
@@ -196,6 +197,19 @@
         d[i] += n; d[i + 1] += n; d[i + 2] += n * 0.8;
       }
       g.putImageData(img, 0, 0);
+      for (var fi = 0; fi < 900; fi++) {
+        var fx0 = Math.random() * 1024, fy0 = Math.random() * 768, fa = Math.random() * Math.PI, fl = 6 + Math.random() * 22;
+        g.strokeStyle = 'rgba(' + (Math.random() < 0.5 ? '150,130,100' : '255,255,250') + ',' + (0.05 + Math.random() * 0.08) + ')';
+        g.lineWidth = 0.6 + Math.random() * 0.7;
+        g.beginPath(); g.moveTo(fx0, fy0); g.quadraticCurveTo(fx0 + Math.cos(fa) * fl * 0.5 + (Math.random() - 0.5) * 6, fy0 + Math.sin(fa) * fl * 0.5 + (Math.random() - 0.5) * 6, fx0 + Math.cos(fa) * fl, fy0 + Math.sin(fa) * fl); g.stroke();
+      }
+      // the creases a boat leaves: across at the sail's band, down the middle, and the corner folds
+      function crease(x0, y0, x1, y1) {
+        g.lineWidth = 2.2; g.strokeStyle = 'rgba(110,85,50,0.13)'; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+        g.lineWidth = 1.2; g.strokeStyle = 'rgba(255,255,255,0.22)'; g.beginPath(); g.moveTo(x0 + 2, y0 + 2); g.lineTo(x1 + 2, y1 + 2); g.stroke();
+      }
+      crease(0, 768 * 0.32, 1024, 768 * 0.32); crease(0, 768 * 0.68, 1024, 768 * 0.68); crease(512, 0, 512, 768);
+      crease(0, 0, 300, 768 * 0.32); crease(1024, 0, 724, 768 * 0.32); crease(0, 768, 300, 768 * 0.68); crease(1024, 768, 724, 768 * 0.68);
       var vg = g.createRadialGradient(512, 384, 200, 512, 384, 700);
       vg.addColorStop(0, 'rgba(120,90,50,0)'); vg.addColorStop(1, 'rgba(120,90,50,0.10)');
       g.fillStyle = vg; g.fillRect(0, 0, 1024, 768);
@@ -205,6 +219,7 @@
       g.fillText('B  E  U  K', 512, 86);
       g.fillRect(452, 104, 120, 1.5);
       g.fillStyle = P.ink || '#22333a';
+      g.shadowColor = 'rgba(34,51,58,0.35)'; g.shadowBlur = 1.4; // the ink sits in the paper
       g.textAlign = 'left';
       g.font = 'italic 500 88px "Cormorant Garamond", "EB Garamond", Georgia, serif';
       g.fillText('For you,', 150, 252);
@@ -218,7 +233,7 @@
       return tex;
     }
 
-    var NU = 64, NV = 48, HW = 1.0, HD = 0.75;
+    var NU = 96, NV = 72, HW = 1.0, HD = 0.75;
     var count = (NU + 1) * (NV + 1);
     var pos = new Float32Array(count * 3), uv = new Float32Array(count * 2);
     var U = new Float32Array(count), Vv = new Float32Array(count);
@@ -237,7 +252,7 @@
     sheetGeo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     sheetGeo.setIndex(idx);
 
-    var paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, emissive: 0x15140f });
+    var paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, side: THREE.DoubleSide, emissive: 0x2a2014 });
     var boat = new THREE.Group();
     boat.rotation.order = 'YXZ';
     var sheet = new THREE.Mesh(sheetGeo, paperMat);
@@ -253,6 +268,58 @@
     var shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.95), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc), transparent: true, depthWrite: false, opacity: 0 }));
     shadow.rotation.order = 'YXZ';
     scene.add(shadow);
+
+    // ---- far off: a headland with its lighthouse, a ship in the haze, gulls ----
+    var far = new THREE.Group(); scene.add(far);
+    var landMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.02, 0.014, 0.024), fog: false });
+    var land = new THREE.Shape(); land.moveTo(-95, -1);
+    for (var lx = -95; lx <= -18; lx += 3) land.lineTo(lx, 1.2 + 4.2 * Math.exp(-Math.pow((lx + 62) / 18, 2)) + 1.6 * Math.exp(-Math.pow((lx + 34) / 9, 2)) + Math.sin(lx * 0.7) * 0.25);
+    land.lineTo(-18, -1); land.lineTo(-95, -1);
+    var landMesh = new THREE.Mesh(new THREE.ShapeGeometry(land), landMat); landMesh.position.z = -150; far.add(landMesh);
+    var tower = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3.2, 0.7), landMat); tower.position.set(-34, 4.1, -150); far.add(tower);
+    function glowTex() {
+      var c = document.createElement('canvas'); c.width = c.height = 64; var x = c.getContext('2d');
+      var gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+    }
+    var gt = glowTex();
+    var flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: gt, color: new THREE.Color(3.0, 2.3, 1.4), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    flash.scale.set(4, 4, 1); flash.position.set(-34, 5.9, -149.5); far.add(flash);
+    var shipMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.035, 0.02, 0.03), fog: false });
+    var ship = new THREE.Group();
+    var hs = new THREE.Shape(); hs.moveTo(-9, 0.6); hs.lineTo(-8.2, -0.9); hs.lineTo(7.6, -0.9); hs.lineTo(9.6, 1.1); hs.lineTo(-9, 1.1); hs.lineTo(-9, 0.6);
+    ship.add(new THREE.Mesh(new THREE.ShapeGeometry(hs), shipMat));
+    function slab(w, h, x0, y0) { var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), shipMat); m.position.set(x0 + w / 2, y0 + h / 2, 0); ship.add(m); }
+    slab(3.2, 2.6, -8.4, 1.1); slab(2.4, 1.0, -8.0, 3.7); slab(0.7, 1.8, -6.6, 3.7);
+    for (var cn = 0; cn < 5; cn++) slab(2.4, 1.1 + (cn % 2) * 0.6, -4.4 + cn * 2.55, 1.1);
+    slab(0.12, 4.2, 6.2, 1.1);
+    ship.position.set(40, -0.2, -135); ship.scale.setScalar(0.9); far.add(ship);
+    var gulls = [];
+    var gullMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.05, 0.045, 0.05), side: THREE.DoubleSide, fog: true });
+    function wingGeo(side) {
+      var gg = new THREE.BufferGeometry();
+      gg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -0.12, side * 0.55, 0.06, 0.02, side * 1.05, -0.04, 0.12, 0, 0, 0.12], 3));
+      gg.setIndex([0, 1, 3, 1, 2, 3]); return gg;
+    }
+    for (var gi = 0; gi < 4; gi++) {
+      var gull = new THREE.Group(), wl = new THREE.Mesh(wingGeo(-1), gullMat), wr = new THREE.Mesh(wingGeo(1), gullMat);
+      gull.add(wl); gull.add(wr); gull.add(new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), gullMat));
+      gull.userData = { wl: wl, wr: wr, r: 7 + gi * 3.5, h: 4.2 + gi * 1.1, cz: -22 - gi * 6, cx: -6 + gi * 5, sp: 0.09 + gi * 0.025, ph: gi * 1.7 };
+      gull.scale.setScalar(0.55 + 0.1 * gi);
+      scene.add(gull); gulls.push(gull);
+    }
+    function ambient(g) {
+      ship.position.x = 40 - ((g * 0.45) % 140);
+      var beat = (g % 6.0); flash.material.opacity = beat < 0.35 ? Math.sin(beat / 0.35 * Math.PI) : 0;
+      for (var q = 0; q < gulls.length; q++) {
+        var gu = gulls[q], ud = gu.userData, a = g * ud.sp + ud.ph;
+        gu.position.set(ud.cx + Math.cos(a) * ud.r, ud.h + Math.sin(a * 2.3) * 0.4, ud.cz + Math.sin(a) * ud.r * 0.5);
+        gu.rotation.y = -a + Math.PI / 2;
+        gu.rotation.z = Math.sin(a * 1.3) * 0.25;
+        var flap = (Math.sin(g * 0.7 + ud.ph) > 0.55) ? Math.sin(g * 9 + ud.ph) * 0.55 : 0.08;
+        ud.wl.rotation.z = flap; ud.wr.rotation.z = -flap;
+      }
+    }
 
     // The boat's shape: the band around v = 0 becomes the sail, the rest the hull.
     var L = 0.80, B = 0.30, HH = 0.30, S = 0.52, C = 0.36;
@@ -308,6 +375,7 @@
 
     function update(t, g) {
       shared.uTime.value = g;
+      ambient(g);
       if (mode === 'idle') {
         camera.position.set(0, 1.05, 3.1);
         camera.lookAt(0, 0.75, 0);
@@ -377,7 +445,7 @@
       camera.position.copy(camPos);
       camera.lookAt(camLook);
       sky.position.copy(camera.position);
-      fill.intensity = 0.75 - 0.35 * kA;
+      fill.intensity = 1.25 - 0.45 * kA;
 
       if (t > T.words && !wordsSent) {
         wordsSent = true;
@@ -391,9 +459,9 @@
     // it. The tooth is fixed to the page, in CSS pixels, so it stays put
     // while the sea moves behind it, the way a printed plate would. ----
     var printBuf = renderer.capabilities.isWebGL2
-      ? new THREE.WebGLMultisampleRenderTarget(1, 1)
+      ? new THREE.WebGLMultisampleRenderTarget(1, 1, { type: THREE.HalfFloatType })
       : new THREE.WebGLRenderTarget(1, 1);
-    printBuf.texture.encoding = THREE.sRGBEncoding;
+    printBuf.texture.encoding = THREE.LinearEncoding;
     var paperOnPage = new THREE.Color();
     try { paperOnPage.setStyle(String(P.paper || '#f8f4e9').trim()); } catch (e) { paperOnPage.setStyle('#f8f4e9'); }
     var printMat = new THREE.ShaderMaterial({
@@ -402,20 +470,21 @@
         uTexel: { value: new THREE.Vector2(1, 1) },
         uDpr: { value: 1 },
         uPaper: { value: new THREE.Vector3(paperOnPage.r, paperOnPage.g, paperOnPage.b) },
-        uSharp: { value: 0.7 }, uGrain: { value: 0.06 }, uSkip: { value: 0.22 }
+        uSharp: { value: 0.45 }, uGrain: { value: 0.05 }, uSkip: { value: 0.16 }, uExp: { value: 0.9 }
       },
       depthTest: false, depthWrite: false,
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
       fragmentShader: [
-        'uniform sampler2D tScene; uniform vec2 uTexel; uniform float uDpr, uSharp, uGrain, uSkip; uniform vec3 uPaper; varying vec2 vUv;',
+        'uniform sampler2D tScene; uniform vec2 uTexel; uniform float uDpr, uSharp, uGrain, uSkip, uExp; uniform vec3 uPaper; varying vec2 vUv;',
+        'vec3 tm(vec3 x){ x *= uExp; x = (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14); return pow(clamp(x, 0.0, 1.0), vec3(1.0 / 2.2)); }',
         'float h21(vec2 p){ p = fract(p * vec2(443.897, 441.423)); p += dot(p, p.yx + 19.19); return fract((p.x + p.y) * p.x); }',
         'float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);',
         '  return mix(mix(h21(i), h21(i+vec2(1.0,0.0)), f.x), mix(h21(i+vec2(0.0,1.0)), h21(i+vec2(1.0,1.0)), f.x), f.y); }',
         'void main(){',
-        '  vec3 c = texture2D(tScene, vUv).rgb;',
+        '  vec3 c = tm(texture2D(tScene, vUv).rgb);',
         // unsharp mask over the four neighbours
-        '  vec3 nb = texture2D(tScene, vUv + vec2(uTexel.x, 0.0)).rgb + texture2D(tScene, vUv - vec2(uTexel.x, 0.0)).rgb',
-        '         + texture2D(tScene, vUv + vec2(0.0, uTexel.y)).rgb + texture2D(tScene, vUv - vec2(0.0, uTexel.y)).rgb;',
+        '  vec3 nb = tm(texture2D(tScene, vUv + vec2(uTexel.x, 0.0)).rgb) + tm(texture2D(tScene, vUv - vec2(uTexel.x, 0.0)).rgb)',
+        '         + tm(texture2D(tScene, vUv + vec2(0.0, uTexel.y)).rgb) + tm(texture2D(tScene, vUv - vec2(0.0, uTexel.y)).rgb);',
         '  c = clamp(c + (c - nb * 0.25) * uSharp, 0.0, 1.0);',
         // the paper: fine tooth, a few long fibres, a faint mottle
         '  vec2 q = gl_FragCoord.xy / uDpr;',
