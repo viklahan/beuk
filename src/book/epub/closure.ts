@@ -109,9 +109,9 @@ const ARRIVE = `(s) => {
   if (!s.bookColour.accent && !s.bookColour.tint) s.bookColour = undefined;
   s.sections = (Array.isArray(s.sections) ? s.sections : []).map(normalizeSection);
   s.cover = s.cover || null;
+  s.fonts = Array.isArray(s.fonts) ? s.fonts.map(normalizeCustomFont).filter(Boolean) : [];
   s.coverRecipe = s.coverRecipe ? normalizeCoverRecipe(s.coverRecipe) : null;
   s.images = Array.isArray(s.images) ? s.images : [];
-  s.fonts = Array.isArray(s.fonts) ? s.fonts.map(normalizeCustomFont).filter(Boolean) : [];
   s.printPictureBook = s.printPictureBook === true && !s.printLargePrint;
   s.printBleed = s.printBleed === true;
   return s;

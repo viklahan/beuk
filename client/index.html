@@ -19953,7 +19953,10 @@
         if (typeof FontFace === "undefined" || !document.fonts || !document.fonts.add) return Promise.resolve(false);
         registeredFontIds[f.id] = true;
         try {
-          const face = new FontFace('"' + f.family.replace(/"/g, "") + '"', 'url(data:' + f.mediaType + ";base64," + f.data + ")");
+          /* The family goes in as the bare name: Chrome reads FontFace's family as the name itself, not as CSS, so a
+             quoted one registered a face called "Writer Hand" WITH its quotes, which no font-family and no canvas
+             ctx.font ever matched (the type fell back to Georgia; tools/book-corpus/wrap-parity.mjs measured it). */
+          const face = new FontFace(f.family.replace(/"/g, ""), 'url(data:' + f.mediaType + ";base64," + f.data + ")");
           /* Into the document's font set at once: the face matches
              its family name from this moment and the load completes
              behind it — the studio's pickers and pages never wait. */
@@ -51575,11 +51578,14 @@
           const e = buildEmptyBook(); state.sections = e.sections; state.activeId = e.activeId;
         }
         state.cover = doc.cover || null;
+        /* BEUK:metaleak — the book's own faces before its cover recipe: normalizeCoverRecipe keeps an element, spine or
+           back font only when it is a library face or one of the book's uploads (uploadedFontByFamily reads state.fonts),
+           so read after it, a writer's own cover face was judged against the LAST book's uploads and dropped on a cold open. */
+        state.fonts = Array.isArray(doc.fonts) ? doc.fonts.map(normalizeCustomFont).filter(Boolean) : [];
         state.coverRecipe = doc.coverRecipe ? normalizeCoverRecipe(doc.coverRecipe) : null;
         state.outline = olNormalize(doc.outline, state.sections); /* BEUK:outline — a book without them has none */
         state.images = Array.isArray(doc.images) ? doc.images : [];
         state.research = rsNormalize(doc.research); /* BEUK:research — a book's research files are its own; read before History, whose snapshots name them */
-        state.fonts = Array.isArray(doc.fonts) ? doc.fonts.map(normalizeCustomFont).filter(Boolean) : [];
         state.customThemes = Array.isArray(doc.customThemes) ? doc.customThemes.map(normalizeCustomTheme).filter(Boolean) : [];
         /* The book's own faces register on arrival, so the studio
            sets type in them from the first render. */
