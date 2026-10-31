@@ -37,6 +37,26 @@ books drafted for the gallery, not real writers' content).
 | `real/salt-road-standalone.json` | `books/ramp-salt-road.beuk-backup.json` | 4 | Standalone book with colour, no printBleed or manuscript keys (pre-bleed shape), embedded images |
 | `real/valois-02-chicot.json` | `sagas/valois/02-chicot-the-jester.beuk-backup.json` | 0 | Series volume with bible and 108 sections (section-heavy) |
 
+## Full-corpus run
+
+`read: full corpus (BEUK_BOOK_CORPUS)` in `tests/book-read.test.ts` is skipped
+unless the env var names a folder. It reads every `*.beuk-backup.json` under
+that folder (any depth, one book at a time), and asserts status `ok`, no
+`schema` warnings, and idempotence (second read deep-equals the first; only
+record-only steps may fire again; nothing preserved). Per-run counts go to the
+test's diagnostics.
+
+```
+BEUK_BOOK_CORPUS="<gallery folder>" node --import tsx --test tests/book-read.test.ts
+```
+
+Observed on the 2026-10-30 gallery (`10-ramp-gallery`): 66 books read
+(10 under `books/`, 56 under `sagas/`), all passed. Upgrades fired on the
+first read: `rights-mode` 66, `optional-empties` 66, `defaults:manuscript` 9,
+`print-defaults` 9, `notes-end` 4. Warnings: none (0 of every code, 0
+`schema`). There is no `client/_ramp-tmp` folder in this gallery, so the two
+extra books the plan allowed for are not part of the count.
+
 ## Known gaps
 
 - No RTL-language book (ar/fa/he/ur): every gallery book is `en`. The corpus

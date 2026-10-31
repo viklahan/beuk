@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
 import { realFixtures } from './book-fixtures.js';
 import { readBook } from '../src/book/read.js';
@@ -198,4 +200,43 @@ test('read: a numeric-string seriesNumber is read as 1.0 reads it, the raw kept'
   const r = readBook(b);
   assert.equal(r.book.meta.seriesNumber, 7);
   assert.deepEqual(r.preserved.find((p) => p.path === 'meta.seriesNumber'), { path: 'meta.seriesNumber', raw: '7', used: 7 });
+});
+
+/* The full gallery, read one book at a time (never all in memory). Skipped
+   unless BEUK_BOOK_CORPUS names a folder; every *.beuk-backup.json under it
+   (any depth) is read. See tests/fixtures/books/README.md. */
+const corpusDir = process.env.BEUK_BOOK_CORPUS;
+
+function* backupFiles(dir: string): Generator<string> {
+  for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) yield* backupFiles(full);
+    else if (e.name.endsWith('.beuk-backup.json')) yield full;
+  }
+}
+
+test('read: full corpus (BEUK_BOOK_CORPUS)', { skip: corpusDir ? false : 'set BEUK_BOOK_CORPUS to a folder of *.beuk-backup.json' }, (t) => {
+  const upgrades = new Map<string, number>();
+  const warns = new Map<string, number>();
+  const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1);
+  let books = 0;
+  for (const file of backupFiles(corpusDir!)) {
+    const name = path.relative(corpusDir!, file).split(path.sep).join('/');
+    const raw = (JSON.parse(readFileSync(file, 'utf8')) as { book: unknown }).book;
+    const a = readBook(raw);
+    assert.equal(a.status, 'ok', name);
+    assert.deepEqual(a.warnings.filter((w) => w.code === 'schema'), [], name);
+    const b = readBook(a.book);
+    assert.deepStrictEqual(b.book, a.book, name);
+    assert.deepEqual(b.upgrades.filter((u) => !recordOnly.has(u)), [], name);
+    assert.deepEqual(b.preserved, [], name);
+    for (const u of a.upgrades) bump(upgrades, u);
+    for (const w of a.warnings) bump(warns, w.code);
+    books++;
+  }
+  assert.ok(books > 0, 'no *.beuk-backup.json found under BEUK_BOOK_CORPUS');
+  const fmt = (m: Map<string, number>) => [...m].sort().map(([k, n]) => `${k}=${n}`).join(' ') || 'none';
+  t.diagnostic(`books read: ${books}`);
+  t.diagnostic(`upgrades: ${fmt(upgrades)}`);
+  t.diagnostic(`warnings: ${fmt(warns)}`);
 });
