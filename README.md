@@ -4401,6 +4401,88 @@ Bulk import uses the same title-page reading (the page is lifted from the
 text, without a report) and falls back to the cleaned file name instead of
 storing "Untitled Book".
 
+### Names never come in with their words run together (BEUK:gluefix)
+
+A title, byline or chapter title must arrive with its spaces. The import used
+to lose them in three places; each is closed, and a last check catches any
+other cause:
+
+- **PDF title pages in spaced capitals.** PDF.js can hand over a whole
+  letter-spaced line as one run (`T H E D E V I L ' S L E D G E R`) with the
+  word breaks no wider than the letter spacing, so closing it up glued the
+  words (`THEDEVIL'SLEDGER`). The letters are now parted by the book's own
+  words: the vocabulary of the PDF's text, its declared title and author, and
+  the words chapter labels are made of. A run is split only when it is not
+  itself a word of the book and the book's words cover it whole — fewest
+  words first, the commoner ones on a tie — so `NOWHERE` stays whole and
+  `KLEOS` is never cut. A dash takes the spacing the book's prose gives it,
+  and a bracket gets its space back (`STATION (CONTINUED)`). The report
+  names the lines read this way, and names every spaced word of eight
+  letters or more it could not part (`ANCHORAGEPD`) instead of passing it.
+- **The PDF's declared title is kept over the page's copy of it.** The title
+  page's spelling replaces the metadata title only when it is the same words,
+  word for word (a curly `’` for `'`): never a run-together copy, and never
+  the title page's capitals over the title's own case (`Kleos`, not `KLEOS`).
+- **A line break inside a heading.** Word (`<br>` from Mammoth) and EPUB
+  headings now read a line break as a space, as the RTF reader already read
+  `\line`: `THE⏎DEVIL'S LEDGER` is the title, and `Chapter One⏎The Muster` is
+  Chapter One titled The Muster in both formats (an EPUB chapter page's own
+  heading now gives the chapter its number). A heading with its by-line under
+  it, before numbered chapters, is the title page, not a preface.
+- **The file name.** `book.rtf`, `book.pdf` and `book.epub` clean to `book`
+  like `.docx`, `.md` and `.txt` always did.
+- **The last check, every format.** After any import, the title, subtitle,
+  author and every section title are checked against the book's own text.
+  A word of eight letters or more that splits into the book's words — every
+  piece three letters or more, two of them neighbours somewhere in the book —
+  is named in the report (`The title “THEDEVIL'SLEDGER” has words run
+  together. The book's own words read it as “THE DEVIL'S LEDGER”.`) with a
+  one-click **Use** button; nothing is changed without that click. A real long
+  word is left alone: `Frontispiece` is not "Front is piece", and `Seashore`
+  is not "Sea shore" in a book that never sets those words side by side.
+
+Self-checks: `import.gluefix.pdf-spaced-words`,
+`import.gluefix.heading-line-breaks`, `import.gluefix.names-flagged` (each
+fails when its fix is reverted).
+
+### A PDF's chapters are its chapters, and nothing else (BEUK:chapfix)
+
+A novel set with lines in a hand larger than its text — ledger entries, a
+diary, a note (13.5pt against 10.5pt in *The Devil's Ledger*) — used to come
+in with those lines as chapters of their own, numbered by position (`4`,
+`17`, `24`…) between `Four` and `Five`. Three things are closed:
+
+- **A label with a hyphenated number.** `C H A P T E R  T W E N T Y - O N E`
+  closes up to `CHAPTER TWENTY-ONE`; the layout's label pattern now takes a
+  hyphenated number, so Twenty-One to Twenty-Nine keep their label over
+  their title (and the label is cased `Twenty-One`). Without it those
+  chapters lost the guard that turns a stray mid-chapter heading into text.
+- **A larger line that is a sentence is text.** The "running text" test read
+  each printed line alone, so a sentence wrapped over two lines
+  (`sold seventy men for a` / `commission — UNPAID.`) passed for a heading.
+  The block is now read whole; a line that opens or ends on a dash is cut
+  from its sentence; and two sentences (`God help us all. M.F.`) are text.
+  A short title-like line in the same size (`The Ship's Articles`) is still a
+  heading; `I. The Storm.` and `Mr. Darcy Returns.` still read as headings.
+- **A set-in block keeps its lines together.** Lines in a size of their own,
+  all at the same inset, read as one paragraph while a line leaves its
+  sentence open — on the page and over a page turn — instead of one
+  paragraph per printed line. Body-size text and list items are untouched
+  (an interrupted `I've ever —` never runs into the next paragraph).
+
+Swept over the twelve market-book PDFs before and after: *The Devil's
+Ledger* goes from 39 body sections to its 30 chapters; *The Raven from
+Darkness*'s diary pages read as entries, not lines; the Crashlanders 1 and 3
+dedications keep their italic (their first line ends on a dash, so they were
+read as headings before); the other eight are byte-identical.
+
+Known limit: a single larger line alone at the foot of a page, its sentence
+running on over the turn, is still read on its own page and can pass for a
+heading.
+
+Self-check: `import.chapfix.pdf-ledger-lines` (fails when any one of its
+seven parts is reverted).
+
 ## Web and store links
 
 `[words](https://…)`, `[words](http://…)` and `[words](mailto:…)` in the

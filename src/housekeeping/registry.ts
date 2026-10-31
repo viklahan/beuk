@@ -1707,6 +1707,30 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Desk state lives in the client editor; there is no server-side desk.',
   },
   {
+    id: 'import.gluefix.pdf-spaced-words',
+    title: 'A PDF title page in spaced capitals keeps its words apart',
+    kind: 'client-only',
+    reason: 'The PDF reader and the manuscript parser run in the studio page; the server never sees an import.',
+  },
+  {
+    id: 'import.gluefix.heading-line-breaks',
+    title: 'A heading broken over two lines reads as words in every format',
+    kind: 'client-only',
+    reason: 'The manuscript parser runs in the studio page; the server never sees an import.',
+  },
+  {
+    id: 'import.gluefix.names-flagged',
+    title: 'A run-together title, byline or chapter title is named in the import report',
+    kind: 'client-only',
+    reason: 'The import report is built in the studio page; the server never sees an import.',
+  },
+  {
+    id: 'import.chapfix.pdf-ledger-lines',
+    title: 'A PDF novel comes in with exactly its chapters: hyphenated labels kept, ledger lines in a larger hand stay text',
+    kind: 'client-only',
+    reason: 'PDF layout reading runs in the studio page on PDF.js output; the server never sees an import.',
+  },
+  {
     id: 'import.zones.numbered-book',
     title: 'A book with numbered chapters keeps its front and back matter out of the chapters',
     kind: 'client-only',
