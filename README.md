@@ -946,16 +946,53 @@ Print Interior View draws with, so the two cannot part.
 **Opening pages.** When "No head on opening pages" is on, **every section's
 opening page prints bare**: chapters, and front and back matter such as a
 foreword or the acknowledgments (V, 2026-10-31). The page after its plate
-counts as a spread chapter's opening. A back-matter section's later
-pages carry the last chapter's head, as the view draws them.
+counts as a spread chapter's opening.
+
+**Whose words** (BEUK:headfit, V, 2026-10-31). With a chapter-title head:
+- a chapter's pages carry its title;
+- a back matter piece's later pages carry **its own** title. Five pages
+  of Acknowledgments read ACKNOWLEDGMENTS, not the last chapter's;
+- front matter keeps whatever came before it, which is nothing before the
+  first chapter;
+- a blank verso still belongs to the section before it.
+
+`printHeadOwner()` is the one rule the view and the meta share.
+
+**One line, always.** A chapter's editor has a **Short running head**
+field. When it's set, the head carries it in place of the title. It is
+stored only when set, as `runHead` on the section. Whatever still runs
+wider than the head's box is cut at a word and ends in an ellipsis
+(`printFitHead()`):
+- **The box** is the text area's width. Measured: Chromium wraps a margin
+  box there and ignores `text-overflow` in it. With `nowrap` the head ran
+  off the page.
+- **The measurement** is made in the studio with a canvas: the head's own
+  face and size, its 0.14em tracking and capitals, and 5% held back for a
+  fallback face.
+- **The renderer** draws the words it is handed. The fit applies to every
+  head content: title, author and title · author too.
+
+**Embedding.** All heads are embedded in one `embedPages` call, so the
+font is copied once: measured +25 KB for 180 heads, against +2.1 MB with
+one call per head.
 
 **Embedding.** All heads are embedded in one `embedPages` call, so the
 font is copied once: measured +25 KB for 180 heads, against +2.1 MB with
 one call per head.
 
 **Checks.** Tests: `tests/print-heads.test.ts`, 12 tests, 11 of 11
-renderer mutants caught. Self-check: `print.runheads.meta`, which matches
-the meta against the view page by page.
+renderer mutants caught. Self-checks:
+- `print.runheads.meta`, which matches the meta against the view page by
+  page;
+- `print.headfit`, which checks the short head, the cut at a word, and one
+  laid-out line in the head's type; 9 of 9 studio mutants caught.
+
+Live check of the fit, through the fenced renderer:
+- **Twenty Years After:** 729 heads, none on two lines (6 pages wrapped
+  before), none past the text area, every head the meta's. 16 long titles
+  are cut, one short head printed on its 8 pages, page count unchanged.
+- **The Lantern Coast,** with five pages of Acknowledgments: four of them
+  carry its own title.
 
 **Spike numbers** (beuk-spikes/runheads, 2026-10-31):
 - right chapter head on 808 of 820 body pages in the novel; the other 12

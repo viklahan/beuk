@@ -170,6 +170,8 @@ const Section = obj({
   // enforced on load: normalizeSection (CI:50249) replaces anything outside BACKDROP_STRENGTHS (CI:29412) with "whisper" (CI:50108)
   backdropStrength: z.enum(['whisper', 'soft', 'strong', 'spread']),
   htLine1: strOrNull, htLine2: str, tocHeading: strOrNull,
+  // the print running head's short form; present only when set (BEUK:headfit)
+  runHead: str.optional(),
   scenes: z.array(Scene),
   // outline fields: present only when set (CI:32939)
   synopsis: str.optional(),
