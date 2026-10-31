@@ -1,0 +1,24 @@
+{
+  "note": "Pages with no translation at all (BEUK:l10n). Known debt as of 2026-10-30, when the guard was written: everything outside the studio was English-only. Take a page off when it is translated; add one only on purpose, with a reason.",
+  "pages": {
+    "client/reset/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/atticus.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/dabble.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/novelcrafter.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/reedsy-studio.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/scrivener.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/compare/vellum.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/features.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/site/ramp.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/support/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "client/thanks/index.html": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/account/page.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/email/layout.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/help/render.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/school/render.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/shares/reader.ts": "English-only at the guard's start (2026-10-30); not yet translated",
+    "src/warmth/pages.ts": "English-only at the guard's start (2026-10-30); not yet translated"
+  }
+}
