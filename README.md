@@ -899,6 +899,75 @@ Print Interior View draws each page at trim + bleed when Bleed is on:
 the bleed shaded beyond a dashed red trim line, the plates and spread
 backdrops running out to the bleed edge. The cover is not affected.
 
+### Running heads (renderer, BEUK:runheads)
+
+**What Chromium misses.** Measured on Chromium, the engine `page.pdf` runs
+in the renderer:
+
+- `string-set` / `string(chapterTitle)` are not supported. A **chapter
+  title** head printed empty on every page: 0 of 820 body pages of a
+  917-page novel, and 0 of 70 in the 97-page sample.
+- `:first` on a named page group is not supported either. The head
+  printed on **every opening page**, whatever the writer chose.
+
+**What the studio sends.** The print stylesheet keeps its own head for any
+other engine. The print file also carries a `<meta name="beuk-heads">`
+with:
+
+- the head's margin box;
+- its type (the same declarations as the stylesheet's `@page` rule);
+- whether opening and blank pages print bare;
+- the words each section's pages carry.
+
+Those words are read by `printPageHeadText()`, the same function the
+Print Interior View draws with, so the two cannot part.
+`deploy/renderer/heads.mjs` then:
+
+1. clears the stylesheet's head in the final pass, with one
+   `@page { @top-center { content: none !important } }`. Measured: it
+   beats every page rule the studio writes.
+2. works out each page's head from where each section starts. This is the
+   page map spreads.mjs measures, with its blank pages; a book needing no
+   other finishing gets the map from its one pass.
+3. has Chromium set each distinct head once on each side of a spread, in
+   a document made of the book's own `<head>` with named pages. So the
+   head is Chromium's own margin-box text, in the book's font, size and
+   position.
+4. draws it over each page with pdf-lib, after the spreads and the
+   page-foot notes and before bleed.
+
+**Pages with no head:**
+- the first page;
+- display pages;
+- a spread's plate;
+- blank pages when blanks print bare;
+- pages whose section has no words to carry.
+
+**Opening pages.** When "No head on opening pages" is on, **every section's
+opening page prints bare**: chapters, and front and back matter such as a
+foreword or the acknowledgments (V, 2026-10-31). The page after its plate
+counts as a spread chapter's opening. A back-matter section's later
+pages carry the last chapter's head, as the view draws them.
+
+**Embedding.** All heads are embedded in one `embedPages` call, so the
+font is copied once: measured +25 KB for 180 heads, against +2.1 MB with
+one call per head.
+
+**Checks.** Tests: `tests/print-heads.test.ts`, 12 tests, 11 of 11
+renderer mutants caught. Self-check: `print.runheads.meta`, which matches
+the meta against the view page by page.
+
+**Spike numbers** (beuk-spikes/runheads, 2026-10-31):
+- right chapter head on 808 of 820 body pages in the novel; the other 12
+  are a blind spot in the scoring script, checked by hand.
+- 51 of 51 in the sample, with no wrong heads.
+- every opening bare.
+- no layout change.
+- about +0.6 to 2 s per book.
+
+Paged.js was spiked too and set aside: about 4× slower on the novel, it
+changed pagination, and it justified last lines (its own bug).
+
 ### Notes at the foot of the page (renderer)
 
 **Notes in print** (Export → Print Interior, and the Print Interior View

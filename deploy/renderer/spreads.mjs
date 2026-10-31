@@ -50,7 +50,8 @@ export function planSections(html) {
     const spread = s.classes.includes('spread-sec');
     const plate = spread ? (PLATE_RE.exec(body) || [])[1] || null : null;
     const layer = spread ? (LAYER_RE.exec(body) || [])[1] || null : null;
-    return { id: s.id, start: s.start, spread, plate, layer };
+    // (display: a title / copyright / dedication page — no head, no folio; heads.mjs)
+    return { id: s.id, start: s.start, spread, plate, layer, display: s.classes.includes('display-sec') };
   });
 }
 
