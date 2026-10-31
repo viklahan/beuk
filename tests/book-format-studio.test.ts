@@ -43,7 +43,7 @@ function same(): (a: unknown, b: unknown) => boolean {
   vm.runInContext(`${src('stableJson')}\n${src('bookDocsSame')}\nthis.f = bookDocsSame;`, sandbox);
   return sandbox.f as (a: unknown, b: unknown) => boolean;
 }
-const book = (): Doc => ({ meta: { title: 'T', bookId: 'urn:uuid:x' }, sections: [{ id: 's1', title: 'One', type: 'chapter' }], activeId: 's1' });
+const book0 = (): Doc => ({ meta: { title: 'T', bookId: 'urn:uuid:x' }, sections: [{ id: 's1', title: 'One', type: 'chapter' }], activeId: 's1' });
 
 test('studio: serializeBook writes formatVersion: 1 as its first key', () => {
   const fn = find('serializeBook') as ts.FunctionDeclaration;
@@ -55,26 +55,26 @@ test('studio: serializeBook writes formatVersion: 1 as its first key', () => {
 
 test('studio: bookDocsSame treats a shelf doc without formatVersion and the same doc with formatVersion: 1 as the same', () => {
   const f = same();
-  const shelf = book();
-  const desk = { formatVersion: 1, ...book() };
+  const shelf = book0();
+  const desk = { formatVersion: 1, ...book0() };
   assert.equal(f(shelf, desk), true);
   assert.equal(f(desk, shelf), true);
-  assert.equal(f(desk, { ...book(), formatVersion: 1 }), true);
+  assert.equal(f(desk, { ...book0(), formatVersion: 1 }), true);
 });
 
 test('studio: bookDocsSame still sees a real difference (a changed section title) as different', () => {
   const f = same();
-  const other = book();
+  const other = book0();
   (other.sections as Doc[])[0]!.title = 'Two';
-  assert.equal(f({ formatVersion: 1, ...book() }, { formatVersion: 1, ...other }), false);
-  assert.equal(f(book(), { formatVersion: 1, ...other }), false);
-  assert.equal(f(null, book()), false);
+  assert.equal(f({ formatVersion: 1, ...book0() }, { formatVersion: 1, ...other }), false);
+  assert.equal(f(book0(), { formatVersion: 1, ...other }), false);
+  assert.equal(f(null, book0()), false);
 });
 
 test('studio: bookDocsSame does not mutate its arguments', () => {
   const f = same();
-  const d = { formatVersion: 1, ...book() };
-  f(d, book());
+  const d = { formatVersion: 1, ...book0() };
+  f(d, book0());
   assert.equal(d.formatVersion, 1);
 });
 
@@ -83,5 +83,33 @@ test('studio: applyBookDoc ignores formatVersion (it reads keys by name; no whol
   assert.ok(!/formatVersion/.test(body), 'applyBookDoc never mentions formatVersion');
   assert.ok(!/Object\.assign\(\s*state\s*,/.test(body), 'no Object.assign(state, ...)');
   assert.ok(!/Object\.(keys|entries)\(\s*doc\s*\)|\bin\s+doc\b|\.\.\.\s*doc\b/.test(body), 'no iteration or spread over doc');
-  assert.match(body, /state\.printNotes = doc\.printNotes/, 'it assigns state fields from named doc keys');
+  /* the lines that show it reads top-level keys by name (client/index.html at this commit):
+     the function is applyBookDoc(doc, opts) { ... } at 50199-50339; inside it
+     50285 `state.printMarginMode = doc.printMarginMode`, 50300 `state.printNotes = doc.printNotes ...`,
+     50301 `state.goals = normalizeGoals(doc.goals)`, 50310 `normalizeHistory(doc.history, doc.historyPool)`,
+     50317 `acxNormalize(doc.audio)`, 50319 `msNormalize(doc.manuscript)`, 50323 `bibleNormalize(doc.bible)`.
+     An unknown top-level key such as formatVersion is therefore never read. */
+  assert.match(body, /state\.printNotes = doc\.printNotes/, 'client/index.html:50300 assigns state.printNotes from doc.printNotes by name');
+  assert.match(body, /state\.goals = normalizeGoals\(doc\.goals\)/, 'client/index.html:50301 reads doc.goals by name');
+  assert.match(body, /state\.audio = acxNormalize\(doc\.audio\)/, 'client/index.html:50317 reads doc.audio by name');
+});
+
+test('studio: a sample fingerprint stored before formatVersion equals the new one (sampleLoadedJsonNormal / sampleComparableJson)', () => {
+  const book = (title: string): Doc => ({ ...book0(), sections: [{ id: 's1', title, type: 'chapter', content: 'x' }] });
+  const sandbox: Record<string, unknown> = { JSON, Array, Object, state: {} };
+  vm.createContext(sandbox);
+  let cur: Doc = book('One');
+  sandbox.serializeBook = () => JSON.parse(JSON.stringify(cur));
+  sandbox.samplePicsStrip = () => undefined;
+  vm.runInContext(`${src('stableJson')}
+${src('sampleComparableJson')}
+${src('sampleLoadedJsonNormal')}
+this.api = { sampleComparableJson, sampleLoadedJsonNormal };`, sandbox);
+  const api = sandbox.api as { sampleComparableJson(): string; sampleLoadedJsonNormal(s: string): string };
+  const old = api.sampleComparableJson(); /* what a device record saved before this change holds: the comparable form of a book with no formatVersion */
+  cur = { formatVersion: 1, ...book('One') };
+  assert.equal(api.sampleLoadedJsonNormal(old), api.sampleComparableJson(), 'old fingerprint equals the new serialization of the same book');
+  assert.equal(api.sampleLoadedJsonNormal(JSON.stringify({ formatVersion: 1, ...JSON.parse(old) })), api.sampleComparableJson(), 'a fingerprint that carries formatVersion also matches');
+  cur = { formatVersion: 1, ...book('Two') };
+  assert.notEqual(api.sampleLoadedJsonNormal(old), api.sampleComparableJson(), 'a real edit still differs');
 });
