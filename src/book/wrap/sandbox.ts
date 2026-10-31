@@ -51,13 +51,46 @@ import vm from 'node:vm';
    studio's own face, then its subsets. A family with no entry (Georgia,
    serif) stays as written.
 
+   Matched against Chrome's own numbers (tests/book-wrap-parity.test.ts,
+   captured by tools/book-corpus/wrap-parity.mjs), three more:
+   3. Which face. Chrome picks a family's face by its @font-face
+      descriptors (matchDescriptor), not by what the file can do, and sets
+      a variable face at that face's declared weight: "700 'EB Garamond'"
+      is the 600 face at wght 600, "400 'Cinzel'" the 500 face. A writer's
+      upload (declared normal 400) stands in only where it is the pick.
+   4. Words. Chrome shapes canvas text a word at a time (chromeWords).
+   5. Size. Chrome sets canvas text at the size floored to 1/100 px
+      (chromeSize). And @napi-rs/canvas rounds measureText to 0.01 px, so
+      widths are measured at 100 times the size.
+
    save()/restore() bring the font back natively; the shim re-applies the
    variation for the restored font after each restore(). */
 
+/** One registered name and the @font-face descriptors (style, declared weight) of the files under it. */
+export type PlanFace = { name: string; descs: { italic: boolean; weight: number }[] };
 export type FontPlan = {
-  /** family as the studio names it → this build's registered faces for it, in the order they stand in for it. */
-  map: Record<string, string[]>;
+  /** family as the studio names it → this build's registered faces for it, in the order they stand in for it.
+   *  A bare string is a face that stands in at every weight and style. */
+  map: Record<string, (string | PlanFace)[]>;
 };
+
+/** The descriptor Chrome sets a request in (CSS Fonts 4 §5.2 font matching, as Blink does it): style first
+ *  (italic asks for an italic face, else takes a normal one; normal the reverse), then weight among that
+ *  style's faces: asked 400–500, the nearest at or above up to 500, then below going down, then above 500
+ *  going up; asked under 400, at or below going down, then above going up; asked over 500, at or above going
+ *  up, then below going down. Null when there is none. */
+export function matchDescriptor(descs: { italic: boolean; weight: number }[], weight: number, italic: boolean): { italic: boolean; weight: number } | null {
+  if (!descs.length) return null;
+  const style = descs.some((d) => d.italic === italic) ? italic : !italic;
+  const ws = [...new Set(descs.filter((d) => d.italic === style).map((d) => d.weight))].sort((a, b) => a - b);
+  const up = (from: number, to = Infinity) => ws.find((w) => w >= from && w <= to);
+  const down = (from: number) => [...ws].reverse().find((w) => w < from);
+  let w: number | undefined;
+  if (weight >= 400 && weight <= 500) w = up(weight, 500) ?? down(weight) ?? up(500.0001);
+  else if (weight < 400) w = [...ws].reverse().find((x) => x <= weight) ?? up(weight);
+  else w = up(weight) ?? down(weight);
+  return w === undefined ? null : { italic: style, weight: w };
+}
 
 const AXIS = { wght: 0x77676874, ital: 0x6974616c, slnt: 0x736c6e74 } as const;
 const GENERIC = new Set(['serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui', 'ui-serif', 'ui-sans-serif', 'ui-monospace', 'math', 'emoji', 'fangsong']);
@@ -100,15 +133,26 @@ export function parseCssFont(value: string): ParsedFont | null {
 }
 
 /** The family list with each family replaced by this build's faces for
- *  it. Idempotent: the faces themselves have no entry, so they stay. */
-export function expandFamilies(families: string[], plan: FontPlan): string[] {
+ *  it that Chrome would set the request in: the faces declared at the
+ *  descriptor matchDescriptor picks for that family (the writer's upload,
+ *  declared normal 400, only when that is the pick, as in Chrome, where
+ *  the face added last wins among equals and a better-matching built-in
+ *  face wins otherwise). `primary` is the first planned family's pick.
+ *  Idempotent: the faces themselves have no entry, so they stay. */
+export function expandFamilies(families: string[], plan: FontPlan, req: { weight: number; italic: boolean } = { weight: 400, italic: false }): { families: string[]; primary: { italic: boolean; weight: number } | null } {
   const out: string[] = [];
+  let primary: { italic: boolean; weight: number } | null = null, planned = false;
   for (const f of families) {
     const faces = Object.prototype.hasOwnProperty.call(plan.map, familyName(f)) ? plan.map[familyName(f)]! : null;
-    if (faces && faces.length) for (const a of faces) out.push(`"${a}"`);
-    else out.push(f);
+    if (!faces || !faces.length) { out.push(f); continue; }
+    const best = matchDescriptor(faces.flatMap((e) => (typeof e === 'string' ? [] : e.descs)), req.weight, req.italic);
+    if (!planned) { primary = best; planned = true; }
+    for (const e of faces) {
+      if (typeof e === 'string') out.push(`"${e}"`);
+      else if (!best || e.descs.some((d) => d.italic === best.italic && d.weight === best.weight)) out.push(`"${e.name}"`);
+    }
   }
-  return out;
+  return { families: out, primary };
 }
 
 /** fontVariationSettings for this font: the axes the setting face has, set the way Chrome sets them. */
@@ -133,7 +177,38 @@ export function variationFor(p: ParsedFont, cache: Map<string, string> = new Map
   return out;
 }
 
+/* ---- word by word, as Chrome shapes canvas text ----
+   Chrome shapes a canvas string one word at a time (Blink's word shaper:
+   each run between spaces, and each space, on its own), so a kerning pair
+   that spans a space is never applied; Skia shapes the whole string.
+   Measured on Libre Baskerville 700 at 51px: Chrome sets "APRIL CAROOKE"
+   493.63 px wide (font-kerning auto), the sum of "APRIL", " " and
+   "CAROOKE"; Skia, and Chrome told font-kerning normal, 492.15. So the
+   shim measures and paints a string with spaces as the sum of its words
+   and spaces. Right-to-left text is left whole (painting its words left to
+   right would reverse them). */
+const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
+export function chromeWords(text: string): string[] | null {
+  if (!text.includes(' ') || RTL.test(text)) return null;
+  return text.split(/( )/).filter((x) => x !== '');
+}
+
+/* ---- the size Chrome sets canvas text at ----
+   Chrome measures and paints canvas text at the font size floored to
+   1/100 px: 45.003px, 45.008px and 45.0099px all set exactly as 45px,
+   44.9999px as 44.99px, 3.009px as 3px (measured,
+   tools/book-corpus/wrap-parity.mjs). The wrap's sizes are fractions of
+   pixels per inch, which is not exactly 300 when the wrap's width in
+   pixels was rounded (12.3225 in → 3697 px: 45.003px blurb type), so the
+   shim floors the same way. */
+export function chromeSize(size: string): string {
+  const m = /^(\d+\.?\d*(?:e[+-]?\d+)?|\.\d+)px$/i.exec(size);
+  if (!m) return size;
+  return `${Math.floor(Number(m[1]) * 100 + 1e-7) / 100}px`;
+}
+
 const SHIMMED = Symbol('beuk-font-shim');
+const SCALE = 100;
 
 function accessor(obj: object, prop: string): PropertyDescriptor {
   for (let o: object | null = obj; o; o = Object.getPrototypeOf(o)) {
@@ -143,7 +218,11 @@ function accessor(obj: object, prop: string): PropertyDescriptor {
   throw new Error(`the canvas context has no ${prop}`);
 }
 
-type Ctx2D = { font: string; fontVariationSettings: string; restore(): void };
+type Metrics = { width: number };
+type Ctx2D = {
+  font: string; fontVariationSettings: string; textAlign: string; restore(): void;
+  measureText(t: string): Metrics; fillText(t: string, x: number, y: number, w?: number): void; strokeText(t: string, x: number, y: number, w?: number): void;
+};
 
 /** Put the font shim on a 2D context (once). */
 export function shimContext<T extends object>(ctx: T, plan: FontPlan): T {
@@ -152,12 +231,17 @@ export function shimContext<T extends object>(ctx: T, plan: FontPlan): T {
   const font = accessor(c, 'font');
   const restore = accessor(c, 'restore').value as () => void;
   const cache = new Map<string, string>();
+  /* the variation each native font string was set with, so restore() brings back the same one */
+  const set = new Map<string, string>();
   const apply = (value: string, expand: boolean) => {
     const p = parseCssFont(value);
     if (!p) { font.set!.call(c, value); return; }
-    const families = expand ? expandFamilies(p.families, plan) : p.families;
-    font.set!.call(c, [...p.lead, p.size, families.join(', ')].join(' '));
-    c.fontVariationSettings = variationFor({ ...p, families }, cache);
+    const { families, primary } = expand ? expandFamilies(p.families, plan, p) : { families: p.families, primary: null };
+    font.set!.call(c, [...p.lead, chromeSize(p.size), families.join(', ')].join(' '));
+    /* the variable face is set at the weight of the face Chrome picked (its declared weight), not the one asked for */
+    const v = variationFor({ ...p, families, ...(primary ? { weight: primary.weight, italic: primary.italic } : {}) }, cache);
+    c.fontVariationSettings = v;
+    set.set(font.get!.call(c) as string, v);
   };
   Object.defineProperty(c, 'font', {
     configurable: true,
@@ -170,10 +254,68 @@ export function shimContext<T extends object>(ctx: T, plan: FontPlan): T {
     writable: true,
     value: () => {
       restore.call(c);
-      const p = parseCssFont(font.get!.call(c) as string);
+      const now = font.get!.call(c) as string;
+      const known = set.get(now);
+      if (known !== undefined) { c.fontVariationSettings = known; return; }
+      const p = parseCssFont(now);
       c.fontVariationSettings = p ? variationFor(p, cache) : 'normal';
     },
   });
+  const measure = accessor(c, 'measureText').value as (t: string) => Metrics;
+  /* @napi-rs/canvas hands measureText's width back rounded to 0.01 px (Chrome keeps the float32 sum: 581.0797
+     where Skia says 581.08). Advances are linear in the size (unhinted), so the width is measured at SCALE
+     times the size and divided back: the rounding shrinks to 0.0001 px. */
+  const width = (t: string) => {
+    const native = font.get!.call(c) as string;
+    const p = parseCssFont(native);
+    const px = p ? /^(\d+\.?\d*(?:e[+-]?\d+)?|\.\d+)px$/i.exec(p.size) : null;
+    if (!p || !px) return measure.call(c, t).width;
+    const v = c.fontVariationSettings;
+    font.set!.call(c, [...p.lead, `${Number(px[1]) * SCALE}px`, p.families.join(', ')].join(' '));
+    c.fontVariationSettings = v;
+    try {
+      return measure.call(c, t).width / SCALE;
+    } finally {
+      font.set!.call(c, native);
+      c.fontVariationSettings = v;
+    }
+  };
+  Object.defineProperty(c, 'measureText', {
+    configurable: true,
+    writable: true,
+    value: (text: unknown) => {
+      const t = String(text);
+      const m = measure.call(c, t);
+      const words = chromeWords(t) ?? [t];
+      /* the native metrics, with Chrome's width */
+      const out: Record<string, unknown> = {};
+      for (let o: object | null = m; o && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
+        for (const k of Object.getOwnPropertyNames(o)) if (!(k in out) && k !== 'constructor') { const v = (m as unknown as Record<string, unknown>)[k]; if (typeof v === 'number') out[k] = v; }
+      }
+      out.width = words.reduce((a, w) => a + width(w), 0);
+      return out;
+    },
+  });
+  for (const name of ['fillText', 'strokeText'] as const) {
+    const paint = accessor(c, name).value as (t: string, x: number, y: number, w?: number) => void;
+    Object.defineProperty(c, name, {
+      configurable: true,
+      writable: true,
+      value: (text: unknown, x: number, y: number, maxWidth?: number) => {
+        const t = String(text);
+        const words = maxWidth === undefined ? chromeWords(t) : null;
+        if (!words) { if (maxWidth === undefined) paint.call(c, t, x, y); else paint.call(c, t, x, y, maxWidth); return; }
+        const ws = words.map(width);
+        const total = ws.reduce((a, w) => a + w, 0);
+        const align = c.textAlign;
+        let at = align === 'center' ? x - total / 2 : align === 'right' || align === 'end' ? x - total : x;
+        c.textAlign = 'left';
+        try {
+          words.forEach((w, i) => { if (w !== ' ') paint.call(c, w, at, y); at += ws[i]!; });
+        } finally { c.textAlign = align; }
+      },
+    });
+  }
   Object.defineProperty(c, SHIMMED, { value: true });
   return ctx;
 }

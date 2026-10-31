@@ -9,7 +9,7 @@ import { PDFDocument } from 'pdf-lib';
 import { reachableFrom } from '../src/book/studio/closure.js';
 import { imageSize } from '../src/book/wrap/limits.js';
 import { WRAP_CLOSURE, WRAP_ROOTS, WRAP_SUPPLIED, WrapBuildError, WrapInputError, extractWrapSource, loadWrapClosure, manifestFonts, wrapState } from '../src/book/wrap/closure.js';
-import { type FontPlan, expandFamilies, makeWrapSandbox, parseCssFont, shimContext } from '../src/book/wrap/sandbox.js';
+import { type FontPlan, chromeSize, chromeWords, expandFamilies, makeWrapSandbox, parseCssFont, shimContext } from '../src/book/wrap/sandbox.js';
 import { readBook } from '../src/book/read.js';
 import { fixturePath } from './book-fixtures.js';
 
@@ -151,9 +151,9 @@ test('font shim: parses the shorthand the studio writes', () => {
   assert.equal(parseCssFont('500 3.0000000000000004px "A B", serif')!.families[0], '"A B"');
   assert.equal(parseCssFont('not a font'), null);
   const plan = { map: { 'A B': ['A B beuk-1', 'A B beuk-latin-ext beuk-1'] } };
-  const once = expandFamilies(["'A B'", 'Georgia', 'serif'], plan);
+  const once = expandFamilies(["'A B'", 'Georgia', 'serif'], plan).families;
   assert.deepEqual(once, ['"A B beuk-1"', '"A B beuk-latin-ext beuk-1"', 'Georgia', 'serif']);
-  assert.deepEqual(expandFamilies(once, plan), once, 'idempotent');
+  assert.deepEqual(expandFamilies(once, plan).families, once, 'idempotent');
 });
 
 test('font shim: a variable face sets bold at wght 700, as Chrome does (Skia alone sets the 400 instance)', () => {
@@ -162,7 +162,7 @@ test('font shim: a variable face sets bold at wght 700, as Chrome does (Skia alo
     const plain = ctx2d(), shim = ctx2d({ map: {} });
     const p400 = widthOf(plain, "400 40px 'Probe LB'", T), p700 = widthOf(plain, "700 40px 'Probe LB'", T);
     const s400 = widthOf(shim, "400 40px 'Probe LB'", T), s700 = widthOf(shim, "700 40px 'Probe LB'", T);
-    assert.ok(Math.abs(s400 - p400) < 1e-6, `400 untouched (${s400} vs ${p400})`);
+    assert.ok(Math.abs(s400 - p400) <= 0.005, `400 untouched, up to the 0.01 px the native width is rounded to (${s400} vs ${p400})`);
     assert.ok(s700 / s400 > 1.015, `bold is wider: ${s700} vs ${s400} (without the shim: ${p700})`);
     assert.equal((shim as unknown as { fontVariationSettings: string }).fontVariationSettings, "'wght' 700");
     /* restore() brings back the earlier font, and its weight with it */
@@ -205,7 +205,7 @@ test('font shim: latin-ext and vietnamese letters come from the family\'s own su
     const viaAlias = widthOf(ctx2d(plan), "400 40px 'Probe LB2', serif", EXT);
     const subsetAlone = widthOf(ctx2d(), "400 40px 'Probe LB2 beuk-latin-ext'", EXT);
     const fallback = widthOf(ctx2d(), "400 40px 'Probe LB2', serif", EXT);
-    assert.ok(Math.abs(viaAlias - subsetAlone) < 1e-6, `the subset sets the letters (${viaAlias} vs ${subsetAlone})`);
+    assert.ok(Math.abs(viaAlias - subsetAlone) <= 0.005, `the subset sets the letters (${viaAlias} vs ${subsetAlone})`);
     assert.ok(Math.abs(viaAlias - fallback) > 0.5, `not the generic fallback (${viaAlias} vs ${fallback})`);
     const title = 'Łódź Żółć Đặng';
     assert.notEqual(widthOf(ctx2d(plan), "400 40px 'Probe LB2', serif", title), widthOf(ctx2d(), "400 40px 'Probe LB2', serif", title));
@@ -308,16 +308,49 @@ test('wrap fonts: a face left behind (a stopped build, a bare family name) never
   }
 });
 
-test('wrap fonts: the writer\'s uploaded "Lora" wins over the studio\'s Lora', async () => {
+test('wrap fonts: the writer\'s uploaded "Lora" stands in where Chrome puts it: at normal 400, not where a built-in face matches better', async () => {
+  /* the studio registers an upload as new FontFace(family, url): normal, 400. Chrome (tests/fixtures/wrap-parity/upload-collision--paperback.json)
+     sets 400 in the upload (the face added last wins among equals), 700 and italic in the built-in faces, which match better */
   const sb = loadWrapClosure(html, CLIENT);
-  const builtIn = await sb.render(inLora() as never, 'jpg', { lang: 'en' });
+  const LORA = "40px 'Lora', serif", T = 'The Lantern Coast';
+  const probes = [{ font: `400 ${LORA}`, text: T }, { font: `700 ${LORA}`, text: T }, { font: `italic 400 ${LORA}`, text: T }];
+  const builtIn = await sb.render(inLora() as never, 'jpg', { lang: 'en', probes });
   const b = inLora();
   b.fonts = [{ id: 'up-lora', family: 'Lora', ext: 'ttf', name: 'MyLora.ttf', data: readFileSync(path.join(FONTS, 'abrilfatface', 'Abril_Fatface-normal-400.ttf')).toString('base64') }];
-  const up = await sb.render(b as never, 'jpg', { lang: 'en' });
+  const up = await sb.render(b as never, 'jpg', { lang: 'en', probes });
   assert.deepEqual(up.uploaded, ['Lora']);
-  assert.notDeepEqual(up.items.backBoxes, builtIn.items.backBoxes, 'the back-panel type set in the uploaded bytes measures differently');
+  assert.ok(Math.abs(up.probes[0]! - builtIn.probes[0]!) > 1, `400: the upload's bytes (${up.probes[0]} vs built-in ${builtIn.probes[0]})`);
+  assert.equal(up.probes[1], builtIn.probes[1], '700: the built-in face');
+  assert.equal(up.probes[2], builtIn.probes[2], 'italic: the built-in italic');
 });
 
 test('wrap closure: loading is cached per studio file', () => {
   assert.equal(loadWrapClosure(html, CLIENT), loadWrapClosure(html, CLIENT));
+});
+
+test('font shim: a string with spaces measures and paints as its words and spaces, as Chrome shapes it; right-to-left text stays whole', () => {
+  assert.deepEqual(chromeWords('APRIL CAROOKE'), ['APRIL', ' ', 'CAROOKE']);
+  assert.deepEqual(chromeWords('a  b'), ['a', ' ', ' ', 'b']);
+  assert.equal(chromeWords('Lantern'), null);
+  assert.equal(chromeWords('فانوس الساحل'), null);
+  withFaces([['librebaskerville/librebaskerville-latin-normal-400_700.woff2', 'Probe LB3']], () => {
+    const shim = ctx2d({ map: {} }), plain = ctx2d();
+    const F = "700 51px 'Probe LB3'";
+    const words = ['APRIL', ' ', 'CAROOKE'].reduce((a, w) => a + widthOf(shim, F, w), 0);
+    assert.ok(Math.abs(widthOf(shim, F, 'APRIL CAROOKE') - words) < 1e-9, 'the sum of the words');
+    /* Chrome measured 493.63 (tools/book-corpus/wrap-parity.mjs); the whole string shaped at once kerns across the space */
+    assert.ok(Math.abs(widthOf(shim, F, 'APRIL CAROOKE') - 493.6289) < 0.05, `Chrome's width (${widthOf(shim, F, 'APRIL CAROOKE')})`);
+    (plain as unknown as { fontVariationSettings: string }).fontVariationSettings = "'wght' 700";
+    assert.ok(Math.abs(widthOf(plain, F, 'APRIL CAROOKE') - 492.15) < 0.05, `Skia's whole-string width (${widthOf(plain, F, 'APRIL CAROOKE')})`);
+  });
+});
+
+test('font shim: type is set at the size floored to 1/100 px, as Chrome sets it', () => {
+  assert.equal(chromeSize('45.003043213633596px'), '45px');
+  assert.equal(chromeSize('45.0099px'), '45px');
+  assert.equal(chromeSize('44.9999px'), '44.99px');
+  assert.equal(chromeSize('44.99px'), '44.99px', 'not floored past itself by binary rounding');
+  assert.equal(chromeSize('51.00000000000001px'), '51px');
+  assert.equal(chromeSize('3.009px'), '3px');
+  assert.equal(chromeSize('1.2em'), '1.2em', 'other units as written');
 });

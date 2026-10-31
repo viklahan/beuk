@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import vm from 'node:vm';
 import { parentPort, workerData } from 'node:worker_threads';
 import { MAX_WRAP_PIXELS, PICTURE_ID_RE, imageSize, pictureFits } from './limits.js';
-import { type FontPlan, installLucide, makeWrapSandbox } from './sandbox.js';
+import { type FontPlan, type PlanFace, installLucide, makeWrapSandbox } from './sandbox.js';
 
 /* BEUK:wrap-server — one cover-wrap render, in its own worker thread and
    its own vm context. The parent terminates the worker at the time cap
@@ -22,7 +22,7 @@ import { type FontPlan, installLucide, makeWrapSandbox } from './sandbox.js';
    before anything big is allocated (src/book/wrap/limits.ts). */
 
 /** A face file, its family, and the family name it registers under (the family, or a subset alias). */
-export type FontFile = { family: string; file: string; alias: string };
+export type FontFile = { family: string; file: string; alias: string; italic: boolean; weights: number[] };
 
 export type WrapWorkerJob = {
   code: string;
@@ -31,6 +31,8 @@ export type WrapWorkerJob = {
   fonts: FontFile[];
   stateJson: string;
   lang: string;
+  /** glyph-width probes, measured on a sandbox canvas once this build's faces are registered */
+  probes: { font: string; text: string }[];
 };
 
 export type WrapRefusal = 'no-cover' | 'too-large' | 'missing-pictures' | 'picture-too-large' | 'bad-picture-id';
@@ -41,6 +43,7 @@ export type WrapWorkerOut =
     jpeg: Uint8Array; items: Record<string, unknown>; dims: Record<string, unknown>;
     /** families with a studio face this build, the families the book's own uploads stood in for, the subset names, the build's nonce */
     fonts: string[]; uploaded: string[]; aliases: string[]; buildId: string;
+    probes: number[];
   };
 
 type Recipe = Record<string, unknown>;
@@ -121,9 +124,12 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
   const buildId = randomBytes(8).toString('hex');
   const keys: NonNullable<ReturnType<typeof GlobalFonts.register>>[] = [];
   const fonts: string[] = [], uploaded: string[] = [], aliases: string[] = [];
-  const add = (family: string, face: string) => {
+  /* each registered name with the descriptors of the files under it (the shim picks names the way Chrome picks faces) */
+  const add = (family: string, face: string, italic: boolean, weights: number[]) => {
     const list = (plan.map[family] ??= []);
-    if (!list.includes(face)) list.push(face);
+    let entry = list.find((e): e is PlanFace => typeof e !== 'string' && e.name === face);
+    if (!entry) list.push(entry = { name: face, descs: [] });
+    for (const weight of weights) if (!entry.descs.some((d) => d.italic === italic && d.weight === weight)) entry.descs.push({ italic, weight });
   };
   try {
     /* the writer's own face of a name first: they chose it */
@@ -134,7 +140,7 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
       const k = GlobalFonts.register(Buffer.from(up.data, 'base64'), face);
       if (!k) continue;
       keys.push(k);
-      add(up.family, face);
+      add(up.family, face, false, [400]); /* registerUploadedFont: new FontFace(family, url), descriptors left at normal 400 */
       if (!uploaded.includes(up.family)) uploaded.push(up.family);
     }
     for (const f of job.fonts) {
@@ -143,14 +149,17 @@ async function run(job: WrapWorkerJob): Promise<WrapWorkerOut> {
       const k = GlobalFonts.registerFromPath(f.file, face);
       if (!k) continue;
       keys.push(k);
-      add(f.family, face);
+      add(f.family, face, f.italic, f.weights);
       if (f.alias === f.family) { if (!fonts.includes(f.family)) fonts.push(f.family); }
       else if (!aliases.includes(f.alias)) aliases.push(f.alias);
     }
+    /* measured the way the painter measures: a canvas the studio code makes, wearing the font shim */
+    const measure = vm.runInContext('(function (ps) { var c = document.createElement("canvas").getContext("2d"); return ps.map(function (p) { c.font = String(p.font); return c.measureText(String(p.text)).width; }); })', ctx) as (ps: unknown) => number[];
+    const probes = Array.from(measure(JSON.parse(JSON.stringify(job.probes))), Number);
     const { canvas, items } = api.render(recipe);
     const jpeg = new Uint8Array(await canvas.encode('jpeg', JPEG_QUALITY));
     /* items and dims are plain numbers, strings and arrays: they cross back by structured clone as they are */
-    return { jpeg, items, dims: api.wrapDims(recipe), fonts, uploaded, aliases, buildId };
+    return { jpeg, items, dims: api.wrapDims(recipe), fonts, uploaded, aliases, buildId, probes };
   } finally {
     if (keys.length) GlobalFonts.removeBatch(keys);
   }

@@ -64,9 +64,9 @@ export const WRAP_CLOSURE: readonly string[] = [
  *  calling the studio's own normalizers. */
 const WRAP_ARRIVE = `(s) => {
   s.sections = (Array.isArray(s.sections) ? s.sections : []).map(normalizeSection);
+  s.fonts = Array.isArray(s.fonts) ? s.fonts.map(normalizeCustomFont).filter(Boolean) : [];
   s.coverRecipe = s.coverRecipe ? normalizeCoverRecipe(s.coverRecipe) : null;
   s.images = Array.isArray(s.images) ? s.images : [];
-  s.fonts = Array.isArray(s.fonts) ? s.fonts.map(normalizeCustomFont).filter(Boolean) : [];
   s.printPictureBook = s.printPictureBook === true && !s.printLargePrint;
   return s;
 }`;
@@ -148,15 +148,58 @@ export function faceSubset(file: string): string {
   return m ? m[1]! : '';
 }
 
+/** The font stylesheets the studio links (client/index.html <link rel="stylesheet" href="assets/fonts/…">);
+ *  tests/book-wrap-parity.test.ts holds this list to the studio's links. */
+export const STUDIO_FONT_CSS: readonly string[] = ['fonts.css', 'fonts-scripts.css', 'fonts-display.css'];
+
+/** A face's @font-face descriptors: its style and the weights it is declared at. */
+export type FaceDescriptor = { italic: boolean; weights: number[] };
+
+/** What Chrome knows about each face file from the studio's stylesheets:
+ *  file (relative to client/assets/fonts) → style and declared weights.
+ *  These are what Chrome matches a ctx.font against (CSS Fonts 4 §5.2),
+ *  and they are not always what the file can do: EB Garamond's latin file
+ *  holds 400–800 but is declared at 400, 500 and 600, so Chrome sets
+ *  "700 … 'EB Garamond'" in the 600 face at wght 600 (measured,
+ *  tools/book-corpus/wrap-parity.mjs). */
+export function fontDescriptors(clientDir: string, cssFiles: readonly string[] = STUDIO_FONT_CSS): Map<string, FaceDescriptor> {
+  const dir = path.resolve(clientDir, 'assets', 'fonts');
+  const out = new Map<string, FaceDescriptor>();
+  for (const css of cssFiles) {
+    for (const block of readFileSync(path.join(dir, css), 'utf8').split('@font-face').slice(1)) {
+      const url = /src:\s*url\(\s*['"]?([^'")]+)['"]?\s*\)/.exec(block)?.[1];
+      const style = /font-style:\s*(\w+)/.exec(block)?.[1] ?? 'normal';
+      const weight = Number(/font-weight:\s*(\d+)/.exec(block)?.[1] ?? 400);
+      if (!url) continue;
+      const file = path.posix.normalize(url);
+      const d = out.get(file) ?? { italic: style === 'italic' || style === 'oblique', weights: [] };
+      if (!d.weights.includes(weight)) d.weights.push(weight);
+      d.weights.sort((a, b) => a - b);
+      out.set(file, d);
+    }
+  }
+  return out;
+}
+
+/** A face file's descriptors when no stylesheet declares it (the whole TTFs the EPUB embeds): from its name
+ *  (Amiri-normal-700.ttf → normal, [700]), else normal 400. */
+export function descriptorFromName(file: string): FaceDescriptor {
+  const m = /-(normal|italic)-([0-9_]+)\.(?:ttf|otf|woff2?)$/i.exec(path.basename(file));
+  return m ? { italic: m[1]!.toLowerCase() === 'italic', weights: m[2]!.split('_').map(Number) } : { italic: false, weights: [400] };
+}
+
 /** Every face file in client/assets/fonts/MANIFEST.tsv (not the licence
  *  texts): family, absolute file, and the name it registers under. Each
  *  family's files come in faceRank order. The primary faces (whole fonts
  *  and the plain Latin subset) register under the family itself; every
  *  other subset under "<family> beuk-<subset>", which the sandbox's font
  *  shim writes right after the family in each stack (src/book/wrap/sandbox.ts),
- *  standing in for Chrome's unicode-range. */
+ *  standing in for Chrome's unicode-range. Each file carries the style and
+ *  weights the studio's stylesheets declare it at (fontDescriptors), which
+ *  the shim matches a ctx.font against the way Chrome does. */
 export function manifestFonts(clientDir: string): FontFile[] {
   const dir = path.resolve(clientDir, 'assets', 'fonts');
+  const declared = fontDescriptors(clientDir);
   const rows = readFileSync(path.join(dir, 'MANIFEST.tsv'), 'utf8').split(/\r?\n/).slice(1);
   const byFamily = new Map<string, string[]>();
   for (const row of rows) {
@@ -176,20 +219,30 @@ export function manifestFonts(clientDir: string): FontFile[] {
     const lead = sorted.some(isPrimary) ? null : faceSubset(sorted[0]!);
     for (const file of sorted) {
       const sub = faceSubset(file);
-      out.push({ family, file, alias: isPrimary(file) || sub === lead ? family : `${family} beuk-${sub}` });
+      const rel = path.relative(dir, file).split(path.sep).join('/');
+      const d = declared.get(rel) ?? descriptorFromName(file);
+      out.push({ family, file, alias: isPrimary(file) || sub === lead ? family : `${family} beuk-${sub}`, italic: d.italic, weights: d.weights });
     }
   }
   return out;
 }
 
 export type WrapKind = 'pdf' | 'jpg';
-export type WrapOptions = { lang: string; timeoutMs?: number; heapMb?: number };
+/** A glyph-width probe: measureText of `text` in `font` (a CSS shorthand), on a canvas made inside the sandbox, so the font shim applies. */
+export type WrapProbe = { font: string; text: string };
+export type WrapOptions = {
+  lang: string; timeoutMs?: number; heapMb?: number;
+  /** measured with this build's faces registered (tests/book-wrap-parity.test.ts holds them to Chrome's); only families the recipe sets type in are registered */
+  probes?: WrapProbe[];
+};
 export type WrapItems = Record<string, unknown> & { barcode?: { x: number; y: number; w: number; h: number } | null; spineDir?: string };
 export type WrapDims = Record<string, unknown> & { totalW: number; totalH: number };
 export type WrapResult = {
   bytes: Buffer; items: WrapItems; dims: WrapDims;
   /** families set in the studio's faces; families the book's uploads stood in for; subset faces; this build's font nonce */
   fonts: string[]; uploaded: string[]; aliases: string[]; buildId: string;
+  /** measureText widths of opts.probes, in order */
+  probes: number[];
   /** when the render left the line and when it finished (performance.now(), ms) */
   timing: { started: number; finished: number };
 };
@@ -263,7 +316,7 @@ export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSand
       const stateJson = JSON.stringify(state);
       return inLine(async () => {
         const started = performance.now();
-        const job: WrapWorkerJob = { code: source.code, lucide, fonts, stateJson, lang: opts.lang };
+        const job: WrapWorkerJob = { code: source.code, lucide, fonts, stateJson, lang: opts.lang, probes: opts.probes ?? [] };
         const out = (await runStudioWorker(siblingWorkerUrl(import.meta.url), job, {
           timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
           heapMb: opts.heapMb ?? DEFAULT_WRAP_WORKER_HEAP_MB,
@@ -276,7 +329,7 @@ export function loadWrapClosure(studioHtml: string, clientDir: string): WrapSand
         const bytes = kind === 'pdf' ? await wrapPdf(jpeg, dims) : jpeg;
         return {
           bytes, items: out.items as WrapItems, dims,
-          fonts: out.fonts, uploaded: out.uploaded, aliases: out.aliases, buildId: out.buildId,
+          fonts: out.fonts, uploaded: out.uploaded, aliases: out.aliases, buildId: out.buildId, probes: out.probes,
           timing: { started, finished: performance.now() },
         };
       });
