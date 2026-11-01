@@ -233,6 +233,8 @@ async function main() {
   rmSync(out, { recursive: true, force: true });
   mkdirSync(path.join(out, 'packs'), { recursive: true });
   const { packs, ...meta } = strings;
+  /* Every language's "Untitled Book": 1.0's imIsPlaceholderTitle treats a stored title equal to any of them as no title. */
+  meta.untitledBook = [...new Set(strings.order.map((c) => packs[c]['misc.untitledBook']))];
   writeFileSync(path.join(out, 'strings-meta.json'), JSON.stringify(meta));
   /* One file per language: English is bundled (the fallback), the rest
      load on demand as their own chunks (and are precached for offline). */

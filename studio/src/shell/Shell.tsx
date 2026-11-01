@@ -60,10 +60,10 @@ export function Shell() {
         <div className="brand-div" aria-hidden="true" />
         <div className="book-id">
           <div className="book-title" id="projectTitleDisplay">
-            {bk.title.trim() || t('misc.untitledBook')}
+            {bk.title || t('misc.untitledBook')}
           </div>
           <div className="book-author" id="projectAuthorDisplay">
-            {bk.author.trim()}
+            {bk.author}
           </div>
         </div>
         <LangMenu />

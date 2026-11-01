@@ -24,7 +24,9 @@ export type Phase = 'starting' | 'empty' | 'open';
 export type BookApi = {
   phase: Phase;
   book: OpenBook | null;
+  /** The title as the top bar shows it (1.0's imRealTitle: trimmed, a stored "Untitled Book" in any language counts as none). */
   title: string;
+  /** The author line as the top bar shows it (1.0: "by {author}", or nothing). */
   author: string;
   rows: OutlineRow[];
   /** The book's language (a LANG_PACKS key, 1.0's bookLang: unknown codes read as "en") and direction. */
@@ -50,6 +52,13 @@ function firstChapter(b: OpenBook): number | null {
   return any >= 0 ? any : null;
 }
 const BOOK_RTL: readonly string[] = (meta as { bookRtl?: string[] }).bookRtl ?? [];
+const UNTITLED: readonly string[] = ['Untitled Book', ...((meta as { untitledBook?: string[] }).untitledBook ?? [])];
+
+/** 1.0's imRealTitle / imIsPlaceholderTitle. */
+export function realTitle(v: unknown): string {
+  const s = String(v || '').trim();
+  return s && UNTITLED.includes(s) ? '' : s;
+}
 
 export function BookProvider({ children }: { children: ReactNode }) {
   const { t } = useLocale();
@@ -124,8 +133,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
       try {
         const b = await importToDevice(parsed);
         show(b);
-        const title = String(bookMeta(b.ydoc).title ?? '').trim();
-        toast(t('local.backupOpened', { title: title || t('misc.untitledBook') }), 'HardDrive');
+        // 1.0's localApplyBackup: state.meta.title || "Untitled Book"
+        toast(t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') }), 'HardDrive');
       } catch (e) {
         // readBook said 'newer' or 'failed': this studio must not open (and so never save) it
         // anything else: this device would not store it (storage blocked or full)
@@ -154,8 +163,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
     return {
       phase,
       book,
-      title: String(m.title ?? ''),
-      author: String(m.author ?? ''),
+      title: realTitle(m.title),
+      author: m.author ? t('misc.byAuthor', { author: m.author }) : '',
       rows,
       bookLang: lang,
       bookDir: BOOK_RTL.includes(lang) ? 'rtl' : 'ltr',
