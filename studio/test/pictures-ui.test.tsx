@@ -256,7 +256,7 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     expect(noHist(await exported())).toEqual(before);
   });
 
-  it('fix round 1: a use added a moment ago (inside the view's 120 ms re-read) is seen at the click: cleanup keeps it, its delete asks first', async () => {
+  it("fix round 1: a use added a moment ago (inside the view's 120 ms re-read) is seen at the click: cleanup keeps it, its delete asks first", async () => {
     await openStudio(BOOK((b) => b.images.push(im('ilK', 'unused-K.png', btoa('imglib-unused-K')), im('ilL', 'unused-L.png', btoa('imglib-unused-L')))));
     await openImageDialog();
     expect($('btnImgCleanup').textContent).toContain('(4 ·'); // the drawn view: scimg2, scimg3, ilK, ilL unused
@@ -269,6 +269,7 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     expect((b.images as Rec[]).map((x) => x.id)).toEqual(['scimg1', 'ilK']);
     expect((b.sections as Rec[])[0]!.plateId).toBe('ilK');
     await click([...document.querySelectorAll('#toasts .toast-action')].pop()!); // Undo the cleanup
+    await waitFor(() => expect(document.querySelector('#imgLib [data-imgdel="ilL"]')).not.toBeNull()); // the grid drawn again
     // in one step: ilL becomes the backdrop, then its delete control: the "used in" confirm, not a silent removal
     await act(async () => {
       fireEvent.change($('chBackdrop'), { target: { value: 'ilL' } });
