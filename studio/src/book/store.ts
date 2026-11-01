@@ -340,13 +340,14 @@ async function importLegacyOnce(book: unknown): Promise<{ book: OpenBook; import
 
 /** What the studio opens at start-up: the last book, else any 2.0 book on this device, else 1.0's local book imported once
  *  (under a Web Lock, re-checked inside it), else nothing. `importedLegacy` is true only when 1.0's book was written now. */
-export async function startBook(readLegacy: () => Promise<{ book: Rec } | null>): Promise<{ book: OpenBook; importedLegacy: boolean } | null> {
+export async function startBook(readLegacy: () => Promise<{ book: Rec; missing?: number } | null>): Promise<{ book: OpenBook; importedLegacy: boolean; picsMissing: number } | null> {
   const found = await discoverBook();
-  if (found) return { book: found, importedLegacy: false };
+  if (found) return { book: found, importedLegacy: false, picsMissing: 0 };
   const legacy = await readLegacy();
   if (!legacy) return null;
   const r = await withImportLock(() => importLegacyOnce(legacy.book));
-  return { book: r.book, importedLegacy: r.imported };
+  // 1.0's local.picsMissing: pictures of 1.0's saved book this device could not read (their names kept, as 1.0 opens it)
+  return { book: r.book, importedLegacy: r.imported, picsMissing: r.imported ? legacy.missing ?? 0 : 0 };
 }
 
 /** Forget a book on this device: every generation's database deleted and its registry entry dropped (1.0's

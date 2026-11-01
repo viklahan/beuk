@@ -69,7 +69,7 @@ describe("1.0's local book, read-only", () => {
     await seed10(idb, { book: rec(BOOK, { sample: { loaded: false } }), 'book-prev': rec(PREV), link: { link: { id: 'x' } } });
     const before = await dump10(idb);
     const got = await readLegacyBook(idb);
-    expect(got).toEqual({ book: BOOK, from: 'book', savedAt: '2026-10-30T10:00:00.000Z' });
+    expect(got).toEqual({ book: BOOK, from: 'book', savedAt: '2026-10-30T10:00:00.000Z', missing: 0 });
     expect(await readLegacyBook(noList(idb))).toEqual(got);
     expect(await dump10(idb)).toEqual(before);
   });
@@ -78,7 +78,7 @@ describe("1.0's local book, read-only", () => {
     const idb = new IDBFactory();
     await seed10(idb, { book: { format: 1, savedAt: 'x', json: '{broken' }, 'book-prev': rec(PREV) });
     const before = await dump10(idb);
-    expect(await readLegacyBook(idb)).toEqual({ book: PREV, from: 'book-prev', savedAt: '2026-10-30T10:00:00.000Z' });
+    expect(await readLegacyBook(idb)).toEqual({ book: PREV, from: 'book-prev', savedAt: '2026-10-30T10:00:00.000Z', missing: 0 });
     expect(await dump10(idb)).toEqual(before);
   });
 

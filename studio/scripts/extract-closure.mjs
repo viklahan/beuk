@@ -59,6 +59,8 @@ export const EXTRA_ROOTS = [
   // wave 1c, task 4: the arrival sweep of old sample copies (1.0's sampleSweepPreRename / sampleSweepStaleCover)
   'sampleIsPreRenameCopy', 'sampleCoverIsStale', 'sampleHasOldAuthor', 'sampleRenameAuthor', 'SAMPLE_COVER_STALE', 'SAMPLE_OLD_AUTHOR', 'SAMPLE_AUTHOR',
   'SAMPLE_PRE_RENAME_ID', 'bookIdsOf', 'bookIdMigrated',
+  // wave 1c, task 5: 1.0's device save names its pictures (BEUK:localpics): the read-only 1.0 import fills them back in
+  'picSwap', 'picIsRef', 'PIC_REF',
   // wave 1c: the quick tour's steps and its decision (I7)
   'TOUR_STEPS', 'TOUR_KEY', 'TOUR_DESK_KEY', 'tourDecide',
   // wave 1c: Story Insights (C4) — the computations, the cache and 1.0's own HTML for the room

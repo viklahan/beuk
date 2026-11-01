@@ -502,6 +502,59 @@ async function oneSafety(origin) {
   }
 }
 
+
+/* ---- wave 1c task 5: 1.0's device save names its pictures (BEUK:localpics); /next fills them back in, read-only ---- */
+/** 1.0's localUnpack on a dumped beuk-local: every "beuk-pic:<sha>" data (beside a mediaType) given its "pic:<sha>" bytes. */
+function unpack10(v, out) {
+  if (Array.isArray(v)) return v.map((x) => unpack10(x, out));
+  if (!v || typeof v !== 'object') return v;
+  const o = {};
+  for (const k of Object.keys(v)) {
+    const x = v[k];
+    if (k === 'data' && typeof x === 'string' && typeof v.mediaType === 'string' && /^beuk-pic:[0-9a-f]{64}$/.test(x) && out['pic:' + x.slice(9)]) o[k] = out['pic:' + x.slice(9)].data;
+    else o[k] = x && typeof x === 'object' ? unpack10(x, out) : x;
+  }
+  return o;
+}
+async function onePackedPics(origin) {
+  const f = fixtures.find((x) => x.name === 'real/salt-road-book-one');
+  const jpg = readFileSync(path.join(REPO, 'client', 'assets', 'sample', 'sample-img-portrait.jpg')).toString('base64');
+  const book = JSON.parse(JSON.stringify(f.book));
+  book.images = [{ id: 'e2e-pic', name: 'portrait.jpg', mediaType: 'image/jpeg', data: jpg }];
+  const file = path.join(OUT, 'salt-road-with-picture.beuk-backup.json');
+  writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book }));
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const one = await watch(await ctx.newPage());
+    await one.goto(origin + '/studio');
+    await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+    await one.setInputFiles('#localBackupInput', file);
+    await one.waitForFunction(async () => {
+      const r = await new Promise((res) => { const q = indexedDB.open('beuk-local'); q.onsuccess = () => res(q.result); q.onerror = () => res(null); });
+      if (!r || !r.objectStoreNames.contains('kv')) { r?.close(); return false; }
+      const rec = await new Promise((res) => { const g = r.transaction('kv', 'readonly').objectStore('kv').get('book'); g.onsuccess = () => res(g.result); g.onerror = () => res(null); });
+      r.close();
+      return !!rec && typeof rec.json === 'string' && rec.json.includes('Salt Road') && rec.json.includes('beuk-pic:');
+    }, null, { timeout: 30_000, polling: 300 });
+    await one.waitForTimeout(1500);
+    const before = await one.evaluate(DUMP_10);
+    await one.close();
+    const packedJson = before.out.book.json;
+    const stored = unpack10(JSON.parse(packedJson).book, before.out);
+    const next = await openNext(ctx, origin);
+    await next.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
+    const exp = await exportBackup(next);
+    const text = JSON.stringify(exp.json.book);
+    check(packedJson.includes('beuk-pic:') && !text.includes('beuk-pic:') && JSON.stringify(exp.json.book) === JSON.stringify(expected(stored, exp.json.book)),
+      `wave 1c task 5: a record 1.0 saved packed (${Object.keys(before.out).filter((k) => k.startsWith('pic:')).length} picture stored once) is imported with its picture filled in: /next exports exactly readBook's reading of 1.0's unpacked book, no name left`);
+    const after = await next.evaluate(DUMP_10);
+    check(JSON.stringify(after) === JSON.stringify(before), `wave 1c task 5: 1.0's database is identical after the import (keys ${JSON.stringify(Object.keys(before.out))})`);
+    await harvestCsp(next);
+  } finally {
+    await ctx.close();
+  }
+}
+
 /* ---- #5 latency ---- */
 async function latency(origin) {
   const ctx = await newContext({ serviceWorkers: 'block' });
@@ -1157,6 +1210,7 @@ try {
   if (run('noEditGate')) await noEditGate(srv.origin);
   if (run('editAndPersist')) await editAndPersist(srv.origin);
   if (run('oneSafety')) await oneSafety(srv.origin);
+  if (run('oneSafety')) await onePackedPics(srv.origin);
   if (run('historyChecks')) await historyChecks(srv.origin);
   if (run('tooltipScan')) await tooltipScan(srv.origin);
   if (run('wave1b')) await wave1bChecks(srv.origin);

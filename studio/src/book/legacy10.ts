@@ -18,12 +18,34 @@
      is aborted, which leaves no database behind ("no 1.0 book");
    - no "kv" store: close, "no 1.0 book";
    - readonly transactions only; the connection closes straight after;
-   - deleteDatabase is never called. */
+   - deleteDatabase is never called.
+
+   BEUK:localpics (1.0, f072a76): 1.0's device save stores each picture and
+   research file ONCE in the same "kv" store as "pic:<sha256>"
+   ({ mediaType, data }), and the record's JSON carries "beuk-pic:<sha256>"
+   where the bytes were. 1.0 reads it back with localPickRecord /
+   localUnpack: "book" when every name resolves, else "book-prev" when that
+   one resolves fully, else whichever parses, its unresolved names kept and
+   the count said (local.picsMissing). This mirrors it: the names are found
+   and swapped by 1.0's own picSwap / picIsRef (the browser closure), the
+   pictures read in a readonly transaction (get "pic:"+sha), and `missing`
+   is handed on so the studio says 1.0's message. A record that holds its
+   bytes inline (saved before f072a76) has no names and opens as it is. */
+
+import { loadClosure } from '../closure/index';
 
 export const LEGACY_DB = 'beuk-local';
 export const LEGACY_STORE = 'kv';
 
-export type LegacyBook = { book: Record<string, unknown>; from: 'book' | 'book-prev'; savedAt: string | null };
+export type LegacyBook = { book: Record<string, unknown>; from: 'book' | 'book-prev'; savedAt: string | null; missing: number };
+export const LEGACY_PIC = 'pic:'; // 1.0's LOCAL_PIC
+
+/** 1.0's picSwap / picIsRef / PIC_REF (from the browser closure). */
+export type PicCode = { picSwap: (v: unknown, swap: (data: string) => string | null) => unknown; picIsRef: (s: unknown) => boolean; PIC_REF: string };
+const loadPicCode = async (): Promise<PicCode> => {
+  const c = await loadClosure();
+  return { picSwap: c.api.picSwap, picIsRef: c.api.picIsRef, PIC_REF: c.api.PIC_REF };
+};
 
 type Rec = Record<string, unknown>;
 
@@ -82,8 +104,41 @@ const get = (store: IDBObjectStore, key: string): Promise<unknown> =>
     r.onerror = () => resolve(undefined);
   });
 
+/** 1.0's localUnpack: the parsed record with its pictures filled back in from the device ({ doc, missing }; the names of
+ *  pictures the device does not hold stay, as 1.0 keeps them). Readonly. */
+export async function unpackLegacy(db: IDBDatabase, d: Rec, pic: PicCode): Promise<{ doc: Rec; missing: number }> {
+  const want = new Set<string>();
+  const cut = pic.PIC_REF.length;
+  pic.picSwap(d, (x) => {
+    if (pic.picIsRef(x)) want.add(x.slice(cut));
+    return null;
+  });
+  if (!want.size) return { doc: d, missing: 0 };
+  const store = db.transaction(LEGACY_STORE, 'readonly').objectStore(LEGACY_STORE);
+  const got = new Map<string, string>();
+  await Promise.all(
+    Array.from(want).map(async (h) => {
+      const v = (await get(store, LEGACY_PIC + h)) as { data?: unknown } | undefined;
+      if (v && typeof v.data === 'string' && v.data) got.set(h, v.data);
+    }),
+  );
+  return { doc: pic.picSwap(d, (x) => (pic.picIsRef(x) ? got.get(x.slice(cut)) || null : null)) as Rec, missing: want.size - got.size };
+}
+
+/** 1.0's localPickRecord: which stored copy 1.0 opens, and how many of its pictures the device lacks. */
+export async function pickLegacy(db: IDBDatabase, all: { book: unknown; prev: unknown }, pic: PicCode): Promise<{ doc: { book: Rec } | null; from: 'book' | 'book-prev' | null; missing: number }> {
+  const bookRec = parseLegacyRecord(all.book), prevRec = parseLegacyRecord(all.prev);
+  const bookU = bookRec ? await unpackLegacy(db, bookRec, pic) : null;
+  const prevU = bookU && !bookU.missing ? null : prevRec ? await unpackLegacy(db, prevRec, pic) : null;
+  if (bookU && !bookU.missing) return { doc: bookU.doc as { book: Rec }, from: 'book', missing: 0 };
+  if (prevU && !prevU.missing) return { doc: prevU.doc as { book: Rec }, from: 'book-prev', missing: 0 };
+  if (bookU) return { doc: bookU.doc as { book: Rec }, from: 'book', missing: bookU.missing };
+  if (prevU) return { doc: prevU.doc as { book: Rec }, from: 'book-prev', missing: prevU.missing };
+  return { doc: null, from: null, missing: 0 };
+}
+
 /** 1.0's local book on this device, or null. Never writes, upgrades, creates or deletes anything. */
-export async function readLegacyBook(idb: IDBFactory | undefined = globalThis.indexedDB): Promise<LegacyBook | null> {
+export async function readLegacyBook(idb: IDBFactory | undefined = globalThis.indexedDB, picCode: () => Promise<PicCode> = loadPicCode): Promise<LegacyBook | null> {
   if (!idb) return null;
   if (typeof idb.databases === 'function') {
     try {
@@ -100,11 +155,10 @@ export async function readLegacyBook(idb: IDBFactory | undefined = globalThis.in
     const tx = db.transaction(LEGACY_STORE, 'readonly');
     const store = tx.objectStore(LEGACY_STORE);
     const [book, prev] = await Promise.all([get(store, 'book'), get(store, 'book-prev')]);
-    const a = parseLegacyRecord(book);
-    if (a) return { book: a.book, from: 'book', savedAt: savedAtOf(book) };
-    const b = parseLegacyRecord(prev);
-    if (b) return { book: b.book, from: 'book-prev', savedAt: savedAtOf(prev) };
-    return null;
+    if (!parseLegacyRecord(book) && !parseLegacyRecord(prev)) return null;
+    const pick = await pickLegacy(db, { book, prev }, await picCode());
+    if (!pick.doc || !pick.from) return null;
+    return { book: pick.doc.book, from: pick.from, savedAt: savedAtOf(pick.from === 'book' ? book : prev), missing: pick.missing };
   } catch {
     return null;
   } finally {

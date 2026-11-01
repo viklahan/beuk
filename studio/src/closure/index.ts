@@ -100,6 +100,10 @@ export type ClosureApi = {
   SAMPLE_PRE_RENAME_ID: string;
   bookIdsOf: (meta: unknown) => string[];
   bookIdMigrated: (id: string) => string;
+  // wave 1c task 5: BEUK:localpics
+  picSwap: (v: unknown, swap: (data: string) => string | null) => unknown;
+  picIsRef: (s: unknown) => boolean;
+  PIC_REF: string;
   CC_LICENCES: Record<string, { name: string; short: string; url: string }>;
   // wave 1c: the quick tour (I7)
   TOUR_STEPS: TourStep[];

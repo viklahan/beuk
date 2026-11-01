@@ -159,6 +159,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
           outside.current.add(r.book.ydoc);
           show(r.book);
           if (r.importedLegacy) toast(t('local.restored'), 'HardDrive');
+          if (r.picsMissing > 0) toast(t('local.picsMissing', { n: r.picsMissing }), 'ImageOff');
           return;
         }
       } catch {
