@@ -77,14 +77,33 @@ export const EXTRA_ROOTS = [
   // footnote number and link address rules (A2, A3), the margin note's opener (A4) and Auto-Format (A13)
   'insertAtCursor', 'wrapSelection', 'redactSelection', 'applyList', 'applyContainer', 'applyBlockquote', 'applyAttribution',
   'nextFootnoteNumber', 'normalizeLinkUrl', 'MARGIN_OPEN_RE', 'isContainerMarkLine', 'beautifyText',
+  // wave 2b: pictures (A6-A8) — the marker text and its rules, the pickers' list, the scene break test, the stock search's
+  // addresses and its result mapping, and the image library itself: the usage map, the unused list, removal and its
+  // Undo, run on a state holding the book as book format (src/pictures/imagelib.ts)
+  'imageTokensIn', 'parseImageLine', 'imageById', 'sceneEntryAt', 'editorBlocks', 'SCENE_BREAK_BLOCK_RE', 'BACKDROP_STRENGTHS',
+  'imageTokenText', 'cleanCaption', 'cleanAlt', 'fmtBytes', 'pickerImages', 'isFlourishImage', 'cmStockGate', 'stockSearchUrl', 'stockDirectUrl',
+  'cmMapDirectResults', 'imglibUsageMap', 'imageUsage', 'imglibUnused', 'imglibIsSample', 'imglibBytes', 'imglibSize', 'imglibName',
+  'imglibUseText', 'imglibSecName', 'imglibRemove', 'imglibUndo', 'IMGLIB_UNDO_MS', 'IMGLIB_COVER_TYPES', 'sampleState',
+  // (already lifted for the cover: named so the tests build 1.0's own image library fixture, imglibCheckFixture)
+  'defaultCoverRecipe', 'normalizeCoverRecipe', 'wrapDefaults',
 ];
 /** Test oracle only (wave 2a, constraint 11): 1.0's dialog handlers, which read and write their dialog's fields
  *  through `$`. Emitted as a THIRD module, src/generated/closure-oracle.js, that only the tests import (never the
  *  app): each test hands it a stand-in `$` and textarea and compares 2.0's result with 1.0's own. Like the sample
  *  module it holds only declarations the main closure does not, and takes everything else from `share`. */
-export const ORACLE_ROOTS = ['openFootnoteDialog', 'confirmFootnote', 'openLinkDialog', 'confirmLink', 'openMarginDialog', 'confirmMargin'];
+export const ORACLE_ROOTS = ['openFootnoteDialog', 'confirmFootnote', 'openLinkDialog', 'confirmLink', 'openMarginDialog', 'confirmMargin',
+  // wave 2b: the section card's marker edits, the scene bar's break test, the scene picker's handlers
+  'sceneBreakAtCursor', 'rewriteImageToken', 'updateImageToken', 'removeImageToken', 'openScenePicker', 'sceneSelectImage', 'confirmSceneImage',
+  'detachSceneImage', 'removeSceneAtCursor', 'toggleSceneSuggest', 'sceneRenderSuggestResults', 'sceneStockLanded', 'selectLibImage'];
 /** What the oracle's handlers take from 1.0's page, supplied by the test (createOracle(share, env)). */
-export const ORACLE_SUPPLIED = ['$', 'activeSection', 'editorViewSnapshot', 'editorViewRestore', 'icons'];
+export const ORACLE_SUPPLIED = ['$', 'activeSection', 'editorViewSnapshot', 'editorViewRestore', 'icons',
+  // wave 2b: what the picture handlers redraw afterwards (nothing a test reads), and 1.0's renderImgLib
+  'withEditorView', 'updateStats', 'renderPreview', 'renderSectionImages', 'zenRenderSurface', 'updateSceneBar', 'refreshExportTree',
+  'renderSceneLib', 'renderImgLib', 'refreshImagePickers', 'document'];
+/** 1.0's top-level lets the oracle's handlers assign (openScenePicker sets scenePending, selectLibImage imgSelId) and the
+ *  main closure also holds (imglibRemove clears them): the oracle declares its OWN copy, so its handlers' writes stay its
+ *  own (a shared name is read-only there). */
+export const ORACLE_OWN = ['imgSelId', 'scenePending'];
 /** The sample book's own code (wave 1c, task 4): 1.0's buildSampleBook with its 145 kB of text (SAMPLE_SECTIONS), and
  *  the packaged cover entry. Emitted as a SECOND module, src/generated/closure-sample.js, its own chunk, loaded only
  *  when the sample is built (Load sample, the pre-rename sweep). It holds only the declarations nothing in the main
@@ -93,7 +112,12 @@ export const SAMPLE_ROOTS = ['buildSampleBook', 'sampleCoverDoc'];
 /** 1.0's top-level `let`s a caller reads or sets (emitted as accessors on the closure's `vars`). */
 export const VARS = ['insVarPick', 'insCache', 'insFacts'];
 /** Names the browser studio supplies besides the EPUB build's. */
-export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature'];
+export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
+  // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
+  // (1.0's local.editSeq), and what 1.0 does after an edit (noteBookEdited, imglibRefresh: 2.0 re-renders from the
+  // Y.Doc); the series Covenant's save (wave 7: 2.0 holds no series, so bibleSeries is null and 1.0's own function returns
+  // at once); 1.0's `cloud` as far as cmStockGate reads it (available, user)
+  'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'bibleSeriesTouched', 'cloud'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -155,7 +179,7 @@ export async function buildClosureModule(html, epubSource) {
   const supplied = [...spec.EPUB_SUPPLIED, ...BROWSER_SUPPLIED];
   const names = reachableFrom(html, roots, [...supplied, ...LOCAL_ONLY]);
   const sampleNames = reachableFrom(html, SAMPLE_ROOTS, [...supplied, ...LOCAL_ONLY, ...names]);
-  const oracleNames = reachableFrom(html, ORACLE_ROOTS, [...supplied, ...ORACLE_SUPPLIED, ...LOCAL_ONLY, ...names]);
+  const oracleNames = [...new Set([...reachableFrom(html, ORACLE_ROOTS, [...supplied, ...ORACLE_SUPPLIED, ...LOCAL_ONLY, ...names]), ...ORACLE_OWN])];
   const forbidden = [...names, ...sampleNames, ...oracleNames].filter((n) => FORBIDDEN.test(n));
   if (forbidden.length) fail(`the lifted code reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it, or change the roots)`);
   let src;
@@ -282,7 +306,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown } };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

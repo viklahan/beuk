@@ -183,7 +183,49 @@ export type ClosureApi = {
   MARGIN_OPEN_RE: RegExp;
   isContainerMarkLine: (line: string) => boolean;
   beautifyText: (text: string) => string;
+  // wave 2b: pictures (A6-A8) — the marker, the pickers' list, the stock search, the image library
+  imageTokensIn: (content: unknown) => ImageToken[];
+  parseImageLine: (line: unknown) => ImageToken | null;
+  imageTokenText: (t: ImageToken) => string;
+  cleanCaption: (v: unknown) => string;
+  cleanAlt: (v: unknown) => string;
+  imageById: (id: unknown) => BookImage | null;
+  sceneEntryAt: (section: unknown, idx: number) => SceneEntry | null;
+  editorBlocks: (val: string) => { start: number; end: number; text: string }[];
+  SCENE_BREAK_BLOCK_RE: RegExp;
+  BACKDROP_STRENGTHS: string[];
+  fmtBytes: (n: number) => string;
+  pickerImages: () => BookImage[];
+  isFlourishImage: (im: unknown) => boolean;
+  cmStockGate: () => 'ok' | 'direct' | 'account';
+  stockSearchUrl: (q: string, perPage?: number) => string;
+  stockDirectUrl: (q: string, perPage?: number) => string;
+  cmMapDirectResults: (json: unknown) => { photos: StockPhoto[] };
+  imglibUsageMap: () => Record<string, ImageUse[]>;
+  imageUsage: (id: string) => ImageUse[];
+  imglibUnused: () => BookImage[];
+  imglibIsSample: (im: unknown) => boolean;
+  imglibBytes: (im: unknown) => number;
+  imglibSize: (n: number) => string;
+  imglibName: (im: unknown) => string;
+  imglibUseText: (u: ImageUse) => string;
+  imglibRemove: (ids: string[]) => ImglibRec | null;
+  imglibUndo: (rec: ImglibRec) => boolean;
+  IMGLIB_UNDO_MS: number;
+  sampleState: { loaded: boolean; loadedJson: string | null };
 };
+/** A picture of the book's library (state.images[]). */
+export type BookImage = { id: string; name: string; mediaType: string; data: string; ext?: string; credit?: { name: string; url: string }; flourish?: boolean };
+/** One picture marker in a section's text (1.0's parseImageLine). */
+export type ImageToken = { alt: string; id: string; full: boolean; caption: string };
+/** A picture at a scene break (section.scenes[]). */
+export type SceneEntry = { at: number; imageId: string; name: string; caption: string; alt: string };
+/** One use of a picture (1.0's imglibUsageMap). */
+export type ImageUse = { role: string; where: string; sectionId?: string; count?: number; themeId?: string };
+/** 1.0's removal record (imglibRemove): what its Undo puts back. Held in memory, as 1.0 holds it. */
+export type ImglibRec = Record<string, unknown> & { ids: string[]; bookId: string | null; snapId: string | null; used: boolean; bytes: number; undone?: boolean };
+/** One stock search result, in the shelf contract shape (1.0's sceneRenderSuggestResults reads these). */
+export type StockPhoto = { photographer?: string; photographerUrl?: string; pageUrl?: string; provider?: string; alt?: string; src?: { medium?: string; large?: string; original?: string } };
 /** 1.0's textarea, as far as its toolbar functions use it (editor/insert.ts Area). */
 export type TextAreaLike = {
   value: string;
@@ -254,6 +296,16 @@ export function setClosureLang(lang: string): void {
    insGlancePages shows no page number, its own "still measuring" state (see the wave 1c report). */
 const NO_DESK = Object.freeze({ counts: Object.freeze({}), total: 0, sig: '', words: 0, run: null });
 
+/** Wave 2b: what 1.0's image library calls around its own code (BROWSER_SUPPLIED), set by pictures/imagelib.ts for the
+ *  call it makes: History's "Before removing a picture" snapshot (2.0's history.ts), and 1.0's local.editSeq (the
+ *  counter a run of removals compares, so one snapshot serves a run with no other edit between). */
+export const pictureEnv: { autoSnapshot: (kind: string) => unknown; editSeq: () => number } = {
+  autoSnapshot: () => null,
+  editSeq: () => 0,
+};
+/** 1.0's `cloud`, as far as cmStockGate reads it: is a shelf there, and who is signed in (pictures/stock.ts probes). */
+export const cloudFacts: { available: boolean; user: unknown } = { available: false, user: null };
+
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
 
 let loading: Promise<Closure> | null = null;
@@ -280,6 +332,17 @@ export function loadClosure(): Promise<Closure> {
         getUiLang: () => currentLang,
         deskState: NO_DESK,
         deskSignature: () => '',
+        // wave 2b: the image library's surroundings (see pictureEnv); 1.0's redraws after an edit are React's re-render here
+        autoSnapshot: (kind: string) => pictureEnv.autoSnapshot(kind),
+        local: {
+          get editSeq() {
+            return pictureEnv.editSeq();
+          },
+        },
+        noteBookEdited: () => undefined,
+        imglibRefresh: () => undefined,
+        bibleSeriesTouched: () => undefined,
+        cloud: cloudFacts,
       });
       share = c.share;
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
