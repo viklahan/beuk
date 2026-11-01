@@ -1,5 +1,5 @@
 import { type Mark, type Node } from 'prosemirror-model';
-import { DELIMITED_MARKS, bookSchema as S } from './schema.js';
+import { DELIMITED_MARKS, LINE_BLOCKS, bookSchema as S, textblockPrefix } from './schema.js';
 
 /* BEUK:editor-convert — 1.0's section `content` <-> a ProseMirror document,
    losslessly: toText(toDoc(t)) === t, byte for byte, for every string t.
@@ -38,6 +38,7 @@ const NOTE_DEF_RE = /^\[(\^?)(\d{1,3})\]:(\s*)([\s\S]+)$/;
 const IMAGE_LINE_RE = /^!\[([^\]]*)\]\(img:([A-Za-z0-9-]+)(\|full)?(?:([ \t]+)(["“”])([^"“”\n]*)(["“”]))?\)$/;
 const LIST_BULLET = /^[-*•]\s+/;
 const LIST_NUMBER = /^(\d{1,3})[.)]\s+/;
+const QUOTE_PREFIX = /^>\s?/;
 const REDACT_RE = /\|\|(?=[^|\s])([^|\n]*?[^|\s])\|\|/g;
 const LINK_RE = /(?<!!)\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)[^\s()<>]+(?:\([^\s()<>]*\)[^\s()<>]*)*)\)/gi;
 const STRONG_RE = /\*\*([^*]+)\*\*/g;
@@ -70,16 +71,23 @@ function splitLines(t: string): Line[] {
 const isBlank = (s: string): boolean => s.trim() === '';
 const isImageLine = (s: string): boolean => IMAGE_LINE_RE.test(s.trim());
 
-function listItemsOf(lines: string[]): boolean { // 1.0's listItemsOf, as a test
+/** 1.0's listItemsOf over a block's lines (`lines` without "\r", `raw` as written): each marked line starts an item
+ *  (its marker as written, the rest its text), an unmarked line continues the item above it ("\n" and the line, kept
+ *  in the item's text). Null when 1.0 does not read the block as a list. */
+function listItemsOf(lines: string[], raw: string[]): { marker: string; text: string }[] | null {
   const ordered = LIST_NUMBER.test(lines[0]!);
-  if (!ordered && !LIST_BULLET.test(lines[0]!)) return false;
+  if (!ordered && !LIST_BULLET.test(lines[0]!)) return null;
   const mark = ordered ? LIST_NUMBER : LIST_BULLET;
-  let items = 0;
-  for (const l of lines) {
-    if (mark.test(l)) items++;
-    else if (!ordered && LIST_NUMBER.test(l)) return false;
+  const items: { marker: string; text: string }[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]!, r = raw[i]!;
+    if (mark.test(l)) {
+      const m = mark.exec(r)![0];
+      items.push({ marker: m, text: r.slice(m.length) });
+    } else if (!ordered && LIST_NUMBER.test(l)) return null;
+    else items[items.length - 1]!.text += '\n' + r;
   }
-  return ordered || items >= 2;
+  return ordered || items.length >= 2 ? items : null;
 }
 
 /* ---- inline ---- */
@@ -248,7 +256,8 @@ export function blockText(node: Node): string {
   const a = node.attrs;
   switch (node.type.name) {
     case 'paragraph': return inlineText(node);
-    case 'footnoteDef': return '[' + (a.caret ? '^' : '') + String(a.n) + ']:' + String(a.gap) + inlineText(node);
+    case 'footnoteDef': case 'heading': return textblockPrefix(node) + inlineText(node);
+    case 'quote': case 'list': return linesText(node);
     case 'image':
       return '![' + String(a.alt) + '](img:' + String(a.id) + (a.full ? '|full' : '') +
         (a.caption !== null ? String(a.capGap) + String(a.q1) + String(a.caption) + String(a.q2) : '') + ')';
@@ -257,6 +266,13 @@ export function blockText(node: Node): string {
     case 'container': return String(a.open) + String(a.openEol) + blocksText(node) + (a.close !== null ? String(a.close) : '');
     default: return node.textContent;
   }
+}
+
+/** A quote's or a list's source: each line's prefix and text, "\n" between lines. */
+function linesText(node: Node): string {
+  let out = '';
+  node.forEach((line, _o, i) => { out += (i ? '\n' : '') + textblockPrefix(line) + inlineText(line); });
+  return out;
 }
 
 /** The source of a run of blocks (a doc's or a container's children). */
@@ -298,7 +314,8 @@ function raw(text: string, why: string, stats?: ConvertStats): Node {
 
 /** One trimmed block of non-container text -> its node (unchecked). */
 function buildBlock(B: string, stats?: ConvertStats): Node {
-  const lines = B.split('\n').map((l) => (l.endsWith('\r') ? l.slice(0, -1) : l));
+  const rawLines = B.split('\n');
+  const lines = rawLines.map((l) => (l.endsWith('\r') ? l.slice(0, -1) : l));
   const single = lines.length === 1;
   if (single && (ORNAMENT_RE.test(B) || SCENE_BREAK_SRC_RE.test(B))) return S.node('sceneBreak', { raw: B });
   const nd = NOTE_DEF_RE.exec(B);
@@ -313,9 +330,17 @@ function buildBlock(B: string, stats?: ConvertStats): Node {
       });
     }
   }
-  if (listItemsOf(lines)) return raw(B, 'list', stats);
-  if (lines.every((l) => l.startsWith('>'))) return raw(B, 'quote', stats);
-  if (B.startsWith('## ') || B.startsWith('# ')) return raw(B, 'heading', stats);
+  // emitText's order: a list, then a quote, then a heading (wave 2a: modelled; raw before)
+  const items = listItemsOf(lines, rawLines);
+  if (items) return S.node('list', null, items.map((it) => S.node('listItem', { marker: it.marker }, inlineNodes(it.text, true))));
+  if (lines.every((l) => l.startsWith('>'))) {
+    return S.node('quote', null, rawLines.map((r) => {
+      const prefix = QUOTE_PREFIX.exec(r)![0];
+      return S.node('quoteLine', { prefix }, inlineNodes(r.slice(prefix.length), false));
+    }));
+  }
+  if (B.startsWith('## ')) return S.node('heading', { level: 2 }, inlineNodes(B.slice(3), false));
+  if (B.startsWith('# ')) return S.node('heading', { level: 1 }, inlineNodes(B.slice(2), false));
   return S.node('paragraph', null, inlineNodes(B, true));
 }
 
@@ -519,8 +544,10 @@ const HREF_RE = /^(?:https?:\/\/|mailto:)[^\s()<>]+(?:\([^\s()<>]*\)[^\s()<>]*)*
 /** True when `mark` over [from, to) of `block`'s content (offsets inside the block) reads back exactly as applied:
  *  the block re-read from its text has the same content. False for em/strong over a "*", a span touching the same
  *  mark, a link label with "]" or a line break, an href 1.0 does not read as a link, and any mark on a rawBlock or atom. */
-export function canApplyMark(block: Node, from: number, to: number, mark: Mark): boolean {
+export function canApplyMark(block: Node, from: number, to: number, mark: Mark, line?: { parent: Node; index: number }): boolean {
   if (!block.isTextblock || !block.type.allowsMarkType(mark.type) || from >= to || from < 0 || to > block.content.size) return false;
+  // a quote line or list item is read back with its whole block (`line`: that block and the line's index in it)
+  if (!('pre' in block.type.spec.attrs!) && !(line && LINE_BLOCKS.has(line.parent.type.name))) return false;
   if (mark.type.name === 'link' && !HREF_RE.test(String(mark.attrs.href))) return false;
   const kids: Node[] = [];
   block.forEach((k, off) => {
@@ -531,12 +558,16 @@ export function canApplyMark(block: Node, from: number, to: number, mark: Mark):
     const s0 = Math.max(a, Math.min(b, from)), s1 = Math.max(a, Math.min(b, to));
     cut(a, s0, false); cut(s0, s1, true); cut(s1, b, false);
   });
-  const candidate = block.type.create({ ...block.attrs, pre: null, post: '' }, kids);
+  let candidate: Node;
+  if (line && !('pre' in block.type.spec.attrs!)) {
+    const p = line.parent;
+    candidate = p.type.create({ ...p.attrs, pre: null, post: '' }, p.content.replaceChild(line.index, block.type.create(block.attrs, kids)));
+  } else candidate = block.type.create({ ...block.attrs, pre: null, post: '' }, kids);
   const back = parseBlocks(blockText(candidate));
   return back.length === 1 && back[0]!.eq(candidate);
 }
 
 /** canApplyMark for a link to `href`. */
-export function canSetLink(block: Node, from: number, to: number, href: string): boolean {
-  return HREF_RE.test(href) && canApplyMark(block, from, to, S.marks.link!.create({ href }));
+export function canSetLink(block: Node, from: number, to: number, href: string, line?: { parent: Node; index: number }): boolean {
+  return HREF_RE.test(href) && canApplyMark(block, from, to, S.marks.link!.create({ href }), line);
 }

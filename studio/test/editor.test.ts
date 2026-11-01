@@ -243,7 +243,8 @@ describe('bold and italic (constraint 4: canApplyMark)', () => {
   });
 
   it('a raw block takes no marks: refused', () => {
-    const { frag } = fragOf('> a quote line\n> another');
+    // (a quote was raw until wave 2a; a verse container still is)
+    const { frag } = fragOf('::: verse\na verse line\n:::');
     const ed = mount(frag);
     expect(ed.state.doc.firstChild!.type.name).toBe('rawBlock');
     let refused = 0;
@@ -252,7 +253,22 @@ describe('bold and italic (constraint 4: canApplyMark)', () => {
     ed.commands.setTextSelection(4);
     expect(toggleBookMark(ed, 'strong', () => refused++)).toBe(false);
     expect(refused).toBe(2);
-    expect(fragmentText(frag)).toBe('> a quote line\n> another');
+    expect(fragmentText(frag)).toBe('::: verse\na verse line\n:::');
+  });
+
+  it('a quote line and a list item take a mark, read back with their whole block (wave 2a)', () => {
+    const { frag } = fragOf('> a quote line\n> another\n\n- one item\n- two');
+    const ed = mount(frag);
+    expect(ed.state.doc.firstChild!.type.name).toBe('quote');
+    // doc > quote > quoteLine: the line's text starts two positions in
+    ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, 2 + 'a '.length, 2 + 'a quote'.length)));
+    expect(toggleBookMark(ed, 'strong', () => undefined)).toBe(true);
+    expect(ed.state.doc.child(1).type.name).toBe('list');
+    const at = ed.state.doc.child(0).nodeSize + 2;
+    ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, at + 'one '.length, at + 'one item'.length)));
+    expect(toggleBookMark(ed, 'em', () => undefined)).toBe(true);
+    flushNormalize(ed);
+    expect(fragmentText(frag)).toBe('> a **quote** line\n> another\n\n- one *item*\n- two');
   });
 
   it('Mod-b and Mod-i run the same commands', () => {

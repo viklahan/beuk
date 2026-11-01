@@ -2,7 +2,7 @@ import { Extension, type Editor } from '@tiptap/core';
 import { Plugin, PluginKey, type EditorState, type Transaction } from '@tiptap/pm/state';
 import type { Node as PMNode, MarkType } from '@tiptap/pm/model';
 import { ySyncPluginKey } from '@tiptap/y-tiptap';
-import { canApplyMark, normalizeBlock } from '@book/editor/index.js';
+import { LINE_BLOCKS, canApplyMark, normalizeBlock } from '@book/editor/index.js';
 import { markToBook, toBook, toEditor } from './bridge';
 
 /* How the book's text behaves in the editor (Part B's contract):
@@ -182,7 +182,7 @@ export function toggleBookMark(editor: Editor, name: 'em' | 'strong', onRefuse: 
   let all = true;
   let any = false;
   let ok = true;
-  state.doc.nodesBetween(from, to, (node, pos) => {
+  state.doc.nodesBetween(from, to, (node, pos, parent, index) => {
     if (!node.isTextblock) return true;
     if (!node.type.allowsMarkType(type)) return false;
     const a = Math.max(from, pos + 1) - (pos + 1);
@@ -195,7 +195,9 @@ export function toggleBookMark(editor: Editor, name: 'em' | 'strong', onRefuse: 
       return true;
     });
     if (!covered) all = false;
-    if (!canApplyMark(toBook(node), a, b, markToBook(type.create()))) ok = false;
+    // a quote line or list item reads back with its whole block (wave 2a)
+    const line = parent && LINE_BLOCKS.has(parent.type.name) ? { parent: toBook(parent), index } : undefined;
+    if (!canApplyMark(toBook(node), a, b, markToBook(type.create()), line)) ok = false;
     return false;
   });
   if (!any) {

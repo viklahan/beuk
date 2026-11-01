@@ -72,18 +72,20 @@ const types = (doc: Node): string[] => { const o: string[] = []; doc.forEach((b)
 
 /* ---- the fixtures ---- */
 
-/** Coverage measured when this test was written (blocks, raw), per fixture: the floor. Legacy fixtures are copies of real/reads-you. */
+/** Coverage measured when this test was written (blocks, raw), per fixture: the floor. Legacy fixtures are copies of real/reads-you.
+ *  Step 5 wave 2a (headings, quotes and lists became nodes) raised it: four-kitchens raw 3 → 0, reads-you 26 → 16,
+ *  salt-road-book-one 3 → 1, salt-road-standalone 8 → 5; the rest unchanged. */
 const COVERAGE_FLOOR: Record<string, { blocks: number; raw: number }> = {
   'real/bookbinders-letter.json': { blocks: 33, raw: 2 },
   'real/dartagnan-01-three-musketeers.json': { blocks: 8117, raw: 0 },
-  'real/four-kitchens-book-one.json': { blocks: 7, raw: 3 },
+  'real/four-kitchens-book-one.json': { blocks: 7, raw: 0 },
   'real/lantern-coast-book-one.json': { blocks: 96, raw: 0 },
   'real/lantern-coast-print.json': { blocks: 264, raw: 0 },
   'real/lunas-beach-standalone.json': { blocks: 36, raw: 0 },
   'real/oz-14-glinda.json': { blocks: 1114, raw: 0 },
-  'real/reads-you.json': { blocks: 61, raw: 26 },
-  'real/salt-road-book-one.json': { blocks: 20, raw: 3 },
-  'real/salt-road-standalone.json': { blocks: 36, raw: 8 },
+  'real/reads-you.json': { blocks: 61, raw: 16 },
+  'real/salt-road-book-one.json': { blocks: 20, raw: 1 },
+  'real/salt-road-standalone.json': { blocks: 36, raw: 5 },
   'real/valois-02-chicot.json': { blocks: 7402, raw: 0 },
 };
 const share = (c: { blocks: number; raw: number }): number => (c.blocks ? (c.blocks - c.raw) / c.blocks : 1);
@@ -180,15 +182,49 @@ test('convert: nesting and edge syntax survive, and the common nestings are mode
   assert.deepEqual(types(c1), ['container']);
   assert.equal(c1.firstChild!.attrs.close, null);
   assert.equal(c1.firstChild!.childCount, 2);
-  // other kinds stay raw; quotes, lists and headings are raw in v1
+  // other kinds stay raw; quotes, lists and headings are nodes since wave 2a
   assert.deepEqual(types(toDoc('::: verse\na\n  b\n:::')), ['rawBlock']);
-  assert.deepEqual(types(toDoc('> quote\n>\n> blank line inside')), ['rawBlock']);
-  assert.deepEqual(types(toDoc('- one\n  continued\n- two')), ['rawBlock']);
+  assert.deepEqual(types(toDoc('> quote\n>\n> blank line inside')), ['quote']);
+  assert.deepEqual(types(toDoc('- one\n  continued\n- two')), ['list']);
   // a note definition starts its own block, as beautifyText splits it
   assert.deepEqual(types(toDoc('[^1]: one\n[^2]: two')), ['footnoteDef', 'footnoteDef']);
   // a picture line stands alone even inside a run of lines
   assert.deepEqual(types(toDoc('a\n![p](img:x)\nb')), ['paragraph', 'image', 'paragraph']);
   assert.deepEqual(types(toDoc('x\n\n***\n\ny')), ['paragraph', 'sceneBreak', 'paragraph']);
+});
+
+/* ---- step 5 wave 2a (B6): headings, quotes and lists are nodes ---- */
+
+test('convert: headings, quotes and lists are nodes, read as 1.0\'s emitText reads them, and round-trip', () => {
+  const cases = [
+    '# One', '## Two', '# a *b* c\nsecond line', '## **x** [l](https://u.v) [^1]', '#no space', '### three', '# ', '## ',
+    '> a\n> b', '>a\n>  b\n>\tc', '>', '> *x*\n> — Name', '> a\r\n> b\r', '>\r\n> x', '> [l](https://a.b)\n> **y**',
+    '- a\n- b', '* a\n* b', '• a\n• b', '- a\n  more\n- b', '1. a\n2. b', '3) c\nmore\n4) d', '1. x\n- y', '10.  wide\n11.\tTab',
+    '- a\r\n- b\r\n', '- *a\n  b* c\n- d', '- a\n1. b', '-\r\n- x', '- \r\n- y',
+    'p\n\n# h\n\n> q\n\n- l\n- m\n\nend', '::: center\n# h\n\n- a\n- b\n:::',
+  ];
+  for (const c of cases) roundTrips(c);
+  assert.deepEqual(types(toDoc('# One\n\n## Two')), ['heading', 'heading']);
+  assert.deepEqual(toDoc('# One\n\n## Two').content.content.map((h) => h.attrs.level), [1, 2]);
+  assert.deepEqual(types(toDoc('### three')), ['paragraph']); // 1.0: neither "## " nor "# "
+  assert.deepEqual(types(toDoc('- lone dash line')), ['paragraph']); // a bulleted list needs two items
+  assert.deepEqual(types(toDoc('- a\n1. b')), ['paragraph']); // a numbered line inside a bulleted list: not a list
+  // a quote: one line per line, its ">" and one whitespace character as the prefix
+  const q = toDoc('>a\n>  b\n> *c*').firstChild!;
+  assert.equal(q.type.name, 'quote');
+  assert.deepEqual(q.content.content.map((l) => [l.attrs.prefix, l.textContent]), [['>', 'a'], ['> ', ' b'], ['> ', 'c']]);
+  assert.deepEqual(runs(toDoc('> *c*')), [['c', ['em']]]);
+  // a list: each marked line an item, its marker as written; an unmarked line continues the item ("\n" kept)
+  const l = toDoc('3) c\nmore\n4) d').firstChild!;
+  assert.equal(l.type.name, 'list');
+  assert.deepEqual(l.content.content.map((i) => [i.attrs.marker, i.textContent]), [['3) ', 'c\nmore'], ['4) ', 'd']]);
+  // emphasis runs over an item's continuation line (1.0 joins it with a space first)
+  assert.deepEqual(runs(toDoc('- *a\n  b* c\n- d')), [['a\n  b', ['em']], [' c', []], ['d', []]]);
+  // a heading's emphasis does not run over a line break (1.0 reads the heading's text as is)
+  assert.deepEqual(types(toDoc('# *a\nb*')), ['heading']);
+  assert.deepEqual(runs(toDoc('# *a\nb*')), [['*a\nb*', []]]);
+  // a quote, a list, a heading inside a centre container are nodes too
+  assert.deepEqual(types(S.node('doc', null, toDoc('::: center\n# h\n\n- a\n- b\n:::').firstChild!.content.content as Node[])), ['heading', 'list']);
 });
 
 /* ---- review focus 3: Unicode ---- */
@@ -289,7 +325,7 @@ test('convert: every attr whose meaningful value can be null defaults to null', 
   for (const [name, type] of Object.entries(S.nodes))
     for (const [attr, spec] of Object.entries(type.spec.attrs ?? {}))
       if (spec.default === null) nullable.push(`${name}.${attr}`);
-  assert.deepEqual(nullable.sort(), ['container.close', 'container.pre', 'footnoteDef.pre', 'image.caption', 'image.pre', 'paragraph.pre', 'rawBlock.pre', 'sceneBreak.pre']);
+  assert.deepEqual(nullable.sort(), ['container.close', 'container.pre', 'footnoteDef.pre', 'heading.pre', 'image.caption', 'image.pre', 'list.pre', 'paragraph.pre', 'quote.pre', 'rawBlock.pre', 'sceneBreak.pre']);
 });
 
 test('convert: paragraph and footnoteDef declare whitespace "pre" (prosemirror-view keeps their line breaks)', () => {
@@ -323,12 +359,25 @@ function randomDocs(count: number, seed0: number): Node[] {
   const inline = (): Node[] => { const out: Node[] = []; const k = rnd(5); for (let i = 0; i < k; i++) { const t = str(6); if (t) out.push(S.text(t, marks())); } return out; };
   const edges = () => ({ pre: pick([null, null, null, '', '\n', '\n\n\n', ' \n\n', '\n  ']), post: pick(['', '', '\n', ' ']) });
   const block = (depth: number): Node => {
-    switch (rnd(depth ? 7 : 6)) {
+    switch (rnd(depth ? 10 : 9)) {
       case 0: case 1: return S.node('paragraph', edges(), inline());
       case 2: { const t = str(6); return S.node('rawBlock', edges(), t ? [S.text(t)] : []); }
       case 3: return S.node('sceneBreak', { ...edges(), raw: pick(['***', '❦', 'x', '---']) });
       case 4: return S.node('image', { ...edges(), alt: pick(['a', 'a]b', '']), id: pick(['x', '', 'a b']), full: rnd(2) === 0, caption: pick([null, 'cap', 'c"d']) });
       case 5: return S.node('footnoteDef', { ...edges(), n: pick(['1', '22']), caret: rnd(2) === 0, gap: pick([' ', '', '\n']) }, inline());
+      // wave 2a: headings, quotes, lists (with prefixes and markers 1.0 would not read, as an edit can leave them)
+      case 6: return S.node('heading', { ...edges(), level: pick([1, 2, 3]) }, inline());
+      case 7: case 8: {
+        const quote = rnd(2) === 0;
+        const kids: Node[] = [];
+        const k = 1 + rnd(3);
+        for (let i = 0; i < k; i++) {
+          kids.push(quote
+            ? S.node('quoteLine', { prefix: pick(['> ', '>', '>\t', '> ', 'x']) }, inline())
+            : S.node('listItem', { marker: pick(['- ', '* ', '• ', '1. ', '2) ', '10.  ', '-', 'x ']) }, inline()));
+        }
+        return S.node(quote ? 'quote' : 'list', edges(), kids);
+      }
       default: {
         const kids: Node[] = [];
         const k = 1 + rnd(3);

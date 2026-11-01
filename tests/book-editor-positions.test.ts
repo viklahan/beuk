@@ -51,6 +51,9 @@ const CASES = [
   '::: verse\nraw lines\n  kept\n:::', '# A heading\n\nBody.', '- one\n- two', '> quote\n> more', '||secret|| words',
   '[note link](note:abc) here', 'Line one\nline two\r\nline three', '*em over\na break*', '\n\n\n', 'x\n\n\n\ny',
   '**[bold link](https://a.b)**', '[*em label*](mailto:a@b.c) x', '*a**b*', 'Emoji 😀 and ü.',
+  // wave 2a: headings, quotes and lists as nodes
+  '## Sub *em* head', '# One\nline two', '>a\n>  b\n> *c*', '> a\r\n> b', '- a\n  more\n- *b*', '3) c\nmore\n4) d',
+  'p\n\n# h\n\n> q\n> r\n\n1. x\n2. y\n\nend', '::: center\n- a\n- b\n\n> q\n:::', '- \r\n- y',
 ];
 
 /** Every cursor position (a textblock position) of a document with its offset. */
@@ -143,6 +146,15 @@ test('positions: the documented cases', () => {
   assert.equal(posToTextOffset(a, 0), 0);
   assert.equal(posToTextOffset(a, 1), 3);
   assert.equal(textOffsetToPos(a, 2), 0);
+  // wave 2a: a quote's line prefix is not a cursor offset; between two lines is the end of the first line's text
+  const q = toDoc('> ab\n> cd');
+  assert.equal(posToTextOffset(q, 2), 2); // the first line's text starts after "> "
+  assert.equal(posToTextOffset(q, 4), 4); // end of "ab"
+  assert.equal(posToTextOffset(q, 5), 4); // between the lines: where the "\n" starts
+  assert.equal(posToTextOffset(q, 6), '> ab\n> '.length); // the second line's text
+  assert.equal(textOffsetToPos(q, '> ab\n>'.length), 4); // inside the second prefix: floor to the end of "ab"
+  // a heading's "## " is its prefix
+  assert.equal(posToTextOffset(toDoc('## H'), 1), 3);
 });
 
 /* ---- fix round 1: nested marks (several opening on one character) ----
@@ -179,9 +191,7 @@ function rng(seed: number): () => number {
 }
 function randomDoc(r: () => number): Node {
   const hrefs = ['https://e.x/a', 'https://e.x/b'];
-  const paras: Node[] = [];
-  const np = 1 + Math.floor(r() * 3);
-  for (let p = 0; p < np; p++) {
+  const runsOf = (): Node[] => {
     const runs: Node[] = [];
     const nr = 1 + Math.floor(r() * 6);
     for (let k = 0; k < nr; k++) {
@@ -194,9 +204,35 @@ function randomDoc(r: () => number): Node {
       if (r() < 0.3) ms.push(S.marks.link!.create({ href: hrefs[Math.floor(r() * 2)] }));
       runs.push(S.text(t, ms));
     }
-    paras.push(S.node('paragraph', null, runs));
+    return runs;
+  };
+  const blocks: Node[] = [];
+  const np = 1 + Math.floor(r() * 3);
+  for (let p = 0; p < np; p++) {
+    // wave 2a: headings, quotes (lines with their ">" prefixes) and lists (items with their markers) as well
+    const kind = Math.floor(r() * 5);
+    if (kind === 1) blocks.push(S.node('heading', { level: 1 + Math.floor(r() * 2) }, runsOf()));
+    else if (kind === 2 || kind === 3) {
+      const quote = kind === 2;
+      const lines: Node[] = [];
+      const nl = 1 + Math.floor(r() * 3);
+      for (let i = 0; i < nl; i++) {
+        lines.push(quote ? S.node('quoteLine', { prefix: ['> ', '>'][Math.floor(r() * 2)] }, runsOf())
+          : S.node('listItem', { marker: ['- ', '1. ', '12) '][Math.floor(r() * 3)] }, runsOf()));
+      }
+      blocks.push(S.node(quote ? 'quote' : 'list', null, lines));
+    } else blocks.push(S.node('paragraph', null, runsOf()));
   }
-  return S.node('doc', null, paras);
+  return S.node('doc', null, blocks);
+}
+/** Every textblock of a document with its position (before it). */
+function textblocks(doc: Node): { node: Node; pos: number }[] {
+  const out: { node: Node; pos: number }[] = [];
+  doc.descendants((n, pos) => {
+    if (n.isTextblock) { out.push({ node: n, pos }); return false; }
+    return true;
+  });
+  return out;
 }
 /** Trailing closing delimiters ("*", "**", "](href)") of a text that ends inside a run of letters. */
 const stripClosers = (s: string): string => s.replace(/(?:\*|\]\([^)]*\))+$/, '');
@@ -207,8 +243,8 @@ test('positions: random marked documents, checked against toText of the document
   for (let n = 0; n < 400; n++) {
     const doc = randomDoc(r);
     const T = toText(doc);
-    doc.forEach((para, pos) => {
-      // the end of each block: the cut document's text is exactly the text up to there
+    for (const { node: para, pos } of textblocks(doc)) {
+      // the end of each textblock (a quote line, a list item included): the cut document's text is exactly the text up to there
       const end = pos + para.nodeSize - 1;
       assert.equal(posToTextOffset(doc, end), toText(doc.cut(0, end)).length, `${JSON.stringify(T)}: end of block at ${end}`);
       blocks++;
@@ -229,7 +265,7 @@ test('positions: random marked documents, checked against toText of the document
         assert.ok(T.slice(o).replace(/^(?:\*|\[)*/, '').startsWith(kid.text!), `${JSON.stringify(T)}: boundary at ${start} is followed by its run`);
         bounds++;
       });
-    });
+    }
   }
   assert.ok(blocks > 500 && inner > 1000 && bounds > 1000, `${blocks} block ends, ${inner} inner and ${bounds} boundary positions checked`);
 });

@@ -56,6 +56,16 @@ const NODE_DOM: Record<string, (node: PMNode) => DOMOutputSpec> = {
   image: (n) => ['figure', { class: 'ms-image', 'data-id': str(n.attrs.id), contenteditable: 'false' }, ['figcaption', {}, str(n.attrs.caption ?? n.attrs.alt) || str(n.attrs.id)]],
   sceneBreak: (n) => ['div', { class: 'ms-scene', contenteditable: 'false' }, str(n.attrs.raw)],
   container: (n) => ['div', { class: 'ms-container', 'data-open': str(n.attrs.open) }, 0],
+  // wave 2a (B6): 1.0's emitText draws "# " as h2.inhead and "## " as h3.inhead, a quote as a blockquote, a list as
+  // ul/ol.book-list (an ordered list starts at its first number)
+  heading: (n) => [Number(n.attrs.level) === 2 ? 'h3' : 'h2', { class: 'inhead ms-heading' }, 0],
+  quote: () => ['blockquote', { class: 'ms-quote' }, 0],
+  quoteLine: () => ['p', { class: 'ms-qline' }, 0],
+  list: (n) => {
+    const m = /^(\d{1,3})[.)]/.exec(str(n.firstChild?.attrs.marker));
+    return m ? ['ol', { class: 'book-list ms-list', ...(m[1] !== '1' && { start: String(parseInt(m[1]!, 10)) }) }, 0] : ['ul', { class: 'book-list ms-list' }, 0];
+  },
+  listItem: () => ['li', 0],
   rawBlock: () => ['pre', { class: 'ms-raw' }, 0],
 };
 

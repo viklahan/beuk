@@ -276,6 +276,12 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
   margin: 0 0 .9em; padding: 8px 10px; background: var(--panel-3); border-radius: 6px;
   font-family: var(--mono-font); font-size: .72em; line-height: 1.5; white-space: pre-wrap;
 }
+/* wave 2a (B6): headings, quotes and lists as 1.0's preview sets them, quietly */
+.ms-editor .ms-heading { margin: .4em 0 .9em; font-size: 1.15em; font-weight: 600; }
+.ms-editor h3.ms-heading { font-size: 1.02em; }
+.ms-editor .ms-quote { margin: 0 0 .9em; padding-inline-start: 14px; border-inline-start: 3px solid var(--line-2); font-style: italic; }
+.ms-editor .ms-quote .ms-qline { margin: 0; }
+.ms-editor .ms-list { margin: 0 0 .9em; padding-inline-start: 1.6em; }
 .ms-editor .ms-rawinline { font-family: var(--mono-font); font-size: .85em; }
 .ms-editor a { color: var(--accent); }
 @media (max-width: 560px) { .ms-editor { padding: 28px 22px; } }

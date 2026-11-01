@@ -36,7 +36,8 @@ describe('the editor schema is bookSchema', () => {
   it('the same marks: em and strong (never italic/bold), link, footnoteRef, rawInline, with the same attrs, inclusive and excludes', () => {
     expect(Object.keys(editorSchema.marks)).toEqual(Object.keys(bookSchema.marks));
     expect(Object.keys(editorSchema.marks)).toEqual(expect.arrayContaining(['em', 'strong']));
-    for (const banned of ['italic', 'bold', 'hardBreak', 'blockquote', 'heading', 'bulletList']) {
+    // StarterKit's nodes never: the book's own heading / quote / list (wave 2a) come from bookSchema, under its names
+    for (const banned of ['italic', 'bold', 'hardBreak', 'blockquote', 'bulletList', 'orderedList']) {
       expect(editorSchema.nodes[banned] ?? editorSchema.marks[banned], banned).toBeUndefined();
     }
     for (const name of Object.keys(bookSchema.marks)) {
@@ -58,7 +59,8 @@ describe('the editor schema is bookSchema', () => {
       expect(a.attribute.rendered, `${a.type}.${a.name}`).toBe(false);
     }
     const blocks = Object.values(bookSchema.nodes).filter((n) => n.isBlock && n.name !== 'doc').map((n) => n.name).sort();
-    expect(attrs.filter((a) => a.name === 'pre').map((a) => a.type).sort()).toEqual(blocks);
+    // a quote's lines and a list's items are not blocks of a run: no separators of their own
+    expect(attrs.filter((a) => a.name === 'pre').map((a) => a.type).sort()).toEqual(blocks.filter((n) => n !== 'quoteLine' && n !== 'listItem'));
   });
 
   it('a document Part B builds is valid in the editor schema, node for node', () => {
@@ -66,7 +68,10 @@ describe('the editor schema is bookSchema', () => {
       bookSchema.node('paragraph', { pre: null }, [bookSchema.text('a '), bookSchema.text('b', [bookSchema.mark('em')])]),
       bookSchema.node('container', { open: '::: center', close: ':::' }, [bookSchema.node('paragraph', null, [bookSchema.text('c')])]),
       bookSchema.node('sceneBreak', { raw: '❦' }),
-      bookSchema.node('rawBlock', null, [bookSchema.text('> q')]),
+      bookSchema.node('rawBlock', null, [bookSchema.text('::: verse')]),
+      bookSchema.node('heading', { level: 2 }, [bookSchema.text('h')]),
+      bookSchema.node('quote', null, [bookSchema.node('quoteLine', { prefix: '>' }, [bookSchema.text('q')])]),
+      bookSchema.node('list', null, [bookSchema.node('listItem', { marker: '1. ' }, [bookSchema.text('i')]), bookSchema.node('listItem', { marker: '2) ' })]),
     ]).toJSON();
     const doc = editorSchema.nodeFromJSON(json);
     doc.check();

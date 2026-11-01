@@ -1,6 +1,6 @@
 import { type Mark, type Node } from 'prosemirror-model';
 import { openingOrder } from './convert.js';
-import { DELIMITED_MARKS } from './schema.js';
+import { DELIMITED_MARKS, LINE_BLOCKS, textblockPrefix } from './schema.js';
 
 /* BEUK:editor-positions — text offsets <-> ProseMirror positions (step 5
    design, decision 6; pulled forward to wave 1b for split at the caret).
@@ -19,7 +19,9 @@ import { DELIMITED_MARKS } from './schema.js';
      ones of marks that start at k are not. The position at the end of the
      block's content maps to the offset after every closing delimiter.
    - A position between blocks (or around an atom: picture, scene break)
-     maps to the offset where the next block's `pre` starts; after the last
+     maps to the offset where the next block's `pre` starts; between two
+     lines of a quote or a list, to the end of the first line's text (where
+     its "\n" starts); after the last
      child of the document, to the end of the text (its `post` included);
      after the last child of a container, to the start of its close line.
 
@@ -45,12 +47,10 @@ function preOf(b: Node, i: number): string {
   return pre === null || pre === undefined ? (i === 0 ? '' : '\n\n') : String(pre);
 }
 
-/** The prefix a block writes before its inline content (convert.ts blockText). */
+/** The prefix a block writes before its inline content (convert.ts blockText; schema.ts textblockPrefix). */
 function prefixOf(node: Node): string {
-  const a = node.attrs;
-  if (node.type.name === 'footnoteDef') return '[' + (a.caret ? '^' : '') + String(a.n) + ']:' + String(a.gap);
-  if (node.type.name === 'container') return String(a.open) + String(a.openEol);
-  return '';
+  if (node.type.name === 'container') return String(node.attrs.open) + String(node.attrs.openEol);
+  return textblockPrefix(node);
 }
 
 /** Characters an atom block writes (convert.ts blockText for image and sceneBreak). */
@@ -96,6 +96,21 @@ function walkInline(node: Node, pos: number, at: number, t: Table): number {
   return at;
 }
 
+/** Fill offsets for a quote's or a list's lines; `pos` is its content start, `at` the offset there. The position between
+ *  two lines maps to the end of the first line's text (where its "\n" starts). Returns the offset after the last line. */
+function walkLines(node: Node, pos: number, at: number, t: Table): number {
+  let q = pos;
+  node.forEach((line, _o, i) => {
+    t.off[q] = at; // before line i: the first line's prefix starts here; a later line's "\n" does
+    if (i > 0) at += 1;
+    at += prefixOf(line).length;
+    at = walkInline(line, q + 1, at, t);
+    q += line.nodeSize;
+  });
+  t.off[q] = at; // the block's content end
+  return at;
+}
+
 /** Fill offsets for the children of `parent` (a doc or a container); `pos` is its content start, `at` the offset there.
  *  Returns the offset after the last child (its post included). */
 function walkBlocks(parent: Node, pos: number, at: number, t: Table): number {
@@ -110,6 +125,8 @@ function walkBlocks(parent: Node, pos: number, at: number, t: Table): number {
       at = walkBlocks(b, p + 1, at, t);
       t.off[p + b.nodeSize - 1] = at; // the container's content end: its close line starts here
       if (b.attrs.close !== null) at += String(b.attrs.close).length;
+    } else if (LINE_BLOCKS.has(b.type.name)) {
+      at = walkLines(b, p + 1, at, t);
     } else if (b.isTextblock) {
       at += prefixOf(b).length;
       at = walkInline(b, p + 1, at, t);

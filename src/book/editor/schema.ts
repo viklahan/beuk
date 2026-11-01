@@ -6,9 +6,10 @@ import { Schema, type NodeSpec, type MarkSpec } from 'prosemirror-model';
 
    The dialect is 1.0's section `content` (client/index.html renders it:
    contentBlocksToHtml, inlineMd, parseContainers). Only the constructs the
-   corpus survey ranked top ten are modelled (step-4 report, Task 1); the
-   rest are rawBlock (a block of source text, verbatim) or the rawInline
-   mark (a span of source text, verbatim).
+   corpus survey ranked top ten are modelled (step-4 report, Task 1), plus
+   headings, quotes and lists (step 5 wave 2a, B6); the rest are rawBlock
+   (a block of source text, verbatim) or the rawInline mark (a span of
+   source text, verbatim).
 
    Lossless rules every node keeps (convert.ts):
    - every block carries `pre` (the exact text between the previous block
@@ -64,6 +65,23 @@ const nodes: Record<string, NodeSpec> = {
     attrs: { ...blockAttrs, open: { default: '::: center' }, openEol: { default: '\n' }, close: { default: null as string | null } },
   },
 
+  /** A heading block (1.0's emitText): "# " (level 1, 1.0's h2) or "## " (level 2, 1.0's h3) and the block's text. A
+   *  line break inside stays a "\n" character, as in a paragraph. Wave 2a (B6). */
+  heading: { group: 'block', content: 'text*', marks: '_', whitespace: 'pre', attrs: { ...blockAttrs, level: { default: 1 } } },
+
+  /** A quotation block: every line starts with ">" (1.0's emitText). One quoteLine per line, joined by "\n". */
+  quote: { group: 'block', content: 'quoteLine+', attrs: { ...blockAttrs } },
+  /** One line of a quote: `prefix` is its ">" with the one whitespace character 1.0 strips after it (/^>\s?/), as
+   *  written; the rest is the line's text (1.0 reads each line's inline marks on its own). */
+  quoteLine: { content: 'text*', marks: '_', whitespace: 'pre', attrs: { prefix: { default: '> ' } } },
+
+  /** A list block (1.0's listItemsOf): bulleted ("- ", "* ", "• ", at least two items) or numbered ("1. ", "1) ").
+   *  One listItem per marked line, joined by "\n". */
+  list: { group: 'block', content: 'listItem+', attrs: { ...blockAttrs } },
+  /** One item: `marker` is the item's mark as written (LIST_BULLET / LIST_NUMBER with its spacing); the text runs on
+   *  over the unmarked lines that continue it ("\n" characters in the text, as 1.0 joins them to the item). */
+  listItem: { content: 'text*', marks: '_', whitespace: 'pre', attrs: { marker: { default: '- ' } } },
+
   /** Source text the converter does not model, verbatim. Edits as plain text. */
   rawBlock: { group: 'block', content: 'text*', marks: '', code: true, attrs: { ...blockAttrs } },
 
@@ -87,3 +105,19 @@ export const bookSchema = new Schema({ nodes, marks });
 
 /** The marks that write delimiters around their text, outermost first when two would open on the same span. */
 export const DELIMITED_MARKS = ['link', 'em', 'strong'] as const;
+
+/** Blocks whose children are LINES (textblocks written one per line, "\n" between them, each after its own prefix). */
+export const LINE_BLOCKS: ReadonlySet<string> = new Set(['quote', 'list']);
+
+/** The text a textblock writes before its inline content (convert.ts blockText): a note definition's "[^n]: ", a
+ *  heading's "# ", a quote line's ">", a list item's marker. "" for the others. */
+export function textblockPrefix(node: import('prosemirror-model').Node): string {
+  const a = node.attrs;
+  switch (node.type.name) {
+    case 'footnoteDef': return '[' + (a.caret ? '^' : '') + String(a.n) + ']:' + String(a.gap);
+    case 'heading': return (Number(a.level) === 2 ? '## ' : '# ');
+    case 'quoteLine': return String(a.prefix);
+    case 'listItem': return String(a.marker);
+    default: return '';
+  }
+}
