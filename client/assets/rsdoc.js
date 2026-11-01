@@ -63,6 +63,69 @@ async function docxTitle(zip) {
   return m ? m[1].replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&").trim() : "";
 }
 
+/* ---- what a Word file holds, counted, so the studio can say what its view leaves out ----
+   Words are counted the same way on both sides (WORD_RE, also in the studio's rsWords).
+   A paragraph's runs are joined (Word splits words across runs); a text box's own paragraphs
+   are counted as theirs, never glued to the paragraph that holds the box; the VML copy of a
+   text box (mc:Fallback) is skipped so it is not counted twice; field codes (w:instrText) are
+   not words on the page. Deleted text (tracked changes) is counted apart. */
+const WORD_RE = /[\p{L}\p{N}][\p{L}\p{N}'’\-]*/gu;
+const CHAR_RE = /[\p{L}\p{N}]/gu; /* letters and numbers: what a view may not add or lose (spacing may change, these may not) */
+function wordsIn(s) { return (String(s).normalize("NFC").match(WORD_RE) || []).length; }
+function charsIn(s) { return (String(s).normalize("NFC").match(CHAR_RE) || []).length; }
+function xmlText(s) { return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&#x([0-9a-fA-F]+);/g, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&amp;/g, "&"); }
+function wordStats(xml) {
+  const re = /<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:delText(?:\s[^>]*)?>([^<]*)<\/w:delText>|<(\/?)w:p(?=[\s>/])[^>]*?(\/?)>|<(\/?)mc:Fallback(?=[\s>/])[^>]*?(\/?)>|<\/mc:AlternateContent\s*>()|<w:(footnoteReference|endnoteReference)(?=[\s/>])/g;
+  const stack = [];
+  let words = 0, chars = 0, deleted = 0, refs = 0, fallback = 0, del = "", m;
+  const flush = (s) => { words += wordsIn(s); chars += charsIn(s); };
+  while ((m = re.exec(xml))) {
+    if (m[5] !== undefined) { if (!m[6]) fallback = Math.max(0, fallback + (m[5] ? -1 : 1)); continue; } /* <mc:Fallback/> (Word writes it so) holds nothing */
+    if (m[7] !== undefined) { fallback = 0; continue; } /* the end of the alternatives: a fallback left open can never hide the rest of the document */
+    if (fallback > 0) continue;
+    if (m[1] !== undefined) { if (stack.length) stack[stack.length - 1] += xmlText(m[1]); else flush(xmlText(m[1])); }
+    else if (m[2] !== undefined) del += xmlText(m[2]);
+    else if (m[8]) refs++;
+    else if (m[3] !== undefined) {
+      if (m[4]) continue; /* <w:p/> */
+      if (m[3]) { flush(stack.pop() || ""); del += " "; } else stack.push("");
+    }
+  }
+  while (stack.length) flush(stack.pop());
+  deleted = wordsIn(del);
+  return { words: words, chars: chars, deleted: deleted, refs: refs };
+}
+/* Text boxes Word writes as DrawingML (mc:Choice holding w:txbxContent) with an empty mc:Fallback:
+   mammoth reads only the fallback, so their words would vanish (Steady Ground: the "urselves" of a
+   drop-capped "Ourselves", 14 letters, seen by the letter count). Their words are written in where
+   the box sits, as plain text, in the copy handed to mammoth; the file itself is never changed. */
+function inlineTextBoxes(xml) {
+  let changed = false;
+  const out = xml.replace(/<mc:AlternateContent\b[\s\S]*?<\/mc:AlternateContent\s*>/g, (block, at) => {
+    const fb = /<mc:Fallback\b[\s\S]*?(?:\/>|<\/mc:Fallback\s*>)/.exec(block);
+    if (fb && /<w:t[\s>]/.test(fb[0])) return block; /* mammoth reads the fallback, which holds the words */
+    const boxes = block.match(/<w:txbxContent\b[\s\S]*?<\/w:txbxContent\s*>/g);
+    if (!boxes) return block;
+    const text = boxes.map((b) => (b.match(/<w:p\b[\s\S]*?<\/w:p\s*>/g) || []).map((p) => (p.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || []).map((t) => t.replace(/<[^>]+>/g, "")).join("")).join(" ")).join(" ").trim();
+    if (!text) return block;
+    changed = true;
+    const inRun = xml.lastIndexOf("<w:r>", at) > xml.lastIndexOf("</w:r>", at) || xml.lastIndexOf("<w:r ", at) > xml.lastIndexOf("</w:r>", at);
+    const t = '<w:t xml:space="preserve">' + text + "</w:t>"; /* still XML-escaped as Word wrote it */
+    return inRun ? t : "<w:r>" + t + "</w:r>";
+  });
+  return changed ? out : null;
+}
+async function docxStats(zip) {
+  const read = async (path) => { const f = zip.file(path); return f ? await f.async("string") : ""; };
+  const body = wordStats(await read("word/document.xml"));
+  const fn = wordStats(await read("word/footnotes.xml")), en = wordStats(await read("word/endnotes.xml"));
+  let headers = 0;
+  for (const path of Object.keys(zip.files)) if (/^word\/(header|footer)\d*\.xml$/.test(path)) headers += wordStats(await read(path)).words;
+  const comments = wordStats(await read("word/comments.xml")).words;
+  /* footnotes.xml carries Word's separator notes (no words); a reference number shown in the text and in the list is Word's own */
+  return { chars: body.chars + fn.chars + en.chars, words: body.words + fn.words + en.words, refs: body.refs + fn.refs + en.refs, headers: headers, comments: comments, deleted: body.deleted };
+}
+
 /* ---- web pages ---- */
 function sniffCharset(bytes) {
   if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return "utf-8";
@@ -183,10 +246,14 @@ self.onmessage = async (ev) => {
       reply({ ok: true, title: await docxTitle(zip) });
     } else if (job.op === "view-word") {
       const u = bytesOf(job.data);
-      await openDocx(u);
-      const r = await mammoth.convertToHtml({ arrayBuffer: u.buffer });
+      const zip = await openDocx(u);
+      const stats = await docxStats(zip);
+      let buf = u.buffer;
+      const inlined = inlineTextBoxes(await zip.file("word/document.xml").async("string"));
+      if (inlined) { zip.file("word/document.xml", inlined); buf = await zip.generateAsync({ type: "arraybuffer" }); }
+      const r = await mammoth.convertToHtml({ arrayBuffer: buf });
       const html = String(r.value || "");
-      reply({ ok: true, html: html.slice(0, LIM.html), cut: html.length > LIM.html, messages: (r.messages || []).length });
+      reply({ ok: true, html: html.slice(0, LIM.html), cut: html.length > LIM.html, messages: (r.messages || []).length, stats: stats });
     } else if (job.op === "check-web") {
       const w = readWeb(job.data);
       reply({ ok: true, kind: w.kind, url: w.url, title: (/<title[^>]*>([\s\S]{0,400}?)<\/title>/i.exec(w.html) || [])[1] || "" });
