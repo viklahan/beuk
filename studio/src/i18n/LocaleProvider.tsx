@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { EN, UI_LANG_NAMES, UI_LANG_ORDER, UI_PLURAL_FORMS, hasLang, isRtl, loadPack, packIfLoaded, storeUiLang, type UiKey } from './strings';
 import { translate, type Params, type Tables } from './translate';
 import { NEXT_STRINGS, type NextKey } from './next-strings';
@@ -32,7 +32,9 @@ export function LocaleProvider({ initial, children }: { initial: string; childre
   const [lang, setLangState] = useState(start);
   const latest = useRef(0);
 
-  useEffect(() => applyToDocument(lang), [lang]);
+  /* Layout effect: dir flips in the same commit as the new strings, before
+     paint, so Arabic text never shows for a frame in LTR chrome. */
+  useLayoutEffect(() => applyToDocument(lang), [lang]);
 
   const setLang = useCallback(async (code: string, opts?: { persist?: boolean }) => {
     const target = hasLang(code) ? code : 'en';
