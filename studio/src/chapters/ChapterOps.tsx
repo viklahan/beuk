@@ -153,7 +153,8 @@ export function useChapterOps({ openHistory }: { openHistory: () => void }): { t
     const r = trig.getBoundingClientRect(), w = m.offsetWidth, h = m.offsetHeight;
     const vw = document.documentElement.clientWidth, vh = window.innerHeight;
     const rtl = document.documentElement.getAttribute('dir') === 'rtl';
-    let x = rtl ? r.left : r.right - w;
+    let x = r.right - w; // the button's inline-end side
+    if (rtl) x = r.left;
     x = Math.max(8, Math.min(x, vw - w - 8));
     let y = r.bottom + 4;
     if (y + h > vh - 8) y = Math.max(8, r.top - h - 4);

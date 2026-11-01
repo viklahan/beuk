@@ -170,7 +170,7 @@ async function cspAndOffline() {
 const ONE_HIDE =
   '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, #tabBtnOutline, .pane-fold, #tipLayer, .beuk-tip,' +
   /* the sidebar's content below its two action buttons (step 5) */
-  ' .sample-bar, #bulkHint, #importSummary, #irReopen { display: none !important; }' +
+  ' #bulkHint, #importSummary, #irReopen, #btnTourAgain { display: none !important; }' + // wave 1b: the sample bar is in both; the tour link is not yet
   /* KNOWN 1.0 QUIRK, not reproduced: at phone widths 1.0 drops the pane
      borders (#panes .pane { border: none }), but its RTL swap rule
      (html[dir=rtl] #pane-structure { border-left: 1px … }) is more
@@ -181,7 +181,7 @@ const ONE_HIDE =
 const FRAME = ['#topbar', '#mobileTabs', '#panes', '#pane-structure', '#pane-center', '#pane-preview', '.center-tabs', '.side-actions', '#btnUiLang', '#btnTheme', '#btnHomeport', '#btnHelp', '#btnExport'];
 const STYLE_PROPS = ['display', 'background-color', 'background-image', 'color', 'font-family', 'font-size', 'font-weight', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
   'border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color', 'border-radius', 'box-shadow'];
-const PIXEL_REGIONS = { desktop: ['#topbar', '.side-actions', '.center-tabs'], phone: ['#topbar', '#mobileTabs', '.side-actions'] };
+const PIXEL_REGIONS = { desktop: ['#topbar', '.side-actions', '.sample-bar', '.center-tabs'], phone: ['#topbar', '#mobileTabs', '.side-actions'] };
 
 async function open(url, { width, height, theme, lang, hide }) {
   const ctx = await browser.newContext({ viewport: { width, height }, serviceWorkers: 'block', deviceScaleFactor: 1 });

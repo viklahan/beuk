@@ -2,6 +2,7 @@
    (src/editor/toolbarLayout.ts) picks the breaks and how many labels fold to icons. Wave 1b (inventory A12). */
 #insertToolbar { column-gap: 4px; row-gap: 4px; }
 #insertToolbar > .tool-group {
+  --tg-grow: 1; /* tbLayout sets each group's own (its button count) on the element */
   display: flex; align-items: center; gap: 4px; min-width: 0;
   flex: var(--tg-grow, 1) 1 auto; flex-wrap: wrap;
 }

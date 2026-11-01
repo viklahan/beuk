@@ -550,7 +550,7 @@ async function latency(origin) {
 /* ---- screenshots, next to 1.0 ---- */
 const ONE_HIDE =
   '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, #tabBtnOutline, .pane-fold, #tipLayer, .beuk-tip,' +
-  ' .sample-bar, #bulkHint, #importSummary, #irReopen { display: none !important; }' +
+  ' #bulkHint, #importSummary, #irReopen, #btnTourAgain { display: none !important; }' + // wave 1b: the sample bar is in both; the tour link is not yet
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
 
 async function pixelDiff(diffPage, a, b) {
@@ -608,7 +608,7 @@ async function screenshots(origin) {
         writeFileSync(b, await two.screenshot());
         shots.push(a, b);
         // the shell regions (gated), then the writing surface: 1.0's #editorArea textarea vs 2.0's #manuscript (reported only)
-        for (const [sel, sel2] of [['#topbar'], ['.side-actions'], ['.center-tabs'], ['#editorArea', '#manuscript']]) {
+        for (const [sel, sel2] of [['#topbar'], ['.side-actions'], ['.sample-bar'], ['.center-tabs'], ['#editorArea', '#manuscript']]) {
           const la = one.locator(sel).first(), lb = two.locator(sel2 ?? sel).first();
           if (!(await la.isVisible()) || !(await lb.isVisible())) { check(false, `screenshots ${tag}: ${sel} visible in both`); continue; }
           const d = await pixelDiff(diffPage, await la.screenshot(), await lb.screenshot());
@@ -792,6 +792,88 @@ async function tooltipScan(origin) {
   }
 }
 
+/* ---- wave 1b: split and Undo in the browser, the sample with its pictures under the CSP, the toolbar layout ---- */
+async function wave1bChecks(origin) {
+  const A = fixtures.find((f) => f.name === 'real/salt-road-standalone');
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, A.file);
+    const before = await exportBackup(page);
+    // the sidebar: groups and counts (1.0's renderSidebar)
+    await page.waitForSelector('#structureList .sec-wc', { timeout: 30_000 });
+    const groups = await page.$$eval('#structureList .group-toggle', (els) => els.map((e) => e.getAttribute('data-og')));
+    check(groups.includes('body') && groups.every((g) => ['front', 'body', 'back'].includes(g)), `wave 1b sidebar: 1.0's group toggles (${groups.join(', ')}), every row with its count`);
+    // split the open chapter at its second paragraph, in the browser: menu → Split at cursor
+    const idx = before.json.book.sections.findIndex((x) => x.kind === 'body' && typeof x.content === 'string' && !x.content.includes(':::') && x.content.split(/\n\s*\n/).filter((p) => p.trim() && !/^[\[!#>*-]/.test(p.trim())).length >= 3);
+    await choose(page, idx);
+    const text = before.json.book.sections[idx].content;
+    // the caret at the start of the chapter's second block (a block boundary: 1.0 cuts before that paragraph)
+    const placed = await page.evaluate(() => {
+      const ed = document.getElementById('manuscript').beukEditor;
+      const doc = ed.state.doc;
+      if (doc.childCount < 2 || !doc.child(1).isTextblock) return false;
+      ed.commands.setTextSelection(doc.child(0).nodeSize + 1);
+      return true;
+    });
+    await page.click('#structureList .sec-item.active [data-act="more"]');
+    await page.waitForSelector('#chopMenu [data-chop-act="split"]');
+    const why = await page.getAttribute('#chopMenu [data-chop-act="split"]', 'aria-disabled');
+    if (why !== null) {
+      const dbg = await page.evaluate(() => {
+        const ed = document.getElementById('manuscript').beukEditor;
+        return { reason: document.querySelector('#chopMenu [data-chop-act="split"]').title, sel: ed.state.selection.from, kids: ed.state.doc.childCount, focus: document.activeElement?.className };
+      });
+      throw new Error(`split refused: ${JSON.stringify({ placed, ...dbg })}`);
+    }
+    await page.click('#chopMenu [data-chop-act="split"]');
+    await page.waitForSelector(`#structureList .sec-item.active[data-index="${idx + 1}"]`, { timeout: 30_000 });
+    const mid = await exportBackup(page);
+    const a = mid.json.book.sections[idx].content, b = mid.json.book.sections[idx + 1].content;
+    check(placed && why === null && mid.json.book.sections.length === before.json.book.sections.length + 1 && a.length > 0 && b.length > 0,
+      `wave 1b split: the caret's chapter cut in two in the browser (${a.length} + ${b.length} characters of ${text.length})`);
+    await page.click('#toasts .toast-action');
+    await page.waitForSelector(`#structureList .sec-item.active[data-index="${idx}"]`, { timeout: 30_000 });
+    const back = await exportBackup(page);
+    check(JSON.stringify(noHistory(back.json.book)) === JSON.stringify(noHistory(before.json.book)), 'wave 1b split: Undo, then export: the book exactly as before (History aside, key order included)');
+    // the toolbar: 1.0's layout ran (rows and fold level set), at a wide and a narrow width
+    const wide = await page.evaluate(() => { const tb = document.getElementById('insertToolbar'); return { rows: tb.getAttribute('data-rows'), fold: tb.getAttribute('data-fold') }; });
+    await page.setViewportSize({ width: 380, height: 800 });
+    await page.waitForTimeout(300);
+    const narrow = await page.evaluate(() => { const tb = document.getElementById('insertToolbar'); return tb ? { rows: tb.getAttribute('data-rows'), fold: tb.getAttribute('data-fold') } : null; });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    check(wide.rows === '1' && wide.fold === '0', `wave 1b toolbar: tbLayout laid the toolbar out (wide: ${JSON.stringify(wide)}, narrow: ${JSON.stringify(narrow)})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+  // the sample: Load from the empty desk, its pictures from /assets/sample/ under the CSP, Remove leaves the empty book
+  const ctx2 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx2, origin);
+    await page.waitForSelector('#btnSampleStory', { timeout: 30_000 });
+    const label = await page.textContent('#btnSampleStory');
+    await page.click('#btnSampleStory');
+    await titleIs(page, 'The Lantern Coast');
+    let filled = false;
+    for (let i = 0; i < 60 && !filled; i++) {
+      const out = await exportBackup(page);
+      filled = out.json.book.images.every((im) => !String(im.id).startsWith('sample-img') || im.data.length > 1000) && out.json.book.cover && out.json.book.cover.data.length > 1000;
+      if (!filled) await page.waitForTimeout(500);
+    }
+    const pics = state(srvRef).requests.filter((p) => p.startsWith('/assets/sample/')).length;
+    check(/25,9\d\d words/.test(label) && filled && pics >= 35, `wave 1b sample: "${label.trim()}" loads the sample; its ${pics} pictures arrive from /assets/sample/ and fill in`);
+    await page.click('#btnSampleStory');
+    await page.waitForFunction(() => document.getElementById('btnSampleStory')?.textContent.includes('Load the sample'), null, { timeout: 30_000 });
+    const empty = await exportBackup(page);
+    check(empty.json.book.meta.title === '' && !JSON.stringify(empty.json.book).includes('Lantern Coast') && (await page.$('#modalConfirm')) === null,
+      'wave 1b sample: Remove (untouched: no confirm) leaves the empty book, nothing of the sample in it');
+    await harvestCsp(page);
+  } finally {
+    await ctx2.close();
+  }
+}
+
 /* ---- the bundle: one yjs ---- */
 function bundle() {
   const dir = path.join(REPO, 'client', 'next', 'assets');
@@ -802,6 +884,8 @@ function bundle() {
 }
 
 const srv = await startServer({ repo: REPO });
+const srvRef = srv;
+const state = (x) => x.state;
 const t0 = Date.now();
 let lat = null;
 try {
@@ -814,6 +898,7 @@ try {
   if (run('oneSafety')) await oneSafety(srv.origin);
   if (run('historyChecks')) await historyChecks(srv.origin);
   if (run('tooltipScan')) await tooltipScan(srv.origin);
+  if (run('wave1b')) await wave1bChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {
