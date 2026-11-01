@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import os from 'node:os';
+import zlib from 'node:zlib';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fillerParagraphs } from '../scripts/import-shapes/filler.js';
+import { buildAll } from '../scripts/import-shapes/generate.js';
 import { renderDocx } from '../scripts/import-shapes/render-docx.js';
+import { renderPdf } from '../scripts/import-shapes/render-pdf.js';
 import { renderMd, renderRtf, renderTxt } from '../scripts/import-shapes/render-text.js';
-import { FORMATS, loadShapes, SHAPES_DIR } from '../scripts/import-shapes/shape.js';
+import { FORMATS, loadShapes, MANIFEST, OUT_DIR, SHAPES_DIR } from '../scripts/import-shapes/shape.js';
 
 /* The import-shapes grid (scripts/import-shapes): real-shaped manuscripts
    in five formats, each with the structure it should import as. These
@@ -175,4 +179,47 @@ test('docx escapes & in text', () => {
 
 test('docx is byte-identical twice', () => {
   for (const s of loadShapes()) assert.ok(renderDocx(s).equals(renderDocx(s)), s.id);
+});
+
+/* Every content stream of a PDF, inflated when it is Flate-encoded. */
+function pdfStreams(buf: Buffer): string[] {
+  const out: string[] = [];
+  const raw = buf.toString('latin1');
+  const re = /<<([^]*?)>>\s*stream\r?\n/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw))) {
+    const start = m.index + m[0].length, end = raw.indexOf('endstream', start);
+    const body = buf.subarray(start, end);
+    try { out.push(/FlateDecode/.test(m[1]) ? zlib.inflateSync(body).toString('latin1') : body.toString('latin1')); } catch { /* not a content stream */ }
+  }
+  return out;
+}
+
+test('pdf of spaced-caps holds the text "T H E"', async () => {
+  const streams = pdfStreams(await renderPdf(shapeById('spaced-caps'))).join('\n');
+  assert.ok(/<5420482045/i.test(streams), 'hex string for "T H E"');
+});
+
+test('pdf carries no clock and no metadata title', async () => {
+  const raw = (await renderPdf(shapeById('clean-numbered'))).toString('latin1');
+  assert.ok(raw.startsWith('%PDF-'));
+  assert.ok(!/\/Title\s*\(/.test(raw) && !/\/Author\s*\(/.test(raw));
+  assert.ok(raw.includes('D:20260101000000Z'));
+});
+
+test('pdf is byte-identical twice', async () => {
+  for (const id of ['clean-numbered', 'dropcap', 'no-headings']) assert.ok((await renderPdf(shapeById(id))).equals(await renderPdf(shapeById(id))), id);
+});
+
+test('manifest lists exactly the applicable cells, and every file matches its hash', () => {
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8')) as { file: string; shape: string; format: string; sha256: string }[];
+  const cells = loadShapes().flatMap((s) => s.formats.map((f) => `${s.id}.${f}`)).sort();
+  assert.deepEqual(manifest.map((m) => m.file), cells);
+  assert.deepEqual(readdirSync(OUT_DIR).sort(), cells);
+  for (const m of manifest) assert.equal(createHash('sha256').update(readFileSync(path.join(OUT_DIR, m.file))).digest('hex'), m.sha256, m.file);
+});
+
+test('buildAll output matches the committed files', async () => {
+  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  assert.deepEqual((await buildAll()).map(({ file, shape, format, sha256 }) => ({ file, shape, format, sha256 })), manifest);
 });

@@ -1,0 +1,20 @@
+---
+title: Look Closely
+author: Ada Marsh
+---
+
+# Activity 1: Count the Boats
+
+Look at the harbour picture. How many boats have a red sail? ____
+
+How many have no sail at all? ____
+
+Draw the boat you would like to sail in.
+
+# Activity 2: Name the Colours
+
+The lighthouse is painted ____ and ____.
+
+The door at the bottom is ____.
+
+What colour would you paint it? ________
