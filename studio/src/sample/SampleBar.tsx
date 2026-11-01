@@ -214,7 +214,9 @@ export function SampleBar({ openHistory }: { openHistory?: () => void } = {}) {
           {t('newbook.btn')}
         </button>
       )}
-      {/* BEUK:tour — the replay link; tour/tour.ts starts it (1.0's tourInit listens on #btnTourAgain) */}
+      {/* BEUK:tour — the replay link; tour/tour.ts starts it (1.0's tourInit listens on #btnTourAgain). The space is
+          1.0's: its two links are inline-blocks with a line break between them in the markup */}
+      {' '}
       <button type="button" className="tour-again" id="btnTourAgain">
         {t('tour.show')}
       </button>
