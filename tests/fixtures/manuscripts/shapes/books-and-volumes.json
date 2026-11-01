@@ -1,0 +1,157 @@
+{
+  "id": "books-and-volumes",
+  "from": "scratch",
+  "formats": [
+    "docx",
+    "pdf",
+    "rtf",
+    "txt",
+    "md"
+  ],
+  "blocks": [
+    {
+      "t": "title",
+      "text": "The Lantern Keeper"
+    },
+    {
+      "t": "byline",
+      "text": "by Ada Marsh"
+    },
+    {
+      "t": "heading",
+      "text": "Book One: The Coast",
+      "level": 1
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 1: The Harbour",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The harbour was quiet before the boats went out, and the gulls stood on the posts like people waiting for a bus."
+    },
+    {
+      "t": "para",
+      "text": "Nell walked the length of the sea wall twice, counting the lamps, and then sat on the steps to watch the tide come in."
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 2: The Storm",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The storm came up from the south in the afternoon, grey at first and then the colour of slate."
+    },
+    {
+      "t": "para",
+      "text": "By supper the windows rattled in their frames, and the fire leaned sideways in the grate whenever the door was opened."
+    },
+    {
+      "t": "heading",
+      "text": "Book Two: The Hills",
+      "level": 1
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 3: The Gate",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The orchard behind the house had seven trees, and each one had a name that only the family used."
+    },
+    {
+      "t": "para",
+      "text": "The well in the yard had been dry for years, but the bucket still hung over it on its rope."
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 4: The Orchard",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The stair to the attic creaked on every third step, so that anyone climbing it played the same slow tune."
+    },
+    {
+      "t": "para",
+      "text": "Her uncle kept the lighthouse on the point, and every evening he climbed the hundred and twelve steps with a can of oil."
+    },
+    {
+      "t": "heading",
+      "text": "Volume III: The River",
+      "level": 1
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 5: The Bridge",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "Nobody slept much that night. In the morning the beach was covered in weed and broken crates and one very surprised crab."
+    },
+    {
+      "t": "para",
+      "text": "The light turned all night, as it always had, though no ship came close enough to need it."
+    }
+  ],
+  "expected": {
+    "meta": {
+      "title": "The Lantern Keeper",
+      "author": "Ada Marsh"
+    },
+    "sections": [
+      {
+        "kind": "body",
+        "type": "part",
+        "number": 1,
+        "title": "The Coast"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 1,
+        "title": "The Harbour"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 2,
+        "title": "The Storm"
+      },
+      {
+        "kind": "body",
+        "type": "part",
+        "number": 2,
+        "title": "The Hills"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 3,
+        "title": "The Gate"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 4,
+        "title": "The Orchard"
+      },
+      {
+        "kind": "body",
+        "type": "part",
+        "number": 3,
+        "title": "The River"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 5,
+        "title": "The Bridge"
+      }
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "id": "worksheet",
+  "from": "marketbooks",
+  "formats": [
+    "docx",
+    "pdf",
+    "rtf",
+    "txt",
+    "md"
+  ],
+  "blocks": [
+    {
+      "t": "title",
+      "text": "Look Closely"
+    },
+    {
+      "t": "byline",
+      "text": "by Ada Marsh"
+    },
+    {
+      "t": "heading",
+      "text": "Activity 1: Count the Boats",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "Look at the harbour picture. How many boats have a red sail? ____"
+    },
+    {
+      "t": "para",
+      "text": "How many have no sail at all? ____"
+    },
+    {
+      "t": "para",
+      "text": "Draw the boat you would like to sail in."
+    },
+    {
+      "t": "heading",
+      "text": "Activity 2: Name the Colours",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The lighthouse is painted ____ and ____."
+    },
+    {
+      "t": "para",
+      "text": "The door at the bottom is ____."
+    },
+    {
+      "t": "para",
+      "text": "What colour would you paint it? ________"
+    }
+  ],
+  "expected": {
+    "meta": {
+      "title": "Look Closely",
+      "author": "Ada Marsh"
+    },
+    "sections": [
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 1,
+        "title": "Count the Boats"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 2,
+        "title": "Name the Colours"
+      }
+    ]
+  }
+}

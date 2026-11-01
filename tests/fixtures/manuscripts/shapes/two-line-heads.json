@@ -1,0 +1,80 @@
+{
+  "id": "two-line-heads",
+  "from": "marketbooks",
+  "formats": [
+    "docx",
+    "pdf"
+  ],
+  "blocks": [
+    {
+      "t": "title",
+      "text": "The Lantern Keeper"
+    },
+    {
+      "t": "byline",
+      "text": "by Ada Marsh"
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 1: The Long Way Home",
+      "level": 1,
+      "lines": [
+        "Chapter 1",
+        "The Long Way Home"
+      ]
+    },
+    {
+      "t": "para",
+      "text": "The harbour was quiet before the boats went out, and the gulls stood on the posts like people waiting for a bus."
+    },
+    {
+      "t": "para",
+      "text": "Nell walked the length of the sea wall twice, counting the lamps, and then sat on the steps to watch the tide come in."
+    },
+    {
+      "t": "para",
+      "text": "Her uncle kept the lighthouse on the point, and every evening he climbed the hundred and twelve steps with a can of oil."
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 2: The Gate at the End of the Lane",
+      "level": 1,
+      "lines": [
+        "Chapter 2: The Gate at the",
+        "End of the Lane"
+      ]
+    },
+    {
+      "t": "para",
+      "text": "The storm came up from the south in the afternoon, grey at first and then the colour of slate."
+    },
+    {
+      "t": "para",
+      "text": "By supper the windows rattled in their frames, and the fire leaned sideways in the grate whenever the door was opened."
+    },
+    {
+      "t": "para",
+      "text": "Nobody slept much that night. In the morning the beach was covered in weed and broken crates and one very surprised crab."
+    }
+  ],
+  "expected": {
+    "meta": {
+      "title": "The Lantern Keeper",
+      "author": "Ada Marsh"
+    },
+    "sections": [
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 1,
+        "title": "The Long Way Home"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 2,
+        "title": "The Gate at the End of the Lane"
+      }
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "id": "bare-numbers-roman",
+  "from": "scratch",
+  "formats": [
+    "docx",
+    "pdf",
+    "rtf",
+    "txt",
+    "md"
+  ],
+  "blocks": [
+    {
+      "t": "title",
+      "text": "The Lantern Keeper"
+    },
+    {
+      "t": "byline",
+      "text": "by Ada Marsh"
+    },
+    {
+      "t": "heading",
+      "text": "I.",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The harbour was quiet before the boats went out, and the gulls stood on the posts like people waiting for a bus."
+    },
+    {
+      "t": "para",
+      "text": "Nell walked the length of the sea wall twice, counting the lamps, and then sat on the steps to watch the tide come in."
+    },
+    {
+      "t": "para",
+      "text": "Her uncle kept the lighthouse on the point, and every evening he climbed the hundred and twelve steps with a can of oil."
+    },
+    {
+      "t": "heading",
+      "text": "II.",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The storm came up from the south in the afternoon, grey at first and then the colour of slate."
+    },
+    {
+      "t": "para",
+      "text": "By supper the windows rattled in their frames, and the fire leaned sideways in the grate whenever the door was opened."
+    },
+    {
+      "t": "para",
+      "text": "Nobody slept much that night. In the morning the beach was covered in weed and broken crates and one very surprised crab."
+    },
+    {
+      "t": "heading",
+      "text": "III.",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The light turned all night, as it always had, though no ship came close enough to need it."
+    },
+    {
+      "t": "para",
+      "text": "In the spring the painters came to give the tower a new white coat, and Nell carried their brushes up and down the stair."
+    },
+    {
+      "t": "para",
+      "text": "At the top the wind was so strong that she had to hold the rail with both hands and shout to be heard."
+    }
+  ],
+  "expected": {
+    "meta": {
+      "title": "The Lantern Keeper",
+      "author": "Ada Marsh"
+    },
+    "sections": [
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 1,
+        "title": ""
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 2,
+        "title": ""
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 3,
+        "title": ""
+      }
+    ]
+  }
+}

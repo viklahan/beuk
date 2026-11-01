@@ -1,0 +1,86 @@
+{
+  "id": "empty-chapter",
+  "from": "scratch",
+  "formats": [
+    "docx",
+    "pdf",
+    "rtf",
+    "txt",
+    "md"
+  ],
+  "blocks": [
+    {
+      "t": "title",
+      "text": "The Lantern Keeper"
+    },
+    {
+      "t": "byline",
+      "text": "by Ada Marsh"
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 1: The Well",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The well in the yard had been dry for years, but the bucket still hung over it on its rope."
+    },
+    {
+      "t": "para",
+      "text": "The harbour was quiet before the boats went out, and the gulls stood on the posts like people waiting for a bus."
+    },
+    {
+      "t": "para",
+      "text": "Nell walked the length of the sea wall twice, counting the lamps, and then sat on the steps to watch the tide come in."
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 2: The Empty Room",
+      "level": 1
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 3: The Stair",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The stair to the attic creaked on every third step, so that anyone climbing it played the same slow tune."
+    },
+    {
+      "t": "para",
+      "text": "Her uncle kept the lighthouse on the point, and every evening he climbed the hundred and twelve steps with a can of oil."
+    },
+    {
+      "t": "para",
+      "text": "The storm came up from the south in the afternoon, grey at first and then the colour of slate."
+    }
+  ],
+  "expected": {
+    "meta": {
+      "title": "The Lantern Keeper",
+      "author": "Ada Marsh"
+    },
+    "sections": [
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 1,
+        "title": "The Well"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 2,
+        "title": "The Empty Room"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 3,
+        "title": "The Stair"
+      }
+    ]
+  }
+}

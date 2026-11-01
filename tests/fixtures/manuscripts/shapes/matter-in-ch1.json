@@ -1,0 +1,91 @@
+{
+  "id": "matter-in-ch1",
+  "from": "scratch",
+  "formats": [
+    "docx",
+    "pdf",
+    "rtf",
+    "txt",
+    "md"
+  ],
+  "blocks": [
+    {
+      "t": "title",
+      "text": "The Lantern Keeper"
+    },
+    {
+      "t": "byline",
+      "text": "by Ada Marsh"
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 1: The Orchard",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "For my sister, who kept the lamp lit."
+    },
+    {
+      "t": "para",
+      "text": "“Every road is a long one at night.” — an old saying"
+    },
+    {
+      "t": "para",
+      "text": "The orchard behind the house had seven trees, and each one had a name that only the family used."
+    },
+    {
+      "t": "para",
+      "text": "The harbour was quiet before the boats went out, and the gulls stood on the posts like people waiting for a bus."
+    },
+    {
+      "t": "para",
+      "text": "Nell walked the length of the sea wall twice, counting the lamps, and then sat on the steps to watch the tide come in."
+    },
+    {
+      "t": "heading",
+      "text": "Chapter 2: The Well",
+      "level": 1
+    },
+    {
+      "t": "para",
+      "text": "The well in the yard had been dry for years, but the bucket still hung over it on its rope."
+    },
+    {
+      "t": "para",
+      "text": "Her uncle kept the lighthouse on the point, and every evening he climbed the hundred and twelve steps with a can of oil."
+    },
+    {
+      "t": "para",
+      "text": "The storm came up from the south in the afternoon, grey at first and then the colour of slate."
+    }
+  ],
+  "expected": {
+    "meta": {
+      "title": "The Lantern Keeper",
+      "author": "Ada Marsh"
+    },
+    "sections": [
+      {
+        "kind": "front",
+        "type": "dedication"
+      },
+      {
+        "kind": "front",
+        "type": "epigraph"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 1,
+        "title": "The Orchard"
+      },
+      {
+        "kind": "body",
+        "type": "chapter",
+        "number": 2,
+        "title": "The Well"
+      }
+    ]
+  }
+}

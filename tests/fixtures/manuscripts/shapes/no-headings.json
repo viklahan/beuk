@@ -1,0 +1,28 @@
+{
+  "id": "no-headings",
+  "from": "scratch",
+  "formats": [
+    "docx",
+    "pdf",
+    "rtf",
+    "txt",
+    "md"
+  ],
+  "blocks": [
+    {
+      "t": "filler",
+      "seed": 11,
+      "words": 9000
+    }
+  ],
+  "expected": {
+    "sections": [
+      {
+        "kind": "body",
+        "type": "chapter",
+        "title": "",
+        "breaks": 0
+      }
+    ]
+  }
+}
