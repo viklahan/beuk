@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import en from '../src/generated/packs/en.json';
 import { App } from '../src/App';
+import { importToDevice } from '../src/book/store';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { fixtures } from './fixtures';
 
@@ -139,5 +140,62 @@ describe('the backup replace and History, in the studio (review focus #1)', () =
     expect(JSON.stringify(strip(back))).toBe(JSON.stringify(strip(oldBook)));
     // focus is not lost in a closed dialog
     expect(document.querySelector('.modal-back.open')).toBeNull();
+  }, 120_000);
+});
+
+describe('fix round 1: a whole restore never overwrites a newer generation', () => {
+  it('another tab opens a backup of the book while the Restore confirm waits: Yes then replaces nothing, the newer generation stays', async () => {
+    const A = fixtures('real').find((f) => f.name === 'real/lunas-beach-standalone')!;
+    render(
+      <LocaleProvider initial="en">
+        <App />
+      </LocaleProvider>,
+    );
+    await waitFor(() => expect(document.getElementById('btnOpenBackup')).not.toBeNull(), { timeout: 10_000 });
+    await act(async () => {
+      fireEvent.change(document.querySelector('#btnOpenBackup + input')!, { target: { files: [backupFile(A.book, 'a.beuk-backup.json')] } });
+    });
+    await waitFor(() => expect(document.querySelector('.desk')).not.toBeNull(), { timeout: 20_000 });
+    const mine = await exported();
+    // a named snapshot to restore
+    await act(async () => {
+      fireEvent.click(document.getElementById('btnHistory')!);
+    });
+    await waitFor(() => expect(document.getElementById('btnHistSave')).not.toBeNull());
+    await waitFor(() => expect((document.getElementById('btnHistSave') as HTMLButtonElement).disabled).toBe(false), { timeout: 10_000 });
+    await act(async () => {
+      fireEvent.change(document.getElementById('histNameInput')!, { target: { value: 'Mine' } });
+    });
+    await act(async () => {
+      fireEvent.click(document.getElementById('btnHistSave')!);
+    });
+    await waitFor(() => expect(document.querySelector('#historyList [data-hopen]')).not.toBeNull());
+    await act(async () => {
+      fireEvent.click(document.querySelector('#historyList [data-hopen]')!);
+    });
+    await act(async () => {
+      fireEvent.click(document.querySelector('#historyDetail [data-hrestore]')!);
+    });
+    await waitFor(() => expect(document.getElementById('btnConfirmYes')).not.toBeNull());
+
+    // "tab 2" (another OpenBook in this process, over Node's BroadcastChannel) opens a newer copy of the same book
+    const newer = JSON.parse(JSON.stringify(mine)) as Rec;
+    (newer.meta as Rec).title = 'Written in tab 2';
+    const tab2 = await importToDevice(newer);
+    try {
+      await waitFor(() => expect(document.getElementById('projectTitleDisplay')!.textContent).toBe('Written in tab 2'), { timeout: 20_000 });
+      // the confirm is still waiting; tab 1 says yes
+      await act(async () => {
+        fireEvent.click(document.getElementById('btnConfirmYes')!);
+      });
+      await waitFor(() => expect(toastText()).toContain(E['next.snapshotGone'] ?? 'That snapshot is no longer here'), { timeout: 10_000 });
+      expect(document.getElementById('projectTitleDisplay')!.textContent).toBe('Written in tab 2');
+      const now = await exported();
+      expect(JSON.stringify(now)).toBe(JSON.stringify(tab2.export()));
+      const gens = (await indexedDB.databases()).map((d) => d.name).filter((n) => n?.startsWith('beuk-next-book-'));
+      expect(gens).toEqual([`beuk-next-book-${tab2.id}-${tab2.epoch}`]); // the newer generation, and no other
+    } finally {
+      await tab2.close();
+    }
   }, 120_000);
 });

@@ -434,3 +434,34 @@ describe('review focus #1: a replace you can undo (through the store)', () => {
     expect(backupArrival(c, null, f.book as Rec, read)).toBe(read);
   });
 });
+
+describe('fix round 1: a snapshot stored without an id', () => {
+  it('gets the same id on every read (its place in the list), nothing is written on open, and it can be deleted and restored', () => {
+    const one = ch('One', '1', 'first words');
+    const y = desk([one]);
+    saveNamed(c, y, 'Older');
+    edit(y, one.id, { content: 'second words here' });
+    saveNamed(c, y, 'Newer');
+    const book = JSON.parse(JSON.stringify(exportBook(y))) as Rec;
+    const h = book.history as Rec[];
+    delete h[1]!.id; // "Older", as some old studio could have stored it
+    const y2 = reopen(book);
+    let n = 0;
+    y2.on('update', () => n++);
+    const ids1 = history(y2).map((s) => s.id), ids2 = history(y2).map((s) => s.id);
+    expect(ids1).toEqual(ids2);
+    expect(ids1[1]).toBe('hist-1');
+    expect(n).toBe(0);
+    // restore the id-less one (whole book), then delete it
+    const back = reopen(restoreDoc(c, y2, 'hist-1')!);
+    expect(sections(back).find((x) => x.id === one.id)!.content).toBe('first words');
+    expect(restoreSection(c, y2, 'hist-1', one.id)).not.toBeNull();
+    expect(sec(y2, one.id)!.content).toBe('first words');
+    const names = () => history(y2).map((s) => s.name);
+    expect(names()).toContain('Older');
+    const olderId = history(y2).find((s) => s.name === 'Older')!.id; // the History write above persisted its id
+    expect(olderId).toBe('hist-1');
+    expect(deleteSnapshot(c, y2, olderId)).toBe(true);
+    expect(names()).not.toContain('Older');
+  });
+});

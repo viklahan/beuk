@@ -45,10 +45,26 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 /** The open book as 1.0's state, with History unpacked (1.0's applyBookDoc: normalizeHistory(doc.history, doc.historyPool)). */
 export type Live = { book: Rec; state: State & { history: HistoryEntry[] } };
 
+/** Book history entries as normalizeHistory should see them: an entry without an id gets one from its place in the
+ *  stored list ("hist-<n>"), so the same entry has the same id on every read (1.0 mints a random uid() on each load,
+ *  which 2.0 cannot keep between reads without writing). Nothing is written: the id reaches the book only with the
+ *  next History write, as 1.0's minted id reaches it with its next save. */
+export function withStableIds(list: unknown): unknown {
+  if (!Array.isArray(list)) return list;
+  const used = new Set(list.flatMap((e) => (isRec(e) && typeof e.id === 'string' && e.id ? [e.id] : [])));
+  return list.map((e, i) => {
+    if (!isRec(e) || (typeof e.id === 'string' && e.id)) return e;
+    let id = 'hist-' + i;
+    while (used.has(id)) id += '-';
+    used.add(id);
+    return { ...e, id };
+  });
+}
+
 export function live(c: Closure, ydoc: Y.Doc): Live {
   const { book, state } = bookState(c, ydoc);
   c.setState(state);
-  state.history = c.api.normalizeHistory(book.history, book.historyPool);
+  state.history = c.api.normalizeHistory(withStableIds(book.history), book.historyPool);
   return { book, state: state as Live['state'] };
 }
 
@@ -259,7 +275,7 @@ export function backupArrival(c: Closure, ydoc: Y.Doc | null, raw: Rec, read: Re
   if (!snap && (carries || !sameBook || !deskHistory.length)) return read;
   const state = stateFromBook(c, read) as Live['state'];
   c.setState(state);
-  let history: HistoryEntry[] = carries ? c.api.normalizeHistory(read.history, read.historyPool) : sameBook ? deskHistory : [];
+  let history: HistoryEntry[] = carries ? c.api.normalizeHistory(withStableIds(read.history), read.historyPool) : sameBook ? deskHistory : [];
   if (snap) {
     state.history = [snap].concat(history.filter((s) => s.id !== snap!.id));
     c.api.pruneAutoSnapshots();

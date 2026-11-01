@@ -149,8 +149,15 @@ export function HistoryDialog({ open, onClose }: { open: boolean; onClose: () =>
   }, [viewId, L, snap]);
   const nowWords = L && c ? (c.setState(L.state), c.api.bookWordTotal()) : 0;
 
+  /** The snapshot (or the book) is gone: say so, and show the list as it now stands. */
+  const gone = () => {
+    setViewId(null);
+    setPeekId(null);
+    setTick((n) => n + 1);
+    toast(t('next.snapshotGone'), 'Info');
+  };
   const doSave = () => {
-    if (!c || !ydoc) return;
+    if (!c || !ydoc || !bk.isLive(ydoc)) return;
     saveNamed(c, ydoc, name);
     setName('');
     setViewId(null);
@@ -163,11 +170,12 @@ export function HistoryDialog({ open, onClose }: { open: boolean; onClose: () =>
     const s = snaps.find((x) => x.id === id);
     const ok = await confirm({ title: t('history.delTitle'), body: t('history.delBody', { name: s ? snapshotLabel(s, t) : '' }), yes: t('history.delete'), no: t('confirm.keep') });
     if (ok !== true) return;
+    // the book this room read must still be the live one (another tab may have replaced it while the confirm waited)
+    if (!bk.isLive(ydoc) || !deleteSnapshot(c, ydoc, id)) return gone();
     if (viewId === id) {
       setViewId(null);
       setPeekId(null);
     }
-    deleteSnapshot(c, ydoc, id);
     setTick((n) => n + 1);
   };
   const askRestore = async (id: string) => {
@@ -181,20 +189,28 @@ export function HistoryDialog({ open, onClose }: { open: boolean; onClose: () =>
       yes: t('history.restoreAll'),
       no: t('confirm.keep'),
     });
-    if (ok !== true || !bk.book || bk.book.ydoc !== ydoc) return;
+    if (ok !== true) return;
+    /* `ydoc` is the book this room read when Restore was clicked. While the confirm waited another tab may have opened
+       a backup: this tab then moved to the newer generation and destroyed that Y.Doc. Restoring from it would replace the
+       newer book with a stale one (and delete the newer generation), so ask the provider, live, first. */
+    if (!bk.isLive(ydoc)) return gone();
     const doc = restoreDoc(c, ydoc, id);
-    if (!doc) return;
-    if (await bk.replaceBook(doc)) {
-      setViewId(null);
-      setPeekId(null);
-      onClose();
-      toast(t('history.restoredToast'), 'History');
+    if (!doc) return gone();
+    const done = await bk.replaceBook(doc, ydoc);
+    if (!done) {
+      if (!bk.isLive(ydoc)) gone(); // replaced meanwhile: nothing written; a storage failure has had its own toast
+      return;
     }
+    setViewId(null);
+    setPeekId(null);
+    onClose();
+    toast(t('history.restoredToast'), 'History');
   };
   const doRestoreSection = (secId: string) => {
     if (!c || !ydoc || !viewId) return;
+    if (!bk.isLive(ydoc)) return gone();
     const at = restoreSection(c, ydoc, viewId, secId);
-    if (at === null) return;
+    if (at === null) return gone();
     bk.select(at); // 1.0: state.activeId = restored.id (the desk shows it); 2.0 never writes activeId on a selection
     setTick((n) => n + 1);
     toast(t('history.sectionRestoredToast'), 'History');

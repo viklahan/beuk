@@ -55,7 +55,13 @@ export type BookApi = {
   select: (index: number | null) => void;
   openBackupFile: (file: File) => Promise<void>;
   /** Open `doc` (a book document) in place of the open book, as a new generation (a whole-book History restore). */
-  replaceBook: (doc: Record<string, unknown>) => Promise<boolean>;
+  /** Open `doc` in place of the open book as a new generation (a whole-book History restore). `from` is the Y.Doc the
+   *  caller read: when it is no longer the live book (another tab replaced it while a confirm waited), nothing is
+   *  replaced and this resolves false without a toast (the caller says so). */
+  replaceBook: (doc: Record<string, unknown>, from: Y.Doc) => Promise<boolean>;
+  /** Is this Y.Doc still the live, current book of this tab (not replaced, not stale)? Read at call time, never from a
+   *  render: an async path that awaited a confirm asks this before it writes. */
+  isLive: (ydoc: Y.Doc | null) => boolean;
   exportBackup: () => void;
 };
 
@@ -219,7 +225,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
           if (!c.api.isEmptyDesk()) {
             const title = String(L.state.meta.title || '') || t('misc.untitledBook');
             const ok = await confirm({ title: t('local.backupConfirmTitle'), body: t('local.backupConfirmBody', { title }), yes: t('local.backupConfirmYes'), no: t('confirm.keep') });
-            if (ok !== true || current.current !== open) return;
+            // another tab may have replaced the book while the confirm waited: then this tab now holds a newer generation
+            if (ok !== true || current.current !== open || open.isStale) return;
           }
           const arrived = backupArrival(c, open.ydoc, raw, readDoc);
           if (arrived !== readDoc) doc = arrived;
@@ -240,8 +247,14 @@ export function BookProvider({ children }: { children: ReactNode }) {
     [replace, confirm, toast, t],
   );
 
+  const isLive = useCallback((ydoc: Y.Doc | null) => {
+    const b = current.current;
+    return !!ydoc && !!b && b.ydoc === ydoc && !b.isStale;
+  }, []);
+
   const replaceBook = useCallback(
-    async (doc: Record<string, unknown>) => {
+    async (doc: Record<string, unknown>, from: Y.Doc) => {
+      if (!isLive(from)) return false;
       try {
         await replace(doc);
         return true;
@@ -250,7 +263,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [replace, toast, t],
+    [replace, toast, t, isLive],
   );
 
   const exportBackup = useCallback(() => {
@@ -282,11 +295,12 @@ export function BookProvider({ children }: { children: ReactNode }) {
       select: setActive,
       openBackupFile,
       replaceBook,
+      isLive,
       exportBackup,
     };
     // rev: the book's meta or sections changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, book, rev, active, t, openBackupFile, replaceBook, exportBackup]);
+  }, [phase, book, rev, active, t, openBackupFile, replaceBook, isLive, exportBackup]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }
