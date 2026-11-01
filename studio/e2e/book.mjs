@@ -103,6 +103,7 @@ async function newContext(opts = {}) {
   return ctx;
 }
 async function watch(page) {
+  page.on('crash', () => csp.errors.push(`${page.url()}: the page CRASHED`));
   page.on('pageerror', (e) => csp.errors.push(`${page.url()}: ${e}`));
   page.on('console', (m) => {
     if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of 404|net::ERR_INTERNET_DISCONNECTED/.test(m.text())) csp.errors.push(`${page.url()}: ${m.text()}`);
@@ -243,6 +244,21 @@ async function readOnlyRooms(page) {
   await page.click('#btnCloseNotebook');
   await page.waitForSelector('#modalNotebook', { state: 'detached', timeout: 10_000 });
   done.push('Notebook');
+  // wave 2b: Insert Image, browsed (a picture chosen, Full-bleed pressed), then closed without placing anything; a
+  // generated section answers with 1.0's toast instead (the "used in" confirm's Cancel: wave2bChecks and the vitest)
+  if (await page.$('#btnInsertImage')) {
+    await page.click('#btnInsertImage');
+    const opened = await page.waitForFunction(() => (document.querySelector('#modalImage #imgLib') ? 'open' : [...document.querySelectorAll('#toasts .toast')].some((x) => x.textContent.includes('generated automatically')) ? 'refused' : null), null, { timeout: 10_000 })
+      .then((h) => h.jsonValue()).then((v) => v === 'open');
+    if (opened) {
+      const cells = await page.$$('#imgLib [data-libimg]');
+      if (cells.length) await cells[0].click();
+      await page.click('[data-imgdisp="full"]');
+      await page.click('#btnCloseImage');
+      await page.waitForSelector('#modalImage', { state: 'detached', timeout: 10_000 });
+      done.push('Insert Image (' + cells.length + ' pictures)');
+    } else done.push('Insert Image (refused: a generated section)');
+  }
   return done.join(' + ');
 }
 
@@ -1150,6 +1166,345 @@ async function wave2aChecks(origin) {
   }
 }
 
+/* ---- wave 2b: pictures (A6-A8) ---- */
+const W2B_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const W2B_TEXTS = [
+  'The harbour woke early.\n\nGulls rose over the wall.\n\nThe ferry waited.',
+  'One line only',
+  'First.\n\n***\n\nSecond part.\n\n***\n\nThird part ends.',
+];
+/** A PNG-headed picture of n bytes (40 x 30 stated), distinct per seed, as base64. */
+function w2bPng(seed, n) {
+  const b = Buffer.alloc(n);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 40, 0, 0, 0, 30]).copy(b);
+  let x = seed >>> 0;
+  for (let i = 24; i < n; i++) {
+    x = (x * 1103515245 + 12345) >>> 0;
+    b[i] = x >>> 24;
+  }
+  return b.toString('base64');
+}
+/** Select the nth scene break node of the open chapter (what a click on the break does). */
+async function w2bStandOn(page, nth) {
+  return page.evaluate((nth) => {
+    const ed = document.getElementById('manuscript').beukEditor;
+    let seen = -1, at = -1;
+    ed.state.doc.forEach((n, off) => {
+      if (n.type.name === 'sceneBreak' && ++seen === nth && at < 0) at = off;
+    });
+    if (at >= 0) ed.commands.setNodeSelection(at);
+    return at;
+  }, nth);
+}
+/** The backup download while a dialog stands over the top bar (the button clicked from the page itself). */
+async function w2bExport(page) {
+  const dl = page.waitForEvent('download', { timeout: 60_000 });
+  await page.evaluate(() => document.getElementById('btnExport').click());
+  const d = await dl;
+  return JSON.parse(readFileSync(await d.path(), 'utf8'));
+}
+async function wave2bChecks(origin) {
+  const book = {
+    meta: { title: 'Picture Book', author: 'A. Writer', language: 'en' },
+    images: [
+      { id: 'p1', name: 'Harbour-Chart.png', mediaType: 'image/png', ext: 'png', data: w2bPng(1, 6000) },
+      { id: 'p2', name: 'second_bay.png', mediaType: 'image/png', ext: 'png', data: w2bPng(2, 5000) },
+      { id: 'p3', name: 'Third Bay.png', mediaType: 'image/png', ext: 'png', data: W2B_PNG },
+    ],
+    sections: W2B_TEXTS.map((content, i) => ({ id: 'q' + i, kind: 'body', type: 'chapter', number: String(i + 1), title: 'Chapter ' + (i + 1), content })),
+  };
+  const file = path.join(OUT, 'wave2b.beuk-backup.json');
+  writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: '2026-11-01T00:00:00.000Z', book }));
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, file);
+    const before = await exportBackup(page);
+    const one = await watch(await ctx.newPage());
+    await one.goto(origin + '/studio');
+    await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), book);
+    const probe = (fn, ...args) => page.evaluate(({ fn, args }) => document.getElementById('manuscript').beukText[fn](...args), { fn, args });
+
+    /* #A7 Insert Image: 1.0's own page and 2.0, the same text and caret, the same choices: the same text */
+    const forms = [
+      { id: 'p2', alt: '', cap: '', full: false },
+      { id: 'p1', alt: 'The [old] chart', cap: 'A "quoted" cap', full: true },
+      { id: 'p3', alt: '   ', cap: '', full: false },
+    ];
+    let cases = 0, equal = 0, undone = 0;
+    const misses = [];
+    for (const [i, text] of W2B_TEXTS.entries()) {
+      await choose(page, i);
+      for (const at of [0, Math.floor(text.length / 2), text.length]) {
+        for (const f of forms) {
+          const cur = await probe('select', at, at);
+          const want = await one.evaluate(({ id, text, s, f }) => {
+            selectSection(id);
+            const area = document.getElementById('editorArea');
+            area.value = text;
+            area.dispatchEvent(new Event('input'));
+            area.focus();
+            area.setSelectionRange(s, s);
+            document.getElementById('btnInsertImage').click();
+            document.querySelector(`#imgLib [data-libimg="${f.id}"]`).click();
+            document.getElementById('imgAlt').value = f.alt;
+            document.getElementById('imgCaption').value = f.cap;
+            document.querySelector(`[data-imgdisp="${f.full ? 'full' : 'standard'}"]`).click();
+            document.getElementById('btnDoInsertImage').click();
+            return area.value;
+          }, { id: 'q' + i, text: cur.text, s: cur.start, f });
+          await page.click('#btnInsertImage');
+          await page.waitForSelector(`#imgLib [data-libimg="${f.id}"]`);
+          await page.click(`#imgLib [data-libimg="${f.id}"]`);
+          await page.fill('#imgAlt', f.alt);
+          await page.fill('#imgCaption', f.cap);
+          await page.click(`[data-imgdisp="${f.full ? 'full' : 'standard'}"]`);
+          await page.click('#btnDoInsertImage');
+          await page.waitForSelector('#modalImage', { state: 'detached' });
+          const got = await probe('read');
+          cases++;
+          if (got.text === want) equal++;
+          else if (misses.length < 3) misses.push({ text: cur.text, at: cur.start, f, want, got: got.text });
+          await page.keyboard.press('Control+z');
+          if ((await probe('read')).text === cur.text) undone++;
+        }
+      }
+    }
+    check(cases === 27 && equal === cases, `wave 2b #A7 editor.toolbar.image-line: Insert Image in 2.0 places exactly the marker 1.0's own page places for the same text, caret and choices (${equal} of ${cases})${misses.length ? ' ' + JSON.stringify(misses) : ''}`);
+    check(undone === cases, `wave 2b #A7: one Ctrl+Z after each placement gives the text back (${undone} of ${cases})`);
+    const afterInsert = await exportBackup(page);
+    check(JSON.stringify(noHistory(afterInsert.json.book)) === JSON.stringify(noHistory(before.json.book)), 'wave 2b #A7: after the placements and their undos the export is exactly the original');
+
+    /* #A6 scene images: 1.0's picker and 2.0's, the same breaks and choices: the same scene entries; the text unchanged */
+    const SC = [
+      { nth: 0, img: 'p1', name: 'The First Bay', alt: '', cap: 'The first bay.' },
+      { nth: 1, img: 'p2', name: '', alt: 'The second bay at dusk', cap: '' },
+      { nth: 0, img: 'p3', name: 'Again', alt: '', cap: '' }, // replace break 0 (the alt it had stays)
+    ];
+    await choose(page, 2);
+    const want = await one.evaluate(({ SC, text }) => {
+      selectSection('q2');
+      const area = document.getElementById('editorArea');
+      area.value = text;
+      area.dispatchEvent(new Event('input'));
+      const s = activeSection();
+      for (const k of SC) {
+        let pos = -1;
+        for (let i = 0; i <= k.nth; i++) pos = area.value.indexOf('***', pos + 1);
+        area.focus();
+        area.setSelectionRange(pos + 1, pos + 1);
+        sceneBarSig = '';
+        updateSceneBar();
+        document.getElementById('btnSceneAdd').click();
+        document.querySelector(`#sceneLib [data-sceneimg="${k.img}"]`).click();
+        document.getElementById('sceneName').value = k.name;
+        if (k.alt) document.getElementById('sceneAlt').value = k.alt;
+        document.getElementById('sceneCaption').value = k.cap;
+        document.getElementById('btnDoScene').click();
+      }
+      return { scenes: JSON.parse(JSON.stringify(s.scenes || [])), label: document.getElementById('sceneBarLabel').textContent };
+    }, { SC, text: W2B_TEXTS[2] });
+    for (const k of SC) {
+      await w2bStandOn(page, k.nth);
+      await page.waitForSelector('#sceneBar.open');
+      await page.click('#btnSceneAdd');
+      await page.waitForSelector(`#sceneLib [data-sceneimg="${k.img}"]`);
+      await page.click(`#sceneLib [data-sceneimg="${k.img}"]`);
+      await page.fill('#sceneName', k.name);
+      if (k.alt) await page.fill('#sceneAlt', k.alt);
+      await page.fill('#sceneCaption', k.cap);
+      await page.click('#btnDoScene');
+      await page.waitForSelector('#modalScene', { state: 'detached' });
+    }
+    await page.waitForFunction((l) => document.getElementById('sceneBarLabel').textContent === l, want.label, { timeout: 5000 }).catch(() => undefined);
+    const label2 = await page.textContent('#sceneBarLabel');
+    const sc = (await exportBackup(page)).json.book;
+    const s2 = sc.sections.find((s) => s.id === 'q2');
+    check(JSON.stringify(s2.scenes) === JSON.stringify(want.scenes) && s2.content === W2B_TEXTS[2] && label2 === want.label,
+      `wave 2b #A6 scene.images.place: the scene entries 2.0 writes equal 1.0's own picker's (${JSON.stringify(s2.scenes)}${JSON.stringify(s2.scenes) === JSON.stringify(want.scenes) ? '' : ' vs 1.0 ' + JSON.stringify(want.scenes)}), the bar reads as 1.0's ("${label2}" / "${want.label}"), the text never changes`);
+    await page.click('#btnSceneRemove');
+    const s3 = (await exportBackup(page)).json.book.sections.find((s) => s.id === 'q2');
+    check(s3.scenes.length === 1 && s3.scenes[0].at === 1, `wave 2b #A6: Remove on the bar takes break 1's picture only (${JSON.stringify(s3.scenes)})`);
+
+    /* #A8 the library: a used picture asks, Remove it everywhere, Undo: back exactly */
+    const preLib = await exportBackup(page);
+    await choose(page, 0);
+    await page.click('#btnInsertImage');
+    await page.waitForSelector('#imgLib [data-imgdel="p2"]');
+    await page.evaluate(() => document.querySelector('#imgLib [data-imgdel="p2"]').click());
+    await page.waitForSelector('#modalImgRemove');
+    const uses = await page.textContent('#imgRmUses');
+    const focusCancel = await page.evaluate(() => document.activeElement?.id);
+    await page.click('#btnImgRmYes');
+    await page.waitForSelector('#modalImgRemove', { state: 'detached' });
+    const gone = (await w2bExport(page)).book;
+    await page.locator('#toasts .toast-action').last().click();
+    await page.waitForFunction(() => document.querySelector('#imgLib [data-libimg="p2"]'));
+    const back = (await w2bExport(page)).book;
+    check(focusCancel === 'btnImgRmCancel' && uses.includes('Chapter 3') && !gone.images.some((x) => x.id === 'p2') && gone.history[0].auto === 'imgremove'
+      && JSON.stringify(noHistory(back)) === JSON.stringify(noHistory(preLib.json.book)),
+      `wave 2b #A8 images.delete.used-clears-roles in Chromium: the confirm lists "${uses.trim()}" with focus on Cancel (${focusCancel}); Remove it everywhere takes it out (History first); Undo gives the book back exactly`);
+    await page.click('#btnCloseImage');
+    await one.close();
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+
+  /* #4 hostile pictures: a malformed one, a scripted SVG, a pixel bomb, a 12 MB one, HTML: nothing runs, nothing breaks */
+  {
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="window.__pwned=1"><script>window.__pwned=2</script><rect width="10" height="10"/></svg>').toString('base64');
+    const bombB = Buffer.from(w2bPng(5, 400), 'base64');
+    bombB.writeUInt32BE(50000, 16);
+    bombB.writeUInt32BE(50000, 20);
+    const hostile = {
+      meta: { title: 'Hostile Pictures', author: 'X', language: 'en' },
+      images: [
+        { id: 'h1', name: 'bad.png', mediaType: 'image/png', data: '%%%garbage%%%' },
+        { id: 'h2', name: 'evil.svg', mediaType: 'image/svg+xml', ext: 'svg', data: svg },
+        { id: 'h3', name: 'bomb.png', mediaType: 'image/png', data: bombB.toString('base64') },
+        { id: 'h4', name: 'big.png', mediaType: 'image/png', ext: 'png', data: w2bPng(6, 12 * 1024 * 1024) },
+        { id: 'h5', name: 'html.png', mediaType: 'text/html', data: Buffer.from('<img src=x onerror="window.__pwned=3">').toString('base64') },
+      ],
+      sections: [{ id: 'x1', kind: 'body', type: 'chapter', title: 'One', content: 'Words.\n\n![a](img:h1)\n\n![b](img:h2)\n\n![c](img:h3)\n\n![d](img:h4)\n\n![e](img:h5)\n\n![f](img:nowhere)\n\n***\n\nEnd.', scenes: [{ at: 0, imageId: 'h2', name: '', caption: '', alt: 'x' }], plateId: 'h3', plateAlt: 'p' }],
+    };
+    const hf = path.join(OUT, 'wave2b-hostile.beuk-backup.json');
+    writeFileSync(hf, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: '2026-11-01T00:00:00.000Z', book: hostile }));
+    const ctx3 = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await openNext(ctx3, origin);
+      await openBackup(page, hf);
+      const b0 = await exportBackup(page);
+      await page.waitForSelector('#sectionImages .sec-img-row', { timeout: 20_000 });
+      const rowsN = await page.$$eval('#sectionImages .sec-img-row', (e) => e.length);
+      const missing = await page.$$eval('#sectionImages .si-missing', (e) => e.length);
+      await w2bStandOn(page, 0);
+      await page.waitForSelector('#sceneBar.open');
+      await page.click('#btnInsertImage');
+      await page.waitForSelector('#imgLib [data-libimg="h5"]');
+      const seen = await page.evaluate(() => {
+        const srcOf = (id) => document.querySelector(`#imgLib [data-libimg="${id}"] img`)?.getAttribute('src')?.slice(0, 26) ?? null;
+        return {
+          src: ['h1', 'h2', 'h3', 'h4', 'h5'].map(srcOf), bar: document.getElementById('sceneBarThumb').getAttribute('src')?.slice(0, 26) ?? null,
+          // an inline <svg> that is not one of the studio's own icons, where the book's pictures are drawn
+          svgs: document.querySelectorAll('#imgLib svg:not(.lucide), #sectionImages svg:not(.lucide), #sceneBar svg:not(.lucide), #editorMeta svg:not(.lucide)').length,
+          pageSvgs: [...document.querySelectorAll('svg:not(.lucide)')].map((x) => (x.id || x.getAttribute('class') || x.parentElement?.id || '?')).join(','),
+        };
+      });
+      await page.waitForTimeout(500);
+      const pwned = await page.evaluate(() => window.__pwned ?? null);
+      await page.click('#btnCloseImage');
+      const b1 = await exportBackup(page);
+      check(rowsN === 6 && missing === 4 && JSON.stringify(seen.src) === JSON.stringify([null, 'data:image/svg+xml;base64,', null, 'data:image/png;base64,iVBO', null]) && seen.bar === 'data:image/svg+xml;base64,'
+        && seen.svgs === 0 && pwned === null && JSON.stringify(b1.json.book) === JSON.stringify(b0.json.book),
+        `wave 2b #4 hostile pictures: the card (${rowsN} rows, ${missing} "missing": malformed, pixel bomb, HTML, not in the library), the library (${JSON.stringify(seen.src)}), the scene bar's SVG only as an <img> (${seen.bar}); no inline SVG made where pictures are drawn (${seen.svgs}; the page's own non-Lucide svgs: ${seen.pageSvgs || 'none'}), nothing ran (${pwned}); the export unchanged`);
+      await harvestCsp(page);
+    } finally {
+      await ctx3.close();
+    }
+  }
+
+  /* #5 memory, and constraint 16 the stock search, on the sample book */
+  const ctx2 = await newContext({ serviceWorkers: 'block' });
+  await ctx2.addInitScript(() => {
+    window.__blobs = { made: 0, revoked: 0 };
+    const mk = URL.createObjectURL.bind(URL), rv = URL.revokeObjectURL.bind(URL);
+    URL.createObjectURL = (o) => {
+      window.__blobs.made++;
+      return mk(o);
+    };
+    URL.revokeObjectURL = (u) => {
+      window.__blobs.revoked++;
+      return rv(u);
+    };
+  });
+  try {
+    const page = await openNext(ctx2, origin);
+    await page.waitForSelector('#btnSampleStory', { timeout: 30_000 });
+    await page.click('#btnSampleStory');
+    await titleIs(page, 'The Lantern Coast');
+    await page.waitForSelector('#manuscript .ms-editor', { timeout: 30_000 });
+    // the sample's own pictures fill in from /assets/sample/ after it lands: wait for them
+    for (let i = 0; i < 60; i++) {
+      const out = await exportBackup(page);
+      if (out.json.book.images.length && out.json.book.images.every((im) => im.data.length > 1000)) break;
+      await page.waitForTimeout(500);
+    }
+    const blobsBefore = await page.evaluate(() => ({ ...window.__blobs }));
+    const cdp = await ctx2.newCDPSession(page);
+    const heap = async () => {
+      await cdp.send('HeapProfiler.collectGarbage');
+      await cdp.send('HeapProfiler.collectGarbage');
+      return (await cdp.send('Runtime.getHeapUsage')).usedSize;
+    };
+    const cycle = async () => {
+      await page.click('#btnInsertImage');
+      await page.waitForSelector('#imgLib [data-libimg] img', { timeout: 30_000 });
+      await page.click('#btnCloseImage');
+      await page.waitForSelector('#modalImage', { state: 'detached' });
+    };
+    // warm up (the first opens build the closure's state and the pictures' URLs), let the sample's own arrival settle
+    await cycle();
+    await cycle();
+    await page.waitForTimeout(2000);
+    const h0 = await heap();
+    const h0b = await heap();
+    for (let i = 0; i < 10; i++) await cycle();
+    await page.waitForTimeout(2000);
+    const h1 = await heap();
+    const blobs = await page.evaluate(() => ({ ...window.__blobs }));
+    await page.click('#btnInsertImage');
+    await page.waitForSelector('#imgLib [data-libimg] img');
+    const n = await page.$$eval('#imgLib [data-libimg] img', (e) => e.length);
+    const sampleDel = await page.$$eval('#imgLib [data-imgdel^="sample-img"]', (e) => e.length);
+    const toolsNote = (await page.textContent('#imgLibTools')) || '';
+    await page.click('#btnCloseImage');
+    const growth = (h1 - h0) / 1024 / 1024;
+    note(`wave 2b #5: heap after 2 opens/closes of Insert Image on the sample (${n} pictures shown): ${(h0 / 1024 / 1024).toFixed(2)} MB (read again: ${(h0b / 1024 / 1024).toFixed(2)} MB); after 10 more: ${(h1 / 1024 / 1024).toFixed(2)} MB (${growth >= 0 ? '+' : ''}${growth.toFixed(2)} MB); blob URLs during the 12 opens: made ${blobs.made - blobsBefore.made}, revoked ${blobs.revoked - blobsBefore.revoked}`);
+    check(growth < 2 && n > 0, `wave 2b #5: ten more opens of the library on the sample grow the heap by ${growth.toFixed(2)} MB (gate 2 MB, as Insights)`);
+    // (a revoke counted here is the backup download's own object URL, made by the export before and revoked a moment later)
+    check(blobs.made - blobsBefore.made === 0, `wave 2b #5: the library makes no blob URL (${blobs.made - blobsBefore.made} made; ${blobs.revoked - blobsBefore.revoked} revoked meanwhile, of ${blobsBefore.made} made before by the exports): its pictures are data: URLs, as 1.0's (the policy's img-src has no blob:)`);
+    check(sampleDel === 0 && toolsNote.length > 0, `wave 2b #A8: the sample's pictures carry no delete control while the sample is on the desk; the tools row says "${toolsNote.trim().slice(0, 90)}"`);
+
+    // constraint 16: Suggest by name with no shelf answering: Openverse directly (mocked here), the thumbnail and the pick under the CSP
+    let searched = null;
+    const fetched = [];
+    await page.route('https://api.openverse.org/**', async (route) => {
+      const u = route.request().url();
+      fetched.push(u);
+      if (u.startsWith('https://api.openverse.org/v1/images/?q=')) {
+        searched = u;
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ results: [{ title: 'Ferry at dawn', creator: 'Ann', url: 'https://elsewhere.example/full.jpg', thumbnail: 'https://api.openverse.org/v1/images/z/thumb/', foreign_landing_url: 'https://elsewhere.example/p' }] }) });
+      }
+      if (u === 'https://api.openverse.org/v1/images/z/thumb/') return route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from(w2bPng(9, 4000), 'base64') });
+      return route.fulfill({ status: 404, body: '' });
+    });
+    await page.route('https://elsewhere.example/**', (route) => {
+      fetched.push(route.request().url());
+      return route.fulfill({ status: 404, body: '' });
+    });
+    if ((await w2bStandOn(page, 0)) < 0) await page.click('#insertToolbar [data-insert="scenebreak"]'); // no break here: plant one (1.0's caret stands on it)
+    await page.waitForSelector('#sceneBar.open', { timeout: 10_000 });
+    await page.click('#btnSceneAdd');
+    await page.fill('#sceneName', 'The Crossing');
+    await page.click('#btnSceneSuggest');
+    const q = await page.inputValue('#sceneSuggestQuery');
+    await page.click('#btnSceneFind');
+    await page.waitForSelector('#sceneSuggestGrid .cm-photo-cell img');
+    await page.click('#sceneSuggestGrid .cm-photo-cell');
+    await page.waitForFunction(() => document.getElementById('sceneAlt').value === 'Ferry at dawn', null, { timeout: 10_000 });
+    const picked = (await w2bExport(page)).book;
+    const pic = picked.images[picked.images.length - 1];
+    await page.click('#btnCloseScene');
+    check(!!searched && q.endsWith('The Crossing') && pic.name === 'Openverse — Ann' && pic.mediaType === 'image/png' && pic.credit.url === 'https://elsewhere.example/p' && !fetched.some((u) => u.startsWith('https://elsewhere.example')),
+      `wave 2b constraint 16 scene.images.suggest: no shelf → Openverse directly ("${q}"), the pick joins the library as 1.0 stores it (${pic.name}, ${pic.mediaType}); the photographer's own host never fetched (${fetched.length} requests)`);
+    await harvestCsp(page);
+  } finally {
+    await ctx2.close();
+  }
+}
+
 async function openInNext(page, file) {
   if (await page.$('#btnOpenBackup')) return openBackup(page, file);
   const title = JSON.parse(readFileSync(file, 'utf8')).book.meta.title;
@@ -1378,6 +1733,7 @@ try {
   if (run('tooltipScan')) await tooltipScan(srv.origin);
   if (run('wave1b')) await wave1bChecks(srv.origin);
   if (run('wave2a')) await wave2aChecks(srv.origin);
+  if (run('wave2b')) await wave2bChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
