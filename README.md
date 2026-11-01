@@ -30,6 +30,25 @@ running and takes the next free port (8091, 8092, …). `-LocalOnly` keeps
 it to this machine, `-Port` picks where the search starts, `-Down` stops
 it, `-NoBuild` restarts without rebuilding.
 
+**Start the whole stack, never part of it.** The app runs its
+migrations at boot and exits when its database is not up; Docker then
+restarts it in a loop while Caddy keeps serving the studio, so the
+studio opens but `/help`, `/school`, `/roadmap`, `/changelog` and the
+API answer 502 (seen 2026-10-31, after only `app` and `caddy` were
+started). Use `start-local.ps1` or `docker compose up -d` (all
+services). With `COMPOSE_FILE` naming the tools overlay, `app` is built
+`FROM beuk-app:latest`: rebuild that first (`docker build -t
+beuk-app:latest .`, then `docker compose build app`) or the overlay
+keeps the old server. The self-check **`infra.app.answers`** (async,
+client-only) runs in the studio, which still opens when the app is
+down, and fetches `/api/health` and the nine pages the app renders: a
+502/504 is named as the app not answering, a 503 from `/api/health` as
+its database down. Proven against a real outage
+(`beuk-spikes/research-cap/mutate-app.py`: database stopped, then the
+app restarted without it): 5 of 6 mutants caught; the sixth, ignoring
+the health reply's `db` field, cannot change the verdict because the
+route answers 200 only when its database query succeeds.
+
 **https on the network, for phones and tablets (BEUK:lanhttps).** Plain
 http on an IP loads the studio, but the browser withholds the service
 worker (offline mode, app install) and `crypto.subtle`: both need https
@@ -3020,6 +3039,24 @@ Founders' Shelf application; none of it touches pricing or checkout.
   serves — by status: In progress, Planned (in build order), Exploring,
   Shipped (newest first, dated). Edit the Markdown, the pages
   follow; there are no other copies to keep in sync.
+  **Both wear the Help pages' frame** (`chrome` in `src/help/render.ts`:
+  logo, Guides / Error codes / Search / Changelog / Roadmap, the shelf
+  status pill, Candlelight, **Open the studio** → `/studio`), so Help,
+  the changelog and the roadmap read as one place; they used to carry
+  the older warmth header with no way back to the studio. **The roadmap
+  is a board, not an essay** (`src/warmth/roadmap.ts`): the Markdown is
+  read into its columns (`parseRoadmap`), each item shown as its title
+  and first sentence with the rest under **More**; In progress is the
+  band across the top, Planned (numbered, as it is the build order) and
+  Exploring sit side by side, Shipped is a dated list with its newest
+  six open and the rest under "N earlier releases", and a row of
+  jump links gives each column's count. Write each item as
+  `- **Title.** One sentence that says what it is. Anything else.`
+  (Shipped: `- **YYYY-MM-DD — Title.** …`). `tests/roadmap-board.test.ts`
+  reads the real roadmap and checks every item and every word arrive,
+  then feeds it messy Markdown (CRLF, no bold, no full stop, a stop
+  inside brackets, an empty column, raw `<script>`), which is read and
+  escaped, never thrown.
 - **Status line** — `GET /api/status` returns a scrubbed public
   summary (app, version, build stamp, db up/down, latest Self-checks
   outcome + when). (The Help pages no longer fetch it: they render

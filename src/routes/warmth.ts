@@ -12,6 +12,11 @@ import {
 } from '../warmth/pages.js';
 import { renderMarkdown } from '../warmth/markdown.js';
 import { renderLegalPage } from '../legal/render.js';
+import type { Db } from '../db.js';
+import { chrome, type PageCtx } from '../help/render.js';
+import { getHelpContent } from '../help/content.js';
+import { readShelfStatus } from '../help/status.js';
+import { parseRoadmap, renderRoadmapBody } from '../warmth/roadmap.js';
 
 /**
  * M4 warmth pages, served by the app (Caddy proxies these paths to it —
@@ -33,8 +38,11 @@ import { renderLegalPage } from '../legal/render.js';
  *
  * Everything else under the site root remains Caddy's static mount.
  */
-export function warmthRoutes(config: Config): Router {
+export function warmthRoutes(config: Config, db: Db): Router {
   const router = Router();
+  // /changelog and /roadmap wear the Help pages' frame (header, Candlelight,
+  // Open the studio), so the three read as one place.
+  const helpCtx = async (): Promise<PageCtx> => ({ config, content: getHelpContent(), status: await readShelfStatus(db, config) });
 
   const sendPage = async (
     res: import('express').Response,
@@ -84,12 +92,10 @@ export function warmthRoutes(config: Config): Router {
 
   router.get('/changelog', async (_req, res, next) => {
     try {
-      const html = await renderDocPage(
-        config,
-        path.join(repoRoot(), 'CHANGELOG.md'),
-        'Changelog',
-      );
-      return res.type('html').send(html);
+      const source = await readFile(path.join(repoRoot(), 'CHANGELOG.md'), 'utf8');
+      const body = `<article class="doc">${renderMarkdown(source)}</article>`;
+      const html = chrome(await helpCtx(), { title: 'Changelog — Beuk', description: 'What changed in Beuk, newest first.', active: 'changelog', body });
+      return res.type('html').set('Cache-Control', 'no-cache').send(html);
     } catch (err) {
       return next(err as Error);
     }
@@ -99,10 +105,11 @@ export function warmthRoutes(config: Config): Router {
     try {
       // Same source as Housekeeping's Reference pillar (docs/roadmap.md);
       // the public page presents it in the warmth chrome.
+      // Shown as a board (src/warmth/roadmap.ts): every item a title and one line, the rest folded.
       const doc = await readReferenceDoc('roadmap');
-      const body = renderMarkdown(doc.content);
-      const html = pageChrome(config, doc.title, body);
-      return res.type('html').send(html);
+      const body = renderRoadmapBody(parseRoadmap(doc.content));
+      const html = chrome(await helpCtx(), { title: 'Roadmap — Beuk', description: 'What is being built in Beuk, what comes next, and what has shipped.', active: 'roadmap', body });
+      return res.type('html').set('Cache-Control', 'no-cache').send(html);
     } catch (err) {
       return next(err as Error);
     }
