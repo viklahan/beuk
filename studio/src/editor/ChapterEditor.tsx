@@ -15,6 +15,7 @@ import { tbLayoutInit } from './toolbarLayout';
 import { ArtRows } from '../pictures/ArtRows';
 import { SceneBar } from '../pictures/SceneBar';
 import { SectionImages } from '../pictures/SectionImages';
+import { StarterBar } from './StarterBar';
 
 /* The open chapter: 1.0's insert toolbar (#insertToolbar, EditorToolbar:
    Bold and Italic as the editor's marks, every other button 1.0's own text
@@ -90,12 +91,13 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
   };
 
   const ydoc = fragment.doc;
-  // 1.0's centre column: #editorMeta (the chapter-art rows), #insertToolbar, #sceneBar, the page, #sectionImages
+  // 1.0's centre column: #editorMeta (the chapter-art rows), #insertToolbar, #sceneBar, #starterBar, the page, #sectionImages
   return (
     <>
       {ydoc && sectionMap && <ArtRows ydoc={ydoc} section={sectionMap} />}
       <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={ydoc} />
       {ydoc && sectionMap && <SceneBar editor={editor} ydoc={ydoc} sectionId={sectionMap.get('id')} sectionType={sectionType} />}
+      {ydoc && sectionMap && <StarterBar editor={editor} ydoc={ydoc} section={sectionMap} />}
       <div className="ms-page ms-editing" id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} />
       {ydoc && <SectionImages editor={editor} ydoc={ydoc} sectionType={sectionType} />}
     </>
