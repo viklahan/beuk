@@ -918,7 +918,7 @@ async function wave1bChecks(origin) {
     await page.waitForTimeout(300);
     const narrow = await page.evaluate(() => { const tb = document.getElementById('insertToolbar'); return tb ? { rows: tb.getAttribute('data-rows'), fold: tb.getAttribute('data-fold') } : null; });
     await page.setViewportSize({ width: 1280, height: 800 });
-    check(wide.rows === '1' && wide.fold === '0', `wave 1b toolbar: tbLayout laid the toolbar out (wide: ${JSON.stringify(wide)}, narrow: ${JSON.stringify(narrow)})`);
+    check(!!wide.rows && !!wide.fold && !!narrow?.rows, `wave 1b toolbar (wave 2a: four groups now, see wave2aChecks): tbLayout laid the toolbar out (wide: ${JSON.stringify(wide)}, narrow: ${JSON.stringify(narrow)})`);
     await harvestCsp(page);
   } finally {
     await ctx.close();
@@ -987,6 +987,169 @@ const insightsMarkup = (page) => page.evaluate(() => {
     '<' + n.localName + [...n.attributes].map((a) => ' ' + a.name + '="' + a.value.replace(/[&"<>]/g, (c) => '&#' + c.charCodeAt(0) + ';') + '"').sort().join('') + '>' + [...n.childNodes].map(canon).join('') + '</' + n.localName + '>';
   return { html: [...b.childNodes].map(canon).join(''), w: document.getElementById('insBody').getAttribute('data-w') };
 });
+/* ---- wave 2a: the insert toolbar against 1.0's own page ----
+   The same text and the same selection (as text offsets) in 2.0's editor and in 1.0's textarea at /studio; the same
+   button clicked in each (1.0's real click handler and dialogs); the texts must be equal. Then one Ctrl+Z in 2.0 gives
+   the original text back. Also: the toolbar's layout at two widths (1.0's editor.toolbar.layout properties), and
+   1.0's editor.scroll.steady on Dumas (a toolbar insert and Auto-Format leave the page's scroll where it was). */
+const W2A_TEXTS = [
+  'First paragraph stands.\n\nA quoted line\nspanning two lines.\n\nLast paragraph rests.',
+  'a *b c* d and **strong words** here[^1].\n\nSecond *em\nacross* lines.\n\n[^1]: The note.',
+  '::: center\nCentred words.\n\nStill centred.\n:::\n\nTail words "quoted" -- then...',
+  '> quoted\n> more\n\n- one\n- two\n\n# Head line\n\nName: hello there\nOther: hi',
+];
+const W2A_PLAIN = ['redact', 'blockquote', 'attribution', 'ul', 'ol', 'scenebreak', 'emdash', 'columns', 'hanging', 'verse', 'center', 'right', 'texts', 'letter', 'transcript', 'log', 'insert', 'sideways', 'upsidedown'];
+const W2A_DIALOGS = [
+  { kind: 'endnote', fill: { fnText: 'A note\nover two lines.' }, ok: 'btnDoFootnote' },
+  { kind: 'link', fill: { lnkUrl: 'www.example.org/a(b)' }, ok: 'btnDoLink' },
+  { kind: 'margin', fill: { mnName: 'Ada', mnText: 'In the margin.' }, ok: 'btnDoMargin' },
+];
+async function wave2aChecks(origin) {
+  const book = {
+    meta: { title: 'Toolbar Book', author: 'A. Writer', language: 'en' },
+    sections: W2A_TEXTS.map((content, i) => ({ id: 'w' + i, kind: 'body', type: 'chapter', title: 'Chapter ' + (i + 1), content })),
+  };
+  const file = path.join(OUT, 'wave2a.beuk-backup.json');
+  writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: '2026-11-01T00:00:00.000Z', book }));
+  // Three passes, each a fresh browser context (a fresh Y.Doc): Yjs's undo slows with every undo on one document (see
+  // the wave 2a report), so each pass gives one document ~90 actions and undos, one selection shape per text
+  let cases = 0, equal = 0, undone = 0, exact = 0;
+  const misses = [];
+  for (let pass = 0; pass < 3; pass++) {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, file);
+    const before = await exportBackup(page);
+    const one = await watch(await ctx.newPage());
+    await one.goto(origin + '/studio');
+    await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+    await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), book);
+    const oneRun = (text, s, e, kind, fill, ok) => one.evaluate(({ text, s, e, kind, fill, ok }) => {
+      const area = document.getElementById('editorArea');
+      area.value = text;
+      area.dispatchEvent(new Event('input'));
+      area.focus();
+      area.setSelectionRange(s, e);
+      (kind === 'autoformat' ? document.getElementById('btnBeautify') : document.querySelector(`[data-insert="${kind}"]`)).click();
+      if (fill) {
+        for (const [id, v] of Object.entries(fill)) document.getElementById(id).value = v;
+        document.getElementById(ok).click();
+      }
+      return { text: area.value, start: area.selectionStart, end: area.selectionEnd };
+    }, { text, s, e, kind, fill, ok });
+    const probe = (fn, ...args) => page.evaluate(({ fn, args }) => document.getElementById('manuscript').beukText[fn](...args), { fn, args });
+    for (const [i, text] of W2A_TEXTS.entries()) {
+      await choose(page, i);
+      const n = text.length;
+      const sels = [[0, 0], [n, n], [Math.floor(n / 2), Math.floor(n / 2)], [text.indexOf('\n\n') - 4, text.indexOf('\n\n') + 6], [3, 12]];
+      const runs = [...W2A_PLAIN.map((kind) => ({ kind })), ...W2A_DIALOGS, { kind: 'autoformat' }];
+      for (const [s0, e0] of [sels[(i + pass) % sels.length]]) {
+        for (const r of runs) {
+          const cur = await probe('select', s0, e0);
+          const want = await oneRun(text, cur.start, cur.end, r.kind, r.fill, r.ok);
+          if (r.kind === 'autoformat') await page.click('#btnBeautify');
+          else await page.click(`#insertToolbar [data-insert="${r.kind}"]`);
+          if (r.fill) {
+            await page.waitForSelector('#' + r.ok);
+            for (const [id, v] of Object.entries(r.fill)) await page.fill('#' + id, v);
+            await page.click('#' + r.ok);
+            await page.waitForSelector('#' + r.ok, { state: 'detached' });
+          }
+          const got = await probe('read');
+          cases++;
+          if (got.text === want.text) equal++;
+          else if (misses.length < 5) misses.push({ kind: r.kind, s: cur.start, e: cur.end, want: want.text.slice(0, 120), got: got.text.slice(0, 120) });
+          if (got.text !== text) {
+            await focused(page).catch(() => undefined);
+            await page.keyboard.press('Control+z');
+            const back = await probe('read');
+            if (back.text === text) undone++;
+            else if (misses.length < 5) misses.push({ kind: r.kind, undo: back.text.slice(0, 120) });
+            if (back.text !== text) await probe('select', 0, 0);
+          } else undone++;
+        }
+      }
+    }
+    const after = await exportBackup(page);
+    if (JSON.stringify(after.json.book) === JSON.stringify(before.json.book)) exact++;
+    await one.close();
+    if (pass < 2) continue;
+    check(cases > 250 && equal === cases, `wave 2a #1: every toolbar action and dialog in 2.0 gives exactly the text 1.0's own page gives for the same text and selection (${equal} of ${cases})${misses.length ? ' ' + JSON.stringify(misses) : ''}`);
+    check(undone === cases, `wave 2a #2: one Ctrl+Z after each gives the original text back (${undone} of ${cases})`);
+    check(exact === 3, `wave 2a #2: after all of it and their undos, the export is exactly the original (${exact} of 3 passes)`);
+    // the layout (1.0's editor.toolbar.layout): each group on one row, no divider at a row's start, folded labels kept
+    for (const w of [1440, 1280, 820, 380]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.waitForTimeout(300);
+      const lay = await page.evaluate(() => {
+        const tb = document.getElementById('insertToolbar');
+        const groups = [...tb.querySelectorAll(':scope > .tool-group')];
+        const oneRow = groups.every((g) => new Set([...g.querySelectorAll(':scope > .tool-btn')].map((b) => Math.round(b.getBoundingClientRect().top))).size === 1);
+        const sepAtStart = groups.some((g) => g.classList.contains('row-start') && [...g.querySelectorAll(':scope > .tool-sep')].some((s) => getComputedStyle(s).display !== 'none'));
+        // a group wider than the toolbar even with every label folded wraps inside itself, in 1.0 too (at 1280 px the
+        // centre pane is 472 px and Blocks needs 494 px in 2.0, 503 px in 1.0): one row per group only where it fits
+        const cs = getComputedStyle(tb);
+        const W = tb.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        tb.classList.add('tb-measure');
+        const was = [...tb.querySelectorAll('.tool-btn[data-collapse]')].map((b) => b.classList.contains('folded'));
+        tb.querySelectorAll('.tool-btn[data-collapse]').forEach((b) => b.classList.add('folded'));
+        const allFit = groups.every((g) => g.getBoundingClientRect().width <= W + 0.5);
+        tb.querySelectorAll('.tool-btn[data-collapse]').forEach((b, i) => b.classList.toggle('folded', was[i]));
+        tb.classList.remove('tb-measure');
+        const foldedKeep = [...tb.querySelectorAll('.tool-btn.folded')].every((b) => (b.querySelector('.tl')?.textContent || '').trim().length > 0);
+        return { rows: tb.getAttribute('data-rows'), fold: tb.getAttribute('data-fold'), W, allFit, oneRow, sepAtStart, foldedKeep, overflow: tb.scrollWidth > tb.clientWidth + 1 };
+      });
+      check(lay.rows && (lay.oneRow || !lay.allFit) && !lay.sepAtStart && lay.foldedKeep && !lay.overflow, `wave 2a toolbar at ${w} px: 1.0's layout (${JSON.stringify(lay)})`);
+    }
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+  }
+  // 1.0's editor.scroll.steady on Dumas: an insert and Auto-Format keep the page's scroll and put the caret where 1.0 does
+  const ctx2 = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx2, origin);
+    await openBackup(page, DUMAS.file);
+    const secs = sectionsOf(expected(DUMAS.book));
+    let big = -1;
+    secs.forEach((s, i) => { if (typeof s.content === 'string' && (big < 0 || s.content.length > secs[big].content.length)) big = i; });
+    await choose(page, big);
+    const scrolls = () => page.evaluate(() => {
+      const out = [];
+      for (let el = document.getElementById('manuscript'); el; el = el.parentElement) if (el.scrollHeight > el.clientHeight + 1) out.push(Math.round(el.scrollTop));
+      out.push(Math.round(document.scrollingElement.scrollTop));
+      return out.join(',');
+    });
+    await page.evaluate(() => {
+      const ms = document.getElementById('manuscript');
+      for (let el = ms; el; el = el.parentElement) if (el.scrollHeight > el.clientHeight + 1) el.scrollTop = Math.floor((el.scrollHeight - el.clientHeight) / 2);
+      document.scrollingElement.scrollTop = Math.floor((document.scrollingElement.scrollHeight - document.scrollingElement.clientHeight) / 2);
+    });
+    const len = (await page.evaluate(() => document.getElementById('manuscript').beukText.read())).text.length;
+    await page.evaluate((mid) => document.getElementById('manuscript').beukText.select(mid, mid), Math.floor(len / 2));
+    const s0 = await scrolls();
+    // clicked in the page (Playwright's own click would first scroll the toolbar button into view)
+    await page.evaluate(() => document.querySelector('#insertToolbar [data-insert="emdash"]').click());
+    await page.waitForTimeout(200);
+    const s1 = await scrolls();
+    const t0 = Date.now();
+    await page.evaluate(() => document.getElementById('btnBeautify').click());
+    await page.waitForSelector('#toasts .toast', { timeout: 30_000 });
+    await page.waitForTimeout(200);
+    const autoMs = Date.now() - t0;
+    const s2 = await scrolls();
+    const cur = await page.evaluate(() => document.getElementById('manuscript').beukText.read());
+    check(s0 === s1 && s1 === s2 && s0 !== '0', `wave 2a: editor.scroll.steady on Dumas: an em dash and Auto-Format leave the scroll where it was (${s0} / ${s1} / ${s2})`);
+    note(`Auto-Format on Dumas's longest chapter (${len} characters): ${autoMs} ms to the toast; caret at ${cur.start}`);
+    await harvestCsp(page);
+  } finally {
+    await ctx2.close();
+  }
+}
+
 async function openInNext(page, file) {
   if (await page.$('#btnOpenBackup')) return openBackup(page, file);
   const title = JSON.parse(readFileSync(file, 'utf8')).book.meta.title;
@@ -1214,6 +1377,7 @@ try {
   if (run('historyChecks')) await historyChecks(srv.origin);
   if (run('tooltipScan')) await tooltipScan(srv.origin);
   if (run('wave1b')) await wave1bChecks(srv.origin);
+  if (run('wave2a')) await wave2aChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

@@ -170,6 +170,30 @@ export type ClosureApi = {
   bibleMatcherNow: () => unknown;
   bibleName: (e: unknown) => string;
   bibleNormalize: (doc: unknown) => Record<string, unknown>;
+  // wave 2a: the insert toolbar's own text edits, run on a stand-in textarea (editor/insert.ts textArea)
+  insertAtCursor: (ta: TextAreaLike, text: string, cursorBack?: number) => void;
+  wrapSelection: (ta: TextAreaLike, marker: string) => void;
+  redactSelection: (ta: TextAreaLike) => boolean;
+  applyList: (ta: TextAreaLike, ordered: boolean) => void;
+  applyContainer: (ta: TextAreaLike, kind: string) => void;
+  applyBlockquote: (ta: TextAreaLike) => void;
+  applyAttribution: (ta: TextAreaLike) => void;
+  nextFootnoteNumber: (text: string) => number;
+  normalizeLinkUrl: (raw: unknown) => string | null;
+  MARGIN_OPEN_RE: RegExp;
+  isContainerMarkLine: (line: string) => boolean;
+  beautifyText: (text: string) => string;
+};
+/** 1.0's textarea, as far as its toolbar functions use it (editor/insert.ts Area). */
+export type TextAreaLike = {
+  value: string;
+  selectionStart: number;
+  selectionEnd: number;
+  scrollTop: number;
+  scrollLeft: number;
+  focus: (o?: unknown) => void;
+  setSelectionRange: (a: number, b: number) => void;
+  dispatchEvent: (e: unknown) => boolean;
 };
 export type TourStep = { id: string; title: string; body: string; anchor: number; beside?: boolean; last?: boolean; groups: string[][] };
 export type InsightsFact = { name: string; short: string; words: number; avg: number | null; dlg: number | null; ease: number | null };
@@ -239,6 +263,8 @@ let sampleLoading: Promise<SampleApi> | null = null;
 
 /** The closure, once loaded (null before). */
 export const closureIfLoaded = (): Closure | null => loaded;
+/** The main closure's names, as the sub-modules take them (the tests' oracle module, closure-oracle.js). */
+export const closureShare = (): Record<string, unknown> | null => share;
 
 /** Load the generated module (its own chunk) and create the studio's closure once. */
 export function loadClosure(): Promise<Closure> {

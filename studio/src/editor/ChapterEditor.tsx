@@ -1,23 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/core';
 import type * as Y from 'yjs';
+import { TextSelection } from '@tiptap/pm/state';
+import { textOffsetToPos } from '@book/editor/index.js';
+import { toBook } from './bridge';
+import { editorText } from './insert';
 import { useLocale } from '../i18n/LocaleProvider';
-import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { clearActiveEditor, setActiveEditor } from './active';
 import { flushNormalize, markActive, toggleBookMark } from './behaviour';
 import { createChapterEditor } from './createEditor';
+import { EditorToolbar } from './EditorToolbar';
 import { tbLayoutInit } from './toolbarLayout';
 
-/* The open chapter: 1.0's format toolbar region (#insertToolbar, the Bold
-   and Italic buttons with 1.0's keys) above the page, and the editor on the
-   chapter's fragment. Choosing another section unmounts this (the Desk keys
-   it by section), which first normalises whatever is still pending, the
-   block under the cursor included, then destroys the editor. */
+/* The open chapter: 1.0's insert toolbar (#insertToolbar, EditorToolbar:
+   Bold and Italic as the editor's marks, every other button 1.0's own text
+   edit) above the page, and the editor on the chapter's fragment. Choosing
+   another section unmounts this (the Desk keys it by section), which first
+   normalises whatever is still pending, the block under the cursor
+   included, then destroys the editor. */
 
-type Props = { fragment: Y.XmlFragment; dir: 'ltr' | 'rtl'; lang: string; label: string; section: number };
+type Props = {
+  fragment: Y.XmlFragment;
+  dir: 'ltr' | 'rtl';
+  lang: string;
+  label: string;
+  section: number;
+  /** The open section's `type`, read when a tool asks (1.0's AUTO_TYPES refuse some). */
+  sectionType?: () => unknown;
+  /** Every section's text, in book order, read when the margin dialog opens. */
+  sectionTexts?: () => string[];
+};
 
-export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
+export function ChapterEditor({ fragment, dir, lang, label, section, sectionType = () => undefined, sectionTexts = () => [] }: Props) {
   const { t } = useLocale();
   const toast = useToast();
   const host = useRef<HTMLDivElement>(null);
@@ -44,6 +59,15 @@ export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
     setEditor(ed);
     setActiveEditor(ed, section);
     (host.current as HTMLDivElement & { beukEditor?: Editor }).beukEditor = ed; // e2e and latency probes reach it here
+    // and the section's text with the selection as text offsets (wave 2a e2e: the toolbar against 1.0's own page)
+    (host.current as HTMLDivElement & { beukText?: unknown }).beukText = {
+      read: () => editorText(ed),
+      select: (s: number, e: number) => {
+        const d = toBook(ed.state.doc);
+        ed.view.dispatch(ed.state.tr.setSelection(TextSelection.create(ed.state.doc, textOffsetToPos(d, s), textOffsetToPos(d, e))));
+        return editorText(ed);
+      },
+    };
     return () => {
       clearActiveEditor(ed);
       flushNormalize(ed);
@@ -54,7 +78,7 @@ export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fragment]);
 
-  const press = (name: 'strong' | 'em') => () => {
+  const press = (name: 'strong' | 'em') => {
     if (!editor) return;
     toggleBookMark(editor, name, () => refuse.current());
     editor.commands.focus();
@@ -62,18 +86,7 @@ export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
 
   return (
     <>
-      <div className="toolbar" id="insertToolbar" role="toolbar" aria-controls="manuscript" ref={bar}>
-        <div className="tool-group" data-tg="format">
-          <button type="button" className="tool-btn" data-collapse="1" data-insert="bold" title={t('tool.boldTitle')} aria-pressed={marks.strong} onMouseDown={(e) => e.preventDefault()} onClick={press('strong')}>
-            <Icon name="Bold" />
-            <span className="tl">{t('tool.bold')}</span>
-          </button>
-          <button type="button" className="tool-btn" data-collapse="1" data-insert="italic" title={t('tool.italicTitle')} aria-pressed={marks.em} onMouseDown={(e) => e.preventDefault()} onClick={press('em')}>
-            <Icon name="Italic" />
-            <span className="tl">{t('tool.italic')}</span>
-          </button>
-        </div>
-      </div>
+      <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={fragment.doc} />
       <div className="ms-page ms-editing" id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} />
     </>
   );

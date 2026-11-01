@@ -46,7 +46,10 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // step 5 wave 1b: the statistics disclosure, the row menu and its toasts, the sample and new book
   'ChevronUp', 'Ellipsis', 'CopyPlus', 'Scissors', 'Merge', 'Trash2', 'Undo2', 'BookX', 'FilePlus', 'File', 'ImageOff', 'TriangleAlert',
   // step 5 wave 1c: the tour's toast, Story Insights and Names on stage, the notebook and its research files
-  'Map', 'RefreshCcw', 'EyeOff', 'Plus', 'StickyNote', 'Pin', 'Folder', 'Paperclip', 'X', 'ExternalLink', 'FileImage', 'FileAudio', 'FileVideo', 'FileType'];
+  'Map', 'RefreshCcw', 'EyeOff', 'Plus', 'StickyNote', 'Pin', 'Folder', 'Paperclip', 'X', 'ExternalLink', 'FileImage', 'FileAudio', 'FileVideo', 'FileType',
+  // step 5 wave 2a: the insert toolbar (1.0's data-lucide names) and its dialogs
+  'Link', 'Quote', 'Signature', 'List', 'Sparkle', 'Minus', 'Columns2', 'IndentIncrease', 'Feather', 'AlignCenter', 'AlignRight',
+  'MessagesSquare', 'MailOpen', 'MicVocal', 'SquareTerminal', 'RotateCw', 'FlipVertical2', 'WandSparkles'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

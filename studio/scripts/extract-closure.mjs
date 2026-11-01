@@ -73,7 +73,18 @@ export const EXTRA_ROOTS = [
   'nbNormalize', 'nbLine', 'nbPack', 'nbHas', 'rsNormalize', 'rsTypeOf', 'rsUrl', 'rsKinds', 'rsLimits', 'rsAccept', 'rsIsRef', 'rsBytesOf',
   'rsKind', 'rsIcon', 'rsSize', 'rsTabOk', 'rsPackFiles', 'rsHas', 'rsNamed', 'rsTotal',
   'bibleAllEntries', 'bibleScan', 'bibleMatcherNow', 'bibleName', 'bibleNormalize',
+  // wave 2a: the editor's insert toolbar (A1, A4) — 1.0's own text edits, run on a stand-in for the textarea — the
+  // footnote number and link address rules (A2, A3), the margin note's opener (A4) and Auto-Format (A13)
+  'insertAtCursor', 'wrapSelection', 'redactSelection', 'applyList', 'applyContainer', 'applyBlockquote', 'applyAttribution',
+  'nextFootnoteNumber', 'normalizeLinkUrl', 'MARGIN_OPEN_RE', 'isContainerMarkLine', 'beautifyText',
 ];
+/** Test oracle only (wave 2a, constraint 11): 1.0's dialog handlers, which read and write their dialog's fields
+ *  through `$`. Emitted as a THIRD module, src/generated/closure-oracle.js, that only the tests import (never the
+ *  app): each test hands it a stand-in `$` and textarea and compares 2.0's result with 1.0's own. Like the sample
+ *  module it holds only declarations the main closure does not, and takes everything else from `share`. */
+export const ORACLE_ROOTS = ['openFootnoteDialog', 'confirmFootnote', 'openLinkDialog', 'confirmLink', 'openMarginDialog', 'confirmMargin'];
+/** What the oracle's handlers take from 1.0's page, supplied by the test (createOracle(share, env)). */
+export const ORACLE_SUPPLIED = ['$', 'activeSection', 'editorViewSnapshot', 'editorViewRestore', 'icons'];
 /** The sample book's own code (wave 1c, task 4): 1.0's buildSampleBook with its 145 kB of text (SAMPLE_SECTIONS), and
  *  the packaged cover entry. Emitted as a SECOND module, src/generated/closure-sample.js, its own chunk, loaded only
  *  when the sample is built (Load sample, the pre-rename sweep). It holds only the declarations nothing in the main
@@ -144,7 +155,8 @@ export async function buildClosureModule(html, epubSource) {
   const supplied = [...spec.EPUB_SUPPLIED, ...BROWSER_SUPPLIED];
   const names = reachableFrom(html, roots, [...supplied, ...LOCAL_ONLY]);
   const sampleNames = reachableFrom(html, SAMPLE_ROOTS, [...supplied, ...LOCAL_ONLY, ...names]);
-  const forbidden = [...names, ...sampleNames].filter((n) => FORBIDDEN.test(n));
+  const oracleNames = reachableFrom(html, ORACLE_ROOTS, [...supplied, ...ORACLE_SUPPLIED, ...LOCAL_ONLY, ...names]);
+  const forbidden = [...names, ...sampleNames, ...oracleNames].filter((n) => FORBIDDEN.test(n));
   if (forbidden.length) fail(`the lifted code reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it, or change the roots)`);
   let src;
   try {
@@ -173,6 +185,10 @@ export async function buildClosureModule(html, epubSource) {
   if (strayReaders.length) fail(`UI_STRINGS is read by ${strayReaders.join(', ')}: only ${UI_STRINGS_READERS.join(', ')} may (the browser supplies a table of "misc.untitledBook" alone)`);
   const api = [...new Set(roots)].filter((n) => src.names.includes(n));
   const sample = sampleModule(extractStudioSource, html, sampleNames, src.names, supplied);
+  const oracle = subModule(extractStudioSource, html, oracleNames, src.names, supplied, {
+    label: 'ORACLE_ROOTS', roots: ORACLE_ROOTS, env: ORACLE_SUPPLIED, fn: 'createOracle', namesConst: 'ORACLE_NAMES',
+    about: "1.0's dialog handlers (ORACLE_ROOTS), for the tests only: the app never imports this module",
+  });
   const vars = VARS.filter((n) => src.names.includes(n));
   const unlifted = VARS.filter((n) => !src.names.includes(n));
   if (unlifted.length) fail(`VARS names no lifted declaration: ${unlifted.join(', ')}`);
@@ -192,29 +208,37 @@ export async function buildClosureModule(html, epubSource) {
   const tail = [
     '',
     `  const vars = { ${vars.map((v) => `get ${v}() { return ${v}; }, set ${v}(v) { ${v} = v; }`).join(', ')} };`,
-    `  const share = { get state() { return state; }, ${[...sample.uses].map((n) => `get ${n}() { return ${n}; }`).join(', ')} };`,
+    `  const share = { get state() { return state; }, ${[...new Set([...sample.uses, ...oracle.uses])].map((n) => `get ${n}() { return ${n}; }`).join(', ')} };`,
     `  return { api: { ${api.join(', ')} }, vars, share, setState: (s) => { state = s; }, getState: () => state, arrive: ${spec.ARRIVE} };`,
     '}',
     '',
   ].join('\n');
-  return { code: head + '\n' + src.code + tail, names: src.names, roots: api, supplied, sample };
+  return { code: head + '\n' + src.code + tail, names: src.names, roots: api, supplied, sample, oracle };
 }
 
-/** The sample module: SAMPLE_ROOTS' own declarations inside createSample(share), the names they use from the main
- *  closure (and its supplied names) taken from `share` when it is created. Created afresh for each use, so `state` and
- *  every shared name are the main closure's current ones. Fails loudly if the sample code would ASSIGN to a shared
- *  name (that write would be lost). */
 function sampleModule(extractStudioSource, html, sampleNames, mainNames, supplied) {
+  return subModule(extractStudioSource, html, sampleNames, mainNames, supplied, {
+    label: 'SAMPLE_ROOTS', roots: SAMPLE_ROOTS, env: [], fn: 'createSample', namesConst: 'SAMPLE_NAMES',
+    about: 'The sample book (SAMPLE_ROOTS)',
+  });
+}
+
+/** A sub-module (the sample, the test oracle): its roots' own declarations inside `fn`(share, env), the names they use
+ *  from the main closure (and its supplied names) taken from `share` when it is created, the names in `o.env` from
+ *  `env`. Created afresh for each use, so `state` and every shared name are the main closure's current ones. Fails
+ *  loudly if a root ended up in the main closure, or if the code would ASSIGN to a shared name (that write would be
+ *  lost). */
+function subModule(extractStudioSource, html, ownNames, mainNames, supplied, o) {
   let src;
   try {
-    src = extractStudioSource(html, sampleNames, { listRef: 'studio/scripts/extract-closure.mjs SAMPLE_ROOTS', api: '', stringTables: false });
+    src = extractStudioSource(html, ownNames, { listRef: 'studio/scripts/extract-closure.mjs ' + o.label, api: '', stringTables: false });
   } catch (e) {
     fail(e.message);
   }
-  const missing = SAMPLE_ROOTS.filter((n) => !src.names.includes(n));
-  if (missing.length) fail(`SAMPLE_ROOTS ${missing.join(', ')} ended up in the main closure (something there reaches them): the sample chunk would not hold them`);
-  const sf = ts.createSourceFile('sample.js', src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-  const outer = new Set([...mainNames, ...supplied]);
+  const missing = o.roots.filter((n) => !src.names.includes(n));
+  if (missing.length) fail(`${o.label} ${missing.join(', ')} ended up in the main closure (something there reaches them): the ${o.fn} module would not hold them`);
+  const sf = ts.createSourceFile('sub.js', src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const outer = new Set([...mainNames, ...supplied, ...o.env]);
   const uses = new Set();
   const assigned = new Set();
   const walk = (n) => {
@@ -230,25 +254,26 @@ function sampleModule(extractStudioSource, html, sampleNames, mainNames, supplie
     ts.forEachChild(n, walk);
   };
   walk(sf);
-  if (assigned.size) fail(`the sample code assigns to ${[...assigned].join(', ')} of the main closure; that write would be lost`);
+  if (assigned.size) fail(`the ${o.label} code assigns to ${[...assigned].join(', ')} of the main closure; that write would be lost`);
   uses.delete('state');
-  const fromShare = [...uses].filter((n) => !supplied.includes(n));
-  const fromEnv = [...uses].filter((n) => supplied.includes(n));
+  const fromEnv = [...uses].filter((n) => o.env.includes(n));
+  const fromShare = [...uses].filter((n) => !o.env.includes(n));
   const code = [
     '/* GENERATED by studio/scripts/extract-closure.mjs from client/index.html — do not edit.',
-    `   The sample book (SAMPLE_ROOTS): ${src.names.length} declarations of 1.0's own code that only the sample uses; every other`,
+    `   ${o.about}: ${src.names.length} declarations of 1.0's own code that only it uses; every other`,
     '   name comes from the main closure (share), created afresh for each use. */',
     '/* eslint-disable */',
-    `export const SAMPLE_NAMES = ${JSON.stringify(src.names)};`,
-    'export function createSample(share) {',
+    `export const ${o.namesConst} = ${JSON.stringify(src.names)};`,
+    `export function ${o.fn}(share, env) {`,
     '  let state = share.state;',
-    ...[...fromShare, ...fromEnv].map((n) => `  const ${n} = share.${n};`),
+    ...fromShare.map((n) => `  const ${n} = share.${n};`),
+    ...fromEnv.map((n) => `  const ${n} = env.${n};`),
     src.code,
-    `  return { ${SAMPLE_ROOTS.join(', ')} };`,
+    `  return { ${o.roots.join(', ')} };`,
     '}',
     '',
   ].join('\n');
-  return { code, names: src.names, uses: new Set([...fromShare, ...fromEnv]) };
+  return { code, names: src.names, uses: new Set(fromShare) };
 }
 
 /** The module's types (the functions are 1.0's untyped code: src/closure/index.ts gives the ones 2.0 calls their types). */
@@ -266,6 +291,11 @@ export declare const SAMPLE_NAMES: string[];
 export declare function createSample(share: Record<string, unknown>): { buildSampleBook: () => any; sampleCoverDoc: () => any };
 `;
 
+const ORACLE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. Test oracle only. */
+export declare const ORACLE_NAMES: string[];
+export declare function createOracle(share: Record<string, unknown>, env: Record<string, unknown>): Record<string, (...args: any[]) => any>;
+`;
+
 export async function writeClosure() {
   const html = readFileSync(path.join(REPO, 'client', 'index.html'), 'utf8');
   const epub = readFileSync(path.join(REPO, 'src', 'book', 'epub', 'closure.ts'), 'utf8');
@@ -276,12 +306,14 @@ export async function writeClosure() {
   writeFileSync(path.join(dir, 'closure.d.ts'), DTS);
   writeFileSync(path.join(dir, 'closure-sample.js'), out.sample.code);
   writeFileSync(path.join(dir, 'closure-sample.d.ts'), SAMPLE_DTS);
+  writeFileSync(path.join(dir, 'closure-oracle.js'), out.oracle.code);
+  writeFileSync(path.join(dir, 'closure-oracle.d.ts'), ORACLE_DTS);
   return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   writeClosure()
-    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js`))
+    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js; the test oracle: ${o.oracle.names.length} → closure-oracle.js`))
     .catch((e) => {
       console.error(e.message);
       process.exit(1);

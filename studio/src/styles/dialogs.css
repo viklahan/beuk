@@ -65,6 +65,7 @@
 .txt-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 select.txt-input { appearance: none; }
 .cover-note { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5; }
+#lnkHint.is-bad { color: var(--bad); } /* 1.0: the link dialog says an address cannot be a link (wave 2a) */
 .linkish { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 12.5px; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-family: inherit; }
 .seg { display: flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
 .seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); padding: 9px 6px; font-size: 12.5px; font-weight: 600; }

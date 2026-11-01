@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react';
 import * as Y from 'yjs';
-import { BODY, SECTIONS } from '@book/editor/index.js';
+import { BODY, SECTIONS, escKey, fragmentText } from '@book/editor/index.js';
 import { ChapterEditor } from '../editor/ChapterEditor';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
@@ -15,6 +15,14 @@ import { useBook } from './BookProvider';
      the chapter.
    The manuscript page keeps the BOOK's direction and language, never the
    interface's (an Arabic chrome around an English book). */
+/** Every section's text, in book order (a section without a text body counts as ""). */
+function sectionTexts(ydoc: Y.Doc): string[] {
+  return ydoc.getArray<unknown>(SECTIONS).toArray().map((s) => {
+    const b = s instanceof Y.Map ? s.get(BODY) : undefined;
+    return b instanceof Y.XmlFragment ? fragmentText(b) : '';
+  });
+}
+
 export function Desk() {
   const { t, lang } = useLocale();
   const bk = useBook();
@@ -88,6 +96,8 @@ export function Desk() {
           lang={bk.bookLang}
           label={row?.name || t('side.untitled')}
           section={bk.active}
+          sectionType={() => (sec instanceof Y.Map ? sec.get(escKey('type')) : undefined)}
+          sectionTexts={() => sectionTexts(bk.book!.ydoc)}
         />
       ) : (
         <div className="ms-page" id="manuscript" dir={bk.bookDir} lang={bk.bookLang} />
