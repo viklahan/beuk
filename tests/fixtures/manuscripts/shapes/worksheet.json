@@ -62,13 +62,23 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "Count the Boats"
+        "title": "Count the Boats",
+        "contains": [
+          "How many boats have a red sail? ____",
+          "How many have no sail at all? ____",
+          "Look at the harbour picture. How many boats"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "Name the Colours"
+        "title": "Name the Colours",
+        "contains": [
+          "The lighthouse is painted ____ and ____.",
+          "What colour would you paint it? ________",
+          "The lighthouse is painted ____ and ____."
+        ]
       }
     ]
   }

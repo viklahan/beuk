@@ -21,7 +21,8 @@
         "kind": "body",
         "type": "chapter",
         "title": "",
-        "breaks": 0
+        "breaks": 0,
+        "minWords": 8900
       }
     ]
   }

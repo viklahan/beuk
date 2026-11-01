@@ -8,7 +8,7 @@
   "blocks": [
     {
       "t": "title",
-      "text": "The Lantern Keeper"
+      "text": "Wind over the Barn"
     },
     {
       "t": "byline",
@@ -53,7 +53,7 @@
   ],
   "expected": {
     "meta": {
-      "title": "The Lantern Keeper",
+      "title": "Wind over the Barn",
       "author": "Ada Marsh"
     },
     "sections": [
@@ -61,13 +61,19 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Field"
+        "title": "The Field",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Barn"
+        "title": "The Barn",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ]
   }

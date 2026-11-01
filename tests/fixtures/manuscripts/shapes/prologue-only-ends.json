@@ -56,11 +56,17 @@
     "sections": [
       {
         "kind": "body",
-        "type": "prologue"
+        "type": "prologue",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
-        "type": "epilogue"
+        "type": "epilogue",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ]
   }

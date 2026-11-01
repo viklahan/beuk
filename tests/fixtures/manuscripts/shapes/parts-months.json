@@ -103,12 +103,18 @@
       {
         "kind": "body",
         "type": "chapter",
-        "title": "Monday, 4 September"
+        "title": "Monday, 4 September",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
-        "title": "Thursday, 7 September"
+        "title": "Thursday, 7 September",
+        "contains": [
+          "Her uncle kept the lighthouse on the point,"
+        ]
       },
       {
         "kind": "body",
@@ -119,12 +125,18 @@
       {
         "kind": "body",
         "type": "chapter",
-        "title": "Sunday, 1 October"
+        "title": "Sunday, 1 October",
+        "contains": [
+          "By supper the windows rattled in their frames,"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
-        "title": "Friday, 13 October"
+        "title": "Friday, 13 October",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ]
   }

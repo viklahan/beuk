@@ -8,7 +8,8 @@
      starts from buildEmptyBook()'s scaffold, whose empty front/back
      sections are the studio's, not the manuscript's;
    - per section only the fields the record carries; titles trimmed and
-     case-folded, "" meaning the stored title must be empty;
+     case-folded, "" meaning the stored title must be empty; contains/lacks
+     as substrings of the section's text, line wrapping undone;
    - the book's title and author; the series line in series or subtitle;
    - mustNotAppear in every section's title and text. */
 import type { Expected, ExpectedSection } from './shape.js';
@@ -20,6 +21,8 @@ export type Book10 = {
 type Sec = Book10['sections'][number];
 
 const fold = (s: unknown) => (typeof s === 'string' ? s : '').trim().toLowerCase();
+/* section text with its line wrapping undone: an importer may rewrap, never reword */
+const flat = (s: unknown) => (typeof s === 'string' ? s : '').replace(/\s+/g, ' ').trim();
 
 /** Scene breaks as 1.0 renders them: a whole block of ***, ❦ or ⁂. */
 export function countBreaks(content: string): number {
@@ -83,6 +86,11 @@ export function compareBook(expected: Expected, book: Book10): { ok: boolean; di
     if (e.number !== undefined && readNumber(s.number ?? '') !== e.number) return fail(`${label(s, i)}: number "${s.number}", expected ${e.number === null ? 'none' : e.number}`);
     if (e.title !== undefined && fold(e.title) !== fold(s.title)) return fail(`${label(s, i)}: title "${s.title}", expected ${e.title === '' ? '"" (untitled)' : `"${e.title}"`}`);
     if (e.breaks !== undefined && countBreaks(s.content ?? '') !== e.breaks) return fail(`${label(s, i)}: ${countBreaks(s.content ?? '')} scene breaks, expected ${e.breaks}`);
+    const text = flat(s.content);
+    for (const c of e.contains ?? []) if (!text.includes(flat(c))) return fail(`${label(s, i)}: does not hold "${c}"`);
+    const words = text ? text.split(' ').length : 0;
+    if (e.minWords !== undefined && words < e.minWords) return fail(`${label(s, i)}: ${words} words, expected at least ${e.minWords}`);
+    for (const c of e.lacks ?? []) if (text.includes(flat(c))) return fail(`${label(s, i)}: must not hold "${c}"`);
   }
   for (const needle of expected.mustNotAppear ?? []) {
     const n = needle.toLowerCase();

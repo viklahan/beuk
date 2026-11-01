@@ -38,6 +38,12 @@ const ExpectedSectionSchema = z.object({
   number: z.number().int().nullable().optional(),
   title: z.string().optional(),
   breaks: z.number().int().nonnegative().optional(),
+  /** text that must be in this section (whitespace-normalised substring) */
+  contains: z.array(z.string()).optional(),
+  /** text that must not be in this section */
+  lacks: z.array(z.string()).optional(),
+  /** at least this many words of text */
+  minWords: z.number().int().positive().optional(),
 }).strict();
 
 const ExpectedSchema = z.object({

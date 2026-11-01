@@ -3,7 +3,7 @@
     "file": "bare-numbers-digit.docx",
     "shape": "bare-numbers-digit",
     "format": "docx",
-    "sha256": "cc49d7e43f5299345a71f60f143323c7b50394386b4b559b58b522e018cd541b"
+    "sha256": "c901ce5b678bffa55fc7d66b23954ae39321e474c6ce3d6102c437241dbd3d1d"
   },
   {
     "file": "bare-numbers-digit.md",
@@ -33,7 +33,7 @@
     "file": "bare-numbers-roman.docx",
     "shape": "bare-numbers-roman",
     "format": "docx",
-    "sha256": "507b5755a220be75a9c5af44ce2aa2ec874d47e391e93bd757236b7336760c3e"
+    "sha256": "a50da919f3b0d701cb518683a0092511bb36c6ef4dcc9208c7015aed37287c40"
   },
   {
     "file": "bare-numbers-roman.md",
@@ -63,7 +63,7 @@
     "file": "bare-numbers-spelled.docx",
     "shape": "bare-numbers-spelled",
     "format": "docx",
-    "sha256": "1699427b15d2e80a71442feaf786e286ab7e508d25b56ddf0afeb1d8077d7c59"
+    "sha256": "5b606d6482c34a901186dc1ce24ecd57d6a770c85d43f7bfe1ab604e618c22f8"
   },
   {
     "file": "bare-numbers-spelled.md",
@@ -93,7 +93,7 @@
     "file": "bare-numbers-word.docx",
     "shape": "bare-numbers-word",
     "format": "docx",
-    "sha256": "4d60f73bcb512b49d13b418b5772ec937878f93b752439ee2d7431f4f5864831"
+    "sha256": "2cffdbe5d8ed4f363a9eb2637ede124e0eab71b6d5d52e75f26ae0781801e78d"
   },
   {
     "file": "bare-numbers-word.md",
@@ -129,7 +129,7 @@
     "file": "books-and-volumes.docx",
     "shape": "books-and-volumes",
     "format": "docx",
-    "sha256": "a2817643e833a2bffe8752ccba3e391234e9a0d429ccfd8ba406717ddaccaaf2"
+    "sha256": "d6077f00f5e968c3ff0146f0ef33a76f4febd9ebdf82cafc8ac2cf1a4887e553"
   },
   {
     "file": "books-and-volumes.md",
@@ -159,7 +159,7 @@
     "file": "box-volume.docx",
     "shape": "box-volume",
     "format": "docx",
-    "sha256": "7acc1d703562270b5e84b5436f3bcb8001d123bf4768788b0c6182c24f42ef89"
+    "sha256": "bd9cbe4a724fb74a169bace8b38387dcce905679915e9ce379f32e4ebc288f51"
   },
   {
     "file": "box-volume.md",
@@ -189,7 +189,7 @@
     "file": "caps-kicker.docx",
     "shape": "caps-kicker",
     "format": "docx",
-    "sha256": "4edede7d5b7af2d1a4c98fd0fc695e394e838d641c3e4caf353e3a1d74ece9ce"
+    "sha256": "7e89454d2da6dd02987891daaab15dfd0e6f96169a95b42eefe37f6ca78c4a3b"
   },
   {
     "file": "caps-kicker.pdf",
@@ -201,7 +201,7 @@
     "file": "clean-numbered.docx",
     "shape": "clean-numbered",
     "format": "docx",
-    "sha256": "0826a6e7f8822b426b2bbd0f46ccff14a4948d183e98da37ced3fa996b566abe"
+    "sha256": "ed7d65ddbfa5e562f49cc7c1fac3925a5ace22285c415bd553d691e0a2161ee3"
   },
   {
     "file": "clean-numbered.md",
@@ -231,19 +231,19 @@
     "file": "dropcap.docx",
     "shape": "dropcap",
     "format": "docx",
-    "sha256": "2baa192ef695d7141947d2fe5b1c7cbc4c629c2aabd69ebd68338ccdd1713b30"
+    "sha256": "8663691c7fbea5581b8299613b8a9ddd0f9b5a117cbecface520030d1368a978"
   },
   {
     "file": "dropcap.pdf",
     "shape": "dropcap",
     "format": "pdf",
-    "sha256": "29e2e7a198dfd304e65c5fa31b69950de4cce4388f97b82cc592345d4fbfa0a8"
+    "sha256": "f9209bb1b20a3879c0196f7ee05fe0f7fb1c30d6f5240696eaf61635b5d58673"
   },
   {
     "file": "empty-chapter.docx",
     "shape": "empty-chapter",
     "format": "docx",
-    "sha256": "2848b91bac5a6562ed1c8ecb3cf9c550339bfb86af640fbf375b696b2ead988c"
+    "sha256": "b8518dd6e22694d68d67e7edb741d152dfec3b4443d4646ce5c5cebfb997f27c"
   },
   {
     "file": "empty-chapter.md",
@@ -273,7 +273,7 @@
     "file": "matter-in-ch1.docx",
     "shape": "matter-in-ch1",
     "format": "docx",
-    "sha256": "9531545a0097a541d86051d26909efc6680218afffe9dff213a95a0e272e022f"
+    "sha256": "da0ee81fb6f5615760958b7a9b455a54c85d48f67cdb69a56f4f60c7821129ac"
   },
   {
     "file": "matter-in-ch1.md",
@@ -309,7 +309,7 @@
     "file": "mixed-word-styles.docx",
     "shape": "mixed-word-styles",
     "format": "docx",
-    "sha256": "8fa217fbc739ee6935cdfabfce90f5863b5d9f808ee7cae215d1c2fab1d39801"
+    "sha256": "c22294e16b3a8e774ebd24566ffac73a6cc18b7d2f526ecb03d4f51db6f5d0cf"
   },
   {
     "file": "no-headings.docx",
@@ -345,37 +345,37 @@
     "file": "note-and-contents.docx",
     "shape": "note-and-contents",
     "format": "docx",
-    "sha256": "a73854b15a37e1b2470d9181b3bec6d6942923f63eefa16ad4e511ce79cca06c"
+    "sha256": "4d08705072c64e4146fd2298dba9624965c2d2b29c5c0f02372da027109eb0ff"
   },
   {
     "file": "note-and-contents.md",
     "shape": "note-and-contents",
     "format": "md",
-    "sha256": "80cec7894bb436561cc9b428e2cd4b7a2d95f893baab41d0620ae2fa534eaf2d"
+    "sha256": "1c79e9a794cd8c60439977574c090e629d438c6dbe42d71dd87d0365500371ee"
   },
   {
     "file": "note-and-contents.pdf",
     "shape": "note-and-contents",
     "format": "pdf",
-    "sha256": "5f5fe507bc561c1cde9f492d692a392b998abd4ee5be64b46a939f8b707ee396"
+    "sha256": "fa7e0844b8cf2383f023b34a245fe6a065f1bc342c8ee5618b07ad53365f4ede"
   },
   {
     "file": "note-and-contents.rtf",
     "shape": "note-and-contents",
     "format": "rtf",
-    "sha256": "2aea0197d4a68db3c3c0ab9b59b9b999ba379ad7eec1d7561dc6a4ed981e0313"
+    "sha256": "11ab03f7aa75941d101c7d65d4e52b113830a187b0f2c854afb1838bd253efc7"
   },
   {
     "file": "note-and-contents.txt",
     "shape": "note-and-contents",
     "format": "txt",
-    "sha256": "280e072ed89234224e729034291d1aa5324515503f417a2aae3d5086f6a69a14"
+    "sha256": "50ed9b8ffeddfbbb23bd6c7405a70cd9aec31897e22f7c2fdebe696a322f3bf2"
   },
   {
     "file": "parts-months.docx",
     "shape": "parts-months",
     "format": "docx",
-    "sha256": "1588482137e0a7b067041d1a7b50be6a8fd59a2d2363100aa550f98f2df44f18"
+    "sha256": "55b4b7dace633b3a31dfb55d28f425322b4dbe2dfc8eee546346f6b168ee9813"
   },
   {
     "file": "parts-months.md",
@@ -405,7 +405,7 @@
     "file": "prologue-only-all.docx",
     "shape": "prologue-only-all",
     "format": "docx",
-    "sha256": "2c219e294db12ad497b479c759febf3a7e05e6a4154bc88b6dd4932c833a1563"
+    "sha256": "6b64afba17585860bb73fb05fc943f70c145b283d07353a45483ddb01821df36"
   },
   {
     "file": "prologue-only-all.md",
@@ -435,7 +435,7 @@
     "file": "prologue-only-ends.docx",
     "shape": "prologue-only-ends",
     "format": "docx",
-    "sha256": "9486cf120dc98be8eabbee65513a3187dce50387a7829da28f9ab80f08d7c43f"
+    "sha256": "7509ece88a5cf4b3209bb42dd561bf2fd7f539a42f0d8335a96adef7e5421c9b"
   },
   {
     "file": "prologue-only-ends.md",
@@ -465,7 +465,7 @@
     "file": "scene-markers-bullet.docx",
     "shape": "scene-markers-bullet",
     "format": "docx",
-    "sha256": "90f1451d3b48b15a355ba92b80f8d686d49db4f66e6ba071e69922cf014fedc3"
+    "sha256": "308e8a62245e1bee40b988d6ea155d2d82f914ab61d15abc7cea3e1a6aec2355"
   },
   {
     "file": "scene-markers-bullet.md",
@@ -495,7 +495,7 @@
     "file": "scene-markers-dashes.docx",
     "shape": "scene-markers-dashes",
     "format": "docx",
-    "sha256": "bb00fb5347d75d943b1bcb9611d49eb910d9e5557a3161124bd39daf92afc4d5"
+    "sha256": "c433d98834730b23c26fc6deb7fa942816d8e9b7d2057d95d4f15368ff5a1dc9"
   },
   {
     "file": "scene-markers-dashes.md",
@@ -525,7 +525,7 @@
     "file": "scene-markers-section.docx",
     "shape": "scene-markers-section",
     "format": "docx",
-    "sha256": "5d35af1e64b2428033fba888d81adc1062cb9b29628abf413275f01807924007"
+    "sha256": "e4c99dd59aa00e6a96af1b300789c842e91adb8892f1a7d7ba28ab9c1113d530"
   },
   {
     "file": "scene-markers-section.md",
@@ -555,7 +555,7 @@
     "file": "scene-markers-stars.docx",
     "shape": "scene-markers-stars",
     "format": "docx",
-    "sha256": "01c2882e6952403d73eb11d6c0ce692be5be9f5430d44a91d70925b74f36e5ae"
+    "sha256": "9151382d63111e165eefd908aee996c77e0be126b7e9268f0b93d144bc0ad7b0"
   },
   {
     "file": "scene-markers-stars.md",
@@ -585,7 +585,7 @@
     "file": "spaced-caps.docx",
     "shape": "spaced-caps",
     "format": "docx",
-    "sha256": "7d4345392047fd06cf99339a89b61d7288249d2d15f5ff5042087dc349d00503"
+    "sha256": "43573fc1a4899bcbd8364452cd4b96791eaf1fab745c20859300a402ea17f9b9"
   },
   {
     "file": "spaced-caps.pdf",
@@ -597,7 +597,7 @@
     "file": "titles-only.docx",
     "shape": "titles-only",
     "format": "docx",
-    "sha256": "663062ab28fb6f9b37abf8ada78beafcdbba819016e40203afbb285ba4a6a347"
+    "sha256": "8efcf302e941ab765db826651185c796a6d1a3c6d0705f2e33e1e0791cbf12f1"
   },
   {
     "file": "titles-only.md",
@@ -627,7 +627,7 @@
     "file": "two-line-heads.docx",
     "shape": "two-line-heads",
     "format": "docx",
-    "sha256": "f33685f0abdef2986063285c99893e1b6821786d96a9f59c9b8be46dff7111cf"
+    "sha256": "94cafa5b8442d03c33cd4886c55f223b9db5ceaa29badba5fb88916aa160683e"
   },
   {
     "file": "two-line-heads.pdf",
@@ -639,7 +639,7 @@
     "file": "worksheet.docx",
     "shape": "worksheet",
     "format": "docx",
-    "sha256": "512c2ee5e6f918531b6bb0588ec48a3206835205154768d84da1edcc8eac4312"
+    "sha256": "7a59805d8c38e10ed2ee69738c43c2ee65c84730aa70429038d09d5c87c0a7cc"
   },
   {
     "file": "worksheet.md",

@@ -120,3 +120,49 @@ test('a volume titled from its file name fails', () => {
   assert.equal(r.ok, false);
   assert.match(r.diff ?? '', /dropcap/);
 });
+
+/* ---- content checks (final review: a cell must not pass on a book that lost its text) ---- */
+test('contains: a named front section left empty fails', () => {
+  const e: Expected = { sections: [{ kind: 'front', type: 'dedication', contains: ['For my sister'] }, { kind: 'body' }] };
+  const r = compareBook(e, book([sec('front', 'dedication', 'Dedication', '', ''), sec('body', 'chapter', 'X', '1', 'For my sister, who kept the lamp lit.')]));
+  assert.equal(r.ok, false);
+  assert.match(r.diff ?? '', /For my sister/);
+});
+
+test('contains matches across rewrapped lines', () => {
+  const e: Expected = { sections: [{ kind: 'body', contains: ['How many have no sail at all? ____'] }] };
+  assert.equal(compareBook(e, book([sec('body', 'chapter', 'X', '1', 'How many have\nno sail at all?  ____')])).ok, true);
+});
+
+test('contains: blanks stripped from a worksheet fail', () => {
+  const e: Expected = { sections: [{ kind: 'body', contains: ['painted ____ and ____.'] }] };
+  assert.equal(compareBook(e, book([sec('body', 'chapter', 'X', '1', 'The lighthouse is painted and .')])).ok, false);
+});
+
+test('lacks: the dedication left inside chapter 1 fails', () => {
+  const e: Expected = { sections: [{ kind: 'body', lacks: ['For my sister'] }] };
+  const r = compareBook(e, book([sec('body', 'chapter', 'The Orchard', '1', 'For my sister, who kept the lamp lit.\n\nThe orchard...')]));
+  assert.equal(r.ok, false);
+  assert.match(r.diff ?? '', /must not hold/);
+});
+
+test('an empty no-headings import fails its contains', () => {
+  const e: Expected = { sections: [{ kind: 'body', type: 'chapter', title: '', breaks: 0, contains: ['first sentence here'] }] };
+  assert.equal(compareBook(e, book([sec('body', 'chapter', '', '', '')])).ok, false);
+});
+
+test('minWords: a section that lost most of its text fails', () => {
+  const e: Expected = { sections: [{ kind: 'body', minWords: 5 }] };
+  assert.equal(compareBook(e, book([sec('body', 'chapter', 'X', '1', 'one two three four five')])).ok, true);
+  const r = compareBook(e, book([sec('body', 'chapter', 'X', '1', 'one two')]));
+  assert.equal(r.ok, false);
+  assert.match(r.diff ?? '', /2 words/);
+});
+
+test('box set: a stray part or untitled body entry under a volume fails', () => {
+  const ok = [['One', ['Chapter 1 · The Harbour', 'Chapter 2 · The Storm']], ['Two', ['Chapter 1 · The Field']], ['Three', ['Chapter 1 · The Harbour']]] as [string, string[]][];
+  const withPart = ok.map(([t, e], i) => [t, i === 1 ? ['Part 1 · Stray', ...e] : e]) as [string, string[]][];
+  assert.equal(compareBoxSetNav(nav(withPart), VOLS).ok, false);
+  const withUntitled = ok.map(([t, e], i) => [t, i === 1 ? [...e, 'Chapter 2 · Untitled'] : e]) as [string, string[]][];
+  assert.equal(compareBoxSetNav(nav(withUntitled), VOLS).ok, false);
+});

@@ -51,7 +51,10 @@
     "sections": [
       {
         "kind": "body",
-        "type": "prologue"
+        "type": "prologue",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       }
     ]
   }

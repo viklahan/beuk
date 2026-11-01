@@ -79,19 +79,28 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": ""
+        "title": "",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": ""
+        "title": "",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 3,
-        "title": ""
+        "title": "",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ]
   }

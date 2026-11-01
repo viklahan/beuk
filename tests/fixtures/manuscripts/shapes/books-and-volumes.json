@@ -114,13 +114,19 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Harbour"
+        "title": "The Harbour",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Storm"
+        "title": "The Storm",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       },
       {
         "kind": "body",
@@ -132,13 +138,19 @@
         "kind": "body",
         "type": "chapter",
         "number": 3,
-        "title": "The Gate"
+        "title": "The Gate",
+        "contains": [
+          "The orchard behind the house had seven trees,"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 4,
-        "title": "The Orchard"
+        "title": "The Orchard",
+        "contains": [
+          "The stair to the attic creaked on every"
+        ]
       },
       {
         "kind": "body",
@@ -150,7 +162,10 @@
         "kind": "body",
         "type": "chapter",
         "number": 5,
-        "title": "The Bridge"
+        "title": "The Bridge",
+        "contains": [
+          "Nobody slept much that night. In the morning"
+        ]
       }
     ]
   }

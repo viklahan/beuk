@@ -62,12 +62,18 @@
       {
         "kind": "body",
         "type": "chapter",
-        "title": "The Ferry"
+        "title": "The Ferry",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
-        "title": "The Crossing"
+        "title": "The Crossing",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       }
     ]
   }

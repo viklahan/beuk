@@ -67,7 +67,10 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Well"
+        "title": "The Well",
+        "contains": [
+          "The well in the yard had been dry"
+        ]
       },
       {
         "kind": "body",
@@ -79,7 +82,10 @@
         "kind": "body",
         "type": "chapter",
         "number": 3,
-        "title": "The Stair"
+        "title": "The Stair",
+        "contains": [
+          "The stair to the attic creaked on every"
+        ]
       }
     ]
   }

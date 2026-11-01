@@ -66,25 +66,37 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Harbour"
+        "title": "The Harbour",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Storm"
+        "title": "The Storm",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 3,
-        "title": "The Light"
+        "title": "The Light",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 4,
-        "title": "The Stair"
+        "title": "The Stair",
+        "contains": [
+          "The stair to the attic creaked on every"
+        ]
       }
     ]
   }

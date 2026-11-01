@@ -71,13 +71,19 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Basket"
+        "title": "The Basket",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Tower"
+        "title": "The Tower",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ],
     "mustNotAppear": [

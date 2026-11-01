@@ -57,13 +57,19 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Gate"
+        "title": "The Gate",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Hill"
+        "title": "The Hill",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       }
     ]
   }

@@ -1,4 +1,6 @@
-/* A shape as a Word document: the minimal package Word and Beuk's reader
+/* A shape as a Word document (no title or author in its package
+   properties: the reader has to find them on the title page, as with
+   the PDFs): the minimal package Word and Beuk's reader
    both open (as src/housekeeping/fixtures.ts builds its fixture docx),
    stored entries with zeroed times via createZip, so the bytes never
    change. Headings carry the Word styles a writer's file would. */
@@ -37,13 +39,9 @@ function blockXml(b: Exclude<Block, { t: 'filler' }>): string {
 const style = (id: string, name: string) => '<w:style w:type="paragraph" w:styleId="' + id + '"><w:name w:val="' + name + '"/></w:style>';
 
 export function renderDocx(s: Shape): Buffer {
-  const title = s.blocks.find((b) => b.t === 'title');
-  const byline = s.blocks.find((b) => b.t === 'byline');
   const document = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<w:document xmlns:w="' + W + '"><w:body>'
     + expandBlocks(s.blocks).map(blockXml).join('') + '</w:body></w:document>';
   const core = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">'
-    + (title ? '<dc:title>' + esc(title.text) + '</dc:title>' : '')
-    + (byline ? '<dc:creator>' + esc(byline.text.replace(/^by\s+/i, '')) + '</dc:creator>' : '')
     + '</cp:coreProperties>';
   const entries = [
     { name: '[Content_Types].xml', data: '<?xml version="1.0" encoding="UTF-8"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>' },

@@ -29,8 +29,8 @@ export function compareBoxSetNav(navXhtml: string, volumes: Expected[]): { ok: b
     const title = (kids(li, 'a')[0]?.textContent ?? '').trim();
     if (v.meta?.title !== undefined && fold(title) !== fold(v.meta.title)) return fail(`book ${i + 1} is titled "${title}", expected "${v.meta.title}"`);
     const entries = (kids(li, 'ol')[0] ? kids(kids(li, 'ol')[0], 'li') : []).map((e: El) => (kids(e, 'a')[0]?.textContent ?? '').trim());
-    // a chapter's label is "Chapter N · Title" (sectionLabel); front and back matter carry no prefix
-    const chapters = entries.map((e: string) => /^Chapter [^·]+ · (.*)$/.exec(e)?.[1]).filter((t: string | undefined): t is string => t !== undefined);
+    // a chapter's label is "Chapter N · Title", a part's "Part N · Title" (sectionLabel); front and back matter carry no prefix
+    const chapters = entries.map((e: string) => /^(?:Chapter|Part) [^·]+ · (.*)$/.exec(e)?.[1]).filter((t: string | undefined): t is string => t !== undefined);
     const want = v.sections.filter((s) => s.kind === 'body' && (s.type ?? 'chapter') === 'chapter').map((s) => s.title ?? '');
     if (chapters.length !== want.length || chapters.some((c: string, k: number) => fold(c) !== fold(want[k])))
       return fail(`book ${i + 1} ("${title}") holds chapters [${chapters.join(', ')}], expected [${want.join(', ')}]`);

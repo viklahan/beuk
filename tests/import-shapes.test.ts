@@ -160,7 +160,8 @@ test('docx is a zip whose document.xml holds every heading text', () => {
   for (const part of ['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/styles.xml', 'docProps/core.xml']) assert.ok(z.has(part), part);
   const doc = z.get('word/document.xml')!;
   for (const h of ['Chapter 1: The Harbour', 'Chapter 2: The Storm', 'Chapter 3: The Light']) assert.ok(doc.includes('<w:t xml:space="preserve">' + h + '</w:t>'), h);
-  assert.match(z.get('docProps/core.xml')!, /<dc:title>The Lantern Keeper<\/dc:title>.*<dc:creator>Ada Marsh<\/dc:creator>/s);
+  // no title or author in the package: the title page is what the reader must find (as the PDFs)
+  assert.ok(!/<dc:(title|creator)>/.test(z.get('docProps/core.xml')!));
 });
 
 test('mixed-word-styles uses Heading1, Heading2 and a bold Normal run', () => {

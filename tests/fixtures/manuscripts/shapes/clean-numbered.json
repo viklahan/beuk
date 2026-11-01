@@ -84,21 +84,30 @@
         "type": "chapter",
         "number": 1,
         "title": "The Harbour",
-        "breaks": 0
+        "breaks": 0,
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
         "title": "The Storm",
-        "breaks": 1
+        "breaks": 1,
+        "contains": [
+          "The storm came up from the south in"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 3,
         "title": "The Light",
-        "breaks": 0
+        "breaks": 0,
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ]
   }

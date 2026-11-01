@@ -9,8 +9,9 @@
      npm run import-shapes:run [-- --only <shape id>]
      (IMPORT_SHAPES_OUT=<dir> keeps results.md / results.json there)
 
-   Not part of npm test: it needs Chromium. Exit 1 on any fail, 2 when
-   the run itself could not start. */
+   Not part of npm test: it needs Chromium. Exit 1 when the results are
+   written and some cell failed; 2 when the run could not start or broke
+   before writing them. */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -23,6 +24,16 @@ import { FORMATS, loadShapes, OUT_DIR, type Format, type Shape } from './shape.j
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const IMPORT_TIMEOUT_MS = 60_000;
 const SETTLE_MS = 1500; // 1.0's local save is debounced (studio/e2e/book.mjs waits the same)
+const CELL_TIMEOUT_MS = 150_000; // wall clock for one cell: boot + import + settle, with room
+
+/** A cell's result, or its fail once `ms` pass; `onTimeout` closes what the cell held open. */
+export async function withDeadline(work: Promise<CellResult>, ms: number, onTimeout: () => unknown, who: Pick<CellResult, 'shape' | 'format'>): Promise<CellResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<CellResult>((resolve) => {
+    timer = setTimeout(() => { Promise.resolve().then(onTimeout).catch(() => {}); resolve({ ...who, status: 'fail', diff: `cell did not finish within ${ms / 1000} s` }); }, ms);
+  });
+  try { return await Promise.race([work, late]); } finally { clearTimeout(timer); }
+}
 
 export type CellResult = { shape: string; format: Format | 'boxset'; status: 'pass' | 'fail' | 'na'; diff?: string };
 
@@ -62,6 +73,7 @@ export async function openStudio(browser: Browser, origin: string) {
 
 /** Import one file through the Import button; the saved book, or why there is none. */
 export async function importThroughButton(page: Page, file: string): Promise<{ book: Book10 } | { error: string }> {
+  const before = await page.evaluate(READ_SAVED);
   const t0 = Date.now();
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#btnImport')]);
   await chooser.setFiles(file);
@@ -74,7 +86,7 @@ export async function importThroughButton(page: Page, file: string): Promise<{ b
     const refused = await page.evaluate(() => (window as unknown as { __toasts: { text: string; alert: boolean }[] }).__toasts.filter((t) => t.alert).map((t) => t.text));
     if (refused.length) return { error: `import refused: ${refused[0].trim()}` };
     const rec = await page.evaluate(READ_SAVED);
-    if (rec && Date.parse(rec.savedAt) > t0) {
+    if (rec && Date.parse(rec.savedAt) > t0 && rec.json !== before?.json) {
       await page.waitForTimeout(SETTLE_MS);
       const last = await page.evaluate(READ_SAVED);
       return { book: JSON.parse(last.json).book as Book10 };
@@ -84,9 +96,15 @@ export async function importThroughButton(page: Page, file: string): Promise<{ b
   return { error: `no book saved within ${IMPORT_TIMEOUT_MS / 1000} s` };
 }
 
-async function runCell(browser: Browser, origin: string, s: Shape, f: Format): Promise<CellResult> {
-  const { ctx, page } = await openStudio(browser, origin);
+export async function runCell(browser: Browser, origin: string, s: Shape, f: Format): Promise<CellResult> {
+  const held: { ctx?: { close: () => Promise<void> } } = {};
+  return withDeadline(cellWork(browser, origin, s, f, held), CELL_TIMEOUT_MS, () => held.ctx?.close(), { shape: s.id, format: f });
+}
+
+async function cellWork(browser: Browser, origin: string, s: Shape, f: Format, held: { ctx?: { close: () => Promise<void> } }): Promise<CellResult> {
   try {
+    const { ctx, page } = await openStudio(browser, origin);
+    held.ctx = ctx;
     const got = await importThroughButton(page, path.join(OUT_DIR, `${s.id}.${f}`));
     if ('error' in got) return { shape: s.id, format: f, status: 'fail', diff: got.error };
     const r = compareBook(s.expected, got.book);
@@ -94,7 +112,7 @@ async function runCell(browser: Browser, origin: string, s: Shape, f: Format): P
   } catch (e) {
     return { shape: s.id, format: f, status: 'fail', diff: `harness: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}` };
   } finally {
-    await ctx.close();
+    await held.ctx?.close().catch(() => {});
   }
 }
 
@@ -104,8 +122,14 @@ async function runBoxSet(browser: Browser, origin: string, shapes: Shape[]): Pro
   const label = 'box set (' + BOXSET_CELL.volumes.join(' + ') + ')';
   const cell = (status: 'pass' | 'fail', diff?: string): CellResult => ({ shape: label, format: 'boxset', status, ...(diff ? { diff } : {}) });
   const expected = BOXSET_CELL.volumes.map((f) => shapes.find((s) => s.id === f.replace(/\.[a-z]+$/, ''))!.expected);
-  const { ctx, page } = await openStudio(browser, origin);
+  const held: { ctx?: { close: () => Promise<void> } } = {};
+  return withDeadline(boxSetWork(browser, origin, expected, cell, held), CELL_TIMEOUT_MS * 2, () => held.ctx?.close(), { shape: label, format: 'boxset' });
+}
+
+async function boxSetWork(browser: Browser, origin: string, expected: Shape['expected'][], cell: (status: 'pass' | 'fail', diff?: string) => CellResult, held: { ctx?: { close: () => Promise<void> } }): Promise<CellResult> {
   try {
+    const { ctx, page } = await openStudio(browser, origin);
+    held.ctx = ctx;
     const first = await importThroughButton(page, path.join(OUT_DIR, BOXSET_CELL.volumes[0]));
     if ('error' in first) return cell('fail', 'book one: ' + first.error);
     // 1.0 opens the Import report after an import; the writer closes it to go on
@@ -129,7 +153,7 @@ async function runBoxSet(browser: Browser, origin: string, shapes: Shape[]): Pro
   } catch (e) {
     return cell('fail', `harness: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`);
   } finally {
-    await ctx.close();
+    await held.ctx?.close().catch(() => {});
   }
 }
 
@@ -168,6 +192,7 @@ async function main() {
   }
 
   const cells: CellResult[] = [];
+  let broke: unknown = null;
   try {
     for (const s of shapes) {
       for (const f of FORMATS) {
@@ -181,9 +206,15 @@ async function main() {
       cells.push(c);
       console.log(`${c.status === 'pass' ? 'pass' : 'FAIL'} ${c.shape}${c.diff ? ' — ' + c.diff : ''}`);
     }
+  } catch (e) {
+    broke = e;
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
     await srv.stop();
+  }
+  if (broke) {
+    console.error('the run broke after ' + cells.length + ' cells: ' + (broke instanceof Error ? broke.stack : String(broke)));
+    process.exit(2);
   }
 
   const ran = new Date().toISOString();

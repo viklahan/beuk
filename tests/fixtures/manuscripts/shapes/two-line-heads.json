@@ -67,13 +67,19 @@
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Long Way Home"
+        "title": "The Long Way Home",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Gate at the End of the Lane"
+        "title": "The Gate at the End of the Lane",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       }
     ]
   }

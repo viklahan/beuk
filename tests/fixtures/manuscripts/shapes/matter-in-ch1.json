@@ -68,23 +68,39 @@
     "sections": [
       {
         "kind": "front",
-        "type": "dedication"
+        "type": "epigraph",
+        "contains": [
+          "Every road is a long one at night."
+        ]
       },
       {
         "kind": "front",
-        "type": "epigraph"
+        "type": "dedication",
+        "contains": [
+          "For my sister, who kept the lamp lit."
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Orchard"
+        "title": "The Orchard",
+        "contains": [
+          "The orchard behind the house had seven trees,"
+        ],
+        "lacks": [
+          "For my sister",
+          "Every road is a long one"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Well"
+        "title": "The Well",
+        "contains": [
+          "The well in the yard had been dry"
+        ]
       }
     ]
   }

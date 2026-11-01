@@ -11,7 +11,7 @@
   "blocks": [
     {
       "t": "title",
-      "text": "The Lantern Keeper"
+      "text": "Notes from the Point"
     },
     {
       "t": "byline",
@@ -33,14 +33,14 @@
     {
       "t": "contents",
       "entries": [
-        "Chapter 1: The Harbour .......... 3",
-        "Chapter 2: The Storm .......... 9",
-        "Chapter 3: The Light .......... 15"
+        "Chapter 1: The Bell .......... 3",
+        "Chapter 2: The Quay .......... 9",
+        "Chapter 3: The Tide .......... 15"
       ]
     },
     {
       "t": "heading",
-      "text": "Chapter 1: The Harbour",
+      "text": "Chapter 1: The Bell",
       "level": 1
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "t": "heading",
-      "text": "Chapter 2: The Storm",
+      "text": "Chapter 2: The Quay",
       "level": 1
     },
     {
@@ -66,7 +66,7 @@
     },
     {
       "t": "heading",
-      "text": "Chapter 3: The Light",
+      "text": "Chapter 3: The Tide",
       "level": 1
     },
     {
@@ -80,31 +80,43 @@
   ],
   "expected": {
     "meta": {
-      "title": "The Lantern Keeper",
+      "title": "Notes from the Point",
       "author": "Ada Marsh"
     },
     "sections": [
       {
         "kind": "front",
-        "title": "A Note from the Author"
+        "title": "A Note from the Author",
+        "contains": [
+          "This story began on a wet weekend by"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 1,
-        "title": "The Harbour"
+        "title": "The Bell",
+        "contains": [
+          "The harbour was quiet before the boats went"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 2,
-        "title": "The Storm"
+        "title": "The Quay",
+        "contains": [
+          "The storm came up from the south in"
+        ]
       },
       {
         "kind": "body",
         "type": "chapter",
         "number": 3,
-        "title": "The Light"
+        "title": "The Tide",
+        "contains": [
+          "The light turned all night, as it always"
+        ]
       }
     ],
     "mustNotAppear": [
