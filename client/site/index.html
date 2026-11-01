@@ -27,6 +27,10 @@
          /?home always shows this page. */
       (function(){
         document.documentElement.className += " js";
+        /* BEUK:deck — a wide, tall enough window gets the tour one scene at a
+           time; set here, before the first paint, so the long page never
+           flashes. The same query is watched by the page script. */
+        try { if (window.matchMedia("(min-width: 980px) and (min-height: 600px)").matches) document.documentElement.className += " deck"; } catch (e) {}
         try {
           if (!/[?&]home(=|&|$)/.test(location.search) && localStorage.getItem("beuk.desk") === "1") location.replace("/studio");
         } catch (e) {}
@@ -102,22 +106,22 @@
       .chooser-line{font-family:var(--book);font-style:italic;font-size:17.5px;color:var(--muted);min-height:1.6em;margin:0;max-width:46em}
       .chooser-line b{color:var(--ink);font-style:normal}
 
-      /* ---------- stations (the voyage) ---------- */
-      .station-rail{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:20px}
-      @media(max-width:880px){.station-rail{grid-template-columns:repeat(3,1fr)}}
-      @media(max-width:520px){.station-rail{grid-template-columns:repeat(2,1fr)}}
-      .station-btn{background:transparent;border:1px solid var(--line);border-radius:10px;padding:12px 10px;text-align:left;color:var(--ink);transition:border-color .25s,background .25s,transform .25s}
-      .station-btn .n{font-family:var(--mono);font-size:11px;color:var(--accent);display:block;margin-bottom:5px}
-      .station-btn .t{font-weight:800;font-size:13.5px;line-height:1.25;display:block}
-      .station-btn:hover{transform:translateY(-2px);border-color:var(--accent)}
-      .station-btn[aria-selected="true"]{background:var(--card);border-color:var(--accent);box-shadow:0 12px 26px -16px rgba(13,74,95,.45)}
-      .station-panel{display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px;grid-template-columns:.9fr 1.1fr;gap:34px;align-items:center}
-      .station-panel.on{display:grid;animation:panelIn .5s ease both}
-      @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-      @media(max-width:760px){.station-panel{grid-template-columns:1fr}}
-      .station-panel h3{font-size:26px;margin-bottom:10px}
-      .station-panel p{color:var(--muted);margin:0 0 12px}
-      .station-panel p b{color:var(--ink)}
+      /* ---------- the voyage: one port per scene ---------- */
+      .scene{scroll-margin-top:112px}
+      .scene-port{padding:22px 0}
+      .port-scene{display:grid;grid-template-columns:1.1fr .9fr;grid-template-areas:"art copy";gap:20px 40px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px}
+      #port-2 .port-scene{grid-template-areas:"art copy" "art studio"}
+      .port-scene .stage-viz{grid-area:art}
+      .port-scene .port-copy{grid-area:copy}
+      .port-scene .blend-studio{grid-area:studio}
+      @media(max-width:760px){.port-scene,#port-2 .port-scene{grid-template-columns:1fr;grid-template-areas:"art" "copy" "studio";padding:20px}}
+      .port-copy h2{font-size:clamp(26px,3.2vw,36px);margin-bottom:12px}
+      .port-copy p{color:var(--muted);margin:0 0 12px}
+      .port-copy p b{color:var(--ink)}
+      .port-copy .kicker{margin-bottom:10px}
+      .voyage-note{font-family:var(--book);font-style:italic;font-size:15px;margin-top:18px !important}
+      .ch-go{margin-left:6px;border:0;background:none;padding:0;font:inherit;font-style:normal;font-weight:800;color:var(--accent2);border-bottom:1px solid var(--amber);cursor:pointer}
+      .ch-go:hover{color:var(--amber2)}
       .stage-viz{min-height:190px;border:1px dashed var(--line);border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden}
       .stage-viz.art{min-height:0;aspect-ratio:1200/775;padding:0;border:0;border-radius:12px;background:#fbf8f0;box-shadow:0 18px 34px -22px rgba(13,74,95,.55)}
       .stage-viz.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
@@ -228,8 +232,9 @@
       .tb-dot.now{background:var(--accent);border-color:var(--accent2)}
       /* BEUK:tips — the dots carry no words: hover or keyboard focus shows each port's name beneath it (its aria-label, unchanged) */
       .tb-dot::after{content:attr(aria-label);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:240px;padding:5px 9px;border-radius:7px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 18px rgba(34,51,58,.16);font-size:12px;font-weight:600;line-height:1.35;text-align:left;white-space:normal;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s ease-out;z-index:3}
-      .tb-dot:first-child::after{left:0;transform:none}
-      .tb-dot:last-child::after{left:auto;right:0;transform:none}
+      .tb-dot:nth-child(-n+3)::after{left:0;transform:none}
+      .tb-dot:nth-last-child(-n+3)::after{left:auto;right:0;transform:none}
+      .tourbar{overflow-x:clip}
       .tb-dot:hover::after,.tb-dot:focus-visible::after{opacity:1;visibility:visible}
       .tb-dot:hover{z-index:4}
       @media (prefers-reduced-motion: reduce){.tb-dot::after{transition:none}}
@@ -242,6 +247,7 @@
       @media (prefers-reduced-motion: reduce){.tb-boat,.tb-boat .tb-hull{transition:none}.tb-boat svg{animation:none}}
       .tb-port{font-family:var(--mono);font-size:12px;color:var(--accent2);white-space:nowrap}
       .tb-port b{color:var(--ink)}
+      @media(max-width:700px){.tb-port .tb-name{display:none}.tb-dot{width:11px;height:11px;border-width:1.5px}}
 
       /* ---------- end-of-tour card ---------- */
       .homecard{max-width:680px;margin:34px auto 0;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:36px 38px;text-align:center;box-shadow:0 24px 48px -28px rgba(13,74,95,.35)}
@@ -334,6 +340,92 @@
       .foot-in nav a:hover{color:var(--accent)}
       .footline{text-align:center;color:#8d8168;font-size:12.5px;padding:22px 16px 38px}
 
+      /* ===== BEUK:deck — the tour, one scene at a time (wide screens with script) =====
+         Without .deck (phones, short windows, no script) every scene is simply the
+         next stretch of one long page. With it, the scenes stack in the window under
+         the top bar and one shows at a time: the dots, Back / Next, the arrow keys,
+         the wheel or a swipe open the next. Hidden scenes are visibility:hidden, so
+         they are out of the Tab order and the accessibility tree too. A scene taller
+         than its window scrolls inside itself — nothing is ever cut off. */
+      html.deck,html.deck body{height:100%;overflow:hidden;scroll-behavior:auto}
+      .deck .topbar{position:fixed;top:0;left:0;right:0}
+      .deck main{position:fixed;left:0;right:0;bottom:0;top:var(--bar-h,104px)}
+      .deck .scene{position:absolute;inset:0;margin:0;padding:clamp(14px,3vh,34px) 0 86px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease,visibility 0s linear .5s}
+      .deck main[data-dir="back"] .scene:not(.on){transform:translateY(-18px)}
+      .deck .scene.snug{overflow-y:hidden}
+      .deck .scene.on{opacity:1;visibility:visible;transform:none;transition:opacity .5s ease,transform .5s ease,visibility 0s}
+      @media(max-height:780px){
+        .deck .scene{padding:10px 0 62px}
+        .deck .tourbar-in{padding-top:4px;padding-bottom:4px}
+        .deck .topbar-in{padding-top:6px;padding-bottom:6px}
+        .deck .deck-nav{bottom:10px}
+      }
+      .deck .scene > :first-child{margin-top:auto}
+      .deck .scene > :last-child{margin-bottom:auto}
+      .deck .scene > .wrap{width:100%}
+      .js.deck .reveal{opacity:1;transform:none}
+      .deck .sec-head{max-width:none;margin-bottom:22px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:44px;align-items:end}
+      .deck .sec-head .kicker{grid-column:1/-1;margin-bottom:8px}
+      .deck .sec-head h2{font-size:clamp(26px,3.4vw,36px)}
+      .deck .sec-head p{font-size:15px;margin:0;line-height:1.55}
+      /* welcome */
+      .deck .hero{padding:0 0 22px}
+      .deck .hero h1{font-size:clamp(34px,min(5.2vw,7.6vh),62px)}
+      .deck .hero .lede{font-size:clamp(16px,2.2vh,18.5px);margin:16px 0 24px}
+      /* ports: the painting never pushes the words off the screen */
+      .deck .scene-port .stage-viz.art{max-height:calc(100vh - var(--bar-h,104px) - 170px)}
+      .deck #port-2 .port-copy h2{margin-bottom:8px}
+      .deck #port-2 .port-copy p{font-size:15px;line-height:1.6}
+      .deck #port-2 .blend-checks{margin-top:10px;padding-top:10px}
+      .deck #port-2 .bs-body{max-height:clamp(120px,calc(100vh - 690px),230px);overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 72%,transparent);mask-image:linear-gradient(180deg,#000 72%,transparent)}
+      .deck #port-2 .bs-head{padding:7px 14px}
+      .deck #port-2 .bs-cap{margin-top:8px;font-size:13px}
+      /* manifest in three columns, the helm's three instruments side by side */
+      .deck .manifest{grid-template-columns:repeat(3,1fr);gap:0 34px}
+      .deck .manifest .mf{padding:9px 0;gap:12px}
+      .deck .manifest .mf h3{font-size:16.5px}
+      .deck .manifest .mf p{font-size:13px;line-height:1.5}
+      .deck .playroom{grid-template-columns:repeat(3,1fr);gap:16px}
+      .deck .lab{padding:18px 20px}
+      .deck .lab.wide{grid-column:auto}
+      .deck .lab h3{font-size:19px}
+      .deck .lab .lab-sub{font-size:13px;line-height:1.5;margin-bottom:10px}
+      .deck .lab .field{margin-bottom:8px}
+      .deck .lab input[type="text"]{padding:8px 11px;font-size:15px}
+      .deck .lab .readout{font-size:12.5px;line-height:1.65;padding:8px 12px}
+      .deck #helm .book3d-wrap{gap:6px;padding:0}
+      .deck #helm .scene3d{transform:scale(.7);margin:-39px 0}
+      .deck #helm .spineviz{height:64px}
+      .deck #helm .wrapbar{height:40px;margin:10px 0 4px}
+      .deck .type-prev{padding:16px 18px;margin-top:12px}
+      .deck .type-prev p{font-size:15.5px;line-height:1.7;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:5;line-clamp:5;overflow:hidden}
+      .deck .type-ctl{gap:8px}
+      /* proof + home */
+      .deck .bp-stage{min-height:236px}
+      .deck .bp-stats{margin-top:20px;padding-top:18px}
+      .deck .final-cta{padding:0}
+      .deck .final-cta h2{font-size:clamp(26px,3.4vw,36px);margin-bottom:0}
+      .deck .homecard{margin-top:16px;padding:24px 34px}
+      .deck .homecard p.hc-copy{margin-bottom:18px}
+      .deck .homecard .hc-escape{margin-top:12px}
+      .deck .final-cta .micro{margin-top:10px}
+      .deck .scene-home footer{margin-top:18px}
+      .deck .scene-home .foot-in{padding:16px 0 4px}
+      .deck .scene-home .footline{padding:10px 16px 0}
+
+      /* back / next */
+      .deck-nav{position:fixed;z-index:40;bottom:18px;right:max(22px,calc((100vw - 1120px) / 2 + 22px));display:flex;align-items:center;gap:6px;background:rgba(248,244,233,.94);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:999px;padding:5px;box-shadow:0 14px 30px -18px rgba(13,74,95,.55)}
+      .deck-nav[hidden]{display:none}
+      .dn-btn{border:0;background:transparent;color:var(--ink);font-weight:800;font-size:14px;padding:9px 16px;border-radius:999px;white-space:nowrap}
+      .dn-btn:hover{background:var(--bg2)}
+      .dn-btn:disabled{opacity:.35;cursor:default;background:transparent}
+      .dn-next{background:var(--cta);color:var(--cta-ink)}
+      .dn-next:hover{background:var(--accent2)}
+      .dn-next.hint{animation:dnHint 2.4s ease-in-out infinite}
+      @keyframes dnHint{0%,100%{box-shadow:0 0 0 0 rgba(20,96,122,0)}50%{box-shadow:0 0 0 7px rgba(20,96,122,.2)}}
+      .dn-count{font-family:var(--mono);font-size:12px;color:var(--muted);padding:0 6px}
+      .deck .tb-dot{width:13px;height:13px}
+
       @media (prefers-reduced-motion: reduce){
         html{scroll-behavior:auto}
         *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important}
@@ -342,7 +434,7 @@
     </style>
   </head>
   <body>
-    <header class="topbar">
+    <header class="topbar" id="topbar">
       <div class="topbar-in">
         <a class="lockup" href="#top" aria-label="Beuk — home">
           <svg class="mark" width="26" height="31" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>
@@ -361,148 +453,198 @@
           <a class="btn-sm" href="/studio">Start writing</a>
         </nav>
       </div>
-      <div class="tourbar" aria-label="Tour progress — six ports">
+      <!-- BEUK:deck — the tour: one dot per scene of the page; a click opens that scene -->
+      <div class="tourbar" aria-label="Tour progress — twelve scenes">
         <div class="tourbar-in">
           <span class="tb-label">The tour</span>
           <div class="tb-track">
             <div class="tb-fill" id="tb-fill"></div>
             <span class="tb-boat" id="tb-boat" aria-hidden="true"><span class="tb-hull"><svg viewBox="0 0 24 18" width="24" height="18"><path d="M12 1.2V12" stroke="var(--ink)" stroke-width="1.2"/><path d="M12.7 1.8 20 11.2h-7.3z" fill="var(--card)" stroke="var(--ink)" stroke-width=".8" stroke-linejoin="round"/><path d="M11.3 3.4 6.2 11.2h5.1z" fill="var(--amber)"/><path d="m12 1.2 4 1.2-4 1.2z" fill="#c8443a"/><path d="M2.5 12h19l-3 4H5.5z" fill="var(--accent2)"/></svg></span></span>
             <div class="tb-dots" id="tb-dots">
-              <button class="tb-dot now" data-port="0" aria-label="Port 1 of 6 — Embarkation: bring your manuscript"></button>
-              <button class="tb-dot" data-port="1" aria-label="Port 2 of 6 — The writing sea: write and typeset"></button>
-              <button class="tb-dot" data-port="2" aria-label="Port 3 of 6 — The shipyard: design the cover"></button>
-              <button class="tb-dot" data-port="3" aria-label="Port 4 of 6 — Customs: check it"></button>
-              <button class="tb-dot" data-port="4" aria-label="Port 5 of 6 — Eleven ports of call: send it everywhere"></button>
-              <button class="tb-dot" data-port="5" aria-label="Port 6 of 6 — Home port: your shelf"></button>
+              <button class="tb-dot now" data-scene="0" aria-label="1 of 12 — Welcome aboard"></button>
+              <button class="tb-dot" data-scene="1" aria-label="2 of 12 — Port 1, Embarkation: bring your manuscript"></button>
+              <button class="tb-dot" data-scene="2" aria-label="3 of 12 — Port 2, The writing sea: write and typeset"></button>
+              <button class="tb-dot" data-scene="3" aria-label="4 of 12 — Port 3, The shipyard: design the cover"></button>
+              <button class="tb-dot" data-scene="4" aria-label="5 of 12 — Port 4, Customs: check it"></button>
+              <button class="tb-dot" data-scene="5" aria-label="6 of 12 — Port 5, Eleven ports of call: send it everywhere"></button>
+              <button class="tb-dot" data-scene="6" aria-label="7 of 12 — Port 6, Home port: your shelf"></button>
+              <button class="tb-dot" data-scene="7" aria-label="8 of 12 — Ports of call: every store"></button>
+              <button class="tb-dot" data-scene="8" aria-label="9 of 12 — The manifest: everything aboard"></button>
+              <button class="tb-dot" data-scene="9" aria-label="10 of 12 — Take the helm: try it here"></button>
+              <button class="tb-dot" data-scene="10" aria-label="11 of 12 — The proof: one book, every shore"></button>
+              <button class="tb-dot" data-scene="11" aria-label="12 of 12 — Come home: start the free trial"></button>
             </div>
           </div>
-          <span class="tb-port" id="tb-port">Port <b>1 of 6</b> · Embarkation</span>
+          <span class="tb-port" id="tb-port"><b>1 of 12</b><span class="tb-name"> · Welcome aboard</span></span>
         </div>
       </div>
     </header>
 
-    <main id="top">
-      <!-- ================= HERO ================= -->
-      <div class="wrap">
-        <header class="hero">
-          <div class="hero-grid">
-            <div class="reveal in">
-              <h1>One book, bound for every shore.</h1>
-              <p class="lede">Your manuscript is a traveller. Beuk is the shipwright and the shipping line in one: it typesets the book, binds it, clears it through inspection — then sails it to eleven stores and the printing press, from a single browser tab.</p>
-              <a class="btn" href="/studio">Start writing <span class="arr">→</span></a>
-              <!-- BLEND (trial): true-facts line -->
-              <p class="blend-facts"><b>No download.</b> <b>Works on any computer, online or off.</b> <b>An account from day one.</b></p>
-              <!-- /BLEND -->
-              <p class="micro"><b>Free for 21 days, then $20 a month.</b> Everything is included. 36 book languages · 11 store presets · 24 trim sizes</p>
-            </div>
-            <div class="reveal in d1">
-              <div class="routewrap" id="routechart">
-                <svg viewBox="0 0 800 240" role="img" aria-label="A dashed sea route from your desk, through the bindery, out to every shore">
-                  <path d="M30,190 C170,90 300,215 450,120 C580,40 690,90 770,60" fill="none" stroke="#d5dcc9" stroke-width="2.5" stroke-linecap="round"/>
-                  <path class="rl-draw" d="M30,190 C170,90 300,215 450,120 C580,40 690,90 770,60" fill="none" stroke="#14607a" stroke-width="2.5" stroke-dasharray="7 8" stroke-linecap="round"/>
-                  <g fill="#14607a"><circle cx="30" cy="190" r="7"/><circle cx="205" cy="138" r="5"/><circle cx="330" cy="168" r="5"/><circle cx="450" cy="120" r="5"/><circle cx="585" cy="66" r="5"/><circle cx="770" cy="60" r="7"/></g>
-                  <g fill="#c99b3f"><circle cx="205" cy="138" r="2.2"/><circle cx="330" cy="168" r="2.2"/><circle cx="450" cy="120" r="2.2"/><circle cx="585" cy="66" r="2.2"/></g>
-                  <g font-family="Karla,sans-serif" font-size="14" font-weight="700" fill="#22333a"><text x="18" y="222">Your desk</text><text x="408" y="98">The bindery</text><text x="700" y="38">Every shore</text></g>
-                </svg>
-              </div>
-              <p class="micro" style="text-align:center">Charted below: the whole route, port by port.</p>
-            </div>
-          </div>
-        </header>
-
-        <!-- ================= CHOOSER ================= -->
-        <div class="chooser-band reveal" data-chooser>
-          <p class="kicker">Where are you with your book?</p>
-          <div class="chooser" role="group" aria-label="Where are you with your book?">
-            <button class="chipbtn" data-ch aria-pressed="false" data-leg="0" data-line="Just an idea is a fine place to start — <b>step onto an empty desk</b>, settle into zen mode, and let a gentle daily streak lay the keel, page by page.">Just an idea</button>
-            <button class="chipbtn" data-ch aria-pressed="false" data-leg="1" data-line="Drafting? <b>Bring the manuscript aboard as it stands</b> — chapters, footnotes and device previews meet you mid-crossing, in the studio fonts and themes.">Drafting</button>
-            <button class="chipbtn" data-ch aria-pressed="false" data-leg="4" data-line="Ready to publish? Then chart the last ports: <b>the shipyard for the cover, customs for the check</b> — and eleven ports of call beyond.">Ready to publish</button>
-          </div>
-          <p class="chooser-line" data-ch-line>Every book is somewhere on this chart. <b>Say where — and we'll set the course from there.</b></p>
-        </div>
-      </div>
-
-      <!-- ================= THE VOYAGE ================= -->
-      <section id="voyage" aria-label="The voyage" style="scroll-margin-top:112px">
+    <main id="top" data-dir="fwd">
+      <!-- ================= 1 · WELCOME ABOARD ================= -->
+      <section class="scene on" id="aboard" data-alias="top" data-name="Welcome aboard" aria-label="Welcome aboard">
         <div class="wrap">
-          <div class="sec-head reveal">
-            <p class="kicker">The voyage</p>
-            <h2>Six ports of one crossing.</h2>
-            <p>Click a port of the route — each one is a real part of Beuk, the same studio charted as a journey. Scroll on, and the whole crossing unfolds.</p>
-          </div>
-          <div class="stations" data-stations>
-            <div class="station-rail" role="tablist" aria-label="Ports of the voyage">
-              <button class="station-btn" role="tab" aria-selected="true"><span class="n">Port 1</span><span class="t">Embarkation</span></button>
-              <button class="station-btn" role="tab" aria-selected="false"><span class="n">Port 2</span><span class="t">The writing sea</span></button>
-              <button class="station-btn" role="tab" aria-selected="false"><span class="n">Port 3</span><span class="t">The shipyard</span></button>
-              <button class="station-btn" role="tab" aria-selected="false"><span class="n">Port 4</span><span class="t">Customs</span></button>
-              <button class="station-btn" role="tab" aria-selected="false"><span class="n">Port 5</span><span class="t">Eleven ports of call</span></button>
-              <button class="station-btn" role="tab" aria-selected="false"><span class="n">Port 6</span><span class="t">Home port</span></button>
-            </div>
-            <article class="station-panel on">
-              <div class="stage-viz art"><img src="/site/ports/port1.webp" width="1200" height="771" alt="Dawn at the quay: three crates marked .docx, .md and .txt wait on a wooden pier beside a moored ship hung with bunting" decoding="async" /></div>
-              <div><h3>Bring your manuscript</h3><p>The manuscript boards as a <b>Word, Markdown, plain-text, RTF or PDF</b> file — or is written on deck, starting from an empty desk. Its <b>language is recognised automatically</b>, one of 36, and you never have to set it.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Word / Markdown / text import</li><li>Language recognised automatically</li><li>Or start from an empty desk</li></ul><!-- /BLEND --></div>
-            </article>
-            <article class="station-panel">
-              <div class="stage-viz art"><img src="/site/ports/port2.webp" width="1200" height="791" alt="Noon on open water: a small boat sails under a mainsail that is a typeset page, its first line opening with a gold drop cap" decoding="async" loading="lazy" /></div>
-              <div><h3>Write &amp; typeset</h3><p>Open water for writing and typesetting together: <b>studio fonts and themes</b>, chapter tools, <b>footnotes and images</b>, previews on <b>Kindle, phone and print</b> — with <b>zen mode</b> for the night watch and a <b>gentle streak</b> that rewards steady sailing, day after day.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Book fonts &amp; themes</li><li>Drop caps &amp; chapter styles</li><li>Device previews</li><li>Zen mode</li></ul><!-- /BLEND --></div>
-              <!-- BLEND (trial): the helm — the real studio, in a browser frame -->
-              <div class="blend-studio">
-                <div class="bs-frame" role="img" aria-label="The Beuk studio in Paper: the beuk and beuk.studio lockup with its tagline, a chapter list for The Lantern Coast on the left, a typeset page with a drop cap in the middle, and Kindle, phone and print preview choices above the page">
-                  <div class="bs-bar"><span class="bs-dot"></span><span class="bs-dot"></span><span class="bs-dot"></span><span class="bs-url">beuk.studio/studio</span></div>
-                  <div class="bs-head">
-                    <svg width="20" height="24" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="#22333a"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="#22333a"/><circle cx="27" cy="35" r="6" fill="#faf7f2"/></svg>
-                    <span><span class="bs-word">beuk</span><span class="bs-sub">beuk.studio</span></span>
-                    <span class="bs-tag">your EPUB &amp; print studio</span>
-                  </div>
-                  <div class="bs-body">
-                    <aside class="bs-side">
-                      <p class="bs-book-t">The Lantern Coast</p>
-                      <ul>
-                        <li>Prologue</li>
-                        <li class="on">One — The Ferry Crossing</li>
-                        <li>Two — The House at Gull Terrace</li>
-                        <li>Three — The Wrong-Way Water</li>
-                        <li>Four — The Tide Table for Next Year</li>
-                        <li>Back matter</li>
-                      </ul>
-                    </aside>
-                    <div class="bs-main">
-                      <div class="bs-chips"><span class="on">Kindle</span><span>Phone</span><span>Print</span></div>
-                      <div class="bs-page">
-                        <div class="bp-chap">Chapter One — The Ferry Crossing</div>
-                        <p class="drop">The ferry left the harbour at the first light, when the water was pewter and the gulls had not yet begun their arguing. Mara stood at the rail with her father’s chart case held against her ribs like a shield, watching the town fold itself slowly away behind the headland.</p>
-                        <p>She had not meant to come back.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <p class="bs-cap">The helm itself — the studio in Paper, exactly as it opens.</p>
+          <header class="hero">
+            <div class="hero-grid">
+              <div class="reveal in">
+                <h1>One book, bound for every shore.</h1>
+                <p class="lede">Your manuscript is a traveller. Beuk is the shipwright and the shipping line in one: it typesets the book, binds it, clears it through inspection — then sails it to eleven stores and the printing press, from a single browser tab.</p>
+                <a class="btn" href="/studio">Start writing <span class="arr">→</span></a>
+                <!-- BLEND (trial): true-facts line -->
+                <p class="blend-facts"><b>No download.</b> <b>Works on any computer, online or off.</b> <b>An account from day one.</b></p>
+                <!-- /BLEND -->
+                <p class="micro"><b>Free for 21 days, then $20 a month.</b> Everything is included. 36 book languages · 11 store presets · 24 trim sizes</p>
               </div>
-              <!-- /BLEND -->
-            </article>
-            <article class="station-panel">
-              <div class="stage-viz art"><img src="/site/ports/port3.webp" width="1200" height="798" alt="Afternoon in the shipyard: a hull on the slipway is painted as a book cover, a crane lowers a pot of colour, and a measuring rule across the spine reads 0.58 inches" decoding="async" loading="lazy" /></div>
-              <div><h3>Design the cover</h3><p>Here the vessel gets its colours: the <b>cover maker</b> for the front, a full <b>print wrap</b> with the <b>spine calculated</b> from true tonnage — page count and paper stock — and a <b>3D book</b> you can walk around before launch. Try it at the helm below.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Cover maker</li><li>Print wrap + spine calculator</li><li>The turning 3D book</li></ul><!-- /BLEND --></div>
-            </article>
-            <article class="station-panel">
-              <div class="stage-viz art"><img src="/site/ports/port4.webp" width="1200" height="770" alt="Late afternoon at the customs house: an open crate is examined under a lamp and a large green stamp reads Checked, EPUB" decoding="async" loading="lazy" /></div>
-              <div><h3>Check it</h3><p>No cargo leaves unexamined: <b>structural validation</b> and the <b>package inspector</b> open every crate — files, links, metadata — and with an account, the <b>official EPUBCheck</b> runs on Beuk's server before the book clears customs. A store's own rules come with each preset.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Structural validation</li><li>Package inspector</li><li>Official EPUBCheck</li></ul><!-- /BLEND --></div>
-            </article>
-            <article class="station-panel">
-              <div class="stage-viz art"><img src="/site/ports/port5.webp" width="1200" height="775" alt="A sea chart at golden hour: a dotted route winds from a small ship past eleven harbours, each marked with its own coloured flag" decoding="async" loading="lazy" /></div>
-              <div><h3>Send it everywhere</h3><p><b>Eleven export presets</b> — one shaped for every port — plus <b>Markdown, HTML and DOCX</b> in the hold, <b>print-ready interiors</b> for paperback and hardback, and <b>narrator scripts</b> for an audiobook.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Eleven store presets</li><li>Markdown / HTML / DOCX</li><li>Print-ready interiors</li><li>ACX narrator scripts</li></ul><!-- /BLEND --></div>
-            </article>
-            <article class="station-panel">
-              <div class="stage-viz art"><img src="/site/ports/port6.webp" width="1200" height="770" alt="Dusk in the home harbour: lit windows climb the hill, the lighthouse sweeps its beam, and in the nearest window a shelf of coloured books" decoding="async" loading="lazy" /></div>
-              <div><h3>Home to your shelf</h3><p>An <b>account</b> keeps the log synced to a cloud shelf, with an archive of every crossing, <b>reading links for beta readers</b> and the <b>official EPUBCheck</b>. The first 21 days are free. After that, <b>your own words stay yours to export</b>: the backup file, Word and Markdown.</p><!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Cloud shelf, device to device</li><li>Export archive</li><li>Beta-reader links</li><li>Free for 21 days</li></ul><!-- /BLEND --></div>
-            </article>
+              <div class="reveal in d1">
+                <div class="routewrap" id="routechart">
+                  <svg viewBox="0 0 800 240" role="img" aria-label="A dashed sea route from your desk, through the bindery, out to every shore">
+                    <path d="M30,190 C170,90 300,215 450,120 C580,40 690,90 770,60" fill="none" stroke="#d5dcc9" stroke-width="2.5" stroke-linecap="round"/>
+                    <path class="rl-draw" d="M30,190 C170,90 300,215 450,120 C580,40 690,90 770,60" fill="none" stroke="#14607a" stroke-width="2.5" stroke-dasharray="7 8" stroke-linecap="round"/>
+                    <g fill="#14607a"><circle cx="30" cy="190" r="7"/><circle cx="205" cy="138" r="5"/><circle cx="330" cy="168" r="5"/><circle cx="450" cy="120" r="5"/><circle cx="585" cy="66" r="5"/><circle cx="770" cy="60" r="7"/></g>
+                    <g fill="#c99b3f"><circle cx="205" cy="138" r="2.2"/><circle cx="330" cy="168" r="2.2"/><circle cx="450" cy="120" r="2.2"/><circle cx="585" cy="66" r="2.2"/></g>
+                    <g font-family="Karla,sans-serif" font-size="14" font-weight="700" fill="#22333a"><text x="18" y="222">Your desk</text><text x="408" y="98">The bindery</text><text x="700" y="38">Every shore</text></g>
+                  </svg>
+                </div>
+                <p class="micro" style="text-align:center">Charted next: the whole route, port by port.</p>
+              </div>
+            </div>
+          </header>
+
+          <!-- ================= CHOOSER ================= -->
+          <div class="chooser-band reveal" data-chooser>
+            <p class="kicker">Where are you with your book?</p>
+            <div class="chooser" role="group" aria-label="Where are you with your book?">
+              <button class="chipbtn" data-ch aria-pressed="false" data-go="port-1" data-line="Just an idea is a fine place to start — <b>step onto an empty desk</b>, settle into zen mode, and let a gentle daily streak lay the keel, page by page.">Just an idea</button>
+              <button class="chipbtn" data-ch aria-pressed="false" data-go="port-2" data-line="Drafting? <b>Bring the manuscript aboard as it stands</b> — chapters, footnotes and device previews meet you mid-crossing, in the studio fonts and themes.">Drafting</button>
+              <button class="chipbtn" data-ch aria-pressed="false" data-go="port-3" data-line="Ready to publish? Then chart the last ports: <b>the shipyard for the cover, customs for the check</b> — and eleven ports of call beyond.">Ready to publish</button>
+            </div>
+            <p class="chooser-line" data-ch-line>Every book is somewhere on this chart. <b>Say where — and we'll set the course from there.</b></p>
           </div>
         </div>
       </section>
 
-      <!-- ================= PORTS OF CALL ================= -->
-      <section id="ports" aria-label="Ports of call" style="scroll-margin-top:112px;padding-top:10px">
+      <!-- ================= 2–7 · THE VOYAGE: six ports, one scene each ================= -->
+      <section class="scene scene-port" id="port-1" data-alias="voyage" data-name="Port 1 · Embarkation" aria-labelledby="port-1-h">
+        <div class="wrap">
+          <div class="port-scene">
+            <div class="stage-viz art"><img src="/site/ports/port1.webp" width="1200" height="771" alt="Dawn at the quay: three crates marked .docx, .md and .txt wait on a wooden pier beside a moored ship hung with bunting" decoding="async" /></div>
+            <div class="port-copy">
+              <p class="kicker">The voyage · Port 1 of 6 — Embarkation</p>
+              <h2 id="port-1-h">Bring your manuscript</h2>
+              <p>The manuscript boards as a <b>Word, Markdown, plain-text, RTF or PDF</b> file — or is written on deck, starting from an empty desk. Its <b>language is recognised automatically</b>, one of 36, and you never have to set it.</p>
+              <!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Word / Markdown / text import</li><li>Language recognised automatically</li><li>Or start from an empty desk</li></ul><!-- /BLEND -->
+              <p class="voyage-note">Six ports of one crossing — each one a real part of Beuk, the same studio charted as a journey.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-port" id="port-2" data-name="Port 2 · The writing sea" aria-labelledby="port-2-h">
+        <div class="wrap">
+          <div class="port-scene">
+            <div class="stage-viz art"><img src="/site/ports/port2.webp" width="1200" height="791" alt="Noon on open water: a small boat sails under a mainsail that is a typeset page, its first line opening with a gold drop cap" decoding="async" loading="lazy" /></div>
+            <div class="port-copy">
+              <p class="kicker">The voyage · Port 2 of 6 — The writing sea</p>
+              <h2 id="port-2-h">Write &amp; typeset</h2>
+              <p>Open water for writing and typesetting together: <b>studio fonts and themes</b>, chapter tools, <b>footnotes and images</b>, previews on <b>Kindle, phone and print</b> — with <b>zen mode</b> for the night watch and a <b>gentle streak</b> that rewards steady sailing, day after day.</p>
+              <!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Book fonts &amp; themes</li><li>Drop caps &amp; chapter styles</li><li>Device previews</li><li>Zen mode</li></ul><!-- /BLEND -->
+            </div>
+            <!-- BLEND (trial): the helm — the real studio, in a browser frame -->
+            <div class="blend-studio">
+              <div class="bs-frame" role="img" aria-label="The Beuk studio in Paper: the beuk and beuk.studio lockup with its tagline, a chapter list for The Lantern Coast on the left, a typeset page with a drop cap in the middle, and Kindle, phone and print preview choices above the page">
+                <div class="bs-bar"><span class="bs-dot"></span><span class="bs-dot"></span><span class="bs-dot"></span><span class="bs-url">beuk.studio/studio</span></div>
+                <div class="bs-head">
+                  <svg width="20" height="24" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="#22333a"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="#22333a"/><circle cx="27" cy="35" r="6" fill="#faf7f2"/></svg>
+                  <span><span class="bs-word">beuk</span><span class="bs-sub">beuk.studio</span></span>
+                  <span class="bs-tag">your EPUB &amp; print studio</span>
+                </div>
+                <div class="bs-body">
+                  <aside class="bs-side">
+                    <p class="bs-book-t">The Lantern Coast</p>
+                    <ul>
+                      <li>Prologue</li>
+                      <li class="on">One — The Ferry Crossing</li>
+                      <li>Two — The House at Gull Terrace</li>
+                      <li>Three — The Wrong-Way Water</li>
+                      <li>Four — The Tide Table for Next Year</li>
+                      <li>Back matter</li>
+                    </ul>
+                  </aside>
+                  <div class="bs-main">
+                    <div class="bs-chips"><span class="on">Kindle</span><span>Phone</span><span>Print</span></div>
+                    <div class="bs-page">
+                      <div class="bp-chap">Chapter One — The Ferry Crossing</div>
+                      <p class="drop">The ferry left the harbour at the first light, when the water was pewter and the gulls had not yet begun their arguing. Mara stood at the rail with her father’s chart case held against her ribs like a shield, watching the town fold itself slowly away behind the headland.</p>
+                      <p>She had not meant to come back.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p class="bs-cap">The helm itself — the studio in Paper, exactly as it opens.</p>
+            </div>
+            <!-- /BLEND -->
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-port" id="port-3" data-name="Port 3 · The shipyard" aria-labelledby="port-3-h">
+        <div class="wrap">
+          <div class="port-scene">
+            <div class="stage-viz art"><img src="/site/ports/port3.webp" width="1200" height="798" alt="Afternoon in the shipyard: a hull on the slipway is painted as a book cover, a crane lowers a pot of colour, and a measuring rule across the spine reads 0.58 inches" decoding="async" loading="lazy" /></div>
+            <div class="port-copy">
+              <p class="kicker">The voyage · Port 3 of 6 — The shipyard</p>
+              <h2 id="port-3-h">Design the cover</h2>
+              <p>Here the vessel gets its colours: the <b>cover maker</b> for the front, a full <b>print wrap</b> with the <b>spine calculated</b> from true tonnage — page count and paper stock — and a <b>3D book</b> you can walk around before launch. Try it at the helm, further on.</p>
+              <!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Cover maker</li><li>Print wrap + spine calculator</li><li>The turning 3D book</li></ul><!-- /BLEND -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-port" id="port-4" data-name="Port 4 · Customs" aria-labelledby="port-4-h">
+        <div class="wrap">
+          <div class="port-scene">
+            <div class="stage-viz art"><img src="/site/ports/port4.webp" width="1200" height="770" alt="Late afternoon at the customs house: an open crate is examined under a lamp and a large green stamp reads Checked, EPUB" decoding="async" loading="lazy" /></div>
+            <div class="port-copy">
+              <p class="kicker">The voyage · Port 4 of 6 — Customs</p>
+              <h2 id="port-4-h">Check it</h2>
+              <p>No cargo leaves unexamined: <b>structural validation</b> and the <b>package inspector</b> open every crate — files, links, metadata — and with an account, the <b>official EPUBCheck</b> runs on Beuk's server before the book clears customs. A store's own rules come with each preset.</p>
+              <!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Structural validation</li><li>Package inspector</li><li>Official EPUBCheck</li></ul><!-- /BLEND -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-port" id="port-5" data-name="Port 5 · Eleven ports of call" aria-labelledby="port-5-h">
+        <div class="wrap">
+          <div class="port-scene">
+            <div class="stage-viz art"><img src="/site/ports/port5.webp" width="1200" height="775" alt="A sea chart at golden hour: a dotted route winds from a small ship past eleven harbours, each marked with its own coloured flag" decoding="async" loading="lazy" /></div>
+            <div class="port-copy">
+              <p class="kicker">The voyage · Port 5 of 6 — Eleven ports of call</p>
+              <h2 id="port-5-h">Send it everywhere</h2>
+              <p><b>Eleven export presets</b> — one shaped for every port — plus <b>Markdown, HTML and DOCX</b> in the hold, <b>print-ready interiors</b> for paperback and hardback, and <b>narrator scripts</b> for an audiobook.</p>
+              <!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Eleven store presets</li><li>Markdown / HTML / DOCX</li><li>Print-ready interiors</li><li>ACX narrator scripts</li></ul><!-- /BLEND -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene scene-port" id="port-6" data-name="Port 6 · Home port" aria-labelledby="port-6-h">
+        <div class="wrap">
+          <div class="port-scene">
+            <div class="stage-viz art"><img src="/site/ports/port6.webp" width="1200" height="770" alt="Dusk in the home harbour: lit windows climb the hill, the lighthouse sweeps its beam, and in the nearest window a shelf of coloured books" decoding="async" loading="lazy" /></div>
+            <div class="port-copy">
+              <p class="kicker">The voyage · Port 6 of 6 — Home port</p>
+              <h2 id="port-6-h">Home to your shelf</h2>
+              <p>An <b>account</b> keeps the log synced to a cloud shelf, with an archive of every crossing, <b>reading links for beta readers</b> and the <b>official EPUBCheck</b>. The first 21 days are free. After that, <b>your own words stay yours to export</b>: the backup file, Word and Markdown.</p>
+              <!-- BLEND (trial): checklist strip --><ul class="blend-checks"><li>Cloud shelf, device to device</li><li>Export archive</li><li>Beta-reader links</li><li>Free for 21 days</li></ul><!-- /BLEND -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 8 · PORTS OF CALL ================= -->
+      <section class="scene" id="ports" data-name="Ports of call" aria-label="Ports of call">
         <div class="wrap">
           <div class="sec-head reveal">
             <p class="kicker">Ports of call</p>
@@ -526,8 +668,8 @@
         </div>
       </section>
 
-      <!-- ================= MANIFEST ================= -->
-      <section id="manifest" aria-label="The ship's manifest" style="scroll-margin-top:112px;padding-top:10px">
+      <!-- ================= 9 · MANIFEST ================= -->
+      <section class="scene" id="manifest" data-name="The manifest" aria-label="The ship's manifest">
         <div class="wrap">
           <div class="sec-head reveal">
             <p class="kicker">The ship's manifest</p>
@@ -551,8 +693,8 @@
         </div>
       </section>
 
-      <!-- ================= TAKE THE HELM ================= -->
-      <section id="helm" aria-label="Take the helm" style="scroll-margin-top:112px;padding-top:10px">
+      <!-- ================= 10 · TAKE THE HELM ================= -->
+      <section class="scene" id="helm" data-name="Take the helm" aria-label="Take the helm">
         <div class="wrap">
           <div class="sec-head reveal">
             <p class="kicker">Take the helm</p>
@@ -605,7 +747,8 @@
       </section>
 
       <!-- BLEND (trial): proof band — one book, every shore -->
-      <section class="blend-proof" aria-label="One book, every shore" style="padding-top:10px">
+      <!-- ================= 11 · THE PROOF ================= -->
+      <section class="scene blend-proof" id="proof" data-name="The proof" aria-label="One book, every shore">
         <div class="wrap">
           <div class="sec-head reveal">
             <p class="kicker">The proof</p>
@@ -659,55 +802,64 @@
       </section>
       <!-- /BLEND -->
 
-      <!-- ================= FINALE ================= -->
-      <div class="wrap">
-        <div class="final-cta reveal">
-          <h2>The tide won't wait — and the first 21 days are on us.</h2>
-          <div class="homecard">
-            <p class="hc-label">Tour complete · Port 6 of 6 — Home port</p>
-            <p class="hc-title" id="hc-title">Your book is ready to come home.</p>
-            <p class="hc-copy">That's the whole voyage — desk to bindery to every shore. An account is your home port: books kept on your shelf, every finished file archived, following you from device to device. The first 21 days are free.</p>
-            <div class="hc-actions">
-              <a class="btn" href="/studio?signup">Start your 21-day free trial</a>
-              <a class="btn-ghost" href="/studio?signin">Sign in</a>
-            </div>
-            <p class="hc-escape">or <a href="/studio">open the studio</a>.</p>
-          </div>
-          <p class="micro">Free for 21 days · $20 a month after · Eleven stores and the press, one book</p>
-        </div>
-      </div>
-
-      <footer>
+      <!-- ================= 12 · COME HOME ================= -->
+      <section class="scene scene-home" id="home" data-name="Come home" aria-label="Come home">
         <div class="wrap">
-          <div class="foot-in">
-            <div class="fl">
-              <a class="lockup" href="#top" aria-label="Beuk — back to top">
-                <svg class="mark" width="24" height="28" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>
-                <span><span class="word" style="font-size:23px">beuk</span><span class="sub" style="display:block">beuk.studio</span></span>
-              </a>
-              <p>Beuk is a writing and typesetting studio: bring a manuscript in, and send a finished book out to every shelf that matters — ebook and print.</p>
+          <div class="final-cta reveal">
+            <h2>The tide won't wait — and the first 21 days are on us.</h2>
+            <div class="homecard">
+              <p class="hc-label">Tour complete · Port 6 of 6 — Home port</p>
+              <p class="hc-title" id="hc-title">Your book is ready to come home.</p>
+              <p class="hc-copy">That's the whole voyage — desk to bindery to every shore. An account is your home port: books kept on your shelf, every finished file archived, following you from device to device. The first 21 days are free.</p>
+              <div class="hc-actions">
+                <a class="btn" href="/studio?signup">Start your 21-day free trial</a>
+                <a class="btn-ghost" href="/studio?signin">Sign in</a>
+              </div>
+              <p class="hc-escape">or <a href="/studio">open the studio</a>.</p>
             </div>
-            <nav aria-label="Footer">
-              <a href="#voyage">The voyage</a>
-              <a href="#ports">Ports of call</a>
-              <a href="#manifest">Manifest</a>
-              <a href="#helm">Take the helm</a>
-              <a href="/studio">The studio</a>
-              <a href="/features">Features</a>
-              <a href="/ramp">Ramp</a>
-              <a href="/compare">Compare</a>
-              <a href="/school">School</a>
-              <a href="/help">Help</a>
-              <a href="/changelog">Changelog</a>
-              <a href="/roadmap">Roadmap</a>
-              <a href="/privacy">Privacy</a>
-              <a href="/terms">Terms</a>
-            </nav>
+            <p class="micro">Free for 21 days · $20 a month after · Eleven stores and the press, one book</p>
           </div>
-          <p class="footline">beuk.studio — your EPUB &amp; print studio. 36 book languages · the studio in 13 languages.</p>
         </div>
-      </footer>
+
+        <footer>
+          <div class="wrap">
+            <div class="foot-in">
+              <div class="fl">
+                <a class="lockup" href="#top" aria-label="Beuk — back to top">
+                  <svg class="mark" width="24" height="28" viewBox="0 0 44 52" aria-hidden="true"><rect x="7" y="3" width="9" height="46" rx="2.5" fill="currentColor"/><rect x="7" y="13" width="9" height="2.4" fill="#c99b3f"/><rect x="7" y="36" width="9" height="2.4" fill="#c99b3f"/><circle cx="27" cy="35" r="12.5" fill="currentColor"/><circle cx="27" cy="35" r="6" fill="#f8f4e9"/></svg>
+                  <span><span class="word" style="font-size:23px">beuk</span><span class="sub" style="display:block">beuk.studio</span></span>
+                </a>
+                <p>Beuk is a writing and typesetting studio: bring a manuscript in, and send a finished book out to every shelf that matters — ebook and print.</p>
+              </div>
+              <nav aria-label="Footer">
+                <a href="#voyage">The voyage</a>
+                <a href="#ports">Ports of call</a>
+                <a href="#manifest">Manifest</a>
+                <a href="#helm">Take the helm</a>
+                <a href="/studio">The studio</a>
+                <a href="/features">Features</a>
+                <a href="/ramp">Ramp</a>
+                <a href="/compare">Compare</a>
+                <a href="/school">School</a>
+                <a href="/help">Help</a>
+                <a href="/changelog">Changelog</a>
+                <a href="/roadmap">Roadmap</a>
+                <a href="/privacy">Privacy</a>
+                <a href="/terms">Terms</a>
+              </nav>
+            </div>
+            <p class="footline">beuk.studio — your EPUB &amp; print studio. 36 book languages · the studio in 13 languages.</p>
+          </div>
+        </footer>
+      </section>
     </main>
+
+    <!-- BEUK:deck — back / next for the one-scene-at-a-time tour (shown by script on wide screens) -->
+    <div class="deck-nav" id="deck-nav" role="group" aria-label="Tour controls" hidden>
+      <button type="button" class="dn-btn dn-prev" id="dn-prev" aria-keyshortcuts="ArrowLeft"><span aria-hidden="true">←</span> Back</button>
+      <span class="dn-count" id="dn-count" aria-hidden="true">1 / 12</span>
+      <button type="button" class="dn-btn dn-next hint" id="dn-next" aria-keyshortcuts="ArrowRight">Next: Port 1 · Embarkation <span aria-hidden="true">→</span></button>
+    </div>
 
     <script>
       (function(){
@@ -730,50 +882,218 @@
           });
         }
 
-        /* ---------- stations + tour progress ---------- */
-        var LEG_NAMES = ["Embarkation","The writing sea","The shipyard","Customs","Eleven ports of call","Home port"];
+        /* ---------- BEUK:deck — the tour: twelve scenes ----------
+           Wide windows (the head script set html.deck): one scene at a time,
+           opened by the dots, Back / Next, the keys, the wheel or a swipe —
+           never by a timer. Everywhere else: one long page, the dots scroll to
+           a scene. #port-3, #helm … name a scene in both. */
+        var DECK_MQ = "(min-width: 980px) and (min-height: 600px)";
+        var de = document.documentElement;
+        var main = document.getElementById("top");
+        var bar = document.getElementById("topbar");
+        var scenes = Array.prototype.slice.call(document.querySelectorAll(".scene"));
+        var N = scenes.length;
         var tbDots = Array.prototype.slice.call(document.querySelectorAll(".tb-dot"));
         var tbPort = document.getElementById("tb-port");
-        var seenPorts = {0:true};
-        var selectLeg = null;
-        document.querySelectorAll("[data-stations]").forEach(function(root){
-          var tabs = Array.prototype.slice.call(root.querySelectorAll(".station-btn"));
-          var panels = Array.prototype.slice.call(root.querySelectorAll(".station-panel"));
-          selectLeg = function(i){
-            tabs.forEach(function(t, j){ t.setAttribute("aria-selected", j===i ? "true" : "false"); });
-            panels.forEach(function(p, j){ p.classList.toggle("on", j===i); });
-            seenPorts[i] = true;
-            tbDots.forEach(function(d, j){
-              d.classList.toggle("now", j===i);
-              d.classList.toggle("seen", !!seenPorts[j] && j!==i);
-            });
-            if(tbPort) tbPort.innerHTML = "Port <b>" + (i+1) + " of 6</b> · " + LEG_NAMES[i];
-          };
-          tabs.forEach(function(tab, i){ tab.addEventListener("click", function(){ selectLeg(i); }); });
-        });
-        tbDots.forEach(function(d){
-          d.addEventListener("click", function(){
-            var i = parseInt(d.getAttribute("data-port"), 10) || 0;
-            if(selectLeg) selectLeg(i);
-            var v = document.getElementById("voyage");
-            if(v) v.scrollIntoView({behavior: reduced ? "auto" : "smooth", block:"start"});
+        var tbFill = document.getElementById("tb-fill");
+        var tbBoat = document.getElementById("tb-boat");
+        var dnNav = document.getElementById("deck-nav");
+        var dnPrev = document.getElementById("dn-prev");
+        var dnNext = document.getElementById("dn-next");
+        var dnCount = document.getElementById("dn-count");
+        var cur = 0, seen = {0:true}, deck = false, lastMove = 0;
+        function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+        function nameOf(i){ return scenes[i].getAttribute("data-name") || ""; }
+        function sceneIndex(key){
+          key = String(key || "").replace(/^#/, "");
+          if(!key) return 0;
+          for(var i = 0; i < N; i++) if(scenes[i].id === key || scenes[i].getAttribute("data-alias") === key) return i;
+          return -1;
+        }
+        function setRoute(f, back){
+          if(tbFill) tbFill.style.width = (f * 100).toFixed(1) + "%";
+          if(tbBoat){ tbBoat.style.left = (f * 100).toFixed(1) + "%"; if(back !== undefined) tbBoat.classList.toggle("back", back); }
+        }
+        function paintBar(i){
+          tbDots.forEach(function(d, j){
+            d.classList.toggle("now", j === i);
+            d.classList.toggle("seen", !!seen[j] && j !== i);
+            if(j === i) d.setAttribute("aria-current", "step"); else d.removeAttribute("aria-current");
           });
-        });
+          if(tbPort) tbPort.innerHTML = "<b>" + (i + 1) + " of " + N + "</b><span class=\"tb-name\"> · " + esc(nameOf(i)) + "</span>";
+        }
+        function paintNav(){
+          if(!dnNav) return;
+          dnPrev.disabled = cur === 0;
+          dnCount.textContent = (cur + 1) + " / " + N;
+          dnNext.innerHTML = cur === N - 1
+            ? 'Back to the start <span aria-hidden="true">↺</span>'
+            : "Next: " + esc(nameOf(cur + 1)) + ' <span aria-hidden="true">→</span>';
+        }
+        /* a scene's pictures load before it is opened, not as it fades in */
+        function warm(i){
+          for(var j = i - 1; j <= i + 1; j++){
+            if(j < 0 || j >= N) continue;
+            scenes[j].querySelectorAll('img[loading="lazy"]').forEach(function(im){ im.loading = "eager"; });
+          }
+        }
+        function setHash(i){
+          try{ history.replaceState(null, "", i === 0 ? location.pathname + location.search : "#" + scenes[i].id); }catch(e){}
+        }
+        function goTo(i, opts){
+          opts = opts || {};
+          i = Math.max(0, Math.min(N - 1, i));
+          if(!deck){
+            scenes[i].scrollIntoView({behavior: reduced ? "auto" : "smooth", block: "start"});
+            if(!opts.noHash) setHash(i);
+            return;
+          }
+          if(i === cur && !opts.force) return;
+          var old = scenes[cur], back = i < cur;
+          var hadFocus = old.contains(document.activeElement);
+          main.setAttribute("data-dir", back ? "back" : "fwd");
+          scenes.forEach(function(s, j){ s.classList.toggle("on", j === i); });
+          scenes[i].scrollTop = 0;
+          cur = i; seen[i] = true; lastMove = Date.now();
+          paintBar(i); paintNav(); warm(i);
+          setRoute(N > 1 ? i / (N - 1) : 0, back);
+          if(!opts.noHash) setHash(i);
+          if(!opts.init && dnNext) dnNext.classList.remove("hint");
+          /* focus left in the scene that just hid goes to the new scene's heading */
+          if(hadFocus || opts.focus){
+            var h = scenes[i].querySelector("h1, h2");
+            if(h){ h.setAttribute("tabindex", "-1"); try{ h.focus({preventScroll: true}); }catch(e){ h.focus(); } }
+          }
+        }
+        function measureBar(){ if(bar) de.style.setProperty("--bar-h", bar.offsetHeight + "px"); }
+        /* A scene taller than the window is zoomed down just enough to fit —
+           never below 80%, so the words stay readable; past that it scrolls
+           inside itself. zoom (not transform) so its layout shrinks with it. */
+        var ZOOM_FLOOR = 0.8;
+        function setZoom(s, z){
+          Array.prototype.forEach.call(s.children, function(el){ el.style.zoom = z === 1 ? "" : String(z); });
+        }
+        function fit(s){
+          setZoom(s, 1);
+          if(!deck) return;
+          var cs = getComputedStyle(s), pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+          var avail = s.clientHeight - pad, z = 1;
+          for(var k = 0; k < 4 && s.scrollHeight > s.clientHeight + 1 && z > ZOOM_FLOOR; k++){
+            z = Math.max(ZOOM_FLOOR, Math.floor(z * avail / (s.scrollHeight - pad) * 100) / 100);
+            setZoom(s, z);
+          }
+          /* a few pixels over is rounding, not content: no scrollbar for that */
+          s.classList.toggle("snug", s.scrollHeight - s.clientHeight <= 6);
+        }
+        var fitT = null;
+        function fitAll(){ scenes.forEach(fit); }
+        function fitSoon(){ clearTimeout(fitT); fitT = setTimeout(fitAll, 120); }
+        function setMode(on, first){
+          deck = on;
+          de.classList.toggle("deck", on);
+          if(dnNav) dnNav.hidden = !on;
+          if(tbPort){ if(on) tbPort.setAttribute("aria-live", "polite"); else tbPort.removeAttribute("aria-live"); }
+          if(on){
+            measureBar(); fitAll();
+            goTo(cur, {force: true, init: true, noHash: true});
+          } else {
+            fitAll();
+            if(!first || cur > 0) scenes[cur].scrollIntoView({block: "start"});
+            observeReveals(); updRoute();
+          }
+        }
+        /* can this scene still scroll inside itself that way? then the wheel / key is its own */
+        function canScroll(el, dir){
+          if(el.scrollHeight <= el.clientHeight + 2) return false;
+          return dir > 0 ? el.scrollTop + el.clientHeight < el.scrollHeight - 2 : el.scrollTop > 2;
+        }
+        function typing(t){
+          var tag = t && t.tagName;
+          return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!(t && t.isContentEditable);
+        }
+        function bookBusy(){ return de.classList.contains("fs3d-lock") || !!(document.fullscreenElement || document.webkitFullscreenElement); }
 
-        /* ---------- chooser: reframes the voyage ---------- */
+        if(dnPrev) dnPrev.addEventListener("click", function(){ goTo(cur - 1); });
+        if(dnNext) dnNext.addEventListener("click", function(){ goTo(cur === N - 1 ? 0 : cur + 1); });
+        tbDots.forEach(function(d){
+          d.addEventListener("click", function(){ goTo(parseInt(d.getAttribute("data-scene"), 10) || 0, {focus: !deck}); });
+        });
+        /* every in-page link names a scene: #top, #voyage, #ports, #manifest, #helm */
+        document.addEventListener("click", function(e){
+          var a = e.target && e.target.closest ? e.target.closest('a[href^="#"]') : null;
+          if(!a) return;
+          var i = sceneIndex(a.getAttribute("href"));
+          if(i < 0) return;
+          e.preventDefault();
+          goTo(i, {focus: true});
+        });
+        window.addEventListener("hashchange", function(){
+          var i = sceneIndex(location.hash);
+          if(i >= 0) goTo(i, {noHash: true});
+        });
+        document.addEventListener("keydown", function(e){
+          if(!deck || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.isComposing) return;
+          if(typing(e.target) || bookBusy()) return;
+          var k = e.key, scene = scenes[cur], onControl = e.target && e.target.closest && e.target.closest("button, a, [tabindex]");
+          var dir = 0;
+          if(k === "ArrowRight") dir = 1;
+          else if(k === "ArrowLeft") dir = -1;
+          else if(k === "ArrowDown" || k === "PageDown" || (k === " " && !onControl && !e.shiftKey)) dir = canScroll(scene, 1) ? 0 : 1;
+          else if(k === "ArrowUp" || k === "PageUp" || (k === " " && !onControl && e.shiftKey)) dir = canScroll(scene, -1) ? 0 : -1;
+          else if(k === "Home"){ e.preventDefault(); goTo(0); return; }
+          else if(k === "End"){ e.preventDefault(); goTo(N - 1); return; }
+          if(!dir) return;
+          e.preventDefault();
+          goTo(cur + dir);
+        });
+        /* the wheel: one scene per gesture — a trackpad's long glide is one gesture */
+        var lastWheel = 0;
+        window.addEventListener("wheel", function(e){
+          if(!deck || e.ctrlKey || bookBusy()) return;
+          var now = Date.now(), gap = now - lastWheel;
+          lastWheel = now;
+          if(Math.abs(e.deltaY) < Math.abs(e.deltaX) || Math.abs(e.deltaY) < 4) return;
+          var dir = e.deltaY > 0 ? 1 : -1;
+          if(canScroll(scenes[cur], dir)) return;
+          if(gap < 200 && now - lastMove < 1400) return;
+          if(now - lastMove < 650) return;
+          goTo(cur + dir);
+        }, {passive: true});
+        /* a swipe, for a touch screen wide enough for the tour (a tablet on its side) */
+        var tx = 0, ty = 0, tOk = false;
+        main.addEventListener("touchstart", function(e){
+          var t = e.target;
+          tOk = deck && e.touches.length === 1 && !(t.closest && t.closest("[data-book3d], input, .fs3d-imm"));
+          if(tOk){ tx = e.touches[0].clientX; ty = e.touches[0].clientY; }
+        }, {passive: true});
+        main.addEventListener("touchend", function(e){
+          if(!tOk || !deck) return;
+          tOk = false;
+          var c = e.changedTouches[0], dx = c.clientX - tx, dy = c.clientY - ty;
+          if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.3) goTo(cur + (dx < 0 ? 1 : -1));
+          else if(Math.abs(dy) > 70 && Math.abs(dy) > Math.abs(dx) * 1.3 && !canScroll(scenes[cur], dy < 0 ? 1 : -1)) goTo(cur + (dy < 0 ? 1 : -1));
+        }, {passive: true});
+
+        /* ---------- chooser: points the course at a port ---------- */
         document.querySelectorAll("[data-chooser]").forEach(function(root){
           var chips = Array.prototype.slice.call(root.querySelectorAll("[data-ch]"));
           var line = root.querySelector("[data-ch-line]");
+          var first = line ? line.innerHTML : "";
           chips.forEach(function(chip){
             chip.addEventListener("click", function(){
               var was = chip.getAttribute("aria-pressed")==="true";
               chips.forEach(function(c){ c.setAttribute("aria-pressed","false"); });
-              if(!was){
-                chip.setAttribute("aria-pressed","true");
-                if(line) line.innerHTML = chip.getAttribute("data-line");
-                if(selectLeg) selectLeg(parseInt(chip.getAttribute("data-leg"), 10) || 0);
-              }
+              if(!line) return;
+              if(was){ line.innerHTML = first; return; }
+              chip.setAttribute("aria-pressed","true");
+              var to = chip.getAttribute("data-go"), i = sceneIndex(to);
+              line.innerHTML = chip.getAttribute("data-line") +
+                (i > 0 ? ' <button type="button" class="ch-go" data-go-to="' + esc(to) + '">Set the course: ' + esc(nameOf(i)) + ' →</button>' : "");
             });
+          });
+          if(line) line.addEventListener("click", function(e){
+            var b = e.target && e.target.closest ? e.target.closest("[data-go-to]") : null;
+            if(b) goTo(sceneIndex(b.getAttribute("data-go-to")), {focus: true});
           });
         });
 
@@ -948,26 +1268,35 @@
           sync();
         })();
 
-        /* ---------- route line fills as you sail down the page ---------- */
-        var tbFill = document.getElementById("tb-fill");
-        var tbBoat = document.getElementById("tb-boat");
+        /* ---------- the long page: the route line fills as you sail down it ---------- */
         var lastY = window.scrollY;
         function updRoute(){
-          if(!tbFill) return;
-          var max = document.documentElement.scrollHeight - window.innerHeight;
+          if(deck) return;
+          var max = de.scrollHeight - window.innerHeight;
           var f = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
-          tbFill.style.width = (f * 100).toFixed(1) + "%";
-          if(tbBoat){
-            tbBoat.style.left = (f * 100).toFixed(1) + "%";
-            if(window.scrollY < lastY - 2) tbBoat.classList.add("back");
-            else if(window.scrollY > lastY + 2) tbBoat.classList.remove("back");
-          }
+          setRoute(f, window.scrollY < lastY - 2 ? true : window.scrollY > lastY + 2 ? false : undefined);
           lastY = window.scrollY;
+          /* the scene under the top bar is the one the bar names */
+          var edge = (bar ? bar.offsetHeight : 0) + 60, at = 0;
+          for(var i = 0; i < N; i++){ if(scenes[i].getBoundingClientRect().top <= edge) at = i; else break; }
+          if(f >= 0.995) at = N - 1;
+          if(at !== cur){ cur = at; seen[at] = true; paintBar(at); }
         }
 
-        observeReveals(); updRoute();
+        var mq = window.matchMedia ? window.matchMedia(DECK_MQ) : null;
+        var startAt = sceneIndex(location.hash);
+        if(startAt > 0) cur = startAt;
+        setMode(!!(mq && mq.matches), true);
+        if(mq){
+          var onMq = function(){ if(mq.matches !== deck) setMode(mq.matches); };
+          if(mq.addEventListener) mq.addEventListener("change", onMq); else if(mq.addListener) mq.addListener(onMq);
+        }
+        window.addEventListener("resize", function(){ if(deck){ measureBar(); fitSoon(); } });
+        /* the book fonts change every line's length once they arrive */
+        if(document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if(deck) fitAll(); });
         var ticking = false;
         window.addEventListener("scroll", function(){
+          if(deck) return;
           if(!ticking){ ticking = true; requestAnimationFrame(function(){ observeReveals(); updRoute(); ticking = false; }); }
         }, {passive:true});
       })();
