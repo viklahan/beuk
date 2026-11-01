@@ -54,8 +54,11 @@ export const EXTRA_ROOTS = [
   'sectionChars', 'emptyOut', 'inBook', 'sectionComplete', 'READ_WPM', 'AUTO_TYPES',
   'chopSplitPlan', 'chopMergePlan', 'chopMergeWhy', 'chopNumberStyle', 'chopStyleFits', 'chopName', 'chopSig', 'chopCanDelete', 'chopCanDuplicate',
   'chopCanSplitKind', 'chopGenerated', 'chopChapters', 'chopNumbers', 'chopClone', 'normalizeScenes', 'CHOP_TOAST_MS',
-  'buildSampleBook', 'SAMPLE_IMAGE_FILES', 'SAMPLE_COVER_FILE', 'SAMPLE_WORDS', 'SAMPLE_BOOK_ID', 'LEGACY_SAMPLE_BOOK_ID', 'isSampleBookId',
+  'SAMPLE_IMAGE_FILES', 'SAMPLE_COVER_FILE', 'SAMPLE_WORDS', 'SAMPLE_BOOK_ID', 'LEGACY_SAMPLE_BOOK_ID', 'isSampleBookId',
   'SAMPLE_DRAFT_EDITS', 'SAMPLE_DRAFT_SNAP_ID', 'histCounted',
+  // wave 1c, task 4: the arrival sweep of old sample copies (1.0's sampleSweepPreRename / sampleSweepStaleCover)
+  'sampleIsPreRenameCopy', 'sampleCoverIsStale', 'sampleHasOldAuthor', 'sampleRenameAuthor', 'SAMPLE_COVER_STALE', 'SAMPLE_OLD_AUTHOR', 'SAMPLE_AUTHOR',
+  'SAMPLE_PRE_RENAME_ID', 'bookIdsOf', 'bookIdMigrated',
   // wave 1c: the quick tour's steps and its decision (I7)
   'TOUR_STEPS', 'TOUR_KEY', 'TOUR_DESK_KEY', 'tourDecide',
   // wave 1c: Story Insights (C4) — the computations, the cache and 1.0's own HTML for the room
@@ -69,6 +72,11 @@ export const EXTRA_ROOTS = [
   'rsKind', 'rsIcon', 'rsSize', 'rsTabOk', 'rsPackFiles', 'rsHas', 'rsNamed', 'rsTotal',
   'bibleAllEntries', 'bibleScan', 'bibleMatcherNow', 'bibleName', 'bibleNormalize',
 ];
+/** The sample book's own code (wave 1c, task 4): 1.0's buildSampleBook with its 145 kB of text (SAMPLE_SECTIONS), and
+ *  the packaged cover entry. Emitted as a SECOND module, src/generated/closure-sample.js, its own chunk, loaded only
+ *  when the sample is built (Load sample, the pre-rename sweep). It holds only the declarations nothing in the main
+ *  closure reaches; everything else it uses is the main closure's own (handed over as `share`: one copy, no drift). */
+export const SAMPLE_ROOTS = ['buildSampleBook', 'sampleCoverDoc'];
 /** 1.0's top-level `let`s a caller reads or sets (emitted as accessors on the closure's `vars`). */
 export const VARS = ['insVarPick', 'insCache', 'insFacts'];
 /** Names the browser studio supplies besides the EPUB build's. */
@@ -133,7 +141,8 @@ export async function buildClosureModule(html, epubSource) {
   const roots = [...spec.EPUB_ROOTS, ...EXTRA_ROOTS];
   const supplied = [...spec.EPUB_SUPPLIED, ...BROWSER_SUPPLIED];
   const names = reachableFrom(html, roots, [...supplied, ...LOCAL_ONLY]);
-  const forbidden = names.filter((n) => FORBIDDEN.test(n));
+  const sampleNames = reachableFrom(html, SAMPLE_ROOTS, [...supplied, ...LOCAL_ONLY, ...names]);
+  const forbidden = [...names, ...sampleNames].filter((n) => FORBIDDEN.test(n));
   if (forbidden.length) fail(`the lifted code reaches ${forbidden.join(', ')}, which the browser studio does not lift (supply it, or change the roots)`);
   let src;
   try {
@@ -161,6 +170,7 @@ export async function buildClosureModule(html, epubSource) {
   const strayReaders = readers.filter((n) => !UI_STRINGS_READERS.includes(n));
   if (strayReaders.length) fail(`UI_STRINGS is read by ${strayReaders.join(', ')}: only ${UI_STRINGS_READERS.join(', ')} may (the browser supplies a table of "misc.untitledBook" alone)`);
   const api = [...new Set(roots)].filter((n) => src.names.includes(n));
+  const sample = sampleModule(extractStudioSource, html, sampleNames, src.names, supplied);
   const vars = VARS.filter((n) => src.names.includes(n));
   const unlifted = VARS.filter((n) => !src.names.includes(n));
   if (unlifted.length) fail(`VARS names no lifted declaration: ${unlifted.join(', ')}`);
@@ -180,11 +190,63 @@ export async function buildClosureModule(html, epubSource) {
   const tail = [
     '',
     `  const vars = { ${vars.map((v) => `get ${v}() { return ${v}; }, set ${v}(v) { ${v} = v; }`).join(', ')} };`,
-    `  return { api: { ${api.join(', ')} }, vars, setState: (s) => { state = s; }, getState: () => state, arrive: ${spec.ARRIVE} };`,
+    `  const share = { get state() { return state; }, ${[...sample.uses].map((n) => `get ${n}() { return ${n}; }`).join(', ')} };`,
+    `  return { api: { ${api.join(', ')} }, vars, share, setState: (s) => { state = s; }, getState: () => state, arrive: ${spec.ARRIVE} };`,
     '}',
     '',
   ].join('\n');
-  return { code: head + '\n' + src.code + tail, names: src.names, roots: api, supplied };
+  return { code: head + '\n' + src.code + tail, names: src.names, roots: api, supplied, sample };
+}
+
+/** The sample module: SAMPLE_ROOTS' own declarations inside createSample(share), the names they use from the main
+ *  closure (and its supplied names) taken from `share` when it is created. Created afresh for each use, so `state` and
+ *  every shared name are the main closure's current ones. Fails loudly if the sample code would ASSIGN to a shared
+ *  name (that write would be lost). */
+function sampleModule(extractStudioSource, html, sampleNames, mainNames, supplied) {
+  let src;
+  try {
+    src = extractStudioSource(html, sampleNames, { listRef: 'studio/scripts/extract-closure.mjs SAMPLE_ROOTS', api: '', stringTables: false });
+  } catch (e) {
+    fail(e.message);
+  }
+  const missing = SAMPLE_ROOTS.filter((n) => !src.names.includes(n));
+  if (missing.length) fail(`SAMPLE_ROOTS ${missing.join(', ')} ended up in the main closure (something there reaches them): the sample chunk would not hold them`);
+  const sf = ts.createSourceFile('sample.js', src.code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const outer = new Set([...mainNames, ...supplied]);
+  const uses = new Set();
+  const assigned = new Set();
+  const walk = (n) => {
+    if (ts.isIdentifier(n) && outer.has(n.text) && !src.names.includes(n.text)) {
+      const p = n.parent;
+      const isKey = (ts.isPropertyAccessExpression(p) && p.name === n) || ((ts.isPropertyAssignment(p) || ts.isMethodDeclaration(p)) && p.name === n);
+      if (!isKey) {
+        uses.add(n.text);
+        if (ts.isBinaryExpression(p) && p.left === n && p.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && p.operatorToken.kind <= ts.SyntaxKind.LastAssignment) assigned.add(n.text);
+        if ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && (p.operator === ts.SyntaxKind.PlusPlusToken || p.operator === ts.SyntaxKind.MinusMinusToken)) assigned.add(n.text);
+      }
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  if (assigned.size) fail(`the sample code assigns to ${[...assigned].join(', ')} of the main closure; that write would be lost`);
+  uses.delete('state');
+  const fromShare = [...uses].filter((n) => !supplied.includes(n));
+  const fromEnv = [...uses].filter((n) => supplied.includes(n));
+  const code = [
+    '/* GENERATED by studio/scripts/extract-closure.mjs from client/index.html — do not edit.',
+    `   The sample book (SAMPLE_ROOTS): ${src.names.length} declarations of 1.0's own code that only the sample uses; every other`,
+    '   name comes from the main closure (share), created afresh for each use. */',
+    '/* eslint-disable */',
+    `export const SAMPLE_NAMES = ${JSON.stringify(src.names)};`,
+    'export function createSample(share) {',
+    '  let state = share.state;',
+    ...[...fromShare, ...fromEnv].map((n) => `  const ${n} = share.${n};`),
+    src.code,
+    `  return { ${SAMPLE_ROOTS.join(', ')} };`,
+    '}',
+    '',
+  ].join('\n');
+  return { code, names: src.names, uses: new Set([...fromShare, ...fromEnv]) };
 }
 
 /** The module's types (the functions are 1.0's untyped code: src/closure/index.ts gives the ones 2.0 calls their types). */
@@ -194,7 +256,12 @@ export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
 export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string };
-export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
+export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
+`;
+
+const SAMPLE_DTS = `/* GENERATED by studio/scripts/extract-closure.mjs — do not edit. */
+export declare const SAMPLE_NAMES: string[];
+export declare function createSample(share: Record<string, unknown>): { buildSampleBook: () => any; sampleCoverDoc: () => any };
 `;
 
 export async function writeClosure() {
@@ -205,12 +272,14 @@ export async function writeClosure() {
   mkdirSync(dir, { recursive: true });
   writeFileSync(path.join(dir, 'closure.js'), out.code);
   writeFileSync(path.join(dir, 'closure.d.ts'), DTS);
+  writeFileSync(path.join(dir, 'closure-sample.js'), out.sample.code);
+  writeFileSync(path.join(dir, 'closure-sample.d.ts'), SAMPLE_DTS);
   return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   writeClosure()
-    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js`))
+    .then((o) => console.log(`extract-closure: ${o.names.length} declarations, ${o.roots.length} roots → src/generated/closure.js; the sample: ${o.sample.names.length} → closure-sample.js`))
     .catch((e) => {
       console.error(e.message);
       process.exit(1);

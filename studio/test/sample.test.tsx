@@ -11,7 +11,7 @@ import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { readRegistry } from '../src/book/store';
 import { statsOf } from '../src/book/stats';
-import { loadClosure, setClosureT, type Closure } from '../src/closure/index';
+import { loadClosure, loadSample, setClosureT, type Closure } from '../src/closure/index';
 import { live } from '../src/history/history';
 import { snapshotLabel } from '../src/history/HistoryDialog';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
@@ -53,6 +53,7 @@ const diskFetch = (async (url: string) => {
 
 beforeAll(async () => {
   c = await loadClosure();
+  await loadSample(); // the sample chunk (wave 1c task 4): buildSample needs it
   setClosureT(t);
 });
 beforeEach(() => {
@@ -98,6 +99,22 @@ describe('the sample is 1.0\'s, at its scale (sample.book.scale-words-chapters, 
     // the pictures are entries waiting for their data, never inlined
     expect(samplePicsMissing(c, exportBook(y))).toBe(c.api.SAMPLE_IMAGE_FILES.length + 1);
     expect((meta as Rec).sampleSections).toBeUndefined();
+  });
+});
+
+describe('wave 1c: the sample from its own chunk', () => {
+  it('built afresh against the main closure\'s current state (1.0\'s normalizeCoverRecipe reads state.theme), equal build after build; the button states SAMPLE_WORDS, the real count', async () => {
+    const a = JSON.stringify(buildSample(c, null));
+    const b = JSON.stringify(buildSample(c, null));
+    expect(a).toBe(b);
+    expect(sampleShippedWords(c)).toBe(c.api.SAMPLE_WORDS);
+    render(
+      <LocaleProvider initial="en">
+        <App />
+      </LocaleProvider>,
+    );
+    await waitFor(() => expect(document.getElementById('btnSampleStory')).not.toBeNull(), { timeout: 10_000 });
+    expect(document.getElementById('btnSampleStory')!.textContent).toContain(t('side.sampleLoad', { n: c.api.fmtNum(c.api.SAMPLE_WORDS), count: c.api.SAMPLE_WORDS }));
   });
 });
 

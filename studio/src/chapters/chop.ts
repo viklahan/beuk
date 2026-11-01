@@ -119,7 +119,7 @@ function idsOk(secs: unknown[]): boolean {
 /** Make the `sections` Y.Array hold `after` (book format). Sections keep their relative order in every operation, so:
  *  delete the ones gone, then walk `after`, updating the one standing there or inserting the new one. `prev`: the
  *  sections as the Y.Doc holds them now (read in the same synchronous step). Call inside a transaction. */
-function writeSections(ydoc: Y.Doc, after: Rec[], prev: Rec[]): void {
+export function writeSections(ydoc: Y.Doc, after: Rec[], prev: Rec[]): void {
   const prevById = new Map(prev.map((s) => [String(s.id), s]));
   const arr = ydoc.getArray<unknown>(SECTIONS);
   const keep = new Set(after.map((s) => String(s.id)));

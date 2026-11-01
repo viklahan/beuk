@@ -141,7 +141,7 @@ export function Shell() {
               {t('side.settings')}
             </button>
           </div>
-          {bk.phase !== 'starting' && <SampleBar />}
+          {bk.phase !== 'starting' && <SampleBar openHistory={() => setDialog('history')} />}
           {/* the matter library (#matterLib): wave 2 (B3) */}
           <div id="structureScroll">
             <Outline tools={ops.tools} />

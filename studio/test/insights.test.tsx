@@ -9,7 +9,7 @@ import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { statsOf } from '../src/book/stats';
 import { importToDevice } from '../src/book/store';
-import { bookState, loadClosure, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
+import { bookState, loadClosure, loadSample, setClosureLang, setClosureT, type Closure } from '../src/closure/index';
 import { castHiddenList, castSection, insightsState, writeCastHidden } from '../src/insights/insights';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { loadPack } from '../src/i18n/strings';
@@ -35,6 +35,7 @@ let c: Closure;
 
 beforeAll(async () => {
   c = await loadClosure();
+  await loadSample(); // the sample chunk (wave 1c task 4): buildSample needs it
   setClosureT(t);
   setClosureLang('en');
 });

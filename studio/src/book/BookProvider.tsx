@@ -67,6 +67,9 @@ export type BookApi = {
   /** Is this Y.Doc still the live, current book of this tab (not replaced, not stale)? Read at call time, never from a
    *  render: an async path that awaited a confirm asks this before it writes. */
   isLive: (ydoc: Y.Doc | null) => boolean;
+  /** True once for a book that reached the desk from outside this studio — this device's book restored at start-up, or
+   *  a backup opened — which is where 1.0 runs its sweep of old sample copies (sampleSweepPreRename). Asking takes it. */
+  takeOutsideArrival: (ydoc: Y.Doc) => boolean;
   exportBackup: () => void;
 };
 
@@ -100,6 +103,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<number | null>(null);
   const started = useRef(false);
   const current = useRef<OpenBook | null>(null);
+  const outside = useRef(new WeakSet<Y.Doc>());
 
   const reopen = useRef<(stale: OpenBook) => void>(() => undefined);
 
@@ -152,6 +156,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
       try {
         const r = await startBook(readLegacyBook);
         if (r) {
+          outside.current.add(r.book.ydoc);
           show(r.book);
           if (r.importedLegacy) toast(t('local.restored'), 'HardDrive');
           return;
@@ -243,6 +248,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
       }
       try {
         const b = await replace(doc);
+        outside.current.add(b.ydoc);
         // 1.0's localApplyBackup clears sampleState.loaded: the new generation starts without the sample record
         // 1.0's localApplyBackup: state.meta.title || "Untitled Book"
         toast(t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') }), 'HardDrive');
@@ -286,6 +292,8 @@ export function BookProvider({ children }: { children: ReactNode }) {
     [replace, toast, t, isLive],
   );
 
+  const takeOutsideArrival = useCallback((ydoc: Y.Doc) => outside.current.delete(ydoc), []);
+
   const exportBackup = useCallback(() => {
     const b = current.current;
     if (!b) return;
@@ -317,11 +325,12 @@ export function BookProvider({ children }: { children: ReactNode }) {
       replaceBook,
       replaceWith,
       isLive,
+      takeOutsideArrival,
       exportBackup,
     };
     // rev: the book's meta or sections changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, exportBackup]);
+  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, takeOutsideArrival, exportBackup]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }

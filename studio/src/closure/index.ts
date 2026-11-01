@@ -79,8 +79,7 @@ export type ClosureApi = {
   chopNumbers: () => Record<string, string>;
   normalizeScenes: (list: unknown) => Record<string, unknown>[];
   CHOP_TOAST_MS: number;
-  // wave 1b: the sample book (I8)
-  buildSampleBook: () => Record<string, unknown> & { sections: Record<string, unknown>[]; meta: Record<string, unknown> };
+  // wave 1b: the sample book (I8) — its builder lives in the sample chunk (SampleApi, loadSample)
   SAMPLE_IMAGE_FILES: { id: string; name: string; mediaType: string; ext: string; file: string; bytes: number; sha256: string }[];
   SAMPLE_COVER_FILE: { name: string; mediaType: string; ext: string; file: string; bytes: number; sha256: string };
   SAMPLE_WORDS: number;
@@ -90,6 +89,17 @@ export type ClosureApi = {
   SAMPLE_DRAFT_EDITS: { starts?: string; after?: string; then: string }[];
   SAMPLE_DRAFT_SNAP_ID: string;
   histCounted: (doc: unknown, s: unknown, flag: boolean) => { w: number };
+  // wave 1c: the arrival sweep of old sample copies
+  sampleIsPreRenameCopy: (meta: unknown) => boolean;
+  sampleCoverIsStale: (cover: unknown) => boolean;
+  sampleHasOldAuthor: () => boolean;
+  sampleRenameAuthor: () => void;
+  SAMPLE_COVER_STALE: { len: number; sha1: string }[];
+  SAMPLE_OLD_AUTHOR: string;
+  SAMPLE_AUTHOR: string;
+  SAMPLE_PRE_RENAME_ID: string;
+  bookIdsOf: (meta: unknown) => string[];
+  bookIdMigrated: (id: string) => string;
   CC_LICENCES: Record<string, { name: string; short: string; url: string }>;
   // wave 1c: the quick tour (I7)
   TOUR_STEPS: TourStep[];
@@ -183,9 +193,18 @@ export type State = Record<string, unknown> & { meta: Record<string, unknown>; s
 /** 1.0's top-level lets the studio reads or sets (scripts/extract-closure.mjs VARS). */
 export type ClosureVars = { insVarPick: string; insCache: { key: string; d: InsightsData | null; ms: number; hit: boolean }; insFacts: Record<string, InsightsFact> };
 
+/** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
+export type SampleApi = {
+  buildSampleBook: () => Record<string, unknown> & { sections: Record<string, unknown>[]; meta: Record<string, unknown> };
+  sampleCoverDoc: () => Record<string, unknown>;
+};
+
 export type Closure = {
   api: ClosureApi;
   vars: ClosureVars;
+  /** The sample's builder once loadSample() has loaded its chunk (null before). Each call runs against the main
+   *  closure's current state. */
+  sample: SampleApi | null;
   setState: (s: State) => void;
   getState: () => State;
   arrive: (s: Record<string, unknown>) => State;
@@ -211,6 +230,8 @@ const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitl
 
 let loading: Promise<Closure> | null = null;
 let loaded: Closure | null = null;
+let share: Record<string, unknown> | null = null;
+let sampleLoading: Promise<SampleApi> | null = null;
 
 /** The closure, once loaded (null before). */
 export const closureIfLoaded = (): Closure | null => loaded;
@@ -230,7 +251,8 @@ export function loadClosure(): Promise<Closure> {
         deskState: NO_DESK,
         deskSignature: () => '',
       });
-      loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
+      share = c.share;
+      loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
       return loaded;
     });
     loading.catch(() => {
@@ -238,6 +260,26 @@ export function loadClosure(): Promise<Closure> {
     });
   }
   return loading;
+}
+
+/** The sample book's code: its own chunk (1.0's 145 kB of sample text), loaded only when the sample is built — Load
+ *  sample, and the pre-rename sweep of an old sample copy. Its functions are created afresh for each call from the main
+ *  closure's current names and state (closure-sample.js createSample(share)). */
+export function loadSample(): Promise<SampleApi> {
+  if (!sampleLoading) {
+    sampleLoading = Promise.all([loadClosure(), import('../generated/closure-sample.js')]).then(([c, m]) => {
+      const api: SampleApi = {
+        buildSampleBook: () => m.createSample(share!).buildSampleBook(),
+        sampleCoverDoc: () => m.createSample(share!).sampleCoverDoc(),
+      };
+      c.sample = api;
+      return api;
+    });
+    sampleLoading.catch(() => {
+      sampleLoading = null;
+    });
+  }
+  return sampleLoading;
 }
 
 /** 1.0's state for a book-format v1 book (a copy: the book is never touched). */

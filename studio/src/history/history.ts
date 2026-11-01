@@ -121,12 +121,13 @@ export function writeHistory(c: Closure, ydoc: Y.Doc, L: Live): void {
 
 /** Unpack History against the book as it stands, let `change` alter the book (inside the same transaction), then pack
  *  it again against the changed book. For any future code that changes pictures, fonts, the cover or research files. */
-export function repackHistory(c: Closure, ydoc: Y.Doc, change: () => void): void {
-  const before = live(c, ydoc);
+export function repackHistory(c: Closure, ydoc: Y.Doc, change: () => void, history?: HistoryEntry[]): void {
+  // `history`: a list the caller already read (and added a snapshot to) with live(); else the book's own, read now
+  const list = history ?? live(c, ydoc).state.history;
   ydoc.transact(() => {
     change();
     const { state } = bookState(c, ydoc);
-    const p = packed(c, state, before.state.history);
+    const p = packed(c, state, list);
     setMetaMany(ydoc, { history: p.history as never, historyPool: p.historyPool as never });
   });
 }

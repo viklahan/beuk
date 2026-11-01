@@ -1,8 +1,9 @@
 import * as Y from 'yjs';
 import { exportBook, importBook, META } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
-import { bookState, stateFromBook, type Closure, type HistoryEntry } from '../closure/index';
-import { live, snapshotDoc, takeSnapshot, writeHistory, type Live } from '../history/history';
+import { bookState, stateFromBook, type Closure, type HistoryEntry, type State } from '../closure/index';
+import { live, repackHistory, snapshotDoc, takeSnapshot, writeHistory, type Live } from '../history/history';
+import { writeSections } from '../chapters/chop';
 
 /* The sample book and New book (inventory I8; client/index.html
    BEUK:slim / BEUK:compare / BEUK:remnants / BEUK:newbook:
@@ -175,15 +176,90 @@ export function sampleDraftSnapshot(c: Closure, sampleBook: Rec): HistoryEntry |
  *  missing defaults from the desk's theme (state.theme), so the open book's state is set first — or, with no book open,
  *  1.0's empty desk (buildEmptyBook), the state 1.0 starts with. */
 export function buildSample(c: Closure, ydoc: Y.Doc | null): Rec & { sections: Rec[]; meta: Rec } {
+  if (!c.sample) throw new Error('the sample chunk is not loaded (closure/index.ts loadSample)');
   if (ydoc) c.setState(bookState(c, ydoc).state);
   else stateFromBook(c, c.api.buildEmptyBook());
-  return c.api.buildSampleBook();
+  return c.sample.buildSampleBook();
 }
 
 /** 1.0's sampleShippedWords: the bundled sample counted the way the stats count the desk. */
 export function sampleShippedWords(c: Closure): number {
   c.setState(stateFromBook(c, buildSample(c, null)));
   return c.api.bookWordTotal();
+}
+
+/* ---- the arrival sweep of old sample copies (1.0's BEUK:sidebar sampleSweepPreRename / sampleSweepStaleCover) ---- */
+
+export type Sweep = { kind: 'prerename'; oldTitle: string } | { kind: 'stale'; staleCover: boolean; oldAuthor: boolean };
+
+/** What 1.0's sweep would do to this book, decided by 1.0's own tests on it: a copy of the sample saved before its
+ *  rename (sampleIsPreRenameCopy: its old id or its UUIDv5, or the sample's id with the old title), else the sample
+ *  under a stale packaged cover (exact length and SHA-1) or its old author, carrying a sample id. FAIL-SAFE: anything
+ *  that cannot be read, or that does not positively identify as the sample, is left alone (null). */
+export function sweepFor(c: Closure, ydoc: Y.Doc, untitled: string): Sweep | null {
+  try {
+    const book = exportBook(ydoc);
+    const meta = isRec(book.meta) ? book.meta : null;
+    if (!meta) return null;
+    if (c.api.sampleIsPreRenameCopy(meta)) return { kind: 'prerename', oldTitle: String(meta.title || '').trim() || untitled };
+    c.setState({ meta, coverRecipe: book.coverRecipe ?? null, sections: [] } as unknown as State);
+    const staleCover = !!c.api.sampleCoverIsStale(book.cover);
+    const oldAuthor = !!c.api.sampleHasOldAuthor();
+    if (!staleCover && !oldAuthor) return null;
+    if (!c.api.bookIdsOf(meta).some((x) => c.api.isSampleBookId(x) || x === c.api.LEGACY_SAMPLE_BOOK_ID)) return null;
+    return { kind: 'stale', staleCover, oldAuthor };
+  } catch {
+    return null;
+  }
+}
+
+/** 1.0's sampleSweepPreRename, as a book document: the copy goes into History first ("Before sample update"), then the
+ *  current sample takes the desk with the desk's History (BEUK:metaleak keepHistory), the snapshot first. Needs the
+ *  sample chunk loaded. */
+export function preRenameArrival(c: Closure, ydoc: Y.Doc): Rec {
+  const L = live(c, ydoc);
+  const snap = takeSnapshot(c, L, '', 'sampleupdate');
+  const sample = asOpened(canonicalOrder(buildSample(c, ydoc)));
+  return withHistory(c, sample, [snap, ...L.state.history.filter((h) => h.id !== snap.id)]);
+}
+
+/** 1.0's sampleSweepStaleCover, on the book in place, in ONE transaction: an edited sample (anything but the untouched
+ *  sample) is snapshotted first ("Before sample update"); a stale cover becomes the packaged one (sampleCoverDoc, its
+ *  picture then filled from /assets/sample/ like every sample picture); the old author becomes the current one
+ *  wherever 1.0's sampleRenameAuthor puts it (the author, the cover recipe, the About the Author text, the portrait's
+ *  name). History is repacked against the result (the cover and a picture's name change). Returns whether a snapshot
+ *  was taken. Needs the sample chunk when the cover is stale. */
+export function staleSweep(c: Closure, ydoc: Y.Doc, sw: { staleCover: boolean; oldAuthor: boolean }, untouched: boolean): boolean {
+  const L = live(c, ydoc);
+  const snapped = !untouched;
+  if (snapped) takeSnapshot(c, L, '', 'sampleupdate');
+  const book = exportBook(ydoc);
+  const prevSections = clone(book.sections) as Rec[];
+  const s = { meta: clone(book.meta), coverRecipe: book.coverRecipe ? clone(book.coverRecipe) : null, sections: clone(book.sections) as Rec[], images: clone(book.images ?? []) } as unknown as State;
+  if (sw.oldAuthor) {
+    c.setState(s);
+    c.api.sampleRenameAuthor();
+  }
+  const cover = sw.staleCover ? c.sample!.sampleCoverDoc() : undefined;
+  repackHistory(
+    c,
+    ydoc,
+    () => {
+      const m = ydoc.getMap<unknown>('meta');
+      const put = (k: string, v: unknown) => {
+        if (JSON.stringify(m.get(k) ?? null) !== JSON.stringify(v ?? null)) m.set(k, clone(v));
+      };
+      if (cover) m.set('cover', clone(cover));
+      if (sw.oldAuthor) {
+        put('meta', s.meta);
+        put('coverRecipe', (s as Rec).coverRecipe);
+        put('images', (s as Rec).images);
+        writeSections(ydoc, s.sections, prevSections);
+      }
+    },
+    L.state.history,
+  );
+  return snapped;
 }
 
 /** 1.0's applySampleBookSync, as a book document: an automatic "sample" snapshot of the open book (none on an empty desk

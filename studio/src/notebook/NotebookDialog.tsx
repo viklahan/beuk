@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useBook } from '../book/BookProvider';
 import { useMeta } from '../book/hooks';
 import { loadClosure, type Closure, type Note, type ResearchFile } from '../closure/index';
@@ -72,7 +72,7 @@ function NotebookBody({ onClose }: { onClose: () => void }) {
   const picked = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const pinSel = useRef<HTMLSelectElement>(null);
-  const focusAfter = useRef<string | null>(null);
+  const focusAfter = useRef<{ note: string; sel: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -99,20 +99,21 @@ function NotebookBody({ onClose }: { onClose: () => void }) {
   const files = state?.research.files ?? [];
   const note = notes.find((n) => n.id === sel) ?? null;
 
-  // 1.0's openNotebook: the note pinned to the section on the desk, else the first; the search emptied
-  useEffect(() => {
+  // 1.0's openNotebook: the note pinned to the section on the desk, else the first; the search emptied (a layout effect: in place before the first click can land)
+  useLayoutEffect(() => {
     if (!state || picked.current) return;
     picked.current = true;
     const here = state.notebook.notes.find((n) => (n.secs || []).includes(activeId ?? ''));
-    setSel(here ? here.id : state.notebook.notes[0]?.id ?? null);
+    setSel((cur) => cur ?? (here ? here.id : state.notebook.notes[0]?.id ?? null));
   }, [state, activeId]);
 
   // a field focused after a re-render (1.0 focuses the title of a new note, the button of a note chosen)
   useEffect(() => {
-    const id = focusAfter.current;
-    if (!id) return;
+    const f = focusAfter.current;
+    // only once the new note's own detail is drawn (its fields are keyed by the note)
+    if (!f || document.getElementById('nbDetail')?.querySelector('[data-note]')?.getAttribute('data-note') !== f.note) return;
     focusAfter.current = null;
-    document.querySelector<HTMLElement>(id)?.focus();
+    document.querySelector<HTMLElement>(f.sel)?.focus();
   });
 
   // the Covenant's names, 250 ms after the writer stops typing (1.0's namesTimer)
@@ -159,7 +160,7 @@ function NotebookBody({ onClose }: { onClose: () => void }) {
     setSel(n.id);
     setQ('');
     setRsOpen(null);
-    focusAfter.current = '#nbTitle';
+    focusAfter.current = { note: n.id, sel: '#nbTitle' };
     return n;
   };
   const nbDelete = (id: string) => {
@@ -332,7 +333,7 @@ function NotebookBody({ onClose }: { onClose: () => void }) {
       return a.bibleAllEntries().length > 0;
     })();
     detail = (
-      <div key={note.id}>
+      <div key={note.id} data-note={note.id}>
         <div className="nb-row">
           <label className="field-lab" htmlFor="nbTitle">
             {tt('nb.titleLab')}

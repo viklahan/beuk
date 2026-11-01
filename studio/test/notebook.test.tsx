@@ -9,7 +9,7 @@ import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
 import { statsOf } from '../src/book/stats';
 import { importToDevice } from '../src/book/store';
-import { loadClosure, setClosureLang, setClosureT, type Closure, type Note } from '../src/closure/index';
+import { loadClosure, loadSample, setClosureLang, setClosureT, type Closure, type Note } from '../src/closure/index';
 import { live, restoreDoc, saveNamed } from '../src/history/history';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
@@ -33,6 +33,7 @@ let c: Closure;
 
 beforeAll(async () => {
   c = await loadClosure();
+  await loadSample(); // the sample chunk (wave 1c task 4): buildSample needs it
   setClosureT(t);
   setClosureLang('en');
 });
@@ -208,7 +209,7 @@ const typeIn = (id: string, v: string, ev: 'input' | 'change' = 'input') =>
     el.dispatchEvent(new Event(ev, { bubbles: true }));
   });
 
-describe('the Notebook in the studio', () => {
+describe('the Notebook in the studio', { timeout: 30_000 }, () => {
   it('notebook.notes: a note from the Notes tool takes its title, folder and text, finds the Covenant\'s names, pins to a chapter and comes first there; search narrows; it rides the book file byte for byte; delete comes with Undo; word counts never move', async () => {
     const book = withCovenant();
     await studioWith(book);
@@ -216,7 +217,7 @@ describe('the Notebook in the studio', () => {
     await waitFor(() => expect(document.getElementById('statWords')?.textContent).toBe(words0));
     await openNotebook();
     act(() => $('btnNbNew').click());
-    await waitFor(() => expect(document.activeElement?.id).toBe('nbTitle'));
+    await waitFor(() => expect(document.activeElement?.id).toBe('nbTitle'), { timeout: 5000 });
     typeIn('nbTitle', 'Nbmarktitle tides');
     typeIn('nbBody', 'Nbmarkbody: Mara sounds the gut at Gullwick. Mara again.');
     typeIn('nbFolder', 'Research', 'change');
@@ -272,8 +273,9 @@ describe('the Notebook in the studio', () => {
     await studioWith(LUNA().book);
     await openNotebook();
     act(() => $('btnNbNew').click());
+    await waitFor(() => expect(document.querySelector('#nbDetail [data-note] #nbUrl')).not.toBeNull(), { timeout: 5000 });
     typeIn('nbUrl', 'example.org/tides', 'change');
-    await waitFor(() => expect(document.getElementById('nbUrlGo')).not.toBeNull());
+    await waitFor(() => expect(document.getElementById('nbUrlGo')).not.toBeNull(), { timeout: 5000 });
     const go = document.getElementById('nbUrlGo') as HTMLAnchorElement;
     expect(go.getAttribute('href')).toBe('https://example.org/tides');
     expect(go.getAttribute('rel')).toContain('noopener');

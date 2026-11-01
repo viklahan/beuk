@@ -1115,6 +1115,9 @@ async function notebookChecks(origin) {
     }, out.json.book);
     check(seen.same && seen.notes.join() === 'Made in 2.0:2', `wave 1c #4: 1.0 reads the notebook made in 2.0 (${seen.notes.join(', ')}; ${seen.files.join(', ')}) and saves it byte for byte`);
     await one.close();
+    // wave 1c task 4: the sample's text is its own chunk, fetched only when the sample is built
+    const chunk = () => page.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /closure-sample-/.test(n)).length);
+    const beforeLoad = await chunk();
     // and 2.0 reads 1.0's: the sample (1.0's buildSampleBook) with its three notes and their files
     await page.click('#btnSampleStory');
     await page.waitForSelector('#modalConfirm', { timeout: 30_000 });
@@ -1122,6 +1125,8 @@ async function notebookChecks(origin) {
     await page.waitForFunction(() => document.getElementById('btnSampleStory')?.querySelector('.lucide-book-x'), null, { timeout: 60_000 });
     await page.click('#btnNotebook');
     await page.waitForSelector('#modalNotebook #nbList [data-nb]', { timeout: 60_000 });
+    const afterLoad = await chunk();
+    check(beforeLoad === 0 && afterLoad === 1, `wave 1c task 4: the sample chunk is not fetched while a book is open, Insights and the Notebook used (${beforeLoad}), and is fetched once by Load sample (${afterLoad})`);
     const listed = await page.$$eval('#nbList [data-nb]', (els) => els.map((e) => e.getAttribute('data-nb')));
     check(listed.length === 3 && listed.includes('sample-nb-depths'), `wave 1c #4: 2.0 shows 1.0's sample notes (${listed.join(', ')})`);
     await closeByEscape(page, '#modalNotebook');

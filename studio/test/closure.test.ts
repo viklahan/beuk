@@ -11,6 +11,7 @@ import { readBook } from '../../src/book/read';
 // @ts-expect-error — a plain .mjs build script, no types
 import { buildClosureModule, EXTRA_ROOTS } from '../scripts/extract-closure.mjs';
 import { CLOSURE_NAMES, CLOSURE_ROOTS, CLOSURE_SUPPLIED } from '../src/generated/closure.js';
+import { SAMPLE_NAMES } from '../src/generated/closure-sample.js';
 import { bookState, loadClosure, type Closure } from '../src/closure/index';
 import { fixtures } from './fixtures';
 import { studioHtml } from './one-source';
@@ -85,12 +86,25 @@ describe('the browser closure (spec decision 3)', () => {
     expect(words).toBeGreaterThan(100_000); // the gallery is really counted (Dumas alone is far past this)
   }, 240_000);
 
-  it('the module is static code: no eval, no new Function, no string tables', () => {
-    const code = readFileSync(fileURLToPath(new URL('../src/generated/closure.js', import.meta.url)), 'utf8');
-    expect(code).not.toMatch(/\beval\s*\(/);
-    expect(code).not.toMatch(/new\s+Function\s*\(/);
-    expect(code).not.toMatch(/\bUI_STRINGS\s*=\s*\{/);
-    expect(code).not.toMatch(/Object\.assign\(UI_STRINGS/);
+  it('the module is static code: no eval, no new Function, no string tables (the sample chunk too)', () => {
+    for (const file of ['closure.js', 'closure-sample.js']) {
+      const code = readFileSync(fileURLToPath(new URL('../src/generated/' + file, import.meta.url)), 'utf8');
+      expect(code).not.toMatch(/\beval\s*\(/);
+      expect(code).not.toMatch(/new\s+Function\s*\(/);
+      expect(code).not.toMatch(/\bUI_STRINGS\s*=\s*\{/);
+      expect(code).not.toMatch(/Object\.assign\(UI_STRINGS/);
+    }
+  });
+
+  it('wave 1c: the sample\'s text is its own chunk — the main module holds no SAMPLE_SECTIONS, the sample module holds it and nothing the main one has', () => {
+    const main = readFileSync(fileURLToPath(new URL('../src/generated/closure.js', import.meta.url)), 'utf8');
+    const sample = readFileSync(fileURLToPath(new URL('../src/generated/closure-sample.js', import.meta.url)), 'utf8');
+    expect(CLOSURE_NAMES).not.toContain('SAMPLE_SECTIONS');
+    expect(CLOSURE_NAMES).not.toContain('buildSampleBook');
+    expect(main).not.toMatch(/const SAMPLE_SECTIONS\s*=/);
+    expect(sample).toMatch(/const SAMPLE_SECTIONS\s*=/);
+    expect(SAMPLE_NAMES).toContain('buildSampleBook');
+    expect(SAMPLE_NAMES.filter((n) => CLOSURE_NAMES.includes(n))).toEqual([]);
   });
 });
 

@@ -5,7 +5,7 @@ import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { App } from '../src/App';
 import { resetSidePrefsCache } from '../src/book/sidePrefs';
-import { loadClosure, setClosureT, type Closure, type TourStep } from '../src/closure/index';
+import { loadClosure, loadSample, setClosureT, type Closure, type TourStep } from '../src/closure/index';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { sampleShippedWords } from '../src/sample/sample';
@@ -23,6 +23,7 @@ let c: Closure;
 
 beforeAll(async () => {
   c = await loadClosure();
+  await loadSample(); // the sample chunk (wave 1c task 4): buildSample needs it
   setClosureT(t);
 });
 beforeEach(() => {

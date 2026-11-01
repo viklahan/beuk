@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useBook } from '../book/BookProvider';
 import { forgetBook } from '../book/store';
 import { useStats } from '../book/stats';
-import { bookState, closureIfLoaded, loadClosure, type Closure } from '../closure/index';
+import { bookState, closureIfLoaded, loadClosure, loadSample, type Closure } from '../closure/index';
 import { fmtNum } from '../history/HistoryDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useConfirm } from '../shell/Dialog';
@@ -10,7 +10,7 @@ import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import {
   deskEmpty, deskIsUntouchedSample, emptyAfterSample, ensureSamplePictures, fillSamplePictures, newBookArrival,
-  sampleArrival, sampleLoaded, samplePicsMissing, sampleShippedWords, sampleSigOf, setSampleRecord,
+  preRenameArrival, sampleArrival, sampleLoaded, samplePicsMissing, sampleSigOf, setSampleRecord, staleSweep, sweepFor,
 } from './sample';
 
 /* 1.0's sample bar in the sidebar (client/index.html .sample-bar:
@@ -30,7 +30,7 @@ import {
    each with its wave: newbook.confirmBodyShelf and unlinking from the shelf
    (wave 7); the writing log's per-book figures (wave 3). */
 
-export function SampleBar() {
+export function SampleBar({ openHistory }: { openHistory?: () => void } = {}) {
   const { t, lang } = useLocale();
   const bk = useBook();
   const stats = useStats();
@@ -69,12 +69,59 @@ export function SampleBar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, ydoc]);
 
+  // 1.0's sampleSweepPreRename / sampleSweepStaleCover, on a book that arrived from outside (device restore, backup):
+  // an old copy of the sample is replaced by the current one, or given the current cover and author, its earlier
+  // state in History first. Only a book 1.0's own tests identify as the sample is touched (sample.ts sweepFor).
+  useEffect(() => {
+    if (!c || !ydoc || !bk.takeOutsideArrival(ydoc)) return;
+    const sw = sweepFor(c, ydoc, t('misc.untitledBook'));
+    if (!sw) return;
+    const history = openHistory ? { label: t('history.open'), onClick: openHistory } : undefined;
+    void (async () => {
+      try {
+        if (sw.kind === 'prerename' || sw.staleCover) await loadSample();
+        if (!bk.isLive(ydoc)) return;
+        if (sw.kind === 'prerename') {
+          const b = await bk.replaceWith(preRenameArrival(c, ydoc), ydoc);
+          if (!b) return;
+          let sig: string | null = null;
+          try {
+            sig = sampleSigOf(c, b.ydoc);
+          } catch {
+            sig = null; // unknown: reads as edited, Remove asks first
+          }
+          setSampleRecord(b.ydoc, sig);
+          toast(t('sample.legacyUpdated', { old: sw.oldTitle }), 'BookOpen', history);
+        } else {
+          const untouched = deskIsUntouchedSample(c, ydoc);
+          const snapped = staleSweep(c, ydoc, sw, untouched);
+          if (untouched) {
+            let sig: string | null = null;
+            try {
+              sig = sampleSigOf(c, ydoc);
+            } catch {
+              sig = null;
+            }
+            setSampleRecord(ydoc, sig);
+          }
+          if (snapped) toast(t(sw.oldAuthor ? 'sample.authorUpdated' : 'sample.coverUpdated'), sw.oldAuthor ? 'BookOpen' : 'Image', history);
+        }
+      } catch {
+        /* fail-safe: a sweep that cannot finish leaves the book as it was */
+      }
+    })();
+    // the book that arrived (a new generation is a new Y.Doc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c, ydoc]);
+
   if (!c) return null;
   const loaded = sampleLoaded(ydoc);
   // the button follows the counts (1.0's renderNewBookButton runs from updateStats); with no book open the desk is empty
   const empty = !ydoc || (stats ? stats.emptyDesk : true);
   const live = stats?.words ?? 0;
-  const shipped = shippedOnce(c);
+  // 1.0's sampleShippedWords is the sample counted as the stats count the desk; 1.0 ships that count as SAMPLE_WORDS
+  // (test/sample.test.tsx holds them equal), so the button states it without loading the sample's text (wave 1c)
+  const shipped = c.api.SAMPLE_WORDS;
 
   /** 1.0's loadSampleStory → applySampleBookSync. */
   const load = async () => {
@@ -85,6 +132,11 @@ export function SampleBar() {
       const title = String(bk.book!.export().meta && (bk.book!.export().meta as { title?: unknown }).title || '') || t('misc.untitledBook');
       const ok = await confirm({ title: t('sample.confirmLoadTitle'), body: t('sample.confirmLoadBody', { title }), yes: t('sample.confirmLoadYes'), no: t('confirm.keep') });
       if (ok !== true) return;
+    }
+    try {
+      await loadSample(); // the sample's text is its own chunk, fetched now
+    } catch {
+      return toast(t('local.blocked'), 'HardDrive');
     }
     if (from ? !bk.isLive(from) : bk.book !== null) return toast(t('next.bookReplaced'), 'Info');
     const doc = sampleArrival(c, from, untouched);
@@ -170,9 +222,3 @@ export function SampleBar() {
   );
 }
 
-let shipped: { c: Closure; n: number } | null = null;
-/** 1.0's sampleShippedWords, counted once (1.0's sampleShippedWordsCache). */
-function shippedOnce(c: Closure): number {
-  if (!shipped || shipped.c !== c) shipped = { c, n: sampleShippedWords(c) };
-  return shipped.n;
-}
