@@ -48,6 +48,8 @@ export const EXTRA_ROOTS = [
   'isEmptyDesk', 'deskTrulyEmpty', 'stableJson', 'HISTORY_AUTO_CAP', 'CHOP_SNAP_CAP', 'CC_LICENCES',
   // 1.0's own blank book and section maker (the History checks build their books with them, as 1.0's do)
   'buildEmptyBook', 'mkSection',
+  // Settings and rights (wave 1a, task 4): the Save rules and the language list, 1.0's own
+  'rightsNormalizeInto', 'RIGHTS_KEYS', 'bookSeriesNumberInto', 'imIsPlaceholderTitle', 'LANG_PACKS', 'langPack', 'a11ySummaryDefault',
 ];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS'];

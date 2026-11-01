@@ -71,3 +71,9 @@ select.txt-input { appearance: none; }
 .seg button.active { background: var(--accent); color: var(--accent-ink); }
 .ins-caption { font-size: 12.5px; color: var(--ink-2); line-height: 1.65; margin: 10px 0 4px; }
 .ins-none { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--muted); margin: 0 0 10px; line-height: 1.55; }
+
+/* ---------- Project Settings ---------- */
+.about-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.about-box h3 { font-size: 13.5px; font-weight: 600; margin: 0 0 6px; }
+.legal-line { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
+.legal-line a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }

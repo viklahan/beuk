@@ -3,6 +3,7 @@ import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
 import { HistoryDialog } from '../history/HistoryDialog';
+import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
@@ -14,9 +15,9 @@ import { ThemeButton } from './ThemeButton';
    Part C: the outline lists the open book's sections, the centre is the
    desk (an empty desk opens a backup; an open book edits the chosen
    chapter), and Export downloads the book as a 1.0 backup file. The reader
-   stays bare. Import and Project Settings keep their place and look but are
-   not wired (aria-disabled) until step 5. Every label is an existing 1.0
-   string key. */
+   stays bare. Step 5 wave 1a wires Project Settings and History (the book
+   tools row); Import keeps its place and look, aria-disabled until its
+   wave. Every label is an existing 1.0 string key. */
 type MobilePane = 'structure' | 'center' | 'preview';
 
 const openTab = (url: string) => {
@@ -119,7 +120,13 @@ export function Shell() {
               <Icon name="FileUp" />
               {t('side.import')}
             </button>
-            <button type="button" className="side-btn" id="btnSettings2" aria-disabled="true">
+            <button
+              type="button"
+              className="side-btn"
+              id="btnSettings2"
+              aria-disabled={bookOpen ? undefined : 'true'}
+              onClick={bookOpen ? () => setDialog('settings') : undefined}
+            >
               <Icon name="SlidersHorizontal" />
               {t('side.settings')}
             </button>
@@ -181,6 +188,7 @@ export function Shell() {
         </section>
       </main>
       <HistoryDialog open={dialog === 'history' && bookOpen} onClose={() => setDialog(null)} />
+      <SettingsDialog open={dialog === 'settings' && bookOpen} onClose={() => setDialog(null)} />
     </div>
   );
 }

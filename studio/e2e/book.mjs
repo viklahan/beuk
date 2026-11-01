@@ -211,6 +211,12 @@ async function readOnlyRooms(page) {
   }
   await closeByEscape(page, '#modalHistory');
   done.push('History');
+  // Project Settings: open, change nothing, Save (an unchanged Save writes nothing)
+  await page.click('#btnSettings2');
+  await page.waitForSelector('#modalSettings #setTitle', { timeout: 60_000 });
+  await page.click('#btnSaveSettings');
+  await page.waitForSelector('#modalSettings', { state: 'detached', timeout: 10_000 });
+  done.push('Settings (saved unchanged)');
   return done.join(' + ');
 }
 
@@ -709,13 +715,27 @@ async function historyChecks(origin) {
       await page.click('#btnHistSave');
       await page.waitForFunction(() => [...document.querySelectorAll('#historyList .hist-name')].some((e) => e.textContent.trim() === 'Made in 2.0'), null, { timeout: 10_000 });
       await closeByEscape(page, '#modalHistory');
+      // review focus #5: Settings edits reach the export, and 1.0 reads them back
+      await page.click('#btnSettings2');
+      await page.waitForSelector('#modalSettings #setPublisher', { timeout: 60_000 });
+      await page.fill('#setPublisher', 'Harbour Press');
+      await page.selectOption('#setRightsMode', 'pd');
+      await page.fill('#setFirstPublished', '1900');
+      const preview = await page.textContent('#rightsPreview');
+      await page.click('#btnSaveSettings');
+      await page.waitForSelector('#modalSettings', { state: 'detached', timeout: 10_000 });
       const out = await exportBackup(page);
+      const m2 = out.json.book.meta;
+      check(m2.publisher === 'Harbour Press' && m2.rightsMode === 'pd' && m2.firstPublished === '1900' && !('editionHolder' in m2) && !('ccLicence' in m2) && preview.includes('This work is in the public domain. First published in 1900.'),
+        `wave 1a #5: Settings edits are in the export (publisher, rightsMode pd, firstPublished 1900; untouched rights keys absent; preview "${preview.slice(0, 70)}…")`);
       await harvestCsp(page);
       await page.close();
       const seen = await one.evaluate((book) => {
         window.beukLocal.applyBackup(book);
         return window.beukHistory.list().map((s) => ({ name: s.name, auto: s.auto, sections: s.doc.sections.length }));
       }, out.json.book);
+      const meta10 = await one.evaluate(() => ({ publisher: state.meta.publisher, mode: rightsModeOf(), line: rightsLine() })); // 1.0's own globals
+      check(meta10.publisher === 'Harbour Press' && meta10.mode === 'pd' && meta10.line.includes('First published in 1900.'), `wave 1a #5: 1.0 reads the Settings edits back (${JSON.stringify(meta10)})`);
       const mine = seen.find((s) => s.name === 'Made in 2.0');
       check(!!mine && mine.sections === sectionsOf(out.json.book).length && seen.some((s) => s.name === 'Made in 1.0'),
         `wave 1a #2: after export and import, 1.0's History holds the snapshot made in 2.0, and 1.0's own: ${JSON.stringify(seen.map((s) => s.name || s.auto))}`);
