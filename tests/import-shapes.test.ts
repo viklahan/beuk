@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fillerParagraphs } from '../scripts/import-shapes/filler.js';
+import { renderDocx } from '../scripts/import-shapes/render-docx.js';
 import { renderMd, renderRtf, renderTxt } from '../scripts/import-shapes/render-text.js';
 import { FORMATS, loadShapes, SHAPES_DIR } from '../scripts/import-shapes/shape.js';
 
@@ -133,4 +134,45 @@ test('blank-line-breaks txt has 3 blank lines at each break', () => {
 
 test('text renderings are byte-identical twice', () => {
   for (const s of loadShapes()) for (const r of [renderTxt, renderMd, renderRtf]) assert.ok(r(s).equals(r(s)), s.id);
+});
+
+/* The stored (method 0) entries of a zip, walked by their local headers. */
+function unzipStored(buf: Buffer): Map<string, string> {
+  const out = new Map<string, string>();
+  let at = 0;
+  while (buf.readUInt32LE(at) === 0x04034b50) {
+    assert.equal(buf.readUInt16LE(at + 8), 0, 'stored entry');
+    const size = buf.readUInt32LE(at + 18), nameLen = buf.readUInt16LE(at + 26), extra = buf.readUInt16LE(at + 28);
+    const name = buf.subarray(at + 30, at + 30 + nameLen).toString('utf8');
+    const start = at + 30 + nameLen + extra;
+    out.set(name, buf.subarray(start, start + size).toString('utf8'));
+    at = start + size;
+  }
+  return out;
+}
+
+test('docx is a zip whose document.xml holds every heading text', () => {
+  const z = unzipStored(renderDocx(shapeById('clean-numbered')));
+  for (const part of ['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/styles.xml', 'docProps/core.xml']) assert.ok(z.has(part), part);
+  const doc = z.get('word/document.xml')!;
+  for (const h of ['Chapter 1: The Harbour', 'Chapter 2: The Storm', 'Chapter 3: The Light']) assert.ok(doc.includes('<w:t xml:space="preserve">' + h + '</w:t>'), h);
+  assert.match(z.get('docProps/core.xml')!, /<dc:title>The Lantern Keeper<\/dc:title>.*<dc:creator>Ada Marsh<\/dc:creator>/s);
+});
+
+test('mixed-word-styles uses Heading1, Heading2 and a bold Normal run', () => {
+  const doc = unzipStored(renderDocx(shapeById('mixed-word-styles'))).get('word/document.xml')!;
+  assert.ok(doc.includes('<w:pStyle w:val="Heading1"/>') && doc.includes('<w:pStyle w:val="Heading2"/>'));
+  assert.ok(doc.includes('<w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">Chapter 3: Night</w:t></w:r>'));
+});
+
+test('dropcap emits framePr dropCap', () => {
+  assert.ok(unzipStored(renderDocx(shapeById('dropcap'))).get('word/document.xml')!.includes('<w:framePr w:dropCap="drop" w:lines="3"'));
+});
+
+test('docx escapes & in text', () => {
+  assert.ok(unzipStored(renderDocx(shapeById('box-volume'))).get('word/document.xml')!.includes('Moss &amp; Wren'));
+});
+
+test('docx is byte-identical twice', () => {
+  for (const s of loadShapes()) assert.ok(renderDocx(s).equals(renderDocx(s)), s.id);
 });

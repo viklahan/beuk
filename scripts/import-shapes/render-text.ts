@@ -85,3 +85,6 @@ export function renderRtf(s: Shape): Buffer {
   }
   return Buffer.from('{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0 Times New Roman;}}\n' + pars.join('\n') + '\n}\n', 'latin1');
 }
+
+/** A title set in spaced capitals, as a PDF's text layer hands it over: T H E  S A L T  R O A D. */
+export const spacedCaps = (t: string) => t.toUpperCase().split(/\s+/).map((w) => [...w].join(' ')).join('  ');
