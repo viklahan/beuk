@@ -2491,6 +2491,18 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     reason: 'Only a browser enforces the policy; the check reads the header the studio was served with and loads real object URLs (the Caddyfile text itself is covered by infra.deploy.security-headers).',
   },
   {
+    id: 'infra.app.answers',
+    title: "The pages the app server renders answer through the studio's own host: /api/health reports the database up, and /help, /school, /roadmap, /changelog, /thanks, /support, /privacy, /terms and /status open; a 502/504 is named as the app not answering (it exits at boot without its database: start the whole stack), a 503 as its database down",
+    kind: 'client-only',
+    reason: "When the app is down none of the server checks can run, but Caddy still serves the studio, so the check runs there. Proven live (beuk-spikes/research-cap/mutate-app.py): database stopped, then the app restarted without it; 5 of 6 mutants caught, the sixth (ignoring /api/health's db field) is equivalent because the route only answers 200 when its database query succeeds.",
+  },
+  {
+    id: 'local.pics',
+    title: "The device save names its pictures: each picture and research file stored once beside the record, which carries names not bytes; no picture rewritten on a later save; one no copy names is deleted; restored byte for byte; messy input (line-broken or garbage base64, look-alike names in the text, a missing, malformed or null stored picture, a torn record, an old inline record, the hash worker gone) handled, never thrown",
+    kind: 'client-only',
+    reason: "The device save is the browser's IndexedDB and the hash runs in a Web Worker; the shelf never sees this format (its own picture store is proven by tests/pictures.test.ts).",
+  },
+  {
     id: 'history.compare.words',
     title: "Compare: a changed section opens word by word in a snapshot's detail (removed struck through, added underlined, unchanged paragraphs folded until Whole section, a cut paragraph shown whole, true counts); nothing in the book changes; the sample's earlier draft of Chapter One differs in three reworded paragraphs and one cut",
     kind: 'client-only',

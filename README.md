@@ -30,6 +30,25 @@ running and takes the next free port (8091, 8092, …). `-LocalOnly` keeps
 it to this machine, `-Port` picks where the search starts, `-Down` stops
 it, `-NoBuild` restarts without rebuilding.
 
+**Start the whole stack, never part of it.** The app runs its
+migrations at boot and exits when its database is not up; Docker then
+restarts it in a loop while Caddy keeps serving the studio, so the
+studio opens but `/help`, `/school`, `/roadmap`, `/changelog` and the
+API answer 502 (seen 2026-10-31, after only `app` and `caddy` were
+started). Use `start-local.ps1` or `docker compose up -d` (all
+services). With `COMPOSE_FILE` naming the tools overlay, `app` is built
+`FROM beuk-app:latest`: rebuild that first (`docker build -t
+beuk-app:latest .`, then `docker compose build app`) or the overlay
+keeps the old server. The self-check **`infra.app.answers`** (async,
+client-only) runs in the studio, which still opens when the app is
+down, and fetches `/api/health` and the nine pages the app renders: a
+502/504 is named as the app not answering, a 503 from `/api/health` as
+its database down. Proven against a real outage
+(`beuk-spikes/research-cap/mutate-app.py`: database stopped, then the
+app restarted without it): 5 of 6 mutants caught; the sixth, ignoring
+the health reply's `db` field, cannot change the verdict because the
+route answers 200 only when its database query succeeds.
+
 **https on the network, for phones and tablets (BEUK:lanhttps).** Plain
 http on an IP loads the studio, but the browser withholds the service
 worker (offline mode, app install) and `crypto.subtle`: both need https
@@ -229,6 +248,95 @@ not, online or not:
   hard crash (no `pagehide`) may be lost; a private window's storage
   ends with the window; the browser can still evict the copy if it did
   not grant lasting storage — export a backup now and then.
+
+### Pictures stored once on the device (BEUK:localpics)
+
+The device save used to write the whole book as one JSON string with
+every picture and research file inside it as base64, and keep the save
+before it beside it. Every pause in typing paid for all of it. Measured
+in the served studio (`beuk-spikes/research-cap/measure.mjs`, median of
+three saves, incompressible files):
+
+| Research on the book | Typing held up per save, before | at 4× slower CPU, before |
+|---|---|---|
+| 10 MB | 0 ms | 132 ms |
+| 25 MB (the old cap) | 113 ms | 401 ms |
+| 50 MB | 178 ms | 745 ms |
+| 100 MB | 444 ms | — |
+
+Now:
+
+- **Each picture-shaped object** (`picObjects` from BEUK:pics: images,
+  the cover, uploaded fonts, History's copies, research files) of 1 KB
+  or more is stored once in the same `kv` store as `pic:<sha256>`, and
+  the record carries `beuk-pic:<sha256>` where its data was, the same
+  name the shelf uses. A picture used twice is stored once.
+- **One transaction** writes the record, moves the old one to
+  `book-prev`, adds the pictures the device lacks and deletes every
+  stored picture that neither the record nor `book-prev` names. A record
+  can never name a picture that was not written with it, and nothing
+  is left behind once both copies let go of it (so Remove still leaves
+  no picture of the sample on the device).
+- **The hash runs in a Web Worker** (`client/assets/pichash.js`,
+  precached; shell cache v20). On the main thread, 25 MB cost 863 ms of
+  digest and 343 ms of decoding at 4× slower CPU (`prof.mjs`). With no
+  worker, or no `crypto.subtle` (plain http on a LAN address), the page
+  hashes as before. Base64 that would not read back identical (a line
+  break, garbage) is not named: it rides inline.
+- **Restore** fills the names back in. A record missing any of its
+  pictures is passed over when `book-prev` is whole; when neither is,
+  the one that reads opens with the missing pictures' names kept, and
+  the studio says how many could not be read (`local.picsMissing`, all
+  13 packs). Records saved before this, with bytes inline, open as they
+  are and take the new form on the next save.
+- **Unchanged:** the desk, backups, exports and the shelf's wire format
+  still hold the bytes; this is the device store's format only. No
+  IndexedDB version bump, so an older studio still open in another tab
+  keeps working.
+
+After (same probe):
+
+| Research on the book | Save, steady | Typing held up | at 4× slower CPU |
+|---|---|---|---|
+| 10 MB | 3 ms | 0 ms | 14–19 ms save, 0 ms held |
+| 25 MB | 3 ms | 0 ms | 15–17 ms save, 0 ms held |
+| 100 MB | 3–5 ms | 0 ms | 16 ms save, 0 ms held |
+
+The one save that pays is the first after files arrive (hashed and
+written once): 25 MB at once held the page for 195 ms at 4× slower CPU
+(1.7 s before the worker). The device keeps one copy instead of two:
+33 MB of storage for 25 MB of research, against 67 MB before. Opening
+the studio with 100 MB of research on the device takes about 1.3 s
+longer (4.3 s at 4× slower CPU), with about 170 MB of memory in use
+(`boot.mjs`); every file came back whole.
+
+**The research cap moved** to 25 MB a file (the shelf takes 32 MiB a
+picture), 200 files and 100 MB a book, in `rsLimits`, the server's
+`LIMITS` and `docs/book-format.md`.
+
+**Self-check `local.pics`** (async, client-only), on a scratch IndexedDB
+database: a picture used as the cover and as an image is stored once; a
+100 KB research file goes through the worker; the record shrinks from
+153,720 to 12,603 characters; a second save writes no picture; a file
+removed from its note stays while `book-prev` names it and goes on the
+save after; the desk comes back byte for byte. Messy input, each handled
+without a throw: base64 with a line break and `*#!%` garbage ride
+inline; the book's own text holding `"data":"beuk-pic:aaa…"` and a bare
+look-alike name is untouched; a stored picture deleted, holding
+`{ data: 123 }` or `null` is counted missing; a record naming an unknown
+picture or reading `{torn` falls back to a whole `book-prev`; an old
+inline record opens as it is; an empty device opens nothing; worker and
+page agree on the hash, garbage through the worker is refused, and with
+the worker gone the page's hash is the same. Mutation test
+(`beuk-spikes/research-cap/mutate.py`): 10 of 10 mutants caught (no
+naming, no deletion, `book-prev` ignored, every save rewriting, missing
+ignored, malformed counted present, the canonical test dropped, Remove
+keeping the old copy's pictures, a missing picture filled with "", the
+worker hashing the wrong bytes).
+
+The same change moved `notebook.research.csp` into the awaited list: its
+`run()` awaits a fetch, and in the synchronous list its Promise read as
+a failure.
 
 **Book IDs from older builds.** Books saved before real UUIDs carry an
 id like `urn:uuid:sk3j9x2a-s8f7d6e5`, which EPUBCheck reports as
@@ -2324,8 +2432,9 @@ files it was written about and the link it came from.
   Notebook (on the note in hand, or a new one titled after the file).
   The type is the browser's, or the file name's when the browser gives
   none (`rsTypeOf`); anything else, a web page included, is refused, as
-  is an empty file. Limits (`rsLimits`): 10 MB a file, 20 files a note,
-  60 files and 25 MB a book.
+  is an empty file. Limits (`rsLimits`): 25 MB a file, 20 files a note,
+  200 files and 100 MB a book (raised from 10 MB, 60 and 25 MB by
+  BEUK:localpics; see Local-first saving).
 - **Opened in the Notebook.** One file at a time, under its note: a
   picture as an image (`data:`), text as text (the first 200,000
   characters), a PDF in the browser's own viewer in a frame, a
@@ -2930,6 +3039,24 @@ Founders' Shelf application; none of it touches pricing or checkout.
   serves — by status: In progress, Planned (in build order), Exploring,
   Shipped (newest first, dated). Edit the Markdown, the pages
   follow; there are no other copies to keep in sync.
+  **Both wear the Help pages' frame** (`chrome` in `src/help/render.ts`:
+  logo, Guides / Error codes / Search / Changelog / Roadmap, the shelf
+  status pill, Candlelight, **Open the studio** → `/studio`), so Help,
+  the changelog and the roadmap read as one place; they used to carry
+  the older warmth header with no way back to the studio. **The roadmap
+  is a board, not an essay** (`src/warmth/roadmap.ts`): the Markdown is
+  read into its columns (`parseRoadmap`), each item shown as its title
+  and first sentence with the rest under **More**; In progress is the
+  band across the top, Planned (numbered, as it is the build order) and
+  Exploring sit side by side, Shipped is a dated list with its newest
+  six open and the rest under "N earlier releases", and a row of
+  jump links gives each column's count. Write each item as
+  `- **Title.** One sentence that says what it is. Anything else.`
+  (Shipped: `- **YYYY-MM-DD — Title.** …`). `tests/roadmap-board.test.ts`
+  reads the real roadmap and checks every item and every word arrive,
+  then feeds it messy Markdown (CRLF, no bold, no full stop, a stop
+  inside brackets, an empty column, raw `<script>`), which is read and
+  escaped, never thrown.
 - **Status line** — `GET /api/status` returns a scrubbed public
   summary (app, version, build stamp, db up/down, latest Self-checks
   outcome + when). (The Help pages no longer fetch it: they render

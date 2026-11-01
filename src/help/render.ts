@@ -185,7 +185,7 @@ export function linkPreviewTags(config: Config, title: string, description?: str
 
 export function chrome(
   ctx: PageCtx,
-  opts: { title: string; description?: string; active?: 'guides' | 'errors' | 'search' | null; body: string; wide?: boolean; status?: number },
+  opts: { title: string; description?: string; active?: 'guides' | 'errors' | 'search' | 'changelog' | 'roadmap' | null; body: string; wide?: boolean; status?: number },
 ): string {
   const { config, status } = ctx;
   const nav = [
@@ -225,11 +225,11 @@ export function chrome(
           <span class="brand-txt"><span class="brand-name">beuk</span><span class="brand-sub"><span class="subbrand">${esc(BRAND_SUBLINE)}</span> · Help</span></span>
         </a>
         <span class="brand-div" aria-hidden="true"></span>
-        <nav class="hh-nav" aria-label="Help">${nav}<a href="/changelog">Changelog</a><a href="/roadmap">Roadmap</a>${supportNavHtml(config)}</nav>
+        <nav class="hh-nav" aria-label="Help">${nav}<a href="/changelog"${opts.active === 'changelog' ? ' aria-current="page"' : ''}>Changelog</a><a href="/roadmap"${opts.active === 'roadmap' ? ' aria-current="page"' : ''}>Roadmap</a>${supportNavHtml(config)}</nav>
         <div class="hh-right">
           ${statusPill(status)}
           <button class="theme-btn" type="button" data-theme-toggle hidden>Candlelight</button>
-          <a class="open-studio" href="/">Open the studio</a>
+          <a class="open-studio" href="/studio">Open the studio</a>
         </div>
       </div>
     </header>
