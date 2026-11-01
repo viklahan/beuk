@@ -21,7 +21,7 @@
      shell so the studio opens on the local book with no network.
    - Everything else (the shell's assets, the CDN libraries, the
      fonts) is cache-first, filled from the network on first use. */
-const BEUK_CACHE = "beuk-shell-v20"; /* v20: the 2.0 studio at /next is left alone (never cached or served here; its beuk-next-* caches survive activate). v19: the Zen paintings (assets/zen/), precached. v18: the sample's pictures moved out of index.html into assets/sample/ (precached below). v17: submission manuscript, goals that plan, Outline (cards, status, tags, filters), Story Bible */
+const BEUK_CACHE = "beuk-shell-v21"; /* v21: two v20s met in a merge, so the shell moves on once for both: the picture-hash worker (assets/pichash.js), precached, and the 2.0 studio at /next is left alone (never cached or served here; its beuk-next-* caches survive activate). v19: the Zen paintings (assets/zen/), precached. v18: the sample's pictures moved out of index.html into assets/sample/ (precached below). v17: submission manuscript, goals that plan, Outline (cards, status, tags, filters), Story Bible */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell
@@ -53,7 +53,9 @@ const BEUK_SHELL = [
   "./zen/bliss.webp",
   "./zen/calm.webp",
   "./zen/mind.webp",
-  "./zen/sakura.webp"
+  "./zen/sakura.webp",
+  /* BEUK:localpics — hashes pictures off the main thread for the device save */
+  "./pichash.js"
 ];
 
 /* ==== BEUK:slim ==== The sample story's pictures, as files (they used

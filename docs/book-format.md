@@ -157,7 +157,7 @@ The known lists are `KNOWN` in `src/book/schema.ts`.
 | `bible` change quote | 160 characters | CI:24131 |
 | `notebook` notes | 500 | CI:26496 |
 | `notebook` title, body | 120, 50000 characters | CI:26496 |
-| `research` file, total, count | 10 MB, 25 MB, 60 files | CI:26533 |
+| `research` file, total, count | 25 MB, 100 MB, 200 files | CI:26533 |
 | `audio.narrator` | 200 characters | CI:47267 |
 | `dictation.recent` | 4 | CI:68702 |
 | `printCustomMargins` | 0 to 3 each | CI:50288 |

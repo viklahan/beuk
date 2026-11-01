@@ -39,7 +39,10 @@ test('remnants: after Remove the next device save writes the empty desk over the
   const html = await clientHtml();
   const clear = html.slice(html.indexOf('function clearDeskToEmpty() {'), html.indexOf('function removeSampleStory() {'));
   assert.match(clear, /local\.dropPrev = true/);
-  const write = html.slice(html.indexOf('function localWrite(json, link) {'), html.indexOf('function localWriteLinkOnly() {'));
+  const write = html.slice(html.indexOf('function localWrite(json, link, pics) {'), html.indexOf('function localWriteLinkOnly() {'));
+  assert.ok(write.length > 0, 'localWrite found');
   assert.match(write, /if \(dropPrev\) store\.put\(rec, "book-prev"\);/);
   assert.match(write, /if \(dropPrev\) local\.dropPrev = false;/);
+  // BEUK:localpics — pictures stored beside the record follow the same rule: after Remove only the new record's are kept
+  assert.match(write, /const prevRec = dropPrev \? rec :/);
 });

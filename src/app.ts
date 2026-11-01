@@ -232,7 +232,7 @@ export function buildApp({
   // Bowmarket too: /school/bowmarket is never a course slug.
   app.use(bowmarketRoutes(config));
   app.use(school.pages);
-  app.use(warmthRoutes(config));
+  app.use(warmthRoutes(config, db));
   // The public site's robots.txt and sitemap.xml (they carry APP_BASE_URL).
   app.use(siteRoutes(config));
   app.use(statusPage.page);

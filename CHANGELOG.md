@@ -4,6 +4,11 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-31 — Room for research
+
+- **A book with many pictures and files types as quickly as an empty one.** Beuk saves your book on your device a moment after you stop typing. It used to save every picture and research file again each time, so a book holding 25 MB of them stalled typing for about a tenth of a second on every save, and for nearly half a second on a slower computer. Each picture and file is now saved on your device once, when it arrives; after that a save takes a few thousandths of a second however much you keep. Your device also keeps one copy of each instead of two, so the book takes half the room. Backups, exports and your shelf copy are unchanged and still carry everything.
+- **More room for research.** A book now keeps up to 100 MB of research files, 25 MB each (it was 25 MB, 10 MB each), and up to 200 files.
+- **Said plainly if a picture is lost.** If a picture or file ever can't be read back from your device, Beuk opens your book with all its writing, says how many are missing, and suggests a backup or your shelf copy.
 ## 2026-10-31 — 21 days free, store-ready files from the server, and the spine and back cover
 
 **21 days free, then one plan** (once billing is switched on; until then everything stays open and no price is shown)
