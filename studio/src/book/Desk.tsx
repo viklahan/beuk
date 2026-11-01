@@ -5,6 +5,7 @@ import { ChapterEditor } from '../editor/ChapterEditor';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import { useBook } from './BookProvider';
+import { SecTypeControl } from '../structure/StructureUi';
 
 /* The writing desk (the centre pane's page).
    - Empty desk: 1.0's "Open a backup…" button, and the page takes a
@@ -88,6 +89,7 @@ export function Desk() {
           <span>{t('next.textWarning', { n: warning.count, chapter })}</span>
         </p>
       ))}
+      {sec instanceof Y.Map && <SecTypeControl key="sectype" section={sec} />}
       {fragment && bk.active !== null ? (
         <ChapterEditor
           key={bk.book!.id + ':' + bk.book!.epoch + ':' + bk.active}

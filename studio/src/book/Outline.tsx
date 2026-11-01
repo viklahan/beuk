@@ -6,6 +6,7 @@ import { useBook } from './BookProvider';
 import type { OutlineRow } from './outlineRows';
 import { groupOf, setGroupCollapsed, sidePrefs, type GroupKey } from './sidePrefs';
 import { useStats } from './stats';
+import type { StructureUi } from '../structure/StructureUi';
 
 /* The outline (inventory B1): 1.0's renderSidebar (client/index.html,
    BEUK:sidebar), with its markup and classes:
@@ -21,18 +22,18 @@ import { useStats } from './stats';
      1.0's rule (outlineRows.ts), its word count (.sec-wc#wc-<id>: "Empty"
      for a page left out of the book, else "<n> w"), .excluded when the
      section is not in the book (1.0's inBook), and .sec-tools.
-   Left out, each with its wave: the row's move up / move down and the
-   include-in-export eye, Add Chapter / Add Part (.og-extra) and drag to
-   reorder — wave 2 (B3, section types, matter and move); the matter
-   library (#matterLib) — wave 2 (B3). The counts come from the closure
-   (stats.tsx); until the first count a row shows none. */
+   Wave 2c (B3, structure/StructureUi.tsx): the row's move up / move down
+   and include-in-export eye (before the chapter-operations button), Add
+   Chapter / Add Part (.og-extra, under the body) and drag to reorder (the
+   tier law: a drop across tiers is refused). The counts come from the
+   closure (stats.tsx); until the first count a row shows none. */
 
 const GROUPS: GroupKey[] = ['front', 'body', 'back'];
 const GROUP_KEY = { front: 'side.groupFront', body: 'side.groupBody', back: 'side.groupBack' } as const;
 
 export type RowTools = (row: OutlineRow) => ReactNode;
 
-export function Outline({ tools }: { tools?: RowTools }) {
+export function Outline({ tools, structure }: { tools?: RowTools; structure?: StructureUi }) {
   const { t, lang } = useLocale();
   const bk = useBook();
   const stats = useStats();
@@ -97,10 +98,16 @@ export function Outline({ tools }: { tools?: RowTools }) {
                   (count && !count.inBook ? ' excluded' : '') +
                   (r.isPart ? ' part-item' : '') +
                   (gk === 'body' && inPart && !r.isPart ? ' in-part' : '');
+                const drag = structure?.rowProps(r);
                 return (
                   <div
                     key={r.index + ':' + r.id}
-                    className={cls}
+                    className={cls + (drag?.className ?? '')}
+                    draggable={drag ? drag.draggable : undefined}
+                    onDragStart={drag?.onDragStart}
+                    onDragEnd={drag?.onDragEnd}
+                    onDragOver={drag?.onDragOver}
+                    onDrop={drag?.onDrop}
                     data-sec={r.id}
                     data-index={r.index}
                     role="button"
@@ -128,11 +135,15 @@ export function Outline({ tools }: { tools?: RowTools }) {
                         {count.emptyOut ? t('side.emptyOutShort') : fmtNum(count.words, lang) + ' ' + t('side.wordUnit', { count: count.words })}
                       </span>
                     )}
-                    {/* move up / down and the include eye: wave 2 (B3); the action menu: chapter operations (B2) */}
-                    <span className="sec-tools">{tools?.(r)}</span>
+                    {/* move up / down and the include eye (B3), then the action menu (chapter operations, B2) */}
+                    <span className="sec-tools">
+                      {structure?.rowTools(r)}
+                      {tools?.(r)}
+                    </span>
                   </div>
                 );
               })}
+              {gk === 'body' && structure?.extra}
             </div>
           </Fragment>
         );

@@ -213,7 +213,85 @@ export type ClosureApi = {
   imglibUndo: (rec: ImglibRec) => boolean;
   IMGLIB_UNDO_MS: number;
   sampleState: { loaded: boolean; loadedJson: string | null };
+  // wave 2c (B3): section types, the matter library, Add Chapter / Add Part, move — 1.0's own, on a book-format state
+  retypeSection: (id: string, newType: string, newKind: string) => boolean;
+  RETYPE_GROUPS: { kind: string; types: string[] }[];
+  TYPE_TITLES: Record<string, string>;
+  insertMatter: (type: string) => Record<string, unknown> | null;
+  MATTER_LIBRARY: { kind: string; types: string[] }[];
+  MATTER_ORDER: Record<string, Record<string, number>>;
+  SINGLETON_TYPES: string[];
+  moveSection: (id: string, dir: 'up' | 'down') => boolean;
+  moveSectionTo: (dragId: string, targetId: string, after: boolean) => boolean;
+  addPart: () => Record<string, unknown>;
+  addChapter: () => void;
+  partGroups: (sections: unknown[]) => { part: Record<string, unknown> | null; items: Record<string, unknown>[] }[];
+  // wave 2c (B4): the back-matter starters
+  starterText: (id: string, lang: string) => string;
+  starterIds: (s: unknown) => string[];
+  starterBlanks: (text: unknown) => string[];
+  STARTER_TEXT: Record<string, Record<string, string>>;
+  STARTER_BLANK_RE: RegExp;
+  STARTERS_FOR: Record<string, string[]>;
+  starterBlanksInBook: () => { s: Record<string, unknown>; blanks: string[] }[];
+  isRtlLang: (code: string) => boolean;
+  // wave 2c (B5): the outline board
+  OL_STATUSES: string[];
+  OL_TAG_COLOURS: number;
+  OL_PREFS_KEY: string;
+  OL_THREADS_MAX: number;
+  OL_FIELDS_MAX: number;
+  OL_FIELD_TYPES: string[];
+  olFieldValueOk: (f: unknown, v: unknown) => boolean;
+  olCleanThread: (n: unknown) => string;
+  olTagKey: (n: unknown) => string;
+  olCleanTag: (n: unknown) => string;
+  olSectionFields: (s: unknown) => Record<string, unknown>;
+  olNormalize: (o: unknown, sections: unknown[]) => OlBook;
+  olBook: () => OlBook;
+  olBookSet: () => boolean;
+  olBookPack: () => Record<string, unknown>;
+  olTagOf: (name: string) => { name: string; colour: number } | null;
+  olUi: OlUi;
+  olFilterOn: () => boolean;
+  olMatches: (s: unknown) => boolean;
+  olItems: () => Record<string, unknown>[];
+  olNumLabel: (s: unknown) => string;
+  olName: (s: unknown) => string;
+  olScenes: (s: unknown) => number;
+  olStatusLabel: (st: unknown) => string;
+  olKindBounds: (s: unknown) => { first: boolean; last: boolean; pos: number; total: number };
+  olSavedMatches: (f: unknown) => boolean;
+  olGridSecs: () => Record<string, unknown>[];
+  olGridEntries: (per: Record<string, unknown>) => Record<string, unknown>[];
+  olSetField: (s: unknown, field: string, value: unknown) => void;
+  olAddTag: (s: unknown, raw: unknown) => boolean;
+  olRemoveTag: (s: unknown, n: unknown) => boolean;
+  olDeleteTag: (name: string) => void;
+  olSaveFilter: (name: unknown) => { id: string; name: string } | null;
+  olAddThread: (raw: unknown) => { id: string; name: string; colour: number } | null;
+  olRenameThread: (id: string, raw: unknown) => boolean;
+  olSetThreadNote: (s: unknown, id: string, value: unknown) => void;
+  olDeleteThread: (id: string) => void;
+  olAddField: (raw: unknown, type: string) => { id: string; name: string; type: string } | null;
+  olRenameField: (id: string, raw: unknown) => boolean;
+  olSetFieldOptions: (id: string, raw: unknown) => boolean;
+  olSetCustom: (s: unknown, id: string, value: unknown) => void;
+  olDeleteField: (id: string) => void;
+  olApplySaved: (id: string) => boolean;
+  bibleMentionsCompute: (sections: unknown[], entries: unknown[], lang: string) => { cols: { id: string; label: string; col: string }[]; per: Record<string, { total: number; counts: number[]; hits: { sec: string; ci: number; s: number; e: number }[] }> };
+  bibleTypeLabel: (type: string, plural?: boolean) => string;
+  castSecLabel: (s: unknown) => string;
+  CAST_STEPS: number[];
 };
+/** 1.0's state.outline, normalised (olNormalize). */
+export type OlTag = { name: string; colour: number };
+export type OlFilter = { id: string; name: string; status: string[]; tags: string[] };
+export type OlThread = { id: string; name: string; colour: number };
+export type OlField = { id: string; name: string; type: 'text' | 'check' | 'list' | 'date'; options?: string[] };
+export type OlBook = { tags: OlTag[]; filters: OlFilter[]; threads: OlThread[]; fields: OlField[] };
+/** 1.0's olUi: the board's view state (per device, never in the book). */
+export type OlUi = { view: 'cards' | 'list' | 'grid'; matter: boolean; status: string[]; tags: string[]; savedId: string | null; focus: unknown; tagsOpen: boolean; fieldsOpen: boolean; renderQueued: boolean };
 /** A picture of the book's library (state.images[]). */
 export type BookImage = { id: string; name: string; mediaType: string; data: string; ext?: string; credit?: { name: string; url: string }; flourish?: boolean };
 /** One picture marker in a section's text (1.0's parseImageLine). */
@@ -304,6 +382,13 @@ export const pictureEnv: { autoSnapshot: (kind: string) => unknown; editSeq: () 
   editSeq: () => 0,
 };
 /** 1.0's `cloud`, as far as cmStockGate reads it: is a shelf there, and who is signed in (pictures/stock.ts probes). */
+/** Wave 2c: what 1.0's structure and outline functions call around their own code (BROWSER_SUPPLIED): selectSection
+ *  (2.0 selects the section once the change is written) and toast (with 1.0's action: an outline Undo). Set by
+ *  src/structure/structure.ts for the call it makes. */
+export const structEnv: { select: (id: string) => void; toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => void } = {
+  select: () => undefined,
+  toast: () => undefined,
+};
 export const cloudFacts: { available: boolean; user: unknown } = { available: false, user: null };
 
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
@@ -324,7 +409,7 @@ export function loadClosure(): Promise<Closure> {
     loading = import('../generated/closure.js').then((m) => {
       const c = m.createClosure({
         state: null,
-        toast: () => undefined,
+        toast: (msg: string, icon?: string, action?: { label: string; ms?: number; onClick: () => void }) => structEnv.toast(msg, icon, action),
         samplePicsRequire: async () => undefined,
         JSZip: undefined,
         t: (k, p) => currentT(k, p),
@@ -343,6 +428,14 @@ export function loadClosure(): Promise<Closure> {
         imglibRefresh: () => undefined,
         bibleSeriesTouched: () => undefined,
         cloud: cloudFacts,
+        // wave 2c: 1.0's redraws after a structural edit are React's re-render from the Y.Doc; selectSection see structEnv
+        renderSidebar: () => undefined,
+        syncEditor: () => undefined,
+        renderPreview: () => undefined,
+        updateStats: () => undefined,
+        refreshExportTree: () => undefined,
+        selectSection: (id: string) => structEnv.select(id),
+        olRender: () => undefined,
       });
       share = c.share;
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };

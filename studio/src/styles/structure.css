@@ -1,0 +1,55 @@
+/* Step 5 wave 2c: 1.0's stylesheet (client/index.html <head>) for the
+   sidebar's Add Chapter / Add Part, drag to reorder, the matter library,
+   the section type row (#secSettings) and the back-matter starters
+   (BEUK:starters), with logical properties (the Arabic chrome mirrors). */
+#btnAddChapter, #btnAddPart {
+  display: flex; align-items: center; gap: 7px; margin: 6px 0 2px; padding: 8px 10px;
+  border: 1px dashed var(--line-2); border-radius: 8px; background: transparent; color: var(--ink-2);
+  font-size: 12.5px; font-weight: 500; width: 100%; cursor: pointer; font: inherit;
+}
+#btnAddPart { margin-block-start: 4px; }
+#btnAddChapter:hover, #btnAddPart:hover { border-color: var(--accent); color: var(--accent); }
+#btnAddChapter svg, #btnAddPart svg { width: 14px; height: 14px; }
+.sec-item .mini { cursor: pointer; }
+.sec-item.dragging { opacity: .45; }
+.sec-item.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.sec-item.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+/* Matter library — one-click pages, grouped by tier */
+.matter-lib { padding: 2px 10px 0; }
+.matter-lib-toggle {
+  display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  color: var(--ink-2); font-size: 12.5px; font-weight: 600; cursor: pointer; font: inherit;
+}
+.matter-lib-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.matter-lib-toggle svg { width: 14px; height: 14px; }
+.matter-lib-toggle .ml-chev { margin-inline-start: auto; }
+.matter-lib-panel { padding: 4px 2px 2px; }
+.matter-lib-panel .group-label { padding-top: 8px; }
+.matter-lib-grid { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 4px; }
+.matter-lib-btn {
+  border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; font: inherit;
+}
+.matter-lib-btn:hover { border-color: var(--accent); color: var(--accent); }
+.matter-lib-btn.exists { opacity: .55; }
+/* the section type row */
+#secSettings { margin-bottom: 6px; }
+#secSettings .switch-row { border-bottom: 1px solid var(--line); }
+#secTypeSel { width: 210px; flex: 0 1 210px; }
+/* BEUK:starters */
+.gen-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.gen-quiet {
+  align-self: flex-start; background: none; border: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: 12.5px; color: var(--muted); text-decoration: underline;
+}
+.gen-quiet:hover { color: var(--ink); }
+.starter-bar { display: flex; flex-direction: column; gap: 10px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); font-size: 13px; color: var(--ink-2); }
+.starter-bar p { margin: 0; display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+.starter-bar p > i, .starter-bar p > svg { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 1px; color: var(--muted); }
+.starter-head b { color: var(--ink); }
+.starter-head span { color: var(--muted); }
+.starter-bar [aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--ink); background: var(--panel); }
+.starter-preview { padding: 10px 12px; border-radius: 8px; background: var(--panel); border: 1px dashed var(--line-2); color: var(--ink); line-height: 1.55; overflow-wrap: anywhere; }
+.starter-preview mark { background: var(--accent-soft); color: var(--ink); border-radius: 3px; padding: 0 2px; }
+.starter-bar p > span { flex: 1 1 0; min-width: 12em; }

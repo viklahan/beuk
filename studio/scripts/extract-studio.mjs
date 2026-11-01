@@ -51,7 +51,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   'Link', 'Quote', 'Signature', 'List', 'Sparkle', 'Minus', 'Columns2', 'IndentIncrease', 'Feather', 'AlignCenter', 'AlignRight',
   'MessagesSquare', 'MailOpen', 'MicVocal', 'SquareTerminal', 'RotateCw', 'FlipVertical2', 'WandSparkles',
   // step 5 wave 2b: pictures (Insert Image, the section card, the scene bar and picker, the image library)
-  'ImagePlus', 'Images', 'Upload', 'Eraser', 'Sparkles', 'Search', 'Expand', 'Shrink', 'RotateCcw'];
+  'ImagePlus', 'Images', 'Upload', 'Eraser', 'Sparkles', 'Search', 'Expand', 'Shrink', 'RotateCcw',
+  // wave 2c: the row's eye, the matter library, the starters, the outline board
+  'Eye', 'Library', 'BookmarkPlus', 'FilePlus2', 'LayoutGrid', 'Table2', 'Filter', 'Tag', 'Move', 'PencilLine'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

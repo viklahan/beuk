@@ -85,7 +85,7 @@ const numbersOf = (secs: Rec[]): Record<string, string> => {
 
 /** Lay `plain` (one section as book format) over the stored section `map`: only changed keys are set, keys gone are
  *  deleted, the text through a diffing update of its fragment. */
-function writeFields(map: Y.Map<unknown>, plain: Rec, prev: Rec | undefined): void {
+export function writeFields(map: Y.Map<unknown>, plain: Rec, prev: Rec | undefined): void {
   if (prev && same(prev, plain)) return; // untouched (the common case: every section the operation did not change)
   for (const [k, v] of Object.entries(plain)) {
     if (k === 'content' && typeof v === 'string' && map.get(BODY) instanceof Y.XmlFragment) {

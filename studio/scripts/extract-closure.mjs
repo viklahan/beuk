@@ -86,7 +86,27 @@ export const EXTRA_ROOTS = [
   'imglibUseText', 'imglibSecName', 'imglibRemove', 'imglibUndo', 'IMGLIB_UNDO_MS', 'IMGLIB_COVER_TYPES', 'sampleState',
   // (already lifted for the cover: named so the tests build 1.0's own image library fixture, imglibCheckFixture)
   'defaultCoverRecipe', 'normalizeCoverRecipe', 'wrapDefaults',
+  // wave 2c (B3): section types, the matter library, Add Chapter / Add Part, move — 1.0's own structure functions, run
+  // on a state holding the book as book format (src/structure/structure.ts); TYPE_TITLES is filled by the top-level
+  // statements ATTACH lifts
+  'retypeSection', 'RETYPE_GROUPS', 'TYPE_TITLES', 'insertMatter', 'MATTER_LIBRARY', 'MATTER_ORDER', 'SINGLETON_TYPES',
+  'moveSection', 'moveSectionTo', 'addPart', 'addChapter', 'partGroups',
+  // wave 2c (B4): the back-matter starters and their [[blanks]]
+  'starterText', 'starterIds', 'starterBlanks', 'STARTER_TEXT', 'STARTER_BLANK_RE', 'STARTERS_FOR', 'starterBlanksInBook', 'isRtlLang',
+  // wave 2c (B5): the outline board — its data rules, its filter (olUi is 1.0's own view object, set by 2.0 before each
+  // call), its names, and every edit of the planning fields, tags, saved filters, threads and custom fields
+  'OL_STATUSES', 'OL_TAG_COLOURS', 'OL_PREFS_KEY', 'OL_THREADS_MAX', 'OL_FIELDS_MAX', 'OL_FIELD_TYPES', 'olFieldValueOk', 'olCleanThread',
+  'olTagKey', 'olCleanTag', 'olSectionFields', 'olNormalize', 'olBook', 'olBookSet', 'olBookPack', 'olTagOf', 'olUi', 'olFilterOn',
+  'olMatches', 'olItems', 'olNumLabel', 'olName', 'olScenes', 'olStatusLabel', 'olKindBounds', 'olSavedMatches', 'olGridSecs', 'olGridEntries',
+  'olSetField', 'olAddTag', 'olRemoveTag', 'olDeleteTag', 'olSaveFilter', 'olAddThread', 'olRenameThread', 'olSetThreadNote', 'olDeleteThread',
+  'olAddField', 'olRenameField', 'olSetFieldOptions', 'olSetCustom', 'olDeleteField', 'olApplySaved',
+  // the Grid's Covenant columns: 1.0's uncached count (bibleMentions itself reads uiLangState for its cache key)
+  'bibleMentionsCompute', 'bibleTypeLabel', 'castSecLabel', 'CAST_STEPS',
 ];
+/** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
+ *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
+ *  lifted too, in 1.0's order, after the declarations (ONE SOURCE: nothing retyped). */
+export const ATTACH = ['TYPE_TITLES'];
 /** Test oracle only (wave 2a, constraint 11): 1.0's dialog handlers, which read and write their dialog's fields
  *  through `$`. Emitted as a THIRD module, src/generated/closure-oracle.js, that only the tests import (never the
  *  app): each test hands it a stand-in `$` and textarea and compares 2.0's result with 1.0's own. Like the sample
@@ -117,7 +137,10 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   // (1.0's local.editSeq), and what 1.0 does after an edit (noteBookEdited, imglibRefresh: 2.0 re-renders from the
   // Y.Doc); the series Covenant's save (wave 7: 2.0 holds no series, so bibleSeries is null and 1.0's own function returns
   // at once); 1.0's `cloud` as far as cmStockGate reads it (available, user)
-  'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'bibleSeriesTouched', 'cloud'];
+  'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'bibleSeriesTouched', 'cloud',
+  // wave 2c: 1.0's redraws after a structural edit (React re-renders from the Y.Doc), and selectSection (2.0 selects the
+  // section 1.0 chose once the change is written: src/structure/structure.ts structEnv)
+  'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'refreshExportTree', 'selectSection', 'olRender'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -177,7 +200,8 @@ export async function buildClosureModule(html, epubSource) {
   const spec = epubSpec(epubSource);
   const roots = [...spec.EPUB_ROOTS, ...EXTRA_ROOTS];
   const supplied = [...spec.EPUB_SUPPLIED, ...BROWSER_SUPPLIED];
-  const names = reachableFrom(html, roots, [...supplied, ...LOCAL_ONLY]);
+  const attach = await attachStatements(html);
+  const names = reachableFrom(html, [...roots, ...attach.refs], [...supplied, ...LOCAL_ONLY]);
   const sampleNames = reachableFrom(html, SAMPLE_ROOTS, [...supplied, ...LOCAL_ONLY, ...names]);
   const oracleNames = [...new Set([...reachableFrom(html, ORACLE_ROOTS, [...supplied, ...ORACLE_SUPPLIED, ...LOCAL_ONLY, ...names]), ...ORACLE_OWN])];
   const forbidden = [...names, ...sampleNames, ...oracleNames].filter((n) => FORBIDDEN.test(n));
@@ -237,7 +261,43 @@ export async function buildClosureModule(html, epubSource) {
     '}',
     '',
   ].join('\n');
-  return { code: head + '\n' + src.code + tail, names: src.names, roots: api, supplied, sample, oracle };
+  const missingAttach = ATTACH.filter((n) => !src.names.includes(n) || !attach.byName[n]);
+  if (missingAttach.length) fail(`ATTACH names no lifted declaration filled by a top-level statement: ${missingAttach.join(', ')}`);
+  return { code: head + '\n' + src.code + '\n' + attach.code + tail, names: src.names, roots: api, supplied, sample, oracle };
+}
+
+/** The top-level expression statements that assign into an ATTACH name (in studio order), and the names they read. */
+async function attachStatements(html) {
+  const { studioScript } = await studioClosure();
+  const sf = ts.createSourceFile('studio.js', studioScript(html), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const rootOf = (x) => {
+    while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = x.expression;
+    return ts.isIdentifier(x) ? x.text : '';
+  };
+  const parts = [], refs = new Set(), byName = {};
+  for (const st of sf.statements) {
+    if (!ts.isExpressionStatement(st)) continue;
+    let target = null;
+    const walk = (n) => {
+      if (target) return;
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ATTACH.includes(rootOf(n.left))) target = rootOf(n.left);
+      else ts.forEachChild(n, walk);
+    };
+    walk(st);
+    if (!target) continue;
+    byName[target] = true;
+    parts.push(st.getText(sf));
+    const collect = (n) => {
+      if (ts.isIdentifier(n)) {
+        const p = n.parent;
+        const isKey = (ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n);
+        if (!isKey) refs.add(n.text);
+      }
+      ts.forEachChild(n, collect);
+    };
+    collect(st);
+  }
+  return { code: parts.join('\n'), refs: [...refs], byName };
 }
 
 function sampleModule(extractStudioSource, html, sampleNames, mainNames, supplied) {
@@ -306,7 +366,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown } };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

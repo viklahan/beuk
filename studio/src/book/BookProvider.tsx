@@ -171,18 +171,21 @@ export function BookProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => () => void current.current?.close(), []);
 
-  // Re-read the title and the outline when the book's meta or its list of sections changes
-  // (shallow: typing inside a chapter does not touch either).
+  // Re-read the title and the outline when the book's meta, its list of sections or a section's own fields change
+  // (wave 2c: a retype, the include eye; typing inside a chapter touches only its text fragment, never these).
   useEffect(() => {
     if (!book) return;
     const bump = () => setRev((r) => r + 1);
     const m = book.ydoc.getMap(META);
     const s = book.ydoc.getArray(SECTIONS);
+    const deep = (events: Y.YEvent<Y.AbstractType<unknown>>[]) => {
+      if (events.some((e) => e.target === s || (e.target instanceof Y.Map && e.target.parent === s))) bump();
+    };
     m.observe(bump);
-    s.observe(bump);
+    s.observeDeep(deep);
     return () => {
       m.unobserve(bump);
-      s.unobserve(bump);
+      s.unobserveDeep(deep);
     };
   }, [book]);
 

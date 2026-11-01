@@ -4,6 +4,7 @@ import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
 import { SideStatus } from '../book/SideStatus';
 import { useChapterOps } from '../chapters/ChapterOps';
+import { useStructure } from '../structure/StructureUi';
 import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { InsightsDialog } from '../insights/InsightsDialog';
@@ -45,6 +46,7 @@ export function Shell() {
   const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | 'notebook' | null>(null);
   const bookOpen = bk.phase === 'open';
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
+  const structure = useStructure();
   const [mstyle, setMstyle] = useState(false);
   const tab = (pane: MobilePane, style: boolean) => () => {
     setMobile(pane);
@@ -142,9 +144,9 @@ export function Shell() {
             </button>
           </div>
           {bk.phase !== 'starting' && <SampleBar openHistory={() => setDialog('history')} />}
-          {/* the matter library (#matterLib): wave 2 (B3) */}
+          {structure.matterLib}
           <div id="structureScroll">
-            <Outline tools={ops.tools} />
+            <Outline tools={ops.tools} structure={structure} />
           </div>
           {/* BEUK:sidebar — 1.0's book tools row: History (wave 1a), Insights and Notes (wave 1c); Goals and the Covenant keep their place until wave 3 */}
           <div className="side-dock">
