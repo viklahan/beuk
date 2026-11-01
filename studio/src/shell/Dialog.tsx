@@ -99,6 +99,10 @@ export type DialogProps = {
   /** 1.0's inline z-index of the back, where it had one (60 is the stylesheet's). */
   z?: number;
   labelledBy: string;
+  /** 1.0's aria-describedby, where its dialog had one (wave 2b: #modalImgRemove). */
+  describedBy?: string;
+  /** 1.0's role, where it was not "dialog" (wave 2b: #modalImgRemove is an alertdialog). */
+  role?: 'dialog' | 'alertdialog';
   /** Extra classes on `.modal` (1.0: "wide ins-modal", …). */
   className?: string;
   modalStyle?: CSSProperties;
@@ -110,7 +114,7 @@ export function Dialog(props: DialogProps) {
   return createPortal(<DialogBody {...props} />, document.body);
 }
 
-function DialogBody({ onClose, id, z, labelledBy, className, modalStyle, children }: DialogProps) {
+function DialogBody({ onClose, id, z, labelledBy, describedBy, role = 'dialog', className, modalStyle, children }: DialogProps) {
   const stack = useContext(StackContext);
   if (!stack) throw new Error('<Dialog> outside <DialogStackProvider>');
   const box = useRef<HTMLDivElement>(null);
@@ -153,7 +157,7 @@ function DialogBody({ onClose, id, z, labelledBy, className, modalStyle, childre
         if (e.target === e.currentTarget) close.current();
       }}
     >
-      <div className={'modal' + (className ? ' ' + className : '')} role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1} ref={box} style={modalStyle}>
+      <div className={'modal' + (className ? ' ' + className : '')} role={role} aria-modal="true" aria-labelledby={labelledBy} aria-describedby={describedBy} tabIndex={-1} ref={box} style={modalStyle}>
         {children}
       </div>
     </div>

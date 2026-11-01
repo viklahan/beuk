@@ -8,6 +8,8 @@ import { Dialog } from '../shell/Dialog';
 import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { applyTextEdit, editorText, textArea } from './insert';
+import { ImageDialog } from '../pictures/ImageDialog';
+import { IMG_AUTO_REFUSED } from '../pictures/scene';
 import {
   autoFormatEdit, footnoteEdit, footnoteNumber, linkEdit, linkWordsOf, marginEdit, marginLastName, marginWordsOf, textAction, type ToolKind,
 } from './tools';
@@ -23,9 +25,11 @@ import {
    closure) written into the editor as one transaction and one undo step
    (insert.ts). Bold and Italic stay the editor's marks (step 4).
 
-   Left out, with their waves: Insert Image (pictures, wave 2b), Dictate
-   (wave 3), the Focus cluster — Read Aloud and Zen (wave 3) — and the scene
-   bar a new scene break opens (scene images, wave 2b). */
+   Insert Image (wave 2b) opens 1.0's picture dialog (pictures/ImageDialog);
+   the scene bar a new scene break opens is pictures/SceneBar.
+
+   Left out, with their waves: Dictate (wave 3) and the Focus cluster — Read
+   Aloud and Zen (wave 3). */
 
 type Btn = { kind: ToolKind | 'bold' | 'italic'; icon: IconName; label: UiKey; title: UiKey };
 
@@ -88,6 +92,7 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
   const [fn, setFn] = useState<{ n: number } | null>(null);
   const [lnk, setLnk] = useState<{ words: string } | null>(null);
   const [mn, setMn] = useState<{ name: string; words: string } | null>(null);
+  const [img, setImg] = useState(false);
 
   const live = (): Editor | null => (editor && !editor.isDestroyed ? editor : null);
   const back = () => {
@@ -160,7 +165,25 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
         <span className="tool-break" aria-hidden="true" />
         <div className="tool-group" data-tg="assist">
           <span className="tool-sep" aria-hidden="true" />
-          {/* Insert Image (wave 2b) and Dictate (wave 3) stand before Auto-Format in 1.0 */}
+          <button
+            type="button"
+            className="tool-btn"
+            data-collapse={3}
+            id="btnInsertImage"
+            title={t('tool.insertImageTitle')}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              // 1.0's openImageModal: a generated section takes no picture
+              withClosure((c) => {
+                if (c.AUTO_TYPES.includes(String(sectionType() ?? ''))) toast(IMG_AUTO_REFUSED, 'Image');
+                else if (ydoc) setImg(true);
+              });
+            }}
+          >
+            <Icon name="ImagePlus" />
+            <span className="tl">{t('tool.insertImage')}</span>
+          </button>
+          {/* Dictate (wave 3) stands here, before Auto-Format, in 1.0 */}
           <button type="button" className="tool-btn accent" id="btnBeautify" title={t('tool.autoFormatTitle')} onMouseDown={(e) => e.preventDefault()} onClick={() => run('autoformat')}>
             <Icon name="WandSparkles" />
             <span className="tl">{t('tool.autoFormat')}</span>
@@ -169,6 +192,16 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
         {/* the Focus cluster (Read Aloud, Zen) is wave 3 */}
       </div>
 
+      {img && ydoc && (
+        <ImageDialog
+          ydoc={ydoc}
+          editor={live()}
+          onClose={() => {
+            setImg(false);
+            back();
+          }}
+        />
+      )}
       {fn && (
         <FootnoteDialog
           n={fn.n}

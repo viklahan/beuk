@@ -49,7 +49,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   'Map', 'RefreshCcw', 'EyeOff', 'Plus', 'StickyNote', 'Pin', 'Folder', 'Paperclip', 'X', 'ExternalLink', 'FileImage', 'FileAudio', 'FileVideo', 'FileType',
   // step 5 wave 2a: the insert toolbar (1.0's data-lucide names) and its dialogs
   'Link', 'Quote', 'Signature', 'List', 'Sparkle', 'Minus', 'Columns2', 'IndentIncrease', 'Feather', 'AlignCenter', 'AlignRight',
-  'MessagesSquare', 'MailOpen', 'MicVocal', 'SquareTerminal', 'RotateCw', 'FlipVertical2', 'WandSparkles'];
+  'MessagesSquare', 'MailOpen', 'MicVocal', 'SquareTerminal', 'RotateCw', 'FlipVertical2', 'WandSparkles',
+  // step 5 wave 2b: pictures (Insert Image, the section card, the scene bar and picker, the image library)
+  'ImagePlus', 'Images', 'Upload', 'Eraser', 'Sparkles', 'Search', 'Expand', 'Shrink', 'RotateCcw'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

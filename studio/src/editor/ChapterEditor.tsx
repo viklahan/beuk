@@ -12,6 +12,9 @@ import { flushNormalize, markActive, toggleBookMark } from './behaviour';
 import { createChapterEditor } from './createEditor';
 import { EditorToolbar } from './EditorToolbar';
 import { tbLayoutInit } from './toolbarLayout';
+import { ArtRows } from '../pictures/ArtRows';
+import { SceneBar } from '../pictures/SceneBar';
+import { SectionImages } from '../pictures/SectionImages';
 
 /* The open chapter: 1.0's insert toolbar (#insertToolbar, EditorToolbar:
    Bold and Italic as the editor's marks, every other button 1.0's own text
@@ -30,9 +33,11 @@ type Props = {
   sectionType?: () => unknown;
   /** Every section's text, in book order, read when the margin dialog opens. */
   sectionTexts?: () => string[];
+  /** The section's own Y map (wave 2b: its plate, backdrop and scene pictures). */
+  sectionMap?: Y.Map<unknown> | null;
 };
 
-export function ChapterEditor({ fragment, dir, lang, label, section, sectionType = () => undefined, sectionTexts = () => [] }: Props) {
+export function ChapterEditor({ fragment, dir, lang, label, section, sectionType = () => undefined, sectionTexts = () => [], sectionMap = null }: Props) {
   const { t } = useLocale();
   const toast = useToast();
   const host = useRef<HTMLDivElement>(null);
@@ -84,10 +89,15 @@ export function ChapterEditor({ fragment, dir, lang, label, section, sectionType
     editor.commands.focus();
   };
 
+  const ydoc = fragment.doc;
+  // 1.0's centre column: #editorMeta (the chapter-art rows), #insertToolbar, #sceneBar, the page, #sectionImages
   return (
     <>
-      <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={fragment.doc} />
+      {ydoc && sectionMap && <ArtRows ydoc={ydoc} section={sectionMap} />}
+      <EditorToolbar ref={bar} editor={editor} marks={marks} onMark={press} sectionType={sectionType} sectionTexts={sectionTexts} ydoc={ydoc} />
+      {ydoc && sectionMap && <SceneBar editor={editor} ydoc={ydoc} sectionId={sectionMap.get('id')} sectionType={sectionType} />}
       <div className="ms-page ms-editing" id="manuscript" dir={dir} lang={lang} data-section={section} ref={host} />
+      {ydoc && <SectionImages editor={editor} ydoc={ydoc} sectionType={sectionType} />}
     </>
   );
 }

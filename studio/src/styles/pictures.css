@@ -1,0 +1,68 @@
+/* Beuk 2.0 studio — pictures (step 5 wave 2b): the chapter-art rows, the
+   scene bar, the image library grids, the section card, the scene picker's
+   suggestions, and the "used in" confirm. Ported from 1.0
+   (client/index.html <head> stylesheet: .switch-row, #sceneBar,
+   .scene-suggest-grid, "Images in the text (feature 3)", BEUK:imagelib,
+   .cm-photo-cell, .fmt-actions). Same values; logical properties, and
+   colours only from the tokens (test/look.test.ts). */
+
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.switch-row:last-child { border-bottom: none; }
+.switch-row .sw-txt b { display: block; font-size: 13.5px; font-weight: 600; }
+.switch-row .sw-txt span { font-size: 12px; color: var(--muted); }
+.fmt-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* The scene bar: appears only while the cursor stands on a scene
+   break in the editor — the break offers its image from there. */
+#sceneBar {
+  display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 10px 0 2px; padding: 8px 12px; border: 1px solid var(--line-2);
+  border-radius: 10px; background: var(--panel-2); font-size: 12.5px; color: var(--ink-2);
+}
+#sceneBar.open { display: flex; }
+#sceneBar .scene-ic { display: inline-flex; color: var(--gold); flex: 0 0 auto; }
+#sceneBar .scene-ic svg { width: 15px; height: 15px; }
+#sceneBarLabel { flex: 1 1 auto; min-width: 140px; }
+#sceneBarLabel b { color: var(--ink); }
+#sceneBarThumb { width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line-2); flex: 0 0 auto; }
+.scene-suggest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 8px; }
+
+/* ---------- Images in the text (feature 3) ---------- */
+.img-lib { display: grid; grid-template-columns: repeat(auto-fill, minmax(98px, 1fr)); gap: 8px; }
+.img-cell { border: 1px solid var(--line-2); background: var(--panel-2); border-radius: 9px; padding: 6px; display: flex; flex-direction: column; gap: 6px; align-items: center; color: var(--ink-2); }
+.img-cell img { width: 100%; height: 64px; object-fit: cover; border-radius: 5px; display: block; }
+.img-cell span { font-size: 10.5px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.img-cell.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.img-empty { grid-column: 1 / -1; font-size: 12.5px; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 9px; padding: 16px; text-align: center; margin: 0; line-height: 1.5; }
+.img-lib-note { font-size: 12px; color: var(--muted); align-self: center; }
+/* ==== BEUK:imagelib ==== the library's quiet delete control, the cleanup row and the used-in list */
+.imglib-cell { position: relative; display: flex; min-width: 0; }
+.imglib-cell > .img-cell { flex: 1 1 auto; min-width: 0; width: 100%; }
+.imglib-del { position: absolute; top: 3px; inset-inline-end: 3px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--line-2); border-radius: 7px; background: var(--panel); color: var(--muted); cursor: pointer; opacity: 0.88; transition: opacity .15s; }
+.imglib-del svg { width: 13px; height: 13px; }
+.imglib-del:hover { color: var(--ink); opacity: 1; border-color: var(--accent); }
+.imglib-del:focus-visible { color: var(--ink); opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (hover: hover) { .imglib-cell:not(:hover):not(:focus-within) .imglib-del { opacity: 0; } }
+.imglib-tools { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin: -6px 0 14px; }
+.imglib-tools[hidden] { display: none; }
+.imglib-tools .tb-btn[disabled] { opacity: 0.5; cursor: default; }
+.imgrm-uses { margin: 2px 0 12px; padding-inline-start: 20px; font-size: 13px; color: var(--ink-2); line-height: 1.6; max-height: 190px; overflow: auto; }
+/* ==== /BEUK:imagelib ==== */
+.sec-imgs { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); padding: 6px 14px 10px; }
+.sec-imgs h4 { margin: 10px 0 2px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.sec-imgs h4 svg { width: 14px; height: 14px; }
+.sec-img-row { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+.sec-img-row:first-of-type { border-top: none; }
+.sec-img-row img { width: 42px; height: 54px; object-fit: cover; border-radius: 5px; border: 1px solid var(--line-2); flex: 0 0 auto; display: block; }
+.sec-img-row .si-missing { width: 42px; height: 54px; border-radius: 5px; border: 1px dashed var(--line-2); display: flex; align-items: center; justify-content: center; color: var(--muted); flex: 0 0 auto; font-size: 9px; text-align: center; }
+.sec-img-row .si-main { flex: 1 1 auto; min-width: 0; }
+.sec-img-row .si-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+.sec-img-row .si-alt { padding: 6px 9px; font-size: 12.5px; }
+.si-btn { flex: 0 0 auto; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink-2); border-radius: 7px; padding: 6px 9px; font-size: 11.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+.si-btn:hover { border-color: var(--muted); color: var(--ink); }
+.si-btn svg { width: 13px; height: 13px; }
+.si-btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+/* the scene picker's suggestions: the cover maker's photo cells */
+.cm-photo-cell { border: 1px solid var(--line-2); border-radius: 7px; padding: 0; overflow: hidden; background: var(--panel-3); aspect-ratio: 2 / 3; cursor: pointer; }
+.cm-photo-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cm-photo-cell.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }

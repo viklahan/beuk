@@ -98,6 +98,7 @@ export function Desk() {
           section={bk.active}
           sectionType={() => (sec instanceof Y.Map ? sec.get(escKey('type')) : undefined)}
           sectionTexts={() => sectionTexts(bk.book!.ydoc)}
+          sectionMap={sec instanceof Y.Map ? sec : null}
         />
       ) : (
         <div className="ms-page" id="manuscript" dir={bk.bookDir} lang={bk.bookLang} />

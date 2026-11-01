@@ -7,6 +7,7 @@ import './styles/toolbar.css';
 import './styles/tour.css';
 import './styles/insights.css';
 import './styles/notebook.css';
+import './styles/pictures.css';
 import { BookProvider } from './book/BookProvider';
 import { StatsProvider } from './book/stats';
 import { DialogStackProvider } from './shell/Dialog';
