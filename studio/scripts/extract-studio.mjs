@@ -42,7 +42,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // part C: the outline rows, the backup and device toasts, the format buttons, the text note
   'GripVertical', 'Bookmark', 'FileText', 'Image', 'ListOrdered', 'HardDrive', 'FolderOpen', 'Bold', 'Italic', 'Info',
   // step 5 wave 1a: the confirm, Settings, History and the sidebar's book tools
-  'BookOpen', 'BookType', 'History', 'Activity', 'Target', 'BookMarked', 'NotebookPen'];
+  'BookOpen', 'BookType', 'History', 'Activity', 'Target', 'BookMarked', 'NotebookPen',
+  // step 5 wave 1b: the statistics disclosure, the row menu and its toasts, the sample and new book
+  'ChevronUp', 'Ellipsis', 'CopyPlus', 'Scissors', 'Merge', 'Trash2', 'Undo2', 'BookX', 'FilePlus', 'File', 'ImageOff', 'TriangleAlert'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

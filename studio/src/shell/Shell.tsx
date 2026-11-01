@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
+import { SideStatus } from '../book/SideStatus';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -166,6 +167,8 @@ export function Shell() {
                 <span className="side-tool-lab">{t('side.toolNotebook')}</span>
               </button>
             </div>
+            {/* the shelf line (#syncRow): wave 7 */}
+            {bookOpen && <SideStatus />}
           </div>
         </aside>
 

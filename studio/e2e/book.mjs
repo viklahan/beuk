@@ -156,10 +156,13 @@ async function openBackup(page, file) {
   await page.waitForSelector('#btnOpenBackup', { state: 'detached', timeout: 60_000 }); // the desk holds the book
 }
 async function rows(page) {
-  return page.$$eval('#structureList .sec-item', (els) => els.map((e, i) => ({ i, editable: e.getAttribute('aria-disabled') !== 'true', name: e.textContent })));
+  // rows stand in their group (front, body, back), so a row's section index is its data-index, not its place
+  const list = await page.$$eval('#structureList .sec-item', (els) =>
+    els.map((e) => ({ i: Number(e.getAttribute('data-index')), editable: e.getAttribute('aria-disabled') !== 'true', name: e.querySelector('.sec-name')?.textContent ?? '' })));
+  return list.sort((a, b) => a.i - b.i);
 }
 async function choose(page, i) {
-  await page.locator('#structureList .sec-item').nth(i).click();
+  await page.locator(`#structureList .sec-item[data-index="${i}"]`).click();
   await page.waitForSelector(`#manuscript[data-section="${i}"] .ms-editor`, { timeout: 30_000 });
 }
 async function exportBackup(page) {

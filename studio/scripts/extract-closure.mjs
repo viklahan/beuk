@@ -50,6 +50,12 @@ export const EXTRA_ROOTS = [
   'buildEmptyBook', 'mkSection',
   // Settings and rights (wave 1a, task 4): the Save rules and the language list, 1.0's own
   'rightsNormalizeInto', 'RIGHTS_KEYS', 'bookSeriesNumberInto', 'imIsPlaceholderTitle', 'LANG_PACKS', 'langPack', 'a11ySummaryDefault',
+  // wave 1b: the sidebar's counts (C1), the chapter operations' plans and rules (B2), the sample book (I8)
+  'sectionChars', 'emptyOut', 'inBook', 'sectionComplete', 'READ_WPM', 'AUTO_TYPES',
+  'chopSplitPlan', 'chopMergePlan', 'chopMergeWhy', 'chopNumberStyle', 'chopStyleFits', 'chopName', 'chopSig', 'chopCanDelete', 'chopCanDuplicate',
+  'chopCanSplitKind', 'chopGenerated', 'chopChapters', 'chopNumbers', 'chopClone', 'normalizeScenes', 'CHOP_TOAST_MS',
+  'buildSampleBook', 'SAMPLE_IMAGE_FILES', 'SAMPLE_COVER_FILE', 'SAMPLE_WORDS', 'SAMPLE_BOOK_ID', 'LEGACY_SAMPLE_BOOK_ID', 'isSampleBookId',
+  'SAMPLE_DRAFT_EDITS', 'SAMPLE_DRAFT_SNAP_ID', 'histCounted',
 ];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS'];

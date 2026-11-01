@@ -2,7 +2,9 @@ import './generated/tokens.css';
 import './styles/shell.css';
 import './styles/dialogs.css';
 import './styles/history.css';
+import './styles/sidebar.css';
 import { BookProvider } from './book/BookProvider';
+import { StatsProvider } from './book/stats';
 import { DialogStackProvider } from './shell/Dialog';
 import { Shell } from './shell/Shell';
 import { TipsHost } from './shell/TipsHost';
@@ -14,7 +16,9 @@ export function App() {
       <DialogStackProvider>
         <TipsHost />
         <BookProvider>
-          <Shell />
+          <StatsProvider>
+            <Shell />
+          </StatsProvider>
         </BookProvider>
       </DialogStackProvider>
     </ToastProvider>

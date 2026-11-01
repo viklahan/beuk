@@ -52,6 +52,40 @@ export type ClosureApi = {
   mkSection: (kind: string, type: string, title: string, extra?: Record<string, unknown>) => Record<string, unknown> & { id: string };
   HISTORY_AUTO_CAP: number;
   CHOP_SNAP_CAP: number;
+  // wave 1b: the sidebar's counts (C1)
+  sectionChars: (s: unknown) => number;
+  emptyOut: (s: unknown) => boolean;
+  inBook: (s: unknown) => boolean;
+  sectionComplete: (s: unknown) => boolean;
+  READ_WPM: number;
+  AUTO_TYPES: string[];
+  // wave 1b: the chapter operations (B2) — 1.0's plans and rules, read against `state`
+  chopSplitPlan: (s: unknown, pos: number) => { c1: string; c2: string; title: string; lifted: boolean; sc1: unknown[]; sc2: unknown[] } | null;
+  chopMergePlan: (a: unknown, b: unknown) => { content: string; scenes: unknown[]; relabelled: number };
+  chopMergeWhy: (s: unknown) => string;
+  chopNumberStyle: () => ((n: number) => string) | null;
+  chopStyleFits: (f: (n: number) => string) => boolean;
+  chopName: (s: unknown) => string;
+  chopSig: (s: unknown) => string;
+  chopCanDelete: (s: unknown) => boolean;
+  chopCanDuplicate: (s: unknown) => boolean;
+  chopCanSplitKind: (s: unknown) => boolean;
+  chopGenerated: (s: unknown) => boolean;
+  chopChapters: () => Record<string, unknown>[];
+  chopNumbers: () => Record<string, string>;
+  normalizeScenes: (list: unknown) => Record<string, unknown>[];
+  CHOP_TOAST_MS: number;
+  // wave 1b: the sample book (I8)
+  buildSampleBook: () => Record<string, unknown> & { sections: Record<string, unknown>[]; meta: Record<string, unknown> };
+  SAMPLE_IMAGE_FILES: { id: string; name: string; mediaType: string; ext: string; file: string; bytes: number; sha256: string }[];
+  SAMPLE_COVER_FILE: { name: string; mediaType: string; ext: string; file: string; bytes: number; sha256: string };
+  SAMPLE_WORDS: number;
+  SAMPLE_BOOK_ID: string;
+  LEGACY_SAMPLE_BOOK_ID: string;
+  isSampleBookId: (id: unknown) => boolean;
+  SAMPLE_DRAFT_EDITS: { starts?: string; after?: string; then: string }[];
+  SAMPLE_DRAFT_SNAP_ID: string;
+  histCounted: (doc: unknown, s: unknown, flag: boolean) => { w: number };
   CC_LICENCES: Record<string, { name: string; short: string; url: string }>;
 };
 export type DiffPart = { t: '=' | '-' | '+'; s: string };
