@@ -42,10 +42,14 @@ export type Area = {
 
 /** A stand-in textarea holding `value` with the selection [start, end). */
 export function textArea(value: string, start: number, end: number): Area {
+  // A real textarea's value never holds a "\r": the browser turns "\r\n" and a lone "\r" into "\n" when the value is
+  // set (1.0's area.value = section.content). The stand-in does the same, the selection moved with the text, so 1.0's
+  // "\n\n" searches find their paragraphs (fix round 1). Its result is what 1.0 would write back.
+  const norm = (s: string) => s.replace(/\r\n?/g, '\n');
   const ta: Area = {
-    value,
-    selectionStart: start,
-    selectionEnd: end,
+    value: norm(value),
+    selectionStart: norm(value.slice(0, start)).length,
+    selectionEnd: norm(value.slice(0, end)).length,
     scrollTop: 0,
     scrollLeft: 0,
     focus: () => undefined,
@@ -85,9 +89,11 @@ const lastEdit = new WeakMap<Editor, { doc: PMNode; from: number; to: number; te
 /** Run a 1.0 textarea function on the editor's text and selection; null when it changed nothing. */
 export function runOnText(cur: TextEdit, act: (ta: Area) => unknown): TextEdit | null {
   const ta = textArea(cur.text, cur.start, cur.end);
+  const before = { text: ta.value, start: ta.selectionStart, end: ta.selectionEnd };
   act(ta);
   const next = { text: ta.value, start: ta.selectionStart, end: ta.selectionEnd };
-  return next.text === cur.text && next.start === cur.start && next.end === cur.end ? null : next;
+  // unchanged from the textarea's own starting state: 1.0 did nothing (its "\r\n" → "\n" alone is never written)
+  return next.text === before.text && next.start === before.start && next.end === before.end ? null : next;
 }
 
 /** The top-level blocks of `next` that differ from `old`: [from, to) of old's children to replace with next's [from, nTo). */

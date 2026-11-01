@@ -7,7 +7,7 @@ import { useLocale } from '../i18n/LocaleProvider';
 import { Dialog } from '../shell/Dialog';
 import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
-import { applyTextEdit, editorText } from './insert';
+import { applyTextEdit, editorText, textArea } from './insert';
 import {
   autoFormatEdit, footnoteEdit, footnoteNumber, linkEdit, linkWordsOf, marginEdit, marginLastName, marginWordsOf, textAction, type ToolKind,
 } from './tools';
@@ -107,9 +107,10 @@ export const EditorToolbar = forwardRef<HTMLDivElement, Props>(function EditorTo
       if (kind === 'autoformat') {
         if (ydoc) bookState(whole, ydoc); // 1.0's state for this book: its language picks the quotes
         const next = autoFormatEdit(c, cur);
-        if (next.text !== cur.text) applyTextEdit(ed, next);
+        const clean = next.text === textArea(cur.text, 0, 0).value; // 1.0 compares its textarea (no CR) before and after
+        if (!clean) applyTextEdit(ed, next);
         ed.view.focus();
-        toast(next.text === cur.text ? AUTO_FORMAT_CLEAN : AUTO_FORMAT_DONE, 'WandSparkles');
+        toast(clean ? AUTO_FORMAT_CLEAN : AUTO_FORMAT_DONE, 'WandSparkles');
         return;
       }
       const next = textAction(c, kind, cur);

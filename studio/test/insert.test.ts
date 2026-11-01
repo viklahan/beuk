@@ -217,7 +217,7 @@ function press(ed: Editor, kind: ToolKind): TextEdit | null {
   return next;
 }
 
-describe('fix round 1: a second press', () => {
+describe('fix round 1: a second press, and text with CRLF line ends', () => {
   it("every kind pressed twice gives 1.0's text after each press (List, Center, Right… take their markup away again)", () => {
     // the reported cases first
     {
@@ -285,6 +285,61 @@ describe('fix round 1: a second press', () => {
       ed.destroy();
     }
     expect(n).toBeGreaterThan(100);
+  }, 120_000);
+
+  it("CRLF: 1.0's textarea holds no \"\\r\", so its paragraph searches work — Blockquote quotes one paragraph, as 1.0", () => {
+    const text = 'Para one.\r\n\r\nPara two.';
+    const { ed, frag } = mount(text);
+    expect(fragmentText(frag)).toBe(text); // lossless until something is written
+    const at = text.indexOf('two');
+    press((select(ed, at, at), ed), 'blockquote');
+    expect(fragmentText(frag)).toBe('Para one.\n\n> Para two.');
+  });
+
+  it('CRLF texts: every kind, the dialogs and Auto-Format equal 1.0 on the textarea value', () => {
+    const texts = ['Para one.\r\n\r\nPara two.', 'a\r\nb\r\n\r\n- x\r\n- y\r\n\r\nlast\r\n', 'lone\rcr\r\rnext', '::: center\r\nC\r\n:::\r\n\r\nT'];
+    let n = 0;
+    for (const text of texts) {
+      for (const [s, e] of selections(text).slice(0, 8)) {
+        const { ed, frag } = mount(text);
+        for (const kind of KINDS) {
+          const cur = select(ed, s, e);
+          const want = oracle(kind, cur);
+          const changed = want.value !== asTextarea(text) || want.selectionStart !== textArea(cur.text, cur.start, cur.end).selectionStart;
+          const next = press(ed, kind);
+          if (!changed) {
+            expect(next).toBeNull();
+            expect(fragmentText(frag)).toBe(text); // a refusal writes nothing, not even the line ends
+          } else {
+            expect(fragmentText(frag), `${kind} on ${JSON.stringify(text)} [${s},${e}]`).toBe(want.value);
+            ed.commands.undo();
+            expect(fragmentText(frag)).toBe(text);
+          }
+          n++;
+        }
+        ed.destroy();
+        // the dialogs and Auto-Format, against 1.0's own handlers on the same textarea
+        const cur = { text, start: Math.min(s, e), end: Math.max(s, e) };
+        const fn = oracleDialog('Footnote', cur, (el) => {
+          el('fnText').value = 'a note';
+        });
+        expect(footnoteEdit(c, cur, footnoteNumber(c, text), 'a note')).toEqual({ text: fn.text, start: fn.start, end: fn.end });
+        const lk = oracleDialog('Link', cur, (el) => {
+          el('lnkUrl').value = 'example.com';
+        });
+        expect(linkWordsOf(cur)).toBe(lk.opened.lnkText);
+        expect(linkEdit(c, cur, linkWordsOf(cur), 'example.com')).toEqual({ text: lk.text, start: lk.start, end: lk.end });
+        const mn = oracleDialog('Margin', cur, (el) => {
+          el('mnName').value = 'Ada';
+          el('mnText').value = 'note';
+        });
+        expect(marginWordsOf(cur)).toBe(mn.opened.mnText);
+        expect(marginEdit(c, cur, 'Ada', 'note')).toEqual({ text: mn.text, start: mn.start, end: mn.end });
+      }
+      stateFromBook(C, { meta: { title: 'x', language: 'en' }, sections: [] });
+      expect(autoFormatEdit(c, { text, start: 0, end: 0 }).text).toBe(c.beautifyText(asTextarea(text).replace(/^\[\^?(\d+)\]:/gm, '[^$1]:')));
+    }
+    expect(n).toBeGreaterThan(400);
   }, 120_000);
 });
 

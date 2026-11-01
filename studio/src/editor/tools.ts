@@ -53,6 +53,12 @@ export function textAction(c: ClosureApi, kind: ToolKind, cur: TextEdit): TextEd
   return act ? runOnText(cur, (ta) => act(c, ta)) : null;
 }
 
+/** The selected text as 1.0's textarea holds it (no "\r"). */
+function sel(cur: TextEdit): string {
+  const ta = textArea(cur.text, cur.start, cur.end);
+  return ta.value.slice(ta.selectionStart, ta.selectionEnd);
+}
+
 /* ---- the footnote (1.0's openFootnoteDialog / confirmFootnote) ---- */
 
 /** The number the next footnote takes in this text (1.0's nextFootnoteNumber: one past the highest [^n] or [n]). */
@@ -64,8 +70,9 @@ export function footnoteEdit(c: ClosureApi, cur: TextEdit, n: number, noteRaw: s
   const note = noteRaw.replace(/\s*\n\s*/g, ' ').trim();
   const marker = '[^' + n + ']';
   const area = textArea(cur.text, cur.start, cur.end);
+  const start = area.selectionStart;
   c.insertAtCursor(area, marker);
-  const afterMarker = cur.start + marker.length;
+  const afterMarker = start + marker.length;
   area.value = area.value.replace(/\s*$/, '') + '\n\n[^' + n + ']: ' + note;
   const at = note ? afterMarker : area.value.length;
   return { text: area.value, start: at, end: at };
@@ -74,7 +81,7 @@ export function footnoteEdit(c: ClosureApi, cur: TextEdit, n: number, noteRaw: s
 /* ---- the link (1.0's openLinkDialog / confirmLink) ---- */
 
 /** The words the link dialog starts with: the selected text, on one line. */
-export const linkWordsOf = (cur: TextEdit): string => cur.text.slice(cur.start, cur.end).replace(/\s*\n\s*/g, ' ').trim();
+export const linkWordsOf = (cur: TextEdit): string => sel(cur).replace(/\s*\n\s*/g, ' ').trim();
 
 /** 1.0's confirmLink: null when the address can't be a link (the dialog says lnk.bad), else [words](address) over the
  *  selection (the address itself, shortened, when no words were given). */
@@ -101,7 +108,7 @@ export function marginLastName(c: ClosureApi, sectionTexts: readonly string[]): 
 }
 
 /** The note's words the dialog starts with: the selected text. */
-export const marginWordsOf = (cur: TextEdit): string => cur.text.slice(cur.start, cur.end).trim();
+export const marginWordsOf = (cur: TextEdit): string => sel(cur).trim();
 
 /** 1.0's confirmMargin: null without a name (the dialog says mn.bad), else "::: margin <Name>" with the words after the
  *  paragraph the selection ends in, the author's text left whole, the caret at the end of the note's words. */
@@ -109,8 +116,9 @@ export function marginEdit(c: ClosureApi, cur: TextEdit, nameRaw: string, wordsR
   const name = nameRaw.replace(/[\r\n:]+/g, ' ').replace(/\s+/g, ' ').trim();
   if (!name) return null;
   const words = wordsRaw.replace(/\r\n?/g, '\n').split('\n').filter((l) => !c.isContainerMarkLine(l)).join('\n').replace(/\n{3,}/g, '\n\n').trim();
-  const val = cur.text;
-  const nx = val.indexOf('\n\n', Math.max(cur.start, cur.end));
+  const ta = textArea(cur.text, cur.start, cur.end); // what 1.0's textarea holds: no "\r"
+  const val = ta.value;
+  const nx = val.indexOf('\n\n', Math.max(ta.selectionStart, ta.selectionEnd));
   const a = nx < 0 ? val.replace(/\s+$/, '').length : nx;
   const b = a;
   const head = val.slice(0, a).replace(/\s+$/, '');
@@ -128,6 +136,7 @@ export const autoFormatText = (c: ClosureApi, text: string): string => c.beautif
 
 /** Auto-Format as an edit: the caret and selection keep their offsets, clamped to the new text (1.0's withEditorView). */
 export function autoFormatEdit(c: ClosureApi, cur: TextEdit): TextEdit {
-  const text = autoFormatText(c, cur.text);
-  return { text, start: Math.min(cur.start, text.length), end: Math.min(cur.end, text.length) };
+  const ta = textArea(cur.text, cur.start, cur.end); // 1.0's handler reads area.value: no "\r"
+  const text = autoFormatText(c, ta.value);
+  return { text, start: Math.min(ta.selectionStart, text.length), end: Math.min(ta.selectionEnd, text.length) };
 }
