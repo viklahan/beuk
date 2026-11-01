@@ -68,11 +68,11 @@ export function Shell() {
         </div>
         <LangMenu />
         <ThemeButton />
-        <button type="button" className="tb-btn" id="btnHomeport" aria-label={t('top.homeportAria')} onClick={() => openTab('/?home')}>
+        <button type="button" className="tb-btn" id="btnHomeport" data-tip="tips.homeport" aria-label={t('top.homeportAria')} onClick={() => openTab('/?home')}>
           <Icon name="Anchor" />
           <span className="tb-label lbl-collapse">{t('top.homeport')}</span>
         </button>
-        <button type="button" className="tb-btn" id="btnHelp" aria-label={t('top.helpAria')} onClick={() => openTab('/help/')}>
+        <button type="button" className="tb-btn" id="btnHelp" data-tip="tips.help" aria-label={t('top.helpAria')} onClick={() => openTab('/help/')}>
           <Icon name="LifeBuoy" />
           <span className="tb-label lbl-collapse">{t('top.help')}</span>
         </button>

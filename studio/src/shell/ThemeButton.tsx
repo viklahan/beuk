@@ -17,6 +17,7 @@ export function ThemeButton() {
       type="button"
       className="tb-btn"
       id="btnTheme"
+      data-tip="tips.theme"
       aria-label={t('top.themeAria')}
       onClick={() => {
         const next = applyTheme(candle ? 'paper' : 'candlelight');

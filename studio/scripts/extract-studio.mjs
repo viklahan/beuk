@@ -39,7 +39,9 @@ export const REQUIRED_PAPER_ONLY = ['--ui-font'];
 /** Lucide icons the shell draws (PascalCase, lucide.icons keys). */
 export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Flame', 'Sun', 'Anchor', 'LifeBuoy', 'Coffee', 'FileUp', 'SlidersHorizontal', 'ListTree', 'PenLine', 'Type', 'TabletSmartphone', 'Check', 'Download',
   // part C: the outline rows, the backup and device toasts, the format buttons, the text note
-  'GripVertical', 'Bookmark', 'FileText', 'Image', 'ListOrdered', 'HardDrive', 'FolderOpen', 'Bold', 'Italic', 'Info'];
+  'GripVertical', 'Bookmark', 'FileText', 'Image', 'ListOrdered', 'HardDrive', 'FolderOpen', 'Bold', 'Italic', 'Info',
+  // step 5 wave 1a: the confirm, Settings, History and the sidebar's book tools
+  'BookOpen', 'BookType', 'History', 'Activity', 'Target', 'BookMarked', 'NotebookPen'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

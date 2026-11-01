@@ -40,6 +40,7 @@ export function LangMenu() {
         type="button"
         className="tb-btn"
         id="btnUiLang"
+        data-tip="tips.uiLang"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls="uiLangMenu"
