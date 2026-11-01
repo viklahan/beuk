@@ -1619,6 +1619,19 @@ async function wave2cChecks(origin) {
       }, { b: two, id: ids[0] });
       check(seen.status === 'draft' && JSON.stringify(seen.tags) === '["harbour"]' && seen.syn === 'The lamps are lit.' && seen.threads.join() === 'The keeper' && seen.pack === JSON.stringify(two.outline),
         `wave2c (${ui}): 1.0 reads the board's data back identically (tags ${seen.tagReg.join(',')}, threads ${seen.threads.join(',')}) and serializes the same outline`);
+      if (ui === 'ar') {
+        // V's decision (2026-11-01), fixed in 1.0 too: on 1.0's own board in Arabic chrome, a real Alt + ArrowDown key
+        // press moves the focused card LATER (1.0 used to read it as earlier in RTL)
+        const oneDir = await one.evaluate(() => document.documentElement.getAttribute('dir'));
+        await one.evaluate(() => olCheckOpen('cards'));
+        await one.waitForSelector('#olRoot .ol-cards[data-olkind="body"] .ol-card', { timeout: 30_000 });
+        const oneCards = () => one.$$eval('#olRoot .ol-cards[data-olkind="body"] .ol-card', (els) => els.map((e) => e.getAttribute('data-ol')));
+        const o0 = await oneCards();
+        await one.focus(`#olRoot [data-ol="${o0[0]}"]`);
+        await one.keyboard.press('Alt+ArrowDown');
+        const moved = await one.waitForFunction((a) => [...document.querySelectorAll('#olRoot .ol-cards[data-olkind="body"] .ol-card')].map((e) => e.getAttribute('data-ol'))[1] === a, o0[0], { timeout: 10_000 }).then(() => true, () => false);
+        check(oneDir === 'rtl' && moved, `wave2c (ar): on 1.0's own board (dir ${oneDir}), Alt + ArrowDown moves the first card one place later (${(await oneCards()).slice(0, 2).join(', ')})`);
+      }
       await harvestCsp(page);
       await harvestCsp(one);
     } finally {

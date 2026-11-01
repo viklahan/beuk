@@ -165,13 +165,16 @@ function carry(c: Closure, book: Rec, pre: Rec, st: State, outline: boolean): Re
   return out;
 }
 
-export type RunResult<R> = { value: R; wrote: boolean; selected: string | null };
+/** `refused`: 2.0 did not run 1.0's function, or did not write its result, because the book's sections lack unique
+ *  string ids (the writer matches sections by id). 1.0 never meets this (normalizeSection gives every section an id on
+ *  load) and has no message for it, so the callers say nothing: the action is a quiet no-op, noted in the wave report. */
+export type RunResult<R> = { value: R; wrote: boolean; selected: string | null; refused?: true };
 export type RunOpts = { outline?: boolean; toast?: StructToast };
 
 /** Run `fn` (1.0's own code, reading `state`) on 1.0's state of the open book, then write back what it changed. */
 export function runOnBook<R>(c: Closure, ydoc: Y.Doc, fn: (st: State) => R, opts: RunOpts = {}): RunResult<R> {
   const book = exportBook(ydoc);
-  if (!Array.isArray(book.sections) || !idsOk(book.sections as unknown[])) return { value: undefined as R, wrote: false, selected: null };
+  if (!Array.isArray(book.sections) || !idsOk(book.sections as unknown[])) return { value: undefined as R, wrote: false, selected: null, refused: true };
   const st = stateFromBook(c, book);
   // 1.0's applyBookDoc: state.outline = olNormalize(doc.outline, state.sections)
   if (opts.outline) st.outline = c.api.olNormalize(book.outline, st.sections);
@@ -191,7 +194,7 @@ export function runOnBook<R>(c: Closure, ydoc: Y.Doc, fn: (st: State) => R, opts
     structEnv.toast = keep.toast;
   }
   const after = carry(c, book, pre, st, !!opts.outline);
-  if (!idsOk(after.sections as unknown[])) return { value, wrote: false, selected };
+  if (!idsOk(after.sections as unknown[])) return { value, wrote: false, selected, refused: true };
   const wrote = writeBook(ydoc, book, after);
   return { value, wrote, selected };
 }

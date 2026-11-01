@@ -41,19 +41,40 @@ const VIEWS: [View, 'LayoutGrid' | 'List' | 'Table2', string][] = [['cards', 'La
 const statusVar = (st: string, statuses: string[]) => (statuses.includes(st) ? 'var(--ol-s-' + st + ')' : 'transparent');
 const cssVars = (v: Record<string, string>) => v as unknown as CSSProperties;
 
-/** A text field whose words are the writer's while focused, written 300 ms after the last key and when left. */
-function Draft({ value, onCommit, area, ...rest }: { value: string; onCommit: (v: string) => void; area?: boolean } & Rec) {
+/** A text field whose words are the writer's while focused, written 300 ms after the last key, when left, when the field
+ *  goes away (a book switch, a tab switch, the board closing: React runs no blur then) and when the page is hidden
+ *  (pagehide). `onCommit` is the one made with the field's own book and section, so a late write lands in the book the
+ *  words were typed for; a section gone by then writes nothing, and a failing write never throws out of the cleanup. */
+export function Draft({ value, onCommit, area, ...rest }: { value: string; onCommit: (v: string) => void; area?: boolean } & Rec) {
   const [draft, setDraft] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<string | null>(null);
+  // the commit of the render the writer typed in (its book and section), never a later render's: a field kept across a
+  // book replace that reuses the ids still writes its pending words to the book they were typed in
+  const pendingTo = useRef<((v: string) => void) | null>(null);
   const latest = useRef(onCommit);
   latest.current = onCommit;
-  const flush = (v: string) => {
+  const flush = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
-    latest.current(v);
+    const v = pending.current, to = pendingTo.current;
+    pending.current = null;
+    pendingTo.current = null;
+    if (v === null || !to) return;
+    try {
+      to(v);
+    } catch {
+      /* the book or its section is gone: nothing to write */
+    }
   };
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
+  useEffect(() => {
+    window.addEventListener('pagehide', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      flush();
+    };
+    // flush reads refs only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const props = {
     ...rest,
@@ -61,11 +82,13 @@ function Draft({ value, onCommit, area, ...rest }: { value: string; onCommit: (v
     onChange: (e: { target: { value: string } }) => {
       const v = e.target.value;
       setDraft(v);
+      pending.current = v;
+      pendingTo.current = latest.current;
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => flush(v), 300);
+      timer.current = setTimeout(flush, 300);
     },
     onBlur: () => {
-      if (draft !== null) flush(draft);
+      flush();
       setDraft(null);
     },
   };
@@ -160,12 +183,16 @@ export function OutlineBoard({ shown, onOpen }: { shown: boolean; onOpen: (id: s
       onClick: () => {
         if (!bkRef.current.isLive(ydoc)) return;
         const r = boardEdit(c, ydoc, uiRef.current, () => action.onClick());
+        if (r.wrote) setSt(boardState(c, ydoc));
         setUi(r.ui);
       },
     } : undefined);
   /** One of 1.0's edits, on the book at this moment. */
   const edit = <R,>(fn: (s: State) => R): R => {
     const r = boardEdit(c, ydoc, uiRef.current, fn, structToast);
+    // the board's view of the book is refreshed now, not 120 ms later: the ui 1.0 left (a saved filter's savedId) must
+    // never be judged against a book read before this edit (the sanitising effect below would drop it)
+    if (r.wrote) setSt(boardState(c, ydoc));
     if (JSON.stringify(r.ui) !== JSON.stringify(uiRef.current)) setUi(r.ui);
     return r.value;
   };
@@ -254,7 +281,11 @@ export function OutlineBoard({ shown, onOpen }: { shown: boolean; onOpen: (id: s
     </span>
   );
   const addTag = (s: Item, raw: string, el: HTMLInputElement) => {
-    if (onSec(s.id, (sec) => c.api.olAddTag(sec, raw))) focusNext.current = { id: s.id, sel: '.ol-tagin' };
+    const added = onSec(s.id, (sec) => c.api.olAddTag(sec, raw));
+    // the section gone (nothing written, nothing refused by 1.0): the typed words stay; else 1.0's: added, the field
+    // is drawn empty again; refused (the tag is already there), 1.0 empties it
+    if (added === undefined) return;
+    if (added) focusNext.current = { id: s.id, sel: '.ol-tagin' };
     el.value = '';
   };
   const tagsCell = (s: Item) => (
@@ -359,7 +390,9 @@ export function OutlineBoard({ shown, onOpen }: { shown: boolean; onOpen: (id: s
       }
       if (e.altKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
-        const earlier = e.key === 'ArrowUp' || (e.key === 'ArrowLeft' ? !rtl : rtl);
+        // Up and Down are always vertical (Up earlier, Down later); Left and Right mirror in RTL. V's decision
+        // (2026-11-01), fixed in 1.0 the same way: 1.0 read Alt + ArrowDown as "earlier" in RTL
+        const earlier = e.key === 'ArrowUp' || (e.key === 'ArrowLeft' && !rtl) || (e.key === 'ArrowRight' && rtl);
         moveStep(s.id, earlier ? -1 : 1, null);
       }
     },

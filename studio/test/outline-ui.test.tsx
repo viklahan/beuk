@@ -221,3 +221,89 @@ describe('keyboard (review focus #5)', () => {
     expect(JSON.stringify(await exported())).toBe(before);
   }, 60_000);
 });
+
+describe('fix round 1', () => {
+  it('a draft is written when its field goes away within 300 ms (the board left for the desk)', async () => {
+    const f = fixtures('real').find((x) => x.name === 'real/lantern-coast-book-one')!;
+    await openStudio(f.book);
+    await openBoard();
+    const [a] = await bodyIds();
+    const syn = card(a!).querySelector<HTMLTextAreaElement>('[data-olf="synopsis"]')!;
+    await act(async () => {
+      fireEvent.change(syn, { target: { value: 'Typed just now.' } });
+      // at once (well inside 300 ms): the board is left, its fields unmount with no blur
+      fireEvent.click(document.getElementById('tabBtnContent')!);
+    });
+    expect(document.querySelector('#olRoot [data-olf="synopsis"]')).toBeNull();
+    expect(((await exported()).sections as Rec[]).find((s) => s.id === a)!.synopsis).toBe('Typed just now.');
+  }, 60_000);
+
+  it('Draft: unmount and pagehide flush; a field re-rendered for another book still writes to the book it was typed in', async () => {
+    const { Draft } = await import('../src/outline/OutlineBoard');
+    const toOld: string[] = [], toNew: string[] = [];
+    const r = render(<Draft value="" onCommit={(v: string) => toOld.push(v)} data-t="d" />);
+    const el = () => document.querySelector<HTMLInputElement>('[data-t="d"]')!;
+    fireEvent.change(el(), { target: { value: 'one' } });
+    // another book's render of the same field (a book replace reusing the ids), before the 300 ms
+    r.rerender(<Draft value="" onCommit={(v: string) => toNew.push(v)} data-t="d" />);
+    r.unmount();
+    expect(toOld).toEqual(['one']);
+    expect(toNew).toEqual([]);
+    // pagehide
+    const got: string[] = [];
+    render(<Draft value="" onCommit={(v: string) => got.push(v)} data-t="d" />);
+    fireEvent.change(el(), { target: { value: 'two' } });
+    window.dispatchEvent(new Event('pagehide'));
+    expect(got).toEqual(['two']);
+    // a commit that throws (its section gone) does not throw out of the cleanup
+    const r3 = render(<Draft value="" onCommit={() => { throw new Error('gone'); }} data-t="e" />);
+    fireEvent.change(document.querySelector('[data-t="e"]')!, { target: { value: 'x' } });
+    expect(() => r3.unmount()).not.toThrow();
+  });
+
+  it('a filter saved under a name is the one on: its chip stays pressed (1.0 marks it active)', async () => {
+    const f = fixtures('real').find((x) => x.name === 'real/lantern-coast-book-one')!;
+    await openStudio(f.book);
+    await openBoard();
+    await act(async () => {
+      fireEvent.click(document.querySelector('[data-olst="none"]')!);
+    });
+    const name = document.getElementById('olSaveName') as HTMLInputElement;
+    name.value = 'Unmarked';
+    await act(async () => {
+      fireEvent.click(document.getElementById('olSaveDo')!);
+    });
+    const saved = await exported();
+    const id = ((saved.outline as Rec).filters as Rec[])[0]!.id as string;
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400)); // past the board's 120 ms re-read
+    });
+    expect(document.querySelector(`[data-olsaved="${id}"]`)!.getAttribute('aria-pressed')).toBe('true');
+  }, 60_000);
+
+  for (const ui of ['en', 'ar'] as const) {
+    it(`all four Alt + arrows move the card the right way (${ui} chrome): Up earlier, Down later; Left / Right mirrored in RTL`, async () => {
+      if (ui !== 'en') await loadPack(ui);
+      const f = fixtures('real').find((x) => x.name === 'real/lantern-coast-book-one')!;
+      await openStudio(f.book, ui);
+      await openBoard();
+      const ids = await bodyIds();
+      const [a, b] = ids as [string, string];
+      // b stands second; each key moves it one place, and the opposite key brings it back
+      const later = ['ArrowDown', ui === 'ar' ? 'ArrowLeft' : 'ArrowRight'];
+      const earlier = ['ArrowUp', ui === 'ar' ? 'ArrowRight' : 'ArrowLeft'];
+      for (const k of earlier) {
+        await press(card(b), k, { altKey: true });
+        await waitFor(async () => expect((await bodyIds()).slice(0, 2), k).toEqual([b, a]));
+        await press(card(b), 'ArrowDown', { altKey: true });
+        await waitFor(async () => expect((await bodyIds()).slice(0, 2), k + ' back').toEqual([a, b]));
+      }
+      for (const k of later) {
+        await press(card(a), k, { altKey: true });
+        await waitFor(async () => expect((await bodyIds()).slice(0, 2), k).toEqual([b, a]));
+        await press(card(a), 'ArrowUp', { altKey: true });
+        await waitFor(async () => expect((await bodyIds()).slice(0, 2), k + ' back').toEqual([a, b]));
+      }
+    }, 120_000);
+  }
+});

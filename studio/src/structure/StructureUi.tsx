@@ -154,7 +154,9 @@ export function useStructure(): StructureUi {
         setDrag(null);
         setDrop(null);
         const r = act((cl, y) => moveTo(cl, y, id, row.id, after(e)));
-        if (r && !r.value) toast(t('toast.moveTier'), 'TriangleAlert');
+        // 1.0's drop handler: `if (!moveSectionTo(...)) toast(toast.moveTier)` — its every false (across tiers, and a
+        // section 1.0 no longer finds) says moveTier; 2.0's own refusal (sections without unique ids) says nothing
+        if (r && !r.refused && r.value === false) toast(t('toast.moveTier'), 'TriangleAlert');
       },
     };
   };

@@ -7,6 +7,8 @@ import { loadClosure, setClosureT, stateFromBook, type Closure } from '../src/cl
 import { chopDelete } from '../src/chapters/chop';
 import { addChapter, addPart, insertMatter, moveStep, moveTo, retype, toggleIncluded, writeOrdered, type RunResult } from '../src/structure/structure';
 import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
+import { closureShare } from '../src/closure/index';
+import { createOracle } from '../src/generated/closure-oracle.js';
 import { fixtures } from './fixtures';
 
 /* Wave 2c, task 1: section types, the matter library, Add Chapter / Add
@@ -19,8 +21,11 @@ import { fixtures } from './fixtures';
    uid() is random); a section the action did not touch is byte-identical
    to the stored one; a singleton that stands refuses a second copy (no
    write, 1.0's toast.pageExists).
-   Constraint 19: each action is one Y transaction — one Y.UndoManager step
-   gives back an export equal (JSON string) to the original.
+   Constraint 19, proven per action: a Y.UndoManager made just before the
+   action, ONE undo() step, and the export is string-equal to the export
+   before the action (the matter loop: on the fixture's one Y.Doc, each type
+   after the previous one was undone; every other action: on a fresh copy of
+   the opened book). That is: the action is one Y transaction.
    1.0 self-checks re-expressed: structure.matter-library (tiers, order,
    singleton jump; the contents/nav half is export, wave 5),
    structure.reorder (move controls, drag-equivalent, persists across a
@@ -31,9 +36,13 @@ import { fixtures } from './fixtures';
 type Rec = Record<string, unknown>;
 const t = (k: string, p?: Rec) => translate({ packs: { en: en as Pack }, pluralForms: meta.pluralForms as PluralForms }, 'en', k, p);
 let c: Closure;
+/** 1.0's own sidebar row handler (test oracle module): its "eye" branch is 1.0's include toggle. */
+let sectionAction: (id: string, act: string) => void;
 beforeAll(async () => {
   c = await loadClosure();
   setClosureT(t);
+  // created afresh for each call: the oracle module takes the main closure's state when it is made
+  sectionAction = (id, act) => (createOracle(closureShare()!, { chopOpenMenu: () => undefined, chopDelete: () => undefined, renderPreview: () => undefined, refreshExportTree: () => undefined, renderSidebar: () => undefined }).sectionAction as (i: string, a: string) => void)(id, act);
 });
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const secs = (y: Y.Doc) => exportBook(y).sections as Rec[];
@@ -64,7 +73,7 @@ function untouched(got: Rec[], before: Rec[], touched: Set<unknown>) {
 const books = fixtures('all').filter((f) => Array.isArray((f.book as Rec).sections) && ((f.book as Rec).sections as Rec[]).every((s) => typeof s?.id === 'string'));
 
 describe('the matter library equals 1.0 on every fixture (review focus #1)', () => {
-  it('each type into each fixture: 1.0\'s sections exactly; a standing singleton refuses; one transaction, one Undo', () => {
+  it('each type into each fixture: 1.0\'s sections exactly; a standing singleton refuses; one undo() step restores the export (one transaction)', () => {
     expect(books.length).toBeGreaterThanOrEqual(11);
     let inserted = 0, refused = 0;
     for (const f of books) {
@@ -112,7 +121,7 @@ describe('the matter library equals 1.0 on every fixture (review focus #1)', () 
 
 describe('retype, Add Chapter / Add Part, move, the eye equal 1.0 on every fixture (constraint 17, 19)', () => {
   const TARGETS = ['front:foreword', 'front:epigraph', 'body:chapter', 'body:part', 'body:prologue', 'back:cta', 'back:aboutauthor'];
-  it('each action: 1.0\'s sections exactly, only the touched section changed, one Undo gives the export back', () => {
+  it('each action, on a fresh copy of the book: 1.0\'s sections exactly, only the touched section changed, one undo() step restores the export (one transaction)', () => {
     for (const f of books) {
       const base = new Y.Doc();
       importBook(f.book, base);
@@ -148,10 +157,8 @@ describe('retype, Add Chapter / Add Part, move, the eye equal 1.0 on every fixtu
           // retypeSection renumbers a section turned into a chapter: every chapter's number is read, nothing else moves
           run(`retype ${id} ${to}`, () => retype(c, y, id, to), () => c.api.retypeSection(id, ty!, k!), new Set([id]));
         }
-        run(`eye ${id}`, () => toggleIncluded(c, y, id), () => {
-          const x = c.getState().sections.find((q: Rec) => q.id === id)!;
-          x.included = !x.included;
-        }, new Set([id]));
+        // the oracle is 1.0's own sectionAction(id, "eye"), run on 1.0's state of the book
+        run(`eye ${id}`, () => toggleIncluded(c, y, id), () => sectionAction(id, 'eye'), new Set([id]));
         run(`up ${id}`, () => moveStep(c, y, id, 'up'), () => c.api.moveSection(id, 'up'), new Set());
         run(`down ${id}`, () => moveStep(c, y, id, 'down'), () => c.api.moveSection(id, 'down'), new Set());
       }

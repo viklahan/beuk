@@ -114,12 +114,16 @@ export const ATTACH = ['TYPE_TITLES'];
 export const ORACLE_ROOTS = ['openFootnoteDialog', 'confirmFootnote', 'openLinkDialog', 'confirmLink', 'openMarginDialog', 'confirmMargin',
   // wave 2b: the section card's marker edits, the scene bar's break test, the scene picker's handlers
   'sceneBreakAtCursor', 'rewriteImageToken', 'updateImageToken', 'removeImageToken', 'openScenePicker', 'sceneSelectImage', 'confirmSceneImage',
-  'detachSceneImage', 'removeSceneAtCursor', 'toggleSceneSuggest', 'sceneRenderSuggestResults', 'sceneStockLanded', 'selectLibImage'];
+  'detachSceneImage', 'removeSceneAtCursor', 'toggleSceneSuggest', 'sceneRenderSuggestResults', 'sceneStockLanded', 'selectLibImage',
+  // wave 2c (fix round 1): the sidebar row's own handler, whose "eye" branch is 1.0's include toggle
+  'sectionAction'];
 /** What the oracle's handlers take from 1.0's page, supplied by the test (createOracle(share, env)). */
 export const ORACLE_SUPPLIED = ['$', 'activeSection', 'editorViewSnapshot', 'editorViewRestore', 'icons',
   // wave 2b: what the picture handlers redraw afterwards (nothing a test reads), and 1.0's renderImgLib
   'withEditorView', 'updateStats', 'renderPreview', 'renderSectionImages', 'zenRenderSurface', 'updateSceneBar', 'refreshExportTree',
-  'renderSceneLib', 'renderImgLib', 'refreshImagePickers', 'document'];
+  'renderSceneLib', 'renderImgLib', 'refreshImagePickers', 'document',
+  // wave 2c: sectionAction's other branches (the row menu, delete), never taken by the eye test
+  'chopOpenMenu', 'chopDelete'];
 /** 1.0's top-level lets the oracle's handlers assign (openScenePicker sets scenePending, selectLibImage imgSelId) and the
  *  main closure also holds (imglibRemove clears them): the oracle declares its OWN copy, so its handlers' writes stay its
  *  own (a shared name is read-only there). */

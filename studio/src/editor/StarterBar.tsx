@@ -67,6 +67,16 @@ export function StarterBar({ editor, ydoc, section }: { editor: Editor | null; y
   const [text, setText] = useState<string | null>(null);
   const [pending, setPending] = useState<Pending>(null);
   const isBody = (section.get('kind') || 'body') === 'body';
+  // what 1.0's starterIds offers and the picked starter's text: they read 1.0's state (the series, the author, the
+  // typefaces, the book's language), so they are computed here, after render, never while rendering
+  const [offer, setOffer] = useState<{ key: string; idsKey: string; ids: string[]; preview: { lang: string; dir: 'ltr' | 'rtl'; text: string } | null }>({ key: '', idsKey: '', ids: [], preview: null });
+  const [metaRev, setMetaRev] = useState(0);
+  useEffect(() => {
+    const m = ydoc.getMap<unknown>(META);
+    const on = () => setMetaRev((n) => n + 1);
+    m.observe(on);
+    return () => m.unobserve(on);
+  }, [ydoc]);
 
   useEffect(() => {
     if (!c) void loadClosure().then(setC).catch(() => undefined);
@@ -87,13 +97,33 @@ export function StarterBar({ editor, ydoc, section }: { editor: Editor | null; y
     };
   }, [editor, isBody]);
 
+  const empty = !!c && text !== null && !isBody && c.api.emptyOut(sectionNow(section, text));
+  // the offer depends on the page and the book's meta; the preview on those and the pick (a pick never hides the offer)
+  const idsKey = [String(section.get('id')), String(section.get('type')), empty, metaRev].join('|');
+  const offerKey = idsKey + '|' + (pending ? pending.secId + ':' + pending.id : '');
+  useEffect(() => {
+    if (!c || !empty) {
+      setOffer((o) => (o.ids.length || o.preview ? { key: offerKey, idsKey, ids: [], preview: null } : o));
+      return;
+    }
+    metaState(c, ydoc);
+    const ids = c.api.starterIds(sectionNow(section, ''));
+    let preview: { lang: string; dir: 'ltr' | 'rtl'; text: string } | null = null;
+    if (pending && pending.secId === section.get('id') && ids.includes(pending.id)) {
+      c.setState(stateFromBook(c, exportBook(ydoc)));
+      const lang = c.api.bookLang();
+      preview = { lang, dir: c.api.isRtlLang(lang) ? 'rtl' : 'ltr', text: c.api.starterText(pending.id, lang) };
+    }
+    setOffer({ key: offerKey, idsKey, ids, preview });
+    // offerKey holds every input
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [c, ydoc, offerKey]);
+
   const hidden = <div id="starterBar" className="starter-bar" style={{ display: 'none' }} aria-live="polite" />;
   if (!c || !editor || isBody || text === null) return hidden;
   const s = sectionNow(section, text);
-  const empty = c.api.emptyOut(s);
   const blanks = empty ? [] : c.api.starterBlanks(s.content);
-  metaState(c, ydoc);
-  const ids = empty ? c.api.starterIds(s) : [];
+  const ids = empty && offer.idsKey === idsKey ? offer.ids : [];
   if (!empty && !blanks.length) return hidden;
   // 1.0: a pick for another section, or one no longer offered, is forgotten
   const pick = pending && pending.secId === s.id && ids.includes(pending.id) ? pending : null;
@@ -109,12 +139,7 @@ export function StarterBar({ editor, ydoc, section }: { editor: Editor | null; y
     selectBlank(c, editor);
   };
 
-  let preview: { lang: string; dir: 'ltr' | 'rtl'; text: string } | null = null;
-  if (pick) {
-    c.setState(stateFromBook(c, exportBook(ydoc)));
-    const lang = c.api.bookLang();
-    preview = { lang, dir: c.api.isRtlLang(lang) ? 'rtl' : 'ltr', text: c.api.starterText(pick.id, lang) };
-  }
+  const preview = pick && offer.key === offerKey ? offer.preview : null;
   const marked = (line: string) =>
     line.split(/(\[\[[^[\]\n]{1,120}\]\])/).map((part, i) => (i % 2 ? <mark key={i}>{part}</mark> : <Fragment key={i}>{part}</Fragment>));
 
