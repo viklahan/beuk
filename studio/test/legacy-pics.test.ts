@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
-import { IDBFactory } from 'fake-indexeddb';
+import { IDBFactory, IDBObjectStore } from 'fake-indexeddb';
 import { LEGACY_DB, LEGACY_PIC, LEGACY_STORE, readLegacyBook } from '../src/book/legacy10';
 import { loadClosure } from '../src/closure/index';
 
@@ -118,5 +118,30 @@ describe('1.0\'s packed device save (BEUK:localpics), read-only', () => {
     await seed10(idb, { book: { format: 1, savedAt: '2026-10-30T10:00:00.000Z', json: JSON.stringify({ book: BOOK }) } });
     const got = await readLegacyBook(idb);
     expect(got).toEqual({ book: BOOK, from: 'book', savedAt: '2026-10-30T10:00:00.000Z', missing: 0 });
+  });
+
+  it('fix round 1: a picture that cannot be READ is a failed restore, not a missing picture — nothing is imported, so the next start tries again (1.0\'s localReq rejects)', async () => {
+    const idb = new IDBFactory();
+    const p = packed(BOOK);
+    await seed10(idb, { book: p.rec, ...p.pics });
+    const proto = IDBObjectStore.prototype as unknown as { get: (k: unknown) => IDBRequest };
+    const real = proto.get;
+    proto.get = function (this: IDBObjectStore, k: unknown) {
+      if (typeof k === 'string' && k.startsWith(LEGACY_PIC)) {
+        const r = { result: undefined, error: new DOMException('read failed', 'UnknownError'), onsuccess: null, onerror: null } as unknown as IDBRequest & { onerror: (() => void) | null };
+        setTimeout(() => r.onerror?.call(r, new Event('error')), 0);
+        return r;
+      }
+      return real.call(this, k);
+    };
+    try {
+      expect(await readLegacyBook(idb)).toBeNull();
+    } finally {
+      proto.get = real;
+    }
+    // the read works again: the book opens whole
+    const got = await readLegacyBook(idb);
+    expect(got?.missing).toBe(0);
+    expect(JSON.stringify(got!.book)).not.toContain('beuk-pic:');
   });
 });

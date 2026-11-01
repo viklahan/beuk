@@ -104,6 +104,16 @@ const get = (store: IDBObjectStore, key: string): Promise<unknown> =>
     r.onerror = () => resolve(undefined);
   });
 
+/** 1.0's localReq: a request's result, or a REJECTION when the read fails. A picture that cannot be read is a failed
+ *  restore (1.0 retries at its next load), never a "missing" picture: the import is made once (store.ts
+ *  importLegacyOnce), so it must not be made from a read error. */
+const getStrict = (store: IDBObjectStore, key: string): Promise<unknown> =>
+  new Promise((resolve, reject) => {
+    const r = store.get(key);
+    r.onsuccess = () => resolve(r.result);
+    r.onerror = () => reject(r.error ?? new Error('read failed'));
+  });
+
 /** 1.0's localUnpack: the parsed record with its pictures filled back in from the device ({ doc, missing }; the names of
  *  pictures the device does not hold stay, as 1.0 keeps them). Readonly. */
 export async function unpackLegacy(db: IDBDatabase, d: Rec, pic: PicCode): Promise<{ doc: Rec; missing: number }> {
@@ -118,7 +128,7 @@ export async function unpackLegacy(db: IDBDatabase, d: Rec, pic: PicCode): Promi
   const got = new Map<string, string>();
   await Promise.all(
     Array.from(want).map(async (h) => {
-      const v = (await get(store, LEGACY_PIC + h)) as { data?: unknown } | undefined;
+      const v = (await getStrict(store, LEGACY_PIC + h)) as { data?: unknown } | undefined;
       if (v && typeof v.data === 'string' && v.data) got.set(h, v.data);
     }),
   );
