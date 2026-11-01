@@ -7,6 +7,7 @@ import { useToast } from '../shell/Toasts';
 import { clearActiveEditor, setActiveEditor } from './active';
 import { flushNormalize, markActive, toggleBookMark } from './behaviour';
 import { createChapterEditor } from './createEditor';
+import { tbLayoutInit } from './toolbarLayout';
 
 /* The open chapter: 1.0's format toolbar region (#insertToolbar, the Bold
    and Italic buttons with 1.0's keys) above the page, and the editor on the
@@ -20,6 +21,9 @@ export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
   const { t } = useLocale();
   const toast = useToast();
   const host = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  // 1.0's toolbar layout: whole groups on even rows, labels folding to icons when they would need more than two
+  useEffect(() => (bar.current ? tbLayoutInit(bar.current) : undefined), []);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [marks, setMarks] = useState({ strong: false, em: false });
   const refuse = useRef(() => undefined as void);
@@ -58,13 +62,13 @@ export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
 
   return (
     <>
-      <div className="toolbar" id="insertToolbar" role="toolbar" aria-controls="manuscript">
+      <div className="toolbar" id="insertToolbar" role="toolbar" aria-controls="manuscript" ref={bar}>
         <div className="tool-group" data-tg="format">
-          <button type="button" className="tool-btn" data-insert="bold" title={t('tool.boldTitle')} aria-pressed={marks.strong} onMouseDown={(e) => e.preventDefault()} onClick={press('strong')}>
+          <button type="button" className="tool-btn" data-collapse="1" data-insert="bold" title={t('tool.boldTitle')} aria-pressed={marks.strong} onMouseDown={(e) => e.preventDefault()} onClick={press('strong')}>
             <Icon name="Bold" />
             <span className="tl">{t('tool.bold')}</span>
           </button>
-          <button type="button" className="tool-btn" data-insert="italic" title={t('tool.italicTitle')} aria-pressed={marks.em} onMouseDown={(e) => e.preventDefault()} onClick={press('em')}>
+          <button type="button" className="tool-btn" data-collapse="1" data-insert="italic" title={t('tool.italicTitle')} aria-pressed={marks.em} onMouseDown={(e) => e.preventDefault()} onClick={press('em')}>
             <Icon name="Italic" />
             <span className="tl">{t('tool.italic')}</span>
           </button>

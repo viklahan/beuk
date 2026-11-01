@@ -4,6 +4,7 @@ import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
 import { SideStatus } from '../book/SideStatus';
 import { useChapterOps } from '../chapters/ChapterOps';
+import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -134,6 +135,8 @@ export function Shell() {
               {t('side.settings')}
             </button>
           </div>
+          {bk.phase !== 'starting' && <SampleBar />}
+          {/* the matter library (#matterLib): wave 2 (B3) */}
           <div id="structureScroll">
             <Outline tools={ops.tools} />
           </div>

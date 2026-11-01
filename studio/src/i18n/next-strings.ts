@@ -14,6 +14,7 @@ const EN = {
   'next.textWarningPlural': '{n} broken characters in “{chapter}” could not be kept and became �.',
   'next.markRefused': 'That can’t be italic or bold here — its asterisks would read back as something else.',
   'next.snapshotGone': 'That snapshot is no longer here — the book was replaced or the snapshot removed. Nothing was changed.',
+  'next.bookReplaced': 'The book was replaced in another tab while this one was asking. Nothing was changed.',
 } as const;
 
 export type NextKey = keyof typeof EN;

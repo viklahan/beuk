@@ -139,10 +139,11 @@ export function saveNamed(c: Closure, ydoc: Y.Doc, name: string): HistoryEntry {
   return snap;
 }
 
-/** 1.0 autoSnapshot: nothing on an empty desk (1.0 also skips the untouched sample; 2.0 has no sample yet). */
-export function autoSnapshot(c: Closure, ydoc: Y.Doc, kind: string): HistoryEntry | null {
+/** 1.0 autoSnapshot: nothing on an empty desk, nothing on the untouched sample (`untouchedSample`: the caller's
+ *  sample/sample.ts deskIsUntouchedSample, read before). */
+export function autoSnapshot(c: Closure, ydoc: Y.Doc, kind: string, untouchedSample = false): HistoryEntry | null {
   const L = live(c, ydoc);
-  if (c.api.isEmptyDesk()) return null;
+  if (c.api.isEmptyDesk() || untouchedSample) return null;
   const snap = takeSnapshot(c, L, '', kind);
   writeHistory(c, ydoc, L);
   return snap;
@@ -207,13 +208,13 @@ export function restoreDoc(c: Closure, ydoc: Y.Doc, id: string): Rec | null {
 
 /** 1.0 restoreSnapshotSection: a "Before restore" snapshot (autoSnapshot), then the section, normalised by 1.0's
  *  normalizeSection, replaces its namesake or returns at its snapshot place. One transaction. Returns its index. */
-export function restoreSection(c: Closure, ydoc: Y.Doc, snapId: string, secId: string): number | null {
+export function restoreSection(c: Closure, ydoc: Y.Doc, snapId: string, secId: string, untouchedSample = false): number | null {
   const L = live(c, ydoc);
   const snap = L.state.history.find((s) => s.id === snapId);
   if (!snap) return null;
   const sIdx = snap.doc.sections.findIndex((s) => s.id === secId);
   if (sIdx < 0) return null;
-  if (!c.api.isEmptyDesk()) takeSnapshot(c, L, '', 'restore');
+  if (!c.api.isEmptyDesk() && !untouchedSample) takeSnapshot(c, L, '', 'restore'); // 1.0's autoSnapshot("restore")
   const restored = c.api.normalizeSection(clone(snap.doc.sections[sIdx]));
   const now = L.state.sections;
   const cur = now.findIndex((s) => s.id === secId);
@@ -254,7 +255,7 @@ export function restoreSection(c: Closure, ydoc: Y.Doc, snapId: string, secId: s
  *  desk's only when it is the same book), the snapshot first, pruned, packed against the arriving book. `raw` is the
  *  backup's book as the file holds it (1.0 decides "carries a History" on it); `read` is that book after readBook. The
  *  open book is not written. Returns the book to open. */
-export function backupArrival(c: Closure, ydoc: Y.Doc | null, raw: Rec, read: Rec): Rec {
+export function backupArrival(c: Closure, ydoc: Y.Doc | null, raw: Rec, read: Rec, untouchedSample = false): Rec {
   let snap: HistoryEntry | null = null;
   let deskHistory: HistoryEntry[] = [];
   let deskBookId: unknown = null;
@@ -262,7 +263,7 @@ export function backupArrival(c: Closure, ydoc: Y.Doc | null, raw: Rec, read: Re
     const L = live(c, ydoc);
     deskBookId = isRec(L.state.meta) ? L.state.meta.bookId : null;
     deskHistory = L.state.history;
-    if (!c.api.isEmptyDesk()) {
+    if (!c.api.isEmptyDesk() && !untouchedSample) { // 1.0's autoSnapshot("backup")
       snap = takeSnapshot(c, L, '', 'backup');
       deskHistory = L.state.history;
     }

@@ -9,6 +9,7 @@ import { resetSidePrefsCache, SIDE_PREFS_KEY } from '../src/book/sidePrefs';
 import { statsOf, statsPages } from '../src/book/stats';
 import { bookState, loadClosure } from '../src/closure/index';
 import { fmtNum } from '../src/history/HistoryDialog';
+import { buildSample } from '../src/sample/sample';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import { fixtures } from './fixtures';
 
@@ -84,7 +85,7 @@ describe('the counts equal 1.0\'s (review focus #5)', () => {
   it('the sample-scale book counts 1.0\'s SAMPLE_WORDS', async () => {
     const c = await loadClosure();
     const ydoc = new Y.Doc();
-    importBook(c.api.buildSampleBook(), ydoc);
+    importBook(buildSample(c, null), ydoc);
     expect(statsOf(c, ydoc).words).toBe(c.api.SAMPLE_WORDS);
   });
 });

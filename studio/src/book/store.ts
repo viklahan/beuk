@@ -348,3 +348,12 @@ export async function startBook(readLegacy: () => Promise<{ book: Rec } | null>)
   const r = await withImportLock(() => importLegacyOnce(legacy.book));
   return { book: r.book, importedLegacy: r.imported };
 }
+
+/** Forget a book on this device: every generation's database deleted and its registry entry dropped (1.0's
+ *  BEUK:remnants — Remove sample leaves nothing of the sample behind). Never call it for the book open in this tab. */
+export async function forgetBook(id: string): Promise<void> {
+  const r = readRegistry();
+  const known = r.books.filter((b) => b.id === id).map((b) => b.epoch);
+  writeRegistry({ v: 1, last: r.last === id ? null : r.last, books: r.books.filter((b) => b.id !== id) });
+  await dropOlderGenerations(id, '', [LEGACY_EPOCH, ...known]);
+}

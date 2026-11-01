@@ -6,6 +6,7 @@ import { Dialog, useConfirm } from '../shell/Dialog';
 import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { deleteSnapshot, live, liveDoc, restoreDoc, restoreSection, saveNamed, type Live } from './history';
+import { deskIsUntouchedSample } from '../sample/sample';
 
 /* The History room (1.0 #modalHistory: renderHistory, histDiffHtml,
    histCmpHtml, initHistory), with 1.0's markup, classes, data- attributes
@@ -209,7 +210,7 @@ export function HistoryDialog({ open, onClose }: { open: boolean; onClose: () =>
   const doRestoreSection = (secId: string) => {
     if (!c || !ydoc || !viewId) return;
     if (!bk.isLive(ydoc)) return gone();
-    const at = restoreSection(c, ydoc, viewId, secId);
+    const at = restoreSection(c, ydoc, viewId, secId, deskIsUntouchedSample(c, ydoc));
     if (at === null) return gone();
     bk.select(at); // 1.0: state.activeId = restored.id (the desk shows it); 2.0 never writes activeId on a selection
     setTick((n) => n + 1);

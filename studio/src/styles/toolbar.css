@@ -1,0 +1,29 @@
+/* ==== BEUK:toolbar ==== 1.0's editor toolbar layout (client/index.html BEUK:toolbar): whole groups wrap, tbLayout()
+   (src/editor/toolbarLayout.ts) picks the breaks and how many labels fold to icons. Wave 1b (inventory A12). */
+#insertToolbar { column-gap: 4px; row-gap: 4px; }
+#insertToolbar > .tool-group {
+  display: flex; align-items: center; gap: 4px; min-width: 0;
+  flex: var(--tg-grow, 1) 1 auto; flex-wrap: wrap;
+}
+#insertToolbar > .tool-group > .tool-btn,
+#insertToolbar > .tool-group > .ra-wrap { flex: 1 1 auto; }
+#insertToolbar .ra-wrap { display: flex; }
+#insertToolbar .ra-wrap > .tool-btn { flex: 1 1 auto; }
+#insertToolbar > .tool-group.row-start > .tool-sep { display: none; }
+body.zen #insertToolbar > .focus-cluster { display: none; }
+/* A forced row break: a zero-height line of its own; the negative margin takes back the extra row gap that line adds. */
+#insertToolbar > .tool-break { display: none; flex: 0 0 100%; height: 0; margin-top: -4px; }
+#insertToolbar > .tool-break.on { display: block; }
+#insertToolbar .tool-btn.folded { position: relative; padding: 0 9px; min-width: 34px; gap: 0; }
+#insertToolbar .tool-btn.folded .tl {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+/* Measuring pass (tbLayout): natural widths, nothing grows or wraps, every divider shown. Applied and removed inside
+   one synchronous call, so it never paints. */
+#insertToolbar.tb-measure { flex-wrap: nowrap; }
+#insertToolbar.tb-measure > .tool-group { flex: 0 0 auto; flex-wrap: nowrap; }
+#insertToolbar.tb-measure > .tool-group > .tool-btn,
+#insertToolbar.tb-measure > .tool-group > .ra-wrap { flex: 0 0 auto; }
+#insertToolbar.tb-measure > .tool-group.row-start > .tool-sep { display: block; }
+#insertToolbar.tb-measure > .tool-break { display: none; }

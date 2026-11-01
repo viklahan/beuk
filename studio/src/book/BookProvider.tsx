@@ -5,6 +5,7 @@ import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
 import { loadClosure } from '../closure/index';
 import { backupArrival, live } from '../history/history';
+import { clearSampleRecord, deskIsUntouchedSample } from '../sample/sample';
 import { useConfirm } from '../shell/Dialog';
 import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -59,6 +60,10 @@ export type BookApi = {
    *  caller read: when it is no longer the live book (another tab replaced it while a confirm waited), nothing is
    *  replaced and this resolves false without a toast (the caller says so). */
   replaceBook: (doc: Record<string, unknown>, from: Y.Doc) => Promise<boolean>;
+  /** Open `doc` as a new generation in place of the book `from` (the sample, the empty book of New book / Remove sample),
+   *  or — `from` null — only while no book is open. Refused (null, no toast) when `from` is no longer the live book; a
+   *  book the device will not store has its toast. */
+  replaceWith: (doc: Record<string, unknown>, from: Y.Doc | null) => Promise<OpenBook | null>;
   /** Is this Y.Doc still the live, current book of this tab (not replaced, not stale)? Read at call time, never from a
    *  render: an async path that awaited a confirm asks this before it writes. */
   isLive: (ydoc: Y.Doc | null) => boolean;
@@ -221,14 +226,15 @@ export function BookProvider({ children }: { children: ReactNode }) {
         if (open) {
           const c = await loadClosure();
           const L = live(c, open.ydoc);
-          // 1.0: an empty desk is replaced without asking (it holds nothing to keep)
-          if (!c.api.isEmptyDesk()) {
+          // 1.0: an empty desk, or the untouched sample, is replaced without asking (it holds nothing to keep)
+          const untouched = deskIsUntouchedSample(c, open.ydoc);
+          if (!c.api.isEmptyDesk() && !untouched) {
             const title = String(L.state.meta.title || '') || t('misc.untitledBook');
             const ok = await confirm({ title: t('local.backupConfirmTitle'), body: t('local.backupConfirmBody', { title }), yes: t('local.backupConfirmYes'), no: t('confirm.keep') });
             // another tab may have replaced the book while the confirm waited: then this tab now holds a newer generation
             if (ok !== true || current.current !== open || open.isStale) return;
           }
-          const arrived = backupArrival(c, open.ydoc, raw, readDoc);
+          const arrived = backupArrival(c, open.ydoc, raw, readDoc, untouched);
           if (arrived !== readDoc) doc = arrived;
         }
       } catch {
@@ -237,6 +243,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
       }
       try {
         const b = await replace(doc);
+        clearSampleRecord(b.id); // 1.0's localApplyBackup: sampleState.loaded = false
         // 1.0's localApplyBackup: state.meta.title || "Untitled Book"
         toast(t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') }), 'HardDrive');
       } catch (e) {
@@ -261,6 +268,19 @@ export function BookProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         toast(t(e instanceof BookImportError ? 'local.backupBad' : 'local.blocked'), 'HardDrive');
         return false;
+      }
+    },
+    [replace, toast, t, isLive],
+  );
+
+  const replaceWith = useCallback(
+    async (doc: Record<string, unknown>, from: Y.Doc | null) => {
+      if (from ? !isLive(from) : current.current !== null) return null;
+      try {
+        return await replace(doc);
+      } catch (e) {
+        toast(t(e instanceof BookImportError ? 'local.backupBad' : 'local.blocked'), 'HardDrive');
+        return null;
       }
     },
     [replace, toast, t, isLive],
@@ -295,12 +315,13 @@ export function BookProvider({ children }: { children: ReactNode }) {
       select: setActive,
       openBackupFile,
       replaceBook,
+      replaceWith,
       isLive,
       exportBackup,
     };
     // rev: the book's meta or sections changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, book, rev, active, t, openBackupFile, replaceBook, isLive, exportBackup]);
+  }, [phase, book, rev, active, t, openBackupFile, replaceBook, replaceWith, isLive, exportBackup]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }
