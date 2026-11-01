@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type * as Y from 'yjs';
 import { IndexeddbPersistence } from 'y-indexeddb';
+import { BLOB_ORIGIN } from '@book/editor/index.js';
 import { useBook } from '../book/BookProvider';
 import { useStats } from '../book/stats';
 import { loadClosure, type Closure } from '../closure/index';
@@ -45,7 +46,8 @@ export function TourHost({ onWrite }: { onWrite: () => void }) {
   useEffect(() => {
     if (!ydoc) return;
     const on = (tr: Y.Transaction) => {
-      if (!tr.local || tr.changed.size === 0 || tr.origin instanceof IndexeddbPersistence) return;
+      // 2.0's own storage housekeeping (packing pictures, letting one go) is not a writer's edit
+      if (!tr.local || tr.changed.size === 0 || tr.origin instanceof IndexeddbPersistence || tr.origin === BLOB_ORIGIN) return;
       edits.current += 1;
       if (edits.current === 1) {
         try {

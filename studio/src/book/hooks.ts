@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Y from 'yjs';
-import { insertSections, sectionPlain, META, SECTIONS } from '@book/editor/index.js';
+import { insertSections, sectionPlain, setMetaValue, META, SECTIONS } from '@book/editor/index.js';
 import type { BookV1 } from '@book/schema.js';
 import { useBook } from './BookProvider';
 
@@ -20,28 +20,23 @@ export type BookSection = BookV1['sections'][number];
 
 type Rec = Record<string, unknown>;
 
-/** A top-level book value as stored (undefined when the book has no such key). Treat it as read-only. */
+/** A top-level book value as stored (undefined when the book has no such key). Treat it as read-only. A picture's data
+ *  in it may be its name in the book's picture store ("beuk-pic:<sha256>", model.ts BLOBS): read bytes with
+ *  getMetaValue (src/book/editor) or exportBook. */
 export function getMeta<K extends MetaKey>(ydoc: Y.Doc, key: K): MetaValue<K> | undefined {
   return ydoc.getMap<unknown>(META).get(key) as MetaValue<K> | undefined;
 }
 
 /** Store a top-level book value: always a fresh copy, in one transaction. undefined removes the key. */
 export function setMeta<K extends MetaKey>(ydoc: Y.Doc, key: K, value: MetaValue<K> | undefined): void {
-  const m = ydoc.getMap<unknown>(META);
-  ydoc.transact(() => {
-    if (value === undefined) m.delete(key);
-    else m.set(key, structuredClone(value));
-  });
+  // pictures, fonts, the cover and research files are stored once in the picture store and named (model.ts BLOBS)
+  setMetaValue(ydoc, key, value);
 }
 
 /** Several top-level values in ONE transaction (e.g. history and historyPool together). */
 export function setMetaMany(ydoc: Y.Doc, values: Partial<{ [K in MetaKey]: MetaValue<K> | undefined }>): void {
-  const m = ydoc.getMap<unknown>(META);
   ydoc.transact(() => {
-    for (const [k, v] of Object.entries(values)) {
-      if (v === undefined) m.delete(k);
-      else m.set(k, structuredClone(v));
-    }
+    for (const [k, v] of Object.entries(values)) setMetaValue(ydoc, k, v);
   });
 }
 

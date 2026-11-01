@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { BODY, LAYOUT, META, SECTIONS } from '@book/editor/index.js';
+import { BODY, getMetaValue, LAYOUT, META, packValue, SECTIONS, setMetaValue } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
 import type { Closure, Note, ResearchFile, State } from '../closure/index';
 import { repackHistory } from '../history/history';
@@ -74,7 +74,7 @@ export function nbState(c: Closure, ydoc: Y.Doc, research?: { files: ResearchFil
   const meta = (isRec(m.get('meta')) ? structuredClone(m.get('meta')) : {}) as Rec;
   const state = { meta, sections: lightSections(ydoc) } as unknown as NbState;
   c.setState(state);
-  state.bible = c.api.bibleNormalize(structuredClone(m.get('bible') ?? null)); // applyBookDoc: the Covenant as 1.0 holds it
+  state.bible = c.api.bibleNormalize(getMetaValue(ydoc, 'bible') ?? null); // applyBookDoc: the Covenant as 1.0 holds it
   // research files can weigh 25 MB: a caller that already read them (they did not change) hands them in
   state.research = research ?? readResearch(c, ydoc);
   const ids = new Set(state.research.files.map((f) => f.id));
@@ -84,7 +84,7 @@ export function nbState(c: Closure, ydoc: Y.Doc, research?: { files: ResearchFil
 
 /** 1.0's applyBookDoc for the research files: rsNormalize(doc.research). */
 export function readResearch(c: Closure, ydoc: Y.Doc): { files: ResearchFile[] } {
-  return c.api.rsNormalize(structuredClone(ydoc.getMap<unknown>(META).get('research') ?? null));
+  return c.api.rsNormalize(getMetaValue(ydoc, 'research') ?? null);
 }
 
 /** Put a top-level key into the book's key order where 1.0's serializeBook writes it (TOP_LEVEL_KEYS), if it is new. */
@@ -114,7 +114,7 @@ function setKey(ydoc: Y.Doc, key: 'notebook' | 'research', value: unknown): void
     return;
   }
   placeKey(ydoc, key);
-  m.set(key, structuredClone(value));
+  setMetaValue(ydoc, key, value); // research bytes stored once in the picture store, named in `research`
 }
 
 /** What 1.0's serializeBook writes for these notes and files: [notebook | undefined, research | undefined]. */
@@ -132,8 +132,9 @@ export function writeNotebook(c: Closure, ydoc: Y.Doc, notes: Note[], files: Res
   state.notebook = { notes };
   state.research = { files };
   const [nb, rs] = packed(c, state);
+  // compared as stored (named), so no file's bytes are read or written for a change that does not touch them
   const cur = ydoc.getMap<unknown>(META).get('research');
-  if (JSON.stringify(cur ?? null) === JSON.stringify(rs ?? null)) {
+  if (JSON.stringify(cur ?? null) === JSON.stringify(packValue(ydoc, rs ?? null, false))) {
     ydoc.transact(() => setKey(ydoc, 'notebook', nb));
     return;
   }

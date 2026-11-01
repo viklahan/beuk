@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { exportBook, importBook, META } from '@book/editor/index.js';
+import { exportBook, importBook, META, setMetaValue } from '@book/editor/index.js';
 import { TOP_LEVEL_KEYS } from '@book/schema.js';
 import { bookState, stateFromBook, type Closure, type HistoryEntry, type State } from '../closure/index';
 import { live, repackHistory, snapshotDoc, takeSnapshot, writeHistory, type Live } from '../history/history';
@@ -247,9 +247,10 @@ export function staleSweep(c: Closure, ydoc: Y.Doc, sw: { staleCover: boolean; o
     () => {
       const m = ydoc.getMap<unknown>('meta');
       const put = (k: string, v: unknown) => {
-        if (JSON.stringify(m.get(k) ?? null) !== JSON.stringify(v ?? null)) m.set(k, clone(v));
+        if (JSON.stringify(exportBook(ydoc)[k] ?? null) !== JSON.stringify(v ?? null)) setMetaValue(ydoc, k, v);
       };
-      if (cover) m.set('cover', clone(cover));
+      void m;
+      if (cover) setMetaValue(ydoc, 'cover', cover);
       if (sw.oldAuthor) {
         put('meta', s.meta);
         put('coverRecipe', (s as Rec).coverRecipe);
@@ -390,8 +391,9 @@ export function fillSamplePictures(c: Closure, ydoc: Y.Doc): { filled: number; m
   const meta = ydoc.getMap<unknown>(META);
   ydoc.transact(() => {
     if (r.filled) {
-      if (Array.isArray(book.images)) meta.set('images', book.images);
-      if (isRec(book.cover)) meta.set('cover', book.cover);
+      // the pictures go into the book's picture store once, named in images / cover (model.ts BLOBS)
+      if (Array.isArray(book.images)) setMetaValue(ydoc, 'images', book.images);
+      if (isRec(book.cover)) setMetaValue(ydoc, 'cover', book.cover);
     }
     writeHistory(c, ydoc, L);
   });

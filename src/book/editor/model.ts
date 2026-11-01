@@ -3,6 +3,7 @@ import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from 'y-
 import { readBook, type ReadResult } from '../read.js';
 import { toDoc, toText } from './convert.js';
 import { bookSchema } from './schema.js';
+import { sha256Hex } from './sha256.js';
 
 /* BEUK:editor-model — a book as one Y.Doc (step 4 design, goal 5).
 
@@ -16,6 +17,20 @@ import { bookSchema } from './schema.js';
      object stays as its JSON value.
    - `layout` (Y.Map): `keys`, the book's top-level key order, so an export
      writes the keys where the book had them.
+   - `blobs` (Y.Map, step 5 wave 1c fix round 1): the book's pictures, fonts,
+     cover and research files, each distinct content ONCE, keyed by the
+     SHA-256 of its bytes: { mediaType, data }. In `meta` such an object's
+     `data` holds 1.0's own name for it, "beuk-pic:<sha256>" (1.0's packed
+     device record, BEUK:localpics, f072a76), wherever it stands — images,
+     cover, fonts, research, History and its pool. Without it, every
+     rewrite of a value holding bytes (a research file added, a History
+     snapshot) put all those bytes into the Y update log again, and
+     y-indexeddb keeps each update until it compacts. 1.0's rule picks what
+     is named (picObjects / localPackRecord): an object with a string
+     mediaType and string data of at least 1,024 characters that is
+     canonical base64; anything else stays inline. exportBook fills the names
+     back in, so the exported book is exactly what was imported; `blobs` is
+     never a field of the book.
 
    Section keys are stored as written except "body" and any key starting
    with "~", which gain a leading "~" (so a 1.0 section that happens to carry
@@ -39,6 +54,12 @@ export const META = 'meta';
 export const SECTIONS = 'sections';
 export const LAYOUT = 'layout';
 export const BODY = 'body';
+export const BLOBS = 'blobs';
+/** 1.0's PIC_REF / PIC_MIN (BEUK:pics, BEUK:localpics). */
+export const PIC_REF = 'beuk-pic:';
+export const PIC_MIN = 1024;
+/** The transaction origin of 2.0's own storage housekeeping (packing, a blob let go): never a writer's edit. */
+export const BLOB_ORIGIN = 'beuk-blobs';
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -132,7 +153,7 @@ export function importBook(doc: unknown, ydoc: Y.Doc = new Y.Doc()): ImportResul
   const sections = ydoc.getArray<unknown>(SECTIONS);
   const layout = ydoc.getMap<unknown>(LAYOUT);
   ydoc.transact(() => {
-    for (const [k, v] of Object.entries(book)) if (k !== 'sections') meta.set(k, v);
+    for (const [k, v] of Object.entries(book)) if (k !== 'sections') meta.set(k, packValue(ydoc, v, true));
     layout.set('keys', Object.keys(book));
     insertSections(sections, 0, Array.isArray(book.sections) ? book.sections : []);
   });
@@ -208,8 +229,149 @@ export function exportBook(ydoc: Y.Doc): Rec {
     if (k === 'sections') {
       setOwn(out, k, sections.toArray().map((s, i) => sectionPlain(s, `sections[${i}]`)));
     } else if (meta.has(k)) {
-      setOwn(out, k, plain(meta.get(k)));
+      setOwn(out, k, unpackValue(ydoc, plain(meta.get(k))));
     }
   }
   return out;
+}
+
+/* ---- the content-addressed picture store (BLOBS) ---- */
+
+/** 1.0's picIsRef. */
+export const isPicRef = (v: unknown): v is string => typeof v === 'string' && v.length === 73 && v.startsWith(PIC_REF) && /^[0-9a-f]{64}$/.test(v.slice(9));
+
+/** 1.0's picSwap: a copy of `v` with each picture-shaped object's `data` (a string beside a string `mediaType`) replaced
+ *  by swap(data) when that returns a string; only the objects on the way to a change are copied. */
+export function picSwapValue(v: unknown, swap: (data: string, owner: Rec) => string | null): unknown {
+  if (Array.isArray(v)) {
+    let out: unknown[] | null = null;
+    for (let i = 0; i < v.length; i++) {
+      const x = v[i], y = x && typeof x === 'object' ? picSwapValue(x, swap) : x;
+      if (y !== x) {
+        if (!out) out = v.slice();
+        out[i] = y;
+      }
+    }
+    return out || v;
+  }
+  if (!isRec(v)) return v;
+  let out: Rec | null = null;
+  for (const k of Object.keys(v)) {
+    const x = v[k];
+    let y = x;
+    if (k === 'data' && typeof x === 'string' && typeof v.mediaType === 'string') {
+      const r = swap(x, v);
+      if (typeof r === 'string') y = r;
+    } else if (x && typeof x === 'object') y = picSwapValue(x, swap);
+    if (y !== x) {
+      if (!out) out = { ...v };
+      setOwn(out, k, y);
+    }
+  }
+  return out || v;
+}
+
+const shaMemo = new Map<string, string>();
+/** 1.0's picShaOf: the SHA-256 of the bytes a canonical base64 string holds, or "" (not canonical: stays inline). */
+export function shaOfData(data: string): string {
+  const hit = shaMemo.get(data);
+  if (hit !== undefined) return hit;
+  let sha = '';
+  try {
+    const bin = atob(data);
+    if (btoa(bin) === data) {
+      const b = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+      sha = sha256Hex(b);
+    }
+  } catch {
+    sha = '';
+  }
+  shaMemo.set(data, sha);
+  while (shaMemo.size > 400) shaMemo.delete(shaMemo.keys().next().value!);
+  return sha;
+}
+
+/** A value as `meta` holds it: each big picture's data named (1.0's localPackRecord rule). With `write`, a content not in
+ *  `blobs` yet is added there (once: an existing entry is never set again). Call inside the write's transaction. */
+export function packValue(ydoc: Y.Doc, v: unknown, write: boolean): unknown {
+  if (!v || typeof v !== 'object') return v;
+  const blobs = ydoc.getMap<unknown>(BLOBS);
+  return picSwapValue(v, (data, owner) => {
+    if (data.length < PIC_MIN || isPicRef(data)) return null;
+    const sha = shaOfData(data);
+    if (!sha) return null;
+    if (write && !blobs.has(sha)) blobs.set(sha, { mediaType: String(owner.mediaType), data });
+    return PIC_REF + sha;
+  });
+}
+
+/** A stored value with its pictures' names filled back in from `blobs` (a name the store does not hold stays a name). */
+export function unpackValue(ydoc: Y.Doc, v: unknown): unknown {
+  if (!v || typeof v !== 'object') return v;
+  const blobs = ydoc.getMap<unknown>(BLOBS);
+  if (!blobs.size) return v;
+  return picSwapValue(v, (x) => {
+    if (!isPicRef(x)) return null;
+    const b = blobs.get(x.slice(PIC_REF.length)) as { data?: unknown } | undefined;
+    return b && typeof b.data === 'string' ? b.data : null;
+  });
+}
+
+/** Set a top-level book value: a new value (structured clone), its pictures stored once in `blobs` and named. undefined
+ *  removes the key. Make it part of the caller's transaction. */
+export function setMetaValue(ydoc: Y.Doc, key: string, value: unknown): void {
+  const meta = ydoc.getMap<unknown>(META);
+  ydoc.transact(() => {
+    if (value === undefined) meta.delete(key);
+    else meta.set(key, packValue(ydoc, structuredClone(value), true));
+  });
+}
+
+/** A top-level book value with its pictures filled in (a fresh copy), or undefined. */
+export function getMetaValue(ydoc: Y.Doc, key: string): unknown {
+  const meta = ydoc.getMap<unknown>(META);
+  return meta.has(key) ? unpackValue(ydoc, plain(meta.get(key))) : undefined;
+}
+
+/** Every picture name the book's values hold (History and its pool included). */
+export function picRefsInMeta(ydoc: Y.Doc): Set<string> {
+  const seen = new Set<string>();
+  const walk = (v: unknown): void => {
+    if (typeof v === 'string') {
+      if (isPicRef(v)) seen.add(v.slice(PIC_REF.length));
+      return;
+    }
+    if (Array.isArray(v)) v.forEach(walk);
+    else if (isRec(v)) for (const k of Object.keys(v)) walk(v[k]);
+  };
+  for (const v of ydoc.getMap<unknown>(META).values()) walk(v);
+  return seen;
+}
+
+/** Let go of every stored picture no value names any more; never one still named anywhere. Returns how many went. */
+export function collectBlobs(ydoc: Y.Doc): number {
+  const blobs = ydoc.getMap<unknown>(BLOBS);
+  if (!blobs.size) return 0;
+  const named = picRefsInMeta(ydoc);
+  const gone = Array.from(blobs.keys()).filter((k) => !named.has(k));
+  if (gone.length) ydoc.transact(() => gone.forEach((k) => blobs.delete(k)), BLOB_ORIGIN);
+  return gone.length;
+}
+
+/** A book stored before `blobs` existed (2.0 waves 1a-1c held its pictures inline in `meta`): every value that holds a
+ *  picture to name is stored again, packed, in ONE transaction. A storage change only: exportBook is the same before and
+ *  after. Returns whether anything changed. */
+export function packBlobs(ydoc: Y.Doc): boolean {
+  const meta = ydoc.getMap<unknown>(META);
+  const changed: [string, unknown][] = [];
+  for (const [k, v] of meta.entries()) {
+    const p = packValue(ydoc, v, false);
+    if (p !== v) changed.push([k, v]);
+  }
+  if (!changed.length) return false;
+  ydoc.transact(() => {
+    for (const [k, v] of changed) meta.set(k, packValue(ydoc, structuredClone(v), true));
+  }, BLOB_ORIGIN);
+  return true;
 }

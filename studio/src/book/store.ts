@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
-import { IndexeddbPersistence, clearDocument } from 'y-indexeddb';
-import { exportBook, importBook, LAYOUT, META, SECTIONS, type TextWarning } from '@book/editor/index.js';
+import { IndexeddbPersistence, clearDocument, storeState } from 'y-indexeddb';
+import { BLOB_ORIGIN, collectBlobs, exportBook, importBook, LAYOUT, META, packBlobs, SECTIONS, type TextWarning } from '@book/editor/index.js';
 
 /* The books on this device, as Y.Docs (step 4 part C).
 
@@ -126,6 +126,9 @@ export async function listGenerations(): Promise<{ id: string; epoch: string; na
   }
 }
 
+/** How long after a change to the book's values the unnamed pictures are let go (one sweep for a burst of changes). */
+export const BLOB_GC_MS = 800;
+
 /** One open book (one generation): its Y.Doc, its persistence, and the tab channels. */
 export class OpenBook {
   readonly id: string;
@@ -140,6 +143,7 @@ export class OpenBook {
   private control: BroadcastChannel | null = null;
   private closed = false;
   private stale = false;
+  private blobTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(id: string, epoch: string, ydoc: Y.Doc, persistence: IndexeddbPersistence, textWarnings: TextWarning[] = []) {
     this.id = id;
@@ -147,6 +151,7 @@ export class OpenBook {
     this.ydoc = ydoc;
     this.persistence = persistence;
     this.textWarnings = textWarnings;
+    ydoc.on('afterTransaction', this.watchBlobs);
     // The database deleted under us (a newer generation replaced it): stop writing, then go stale.
     void persistence._db.then((db) => {
       const prev = db.onversionchange;
@@ -176,6 +181,24 @@ export class OpenBook {
         if (typeof m?.replaced === 'string' && m.replaced > this.epoch) this.markStale();
       };
     }
+  }
+
+  /** After a change of this tab's to the book's values: the pictures no value names any more are let go (never one still
+   *  named — History and its pool are values too), and y-indexeddb is compacted so their bytes leave IndexedDB
+   *  (it keeps every update until ~500 have gathered). A keystroke changes no value: nothing runs. */
+  private watchBlobs = (tr: Y.Transaction): void => {
+    if (this.stale || this.closed || !tr.local || tr.origin === BLOB_ORIGIN || !tr.changed.has(this.ydoc.getMap(META) as never)) return;
+    if (this.blobTimer) clearTimeout(this.blobTimer);
+    this.blobTimer = setTimeout(() => void this.collect(), BLOB_GC_MS);
+  };
+
+  /** Let go of unnamed pictures now and compact the store when any went (also what the debounced watcher runs). */
+  async collect(): Promise<number> {
+    this.blobTimer = null;
+    if (this.stale || this.closed) return 0;
+    const n = collectBlobs(this.ydoc);
+    if (n) await storeState(this.persistence, true).catch(() => undefined);
+    return n;
   }
 
   private relay = (update: Uint8Array, origin: unknown): void => {
@@ -213,6 +236,9 @@ export class OpenBook {
     this.closed = true;
     this.onStale = null;
     this.ydoc.off('update', this.relay);
+    this.ydoc.off('afterTransaction', this.watchBlobs);
+    if (this.blobTimer) clearTimeout(this.blobTimer);
+    this.blobTimer = null;
     this.channel?.close();
     this.control?.close();
     this.channel = null;
@@ -232,6 +258,9 @@ async function openGeneration(id: string, epoch: string): Promise<OpenBook | nul
     ydoc.destroy();
     return null;
   }
+  // a book stored before the picture store (waves 1a-1c held pictures inline in meta): packed once, then the old
+  // updates compacted away so the inline copies leave IndexedDB (a storage change only: the export is the same)
+  if (packBlobs(ydoc)) await storeState(persistence, true).catch(() => undefined);
   remember(id, epoch, String(bookMeta(ydoc).title ?? ''));
   return new OpenBook(id, epoch, ydoc, persistence);
 }
