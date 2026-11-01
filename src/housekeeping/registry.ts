@@ -2488,7 +2488,7 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
   },
   {
     id: 'notebook.research',
-    title: "Research files: text, picture, PDF, recording and clip attach to a note and open in the Notebook (a web page, an oversized and an empty file refused); source link http(s) only; written once and round-trip byte for byte, junk dropped; History names them, a removed file is written once in historyPool and restores; remove with Undo; never leak to the next book, never exported or counted; the sample's depths note carries its soundings and sketch",
+    title: "Research files: text, picture, PDF, recording and clip attach to a note and open in the Notebook (a program, an oversized and an empty file refused); source link http(s) only; written once and round-trip byte for byte, junk dropped; History names them, a removed file is written once in historyPool and restores; remove with Undo; never leak to the next book, never exported or counted; the sample's depths note carries its soundings and sketch",
     kind: 'client-only',
     reason: 'Research files ride the client book document and are viewed in the studio; on the shelf they are stored by the picture store as opaque bytes (its media-type rule is proven by tests/pictures.test.ts).',
   },
@@ -2497,6 +2497,12 @@ export const SELF_CHECK_CASES: RegistryCase[] = [
     title: "Research files are not blocked by the served Content-Security-Policy: frame-src and media-src allow blob:, and a PDF frame and an audio player from object URLs load with no violation",
     kind: 'client-only',
     reason: 'Only a browser enforces the policy; the check reads the header the studio was served with and loads real object URLs (the Caddyfile text itself is covered by infra.deploy.security-headers).',
+  },
+  {
+    id: 'notebook.research.webword',
+    title: "Word documents and saved web pages as research: a real .docx, a Chrome-style .mhtml with its picture and an .html are kept under their own types and read in the Notebook (words, headings, lists, tables, safe links, their own pictures); the note takes the document's title and the page's address; a messy pile (truncated, renamed, zip bomb, old .doc, empty, broken XML, scripts, handlers, frames, SVG, forms, hostile base, javascript:/data: links, broken MHTML, UTF-16, Windows-1252, binary, 10,000-deep nesting, Safari archive, a 300-character right-to-left name, a reader out of time) is refused by name or shown safely, never thrown",
+    kind: 'client-only',
+    reason: 'The files are opened in a Web Worker (client/assets/rsdoc.js) and rebuilt for the page by an allowlist in the studio; the shelf only stores their bytes, under types tests/pictures.test.ts proves it accepts (and text/html, multipart/related it refuses).',
   },
   {
     id: 'infra.app.answers',
