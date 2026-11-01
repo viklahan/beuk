@@ -141,7 +141,10 @@ function check(ed: Editor, frag: Y.XmlFragment, text: string, kind: ToolKind, s:
   applyTextEdit(ed, next!);
   expect(fragmentText(frag), `${where}: text`).toBe(want.value);
   const sel = editorText(ed);
-  expect([sel.start, sel.end], `${where}: selection`).toEqual([floorIn(want.value, want.selectionStart), floorIn(want.value, want.selectionEnd)]);
+  // the editor answers with 1.0's own selection (fix round 1); its caret stands at the nearest cursor position below
+  expect([sel.start, sel.end], `${where}: selection`).toEqual([want.selectionStart, want.selectionEnd]);
+  const d = toBook(ed.state.doc);
+  expect([posToTextOffset(d, ed.state.selection.from), posToTextOffset(d, ed.state.selection.to)], `${where}: caret`).toEqual([floorIn(want.value, want.selectionStart), floorIn(want.value, want.selectionEnd)]);
   ed.commands.undo();
   expect(fragmentText(frag), `${where}: one undo gives the original back`).toBe(text);
   return true;
@@ -200,6 +203,89 @@ describe("every toolbar action equals 1.0's own function (constraint 11, review 
     });
     expect(breaks).toBe(1);
   });
+});
+
+/* ---- fix round 1 ---- */
+
+/** A browser textarea's value for a text: "\r\n" and a lone "\r" become "\n" (what 1.0's area.value holds). */
+const asTextarea = (s: string): string => s.replace(/\r\n?/g, '\n');
+
+/** Press `kind` in the editor (the toolbar's path: editorText → 1.0's function → applyTextEdit); null if 1.0 refused. */
+function press(ed: Editor, kind: ToolKind): TextEdit | null {
+  const next = textAction(c, kind, editorText(ed));
+  if (next) applyTextEdit(ed, next);
+  return next;
+}
+
+describe('fix round 1: a second press', () => {
+  it("every kind pressed twice gives 1.0's text after each press (List, Center, Right… take their markup away again)", () => {
+    // the reported cases first
+    {
+      const { ed, frag } = mount('Intro.\n\nOne\nTwo');
+      select(ed, 'Intro.\n\nOn'.length, 'Intro.\n\nOn'.length);
+      press(ed, 'ul');
+      expect(fragmentText(frag)).toBe('Intro.\n\n- One\n- Two');
+      press(ed, 'ul');
+      expect(fragmentText(frag)).toBe('Intro.\n\nOne\nTwo');
+    }
+    {
+      const { ed, frag } = mount('Hello');
+      select(ed, 2, 2);
+      press(ed, 'center');
+      press(ed, 'center');
+      expect(fragmentText(frag)).toBe('Hello');
+    }
+    let n = 0;
+    for (const text of TEXTS) {
+      for (const [s, e] of selections(text).slice(0, 10)) {
+        const { ed, frag } = mount(text);
+        for (const kind of KINDS) {
+          const cur = select(ed, s, e);
+          const ta = textArea(cur.text, cur.start, cur.end); // 1.0's textarea, pressed twice
+          for (let k = 0; k < 2; k++) {
+            const want = oracle(kind, { text: ta.value, start: ta.selectionStart, end: ta.selectionEnd });
+            ta.value = want.value;
+            ta.setSelectionRange(want.selectionStart, want.selectionEnd);
+            press(ed, kind);
+            const where = `${kind} press ${k + 1} on ${JSON.stringify(text.slice(0, 24))} [${s},${e}]`;
+            expect(fragmentText(frag), where).toBe(ta.value);
+            const sel = editorText(ed);
+            // after an edit the editor answers with 1.0's own selection (that is what makes the next press equal 1.0's)
+            expect([sel.start, sel.end], where).toEqual([ta.selectionStart, ta.selectionEnd]);
+            n++;
+          }
+          // back to the original for the next kind (the undo steps of the presses that changed something)
+          while (fragmentText(frag) !== text && ed.commands.undo());
+          expect(fragmentText(frag)).toBe(text);
+        }
+        ed.destroy();
+      }
+    }
+    expect(n).toBeGreaterThan(2500);
+  }, 180_000);
+
+  it("a press, a cursor move, a press: the moved cursor is the editor's own again, and the text is 1.0's", () => {
+    let n = 0;
+    for (const text of TEXTS.filter((t) => t.length > 10)) {
+      const { ed, frag } = mount(text);
+      for (const kind of KINDS) {
+        const mid = Math.floor(text.length / 2);
+        press((select(ed, mid, mid), ed), kind);
+        const after = fragmentText(frag);
+        // the writer moves the caret to the very start, then presses again
+        const cur = select(ed, 0, 0);
+        expect([cur.start, cur.end]).toEqual([floorIn(after, 0), floorIn(after, 0)]);
+        const want = oracle(kind, cur);
+        press(ed, kind);
+        expect(fragmentText(frag), `${kind} on ${JSON.stringify(text.slice(0, 24))}`).toBe(want.value);
+        n++;
+        while (fragmentText(frag) !== text && ed.commands.undo());
+        expect(fragmentText(frag)).toBe(text);
+      }
+      ed.destroy();
+    }
+    expect(n).toBeGreaterThan(100);
+  }, 120_000);
 });
 
 /* ---- the dialog handlers, against 1.0's own (the oracle module) ---- */
@@ -377,7 +463,7 @@ describe("Auto-Format equals 1.0's beautifyText (A13, review focus 4)", () => {
       if (next.text === text) continue;
       applyTextEdit(ed, next);
       expect(fragmentText(frag)).toBe(next.text);
-      expect(editorText(ed).start).toBe(floorIn(next.text, Math.min(cur.start, next.text.length)));
+      expect(editorText(ed).start).toBe(Math.min(cur.start, next.text.length));
       ed.commands.undo();
       expect(fragmentText(frag)).toBe(text);
     }

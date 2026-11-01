@@ -50,8 +50,12 @@ export function textArea(value: string, start: number, end: number): Area {
     scrollLeft: 0,
     focus: () => undefined,
     setSelectionRange(a: number, b: number) {
-      ta.selectionStart = a;
-      ta.selectionEnd = b;
+      // a real textarea clamps both ends to its length, and a start past the end to the end (HTML setSelectionRange):
+      // 1.0's applyBlockquote at the end of a quoted paragraph asks for start + 2
+      const len = ta.value.length;
+      const end = Math.max(0, Math.min(len, b));
+      ta.selectionStart = Math.min(Math.max(0, Math.min(len, a)), end);
+      ta.selectionEnd = end;
     },
     dispatchEvent: () => true,
   };
@@ -65,8 +69,18 @@ export type TextEdit = { text: string; start: number; end: number };
 export function editorText(editor: Editor): TextEdit {
   const doc = toBook(editor.state.doc);
   const { from, to } = editor.state.selection;
-  return { text: toText(doc), start: posToTextOffset(doc, from), end: posToTextOffset(doc, to) };
+  const text = toText(doc);
+  // 1.0's own selection from the last edit, while the editor still holds exactly what that edit left (fix round 1):
+  // applyList / applyContainer select the whole rewritten block FROM its marker or "::: kind" line, and that selection
+  // is what makes a second press take the markup away. No cursor stands inside a marker or an opener line, so the
+  // editor's selection alone would floor the start back (positions.ts) and the second press would add markup again.
+  const last = lastEdit.get(editor);
+  if (last && last.doc === editor.state.doc && last.from === from && last.to === to && last.text === text) return { text, start: last.start, end: last.end };
+  return { text, start: posToTextOffset(doc, from), end: posToTextOffset(doc, to) };
 }
+
+/** Per editor: the document and selection the last applyTextEdit left, and 1.0's text selection that went with them. */
+const lastEdit = new WeakMap<Editor, { doc: PMNode; from: number; to: number; text: string; start: number; end: number }>();
 
 /** Run a 1.0 textarea function on the editor's text and selection; null when it changed nothing. */
 export function runOnText(cur: TextEdit, act: (ta: Area) => unknown): TextEdit | null {
@@ -123,5 +137,7 @@ export function applyTextEdit(editor: Editor, next: TextEdit): boolean {
   um?.stopCapturing();
   editor.view.dispatch(tr);
   um?.stopCapturing();
+  const st = editor.state; // after the dispatch (and anything appended to it)
+  lastEdit.set(editor, { doc: st.doc, from: st.selection.from, to: st.selection.to, text: next.text, start: clamp(next.start), end: clamp(next.end) });
   return true;
 }
