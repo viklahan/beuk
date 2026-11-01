@@ -307,6 +307,37 @@ async function editAndPersist(origin) {
     check(JSON.stringify(er.json.book) === JSON.stringify(ea.json.book), '#3 two tabs: a reload afterwards holds both edits (the doc merged, nothing lost)');
     const others = sectionsOf(er.json.book).every((s, i) => i === target.i || i === a.i || i === b.i || JSON.stringify(s) === JSON.stringify(sectionsOf(want0)[i]));
     check(others, '#3 two tabs: every other section is untouched');
+
+    // Fix round 1: replace the book (drop its backup on tab 1) while tab 2 has it open — nothing may double
+    const tab2 = await openNext(ctx, origin);
+    await tab2.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
+    await page.bringToFront();
+    const backupText = readFileSync(DUMAS.file, 'utf8');
+    await page.evaluate((text) => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([text], 'dumas.beuk-backup.json', { type: 'application/json' }));
+      document.querySelector('.desk').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    }, backupText);
+    await page.waitForFunction(() => /Backup opened/.test(document.getElementById('toasts')?.textContent || ''), null, { timeout: 60_000 });
+    const wantBackup = expected(DUMAS.book);
+    let r1, r2;
+    for (let tries = 0; tries < 12; tries++) { // tab 2 reopens the new generation on its own
+      await page.waitForTimeout(500);
+      r1 = await exportBackup(page);
+      r2 = await exportBackup(tab2);
+      if (JSON.stringify(r2.json.book) === JSON.stringify(wantBackup)) break;
+    }
+    check(sectionsOf(r1.json.book).length === sectionsOf(DUMAS.book).length && JSON.stringify(r1.json.book) === JSON.stringify(wantBackup),
+      `fix 1: a backup opened in tab 1 while tab 2 holds the book exports exactly the backup (${sectionsOf(r1.json.book).length} sections, backup ${sectionsOf(DUMAS.book).length})`);
+    check(JSON.stringify(r2.json.book) === JSON.stringify(wantBackup), `fix 1: tab 2 moved to the new generation (${sectionsOf(r2.json.book).length} sections)`);
+    const gens = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name).filter((n) => n.startsWith('beuk-next-book-')));
+    check(gens.length === 1, `fix 1: one generation left on the device (${JSON.stringify(gens)})`);
+    await page.reload();
+    await page.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
+    const r3 = await exportBackup(page);
+    check(JSON.stringify(r3.json.book) === JSON.stringify(wantBackup), 'fix 1: and after a reload, still exactly the backup');
+    await harvestCsp(tab2);
+    await tab2.close();
     await harvestCsp(page);
   } finally {
     await ctx.close();
@@ -363,8 +394,13 @@ async function oneSafety(origin) {
     await harvestCsp(one);
     await one.close();
 
-    const next = await openNext(ctx, origin);
-    await next.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
+    // two tabs of /next opened at once on this first visit: 1.0's book is imported once (Web Lock), never doubled
+    const [next, twin] = await Promise.all([openNext(ctx, origin), openNext(ctx, origin)]);
+    await Promise.all([next, twin].map((p) => p.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 })));
+    await next.waitForTimeout(500);
+    const twinOut = await exportBackup(twin);
+    await harvestCsp(twin);
+    await twin.close();
     const title = await next.textContent('#projectTitleDisplay');
     const toast = await next.waitForSelector('#toasts .toast', { timeout: 5000 }).then((t) => t.textContent(), () => '');
     check(title === 'Salt Road — Book One', `#4 /next opened 1.0's book on its own ("${title}"; toast "${toast}")`);
@@ -372,6 +408,9 @@ async function oneSafety(origin) {
     const exp = await exportBackup(next);
     const stored = JSON.parse(before.out.book.json).book;
     check(JSON.stringify(exp.json.book) === JSON.stringify(expected(stored, exp.json.book)), '#4 the book /next imported from 1.0 exports exactly what readBook reads from 1.0\'s copy');
+    const gens1 = await next.evaluate(async () => (await indexedDB.databases()).map((d) => d.name).filter((n) => n.startsWith('beuk-next-book-')));
+    check(JSON.stringify(twinOut.json.book) === JSON.stringify(exp.json.book) && sectionsOf(twinOut.json.book).length === sectionsOf(stored).length && gens1.length === 1,
+      `fix 1: two tabs opened together imported 1.0's book once (${sectionsOf(twinOut.json.book).length} sections, ${gens1.length} generation)`);
     const after = await next.evaluate(DUMP_10);
     check(JSON.stringify(after) === JSON.stringify(before), `#4 1.0's database is identical after /next imported it (version ${before.version}, stores ${JSON.stringify(before.stores)}, keys ${JSON.stringify(Object.keys(before.out))})`);
     await harvestCsp(next);

@@ -8,16 +8,21 @@ import { useToast } from '../shell/Toasts';
 import { backupFilename, backupJson, downloadText, parseBackup } from './backup';
 import { readLegacyBook } from './legacy10';
 import { outlineRows, type OutlineRow } from './outlineRows';
-import { bookMeta, importToDevice, openLastBook, type OpenBook } from './store';
+import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, startBook, type OpenBook } from './store';
 
 /* useBook(): the book open in /next, its outline, and what the writer can
    do with it (open a backup, export one). One open book in step 4; the
    store keeps the list of books on this device for later.
 
-   Start-up: the book open last on this device (y-indexeddb, so it opens
-   offline too). With none, 1.0's own book on this device is imported once,
-   read-only (legacy10.ts never writes 1.0's database), with 1.0's
-   "Welcome back" toast. With neither, the desk is empty. */
+   Start-up (store.ts startBook): the book open last on this device
+   (y-indexeddb, so it opens offline too), else any 2.0 book found on this
+   device, else 1.0's own book imported once, read-only (legacy10.ts never
+   writes 1.0's database), with 1.0's "Welcome back" toast. Else the empty
+   desk.
+
+   Generations: when another tab replaces this book (it opened a backup),
+   this tab's generation goes stale and the newest one is reopened in its
+   place, keeping the chosen section. */
 
 export type Phase = 'starting' | 'empty' | 'open';
 
@@ -70,13 +75,48 @@ export function BookProvider({ children }: { children: ReactNode }) {
   const started = useRef(false);
   const current = useRef<OpenBook | null>(null);
 
-  const show = useCallback((b: OpenBook | null) => {
+  const reopen = useRef<(stale: OpenBook) => void>(() => undefined);
+
+  const show = useCallback((b: OpenBook | null, keepActive = false) => {
     const prev = current.current;
     current.current = b;
+    if (b) b.onStale = (stale) => reopen.current(stale);
     setBook(b);
-    setActive(b ? firstChapter(b) : null);
+    setActive((a) => {
+      if (!b) return null;
+      if (keepActive && a !== null && a < b.ydoc.getArray(SECTIONS).length) return a;
+      return firstChapter(b);
+    });
     setPhase(b ? 'open' : 'empty');
     if (prev && prev !== b) void prev.close();
+  }, []);
+
+  // This tab's generation was replaced elsewhere: open the newest one in its place.
+  reopen.current = (stale: OpenBook) => {
+    if (current.current !== stale) return;
+    void openStoredBook(stale.id)
+      .catch(() => null)
+      .then((nb) => {
+        if (current.current !== stale) return void nb?.close();
+        show(nb, true);
+      });
+  };
+
+  // A newer generation in the registry (written by another tab) also makes this one stale.
+  useEffect(() => {
+    const check = (e?: StorageEvent) => {
+      if (e && e.key !== REGISTRY_KEY) return;
+      const b = current.current;
+      const ep = b && registryEpoch(b.id);
+      if (b && ep && ep > b.epoch) b.markStale();
+    };
+    const onFocus = () => check();
+    window.addEventListener('storage', check);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('storage', check);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -84,13 +124,10 @@ export function BookProvider({ children }: { children: ReactNode }) {
     started.current = true;
     void (async () => {
       try {
-        const last = await openLastBook();
-        if (last) return show(last);
-        const legacy = await readLegacyBook();
-        if (legacy) {
-          const b = await importToDevice(legacy.book);
-          show(b);
-          toast(t('local.restored'), 'HardDrive');
+        const r = await startBook(readLegacyBook);
+        if (r) {
+          show(r.book);
+          if (r.importedLegacy) toast(t('local.restored'), 'HardDrive');
           return;
         }
       } catch {
@@ -130,6 +167,9 @@ export function BookProvider({ children }: { children: ReactNode }) {
         toast(t('local.backupBad'), 'HardDrive');
         return;
       }
+      // the book open here is about to be replaced by this tab itself: its going stale is not news
+      const prev = current.current;
+      if (prev) prev.onStale = null;
       try {
         const b = await importToDevice(parsed);
         show(b);
@@ -139,6 +179,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
         // readBook said 'newer' or 'failed': this studio must not open (and so never save) it
         // anything else: this device would not store it (storage blocked or full)
         toast(t(e instanceof BookImportError ? 'local.backupBad' : 'local.blocked'), 'HardDrive');
+        if (prev && current.current === prev) prev.onStale = (stale) => reopen.current(stale);
       }
     },
     [show, toast, t],

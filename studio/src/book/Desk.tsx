@@ -82,7 +82,7 @@ export function Desk() {
       ))}
       {fragment && bk.active !== null ? (
         <ChapterEditor
-          key={bk.book!.id + ':' + bk.active}
+          key={bk.book!.id + ':' + bk.book!.epoch + ':' + bk.active}
           fragment={fragment}
           dir={bk.bookDir}
           lang={bk.bookLang}
