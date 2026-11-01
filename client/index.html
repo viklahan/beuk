@@ -1822,6 +1822,9 @@
       .rs-doc-body table { border-collapse: collapse; display: block; max-width: 100%; overflow-x: auto; font-size: 14px; }
       .rs-doc-body th, .rs-doc-body td { border: 1px solid var(--line-2); padding: 4px 8px; vertical-align: top; }
       .rs-doc-body a { color: var(--accent); }
+      .rs-doc-fidelity { margin: 0 0 10px; font-size: 12px; }
+      .rs-doc-fidelity.is-partial { color: var(--ink-2); padding: 6px 10px; border-left: 3px solid var(--gold, #a87e2c); background: var(--panel-2, transparent); }
+      .rs-doc-body .rs-gone { font-family: "Karla", system-ui, sans-serif; font-size: 12px; font-style: italic; color: var(--muted); }
       #modalNotebook.rs-drop .nb-modal { outline: 2px dashed var(--accent); outline-offset: -6px; }
       .bib-none { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink-2); line-height: 1.6; margin: 6px 0; }
       .bib-detail { min-width: 0; }
@@ -8423,6 +8426,23 @@
         "zh-Hans": { "rs.kind.web": "网页", "rs.kind.word": "Word 文档", "rs.badType": "{name}：Beuk 可保存图片、PDF、录音、视频、文本文件、已保存的网页和 Word 文档。", "rs.none": "还没有文件。添加一张图片、一个 PDF、一段录音、一段视频、一个文本文件、一个已保存的网页或一份 Word 文档，或把文件拖到笔记本上。", "rs.docOld": "{name} 是旧版 Word 文件（.doc）。请在 Word 中打开，另存为 Word 文档（.docx），再添加该文件。", "rs.webarchive": "{name} 是 Safari 网页归档。请在 Safari 中以“格式：页面源码”重新存储该页面，再添加该文件。", "rs.notWord": "{name} 无法作为 Word 文档打开。它可能已损坏，或是改名为 .docx 的其他类型文件。", "rs.notWeb": "{name} 无法作为网页打开。它可能已损坏，或是改了名的其他类型文件。", "rs.opening": "正在打开…", "rs.docFail": "此文件无法在这里显示。请保存一份副本，用其他程序打开。", "rs.docBig": "此文件在这里打开用时过长。请保存一份副本，用其他程序打开。", "rs.docEmpty": "此文件中没有可显示的文字或图片。", "rs.docCut": "只显示了此文件的开头。请保存一份副本以阅读全文。", "rs.webNote": "以文字、链接和随页面保存的图片显示。页面的脚本、样式以及会从网上加载的内容都不显示。", "rs.wordNote": "以文字、标题、列表、表格和图片显示。不保留 Word 的页面版式。" }
       };
       Object.keys(RSWW_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RSWW_STRINGS[code]); });
+      /* BEUK:webword — what a reader view leaves out, said to the writer: all 13 packs (rs.wordNote replaces the earlier one) */
+      const RSWWF_STRINGS = {
+        "en": { "rs.allShown": "Every word in the file is shown here.", "rs.notShown": "Not shown here: {list}. Save a copy to see the whole file.", "rs.extra": "This view also shows {n} letters or numbers that are not in the file.", "rs.g.menu": "menus: {n} ({w} words)", "rs.g.form": "form fields and buttons: {n} ({w} words)", "rs.g.media": "embedded video, audio and frames: {n} ({w} words)", "rs.g.drawing": "drawings and formulas: {n} ({w} words)", "rs.g.hidden": "parts the page itself hid: {n} ({w} words)", "rs.g.webPic": "pictures not saved with the page: {n}", "rs.g.pic": "pictures in a format this view can't show: {n}", "rs.g.link": "links that don't lead to a web address: {n} (their words are shown)", "rs.g.code": "scripts and styles: {n}", "rs.g.headers": "header and footer words: {n}", "rs.g.comments": "comment words: {n}", "rs.g.deleted": "words deleted in tracked changes: {n}", "rs.g.other": "other letters and numbers: {n}", "rs.picMark": "(a picture this view can't show)", "rs.picMarkAlt": "(a picture this view can't show: {alt})", "rs.webPicMark": "(a picture not saved with the page)", "rs.webPicMarkAlt": "(a picture not saved with the page: {alt})", "rs.wordNote": "Shown as words, headings, lists, tables and pictures; footnotes and endnotes are listed at the end. Word's own page layout is not kept." },
+        "es": { "rs.allShown": "Aquí se muestran todas las palabras del archivo.", "rs.notShown": "No se muestra aquí: {list}. Guarda una copia para ver el archivo completo.", "rs.extra": "Esta vista muestra además {n} letras o números que no están en el archivo.", "rs.g.menu": "menús: {n} ({w} palabras)", "rs.g.form": "campos de formulario y botones: {n} ({w} palabras)", "rs.g.media": "vídeo, audio y marcos incrustados: {n} ({w} palabras)", "rs.g.drawing": "dibujos y fórmulas: {n} ({w} palabras)", "rs.g.hidden": "partes que la propia página ocultaba: {n} ({w} palabras)", "rs.g.webPic": "imágenes no guardadas con la página: {n}", "rs.g.pic": "imágenes en un formato que esta vista no puede mostrar: {n}", "rs.g.link": "enlaces que no llevan a una dirección web: {n} (sus palabras sí se muestran)", "rs.g.code": "scripts y estilos: {n}", "rs.g.headers": "palabras de encabezados y pies de página: {n}", "rs.g.comments": "palabras de comentarios: {n}", "rs.g.deleted": "palabras eliminadas en el control de cambios: {n}", "rs.g.other": "otras letras y números: {n}", "rs.picMark": "(una imagen que esta vista no puede mostrar)", "rs.picMarkAlt": "(una imagen que esta vista no puede mostrar: {alt})", "rs.webPicMark": "(una imagen no guardada con la página)", "rs.webPicMarkAlt": "(una imagen no guardada con la página: {alt})", "rs.wordNote": "Se muestra como texto, títulos, listas, tablas e imágenes; las notas al pie y al final aparecen al final. No se conserva la maquetación de Word." },
+        "fr": { "rs.allShown": "Tous les mots du fichier sont affichés ici.", "rs.notShown": "Non affiché ici : {list}. Enregistrez une copie pour voir le fichier entier.", "rs.extra": "Cet affichage montre aussi {n} lettres ou chiffres qui ne sont pas dans le fichier.", "rs.g.menu": "menus : {n} ({w} mots)", "rs.g.form": "champs de formulaire et boutons : {n} ({w} mots)", "rs.g.media": "vidéos, sons et cadres intégrés : {n} ({w} mots)", "rs.g.drawing": "dessins et formules : {n} ({w} mots)", "rs.g.hidden": "parties que la page masquait elle-même : {n} ({w} mots)", "rs.g.webPic": "images non enregistrées avec la page : {n}", "rs.g.pic": "images dans un format que cet affichage ne sait pas montrer : {n}", "rs.g.link": "liens qui ne mènent pas à une adresse web : {n} (leurs mots sont affichés)", "rs.g.code": "scripts et styles : {n}", "rs.g.headers": "mots des en-têtes et pieds de page : {n}", "rs.g.comments": "mots des commentaires : {n}", "rs.g.deleted": "mots supprimés dans le suivi des modifications : {n}", "rs.g.other": "autres lettres et chiffres : {n}", "rs.picMark": "(une image que cet affichage ne sait pas montrer)", "rs.picMarkAlt": "(une image que cet affichage ne sait pas montrer : {alt})", "rs.webPicMark": "(une image non enregistrée avec la page)", "rs.webPicMarkAlt": "(une image non enregistrée avec la page : {alt})", "rs.wordNote": "Affiché en texte, titres, listes, tableaux et images ; les notes de bas de page et de fin sont regroupées à la fin. La mise en page de Word n'est pas conservée." },
+        "de": { "rs.allShown": "Jedes Wort der Datei wird hier gezeigt.", "rs.notShown": "Hier nicht gezeigt: {list}. Speichern Sie eine Kopie, um die ganze Datei zu sehen.", "rs.extra": "Diese Ansicht zeigt zusätzlich {n} Buchstaben oder Ziffern, die nicht in der Datei stehen.", "rs.g.menu": "Menüs: {n} ({w} Wörter)", "rs.g.form": "Formularfelder und Schaltflächen: {n} ({w} Wörter)", "rs.g.media": "eingebettete Videos, Töne und Rahmen: {n} ({w} Wörter)", "rs.g.drawing": "Zeichnungen und Formeln: {n} ({w} Wörter)", "rs.g.hidden": "Teile, die die Seite selbst verbarg: {n} ({w} Wörter)", "rs.g.webPic": "nicht mit der Seite gespeicherte Bilder: {n}", "rs.g.pic": "Bilder in einem Format, das diese Ansicht nicht zeigen kann: {n}", "rs.g.link": "Links, die zu keiner Webadresse führen: {n} (ihre Wörter werden gezeigt)", "rs.g.code": "Skripte und Stile: {n}", "rs.g.headers": "Wörter in Kopf- und Fußzeilen: {n}", "rs.g.comments": "Wörter in Kommentaren: {n}", "rs.g.deleted": "in der Änderungsverfolgung gelöschte Wörter: {n}", "rs.g.other": "weitere Buchstaben und Ziffern: {n}", "rs.picMark": "(ein Bild, das diese Ansicht nicht zeigen kann)", "rs.picMarkAlt": "(ein Bild, das diese Ansicht nicht zeigen kann: {alt})", "rs.webPicMark": "(ein nicht mit der Seite gespeichertes Bild)", "rs.webPicMarkAlt": "(ein nicht mit der Seite gespeichertes Bild: {alt})", "rs.wordNote": "Gezeigt als Text, Überschriften, Listen, Tabellen und Bilder; Fuß- und Endnoten stehen gesammelt am Ende. Das Seitenlayout von Word bleibt nicht erhalten." },
+        "it": { "rs.allShown": "Qui sono mostrate tutte le parole del file.", "rs.notShown": "Non mostrato qui: {list}. Salvane una copia per vedere il file intero.", "rs.extra": "Questa vista mostra anche {n} lettere o cifre che non sono nel file.", "rs.g.menu": "menu: {n} ({w} parole)", "rs.g.form": "campi di modulo e pulsanti: {n} ({w} parole)", "rs.g.media": "video, audio e riquadri incorporati: {n} ({w} parole)", "rs.g.drawing": "disegni e formule: {n} ({w} parole)", "rs.g.hidden": "parti che la pagina stessa nascondeva: {n} ({w} parole)", "rs.g.webPic": "immagini non salvate con la pagina: {n}", "rs.g.pic": "immagini in un formato che questa vista non può mostrare: {n}", "rs.g.link": "link che non portano a un indirizzo web: {n} (le loro parole sono mostrate)", "rs.g.code": "script e stili: {n}", "rs.g.headers": "parole di intestazioni e piè di pagina: {n}", "rs.g.comments": "parole dei commenti: {n}", "rs.g.deleted": "parole eliminate nelle revisioni: {n}", "rs.g.other": "altre lettere e cifre: {n}", "rs.picMark": "(un'immagine che questa vista non può mostrare)", "rs.picMarkAlt": "(un'immagine che questa vista non può mostrare: {alt})", "rs.webPicMark": "(un'immagine non salvata con la pagina)", "rs.webPicMarkAlt": "(un'immagine non salvata con la pagina: {alt})", "rs.wordNote": "Mostrato come testo, titoli, elenchi, tabelle e immagini; le note a piè di pagina e di chiusura sono riunite alla fine. L'impaginazione di Word non viene mantenuta." },
+        "pt": { "rs.allShown": "Todas as palavras do ficheiro são mostradas aqui.", "rs.notShown": "Não mostrado aqui: {list}. Guarde uma cópia para ver o ficheiro completo.", "rs.extra": "Esta vista mostra ainda {n} letras ou números que não estão no ficheiro.", "rs.g.menu": "menus: {n} ({w} palavras)", "rs.g.form": "campos de formulário e botões: {n} ({w} palavras)", "rs.g.media": "vídeo, áudio e molduras incorporados: {n} ({w} palavras)", "rs.g.drawing": "desenhos e fórmulas: {n} ({w} palavras)", "rs.g.hidden": "partes que a própria página ocultava: {n} ({w} palavras)", "rs.g.webPic": "imagens não guardadas com a página: {n}", "rs.g.pic": "imagens num formato que esta vista não consegue mostrar: {n}", "rs.g.link": "ligações que não levam a um endereço web: {n} (as suas palavras são mostradas)", "rs.g.code": "scripts e estilos: {n}", "rs.g.headers": "palavras de cabeçalhos e rodapés: {n}", "rs.g.comments": "palavras de comentários: {n}", "rs.g.deleted": "palavras eliminadas no controlo de alterações: {n}", "rs.g.other": "outras letras e números: {n}", "rs.picMark": "(uma imagem que esta vista não consegue mostrar)", "rs.picMarkAlt": "(uma imagem que esta vista não consegue mostrar: {alt})", "rs.webPicMark": "(uma imagem não guardada com a página)", "rs.webPicMarkAlt": "(uma imagem não guardada com a página: {alt})", "rs.wordNote": "Mostrado como texto, títulos, listas, tabelas e imagens; as notas de rodapé e as notas finais aparecem no fim. A paginação do Word não é mantida." },
+        "nl": { "rs.allShown": "Elk woord uit het bestand wordt hier getoond.", "rs.notShown": "Hier niet getoond: {list}. Sla een kopie op om het hele bestand te zien.", "rs.extra": "Deze weergave toont ook {n} letters of cijfers die niet in het bestand staan.", "rs.g.menu": "menu's: {n} ({w} woorden)", "rs.g.form": "formuliervelden en knoppen: {n} ({w} woorden)", "rs.g.media": "ingesloten video, geluid en frames: {n} ({w} woorden)", "rs.g.drawing": "tekeningen en formules: {n} ({w} woorden)", "rs.g.hidden": "delen die de pagina zelf verborg: {n} ({w} woorden)", "rs.g.webPic": "afbeeldingen die niet met de pagina zijn opgeslagen: {n}", "rs.g.pic": "afbeeldingen in een indeling die deze weergave niet kan tonen: {n}", "rs.g.link": "links die niet naar een webadres leiden: {n} (hun woorden worden getoond)", "rs.g.code": "scripts en stijlen: {n}", "rs.g.headers": "woorden in kop- en voetteksten: {n}", "rs.g.comments": "woorden in opmerkingen: {n}", "rs.g.deleted": "woorden verwijderd in bijgehouden wijzigingen: {n}", "rs.g.other": "overige letters en cijfers: {n}", "rs.picMark": "(een afbeelding die deze weergave niet kan tonen)", "rs.picMarkAlt": "(een afbeelding die deze weergave niet kan tonen: {alt})", "rs.webPicMark": "(een afbeelding die niet met de pagina is opgeslagen)", "rs.webPicMarkAlt": "(een afbeelding die niet met de pagina is opgeslagen: {alt})", "rs.wordNote": "Getoond als tekst, koppen, lijsten, tabellen en afbeeldingen; voetnoten en eindnoten staan samen aan het eind. De opmaak van Word blijft niet behouden." },
+        "pl": { "rs.allShown": "Pokazano tu każde słowo z pliku.", "rs.notShown": "Nie pokazano tu: {list}. Zapisz kopię, aby zobaczyć cały plik.", "rs.extra": "Ten widok pokazuje też {n} liter lub cyfr, których nie ma w pliku.", "rs.g.menu": "menu: {n} (słowa: {w})", "rs.g.form": "pola formularzy i przyciski: {n} (słowa: {w})", "rs.g.media": "osadzone wideo, dźwięk i ramki: {n} (słowa: {w})", "rs.g.drawing": "rysunki i wzory: {n} (słowa: {w})", "rs.g.hidden": "części ukryte przez samą stronę: {n} (słowa: {w})", "rs.g.webPic": "obrazy niezapisane razem ze stroną: {n}", "rs.g.pic": "obrazy w formacie, którego ten widok nie pokaże: {n}", "rs.g.link": "linki, które nie prowadzą pod adres internetowy: {n} (ich słowa są pokazane)", "rs.g.code": "skrypty i style: {n}", "rs.g.headers": "słowa z nagłówków i stopek: {n}", "rs.g.comments": "słowa z komentarzy: {n}", "rs.g.deleted": "słowa usunięte w śledzeniu zmian: {n}", "rs.g.other": "inne litery i cyfry: {n}", "rs.picMark": "(obraz, którego ten widok nie pokaże)", "rs.picMarkAlt": "(obraz, którego ten widok nie pokaże: {alt})", "rs.webPicMark": "(obraz niezapisany razem ze stroną)", "rs.webPicMarkAlt": "(obraz niezapisany razem ze stroną: {alt})", "rs.wordNote": "Pokazany jako tekst, nagłówki, listy, tabele i obrazy; przypisy dolne i końcowe są zebrane na końcu. Układ stron z Worda nie jest zachowany." },
+        "ru": { "rs.allShown": "Здесь показано каждое слово файла.", "rs.notShown": "Здесь не показано: {list}. Сохраните копию, чтобы увидеть файл целиком.", "rs.extra": "Этот просмотр показывает ещё {n} букв или цифр, которых нет в файле.", "rs.g.menu": "меню: {n} (слов: {w})", "rs.g.form": "поля форм и кнопки: {n} (слов: {w})", "rs.g.media": "встроенные видео, звук и фреймы: {n} (слов: {w})", "rs.g.drawing": "рисунки и формулы: {n} (слов: {w})", "rs.g.hidden": "части, скрытые самой страницей: {n} (слов: {w})", "rs.g.webPic": "изображения, не сохранённые вместе со страницей: {n}", "rs.g.pic": "изображения в формате, который этот просмотр не показывает: {n}", "rs.g.link": "ссылки, ведущие не на веб-адрес: {n} (их слова показаны)", "rs.g.code": "скрипты и стили: {n}", "rs.g.headers": "слова из колонтитулов: {n}", "rs.g.comments": "слова из примечаний: {n}", "rs.g.deleted": "слова, удалённые в режиме исправлений: {n}", "rs.g.other": "другие буквы и цифры: {n}", "rs.picMark": "(изображение, которое этот просмотр не показывает)", "rs.picMarkAlt": "(изображение, которое этот просмотр не показывает: {alt})", "rs.webPicMark": "(изображение, не сохранённое вместе со страницей)", "rs.webPicMarkAlt": "(изображение, не сохранённое вместе со страницей: {alt})", "rs.wordNote": "Показан как текст, заголовки, списки, таблицы и изображения; сноски и концевые сноски собраны в конце. Вёрстка страниц Word не сохраняется." },
+        "tr": { "rs.allShown": "Dosyadaki her sözcük burada gösteriliyor.", "rs.notShown": "Burada gösterilmeyenler: {list}. Dosyanın tamamını görmek için bir kopyasını kaydedin.", "rs.extra": "Bu görünüm ayrıca dosyada olmayan {n} harf ya da rakam gösteriyor.", "rs.g.menu": "menüler: {n} ({w} sözcük)", "rs.g.form": "form alanları ve düğmeler: {n} ({w} sözcük)", "rs.g.media": "gömülü video, ses ve çerçeveler: {n} ({w} sözcük)", "rs.g.drawing": "çizimler ve formüller: {n} ({w} sözcük)", "rs.g.hidden": "sayfanın kendisinin gizlediği bölümler: {n} ({w} sözcük)", "rs.g.webPic": "sayfayla birlikte kaydedilmemiş resimler: {n}", "rs.g.pic": "bu görünümün gösteremediği biçimde resimler: {n}", "rs.g.link": "bir web adresine gitmeyen bağlantılar: {n} (sözcükleri gösteriliyor)", "rs.g.code": "betikler ve stiller: {n}", "rs.g.headers": "üst ve alt bilgi sözcükleri: {n}", "rs.g.comments": "yorum sözcükleri: {n}", "rs.g.deleted": "değişiklik izlemede silinen sözcükler: {n}", "rs.g.other": "diğer harfler ve rakamlar: {n}", "rs.picMark": "(bu görünümün gösteremediği bir resim)", "rs.picMarkAlt": "(bu görünümün gösteremediği bir resim: {alt})", "rs.webPicMark": "(sayfayla birlikte kaydedilmemiş bir resim)", "rs.webPicMarkAlt": "(sayfayla birlikte kaydedilmemiş bir resim: {alt})", "rs.wordNote": "Metin, başlıklar, listeler, tablolar ve resimler olarak gösterilir; dipnotlar ve son notlar sonda toplanır. Word'ün sayfa düzeni korunmaz." },
+        "ar": { "rs.allShown": "تظهر هنا كل كلمة في الملف.", "rs.notShown": "لا يظهر هنا: {list}. احفظ نسخة لترى الملف كاملًا.", "rs.extra": "يعرض هذا العرض أيضًا {n} من الحروف أو الأرقام غير الموجودة في الملف.", "rs.g.menu": "القوائم: {n} (الكلمات: {w})", "rs.g.form": "حقول النماذج والأزرار: {n} (الكلمات: {w})", "rs.g.media": "الفيديو والصوت والإطارات المضمّنة: {n} (الكلمات: {w})", "rs.g.drawing": "الرسوم والصيغ: {n} (الكلمات: {w})", "rs.g.hidden": "أجزاء أخفتها الصفحة نفسها: {n} (الكلمات: {w})", "rs.g.webPic": "صور لم تُحفظ مع الصفحة: {n}", "rs.g.pic": "صور بتنسيق لا يستطيع هذا العرض إظهاره: {n}", "rs.g.link": "روابط لا تؤدي إلى عنوان ويب: {n} (كلماتها ظاهرة)", "rs.g.code": "النصوص البرمجية والأنماط: {n}", "rs.g.headers": "كلمات الرؤوس والتذييلات: {n}", "rs.g.comments": "كلمات التعليقات: {n}", "rs.g.deleted": "كلمات حُذفت في تعقّب التغييرات: {n}", "rs.g.other": "حروف وأرقام أخرى: {n}", "rs.picMark": "(صورة لا يستطيع هذا العرض إظهارها)", "rs.picMarkAlt": "(صورة لا يستطيع هذا العرض إظهارها: {alt})", "rs.webPicMark": "(صورة لم تُحفظ مع الصفحة)", "rs.webPicMarkAlt": "(صورة لم تُحفظ مع الصفحة: {alt})", "rs.wordNote": "يُعرض نصًا وعناوين وقوائم وجداول وصورًا؛ وتُجمع الحواشي السفلية والختامية في النهاية. لا يُحتفظ بتخطيط صفحات Word." },
+        "ja": { "rs.allShown": "ファイル内のすべての語をここに表示しています。", "rs.notShown": "ここに表示していないもの：{list}。ファイル全体を見るには、コピーを保存してください。", "rs.extra": "この表示には、ファイルにない文字または数字が {n} 個含まれています。", "rs.g.menu": "メニュー：{n}（{w} 語）", "rs.g.form": "フォームの入力欄とボタン：{n}（{w} 語）", "rs.g.media": "埋め込まれた動画・音声・フレーム：{n}（{w} 語）", "rs.g.drawing": "図と数式：{n}（{w} 語）", "rs.g.hidden": "ページ自体が隠していた部分：{n}（{w} 語）", "rs.g.webPic": "ページと一緒に保存されていない画像：{n}", "rs.g.pic": "この表示では見せられない形式の画像：{n}", "rs.g.link": "ウェブアドレスにつながらないリンク：{n}（文字は表示しています）", "rs.g.code": "スクリプトとスタイル：{n}", "rs.g.headers": "ヘッダーとフッターの語：{n}", "rs.g.comments": "コメントの語：{n}", "rs.g.deleted": "変更履歴で削除された語：{n}", "rs.g.other": "その他の文字と数字：{n}", "rs.picMark": "（この表示では見せられない画像）", "rs.picMarkAlt": "（この表示では見せられない画像：{alt}）", "rs.webPicMark": "（ページと一緒に保存されていない画像）", "rs.webPicMarkAlt": "（ページと一緒に保存されていない画像：{alt}）", "rs.wordNote": "文字、見出し、リスト、表、画像として表示します。脚注と文末脚注は最後にまとめて表示します。Word のページレイアウトは保たれません。" },
+        "zh-Hans": { "rs.allShown": "此处显示了文件中的每一个词。", "rs.notShown": "此处未显示：{list}。保存一份副本即可查看完整文件。", "rs.extra": "此视图还显示了文件中没有的 {n} 个字母或数字。", "rs.g.menu": "菜单：{n}（{w} 个词）", "rs.g.form": "表单栏和按钮：{n}（{w} 个词）", "rs.g.media": "嵌入的视频、音频和框架：{n}（{w} 个词）", "rs.g.drawing": "图形和公式：{n}（{w} 个词）", "rs.g.hidden": "页面本身隐藏的部分：{n}（{w} 个词）", "rs.g.webPic": "未随页面保存的图片：{n}", "rs.g.pic": "此视图无法显示其格式的图片：{n}", "rs.g.link": "不指向网址的链接：{n}（其文字已显示）", "rs.g.code": "脚本和样式：{n}", "rs.g.headers": "页眉和页脚中的词：{n}", "rs.g.comments": "批注中的词：{n}", "rs.g.deleted": "修订中删除的词：{n}", "rs.g.other": "其他字母和数字：{n}", "rs.picMark": "（此视图无法显示的图片）", "rs.picMarkAlt": "（此视图无法显示的图片：{alt}）", "rs.webPicMark": "（未随页面保存的图片）", "rs.webPicMarkAlt": "（未随页面保存的图片：{alt}）", "rs.wordNote": "以文字、标题、列表、表格和图片显示；脚注和尾注集中列在最后。不保留 Word 的页面版式。" }
+      };
+      Object.keys(RSWWF_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RSWWF_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
@@ -27051,6 +27071,25 @@
          opts.base is the page's own address, for its relative links. Never recursive (a page
          nested ten thousand deep is walked like any other) and capped at RS_SAN.nodes elements. */
       const RS_SAN = { nodes: 40000, depth: 120 };
+      /* letters and numbers, counted the same way the worker counts a Word file's (CHAR_RE in assets/rsdoc.js):
+         spacing may change in a reader view, these may not, so they are what is accounted for */
+      const RS_CHAR_RE = /[\p{L}\p{N}]/gu, RS_WORD_RE = /[\p{L}\p{N}][\p{L}\p{N}'’\-]*/gu;
+      function rsChars(s) { return (String(s || "").normalize("NFC").match(RS_CHAR_RE) || []).length; }
+      function rsWords(s) { return (String(s || "").normalize("NFC").match(RS_WORD_RE) || []).length; }
+      /* the visible text under a node: script, style and template text is code, not words; a view's own notes (.rs-gone) are not the file's */
+      function rsVisibleText(root) {
+        let out = "";
+        const work = [root];
+        while (work.length) {
+          const n = work.pop();
+          if (n.nodeType === 3) { out += n.nodeValue; continue; }
+          if (n.nodeType !== 1 && n.nodeType !== 9 && n.nodeType !== 11) continue;
+          if (n.nodeType === 1 && (/^(SCRIPT|STYLE|TEMPLATE)$/i.test(n.tagName) || (n.classList && n.classList.contains("rs-gone")))) continue;
+          out += " ";
+          for (let i = n.childNodes.length - 1; i >= 0; i--) work.push(n.childNodes[i]);
+        }
+        return out;
+      }
       function rsSanitize(html, opts) {
         opts = opts || {};
         const src = new DOMParser().parseFromString(String(html || ""), "text/html");
@@ -27061,22 +27100,37 @@
           TABLE: "table", THEAD: "thead", TBODY: "tbody", TFOOT: "tfoot", TR: "tr", TH: "th", TD: "td", CAPTION: "caption", A: "a", IMG: "img", FIGURE: "figure", FIGCAPTION: "figcaption", DL: "dl", DT: "dt", DD: "dd",
           /* page boxes stay boxes (no attributes), so text in separate boxes never runs together */
           DIV: "div", SECTION: "div", ARTICLE: "div", HEADER: "div", FOOTER: "div", MAIN: "div", ASIDE: "div", ADDRESS: "div" };
-        const DROP = /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|IFRAME|FRAME|FRAMESET|OBJECT|EMBED|APPLET|SVG|MATH|CANVAS|FORM|INPUT|BUTTON|SELECT|TEXTAREA|OPTION|VIDEO|AUDIO|SOURCE|TRACK|PICTURE|HEAD|TITLE|META|LINK|BASE|NAV|DIALOG|PORTAL|SLOT|MAP|AREA)$/;
+        /* not page text at all: dropped and not counted as words */
+        const CODE = /^(SCRIPT|STYLE|TEMPLATE|HEAD|TITLE|META|LINK|BASE|SOURCE|TRACK|PARAM|SLOT)$/;
+        /* page content the reader view leaves out, by what the writer is told */
+        const GONE = { NAV: "menu", INPUT: "form", BUTTON: "form", SELECT: "form", TEXTAREA: "form", OPTION: "form", OPTGROUP: "form", DATALIST: "form",
+          IFRAME: "media", FRAME: "media", FRAMESET: "media", OBJECT: "media", EMBED: "media", APPLET: "media", VIDEO: "media", AUDIO: "media", CANVAS: "media", PORTAL: "media", MAP: "media",
+          SVG: "drawing", MATH: "drawing", DIALOG: "hidden" };
+        /* inline by nature: unwrapped without a space, so a word split across them stays one word */
+        const INLINE = /^(SPAN|FONT|SMALL|BIG|MARK|ABBR|ACRONYM|CITE|Q|DFN|TIME|VAR|KBD|SAMP|BDI|BDO|WBR|NOBR|INS|DATA|LABEL|OUTPUT|TT|RUBY|RB|RT|RP|PICTURE)$/;
+        const gone = { code: 0, menu: 0, form: 0, media: 0, drawing: 0, hidden: 0, webPic: 0, pic: 0, link: 0, words: { menu: 0, form: 0, media: 0, drawing: 0, hidden: 0 }, chars: 0 };
         const link = (v) => {
           const s = String(v || "").trim();
-          if (!s || s[0] === "#") return "";
-          try { const u = opts.base ? new URL(s, opts.base) : new URL(s); return (u.protocol === "http:" || u.protocol === "https:") ? u.href : ""; } catch (e) { return ""; }
+          if (!s || s[0] === "#") return { href: "", internal: true };
+          try { const u = opts.base ? new URL(s, opts.base) : new URL(s); return { href: (u.protocol === "http:" || u.protocol === "https:" || u.protocol === "mailto:") ? u.href : "", internal: false }; } catch (e) { return { href: "", internal: !/^[a-z][a-z0-9+.-]*:/i.test(s) }; }
         };
         const pic = (v) => {
           const s = String(v || "").trim();
           const own = opts.images && Object.prototype.hasOwnProperty.call(opts.images, s) ? opts.images[s] : s;
-          return /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(own) ? own : "";
+          if (/^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(own)) return { src: own };
+          return { src: "", saved: /^data:/i.test(own) }; /* saved: carried in the file, in a format this view does not show */
         };
+        const hiddenByPage = (el) => el.hasAttribute("hidden") || /(^|;)\s*(display\s*:\s*none|visibility\s*:\s*hidden)/i.test(el.getAttribute("style") || "");
+        const leaveOut = (el, why) => {
+          const txt = rsVisibleText(el);
+          gone[why]++; gone.words[why] += rsWords(txt); gone.chars += rsChars(txt);
+        };
+        const mark = (text) => { const m = out.createElement("span"); m.className = "rs-gone"; m.textContent = text; return m; };
         let count = 0, cut = false;
         /* a work list of [source node, its kept parent, depth]: children are pushed in reverse so they come off in order */
         const work = [];
         const pushKids = (from, to, d) => { const kids = from.childNodes; for (let i = kids.length - 1; i >= 0; i--) work.push([kids[i], to, d]); };
-        const GAP = {}; /* a space after an unwrapped element: its words and the next ones stay apart */
+        const GAP = {}; /* a space after an unwrapped box: its words and the next ones stay apart */
         pushKids(src.body || src.documentElement, root, 0);
         while (work.length) {
           const [node, parent, d] = work.pop();
@@ -27084,25 +27138,54 @@
           if (node.nodeType === 3) { if (node.nodeValue) parent.appendChild(out.createTextNode(node.nodeValue)); continue; }
           if (node.nodeType !== 1) continue;
           const tag = node.tagName.toUpperCase();
-          if (DROP.test(tag)) continue;
+          if (CODE.test(tag)) continue; /* scripts and styles are counted once, over the whole document, below */
+          if (GONE[tag]) { leaveOut(node, GONE[tag]); continue; }
+          if (hiddenByPage(node)) { leaveOut(node, "hidden"); continue; }
           if (++count > RS_SAN.nodes) { cut = true; break; }
           const keep = KEEP[tag];
-          if (!keep || d >= RS_SAN.depth) { work.push([GAP, parent, d]); pushKids(node, parent, d); continue; } /* not kept (or too deep): its children join the parent, then a space */
+          if (!keep || d >= RS_SAN.depth) { /* not kept (or too deep): its children join the parent */
+            if (!INLINE.test(tag)) work.push([GAP, parent, d]);
+            pushKids(node, parent, d); continue;
+          }
           if (keep === "img") {
             const s = pic(node.getAttribute("src"));
-            if (s) { const im = out.createElement("img"); im.setAttribute("src", s); im.setAttribute("alt", String(node.getAttribute("alt") || "").slice(0, 300)); im.setAttribute("loading", "lazy"); ["width", "height"].forEach((a) => { const v = String(node.getAttribute(a) || "").trim(); if (/^[1-9][0-9]{0,3}$/.test(v)) im.setAttribute(a, v); }); parent.appendChild(im); } /* the size the page gave it, plain numbers only */
-            else if (node.getAttribute("alt")) parent.appendChild(out.createTextNode("[" + String(node.getAttribute("alt")).slice(0, 300) + "]"));
+            const alt = String(node.getAttribute("alt") || "").replace(/\s+/g, " ").trim().slice(0, 300);
+            if (s.src) { const im = out.createElement("img"); im.setAttribute("src", s.src); im.setAttribute("alt", alt); im.setAttribute("loading", "lazy"); ["width", "height"].forEach((a) => { const v = String(node.getAttribute(a) || "").trim(); if (/^[1-9][0-9]{0,3}$/.test(v)) im.setAttribute(a, v); }); parent.appendChild(im); } /* the size the page gave it, plain numbers only */
+            else if (s.saved) { gone.pic++; parent.appendChild(mark(alt ? t("rs.picMarkAlt", { alt: alt }) : t("rs.picMark"))); }
+            else { gone.webPic++; parent.appendChild(mark(alt ? t("rs.webPicMarkAlt", { alt: alt }) : t("rs.webPicMark"))); }
             continue;
           }
           const el = out.createElement(keep);
-          if (keep === "a") { const h = link(node.getAttribute("href")); if (h) { el.setAttribute("href", h); el.setAttribute("target", "_blank"); el.setAttribute("rel", "noopener noreferrer nofollow"); } }
+          if (keep === "a") {
+            const h = link(node.getAttribute("href"));
+            if (h.href) { el.setAttribute("href", h.href); el.setAttribute("target", "_blank"); el.setAttribute("rel", "noopener noreferrer nofollow"); }
+            else if (!h.internal) gone.link++; /* its words stay; only where it led is left out */
+          }
           if (keep === "td" || keep === "th") ["colspan", "rowspan"].forEach((a) => { const v = parseInt(node.getAttribute(a), 10); if (v > 1 && v <= 50) el.setAttribute(a, String(v)); });
           if (keep === "ol") { const v = parseInt(node.getAttribute("start"), 10); if (v > 1 && v < 100000) el.setAttribute("start", String(v)); }
           parent.appendChild(el);
           if (keep === "a" && node.nextSibling && node.nextSibling.nodeType === 1) work.push([GAP, parent, d]); /* links side by side (chips, menus) stay apart */
           pushKids(node, el, d + 1);
         }
-        return { node: root, cut: cut, empty: !root.textContent.trim() && !root.querySelector("img") };
+        /* what the file holds against what is shown and what was left out: nothing may go missing unsaid */
+        gone.code = src.querySelectorAll("script, style").length; /* in the head as well as the body */
+        const srcChars = rsChars(rsVisibleText(src.body || src.documentElement));
+        const shownChars = rsChars(rsVisibleText(root));
+        return { node: root, cut: cut, empty: !root.textContent.trim() && !root.querySelector("img"), gone: gone, srcChars: srcChars, shownChars: shownChars };
+      }
+      /* the sentence under a view: everything shown, or what is not, by kind and number; any letters or
+         numbers still unaccounted for are named too, and so are any the view shows that the file does not hold */
+      function rsFidelity(view) {
+        const g = view.gone || {}, w = g.words || {}, items = [];
+        const add = (key, n, words) => { if (n > 0) items.push(t(key, { n: fmtNum(n), w: fmtNum(words || 0) })); };
+        add("rs.g.menu", g.menu, w.menu); add("rs.g.form", g.form, w.form); add("rs.g.media", g.media, w.media); add("rs.g.drawing", g.drawing, w.drawing);
+        add("rs.g.hidden", g.hidden, w.hidden); add("rs.g.webPic", g.webPic); add("rs.g.pic", g.pic); add("rs.g.link", g.link); add("rs.g.code", g.code);
+        add("rs.g.headers", view.headers, view.headers); add("rs.g.comments", view.comments, view.comments); add("rs.g.deleted", view.deleted, view.deleted);
+        const missing = view.expectChars - view.shownChars - (g.chars || 0);
+        if (missing > 0) add("rs.g.other", missing);
+        const lines = [items.length ? t("rs.notShown", { list: items.join("; ") }) : t("rs.allShown")];
+        if (missing < 0) lines.push(t("rs.extra", { n: fmtNum(-missing) }));
+        return { text: lines.join(" "), whole: !items.length && missing === 0 };
       }
       async function rsDocFill(f) {
         const slot = () => document.querySelector('#rsView .rs-doc[data-rsdoc="' + f.id + '"]');
@@ -27115,21 +27198,32 @@
           if (!r || !r.ok) view = { error: r && r.reason === "timeout" ? "rs.docBig" : "rs.docFail" };
           else {
             const s = rsSanitize(r.html, { images: r.images || {}, base: rsUrl(r.url) || "" });
-            view = s.empty ? { error: "rs.docEmpty" } : { node: s.node, cut: s.cut || r.cut, note: word ? "rs.wordNote" : "rs.webNote" };
+            if (s.empty) view = { error: "rs.docEmpty" };
+            else {
+              view = { node: s.node, cut: s.cut || r.cut, note: word ? "rs.wordNote" : "rs.webNote", gone: s.gone, shownChars: s.shownChars };
+              if (word && r.stats) {
+                /* a Word file is counted from its own XML; the footnote numbers mammoth writes ("[1]") are Word's own numbering, shown as Word shows it */
+                let refDigits = 0; for (let i = 1; i <= r.stats.refs; i++) refDigits += String(i).length; /* once, in the text: the list numbers itself */
+                Object.assign(view, { expectChars: r.stats.chars + refDigits, headers: r.stats.headers, comments: r.stats.comments, deleted: r.stats.deleted });
+              } else view.expectChars = s.srcChars;
+              if (view.cut) view.expectChars = view.shownChars + (s.gone.chars || 0); /* what was cut is already said (rs.docCut) */
+              view.fidelity = rsFidelity(view);
+            }
           }
           rsDocW.cache.set(key, view);
           if (rsDocW.cache.size > 6) rsDocW.cache.delete(rsDocW.cache.keys().next().value);
         }
         const el = slot(); if (!el) return; /* the writer moved on meanwhile */
         el.removeAttribute("aria-busy");
-        const say = (key, cls) => { const q = document.createElement("p"); q.className = "nb-quiet" + (cls ? " " + cls : ""); q.textContent = t(key); return q; };
+        const say = (text, cls) => { const q = document.createElement("p"); q.className = "nb-quiet" + (cls ? " " + cls : ""); q.textContent = text; return q; };
         el.textContent = "";
-        if (view.error) { el.appendChild(say(view.error)); return; }
-        el.appendChild(say(view.note, "rs-doc-note"));
+        if (view.error) { el.appendChild(say(t(view.error))); return; }
+        el.appendChild(say(t(view.note), "rs-doc-note"));
+        el.appendChild(say(view.fidelity.text, "rs-doc-fidelity" + (view.fidelity.whole ? "" : " is-partial")));
         const body = document.createElement("div"); body.className = "rs-doc-body"; body.setAttribute("dir", "auto");
         body.appendChild(document.importNode(view.node, true));
         el.appendChild(body);
-        if (view.cut) el.appendChild(say("rs.docCut"));
+        if (view.cut) el.appendChild(say(t("rs.docCut")));
       }
       /* ==== /BEUK:webword ==== */
       /* ==== /BEUK:research ==== */
@@ -70597,7 +70691,15 @@
             if (d && !d.querySelector('a[href="https://example.org/rel"]')) bad.push("a relative link was not read against the page's own address");
             d = await view("page.html");
             if (!d || unsafe(d).length || d.querySelector("img")) bad.push("the HTML view carries something unsafe or a picture from the web");
-            if (d && d.textContent.indexOf("[tracker]") === -1) bad.push("a web picture is not shown as its words");
+            /* a picture from the web is a marked note, never words that look like the page's */
+            const marks = d ? Array.from(d.querySelectorAll(".rs-doc-body .rs-gone")).map((m) => m.textContent) : [];
+            if (marks.indexOf(t("rs.webPicMarkAlt", { alt: "tracker" })) === -1 || marks.filter((m) => m === t("rs.webPicMark")).length !== 2) bad.push("the pictures from the web are not marked notes (" + marks.join(" | ") + ")");
+            const fid = (el) => (el && el.querySelector(".rs-doc-fidelity") || {}).textContent || "";
+            /* the view says what it left out, each kind with its number */
+            const ph = fid(d);
+            [t("rs.g.form", { n: fmtNum(1), w: fmtNum(0) }), t("rs.g.media", { n: fmtNum(2), w: fmtNum(0) }), t("rs.g.drawing", { n: fmtNum(1), w: fmtNum(0) }), t("rs.g.webPic", { n: fmtNum(3) }), t("rs.g.link", { n: fmtNum(2) }), t("rs.g.code", { n: fmtNum(4) })]
+              .forEach((want) => { if (ph.indexOf(want) === -1) bad.push("the page's view does not say \"" + want + "\" (" + ph + ")"); });
+            if (ph.indexOf(t("rs.allShown")) !== -1 || ph.indexOf(t("rs.g.other", { n: "" }).replace(/\s*$/, "")) !== -1 || ph.indexOf(t("rs.extra", { n: "" }).split(" ").slice(0, 3).join(" ")) !== -1) bad.push("the page's view claims too much or leaves letters unaccounted (" + ph + ")");
             d = await view("utf16.html"); if (!d || d.textContent.indexOf("Wmark Möwe sixteen") === -1) bad.push("UTF-16 not read");
             d = await view("old.htm"); if (!d || d.textContent.indexOf("Café and Wmark") === -1) bad.push("Windows-1252 not read");
             d = await view("deep.html"); if (!d || d.textContent.indexOf("Wmark deep") === -1 || d.textContent.indexOf("Wmark quoted") === -1) bad.push("ten thousand nested elements were not read");
@@ -70613,12 +70715,64 @@
             if (!lim || lim.ok || lim.reason !== "bomb") bad.push("parts past the unpacked limit were not refused (" + JSON.stringify(lim) + ")");
             const fine = await rsDocJob("check-word", bigB64);
             if (!fine || !fine.ok) bad.push("the same file under the real limit was refused (" + JSON.stringify(fine) + ")");
+            /* BEUK:webword — nothing added or removed unsaid. Word: a text box written as DrawingML with an empty
+               fallback (as Word writes a drop cap's box) is read where it sits; what a view cannot show is named and counted */
+            const box = '<w:p><w:r><w:t>O</w:t></w:r><w:r><mc:AlternateContent xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"><mc:Choice Requires="wps"><w:drawing><w:txbxContent><w:p><w:r><w:t>urselves</w:t></w:r></w:p></w:txbxContent></w:drawing></mc:Choice><mc:Fallback /></mc:AlternateContent></w:r><w:r><w:t xml:space="preserve"> and the Wmark after the box.</w:t></w:r></w:p>';
+            const r3 = await rsAddFiles(n.id, [file("dropcap.docx", await docx(box + p("A last line.")))]);
+            if (r3.added.length !== 1) bad.push("the drop-cap document was not kept");
+            else {
+              d = await view("dropcap.docx");
+              const bodyText = d ? d.querySelector(".rs-doc-body").textContent : "";
+              if (bodyText.indexOf("Ourselves and the Wmark after the box.") === -1) bad.push("a text box's words were not read where it sits (" + bodyText.slice(0, 80) + ")");
+              if (fid(d) !== t("rs.allShown")) bad.push("the drop-cap document does not say every word is shown (" + fid(d) + ")");
+            }
+            const extras = async () => {
+              const z = new JSZip();
+              z.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="emf" ContentType="image/x-emf"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+              z.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+              z.file("word/_rels/document.xml.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rEmf" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/plan.emf"/></Relationships>');
+              z.file("word/media/plan.emf", "AQAAAGwAAAA=", { base64: true });
+              z.file("word/header1.xml", '<w:hdr xmlns:w="' + W + '"><w:p><w:r><w:t>Running head words</w:t></w:r></w:p></w:hdr>');
+              z.file("word/footer1.xml", '<w:ftr xmlns:w="' + W + '"><w:p><w:r><w:t>Page</w:t></w:r></w:p></w:ftr>');
+              z.file("word/comments.xml", '<w:comments xmlns:w="' + W + '"><w:comment w:id="0"><w:p><w:r><w:t>Check this date please</w:t></w:r></w:p></w:comment></w:comments>');
+              z.file("word/document.xml", '<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="' + W + '" xmlns:r="' + R + '"><w:body>' + p("Kept words stay.") +
+                '<w:p><w:r><w:t xml:space="preserve">Before </w:t></w:r><w:del w:id="1" w:author="x"><w:r><w:delText>three gone words</w:delText></w:r></w:del><w:r><w:t xml:space="preserve"> after.</w:t></w:r></w:p>' +
+                '<w:p><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:docPr id="2" name="plan" descr="the plan"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:blipFill><a:blip r:embed="rEmf"/></pic:blipFill></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p></w:body></w:document>');
+              return new Uint8Array(await z.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+            };
+            const r4 = await rsAddFiles(n.id, [file("extras.docx", await extras())]);
+            if (r4.added.length !== 1) bad.push("the document with a header, a comment, a deletion and an EMF was not kept");
+            else {
+              d = await view("extras.docx");
+              const fx = fid(d);
+              [t("rs.g.headers", { n: fmtNum(4) }), t("rs.g.comments", { n: fmtNum(4) }), t("rs.g.deleted", { n: fmtNum(3) }), t("rs.g.pic", { n: fmtNum(1) })]
+                .forEach((want) => { if (fx.indexOf(want) === -1) bad.push("the Word view does not say \"" + want + "\" (" + fx + ")"); });
+              if (fx.indexOf(t("rs.g.other", { n: "" }).replace(/\s*$/, "")) !== -1) bad.push("the Word view leaves letters unaccounted (" + fx + ")");
+              const pm = d && d.querySelector(".rs-doc-body .rs-gone");
+              if (!pm || pm.textContent !== t("rs.picMarkAlt", { alt: "the plan" })) bad.push("a picture the view cannot show is not a marked note (" + (pm ? pm.textContent : "none") + ")");
+            }
+            /* web: a clean page says everything is shown; a word split across spans stays one word; a page inside one big form keeps its words */
+            const clean = rsSanitize("<p>Plain <span>Hel</span><span>lo</span> words.</p>");
+            const cf = rsFidelity({ gone: clean.gone, expectChars: clean.srcChars, shownChars: clean.shownChars });
+            if (!cf.whole || cf.text !== t("rs.allShown")) bad.push("a clean page does not say every word is shown (" + cf.text + ")");
+            if (clean.node.textContent.indexOf("Hello") === -1) bad.push("a word split across spans was split in the view");
+            const aspx = rsSanitize('<form id="aspnetForm"><div><h1>Whole page</h1><p>Inside the form.</p><input value="x"><button>Go now</button></div></form>');
+            if (aspx.node.textContent.indexOf("Inside the form.") === -1 || aspx.gone.form !== 2 || aspx.gone.words.form !== 2) bad.push("a page inside one form lost its words or miscounted its fields (" + JSON.stringify(aspx.gone) + ")");
+            const hid = rsSanitize('<p>Seen.</p><p hidden>Not seen one.</p><div style="display: none">Not seen two.</div><nav><a href="https://example.org/m">Menu link</a></nav>');
+            if (hid.gone.hidden !== 2 || hid.gone.words.hidden !== 6 || hid.gone.menu !== 1 || hid.gone.words.menu !== 2 || hid.node.textContent.indexOf("Not seen") !== -1) bad.push("hidden parts or a menu were miscounted (" + JSON.stringify(hid.gone) + ")");
+            const hf = rsFidelity({ gone: hid.gone, expectChars: hid.srcChars, shownChars: hid.shownChars });
+            if (hf.whole || hf.text.indexOf(t("rs.g.other", { n: "" }).replace(/\s*$/, "")) !== -1 || hf.text.indexOf(t("rs.g.hidden", { n: fmtNum(2), w: fmtNum(6) })) === -1 || hf.text.indexOf(t("rs.g.menu", { n: fmtNum(1), w: fmtNum(2) })) === -1) bad.push("hidden parts or a menu were not said (" + hf.text + ")");
+            /* a view that lost letters it cannot explain says so, and one that shows letters the file lacks says that too */
+            const lost = rsFidelity({ gone: clean.gone, expectChars: clean.srcChars + 9, shownChars: clean.shownChars });
+            if (lost.whole || lost.text.indexOf(t("rs.g.other", { n: fmtNum(9) })) === -1) bad.push("unexplained missing letters were not said (" + lost.text + ")");
+            const more = rsFidelity({ gone: clean.gone, expectChars: clean.srcChars - 4, shownChars: clean.shownChars });
+            if (more.whole || more.text.indexOf(t("rs.extra", { n: fmtNum(4) })) === -1) bad.push("letters not in the file were not said (" + more.text + ")");
             /* words in separate boxes, side-by-side spans and side-by-side links stay separate words */
-            const sep = rsSanitize('<div>alpha</div><div>beta</div><span>gamma</span><span>delta</span><a href="https://example.org/1">one</a><a href="https://example.org/2">two</a>');
+            const sep = rsSanitize('<div>alpha</div><div>beta</div><span>gamma</span> <span>delta</span> <a href="https://example.org/1">one</a><a href="https://example.org/2">two</a><x-card>three</x-card><x-card>four</x-card>');
             const boxes = Array.from(sep.node.children).filter((e) => e.tagName === "DIV").map((e) => e.textContent);
             if (boxes.join("|") !== "alpha|beta") bad.push("separate boxes did not stay boxes (" + boxes.join("|") + ")");
             const loose = Array.from(sep.node.childNodes).filter((x) => !(x.nodeType === 1 && x.tagName === "DIV")).map((x) => x.textContent).join("").trim().split(/\s+/);
-            if (loose.join("|") !== "gamma|delta|one|two") bad.push("side-by-side spans or links ran together (" + loose.join("|") + ")");
+            if (loose.join("|") !== "gamma|delta|one|two|three|four") bad.push("side-by-side spans or links ran together (" + loose.join("|") + ")");
             /* broken Word XML is kept (the zip is sound) and shows a plain message */
             const broken = await docx("", { rawXml: "<w:document><w:body><w:p>never closed" });
             const r2 = await rsAddFiles(n.id, [file("broken.docx", broken)]);
