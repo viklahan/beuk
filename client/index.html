@@ -33886,7 +33886,7 @@
           if (e.altKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
             e.preventDefault();
             const rtl = document.documentElement.getAttribute("dir") === "rtl";
-            const earlier = e.key === "ArrowUp" || (e.key === "ArrowLeft" ? !rtl : rtl);
+            const earlier = e.key === "ArrowUp" || (e.key === "ArrowLeft" && !rtl) || (e.key === "ArrowRight" && rtl);
             olUi.focus = { id: id, sel: null };
             if (!olMoveStep(id, earlier ? -1 : 1)) olUi.focus = null;
           }
