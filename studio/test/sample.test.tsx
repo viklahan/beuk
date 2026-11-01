@@ -18,7 +18,7 @@ import { translate, type Pack, type PluralForms } from '../src/i18n/translate';
 import { LocaleProvider } from '../src/i18n/LocaleProvider';
 import {
   buildSample, emptyAfterSample, ensureSamplePictures, fillSamplePictures, newBookArrival, resetSamplePictures, sampleArrival, samplePicsMissing,
-  sampleShippedWords, SAMPLE_KEY, SAMPLE_PIC_DIR,
+  deskIsUntouchedSample, sampleLoaded, sampleRecord, sampleShippedWords, sampleSigOf, SAMPLE_MAP, SAMPLE_PIC_DIR, setSampleRecord,
 } from '../src/sample/sample';
 import { BOOKS, fixtures } from './fixtures';
 
@@ -185,6 +185,53 @@ describe('the sample\'s pictures (BEUK:slim)', () => {
   });
 });
 
+describe('fix round 1: the sample record lives with the book, and fails safe', () => {
+  it('the record is in the book’s Y.Doc, never exported; a new import starts without it; a missing fingerprint reads as edited', () => {
+    const y = open(sampleArrival(c, null, false));
+    expect(sampleLoaded(y)).toBe(false);
+    setSampleRecord(y, sampleSigOf(c, y));
+    expect(sampleLoaded(y)).toBe(true);
+    expect(deskIsUntouchedSample(c, y)).toBe(true);
+    expect(JSON.stringify(exportBook(y)).includes(SAMPLE_MAP)).toBe(false);
+    expect(Object.keys(exportBook(y))).not.toContain('sample');
+    expect(sampleLoaded(open(exportBook(y)))).toBe(false); // a backup of it arrives as the writer's own book
+    setSampleRecord(y, null);
+    expect(sampleLoaded(y)).toBe(true);
+    expect(deskIsUntouchedSample(c, y)).toBe(false); // unknown fingerprint: edited, Remove asks
+    y.getMap(SAMPLE_MAP).set('sample', 'garbage');
+    expect(deskIsUntouchedSample(c, y)).toBe(false);
+  });
+
+  it('the snapshot taken before the sample survives Remove sample in every case, also when the replaced book carried the sample’s id', () => {
+    const f = fixtures('real').find((x) => x.name === 'real/lunas-beach-standalone')!;
+    // (1) the writer's own book
+    const own = open(f.book);
+    const ownSecs = JSON.stringify(exportBook(own).sections);
+    // (2) an edited sample whose record was lost: it reads as the writer's book (bookId = the sample's)
+    const lost = open(sampleArrival(c, null, false));
+    lost.transact(() => {
+      const m = { ...(exportBook(lost).meta as Rec), publisher: 'Edited after the record was lost' };
+      lost.getMap('meta').set('meta', m);
+    });
+    expect(sampleLoaded(lost)).toBe(false);
+    const lostSecs = JSON.stringify(exportBook(lost).sections);
+    for (const [desk, secs] of [[own, ownSecs], [lost, lostSecs]] as const) {
+      const sample = open(sampleArrival(c, desk, deskIsUntouchedSample(c, desk)));
+      setSampleRecord(sample, sampleSigOf(c, sample));
+      expect(deskIsUntouchedSample(c, sample)).toBe(true); // Remove would not ask
+      const empty = open(emptyAfterSample(c, sample));
+      const kept = live(c, empty).state.history.filter((h) => h.auto === 'sample');
+      expect(kept.length).toBe(1);
+      expect(JSON.stringify(kept[0]!.doc.sections)).toBe(secs);
+    }
+    // the edited copy is recoverable whole from that snapshot
+    const sample = open(sampleArrival(c, lost, false));
+    const empty = open(emptyAfterSample(c, sample));
+    const snap = live(c, empty).state.history.find((h) => h.auto === 'sample')!;
+    expect((snap.doc.meta as Rec).publisher).toBe('Edited after the record was lost');
+  });
+});
+
 /* ---- in the studio ---- */
 
 const backupFile = (book: unknown) => new File([JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: '2026-10-31T00:00:00.000Z', book })], 'a.beuk-backup.json', { type: 'application/json' });
@@ -219,6 +266,11 @@ const strip = (x: Rec) => {
   delete o.importReport;
   return o;
 };
+/** The open book's Y.Doc, reached through the open chapter editor's collaboration binding. */
+const openYdoc = (): Y.Doc => {
+  const ed = (document.getElementById('manuscript') as unknown as { beukEditor: { extensionManager: { extensions: { name: string; options: { fragment?: Y.XmlFragment } }[] } } }).beukEditor;
+  return ed.extensionManager.extensions.find((e) => e.name === 'collaboration')!.options.fragment!.doc!;
+};
 const btn = () => document.getElementById('btnSampleStory')!;
 const title = () => document.getElementById('projectTitleDisplay')!.textContent;
 const words = () => document.getElementById('statWords')!.textContent;
@@ -239,7 +291,8 @@ describe('the sample bar in the studio', () => {
     expect(document.getElementById('sampleNote')!.textContent).toBe(E['side.sampleNoteLoaded']!.replace('{n}', c.api.SAMPLE_WORDS.toLocaleString('en')));
     expect(document.getElementById('toasts')!.textContent).toContain('Sample story loaded');
     expect(document.getElementById('btnNewBook')).toBeNull(); // the sample keeps its own Remove
-    expect(JSON.parse(localStorage.getItem(SAMPLE_KEY)!).books[c.api.SAMPLE_BOOK_ID]).toBeTruthy();
+    expect(sampleRecord(openYdoc())?.sig).toBeTruthy(); // the record lives in the book's own Y.Doc
+    expect(Object.keys(localStorage).some((k) => k.includes('sample'))).toBe(false);
     // the pictures arrive and fill in; the sample stays untouched
     await waitFor(async () => expect(samplePicsMissing(c, await exported())).toBe(0), { timeout: 20_000 });
     const loaded = await exported();
@@ -260,7 +313,7 @@ describe('the sample bar in the studio', () => {
       expect(names.some((n) => n.includes(c.api.SAMPLE_BOOK_ID))).toBe(false);
     });
     expect(readRegistry().books.some((b) => b.id === c.api.SAMPLE_BOOK_ID)).toBe(false);
-    expect(localStorage.getItem(SAMPLE_KEY)!.includes(c.api.SAMPLE_BOOK_ID)).toBe(false);
+    expect(sampleRecord(openYdoc())).toBeNull();
     // the empty desk reports nothing (sample.empty-desk.no-figures, the sidebar half)
     for (const id of ['progFrontPct', 'progBodyPct', 'progBackPct']) expect(document.getElementById(id)!.textContent).toBe('0%');
     // Load again lands the same count
@@ -270,6 +323,27 @@ describe('the sample bar in the studio', () => {
     await waitFor(() => expect(title()).toBe('The Lantern Coast'), { timeout: 20_000 });
     await waitFor(() => expect(words()).toBe(c.api.SAMPLE_WORDS.toLocaleString('en')), { timeout: 10_000 });
     expect(JSON.stringify(strip(await exported()).sections)).toBe(JSON.stringify(strip(loaded).sections));
+  }, 120_000);
+
+  it('fix round 1: a sample whose fingerprint is unknown reads as edited — Remove asks first', async () => {
+    await studio();
+    await act(async () => {
+      fireEvent.click(btn());
+    });
+    await waitFor(() => expect(title()).toBe('The Lantern Coast'), { timeout: 20_000 });
+    await waitFor(() => expect(document.querySelector('#manuscript .ms-editor')).not.toBeNull(), { timeout: 20_000 });
+    await act(async () => {
+      setSampleRecord(openYdoc(), null);
+    });
+    await act(async () => {
+      fireEvent.click(btn());
+    });
+    await waitFor(() => expect(document.getElementById('modalConfirm')).not.toBeNull());
+    expect(document.getElementById('confirmTitle')!.textContent).toBe(E['sample.confirmRemoveTitle']);
+    await act(async () => {
+      fireEvent.click(document.getElementById('btnConfirmNo')!);
+    });
+    expect(title()).toBe('The Lantern Coast');
   }, 120_000);
 
   it('Load over the writer\'s book asks first (1.0\'s keys); Yes replaces; History gives the book back exactly (history.restore.snapshot-always, the sample half); an edited sample asks before Remove', async () => {

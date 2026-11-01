@@ -209,6 +209,19 @@ const DELIM_RANK: Record<string, number> = Object.fromEntries(DELIMITED_MARKS.ma
 const openOf = (m: Mark): string => (m.type.name === 'link' ? '[' : m.type.name === 'em' ? '*' : '**');
 const closeOf = (m: Mark): string => (m.type.name === 'link' ? '](' + String(m.attrs.href) + ')' : m.type.name === 'em' ? '*' : '**');
 
+/** The order in which the delimited marks `open` (all opening at child j of `kids`) are written: the mark that runs
+ *  longest opens first (it encloses the others); on a tie, link, then em, then strong. ONE function, shared by inlineText
+ *  and positions.ts, so the text and the offsets can never disagree. Returns a new array. */
+export function openingOrder(kids: readonly Node[], j: number, open: readonly Mark[]): Mark[] {
+  const out = [...open];
+  if (out.length > 1) {
+    const run = (m: Mark): number => { let x = j; while (x < kids.length && m.isInSet(kids[x]!.marks)) x++; return x - j; };
+    const len = new Map(out.map((m) => [m, run(m)]));
+    out.sort((p, q) => len.get(q)! - len.get(p)! || DELIM_RANK[p.type.name]! - DELIM_RANK[q.type.name]!);
+  }
+  return out;
+}
+
 /** A textblock's inline content as source: text verbatim, em/strong/link delimiters written where their marks open and close. */
 export function inlineText(node: Node): string {
   const kids: Node[] = [];
@@ -222,13 +235,7 @@ export function inlineText(node: Node): string {
     while (k < stack.length && stack[k]!.isInSet(ms)) k++;
     for (let t = stack.length - 1; t >= k; t--) out += closeOf(stack[t]!);
     stack.length = k;
-    const open = ms.filter((m) => !m.isInSet(stack));
-    if (open.length > 1) {
-      // the mark that runs longest opens first (it encloses the others); on a tie, link, then em, then strong
-      const run = (m: Mark): number => { let x = j; while (x < kids.length && m.isInSet(kids[x]!.marks)) x++; return x - j; };
-      const len = new Map(open.map((m) => [m, run(m)]));
-      open.sort((p, q) => len.get(q)! - len.get(p)! || DELIM_RANK[p.type.name]! - DELIM_RANK[q.type.name]!);
-    }
+    const open = openingOrder(kids, j, ms.filter((m) => !m.isInSet(stack)));
     for (const m of open) { out += openOf(m); stack.push(m); }
     out += kid.isText ? kid.text! : '';
   }

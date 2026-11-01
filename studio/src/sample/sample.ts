@@ -23,50 +23,36 @@ import { live, snapshotDoc, takeSnapshot, writeHistory, type Live } from '../his
    check), exactly like opening a backup.
 
    Where 1.0 keeps "the sample is loaded" (sampleState: loaded and the
-   loaded fingerprint, saved beside its local book record), 2.0 keeps a
-   per-device record keyed by the book's id (SAMPLE_KEY), holding a hash of
-   the fingerprint. */
+   loaded fingerprint, saved beside its local book record), 2.0 keeps the
+   record INSIDE the book's own Y.Doc, in a map exportBook never reads
+   (SAMPLE_MAP): it is stored in the book's own generation (y-indexeddb), so
+   it lives and dies with the book — never in localStorage, where it could be
+   lost while the book stays (fix round 1). A new generation (a backup, a
+   restore) starts without it, as 1.0's localApplyBackup clears the flag.
+   Fail safe: a record whose fingerprint is missing or unreadable reads as
+   an EDITED sample, so Remove asks first. */
 
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
-export const SAMPLE_KEY = 'beuk.next.sample.v1';
+/** The Y map (beside meta / sections / layout) holding this device's notes about the book; exportBook never writes it. */
+export const SAMPLE_MAP = 'next.device';
 /** Where 1.0's sample pictures are served (1.0: assets/sample/ beside /studio). */
 export const SAMPLE_PIC_DIR = '/assets/sample/';
 
 /* ---- the "sample is loaded" record ---- */
 
-type Records = Record<string, { sig: string }>;
-function readRecords(): Records {
-  try {
-    const raw = globalThis.localStorage?.getItem(SAMPLE_KEY);
-    const v = raw ? (JSON.parse(raw) as unknown) : null;
-    if (!isRec(v) || v.v !== 1 || !isRec(v.books)) return {};
-    const out: Records = {};
-    for (const [k, r] of Object.entries(v.books)) if (isRec(r) && typeof r.sig === 'string') out[k] = { sig: r.sig };
-    return out;
-  } catch {
-    return {};
-  }
+/** The record: absent = not the sample; present = loaded, with the fingerprint's hash (null: unknown → edited). */
+export function sampleRecord(ydoc: Y.Doc | null): { sig: string | null } | null {
+  if (!ydoc) return null;
+  const v = ydoc.getMap<unknown>(SAMPLE_MAP).get('sample');
+  if (v === undefined) return null;
+  return { sig: isRec(v) && typeof v.sig === 'string' && v.sig ? v.sig : null };
 }
-function writeRecords(r: Records): void {
-  try {
-    globalThis.localStorage?.setItem(SAMPLE_KEY, JSON.stringify({ v: 1, books: r }));
-  } catch {
-    /* blocked or full: the sample then reads as edited (Remove asks first), which loses nothing */
-  }
-}
-export const sampleRecord = (bookId: string | null): { sig: string } | null => (bookId ? readRecords()[bookId] ?? null : null);
-export function setSampleRecord(bookId: string, sig: string): void {
-  writeRecords({ ...readRecords(), [bookId]: { sig } });
-}
-export function clearSampleRecord(bookId: string | null): void {
-  if (!bookId) return;
-  const r = readRecords();
-  if (!(bookId in r)) return;
-  delete r[bookId];
-  writeRecords(r);
+/** Mark the book as the loaded sample. `sig` null (the fingerprint could not be taken) reads as edited. */
+export function setSampleRecord(ydoc: Y.Doc, sig: string | null): void {
+  ydoc.getMap<unknown>(SAMPLE_MAP).set('sample', { sig });
 }
 
 /** A 106-bit string hash (two 53-bit lanes): the fingerprint is compared, never stored whole. */
@@ -113,17 +99,17 @@ export function sampleComparable(c: Closure, book: Rec): string {
 }
 export const sampleSigOf = (c: Closure, ydoc: Y.Doc): string => hashText(sampleComparable(c, exportBook(ydoc)));
 
-const bookIdOfDoc = (ydoc: Y.Doc): string | null => {
-  const m = ydoc.getMap<unknown>(META).get('meta');
-  return isRec(m) && typeof m.bookId === 'string' ? m.bookId : null;
-};
 /** 1.0's sampleState.loaded for the open book. */
-export const sampleLoaded = (ydoc: Y.Doc | null): boolean => !!ydoc && !!sampleRecord(bookIdOfDoc(ydoc));
-/** 1.0's deskIsUntouchedSample. */
+export const sampleLoaded = (ydoc: Y.Doc | null): boolean => !!sampleRecord(ydoc);
+/** 1.0's deskIsUntouchedSample: loaded, and the fingerprint known and unchanged (anything else reads as edited). */
 export function deskIsUntouchedSample(c: Closure, ydoc: Y.Doc | null): boolean {
-  if (!ydoc) return false;
-  const r = sampleRecord(bookIdOfDoc(ydoc));
-  return !!r && sampleSigOf(c, ydoc) === r.sig;
+  const r = sampleRecord(ydoc);
+  if (!r || !r.sig) return false;
+  try {
+    return sampleSigOf(c, ydoc!) === r.sig;
+  } catch {
+    return false;
+  }
 }
 /** 1.0's isEmptyDesk for the open book (no book open: an empty desk). */
 export function deskEmpty(c: Closure, ydoc: Y.Doc | null): boolean {
@@ -217,10 +203,13 @@ export function sampleArrival(c: Closure, ydoc: Y.Doc | null, untouchedSample: b
 }
 
 /** 1.0's clearDeskToEmpty, as a book document: the empty book, the desk's History kept but not the sample's own draft
- *  snapshot nor any snapshot of the sample itself (BEUK:remnants). No snapshot is taken. */
+ *  snapshot nor any snapshot of the sample itself (BEUK:remnants). No snapshot is taken.
+ *  Fix round 1: a "sample" snapshot (auto kind `sample`: the desk as it stood before the sample was loaded over it) is
+ *  ALWAYS kept, whatever book id it carries — it may be the writer's only copy of a book that carried the sample's id. */
 export function emptyAfterSample(c: Closure, ydoc: Y.Doc): Rec {
   const L = live(c, ydoc);
   const isSample = (s: HistoryEntry): boolean => {
+    if (s.auto === 'sample') return false;
     const id = isRec(s.doc?.meta) ? s.doc.meta.bookId : null;
     return !!id && (c.api.isSampleBookId(id) || id === c.api.LEGACY_SAMPLE_BOOK_ID);
   };

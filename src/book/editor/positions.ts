@@ -1,4 +1,5 @@
 import { type Mark, type Node } from 'prosemirror-model';
+import { openingOrder } from './convert.js';
 import { DELIMITED_MARKS } from './schema.js';
 
 /* BEUK:editor-positions — text offsets <-> ProseMirror positions (step 5
@@ -82,7 +83,8 @@ function walkInline(node: Node, pos: number, at: number, t: Table): number {
     for (let x = stack.length - 1; x >= k; x--) at += closeOf(stack[x]!).length;
     stack.length = k;
     t.off[p] = at; t.text[p] = 1; // the boundary before this child: closes counted, opens not
-    for (const m of ms) if (!m.isInSet(stack)) { at += openOf(m).length; stack.push(m); }
+    // opened in exactly inlineText's order (convert.ts openingOrder): a different order closes and reopens differently
+    for (const m of openingOrder(kids, j, ms.filter((x) => !x.isInSet(stack)))) { at += openOf(m).length; stack.push(m); }
     const len = kid.isText ? kid.text!.length : kid.nodeSize;
     // inside a text node, character c sits at at + c; position p + c (c >= 1) is between characters
     for (let c = 1; c < len; c++) { t.off[p + c] = at + c; t.text[p + c] = 1; }

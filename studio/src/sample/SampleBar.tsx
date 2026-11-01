@@ -9,7 +9,7 @@ import { useConfirm } from '../shell/Dialog';
 import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import {
-  clearSampleRecord, deskEmpty, deskIsUntouchedSample, emptyAfterSample, ensureSamplePictures, fillSamplePictures, newBookArrival,
+  deskEmpty, deskIsUntouchedSample, emptyAfterSample, ensureSamplePictures, fillSamplePictures, newBookArrival,
   sampleArrival, sampleLoaded, samplePicsMissing, sampleShippedWords, sampleSigOf, setSampleRecord,
 } from './sample';
 
@@ -93,7 +93,13 @@ export function SampleBar() {
       if (from && !bk.isLive(from)) toast(t('next.bookReplaced'), 'Info');
       return;
     }
-    setSampleRecord(b.id, sampleSigOf(c, b.ydoc));
+    let sig: string | null = null;
+    try {
+      sig = sampleSigOf(c, b.ydoc);
+    } catch {
+      sig = null; // unknown: the sample reads as edited, Remove asks first
+    }
+    setSampleRecord(b.ydoc, sig);
     const { state } = bookState(c, b.ydoc);
     c.setState(state);
     toast(t('toast.sampleLoaded', { words: fmtNum(c.api.bookWordTotal(), lang), chapters: state.sections.filter((x) => x.type === 'chapter').length }), 'BookOpen');
@@ -112,7 +118,6 @@ export function SampleBar() {
     const doc = emptyAfterSample(c, from);
     const b = await bk.replaceWith(doc, from);
     if (!b) return;
-    clearSampleRecord(sampleId);
     void forgetBook(sampleId); // nothing of the sample stays behind on this device (BEUK:remnants)
     toast(t('toast.sampleRemoved'), 'BookX');
   };

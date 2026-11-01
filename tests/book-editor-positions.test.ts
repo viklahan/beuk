@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import type { Node } from 'prosemirror-model';
 import { fixturePath } from './book-fixtures.js';
 import { toDoc, toText } from '../src/book/editor/convert.js';
+import { bookSchema as S } from '../src/book/editor/schema.js';
 import { posToTextOffset, textOffsetToPos } from '../src/book/editor/positions.js';
 
 /* BEUK:editor-positions — text offsets <-> ProseMirror positions, defined
@@ -142,4 +143,93 @@ test('positions: the documented cases', () => {
   assert.equal(posToTextOffset(a, 0), 0);
   assert.equal(posToTextOffset(a, 1), 3);
   assert.equal(textOffsetToPos(a, 2), 0);
+});
+
+/* ---- fix round 1: nested marks (several opening on one character) ----
+   inlineText opens the longest-running mark first; positions.ts must open them in the very same order (one shared
+   function, convert.ts openingOrder), or the offsets drift by the delimiters closed and reopened. */
+
+const nested = ['***x* y**', '***x** y*', '**_x_ y**', '*[**a b**](https://e.x/a) c*', '[*a* **b c**](https://e.x/b) d', '**[a](https://e.x/a) *b***', 'p ***q*** r *s **t** u* v'];
+
+test('positions: nested marks, every offset (fix round 1)', () => {
+  for (const [i, text] of nested.entries()) {
+    const doc = toDoc(text);
+    assert.equal(toText(doc), text);
+    check(`nested ${i} ${JSON.stringify(text)}`, text, 1);
+  }
+  // the reported case: bold "x y" with italic "x" writes "***x* y**", 9 characters, and the block ends at 9
+  const d = S.node('doc', null, [S.node('paragraph', null, [
+    S.text('x', [S.marks.em!.create(), S.marks.strong!.create()]), S.text(' y', [S.marks.strong!.create()]),
+  ])]);
+  assert.equal(toText(d), '***x* y**');
+  assert.equal(posToTextOffset(d, d.child(0).nodeSize - 1), 9);
+  assert.equal(posToTextOffset(d, 2), 5); // after "x": the em closed, the strong still open
+});
+
+/* A seeded random doc: paragraphs of short letter runs, each under a random set of em / strong / link marks. */
+function rng(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function randomDoc(r: () => number): Node {
+  const hrefs = ['https://e.x/a', 'https://e.x/b'];
+  const paras: Node[] = [];
+  const np = 1 + Math.floor(r() * 3);
+  for (let p = 0; p < np; p++) {
+    const runs: Node[] = [];
+    const nr = 1 + Math.floor(r() * 6);
+    for (let k = 0; k < nr; k++) {
+      let t = '';
+      const len = 1 + Math.floor(r() * 4);
+      for (let c = 0; c < len; c++) t += 'abcd e'[Math.floor(r() * 6)];
+      const ms = [];
+      if (r() < 0.45) ms.push(S.marks.em!.create());
+      if (r() < 0.45) ms.push(S.marks.strong!.create());
+      if (r() < 0.3) ms.push(S.marks.link!.create({ href: hrefs[Math.floor(r() * 2)] }));
+      runs.push(S.text(t, ms));
+    }
+    paras.push(S.node('paragraph', null, runs));
+  }
+  return S.node('doc', null, paras);
+}
+/** Trailing closing delimiters ("*", "**", "](href)") of a text that ends inside a run of letters. */
+const stripClosers = (s: string): string => s.replace(/(?:\*|\]\([^)]*\))+$/, '');
+
+test('positions: random marked documents, checked against toText of the document cut at each position (fix round 1)', () => {
+  const r = rng(20261031);
+  let blocks = 0, inner = 0, bounds = 0;
+  for (let n = 0; n < 400; n++) {
+    const doc = randomDoc(r);
+    const T = toText(doc);
+    doc.forEach((para, pos) => {
+      // the end of each block: the cut document's text is exactly the text up to there
+      const end = pos + para.nodeSize - 1;
+      assert.equal(posToTextOffset(doc, end), toText(doc.cut(0, end)).length, `${JSON.stringify(T)}: end of block at ${end}`);
+      blocks++;
+      para.forEach((kid, off) => {
+        const start = pos + 1 + off;
+        // inside a text node: the cut text, less the closers the cut adds, is the text before that character
+        for (let c = 1; c < kid.text!.length; c++) {
+          const L = toText(doc.cut(0, start + c));
+          assert.equal(posToTextOffset(doc, start + c), stripClosers(L).length, `${JSON.stringify(T)}: inside a run at ${start + c}`);
+          // (only the LENGTH is compared: in the cut document a run may be shorter, so marks opening together can open
+          // in another order there — the same delimiters, the same count of characters)
+          inner++;
+        }
+        // a run boundary: at or after the plain text before it, only closing delimiters in between, then openers and the run
+        const base = stripClosers(toText(doc.cut(0, start))).length;
+        const o = posToTextOffset(doc, start);
+        assert.ok(o >= base && /^(?:\*|\]\([^)]*\))*$/.test(T.slice(base, o)), `${JSON.stringify(T)}: boundary at ${start}: ${o} vs ${base}`);
+        assert.ok(T.slice(o).replace(/^(?:\*|\[)*/, '').startsWith(kid.text!), `${JSON.stringify(T)}: boundary at ${start} is followed by its run`);
+        bounds++;
+      });
+    });
+  }
+  assert.ok(blocks > 500 && inner > 1000 && bounds > 1000, `${blocks} block ends, ${inner} inner and ${bounds} boundary positions checked`);
 });

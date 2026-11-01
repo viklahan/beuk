@@ -5,7 +5,7 @@ import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
 import { loadClosure } from '../closure/index';
 import { backupArrival, live } from '../history/history';
-import { clearSampleRecord, deskIsUntouchedSample } from '../sample/sample';
+import { deskIsUntouchedSample } from '../sample/sample';
 import { useConfirm } from '../shell/Dialog';
 import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -243,7 +243,7 @@ export function BookProvider({ children }: { children: ReactNode }) {
       }
       try {
         const b = await replace(doc);
-        clearSampleRecord(b.id); // 1.0's localApplyBackup: sampleState.loaded = false
+        // 1.0's localApplyBackup clears sampleState.loaded: the new generation starts without the sample record
         // 1.0's localApplyBackup: state.meta.title || "Untitled Book"
         toast(t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') }), 'HardDrive');
       } catch (e) {
