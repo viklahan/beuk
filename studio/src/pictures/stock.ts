@@ -17,8 +17,10 @@ import { stockUrls } from './scene';
      addresses in order even when the policy refuses one (a violation,
      then the next); 2.0 tries and shows only the addresses the policy
      allows, so it never causes a violation (the CSP is not widened).
-   - A pick downloads the picture and checks its bytes are a picture (2.0's
-     check; 1.0 trusts the download's type) before it joins the library. */
+   - A pick downloads the picture and checks its bytes are a JPEG or a PNG,
+     1.0's upload types (2.0's check; 1.0 trusts the download's type), and
+     stores the type the bytes are; anything else is refused with 1.0's
+     covermk.photoFail. */
 
 /** The origins the served policy allows for img-src and connect-src beyond 'self' (Caddyfile). */
 export const STOCK_ORIGINS = ['https://images.pexels.com', 'https://api.openverse.org'];
@@ -108,7 +110,7 @@ export async function stockSearch(c: ClosureApi, query: string, fetcher: typeof 
 }
 
 /** 1.0's scenePickStock download: the addresses in its order (only those the policy allows), the first that answers;
- *  the bytes must be a picture. Null: 1.0's covermk.photoFail. */
+ *  the bytes must be a JPEG or a PNG, and `type` is what they are. Null: 1.0's covermk.photoFail. */
 export async function stockDownload(ph: StockPhoto, fetcher: typeof fetch = globalThis.fetch.bind(globalThis)): Promise<{ type: string; data: string } | null> {
   const urls = stockUrls(ph).filter(allowedStockUrl);
   for (const u of urls) {
@@ -117,8 +119,10 @@ export async function stockDownload(ph: StockPhoto, fetcher: typeof fetch = glob
       if (!r.ok) throw new Error('img ' + r.status);
       const blob = await r.blob();
       const data = bytesToBase64(new Uint8Array(await blob.arrayBuffer()));
-      if (!sniffPicture(data, blob.type)) return null;
-      return { type: blob.type, data };
+      // only 1.0's picture types (JPG, PNG: its upload rule), typed by the bytes themselves (fix round 1)
+      const kind = sniffPicture(data);
+      if (kind !== 'image/jpeg' && kind !== 'image/png') return null;
+      return { type: kind, data };
     } catch {
       /* the next rendition */
     }

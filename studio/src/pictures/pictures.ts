@@ -38,18 +38,52 @@ export type PictureKind = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp
 export const SHOW_MAX_PIXELS = 64_000_000;
 const B64 = /^[A-Za-z0-9+/]*={0,2}$/;
 
-/** The first `n` bytes a base64 string holds (no more is decoded). */
-function headBytes(data: string, n: number): Uint8Array {
-  const take = Math.min(data.length, Math.ceil(n / 3) * 4);
+/** The `n` bytes a base64 string holds from byte `start` on (only the 4-character groups covering them are decoded;
+ *  fewer at the end of the data). */
+function bytesAt(data: string, start: number, n: number): Uint8Array {
+  const g0 = Math.floor(start / 3);
+  const g1 = Math.ceil((start + n) / 3);
   let bin = '';
   try {
-    bin = atob(data.slice(0, take));
+    bin = atob(data.slice(g0 * 4, Math.min(data.length, g1 * 4)));
   } catch {
     return new Uint8Array(0);
   }
-  const out = new Uint8Array(Math.min(n, bin.length));
-  for (let i = 0; i < out.length; i++) out[i] = bin.charCodeAt(i);
+  const off = start - g0 * 3;
+  const out = new Uint8Array(Math.max(0, Math.min(n, bin.length - off)));
+  for (let i = 0; i < out.length; i++) out[i] = bin.charCodeAt(off + i);
   return out;
+}
+const headBytes = (data: string, n: number): Uint8Array => bytesAt(data, 0, n);
+/** How many bytes a (padded) base64 string holds. */
+const byteLength = (data: string): number => (data.length / 4) * 3 - (data.endsWith('==') ? 2 : data.endsWith('=') ? 1 : 0);
+
+/** A JPEG's stated size from its first frame header (SOF), walking the segment lengths over the WHOLE data (fix round
+ *  1: EXIF, XMP, ICC or Photoshop blocks can put the frame header far past the first kilobytes), reading only the few
+ *  bytes of each segment's header. Null when the walk breaks or meets the image data before any frame header. */
+function jpegPixels(data: string): number | null {
+  const total = byteLength(data);
+  let i = 2;
+  for (let guard = 0; guard < 100_000 && i + 4 <= total; guard++) {
+    const h = bytesAt(data, i, 9);
+    if (h.length < 4 || h[0] !== 0xff) return null;
+    const m = h[1]!;
+    if (m === 0xff) {
+      i += 1; // fill byte before a marker
+      continue;
+    }
+    if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) {
+      i += 2;
+      continue;
+    }
+    if (m === 0xd9 || m === 0xda) return null; // end of image, or the scan: no frame header before it
+    // SOF0..SOF15, less DHT (C4), JPG (C8), DAC (CC)
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return h.length >= 9 ? be16(h, 5) * be16(h, 7) : null;
+    const len = be16(h, 2);
+    if (len < 2) return null;
+    i += 2 + len;
+  }
+  return null;
 }
 
 const be16 = (b: Uint8Array, i: number) => (b[i]! << 8) | b[i + 1]!;
@@ -57,9 +91,8 @@ const be32 = (b: Uint8Array, i: number) => ((b[i]! << 24) >>> 0) + (b[i + 1]! <<
 const le16 = (b: Uint8Array, i: number) => b[i]! | (b[i + 1]! << 8);
 const le24 = (b: Uint8Array, i: number) => b[i]! | (b[i + 1]! << 8) | (b[i + 2]! << 16);
 
-/** A raster picture's stated size (width × height) from its header, or null when the header does not say (JPEG: the
- *  first frame header within the first 64 kB). */
-function statedPixels(kind: PictureKind, b: Uint8Array): number | null {
+/** A raster picture's stated size (width × height) from its header, or null when the header does not say. */
+function statedPixels(kind: PictureKind, b: Uint8Array, data: string): number | null {
   if (kind === 'image/png') return b.length >= 24 ? be32(b, 16) * be32(b, 20) : null;
   if (kind === 'image/gif') return b.length >= 10 ? le16(b, 6) * le16(b, 8) : null;
   if (kind === 'image/webp') {
@@ -72,29 +105,14 @@ function statedPixels(kind: PictureKind, b: Uint8Array): number | null {
     }
     return null;
   }
-  if (kind === 'image/jpeg') {
-    let i = 2;
-    while (i + 9 < b.length) {
-      if (b[i] !== 0xff) return null;
-      const m = b[i + 1]!;
-      if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) {
-        i += 2;
-        continue;
-      }
-      const len = be16(b, i + 2);
-      // SOF0..SOF15, less DHT (C4), JPG (C8), DAC (CC)
-      if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return be16(b, i + 5) * be16(b, i + 7);
-      i += 2 + len;
-    }
-    return null;
-  }
+  if (kind === 'image/jpeg') return jpegPixels(data);
   return null;
 }
 
 /** What the bytes are, when they are one of the picture kinds 2.0 shows; null otherwise. */
 export function sniffPicture(data: unknown, mediaType?: unknown): PictureKind | null {
   if (typeof data !== 'string' || data.length < 8 || data.length % 4 !== 0 || !B64.test(data)) return null;
-  const b = headBytes(data, 64 * 1024);
+  const b = headBytes(data, 1024);
   let kind: PictureKind | null = null;
   if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) kind = 'image/jpeg';
   else if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) kind = 'image/png';
@@ -107,7 +125,7 @@ export function sniffPicture(data: unknown, mediaType?: unknown): PictureKind | 
   }
   if (!kind) return null;
   if (kind !== 'image/svg+xml') {
-    const px = statedPixels(kind, b);
+    const px = statedPixels(kind, b, data);
     if (px === null || !(px > 0) || px > SHOW_MAX_PIXELS) return null;
   }
   return kind;

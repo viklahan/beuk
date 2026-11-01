@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type * as Y from 'yjs';
-import { loadClosure, type BookImage, type Closure } from '../closure/index';
+import { loadClosure, type BookImage, type Closure, type ImageUse } from '../closure/index';
 import { useBook } from '../book/BookProvider';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Dialog } from '../shell/Dialog';
@@ -98,11 +98,11 @@ export const libSize = (c: Closure, n: number): string => c.api.imglibSize(n);
 /** The removal actions with their confirm and toasts (1.0's imglibRequestDelete, imglibRemoveWithToast, imglibCleanup,
  *  imglibToast, imglibFocusLibrary, imglibCloseConfirm). `focusTo`: where focus lands after a removal (the library's
  *  first picture, else its Upload button), as 1.0's imglibFocusLibrary does for the Insert Image dialog. */
-export function useLibraryActions(ydoc: Y.Doc | null, lib: { c: Closure | null; view: LibraryView | null; refresh: () => void }, focusTo?: () => HTMLElement | null) {
+export function useLibraryActions(ydoc: Y.Doc | null, lib: { c: Closure | null; view: LibraryView | null; refresh: () => void }, focusTo?: () => HTMLElement | null, onRemoved?: (ids: string[]) => void) {
   const { t } = useLocale();
   const toast = useToast();
   const bk = useBook();
-  const [pending, setPending] = useState<{ id: string; opener: HTMLElement | null } | null>(null);
+  const [pending, setPending] = useState<{ id: string; opener: HTMLElement | null; im: BookImage; uses: ImageUse[] } | null>(null);
   const live = useRef(bk.isLive);
   live.current = bk.isLive;
 
@@ -121,7 +121,8 @@ export function useLibraryActions(ydoc: Y.Doc | null, lib: { c: Closure | null; 
     const c = lib.c;
     if (!c || !ydoc || !live.current(ydoc)) return null;
     const rec = removePictures(c, ydoc, ids);
-    if (!rec) return null;
+    if (!rec) return null; // 1.0's imglibRemoveWithToast: nothing removed, no toast
+    onRemoved?.(rec.ids); // 1.0's imglibRemove clears the pickers' choice (imgSelId, scenePending.imageId)
     undoToast(c, rec, cleanup ? t('imglib.cleanupToast', { n: rec.ids.length, size: c.api.imglibSize(rec.bytes) }) : t(rec.used ? 'imglib.removedEverywhere' : 'imglib.removed'));
     lib.refresh();
     // the control that started it is gone with its cell (after React draws the library again)
@@ -134,10 +135,15 @@ export function useLibraryActions(ydoc: Y.Doc | null, lib: { c: Closure | null; 
       }
     });
     return rec;
-  }, [lib, ydoc, t, undoToast, focusTo]);
+  }, [lib, ydoc, t, undoToast, focusTo, onRemoved]);
+
+  /* The book as it stands NOW (fix round 1): the drawn view is re-read only 120 ms after the last change, so a use
+     added a moment ago (another tab, a collaborator) may not be in it yet. 1.0 reads imageUsage / imglibUnused at the
+     click; so does 2.0. */
+  const fresh = useCallback((): LibraryView | null => (lib.c && ydoc ? libraryView(lib.c, ydoc) : null), [lib.c, ydoc]);
 
   const requestDelete = useCallback((id: string, opener: HTMLElement | null) => {
-    const v = lib.view;
+    const v = fresh();
     const im = v?.images.find((x) => x.id === id);
     if (!v || !im || v.sample.has(id)) return;
     const uses = v.usage[id] ?? [];
@@ -145,13 +151,13 @@ export function useLibraryActions(ydoc: Y.Doc | null, lib: { c: Closure | null; 
       removeWithToast([id], false);
       return;
     }
-    setPending({ id, opener });
-  }, [lib.view, removeWithToast]);
+    setPending({ id, opener, im, uses });
+  }, [fresh, removeWithToast]);
 
   const cleanup = useCallback(() => {
-    const ids = (lib.view?.unused ?? []).map((im) => im.id);
+    const ids = (fresh()?.unused ?? []).map((im) => im.id);
     return ids.length ? removeWithToast(ids, true) : null;
-  }, [lib.view, removeWithToast]);
+  }, [fresh, removeWithToast]);
 
   const close = (removed: boolean) => {
     const op = pending?.opener ?? null;
@@ -165,11 +171,11 @@ export function useLibraryActions(ydoc: Y.Doc | null, lib: { c: Closure | null; 
     }
   };
 
-  const confirm = pending && lib.c && lib.view ? (
+  const confirm = pending && lib.c ? (
     <RemoveConfirm
       c={lib.c}
-      im={lib.view.images.find((x) => x.id === pending.id) ?? null}
-      uses={lib.view.usage[pending.id] ?? []}
+      im={pending.im}
+      uses={pending.uses}
       onCancel={() => close(false)}
       onYes={() => {
         const id = pending.id;

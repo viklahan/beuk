@@ -46,14 +46,23 @@ export function ImageDialog({ ydoc, editor, onClose }: { ydoc: Y.Doc; editor: Ed
     Object.assign(form, patch);
     bump((n) => n + 1);
   };
-  const actions = useLibraryActions(ydoc, lib, () => grid.current?.querySelector<HTMLElement>('.img-cell') ?? upload.current);
+  // 1.0's imglibRemove: a removed picture that was the choice leaves no choice (imgSelId = null), Insert disabled
+  const actions = useLibraryActions(ydoc, lib, () => grid.current?.querySelector<HTMLElement>('.img-cell') ?? upload.current, (ids) => {
+    if (form.sel && ids.includes(form.sel)) set({ sel: null });
+  });
+  const opened = useRef(false);
 
   const c = lib.c;
   const view = lib.view;
-  // 1.0's openImageModal: a chosen picture that left the library gives way to the newest one
   const images = view?.images ?? [];
   const byId = (id: string | null) => images.find((im) => im.id === id) ?? null;
-  if (view && !byId(form.sel)) form.sel = images.length ? images[images.length - 1]!.id : null;
+  // 1.0's openImageModal, ONCE as the dialog opens (fix round 1): a chosen picture that left the library gives way to
+  // the newest one. Never again while it stays open: after a removal the choice stays empty (1.0), and an upload's
+  // choice holds until the library re-read shows its picture.
+  if (view && !opened.current) {
+    opened.current = true;
+    if (!byId(form.sel)) form.sel = images.length ? images[images.length - 1]!.id : null;
+  }
   const sel = byId(form.sel);
 
   const pick = (id: string) => {

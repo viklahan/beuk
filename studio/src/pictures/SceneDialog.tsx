@@ -29,7 +29,8 @@ export function SceneDialog({ c, ydoc, sectionId, at, onClose }: Props) {
   const file = useRef<HTMLInputElement>(null);
   const altEl = useRef<HTMLInputElement>(null);
   const queryEl = useRef<HTMLInputElement>(null);
-  const actions = useLibraryActions(ydoc, lib);
+  // 1.0's imglibRemove clears scenePending.imageId when that picture is removed
+  const actions = useLibraryActions(ydoc, lib, undefined, (ids) => setImageId((cur) => (cur && ids.includes(cur) ? null : cur)));
   // 1.0's openScenePicker: scenePending and the fields from the break's entry
   const [init] = useState(() => {
     const s = { scenes: sectionKey(sectionMapById(ydoc, sectionId), 'scenes') };

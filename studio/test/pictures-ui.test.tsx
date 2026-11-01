@@ -256,6 +256,49 @@ describe('pictures in the studio (A6–A8)', { timeout: 60_000 }, () => {
     expect(noHist(await exported())).toEqual(before);
   });
 
+  it('fix round 1: a use added a moment ago (inside the view's 120 ms re-read) is seen at the click: cleanup keeps it, its delete asks first', async () => {
+    await openStudio(BOOK((b) => b.images.push(im('ilK', 'unused-K.png', btoa('imglib-unused-K')), im('ilL', 'unused-L.png', btoa('imglib-unused-L')))));
+    await openImageDialog();
+    expect($('btnImgCleanup').textContent).toContain('(4 ·'); // the drawn view: scimg2, scimg3, ilK, ilL unused
+    // in one step, before the dialog's view is re-read: ilK becomes this chapter's plate, then cleanup
+    await act(async () => {
+      fireEvent.change($('chPlate'), { target: { value: 'ilK' } });
+      fireEvent.click($('btnImgCleanup'));
+    });
+    let b = await exported();
+    expect((b.images as Rec[]).map((x) => x.id)).toEqual(['scimg1', 'ilK']);
+    expect((b.sections as Rec[])[0]!.plateId).toBe('ilK');
+    await click([...document.querySelectorAll('#toasts .toast-action')].pop()!); // Undo the cleanup
+    // in one step: ilL becomes the backdrop, then its delete control: the "used in" confirm, not a silent removal
+    await act(async () => {
+      fireEvent.change($('chBackdrop'), { target: { value: 'ilL' } });
+      fireEvent.click(document.querySelector('#imgLib [data-imgdel="ilL"]')!);
+    });
+    expect($('modalImgRemove')).not.toBeNull();
+    expect($('imgRmUses').textContent).toContain(E['imglib.role.backdrop']!);
+    await click($('btnImgRmCancel'));
+    b = await exported();
+    expect((b.images as Rec[]).some((x) => x.id === 'ilL')).toBe(true);
+  });
+
+  it("fix round 1: deleting the chosen picture leaves no choice and Insert disabled, as 1.0's imglibRemove (imgSelId = null); Undo does not choose it again", async () => {
+    await openStudio(BOOK((b) => b.images.push(im('ilK', 'unused-K.png', btoa('imglib-unused-K')))));
+    await openImageDialog();
+    expect(document.querySelector('#imgLib .img-cell.active')!.getAttribute('data-libimg')).toBe('ilK');
+    await click(document.querySelector('#imgLib [data-imgdel="ilK"]'));
+    await waitFor(() => expect(document.querySelector('#imgLib [data-libimg="ilK"]')).toBeNull());
+    expect(document.querySelector('#imgLib .img-cell.active')).toBeNull();
+    expect(($('btnDoInsertImage') as unknown as HTMLButtonElement).disabled).toBe(true);
+    expect($('imgLibNote').textContent).toBe('Pick an image above, or upload a new one.');
+    await click([...document.querySelectorAll('#toasts .toast-action')].pop()!);
+    await waitFor(() => expect(document.querySelector('#imgLib [data-libimg="ilK"]')).not.toBeNull());
+    expect(document.querySelector('#imgLib .img-cell.active')).toBeNull();
+    // an upload is chosen however late the library's re-read lands
+    await putFile($('imgFileInput'), new File([pngBytes()], 'late.png', { type: 'image/png' }));
+    await waitFor(() => expect(document.querySelector('#imgLib .img-cell.active')?.textContent).toBe('late.png'));
+    expect(($('btnDoInsertImage') as unknown as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('the section card: alt and caption kept on change, Standard / Full-bleed, Remove (the picture stays in the library)', async () => {
     await openStudio(BOOK());
     await chooseSection(1);

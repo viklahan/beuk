@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
-import { BLOBS, exportBook, importBook, META, SECTIONS } from '../../src/book/editor/index';
+import { BLOBS, collectBlobs, exportBook, importBook, META, SECTIONS } from '../../src/book/editor/index';
 import en from '../src/generated/packs/en.json';
 import meta from '../src/generated/strings-meta.json';
 import { createOracle } from '../src/generated/closure-oracle.js';
@@ -215,7 +215,8 @@ describe("the image library: 1.0's own functions on the Y.Doc (inventory A8)", (
     const h = history(ydoc);
     expect(h.filter((s) => s.auto === 'imgremove').length).toBe(2);
     expect((h[0]!.doc.sections as Rec[]).some((s) => s.title === 'Chapter Three, again')).toBe(true);
-    // the store holds each picture's bytes once (wave 1c's rule), and nothing the book no longer names after GC
+    // the store holds each picture's bytes once (wave 1c's rule); its GC keeps a removed picture History still names
+    collectBlobs(ydoc);
     const blobs = ydoc.getMap(BLOBS);
     const dataA = (h[0]!.doc.images as Rec[]).find((im) => im.id === 'ilA')!.data;
     expect(String(dataA).length).toBeGreaterThan(1024);
@@ -329,6 +330,31 @@ describe('constraint 15: only bytes 2.0 has checked are shown', () => {
     expect(sniffPicture(png(1, 200, 8000, 8000))).toBe('image/png');
     expect(8000 * 8000).toBeLessThanOrEqual(SHOW_MAX_PIXELS);
   });
+  it('fix round 1: a JPEG whose frame header lies past 64 kB (a big APP segment before it) is found, and the cap still holds', () => {
+    const mk = (w: number, h: number, appBytes: number) => {
+      // APP1 (EXIF-like) segments of at most 65,533 data bytes each, then the frame header, then the end
+      const segs: number[] = [];
+      for (let left = appBytes; left > 0; left -= 65533) segs.push(Math.min(left, 65533));
+      const out = new Uint8Array(2 + segs.reduce((a, n) => a + 4 + n, 0) + 19 + 2);
+      out.set([0xff, 0xd8], 0);
+      let o = 2;
+      for (const n of segs) {
+        out.set([0xff, 0xe1, (n + 2) >> 8, (n + 2) & 255], o);
+        o += 4 + n;
+      }
+      out.set([0xff, 0xc0, 0, 17, 8, h >> 8, h & 255, w >> 8, w & 255, 3], o);
+      out.set([0xff, 0xd9], o + 19);
+      return bytesToBase64(out);
+    };
+    const far = mk(640, 480, 200_000);
+    expect(far.length).toBeGreaterThan(4 * 64 * 1024 / 3);
+    expect(sniffPicture(far)).toBe('image/jpeg');
+    expect(sniffPicture(mk(20000, 20000, 200_000))).toBe(null);
+    // a scan before any frame header, and a broken segment length: not a picture 2.0 shows
+    const noSof = bytesToBase64(Uint8Array.from([0xff, 0xd8, 0xff, 0xda, 0, 4, 0, 0, 0xff, 0xd9, 0, 0]));
+    expect(sniffPicture(noSof)).toBe(null);
+  });
+
   it('an oversized picture (30 MB of base64) is checked and shown without decoding it all', () => {
     const big = png(3, 22 * 1024 * 1024);
     const t0 = performance.now();
