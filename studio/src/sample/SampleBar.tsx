@@ -26,8 +26,8 @@ import {
    nothing written, if another tab replaced the book while the confirm
    waited (the live check).
 
-   Left out, each with its wave: the quick tour link (#btnTourAgain, the
-   tour's wave); newbook.confirmBodyShelf and unlinking from the shelf
+   Wave 1c: the quick tour link (#btnTourAgain) under the three. Left out,
+   each with its wave: newbook.confirmBodyShelf and unlinking from the shelf
    (wave 7); the writing log's per-book figures (wave 3). */
 
 export function SampleBar() {
@@ -162,7 +162,10 @@ export function SampleBar() {
           {t('newbook.btn')}
         </button>
       )}
-      {/* the quick tour link (#btnTourAgain): the tour's wave */}
+      {/* BEUK:tour — the replay link; tour/tour.ts starts it (1.0's tourInit listens on #btnTourAgain) */}
+      <button type="button" className="tour-again" id="btnTourAgain">
+        {t('tour.show')}
+      </button>
     </div>
   );
 }

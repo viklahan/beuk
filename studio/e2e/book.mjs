@@ -550,7 +550,7 @@ async function latency(origin) {
 /* ---- screenshots, next to 1.0 ---- */
 const ONE_HIDE =
   '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, #tabBtnOutline, .pane-fold, #tipLayer, .beuk-tip,' +
-  ' #bulkHint, #importSummary, #irReopen, #btnTourAgain { display: none !important; }' + // wave 1b: the sample bar is in both; the tour link is not yet
+  ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
   ' @media (max-width: 1023px) { html[dir="rtl"] #panes .pane { border: none !important; } }';
 
 async function pixelDiff(diffPage, a, b) {

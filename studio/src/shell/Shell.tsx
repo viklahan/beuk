@@ -8,6 +8,8 @@ import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
+import { syncClosureLocale } from '../closure/index';
+import { TourHost } from '../tour/TourHost';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
 import { ThemeButton } from './ThemeButton';
@@ -32,7 +34,9 @@ const openTab = (url: string) => {
 };
 
 export function Shell() {
-  const { t, dir } = useLocale();
+  const { t, dir, lang } = useLocale();
+  // 1.0's code in the closure reads t() and the interface language at call time
+  syncClosureLocale(t as (k: string, p?: Record<string, unknown>) => string, lang);
   const bk = useBook();
   const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
@@ -196,6 +200,16 @@ export function Shell() {
         </section>
       </main>
       {ops.menu}
+      <TourHost
+        onWrite={() => {
+          // 1.0's tourAct("write"): the page, the Write tab on a phone, the caret in the chapter
+          setMobile('center');
+          setMstyle(false);
+          const host = document.getElementById('manuscript') as (HTMLElement & { beukEditor?: { commands: { focus: () => unknown } } }) | null;
+          if (host?.beukEditor) host.beukEditor.commands.focus();
+          else host?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus();
+        }}
+      />
       <HistoryDialog open={dialog === 'history' && bookOpen} onClose={() => setDialog(null)} />
       <SettingsDialog open={dialog === 'settings' && bookOpen} onClose={() => setDialog(null)} />
     </div>

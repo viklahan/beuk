@@ -79,6 +79,13 @@ async function cspAndOffline() {
   const srv = await startServer({ repo: REPO });
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   await ctx.addInitScript(CSP_LISTENER);
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem('beuk.tour.v1', 'done'); // the tour has its own step (tourChecks)
+    } catch {
+      /* no storage */
+    }
+  });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -170,7 +177,7 @@ async function cspAndOffline() {
 const ONE_HIDE =
   '.local-wrap, #netPill, #btnAccount, #btnSupport, #updateBar, #tabBtnType, #tabBtnOutline, .pane-fold, #tipLayer, .beuk-tip,' +
   /* the sidebar's content below its two action buttons (step 5) */
-  ' #bulkHint, #importSummary, #irReopen, #btnTourAgain { display: none !important; }' + // wave 1b: the sample bar is in both; the tour link is not yet
+  ' #bulkHint, #importSummary, #irReopen { display: none !important; }' + // wave 1c: the sample bar and its tour link are in both
   /* KNOWN 1.0 QUIRK, not reproduced: at phone widths 1.0 drops the pane
      borders (#panes .pane { border: none }), but its RTL swap rule
      (html[dir=rtl] #pane-structure { border-left: 1px … }) is more
@@ -330,8 +337,94 @@ async function arabic() {
   }
 }
 
+/** Wave 1c: the quick tour (1.0's tour.targets-visible and tour.no-overflow-rtl-phone, in a real layout), and the
+ *  offer on a fresh device. */
+async function tourChecks() {
+  const srv = await startServer({ repo: REPO });
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block', deviceScaleFactor: 1 });
+  await ctx.addInitScript(CSP_LISTENER);
+  try {
+    const page = await ctx.newPage();
+    await page.goto(srv.origin + '/next/');
+    // a fresh device (nothing stored): the tour offers itself once the desk is known and nothing is open
+    await page.waitForSelector('#tourCard', { timeout: 15_000 });
+    const first = await page.evaluate(() => ({ step: document.getElementById('tourCard').getAttribute('data-step'), count: document.getElementById('tourCount').textContent, focus: document.activeElement && document.activeElement.id }));
+    check(first.step === 'start' && first.focus === 'tourTitle', `tour: offered on a fresh device at 1280×800 (${first.step}, "${first.count}", focus on #${first.focus})`);
+    // tour.targets-visible: every step points at a control that is on screen; the card stays in the window; one ring per target
+    const tv = await page.evaluate(() => {
+      const T = window.beukTour, bad = [], bits = [];
+      const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      T.state.steps.forEach((s, i) => {
+        s.groups.forEach((g, k) => { if (k === s.anchor && !document.querySelector(g[0])) bad.push(`step ${i + 1}: ${g[0]} is missing from the page`); });
+        T.go(i, '');
+        const els = T.targets(i), anchor = els[s.anchor];
+        if (!anchor) bad.push(`step ${i + 1}: nothing visible to point at`);
+        const c = document.getElementById('tourCard').getBoundingClientRect();
+        if (c.left < -0.5 || c.right > vw + 0.5 || c.top < -0.5 || c.bottom > vh + 0.5) bad.push(`step ${i + 1}: the card runs outside the window`);
+        const shown = T.state.rings.filter((r) => !r.hidden).length;
+        if (shown !== els.filter(Boolean).length) bad.push(`step ${i + 1}: ${shown} rings for ${els.filter(Boolean).length} targets`);
+        bits.push(`${i + 1} ${els.filter(Boolean).map((e) => '#' + e.id).join(' + ')}`);
+      });
+      return { bad, bits };
+    });
+    check(tv.bad.length === 0, `tour.targets-visible at 1280×800: ${tv.bits.join('; ')}${tv.bad.length ? ' — ' + tv.bad.join('; ') : ''}`);
+    // Escape skips it for good (stored in 1.0's shape)
+    await page.evaluate(() => window.beukTour.go(0, 'title'));
+    await page.keyboard.press('Escape');
+    const stored = await page.evaluate(() => ({ v: localStorage.getItem('beuk.tour.v1'), card: !!document.getElementById('tourCard') }));
+    check(stored.v === 'skipped' && !stored.card, `tour: Escape ends it, stored "${stored.v}"`);
+    await page.reload();
+    await page.waitForSelector('#btnTourAgain');
+    await page.waitForTimeout(1500);
+    check(!(await page.$('#tourCard')), 'tour: a skipped tour is not offered again after a reload');
+    await page.click('#btnTourAgain');
+    check(!!(await page.$('#tourCard')), 'tour: "Show the quick tour" brings it back');
+    await page.evaluate(() => window.beukTour.end('done'));
+    // tour.no-overflow-rtl-phone: every language at 390 px, Arabic right to left
+    await page.setViewportSize({ width: 390, height: 844 });
+    const order = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'pl', 'ru', 'tr', 'ar', 'ja', 'zh-Hans'];
+    const bad = [];
+    let rtl = null;
+    for (const L of order) {
+      await page.evaluate((l) => localStorage.setItem('beuk.uiLang.v1', l), L);
+      await page.reload();
+      await page.waitForSelector('#btnTourAgain', { state: 'attached' });
+      await page.waitForFunction(() => !!window.beukTour);
+      const r = await page.evaluate((l) => {
+        const T = window.beukTour, out = [];
+        T.start({ replay: true, dry: true });
+        const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+        T.state.steps.forEach((s, i) => {
+          T.go(i, '');
+          const card = document.getElementById('tourCard'), c = card.getBoundingClientRect();
+          if (c.left < -0.5 || c.right > vw + 0.5 || c.top < -0.5 || c.bottom > vh + 0.5) out.push(`${l} ${i + 1}: card outside the window`);
+          if (card.scrollWidth > card.clientWidth + 1) out.push(`${l} ${i + 1}: text wider than the card`);
+          card.querySelectorAll('button:not([hidden])').forEach((b) => {
+            if (b.closest('[hidden]')) return;
+            const br = b.getBoundingClientRect();
+            if (br.left < c.left - 0.5 || br.right > c.right + 0.5) out.push(`${l} ${i + 1}: a button sticks out`);
+          });
+          if (document.documentElement.scrollWidth > vw + 1) out.push(`${l} ${i + 1}: the page scrolls sideways`);
+        });
+        const dir = getComputedStyle(document.getElementById('tourCard')).direction;
+        T.end('done');
+        return { out, dir, n: T.state.steps.length };
+      }, L);
+      bad.push(...r.out);
+      if (L === 'ar') rtl = r.dir;
+    }
+    check(bad.length === 0 && rtl === 'rtl', `tour.no-overflow-rtl-phone: ${order.length} languages at 390×844, all inside, no sideways scroll, Arabic ${rtl}${bad.length ? ' — ' + bad.slice(0, 6).join('; ') : ''}`);
+    const v = await page.evaluate(() => window.__csp || []);
+    check(v.length === 0, `tour: CSP violations ${v.length}`);
+  } finally {
+    await ctx.close();
+    await srv.stop();
+  }
+}
+
 try {
   await cspAndOffline();
+  await tourChecks();
   const diffCtx = await browser.newContext();
   const diffPage = await diffCtx.newPage();
   const table = [];

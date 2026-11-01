@@ -1,0 +1,39 @@
+/* ==== BEUK:tour ==== — 1.0's first-run quick tour (client/index.html CSS 2775-2817): a small card (not modal, no
+   backdrop) beside the control it describes, under every dialog (.modal-back is z-index 60 and up). The card and its
+   rings are placed in physical pixels from getBoundingClientRect (tour.ts tourPlace, as 1.0), so their anchor is
+   physical (inset), like the tooltip's (wave 1a ruling 15). .tour-again lives in sidebar.css. */
+.tour-card {
+  position: fixed; z-index: 59; box-sizing: border-box; inset: 12px auto auto 12px;
+  width: min(340px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow-y: auto; overflow-x: hidden;
+  background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 12px 16px 14px;
+  animation: tourIn .18s ease-out;
+}
+.tour-card[hidden], .tour-card [hidden], .tour-ring[hidden] { display: none !important; }
+.tour-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.tour-count { font-size: 11.5px; font-weight: 600; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.tour-x {
+  flex: 0 0 auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; margin-inline-end: -6px;
+}
+.tour-x:hover { color: var(--ink); background: var(--panel-3); }
+.tour-card h2 { margin: 2px 0 6px; font-size: 15.5px; font-weight: 700; line-height: 1.3; outline: none; overflow-wrap: anywhere; }
+.tour-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.55; color: var(--ink-2); overflow-wrap: anywhere; }
+.tour-card p.tour-q { margin: 0 0 2px; font-weight: 600; color: var(--ink); }
+.tour-acts { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; }
+.tour-acts .tb-btn, .tour-nav .tb-btn { justify-content: center; white-space: normal; text-align: center; min-width: 0; max-width: 100%; }
+.tour-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.tour-card :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tour-card h2:focus, .tour-card h2:focus-visible { outline: none; }
+.tour-ring {
+  position: fixed; z-index: 58; pointer-events: none; border-radius: 10px; box-sizing: border-box;
+  box-shadow: 0 0 0 3px var(--accent), 0 0 0 7px var(--accent-soft);
+  transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease;
+}
+.tour-live { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+@keyframes tourIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .tour-card { animation: none; }
+  .tour-ring { transition: none; }
+}
+/* ==== /BEUK:tour ==== */

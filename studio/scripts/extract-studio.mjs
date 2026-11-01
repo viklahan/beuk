@@ -44,7 +44,9 @@ export const ICONS = ['Globe', 'ChevronDown', 'ChevronLeft', 'ChevronRight', 'Fl
   // step 5 wave 1a: the confirm, Settings, History and the sidebar's book tools
   'BookOpen', 'BookType', 'History', 'Activity', 'Target', 'BookMarked', 'NotebookPen',
   // step 5 wave 1b: the statistics disclosure, the row menu and its toasts, the sample and new book
-  'ChevronUp', 'Ellipsis', 'CopyPlus', 'Scissors', 'Merge', 'Trash2', 'Undo2', 'BookX', 'FilePlus', 'File', 'ImageOff', 'TriangleAlert'];
+  'ChevronUp', 'Ellipsis', 'CopyPlus', 'Scissors', 'Merge', 'Trash2', 'Undo2', 'BookX', 'FilePlus', 'File', 'ImageOff', 'TriangleAlert',
+  // step 5 wave 1c: the tour's toast, Story Insights and Names on stage, the notebook and its research files
+  'Map', 'RefreshCcw', 'EyeOff', 'Plus', 'StickyNote', 'Pin', 'Folder', 'Paperclip', 'X', 'ExternalLink', 'FileImage', 'FileAudio', 'FileVideo', 'FileType'];
 
 const fail = (msg) => {
   throw new Error(`extract-studio: ${msg}`);

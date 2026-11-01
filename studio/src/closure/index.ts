@@ -21,7 +21,11 @@ import meta from '../generated/strings-meta.json';
    by setClosureT), a UI_STRINGS holding only every pack's
    "misc.untitledBook" (imIsPlaceholderTitle, the one reader the extractor
    allows), and toast / samplePicsRequire / JSZip stubs (no build in wave 1a
-   calls them). */
+   calls them). Wave 1c adds getUiLang (the studio's interface language, set
+   by setClosureLang: 1.0's fmtNum and Insights' cache key read it, and the
+   extractor may not lift uiLangState), and 1.0's reading desk as one that
+   has measured nothing (deskState / deskSignature; the desk is wave 4).
+   ClosureLocale keeps t and the language current. */
 
 export type Fn = (...args: never[]) => unknown;
 /** The 1.0 functions 2.0 calls, typed loosely (their real types are 1.0's). */
@@ -87,7 +91,77 @@ export type ClosureApi = {
   SAMPLE_DRAFT_SNAP_ID: string;
   histCounted: (doc: unknown, s: unknown, flag: boolean) => { w: number };
   CC_LICENCES: Record<string, { name: string; short: string; url: string }>;
+  // wave 1c: the quick tour (I7)
+  TOUR_STEPS: TourStep[];
+  TOUR_KEY: string;
+  TOUR_DESK_KEY: string;
+  tourDecide: (d: { storage: boolean; stored: string | null; desk: string | null; empty: boolean }) => boolean;
+  // wave 1c: Story Insights (C4) and Names on stage (C5)
+  computeInsights: () => InsightsData;
+  insComputeFor: (sections: unknown[], lang: string) => InsightsData;
+  insBuildHtml: (d: InsightsData, ctx: { W: number }) => string;
+  insFactValues: (f: InsightsFact) => { words: string; avg: string | null; dlg: string | null; ease: string | null };
+  insFactAria: (id: string, lead: string) => string;
+  insVarietyInner: (d: InsightsData, ctx: { W: number }) => string;
+  insRenderReadability: (d: unknown, ctx: { W: number }) => string;
+  insRtl: () => boolean;
+  insFrequency: (sections: unknown[], lang: string) => { top: { word: string; count: number }[]; total: number };
+  insRhythm: (sections: unknown[]) => { id: string; name: string; short: string; words: number }[];
+  insCadence: (sections: unknown[]) => { points: { id: string; avg: number | null }[]; overall: number };
+  insEchoes: (sections: unknown[], lang: string) => { phrase: string; count: number; firstId: string; names: string[] }[];
+  insDialogueText: (text: string, lang: string) => { dialogue: number; total: number; share: number };
+  insDialogue: (sections: unknown[], lang: string) => { rows: unknown[]; dialogue: number; total: number; share: number };
+  insCrutch: (sections: unknown[], lang: string) => { rows: { label: string; suffix: boolean; count: number; rate: number }[]; total: number; suffix: string } | null;
+  insHistogram: (lens: number[]) => { buckets: { lo: number; hi: number; count: number }[]; total: number; median: number; p90: number; mode: number };
+  insVariety: (sections: unknown[]) => { secs: { id: string; lens: number[] }[]; all: number[] };
+  insReadability: (sections: unknown[], lang: string) => { points: { score: number | null }[]; overall: number | null } | null;
+  insSyllables: (w: string) => number;
+  insFlesch: (w: number, s: number, y: number) => number | null;
+  insTokens: (text: string) => string[];
+  insSentences: (text: string) => number[];
+  insBodySections: (sections: unknown[]) => Record<string, unknown>[];
+  fmtNum: (n: number) => string;
+  esc: (s: unknown) => string;
+  castCompute: (sections: unknown[], lang: string, title: unknown) => CastData;
+  castVisible: (d: CastData, hidden: unknown) => CastRow[];
+  castGridHtml: (rows: CastRow[], d: CastData) => string;
+  castNormalizeHidden: (v: unknown) => string[];
+  castHash: (s: string, h: number) => number;
+  castRateStr: (v: number, lang?: string) => string;
+  CAST_MAX_ROWS: number;
+  // wave 1c: the notebook and research files (C7)
+  nbNormalize: (doc: unknown, sections: unknown[], fileIds?: Set<string>) => { notes: Note[] };
+  nbLine: (v: unknown, n: number) => string;
+  nbPack: () => { notes: Note[] };
+  nbHas: () => boolean;
+  rsNormalize: (doc: unknown) => { files: ResearchFile[] };
+  rsTypeOf: (name: unknown, type: unknown) => string | null;
+  rsUrl: (v: unknown) => string;
+  rsKinds: () => Record<string, string>;
+  rsLimits: () => { file: number; total: number; files: number; perNote: number; textShown: number };
+  rsAccept: () => string;
+  rsIsRef: (data: unknown) => boolean;
+  rsBytesOf: (data: unknown) => number;
+  rsKind: (f: unknown) => string;
+  rsIcon: (f: unknown) => string;
+  rsSize: (b: number) => string;
+  rsTabOk: (f: unknown) => boolean;
+  rsPackFiles: () => ResearchFile[];
+  rsHas: () => boolean;
+  rsNamed: () => Set<string>;
+  rsTotal: () => number;
+  bibleAllEntries: () => { id: string; name?: string }[];
+  bibleScan: (text: string, m: unknown) => { hits: { s: number; e: number; id: string }[] };
+  bibleMatcherNow: () => unknown;
+  bibleName: (e: unknown) => string;
 };
+export type TourStep = { id: string; title: string; body: string; anchor: number; beside?: boolean; last?: boolean; groups: string[][] };
+export type InsightsFact = { name: string; short: string; words: number; avg: number | null; dlg: number | null; ease: number | null };
+export type InsightsData = Record<string, unknown> & { totalWords: number; facts: Record<string, InsightsFact>; variety: { secs: { id: string; name: string; lens: number[] }[]; all: number[] }; frequency: { total: number }; lang: string };
+export type CastRow = { key: string; name: string; total: number; sections: number; per: number[] };
+export type CastData = { caseless: boolean; minCount: number; names: CastRow[]; cols: { id: string; label: string; col: string; words: number }[] };
+export type Note = { id: string; title: string; body: string; folder?: string; secs?: string[]; files?: string[]; url?: string; at?: string };
+export type ResearchFile = { id: string; name: string; mediaType: string; data: string; bytes: number; at?: string };
 export type DiffPart = { t: '=' | '-' | '+'; s: string };
 export type DiffRow = { id: string; name: string; before: number; after: number; delta: number; note: 'out' | null };
 export type SectionDiff = { added: DiffRow[]; removed: DiffRow[]; leftout: DiffRow[]; broughtin: DiffRow[]; changed: DiffRow[] };
@@ -104,8 +178,12 @@ export type HistoryEntry = {
 /** 1.0's global state, as far as these functions read it. */
 export type State = Record<string, unknown> & { meta: Record<string, unknown>; sections: Record<string, unknown>[]; history?: HistoryEntry[] };
 
+/** 1.0's top-level lets the studio reads or sets (scripts/extract-closure.mjs VARS). */
+export type ClosureVars = { insVarPick: string; insCache: { key: string; d: InsightsData | null; ms: number; hit: boolean }; insFacts: Record<string, InsightsFact> };
+
 export type Closure = {
   api: ClosureApi;
+  vars: ClosureVars;
   setState: (s: State) => void;
   getState: () => State;
   arrive: (s: Record<string, unknown>) => State;
@@ -114,10 +192,18 @@ export type Closure = {
 
 type T = (key: string, params?: Record<string, unknown>) => string;
 let currentT: T = (k) => k;
+let currentLang = 'en';
 /** The studio's t(), for 1.0's code (the History labels, section names). */
 export function setClosureT(t: T): void {
   currentT = t;
 }
+/** The interface language 1.0's getUiLang() answers (its number formats, Insights' cache key). */
+export function setClosureLang(lang: string): void {
+  currentLang = lang;
+}
+/* 1.0's reading desk (deskState / deskSignature) is wave 4 (E1): until then it has measured nothing, so 1.0's
+   insGlancePages shows no page number, its own "still measuring" state (see the wave 1c report). */
+const NO_DESK = Object.freeze({ counts: Object.freeze({}), total: 0, sig: '', words: 0, run: null });
 
 const UNTITLED: readonly string[] = (meta as { untitledBook?: string[] }).untitledBook ?? [];
 
@@ -138,8 +224,11 @@ export function loadClosure(): Promise<Closure> {
         JSZip: undefined,
         t: (k, p) => currentT(k, p),
         UI_STRINGS: Object.fromEntries(UNTITLED.map((s, i) => [String(i), { 'misc.untitledBook': s }])),
+        getUiLang: () => currentLang,
+        deskState: NO_DESK,
+        deskSignature: () => '',
       });
-      loaded = { api: c.api as unknown as ClosureApi, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
+      loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };
       return loaded;
     });
     loading.catch(() => {
@@ -161,4 +250,10 @@ export function stateFromBook(c: Closure, book: Record<string, unknown>): State 
 export function bookState(c: Closure, ydoc: Y.Doc): { book: Record<string, unknown>; state: State } {
   const book = exportBook(ydoc);
   return { book, state: stateFromBook(c, book) };
+}
+
+/** Keeps the closure's t() and interface language equal to the studio's (1.0's code reads both at call time). */
+export function syncClosureLocale(t: T, lang: string): void {
+  setClosureT(t);
+  setClosureLang(lang);
 }
