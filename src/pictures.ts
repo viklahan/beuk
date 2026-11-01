@@ -21,10 +21,12 @@ const REF_RE = /^beuk-pic:([0-9a-f]{64})$/;
 
 /** What a stored picture may be: images and the uploaded fonts a book
  *  carries, and the research files its Notebook keeps (BEUK:research —
- *  PDFs, recordings, clips, plain/Markdown/CSV text). Never HTML: the
- *  store hands bytes back as JSON, but nothing that renders as a page
- *  is kept. */
-export const PICTURE_MEDIA_RE = /^(?:(?:image|font|audio|video)\/[a-z0-9][a-z0-9.+-]{0,60}|application\/pdf|text\/(?:plain|markdown|csv))$/;
+ *  PDFs, recordings, clips, plain/Markdown/CSV text, Word documents and
+ *  saved web pages — BEUK:webword). Never HTML: the store hands bytes back
+ *  as JSON, but nothing that renders as a page is kept; a saved web page
+ *  is kept under the studio's own type, application/vnd.beuk.webpage,
+ *  which no browser renders. */
+export const PICTURE_MEDIA_RE = /^(?:(?:image|font|audio|video)\/[a-z0-9][a-z0-9.+-]{0,60}|application\/pdf|text\/(?:plain|markdown|csv)|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.beuk\.webpage)$/;
 
 /** The sha256 a doc string names, or null. */
 export function picRefOf(value: unknown): string | null {

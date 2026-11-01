@@ -1809,6 +1809,19 @@
       .rs-video { display: block; max-width: 100%; max-height: 60vh; margin: 0 auto; }
       .rs-text { white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; margin: 0; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
       .rs-tab { margin-top: 8px; }
+      /* BEUK:webword — a Word document or saved web page, read as words in the book's reading face */
+      .rs-doc { max-height: 60vh; overflow: auto; padding: 4px 8px; }
+      .rs-doc-note { margin: 0 0 8px; font-size: 12px; }
+      .rs-doc-body { font-family: "EB Garamond", Georgia, serif; font-size: 16px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
+      .rs-doc-body h3, .rs-doc-body h4, .rs-doc-body h5, .rs-doc-body h6 { font-family: inherit; line-height: 1.25; margin: 1em 0 .4em; }
+      .rs-doc-body h3 { font-size: 1.3em; } .rs-doc-body h4 { font-size: 1.15em; } .rs-doc-body h5, .rs-doc-body h6 { font-size: 1em; }
+      .rs-doc-body p, .rs-doc-body ul, .rs-doc-body ol, .rs-doc-body blockquote, .rs-doc-body pre, .rs-doc-body table, .rs-doc-body figure, .rs-doc-body dl { margin: 0 0 .7em; }
+      .rs-doc-body blockquote { padding-left: 12px; border-left: 3px solid var(--line-2); color: var(--ink-2); }
+      .rs-doc-body pre { white-space: pre-wrap; font-size: 13px; }
+      .rs-doc-body img { display: block; max-width: 100%; height: auto; margin: 6px 0; }
+      .rs-doc-body table { border-collapse: collapse; display: block; max-width: 100%; overflow-x: auto; font-size: 14px; }
+      .rs-doc-body th, .rs-doc-body td { border: 1px solid var(--line-2); padding: 4px 8px; vertical-align: top; }
+      .rs-doc-body a { color: var(--accent); }
       #modalNotebook.rs-drop .nb-modal { outline: 2px dashed var(--accent); outline-offset: -6px; }
       .bib-none { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink-2); line-height: 1.6; margin: 6px 0; }
       .bib-detail { min-width: 0; }
@@ -8393,6 +8406,23 @@
         "zh-Hans": { "rs.count": "文件：{n}", "rs.urlLab": "来源链接", "rs.urlOpen": "打开", "rs.urlBad": "这不是网址。来源链接以 http:// 或 https:// 开头。", "rs.filesLab": "资料文件", "rs.none": "还没有文件。添加图片、PDF、录音、视频或文本文件，或把它拖到笔记本上。", "rs.add": "添加文件", "rs.hint": "每个文件最多 {mb} MB · 已用 {used}，共 {total} MB", "rs.view": "在这里打开 {name}", "rs.hide": "关闭 {name}", "rs.download": "保存 {name} 的副本", "rs.remove": "从这条笔记中移除 {name}", "rs.removed": "已移除文件：{name}", "rs.added1": "已添加文件：{name}", "rs.added": "已添加 {n} 个文件", "rs.badType": "{name}：Beuk 可以保存图片、PDF、录音、视频和文本文件。", "rs.tooBig": "{name} 超过 {mb} MB。", "rs.readFail": "无法读取 {name}。", "rs.full": "加上 {name} 后，本书的资料文件将超过 {mb} MB。", "rs.noteFull": "{name}：一条笔记最多存放 {n} 个文件。", "rs.newTab": "在新标签页中打开", "rs.notHere": "这个文件还在从书架上传来。", "rs.textCut": "只显示前 {n} 个字符。保存副本即可阅读其余部分。", "rs.kind.image": "图片", "rs.kind.pdf": "PDF", "rs.kind.audio": "录音", "rs.kind.video": "视频", "rs.kind.text": "文本", "rs.kb": "{n} KB", "rs.mb": "{n} MB" }
       };
       Object.keys(RS_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RS_STRINGS[code]); });
+      /* BEUK:webword — the Word and web page words, all 13 packs (after RS_STRINGS: rs.badType and rs.none name the two new kinds) */
+      const RSWW_STRINGS = {
+        "en": { "rs.kind.web": "Web page", "rs.kind.word": "Word document", "rs.badType": "{name}: Beuk keeps pictures, PDFs, recordings, video clips, text files, saved web pages and Word documents.", "rs.none": "No files yet. Add a picture, a PDF, a recording, a video clip, a text file, a saved web page or a Word document, or drop one on the Notebook.", "rs.docOld": "{name} is an older Word file (.doc). Open it in Word, save it as a Word Document (.docx), then add that.", "rs.webarchive": "{name} is a Safari web archive. In Safari, save the page again with Format: Page Source, then add that.", "rs.notWord": "{name} does not open as a Word document. It may be damaged, or another kind of file renamed to .docx.", "rs.notWeb": "{name} does not open as a web page. It may be damaged, or another kind of file renamed.", "rs.opening": "Opening…", "rs.docFail": "This file could not be shown here. Save a copy to open it in another program.", "rs.docBig": "This file took too long to open here. Save a copy to open it in another program.", "rs.docEmpty": "There are no words or pictures in this file to show.", "rs.docCut": "Only the start of this file is shown. Save a copy to read it all.", "rs.webNote": "Shown as words, links and the pictures saved with the page. Its scripts, styles and anything it would fetch from the web are left out.", "rs.wordNote": "Shown as words, headings, lists, tables and pictures. Word's own page layout is not kept." },
+        "es": { "rs.kind.web": "Página web", "rs.kind.word": "Documento de Word", "rs.badType": "{name}: Beuk guarda imágenes, PDF, grabaciones, vídeos, archivos de texto, páginas web guardadas y documentos de Word.", "rs.none": "Aún no hay archivos. Añade una imagen, un PDF, una grabación, un vídeo, un archivo de texto, una página web guardada o un documento de Word, o suéltalo sobre el Cuaderno.", "rs.docOld": "{name} es un archivo de Word antiguo (.doc). Ábrelo en Word, guárdalo como Documento de Word (.docx) y añade ese.", "rs.webarchive": "{name} es un archivo web de Safari. En Safari, guarda de nuevo la página con Formato: Código fuente de la página y añade ese.", "rs.notWord": "{name} no se abre como documento de Word. Puede estar dañado, o ser otro tipo de archivo renombrado a .docx.", "rs.notWeb": "{name} no se abre como página web. Puede estar dañado, o ser otro tipo de archivo renombrado.", "rs.opening": "Abriendo…", "rs.docFail": "Este archivo no se puede mostrar aquí. Guarda una copia para abrirlo en otro programa.", "rs.docBig": "Este archivo tardó demasiado en abrirse aquí. Guarda una copia para abrirlo en otro programa.", "rs.docEmpty": "Este archivo no tiene palabras ni imágenes que mostrar.", "rs.docCut": "Solo se muestra el principio de este archivo. Guarda una copia para leerlo entero.", "rs.webNote": "Se muestra como texto, enlaces y las imágenes guardadas con la página. Sus scripts, estilos y todo lo que cargaría de la web quedan fuera.", "rs.wordNote": "Se muestra como texto, títulos, listas, tablas e imágenes. No se conserva la maquetación de Word." },
+        "fr": { "rs.kind.web": "Page web", "rs.kind.word": "Document Word", "rs.badType": "{name} : Beuk garde les images, les PDF, les enregistrements, les vidéos, les fichiers texte, les pages web enregistrées et les documents Word.", "rs.none": "Pas encore de fichier. Ajoutez une image, un PDF, un enregistrement, une vidéo, un fichier texte, une page web enregistrée ou un document Word, ou déposez-le sur le Carnet.", "rs.docOld": "{name} est un ancien fichier Word (.doc). Ouvrez-le dans Word, enregistrez-le en Document Word (.docx), puis ajoutez celui-ci.", "rs.webarchive": "{name} est une archive web Safari. Dans Safari, enregistrez de nouveau la page au format Source de la page, puis ajoutez celle-ci.", "rs.notWord": "{name} ne s'ouvre pas comme un document Word. Il est peut-être abîmé, ou c'est un autre type de fichier renommé en .docx.", "rs.notWeb": "{name} ne s'ouvre pas comme une page web. Il est peut-être abîmé, ou c'est un autre type de fichier renommé.", "rs.opening": "Ouverture…", "rs.docFail": "Ce fichier ne peut pas être affiché ici. Enregistrez une copie pour l'ouvrir dans un autre programme.", "rs.docBig": "Ce fichier a mis trop de temps à s'ouvrir ici. Enregistrez une copie pour l'ouvrir dans un autre programme.", "rs.docEmpty": "Ce fichier ne contient ni texte ni image à afficher.", "rs.docCut": "Seul le début de ce fichier est affiché. Enregistrez une copie pour le lire en entier.", "rs.webNote": "Affichée en texte, liens et images enregistrées avec la page. Ses scripts, ses styles et tout ce qu'elle irait chercher sur le web sont laissés de côté.", "rs.wordNote": "Affiché en texte, titres, listes, tableaux et images. La mise en page de Word n'est pas conservée." },
+        "de": { "rs.kind.web": "Webseite", "rs.kind.word": "Word-Dokument", "rs.badType": "{name}: Beuk bewahrt Bilder, PDFs, Aufnahmen, Videos, Textdateien, gespeicherte Webseiten und Word-Dokumente auf.", "rs.none": "Noch keine Dateien. Fügen Sie ein Bild, ein PDF, eine Aufnahme, ein Video, eine Textdatei, eine gespeicherte Webseite oder ein Word-Dokument hinzu, oder ziehen Sie sie aufs Notizbuch.", "rs.docOld": "{name} ist eine ältere Word-Datei (.doc). Öffnen Sie sie in Word, speichern Sie sie als Word-Dokument (.docx) und fügen Sie dieses hinzu.", "rs.webarchive": "{name} ist ein Safari-Webarchiv. Speichern Sie die Seite in Safari erneut mit Format: Seitenquelle und fügen Sie diese hinzu.", "rs.notWord": "{name} lässt sich nicht als Word-Dokument öffnen. Die Datei ist vielleicht beschädigt oder eine andere, in .docx umbenannte Datei.", "rs.notWeb": "{name} lässt sich nicht als Webseite öffnen. Die Datei ist vielleicht beschädigt oder eine andere, umbenannte Datei.", "rs.opening": "Wird geöffnet …", "rs.docFail": "Diese Datei lässt sich hier nicht anzeigen. Speichern Sie eine Kopie, um sie in einem anderen Programm zu öffnen.", "rs.docBig": "Diese Datei brauchte hier zu lange zum Öffnen. Speichern Sie eine Kopie, um sie in einem anderen Programm zu öffnen.", "rs.docEmpty": "Diese Datei enthält keine Wörter oder Bilder zum Anzeigen.", "rs.docCut": "Nur der Anfang dieser Datei wird gezeigt. Speichern Sie eine Kopie, um alles zu lesen.", "rs.webNote": "Gezeigt als Text, Links und die mit der Seite gespeicherten Bilder. Skripte, Stile und alles, was sie aus dem Web laden würde, bleiben weg.", "rs.wordNote": "Gezeigt als Text, Überschriften, Listen, Tabellen und Bilder. Das Seitenlayout von Word bleibt nicht erhalten." },
+        "it": { "rs.kind.web": "Pagina web", "rs.kind.word": "Documento Word", "rs.badType": "{name}: Beuk conserva immagini, PDF, registrazioni, video, file di testo, pagine web salvate e documenti Word.", "rs.none": "Ancora nessun file. Aggiungi un'immagine, un PDF, una registrazione, un video, un file di testo, una pagina web salvata o un documento Word, oppure trascinalo sul Quaderno.", "rs.docOld": "{name} è un vecchio file di Word (.doc). Aprilo in Word, salvalo come Documento di Word (.docx) e aggiungi quello.", "rs.webarchive": "{name} è un archivio web di Safari. In Safari, salva di nuovo la pagina con Formato: Sorgente pagina e aggiungi quello.", "rs.notWord": "{name} non si apre come documento Word. Potrebbe essere danneggiato, o un altro tipo di file rinominato in .docx.", "rs.notWeb": "{name} non si apre come pagina web. Potrebbe essere danneggiato, o un altro tipo di file rinominato.", "rs.opening": "Apertura…", "rs.docFail": "Questo file non si può mostrare qui. Salvane una copia per aprirlo in un altro programma.", "rs.docBig": "Questo file ha impiegato troppo ad aprirsi qui. Salvane una copia per aprirlo in un altro programma.", "rs.docEmpty": "In questo file non ci sono parole né immagini da mostrare.", "rs.docCut": "Viene mostrato solo l'inizio di questo file. Salvane una copia per leggerlo tutto.", "rs.webNote": "Mostrata come testo, link e le immagini salvate con la pagina. Script, stili e tutto ciò che caricherebbe dal web restano fuori.", "rs.wordNote": "Mostrato come testo, titoli, elenchi, tabelle e immagini. L'impaginazione di Word non viene mantenuta." },
+        "pt": { "rs.kind.web": "Página web", "rs.kind.word": "Documento Word", "rs.badType": "{name}: o Beuk guarda imagens, PDF, gravações, vídeos, ficheiros de texto, páginas web guardadas e documentos Word.", "rs.none": "Ainda não há ficheiros. Adicione uma imagem, um PDF, uma gravação, um vídeo, um ficheiro de texto, uma página web guardada ou um documento Word, ou largue-o no Caderno.", "rs.docOld": "{name} é um ficheiro antigo do Word (.doc). Abra-o no Word, guarde-o como Documento do Word (.docx) e adicione esse.", "rs.webarchive": "{name} é um arquivo web do Safari. No Safari, guarde de novo a página com Formato: Código-fonte da página e adicione esse.", "rs.notWord": "{name} não abre como documento Word. Pode estar danificado, ou ser outro tipo de ficheiro renomeado para .docx.", "rs.notWeb": "{name} não abre como página web. Pode estar danificado, ou ser outro tipo de ficheiro renomeado.", "rs.opening": "A abrir…", "rs.docFail": "Não é possível mostrar este ficheiro aqui. Guarde uma cópia para o abrir noutro programa.", "rs.docBig": "Este ficheiro demorou demasiado a abrir aqui. Guarde uma cópia para o abrir noutro programa.", "rs.docEmpty": "Este ficheiro não tem palavras nem imagens para mostrar.", "rs.docCut": "Só se mostra o início deste ficheiro. Guarde uma cópia para o ler todo.", "rs.webNote": "Mostrada como texto, ligações e as imagens guardadas com a página. Os seus scripts, estilos e tudo o que iria buscar à web ficam de fora.", "rs.wordNote": "Mostrado como texto, títulos, listas, tabelas e imagens. A paginação do Word não é mantida." },
+        "nl": { "rs.kind.web": "Webpagina", "rs.kind.word": "Word-document", "rs.badType": "{name}: Beuk bewaart afbeeldingen, pdf's, opnames, videoclips, tekstbestanden, opgeslagen webpagina's en Word-documenten.", "rs.none": "Nog geen bestanden. Voeg een afbeelding, een pdf, een opname, een videoclip, een tekstbestand, een opgeslagen webpagina of een Word-document toe, of sleep het op het Notitieboek.", "rs.docOld": "{name} is een ouder Word-bestand (.doc). Open het in Word, sla het op als Word-document (.docx) en voeg dat toe.", "rs.webarchive": "{name} is een Safari-webarchief. Sla de pagina in Safari opnieuw op met Opmaak: Paginabron en voeg die toe.", "rs.notWord": "{name} opent niet als Word-document. Het is misschien beschadigd, of een ander soort bestand dat .docx is genoemd.", "rs.notWeb": "{name} opent niet als webpagina. Het is misschien beschadigd, of een ander soort bestand met een andere naam.", "rs.opening": "Openen…", "rs.docFail": "Dit bestand kan hier niet worden getoond. Sla een kopie op om het in een ander programma te openen.", "rs.docBig": "Dit bestand deed er hier te lang over om te openen. Sla een kopie op om het in een ander programma te openen.", "rs.docEmpty": "Dit bestand bevat geen woorden of afbeeldingen om te tonen.", "rs.docCut": "Alleen het begin van dit bestand wordt getoond. Sla een kopie op om alles te lezen.", "rs.webNote": "Getoond als tekst, links en de afbeeldingen die met de pagina zijn opgeslagen. Scripts, stijlen en alles wat ze van het web zou halen, blijven weg.", "rs.wordNote": "Getoond als tekst, koppen, lijsten, tabellen en afbeeldingen. De opmaak van Word blijft niet behouden." },
+        "pl": { "rs.kind.web": "Strona internetowa", "rs.kind.word": "Dokument Word", "rs.badType": "{name}: Beuk przechowuje obrazy, pliki PDF, nagrania, filmy, pliki tekstowe, zapisane strony internetowe i dokumenty Word.", "rs.none": "Nie ma jeszcze plików. Dodaj obraz, PDF, nagranie, film, plik tekstowy, zapisaną stronę internetową lub dokument Word albo upuść go na Notatnik.", "rs.docOld": "{name} to starszy plik Worda (.doc). Otwórz go w Wordzie, zapisz jako Dokument programu Word (.docx) i dodaj ten plik.", "rs.webarchive": "{name} to archiwum internetowe Safari. W Safari zapisz stronę ponownie w formacie Źródło strony i dodaj ten plik.", "rs.notWord": "{name} nie otwiera się jako dokument Word. Może być uszkodzony albo to inny plik ze zmienioną nazwą na .docx.", "rs.notWeb": "{name} nie otwiera się jako strona internetowa. Może być uszkodzony albo to inny plik ze zmienioną nazwą.", "rs.opening": "Otwieranie…", "rs.docFail": "Tego pliku nie można tu pokazać. Zapisz kopię, aby otworzyć go w innym programie.", "rs.docBig": "Ten plik otwierał się tu zbyt długo. Zapisz kopię, aby otworzyć go w innym programie.", "rs.docEmpty": "W tym pliku nie ma słów ani obrazów do pokazania.", "rs.docCut": "Pokazano tylko początek tego pliku. Zapisz kopię, aby przeczytać całość.", "rs.webNote": "Pokazana jako tekst, linki i obrazy zapisane razem ze stroną. Jej skrypty, style i wszystko, co pobierałaby z sieci, są pominięte.", "rs.wordNote": "Pokazany jako tekst, nagłówki, listy, tabele i obrazy. Układ stron z Worda nie jest zachowany." },
+        "ru": { "rs.kind.web": "Веб-страница", "rs.kind.word": "Документ Word", "rs.badType": "{name}: Beuk хранит изображения, PDF, записи, видео, текстовые файлы, сохранённые веб-страницы и документы Word.", "rs.none": "Файлов пока нет. Добавьте изображение, PDF, запись, видео, текстовый файл, сохранённую веб-страницу или документ Word — или перетащите файл на Блокнот.", "rs.docOld": "{name} — файл Word старого формата (.doc). Откройте его в Word, сохраните как документ Word (.docx) и добавьте его.", "rs.webarchive": "{name} — веб-архив Safari. В Safari сохраните страницу заново в формате «Исходный код страницы» и добавьте его.", "rs.notWord": "{name} не открывается как документ Word. Возможно, файл повреждён или это файл другого типа, переименованный в .docx.", "rs.notWeb": "{name} не открывается как веб-страница. Возможно, файл повреждён или это переименованный файл другого типа.", "rs.opening": "Открываем…", "rs.docFail": "Этот файл нельзя показать здесь. Сохраните копию, чтобы открыть его в другой программе.", "rs.docBig": "Этот файл открывался здесь слишком долго. Сохраните копию, чтобы открыть его в другой программе.", "rs.docEmpty": "В этом файле нет текста или изображений для показа.", "rs.docCut": "Показано только начало файла. Сохраните копию, чтобы прочитать его целиком.", "rs.webNote": "Показана как текст, ссылки и изображения, сохранённые вместе со страницей. Её скрипты, стили и всё, что она загрузила бы из интернета, не показываются.", "rs.wordNote": "Показан как текст, заголовки, списки, таблицы и изображения. Вёрстка страниц Word не сохраняется." },
+        "tr": { "rs.kind.web": "Web sayfası", "rs.kind.word": "Word belgesi", "rs.badType": "{name}: Beuk resimleri, PDF'leri, kayıtları, videoları, metin dosyalarını, kaydedilmiş web sayfalarını ve Word belgelerini saklar.", "rs.none": "Henüz dosya yok. Bir resim, PDF, kayıt, video, metin dosyası, kaydedilmiş web sayfası ya da Word belgesi ekleyin veya Defter'in üzerine bırakın.", "rs.docOld": "{name} eski bir Word dosyası (.doc). Word'de açın, Word Belgesi (.docx) olarak kaydedin ve onu ekleyin.", "rs.webarchive": "{name} bir Safari web arşivi. Safari'de sayfayı Biçim: Sayfa Kaynağı ile yeniden kaydedin ve onu ekleyin.", "rs.notWord": "{name} bir Word belgesi olarak açılmıyor. Dosya bozuk olabilir ya da adı .docx yapılmış başka türde bir dosya olabilir.", "rs.notWeb": "{name} bir web sayfası olarak açılmıyor. Dosya bozuk olabilir ya da adı değiştirilmiş başka türde bir dosya olabilir.", "rs.opening": "Açılıyor…", "rs.docFail": "Bu dosya burada gösterilemiyor. Başka bir programda açmak için bir kopyasını kaydedin.", "rs.docBig": "Bu dosyanın burada açılması çok uzun sürdü. Başka bir programda açmak için bir kopyasını kaydedin.", "rs.docEmpty": "Bu dosyada gösterilecek sözcük ya da resim yok.", "rs.docCut": "Bu dosyanın yalnızca başı gösteriliyor. Tamamını okumak için bir kopyasını kaydedin.", "rs.webNote": "Metin, bağlantılar ve sayfayla birlikte kaydedilen resimler olarak gösterilir. Betikleri, stilleri ve web'den getireceği her şey dışarıda bırakılır.", "rs.wordNote": "Metin, başlıklar, listeler, tablolar ve resimler olarak gösterilir. Word'ün sayfa düzeni korunmaz." },
+        "ar": { "rs.kind.web": "صفحة ويب", "rs.kind.word": "مستند Word", "rs.badType": "{name}: يحفظ Beuk الصور وملفات PDF والتسجيلات ومقاطع الفيديو والملفات النصية وصفحات الويب المحفوظة ومستندات Word.", "rs.none": "لا ملفات بعد. أضف صورة أو ملف PDF أو تسجيلًا أو مقطع فيديو أو ملفًا نصيًا أو صفحة ويب محفوظة أو مستند Word، أو أفلته على الدفتر.", "rs.docOld": "{name} ملف Word قديم (.doc). افتحه في Word واحفظه بصيغة مستند Word (.docx)، ثم أضف ذلك الملف.", "rs.webarchive": "{name} أرشيف ويب من Safari. في Safari، احفظ الصفحة مرة أخرى بتنسيق «مصدر الصفحة»، ثم أضف ذلك الملف.", "rs.notWord": "لا يُفتح {name} كمستند Word. قد يكون تالفًا، أو ملفًا من نوع آخر أُعيدت تسميته إلى ‎.docx.", "rs.notWeb": "لا يُفتح {name} كصفحة ويب. قد يكون تالفًا، أو ملفًا من نوع آخر أُعيدت تسميته.", "rs.opening": "جارٍ الفتح…", "rs.docFail": "لا يمكن عرض هذا الملف هنا. احفظ نسخة لتفتحه في برنامج آخر.", "rs.docBig": "استغرق فتح هذا الملف هنا وقتًا طويلًا. احفظ نسخة لتفتحه في برنامج آخر.", "rs.docEmpty": "لا كلمات ولا صور في هذا الملف لعرضها.", "rs.docCut": "يُعرض بداية هذا الملف فقط. احفظ نسخة لتقرأه كاملًا.", "rs.webNote": "تُعرض نصًا وروابط مع الصور المحفوظة مع الصفحة. تُستبعد نصوصها البرمجية وأنماطها وكل ما قد تجلبه من الويب.", "rs.wordNote": "يُعرض نصًا وعناوين وقوائم وجداول وصورًا. لا يُحتفظ بتخطيط صفحات Word." },
+        "ja": { "rs.kind.web": "ウェブページ", "rs.kind.word": "Word 文書", "rs.badType": "{name}：Beuk に保存できるのは画像、PDF、録音、動画、テキストファイル、保存したウェブページ、Word 文書です。", "rs.none": "まだファイルがありません。画像、PDF、録音、動画、テキストファイル、保存したウェブページ、Word 文書を追加するか、ノートブックにドロップしてください。", "rs.docOld": "{name} は古い形式の Word ファイル（.doc）です。Word で開いて Word 文書（.docx）として保存し、そのファイルを追加してください。", "rs.webarchive": "{name} は Safari の Web アーカイブです。Safari でページを「フォーマット：ページのソース」で保存し直し、そのファイルを追加してください。", "rs.notWord": "{name} は Word 文書として開けません。破損しているか、別の種類のファイルの名前を .docx に変えたものかもしれません。", "rs.notWeb": "{name} はウェブページとして開けません。破損しているか、別の種類のファイルの名前を変えたものかもしれません。", "rs.opening": "開いています…", "rs.docFail": "このファイルはここでは表示できません。コピーを保存して、別のアプリで開いてください。", "rs.docBig": "このファイルは開くのに時間がかかりすぎました。コピーを保存して、別のアプリで開いてください。", "rs.docEmpty": "このファイルには表示できる文字や画像がありません。", "rs.docCut": "このファイルの最初の部分だけを表示しています。全文はコピーを保存して読んでください。", "rs.webNote": "文字、リンク、ページと一緒に保存された画像として表示します。スクリプト、スタイル、ウェブから読み込むものは表示しません。", "rs.wordNote": "文字、見出し、リスト、表、画像として表示します。Word のページレイアウトは保たれません。" },
+        "zh-Hans": { "rs.kind.web": "网页", "rs.kind.word": "Word 文档", "rs.badType": "{name}：Beuk 可保存图片、PDF、录音、视频、文本文件、已保存的网页和 Word 文档。", "rs.none": "还没有文件。添加一张图片、一个 PDF、一段录音、一段视频、一个文本文件、一个已保存的网页或一份 Word 文档，或把文件拖到笔记本上。", "rs.docOld": "{name} 是旧版 Word 文件（.doc）。请在 Word 中打开，另存为 Word 文档（.docx），再添加该文件。", "rs.webarchive": "{name} 是 Safari 网页归档。请在 Safari 中以“格式：页面源码”重新存储该页面，再添加该文件。", "rs.notWord": "{name} 无法作为 Word 文档打开。它可能已损坏，或是改名为 .docx 的其他类型文件。", "rs.notWeb": "{name} 无法作为网页打开。它可能已损坏，或是改了名的其他类型文件。", "rs.opening": "正在打开…", "rs.docFail": "此文件无法在这里显示。请保存一份副本，用其他程序打开。", "rs.docBig": "此文件在这里打开用时过长。请保存一份副本，用其他程序打开。", "rs.docEmpty": "此文件中没有可显示的文字或图片。", "rs.docCut": "只显示了此文件的开头。请保存一份副本以阅读全文。", "rs.webNote": "以文字、链接和随页面保存的图片显示。页面的脚本、样式以及会从网上加载的内容都不显示。", "rs.wordNote": "以文字、标题、列表、表格和图片显示。不保留 Word 的页面版式。" }
+      };
+      Object.keys(RSWW_STRINGS).forEach((code) => { if (UI_STRINGS[code]) Object.assign(UI_STRINGS[code], RSWW_STRINGS[code]); });
       /* ==== /BEUK:outline ==== */
       /* ==== BEUK:shelfguard ==== — the shelf-open guard's words, all 13 packs */
       const SHELFGUARD_STRINGS = {
@@ -26772,18 +26802,27 @@
          names its pictures (histPack), so a restore brings back exactly
          the files it had; on the shelf each is stored like a picture,
          uploaded once (BEUK:pics). Never exported, never counted. */
+      /* BEUK:webword — a Word document, and a saved web page under a type of Beuk's own (never text/html) */
+      const RS_WORD = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      const RS_WEB = "application/vnd.beuk.webpage";
       function rsKinds() {
         return { "image/png": "image", "image/jpeg": "image", "image/gif": "image", "image/webp": "image", "image/svg+xml": "image",
           "application/pdf": "pdf",
           "audio/mpeg": "audio", "audio/mp4": "audio", "audio/wav": "audio", "audio/ogg": "audio", "audio/webm": "audio",
           "video/mp4": "video", "video/webm": "video",
-          "text/plain": "text", "text/markdown": "text", "text/csv": "text" };
+          "text/plain": "text", "text/markdown": "text", "text/csv": "text",
+          [RS_WORD]: "word", [RS_WEB]: "web" }; /* BEUK:webword */
       }
       function rsLimits() { return { file: 25 * 1024 * 1024, total: 100 * 1024 * 1024, files: 200, perNote: 20, textShown: 200000 }; } /* BEUK:localpics — raised from 10 MB, 25 MB, 60 once the device save stopped rewriting every file (measured: beuk-spikes/research-cap) */
-      function rsAccept() { return ".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.mp3,.m4a,.wav,.ogg,.oga,.mp4,.webm,.txt,.md,.markdown,.csv," + Object.keys(rsKinds()).join(","); }
+      function rsAccept() { return ".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.mp3,.m4a,.wav,.ogg,.oga,.mp4,.webm,.txt,.md,.markdown,.csv,.docx,.html,.htm,.mhtml,.mht,text/html,multipart/related," + Object.keys(rsKinds()).join(","); }
       /* the type a file is kept as, or null: its own type first, its name only when the browser gave none */
       function rsTypeOf(name, type) {
         const raw = String(type || "").toLowerCase().split(";")[0].trim();
+        /* BEUK:webword — a Word document or a saved web page, by its name: browsers type an .mhtml as
+           multipart/related, message/rfc822 or nothing, and an .html as text/html, none of which Beuk keeps as such */
+        const ext0 = (String(name || "").toLowerCase().match(/\.([a-z0-9]{1,8})$/) || [])[1] || "";
+        if (ext0 === "docx" && (!raw || raw === "application/octet-stream" || raw === RS_WORD || raw === "application/zip" || raw === "application/x-zip-compressed")) return RS_WORD;
+        if (/^(html?|mhtml?)$/.test(ext0) && (!raw || raw === "application/octet-stream" || raw === "text/html" || raw === "application/xhtml+xml" || raw === "multipart/related" || raw === "message/rfc822" || raw === "application/x-mimearchive" || raw === RS_WEB)) return RS_WEB;
         const alias = { "audio/x-m4a": "audio/mp4", "audio/m4a": "audio/mp4", "audio/x-wav": "audio/wav", "audio/wave": "audio/wav", "audio/vnd.wave": "audio/wav", "audio/mp3": "audio/mpeg", "text/x-markdown": "text/markdown", "image/jpg": "image/jpeg" };
         const ty = alias[raw] || raw;
         if (rsKinds()[ty]) return ty;
@@ -26824,7 +26863,7 @@
       function rsTotal() { const ids = rsNamed(); return rsBook().files.reduce((a, f) => a + (ids.has(f.id) ? f.bytes : 0), 0); }
       function rsFile(id) { return rsBook().files.find((f) => f.id === id) || null; }
       function rsKind(f) { return (f && rsKinds()[f.mediaType]) || "file"; }
-      function rsIcon(f) { return { image: "file-image", pdf: "file-text", audio: "file-audio", video: "file-video", text: "file-type" }[rsKind(f)] || "file"; }
+      function rsIcon(f) { return { image: "file-image", pdf: "file-text", audio: "file-audio", video: "file-video", text: "file-type", word: "file-pen-line", web: "globe" }[rsKind(f)] || "file"; }
       function rsSize(b) { return b >= 1024 * 1024 ? t("rs.mb", { n: fmtNum(Math.round(b / 1024 / 1024 * 10) / 10) }) : t("rs.kb", { n: fmtNum(Math.max(1, Math.round(b / 1024))) }); }
       function rsBytes(f) { const bin = atob(f.data), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
       function rsText(f) { try { return new TextDecoder("utf-8").decode(rsBytes(f)); } catch (e) { return ""; } }
@@ -26859,6 +26898,7 @@
           const all = rsText(f), cap = rsLimits().textShown;
           return '<pre class="rs-text" dir="auto">' + esc(all.slice(0, cap)) + "</pre>" + (all.length > cap ? '<p class="nb-quiet">' + esc(t("rs.textCut", { n: fmtNum(cap) })) + "</p>" : "");
         }
+        if (k === "word" || k === "web") { setTimeout(() => rsDocFill(f), 0); return '<div class="rs-doc" data-rsdoc="' + esc(f.id) + '" aria-busy="true"><p class="nb-quiet">' + esc(t("rs.opening")) + "</p></div>"; } /* BEUK:webword */
         const url = rsBlobUrl(f);
         if (k === "pdf") return '<iframe class="rs-pdf" title="' + name + '" src="' + url + '"></iframe>';
         if (k === "audio") return '<audio class="rs-audio" controls preload="metadata" src="' + url + '"></audio>';
@@ -26888,9 +26928,11 @@
         (items || []).forEach((it) => {
           const name = nbLine(it && it.name, 160) || "file";
           const type = rsTypeOf(it && it.name, it && it.type);
-          if (!type) { refused.push(t("rs.badType", { name: name })); return; }
+          if (!type) { refused.push(t(rsRefusalKey(it && it.name), { name: name })); return; } /* BEUK:webword — an old .doc or a Safari archive is told how to save it */
           if (it.size > L.file) { refused.push(t("rs.tooBig", { name: name, mb: fmtNum(L.file / 1024 / 1024) })); return; }
           if (!(it.size > 0) || typeof it.data !== "string" || !it.data) { refused.push(t("rs.readFail", { name: name })); return; }
+          /* BEUK:webword — a Word document or web page is kept only once the worker has opened it (rsAddFiles) */
+          if ((type === RS_WORD || type === RS_WEB) && !(it.check && it.check.ok)) { refused.push(t(rsCheckKey(type, it.check), { name: name })); return; }
           if (rsTotal() + it.size > L.total || rsNamed().size >= L.files) { refused.push(t("rs.full", { name: name, mb: fmtNum(L.total / 1024 / 1024) })); return; }
           if (!n) n = nbNew();
           if ((n.files || []).length >= L.perNote) { refused.push(t("rs.noteFull", { name: name, n: fmtNum(L.perNote) })); return; }
@@ -26898,6 +26940,9 @@
           rsBook().files.push(f);
           n.files = (n.files || []).concat([f.id]);
           added.push(f);
+          /* BEUK:webword — the page's own title and address, the document's title: the note's when it has none */
+          if (it.check && it.check.title && !n.title) n.title = nbLine(rsPlainTitle(it.check.title), 120);
+          if (it.check && it.check.url && !n.url) { const u = rsUrl(it.check.url); if (u) n.url = u; }
         });
         if (added.length) {
           if (!n.title) n.title = nbLine(added[0].name.replace(/\.[^.]+$/, ""), 120);
@@ -26920,7 +26965,12 @@
       }
       async function rsAddFiles(noteId, list) {
         const items = [];
-        for (const file of Array.from(list || [])) items.push({ name: file.name, type: file.type, size: file.size, data: await rsReadOne(file) });
+        for (const file of Array.from(list || [])) {
+          const it = { name: file.name, type: file.type, size: file.size, data: await rsReadOne(file) };
+          const ty = rsTypeOf(file.name, file.type); /* BEUK:webword — opened in the worker before it is kept */
+          if (it.data && (ty === RS_WORD || ty === RS_WEB)) it.check = await rsDocCheck(ty, it.data);
+          items.push(it);
+        }
         return rsAddRead(noteId, items);
       }
       function rsRemove(noteId, fileId) {
@@ -26944,6 +26994,144 @@
         const a = document.createElement("a"); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 30000);
       }
+      /* ==== BEUK:webword ==== — Word documents and saved web pages as research.
+         Both are kept as they came (Save a copy gives back the same bytes) and
+         opened in a reader view: the worker (assets/rsdoc.js) unpacks them off the
+         main thread under a time limit, and what it hands back is rebuilt here
+         from an allowlist — headings, paragraphs, lists, quotes, tables, links
+         (http and https, opening in a new tab) and pictures carried inside the
+         file (PNG, JPEG, GIF, WebP as data:). Scripts, styles, frames, forms,
+         event handlers and anything that would load from the web never reach the
+         page. A web page is kept under its own type, never text/html: the shelf
+         keeps nothing that renders as a page (src/pictures.ts). */
+      const RS_DOC_MS = 20000;
+      const rsDocW = { w: null, seq: 0, wait: new Map(), cache: new Map() };
+      function rsDocJob(op, data, ms) {
+        return new Promise((resolve) => {
+          if (typeof Worker !== "function") { resolve({ ok: false, reason: "no-worker" }); return; }
+          if (!rsDocW.w) {
+            try {
+              rsDocW.w = new Worker("assets/rsdoc.js");
+              rsDocW.w.onmessage = (ev) => { const m = ev.data || {}, cb = rsDocW.wait.get(m.id); if (cb) cb(m); };
+              rsDocW.w.onerror = (e) => { if (e && e.preventDefault) e.preventDefault(); rsDocStop("worker-failed"); };
+            } catch (e) { resolve({ ok: false, reason: "no-worker" }); return; }
+          }
+          const id = ++rsDocW.seq;
+          const timer = setTimeout(() => rsDocStop("timeout"), ms || RS_DOC_MS);
+          rsDocW.wait.set(id, (m) => { clearTimeout(timer); rsDocW.wait.delete(id); resolve(m); });
+          try { rsDocW.w.postMessage({ id: id, op: op, data: data }); } catch (e) { rsDocW.wait.get(id)({ ok: false, reason: "post" }); }
+        });
+      }
+      /* a job over its time, or a worker that died: every waiting job is told, and the next starts a fresh worker */
+      function rsDocStop(reason) {
+        try { if (rsDocW.w) rsDocW.w.terminate(); } catch (e) {}
+        rsDocW.w = null;
+        Array.from(rsDocW.wait.values()).forEach((cb) => cb({ ok: false, reason: reason }));
+      }
+      function rsDocCheck(type, data) { return rsDocJob(type === RS_WORD ? "check-word" : "check-web", data); }
+      function rsRefusalKey(name) {
+        const ext = (String(name || "").toLowerCase().match(/\.([a-z0-9]{1,12})$/) || [])[1] || "";
+        return ext === "doc" ? "rs.docOld" : ext === "webarchive" ? "rs.webarchive" : "rs.badType";
+      }
+      function rsCheckKey(type, check) {
+        const r = (check && check.reason) || "";
+        if (r === "old-doc") return "rs.docOld";
+        if (r === "webarchive") return "rs.webarchive";
+        if (r === "timeout" || r === "worker-failed" || r === "no-worker") return "rs.readFail";
+        return type === RS_WORD ? "rs.notWord" : "rs.notWeb";
+      }
+      /* a <title> as plain words: its entities read, any tags and control characters gone */
+      function rsPlainTitle(raw) {
+        const d = new DOMParser().parseFromString("<p>" + String(raw || "").slice(0, 400).replace(/</g, "&lt;") + "</p>", "text/html");
+        return (d.body.textContent || "").replace(/[\u0000-\u001f\u007f‪-‮⁦-⁩]/g, "").replace(/\s+/g, " ").trim();
+      }
+      /* the reader view: an allowlist rebuild of untrusted HTML, as detached nodes that are imported
+         as they are (never serialised and parsed again, so nothing can read differently the second time).
+         opts.images maps a saved picture's address (Content-Location, cid:) to its data: URL;
+         opts.base is the page's own address, for its relative links. Never recursive (a page
+         nested ten thousand deep is walked like any other) and capped at RS_SAN.nodes elements. */
+      const RS_SAN = { nodes: 40000, depth: 120 };
+      function rsSanitize(html, opts) {
+        opts = opts || {};
+        const src = new DOMParser().parseFromString(String(html || ""), "text/html");
+        const out = document.implementation.createHTMLDocument("");
+        const root = out.createElement("div");
+        const KEEP = { P: "p", H1: "h3", H2: "h3", H3: "h4", H4: "h5", H5: "h6", H6: "h6", UL: "ul", OL: "ol", LI: "li", BLOCKQUOTE: "blockquote", PRE: "pre", CODE: "code",
+          STRONG: "strong", B: "strong", EM: "em", I: "em", U: "u", S: "s", STRIKE: "s", DEL: "s", SUP: "sup", SUB: "sub", BR: "br", HR: "hr",
+          TABLE: "table", THEAD: "thead", TBODY: "tbody", TFOOT: "tfoot", TR: "tr", TH: "th", TD: "td", CAPTION: "caption", A: "a", IMG: "img", FIGURE: "figure", FIGCAPTION: "figcaption", DL: "dl", DT: "dt", DD: "dd",
+          /* page boxes stay boxes (no attributes), so text in separate boxes never runs together */
+          DIV: "div", SECTION: "div", ARTICLE: "div", HEADER: "div", FOOTER: "div", MAIN: "div", ASIDE: "div", ADDRESS: "div" };
+        const DROP = /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|IFRAME|FRAME|FRAMESET|OBJECT|EMBED|APPLET|SVG|MATH|CANVAS|FORM|INPUT|BUTTON|SELECT|TEXTAREA|OPTION|VIDEO|AUDIO|SOURCE|TRACK|PICTURE|HEAD|TITLE|META|LINK|BASE|NAV|DIALOG|PORTAL|SLOT|MAP|AREA)$/;
+        const link = (v) => {
+          const s = String(v || "").trim();
+          if (!s || s[0] === "#") return "";
+          try { const u = opts.base ? new URL(s, opts.base) : new URL(s); return (u.protocol === "http:" || u.protocol === "https:") ? u.href : ""; } catch (e) { return ""; }
+        };
+        const pic = (v) => {
+          const s = String(v || "").trim();
+          const own = opts.images && Object.prototype.hasOwnProperty.call(opts.images, s) ? opts.images[s] : s;
+          return /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(own) ? own : "";
+        };
+        let count = 0, cut = false;
+        /* a work list of [source node, its kept parent, depth]: children are pushed in reverse so they come off in order */
+        const work = [];
+        const pushKids = (from, to, d) => { const kids = from.childNodes; for (let i = kids.length - 1; i >= 0; i--) work.push([kids[i], to, d]); };
+        const GAP = {}; /* a space after an unwrapped element: its words and the next ones stay apart */
+        pushKids(src.body || src.documentElement, root, 0);
+        while (work.length) {
+          const [node, parent, d] = work.pop();
+          if (node === GAP) { const last = parent.lastChild; if (last && !(last.nodeType === 3 && /\s$/.test(last.nodeValue))) parent.appendChild(out.createTextNode(" ")); continue; }
+          if (node.nodeType === 3) { if (node.nodeValue) parent.appendChild(out.createTextNode(node.nodeValue)); continue; }
+          if (node.nodeType !== 1) continue;
+          const tag = node.tagName.toUpperCase();
+          if (DROP.test(tag)) continue;
+          if (++count > RS_SAN.nodes) { cut = true; break; }
+          const keep = KEEP[tag];
+          if (!keep || d >= RS_SAN.depth) { work.push([GAP, parent, d]); pushKids(node, parent, d); continue; } /* not kept (or too deep): its children join the parent, then a space */
+          if (keep === "img") {
+            const s = pic(node.getAttribute("src"));
+            if (s) { const im = out.createElement("img"); im.setAttribute("src", s); im.setAttribute("alt", String(node.getAttribute("alt") || "").slice(0, 300)); im.setAttribute("loading", "lazy"); ["width", "height"].forEach((a) => { const v = String(node.getAttribute(a) || "").trim(); if (/^[1-9][0-9]{0,3}$/.test(v)) im.setAttribute(a, v); }); parent.appendChild(im); } /* the size the page gave it, plain numbers only */
+            else if (node.getAttribute("alt")) parent.appendChild(out.createTextNode("[" + String(node.getAttribute("alt")).slice(0, 300) + "]"));
+            continue;
+          }
+          const el = out.createElement(keep);
+          if (keep === "a") { const h = link(node.getAttribute("href")); if (h) { el.setAttribute("href", h); el.setAttribute("target", "_blank"); el.setAttribute("rel", "noopener noreferrer nofollow"); } }
+          if (keep === "td" || keep === "th") ["colspan", "rowspan"].forEach((a) => { const v = parseInt(node.getAttribute(a), 10); if (v > 1 && v <= 50) el.setAttribute(a, String(v)); });
+          if (keep === "ol") { const v = parseInt(node.getAttribute("start"), 10); if (v > 1 && v < 100000) el.setAttribute("start", String(v)); }
+          parent.appendChild(el);
+          if (keep === "a" && node.nextSibling && node.nextSibling.nodeType === 1) work.push([GAP, parent, d]); /* links side by side (chips, menus) stay apart */
+          pushKids(node, el, d + 1);
+        }
+        return { node: root, cut: cut, empty: !root.textContent.trim() && !root.querySelector("img") };
+      }
+      async function rsDocFill(f) {
+        const slot = () => document.querySelector('#rsView .rs-doc[data-rsdoc="' + f.id + '"]');
+        if (!slot()) return;
+        const key = f.id + ":" + f.data.length;
+        let view = rsDocW.cache.get(key);
+        if (!view) {
+          const word = f.mediaType === RS_WORD;
+          const r = await rsDocJob(word ? "view-word" : "view-web", f.data);
+          if (!r || !r.ok) view = { error: r && r.reason === "timeout" ? "rs.docBig" : "rs.docFail" };
+          else {
+            const s = rsSanitize(r.html, { images: r.images || {}, base: rsUrl(r.url) || "" });
+            view = s.empty ? { error: "rs.docEmpty" } : { node: s.node, cut: s.cut || r.cut, note: word ? "rs.wordNote" : "rs.webNote" };
+          }
+          rsDocW.cache.set(key, view);
+          if (rsDocW.cache.size > 6) rsDocW.cache.delete(rsDocW.cache.keys().next().value);
+        }
+        const el = slot(); if (!el) return; /* the writer moved on meanwhile */
+        el.removeAttribute("aria-busy");
+        const say = (key, cls) => { const q = document.createElement("p"); q.className = "nb-quiet" + (cls ? " " + cls : ""); q.textContent = t(key); return q; };
+        el.textContent = "";
+        if (view.error) { el.appendChild(say(view.error)); return; }
+        el.appendChild(say(view.note, "rs-doc-note"));
+        const body = document.createElement("div"); body.className = "rs-doc-body"; body.setAttribute("dir", "auto");
+        body.appendChild(document.importNode(view.node, true));
+        el.appendChild(body);
+        if (view.cut) el.appendChild(say("rs.docCut"));
+      }
+      /* ==== /BEUK:webword ==== */
       /* ==== /BEUK:research ==== */
       function nbBook() { if (!state.notebook || !Array.isArray(state.notebook.notes)) state.notebook = { notes: [] }; return state.notebook; }
       function nbHas() { return nbBook().notes.length > 0; }
@@ -54813,7 +55001,7 @@
          and falls back — same logic, same cache, either way. */
       const PWA_SW_URL = "sw.js";
       const PWA_SW_URL_ASSETS = "assets/sw.js";
-      const BEUK_CACHE_NAME = "beuk-shell-v21"; /* must match sw.js */
+      const BEUK_CACHE_NAME = "beuk-shell-v22"; /* must match sw.js */
       const pwa = {
         manifest: null,        // the parsed manifest (fetched at boot)
         swSource: "",          // the served worker's own bytes, for the self-check
@@ -66958,7 +67146,7 @@
       );
       /* BEUK:research — self-check */
       SELF_CHECKS.push(
-        { id: "notebook.research", feature: "notebook", name: "Research files: a text file, a picture, a PDF, a recording and a clip attach to a note (a web page, a file over the size limit and an empty one are refused) and open inside the Notebook — the text as text, the picture as an image, the PDF in a frame, the recording and the clip in players; the source link keeps http(s) only; a note is found by its files' names; the book writes each file once (no research key when no note names one), round-trips byte for byte, and drops a file of the wrong kind or with bad bytes and a note's name for a file the book lacks; a History snapshot names the files instead of copying them, a file removed afterwards is written once in historyPool and comes back on restore; remove comes with Undo; another book arrives with none; on the shelf they travel as pictures do; never exported, never counted; the sample's depths note carries its soundings and its sketch, every line from its chapter",
+        { id: "notebook.research", feature: "notebook", name: "Research files: a text file, a picture, a PDF, a recording and a clip attach to a note (a program, a file over the size limit and an empty one are refused; web pages and Word documents: notebook.research.webword) and open inside the Notebook — the text as text, the picture as an image, the PDF in a frame, the recording and the clip in players; the source link keeps http(s) only; a note is found by its files' names; the book writes each file once (no research key when no note names one), round-trips byte for byte, and drops a file of the wrong kind or with bad bytes and a note's name for a file the book lacks; a History snapshot names the files instead of copying them, a file removed afterwards is written once in historyPool and comes back on restore; remove comes with Undo; another book arrives with none; on the shelf they travel as pictures do; never exported, never counted; the sample's depths note carries its soundings and its sketch, every line from its chapter",
           run() {
             const keepUi = { sel: nbUi.sel, q: nbUi.q, open: nbUi.rsOpen };
             return bibleCheckGuard(() => chopCheckRun(() => {
@@ -66985,7 +67173,7 @@
                   { name: "ledger.pdf", type: "application/pdf", data: b64("%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n") },
                   { name: "gulls.m4a", type: "audio/x-m4a", data: b64("rs-audio-bytes") },
                   { name: "tide.webm", type: "video/webm", data: b64("rs-video-bytes") },
-                  { name: "page.html", type: "text/html", data: b64("<!doctype html><p>a web page</p>") },
+                  { name: "setup.exe", type: "application/x-msdownload", data: b64("MZ not a research file") }, /* BEUK:webword — web pages are kept now (notebook.research.webword); a program is not */
                   { name: "huge.pdf", type: "application/pdf", data: b64("x"), size: rsLimits().file + 1 },
                   { name: "empty.txt", type: "text/plain", data: "", size: 0 }
                 ].map((it) => Object.assign({ size: it.data ? atob(it.data).length : 0 }, it));
@@ -67101,7 +67289,7 @@
                 const sketch = rsFile("sample-rs-sketch");
                 if (!sketch || rsText(sketch).indexOf("<svg") !== 0) bad.push("the sample sketch is not an SVG");
                 if (JSON.stringify(serializeBook().research) !== JSON.stringify(buildSampleBook().research)) bad.push("the sample's files do not round-trip as built");
-                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "5 files kept (m4a as audio/mp4), a web page, an oversized and an empty file refused; text, picture, PDF frame, recording and clip players all opened, object URL let go on switching and closing; the link kept as https, javascript: refused; found by file name; written once, byte for byte, junk dropped; a snapshot names all 5, the removed file sits once in historyPool and restores; remove + Undo; next book has none; the shelf packs it like a picture; EPUB, print and Word unchanged, word counts unchanged; the sample's soundings (4 lines, each in its chapter), sketch and link in place");
+                return scVerdict(bad.length === 0, bad.length ? bad.join("; ") : "5 files kept (m4a as audio/mp4), a program, an oversized and an empty file refused; text, picture, PDF frame, recording and clip players all opened, object URL let go on switching and closing; the link kept as https, javascript: refused; found by file name; written once, byte for byte, junk dropped; a snapshot names all 5, the removed file sits once in historyPool and restores; remove + Undo; next book has none; the shelf packs it like a picture; EPUB, print and Word unchanged, word counts unchanged; the sample's soundings (4 lines, each in its chapter), sketch and link in place");
               } finally { closeNotebook(); nbUi.sel = keepUi.sel; nbUi.q = keepUi.q; nbUi.rsOpen = keepUi.open; }
             }));
           } }
@@ -70310,6 +70498,153 @@
           return scVerdict(!bad.length, bad.length ? bad.join("; ") : ok.length + " answered: " + ok.join(", "));
         } });
       /* ==== /BEUK:appup ==== */
+      /* ==== BEUK:webword — self-check ==== real files through rsAddFiles (the worker opens each before it is kept),
+         then the reader view; the desk is put back afterwards and never saved meanwhile */
+      SELF_CHECKS_ASYNC.push({ id: "notebook.research.webword", feature: "notebook",
+        name: "Word documents and saved web pages are kept as research and read in the Notebook: a real .docx and a Chrome-style .mhtml (with its picture) and .html are kept under their own types, read as words, headings, lists, tables, links and their own pictures, and the note takes the document's title and the page's address; the messy ones are refused by name or shown safely, never thrown: a truncated .docx, a renamed picture, a zip with no document, a zip bomb, an old .doc (by name and by its bytes), an empty file, broken Word XML, scripts, event handlers, frames, SVG, forms, meta refresh, a hostile base, javascript: and data: links, an MHTML without a boundary or an HTML part or with garbage base64, UTF-16 and Windows-1252 pages, binary bytes named .html, ten thousand nested elements, a Safari web archive, a 300-character name with a right-to-left override, and a reader that runs out of time",
+        async run() {
+          const bad = [], notes = [];
+          if (!window.JSZip) return scVerdict(false, "JSZip not loaded");
+          const keep = { doc: JSON.parse(JSON.stringify(serializeBook())), susp: local.suspended, toast: window.toast, sel: nbUi.sel, open: nbUi.rsOpen, dirty: cloudDirty, edited: cloud.sessionEdited };
+          const C = (...c) => String.fromCharCode(...c);
+          const enc = (txt) => new TextEncoder().encode(txt);
+          const file = (name, bytes, type) => new File([bytes], name, { type: type || "" });
+          const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main", R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+          const docx = async (body, opts) => {
+            opts = opts || {};
+            const z = new JSZip();
+            z.file("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+            z.file("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+            if (opts.title) z.file("docProps/core.xml", '<?xml version="1.0"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>' + opts.title + "</dc:title></cp:coreProperties>");
+            z.file("word/_rels/document.xml.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rLink" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.org/tides" TargetMode="External"/><Relationship Id="rJs" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="javascript:alert(1)" TargetMode="External"/><Relationship Id="rImg" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/chart.png"/></Relationships>');
+            z.file("word/media/chart.png", FAKE_PNG, { base64: true });
+            if (!opts.noDocument) z.file("word/document.xml", opts.rawXml || ('<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="' + W + '" xmlns:r="' + R + '"><w:body>' + body + "</w:body></w:document>"));
+            if (opts.bomb) z.file("word/bomb.xml", "a".repeat(2 * 1024 * 1024));
+            return new Uint8Array(await z.generateAsync({ type: "uint8array", compression: "DEFLATE" }));
+          };
+          const p = (txt, style) => "<w:p>" + (style ? '<w:pPr><w:pStyle w:val="' + style + '"/></w:pPr>' : "") + '<w:r><w:t xml:space="preserve">' + txt + "</w:t></w:r></w:p>";
+          const goodBody = p("Tide Tables", "Heading1") + p("Wmark the harbour at dawn.") +
+            '<w:p><w:hyperlink r:id="rLink"><w:r><w:t>the tide office</w:t></w:r></w:hyperlink> <w:hyperlink r:id="rJs"><w:r><w:t>a trap</w:t></w:r></w:hyperlink></w:p>' +
+            '<w:tbl><w:tr><w:tc><w:p><w:r><w:t>High</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>06:12</w:t></w:r></w:p></w:tc></w:tr></w:tbl>' +
+            '<w:p><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:docPr id="1" name="chart" descr="the chart"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:blipFill><a:blip r:embed="rImg"/></pic:blipFill></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+          const good = await docx(goodBody, { title: "Harbour &amp; Tides" + C(0x202e) });
+          const qp = (s) => Array.from(enc(s)).map((b) => (b === 61 || b > 126) ? "=" + b.toString(16).toUpperCase().padStart(2, "0") : String.fromCharCode(b)).join("").replace(/(.{70})/g, "$1=\r\n");
+          const B = "----MultipartBoundary--rs1----";
+          const mhtml = (parts, boundary) => ["From: <Saved by Blink>", "Snapshot-Content-Location: https://example.org/tides/today", "MIME-Version: 1.0", "Content-Type: multipart/related;", "\ttype=\"text/html\";" + (boundary === false ? "" : "\r\n\tboundary=\"" + B + "\""), "", ""].join("\r\n") +
+            parts.map((x) => "--" + B + "\r\n" + x).join("\r\n") + "\r\n--" + B + "--\r\n";
+          const pageHtml = "<!doctype html><html><head><title>Tide &amp; Time" + C(0x202e) + "</title><base href=\"https://evil.example/\"><meta http-equiv=\"refresh\" content=\"0;url=https://evil.example\"><style>body{background:url(https://track.example/px.gif)}</style><scr" + "ipt>window.__rsPwned=1<\/script></head><body>" +
+            "<h1 onclick=\"window.__rsPwned=2\">Wmark Möwe at the pier</h1><p>Café by the <a href=\"https://example.org/pier\">pier</a>, <a href=\"javascript:window.__rsPwned=3\">bad</a>, <a href=\"data:text/html,<scr" + "ipt>parent.__rsPwned=4<\/script>\">worse</a>, <a href=\"/rel\">relative</a>.</p>" +
+            "<img src=\"x\" onerror=\"window.__rsPwned=5\"><img src=\"https://track.example/pixel.gif\" alt=\"tracker\"><img src=\"chart.png\"><iframe src=\"https://evil.example\"></iframe><svg onload=\"window.__rsPwned=6\"><circle r=\"5\"/></svg>" +
+            "<form action=\"https://evil.example\"><input name=\"q\"></form><object data=\"x.swf\"></object><ul><li style=\"color:red\">one</li><li>two</li></ul><scr" + "ipt>window.__rsPwned=7<\/script><style>p{background:url(https://track.example/px.gif)}</style></body></html>";
+          const goodMhtml = mhtml([
+            "Content-Type: text/html\r\nContent-Transfer-Encoding: quoted-printable\r\nContent-Location: https://example.org/tides/today\r\n\r\n" + qp(pageHtml),
+            "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\nContent-Location: https://example.org/tides/chart.png\r\n\r\n" + FAKE_PNG.replace(/(.{76})/g, "$1\r\n"),
+            "Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\nContent-Location: https://example.org/tides/junk.png\r\n\r\n!!!@@@not base64###"
+          ]).replace("<img src=\"chart.png\">", "<img src=\"https://example.org/tides/chart.png\">");
+          const goodMhtmlFixed = goodMhtml.replace(qp(pageHtml), qp(pageHtml.replace("<img src=\"chart.png\">", "<img src=\"https://example.org/tides/chart.png\">")));
+          const u16 = (txt) => { const u = new Uint8Array(2 + txt.length * 2); u[0] = 0xff; u[1] = 0xfe; for (let i = 0; i < txt.length; i++) { u[2 + i * 2] = txt.charCodeAt(i) & 255; u[3 + i * 2] = txt.charCodeAt(i) >> 8; } return u; };
+          const cp1252 = (() => { const t = "<html><head><meta charset=\"windows-1252\"><title>Old</title></head><body><p>Caf" + C(0xe9) + " and Wmark</p></body></html>"; return Uint8Array.from(t, (c) => c.charCodeAt(0)); })();
+          const binary = (() => { const u = new Uint8Array(4096); for (let i = 0; i < u.length; i++) u[i] = (i * 73 + 11) % 256; return u; })();
+          const deep = "<html><body>" + "<div>".repeat(10000) + "<p>Wmark deep</p>" + "</div>".repeat(10000) + "<blockquote>".repeat(2000) + "Wmark quoted" + "</blockquote>".repeat(2000) + "</body></html>";
+          const nul = Uint8Array.from("<html><body><p>looks like a page</p>" + C(0).repeat(4096) + "</body></html>", (c) => c.charCodeAt(0));
+          const longName = "Tide" + C(0x202e) + "x".repeat(300) + ".html";
+          try {
+            local.suspended = true; window.toast = () => {};
+            applyBookDoc(buildEmptyBook());
+            const n = nbNew(); n.title = ""; nbUi.sel = n.id;
+            const pass = [
+              file("tides.docx", good), file("today.mhtml", enc(goodMhtmlFixed), "multipart/related"), file("page.html", enc("<!-- saved from url=(0031)https://example.org/saved/page -->\n" + pageHtml), "text/html"),
+              file("utf16.html", u16("<html><body><p>Wmark Möwe sixteen</p></body></html>"), "text/html"), file("old.htm", cp1252), file("deep.html", enc(deep), "text/html"), file(longName, enc("<p>Wmark long</p>"), "text/html")
+            ];
+            const fail = [
+              ["truncated.docx", good.slice(0, Math.floor(good.length / 2)), "rs.notWord"], ["picture.docx", Uint8Array.from(atob(FAKE_PNG), (c) => c.charCodeAt(0)), "rs.notWord"],
+              ["nodoc.docx", await docx("", { noDocument: true }), "rs.notWord"], ["bomb.docx", await docx(p("x"), { bomb: true }), "rs.notWord"],
+              ["renamed.docx", Uint8Array.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 1, 2, 3, 4]), "rs.docOld"], ["memo.doc", enc("old word"), "rs.docOld"],
+              ["empty.docx", new Uint8Array(0), "rs.readFail"], ["noboundary.mhtml", enc(mhtml(["Content-Type: text/html\r\n\r\n<p>x</p>"], false)), "rs.notWeb"],
+              ["nohtml.mhtml", enc(mhtml(["Content-Type: image/png\r\nContent-Transfer-Encoding: base64\r\n\r\n" + FAKE_PNG])), "rs.notWeb"],
+              ["binary.html", binary, "rs.notWeb"], ["nul.html", nul, "rs.notWeb"], ["safari.webarchive", enc("bplist00 archive"), "rs.webarchive"], ["safari.html", enc("bplist00\u0000\u0001 archive bytes"), "rs.webarchive"]
+            ];
+            const res = await rsAddFiles(n.id, pass.concat(fail.map(([nm, b]) => file(nm, b))));
+            const kept = res.added.map((f) => f.name);
+            pass.forEach((f) => { if (kept.indexOf(nbLine(f.name, 160)) === -1) bad.push("not kept: " + f.name.slice(0, 30)); });
+            fail.forEach(([nm, , key]) => {
+              if (kept.indexOf(nm) !== -1) bad.push("kept, should be refused: " + nm);
+              else if (!res.refused.some((r) => r === t(key, { name: nm }))) bad.push(nm + " refused without " + key + " (" + (res.refused.find((r) => r.indexOf(nm) !== -1) || "no message") + ")");
+            });
+            const byName = (nm) => rsBook().files.find((f) => f.name === nm);
+            if (!byName("tides.docx") || byName("tides.docx").mediaType !== RS_WORD) bad.push("the .docx is not kept as a Word document");
+            ["today.mhtml", "page.html"].forEach((nm) => { if (!byName(nm) || byName(nm).mediaType !== RS_WEB) bad.push(nm + " is not kept as a web page (" + (byName(nm) || {}).mediaType + ")"); });
+            if (n.title !== "Harbour & Tides") bad.push("note title " + JSON.stringify(n.title) + " (want the document's own, read and without its override)");
+            if (n.url !== "https://example.org/tides/today") bad.push("note link " + JSON.stringify(n.url) + " (want the page's own address)");
+            const lng = res.added.find((f) => f.name.indexOf("Tide") === 0);
+            if (!lng || lng.name.length > 160) bad.push("the long name was not kept or not cut to 160");
+            if (rsFile(byName("tides.docx").id) && atob(byName("tides.docx").data).length !== good.length) bad.push("the .docx is not kept byte for byte");
+            /* the reader view, through the Notebook itself */
+            const view = async (nm) => {
+              nbUi.rsOpen = byName(nm).id; nbRender();
+              for (let w = 0; w < 300; w++) { const d = document.querySelector("#rsView .rs-doc"); if (d && !d.hasAttribute("aria-busy")) break; await new Promise((r) => setTimeout(r, 50)); }
+              return document.querySelector("#rsView .rs-doc");
+            };
+            const unsafe = (el) => Array.from(el.querySelectorAll("*")).filter((e) => /^(SCRIPT|STYLE|IFRAME|SVG|FORM|INPUT|OBJECT|EMBED|LINK|META|BASE)$/.test(e.tagName) || Array.from(e.attributes).some((a) => /^on/i.test(a.name) || a.name === "style" || (a.name === "href" && !/^https?:/.test(a.value)) || (a.name === "src" && !/^data:image\/(png|jpeg|gif|webp);base64,/.test(a.value))));
+            let d = await view("tides.docx");
+            if (!d || !d.querySelector("h3") || d.textContent.indexOf("Wmark the harbour") === -1 || !d.querySelector("table td") || !d.querySelector('a[href="https://example.org/tides"][target="_blank"][rel~="noopener"]') || !d.querySelector("img[src^='data:image/png']")) bad.push("the Word view lacks its heading, words, table, safe link or picture");
+            if (d && unsafe(d).length) bad.push("the Word view carries " + unsafe(d).map((e) => e.tagName).join(","));
+            d = await view("today.mhtml");
+            if (!d || d.textContent.indexOf("Wmark Möwe at the pier") === -1 || d.textContent.indexOf("Café") === -1) bad.push("the MHTML view lost its words or their accents");
+            if (d && !d.querySelector("img[src^='data:image/png']")) bad.push("the MHTML view lost the picture saved with it");
+            if (d && d.querySelectorAll("img").length !== 1) bad.push("the MHTML view shows " + d.querySelectorAll("img").length + " pictures (want only the saved one)");
+            if (d && (unsafe(d).length || d.querySelector('a[href^="https://evil"]'))) bad.push("the MHTML view carries " + unsafe(d).map((e) => e.tagName).join(",") + " or the hostile base");
+            if (d && !d.querySelector('a[href="https://example.org/rel"]')) bad.push("a relative link was not read against the page's own address");
+            d = await view("page.html");
+            if (!d || unsafe(d).length || d.querySelector("img")) bad.push("the HTML view carries something unsafe or a picture from the web");
+            if (d && d.textContent.indexOf("[tracker]") === -1) bad.push("a web picture is not shown as its words");
+            d = await view("utf16.html"); if (!d || d.textContent.indexOf("Wmark Möwe sixteen") === -1) bad.push("UTF-16 not read");
+            d = await view("old.htm"); if (!d || d.textContent.indexOf("Café and Wmark") === -1) bad.push("Windows-1252 not read");
+            d = await view("deep.html"); if (!d || d.textContent.indexOf("Wmark deep") === -1 || d.textContent.indexOf("Wmark quoted") === -1) bad.push("ten thousand nested elements were not read");
+            if (d) { let depth = 0, e = d.querySelector(".rs-doc-body"); const walk = (el, k) => { depth = Math.max(depth, k); for (const c of el.children) walk(c, k + 1); }; if (e) walk(e, 0); if (depth > RS_SAN.depth + 2) bad.push("the view nests " + depth + " deep (cap " + RS_SAN.depth + ")"); }
+            if (window.__rsPwned) bad.push("a script ran: " + window.__rsPwned);
+            const shown = Array.from(rsDocW.cache.values()).map((v) => (v.node ? v.node.textContent : "")).join(" ");
+            if (/__rsPwned|background:url|track\.example\/px/.test(shown)) bad.push("a script's or a style's text is shown as words");
+            /* the total-size guard, on a limit the job tightens: parts that do not compress, more of them than the limit allows */
+            const rnd = (n) => { const u = new Uint8Array(n); crypto.getRandomValues(u); return btoa(String.fromCharCode.apply(null, u)); };
+            const big = await (async () => { const z = new JSZip(); z.file("word/document.xml", "<w:document xmlns:w=\"" + W + "\"><w:body/></w:document>"); for (let k = 0; k < 4; k++) z.file("word/media/r" + k + ".bin", rnd(60000), { base64: true }); return new Uint8Array(await z.generateAsync({ type: "uint8array", compression: "DEFLATE" })); })();
+            let bigBin = ""; for (let o = 0; o < big.length; o += 32768) bigBin += String.fromCharCode.apply(null, big.subarray(o, o + 32768)); const bigB64 = btoa(bigBin);
+            const lim = await (async () => { if (!rsDocW.w) await rsDocJob("check-web", btoa("<p>warm</p>")); return new Promise((resolve) => { const id = ++rsDocW.seq; rsDocW.wait.set(id, (m) => { rsDocW.wait.delete(id); resolve(m); }); rsDocW.w.postMessage({ id: id, op: "check-word", data: bigB64, limUnzipped: 200000 }); setTimeout(() => { if (rsDocW.wait.has(id)) { rsDocW.wait.delete(id); resolve({ ok: false, reason: "no answer" }); } }, 20000); }); })();
+            if (!lim || lim.ok || lim.reason !== "bomb") bad.push("parts past the unpacked limit were not refused (" + JSON.stringify(lim) + ")");
+            const fine = await rsDocJob("check-word", bigB64);
+            if (!fine || !fine.ok) bad.push("the same file under the real limit was refused (" + JSON.stringify(fine) + ")");
+            /* words in separate boxes, side-by-side spans and side-by-side links stay separate words */
+            const sep = rsSanitize('<div>alpha</div><div>beta</div><span>gamma</span><span>delta</span><a href="https://example.org/1">one</a><a href="https://example.org/2">two</a>');
+            const boxes = Array.from(sep.node.children).filter((e) => e.tagName === "DIV").map((e) => e.textContent);
+            if (boxes.join("|") !== "alpha|beta") bad.push("separate boxes did not stay boxes (" + boxes.join("|") + ")");
+            const loose = Array.from(sep.node.childNodes).filter((x) => !(x.nodeType === 1 && x.tagName === "DIV")).map((x) => x.textContent).join("").trim().split(/\s+/);
+            if (loose.join("|") !== "gamma|delta|one|two") bad.push("side-by-side spans or links ran together (" + loose.join("|") + ")");
+            /* broken Word XML is kept (the zip is sound) and shows a plain message */
+            const broken = await docx("", { rawXml: "<w:document><w:body><w:p>never closed" });
+            const r2 = await rsAddFiles(n.id, [file("broken.docx", broken)]);
+            if (r2.added.length === 1) { d = await view("broken.docx"); if (!d || d.textContent.indexOf(t("rs.docFail")) === -1) bad.push("broken Word XML did not say it cannot be shown (" + (d ? d.textContent.slice(0, 60) : "no view") + ")"); }
+            else notes.push("broken XML refused at the door");
+            /* a reader that runs out of time is stopped, and the next job starts a fresh one */
+            const slow = await rsDocJob("view-web", btoa("<p>" + "Wmark slow. ".repeat(600000) + "</p>"), 2);
+            if (!slow || slow.ok || slow.reason !== "timeout") bad.push("a job over its time was not stopped (" + JSON.stringify(slow) + ")");
+            const after = await rsDocJob("check-web", btoa("<p>fine</p>"));
+            if (!after || !after.ok) bad.push("the reader did not come back after a timeout");
+            /* the shelf keeps both kinds, never as HTML; a raw text/html file in a book is dropped */
+            if (rsNormalize({ files: [{ id: "h", name: "x.html", mediaType: "text/html", data: btoa("<p>x</p>") }] }).files.length) bad.push("a text/html file in a book file was kept");
+            notes.push(kept.length + " kept, " + res.refused.length + " refused by name");
+          } catch (e) {
+            bad.push("threw: " + (e && e.message ? e.message : String(e)));
+          } finally {
+            delete window.__rsPwned;
+            closeNotebook();
+            window.toast = keep.toast; nbUi.sel = keep.sel; nbUi.rsOpen = keep.open;
+            applyBookDoc(keep.doc);
+            cloudDirty = keep.dirty; cloud.sessionEdited = keep.edited;
+            local.suspended = keep.susp;
+          }
+          return scVerdict(!bad.length, bad.length ? bad.join("; ") : "kept, read and refused as each should be — " + notes.join("; "));
+        } });
+      /* ==== /BEUK:webword — self-check ==== */
       /* ==== BEUK:boxsetvols ==== */
       SELF_CHECKS_ASYNC.push({ id: "boxset.volumes.whole-books", feature: "boxset-docx",
         name: "Box set from whole books: Add a Book takes a Beuk backup file whole — every added volume's pictures (ids that collide with Book One's and with each other, renamed per volume) and its cover ship in the box-set EPUB, which the validator passes; each volume's title is the book's own (backup meta title, Markdown frontmatter title), and a file name is used unmangled (hyphens kept)",

@@ -20,7 +20,7 @@
    assets/ carries the same logic with paths relative to that
    folder, for hostings that serve only index.html + assets/;
    the studio registers this copy first and falls back to it. */
-const BEUK_CACHE = "beuk-shell-v21"; /* v21: two v20s met in a merge, so the shell moves on once for both: the picture-hash worker (assets/pichash.js), precached, and the 2.0 studio at /next is left alone (never cached or served here; its beuk-next-* caches survive activate). v19: the Zen paintings (assets/zen/), precached. v18: the sample's pictures moved out of index.html into assets/sample/ (precached below). v17: submission manuscript, goals that plan, Outline (cards, status, tags, filters), Story Bible */
+const BEUK_CACHE = "beuk-shell-v22"; /* v22: the research reader for Word documents and saved web pages (assets/rsdoc.js), precached. v21: two v20s met in a merge, so the shell moves on once for both: the picture-hash worker (assets/pichash.js), precached, and the 2.0 studio at /next is left alone (never cached or served here; its beuk-next-* caches survive activate). v19: the Zen paintings (assets/zen/), precached. v18: the sample's pictures moved out of index.html into assets/sample/ (precached below). v17: submission manuscript, goals that plan, Outline (cards, status, tags, filters), Story Bible */
 /* ==== BEUK:sound ==== The zen ambient recordings (assets/sound/*.mp3,
    up to ~1 MB each) are NOT precached — install stays small. Each is
    kept the first time it is played, in its own cache that a shell
@@ -54,7 +54,9 @@ const BEUK_SHELL = [
   "./assets/zen/mind.webp",
   "./assets/zen/sakura.webp",
   /* BEUK:localpics — hashes pictures off the main thread for the device save */
-  "./assets/pichash.js"
+  "./assets/pichash.js",
+  /* BEUK:webword — opens Word documents and saved web pages off the main thread */
+  "./assets/rsdoc.js"
 ];
 
 /* ==== BEUK:slim ==== The sample story's pictures, as files (they used
