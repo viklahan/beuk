@@ -296,3 +296,29 @@ describe('the schema bridge (TipTap\'s Schema instance is not bookSchema\'s)', (
     expect(fragmentText(frag)).toBe(text);
   });
 });
+
+describe('link hrefs on the page are sanitised (display only)', () => {
+  it('toDOM: javascript:, data: and friends render as "#"; http(s), mailto and relative/fragment hrefs pass as written', async () => {
+    const { safeHref } = await import('../src/editor/schema');
+    for (const bad of ['javascript:alert(1)', ' JaVaScRiPt:x', 'java\tscript:x', 'java\nscript:x', '\u0001javascript:x', 'data:text/html,x', 'vbscript:x', 'file:///etc/passwd', 'blob:https://a.b/x', 'http://[bad'])
+      expect(safeHref(bad), JSON.stringify(bad)).toBe('#');
+    for (const good of ['https://a.b', 'http://a.b/c?d#e', 'mailto:a@b.c', '#fn1', 'chapter-2', '/x/y'])
+      expect(safeHref(good), good).toBe(good);
+  });
+
+  it('a javascript: link in the fragment renders href="#" in the editor, and the text still exports byte for byte', () => {
+    const doc = bookSchema.node('doc', null, [
+      bookSchema.node('paragraph', null, [bookSchema.text('see '), bookSchema.text('here', [bookSchema.mark('link', { href: 'javascript:alert(1)' })]), bookSchema.text(' and '), bookSchema.text('there', [bookSchema.mark('link', { href: 'https://a.b' })])]),
+    ]);
+    const y = new Y.Doc();
+    const frag = y.getXmlFragment('body');
+    ypPmToFrag(doc, frag);
+    const ed = mount(frag);
+    const hrefs = Array.from(ed.view.dom.querySelectorAll('a')).map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(['#', 'https://a.b']);
+    expect(ed.state.doc.firstChild!.child(1).marks[0]!.attrs.href).toBe('javascript:alert(1)'); // the stored attr is untouched
+    flushNormalize(ed);
+    expect(fragmentText(frag)).toBe(toText(doc));
+    expect(fragmentText(frag)).toBe('see [here](javascript:alert(1)) and [there](https://a.b)');
+  });
+});

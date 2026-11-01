@@ -30,6 +30,24 @@ function attributesOf(spec: NodeSpec | MarkSpec): Attributes {
 
 const str = (v: unknown): string => (v == null ? '' : String(v));
 
+const SAFE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:']);
+
+/** The href the PAGE gets for a link (display only: the stored attr, and so the book's text, is never touched).
+ *  http, https, mailto and relative or fragment hrefs (resolved against the page) pass as written; anything else
+ *  (javascript:, data:, vbscript:, file:, blob:, unparsable) becomes "#". ASCII control characters and whitespace
+ *  are dropped before the check, because browsers ignore them inside a scheme ("java\tscript:"). */
+export function safeHref(v: unknown): string {
+  const raw = str(v);
+  const probe = raw.replace(/[\u0000-\u0020\u007f]/g, '');
+  let url: URL;
+  try {
+    url = new URL(probe, globalThis.location?.href ?? 'https://beuk.invalid/');
+  } catch {
+    return '#';
+  }
+  return SAFE_PROTOCOLS.has(url.protocol) ? raw : '#';
+}
+
 /** What each block looks like on the page. Leaf atoms show their source-ish text; nothing here is read back. */
 const NODE_DOM: Record<string, (node: PMNode) => DOMOutputSpec> = {
   doc: () => ['div', 0],
@@ -42,7 +60,7 @@ const NODE_DOM: Record<string, (node: PMNode) => DOMOutputSpec> = {
 };
 
 const MARK_DOM: Record<string, (mark: PMMark) => DOMOutputSpec> = {
-  link: (m) => ['a', { href: str(m.attrs.href), rel: 'noopener noreferrer nofollow', target: '_blank' }, 0],
+  link: (m) => ['a', { href: safeHref(m.attrs.href), rel: 'noopener noreferrer nofollow', target: '_blank' }, 0],
   em: () => ['em', 0],
   strong: () => ['strong', 0],
   footnoteRef: () => ['span', { class: 'ms-fnref' }, 0],
