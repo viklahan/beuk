@@ -68190,6 +68190,36 @@
       /* BEUK:localpics — the research policy check awaits a fetch: it belongs with the checks that are awaited (in SELF_CHECKS its Promise read as a failure) */
       { const i = SELF_CHECKS.findIndex((c) => c.id === "notebook.research.csp"); if (i !== -1) SELF_CHECKS_ASYNC.push(SELF_CHECKS.splice(i, 1)[0]); }
       /* ==== /BEUK:localpics — self-check ==== */
+      /* ==== BEUK:appup ==== — the pages the app server renders answer.
+         Caddy serves the studio and the static site from ./client itself,
+         and hands /api, /help, /school, /roadmap, /changelog and the rest
+         to the app (Caddyfile). When the app is down — it exits at boot
+         when its database is not running (2026-10-31: db not started,
+         every one of those pages a 502 while the studio still opened) —
+         none of the server's own housekeeping checks can run to say so.
+         This one runs in the studio, which still opens, and names the
+         cause. */
+      SELF_CHECKS_ASYNC.push({ id: "infra.app.answers", feature: "infra",
+        name: "The pages the app server renders answer through the studio's own host: /api/health reports the database up, and /help, /school, /roadmap, /changelog, /thanks, /support, /privacy, /terms and /status each open (a 502 or 504 is named as the app not answering, a 503 from /api/health as its database down)",
+        async run() {
+          const PAGES = ["/help", "/school", "/roadmap", "/changelog", "/thanks", "/support", "/privacy", "/terms", "/status"];
+          const bad = [], ok = [];
+          const why = (s) => s === 502 || s === 504 ? "the app server is not answering (start the whole stack: docker compose up -d — the app exits at boot without its database)" : s === 503 ? "the app is up but its database is down" : s === 404 ? "this host does not serve it (a deploy without the app server)" : "answered " + s;
+          const get = async (p) => { try { const r = await fetch(p, { cache: "no-store", credentials: "same-origin" }); return { status: r.status, r }; } catch (e) { return { status: 0, err: (e && e.message) || String(e) }; } };
+          if (location.protocol !== "http:" && location.protocol !== "https:") return scVerdict(false, "the studio was opened from " + location.protocol + " — there is no app server to ask");
+          const h = await get("/api/health");
+          let body = null;
+          if (h.r) { try { body = await h.r.json(); } catch (e) {} }
+          if (h.status === 200 && body && body.ok === true && body.db === "up") ok.push("/api/health (db up)");
+          else bad.push("/api/health: " + (h.status ? why(h.status) : "no reply (" + h.err + ")") + (body && body.db ? ", db " + body.db : ""));
+          const res = await Promise.all(PAGES.map(async (p) => ({ p, a: await get(p) })));
+          const byWhy = new Map(); /* one line per cause, naming its pages */
+          res.forEach(({ p, a }) => { if (a.status >= 200 && a.status < 400) { ok.push(p); return; } const w = a.status ? why(a.status) : "no reply (" + a.err + ")"; byWhy.set(w, (byWhy.get(w) || []).concat([p])); });
+          byWhy.forEach((ps, w) => bad.push(ps.join(", ") + ": " + w));
+          if (!navigator.onLine && bad.length) bad.unshift("this device reports it is offline");
+          return scVerdict(!bad.length, bad.length ? bad.join("; ") : ok.length + " answered: " + ok.join(", "));
+        } });
+      /* ==== /BEUK:appup ==== */
       /* ==== BEUK:boxsetvols ==== */
       SELF_CHECKS_ASYNC.push({ id: "boxset.volumes.whole-books", feature: "boxset-docx",
         name: "Box set from whole books: Add a Book takes a Beuk backup file whole — every added volume's pictures (ids that collide with Book One's and with each other, renamed per volume) and its cover ship in the box-set EPUB, which the validator passes; each volume's title is the book's own (backup meta title, Markdown frontmatter title), and a file name is used unmangled (hyphens kept)",
