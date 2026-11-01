@@ -128,7 +128,7 @@ describe('1.0\'s packed device save (BEUK:localpics), read-only', () => {
     const real = proto.get;
     proto.get = function (this: IDBObjectStore, k: unknown) {
       if (typeof k === 'string' && k.startsWith(LEGACY_PIC)) {
-        const r = { result: undefined, error: new DOMException('read failed', 'UnknownError'), onsuccess: null, onerror: null } as unknown as IDBRequest & { onerror: (() => void) | null };
+        const r = { result: undefined, error: new DOMException('read failed', 'UnknownError'), onsuccess: null, onerror: null } as unknown as IDBRequest & { onerror: ((e: Event) => void) | null };
         setTimeout(() => r.onerror?.call(r, new Event('error')), 0);
         return r;
       }
