@@ -2526,6 +2526,37 @@ files it was written about and the link it came from.
   they are: nothing is serialised and parsed again, so nothing can read
   differently the second time. Unwrapped elements and side-by-side
   links get a space, so words never run together.
+- **Nothing added or removed unsaid.** Under every view one line says
+  either "Every word in the file is shown here." or "Not shown here: …",
+  each kind with its number: menus, form fields and buttons, embedded
+  video/audio/frames, drawings and formulas (each with its words), parts
+  the page itself hid (`hidden`, `display:none`, `visibility:hidden`),
+  pictures not saved with the page, pictures in a format the view cannot
+  show (EMF, TIFF…), links that lead nowhere on the web (their words are
+  shown), scripts and styles (counted over the whole document, head
+  included), and for Word the header and footer words, comment words and
+  words deleted in tracked changes. Then the books are balanced in
+  **letters and numbers** (`\p{L}\p{N}`, so spacing may change but
+  characters may not): the file's own count — for Word from its XML in
+  the worker (`docxStats`: runs, footnotes and endnotes; a text box's
+  VML copy in `mc:Fallback` counted once; `<mc:Fallback/>` holds
+  nothing and `</mc:AlternateContent>` closes any fallback left open),
+  for a page from its visible text — must equal what is shown plus what
+  was named. Anything left over is said as "other letters and numbers:
+  N"; letters shown that the file does not hold are said as such. A
+  footnote number mammoth writes ("[1]") is Word's own numbering. A
+  picture that is not shown leaves a marked note in its place ("(a
+  picture not saved with the page: …)", styled as a note, never counted
+  as the file's words). The writer's own words are never re-spaced:
+  inline elements (`span`, `em`…) are joined as the browser joins them,
+  so a word split across them ("<span>O</span>urselves") stays one word.
+- **What the count found on real files.** Steady Ground (a Word book):
+  14 letters were missing, the "urselves" and "nxious" of two drop caps
+  whose rest of the word sits in DrawingML text boxes with an empty
+  fallback, which mammoth does not read. The worker now writes a text
+  box's words in where the box sits, in the copy it hands mammoth (the
+  file is never changed): "Ourselves" reads whole and the view says
+  every word is shown. My first word-level probe had missed this.
 - **Measured live** (`beuk-spikes/webword/smoke.mjs`, through the
   Notebook's own file picker): a 1.2 MB Word book (10,721 words) and the
   e2e manuscript (272 words, 4 headings, its picture, the note titled
@@ -2549,8 +2580,20 @@ files it was written about and the link it came from.
   no script or CSS text is shown. Broken Word XML is kept (its zip is
   sound) and says it cannot be shown; a job past its time is stopped and
   the next one works; the 200 MB total refuses incompressible parts past
-  a limit the job tightens (a job can only tighten it). Mutation test
-  (`beuk-spikes/webword/mutate.py`): 21 of 21 caught.
+  a limit the job tightens (a job can only tighten it). The accounting
+  is held too: a drop-cap Word file (text box, `<mc:Fallback />`) reads
+  "Ourselves and the Wmark after the box." and says every word is
+  shown; a Word file with a header, footer, comment, tracked deletion
+  and an EMF picture names each with its count; the test page names its
+  1 form field, 2 frames, 1 drawing, 3 web pictures, 2 dead links and 4
+  scripts and styles, claims nothing extra and leaves nothing
+  unexplained; hidden parts and a menu are counted with their words; a
+  page inside one `<form>` keeps its words; a word split across spans
+  stays one; unexplained missing or extra letters are said. Mutation
+  test (`beuk-spikes/webword/mutate.py`): 33 of 34 caught; the 34th
+  (a self-closing fallback treated as open) is equivalent, since
+  `mc:Fallback` is always the last child and `</mc:AlternateContent>`
+  closes it.
 
 ## Studio: the preview keeps the writer's place (client-only)
 
