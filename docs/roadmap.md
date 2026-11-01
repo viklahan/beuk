@@ -5,7 +5,7 @@ column and moves along as the work moves. Dates are the day a feature
 reached the build; the [changelog](/changelog) explains the changes in
 plain words.
 
-Last updated: 2026-10-29.
+Last updated: 2026-10-31.
 
 **The statuses.** *In progress*: being built right now. *Planned*: agreed,
 and in the order it will be built. *Exploring*: wanted, not yet designed
@@ -16,8 +16,7 @@ today.
 
 - **Research files: web pages and Word files.** The Notebook already keeps
   pictures, PDFs, recordings, video clips and text on a note. Next it
-  takes a web page you saved from your browser and a Word document, and
-  the 25 MB a book limit on research is being measured and reconsidered.
+  takes a web page you saved from your browser and a Word document.
 
 ## Planned
 
@@ -66,6 +65,10 @@ In the order they will be built.
 
 Newest first.
 
+- **2026-10-31 — Room for research.** A book now keeps up to 100 MB of
+  research files, 25 MB each (it was 25 MB, 10 MB each). Pictures and
+  files are saved on your device once instead of with every keystroke's
+  save, so a book full of them types as quickly as an empty one.
 - **2026-10-29 — Research files.** Pictures, PDFs, recordings, video
   clips and text kept on a Notebook note, opened beside it, with a link
   to where they came from.

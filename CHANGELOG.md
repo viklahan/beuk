@@ -4,6 +4,12 @@ What changed, in the order writers met it. Every entry exists because
 someone asked, in so many words, for the book on their desk to be easier
 to make well.
 
+## 2026-10-31 — Room for research
+
+- **A book with many pictures and files types as quickly as an empty one.** Beuk saves your book on your device a moment after you stop typing. It used to save every picture and research file again each time, so a book holding 25 MB of them stalled typing for about a tenth of a second on every save, and for nearly half a second on a slower computer. Each picture and file is now saved on your device once, when it arrives; after that a save takes a few thousandths of a second however much you keep. Your device also keeps one copy of each instead of two, so the book takes half the room. Backups, exports and your shelf copy are unchanged and still carry everything.
+- **More room for research.** A book now keeps up to 100 MB of research files, 25 MB each (it was 25 MB, 10 MB each), and up to 200 files.
+- **Said plainly if a picture is lost.** If a picture or file ever can't be read back from your device, Beuk opens your book with all its writing, says how many are missing, and suggests a backup or your shelf copy.
+
 ## 2026-10-29 — Buy the maker a caife
 
 - **The support page says thank you properly.** "Buy me a coffee on Ko-fi" is now **Buy a Caife** (caife is Irish for coffee), on the support page and on the tip jar in Help and after an export. Ko-fi still opens in a new tab. Back on the support page, a thank-you note drifts down over a morning sea, folds itself into a paper boat and sails off toward the sun, and the page says "Go raibh maith agat", Irish for thank you. The note waits for you: if you are still on Ko-fi, it folds when you come back. It is drawn live in your browser, from Beuk's own server, with no images and nothing fetched from elsewhere. With reduced motion on, you see the boat already on the water. For a week afterwards, on that device, the boat is still out there when you visit.

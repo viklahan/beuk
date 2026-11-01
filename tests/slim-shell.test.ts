@@ -64,7 +64,7 @@ test('slim: both service workers precache exactly the manifest files, at shell c
   const files = [...m.images, m.cover].map((p) => p.file).sort();
   for (const [rel, prefix] of [['sw.js', './assets/sample/'], [path.join('assets', 'sw.js'), './sample/']] as const) {
     const sw = await readFile(path.join(client, rel), 'utf8');
-    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v19";/, rel);
+    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v20";/, rel);
     const block = /const BEUK_SAMPLE = \[([\s\S]*?)\];/.exec(sw);
     assert.ok(block, `${rel}: BEUK_SAMPLE list`);
     const listed = [...block[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
@@ -78,7 +78,7 @@ test('slim: both service workers precache exactly the manifest files, at shell c
     assert.ok(activate && !activate[0].includes('precacheSample'), `${rel}: not in activate (it would hold every fetch)`);
   }
   const html = await readFile(path.join(client, 'index.html'), 'utf8');
-  assert.match(html, /const BEUK_CACHE_NAME = "beuk-shell-v19";/);
+  assert.match(html, /const BEUK_CACHE_NAME = "beuk-shell-v20";/);
 });
 
 test('slim: shell.sample.external is in the client and registered client-only with a reason', async () => {

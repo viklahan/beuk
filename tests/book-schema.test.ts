@@ -76,7 +76,7 @@ test('schema: TOP_LEVEL_KEYS has 38 entries and includes formatVersion', () => {
   assert.equal(new Set(TOP_LEVEL_KEYS).size, 38);
   assert.ok(TOP_LEVEL_KEYS.includes('formatVersion'));
   assert.equal(LIMITS.seriesMax, 120);
-  assert.equal(LIMITS.researchFileMax, 10 * 1024 * 1024);
+  assert.equal(LIMITS.researchFileMax, 25 * 1024 * 1024);
 });
 
 test('schema: a wrong type (sections: "x") fails with a path', () => {

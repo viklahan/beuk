@@ -98,7 +98,7 @@ export const LIMITS = {
   bibleNameMax: 120, bibleNotesMax: 20000, // CI:24110-24128
   bibleQuoteMax: 160, // CI:24131
   notebookNotesMax: 500, notebookTitleMax: 120, notebookBodyMax: 50000, // CI:26496-26513
-  researchFileMax: 10 * 1024 * 1024, researchTotalMax: 25 * 1024 * 1024, researchFilesMax: 60, // CI:26533 (rsLimits)
+  researchFileMax: 25 * 1024 * 1024, researchTotalMax: 100 * 1024 * 1024, researchFilesMax: 200, // CI:26533 (rsLimits)
   audioNarratorMax: 200, // CI:47267-47289
   historyChopNameMax: 300, // CI:32202
   dictationRecentMax: 4, // CI:68702-68715
