@@ -12,10 +12,11 @@
    Not part of npm test: it needs Chromium. Exit 1 on any fail, 2 when
    the run itself could not start. */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { BOXSET_CELL, compareBoxSetNav, epubNav } from './boxset.js';
 import { compareBook, type Book10 } from './compare.js';
 import { FORMATS, loadShapes, OUT_DIR, type Format, type Shape } from './shape.js';
 
@@ -97,6 +98,41 @@ async function runCell(browser: Browser, origin: string, s: Shape, f: Format): P
   }
 }
 
+/* The box set cell: Book One through the Import button, Books Two and
+   Three through Add a Book, Build Box Set, and the EPUB's contents read. */
+async function runBoxSet(browser: Browser, origin: string, shapes: Shape[]): Promise<CellResult> {
+  const label = 'box set (' + BOXSET_CELL.volumes.join(' + ') + ')';
+  const cell = (status: 'pass' | 'fail', diff?: string): CellResult => ({ shape: label, format: 'boxset', status, ...(diff ? { diff } : {}) });
+  const expected = BOXSET_CELL.volumes.map((f) => shapes.find((s) => s.id === f.replace(/\.[a-z]+$/, ''))!.expected);
+  const { ctx, page } = await openStudio(browser, origin);
+  try {
+    const first = await importThroughButton(page, path.join(OUT_DIR, BOXSET_CELL.volumes[0]));
+    if ('error' in first) return cell('fail', 'book one: ' + first.error);
+    // 1.0 opens the Import report after an import; the writer closes it to go on
+    if (await page.isVisible('#btnIrClose')) await page.click('#btnIrClose');
+    await page.click('#btnExport');
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.click('#btnBoxSetAdd')]);
+    await chooser.setFiles(BOXSET_CELL.volumes.slice(1).map((f) => path.join(OUT_DIR, f)));
+    try {
+      await page.waitForFunction((n: number) => document.querySelectorAll('#boxSetList .bs-row').length === n, BOXSET_CELL.volumes.length, { timeout: IMPORT_TIMEOUT_MS });
+    } catch {
+      const toasts = await page.evaluate(() => (window as unknown as { __toasts: { text: string }[] }).__toasts.map((t) => t.text.trim()));
+      return cell('fail', `Add a Book: the box set never listed ${BOXSET_CELL.volumes.length} books` + (toasts.length ? ` (toasts: ${toasts.join(' | ')})` : ''));
+    }
+    let download;
+    try { [download] = await Promise.all([page.waitForEvent('download', { timeout: IMPORT_TIMEOUT_MS }), page.click('#btnBuildBoxSet')]); }
+    catch { return cell('fail', `Build Box Set: no download within ${IMPORT_TIMEOUT_MS / 1000} s`); }
+    const nav = epubNav(readFileSync(await download.path()));
+    if (!nav) return cell('fail', 'the box set EPUB has no nav document');
+    const r = compareBoxSetNav(nav, expected);
+    return r.ok ? cell('pass') : cell('fail', r.diff ?? '');
+  } catch (e) {
+    return cell('fail', `harness: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`);
+  } finally {
+    await ctx.close();
+  }
+}
+
 export function resultsMarkdown(cells: CellResult[], ran: string, base: string): string {
   const rows = new Map<string, Map<string, CellResult>>();
   for (const c of cells) { if (!rows.has(c.shape)) rows.set(c.shape, new Map()); rows.get(c.shape)!.set(c.format, c); }
@@ -116,7 +152,7 @@ export function resultsMarkdown(cells: CellResult[], ran: string, base: string):
 async function main() {
   const only = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : null;
   const shapes = loadShapes().filter((s) => !only || s.id === only);
-  if (!shapes.length) { console.error(`no shape "${only}"`); process.exit(2); }
+  if (!shapes.length && only !== 'boxset') { console.error(`no shape "${only}"`); process.exit(2); }
   const OUT = process.env.IMPORT_SHAPES_OUT ? path.resolve(process.env.IMPORT_SHAPES_OUT) : mkdtempSync(path.join(os.tmpdir(), 'beuk-import-shapes-'));
   mkdirSync(OUT, { recursive: true });
 
@@ -139,6 +175,11 @@ async function main() {
         cells.push(c);
         if (c.status !== 'na') console.log(`${c.status === 'pass' ? 'pass' : 'FAIL'} ${s.id}.${f}${c.diff ? ' — ' + c.diff : ''}`);
       }
+    }
+    if (!only || only === 'boxset') {
+      const c = await runBoxSet(browser, srv.origin, loadShapes());
+      cells.push(c);
+      console.log(`${c.status === 'pass' ? 'pass' : 'FAIL'} ${c.shape}${c.diff ? ' — ' + c.diff : ''}`);
     }
   } finally {
     await browser.close();

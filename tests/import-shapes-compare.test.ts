@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { compareBoxSetNav } from '../scripts/import-shapes/boxset.js';
 import { compareBook, countBreaks, readNumber, type Book10 } from '../scripts/import-shapes/compare.js';
 import type { Expected } from '../scripts/import-shapes/shape.js';
 
@@ -85,4 +86,37 @@ test('meta author mismatch fails', () => {
   const r = compareBook({ meta: { author: 'B. Other' }, sections: [{ kind: 'body' }] }, book([sec('body', 'chapter', 'X')]));
   assert.equal(r.ok, false);
   assert.match(r.diff ?? '', /author/);
+});
+
+/* ---- the box set cell: the combined EPUB's nav, one part per book ---- */
+
+const nav = (vols: [string, string[]][]) =>
+  '<?xml version="1.0" encoding="utf-8"?>\n<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Table of Contents</title></head><body>\n'
+  + '<nav epub:type="toc" id="toc"><h1>Contents</h1><ol>\n'
+  + vols.map(([t, entries]) => `  <li><a href="d.xhtml">${t}</a><ol>\n` + ['Title Page', ...entries].map((e) => `    <li><a href="x.xhtml">${e}</a></li>`).join('\n') + '\n  </ol></li>').join('\n')
+  + '\n</ol></nav>\n<nav epub:type="landmarks" hidden="hidden"><ol><li><a epub:type="toc" href="nav.xhtml">Contents</a></li></ol></nav>\n</body></html>';
+const vol = (title: string, chapters: string[]): Expected => ({ meta: { title }, sections: chapters.map((c, i) => ({ kind: 'body', type: 'chapter', number: i + 1, title: c })) });
+const VOLS = [vol('One', ['The Harbour', 'The Storm']), vol('Two', ['The Field']), vol('Three', ['The Harbour'])];
+
+test('box set nav with three volumes in order passes', () => {
+  const r = compareBoxSetNav(nav([['One', ['Chapter 1 · The Harbour', 'Chapter 2 · The Storm', 'About the Author']], ['Two', ['Chapter 1 · The Field']], ['Three', ['A Note', 'Chapter 1 · The Harbour']]]), VOLS);
+  assert.deepEqual(r, { ok: true, diff: null });
+});
+
+test('a chapter under the wrong volume fails', () => {
+  const r = compareBoxSetNav(nav([['One', ['Chapter 1 · The Harbour']], ['Two', ['Chapter 1 · The Storm', 'Chapter 2 · The Field']], ['Three', ['Chapter 1 · The Harbour']]]), VOLS);
+  assert.equal(r.ok, false);
+  assert.match(r.diff ?? '', /book 1/);
+});
+
+test('a missing volume fails', () => {
+  const r = compareBoxSetNav(nav([['One', ['Chapter 1 · The Harbour', 'Chapter 2 · The Storm']], ['Two', ['Chapter 1 · The Field']]]), VOLS);
+  assert.equal(r.ok, false);
+  assert.match(r.diff ?? '', /3 books/);
+});
+
+test('a volume titled from its file name fails', () => {
+  const r = compareBoxSetNav(nav([['One', ['Chapter 1 · The Harbour', 'Chapter 2 · The Storm']], ['dropcap', ['Chapter 1 · The Field']], ['Three', ['Chapter 1 · The Harbour']]]), VOLS);
+  assert.equal(r.ok, false);
+  assert.match(r.diff ?? '', /dropcap/);
 });
