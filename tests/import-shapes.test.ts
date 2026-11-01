@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fillerParagraphs } from '../scripts/import-shapes/filler.js';
+import { renderMd, renderRtf, renderTxt } from '../scripts/import-shapes/render-text.js';
 import { FORMATS, loadShapes, SHAPES_DIR } from '../scripts/import-shapes/shape.js';
 
 /* The import-shapes grid (scripts/import-shapes): real-shaped manuscripts
@@ -94,4 +95,42 @@ test('fillerParagraphs is deterministic and within 1% of the word count', () => 
   const words = a.join(' ').split(/\s+/).length;
   assert.ok(Math.abs(words - 9000) <= 90, `${words} words`);
   for (const p of a.slice(0, -1)) { const n = p.split(/\s+/).length; assert.ok(n >= 60 && n <= 120, `paragraph of ${n} words`); }
+});
+
+const shapeById = (id: string) => { const s = loadShapes().find((x) => x.id === id); assert.ok(s, id); return s; };
+
+test('txt of clean-numbered starts with the title line and holds every heading in order', () => {
+  const txt = renderTxt(shapeById('clean-numbered')).toString('utf8');
+  assert.ok(txt.startsWith('The Lantern Keeper\n'));
+  const at = ['Chapter 1: The Harbour', 'Chapter 2: The Storm', 'Chapter 3: The Light'].map((h) => txt.indexOf('\n' + h + '\n'));
+  assert.ok(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1])), String(at));
+  assert.ok(txt.includes('\n***\n') && txt.endsWith('\n') && !txt.endsWith('\n\n'));
+});
+
+test('md of md-headings has atx and setext headings', () => {
+  const md = renderMd(shapeById('md-headings')).toString('utf8');
+  assert.ok(md.includes('# Chapter 1: The Harbour\n') && md.includes('## Chapter 2: The Storm\n'));
+  assert.ok(md.includes('Chapter 3: The Light\n' + '='.repeat('Chapter 3: The Light'.length) + '\n'));
+  assert.ok(md.includes('Chapter 4: The Stair\n' + '-'.repeat('Chapter 4: The Stair'.length) + '\n'));
+});
+
+test('md title page is front matter', () => {
+  assert.ok(renderMd(shapeById('clean-numbered')).toString('utf8').startsWith('---\ntitle: The Lantern Keeper\nauthor: Ada Marsh\n---\n'));
+});
+
+test('rtf escapes § and — as \\u escapes', () => {
+  const a = renderRtf(shapeById('scene-markers-section')).toString('latin1');
+  const b = renderRtf(shapeById('scene-markers-dashes')).toString('latin1');
+  assert.ok(a.startsWith('{\\rtf1') && a.includes('\\u167?') && b.includes('\\u8212?'));
+  assert.ok(!/[^\x00-\x7f]/.test(a + b), 'rtf is 7-bit');
+});
+
+test('blank-line-breaks txt has 3 blank lines at each break', () => {
+  const txt = renderTxt(shapeById('blank-line-breaks')).toString('utf8');
+  assert.equal(txt.split('\n\n\n\n').length - 1, 3);
+  assert.ok(!txt.includes('\n\n\n\n\n'));
+});
+
+test('text renderings are byte-identical twice', () => {
+  for (const s of loadShapes()) for (const r of [renderTxt, renderMd, renderRtf]) assert.ok(r(s).equals(r(s)), s.id);
 });
