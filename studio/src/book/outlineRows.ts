@@ -9,9 +9,11 @@ import { BODY, SECTIONS } from '@book/editor/index.js';
    Step 4 lists the sections flat, in book order (1.0's groups, word counts
    and row tools are step 5). */
 
-export type OutlineRow = { index: number; id: string; name: string; kind: string; type: string; isPart: boolean; editable: boolean };
+/** `chopName`: 1.0's chopName (the title, else the type's label, else side.untitled); `isSection`: an object entry. */
+export type OutlineRow = { index: number; id: string; name: string; chopName: string; kind: string; type: string; isPart: boolean; editable: boolean; isSection: boolean };
 
-type T = (key: 'import.type.part' | 'side.untitled' | 'side.chapterAbbr') => string;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type T = (key: any) => string;
 
 type SectionLike = { title?: unknown; number?: unknown; type?: unknown; kind?: unknown };
 
@@ -24,14 +26,23 @@ export function sectionName(s: SectionLike, t: T): string {
   return title;
 }
 
+/** 1.0's chopName (BEUK:chapterops): the trimmed title, else the type's import label, else side.untitled. */
+export function chopName(s: SectionLike, t: T): string {
+  const title = String((s && s.title) || '').trim();
+  if (title) return title;
+  const k = 'import.type.' + String(s && s.type);
+  const lbl = t(k);
+  return lbl !== k ? lbl : t('side.untitled');
+}
+
 /** The outline rows of a book's Y.Doc. `editable`: the section's content is text (it has a fragment). */
 export function outlineRows(ydoc: Y.Doc, t: T): OutlineRow[] {
   return ydoc.getArray<unknown>(SECTIONS).toArray().map((s, index) => {
-    if (!(s instanceof Y.Map)) return { index, id: String(index), name: '', kind: '', type: '', isPart: false, editable: false };
+    if (!(s instanceof Y.Map)) return { index, id: String(index), name: '', chopName: '', kind: '', type: '', isPart: false, editable: false, isSection: false };
     const get = (k: string): unknown => s.get(k);
     const sec: SectionLike = { title: get('title'), number: get('number'), type: get('type'), kind: get('kind') };
     const id = typeof get('id') === 'string' ? (get('id') as string) : String(index);
     const str = (v: unknown): string => (typeof v === 'string' ? v : '');
-    return { index, id, name: sectionName(sec, t), kind: str(sec.kind), type: str(sec.type), isPart: sec.type === 'part', editable: get(BODY) instanceof Y.XmlFragment };
+    return { index, id, name: sectionName(sec, t), chopName: chopName(sec, t), kind: str(sec.kind), type: str(sec.type), isPart: sec.type === 'part', editable: get(BODY) instanceof Y.XmlFragment, isSection: true };
   });
 }

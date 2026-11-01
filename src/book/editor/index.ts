@@ -5,6 +5,6 @@
 export { bookSchema, DELIMITED_MARKS } from './schema.js';
 export { toDoc, toText, blockText, blocksText, inlineText, blockCoverage, normalizeBlock, normalizeDoc, canApplyMark, canSetLink } from './convert.js';
 export type { ConvertStats, BlockFix } from './convert.js';
-export { importBook, exportBook, fragmentText, insertSections, sectionPlain, unwrapBackup, BookImportError, BookExportError, META, SECTIONS, LAYOUT, BODY } from './model.js';
+export { importBook, exportBook, fragmentText, insertSections, sectionPlain, escKey, unwrapBackup, BookImportError, BookExportError, META, SECTIONS, LAYOUT, BODY } from './model.js';
 export type { ImportResult, TextWarning } from './model.js';
 export { posToTextOffset, textOffsetToPos } from './positions.js';

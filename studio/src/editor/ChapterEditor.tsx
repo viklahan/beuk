@@ -4,6 +4,7 @@ import type * as Y from 'yjs';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
+import { clearActiveEditor, setActiveEditor } from './active';
 import { flushNormalize, markActive, toggleBookMark } from './behaviour';
 import { createChapterEditor } from './createEditor';
 
@@ -37,8 +38,10 @@ export function ChapterEditor({ fragment, dir, lang, label, section }: Props) {
       if (transaction.storedMarksSet) sync();
     });
     setEditor(ed);
+    setActiveEditor(ed, section);
     (host.current as HTMLDivElement & { beukEditor?: Editor }).beukEditor = ed; // e2e and latency probes reach it here
     return () => {
+      clearActiveEditor(ed);
       flushNormalize(ed);
       ed.destroy();
       setEditor(null);

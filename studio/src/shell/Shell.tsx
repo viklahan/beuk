@@ -3,6 +3,7 @@ import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
 import { SideStatus } from '../book/SideStatus';
+import { useChapterOps } from '../chapters/ChapterOps';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
@@ -36,6 +37,7 @@ export function Shell() {
   const [mobile, setMobile] = useState<MobilePane>('structure');
   const [dialog, setDialog] = useState<'history' | 'settings' | null>(null);
   const bookOpen = bk.phase === 'open';
+  const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const [mstyle, setMstyle] = useState(false);
   const tab = (pane: MobilePane, style: boolean) => () => {
     setMobile(pane);
@@ -133,7 +135,7 @@ export function Shell() {
             </button>
           </div>
           <div id="structureScroll">
-            <Outline />
+            <Outline tools={ops.tools} />
           </div>
           {/* BEUK:sidebar — 1.0's book tools row; wave 1a wires History, the rest keep their place until their waves */}
           <div className="side-dock">
@@ -190,6 +192,7 @@ export function Shell() {
           <div id="previewStage" />
         </section>
       </main>
+      {ops.menu}
       <HistoryDialog open={dialog === 'history' && bookOpen} onClose={() => setDialog(null)} />
       <SettingsDialog open={dialog === 'settings' && bookOpen} onClose={() => setDialog(null)} />
     </div>

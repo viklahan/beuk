@@ -46,7 +46,8 @@ const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !
 const setOwn = (o: Rec, k: string, v: unknown): void => {
   Object.defineProperty(o, k, { value: v, writable: true, enumerable: true, configurable: true });
 };
-const escKey = (k: string): string => (k === BODY || k.startsWith('~') ? '~' + k : k);
+/** The Y.Map key a section's book key is stored under ("body" and "~…" gain a leading "~"). */
+export const escKey = (k: string): string => (k === BODY || k.startsWith('~') ? '~' + k : k);
 const unescKey = (k: string): string => (k.startsWith('~') ? k.slice(1) : k);
 const plain = (v: unknown): unknown => (v instanceof Y.AbstractType ? v.toJSON() : v === undefined ? v : structuredClone(v));
 
