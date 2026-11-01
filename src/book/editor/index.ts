@@ -7,3 +7,4 @@ export { toDoc, toText, blockText, blocksText, inlineText, blockCoverage, normal
 export type { ConvertStats, BlockFix } from './convert.js';
 export { importBook, exportBook, fragmentText, insertSections, sectionPlain, unwrapBackup, BookImportError, BookExportError, META, SECTIONS, LAYOUT, BODY } from './model.js';
 export type { ImportResult, TextWarning } from './model.js';
+export { posToTextOffset, textOffsetToPos } from './positions.js';
