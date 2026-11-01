@@ -5,6 +5,8 @@ import { Outline } from '../book/Outline';
 import { SideStatus } from '../book/SideStatus';
 import { useChapterOps } from '../chapters/ChapterOps';
 import { useStructure } from '../structure/StructureUi';
+import { OutlineBoard } from '../outline/OutlineBoard';
+import { indexOfId } from '../structure/structure';
 import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { InsightsDialog } from '../insights/InsightsDialog';
@@ -47,6 +49,22 @@ export function Shell() {
   const bookOpen = bk.phase === 'open';
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const structure = useStructure();
+  // 1.0's centre tabs: the chapter content and the outline board (the Typography Studio is wave 4)
+  const [center, setCenter] = useState<'content' | 'outline'>('content');
+  const showOutline = center === 'outline' && bookOpen;
+  /** 1.0's olOpen: the desk, that section, the caret in its page. */
+  const openOnDesk = (id: string) => {
+    const y = bk.book?.ydoc;
+    if (!y) return;
+    const i = indexOfId(y, id);
+    if (i === null) return;
+    setCenter('content');
+    bk.select(i);
+    requestAnimationFrame(() => {
+      const host = document.getElementById('manuscript') as (HTMLElement & { beukEditor?: { commands: { focus: () => unknown } } }) | null;
+      host?.beukEditor?.commands.focus();
+    });
+  };
   const [mstyle, setMstyle] = useState(false);
   const tab = (pane: MobilePane, style: boolean) => () => {
     setMobile(pane);
@@ -203,14 +221,29 @@ export function Shell() {
 
         <section id="pane-center" className="pane">
           <div className="center-tabs" role="tablist">
-            <button type="button" className="ctab active" id="tabBtnContent" role="tab" aria-selected="true">
+            <button type="button" className={'ctab' + (showOutline ? '' : ' active')} id="tabBtnContent" role="tab" aria-selected={showOutline ? 'false' : 'true'} onClick={() => setCenter('content')}>
               <Icon name="PenLine" />
               {t('tab.content')}
             </button>
+            <button
+              type="button"
+              className={'ctab' + (showOutline ? ' active' : '')}
+              id="tabBtnOutline"
+              role="tab"
+              aria-selected={showOutline ? 'true' : 'false'}
+              aria-disabled={bookOpen ? undefined : 'true'}
+              onClick={bookOpen ? () => setCenter('outline') : undefined}
+            >
+              <Icon name="LayoutGrid" />
+              {t('ol.tab')}
+            </button>
           </div>
           <div className="center-body" role="tabpanel">
-            <div className="center-inner">
+            <div id="panelContent" className="center-inner" style={showOutline ? { display: 'none' } : undefined}>
               <Desk />
+            </div>
+            <div id="panelOutline" className="center-inner ol-inner" style={showOutline ? undefined : { display: 'none' }}>
+              <OutlineBoard shown={showOutline} onOpen={openOnDesk} />
             </div>
           </div>
         </section>

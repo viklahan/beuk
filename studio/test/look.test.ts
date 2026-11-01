@@ -18,6 +18,8 @@ const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '');
    colour is ever truly needed, it goes here with the reason. */
 const COLOUR_ALLOWLIST: { file: string; text: string; why: string }[] = [
   { file: 'styles/notebook.css', text: '#fff', why: "1.0's .rs-pdf: a PDF page frame is white in both themes (the PDF viewer paints its own page)" },
+  { file: 'styles/outline.css', text: 'rgba(20,44,52,.08)', why: "1.0's .ol-card shadow, verbatim (1.0 keeps it literal in both themes; no token holds it)" },
+  { file: 'styles/outline.css', text: 'rgba(20,44,52,.13)', why: "1.0's .ol-card:hover / .active shadow, verbatim (as above)" },
 ];
 
 describe('the look: tokens only, logical properties only (review focus #3, #1)', () => {

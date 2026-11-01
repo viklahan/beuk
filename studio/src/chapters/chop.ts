@@ -3,6 +3,7 @@ import { prosemirrorToYXmlFragment } from 'y-prosemirror';
 import { BODY, escKey, insertSections, META, sectionPlain, SECTIONS, toDoc } from '@book/editor/index.js';
 import type { Closure, HistoryEntry } from '../closure/index';
 import { live, takeSnapshot, writeHistory } from '../history/history';
+import { writeOrdered } from '../structure/structure';
 
 /* BEUK:chapterops — 1.0's structural edits on the section list (inventory
    B2; client/index.html chopRun / chopUndo / chopDelete / chopDuplicate /
@@ -48,7 +49,7 @@ const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
 
-export type ChopOp = 'delete' | 'duplicate' | 'split' | 'merge';
+export type ChopOp = 'delete' | 'duplicate' | 'split' | 'merge' | 'move';
 type T = (key: string, params?: Record<string, unknown>) => string;
 type Style = (n: number) => string;
 
@@ -193,7 +194,7 @@ function chopRun(env: ChopEnv, spec: Spec): ChopDone | null {
   snap.chop = { op: spec.op, a: spec.a || '', b: spec.b || '' };
   if (pre.style) chaptersOf(secs).forEach((s, i) => { s.number = pre.style!(i + 1); });
   ydoc.transact(() => {
-    writeSections(ydoc, secs, before);
+    (spec.op === 'move' ? writeOrdered : writeSections)(ydoc, secs, before);
     spec.extra?.(data);
     writeHistory(c, ydoc, L);
   });
@@ -235,7 +236,7 @@ export function chopUndo(env: ChopEnv, rec: ChopRec, isLive: (y: Y.Doc) => boole
     });
   if (!idsOk(secs)) return { ok: false, changed: null };
   ydoc.transact(() => {
-    writeSections(ydoc, secs, prev);
+    (rec.op === 'move' ? writeOrdered : writeSections)(ydoc, secs, prev);
     if (rec.op === 'duplicate') {
       const a = audioInclude(ydoc);
       const copyId = String(rec.data.copyId);
@@ -450,11 +451,59 @@ export function chopMerge(env: ChopEnv, id: string): ChopDone | null {
   });
 }
 
+/** 1.0's olMoveTo (BEUK:outline): the board's move through chopRun — a "Before moving …" snapshot, the tier law
+ *  (refused across front / body / back: 'tier', 1.0's toast.moveTier), chapters renumbered when numbered in sequence,
+ *  and an Undo that puts the section back beside its old neighbours (chopInsertAt). Only the order moves. */
+export function chopMove(env: ChopEnv, dragId: string, targetId: string, after: boolean): ChopDone | 'tier' | null {
+  const { c, ydoc } = env;
+  const L = live(c, ydoc);
+  c.setState(L.state);
+  const all = c.getState().sections as Rec[];
+  const from = all.findIndex((s) => s.id === dragId), to = all.findIndex((s) => s.id === targetId);
+  if (from < 0 || to < 0 || from === to) return null;
+  if (all[from]!.kind !== all[to]!.kind) return 'tier';
+  const ids = all.map((s) => String(s.id));
+  const sim = ids.filter((x) => x !== dragId);
+  sim.splice(sim.indexOf(targetId) + (after ? 1 : 0), 0, dragId);
+  if (sim.join(',') === ids.join(',')) return null;
+  const name = c.api.chopName(all[from]);
+  return chopRun(env, {
+    op: 'move', a: name,
+    apply(secs) {
+      const i = secs.findIndex((x) => x.id === dragId);
+      if (i < 0) return null;
+      const anchor = { idx: i, prevId: i > 0 ? secs[i - 1]!.id : null, nextId: secs[i + 1] ? secs[i + 1]!.id : null };
+      const s = secs.splice(i, 1)[0]!;
+      const at = secs.findIndex((x) => x.id === targetId);
+      if (at < 0) {
+        secs.splice(i, 0, s);
+        return null;
+      }
+      secs.splice(at + (after ? 1 : 0), 0, s);
+      return { id: dragId, anchor, activeId: env.activeId };
+    },
+    undo(d, secs) {
+      const i = secs.findIndex((x) => x.id === d.id);
+      if (i < 0) return true;
+      const s = secs.splice(i, 1)[0]!;
+      // 1.0's chopInsertAt: after its old previous neighbour, else before its old next one, else at its old index
+      const a = d.anchor as { idx: number; prevId: unknown; nextId: unknown };
+      let at = -1;
+      if (a.prevId) { const p = secs.findIndex((x) => x.id === a.prevId); if (p >= 0) at = p + 1; }
+      if (at < 0 && a.nextId) { const p = secs.findIndex((x) => x.id === a.nextId); if (p >= 0) at = p; }
+      if (at < 0) at = Math.min(Math.max(0, a.idx), secs.length);
+      secs.splice(at, 0, s);
+      return true;
+    },
+  });
+}
+
 /** The toast text and icon of a finished operation (1.0's spec.msg / spec.icon). */
 export function chopMessage(rec: ChopRec, t: T): string {
   const ch = rec.snap.chop!;
   if (rec.op === 'delete') return t('chop.deleted', { name: ch.a });
   if (rec.op === 'duplicate') return t('chop.duplicated', { name: ch.a });
   if (rec.op === 'split') return t('chop.splitDone', { name: ch.a });
+  if (rec.op === 'move') return t('ol.moved', { name: ch.a });
   return t('chop.merged', { a: ch.a, b: ch.b });
 }

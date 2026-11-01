@@ -259,6 +259,25 @@ async function readOnlyRooms(page) {
       done.push('Insert Image (' + cells.length + ' pictures)');
     } else done.push('Insert Image (refused: a generated section)');
   }
+  // wave 2c (review focus #4): the outline board opened, every view, the matter chip and every status and tag chip
+  // pressed and released, then back to the desk — nothing edited
+  await page.click('#tabBtnOutline');
+  await page.waitForSelector('#olTitle', { timeout: 60_000 });
+  for (const v of ['list', 'grid', 'cards']) {
+    await page.click(`[data-olview="${v}"]`);
+    await page.waitForSelector(`[data-olview="${v}"][aria-pressed="true"]`, { timeout: 30_000 });
+  }
+  await page.click('[data-olmatter]');
+  await page.click('[data-olmatter]');
+  for (const sel of ['[data-olst]', '[data-oltag]']) {
+    const n = (await page.$(sel)).length;
+    for (let k = 0; k < n; k++) {
+      await page.locator(sel).nth(k).click();
+      await page.locator(sel).nth(k).click();
+    }
+  }
+  await page.click('#tabBtnContent');
+  done.push('the outline board (Cards, List, Grid, filters)');
   return done.join(' + ');
 }
 
@@ -1505,6 +1524,106 @@ async function wave2bChecks(origin) {
   }
 }
 
+/* ---- wave 2c: section types, matter, Add Chapter / Part, a starter, the outline board — against 1.0's own page ---- */
+const W2C_SHAPE = (secs) => secs.map((x) => [x.kind, x.type, x.title, x.number, x.included].join('|'));
+async function wave2cChecks(origin) {
+  const f = fixtures.find((x) => x.name === 'real/lantern-coast-book-one');
+  for (const ui of ['en', 'ar']) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    if (ui === 'ar') await ctx.addInitScript(() => localStorage.setItem('beuk.uiLang.v1', 'ar'));
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      const one = await watch(await ctx.newPage());
+      await one.goto(origin + '/studio');
+      await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      const start = (await exportBackup(page)).json.book;
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      const oneSecs = () => one.evaluate(() => serializeBook().sections);
+      if (ui === 'en') {
+        // the matter library: every type, in the library's order, in both apps
+        await page.click('#btnMatterLib');
+        const types = await page.$eval('[data-matter]', (els) => els.map((e) => e.getAttribute('data-matter')));
+        for (const ty of types) {
+          await page.click(`[data-matter="${ty}"]`);
+          await one.evaluate((t) => insertMatter(t), ty);
+        }
+        let two = (await exportBackup(page)).json.book;
+        check(JSON.stringify(W2C_SHAPE(two.sections)) === JSON.stringify(W2C_SHAPE(await oneSecs())), `wave2c: the matter library, all ${types.length} types clicked in 2.0 and run in 1.0: the same sections (kind, type, title, number, included)`);
+        await page.click('#btnAddChapter');
+        await page.click('#btnAddPart');
+        await one.evaluate(() => { addChapter(); addPart(); });
+        two = (await exportBackup(page)).json.book;
+        check(JSON.stringify(W2C_SHAPE(two.sections)) === JSON.stringify(W2C_SHAPE(await oneSecs())), 'wave2c: Add Chapter and Add Part: the same sections as 1.0');
+        const id = await page.$eval('#structureList .sec-item.active', (e) => e.getAttribute('data-sec'));
+        await page.selectOption('#secTypeSel', 'back:cta');
+        await page.waitForFunction(() => document.getElementById('secTypeSel')?.value === 'back:cta', null, { timeout: 30_000 });
+        await one.evaluate((i) => retypeSection(i, 'cta', 'back'), id);
+        two = (await exportBackup(page)).json.book;
+        check(JSON.stringify(W2C_SHAPE(two.sections)) === JSON.stringify(W2C_SHAPE(await oneSecs())), 'wave2c: a retype to Call to Action through #secTypeSel: the same sections as 1.0');
+        await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), two);
+        check(JSON.stringify(W2C_SHAPE(await oneSecs())) === JSON.stringify(W2C_SHAPE(two.sections)), "wave2c: 1.0 opens 2.0's book with the same sections");
+        // a starter on an empty About the Author: 2.0's Use writes 1.0's starterText
+        const about = two.sections.find((x) => x.type === 'aboutauthor' && !String(x.content || '').trim());
+        if (about) {
+          await page.click(`#structureList .sec-item[data-sec="${about.id}"]`);
+          await page.waitForSelector('#starterBar [data-starter]', { timeout: 30_000 });
+          await page.click('#starterBar [data-starter]');
+          const sid = await page.$eval('#starterBar [data-starter][aria-pressed="true"]', (e) => e.getAttribute('data-starter'));
+          await page.click('#starterUse');
+          await page.waitForSelector('#starterNext', { timeout: 30_000 });
+          const got = (await exportBackup(page)).json.book.sections.find((x) => x.id === about.id).content;
+          const want = await one.evaluate((sx) => starterText(sx, bookLang()), sid);
+          check(got === want, `wave2c: the starter ${sid} written by Use equals 1.0's starterText (${got.length} characters)`);
+        } else note('wave2c: no empty About the Author page in this book: the starter check did not run');
+      }
+      // the outline board, by keyboard (Arabic chrome mirrors Alt + Left / Right, 1.0's rule)
+      await page.click('#tabBtnOutline');
+      await page.waitForSelector('#olRoot .ol-card', { timeout: 60_000 });
+      const cards = () => page.$eval('#olRoot .ol-cards[data-olkind="body"] .ol-card', (els) => els.map((e) => e.getAttribute('data-ol')));
+      const ids = await cards();
+      await page.focus(`#olRoot [data-ol="${ids[0]}"]`);
+      await page.keyboard.press(ui === 'ar' ? 'Alt+ArrowLeft' : 'Alt+ArrowRight');
+      await page.waitForFunction((a) => [...document.querySelectorAll('#olRoot .ol-cards[data-olkind="body"] .ol-card')].map((e) => e.getAttribute('data-ol'))[1] === a, ids[0], { timeout: 30_000 });
+      const focused = await page.evaluate(() => document.activeElement?.getAttribute('data-ol'));
+      check(focused === ids[0], `wave2c (${ui}): Alt + ${ui === 'ar' ? 'Left' : 'Right'} moves the focused card one place later, and focus stays on it`);
+      await page.selectOption(`#olRoot [data-ol="${ids[0]}"] [data-olf="status"]`, 'draft');
+      await page.focus(`#olRoot [data-ol="${ids[0]}"] .ol-tagin`);
+      await page.keyboard.type('harbour');
+      await page.keyboard.press('Enter');
+      await page.waitForSelector('[data-oltag="harbour"]', { timeout: 30_000 });
+      await page.focus(`#olRoot [data-ol="${ids[0]}"] [data-olf="synopsis"]`);
+      await page.keyboard.type('The lamps are lit.');
+      await page.keyboard.press('Tab');
+      await page.focus('[data-olview="grid"]');
+      await page.keyboard.press('Enter');
+      await page.waitForSelector('#olThreadName', { timeout: 30_000 });
+      await page.focus('#olThreadName');
+      await page.keyboard.type('The keeper');
+      await page.keyboard.press('Enter');
+      await page.waitForSelector('[data-olthname]', { timeout: 30_000 });
+      await page.waitForTimeout(500);
+      const two = (await exportBackup(page)).json.book;
+      const s0 = two.sections.find((x) => x.id === ids[0]);
+      const threads = two.outline && Array.isArray(two.outline.threads) ? two.outline.threads.length : 0;
+      check(s0.status === 'draft' && JSON.stringify(s0.tags) === '["harbour"]' && s0.synopsis === 'The lamps are lit.' && threads === 1,
+        `wave2c (${ui}): status, a tag, a synopsis and a thread, set from the keyboard, are in the export (${JSON.stringify({ status: s0.status, tags: s0.tags, syn: s0.synopsis, threads })})`);
+      // 1.0 shows them identically: its own state after applyBookDoc of 2.0's export, and its own serializeBook
+      const seen = await one.evaluate(({ b, id }) => {
+        applyBookDoc(JSON.parse(JSON.stringify(b)));
+        const s = state.sections.find((x) => x.id === id);
+        return { status: s.status, tags: s.tags, syn: s.synopsis, tagReg: olBook().tags.map((x) => x.name + ':' + x.colour), threads: olBook().threads.map((x) => x.name), pack: JSON.stringify(serializeBook().outline) };
+      }, { b: two, id: ids[0] });
+      check(seen.status === 'draft' && JSON.stringify(seen.tags) === '["harbour"]' && seen.syn === 'The lamps are lit.' && seen.threads.join() === 'The keeper' && seen.pack === JSON.stringify(two.outline),
+        `wave2c (${ui}): 1.0 reads the board's data back identically (tags ${seen.tagReg.join(',')}, threads ${seen.threads.join(',')}) and serializes the same outline`);
+      await harvestCsp(page);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
 async function openInNext(page, file) {
   if (await page.$('#btnOpenBackup')) return openBackup(page, file);
   const title = JSON.parse(readFileSync(file, 'utf8')).book.meta.title;
@@ -1734,6 +1853,7 @@ try {
   if (run('wave1b')) await wave1bChecks(srv.origin);
   if (run('wave2a')) await wave2aChecks(srv.origin);
   if (run('wave2b')) await wave2bChecks(srv.origin);
+  if (run('wave2c')) await wave2cChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
