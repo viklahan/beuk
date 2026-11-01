@@ -270,7 +270,7 @@ async function readOnlyRooms(page) {
   await page.click('[data-olmatter]');
   await page.click('[data-olmatter]');
   for (const sel of ['[data-olst]', '[data-oltag]']) {
-    const n = (await page.$(sel)).length;
+    const n = (await page.$$(sel)).length;
     for (let k = 0; k < n; k++) {
       await page.locator(sel).nth(k).click();
       await page.locator(sel).nth(k).click();
@@ -1543,7 +1543,7 @@ async function wave2cChecks(origin) {
       if (ui === 'en') {
         // the matter library: every type, in the library's order, in both apps
         await page.click('#btnMatterLib');
-        const types = await page.$eval('[data-matter]', (els) => els.map((e) => e.getAttribute('data-matter')));
+        const types = await page.$$eval('[data-matter]', (els) => els.map((e) => e.getAttribute('data-matter')));
         for (const ty of types) {
           await page.click(`[data-matter="${ty}"]`);
           await one.evaluate((t) => insertMatter(t), ty);
@@ -1555,12 +1555,15 @@ async function wave2cChecks(origin) {
         await one.evaluate(() => { addChapter(); addPart(); });
         two = (await exportBackup(page)).json.book;
         check(JSON.stringify(W2C_SHAPE(two.sections)) === JSON.stringify(W2C_SHAPE(await oneSecs())), 'wave2c: Add Chapter and Add Part: the same sections as 1.0');
-        const id = await page.$eval('#structureList .sec-item.active', (e) => e.getAttribute('data-sec'));
+        // a section both apps hold under the same id (the pages the two apps just added have ids of their own)
+        const id = start.sections.find((x) => x.kind === 'body' && x.type === 'chapter').id;
+        await page.click(`#structureList .sec-item[data-sec="${id}"]`);
+        await page.waitForFunction((i) => document.querySelector('#structureList .sec-item.active')?.getAttribute('data-sec') === i, id, { timeout: 30_000 });
         await page.selectOption('#secTypeSel', 'back:cta');
         await page.waitForFunction(() => document.getElementById('secTypeSel')?.value === 'back:cta', null, { timeout: 30_000 });
         await one.evaluate((i) => retypeSection(i, 'cta', 'back'), id);
         two = (await exportBackup(page)).json.book;
-        check(JSON.stringify(W2C_SHAPE(two.sections)) === JSON.stringify(W2C_SHAPE(await oneSecs())), 'wave2c: a retype to Call to Action through #secTypeSel: the same sections as 1.0');
+        { const a1 = W2C_SHAPE(two.sections), b1 = W2C_SHAPE(await oneSecs()); const k = a1.findIndex((x, i) => x !== b1[i]); check(k < 0 && a1.length === b1.length, 'wave2c: a retype (section ' + id + ') to Call to Action through #secTypeSel: the same sections as 1.0' + (k < 0 ? '' : ' — first difference at ' + k + ': 2.0 ' + a1[k] + ' / 1.0 ' + b1[k])); }
         await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), two);
         check(JSON.stringify(W2C_SHAPE(await oneSecs())) === JSON.stringify(W2C_SHAPE(two.sections)), "wave2c: 1.0 opens 2.0's book with the same sections");
         // a starter on an empty About the Author: 2.0's Use writes 1.0's starterText
@@ -1580,7 +1583,7 @@ async function wave2cChecks(origin) {
       // the outline board, by keyboard (Arabic chrome mirrors Alt + Left / Right, 1.0's rule)
       await page.click('#tabBtnOutline');
       await page.waitForSelector('#olRoot .ol-card', { timeout: 60_000 });
-      const cards = () => page.$eval('#olRoot .ol-cards[data-olkind="body"] .ol-card', (els) => els.map((e) => e.getAttribute('data-ol')));
+      const cards = () => page.$$eval('#olRoot .ol-cards[data-olkind="body"] .ol-card', (els) => els.map((e) => e.getAttribute('data-ol')));
       const ids = await cards();
       await page.focus(`#olRoot [data-ol="${ids[0]}"]`);
       await page.keyboard.press(ui === 'ar' ? 'Alt+ArrowLeft' : 'Alt+ArrowRight');
