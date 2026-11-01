@@ -129,6 +129,7 @@ export type ClosureApi = {
   castHash: (s: string, h: number) => number;
   castRateStr: (v: number, lang?: string) => string;
   CAST_MAX_ROWS: number;
+  bookLang: () => string;
   // wave 1c: the notebook and research files (C7)
   nbNormalize: (doc: unknown, sections: unknown[], fileIds?: Set<string>) => { notes: Note[] };
   nbLine: (v: unknown, n: number) => string;

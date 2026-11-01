@@ -6,6 +6,7 @@ import { SideStatus } from '../book/SideStatus';
 import { useChapterOps } from '../chapters/ChapterOps';
 import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
+import { InsightsDialog } from '../insights/InsightsDialog';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { syncClosureLocale } from '../closure/index';
@@ -40,7 +41,7 @@ export function Shell() {
   const bk = useBook();
   const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
-  const [dialog, setDialog] = useState<'history' | 'settings' | null>(null);
+  const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | null>(null);
   const bookOpen = bk.phase === 'open';
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const [mstyle, setMstyle] = useState(false);
@@ -144,10 +145,18 @@ export function Shell() {
           <div id="structureScroll">
             <Outline tools={ops.tools} />
           </div>
-          {/* BEUK:sidebar — 1.0's book tools row; wave 1a wires History, the rest keep their place until their waves */}
+          {/* BEUK:sidebar — 1.0's book tools row: History (wave 1a), Insights and Notes (wave 1c); Goals and the Covenant keep their place until wave 3 */}
           <div className="side-dock">
             <div className="side-tools" id="sideTools" role="group" aria-label={t('side.toolsAria')}>
-              <button className="side-tool" id="btnInsights" data-tip="tips.insights" type="button" aria-label={t('insights.open')} aria-disabled="true">
+              <button
+                className="side-tool"
+                id="btnInsights"
+                data-tip="tips.insights"
+                type="button"
+                aria-label={t('insights.open')}
+                aria-disabled={bookOpen ? undefined : 'true'}
+                onClick={bookOpen ? () => setDialog('insights') : undefined}
+              >
                 <Icon name="Activity" />
                 <span className="side-tool-lab">{t('side.toolInsights')}</span>
               </button>
@@ -212,6 +221,7 @@ export function Shell() {
       />
       <HistoryDialog open={dialog === 'history' && bookOpen} onClose={() => setDialog(null)} />
       <SettingsDialog open={dialog === 'settings' && bookOpen} onClose={() => setDialog(null)} />
+      <InsightsDialog open={dialog === 'insights' && bookOpen} onClose={() => setDialog(null)} />
     </div>
   );
 }

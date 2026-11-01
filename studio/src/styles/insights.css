@@ -1,0 +1,155 @@
+/* ==== BEUK:insights / BEUK:cast ==== — 1.0's Story Insights and Names on stage (client/index.html CSS 1595-1627,
+   1629-1705, 1707-1745), ported with logical properties (text-align start/end, margin-inline-end). The charts keep
+   direction: ltr (1.0: positions are mirrored in code for RTL; anchors stay physical). */
+:root { --ins-a: var(--accent); --ins-b: var(--gold); }
+.ins-modal { max-width: 780px; }
+.ins-sec { border-top: 1px solid var(--line); padding: 19px 0 8px; }
+.ins-sec:first-child { border-top: none; padding-top: 4px; }
+.ins-h { font-family: "EB Garamond", Georgia, serif; font-size: 20px; font-weight: 600; margin: 0 0 2px; color: var(--ink); }
+.ins-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; line-height: 1.55; }
+.ins-num { font-family: "EB Garamond", Georgia, serif; }
+.ins-empty { font-family: "EB Garamond", Georgia, serif; font-size: 17px; color: var(--ink-2); line-height: 1.65; text-align: center; padding: 30px 14px 22px; margin: 0; }
+.ins-freq-row { display: grid; grid-template-columns: minmax(92px, 150px) 1fr 46px; align-items: center; gap: 10px; padding: 3.5px 0; }
+.ins-freq-word { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ins-freq-track { height: 9px; background: var(--panel-3); border-radius: 99px; overflow: hidden; }
+.ins-freq-bar { display: block; height: 100%; background: var(--ins-a); border-radius: 99px; opacity: .88; }
+.ins-freq-count { font-size: 15.5px; color: var(--ink-2); text-align: end; }
+.ins-freq-note { grid-column: 1 / -1; font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 12.5px; color: var(--muted); margin-top: -1px; }
+.ins-chart { width: 100%; height: auto; display: block; }
+.ins-caption { font-size: 12.5px; color: var(--ink-2); line-height: 1.65; margin: 10px 0 4px; }
+.ins-none { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--muted); margin: 0 0 10px; line-height: 1.55; }
+.ins-echo { display: block; width: 100%; text-align: start; background: none; border: none; border-top: 1px solid var(--line); padding: 9px 2px; color: var(--ink); font-family: inherit; }
+.ins-echo:first-of-type { border-top: none; padding-top: 2px; }
+.ins-echo:hover .ins-echo-phrase, .ins-echo:focus-visible .ins-echo-phrase { color: var(--accent); }
+.ins-echo-phrase { font-family: "EB Garamond", Georgia, serif; font-size: 16.5px; display: block; line-height: 1.4; }
+.ins-echo-meta { font-size: 11.5px; color: var(--muted); display: block; margin-top: 2px; line-height: 1.5; }
+.ins-legend { display: flex; gap: 18px; font-size: 11.5px; color: var(--muted); margin: 0 0 10px; }
+.ins-legend .sw { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-inline-end: 5px; vertical-align: -1px; }
+.ins-dlg-row { display: grid; grid-template-columns: minmax(70px, 140px) 1fr 44px; align-items: center; gap: 10px; padding: 3.5px 0; }
+.ins-dlg-name { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ins-dlg-track { height: 10px; background: var(--panel-3); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; display: flex; }
+.ins-dlg-seg { display: block; height: 100%; background: var(--ins-b); }
+.ins-dlg-pct { font-size: 15px; color: var(--ink-2); text-align: end; }
+@media (max-width: 560px) {
+  .ins-freq-row { grid-template-columns: minmax(68px, 104px) 1fr 40px; gap: 8px; }
+  .ins-dlg-row { grid-template-columns: minmax(54px, 88px) 1fr 38px; gap: 8px; }
+  .ins-h { font-size: 18.5px; }
+}
+.ins-glance-sec { padding-bottom: 4px; }
+.ins-glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.ins-g { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 9px; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ins-g-lab { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+.ins-g-val { font-size: 26px; font-weight: 600; color: var(--ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ins-g-note { font-size: 11px; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+.ins-foot { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin: 10px 0 2px; }
+.ins-words { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--ins-rows, 10), auto); grid-auto-flow: column; column-gap: 32px; }
+.ins-w { display: grid; grid-template-columns: minmax(70px, 118px) 1fr 40px; align-items: center; gap: 10px; padding: 3px 0; border-radius: 6px; cursor: default; }
+.ins-w.is-hot .ins-w-word { color: var(--accent); }
+.ins-w-word { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ins-w-track { height: 6px; background: var(--panel-3); border-radius: 99px; overflow: hidden; }
+.ins-w-bar { display: block; height: 100%; background: var(--ins-a); border-radius: 99px; opacity: .85; }
+.ins-w-count { font-size: 15px; color: var(--ink-2); text-align: end; font-variant-numeric: tabular-nums; }
+.ins-plotwrap { width: 100%; overflow: hidden; }
+.ins-chart { width: 100%; height: auto; display: block; overflow: visible; direction: ltr; } /* positions are mirrored in code for RTL; anchors stay physical */
+.ins-chart text { font-family: "EB Garamond", Georgia, serif; }
+.ins-ax, .ins-tick { font-size: 11.5px; fill: var(--muted); }
+.ins-tick { font-variant-numeric: tabular-nums; }
+.ins-grid { stroke: var(--line); stroke-width: 1; }
+.ins-base { stroke: var(--line-2); stroke-width: 1; }
+.ins-ref { stroke: var(--muted); stroke-width: 1; opacity: .9; } /* a quiet ink line, so it never reads as the data line in either theme */
+.ins-refkey { margin: -6px 0 6px; }
+.ins-key-ref { display: inline-block; width: 16px; height: 0; border-top: 1.5px solid var(--muted); margin-inline-end: 6px; vertical-align: 3px; }
+.ins-ref-lab, .ins-cap-lab { font-size: 12px; font-style: italic; fill: var(--gold-ink); paint-order: stroke; stroke: var(--panel-2); stroke-width: 3px; }
+.ins-cap-lab { fill: var(--ink-2); font-style: normal; }
+.ins-line { fill: none; stroke: var(--ins-b); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ins-mark { cursor: pointer; outline: none; }
+.ins-mark-static { cursor: default; }
+.ins-hit { fill: transparent; }
+.ins-mark.is-hot .ins-hit { fill: var(--panel-3); opacity: .7; }
+.ins-mark:focus-visible .ins-hit { fill: var(--accent-soft); opacity: .6; stroke: var(--accent); stroke-width: 1.5; }
+.ins-bar { opacity: .82; transition: opacity .12s; }
+.ins-bar-a { fill: var(--ins-a); }
+.ins-bar-b { fill: var(--ins-b); }
+.ins-mark.is-hot .ins-bar, .ins-mark:focus-visible .ins-bar { opacity: 1; }
+.ins-xhair { stroke: var(--line-2); stroke-width: 1; opacity: 0; }
+.ins-mark.is-hot .ins-xhair, .ins-mark:focus-visible .ins-xhair { opacity: 1; }
+.ins-dot { fill: var(--ins-b); stroke: var(--panel-2); stroke-width: 2; transition: r .12s; }
+.ins-mark.is-hot .ins-dot, .ins-mark:focus-visible .ins-dot { r: 5.5; }
+.ins-tip { position: fixed; z-index: 95; pointer-events: none; max-width: 260px; background: var(--panel); color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 9px; box-shadow: var(--shadow); padding: 8px 11px 8px; font-size: 12px; line-height: 1.45; display: flex; flex-direction: column; gap: 1px; }
+.ins-tip[hidden] { display: none; }
+.ins-tip-v { font-family: "EB Garamond", Georgia, serif; font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+.ins-tip-n { color: var(--ink-2); font-weight: 600; }
+.ins-tip-m { color: var(--muted); }
+.ins-tip-h { color: var(--muted); font-style: italic; margin-top: 3px; font-size: 11.5px; }
+button.ins-dlg-row { width: 100%; background: none; border: none; color: inherit; font: inherit; text-align: start; cursor: pointer; border-radius: 6px; }
+button.ins-dlg-row.is-hot .ins-dlg-name, button.ins-dlg-row:focus-visible .ins-dlg-name { color: var(--accent); }
+button.ins-dlg-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ins-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); margin: 0 0 10px; max-width: 100%; }
+.ins-pick select { max-width: min(320px, 70vw); }
+.ins-cr-head, .ins-cr-row { display: grid; grid-template-columns: minmax(96px, 150px) minmax(60px, 1fr) 44px minmax(0, 1.6fr); align-items: center; gap: 10px; }
+.ins-cr-head { font-size: 11px; color: var(--muted); padding-bottom: 4px; border-bottom: 1px solid var(--line); margin-bottom: 3px; }
+.ins-cr-unit { text-align: end; grid-column: 2 / 4; }
+.ins-cr-row { padding: 4px 0; }
+.ins-cr-suffix { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 9px; }
+.ins-cr-term { font-family: "EB Garamond", Georgia, serif; font-size: 16px; color: var(--ink); line-height: 1.25; }
+.ins-cr-approx { display: block; font-family: var(--ui-font); font-size: 10.5px; color: var(--muted); }
+.ins-cr-track { height: 6px; background: var(--panel-3); border-radius: 99px; overflow: hidden; }
+.ins-cr-bar { display: block; height: 100%; background: var(--ins-a); border-radius: 99px; opacity: .7; }
+.ins-cr-rate { font-size: 15px; color: var(--ink-2); text-align: end; font-variant-numeric: tabular-nums; }
+.ins-cr-where { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.ins-chip { font: inherit; font-size: 11.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 2px 9px; cursor: pointer; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ins-chip:hover, .ins-chip:focus-visible { border-color: var(--accent); color: var(--accent); }
+.ins-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 640px) {
+  .ins-words { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; }
+  .ins-cr-head { grid-template-columns: minmax(80px, 120px) 1fr 40px; }
+  .ins-cr-head > span:last-child { display: none; }
+  .ins-cr-row { grid-template-columns: minmax(80px, 120px) 1fr 40px; row-gap: 5px; }
+  .ins-cr-where { grid-column: 1 / -1; padding-inline-start: 0; }
+  .ins-g-val { font-size: 22px; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; } /* a long value ("1 س 0 د") wraps rather than cut */
+  .ins-glance { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .ins-g { padding: 8px 9px 7px; }
+}
+/* ==== BEUK:cast ==== Names on stage heatmap: hairline cells on the
+   modal surface, one sequential hue (--ins-a) in five steps, an
+   en-dash for "not named", HTML labels beside an SVG plot. */
+.cast-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; font-size: 11.5px; color: var(--muted); margin: 0 0 10px; }
+.cast-scale { display: inline-flex; align-items: center; gap: 3px; }
+.cast-scale .ins-num { font-size: 13px; color: var(--ink-2); margin: 0 3px; }
+.cast-sw { display: inline-block; width: 14px; height: 11px; border-radius: 2px; background: var(--ins-a); }
+.cast-sw-none { display: inline-block; width: 14px; height: 11px; border-radius: 2px; border: 1px solid var(--line); background: linear-gradient(var(--line-2), var(--line-2)) center / 6px 1.5px no-repeat, var(--panel-2); margin-inline-end: 5px; }
+.cast-wrap { position: relative; }
+.cast-grid { display: grid; grid-template-columns: minmax(64px, 138px) minmax(0, 1fr) auto; column-gap: 10px; align-items: start; }
+.cast-names, .cast-tots { display: flex; flex-direction: column; }
+.cast-rh { height: 26px; display: flex; align-items: center; gap: 2px; min-width: 0; }
+.cast-name { font-family: "EB Garamond", Georgia, serif; font-size: 15.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto; }
+.cast-hide { flex: none; background: none; border: none; padding: 3px; margin: 0; border-radius: 6px; color: var(--muted); opacity: .42; cursor: pointer; line-height: 0; }
+.cast-hide svg { width: 13px; height: 13px; }
+.cast-rh:hover .cast-hide, .cast-hide:hover, .cast-hide:focus-visible { opacity: 1; color: var(--ink-2); }
+.cast-hide:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cast-tot { height: 26px; display: flex; align-items: center; justify-content: flex-end; font-size: 15px; color: var(--ink-2); min-width: 2.2em; }
+.cast-plot { min-width: 0; }
+.cast-svg { display: block; width: 100%; }
+.cast-cell { cursor: pointer; outline: none; }
+.cast-cols { display: grid; grid-template-columns: repeat(var(--cast-n), minmax(0, 1fr)); margin-top: 4px; font-family: "EB Garamond", Georgia, serif; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.2; }
+.cast-cols span { overflow: hidden; white-space: nowrap; font-variant-numeric: lining-nums; }
+.cast-tip { position: absolute; z-index: 3; pointer-events: none; max-width: min(320px, 100%); background: var(--panel); color: var(--ink); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow); padding: 6px 10px; font-size: 12.5px; line-height: 1.45; }
+.cast-hidden { margin: 10px 0 4px; font-size: 12.5px; color: var(--ink-2); }
+.cast-hidden summary { cursor: pointer; color: var(--muted); width: fit-content; border-radius: 6px; }
+.cast-hidden summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cast-hidden-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.cast-hidden-list li { display: inline-flex; align-items: center; gap: 8px; }
+.cast-hname { font-family: "EB Garamond", Georgia, serif; font-size: 15px; color: var(--ink-2); }
+.cast-show { padding: 3px 9px; font-size: 11.5px; }
+@media (max-width: 560px) {
+  .cast-grid { grid-template-columns: minmax(56px, 92px) minmax(0, 1fr) auto; column-gap: 6px; }
+  .cast-name { font-size: 14.5px; }
+  .cast-tot { font-size: 13.5px; }
+  .cast-cols { font-size: 10px; }
+  .cast-cols .cast-c2 { visibility: hidden; }
+}
+/* ==== /BEUK:cast ==== */
+/* the two custom properties 1.0's markup sets inline (style="--ins-rows:…", style="--cast-n:…"), declared on the same
+   elements so the stylesheet names them; the inline value wins */
+.ins-words { --ins-rows: 10; }
+.cast-grid { --cast-n: 1; }

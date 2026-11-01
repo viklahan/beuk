@@ -220,6 +220,20 @@ async function readOnlyRooms(page) {
   await page.click('#btnSaveSettings');
   await page.waitForSelector('#modalSettings', { state: 'detached', timeout: 10_000 });
   done.push('Settings (saved unchanged)');
+  // wave 1c: Story Insights, drawn and browsed (a mark focused, the variety picker changed), then closed
+  await page.click('#btnInsights');
+  await page.waitForSelector('#insBody .ins-sec, #insBody .ins-empty', { timeout: 60_000 });
+  await page.evaluate(() => {
+    document.querySelector('#insBody .ins-mark')?.focus();
+    const sel = document.getElementById('insVarSel');
+    if (sel && sel.options.length > 1) {
+      sel.value = sel.options[1].value;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+  await page.click('#btnCloseInsights');
+  await page.waitForSelector('#modalInsights', { state: 'detached', timeout: 10_000 });
+  done.push('Insights');
   return done.join(' + ');
 }
 
@@ -874,6 +888,175 @@ async function wave1bChecks(origin) {
   }
 }
 
+/* ---- wave 1c: Story Insights and Names on stage (review focus #1, #2, #5) ---- */
+/** A fixture rewritten in another script and language (no such fixture is committed): its body sections hold text in
+ *  that script, so the language branches (dialogue quotes, crutch lists, reading ease, casing) are exercised. */
+function scriptBook(base, lang, lines) {
+  const b = JSON.parse(JSON.stringify(base));
+  b.meta.language = lang;
+  b.meta.title = lang + ' fixture';
+  let k = 0;
+  for (const s of b.sections) if (s.kind === 'body' && s.content) s.content = Array.from({ length: 6 }, () => lines[k++ % lines.length]).join('\n\n');
+  return b;
+}
+const SCRIPT_LINES = {
+  ar: ['«نبحر عند الفجر»، قالت مارا. رفع القبطان هيل الفانوس فوق الماء.', 'مشت مارا إلى الميناء حيث كان القبطان هيل ينتظر. رفعت مارا الفانوس.', 'كان الضباب كثيفًا فوق الرصيف، والقوارب صامتة.'],
+  ja: ['「夜明けに出航する」とマラは言った。ヘイル船長が灯りを掲げた。', 'マラは港へ歩いた。ヘイル船長が待っていた。マラは灯りを掲げた。', '霧が桟橋を覆い、船は静かだった。'],
+  hi: ['"हम भोर में निकलेंगे," मारा ने कहा। कप्तान हेल ने लालटेन उठाई।', 'मारा बंदरगाह की ओर चली जहाँ कप्तान हेल इंतज़ार कर रहे थे।', 'घाट पर कोहरा घना था, और नावें चुप थीं।'],
+};
+/** #insBody as markup to compare: the page count card left out (1.0's desk measures it; 2.0 has no desk yet), the
+ *  icons written back as 1.0's placeholders (1.0's lucide and 2.0 draw the same icons as different DOM), and a title
+ *  the tooltip layer has already absorbed (BEUK:tips, wave 1a: title → data-tip-text, on its own sweep) put back. */
+const insightsMarkup = (page) => page.evaluate(() => {
+  const b = document.getElementById('insBody').cloneNode(true);
+  b.querySelector('#insGPages')?.remove();
+  b.querySelectorAll('svg.lucide').forEach((svg) => {
+    const i = document.createElement('i');
+    i.setAttribute('data-lucide', [...svg.classList].find((x) => x.startsWith('lucide-')).slice(7));
+    svg.replaceWith(i);
+  });
+  b.querySelectorAll('.is-hot').forEach((n) => n.classList.remove('is-hot'));
+  b.querySelectorAll('[data-tip-text]').forEach((n) => {
+    if (!n.hasAttribute('title')) n.setAttribute('title', n.getAttribute('data-tip-text'));
+    n.removeAttribute('data-tip-text');
+  });
+  // attributes in a fixed order (the tooltip layer re-adds a title at the end)
+  const canon = (n) => n.nodeType === 3 ? n.data.replace(/[&<>]/g, (c) => '&#' + c.charCodeAt(0) + ';') : n.nodeType !== 1 ? '' :
+    '<' + n.localName + [...n.attributes].map((a) => ' ' + a.name + '="' + a.value.replace(/[&"<>]/g, (c) => '&#' + c.charCodeAt(0) + ';') + '"').sort().join('') + '>' + [...n.childNodes].map(canon).join('') + '</' + n.localName + '>';
+  return { html: [...b.childNodes].map(canon).join(''), w: document.getElementById('insBody').getAttribute('data-w') };
+});
+async function openInNext(page, file) {
+  if (await page.$('#btnOpenBackup')) return openBackup(page, file);
+  const title = JSON.parse(readFileSync(file, 'utf8')).book.meta.title;
+  await dropOn(page, file);
+  await page.waitForFunction(() => !!document.getElementById('modalConfirm') || /Backup opened/.test(document.getElementById('toasts')?.textContent || ''), null, { timeout: 60_000 });
+  if (await page.$('#modalConfirm')) await page.click('#modalConfirm #btnConfirmYes');
+  await titleIs(page, title);
+}
+
+async function insightsChecks(origin) {
+  const base = fixtures.find((f) => f.name === 'real/lunas-beach-standalone');
+  const books = fixtures.filter((f) => f.name.startsWith('real/')).map((f) => ({ name: f.name, file: f.file, book: f.book }));
+  for (const [lang, lines] of Object.entries(SCRIPT_LINES)) {
+    const book = scriptBook(base.book, lang, lines);
+    const file = path.join(OUT, `insights-${lang}.beuk-backup.json`);
+    writeFileSync(file, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book }));
+    books.push({ name: `script/${lang}`, file, book });
+  }
+  // #1 the room equals 1.0's, markup and numbers, on every fixture in its language (and in Arabic chrome for one)
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const one = await watch(await ctx.newPage());
+      await one.goto(origin + '/studio');
+      await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      const page = await openNext(ctx, origin);
+      await page.waitForSelector('#btnOpenBackup, .desk', { timeout: 60_000 });
+      const same = [], differ = [];
+      for (const b of [...books, { ...books.find((x) => x.name === base.name), name: base.name + ' (Arabic chrome)', ui: 'ar' }]) {
+        if (b.ui) {
+          await one.evaluate(() => setUiLang('ar', { persist: false }));
+          await page.click('#btnUiLang');
+          await page.click('#uiLangMenu [data-lang="ar"]');
+          await page.waitForFunction(() => document.documentElement.dir === 'rtl');
+        }
+        await one.evaluate((book) => {
+          applyBookDoc(JSON.parse(JSON.stringify(book)));
+          window.beukInsights.open();
+        }, b.book);
+        const html1 = await insightsMarkup(one);
+        await one.evaluate(() => document.getElementById('btnCloseInsights').click());
+        await openInNext(page, b.file);
+        await page.click('#btnInsights');
+        await page.waitForSelector('#insBody .ins-sec, #insBody .ins-empty', { timeout: 60_000 });
+        const html2 = await insightsMarkup(page);
+        await page.click('#btnCloseInsights');
+        await page.waitForSelector('#modalInsights', { state: 'detached' });
+        if (html1.html === html2.html) same.push(`${b.name} (${html2.html.length} chars at ${html2.w} px)`);
+        else {
+          let i = 0;
+          while (i < html1.html.length && html1.html[i] === html2.html[i]) i++;
+          differ.push(`${b.name}: 1.0 ${html1.w}px vs 2.0 ${html2.w}px, first difference at ${i}: 1.0 «${html1.html.slice(Math.max(0, i - 60), i + 80)}» 2.0 «${html2.html.slice(Math.max(0, i - 60), i + 80)}»`);
+        }
+        if (b.ui) {
+          await one.evaluate(() => setUiLang('en', { persist: false }));
+          await page.click('#btnUiLang');
+          await page.click('#uiLangMenu [data-lang="en"]');
+          await page.waitForFunction(() => document.documentElement.dir === 'ltr');
+        }
+      }
+      check(differ.length === 0, `wave 1c #1: Story Insights and Names on stage equal 1.0's room, markup and numbers (page card aside): ${same.length} of ${same.length + differ.length} books${differ.length ? ' — ' + differ.join(' | ') : ''}`);
+      note(same.join('; '));
+    } finally {
+      await ctx.close();
+    }
+  }
+  // #2 keyboard and tooltip in a real layout; #5 Dumas: time to draw, listeners released, no heap growth over 10 reopenings
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, DUMAS.file);
+      const cdp = await ctx.newCDPSession(page);
+      const listeners = async () => {
+        const out = {};
+        for (const expr of ['window', 'document']) {
+          const { result } = await cdp.send('Runtime.evaluate', { expression: expr });
+          const { listeners: l } = await cdp.send('DOMDebugger.getEventListeners', { objectId: result.objectId });
+          out[expr] = l.length;
+        }
+        return out;
+      };
+      const heap = async () => {
+        await cdp.send('HeapProfiler.collectGarbage');
+        await cdp.send('HeapProfiler.collectGarbage');
+        return (await cdp.send('Runtime.getHeapUsage')).usedSize;
+      };
+      const openRoom = async () => {
+        const t0 = await page.evaluate(() => performance.now());
+        await page.click('#btnInsights');
+        await page.waitForSelector('#insBody .cast-sec', { timeout: 60_000 });
+        return (await page.evaluate(() => performance.now())) - t0;
+      };
+      const closeRoom = async () => {
+        await page.click('#btnCloseInsights');
+        await page.waitForSelector('#modalInsights', { state: 'detached' });
+      };
+      const before = await listeners();
+      const cold = await openRoom();
+      // the keyboard: roving focus and the tooltip's first line (1.0's insFactValues)
+      const kb = await page.evaluate(() => {
+        const marks = [...document.querySelector('#insBody svg.ins-plot').querySelectorAll('.ins-mark')];
+        marks[0].focus();
+        const tip1 = document.getElementById('insTip').textContent;
+        marks[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+        return { moved: document.activeElement === marks[1], tab: marks[1].getAttribute('tabindex'), tip1, shown: !document.getElementById('insTip').hidden, n: marks.length };
+      });
+      check(kb.moved && kb.tab === '0' && kb.shown && kb.tip1.length > 0, `wave 1c #2: Dumas, roving focus moves through the ${kb.n} rhythm columns, the tooltip shows ("${kb.tip1.slice(0, 60)}")`);
+      await closeRoom();
+      const warm = await openRoom();
+      await closeRoom();
+      const after1 = await listeners();
+      const h0 = await heap();
+      const times = [];
+      for (let i = 0; i < 10; i++) {
+        times.push(await openRoom());
+        await closeRoom();
+      }
+      const h1 = await heap();
+      const after = await listeners();
+      const grow = h1 - h0;
+      note(`wave 1c #5: Dumas Insights — first open ${cold.toFixed(0)} ms (cold: computed and drawn), second ${warm.toFixed(0)} ms, ten more: median ${times.slice().sort((a, b) => a - b)[5].toFixed(0)} ms, max ${Math.max(...times).toFixed(0)} ms`);
+      note(`wave 1c #5: heap after one open/close ${(h0 / 1048576).toFixed(2)} MB, after ten more ${(h1 / 1048576).toFixed(2)} MB (${grow >= 0 ? '+' : ''}${(grow / 1048576).toFixed(2)} MB)`);
+      check(JSON.stringify(after1) === JSON.stringify(before) && JSON.stringify(after) === JSON.stringify(before), `wave 1c #5: closing Insights releases its listeners (window/document listeners before ${JSON.stringify(before)}, after one ${JSON.stringify(after1)}, after eleven ${JSON.stringify(after)})`);
+      check(grow < 2 * 1048576, `wave 1c #5: ten reopenings do not grow the heap past noise (${(grow / 1048576).toFixed(2)} MB, limit 2 MB)`);
+      check(!(await page.$('#insTip')), 'wave 1c #5: the tooltip leaves with the room');
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
 /* ---- the bundle: one yjs ---- */
 function bundle() {
   const dir = path.join(REPO, 'client', 'next', 'assets');
@@ -899,6 +1082,7 @@ try {
   if (run('historyChecks')) await historyChecks(srv.origin);
   if (run('tooltipScan')) await tooltipScan(srv.origin);
   if (run('wave1b')) await wave1bChecks(srv.origin);
+  if (run('insights')) await insightsChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {

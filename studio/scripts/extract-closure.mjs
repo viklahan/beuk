@@ -63,7 +63,7 @@ export const EXTRA_ROOTS = [
   'insFrequency', 'insRhythm', 'insCadence', 'insEchoes', 'insDialogueText', 'insDialogue', 'insCrutch', 'insHistogram', 'insVariety',
   'insReadability', 'insSyllables', 'insFlesch', 'insTokens', 'insSentences', 'insBodySections', 'fmtNum', 'esc',
   // wave 1c: Names on stage (C5)
-  'castCompute', 'castVisible', 'castGridHtml', 'castNormalizeHidden', 'castHash', 'castRateStr', 'CAST_MAX_ROWS',
+  'castCompute', 'castVisible', 'castGridHtml', 'castNormalizeHidden', 'castHash', 'castRateStr', 'CAST_MAX_ROWS', 'bookLang',
   // wave 1c: the notebook and its research files (C7) — the normalisers, the limits and the book's stored forms
   'nbNormalize', 'nbLine', 'nbPack', 'nbHas', 'rsNormalize', 'rsTypeOf', 'rsUrl', 'rsKinds', 'rsLimits', 'rsAccept', 'rsIsRef', 'rsBytesOf',
   'rsKind', 'rsIcon', 'rsSize', 'rsTabOk', 'rsPackFiles', 'rsHas', 'rsNamed', 'rsTotal',

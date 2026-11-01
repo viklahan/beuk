@@ -5,6 +5,7 @@ import './styles/history.css';
 import './styles/sidebar.css';
 import './styles/toolbar.css';
 import './styles/tour.css';
+import './styles/insights.css';
 import { BookProvider } from './book/BookProvider';
 import { StatsProvider } from './book/stats';
 import { DialogStackProvider } from './shell/Dialog';
