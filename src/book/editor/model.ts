@@ -133,17 +133,7 @@ export function importBook(doc: unknown, ydoc: Y.Doc = new Y.Doc()): ImportResul
   ydoc.transact(() => {
     for (const [k, v] of Object.entries(book)) if (k !== 'sections') meta.set(k, v);
     layout.set('keys', Object.keys(book));
-    const list = Array.isArray(book.sections) ? book.sections : [];
-    for (const s of list) {
-      if (!isRec(s)) { sections.push([s]); continue; }
-      const m = new Y.Map<unknown>();
-      for (const [k, v] of Object.entries(s)) {
-        if (k === 'content' && typeof v === 'string') m.set(BODY, new Y.XmlFragment());
-        else m.set(escKey(k), v);
-      }
-      sections.push([m]);
-      if (typeof s.content === 'string') prosemirrorToYXmlFragment(toDoc(s.content), m.get(BODY) as Y.XmlFragment);
-    }
+    insertSections(sections, 0, Array.isArray(book.sections) ? book.sections : []);
   });
   const { book: _book, ...rest } = read;
   return { ...rest, ydoc, textWarnings };
@@ -176,6 +166,34 @@ export function fragmentText(frag: Y.XmlFragment, where = 'section'): string {
   return toText(yXmlFragmentToProseMirrorRootNode(frag, bookSchema));
 }
 
+/** Insert book-format sections into the `sections` Y.Array at `index`, exactly as importBook stores them (each section a
+ *  Y.Map, its string `content` a `body` fragment). Each section is inserted and then filled, in order; call it inside a
+ *  transaction to make the whole insert one change. */
+export function insertSections(sections: Y.Array<unknown>, index: number, list: readonly unknown[]): void {
+  let at = index;
+  for (const s of list) {
+    if (!isRec(s)) { sections.insert(at++, [s]); continue; }
+    const m = new Y.Map<unknown>();
+    for (const [k, v] of Object.entries(s)) {
+      if (k === 'content' && typeof v === 'string') m.set(BODY, new Y.XmlFragment());
+      else m.set(escKey(k), v);
+    }
+    sections.insert(at++, [m]);
+    if (typeof s.content === 'string') prosemirrorToYXmlFragment(toDoc(s.content), m.get(BODY) as Y.XmlFragment);
+  }
+}
+
+/** One entry of the `sections` Y.Array as book-format v1 (what exportBook writes for it). */
+export function sectionPlain(s: unknown, where = 'section'): unknown {
+  if (!(s instanceof Y.Map)) return plain(s);
+  const o: Rec = {};
+  for (const [sk, v] of s.entries()) {
+    if (sk === BODY && v instanceof Y.XmlFragment) setOwn(o, 'content', fragmentText(v, where));
+    else setOwn(o, unescKey(sk), plain(v));
+  }
+  return o;
+}
+
 /** The Y.Doc -> a book-format v1 document (the `book` of a backup), keys in the order the book had them. */
 export function exportBook(ydoc: Y.Doc): Rec {
   const meta = ydoc.getMap<unknown>(META);
@@ -187,15 +205,7 @@ export function exportBook(ydoc: Y.Doc): Rec {
   const out: Rec = {};
   for (const k of keys) {
     if (k === 'sections') {
-      setOwn(out, k, sections.toArray().map((s, i) => {
-        if (!(s instanceof Y.Map)) return plain(s);
-        const o: Rec = {};
-        for (const [sk, v] of s.entries()) {
-          if (sk === BODY && v instanceof Y.XmlFragment) setOwn(o, 'content', fragmentText(v, `sections[${i}]`));
-          else setOwn(o, unescKey(sk), plain(v));
-        }
-        return o;
-      }));
+      setOwn(out, k, sections.toArray().map((s, i) => sectionPlain(s, `sections[${i}]`)));
     } else if (meta.has(k)) {
       setOwn(out, k, plain(meta.get(k)));
     }

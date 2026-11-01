@@ -24,6 +24,7 @@ import { register } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import vm from 'node:vm';
+import { writeClosure } from './extract-closure.mjs';
 
 const STUDIO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = path.resolve(STUDIO, '..');
@@ -243,8 +244,10 @@ async function main() {
   for (const code of strings.order) writeFileSync(path.join(out, 'packs', `${code}.json`), JSON.stringify(packs[code]));
   writeFileSync(path.join(out, 'tokens.css'), tokens.css);
   writeFileSync(path.join(out, 'icons.json'), JSON.stringify(icons));
+  /* 1.0's render code as a browser module (scripts/extract-closure.mjs), written here so the rmSync above never takes it */
+  const closure = await writeClosure();
   const keys = Object.keys(strings.packs.en).length;
-  console.log(`extract-studio: ${strings.order.length} interface languages × ${keys} keys, RTL: ${strings.rtl.join(', ') || 'none'}; tokens: ${tokens.paper.length} Paper / ${tokens.candlelight.length} Candlelight; ${Object.keys(icons).length} icons → src/generated/`);
+  console.log(`extract-studio: ${strings.order.length} interface languages × ${keys} keys, RTL: ${strings.rtl.join(', ') || 'none'}; tokens: ${tokens.paper.length} Paper / ${tokens.candlelight.length} Candlelight; ${Object.keys(icons).length} icons; closure: ${closure.names.length} declarations → src/generated/`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
