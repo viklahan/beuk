@@ -16,7 +16,9 @@ const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '');
 
 /* Colours come only from the tokens extracted from 1.0. If a literal
    colour is ever truly needed, it goes here with the reason. */
-const COLOUR_ALLOWLIST: { file: string; text: string; why: string }[] = [];
+const COLOUR_ALLOWLIST: { file: string; text: string; why: string }[] = [
+  { file: 'styles/notebook.css', text: '#fff', why: "1.0's .rs-pdf: a PDF page frame is white in both themes (the PDF viewer paints its own page)" },
+];
 
 describe('the look: tokens only, logical properties only (review focus #3, #1)', () => {
   const css = files(SRC).filter((f) => f.endsWith('.css'));

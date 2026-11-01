@@ -234,6 +234,15 @@ async function readOnlyRooms(page) {
   await page.click('#btnCloseInsights');
   await page.waitForSelector('#modalInsights', { state: 'detached', timeout: 10_000 });
   done.push('Insights');
+  // wave 1c: the Notebook, browsed (every note chosen, every file opened, a search), then closed
+  await page.click('#btnNotebook');
+  await page.waitForSelector('#modalNotebook #nbList', { timeout: 60_000 });
+  for (const b of await page.$$('#nbList [data-nb]')) await b.click();
+  for (const b of await page.$$('[data-rsview]')) await b.click();
+  await page.fill('#nbSearch', 'a');
+  await page.click('#btnCloseNotebook');
+  await page.waitForSelector('#modalNotebook', { state: 'detached', timeout: 10_000 });
+  done.push('Notebook');
   return done.join(' + ');
 }
 
@@ -1057,6 +1066,70 @@ async function insightsChecks(origin) {
   }
 }
 
+/* ---- wave 1c: the Notebook and its research files (review focus #4; 1.0's notebook.research.csp) ---- */
+async function notebookChecks(origin) {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    const base = fixtures.find((f) => f.name === 'real/lunas-beach-standalone');
+    await openBackup(page, base.file);
+    await page.click('#btnNotebook');
+    await page.waitForSelector('#modalNotebook #nbList', { timeout: 60_000 });
+    await page.click('#btnNbNew');
+    await page.fill('#nbTitle', 'Made in 2.0');
+    await page.fill('#nbBody', 'A note with a recording and a PDF.');
+    // a PDF and a recording through the file picker (1.0's notebook.research.csp: frame-src and media-src allow blob:)
+    const pdf = path.join(OUT, 'ledger.pdf'), wav = path.join(OUT, 'gulls.wav');
+    writeFileSync(pdf, '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n');
+    writeFileSync(wav, Buffer.from([82, 73, 70, 70, 36, 0, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 1, 0, 64, 31, 0, 0, 64, 31, 0, 0, 1, 0, 8, 0, 100, 97, 116, 97, 0, 0, 0, 0]));
+    await page.setInputFiles('#rsFileInput', [pdf, wav]);
+    await page.waitForFunction(() => document.querySelectorAll('#rsRow [data-rsfile]').length === 2, null, { timeout: 30_000 });
+    const viewed = [];
+    for (const name of ['ledger.pdf', 'gulls.wav']) {
+      await page.locator('[data-rsview]', { hasText: name }).click();
+      const el = await page.waitForSelector('#rsView iframe.rs-pdf, #rsView audio.rs-audio', { timeout: 10_000 });
+      viewed.push(await el.evaluate((e) => e.tagName.toLowerCase() + ' ' + e.getAttribute('src').slice(0, 5)));
+      await page.waitForTimeout(600);
+      await page.locator('[data-rsview]', { hasText: name }).click(); // close it again
+    }
+    const v = await page.evaluate(() => (window.__csp || []).filter((x) => String(x.blocked || '').startsWith('blob')));
+    check(v.length === 0 && viewed.join(',') === 'iframe blob:,audio blob:', `wave 1c notebook.research.csp: a PDF frame and a player from object URLs load under the served policy with no violation (${viewed.join(', ')})`);
+    await closeByEscape(page, '#modalNotebook');
+    const out = await exportBackup(page);
+    const nb = out.json.book.notebook, rs = out.json.book.research;
+    check(nb && nb.notes.length === 1 && nb.notes[0].title === 'Made in 2.0' && rs && rs.files.length === 2 && rs.files.find((f) => f.name === 'gulls.wav').mediaType === 'audio/wav',
+      `wave 1c #4: the note and its two files are in the exported book, as 1.0 writes them (${nb ? nb.notes.length : 0} note, ${rs ? rs.files.length : 0} files)`);
+    // a reload keeps them
+    await page.reload();
+    await page.waitForSelector('.desk', { timeout: 60_000 });
+    const again = await exportBackup(page);
+    check(JSON.stringify(again.json.book) === JSON.stringify(out.json.book), 'wave 1c #4: after a reload the book (notes and files) exports exactly the same');
+    // 1.0 reads them: same notes, same files, and its own save writes them byte for byte
+    const one = await watch(await ctx.newPage());
+    await one.goto(origin + '/studio');
+    await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+    const seen = await one.evaluate((book) => {
+      applyBookDoc(JSON.parse(JSON.stringify(book)));
+      const ser = serializeBook();
+      return { notes: nbBook().notes.map((n) => n.title + ':' + (n.files || []).length), files: rsBook().files.map((f) => f.name + ':' + f.mediaType), same: JSON.stringify(ser.notebook) === JSON.stringify(book.notebook) && JSON.stringify(ser.research) === JSON.stringify(book.research) };
+    }, out.json.book);
+    check(seen.same && seen.notes.join() === 'Made in 2.0:2', `wave 1c #4: 1.0 reads the notebook made in 2.0 (${seen.notes.join(', ')}; ${seen.files.join(', ')}) and saves it byte for byte`);
+    await one.close();
+    // and 2.0 reads 1.0's: the sample (1.0's buildSampleBook) with its three notes and their files
+    await page.click('#btnSampleStory');
+    await page.waitForSelector('#modalConfirm', { timeout: 30_000 });
+    await page.click('#modalConfirm #btnConfirmYes');
+    await page.waitForFunction(() => document.getElementById('btnSampleStory')?.querySelector('.lucide-book-x'), null, { timeout: 60_000 });
+    await page.click('#btnNotebook');
+    await page.waitForSelector('#modalNotebook #nbList [data-nb]', { timeout: 60_000 });
+    const listed = await page.$$eval('#nbList [data-nb]', (els) => els.map((e) => e.getAttribute('data-nb')));
+    check(listed.length === 3 && listed.includes('sample-nb-depths'), `wave 1c #4: 2.0 shows 1.0's sample notes (${listed.join(', ')})`);
+    await closeByEscape(page, '#modalNotebook');
+  } finally {
+    await ctx.close();
+  }
+}
+
 /* ---- the bundle: one yjs ---- */
 function bundle() {
   const dir = path.join(REPO, 'client', 'next', 'assets');
@@ -1083,6 +1156,7 @@ try {
   if (run('tooltipScan')) await tooltipScan(srv.origin);
   if (run('wave1b')) await wave1bChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
+  if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);
   if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {

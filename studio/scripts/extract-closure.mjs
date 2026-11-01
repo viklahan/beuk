@@ -67,7 +67,7 @@ export const EXTRA_ROOTS = [
   // wave 1c: the notebook and its research files (C7) — the normalisers, the limits and the book's stored forms
   'nbNormalize', 'nbLine', 'nbPack', 'nbHas', 'rsNormalize', 'rsTypeOf', 'rsUrl', 'rsKinds', 'rsLimits', 'rsAccept', 'rsIsRef', 'rsBytesOf',
   'rsKind', 'rsIcon', 'rsSize', 'rsTabOk', 'rsPackFiles', 'rsHas', 'rsNamed', 'rsTotal',
-  'bibleAllEntries', 'bibleScan', 'bibleMatcherNow', 'bibleName',
+  'bibleAllEntries', 'bibleScan', 'bibleMatcherNow', 'bibleName', 'bibleNormalize',
 ];
 /** 1.0's top-level `let`s a caller reads or sets (emitted as accessors on the closure's `vars`). */
 export const VARS = ['insVarPick', 'insCache', 'insFacts'];

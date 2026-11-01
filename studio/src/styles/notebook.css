@@ -1,0 +1,76 @@
+/* ==== BEUK:notebook / BEUK:research ==== — 1.0's Notebook and its research files (client/index.html CSS 1756-1814,
+   1967-1969, 2562-2600), with the Covenant's list classes (.bib-*) and the outline's chip, link and mini buttons
+   (.ol-chip, .ol-link, .ol-mini) that 1.0's notebook wears. Ported as 1.0 has them, phone rule included: at 760 px
+   and below 1.0 hides .bib-detail unless .bib-main is .is-detail, which only the Covenant ever sets — so 1.0's
+   notebook shows only its list on a phone (a 1.0 bug, kept; see the wave 1c report). */
+.bib-main { display: grid; grid-template-columns: minmax(210px, 270px) minmax(0, 1fr); gap: 22px; margin-top: 14px; align-items: start; }
+.bib-side { min-width: 0; }
+.bib-search { margin: 0 0 10px; font-size: 13px; padding: 7px 11px; }
+.bib-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
+.bib-item:hover { background: var(--panel); border-color: var(--line); }
+.bib-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.bib-item.is-sel { background: var(--accent-soft); border-color: var(--accent); }
+.bib-item svg { width: 15px; height: 15px; color: var(--muted); flex: 0 0 auto; }
+.bib-item-name { flex: 1 1 auto; min-width: 0; font-family: "EB Garamond", Georgia, serif; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bib-item-name.is-blank { color: var(--muted); font-style: italic; }
+.bib-detail { min-width: 0; }
+@media (max-width: 760px) {
+  .bib-main { grid-template-columns: minmax(0, 1fr); }
+  .bib-main.is-detail .bib-side { display: none; }
+  .bib-main:not(.is-detail) .bib-detail { display: none; }
+}
+.ol-chip {
+  display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink-2);
+  border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; line-height: 1.5;
+}
+.ol-chip:hover { border-color: var(--muted); color: var(--ink); }
+.ol-chip:focus-visible, .ol-mini:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ol-link { border: none; background: none; padding: 2px 4px; font: inherit; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.ol-link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+.ol-mini {
+  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; border: none;
+  background: transparent; color: var(--muted); padding: 0; cursor: pointer; flex: 0 0 auto;
+}
+.ol-mini:hover { background: var(--accent-soft); color: var(--ink); }
+.ol-mini:disabled { opacity: .35; cursor: default; background: transparent; }
+.nb-side-bar { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.nb-side-bar .bib-search { flex: 1 1 auto; min-width: 0; margin: 0; }
+.nb-side-bar .tb-btn { flex: 0 0 auto; white-space: nowrap; }
+.nb-group { margin-bottom: 10px; }
+.nb-group-h { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 6px 4px 3px; }
+.nb-group-h svg { width: 13px; height: 13px; }
+.nb-group[data-nbgroup="here"] .nb-group-h { color: var(--accent); }
+.nb-item-txt { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.nb-item-meta { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nb-row { margin-bottom: 12px; }
+.nb-row .field-lab { display: block; margin-bottom: 4px; }
+.nb-body { width: 100%; min-height: 220px; resize: vertical; font-family: "EB Garamond", Georgia, serif; font-size: 16px; line-height: 1.55; }
+.nb-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.nb-chips .ol-chip svg { width: 12px; height: 12px; }
+.nb-pin { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line-2); border-radius: 999px; padding: 1px 4px 1px 10px; background: var(--panel); font-size: 12.5px; }
+.nb-pinsel { width: auto; max-width: 100%; margin-inline-end: 6px; }
+.nb-quiet { font-size: 12.5px; color: var(--muted); margin: 2px 0 6px; }
+.nb-pick { font-family: "EB Garamond", Georgia, serif; font-style: italic; font-size: 15px; margin-top: 30px; text-align: center; }
+.nb-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px dashed var(--line); padding-top: 10px; }
+/* BEUK:research */
+.rs-url { display: flex; gap: 6px; align-items: center; }
+.rs-url .txt-input { flex: 1 1 auto; min-width: 0; }
+.rs-url .tb-btn { flex: 0 0 auto; text-decoration: none; white-space: nowrap; }
+.rs-files { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rs-file { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 3px 4px 3px 6px; background: var(--panel); }
+.rs-file.is-open { border-color: var(--accent); }
+.rs-name { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; background: none; border: 0; padding: 2px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; text-align: start; }
+.rs-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-name svg { width: 15px; height: 15px; flex: 0 0 auto; color: var(--muted); }
+.rs-name:hover span, .rs-name:focus-visible span { text-decoration: underline; }
+.rs-meta { flex: 0 0 auto; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.rs-add { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rs-add .nb-quiet { margin: 0; }
+.rs-view { margin-top: 10px; border: 1px solid var(--line-2); border-radius: 10px; padding: 8px; background: var(--panel); /* 1.0: var(--paper, var(--panel)); 1.0 declares no --paper */ }
+.rs-img { display: block; max-width: 100%; max-height: 60vh; margin: 0 auto; }
+.rs-pdf { display: block; width: 100%; height: 60vh; border: 0; background: #fff; }
+.rs-audio { display: block; width: 100%; }
+.rs-video { display: block; max-width: 100%; max-height: 60vh; margin: 0 auto; }
+.rs-text { white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; margin: 0; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; line-height: 1.5; }
+.rs-tab { margin-top: 8px; }
+#modalNotebook.rs-drop .nb-modal { outline: 2px dashed var(--accent); outline-offset: -6px; }

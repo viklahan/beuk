@@ -7,6 +7,7 @@ import { useChapterOps } from '../chapters/ChapterOps';
 import { SampleBar } from '../sample/SampleBar';
 import { HistoryDialog } from '../history/HistoryDialog';
 import { InsightsDialog } from '../insights/InsightsDialog';
+import { NotebookDialog } from '../notebook/NotebookDialog';
 import { SettingsDialog } from '../settings/SettingsDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { syncClosureLocale } from '../closure/index';
@@ -41,7 +42,7 @@ export function Shell() {
   const bk = useBook();
   const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
-  const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | null>(null);
+  const [dialog, setDialog] = useState<'history' | 'settings' | 'insights' | 'notebook' | null>(null);
   const bookOpen = bk.phase === 'open';
   const ops = useChapterOps({ openHistory: () => setDialog('history') });
   const [mstyle, setMstyle] = useState(false);
@@ -180,7 +181,15 @@ export function Shell() {
                 <Icon name="BookMarked" />
                 <span className="side-tool-lab">{t('side.toolBible')}</span>
               </button>
-              <button className="side-tool" id="btnNotebook" data-tip="tips.notebook" type="button" aria-label={t('nb.open')} aria-disabled="true">
+              <button
+                className="side-tool"
+                id="btnNotebook"
+                data-tip="tips.notebook"
+                type="button"
+                aria-label={t('nb.open')}
+                aria-disabled={bookOpen ? undefined : 'true'}
+                onClick={bookOpen ? () => setDialog('notebook') : undefined}
+              >
                 <Icon name="NotebookPen" />
                 <span className="side-tool-lab">{t('side.toolNotebook')}</span>
               </button>
@@ -222,6 +231,7 @@ export function Shell() {
       <HistoryDialog open={dialog === 'history' && bookOpen} onClose={() => setDialog(null)} />
       <SettingsDialog open={dialog === 'settings' && bookOpen} onClose={() => setDialog(null)} />
       <InsightsDialog open={dialog === 'insights' && bookOpen} onClose={() => setDialog(null)} />
+      <NotebookDialog open={dialog === 'notebook' && bookOpen} onClose={() => setDialog(null)} />
     </div>
   );
 }

@@ -155,6 +155,7 @@ export type ClosureApi = {
   bibleScan: (text: string, m: unknown) => { hits: { s: number; e: number; id: string }[] };
   bibleMatcherNow: () => unknown;
   bibleName: (e: unknown) => string;
+  bibleNormalize: (doc: unknown) => Record<string, unknown>;
 };
 export type TourStep = { id: string; title: string; body: string; anchor: number; beside?: boolean; last?: boolean; groups: string[][] };
 export type InsightsFact = { name: string; short: string; words: number; avg: number | null; dlg: number | null; ease: number | null };
