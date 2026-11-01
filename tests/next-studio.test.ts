@@ -99,9 +99,9 @@ test("1.0's service workers leave /next alone: never cached or served, and its b
     for (const u of ['/next', '/next/', '/next/assets/index-1.js', '/next/sw.js']) assert.ok(rx.test(u), `${p}: ${u} passes through`);
     for (const u of ['/nextbook', '/studio', '/']) assert.ok(!rx.test(u), `${p}: not ${u}`);
     assert.ok(sw.includes('keys.filter((k) => k !== BEUK_CACHE && k !== BEUK_SOUND_CACHE && k.indexOf("beuk-next-") !== 0)'), `${p}: activate keeps beuk-next-*`);
-    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v21";/, `${p}: shell cache bumped for the change`);
+    assert.match(sw, /const BEUK_CACHE = "beuk-shell-v22";/, `${p}: shell cache bumped for the change`);
   }
-  assert.match(read('client/index.html'), /const BEUK_CACHE_NAME = "beuk-shell-v21";/);
+  assert.match(read('client/index.html'), /const BEUK_CACHE_NAME = "beuk-shell-v22";/);
   // The 2.0 worker's own cache prefix is the one 1.0 keeps.
   assert.ok(read('studio/public/sw.js').includes("const PREFIX = 'beuk-next-';"));
 });

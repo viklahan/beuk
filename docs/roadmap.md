@@ -14,9 +14,7 @@ today.
 
 ## In progress
 
-- **Research files: web pages and Word files.** The Notebook already keeps
-  pictures, PDFs, recordings, video clips and text on a note. Next it
-  takes a web page you saved from your browser and a Word document.
+Nothing is being built this minute; the first item under Planned is next.
 
 ## Planned
 
@@ -65,6 +63,10 @@ In the order they will be built.
 
 Newest first.
 
+- **2026-10-31 — Web pages and Word documents as research.** Save a web
+  page from your browser or add a Word document to a Notebook note, and
+  read it right there: its words, headings, lists, tables, links and
+  pictures, never its scripts or anything it would load from the web.
 - **2026-10-31 — Room for research.** A book now keeps up to 100 MB of
   research files, 25 MB each (it was 25 MB, 10 MB each). Pictures and
   files are saved on your device once instead of with every keystroke's

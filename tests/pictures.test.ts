@@ -102,14 +102,15 @@ test('uploads are verified: the name must be the sha256 of the bytes, base64 can
 });
 
 test('research files ride the picture store: a PDF, a recording, a clip and plain text are kept; HTML and other text never', async () => {
-  for (const mediaType of ['application/pdf', 'audio/mpeg', 'audio/mp4', 'video/webm', 'text/plain', 'text/markdown', 'text/csv']) {
+  for (const mediaType of ['application/pdf', 'audio/mpeg', 'audio/mp4', 'video/webm', 'text/plain', 'text/markdown', 'text/csv',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.beuk.webpage']) { // BEUK:webword
     const p = picture(1500);
     assert.equal((await bob.put(`/api/pictures/${p.sha}`, { mediaType, data: p.data })).status, 201, mediaType);
     const back = await bob.get(`/api/pictures/${p.sha}`);
     assert.equal(back.body.picture.mediaType, mediaType);
     assert.equal(back.body.picture.data, p.data);
   }
-  for (const mediaType of ['text/html', 'application/xhtml+xml', 'text/javascript', 'application/octet-stream', 'application/pdfx']) {
+  for (const mediaType of ['text/html', 'application/xhtml+xml', 'text/javascript', 'application/octet-stream', 'application/pdfx', 'multipart/related', 'message/rfc822', 'application/vnd.beuk.webpage+html', 'application/msword']) {
     const p = picture(1500);
     assert.equal((await bob.put(`/api/pictures/${p.sha}`, { mediaType, data: p.data })).status, 400, mediaType);
   }

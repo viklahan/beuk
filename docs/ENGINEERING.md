@@ -2431,8 +2431,8 @@ files it was written about and the link it came from.
   (plain, Markdown, CSV), added with **Add files** or dropped on the open
   Notebook (on the note in hand, or a new one titled after the file).
   The type is the browser's, or the file name's when the browser gives
-  none (`rsTypeOf`); anything else, a web page included, is refused, as
-  is an empty file. Limits (`rsLimits`): 25 MB a file, 20 files a note,
+  none (`rsTypeOf`), plus saved web pages and Word documents (below);
+  anything else is refused, as is an empty file. Limits (`rsLimits`): 25 MB a file, 20 files a note,
   200 files and 100 MB a book (raised from 10 MB, 60 and 25 MB by
   BEUK:localpics; see Local-first saving).
 - **Opened in the Notebook.** One file at a time, under its note: a
@@ -2466,7 +2466,9 @@ files it was written about and the link it came from.
   once by their SHA-256 and named in the saved book, so an autosave does
   not resend a 10 MB PDF. The picture store accepts these types
   (`PICTURE_MEDIA_RE` in `src/pictures.ts`), never HTML;
-  `tests/pictures.test.ts` holds both.
+  `tests/pictures.test.ts` holds both (a saved web page is stored as
+  `application/vnd.beuk.webpage`, never `text/html`, `multipart/related`
+  or `message/rfc822`).
 - **Content-Security-Policy.** The Caddyfile allows `blob:` in
   `frame-src` and `media-src` for the PDF frame and the players (see
   **Security headers**). Self-check `notebook.research.csp` reads the
@@ -2480,7 +2482,75 @@ files it was written about and the link it came from.
   chapters say, marked "a sketch, not to scale"); "Notices to
   Mariners" links to Wikipedia's article on notices to mariners.
 - All 13 interface languages. Self-checks: `notebook.research`,
-  `notebook.research.csp`.
+  `notebook.research.csp`, `notebook.research.webword`.
+
+### Web pages and Word documents (`BEUK:webword`)
+
+- **What is kept.** A Word document (`.docx`, kept as
+  `application/vnd.openxmlformats-officedocument.wordprocessingml.document`)
+  and a saved web page (`.html`, `.htm`, and Chrome and Edge's
+  "Webpage, Single File" `.mhtml` / `.mht`, kept as
+  `application/vnd.beuk.webpage` whatever the browser typed it). Both
+  are kept byte for byte; **Save a copy** gives the file back.
+- **Opened before it is kept.** `rsAddFiles` hands each one to a Web
+  Worker (`client/assets/rsdoc.js`, precached; shell cache v22) under a
+  20 s limit (`rsDocJob`; past it the worker is terminated and the next
+  job starts a fresh one). A `.docx` must be a zip holding
+  `word/document.xml`, declaring at most 200 MB unpacked, with no part
+  over 1 MB unpacking more than 200 times its packed size (a zip bomb is
+  refused before anything is unpacked); an OLE file (an old `.doc`,
+  renamed or not) is told to save as `.docx`. A web page must be an
+  MHTML archive with an HTML part, or text that reads as HTML (a
+  byte-order mark, the page's `<meta charset>`, else UTF-8; mostly NUL
+  or replacement characters is binary and refused); a Safari
+  `.webarchive` (a binary plist) is told to save as Page Source. The
+  note takes the document's `dc:title` or the page's `<title>` (read as
+  plain words, controls and direction overrides removed) when it has
+  none, and the page's own address (MHTML `Snapshot-Content-Location`,
+  Chrome's `saved from url` comment, `rel=canonical`, `og:url`, through
+  `rsUrl`) when it has no link.
+- **The reader view.** The worker unpacks (mammoth for Word; MHTML
+  parts decoded from base64 or quoted-printable, in their own charset)
+  and the studio rebuilds the result from an allowlist (`rsSanitize`):
+  headings, paragraphs, lists, quotes, code, tables (numeric
+  `colspan`/`rowspan`), links (`http(s)` only, read against the page's
+  own address, opening in a new tab with `noopener noreferrer
+  nofollow`), page boxes as plain `div`s, and pictures only as `data:`
+  PNG, JPEG, GIF or WebP — those saved inside an MHTML by their
+  `Content-Location` or `cid:`, never fetched from the web (a picture
+  with words shows them in brackets). No attribute survives but those;
+  scripts, styles, frames, SVG, MathML, forms, media, `<base>`, `<meta>`
+  and their contents never reach the page. The walk is a work list, not
+  recursion; output nesting stops at 120 and elements at 40,000 ("Only
+  the start of this file is shown"). The rebuilt nodes are imported as
+  they are: nothing is serialised and parsed again, so nothing can read
+  differently the second time. Unwrapped elements and side-by-side
+  links get a space, so words never run together.
+- **Measured live** (`beuk-spikes/webword/smoke.mjs`, through the
+  Notebook's own file picker): a 1.2 MB Word book (10,721 words) and the
+  e2e manuscript (272 words, 4 headings, its picture, the note titled
+  from the document), and the Help and Roadmap pages saved by Chrome as
+  `.mhtml` (3,739 and 945 words, their logo) and `.html`; no unsafe
+  element or attribute, no CSP report, no request outside the studio.
+- **Self-check `notebook.research.webword`** (async, client-only) adds
+  20 files through `rsAddFiles`: 7 kept (a real `.docx` with a heading,
+  a table, a safe and a `javascript:` link and a picture; a Chrome-style
+  `.mhtml` with its picture and a garbage-base64 part; an `.html` with a
+  `saved from url` comment; UTF-16, Windows-1252, ten thousand nested
+  `div`s plus two thousand nested `blockquote`s, a 300-character name
+  with a right-to-left override) and 13 refused, each with its own
+  sentence (truncated, a renamed picture, no document, a zip bomb, an
+  OLE `.doc` by bytes and by name, empty, an MHTML with no boundary or
+  no HTML part, random bytes, HTML padded with NULs, a Safari archive by
+  name and by bytes). The test page carries scripts in its head and
+  body, `onclick`, `onerror`, an `<iframe>`, `<svg onload>`, a form,
+  `<meta refresh>`, a hostile `<base>`, `javascript:` and `data:` links,
+  styles and a tracking pixel: none reaches the view, no script runs and
+  no script or CSS text is shown. Broken Word XML is kept (its zip is
+  sound) and says it cannot be shown; a job past its time is stopped and
+  the next one works; the 200 MB total refuses incompressible parts past
+  a limit the job tightens (a job can only tighten it). Mutation test
+  (`beuk-spikes/webword/mutate.py`): 21 of 21 caught.
 
 ## Studio: the preview keeps the writer's place (client-only)
 
