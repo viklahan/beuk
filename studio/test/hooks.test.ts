@@ -8,7 +8,7 @@ import { DUMAS, fixtures } from './fixtures';
    NEW values in `meta`, sections by structural operations, each one Y
    transaction. */
 
-const open = (name = 'real/lunas-beach') => {
+const open = (name = 'real/lunas-beach-standalone') => {
   const f = fixtures('real').find((x) => x.name === name) ?? fixtures('real')[0]!;
   const ydoc = new Y.Doc();
   importBook(f.book, ydoc);

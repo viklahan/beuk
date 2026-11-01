@@ -134,6 +134,15 @@ function expected(book, exported) {
   return want;
 }
 
+/** A book less what History writes (history, historyPool) and what a snapshot leaves behind (importReport). */
+function noHistory(b) {
+  const o = { ...b };
+  delete o.history;
+  delete o.historyPool;
+  delete o.importReport;
+  return o;
+}
+
 /* ---- the studio, driven ---- */
 async function openNext(ctx, origin) {
   const page = await watch(await ctx.newPage());
@@ -180,6 +189,31 @@ async function coverage(page) {
 const focused = (page) => page.waitForFunction(() => !!document.activeElement?.closest('.ms-editor'), null, { timeout: 5000 });
 const sectionsOf = (b) => (Array.isArray(b.sections) ? b.sections : []);
 
+/** Escape closes the top dialog; a tooltip shown on keyboard focus takes the first Escape (1.0, WCAG 1.4.13). */
+async function closeByEscape(page, sel) {
+  for (let i = 0; i < 2; i++) {
+    await page.keyboard.press('Escape');
+    if (await page.waitForSelector(sel, { state: 'detached', timeout: 1500 }).then(() => true, () => false)) return;
+  }
+  await page.waitForSelector(sel, { state: 'detached', timeout: 5000 });
+}
+/** Open and close every room that reads the book without writing it (wave 1a: History, browsed to a snapshot's detail). */
+async function readOnlyRooms(page) {
+  const done = [];
+  await page.click('#btnHistory');
+  await page.waitForSelector('#modalHistory #historyList', { timeout: 60_000 });
+  const first = await page.$('#historyList [data-hopen]');
+  if (first) {
+    await first.click();
+    await page.waitForSelector('#historyDetail', { timeout: 60_000 });
+    const peek = await page.$('#historyDetail [data-hpeek]');
+    if (peek) await peek.click();
+  }
+  await closeByEscape(page, '#modalHistory');
+  done.push('History');
+  return done.join(' + ');
+}
+
 /* ---- #1 the no-edit gate ---- */
 async function noEditGate(origin) {
   const cov = [];
@@ -206,10 +240,11 @@ async function noEditGate(origin) {
         raw += w;
         mounted++;
       }
+      const opened = await readOnlyRooms(page);
       const out = await exportBackup(page);
       const want = expected(f.book, out.json.book);
       const same = JSON.stringify(out.json.book) === JSON.stringify(want);
-      check(same, `#1 ${f.name}: ${mounted} chapter editors mounted, nothing typed — the export equals readBook's book`);
+      check(same, `#1 ${f.name}: ${mounted} chapter editors mounted, ${opened} opened and closed, nothing typed — the export equals readBook's book`);
       check(out.json.format === 'beuk-backup' && out.json.version === 1 && /\.beuk-backup\.json$/.test(out.name) && Object.keys(out.json).join() === 'format,version,exportedAt,book', `#1 ${f.name}: 1.0's backup wrapper (${out.name})`);
       cov.push({ name: f.name, total, raw });
       await harvestCsp(page);
@@ -318,24 +353,29 @@ async function editAndPersist(origin) {
       dt.items.add(new File([text], 'dumas.beuk-backup.json', { type: 'application/json' }));
       document.querySelector('.desk').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
     }, backupText);
+    // step 5 wave 1a: 1.0's confirm first, then a "Before opening a backup" snapshot rides into the arriving book's History
+    await page.waitForSelector('#modalConfirm #btnConfirmYes', { timeout: 60_000 });
+    await page.click('#modalConfirm #btnConfirmYes');
     await page.waitForFunction(() => /Backup opened/.test(document.getElementById('toasts')?.textContent || ''), null, { timeout: 60_000 });
-    const wantBackup = expected(DUMAS.book);
+    const wantBackup = noHistory(expected(DUMAS.book));
     let r1, r2;
     for (let tries = 0; tries < 12; tries++) { // tab 2 reopens the new generation on its own
       await page.waitForTimeout(500);
       r1 = await exportBackup(page);
       r2 = await exportBackup(tab2);
-      if (JSON.stringify(r2.json.book) === JSON.stringify(wantBackup)) break;
+      if (JSON.stringify(noHistory(r2.json.book)) === JSON.stringify(wantBackup) && JSON.stringify(r2.json.book) === JSON.stringify(r1.json.book)) break;
     }
-    check(sectionsOf(r1.json.book).length === sectionsOf(DUMAS.book).length && JSON.stringify(r1.json.book) === JSON.stringify(wantBackup),
-      `fix 1: a backup opened in tab 1 while tab 2 holds the book exports exactly the backup (${sectionsOf(r1.json.book).length} sections, backup ${sectionsOf(DUMAS.book).length})`);
-    check(JSON.stringify(r2.json.book) === JSON.stringify(wantBackup), `fix 1: tab 2 moved to the new generation (${sectionsOf(r2.json.book).length} sections)`);
+    check(sectionsOf(r1.json.book).length === sectionsOf(DUMAS.book).length && JSON.stringify(noHistory(r1.json.book)) === JSON.stringify(wantBackup),
+      `fix 1: a backup opened in tab 1 while tab 2 holds the book exports exactly the backup, History aside (${sectionsOf(r1.json.book).length} sections, backup ${sectionsOf(DUMAS.book).length})`);
+    check(r1.json.book.history.length === 1 && r1.json.book.history[0].auto === 'backup' && !!r1.json.book.history[0].chopDoc,
+      `wave 1a: the replaced book stands in the backup's History as "Before opening a backup" (${JSON.stringify(r1.json.book.history.map((h) => h.auto))})`);
+    check(JSON.stringify(r2.json.book) === JSON.stringify(r1.json.book), `fix 1: tab 2 moved to the new generation (${sectionsOf(r2.json.book).length} sections)`);
     const gens = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name).filter((n) => n.startsWith('beuk-next-book-')));
     check(gens.length === 1, `fix 1: one generation left on the device (${JSON.stringify(gens)})`);
     await page.reload();
     await page.waitForSelector('#manuscript .ms-editor', { timeout: 60_000 });
     const r3 = await exportBackup(page);
-    check(JSON.stringify(r3.json.book) === JSON.stringify(wantBackup), 'fix 1: and after a reload, still exactly the backup');
+    check(JSON.stringify(r3.json.book) === JSON.stringify(r1.json.book), 'fix 1: and after a reload, still exactly the backup (and its History)');
     await harvestCsp(tab2);
     await tab2.close();
     await harvestCsp(page);
@@ -581,6 +621,154 @@ async function screenshots(origin) {
   return shots;
 }
 
+/* ---- wave 1a: History (review focus #1 and #2) ---- */
+const dropOn = (page, file) =>
+  page.evaluate(([text, name]) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([text], name, { type: 'application/json' }));
+    document.querySelector('.desk').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, [readFileSync(file, 'utf8'), path.basename(file)]);
+const titleIs = (page, t) => page.waitForFunction((x) => document.getElementById('projectTitleDisplay')?.textContent === x, t, { timeout: 60_000 });
+
+async function historyChecks(origin) {
+  const A = fixtures.find((f) => f.name === 'real/lunas-beach-standalone');
+  const B = fixtures.find((f) => f.name === 'real/bookbinders-letter');
+  // #1 a replace you can undo
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, A.file);
+      const old = await exportBackup(page);
+      await dropOn(page, B.file);
+      await page.waitForSelector('#modalConfirm', { timeout: 30_000 });
+      const title = await page.textContent('#confirmTitle'), body = await page.textContent('#confirmBody');
+      check(title === 'Open this backup?' && body.includes(old.json.book.meta.title), `wave 1a #1: a backup over the open book asks first, in 1.0's words ("${title}" / "${body.slice(0, 70)}…")`);
+      const focusIn = await page.evaluate(() => !!document.activeElement?.closest('#modalConfirm'));
+      await page.keyboard.press('Escape');
+      await page.waitForSelector('#modalConfirm', { state: 'detached' });
+      const kept = await exportBackup(page);
+      check(focusIn && JSON.stringify(kept.json.book) === JSON.stringify(old.json.book), 'wave 1a #1: focus is in the confirm; Escape answers "Keep writing" and nothing changes');
+      await dropOn(page, B.file);
+      await page.waitForSelector('#modalConfirm #btnConfirmYes', { timeout: 30_000 });
+      await page.click('#btnConfirmYes');
+      await titleIs(page, B.book.meta.title);
+      await page.click('#btnHistory');
+      await page.waitForSelector('#historyList .hist-row', { timeout: 60_000 });
+      const label = await page.textContent('#historyList .hist-row .hist-name');
+      await page.click('#historyList .hist-row [data-hopen]');
+      await page.waitForSelector('#historyDetail [data-hrestore]');
+      await page.click('#historyDetail [data-hrestore]');
+      await page.waitForSelector('#modalConfirm #btnConfirmYes');
+      const rbody = await page.textContent('#confirmBody');
+      await page.click('#btnConfirmYes');
+      await titleIs(page, A.book.meta.title);
+      const back = await exportBackup(page);
+      check(label.includes('Before opening a backup') && rbody.includes('Before opening a backup'), `wave 1a #1: History lists "${label.trim()}", and Restore asks first ("${rbody.slice(0, 50)}…")`);
+      check(JSON.stringify(noHistory(back.json.book)) === JSON.stringify(noHistory(old.json.book)), 'wave 1a #1: "Restore the whole book" brings the old book back exactly (export-equal, key order included, History aside)');
+      check(back.json.book.history[0]?.auto === 'restore' && back.json.book.history[1]?.auto === 'backup', `wave 1a #1: and the restore is itself undoable (History: ${JSON.stringify(back.json.book.history.map((h) => h.auto))})`);
+      const gens = await page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name).filter((n) => n.startsWith('beuk-next-book-')));
+      note(`book generations on the device after the restore: ${gens.length}`);
+      await harvestCsp(page);
+    } finally {
+      await ctx.close();
+    }
+  }
+  // #2 History made in 1.0 shows in 2.0, and a snapshot made in 2.0 shows in 1.0
+  {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const one = await watch(await ctx.newPage());
+      await one.goto(origin + '/studio');
+      await one.waitForFunction(() => document.documentElement.getAttribute('data-local-restore') !== 'pending', null, { timeout: 30_000 });
+      await one.setInputFiles('#localBackupInput', A.file);
+      await one.waitForFunction((t) => document.getElementById('projectTitleDisplay')?.textContent.trim() === t, A.book.meta.title, { timeout: 30_000 });
+      const made10 = await one.evaluate(() => {
+        window.beukHistory.save('Made in 1.0');
+        return JSON.parse(JSON.stringify(serializeBook())); // 1.0's own saved form (a global of its page)
+      });
+      const file10 = path.join(OUT, 'history-from-1.0.beuk-backup.json');
+      writeFileSync(file10, JSON.stringify({ format: 'beuk-backup', version: 1, exportedAt: new Date().toISOString(), book: made10 }));
+      const page = await openNext(ctx, origin);
+      // /next opens 1.0's (saved) book from this device on its own, or shows the empty desk
+      await page.waitForSelector('#btnOpenBackup, .desk', { timeout: 60_000 });
+      if (await page.$('#btnOpenBackup')) await openBackup(page, file10);
+      else {
+        await dropOn(page, file10);
+        await page.waitForFunction(() => !!document.getElementById('modalConfirm') || /Backup opened/.test(document.getElementById('toasts')?.textContent || ''), null, { timeout: 60_000 });
+        if (await page.$('#modalConfirm')) {
+          await page.click('#modalConfirm #btnConfirmYes');
+          await page.waitForFunction(() => /Backup opened/.test(document.getElementById('toasts')?.textContent || ''), null, { timeout: 60_000 });
+        }
+      }
+      await page.click('#btnHistory');
+      await page.waitForSelector('#historyList .hist-row', { timeout: 60_000 });
+      const names = await page.$$eval('#historyList .hist-name', (els) => els.map((e) => e.textContent.trim()));
+      check(names.includes('Made in 1.0'), `wave 1a #2: a snapshot made in 1.0 shows in 2.0's History (${JSON.stringify(names)})`);
+      await page.fill('#histNameInput', 'Made in 2.0');
+      await page.click('#btnHistSave');
+      await page.waitForFunction(() => [...document.querySelectorAll('#historyList .hist-name')].some((e) => e.textContent.trim() === 'Made in 2.0'), null, { timeout: 10_000 });
+      await closeByEscape(page, '#modalHistory');
+      const out = await exportBackup(page);
+      await harvestCsp(page);
+      await page.close();
+      const seen = await one.evaluate((book) => {
+        window.beukLocal.applyBackup(book);
+        return window.beukHistory.list().map((s) => ({ name: s.name, auto: s.auto, sections: s.doc.sections.length }));
+      }, out.json.book);
+      const mine = seen.find((s) => s.name === 'Made in 2.0');
+      check(!!mine && mine.sections === sectionsOf(out.json.book).length && seen.some((s) => s.name === 'Made in 1.0'),
+        `wave 1a #2: after export and import, 1.0's History holds the snapshot made in 2.0, and 1.0's own: ${JSON.stringify(seen.map((s) => s.name || s.auto))}`);
+      await harvestCsp(one);
+    } finally {
+      await ctx.close();
+    }
+  }
+}
+
+/* ---- wave 1a: one tooltip (1.0's ui.tooltips scan, in a real layout) ---- */
+async function tooltipScan(origin) {
+  const ctx = await newContext({ serviceWorkers: 'block' });
+  try {
+    const page = await openNext(ctx, origin);
+    await openBackup(page, fixtures.find((f) => f.name === 'real/lunas-beach-standalone').file);
+    const r = await page.evaluate(() => {
+      const T = window.beukTips;
+      if (!T) return { missing: true };
+      T.flush();
+      const desc = (el) => (el.id ? '#' + el.id : el.tagName.toLowerCase() + (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/).join('.') : ''));
+      const left = [...document.querySelectorAll('[title]')].filter((el) => el instanceof HTMLElement && !T.keepsTitle(el)).map(desc);
+      let icon = 0;
+      const noName = [], noTip = [];
+      document.querySelectorAll("button, [role='button'], a[href]").forEach((el) => {
+        if (el.closest('.fc-page, .piv-book, [data-keep-titles]') || el.closest('#beukTip')) return;
+        if (!T.iconOnly(el)) return;
+        icon++;
+        if (!T.nameOf(el)) noName.push(desc(el));
+        if (!T.textFor(el)) noTip.push(desc(el));
+      });
+      T.setKeyboard(true);
+      const b = document.getElementById('btnTheme');
+      b.focus();
+      const tip = document.getElementById('beukTip');
+      const tr = tip && !tip.hidden ? tip.getBoundingClientRect() : null, br = b.getBoundingClientRect();
+      const beside = !!tr && !(tr.left < br.right && br.left < tr.right && tr.top < br.bottom && br.top < tr.bottom);
+      const wired = (b.getAttribute('aria-describedby') || '').includes('beukTip');
+      b.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+      const hidden = !tip || tip.hidden;
+      T.setKeyboard(false);
+      b.blur();
+      return { left, icon, noName, noTip, beside, wired, hidden };
+    });
+    check(!r.missing && r.left.length === 0 && r.noName.length === 0 && r.noTip.length === 0,
+      `wave 1a ui.tooltips: no help title left (${JSON.stringify(r.left)}); ${r.icon} icon-only controls, each named and tipped (${JSON.stringify(r.noName)} / ${JSON.stringify(r.noTip)})`);
+    check(r.beside && r.wired && r.hidden, `wave 1a ui.tooltips: keyboard focus shows the tip beside #btnTheme, wired by aria-describedby (${r.beside}, ${r.wired}); Escape hides it (${r.hidden})`);
+    await harvestCsp(page);
+  } finally {
+    await ctx.close();
+  }
+}
+
 /* ---- the bundle: one yjs ---- */
 function bundle() {
   const dir = path.join(REPO, 'client', 'next', 'assets');
@@ -594,12 +782,17 @@ const srv = await startServer({ repo: REPO });
 const t0 = Date.now();
 let lat = null;
 try {
-  bundle();
-  await noEditGate(srv.origin);
-  await editAndPersist(srv.origin);
-  await oneSafety(srv.origin);
-  lat = await latency(srv.origin);
-  await screenshots(srv.origin);
+  // E2E_ONLY=historyChecks,tooltipScan runs just those steps (a quick re-run while working; the gate runs them all)
+  const only = (process.env.E2E_ONLY || '').split(',').filter(Boolean);
+  const run = (name) => !only.length || only.includes(name);
+  if (run('bundle')) bundle();
+  if (run('noEditGate')) await noEditGate(srv.origin);
+  if (run('editAndPersist')) await editAndPersist(srv.origin);
+  if (run('oneSafety')) await oneSafety(srv.origin);
+  if (run('historyChecks')) await historyChecks(srv.origin);
+  if (run('tooltipScan')) await tooltipScan(srv.origin);
+  if (run('latency')) lat = await latency(srv.origin);
+  if (run('screenshots')) await screenshots(srv.origin);
 } catch (e) {
   check(false, `the run threw: ${e && e.stack ? e.stack : e}`);
 } finally {

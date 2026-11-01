@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBook } from '../book/BookProvider';
 import { Desk } from '../book/Desk';
 import { Outline } from '../book/Outline';
+import { HistoryDialog } from '../history/HistoryDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from './Icon';
 import { LangMenu } from './LangMenu';
@@ -31,6 +32,8 @@ export function Shell() {
   const bk = useBook();
   const canExport = bk.phase === 'open';
   const [mobile, setMobile] = useState<MobilePane>('structure');
+  const [dialog, setDialog] = useState<'history' | 'settings' | null>(null);
+  const bookOpen = bk.phase === 'open';
   const [mstyle, setMstyle] = useState(false);
   const tab = (pane: MobilePane, style: boolean) => () => {
     setMobile(pane);
@@ -124,6 +127,39 @@ export function Shell() {
           <div id="structureScroll">
             <Outline />
           </div>
+          {/* BEUK:sidebar — 1.0's book tools row; wave 1a wires History, the rest keep their place until their waves */}
+          <div className="side-dock">
+            <div className="side-tools" id="sideTools" role="group" aria-label={t('side.toolsAria')}>
+              <button className="side-tool" id="btnInsights" data-tip="tips.insights" type="button" aria-label={t('insights.open')} aria-disabled="true">
+                <Icon name="Activity" />
+                <span className="side-tool-lab">{t('side.toolInsights')}</span>
+              </button>
+              <button className="side-tool" id="btnGoals" data-tip="tips.goals" type="button" aria-label={t('goals.open')} aria-disabled="true">
+                <Icon name="Target" />
+                <span className="side-tool-lab">{t('side.toolGoals')}</span>
+              </button>
+              <button
+                className="side-tool"
+                id="btnHistory"
+                data-tip="tips.history"
+                type="button"
+                aria-label={t('history.open')}
+                aria-disabled={bookOpen ? undefined : 'true'}
+                onClick={bookOpen ? () => setDialog('history') : undefined}
+              >
+                <Icon name="History" />
+                <span className="side-tool-lab">{t('side.toolHistory')}</span>
+              </button>
+              <button className="side-tool" id="btnBible" data-tip="tips.bible" type="button" aria-label={t('bible.open')} aria-disabled="true">
+                <Icon name="BookMarked" />
+                <span className="side-tool-lab">{t('side.toolBible')}</span>
+              </button>
+              <button className="side-tool" id="btnNotebook" data-tip="tips.notebook" type="button" aria-label={t('nb.open')} aria-disabled="true">
+                <Icon name="NotebookPen" />
+                <span className="side-tool-lab">{t('side.toolNotebook')}</span>
+              </button>
+            </div>
+          </div>
         </aside>
 
         <section id="pane-center" className="pane">
@@ -144,6 +180,7 @@ export function Shell() {
           <div id="previewStage" />
         </section>
       </main>
+      <HistoryDialog open={dialog === 'history' && bookOpen} onClose={() => setDialog(null)} />
     </div>
   );
 }

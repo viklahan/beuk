@@ -30,6 +30,7 @@ export type ClosureApi = {
   buildBookCss: (scope: string) => string;
   bookWordTotal: () => number;
   sectionWords: (s: unknown) => number;
+  normalizeSection: (s: unknown) => Record<string, unknown>;
   rightsLine: (meta?: unknown) => string;
   rightsModeOf: (meta?: unknown) => 'pd' | 'cc' | 'custom' | 'reserved';
   copyrightRightsParas: (meta: unknown) => string[];
@@ -47,6 +48,8 @@ export type ClosureApi = {
   isEmptyDesk: () => boolean;
   deskTrulyEmpty: () => boolean;
   stableJson: (v: unknown) => string;
+  buildEmptyBook: () => Record<string, unknown> & { sections: Record<string, unknown>[] };
+  mkSection: (kind: string, type: string, title: string, extra?: Record<string, unknown>) => Record<string, unknown> & { id: string };
   HISTORY_AUTO_CAP: number;
   CHOP_SNAP_CAP: number;
   CC_LICENCES: Record<string, { name: string; short: string; url: string }>;
@@ -115,6 +118,8 @@ export function loadClosure(): Promise<Closure> {
 /** 1.0's state for a book-format v1 book (a copy: the book is never touched). */
 export function stateFromBook(c: Closure, book: Record<string, unknown>): State {
   const s = epubState(structuredClone(book) as unknown as BookV1, String(book.exportPlatform ?? 'generic'));
+  // as the EPUB worker does: the state is 1.0's global first, then arrives (ARRIVE's normalizers read the global state)
+  c.setState(s as State);
   return c.arrive(s);
 }
 

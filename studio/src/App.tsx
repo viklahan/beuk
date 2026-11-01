@@ -1,6 +1,7 @@
 import './generated/tokens.css';
 import './styles/shell.css';
 import './styles/dialogs.css';
+import './styles/history.css';
 import { BookProvider } from './book/BookProvider';
 import { DialogStackProvider } from './shell/Dialog';
 import { Shell } from './shell/Shell';

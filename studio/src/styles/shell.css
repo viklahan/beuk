@@ -279,3 +279,19 @@ input, select, textarea { font-family: inherit; color: var(--ink); }
 .ms-editor .ms-rawinline { font-family: var(--mono-font); font-size: .85em; }
 .ms-editor a { color: var(--accent); }
 @media (max-width: 560px) { .ms-editor { padding: 28px 22px; } }
+
+/* ==== BEUK:sidebar ==== the bottom dock: the book tools as one compact labelled row (1.0 .side-dock / .side-tools).
+   Wave 1a wires History; the others keep their place and look, aria-disabled until their waves. */
+.side-dock { border-top: 1px solid var(--line); background: var(--panel); flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 8px 10px 6px; }
+.side-dock > * { flex: 0 0 auto; }
+.side-tools { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; }
+.side-tool {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; min-width: 0;
+  padding: 6px 2px 5px; border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--ink-2); font: inherit; font-size: 10.5px; font-weight: 600; line-height: 1.2; cursor: pointer;
+}
+.side-tool:hover { background: var(--panel-2); border-color: var(--line); color: var(--ink); }
+.side-tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.side-tool svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.side-tool-lab { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-tool[aria-disabled="true"] { cursor: default; }

@@ -1,7 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as Y from 'yjs';
-import { BODY, BookImportError, META, SECTIONS, type TextWarning } from '@book/editor/index.js';
+import { BODY, BookImportError, META, SECTIONS, unwrapBackup, type TextWarning } from '@book/editor/index.js';
+import { readBook } from '@book/read.js';
 import { LANG_CODES } from '@book/upgrade.js';
+import { loadClosure } from '../closure/index';
+import { backupArrival, live } from '../history/history';
+import { useConfirm } from '../shell/Dialog';
 import meta from '../generated/strings-meta.json';
 import { useLocale } from '../i18n/LocaleProvider';
 import { useToast } from '../shell/Toasts';
@@ -19,6 +23,14 @@ import { REGISTRY_KEY, bookMeta, importToDevice, openStoredBook, registryEpoch, 
    device, else 1.0's own book imported once, read-only (legacy10.ts never
    writes 1.0's database), with 1.0's "Welcome back" toast. Else the empty
    desk.
+
+   Opening a backup over the open book (1.0 localOpenBackupFile /
+   localApplyBackup, Part C ruling 3 resolved): 1.0's confirm first
+   (local.backupConfirm*: "the current book is kept first as a snapshot"),
+   unless the desk is empty; then a "Before opening a backup" History
+   snapshot of the open book goes into the arriving book's History; then
+   the replace (a new generation). History → "Restore the whole book" on
+   that snapshot brings the old book back.
 
    Generations: when another tab replaces this book (it opened a backup),
    this tab's generation goes stale and the newest one is reopened in its
@@ -42,6 +54,8 @@ export type BookApi = {
   active: number | null;
   select: (index: number | null) => void;
   openBackupFile: (file: File) => Promise<void>;
+  /** Open `doc` (a book document) in place of the open book, as a new generation (a whole-book History restore). */
+  replaceBook: (doc: Record<string, unknown>) => Promise<boolean>;
   exportBackup: () => void;
 };
 
@@ -68,6 +82,7 @@ export function realTitle(v: unknown): string {
 export function BookProvider({ children }: { children: ReactNode }) {
   const { t } = useLocale();
   const toast = useToast();
+  const confirm = useConfirm();
   const [phase, setPhase] = useState<Phase>('starting');
   const [book, setBook] = useState<OpenBook | null>(null);
   const [rev, setRev] = useState(0);
@@ -154,6 +169,24 @@ export function BookProvider({ children }: { children: ReactNode }) {
     };
   }, [book]);
 
+  /** Open `doc` as a new generation of its book, in place of the open one. Throws as importToDevice does. */
+  const replace = useCallback(
+    async (doc: unknown) => {
+      // the book open here is about to be replaced by this tab itself: its going stale is not news
+      const prev = current.current;
+      if (prev) prev.onStale = null;
+      try {
+        const b = await importToDevice(doc);
+        show(b);
+        return b;
+      } catch (e) {
+        if (prev && current.current === prev) prev.onStale = (stale) => reopen.current(stale);
+        throw e;
+      }
+    },
+    [show],
+  );
+
   const openBackupFile = useCallback(
     async (file: File) => {
       let text = '';
@@ -167,22 +200,57 @@ export function BookProvider({ children }: { children: ReactNode }) {
         toast(t('local.backupBad'), 'HardDrive');
         return;
       }
-      // the book open here is about to be replaced by this tab itself: its going stale is not news
-      const prev = current.current;
-      if (prev) prev.onStale = null;
+      const raw = unwrapBackup(parsed) as Record<string, unknown>;
+      const read = readBook(raw);
+      if (read.status !== 'ok') {
+        // readBook said 'newer' or 'failed': this studio must not open (and so never save) it
+        toast(t('local.backupBad'), 'HardDrive');
+        return;
+      }
+      const readDoc = read.book as unknown as Record<string, unknown>;
+      // unchanged, the file itself goes to importBook (one readBook, exactly as step 4 opened it)
+      let doc: unknown = parsed;
+      const open = current.current;
       try {
-        const b = await importToDevice(parsed);
-        show(b);
+        if (open) {
+          const c = await loadClosure();
+          const L = live(c, open.ydoc);
+          // 1.0: an empty desk is replaced without asking (it holds nothing to keep)
+          if (!c.api.isEmptyDesk()) {
+            const title = String(L.state.meta.title || '') || t('misc.untitledBook');
+            const ok = await confirm({ title: t('local.backupConfirmTitle'), body: t('local.backupConfirmBody', { title }), yes: t('local.backupConfirmYes'), no: t('confirm.keep') });
+            if (ok !== true || current.current !== open) return;
+          }
+          const arrived = backupArrival(c, open.ydoc, raw, readDoc);
+          if (arrived !== readDoc) doc = arrived;
+        }
+      } catch {
+        toast(t('local.blocked'), 'HardDrive');
+        return;
+      }
+      try {
+        const b = await replace(doc);
         // 1.0's localApplyBackup: state.meta.title || "Untitled Book"
         toast(t('local.backupOpened', { title: String(bookMeta(b.ydoc).title || '') || t('misc.untitledBook') }), 'HardDrive');
       } catch (e) {
-        // readBook said 'newer' or 'failed': this studio must not open (and so never save) it
-        // anything else: this device would not store it (storage blocked or full)
+        // anything but a refused book: this device would not store it (storage blocked or full)
         toast(t(e instanceof BookImportError ? 'local.backupBad' : 'local.blocked'), 'HardDrive');
-        if (prev && current.current === prev) prev.onStale = (stale) => reopen.current(stale);
       }
     },
-    [show, toast, t],
+    [replace, confirm, toast, t],
+  );
+
+  const replaceBook = useCallback(
+    async (doc: Record<string, unknown>) => {
+      try {
+        await replace(doc);
+        return true;
+      } catch (e) {
+        toast(t(e instanceof BookImportError ? 'local.backupBad' : 'local.blocked'), 'HardDrive');
+        return false;
+      }
+    },
+    [replace, toast, t],
   );
 
   const exportBackup = useCallback(() => {
@@ -213,11 +281,12 @@ export function BookProvider({ children }: { children: ReactNode }) {
       active,
       select: setActive,
       openBackupFile,
+      replaceBook,
       exportBackup,
     };
     // rev: the book's meta or sections changed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, book, rev, active, t, openBackupFile, exportBackup]);
+  }, [phase, book, rev, active, t, openBackupFile, replaceBook, exportBackup]);
 
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
 }

@@ -46,6 +46,8 @@ export const EXTRA_ROOTS = [
   'countWords', 'buildBookCss', 'bookWordTotal', 'sectionWords', 'rightsLine', 'rightsModeOf', 'copyrightRightsParas', 'imRealTitle', 'uid', 'newBookId',
   'normalizeHistory', 'histPack', 'pruneAutoSnapshots', 'histSectionDiff', 'histTextDiff', 'histWordDiff', 'snapshotSectionWords', 'snapshotSectionName',
   'isEmptyDesk', 'deskTrulyEmpty', 'stableJson', 'HISTORY_AUTO_CAP', 'CHOP_SNAP_CAP', 'CC_LICENCES',
+  // 1.0's own blank book and section maker (the History checks build their books with them, as 1.0's do)
+  'buildEmptyBook', 'mkSection',
 ];
 /** Names the browser studio supplies besides the EPUB build's. */
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS'];

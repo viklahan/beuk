@@ -67,6 +67,7 @@ describe('the browser closure (spec decision 3)', () => {
       const server = serverFor(f.book);
       const ydoc = new Y.Doc();
       importBook(f.book, ydoc);
+      c.setState(null as never); // nothing left over from the last book: arriving must not lean on a previous state
       const { state } = bookState(c, ydoc);
       c.setState(state);
       const lang = state.meta.language;
