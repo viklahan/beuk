@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@book/*": ["../src/book/*"],
+      "zod": ["./node_modules/zod"],
+      "yjs": ["./node_modules/yjs"],
+      "y-prosemirror": ["./node_modules/y-prosemirror"],
+      "prosemirror-model": ["./node_modules/prosemirror-model"],
+      "prosemirror-state": ["./node_modules/prosemirror-state"],
+      "prosemirror-view": ["./node_modules/prosemirror-view"],
+      "prosemirror-transform": ["./node_modules/prosemirror-transform"],
+      "typescript": ["./node_modules/typescript"]
+    }
+  },
+  "include": ["src", "test", "vite.config.ts"]
+}

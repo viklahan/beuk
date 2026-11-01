@@ -1,0 +1,77 @@
+import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { EN, UI_LANG_NAMES, UI_LANG_ORDER, UI_PLURAL_FORMS, hasLang, isRtl, loadPack, packIfLoaded, storeUiLang, type UiKey } from './strings';
+import { translate, type Params, type Tables } from './translate';
+import { NEXT_STRINGS, type NextKey } from './next-strings';
+
+export type Locale = {
+  /** The interface language (a UI_LANG_ORDER code). */
+  lang: string;
+  /** The chrome's direction. The manuscript keeps the BOOK's direction. */
+  dir: 'ltr' | 'rtl';
+  /** 1.0's t(). Keys are typed against 1.0's English pack (UiKey), plus the few 2.0-only keys (NextKey, i18n/next-strings.ts). */
+  t: (key: UiKey | NextKey, params?: Params) => string;
+  /** Switch language (loads its pack first), saved under 1.0's key unless persist is false.
+   *  Rejects when the pack cannot be loaded; the language stays as it was. */
+  setLang: (code: string, opts?: { persist?: boolean }) => Promise<string>;
+  order: readonly string[];
+  names: Readonly<Record<string, string>>;
+};
+
+const LocaleContext = createContext<Locale | null>(null);
+
+/** 1.0's applyUiLang: lang and dir on <html>, so everything outside the
+ *  React tree (scrollbars, portals) follows too. */
+function applyToDocument(lang: string): void {
+  if (typeof document === 'undefined') return;
+  document.documentElement.setAttribute('lang', lang);
+  document.documentElement.setAttribute('dir', isRtl(lang) ? 'rtl' : 'ltr');
+}
+
+export function LocaleProvider({ initial, children }: { initial: string; children: ReactNode }) {
+  const start = hasLang(initial) && packIfLoaded(initial) ? initial : 'en';
+  const [lang, setLangState] = useState(start);
+  const latest = useRef(0);
+
+  /* Layout effect: dir flips in the same commit as the new strings, before
+     paint, so Arabic text never shows for a frame in LTR chrome. */
+  useLayoutEffect(() => applyToDocument(lang), [lang]);
+
+  const setLang = useCallback(async (code: string, opts?: { persist?: boolean }) => {
+    const target = hasLang(code) ? code : 'en';
+    const ticket = ++latest.current;
+    await loadPack(target);
+    /* A later switch started while this pack loaded: it wins, and this
+       one neither applies nor saves (a slow pack must not overwrite the
+       writer's last choice). */
+    if (ticket !== latest.current) return target;
+    if (opts?.persist !== false) storeUiLang(target);
+    setLangState(target);
+    return target;
+  }, []);
+
+  const value = useMemo<Locale>(() => {
+    const cur = packIfLoaded(lang);
+    const tables: Tables = {
+      packs: { en: { ...EN, ...NEXT_STRINGS.en }, [lang]: cur && { ...cur, ...NEXT_STRINGS[lang] } },
+      pluralForms: UI_PLURAL_FORMS,
+    };
+    return {
+      lang,
+      dir: isRtl(lang) ? 'rtl' : 'ltr',
+      t: (key, params) => translate(tables, lang, key, params),
+      setLang,
+      order: UI_LANG_ORDER,
+      names: UI_LANG_NAMES,
+    };
+  }, [lang, setLang]);
+
+  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
+}
+
+export function useLocale(): Locale {
+  const v = useContext(LocaleContext);
+  if (!v) throw new Error('useLocale() outside <LocaleProvider>');
+  return v;
+}
+
+export const useT = (): Locale['t'] => useLocale().t;

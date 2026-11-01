@@ -12,6 +12,7 @@ import { createMailer, type Mailer } from './mailer.js';
 import { accountRoutes, BackgroundTasks, type AccountLimits } from './routes/account.js';
 import { authRoutes } from './routes/auth.js';
 import { accountPortalRoutes, signupConfirmationHook, type PortalLimits } from './routes/account-portal.js';
+import { nextStudioRoutes } from './routes/next-studio.js';
 import { billingRoutes } from './routes/billing.js';
 import { cspReportRoutes, type CspReportOptions } from './routes/csp-report.js';
 import { exportRoutes } from './routes/exports.js';
@@ -239,6 +240,8 @@ export function buildApp({
   app.use(resetPageRoutes(config));
   // Accounts portal pages: /account, /account/confirm, /account/deleted.
   app.use(portal.pages);
+  // Beuk 2.0 studio (React) at /next, from the image's build (Caddy proxies /next* here).
+  app.use(nextStudioRoutes());
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     // body-parser marks an over-limit body; say so instead of a bare 500

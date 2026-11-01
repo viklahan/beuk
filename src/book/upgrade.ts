@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from 'node:crypto';
 import {
   PRINT_BLEED_DEFAULT, PRINT_DEFAULTS, PRINT_MARGINS_DEFAULT, PRINT_NOTES_DEFAULT, PRINT_PICTURE_BOOK_DEFAULT,
   THEME_DEFAULT, ACTIVE_PRESET_DEFAULT, scaffoldSections,
@@ -54,13 +53,60 @@ const LEGACY_SAMPLE_BOOK_ID = 'urn:uuid:beuk-sample-lantern-coast';
 /** BOOKID_UUID_RE, CI:4379: a well-formed RFC 9562 UUID (versions 1-8, variant 10xx) behind urn:uuid:. */
 const BOOKID_UUID_RE = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-/** RFC 9562 section 5.5 UUIDv5 of `name` under namespace `ns` (canonical hex, no urn prefix): uuidV5, CI:4418-4427. 1.0 writes its own SHA-1; this uses node's, which is the same function. The name is UTF-8, as 1.0's TextEncoder. */
+/* Browser-safe (step 4 part C): no node:crypto and no Buffer, so readBook runs in the studio bundle as well as in Node.
+   SHA-1 is synchronous because readBook is (crypto.subtle.digest is async and needs a secure context); the random id uses
+   globalThis.crypto, which Node 22 and every browser have. */
+
+/** SHA-1 (FIPS 180-4) of `bytes`: 1.0's bookIdSha1, CI:4460, ported line for line. */
+export function sha1(bytes: Uint8Array): Uint8Array {
+  const ml = bytes.length, withPad = ((ml + 9 + 63) >> 6) << 6;
+  const m = new Uint8Array(withPad); m.set(bytes); m[ml] = 0x80;
+  const bits = ml * 8;
+  m[withPad - 4] = (bits >>> 24) & 255; m[withPad - 3] = (bits >>> 16) & 255; m[withPad - 2] = (bits >>> 8) & 255; m[withPad - 1] = bits & 255;
+  m[withPad - 5] = Math.floor(bits / 4294967296) & 255;
+  let h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476, h4 = 0xc3d2e1f0;
+  const w = new Int32Array(80);
+  for (let off = 0; off < withPad; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = (m[off + i * 4]! << 24) | (m[off + i * 4 + 1]! << 16) | (m[off + i * 4 + 2]! << 8) | m[off + i * 4 + 3]!;
+    for (let i = 16; i < 80; i++) { const x = w[i - 3]! ^ w[i - 8]! ^ w[i - 14]! ^ w[i - 16]!; w[i] = (x << 1) | (x >>> 31); }
+    let a = h0, b = h1, c = h2, d = h3, e = h4;
+    for (let i = 0; i < 80; i++) {
+      let f: number, k: number;
+      if (i < 20) { f = (b & c) | (~b & d); k = 0x5a827999; }
+      else if (i < 40) { f = b ^ c ^ d; k = 0x6ed9eba1; }
+      else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8f1bbcdc; }
+      else { f = b ^ c ^ d; k = 0xca62c1d6; }
+      const tmp = (((a << 5) | (a >>> 27)) + f + e + k + w[i]!) | 0;
+      e = d; d = c; c = (b << 30) | (b >>> 2); b = a; a = tmp;
+    }
+    h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0; h4 = (h4 + e) | 0;
+  }
+  const out = new Uint8Array(20);
+  [h0, h1, h2, h3, h4].forEach((h, i) => { out[i * 4] = (h >>> 24) & 255; out[i * 4 + 1] = (h >>> 16) & 255; out[i * 4 + 2] = (h >>> 8) & 255; out[i * 4 + 3] = h & 255; });
+  return out;
+}
+
+/** RFC 9562 section 5.5 UUIDv5 of `name` under namespace `ns` (canonical hex, no urn prefix): uuidV5, CI:4494. The name is UTF-8, as 1.0's TextEncoder. */
 export function uuidV5(ns: string, name: string): string {
-  const h = createHash('sha1').update(Buffer.from(ns.replace(/-/g, ''), 'hex')).update(Buffer.from(String(name), 'utf8')).digest();
-  const b = Buffer.from(h.subarray(0, 16));
+  const hex = String(ns).replace(/-/g, '');
+  const nb = new TextEncoder().encode(String(name)), buf = new Uint8Array(16 + nb.length);
+  for (let i = 0; i < 16; i++) buf[i] = parseInt(hex.substr(i * 2, 2), 16);
+  buf.set(nb, 16);
+  const b = sha1(buf).slice(0, 16);
   b[6] = (b[6]! & 0x0f) | 0x50;
   b[8] = (b[8]! & 0x3f) | 0x80;
-  const x = b.toString('hex');
+  const x = Array.from(b, (v) => (v + 256).toString(16).slice(1)).join('');
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
+}
+
+/** A random v4 UUID (newBookId, CI:4345), from globalThis.crypto: randomUUID where it exists (a secure context), else getRandomValues. Same format either way. */
+export function randomUUID(): string {
+  const c = globalThis.crypto;
+  if (typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = c.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6]! & 0x0f) | 0x40;
+  b[8] = (b[8]! & 0x3f) | 0x80;
+  const x = Array.from(b, (v) => (v + 256).toString(16).slice(1)).join('');
   return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
 }
 

@@ -25,13 +25,13 @@ test('hcpreview: every client preview.hardcover.* self-check is registered serve
   }
 });
 
-test('hcpreview: the device bar carries ten devices and the device self-check expects exactly them', async () => {
+test('hcpreview: the device bar carries eleven devices and the device self-check expects exactly them', async () => {
   const html = await clientHtml();
   const bar = /<div class="device-bar" id="deviceBar">([\s\S]*?)<\/div>/.exec(html);
   assert.ok(bar, 'device bar present');
   const ids = [...bar[1].matchAll(/data-device="([a-z]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(ids, ['kindle', 'ipad', 'kobo', 'phone', 'oasis', 'basic', 'iphone', 'forma', 'android', 'hardcover']);
-  assert.match(html, /btns\.length === 10 && \["kindle", "ipad", "kobo", "phone", "oasis", "basic", "iphone", "forma", "android", "hardcover"\]/);
+  assert.deepEqual(ids, ['kindle', 'ipad', 'kobo', 'phone', 'oasis', 'basic', 'colorsoft', 'iphone', 'forma', 'android', 'hardcover']);
+  assert.match(html, /btns\.length === 11 && \["kindle", "ipad", "kobo", "phone", "oasis", "basic", "colorsoft", "iphone", "forma", "android", "hardcover"\]/);
 });
 
 test('hcpreview: the open book is built from the print view engine and every hcp.* string ships in all 13 locales', async () => {

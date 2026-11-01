@@ -287,11 +287,16 @@ type Ledger = { note: string; pages: Record<string, string> };
 const LEDGER_PATH = path.join(ROOT, 'tests', 'fixtures', 'l10n-english-only.json');
 /* Not pages a writer reads: test fixtures for the admin surface. */
 const NOT_PAGES = new Set(['src/housekeeping/fixtures.ts']);
+/* Build output, not source: client/next/ is the 2.0 studio's build
+   (studio/ → vite build, gitignored), present only where it was built.
+   Its page is translated through t() in studio/src (the strings come
+   from this file's UI_STRINGS); studio/test/ guards that. */
+const NOT_SCANNED_DIRS = new Set(['client/next']);
 
 function walk(dir: string, keep: (rel: string) => boolean, out: string[] = []): string[] {
   for (const name of readdirSync(path.join(ROOT, dir))) {
     const rel = `${dir}/${name}`;
-    if (name.startsWith('_') || name.startsWith('.') || name === 'node_modules') continue;
+    if (name.startsWith('_') || name.startsWith('.') || name === 'node_modules' || NOT_SCANNED_DIRS.has(rel)) continue;
     if (statSync(path.join(ROOT, rel)).isDirectory()) walk(rel, keep, out);
     else if (keep(rel)) out.push(rel);
   }

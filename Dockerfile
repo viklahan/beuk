@@ -7,6 +7,21 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
+# Beuk 2.0 studio (React, served at /next by the app): studio/ has its own
+# package.json and lockfile. Its build extracts the interface strings and
+# the theme tokens from client/index.html (studio/scripts/extract-studio.mjs,
+# with src/book/studio/closure.ts's parser selection) and imports the
+# book-format code from src/book, so it needs both. Output: client/next/.
+FROM node:24-slim AS studio
+WORKDIR /app
+COPY studio/package.json studio/package-lock.json ./studio/
+RUN cd studio && npm ci
+COPY studio ./studio
+COPY client/index.html ./client/index.html
+COPY client/assets/vendor/lucide.min.js ./client/assets/vendor/lucide.min.js
+COPY src/book ./src/book
+RUN cd studio && npm run build
+
 # Off-site backups: restic, pinned release + the sha256 published in the
 # release's SHA256SUMS (any other bytes fail the build). The app runs it
 # (src/housekeeping/offsite.ts) only when the OFFSITE_* + RESTIC_PASSWORD
@@ -51,6 +66,8 @@ COPY docs ./docs
 # them; they are NOT served from Caddy's static ./client mount, which
 # only the caddy container sees.
 COPY client ./client
+# The 2.0 studio's build (studio stage above), served at /next.
+COPY --from=studio /app/client/next ./client/next
 COPY CHANGELOG.md ./CHANGELOG.md
 # H1/H2 Help: the guides (Markdown), the error dictionary and the home
 # page data, read at request time and indexed for search at boot.
