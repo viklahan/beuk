@@ -355,7 +355,42 @@ async function readOnlyRooms(page) {
   await page.click('#btnTcClose');
   await page.click('#tabBtnContent');
   done.push('the Style tab (15 presets hovered, the creator opened and closed)');
+  done.push(await previewBrowse(page));
   return done.join(' + ');
+}
+/** Wave 4b (constraint 38): the preview browsed — every device, pages turned both ways, a desk rail row, full screen on
+ *  and off, the hardcover opened, turned, closed — and the pane left on the Kindle. */
+async function previewBrowse(page) {
+  await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+  const devs = await page.$$eval('#deviceBar [data-device]', (bs) => bs.map((b) => b.getAttribute('data-device')));
+  for (const d of devs) {
+    await page.click(`#deviceBar [data-device="${d}"]`);
+    if (d === 'hardcover') {
+      await page.waitForSelector('#hcStage:not([hidden])', { timeout: 10_000 });
+      await page.click('#hcToggle');
+      await page.waitForTimeout(700);
+      await page.click('#hcNext');
+      await page.click('#hcPrev');
+      await page.click('#hcToggle');
+      await page.waitForTimeout(500);
+      continue;
+    }
+    await page.waitForTimeout(80);
+  }
+  await page.click('#deviceBar [data-device="kindle"]');
+  await page.waitForTimeout(400);
+  if (!(await page.$eval('#btnNextPage', (b) => b.disabled))) await page.click('#btnNextPage');
+  if (!(await page.$eval('#btnPrevPage', (b) => b.disabled))) await page.click('#btnPrevPage');
+  await page.click('#pvFull');
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const rail = await page.$$('#deskRail .desk-item');
+  if (rail.length > 1) {
+    await rail[rail.length - 1].click();
+    await page.waitForTimeout(300);
+  }
+  return `the preview (${devs.length} devices, the hardcover opened and turned, pages turned, full screen, a desk row)`;
 }
 
 /* ---- #1 the no-edit gate ---- */
@@ -2908,6 +2943,124 @@ async function wave4aChecks(origin) {
   }
 }
 
+/* ---- wave 4b: the preview (E1, E2) ----
+   Beside 1.0 with the same book (1.0's applyBookDoc of the book 2.0 exports): the reading desk's page counts — every
+   section, every fixture, every device profile — equal 1.0's (1.0's own computeDeskCountsSync in both, at each
+   profile's fixed reading area); the page breaks of the largest chapter on the visible preview (every block's page)
+   equal 1.0's on three profiles; the hardcover's print pages equal 1.0's; the preview's chrome reads as 1.0's; the
+   preview is isolated from the app (a hostile book changes nothing outside it and sends no request); browsing it
+   writes nothing; the preview region is screenshotted next to 1.0's. */
+const W4B_DEVICES = ['kindle', 'ipad', 'kobo', 'phone', 'oasis', 'basic', 'colorsoft', 'iphone', 'forma', 'android'];
+const w4bParity = { rows: [], breaks: [] };
+/** 1.0's desk counts for every profile, through 1.0's own computeDeskCountsSync (a count taken before a picture
+ *  decoded is taken again), and the hardcover's print pages. `call` is 1.0's global or 2.0's beukPreview.call. */
+const W4B_COUNTS = async ([devs, two]) => {
+  const call = two ? (n, ...a) => window.beukPreview.call(n, ...a) : (n, ...a) => window[n](...a);
+  await document.fonts.ready;
+  // a first pass lays every section out (the faces a section asks for start loading then, pictures decode): wait for
+  // them, as 1.0's own count does (pcFontGen, pcWhenDecoded)
+  for (const d of devs.slice(0, 2)) {
+    call('setDevice', d);
+    call('computeDeskCountsSync');
+  }
+  await document.fonts.ready;
+  await new Promise((res) => setTimeout(res, 300));
+  const out = {};
+  for (const d of devs) {
+    call('setDevice', d);
+    let r = null;
+    for (let i = 0; i < 8; i++) {
+      r = call('computeDeskCountsSync');
+      if (!r || !r.provisional) break;
+      await new Promise((res) => setTimeout(res, 250));
+    }
+    out[d] = r ? { counts: r.counts, total: r.total, provisional: !!r.provisional } : null;
+  }
+  try {
+    const m = call('hcEnsureModel', true);
+    out.hardcover = m ? { total: m.pages.length } : null;
+  } catch (e) {
+    out.hardcover = { error: String(e) };
+  }
+  call('setDevice', 'kindle');
+  return out;
+};
+/** The page every typeset block of the visible preview starts on (1.0's previewPageAtX on its first box), and the
+ *  page count — on the profile `d`, once 1.0's setDevice has settled (its 330 ms re-measure). */
+const W4B_BREAKS = async ([d, two]) => {
+  const call = two ? (n, ...a) => window.beukPreview.call(n, ...a) : (n, ...a) => window[n](...a);
+  call('setDevice', d);
+  await new Promise((r) => setTimeout(r, 700));
+  call('measurePages');
+  const flow = document.getElementById('pageFlow');
+  const blocks = [...flow.querySelectorAll('p, blockquote, h1, h2, h3, figure, .scene-break')];
+  const pages = blocks.map((b) => {
+    const r = b.getClientRects()[0];
+    return r ? call('previewPageAtX', r.left + Math.min(4, r.width / 2)) : 0;
+  });
+  const st = two ? window.beukPreview.state() : state;
+  return { pageCount: st.pageCount, pages };
+};
+async function wave4bParity(origin) {
+  // W4B_FIXTURES=real/x,legacy/y narrows the sweep while working (the gate runs every fixture)
+  const narrow = (process.env.W4B_FIXTURES || '').split(',').filter(Boolean);
+  const books = fixtures.filter((f) => Array.isArray(f.book.sections) && (!narrow.length || narrow.includes(f.name)));
+  for (const f of books) {
+    const ctx = await newContext({ serviceWorkers: 'block' });
+    try {
+      const page = await openNext(ctx, origin);
+      await openBackup(page, f.file);
+      await page.waitForFunction(() => !!window.beukPreview, null, { timeout: 60_000 });
+      const start = (await exportBackup(page)).json.book;
+      const one = await openOne(ctx, origin);
+      await one.evaluate((b) => applyBookDoc(JSON.parse(JSON.stringify(b))), start);
+      await page.bringToFront();
+      const two = await page.evaluate(W4B_COUNTS, [W4B_DEVICES, true]);
+      await one.bringToFront();
+      const oneC = await one.evaluate(W4B_COUNTS, [W4B_DEVICES, false]);
+      for (const d of [...W4B_DEVICES, 'hardcover']) {
+        const a = oneC[d], b = two[d];
+        const same = JSON.stringify(a) === JSON.stringify(b);
+        w4bParity.rows.push({ fixture: f.name, device: d, one: a ? a.total : null, two: b ? b.total : null, same, prov: !!(a && a.provisional) || !!(b && b.provisional) });
+        if (!same) {
+          const diff = a && b && a.counts ? Object.keys(a.counts).filter((k) => a.counts[k] !== b.counts?.[k]).map((k) => `${k}: ${a.counts[k]}/${b.counts?.[k]}`).slice(0, 6) : [];
+          check(false, `wave4b page parity ${f.name} on ${d}: 1.0 ${JSON.stringify(a && a.total)} / 2.0 ${JSON.stringify(b && b.total)}${diff.length ? ' — sections (1.0/2.0) ' + diff.join(', ') : ''}${b && b.error ? ' ' + b.error : ''}`);
+        }
+      }
+      const bad = w4bParity.rows.filter((r) => r.fixture === f.name && !r.same).length;
+      check(bad === 0, `wave4b review focus #1: ${f.name}: every section's page count on all ${W4B_DEVICES.length} profiles and the hardcover's print pages equal 1.0's (totals ${W4B_DEVICES.map((d) => two[d]?.total).join('/')}, hardcover ${two.hardcover?.total})`);
+      // the page breaks of the largest body chapter, on the visible preview
+      const secs = sectionsOf(start);
+      let big = -1;
+      secs.forEach((s, i) => { if (s.kind === 'body' && typeof s.content === 'string' && (big < 0 || s.content.length > secs[big].content.length)) big = i; });
+      if (big >= 0) {
+        await page.bringToFront();
+        await choose(page, big);
+        await page.waitForTimeout(300);
+        await one.bringToFront();
+        await one.evaluate((id) => selectSection(id), secs[big].id);
+        for (const d of ['kindle', 'ipad', 'phone']) {
+          await one.bringToFront();
+          const a = await one.evaluate(W4B_BREAKS, [d, false]);
+          await page.bringToFront();
+          const b = await page.evaluate(W4B_BREAKS, [d, true]);
+          const same = JSON.stringify(a) === JSON.stringify(b);
+          w4bParity.breaks.push({ fixture: f.name, device: d, one: a.pageCount, two: b.pageCount, blocks: a.pages.length, same });
+          check(same, `wave4b page breaks ${f.name} "${secs[big].title}" on ${d}: ${b.pageCount} pages, ${b.pages.length} blocks — each block's page equals 1.0's${same ? '' : ` (1.0: ${a.pageCount} pages, ${a.pages.length} blocks; first differing block ${a.pages.findIndex((p, i) => p !== b.pages[i])})`}`);
+        }
+      }
+      for (const p of [page, one]) await harvestCsp(p);
+    } finally {
+      await ctx.close();
+    }
+  }
+  note('wave4b page parity (fixture × device: 1.0 / 2.0 desk total):');
+  for (const f of books) note(`  ${f.name}: ` + [...W4B_DEVICES, 'hardcover'].map((d) => { const r = w4bParity.rows.find((x) => x.fixture === f.name && x.device === d); return `${d} ${r?.one}/${r?.two}${r?.same ? '' : ' ≠'}${r?.prov ? ' (provisional)' : ''}`; }).join(', '));
+}
+async function wave4bChecks(origin) {
+  await wave4bParity(origin);
+}
+
 const srv = await startServer({ repo: REPO });
 const srvRef = srv;
 const state = (x) => x.state;
@@ -2931,6 +3084,7 @@ try {
   if (run('wave3a')) await wave3aChecks(srv.origin);
   if (run('wave3b')) await wave3bChecks(srv.origin);
   if (run('wave4a')) await wave4aChecks(srv.origin);
+  if (run('wave4b')) await wave4bChecks(srv.origin);
   if (run('insights')) await insightsChecks(srv.origin);
   if (run('notebook')) await notebookChecks(srv.origin);
   if (run('latency')) lat = await latency(srv.origin);

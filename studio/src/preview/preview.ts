@@ -282,6 +282,14 @@ function ensureSheets(): void {
     el.id = id;
     document.head.appendChild(el);
   }
+  // the print view's measurer, where 1.0 has it (the end of <body>): the hardcover's open book lays its pages out there
+  if (!document.getElementById('pivMeasure')) {
+    const m = document.createElement('div');
+    m.className = 'piv-measure';
+    m.id = 'pivMeasure';
+    m.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(m);
+  }
 }
 /** Before 1.0's own listeners in the pane (and its page keys) run, its state is the book as it stands. */
 function installRefresh(): void {
@@ -306,6 +314,13 @@ export function startPreview(): void {
   pc.api.hcInit();
   pc.api.fsInit();
   started = true;
+  // the reader's seam, as 1.0 publishes window.beukReader: 1.0's preview functions on the book as it stands (the e2e
+  // drives 2.0 with them exactly as it drives 1.0)
+  (window as unknown as { beukPreview?: unknown }).beukPreview = {
+    call: (name: string, ...args: unknown[]) => pvRun((p) => p.api[name]!(...args)),
+    state: () => loaded?.getState() ?? null,
+    safety: previewSafety,
+  };
   renderNow();
 }
 /** 1.0's renderPreview now, on the book as it stands. With no book open, the page is empty (1.0's empty desk). */
