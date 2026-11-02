@@ -247,8 +247,9 @@ export const PREVIEW_SUPPLIED = ['t', 'document', 'UI_STRINGS', 'getUiLang', 'ui
   '$', 'activeSection',
   // the main studio after a desk jump (deskGoToSection: 2.0 selects the section), Read Aloud and dictation (the main
   // closure's, stopped there), the print view (wave 5: nothing to redraw), and what 1.0's desk refreshes when it has
-  // measured (statsPagesRefresh, insGlancePagesRefresh: 2.0 re-renders the sidebar and the Insights glance)
-  'renderSidebar', 'syncEditor', 'raStop', 'dictDiscard', 'renderPrintView', 'statsPagesRefresh', 'insGlancePagesRefresh',
+  // measured (statsPagesRefresh: 2.0 counts the sidebar again; 1.0's own insGlancePagesRefresh writes the Insights
+  // glance's page card when the room is open)
+  'renderSidebar', 'syncEditor', 'raStop', 'dictDiscard', 'renderPrintView', 'statsPagesRefresh',
   'noteBookEdited', 'autoSnapshot', 'local', 'cloud', 'refreshImagePickers', 'FileReader'];
 /** 1.0's top-level lets of the preview module the studio reads or sets. */
 export const PREVIEW_VARS = ['editorSyncedSectionId', 'editorTypedAt', 'pvFollow', 'pcFontGen', 'pvShownId', 'pvShownSec'];

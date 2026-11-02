@@ -4,7 +4,7 @@ import { fmtNum } from '../history/HistoryDialog';
 import { useLocale } from '../i18n/LocaleProvider';
 import { Icon } from '../shell/Icon';
 import { setStatusOpen, sidePrefs } from './sidePrefs';
-import { PAGE_WORDS, useStats } from './stats';
+import { PAGE_WORDS, statsDesk, useStats } from './stats';
 
 /* BEUK:sidebar — 1.0's statistics disclosure in the side dock
    (client/index.html #sideStatus: #btnSideStatus with its one-line
@@ -22,6 +22,7 @@ export function SideStatus() {
   const n = (v: number) => fmtNum(v, lang);
   const words = stats?.words ?? 0;
   const pages = stats?.pages ?? 0;
+  const desk = statsDesk(); // 1.0's statsPagesNote: which count the pages are
   const mins = stats?.minutes ?? 0;
   const time = mins >= 60 ? t('stats.readingH', { h: Math.floor(mins / 60), m: mins % 60 }) : t('stats.readingM', { m: mins });
   const summary = t('side.statsSummary', {
@@ -86,7 +87,7 @@ export function SideStatus() {
         </div>
         {/* no reading desk until wave 4: always 1.0's words-per-page note */}
         <p id="statsNote" className="stats-note">
-          {stats ? t('stats.pagesNote', { a: n(PAGE_WORDS), b: n(stats.readWpm) }) : ''}
+          {stats ? (desk.ready ? t('stats.pagesNoteDesk', { device: desk.device, b: n(stats.readWpm) }) : t('stats.pagesNote', { a: n(PAGE_WORDS), b: n(stats.readWpm) })) : ''}
         </p>
         {/* wave 3a: 1.0's streak row and goal lines; 1.0's renderStreak / renderGoalLines fill them (React leaves their insides alone) */}
         <div className="streak-row">

@@ -3255,7 +3255,7 @@ async function wave4bChrome(origin) {
       const bad = W4B_DEVICES.filter((d) => JSON.stringify(two.devices[d]) !== JSON.stringify(oneL.devices[d]));
       check(bad.length === 0, `wave4b (${ui}) preview.devices.expanded + preview.devices.display-truth: every profile's frame, size, footer, display type, screen filter, truth note and facts equal 1.0's${bad.length ? ' — differ: ' + bad.map((d) => d + ' ' + JSON.stringify(two.devices[d]).slice(0, 160) + ' / 1.0 ' + JSON.stringify(oneL.devices[d]).slice(0, 160)).join('; ') : ''}`);
       // the visible chrome around the page and the typeset page itself, on the open section
-      const chrome = (p) => p.evaluate(() => ({ counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent, rh: document.getElementById('rhBook').textContent + '|' + document.getElementById('rhChapter').textContent, total: document.getElementById('deskTotal').textContent, basis: document.getElementById('deskBasis').textContent, rail: document.getElementById('deskRail').innerText, flow: document.getElementById('pageFlow').innerHTML, prev: document.getElementById('btnPrevPage').disabled, next: document.getElementById('btnNextPage').disabled, dir: document.getElementById('pageFlow').dir, lang: document.getElementById('pageFlow').getAttribute('lang') }));
+      const chrome = (p) => p.evaluate(() => ({ counter: document.getElementById('pageCounter').textContent, name: document.getElementById('previewSectionName').textContent, rh: document.getElementById('rhBook').textContent + '|' + document.getElementById('rhChapter').textContent, total: document.getElementById('deskTotal').textContent, basis: document.getElementById('deskBasis').textContent, rail: document.getElementById('deskRail').innerText, flow: document.getElementById('pageFlow').innerHTML, prev: document.getElementById('btnPrevPage').disabled, next: document.getElementById('btnNextPage').disabled, dir: document.getElementById('pageFlow').dir, lang: document.getElementById('pageFlow').getAttribute('lang'), statPages: document.getElementById('statPages')?.textContent ?? null, statsNote: document.getElementById('statsNote')?.textContent ?? null }));
       await page.bringToFront();
       await page.waitForTimeout(900);
       const c2 = await chrome(page);
@@ -3263,7 +3263,7 @@ async function wave4bChrome(origin) {
       await one.waitForTimeout(900);
       const c1 = await chrome(one);
       const cbad = Object.keys(c1).filter((k) => c1[k] !== c2[k]);
-      check(cbad.length === 0, `wave4b (${ui}) look parity: the page counter, section line, running head, desk total, basis and rail, the page flow's typeset HTML (${c2.flow.length} characters) and the page buttons equal 1.0's${cbad.length ? ' — differ: ' + cbad.map((k) => `${k} "${String(c2[k]).slice(0, 80)}" / 1.0 "${String(c1[k]).slice(0, 80)}"`).join('; ') : ''}`);
+      check(cbad.length === 0, `wave4b (${ui}) look parity: the page counter, section line, running head, desk total, basis and rail, the page flow's typeset HTML (${c2.flow.length} characters) and the page buttons equal 1.0's; the sidebar's pages are the desk's (${c2.statPages}: "${c2.statsNote}")${cbad.length ? ' — differ: ' + cbad.map((k) => `${k} "${String(c2[k]).slice(0, 80)}" / 1.0 "${String(c1[k]).slice(0, 80)}"`).join('; ') : ''}`);
       // E2: the hardcover, closed and open, beside 1.0's
       await page.bringToFront();
       const h2 = await page.evaluate(W4B_HC, true);

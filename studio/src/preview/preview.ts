@@ -31,7 +31,7 @@ type Rec = Record<string, unknown>;
 type Fn = (...args: any[]) => any;
 export type PreviewClosure = { api: Record<string, Fn>; vars: Rec; setState: (s: unknown) => void; getState: () => State & Rec };
 
-/** What happened on the desk (1.0's statsPagesRefresh / insGlancePagesRefresh): the sidebar and Insights redraw. */
+/** What happened on the desk (1.0's statsPagesRefresh): the sidebar counts its pages again. */
 export const deskEvents = new EventTarget();
 
 /** 1.0's preview view, kept across books (state.device, page, pageCount: 1.0 keeps the device over applyBookDoc). */
@@ -187,7 +187,6 @@ export function loadPreview(): Promise<PreviewClosure> {
         dictDiscard: () => envRun((c) => (c.api as unknown as { dictDiscard?: () => void }).dictDiscard?.()),
         renderPrintView: () => undefined,
         statsPagesRefresh: () => deskEvents.dispatchEvent(new Event('measured')),
-        insGlancePagesRefresh: () => deskEvents.dispatchEvent(new Event('measured')),
         noteBookEdited: () => undefined,
         autoSnapshot: () => null,
         local: { editSeq: 0 },
@@ -267,6 +266,7 @@ export function setPreviewMounted(on: boolean): void {
   mounted.on = on;
 }
 previewEnv.render = requestRender;
+previewEnv.device = () => String(loaded?.getState()?.device ?? view.device);
 previewEnv.deskSignature = () => (loaded && loaded.getState() ? String(loaded.api.deskSignature()) : '');
 previewEnv.desk = () => ((loaded?.api.deskState as unknown as DeskState) ?? { counts: {}, total: 0, sig: '', words: 0, run: null });
 

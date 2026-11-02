@@ -3,6 +3,7 @@ import type * as Y from 'yjs';
 import { bookState, loadClosure, type Closure, type State } from '../closure/index';
 import { useBook } from './BookProvider';
 import { startDeskClock } from '../goals/goals';
+import { deskEvents, previewIfLoaded } from '../preview/preview';
 
 /* The book's counts (inventory C1: 1.0's statsCells, renderSideStatusSummary,
    renderProgress and the outline's per-row count, client/index.html
@@ -13,9 +14,9 @@ import { startDeskClock } from '../goals/goals';
    re-implemented here except the page estimate's desk-less branch:
 
    - statsPages: 1.0 uses the reading desk's own measured page count once
-     the desk has measured the book (deskState); 2.0 has no reading desk
-     until wave 4 (E1), so it always takes 1.0's fallback, ceil(words/250),
-     and the note says so with 1.0's stats.pagesNote.
+     the desk has measured the book (deskState); wave 4b (E1) brings the
+     desk (src/preview), and its own statsPages answers; before it has
+     measured, 1.0's fallback, ceil(words/250), and the note says which.
 
    The counts are recomputed after the book changes, debounced (a whole-book
    export and ARRIVE per keystroke would cost a big book its typing speed);
@@ -41,8 +42,20 @@ export type BookStats = {
   emptyDesk: boolean;
 };
 
-/** 1.0's statsPages without a reading desk. */
-export const statsPages = (total: number): number => (total > 0 ? Math.ceil(total / PAGE_WORDS) : 0);
+/** 1.0's statsPages: the reading desk's measured count once it has measured a book with words (wave 4b: 1.0's own
+ *  statsPages in the preview's module, on its desk), scaled by the words since; until then 250 words a page. */
+export const statsPages = (total: number): number => {
+  const pv = previewIfLoaded();
+  if (pv) return Number(pv.api.statsPages(total));
+  return total > 0 ? Math.ceil(total / PAGE_WORDS) : 0;
+};
+/** Has the desk measured (1.0's statsDeskReady), and on which device (1.0's stats.pagesNoteDesk names it). */
+export function statsDesk(): { ready: boolean; device: string } {
+  const pv = previewIfLoaded();
+  if (!pv || !pv.api.statsDeskReady()) return { ready: false, device: '' };
+  const d = String(pv.getState()?.device ?? '');
+  return { ready: true, device: String((pv.api.DEVICE_NAMES as unknown as Record<string, string>)[d] ?? d) };
+}
 
 /** The counts for 1.0's state, through 1.0's functions (the closure's state is set to `state` first). */
 export function computeStats(c: Closure, state: State): BookStats {
@@ -111,9 +124,12 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       run(); // at once on open
     }).catch(() => undefined);
     ydoc.on('update', soon);
+    // wave 4b: the desk has measured (1.0's statsPagesRefresh): the pages are counted again
+    deskEvents.addEventListener('measured', soon);
     return () => {
       alive = false;
       ydoc.off('update', soon);
+      deskEvents.removeEventListener('measured', soon);
       if (timer.current) clearTimeout(timer.current);
       timer.current = null;
     };

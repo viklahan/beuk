@@ -82,6 +82,22 @@ describe('the counts equal 1.0\'s (review focus #5)', () => {
     expect(statsPages(251)).toBe(2);
   });
 
+  it('wave 4b: once the reading desk has measured, the pages are 1.0\'s statsPages of the desk (scaled by the words since)', async () => {
+    const { loadPreview } = await import('../src/preview/preview');
+    const pv = await loadPreview();
+    const desk = pv.api.deskState as unknown as { total: number; words: number; sig: string; counts: Record<string, number> };
+    const keep = { ...desk };
+    try {
+      Object.assign(desk, { total: 33, words: 10000, sig: 'x', counts: {} });
+      expect(statsPages(10000)).toBe(33);
+      expect(statsPages(12500)).toBe(41);
+      expect(statsPages(0)).toBe(0);
+    } finally {
+      Object.assign(desk, keep);
+    }
+    expect(statsPages(251)).toBe(2);
+  });
+
   it('the sample-scale book counts 1.0\'s SAMPLE_WORDS', async () => {
     const c = await loadClosure();
     await loadSample();

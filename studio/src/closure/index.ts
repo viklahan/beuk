@@ -717,8 +717,9 @@ export const closureLang = (): string => currentLang;
    "still measuring" state), and its renderPreview asks the preview to draw (1.0's Style handlers call it). */
 export type DeskState = { counts: Record<string, number>; total: number; sig: string; words: number; run: unknown };
 const NO_DESK: DeskState = Object.freeze({ counts: Object.freeze({}), total: 0, sig: '', words: 0, run: null }) as DeskState;
-export const previewEnv: { render: () => void; deskSignature: () => string; desk: () => DeskState } = {
+export const previewEnv: { render: () => void; deskSignature: () => string; desk: () => DeskState; device: () => string } = {
   render: () => undefined,
+  device: () => 'kindle',
   deskSignature: () => '',
   desk: () => NO_DESK,
 };
@@ -947,6 +948,9 @@ export function loadSample(): Promise<SampleApi> {
 /** 1.0's state for a book-format v1 book (a copy: the book is never touched). */
 export function stateFromBook(c: Closure, book: Record<string, unknown>): State {
   const s = epubState(structuredClone(book) as unknown as BookV1, String(book.exportPlatform ?? 'generic'));
+  // 1.0's session-only preview device (state.device, never in the book): the preview's (wave 4b) — 1.0's Insights
+  // glance and the sidebar's note name it
+  (s as unknown as Record<string, unknown>).device = previewEnv.device();
   // as the EPUB worker does: the state is 1.0's global first, then arrives (ARRIVE's normalizers read the global state)
   c.setState(s as State);
   return c.arrive(s);
