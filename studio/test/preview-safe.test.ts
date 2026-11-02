@@ -232,4 +232,27 @@ describe('review round 2', () => {
     sourceSafe(c, ok as never, { fonts: [] });
     expect(ok.cover).not.toBeNull();
   });
+
+  it('Minor 5: wired — a key typed in the editor reads nothing; ← outside a field reads the book again', async () => {
+    await loadClosure();
+    const { installRefresh, previewSafety } = await import('../src/preview/preview');
+    await loadPreview();
+    const pane = document.createElement('section');
+    const ed = document.createElement('div');
+    ed.setAttribute('contenteditable', 'true'); // as ProseMirror marks its page
+    document.body.append(pane, ed);
+    const off = installRefresh(pane);
+    try {
+      const key = (target: Element, k: string) => target.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+      const before = previewSafety.reads;
+      for (const k of [' ', 'a', 'ArrowRight', 'f']) key(ed, k);
+      expect(previewSafety.reads - before, 'keys typed in the editor').toBe(0);
+      key(document.body, 'ArrowLeft');
+      expect(previewSafety.reads - before, '← outside a field').toBe(1);
+    } finally {
+      off();
+      pane.remove();
+      ed.remove();
+    }
+  });
 });

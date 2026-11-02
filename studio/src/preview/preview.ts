@@ -45,7 +45,7 @@ const INERT = new Set(['modalPrintView', 'modalPrint', 'pivModalBox', 'printModa
 const inert = new Map<string, HTMLElement>();
 const proxies = new WeakMap<Element, Element>();
 /** The CSS rules cleanBookCss dropped (0 for an honest book: the e2e reads it). */
-export const previewSafety = { droppedRules: 0, cleanedFlows: 0, sheets: 0 };
+export const previewSafety = { droppedRules: 0, cleanedFlows: 0, sheets: 0, reads: 0 };
 
 function guardFlow(el: Element): Element {
   let p = proxies.get(el);
@@ -234,6 +234,7 @@ function noBookState(): State | null {
 export function pvRefresh(): boolean {
   const pc = loaded;
   if (!pc) return false;
+  previewSafety.reads++;
   const prev = pc.getState() as (State & Rec) | null;
   if (prev) Object.assign(view, { device: prev.device ?? view.device, page: prev.page ?? view.page, pageCount: prev.pageCount ?? view.pageCount });
   const st = ((desk.ydoc && styleEnter() ? styleState() : null) ?? noBookState()) as (State & Rec) | null;
@@ -287,6 +288,7 @@ previewEnv.desk = () => ((loaded?.api.deskState as unknown as DeskState) ?? { co
 
 /* ---- the pane's life ---- */
 let started = false;
+let uninstall: (() => void) | null = null;
 export const previewStarted = (): boolean => started;
 /** The two book stylesheets 1.0 creates in the head on first use, made here first (so 1.0's code reaches them only
  *  through the sink, preview$). */
@@ -311,21 +313,26 @@ function ensureSheets(): void {
 export function pageKeyReadsBook(e: { key: string; target: EventTarget | null }): boolean {
   if (!/^(ArrowLeft|ArrowRight|f|F)$/.test(e.key)) return false;
   const tg = e.target as HTMLElement | null;
-  return !(tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName || '')));
+  if (!tg) return true;
+  const editable = tg.isContentEditable || (typeof tg.closest === 'function' && !!tg.closest('[contenteditable=""], [contenteditable="true"]'));
+  return !(editable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName || ''));
 }
 /** Before 1.0's own listeners in the pane (and its page keys) run, its state is the book as it stands. */
-function installRefresh(): void {
-  const pane = document.getElementById('pane-preview');
-  for (const type of ['click', 'pointerdown', 'pointerup', 'keydown']) pane?.addEventListener(type, () => void pvRefresh(), true);
+/** Installs the refreshes on `pane` (capture) and the window; returns the uninstaller. */
+export function installRefresh(pane: HTMLElement | null): () => void {
+  const onPane = () => void pvRefresh();
+  const types = ['click', 'pointerdown', 'pointerup', 'keydown'];
+  for (const type of types) pane?.addEventListener(type, onPane, true);
   // 1.0's page keys (← →, F) act only outside a field; a key typed in the editor or a field reads nothing (typing
   // stays cheap: constraint 37)
-  window.addEventListener(
-    'keydown',
-    (e) => {
-      if (pageKeyReadsBook(e)) pvRefresh();
-    },
-    true,
-  );
+  const onKey = (e: KeyboardEvent) => {
+    if (pageKeyReadsBook(e)) pvRefresh();
+  };
+  window.addEventListener('keydown', onKey, true);
+  return () => {
+    for (const type of types) pane?.removeEventListener(type, onPane, true);
+    window.removeEventListener('keydown', onKey, true);
+  };
 }
 /** 1.0's init: initPreview, hcInit, fsInit on the pane's markup, then the first render. */
 export function startPreview(): void {
@@ -333,7 +340,7 @@ export function startPreview(): void {
   if (!pc || started || !document.getElementById('pageFlow')) return;
   ensureSheets();
   if (!pvRefresh()) return;
-  installRefresh();
+  uninstall = installRefresh(document.getElementById('pane-preview'));
   pc.api.initPreview();
   pc.api.hcInit();
   pc.api.fsInit();

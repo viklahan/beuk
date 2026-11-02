@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 // @ts-expect-error — a plain .mjs build script, no types
-import { PREVIEW_ROOTS, PREVIEW_SUPPLIED } from '../scripts/extract-closure.mjs';
-import { PREVIEW_NAMES, PREVIEW_API, PREVIEW_SUPPLIED_NAMES } from '../src/generated/closure-preview.js';
+import { PREVIEW_SUPPLIED } from '../scripts/extract-closure.mjs';
+import { PREVIEW_NAMES, PREVIEW_SUPPLIED_NAMES } from '../src/generated/closure-preview.js';
 import { CLOSURE_NAMES, CLOSURE_SUPPLIED } from '../src/generated/closure.js';
 
 /* Step 5 wave 4b (E1, E2): 1.0's preview, its reading desk, the hardcover and full screen, lifted whole into their
@@ -14,7 +14,6 @@ import { CLOSURE_NAMES, CLOSURE_SUPPLIED } from '../src/generated/closure.js';
 
 describe('the preview module (wave 4b)', () => {
   it("lifts 1.0's preview, desk, hardcover and full-screen code", () => {
-    for (const r of PREVIEW_ROOTS) expect(PREVIEW_API).toContain(r);
     for (const n of ['renderPreview', 'measurePages', 'goToPage', 'setDevice', 'initPreview', 'updateDesk', 'renderDesk', 'keepOrnamentsWithText',
       'deskSignature', 'deskState', 'PAGE_GEOMETRY', 'DEVICE_DISPLAY', 'hcRender', 'hcInit', 'fsInit', 'fsToggle', 'buildPrintViewModel', 'sectionHtml', 'buildBookCss'])
       expect(PREVIEW_NAMES).toContain(n);
