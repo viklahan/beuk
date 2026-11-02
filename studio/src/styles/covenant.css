@@ -1,0 +1,19 @@
+/* ==== BEUK:bible ==== — the Covenant's marks on 2.0's page (step 5 wave 3b, ruling: restated, as wave 3a's Zen column).
+   1.0 draws its underlines on a mirror laid over the textarea (client/index.html CSS 1898-1922, `.bible-ov-text .bm`,
+   `.bm.is-hot`, `.bm-dotmark`, `body.zen …`). 2.0's page is ProseMirror, so the underline is a decoration around the
+   name itself (src/covenant/marks.ts): the same line on the same span, never taking the text's colour, and the margin
+   dot is a widget placed in the page's start margin, level with its passage. 1.0's originals:
+     .bible-ov-text .bm { text-decoration-line: underline; text-decoration-style: solid; text-decoration-thickness: 1.5px;
+       text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--accent) 48%, transparent);
+       text-decoration-skip-ink: none; }
+     .bible-ov-text .bm.is-hot { text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+     body.zen .bible-ov-text .bm { text-decoration-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+     body.zen .bible-ov-text .bm-dotmark { opacity: .55; } */
+#manuscript .ms-editor { position: relative; }
+#manuscript .ms-editor .bm { text-decoration-line: underline; text-decoration-style: solid; text-decoration-thickness: 1.5px; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 48%, transparent); text-decoration-skip-ink: none; }
+#manuscript .ms-editor .bm.is-hot { text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+body.zen #manuscript .ms-editor .bm { text-decoration-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+/* the dot: absolutely placed at its passage's line (its static position gives the line), in the start margin */
+#manuscript .ms-editor .bm-dotmark { inset-inline-start: 4px; margin-top: .55em; }
+body.zen #manuscript .ms-editor .bm-dotmark { opacity: .55; }

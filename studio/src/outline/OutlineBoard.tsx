@@ -10,6 +10,7 @@ import { Icon } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { iconOf, idAt, indexOfId, type StructToast } from '../structure/structure';
 import { boardEdit, boardState, boardView, readPrefs, savePrefs, secIn, type BoardUi, type BoardView, type Item, type View } from './board';
+import { openCovenant } from '../covenant/CovenantDialog';
 
 /* BEUK:outline — the outline board (inventory B5): Cards, List and Grid
    over the book's own sections (client/index.html olRender, olCard, olRow,
@@ -587,8 +588,8 @@ export function OutlineBoard({ shown, onOpen }: { shown: boolean; onOpen: (id: s
           <Icon name="Plus" />
           {t('ol.threadAdd')}
         </button>
-        {/* 1.0 opens the Covenant here; the Covenant is wave 3 (2.0's #btnBible is held the same way) */}
-        <button type="button" className="ol-link" data-olcov="1" data-olkey="g-cov" aria-disabled="true">
+        {/* 1.0's olOnClick: data-olcov opens the Covenant (wave 3b) */}
+        <button type="button" className="ol-link" data-olcov="1" data-olkey="g-cov" onClick={() => openCovenant()}>
           <Icon name="BookMarked" />
           {t('ol.gridOpenCov')}
         </button>

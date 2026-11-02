@@ -12,6 +12,7 @@ import { HistoryDialog } from '../history/HistoryDialog';
 import { InsightsDialog } from '../insights/InsightsDialog';
 import { NotebookDialog } from '../notebook/NotebookDialog';
 import { GoalsDialog } from '../goals/GoalsDialog';
+import { CovenantHost, openCovenant } from '../covenant/CovenantDialog';
 import { EnvironmentHost } from '../environment/EnvironmentHost';
 import { cloudLoadStreak } from '../goals/goals';
 import { probeCloud } from '../pictures/stock';
@@ -176,7 +177,7 @@ export function Shell() {
           <div id="structureScroll">
             <Outline tools={ops.tools} structure={structure} />
           </div>
-          {/* BEUK:sidebar — 1.0's book tools row: History (wave 1a), Insights and Notes (wave 1c); Goals (wave 3a); the Covenant keeps its place until wave 3b */}
+          {/* BEUK:sidebar — 1.0's book tools row: History (wave 1a), Insights and Notes (wave 1c); Goals (wave 3a); the Covenant (wave 3b) */}
           <div className="side-dock">
             <div className="side-tools" id="sideTools" role="group" aria-label={t('side.toolsAria')}>
               <button
@@ -215,7 +216,15 @@ export function Shell() {
                 <Icon name="History" />
                 <span className="side-tool-lab">{t('side.toolHistory')}</span>
               </button>
-              <button className="side-tool" id="btnBible" data-tip="tips.bible" type="button" aria-label={t('bible.open')} aria-disabled="true">
+              <button
+                className="side-tool"
+                id="btnBible"
+                data-tip="tips.bible"
+                type="button"
+                aria-label={t('bible.open')}
+                aria-disabled={bookOpen ? undefined : 'true'}
+                onClick={bookOpen ? () => openCovenant() : undefined}
+              >
                 <Icon name="BookMarked" />
                 <span className="side-tool-lab">{t('side.toolBible')}</span>
               </button>
@@ -287,6 +296,7 @@ export function Shell() {
       <NotebookDialog open={dialog === 'notebook' && bookOpen} onClose={() => setDialog(null)} />
       <GoalsDialog open={dialog === 'goals' && bookOpen} onClose={() => setDialog(null)} />
       <EnvironmentHost setCenter={setCenter} />
+      <CovenantHost />
     </div>
   );
 }

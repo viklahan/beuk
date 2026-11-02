@@ -119,9 +119,13 @@ describe('the closure extraction breaks loudly', () => {
     await expect(buildClosureModule(html, epubSource())).rejects.toThrow(/countWords/);
   }, 60_000);
 
-  it('lifted code that reaches the interface language fails, naming it', async () => {
-    const html = studioHtml().replace('function rightsYear(m) { return', 'function rightsYear(m) { void uiLangState; return');
-    await expect(buildClosureModule(html, epubSource())).rejects.toThrow(/uiLangState/);
+  it('lifted code that reaches the interface language machinery fails, naming it', async () => {
+    /* wave 3b: uiLangState itself is SUPPLIED (read live: 1.0's Covenant and Names on stage caches key on it), never
+       lifted; the plural machinery still may not be reached */
+    expect(CLOSURE_SUPPLIED).toContain('uiLangState');
+    expect(CLOSURE_NAMES).not.toContain('uiLangState');
+    const html = studioHtml().replace('function rightsYear(m) { return', 'function rightsYear(m) { void uiPluralCategory; return');
+    await expect(buildClosureModule(html, epubSource())).rejects.toThrow(/uiPluralCategory/);
   }, 60_000);
 
   it('a lifted function that reads UI_STRINGS (other than imIsPlaceholderTitle) fails, naming it', async () => {

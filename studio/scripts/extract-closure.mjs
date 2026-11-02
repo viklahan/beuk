@@ -125,6 +125,23 @@ export const EXTRA_ROOTS = [
   'langDisplayName',
   // wave 3a: what 1.0's window.beukDictation / beukZen test seams reach (src/environment/EnvironmentHost.tsx)
   'dictLangChoices', 'DICT_LANGS', 'zenFoldSync',
+  // wave 3b (C6): the Covenant — 1.0's own model, room, card, change marking and series code, drawing into the room's
+  // ids (src/covenant). The desk mirror (bibleDesk*) is NOT lifted: its entry points are supplied (BROWSER_SUPPLIED),
+  // and 2.0 draws the marks as ProseMirror decorations (src/covenant/marks.ts)
+  'BIBLE_TYPES', 'BIBLE_MAX', 'BIBLE_FORMAT', 'BIBLE_CHANGE_MAX', 'BIBLE_MARKS_KEY', 'BIBLE_NEAR', 'bibleKey', 'bibleBuildMatcher',
+  'bibleNormalizeEntry', 'bibleNormalizeAnchor', 'bibleAnchorMake', 'bibleAnchorFind', 'bibleStateAt', 'bibleResolveChange', 'bibleCursorPos', 'biblePos',
+  'bibleEntries', 'bibleHas', 'bibleById', 'bibleListOf', 'bibleHomeDoc', 'bibleFieldDefs', 'bibleMentions', 'bibleUi', 'bibleTouched', 'bibleBookArrived',
+  'bibleOnLangChange', 'bibleRender', 'bibleRenderList', 'bibleRenderEntry', 'bibleRenderMentions', 'bibleRenderSeed', 'bibleRenderFields',
+  'bibleRenderMerge', 'bibleRenderSeriesLine', 'bibleStatus', 'bibleNewEntry', 'bibleDelete', 'bibleOnField', 'bibleOnFact', 'bibleRenameField',
+  'bibleAddField', 'bibleAddLink', 'bibleRemoveLink', 'bibleRemoveChange', 'bibleRemoveFieldUndoable', 'bibleApplyTemplate', 'bibleRefreshMore',
+  'bibleRefreshCard', 'bibleSetFact', 'bibleSeedAdd', 'bibleSeedSync', 'bibleSeedCandidates', 'bibleSetMarks', 'bibleMarksOn', 'bibleExportDoc',
+  'bibleExportName', 'bibleExport', 'bibleImportDoc', 'bibleImportReport', 'bibleCardEl', 'bibleCardHtml', 'bibleMarkOffered', 'bibleMarkChange',
+  'bibleMarkOpen', 'bibleMarkSave', 'bibleMarkClose', 'bibleMarkMenuEl', 'bibleMarkHideMenu', 'bibleMarkPlace', 'bibleMark', 'bibleDotsCompute',
+  'bibleCountsNow', 'bibleCountsHeld', 'bibleInSeries', 'bibleSeriesKey', 'bibleShelfScan', 'bibleSeriesRefresh', 'bibleSeriesSet', 'bibleSeriesSync',
+  'bibleSeriesNet', 'bibleSeriesMem', 'bibleSeriesTouched', 'bibleSeriesStep', 'bibleSeriesSaveNow', 'bibleSeriesFlush', 'bibleSeriesSignOut',
+  'bibleSeriesForget', 'bibleAuthSignedOut', 'bibleSeriesResolve', 'bibleSeriesRaise', 'bibleSeriesFlushOnHide', 'bibleJoinStart', 'bibleJoinDismiss',
+  'bibleJoinOffered', 'bibleJoinMembers', 'bibleMergePlan', 'bibleMergeSave', 'bibleSetOnlyBook', 'bibleSeriesLeave', 'bibleSeriesRename',
+  'bibleSeriesChangeAsk', 'bibleSeriesSettingsNote', 'bibleSeriesFree',
 ];
 /** Wave 2c: lifted declarations that 1.0 fills by top-level statements right after them (TYPE_TITLES: the FRONT / BACK
  *  labels and the extra types). Every top-level expression statement of the studio that assigns into one of these is
@@ -158,6 +175,8 @@ export const ORACLE_OWN = ['imgSelId', 'scenePending'];
 export const SAMPLE_ROOTS = ['buildSampleBook', 'sampleCoverDoc'];
 /** 1.0's top-level `let`s a caller reads or sets (emitted as accessors on the closure's `vars`). */
 export const VARS = ['insVarPick', 'insCache', 'insFacts',
+  // wave 3b: the section 1.0's editor shows (the Covenant's caret position and margin dots read it), the series in hand
+  'editorSyncedSectionId', 'bibleSeries', 'bibleAllVer', 'bibleSeriesArriveTimer',
   // wave 3a: the writing log, its clock and the Goals room's view state
   'wlog', 'wlogRebase', 'wlogLastTick', 'wlogFgOverride', 'goalJustWriteCache', 'goalKeptPeriod', 'goalCalCursor', 'roadState',
   // wave 3a: Zen's and dictation's test overrides and transition flag, 1.0's centre tab
@@ -168,9 +187,9 @@ export const VARS = ['insVarPick', 'insCache', 'insFacts',
 export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'deskSignature',
   // wave 2b (the image library): History's snapshot (2.0's own, history.ts), the edit counter a run of removals reads
   // (1.0's local.editSeq), and what 1.0 does after an edit (noteBookEdited, imglibRefresh: 2.0 re-renders from the
-  // Y.Doc); the series Covenant's save (wave 7: 2.0 holds no series, so bibleSeries is null and 1.0's own function returns
-  // at once); 1.0's `cloud` as far as cmStockGate reads it (available, user)
-  'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'bibleSeriesTouched', 'cloud',
+  // Y.Doc); 1.0's `cloud` as far as cmStockGate reads it (available, user). (Wave 3b lifts bibleSeriesTouched, which
+  // wave 2b supplied as a no-op: the series Covenant is 1.0's own code now.)
+  'autoSnapshot', 'local', 'noteBookEdited', 'imglibRefresh', 'cloud',
   // wave 2c: 1.0's redraws after a structural edit (React re-renders from the Y.Doc), and selectSection (2.0 selects the
   // section 1.0 chose once the change is written: src/structure/structure.ts structEnv)
   'renderSidebar', 'syncEditor', 'renderPreview', 'updateStats', 'refreshExportTree', 'selectSection', 'olRender',
@@ -179,7 +198,14 @@ export const BROWSER_SUPPLIED = ['t', 'UI_STRINGS', 'getUiLang', 'deskState', 'd
   'cloudHeartbeat', 'cloudConfirm', 'icons', 'fmtDateIntl',
   // wave 3a (A9-A11): 1.0's `$` (src/environment/page.ts: #editorArea is the open editor's stand-in, #panelContent the
   // desk's), activeSection (the open section of 1.0's state), setCenterTab (Zen is always the desk) and closeUiLangMenu
-  '$', 'activeSection', 'setCenterTab', 'closeUiLangMenu'];
+  '$', 'activeSection', 'setCenterTab', 'closeUiLangMenu',
+  // wave 3b (C6): the shelf's transport (1.0's apiFetch: its guards and answer shapes, src/covenant/net.ts), 1.0's network
+  // state (net.online), the shelf link's dirty flag (2.0 has no shelf link: false), the interface language as 1.0's
+  // caches key on it (uiLangState, read live), the room's open (openBible: 2.0's Dialog), the Outline's follow-up after
+  // the room closes (olOnStructure: React re-renders), and the desk mirror's entry points — 2.0 has no mirror, its marks
+  // are ProseMirror decorations: bibleDeskRender / bibleDeskSchedule redraw them, bibleCardHide hides 2.0's card,
+  // bibleOffsetY measures a text offset on the editor's page
+  'apiFetch', 'net', 'cloudDirty', 'uiLangState', 'openBible', 'olOnStructure', 'bibleDeskRender', 'bibleDeskSchedule', 'bibleCardHide', 'bibleOffsetY'];
 /** Lifted declarations that may read UI_STRINGS: each reads only every pack's "misc.untitledBook". */
 export const UI_STRINGS_READERS = ['imIsPlaceholderTitle'];
 /** Top-level names of 1.0 that the lifted code uses only as LOCAL names (the reachability walk is by name, not by
@@ -405,7 +431,7 @@ export declare const CLOSURE_NAMES: string[];
 export declare const CLOSURE_ROOTS: string[];
 export declare const CLOSURE_SUPPLIED: string[];
 export declare const STUDIO_SHA: string;
-export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; bibleSeriesTouched: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void };
+export type ClosureEnv = { state: unknown; toast: (msg: string, icon?: string) => void; samplePicsRequire: () => Promise<unknown>; JSZip: unknown; t: (key: string, params?: Record<string, unknown>) => string; UI_STRINGS: Record<string, Record<string, string>>; getUiLang: () => string; deskState: unknown; deskSignature: () => string; autoSnapshot: (kind: string) => unknown; local: { readonly editSeq: number }; noteBookEdited: () => void; imglibRefresh: () => void; cloud: { available: boolean; user: unknown }; renderSidebar: () => void; syncEditor: () => void; renderPreview: () => void; updateStats: () => void; refreshExportTree: () => void; selectSection: (id: string) => void; olRender: () => void; cloudHeartbeat: () => void; cloudConfirm: (o: Record<string, unknown>) => Promise<unknown>; icons: () => void; fmtDateIntl: (d: Date) => string; $: (id: string) => any; activeSection: () => unknown; setCenterTab: (tab: string) => void; closeUiLangMenu: () => void; apiFetch: (path: string, opts?: Record<string, unknown>) => unknown; net: { readonly online: boolean }; cloudDirty: boolean; uiLangState: unknown; openBible: (id?: string) => void; olOnStructure: () => void; bibleDeskRender: (force?: boolean) => void; bibleDeskSchedule: () => void; bibleCardHide: () => void; bibleOffsetY: (area: unknown, offset: number) => number };
 export declare function createClosure(env: ClosureEnv): { api: Record<string, (...args: any[]) => any> & Record<string, any>; vars: Record<string, any>; share: Record<string, unknown>; setState(s: unknown): void; getState(): any; arrive(s: unknown): any };
 `;
 

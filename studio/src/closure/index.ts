@@ -167,7 +167,7 @@ export type ClosureApi = {
   rsNamed: () => Set<string>;
   rsTotal: () => number;
   bibleAllEntries: () => { id: string; name?: string }[];
-  bibleScan: (text: string, m: unknown) => { hits: { s: number; e: number; id: string }[] };
+  bibleScan: (text: string, m: unknown) => { hits: { s: number; e: number; id: string }[]; ambiguous: { s: number; e: number; ids: string[] }[] };
   bibleMatcherNow: () => unknown;
   bibleName: (e: unknown) => string;
   bibleNormalize: (doc: unknown) => Record<string, unknown>;
@@ -415,7 +415,116 @@ export type ClosureApi = {
   dictLangChoices: () => string[];
   DICT_LANGS: Record<string, string>;
   zenFoldSync: (s: unknown) => void;
+  // wave 3b (C6): the Covenant — 1.0's own model, room, card, change marking and series (src/covenant)
+  BIBLE_TYPES: string[];
+  BIBLE_MAX: number;
+  BIBLE_FORMAT: string;
+  BIBLE_CHANGE_MAX: number;
+  BIBLE_MARKS_KEY: string;
+  BIBLE_NEAR: number;
+  bibleKey: (s: unknown) => string;
+  bibleBuildMatcher: (entries: unknown[], lang: string) => BibleMatcher | null;
+  bibleNormalizeEntry: (e: unknown) => BibleEntry | null;
+  bibleNormalizeAnchor: (a: unknown) => Record<string, unknown> | null;
+  bibleAnchorMake: (secId: string, start: number, end: number) => { sec: string; quote: string; at: number } | null;
+  bibleAnchorFind: (anchor: unknown, sections: unknown[]) => { sec: string; at: number } | null;
+  bibleStateAt: (entry: unknown, pos: unknown, resolve: (c: unknown) => unknown) => { now: unknown; facts: Record<string, string>; past: unknown[]; later: unknown[]; unordered: unknown[]; orphans: unknown[] };
+  bibleResolveChange: (c: unknown) => unknown;
+  bibleCursorPos: () => number[] | null;
+  biblePos: (book: number, sec: number, at: number) => number[];
+  bibleEntries: () => BibleEntry[];
+  bibleHas: () => boolean;
+  bibleById: (id: unknown) => BibleEntry | null;
+  bibleListOf: (id: string) => BibleEntry[];
+  bibleHomeDoc: () => { entries: BibleEntry[]; fields?: Record<string, unknown> };
+  bibleFieldDefs: (type: string) => { id: string; label: string }[];
+  bibleMentions: () => { cols: { id: string; label: string; col: string }[]; per: Record<string, { total: number; counts: number[]; hits: { sec: string; ci: number; s: number; e: number }[]; ambiguous: number }>; ambiguous: number };
+  bibleUi: { sel: string | null; mode: string; query: string; detail: boolean; menTimer: unknown; saveTimer: unknown; filter: string; merge: unknown };
+  bibleTouched: (matching: boolean) => void;
+  bibleBookArrived: () => void;
+  bibleOnLangChange: () => void;
+  bibleRender: () => void;
+  bibleRenderList: () => void;
+  bibleRenderEntry: () => void;
+  bibleRenderMentions: () => void;
+  bibleRenderSeed: () => void;
+  bibleRenderFields: () => void;
+  bibleRenderMerge: () => void;
+  bibleRenderSeriesLine: () => void;
+  bibleStatus: (msg: string) => void;
+  bibleNewEntry: () => BibleEntry | null;
+  bibleDelete: (id: string | null) => void;
+  bibleOnField: (el: Element) => void;
+  bibleOnFact: (el: Element) => void;
+  bibleRenameField: (type: string | null, id: string | null, label: string) => boolean;
+  bibleAddField: (type: string, label: string) => string | null;
+  bibleAddLink: (id: string, to: string, label: string) => boolean;
+  bibleRemoveLink: (id: string, i: number) => boolean;
+  bibleRemoveChange: (entryId: string | null, cid: string | null) => boolean;
+  bibleRemoveFieldUndoable: (type: string | null, id: string | null) => boolean;
+  bibleApplyTemplate: (name: string | null) => void;
+  bibleRefreshMore: (e: unknown, focusSel?: string) => void;
+  bibleRefreshCard: (e: unknown) => void;
+  bibleSetFact: (id: string, field: string | null, value: string) => void;
+  bibleSeedAdd: () => BibleEntry[];
+  bibleSeedSync: () => void;
+  bibleSeedCandidates: () => { caseless: boolean; hidden: number; list: { key: string; name: string; total: number; taken: boolean }[] };
+  bibleSetMarks: (on: boolean) => void;
+  bibleMarksOn: () => boolean;
+  bibleExportDoc: () => Record<string, unknown> & { entries: BibleEntry[] };
+  bibleExportName: () => string;
+  bibleExport: () => void;
+  bibleImportDoc: (doc: unknown) => { ok: boolean; added: BibleEntry[]; skipped: string[]; pics: number };
+  bibleImportReport: (r: unknown) => string;
+  bibleCardEl: () => HTMLElement;
+  bibleCardHtml: (e: unknown) => string;
+  bibleMarkOffered: (hits: { s: number; e: number; id: string }[], start: number, end: number) => BibleEntry[];
+  bibleMarkChange: (entryId: string, secId: string, start: number, end: number, text: string, fact?: unknown) => Record<string, unknown> | null;
+  bibleMarkOpen: (entryId: string | null, pt: { x: number; y: number } | null) => void;
+  bibleMarkSave: () => void;
+  bibleMarkClose: (refocus: boolean) => void;
+  bibleMarkMenuEl: () => HTMLElement;
+  bibleMarkHideMenu: () => void;
+  bibleMarkPlace: (el: HTMLElement, pt: { x: number; y: number } | null) => void;
+  bibleMark: { sec: string | null; start: number; end: number; id: string | null; names: string[]; pt: { x: number; y: number } | null; top: number; scroll: number };
+  bibleDotsCompute: (val: string) => { at: number; eid: string; cid: string; title: string }[];
+  bibleCountsNow: () => void;
+  bibleCountsHeld: () => boolean;
+  bibleInSeries: () => boolean;
+  bibleSeriesKey: (name: unknown) => string;
+  bibleShelfScan: () => unknown;
+  bibleSeriesRefresh: (force: boolean) => unknown;
+  bibleSeriesSet: (s: unknown, userId?: unknown, dirty?: boolean, kept?: unknown) => void;
+  bibleSeriesSync: Record<string, unknown> & { userId: unknown; dirty: boolean; pending: number; conflict: unknown; timer: unknown; stepTimer: unknown; syncedJson: string | null; refused: number; running: boolean };
+  bibleSeriesNet: { fetch: (path: string, opts: Record<string, unknown>) => unknown; store: (rec: unknown) => unknown; load: (userId: unknown, key: string) => unknown; pref: (uid: unknown, v?: unknown) => unknown; ask: (spec: unknown) => unknown };
+  bibleSeriesMem: Record<string, unknown> & { user: unknown; gone: string[]; dismissed: string[]; shelf: Record<string, unknown>; absent: string | null };
+  bibleSeriesTouched: () => void;
+  bibleSeriesStep: () => void;
+  bibleSeriesSaveNow: () => unknown;
+  bibleSeriesFlush: () => void;
+  bibleSeriesSignOut: () => void;
+  bibleSeriesForget: (uid: unknown) => void;
+  bibleAuthSignedOut: (me: unknown) => boolean;
+  bibleSeriesResolve: (choice: string) => boolean;
+  bibleSeriesRaise: () => void;
+  bibleSeriesFlushOnHide: () => void;
+  bibleJoinStart: () => unknown;
+  bibleJoinDismiss: () => void;
+  bibleJoinOffered: () => number;
+  bibleJoinMembers: () => Record<string, unknown>[];
+  bibleMergePlan: (books: unknown[]) => unknown;
+  bibleMergeSave: () => unknown;
+  bibleSetOnlyBook: (id: string, on: boolean) => unknown;
+  bibleSeriesLeave: () => unknown;
+  bibleSeriesRename: (name: string) => unknown;
+  bibleSeriesChangeAsk: (name: string) => boolean;
+  bibleSeriesSettingsNote: () => void;
+  bibleSeriesFree: () => unknown;
 };
+/** 1.0's Covenant entry, normalised (bibleNormalizeEntry). */
+export type BibleEntry = { id: string; type: string; name: string; aliases: string[]; description: string; notes: string; imageId: string | null; tags: string[]; exactCase: boolean; exclude: string[]; facts?: Record<string, string>; links?: { to: string; label: string }[]; changes?: { id: string; anchor: { sec: string; quote: string; at: number; book?: string; pos?: number[] }; text: string; fact?: { field: string; value: string } }[]; ai?: string; scope?: string };
+/** 1.0's matcher (bibleBuildMatcher): the names' regex, the exclusions' regex and their tables. */
+export type BibleMatcher = { re: RegExp; exRe: RegExp | null; terms: Map<string, unknown>; ex: Map<string, unknown> };
 /** 1.0's state.goals, normalised (normalizeGoals). */
 export type Goals = { daily: number; project: number; deadline: string; days?: number[]; dlDay?: boolean; auto?: boolean; start?: { day: string; w: number } };
 export type GoalMathOut = { has: boolean; daily: Record<string, unknown> | null; project: Record<string, unknown> | null; deadline: (Record<string, unknown> & { pace: number | null }) | null; plan: Record<string, unknown> | null; pace: Record<string, unknown> | null };
@@ -496,6 +605,11 @@ export type ClosureVars = {
   currentCenterTab: string;
   zdTimer: unknown;
   zdStart: number | null;
+  // wave 3b: the section 1.0's editor shows, the series Covenant in hand and the entries' version counter
+  editorSyncedSectionId: string | null;
+  bibleSeries: (Record<string, unknown> & { key: string; name: string; doc: { entries: BibleEntry[]; fields?: Record<string, unknown> }; revision: number | null }) | null;
+  bibleAllVer: number;
+  bibleSeriesArriveTimer: unknown;
 };
 
 /** The sample book's own code (src/generated/closure-sample.js, its own chunk: loadSample). */
@@ -556,6 +670,35 @@ export const pageEnv: { $: (id: string) => unknown; activeSection: () => unknown
   closeUiLangMenu: () => undefined,
 };
 export const cloudFacts: { available: boolean; user: unknown; serverStreak: unknown; lastHeartbeatAt: number } = { available: false, user: null, serverStreak: null, lastHeartbeatAt: 0 };
+/** Wave 3b (C6): what 1.0's Covenant code reaches around its own (BROWSER_SUPPLIED), filled in by src/covenant: the
+ *  shelf's transport (1.0's apiFetch), the room's open (2.0's Dialog), and the desk mirror's entry points — 2.0 draws
+ *  the marks as ProseMirror decorations, so a redraw, the card's hide and a line's height are 2.0's own. */
+export const covEnv: {
+  apiFetch: (path: string, opts?: Record<string, unknown>) => unknown;
+  openBible: (id?: string) => void;
+  deskRender: (force?: boolean) => void;
+  deskSchedule: () => void;
+  cardHide: () => void;
+  offsetY: (area: unknown, offset: number) => number;
+} = {
+  apiFetch: () => null,
+  openBible: () => undefined,
+  deskRender: () => undefined,
+  deskSchedule: () => undefined,
+  cardHide: () => undefined,
+  offsetY: () => 0,
+};
+/** 1.0's `net` (net.online), as the series Covenant reads it. */
+const netFacts = {
+  get online() {
+    return typeof navigator === 'undefined' || navigator.onLine !== false;
+  },
+};
+/** 1.0's uiLangState as its caches key on it (`h + ":" + uiLangState`): read live, so a language change is a new key. */
+const uiLangLive = {
+  toString: () => currentLang,
+  valueOf: () => currentLang,
+};
 /** Wave 3a: what 1.0's goals and streak code call around their own code (BROWSER_SUPPLIED), set by src/goals/goals.ts:
  *  noteBookEdited (1.0 saves the book: 2.0 writes 1.0's state.goals to the Y meta map, goals.ts goalsRun), the shelf's
  *  heartbeat (streak.ts) and the calm confirm (2.0's useConfirm, for Clear tracking data). */
@@ -609,7 +752,6 @@ export function loadClosure(): Promise<Closure> {
         },
         noteBookEdited: () => writeEnv.noteBookEdited(),
         imglibRefresh: () => undefined,
-        bibleSeriesTouched: () => undefined,
         cloud: cloudFacts,
         // wave 2c: 1.0's redraws after a structural edit are React's re-render from the Y.Doc; selectSection see structEnv
         renderSidebar: () => undefined,
@@ -629,6 +771,17 @@ export function loadClosure(): Promise<Closure> {
         activeSection: () => pageEnv.activeSection(),
         setCenterTab: (tab: string) => pageEnv.setCenterTab(tab),
         closeUiLangMenu: () => pageEnv.closeUiLangMenu(),
+        // wave 3b (C6): the Covenant's surroundings (covEnv, src/covenant)
+        apiFetch: (path: string, opts?: Record<string, unknown>) => covEnv.apiFetch(path, opts),
+        net: netFacts,
+        cloudDirty: false,
+        uiLangState: uiLangLive,
+        openBible: (id?: string) => covEnv.openBible(id),
+        olOnStructure: () => undefined,
+        bibleDeskRender: (force?: boolean) => covEnv.deskRender(force),
+        bibleDeskSchedule: () => covEnv.deskSchedule(),
+        bibleCardHide: () => covEnv.cardHide(),
+        bibleOffsetY: (area: unknown, offset: number) => covEnv.offsetY(area, offset),
       });
       share = c.share;
       loaded = { api: c.api as unknown as ClosureApi, vars: c.vars as ClosureVars, sample: null, setState: c.setState, getState: c.getState, arrive: c.arrive, names: m.CLOSURE_NAMES };

@@ -7,6 +7,7 @@ import { Dialog } from '../shell/Dialog';
 import { Icon, type IconName } from '../shell/Icon';
 import { useToast } from '../shell/Toasts';
 import { addRead, bytesOf, fmtDateIntl, namesIn, nbState, nowIso, readOne, readResearch, textOf, writeNotebook, writeNotes, type FileItem, type NbState } from './notebook';
+import { openCovenant } from '../covenant/CovenantDialog';
 
 /* 1.0's Notebook (client/index.html #modalNotebook, BEUK:notebook and
    BEUK:research: nbRenderList, nbRenderDetail, rsFilesHtml, rsViewHtml and
@@ -486,8 +487,8 @@ function NotebookBody({ onClose }: { onClose: () => void }) {
             ) : (
               <div className="nb-chips">
                 {names.map((x) => (
-                  // opening the Covenant from here is wave 3 (the Covenant room)
-                  <button type="button" className="ol-chip" data-nbcov={x.id} key={x.id} aria-disabled="true">
+                  // 1.0's nbOnClick: a chip opens the Covenant on that entry (wave 3b)
+                  <button type="button" className="ol-chip" data-nbcov={x.id} key={x.id} onClick={() => openCovenant(x.id)}>
                     <Icon name="BookMarked" />
                     {tt('nb.nameN', { name: x.name, n: a.fmtNum(x.n) })}
                   </button>
